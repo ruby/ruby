@@ -3868,9 +3868,16 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
-          v13:BasicObject = GetBlockParam :block, l0, EP@3
+          v13:CBool = IsBlockParamModified l0
+          IfTrue v13, bb3(v8, v9)
+          v24:BasicObject = GetBlockParam :block, l0, EP@3
+          Jump bb5(v8, v24, v24)
+        bb3(v14:BasicObject, v15:BasicObject):
+          v22:BasicObject = GetLocal :block, l0, EP@3
+          Jump bb5(v14, v22, v22)
+        bb5(v26:BasicObject, v27:BasicObject, v28:BasicObject):
           CheckInterrupts
-          Return v13
+          Return v28
         ");
     }
 

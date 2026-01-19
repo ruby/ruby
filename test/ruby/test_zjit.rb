@@ -493,6 +493,19 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:getblockparam, :getblockparamproxy]
   end
 
+  def test_getblockparam_used_twice_in_args
+    assert_compiles '1', %q{
+      def f(*args) = args
+      def test(&blk)
+        b = blk
+        f(*[1], blk)
+        blk
+      end
+      test {1}.call
+      test {1}.call
+    }, insns: [:getblockparam]
+  end
+
   def test_optimized_method_call_proc_call
     assert_compiles '2', %q{
       p = proc { |x| x * 2 }

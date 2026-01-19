@@ -840,6 +840,9 @@ pub enum Insn {
     /// If `use_sp` is true, it uses the SP register to optimize the read.
     /// `rest_param` is used by infer_types to infer the ArrayExact type.
     GetLocal { level: u32, ep_offset: u32, use_sp: bool, rest_param: bool },
+    /// Check whether VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM is set in the environment flags.
+    /// Returns CBool (0/1).
+    IsBlockParamModified { level: u32 },
     /// Get the block parameter as a Proc.
     GetBlockParam { level: u32, ep_offset: u32, state: InsnId },
     /// Set a local variable in a higher scope or the heap
@@ -1153,6 +1156,7 @@ impl Insn {
             Insn::GetSpecialNumber { .. } => effects::Any,
             Insn::GetClassVar { .. } => effects::Any,
             Insn::SetClassVar { .. } => effects::Any,
+            Insn::IsBlockParamModified { .. } => effects::Any,
             Insn::GetBlockParam { .. } => effects::Any,
             Insn::Snapshot { .. } => effects::Empty,
             Insn::Jump(_) => effects::Any,
@@ -1597,6 +1601,9 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             &Insn::GetLocal { level, ep_offset, use_sp: false, rest_param } => {
                 let name = get_local_var_name_for_printer(self.iseq, level, ep_offset).map_or(String::new(), |x| format!("{x}, "));
                 write!(f, "GetLocal {name}l{level}, EP@{ep_offset}{}", if rest_param { ", *" } else { "" })
+            },
+            &Insn::IsBlockParamModified { level } => {
+                write!(f, "IsBlockParamModified l{level}")
             },
             &Insn::SetLocal { val, level, ep_offset } => {
                 let name = get_local_var_name_for_printer(self.iseq, level, ep_offset).map_or(String::new(), |x| format!("{x}, "));
@@ -2148,6 +2155,7 @@ impl Function {
                     | PutSpecialObject {..}
                     | GetGlobal {..}
                     | GetLocal {..}
+                    | IsBlockParamModified {..}
                     | SideExit {..}
                     | EntryPoint {..}
                     | LoadPC
@@ -2498,6 +2506,7 @@ impl Function {
             Insn::AnyToString { .. } => types::String,
             Insn::GetLocal { rest_param: true, .. } => types::ArrayExact,
             Insn::GetLocal { .. } => types::BasicObject,
+            Insn::IsBlockParamModified { .. } => types::CBool,
             Insn::GetBlockParam { .. } => types::BasicObject,
             Insn::GetBlockHandler { .. } => types::RubyValue,
             // The type of Snapshot doesn't really matter; it's never materialized. It's used only
@@ -4397,6 +4406,7 @@ impl Function {
             | &Insn::GetLEP
             | &Insn::LoadSelf
             | &Insn::GetLocal { .. }
+            | &Insn::IsBlockParamModified { .. }
             | &Insn::PutSpecialObject { .. }
             | &Insn::IncrCounter(_)
             | &Insn::IncrCounterPtr { .. } =>
@@ -5166,6 +5176,7 @@ impl Function {
             | Insn::GetSpecialSymbol { .. }
             | Insn::GetLocal { .. }
             | Insn::GetBlockParam { .. }
+            | Insn::IsBlockParamModified { .. }
             | Insn::StoreField { .. } => {
                 Ok(())
             }
@@ -6442,14 +6453,110 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     state.stack_push(fun.push_insn(block, Insn::Const { val: Const::Value(unsafe { rb_block_param_proxy }) }));
                 }
                 YARVINSN_getblockparam => {
+                    fn new_branch_block(
+                        fun: &mut Function,
+                        insn_idx: u32,
+                        exit_state: &FrameState,
+                        locals_count: usize,
+                        stack_count: usize,
+                    ) -> (BlockId, InsnId, FrameState, InsnId) {
+                        let block = fun.new_block(insn_idx);
+                        let self_param = fun.push_insn(block, Insn::Param);
+                        let mut state = exit_state.clone();
+                        state.locals.clear();
+                        state.stack.clear();
+                        state.locals.extend((0..locals_count).map(|_| fun.push_insn(block, Insn::Param)));
+                        state.stack.extend((0..stack_count).map(|_| fun.push_insn(block, Insn::Param)));
+                        let snapshot = fun.push_insn(block, Insn::Snapshot { state: state.clone() });
+                        (block, self_param, state, snapshot)
+                    }
+
+                    fn finish_getblockparam_branch(
+                        fun: &mut Function,
+                        block: BlockId,
+                        self_param: InsnId,
+                        state: &mut FrameState,
+                        join_block: BlockId,
+                        ep_offset: u32,
+                        level: u32,
+                        val: InsnId,
+                    ) {
+                        if level == 0 {
+                            state.setlocal(ep_offset, val);
+                        }
+                        state.stack_push(val);
+                        fun.push_insn(block, Insn::Jump(BranchEdge {
+                            target: join_block,
+                            args: state.as_args(self_param),
+                        }));
+                    }
+
                     let ep_offset = get_arg(pc, 0).as_u32();
                     let level = get_arg(pc, 1).as_u32();
-                    let val = fun.push_insn(block, Insn::GetBlockParam { ep_offset, level, state: exit_id });
-                    if level == 0 {
-                        // Keep it in sync for side exits.
-                        state.setlocal(ep_offset, val);
-                    }
-                    state.stack_push(val);
+                    let branch_insn_idx = exit_state.insn_idx as u32;
+
+                    // If the block param is already a Proc (modified), read it from EP.
+                    // Otherwise, convert it to a Proc and store it to EP.
+                    let is_modified = fun.push_insn(block, Insn::IsBlockParamModified { level });
+
+                    let locals_count = state.locals.len();
+                    let stack_count = state.stack.len();
+                    let entry_args = state.as_args(self_param);
+
+                    // Set up branch and join blocks.
+                    let (modified_block, modified_self_param, mut modified_state, ..) =
+                    new_branch_block(&mut fun, branch_insn_idx, &exit_state, locals_count, stack_count);
+                    let (unmodified_block, unmodified_self_param, mut unmodified_state, unmodified_exit_id) =
+                    new_branch_block(&mut fun, branch_insn_idx, &exit_state, locals_count, stack_count);
+                    let join_block = insn_idx_to_block.get(&insn_idx).copied().unwrap_or_else(|| fun.new_block(insn_idx));
+
+                    fun.push_insn(block, Insn::IfTrue {
+                        val: is_modified,
+                        target: BranchEdge { target: modified_block, args: entry_args.clone() },
+                    });
+                    fun.push_insn(block, Insn::Jump(BranchEdge {
+                        target: unmodified_block,
+                        args: entry_args,
+                    }));
+
+                    // Push modified block: read Proc from EP.
+                    let modified_val = fun.push_insn(modified_block, Insn::GetLocal {
+                        ep_offset,
+                        level,
+                        use_sp: false,
+                        rest_param: false,
+                    });
+                    finish_getblockparam_branch(
+                        &mut fun,
+                        modified_block,
+                        modified_self_param,
+                        &mut modified_state,
+                        join_block,
+                        ep_offset,
+                        level,
+                        modified_val,
+                    );
+
+                    // Push unmodified block: convert block handler to Proc.
+                    let unmodified_val = fun.push_insn(unmodified_block, Insn::GetBlockParam {
+                        ep_offset,
+                        level,
+                        state: unmodified_exit_id,
+                    });
+                    finish_getblockparam_branch(
+                        &mut fun,
+                        unmodified_block,
+                        unmodified_self_param,
+                        &mut unmodified_state,
+                        join_block,
+                        ep_offset,
+                        level,
+                        unmodified_val,
+                    );
+
+                    // Continue compilation from the join block at the next instruction.
+                    queue.push_back((unmodified_state, join_block, insn_idx, local_inval));
+                    break;
                 }
                 YARVINSN_pop => { state.stack_pop()?; }
                 YARVINSN_dup => { state.stack_push(state.stack_top()?); }
