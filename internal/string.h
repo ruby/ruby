@@ -50,6 +50,13 @@ rb_str_enc_fastpath(VALUE str)
     return rb_str_encindex_fastpath(ENCODING_GET_INLINED(str));
 }
 
+static inline rb_encoding *
+rb_str_enc_get(VALUE str)
+{
+    RUBY_ASSERT(RB_TYPE_P(str, T_STRING));
+    return rb_enc_from_index(ENCODING_GET(str));
+}
+
 /* string.c */
 VALUE rb_str_dup_m(VALUE str);
 VALUE rb_fstring(VALUE);

@@ -1,0 +1,5 @@
+prelude: |
+  # frozen_string_literal: true
+benchmark:
+  long: File.dirname("/Users/george/src/github.com/ruby/ruby/benchmark/file_dirname.yml")
+  short: File.dirname("foo/bar")

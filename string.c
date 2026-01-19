@@ -2880,7 +2880,7 @@ str_null_check(VALUE str, int *w)
     int minlen = 1;
 
     if (RB_UNLIKELY(!rb_str_enc_fastpath(str))) {
-        rb_encoding *enc = rb_enc_get(str);
+        rb_encoding *enc = rb_str_enc_get(str);
         minlen = rb_enc_mbminlen(enc);
 
         if (minlen > 1) {
