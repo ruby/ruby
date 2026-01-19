@@ -3636,7 +3636,7 @@ not_same_drive(VALUE path, int drive)
 #endif /* DOSISH_DRIVE_LETTER */
 
 static inline char *
-skiproot(const char *path, const char *end, rb_encoding *enc)
+skiproot(const char *path, const char *end)
 {
 #ifdef DOSISH_DRIVE_LETTER
     if (path + 2 <= end && has_drive_letter(path)) path += 2;
@@ -3689,7 +3689,7 @@ skipprefixroot(const char *path, const char *end, rb_encoding *enc)
     while (isdirsep(*p)) p++;
     return p;
 #else
-    return skiproot(path, end, enc);
+    return skiproot(path, end);
 #endif
 }
 
@@ -4075,7 +4075,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
                 rb_enc_associate(result, enc = fs_enc_check(result, fname));
                 p = pend;
             }
-            p = chompdirsep(skiproot(buf, p, enc), p, enc);
+            p = chompdirsep(skiproot(buf, p), p, enc);
             s += 2;
         }
     }
@@ -4100,7 +4100,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
         }
         else
 #endif /* defined DOSISH || defined __CYGWIN__ */
-            p = chompdirsep(skiproot(buf, p, enc), p, enc);
+            p = chompdirsep(skiproot(buf, p), p, enc);
     }
     else {
         size_t len;
@@ -4231,7 +4231,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
         BUFCOPY(b, s-b);
         rb_str_set_len(result, p-buf);
     }
-    if (p == skiproot(buf, p + !!*p, enc) - 1) p++;
+    if (p == skiproot(buf, p + !!*p) - 1) p++;
 
 #if USE_NTFS
     *p = '\0';
@@ -5081,7 +5081,7 @@ rb_file_dirname_n(VALUE fname, int n)
     CheckPath(fname, name);
     end = name + RSTRING_LEN(fname);
     enc = path_enc_get(fname);
-    root = skiproot(name, end, enc);
+    root = skiproot(name, end);
 #ifdef DOSISH_UNC
     if (root > name + 1 && isdirsep(*name))
         root = skipprefix(name = root - 2, end, enc);
@@ -5133,7 +5133,7 @@ rb_file_dirname_n(VALUE fname, int n)
     }
 #ifdef DOSISH_DRIVE_LETTER
     if (has_drive_letter(name) && isdirsep(*(name + 2))) {
-        const char *top = skiproot(name + 2, end, enc);
+        const char *top = skiproot(name + 2, end);
         dirname = rb_enc_str_new(name, 3, rb_str_enc_get(fname));
         rb_str_cat(dirname, top, p - top);
     }
