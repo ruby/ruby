@@ -3,6 +3,29 @@ require_relative "utils"
 
 if defined?(OpenSSL)
 
+# OpenSSL::PKCS12.create calling the PKCS12_create() has the argument mac_iter
+# which uses a MAC key using PKCS12KDF which is not FIPS-approved.
+# OpenSSL::PKCS12.new with base64-encoded example calling PKCS12_parse()
+# verifies the MAC key using PKCS12KDF which is not FIPS-approved.
+#
+# PBE-SHA1-3DES uses PKCS12KDF which is not FIPS-approved according to the RFC
+# 7292 PKCS#12.
+# https://datatracker.ietf.org/doc/html/rfc7292#appendix-C
+# > The PBES1 encryption scheme defined in PKCS #5 provides a number of
+# > algorithm identifiers for deriving keys and IVs; here, we specify a
+# > few more, all of which use the procedure detailed in Appendices B.2
+# > and B.3 to construct keys (and IVs, where needed).  As is implied by
+# > their names, all of the object identifiers below use the hash
+# > function SHA-1.
+# > ...
+# > pbeWithSHAAnd3-KeyTripleDES-CBC  OBJECT IDENTIFIER ::= {pkcs-12PbeIds 3}
+#
+# Note that the pbeWithSHAAnd3-KeyTripleDES-CBC (pkcs12-pbeids 3) in the RFC
+# 7292 PKCS#12 means PBE-SHA1-3DES in OpenSSL. PKCS12KDF is used in PKCS#12.
+# https://oidref.com/1.2.840.113549.1.12.1.3
+# https://github.com/openssl/openssl/blob/ed57d1e06dca28689190e00d9893e0fd7ecc67c1/crypto/objects/objects.txt#L385
+return if OpenSSL.fips_mode
+
 module OpenSSL
   class TestPKCS12 < OpenSSL::TestCase
     DEFAULT_PBE_PKEYS = "PBE-SHA1-3DES"
