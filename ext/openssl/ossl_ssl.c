@@ -47,7 +47,7 @@ static ID id_i_cert_store, id_i_ca_file, id_i_ca_path, id_i_verify_mode,
           id_i_session_remove_cb, id_i_npn_select_cb, id_i_npn_protocols,
           id_i_alpn_select_cb, id_i_alpn_protocols, id_i_servername_cb,
           id_i_verify_hostname, id_i_keylog_cb, id_i_tmp_dh_callback;
-static ID id_i_io, id_i_context, id_i_hostname;
+static ID id_i_io, id_i_context, id_i_hostname, id_i_sync_close;
 
 static int ossl_ssl_ex_ptr_idx;
 static int ossl_sslctx_ex_ptr_idx;
@@ -1616,12 +1616,17 @@ peeraddr_ip_str(VALUE self)
  * call-seq:
  *    SSLSocket.new(io) => aSSLSocket
  *    SSLSocket.new(io, ctx) => aSSLSocket
+ *    SSLSocket.new(io, ctx, sync_close:) => aSSLSocket
  *
  * Creates a new SSL socket from _io_ which must be a real IO object (not an
  * IO-like object that responds to read/write).
  *
  * If _ctx_ is provided the SSL Sockets initial params will be taken from
  * the context.
+ *
+ * The optional _sync_close_ keyword parameter sets the _sync_close_ instance
+ * variable. Setting this to +true+ will cause the underlying socket to be
+ * closed when the SSL/TLS connection is shut down.
  *
  * The OpenSSL::Buffering module provides additional IO methods.
  *
@@ -1631,6 +1636,10 @@ peeraddr_ip_str(VALUE self)
 static VALUE
 ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
 {
+    static ID kw_ids[1];
+    VALUE kw_args[1];
+    VALUE opts;
+
     VALUE io, v_ctx;
     SSL *ssl;
     SSL_CTX *ctx;
@@ -1639,8 +1648,17 @@ ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
     if (ssl)
         ossl_raise(eSSLError, "SSL already initialized");
 
-    if (rb_scan_args(argc, argv, "11", &io, &v_ctx) == 1)
+    if (rb_scan_args(argc, argv, "11:", &io, &v_ctx, &opts) == 1)
         v_ctx = rb_funcall(cSSLContext, rb_intern("new"), 0);
+
+    if (!kw_ids[0]) {
+        kw_ids[0] = rb_intern_const("sync_close");
+    }
+
+    rb_get_kwargs(opts, kw_ids, 0, 1, kw_args);
+    if (kw_args[0] != Qundef) {
+        rb_ivar_set(self, id_i_sync_close, kw_args[0]);
+    }
 
     GetSSLCTX(v_ctx, ctx);
     rb_ivar_set(self, id_i_context, v_ctx);
@@ -3300,5 +3318,6 @@ Init_ossl_ssl(void)
     DefIVarID(io);
     DefIVarID(context);
     DefIVarID(hostname);
+    DefIVarID(sync_close);
 #endif /* !defined(OPENSSL_NO_SOCK) */
 }

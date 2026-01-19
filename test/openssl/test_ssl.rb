@@ -355,6 +355,22 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     end
   end
 
+  def test_sync_close_initialize_opt
+    start_server do |port|
+      begin
+        sock = TCPSocket.new("127.0.0.1", port)
+        ssl = OpenSSL::SSL::SSLSocket.new(sock, sync_close: true)
+        assert_equal true, ssl.sync_close
+        ssl.connect
+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
+        ssl.close
+        assert_predicate sock, :closed?
+      ensure
+        sock&.close
+      end
+    end
+  end
+
   def test_copy_stream
     start_server do |port|
       server_connect(port) do |ssl|
