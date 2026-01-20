@@ -19,8 +19,6 @@ module Prism
 
       lex(source).each do |token|
         case token[1]
-        when :on_sp
-          # skip
         when :on_tstring_content
           if previous[1] == :on_tstring_content && (token[2].start_with?("\#$") || token[2].start_with?("\#@"))
             previous[2] << token[2]
