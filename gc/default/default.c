@@ -867,10 +867,13 @@ gc_sweep_fast_path_p(VALUE obj)
         }
 
       case T_DATA:
-        if (flags & RUBY_FL_USERPRIV0) {
+        if (flags & RUBY_TYPED_FL_IS_TYPED_DATA) {
             uintptr_t type = (uintptr_t)RTYPEDDATA(obj)->type;
             if (type & TYPED_DATA_EMBEDDED) {
                 RUBY_DATA_FUNC dfree = ((const rb_data_type_t *)(type & TYPED_DATA_PTR_MASK))->function.dfree;
+                // Fast path for embedded T_DATA with no custom free function.
+                // True when dfree is NULL (RUBY_NEVER_FREE) or -1 (RUBY_TYPED_DEFAULT_FREE).
+                // Single comparison used instead of two equality checks for performance.
                 return (uintptr_t)dfree + 1 <= 1;
             }
         }
