@@ -990,6 +990,10 @@ pub enum Insn {
     ObjToString { val: InsnId, cd: *const rb_call_data, state: InsnId },
     AnyToString { val: InsnId, str: InsnId, state: InsnId },
 
+    /// Refine the known type information of with additional type information.
+    /// Computes the intersection of the existing type and the new type.
+    RefineType { val: InsnId, new_type: Type },
+
     /// Side-exit if val doesn't have the expected type.
     GuardType { val: InsnId, guard_type: Type, state: InsnId },
     GuardTypeNot { val: InsnId, guard_type: Type, state: InsnId },
@@ -1207,6 +1211,7 @@ impl Insn {
             Insn::IncrCounterPtr { .. } => effects::Any,
             Insn::CheckInterrupts { .. } => effects::Any,
             Insn::InvokeProc { .. } => effects::Any,
+            Insn::RefineType { .. } => effects::Empty,
         }
     }
 
@@ -1502,6 +1507,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::FixnumLShift { left, right, .. } => { write!(f, "FixnumLShift {left}, {right}") },
             Insn::FixnumRShift { left, right, .. } => { write!(f, "FixnumRShift {left}, {right}") },
             Insn::GuardType { val, guard_type, .. } => { write!(f, "GuardType {val}, {}", guard_type.print(self.ptr_map)) },
+            Insn::RefineType { val, new_type, .. } => { write!(f, "RefineType {val}, {}", new_type.print(self.ptr_map)) },
             Insn::GuardTypeNot { val, guard_type, .. } => { write!(f, "GuardTypeNot {val}, {}", guard_type.print(self.ptr_map)) },
             Insn::GuardBitEquals { val, expected, .. } => { write!(f, "GuardBitEquals {val}, {}", expected.print(self.ptr_map)) },
             &Insn::GuardShape { val, shape, .. } => { write!(f, "GuardShape {val}, {:p}", self.ptr_map.map_shape(shape)) },
@@ -2164,6 +2170,7 @@ impl Function {
             Jump(target) => Jump(find_branch_edge!(target)),
             &IfTrue { val, ref target } => IfTrue { val: find!(val), target: find_branch_edge!(target) },
             &IfFalse { val, ref target } => IfFalse { val: find!(val), target: find_branch_edge!(target) },
+            &RefineType { val, new_type } => RefineType { val: find!(val), new_type },
             &GuardType { val, guard_type, state } => GuardType { val: find!(val), guard_type, state },
             &GuardTypeNot { val, guard_type, state } => GuardTypeNot { val: find!(val), guard_type, state },
             &GuardBitEquals { val, expected, reason, state } => GuardBitEquals { val: find!(val), expected, reason, state },
@@ -2412,6 +2419,7 @@ impl Function {
             Insn::CCall { return_type, .. } => *return_type,
             &Insn::CCallVariadic { return_type, .. } => return_type,
             Insn::GuardType { val, guard_type, .. } => self.type_of(*val).intersection(*guard_type),
+            Insn::RefineType { val, new_type, .. } => self.type_of(*val).intersection(*new_type),
             Insn::GuardTypeNot { .. } => types::BasicObject,
             Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_const(*expected)),
             Insn::GuardShape { val, .. } => self.type_of(*val),
@@ -2582,6 +2590,7 @@ impl Function {
             | Insn::GuardTypeNot { val, .. }
             | Insn::GuardShape { val, .. }
             | Insn::GuardBitEquals { val, .. } => self.chase_insn(val),
+            | Insn::RefineType { val, .. } => self.chase_insn(val),
             _ => id,
         }
     }
@@ -4425,6 +4434,7 @@ impl Function {
                 worklist.extend(values);
                 worklist.push_back(state);
             }
+            | &Insn::RefineType { val, .. }
             | &Insn::Return { val }
             | &Insn::Test { val }
             | &Insn::SetLocal { val, .. }
@@ -5342,6 +5352,7 @@ impl Function {
                 self.assert_subtype(insn_id, val, types::BasicObject)?;
                 self.assert_subtype(insn_id, class, types::Class)
             }
+            Insn::RefineType { .. } => Ok(()),
         }
     }
 
@@ -5533,6 +5544,19 @@ impl FrameState {
         state.stack.truncate(args_start);
         state.stack.extend_from_slice(new_args);
         state
+    }
+
+    fn replace(&mut self, old: InsnId, new: InsnId) {
+        for slot in &mut self.stack {
+            if *slot == old {
+                *slot = new;
+            }
+        }
+        for slot in &mut self.locals {
+            if *slot == old {
+                *slot = new;
+            }
+        }
     }
 }
 
@@ -6217,10 +6241,17 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let test_id = fun.push_insn(block, Insn::Test { val });
                     let target_idx = insn_idx_at_offset(insn_idx, offset);
                     let target = insn_idx_to_block[&target_idx];
+                    let nil_false_type = types::NilClass.union(types::FalseClass);
+                    let nil_false = fun.push_insn(block, Insn::RefineType { val, new_type: nil_false_type });
+                    let mut iffalse_state = state.clone();
+                    iffalse_state.replace(val, nil_false);
                     let _branch_id = fun.push_insn(block, Insn::IfFalse {
                         val: test_id,
-                        target: BranchEdge { target, args: state.as_args(self_param) }
+                        target: BranchEdge { target, args: iffalse_state.as_args(self_param) }
                     });
+                    let not_nil_false_type = types::BasicObject.subtract(types::NilClass).subtract(types::FalseClass);
+                    let not_nil_false = fun.push_insn(block, Insn::RefineType { val, new_type: not_nil_false_type });
+                    state.replace(val, not_nil_false);
                     queue.push_back((state.clone(), target, target_idx, local_inval));
                 }
                 YARVINSN_branchif => {
@@ -6230,10 +6261,17 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let test_id = fun.push_insn(block, Insn::Test { val });
                     let target_idx = insn_idx_at_offset(insn_idx, offset);
                     let target = insn_idx_to_block[&target_idx];
+                    let not_nil_false_type = types::BasicObject.subtract(types::NilClass).subtract(types::FalseClass);
+                    let not_nil_false = fun.push_insn(block, Insn::RefineType { val, new_type: not_nil_false_type });
+                    let mut iftrue_state = state.clone();
+                    iftrue_state.replace(val, not_nil_false);
                     let _branch_id = fun.push_insn(block, Insn::IfTrue {
                         val: test_id,
-                        target: BranchEdge { target, args: state.as_args(self_param) }
+                        target: BranchEdge { target, args: iftrue_state.as_args(self_param) }
                     });
+                    let nil_false_type = types::NilClass.union(types::FalseClass);
+                    let nil_false = fun.push_insn(block, Insn::RefineType { val, new_type: nil_false_type });
+                    state.replace(val, nil_false);
                     queue.push_back((state.clone(), target, target_idx, local_inval));
                 }
                 YARVINSN_branchnil => {
@@ -6243,10 +6281,16 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let test_id = fun.push_insn(block, Insn::IsNil { val });
                     let target_idx = insn_idx_at_offset(insn_idx, offset);
                     let target = insn_idx_to_block[&target_idx];
+                    let nil = fun.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
+                    let mut iftrue_state = state.clone();
+                    iftrue_state.replace(val, nil);
                     let _branch_id = fun.push_insn(block, Insn::IfTrue {
                         val: test_id,
-                        target: BranchEdge { target, args: state.as_args(self_param) }
+                        target: BranchEdge { target, args: iftrue_state.as_args(self_param) }
                     });
+                    let new_type = types::BasicObject.subtract(types::NilClass);
+                    let not_nil = fun.push_insn(block, Insn::RefineType { val, new_type });
+                    state.replace(val, not_nil);
                     queue.push_back((state.clone(), target, target_idx, local_inval));
                 }
                 YARVINSN_opt_case_dispatch => {
@@ -7665,21 +7709,23 @@ mod graphviz_tests {
         <TR><TD ALIGN="left" PORT="v12">PatchPoint NoTracePoint&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v14">CheckInterrupts&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v15">v15:CBool = Test v9&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v16">IfFalse v15, bb3(v8, v9)&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v18">PatchPoint NoTracePoint&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v19">v19:Fixnum[3] = Const Value(3)&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v21">PatchPoint NoTracePoint&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v22">CheckInterrupts&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v23">Return v19&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v16">v16:Falsy = RefineType v9, Falsy&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v17">IfFalse v15, bb3(v8, v16)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v18">v18:Truthy = RefineType v9, Truthy&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v20">PatchPoint NoTracePoint&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v21">v21:Fixnum[3] = Const Value(3)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v23">PatchPoint NoTracePoint&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v24">CheckInterrupts&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v25">Return v21&nbsp;</TD></TR>
         </TABLE>>];
-          bb2:v16 -> bb3:params:n;
+          bb2:v17 -> bb3:params:n;
           bb3 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb3(v24:BasicObject, v25:BasicObject)&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v28">PatchPoint NoTracePoint&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v29">v29:Fixnum[4] = Const Value(4)&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v31">PatchPoint NoTracePoint&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v32">CheckInterrupts&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v33">Return v29&nbsp;</TD></TR>
+        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb3(v26:BasicObject, v27:Falsy)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v30">PatchPoint NoTracePoint&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v31">v31:Fixnum[4] = Const Value(4)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v33">PatchPoint NoTracePoint&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v34">CheckInterrupts&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v35">Return v31&nbsp;</TD></TR>
         </TABLE>>];
         }
         "#);
