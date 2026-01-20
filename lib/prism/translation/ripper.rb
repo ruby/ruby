@@ -3446,12 +3446,12 @@ module Prism
 
       # :stopdoc:
       def _dispatch_0; end
-      def _dispatch_1(_); end
-      def _dispatch_2(_, _); end
-      def _dispatch_3(_, _, _); end
-      def _dispatch_4(_, _, _, _); end
-      def _dispatch_5(_, _, _, _, _); end
-      def _dispatch_7(_, _, _, _, _, _, _); end
+      def _dispatch_1(arg); arg end
+      def _dispatch_2(arg, _); arg end
+      def _dispatch_3(arg, _, _); arg end
+      def _dispatch_4(arg, _, _, _); arg end
+      def _dispatch_5(arg, _, _, _, _); arg end
+      def _dispatch_7(arg, _, _, _, _, _, _); arg end
       # :startdoc:
 
       #
