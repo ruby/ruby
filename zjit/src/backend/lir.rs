@@ -33,6 +33,11 @@ impl std::fmt::Display for BlockId {
     }
 }
 
+/// Dummy HIR block ID used when creating test or invalid LIR blocks
+const DUMMY_HIR_BLOCK_ID: usize = usize::MAX;
+/// Dummy RPO index used when creating test or invalid LIR blocks
+const DUMMY_RPO_INDEX: usize = usize::MAX;
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct BranchEdge {
     pub target: BlockId,
@@ -1587,7 +1592,7 @@ impl Assembler
 
     // Create an invalid LIR basic block for testing or when a valid HIR block ID is not available.
     pub fn new_invalid_block(&mut self) -> BlockId {
-        self.new_block(hir::BlockId(usize::MAX), true, usize::MAX)
+        self.new_block(hir::BlockId(DUMMY_HIR_BLOCK_ID), true, DUMMY_RPO_INDEX)
     }
 
     pub fn set_current_block(&mut self, block_id: BlockId) {
