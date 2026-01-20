@@ -6,7 +6,6 @@ use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::ffi::{c_int, c_long, c_void};
 use std::slice;
-use std::collections::HashMap;
 
 use crate::backend::current::ALLOC_REGS;
 use crate::invariants::{
@@ -271,22 +270,24 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
     let mut jit = JITState::new(iseq, version, function.num_insns(), function.num_blocks());
     let mut asm = Assembler::new_with_stack_slots(num_spilled_params);
 
-    // Create a hash table mapping HIR block IDs to LIR block IDs
-    let mut hir_to_lir: HashMap<BlockId, lir::BlockId> = HashMap::new();
+    // Mapping from HIR block IDs to LIR block IDs.
+    // This is is a one-to-one mapping from HIR to LIR blocks used for finding
+    // jump targets in LIR (LIR should always jump to the head of an HIR block)
+    let mut hir_to_lir: Vec<Option<lir::BlockId>> = vec![None; function.num_blocks()];
 
     let reverse_post_order = function.rpo();
 
     // Create all LIR basic blocks corresponding to HIR basic blocks
     for (rpo_idx, &block_id) in reverse_post_order.iter().enumerate() {
         let lir_block_id = asm.new_block(block_id, function.is_entry_block(block_id), rpo_idx);
-        hir_to_lir.insert(block_id, lir_block_id);
+        hir_to_lir[block_id.0] = Some(lir_block_id);
     }
 
     // Compile each basic block
     for (rpo_idx, &block_id) in reverse_post_order.iter().enumerate() {
         // Set the current block to the LIR block that corresponds to this
         // HIR block.
-        let lir_block_id = hir_to_lir[&block_id];
+        let lir_block_id = hir_to_lir[block_id.0].unwrap();
         asm.set_current_block(lir_block_id);
 
         // Write a label to jump to the basic block
@@ -317,7 +318,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                 Insn::IfFalse { val, target } => {
                     let val_opnd = jit.get_opnd(val);
 
-                    let lir_target = hir_to_lir[&target.target];
+                    let lir_target = hir_to_lir[target.target.0].unwrap();
 
                     let fall_through_target = asm.new_block(block_id, false, rpo_idx);
 
@@ -331,7 +332,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                         args: vec![]
                     };
 
-                    gen_if_false(&mut jit, &mut asm, val_opnd, branch_edge, fall_through_edge);
+                    gen_if_false(&mut asm, val_opnd, branch_edge, fall_through_edge);
                     asm.set_current_block(fall_through_target);
 
                     let label = jit.get_label(&mut asm, fall_through_target, block_id);
@@ -340,7 +341,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                 Insn::IfTrue { val, target } => {
                     let val_opnd = jit.get_opnd(val);
 
-                    let lir_target = hir_to_lir[&target.target];
+                    let lir_target = hir_to_lir[target.target.0].unwrap();
 
                     let fall_through_target = asm.new_block(block_id, false, rpo_idx);
 
@@ -354,19 +355,19 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                         args: vec![]
                     };
 
-                    gen_if_true(&mut jit, &mut asm, val_opnd, branch_edge, fall_through_edge);
+                    gen_if_true(&mut asm, val_opnd, branch_edge, fall_through_edge);
                     asm.set_current_block(fall_through_target);
 
                     let label = jit.get_label(&mut asm, fall_through_target, block_id);
                     asm.write_label(label);
                 }
                 Insn::Jump(target) => {
-                    let lir_target = hir_to_lir[&target.target];
+                    let lir_target = hir_to_lir[target.target.0].unwrap();
                     let branch_edge = lir::BranchEdge {
                         target: lir_target,
                         args: target.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
                     };
-                    gen_jump(&mut jit, &mut asm, branch_edge);
+                    gen_jump(&mut asm, branch_edge);
                 },
                 _ => {
                     if let Err(last_snapshot) = gen_insn(cb, &mut jit, &mut asm, function, insn_id, &insn) {
@@ -1304,13 +1305,13 @@ fn gen_param(asm: &mut Assembler, idx: usize) -> lir::Opnd {
 }
 
 /// Compile a jump to a basic block
-fn gen_jump(_jit: &mut JITState, asm: &mut Assembler, branch: lir::BranchEdge) {
+fn gen_jump(asm: &mut Assembler, branch: lir::BranchEdge) {
     // Jump to the basic block
     asm.jmp(Target::Block(branch));
 }
 
 /// Compile a conditional branch to a basic block
-fn gen_if_true(_jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, branch: lir::BranchEdge, fall_through: lir::BranchEdge) {
+fn gen_if_true(asm: &mut Assembler, val: lir::Opnd, branch: lir::BranchEdge, fall_through: lir::BranchEdge) {
     // If val is zero, move on to the next instruction.
     asm.test(val, val);
     asm.jz(Target::Block(fall_through));
@@ -1318,7 +1319,7 @@ fn gen_if_true(_jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, branch:
 }
 
 /// Compile a conditional branch to a basic block
-fn gen_if_false(_jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, branch: lir::BranchEdge, fall_through: lir::BranchEdge) {
+fn gen_if_false(asm: &mut Assembler, val: lir::Opnd, branch: lir::BranchEdge, fall_through: lir::BranchEdge) {
     // If val is not zero, move on to the next instruction.
     asm.test(val, val);
     asm.jnz(Target::Block(fall_through));
