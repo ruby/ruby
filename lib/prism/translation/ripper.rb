@@ -1112,7 +1112,7 @@ module Prism
             else
               arguments, block = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc || node.location))
               call =
-                if node.opening_loc.nil? && arguments&.any?
+                if node.opening_loc.nil? && get_arguments_and_block(node.arguments, node.block).first.any?
                   bounds(node.location)
                   on_command(message, arguments)
                 elsif !node.opening_loc.nil?
@@ -1179,16 +1179,24 @@ module Prism
         end
       end
 
-      # Visit the arguments and block of a call node and return the arguments
-      # and block as they should be used.
-      private def visit_call_node_arguments(arguments_node, block_node, trailing_comma)
+      # Extract the arguments and block Ripper-style, which means if the block
+      # is like `&b` then it's moved to arguments.
+      private def get_arguments_and_block(arguments_node, block_node)
         arguments = arguments_node&.arguments || []
         block = block_node
 
         if block.is_a?(BlockArgumentNode)
-          arguments << block
+          arguments += [block]
           block = nil
         end
+
+        [arguments, block]
+      end
+
+      # Visit the arguments and block of a call node and return the arguments
+      # and block as they should be used.
+      private def visit_call_node_arguments(arguments_node, block_node, trailing_comma)
+        arguments, block = get_arguments_and_block(arguments_node, block_node)
 
         [
           if arguments.length == 1 && arguments.first.is_a?(ForwardingArgumentsNode)

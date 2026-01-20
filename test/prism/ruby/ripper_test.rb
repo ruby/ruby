@@ -110,6 +110,14 @@ module Prism
       include Events
     end
 
+    class ObjectEvents < Translation::Ripper
+      Prism::Translation::Ripper::PARSER_EVENTS.each do |event|
+        define_method(:"on_#{event}") do |*args|
+          Object.new
+        end
+      end
+    end
+
     def test_events
       source = "1 rescue 2"
       ripper = RipperEvents.new(source)
@@ -152,6 +160,10 @@ module Prism
 
     def assert_ripper_sexp_raw(source)
       assert_equal Ripper.sexp_raw(source), Prism::Translation::Ripper.sexp_raw(source)
+
+      # Similar to test/ripper/assert_parse_files.rb in CRuby
+      object_events = ObjectEvents.new(source)
+      assert_nothing_raised { object_events.parse }
     end
 
     def assert_ripper_lex(source)
