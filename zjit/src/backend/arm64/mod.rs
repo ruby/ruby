@@ -5,7 +5,6 @@ use crate::asm::arm64::*;
 use crate::codegen::split_patch_point;
 use crate::cruby::*;
 use crate::backend::lir::*;
-use crate::hir;
 use crate::options::asm_dump;
 use crate::stats::CompileError;
 use crate::virtualmem::CodePtr;
@@ -1613,7 +1612,7 @@ impl Assembler {
     }
 
     /// Optimize and compile the stored instructions
-    pub fn compile_with_regs(mut self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Result<(CodePtr, Vec<CodePtr>), CompileError> {
+    pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Result<(CodePtr, Vec<CodePtr>), CompileError> {
         // The backend is allowed to use scratch registers only if it has not accepted them so far.
         let use_scratch_regs = !self.accept_scratch_reg;
 

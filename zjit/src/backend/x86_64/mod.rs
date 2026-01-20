@@ -7,7 +7,6 @@ use crate::stats::CompileError;
 use crate::virtualmem::CodePtr;
 use crate::cruby::*;
 use crate::backend::lir::*;
-use crate::hir;
 use crate::cast::*;
 use crate::options::asm_dump;
 
