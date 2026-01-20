@@ -106,7 +106,6 @@ class TestMkmf < Test::Unit::TestCase
     end
 
     def teardown
-      return if @omitted
       rbconfig0 = @rbconfig
       mkconfig0 = @mkconfig
       RbConfig.module_eval {
@@ -123,7 +122,18 @@ class TestMkmf < Test::Unit::TestCase
       Logging.log_close
       FileUtils.rm_f("mkmf.log")
       Dir.chdir(@curdir)
-      FileUtils.rm_rf(@tmpdir)
+      try_count = 0
+      begin
+        FileUtils.rm_rf(@tmpdir)
+        raise SystemCallError, "failed to delete" if File.exist?(@tmpdir)
+      rescue SystemCallError
+        try_count += 1
+        if try_count < 3
+          sleep 1
+          retry
+        end
+        puts "Failed to delete #{ @tmpdir.dump }: #{ $!.message }"
+      end
     end
 
     def mkmf(*args, &block)
