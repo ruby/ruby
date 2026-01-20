@@ -33,7 +33,13 @@ enum ruby_rstring_private_flags {
 static inline bool
 rb_str_encindex_fastpath(int encindex)
 {
-    // The overwhelming majority of strings are in one of these 3 encodings.
+    // The overwhelming majority of strings are in one of these 3 encodings,
+    // which are all either ASCII or perfect ASCII supersets.
+    // Hence you can use fast, single byte algorithms on them, such as `memchr` etc,
+    // without all the overhead of fetching the rb_encoding and using functions such as
+    // rb_enc_mbminlen etc.
+    // Many other encodings could qualify, but they are expected to be rare occurences,
+    // so it's better to keep that list small.
     switch (encindex) {
       case ENCINDEX_ASCII_8BIT:
       case ENCINDEX_UTF_8:
