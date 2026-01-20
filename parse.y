@@ -945,6 +945,7 @@ parser_token2char(struct parser_params *p, enum yytokentype tok)
       TOKEN2CHAR(tUPLUS);
       TOKEN2CHAR(tUMINUS);
       TOKEN2CHAR(tPOW);
+      TOKEN2CHAR(tTETRATE);
       TOKEN2CHAR(tCMP);
       TOKEN2CHAR(tEQ);
       TOKEN2CHAR(tEQQ);
@@ -2820,6 +2821,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %token tUPLUS		RUBY_TOKEN(UPLUS)  "unary+"
 %token tUMINUS		RUBY_TOKEN(UMINUS) "unary-"
 %token tPOW		RUBY_TOKEN(POW)    "**"
+%token tTETRATE		RUBY_TOKEN(TETRATE)    "***"
 %token tCMP		RUBY_TOKEN(CMP)    "<=>"
 %token tEQ		RUBY_TOKEN(EQ)     "=="
 %token tEQQ		RUBY_TOKEN(EQQ)    "==="
@@ -2894,6 +2896,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %left  '*' '/' '%'
 %right tUMINUS_NUM tUMINUS
 %right tPOW
+%right tTETRATE
 %right '!' '~' tUPLUS
 
 %token tLAST_TOKEN
@@ -3952,6 +3955,10 @@ arg		: asgn(arg_rhs)
                     {
                         $$ = call_bin_op(p, $1, idPow, $3, &@2, &@$);
                     /*% ripper: binary!($:1, ID2VAL(idPow), $:3) %*/
+                    }
+                | arg tTETRATE arg
+                    {
+                        $$ = call_bin_op(p, $1, idTetrate, $3, &@2, &@$);
                     }
                 | tUMINUS_NUM simple_numeric tPOW arg
                     {
@@ -10634,13 +10641,18 @@ parser_yylex(struct parser_params *p)
 
       case '*':
         if ((c = nextc(p)) == '*') {
-            if ((c = nextc(p)) == '=') {
+            int c2 = nextc(p);
+            if (c2 == '*') {
+                set_yylval_id(idTetrate);
+                return tTETRATE;
+            }
+            if (c2 == '=') {
                 set_yylval_id(idPow);
                 SET_LEX_STATE(EXPR_BEG);
                 return tOP_ASGN;
             }
-            pushback(p, c);
-            if (IS_SPCARG(c)) {
+            pushback(p, c2);
+            if (IS_SPCARG(c2)) {
                 rb_warning0("'**' interpreted as argument prefix");
                 c = tDSTAR;
             }
