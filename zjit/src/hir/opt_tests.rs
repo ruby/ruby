@@ -2653,10 +2653,11 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, block_given?@0x1008, cme:0x1010)
           v19:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v20:BoolExact = IsBlockGiven
+          v20:CPtr = GetLEP
+          v21:BoolExact = IsBlockGiven v20
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v20
+          Return v21
         ");
     }
 
@@ -2679,7 +2680,7 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, block_given?@0x1008, cme:0x1010)
           v19:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v20:BoolExact = IsBlockGiven
+          v20:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v20

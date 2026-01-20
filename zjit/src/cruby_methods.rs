@@ -318,8 +318,14 @@ fn inline_kernel_itself(_fun: &mut hir::Function, _block: hir::BlockId, recv: hi
 
 fn inline_kernel_block_given_p(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
     let &[] = args else { return None; };
-    // TODO(max): In local iseq types that are not ISEQ_TYPE_METHOD, rewrite to Constant false.
-    Some(fun.push_insn(block, hir::Insn::IsBlockGiven))
+
+    let local_iseq = unsafe { rb_get_iseq_body_local_iseq(fun.iseq()) };
+    if unsafe { rb_get_iseq_body_type(local_iseq) } == ISEQ_TYPE_METHOD {
+        let lep = fun.push_insn(block, hir::Insn::GetLEP);
+        Some(fun.push_insn(block, hir::Insn::IsBlockGiven { lep }))
+    } else {
+        Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qfalse) }))
+    }
 }
 
 fn inline_array_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {

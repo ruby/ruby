@@ -503,7 +503,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::LoadField { recv, id, offset, return_type } => gen_load_field(asm, opnd!(recv), id, offset, return_type),
         &Insn::StoreField { recv, id, offset, val } => no_output!(gen_store_field(asm, opnd!(recv), id, offset, opnd!(val), function.type_of(val))),
         &Insn::WriteBarrier { recv, val } => no_output!(gen_write_barrier(asm, opnd!(recv), opnd!(val), function.type_of(val))),
-        &Insn::IsBlockGiven => gen_is_block_given(jit, asm),
+        &Insn::IsBlockGiven { lep } => gen_is_block_given(asm, opnd!(lep)),
         Insn::ArrayInclude { elements, target, state } => gen_array_include(jit, asm, opnds!(elements), opnd!(target), &function.frame_state(*state)),
         Insn::ArrayPackBuffer { elements, fmt, buffer, state } => gen_array_pack_buffer(jit, asm, opnds!(elements), opnd!(fmt), opnd!(buffer), &function.frame_state(*state)),
         &Insn::DupArrayInclude { ary, target, state } => gen_dup_array_include(jit, asm, ary, opnd!(target), &function.frame_state(state)),
@@ -609,16 +609,10 @@ fn gen_defined(jit: &JITState, asm: &mut Assembler, op_type: usize, obj: VALUE, 
 }
 
 /// Similar to gen_defined for DEFINED_YIELD
-fn gen_is_block_given(jit: &JITState, asm: &mut Assembler) -> Opnd {
-    let local_iseq = unsafe { rb_get_iseq_body_local_iseq(jit.iseq) };
-    if unsafe { rb_get_iseq_body_type(local_iseq) } == ISEQ_TYPE_METHOD {
-        let lep = gen_get_lep(jit, asm);
-        let block_handler = asm.load(Opnd::mem(64, lep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL));
-        asm.cmp(block_handler, VM_BLOCK_HANDLER_NONE.into());
-        asm.csel_e(Qfalse.into(), Qtrue.into())
-    } else {
-        Qfalse.into()
-    }
+fn gen_is_block_given(asm: &mut Assembler, lep: Opnd) -> Opnd {
+    let block_handler = asm.load(Opnd::mem(64, lep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL));
+    asm.cmp(block_handler, VM_BLOCK_HANDLER_NONE.into());
+    asm.csel_e(Qfalse.into(), Qtrue.into())
 }
 
 fn gen_unbox_fixnum(asm: &mut Assembler, val: Opnd) -> Opnd {
