@@ -4584,6 +4584,26 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:invokeblock]
   end
 
+  def test_optimized_call_with_literal_block_and_callee_block_param
+    assert_compiles '3', %q{
+      def test(a, b, &block)
+        block.call(a, b)
+      end
+      test(1, 2) { |a, b| a + b }
+      test(1, 2) { |a, b| a + b }
+    }, call_threshold: 2
+  end
+
+  def test_optimized_call_with_literal_block_no_callee_block_param
+    assert_compiles '3', %q{
+      def test(a, b)
+        yield a, b if block_given?
+      end
+      test(1, 2) { |a, b| a + b }
+      test(1, 2) { |a, b| a + b }
+    }, call_threshold: 2
+  end
+
   def test_ccall_variadic_with_multiple_args
     assert_compiles "[1, 2, 3]", %q{
       def test

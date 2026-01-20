@@ -2872,7 +2872,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn dont_specialize_call_to_iseq_with_block() {
+    fn test_send_direct_iseq_with_block() {
         eval("
             def foo(&block) = 1
             def test = foo {|| }
@@ -2889,9 +2889,12 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
-          v11:BasicObject = Send v6, 0x1000, :foo # SendFallbackReason: Send: unsupported method type Iseq
+          PatchPoint NoSingletonClass(Object@0x1000)
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v18:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v19:BasicObject = SendDirect v18, 0x1038, :foo (0x1040)
           CheckInterrupts
-          Return v11
+          Return v19
         ");
     }
 
@@ -2921,7 +2924,10 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:NilClass):
           v13:Fixnum[1] = Const Value(1)
           SetLocal :a, l0, EP@3, v13
-          v19:BasicObject = Send v8, 0x1000, :foo # SendFallbackReason: Send: unsupported method type Iseq
+          PatchPoint NoSingletonClass(Object@0x1000)
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v31:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v8, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v32:BasicObject = SendDirect v31, 0x1038, :foo (0x1040)
           v20:BasicObject = GetLocal :a, l0, EP@3
           v24:BasicObject = GetLocal :a, l0, EP@3
           CheckInterrupts
@@ -3374,6 +3380,7 @@ mod hir_opt_tests {
           v11:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v12:StringExact = StringCopy v11
           v14:Fixnum[1] = Const Value(1)
+          IncrCounter complex_arg_pass_caller_kwarg
           v16:BasicObject = SendWithoutBlock v6, :sprintf, v12, v14 # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v16
@@ -6534,13 +6541,13 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_do_not_optimize_send_to_iseq_method_with_block() {
+    fn test_send_direct_iseq_with_block_no_callee_block_param() {
         eval(r#"
             def foo
               yield 1
             end
 
-            def test = foo {}
+            def test = foo { |x| x * 2 }
             test; test
         "#);
         assert_snapshot!(hir_string("test"), @r"
@@ -6553,9 +6560,12 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
-          v11:BasicObject = Send v6, 0x1000, :foo # SendFallbackReason: Send: unsupported method type Iseq
+          PatchPoint NoSingletonClass(Object@0x1000)
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v18:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v19:BasicObject = SendDirect v18, 0x1038, :foo (0x1040)
           CheckInterrupts
-          Return v11
+          Return v19
         ");
     }
 

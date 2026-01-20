@@ -958,6 +958,18 @@ pub enum Insn {
         kw_splat: bool,
     },
 
+    /// Optimized ISEQ call with a literal block
+    SendDirect {
+        recv: InsnId,
+        cd: *const rb_call_data,
+        cme: *const rb_callable_method_entry_t,
+        iseq: IseqPtr,
+        args: Vec<InsnId>,
+        kw_bits: u32,
+        blockiseq: IseqPtr,
+        state: InsnId,
+    },
+
     /// Optimized ISEQ call
     SendWithoutBlockDirect {
         recv: InsnId,
@@ -1193,6 +1205,7 @@ impl Insn {
             Insn::InvokeSuper { .. } => effects::Any,
             Insn::InvokeSuperForward { .. } => effects::Any,
             Insn::InvokeBlock { .. } => effects::Any,
+            Insn::SendDirect { .. } => effects::Any,
             Insn::SendWithoutBlockDirect { .. } => effects::Any,
             Insn::InvokeBuiltin { .. } => effects::Any,
             Insn::EntryPoint { .. } => effects::Any,
@@ -1444,6 +1457,13 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                     write!(f, ", {arg}")?;
                 }
                 write!(f, " # SendFallbackReason: {reason}")?;
+                Ok(())
+            }
+            Insn::SendDirect { recv, cd, iseq, args, blockiseq, .. } => {
+                write!(f, "SendDirect {recv}, {:p}, :{} ({:?})", self.ptr_map.map_ptr(blockiseq), ruby_call_method_name(*cd), self.ptr_map.map_ptr(iseq))?;
+                for arg in args {
+                    write!(f, ", {arg}")?;
+                }
                 Ok(())
             }
             Insn::SendWithoutBlockDirect { recv, cd, iseq, args, .. } => {
@@ -1838,7 +1858,11 @@ pub enum ValidationError {
     MiscValidationError(InsnId, String),
 }
 
-fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq_t, ci: *const rb_callinfo, send_insn: InsnId, args: &[InsnId]) -> bool {
+/// Check if we can do a direct send to the given iseq with the given args.
+/// If `allow_block_param` is true, methods with `&block` parameters are allowed.
+/// This is used for Send (with block) optimization where we pass a block to a method
+/// that accepts one.
+fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq_t, ci: *const rb_callinfo, send_insn: InsnId, args: &[InsnId], allow_block_param: bool) -> bool {
     let mut can_send = true;
     let mut count_failure = |counter| {
         can_send = false;
@@ -1849,7 +1873,8 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
     use Counter::*;
     if 0 != params.flags.has_rest()    { count_failure(complex_arg_pass_param_rest) }
     if 0 != params.flags.has_post()    { count_failure(complex_arg_pass_param_post) }
-    if 0 != params.flags.has_block()   { count_failure(complex_arg_pass_param_block) }
+    // Allow &block param when explicitly permitted (for Send with block optimization)
+    if !allow_block_param && 0 != params.flags.has_block() { count_failure(complex_arg_pass_param_block) }
     if 0 != params.flags.forwardable() { count_failure(complex_arg_pass_param_forwardable) }
 
     if 0 != params.flags.has_kwrest()  { count_failure(complex_arg_pass_param_kwrest) }
@@ -2270,6 +2295,16 @@ impl Function {
                 kw_bits,
                 state,
             },
+            &SendDirect { recv, cd, cme, iseq, ref args, kw_bits, blockiseq, state } => SendDirect {
+                recv: find!(recv),
+                cd,
+                cme,
+                iseq,
+                args: find_vec!(args),
+                kw_bits,
+                blockiseq,
+                state,
+            },
             &Send { recv, cd, blockiseq, ref args, state, reason } => Send {
                 recv: find!(recv),
                 cd,
@@ -2499,6 +2534,7 @@ impl Function {
             Insn::FixnumRShift { .. } => types::Fixnum,
             Insn::PutSpecialObject { .. } => types::BasicObject,
             Insn::SendWithoutBlock { .. } => types::BasicObject,
+            Insn::SendDirect { .. } => types::BasicObject,
             Insn::SendWithoutBlockDirect { .. } => types::BasicObject,
             Insn::Send { .. } => types::BasicObject,
             Insn::SendForward { .. } => types::BasicObject,
@@ -2965,9 +3001,11 @@ impl Function {
         }
     }
 
-    /// Rewrite SendWithoutBlock opcodes into SendWithoutBlockDirect opcodes if we know the target
-    /// ISEQ statically. This removes run-time method lookups and opens the door for inlining.
+    /// Rewrite eligible Send/SendWithoutBlock opcodes into SendDirect/SendWithoutBlockDirect
+    /// opcodes if we know the target ISEQ statically. This removes run-time method lookups and
+    /// opens the door for inlining.
     /// Also try and inline constant caches, specialize object allocations, and more.
+    /// Calls to C functions are handled separately in optimize_c_calls.
     fn type_specialize(&mut self) {
         for block in self.rpo() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
@@ -3050,15 +3088,20 @@ impl Function {
                             // Only specialize positional-positional calls
                             // TODO(max): Handle other kinds of parameter passing
                             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
-                            if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice()) {
+                            if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice(), false) {
                                 self.push_insn_id(block, insn_id); continue;
                             }
+
                             // Check singleton class assumption first, before emitting other patchpoints
                             if !self.assume_no_singleton_classes(block, klass, state) {
                                 self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
                                 self.push_insn_id(block, insn_id); continue;
                             }
+
+                            // Add PatchPoint for method redefinition
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+
+                            // Add GuardType for profiled receiver
                             if let Some(profiled_type) = profiled_type {
                                 recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
                             }
@@ -3083,7 +3126,7 @@ impl Function {
                             let capture = unsafe { proc_block.as_.captured.as_ref() };
                             let iseq = unsafe { *capture.code.iseq.as_ref() };
 
-                            if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice()) {
+                            if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice(), false) {
                                 self.push_insn_id(block, insn_id); continue;
                             }
                             // Can't pass a block to a block for now
@@ -3240,14 +3283,12 @@ impl Function {
                             self.push_insn_id(block, insn_id); continue;
                         }
                     }
-                    // This doesn't actually optimize Send yet, just replaces the fallback reason to be more precise.
-                    // The actual optimization is done in reduce_send_to_ccall.
-                    Insn::Send { recv, cd, state, .. } => {
+                    Insn::Send { mut recv, cd, state, blockiseq, args, .. } => {
                         let frame_state = self.frame_state(state);
-                        let klass = match self.resolve_receiver_type(recv, self.type_of(recv), frame_state.insn_idx) {
-                            ReceiverTypeResolution::StaticallyKnown { class } => class,
+                        let (klass, profiled_type) = match self.resolve_receiver_type(recv, self.type_of(recv), frame_state.insn_idx) {
+                            ReceiverTypeResolution::StaticallyKnown { class } => (class, None),
                             ReceiverTypeResolution::Monomorphic { profiled_type }
-                            | ReceiverTypeResolution::SkewedPolymorphic { profiled_type } => profiled_type.class(),
+                            | ReceiverTypeResolution::SkewedPolymorphic { profiled_type } => (profiled_type.class(), Some(profiled_type)),
                             ReceiverTypeResolution::SkewedMegamorphic { .. }
                             | ReceiverTypeResolution::Megamorphic => {
                                 if get_option!(stats) {
@@ -3272,6 +3313,9 @@ impl Function {
                             }
                         };
                         let ci = unsafe { get_call_data_ci(cd) }; // info about the call site
+
+                        let flags = unsafe { rb_vm_ci_flag(ci) };
+
                         let mid = unsafe { vm_ci_mid(ci) };
                         // Do method lookup
                         let mut cme = unsafe { rb_callable_method_entry(klass, mid) };
@@ -3282,13 +3326,73 @@ impl Function {
                         // Load an overloaded cme if applicable. See vm_search_cc().
                         // It allows you to use a faster ISEQ if possible.
                         cme = unsafe { rb_check_overloaded_cme(cme, ci) };
+                        let visibility = unsafe { METHOD_ENTRY_VISI(cme) };
+                        match (visibility, flags & VM_CALL_FCALL != 0) {
+                            (METHOD_VISI_PUBLIC, _) => {}
+                            (METHOD_VISI_PRIVATE, true) => {}
+                            (METHOD_VISI_PROTECTED, true) => {}
+                            _ => {
+                                self.set_dynamic_send_reason(insn_id, SendNotOptimizedNeedPermission);
+                                self.push_insn_id(block, insn_id); continue;
+                            }
+                        }
                         let mut def_type = unsafe { get_cme_def_type(cme) };
                         while def_type == VM_METHOD_TYPE_ALIAS {
                             cme = unsafe { rb_aliased_callable_method_entry(cme) };
                             def_type = unsafe { get_cme_def_type(cme) };
                         }
-                        self.set_dynamic_send_reason(insn_id, SendNotOptimizedMethodType(MethodType::from(def_type)));
-                        self.push_insn_id(block, insn_id); continue;
+
+                        // If the call site info indicates that the `Function` has overly complex arguments, then do not optimize into a `SendWithoutBlockDirect`.
+                        // Optimized methods(`VM_METHOD_TYPE_OPTIMIZED`) handle their own argument constraints (e.g., kw_splat for Proc call).
+                        if def_type != VM_METHOD_TYPE_OPTIMIZED && unspecializable_call_type(flags) {
+                            self.count_complex_call_features(block, flags);
+                            self.set_dynamic_send_reason(insn_id, ComplexArgPass);
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+
+                        if def_type == VM_METHOD_TYPE_ISEQ {
+                            // TODO(max): Allow non-iseq; cache cme
+                            // Only specialize positional-positional calls
+                            // TODO(max): Handle other kinds of parameter passing
+                            let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
+                            if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice(), true) {
+                                self.push_insn_id(block, insn_id); continue;
+                            }
+
+                            // Check singleton class assumption first, before emitting other patchpoints
+                            if !self.assume_no_singleton_classes(block, klass, state) {
+                                self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
+                                self.push_insn_id(block, insn_id); continue;
+                            }
+
+                            // Add PatchPoint for method redefinition
+                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+
+                            // Add GuardType for profiled receiver
+                            if let Some(profiled_type) = profiled_type {
+                                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+                            }
+
+                            let Ok((send_state, processed_args, kw_bits)) = self.prepare_direct_send_args(block, &args, ci, iseq, state)
+                                .inspect_err(|&reason| self.set_dynamic_send_reason(insn_id, reason)) else {
+                                self.push_insn_id(block, insn_id); continue;
+                            };
+
+                            let send_direct = self.push_insn(block, Insn::SendDirect {
+                                recv,
+                                cd,
+                                cme,
+                                iseq,
+                                args: processed_args,
+                                kw_bits,
+                                blockiseq,
+                                state: send_state,
+                            });
+                            self.make_equal_to(insn_id, send_direct);
+                        } else {
+                            self.set_dynamic_send_reason(insn_id, SendNotOptimizedMethodType(MethodType::from(def_type)));
+                            self.push_insn_id(block, insn_id); continue;
+                        }
                     }
                     Insn::GetConstantPath { ic, state, .. } => {
                         let idlist: *const ID = unsafe { (*ic).segments };
@@ -3464,7 +3568,7 @@ impl Function {
                         // Check if the super method's parameters support direct send.
                         // If not, we can't do direct dispatch.
                         let super_iseq = unsafe { get_def_iseq_ptr((*super_cme).def) };
-                        if !can_direct_send(self, block, super_iseq, ci, insn_id, args.as_slice()) {
+                        if !can_direct_send(self, block, super_iseq, ci, insn_id, args.as_slice(), false) {
                             self.push_insn_id(block, insn_id);
                             self.set_dynamic_send_reason(insn_id, SuperTargetComplexArgsPass);
                             continue;
@@ -3776,7 +3880,7 @@ impl Function {
         self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass: recv_class, method: method_id, cme }, state });
     }
 
-    /// Optimize SendWithoutBlock that land in a C method to a direct CCall without
+    /// Optimize Send/SendWithoutBlock that land in a C method to a direct CCall without
     /// runtime lookup.
     fn optimize_c_calls(&mut self) {
         if unsafe { rb_zjit_method_tracing_currently_enabled() } {
@@ -3841,7 +3945,10 @@ impl Function {
             // When seeing &block argument, fall back to dynamic dispatch for now
             // TODO: Support block forwarding
             if unspecializable_c_call_type(ci_flags) {
-                fun.count_complex_call_features(block, ci_flags);
+                // Only count features NOT already counted in type_specialize.
+                if !unspecializable_call_type(ci_flags) {
+                    fun.count_complex_call_features(block, ci_flags);
+                }
                 fun.set_dynamic_send_reason(send_insn_id, ComplexArgPass);
                 return Err(());
             }
@@ -4011,7 +4118,10 @@ impl Function {
 
                     // Filter for simple call sites (i.e. no splats etc.)
                     if ci_flags & VM_CALL_ARGS_SIMPLE == 0 {
-                        fun.count_complex_call_features(block, ci_flags);
+                        // Only count features NOT already counted in type_specialize.
+                        if !unspecializable_call_type(ci_flags) {
+                            fun.count_complex_call_features(block, ci_flags);
+                        }
                         fun.set_dynamic_send_reason(send_insn_id, ComplexArgPass);
                         return Err(());
                     }
@@ -4091,8 +4201,10 @@ impl Function {
                     // func(int argc, VALUE *argv, VALUE recv)
                     let ci_flags = unsafe { vm_ci_flag(call_info) };
                     if ci_flags & VM_CALL_ARGS_SIMPLE == 0 {
-                        // TODO(alan): Add fun.count_complex_call_features() here without double
-                        // counting splat
+                        // Only count features NOT already counted in type_specialize.
+                        if !unspecializable_call_type(ci_flags) {
+                            fun.count_complex_call_features(block, ci_flags);
+                        }
                         fun.set_dynamic_send_reason(send_insn_id, ComplexArgPass);
                         return Err(());
                     } else {
@@ -4616,6 +4728,7 @@ impl Function {
             | &Insn::SendWithoutBlock { recv, ref args, state, .. }
             | &Insn::CCallVariadic { recv, ref args, state, .. }
             | &Insn::CCallWithFrame { recv, ref args, state, .. }
+            | &Insn::SendDirect { recv, ref args, state, .. }
             | &Insn::SendWithoutBlockDirect { recv, ref args, state, .. }
             | &Insn::InvokeBuiltin { recv, ref args, state, .. }
             | &Insn::InvokeSuper { recv, ref args, state, .. }
@@ -5276,6 +5389,7 @@ impl Function {
             }
             // Instructions with recv and a Vec of Ruby objects
             Insn::SendWithoutBlock { recv, ref args, .. }
+            | Insn::SendDirect { recv, ref args, .. }
             | Insn::SendWithoutBlockDirect { recv, ref args, .. }
             | Insn::Send { recv, ref args, .. }
             | Insn::SendForward { recv, ref args, .. }
