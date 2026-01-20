@@ -67,6 +67,41 @@ impl<T: Into<usize> + Copy> BitSet<T> {
         }
         changed
     }
+
+    /// Modify `self` to have bits set if they are set in either `self` or `other`. Returns true if `self`
+    /// was modified, and false otherwise.
+    /// `self` and `other` must have the same number of bits.
+    pub fn union_with(&mut self, other: &Self) -> bool {
+        assert_eq!(self.num_bits, other.num_bits);
+        let mut changed = false;
+        for i in 0..self.entries.len() {
+            let before = self.entries[i];
+            self.entries[i] |= other.entries[i];
+            changed |= self.entries[i] != before;
+        }
+        changed
+    }
+
+    /// Modify `self` to remove bits that are set in `other`. Returns true if `self`
+    /// was modified, and false otherwise.
+    /// `self` and `other` must have the same number of bits.
+    pub fn difference_with(&mut self, other: &Self) -> bool {
+        assert_eq!(self.num_bits, other.num_bits);
+        let mut changed = false;
+        for i in 0..self.entries.len() {
+            let before = self.entries[i];
+            self.entries[i] &= !other.entries[i];
+            changed |= self.entries[i] != before;
+        }
+        changed
+    }
+
+    /// Check if two BitSets are equal.
+    /// `self` and `other` must have the same number of bits.
+    pub fn equals(&self, other: &Self) -> bool {
+        assert_eq!(self.num_bits, other.num_bits);
+        self.entries == other.entries
+    }
 }
 
 #[cfg(test)]
