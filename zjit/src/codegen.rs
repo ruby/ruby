@@ -2638,8 +2638,17 @@ pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, C
     asm.frame_setup(&[]);
 
     asm_comment!(asm, "preserve argument registers");
-    for &reg in ALLOC_REGS.iter() {
-        asm.cpush(Opnd::Reg(reg));
+
+    for pair in ALLOC_REGS.chunks(2) {
+        match *pair {
+            [reg0, reg1] => {
+                asm.cpush_pair(Opnd::Reg(reg0), Opnd::Reg(reg1));
+            }
+            [reg] => {
+                asm.cpush(Opnd::Reg(reg));
+            }
+            _ => unreachable!("chunks(2)")
+        }
     }
     if cfg!(target_arch = "x86_64") && ALLOC_REGS.len() % 2 == 1 {
         asm.cpush(Opnd::Reg(ALLOC_REGS[0])); // maintain alignment for x86_64
@@ -2653,8 +2662,17 @@ pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, C
     if cfg!(target_arch = "x86_64") && ALLOC_REGS.len() % 2 == 1 {
         asm.cpop_into(Opnd::Reg(ALLOC_REGS[0]));
     }
-    for &reg in ALLOC_REGS.iter().rev() {
-        asm.cpop_into(Opnd::Reg(reg));
+
+    for pair in ALLOC_REGS.chunks(2).rev() {
+        match *pair {
+            [reg] => {
+                asm.cpop_into(Opnd::Reg(reg));
+            }
+            [reg0, reg1] => {
+                asm.cpop_pair_into(Opnd::Reg(reg1), Opnd::Reg(reg0));
+            }
+            _ => unreachable!("chunks(2)")
+        }
     }
 
     // Discard the current frame since the JIT function will set it up again

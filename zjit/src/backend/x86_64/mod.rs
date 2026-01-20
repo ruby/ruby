@@ -851,11 +851,19 @@ impl Assembler {
                 Insn::CPush(opnd) => {
                     push(cb, opnd.into());
                 },
+                Insn::CPushPair(opnd0, opnd1) => {
+                    push(cb, opnd0.into());
+                    push(cb, opnd1.into());
+                },
                 Insn::CPop { out } => {
                     pop(cb, out.into());
                 },
                 Insn::CPopInto(opnd) => {
                     pop(cb, opnd.into());
+                },
+                Insn::CPopPairInto(opnd0, opnd1) => {
+                    pop(cb, opnd0.into());
+                    pop(cb, opnd1.into());
                 },
 
                 // C function call
@@ -1646,6 +1654,119 @@ mod tests {
             0x23: call rax
         ");
         assert_snapshot!(cb.hexdump(), @"b801000000b902000000ba030000004889c74889ce4989cb4889d14c89dab800000000ffd0");
+    }
+
+    #[test]
+    fn test_ccall_register_preservation_even() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let v0 = asm.load(1.into());
+        let v1 = asm.load(2.into());
+        let v2 = asm.load(3.into());
+        let v3 = asm.load(4.into());
+        asm.ccall(0 as _, vec![]);
+        _ = asm.add(v0, v1);
+        _ = asm.add(v2, v3);
+
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov edi, 1
+        0x5: mov esi, 2
+        0xa: mov edx, 3
+        0xf: mov ecx, 4
+        0x14: push rdi
+        0x15: push rsi
+        0x16: push rdx
+        0x17: push rcx
+        0x18: mov eax, 0
+        0x1d: call rax
+        0x1f: pop rcx
+        0x20: pop rdx
+        0x21: pop rsi
+        0x22: pop rdi
+        0x23: add rdi, rsi
+        0x26: add rdx, rcx
+        ");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000057565251b800000000ffd0595a5e5f4801f74801ca");
+    }
+
+    #[test]
+    fn test_ccall_register_preservation_odd() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let v0 = asm.load(1.into());
+        let v1 = asm.load(2.into());
+        let v2 = asm.load(3.into());
+        let v3 = asm.load(4.into());
+        let v4 = asm.load(5.into());
+        asm.ccall(0 as _, vec![]);
+        _ = asm.add(v0, v1);
+        _ = asm.add(v2, v3);
+        _ = asm.add(v2, v4);
+
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov edi, 1
+        0x5: mov esi, 2
+        0xa: mov edx, 3
+        0xf: mov ecx, 4
+        0x14: mov r8d, 5
+        0x1a: push rdi
+        0x1b: push rsi
+        0x1c: push rdx
+        0x1d: push rcx
+        0x1e: push r8
+        0x20: push r8
+        0x22: mov eax, 0
+        0x27: call rax
+        0x29: pop r8
+        0x2b: pop r8
+        0x2d: pop rcx
+        0x2e: pop rdx
+        0x2f: pop rsi
+        0x30: pop rdi
+        0x31: add rdi, rsi
+        0x34: mov rdi, rdx
+        0x37: add rdi, rcx
+        0x3a: add rdx, r8
+        ");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b8050000005756525141504150b800000000ffd041584158595a5e5f4801f74889d74801cf4c01c2");
+    }
+
+    #[test]
+    fn test_cpush_pair() {
+        let (mut asm, mut cb) = setup_asm();
+        let v0 = asm.load(1.into());
+        let v1 = asm.load(2.into());
+        asm.cpush_pair(v0, v1);
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov edi, 1
+        0x5: mov esi, 2
+        0xa: push rdi
+        0xb: push rsi
+        ");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be020000005756");
+    }
+
+    #[test]
+    fn test_cpop_pair_into() {
+        let (mut asm, mut cb) = setup_asm();
+        let v0 = asm.load(1.into());
+        let v1 = asm.load(2.into());
+        asm.cpop_pair_into(v0, v1);
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov edi, 1
+        0x5: mov esi, 2
+        0xa: pop rdi
+        0xb: pop rsi
+        ");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be020000005f5e");
     }
 
     #[test]

@@ -380,8 +380,16 @@ pub enum Insn {
     /// Pop a register from the C stack and store it into another register
     CPopInto(Opnd),
 
+    /// Pop a pair of registers from the C stack and store it into a pair of registers.
+    /// The registers are popped from left to right.
+    CPopPairInto(Opnd, Opnd),
+
     /// Push a register onto the C stack
     CPush(Opnd),
+
+    /// Push a pair of registers onto the C stack.
+    /// The registers are pushed from left to right.
+    CPushPair(Opnd, Opnd),
 
     // C function call with N arguments (variadic)
     CCall {
@@ -609,7 +617,9 @@ impl Insn {
             Insn::Cmp { .. } => "Cmp",
             Insn::CPop { .. } => "CPop",
             Insn::CPopInto(_) => "CPopInto",
+            Insn::CPopPairInto(_, _) => "CPopPairInto",
             Insn::CPush(_) => "CPush",
+            Insn::CPushPair(_, _) => "CPushPair",
             Insn::CCall { .. } => "CCall",
             Insn::CRet(_) => "CRet",
             Insn::CSelE { .. } => "CSelE",
@@ -865,6 +875,8 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             },
             Insn::Add { left: opnd0, right: opnd1, .. } |
             Insn::And { left: opnd0, right: opnd1, .. } |
+            Insn::CPushPair(opnd0, opnd1) |
+            Insn::CPopPairInto(opnd0, opnd1) |
             Insn::Cmp { left: opnd0, right: opnd1 } |
             Insn::CSelE { truthy: opnd0, falsy: opnd1, .. } |
             Insn::CSelG { truthy: opnd0, falsy: opnd1, .. } |
@@ -1034,6 +1046,8 @@ impl<'a> InsnOpndMutIterator<'a> {
             },
             Insn::Add { left: opnd0, right: opnd1, .. } |
             Insn::And { left: opnd0, right: opnd1, .. } |
+            Insn::CPushPair(opnd0, opnd1) |
+            Insn::CPopPairInto(opnd0, opnd1) |
             Insn::Cmp { left: opnd0, right: opnd1 } |
             Insn::CSelE { truthy: opnd0, falsy: opnd1, .. } |
             Insn::CSelG { truthy: opnd0, falsy: opnd1, .. } |
@@ -1592,9 +1606,19 @@ impl Assembler
                 saved_regs = pool.live_regs();
 
                 // Save live registers
-                for &(reg, _) in saved_regs.iter() {
-                    asm.cpush(Opnd::Reg(reg));
-                    pool.dealloc_opnd(&Opnd::Reg(reg));
+                for pair in saved_regs.chunks(2) {
+                    match *pair {
+                        [(reg0, _), (reg1, _)] => {
+                            asm.cpush_pair(Opnd::Reg(reg0), Opnd::Reg(reg1));
+                            pool.dealloc_opnd(&Opnd::Reg(reg0));
+                            pool.dealloc_opnd(&Opnd::Reg(reg1));
+                        }
+                        [(reg, _)] => {
+                            asm.cpush(Opnd::Reg(reg));
+                            pool.dealloc_opnd(&Opnd::Reg(reg));
+                        }
+                        _ => unreachable!("chunks(2)")
+                    }
                 }
                 // On x86_64, maintain 16-byte stack alignment
                 if cfg!(target_arch = "x86_64") && saved_regs.len() % 2 == 1 {
@@ -1725,9 +1749,19 @@ impl Assembler
                     asm.cpop_into(Opnd::Reg(saved_regs.last().unwrap().0));
                 }
                 // Restore saved registers
-                for &(reg, vreg_idx) in saved_regs.iter().rev() {
-                    asm.cpop_into(Opnd::Reg(reg));
-                    pool.take_reg(&reg, vreg_idx);
+                for pair in saved_regs.chunks(2).rev() {
+                    match *pair {
+                        [(reg, vreg_idx)] => {
+                            asm.cpop_into(Opnd::Reg(reg));
+                            pool.take_reg(&reg, vreg_idx);
+                        }
+                        [(reg0, vreg_idx0), (reg1, vreg_idx1)] => {
+                            asm.cpop_pair_into(Opnd::Reg(reg1), Opnd::Reg(reg0));
+                            pool.take_reg(&reg1, vreg_idx1);
+                            pool.take_reg(&reg0, vreg_idx0);
+                        }
+                        _ => unreachable!("chunks(2)")
+                    }
                 }
                 saved_regs.clear();
             }
@@ -2125,8 +2159,16 @@ impl Assembler {
         self.push_insn(Insn::CPopInto(opnd));
     }
 
+    pub fn cpop_pair_into(&mut self, opnd0: Opnd, opnd1: Opnd) {
+        self.push_insn(Insn::CPopPairInto(opnd0, opnd1));
+    }
+
     pub fn cpush(&mut self, opnd: Opnd) {
         self.push_insn(Insn::CPush(opnd));
+    }
+
+    pub fn cpush_pair(&mut self, opnd0: Opnd, opnd1: Opnd) {
+        self.push_insn(Insn::CPushPair(opnd0, opnd1));
     }
 
     pub fn cret(&mut self, opnd: Opnd) {
