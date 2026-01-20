@@ -53,6 +53,22 @@ const DUMMY_HIR_BLOCK_ID: usize = usize::MAX;
 /// Dummy RPO index used when creating test or invalid LIR blocks
 const DUMMY_RPO_INDEX: usize = usize::MAX;
 
+/// LIR Instruction ID. Unique ID for each instruction in the LIR.
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, PartialOrd, Ord)]
+pub struct InsnId(pub usize);
+
+impl From<InsnId> for usize {
+    fn from(val: InsnId) -> Self {
+        val.0
+    }
+}
+
+impl std::fmt::Display for InsnId {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "i{}", self.0)
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct BranchEdge {
     pub target: BlockId,
@@ -73,11 +89,18 @@ pub struct BasicBlock {
     // Instructions in this basic block
     pub insns: Vec<Insn>,
 
+    // Instruction IDs for each instruction (same length as insns)
+    pub insn_ids: Vec<Option<InsnId>>,
+
     // Input parameters for this block
     pub parameters: Vec<Opnd>,
 
     // RPO position of the source HIR block
     pub rpo_index: usize,
+
+    // Range of instruction IDs in this block (inclusive start, exclusive end)
+    pub from: InsnId,
+    pub to: InsnId,
 }
 
 pub struct EdgePair(Option<BranchEdge>, Option<BranchEdge>);
@@ -89,8 +112,11 @@ impl BasicBlock {
             hir_block_id,
             is_entry,
             insns: vec![],
+            insn_ids: vec![],
             parameters: vec![],
             rpo_index,
+            from: InsnId(0),
+            to: InsnId(0),
         }
     }
 
@@ -100,6 +126,7 @@ impl BasicBlock {
 
     pub fn push_insn(&mut self, insn: Insn) {
         self.insns.push(insn);
+        self.insn_ids.push(None);
     }
 
     pub fn edges(&self) -> EdgePair {
@@ -2402,6 +2429,38 @@ impl Assembler
             }
         }
         result
+    }
+
+    /// Number all instructions in the LIR in reverse postorder.
+    /// This assigns a unique InsnId to each instruction across all blocks.
+    /// Also sets the from/to range on each block.
+    /// Returns the next available instruction ID after numbering.
+    pub fn number_instructions(&mut self, start: usize) -> usize {
+        let rpo_order = self.rpo();
+        let mut insn_id = start;
+        for block_id in rpo_order {
+            let block = &mut self.basic_blocks[block_id.0];
+            let block_start = insn_id;
+            for id_slot in &mut block.insn_ids {
+                *id_slot = Some(InsnId(insn_id));
+                insn_id += 2;
+            }
+            block.from = InsnId(block_start);
+            block.to = InsnId(insn_id);
+        }
+        insn_id
+    }
+
+    /// Iterate over all instructions mutably with their block ID, instruction ID, and instruction index within the block.
+    /// Returns an iterator of (BlockId, Option<InsnId>, usize, &mut Insn).
+    pub fn iter_insns_mut(&mut self) -> impl Iterator<Item = (BlockId, Option<InsnId>, usize, &mut Insn)> {
+        self.basic_blocks.iter_mut().flat_map(|block| {
+            let block_id = block.id;
+            block.insns.iter_mut()
+                .zip(block.insn_ids.iter().copied())
+                .enumerate()
+                .map(move |(idx, (insn, insn_id))| (block_id, insn_id, idx, insn))
+        })
     }
 }
 
