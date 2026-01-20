@@ -716,6 +716,7 @@ num_members(VALUE klass)
 struct struct_hash_set_arg {
     VALUE self;
     VALUE unknown_keywords;
+    VALUE found_keywords;
 };
 
 static int rb_struct_pos(VALUE s, VALUE *name);
@@ -724,6 +725,8 @@ static int
 struct_hash_set_i(VALUE key, VALUE val, VALUE arg)
 {
     struct struct_hash_set_arg *args = (struct struct_hash_set_arg *)arg;
+    VALUE klass = rb_obj_class(args->self);
+    VALUE members = struct_ivar_get(klass, id_members);
     int i = rb_struct_pos(args->self, &key);
     if (i < 0) {
         if (NIL_P(args->unknown_keywords)) {
@@ -734,6 +737,12 @@ struct_hash_set_i(VALUE key, VALUE val, VALUE arg)
     else {
         rb_struct_modify(args->self);
         RSTRUCT_SET_RAW(args->self, i, val);
+
+        if (NIL_P(args->found_keywords)) {
+            args->found_keywords = rb_hash_new();
+        }
+        VALUE member = rb_ary_entry(members, i);
+        rb_hash_aset(args->found_keywords, member, Qtrue);
     }
     return ST_CONTINUE;
 }
@@ -771,6 +780,7 @@ rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
         rb_mem_clear((VALUE *)RSTRUCT_CONST_PTR(self), n);
         arg.self = self;
         arg.unknown_keywords = Qnil;
+        arg.found_keywords = Qnil;
         rb_hash_foreach(argv[0], struct_hash_set_i, (VALUE)&arg);
         if (arg.unknown_keywords != Qnil) {
             rb_raise(rb_eArgError, "unknown keywords: %s",
@@ -1817,19 +1827,21 @@ rb_data_initialize_m(int argc, const VALUE *argv, VALUE self)
         rb_error_arity(argc, 0, 0);
     }
 
-    if (RHASH_SIZE(argv[0]) < num_members) {
-        VALUE missing = rb_ary_diff(members, rb_hash_keys(argv[0]));
-        rb_exc_raise(rb_keyword_error_new("missing", missing));
-    }
-
     struct struct_hash_set_arg arg;
     rb_mem_clear((VALUE *)RSTRUCT_CONST_PTR(self), num_members);
     arg.self = self;
     arg.unknown_keywords = Qnil;
+    arg.found_keywords = Qnil;
     rb_hash_foreach(argv[0], struct_hash_set_i, (VALUE)&arg);
     // Freeze early before potentially raising, so that we don't leave an
     // unfrozen copy on the heap, which could get exposed via ObjectSpace.
     OBJ_FREEZE(self);
+    if (arg.found_keywords != Qnil) {
+        VALUE missing = rb_ary_diff(members, rb_hash_keys(arg.found_keywords));
+        if (RARRAY_LEN(missing) > 0) {
+          rb_exc_raise(rb_keyword_error_new("missing", missing));
+        }
+    }
     if (arg.unknown_keywords != Qnil) {
         rb_exc_raise(rb_keyword_error_new("unknown", arg.unknown_keywords));
     }
