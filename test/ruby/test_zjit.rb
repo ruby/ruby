@@ -4471,6 +4471,28 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_exit_tracing
+    # This is a very basic smoke test. The StackProf format
+    # this option generates is external to us.
+    Dir.mktmpdir("zjit_test_exit_tracing") do |tmp_dir|
+      assert_compiles('true', <<~RUBY, extra_args: ['-C', tmp_dir, '--zjit-trace-exits'])
+        def test(object) = object.itself
+
+        # induce an exit just for good measure
+        array = []
+        test(array)
+        test(array)
+        def array.itself = :not_itself
+        test(array)
+
+        RubyVM::ZJIT.exit_locations.is_a?(Hash)
+      RUBY
+      dump_files = Dir.glob('zjit_exits_*.dump', base: tmp_dir)
+      assert_equal(1, dump_files.length)
+      refute(File.empty?(File.join(tmp_dir, dump_files.first)))
+    end
+  end
+
   private
 
   # Assert that every method call in `test_script` can be compiled by ZJIT
@@ -4531,10 +4553,11 @@ class TestZJIT < Test::Unit::TestCase
     stats: false,
     debug: true,
     allowed_iseqs: nil,
+    extra_args: nil,
     timeout: 1000,
     pipe_fd: nil
   )
-    args = ["--disable-gems"]
+    args = ["--disable-gems", *extra_args]
     if zjit
       args << "--zjit-call-threshold=#{call_threshold}"
       args << "--zjit-num-profiles=#{num_profiles}"
