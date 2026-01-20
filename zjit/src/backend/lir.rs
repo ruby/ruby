@@ -82,7 +82,6 @@ impl BasicBlock {
         self.insns.push(insn);
     }
 
-
     pub fn edges(&self) -> EdgePair {
         let extract_edge = |insn: &Insn| -> Option<BranchEdge> {
             if let Some(Target::Block(edge)) = insn.target() {
