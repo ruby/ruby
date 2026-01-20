@@ -180,10 +180,13 @@ module SyntaxSuggest
     #     EOM
     #     expect(lines.first.trailing_slash?).to eq(true)
     #
-    if SyntaxSuggest.use_prism_parser?
+    if SyntaxSuggest.use_prism_parser? && Prism::VERSION <= "1.8.0"
+      # Older versions of prism didn't correctly emit on_sp
       def trailing_slash?
         last = @lex.last
-        last&.type == :on_tstring_end
+        return false unless last
+
+        last.type == :on_tstring_end || (last.type == :on_sp && last.token == TRAILING_SLASH)
       end
     else
       def trailing_slash?
