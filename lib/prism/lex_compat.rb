@@ -226,7 +226,7 @@ module Prism
     end
 
     # Tokens where state should be ignored
-    # used for :on_comment, :on_heredoc_end, :on_embexpr_end
+    # used for :on_sp, :on_comment, :on_heredoc_end, :on_embexpr_end
     class IgnoreStateToken < Token
       def ==(other) # :nodoc:
         self[0...-1] == other[0...-1]
@@ -611,10 +611,10 @@ module Prism
     BOM_FLUSHED = RUBY_VERSION >= "3.3.0"
     private_constant :BOM_FLUSHED
 
-    attr_reader :source, :options
+    attr_reader :options
 
-    def initialize(source, **options)
-      @source = source
+    def initialize(code, **options)
+      @code = code
       @options = options
     end
 
@@ -624,12 +624,14 @@ module Prism
       state = :default
       heredoc_stack = [[]] #: Array[Array[Heredoc::PlainHeredoc | Heredoc::DashHeredoc | Heredoc::DedentingHeredoc]]
 
-      result = Prism.lex(source, **options)
+      result = Prism.lex(@code, **options)
+      source = result.source
       result_value = result.value
       previous_state = nil #: State?
       last_heredoc_end = nil #: Integer?
+      eof_token = nil
 
-      bom = source.byteslice(0..2) == "\xEF\xBB\xBF"
+      bom = source.slice(0, 3) == "\xEF\xBB\xBF"
 
       result_value.each_with_index do |(token, lex_state), index|
         lineno = token.location.start_line
@@ -741,6 +743,7 @@ module Prism
 
             Token.new([[lineno, column], event, value, lex_state])
           when :on_eof
+            eof_token = token
             previous_token = result_value[index - 1][0]
 
             # If we're at the end of the file and the previous token was a
@@ -763,7 +766,7 @@ module Prism
                   end_offset += 3
                 end
 
-                tokens << Token.new([[lineno, 0], :on_nl, source.byteslice(start_offset...end_offset), lex_state])
+                tokens << Token.new([[lineno, 0], :on_nl, source.slice(start_offset, end_offset - start_offset), lex_state])
               end
             end
 
@@ -857,7 +860,89 @@ module Prism
       # We sort by location to compare against Ripper's output
       tokens.sort_by!(&:location)
 
-      Result.new(tokens, result.comments, result.magic_comments, result.data_loc, result.errors, result.warnings, Source.for(source))
+      # Add :on_sp tokens
+      tokens = add_on_sp_tokens(tokens, source, result.data_loc, bom, eof_token)
+
+      Result.new(tokens, result.comments, result.magic_comments, result.data_loc, result.errors, result.warnings, source)
+    end
+
+    def add_on_sp_tokens(tokens, source, data_loc, bom, eof_token)
+      new_tokens = []
+
+      prev_token_state = Translation::Ripper::Lexer::State.cached(Translation::Ripper::EXPR_BEG)
+      prev_token_end = bom ? 3 : 0
+
+      tokens.each do |token|
+        line, column = token.location
+        start_offset = source.line_to_byte_offset(line) + column
+        # Ripper reports columns on line 1 without counting the BOM, so we adjust to get the real offset
+        start_offset += 3 if line == 1 && bom
+
+        if start_offset > prev_token_end
+          sp_value = source.slice(prev_token_end, start_offset - prev_token_end)
+          sp_line = source.line(prev_token_end)
+          sp_column = source.column(prev_token_end)
+          # Ripper reports columns on line 1 without counting the BOM
+          sp_column -= 3 if sp_line == 1 && bom
+          continuation_index = sp_value.byteindex("\\")
+
+          # ripper emits up to three :on_sp tokens when line continuations are used
+          if continuation_index
+            next_whitespace_index = continuation_index + 1
+            next_whitespace_index += 1 if sp_value.byteslice(next_whitespace_index) == "\r"
+            next_whitespace_index += 1
+            first_whitespace = sp_value[0...continuation_index]
+            continuation = sp_value[continuation_index...next_whitespace_index]
+            second_whitespace = sp_value[next_whitespace_index..]
+
+            new_tokens << IgnoreStateToken.new([
+              [sp_line, sp_column],
+              :on_sp,
+              first_whitespace,
+              prev_token_state
+            ]) unless first_whitespace.empty?
+
+            new_tokens << IgnoreStateToken.new([
+              [sp_line, sp_column + continuation_index],
+              :on_sp,
+              continuation,
+              prev_token_state
+            ])
+
+            new_tokens << IgnoreStateToken.new([
+              [sp_line + 1, 0],
+              :on_sp,
+              second_whitespace,
+              prev_token_state
+            ]) unless second_whitespace.empty?
+          else
+            new_tokens << IgnoreStateToken.new([
+              [sp_line, sp_column],
+              :on_sp,
+              sp_value,
+              prev_token_state
+            ])
+          end
+        end
+
+        new_tokens << token
+        prev_token_state = token.state
+        prev_token_end = start_offset + token.value.bytesize
+      end
+
+      unless data_loc # no trailing :on_sp with __END__ as it is always preceded by :on_nl
+        end_offset = eof_token.location.end_offset
+        if prev_token_end < end_offset
+          new_tokens << IgnoreStateToken.new([
+            [source.line(prev_token_end), source.column(prev_token_end)],
+            :on_sp,
+            source.slice(prev_token_end, end_offset - prev_token_end),
+            prev_token_state
+          ])
+        end
+      end
+
+      new_tokens
     end
   end
 

@@ -39,6 +39,8 @@ module Prism
 
     # Skip these tests that we haven't implemented yet.
     omitted_sexp_raw = [
+      "bom_leading_space.txt",
+      "bom_spaces.txt",
       "dos_endings.txt",
       "heredocs_with_fake_newlines.txt",
       "heredocs_with_ignored_newlines.txt",
@@ -92,7 +94,7 @@ module Prism
       assert_equal(expected, lexer.parse[0].to_a)
       assert_equal(lexer.parse[0].to_a, lexer.scan[0].to_a)
 
-      assert_equal(%i[on_int on_op], Translation::Ripper::Lexer.new("1 +").lex.map(&:event))
+      assert_equal(%i[on_int on_sp on_op], Translation::Ripper::Lexer.new("1 +").lex.map(&:event))
       assert_raise(SyntaxError) { Translation::Ripper::Lexer.new("1 +").lex(raise_errors: true) }
     end
 
@@ -121,15 +123,17 @@ module Prism
     def assert_ripper_lex(source)
       prism = Translation::Ripper.lex(source)
       ripper = Ripper.lex(source)
-      ripper.reject! { |elem| elem[1] == :on_sp } # Prism doesn't emit on_sp
-      ripper.sort_by! { |elem| elem[0] } # Prism emits tokens by their order in the code, not in parse order
+
+      # Prism emits tokens by their order in the code, not in parse order
+      ripper.sort_by! { |elem| elem[0] }
 
       [prism.size, ripper.size].max.times do |i|
         expected = ripper[i]
         actual = prism[i]
+
         # Since tokens related to heredocs are not emitted in the same order,
         # the state also doesn't line up.
-        if expected[1] == :on_heredoc_end && actual[1] == :on_heredoc_end
+        if expected && actual && expected[1] == :on_heredoc_end && actual[1] == :on_heredoc_end
           expected[3] = actual[3] = nil
         end
 
