@@ -1614,8 +1614,7 @@ impl Assembler {
     /// Optimize and compile the stored instructions
     pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Result<(CodePtr, Vec<CodePtr>), CompileError> {
         // The backend is allowed to use scratch registers only if it has not accepted them so far.
-        let use_scratch_regs = !self.accept_scratch_reg;
-
+        let use_scratch_reg = !self.accept_scratch_reg;
         asm_dump!(self, init);
 
         let asm = self.arm64_split();
@@ -1628,7 +1627,7 @@ impl Assembler {
         asm.compile_exits();
         asm_dump!(asm, compile_exits);
 
-        if use_scratch_regs {
+        if use_scratch_reg {
             asm = asm.arm64_scratch_split();
             asm_dump!(asm, scratch_split);
         } else {
