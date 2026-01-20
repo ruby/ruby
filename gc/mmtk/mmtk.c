@@ -439,16 +439,15 @@ rb_mmtk_update_global_tables_replace_i(VALUE *ptr, void *data)
 }
 
 static void
-rb_mmtk_update_global_tables(int table)
+rb_mmtk_update_global_tables(int table, bool moving)
 {
     MMTK_ASSERT(table < RB_GC_VM_WEAK_TABLE_COUNT);
 
-    // TODO: set weak_only to true for non-moving GC
     rb_gc_vm_weak_table_foreach(
         rb_mmtk_update_global_tables_i,
         rb_mmtk_update_global_tables_replace_i,
         NULL,
-        false,
+        !moving,
         (enum rb_gc_vm_weak_tables)table
     );
 }
