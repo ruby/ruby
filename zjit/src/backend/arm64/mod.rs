@@ -1005,15 +1005,15 @@ impl Assembler {
                 (num_insns..cb.conditional_jump_insns()).for_each(|_| nop(cb));
             }
 
-            let label = match &target {
-                &Target::CodePtr(dst_ptr) => {
+            let label = match target {
+                Target::CodePtr(dst_ptr) => {
                     let dst_addr = dst_ptr.as_offset();
                     let src_addr = cb.get_write_ptr().as_offset();
                     generate_branch::<CONDITION>(cb, src_addr, dst_addr);
                     return;
                 },
-                &Target::Label(l) => l,
-                Target::Block(edge) => asm.block_label(edge.target),
+                Target::Label(l) => l,
+                Target::Block(ref edge) => asm.block_label(edge.target),
                 Target::SideExit { .. } => {
                     unreachable!("Target::SideExit should have been compiled by compile_exits")
                 },
@@ -1480,24 +1480,37 @@ impl Assembler {
                 Insn::JmpOpnd(opnd) => {
                     br(cb, opnd.into());
                 },
-                &Insn::Jmp(ref target) => {
-                    match target {
-                        &Target::CodePtr(dst_ptr) => {
+                Insn::Jmp(target) => {
+                    match *target {
+                        Target::CodePtr(dst_ptr) => {
                             emit_jmp_ptr(cb, dst_ptr, true);
                         },
-                        &Target::Label(label_idx) => {
+                        Target::Label(label_idx) => {
+                            // Reserve space for a single B instruction
                             cb.label_ref(label_idx, 4, |cb, src_addr, dst_addr| {
-                                let bytes: i32 = (dst_addr - (src_addr - 4)).try_into().unwrap();
-                                b(cb, InstructionOffset::from_bytes(bytes));
-                                Ok(())
+                                // +1 since src_addr is after the instruction while A64
+                                // counts the offset relative to the start.
+                                let offset = (dst_addr - src_addr) / 4 + 1;
+                                if b_offset_fits_bits(offset) {
+                                    b(cb, InstructionOffset::from_insns(offset as i32));
+                                    Ok(())
+                                } else {
+                                    Err(())
+                                }
                             });
                         },
-                        Target::Block(edge) => {
+                        Target::Block(ref edge) => {
                             let label = self.block_label(edge.target);
                             cb.label_ref(label, 4, |cb, src_addr, dst_addr| {
-                                let bytes: i32 = (dst_addr - (src_addr - 4)).try_into().unwrap();
-                                b(cb, InstructionOffset::from_bytes(bytes));
-                                Ok(())
+                                // +1 since src_addr is after the instruction while A64
+                                // counts the offset relative to the start.
+                                let offset = (dst_addr - src_addr) / 4 + 1;
+                                if b_offset_fits_bits(offset) {
+                                    b(cb, InstructionOffset::from_insns(offset as i32));
+                                    Ok(())
+                                } else {
+                                    Err(())
+                                }
                             });
                         },
                         Target::SideExit { .. } => {
