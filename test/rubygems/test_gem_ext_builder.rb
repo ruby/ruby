@@ -202,7 +202,8 @@ install:
   end
 
   def test_build_multiple_extensions
-    pend "terminates on mswin" if vc_windows? && ruby_repo?
+    pend if RUBY_ENGINE == "truffleruby"
+    pend "terminates on ruby/ruby" if ruby_repo?
 
     extension_in_lib do
       @spec.extensions << "ext/Rakefile"
