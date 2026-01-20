@@ -5126,24 +5126,12 @@ rb_file_dirname_n(VALUE fname, int n)
     return dirname;
 }
 
-/*
- * accept a String, and return the pointer of the extension.
- * if len is passed, set the length of extension to it.
- * returned pointer is in ``name'' or NULL.
- *                 returns   *len
- *   no dot        NULL      0
- *   dotfile       top       0
- *   end with dot  dot       1
- *   .ext          dot       len of .ext
- *   .ext:stream   dot       len of .ext without :stream (NTFS only)
- *
- */
-const char *
-ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc)
+static inline const char *
+enc_find_extname(const char *name, long *len, bool mb_enc, rb_encoding *enc)
 {
     const char *p, *e, *end = name + (len ? *len : (long)strlen(name));
 
-    p = strrdirsep(name, end, true, enc);	/* get the last path component */
+    p = strrdirsep(name, end, mb_enc, enc);	/* get the last path component */
     if (!p)
         p = name;
     else
@@ -5176,7 +5164,7 @@ ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc)
 #endif
         else if (isdirsep(*p))
             break;
-        Inc(p, end, true, enc);
+        Inc(p, end, mb_enc, enc);
     }
 
     if (len) {
@@ -5189,6 +5177,24 @@ ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc)
             *len = p - e;
     }
     return e;
+}
+
+/*
+ * accept a String, and return the pointer of the extension.
+ * if len is passed, set the length of extension to it.
+ * returned pointer is in ``name'' or NULL.
+ *                 returns   *len
+ *   no dot        NULL      0
+ *   dotfile       top       0
+ *   end with dot  dot       1
+ *   .ext          dot       len of .ext
+ *   .ext:stream   dot       len of .ext without :stream (NTFS only)
+ *
+ */
+const char *
+ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc)
+{
+    return enc_find_extname(name, len, true, enc);
 }
 
 /*
@@ -5220,18 +5226,19 @@ ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc)
 static VALUE
 rb_file_s_extname(VALUE klass, VALUE fname)
 {
-    const char *name, *e;
-    long len;
-    VALUE extname;
+    const char *name;
+    CheckPath(fname, name);
+    long len = RSTRING_LEN(fname);
 
-    FilePathStringValue(fname);
-    name = StringValueCStr(fname);
-    len = RSTRING_LEN(fname);
-    e = ruby_enc_find_extname(name, &len, rb_enc_get(fname));
-    if (len < 1)
-        return rb_str_new(0, 0);
-    extname = rb_str_subseq(fname, e - name, len); /* keep the dot, too! */
-    return extname;
+    if (len < 1) {
+        return rb_enc_str_new(0, 0, rb_str_enc_get(fname));
+    }
+
+    bool mb_enc = !rb_str_enc_fastpath(fname);
+    rb_encoding *enc = rb_str_enc_get(fname);
+
+    const char *ext = enc_find_extname(name, &len, mb_enc, enc);
+    return rb_enc_str_new(ext, len, enc);
 }
 
 /*
