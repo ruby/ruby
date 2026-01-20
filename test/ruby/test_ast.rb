@@ -1734,6 +1734,17 @@ dummy
       assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 9, 1, 20], [1, 9, 1, 14], [1, 14, 1, 15], [1, 19, 1, 20]])
     end
 
+    def test_zlist_locations
+      node = ast_parse("[]")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 2], [1, 0, 1, 1], [1, 1, 1, 2]])
+
+      node = ast_parse("%w[]")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 4], [1, 0, 1, 3], [1, 3, 1, 4]])
+
+      node = ast_parse("ary[] += 1")
+      assert_locations(node.children[-1].children[2].locations, [[1, 4, 1, 4], [1, 3, 1, 4], [1, 4, 1, 5]])
+    end
+
     private
     def ast_parse(src, **options)
       begin
