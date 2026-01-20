@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::mem::take;
 use std::panic;
@@ -2362,6 +2362,46 @@ impl Assembler
             let nanos = side_exit_start.elapsed().as_nanos();
             crate::stats::incr_counter_by(crate::stats::Counter::compile_side_exit_time_ns, nanos as u64);
         }
+    }
+
+    /// Return a traversal of the block graph in reverse post-order.
+    pub fn rpo(&self) -> Vec<BlockId> {
+        let entry_blocks: Vec<BlockId> = self.basic_blocks.iter()
+            .filter(|block| block.entry)
+            .map(|block| block.id)
+            .collect();
+        let mut result = self.po_from(entry_blocks);
+        result.reverse();
+        result
+    }
+
+    /// Compute postorder traversal starting from the given blocks.
+    /// Outbound edges are extracted from the last 0, 1, or 2 instructions (jumps).
+    fn po_from(&self, starts: Vec<BlockId>) -> Vec<BlockId> {
+        #[derive(PartialEq)]
+        enum Action {
+            VisitEdges,
+            VisitSelf,
+        }
+        let mut result = vec![];
+        let mut seen = HashSet::with_capacity(self.basic_blocks.len());
+        let mut stack: Vec<_> = starts.iter().map(|&start| (start, Action::VisitEdges)).collect();
+        while let Some((block, action)) = stack.pop() {
+            if action == Action::VisitSelf {
+                result.push(block);
+                continue;
+            }
+            if !seen.insert(block) { continue; }
+            stack.push((block, Action::VisitSelf));
+            let EdgePair(edge1, edge2) = self.basic_blocks[block.0].edges();
+            if let Some(edge) = edge1 {
+                stack.push((edge.target, Action::VisitEdges));
+            }
+            if let Some(edge) = edge2 {
+                stack.push((edge.target, Action::VisitEdges));
+            }
+        }
+        result
     }
 }
 
