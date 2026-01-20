@@ -1564,7 +1564,7 @@ impl Assembler
         asm
     }
 
-    // Create a new LIR basic block.  Returns the newly created block
+    // Create a new LIR basic block.  Returns the newly created block ID
     pub fn new_block(&mut self, hir_block_id: hir::BlockId, is_entry: bool, rpo_index: usize) -> BlockId {
         let bb_id = BlockId(self.basic_blocks.len());
         let lir_bb = BasicBlock::new(bb_id, hir_block_id, is_entry, rpo_index);
