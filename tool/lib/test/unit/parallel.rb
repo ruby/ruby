@@ -108,9 +108,12 @@ module Test
               $:.push(*Marshal.load($1.unpack1("m").force_encoding("ASCII-8BIT"))).uniq!
             when /^run (.+?) (.+?)$/
               _report "okay"
-
               @options = @opts.dup
               suites = Test::Unit::TestCase.test_suites
+              suites_method_nums = {}
+              suites.each do |suite|
+                suites_method_nums[suite] = suite.test_method_num
+              end
 
               begin
                 require File.realpath($1)
@@ -119,7 +122,16 @@ module Test
                 _report "ready"
                 next
               end
-              _run_suites Test::Unit::TestCase.test_suites-suites, $2.to_sym
+
+              new_suites = []
+              after_suites = Test::Unit::TestCase.test_suites
+              after_suites.each do |suite|
+                if suites_method_nums[suite].nil? || suites_method_nums[suite] != suite.test_method_num
+                  new_suites << suite
+                end
+              end
+
+              _run_suites new_suites, $2.to_sym
 
               if @need_exit
                 _report "bye"
