@@ -1019,11 +1019,17 @@ impl Assembler {
                     unreachable!("Target::SideExit should have been compiled by compile_exits")
                 },
             };
-            // We save `cb.conditional_jump_insns` number of bytes since we may use up to that amount
-            // `generate_branch` will pad the emitted branch instructions with `nop`s for each unused byte.
-            cb.label_ref(label, (cb.conditional_jump_insns() * 4) as usize, |cb, src_addr, dst_addr| {
-                generate_branch::<CONDITION>(cb, src_addr - (cb.conditional_jump_insns() * 4) as i64, dst_addr);
-                Ok(())
+            // Try to use a single B.cond instruction
+            cb.label_ref(label, 4, |cb, src_addr, dst_addr| {
+                // +1 since src_addr is after the instruction while A64
+                // counts the offset relative to the start.
+                let offset = (dst_addr - src_addr) / 4 + 1;
+                if bcond_offset_fits_bits(offset) {
+                    bcond(cb, CONDITION, InstructionOffset::from_insns(offset as i32));
+                    Ok(())
+                } else {
+                    Err(())
+                }
             });
         }
 
