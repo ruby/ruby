@@ -476,7 +476,7 @@ impl Assembler {
         asm_local.live_ranges.resize(self.live_ranges.len(), LiveRange { start: None, end: None });
 
         // Create one giant block to linearize everything into
-        asm_local.new_block(hir::BlockId(usize::MAX), true, usize::MAX);
+        asm_local.new_invalid_block();
 
         let asm = &mut asm_local;
 
@@ -1142,7 +1142,7 @@ mod tests {
     fn setup_asm() -> (Assembler, CodeBlock) {
         rb_zjit_prepare_options(); // for get_option! on asm.compile
         let mut asm = Assembler::new();
-        asm.new_block(hir::BlockId(usize::MAX), true, usize::MAX);
+        asm.new_invalid_block();
         (asm, CodeBlock::new_dummy())
     }
 
@@ -1151,7 +1151,7 @@ mod tests {
         use crate::hir::SideExitReason;
 
         let mut asm = Assembler::new();
-        asm.new_block(hir::BlockId(usize::MAX), true, usize::MAX);
+        asm.new_invalid_block();
         asm.stack_base_idx = 1;
 
         let label = asm.new_label("bb0");

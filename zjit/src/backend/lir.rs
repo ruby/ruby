@@ -1579,6 +1579,11 @@ impl Assembler
         bb_id
     }
 
+    // Create an invalid LIR basic block for testing or when a valid HIR block ID is not available.
+    pub fn new_invalid_block(&mut self) -> BlockId {
+        self.new_block(hir::BlockId(usize::MAX), true, usize::MAX)
+    }
+
     pub fn set_current_block(&mut self, block_id: BlockId) {
         self.current_block_id = block_id;
     }
@@ -2792,7 +2797,7 @@ impl Assembler {
         asm_local.live_ranges.resize(self.live_ranges.len(), LiveRange { start: None, end: None });
 
         // Create one giant block to linearize everything into
-        asm_local.new_block(hir::BlockId(usize::MAX), true, usize::MAX);
+        asm_local.new_invalid_block();
 
         // Get linearized instructions with branch parameters expanded into ParallelMov
         let linearized_insns = self.linearize_instructions();
