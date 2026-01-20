@@ -86,6 +86,40 @@ module Prism
       define_method("#{fixture.test_name}_lex") { assert_ripper_lex(fixture.read) }
     end
 
+    module Events
+      attr_reader :events
+
+      def initialize(...)
+        super
+        @events = []
+      end
+
+      Prism::Translation::Ripper::PARSER_EVENTS.each do |event|
+        define_method(:"on_#{event}") do |*args|
+          @events << [event, *args]
+          super(*args)
+        end
+      end
+    end
+
+    class RipperEvents < Ripper
+      include Events
+    end
+
+    class PrismEvents < Translation::Ripper
+      include Events
+    end
+
+    def test_events
+      source = "1 rescue 2"
+      ripper = RipperEvents.new(source)
+      prism = PrismEvents.new(source)
+      ripper.parse
+      prism.parse
+      # This makes sure that the content is the same. Ordering is not correct for now.
+      assert_equal(ripper.events.sort, prism.events.sort)
+    end
+
     def test_lexer
       lexer = Translation::Ripper::Lexer.new("foo")
       expected = [[1, 0], :on_ident, "foo", Translation::Ripper::EXPR_CMDARG]
