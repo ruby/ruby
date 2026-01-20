@@ -912,90 +912,90 @@ impl Assembler {
 
                 // Conditional jump to a label
                 Insn::Jmp(target) => {
-                    match target {
-                        Target::CodePtr(code_ptr) => jmp_ptr(cb, *code_ptr),
-                        Target::Label(label) => jmp_label(cb, *label),
+                    match *target {
+                        Target::CodePtr(code_ptr) => jmp_ptr(cb, code_ptr),
+                        Target::Label(label) => jmp_label(cb, label),
                         Target::Block(edge) => jmp_label(cb, self.block_label(edge.target)),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 }
 
                 Insn::Je(target) => {
-                    match target {
-                        Target::CodePtr(code_ptr) => je_ptr(cb, *code_ptr),
-                        Target::Label(label) => je_label(cb, *label),
+                    match *target {
+                        Target::CodePtr(code_ptr) => je_ptr(cb, code_ptr),
+                        Target::Label(label) => je_label(cb, label),
                         Target::Block(edge) => je_label(cb, self.block_label(edge.target)),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 }
 
                 Insn::Jne(target) => {
-                    match target {
-                        Target::CodePtr(code_ptr) => jne_ptr(cb, *code_ptr),
-                        Target::Label(label) => jne_label(cb, *label),
+                    match *target {
+                        Target::CodePtr(code_ptr) => jne_ptr(cb, code_ptr),
+                        Target::Label(label) => jne_label(cb, label),
                         Target::Block(edge) => jne_label(cb, self.block_label(edge.target)),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 }
 
                 Insn::Jl(target) => {
-                    match target {
-                        Target::CodePtr(code_ptr) => jl_ptr(cb, *code_ptr),
-                        Target::Label(label) => jl_label(cb, *label),
+                    match *target {
+                        Target::CodePtr(code_ptr) => jl_ptr(cb, code_ptr),
+                        Target::Label(label) => jl_label(cb, label),
                         Target::Block(edge) => jl_label(cb, self.block_label(edge.target)),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 },
 
                 Insn::Jg(target) => {
-                    match target {
-                        Target::CodePtr(code_ptr) => jg_ptr(cb, *code_ptr),
-                        Target::Label(label) => jg_label(cb, *label),
+                    match *target {
+                        Target::CodePtr(code_ptr) => jg_ptr(cb, code_ptr),
+                        Target::Label(label) => jg_label(cb, label),
                         Target::Block(edge) => jg_label(cb, self.block_label(edge.target)),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 },
 
                 Insn::Jge(target) => {
-                    match target {
-                        Target::CodePtr(code_ptr) => jge_ptr(cb, *code_ptr),
-                        Target::Label(label) => jge_label(cb, *label),
+                    match *target {
+                        Target::CodePtr(code_ptr) => jge_ptr(cb, code_ptr),
+                        Target::Label(label) => jge_label(cb, label),
                         Target::Block(edge) => jge_label(cb, self.block_label(edge.target)),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 },
 
                 Insn::Jbe(target) => {
-                    match target {
-                        Target::CodePtr(code_ptr) => jbe_ptr(cb, *code_ptr),
-                        Target::Label(label) => jbe_label(cb, *label),
+                    match *target {
+                        Target::CodePtr(code_ptr) => jbe_ptr(cb, code_ptr),
+                        Target::Label(label) => jbe_label(cb, label),
                         Target::Block(edge) => jbe_label(cb, self.block_label(edge.target)),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 },
 
                 Insn::Jb(target) => {
-                    match target {
-                        Target::CodePtr(code_ptr) => jb_ptr(cb, *code_ptr),
-                        Target::Label(label) => jb_label(cb, *label),
+                    match *target {
+                        Target::CodePtr(code_ptr) => jb_ptr(cb, code_ptr),
+                        Target::Label(label) => jb_label(cb, label),
                         Target::Block(edge) => jb_label(cb, self.block_label(edge.target)),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 },
 
                 Insn::Jz(target) => {
-                    match target {
-                        Target::CodePtr(code_ptr) => jz_ptr(cb, *code_ptr),
-                        Target::Label(label) => jz_label(cb, *label),
+                    match *target {
+                        Target::CodePtr(code_ptr) => jz_ptr(cb, code_ptr),
+                        Target::Label(label) => jz_label(cb, label),
                         Target::Block(edge) => jz_label(cb, self.block_label(edge.target)),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 }
 
                 Insn::Jnz(target) => {
-                    match target {
-                        Target::CodePtr(code_ptr) => jnz_ptr(cb, *code_ptr),
-                        Target::Label(label) => jnz_label(cb, *label),
+                    match *target {
+                        Target::CodePtr(code_ptr) => jnz_ptr(cb, code_ptr),
+                        Target::Label(label) => jnz_label(cb, label),
                         Target::Block(edge) => jnz_label(cb, self.block_label(edge.target)),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
@@ -1003,9 +1003,9 @@ impl Assembler {
 
                 Insn::Jo(target) |
                 Insn::JoMul(target) => {
-                    match target {
-                        Target::CodePtr(code_ptr) => jo_ptr(cb, *code_ptr),
-                        Target::Label(label) => jo_label(cb, *label),
+                    match *target {
+                        Target::CodePtr(code_ptr) => jo_ptr(cb, code_ptr),
+                        Target::Label(label) => jo_label(cb, label),
                         Target::Block(edge) => jo_label(cb, self.block_label(edge.target)),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
