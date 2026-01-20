@@ -133,6 +133,9 @@ jobs:
             debugflags="${{ matrix.entry.debugflags }}" \
             wasmoptflags="${{ matrix.entry.wasmoptflags }} ${{ matrix.entry.debugflags }}"
 
+          # Ensure the timestamp is newer to prevent rebuild attempts
+          touch ../src/tool/dump_ast
+
       # miniruby may not be built when cross-compling
       - run: make mini ruby
 
