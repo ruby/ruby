@@ -44,9 +44,11 @@ pub struct BasicBlock {
     // Unique id for this block
     pub id: BlockId,
 
+    // HIR block this LIR block was lowered from. Not injective: multiple LIR blocks may share
+    // the same hir_block_id because we split HIR blocks into multiple LIR blocks during lowering.
     pub hir_block_id: hir::BlockId,
 
-    pub entry: bool,
+    pub is_entry: bool,
 
     // Instructions in this basic block
     pub insns: Vec<Insn>,
@@ -61,11 +63,11 @@ pub struct BasicBlock {
 pub struct EdgePair(Option<BranchEdge>, Option<BranchEdge>);
 
 impl BasicBlock {
-    fn new(id: BlockId, hir_block_id: hir::BlockId, entry: bool, rpo_index: usize) -> Self {
+    fn new(id: BlockId, hir_block_id: hir::BlockId, is_entry: bool, rpo_index: usize) -> Self {
         Self {
             id,
             hir_block_id,
-            entry,
+            is_entry,
             insns: vec![],
             parameters: vec![],
             rpo_index,
@@ -99,6 +101,11 @@ impl BasicBlock {
                 EdgePair(extract_edge(last), None)
             }
         }
+    }
+
+    /// Sort key for scheduling blocks in code layout order
+    pub fn sort_key(&self) -> (usize, usize) {
+        (self.rpo_index, self.id.0)
     }
 }
 
@@ -1480,6 +1487,10 @@ const ASSEMBLER_INSNS_CAPACITY: usize = 256;
 #[derive(Clone)]
 pub struct Assembler {
     pub basic_blocks: Vec<BasicBlock>,
+
+    /// The block to which new instructions are added. Used during HIR to LIR lowering to
+    /// determine which LIR block we should add instructions to. Set by `set_current_block()`
+    /// and automatically set to new entry blocks created by `new_block()`.
     current_block_id: BlockId,
 
     /// Live range for each VReg indexed by its `idx``
@@ -1502,9 +1513,6 @@ pub struct Assembler {
 
     /// Current instruction index, incremented for each instruction pushed
     idx: usize,
-
-    /// Index in label_names where block labels start
-    block_label_offset: usize,
 }
 
 impl Assembler
@@ -1520,7 +1528,6 @@ impl Assembler
             current_block_id: BlockId(0),
             live_ranges: Vec::default(),
             idx: 0,
-            block_label_offset: 0,
         }
     }
 
@@ -1559,11 +1566,11 @@ impl Assembler
     }
 
     // Create a new LIR basic block.  Returns the newly created block
-    pub fn new_block(&mut self, hir_block_id: hir::BlockId, entry: bool, rpo_index: usize) -> BlockId {
+    pub fn new_block(&mut self, hir_block_id: hir::BlockId, is_entry: bool, rpo_index: usize) -> BlockId {
         let bb_id = BlockId(self.basic_blocks.len());
-        let lir_bb = BasicBlock::new(bb_id, hir_block_id, entry, rpo_index);
+        let lir_bb = BasicBlock::new(bb_id, hir_block_id, is_entry, rpo_index);
         self.basic_blocks.push(lir_bb);
-        if entry {
+        if is_entry {
             self.set_current_block(bb_id);
         }
         bb_id
@@ -1574,7 +1581,7 @@ impl Assembler
     // one assembler to a new one.
     pub fn new_block_from_old_block(&mut self, old_block: &BasicBlock) -> BlockId {
         let bb_id = BlockId(self.basic_blocks.len());
-        let lir_bb = BasicBlock::new(bb_id, old_block.hir_block_id, old_block.entry, old_block.rpo_index);
+        let lir_bb = BasicBlock::new(bb_id, old_block.hir_block_id, old_block.is_entry, old_block.rpo_index);
         self.basic_blocks.push(lir_bb);
         bb_id
     }
@@ -1592,6 +1599,14 @@ impl Assembler
         &mut self.basic_blocks[self.current_block_id.0]
     }
 
+    /// Return basic blocks sorted by RPO index, then by block ID.
+    /// TODO: Use a more advanced scheduling algorithm
+    pub fn sorted_blocks(&self) -> Vec<&BasicBlock> {
+        let mut sorted: Vec<&BasicBlock> = self.basic_blocks.iter().collect();
+        sorted.sort_by_key(|block| block.sort_key());
+        sorted
+    }
+
     /// Return true if `opnd` is or depends on `reg`
     pub fn has_reg(opnd: Opnd, reg: Reg) -> bool {
         match opnd {
@@ -1603,7 +1618,7 @@ impl Assembler
 
     pub fn instruction_iterator(&mut self) -> InsnIter {
         let mut blocks = take(&mut self.basic_blocks);
-        blocks.sort_by_key(|block| (block.rpo_index, block.id.0));
+        blocks.sort_by_key(|block| block.sort_key());
 
         let mut iter = InsnIter {
             blocks,
@@ -1619,17 +1634,6 @@ impl Assembler
         }
 
         iter
-    }
-
-    // Create labels for all basic blocks. Must be called before linearize_instructions or block_label.
-    pub fn init_block_labels(&mut self) {
-        if self.block_label_offset == 0 && !self.basic_blocks.is_empty() {
-            self.block_label_offset = self.label_names.len();
-            for block in &self.basic_blocks {
-                let label_name = format!("bb{}", block.id.0);
-                self.label_names.push(label_name);
-            }
-        }
     }
 
     /// Return an operand for a basic block argument at a given index.
@@ -1652,11 +1656,7 @@ impl Assembler
         // Emit instructions with labels, expanding branch parameters
         let mut insns = Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY);
 
-        // Sort basic blocks by RPO index first, then by LIR block id
-        let mut sorted_blocks: Vec<&BasicBlock> = self.basic_blocks.iter().collect();
-        sorted_blocks.sort_by_key(|block| (block.rpo_index, block.id.0));
-
-        for block in sorted_blocks {
+        for block in self.sorted_blocks() {
             // Process each instruction, expanding branch params if needed
             for insn in &block.insns {
                 self.expand_branch_insn(insn, &mut insns);
@@ -1695,9 +1695,13 @@ impl Assembler
         insns.push(insn.clone());
     }
 
-    // Get the label for a given block.
+    // Get the label for a given block by extracting it from the first instruction.
     pub(super) fn block_label(&self, block_id: BlockId) -> Label {
-        Label(self.block_label_offset + block_id.0)
+        let block = &self.basic_blocks[block_id.0];
+        match block.insns.first() {
+            Some(Insn::Label(Target::Label(label))) => *label,
+            other => panic!("Expected first instruction of block {:?} to be a Label, but found: {:?}", block_id, other),
+        }
     }
 
     pub fn expect_leaf_ccall(&mut self, stack_size: usize) {
@@ -1828,31 +1832,21 @@ impl Assembler
     /// Strip branch arguments from a jump instruction, converting Target::Block(edge) with args
     /// into Target::Label. This is needed after linearization since all blocks are merged into one.
     pub fn strip_branch_args(&self, insn: Insn) -> Insn {
-        fn get_block_label(asm: &Assembler, block_id: BlockId) -> Label {
-            let block = &asm.basic_blocks[block_id.0];
-            match block.insns.first() {
-                Some(Insn::Label(Target::Label(label))) => label.clone(),
-                other => panic!("Expected first instruction of block {:?} to be a Label, but found: {:?}", block_id, other),
-            }
-        }
-
-        let asm = self;
-
         match insn {
-            Insn::Jmp(Target::Block(edge)) => Insn::Jmp(Target::Label(get_block_label(asm, edge.target))),
-            Insn::Jz(Target::Block(edge)) => Insn::Jz(Target::Label(get_block_label(asm, edge.target))),
-            Insn::Jnz(Target::Block(edge)) => Insn::Jnz(Target::Label(get_block_label(asm, edge.target))),
-            Insn::Je(Target::Block(edge)) => Insn::Je(Target::Label(get_block_label(asm, edge.target))),
-            Insn::Jne(Target::Block(edge)) => Insn::Jne(Target::Label(get_block_label(asm, edge.target))),
-            Insn::Jl(Target::Block(edge)) => Insn::Jl(Target::Label(get_block_label(asm, edge.target))),
-            Insn::Jg(Target::Block(edge)) => Insn::Jg(Target::Label(get_block_label(asm, edge.target))),
-            Insn::Jge(Target::Block(edge)) => Insn::Jge(Target::Label(get_block_label(asm, edge.target))),
-            Insn::Jbe(Target::Block(edge)) => Insn::Jbe(Target::Label(get_block_label(asm, edge.target))),
-            Insn::Jb(Target::Block(edge)) => Insn::Jb(Target::Label(get_block_label(asm, edge.target))),
-            Insn::Jo(Target::Block(edge)) => Insn::Jo(Target::Label(get_block_label(asm, edge.target))),
-            Insn::JoMul(Target::Block(edge)) => Insn::JoMul(Target::Label(get_block_label(asm, edge.target))),
-            Insn::Joz(opnd, Target::Block(edge)) => Insn::Joz(opnd, Target::Label(get_block_label(asm, edge.target))),
-            Insn::Jonz(opnd, Target::Block(edge)) => Insn::Jonz(opnd, Target::Label(get_block_label(asm, edge.target))),
+            Insn::Jmp(Target::Block(edge)) => Insn::Jmp(Target::Label(self.block_label(edge.target))),
+            Insn::Jz(Target::Block(edge)) => Insn::Jz(Target::Label(self.block_label(edge.target))),
+            Insn::Jnz(Target::Block(edge)) => Insn::Jnz(Target::Label(self.block_label(edge.target))),
+            Insn::Je(Target::Block(edge)) => Insn::Je(Target::Label(self.block_label(edge.target))),
+            Insn::Jne(Target::Block(edge)) => Insn::Jne(Target::Label(self.block_label(edge.target))),
+            Insn::Jl(Target::Block(edge)) => Insn::Jl(Target::Label(self.block_label(edge.target))),
+            Insn::Jg(Target::Block(edge)) => Insn::Jg(Target::Label(self.block_label(edge.target))),
+            Insn::Jge(Target::Block(edge)) => Insn::Jge(Target::Label(self.block_label(edge.target))),
+            Insn::Jbe(Target::Block(edge)) => Insn::Jbe(Target::Label(self.block_label(edge.target))),
+            Insn::Jb(Target::Block(edge)) => Insn::Jb(Target::Label(self.block_label(edge.target))),
+            Insn::Jo(Target::Block(edge)) => Insn::Jo(Target::Label(self.block_label(edge.target))),
+            Insn::JoMul(Target::Block(edge)) => Insn::JoMul(Target::Label(self.block_label(edge.target))),
+            Insn::Joz(opnd, Target::Block(edge)) => Insn::Joz(opnd, Target::Label(self.block_label(edge.target))),
+            Insn::Jonz(opnd, Target::Block(edge)) => Insn::Jonz(opnd, Target::Label(self.block_label(edge.target))),
             _ => insn,
         }
     }
@@ -1887,7 +1881,7 @@ impl Assembler
         while let Some((index, mut insn)) = iterator.next(asm) {
             // Remember the index of FrameSetup to bump slot_count when we know the max number of spilled VRegs.
             if let Insn::FrameSetup { .. } = insn {
-                assert!(asm.current_block().entry);
+                assert!(asm.current_block().is_entry);
                 frame_setup_idxs.push((asm.current_block().id, asm.current_block().insns.len()));
             }
 
@@ -2152,10 +2146,7 @@ impl Assembler
         // Extract targets first so that we can update instructions while referencing part of them.
         let mut targets = HashMap::new();
 
-        let mut sorted_blocks: Vec<&BasicBlock> = self.basic_blocks.iter().collect();
-        sorted_blocks.sort_by_key(|block| (block.rpo_index, block.id.0));
-
-        for block in sorted_blocks.iter() {
+        for block in self.sorted_blocks().iter() {
             for (idx, insn) in block.insns.iter().enumerate() {
                 if let Some(target @ Target::SideExit { .. }) = insn.target() {
                     targets.insert((block.id.0, idx), target.clone());
