@@ -2407,7 +2407,7 @@ impl Assembler
     /// Return a traversal of the block graph in reverse post-order.
     pub fn rpo(&self) -> Vec<BlockId> {
         let entry_blocks: Vec<BlockId> = self.basic_blocks.iter()
-            .filter(|block| block.entry)
+            .filter(|block| block.is_entry)
             .map(|block| block.id)
             .collect();
         let mut result = self.po_from(entry_blocks);
@@ -2492,13 +2492,6 @@ impl Assembler
             let kill_set = &mut kill_sets[block_id.0];
             let gen_set = &mut gen_sets[block_id.0];
 
-            // Add block parameters to kill set FIRST (they're defined at block entry)
-            for param in &block.parameters {
-                if let Opnd::VReg { idx, .. } = param {
-                    kill_set.insert(*idx);
-                }
-            }
-
             // Iterate over instructions in reverse
             for insn in block.insns.iter().rev() {
                 // If the instruction has an output that is a VReg, add to kill set
@@ -2509,15 +2502,21 @@ impl Assembler
                 }
 
                 // For all input operands that are VRegs, add to gen set
-                // (only if not already in kill set)
                 for opnd in insn.opnd_iter() {
                     if let Opnd::VReg { idx, .. } = opnd {
-                        if !kill_set.get(*idx) {
-                            gen_set.insert(*idx);
-                        }
+                        assert!(!kill_set.get(*idx));
+                        gen_set.insert(*idx);
                     }
                 }
             }
+
+            // Add block parameters to kill set
+            for param in &block.parameters {
+                if let Opnd::VReg { idx, .. } = param {
+                    kill_set.insert(*idx);
+                }
+            }
+
         }
 
         (kill_sets, gen_sets)
@@ -2530,7 +2529,7 @@ impl Assembler
         // Get blocks in postorder
         let po_blocks = {
             let entry_blocks: Vec<BlockId> = self.basic_blocks.iter()
-                .filter(|block| block.entry)
+                .filter(|block| block.is_entry)
                 .map(|block| block.id)
                 .collect();
             self.po_from(entry_blocks)
