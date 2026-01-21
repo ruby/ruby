@@ -84,7 +84,7 @@ impl JITState {
         match &self.labels[lir_block_id.0] {
             Some(label) => label.clone(),
             None => {
-                let label = asm.new_label(&format!("{hir_block_id}+{}", lir_block_id.0));
+                let label = asm.new_label(&format!("{hir_block_id}_{lir_block_id}");
                 self.labels[lir_block_id.0] = Some(label.clone());
                 label
             }
