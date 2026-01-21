@@ -600,6 +600,62 @@ rb_coverage_running(VALUE klass)
  * 5. The ending line number the method appears on in the file.
  * 6. The ending column number the method appears on in the file.
  *
+ * == Eval \Coverage
+ *
+ * Eval coverage can be combined with the coverage types above to track
+ * coverage for eval.
+ *
+ *   require "coverage"
+ *   Coverage.start(eval: true, lines: true)
+ *
+ *   eval(<<~RUBY, nil, "eval 1")
+ *     ary = []
+ *     10.times do |i|
+ *       ary << "hello" * i
+ *     end
+ *   RUBY
+ *
+ *   Coverage.result # => {"eval 1" => {lines: [1, 1, 10, nil]}}
+ *
+ * Note that the eval must have a filename assigned, otherwise coverage
+ * will not be measured.
+ *
+ *   require "coverage"
+ *   Coverage.start(eval: true, lines: true)
+ *
+ *   eval(<<~RUBY)
+ *     ary = []
+ *     10.times do |i|
+ *       ary << "hello" * i
+ *     end
+ *   RUBY
+ *
+ *   Coverage.result # => {"(eval)" => {lines: [nil, nil, nil, nil]}}
+ *
+ * Also note that if a line number is assigned to the eval and it is not 1,
+ * then the resulting coverage will be padded with +nil+ if the line number is
+ * greater than 1, and truncated if the line number is less than 1.
+ *
+ *   require "coverage"
+ *   Coverage.start(eval: true, lines: true)
+ *
+ *   eval(<<~RUBY, nil, "eval 1", 3)
+ *     ary = []
+ *     10.times do |i|
+ *       ary << "hello" * i
+ *     end
+ *   RUBY
+ *
+ *  eval(<<~RUBY, nil, "eval 2", -1)
+ *     ary = []
+ *     10.times do |i|
+ *       ary << "hello" * i
+ *     end
+ *   RUBY
+ *
+ *   Coverage.result
+ *   # => {"eval 1" => {lines: [nil, nil, 1, 1, 10, nil]}, "eval 2" => {lines: [10, nil]}}
+ *
  * == All \Coverage Modes
  *
  * You can also run all modes of coverage simultaneously with this shortcut.
