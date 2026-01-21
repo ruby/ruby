@@ -546,6 +546,8 @@ class TestGem < Gem::TestCase
   end
 
   def test_default_path
+    original_gem_default_path?
+
     vendordir(File.join(@tempdir, "vendor")) do
       FileUtils.rm_rf Gem.user_home
 
@@ -556,6 +558,8 @@ class TestGem < Gem::TestCase
   end
 
   def test_default_path_missing_vendor
+    original_gem_default_path?
+
     vendordir(nil) do
       FileUtils.rm_rf Gem.user_home
 
@@ -566,6 +570,8 @@ class TestGem < Gem::TestCase
   end
 
   def test_default_path_user_home
+    original_gem_default_path?
+
     vendordir(File.join(@tempdir, "vendor")) do
       expected = [Gem.user_dir, Gem.default_dir]
 
@@ -574,6 +580,8 @@ class TestGem < Gem::TestCase
   end
 
   def test_default_path_vendor_dir
+    original_gem_default_path?
+
     vendordir(File.join(@tempdir, "vendor")) do
       FileUtils.mkdir_p Gem.vendor_dir
 
@@ -1775,5 +1783,11 @@ class TestGem < Gem::TestCase
 
   def util_cache_dir
     File.join Gem.dir, "cache"
+  end
+
+  def original_gem_default_path?
+    unless Gem.method(:default_path).source_location.first.match? "lib/rubygems/defaults.rb"
+      pend "Gem.default_path likely differs from original RubyGems implementation"
+    end
   end
 end
