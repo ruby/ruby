@@ -748,7 +748,7 @@ fn gen_setlocal(asm: &mut Assembler, val: Opnd, val_type: Type, local_ep_offset:
 /// Returns 1 (as CBool) when VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM is set; returns 0 otherwise.
 fn gen_is_block_param_modified(asm: &mut Assembler, level: u32) -> Opnd {
     let ep = gen_get_ep(asm, level);
-    let flags = asm.load(Opnd::mem(64, ep, SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32)));
+    let flags = asm.load(Opnd::mem(VALUE_BITS, ep, SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32)));
     asm.test(flags, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into());
     asm.csel_nz(Opnd::Imm(1), Opnd::Imm(0))
 }
@@ -759,12 +759,12 @@ fn gen_getblockparam(jit: &mut JITState, asm: &mut Assembler, ep_offset: u32, le
     gen_prepare_leaf_call_with_gc(asm, state);
     // Bail out if write barrier is required.
     let ep = gen_get_ep(asm, level);
-    let flags = Opnd::mem(64, ep, SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32));
+    let flags = Opnd::mem(VALUE_BITS, ep, SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32));
     asm.test(flags, VM_ENV_FLAG_WB_REQUIRED.into());
     asm.jnz(side_exit(jit, state, SideExitReason::BlockParamWbRequired));
 
     // Convert block handler to Proc.
-    let block_handler = asm.load(Opnd::mem(64, ep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL));
+    let block_handler = asm.load(Opnd::mem(VALUE_BITS, ep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL));
     let proc = asm_ccall!(asm, rb_vm_bh_to_procval, EC, block_handler);
 
     // Write Proc to EP and mark modified.
@@ -773,16 +773,16 @@ fn gen_getblockparam(jit: &mut JITState, asm: &mut Assembler, ep_offset: u32, le
         panic!("Could not convert local_ep_offset {ep_offset} to i32")
     });
     let offset = -(SIZEOF_VALUE_I32 * local_ep_offset);
-    asm.mov(Opnd::mem(64, ep, offset), proc);
+    asm.mov(Opnd::mem(VALUE_BITS, ep, offset), proc);
 
-    let flags = Opnd::mem(64, ep, SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32));
+    let flags = Opnd::mem(VALUE_BITS, ep, SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32));
     let flags_val = asm.load(flags);
     let modified = asm.or(flags_val, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into());
     asm.store(flags, modified);
 
     // Read the Proc from EP.
     let ep = gen_get_ep(asm, level);
-    asm.load(Opnd::mem(64, ep, offset))
+    asm.load(Opnd::mem(VALUE_BITS, ep, offset))
 }
 
 fn gen_guard_block_param_proxy(jit: &JITState, asm: &mut Assembler, level: u32, state: &FrameState) {
