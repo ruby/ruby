@@ -1693,34 +1693,44 @@ impl Assembler
         insns
     }
 
-    // Expand a single instruction, inserting parameter moves before jumps when needed
+    /// Expand and linearize a branch instruction:
+    /// 1. If the branch has Target::Block with arguments, insert a ParallelMov first
+    /// 2. Convert Target::Block to Target::Label
+    /// 3. Push the converted instruction
     fn expand_branch_insn(&self, insn: &Insn, insns: &mut Vec<Insn>) {
-        // If this is a jump with Target::Block that has arguments, insert parameter moves first
-        match insn {
-            Insn::Jmp(Target::Block(edge))
-            | Insn::Jz(Target::Block(edge))
-            | Insn::Jnz(Target::Block(edge))
-            | Insn::Je(Target::Block(edge))
-            | Insn::Jne(Target::Block(edge))
-            | Insn::Jl(Target::Block(edge))
-            | Insn::Jg(Target::Block(edge))
-            | Insn::Jge(Target::Block(edge))
-            | Insn::Jbe(Target::Block(edge))
-            | Insn::Jb(Target::Block(edge))
-            | Insn::Jo(Target::Block(edge))
-            | Insn::JoMul(Target::Block(edge)) if !edge.args.is_empty() => {
-                // Insert parallel move for branch parameters
+        // Helper to process branch arguments and return the label target
+        let mut process_edge = |edge: &BranchEdge| -> Label {
+            if !edge.args.is_empty() {
                 insns.push(Insn::ParallelMov {
                     moves: edge.args.iter().enumerate()
                         .map(|(idx, &arg)| (Assembler::param_opnd(idx), arg))
                         .collect()
                 });
             }
-            _ => {}
-        }
+            self.block_label(edge.target)
+        };
 
-        // Push the instruction itself
-        insns.push(insn.clone());
+        // Convert Target::Block to Target::Label, processing args if needed
+        let stripped_insn = match insn {
+            Insn::Jmp(Target::Block(edge)) => Insn::Jmp(Target::Label(process_edge(edge))),
+            Insn::Jz(Target::Block(edge)) => Insn::Jz(Target::Label(process_edge(edge))),
+            Insn::Jnz(Target::Block(edge)) => Insn::Jnz(Target::Label(process_edge(edge))),
+            Insn::Je(Target::Block(edge)) => Insn::Je(Target::Label(process_edge(edge))),
+            Insn::Jne(Target::Block(edge)) => Insn::Jne(Target::Label(process_edge(edge))),
+            Insn::Jl(Target::Block(edge)) => Insn::Jl(Target::Label(process_edge(edge))),
+            Insn::Jg(Target::Block(edge)) => Insn::Jg(Target::Label(process_edge(edge))),
+            Insn::Jge(Target::Block(edge)) => Insn::Jge(Target::Label(process_edge(edge))),
+            Insn::Jbe(Target::Block(edge)) => Insn::Jbe(Target::Label(process_edge(edge))),
+            Insn::Jb(Target::Block(edge)) => Insn::Jb(Target::Label(process_edge(edge))),
+            Insn::Jo(Target::Block(edge)) => Insn::Jo(Target::Label(process_edge(edge))),
+            Insn::JoMul(Target::Block(edge)) => Insn::JoMul(Target::Label(process_edge(edge))),
+            Insn::Joz(opnd, Target::Block(edge)) => Insn::Joz(*opnd, Target::Label(process_edge(edge))),
+            Insn::Jonz(opnd, Target::Block(edge)) => Insn::Jonz(*opnd, Target::Label(process_edge(edge))),
+            _ => insn.clone()
+        };
+
+        // Push the stripped instruction
+        insns.push(stripped_insn);
     }
 
     // Get the label for a given block by extracting it from the first instruction.
@@ -1855,28 +1865,6 @@ impl Assembler
             }
         }
         Some(new_moves)
-    }
-
-    /// Strip branch arguments from a jump instruction, converting Target::Block(edge) with args
-    /// into Target::Label. This is needed after linearization since all blocks are merged into one.
-    pub fn strip_branch_args(&self, insn: Insn) -> Insn {
-        match insn {
-            Insn::Jmp(Target::Block(edge)) => Insn::Jmp(Target::Label(self.block_label(edge.target))),
-            Insn::Jz(Target::Block(edge)) => Insn::Jz(Target::Label(self.block_label(edge.target))),
-            Insn::Jnz(Target::Block(edge)) => Insn::Jnz(Target::Label(self.block_label(edge.target))),
-            Insn::Je(Target::Block(edge)) => Insn::Je(Target::Label(self.block_label(edge.target))),
-            Insn::Jne(Target::Block(edge)) => Insn::Jne(Target::Label(self.block_label(edge.target))),
-            Insn::Jl(Target::Block(edge)) => Insn::Jl(Target::Label(self.block_label(edge.target))),
-            Insn::Jg(Target::Block(edge)) => Insn::Jg(Target::Label(self.block_label(edge.target))),
-            Insn::Jge(Target::Block(edge)) => Insn::Jge(Target::Label(self.block_label(edge.target))),
-            Insn::Jbe(Target::Block(edge)) => Insn::Jbe(Target::Label(self.block_label(edge.target))),
-            Insn::Jb(Target::Block(edge)) => Insn::Jb(Target::Label(self.block_label(edge.target))),
-            Insn::Jo(Target::Block(edge)) => Insn::Jo(Target::Label(self.block_label(edge.target))),
-            Insn::JoMul(Target::Block(edge)) => Insn::JoMul(Target::Label(self.block_label(edge.target))),
-            Insn::Joz(opnd, Target::Block(edge)) => Insn::Joz(opnd, Target::Label(self.block_label(edge.target))),
-            Insn::Jonz(opnd, Target::Block(edge)) => Insn::Jonz(opnd, Target::Label(self.block_label(edge.target))),
-            _ => insn,
-        }
     }
 
 
@@ -2835,8 +2823,6 @@ impl Assembler {
                     }
                 }
                 _ => {
-                    // Strip branch args from jumps since everything is now in one block
-                    let insn = self.strip_branch_args(insn);
                     asm_local.push_insn(insn);
                 }
             }

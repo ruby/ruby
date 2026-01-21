@@ -654,8 +654,6 @@ impl Assembler {
                     split_patch_point(asm, target, invariant, version);
                 }
                 _ => {
-                    // Strip branch args from jumps since everything is now in one block
-                    let insn = self.strip_branch_args(insn);
                     asm.push_insn(insn);
                 }
             }
