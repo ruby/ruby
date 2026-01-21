@@ -3,24 +3,6 @@
 # Ruby 3.2+ has a cleaner way to hook into Ruby that doesn't use `require`
 if SyntaxError.method_defined?(:detailed_message)
   module SyntaxSuggest
-    # Mini String IO [Private]
-    #
-    # Acts like a StringIO with reduced API, but without having to require that
-    # class.
-    class MiniStringIO
-      def initialize(isatty: $stderr.isatty)
-        @string = +""
-        @isatty = isatty
-      end
-
-      attr_reader :isatty
-      def puts(value = $/, **)
-        @string << value
-      end
-
-      attr_reader :string
-    end
-
     # SyntaxSuggest.module_for_detailed_message [Private]
     #
     # Used to monkeypatch SyntaxError via Module.prepend
