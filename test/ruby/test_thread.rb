@@ -1595,7 +1595,7 @@ q.pop
   # [Bug #21342]
   def test_unlock_locked_mutex_with_collected_fiber
     bug21127 = '[ruby-core:120930] [Bug #21127]'
-    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}", bug21127)
     begin;
       5.times do
         m = Mutex.new
