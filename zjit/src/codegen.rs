@@ -532,8 +532,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::GuardNotShared { recv, state } => gen_guard_not_shared(jit, asm, opnd!(recv), &function.frame_state(*state)),
         &Insn::GuardLess { left, right, state } => gen_guard_less(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
         &Insn::GuardGreaterEq { left, right, state } => gen_guard_greater_eq(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
-        &Insn::GuardSuperMethodEntry { cme, state } => no_output!(gen_guard_super_method_entry(jit, asm, cme, &function.frame_state(state))),
-        Insn::GetBlockHandler => gen_get_block_handler(jit, asm),
+        &Insn::GuardSuperMethodEntry { lep, cme, state } => no_output!(gen_guard_super_method_entry(jit, asm, opnd!(lep), cme, &function.frame_state(state))),
+        Insn::GetBlockHandler { lep } => gen_get_block_handler(asm, opnd!(lep)),
         Insn::PatchPoint { invariant, state } => no_output!(gen_patch_point(jit, asm, invariant, &function.frame_state(*state))),
         Insn::CCall { cfunc, recv, args, name, return_type: _, elidable: _ } => gen_ccall(asm, *cfunc, *name, opnd!(recv), opnds!(args)),
         // Give up CCallWithFrame for 7+ args since asm.ccall() supports at most 6 args (recv + args).
@@ -576,11 +576,12 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::GuardShape { val, shape, state } => gen_guard_shape(jit, asm, opnd!(val), shape, &function.frame_state(state)),
         Insn::LoadPC => gen_load_pc(asm),
         Insn::LoadEC => gen_load_ec(),
+        Insn::GetLEP => gen_get_lep(jit, asm),
         Insn::LoadSelf => gen_load_self(),
         &Insn::LoadField { recv, id, offset, return_type } => gen_load_field(asm, opnd!(recv), id, offset, return_type),
         &Insn::StoreField { recv, id, offset, val } => no_output!(gen_store_field(asm, opnd!(recv), id, offset, opnd!(val), function.type_of(val))),
         &Insn::WriteBarrier { recv, val } => no_output!(gen_write_barrier(asm, opnd!(recv), opnd!(val), function.type_of(val))),
-        &Insn::IsBlockGiven => gen_is_block_given(jit, asm),
+        &Insn::IsBlockGiven { lep } => gen_is_block_given(asm, opnd!(lep)),
         Insn::ArrayInclude { elements, target, state } => gen_array_include(jit, asm, opnds!(elements), opnd!(target), &function.frame_state(*state)),
         Insn::ArrayPackBuffer { elements, fmt, buffer, state } => gen_array_pack_buffer(jit, asm, opnds!(elements), opnd!(fmt), opnd!(buffer), &function.frame_state(*state)),
         &Insn::DupArrayInclude { ary, target, state } => gen_dup_array_include(jit, asm, ary, opnd!(target), &function.frame_state(state)),
@@ -688,16 +689,10 @@ fn gen_defined(jit: &JITState, asm: &mut Assembler, op_type: usize, obj: VALUE, 
 }
 
 /// Similar to gen_defined for DEFINED_YIELD
-fn gen_is_block_given(jit: &JITState, asm: &mut Assembler) -> Opnd {
-    let local_iseq = unsafe { rb_get_iseq_body_local_iseq(jit.iseq) };
-    if unsafe { rb_get_iseq_body_type(local_iseq) } == ISEQ_TYPE_METHOD {
-        let lep = gen_get_lep(jit, asm);
-        let block_handler = asm.load(Opnd::mem(64, lep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL));
-        asm.cmp(block_handler, VM_BLOCK_HANDLER_NONE.into());
-        asm.csel_e(Qfalse.into(), Qtrue.into())
-    } else {
-        Qfalse.into()
-    }
+fn gen_is_block_given(asm: &mut Assembler, lep: Opnd) -> Opnd {
+    let block_handler = asm.load(Opnd::mem(64, lep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL));
+    asm.cmp(block_handler, VM_BLOCK_HANDLER_NONE.into());
+    asm.csel_e(Qfalse.into(), Qtrue.into())
 }
 
 fn gen_unbox_fixnum(asm: &mut Assembler, val: Opnd) -> Opnd {
@@ -803,11 +798,11 @@ fn gen_guard_greater_eq(jit: &JITState, asm: &mut Assembler, left: Opnd, right: 
 fn gen_guard_super_method_entry(
     jit: &JITState,
     asm: &mut Assembler,
+    lep: Opnd,
     cme: *const rb_callable_method_entry_t,
     state: &FrameState,
 ) {
     asm_comment!(asm, "guard super method entry");
-    let lep = gen_get_lep(jit, asm);
     let ep_me_opnd = Opnd::mem(64, lep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_ME_CREF);
     let ep_me = asm.load(ep_me_opnd);
     asm.cmp(ep_me, Opnd::UImm(cme as u64));
@@ -815,9 +810,8 @@ fn gen_guard_super_method_entry(
 }
 
 /// Get the block handler from ep[VM_ENV_DATA_INDEX_SPECVAL] at the local EP (LEP).
-fn gen_get_block_handler(jit: &JITState, asm: &mut Assembler) -> Opnd {
+fn gen_get_block_handler(asm: &mut Assembler, lep: Opnd) -> Opnd {
     asm_comment!(asm, "get block handler from LEP");
-    let lep = gen_get_lep(jit, asm);
     asm.load(Opnd::mem(64, lep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL))
 }
 

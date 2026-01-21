@@ -802,7 +802,7 @@ pub enum Insn {
     GetConstantPath { ic: *const iseq_inline_constant_cache, state: InsnId },
     /// Kernel#block_given? but without pushing a frame. Similar to [`Insn::Defined`] with
     /// `DEFINED_YIELD`
-    IsBlockGiven,
+    IsBlockGiven { lep: InsnId },
     /// Test the bit at index of val, a Fixnum.
     /// Return Qtrue if the bit is set, else Qfalse.
     FixnumBitCheck { val: InsnId, index: u8 },
@@ -848,6 +848,10 @@ pub enum Insn {
     GetClassVar { id: ID, ic: *const iseq_inline_cvar_cache_entry, state: InsnId },
     /// Set a class variable `id` to `val`
     SetClassVar { id: ID, val: InsnId, ic: *const iseq_inline_cvar_cache_entry, state: InsnId },
+
+    /// Get the EP of the ISeq of the containing method, or "local level", skipping over block-level EPs.
+    /// Equivalent of GET_LEP() macro.
+    GetLEP,
 
     /// Own a FrameState so that instructions can look up their dominating FrameState when
     /// generating deopt side-exits and frame reconstruction metadata. Does not directly generate
@@ -1012,9 +1016,9 @@ pub enum Insn {
     GuardLess { left: InsnId, right: InsnId, state: InsnId },
     /// Side-exit if the method entry at ep[VM_ENV_DATA_INDEX_ME_CREF] doesn't match the expected CME.
     /// Used to ensure super calls are made from the expected method context.
-    GuardSuperMethodEntry { cme: *const rb_callable_method_entry_t, state: InsnId },
+    GuardSuperMethodEntry { lep: InsnId, cme: *const rb_callable_method_entry_t, state: InsnId },
     /// Get the block handler from ep[VM_ENV_DATA_INDEX_SPECVAL] at the local EP (LEP).
-    GetBlockHandler,
+    GetBlockHandler { lep: InsnId },
 
     /// Generate no code (or padding if necessary) and insert a patch point
     /// that can be rewritten to a side exit when the Invariant is broken.
@@ -1131,6 +1135,7 @@ impl Insn {
             Insn::DefinedIvar { .. } => effects::Any,
             Insn::LoadPC { .. } => Effect::read_write(abstract_heaps::PC, abstract_heaps::Empty),
             Insn::LoadEC { .. } => effects::Empty,
+            Insn::GetLEP { .. } => effects::Empty,
             Insn::LoadSelf { .. } => Effect::read_write(abstract_heaps::Frame, abstract_heaps::Empty),
             Insn::LoadField { .. } => Effect::read_write(abstract_heaps::Other, abstract_heaps::Empty),
             Insn::StoreField { .. } => effects::Any,
@@ -1510,11 +1515,11 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GuardNotShared { recv, .. } => write!(f, "GuardNotShared {recv}"),
             Insn::GuardLess { left, right, .. } => write!(f, "GuardLess {left}, {right}"),
             Insn::GuardGreaterEq { left, right, .. } => write!(f, "GuardGreaterEq {left}, {right}"),
-            Insn::GuardSuperMethodEntry { cme, .. } => write!(f, "GuardSuperMethodEntry {:p}", self.ptr_map.map_ptr(cme)),
-            Insn::GetBlockHandler => write!(f, "GetBlockHandler"),
+            Insn::GuardSuperMethodEntry { lep, cme, .. } => write!(f, "GuardSuperMethodEntry {lep}, {:p}", self.ptr_map.map_ptr(cme)),
+            Insn::GetBlockHandler { lep } => write!(f, "GetBlockHandler {lep}"),
             Insn::PatchPoint { invariant, .. } => { write!(f, "PatchPoint {}", invariant.print(self.ptr_map)) },
             Insn::GetConstantPath { ic, .. } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
-            Insn::IsBlockGiven => { write!(f, "IsBlockGiven") },
+            Insn::IsBlockGiven { lep } => { write!(f, "IsBlockGiven {lep}") },
             Insn::FixnumBitCheck {val, index} => { write!(f, "FixnumBitCheck {val}, {index}") },
             Insn::CCall { cfunc, recv, args, name, return_type: _, elidable: _ } => {
                 write!(f, "CCall {recv}, :{}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfunc))?;
@@ -1562,6 +1567,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GetIvar { self_val, id, .. } => write!(f, "GetIvar {self_val}, :{}", id.contents_lossy()),
             Insn::LoadPC => write!(f, "LoadPC"),
             Insn::LoadEC => write!(f, "LoadEC"),
+            Insn::GetLEP => write!(f, "GetLEP"),
             Insn::LoadSelf => write!(f, "LoadSelf"),
             &Insn::LoadField { recv, id, offset, return_type: _ } => write!(f, "LoadField {recv}, :{}@{:p}", id.contents_lossy(), self.ptr_map.map_offset(offset)),
             &Insn::StoreField { recv, id, offset, val } => write!(f, "StoreField {recv}, :{}@{:p}, {val}", id.contents_lossy(), self.ptr_map.map_offset(offset)),
@@ -1969,6 +1975,10 @@ impl Function {
         }
     }
 
+    pub fn iseq(&self) -> *const rb_iseq_t {
+        self.iseq
+    }
+
     // Add an instruction to the function without adding it to any block
     fn new_insn(&mut self, insn: Insn) -> InsnId {
         let id = InsnId(self.insns.len());
@@ -2119,7 +2129,6 @@ impl Function {
             result@(Const {..}
                     | Param
                     | GetConstantPath {..}
-                    | IsBlockGiven
                     | PatchPoint {..}
                     | PutSpecialObject {..}
                     | GetGlobal {..}
@@ -2128,6 +2137,7 @@ impl Function {
                     | EntryPoint {..}
                     | LoadPC
                     | LoadEC
+                    | GetLEP
                     | LoadSelf
                     | IncrCounterPtr {..}
                     | IncrCounter(_)) => result.clone(),
@@ -2173,8 +2183,9 @@ impl Function {
             &GuardNotShared { recv, state } => GuardNotShared { recv: find!(recv), state },
             &GuardGreaterEq { left, right, state } => GuardGreaterEq { left: find!(left), right: find!(right), state },
             &GuardLess { left, right, state } => GuardLess { left: find!(left), right: find!(right), state },
-            &GuardSuperMethodEntry { cme, state } => GuardSuperMethodEntry { cme, state },
-            &GetBlockHandler => GetBlockHandler,
+            &GuardSuperMethodEntry { lep, cme, state } => GuardSuperMethodEntry { lep: find!(lep), cme, state },
+            &GetBlockHandler { lep } => GetBlockHandler { lep: find!(lep) },
+            &IsBlockGiven { lep } => IsBlockGiven { lep: find!(lep) },
             &FixnumAdd { left, right, state } => FixnumAdd { left: find!(left), right: find!(right), state },
             &FixnumSub { left, right, state } => FixnumSub { left: find!(left), right: find!(right), state },
             &FixnumMult { left, right, state } => FixnumMult { left: find!(left), right: find!(right), state },
@@ -2446,7 +2457,7 @@ impl Function {
             Insn::Defined { pushval, .. } => Type::from_value(*pushval).union(types::NilClass),
             Insn::DefinedIvar { pushval, .. } => Type::from_value(*pushval).union(types::NilClass),
             Insn::GetConstantPath { .. } => types::BasicObject,
-            Insn::IsBlockGiven => types::BoolExact,
+            Insn::IsBlockGiven { .. } => types::BoolExact,
             Insn::FixnumBitCheck { .. } => types::BoolExact,
             Insn::ArrayMax { .. } => types::BasicObject,
             Insn::ArrayInclude { .. } => types::BoolExact,
@@ -2457,6 +2468,7 @@ impl Function {
             Insn::GetIvar { .. } => types::BasicObject,
             Insn::LoadPC => types::CPtr,
             Insn::LoadEC => types::CPtr,
+            Insn::GetLEP => types::CPtr,
             Insn::LoadSelf => types::BasicObject,
             &Insn::LoadField { return_type, .. } => return_type,
             Insn::GetSpecialSymbol { .. } => types::BasicObject,
@@ -2468,7 +2480,7 @@ impl Function {
             Insn::AnyToString { .. } => types::String,
             Insn::GetLocal { rest_param: true, .. } => types::ArrayExact,
             Insn::GetLocal { .. } => types::BasicObject,
-            Insn::GetBlockHandler => types::RubyValue,
+            Insn::GetBlockHandler { .. } => types::RubyValue,
             // The type of Snapshot doesn't really matter; it's never materialized. It's used only
             // as a reference for FrameState, which we use to generate side-exit code.
             Insn::Snapshot { .. } => types::Any,
@@ -3413,10 +3425,15 @@ impl Function {
                         });
 
                         // Guard that we're calling `super` from the expected method context.
-                        self.push_insn(block, Insn::GuardSuperMethodEntry { cme: current_cme, state });
+                        let lep = self.push_insn(block, Insn::GetLEP);
+                        self.push_insn(block, Insn::GuardSuperMethodEntry {
+                            lep,
+                            cme: current_cme,
+                            state
+                        });
 
                         // Guard that no block is being passed (implicit or explicit).
-                        let block_handler = self.push_insn(block, Insn::GetBlockHandler);
+                        let block_handler = self.push_insn(block, Insn::GetBlockHandler { lep });
                         self.push_insn(block, Insn::GuardBitEquals {
                             val: block_handler,
                             expected: Const::Value(VALUE(VM_BLOCK_HANDLER_NONE as usize)),
@@ -4357,14 +4374,17 @@ impl Function {
             | &Insn::EntryPoint { .. }
             | &Insn::LoadPC
             | &Insn::LoadEC
+            | &Insn::GetLEP
             | &Insn::LoadSelf
             | &Insn::GetLocal { .. }
-            | &Insn::GetBlockHandler
             | &Insn::PutSpecialObject { .. }
-            | &Insn::IsBlockGiven
             | &Insn::IncrCounter(_)
             | &Insn::IncrCounterPtr { .. } =>
                 {}
+            &Insn::GetBlockHandler { lep }
+            | &Insn::IsBlockGiven { lep } => {
+                worklist.push_back(lep);
+            }
             &Insn::PatchPoint { state, .. }
             | &Insn::CheckInterrupts { state }
             | &Insn::GetConstantPath { ic: _, state } => {
@@ -4589,12 +4609,15 @@ impl Function {
                 worklist.push_back(val);
             }
             &Insn::GuardBlockParamProxy { state, .. } |
-            &Insn::GuardSuperMethodEntry { state, .. } |
             &Insn::GetGlobal { state, .. } |
             &Insn::GetSpecialSymbol { state, .. } |
             &Insn::GetSpecialNumber { state, .. } |
             &Insn::ObjectAllocClass { state, .. } |
             &Insn::SideExit { state, .. } => worklist.push_back(state),
+            &Insn::GuardSuperMethodEntry { lep, state, .. } => {
+                worklist.push_back(lep);
+                worklist.push_back(state);
+            }
             &Insn::UnboxFixnum { val } => worklist.push_back(val),
             &Insn::FixnumAref { recv, index } => {
                 worklist.push_back(recv);
@@ -5099,17 +5122,18 @@ impl Function {
             | Insn::PutSpecialObject { .. }
             | Insn::LoadField { .. }
             | Insn::GetConstantPath { .. }
-            | Insn::IsBlockGiven
+            | Insn::IsBlockGiven { .. }
             | Insn::GetGlobal { .. }
             | Insn::LoadPC
             | Insn::LoadEC
+            | Insn::GetLEP
             | Insn::LoadSelf
             | Insn::Snapshot { .. }
             | Insn::Jump { .. }
             | Insn::EntryPoint { .. }
             | Insn::GuardBlockParamProxy { .. }
             | Insn::GuardSuperMethodEntry { .. }
-            | Insn::GetBlockHandler
+            | Insn::GetBlockHandler { .. }
             | Insn::PatchPoint { .. }
             | Insn::SideExit { .. }
             | Insn::IncrCounter { .. }
