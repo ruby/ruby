@@ -168,18 +168,26 @@ impl BasicBlock {
         succs
     }
 
-    /// Get the output operands for this block.
-    /// These are all operands passed to successor blocks via block edges.
-    pub fn out_opnds(&self) -> Vec<Opnd> {
+    /// Get the output VRegs for this block.
+    /// These are VRegs passed to successor blocks via block edges.
+    pub fn out_vregs(&self) -> Vec<Opnd> {
         let EdgePair(edge1, edge2) = self.edges();
-        let mut out_opnds = Vec::new();
+        let mut out_vregs = Vec::new();
         if let Some(edge) = edge1 {
-            out_opnds.extend_from_slice(&edge.args);
+            for arg in &edge.args {
+                if matches!(arg, Opnd::VReg { .. }) {
+                    out_vregs.push(*arg);
+                }
+            }
         }
         if let Some(edge) = edge2 {
-            out_opnds.extend_from_slice(&edge.args);
+            for arg in &edge.args {
+                if matches!(arg, Opnd::VReg { .. }) {
+                    out_vregs.push(*arg);
+                }
+            }
         }
-        out_opnds
+        out_vregs
     }
 }
 
@@ -3643,27 +3651,27 @@ mod tests {
     }
 
     #[test]
-    fn test_out_opnds() {
+    fn test_out_vregs() {
         let TestFunc { asm, r11, r14, r15, b1, b2, b3, b4, .. } = build_func();
 
         // b1 has one edge to b2 with args [imm(1), r11]
-        let out_b1 = asm.basic_blocks[b1.0].out_opnds();
-        assert_eq!(out_b1.len(), 2);
-        assert_eq!(out_b1[0], Opnd::UImm(1));
-        assert_eq!(out_b1[1], r11);
+        // Only r11 is a VReg, so we should only get that
+        let out_b1 = asm.basic_blocks[b1.0].out_vregs();
+        assert_eq!(out_b1.len(), 1);
+        assert_eq!(out_b1[0], r11);
 
         // b2 has two edges: one to b4 (no args) and one to b3 (no args)
-        let out_b2 = asm.basic_blocks[b2.0].out_opnds();
+        let out_b2 = asm.basic_blocks[b2.0].out_vregs();
         assert_eq!(out_b2.len(), 0);
 
         // b3 has one edge to b2 with args [r14, r15]
-        let out_b3 = asm.basic_blocks[b3.0].out_opnds();
+        let out_b3 = asm.basic_blocks[b3.0].out_vregs();
         assert_eq!(out_b3.len(), 2);
         assert_eq!(out_b3[0], r14);
         assert_eq!(out_b3[1], r15);
 
         // b4 has no edges (terminates with CRet)
-        let out_b4 = asm.basic_blocks[b4.0].out_opnds();
+        let out_b4 = asm.basic_blocks[b4.0].out_vregs();
         assert_eq!(out_b4.len(), 0);
     }
 
