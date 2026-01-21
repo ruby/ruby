@@ -1666,6 +1666,32 @@ dummy
       assert_locations(node.children[-1].locations, [[1, 0, 1, 8], [1, 0, 1, 5], [1, 5, 1, 6], [1, 7, 1, 8]])
     end
 
+    def test_sym_locations
+      node = ast_parse(":foo")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 4], [1, 0, 1, 1], [1, 1, 1, 4], nil])
+
+      node = ast_parse(':"hello"')
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 8], [1, 0, 1, 2], [1, 2, 1, 7], [1, 7, 1, 8]])
+
+      node = ast_parse(":'world'")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 8], [1, 0, 1, 2], [1, 2, 1, 7], [1, 7, 1, 8]])
+
+      node = ast_parse("%s{text}")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 8], [1, 0, 1, 3], [1, 3, 1, 7], [1, 7, 1, 8]])
+
+      node = ast_parse("%s(foo)")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 7], [1, 0, 1, 3], [1, 3, 1, 6], [1, 6, 1, 7]])
+
+      node = ast_parse("%s[bar]")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 7], [1, 0, 1, 3], [1, 3, 1, 6], [1, 6, 1, 7]])
+
+      node = ast_parse(':""')
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 3], [1, 0, 1, 2], [1, 2, 1, 2], [1, 2, 1, 3]])
+
+      node = ast_parse("{foo: 1}")
+      assert_locations(node.children[-1].children[0].children[0].locations, [[1, 1, 1, 5], nil, [1, 1, 1, 4], [1, 4, 1, 5]])
+    end
+
     def test_unless_locations
       node = ast_parse("unless cond then 1 else 2 end")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 29], [1, 0, 1, 6], [1, 12, 1, 16], [1, 26, 1, 29]])
