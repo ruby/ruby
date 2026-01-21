@@ -102,6 +102,22 @@ impl<T: Into<usize> + Copy> BitSet<T> {
         assert_eq!(self.num_bits, other.num_bits);
         self.entries == other.entries
     }
+
+    /// Returns an iterator over the indices of set bits.
+    /// Only iterates over bits that are set, not all possible indices.
+    pub fn iter_set_bits(&self) -> impl Iterator<Item = usize> + '_ {
+        self.entries.iter().enumerate().flat_map(move |(entry_idx, &entry)| {
+            let mut bits = entry;
+            std::iter::from_fn(move || {
+                if bits == 0 {
+                    return None;
+                }
+                let bit_pos = bits.trailing_zeros() as usize;
+                bits &= bits - 1; // Clear the lowest set bit
+                Some(entry_idx * ENTRY_NUM_BITS + bit_pos)
+            })
+        }).filter(move |&idx| idx < self.num_bits)
+    }
 }
 
 #[cfg(test)]
@@ -167,5 +183,43 @@ mod tests {
         assert!(!left.get(0usize));
         assert!(left.get(1usize));
         assert!(!left.get(2usize));
+    }
+
+    #[test]
+    fn test_iter_set_bits() {
+        let mut set: BitSet<usize> = BitSet::with_capacity(10);
+        set.insert(1usize);
+        set.insert(5usize);
+        set.insert(9usize);
+
+        let set_bits: Vec<usize> = set.iter_set_bits().collect();
+        assert_eq!(set_bits, vec![1, 5, 9]);
+    }
+
+    #[test]
+    fn test_iter_set_bits_empty() {
+        let set: BitSet<usize> = BitSet::with_capacity(10);
+        let set_bits: Vec<usize> = set.iter_set_bits().collect();
+        assert_eq!(set_bits, vec![]);
+    }
+
+    #[test]
+    fn test_iter_set_bits_all() {
+        let mut set: BitSet<usize> = BitSet::with_capacity(5);
+        set.insert_all();
+        let set_bits: Vec<usize> = set.iter_set_bits().collect();
+        assert_eq!(set_bits, vec![0, 1, 2, 3, 4]);
+    }
+
+    #[test]
+    fn test_iter_set_bits_large() {
+        let mut set: BitSet<usize> = BitSet::with_capacity(200);
+        set.insert(0usize);
+        set.insert(127usize);
+        set.insert(128usize);
+        set.insert(199usize);
+
+        let set_bits: Vec<usize> = set.iter_set_bits().collect();
+        assert_eq!(set_bits, vec![0, 127, 128, 199]);
     }
 }
