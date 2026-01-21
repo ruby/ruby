@@ -1145,7 +1145,7 @@ impl Insn {
             Insn::StoreField { .. } => effects::Any,
             Insn::WriteBarrier { .. } => effects::Any,
             Insn::GetLocal   { .. } => Effect::read_write(abstract_heaps::Locals, abstract_heaps::Empty),
-            Insn::SetLocal { .. } => Effect:write(abstract_heaps::Locals),
+            Insn::SetLocal { .. } => Effect::write(abstract_heaps::Locals),
             Insn::GetSpecialSymbol { .. } => effects::Any,
             Insn::GetSpecialNumber { .. } => effects::Any,
             Insn::GetClassVar { .. } => effects::Any,
