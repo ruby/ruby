@@ -52,9 +52,10 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:NilClass):
           v13:TrueClass = Const Value(true)
           CheckInterrupts
-          v23:Fixnum[3] = Const Value(3)
+          v22:TrueClass = RefineType v13, Truthy
+          v25:Fixnum[3] = Const Value(3)
           CheckInterrupts
-          Return v23
+          Return v25
         ");
     }
 
@@ -84,9 +85,10 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:NilClass):
           v13:FalseClass = Const Value(false)
           CheckInterrupts
-          v33:Fixnum[4] = Const Value(4)
+          v20:FalseClass = RefineType v13, Falsy
+          v35:Fixnum[4] = Const Value(4)
           CheckInterrupts
-          Return v33
+          Return v35
         ");
     }
 
@@ -267,12 +269,12 @@ mod hir_opt_tests {
           v10:Fixnum[1] = Const Value(1)
           v12:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1000, <@0x1008, cme:0x1010)
-          v40:TrueClass = Const Value(true)
+          v42:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          v22:Fixnum[3] = Const Value(3)
+          v24:Fixnum[3] = Const Value(3)
           CheckInterrupts
-          Return v22
+          Return v24
         ");
     }
 
@@ -300,18 +302,18 @@ mod hir_opt_tests {
           v10:Fixnum[1] = Const Value(1)
           v12:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1000, <=@0x1008, cme:0x1010)
-          v55:TrueClass = Const Value(true)
+          v59:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          v21:Fixnum[2] = Const Value(2)
           v23:Fixnum[2] = Const Value(2)
+          v25:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1000, <=@0x1008, cme:0x1010)
-          v57:TrueClass = Const Value(true)
+          v61:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          v33:Fixnum[3] = Const Value(3)
+          v37:Fixnum[3] = Const Value(3)
           CheckInterrupts
-          Return v33
+          Return v37
         ");
     }
 
@@ -339,12 +341,12 @@ mod hir_opt_tests {
           v10:Fixnum[2] = Const Value(2)
           v12:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1000, >@0x1008, cme:0x1010)
-          v40:TrueClass = Const Value(true)
+          v42:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          v22:Fixnum[3] = Const Value(3)
+          v24:Fixnum[3] = Const Value(3)
           CheckInterrupts
-          Return v22
+          Return v24
         ");
     }
 
@@ -372,18 +374,18 @@ mod hir_opt_tests {
           v10:Fixnum[2] = Const Value(2)
           v12:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1000, >=@0x1008, cme:0x1010)
-          v55:TrueClass = Const Value(true)
+          v59:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          v21:Fixnum[2] = Const Value(2)
           v23:Fixnum[2] = Const Value(2)
+          v25:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1000, >=@0x1008, cme:0x1010)
-          v57:TrueClass = Const Value(true)
+          v61:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          v33:Fixnum[3] = Const Value(3)
+          v37:Fixnum[3] = Const Value(3)
           CheckInterrupts
-          Return v33
+          Return v37
         ");
     }
 
@@ -411,12 +413,12 @@ mod hir_opt_tests {
           v10:Fixnum[1] = Const Value(1)
           v12:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1000, ==@0x1008, cme:0x1010)
-          v40:FalseClass = Const Value(false)
+          v42:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          v31:Fixnum[4] = Const Value(4)
+          v33:Fixnum[4] = Const Value(4)
           CheckInterrupts
-          Return v31
+          Return v33
         ");
     }
 
@@ -444,12 +446,12 @@ mod hir_opt_tests {
           v10:Fixnum[2] = Const Value(2)
           v12:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1000, ==@0x1008, cme:0x1010)
-          v40:TrueClass = Const Value(true)
+          v42:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          v22:Fixnum[3] = Const Value(3)
+          v24:Fixnum[3] = Const Value(3)
           CheckInterrupts
-          Return v22
+          Return v24
         ");
     }
 
@@ -478,12 +480,12 @@ mod hir_opt_tests {
           v12:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1000, !=@0x1008, cme:0x1010)
           PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-          v41:TrueClass = Const Value(true)
+          v43:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          v22:Fixnum[3] = Const Value(3)
+          v24:Fixnum[3] = Const Value(3)
           CheckInterrupts
-          Return v22
+          Return v24
         ");
     }
 
@@ -512,12 +514,12 @@ mod hir_opt_tests {
           v12:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1000, !=@0x1008, cme:0x1010)
           PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-          v41:FalseClass = Const Value(false)
+          v43:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          v31:Fixnum[4] = Const Value(4)
+          v33:Fixnum[4] = Const Value(4)
           CheckInterrupts
-          Return v31
+          Return v33
         ");
     }
 
@@ -4992,8 +4994,9 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:NilClass):
           v13:NilClass = Const Value(nil)
           CheckInterrupts
+          v21:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v13
+          Return v21
         ");
     }
 
@@ -5020,10 +5023,11 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:NilClass):
           v13:Fixnum[1] = Const Value(1)
           CheckInterrupts
+          v23:Fixnum[1] = RefineType v13, NotNil
           PatchPoint MethodRedefined(Integer@0x1000, itself@0x1008, cme:0x1010)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v13
+          Return v23
         ");
     }
 
@@ -5840,20 +5844,22 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           CheckInterrupts
           v15:CBool = Test v9
-          IfFalse v15, bb3(v8, v9)
-          v18:FalseClass = Const Value(false)
+          v16:Falsy = RefineType v9, Falsy
+          IfFalse v15, bb3(v8, v16)
+          v18:Truthy = RefineType v9, Truthy
+          v20:FalseClass = Const Value(false)
           CheckInterrupts
-          Jump bb4(v8, v9, v18)
-        bb3(v22:BasicObject, v23:BasicObject):
-          v26:NilClass = Const Value(nil)
-          Jump bb4(v22, v23, v26)
-        bb4(v28:BasicObject, v29:BasicObject, v30:NilClass|FalseClass):
+          Jump bb4(v8, v18, v20)
+        bb3(v24:BasicObject, v25:Falsy):
+          v28:NilClass = Const Value(nil)
+          Jump bb4(v24, v25, v28)
+        bb4(v30:BasicObject, v31:BasicObject, v32:Falsy):
           PatchPoint MethodRedefined(NilClass@0x1000, !@0x1008, cme:0x1010)
-          v41:NilClass = GuardType v30, NilClass
-          v42:TrueClass = Const Value(true)
+          v43:NilClass = GuardType v32, NilClass
+          v44:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v42
+          Return v44
         ");
     }
 
@@ -10059,9 +10065,9 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           PatchPoint NoSingletonClass(C@0x1000)
           PatchPoint MethodRedefined(C@0x1000, class@0x1008, cme:0x1010)
-          v40:HeapObject[class_exact:C] = GuardType v6, HeapObject[class_exact:C]
+          v42:HeapObject[class_exact:C] = GuardType v6, HeapObject[class_exact:C]
           IncrCounter inline_iseq_optimized_send_count
-          v44:Class[C@0x1000] = Const Value(VALUE(0x1000))
+          v46:Class[C@0x1000] = Const Value(VALUE(0x1000))
           IncrCounter inline_cfunc_optimized_send_count
           v13:StaticSymbol[:_lex_actions] = Const Value(VALUE(0x1038))
           v15:TrueClass = Const Value(true)
@@ -10069,12 +10075,12 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Class@0x1040, respond_to?@0x1048, cme:0x1050)
           PatchPoint NoSingletonClass(Class@0x1040)
           PatchPoint MethodRedefined(Class@0x1040, _lex_actions@0x1078, cme:0x1080)
-          v52:TrueClass = Const Value(true)
+          v54:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          v24:StaticSymbol[:CORRECT] = Const Value(VALUE(0x10a8))
+          v26:StaticSymbol[:CORRECT] = Const Value(VALUE(0x10a8))
           CheckInterrupts
-          Return v24
+          Return v26
         ");
     }
 
@@ -10230,23 +10236,23 @@ mod hir_opt_tests {
          CheckInterrupts
          SetLocal :formatted, l0, EP@3, v15
          PatchPoint SingleRactorMode
-         v54:HeapBasicObject = GuardType v14, HeapBasicObject
-         v55:CShape = LoadField v54, :_shape_id@0x1000
-         v56:CShape[0x1001] = GuardBitEquals v55, CShape(0x1001)
-         StoreField v54, :@formatted@0x1002, v15
-         WriteBarrier v54, v15
-         v59:CShape[0x1003] = Const CShape(0x1003)
-         StoreField v54, :_shape_id@0x1000, v59
-         v43:Class[VMFrozenCore] = Const Value(VALUE(0x1008))
+         v56:HeapBasicObject = GuardType v14, HeapBasicObject
+         v57:CShape = LoadField v56, :_shape_id@0x1000
+         v58:CShape[0x1001] = GuardBitEquals v57, CShape(0x1001)
+         StoreField v56, :@formatted@0x1002, v15
+         WriteBarrier v56, v15
+         v61:CShape[0x1003] = Const CShape(0x1003)
+         StoreField v56, :_shape_id@0x1000, v61
+         v45:Class[VMFrozenCore] = Const Value(VALUE(0x1008))
          PatchPoint NoSingletonClass(Class@0x1010)
          PatchPoint MethodRedefined(Class@0x1010, lambda@0x1018, cme:0x1020)
-         v64:BasicObject = CCallWithFrame v43, :RubyVM::FrozenCore.lambda@0x1048, block=0x1050
-         v46:BasicObject = GetLocal :a, l0, EP@6
-         v47:BasicObject = GetLocal :_b, l0, EP@5
-         v48:BasicObject = GetLocal :_c, l0, EP@4
-         v49:BasicObject = GetLocal :formatted, l0, EP@3
+         v66:BasicObject = CCallWithFrame v45, :RubyVM::FrozenCore.lambda@0x1048, block=0x1050
+         v48:BasicObject = GetLocal :a, l0, EP@6
+         v49:BasicObject = GetLocal :_b, l0, EP@5
+         v50:BasicObject = GetLocal :_c, l0, EP@4
+         v51:BasicObject = GetLocal :formatted, l0, EP@3
          CheckInterrupts
-         Return v64
+         Return v66
        ");
     }
 

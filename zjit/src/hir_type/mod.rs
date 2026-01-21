@@ -453,6 +453,25 @@ impl Type {
         types::Empty
     }
 
+    /// Subtract `other` from `self`, preserving specialization if possible.
+    pub fn subtract(&self, other: Type) -> Type {
+        // If self is a subtype of other, the result is empty (no negative types).
+        if self.is_subtype(other) { return types::Empty; }
+        // Self is not a subtype of other. That means either:
+        // * Their type bits do not overlap at all (eg Int vs String)
+        // * Their type bits overlap but self's specialization is not a subtype of other's (eg
+        //   Fixnum[5] vs Fixnum[4])
+        // Check for the latter case, returning self unchanged if so.
+        if !self.spec_is_subtype_of(other) {
+            return *self;
+        }
+        // Now self is either a supertype of other (eg Object vs String or Fixnum vs Fixnum[5]) or
+        // their type bits do not overlap at all (eg Int vs String).
+        // Just subtract the bits and keep self's specialization.
+        let bits = self.bits & !other.bits;
+        Type { bits, spec: self.spec }
+    }
+
     pub fn could_be(&self, other: Type) -> bool {
         !self.intersection(other).bit_equal(types::Empty)
     }
@@ -1059,5 +1078,46 @@ mod tests {
         assert!(!types::CInt8.has_value(Const::CInt8(42)));
         assert!(!types::CBool.has_value(Const::CBool(true)));
         assert!(!types::CShape.has_value(Const::CShape(crate::cruby::ShapeId(0x1234))));
+    }
+
+    #[test]
+    fn test_subtract_with_superset_returns_empty() {
+        let left = types::NilClass;
+        let right = types::BasicObject;
+        let result = left.subtract(right);
+        assert_bit_equal(result, types::Empty);
+    }
+
+    #[test]
+    fn test_subtract_with_subset_removes_bits() {
+        let left = types::BasicObject;
+        let right = types::NilClass;
+        let result = left.subtract(right);
+        assert_subtype(result, types::BasicObject);
+        assert_not_subtype(types::NilClass, result);
+    }
+
+    #[test]
+    fn test_subtract_with_no_overlap_returns_self() {
+        let left = types::Fixnum;
+        let right = types::StringExact;
+        let result = left.subtract(right);
+        assert_bit_equal(result, left);
+    }
+
+    #[test]
+    fn test_subtract_with_no_specialization_overlap_returns_self() {
+        let left = Type::fixnum(4);
+        let right = Type::fixnum(5);
+        let result = left.subtract(right);
+        assert_bit_equal(result, left);
+    }
+
+    #[test]
+    fn test_subtract_with_specialization_subset_removes_specialization() {
+        let left = types::Fixnum;
+        let right = Type::fixnum(42);
+        let result = left.subtract(right);
+        assert_bit_equal(result, types::Fixnum);
     }
 }
