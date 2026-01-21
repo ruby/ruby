@@ -1614,8 +1614,8 @@ impl Assembler
         bb_id
     }
 
-    // Create an invalid LIR basic block for testing or when a valid HIR block ID is not available.
-    pub fn new_invalid_block(&mut self) -> BlockId {
+    // Create a LIR basic block without a valid HIR block ID (for testing or internal use).
+    pub fn new_block_without_id(&mut self) -> BlockId {
         self.new_block(hir::BlockId(DUMMY_HIR_BLOCK_ID), true, DUMMY_RPO_INDEX)
     }
 
@@ -2804,7 +2804,7 @@ impl Assembler {
         asm_local.live_ranges.resize(self.live_ranges.len(), LiveRange { start: None, end: None });
 
         // Create one giant block to linearize everything into
-        asm_local.new_invalid_block();
+        asm_local.new_block_without_id();
 
         // Get linearized instructions with branch parameters expanded into ParallelMov
         let linearized_insns = self.linearize_instructions();

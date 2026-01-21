@@ -84,7 +84,7 @@ impl JITState {
         match &self.labels[lir_block_id.0] {
             Some(label) => label.clone(),
             None => {
-                let label = asm.new_label(&format!("{hir_block_id}_{lir_block_id}");
+                let label = asm.new_label(&format!("{hir_block_id}_{lir_block_id}"));
                 self.labels[lir_block_id.0] = Some(label.clone());
                 label
             }
@@ -181,7 +181,7 @@ fn register_with_perf(iseq_name: String, start_ptr: usize, code_size: usize) {
 pub fn gen_entry_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> {
     // Set up registers for CFP, EC, SP, and basic block arguments
     let mut asm = Assembler::new();
-    asm.new_invalid_block();
+    asm.new_block_without_id();
     gen_entry_prologue(&mut asm);
 
     // Jump to the first block using a call instruction. This trampoline is used
@@ -2650,7 +2650,7 @@ fn function_stub_hit_body(cb: &mut CodeBlock, iseq_call: &IseqCallRef) -> Result
 /// Compile a stub for an ISEQ called by SendWithoutBlockDirect
 fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodePtr, CompileError> {
     let (mut asm, scratch_reg) = Assembler::new_with_scratch_reg();
-    asm.new_invalid_block();
+    asm.new_block_without_id();
     asm_comment!(asm, "Stub: {}", iseq_get_location(iseq_call.iseq.get(), 0));
 
     // Call function_stub_hit using the shared trampoline. See `gen_function_stub_hit_trampoline`.
@@ -2668,7 +2668,7 @@ fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodeP
 /// See [gen_function_stub] for how it's used.
 pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> {
     let (mut asm, scratch_reg) = Assembler::new_with_scratch_reg();
-    asm.new_invalid_block();
+    asm.new_block_without_id();
     asm_comment!(asm, "function_stub_hit trampoline");
 
     // Maintain alignment for x86_64, and set up a frame for arm64 properly
@@ -2709,7 +2709,7 @@ pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, C
 /// Generate a trampoline that is used when a function exits without restoring PC and the stack
 pub fn gen_exit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> {
     let mut asm = Assembler::new();
-    asm.new_invalid_block();
+    asm.new_block_without_id();
 
     asm_comment!(asm, "side-exit trampoline");
     asm.frame_teardown(&[]); // matching the setup in gen_entry_point()
@@ -2724,7 +2724,7 @@ pub fn gen_exit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> 
 /// Generate a trampoline that increments exit_compilation_failure and jumps to exit_trampoline.
 pub fn gen_exit_trampoline_with_counter(cb: &mut CodeBlock, exit_trampoline: CodePtr) -> Result<CodePtr, CompileError> {
     let mut asm = Assembler::new();
-    asm.new_invalid_block();
+    asm.new_block_without_id();
 
     asm_comment!(asm, "function stub exit trampoline");
     gen_incr_counter(&mut asm, exit_compile_error);
@@ -2933,7 +2933,7 @@ impl IseqCall {
     fn regenerate(&self, cb: &mut CodeBlock, callback: impl Fn(&mut Assembler)) {
         cb.with_write_ptr(self.start_addr.get().unwrap(), |cb| {
             let mut asm = Assembler::new();
-            asm.new_invalid_block();
+            asm.new_block_without_id();
             callback(&mut asm);
             asm.compile(cb).unwrap();
             assert_eq!(self.end_addr.get().unwrap(), cb.get_write_ptr());
