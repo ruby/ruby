@@ -2606,90 +2606,101 @@ impl fmt::Display for Assembler {
             }
         }
 
-        for insn in self.linearize_instructions().iter() {
-            match insn {
-                Insn::Comment(comment) => {
-                    writeln!(f, "    {bold_begin}# {comment}{bold_end}")?;
-                }
-                Insn::Label(target) => {
-                    let &Target::Label(Label(label_idx)) = target else {
-                        panic!("unexpected target for Insn::Label: {target:?}");
-                    };
-                    writeln!(f, "  {}:", label_name(self, label_idx, &label_counts))?;
-                }
-                _ => {
-                    write!(f, "    ")?;
-
-                    // Print output operand if any
-                    if let Some(out) = insn.out_opnd() {
-                        write!(f, "{out} = ")?;
+        for block_id in self.rpo() {
+            let bb = &self.basic_blocks[block_id.0];
+            let params = &bb.parameters;
+            for insn in &bb.insns {
+                match insn {
+                    Insn::Comment(comment) => {
+                        writeln!(f, "    {bold_begin}# {comment}{bold_end}")?;
                     }
-
-                    // Print the instruction name
-                    write!(f, "{}", insn.op())?;
-
-                    // Show slot_count for FrameSetup
-                    if let Insn::FrameSetup { slot_count, preserved } = insn {
-                        write!(f, " {slot_count}")?;
-                        if !preserved.is_empty() {
-                            write!(f, ",")?;
+                    Insn::Label(target) => {
+                        let Target::Label(Label(label_idx)) = target else {
+                            panic!("unexpected target for Insn::Label: {target:?}");
+                        };
+                        write!(f, "  {}(", label_name(self, *label_idx, &label_counts))?;
+                        for (idx, param) in params.iter().enumerate() {
+                            if idx > 0 {
+                                write!(f, ", ")?;
+                            }
+                            write!(f, "{param}")?;
                         }
+                        writeln!(f, "):")?;
                     }
+                    _ => {
+                        write!(f, "    ")?;
 
-                    // Print target
-                    if let Some(target) = insn.target() {
-                        match target {
-                            Target::CodePtr(code_ptr) => write!(f, " {code_ptr:?}")?,
-                            Target::Label(Label(label_idx)) => write!(f, " {}", label_name(self, *label_idx, &label_counts))?,
-                            Target::SideExit { reason, .. } => write!(f, " Exit({reason})")?,
-                            Target::Block(edge) => {
-                                if edge.args.is_empty() {
-                                    write!(f, " bb{}", edge.target.0)?;
-                                } else {
-                                    write!(f, " bb{}(", edge.target.0)?;
-                                    for (i, arg) in edge.args.iter().enumerate() {
-                                        if i > 0 {
-                                            write!(f, ", ")?;
+                        // Print output operand if any
+                        if let Some(out) = insn.out_opnd() {
+                            write!(f, "{out} = ")?;
+                        }
+
+                        // Print the instruction name
+                        write!(f, "{}", insn.op())?;
+
+                        // Show slot_count for FrameSetup
+                        if let Insn::FrameSetup { slot_count, preserved } = insn {
+                            write!(f, " {slot_count}")?;
+                            if !preserved.is_empty() {
+                                write!(f, ",")?;
+                            }
+                        }
+
+                        // Print target
+                        if let Some(target) = insn.target() {
+                            match target {
+                                Target::CodePtr(code_ptr) => write!(f, " {code_ptr:?}")?,
+                                Target::Label(Label(label_idx)) => write!(f, " {}", label_name(self, *label_idx, &label_counts))?,
+                                Target::SideExit { reason, .. } => write!(f, " Exit({reason})")?,
+                                Target::Block(edge) => {
+                                    if edge.args.is_empty() {
+                                        write!(f, " bb{}", edge.target.0)?;
+                                    } else {
+                                        write!(f, " bb{}(", edge.target.0)?;
+                                        for (i, arg) in edge.args.iter().enumerate() {
+                                            if i > 0 {
+                                                write!(f, ", ")?;
+                                            }
+                                            write!(f, "{}", arg)?;
                                         }
-                                        write!(f, "{}", arg)?;
+                                        write!(f, ")")?;
                                     }
-                                    write!(f, ")")?;
                                 }
                             }
                         }
-                    }
 
-                    // Print list of operands
-                    if let Some(Target::SideExit { .. }) = insn.target() {
-                        // If the instruction has a SideExit, avoid using opnd_iter(), which has stack/locals.
-                        // Here, only handle instructions that have both Opnd and Target.
-                        match insn {
-                            Insn::Joz(opnd, _) |
-                            Insn::Jonz(opnd, _) |
-                            Insn::LeaJumpTarget { out: opnd, target: _ } => {
-                                write!(f, ", {opnd}")?;
+                        // Print list of operands
+                        if let Some(Target::SideExit { .. }) = insn.target() {
+                            // If the instruction has a SideExit, avoid using opnd_iter(), which has stack/locals.
+                            // Here, only handle instructions that have both Opnd and Target.
+                            match insn {
+                                Insn::Joz(opnd, _) |
+                                Insn::Jonz(opnd, _) |
+                                Insn::LeaJumpTarget { out: opnd, target: _ } => {
+                                    write!(f, ", {opnd}")?;
+                                }
+                                _ => {}
                             }
-                            _ => {}
-                        }
-                    } else if let Some(Target::Block(_)) = insn.target() {
-                        // If the instruction has a Block target, avoid using opnd_iter() for branch args
-                        // since they're already printed inline with the target. Only print non-target operands.
-                        match insn {
-                            Insn::Joz(opnd, _) |
-                            Insn::Jonz(opnd, _) |
-                            Insn::LeaJumpTarget { out: opnd, target: _ } => {
-                                write!(f, ", {opnd}")?;
+                        } else if let Some(Target::Block(_)) = insn.target() {
+                            // If the instruction has a Block target, avoid using opnd_iter() for branch args
+                            // since they're already printed inline with the target. Only print non-target operands.
+                            match insn {
+                                Insn::Joz(opnd, _) |
+                                Insn::Jonz(opnd, _) |
+                                Insn::LeaJumpTarget { out: opnd, target: _ } => {
+                                    write!(f, ", {opnd}")?;
+                                }
+                                _ => {}
                             }
-                            _ => {}
+                        } else if let Insn::ParallelMov { moves } = insn {
+                            // Print operands with a special syntax for ParallelMov
+                            moves.iter().try_fold(" ", |prefix, (dst, src)| write!(f, "{prefix}{dst} <- {src}").and(Ok(", ")))?;
+                        } else if insn.opnd_iter().count() > 0 {
+                            insn.opnd_iter().try_fold(" ", |prefix, opnd| write!(f, "{prefix}{opnd}").and(Ok(", ")))?;
                         }
-                    } else if let Insn::ParallelMov { moves } = insn {
-                        // Print operands with a special syntax for ParallelMov
-                        moves.iter().try_fold(" ", |prefix, (dst, src)| write!(f, "{prefix}{dst} <- {src}").and(Ok(", ")))?;
-                    } else if insn.opnd_iter().count() > 0 {
-                        insn.opnd_iter().try_fold(" ", |prefix, opnd| write!(f, "{prefix}{opnd}").and(Ok(", ")))?;
-                    }
 
-                    write!(f, "\n")?;
+                        write!(f, "\n")?;
+                    }
                 }
             }
         }
@@ -3305,6 +3316,7 @@ impl Drop for AssemblerPanicHook {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use insta::assert_snapshot;
 
     fn scratch_reg() -> Opnd {
         Assembler::new_with_scratch_reg().1
@@ -3473,6 +3485,8 @@ mod tests {
 
         // Build b1: define(r10, r11) { jump(edge(b2, [imm(1), r11])) }
         asm.set_current_block(b1);
+        let label_b1 = asm.new_label("bb0");
+        asm.write_label(label_b1);
         asm.basic_blocks[b1.0].add_parameter(r10);
         asm.basic_blocks[b1.0].add_parameter(r11);
         asm.basic_blocks[b1.0].push_insn(Insn::Jmp(Target::Block(BranchEdge {
@@ -3482,6 +3496,8 @@ mod tests {
 
         // Build b2: define(r12, r13) { cmp(r13, imm(1)); blt(...) }
         asm.set_current_block(b2);
+        let label_b2 = asm.new_label("bb1");
+        asm.write_label(label_b2);
         asm.basic_blocks[b2.0].add_parameter(r12);
         asm.basic_blocks[b2.0].add_parameter(r13);
         asm.basic_blocks[b2.0].push_insn(Insn::Cmp { left: r13, right: Opnd::UImm(1) });
@@ -3490,6 +3506,8 @@ mod tests {
 
         // Build b3: r14 = mul(r12, r13); r15 = sub(r13, imm(1)); jump(edge(b2, [r14, r15]))
         asm.set_current_block(b3);
+        let label_b3 = asm.new_label("bb2");
+        asm.write_label(label_b3);
         let r14 = asm.new_vreg(64);
         let r15 = asm.new_vreg(64);
         asm.basic_blocks[b3.0].push_insn(Insn::Mul { left: r12, right: r13, out: r14 });
@@ -3501,6 +3519,8 @@ mod tests {
 
         // Build b4: out = add(r10, r12); ret out
         asm.set_current_block(b4);
+        let label_b4 = asm.new_label("bb3");
+        asm.write_label(label_b4);
         let out = asm.new_vreg(64);
         asm.basic_blocks[b4.0].push_insn(Insn::Add { left: r10, right: r12, out });
         asm.basic_blocks[b4.0].push_insn(Insn::CRet(out));
@@ -3532,5 +3552,29 @@ mod tests {
             bitset_to_vreg_indices(&live_in[b4.0], num_vregs),
             vec![r10.vreg_idx(), r12.vreg_idx()]
         );
+    }
+
+    #[test]
+    fn test_lir_debug_output() {
+        let TestFunc { asm, .. } = build_func();
+
+        // Test the LIR string output
+        let output = lir_string(&asm);
+
+        assert_snapshot!(output, @"
+        bb0(v0, v1):
+          Jmp bb1(1, v1)
+        bb1(v2, v3):
+          Cmp v3, 1
+          Jl bb3
+          Jmp bb2
+        bb3():
+          v6 = Add v0, v2
+          CRet v6
+        bb2():
+          v4 = Mul v2, v3
+          v5 = Sub v3, 1
+          Jmp bb1(v4, v5)
+        ");
     }
 }

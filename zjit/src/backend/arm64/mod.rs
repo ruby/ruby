@@ -1749,6 +1749,7 @@ mod tests {
         let val32 = asm.sub(Opnd::Value(Qtrue), Opnd::Imm(1));
         asm.store(Opnd::mem(64, EC, 0x10).with_num_bits(32), val32.with_num_bits(32));
         asm.je(label);
+        asm.frame_teardown(JIT_PRESERVED_REGS);
         asm.cret(val64);
 
         asm.frame_teardown(JIT_PRESERVED_REGS);
@@ -1763,7 +1764,6 @@ mod tests {
           v1 = Sub Value(0x14), Imm(1)
           Store Mem32[x20 + 0x10], VReg32(v1)
           Je bb0
-          CRet v0
           FrameTeardown x19, x21, x20
           PadPatchPoint
         ");
