@@ -2684,6 +2684,71 @@ pub mod hir_build_tests {
     }
 
     #[test]
+    fn test_getblockparam() {
+        eval("
+            def test(&block) = block
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :block, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v13:CBool = IsBlockParamModified l0
+          IfTrue v13, bb3(v8, v9)
+          Jump bb4(v8, v9)
+        bb3(v14:BasicObject, v15:BasicObject):
+          v22:BasicObject = GetLocal :block, l0, EP@3
+          Jump bb5(v14, v22, v22)
+        bb4(v17:BasicObject, v18:BasicObject):
+          v24:BasicObject = GetBlockParam :block, l0, EP@3
+          Jump bb5(v17, v24, v24)
+        bb5(v26:BasicObject, v27:BasicObject, v28:BasicObject):
+          CheckInterrupts
+          Return v28
+        ");
+    }
+
+    #[test]
+    fn test_getblockparam_nested_block() {
+        eval("
+            def test(&block)
+              proc do
+                block
+              end
+            end
+        ");
+        assert_snapshot!(hir_string_proc("test"), @r"
+        fn block in test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:CBool = IsBlockParamModified l1
+          IfTrue v10, bb3(v6)
+          Jump bb4(v6)
+        bb3(v11:BasicObject):
+          v17:BasicObject = GetLocal :block, l1, EP@3
+          Jump bb5(v11, v17)
+        bb4(v13:BasicObject):
+          v19:BasicObject = GetBlockParam :block, l1, EP@3
+          Jump bb5(v13, v19)
+        bb5(v21:BasicObject, v22:BasicObject):
+          CheckInterrupts
+          Return v22
+        ");
+    }
+
+    #[test]
     fn test_splatarray_mut() {
         eval("
             def test(a) = [*a]

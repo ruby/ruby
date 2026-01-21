@@ -3853,6 +3853,67 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_getblockparam() {
+        eval("
+            def test(&block) = block
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :block, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v13:CBool = IsBlockParamModified l0
+          IfTrue v13, bb3(v8, v9)
+          v24:BasicObject = GetBlockParam :block, l0, EP@3
+          Jump bb5(v8, v24, v24)
+        bb3(v14:BasicObject, v15:BasicObject):
+          v22:BasicObject = GetLocal :block, l0, EP@3
+          Jump bb5(v14, v22, v22)
+        bb5(v26:BasicObject, v27:BasicObject, v28:BasicObject):
+          CheckInterrupts
+          Return v28
+        ");
+    }
+
+    #[test]
+    fn test_getblockparam_nested_block() {
+        eval("
+            def test(&block)
+              proc do
+                block
+              end
+            end
+        ");
+        assert_snapshot!(hir_string_proc("test"), @r"
+        fn block in test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:CBool = IsBlockParamModified l1
+          IfTrue v10, bb3(v6)
+          v19:BasicObject = GetBlockParam :block, l1, EP@3
+          Jump bb5(v6, v19)
+        bb3(v11:BasicObject):
+          v17:BasicObject = GetLocal :block, l1, EP@3
+          Jump bb5(v11, v17)
+        bb5(v21:BasicObject, v22:BasicObject):
+          CheckInterrupts
+          Return v22
+        ");
+    }
+
+    #[test]
     fn test_getinstancevariable() {
         eval("
             def test = @foo
