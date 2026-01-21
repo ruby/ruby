@@ -401,7 +401,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::Send { cd, blockiseq, state, reason, .. } => gen_send(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::SendForward { cd, blockiseq, state, reason, .. } => gen_send_forward(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::SendWithoutBlock { cd, state, reason, .. } => gen_send_without_block(jit, asm, cd, &function.frame_state(state), reason),
-        Insn::SendWithoutBlockDirect { cme, iseq, recv, args, state, .. } => gen_send_iseq_direct(cb, jit, asm, *cme, *iseq, opnd!(recv), opnds!(args), &function.frame_state(*state), None),
+        Insn::SendWithoutBlockDirect { cme, iseq, recv, args, kw_bits, state, .. } => gen_send_iseq_direct(cb, jit, asm, *cme, *iseq, opnd!(recv), opnds!(args), *kw_bits, &function.frame_state(*state), None),
         &Insn::InvokeSuper { cd, blockiseq, state, reason, .. } => gen_invokesuper(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::InvokeBlock { cd, state, reason, .. } => gen_invokeblock(jit, asm, cd, &function.frame_state(state), reason),
         Insn::InvokeProc { recv, args, state, kw_splat } => gen_invokeproc(jit, asm, opnd!(recv), opnds!(args), *kw_splat, &function.frame_state(*state)),
@@ -1358,6 +1358,7 @@ fn gen_send_iseq_direct(
     iseq: IseqPtr,
     recv: Opnd,
     args: Vec<Opnd>,
+    kw_bits: u32,
     state: &FrameState,
     block_handler: Option<Opnd>,
 ) -> lir::Opnd {
@@ -1404,12 +1405,13 @@ fn gen_send_iseq_direct(
     // Write "keyword_bits" to the callee's frame if the callee accepts keywords.
     // This is a synthetic local/parameter that the callee reads via checkkeyword to determine
     // which optional keyword arguments need their defaults evaluated.
+    // We write this to the local table slot at bits_start so that:
+    // 1. The interpreter can read it via checkkeyword if we side-exit
+    // 2. The JIT entry can read it via GetLocal
     if unsafe { rb_get_iseq_flags_has_kw(iseq) } {
         let keyword = unsafe { rb_get_iseq_body_param_keyword(iseq) };
         let bits_start = unsafe { (*keyword).bits_start } as usize;
-        // Currently we only support required keywords, so all bits are 0 (all keywords specified).
-        // TODO: When supporting optional keywords, calculate actual unspecified_bits here.
-        let unspecified_bits = VALUE::fixnum_from_usize(0);
+        let unspecified_bits = VALUE::fixnum_from_usize(kw_bits as usize);
         let bits_offset = (state.stack().len() - args.len() + bits_start) * SIZEOF_VALUE;
         asm_comment!(asm, "write keyword bits to callee frame");
         asm.store(Opnd::mem(64, SP, bits_offset as i32), unspecified_bits.into());
@@ -1435,10 +1437,11 @@ fn gen_send_iseq_direct(
         let lead_num = params.lead_num as u32;
         let opt_num = params.opt_num as u32;
         let keyword = params.keyword;
-        let kw_req_num = if keyword.is_null() { 0 } else { unsafe { (*keyword).required_num } } as u32;
-        let req_num = lead_num + kw_req_num;
-        assert!(args.len() as u32 <= req_num + opt_num);
-        let num_optionals_passed = args.len() as u32 - req_num;
+        let kw_total_num = if keyword.is_null() { 0 } else { unsafe { (*keyword).num } } as u32;
+        assert!(args.len() as u32 <= lead_num + opt_num + kw_total_num);
+        // For computing optional positional entry point, only count positional args
+        let positional_argc = args.len() as u32 - kw_total_num;
+        let num_optionals_passed = positional_argc.saturating_sub(lead_num);
         num_optionals_passed
     } else {
         0
