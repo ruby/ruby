@@ -280,28 +280,29 @@ class BasicSocket < IO
   #
   # sendmsg sends a message using sendmsg(2) system call in blocking manner.
   #
-  # _mesg_ is a string to send.
+  # === Parameters
+  # * +mesg+ is a string to send.
   #
-  # _flags_ is bitwise OR of MSG_* constants such as Socket::MSG_OOB.
+  # * +flags+ is bitwise OR of MSG_* constants such as Socket::MSG_OOB.
   #
-  # _dest_sockaddr_ is a destination socket address for connection-less socket.
-  # It should be a sockaddr such as a result of Socket.sockaddr_in.
-  # An Addrinfo object can be used too.
+  # * +dest_sockaddr+ is a destination socket address for connection-less socket.
+  #   It should be a sockaddr such as a result of Socket.sockaddr_in.
+  #   An Addrinfo object can be used too.
   #
-  # _controls_ is a list of ancillary data.
-  # The element of _controls_ should be Socket::AncillaryData or
-  # 3-elements array.
-  # The 3-element array should contains cmsg_level, cmsg_type and data.
+  # * +controls+ is a list of ancillary data.
+  #   The element of _controls_ should be Socket::AncillaryData or 3-elements array.
+  #   The 3-element array should contains cmsg_level, cmsg_type and data.
   #
   # The return value, _numbytes_sent_ is an integer which is the number of bytes sent.
   #
+  # === Examples
   # sendmsg can be used to implement send_io as follows:
   #
-  #   # use Socket::AncillaryData.
+  # Use Socket::AncillaryData.
   #   ancdata = Socket::AncillaryData.int(:UNIX, :SOCKET, :RIGHTS, io.fileno)
   #   sock.sendmsg("a", 0, nil, ancdata)
   #
-  #   # use 3-element array.
+  # Use 3-element array.
   #   ancdata = [:SOCKET, :RIGHTS, [io.fileno].pack("i!")]
   #   sock.sendmsg("\0", 0, nil, ancdata)
   def sendmsg(mesg, flags = 0, dest_sockaddr = nil, *controls)
