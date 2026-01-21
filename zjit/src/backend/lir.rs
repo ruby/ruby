@@ -29,7 +29,7 @@ impl From<BlockId> for usize {
 
 impl std::fmt::Display for BlockId {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "bb{}", self.0)
+        write!(f, "l{}", self.0)
     }
 }
 
