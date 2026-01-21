@@ -1150,14 +1150,35 @@ bsock_sendmsg_internal(VALUE sock, VALUE data, VALUE vflags,
 #endif
     int flags;
     ssize_t ss;
+    VALUE v1, v2;
+    struct iovec *piov = &iov;
+    VALUE *tmp_array = NULL;
+    int iovlen = 1;
 
     GetOpenFile(sock, fptr);
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
     family = rsock_getfamily(fptr);
 #endif
 
-    StringValue(data);
-    tmp = rb_str_tmp_frozen_acquire(data);
+    if (RB_TYPE_P(data, T_ARRAY)) {
+        iovlen = RARRAY_LENINT(data);
+        piov = ALLOCV_N(struct iovec, v1, iovlen);
+        tmp_array = ALLOCV_N(VALUE, v2, iovlen);
+        for (long i = 0; i < iovlen; i++) {
+            tmp = RARRAY_AREF(data, i);
+            tmp = rb_obj_as_string(tmp);
+            tmp = rb_str_tmp_frozen_acquire(tmp);
+            tmp_array[i] = tmp;
+            piov[i].iov_base = RSTRING_PTR(tmp);
+            piov[i].iov_len = RSTRING_LEN(tmp);
+        }
+    }
+    else {
+        StringValue(data);
+        tmp = rb_str_tmp_frozen_acquire(data);
+        iov.iov_base = RSTRING_PTR(tmp);
+        iov.iov_len = RSTRING_LEN(tmp);
+    }
 
     if (!RB_TYPE_P(controls, T_ARRAY)) {
         controls = rb_ary_new();
@@ -1266,10 +1287,8 @@ bsock_sendmsg_internal(VALUE sock, VALUE data, VALUE vflags,
         mh.msg_name = RSTRING_PTR(dest_sockaddr);
         mh.msg_namelen = RSTRING_SOCKLEN(dest_sockaddr);
     }
-    mh.msg_iovlen = 1;
-    mh.msg_iov = &iov;
-    iov.iov_base = RSTRING_PTR(tmp);
-    iov.iov_len = RSTRING_LEN(tmp);
+    mh.msg_iovlen = iovlen;
+    mh.msg_iov = piov;
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
     if (controls_str) {
         mh.msg_control = RSTRING_PTR(controls_str);
@@ -1302,7 +1321,13 @@ bsock_sendmsg_internal(VALUE sock, VALUE data, VALUE vflags,
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
     RB_GC_GUARD(controls_str);
 #endif
-    rb_str_tmp_frozen_release(data, tmp);
+    if (tmp_array) {
+        ALLOCV_END(v1);
+        ALLOCV_END(v2);
+    }
+    else {
+        rb_str_tmp_frozen_release(data, tmp);
+    }
 
     return SSIZET2NUM(ss);
 }
