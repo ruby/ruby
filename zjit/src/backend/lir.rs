@@ -2159,7 +2159,10 @@ impl Assembler {
         self.push_insn(Insn::CPopInto(opnd));
     }
 
+    #[track_caller]
     pub fn cpop_pair_into(&mut self, opnd0: Opnd, opnd1: Opnd) {
+        assert!(matches!(opnd0, Opnd::Reg(_) | Opnd::VReg{ .. }), "Destination of cpop_pair_into must be a register, got: {opnd0:?}");
+        assert!(matches!(opnd1, Opnd::Reg(_) | Opnd::VReg{ .. }), "Destination of cpop_pair_into must be a register, got: {opnd1:?}");
         self.push_insn(Insn::CPopPairInto(opnd0, opnd1));
     }
 
@@ -2167,7 +2170,10 @@ impl Assembler {
         self.push_insn(Insn::CPush(opnd));
     }
 
+    #[track_caller]
     pub fn cpush_pair(&mut self, opnd0: Opnd, opnd1: Opnd) {
+        assert!(matches!(opnd0, Opnd::Reg(_) | Opnd::VReg{ .. }), "Destination of cpush_pair must be a register, got: {opnd0:?}");
+        assert!(matches!(opnd1, Opnd::Reg(_) | Opnd::VReg{ .. }), "Destination of cpush_pair must be a register, got: {opnd1:?}");
         self.push_insn(Insn::CPushPair(opnd0, opnd1));
     }
 
