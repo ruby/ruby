@@ -92,11 +92,13 @@ fn write_spec(f: &mut std::fmt::Formatter, printer: &TypePrinter) -> std::fmt::R
         Specialization::Int(val) if ty.is_subtype(types::CInt8) => write!(f, "[{}]", (val & u8::MAX as u64) as i8),
         Specialization::Int(val) if ty.is_subtype(types::CInt16) => write!(f, "[{}]", (val & u16::MAX as u64) as i16),
         Specialization::Int(val) if ty.is_subtype(types::CInt32) => write!(f, "[{}]", (val & u32::MAX as u64) as i32),
+        Specialization::Int(val) if ty.is_subtype(types::CShape) =>
+            write!(f, "[{:p}]", printer.ptr_map.map_shape(crate::cruby::ShapeId((val & u32::MAX as u64) as u32))),
         Specialization::Int(val) if ty.is_subtype(types::CInt64) => write!(f, "[{}]", val as i64),
         Specialization::Int(val) if ty.is_subtype(types::CUInt8) => write!(f, "[{}]", val & u8::MAX as u64),
         Specialization::Int(val) if ty.is_subtype(types::CUInt16) => write!(f, "[{}]", val & u16::MAX as u64),
         Specialization::Int(val) if ty.is_subtype(types::CUInt32) => write!(f, "[{}]", val & u32::MAX as u64),
-        Specialization::Int(val) if ty.is_subtype(types::CUInt64) => write!(f, "[{}]", val),
+        Specialization::Int(val) if ty.is_subtype(types::CUInt64) => write!(f, "[{val}]"),
         Specialization::Int(val) if ty.is_subtype(types::CPtr) => write!(f, "[{}]", Const::CPtr(val as *const u8).print(printer.ptr_map)),
         Specialization::Int(val) => write!(f, "[{val}]"),
         Specialization::Double(val) => write!(f, "[{val}]"),
@@ -258,6 +260,7 @@ impl Type {
             Const::CUInt8(v) => Self::from_cint(types::CUInt8, v as i64),
             Const::CUInt16(v) => Self::from_cint(types::CUInt16, v as i64),
             Const::CUInt32(v) => Self::from_cint(types::CUInt32, v as i64),
+            Const::CShape(v) => Self::from_cint(types::CShape, v.0 as i64),
             Const::CUInt64(v) => Self::from_cint(types::CUInt64, v as i64),
             Const::CPtr(v) => Self::from_cptr(v),
             Const::CDouble(v) => Self::from_double(v),
@@ -332,6 +335,25 @@ impl Type {
         self.is_subtype(types::NilClass) || self.is_subtype(types::FalseClass)
     }
 
+    pub fn has_value(&self, val: Const) -> bool {
+        match (self.spec, val) {
+            (Specialization::Object(v1), Const::Value(v2)) => v1 == v2,
+            (Specialization::Int(v1), Const::CBool(v2)) if self.is_subtype(types::CBool) => v1 == (v2 as u64),
+            (Specialization::Int(v1), Const::CInt8(v2)) if self.is_subtype(types::CInt8) => v1 == (v2 as u64),
+            (Specialization::Int(v1), Const::CInt16(v2)) if self.is_subtype(types::CInt16) => v1 == (v2 as u64),
+            (Specialization::Int(v1), Const::CInt32(v2)) if self.is_subtype(types::CInt32) => v1 == (v2 as u64),
+            (Specialization::Int(v1), Const::CInt64(v2)) if self.is_subtype(types::CInt64) => v1 == (v2 as u64),
+            (Specialization::Int(v1), Const::CUInt8(v2)) if self.is_subtype(types::CUInt8) => v1 == (v2 as u64),
+            (Specialization::Int(v1), Const::CUInt16(v2)) if self.is_subtype(types::CUInt16) => v1 == (v2 as u64),
+            (Specialization::Int(v1), Const::CUInt32(v2)) if self.is_subtype(types::CUInt32) => v1 == (v2 as u64),
+            (Specialization::Int(v1), Const::CShape(v2)) if self.is_subtype(types::CShape) => v1 == (v2.0 as u64),
+            (Specialization::Int(v1), Const::CUInt64(v2)) if self.is_subtype(types::CUInt64) => v1 == v2,
+            (Specialization::Int(v1), Const::CPtr(v2)) if self.is_subtype(types::CPtr) => v1 == (v2 as u64),
+            (Specialization::Double(v1), Const::CDouble(v2)) => v1.to_bits() == v2.to_bits(),
+            _ => false,
+        }
+    }
+
     /// Return the object specialization, if any.
     pub fn ruby_object(&self) -> Option<VALUE> {
         match self.spec {
@@ -370,6 +392,13 @@ impl Type {
             self.ruby_object().map(|val| val.as_fixnum())
         } else {
             None
+        }
+    }
+
+    pub fn cint64_value(&self) -> Option<i64> {
+        match (self.is_subtype(types::CInt64), &self.spec) {
+            (true, Specialization::Int(val)) => Some(*val as i64),
+            _ => None,
         }
     }
 
@@ -422,6 +451,25 @@ impl Type {
         if self.spec_is_subtype_of(other) { return Type { bits, spec: self.spec }; }
         if other.spec_is_subtype_of(*self) { return Type { bits, spec: other.spec }; }
         types::Empty
+    }
+
+    /// Subtract `other` from `self`, preserving specialization if possible.
+    pub fn subtract(&self, other: Type) -> Type {
+        // If self is a subtype of other, the result is empty (no negative types).
+        if self.is_subtype(other) { return types::Empty; }
+        // Self is not a subtype of other. That means either:
+        // * Their type bits do not overlap at all (eg Int vs String)
+        // * Their type bits overlap but self's specialization is not a subtype of other's (eg
+        //   Fixnum[5] vs Fixnum[4])
+        // Check for the latter case, returning self unchanged if so.
+        if !self.spec_is_subtype_of(other) {
+            return *self;
+        }
+        // Now self is either a supertype of other (eg Object vs String or Fixnum vs Fixnum[5]) or
+        // their type bits do not overlap at all (eg Int vs String).
+        // Just subtract the bits and keep self's specialization.
+        let bits = self.bits & !other.bits;
+        Type { bits, spec: self.spec }
     }
 
     pub fn could_be(&self, other: Type) -> bool {
@@ -526,6 +574,10 @@ impl Type {
         if self.is_subtype(types::CUInt8) || self.is_subtype(types::CInt8) { return 1; }
         if self.is_subtype(types::CUInt16) || self.is_subtype(types::CInt16) { return 2; }
         if self.is_subtype(types::CUInt32) || self.is_subtype(types::CInt32) { return 4; }
+        if self.is_subtype(types::CShape) {
+            use crate::cruby::{SHAPE_ID_NUM_BITS, BITS_PER_BYTE};
+            return (SHAPE_ID_NUM_BITS as usize / BITS_PER_BYTE).try_into().unwrap();
+        }
         // CUInt64, CInt64, CPtr, CNull, CDouble, or anything else defaults to 8 bytes
         crate::cruby::SIZEOF_VALUE as u8
     }
@@ -950,5 +1002,122 @@ mod tests {
             assert_bit_equal(c_instance.union(d_instance), Type { bits: bits::ObjectSubclass, spec: Specialization::Type(c_class)});
             assert_bit_equal(d_instance.union(c_instance), Type { bits: bits::ObjectSubclass, spec: Specialization::Type(c_class)});
         });
+    }
+
+    #[test]
+    fn has_value() {
+        // With known values
+        crate::cruby::with_rubyvm(|| {
+            let a = rust_str_to_sym("a");
+            let b = rust_str_to_sym("b");
+            let ty = Type::from_value(a);
+            assert!(ty.has_value(Const::Value(a)));
+            assert!(!ty.has_value(Const::Value(b)));
+        });
+
+        let true_ty = Type::from_cbool(true);
+        assert!(true_ty.has_value(Const::CBool(true)));
+        assert!(!true_ty.has_value(Const::CBool(false)));
+
+        let int8_ty = Type::from_cint(types::CInt8, 42);
+        assert!(int8_ty.has_value(Const::CInt8(42)));
+        assert!(!int8_ty.has_value(Const::CInt8(-1)));
+        let neg_int8_ty = Type::from_cint(types::CInt8, -1);
+        assert!(neg_int8_ty.has_value(Const::CInt8(-1)));
+
+        let int16_ty = Type::from_cint(types::CInt16, 1000);
+        assert!(int16_ty.has_value(Const::CInt16(1000)));
+        assert!(!int16_ty.has_value(Const::CInt16(2000)));
+
+        let int32_ty = Type::from_cint(types::CInt32, 100000);
+        assert!(int32_ty.has_value(Const::CInt32(100000)));
+        assert!(!int32_ty.has_value(Const::CInt32(-100000)));
+
+        let int64_ty = Type::from_cint(types::CInt64, i64::MAX);
+        assert!(int64_ty.has_value(Const::CInt64(i64::MAX)));
+        assert!(!int64_ty.has_value(Const::CInt64(0)));
+
+        let uint8_ty = Type::from_cint(types::CUInt8, u8::MAX as i64);
+        assert!(uint8_ty.has_value(Const::CUInt8(u8::MAX)));
+        assert!(!uint8_ty.has_value(Const::CUInt8(0)));
+
+        let uint16_ty = Type::from_cint(types::CUInt16, u16::MAX as i64);
+        assert!(uint16_ty.has_value(Const::CUInt16(u16::MAX)));
+        assert!(!uint16_ty.has_value(Const::CUInt16(1)));
+
+        let uint32_ty = Type::from_cint(types::CUInt32, u32::MAX as i64);
+        assert!(uint32_ty.has_value(Const::CUInt32(u32::MAX)));
+        assert!(!uint32_ty.has_value(Const::CUInt32(42)));
+
+        let uint64_ty = Type::from_cint(types::CUInt64, i64::MAX);
+        assert!(uint64_ty.has_value(Const::CUInt64(i64::MAX as u64)));
+        assert!(!uint64_ty.has_value(Const::CUInt64(123)));
+
+        let shape_ty = Type::from_cint(types::CShape, 0x1234);
+        assert!(shape_ty.has_value(Const::CShape(crate::cruby::ShapeId(0x1234))));
+        assert!(!shape_ty.has_value(Const::CShape(crate::cruby::ShapeId(0x5678))));
+
+        let ptr = 0x1000 as *const u8;
+        let ptr_ty = Type::from_cptr(ptr);
+        assert!(ptr_ty.has_value(Const::CPtr(ptr)));
+        assert!(!ptr_ty.has_value(Const::CPtr(0x2000 as *const u8)));
+
+        let double_ty = Type::from_double(std::f64::consts::PI);
+        assert!(double_ty.has_value(Const::CDouble(std::f64::consts::PI)));
+        assert!(!double_ty.has_value(Const::CDouble(3.123)));
+
+        let nan_ty = Type::from_double(f64::NAN);
+        assert!(nan_ty.has_value(Const::CDouble(f64::NAN)));
+
+        // Mismatched types
+        assert!(!int8_ty.has_value(Const::CInt16(42)));
+        assert!(!int16_ty.has_value(Const::CInt32(1000)));
+        assert!(!uint8_ty.has_value(Const::CInt8(-1i8)));
+
+        // Wrong specialization (unknown value)
+        assert!(!types::CInt8.has_value(Const::CInt8(42)));
+        assert!(!types::CBool.has_value(Const::CBool(true)));
+        assert!(!types::CShape.has_value(Const::CShape(crate::cruby::ShapeId(0x1234))));
+    }
+
+    #[test]
+    fn test_subtract_with_superset_returns_empty() {
+        let left = types::NilClass;
+        let right = types::BasicObject;
+        let result = left.subtract(right);
+        assert_bit_equal(result, types::Empty);
+    }
+
+    #[test]
+    fn test_subtract_with_subset_removes_bits() {
+        let left = types::BasicObject;
+        let right = types::NilClass;
+        let result = left.subtract(right);
+        assert_subtype(result, types::BasicObject);
+        assert_not_subtype(types::NilClass, result);
+    }
+
+    #[test]
+    fn test_subtract_with_no_overlap_returns_self() {
+        let left = types::Fixnum;
+        let right = types::StringExact;
+        let result = left.subtract(right);
+        assert_bit_equal(result, left);
+    }
+
+    #[test]
+    fn test_subtract_with_no_specialization_overlap_returns_self() {
+        let left = Type::fixnum(4);
+        let right = Type::fixnum(5);
+        let result = left.subtract(right);
+        assert_bit_equal(result, left);
+    }
+
+    #[test]
+    fn test_subtract_with_specialization_subset_removes_specialization() {
+        let left = types::Fixnum;
+        let right = Type::fixnum(42);
+        let result = left.subtract(right);
+        assert_bit_equal(result, types::Fixnum);
     }
 }

@@ -28,7 +28,7 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_stats_quiet
-    # Test that --zjit-stats=quiet collects stats but doesn't print them
+    # Test that --zjit-stats-quiet collects stats but doesn't print them
     script = <<~RUBY
       def test = 42
       test
@@ -44,11 +44,24 @@ class TestZJIT < Test::Unit::TestCase
     assert_includes(err, stats_header)
     assert_equal("true\n", out)
 
-    # With --zjit-stats=quiet, stats should NOT be printed but still enabled
+    # With --zjit-stats-quiet, stats should NOT be printed but still enabled
     out, err, status = eval_with_jit(script, stats: :quiet)
     assert_success(out, err, status)
     refute_includes(err, stats_header)
     assert_equal("true\n", out)
+
+    # With --zjit-stats=<path>, stats should be printed to the path
+    Tempfile.create("zjit-stats-") {|tmp|
+      stats_file = tmp.path
+      tmp.puts("Lorem ipsum dolor sit amet, consectetur adipiscing elit, ...")
+      tmp.close
+
+      out, err, status = eval_with_jit(script, stats: stats_file)
+      assert_success(out, err, status)
+      refute_includes(err, stats_header)
+      assert_equal("true\n", out)
+      assert_equal stats_header, File.open(stats_file) {|f| f.gets(chomp: true)}, "should be overwritten"
+    }
   end
 
   def test_enable_through_env
@@ -88,7 +101,7 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_zjit_enable_respects_existing_options
-    assert_separately(['--zjit-disable', '--zjit-stats=quiet'], <<~RUBY)
+    assert_separately(['--zjit-disable', '--zjit-stats-quiet'], <<~RUBY)
       refute_predicate RubyVM::ZJIT, :enabled?
       assert_predicate RubyVM::ZJIT, :stats_enabled?
 
@@ -340,6 +353,73 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_return_nonparam_local
+    # Use dead code (if false) to create a local without initialization instructions.
+    assert_compiles 'nil', %q{
+      def foo(a)
+        if false
+          x = nil
+        end
+        x
+      end
+      def test = foo(1)
+      test
+      test
+    }, call_threshold: 2
+  end
+
+  def test_nonparam_local_nil_in_jit_call
+    # Non-parameter locals must be initialized to nil in JIT-to-JIT calls.
+    # Use dead code (if false) to create locals without initialization instructions.
+    # Then eval a string that accesses the uninitialized locals.
+    assert_compiles '["x", "x", "x", "x"]', %q{
+      def f(a)
+        a ||= 1
+        if false; b = 1; end
+        eval("-> { p 'x#{b}' }")
+      end
+
+      4.times.map { f(1).call }
+    }, call_threshold: 2
+  end
+
+  def test_kwargs_with_exit_and_local_invalidation
+    assert_compiles ':ok', %q{
+      def a(b:, c:)
+        if c == :b
+          return -> {}
+        end
+        Class # invalidate locals
+
+        raise "c is :b!" if c == :b
+      end
+
+      def test
+        # note opposite order of kwargs
+        a(c: :c, b: :b)
+      end
+
+      4.times { test }
+      :ok
+    }, call_threshold: 2
+  end
+
+  def test_kwargs_with_max_direct_send_arg_count
+    # Ensure that we only reorder the args when we _can_ use direct send (< 6 args).
+    assert_compiles '[[1, 2, 3, 4, 5, 6, 7, 8]]', %q{
+      def kwargs(five, six, a:, b:, c:, d:, e:, f:)
+        [a, b, c, d, five, six, e, f]
+      end
+
+      5.times.flat_map do
+        [
+          kwargs(5, 6, d: 4, c: 3, a: 1, b: 2, e: 7, f: 8),
+          kwargs(5, 6, d: 4, c: 3, b: 2, a: 1, e: 7, f: 8)
+        ]
+      end.uniq
+    }, call_threshold: 2
+  end
+
   def test_setlocal_on_eval
     assert_compiles '1', %q{
       @b = binding
@@ -388,6 +468,74 @@ class TestZJIT < Test::Unit::TestCase
       end
       test { 1 }
     }, insns: [:getblockparamproxy]
+  end
+
+  def test_optimized_method_call_proc_call
+    assert_compiles '2', %q{
+      p = proc { |x| x * 2 }
+      def test(p)
+        p.call(1)
+      end
+      test(p)
+      test(p)
+    }, call_threshold: 2, insns: [:opt_send_without_block]
+  end
+
+  def test_optimized_method_call_proc_aref
+    assert_compiles '4', %q{
+      p = proc { |x| x * 2 }
+      def test(p)
+        p[2]
+      end
+      test(p)
+      test(p)
+    }, call_threshold: 2, insns: [:opt_aref]
+  end
+
+  def test_optimized_method_call_proc_yield
+    assert_compiles '6', %q{
+      p = proc { |x| x * 2 }
+      def test(p)
+        p.yield(3)
+      end
+      test(p)
+      test(p)
+    }, call_threshold: 2, insns: [:opt_send_without_block]
+  end
+
+  def test_optimized_method_call_proc_kw_splat
+    assert_compiles '3', %q{
+      p = proc { |**kw| kw[:a] + kw[:b] }
+      def test(p, h)
+        p.call(**h)
+      end
+      h = { a: 1, b: 2 }
+      test(p, h)
+      test(p, h)
+    }, call_threshold: 2, insns: [:opt_send_without_block]
+  end
+
+  def test_optimized_method_call_proc_call_splat
+    assert_compiles '43', %q{
+      p = proc { |x| x + 1 }
+      def test(p)
+        ary = [42]
+        p.call(*ary)
+      end
+      test(p)
+      test(p)
+    }, call_threshold: 2
+  end
+
+  def test_optimized_method_call_proc_call_kwarg
+    assert_compiles '1', %q{
+      p = proc { |a:| a }
+      def test(p)
+        p.call(a: 1)
+      end
+      test(p)
+      test(p)
+    }, call_threshold: 2
   end
 
   def test_call_a_forwardable_method
@@ -555,12 +703,22 @@ class TestZJIT < Test::Unit::TestCase
       def test(a:, b:) = [a, b]
       def entry = test(b: 2, a: 1) # change order
       entry
-    }
+      entry
+    }, call_threshold: 2
   end
 
   def test_send_kwarg_optional
     assert_compiles '[1, 2]', %q{
       def test(a: 1, b: 2) = [a, b]
+      def entry = test
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_kwarg_optional_too_many
+    assert_compiles '[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]', %q{
+      def test(a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9, j: 10) = [a, b, c, d, e, f, g, h, i, j]
       def entry = test
       entry
       entry
@@ -585,10 +743,155 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_send_kwarg_to_ccall
+    assert_compiles '["a", "b", "c"]', %q{
+      def test(s) = s.each_line(chomp: true).to_a
+      def entry = test(%(a\nb\nc))
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_kwarg_and_block_to_ccall
+    assert_compiles '["a", "b", "c"]', %q{
+      def test(s)
+        a = []
+        s.each_line(chomp: true) { |l| a << l }
+        a
+      end
+      def entry = test(%(a\nb\nc))
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_kwarg_with_too_many_args_to_c_call
+    assert_compiles '"a b c d {kwargs: :e}"', %q{
+      def test(a:, b:, c:, d:, e:) = sprintf("%s %s %s %s %s", a, b, c, d, kwargs: e)
+      def entry = test(e: :e, d: :d, c: :c, a: :a, b: :b)
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_kwsplat
+    assert_compiles '3', %q{
+      def test(a:) = a
+      def entry = test(**{a: 3})
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
   def test_send_kwrest
     assert_compiles '{a: 3}', %q{
       def test(**kwargs) = kwargs
       def entry = test(a: 3)
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_req_kwreq
+    assert_compiles '[1, 3]', %q{
+      def test(a, c:) = [a, c]
+      def entry = test(1, c: 3)
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_req_opt_kwreq
+    assert_compiles '[[1, 2, 3], [-1, -2, -3]]', %q{
+      def test(a, b = 2, c:) = [a, b, c]
+      def entry = [test(1, c: 3), test(-1, -2, c: -3)] # specify all, change kw order
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_req_opt_kwreq_kwopt
+    assert_compiles '[[1, 2, 3, 4], [-1, -2, -3, -4]]', %q{
+      def test(a, b = 2, c:, d: 4) = [a, b, c, d]
+      def entry = [test(1, c: 3), test(-1, -2, d: -4, c: -3)] # specify all, change kw order
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_unexpected_keyword
+    assert_compiles ':error', %q{
+      def test(a: 1) = a*2
+      def entry
+        test(z: 2)
+      rescue ArgumentError
+        :error
+      end
+
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_pos_optional_with_maybe_too_many_args
+    assert_compiles '[[1, 2, 3, 4, 5, 6], [10, 20, 30, 4, 5, 6], [10, 20, 30, 40, 50, 60]]', %q{
+      def target(a = 1, b = 2, c = 3, d = 4, e = 5, f:) = [a, b, c, d, e, f]
+      def test = [target(f: 6), target(10, 20, 30, f: 6), target(10, 20, 30, 40, 50, f: 60)]
+      test
+      test
+    }, call_threshold: 2
+  end
+
+  def test_send_kwarg_partial_optional
+    assert_compiles '[[1, 2, 3], [1, 20, 3], [10, 2, 30]]', %q{
+      def test(a: 1, b: 2, c: 3) = [a, b, c]
+      def entry = [test, test(b: 20), test(c: 30, a: 10)]
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_kwarg_optional_a_lot
+    assert_compiles '[[1, 2, 3, 4, 5, 6], [1, 2, 3, 7, 8, 9], [2, 4, 6, 8, 10, 12]]', %q{
+      def test(a: 1, b: 2, c: 3, d: 4, e: 5, f: 6) = [a, b, c, d, e, f]
+      def entry = [test, test(d: 7, f: 9, e: 8), test(f: 12, e: 10, d: 8, c: 6, b: 4, a: 2)]
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_kwarg_non_constant_default
+    assert_compiles '[[1, 2], [10, 2]]', %q{
+      def make_default = 2
+      def test(a: 1, b: make_default) = [a, b]
+      def entry = [test, test(a: 10)]
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_kwarg_optional_static_with_side_exit
+    # verify frame reconstruction with synthesized keyword defaults is correct
+    assert_compiles '[10, 2, 10]', %q{
+      def callee(a: 1, b: 2)
+        # use binding to force side-exit
+        x = binding.local_variable_get(:a)
+        [a, b, x]
+      end
+
+      def entry
+        callee(a: 10) # b should get default value
+      end
+
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_all_arg_types
+    assert_compiles '[:req, :opt, :post, :kwr, :kwo, true]', %q{
+      def test(a, b = :opt, c, d:, e: :kwo) = [a, b, c, d, e, block_given?]
+      def entry = test(:req, :post, d: :kwr) {}
       entry
       entry
     }, call_threshold: 2
@@ -661,6 +964,667 @@ class TestZJIT < Test::Unit::TestCase
 
       Bar.new.test
     }
+  end
+
+  def test_invokesuper_to_iseq
+    assert_compiles '["B", "A"]', %q{
+      class A
+        def foo
+          "A"
+        end
+      end
+
+      class B < A
+        def foo
+          ["B", super]
+        end
+      end
+
+      def test
+        B.new.foo
+      end
+
+      test  # profile invokesuper
+      test  # compile + run compiled code
+    }, call_threshold: 2
+  end
+
+  def test_invokesuper_with_args
+    assert_compiles '["B", 11]', %q{
+      class A
+        def foo(x)
+          x * 2
+        end
+      end
+
+      class B < A
+        def foo(x)
+          ["B", super(x) + 1]
+        end
+      end
+
+      def test
+        B.new.foo(5)
+      end
+
+      test  # profile invokesuper
+      test  # compile + run compiled code
+    }, call_threshold: 2
+  end
+
+  # Test super with explicit args when callee has rest parameter.
+  # This should fall back to dynamic dispatch since we can't handle rest params yet.
+  def test_invokesuper_with_args_to_rest_param
+    assert_compiles '["B", "a", ["b", "c"]]', %q{
+      class A
+        def foo(x, *rest)
+          [x, rest]
+        end
+      end
+
+      class B < A
+        def foo(x, y, z)
+          ["B", *super(x, y, z)]
+        end
+      end
+
+      def test
+        B.new.foo("a", "b", "c")
+      end
+
+      test  # profile invokesuper
+      test  # compile + run compiled code
+    }, call_threshold: 2
+  end
+
+  def test_invokesuper_with_block
+    assert_compiles '["B", "from_block"]', %q{
+      class A
+        def foo
+          block_given? ? yield : "no_block"
+        end
+      end
+
+      class B < A
+        def foo
+          ["B", super { "from_block" }]
+        end
+      end
+
+      def test
+        B.new.foo
+      end
+
+      test  # profile invokesuper
+      test  # compile + run compiled code
+    }, call_threshold: 2
+  end
+
+  def test_invokesuper_to_cfunc
+    assert_compiles '["MyArray", 3]', %q{
+      class MyArray < Array
+        def length
+          ["MyArray", super]
+        end
+      end
+
+      def test
+        MyArray.new([1, 2, 3]).length
+      end
+
+      test  # profile invokesuper
+      test  # compile + run compiled code
+    }, call_threshold: 2
+  end
+
+  def test_invokesuper_multilevel
+    assert_compiles '["C", ["B", "A"]]', %q{
+      class A
+        def foo
+          "A"
+        end
+      end
+
+      class B < A
+        def foo
+          ["B", super]
+        end
+      end
+
+      class C < B
+        def foo
+          ["C", super]
+        end
+      end
+
+      def test
+        C.new.foo
+      end
+
+      test  # profile invokesuper
+      test  # compile + run compiled code
+    }, call_threshold: 2
+  end
+
+  # Test implicit block forwarding - super without explicit block should forward caller's block
+  # Note: We call test twice to ensure ZJIT compiles it before the final call that we check
+  def test_invokesuper_forwards_block_implicitly
+    assert_compiles '["B", "forwarded_block"]', %q{
+      class A
+        def foo
+          block_given? ? yield : "no_block"
+        end
+      end
+
+      class B < A
+        def foo
+          ["B", super]  # should forward the block from caller
+        end
+      end
+
+      def test
+        B.new.foo { "forwarded_block" }
+      end
+
+      test  # profile invokesuper
+      test  # compile + run compiled code
+    }, call_threshold: 2
+  end
+
+  # Test implicit block forwarding with explicit arguments
+  def test_invokesuper_forwards_block_implicitly_with_args
+    assert_compiles '["B", ["arg_value", "forwarded"]]', %q{
+      class A
+        def foo(x)
+          [x, (block_given? ? yield : "no_block")]
+        end
+      end
+
+      class B < A
+        def foo(x)
+          ["B", super(x)]  # explicit args, but block should still be forwarded
+        end
+      end
+
+      def test
+        B.new.foo("arg_value") { "forwarded" }
+      end
+
+      test  # profile
+      test  # compile + run compiled code
+    }, call_threshold: 2
+  end
+
+  # Test implicit block forwarding when no block is given (should not fail)
+  def test_invokesuper_forwards_block_implicitly_no_block_given
+    assert_compiles '["B", "no_block"]', %q{
+      class A
+        def foo
+          block_given? ? yield : "no_block"
+        end
+      end
+
+      class B < A
+        def foo
+          ["B", super]  # no block given by caller
+        end
+      end
+
+      def test
+        B.new.foo  # called without a block
+      end
+
+      test  # profile
+      test  # compile + run compiled code
+    }, call_threshold: 2
+  end
+
+  # Test implicit block forwarding through multiple inheritance levels
+  def test_invokesuper_forwards_block_implicitly_multilevel
+    assert_compiles '["C", ["B", "deep_block"]]', %q{
+      class A
+        def foo
+          block_given? ? yield : "no_block"
+        end
+      end
+
+      class B < A
+        def foo
+          ["B", super]  # forwards block to A
+        end
+      end
+
+      class C < B
+        def foo
+          ["C", super]  # forwards block to B, which forwards to A
+        end
+      end
+
+      def test
+        C.new.foo { "deep_block" }
+      end
+
+      test  # profile
+      test  # compile + run compiled code
+    }, call_threshold: 2
+  end
+
+  # Test implicit block forwarding with block parameter syntax
+  def test_invokesuper_forwards_block_param
+    assert_compiles '["B", "block_param_forwarded"]', %q{
+      class A
+        def foo
+          block_given? ? yield : "no_block"
+        end
+      end
+
+      class B < A
+        def foo(&block)
+          ["B", super]  # should forward &block implicitly
+        end
+      end
+
+      def test
+        B.new.foo { "block_param_forwarded" }
+      end
+
+      test  # profile
+      test  # compile + run compiled code
+    }, call_threshold: 2
+  end
+
+  def test_invokesuper_with_blockarg
+    assert_compiles '["B", "different block"]', %q{
+      class A
+        def foo
+          block_given? ? yield : "no block"
+        end
+      end
+
+      class B < A
+        def foo(&blk)
+          other_block = proc { "different block" }
+          ["B", super(&other_block)]
+        end
+      end
+
+      def test
+        B.new.foo { "passed block" }
+      end
+
+      test  # profile
+      test  # compile + run compiled code
+    }, call_threshold: 2
+  end
+
+  def test_invokesuper_with_symbol_to_proc
+    assert_compiles '["B", [3, 5, 7]]', %q{
+      class A
+        def foo(items, &blk)
+          items.map(&blk)
+        end
+      end
+
+      class B < A
+        def foo(items)
+          ["B", super(items, &:succ)]
+        end
+      end
+
+      def test
+        B.new.foo([2, 4, 6])
+      end
+
+      test  # profile
+      test  # compile + run compiled code
+    }, call_threshold: 2
+  end
+
+  def test_invokesuper_with_splat
+    assert_compiles '["B", 6]', %q{
+      class A
+        def foo(a, b, c)
+          a + b + c
+        end
+      end
+
+      class B < A
+        def foo(*args)
+          ["B", super(*args)]
+        end
+      end
+
+      def test
+        B.new.foo(1, 2, 3)
+      end
+
+      test  # profile
+      test  # compile + run compiled code
+    }, call_threshold: 2
+  end
+
+  def test_invokesuper_with_kwargs
+    assert_compiles '["B", "x=1, y=2"]', %q{
+      class A
+        def foo(x:, y:)
+          "x=#{x}, y=#{y}"
+        end
+      end
+
+      class B < A
+        def foo(x:, y:)
+          ["B", super(x: x, y: y)]
+        end
+      end
+
+      def test
+        B.new.foo(x: 1, y: 2)
+      end
+
+      test  # profile
+      test  # compile + run compiled code
+    }, call_threshold: 2
+  end
+
+  def test_invokesuper_with_kw_splat
+    assert_compiles '["B", "x=1, y=2"]', %q{
+      class A
+        def foo(x:, y:)
+          "x=#{x}, y=#{y}"
+        end
+      end
+
+      class B < A
+        def foo(**kwargs)
+          ["B", super(**kwargs)]
+        end
+      end
+
+      def test
+        B.new.foo(x: 1, y: 2)
+      end
+
+      test  # profile
+      test  # compile + run compiled code
+    }, call_threshold: 2
+  end
+
+  # Test that including a module after compilation correctly changes the super target.
+  # The included module's method should be called, not the original super target.
+  def test_invokesuper_with_include
+    assert_compiles '["B", "M"]', %q{
+      class A
+        def foo
+          "A"
+        end
+      end
+
+      class B < A
+        def foo
+          ["B", super]
+        end
+      end
+
+      def test
+        B.new.foo
+      end
+
+      test  # profile invokesuper (super -> A#foo)
+      test  # compile with super -> A#foo
+
+      # Now include a module in B that defines foo - super should go to M#foo instead
+      module M
+        def foo
+          "M"
+        end
+      end
+      B.include(M)
+
+      test  # should call M#foo, not A#foo
+    }, call_threshold: 2
+  end
+
+  # Test that prepending a module after compilation correctly changes the super target.
+  # The prepended module's method should be called, not the original super target.
+  def test_invokesuper_with_prepend
+    assert_compiles '["B", "M"]', %q{
+      class A
+        def foo
+          "A"
+        end
+      end
+
+      class B < A
+        def foo
+          ["B", super]
+        end
+      end
+
+      def test
+        B.new.foo
+      end
+
+      test  # profile invokesuper (super -> A#foo)
+      test  # compile with super -> A#foo
+
+      # Now prepend a module that defines foo - super should go to M#foo instead
+      module M
+        def foo
+          "M"
+        end
+      end
+      A.prepend(M)
+
+      test  # should call M#foo, not A#foo
+    }, call_threshold: 2
+  end
+
+  # Test super with positional and keyword arguments (pattern from chunky_png)
+  def test_invokesuper_with_keyword_args
+    assert_compiles '{content: "image data"}', %q{
+      class A
+        def foo(attributes = {})
+          @attributes = attributes
+        end
+      end
+
+      class B < A
+        def foo(content = '')
+          super(content: content)
+        end
+      end
+
+      def test
+        B.new.foo("image data")
+      end
+
+      test
+      test
+    }, call_threshold: 2
+  end
+
+  def test_invokesuper_with_optional_keyword_args
+    assert_compiles '[1, 2, 3]', %q{
+      class Parent
+        def foo(a, b: 2, c: 3) = [a, b, c]
+      end
+
+      class Child < Parent
+        def foo(a) = super(a)
+      end
+
+      def test = Child.new.foo(1)
+
+      test
+      test
+    }, call_threshold: 2
+  end
+
+  def test_send_with_non_constant_keyword_default
+    assert_compiles '[[2, 4, 16], [10, 4, 16], [2, 20, 16], [2, 4, 30], [10, 20, 30]]', %q{
+      def dbl(x = 1) = x * 2
+
+      def foo(a: dbl, b: dbl(2), c: dbl(2 ** 3))
+        [a, b, c]
+      end
+
+      def test
+        [
+          foo,
+          foo(a: 10),
+          foo(b: 20),
+          foo(c: 30),
+          foo(a: 10, b: 20, c: 30)
+        ]
+      end
+
+      test
+      test
+    }, call_threshold: 2
+  end
+
+  def test_send_with_non_constant_keyword_default_not_evaluated_when_provided
+    assert_compiles '[1, 2, 3]', %q{
+      def foo(a: raise, b: raise, c: raise)
+        [a, b, c]
+      end
+
+      def test
+        foo(a: 1, b: 2, c: 3)
+      end
+
+      test
+      test
+    }, call_threshold: 2
+  end
+
+  def test_send_with_non_constant_keyword_default_evaluated_when_not_provided
+    assert_compiles '["a", "b", "c"]', %q{
+      def raise_a = raise "a"
+      def raise_b = raise "b"
+      def raise_c = raise "c"
+
+      def foo(a: raise_a, b: raise_b, c: raise_c)
+        [a, b, c]
+      end
+
+      def test_a
+        foo(b: 2, c: 3)
+      rescue RuntimeError => e
+        e.message
+      end
+
+      def test_b
+        foo(a: 1, c: 3)
+      rescue RuntimeError => e
+        e.message
+      end
+
+      def test_c
+        foo(a: 1, b: 2)
+      rescue RuntimeError => e
+        e.message
+      end
+
+      def test
+        [test_a, test_b, test_c]
+      end
+
+      test
+      test
+    }, call_threshold: 2
+  end
+
+  def test_send_with_non_constant_keyword_default_jit_to_jit
+    # Test that kw_bits passing works correctly in JIT-to-JIT calls
+    assert_compiles '[2, 4, 6]', %q{
+      def make_default(x) = x * 2
+
+      def callee(a: make_default(1), b: make_default(2), c: make_default(3))
+        [a, b, c]
+      end
+
+      def caller_method
+        callee
+      end
+
+      # Warm up callee first so it gets JITted
+      callee
+      callee
+
+      # Now warm up caller - this creates JIT-to-JIT call
+      caller_method
+      caller_method
+    }, call_threshold: 2
+  end
+
+  def test_send_with_non_constant_keyword_default_side_exit
+    # Verify frame reconstruction includes correct values for non-constant defaults
+    assert_compiles '[10, 2, 30]', %q{
+      def make_b = 2
+
+      def callee(a: 1, b: make_b, c: 3)
+        x = binding.local_variable_get(:a)
+        y = binding.local_variable_get(:b)
+        z = binding.local_variable_get(:c)
+        [x, y, z]
+      end
+
+      def test
+        callee(a: 10, c: 30)
+      end
+
+      test
+      test
+    }, call_threshold: 2
+  end
+
+  def test_send_with_non_constant_keyword_default_evaluation_order
+    # Verify defaults are evaluated left-to-right and only when not provided
+    assert_compiles '[["a", "b", "c"], ["b", "c"], ["a", "c"], ["a", "b"]]', %q{
+      def log(x)
+        $order << x
+        x
+      end
+
+      def foo(a: log("a"), b: log("b"), c: log("c"))
+        [a, b, c]
+      end
+
+      def test
+        results = []
+
+        $order = []
+        foo
+        results << $order.dup
+
+        $order = []
+        foo(a: "A")
+        results << $order.dup
+
+        $order = []
+        foo(b: "B")
+        results << $order.dup
+
+        $order = []
+        foo(c: "C")
+        results << $order.dup
+
+        results
+      end
+
+      test
+      test
+    }, call_threshold: 2
+  end
+
+  def test_send_with_too_many_non_constant_keyword_defaults
+    assert_compiles '35', %q{
+      def many_kwargs( k1: 1, k2: 2, k3: 3, k4: 4, k5: 5, k6: 6, k7: 7, k8: 8, k9: 9, k10: 10, k11: 11, k12: 12, k13: 13, k14: 14, k15: 15, k16: 16, k17: 17, k18: 18, k19: 19, k20: 20, k21: 21, k22: 22, k23: 23, k24: 24, k25: 25, k26: 26, k27: 27, k28: 28, k29: 29, k30: 30, k31: 31, k32: 32, k33: 33, k34: k33 + 1) = k1 + k34
+      def t = many_kwargs
+      t
+      t
+    }, call_threshold: 2
   end
 
   def test_invokebuiltin
@@ -1129,6 +2093,34 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:opt_duparray_send], call_threshold: 1
   end
 
+  def test_opt_newarray_send_pack_buffer
+    assert_compiles '["ABC", "ABC", "ABC", "ABC"]', %q{
+      def test(num, buffer)
+        [num].pack('C', buffer:)
+      end
+      buf = ""
+      [test(65, buf), test(66, buf), test(67, buf), buf]
+    }, insns: [:opt_newarray_send], call_threshold: 1
+  end
+
+  def test_opt_newarray_send_pack_buffer_redefined
+    assert_compiles '["b", "A"]', %q{
+      class Array
+        alias_method :old_pack, :pack
+        def pack(fmt, buffer: nil)
+          old_pack(fmt, buffer: buffer)
+          "b"
+        end
+      end
+
+      def test(num, buffer)
+        [num].pack('C', buffer:)
+      end
+      buf = ""
+      [test(65, buf), buf]
+    }, insns: [:opt_newarray_send], call_threshold: 1
+  end
+
   def test_opt_newarray_send_hash
     assert_compiles 'Integer', %q{
       def test(x)
@@ -1301,6 +2293,77 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:opt_hash_freeze], call_threshold: 1
   end
 
+  def test_opt_aset_hash
+    assert_compiles '42', %q{
+      def test(h, k, v)
+        h[k] = v
+      end
+      h = {}
+      test(h, :key, 42)
+      test(h, :key, 42)
+      h[:key]
+    }, call_threshold: 2, insns: [:opt_aset]
+  end
+
+  def test_opt_aset_hash_returns_value
+    assert_compiles '100', %q{
+      def test(h, k, v)
+        h[k] = v
+      end
+      test({}, :key, 100)
+      test({}, :key, 100)
+    }, call_threshold: 2
+  end
+
+  def test_opt_aset_hash_string_key
+    assert_compiles '"bar"', %q{
+      def test(h, k, v)
+        h[k] = v
+      end
+      h = {}
+      test(h, "foo", "bar")
+      test(h, "foo", "bar")
+      h["foo"]
+    }, call_threshold: 2
+  end
+
+  def test_opt_aset_hash_subclass
+    assert_compiles '42', %q{
+      class MyHash < Hash; end
+      def test(h, k, v)
+        h[k] = v
+      end
+      h = MyHash.new
+      test(h, :key, 42)
+      test(h, :key, 42)
+      h[:key]
+    }, call_threshold: 2
+  end
+
+  def test_opt_aset_hash_too_few_args
+    assert_compiles '"ArgumentError"', %q{
+      def test(h)
+        h.[]= 123
+      rescue ArgumentError
+        "ArgumentError"
+      end
+      test({})
+      test({})
+    }, call_threshold: 2
+  end
+
+  def test_opt_aset_hash_too_many_args
+    assert_compiles '"ArgumentError"', %q{
+      def test(h)
+        h[:a, :b] = :c
+      rescue ArgumentError
+        "ArgumentError"
+      end
+      test({})
+      test({})
+    }, call_threshold: 2
+  end
+
   def test_opt_ary_freeze
     assert_compiles "[[], 5]", %q{
       def test = [].freeze
@@ -1402,6 +2465,163 @@ class TestZJIT < Test::Unit::TestCase
       test(2)
       test(2)
     }, call_threshold: 2, insns: [:opt_aref]
+  end
+
+  def test_array_fixnum_aref_negative_index
+    assert_compiles '3', %q{
+      def test(x) = [1,2,3][x]
+      test(-1)
+      test(-1)
+    }, call_threshold: 2, insns: [:opt_aref]
+  end
+
+  def test_array_fixnum_aref_out_of_bounds_positive
+    assert_compiles 'nil', %q{
+      def test(x) = [1,2,3][x]
+      test(10)
+      test(10)
+    }, call_threshold: 2, insns: [:opt_aref]
+  end
+
+  def test_array_fixnum_aref_out_of_bounds_negative
+    assert_compiles 'nil', %q{
+      def test(x) = [1,2,3][x]
+      test(-10)
+      test(-10)
+    }, call_threshold: 2, insns: [:opt_aref]
+  end
+
+  def test_array_fixnum_aref_array_subclass
+    assert_compiles '3', %q{
+      class MyArray < Array; end
+      def test(arr, idx) = arr[idx]
+      arr = MyArray[1,2,3]
+      test(arr, 2)
+      arr = MyArray[1,2,3]
+      test(arr, 2)
+    }, call_threshold: 2, insns: [:opt_aref]
+  end
+
+  def test_array_aref_non_fixnum_index
+    assert_compiles 'TypeError', %q{
+      def test(arr, idx) = arr[idx]
+      test([1,2,3], 1)
+      test([1,2,3], 1)
+      begin
+        test([1,2,3], "1")
+      rescue => e
+        e.class
+      end
+    }, call_threshold: 2
+  end
+
+  def test_array_fixnum_aset
+    assert_compiles '[1, 2, 7]', %q{
+      def test(arr, idx)
+        arr[idx] = 7
+      end
+      arr = [1,2,3]
+      test(arr, 2)
+      arr = [1,2,3]
+      test(arr, 2)
+      arr
+    }, call_threshold: 2, insns: [:opt_aset]
+  end
+
+  def test_array_fixnum_aset_returns_value
+    assert_compiles '7', %q{
+      def test(arr, idx)
+        arr[idx] = 7
+      end
+      test([1,2,3], 2)
+      test([1,2,3], 2)
+    }, call_threshold: 2, insns: [:opt_aset]
+  end
+
+  def test_array_fixnum_aset_out_of_bounds
+    assert_compiles '[1, 2, 3, nil, nil, 7]', %q{
+      def test(arr)
+        arr[5] = 7
+      end
+      arr = [1,2,3]
+      test(arr)
+      arr = [1,2,3]
+      test(arr)
+      arr
+    }, call_threshold: 2
+  end
+
+  def test_array_fixnum_aset_negative_index
+    assert_compiles '[1, 2, 7]', %q{
+      def test(arr)
+        arr[-1] = 7
+      end
+      arr = [1,2,3]
+      test(arr)
+      arr = [1,2,3]
+      test(arr)
+      arr
+    }, call_threshold: 2
+  end
+
+  def test_array_fixnum_aset_shared
+    assert_compiles '[10, 999, -1, -2]', %q{
+      def test(arr, idx, val)
+        arr[idx] = val
+      end
+      arr = (0..50).to_a
+      test(arr, 0, -1)
+      test(arr, 1, -2)
+      shared = arr[10, 20]
+      test(shared, 0, 999)
+      [arr[10], shared[0], arr[0], arr[1]]
+    }, call_threshold: 2
+  end
+
+  def test_array_fixnum_aset_frozen
+    assert_compiles 'FrozenError', %q{
+      def test(arr, idx, val)
+        arr[idx] = val
+      end
+      arr = [1,2,3]
+      test(arr, 1, 9)
+      test(arr, 1, 9)
+      arr.freeze
+      begin
+        test(arr, 1, 9)
+      rescue => e
+        e.class
+      end
+    }, call_threshold: 2
+  end
+
+  def test_array_fixnum_aset_array_subclass
+    assert_compiles '7', %q{
+      class MyArray < Array; end
+      def test(arr, idx)
+        arr[idx] = 7
+      end
+      arr = MyArray.new
+      test(arr, 0)
+      arr = MyArray.new
+      test(arr, 0)
+      arr[0]
+    }, call_threshold: 2, insns: [:opt_aset]
+  end
+
+  def test_array_aset_non_fixnum_index
+    assert_compiles 'TypeError', %q{
+      def test(arr, idx)
+        arr[idx] = 7
+      end
+      test([1,2,3], 0)
+      test([1,2,3], 0)
+      begin
+        test([1,2,3], "0")
+      rescue => e
+        e.class
+      end
+    }, call_threshold: 2
   end
 
   def test_empty_array_pop
@@ -1938,7 +3158,7 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_setclassvariable_raises
-    assert_compiles '"can\'t modify frozen #<Class:Foo>: Foo"', %q{
+    assert_compiles '"can\'t modify frozen Class: Foo"', %q{
       class Foo
         def self.test = @@x = 42
         freeze
@@ -3436,6 +4656,82 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 14, num_profiles: 5
   end
 
+  def test_is_a_string_special_case
+    assert_compiles '[true, false, false, false, false, false]', %q{
+      def test(x)
+        x.is_a?(String)
+      end
+      test("foo")
+      [test("bar"), test(1), test(false), test(:foo), test([]), test({})]
+    }
+  end
+
+  def test_is_a_array_special_case
+    assert_compiles '[true, true, false, false, false, false, false]', %q{
+      def test(x)
+        x.is_a?(Array)
+      end
+      test([])
+      [test([1,2,3]), test([]), test(1), test(false), test(:foo), test("foo"), test({})]
+    }
+  end
+
+  def test_is_a_hash_special_case
+    assert_compiles '[true, true, false, false, false, false, false]', %q{
+      def test(x)
+        x.is_a?(Hash)
+      end
+      test({})
+      [test({:a => "b"}), test({}), test(1), test(false), test(:foo), test([]), test("foo")]
+    }
+  end
+
+  def test_is_a_hash_subclass
+    assert_compiles 'true', %q{
+      class MyHash < Hash
+      end
+      def test(x)
+        x.is_a?(Hash)
+      end
+      test({})
+      test(MyHash.new)
+    }
+  end
+
+  def test_is_a_normal_case
+    assert_compiles '[true, false]', %q{
+      class MyClass
+      end
+      def test(x)
+        x.is_a?(MyClass)
+      end
+      test("a")
+      [test(MyClass.new), test("a")]
+    }
+  end
+
+  def test_exit_tracing
+    # This is a very basic smoke test. The StackProf format
+    # this option generates is external to us.
+    Dir.mktmpdir("zjit_test_exit_tracing") do |tmp_dir|
+      assert_compiles('true', <<~RUBY, extra_args: ['-C', tmp_dir, '--zjit-trace-exits'])
+        def test(object) = object.itself
+
+        # induce an exit just for good measure
+        array = []
+        test(array)
+        test(array)
+        def array.itself = :not_itself
+        test(array)
+
+        RubyVM::ZJIT.exit_locations.is_a?(Hash)
+      RUBY
+      dump_files = Dir.glob('zjit_exits_*.dump', base: tmp_dir)
+      assert_equal(1, dump_files.length)
+      refute(File.empty?(File.join(tmp_dir, dump_files.first)))
+    end
+  end
+
   private
 
   # Assert that every method call in `test_script` can be compiled by ZJIT
@@ -3496,14 +4792,22 @@ class TestZJIT < Test::Unit::TestCase
     stats: false,
     debug: true,
     allowed_iseqs: nil,
+    extra_args: nil,
     timeout: 1000,
     pipe_fd: nil
   )
-    args = ["--disable-gems"]
+    args = ["--disable-gems", *extra_args]
     if zjit
       args << "--zjit-call-threshold=#{call_threshold}"
       args << "--zjit-num-profiles=#{num_profiles}"
-      args << "--zjit-stats#{"=#{stats}" unless stats == true}" if stats
+      case stats
+      when true
+        args << "--zjit-stats"
+      when :quiet
+        args << "--zjit-stats-quiet"
+      else
+        args << "--zjit-stats=#{stats}" if stats
+      end
       args << "--zjit-debug" if debug
       if allowed_iseqs
         jitlist = Tempfile.new("jitlist")

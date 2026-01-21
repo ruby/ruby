@@ -534,6 +534,7 @@ Init_ossl_x509name(void)
     rb_hash_aset(hash, rb_str_new2("DC"), ia5str);
     rb_hash_aset(hash, rb_str_new2("domainComponent"), ia5str);
     rb_hash_aset(hash, rb_str_new2("emailAddress"), ia5str);
+    rb_obj_freeze(hash);
 
     /*
      * The default object type template for name entries.

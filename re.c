@@ -17,6 +17,7 @@
 #include "hrtime.h"
 #include "internal.h"
 #include "internal/encoding.h"
+#include "internal/error.h"
 #include "internal/hash.h"
 #include "internal/imemo.h"
 #include "internal/re.h"
@@ -1013,6 +1014,7 @@ update_char_offset(VALUE match)
     char *s, *p, *q;
     rb_encoding *enc;
     pair_t *pairs;
+    VALUE pairs_obj = Qnil;
 
     if (rm->char_offset_num_allocated)
         return;
@@ -1034,7 +1036,7 @@ update_char_offset(VALUE match)
         return;
     }
 
-    pairs = ALLOCA_N(pair_t, num_regs*2);
+    pairs = RB_ALLOCV_N(pair_t, pairs_obj, num_regs * 2);
     num_pos = 0;
     for (i = 0; i < num_regs; i++) {
         if (BEG(i) < 0)
@@ -1069,6 +1071,8 @@ update_char_offset(VALUE match)
         found = bsearch(&key, pairs, num_pos, sizeof(pair_t), pair_byte_cmp);
         rm->char_offset[i].end = found->char_pos;
     }
+
+    RB_ALLOCV_END(pairs_obj);
 }
 
 static VALUE
@@ -2212,12 +2216,12 @@ match_ary_aref(VALUE match, VALUE idx, VALUE result)
 
 /*
  *  call-seq:
- *    matchdata[index] -> string or nil
- *    matchdata[start, length] -> array
- *    matchdata[range] -> array
- *    matchdata[name] -> string or nil
+ *    self[offset] -> string or nil
+ *    self[offset, size] -> array
+ *    self[range] -> array
+ *    self[name] -> string or nil
  *
- *  When arguments +index+, +start and +length+, or +range+ are given,
+ *  When arguments +offset+, +offset+ and +size+, or +range+ are given,
  *  returns match and captures in the style of Array#[]:
  *
  *    m = /(.)(.)(\d+)(\d)/.match("THX1138.")
@@ -2468,7 +2472,7 @@ match_named_captures(int argc, VALUE *argv, VALUE match)
     }
 
     hash = rb_hash_new();
-    memo = MEMO_NEW(hash, match, symbolize_names);
+    memo = rb_imemo_memo_new(hash, match, symbolize_names);
 
     onig_foreach_name(RREGEXP(RMATCH(match)->regexp)->ptr, match_named_captures_iter, (void*)memo);
 
@@ -2507,7 +2511,7 @@ match_deconstruct_keys(VALUE match, VALUE keys)
         h = rb_hash_new_with_size(onig_number_of_names(RREGEXP_PTR(RMATCH(match)->regexp)));
 
         struct MEMO *memo;
-        memo = MEMO_NEW(h, match, 1);
+        memo = rb_imemo_memo_new(h, match, 1);
 
         onig_foreach_name(RREGEXP_PTR(RMATCH(match)->regexp), match_named_captures_iter, (void*)memo);
 
@@ -2613,6 +2617,7 @@ match_inspect(VALUE match)
     struct re_registers *regs = RMATCH_REGS(match);
     int num_regs = regs->num_regs;
     struct backref_name_tag *names;
+    VALUE names_obj = Qnil;
     VALUE regexp = RMATCH(match)->regexp;
 
     if (regexp == 0) {
@@ -2623,7 +2628,7 @@ match_inspect(VALUE match)
                           cname, rb_reg_nth_match(0, match));
     }
 
-    names = ALLOCA_N(struct backref_name_tag, num_regs);
+    names = RB_ALLOCV_N(struct backref_name_tag, names_obj, num_regs);
     MEMZERO(names, struct backref_name_tag, num_regs);
 
     onig_foreach_name(RREGEXP_PTR(regexp),
@@ -2651,6 +2656,7 @@ match_inspect(VALUE match)
     }
     rb_str_buf_cat2(str, ">");
 
+    RB_ALLOCV_END(names_obj);
     return str;
 }
 
@@ -3543,10 +3549,10 @@ reg_hash(VALUE re)
 
 /*
  *  call-seq:
- *    regexp == object -> true or false
+ *    self == other -> true or false
  *
- *  Returns +true+ if +object+ is another \Regexp whose pattern,
- *  flags, and encoding are the same as +self+, +false+ otherwise:
+ *  Returns whether +other+ is another \Regexp whose pattern,
+ *  flags, and encoding are the same as +self+:
  *
  *    /foo/ == Regexp.new('foo')                          # => true
  *    /foo/ == /foo/i                                     # => false
@@ -3598,11 +3604,11 @@ match_hash(VALUE match)
 
 /*
  *  call-seq:
- *    matchdata == object -> true or false
+ *    self == other -> true or false
  *
- *  Returns +true+ if +object+ is another \MatchData object
+ *  Returns whether +other+ is another \MatchData object
  *  whose target string, regexp, match, and captures
- *  are the same as +self+, +false+ otherwise.
+ *  are the same as +self+.
  */
 
 static VALUE
@@ -3662,12 +3668,11 @@ reg_match_pos(VALUE re, VALUE *strp, long pos, VALUE* set_match)
 
 /*
  *  call-seq:
- *    regexp =~ string -> integer or nil
+ *    self =~ other -> integer or nil
  *
  *  Returns the integer index (in characters) of the first match
- *  for +self+ and +string+, or +nil+ if none;
- *  also sets the
- *  {rdoc-ref:Regexp global variables}[rdoc-ref:Regexp@Global+Variables]:
+ *  for +self+ and +other+, or +nil+ if none;
+ *  updates {Regexp-related global variables}[rdoc-ref:Regexp@Global+Variables].
  *
  *    /at/ =~ 'input data' # => 7
  *    $~                   # => #<MatchData "at">
@@ -3727,9 +3732,9 @@ rb_reg_match(VALUE re, VALUE str)
 
 /*
  *  call-seq:
- *    regexp === string -> true or false
+ *    self === other -> true or false
  *
- *  Returns +true+ if +self+ finds a match in +string+:
+ *  Returns whether +self+ finds a match in +other+:
  *
  *    /^[a-z]*$/ === 'HELLO' # => false
  *    /^[A-Z]*$/ === 'HELLO' # => true
@@ -3970,7 +3975,6 @@ struct reg_init_args {
 
 static VALUE reg_extract_args(int argc, VALUE *argv, struct reg_init_args *args);
 static VALUE reg_init_args(VALUE self, VALUE str, rb_encoding *enc, int flags);
-void rb_warn_deprecated_to_remove(const char *removal, const char *fmt, const char *suggest, ...);
 
 /*
  *  call-seq:

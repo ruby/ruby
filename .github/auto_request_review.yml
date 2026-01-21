@@ -2,16 +2,15 @@ files:
   'yjit*': [team:jit]
   'yjit/**/*': [team:jit]
   'yjit/src/cruby_bindings.inc.rs': []
-  'doc/yjit/*': [team:jit]
   'bootstraptest/test_yjit*': [team:jit]
   'test/ruby/test_yjit*': [team:jit]
   'zjit*': [team:jit]
   'zjit/**/*': [team:jit]
   'zjit/src/cruby_bindings.inc.rs': []
-  'doc/zjit*': [team:jit]
   'test/ruby/test_zjit*': [team:jit]
   'defs/jit.mk': [team:jit]
   'tool/zjit_bisect.rb': [team:jit]
+  'doc/jit/*': [team:jit]
   # Skip github workflow files because the team don't necessarily need to review dependabot updates for GitHub Actions. It's noisy in notifications, and they're auto-merged anyway.
 options:
   ignore_draft: true

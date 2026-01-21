@@ -103,6 +103,10 @@ module Bundler
       end
     end
 
+    def build_jobs
+      Bundler.settings[:jobs] || super
+    end
+
     def build_extensions
       extension_cache_path = options[:bundler_extension_cache_path]
       extension_dir = spec.extension_dir

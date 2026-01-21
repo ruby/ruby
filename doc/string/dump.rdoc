@@ -69,10 +69,6 @@ and so contains both outer double-quotes and escaped inner double-quotes:
 If +self+ is encoded in UTF-8 and contains Unicode characters,
 each Unicode character is dumped as a Unicode escape sequence:
 
-  String:    тест
-  Dumped:    "\u0442\u0435\u0441\u0442"
-  Undumped:  тест
-
   String:    こんにちは
   Dumped:    "\u3053\u3093\u306B\u3061\u306F"
   Undumped:  こんにちは
@@ -87,10 +83,6 @@ where <tt><encoding></tt> is <tt>self.encoding.name</tt>:
   String:    hello
   Dumped:    "\xFE\xFF\x00h\x00e\x00l\x00l\x00o".dup.force_encoding("UTF-16")
   Undumped:  hello
-
-  String:    тест
-  Dumped:    "\xFE\xFF\x04B\x045\x04A\x04B".dup.force_encoding("UTF-16")
-  Undumped:  тест
 
   String:    こんにちは
   Dumped:    "\xFE\xFF0S0\x930k0a0o".dup.force_encoding("UTF-16")

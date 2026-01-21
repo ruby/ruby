@@ -428,40 +428,10 @@ rb_class_modify_check(VALUE klass)
         rb_class_set_initialized(klass);
     }
     if (OBJ_FROZEN(klass)) {
-        const char *desc;
-
         if (RCLASS_SINGLETON_P(klass)) {
-            desc = "object";
             klass = RCLASS_ATTACHED_OBJECT(klass);
-            if (!SPECIAL_CONST_P(klass)) {
-                switch (BUILTIN_TYPE(klass)) {
-                  case T_MODULE:
-                  case T_ICLASS:
-                    desc = "Module";
-                    break;
-                  case T_CLASS:
-                    desc = "Class";
-                    break;
-                  default:
-                    break;
-                }
-            }
         }
-        else {
-            switch (BUILTIN_TYPE(klass)) {
-              case T_MODULE:
-              case T_ICLASS:
-                desc = "module";
-                break;
-              case T_CLASS:
-                desc = "class";
-                break;
-              default:
-                Check_Type(klass, T_CLASS);
-                UNREACHABLE;
-            }
-        }
-        rb_frozen_error_raise(klass, "can't modify frozen %s: %"PRIsVALUE, desc, klass);
+        rb_error_frozen_object(klass);
     }
 }
 
@@ -952,6 +922,9 @@ rb_f_raise(int argc, VALUE *argv)
  *  With argument +exception+ not given,
  *  argument +message+ and keyword argument +cause+ may be given,
  *  but argument +backtrace+ may not be given.
+ *
+ *  +cause+ can not be given as an only argument.
+ *
  */
 
 static VALUE
@@ -1163,12 +1136,11 @@ rb_protect(VALUE (* proc) (VALUE), VALUE data, int *pstate)
 }
 
 VALUE
-rb_ensure(VALUE (*b_proc)(VALUE), VALUE data1, VALUE (*e_proc)(VALUE), VALUE data2)
+rb_ec_ensure(rb_execution_context_t *ec, VALUE (*b_proc)(VALUE), VALUE data1, VALUE (*e_proc)(VALUE), VALUE data2)
 {
     enum ruby_tag_type state;
     volatile VALUE result = Qnil;
     VALUE errinfo;
-    rb_execution_context_t * volatile ec = GET_EC();
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         result = (*b_proc) (data1);
@@ -1183,6 +1155,12 @@ rb_ensure(VALUE (*b_proc)(VALUE), VALUE data1, VALUE (*e_proc)(VALUE), VALUE dat
     if (state)
         EC_JUMP_TAG(ec, state);
     return result;
+}
+
+VALUE
+rb_ensure(VALUE (*b_proc)(VALUE), VALUE data1, VALUE (*e_proc)(VALUE), VALUE data2)
+{
+    return rb_ec_ensure(GET_EC(), b_proc, data1, e_proc, data2);
 }
 
 static ID

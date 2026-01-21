@@ -26,9 +26,11 @@ describe "FrozenError#message" do
     object = Object.new
     object.freeze
 
+    msg_class = ruby_version_is("4.0") ? "Object" : "object"
+
     -> {
       def object.x; end
-    }.should raise_error(FrozenError, "can't modify frozen object: #{object}")
+    }.should raise_error(FrozenError, "can't modify frozen #{msg_class}: #{object}")
 
     object = [].freeze
     -> { object << nil }.should raise_error(FrozenError, "can't modify frozen Array: []")

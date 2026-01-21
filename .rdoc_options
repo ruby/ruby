@@ -10,8 +10,7 @@ rdoc_include:
 
 exclude:
 - \.gemspec\z
-
-generator_name: aliki
+- lib/set/subclass_compatible.rb
 
 autolink_excluded_words:
 - Box

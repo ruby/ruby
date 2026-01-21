@@ -635,6 +635,7 @@ class Gem::Installer
     @build_root          = options[:build_root]
 
     @build_args = options[:build_args]
+    @build_jobs = options[:build_jobs]
 
     @gem_home = @install_dir || user_install_dir || Gem.dir
 
@@ -803,7 +804,7 @@ class Gem::Installer
   # configure scripts and rakefiles or mkrf_conf files.
 
   def build_extensions
-    builder = Gem::Ext::Builder.new spec, build_args, Gem.target_rbconfig
+    builder = Gem::Ext::Builder.new spec, build_args, Gem.target_rbconfig, build_jobs
 
     builder.build_extensions
   end
@@ -938,6 +939,15 @@ class Gem::Installer
     @build_args ||= begin
                       require_relative "command"
                       Gem::Command.build_args
+                    end
+  end
+
+  def build_jobs
+    @build_jobs ||= begin
+                      require "etc"
+                      Etc.nprocessors + 1
+                    rescue LoadError
+                      1
                     end
   end
 

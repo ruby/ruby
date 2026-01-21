@@ -90,7 +90,7 @@ module Bundler
     end
 
     def gems_installed_for(definition)
-      count = definition.specs.count
+      count = definition.specs.count {|spec| spec.name != "bundler" }
       "#{count} #{count == 1 ? "gem" : "gems"} now installed"
     end
 

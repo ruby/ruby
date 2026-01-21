@@ -3,6 +3,7 @@
 return if RUBY_VERSION < "3.3" || RUBY_ENGINE != "ruby"
 
 require_relative "../test_helper"
+require "ripper"
 
 module Prism
   class RipperTest < TestCase
@@ -37,7 +38,9 @@ module Prism
     end
 
     # Skip these tests that we haven't implemented yet.
-    omitted = [
+    omitted_sexp_raw = [
+      "bom_leading_space.txt",
+      "bom_spaces.txt",
       "dos_endings.txt",
       "heredocs_with_fake_newlines.txt",
       "heredocs_with_ignored_newlines.txt",
@@ -58,14 +61,134 @@ module Prism
       "whitequark/slash_newline_in_heredocs.txt"
     ]
 
-    Fixture.each_for_current_ruby(except: incorrect | omitted) do |fixture|
-      define_method(fixture.test_name) { assert_ripper(fixture.read) }
+    omitted_lex = [
+      "comments.txt",
+      "heredoc_percent_q_newline_delimiter.txt",
+      "heredoc_with_escaped_newline_at_start.txt",
+      "heredocs_with_fake_newlines.txt",
+      "indented_file_end.txt",
+      "seattlerb/TestRubyParserShared.txt",
+      "seattlerb/class_comments.txt",
+      "seattlerb/module_comments.txt",
+      "seattlerb/parse_line_block_inline_comment_leading_newlines.txt",
+      "seattlerb/parse_line_block_inline_multiline_comment.txt",
+      "spanning_heredoc_newlines.txt",
+      "strings.txt",
+      "whitequark/dedenting_heredoc.txt",
+      "whitequark/procarg0.txt",
+    ]
+
+    Fixture.each_for_current_ruby(except: incorrect | omitted_sexp_raw) do |fixture|
+      define_method("#{fixture.test_name}_sexp_raw") { assert_ripper_sexp_raw(fixture.read) }
+    end
+
+    Fixture.each_for_current_ruby(except: incorrect | omitted_lex) do |fixture|
+      define_method("#{fixture.test_name}_lex") { assert_ripper_lex(fixture.read) }
+    end
+
+    module Events
+      attr_reader :events
+
+      def initialize(...)
+        super
+        @events = []
+      end
+
+      Prism::Translation::Ripper::PARSER_EVENTS.each do |event|
+        define_method(:"on_#{event}") do |*args|
+          @events << [event, *args]
+          super(*args)
+        end
+      end
+    end
+
+    class RipperEvents < Ripper
+      include Events
+    end
+
+    class PrismEvents < Translation::Ripper
+      include Events
+    end
+
+    class ObjectEvents < Translation::Ripper
+      OBJECT = BasicObject.new
+      Prism::Translation::Ripper::PARSER_EVENTS.each do |event|
+        define_method(:"on_#{event}") { |*args| OBJECT }
+      end
+    end
+
+    Fixture.each_for_current_ruby(except: incorrect) do |fixture|
+      define_method("#{fixture.test_name}_events") do
+        source = fixture.read
+        # Similar to test/ripper/assert_parse_files.rb in CRuby
+        object_events = ObjectEvents.new(source)
+        assert_nothing_raised { object_events.parse }
+      end
+    end
+
+    def test_events
+      source = "1 rescue 2"
+      ripper = RipperEvents.new(source)
+      prism = PrismEvents.new(source)
+      ripper.parse
+      prism.parse
+      # This makes sure that the content is the same. Ordering is not correct for now.
+      assert_equal(ripper.events.sort, prism.events.sort)
+    end
+
+    def test_lexer
+      lexer = Translation::Ripper::Lexer.new("foo")
+      expected = [[1, 0], :on_ident, "foo", Translation::Ripper::EXPR_CMDARG]
+
+      assert_equal([expected], lexer.lex)
+      assert_equal(expected, lexer.parse[0].to_a)
+      assert_equal(lexer.parse[0].to_a, lexer.scan[0].to_a)
+
+      assert_equal(%i[on_int on_sp on_op], Translation::Ripper::Lexer.new("1 +").lex.map(&:event))
+      assert_raise(SyntaxError) { Translation::Ripper::Lexer.new("1 +").lex(raise_errors: true) }
+    end
+
+    def test_tokenize
+      source = "foo;1;BAZ"
+      assert_equal(Ripper.tokenize(source), Translation::Ripper.tokenize(source))
+    end
+
+    # Check that the hardcoded values don't change without us noticing.
+    def test_internals
+      actual = Translation::Ripper.constants.select { |name| name.start_with?("EXPR_") }.sort
+      expected = Ripper.constants.select { |name| name.start_with?("EXPR_") }.sort
+
+      assert_equal(expected, actual)
+      expected.zip(actual).each do |ripper, prism|
+        assert_equal(Ripper.const_get(ripper), Translation::Ripper.const_get(prism))
+      end
     end
 
     private
 
-    def assert_ripper(source)
+    def assert_ripper_sexp_raw(source)
       assert_equal Ripper.sexp_raw(source), Prism::Translation::Ripper.sexp_raw(source)
+    end
+
+    def assert_ripper_lex(source)
+      prism = Translation::Ripper.lex(source)
+      ripper = Ripper.lex(source)
+
+      # Prism emits tokens by their order in the code, not in parse order
+      ripper.sort_by! { |elem| elem[0] }
+
+      [prism.size, ripper.size].max.times do |i|
+        expected = ripper[i]
+        actual = prism[i]
+
+        # Since tokens related to heredocs are not emitted in the same order,
+        # the state also doesn't line up.
+        if expected && actual && expected[1] == :on_heredoc_end && actual[1] == :on_heredoc_end
+          expected[3] = actual[3] = nil
+        end
+
+        assert_equal(expected, actual)
+      end
     end
   end
 end

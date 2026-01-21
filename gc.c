@@ -11,9 +11,6 @@
 
 **********************************************************************/
 
-#define rb_data_object_alloc rb_data_object_alloc
-#define rb_data_typed_object_alloc rb_data_typed_object_alloc
-
 #include "ruby/internal/config.h"
 #ifdef _WIN32
 # include "ruby/ruby.h"
@@ -131,6 +128,14 @@
 
 #include "builtin.h"
 #include "shape.h"
+
+// TODO: Don't export this function in modular GC, instead MMTk should figure out
+// how to combine GC thread backtrace with mutator thread backtrace.
+void
+rb_gc_print_backtrace(void)
+{
+    rb_print_backtrace(stderr);
+}
 
 unsigned int
 rb_gc_vm_lock(const char *file, int line)
@@ -402,7 +407,7 @@ void rb_vm_update_references(void *ptr);
 #define RMOVED(obj) ((struct RMoved *)(obj))
 
 #define TYPED_UPDATE_IF_MOVED(_objspace, _type, _thing) do { \
-    if (rb_gc_impl_object_moved_p((_objspace), (VALUE)(_thing))) {    \
+    if (gc_object_moved_p_internal((_objspace), (VALUE)(_thing))) {    \
         *(_type *)&(_thing) = (_type)gc_location_internal(_objspace, (VALUE)_thing); \
     } \
 } while (0)
@@ -484,21 +489,21 @@ rb_malloc_grow_capa(size_t current, size_t type_size)
     return new_capacity;
 }
 
-static inline struct rbimpl_size_mul_overflow_tag
+static inline struct rbimpl_size_overflow_tag
 size_mul_add_overflow(size_t x, size_t y, size_t z) /* x * y + z */
 {
-    struct rbimpl_size_mul_overflow_tag t = rbimpl_size_mul_overflow(x, y);
-    struct rbimpl_size_mul_overflow_tag u = rbimpl_size_add_overflow(t.right, z);
-    return (struct rbimpl_size_mul_overflow_tag) { t.left || u.left, u.right };
+    struct rbimpl_size_overflow_tag t = rbimpl_size_mul_overflow(x, y);
+    struct rbimpl_size_overflow_tag u = rbimpl_size_add_overflow(t.result, z);
+    return (struct rbimpl_size_overflow_tag) { t.overflowed || u.overflowed, u.result };
 }
 
-static inline struct rbimpl_size_mul_overflow_tag
+static inline struct rbimpl_size_overflow_tag
 size_mul_add_mul_overflow(size_t x, size_t y, size_t z, size_t w) /* x * y + z * w */
 {
-    struct rbimpl_size_mul_overflow_tag t = rbimpl_size_mul_overflow(x, y);
-    struct rbimpl_size_mul_overflow_tag u = rbimpl_size_mul_overflow(z, w);
-    struct rbimpl_size_mul_overflow_tag v = rbimpl_size_add_overflow(t.right, u.right);
-    return (struct rbimpl_size_mul_overflow_tag) { t.left || u.left || v.left, v.right };
+    struct rbimpl_size_overflow_tag t = rbimpl_size_mul_overflow(x, y);
+    struct rbimpl_size_overflow_tag u = rbimpl_size_mul_overflow(z, w);
+    struct rbimpl_size_overflow_tag v = rbimpl_size_add_overflow(t.result, u.result);
+    return (struct rbimpl_size_overflow_tag) { t.overflowed || u.overflowed || v.overflowed, v.result };
 }
 
 PRINTF_ARGS(NORETURN(static void gc_raise(VALUE, const char*, ...)), 2, 3);
@@ -506,9 +511,9 @@ PRINTF_ARGS(NORETURN(static void gc_raise(VALUE, const char*, ...)), 2, 3);
 static inline size_t
 size_mul_or_raise(size_t x, size_t y, VALUE exc)
 {
-    struct rbimpl_size_mul_overflow_tag t = rbimpl_size_mul_overflow(x, y);
-    if (LIKELY(!t.left)) {
-        return t.right;
+    struct rbimpl_size_overflow_tag t = rbimpl_size_mul_overflow(x, y);
+    if (LIKELY(!t.overflowed)) {
+        return t.result;
     }
     else if (rb_during_gc()) {
         rb_memerror();          /* or...? */
@@ -532,9 +537,9 @@ rb_size_mul_or_raise(size_t x, size_t y, VALUE exc)
 static inline size_t
 size_mul_add_or_raise(size_t x, size_t y, size_t z, VALUE exc)
 {
-    struct rbimpl_size_mul_overflow_tag t = size_mul_add_overflow(x, y, z);
-    if (LIKELY(!t.left)) {
-        return t.right;
+    struct rbimpl_size_overflow_tag t = size_mul_add_overflow(x, y, z);
+    if (LIKELY(!t.overflowed)) {
+        return t.result;
     }
     else if (rb_during_gc()) {
         rb_memerror();          /* or...? */
@@ -559,9 +564,9 @@ rb_size_mul_add_or_raise(size_t x, size_t y, size_t z, VALUE exc)
 static inline size_t
 size_mul_add_mul_or_raise(size_t x, size_t y, size_t z, size_t w, VALUE exc)
 {
-    struct rbimpl_size_mul_overflow_tag t = size_mul_add_mul_overflow(x, y, z, w);
-    if (LIKELY(!t.left)) {
-        return t.right;
+    struct rbimpl_size_overflow_tag t = size_mul_add_mul_overflow(x, y, z, w);
+    if (LIKELY(!t.overflowed)) {
+        return t.result;
     }
     else if (rb_during_gc()) {
         rb_memerror();          /* or...? */
@@ -637,9 +642,11 @@ typedef struct gc_function_map {
     void (*mark_and_move)(void *objspace_ptr, VALUE *ptr);
     void (*mark_and_pin)(void *objspace_ptr, VALUE obj);
     void (*mark_maybe)(void *objspace_ptr, VALUE obj);
-    void (*mark_weak)(void *objspace_ptr, VALUE *ptr);
-    void (*remove_weak)(void *objspace_ptr, VALUE parent_obj, VALUE *ptr);
+    // Weak references
+    void (*declare_weak_references)(void *objspace_ptr, VALUE obj);
+    bool (*handle_weak_references_alive_p)(void *objspace_ptr, VALUE obj);
     // Compaction
+    void (*register_pinning_obj)(void *objspace_ptr, VALUE obj);
     bool (*object_moved_p)(void *objspace_ptr, VALUE obj);
     VALUE (*location)(void *objspace_ptr, VALUE value);
     // Write barriers
@@ -811,9 +818,11 @@ ruby_modular_gc_init(void)
     load_modular_gc_func(mark_and_move);
     load_modular_gc_func(mark_and_pin);
     load_modular_gc_func(mark_maybe);
-    load_modular_gc_func(mark_weak);
-    load_modular_gc_func(remove_weak);
+    // Weak references
+    load_modular_gc_func(declare_weak_references);
+    load_modular_gc_func(handle_weak_references_alive_p);
     // Compaction
+    load_modular_gc_func(register_pinning_obj);
     load_modular_gc_func(object_moved_p);
     load_modular_gc_func(location);
     // Write barriers
@@ -891,9 +900,11 @@ ruby_modular_gc_init(void)
 # define rb_gc_impl_mark_and_move rb_gc_functions.mark_and_move
 # define rb_gc_impl_mark_and_pin rb_gc_functions.mark_and_pin
 # define rb_gc_impl_mark_maybe rb_gc_functions.mark_maybe
-# define rb_gc_impl_mark_weak rb_gc_functions.mark_weak
-# define rb_gc_impl_remove_weak rb_gc_functions.remove_weak
+// Weak references
+# define rb_gc_impl_declare_weak_references rb_gc_functions.declare_weak_references
+# define rb_gc_impl_handle_weak_references_alive_p rb_gc_functions.handle_weak_references_alive_p
 // Compaction
+# define rb_gc_impl_register_pinning_obj rb_gc_functions.register_pinning_obj
 # define rb_gc_impl_object_moved_p rb_gc_functions.object_moved_p
 # define rb_gc_impl_location rb_gc_functions.location
 // Write barriers
@@ -1001,7 +1012,10 @@ newobj_of(rb_ractor_t *cr, VALUE klass, VALUE flags, shape_id_t shape_id, bool w
     if (UNLIKELY(rb_gc_event_hook_required_p(RUBY_INTERNAL_EVENT_NEWOBJ))) {
         int lev = RB_GC_VM_LOCK_NO_BARRIER();
         {
-            memset((char *)obj + RVALUE_SIZE, 0, rb_gc_obj_slot_size(obj) - RVALUE_SIZE);
+            size_t slot_size = rb_gc_obj_slot_size(obj);
+            if (slot_size > RVALUE_SIZE) {
+                memset((char *)obj + RVALUE_SIZE, 0, slot_size - RVALUE_SIZE);
+            }
 
             /* We must disable GC here because the callback could call xmalloc
              * which could potentially trigger a GC, and a lot of code is unsafe
@@ -1046,6 +1060,12 @@ rb_wb_protected_newobj_of(rb_execution_context_t *ec, VALUE klass, VALUE flags, 
     return newobj_of(rb_ec_ractor_ptr(ec), klass, flags, shape_id, TRUE, size);
 }
 
+void
+rb_gc_register_pinning_obj(VALUE obj)
+{
+    rb_gc_impl_register_pinning_obj(rb_gc_get_objspace(), obj);
+}
+
 #define UNEXPECTED_NODE(func) \
     rb_bug(#func"(): GC does not handle T_NODE 0x%x(%p) 0x%"PRIxVALUE, \
            BUILTIN_TYPE(obj), (void*)(obj), RBASIC(obj)->flags)
@@ -1066,6 +1086,8 @@ rb_data_object_wrap(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_FU
     if (klass) rb_data_object_check(klass);
     VALUE obj = newobj_of(GET_RACTOR(), klass, T_DATA, ROOT_SHAPE_ID, !dmark, sizeof(struct RTypedData));
 
+    rb_gc_register_pinning_obj(obj);
+
     struct RData *data = (struct RData *)obj;
     data->dmark = dmark;
     data->dfree = dfree;
@@ -1082,6 +1104,10 @@ rb_data_object_zalloc(VALUE klass, size_t size, RUBY_DATA_FUNC dmark, RUBY_DATA_
     return obj;
 }
 
+#define RTYPEDDATA_EMBEDDED_P rbimpl_typeddata_embedded_p
+#define RB_DATA_TYPE_EMBEDDABLE_P(type) ((type)->flags & RUBY_TYPED_EMBEDDABLE)
+#define RTYPEDDATA_EMBEDDABLE_P(obj) RB_DATA_TYPE_EMBEDDABLE_P(RTYPEDDATA_TYPE(obj))
+
 static VALUE
 typed_data_alloc(VALUE klass, VALUE typed_flag, void *datap, const rb_data_type_t *type, size_t size)
 {
@@ -1089,6 +1115,8 @@ typed_data_alloc(VALUE klass, VALUE typed_flag, void *datap, const rb_data_type_
     if (klass) rb_data_object_check(klass);
     bool wb_protected = (type->flags & RUBY_FL_WB_PROTECTED) || !type->function.dmark;
     VALUE obj = newobj_of(GET_RACTOR(), klass, T_DATA | RUBY_TYPED_FL_IS_TYPED_DATA, ROOT_SHAPE_ID, wb_protected, size);
+
+    rb_gc_register_pinning_obj(obj);
 
     struct RTypedData *data = (struct RTypedData *)obj;
     data->fields_obj = 0;
@@ -1101,7 +1129,7 @@ typed_data_alloc(VALUE klass, VALUE typed_flag, void *datap, const rb_data_type_
 VALUE
 rb_data_typed_object_wrap(VALUE klass, void *datap, const rb_data_type_t *type)
 {
-    if (UNLIKELY(type->flags & RUBY_TYPED_EMBEDDABLE)) {
+    if (UNLIKELY(RB_DATA_TYPE_EMBEDDABLE_P(type))) {
         rb_raise(rb_eTypeError, "Cannot wrap an embeddable TypedData");
     }
 
@@ -1111,7 +1139,7 @@ rb_data_typed_object_wrap(VALUE klass, void *datap, const rb_data_type_t *type)
 VALUE
 rb_data_typed_object_zalloc(VALUE klass, size_t size, const rb_data_type_t *type)
 {
-    if (type->flags & RUBY_TYPED_EMBEDDABLE) {
+    if (RB_DATA_TYPE_EMBEDDABLE_P(type)) {
         if (!(type->flags & RUBY_TYPED_FREE_IMMEDIATELY)) {
             rb_raise(rb_eTypeError, "Embeddable TypedData must be freed immediately");
         }
@@ -1137,7 +1165,7 @@ rb_objspace_data_type_memsize(VALUE obj)
         const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
         const void *ptr = RTYPEDDATA_GET_DATA(obj);
 
-        if (RTYPEDDATA_TYPE(obj)->flags & RUBY_TYPED_EMBEDDABLE && !RTYPEDDATA_EMBEDDED_P(obj)) {
+        if (RTYPEDDATA_EMBEDDABLE_P(obj) && !RTYPEDDATA_EMBEDDED_P(obj)) {
 #ifdef HAVE_MALLOC_USABLE_SIZE
             size += malloc_usable_size((void *)ptr);
 #endif
@@ -1159,6 +1187,58 @@ rb_objspace_data_type_name(VALUE obj)
     }
     else {
         return 0;
+    }
+}
+
+void
+rb_gc_declare_weak_references(VALUE obj)
+{
+    rb_gc_impl_declare_weak_references(rb_gc_get_objspace(), obj);
+}
+
+bool
+rb_gc_handle_weak_references_alive_p(VALUE obj)
+{
+    if (SPECIAL_CONST_P(obj)) return true;
+
+    return rb_gc_impl_handle_weak_references_alive_p(rb_gc_get_objspace(), obj);
+}
+
+void
+rb_gc_handle_weak_references(VALUE obj)
+{
+    switch (BUILTIN_TYPE(obj)) {
+      case T_DATA:
+        if (RTYPEDDATA_P(obj)) {
+            const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
+
+            if (type->function.handle_weak_references) {
+                (type->function.handle_weak_references)(RTYPEDDATA_GET_DATA(obj));
+            }
+            else {
+                rb_bug(
+                    "rb_gc_handle_weak_references: TypedData %s does not implement handle_weak_references",
+                    RTYPEDDATA_TYPE(obj)->wrap_struct_name
+                );
+            }
+        }
+        else {
+           rb_bug("rb_gc_handle_weak_references: unknown T_DATA");
+        }
+        break;
+
+      case T_IMEMO: {
+        GC_ASSERT(imemo_type(obj) == imemo_callcache);
+
+        struct rb_callcache *cc = (struct rb_callcache *)obj;
+        if (!rb_gc_handle_weak_references_alive_p(cc->klass)) {
+            vm_cc_invalidate(cc);
+        }
+
+        break;
+      }
+      default:
+        rb_bug("rb_gc_handle_weak_references: type not supported\n");
     }
 }
 
@@ -1200,7 +1280,7 @@ rb_data_free(void *objspace, VALUE obj)
             }
             else if (free_immediately) {
                 (*dfree)(data);
-                if (RTYPEDDATA_TYPE(obj)->flags & RUBY_TYPED_EMBEDDABLE && !RTYPEDDATA_EMBEDDED_P(obj)) {
+                if (RTYPEDDATA_EMBEDDABLE_P(obj) && !RTYPEDDATA_EMBEDDED_P(obj)) {
                     xfree(data);
                 }
 
@@ -1537,34 +1617,26 @@ os_obj_of(VALUE of)
  *  Ruby process. If <i>module</i> is specified, calls the block
  *  for only those classes or modules that match (or are a subclass of)
  *  <i>module</i>. Returns the number of objects found. Immediate
- *  objects (<code>Fixnum</code>s, <code>Symbol</code>s
- *  <code>true</code>, <code>false</code>, and <code>nil</code>) are
- *  never returned. In the example below, #each_object returns both
- *  the numbers we defined and several constants defined in the Math
- *  module.
+ *  objects (such as <code>Fixnum</code>s, static <code>Symbol</code>s
+ *  <code>true</code>, <code>false</code> and <code>nil</code>) are
+ *  never returned.
  *
  *  If no block is given, an enumerator is returned instead.
  *
- *     a = 102.7
- *     b = 95       # Won't be returned
- *     c = 12345678987654321
- *     count = ObjectSpace.each_object(Numeric) {|x| p x }
+ *     Job = Class.new
+ *     jobs = [Job.new, Job.new]
+ *     count = ObjectSpace.each_object(Job) {|x| p x }
  *     puts "Total count: #{count}"
  *
  *  <em>produces:</em>
  *
- *     12345678987654321
- *     102.7
- *     2.71828182845905
- *     3.14159265358979
- *     2.22044604925031e-16
- *     1.7976931348623157e+308
- *     2.2250738585072e-308
- *     Total count: 7
+ *    #<Job:0x000000011d6cbbf0>
+ *    #<Job:0x000000011d6cbc68>
+ *     Total count: 2
  *
- *  Due to a current known Ractor implementation issue, this method will not yield
- *  Ractor-unshareable objects in multi-Ractor mode (when
- *  <code>Ractor.new</code> has been called within the process at least once).
+ *  Due to a current Ractor implementation issue, this method does not yield
+ *  Ractor-unshareable objects when the process is in multi-Ractor mode. Multi-ractor
+ *  mode is enabled when <code>Ractor.new</code> has been called for the first time.
  *  See https://bugs.ruby-lang.org/issues/19387 for more information.
  *
  *     a = 12345678987654321 # shareable
@@ -1637,63 +1709,68 @@ rb_gc_copy_finalizer(VALUE dest, VALUE obj)
 
 /*
  *  call-seq:
- *     ObjectSpace.define_finalizer(obj, aProc=proc())
+ *     ObjectSpace.define_finalizer(obj) {|id| ... } -> array
+ *     ObjectSpace.define_finalizer(obj, finalizer) -> array
  *
- *  Adds <i>aProc</i> as a finalizer, to be called after <i>obj</i>
- *  was destroyed. The object ID of the <i>obj</i> will be passed
- *  as an argument to <i>aProc</i>. If <i>aProc</i> is a lambda or
- *  method, make sure it can be called with a single argument.
+ *  Adds a new finalizer for +obj+ that is called when +obj+ is destroyed
+ *  by the garbage collector or when Ruby shuts down (which ever comes first).
  *
- *  The return value is an array <code>[0, aProc]</code>.
+ *  With a block given, uses the block as the callback. Without a block given,
+ *  uses a callable object +finalizer+ as the callback. The callback is called
+ *  when +obj+ is destroyed with a single argument +id+ which is the object
+ *  ID of +obj+ (see Object#object_id).
  *
- *  The two recommended patterns are to either create the finaliser proc
- *  in a non-instance method where it can safely capture the needed state,
- *  or to use a custom callable object that stores the needed state
- *  explicitly as instance variables.
+ *  The return value is an array <code>[0, callback]</code>, where +callback+
+ *  is a Proc created from the block if one was given or +finalizer+ otherwise.
+ *
+ *  Note that defining a finalizer in an instance method of the object may prevent
+ *  the object from being garbage collected since if the block or +finalizer+ refers
+ *  to +obj+ then +obj+ will never be reclaimed by the garbage collector. For example,
+ *  the following script demonstrates the issue:
  *
  *      class Foo
- *        def initialize(data_needed_for_finalization)
- *          ObjectSpace.define_finalizer(self, self.class.create_finalizer(data_needed_for_finalization))
- *        end
- *
- *        def self.create_finalizer(data_needed_for_finalization)
- *          proc {
- *            puts "finalizing #{data_needed_for_finalization}"
- *          }
+ *        def define_final
+ *          ObjectSpace.define_finalizer(self) do |id|
+ *            puts "Running finalizer for #{id}!"
+ *          end
  *        end
  *      end
  *
- *      class Bar
- *       class Remover
- *          def initialize(data_needed_for_finalization)
- *            @data_needed_for_finalization = data_needed_for_finalization
- *          end
+ *      obj = Foo.new
+ *      obj.define_final
  *
+ *  There are two patterns to solve this issue:
+ *
+ *  - Create the finalizer in a non-instance method so it can safely capture
+ *    the needed state:
+ *
+ *      class Foo
+ *        def define_final
+ *          ObjectSpace.define_finalizer(self, self.class.create_finalizer)
+ *        end
+ *
+ *        def self.create_finalizer
+ *          proc do |id|
+ *            puts "Running finalizer for #{id}!"
+ *          end
+ *        end
+ *      end
+ *
+ *  - Use a callable object:
+ *
+ *      class Foo
+ *        class Finalizer
  *          def call(id)
- *            puts "finalizing #{@data_needed_for_finalization}"
+ *            puts "Running finalizer for #{id}!"
  *          end
  *        end
  *
- *        def initialize(data_needed_for_finalization)
- *          ObjectSpace.define_finalizer(self, Remover.new(data_needed_for_finalization))
+ *        def define_final
+ *          ObjectSpace.define_finalizer(self, Finalizer.new)
  *        end
  *      end
  *
- *  Note that if your finalizer references the object to be
- *  finalized it will never be run on GC, although it will still be
- *  run at exit. You will get a warning if you capture the object
- *  to be finalized as the receiver of the finalizer.
- *
- *      class CapturesSelf
- *        def initialize(name)
- *          ObjectSpace.define_finalizer(self, proc {
- *            # this finalizer will only be run on exit
- *            puts "finalizing #{name}"
- *          })
- *        end
- *      end
- *
- *  Also note that finalization can be unpredictable and is never guaranteed
+ *  Note that finalization can be unpredictable and is never guaranteed
  *  to be run except on exit.
  */
 
@@ -2061,6 +2138,7 @@ obj_free_object_id(VALUE obj)
 void
 rb_gc_obj_free_vm_weak_references(VALUE obj)
 {
+    ASSUME(!RB_SPECIAL_CONST_P(obj));
     obj_free_object_id(obj);
 
     if (rb_obj_gen_fields_p(obj)) {
@@ -2122,14 +2200,9 @@ rb_gc_obj_free_vm_weak_references(VALUE obj)
 static VALUE
 id2ref(VALUE objid)
 {
-#if SIZEOF_LONG == SIZEOF_VOIDP
-#define NUM2PTR(x) NUM2ULONG(x)
-#elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
-#define NUM2PTR(x) NUM2ULL(x)
-#endif
     objid = rb_to_int(objid);
     if (FIXNUM_P(objid) || rb_big_size(objid) <= SIZEOF_VOIDP) {
-        VALUE ptr = NUM2PTR(objid);
+        VALUE ptr = (VALUE)NUM2PTR(objid);
         if (SPECIAL_CONST_P(ptr)) {
             if (ptr == Qtrue) return Qtrue;
             if (ptr == Qfalse) return Qfalse;
@@ -2393,9 +2466,8 @@ rb_obj_memsize_of(VALUE obj)
         break;
 
       case T_STRUCT:
-        if ((RBASIC(obj)->flags & RSTRUCT_EMBED_LEN_MASK) == 0 &&
-            RSTRUCT(obj)->as.heap.ptr) {
-            size += sizeof(VALUE) * RSTRUCT_LEN(obj);
+        if (RSTRUCT_EMBED_LEN(obj) == 0) {
+            size += sizeof(VALUE) * RSTRUCT_LEN_RAW(obj);
         }
         break;
 
@@ -2658,29 +2730,6 @@ rb_gc_mark_maybe(VALUE obj)
     gc_mark_maybe_internal(obj);
 }
 
-void
-rb_gc_mark_weak(VALUE *ptr)
-{
-    if (RB_SPECIAL_CONST_P(*ptr)) return;
-
-    rb_vm_t *vm = GET_VM();
-    void *objspace = vm->gc.objspace;
-    if (LIKELY(vm->gc.mark_func_data == NULL)) {
-        GC_ASSERT(rb_gc_impl_during_gc_p(objspace));
-
-        rb_gc_impl_mark_weak(objspace, ptr);
-    }
-    else {
-        GC_ASSERT(!rb_gc_impl_during_gc_p(objspace));
-    }
-}
-
-void
-rb_gc_remove_weak(VALUE parent_obj, VALUE *ptr)
-{
-    rb_gc_impl_remove_weak(rb_gc_get_objspace(), parent_obj, ptr);
-}
-
 ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(static void each_location(register const VALUE *x, register long n, void (*cb)(VALUE, void *), void *data));
 static void
 each_location(register const VALUE *x, register long n, void (*cb)(VALUE, void *), void *data)
@@ -2875,6 +2924,16 @@ gc_mark_machine_stack_location_maybe(VALUE obj, void *data)
         each_location_ptr(fake_frame_start, fake_frame_end, gc_mark_maybe_each_location, NULL);
     }
 #endif
+}
+
+static bool
+gc_object_moved_p_internal(void *objspace, VALUE obj)
+{
+    if (SPECIAL_CONST_P(obj)) {
+        return false;
+    }
+
+    return rb_gc_impl_object_moved_p(objspace, obj);
 }
 
 static VALUE
@@ -3114,11 +3173,19 @@ gc_mark_classext_iclass(rb_classext_t *ext, bool prime, VALUE box_value, void *a
 #define TYPED_DATA_REFS_OFFSET_LIST(d) (size_t *)(uintptr_t)RTYPEDDATA_TYPE(d)->function.dmark
 
 void
+rb_gc_move_obj_during_marking(VALUE from, VALUE to)
+{
+    if (rb_obj_using_gen_fields_table_p(to)) {
+        rb_mark_generic_ivar(from);
+    }
+}
+
+void
 rb_gc_mark_children(void *objspace, VALUE obj)
 {
     struct gc_mark_classext_foreach_arg foreach_args;
 
-    if (rb_obj_gen_fields_p(obj)) {
+    if (rb_obj_using_gen_fields_table_p(obj)) {
         rb_mark_generic_ivar(obj);
     }
 
@@ -3655,7 +3722,7 @@ check_id_table_move(VALUE value, void *data)
 {
     void *objspace = (void *)data;
 
-    if (rb_gc_impl_object_moved_p(objspace, (VALUE)value)) {
+    if (gc_object_moved_p_internal(objspace, (VALUE)value)) {
         return ID_TABLE_REPLACE;
     }
 
@@ -3699,7 +3766,7 @@ update_id_table(VALUE *value, void *data, int existing)
 {
     void *objspace = (void *)data;
 
-    if (rb_gc_impl_object_moved_p(objspace, (VALUE)*value)) {
+    if (gc_object_moved_p_internal(objspace, (VALUE)*value)) {
         *value = gc_location_internal(objspace, (VALUE)*value);
     }
 
@@ -3742,11 +3809,11 @@ update_const_tbl_i(VALUE value, void *objspace)
 {
     rb_const_entry_t *ce = (rb_const_entry_t *)value;
 
-    if (rb_gc_impl_object_moved_p(objspace, ce->value)) {
+    if (gc_object_moved_p_internal(objspace, ce->value)) {
         ce->value = gc_location_internal(objspace, ce->value);
     }
 
-    if (rb_gc_impl_object_moved_p(objspace, ce->file)) {
+    if (gc_object_moved_p_internal(objspace, ce->file)) {
         ce->file = gc_location_internal(objspace, ce->file);
     }
 
@@ -4781,6 +4848,10 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
             }
             break;
           case T_STRING: {
+            APPEND_F("[%s%s] ",
+                     C(FL_TEST(obj, RSTRING_FSTR), "F"),
+                     C(RB_OBJ_FROZEN(obj), "R"));
+
             if (STR_SHARED_P(obj)) {
                 APPEND_F(" [shared] len: %ld", RSTRING_LEN(obj));
             }
@@ -5376,11 +5447,11 @@ ruby_mimcalloc(size_t num, size_t size)
 {
     void *mem;
 #if CALC_EXACT_MALLOC_SIZE
-    struct rbimpl_size_mul_overflow_tag t = rbimpl_size_mul_overflow(num, size);
-    if (UNLIKELY(t.left)) {
+    struct rbimpl_size_overflow_tag t = rbimpl_size_mul_overflow(num, size);
+    if (UNLIKELY(t.overflowed)) {
         return NULL;
     }
-    size = t.right + sizeof(struct malloc_obj_info);
+    size = t.result + sizeof(struct malloc_obj_info);
     mem = calloc1(size);
     if (!mem) {
         return NULL;

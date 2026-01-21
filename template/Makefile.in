@@ -114,6 +114,9 @@ JIT_CARGO_SUPPORT=@JIT_CARGO_SUPPORT@
 CARGO_TARGET_DIR=@abs_top_builddir@/target
 CARGO_BUILD_ARGS=@CARGO_BUILD_ARGS@
 ZJIT_TEST_FEATURES=@ZJIT_TEST_FEATURES@
+JIT_RUST_FLAGS=@JIT_RUST_FLAGS@
+RUSTC_FLAGS=@RUSTC_FLAGS@
+RLIB_DIR=@RLIB_DIR@
 RUST_LIB=@RUST_LIB@
 RUST_LIBOBJ = $(RUST_LIB:.a=.@OBJEXT@)
 LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@
@@ -337,7 +340,8 @@ $(LIBRUBY_SO):
 		@-[ -n "$(EXTSTATIC)" ] || $(PRE_LIBRUBY_UPDATE)
 		$(ECHO) linking shared-library $@
 		$(Q) $(LDSHARED) $(DLDFLAGS) $(OBJS) $(DLDOBJS) $(SOLIBS) $(EXTSOLIBS) $(OUTFLAG)$@
-		-$(Q) $(OBJCOPY) -w -L '$(SYMBOL_PREFIX)Init_*' -L '$(SYMBOL_PREFIX)ruby_static_id_*' \
+		-$(Q) $(OBJCOPY) -w -L '$(SYMBOL_PREFIX)Init_*' -L '$(SYMBOL_PREFIX)InitVM_*' \
+			-L '$(SYMBOL_PREFIX)ruby_static_id_*' \
 			-L '$(SYMBOL_PREFIX)*_threadptr_*' -L '$(SYMBOL_PREFIX)*_ec_*' $@
 		$(Q) $(POSTLINK)
 		@-$(MINIRUBY) -e 'so, *aliases = ARGV; aliases.uniq!; aliases.delete(File.basename(so)); \

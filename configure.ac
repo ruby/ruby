@@ -69,6 +69,7 @@ dnl 93(bright yellow) is copied from .github/workflows/mingw.yml
 AC_ARG_VAR([cflags], [additional CFLAGS (ignored when CFLAGS is given)])dnl
 AC_ARG_VAR([cppflags], [additional CPPFLAGS (ignored when CPPFLAGS is given)])dnl
 AC_ARG_VAR([cxxflags], [additional CXXFLAGS (ignored when CXXFLAGS is given)])dnl
+AC_ARG_VAR([rustc_flags], [additional RUSTC_FLAGS])dnl
 
 [begin]_group "environment section" && {
 HAVE_BASERUBY=yes
@@ -82,9 +83,17 @@ AC_ARG_WITH(baseruby,
 	],
 	[
 		AC_PATH_PROG([BASERUBY], [ruby], [false])
+		HAVE_BASERUBY=
 	])
-AS_IF([test "$HAVE_BASERUBY" != no], [
-    RUBYOPT=- $BASERUBY --disable=gems -rerb -rfileutils -rtempfile "${tooldir}/missing-baseruby.bat" || HAVE_BASERUBY=no
+AS_IF([test "$HAVE_BASERUBY" = no], [
+    # --without-baseruby
+], [error=`RUBYOPT=- $BASERUBY --disable=gems "${tooldir}/missing-baseruby.bat" --verbose 2>&1`], [
+    HAVE_BASERUBY=yes
+], [test "$HAVE_BASERUBY" = ""], [ # no --with-baseruby option
+    AC_MSG_WARN($error)            # just warn and continue
+    HAVE_BASERUBY=no
+], [                               # the ruby given by --with-baseruby is too old
+    AC_MSG_ERROR($error)           # bail out
 ])
 AS_IF([test "${HAVE_BASERUBY:=no}" != no], [
     AS_CASE(["$build_os"], [mingw*], [
@@ -537,7 +546,6 @@ AS_CASE(["$target_os"],
     ])
     rb_cv_binary_elf=no
     : ${enable_shared=yes}
-    AS_IF([$WINDRES --version | grep LLVM > /dev/null], [USE_LLVM_WINDRES=yes], [USE_LLVM_WINDRES=no])
     ],
 [hiuxmpp*], [AC_DEFINE(__HIUX_MPP__)])    # by TOYODA Eizi <toyoda@npd.kishou.go.jp>
 
@@ -3700,6 +3708,7 @@ AS_CASE("$enable_shared", [yes], [
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-current_version $(RUBY_PROGRAM_VERSION)'
 	AS_IF([test "$visibility_option" = ld], [
 	    LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-Wl,-unexported_symbol,_Init_*'
+	    LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-Wl,-unexported_symbol,_InitVM_*'
 	    LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-Wl,-unexported_symbol,_ruby_static_id_*'
 	    LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-Wl,-unexported_symbol,*_threadptr_*'
 	])
@@ -3896,7 +3905,6 @@ AC_SUBST(INSTALL_STATIC_LIBRARY)
 
 [begin]_group "JIT section" && {
 AC_CHECK_PROG(RUSTC, [rustc], [rustc], [no]) dnl no ac_tool_prefix
-AC_CHECK_TOOL(CARGO, [cargo], [no])
 
 dnl check if rustc is recent enough to build YJIT (rustc >= 1.58.0)
 JIT_RUSTC_OK=no
@@ -3958,16 +3966,12 @@ AC_ARG_ENABLE(zjit,
     [AS_CASE(["$JIT_TARGET_OK"],
         [yes], [
             rb_zjit_build_possible=no
-            AC_MSG_CHECKING([possible to build ZJIT])dnl only checked when --enable-zjit is not specified
+            AC_MSG_CHECKING([prerequisites for ZJIT])dnl only checked when --enable-zjit is not specified
             # Fails in case rustc target doesn't match ruby target. Can happen on Rosetta, for example.
             # 1.85.0 is the first stable version that supports the 2024 edition.
             AS_IF([test "$RUSTC" != "no" && echo "#[cfg(target_arch = \"$JIT_TARGET_ARCH\")] fn main() {}" |
                     $RUSTC - --edition=2024 --emit asm=/dev/null 2>/dev/null],
-                AS_IF([test "$gnumake" = "yes" -a  \( "$YJIT_SUPPORT" = "no" -o "$CARGO" != "no" \)], [
-                    # When only building ZJIT, we don't need cargo; it's required for YJIT+ZJIT build.
-                    # Assume that if rustc is new enough, then cargo is also.
-                    # TODO(alan): Get rid of dependency on cargo in YJIT+ZJIT build. Cargo's offline mode
-                    #             still too unreliable: https://github.com/rust-lang/cargo/issues/10352
+                AS_IF([test "$gnumake" = "yes"], [
                     rb_zjit_build_possible=yes
                 ])
             )
@@ -4053,8 +4057,24 @@ AS_CASE(["${ZJIT_SUPPORT}"],
     AC_DEFINE(USE_ZJIT, 0)
 ])
 
-# if YJIT+ZJIT release build, or any build that requires Cargo
-AS_IF([test x"$JIT_CARGO_SUPPORT" != "xno" -o \( x"$YJIT_SUPPORT" != "xno" -a x"$ZJIT_SUPPORT" != "xno" \)], [
+RUSTC_FLAGS='-g -C lto=thin -C opt-level=3 -C overflow-checks=on'
+AS_IF([test -n "${rustc_flags}"], [
+    RUSTC_FLAGS="${RUSTC_FLAGS} ${rustc_flags}"
+])
+
+JIT_RUST_FLAGS='--crate-type=staticlib --cfg feature=\"stats_allocator\"'
+RLIB_DIR=
+AS_CASE(["$JIT_CARGO_SUPPORT:$YJIT_SUPPORT:$ZJIT_SUPPORT"],
+[no:yes:yes], [ # release build of YJIT+ZJIT
+    YJIT_LIBS=
+    ZJIT_LIBS=
+    JIT_RUST_FLAGS="--crate-type=rlib"
+    RLIB_DIR="target/release"
+    RUST_LIB="target/release/libruby.a"
+],
+[no:*], [],
+[ # JIT_CARGO_SUPPORT not "no" -- cargo required.
+    AC_CHECK_TOOL(CARGO, [cargo], [no])
     AS_IF([test x"$CARGO" = "xno"],
         AC_MSG_ERROR([this build configuration requires cargo. Installation instructions available at https://www.rust-lang.org/tools/install]))
 
@@ -4098,6 +4118,8 @@ AS_IF([test -n "$RUST_LIB"], [
 
 dnl These variables end up in ::RbConfig::CONFIG
 AC_SUBST(RUSTC)dnl Rust compiler command
+AC_SUBST(JIT_RUST_FLAGS)dnl the common rustc flags for JIT crates such as zjit
+AC_SUBST(RUSTC_FLAGS)dnl user-configurable rustc compiler flags
 AC_SUBST(CARGO)dnl Cargo command for Rust builds
 AC_SUBST(CARGO_BUILD_ARGS)dnl for selecting Rust build profiles
 AC_SUBST(YJIT_SUPPORT)dnl what flavor of YJIT the Ruby build includes
@@ -4108,6 +4130,7 @@ AC_SUBST(ZJIT_LIBS)dnl path to the .a library of ZJIT
 AC_SUBST(ZJIT_OBJ)dnl for optionally building the C parts of ZJIT
 AC_SUBST(JIT_OBJ)dnl for optionally building C glue code for Rust FFI
 AC_SUBST(RUST_LIB)dnl path to the rust .a library that contains either or both JITs
+AC_SUBST(RLIB_DIR)dnl subpath of build directory for .rlib files
 AC_SUBST(JIT_CARGO_SUPPORT)dnl "no" or the cargo profile of the rust code
 }
 
@@ -4390,7 +4413,6 @@ AC_SUBST(MINIOBJS)
 AC_SUBST(THREAD_MODEL)
 AC_SUBST(COROUTINE_TYPE, ${coroutine_type})
 AC_SUBST(PLATFORM_DIR)
-AC_SUBST(USE_LLVM_WINDRES)
 
 firstmf=`echo $FIRSTMAKEFILE | sed 's/:.*//'`
 firsttmpl=`echo $FIRSTMAKEFILE | sed 's/.*://'`
@@ -4829,6 +4851,7 @@ config_summary "strip command"       "$STRIP"
 config_summary "install doc"         "$DOCTARGETS"
 config_summary "YJIT support"        "$YJIT_SUPPORT"
 config_summary "ZJIT support"        "$ZJIT_SUPPORT"
+config_summary "RUSTC_FLAGS"         "$RUSTC_FLAGS"
 config_summary "man page type"       "$MANTYPE"
 config_summary "search path"         "$search_path"
 config_summary "static-linked-ext"   ${EXTSTATIC:+"yes"}

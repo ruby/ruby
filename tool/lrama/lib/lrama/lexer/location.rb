@@ -69,15 +69,15 @@ module Lrama
       def generate_error_message(error_message)
         <<~ERROR.chomp
           #{path}:#{first_line}:#{first_column}: #{error_message}
-          #{line_with_carets}
+          #{error_with_carets}
         ERROR
       end
 
       # @rbs () -> String
-      def line_with_carets
+      def error_with_carets
         <<~TEXT
-          #{text}
-          #{carets}
+          #{formatted_first_lineno} | #{text}
+          #{line_number_padding} | #{carets_line}
         TEXT
       end
 
@@ -89,13 +89,30 @@ module Lrama
       end
 
       # @rbs () -> String
-      def blanks
-        (text[0...first_column] or raise "#{first_column} is invalid").gsub(/[^\t]/, ' ')
+      def carets_line
+        leading_whitespace + highlight_marker
       end
 
       # @rbs () -> String
-      def carets
-        blanks + '^' * (last_column - first_column)
+      def leading_whitespace
+        (text[0...first_column] or raise "Invalid first_column: #{first_column}")
+          .gsub(/[^\t]/, ' ')
+      end
+
+      # @rbs () -> String
+      def highlight_marker
+        length = last_column - first_column
+        '^' + '~' * [0, length - 1].max
+      end
+
+      # @rbs () -> String
+      def formatted_first_lineno
+        first_line.to_s.rjust(4)
+      end
+
+      # @rbs () -> String
+      def line_number_padding
+        ' ' * formatted_first_lineno.length
       end
 
       # @rbs () -> String

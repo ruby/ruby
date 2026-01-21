@@ -268,24 +268,16 @@ MAKE_LINK = $(MINIRUBY) -rfileutils -e "include FileUtils::Verbose" \
 
 # For release builds
 YJIT_RUSTC_ARGS = --crate-name=yjit \
-	--crate-type=staticlib \
+	$(JIT_RUST_FLAGS) \
+	$(RUSTC_FLAGS) \
 	--edition=2021 \
-	--cfg 'feature="stats_allocator"' \
-	-g \
-	-C lto=thin \
-	-C opt-level=3 \
-	-C overflow-checks=on \
 	'--out-dir=$(CARGO_TARGET_DIR)/release/' \
 	'$(top_srcdir)/yjit/src/lib.rs'
 
 ZJIT_RUSTC_ARGS = --crate-name=zjit \
-	--crate-type=staticlib \
+	$(JIT_RUST_FLAGS) \
+	$(RUSTC_FLAGS) \
 	--edition=2024 \
-	--cfg 'feature="stats_allocator"' \
-	-g \
-	-C lto=thin \
-	-C opt-level=3 \
-	-C overflow-checks=on \
 	'--out-dir=$(CARGO_TARGET_DIR)/release/' \
 	'$(top_srcdir)/zjit/src/lib.rs'
 
@@ -805,7 +797,8 @@ clean-platform distclean-platform realclean-platform:
 
 RUBYSPEC_CAPIEXT = spec/ruby/optional/capi/ext
 RUBYSPEC_CAPIEXT_SRCDIR = $(srcdir)/$(RUBYSPEC_CAPIEXT)
-RUBYSPEC_CAPIEXT_DEPS = $(RUBYSPEC_CAPIEXT_SRCDIR)/rubyspec.h $(RUBY_H_INCLUDES) $(LIBRUBY)
+RUBYSPEC_CAPIEXT_DEPS = $(RUBYSPEC_CAPIEXT_SRCDIR)/rubyspec.h $(RUBY_H_INCLUDES) {$(VPATH)}internal/abi.h $(LIBRUBY)
+RUBYSPEC_CAPIEXT_BUILD = $(enable_shared:yes=rubyspec-capiext)
 
 rubyspec-capiext: build-ext $(DOT_WAIT)
 # make-dependent rules should be included after this and built after build-ext.
@@ -907,7 +900,7 @@ test: test-short
 
 # Separate to skip updating encs and exts by `make -o test-precheck`
 # for GNU make.
-test-precheck: $(ENCSTATIC:static=lib)encs exts PHONY $(DOT_WAIT)
+test-precheck: $(ENCSTATIC:static=lib)encs $(RUBYSPEC_CAPIEXT_BUILD) exts PHONY $(DOT_WAIT)
 yes-test-all-precheck: programs $(DOT_WAIT) test-precheck
 
 PRECHECK_TEST_ALL = yes-test-all-precheck
@@ -1568,7 +1561,7 @@ yes-install-for-test-bundled-gems: yes-update-default-gemspecs
 	$(XRUBY) -C "$(srcdir)" -r./tool/lib/gem_env.rb bin/gem \
 		install --no-document --conservative \
 		"hoe" "json-schema:5.1.0" "test-unit-rr" "simplecov" "simplecov-html" "simplecov-json" "rspec" "zeitwerk" \
-		"sinatra" "rack" "tilt" "mustermann" "base64" "compact_index" "rack-test" "logger" "kpeg" "tracer"
+		"sinatra" "rack" "tilt" "mustermann" "base64" "compact_index" "rack-test" "logger" "kpeg" "tracer" "minitest-mock"
 
 test-bundled-gems-fetch: yes-test-bundled-gems-fetch
 yes-test-bundled-gems-fetch: clone-bundled-gems-src
@@ -1620,6 +1613,11 @@ no-test-bundled-gems-spec:
 test-syntax-suggest:
 
 check: $(DOT_WAIT) $(PREPARE_SYNTAX_SUGGEST) test-syntax-suggest
+
+RAKER = $(XRUBY) -I$(srcdir)/gems/lib$(PATH_SEPARATOR)$(srcdir)/.bundle/lib \
+	-rrubygems $(srcdir)/.bundle/bin/rake
+rake:
+	$(RAKER) $(RAKE_OPTS) $(RAKE)
 
 test-bundler-precheck: $(TEST_RUNNABLE)-test-bundler-precheck
 no-test-bundler-precheck:

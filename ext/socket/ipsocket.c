@@ -27,11 +27,19 @@ struct inetsock_arg
 };
 
 void
-rsock_raise_user_specified_timeout(void)
+rsock_raise_user_specified_timeout(struct addrinfo *ai, VALUE host, VALUE port)
 {
-    VALUE errno_module = rb_const_get(rb_cObject, rb_intern("Errno"));
-    VALUE etimedout_error = rb_const_get(errno_module, rb_intern("ETIMEDOUT"));
-    rb_raise(etimedout_error, "user specified timeout");
+    VALUE message;
+
+    if (ai && ai->ai_addr) {
+        VALUE rai = rsock_addrinfo_new((struct sockaddr *)ai->ai_addr, (socklen_t)ai->ai_addrlen, PF_UNSPEC, 0, 0, Qnil, Qnil);
+        VALUE addr_str = rsock_addrinfo_inspect_sockaddr(rai);
+        message = rb_sprintf("user specified timeout for %" PRIsVALUE, addr_str);
+    } else {
+        message = rb_sprintf("user specified timeout for %" PRIsVALUE " port %" PRIsVALUE, host, port);
+    }
+
+    rb_raise(rb_eIOTimeoutError, "%" PRIsVALUE, message);
 }
 
 static VALUE
@@ -75,15 +83,13 @@ init_inetsock_internal(VALUE v)
     VALUE open_timeout = arg->open_timeout;
     VALUE timeout;
     VALUE starts_at;
-    unsigned int timeout_msec;
 
     timeout = NIL_P(open_timeout) ? resolv_timeout : open_timeout;
-    timeout_msec = NIL_P(timeout) ? 0 : rsock_value_timeout_to_msec(timeout);
     starts_at = current_clocktime();
 
     arg->remote.res = rsock_addrinfo(arg->remote.host, arg->remote.serv,
                                      family, SOCK_STREAM,
-                                     (type == INET_SERVER) ? AI_PASSIVE : 0, timeout_msec);
+                                     (type == INET_SERVER) ? AI_PASSIVE : 0, timeout);
 
     /*
      * Maybe also accept a local address
@@ -91,7 +97,7 @@ init_inetsock_internal(VALUE v)
 
     if (type != INET_SERVER && (!NIL_P(arg->local.host) || !NIL_P(arg->local.serv))) {
         arg->local.res = rsock_addrinfo(arg->local.host, arg->local.serv,
-                                        family, SOCK_STREAM, 0, 0);
+                                        family, SOCK_STREAM, 0, timeout);
     }
 
     VALUE io = Qnil;
@@ -151,7 +157,9 @@ init_inetsock_internal(VALUE v)
             } else {
                 VALUE elapsed = rb_funcall(current_clocktime(), '-', 1, starts_at);
                 timeout = rb_funcall(open_timeout, '-', 1, elapsed);
-                if (rb_funcall(timeout, '<', 1, INT2FIX(0)) == Qtrue) rsock_raise_user_specified_timeout();
+                if (rb_funcall(timeout, '<', 1, INT2FIX(0)) == Qtrue) {
+                    rsock_raise_user_specified_timeout(res, arg->remote.host, arg->remote.serv);
+                }
             }
 
             if (status >= 0) {
@@ -248,6 +256,21 @@ is_specified_ip_address(const char *hostname)
 
     return (inet_pton(AF_INET6, hostname, &ipv6addr) == 1 ||
             inet_pton(AF_INET, hostname, &ipv4addr) == 1);
+}
+
+static int
+is_local_port_fixed(const char *portp)
+{
+    if (!portp) return 0;
+
+    char *endp;
+    errno = 0;
+    long port = strtol(portp, &endp, 10);
+
+    if (endp == portp) return 0;
+    if (errno == ERANGE) return 0;
+
+    return port > 0;
 }
 
 struct fast_fallback_inetsock_arg
@@ -606,6 +629,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
     struct timeval user_specified_open_timeout_storage;
     struct timeval *user_specified_open_timeout_at = NULL;
     struct timespec now = current_clocktime_ts();
+    VALUE starts_at = current_clocktime();
 
     if (!NIL_P(open_timeout)) {
         struct timeval open_timeout_tv = rb_time_interval(open_timeout);
@@ -619,7 +643,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
         arg->getaddrinfo_shared = NULL;
 
         int family = arg->families[0];
-        unsigned int t = NIL_P(resolv_timeout) ? 0 : rsock_value_timeout_to_msec(resolv_timeout);
+        VALUE t = NIL_P(open_timeout) ? resolv_timeout : open_timeout;
 
         arg->remote.res = rsock_addrinfo(
             arg->remote.host,
@@ -833,14 +857,26 @@ init_fast_fallback_inetsock_internal(VALUE v)
                     status = connect(fd, remote_ai->ai_addr, remote_ai->ai_addrlen);
                     last_family = remote_ai->ai_family;
                 } else {
-                    if (!NIL_P(connect_timeout)) {
-                        user_specified_connect_timeout_storage = rb_time_interval(connect_timeout);
-                        user_specified_connect_timeout_at = &user_specified_connect_timeout_storage;
+                    VALUE timeout = Qnil;
+
+                    if (!NIL_P(open_timeout)) {
+                        VALUE elapsed = rb_funcall(current_clocktime(), '-', 1, starts_at);
+                        timeout = rb_funcall(open_timeout, '-', 1, elapsed);
+
+                        if (rb_funcall(timeout, '<', 1, INT2FIX(0)) == Qtrue) {
+                            rsock_raise_user_specified_timeout(NULL, arg->remote.host, arg->remote.serv);
+                        }
+                    }
+                    if (NIL_P(timeout)) {
+                        if (!NIL_P(connect_timeout)) {
+                            user_specified_connect_timeout_storage = rb_time_interval(connect_timeout);
+                            user_specified_connect_timeout_at = &user_specified_connect_timeout_storage;
+                        }
+                        timeout =
+                          (user_specified_connect_timeout_at && is_infinity(*user_specified_connect_timeout_at)) ?
+                          Qnil : tv_to_seconds(user_specified_connect_timeout_at);
                     }
 
-                    VALUE timeout =
-                        (user_specified_connect_timeout_at && is_infinity(*user_specified_connect_timeout_at)) ?
-                        Qnil : tv_to_seconds(user_specified_connect_timeout_at);
                     io = arg->io = rsock_init_sock(arg->self, fd);
                     status = rsock_connect(io, remote_ai->ai_addr, remote_ai->ai_addrlen, 0, timeout);
                 }
@@ -1166,7 +1202,9 @@ init_fast_fallback_inetsock_internal(VALUE v)
             }
         }
 
-        if (is_timeout_tv(user_specified_open_timeout_at, now)) rsock_raise_user_specified_timeout();
+        if (is_timeout_tv(user_specified_open_timeout_at, now)) {
+            rsock_raise_user_specified_timeout(NULL, arg->remote.host, arg->remote.serv);
+        }
 
         if (!any_addrinfos(&resolution_store)) {
             if (!in_progress_fds(arg->connection_attempt_fds_size) &&
@@ -1189,7 +1227,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                 resolution_store.is_all_finished) &&
                 (is_timeout_tv(user_specified_connect_timeout_at, now) ||
                 !in_progress_fds(arg->connection_attempt_fds_size))) {
-                rsock_raise_user_specified_timeout();
+                rsock_raise_user_specified_timeout(NULL, arg->remote.host, arg->remote.serv);
             }
         }
     }
@@ -1291,13 +1329,15 @@ rsock_init_inetsock(
 
     if (type == INET_CLIENT && FAST_FALLBACK_INIT_INETSOCK_IMPL == 1 && RTEST(fast_fallback)) {
         struct rb_addrinfo *local_res = NULL;
-        char *hostp, *portp;
-        char hbuf[NI_MAXHOST], pbuf[NI_MAXSERV];
+        char *hostp, *portp, *local_portp;
+        char hbuf[NI_MAXHOST], pbuf[NI_MAXSERV], local_pbuf[NI_MAXSERV];
         int additional_flags = 0;
+        int local_flags = 0;
         hostp = raddrinfo_host_str(remote_host, hbuf, sizeof(hbuf), &additional_flags);
         portp = raddrinfo_port_str(remote_serv, pbuf, sizeof(pbuf), &additional_flags);
+        local_portp = raddrinfo_port_str(local_serv, local_pbuf, sizeof(local_pbuf), &local_flags);
 
-        if (!is_specified_ip_address(hostp)) {
+        if (!is_specified_ip_address(hostp) && !is_local_port_fixed(local_portp)) {
             int target_families[2] = { 0, 0 };
             int resolving_family_size = 0;
 
@@ -1305,13 +1345,14 @@ rsock_init_inetsock(
              * Maybe also accept a local address
              */
             if (!NIL_P(local_host) || !NIL_P(local_serv)) {
+                VALUE t = NIL_P(open_timeout) ? resolv_timeout : open_timeout;
                 local_res = rsock_addrinfo(
                     local_host,
                     local_serv,
                     AF_UNSPEC,
                     SOCK_STREAM,
                     0,
-                    0
+                    t
                 );
 
                 struct addrinfo *tmp_p = local_res->ai;
@@ -1568,7 +1609,7 @@ static VALUE
 ip_s_getaddress(VALUE obj, VALUE host)
 {
     union_sockaddr addr;
-    struct rb_addrinfo *res = rsock_addrinfo(host, Qnil, AF_UNSPEC, SOCK_STREAM, 0, 0);
+    struct rb_addrinfo *res = rsock_addrinfo(host, Qnil, AF_UNSPEC, SOCK_STREAM, 0, Qnil);
     socklen_t len = res->ai->ai_addrlen;
 
     /* just take the first one */

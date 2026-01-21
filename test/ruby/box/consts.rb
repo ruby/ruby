@@ -1,3 +1,4 @@
+$VERBOSE = nil
 class String
   STR_CONST1 = 111
   STR_CONST2 = 222

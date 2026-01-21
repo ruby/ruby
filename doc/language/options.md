@@ -1,10 +1,3 @@
-<!---
-  CAUTION
-
-  This page on docs.ruby-lang.org is displayed in Ruby's help message (-h and --help).
-  Please make sure you update the link when renaming or moving this file.
---->
-
 # Ruby Command-Line Options
 
 ## About the Examples
@@ -647,7 +640,7 @@ Option `--encoding` is an alias for
 
 Option `--external-encoding`
 sets the default external encoding for the invoked Ruby program;
-for values of +encoding+,
+for values of `encoding`,
 see {Encoding: Names and Aliases}[rdoc-ref:encodings.rdoc@Names+and+Aliases].
 
 ```console
@@ -669,7 +662,7 @@ For a shorter help message, use option `-h`.
 
 Option `--internal-encoding`
 sets the default internal encoding for the invoked Ruby program;
-for values of +encoding+,
+for values of `encoding`,
 see {Encoding: Names and Aliases}[rdoc-ref:encodings.rdoc@Names+and+Aliases].
 
 ```console

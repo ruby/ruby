@@ -1,5 +1,8 @@
 ARGFTest     Failing on Windows
 
+RactorSingletonTest     Hangs up on Windows
+RactorInstanceTest      Hangs up on Windows
+
 # NotImplementedError: fileno() function is unimplemented on this machine
 test_fileno(DirInstanceTest)
 test_fchdir(DirSingletonTest)
@@ -102,3 +105,7 @@ test_new(TempfileSingletonTest)
 
 # Errno::EACCES: Permission denied @ apply2files - C:/a/_temp/d20250813-10156-f8z9pn/test.gz
 test_open(ZlibGzipReaderSingletonTest)
+
+# Errno::EACCES: Permission denied @ rb_file_s_rename
+# D:/a/ruby/ruby/src/lib/rubygems/util/atomic_file_writer.rb:42:in 'File.rename'
+test_write_binary(GemSingletonTest)

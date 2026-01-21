@@ -38,10 +38,6 @@ jobs:
         # Skip 'push' events because post_push.yml fixes them on push
         if: ${{ github.repository == 'ruby/ruby' && startsWith(github.event_name, 'pull') }}
 
-      - name: Check if C-sources are US-ASCII
-        run: |
-          grep -r -n --exclude-dir=vendor --include='*.[chyS]' --include='*.asm' $'[^\t-~]' -- . && exit 1 || :
-
       - name: Check for bash specific substitution in configure.ac
         run: |
           git grep -n '\${[A-Za-z_0-9]*/' -- configure.ac && exit 1 || :
@@ -56,6 +52,22 @@ jobs:
           done
           exit $fail
         working-directory: include
+
+      - id: now
+        run: |
+          date +"mon=%-m"%n"day=%-d" >> $GITHUB_OUTPUT
+        env:
+          TZ: Tokyo/Asia
+
+      - id: deprecation
+        run: |
+          eval $(sed -n 's/^#define RUBY_API_VERSION_\(MAJOR\|MINOR\) /\1=/p' include/ruby/version.h)
+          if git --no-pager grep --color -o 'rb_warn_deprecated_to_remove_at('$MAJOR'\.'$MINOR',.*' -- '*.c' >&2; then
+              false
+          else
+              true
+          fi
+        continue-on-error: ${{ steps.now.outputs.mon < 12 }}
 
       - name: Check if to generate documents
         id: rdoc
@@ -103,7 +115,7 @@ jobs:
           }}
 
       - name: Upload docs
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6.0.0
         with:
           path: html
           name: ${{ steps.docs.outputs.htmlout }}

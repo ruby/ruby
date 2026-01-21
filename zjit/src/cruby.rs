@@ -198,7 +198,6 @@ pub use rb_FL_TEST as FL_TEST;
 pub use rb_FL_TEST_RAW as FL_TEST_RAW;
 pub use rb_RB_TYPE_P as RB_TYPE_P;
 pub use rb_BASIC_OP_UNREDEFINED_P as BASIC_OP_UNREDEFINED_P;
-pub use rb_RSTRUCT_LEN as RSTRUCT_LEN;
 pub use rb_vm_ci_argc as vm_ci_argc;
 pub use rb_vm_ci_mid as vm_ci_mid;
 pub use rb_vm_ci_flag as vm_ci_flag;
@@ -681,6 +680,14 @@ impl VALUE {
         let k: isize = item.wrapping_add(item.wrapping_add(1));
         VALUE(k as usize)
     }
+
+    /// Call the write barrier after separately writing val to self.
+    pub fn write_barrier(self, val: VALUE) {
+        // rb_gc_writebarrier() asserts it is not called with a special constant
+        if !val.special_const_p() {
+            unsafe { rb_gc_writebarrier(self, val) };
+        }
+    }
 }
 
 pub type IseqParameters = rb_iseq_constant_body_rb_iseq_parameters;
@@ -986,7 +993,7 @@ pub fn rb_bug_panic_hook() {
         // You may also use ZJIT_RB_BUG=1 to trigger this on dev builds.
         if release_build || env::var("ZJIT_RB_BUG").is_ok() {
             // Abort with rb_bug(). It has a length limit on the message.
-            let panic_message = &format!("{}", panic_info)[..];
+            let panic_message = &format!("{panic_info}")[..];
             let len = std::cmp::min(0x100, panic_message.len()) as c_int;
             unsafe { rb_bug(b"ZJIT: %*s\0".as_ref().as_ptr() as *const c_char, len, panic_message.as_ptr()); }
         } else {
@@ -1064,12 +1071,6 @@ mod manual_defs {
     pub const RUBY_OFFSET_CFP_BLOCK_CODE: i32 = 40;
     pub const RUBY_OFFSET_CFP_JIT_RETURN: i32 = 48;
     pub const RUBY_SIZEOF_CONTROL_FRAME: usize = 56;
-
-    // Constants from rb_execution_context_t vm_core.h
-    pub const RUBY_OFFSET_EC_CFP: i32 = 16;
-    pub const RUBY_OFFSET_EC_INTERRUPT_FLAG: i32 = 32; // rb_atomic_t (u32)
-    pub const RUBY_OFFSET_EC_INTERRUPT_MASK: i32 = 36; // rb_atomic_t (u32)
-    pub const RUBY_OFFSET_EC_THREAD_PTR: i32 = 48;
 
     // Constants from rb_thread_t in vm_core.h
     pub const RUBY_OFFSET_THREAD_SELF: i32 = 16;

@@ -162,7 +162,7 @@ rb_obj_setup(VALUE obj, VALUE klass, VALUE type)
  *
  * Returns +true+ or +false+.
  *
- * Like Object#==, if +object+ is an instance of Object
+ * Like Object#==, if +other+ is an instance of \Object
  * (and not an instance of one of its many subclasses).
  *
  * This method is commonly overridden by those subclasses,
@@ -200,14 +200,18 @@ rb_eql(VALUE obj1, VALUE obj2)
 
 /**
  *  call-seq:
- *     obj == other        -> true or false
- *     obj.equal?(other)   -> true or false
- *     obj.eql?(other)     -> true or false
+ *     self == other -> true or false
+ *     equal?(other) -> true or false
+ *     eql?(other) -> true or false
  *
- *  Equality --- At the Object level, #== returns <code>true</code>
- *  only if +obj+ and +other+ are the same object.  Typically, this
- *  method is overridden in descendant classes to provide
- *  class-specific meaning.
+ *  Returns whether +self+ and +other+ are the same object:
+ *
+ *    object = Object.new
+ *    object == object     # => true
+ *    object == Object.new # => false
+ *
+ *  Here in class \Object, #==, #equal?, and #eql? are the same method.
+ *  A subclass may override #== to provide class-specific meaning.
  *
  *  Unlike #==, the #equal? method should never be overridden by
  *  subclasses as it is used to determine object identity (that is,
@@ -1766,21 +1770,33 @@ rb_obj_not_match(VALUE obj1, VALUE obj2)
 
 /*
  *  call-seq:
- *     obj <=> other -> 0 or nil
+ *     self <=> other -> 0 or nil
  *
- *  Returns 0 if +obj+ and +other+ are the same object
- *  or <code>obj == other</code>, otherwise nil.
+ *  Compares +self+ and +other+.
  *
- *  The #<=> is used by various methods to compare objects, for example
- *  Enumerable#sort, Enumerable#max etc.
+ *  Returns:
  *
- *  Your implementation of #<=> should return one of the following values: -1, 0,
- *  1 or nil. -1 means self is smaller than other. 0 means self is equal to other.
- *  1 means self is bigger than other. Nil means the two values could not be
- *  compared.
+ *  - +0+, if +self+ and +other+ are the same object,
+ *    or if <tt>self == other</tt>.
+ *  - +nil+, otherwise.
  *
- *  When you define #<=>, you can include Comparable to gain the
- *  methods #<=, #<, #==, #>=, #> and #between?.
+ *  Examples:
+ *
+ *    o = Object.new
+ *    o <=> o     # => 0
+ *    o <=> o.dup # => nil
+ *
+ *  A class that includes module Comparable
+ *  should override this method by defining an instance method that:
+ *
+ *  - Take one argument, +other+.
+ *  - Returns:
+ *
+ *    - +-1+, if +self+ is less than +other+.
+ *    - +0+, if +self+ is equal to +other+.
+ *    - +1+, if +self+ is greater than +other+.
+ *    - +nil+, if the two values are incommensurate.
+ *
  */
 static VALUE
 rb_obj_cmp(VALUE obj1, VALUE obj2)
@@ -1880,11 +1896,12 @@ rb_mod_freeze(VALUE mod)
 
 /*
  *  call-seq:
- *     mod === obj    -> true or false
+ *     self === other -> true or false
  *
- *  Case Equality---Returns <code>true</code> if <i>obj</i> is an
- *  instance of <i>mod</i> or an instance of one of <i>mod</i>'s descendants.
- *  Of limited use for modules, but can be used in <code>case</code> statements
+ *  Returns whether +other+ is an instance of +self+,
+ *  or is an instance of a subclass of +self+.
+ *
+ *  Of limited use for modules, but can be used in +case+ statements
  *  to classify objects by class.
  */
 
@@ -1898,11 +1915,24 @@ rb_mod_eqq(VALUE mod, VALUE arg)
  * call-seq:
  *   mod <= other   ->  true, false, or nil
  *
- * Returns true if <i>mod</i> is a subclass of <i>other</i> or
- * is the same as <i>other</i>. Returns
- * <code>nil</code> if there's no relationship between the two.
- * (Think of the relationship in terms of the class definition:
- * "class A < B" implies "A < B".)
+ * Returns +true+ if +self+ is a descendant of +other+
+ * (+self+ is a subclass of +other+ or +self+ includes +other+) or
+ * if +self+ is the same as +other+:
+ *
+ *   Float <= Numeric    # => true
+ *   Array <= Enumerable # => true
+ *   Float <= Float      # => true
+ *
+ * Returns +false+ if +self+ is an ancestor of +other+
+ * (+self+ is a superclass of +other+ or +self+ is included in +other+):
+ *
+ *   Numeric <= Float    # => false
+ *   Enumerable <= Array # => false
+ *
+ * Returns +nil+ if there is no relationship between the two:
+ *
+ *   Float <= Hash        # => nil
+ *   Enumerable <= String # => nil
  */
 
 VALUE
@@ -1948,14 +1978,26 @@ rb_class_inherited_p(VALUE mod, VALUE arg)
 
 /*
  * call-seq:
- *   mod < other   ->  true, false, or nil
+ *   self < other -> true, false, or nil
  *
- * Returns true if <i>mod</i> is a subclass of <i>other</i>. Returns
- * <code>false</code> if <i>mod</i> is the same as <i>other</i>
- * or <i>mod</i> is an ancestor of <i>other</i>.
- * Returns <code>nil</code> if there's no relationship between the two.
- * (Think of the relationship in terms of the class definition:
- * "class A < B" implies "A < B".)
+ * Returns +true+ if +self+ is a descendant of +other+
+ * (+self+ is a subclass of +other+ or +self+ includes +other+):
+ *
+ *   Float < Numeric    # => true
+ *   Array < Enumerable # => true
+ *
+ * Returns +false+ if +self+ is an ancestor of +other+
+ * (+self+ is a superclass of +other+ or +self+ is included in +other+) or
+ * if +self+ is the same as +other+:
+ *
+ *   Numeric < Float    # => false
+ *   Enumerable < Array # => false
+ *   Float < Float      # => false
+ *
+ * Returns +nil+ if there is no relationship between the two:
+ *
+ *   Float < Hash        # => nil
+ *   Enumerable < String # => nil
  *
  */
 
@@ -1971,11 +2013,24 @@ rb_mod_lt(VALUE mod, VALUE arg)
  * call-seq:
  *   mod >= other   ->  true, false, or nil
  *
- * Returns true if <i>mod</i> is an ancestor of <i>other</i>, or the
- * two modules are the same. Returns
- * <code>nil</code> if there's no relationship between the two.
- * (Think of the relationship in terms of the class definition:
- * "class A < B" implies "B > A".)
+ * Returns +true+ if +self+ is an ancestor of +other+
+ * (+self+ is a superclass of +other+ or +self+ is included in +other+) or
+ * if +self+ is the same as +other+:
+ *
+ *   Numeric >= Float    # => true
+ *   Enumerable >= Array # => true
+ *   Float >= Float      # => true
+ *
+ * Returns +false+ if +self+ is a descendant of +other+
+ * (+self+ is a subclass of +other+ or +self+ includes +other+):
+ *
+ *   Float >= Numeric    # => false
+ *   Array >= Enumerable # => false
+ *
+ * Returns +nil+ if there is no relationship between the two:
+ *
+ *   Float >= Hash        # => nil
+ *   Enumerable >= String # => nil
  *
  */
 
@@ -1991,14 +2046,26 @@ rb_mod_ge(VALUE mod, VALUE arg)
 
 /*
  * call-seq:
- *   mod > other   ->  true, false, or nil
+ *   self > other -> true, false, or nil
  *
- * Returns true if <i>mod</i> is an ancestor of <i>other</i>. Returns
- * <code>false</code> if <i>mod</i> is the same as <i>other</i>
- * or <i>mod</i> is a descendant of <i>other</i>.
- * Returns <code>nil</code> if there's no relationship between the two.
- * (Think of the relationship in terms of the class definition:
- * "class A < B" implies "B > A".)
+ * Returns +true+ if +self+ is an ancestor of +other+
+ * (+self+ is a superclass of +other+ or +self+ is included in +other+):
+ *
+ *   Numeric > Float    # => true
+ *   Enumerable > Array # => true
+ *
+ * Returns +false+ if +self+ is a descendant of +other+
+ * (+self+ is a subclass of +other+ or +self+ includes +other+) or
+ * if +self+ is the same as +other+:
+ *
+ *   Float > Numeric    # => false
+ *   Array > Enumerable # => false
+ *   Float > Float      # => false
+ *
+ * Returns +nil+ if there is no relationship between the two:
+ *
+ *   Float > Hash        # => nil
+ *   Enumerable > String # => nil
  *
  */
 
@@ -2011,13 +2078,15 @@ rb_mod_gt(VALUE mod, VALUE arg)
 
 /*
  *  call-seq:
- *     self <=> object -> -1, 0, +1, or nil
+ *     self <=> other -> -1, 0, 1, or nil
+ *
+ *  Compares +self+ and +other+.
  *
  *  Returns:
  *
- *  - +-1+, if +self+ includes +object+, if or +self+ is a subclass of +object+.
- *  - +0+, if +self+ and +object+ are the same.
- *  - +1+, if +object+ includes +self+, or if +object+ is a subclass of +self+.
+ *  - +-1+, if +self+ includes +other+, if or +self+ is a subclass of +other+.
+ *  - +0+, if +self+ and +other+ are the same.
+ *  - +1+, if +other+ includes +self+, or if +other+ is a subclass of +self+.
  *  - +nil+, if none of the above is true.
  *
  *  Examples:
@@ -2028,8 +2097,10 @@ rb_mod_gt(VALUE mod, VALUE arg)
  *        Enumerable <=> Array      # =>  1
  *    # Class File is a subclass of class IO.
  *              File <=> IO         # => -1
- *                IO <=> File       # =>  1
  *              File <=> File       # =>  0
+ *                IO <=> File       # =>  1
+ *    # Class File has no relationship to class String.
+ *              File <=> String     # => nil
  *
  */
 
@@ -2238,8 +2309,10 @@ class_call_alloc_func(rb_alloc_func_t allocator, VALUE klass)
 
     obj = (*allocator)(klass);
 
-    if (rb_obj_class(obj) != rb_class_real(klass)) {
-        rb_raise(rb_eTypeError, "wrong instance allocation");
+    if (UNLIKELY(RBASIC_CLASS(obj) != klass)) {
+        if (rb_obj_class(obj) != rb_class_real(klass)) {
+            rb_raise(rb_eTypeError, "wrong instance allocation");
+        }
     }
     return obj;
 }

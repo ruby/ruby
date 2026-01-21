@@ -1497,6 +1497,10 @@ rb_hash_new_capa(long capa)
 static VALUE
 hash_copy(VALUE ret, VALUE hash)
 {
+    if (rb_hash_compare_by_id_p(hash)) {
+        rb_gc_register_pinning_obj(ret);
+    }
+
     if (RHASH_AR_TABLE_P(hash)) {
         if (RHASH_AR_TABLE_P(ret)) {
             ar_copy(ret, hash);
@@ -1554,9 +1558,8 @@ rb_hash_dup(VALUE hash)
     const VALUE flags = RBASIC(hash)->flags;
     VALUE ret = hash_dup(hash, rb_obj_class(hash), flags & RHASH_PROC_DEFAULT);
 
-    if (rb_obj_gen_fields_p(hash)) {
-        rb_copy_generic_ivar(ret, hash);
-    }
+    rb_copy_generic_ivar(ret, hash);
+
     return ret;
 }
 
@@ -3976,17 +3979,13 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
 
 /*
  *  call-seq:
- *    self == object -> true or false
+ *    self == other -> true or false
  *
- *  Returns whether +self+ and +object+ are equal.
+ *  Returns whether all of the following are true:
  *
- *  Returns +true+ if all of the following are true:
- *
- *  - +object+ is a +Hash+ object (or can be converted to one).
- *  - +self+ and +object+ have the same keys (regardless of order).
- *  - For each key +key+, <tt>self[key] == object[key]</tt>.
- *
- *  Otherwise, returns +false+.
+ *  - +other+ is a +Hash+ object (or can be converted to one).
+ *  - +self+ and +other+ have the same keys (regardless of order).
+ *  - For each key +key+, <tt>self[key] == other[key]</tt>.
  *
  *  Examples:
  *
@@ -4673,6 +4672,8 @@ rb_hash_compare_by_id(VALUE hash)
         RHASH_ST_CLEAR(tmp);
     }
 
+    rb_gc_register_pinning_obj(hash);
+
     return hash;
 }
 
@@ -4702,6 +4703,7 @@ rb_ident_hash_new(void)
 {
     VALUE hash = rb_hash_new();
     hash_st_table_init(hash, &identhash, 0);
+    rb_gc_register_pinning_obj(hash);
     return hash;
 }
 
@@ -4710,6 +4712,7 @@ rb_ident_hash_new_with_size(st_index_t size)
 {
     VALUE hash = rb_hash_new();
     hash_st_table_init(hash, &identhash, size);
+    rb_gc_register_pinning_obj(hash);
     return hash;
 }
 
@@ -4888,10 +4891,9 @@ hash_le(VALUE hash1, VALUE hash2)
 
 /*
  *  call-seq:
- *    self <= other_hash -> true or false
+ *    self <= other -> true or false
  *
- *  Returns +true+ if the entries of +self+ are a subset of the entries of +other_hash+,
- *  +false+ otherwise:
+ *  Returns whether the entries of +self+ are a subset of the entries of +other+:
  *
  *    h0 = {foo: 0, bar: 1}
  *    h1 = {foo: 0, bar: 1, baz: 2}
@@ -4915,10 +4917,9 @@ rb_hash_le(VALUE hash, VALUE other)
 
 /*
  *  call-seq:
- *    self < other_hash -> true or false
+ *    self < other -> true or false
  *
- *  Returns +true+ if the entries of +self+ are a proper subset of the entries of +other_hash+,
- *  +false+ otherwise:
+ *  Returns whether the entries of +self+ are a proper subset of the entries of +other+:
  *
  *    h = {foo: 0, bar: 1}
  *    h < {foo: 0, bar: 1, baz: 2} # => true   # Proper subset.
@@ -4944,10 +4945,9 @@ rb_hash_lt(VALUE hash, VALUE other)
 
 /*
  *  call-seq:
- *    self >= other_hash -> true or false
+ *    self >= other -> true or false
  *
- *  Returns +true+ if the entries of +self+ are a superset of the entries of +other_hash+,
- *  +false+ otherwise:
+ *  Returns whether the entries of +self+ are a superset of the entries of +other+:
  *
  *    h0 = {foo: 0, bar: 1, baz: 2}
  *    h1 = {foo: 0, bar: 1}
@@ -4971,10 +4971,9 @@ rb_hash_ge(VALUE hash, VALUE other)
 
 /*
  *  call-seq:
- *    self > other_hash -> true or false
+ *    self > other -> true or false
  *
- *  Returns +true+ if the entries of +self+ are a proper superset of the entries of +other_hash+,
- *  +false+ otherwise:
+ *  Returns whether the entries of +self+ are a proper superset of the entries of +other+:
  *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h > {foo: 0, bar: 1}         # => true   # Proper superset.

@@ -320,20 +320,20 @@ class TestSignal < Test::Unit::TestCase
 
     # The parent should be notified about the stop
     _, status = Process.waitpid2(child_pid, Process::WUNTRACED)
-    assert status.stopped?
+    assert_predicate status, :stopped?
 
     # It can be continued
     Process.kill(:CONT, child_pid)
 
     # And the child then runs to completion
     _, status = Process.waitpid2(child_pid)
-    assert status.exited?
-    assert status.success?
+    assert_predicate status, :exited?
+    assert_predicate status, :success?
   end
 
   def test_sigwait_fd_unused
     t = EnvUtil.apply_timeout_scale(0.1)
-    assert_separately([], <<-End)
+    assert_ruby_status([], <<-End)
       tgt = $$
       trap(:TERM) { exit(0) }
       e = "Process.daemon; sleep #{t * 2}; Process.kill(:TERM,\#{tgt})"

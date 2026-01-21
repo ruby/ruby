@@ -76,6 +76,15 @@ module Prism
       source.byteslice(byte_offset, length) or raise
     end
 
+    # Converts the line number to a byte offset corresponding to the start of that line
+    def line_to_byte_offset(line)
+      l = line - @start_line
+      if l < 0 || l >= offsets.size
+        raise ArgumentError, "line #{line} is out of range"
+      end
+      offsets[l]
+    end
+
     # Binary search through the offsets to find the line number for the given
     # byte offset.
     def line(byte_offset)

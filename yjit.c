@@ -64,8 +64,6 @@ STATIC_ASSERT(pointer_tagging_scheme, USE_FLONUM);
 // The "_yjit_" part is for trying to be informative. We might want different
 // suffixes for symbols meant for Rust and symbols meant for broader CRuby.
 
-# define PTR2NUM(x)   (rb_int2inum((intptr_t)(void *)(x)))
-
 // For a given raw_sample (frame), set the hash with the caller's
 // name, file, and line number. Return the  hash with collected frame_info.
 static void
@@ -162,18 +160,7 @@ rb_yjit_exit_locations_dict(VALUE *yjit_raw_samples, int *yjit_line_samples, int
 bool
 rb_c_method_tracing_currently_enabled(const rb_execution_context_t *ec)
 {
-    rb_event_flag_t tracing_events;
-    if (rb_multi_ractor_p()) {
-        tracing_events = ruby_vm_event_enabled_global_flags;
-    }
-    else {
-        // At the time of writing, events are never removed from
-        // ruby_vm_event_enabled_global_flags so always checking using it would
-        // mean we don't compile even after tracing is disabled.
-        tracing_events = rb_ec_ractor_hooks(ec)->events;
-    }
-
-    return tracing_events & (RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN);
+    return ruby_vm_c_events_enabled > 0;
 }
 
 // The code we generate in gen_send_cfunc() doesn't fire the c_return TracePoint event
@@ -235,14 +222,6 @@ rb_iseq_set_yjit_payload(const rb_iseq_t *iseq, void *payload)
 typedef struct rb_iseq_param_keyword rb_seq_param_keyword_struct;
 
 ID rb_get_symbol_id(VALUE namep);
-
-VALUE
-rb_optimized_call(VALUE *recv, rb_execution_context_t *ec, int argc, VALUE *argv, int kw_splat, VALUE block_handler)
-{
-    rb_proc_t *proc;
-    GetProcPtr(recv, proc);
-    return rb_vm_invoke_proc(ec, proc, argc, argv, kw_splat, block_handler);
-}
 
 // If true, the iseq has only opt_invokebuiltin_delegate(_leave) and leave insns.
 static bool
@@ -484,6 +463,12 @@ size_t
 rb_yjit_invokeblock_sp_pops(const struct rb_callinfo *ci)
 {
     return 1 - sp_inc_of_invokeblock(ci); // + 1 to ignore return value push
+}
+
+rb_serial_t
+rb_yjit_cme_ractor_serial(const rb_callable_method_entry_t *cme)
+{
+    return cme->def->body.bmethod.defined_ractor_id;
 }
 
 // Setup jit_return to avoid returning a non-Qundef value on a non-FINISH frame.

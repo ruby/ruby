@@ -253,7 +253,6 @@ end
 
 def package(vcs, rev, destdir, tmp = nil)
   pwd = Dir.pwd
-  patchlevel = false
   prerelease = false
   if rev and revision = rev[/@(\h+)\z/, 1]
     rev = $`
@@ -270,22 +269,23 @@ def package(vcs, rev, destdir, tmp = nil)
   when /\Astable\z/
     vcs.branch_list("ruby_[0-9]*") {|n| url = n[/\Aruby_\d+_\d+\z/]}
     url &&= vcs.branch(url)
-  when /\A(.*)\.(.*)\.(.*)-(preview|rc)(\d+)/
+  when /\A(\d+)\.(\d+)\.(\d+)-(preview|rc)(\d+)/
     prerelease = true
     tag = "#{$4}#{$5}"
-    url = vcs.tag("v#{$1}_#{$2}_#{$3}_#{$4}#{$5}")
-  when /\A(.*)\.(.*)\.(.*)-p(\d+)/
-    patchlevel = true
-    tag = "p#{$4}"
-    url = vcs.tag("v#{$1}_#{$2}_#{$3}_#{$4}")
-  when /\A(\d+)\.(\d+)(?:\.(\d+))?\z/
-    if $3 && ($1 > "2" || $1 == "2" && $2 >= "1")
-      patchlevel = true
-      tag = ""
-      url = vcs.tag("v#{$1}_#{$2}_#{$3}")
+    if Integer($1) >= 4
+      url = vcs.tag("v#{rev}")
     else
-      url = vcs.branch("ruby_#{rev.tr('.', '_')}")
+      url = vcs.tag("v#{$1}_#{$2}_#{$3}_#{$4}#{$5}")
     end
+  when /\A(\d+)\.(\d+)\.(\d+)\z/
+    tag = ""
+    if Integer($1) >= 4
+      url = vcs.tag("v#{rev}")
+    else
+      url = vcs.tag("v#{$1}_#{$2}_#{$3}")
+    end
+  when /\A(\d+)\.(\d+)\z/
+    url = vcs.branch("ruby_#{rev.tr('.', '_')}")
   else
     warn "#{$0}: unknown version - #{rev}"
     return
@@ -357,13 +357,7 @@ def package(vcs, rev, destdir, tmp = nil)
       [api_major_version, api_minor_version, version_teeny].join('.')
     end
   version or return
-  if patchlevel
-    unless tag.empty?
-      versionhdr ||= File.read("#{v}/version.h")
-      patchlevel = versionhdr[/^\#define\s+RUBY_PATCHLEVEL\s+(\d+)/, 1]
-      tag = (patchlevel ? "p#{patchlevel}" : vcs.revision_name(revision))
-    end
-  elsif prerelease
+  if prerelease
     versionhdr ||= File.read("#{v}/version.h")
     versionhdr.sub!(/^\#\s*define\s+RUBY_PATCHLEVEL_STR\s+"\K.+?(?=")/, tag) or raise "no match of RUBY_PATCHLEVEL_STR to replace"
     File.write("#{v}/version.h", versionhdr)

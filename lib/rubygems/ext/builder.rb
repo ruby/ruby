@@ -22,7 +22,7 @@ class Gem::Ext::Builder
   end
 
   def self.make(dest_path, results, make_dir = Dir.pwd, sitedir = nil, targets = ["clean", "", "install"],
-    target_rbconfig: Gem.target_rbconfig)
+    target_rbconfig: Gem.target_rbconfig, n_jobs: nil)
     unless File.exist? File.join(make_dir, "Makefile")
       # No makefile exists, nothing to do.
       raise NoMakefileError, "No Makefile found in #{make_dir}"
@@ -34,8 +34,18 @@ class Gem::Ext::Builder
     make_program_name ||= RUBY_PLATFORM.include?("mswin") ? "nmake" : "make"
     make_program = shellsplit(make_program_name)
 
+    is_nmake = /\bnmake/i.match?(make_program_name)
     # The installation of the bundled gems is failed when DESTDIR is empty in mswin platform.
-    destdir = /\bnmake/i !~ make_program_name || ENV["DESTDIR"] && ENV["DESTDIR"] != "" ? format("DESTDIR=%s", ENV["DESTDIR"]) : ""
+    destdir = !is_nmake || ENV["DESTDIR"] && ENV["DESTDIR"] != "" ? format("DESTDIR=%s", ENV["DESTDIR"]) : ""
+
+    # nmake doesn't support parallel build
+    unless is_nmake
+      have_make_arguments = make_program.size > 1
+
+      if !have_make_arguments && !ENV["MAKEFLAGS"] && n_jobs
+        make_program << "-j#{n_jobs}"
+      end
+    end
 
     env = [destdir]
 
@@ -147,13 +157,12 @@ class Gem::Ext::Builder
   # have build arguments, saved, set +build_args+ which is an ARGV-style
   # array.
 
-  def initialize(spec, build_args = spec.build_args, target_rbconfig = Gem.target_rbconfig)
+  def initialize(spec, build_args = spec.build_args, target_rbconfig = Gem.target_rbconfig, build_jobs = nil)
     @spec       = spec
     @build_args = build_args
     @gem_dir    = spec.full_gem_path
     @target_rbconfig = target_rbconfig
-
-    @ran_rake = false
+    @build_jobs = build_jobs
   end
 
   ##
@@ -166,7 +175,6 @@ class Gem::Ext::Builder
     when /configure/ then
       Gem::Ext::ConfigureBuilder
     when /rakefile/i, /mkrf_conf/i then
-      @ran_rake = true
       Gem::Ext::RakeBuilder
     when /CMakeLists.txt/ then
       Gem::Ext::CmakeBuilder.new
@@ -208,7 +216,7 @@ EOF
       FileUtils.mkdir_p dest_path
 
       results = builder.build(extension, dest_path,
-                              results, @build_args, lib_dir, extension_dir, @target_rbconfig)
+                              results, @build_args, lib_dir, extension_dir, @target_rbconfig, n_jobs: @build_jobs)
 
       verbose { results.join("\n") }
 
@@ -239,8 +247,6 @@ EOF
     FileUtils.rm_f @spec.gem_build_complete_path
 
     @spec.extensions.each do |extension|
-      break if @ran_rake
-
       build_extension extension, dest_path
     end
 

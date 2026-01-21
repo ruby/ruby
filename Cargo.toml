@@ -1,6 +1,15 @@
-# Using Cargo's workspace feature to build all the Rust code in
-# into a single package.
-# TODO(alan) notes about rust version requirements. Undecided yet.
+# This is the root Cargo [workspace](https://doc.rust-lang.org/cargo/reference/workspaces.html)
+# and the root package for all the rust code that are statically linked into ruby. Rust tooling
+# limitations means all Rust code need to share a single archive library (staticlib) at the
+# integration point with non-rust code. (See rustlang/rust#44322 and #104707 for a taste of
+# the linking challenges.)
+#
+# Do not add required dependencies. This is a policy that helps downstream consumers and give
+# us tight control over what we ship. All of the optional dependencies are used exclusively
+# during development.
+#
+# Release builds avoid Cargo entirely because offline builds can fail even when none of the
+# optional dependencies are built (rust-lang/cargo#10352).
 
 [workspace]
 members = ["zjit", "yjit", "jit"]

@@ -699,7 +699,12 @@ ractor_sync_free(rb_ractor_t *r)
 static size_t
 ractor_sync_memsize(const rb_ractor_t *r)
 {
-    return st_table_size(r->sync.ports);
+    if (r->sync.ports) {
+        return st_table_size(r->sync.ports);
+    }
+    else {
+        return 0;
+    }
 }
 
 static void
@@ -1262,7 +1267,11 @@ static size_t
 ractor_selector_memsize(const void *ptr)
 {
     const struct ractor_selector *s = ptr;
-    return sizeof(struct ractor_selector) + st_memsize(s->ports);
+    size_t size = sizeof(struct ractor_selector);
+    if (s->ports) {
+        size += st_memsize(s->ports);
+    }
+    return size;
 }
 
 static const rb_data_type_t ractor_selector_data_type = {

@@ -2943,6 +2943,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
                         $$ = new_args_tail(p, 0, 0, $1, &@1);
                     /*% ripper: [Qnil, Qnil, $:1] %*/
                     }
+                ;
 
 %rule def_endless_method(bodystmt) <node>
                 : defn_head[head] f_opt_paren_args[args] '=' bodystmt
@@ -4569,10 +4570,10 @@ primary		: inline_primary
                         m->nd_plen = 1;
                         m->nd_next = $for_var;
                         break;
-                        case NODE_MASGN: /* e.each {|*internal_var| a, b, c = (internal_var.length == 1 && Array === (tmp = internal_var[0]) ? tmp : internal_var); ... } */
+                      case NODE_MASGN: /* e.each {|*internal_var| a, b, c = (internal_var.length == 1 && Array === (tmp = internal_var[0]) ? tmp : internal_var); ... } */
                         m->nd_next = node_assign(p, $for_var, NEW_FOR_MASGN(internal_var, &@for_var), NO_LEX_CTXT, &@for_var);
                         break;
-                        default: /* e.each {|*internal_var| @a, B, c[1], d.attr = internal_val; ... } */
+                      default: /* e.each {|*internal_var| @a, B, c[1], d.attr = internal_val; ... } */
                         m->nd_next = node_assign(p, (NODE *)NEW_MASGN(NEW_LIST($for_var, &@for_var), 0, &@for_var), internal_var, NO_LEX_CTXT, &@for_var);
                     }
                     /* {|*internal_id| <m> = internal_id; ... } */
@@ -4692,7 +4693,7 @@ primary		: inline_primary
                     if (!p->ctxt.in_defined) {
                         switch (p->ctxt.in_rescue) {
                           case before_rescue: yyerror1(&@1, "Invalid retry without rescue"); break;
-                            case after_rescue: /* ok */ break;
+                          case after_rescue: /* ok */ break;
                           case after_else: yyerror1(&@1, "Invalid retry after else"); break;
                           case after_ensure: yyerror1(&@1, "Invalid retry after ensure"); break;
                         }
@@ -5122,10 +5123,10 @@ numparam	:   {
                 ;
 
 it_id		:   {
-                    $$ = p->it_id;
-                    p->it_id = 0;
-                }
-            ;
+                        $$ = p->it_id;
+                        p->it_id = 0;
+                    }
+                ;
 
 lambda		: tLAMBDA[lpar]
                     {
@@ -5148,7 +5149,7 @@ lambda		: tLAMBDA[lpar]
                         CMDARG_POP();
                         $args = args_with_numbered(p, $args, max_numparam, it_id);
                         {
-                            YYLTYPE loc = code_loc_gen(&@args, &@body);
+                            YYLTYPE loc = code_loc_gen(&@lpar, &@body);
                             $$ = NEW_LAMBDA($args, $body->node, &loc, &@lpar, &$body->opening_loc, &$body->closing_loc);
                             nd_set_line(RNODE_LAMBDA($$)->nd_body, @body.end_pos.lineno);
                             nd_set_line($$, @args.end_pos.lineno);
@@ -5234,6 +5235,12 @@ block_call	: command do_block
                     {
                         $$ = new_command_qcall(p, $2, $1, $3, $4, $5, &@3, &@$);
                     /*% ripper: method_add_block!(command_call!($:1, $:2, $:3, $:4), $:5) %*/
+                    }
+                | block_call call_op2 paren_args
+                    {
+                        $$ = new_qcall(p, $2, $1, idCall, $3, &@2, &@$);
+                        nd_set_line($$, @2.end_pos.lineno);
+                    /*% ripper: method_add_arg!(call!($:1, $:2, ID2VAL(idCall)), $:3) %*/
                     }
                 ;
 
@@ -5435,7 +5442,7 @@ p_top_expr	: p_top_expr_body
                     }
                 ;
 
-p_top_expr_body	: p_expr
+p_top_expr_body : p_expr
                 | p_expr ','
                     {
                         $$ = new_array_pattern_tail(p, 0, 1, 0, 0, &@$);
@@ -5788,7 +5795,7 @@ p_value 	: p_primitive
                 | p_const
                 ;
 
-p_primitive		: inline_primary
+p_primitive	: inline_primary
                 | keyword_variable
                     {
                         if (!($$ = gettable(p, $1, &@$))) $$ = NEW_ERROR(&@$);
@@ -6052,7 +6059,7 @@ xstring_contents: /* none */
                     }
                 ;
 
-regexp_contents: /* none */
+regexp_contents	: /* none */
                     {
                         $$ = 0;
                     /*% ripper: regexp_new! %*/
@@ -6199,14 +6206,14 @@ user_variable	: ident_or_const
                 | nonlocal_var
                 ;
 
-keyword_variable	: keyword_nil {$$ = KWD2EID(nil, $1);}
-                    | keyword_self {$$ = KWD2EID(self, $1);}
-                    | keyword_true {$$ = KWD2EID(true, $1);}
-                    | keyword_false {$$ = KWD2EID(false, $1);}
-                    | keyword__FILE__ {$$ = KWD2EID(_FILE__, $1);}
-                    | keyword__LINE__ {$$ = KWD2EID(_LINE__, $1);}
-                    | keyword__ENCODING__ {$$ = KWD2EID(_ENCODING__, $1);}
-                    ;
+keyword_variable: keyword_nil {$$ = KWD2EID(nil, $1);}
+                | keyword_self {$$ = KWD2EID(self, $1);}
+                | keyword_true {$$ = KWD2EID(true, $1);}
+                | keyword_false {$$ = KWD2EID(false, $1);}
+                | keyword__FILE__ {$$ = KWD2EID(_FILE__, $1);}
+                | keyword__LINE__ {$$ = KWD2EID(_LINE__, $1);}
+                | keyword__ENCODING__ {$$ = KWD2EID(_ENCODING__, $1);}
+                ;
 
 var_ref		: user_variable
                     {
@@ -13029,14 +13036,14 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
         }
 # endif
         /* method call without arguments */
-        if (dyna_in_block(p) && id == rb_intern("it") && !(DVARS_TERMINAL_P(p->lvtbl->args) || DVARS_TERMINAL_P(p->lvtbl->args->prev))) {
+        if (dyna_in_block(p) && id == idIt && !(DVARS_TERMINAL_P(p->lvtbl->args) || DVARS_TERMINAL_P(p->lvtbl->args->prev))) {
             if (numparam_used_p(p)) return 0;
             if (p->max_numparam == ORDINAL_PARAM) {
                 compile_error(p, "ordinary parameter is defined");
                 return 0;
             }
             if (!p->it_id) {
-                p->it_id = internal_id(p);
+                p->it_id = idItImplicit;
                 vtable_add(p->lvtbl->args, p->it_id);
             }
             NODE *node = NEW_DVAR(p->it_id, loc);

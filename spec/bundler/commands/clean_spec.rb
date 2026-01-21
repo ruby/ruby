@@ -898,4 +898,41 @@ RSpec.describe "bundle clean" do
 
     expect(very_simple_binary_extensions_dir).to be_nil
   end
+
+  it "does not remove the bundler version currently running" do
+    gemfile <<-G
+      source "https://gem.repo1"
+
+      gem "myrack"
+    G
+
+    bundle "config set path vendor/bundle"
+    bundle "install"
+
+    version = Bundler.gem_version.to_s
+    # Simulate that the locked bundler version is installed in the bundle path
+    # by creating the gem directory and gemspec (as would happen after bundle install with that version)
+    Pathname(vendored_gems("cache/bundler-#{version}.gem")).tap do |path|
+      path.basename.mkpath
+      FileUtils.touch(path)
+    end
+    FileUtils.touch(vendored_gems("gems/bundler-#{version}"))
+    Pathname(vendored_gems("specifications/bundler-#{version}.gemspec")).tap do |path|
+      path.basename.mkpath
+      path.write(<<~GEMSPEC)
+        Gem::Specification.new do |s|
+          s.name = "bundler"
+          s.version = "#{version}"
+          s.authors = ["bundler team"]
+          s.summary = "The best way to manage your application's dependencies"
+        end
+      GEMSPEC
+    end
+
+    should_have_gems "bundler-#{version}"
+
+    bundle :clean
+
+    should_have_gems "bundler-#{version}"
+  end
 end

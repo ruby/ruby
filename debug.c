@@ -57,6 +57,7 @@ const union {
     enum ruby_rstring_flags     rstring_flags;
     enum ruby_rarray_flags      rarray_flags;
     enum ruby_rarray_consts     rarray_consts;
+    enum rbimpl_typeddata_flags rtypeddata_consts;
     enum {
         RUBY_FMODE_READABLE		= FMODE_READABLE,
         RUBY_FMODE_WRITABLE		= FMODE_WRITABLE,
@@ -708,4 +709,22 @@ ruby_debug_log_dump(const char *fname, unsigned int n)
         fclose(fp);
     }
 }
+
+#else
+
+#undef ruby_debug_log
+void
+ruby_debug_log(const char *file, int line, const char *func_name, const char *fmt, ...)
+{
+    va_list args;
+
+    fprintf(stderr, "[%s:%d] %s: ", file, line, func_name);
+
+    va_start(args, fmt);
+    vfprintf(stderr, fmt, args);
+    va_end(args);
+
+    fprintf(stderr, "\n");
+}
+
 #endif // #if USE_RUBY_DEBUG_LOG

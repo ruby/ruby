@@ -1400,3 +1400,28 @@ class TestNetHTTPPartialResponse < Test::Unit::TestCase
     assert_raise(EOFError) {http.get('/')}
   end
 end
+
+class TestNetHTTPInRactor < Test::Unit::TestCase
+  CONFIG = {
+    'host' => '127.0.0.1',
+    'proxy_host' => nil,
+    'proxy_port' => nil,
+  }
+
+  include TestNetHTTPUtils
+
+  def test_get
+    assert_ractor(<<~RUBY, require: 'net/http')
+      expected = #{$test_net_http_data.dump}.b
+      ret = Ractor.new {
+        host = #{config('host').dump}
+        port = #{config('port')}
+        Net::HTTP.start(host, port) { |http|
+          res = http.get('/')
+          res.body
+        }
+      }.value
+      assert_equal expected, ret
+    RUBY
+  end
+end if defined?(Ractor) && Ractor.method_defined?(:value)

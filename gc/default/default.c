@@ -316,7 +316,7 @@ int ruby_rgengc_debug;
 #endif
 
 #ifndef GC_DEBUG_STRESS_TO_CLASS
-# define GC_DEBUG_STRESS_TO_CLASS 1
+# define GC_DEBUG_STRESS_TO_CLASS RUBY_DEBUG
 #endif
 
 typedef enum {
@@ -505,7 +505,6 @@ typedef struct rb_objspace {
         unsigned int during_compacting : 1;
         unsigned int during_reference_updating : 1;
         unsigned int gc_stressful: 1;
-        unsigned int has_newobj_hook: 1;
         unsigned int during_minor_gc : 1;
         unsigned int during_incremental_marking : 1;
         unsigned int measure_gc : 1;
@@ -589,7 +588,6 @@ typedef struct rb_objspace {
 
         /* Weak references */
         size_t weak_references_count;
-        size_t retained_weak_references_count;
     } profile;
 
     VALUE gc_stress_mode;
@@ -635,7 +633,7 @@ typedef struct rb_objspace {
     VALUE stress_to_class;
 #endif
 
-    rb_darray(VALUE *) weak_references;
+    rb_darray(VALUE) weak_references;
     rb_postponed_job_handle_t finalize_deferred_pjob;
 
     unsigned long live_ractor_cache_count;
@@ -1375,16 +1373,12 @@ check_rvalue_consistency(rb_objspace_t *objspace, const VALUE obj)
 static inline bool
 gc_object_moved_p(rb_objspace_t *objspace, VALUE obj)
 {
-    if (RB_SPECIAL_CONST_P(obj)) {
-        return FALSE;
+
+    bool ret;
+    asan_unpoisoning_object(obj) {
+        ret = BUILTIN_TYPE(obj) == T_MOVED;
     }
-    else {
-        int ret;
-        asan_unpoisoning_object(obj) {
-            ret = BUILTIN_TYPE(obj) == T_MOVED;
-        }
-        return ret;
-    }
+    return ret;
 }
 
 static inline int
@@ -1525,7 +1519,6 @@ rb_gc_impl_set_event_hook(void *objspace_ptr, const rb_event_flag_t event)
 {
     rb_objspace_t *objspace = objspace_ptr;
     objspace->hook_events = event & RUBY_INTERNAL_EVENT_OBJSPACE_MASK;
-    objspace->flags.has_newobj_hook = !!(objspace->hook_events & RUBY_INTERNAL_EVENT_NEWOBJ);
 }
 
 unsigned long long
@@ -3817,7 +3810,7 @@ gc_sweep_finish_heap(rb_objspace_t *objspace, rb_heap_t *heap)
                     heap_allocatable_slots_expand(objspace, heap, swept_slots, heap->total_slots);
                 }
             }
-            else {
+            else if (objspace->heap_pages.allocatable_slots < (min_free_slots - swept_slots)) {
                 gc_needs_major_flags |= GPR_FLAG_MAJOR_BY_NOFREE;
                 heap->force_major_gc_count++;
             }
@@ -4418,6 +4411,10 @@ gc_grey(rb_objspace_t *objspace, VALUE obj)
         MARK_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), obj);
     }
 
+    if (RB_FL_TEST_RAW(obj, RUBY_FL_WEAK_REFERENCE)) {
+        rb_darray_append_without_gc(&objspace->weak_references, obj);
+    }
+
     push_mark_stack(&objspace->mark_stack, obj);
 }
 
@@ -4532,53 +4529,6 @@ rb_gc_impl_mark_maybe(void *objspace_ptr, VALUE obj)
                 gc_mark_and_pin(objspace, obj);
                 break;
             }
-        }
-    }
-}
-
-void
-rb_gc_impl_mark_weak(void *objspace_ptr, VALUE *ptr)
-{
-    rb_objspace_t *objspace = objspace_ptr;
-
-    VALUE obj = *ptr;
-
-    gc_mark_check_t_none(objspace, obj);
-
-    /* If we are in a minor GC and the other object is old, then obj should
-     * already be marked and cannot be reclaimed in this GC cycle so we don't
-     * need to add it to the weak references list. */
-    if (!is_full_marking(objspace) && RVALUE_OLD_P(objspace, obj)) {
-        GC_ASSERT(RVALUE_MARKED(objspace, obj));
-        GC_ASSERT(!objspace->flags.during_compacting);
-
-        return;
-    }
-
-    rgengc_check_relation(objspace, obj);
-
-    rb_darray_append_without_gc(&objspace->weak_references, ptr);
-
-    objspace->profile.weak_references_count++;
-}
-
-void
-rb_gc_impl_remove_weak(void *objspace_ptr, VALUE parent_obj, VALUE *ptr)
-{
-    rb_objspace_t *objspace = objspace_ptr;
-
-    /* If we're not incremental marking, then the state of the objects can't
-     * change so we don't need to do anything. */
-    if (!is_incremental_marking(objspace)) return;
-    /* If parent_obj has not been marked, then ptr has not yet been marked
-     * weak, so we don't need to do anything. */
-    if (!RVALUE_MARKED(objspace, parent_obj)) return;
-
-    VALUE **ptr_ptr;
-    rb_darray_foreach(objspace->weak_references, i, ptr_ptr) {
-        if (*ptr_ptr == ptr) {
-            *ptr_ptr = NULL;
-            break;
         }
     }
 }
@@ -5366,30 +5316,48 @@ gc_marks_wb_unprotected_objects(rb_objspace_t *objspace, rb_heap_t *heap)
     gc_mark_stacked_objects_all(objspace);
 }
 
+void
+rb_gc_impl_declare_weak_references(void *objspace_ptr, VALUE obj)
+{
+    FL_SET_RAW(obj, RUBY_FL_WEAK_REFERENCE);
+}
+
+bool
+rb_gc_impl_handle_weak_references_alive_p(void *objspace_ptr, VALUE obj)
+{
+    rb_objspace_t *objspace = objspace_ptr;
+
+    bool marked = RVALUE_MARKED(objspace, obj);
+
+    if (marked) {
+        rgengc_check_relation(objspace, obj);
+    }
+
+    return marked;
+}
+
 static void
 gc_update_weak_references(rb_objspace_t *objspace)
 {
-    size_t retained_weak_references_count = 0;
-    VALUE **ptr_ptr;
-    rb_darray_foreach(objspace->weak_references, i, ptr_ptr) {
-        if (!*ptr_ptr) continue;
-
-        VALUE obj = **ptr_ptr;
-
-        if (RB_SPECIAL_CONST_P(obj)) continue;
-
-        if (!RVALUE_MARKED(objspace, obj)) {
-            **ptr_ptr = Qundef;
-        }
-        else {
-            retained_weak_references_count++;
-        }
+    VALUE *obj_ptr;
+    rb_darray_foreach(objspace->weak_references, i, obj_ptr) {
+        gc_mark_set_parent(objspace, *obj_ptr);
+        rb_gc_handle_weak_references(*obj_ptr);
+        gc_mark_set_parent_invalid(objspace);
     }
 
-    objspace->profile.retained_weak_references_count = retained_weak_references_count;
+    size_t capa = rb_darray_capa(objspace->weak_references);
+    size_t size = rb_darray_size(objspace->weak_references);
+
+    objspace->profile.weak_references_count = size;
 
     rb_darray_clear(objspace->weak_references);
-    rb_darray_resize_capa_without_gc(&objspace->weak_references, retained_weak_references_count);
+
+    /* If the darray has capacity for more than four times the amount used, we
+     * shrink it down to half of that capacity. */
+    if (capa > size * 4) {
+        rb_darray_resize_capa_without_gc(&objspace->weak_references, size * 2);
+    }
 }
 
 static void
@@ -5946,6 +5914,10 @@ rgengc_rememberset_mark_plane(rb_objspace_t *objspace, uintptr_t p, bits_t bitse
                 GC_ASSERT(RVALUE_OLD_P(objspace, obj) || RVALUE_WB_UNPROTECTED(objspace, obj));
 
                 gc_mark_children(objspace, obj);
+
+                if (RB_FL_TEST_RAW(obj, RUBY_FL_WEAK_REFERENCE)) {
+                    rb_darray_append_without_gc(&objspace->weak_references, obj);
+                }
             }
             p += BASE_SLOT_SIZE;
             bitset >>= 1;
@@ -6090,11 +6062,13 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
 {
     rb_objspace_t *objspace = objspace_ptr;
 
-    if (RGENGC_CHECK_MODE) {
-        if (SPECIAL_CONST_P(a)) rb_bug("rb_gc_writebarrier: a is special const: %"PRIxVALUE, a);
-    }
-
-    if (SPECIAL_CONST_P(b)) return;
+#if RGENGC_CHECK_MODE
+    if (SPECIAL_CONST_P(a)) rb_bug("rb_gc_writebarrier: a is special const: %"PRIxVALUE, a);
+    if (SPECIAL_CONST_P(b)) rb_bug("rb_gc_writebarrier: b is special const: %"PRIxVALUE, b);
+#else
+    RBIMPL_ASSERT_OR_ASSUME(!SPECIAL_CONST_P(a));
+    RBIMPL_ASSERT_OR_ASSUME(!SPECIAL_CONST_P(b));
+#endif
 
     GC_ASSERT(!during_gc);
     GC_ASSERT(RB_BUILTIN_TYPE(a) != T_NONE);
@@ -6505,7 +6479,6 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
     objspace->profile.total_allocated_objects_at_gc_start = total_allocated_objects(objspace);
     objspace->profile.heap_used_at_gc_start = rb_darray_size(objspace->heap_pages.sorted);
     objspace->profile.weak_references_count = 0;
-    objspace->profile.retained_weak_references_count = 0;
     gc_prof_setup_new_record(objspace, reason);
     gc_reset_malloc_info(objspace, do_full_mark);
 
@@ -6897,12 +6870,6 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
       case T_ZOMBIE:
         return FALSE;
       case T_SYMBOL:
-        // TODO: restore original behavior
-        // if (RSYMBOL(obj)->id & ~ID_SCOPE_MASK) {
-        //     return FALSE;
-        // }
-        return false;
-        /* fall through */
       case T_STRING:
       case T_OBJECT:
       case T_FLOAT:
@@ -7091,6 +7058,12 @@ gc_sort_heap_by_compare_func(rb_objspace_t *objspace, gc_compact_compare_func co
     }
 }
 #endif
+
+void
+rb_gc_impl_register_pinning_obj(void *objspace_ptr, VALUE obj)
+{
+    /* no-op */
+}
 
 bool
 rb_gc_impl_object_moved_p(void *objspace_ptr, VALUE obj)
@@ -7325,7 +7298,7 @@ gc_info_decode(rb_objspace_t *objspace, const VALUE hash_or_key, const unsigned 
 #endif
     static VALUE sym_newobj, sym_malloc, sym_method, sym_capi;
     static VALUE sym_none, sym_marking, sym_sweeping;
-    static VALUE sym_weak_references_count, sym_retained_weak_references_count;
+    static VALUE sym_weak_references_count;
     VALUE hash = Qnil, key = Qnil;
     VALUE major_by, need_major_by;
     unsigned int flags = orig_flags ? orig_flags : objspace->profile.latest_gc_info;
@@ -7367,7 +7340,6 @@ gc_info_decode(rb_objspace_t *objspace, const VALUE hash_or_key, const unsigned 
         S(sweeping);
 
         S(weak_references_count);
-        S(retained_weak_references_count);
 #undef S
     }
 
@@ -7420,7 +7392,6 @@ gc_info_decode(rb_objspace_t *objspace, const VALUE hash_or_key, const unsigned 
     }
 
     SET(weak_references_count, LONG2FIX(objspace->profile.weak_references_count));
-    SET(retained_weak_references_count, LONG2FIX(objspace->profile.retained_weak_references_count));
 #undef SET
 
     if (!NIL_P(key)) {
@@ -9428,6 +9399,7 @@ rb_gc_impl_after_fork(void *objspace_ptr, rb_pid_t pid)
 
 VALUE rb_ident_hash_new_with_size(st_index_t size);
 
+#if GC_DEBUG_STRESS_TO_CLASS
 /*
  *  call-seq:
  *    GC.add_stress_to_class(class[, ...])
@@ -9477,6 +9449,7 @@ rb_gcdebug_remove_stress_to_class(int argc, VALUE *argv, VALUE self)
 
     return Qnil;
 }
+#endif
 
 void *
 rb_gc_impl_objspace_alloc(void)
@@ -9582,10 +9555,10 @@ rb_gc_impl_init(void)
         rb_define_singleton_method(rb_mGC, "verify_compaction_references", rb_f_notimplement, -1);
     }
 
-    if (GC_DEBUG_STRESS_TO_CLASS) {
-        rb_define_singleton_method(rb_mGC, "add_stress_to_class", rb_gcdebug_add_stress_to_class, -1);
-        rb_define_singleton_method(rb_mGC, "remove_stress_to_class", rb_gcdebug_remove_stress_to_class, -1);
-    }
+#if GC_DEBUG_STRESS_TO_CLASS
+    rb_define_singleton_method(rb_mGC, "add_stress_to_class", rb_gcdebug_add_stress_to_class, -1);
+    rb_define_singleton_method(rb_mGC, "remove_stress_to_class", rb_gcdebug_remove_stress_to_class, -1);
+#endif
 
     /* internal methods */
     rb_define_singleton_method(rb_mGC, "verify_internal_consistency", gc_verify_internal_consistency_m, 0);

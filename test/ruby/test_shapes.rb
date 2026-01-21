@@ -228,7 +228,7 @@ class TestShapes < Test::Unit::TestCase
   end
 
   def test_run_out_of_shape_for_object
-    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       class A
         def initialize
@@ -339,7 +339,7 @@ class TestShapes < Test::Unit::TestCase
   end
 
   def test_gc_stress_during_evacuate_generic_ivar
-    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       [].instance_variable_set(:@a, 1)
 
@@ -507,7 +507,7 @@ class TestShapes < Test::Unit::TestCase
   end
 
   def test_run_out_of_shape_rb_obj_copy_ivar
-    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       class A
         def initialize

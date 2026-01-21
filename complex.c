@@ -799,9 +799,9 @@ rb_complex_imag(VALUE self)
 
 /*
  * call-seq:
- *   -complex -> new_complex
+ *   -self -> complex
  *
- * Returns the negation of +self+, which is the negation of each of its parts:
+ * Returns +self+, negated, which is the negation of each of its parts:
  *
  *   -Complex.rect(1, 2)   # => (-1-2i)
  *   -Complex.rect(-1, -2) # => (1+2i)
@@ -861,9 +861,9 @@ rb_complex_plus(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *   complex - numeric -> new_complex
+ *   self - other -> complex
  *
- * Returns the difference of +self+ and +numeric+:
+ * Returns the difference of +self+ and +other+:
  *
  *   Complex.rect(2, 3)  - Complex.rect(2, 3)  # => (0+0i)
  *   Complex.rect(900)   - Complex.rect(1)     # => (899+0i)
@@ -999,9 +999,9 @@ f_divide(VALUE self, VALUE other,
 
 /*
  * call-seq:
- *   complex / numeric -> new_complex
+ *   self / other -> complex
  *
- * Returns the quotient of +self+ and +numeric+:
+ * Returns the quotient of +self+ and +other+:
  *
  *   Complex.rect(2, 3)  / Complex.rect(2, 3)  # => (1+0i)
  *   Complex.rect(900)   / Complex.rect(1)     # => (900+0i)
@@ -1122,9 +1122,9 @@ complex_pow_for_special_angle(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *   complex ** numeric -> new_complex
+ *   self ** exponent -> complex
  *
- * Returns +self+ raised to power +numeric+:
+ * Returns +self+ raised to the power +exponent+:
  *
  *   Complex.rect(0, 1) ** 2            # => (-1+0i)
  *   Complex.rect(-8) ** Rational(1, 3) # => (1.0000000000000002+1.7320508075688772i)
@@ -1226,10 +1226,10 @@ rb_complex_pow(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *   complex == object -> true or false
+ *   self == other -> true or false
  *
- * Returns +true+ if <tt>self.real == object.real</tt>
- * and <tt>self.imag == object.imag</tt>:
+ * Returns whether both <tt>self.real == other.real</tt>
+ * and <tt>self.imag == other.imag</tt>:
  *
  *   Complex.rect(2, 3)  == Complex.rect(2.0, 3.0) # => true
  *
@@ -1260,14 +1260,16 @@ nucomp_real_p(VALUE self)
 
 /*
  * call-seq:
- *   complex <=> object -> -1, 0, 1, or nil
+ *   self <=> other -> -1, 0, 1, or nil
+ *
+ * Compares +self+ and +other+.
  *
  * Returns:
  *
- * - <tt>self.real <=> object.real</tt> if both of the following are true:
+ * - <tt>self.real <=> other.real</tt> if both of the following are true:
  *
  *   - <tt>self.imag == 0</tt>.
- *   - <tt>object.imag == 0</tt>. # Always true if object is numeric but not complex.
+ *   - <tt>other.imag == 0</tt> (always true if +other+ is numeric but not complex).
  *
  * - +nil+ otherwise.
  *
@@ -1280,6 +1282,8 @@ nucomp_real_p(VALUE self)
  *   Complex.rect(1) <=> Complex.rect(1, 1) # => nil # object.imag not zero.
  *   Complex.rect(1) <=> 'Foo'              # => nil # object.imag not defined.
  *
+ * \Class \Complex includes module Comparable,
+ * each of whose methods uses Complex#<=> for comparison.
  */
 static VALUE
 nucomp_cmp(VALUE self, VALUE other)
@@ -1775,12 +1779,6 @@ rb_complex_new_polar(VALUE x, VALUE y)
 }
 
 VALUE
-rb_complex_polar(VALUE x, VALUE y)
-{
-    return rb_complex_new_polar(x, y);
-}
-
-VALUE
 rb_Complex(VALUE x, VALUE y)
 {
     VALUE a[2];
@@ -1805,7 +1803,7 @@ rb_dbl_complex_new(double real, double imag)
  *   Complex.rect(1, Rational(0, 1)).to_i # => 1
  *
  * Raises RangeError if <tt>self.imag</tt> is not exactly zero
- * (either <tt>Integer(0)</tt> or <tt>Rational(0, _n_)</tt>).
+ * (either <tt>Integer(0)</tt> or <tt>Rational(0, n)</tt>).
  */
 static VALUE
 nucomp_to_i(VALUE self)
@@ -1829,7 +1827,7 @@ nucomp_to_i(VALUE self)
  *   Complex.rect(1, Rational(0, 1)).to_f # => 1.0
  *
  * Raises RangeError if <tt>self.imag</tt> is not exactly zero
- * (either <tt>Integer(0)</tt> or <tt>Rational(0, _n_)</tt>).
+ * (either <tt>Integer(0)</tt> or <tt>Rational(0, n)</tt>).
  */
 static VALUE
 nucomp_to_f(VALUE self)
@@ -1854,7 +1852,7 @@ nucomp_to_f(VALUE self)
  *   Complex.rect(1, 0.0).to_r            # => (1/1)
  *
  * Raises RangeError if <tt>self.imag</tt> is not exactly zero
- * (either <tt>Integer(0)</tt> or <tt>Rational(0, _n_)</tt>)
+ * (either <tt>Integer(0)</tt> or <tt>Rational(0, n)</tt>)
  * and <tt>self.imag.to_r</tt> is not exactly zero.
  *
  * Related: Complex#rationalize.

@@ -164,6 +164,20 @@ class JSONParserTest < Test::Unit::TestCase
     end
   end
 
+  def test_parse_control_chars_in_string
+    0.upto(31) do |ord|
+      assert_raise JSON::ParserError do
+        parse(%("#{ord.chr}"))
+      end
+    end
+  end
+
+  def test_parse_allowed_control_chars_in_string
+    0.upto(31) do |ord|
+      assert_equal ord.chr, parse(%("#{ord.chr}"), allow_control_characters: true)
+    end
+  end
+
   def test_parse_arrays
     assert_equal([1,2,3], parse('[1,2,3]'))
     assert_equal([1.2,2,3], parse('[1.2,2,3]'))
@@ -336,6 +350,7 @@ class JSONParserTest < Test::Unit::TestCase
     assert_raise(JSON::ParserError) { parse('"\\uD800"') }
     assert_raise(JSON::ParserError) { parse('"\\uD800_________________"') }
     assert_raise(JSON::ParserError) { parse('"\\uD800\\u0041"') }
+    assert_raise(JSON::ParserError) { parse('"\\uD800\\u004') }
   end
 
   def test_parse_big_integers
@@ -829,7 +844,6 @@ class JSONParserTest < Test::Unit::TestCase
 
   def test_frozen
     parser_config = JSON::Parser::Config.new({}).freeze
-    omit "JRuby failure in CI" if RUBY_ENGINE == "jruby"
     assert_raise FrozenError do
       parser_config.send(:initialize, {})
     end

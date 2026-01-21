@@ -7,7 +7,7 @@ static VALUE CNaN, CInfinity, CMinusInfinity;
 
 static ID i_new, i_try_convert, i_uminus, i_encode;
 
-static VALUE sym_max_nesting, sym_allow_nan, sym_allow_trailing_comma, sym_symbolize_names, sym_freeze,
+static VALUE sym_max_nesting, sym_allow_nan, sym_allow_trailing_comma, sym_allow_control_characters, sym_symbolize_names, sym_freeze,
              sym_decimal_class, sym_on_load, sym_allow_duplicate_key;
 
 static int binary_encindex;
@@ -335,6 +335,7 @@ typedef struct JSON_ParserStruct {
     int max_nesting;
     bool allow_nan;
     bool allow_trailing_comma;
+    bool allow_control_characters;
     bool symbolize_names;
     bool freeze;
 } JSON_ParserConfig;
@@ -476,23 +477,24 @@ static const signed char digit_values[256] = {
     -1, -1, -1, -1, -1, -1, -1
 };
 
-static uint32_t unescape_unicode(JSON_ParserState *state, const unsigned char *p)
+static uint32_t unescape_unicode(JSON_ParserState *state, const char *sp, const char *spe)
 {
-    signed char b;
-    uint32_t result = 0;
-    b = digit_values[p[0]];
-    if (b < 0) raise_parse_error_at("incomplete unicode character escape sequence at %s", state, (char *)p - 2);
-    result = (result << 4) | (unsigned char)b;
-    b = digit_values[p[1]];
-    if (b < 0) raise_parse_error_at("incomplete unicode character escape sequence at %s", state, (char *)p - 2);
-    result = (result << 4) | (unsigned char)b;
-    b = digit_values[p[2]];
-    if (b < 0) raise_parse_error_at("incomplete unicode character escape sequence at %s", state, (char *)p - 2);
-    result = (result << 4) | (unsigned char)b;
-    b = digit_values[p[3]];
-    if (b < 0) raise_parse_error_at("incomplete unicode character escape sequence at %s", state, (char *)p - 2);
-    result = (result << 4) | (unsigned char)b;
-    return result;
+    if (RB_UNLIKELY(sp > spe - 4)) {
+        raise_parse_error_at("incomplete unicode character escape sequence at %s", state, sp - 2);
+    }
+
+    const unsigned char *p = (const unsigned char *)sp;
+
+    const signed char b0 = digit_values[p[0]];
+    const signed char b1 = digit_values[p[1]];
+    const signed char b2 = digit_values[p[2]];
+    const signed char b3 = digit_values[p[3]];
+
+    if (RB_UNLIKELY((signed char)(b0 | b1 | b2 | b3) < 0)) {
+        raise_parse_error_at("incomplete unicode character escape sequence at %s", state, sp - 2);
+    }
+
+    return ((uint32_t)b0 << 12) | ((uint32_t)b1 << 8) | ((uint32_t)b2 << 4) | (uint32_t)b3;
 }
 
 #define GET_PARSER_CONFIG                          \
@@ -642,7 +644,7 @@ static inline VALUE json_string_fastpath(JSON_ParserState *state, JSON_ParserCon
 typedef struct _json_unescape_positions {
     long size;
     const char **positions;
-    bool has_more;
+    unsigned long additional_backslashes;
 } JSON_UnescapePositions;
 
 static inline const char *json_next_backslash(const char *pe, const char *stringEnd, JSON_UnescapePositions *positions)
@@ -656,7 +658,8 @@ static inline const char *json_next_backslash(const char *pe, const char *string
         }
     }
 
-    if (positions->has_more) {
+    if (positions->additional_backslashes) {
+        positions->additional_backslashes--;
         return memchr(pe, '\\', stringEnd - pe);
     }
 
@@ -706,55 +709,52 @@ NOINLINE(static) VALUE json_string_unescape(JSON_ParserState *state, JSON_Parser
             case 'f':
                 APPEND_CHAR('\f');
                 break;
-            case 'u':
-                if (pe > stringEnd - 5) {
-                    raise_parse_error_at("incomplete unicode character escape sequence at %s", state, p);
-                } else {
-                    uint32_t ch = unescape_unicode(state, (unsigned char *) ++pe);
-                    pe += 3;
-                    /* To handle values above U+FFFF, we take a sequence of
-                     * \uXXXX escapes in the U+D800..U+DBFF then
-                     * U+DC00..U+DFFF ranges, take the low 10 bits from each
-                     * to make a 20-bit number, then add 0x10000 to get the
-                     * final codepoint.
-                     *
-                     * See Unicode 15: 3.8 "Surrogates", 5.3 "Handling
-                     * Surrogate Pairs in UTF-16", and 23.6 "Surrogates
-                     * Area".
-                     */
-                    if ((ch & 0xFC00) == 0xD800) {
-                        pe++;
-                        if (pe > stringEnd - 6) {
-                            raise_parse_error_at("incomplete surrogate pair at %s", state, p);
-                        }
-                        if (pe[0] == '\\' && pe[1] == 'u') {
-                            uint32_t sur = unescape_unicode(state, (unsigned char *) pe + 2);
+            case 'u': {
+                uint32_t ch = unescape_unicode(state, ++pe, stringEnd);
+                pe += 3;
+                /* To handle values above U+FFFF, we take a sequence of
+                 * \uXXXX escapes in the U+D800..U+DBFF then
+                 * U+DC00..U+DFFF ranges, take the low 10 bits from each
+                 * to make a 20-bit number, then add 0x10000 to get the
+                 * final codepoint.
+                 *
+                 * See Unicode 15: 3.8 "Surrogates", 5.3 "Handling
+                 * Surrogate Pairs in UTF-16", and 23.6 "Surrogates
+                 * Area".
+                 */
+                if ((ch & 0xFC00) == 0xD800) {
+                    pe++;
+                    if (RB_LIKELY((pe <= stringEnd - 6) && memcmp(pe, "\\u", 2) == 0)) {
+                        uint32_t sur = unescape_unicode(state, pe + 2, stringEnd);
 
-                            if ((sur & 0xFC00) != 0xDC00) {
-                                raise_parse_error_at("invalid surrogate pair at %s", state, p);
-                            }
-
-                            ch = (((ch & 0x3F) << 10) | ((((ch >> 6) & 0xF) + 1) << 16)
-                                    | (sur & 0x3FF));
-                            pe += 5;
-                        } else {
-                            raise_parse_error_at("incomplete surrogate pair at %s", state, p);
-                            break;
+                        if (RB_UNLIKELY((sur & 0xFC00) != 0xDC00)) {
+                            raise_parse_error_at("invalid surrogate pair at %s", state, p);
                         }
+
+                        ch = (((ch & 0x3F) << 10) | ((((ch >> 6) & 0xF) + 1) << 16) | (sur & 0x3FF));
+                        pe += 5;
+                    } else {
+                        raise_parse_error_at("incomplete surrogate pair at %s", state, p);
+                        break;
                     }
-
-                    char buf[4];
-                    int unescape_len = convert_UTF32_to_UTF8(buf, ch);
-                    MEMCPY(buffer, buf, char, unescape_len);
-                    buffer += unescape_len;
-                    p = ++pe;
                 }
+
+                int unescape_len = convert_UTF32_to_UTF8(buffer, ch);
+                buffer += unescape_len;
+                p = ++pe;
                 break;
+            }
             default:
                 if ((unsigned char)*pe < 0x20) {
-                    raise_parse_error_at("invalid ASCII control character in string: %s", state, pe - 1);
+                    if (!config->allow_control_characters) {
+                        if (*pe == '\n') {
+                            raise_parse_error_at("Invalid unescaped newline character (\\n) in string: %s", state, pe - 1);
+                        }
+                        raise_parse_error_at("invalid ASCII control character in string: %s", state, pe - 1);
+                    }
+                } else {
+                    raise_parse_error_at("invalid escape character in string: %s", state, pe - 1);
                 }
-                raise_parse_error_at("invalid escape character in string: %s", state, pe - 1);
                 break;
         }
     }
@@ -985,7 +985,7 @@ static VALUE json_parse_escaped_string(JSON_ParserState *state, JSON_ParserConfi
     JSON_UnescapePositions positions = {
         .size = 0,
         .positions = backslashes,
-        .has_more = false,
+        .additional_backslashes = 0,
     };
 
     do {
@@ -1000,13 +1000,15 @@ static VALUE json_parse_escaped_string(JSON_ParserState *state, JSON_ParserConfi
                     backslashes[positions.size] = state->cursor;
                     positions.size++;
                 } else {
-                    positions.has_more = true;
+                    positions.additional_backslashes++;
                 }
                 state->cursor++;
                 break;
             }
             default:
-                raise_parse_error("invalid ASCII control character in string: %s", state);
+                if (!config->allow_control_characters) {
+                    raise_parse_error("invalid ASCII control character in string: %s", state);
+                }
                 break;
         }
 
@@ -1427,14 +1429,15 @@ static int parser_config_init_i(VALUE key, VALUE val, VALUE data)
 {
     JSON_ParserConfig *config = (JSON_ParserConfig *)data;
 
-         if (key == sym_max_nesting)          { config->max_nesting = RTEST(val) ? FIX2INT(val) : 0; }
-    else if (key == sym_allow_nan)            { config->allow_nan = RTEST(val); }
-    else if (key == sym_allow_trailing_comma) { config->allow_trailing_comma = RTEST(val); }
-    else if (key == sym_symbolize_names)      { config->symbolize_names = RTEST(val); }
-    else if (key == sym_freeze)               { config->freeze = RTEST(val); }
-    else if (key == sym_on_load)              { config->on_load_proc = RTEST(val) ? val : Qfalse; }
-    else if (key == sym_allow_duplicate_key)  { config->on_duplicate_key = RTEST(val) ? JSON_IGNORE : JSON_RAISE; }
-    else if (key == sym_decimal_class)        {
+         if (key == sym_max_nesting)                { config->max_nesting = RTEST(val) ? FIX2INT(val) : 0; }
+    else if (key == sym_allow_nan)                  { config->allow_nan = RTEST(val); }
+    else if (key == sym_allow_trailing_comma)       { config->allow_trailing_comma = RTEST(val); }
+    else if (key == sym_allow_control_characters)   { config->allow_control_characters = RTEST(val); }
+    else if (key == sym_symbolize_names)            { config->symbolize_names = RTEST(val); }
+    else if (key == sym_freeze)                     { config->freeze = RTEST(val); }
+    else if (key == sym_on_load)                    { config->on_load_proc = RTEST(val) ? val : Qfalse; }
+    else if (key == sym_allow_duplicate_key)        { config->on_duplicate_key = RTEST(val) ? JSON_IGNORE : JSON_RAISE; }
+    else if (key == sym_decimal_class)              {
         if (RTEST(val)) {
             if (rb_respond_to(val, i_try_convert)) {
                 config->decimal_class = val;
@@ -1647,6 +1650,7 @@ void Init_parser(void)
     sym_max_nesting = ID2SYM(rb_intern("max_nesting"));
     sym_allow_nan = ID2SYM(rb_intern("allow_nan"));
     sym_allow_trailing_comma = ID2SYM(rb_intern("allow_trailing_comma"));
+    sym_allow_control_characters = ID2SYM(rb_intern("allow_control_characters"));
     sym_symbolize_names = ID2SYM(rb_intern("symbolize_names"));
     sym_freeze = ID2SYM(rb_intern("freeze"));
     sym_on_load = ID2SYM(rb_intern("on_load"));

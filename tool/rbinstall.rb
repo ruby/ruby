@@ -870,16 +870,25 @@ def load_gemspec(file, base = nil, files: nil)
   code = File.read(file, encoding: "utf-8:-")
 
   code.gsub!(/^ *#.*/, "")
-  files = files ? files.map(&:dump).join(", ") : ""
+  spec_files = files ? files.map(&:dump).join(", ") : ""
   code.gsub!(/(?:`git[^\`]*`|%x\[git[^\]]*\])\.split(\([^\)]*\))?/m) do
-    "[" + files + "]"
+    "[" + spec_files + "]"
   end \
   or
   code.gsub!(/IO\.popen\(.*git.*?\)/) do
-    "[" + files + "] || itself"
+    "[" + spec_files + "] || itself"
   end
 
   spec = eval(code, binding, file)
+  # for out-of-place build
+  collected_files = files ? spec.files.concat(files).uniq : spec.files
+  spec.files = collected_files.map do |f|
+    if !File.exist?(File.join(base || ".", f)) && f.end_with?(".rb")
+      "lib/#{f}"
+    else
+      f
+    end
+  end
   unless Gem::Specification === spec
     raise TypeError, "[#{file}] isn't a Gem::Specification (#{spec.class} instead)."
   end

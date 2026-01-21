@@ -139,14 +139,6 @@ def extract_makefile(makefile, keep = true)
   true
 end
 
-def create_makefile(target, srcprefix = nil)
-  if $static and target.include?("/")
-    base = File.basename(target)
-    $defs << "-DInit_#{base}=Init_#{target.tr('/', '_')}"
-  end
-  super
-end
-
 def extmake(target, basedir = 'ext', maybestatic = true)
   FileUtils.mkpath target unless File.directory?(target)
   begin
@@ -567,6 +559,7 @@ extend Module.new {
       if $static and (target = args.first).include?("/")
         base = File.basename(target)
         $defs << "-DInit_#{base}=Init_#{target.tr('/', '_')}"
+        $defs << "-DInitVM_#{base}=InitVM_#{target.tr('/', '_')}"
       end
       return super
     end
@@ -599,6 +592,7 @@ gem = #{@gemname}
 build_complete = $(TARGET_GEM_DIR)/gem.build_complete
 install-so: build_complete
 clean-so:: clean-build_complete
+$(build_complete) $(OBJS): $(TARGET_SO_DIR_TIMESTAMP)
 
 build_complete: $(build_complete)
 $(build_complete): $(TARGET_SO)

@@ -909,7 +909,7 @@ class TestSocket < Test::Unit::TestCase
 
       Addrinfo.define_singleton_method(:getaddrinfo) { |*_| sleep }
 
-      assert_raise(Errno::ETIMEDOUT) do
+      assert_raise(IO::TimeoutError) do
         Socket.tcp("localhost", port, resolv_timeout: 0.01)
       end
     ensure
@@ -934,7 +934,7 @@ class TestSocket < Test::Unit::TestCase
 
     server.close
 
-    assert_raise(Errno::ETIMEDOUT) do
+    assert_raise(IO::TimeoutError) do
       Socket.tcp("localhost", port, resolv_timeout: 0.01)
     end
     RUBY
@@ -951,7 +951,7 @@ class TestSocket < Test::Unit::TestCase
       end
     end
 
-    assert_raise(Errno::ETIMEDOUT) do
+    assert_raise(IO::TimeoutError) do
       Socket.tcp("localhost", 12345, open_timeout: 0.01)
     end
     RUBY
@@ -1011,7 +1011,7 @@ class TestSocket < Test::Unit::TestCase
       Addrinfo.define_singleton_method(:getaddrinfo) do |_, _, family, *_|
         case family
         when Socket::AF_INET6 then raise SocketError
-        when Socket::AF_INET then sleep(0.001); raise SocketError, "Last hostname resolution error"
+        when Socket::AF_INET then sleep(0.01); raise SocketError, "Last hostname resolution error"
         end
       end
 

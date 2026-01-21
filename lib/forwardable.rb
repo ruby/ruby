@@ -109,10 +109,8 @@
 # +delegate.rb+.
 #
 module Forwardable
-  require 'forwardable/impl'
-
   # Version of +forwardable.rb+
-  VERSION = "1.3.3"
+  VERSION = "1.4.0"
   VERSION.freeze
 
   # Version for backward compatibility
@@ -206,37 +204,33 @@ module Forwardable
     if Module === obj ?
          obj.method_defined?(accessor) || obj.private_method_defined?(accessor) :
          obj.respond_to?(accessor, true)
-      accessor = "#{accessor}()"
+      accessor = "(#{accessor}())"
     end
 
     args = RUBY_VERSION >= '2.7' ? '...' : '*args, &block'
     method_call = ".__send__(:#{method}, #{args})"
-    if _valid_method?(method)
+    if method.match?(/\A[_a-zA-Z]\w*[?!]?\z/)
       loc, = caller_locations(2,1)
       pre = "_ ="
       mesg = "#{Module === obj ? obj : obj.class}\##{ali} at #{loc.path}:#{loc.lineno} forwarding to private method "
-      method_call = "#{<<-"begin;"}\n#{<<-"end;".chomp}"
-        begin;
-          unless defined? _.#{method}
-            ::Kernel.warn #{mesg.dump}"\#{_.class}"'##{method}', uplevel: 1
-            _#{method_call}
-          else
-            _.#{method}(#{args})
-          end
-        end;
+      method_call = <<~RUBY.chomp
+        if defined?(_.#{method})
+          _.#{method}(#{args})
+        else
+          ::Kernel.warn #{mesg.dump}"\#{_.class}"'##{method}', uplevel: 1
+          _#{method_call}
+        end
+      RUBY
     end
 
-    _compile_method("#{<<-"begin;"}\n#{<<-"end;"}", __FILE__, __LINE__+1)
-    begin;
+    eval(<<~RUBY, nil, __FILE__, __LINE__ + 1)
       proc do
         def #{ali}(#{args})
-          #{pre}
-          begin
-            #{accessor}
-          end#{method_call}
+          #{pre}#{accessor}
+          #{method_call}
         end
       end
-    end;
+    RUBY
   end
 end
 

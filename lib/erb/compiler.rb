@@ -225,7 +225,7 @@ class ERB::Compiler # :nodoc:
       end
     end
 
-    ERB_STAG = %w(<%= <%# <%)
+    ERB_STAG = %w(<%= <%# <%).freeze
     def is_erb_stag?(s)
       ERB_STAG.member?(s)
     end

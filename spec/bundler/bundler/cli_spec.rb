@@ -282,4 +282,15 @@ RSpec.describe "bundler executable" do
     bundler "--version"
     expect(out).to eq("#{Bundler::VERSION} (simulating Bundler 5)")
   end
+
+  it "shows cli_help when bundler install and no Gemfile is found" do
+    bundler "install", raise_on_error: false
+    expect(err).to include("Could not locate Gemfile")
+
+    expect(out).to include("Bundler version #{Bundler::VERSION}").
+      and include("\n\nBundler commands:\n\n").
+      and include("\n\n  Primary commands:\n").
+      and include("\n\n  Utilities:\n").
+      and include("\n\nOptions:\n")
+  end
 end

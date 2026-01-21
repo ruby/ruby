@@ -1397,8 +1397,6 @@ void
 Init_ossl_asn1(void)
 {
 #undef rb_intern
-    VALUE ary;
-    int i;
 
     sym_UNIVERSAL = ID2SYM(rb_intern_const("UNIVERSAL"));
     sym_CONTEXT_SPECIFIC = ID2SYM(rb_intern_const("CONTEXT_SPECIFIC"));
@@ -1548,17 +1546,20 @@ Init_ossl_asn1(void)
     rb_define_module_function(mASN1, "traverse", ossl_asn1_traverse, 1);
     rb_define_module_function(mASN1, "decode", ossl_asn1_decode, 1);
     rb_define_module_function(mASN1, "decode_all", ossl_asn1_decode_all, 1);
-    ary = rb_ary_new();
 
+    VALUE ary = rb_ary_new_capa(ossl_asn1_info_size);
+    for (int i = 0; i < ossl_asn1_info_size; i++) {
+        const char *name = ossl_asn1_info[i].name;
+        if (name[0] == '[')
+            continue;
+        rb_define_const(mASN1, name, INT2NUM(i));
+        rb_ary_store(ary, i, rb_obj_freeze(rb_str_new_cstr(name)));
+    }
+    rb_obj_freeze(ary);
     /*
      * Array storing tag names at the tag's index.
      */
     rb_define_const(mASN1, "UNIVERSAL_TAG_NAME", ary);
-    for(i = 0; i < ossl_asn1_info_size; i++){
-        if(ossl_asn1_info[i].name[0] == '[') continue;
-        rb_define_const(mASN1, ossl_asn1_info[i].name, INT2NUM(i));
-        rb_ary_store(ary, i, rb_str_new2(ossl_asn1_info[i].name));
-    }
 
     /* Document-class: OpenSSL::ASN1::ASN1Data
      *
@@ -1880,6 +1881,7 @@ do{\
     rb_hash_aset(class_tag_map, cASN1GeneralString, INT2NUM(V_ASN1_GENERALSTRING));
     rb_hash_aset(class_tag_map, cASN1UniversalString, INT2NUM(V_ASN1_UNIVERSALSTRING));
     rb_hash_aset(class_tag_map, cASN1BMPString, INT2NUM(V_ASN1_BMPSTRING));
+    rb_obj_freeze(class_tag_map);
 
     id_each = rb_intern_const("each");
 }

@@ -1,31 +1,30 @@
 Returns the substring of +self+ specified by the arguments.
 
-<b>Form <tt>self[index]</tt></b>
+<b>Form <tt>self[offset]</tt></b>
 
-With non-negative integer argument +index+ given,
-returns the 1-character substring found in self at character offset index:
+With non-negative integer argument +offset+ given,
+returns the 1-character substring found in self at character offset +offset+:
 
   'hello'[0]    # => "h"
   'hello'[4]    # => "o"
   'hello'[5]    # => nil
-  'Привет'[2]   # => "и"
   'こんにちは'[4] # => "は"
 
-With negative integer argument +index+ given,
+With negative integer argument +offset+ given,
 counts backward from the end of +self+:
 
   'hello'[-1] # => "o"
   'hello'[-5] # => "h"
   'hello'[-6] # => nil
 
-<b>Form <tt>self[start, length]</tt></b>
+<b>Form <tt>self[offset, size]</tt></b>
 
-With integer arguments +start+ and +length+ given,
-returns a substring of size +length+ characters (as available)
-beginning at character offset specified by +start+.
+With integer arguments +offset+ and +size+ given,
+returns a substring of size +size+ characters (as available)
+beginning at character offset specified by +offset+.
 
-If argument +start+ is non-negative,
-the offset is +start+:
+If argument +offset+ is non-negative,
+the offset is +offset+:
 
   'hello'[0, 1]  # => "h"
   'hello'[0, 5]  # => "hello"
@@ -34,7 +33,7 @@ the offset is +start+:
   'hello'[2, 0]  # => ""
   'hello'[2, -1] # => nil
 
-If argument +start+ is negative,
+If argument +offset+ is negative,
 counts backward from the end of +self+:
 
   'hello'[-1, 1] # => "o"
@@ -42,7 +41,7 @@ counts backward from the end of +self+:
   'hello'[-1, 0] # => ""
   'hello'[-6, 5] # => nil
 
-Special case: if +start+ equals the length of +self+,
+Special case: if +offset+ equals the size of +self+,
 returns a new empty string:
 
   'hello'[5, 3]  # => ""
@@ -92,7 +91,6 @@ returns the matching substring of +self+, if found:
   'hello'['ell']      # => "ell"
   'hello'['']         # => ""
   'hello'['nosuch']   # => nil
-  'Привет'['ив']      # => "ив"
   'こんにちは'['んにち'] # => "んにち"
 
 Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].

@@ -6,10 +6,10 @@ prevs = [prev, prev.sub(/\.\d+\z/, '')]
 
 update = ->(list, type, desc = "updated") do
   item = ->(mark = "* ") do
-    "The following #{type} gem#{list.size == 1 ? ' is' : 's are'} #{desc}.\n\n" +
+    "### The following #{type} gem#{list.size == 1 ? ' is' : 's are'} #{desc}.\n\n" +
       list.map {|g, v|"#{mark}#{g} #{v}\n"}.join("") + "\n"
   end
-  news.sub!(/^(?:\*( +))?The following #{type} gems? (?:are|is) #{desc}\.\n+(?:(?(1) \1)\*( *).*\n)*\n*/) do
+  news.sub!(/^(?:\*( +)|#+ *)?The following #{type} gems? (?:are|is) #{desc}\.\n+(?:(?(1) \1)\*( *).*\n)*\n*/) do
     item["#{$1&.<< " "}*#{$2 || ' '}"]
   end or news.sub!(/^## Stdlib updates(?:\n+The following.*(?:\n+( *\* *).*)*)*\n+\K/) do
     item[$1 || "* "]

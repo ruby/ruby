@@ -601,7 +601,7 @@ class TestClass < Test::Unit::TestCase
     obj = Object.new
     c = obj.singleton_class
     obj.freeze
-    assert_raise_with_message(FrozenError, /frozen object/) {
+    assert_raise_with_message(FrozenError, /frozen Object/) {
       c.class_eval {def f; end}
     }
   end
@@ -925,6 +925,21 @@ CODE
         Ractor.new do
           20_000.times do
             Object.new.singleton_class
+          end
+        end
+      end.each(&:join)
+    end;
+  end
+
+  def test_safe_multi_ractor_singleton_class_access
+    assert_ractor "#{<<~"begin;"}\n#{<<~'end;'}"
+    begin;
+      class A; end
+      4.times.map do
+        Ractor.new do
+          a = A
+          100.times do
+            a = a.singleton_class
           end
         end
       end.each(&:join)

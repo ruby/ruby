@@ -32,19 +32,17 @@ describe 'Addrinfo#inspect_sockaddr' do
     end
   end
 
-  with_feature :unix_socket do
-    describe 'using a UNIX path' do
-      it 'returns a String containing the UNIX path' do
-        addr = Addrinfo.unix('/foo/bar')
+  describe 'using a UNIX path' do
+    it 'returns a String containing the UNIX path' do
+      addr = Addrinfo.unix('/foo/bar')
 
-        addr.inspect_sockaddr.should == '/foo/bar'
-      end
+      addr.inspect_sockaddr.should == '/foo/bar'
+    end
 
-      it 'returns a String containing the UNIX path when using a relative path' do
-        addr = Addrinfo.unix('foo')
+    it 'returns a String containing the UNIX path when using a relative path' do
+      addr = Addrinfo.unix('foo')
 
-        addr.inspect_sockaddr.should == 'UNIX foo'
-      end
+      addr.inspect_sockaddr.should == 'UNIX foo'
     end
   end
 end

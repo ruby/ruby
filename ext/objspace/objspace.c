@@ -108,28 +108,24 @@ each_object_with_flags(each_obj_with_flags cb, void *ctx)
 
 /*
  *  call-seq:
- *    ObjectSpace.memsize_of_all([klass]) -> Integer
+ *    ObjectSpace.memsize_of_all(klass = nil) -> integer
  *
- *  Return consuming memory size of all living objects in bytes.
+ *  Returns the total memory size of all living objects in bytes.
  *
- *  If +klass+ (should be Class object) is given, return the total memory size
- *  of instances of the given class.
+ *    ObjectSpace.memsize_of_all # => 12502001
  *
- *  Note that the returned size is incomplete. You need to deal with this
- *  information as only a *HINT*. Especially, the size of +T_DATA+ may not be
- *  correct.
+ *  If +klass+ is given (which must be a Class or Module), returns the total
+ *  memory size of objects whose class is, or is a subclass, of +klass+.
  *
- *  Note that this method does *NOT* return total malloc'ed memory size.
+ *    class MyClass; end
+ *    ObjectSpace.memsize_of_all(MyClass) # => 0
+ *    o = MyClass.new
+ *    ObjectSpace.memsize_of_all(MyClass) # => 40
  *
- *  This method can be defined by the following Ruby code:
- *
- *	def memsize_of_all klass = false
- *  	  total = 0
- *  	  ObjectSpace.each_object{|e|
- *  	    total += ObjectSpace.memsize_of(e) if klass == false || e.kind_of?(klass)
- *  	  }
- *  	  total
- *  	end
+ *  Note that the value returned may be an underestimate of the actual amount
+ *  of memory used. Therefore, the value returned should only be used as a hint,
+ *  rather than a source of truth. In particular, the size of +T_DATA+ objects may
+ *  not be correct.
  *
  *  This method is only expected to work with C Ruby.
  */
@@ -295,28 +291,27 @@ size_t rb_sym_immortal_count(void);
 
 /*
  *  call-seq:
- *     ObjectSpace.count_symbols([result_hash]) -> hash
+ *     ObjectSpace.count_symbols(result_hash = nil) -> hash
  *
- *  Counts symbols for each Symbol type.
+ *  Returns a hash containing the number of objects for each Symbol type.
  *
- *  This method is only for MRI developers interested in performance and memory
- *  usage of Ruby programs.
+ *  The types of Symbols are the following:
  *
- *  If the optional argument, result_hash, is given, it is overwritten and
- *  returned. This is intended to avoid probe effect.
+ *  - +mortal_dynamic_symbol+: Symbols that are garbage collectable.
+ *  - +immortal_dynamic_symbol+: Symbols that are objects allocated from the
+ *    garbage collector, but are not garbage collectable.
+ *  - +immortal_static_symbol+: Symbols that are not allocated from the
+ *    garbage collector, and are thus not garbage collectable.
+ *  - +immortal_symbol+: the sum of +immortal_dynamic_symbol+ and +immortal_static_symbol+.
  *
- *  Note:
- *  The contents of the returned hash is implementation defined.
- *  It may be changed in future.
+ *  If the optional argument +result_hash+ is given, it is overwritten and
+ *  returned. This is intended to avoid the probe effect.
+ *
+ *  This method is intended for developers interested in performance and memory
+ *  usage of Ruby programs. The contents of the returned hash is implementation
+ *  specific and may change in the future.
  *
  *  This method is only expected to work with C Ruby.
- *
- *  On this version of MRI, they have 3 types of Symbols (and 1 total counts).
- *
- *   * mortal_dynamic_symbol: GC target symbols (collected by GC)
- *   * immortal_dynamic_symbol: Immortal symbols promoted from dynamic symbols (do not collected by GC)
- *   * immortal_static_symbol: Immortal symbols (do not collected by GC)
- *   * immortal_symbol: total immortal symbols (immortal_dynamic_symbol+immortal_static_symbol)
  */
 
 static VALUE
@@ -334,35 +329,6 @@ count_symbols(int argc, VALUE *argv, VALUE os)
     rb_hash_aset(hash, ID2SYM(rb_intern("immortal_symbol")),         SIZET2NUM(immortal_symbols));
 
     return hash;
-}
-
-/*
- *  call-seq:
- *     ObjectSpace.count_nodes([result_hash]) -> hash
- *
- *  Counts nodes for each node type.
- *
- *  This method is only for MRI developers interested in performance and memory
- *  usage of Ruby programs.
- *
- *  It returns a hash as:
- *
- *	{:NODE_METHOD=>2027, :NODE_FBODY=>1927, :NODE_CFUNC=>1798, ...}
- *
- *  If the optional argument, result_hash, is given, it is overwritten and
- *  returned. This is intended to avoid probe effect.
- *
- *  Note:
- *  The contents of the returned hash is implementation defined.
- *  It may be changed in future.
- *
- *  This method is only expected to work with C Ruby.
- */
-
-static VALUE
-count_nodes(int argc, VALUE *argv, VALUE os)
-{
-    return setup_hash(argc, argv);
 }
 
 static void
@@ -394,32 +360,22 @@ cto_i(VALUE v, void *data)
 
 /*
  *  call-seq:
- *     ObjectSpace.count_tdata_objects([result_hash]) -> hash
+ *     ObjectSpace.count_tdata_objects(result_hash = nil) -> hash
  *
- *  Counts objects for each +T_DATA+ type.
+ *  Returns a hash containing the number of objects for each +T_DATA+ type.
+ *  The keys are Class objects when the +T_DATA+ object has an associated class,
+ *  or Symbol objects of the name defined in the +rb_data_type_struct+ for internal
+ *  +T_DATA+ objects.
  *
- *  This method is only for MRI developers interested in performance and memory
- *  usage of Ruby programs.
+ *    ObjectSpace.count_tdata_objects
+ *    # => {RBS::Location => 39255, marshal_compat_table: 1, Encoding => 103, mutex: 1, ... }
  *
- *  It returns a hash as:
+ *  If the optional argument +result_hash+ is given, it is overwritten and
+ *  returned. This is intended to avoid the probe effect.
  *
- *	{RubyVM::InstructionSequence=>504, :parser=>5, :barrier=>6,
- *  	 :mutex=>6, Proc=>60, RubyVM::Env=>57, Mutex=>1, Encoding=>99,
- *  	 ThreadGroup=>1, Binding=>1, Thread=>1, RubyVM=>1, :iseq=>1,
- *  	 Random=>1, ARGF.class=>1, Data=>1, :autoload=>3, Time=>2}
- *  	# T_DATA objects existing at startup on r32276.
- *
- *  If the optional argument, result_hash, is given, it is overwritten and
- *  returned. This is intended to avoid probe effect.
- *
- *  The contents of the returned hash is implementation specific and may change
- *  in the future.
- *
- *  In this version, keys are Class object or Symbol object.
- *
- *  If object is kind of normal (accessible) object, the key is Class object.
- *  If object is not a kind of normal (internal) object, the key is symbol
- *  name, registered by rb_data_type_struct.
+ *  This method is intended for developers interested in performance and memory
+ *  usage of Ruby programs. The contents of the returned hash is implementation
+ *  specific and may change in the future.
  *
  *  This method is only expected to work with C Ruby.
  */
@@ -458,28 +414,22 @@ count_imemo_objects_i(VALUE v, void *data)
 
 /*
  *  call-seq:
- *     ObjectSpace.count_imemo_objects([result_hash]) -> hash
+ *     ObjectSpace.count_imemo_objects(result_hash = nil) -> hash
  *
- *  Counts objects for each +T_IMEMO+ type.
+ *  Returns a hash containing the number of objects for each +T_IMEMO+ type.
+ *  The keys are Symbol objects of the +T_IMEMO+ type name.
+ *  +T_IMEMO+ objects are Ruby internal objects that are not visible to Ruby
+ *  programs.
  *
- *  This method is only for MRI developers interested in performance and memory
- *  usage of Ruby programs.
+ *    ObjectSpace.count_imemo_objects
+ *    # => {imemo_callcache: 5482, imemo_constcache: 1258, imemo_ment: 13906, ... }
  *
- *  It returns a hash as:
+ *  If the optional argument +result_hash+ is given, it is overwritten and
+ *  returned. This is intended to avoid the probe effect.
  *
- *       {:imemo_ifunc=>8,
- *        :imemo_svar=>7,
- *        :imemo_cref=>509,
- *        :imemo_memo=>1,
- *        :imemo_throw_data=>1}
- *
- *  If the optional argument, result_hash, is given, it is overwritten and
- *  returned. This is intended to avoid probe effect.
- *
- *  The contents of the returned hash is implementation specific and may change
- *  in the future.
- *
- *  In this version, keys are symbol objects.
+ *  This method is intended for developers interested in performance and memory
+ *  usage of Ruby programs. The contents of the returned hash is implementation
+ *  specific and may change in the future.
  *
  *  This method is only expected to work with C Ruby.
  */
@@ -834,7 +784,6 @@ Init_objspace(void)
 
     rb_define_module_function(rb_mObjSpace, "count_objects_size", count_objects_size, -1);
     rb_define_module_function(rb_mObjSpace, "count_symbols", count_symbols, -1);
-    rb_define_module_function(rb_mObjSpace, "count_nodes", count_nodes, -1);
     rb_define_module_function(rb_mObjSpace, "count_tdata_objects", count_tdata_objects, -1);
     rb_define_module_function(rb_mObjSpace, "count_imemo_objects", count_imemo_objects, -1);
 

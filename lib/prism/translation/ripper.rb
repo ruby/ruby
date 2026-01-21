@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 # :markup: markdown
 
-require "ripper"
-
 module Prism
   module Translation
     # This class provides a compatibility layer between prism and Ripper. It
@@ -78,6 +76,19 @@ module Prism
         else
           result.value
         end
+      end
+
+      # Tokenizes the Ruby program and returns an array of strings.
+      # The +filename+ and +lineno+ arguments are mostly ignored, since the
+      # return value is just the tokenized input.
+      # By default, this method does not handle syntax errors in +src+,
+      # use the +raise_errors+ keyword to raise a SyntaxError for an error in +src+.
+      #
+      #   p Ripper.tokenize("def m(a) nil end")
+      #      # => ["def", " ", "m", "(", "a", ")", " ", "nil", " ", "end"]
+      #
+      def self.tokenize(...)
+        lex(...).map(&:value)
       end
 
       # This contains a table of all of the parser events and their
@@ -426,8 +437,34 @@ module Prism
         end
       end
 
+      autoload :Filter, "prism/translation/ripper/filter"
+      autoload :Lexer, "prism/translation/ripper/lexer"
       autoload :SexpBuilder, "prism/translation/ripper/sexp"
       autoload :SexpBuilderPP, "prism/translation/ripper/sexp"
+
+      # :stopdoc:
+      # This is not part of the public API but used by some gems.
+
+      # Ripper-internal bitflags.
+      LEX_STATE_NAMES = %i[
+        BEG END ENDARG ENDFN ARG CMDARG MID FNAME DOT CLASS LABEL LABELED FITEM
+      ].map.with_index.to_h { |name, i| [2 ** i, name] }.freeze
+      private_constant :LEX_STATE_NAMES
+
+      LEX_STATE_NAMES.each do |value, key|
+        const_set("EXPR_#{key}", value)
+      end
+      EXPR_NONE = 0
+      EXPR_VALUE = EXPR_BEG
+      EXPR_BEG_ANY = EXPR_BEG | EXPR_MID | EXPR_CLASS
+      EXPR_ARG_ANY = EXPR_ARG | EXPR_CMDARG
+      EXPR_END_ANY = EXPR_END | EXPR_ENDARG | EXPR_ENDFN
+
+      def self.lex_state_name(state)
+        LEX_STATE_NAMES.filter_map { |flag, name| name if state & flag != 0  }.join("|")
+      end
+
+      # :startdoc:
 
       # The source that is being parsed.
       attr_reader :source
@@ -795,7 +832,7 @@ module Prism
       # foo(bar)
       #     ^^^
       def visit_arguments_node(node)
-        arguments, _ = visit_call_node_arguments(node, nil, false)
+        arguments, _, _ = visit_call_node_arguments(node, nil, false)
         arguments
       end
 
@@ -1005,16 +1042,16 @@ module Prism
           case node.name
           when :[]
             receiver = visit(node.receiver)
-            arguments, block = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc))
+            arguments, block, has_ripper_block = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc))
 
             bounds(node.location)
             call = on_aref(receiver, arguments)
 
-            if block.nil?
-              call
-            else
+            if has_ripper_block
               bounds(node.location)
               on_method_add_block(call, block)
+            else
+              call
             end
           when :[]=
             receiver = visit(node.receiver)
@@ -1073,9 +1110,9 @@ module Prism
             if node.variable_call?
               on_vcall(message)
             else
-              arguments, block = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc || node.location))
+              arguments, block, has_ripper_block = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc || node.location))
               call =
-                if node.opening_loc.nil? && arguments&.any?
+                if node.opening_loc.nil? && get_arguments_and_block(node.arguments, node.block).first.any?
                   bounds(node.location)
                   on_command(message, arguments)
                 elsif !node.opening_loc.nil?
@@ -1086,11 +1123,11 @@ module Prism
                   on_method_add_arg(on_fcall(message), on_args_new)
                 end
 
-              if block.nil?
-                call
-              else
+              if has_ripper_block
                 bounds(node.block.location)
                 on_method_add_block(call, block)
+              else
+                call
               end
             end
           end
@@ -1114,7 +1151,7 @@ module Prism
             bounds(node.location)
             on_assign(on_field(receiver, call_operator, message), value)
           else
-            arguments, block = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc || node.location))
+            arguments, block, has_ripper_block = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc || node.location))
             call =
               if node.opening_loc.nil?
                 bounds(node.location)
@@ -1132,26 +1169,34 @@ module Prism
                 on_method_add_arg(on_call(receiver, call_operator, message), arguments)
               end
 
-            if block.nil?
-              call
-            else
+            if has_ripper_block
               bounds(node.block.location)
               on_method_add_block(call, block)
+            else
+              call
             end
           end
         end
       end
 
-      # Visit the arguments and block of a call node and return the arguments
-      # and block as they should be used.
-      private def visit_call_node_arguments(arguments_node, block_node, trailing_comma)
+      # Extract the arguments and block Ripper-style, which means if the block
+      # is like `&b` then it's moved to arguments.
+      private def get_arguments_and_block(arguments_node, block_node)
         arguments = arguments_node&.arguments || []
         block = block_node
 
         if block.is_a?(BlockArgumentNode)
-          arguments << block
+          arguments += [block]
           block = nil
         end
+
+        [arguments, block]
+      end
+
+      # Visit the arguments and block of a call node and return the arguments
+      # and block as they should be used.
+      private def visit_call_node_arguments(arguments_node, block_node, trailing_comma)
+        arguments, block = get_arguments_and_block(arguments_node, block_node)
 
         [
           if arguments.length == 1 && arguments.first.is_a?(ForwardingArgumentsNode)
@@ -1166,7 +1211,8 @@ module Prism
               on_args_add_block(args, false)
             end
           end,
-          visit(block)
+          visit(block),
+          block != nil,
         ]
       end
 
@@ -1603,10 +1649,10 @@ module Prism
           end
 
         bounds(node.location)
-        if receiver.nil?
-          on_def(name, parameters, bodystmt)
-        else
+        if receiver
           on_defs(receiver, operator, name, parameters, bodystmt)
+        else
+          on_def(name, parameters, bodystmt)
         end
       end
 
@@ -2004,7 +2050,7 @@ module Prism
       # ^^^^^^^^^^^^^^^
       def visit_index_operator_write_node(node)
         receiver = visit(node.receiver)
-        arguments, _ = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc))
+        arguments, _, _ = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc))
 
         bounds(node.location)
         target = on_aref_field(receiver, arguments)
@@ -2021,7 +2067,7 @@ module Prism
       # ^^^^^^^^^^^^^^^^
       def visit_index_and_write_node(node)
         receiver = visit(node.receiver)
-        arguments, _ = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc))
+        arguments, _, _ = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc))
 
         bounds(node.location)
         target = on_aref_field(receiver, arguments)
@@ -2038,7 +2084,7 @@ module Prism
       # ^^^^^^^^^^^^^^^^
       def visit_index_or_write_node(node)
         receiver = visit(node.receiver)
-        arguments, _ = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc))
+        arguments, _, _ = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc))
 
         bounds(node.location)
         target = on_aref_field(receiver, arguments)
@@ -2055,7 +2101,7 @@ module Prism
       # ^^^^^^^^
       def visit_index_target_node(node)
         receiver = visit(node.receiver)
-        arguments, _ = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc))
+        arguments, _, _ = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc))
 
         bounds(node.location)
         on_aref_field(receiver, arguments)
@@ -3085,7 +3131,7 @@ module Prism
       # super(foo)
       # ^^^^^^^^^^
       def visit_super_node(node)
-        arguments, block = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.rparen_loc || node.location))
+        arguments, block, has_ripper_block = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.rparen_loc || node.location))
 
         if !node.lparen_loc.nil?
           bounds(node.lparen_loc)
@@ -3095,11 +3141,11 @@ module Prism
         bounds(node.location)
         call = on_super(arguments)
 
-        if block.nil?
-          call
-        else
+        if has_ripper_block
           bounds(node.block.location)
           on_method_add_block(call, block)
+        else
+          call
         end
       end
 
@@ -3409,12 +3455,12 @@ module Prism
 
       # :stopdoc:
       def _dispatch_0; end
-      def _dispatch_1(_); end
-      def _dispatch_2(_, _); end
-      def _dispatch_3(_, _, _); end
-      def _dispatch_4(_, _, _, _); end
-      def _dispatch_5(_, _, _, _, _); end
-      def _dispatch_7(_, _, _, _, _, _, _); end
+      def _dispatch_1(arg); arg end
+      def _dispatch_2(arg, _); arg end
+      def _dispatch_3(arg, _, _); arg end
+      def _dispatch_4(arg, _, _, _); arg end
+      def _dispatch_5(arg, _, _, _, _); arg end
+      def _dispatch_7(arg, _, _, _, _, _, _); arg end
       # :startdoc:
 
       #

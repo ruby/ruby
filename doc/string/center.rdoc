@@ -9,7 +9,6 @@ centered and padded on one or both ends with +pad_string+:
   'hello'.center(20, '-|')      # => "-|-|-|-hello-|-|-|-|" # Some padding repeated.
   'hello'.center(10, 'abcdefg') # => "abhelloabc"           # Some padding not used.
   '  hello  '.center(13)        # => "    hello    "
-  'тест'.center(10)             # => "   тест   "
   'こんにちは'.center(10)         # => "  こんにちは   "      # Multi-byte characters.
 
 If +size+ is less than or equal to the size of +self+, returns an unpadded copy of +self+:

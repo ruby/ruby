@@ -23,19 +23,13 @@
 #include "ruby/debug.h"
 #include "internal/cont.h"
 
-// For mmapp(), sysconf()
-#ifndef _WIN32
-#include <unistd.h>
-#include <sys/mman.h>
-#endif
-
-#include <errno.h>
+// This build config impacts the pointer tagging scheme and we only want to
+// support one scheme for simplicity.
+STATIC_ASSERT(pointer_tagging_scheme, USE_FLONUM);
 
 enum zjit_struct_offsets {
     ISEQ_BODY_OFFSET_PARAM = offsetof(struct rb_iseq_constant_body, param)
 };
-
-#define PTR2NUM(x) (rb_int2inum((intptr_t)(void *)(x)))
 
 // For a given raw_sample (frame), set the hash with the caller's
 // name, file, and line number. Return the  hash with collected frame_info.
@@ -308,6 +302,14 @@ rb_zjit_class_has_default_allocator(VALUE klass)
 
 VALUE rb_vm_get_untagged_block_handler(rb_control_frame_t *reg_cfp);
 
+void
+rb_zjit_writebarrier_check_immediate(VALUE recv, VALUE val)
+{
+    if (!RB_SPECIAL_CONST_P(val)) {
+        rb_gc_writebarrier(recv, val);
+    }
+}
+
 // Primitives used by zjit.rb. Don't put other functions below, which wouldn't use them.
 VALUE rb_zjit_enable(rb_execution_context_t *ec, VALUE self);
 VALUE rb_zjit_assert_compiles(rb_execution_context_t *ec, VALUE self);
@@ -315,6 +317,7 @@ VALUE rb_zjit_stats(rb_execution_context_t *ec, VALUE self, VALUE target_key);
 VALUE rb_zjit_reset_stats_bang(rb_execution_context_t *ec, VALUE self);
 VALUE rb_zjit_stats_enabled_p(rb_execution_context_t *ec, VALUE self);
 VALUE rb_zjit_print_stats_p(rb_execution_context_t *ec, VALUE self);
+VALUE rb_zjit_get_stats_file_path_p(rb_execution_context_t *ec, VALUE self);
 VALUE rb_zjit_trace_exit_locations_enabled_p(rb_execution_context_t *ec, VALUE self);
 VALUE rb_zjit_get_exit_locations(rb_execution_context_t *ec, VALUE self);
 

@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include "ruby/ruby.h"
 
 // Type for a dynamic array. Use to declare a dynamic array.
 // It is a pointer so it fits in st_table nicely. Designed
@@ -72,6 +73,20 @@
     (*(ptr_to_ary))->meta.size++; \
 } while (0)
 
+/* Removes the element at idx and replaces it with the last element.
+ * ptr_to_ary and idx is evaluated multiple times.
+ * Warning: not bounds checked.
+ *
+ * void rb_darray_swap_remove(rb_darray(T) *ptr_to_ary, size_t idx);
+ */
+#define rb_darray_swap_remove(ptr_to_ary, idx) do { \
+    size_t _darray_size = rb_darray_size(*(ptr_to_ary)); \
+    if ((idx) != _darray_size - 1) { \
+        (*(ptr_to_ary))->data[idx] = (*(ptr_to_ary))->data[_darray_size - 1]; \
+    } \
+    (*(ptr_to_ary))->meta.size--; \
+} while (0)
+
 // Iterate over items of the array in a for loop
 //
 #define rb_darray_foreach(ary, idx_name, elem_ptr_var) \
@@ -133,6 +148,9 @@ rb_darray_size(const void *ary)
     return meta ? meta->size : 0;
 }
 
+/* Estimate of the amount of memory used by this darray.
+ * Useful for TypedData objects. */
+#define rb_darray_memsize(ary) (sizeof(*(ary)) + (rb_darray_size(ary) * sizeof((ary)->data[0])))
 
 static inline void
 rb_darray_pop(void *ary, size_t count)

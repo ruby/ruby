@@ -1291,7 +1291,8 @@ internal_writev_func(void *ptr)
 static ssize_t
 rb_io_read_memory(rb_io_t *fptr, void *buf, size_t count)
 {
-    VALUE scheduler = rb_fiber_scheduler_current();
+    rb_thread_t *th = GET_THREAD();
+    VALUE scheduler = rb_fiber_scheduler_current_for_threadptr(th);
     if (scheduler != Qnil) {
         VALUE result = rb_fiber_scheduler_io_read_memory(scheduler, fptr->self, buf, count, 0);
 
@@ -1301,7 +1302,7 @@ rb_io_read_memory(rb_io_t *fptr, void *buf, size_t count)
     }
 
     struct io_internal_read_struct iis = {
-        .th = rb_thread_current(),
+        .th = th->self,
         .fptr = fptr,
         .nonblock = 0,
         .fd = fptr->fd,
@@ -1324,7 +1325,8 @@ rb_io_read_memory(rb_io_t *fptr, void *buf, size_t count)
 static ssize_t
 rb_io_write_memory(rb_io_t *fptr, const void *buf, size_t count)
 {
-    VALUE scheduler = rb_fiber_scheduler_current();
+    rb_thread_t *th = GET_THREAD();
+    VALUE scheduler = rb_fiber_scheduler_current_for_threadptr(th);
     if (scheduler != Qnil) {
         VALUE result = rb_fiber_scheduler_io_write_memory(scheduler, fptr->self, buf, count, 0);
 
@@ -1334,7 +1336,7 @@ rb_io_write_memory(rb_io_t *fptr, const void *buf, size_t count)
     }
 
     struct io_internal_write_struct iis = {
-        .th = rb_thread_current(),
+        .th = th->self,
         .fptr = fptr,
         .nonblock = 0,
         .fd = fptr->fd,
@@ -1360,7 +1362,9 @@ rb_writev_internal(rb_io_t *fptr, const struct iovec *iov, int iovcnt)
 {
     if (!iovcnt) return 0;
 
-    VALUE scheduler = rb_fiber_scheduler_current();
+    rb_thread_t *th = GET_THREAD();
+
+    VALUE scheduler = rb_fiber_scheduler_current_for_threadptr(th);
     if (scheduler != Qnil) {
         // This path assumes at least one `iov`:
         VALUE result = rb_fiber_scheduler_io_write_memory(scheduler, fptr->self, iov[0].iov_base, iov[0].iov_len, 0);
@@ -1371,7 +1375,7 @@ rb_writev_internal(rb_io_t *fptr, const struct iovec *iov, int iovcnt)
     }
 
     struct io_internal_writev_struct iis = {
-        .th = rb_thread_current(),
+        .th = th->self,
         .fptr = fptr,
         .nonblock = 0,
         .fd = fptr->fd,
@@ -1414,10 +1418,34 @@ io_flush_buffer_sync(void *arg)
     return (VALUE)-1;
 }
 
+static inline VALUE
+io_flush_buffer_fiber_scheduler(VALUE scheduler, rb_io_t *fptr)
+{
+    VALUE ret = rb_fiber_scheduler_io_write_memory(scheduler, fptr->self, fptr->wbuf.ptr+fptr->wbuf.off, fptr->wbuf.len, 0);
+    if (!UNDEF_P(ret)) {
+        ssize_t result = rb_fiber_scheduler_io_result_apply(ret);
+        if (result > 0) {
+            fptr->wbuf.off += result;
+            fptr->wbuf.len -= result;
+        }
+        return result >= 0 ? (VALUE)0 : (VALUE)-1;
+    }
+    return ret;
+}
+
 static VALUE
 io_flush_buffer_async(VALUE arg)
 {
     rb_io_t *fptr = (rb_io_t *)arg;
+
+    VALUE scheduler = rb_fiber_scheduler_current();
+    if (scheduler != Qnil) {
+        VALUE result = io_flush_buffer_fiber_scheduler(scheduler, fptr);
+        if (!UNDEF_P(result)) {
+            return result;
+        }
+    }
+
     return rb_io_blocking_region_wait(fptr, io_flush_buffer_sync, fptr, RUBY_IO_WRITABLE);
 }
 
@@ -1453,7 +1481,8 @@ io_fflush(rb_io_t *fptr)
 VALUE
 rb_io_wait(VALUE io, VALUE events, VALUE timeout)
 {
-    VALUE scheduler = rb_fiber_scheduler_current();
+    rb_thread_t *th = GET_THREAD();
+    VALUE scheduler = rb_fiber_scheduler_current_for_threadptr(th);
 
     if (scheduler != Qnil) {
         return rb_fiber_scheduler_io_wait(scheduler, io, events, timeout);
@@ -1474,7 +1503,7 @@ rb_io_wait(VALUE io, VALUE events, VALUE timeout)
         tv = &tv_storage;
     }
 
-    int ready = rb_thread_io_wait(fptr, RB_NUM2INT(events), tv);
+    int ready = rb_thread_io_wait(th, fptr, RB_NUM2INT(events), tv);
 
     if (ready < 0) {
         rb_sys_fail(0);
@@ -1498,17 +1527,15 @@ io_from_fd(int fd)
 }
 
 static int
-io_wait_for_single_fd(int fd, int events, struct timeval *timeout)
+io_wait_for_single_fd(int fd, int events, struct timeval *timeout, rb_thread_t *th, VALUE scheduler)
 {
-    VALUE scheduler = rb_fiber_scheduler_current();
-
     if (scheduler != Qnil) {
         return RTEST(
             rb_fiber_scheduler_io_wait(scheduler, io_from_fd(fd), RB_INT2NUM(events), rb_fiber_scheduler_make_timeout(timeout))
         );
     }
 
-    return rb_thread_wait_for_single_fd(fd, events, timeout);
+    return rb_thread_wait_for_single_fd(th, fd, events, timeout);
 }
 
 int
@@ -1516,7 +1543,8 @@ rb_io_wait_readable(int f)
 {
     io_fd_check_closed(f);
 
-    VALUE scheduler = rb_fiber_scheduler_current();
+    rb_thread_t *th = GET_THREAD();
+    VALUE scheduler = rb_fiber_scheduler_current_for_threadptr(th);
 
     switch (errno) {
       case EINTR:
@@ -1536,7 +1564,7 @@ rb_io_wait_readable(int f)
             );
         }
         else {
-            io_wait_for_single_fd(f, RUBY_IO_READABLE, NULL);
+            io_wait_for_single_fd(f, RUBY_IO_READABLE, NULL, th, scheduler);
         }
         return TRUE;
 
@@ -1550,7 +1578,8 @@ rb_io_wait_writable(int f)
 {
     io_fd_check_closed(f);
 
-    VALUE scheduler = rb_fiber_scheduler_current();
+    rb_thread_t *th = GET_THREAD();
+    VALUE scheduler = rb_fiber_scheduler_current_for_threadptr(th);
 
     switch (errno) {
       case EINTR:
@@ -1579,7 +1608,7 @@ rb_io_wait_writable(int f)
             );
         }
         else {
-            io_wait_for_single_fd(f, RUBY_IO_WRITABLE, NULL);
+            io_wait_for_single_fd(f, RUBY_IO_WRITABLE, NULL, th, scheduler);
         }
         return TRUE;
 
@@ -1591,7 +1620,9 @@ rb_io_wait_writable(int f)
 int
 rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 {
-    return io_wait_for_single_fd(fd, events, timeout);
+    rb_thread_t *th = GET_THREAD();
+    VALUE scheduler = rb_fiber_scheduler_current_for_threadptr(th);
+    return io_wait_for_single_fd(fd, events, timeout, th, scheduler);
 }
 
 int
@@ -2628,9 +2659,6 @@ io_fillbuf(rb_io_t *fptr)
         fptr->rbuf.len = 0;
         fptr->rbuf.capa = IO_RBUF_CAPA_FOR(fptr);
         fptr->rbuf.ptr = ALLOC_N(char, fptr->rbuf.capa);
-#ifdef _WIN32
-        fptr->rbuf.capa--;
-#endif
     }
     if (fptr->rbuf.len == 0) {
       retry:
@@ -3298,10 +3326,6 @@ io_shift_cbuf(rb_io_t *fptr, int len, VALUE *strp)
 static int
 io_setstrbuf(VALUE *str, long len)
 {
-#ifdef _WIN32
-    if (len > 0)
-        len = (len + 1) & ~1L;	/* round up for wide char */
-#endif
     if (NIL_P(*str)) {
         *str = rb_str_new(0, len);
         return TRUE;
@@ -4696,10 +4720,11 @@ rb_io_each_line(int argc, VALUE *argv, VALUE io)
  *  Calls the given block with each byte (0..255) in the stream; returns +self+.
  *  See {Byte IO}[rdoc-ref:IO@Byte+IO].
  *
- *    f = File.new('t.rus')
+ *    File.read('t.ja') # => "こんにちは"
+ *    f = File.new('t.ja')
  *    a = []
  *    f.each_byte {|b| a << b }
- *    a # => [209, 130, 208, 181, 209, 129, 209, 130]
+ *    a # => [227, 129, 147, 227, 130, 147, 227, 129, 171, 227, 129, 161, 227, 129, 175]
  *    f.close
  *
  *  Returns an Enumerator if no block is given.
@@ -4844,10 +4869,11 @@ io_getc(rb_io_t *fptr, rb_encoding *enc)
  *  Calls the given block with each character in the stream; returns +self+.
  *  See {Character IO}[rdoc-ref:IO@Character+IO].
  *
- *    f = File.new('t.rus')
+ *    File.read('t.ja') # => "こんにちは"
+ *    f = File.new('t.ja')
  *    a = []
  *    f.each_char {|c| a << c.ord }
- *    a # => [1090, 1077, 1089, 1090]
+ *    a # => [12371, 12435, 12395, 12385, 12399]
  *    f.close
  *
  *  Returns an Enumerator if no block is given.
@@ -4882,10 +4908,11 @@ rb_io_each_char(VALUE io)
  *
  *  Calls the given block with each codepoint in the stream; returns +self+:
  *
- *    f = File.new('t.rus')
+ *    File.read('t.ja') # => "こんにちは"
+ *    f = File.new('t.ja')
  *    a = []
  *    f.each_codepoint {|c| a << c }
- *    a # => [1090, 1077, 1089, 1090]
+ *    a # => [12371, 12435, 12395, 12385, 12399]
  *    f.close
  *
  *  Returns an Enumerator if no block is given.
@@ -4999,8 +5026,9 @@ rb_io_each_codepoint(VALUE io)
  *    f = File.open('t.txt')
  *    f.getc     # => "F"
  *    f.close
- *    f = File.open('t.rus')
- *    f.getc.ord # => 1090
+ *    File.read('t.ja') # => "こんにちは"
+ *    f = File.open('t.ja')
+ *    f.getc.ord # => 12371
  *    f.close
  *
  *  Related:  IO#readchar (may raise EOFError).
@@ -5032,8 +5060,9 @@ rb_io_getc(VALUE io)
  *    f = File.open('t.txt')
  *    f.readchar     # => "F"
  *    f.close
- *    f = File.open('t.rus')
- *    f.readchar.ord # => 1090
+ *    File.read('t.ja') # => "こんにちは"
+ *    f = File.open('t.ja')
+ *    f.readchar.ord # => 12371
  *    f.close
  *
  *  Related:  IO#getc (will not raise EOFError).
@@ -5062,8 +5091,9 @@ rb_io_readchar(VALUE io)
  *    f = File.open('t.txt')
  *    f.getbyte # => 70
  *    f.close
- *    f = File.open('t.rus')
- *    f.getbyte # => 209
+ *    File.read('t.ja') # => "こんにちは"
+ *    f = File.open('t.ja')
+ *    f.getbyte # => 227
  *    f.close
  *
  *  Related: IO#readbyte (may raise EOFError).
@@ -5106,8 +5136,9 @@ rb_io_getbyte(VALUE io)
  *    f = File.open('t.txt')
  *    f.readbyte # => 70
  *    f.close
- *    f = File.open('t.rus')
- *    f.readbyte # => 209
+ *    File.read('t.ja') # => "こんにちは"
+ *    f = File.open('t.ja')
+ *    f.readbyte # => 227
  *    f.close
  *
  *  Related: IO#getbyte (will not raise EOFError).
@@ -8232,9 +8263,6 @@ rb_io_s_sysopen(int argc, VALUE *argv, VALUE _)
  *
  *  Creates an IO object connected to the given file.
  *
- *  This method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
- *
  *  With no block given, file stream is returned:
  *
  *    open('t.txt') # => #<File:t.txt>
@@ -9471,7 +9499,8 @@ static VALUE io_initialize(VALUE io, VALUE fnum, VALUE vmode, VALUE opt);
  *  The new \IO object does not inherit encoding
  *  (because the integer file descriptor does not have an encoding):
  *
- *    fd = IO.sysopen('t.rus', 'rb')
+ *    File.read('t.ja') # => "こんにちは"
+ *    fd = IO.sysopen('t.ja', 'rb')
  *    io = IO.new(fd)
  *    io.external_encoding # => #<Encoding:UTF-8> # Not ASCII-8BIT.
  *
@@ -10729,9 +10758,9 @@ select_internal(VALUE read, VALUE write, VALUE except, struct timeval *tp, rb_fd
     if (!pending && n == 0) return Qnil; /* returns nil on timeout */
 
     res = rb_ary_new2(3);
-    rb_ary_push(res, rp?rb_ary_new():rb_ary_new2(0));
-    rb_ary_push(res, wp?rb_ary_new():rb_ary_new2(0));
-    rb_ary_push(res, ep?rb_ary_new():rb_ary_new2(0));
+    rb_ary_push(res, rp ? rb_ary_new_capa(RARRAY_LEN(read)) : rb_ary_new());
+    rb_ary_push(res, wp ? rb_ary_new_capa(RARRAY_LEN(write)) : rb_ary_new());
+    rb_ary_push(res, ep ? rb_ary_new_capa(RARRAY_LEN(except)) : rb_ary_new());
 
     if (rp) {
         list = RARRAY_AREF(res, 0);
@@ -12030,10 +12059,6 @@ io_s_foreach(VALUE v)
  *
  *  Calls the block with each successive line read from the stream.
  *
- *  When called from class \IO (but not subclasses of \IO),
- *  this method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
- *
  *  The first argument must be a string that is the path to a file.
  *
  *  With only argument +path+ given, parses lines from the file at the given +path+,
@@ -12133,10 +12158,6 @@ io_s_readlines(VALUE v)
  *
  *  Returns an array of all lines read from the stream.
  *
- *  When called from class \IO (but not subclasses of \IO),
- *  this method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
- *
  *  The first argument must be a string that is the path to a file.
  *
  *  With only argument +path+ given, parses lines from the file at the given +path+,
@@ -12222,10 +12243,6 @@ seek_before_access(VALUE argp)
  *  Opens the stream, reads and returns some or all of its content,
  *  and closes the stream; returns +nil+ if no bytes were read.
  *
- *  When called from class \IO (but not subclasses of \IO),
- *  this method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
- *
  *  The first argument must be a string that is the path to a file.
  *
  *  With only argument +path+ given, reads in text mode and returns the entire content
@@ -12292,10 +12309,6 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
  *
  *  Behaves like IO.read, except that the stream is opened in binary mode
  *  with ASCII-8BIT encoding.
- *
- *  When called from class \IO (but not subclasses of \IO),
- *  this method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
  *
  */
 
@@ -12397,10 +12410,6 @@ io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
  *  Opens the stream, writes the given +data+ to it,
  *  and closes the stream; returns the number of bytes written.
  *
- *  When called from class \IO (but not subclasses of \IO),
- *  this method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
- *
  *  The first argument must be a string that is the path to a file.
  *
  *  With only argument +path+ given, writes the given +data+ to the file at that path:
@@ -12446,10 +12455,6 @@ rb_io_s_write(int argc, VALUE *argv, VALUE io)
  *
  *  Behaves like IO.write, except that the stream is opened in binary mode
  *  with ASCII-8BIT encoding.
- *
- *  When called from class \IO (but not subclasses of \IO),
- *  this method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
  *
  */
 
@@ -15307,11 +15312,13 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *    File.open('t.txt') {|f| f.gets(11) } # => "First line\n"
  *    File.open('t.txt') {|f| f.gets(12) } # => "First line\n"
  *
- *    # Text with 2-byte characters, which will not be split.
- *    File.open('t.rus') {|f| f.gets(1).size } # => 1
- *    File.open('t.rus') {|f| f.gets(2).size } # => 1
- *    File.open('t.rus') {|f| f.gets(3).size } # => 2
- *    File.open('t.rus') {|f| f.gets(4).size } # => 2
+ *    # Text with 3-byte characters, which will not be split.
+ *    File.read('t.ja') # => "こんにちは"
+ *    File.open('t.ja') {|f| f.gets(1).size }      # => 1
+ *    File.open('t.ja') {|f| f.gets(2).size }      # => 1
+ *    File.open('t.ja') {|f| f.gets(3).size }      # => 1
+ *    File.open('t.ja') {|f| f.gets(4).size }      # => 2
+ *    File.open('t.ja') {|f| f.gets(5).size }      # => 2
  *
  *  ===== Line Separator and Line Limit
  *

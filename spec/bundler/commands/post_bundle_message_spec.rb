@@ -18,7 +18,7 @@ RSpec.describe "post bundle message" do
   let(:bundle_show_path_message)   { "Bundled gems are installed into `#{bundle_path}`" }
   let(:bundle_complete_message)    { "Bundle complete!" }
   let(:bundle_updated_message)     { "Bundle updated!" }
-  let(:installed_gems_stats)       { "4 Gemfile dependencies, 5 gems now installed." }
+  let(:installed_gems_stats)       { "4 Gemfile dependencies, 4 gems now installed." }
 
   describe "when installing to system gems" do
     before do
@@ -44,14 +44,14 @@ RSpec.describe "post bundle message" do
       expect(out).to include(bundle_show_system_message)
       expect(out).to include("Gems in the groups 'emo' and 'test' were not installed")
       expect(out).to include(bundle_complete_message)
-      expect(out).to include("4 Gemfile dependencies, 3 gems now installed.")
+      expect(out).to include("4 Gemfile dependencies, 2 gems now installed.")
 
       bundle "config set --local without emo obama test"
       bundle :install
       expect(out).to include(bundle_show_system_message)
       expect(out).to include("Gems in the groups 'emo', 'obama' and 'test' were not installed")
       expect(out).to include(bundle_complete_message)
-      expect(out).to include("4 Gemfile dependencies, 2 gems now installed.")
+      expect(out).to include("4 Gemfile dependencies, 1 gem now installed.")
     end
 
     describe "for second bundle install run" do

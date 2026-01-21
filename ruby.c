@@ -410,9 +410,6 @@ usage(const char *name, int help, int highlight, int columns)
 #define SHOW(m) show_usage_line(&(m), help, highlight, w, columns)
 
     printf("%sUsage:%s %s [options] [--] [filepath] [arguments]\n", sb, se, name);
-    printf("\n""Details and examples at https://docs.ruby-lang.org/en/%s/ruby/options_md.html\n",
-           ruby_api_version_name);
-
     for (i = 0; i < num; ++i)
         SHOW(usage_msg[i]);
 
@@ -1812,13 +1809,6 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
         if (opt->features.set & FEATURE_BIT(syntax_suggest)) {
             rb_define_module("SyntaxSuggest");
         }
-    }
-
-    /* [Feature #19785] Warning for removed GC environment variable.
-     * Remove this in Ruby 3.4. */
-    if (getenv("RUBY_GC_HEAP_INIT_SLOTS")) {
-        rb_warn_deprecated("The environment variable RUBY_GC_HEAP_INIT_SLOTS",
-                           "environment variables RUBY_GC_HEAP_%d_INIT_SLOTS");
     }
 
     Init_ext(); /* load statically linked extensions before rubygems */

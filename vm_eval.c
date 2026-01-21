@@ -1379,6 +1379,17 @@ rb_yield(VALUE val)
     }
 }
 
+VALUE
+rb_ec_yield(rb_execution_context_t *ec, VALUE val)
+{
+    if (UNDEF_P(val)) {
+        return vm_yield(ec, 0, NULL, RB_NO_KEYWORDS);
+    }
+    else {
+        return vm_yield(ec, 1, &val, RB_NO_KEYWORDS);
+    }
+}
+
 #undef rb_yield_values
 VALUE
 rb_yield_values(int n, ...)
@@ -1520,13 +1531,6 @@ rb_iterate_internal(VALUE (* it_proc)(VALUE), VALUE data1,
     return rb_iterate0(it_proc, data1,
                        bl_proc ? rb_vm_ifunc_proc_new(bl_proc, (void *)data2) : 0,
                        GET_EC());
-}
-
-VALUE
-rb_iterate(VALUE (* it_proc)(VALUE), VALUE data1,
-           rb_block_call_func_t bl_proc, VALUE data2)
-{
-    return rb_iterate_internal(it_proc, data1, bl_proc, data2);
 }
 
 struct iter_method_arg {

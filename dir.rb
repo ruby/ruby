@@ -178,7 +178,7 @@ class Dir
   # if +nil+ (the default), the file system's encoding is used:
   #
   #   Dir.open('.').read.encoding                       # => #<Encoding:UTF-8>
-  #   Dir.open('.', encoding: 'US-ASCII').read.encoding # => #<Encoding:US-ASCII>
+  #   Dir.open('.', encoding: Encoding::US_ASCII).read.encoding # => #<Encoding:US-ASCII>
   #
   def self.open(name, encoding: nil, &block)
     dir = Primitive.dir_s_open(name, encoding)
@@ -206,7 +206,7 @@ class Dir
   # if +nil+ (the default), the file system's encoding is used:
   #
   #   Dir.new('.').read.encoding                       # => #<Encoding:UTF-8>
-  #   Dir.new('.', encoding: 'US-ASCII').read.encoding # => #<Encoding:US-ASCII>
+  #   Dir.new('.', encoding: Encoding::US_ASCI).read.encoding # => #<Encoding:US-ASCII>
   #
   def initialize(name, encoding: nil)
     Primitive.dir_initialize(name, encoding)
@@ -319,14 +319,14 @@ class Dir
   #
   #     Dir.glob('io.?') # => ["io.c"]
   #
-  # - <tt>'[_set_]'</tt>: Matches any one character in the string _set_;
+  # - <tt>'[set]'</tt>: Matches any one character in the string _set_;
   #   behaves like a {Regexp character class}[rdoc-ref:Regexp@Character+Classes],
   #   including set negation (<tt>'[^a-z]'</tt>):
   #
   #     Dir.glob('*.[a-z][a-z]').take(3)
   #     # => ["CONTRIBUTING.md", "COPYING.ja", "KNOWNBUGS.rb"]
   #
-  # - <tt>'{_abc_,_xyz_}'</tt>:
+  # - <tt>'{abc,xyz}'</tt>:
   #   Matches either string _abc_ or string _xyz_;
   #   behaves like {Regexp alternation}[rdoc-ref:Regexp@Alternation]:
   #
@@ -388,10 +388,10 @@ class Dir
   #
   # - File::FNM_EXTGLOB:
   #   enables the pattern extension
-  #   <tt>'{_a_,_b_}'</tt>, which matches pattern _a_ and pattern _b_;
+  #   <tt>'{a,b}'</tt>, which matches pattern _a_ and pattern _b_;
   #   behaves like a
   #   {regexp union}[rdoc-ref:Regexp.union]
-  #   (e.g., <tt>'(?:_a_|_b_)'</tt>):
+  #   (e.g., <tt>'(?:a|b)'</tt>):
   #
   #     pattern = '{LEGAL,BSDL}'
   #     Dir.glob(pattern)      # => ["LEGAL", "BSDL"]

@@ -2338,7 +2338,7 @@ class TestTranscode < Test::Unit::TestCase
         r, _obj = Ractor.select(*rs)
         rs.delete(r)
       end
-      assert rs.empty?
+      assert_empty rs
     end;
   end
 
@@ -2357,7 +2357,7 @@ class TestTranscode < Test::Unit::TestCase
         r, _obj = Ractor.select(*rs)
         rs.delete(r)
       end
-      assert rs.empty?
+      assert_empty rs
     end;
   end
 
@@ -2380,7 +2380,7 @@ class TestTranscode < Test::Unit::TestCase
         r, _obj = Ractor.select(*rs)
         rs.delete(r)
       end
-      assert rs.empty?
+      assert_empty rs
     end;
   end
 
@@ -2403,7 +2403,7 @@ class TestTranscode < Test::Unit::TestCase
         r, _obj = Ractor.select(*rs)
         rs.delete(r)
       end
-      assert rs.empty?
+      assert_empty rs
     end;
   end
 

@@ -392,7 +392,7 @@ impl Assembler {
     /// for VRegs, most splits should happen in [`Self::x86_split`]. However, some instructions
     /// need to be split with registers after `alloc_regs`, e.g. for `compile_exits`, so
     /// this splits them and uses scratch registers for it.
-    pub fn x86_scratch_split(mut self) -> Assembler {
+    pub fn x86_scratch_split(self) -> Assembler {
         /// For some instructions, we want to be able to lower a 64-bit operand
         /// without requiring more registers to be available in the register
         /// allocator. So we just use the SCRATCH0_OPND register temporarily to hold
@@ -468,12 +468,22 @@ impl Assembler {
         // Prepare StackState to lower MemBase::Stack
         let stack_state = StackState::new(self.stack_base_idx);
 
-        let mut asm_local = Assembler::new_with_asm(&self);
-        let asm = &mut asm_local;
-        asm.accept_scratch_reg = true;
-        let mut iterator = self.instruction_iterator();
+        let mut asm_local = Assembler::new();
+        asm_local.accept_scratch_reg = true;
+        asm_local.stack_base_idx = self.stack_base_idx;
+        asm_local.label_names = self.label_names.clone();
+        asm_local.live_ranges.resize(self.live_ranges.len(), LiveRange { start: None, end: None });
 
-        while let Some((_, mut insn)) = iterator.next(asm) {
+        // Create one giant block to linearize everything into
+        asm_local.new_block_without_id();
+
+        let asm = &mut asm_local;
+
+        // Get linearized instructions with branch parameters expanded into ParallelMov
+        let linearized_insns = self.linearize_instructions();
+
+        for insn in linearized_insns.iter() {
+            let mut insn = insn.clone();
             match &mut insn {
                 Insn::Add { left, right, out } |
                 Insn::Sub { left, right, out } |
@@ -640,8 +650,8 @@ impl Assembler {
                     };
                     asm.store(dest, src);
                 }
-                &mut Insn::PatchPoint { ref target, invariant, payload } => {
-                    split_patch_point(asm, target, invariant, payload);
+                &mut Insn::PatchPoint { ref target, invariant, version } => {
+                    split_patch_point(asm, target, invariant, version);
                 }
                 _ => {
                     asm.push_insn(insn);
@@ -703,7 +713,10 @@ impl Assembler {
 
         // For each instruction
         let mut insn_idx: usize = 0;
-        while let Some(insn) = self.insns.get(insn_idx) {
+        assert_eq!(self.basic_blocks.len(), 1, "Assembler should be linearized into a single block before arm64_emit");
+        let insns = &self.basic_blocks[0].insns;
+
+        while let Some(insn) = insns.get(insn_idx) {
             // Update insn_idx that is shown on panic
             hook_insn_idx.as_mut().map(|idx| idx.lock().map(|mut idx| *idx = insn_idx).unwrap());
 
@@ -836,6 +849,7 @@ impl Assembler {
                         cb.label_ref(*label, 7, move |cb, src_addr, dst_addr| {
                             let disp = dst_addr - src_addr;
                             lea(cb, out.into(), mem_opnd(8, RIP, disp.try_into().unwrap()));
+                            Ok(())
                         });
                     } else {
                         // Set output to the jump target's raw address
@@ -850,30 +864,19 @@ impl Assembler {
                 Insn::CPush(opnd) => {
                     push(cb, opnd.into());
                 },
+                Insn::CPushPair(opnd0, opnd1) => {
+                    push(cb, opnd0.into());
+                    push(cb, opnd1.into());
+                },
                 Insn::CPop { out } => {
                     pop(cb, out.into());
                 },
                 Insn::CPopInto(opnd) => {
                     pop(cb, opnd.into());
                 },
-
-                // Push and pop to the C stack all caller-save registers and the
-                // flags
-                Insn::CPushAll => {
-                    let regs = Assembler::get_caller_save_regs();
-
-                    for reg in regs {
-                        push(cb, X86Opnd::Reg(reg));
-                    }
-                    pushfq(cb);
-                },
-                Insn::CPopAll => {
-                    let regs = Assembler::get_caller_save_regs();
-
-                    popfq(cb);
-                    for reg in regs.into_iter().rev() {
-                        pop(cb, X86Opnd::Reg(reg));
-                    }
+                Insn::CPopPairInto(opnd0, opnd1) => {
+                    pop(cb, opnd0.into());
+                    pop(cb, opnd1.into());
                 },
 
                 // C function call
@@ -917,6 +920,7 @@ impl Assembler {
                     match *target {
                         Target::CodePtr(code_ptr) => jmp_ptr(cb, code_ptr),
                         Target::Label(label) => jmp_label(cb, label),
+                        Target::Block(ref edge) => jmp_label(cb, self.block_label(edge.target)),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 }
@@ -925,6 +929,7 @@ impl Assembler {
                     match *target {
                         Target::CodePtr(code_ptr) => je_ptr(cb, code_ptr),
                         Target::Label(label) => je_label(cb, label),
+                        Target::Block(ref edge) => je_label(cb, self.block_label(edge.target)),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 }
@@ -933,6 +938,7 @@ impl Assembler {
                     match *target {
                         Target::CodePtr(code_ptr) => jne_ptr(cb, code_ptr),
                         Target::Label(label) => jne_label(cb, label),
+                        Target::Block(ref edge) => jne_label(cb, self.block_label(edge.target)),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 }
@@ -941,6 +947,7 @@ impl Assembler {
                     match *target {
                         Target::CodePtr(code_ptr) => jl_ptr(cb, code_ptr),
                         Target::Label(label) => jl_label(cb, label),
+                        Target::Block(ref edge) => jl_label(cb, self.block_label(edge.target)),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 },
@@ -949,6 +956,7 @@ impl Assembler {
                     match *target {
                         Target::CodePtr(code_ptr) => jg_ptr(cb, code_ptr),
                         Target::Label(label) => jg_label(cb, label),
+                        Target::Block(ref edge) => jg_label(cb, self.block_label(edge.target)),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 },
@@ -957,6 +965,7 @@ impl Assembler {
                     match *target {
                         Target::CodePtr(code_ptr) => jge_ptr(cb, code_ptr),
                         Target::Label(label) => jge_label(cb, label),
+                        Target::Block(ref edge) => jge_label(cb, self.block_label(edge.target)),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 },
@@ -965,6 +974,7 @@ impl Assembler {
                     match *target {
                         Target::CodePtr(code_ptr) => jbe_ptr(cb, code_ptr),
                         Target::Label(label) => jbe_label(cb, label),
+                        Target::Block(ref edge) => jbe_label(cb, self.block_label(edge.target)),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 },
@@ -973,6 +983,7 @@ impl Assembler {
                     match *target {
                         Target::CodePtr(code_ptr) => jb_ptr(cb, code_ptr),
                         Target::Label(label) => jb_label(cb, label),
+                        Target::Block(ref edge) => jb_label(cb, self.block_label(edge.target)),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 },
@@ -981,6 +992,7 @@ impl Assembler {
                     match *target {
                         Target::CodePtr(code_ptr) => jz_ptr(cb, code_ptr),
                         Target::Label(label) => jz_label(cb, label),
+                        Target::Block(ref edge) => jz_label(cb, self.block_label(edge.target)),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 }
@@ -989,6 +1001,7 @@ impl Assembler {
                     match *target {
                         Target::CodePtr(code_ptr) => jnz_ptr(cb, code_ptr),
                         Target::Label(label) => jnz_label(cb, label),
+                        Target::Block(ref edge) => jnz_label(cb, self.block_label(edge.target)),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 }
@@ -998,6 +1011,7 @@ impl Assembler {
                     match *target {
                         Target::CodePtr(code_ptr) => jo_ptr(cb, code_ptr),
                         Target::Label(label) => jo_label(cb, label),
+                        Target::Block(ref edge) => jo_label(cb, self.block_label(edge.target)),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 }
@@ -1062,7 +1076,7 @@ impl Assembler {
         } else {
             // No bytes dropped, so the pos markers point to valid code
             for (insn_idx, pos) in pos_markers {
-                if let Insn::PosMarker(callback) = self.insns.get(insn_idx).unwrap() {
+                if let Insn::PosMarker(callback) = insns.get(insn_idx).unwrap() {
                     callback(pos, cb);
                 } else {
                     panic!("non-PosMarker in pos_markers insn_idx={insn_idx} {self:?}");
@@ -1092,6 +1106,10 @@ impl Assembler {
         if use_scratch_regs {
             asm = asm.x86_scratch_split();
             asm_dump!(asm, scratch_split);
+        } else {
+            // For trampolines that use scratch registers, resolve ParallelMov without scratch_reg.
+            asm = asm.resolve_parallel_mov_pass();
+            asm_dump!(asm, resolve_parallel_mov);
         }
 
         // Create label instances in the code block
@@ -1104,7 +1122,7 @@ impl Assembler {
         let gc_offsets = asm.x86_emit(cb);
 
         if let (Some(gc_offsets), false) = (gc_offsets, cb.has_dropped_bytes()) {
-            cb.link_labels();
+            cb.link_labels().or(Err(CompileError::LabelLinkingFailure))?;
             Ok((start_ptr, gc_offsets))
         } else {
             cb.clear_labels();
@@ -1125,7 +1143,9 @@ mod tests {
 
     fn setup_asm() -> (Assembler, CodeBlock) {
         rb_zjit_prepare_options(); // for get_option! on asm.compile
-        (Assembler::new(), CodeBlock::new_dummy())
+        let mut asm = Assembler::new();
+        asm.new_block_without_id();
+        (asm, CodeBlock::new_dummy())
     }
 
     #[test]
@@ -1133,6 +1153,7 @@ mod tests {
         use crate::hir::SideExitReason;
 
         let mut asm = Assembler::new();
+        asm.new_block_without_id();
         asm.stack_base_idx = 1;
 
         let label = asm.new_label("bb0");
@@ -1664,6 +1685,119 @@ mod tests {
             0x23: call rax
         ");
         assert_snapshot!(cb.hexdump(), @"b801000000b902000000ba030000004889c74889ce4989cb4889d14c89dab800000000ffd0");
+    }
+
+    #[test]
+    fn test_ccall_register_preservation_even() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let v0 = asm.load(1.into());
+        let v1 = asm.load(2.into());
+        let v2 = asm.load(3.into());
+        let v3 = asm.load(4.into());
+        asm.ccall(0 as _, vec![]);
+        _ = asm.add(v0, v1);
+        _ = asm.add(v2, v3);
+
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov edi, 1
+        0x5: mov esi, 2
+        0xa: mov edx, 3
+        0xf: mov ecx, 4
+        0x14: push rdi
+        0x15: push rsi
+        0x16: push rdx
+        0x17: push rcx
+        0x18: mov eax, 0
+        0x1d: call rax
+        0x1f: pop rcx
+        0x20: pop rdx
+        0x21: pop rsi
+        0x22: pop rdi
+        0x23: add rdi, rsi
+        0x26: add rdx, rcx
+        ");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000057565251b800000000ffd0595a5e5f4801f74801ca");
+    }
+
+    #[test]
+    fn test_ccall_register_preservation_odd() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let v0 = asm.load(1.into());
+        let v1 = asm.load(2.into());
+        let v2 = asm.load(3.into());
+        let v3 = asm.load(4.into());
+        let v4 = asm.load(5.into());
+        asm.ccall(0 as _, vec![]);
+        _ = asm.add(v0, v1);
+        _ = asm.add(v2, v3);
+        _ = asm.add(v2, v4);
+
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov edi, 1
+        0x5: mov esi, 2
+        0xa: mov edx, 3
+        0xf: mov ecx, 4
+        0x14: mov r8d, 5
+        0x1a: push rdi
+        0x1b: push rsi
+        0x1c: push rdx
+        0x1d: push rcx
+        0x1e: push r8
+        0x20: push r8
+        0x22: mov eax, 0
+        0x27: call rax
+        0x29: pop r8
+        0x2b: pop r8
+        0x2d: pop rcx
+        0x2e: pop rdx
+        0x2f: pop rsi
+        0x30: pop rdi
+        0x31: add rdi, rsi
+        0x34: mov rdi, rdx
+        0x37: add rdi, rcx
+        0x3a: add rdx, r8
+        ");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b8050000005756525141504150b800000000ffd041584158595a5e5f4801f74889d74801cf4c01c2");
+    }
+
+    #[test]
+    fn test_cpush_pair() {
+        let (mut asm, mut cb) = setup_asm();
+        let v0 = asm.load(1.into());
+        let v1 = asm.load(2.into());
+        asm.cpush_pair(v0, v1);
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov edi, 1
+        0x5: mov esi, 2
+        0xa: push rdi
+        0xb: push rsi
+        ");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be020000005756");
+    }
+
+    #[test]
+    fn test_cpop_pair_into() {
+        let (mut asm, mut cb) = setup_asm();
+        let v0 = asm.load(1.into());
+        let v1 = asm.load(2.into());
+        asm.cpop_pair_into(v0, v1);
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov edi, 1
+        0x5: mov esi, 2
+        0xa: pop rdi
+        0xb: pop rsi
+        ");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be020000005f5e");
     }
 
     #[test]

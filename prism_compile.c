@@ -1833,6 +1833,10 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                     //   foo(*a, b, c: :d)
                     //   foo(*a, b, **c)
                     //
+                    // If the next node is a forwarding argument:
+                    //
+                    //   foo(*a, b, ...)
+                    //
                     // If the next node is NULL (we have hit the end):
                     //
                     //   foo(*a, b)
@@ -1853,6 +1857,10 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                           case PM_SPLAT_NODE: {
                             PUSH_INSN1(ret, location, newarray, INT2FIX(post_splat_counter));
                             PUSH_INSN(ret, location, concatarray);
+                            break;
+                          }
+                          case PM_FORWARDING_ARGUMENTS_NODE: {
+                            PUSH_INSN1(ret, location, pushtoarray, INT2FIX(post_splat_counter));
                             break;
                           }
                           default:
@@ -3284,13 +3292,6 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
         scope->parameters = cast->parameters;
         scope->body = cast->body;
         scope->locals = cast->locals;
-
-        if (cast->parameters != NULL) {
-            scope->base.location.start = cast->parameters->location.start;
-        }
-        else {
-            scope->base.location.start = cast->operator_loc.end;
-        }
         break;
       }
       case PM_MODULE_NODE: {
@@ -6398,8 +6399,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
     }
 
     if (scope_node->parameters != NULL && PM_NODE_TYPE_P(scope_node->parameters, PM_IT_PARAMETERS_NODE)) {
-        ID local = rb_make_temporary_id(local_index);
-        local_table_for_iseq->ids[local_index++] = local;
+        local_table_for_iseq->ids[local_index++] = idItImplicit;
     }
 
     // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j), k:, l: 1, **m, &n)

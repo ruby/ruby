@@ -1996,7 +1996,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_popen_reopen
-    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       io = File.open(IO::NULL)
       io2 = io.dup
@@ -2387,7 +2387,7 @@ EOS
   end
 
   def test_deadlock_by_signal_at_forking
-    assert_separately(%W(- #{RUBY}), <<-INPUT, timeout: 100)
+    assert_ruby_status(%W(- #{RUBY}), <<-INPUT, timeout: 100)
       ruby = ARGV.shift
       GC.start # reduce garbage
       GC.disable # avoid triggering CoW after forks

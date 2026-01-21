@@ -1336,6 +1336,28 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[@cls[1,2], nil, 'dog', 'cat'], a.prepend(@cls[1, 2]))
   end
 
+  def test_tolerant_to_redefinition
+    *code = __FILE__, __LINE__+1, "#{<<-"{#"}\n#{<<-'};'}"
+    {#
+      module M
+        def <<(a)
+          super(a * 2)
+        end
+      end
+      class Array; prepend M; end
+      ary = [*1..10]
+      mapped = ary.map {|i| i}
+      selected = ary.select {true}
+      module M
+        remove_method :<<
+      end
+      assert_equal(ary, mapped)
+      assert_equal(ary, selected)
+    };
+    assert_separately(%w[--disable-yjit], *code)
+    assert_separately(%w[--enable-yjit], *code)
+  end
+
   def test_push
     a = @cls[1, 2, 3]
     assert_equal(@cls[1, 2, 3, 4, 5], a.push(4, 5))
@@ -3582,6 +3604,23 @@ class TestArray < Test::Unit::TestCase
       var_1_block_129 <=> var_0_block_129
     end.shift(3)
     assert_equal((1..67).to_a.reverse, var_0)
+  end
+
+  def test_find
+    ary = [1, 2, 3, 4, 5]
+    assert_equal(2, ary.find {|x| x % 2 == 0 })
+    assert_equal(nil, ary.find {|x| false })
+    assert_equal(:foo, ary.find(proc { :foo }) {|x| false })
+  end
+
+  def test_rfind
+    ary = [1, 2, 3, 4, 5]
+    assert_equal(4, ary.rfind {|x| x % 2 == 0 })
+    assert_equal(1, ary.rfind {|x| x < 2 })
+    assert_equal(5, ary.rfind {|x| x > 4 })
+    assert_equal(nil, ary.rfind {|x| false })
+    assert_equal(:foo, ary.rfind(proc { :foo }) {|x| false })
+    assert_equal(nil, ary.rfind {|x| ary.clear; false })
   end
 
   private

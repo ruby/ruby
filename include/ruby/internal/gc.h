@@ -785,7 +785,9 @@ rb_obj_written(
     RGENGC_LOGGING_OBJ_WRITTEN(a, oldv, b, filename, line);
 #endif
 
-    rb_gc_writebarrier(a, b);
+    if (!RB_SPECIAL_CONST_P(b)) {
+        rb_gc_writebarrier(a, b);
+    }
 
     return a;
 }
@@ -820,8 +822,5 @@ rb_obj_write(
     rb_obj_written(a, RUBY_Qundef /* ignore `oldv' now */, b, filename, line);
     return a;
 }
-
-RBIMPL_ATTR_DEPRECATED(("Will be removed soon"))
-static inline void rb_gc_force_recycle(VALUE obj){}
 
 #endif /* RBIMPL_GC_H */

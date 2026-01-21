@@ -4,7 +4,6 @@ Returns whether +self+ ends with any of the given +strings+:
   'foo'.end_with?('bar', 'oo')  # => true
   'foo'.end_with?('bar', 'baz') # => false
   'foo'.end_with?('')           # => true
-  'тест'.end_with?('т')         # => true
   'こんにちは'.end_with?('は')   # => true
 
 Related: see {Querying}[rdoc-ref:String@Querying].

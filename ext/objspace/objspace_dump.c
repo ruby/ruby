@@ -29,7 +29,7 @@
 #include "ruby/util.h"
 #include "ruby/io.h"
 #include "vm_callinfo.h"
-#include "vm_core.h"
+#include "vm_sync.h"
 
 RUBY_EXTERN const char ruby_hexdigits[];
 
@@ -771,20 +771,31 @@ dump_result(struct dump_config *dc)
     return dc->given_output;
 }
 
-/* :nodoc: */
 static VALUE
-objspace_dump(VALUE os, VALUE obj, VALUE output)
+dump_locked(void *args_p)
 {
     struct dump_config dc = {0,};
+    VALUE obj = ((VALUE*)args_p)[0];
+    VALUE output = ((VALUE*)args_p)[1];
+
     if (!RB_SPECIAL_CONST_P(obj)) {
         dc.cur_page_slot_size = rb_gc_obj_slot_size(obj);
     }
-
     dump_output(&dc, output, Qnil, Qnil, Qnil);
 
     dump_object(obj, &dc);
 
     return dump_result(&dc);
+}
+
+/* :nodoc: */
+static VALUE
+objspace_dump(VALUE os, VALUE obj, VALUE output)
+{
+    VALUE args[2];
+    args[0] = obj;
+    args[1] = output;
+    return rb_vm_lock_with_barrier(dump_locked, (void*)args);
 }
 
 static void
@@ -835,11 +846,15 @@ shape_id_i(shape_id_t shape_id, void *data)
     dump_append(dc, "}\n");
 }
 
-/* :nodoc: */
 static VALUE
-objspace_dump_all(VALUE os, VALUE output, VALUE full, VALUE since, VALUE shapes)
+dump_all_locked(void *args_p)
 {
     struct dump_config dc = {0,};
+    VALUE output = ((VALUE*)args_p)[0];
+    VALUE full = ((VALUE*)args_p)[1];
+    VALUE since = ((VALUE*)args_p)[2];
+    VALUE shapes = ((VALUE*)args_p)[3];
+
     dump_output(&dc, output, full, since, shapes);
 
     if (!dc.partial_dump || dc.since == 0) {
@@ -860,9 +875,23 @@ objspace_dump_all(VALUE os, VALUE output, VALUE full, VALUE since, VALUE shapes)
 
 /* :nodoc: */
 static VALUE
-objspace_dump_shapes(VALUE os, VALUE output, VALUE shapes)
+objspace_dump_all(VALUE os, VALUE output, VALUE full, VALUE since, VALUE shapes)
+{
+    VALUE args[4];
+    args[0] = output;
+    args[1] = full;
+    args[2] = since;
+    args[3] = shapes;
+    return rb_vm_lock_with_barrier(dump_all_locked, (void*)args);
+}
+
+static VALUE
+dump_shapes_locked(void *args_p)
 {
     struct dump_config dc = {0,};
+    VALUE output = ((VALUE*)args_p)[0];
+    VALUE shapes = ((VALUE*)args_p)[1];
+
     dump_output(&dc, output, Qfalse, Qnil, shapes);
 
     if (RTEST(shapes)) {
@@ -871,12 +900,25 @@ objspace_dump_shapes(VALUE os, VALUE output, VALUE shapes)
     return dump_result(&dc);
 }
 
+/* :nodoc: */
+static VALUE
+objspace_dump_shapes(VALUE os, VALUE output, VALUE shapes)
+{
+    VALUE args[2];
+    args[0] = output;
+    args[1] = shapes;
+    return rb_vm_lock_with_barrier(dump_shapes_locked, (void*)args);
+}
+
 void
 Init_objspace_dump(VALUE rb_mObjSpace)
 {
 #undef rb_intern
 #if 0
     rb_mObjSpace = rb_define_module("ObjectSpace"); /* let rdoc know */
+#endif
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    RB_EXT_RACTOR_SAFE(true);
 #endif
 
     rb_define_module_function(rb_mObjSpace, "_dump", objspace_dump, 2);

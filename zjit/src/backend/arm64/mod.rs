@@ -694,7 +694,8 @@ impl Assembler {
     /// VRegs, most splits should happen in [`Self::arm64_split`]. However, some instructions
     /// need to be split with registers after `alloc_regs`, e.g. for `compile_exits`, so this
     /// splits them and uses scratch registers for it.
-    fn arm64_scratch_split(mut self) -> Assembler {
+    /// Linearizes all blocks into a single giant block.
+    fn arm64_scratch_split(self) -> Assembler {
         /// If opnd is Opnd::Mem with a too large disp, make the disp smaller using lea.
         fn split_large_disp(asm: &mut Assembler, opnd: Opnd, scratch_opnd: Opnd) -> Opnd {
             match opnd {
@@ -750,12 +751,23 @@ impl Assembler {
         // Prepare StackState to lower MemBase::Stack
         let stack_state = StackState::new(self.stack_base_idx);
 
-        let mut asm_local = Assembler::new_with_asm(&self);
-        let asm = &mut asm_local;
-        asm.accept_scratch_reg = true;
-        let iterator = &mut self.instruction_iterator();
+        let mut asm_local = Assembler::new();
+        asm_local.accept_scratch_reg = true;
+        asm_local.stack_base_idx = self.stack_base_idx;
+        asm_local.label_names = self.label_names.clone();
+        asm_local.live_ranges.resize(self.live_ranges.len(), LiveRange { start: None, end: None });
 
-        while let Some((_, mut insn)) = iterator.next(asm) {
+        // Create one giant block to linearize everything into
+        asm_local.new_block_without_id();
+
+        let asm = &mut asm_local;
+
+        // Get linearized instructions with branch parameters expanded into ParallelMov
+        let linearized_insns = self.linearize_instructions();
+
+        // Process each linearized instruction
+        for (idx, insn) in linearized_insns.iter().enumerate() {
+            let mut insn = insn.clone();
             match &mut insn {
                 Insn::Add { left, right, out } |
                 Insn::Sub { left, right, out } |
@@ -795,7 +807,7 @@ impl Assembler {
                     };
 
                     // If the next instruction is JoMul
-                    if matches!(iterator.peek(), Some((_, Insn::JoMul(_)))) {
+                    if idx + 1 < linearized_insns.len() && matches!(linearized_insns[idx + 1], Insn::JoMul(_)) {
                         // Produce a register that is all zeros or all ones
                         // Based on the sign bit of the 64-bit mul result
                         asm.push_insn(Insn::RShift { out: SCRATCH0_OPND, opnd: reg_out, shift: Opnd::UImm(63) });
@@ -903,8 +915,8 @@ impl Assembler {
                         }
                     }
                 }
-                &mut Insn::PatchPoint { ref target, invariant, payload } => {
-                    split_patch_point(asm, target, invariant, payload);
+                &mut Insn::PatchPoint { ref target, invariant, version } => {
+                    split_patch_point(asm, target, invariant, version);
                 }
                 _ => {
                     asm.push_insn(insn);
@@ -940,7 +952,7 @@ impl Assembler {
 
         /// Emit a conditional jump instruction to a specific target. This is
         /// called when lowering any of the conditional jump instructions.
-        fn emit_conditional_jump<const CONDITION: u8>(cb: &mut CodeBlock, target: Target) {
+        fn emit_conditional_jump<const CONDITION: u8>(asm: &Assembler, cb: &mut CodeBlock, target: Target) {
             fn generate_branch<const CONDITION: u8>(cb: &mut CodeBlock, src_addr: i64, dst_addr: i64) {
                 let num_insns = if bcond_offset_fits_bits((dst_addr - src_addr) / 4) {
                     // If the jump offset fits into the conditional jump as
@@ -991,23 +1003,31 @@ impl Assembler {
                 (num_insns..cb.conditional_jump_insns()).for_each(|_| nop(cb));
             }
 
-            match target {
+            let label = match target {
                 Target::CodePtr(dst_ptr) => {
                     let dst_addr = dst_ptr.as_offset();
                     let src_addr = cb.get_write_ptr().as_offset();
                     generate_branch::<CONDITION>(cb, src_addr, dst_addr);
+                    return;
                 },
-                Target::Label(label_idx) => {
-                    // We save `cb.conditional_jump_insns` number of bytes since we may use up to that amount
-                    // `generate_branch` will pad the emitted branch instructions with `nop`s for each unused byte.
-                    cb.label_ref(label_idx, (cb.conditional_jump_insns() * 4) as usize, |cb, src_addr, dst_addr| {
-                        generate_branch::<CONDITION>(cb, src_addr - (cb.conditional_jump_insns() * 4) as i64, dst_addr);
-                    });
-                },
+                Target::Label(l) => l,
+                Target::Block(ref edge) => asm.block_label(edge.target),
                 Target::SideExit { .. } => {
                     unreachable!("Target::SideExit should have been compiled by compile_exits")
                 },
             };
+            // Try to use a single B.cond instruction
+            cb.label_ref(label, 4, |cb, src_addr, dst_addr| {
+                // +1 since src_addr is after the instruction while A64
+                // counts the offset relative to the start.
+                let offset = (dst_addr - src_addr) / 4 + 1;
+                if bcond_offset_fits_bits(offset) {
+                    bcond(cb, CONDITION, InstructionOffset::from_insns(offset as i32));
+                    Ok(())
+                } else {
+                    Err(())
+                }
+            });
         }
 
         /// Emit a CBZ or CBNZ which branches when a register is zero or non-zero
@@ -1086,14 +1106,13 @@ impl Assembler {
             gc_offsets.push(ptr_offset);
         }
 
-        /// Emit a push instruction for the given operand by adding to the stack
-        /// pointer and then storing the given value.
+        /// Push a value to the stack by subtracting from the stack pointer then storing,
+        /// leaving an 8-byte gap for alignment.
         fn emit_push(cb: &mut CodeBlock, opnd: A64Opnd) {
             str_pre(cb, opnd, A64Opnd::new_mem(64, C_SP_REG, -C_SP_STEP));
         }
 
-        /// Emit a pop instruction into the given operand by loading the value
-        /// and then subtracting from the stack pointer.
+        /// Pop a value from the stack by loading `[sp]` then adding to the stack pointer.
         fn emit_pop(cb: &mut CodeBlock, opnd: A64Opnd) {
             ldr_post(cb, opnd, A64Opnd::new_mem(64, C_SP_REG, C_SP_STEP));
         }
@@ -1111,8 +1130,13 @@ impl Assembler {
         let (_hook, mut hook_insn_idx) = AssemblerPanicHook::new(self, 0);
 
         // For each instruction
+        // NOTE: At this point, the assembler should have been linearized into a single giant block
+        // by either resolve_parallel_mov_pass() or arm64_scratch_split().
         let mut insn_idx: usize = 0;
-        while let Some(insn) = self.insns.get(insn_idx) {
+        assert_eq!(self.basic_blocks.len(), 1, "Assembler should be linearized into a single block before arm64_emit");
+        let insns = &self.basic_blocks[0].insns;
+
+        while let Some(insn) = insns.get(insn_idx) {
             // Update insn_idx that is shown on panic
             hook_insn_idx.as_mut().map(|idx| idx.lock().map(|mut idx| *idx = insn_idx).unwrap());
 
@@ -1216,7 +1240,7 @@ impl Assembler {
                 },
                 Insn::Mul { left, right, out } => {
                     // If the next instruction is JoMul with RShift created by arm64_scratch_split
-                    match (self.insns.get(insn_idx + 1), self.insns.get(insn_idx + 2)) {
+                    match (insns.get(insn_idx + 1), insns.get(insn_idx + 2)) {
                         (Some(Insn::RShift { out: out_sign, opnd: out_opnd, shift: out_shift }), Some(Insn::JoMul(_))) => {
                             // Compute the high 64 bits
                             smulh(cb, Self::EMIT_OPND, left.into(), right.into());
@@ -1311,7 +1335,7 @@ impl Assembler {
                         64 | 32 => stur(cb, src, dest.into()),
                         16 => sturh(cb, src, dest.into()),
                         8 => sturb(cb, src, dest.into()),
-                        num_bits => panic!("unexpected dest num_bits: {} (src: {:?}, dest: {:?})", num_bits, src, dest),
+                        num_bits => panic!("unexpected dest num_bits: {num_bits} (src: {src:?}, dest: {dest:?})"),
                     }
                 },
                 Insn::Load { opnd, out } |
@@ -1331,7 +1355,7 @@ impl Assembler {
                                 64 | 32 => ldur(cb, out.into(), opnd.into()),
                                 16 => ldurh(cb, out.into(), opnd.into()),
                                 8 => ldurb(cb, out.into(), opnd.into()),
-                                num_bits => panic!("unexpected num_bits: {}", num_bits)
+                                num_bits => panic!("unexpected num_bits: {num_bits}"),
                             };
                         },
                         Opnd::Value(value) => {
@@ -1400,6 +1424,7 @@ impl Assembler {
                         // Set output to the raw address of the label
                         cb.label_ref(*label_idx, 4, |cb, end_addr, dst_addr| {
                             adr(cb, Self::EMIT_OPND, A64Opnd::new_imm(dst_addr - (end_addr - 4)));
+                            Ok(())
                         });
 
                         mov(cb, out.into(), Self::EMIT_OPND);
@@ -1413,33 +1438,19 @@ impl Assembler {
                 Insn::CPush(opnd) => {
                     emit_push(cb, opnd.into());
                 },
+                Insn::CPushPair(opnd0, opnd1) => {
+                    // Second operand ends up at the lower stack address
+                    stp_pre(cb, opnd1.into(), opnd0.into(), A64Opnd::new_mem(64, C_SP_REG, -C_SP_STEP));
+                },
                 Insn::CPop { out } => {
                     emit_pop(cb, out.into());
                 },
                 Insn::CPopInto(opnd) => {
                     emit_pop(cb, opnd.into());
                 },
-                Insn::CPushAll => {
-                    let regs = Assembler::get_caller_save_regs();
-
-                    for reg in regs {
-                        emit_push(cb, A64Opnd::Reg(reg));
-                    }
-
-                    // Push the flags/state register
-                    mrs(cb, Self::EMIT_OPND, SystemRegister::NZCV);
-                    emit_push(cb, Self::EMIT_OPND);
-                },
-                Insn::CPopAll => {
-                    let regs = Assembler::get_caller_save_regs();
-
-                    // Pop the state/flags register
-                    msr(cb, SystemRegister::NZCV, Self::EMIT_OPND);
-                    emit_pop(cb, Self::EMIT_OPND);
-
-                    for reg in regs.into_iter().rev() {
-                        emit_pop(cb, A64Opnd::Reg(reg));
-                    }
+                Insn::CPopPairInto(opnd0, opnd1) => {
+                    // First operand is popped from the lower stack address
+                    ldp_post(cb, opnd0.into(), opnd1.into(), A64Opnd::new_mem(64, C_SP_REG, C_SP_STEP));
                 },
                 Insn::CCall { fptr, .. } => {
                     match fptr {
@@ -1481,14 +1492,31 @@ impl Assembler {
                             emit_jmp_ptr(cb, dst_ptr, true);
                         },
                         Target::Label(label_idx) => {
-                            // Here we're going to save enough space for
-                            // ourselves and then come back and write the
-                            // instruction once we know the offset. We're going
-                            // to assume we can fit into a single b instruction.
-                            // It will panic otherwise.
+                            // Reserve space for a single B instruction
                             cb.label_ref(label_idx, 4, |cb, src_addr, dst_addr| {
-                                let bytes: i32 = (dst_addr - (src_addr - 4)).try_into().unwrap();
-                                b(cb, InstructionOffset::from_bytes(bytes));
+                                // +1 since src_addr is after the instruction while A64
+                                // counts the offset relative to the start.
+                                let offset = (dst_addr - src_addr) / 4 + 1;
+                                if b_offset_fits_bits(offset) {
+                                    b(cb, InstructionOffset::from_insns(offset as i32));
+                                    Ok(())
+                                } else {
+                                    Err(())
+                                }
+                            });
+                        },
+                        Target::Block(ref edge) => {
+                            let label = self.block_label(edge.target);
+                            cb.label_ref(label, 4, |cb, src_addr, dst_addr| {
+                                // +1 since src_addr is after the instruction while A64
+                                // counts the offset relative to the start.
+                                let offset = (dst_addr - src_addr) / 4 + 1;
+                                if b_offset_fits_bits(offset) {
+                                    b(cb, InstructionOffset::from_insns(offset as i32));
+                                    Ok(())
+                                } else {
+                                    Err(())
+                                }
                             });
                         },
                         Target::SideExit { .. } => {
@@ -1497,28 +1525,28 @@ impl Assembler {
                     };
                 },
                 Insn::Je(target) | Insn::Jz(target) => {
-                    emit_conditional_jump::<{Condition::EQ}>(cb, target.clone());
+                    emit_conditional_jump::<{Condition::EQ}>(self, cb, target.clone());
                 },
                 Insn::Jne(target) | Insn::Jnz(target) | Insn::JoMul(target) => {
-                    emit_conditional_jump::<{Condition::NE}>(cb, target.clone());
+                    emit_conditional_jump::<{Condition::NE}>(self, cb, target.clone());
                 },
                 Insn::Jl(target) => {
-                    emit_conditional_jump::<{Condition::LT}>(cb, target.clone());
+                    emit_conditional_jump::<{Condition::LT}>(self, cb, target.clone());
                 },
                 Insn::Jg(target) => {
-                    emit_conditional_jump::<{Condition::GT}>(cb, target.clone());
+                    emit_conditional_jump::<{Condition::GT}>(self, cb, target.clone());
                 },
                 Insn::Jge(target) => {
-                    emit_conditional_jump::<{Condition::GE}>(cb, target.clone());
+                    emit_conditional_jump::<{Condition::GE}>(self, cb, target.clone());
                 },
                 Insn::Jbe(target) => {
-                    emit_conditional_jump::<{Condition::LS}>(cb, target.clone());
+                    emit_conditional_jump::<{Condition::LS}>(self, cb, target.clone());
                 },
                 Insn::Jb(target) => {
-                    emit_conditional_jump::<{Condition::CC}>(cb, target.clone());
+                    emit_conditional_jump::<{Condition::CC}>(self, cb, target.clone());
                 },
                 Insn::Jo(target) => {
-                    emit_conditional_jump::<{Condition::VS}>(cb, target.clone());
+                    emit_conditional_jump::<{Condition::VS}>(self, cb, target.clone());
                 },
                 Insn::Joz(opnd, target) => {
                     emit_cmp_zero_jump(cb, opnd.into(), true, target.clone());
@@ -1541,8 +1569,8 @@ impl Assembler {
                     let Some(Insn::Cmp {
                         left: status_reg @ Opnd::Reg(_),
                         right: Opnd::UImm(_) | Opnd::Imm(_),
-                    }) = self.insns.get(insn_idx + 1) else {
-                        panic!("arm64_scratch_split should add Cmp after IncrCounter: {:?}", self.insns.get(insn_idx + 1));
+                    }) = insns.get(insn_idx + 1) else {
+                        panic!("arm64_scratch_split should add Cmp after IncrCounter: {:?}", insns.get(insn_idx + 1));
                     };
 
                     // Attempt to increment a counter
@@ -1591,7 +1619,7 @@ impl Assembler {
         } else {
             // No bytes dropped, so the pos markers point to valid code
             for (insn_idx, pos) in pos_markers {
-                if let Insn::PosMarker(callback) = self.insns.get(insn_idx).unwrap() {
+                if let Insn::PosMarker(callback) = insns.get(insn_idx).unwrap() {
                     callback(pos, cb);
                 } else {
                     panic!("non-PosMarker in pos_markers insn_idx={insn_idx} {self:?}");
@@ -1621,6 +1649,10 @@ impl Assembler {
         if use_scratch_reg {
             asm = asm.arm64_scratch_split();
             asm_dump!(asm, scratch_split);
+        } else {
+            // For trampolines that use scratch registers, resolve ParallelMov without scratch_reg.
+            asm = asm.resolve_parallel_mov_pass();
+            asm_dump!(asm, resolve_parallel_mov);
         }
 
         // Create label instances in the code block
@@ -1633,7 +1665,7 @@ impl Assembler {
         let gc_offsets = asm.arm64_emit(cb);
 
         if let (Some(gc_offsets), false) = (gc_offsets, cb.has_dropped_bytes()) {
-            cb.link_labels();
+            cb.link_labels().or(Err(CompileError::LabelLinkingFailure))?;
 
             // Invalidate icache for newly written out region so we don't run stale code.
             unsafe { rb_jit_icache_invalidate(start_ptr.raw_ptr(cb) as _, cb.get_write_ptr().raw_ptr(cb) as _) };
@@ -1685,12 +1717,15 @@ mod tests {
 
     use super::*;
     use insta::assert_snapshot;
+    use crate::hir;
 
     static TEMP_REGS: [Reg; 5] = [X1_REG, X9_REG, X10_REG, X14_REG, X15_REG];
 
     fn setup_asm() -> (Assembler, CodeBlock) {
         crate::options::rb_zjit_prepare_options(); // Allow `get_option!` in Assembler
-        (Assembler::new(), CodeBlock::new_dummy())
+        let mut asm = Assembler::new();
+        asm.new_block_without_id();
+        (asm, CodeBlock::new_dummy())
     }
 
     #[test]
@@ -1698,6 +1733,7 @@ mod tests {
         use crate::hir::SideExitReason;
 
         let mut asm = Assembler::new();
+        asm.new_block_without_id();
         asm.stack_base_idx = 1;
 
         let label = asm.new_label("bb0");
@@ -1747,6 +1783,29 @@ mod tests {
             0x8: mov x1, x0
         ");
         assert_snapshot!(cb.hexdump(), @"600080d2207d009be10300aa");
+    }
+
+    #[test]
+    fn test_conditional_branch_to_label() {
+        let (mut asm, mut cb) = setup_asm();
+        let start = asm.new_label("start");
+        let forward = asm.new_label("forward");
+
+        let value = asm.load(Opnd::mem(VALUE_BITS, NATIVE_STACK_PTR, 0));
+        asm.write_label(start.clone());
+        asm.cmp(value, 0.into());
+        asm.jg(forward.clone());
+        asm.jl(start.clone());
+        asm.write_label(forward);
+
+        asm.compile_with_num_regs(&mut cb, 1);
+        assert_disasm_snapshot!(cb.disasm(), @r"
+        0x0: ldur x0, [sp]
+        0x4: cmp x0, #0
+        0x8: b.gt #0x10
+        0xc: b.lt #4
+        ");
+        assert_snapshot!(cb.hexdump(), @"e00340f81f0000f14c000054cbffff54");
     }
 
     #[test]
@@ -1846,50 +1905,6 @@ mod tests {
         0xc: .byte 0x21, 0x00, 0x00, 0x00
         ");
         assert_snapshot!(cb.hexdump(), @"48656c6c6f2c20776f726c6421000000");
-    }
-
-    #[test]
-    fn test_emit_cpush_all() {
-        let (mut asm, mut cb) = setup_asm();
-
-        asm.cpush_all();
-        asm.compile_with_num_regs(&mut cb, 0);
-
-        assert_disasm_snapshot!(cb.disasm(), @r"
-        0x0: str x1, [sp, #-0x10]!
-        0x4: str x9, [sp, #-0x10]!
-        0x8: str x10, [sp, #-0x10]!
-        0xc: str x11, [sp, #-0x10]!
-        0x10: str x12, [sp, #-0x10]!
-        0x14: str x13, [sp, #-0x10]!
-        0x18: str x14, [sp, #-0x10]!
-        0x1c: str x15, [sp, #-0x10]!
-        0x20: mrs x16, nzcv
-        0x24: str x16, [sp, #-0x10]!
-        ");
-        assert_snapshot!(cb.hexdump(), @"e10f1ff8e90f1ff8ea0f1ff8eb0f1ff8ec0f1ff8ed0f1ff8ee0f1ff8ef0f1ff810423bd5f00f1ff8");
-    }
-
-    #[test]
-    fn test_emit_cpop_all() {
-        let (mut asm, mut cb) = setup_asm();
-
-        asm.cpop_all();
-        asm.compile_with_num_regs(&mut cb, 0);
-
-        assert_disasm_snapshot!(cb.disasm(), @r"
-        0x0: msr nzcv, x16
-        0x4: ldr x16, [sp], #0x10
-        0x8: ldr x15, [sp], #0x10
-        0xc: ldr x14, [sp], #0x10
-        0x10: ldr x13, [sp], #0x10
-        0x14: ldr x12, [sp], #0x10
-        0x18: ldr x11, [sp], #0x10
-        0x1c: ldr x10, [sp], #0x10
-        0x20: ldr x9, [sp], #0x10
-        0x24: ldr x1, [sp], #0x10
-        ");
-        assert_snapshot!(cb.hexdump(), @"10421bd5f00741f8ef0741f8ee0741f8ed0741f8ec0741f8eb0741f8ea0741f8e90741f8e10741f8");
     }
 
     #[test]
@@ -2132,6 +2147,7 @@ mod tests {
     #[test]
     fn test_store_with_valid_scratch_reg() {
         let (mut asm, scratch_reg) = Assembler::new_with_scratch_reg();
+        asm.new_block_without_id();
         let mut cb = CodeBlock::new_dummy();
         asm.store(Opnd::mem(64, scratch_reg, 0), 0x83902.into());
 
@@ -2572,7 +2588,7 @@ mod tests {
     }
 
     #[test]
-    fn test_label_branch_generate_bounds() {
+    fn test_exceeding_label_branch_generate_bounds() {
         // The immediate in a conditional branch is a 19 bit unsigned integer
         // which has a max value of 2^18 - 1.
         const IMMEDIATE_MAX_VALUE: usize = 2usize.pow(18) - 1;
@@ -2583,7 +2599,9 @@ mod tests {
         let page_size = unsafe { rb_jit_get_page_size() } as usize;
         let memory_required = (IMMEDIATE_MAX_VALUE + 8) * 4 + page_size;
 
+        crate::options::rb_zjit_prepare_options(); // Allow `get_option!` in Assembler
         let mut asm = Assembler::new();
+        asm.new_block_without_id();
         let mut cb = CodeBlock::new_dummy_sized(memory_required);
 
         let far_label = asm.new_label("far");
@@ -2596,7 +2614,7 @@ mod tests {
         });
 
         asm.write_label(far_label.clone());
-        asm.compile_with_num_regs(&mut cb, 1);
+        assert_eq!(Err(CompileError::LabelLinkingFailure), asm.compile(&mut cb));
     }
 
     #[test]
@@ -2695,6 +2713,76 @@ mod tests {
     }
 
     #[test]
+    fn test_ccall_register_preservation_even() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let v0 = asm.load(1.into());
+        let v1 = asm.load(2.into());
+        let v2 = asm.load(3.into());
+        let v3 = asm.load(4.into());
+        asm.ccall(0 as _, vec![]);
+        _ = asm.add(v0, v1);
+        _ = asm.add(v2, v3);
+
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov x0, #1
+        0x4: mov x1, #2
+        0x8: mov x2, #3
+        0xc: mov x3, #4
+        0x10: mov x4, x0
+        0x14: stp x2, x1, [sp, #-0x10]!
+        0x18: stp x4, x3, [sp, #-0x10]!
+        0x1c: mov x16, #0
+        0x20: blr x16
+        0x24: ldp x4, x3, [sp], #0x10
+        0x28: ldp x2, x1, [sp], #0x10
+        0x2c: adds x4, x4, x1
+        0x30: adds x2, x2, x3
+        ");
+        assert_snapshot!(cb.hexdump(), @"200080d2410080d2620080d2830080d2e40300aae207bfa9e40fbfa9100080d200023fd6e40fc1a8e207c1a8840001ab420003ab");
+    }
+
+    #[test]
+    fn test_ccall_register_preservation_odd() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let v0 = asm.load(1.into());
+        let v1 = asm.load(2.into());
+        let v2 = asm.load(3.into());
+        let v3 = asm.load(4.into());
+        let v4 = asm.load(5.into());
+        asm.ccall(0 as _, vec![]);
+        _ = asm.add(v0, v1);
+        _ = asm.add(v2, v3);
+        _ = asm.add(v2, v4);
+
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov x0, #1
+        0x4: mov x1, #2
+        0x8: mov x2, #3
+        0xc: mov x3, #4
+        0x10: mov x4, #5
+        0x14: mov x5, x0
+        0x18: stp x2, x1, [sp, #-0x10]!
+        0x1c: stp x4, x3, [sp, #-0x10]!
+        0x20: str x5, [sp, #-0x10]!
+        0x24: mov x16, #0
+        0x28: blr x16
+        0x2c: ldr x5, [sp], #0x10
+        0x30: ldp x4, x3, [sp], #0x10
+        0x34: ldp x2, x1, [sp], #0x10
+        0x38: adds x5, x5, x1
+        0x3c: adds x0, x2, x3
+        0x40: adds x2, x2, x4
+        ");
+        assert_snapshot!(cb.hexdump(), @"200080d2410080d2620080d2830080d2a40080d2e50300aae207bfa9e40fbfa9e50f1ff8100080d200023fd6e50741f8e40fc1a8e207c1a8a50001ab400003ab420004ab");
+    }
+
+    #[test]
     fn test_ccall_resolve_parallel_moves_large_cycle() {
         let (mut asm, mut cb) = setup_asm();
 
@@ -2715,6 +2803,38 @@ mod tests {
             0x14: blr x16
         ");
         assert_snapshot!(cb.hexdump(), @"ef0300aae00301aae10302aae2030faa100080d200023fd6");
+    }
+
+    #[test]
+    fn test_cpush_pair() {
+        let (mut asm, mut cb) = setup_asm();
+        let v0 = asm.load(1.into());
+        let v1 = asm.load(2.into());
+        asm.cpush_pair(v0, v1);
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov x0, #1
+        0x4: mov x1, #2
+        0x8: stp x1, x0, [sp, #-0x10]!
+        ");
+        assert_snapshot!(cb.hexdump(), @"200080d2410080d2e103bfa9");
+    }
+
+    #[test]
+    fn test_cpop_pair_into() {
+        let (mut asm, mut cb) = setup_asm();
+        let v0 = asm.load(1.into());
+        let v1 = asm.load(2.into());
+        asm.cpop_pair_into(v0, v1);
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov x0, #1
+        0x4: mov x1, #2
+        0x8: ldp x0, x1, [sp], #0x10
+        ");
+        assert_snapshot!(cb.hexdump(), @"200080d2410080d2e007c1a8");
     }
 
     #[test]

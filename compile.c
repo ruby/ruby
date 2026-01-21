@@ -610,8 +610,6 @@ branch_coverage_valid_p(rb_iseq_t *iseq, int first_line)
     return 1;
 }
 
-#define PTR2NUM(x) (rb_int2inum((intptr_t)(void *)(x)))
-
 static VALUE
 setup_branch(const rb_code_location_t *loc, const char *type, VALUE structure, VALUE key)
 {
@@ -10928,10 +10926,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       }
 
       case NODE_MASGN:{
-        bool prev_in_masgn = ISEQ_COMPILE_DATA(iseq)->in_masgn;
-        ISEQ_COMPILE_DATA(iseq)->in_masgn = true;
         compile_massign(iseq, ret, node, popped);
-        ISEQ_COMPILE_DATA(iseq)->in_masgn = prev_in_masgn;
         break;
       }
 

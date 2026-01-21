@@ -262,7 +262,6 @@ struct ifaddrs {
 #endif
 
 extern void   rb_w32_sysinit(int *, char ***);
-extern DWORD  rb_w32_osid(void);
 extern int    flock(int fd, int oper);
 extern int    rb_w32_io_cancelable_p(int);
 extern int    rb_w32_is_socket(int);
@@ -306,7 +305,11 @@ extern void   rb_w32_free_environ(char **);
 extern int    rb_w32_map_errno(DWORD);
 extern const char *WSAAPI rb_w32_inet_ntop(int,const void *,char *,size_t);
 extern int WSAAPI rb_w32_inet_pton(int,const char *,void *);
-extern DWORD  rb_w32_osver(void);
+
+RBIMPL_ATTR_DEPRECATED(("as Windows 9x is not supported already"))
+static inline DWORD rb_w32_osid(void) {return VER_PLATFORM_WIN32_NT;}
+RBIMPL_ATTR_DEPRECATED(("by Windows Version Helper APIs"))
+extern DWORD rb_w32_osver(void);
 
 extern int rb_w32_uchown(const char *, int, int);
 extern int rb_w32_ulink(const char *, const char *);

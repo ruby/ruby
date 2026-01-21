@@ -14,6 +14,8 @@ Each of these instance methods accepts one or more character selectors:
 - String#delete!(*selectors): returns +self+ or +nil+.
 - String#squeeze(*selectors): returns a new string.
 - String#squeeze!(*selectors): returns +self+ or +nil+.
+- String#strip(*selectors): returns a new string.
+- String#strip!(*selectors): returns +self+ or +nil+.
 
 A character selector identifies zero or more characters in +self+
 that are to be operands for the method.
@@ -29,7 +31,6 @@ contained in the selector itself:
   'abracadabra'.delete('abc') # => "rdr"
   '0123456789'.delete('258')  # => "0134679"
   '!@#$%&*()_+'.delete('+&#') # => "!@$%*()_"
-  'тест'.delete('т')          # => "ес"
   'こんにちは'.delete('に')     # => "こんちは"
 
 Note that order and repetitions do not matter:
@@ -79,6 +80,8 @@ These instance methods accept multiple character selectors:
 - String#delete!(*selectors): returns +self+ or +nil+.
 - String#squeeze(*selectors): returns a new string.
 - String#squeeze!(*selectors): returns +self+ or +nil+.
+- String#strip(*selectors): returns a new string.
+- String#strip!(*selectors): returns +self+ or +nil+.
 
 In effect, the given selectors are formed into a single selector
 consisting of only those characters common to _all_ of the given selectors.

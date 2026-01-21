@@ -63,13 +63,13 @@ module Win32
 
           if add_search = search.nil?
             search = []
-            nvdom = params.value('NV Domain')
+            domain = params.value('Domain')
 
-            if nvdom and !nvdom.empty?
-              search = [ nvdom ]
+            if domain and !domain.empty?
+              search = [ domain ]
               udmnd = params.value('UseDomainNameDevolution')
               if udmnd&.nonzero?
-                if /^\w+\./ =~ nvdom
+                if /^\w+\./ =~ domain
                   devo = $'
                 end
               end

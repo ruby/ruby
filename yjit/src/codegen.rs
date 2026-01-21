@@ -1208,7 +1208,7 @@ fn gen_check_ints(
 
     // Not checking interrupt_mask since it's zero outside finalize_deferred_heap_pages,
     // signal_exec, or rb_postponed_job_flush.
-    let interrupt_flag = asm.load(Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_FLAG));
+    let interrupt_flag = asm.load(Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_FLAG as i32));
     asm.test(interrupt_flag, interrupt_flag);
 
     asm.jnz(Target::side_exit(counter));
@@ -2518,6 +2518,7 @@ fn gen_setlocal_generic(
     ep_offset: u32,
     level: u32,
 ) -> Option<CodegenStatus> {
+    // Post condition: The type of of the set local is updated in the Context.
     let value_type = asm.ctx.get_opnd_type(StackOpnd(0));
 
     // Fallback because of write barrier
@@ -2539,6 +2540,11 @@ fn gen_setlocal_generic(
         );
         asm.stack_pop(1);
 
+        // Set local type in the context
+        if level == 0 {
+            let local_idx = ep_offset_to_local_idx(jit.get_iseq(), ep_offset).as_usize();
+            asm.ctx.set_local_type(local_idx, value_type);
+        }
         return Some(KeepCompiling);
     }
 
@@ -2591,6 +2597,7 @@ fn gen_setlocal_generic(
         );
     }
 
+    // Set local type in the context
     if level == 0 {
         let local_idx = ep_offset_to_local_idx(jit.get_iseq(), ep_offset).as_usize();
         asm.ctx.set_local_type(local_idx, value_type);
@@ -6652,7 +6659,7 @@ fn jit_thread_s_current(
     asm.stack_pop(1);
 
     // ec->thread_ptr
-    let ec_thread_opnd = asm.load(Opnd::mem(64, EC, RUBY_OFFSET_EC_THREAD_PTR));
+    let ec_thread_opnd = asm.load(Opnd::mem(64, EC, RUBY_OFFSET_EC_THREAD_PTR as i32));
 
     // thread->self
     let thread_self = Opnd::mem(64, ec_thread_opnd, RUBY_OFFSET_THREAD_SELF);
@@ -7117,7 +7124,7 @@ fn gen_send_cfunc(
 
     asm_comment!(asm, "set ec->cfp");
     let new_cfp = asm.lea(Opnd::mem(64, CFP, -(RUBY_SIZEOF_CONTROL_FRAME as i32)));
-    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), new_cfp);
+    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP as i32), new_cfp);
 
     if !kw_arg.is_null() {
         // Build a hash from all kwargs passed
@@ -7213,7 +7220,7 @@ fn gen_send_cfunc(
     // Pop the stack frame (ec->cfp++)
     // Instead of recalculating, we can reuse the previous CFP, which is stored in a callee-saved
     // register
-    let ec_cfp_opnd = Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP);
+    let ec_cfp_opnd = Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP as i32);
     asm.store(ec_cfp_opnd, CFP);
 
     // cfunc calls may corrupt types
@@ -7389,11 +7396,12 @@ fn gen_send_bmethod(
     let capture = unsafe { proc_block.as_.captured.as_ref() };
     let iseq = unsafe { *capture.code.iseq.as_ref() };
 
-    // Optimize for single ractor mode and avoid runtime check for
-    // "defined with an un-shareable Proc in a different Ractor"
-    if !assume_single_ractor_mode(jit, asm) {
-        gen_counter_incr(jit, asm, Counter::send_bmethod_ractor);
-        return None;
+    if !procv.shareable_p() {
+        let ractor_serial = unsafe { rb_yjit_cme_ractor_serial(cme) };
+        asm_comment!(asm, "guard current ractor == {}", ractor_serial);
+        let current_ractor_serial = asm.load(Opnd::mem(64, EC, RUBY_OFFSET_EC_RACTOR_ID as i32));
+        asm.cmp(current_ractor_serial, ractor_serial.into());
+        asm.jne(Target::side_exit(Counter::send_bmethod_ractor));
     }
 
     // Passing a block to a block needs logic different from passing
@@ -7458,6 +7466,12 @@ fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<Opnd>, block: Opti
 
             let ep_offset = unsafe { *rb_iseq_pc_at_idx(iseq, 1) }.as_u32();
             let local_idx = ep_offset_to_local_idx(iseq, ep_offset);
+
+            // Only inline getlocal on a parameter. DCE in the IESQ builder can
+            // make a two-instruction ISEQ that does not return a parameter.
+            if local_idx >= unsafe { get_iseq_body_param_size(iseq) } {
+                return None;
+            }
 
             if unsafe { rb_simple_iseq_p(iseq) } {
                 return Some(IseqReturn::LocalVariable(local_idx));
@@ -7883,6 +7897,11 @@ fn gen_send_iseq(
                 gen_counter_incr(jit, asm, Counter::send_iseq_clobbering_block_arg);
                 return None;
             }
+            if iseq_has_rest || has_kwrest {
+                // The proc would be stored above the current stack top, where GC can't see it
+                gen_counter_incr(jit, asm, Counter::send_iseq_block_arg_gc_unsafe);
+                return None;
+            }
             let proc = asm.stack_pop(1); // Pop first, as argc doesn't account for the block arg
             let callee_specval = asm.ctx.sp_opnd(callee_specval);
             asm.store(callee_specval, proc);
@@ -8295,7 +8314,7 @@ fn gen_send_iseq(
     // We also do this after spill_regs() to avoid doubly spilling the same thing on asm.ccall().
     if get_option!(gen_stats) {
         // Protect caller-saved registers in case they're used for arguments
-        asm.cpush_all();
+        let mapping = asm.cpush_all();
 
         // Assemble the ISEQ name string
         let name_str = get_iseq_name(iseq);
@@ -8305,7 +8324,7 @@ fn gen_send_iseq(
 
         // Increment the counter for this cfunc
         asm.ccall(incr_iseq_counter as *const u8, vec![iseq_idx.into()]);
-        asm.cpop_all();
+        asm.cpop_all(mapping);
     }
 
     // The callee might change locals through Kernel#binding and other means.
@@ -8340,7 +8359,7 @@ fn gen_send_iseq(
     asm_comment!(asm, "switch to new CFP");
     let new_cfp = asm.sub(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
     asm.mov(CFP, new_cfp);
-    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
+    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP as i32), CFP);
 
     // Directly jump to the entry point of the callee
     gen_direct_jump(
@@ -8928,6 +8947,12 @@ fn gen_struct_aset(
         return None;
     }
 
+    // If the comptime receiver is frozen, writing a struct member will raise an exception
+    // and we don't want to JIT code to deal with that situation.
+    if comptime_recv.is_frozen() {
+        return None;
+    }
+
     if c_method_tracing_currently_enabled(jit) {
         // Struct accesses need fire c_call and c_return events, which we can't support
         // See :attr-tracing:
@@ -8947,6 +8972,17 @@ fn gen_struct_aset(
     // Confidence checks
     assert!(unsafe { RB_TYPE_P(comptime_recv, RUBY_T_STRUCT) });
     assert!((off as i64) < unsafe { RSTRUCT_LEN(comptime_recv) });
+
+    // Even if the comptime recv was not frozen, future recv may be. So we need to emit a guard
+    // that the recv is not frozen.
+    // We know all structs are heap objects, so we can check the flag directly.
+    let recv = asm.stack_opnd(1);
+    let recv = asm.load(recv);
+    let flags = asm.load(Opnd::mem(VALUE_BITS, recv, RUBY_OFFSET_RBASIC_FLAGS));
+    asm.test(flags, (RUBY_FL_FREEZE as u64).into());
+    asm.jnz(Target::side_exit(Counter::opt_aset_frozen));
+
+    // Not frozen, so we can proceed.
 
     asm_comment!(asm, "struct aset");
 
@@ -9918,7 +9954,7 @@ fn gen_leave(
     asm_comment!(asm, "pop stack frame");
     let incr_cfp = asm.add(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
     asm.mov(CFP, incr_cfp);
-    asm.mov(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
+    asm.mov(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP as i32), CFP);
 
     // Load the return value
     let retval_opnd = asm.stack_pop(1);

@@ -9,6 +9,7 @@
 
 **********************************************************************/
 
+#include "darray.h"
 #include "internal.h"
 #include "internal/concurrent_set.h"
 #include "internal/error.h"
@@ -87,12 +88,6 @@ Init_op_tbl(void)
 
 static const int ID_ENTRY_UNIT = 512;
 
-enum id_entry_type {
-    ID_ENTRY_STR,
-    ID_ENTRY_SYM,
-    ID_ENTRY_SIZE
-};
-
 typedef struct {
     rb_atomic_t next_id;
     VALUE sym_set;
@@ -169,6 +164,62 @@ sym_set_cmp(VALUE a, VALUE b)
     return rb_str_hash_cmp(sym_set_sym_get_str(a), sym_set_sym_get_str(b)) == false;
 }
 
+struct sym_id_entry {
+    VALUE sym;
+    VALUE str;
+};
+
+static void
+sym_id_entry_list_mark(void *ptr)
+{
+    rb_darray(struct sym_id_entry) ary = ptr;
+
+    struct sym_id_entry *entry;
+    rb_darray_foreach(ary, i, entry) {
+        // sym must be pinned because it may be used in places that don't
+        // support compaction
+        rb_gc_mark(entry->sym);
+        rb_gc_mark_movable(entry->str);
+    }
+}
+
+static void
+sym_id_entry_list_free(void *ptr)
+{
+    rb_darray(struct sym_id_entry) ary = ptr;
+
+    rb_darray_free(ary);
+}
+
+static size_t
+sym_id_entry_list_memsize(const void *ptr)
+{
+    const rb_darray(struct sym_id_entry) ary = ptr;
+
+    return rb_darray_memsize(ary);
+}
+
+static void
+sym_id_entry_list_compact(void *ptr)
+{
+    rb_darray(struct sym_id_entry) ary = ptr;
+
+    struct sym_id_entry *entry;
+    rb_darray_foreach(ary, i, entry) {
+        entry->str = rb_gc_location(entry->str);
+    }
+}
+
+static const rb_data_type_t sym_id_entry_list_type = {
+    "symbol_id_entry_list",
+    {
+        sym_id_entry_list_mark,
+        sym_id_entry_list_free,
+        sym_id_entry_list_memsize,
+        sym_id_entry_list_compact,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+};
 
 static int
 sym_check_asciionly(VALUE str, bool fake_str)
@@ -231,14 +282,24 @@ set_id_entry(rb_symbols_t *symbols, rb_id_serial_t num, VALUE str, VALUE sym)
 
     size_t idx = num / ID_ENTRY_UNIT;
 
-    VALUE ary, ids = symbols->ids;
-    if (idx >= (size_t)RARRAY_LEN(ids) || NIL_P(ary = rb_ary_entry(ids, (long)idx))) {
-        ary = rb_ary_hidden_new(ID_ENTRY_UNIT * ID_ENTRY_SIZE);
-        rb_ary_store(ids, (long)idx, ary);
+    VALUE id_entry_list, ids = symbols->ids;
+    rb_darray(struct sym_id_entry) entries;
+    if (idx >= (size_t)RARRAY_LEN(ids) || NIL_P(id_entry_list = rb_ary_entry(ids, (long)idx))) {
+        rb_darray_make(&entries, ID_ENTRY_UNIT);
+        id_entry_list = TypedData_Wrap_Struct(0, &sym_id_entry_list_type, entries);
+        rb_ary_store(ids, (long)idx, id_entry_list);
     }
-    idx = (num % ID_ENTRY_UNIT) * ID_ENTRY_SIZE;
-    rb_ary_store(ary, (long)idx + ID_ENTRY_STR, str);
-    rb_ary_store(ary, (long)idx + ID_ENTRY_SYM, sym);
+    else {
+        entries = RTYPEDDATA_GET_DATA(id_entry_list);
+    }
+
+    idx = num % ID_ENTRY_UNIT;
+    struct sym_id_entry *entry = rb_darray_ref(entries, idx);
+    RUBY_ASSERT(entry->str == 0);
+    RUBY_ASSERT(entry->sym == 0);
+
+    RB_OBJ_WRITE(id_entry_list, &entry->str, str);
+    RB_OBJ_WRITE(id_entry_list, &entry->sym, sym);
 }
 
 static VALUE
@@ -394,7 +455,7 @@ rb_free_global_symbol_table(void)
 }
 
 WARN_UNUSED_RESULT(static ID lookup_str_id(VALUE str));
-WARN_UNUSED_RESULT(static VALUE lookup_id_str(ID id));
+WARN_UNUSED_RESULT(static VALUE get_id_str(ID id));
 
 ID
 rb_id_attrset(ID id)
@@ -419,7 +480,7 @@ rb_id_attrset(ID id)
             return id;
           default:
             {
-                VALUE str = lookup_id_str(id);
+                VALUE str = get_id_str(id);
                 if (str != 0) {
                     rb_name_error(id, "cannot make unknown type ID %d:%"PRIsVALUE" attrset",
                                   scope, str);
@@ -434,7 +495,7 @@ rb_id_attrset(ID id)
 
     bool error = false;
     /* make new symbol and ID */
-    VALUE str = lookup_id_str(id);
+    VALUE str = get_id_str(id);
     if (str) {
         str = rb_str_dup(str);
         rb_str_cat(str, "=", 1);
@@ -705,75 +766,60 @@ rb_enc_symname2_p(const char *name, long len, rb_encoding *enc)
     return rb_enc_symname_type(name, len, enc, IDSET_ATTRSET_FOR_SYNTAX) != -1;
 }
 
-static VALUE
-get_id_serial_entry(rb_id_serial_t num, ID id, const enum id_entry_type t)
+static struct sym_id_entry *
+get_id_serial_entry(rb_id_serial_t num)
 {
-    VALUE result = 0;
+    struct sym_id_entry *entry = NULL;
 
     GLOBAL_SYMBOLS_LOCKING(symbols) {
         if (num && num < RUBY_ATOMIC_LOAD(symbols->next_id)) {
             size_t idx = num / ID_ENTRY_UNIT;
             VALUE ids = symbols->ids;
-            VALUE ary;
-            if (idx < (size_t)RARRAY_LEN(ids) && !NIL_P(ary = rb_ary_entry(ids, (long)idx))) {
-                long pos = (long)(num % ID_ENTRY_UNIT) * ID_ENTRY_SIZE;
-                result = rb_ary_entry(ary, pos + t);
+            VALUE id_entry_list;
+            if (idx < (size_t)RARRAY_LEN(ids) && !NIL_P(id_entry_list = rb_ary_entry(ids, (long)idx))) {
+                rb_darray(struct sym_id_entry) entries = RTYPEDDATA_GET_DATA(id_entry_list);
 
-                if (NIL_P(result)) {
-                    result = 0;
-                }
-                else if (CHECK_ID_SERIAL) {
-                    if (id) {
-                        VALUE sym = result;
-                        if (t != ID_ENTRY_SYM)
-                          sym = rb_ary_entry(ary, pos + ID_ENTRY_SYM);
-                        if (STATIC_SYM_P(sym)) {
-                            if (STATIC_SYM2ID(sym) != id) result = 0;
-                        }
-                        else {
-                            if (RSYMBOL(sym)->id != id) result = 0;
-                        }
-                    }
-                }
+                size_t pos = (size_t)(num % ID_ENTRY_UNIT);
+                RUBY_ASSERT(pos < rb_darray_size(entries));
+                entry = rb_darray_ref(entries, pos);
             }
         }
     }
 
-    if (result) {
-        switch (t) {
-          case ID_ENTRY_STR:
-            RUBY_ASSERT_BUILTIN_TYPE(result, T_STRING);
-            break;
-          case ID_ENTRY_SYM:
-            RUBY_ASSERT_BUILTIN_TYPE(result, T_SYMBOL);
-            break;
-          default:
-            break;
-        }
-    }
-
-    return result;
+    return entry;
 }
 
 static VALUE
-get_id_entry(ID id, const enum id_entry_type t)
+get_id_sym(ID id)
 {
-    return get_id_serial_entry(rb_id_to_serial(id), id, t);
+    struct sym_id_entry *entry = get_id_serial_entry(rb_id_to_serial(id));
+    return entry ? entry->sym : 0;
+}
+
+static VALUE
+get_id_str(ID id)
+{
+    struct sym_id_entry *entry = get_id_serial_entry(rb_id_to_serial(id));
+    return entry ? entry->str : 0;
 }
 
 int
 rb_static_id_valid_p(ID id)
 {
-    return STATIC_ID2SYM(id) == get_id_entry(id, ID_ENTRY_SYM);
+    return STATIC_ID2SYM(id) == get_id_sym(id);
 }
 
 static inline ID
 rb_id_serial_to_id(rb_id_serial_t num)
 {
     if (is_notop_id((ID)num)) {
-        VALUE sym = get_id_serial_entry(num, 0, ID_ENTRY_SYM);
-        if (sym) return SYM2ID(sym);
-        return ((ID)num << ID_SCOPE_SHIFT) | ID_INTERNAL | ID_STATIC_SYM;
+        struct sym_id_entry *entry = get_id_serial_entry(num);
+        if (entry && entry->sym != 0) {
+            return SYM2ID(entry->sym);
+        }
+        else {
+            return ((ID)num << ID_SCOPE_SHIFT) | ID_INTERNAL | ID_STATIC_SYM;
+        }
     }
     else {
         return (ID)num;
@@ -834,12 +880,6 @@ lookup_str_id(VALUE str)
     }
 
     return (ID)0;
-}
-
-static VALUE
-lookup_id_str(ID id)
-{
-    return get_id_entry(id, ID_ENTRY_STR);
 }
 
 ID
@@ -974,7 +1014,7 @@ VALUE
 rb_id2sym(ID x)
 {
     if (!DYNAMIC_ID_P(x)) return STATIC_ID2SYM(x);
-    return get_id_entry(x, ID_ENTRY_SYM);
+    return get_id_sym(x);
 }
 
 /*
@@ -1008,7 +1048,7 @@ rb_sym2str(VALUE sym)
 VALUE
 rb_id2str(ID id)
 {
-    return lookup_id_str(id);
+    return get_id_str(id);
 }
 
 const char *

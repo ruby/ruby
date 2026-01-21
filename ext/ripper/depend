@@ -578,6 +578,7 @@ ripper.o: $(top_srcdir)/ccan/container_of/container_of.h
 ripper.o: $(top_srcdir)/ccan/list/list.h
 ripper.o: $(top_srcdir)/ccan/str/str.h
 ripper.o: $(top_srcdir)/constant.h
+ripper.o: $(top_srcdir)/encindex.h
 ripper.o: $(top_srcdir)/id_table.h
 ripper.o: $(top_srcdir)/internal.h
 ripper.o: $(top_srcdir)/internal/array.h
@@ -605,6 +606,7 @@ ripper.o: $(top_srcdir)/internal/serial.h
 ripper.o: $(top_srcdir)/internal/set_table.h
 ripper.o: $(top_srcdir)/internal/static_assert.h
 ripper.o: $(top_srcdir)/internal/string.h
+ripper.o: $(top_srcdir)/internal/struct.h
 ripper.o: $(top_srcdir)/internal/symbol.h
 ripper.o: $(top_srcdir)/internal/thread.h
 ripper.o: $(top_srcdir)/internal/variable.h

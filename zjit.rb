@@ -10,6 +10,9 @@ module RubyVM::ZJIT
   # Blocks that are called when YJIT is enabled
   @jit_hooks = []
   # Avoid calling a Ruby method here to avoid interfering with compilation tests
+  if Primitive.rb_zjit_get_stats_file_path_p
+    at_exit { print_stats_file }
+  end
   if Primitive.rb_zjit_print_stats_p
     at_exit { print_stats }
   end
@@ -181,6 +184,7 @@ class << RubyVM::ZJIT
     # Show fallback counters, ordered by the typical amount of fallbacks for the prefix at the time
     print_counters_with_prefix(prefix: 'unspecialized_send_def_type_', prompt: 'not optimized method types for send', buf:, stats:, limit: 20)
     print_counters_with_prefix(prefix: 'unspecialized_send_without_block_def_type_', prompt: 'not optimized method types for send_without_block', buf:, stats:, limit: 20)
+    print_counters_with_prefix(prefix: 'unspecialized_super_def_type_', prompt: 'not optimized method types for super', buf:, stats:, limit: 20)
     print_counters_with_prefix(prefix: 'uncategorized_fallback_yarv_insn_', prompt: 'instructions with uncategorized fallback reason', buf:, stats:, limit: 20)
     print_counters_with_prefix(prefix: 'send_fallback_', prompt: 'send fallback reasons', buf:, stats:, limit: 20)
     print_counters_with_prefix(prefix: 'setivar_fallback_', prompt: 'setivar fallback reasons', buf:, stats:, limit: 5)
@@ -331,6 +335,14 @@ class << RubyVM::ZJIT
   # Print ZJIT stats
   def print_stats
     $stderr.write stats_string
+  end
+
+  # Print ZJIT stats to file
+  def print_stats_file
+    filename = Primitive.rb_zjit_get_stats_file_path_p
+    File.open(filename, "wb") do |file|
+      file.write stats_string
+    end
   end
 
   def dump_locations # :nodoc:

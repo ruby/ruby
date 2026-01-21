@@ -1,7 +1,10 @@
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::AtomicUsize;
+use std::sync::atomic::Ordering;
 
 use atomic_refcell::AtomicRefCell;
-use mmtk::scheduler::{GCWork, GCWorker, WorkBucketStage};
+use mmtk::scheduler::GCWork;
+use mmtk::scheduler::GCWorker;
+use mmtk::scheduler::WorkBucketStage;
 
 use crate::Ruby;
 use sysinfo::System;

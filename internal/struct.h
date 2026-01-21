@@ -49,36 +49,16 @@ struct RStruct {
 
 #define RSTRUCT(obj) ((struct RStruct *)(obj))
 
-#ifdef RSTRUCT_LEN
-# undef RSTRUCT_LEN
-#endif
-
-#ifdef RSTRUCT_PTR
-# undef RSTRUCT_PTR
-#endif
-
-#ifdef RSTRUCT_SET
-# undef RSTRUCT_SET
-#endif
-
-#ifdef RSTRUCT_GET
-# undef RSTRUCT_GET
-#endif
-
-#define RSTRUCT_LEN internal_RSTRUCT_LEN
-#define RSTRUCT_SET internal_RSTRUCT_SET
-#define RSTRUCT_GET internal_RSTRUCT_GET
-
 /* struct.c */
 VALUE rb_struct_init_copy(VALUE copy, VALUE s);
 VALUE rb_struct_lookup(VALUE s, VALUE idx);
 VALUE rb_struct_s_keyword_init(VALUE klass);
 static inline long RSTRUCT_EMBED_LEN(VALUE st);
-static inline long RSTRUCT_LEN(VALUE st);
+static inline long RSTRUCT_LEN_RAW(VALUE st);
 static inline int RSTRUCT_LENINT(VALUE st);
 static inline const VALUE *RSTRUCT_CONST_PTR(VALUE st);
-static inline void RSTRUCT_SET(VALUE st, long k, VALUE v);
-static inline VALUE RSTRUCT_GET(VALUE st, long k);
+static inline void RSTRUCT_SET_RAW(VALUE st, long k, VALUE v);
+static inline VALUE RSTRUCT_GET_RAW(VALUE st, long k);
 
 static inline long
 RSTRUCT_EMBED_LEN(VALUE st)
@@ -89,7 +69,7 @@ RSTRUCT_EMBED_LEN(VALUE st)
 }
 
 static inline long
-RSTRUCT_LEN(VALUE st)
+RSTRUCT_LEN_RAW(VALUE st)
 {
     if (FL_TEST_RAW(st, RSTRUCT_EMBED_LEN_MASK)) {
         return RSTRUCT_EMBED_LEN(st);
@@ -102,7 +82,7 @@ RSTRUCT_LEN(VALUE st)
 static inline int
 RSTRUCT_LENINT(VALUE st)
 {
-    return rb_long2int(RSTRUCT_LEN(st));
+    return rb_long2int(RSTRUCT_LEN_RAW(st));
 }
 
 static inline const VALUE *
@@ -119,13 +99,13 @@ RSTRUCT_CONST_PTR(VALUE st)
 }
 
 static inline void
-RSTRUCT_SET(VALUE st, long k,  VALUE v)
+RSTRUCT_SET_RAW(VALUE st, long k,  VALUE v)
 {
     RB_OBJ_WRITE(st, &RSTRUCT_CONST_PTR(st)[k], v);
 }
 
 static inline VALUE
-RSTRUCT_GET(VALUE st, long k)
+RSTRUCT_GET_RAW(VALUE st, long k)
 {
     return RSTRUCT_CONST_PTR(st)[k];
 }
@@ -137,7 +117,7 @@ RSTRUCT_FIELDS_OBJ(VALUE st)
     VALUE fields_obj;
     if (embed_len) {
         RUBY_ASSERT(!FL_TEST_RAW(st, RSTRUCT_GEN_FIELDS));
-        fields_obj = RSTRUCT_GET(st, embed_len);
+        fields_obj = RSTRUCT_GET_RAW(st, embed_len);
     }
     else {
         fields_obj = RSTRUCT(st)->as.heap.fields_obj;
@@ -151,7 +131,7 @@ RSTRUCT_SET_FIELDS_OBJ(VALUE st, VALUE fields_obj)
     const long embed_len = RSTRUCT_EMBED_LEN(st);
     if (embed_len) {
         RUBY_ASSERT(!FL_TEST_RAW(st, RSTRUCT_GEN_FIELDS));
-        RSTRUCT_SET(st, embed_len, fields_obj);
+        RSTRUCT_SET_RAW(st, embed_len, fields_obj);
     }
     else {
         RB_OBJ_WRITE(st, &RSTRUCT(st)->as.heap.fields_obj, fields_obj);

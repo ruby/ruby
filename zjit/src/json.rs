@@ -43,9 +43,9 @@ impl Json {
         match self {
             Json::Null => writer.write_all(b"null"),
             Json::Bool(b) => writer.write_all(if *b { b"true" } else { b"false" }),
-            Json::Integer(i) => write!(writer, "{}", i),
-            Json::UnsignedInteger(u) => write!(writer, "{}", u),
-            Json::Floating(f) => write!(writer, "{}", f),
+            Json::Integer(i) => write!(writer, "{i}"),
+            Json::UnsignedInteger(u) => write!(writer, "{u}"),
+            Json::Floating(f) => write!(writer, "{f}"),
             Json::String(s) => return Self::write_str(writer, s),
             Json::Array(jsons) => return Self::write_array(writer, jsons),
             Json::Object(map) => return Self::write_object(writer, map),
@@ -69,9 +69,9 @@ impl Json {
                 '\x0C' => write!(writer, "\\f")?,
                 ch if ch.is_control() => {
                     let code_point = ch as u32;
-                    write!(writer, "\\u{:04X}", code_point)?
+                    write!(writer, "\\u{code_point:04X}")?
                 }
-                _ => write!(writer, "{}", ch)?,
+                _ => write!(writer, "{ch}")?,
             };
         }
 
@@ -83,7 +83,7 @@ impl Json {
         writer.write_all(b"[")?;
         let mut prefix = "";
         for item in jsons {
-            write!(writer, "{}", prefix)?;
+            write!(writer, "{prefix}")?;
             item.marshal(writer)?;
             prefix = ", ";
         }
@@ -96,7 +96,7 @@ impl Json {
         let mut prefix = "";
         for (k, v) in pairs {
             // Escape the keys, despite not being `Json::String` objects.
-            write!(writer, "{}", prefix)?;
+            write!(writer, "{prefix}")?;
             Self::write_str(writer, k)?;
             writer.write_all(b":")?;
             v.marshal(writer)?;
@@ -112,7 +112,7 @@ impl std::fmt::Display for Json {
         let mut buf = Vec::new();
         self.marshal(&mut buf).map_err(|_| std::fmt::Error)?;
         let s = String::from_utf8(buf).map_err(|_| std::fmt::Error)?;
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 
@@ -225,8 +225,8 @@ impl From<io::Error> for JsonError {
 impl fmt::Display for JsonError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            JsonError::FloatError(v) => write!(f, "Cannot serialize float {}", v),
-            JsonError::IoError(e) => write!(f, "{}", e),
+            JsonError::FloatError(v) => write!(f, "Cannot serialize float {v}"),
+            JsonError::IoError(e) => write!(f, "{e}"),
         }
     }
 }

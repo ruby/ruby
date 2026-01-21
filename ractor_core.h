@@ -91,7 +91,7 @@ struct rb_ractor_struct {
 
     // ractor local data
 
-    rb_serial_t next_fiber_serial;
+    rb_serial_t next_ec_serial;
 
     st_table *local_storage;
     struct rb_id_table *idkey_local_storage;
@@ -144,6 +144,7 @@ VALUE rb_ractor_require(VALUE feature, bool silent);
 VALUE rb_ractor_autoload_load(VALUE space, ID id);
 
 VALUE rb_ractor_ensure_shareable(VALUE obj, VALUE name);
+st_table *rb_ractor_targeted_hooks(rb_ractor_t *cr);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 void rb_ractor_finish_marking(void);
@@ -248,6 +249,25 @@ static inline uint32_t
 rb_ractor_id(const rb_ractor_t *r)
 {
     return r->pub.id;
+}
+
+static inline void
+rb_ractor_targeted_hooks_incr(rb_ractor_t *cr)
+{
+    cr->pub.targeted_hooks_cnt++;
+}
+
+static inline void
+rb_ractor_targeted_hooks_decr(rb_ractor_t *cr)
+{
+    RUBY_ASSERT(cr->pub.targeted_hooks_cnt > 0);
+    cr->pub.targeted_hooks_cnt--;
+}
+
+static inline unsigned int
+rb_ractor_targeted_hooks_cnt(rb_ractor_t *cr)
+{
+    return cr->pub.targeted_hooks_cnt;
 }
 
 #if RACTOR_CHECK_MODE > 0

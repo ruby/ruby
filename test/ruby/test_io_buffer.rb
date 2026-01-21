@@ -1,6 +1,7 @@
 # frozen_string_literal: false
 
 require 'tempfile'
+require 'rbconfig/sizeof'
 
 class TestIOBuffer < Test::Unit::TestCase
   experimental = Warning[:experimental]
@@ -45,22 +46,22 @@ class TestIOBuffer < Test::Unit::TestCase
   def test_new_internal
     buffer = IO::Buffer.new(1024, IO::Buffer::INTERNAL)
     assert_equal 1024, buffer.size
-    refute buffer.external?
-    assert buffer.internal?
-    refute buffer.mapped?
+    refute_predicate buffer, :external?
+    assert_predicate buffer, :internal?
+    refute_predicate buffer, :mapped?
   end
 
   def test_new_mapped
     buffer = IO::Buffer.new(1024, IO::Buffer::MAPPED)
     assert_equal 1024, buffer.size
-    refute buffer.external?
-    refute buffer.internal?
-    assert buffer.mapped?
+    refute_predicate buffer, :external?
+    refute_predicate buffer, :internal?
+    assert_predicate buffer, :mapped?
   end
 
   def test_new_readonly
     buffer = IO::Buffer.new(128, IO::Buffer::INTERNAL|IO::Buffer::READONLY)
-    assert buffer.readonly?
+    assert_predicate buffer, :readonly?
 
     assert_raise IO::Buffer::AccessError do
       buffer.set_string("")
@@ -140,19 +141,19 @@ class TestIOBuffer < Test::Unit::TestCase
   def test_string_mapped
     string = "Hello World"
     buffer = IO::Buffer.for(string)
-    assert buffer.readonly?
+    assert_predicate buffer, :readonly?
   end
 
   def test_string_mapped_frozen
     string = "Hello World".freeze
     buffer = IO::Buffer.for(string)
-    assert buffer.readonly?
+    assert_predicate buffer, :readonly?
   end
 
   def test_string_mapped_mutable
     string = "Hello World"
     IO::Buffer.for(string) do |buffer|
-      refute buffer.readonly?
+      refute_predicate buffer, :readonly?
 
       buffer.set_value(:U8, 0, "h".ord)
 
@@ -414,6 +415,8 @@ class TestIOBuffer < Test::Unit::TestCase
     :F64 => [-1.0, 0.0, 0.5, 1.0, 128.0],
   }
 
+  SIZE_MAX = RbConfig::LIMITS["SIZE_MAX"]
+
   def test_get_set_value
     buffer = IO::Buffer.new(128)
 
@@ -421,6 +424,16 @@ class TestIOBuffer < Test::Unit::TestCase
       values.each do |value|
         buffer.set_value(data_type, 0, value)
         assert_equal value, buffer.get_value(data_type, 0), "Converting #{value} as #{data_type}."
+      end
+      assert_raise(ArgumentError) {buffer.get_value(data_type, 128)}
+      assert_raise(ArgumentError) {buffer.set_value(data_type, 128, 0)}
+      case data_type
+      when :U8, :S8
+      else
+        assert_raise(ArgumentError) {buffer.get_value(data_type, 127)}
+        assert_raise(ArgumentError) {buffer.set_value(data_type, 127, 0)}
+        assert_raise(ArgumentError) {buffer.get_value(data_type, SIZE_MAX)}
+        assert_raise(ArgumentError) {buffer.set_value(data_type, SIZE_MAX, 0)}
       end
     end
   end
@@ -489,7 +502,21 @@ class TestIOBuffer < Test::Unit::TestCase
 
   def test_clear
     buffer = IO::Buffer.new(16)
-    buffer.set_string("Hello World!")
+    assert_equal "\0" * 16, buffer.get_string
+    buffer.clear(1)
+    assert_equal "\1" * 16, buffer.get_string
+    buffer.clear(2, 1, 2)
+    assert_equal "\1" + "\2"*2 + "\1"*13, buffer.get_string
+    buffer.clear(2, 1)
+    assert_equal "\1" + "\2"*15, buffer.get_string
+    buffer.clear(260)
+    assert_equal "\4" * 16, buffer.get_string
+    assert_raise(TypeError) {buffer.clear("x")}
+
+    assert_raise(ArgumentError) {buffer.clear(0, 20)}
+    assert_raise(ArgumentError) {buffer.clear(0, 0, 20)}
+    assert_raise(ArgumentError) {buffer.clear(0, 10, 10)}
+    assert_raise(ArgumentError) {buffer.clear(0, SIZE_MAX-7, 10)}
   end
 
   def test_invalidation
@@ -688,8 +715,8 @@ class TestIOBuffer < Test::Unit::TestCase
 
       buffer = IO::Buffer.map(file, nil, 0, IO::Buffer::PRIVATE)
       begin
-        assert buffer.private?
-        refute buffer.readonly?
+        assert_predicate buffer, :private?
+        refute_predicate buffer, :readonly?
 
         buffer.set_string("J")
 

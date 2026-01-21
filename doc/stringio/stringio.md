@@ -324,7 +324,7 @@ a binary stream may not be changed to text.
 
 ### Encodings
 
-A stream has an encoding; see the [encodings document][encodings document].
+A stream has an encoding; see [Encodings][encodings document].
 
 The initial encoding for a new or re-opened stream depends on its [data mode][data mode]:
 
@@ -683,7 +683,7 @@ Reading:
 - #each_codepoint: reads each remaining codepoint, passing it to the block.
 
 [bom]:                https://en.wikipedia.org/wiki/Byte_order_mark
-[encodings document]: https://docs.ruby-lang.org/en/master/encodings_rdoc.html
+[encodings document]: https://docs.ruby-lang.org/en/master/language/encodings_rdoc.html
 [io class]:           https://docs.ruby-lang.org/en/master/IO.html
 [kernel#puts]:        https://docs.ruby-lang.org/en/master/Kernel.html#method-i-puts
 [kernel#readline]:    https://docs.ruby-lang.org/en/master/Kernel.html#method-i-readline

@@ -123,6 +123,25 @@ class TestCall < Test::Unit::TestCase
    assert_equal([1, 2, {kw: 3}], f(*a, kw: 3))
   end
 
+  def test_forward_argument_init
+    o = Object.new
+    def o.simple_forward_argument_init(a=eval('b'), b=1)
+      [a, b]
+    end
+
+    def o.complex_forward_argument_init(a=eval('b'), b=eval('kw'), kw: eval('kw2'), kw2: 3)
+      [a, b, kw, kw2]
+    end
+
+    def o.keyword_forward_argument_init(a: eval('b'), b: eval('kw'), kw: eval('kw2'), kw2: 3)
+      [a, b, kw, kw2]
+    end
+
+    assert_equal [nil, 1], o.simple_forward_argument_init
+    assert_equal [nil, nil, 3, 3], o.complex_forward_argument_init
+    assert_equal [nil, nil, 3, 3], o.keyword_forward_argument_init
+  end
+
   def test_call_bmethod_proc
     pr = proc{|sym| sym}
     define_singleton_method(:a, &pr)
@@ -421,6 +440,35 @@ class TestCall < Test::Unit::TestCase
     assert_equal([1, 2, {}], s(1, **{kw: 2}))
     assert_equal([2, {}], s(*r2kea))
     assert_equal([1, 2, {}], s(*r2ka))
+  end
+
+  def test_anon_splat_mutated_bug_21757
+    args = [1, 2]
+    kw = {bug: true}
+
+    def self.m(*); end
+    m(*args, bug: true)
+    assert_equal(2, args.length)
+
+    proc = ->(*) { }
+    proc.(*args, bug: true)
+    assert_equal(2, args.length)
+
+    def self.m2(*); end
+    m2(*args, **kw)
+    assert_equal(2, args.length)
+
+    proc = ->(*) { }
+    proc.(*args, **kw)
+    assert_equal(2, args.length)
+
+    def self.m3(*, **nil); end
+    assert_raise(ArgumentError) { m3(*args, bug: true) }
+    assert_equal(2, args.length)
+
+    proc = ->(*, **nil) { }
+    assert_raise(ArgumentError) { proc.(*args, bug: true) }
+    assert_equal(2, args.length)
   end
 
   def test_kwsplat_block_eval_order

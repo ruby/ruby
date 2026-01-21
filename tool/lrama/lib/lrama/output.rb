@@ -1,13 +1,12 @@
 # frozen_string_literal: true
 
-require "erb"
 require "forwardable"
-require_relative "report/duration"
+require_relative "tracer/duration"
 
 module Lrama
   class Output
     extend Forwardable
-    include Report::Duration
+    include Tracer::Duration
 
     attr_reader :grammar_file_path, :context, :grammar, :error_recovery, :include_header
 
@@ -43,7 +42,7 @@ module Lrama
     end
 
     def render_partial(file)
-      render_template(partial_file(file))
+      ERB.render(partial_file(file), context: @context, output: self)
     end
 
     def render
@@ -405,14 +404,8 @@ module Lrama
     private
 
     def eval_template(file, path)
-      tmp = render_template(file)
+      tmp = ERB.render(file, context: @context, output: self)
       replace_special_variables(tmp, path)
-    end
-
-    def render_template(file)
-      erb = self.class.erb(File.read(file))
-      erb.filename = file
-      erb.result_with_hash(context: @context, output: self)
     end
 
     def template_file

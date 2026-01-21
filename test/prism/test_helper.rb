@@ -2,7 +2,6 @@
 
 require "prism"
 require "pp"
-require "ripper"
 require "stringio"
 require "test/unit"
 require "tempfile"
@@ -241,7 +240,7 @@ module Prism
     end
 
     # All versions that prism can parse
-    SYNTAX_VERSIONS = %w[3.3 3.4 4.0]
+    SYNTAX_VERSIONS = %w[3.3 3.4 4.0 4.1]
 
     # `RUBY_VERSION` with the patch version excluded
     CURRENT_MAJOR_MINOR = RUBY_VERSION.split(".")[0, 2].join(".")

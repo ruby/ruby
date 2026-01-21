@@ -17,7 +17,7 @@ Note that in the examples below, a returned string <tt>'hello'</tt>
 is a copy of +self+, not +self+.
 
 If +pattern+ is a Regexp, performs the equivalent of <tt>self.match(pattern)</tt>
-(also setting {pattern-matching global variables}[rdoc-ref:language/globals.md@Pattern+Matching]):
+(also setting {matched-data variables}[rdoc-ref:language/globals.md@Matched+Data]):
 
   'hello'.partition(/h/)  # => ["", "h", "ello"]
   'hello'.partition(/l/)  # => ["he", "l", "lo"]
@@ -30,7 +30,7 @@ If +pattern+ is a Regexp, performs the equivalent of <tt>self.match(pattern)</tt
 
 If +pattern+ is not a Regexp, converts it to a string (if it is not already one),
 then performs the equivalent of <tt>self.index(pattern)</tt>
-(and does _not_ set {pattern-matching global variables}[rdoc-ref:language/globals.md@Pattern+Matching]):
+(and does _not_ set {matched-data global variables}[rdoc-ref:language/globals.md@Matched+Data]):
 
   'hello'.partition('h')     # => ["", "h", "ello"]
   'hello'.partition('l')     # => ["he", "l", "lo"]
@@ -38,7 +38,6 @@ then performs the equivalent of <tt>self.index(pattern)</tt>
   'hello'.partition('o')     # => ["hell", "o", ""]
   'hello'.partition('')      # => ["", "", "hello"]
   'hello'.partition('x')     # => ["hello", "", ""]
-  'тест'.partition('т')      # => ["", "т", "ест"]
   'こんにちは'.partition('に') # => ["こん", "に", "ちは"]
 
 Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].

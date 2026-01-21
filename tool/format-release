@@ -9,6 +9,7 @@ end
 
 require "open-uri"
 require "yaml"
+require_relative "./ruby-version"
 
 Diffy::Diff.default_options.merge!(
   include_diff_info: true,
@@ -54,31 +55,10 @@ eom
     unless /\A(\d+)\.(\d+)\.(\d+)(?:-(?:preview|rc)\d+)?\z/ =~ version
       raise "unexpected version string '#{version}'"
     end
-    x = $1.to_i
-    y = $2.to_i
-    z = $3.to_i
-    # previous tag for git diff --shortstat
-    # It's only for x.y.0 release
-    if z != 0
-      prev_tag = nil
-    elsif y != 0
-      prev_tag = "v#{x}_#{y-1}_0"
-      prev_ver = "#{x}.#{y-1}.0"
-    else # y == 0 && z == 0
-      case x
-      when 3
-        prev_tag = "v2_7_0"
-        prev_ver = "2.7.0"
-      when 4
-        prev_tag = "v3_4_0"
-        prev_ver = "3.4.0"
-      else
-        raise "it doesn't know what is the previous version of '#{version}'"
-      end
-    end
+    teeny = Integer($3)
 
     uri = "https://cache.ruby-lang.org/pub/tmp/ruby-info-#{version}-draft.yml"
-    info = YAML.load(URI(uri).read)
+    info = YAML.unsafe_load(URI(uri).read)
     if info.size != 1
       raise "unexpected info.yml '#{uri}'"
     end
@@ -93,9 +73,10 @@ eom
       tarballs << tarball
     end
 
-    if prev_tag
+    if teeny == 0
       # show diff shortstat
-      tag = "v#{version.gsub(/[.\-]/, '_')}"
+      tag = RubyVersion.tag(version)
+      prev_tag = RubyVersion.tag(RubyVersion.previous(version))
       stat = `git -C #{rubydir} diff -l0 --shortstat #{prev_tag}..#{tag}`
       files_changed, insertions, deletions = stat.scan(/\d+/)
     end
@@ -189,7 +170,7 @@ eom
     if /\.0(?:-\w+)?\z/ =~ ver
       # preview, rc, or first release
       entry <<= <<eom
-  tag: v#{ver.tr('.-', '_')}
+  tag: #{RubyVersion.tag(ver)}
   stats:
     files_changed: #{files_changed}
     insertions: #{insertions}

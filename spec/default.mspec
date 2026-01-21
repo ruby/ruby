@@ -9,6 +9,7 @@ ENV["CHECK_CONSTANT_LEAKS"] ||= "true"
 
 require "./rbconfig" unless defined?(RbConfig)
 require_relative "../tool/test-coverage" if ENV.key?("COVERAGE")
+require_relative "../tool/lib/test/jobserver"
 load File.dirname(__FILE__) + '/ruby/default.mspec'
 OBJDIR = File.expand_path("spec/ruby/optional/capi/ext") unless defined?(OBJDIR)
 class MSpecScript
@@ -50,34 +51,10 @@ end
 
 module MSpecScript::JobServer
   def cores(max = 1)
-    if max > 1 and /(?:\A|\s)--jobserver-(?:auth|fds)=(\d+),(\d+)/ =~ ENV["MAKEFLAGS"]
-      cores = 1
-      begin
-        r = IO.for_fd($1.to_i(10), "rb", autoclose: false)
-        w = IO.for_fd($2.to_i(10), "wb", autoclose: false)
-        jobtokens = r.read_nonblock(max - 1)
-        cores = jobtokens.size
-        if cores > 0
-          cores += 1
-          jobserver = w
-          w = nil
-          at_exit {
-            jobserver.print(jobtokens)
-            jobserver.close
-          }
-          MSpecScript::JobServer.module_eval do
-            remove_method :cores
-            define_method(:cores) do
-              cores
-            end
-          end
-          return cores
-        end
-      rescue Errno::EBADF
-      ensure
-        r&.close
-        w&.close
-      end
+    MSpecScript::JobServer.remove_method :cores
+    if cores = Test::JobServer.max_jobs(max)
+      MSpecScript::JobServer.define_method(:cores) { cores }
+      return cores
     end
     super
   end

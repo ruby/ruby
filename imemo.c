@@ -54,6 +54,8 @@ rb_imemo_tmpbuf_new(void)
     VALUE flags = T_IMEMO | (imemo_tmpbuf << FL_USHIFT);
     NEWOBJ_OF(obj, rb_imemo_tmpbuf_t, 0, flags, sizeof(rb_imemo_tmpbuf_t), NULL);
 
+    rb_gc_register_pinning_obj((VALUE)obj);
+
     obj->ptr = NULL;
     obj->cnt = 0;
 
@@ -92,9 +94,24 @@ rb_free_tmp_buffer(volatile VALUE *store)
     rb_imemo_tmpbuf_t *s = (rb_imemo_tmpbuf_t*)ATOMIC_VALUE_EXCHANGE(*store, 0);
     if (s) {
         void *ptr = ATOMIC_PTR_EXCHANGE(s->ptr, 0);
+        long cnt = s->cnt;
         s->cnt = 0;
-        ruby_xfree(ptr);
+        ruby_sized_xfree(ptr, sizeof(VALUE) * cnt);
     }
+}
+
+struct MEMO *
+rb_imemo_memo_new(VALUE a, VALUE b, VALUE c)
+{
+    struct MEMO *memo = IMEMO_NEW(struct MEMO, imemo_memo, 0);
+
+    rb_gc_register_pinning_obj((VALUE)memo);
+
+    *((VALUE *)&memo->v1) = a;
+    *((VALUE *)&memo->v2) = b;
+    *((VALUE *)&memo->u3.value) = c;
+
+    return memo;
 }
 
 static VALUE
@@ -306,9 +323,6 @@ mark_and_move_method_entry(rb_method_entry_t *ment, bool reference_updating)
             if (!rb_gc_checking_shareable()) {
                 rb_gc_mark_and_move(&def->body.bmethod.proc);
             }
-            if (def->body.bmethod.hooks) {
-                rb_hook_list_mark_and_move(def->body.bmethod.hooks);
-            }
             break;
           case VM_METHOD_TYPE_ALIAS:
             rb_gc_mark_and_move_ptr(&def->body.alias.original_me);
@@ -375,7 +389,6 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
             RUBY_ASSERT(RB_TYPE_P(cc->klass, T_CLASS) || RB_TYPE_P(cc->klass, T_ICLASS));
             RUBY_ASSERT(IMEMO_TYPE_P((VALUE)cc->cme_, imemo_ment));
 
-            rb_gc_mark_weak((VALUE *)&cc->klass);
             if ((vm_cc_super_p(cc) || vm_cc_refinement_p(cc))) {
                 rb_gc_mark_movable((VALUE)cc->cme_);
             }

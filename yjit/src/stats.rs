@@ -354,6 +354,7 @@ make_counters! {
     send_iseq_arity_error,
     send_iseq_block_arg_type,
     send_iseq_clobbering_block_arg,
+    send_iseq_block_arg_gc_unsafe,
     send_iseq_complex_discard_extras,
     send_iseq_leaf_builtin_block_arg_block_param,
     send_iseq_kw_splat_non_nil,
@@ -488,6 +489,7 @@ make_counters! {
     opt_aset_not_array,
     opt_aset_not_fixnum,
     opt_aset_not_hash,
+    opt_aset_frozen,
 
     opt_case_dispatch_megamorphic,
 

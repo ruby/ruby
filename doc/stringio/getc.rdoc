@@ -12,9 +12,9 @@ Returns +nil+ if at end-of-stream:
 
 Returns characters, not bytes:
 
-  strio = StringIO.new('тест')
-  strio.getc # => "т"
-  strio.getc # => "е"
+  strio = StringIO.new('Привет')
+  strio.getc # => "П"
+  strio.getc # => "р"
 
   strio = StringIO.new('こんにちは')
   strio.getc # => "こ"
@@ -31,4 +31,4 @@ in other cases that need not be true:
    strio.pos = 5 # => 5     # At third byte of second character; returns byte.
    strio.getc    # => "\x93"
 
-Related: StringIO.getbyte.
+Related: #getbyte, #putc, #ungetc.

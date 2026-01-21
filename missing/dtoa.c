@@ -547,10 +547,13 @@ Balloc(int k)
 }
 
 static void
-Bfree(Bigint *v)
+Bclear(Bigint **vp)
 {
-    FREE(v);
+    Bigint *v = *vp;
+    *vp = NULL;
+    if (v) FREE(v);
 }
+#define Bfree(v) Bclear(&(v))
 
 #define Bcopy(x,y) memcpy((char *)&(x)->sign, (char *)&(y)->sign, \
 (y)->wds*sizeof(Long) + 2*sizeof(int))
