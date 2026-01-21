@@ -1585,6 +1585,8 @@ dir_chdir(VALUE dir)
 #endif
 }
 
+static VALUE last_cwd;
+
 #ifndef _WIN32
 static VALUE
 getcwd_to_str(VALUE arg)
@@ -1604,11 +1606,34 @@ getcwd_xfree(VALUE arg)
     return Qnil;
 }
 
-VALUE
-rb_dir_getwd_ospath(void)
+static VALUE
+rb_dir_getwd_ospath_slowpath(void)
 {
     char *path = ruby_getcwd();
     return rb_ensure(getcwd_to_str, (VALUE)path, getcwd_xfree, (VALUE)path);
+}
+
+VALUE
+rb_dir_getwd_ospath(void)
+{
+    char buf[PATH_MAX];
+    char *path = getcwd(buf, PATH_MAX);
+    if (!path) {
+        return rb_dir_getwd_ospath_slowpath();
+    }
+
+    VALUE cached_cwd = RUBY_ATOMIC_VALUE_LOAD(last_cwd);
+
+    if (!cached_cwd || strcmp(RSTRING_PTR(cached_cwd), path) != 0) {
+#ifdef __APPLE__
+        cached_cwd = rb_str_normalize_ospath(path, strlen(path));
+#else
+        cached_cwd = rb_str_new2(path);
+#endif
+        rb_str_freeze(cached_cwd);
+        RUBY_ATOMIC_VALUE_SET(last_cwd, cached_cwd);
+    }
+    return cached_cwd;
 }
 #endif
 
@@ -1617,7 +1642,7 @@ rb_dir_getwd(void)
 {
     rb_encoding *fs = rb_filesystem_encoding();
     int fsenc = rb_enc_to_index(fs);
-    VALUE cwd = rb_dir_getwd_ospath();
+    VALUE cwd = rb_str_new_shared(rb_dir_getwd_ospath());
 
     switch (fsenc) {
       case ENCINDEX_US_ASCII:
@@ -4008,6 +4033,7 @@ Init_Dir(void)
 
     rb_gc_register_address(&chdir_lock.path);
     rb_gc_register_address(&chdir_lock.thread);
+    rb_gc_register_address(&last_cwd);
 
     rb_cDir = rb_define_class("Dir", rb_cObject);
 
