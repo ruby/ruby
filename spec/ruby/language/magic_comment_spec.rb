@@ -3,7 +3,13 @@ require_relative '../spec_helper'
 # See core/kernel/eval_spec.rb for more magic comments specs for eval()
 describe :magic_comments, shared: true do
   before :each do
-    @default = @method == :locale ? Encoding.find('locale') : Encoding::UTF_8
+    @default = if @method == :locale &&
+        ( platform_is_not(:windows) || ruby_version_is(""..."4.0") )
+    then
+      Encoding.find('locale')
+    else
+      Encoding::UTF_8
+    end
   end
 
   it "are optional" do
