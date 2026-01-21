@@ -1607,6 +1607,16 @@ dummy
       assert_locations(node.children[-1].children[-1].locations, [[1, 4, 1, 15], [1, 8, 1, 9], [1, 9, 1, 10], [1, 11, 1, 13]])
     end
 
+    def test_op_asgn_and_locations
+      node = ast_parse("a &&= b")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 7], [1, 0, 1, 1], [1, 2, 1, 5]])
+    end
+
+    def test_op_asgn_or_locations
+      node = ast_parse("a ||= b")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 7], [1, 0, 1, 1], [1, 2, 1, 5]])
+    end
+
     def test_postexe_locations
       node = ast_parse("END {  }")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 8], [1, 0, 1, 3], [1, 4, 1, 5], [1, 7, 1, 8]])
