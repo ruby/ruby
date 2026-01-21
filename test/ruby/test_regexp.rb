@@ -710,9 +710,9 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal({a: "foo", b: "baz"}, m.deconstruct_keys(nil))
     assert_equal({a: "foo", b: "baz"}, m.deconstruct_keys([:a, :b]))
     assert_equal({b: "baz"}, m.deconstruct_keys([:b]))
-    assert_equal({}, m.deconstruct_keys([:c, :a]))
+    assert_equal({a: "foo"}, m.deconstruct_keys([:c, :a]))
     assert_equal({a: "foo"}, m.deconstruct_keys([:a, :c]))
-    assert_equal({}, m.deconstruct_keys([:a, :b, :c]))
+    assert_equal({a: "foo", b: "baz"}, m.deconstruct_keys([:a, :b, :c]))
 
     assert_raise(TypeError) {
       m.deconstruct_keys(0)
