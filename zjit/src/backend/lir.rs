@@ -88,6 +88,7 @@ impl BasicBlock {
     }
 
     pub fn edges(&self) -> EdgePair {
+        assert!(self.insns.last().unwrap().is_terminator());
         let extract_edge = |insn: &Insn| -> Option<BranchEdge> {
             if let Some(Target::Block(edge)) = insn.target() {
                 Some(edge.clone())
@@ -885,6 +886,29 @@ impl Insn {
             Insn::BakeString(text) |
             Insn::Comment(text) => Some(text),
             _ => None
+        }
+    }
+
+    /// Returns true if this instruction is a terminator (ends a basic block).
+    pub fn is_terminator(&self) -> bool {
+        match self {
+            Insn::Jbe(_) |
+            Insn::Jb(_) |
+            Insn::Je(_) |
+            Insn::Jl(_) |
+            Insn::Jg(_) |
+            Insn::Jge(_) |
+            Insn::Jmp(_) |
+            Insn::JmpOpnd(_) |
+            Insn::Jne(_) |
+            Insn::Jnz(_) |
+            Insn::Jo(_) |
+            Insn::JoMul(_) |
+            Insn::Jz(_) |
+            Insn::Joz(..) |
+            Insn::Jonz(..) |
+            Insn::CRet(_) => true,
+            _ => false
         }
     }
 }
