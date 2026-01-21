@@ -52,17 +52,29 @@ rb_coverage_supported(VALUE self, VALUE _mode)
 
 /*
  * call-seq:
- *    Coverage.setup                                                          => nil
- *    Coverage.setup(:all)                                                    => nil
- *    Coverage.setup(lines: bool, branches: bool, methods: bool, eval: bool)  => nil
- *    Coverage.setup(oneshot_lines: true)                                     => nil
+ *    Coverage.setup -> nil
+ *    Coverage.setup(type) -> nil
+ *    Coverage.setup(lines: false, branches: false, methods: false, eval: false, oneshot_lines: false) -> nil
  *
- * Set up the coverage measurement.
+ * Performs setup for coverage measurement, but does not start coverage measurement.
+ * To start coverage measurement, use Coverage.resume.
  *
- * Note that this method does not start the measurement itself.
- * Use Coverage.resume to start the measurement.
+ * To perform both setup and start coverage measurement, Coverage.start can be used.
  *
- * You may want to use Coverage.start to setup and then start the measurement.
+ * With argument +type+ given and +type+ is symbol +:all+, enables all types of coverage
+ * (lines, branches, methods, and eval).
+ *
+ * Keyword arguments or hash +type+ can be given with each of the following keys:
+ *
+ * - +lines+: Enables line coverage that records the number of times each line was executed.
+ *   If +lines+ is enabled, +oneshot_lines+ cannot be enabled.
+ *   See {Lines Coverage}[rdoc-ref:Coverage@Lines+Coverage].
+ * - +branches+: Enables branch coverage that records the number of times each
+ *   branch in each conditional was executed. See {Branches Coverage}[rdoc-ref:Coverage@Branch+Coverage].
+ * - +methods+: Enables method coverage that records the number of times each method was exectued.
+ *   See {Methods Coverage}[rdoc-ref:Coverage@Methods+Coverage].
+ * - +eval+: Enables coverage for evaluations (e.g. Kernel#eval, Module#class_eval).
+ *   See {Eval Coverage}[rdoc-ref:Coverage@Eval+Coverage].
  */
 static VALUE
 rb_coverage_setup(int argc, VALUE *argv, VALUE klass)
