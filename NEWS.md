@@ -49,6 +49,7 @@ releases.
 * prism 1.8.0
 * stringio 3.2.1.dev
 * strscan 3.1.7.dev
+* syntax_suggest 2.0.3
 
 ### The following bundled gems are updated.
 
