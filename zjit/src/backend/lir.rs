@@ -167,6 +167,20 @@ impl BasicBlock {
         }
         succs
     }
+
+    /// Get the output operands for this block.
+    /// These are all operands passed to successor blocks via block edges.
+    pub fn out_opnds(&self) -> Vec<Opnd> {
+        let EdgePair(edge1, edge2) = self.edges();
+        let mut out_opnds = Vec::new();
+        if let Some(edge) = edge1 {
+            out_opnds.extend_from_slice(&edge.args);
+        }
+        if let Some(edge) = edge2 {
+            out_opnds.extend_from_slice(&edge.args);
+        }
+        out_opnds
+    }
 }
 
 pub use crate::backend::current::{
@@ -1442,6 +1456,56 @@ impl std::ops::IndexMut<VRegId> for LiveRanges {
     }
 }
 
+/// Live Interval of a VReg
+pub struct Interval {
+    pub range: LiveRange,
+}
+
+impl Interval {
+    /// Create a new Interval with no range
+    pub fn new() -> Self {
+        Self {
+            range: LiveRange {
+                start: None,
+                end: None,
+            },
+        }
+    }
+
+    /// Check if the interval is alive at position x (strictly between start and end)
+    /// Panics if the range is not set
+    pub fn survives(&self, x: usize) -> bool {
+        assert!(self.range.start.is_some() && self.range.end.is_some(), "survives called on interval with no range");
+        let start = self.range.start.unwrap();
+        let end = self.range.end.unwrap();
+        start < x && end > x
+    }
+
+    /// Add a range to the interval, extending it if necessary
+    pub fn add_range(&mut self, from: usize, to: usize) {
+        if to <= from {
+            panic!("Invalid range: {} to {}", from, to);
+        }
+
+        if self.range.start.is_none() {
+            self.range.start = Some(from);
+            self.range.end = Some(to);
+            return;
+        }
+
+        // Extend the range to cover both the existing range and the new range
+        self.range.start = Some(self.range.start.unwrap().min(from));
+        self.range.end = Some(self.range.end.unwrap().max(to));
+    }
+
+    /// Set the start of the range
+    pub fn set_from(&mut self, from: usize) {
+        let end = self.range.end.unwrap_or(from);
+        self.range.start = Some(from);
+        self.range.end = Some(end);
+    }
+}
+
 /// StackState manages which stack slots are used by which VReg
 pub struct StackState {
     /// The maximum number of spilled VRegs at a time
@@ -2497,15 +2561,15 @@ impl Assembler
                 // If the instruction has an output that is a VReg, add to kill set
                 if let Some(out) = insn.out_opnd() {
                     if let Opnd::VReg { idx, .. } = out {
-                        kill_set.insert(*idx);
+                        kill_set.insert(idx.0);
                     }
                 }
 
                 // For all input operands that are VRegs, add to gen set
                 for opnd in insn.opnd_iter() {
                     if let Opnd::VReg { idx, .. } = opnd {
-                        assert!(!kill_set.get(*idx));
-                        gen_set.insert(*idx);
+                        assert!(!kill_set.get(idx.0));
+                        gen_set.insert(idx.0);
                     }
                 }
             }
@@ -2513,7 +2577,7 @@ impl Assembler
             // Add block parameters to kill set
             for param in &block.parameters {
                 if let Opnd::VReg { idx, .. } = param {
-                    kill_set.insert(*idx);
+                    kill_set.insert(idx.0);
                 }
             }
 
@@ -3576,5 +3640,92 @@ mod tests {
           v5 = Sub v3, 1
           Jmp bb1(v4, v5)
         ");
+    }
+
+    #[test]
+    fn test_out_opnds() {
+        let TestFunc { asm, r11, r14, r15, b1, b2, b3, b4, .. } = build_func();
+
+        // b1 has one edge to b2 with args [imm(1), r11]
+        let out_b1 = asm.basic_blocks[b1.0].out_opnds();
+        assert_eq!(out_b1.len(), 2);
+        assert_eq!(out_b1[0], Opnd::UImm(1));
+        assert_eq!(out_b1[1], r11);
+
+        // b2 has two edges: one to b4 (no args) and one to b3 (no args)
+        let out_b2 = asm.basic_blocks[b2.0].out_opnds();
+        assert_eq!(out_b2.len(), 0);
+
+        // b3 has one edge to b2 with args [r14, r15]
+        let out_b3 = asm.basic_blocks[b3.0].out_opnds();
+        assert_eq!(out_b3.len(), 2);
+        assert_eq!(out_b3[0], r14);
+        assert_eq!(out_b3[1], r15);
+
+        // b4 has no edges (terminates with CRet)
+        let out_b4 = asm.basic_blocks[b4.0].out_opnds();
+        assert_eq!(out_b4.len(), 0);
+    }
+
+    #[test]
+    fn test_interval_add_range() {
+        let mut interval = Interval::new();
+
+        // Add range to empty interval
+        interval.add_range(5, 10);
+        assert_eq!(interval.range.start, Some(5));
+        assert_eq!(interval.range.end, Some(10));
+
+        // Extend range backward
+        interval.add_range(3, 7);
+        assert_eq!(interval.range.start, Some(3));
+        assert_eq!(interval.range.end, Some(10));
+
+        // Extend range forward
+        interval.add_range(8, 15);
+        assert_eq!(interval.range.start, Some(3));
+        assert_eq!(interval.range.end, Some(15));
+    }
+
+    #[test]
+    fn test_interval_survives() {
+        let mut interval = Interval::new();
+        interval.add_range(3, 10);
+
+        assert!(!interval.survives(2));  // Before range
+        assert!(!interval.survives(3));  // At start
+        assert!(interval.survives(5));   // Inside range
+        assert!(!interval.survives(10)); // At end
+        assert!(!interval.survives(11)); // After range
+    }
+
+    #[test]
+    fn test_interval_set_from() {
+        let mut interval = Interval::new();
+
+        // With no range, sets both start and end
+        interval.set_from(10);
+        assert_eq!(interval.range.start, Some(10));
+        assert_eq!(interval.range.end, Some(10));
+
+        // With existing range, updates start but keeps end
+        interval.add_range(5, 20);
+        interval.set_from(3);
+        assert_eq!(interval.range.start, Some(3));
+        assert_eq!(interval.range.end, Some(20));
+    }
+
+    #[test]
+    #[should_panic(expected = "Invalid range")]
+    fn test_interval_add_range_invalid() {
+        let mut interval = Interval::new();
+        interval.add_range(10, 5);
+    }
+
+    #[test]
+    #[should_panic(expected = "survives called on interval with no range")]
+    fn test_interval_survives_panics_without_range() {
+        let interval = Interval::new();
+        interval.survives(5);
     }
 }
