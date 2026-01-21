@@ -7,6 +7,7 @@ use std::sync::{Arc, Mutex};
 use crate::codegen::local_size_and_idx_to_ep_offset;
 use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, vm_stack_canary};
 use crate::hir::{Invariant, SideExitReason};
+use crate::hir;
 use crate::options::{TraceExits, debug, get_option};
 use crate::cruby::VALUE;
 use crate::payload::IseqVersionRef;
@@ -14,6 +15,104 @@ use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, side_exit_coun
 use crate::virtualmem::CodePtr;
 use crate::asm::{CodeBlock, Label};
 use crate::state::rb_zjit_record_exit_stack;
+
+/// LIR Block ID. Unique ID for each block, and also defined in LIR so
+/// we can differentiate it from HIR block ids.
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, PartialOrd, Ord)]
+pub struct BlockId(pub usize);
+
+impl From<BlockId> for usize {
+    fn from(val: BlockId) -> Self {
+        val.0
+    }
+}
+
+impl std::fmt::Display for BlockId {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "l{}", self.0)
+    }
+}
+
+/// Dummy HIR block ID used when creating test or invalid LIR blocks
+const DUMMY_HIR_BLOCK_ID: usize = usize::MAX;
+/// Dummy RPO index used when creating test or invalid LIR blocks
+const DUMMY_RPO_INDEX: usize = usize::MAX;
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct BranchEdge {
+    pub target: BlockId,
+    pub args: Vec<Opnd>,
+}
+
+#[derive(Clone, Debug)]
+pub struct BasicBlock {
+    // Unique id for this block
+    pub id: BlockId,
+
+    // HIR block this LIR block was lowered from. Not injective: multiple LIR blocks may share
+    // the same hir_block_id because we split HIR blocks into multiple LIR blocks during lowering.
+    pub hir_block_id: hir::BlockId,
+
+    pub is_entry: bool,
+
+    // Instructions in this basic block
+    pub insns: Vec<Insn>,
+
+    // Input parameters for this block
+    pub parameters: Vec<Opnd>,
+
+    // RPO position of the source HIR block
+    pub rpo_index: usize,
+}
+
+pub struct EdgePair(Option<BranchEdge>, Option<BranchEdge>);
+
+impl BasicBlock {
+    fn new(id: BlockId, hir_block_id: hir::BlockId, is_entry: bool, rpo_index: usize) -> Self {
+        Self {
+            id,
+            hir_block_id,
+            is_entry,
+            insns: vec![],
+            parameters: vec![],
+            rpo_index,
+        }
+    }
+
+    pub fn add_parameter(&mut self, param: Opnd) {
+        self.parameters.push(param);
+    }
+
+    pub fn push_insn(&mut self, insn: Insn) {
+        self.insns.push(insn);
+    }
+
+    pub fn edges(&self) -> EdgePair {
+        assert!(self.insns.last().unwrap().is_terminator());
+        let extract_edge = |insn: &Insn| -> Option<BranchEdge> {
+            if let Some(Target::Block(edge)) = insn.target() {
+                Some(edge.clone())
+            } else {
+                None
+            }
+        };
+
+        match self.insns.as_slice() {
+            [] => panic!("empty block"),
+            [.., second_last, last] => {
+                EdgePair(extract_edge(second_last), extract_edge(last))
+            },
+            [.., last] => {
+                EdgePair(extract_edge(last), None)
+            }
+        }
+    }
+
+    /// Sort key for scheduling blocks in code layout order
+    pub fn sort_key(&self) -> (usize, usize) {
+        (self.rpo_index, self.id.0)
+    }
+}
 
 pub use crate::backend::current::{
     mem_base_reg,
@@ -309,13 +408,15 @@ pub struct SideExit {
 
 /// Branch target (something that we can jump to)
 /// for branch instructions
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub enum Target
 {
     /// Pointer to a piece of ZJIT-generated code
     CodePtr(CodePtr),
     /// A label within the generated code
     Label(Label),
+    /// An LIR branch edge
+    Block(BranchEdge),
     /// Side exit to the interpreter
     SideExit {
         /// Context used for compiling the side exit
@@ -323,6 +424,32 @@ pub enum Target
         /// We use this to increment exit counters
         reason: SideExitReason,
     },
+}
+
+impl fmt::Debug for Target {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Target::CodePtr(ptr) => write!(f, "CodePtr({:?})", ptr),
+            Target::Label(label) => write!(f, "Label({:?})", label),
+            Target::Block(edge) => {
+                if edge.args.is_empty() {
+                    write!(f, "Block({:?})", edge.target)
+                } else {
+                    write!(f, "Block({:?}(", edge.target)?;
+                    for (i, arg) in edge.args.iter().enumerate() {
+                        if i > 0 {
+                            write!(f, ", ")?;
+                        }
+                        write!(f, "{:?}", arg)?;
+                    }
+                    write!(f, "))")
+                }
+            }
+            Target::SideExit { exit, reason } => {
+                write!(f, "SideExit {{ exit: {:?}, reason: {:?} }}", exit, reason)
+            }
+        }
+    }
 }
 
 impl Target
@@ -771,6 +898,29 @@ impl Insn {
             _ => None
         }
     }
+
+    /// Returns true if this instruction is a terminator (ends a basic block).
+    pub fn is_terminator(&self) -> bool {
+        match self {
+            Insn::Jbe(_) |
+            Insn::Jb(_) |
+            Insn::Je(_) |
+            Insn::Jl(_) |
+            Insn::Jg(_) |
+            Insn::Jge(_) |
+            Insn::Jmp(_) |
+            Insn::JmpOpnd(_) |
+            Insn::Jne(_) |
+            Insn::Jnz(_) |
+            Insn::Jo(_) |
+            Insn::JoMul(_) |
+            Insn::Jz(_) |
+            Insn::Joz(..) |
+            Insn::Jonz(..) |
+            Insn::CRet(_) => true,
+            _ => false
+        }
+    }
 }
 
 /// An iterator that will yield a non-mutable reference to each operand in turn
@@ -806,22 +956,33 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::Label(target) |
             Insn::LeaJumpTarget { target, .. } |
             Insn::PatchPoint { target, .. } => {
-                if let Target::SideExit { exit: SideExit { stack, locals, .. }, .. } = target {
-                    let stack_idx = self.idx;
-                    if stack_idx < stack.len() {
-                        let opnd = &stack[stack_idx];
-                        self.idx += 1;
-                        return Some(opnd);
-                    }
+                match target {
+                    Target::SideExit { exit: SideExit { stack, locals, .. }, .. } => {
+                        let stack_idx = self.idx;
+                        if stack_idx < stack.len() {
+                            let opnd = &stack[stack_idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
 
-                    let local_idx = self.idx - stack.len();
-                    if local_idx < locals.len() {
-                        let opnd = &locals[local_idx];
-                        self.idx += 1;
-                        return Some(opnd);
+                        let local_idx = self.idx - stack.len();
+                        if local_idx < locals.len() {
+                            let opnd = &locals[local_idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
+                        None
                     }
+                    Target::Block(edge) => {
+                        if self.idx < edge.args.len() {
+                            let opnd = &edge.args[self.idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
+                        None
+                    }
+                    _ => None
                 }
-                None
             }
 
             Insn::Joz(opnd, target) |
@@ -831,22 +992,34 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
                     return Some(opnd);
                 }
 
-                if let Target::SideExit { exit: SideExit { stack, locals, .. }, .. } = target {
-                    let stack_idx = self.idx - 1;
-                    if stack_idx < stack.len() {
-                        let opnd = &stack[stack_idx];
-                        self.idx += 1;
-                        return Some(opnd);
-                    }
+                match target {
+                    Target::SideExit { exit: SideExit { stack, locals, .. }, .. } => {
+                        let stack_idx = self.idx - 1;
+                        if stack_idx < stack.len() {
+                            let opnd = &stack[stack_idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
 
-                    let local_idx = stack_idx - stack.len();
-                    if local_idx < locals.len() {
-                        let opnd = &locals[local_idx];
-                        self.idx += 1;
-                        return Some(opnd);
+                        let local_idx = stack_idx - stack.len();
+                        if local_idx < locals.len() {
+                            let opnd = &locals[local_idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
+                        None
                     }
+                    Target::Block(edge) => {
+                        let arg_idx = self.idx - 1;
+                        if arg_idx < edge.args.len() {
+                            let opnd = &edge.args[arg_idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
+                        None
+                    }
+                    _ => None
                 }
-                None
             }
 
             Insn::BakeString(_) |
@@ -975,22 +1148,33 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::Label(target) |
             Insn::LeaJumpTarget { target, .. } |
             Insn::PatchPoint { target, .. } => {
-                if let Target::SideExit { exit: SideExit { stack, locals, .. }, .. } = target {
-                    let stack_idx = self.idx;
-                    if stack_idx < stack.len() {
-                        let opnd = &mut stack[stack_idx];
-                        self.idx += 1;
-                        return Some(opnd);
-                    }
+                match target {
+                    Target::SideExit { exit: SideExit { stack, locals, .. }, .. } => {
+                        let stack_idx = self.idx;
+                        if stack_idx < stack.len() {
+                            let opnd = &mut stack[stack_idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
 
-                    let local_idx = self.idx - stack.len();
-                    if local_idx < locals.len() {
-                        let opnd = &mut locals[local_idx];
-                        self.idx += 1;
-                        return Some(opnd);
+                        let local_idx = self.idx - stack.len();
+                        if local_idx < locals.len() {
+                            let opnd = &mut locals[local_idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
+                        None
                     }
+                    Target::Block(edge) => {
+                        if self.idx < edge.args.len() {
+                            let opnd = &mut edge.args[self.idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
+                        None
+                    }
+                    _ => None
                 }
-                None
             }
 
             Insn::Joz(opnd, target) |
@@ -1000,22 +1184,34 @@ impl<'a> InsnOpndMutIterator<'a> {
                     return Some(opnd);
                 }
 
-                if let Target::SideExit { exit: SideExit { stack, locals, .. }, .. } = target {
-                    let stack_idx = self.idx - 1;
-                    if stack_idx < stack.len() {
-                        let opnd = &mut stack[stack_idx];
-                        self.idx += 1;
-                        return Some(opnd);
-                    }
+                match target {
+                    Target::SideExit { exit: SideExit { stack, locals, .. }, .. } => {
+                        let stack_idx = self.idx - 1;
+                        if stack_idx < stack.len() {
+                            let opnd = &mut stack[stack_idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
 
-                    let local_idx = stack_idx - stack.len();
-                    if local_idx < locals.len() {
-                        let opnd = &mut locals[local_idx];
-                        self.idx += 1;
-                        return Some(opnd);
+                        let local_idx = stack_idx - stack.len();
+                        if local_idx < locals.len() {
+                            let opnd = &mut locals[local_idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
+                        None
                     }
+                    Target::Block(edge) => {
+                        let arg_idx = self.idx - 1;
+                        if arg_idx < edge.args.len() {
+                            let opnd = &mut edge.args[arg_idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
+                        None
+                    }
+                    _ => None
                 }
-                None
             }
 
             Insn::BakeString(_) |
@@ -1332,7 +1528,12 @@ const ASSEMBLER_INSNS_CAPACITY: usize = 256;
 /// optimized and lowered
 #[derive(Clone)]
 pub struct Assembler {
-    pub(super) insns: Vec<Insn>,
+    pub basic_blocks: Vec<BasicBlock>,
+
+    /// The block to which new instructions are added. Used during HIR to LIR lowering to
+    /// determine which LIR block we should add instructions to. Set by `set_current_block()`
+    /// and automatically set to new entry blocks created by `new_block()`.
+    current_block_id: BlockId,
 
     /// Live range for each VReg indexed by its `idx``
     pub(super) live_ranges: Vec<LiveRange>,
@@ -1350,7 +1551,10 @@ pub struct Assembler {
     pub(super) stack_base_idx: usize,
 
     /// If Some, the next ccall should verify its leafness
-    leaf_ccall_stack_size: Option<usize>
+    leaf_ccall_stack_size: Option<usize>,
+
+    /// Current instruction index, incremented for each instruction pushed
+    idx: usize,
 }
 
 impl Assembler
@@ -1358,12 +1562,14 @@ impl Assembler
     /// Create an Assembler with defaults
     pub fn new() -> Self {
         Self {
-            insns: Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY),
-            live_ranges: Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY),
             label_names: Vec::default(),
             accept_scratch_reg: false,
             stack_base_idx: 0,
             leaf_ccall_stack_size: None,
+            basic_blocks: Vec::default(),
+            current_block_id: BlockId(0),
+            live_ranges: Vec::default(),
+            idx: 0,
         }
     }
 
@@ -1387,9 +1593,60 @@ impl Assembler
             stack_base_idx: old_asm.stack_base_idx,
             ..Self::new()
         };
-        // Bump the initial VReg index to allow the use of the VRegs for the old Assembler
+
+        // Initialize basic blocks from the old assembler, preserving hir_block_id and entry flag
+        // but with empty instruction lists
+        for old_block in &old_asm.basic_blocks {
+            asm.new_block_from_old_block(&old_block);
+        }
+
+        // Initialize live_ranges to match the old assembler's size
+        // This allows reusing VRegs from the old assembler
         asm.live_ranges.resize(old_asm.live_ranges.len(), LiveRange { start: None, end: None });
+
         asm
+    }
+
+    // Create a new LIR basic block.  Returns the newly created block ID
+    pub fn new_block(&mut self, hir_block_id: hir::BlockId, is_entry: bool, rpo_index: usize) -> BlockId {
+        let bb_id = BlockId(self.basic_blocks.len());
+        let lir_bb = BasicBlock::new(bb_id, hir_block_id, is_entry, rpo_index);
+        self.basic_blocks.push(lir_bb);
+        if is_entry {
+            self.set_current_block(bb_id);
+        }
+        bb_id
+    }
+
+    // Create a new LIR basic block from an old one.  This should only be used
+    // when creating new assemblers during passes when we want to translate
+    // one assembler to a new one.
+    pub fn new_block_from_old_block(&mut self, old_block: &BasicBlock) -> BlockId {
+        let bb_id = BlockId(self.basic_blocks.len());
+        let lir_bb = BasicBlock::new(bb_id, old_block.hir_block_id, old_block.is_entry, old_block.rpo_index);
+        self.basic_blocks.push(lir_bb);
+        bb_id
+    }
+
+    // Create a LIR basic block without a valid HIR block ID (for testing or internal use).
+    pub fn new_block_without_id(&mut self) -> BlockId {
+        self.new_block(hir::BlockId(DUMMY_HIR_BLOCK_ID), true, DUMMY_RPO_INDEX)
+    }
+
+    pub fn set_current_block(&mut self, block_id: BlockId) {
+        self.current_block_id = block_id;
+    }
+
+    pub fn current_block(&mut self) -> &mut BasicBlock {
+        &mut self.basic_blocks[self.current_block_id.0]
+    }
+
+    /// Return basic blocks sorted by RPO index, then by block ID.
+    /// TODO: Use a more advanced scheduling algorithm
+    pub fn sorted_blocks(&self) -> Vec<&BasicBlock> {
+        let mut sorted: Vec<&BasicBlock> = self.basic_blocks.iter().collect();
+        sorted.sort_by_key(|block| block.sort_key());
+        sorted
     }
 
     /// Return true if `opnd` is or depends on `reg`
@@ -1402,11 +1659,100 @@ impl Assembler
     }
 
     pub fn instruction_iterator(&mut self) -> InsnIter {
-        let insns = take(&mut self.insns);
-        InsnIter {
-            old_insns_iter: insns.into_iter(),
+        let mut blocks = take(&mut self.basic_blocks);
+        blocks.sort_by_key(|block| block.sort_key());
+
+        let mut iter = InsnIter {
+            blocks,
+            current_block_idx: 0,
+            current_insn_iter: vec![].into_iter(), // Will be replaced immediately
             peeked: None,
             index: 0,
+        };
+
+        // Set up first block's iterator
+        if !iter.blocks.is_empty() {
+            iter.current_insn_iter = take(&mut iter.blocks[0].insns).into_iter();
+        }
+
+        iter
+    }
+
+    /// Return an operand for a basic block argument at a given index.
+    /// To simplify the implementation, we allocate a fixed register or a stack slot
+    /// for each basic block argument.
+    pub fn param_opnd(idx: usize) -> Opnd {
+        use crate::backend::current::ALLOC_REGS;
+        use crate::cruby::SIZEOF_VALUE_I32;
+
+        if idx < ALLOC_REGS.len() {
+            Opnd::Reg(ALLOC_REGS[idx])
+        } else {
+            // With FrameSetup, the address that NATIVE_BASE_PTR points to stores an old value in the register.
+            // To avoid clobbering it, we need to start from the next slot, hence `+ 1` for the index.
+            Opnd::mem(64, NATIVE_BASE_PTR, (idx - ALLOC_REGS.len() + 1) as i32 * -SIZEOF_VALUE_I32)
+        }
+    }
+
+    pub fn linearize_instructions(&self) -> Vec<Insn> {
+        // Emit instructions with labels, expanding branch parameters
+        let mut insns = Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY);
+
+        for block in self.sorted_blocks() {
+            // Process each instruction, expanding branch params if needed
+            for insn in &block.insns {
+                self.expand_branch_insn(insn, &mut insns);
+            }
+        }
+        insns
+    }
+
+    /// Expand and linearize a branch instruction:
+    /// 1. If the branch has Target::Block with arguments, insert a ParallelMov first
+    /// 2. Convert Target::Block to Target::Label
+    /// 3. Push the converted instruction
+    fn expand_branch_insn(&self, insn: &Insn, insns: &mut Vec<Insn>) {
+        // Helper to process branch arguments and return the label target
+        let mut process_edge = |edge: &BranchEdge| -> Label {
+            if !edge.args.is_empty() {
+                insns.push(Insn::ParallelMov {
+                    moves: edge.args.iter().enumerate()
+                        .map(|(idx, &arg)| (Assembler::param_opnd(idx), arg))
+                        .collect()
+                });
+            }
+            self.block_label(edge.target)
+        };
+
+        // Convert Target::Block to Target::Label, processing args if needed
+        let stripped_insn = match insn {
+            Insn::Jmp(Target::Block(edge)) => Insn::Jmp(Target::Label(process_edge(edge))),
+            Insn::Jz(Target::Block(edge)) => Insn::Jz(Target::Label(process_edge(edge))),
+            Insn::Jnz(Target::Block(edge)) => Insn::Jnz(Target::Label(process_edge(edge))),
+            Insn::Je(Target::Block(edge)) => Insn::Je(Target::Label(process_edge(edge))),
+            Insn::Jne(Target::Block(edge)) => Insn::Jne(Target::Label(process_edge(edge))),
+            Insn::Jl(Target::Block(edge)) => Insn::Jl(Target::Label(process_edge(edge))),
+            Insn::Jg(Target::Block(edge)) => Insn::Jg(Target::Label(process_edge(edge))),
+            Insn::Jge(Target::Block(edge)) => Insn::Jge(Target::Label(process_edge(edge))),
+            Insn::Jbe(Target::Block(edge)) => Insn::Jbe(Target::Label(process_edge(edge))),
+            Insn::Jb(Target::Block(edge)) => Insn::Jb(Target::Label(process_edge(edge))),
+            Insn::Jo(Target::Block(edge)) => Insn::Jo(Target::Label(process_edge(edge))),
+            Insn::JoMul(Target::Block(edge)) => Insn::JoMul(Target::Label(process_edge(edge))),
+            Insn::Joz(opnd, Target::Block(edge)) => Insn::Joz(*opnd, Target::Label(process_edge(edge))),
+            Insn::Jonz(opnd, Target::Block(edge)) => Insn::Jonz(*opnd, Target::Label(process_edge(edge))),
+            _ => insn.clone()
+        };
+
+        // Push the stripped instruction
+        insns.push(stripped_insn);
+    }
+
+    // Get the label for a given block by extracting it from the first instruction.
+    pub(super) fn block_label(&self, block_id: BlockId) -> Label {
+        let block = &self.basic_blocks[block_id.0];
+        match block.insns.first() {
+            Some(Insn::Label(Target::Label(label))) => *label,
+            other => panic!("Expected first instruction of block {:?} to be a Label, but found: {:?}", block_id, other),
         }
     }
 
@@ -1444,7 +1790,7 @@ impl Assembler
     /// operands to this instruction.
     pub fn push_insn(&mut self, insn: Insn) {
         // Index of this instruction
-        let insn_idx = self.insns.len();
+        let insn_idx = self.idx;
 
         // Initialize the live range of the output VReg to insn_idx..=insn_idx
         if let Some(Opnd::VReg { idx, .. }) = insn.out_opnd() {
@@ -1475,7 +1821,9 @@ impl Assembler
             }
         }
 
-        self.insns.push(insn);
+        self.idx += 1;
+
+        self.current_block().push_insn(insn);
     }
 
     /// Create a new label instance that we can jump to
@@ -1533,6 +1881,7 @@ impl Assembler
         Some(new_moves)
     }
 
+
     /// Sets the out field on the various instructions that require allocated
     /// registers because their output is used as the operand on a subsequent
     /// instruction. This is our implementation of the linear scan algorithm.
@@ -1548,17 +1897,22 @@ impl Assembler
         let mut saved_regs: Vec<(Reg, usize)> = vec![];
 
         // Remember the indexes of Insn::FrameSetup to update the stack size later
-        let mut frame_setup_idxs: Vec<usize> = vec![];
+        let mut frame_setup_idxs: Vec<(BlockId, usize)> = vec![];
 
         // live_ranges is indexed by original `index` given by the iterator.
-        let mut asm = Assembler::new_with_asm(&self);
-        let live_ranges: Vec<LiveRange> = take(&mut self.live_ranges);
-        let mut iterator = self.insns.into_iter().enumerate().peekable();
+        let mut asm_local = Assembler::new_with_asm(&self);
 
-        while let Some((index, mut insn)) = iterator.next() {
+        let iterator = &mut self.instruction_iterator();
+
+        let asm = &mut asm_local;
+
+        let live_ranges: Vec<LiveRange> = take(&mut self.live_ranges);
+
+        while let Some((index, mut insn)) = iterator.next(asm) {
             // Remember the index of FrameSetup to bump slot_count when we know the max number of spilled VRegs.
             if let Insn::FrameSetup { .. } = insn {
-                frame_setup_idxs.push(asm.insns.len());
+                assert!(asm.current_block().is_entry);
+                frame_setup_idxs.push((asm.current_block().id, asm.current_block().insns.len()));
             }
 
             let before_ccall = match (&insn, iterator.peek().map(|(_, insn)| insn)) {
@@ -1715,17 +2069,6 @@ impl Assembler
             // Push instruction(s)
             let is_ccall = matches!(insn, Insn::CCall { .. });
             match insn {
-                Insn::ParallelMov { moves } => {
-                    // For trampolines that use scratch registers, attempt to lower ParallelMov without scratch_reg.
-                    if let Some(moves) = Self::resolve_parallel_moves(&moves, None) {
-                        for (dst, src) in moves {
-                            asm.mov(dst, src);
-                        }
-                    } else {
-                        // If it needs a scratch_reg, leave it to *_split_with_scratch_regs to handle it.
-                        asm.push_insn(Insn::ParallelMov { moves });
-                    }
-                }
                 Insn::CCall { opnds, fptr, start_marker, end_marker, out } => {
                     // Split start_marker and end_marker here to avoid inserting push/pop between them.
                     if let Some(start_marker) = start_marker {
@@ -1768,8 +2111,8 @@ impl Assembler
         }
 
         // Extend the stack space for spilled operands
-        for frame_setup_idx in frame_setup_idxs {
-            match &mut asm.insns[frame_setup_idx] {
+        for (block_id, frame_setup_idx) in frame_setup_idxs {
+            match &mut asm.basic_blocks[block_id.0].insns[frame_setup_idx] {
                 Insn::FrameSetup { slot_count, .. } => {
                     *slot_count += pool.stack_state.stack_size;
                 }
@@ -1778,7 +2121,7 @@ impl Assembler
         }
 
         assert!(pool.is_empty(), "Expected all registers to be returned to the pool");
-        Ok(asm)
+        Ok(asm_local)
     }
 
     /// Compile the instructions down to machine code.
@@ -1852,16 +2195,19 @@ impl Assembler
 
         // Extract targets first so that we can update instructions while referencing part of them.
         let mut targets = HashMap::new();
-        for (idx, insn) in self.insns.iter().enumerate() {
-            if let Some(target @ Target::SideExit { .. }) = insn.target() {
-                targets.insert(idx, target.clone());
+
+        for block in self.sorted_blocks().iter() {
+            for (idx, insn) in block.insns.iter().enumerate() {
+                if let Some(target @ Target::SideExit { .. }) = insn.target() {
+                    targets.insert((block.id.0, idx), target.clone());
+                }
             }
         }
 
         // Map from SideExit to compiled Label. This table is used to deduplicate side exit code.
         let mut compiled_exits: HashMap<SideExit, Label> = HashMap::new();
 
-        for (idx, target) in targets {
+        for ((block_id, idx), target) in targets {
             // Compile a side exit. Note that this is past the split pass and alloc_regs(),
             // so you can't use an instruction that returns a VReg.
             if let Target::SideExit { exit: exit @ SideExit { pc, .. }, reason } = target {
@@ -1914,7 +2260,7 @@ impl Assembler
                     new_exit
                 };
 
-                *self.insns[idx].target_mut().unwrap() = counted_exit.unwrap_or(compiled_exit);
+                *self.basic_blocks[block_id].insns[idx].target_mut().unwrap() = counted_exit.unwrap_or(compiled_exit);
             }
         }
     }
@@ -1949,7 +2295,7 @@ impl fmt::Display for Assembler {
             }
         }
 
-        for insn in self.insns.iter() {
+        for insn in self.linearize_instructions().iter() {
             match insn {
                 Insn::Comment(comment) => {
                     writeln!(f, "    {bold_begin}# {comment}{bold_end}")?;
@@ -1985,6 +2331,20 @@ impl fmt::Display for Assembler {
                             Target::CodePtr(code_ptr) => write!(f, " {code_ptr:?}")?,
                             Target::Label(Label(label_idx)) => write!(f, " {}", label_name(self, *label_idx, &label_counts))?,
                             Target::SideExit { reason, .. } => write!(f, " Exit({reason})")?,
+                            Target::Block(edge) => {
+                                if edge.args.is_empty() {
+                                    write!(f, " bb{}", edge.target.0)?;
+                                } else {
+                                    write!(f, " bb{}(", edge.target.0)?;
+                                    for (i, arg) in edge.args.iter().enumerate() {
+                                        if i > 0 {
+                                            write!(f, ", ")?;
+                                        }
+                                        write!(f, "{}", arg)?;
+                                    }
+                                    write!(f, ")")?;
+                                }
+                            }
                         }
                     }
 
@@ -1992,6 +2352,17 @@ impl fmt::Display for Assembler {
                     if let Some(Target::SideExit { .. }) = insn.target() {
                         // If the instruction has a SideExit, avoid using opnd_iter(), which has stack/locals.
                         // Here, only handle instructions that have both Opnd and Target.
+                        match insn {
+                            Insn::Joz(opnd, _) |
+                            Insn::Jonz(opnd, _) |
+                            Insn::LeaJumpTarget { out: opnd, target: _ } => {
+                                write!(f, ", {opnd}")?;
+                            }
+                            _ => {}
+                        }
+                    } else if let Some(Target::Block(_)) = insn.target() {
+                        // If the instruction has a Block target, avoid using opnd_iter() for branch args
+                        // since they're already printed inline with the target. Only print non-target operands.
                         match insn {
                             Insn::Joz(opnd, _) |
                             Insn::Jonz(opnd, _) |
@@ -2019,7 +2390,7 @@ impl fmt::Debug for Assembler {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         writeln!(fmt, "Assembler")?;
 
-        for (idx, insn) in self.insns.iter().enumerate() {
+        for (idx, insn) in self.linearize_instructions().iter().enumerate() {
             writeln!(fmt, "    {idx:03} {insn:?}")?;
         }
 
@@ -2028,7 +2399,9 @@ impl fmt::Debug for Assembler {
 }
 
 pub struct InsnIter {
-    old_insns_iter: std::vec::IntoIter<Insn>,
+    blocks: Vec<BasicBlock>,
+    current_block_idx: usize,
+    current_insn_iter: std::vec::IntoIter<Insn>,
     peeked: Option<(usize, Insn)>,
     index: usize,
 }
@@ -2039,7 +2412,7 @@ impl InsnIter {
     pub fn peek(&mut self) -> Option<&(usize, Insn)> {
         // If we don't have a peeked value, get one
         if self.peeked.is_none() {
-            let insn = self.old_insns_iter.next()?;
+            let insn = self.current_insn_iter.next()?;
             let idx = self.index;
             self.index += 1;
             self.peeked = Some((idx, insn));
@@ -2048,17 +2421,34 @@ impl InsnIter {
         self.peeked.as_ref()
     }
 
-    // Get the next instruction.  Right now we're passing the "new" assembler
-    // (the assembler we're copying in to) as a parameter.  Once we've
-    // introduced basic blocks to LIR, we'll use the to set the correct BB
-    // on the new assembler, but for now it is unused.
-    pub fn next(&mut self, _new_asm: &mut Assembler) -> Option<(usize, Insn)> {
+    // Get the next instruction, advancing to the next block when current block is exhausted.
+    // Sets the current block on new_asm when moving to a new block.
+    pub fn next(&mut self, new_asm: &mut Assembler) -> Option<(usize, Insn)> {
         // If we have a peeked value, return it
         if let Some(item) = self.peeked.take() {
             return Some(item);
         }
-        // Otherwise get the next from underlying iterator
-        let insn = self.old_insns_iter.next()?;
+
+        // Try to get the next instruction from current block
+        if let Some(insn) = self.current_insn_iter.next() {
+            let idx = self.index;
+            self.index += 1;
+            return Some((idx, insn));
+        }
+
+        // Current block is exhausted, move to next block
+        self.current_block_idx += 1;
+        if self.current_block_idx >= self.blocks.len() {
+            return None;
+        }
+
+        // Set up the next block
+        let next_block = &mut self.blocks[self.current_block_idx];
+        new_asm.set_current_block(next_block.id);
+        self.current_insn_iter = take(&mut next_block.insns).into_iter();
+
+        // Get first instruction from the new block
+        let insn = self.current_insn_iter.next()?;
         let idx = self.index;
         self.index += 1;
         Some((idx, insn))
@@ -2450,6 +2840,43 @@ impl Assembler {
         let out = self.new_vreg(Opnd::match_num_bits(&[left, right]));
         self.push_insn(Insn::Xor { left, right, out });
         out
+    }
+
+    /// This is used for trampolines that don't allow scratch registers.
+    /// Linearizes all blocks into a single giant block.
+    pub fn resolve_parallel_mov_pass(self) -> Assembler {
+        let mut asm_local = Assembler::new();
+        asm_local.accept_scratch_reg = self.accept_scratch_reg;
+        asm_local.stack_base_idx = self.stack_base_idx;
+        asm_local.label_names = self.label_names.clone();
+        asm_local.live_ranges.resize(self.live_ranges.len(), LiveRange { start: None, end: None });
+
+        // Create one giant block to linearize everything into
+        asm_local.new_block_without_id();
+
+        // Get linearized instructions with branch parameters expanded into ParallelMov
+        let linearized_insns = self.linearize_instructions();
+
+        // Process each linearized instruction
+        for insn in linearized_insns {
+            match insn {
+                Insn::ParallelMov { moves } => {
+                    // Resolve parallel moves without scratch register
+                    if let Some(resolved_moves) = Assembler::resolve_parallel_moves(&moves, None) {
+                        for (dst, src) in resolved_moves {
+                            asm_local.mov(dst, src);
+                        }
+                    } else {
+                        unreachable!("ParallelMov requires scratch register but scratch_reg is not allowed");
+                    }
+                }
+                _ => {
+                    asm_local.push_insn(insn);
+                }
+            }
+        }
+
+        asm_local
     }
 }
 

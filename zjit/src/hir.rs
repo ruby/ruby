@@ -4702,6 +4702,10 @@ impl Function {
         entry_blocks
     }
 
+    pub fn is_entry_block(&self, block_id: BlockId) -> bool {
+        self.entry_block == block_id || self.jit_entry_blocks.contains(&block_id)
+    }
+
     /// Return a traversal of the `Function`'s `BlockId`s in reverse post-order.
     pub fn rpo(&self) -> Vec<BlockId> {
         let mut result = self.po_from(self.entry_blocks());
