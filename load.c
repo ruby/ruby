@@ -1274,6 +1274,27 @@ rb_ext_ractor_safe(bool flag)
     GET_THREAD()->ext_config.ractor_safe = flag;
 }
 
+// Is this thread currently requiring the resolved filename associated with this feature?
+bool
+rb_require_feature_locked_p(VALUE feature)
+{
+    rb_box_t *box = (rb_box_t *)rb_current_box();
+    VALUE path = rb_str_encode_ospath(feature);
+    volatile VALUE saved_path;
+    int found = search_required(box, path, &saved_path, rb_feature_p);
+    if (!found) return false;
+    st_table *loading_tbl = box->loading_table;
+    st_data_t data;
+    VALUE thread_shield;
+    if (st_lookup(loading_tbl, (st_data_t)RSTRING_PTR(saved_path), &data)) {
+        thread_shield = (VALUE)data;
+        if (rb_thread_shield_owned(thread_shield)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 /*
  * returns
  *  0: if already loaded (false)
