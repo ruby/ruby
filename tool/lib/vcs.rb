@@ -459,7 +459,8 @@ class VCS
         rev or next
         rev unless rev.empty?
       end
-      unless from&.match?(/./) or (from = branch_beginning(url))&.match?(/./)
+      to ||= url.to_str
+      unless from&.match?(/./) or (from = branch_beginning(to))&.match?(/./)
         warn "no starting commit found", uplevel: 1
         from = nil
       end
@@ -470,7 +471,6 @@ class VCS
       else
         warn "Could not fetch notes/commits tree", uplevel: 1
       end
-      to ||= url.to_str
       if from
         arg = ["#{from}^..#{to}"]
       else
