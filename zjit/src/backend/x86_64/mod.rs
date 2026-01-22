@@ -140,7 +140,7 @@ impl Assembler {
     {
         let mut asm_local = Assembler::new_with_asm(&self);
         let asm = &mut asm_local;
-        let live_ranges: Vec<LiveRange> = take(&mut self.live_ranges);
+        let live_ranges = take(&mut self.live_ranges);
         let mut iterator = self.instruction_iterator();
 
         while let Some((index, mut insn)) = iterator.next(asm) {
@@ -166,7 +166,7 @@ impl Assembler {
             // When we split an operand, we can create a new VReg not in `live_ranges`.
             // So when we see a VReg with out-of-range index, it's created from splitting
             // from the loop above and we know it doesn't outlive the current instruction.
-            let vreg_outlives_insn = |vreg_idx| {
+            let vreg_outlives_insn = |vreg_idx: VRegId| {
                 live_ranges
                     .get(vreg_idx)
                     .is_some_and(|live_range: &LiveRange| live_range.end() > index)
@@ -472,7 +472,7 @@ impl Assembler {
         asm_local.accept_scratch_reg = true;
         asm_local.stack_base_idx = self.stack_base_idx;
         asm_local.label_names = self.label_names.clone();
-        asm_local.live_ranges.resize(self.live_ranges.len(), LiveRange { start: None, end: None });
+        asm_local.live_ranges = LiveRanges::new(self.live_ranges.len());
 
         // Create one giant block to linearize everything into
         asm_local.new_block_without_id();
