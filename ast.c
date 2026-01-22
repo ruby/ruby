@@ -787,6 +787,11 @@ node_locations(VALUE ast_value, const NODE *node)
         return rb_ary_new_from_args(2,
                                     location_new(nd_code_loc(node)),
                                     location_new(&RNODE_AND(node)->operator_loc));
+      case NODE_BEGIN:
+        return rb_ary_new_from_args(3,
+                                    location_new(nd_code_loc(node)),
+                                    location_new(&RNODE_BEGIN(node)->begin_keyword_loc),
+                                    location_new(&RNODE_BEGIN(node)->end_keyword_loc));
       case NODE_BLOCK_PASS:
         return rb_ary_new_from_args(2,
                                     location_new(nd_code_loc(node)),
