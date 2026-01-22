@@ -2923,7 +2923,7 @@ NOINSERT_UPDATE_CALLBACK(hash_aset_str)
  *    h = {foo: 0, bar: 1}
  *    h[:baz] = 2 # => 2
  *    h[:baz]     # => 2
- *    h           # => {:foo=>0, :bar=>1, :baz=>2}
+ *    h           # => {foo: 0, bar: 1, baz: 2}
  *
  *  Related: #[]; see also {Methods for Assigning}[rdoc-ref:Hash@Methods+for+Assigning].
  */
