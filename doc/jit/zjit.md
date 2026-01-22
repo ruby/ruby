@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/27abfe03-3e96-4220-b6f1-278bb0c87684" width="400">
+</p>
+
 # ZJIT: ADVANCED RUBY JIT PROTOTYPE
 
 ZJIT is a method-based just-in-time (JIT) compiler for Ruby. It uses profile
