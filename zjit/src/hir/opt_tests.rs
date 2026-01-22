@@ -10742,6 +10742,62 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_fold_isnil_when_nil() {
+        eval(r#"
+            NIL = nil
+            def test = NIL.nil?
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, NIL)
+          v21:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(NilClass@0x1008, nil?@0x1010, cme:0x1018)
+          v24:TrueClass = Const Value(true)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v24
+        ")
+    }
+
+    #[test]
+    fn test_fold_isnil_when_definitely_not_nil() {
+        eval(r#"
+            NOT_NIL = 1
+            def test = NOT_NIL.nil?
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, NOT_NIL)
+          v21:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1008, nil?@0x1010, cme:0x1018)
+          v24:FalseClass = Const Value(false)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v24
+        ")
+    }
+
+    #[test]
     fn optimize_call_to_private_method_iseq_with_fcall() {
         eval(r#"
             class C
