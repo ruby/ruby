@@ -924,30 +924,31 @@ pub const YARVINSN_zjit_send: ruby_vminsn_type = 221;
 pub const YARVINSN_zjit_opt_send_without_block: ruby_vminsn_type = 222;
 pub const YARVINSN_zjit_objtostring: ruby_vminsn_type = 223;
 pub const YARVINSN_zjit_opt_nil_p: ruby_vminsn_type = 224;
-pub const YARVINSN_zjit_invokeblock: ruby_vminsn_type = 225;
-pub const YARVINSN_zjit_opt_plus: ruby_vminsn_type = 226;
-pub const YARVINSN_zjit_opt_minus: ruby_vminsn_type = 227;
-pub const YARVINSN_zjit_opt_mult: ruby_vminsn_type = 228;
-pub const YARVINSN_zjit_opt_div: ruby_vminsn_type = 229;
-pub const YARVINSN_zjit_opt_mod: ruby_vminsn_type = 230;
-pub const YARVINSN_zjit_opt_eq: ruby_vminsn_type = 231;
-pub const YARVINSN_zjit_opt_neq: ruby_vminsn_type = 232;
-pub const YARVINSN_zjit_opt_lt: ruby_vminsn_type = 233;
-pub const YARVINSN_zjit_opt_le: ruby_vminsn_type = 234;
-pub const YARVINSN_zjit_opt_gt: ruby_vminsn_type = 235;
-pub const YARVINSN_zjit_opt_ge: ruby_vminsn_type = 236;
-pub const YARVINSN_zjit_opt_ltlt: ruby_vminsn_type = 237;
-pub const YARVINSN_zjit_opt_and: ruby_vminsn_type = 238;
-pub const YARVINSN_zjit_opt_or: ruby_vminsn_type = 239;
-pub const YARVINSN_zjit_opt_aref: ruby_vminsn_type = 240;
-pub const YARVINSN_zjit_opt_aset: ruby_vminsn_type = 241;
-pub const YARVINSN_zjit_opt_length: ruby_vminsn_type = 242;
-pub const YARVINSN_zjit_opt_size: ruby_vminsn_type = 243;
-pub const YARVINSN_zjit_opt_empty_p: ruby_vminsn_type = 244;
-pub const YARVINSN_zjit_opt_succ: ruby_vminsn_type = 245;
-pub const YARVINSN_zjit_opt_not: ruby_vminsn_type = 246;
-pub const YARVINSN_zjit_opt_regexpmatch2: ruby_vminsn_type = 247;
-pub const VM_INSTRUCTION_SIZE: ruby_vminsn_type = 248;
+pub const YARVINSN_zjit_invokesuper: ruby_vminsn_type = 225;
+pub const YARVINSN_zjit_invokeblock: ruby_vminsn_type = 226;
+pub const YARVINSN_zjit_opt_plus: ruby_vminsn_type = 227;
+pub const YARVINSN_zjit_opt_minus: ruby_vminsn_type = 228;
+pub const YARVINSN_zjit_opt_mult: ruby_vminsn_type = 229;
+pub const YARVINSN_zjit_opt_div: ruby_vminsn_type = 230;
+pub const YARVINSN_zjit_opt_mod: ruby_vminsn_type = 231;
+pub const YARVINSN_zjit_opt_eq: ruby_vminsn_type = 232;
+pub const YARVINSN_zjit_opt_neq: ruby_vminsn_type = 233;
+pub const YARVINSN_zjit_opt_lt: ruby_vminsn_type = 234;
+pub const YARVINSN_zjit_opt_le: ruby_vminsn_type = 235;
+pub const YARVINSN_zjit_opt_gt: ruby_vminsn_type = 236;
+pub const YARVINSN_zjit_opt_ge: ruby_vminsn_type = 237;
+pub const YARVINSN_zjit_opt_ltlt: ruby_vminsn_type = 238;
+pub const YARVINSN_zjit_opt_and: ruby_vminsn_type = 239;
+pub const YARVINSN_zjit_opt_or: ruby_vminsn_type = 240;
+pub const YARVINSN_zjit_opt_aref: ruby_vminsn_type = 241;
+pub const YARVINSN_zjit_opt_aset: ruby_vminsn_type = 242;
+pub const YARVINSN_zjit_opt_length: ruby_vminsn_type = 243;
+pub const YARVINSN_zjit_opt_size: ruby_vminsn_type = 244;
+pub const YARVINSN_zjit_opt_empty_p: ruby_vminsn_type = 245;
+pub const YARVINSN_zjit_opt_succ: ruby_vminsn_type = 246;
+pub const YARVINSN_zjit_opt_not: ruby_vminsn_type = 247;
+pub const YARVINSN_zjit_opt_regexpmatch2: ruby_vminsn_type = 248;
+pub const VM_INSTRUCTION_SIZE: ruby_vminsn_type = 249;
 pub type ruby_vminsn_type = u32;
 pub type rb_iseq_callback = ::std::option::Option<
     unsafe extern "C" fn(arg1: *const rb_iseq_t, arg2: *mut ::std::os::raw::c_void),
@@ -1163,14 +1164,6 @@ extern "C" {
     pub fn rb_iseq_get_yjit_payload(iseq: *const rb_iseq_t) -> *mut ::std::os::raw::c_void;
     pub fn rb_iseq_set_yjit_payload(iseq: *const rb_iseq_t, payload: *mut ::std::os::raw::c_void);
     pub fn rb_get_symbol_id(namep: VALUE) -> ID;
-    pub fn rb_optimized_call(
-        recv: *mut VALUE,
-        ec: *mut rb_execution_context_t,
-        argc: ::std::os::raw::c_int,
-        argv: *mut VALUE,
-        kw_splat: ::std::os::raw::c_int,
-        block_handler: VALUE,
-    ) -> VALUE;
     pub fn rb_yjit_builtin_function(iseq: *const rb_iseq_t) -> *const rb_builtin_function;
     pub fn rb_yjit_str_simple_append(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_vm_base_ptr(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
@@ -1239,6 +1232,14 @@ extern "C" {
     pub fn rb_get_def_original_id(def: *const rb_method_definition_t) -> ID;
     pub fn rb_get_def_bmethod_proc(def: *mut rb_method_definition_t) -> VALUE;
     pub fn rb_jit_get_proc_ptr(procv: VALUE) -> *mut rb_proc_t;
+    pub fn rb_optimized_call(
+        recv: *mut VALUE,
+        ec: *mut rb_execution_context_t,
+        argc: ::std::os::raw::c_int,
+        argv: *mut VALUE,
+        kw_splat: ::std::os::raw::c_int,
+        block_handler: VALUE,
+    ) -> VALUE;
     pub fn rb_jit_iseq_builtin_attrs(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
     pub fn rb_get_mct_argc(mct: *const rb_method_cfunc_t) -> ::std::os::raw::c_int;
     pub fn rb_get_mct_func(mct: *const rb_method_cfunc_t) -> *mut ::std::os::raw::c_void;

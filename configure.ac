@@ -546,7 +546,6 @@ AS_CASE(["$target_os"],
     ])
     rb_cv_binary_elf=no
     : ${enable_shared=yes}
-    AS_IF([$WINDRES --version | grep LLVM > /dev/null], [USE_LLVM_WINDRES=yes], [USE_LLVM_WINDRES=no])
     ],
 [hiuxmpp*], [AC_DEFINE(__HIUX_MPP__)])    # by TOYODA Eizi <toyoda@npd.kishou.go.jp>
 
@@ -4414,7 +4413,6 @@ AC_SUBST(MINIOBJS)
 AC_SUBST(THREAD_MODEL)
 AC_SUBST(COROUTINE_TYPE, ${coroutine_type})
 AC_SUBST(PLATFORM_DIR)
-AC_SUBST(USE_LLVM_WINDRES)
 
 firstmf=`echo $FIRSTMAKEFILE | sed 's/:.*//'`
 firsttmpl=`echo $FIRSTMAKEFILE | sed 's/.*://'`

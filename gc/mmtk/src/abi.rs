@@ -318,7 +318,7 @@ pub struct RubyUpcalls {
     pub handle_weak_references: extern "C" fn(object: ObjectReference, moving: bool),
     pub call_obj_free: extern "C" fn(object: ObjectReference),
     pub vm_live_bytes: extern "C" fn() -> usize,
-    pub update_global_tables: extern "C" fn(tbl_idx: c_int),
+    pub update_global_tables: extern "C" fn(tbl_idx: c_int, moving: bool),
     pub global_tables_count: extern "C" fn() -> c_int,
     pub update_finalizer_table: extern "C" fn(),
     pub special_const_p: extern "C" fn(object: ObjectReference) -> bool,

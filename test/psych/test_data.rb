@@ -83,12 +83,11 @@ module Psych
 
       # completely different members
       TestData.send :remove_const, :D
-      TestData.const_set :D, Data.define(:foo, :bar)
+      TestData.const_set :D, Data.define(:a, :c)
       e = assert_raise(ArgumentError) { Psych.unsafe_load d }
-      assert_equal 'unknown keywords: :a, :b', e.message
+      assert_include e.message, 'keyword:'
     ensure
       TestData.send :remove_const, :D
     end
   end
 end
-

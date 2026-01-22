@@ -10758,9 +10758,9 @@ select_internal(VALUE read, VALUE write, VALUE except, struct timeval *tp, rb_fd
     if (!pending && n == 0) return Qnil; /* returns nil on timeout */
 
     res = rb_ary_new2(3);
-    rb_ary_push(res, rp?rb_ary_new():rb_ary_new2(0));
-    rb_ary_push(res, wp?rb_ary_new():rb_ary_new2(0));
-    rb_ary_push(res, ep?rb_ary_new():rb_ary_new2(0));
+    rb_ary_push(res, rp ? rb_ary_new_capa(RARRAY_LEN(read)) : rb_ary_new());
+    rb_ary_push(res, wp ? rb_ary_new_capa(RARRAY_LEN(write)) : rb_ary_new());
+    rb_ary_push(res, ep ? rb_ary_new_capa(RARRAY_LEN(except)) : rb_ary_new());
 
     if (rp) {
         list = RARRAY_AREF(res, 0);

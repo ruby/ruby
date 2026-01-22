@@ -108,28 +108,24 @@ each_object_with_flags(each_obj_with_flags cb, void *ctx)
 
 /*
  *  call-seq:
- *    ObjectSpace.memsize_of_all([klass]) -> Integer
+ *    ObjectSpace.memsize_of_all(klass = nil) -> integer
  *
- *  Return consuming memory size of all living objects in bytes.
+ *  Returns the total memory size of all living objects in bytes.
  *
- *  If +klass+ (should be Class object) is given, return the total memory size
- *  of instances of the given class.
+ *    ObjectSpace.memsize_of_all # => 12502001
  *
- *  Note that the returned size is incomplete. You need to deal with this
- *  information as only a *HINT*. Especially, the size of +T_DATA+ may not be
- *  correct.
+ *  If +klass+ is given (which must be a Class or Module), returns the total
+ *  memory size of objects whose class is, or is a subclass, of +klass+.
  *
- *  Note that this method does *NOT* return total malloc'ed memory size.
+ *    class MyClass; end
+ *    ObjectSpace.memsize_of_all(MyClass) # => 0
+ *    o = MyClass.new
+ *    ObjectSpace.memsize_of_all(MyClass) # => 40
  *
- *  This method can be defined by the following Ruby code:
- *
- *	def memsize_of_all klass = false
- *  	  total = 0
- *  	  ObjectSpace.each_object{|e|
- *  	    total += ObjectSpace.memsize_of(e) if klass == false || e.kind_of?(klass)
- *  	  }
- *  	  total
- *  	end
+ *  Note that the value returned may be an underestimate of the actual amount
+ *  of memory used. Therefore, the value returned should only be used as a hint,
+ *  rather than a source of truth. In particular, the size of +T_DATA+ objects may
+ *  not be correct.
  *
  *  This method is only expected to work with C Ruby.
  */

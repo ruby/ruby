@@ -304,7 +304,6 @@ module SyncDefaultGems
     time: lib("ruby/time"),
     timeout: lib("ruby/timeout"),
     tmpdir: lib("ruby/tmpdir"),
-    tsort: lib("ruby/tsort"),
     un: lib("ruby/un"),
     uri: lib("ruby/uri", gemspec_in_subdir: true),
     weakref: lib("ruby/weakref"),
@@ -399,6 +398,10 @@ module SyncDefaultGems
 
     upstream = File.join("..", "..", config.upstream)
 
+    unless File.exist?(upstream)
+      abort %[Expected '#{upstream}' (#{File.expand_path("#{upstream}")}) to be a directory, but it didn't exist.]
+    end
+
     config.mappings.each do |src, dst|
       rm_rf(dst)
     end
@@ -440,7 +443,7 @@ module SyncDefaultGems
   end
 
   def check_prerelease_version(gem)
-    return if ["rubygems", "mmtk", "cgi", "pathname"].include?(gem)
+    return if ["rubygems", "mmtk", "cgi", "pathname", "Onigmo"].include?(gem)
 
     require "net/https"
     require "json"
@@ -799,26 +802,6 @@ module SyncDefaultGems
     return true
   end
 
-  def sync_lib(repo, upstream = nil)
-    unless upstream and File.directory?(upstream) or File.directory?(upstream = "../#{repo}")
-      abort %[Expected '#{upstream}' \(#{File.expand_path("#{upstream}")}\) to be a directory, but it wasn't.]
-    end
-    rm_rf(["lib/#{repo}.rb", "lib/#{repo}/*", "test/test_#{repo}.rb"])
-    cp_r(Dir.glob("#{upstream}/lib/*"), "lib")
-    tests = if File.directory?("test/#{repo}")
-              "test/#{repo}"
-            else
-              "test/test_#{repo}.rb"
-            end
-    cp_r("#{upstream}/#{tests}", "test") if File.exist?("#{upstream}/#{tests}")
-    gemspec = if File.directory?("lib/#{repo}")
-                "lib/#{repo}/#{repo}.gemspec"
-              else
-                "lib/#{repo}.gemspec"
-              end
-    cp_r("#{upstream}/#{repo}.gemspec", "#{gemspec}")
-  end
-
   def update_default_gems(gem, release: false)
     config = REPOSITORIES[gem]
     author, repository = config.upstream.split('/')
@@ -862,13 +845,10 @@ module SyncDefaultGems
       REPOSITORIES.each_key {|gem| update_default_gems(gem)}
     end
   when "all"
-    if ARGV[1] == "release"
-      REPOSITORIES.each_key do |gem|
-        update_default_gems(gem, release: true)
-        sync_default_gems(gem)
-      end
-    else
-      REPOSITORIES.each_key {|gem| sync_default_gems(gem)}
+    REPOSITORIES.each_key do |gem|
+      next if ["Onigmo"].include?(gem)
+      update_default_gems(gem, release: true) if ARGV[1] == "release"
+      sync_default_gems(gem)
     end
   when "list"
     ARGV.shift

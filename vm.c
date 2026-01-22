@@ -3682,8 +3682,9 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
         rb_control_frame_t *cfp = ec->cfp;
         rb_control_frame_t *limit_cfp = (void *)(ec->vm_stack + ec->vm_stack_size);
 
-        VM_ASSERT(sp == ec->cfp->sp);
-        rb_gc_mark_vm_stack_values((long)(sp - p), p);
+        for (long i = 0; i < (long)(sp - p); i++) {
+            rb_gc_mark_movable(p[i]);
+        }
 
         while (cfp != limit_cfp) {
             const VALUE *ep = cfp->ep;

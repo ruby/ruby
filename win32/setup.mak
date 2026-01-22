@@ -36,7 +36,7 @@ i686-mswin32: -prologue- -i686- -epilogue-
 alpha-mswin32: -prologue- -alpha- -epilogue-
 x64-mswin64: -prologue- -x64- -epilogue-
 
--prologue-: -basic-vars-
+-prologue-: -basic-vars- -baseruby- -gmp-
 -generic-: -osname-
 
 -basic-vars-: nul
@@ -49,9 +49,13 @@ prefix = $(prefix:\=/)
 <<
 	@type $(config_make) >>$(MAKEFILE)
 	@del $(config_make) > nul
+
+-baseruby-: nul
 !if "$(HAVE_BASERUBY)" != "no"
-	@$(BASERUBY:/=\) "$(srcdir)/tool/missing-baseruby.bat" --verbose $(HAVE_BASERUBY:yes=|| exit )|| exit 0
+	@cd $(srcdir:/=\)\tool && $(BASERUBY:/=\) missing-baseruby.bat --verbose || exit $(HAVE_BASERUBY:yes=non-)0
 !endif
+
+-gmp-:
 !if "$(WITH_GMP)" != "no"
 	@($(CC) $(XINCFLAGS) <<conftest.c -link $(XLDFLAGS) gmp.lib > nul && (echo USE_GMP = yes) || exit /b 0) >>$(MAKEFILE)
 #include <gmp.h>

@@ -45,7 +45,7 @@ ZJIT.
 
 ## Build Instructions
 
-Refer to [Building Ruby](rdoc-ref:contributing/building_ruby.md) for general build prerequists.
+Refer to [Building Ruby](rdoc-ref:contributing/building_ruby.md) for general build prerequisites.
 Additionally, ZJIT requires Rust 1.85.0 or later. Release builds need only `rustc`. Development
 builds require `cargo` and may download dependencies. GNU Make is required.
 

@@ -1014,6 +1014,7 @@ update_char_offset(VALUE match)
     char *s, *p, *q;
     rb_encoding *enc;
     pair_t *pairs;
+    VALUE pairs_obj = Qnil;
 
     if (rm->char_offset_num_allocated)
         return;
@@ -1035,7 +1036,7 @@ update_char_offset(VALUE match)
         return;
     }
 
-    pairs = ALLOCA_N(pair_t, num_regs*2);
+    pairs = RB_ALLOCV_N(pair_t, pairs_obj, num_regs * 2);
     num_pos = 0;
     for (i = 0; i < num_regs; i++) {
         if (BEG(i) < 0)
@@ -1070,6 +1071,8 @@ update_char_offset(VALUE match)
         found = bsearch(&key, pairs, num_pos, sizeof(pair_t), pair_byte_cmp);
         rm->char_offset[i].end = found->char_pos;
     }
+
+    RB_ALLOCV_END(pairs_obj);
 }
 
 static VALUE
@@ -2614,6 +2617,7 @@ match_inspect(VALUE match)
     struct re_registers *regs = RMATCH_REGS(match);
     int num_regs = regs->num_regs;
     struct backref_name_tag *names;
+    VALUE names_obj = Qnil;
     VALUE regexp = RMATCH(match)->regexp;
 
     if (regexp == 0) {
@@ -2624,7 +2628,7 @@ match_inspect(VALUE match)
                           cname, rb_reg_nth_match(0, match));
     }
 
-    names = ALLOCA_N(struct backref_name_tag, num_regs);
+    names = RB_ALLOCV_N(struct backref_name_tag, names_obj, num_regs);
     MEMZERO(names, struct backref_name_tag, num_regs);
 
     onig_foreach_name(RREGEXP_PTR(regexp),
@@ -2652,6 +2656,7 @@ match_inspect(VALUE match)
     }
     rb_str_buf_cat2(str, ">");
 
+    RB_ALLOCV_END(names_obj);
     return str;
 }
 

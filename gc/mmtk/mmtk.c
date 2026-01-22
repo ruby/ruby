@@ -91,6 +91,8 @@ RB_THREAD_LOCAL_SPECIFIER VALUE marking_parent_object;
 
 #include <pthread.h>
 
+static inline VALUE rb_mmtk_call_object_closure(VALUE obj, bool pin);
+
 static void
 rb_mmtk_init_gc_worker_thread(MMTk_VMWorkerThread gc_thread_tls)
 {
@@ -330,6 +332,10 @@ rb_mmtk_call_obj_free(MMTk_ObjectReference object)
     }
 
     rb_gc_obj_free(objspace, obj);
+
+#ifdef MMTK_DEBUG
+    memset((void *)obj, 0, rb_gc_impl_obj_slot_size(obj));
+#endif
 }
 
 static size_t
@@ -341,11 +347,7 @@ rb_mmtk_vm_live_bytes(void)
 static void
 make_final_job(struct objspace *objspace, VALUE obj, VALUE table)
 {
-    RUBY_ASSERT(RB_FL_TEST(obj, RUBY_FL_FINALIZE));
-    RUBY_ASSERT(mmtk_is_reachable((MMTk_ObjectReference)table));
-    RUBY_ASSERT(RB_BUILTIN_TYPE(table) == T_ARRAY);
-
-    RB_FL_UNSET(obj, RUBY_FL_FINALIZE);
+    MMTK_ASSERT(RB_BUILTIN_TYPE(table) == T_ARRAY);
 
     struct MMTk_final_job *job = xmalloc(sizeof(struct MMTk_final_job));
     job->next = objspace->finalizer_jobs;
@@ -356,15 +358,23 @@ make_final_job(struct objspace *objspace, VALUE obj, VALUE table)
 }
 
 static int
-rb_mmtk_update_finalizer_table_i(st_data_t key, st_data_t value, st_data_t data)
+rb_mmtk_update_finalizer_table_i(st_data_t key, st_data_t value, st_data_t data, int error)
 {
-    RUBY_ASSERT(RB_FL_TEST(key, RUBY_FL_FINALIZE));
-    RUBY_ASSERT(mmtk_is_reachable((MMTk_ObjectReference)value));
-    RUBY_ASSERT(RB_BUILTIN_TYPE(value) == T_ARRAY);
+    MMTK_ASSERT(mmtk_is_reachable((MMTk_ObjectReference)value));
+    MMTK_ASSERT(RB_BUILTIN_TYPE(value) == T_ARRAY);
 
     struct objspace *objspace = (struct objspace *)data;
 
-    if (!mmtk_is_reachable((MMTk_ObjectReference)key)) {
+    if (mmtk_is_reachable((MMTk_ObjectReference)key)) {
+        VALUE new_key_location = rb_mmtk_call_object_closure((VALUE)key, false);
+
+        MMTK_ASSERT(RB_FL_TEST(new_key_location, RUBY_FL_FINALIZE));
+
+        if (new_key_location != key) {
+            return ST_REPLACE;
+        }
+    }
+    else {
         make_final_job(objspace, (VALUE)key, (VALUE)value);
 
         rb_postponed_job_trigger(objspace->finalizer_postponed_job);
@@ -375,13 +385,25 @@ rb_mmtk_update_finalizer_table_i(st_data_t key, st_data_t value, st_data_t data)
     return ST_CONTINUE;
 }
 
+static int
+rb_mmtk_update_finalizer_table_replace_i(st_data_t *key, st_data_t *value, st_data_t data, int existing)
+{
+    *key = rb_mmtk_call_object_closure((VALUE)*key, false);
+
+    return ST_CONTINUE;
+}
+
 static void
 rb_mmtk_update_finalizer_table(void)
 {
     struct objspace *objspace = rb_gc_get_objspace();
 
-    // TODO: replace with st_foreach_with_replace when GC is moving
-    st_foreach(objspace->finalizer_table, rb_mmtk_update_finalizer_table_i, (st_data_t)objspace);
+    st_foreach_with_replace(
+        objspace->finalizer_table,
+        rb_mmtk_update_finalizer_table_i,
+        rb_mmtk_update_finalizer_table_replace_i,
+        (st_data_t)objspace
+    );
 }
 
 static int
@@ -417,16 +439,15 @@ rb_mmtk_update_global_tables_replace_i(VALUE *ptr, void *data)
 }
 
 static void
-rb_mmtk_update_global_tables(int table)
+rb_mmtk_update_global_tables(int table, bool moving)
 {
-    RUBY_ASSERT(table < RB_GC_VM_WEAK_TABLE_COUNT);
+    MMTK_ASSERT(table < RB_GC_VM_WEAK_TABLE_COUNT);
 
-    // TODO: set weak_only to true for non-moving GC
     rb_gc_vm_weak_table_foreach(
         rb_mmtk_update_global_tables_i,
         rb_mmtk_update_global_tables_replace_i,
         NULL,
-        false,
+        !moving,
         (enum rb_gc_vm_weak_tables)table
     );
 }
@@ -580,7 +601,13 @@ rb_gc_impl_ractor_cache_free(void *objspace_ptr, void *cache_ptr)
 
     ccan_list_del(&cache->list_node);
 
-    RUBY_ASSERT(objspace->live_ractor_cache_count > 1);
+    if (ruby_free_at_exit_p()) {
+        MMTK_ASSERT(objspace->live_ractor_cache_count > 0);
+    }
+    else {
+        MMTK_ASSERT(objspace->live_ractor_cache_count > 1);
+    }
+
     objspace->live_ractor_cache_count--;
 
     mmtk_destroy_mutator(cache->mutator);
@@ -1476,7 +1503,7 @@ rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
     size_t n = 0;
 
 #define SET_ENTRY(na, v) do { \
-    RUBY_ASSERT(n <= RB_GC_OBJECT_METADATA_ENTRY_COUNT); \
+    MMTK_ASSERT(n <= RB_GC_OBJECT_METADATA_ENTRY_COUNT); \
     object_metadata_entries[n].name = ID_##na; \
     object_metadata_entries[n].val = v; \
     n++; \

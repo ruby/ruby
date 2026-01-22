@@ -61,8 +61,7 @@ module Prism
   #   Prism::lex_compat(source, **options) -> LexCompat::Result
   #
   # Returns a parse result whose value is an array of tokens that closely
-  # resembles the return value of Ripper::lex. The main difference is that the
-  # `:on_sp` token is not emitted.
+  # resembles the return value of Ripper::lex.
   #
   # For supported options, see Prism::parse.
   def self.lex_compat(source, **options)
@@ -72,9 +71,8 @@ module Prism
   # :call-seq:
   #   Prism::lex_ripper(source) -> Array
   #
-  # This lexes with the Ripper lex. It drops any space events but otherwise
-  # returns the same tokens. Raises SyntaxError if the syntax in source is
-  # invalid.
+  # This wraps the result of Ripper.lex. It produces almost exactly the
+  # same tokens. Raises SyntaxError if the syntax in source is invalid.
   def self.lex_ripper(source)
     LexRipper.new(source).result # steep:ignore
   end
