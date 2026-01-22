@@ -31,53 +31,58 @@ echo>%config_make% # CONFIGURE
   echo #define CONFIGURE_ARGS \
 ) >%confargs%
 :loop
-set opt=%1
-if "%1" == "" goto :end
-if "%1" == "--debug-configure" (echo on & shift & goto :loop)
-if "%1" == "--no-debug-configure" (echo off & shift & goto :loop)
-if "%1" == "--prefix" goto :prefix
-if "%1" == "--srcdir" goto :srcdir
-if "%1" == "srcdir" goto :srcdir
-if "%1" == "--target" goto :target
-if "%1" == "target" goto :target
-if "%1" == "--with-static-linked-ext" goto :extstatic
-if "%1" == "--program-prefix" goto :pprefix
-if "%1" == "--program-suffix" goto :suffix
-if "%1" == "--program-transform-name" goto :transform_name
-if "%1" == "--program-name" goto :installname
-if "%1" == "--install-name" goto :installname
-if "%1" == "--so-name" goto :soname
-if "%1" == "--enable-install-doc" goto :enable-rdoc
-if "%1" == "--disable-install-doc" goto :disable-rdoc
-if "%1" == "--enable-install-static-library" goto :enable-lib
-if "%1" == "--disable-install-static-library" goto :disable-lib
-if "%1" == "--enable-debug-env" goto :enable-debug-env
-if "%1" == "--disable-debug-env" goto :disable-debug-env
-if "%1" == "--enable-devel" goto :enable-devel
-if "%1" == "--disable-devel" goto :disable-devel
-if "%1" == "--enable-rubygems" goto :enable-rubygems
-if "%1" == "--disable-rubygems" goto :disable-rubygems
-if "%1" == "--extout" goto :extout
-if "%1" == "--path" goto :path
-if "%1" == "--with-baseruby" goto :baseruby
-if "%1" == "--without-baseruby" goto :nobaseruby
-if "%1" == "--with-ntver" goto :ntver
-if "%1" == "--with-libdir" goto :libdir
-if "%1" == "--with-git" goto :git
-if "%1" == "--without-git" goto :nogit
-if "%1" == "--without-ext" goto :witharg
-if "%1" == "--without-extensions" goto :witharg
-if "%1" == "--with-opt-dir" goto :opt-dir
-if "%1" == "--with-gmp" goto :gmp
-if "%1" == "--with-gmp-dir" goto :gmp-dir
-if "%opt:~0,10%" == "--without-" goto :withoutarg
-if "%opt:~0,7%" == "--with-" goto :witharg
-if "%1" == "-h" goto :help
-if "%1" == "--help" goto :help
-  if "%opt:~0,1%" == "-" (
+if "%~1" == "" goto :end
+call set opt=%1
+for /F "usebackq" %%I in ('%opt:^==@%') do set opt1=%%~I
+if "%~1" == "--debug-configure" (echo on & shift & goto :loop)
+if "%~1" == "--no-debug-configure" (echo off & shift & goto :loop)
+if "%~1" == "--prefix" goto :prefix
+if "%~1" == "--srcdir" goto :srcdir
+if "%~1" == "srcdir" goto :srcdir
+if "%~1" == "--target" goto :target
+if "%~1" == "target" goto :target
+if "%~1" == "--with-static-linked-ext" goto :extstatic
+if "%~1" == "--program-prefix" goto :pprefix
+if "%~1" == "--program-suffix" goto :suffix
+if "%~1" == "--program-transform-name" goto :transform_name
+if "%~1" == "--program-name" goto :installname
+if "%~1" == "--install-name" goto :installname
+if "%~1" == "--so-name" goto :soname
+if "%~1" == "--enable-install-doc" goto :enable-rdoc
+if "%~1" == "--disable-install-doc" goto :disable-rdoc
+if "%~1" == "--enable-install-static-library" goto :enable-lib
+if "%~1" == "--disable-install-static-library" goto :disable-lib
+if "%~1" == "--enable-debug-env" goto :enable-debug-env
+if "%~1" == "--disable-debug-env" goto :disable-debug-env
+if "%~1" == "--enable-devel" goto :enable-devel
+if "%~1" == "--disable-devel" goto :disable-devel
+if "%~1" == "--enable-rubygems" goto :enable-rubygems
+if "%~1" == "--disable-rubygems" goto :disable-rubygems
+if "%~1" == "--extout" goto :extout
+if "%~1" == "--path" goto :path
+if "%~1" == "--with-baseruby" goto :baseruby
+if "%~1" == "--without-baseruby" goto :nobaseruby
+if "%~1" == "--with-ntver" goto :ntver
+if "%~1" == "--with-libdir" goto :libdir
+if "%~1" == "--with-git" goto :git
+if "%~1" == "--without-git" goto :nogit
+if "%~1" == "--without-ext" goto :witharg
+if "%~1" == "--without-extensions" goto :witharg
+if "%~1" == "--with-opt-dir" goto :opt-dir
+if "%~1" == "--with-gmp" goto :gmp
+if "%~1" == "--with-gmp-dir" goto :gmp-dir
+if "%opt1:~0,10%" == "--without-" goto :withoutarg
+if "%opt1:~0,7%" == "--with-" goto :witharg
+if "%~1" == "-h" goto :help
+if "%~1" == "--help" goto :help
+  if "%opt1:~0,1%" == "-" (
     echo>>%confargs%  %1 \
     set witharg=
   ) else if "%witharg%" == "" (
+    echo %1 | findstr "=" > NUL
+    if not errorlevel 1 (
+      FOR /F "delims== tokens=1,*" %%I in ("%~1") do echo>>%config_make% %%I = %%J
+    )
     echo>>%confargs%  %1 \
   ) else (
     echo>>%confargs% ,%1\
@@ -263,6 +268,10 @@ goto :loop ;
       popd
     )
   )
+  echo>>%confargs%  %1=%2\
+  shift
+  shift
+goto :loop ;
 :witharg
   echo>>%confargs%  %1=%2\
   set witharg=1
@@ -291,6 +300,8 @@ goto :loop ;
   echo   --with-ntver=0xXXXX     target NT version (shouldn't use with old SDK)
   echo   --with-ntver=_WIN32_WINNT_XXXX
   echo   --with-ntver=XXXX       same as --with-ntver=_WIN32_WINNT_XXXX
+  echo Makefile macro definition
+  echo   "name=value"            add macro definition in Makefile
   echo Note that `,' and `;' need to be enclosed within double quotes in batch file command line.
   del %confargs% %config_make%
 goto :exit
