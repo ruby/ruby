@@ -99,7 +99,7 @@ pub struct BasicBlock {
     // RPO position of the source HIR block
     pub rpo_index: usize,
 
-    // Range of instruction IDs in this block (inclusive start, exclusive end)
+    // Range of instruction IDs in this block
     pub from: InsnId,
     pub to: InsnId,
 }
@@ -170,7 +170,12 @@ impl BasicBlock {
 
     /// Get the output VRegs for this block.
     /// These are VRegs passed to successor blocks via block edges.
+    /// This function is used for live range calculations and should _not_
+    /// be used for parallel moves between blocks
     pub fn out_vregs(&self) -> Vec<Opnd> {
+        // TODO: Do we need to consider memory opnds for block args?
+        // TODO: Yes, we do need to care about memory base vregs
+        // FIXME: Aaron
         let EdgePair(edge1, edge2) = self.edges();
         let mut out_vregs = Vec::new();
         if let Some(edge) = edge1 {
@@ -1414,9 +1419,9 @@ impl fmt::Debug for Insn {
 /// TODO: Consider supporting lifetime holes
 #[derive(Clone, Debug, PartialEq)]
 pub struct LiveRange {
-    /// Index of the first instruction that used the VReg (inclusive)
+    /// Index of the first instruction that used the VReg
     pub start: Option<usize>,
-    /// Index of the last instruction that used the VReg (inclusive)
+    /// Index of the last instruction that used the VReg
     pub end: Option<usize>,
 }
 
@@ -1480,7 +1485,7 @@ impl Interval {
         }
     }
 
-    /// Check if the interval is alive at position x (strictly between start and end)
+    /// Check if the interval is alive at position x
     /// Panics if the range is not set
     pub fn survives(&self, x: usize) -> bool {
         assert!(self.range.start.is_some() && self.range.end.is_some(), "survives called on interval with no range");
@@ -2517,7 +2522,7 @@ impl Assembler
     }
 
     /// Number all instructions in the LIR in reverse postorder.
-    /// This assigns a unique InsnId to each instruction across all blocks.
+    /// This assigns a unique InsnId to each instruction across all blocks, skipping labels.
     /// Also sets the from/to range on each block.
     /// Returns the next available instruction ID after numbering.
     pub fn number_instructions(&mut self, start: usize) -> usize {
@@ -2526,9 +2531,14 @@ impl Assembler
         for block_id in rpo_order {
             let block = &mut self.basic_blocks[block_id.0];
             let block_start = insn_id;
-            for id_slot in &mut block.insn_ids {
-                *id_slot = Some(InsnId(insn_id));
-                insn_id += 2;
+            insn_id += 2;
+            for (insn, id_slot) in block.insns.iter().zip(block.insn_ids.iter_mut()) {
+                if matches!(insn, Insn::Label(_)) {
+                    *id_slot = None;
+                } else {
+                    *id_slot = Some(InsnId(insn_id));
+                    insn_id += 2;
+                }
             }
             block.from = InsnId(block_start);
             block.to = InsnId(insn_id);
@@ -2592,6 +2602,66 @@ impl Assembler
         }
 
         (kill_sets, gen_sets)
+    }
+
+    pub fn block_order(&self) -> Vec<BlockId> {
+        self.rpo()
+    }
+
+    /// Calculate live intervals for each VReg.
+    pub fn build_intervals(&self, live_in: Vec<BitSet<usize>>) -> Vec<Interval> {
+        let num_vregs = self.live_ranges.len();
+        let mut intervals: Vec<Interval> = (0..num_vregs)
+            .map(|_| Interval::new())
+            .collect();
+
+        let blocks = self.block_order();
+
+        for block_id in blocks {
+            let block = &self.basic_blocks[block_id.0];
+
+            // live = union of successor.liveIn for each successor
+            let mut live = BitSet::with_capacity(num_vregs);
+            for succ_id in block.successors() {
+                live.union_with(&live_in[succ_id.0]);
+            }
+
+            // Add out_vregs to live set
+            for vreg in block.out_vregs() {
+                if let Opnd::VReg { idx, .. } = vreg {
+                    live.insert(idx.0);
+                }
+            }
+
+            // For each live vreg, add entire block range
+            // block.to is the first instruction of the next block
+            for idx in live.iter_set_bits() {
+                intervals[idx].add_range(block.from.0, block.to.0);
+            }
+
+            // Iterate instructions in reverse
+            for (insn_id, insn) in block.insn_ids.iter().zip(&block.insns).rev() {
+                // TODO(max): Remove labels, which are not numbered, in favor of blocks
+                let Some(insn_id) = insn_id else { continue; };
+                // If instruction has VReg output, set_from
+                if let Some(out) = insn.out_opnd() {
+                    if let Opnd::VReg { idx, .. } = out {
+                        intervals[idx.0].set_from(insn_id.0);
+                    }
+                }
+
+                // For each VReg input, add_range from block start to insn
+                // TODO: We  need to tread memory base vregs as uses, so 
+                // write a function that extracts any vregs from an opnd
+                for opnd in insn.opnd_iter() {
+                    if let Opnd::VReg { idx, .. } = opnd {
+                        intervals[idx.0].add_range(block.from.0, insn_id.0);
+                    }
+                }
+            }
+        }
+
+        intervals
     }
 
     /// Analyze liveness for all blocks using a fixed-point algorithm.
@@ -2681,7 +2751,12 @@ impl fmt::Display for Assembler {
         for block_id in self.rpo() {
             let bb = &self.basic_blocks[block_id.0];
             let params = &bb.parameters;
-            for insn in &bb.insns {
+            for (insn_id, insn) in bb.insn_ids.iter().zip(&bb.insns) {
+                if let Some(id) = insn_id {
+                    write!(f, "{id}: ")?;
+                } else {
+                    write!(f, "    ")?;
+                }
                 match insn {
                     Insn::Comment(comment) => {
                         writeln!(f, "    {bold_begin}# {comment}{bold_end}")?;
@@ -3611,18 +3686,18 @@ mod tests {
         assert_eq!(bitset_to_vreg_indices(&live_in[b1.0], num_vregs), vec![]);
 
         // b2: [r10] - r10 is live-in (used in b4 which is reachable)
-        assert_eq!(bitset_to_vreg_indices(&live_in[b2.0], num_vregs), vec![r10.vreg_idx()]);
+        assert_eq!(bitset_to_vreg_indices(&live_in[b2.0], num_vregs), vec![r10.vreg_idx().0]);
 
         // b3: [r10, r12, r13] - all are live-in
         assert_eq!(
             bitset_to_vreg_indices(&live_in[b3.0], num_vregs),
-            vec![r10.vreg_idx(), r12.vreg_idx(), r13.vreg_idx()]
+            vec![r10.vreg_idx().0, r12.vreg_idx().0, r13.vreg_idx().0]
         );
 
         // b4: [r10, r12] - both are live-in
         assert_eq!(
             bitset_to_vreg_indices(&live_in[b4.0], num_vregs),
-            vec![r10.vreg_idx(), r12.vreg_idx()]
+            vec![r10.vreg_idx().0, r12.vreg_idx().0]
         );
     }
 
@@ -3701,9 +3776,9 @@ mod tests {
         interval.add_range(3, 10);
 
         assert!(!interval.survives(2));  // Before range
-        assert!(!interval.survives(3));  // At start
+        assert!(!interval.survives(3));  // At start (exclusive)
         assert!(interval.survives(5));   // Inside range
-        assert!(!interval.survives(10)); // At end
+        assert!(!interval.survives(10)); // At end (exclusive)
         assert!(!interval.survives(11)); // After range
     }
 
@@ -3735,5 +3810,47 @@ mod tests {
     fn test_interval_survives_panics_without_range() {
         let interval = Interval::new();
         interval.survives(5);
+    }
+
+    #[test]
+    fn test_build_intervals() {
+        let TestFunc { mut asm, r10, r11, r12, r13, r14, r15, .. } = build_func();
+
+        // Analyze liveness
+        let live_in = asm.analyze_liveness();
+
+        // Number instructions (starting from 16 to match Ruby test)
+        asm.number_instructions(16);
+
+        // Build intervals
+        let intervals = asm.build_intervals(live_in);
+
+        // Extract vreg indices
+        let r10_idx = if let Opnd::VReg { idx, .. } = r10 { idx } else { panic!() };
+        let r11_idx = if let Opnd::VReg { idx, .. } = r11 { idx } else { panic!() };
+        let r12_idx = if let Opnd::VReg { idx, .. } = r12 { idx } else { panic!() };
+        let r13_idx = if let Opnd::VReg { idx, .. } = r13 { idx } else { panic!() };
+        let r14_idx = if let Opnd::VReg { idx, .. } = r14 { idx } else { panic!() };
+        let r15_idx = if let Opnd::VReg { idx, .. } = r15 { idx } else { panic!() };
+
+        // Assert expected ranges
+        // Note: Rust CFG differs from Ruby due to conditional branches requiring two instructions (Jl + Jmp)
+        assert_eq!(intervals[r10_idx.0].range.start, Some(16));
+        assert_eq!(intervals[r10_idx.0].range.end, Some(42));
+
+        assert_eq!(intervals[r11_idx.0].range.start, Some(16));
+        assert_eq!(intervals[r11_idx.0].range.end, Some(20));
+
+        assert_eq!(intervals[r12_idx.0].range.start, Some(20));
+        assert_eq!(intervals[r12_idx.0].range.end, Some(36));
+
+        assert_eq!(intervals[r13_idx.0].range.start, Some(20));
+        assert_eq!(intervals[r13_idx.0].range.end, Some(38));
+
+        assert_eq!(intervals[r14_idx.0].range.start, Some(36));
+        assert_eq!(intervals[r14_idx.0].range.end, Some(42));
+
+        assert_eq!(intervals[r15_idx.0].range.start, Some(38));
+        assert_eq!(intervals[r15_idx.0].range.end, Some(42));
     }
 }
