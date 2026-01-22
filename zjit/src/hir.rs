@@ -6293,7 +6293,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let test_id = fun.push_insn(block, Insn::Test { val });
                     let target_idx = insn_idx_at_offset(insn_idx, offset);
                     let target = insn_idx_to_block[&target_idx];
-                    let nil_false_type = types::NilClass.union(types::FalseClass);
+                    let nil_false_type = types::Falsy;
                     let nil_false = fun.push_insn(block, Insn::RefineType { val, new_type: nil_false_type });
                     let mut iffalse_state = state.clone();
                     iffalse_state.replace(val, nil_false);
@@ -6301,7 +6301,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         val: test_id,
                         target: BranchEdge { target, args: iffalse_state.as_args(self_param) }
                     });
-                    let not_nil_false_type = types::BasicObject.subtract(types::NilClass).subtract(types::FalseClass);
+                    let not_nil_false_type = types::Truthy;
                     let not_nil_false = fun.push_insn(block, Insn::RefineType { val, new_type: not_nil_false_type });
                     state.replace(val, not_nil_false);
                     queue.push_back((state.clone(), target, target_idx, local_inval));
@@ -6313,7 +6313,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let test_id = fun.push_insn(block, Insn::Test { val });
                     let target_idx = insn_idx_at_offset(insn_idx, offset);
                     let target = insn_idx_to_block[&target_idx];
-                    let not_nil_false_type = types::BasicObject.subtract(types::NilClass).subtract(types::FalseClass);
+                    let not_nil_false_type = types::Truthy;
                     let not_nil_false = fun.push_insn(block, Insn::RefineType { val, new_type: not_nil_false_type });
                     let mut iftrue_state = state.clone();
                     iftrue_state.replace(val, not_nil_false);
@@ -6321,7 +6321,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         val: test_id,
                         target: BranchEdge { target, args: iftrue_state.as_args(self_param) }
                     });
-                    let nil_false_type = types::NilClass.union(types::FalseClass);
+                    let nil_false_type = types::Falsy;
                     let nil_false = fun.push_insn(block, Insn::RefineType { val, new_type: nil_false_type });
                     state.replace(val, nil_false);
                     queue.push_back((state.clone(), target, target_idx, local_inval));
@@ -6340,7 +6340,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         val: test_id,
                         target: BranchEdge { target, args: iftrue_state.as_args(self_param) }
                     });
-                    let new_type = types::BasicObject.subtract(types::NilClass);
+                    let new_type = types::NotNil;
                     let not_nil = fun.push_insn(block, Insn::RefineType { val, new_type });
                     state.replace(val, not_nil);
                     queue.push_back((state.clone(), target, target_idx, local_inval));
