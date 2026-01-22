@@ -168,7 +168,7 @@ impl Assembler {
             // from the loop above and we know it doesn't outlive the current instruction.
             let vreg_outlives_insn = |vreg_idx: VRegId| {
                 live_ranges
-                    .get(vreg_idx)
+                    .get(vreg_idx.0)
                     .is_some_and(|live_range: &LiveRange| live_range.end() > index)
             };
 
@@ -185,13 +185,13 @@ impl Assembler {
                     match (&left, &right, iterator.peek().map(|(_, insn)| insn)) {
                         // Merge this insn, e.g. `add REG, right -> out`, and `mov REG, out` if possible
                         (Opnd::Reg(_), Opnd::UImm(value), Some(Insn::Mov { dest, src }))
-                        if out == src && left == dest && live_ranges[out.vreg_idx()].end() == index + 1 && uimm_num_bits(*value) <= 32 => {
+                        if out == src && left == dest && live_ranges[out.vreg_idx().0].end() == index + 1 && uimm_num_bits(*value) <= 32 => {
                             *out = *dest;
                             asm.push_insn(insn);
                             iterator.next(asm); // Pop merged Insn::Mov
                         }
                         (Opnd::Reg(_), Opnd::Reg(_), Some(Insn::Mov { dest, src }))
-                        if out == src && live_ranges[out.vreg_idx()].end() == index + 1 && *dest == *left => {
+                        if out == src && live_ranges[out.vreg_idx().0].end() == index + 1 && *dest == *left => {
                             *out = *dest;
                             asm.push_insn(insn);
                             iterator.next(asm); // Pop merged Insn::Mov
@@ -372,7 +372,7 @@ impl Assembler {
                     // Merge `lea` and `mov` into a single `lea` when possible
                     match (&insn, iterator.peek().map(|(_, insn)| insn)) {
                         (Insn::Lea { opnd, out }, Some(Insn::Mov { dest: Opnd::Reg(reg), src }))
-                        if matches!(out, Opnd::VReg { .. }) && out == src && live_ranges[out.vreg_idx()].end() == index + 1 => {
+                        if matches!(out, Opnd::VReg { .. }) && out == src && live_ranges[out.vreg_idx().0].end() == index + 1 => {
                             asm.push_insn(Insn::Lea { opnd: *opnd, out: Opnd::Reg(*reg) });
                             iterator.next(asm); // Pop merged Insn::Mov
                         }

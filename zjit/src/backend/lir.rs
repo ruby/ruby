@@ -307,8 +307,8 @@ impl fmt::Debug for Opnd {
         match self {
             Self::None => write!(fmt, "None"),
             Value(val) => write!(fmt, "Value({val:?})"),
-            VReg { idx, num_bits } if *num_bits == 64 => write!(fmt, "VReg({idx})"),
-            VReg { idx, num_bits } => write!(fmt, "VReg{num_bits}({idx})"),
+            VReg { idx, num_bits } if *num_bits == 64 => write!(fmt, "VReg({})", idx.0),
+            VReg { idx, num_bits } => write!(fmt, "VReg{num_bits}({})", idx.0),
             Imm(signed) => write!(fmt, "{signed:x}_i64"),
             UImm(unsigned) => write!(fmt, "{unsigned:x}_u64"),
             // Say Mem and Reg only once
