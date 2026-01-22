@@ -1243,6 +1243,106 @@ rb_gc_handle_weak_references(VALUE obj)
     }
 }
 
+/*
+ * Returns true if the object requires a full rb_gc_obj_free() call during sweep,
+ * false if it can be freed quickly without calling destructors or cleanup.
+ *
+ * Objects that return false are:
+ * - Simple embedded objects without external allocations
+ * - Objects without finalizers
+ * - Objects without object IDs registered in id2ref
+ * - Objects without generic instance variables
+ *
+ * This is used by the GC sweep fast path to avoid function call overhead
+ * for the majority of simple objects.
+ */
+bool
+rb_gc_obj_free_on_sweep_p(VALUE obj)
+{
+    VALUE flags = RBASIC(obj)->flags;
+
+    if (flags & FL_FINALIZE) return true;
+
+    switch (flags & RUBY_T_MASK) {
+      case T_IMEMO:
+        switch (imemo_type(obj)) {
+          case imemo_constcache:
+          case imemo_cref:
+          case imemo_ifunc:
+          case imemo_memo:
+          case imemo_svar:
+          case imemo_throw_data:
+            return false;
+          default:
+            return true;
+        }
+
+      case T_DATA:
+        if (flags & RUBY_TYPED_FL_IS_TYPED_DATA) {
+            uintptr_t type = (uintptr_t)RTYPEDDATA(obj)->type;
+            if (type & TYPED_DATA_EMBEDDED) {
+                RUBY_DATA_FUNC dfree = ((const rb_data_type_t *)(type & TYPED_DATA_PTR_MASK))->function.dfree;
+                // Fast path for embedded T_DATA with no custom free function.
+                // True when dfree is NULL (RUBY_NEVER_FREE) or -1 (RUBY_TYPED_DEFAULT_FREE).
+                if ((uintptr_t)dfree + 1 <= 1) return false;
+            }
+        }
+        return true;
+
+      case T_OBJECT:
+      case T_STRING:
+      case T_ARRAY:
+      case T_HASH:
+      case T_BIGNUM:
+      case T_STRUCT:
+      case T_FLOAT:
+      case T_RATIONAL:
+      case T_COMPLEX:
+        break;
+
+      default:
+        return true;
+    }
+
+    shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
+    if (id2ref_tbl && rb_shape_has_object_id(shape_id)) return true;
+
+    switch (flags & RUBY_T_MASK) {
+      case T_OBJECT:
+        if (flags & ROBJECT_HEAP) return true;
+        return false;
+
+      case T_STRING:
+        if (flags & (RSTRING_NOEMBED | RSTRING_FSTR)) return true;
+        return rb_shape_has_fields(shape_id);
+
+      case T_ARRAY:
+        if (!(flags & RARRAY_EMBED_FLAG)) return true;
+        return rb_shape_has_fields(shape_id);
+
+      case T_HASH:
+        if (flags & RHASH_ST_TABLE_FLAG) return true;
+        return rb_shape_has_fields(shape_id);
+
+      case T_BIGNUM:
+        if (!(flags & BIGNUM_EMBED_FLAG)) return true;
+        return rb_shape_has_fields(shape_id);
+
+      case T_STRUCT:
+        if (!(flags & RSTRUCT_EMBED_LEN_MASK)) return true;
+        if (flags & RSTRUCT_GEN_FIELDS) return rb_shape_has_fields(shape_id);
+        return false;
+
+      case T_FLOAT:
+      case T_RATIONAL:
+      case T_COMPLEX:
+        return rb_shape_has_fields(shape_id);
+
+      default:
+        UNREACHABLE_RETURN(true);
+    }
+}
+
 static void
 io_fptr_finalize(void *fptr)
 {
