@@ -2031,21 +2031,38 @@ eval_string_with_scope(VALUE scope, VALUE src, VALUE file, int line)
 }
 
 /*
- *  call-seq:
- *     eval(string [, binding [, filename [,lineno]]])  -> obj
+ * call-seq:
+ *    eval(string, binding = nil, filename = default_filename, lineno = 1) -> obj
  *
- *  Evaluates the Ruby expression(s) in <em>string</em>. If
- *  <em>binding</em> is given, which must be a Binding object, the
- *  evaluation is performed in its context. If the optional
- *  <em>filename</em> and <em>lineno</em> parameters are present, they
- *  will be used when reporting syntax errors.
+ * Evaluates the Ruby expression(s) in +string+. Returns the result of the last
+ * expression.
  *
- *     def get_binding(str)
- *       return binding
- *     end
- *     str = "hello"
- *     eval "str + ' Fred'"                      #=> "hello Fred"
- *     eval "str + ' Fred'", get_binding("bye")  #=> "bye Fred"
+ *   str = "Hello"
+ *   eval("str + ' World'") # => "Hello World"
+ *
+ * If +binding+ is given, which must be a Binding object, the
+ * evaluation is performed in its context. Otherwise, the
+ * evaluation is performed in the context of the caller.
+ *
+ *   def get_binding(str) = binding
+ *   str = "Hello"
+ *   eval("str + ' World'", get_binding("Bye")) # => "Bye World"
+ *
+ * If the optional +filename+ is given, it will be used as the
+ * filename of the evaluation (for <tt>__FILE__</tt> and errors).
+ * Otherwise, it will default to <tt>(eval at __FILE__:__LINE__)</tt>
+ * where <tt>__FILE__</tt> and <tt>__LINE__</tt> are the filename and
+ * line number of the caller, respectively.
+ *
+ *   eval("puts __FILE__") # => "(eval at test.rb:1)"
+ *   eval("puts __FILE__", nil, "foobar.rb") # => "foobar.rb"
+ *
+ * If the optional +lineno+ is given, it will be used as the
+ * line number of the evaluation (for <tt>__LINE__</tt> and errors).
+ * Otherwise, it will default to 1.
+ *
+ *   eval("puts __LINE__") # => 1
+ *   eval("puts __LINE__", nil, "foobar.rb", 10) # => 10
  */
 
 VALUE
