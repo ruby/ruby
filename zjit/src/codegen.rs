@@ -2899,6 +2899,7 @@ fn gen_string_append_codepoint(jit: &mut JITState, asm: &mut Assembler, string: 
 /// Generate a JIT entry that just increments exit_compilation_failure and exits
 fn gen_compile_error_counter(cb: &mut CodeBlock, compile_error: &CompileError) -> Result<CodePtr, CompileError> {
     let mut asm = Assembler::new();
+    asm.new_block_without_id();
     gen_incr_counter(&mut asm, exit_compile_error);
     gen_incr_counter(&mut asm, exit_counter_for_compile_error(compile_error));
     asm.cret(Qundef.into());
