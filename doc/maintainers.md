@@ -50,6 +50,10 @@ consensus on ruby-core/ruby-dev.
 
 * *No maintainer*
 
+#### lib/pathname.rb
+
+* Tanaka Akira ([akr])
+
 #### lib/rubygems.rb, lib/rubygems/*
 
 * Hiroshi SHIBATA ([hsbt])
@@ -349,12 +353,6 @@ consensus on ruby-core/ruby-dev.
 * Kazuki Yamaguchi ([rhenium])
 * https://github.com/ruby/openssl
 * https://rubygems.org/gems/openssl
-
-#### ext/pathname
-
-* Tanaka Akira ([akr])
-* https://github.com/ruby/pathname
-* https://rubygems.org/gems/pathname
 
 #### ext/psych
 
