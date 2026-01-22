@@ -1,0 +1,128 @@
+---
+prelude: |
+  require 'thread'
+
+  max = Integer(ENV["BENCHMARK_SZQUEUE_MAX"]    ||       100)
+  N   = Integer(ENV["BENCHMARK_ENQ_PER_ITER"]   || 1_000_000)
+  P   = Integer(ENV["BENCHMARK_PRODUCER_COUNT"] ||        10)
+  C   = Integer(ENV["BENCHMARK_CONSUMER_COUNT"] ||        10)
+
+benchmark:
+  - name: vm_thread_queue
+    script: |
+      n = N
+      q = Thread::Queue.new
+      consumer = Thread.new{
+        while q.pop
+          # consuming
+        end
+      }
+
+      producer = Thread.new{
+        while n > 0
+          q.push true
+          n -= 1
+        end
+        q.push nil
+      }
+
+      consumer.join
+
+  - name: vm_thread_sized_queue
+    script: |
+      # on producer, one consumer
+
+      n = N
+      q = Thread::SizedQueue.new(max)
+      consumer = Thread.new{
+        while q.pop
+          # consuming
+        end
+      }
+
+      producer = Thread.new{
+        while n > 0
+          q.push true
+          n -= 1
+        end
+        q.push nil
+      }
+
+      consumer.join
+
+  - name: vm_thread_sized_queue2
+    script: |
+      # one producer, many consumers
+      n = N
+      m = C
+      q = Thread::SizedQueue.new(max)
+      consumers = m.times.map do
+        Thread.new do
+          while q.pop
+            # consuming
+          end
+        end
+      end
+
+      producer = Thread.new do
+        while n > 0
+          q.push true
+          n -= 1
+        end
+        m.times { q.push nil }
+      end
+
+      producer.join
+      consumers.each(&:join)
+
+  - name: vm_thread_sized_queue3
+    script: |
+      # many producers, one consumer
+      n = N
+      m = P
+      q = Thread::SizedQueue.new(max)
+      consumer = Thread.new do
+        while q.pop
+          # consuming
+        end
+      end
+
+      producers = m.times.map do
+        Thread.new do
+          while n > 0
+            q.push true
+            n -= 1
+          end
+        end
+      end
+      producers.each(&:join)
+      q.push nil
+      consumer.join
+
+  - name: vm_thread_sized_queue4
+    script: |
+      # many producers, many consumers
+      nr = N
+      n = C
+      m = P
+      q = Thread::SizedQueue.new(max)
+      consumers = n.times.map do
+        Thread.new do
+          while q.pop
+            # consuming
+          end
+        end
+      end
+
+      producers = m.times.map do
+        Thread.new do
+          while nr > 0
+            q.push true
+            nr -= 1
+          end
+        end
+      end
+
+      producers.each(&:join)
+      n.times { q.push nil }
+      consumers.each(&:join)
