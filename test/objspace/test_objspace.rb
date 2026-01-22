@@ -54,9 +54,7 @@ class TestObjSpace < Test::Unit::TestCase
     assert_operator(a, :>, b)
     assert_operator(a, :>, 0)
     assert_operator(b, :>, 0)
-    # Module should also work (since kind_of? works with modules)
     assert_kind_of(Integer, ObjectSpace.memsize_of_all(Enumerable))
-    # Invalid types should raise TypeError
     assert_raise(TypeError) {ObjectSpace.memsize_of_all('error')}
     assert_raise(TypeError) {ObjectSpace.memsize_of_all(123)}
     assert_raise(TypeError) {ObjectSpace.memsize_of_all(:symbol)}
