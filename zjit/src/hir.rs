@@ -4377,6 +4377,15 @@ impl Function {
                     // completely drop the branch from the block.
                     Insn::IfTrue { val, .. } if self.is_a(val, Type::from_cbool(false)) => continue,
                     Insn::IfFalse { val, .. } if self.is_a(val, Type::from_cbool(true)) => continue,
+                    Insn::IsNil { val } => {
+                        if self.is_a(val, types::NilClass) {
+                            self.new_insn(Insn::Const { val: Const::CBool(true) })
+                        } else if !self.type_of(val).could_be(types::NilClass) {
+                            self.new_insn(Insn::Const { val: Const::CBool(false) })
+                        } else {
+                            insn_id
+                        }
+                    }
                     _ => insn_id,
                 };
                 // If we're adding a new instruction, mark the two equivalent in the union-find and
