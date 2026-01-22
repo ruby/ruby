@@ -6,6 +6,15 @@ require 'json/common'
 #
 # \JSON is a lightweight data-interchange format.
 #
+# \JSON is easy for us humans to read and write,
+# and equally simple for machines to read (parse) and write (generate).
+#
+# \JSON is language-independent, making it an ideal interchange format
+# for applications in differing programming languages
+# and on differing operating systems.
+#
+# == \JSON Values
+#
 # A \JSON value is one of the following:
 # - Double-quoted text:  <tt>"foo"</tt>.
 # - Number:  +1+, +1.0+, +2.0e2+.
