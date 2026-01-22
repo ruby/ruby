@@ -87,6 +87,30 @@ VALUE rb_enc_str_new_cstr(const char *ptr, rb_encoding *enc);
 VALUE rb_enc_str_new_static(const char *ptr, long len, rb_encoding *enc);
 
 /**
+ * Similar to rb_enc_str_new(), but it adopts the pointer instead of copying.
+ *
+ * @param[in]  ptr   A memory region of `capa` bytes length. MUST be freeable with `ruby_xfree`.
+ * @param[in]  len   Length of the string, in bytes, not including  the
+ *                   terminating NULL characters, not including extra usable capacity.
+ * @param[in]  capa  The usable length of `ptr`, in bytes,  including  the
+ *                   terminating NULL characters.
+ * @param[in]  enc   Encoding of `ptr`.
+ * @exception  rb_eArgError    `len` is negative.
+ * @exception  rb_eNoMemError  the system is out of memoy and the String couldn't be allocated.
+ * @return     An instance  of ::rb_cString,  of `len`  bytes length, `capa - termlen` bytes capacity,
+ *             and of `enc` encoding.
+ * @pre        At  least  `capa` bytes  of  continuous  memory region  shall  be
+ *             accessible via `ptr`.
+ * @pre        `ptr` MUST be freeable with `ruby_xfree`.
+ * @pre        `ptr` MUST not be manually freed after `rb_enc_str_adopt` has been called.
+ * @note       If the string can't be allocated and the function raises an error, the pointer
+ *             is immediately freed.
+ * @note       `enc` can be a  null pointer.  It can also be  seen as a routine
+ *             identical to rb_usascii_str_new() then.
+ */
+VALUE rb_enc_str_adopt(char *ptr, long len, long capa, rb_encoding *enc);
+
+/**
  * Identical to rb_enc_str_new(),  except it returns a "f"string.   It can also
  * be seen as a routine  identical to rb_interned_str(), except it additionally
  * takes an encoding.
