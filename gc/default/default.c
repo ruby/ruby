@@ -844,94 +844,11 @@ heap_page_in_global_empty_pages_pool(rb_objspace_t *objspace, struct heap_page *
 #define GET_HEAP_MARKING_BITS(x)        (&GET_HEAP_PAGE(x)->marking_bits[0])
 
 
-#ifndef BUILDING_MODULAR_GC
 static inline bool
 gc_sweep_fast_path_p(VALUE obj)
 {
-    VALUE flags = RBASIC(obj)->flags;
-
-    if (flags & FL_FINALIZE) return false;
-
-    switch (flags & RUBY_T_MASK) {
-      case T_IMEMO:
-        switch (imemo_type(obj)) {
-          case imemo_constcache:
-          case imemo_cref:
-          case imemo_ifunc:
-          case imemo_memo:
-          case imemo_svar:
-          case imemo_throw_data:
-            return true;
-          default:
-            return false;
-        }
-
-      case T_DATA:
-        if (flags & RUBY_TYPED_FL_IS_TYPED_DATA) {
-            uintptr_t type = (uintptr_t)RTYPEDDATA(obj)->type;
-            if (type & TYPED_DATA_EMBEDDED) {
-                RUBY_DATA_FUNC dfree = ((const rb_data_type_t *)(type & TYPED_DATA_PTR_MASK))->function.dfree;
-                // Fast path for embedded T_DATA with no custom free function.
-                // True when dfree is NULL (RUBY_NEVER_FREE) or -1 (RUBY_TYPED_DEFAULT_FREE).
-                // Single comparison used instead of two equality checks for performance.
-                return (uintptr_t)dfree + 1 <= 1;
-            }
-        }
-        return false;
-
-      case T_OBJECT:
-      case T_STRING:
-      case T_ARRAY:
-      case T_HASH:
-      case T_BIGNUM:
-      case T_STRUCT:
-      case T_FLOAT:
-      case T_RATIONAL:
-      case T_COMPLEX:
-        break;
-
-      default:
-        return false;
-    }
-
-    shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
-    if (id2ref_tbl && rb_shape_has_object_id(shape_id)) return false;
-
-    switch (flags & RUBY_T_MASK) {
-      case T_OBJECT:
-        return !(flags & ROBJECT_HEAP);
-
-      case T_STRING:
-        if (flags & (RSTRING_NOEMBED | RSTRING_FSTR)) return false;
-        return !rb_shape_has_fields(shape_id);
-
-      case T_ARRAY:
-        if (!(flags & RARRAY_EMBED_FLAG)) return false;
-        return !rb_shape_has_fields(shape_id);
-
-      case T_HASH:
-        if (flags & RHASH_ST_TABLE_FLAG) return false;
-        return !rb_shape_has_fields(shape_id);
-
-      case T_BIGNUM:
-        if (!(flags & BIGNUM_EMBED_FLAG)) return false;
-        return !rb_shape_has_fields(shape_id);
-
-      case T_STRUCT:
-        if (!(flags & RSTRUCT_EMBED_LEN_MASK)) return false;
-        if (flags & RSTRUCT_GEN_FIELDS) return !rb_shape_has_fields(shape_id);
-        return true;
-
-      case T_FLOAT:
-      case T_RATIONAL:
-      case T_COMPLEX:
-        return !rb_shape_has_fields(shape_id);
-
-      default:
-        UNREACHABLE_RETURN(false);
-    }
+    return !rb_gc_obj_free_on_sweep_p(obj);
 }
-#endif
 
 #define RVALUE_AGE_BITMAP_INDEX(n)  (NUM_IN_PAGE(n) / (BITS_BITLENGTH / RVALUE_AGE_BIT_COUNT))
 #define RVALUE_AGE_BITMAP_OFFSET(n) ((NUM_IN_PAGE(n) % (BITS_BITLENGTH / RVALUE_AGE_BIT_COUNT)) * RVALUE_AGE_BIT_COUNT)
@@ -3610,9 +3527,8 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
 #undef CHECK
 #endif
 
-#ifndef BUILDING_MODULAR_GC
                 if (gc_sweep_fast_path_p(vp)) {
-                    if (UNLIKELY(objspace->hook_events & RUBY_INTERNAL_EVENT_FREEOBJ)) {
+                    if (RB_UNLIKELY(objspace->hook_events & RUBY_INTERNAL_EVENT_FREEOBJ)) {
                         rb_gc_event_hook(vp, RUBY_INTERNAL_EVENT_FREEOBJ);
                     }
 
@@ -3622,9 +3538,7 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
                     gc_report(3, objspace, "page_sweep: %s (fast path) added to freelist\n", rb_obj_info(vp));
                     ctx->freed_slots++;
                 }
-                else
-#endif
-                {
+                else {
                     gc_report(2, objspace, "page_sweep: free %p\n", (void *)p);
 
                     rb_gc_event_hook(vp, RUBY_INTERNAL_EVENT_FREEOBJ);
