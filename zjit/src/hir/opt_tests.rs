@@ -11319,4 +11319,53 @@ mod hir_opt_tests {
           Return v31
         ");
     }
+
+    #[test]
+    fn test_infer_truthiness_from_branch() {
+        eval("
+        def test(x)
+          if x
+            if x
+              if x
+                3
+              else
+                4
+              end
+            else
+              5
+            end
+          else
+            6
+          end
+        end
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :x, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          CheckInterrupts
+          v15:CBool = Test v9
+          v16:Falsy = RefineType v9, Falsy
+          IfFalse v15, bb5(v8, v16)
+          v18:Truthy = RefineType v9, Truthy
+          CheckInterrupts
+          v26:Truthy = RefineType v18, Truthy
+          CheckInterrupts
+          v34:Truthy = RefineType v26, Truthy
+          v37:Fixnum[3] = Const Value(3)
+          CheckInterrupts
+          Return v37
+        bb5(v42:BasicObject, v43:Falsy):
+          v47:Fixnum[6] = Const Value(6)
+          CheckInterrupts
+          Return v47
+        ");
+    }
 }
