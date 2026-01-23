@@ -386,6 +386,8 @@ str_store_precomputed_hash(VALUE str, st_index_t hash)
     return str;
 }
 
+static inline void str_discard_no_modifiable(VALUE str);
+
 VALUE
 rb_fstring(VALUE str)
 {
@@ -416,6 +418,9 @@ rb_fstring(VALUE str)
     fstr = register_fstring(str, false, false);
 
     if (!bare) {
+        // str may be unmodifiable and still own malloc buffer.
+        // We need to discard it before calling str_replace_shared_without_enc.
+        str_discard_no_modifiable(str);
         str_replace_shared_without_enc(str, fstr);
         OBJ_FREEZE(str);
         return str;
@@ -1430,15 +1435,32 @@ rb_str_export_to_enc(VALUE str, rb_encoding *enc)
     return rb_str_conv_enc(str, STR_ENC_GET(str), enc);
 }
 
+static inline bool str_owning_malloc_p(VALUE str);
+
+/*
+ * This function makes `str2` have the same content as `str`, and share if possible.
+ * If `str2` has enough embed capacity to hold the content of `str2`,
+ * it will turn `str2` into an embedded string and copy over the content.
+ * Otherwise, it will turn `str2` into an `STR_SHARED` string.
+ * If `str` is already `STR_SHARED`, `str2` will reuse its shared root;
+ * otherwise, it will create a new frozen string that has the same content as `str`,
+ * and use that as the shared root.
+ */
 static VALUE
 str_replace_shared_without_enc(VALUE str2, VALUE str)
 {
+    RUBY_ASSERT(!str_owning_malloc_p(str2));
+
     const int termlen = TERM_LEN(str);
     char *ptr;
     long len;
 
     RSTRING_GETMEM(str, ptr, len);
     if (str_embed_capa(str2) >= len + termlen) {
+        // Note: str2 must have been "discarded",
+        // i.e. not owning a malloc buffer now.
+        // For this reason, we simply sets str2 as embedded,
+        // ignoring the previous value of RSTRING(str2)->as.heap.ptr
         char *ptr2 = RSTRING(str2)->as.embed.ary;
         STR_SET_EMBED(str2);
         memcpy(ptr2, RSTRING_PTR(str), len);
@@ -1456,15 +1478,6 @@ str_replace_shared_without_enc(VALUE str2, VALUE str)
         }
         RUBY_ASSERT(OBJ_FROZEN(root));
 
-        if (!STR_EMBED_P(str2) && !FL_TEST_RAW(str2, STR_SHARED|STR_NOFREE)) {
-            if (FL_TEST_RAW(str2, STR_SHARED_ROOT)) {
-                rb_fatal("about to free a possible shared root");
-            }
-            char *ptr2 = STR_HEAP_PTR(str2);
-            if (ptr2 != ptr) {
-                ruby_sized_xfree(ptr2, STR_HEAP_SIZE(str2));
-            }
-        }
         FL_SET(str2, STR_NOEMBED);
         RSTRING(str2)->as.heap.ptr = ptr;
         STR_SET_SHARED(str2, root);
@@ -1472,12 +1485,16 @@ str_replace_shared_without_enc(VALUE str2, VALUE str)
 
     STR_SET_LEN(str2, len);
 
+    RUBY_ASSERT(STR_EMBED_P(str2) || STR_SHARED_P(str2));
+
     return str2;
 }
 
 static VALUE
 str_replace_shared(VALUE str2, VALUE str)
 {
+    RUBY_ASSERT(!str_owning_malloc_p(str2));
+
     str_replace_shared_without_enc(str2, str);
     rb_enc_cr_str_exact_copy(str2, str);
     return str2;
@@ -1850,6 +1867,8 @@ rb_obj_as_string_result(VALUE str, VALUE obj)
 static VALUE
 str_replace(VALUE str, VALUE str2)
 {
+    RUBY_ASSERT(!str_owning_malloc_p(str));
+
     long len;
 
     len = RSTRING_LEN(str2);
@@ -2756,15 +2775,63 @@ str_modify_keep_cr(VALUE str)
         ENC_CODERANGE_CLEAR(str);
 }
 
-static inline void
-str_discard(VALUE str)
+/*
+ * Like str_owning_malloc_p, except it doesn't check whether as.heap.ptr is
+ * NULL.
+ */
+static inline bool
+str_may_own_malloc_p(VALUE str)
 {
-    str_modifiable(str);
-    if (!STR_EMBED_P(str) && !FL_TEST(str, STR_SHARED|STR_NOFREE)) {
+    RUBY_ASSERT(BUILTIN_TYPE(str) == T_STRING);
+
+    return !STR_EMBED_P(str) && !FL_TEST_RAW(str, STR_SHARED|STR_NOFREE);
+}
+
+/*
+ * Test if a T_STRING instance is currently owning a malloc buffer.
+ *
+ * A T_STRING instance is owning a malloc buffer if the as.heap.ptr field points
+ * to the buffer, and the buffer shall be freed when the T_STRING instance is
+ * dead.
+ *
+ * Specifically, such a string must not be embedded, shared or no-free.
+ *
+ * - Embedded strings (STR_EMBED_P) hold its characters in the object itself.
+ * - The malloc buffer of a shared string (STR_SHARED) is in the shared root
+ *   instead of the shared string itself.
+ * - If a string has STR_NOFREE, the underlying buffer may not be allocated from
+ *   malloc, or it is part of some malloc memory which the current String object
+ *   is not supposed to free.
+ */
+static inline bool
+str_owning_malloc_p(VALUE str)
+{
+    return str_may_own_malloc_p(str) && RSTRING(str)->as.heap.ptr != NULL;
+}
+
+/*
+ * Like str_discard, but does not require str to be modifiable.
+ * This function can only be called directly if the string will soon be made to
+ * have the same value as before (e.g. becoming embedded or shared), which will
+ * appear to the application as if the string has not been modified.
+ */
+static inline void
+str_discard_no_modifiable(VALUE str)
+{
+    if (str_owning_malloc_p(str)) {
         ruby_sized_xfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
         RSTRING(str)->as.heap.ptr = 0;
         STR_SET_LEN(str, 0);
     }
+}
+
+/* Free the malloc memory of a String instance if it is owning one. */
+static inline void
+str_discard(VALUE str)
+{
+    str_modifiable(str);
+    str_discard_no_modifiable(str);
+    RUBY_ASSERT(!str_owning_malloc_p(str));
 }
 
 void
