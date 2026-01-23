@@ -717,6 +717,21 @@ pub extern "C" fn rb_zjit_reset_stats_bang(_ec: EcPtr, _self: VALUE) -> VALUE {
     // Reset exit counters for YARV instructions
     exit_counters.as_mut_slice().fill(0);
 
+    // Reset send fallback counters
+    ZJITState::get_send_fallback_counters().as_mut_slice().fill(0);
+
+    // Reset not-inlined counters
+    ZJITState::get_not_inlined_cfunc_counter_pointers().iter_mut()
+        .for_each(|b| { **(b.1) = 0; });
+
+    // Reset not-annotated counters
+    ZJITState::get_not_annotated_cfunc_counter_pointers().iter_mut()
+        .for_each(|b| { **(b.1) = 0; });
+
+    // Reset ccall counters
+    ZJITState::get_ccall_counter_pointers().iter_mut()
+        .for_each(|b| { **(b.1) = 0; });
+
     Qnil
 }
 
