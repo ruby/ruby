@@ -696,7 +696,7 @@ class Pathname
   # Occurrences of <tt>'/'</tt>, <tt>'.'</tt>, and <tt>'..'</tt> are preserved:
   #
   #   Pathname.new('/a') + '//b//c/./../d' # => #<Pathname://b//c/./../d>
-  # 
+  #
   # This method does not access the file system, so +other+ need not represent
   # an existing (or even a valid) file or directory path:
   #
