@@ -6403,9 +6403,28 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
-          v14:BasicObject = SendWithoutBlock v9, :foo # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v14:CBool = HasType v9, HeapObject[class_exact:C]
+          IfTrue v14, bb4(v8, v9, v9)
+          v23:CBool = HasType v9, HeapObject[class_exact:C]
+          IfTrue v23, bb5(v8, v9, v9)
+          SideExit PolymorphicFallthrough
+        bb4(v15:BasicObject, v16:BasicObject, v17:BasicObject):
+          v19:HeapObject[class_exact:C] = RefineType v17, HeapObject[class_exact:C]
+          PatchPoint NoSingletonClass(C@0x1000)
+          PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
+          IncrCounter getivar_fallback_not_monomorphic
+          v43:BasicObject = GetIvar v19, :@foo
+          Jump bb3(v15, v16, v43)
+        bb5(v24:BasicObject, v25:BasicObject, v26:BasicObject):
+          v28:HeapObject[class_exact:C] = RefineType v26, HeapObject[class_exact:C]
+          PatchPoint NoSingletonClass(C@0x1000)
+          PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
+          IncrCounter getivar_fallback_not_monomorphic
+          v46:BasicObject = GetIvar v28, :@foo
+          Jump bb3(v24, v25, v46)
+        bb3(v33:BasicObject, v34:BasicObject, v35:BasicObject):
           CheckInterrupts
-          Return v14
+          Return v35
         ");
     }
 
