@@ -3782,15 +3782,18 @@ impl Function {
             };
 
             // Do method lookup
-            let cme: *const rb_callable_method_entry_struct = unsafe { rb_callable_method_entry(recv_class, method_id) };
+            let mut cme: *const rb_callable_method_entry_struct = unsafe { rb_callable_method_entry(recv_class, method_id) };
             if cme.is_null() {
                 fun.set_dynamic_send_reason(send_insn_id, SendNotOptimizedMethodType(MethodType::Null));
                 return Err(());
             }
 
             // Filter for C methods
-            // TODO(max): Handle VM_METHOD_TYPE_ALIAS
-            let def_type = unsafe { get_cme_def_type(cme) };
+            let mut def_type = unsafe { get_cme_def_type(cme) };
+            while def_type == VM_METHOD_TYPE_ALIAS {
+                cme = unsafe { rb_aliased_callable_method_entry(cme) };
+                def_type = unsafe { get_cme_def_type(cme) };
+            }
             if def_type != VM_METHOD_TYPE_CFUNC {
                 return Err(());
             }
