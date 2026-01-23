@@ -38,7 +38,7 @@ rb_str_encindex_fastpath(int encindex)
     // Hence you can use fast, single byte algorithms on them, such as `memchr` etc,
     // without all the overhead of fetching the rb_encoding and using functions such as
     // rb_enc_mbminlen etc.
-    // Many other encodings could qualify, but they are expected to be rare occurences,
+    // Many other encodings could qualify, but they are expected to be rare occurrences,
     // so it's better to keep that list small.
     switch (encindex) {
       case ENCINDEX_ASCII_8BIT:
