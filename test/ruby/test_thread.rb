@@ -1652,4 +1652,16 @@ q.pop
       end
     end;
   end
+
+  # [Bug #21836]
+  def test_mn_threads_sub_millisecond_sleep
+    assert_separately([{'RUBY_MN_THREADS' => '1'}], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 30)
+    begin;
+      t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      1000.times { sleep 0.0001 }
+      t1 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      elapsed = t1 - t0
+      assert_operator elapsed, :>=, 0.1, "sub-millisecond sleeps should not return immediately"
+    end;
+  end
 end
