@@ -6885,7 +6885,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             locals_count: usize,
                             stack_count: usize,
                             join_block: BlockId,
-                        ) -> (BlockId, InsnId, FrameState, InsnId) {
+                        ) -> BlockId {
                             let block = fun.new_block(insn_idx);
                             let self_param = fun.push_insn(block, Insn::Param);
                             let mut state = exit_state.clone();
@@ -6901,7 +6901,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             let send = fun.push_insn(block, Insn::SendWithoutBlock { recv: refined_recv, cd, args, state: snapshot, reason: Uncategorized(opcode) });
                             state.stack_push(send);
                             fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: state.as_args(self_param) }));
-                            (block, self_param, state, snapshot)
+                            block
                         }
                         let branch_insn_idx = exit_state.insn_idx as u32;
                         let locals_count = state.locals.len();
@@ -6914,7 +6914,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                                 if profiled_type.is_empty() { break; }
                                 let expected = Type::from_profiled_type(profiled_type);
                                 let has_type = fun.push_insn(block, Insn::HasType { val: recv, expected });
-                                let (iftrue_block, iftrue_self_param, mut iftrue_state, ..) =
+                                let iftrue_block =
                                     new_branch_block(&mut fun, cd, argc as usize, opcode, expected, branch_insn_idx, &exit_state, locals_count, stack_count, join_block);
                                 let target = BranchEdge { target: iftrue_block, args: entry_args.clone() };
                                 fun.push_insn(block, Insn::IfTrue { val: has_type, target });
