@@ -1269,17 +1269,17 @@ nodes:
       - name: opening_loc
         type: location
         comment: |
-          Represents the location of the opening `|`.
+          Represents the location of the opening `{` or `do`.
 
               [1, 2, 3].each { |i| puts x }
-                               ^
+                             ^
       - name: closing_loc
         type: location
         comment: |
-          Represents the location of the closing `|`.
+          Represents the location of the closing `}` or `end`.
 
               [1, 2, 3].each { |i| puts x }
-                                 ^
+                                          ^
     comment: |
       Represents a block of ruby code.
 

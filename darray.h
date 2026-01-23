@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include "ruby/ruby.h"
 
 // Type for a dynamic array. Use to declare a dynamic array.
 // It is a pointer so it fits in st_table nicely. Designed
@@ -147,6 +148,9 @@ rb_darray_size(const void *ary)
     return meta ? meta->size : 0;
 }
 
+/* Estimate of the amount of memory used by this darray.
+ * Useful for TypedData objects. */
+#define rb_darray_memsize(ary) (sizeof(*(ary)) + (rb_darray_size(ary) * sizeof((ary)->data[0])))
 
 static inline void
 rb_darray_pop(void *ary, size_t count)

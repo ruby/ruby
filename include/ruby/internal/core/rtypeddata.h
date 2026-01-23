@@ -265,6 +265,13 @@ struct rb_data_type_struct {
          * @internal
          */
         void (*handle_weak_references)(void *);
+
+         /**
+          * This field  is reserved for future  extension.  For now, it  must be
+          * filled with zeros.
+          */
+        void *reserved[7]; /* For future extension.
+                              This array *must* be filled with ZERO. */
     } function;
 
     /**
@@ -673,24 +680,24 @@ RTYPEDDATA_TYPE(VALUE obj)
 RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NONNULL(())
 static inline bool
-rb_typeddata_inherited_p_inline(const rb_data_type_t *child, const rb_data_type_t *parent)
+rbimpl_typeddata_inherited_p_inline(const rb_data_type_t *child, const rb_data_type_t *parent)
 {
     do {
         if (RB_LIKELY(child == parent)) return true;
     } while ((child = child->parent) != NULL);
     return false;
 }
-#define rb_typeddata_inherited_p rb_typeddata_inherited_p_inline
+#define rb_typeddata_inherited_p rbimpl_typeddata_inherited_p_inline
 
 RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NONNULL((2))
 static inline bool
-rb_typeddata_is_kind_of_inline(VALUE obj, const rb_data_type_t *data_type)
+rbimpl_typeddata_is_kind_of_inline(VALUE obj, const rb_data_type_t *data_type)
 {
     if (RB_UNLIKELY(!rbimpl_obj_typeddata_p(obj))) return false;
     return rb_typeddata_inherited_p(RTYPEDDATA_TYPE(obj), data_type);
 }
-#define rb_typeddata_is_kind_of rb_typeddata_is_kind_of_inline
+#define rb_typeddata_is_kind_of rbimpl_typeddata_is_kind_of_inline
 
 RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NONNULL((2))

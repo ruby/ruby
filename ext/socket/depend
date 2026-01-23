@@ -193,6 +193,7 @@ ancdata.o: $(top_srcdir)/ccan/check_type/check_type.h
 ancdata.o: $(top_srcdir)/ccan/container_of/container_of.h
 ancdata.o: $(top_srcdir)/ccan/list/list.h
 ancdata.o: $(top_srcdir)/ccan/str/str.h
+ancdata.o: $(top_srcdir)/encindex.h
 ancdata.o: $(top_srcdir)/id_table.h
 ancdata.o: $(top_srcdir)/internal.h
 ancdata.o: $(top_srcdir)/internal/array.h
@@ -408,6 +409,7 @@ basicsocket.o: $(top_srcdir)/ccan/check_type/check_type.h
 basicsocket.o: $(top_srcdir)/ccan/container_of/container_of.h
 basicsocket.o: $(top_srcdir)/ccan/list/list.h
 basicsocket.o: $(top_srcdir)/ccan/str/str.h
+basicsocket.o: $(top_srcdir)/encindex.h
 basicsocket.o: $(top_srcdir)/id_table.h
 basicsocket.o: $(top_srcdir)/internal.h
 basicsocket.o: $(top_srcdir)/internal/array.h
@@ -623,6 +625,7 @@ constants.o: $(top_srcdir)/ccan/check_type/check_type.h
 constants.o: $(top_srcdir)/ccan/container_of/container_of.h
 constants.o: $(top_srcdir)/ccan/list/list.h
 constants.o: $(top_srcdir)/ccan/str/str.h
+constants.o: $(top_srcdir)/encindex.h
 constants.o: $(top_srcdir)/id_table.h
 constants.o: $(top_srcdir)/internal.h
 constants.o: $(top_srcdir)/internal/array.h
@@ -839,6 +842,7 @@ ifaddr.o: $(top_srcdir)/ccan/check_type/check_type.h
 ifaddr.o: $(top_srcdir)/ccan/container_of/container_of.h
 ifaddr.o: $(top_srcdir)/ccan/list/list.h
 ifaddr.o: $(top_srcdir)/ccan/str/str.h
+ifaddr.o: $(top_srcdir)/encindex.h
 ifaddr.o: $(top_srcdir)/id_table.h
 ifaddr.o: $(top_srcdir)/internal.h
 ifaddr.o: $(top_srcdir)/internal/array.h
@@ -1054,6 +1058,7 @@ init.o: $(top_srcdir)/ccan/check_type/check_type.h
 init.o: $(top_srcdir)/ccan/container_of/container_of.h
 init.o: $(top_srcdir)/ccan/list/list.h
 init.o: $(top_srcdir)/ccan/str/str.h
+init.o: $(top_srcdir)/encindex.h
 init.o: $(top_srcdir)/id_table.h
 init.o: $(top_srcdir)/internal.h
 init.o: $(top_srcdir)/internal/array.h
@@ -1269,6 +1274,7 @@ ipsocket.o: $(top_srcdir)/ccan/check_type/check_type.h
 ipsocket.o: $(top_srcdir)/ccan/container_of/container_of.h
 ipsocket.o: $(top_srcdir)/ccan/list/list.h
 ipsocket.o: $(top_srcdir)/ccan/str/str.h
+ipsocket.o: $(top_srcdir)/encindex.h
 ipsocket.o: $(top_srcdir)/id_table.h
 ipsocket.o: $(top_srcdir)/internal.h
 ipsocket.o: $(top_srcdir)/internal/array.h
@@ -1484,6 +1490,7 @@ option.o: $(top_srcdir)/ccan/check_type/check_type.h
 option.o: $(top_srcdir)/ccan/container_of/container_of.h
 option.o: $(top_srcdir)/ccan/list/list.h
 option.o: $(top_srcdir)/ccan/str/str.h
+option.o: $(top_srcdir)/encindex.h
 option.o: $(top_srcdir)/id_table.h
 option.o: $(top_srcdir)/internal.h
 option.o: $(top_srcdir)/internal/array.h
@@ -1699,6 +1706,7 @@ raddrinfo.o: $(top_srcdir)/ccan/check_type/check_type.h
 raddrinfo.o: $(top_srcdir)/ccan/container_of/container_of.h
 raddrinfo.o: $(top_srcdir)/ccan/list/list.h
 raddrinfo.o: $(top_srcdir)/ccan/str/str.h
+raddrinfo.o: $(top_srcdir)/encindex.h
 raddrinfo.o: $(top_srcdir)/id_table.h
 raddrinfo.o: $(top_srcdir)/internal.h
 raddrinfo.o: $(top_srcdir)/internal/array.h
@@ -1914,6 +1922,7 @@ socket.o: $(top_srcdir)/ccan/check_type/check_type.h
 socket.o: $(top_srcdir)/ccan/container_of/container_of.h
 socket.o: $(top_srcdir)/ccan/list/list.h
 socket.o: $(top_srcdir)/ccan/str/str.h
+socket.o: $(top_srcdir)/encindex.h
 socket.o: $(top_srcdir)/id_table.h
 socket.o: $(top_srcdir)/internal.h
 socket.o: $(top_srcdir)/internal/array.h
@@ -2129,6 +2138,7 @@ sockssocket.o: $(top_srcdir)/ccan/check_type/check_type.h
 sockssocket.o: $(top_srcdir)/ccan/container_of/container_of.h
 sockssocket.o: $(top_srcdir)/ccan/list/list.h
 sockssocket.o: $(top_srcdir)/ccan/str/str.h
+sockssocket.o: $(top_srcdir)/encindex.h
 sockssocket.o: $(top_srcdir)/id_table.h
 sockssocket.o: $(top_srcdir)/internal.h
 sockssocket.o: $(top_srcdir)/internal/array.h
@@ -2344,6 +2354,7 @@ tcpserver.o: $(top_srcdir)/ccan/check_type/check_type.h
 tcpserver.o: $(top_srcdir)/ccan/container_of/container_of.h
 tcpserver.o: $(top_srcdir)/ccan/list/list.h
 tcpserver.o: $(top_srcdir)/ccan/str/str.h
+tcpserver.o: $(top_srcdir)/encindex.h
 tcpserver.o: $(top_srcdir)/id_table.h
 tcpserver.o: $(top_srcdir)/internal.h
 tcpserver.o: $(top_srcdir)/internal/array.h
@@ -2559,6 +2570,7 @@ tcpsocket.o: $(top_srcdir)/ccan/check_type/check_type.h
 tcpsocket.o: $(top_srcdir)/ccan/container_of/container_of.h
 tcpsocket.o: $(top_srcdir)/ccan/list/list.h
 tcpsocket.o: $(top_srcdir)/ccan/str/str.h
+tcpsocket.o: $(top_srcdir)/encindex.h
 tcpsocket.o: $(top_srcdir)/id_table.h
 tcpsocket.o: $(top_srcdir)/internal.h
 tcpsocket.o: $(top_srcdir)/internal/array.h
@@ -2774,6 +2786,7 @@ udpsocket.o: $(top_srcdir)/ccan/check_type/check_type.h
 udpsocket.o: $(top_srcdir)/ccan/container_of/container_of.h
 udpsocket.o: $(top_srcdir)/ccan/list/list.h
 udpsocket.o: $(top_srcdir)/ccan/str/str.h
+udpsocket.o: $(top_srcdir)/encindex.h
 udpsocket.o: $(top_srcdir)/id_table.h
 udpsocket.o: $(top_srcdir)/internal.h
 udpsocket.o: $(top_srcdir)/internal/array.h
@@ -2989,6 +3002,7 @@ unixserver.o: $(top_srcdir)/ccan/check_type/check_type.h
 unixserver.o: $(top_srcdir)/ccan/container_of/container_of.h
 unixserver.o: $(top_srcdir)/ccan/list/list.h
 unixserver.o: $(top_srcdir)/ccan/str/str.h
+unixserver.o: $(top_srcdir)/encindex.h
 unixserver.o: $(top_srcdir)/id_table.h
 unixserver.o: $(top_srcdir)/internal.h
 unixserver.o: $(top_srcdir)/internal/array.h
@@ -3204,6 +3218,7 @@ unixsocket.o: $(top_srcdir)/ccan/check_type/check_type.h
 unixsocket.o: $(top_srcdir)/ccan/container_of/container_of.h
 unixsocket.o: $(top_srcdir)/ccan/list/list.h
 unixsocket.o: $(top_srcdir)/ccan/str/str.h
+unixsocket.o: $(top_srcdir)/encindex.h
 unixsocket.o: $(top_srcdir)/id_table.h
 unixsocket.o: $(top_srcdir)/internal.h
 unixsocket.o: $(top_srcdir)/internal/array.h

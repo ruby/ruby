@@ -11,6 +11,7 @@ of each.
 - `MakeMakefile`: A module used to generate a Makefile for C extensions
 - `RbConfig`: Information about your Ruby configuration and build
 - `Gem`: A package management framework for Ruby
+- `Pathname`: Representation of the name of a file or directory on the filesystem. Pathname is a core class, but only methods that depend on other libraries are provided as a library.
 
 ## Extensions
 
@@ -74,7 +75,6 @@ of each.
 - IO#wait ([GitHub][io-wait]): Provides the feature for waiting until IO is readable or writable without blocking.
 - JSON ([GitHub][json]): Implements JavaScript Object Notation for Ruby
 - OpenSSL ([GitHub][openssl]): Provides SSL, TLS, and general-purpose cryptography for Ruby
-- Pathname ([GitHub][pathname]): Representation of the name of a file or directory on the filesystem
 - Psych ([GitHub][psych]): A YAML parser and emitter for Ruby
 - StringIO ([GitHub][stringio]): Pseudo-I/O on String objects
 - StringScanner ([GitHub][strscan]): Provides lexical scanning operations on a String

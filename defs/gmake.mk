@@ -517,7 +517,7 @@ fix-depends check-depends: all hello
 # because the same named directory exists in the source tree.
 $(RUBYSPEC_CAPIEXT)/%.$(DLEXT): $(srcdir)/$(RUBYSPEC_CAPIEXT)/%.c $(RUBYSPEC_CAPIEXT_DEPS) \
 	| build-ext
-	$(ECHO) building $@
+	$(no_silence:no=$(ECHO) building $@)
 	$(Q) $(MAKEDIRS) $(@D)
 	$(Q) $(DLDSHARED) -L. $(XDLDFLAGS) $(XLDFLAGS) $(LDFLAGS) $(INCFLAGS) $(CPPFLAGS) $(OUTFLAG)$@ $< $(LIBRUBYARG)
 ifneq ($(POSTLINK),)

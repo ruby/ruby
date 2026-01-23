@@ -146,27 +146,7 @@ VALUE rb_cSymbol;
     RSTRING(str)->len = (n); \
 } while (0)
 
-static inline bool
-str_encindex_fastpath(int encindex)
-{
-    // The overwhelming majority of strings are in one of these 3 encodings.
-    switch (encindex) {
-      case ENCINDEX_ASCII_8BIT:
-      case ENCINDEX_UTF_8:
-      case ENCINDEX_US_ASCII:
-        return true;
-      default:
-        return false;
-    }
-}
-
-static inline bool
-str_enc_fastpath(VALUE str)
-{
-    return str_encindex_fastpath(ENCODING_GET_INLINED(str));
-}
-
-#define TERM_LEN(str) (str_enc_fastpath(str) ? 1 : rb_enc_mbminlen(rb_enc_from_index(ENCODING_GET(str))))
+#define TERM_LEN(str) (rb_str_enc_fastpath(str) ? 1 : rb_enc_mbminlen(rb_enc_from_index(ENCODING_GET(str))))
 #define TERM_FILL(ptr, termlen) do {\
     char *const term_fill_ptr = (ptr);\
     const int term_fill_len = (termlen);\
@@ -960,7 +940,7 @@ static inline bool
 rb_enc_str_asciicompat(VALUE str)
 {
     int encindex = ENCODING_GET_INLINED(str);
-    return str_encindex_fastpath(encindex) || rb_enc_asciicompat(rb_enc_get_from_index(encindex));
+    return rb_str_encindex_fastpath(encindex) || rb_enc_asciicompat(rb_enc_get_from_index(encindex));
 }
 
 int
@@ -2796,7 +2776,7 @@ rb_must_asciicompat(VALUE str)
         rb_raise(rb_eTypeError, "not encoding capable object");
     }
 
-    if (RB_LIKELY(str_encindex_fastpath(encindex))) {
+    if (RB_LIKELY(rb_str_encindex_fastpath(encindex))) {
         return;
     }
 
@@ -2897,16 +2877,21 @@ str_null_check(VALUE str, int *w)
 {
     char *s = RSTRING_PTR(str);
     long len = RSTRING_LEN(str);
-    rb_encoding *enc = rb_enc_get(str);
-    const int minlen = rb_enc_mbminlen(enc);
+    int minlen = 1;
 
-    if (minlen > 1) {
-        *w = 1;
-        if (str_null_char(s, len, minlen, enc)) {
-            return NULL;
+    if (RB_UNLIKELY(!rb_str_enc_fastpath(str))) {
+        rb_encoding *enc = rb_str_enc_get(str);
+        minlen = rb_enc_mbminlen(enc);
+
+        if (minlen > 1) {
+            *w = 1;
+            if (str_null_char(s, len, minlen, enc)) {
+                return NULL;
+            }
+            return str_fill_term(str, s, len, minlen);
         }
-        return str_fill_term(str, s, len, minlen);
     }
+
     *w = 0;
     if (!s || memchr(s, 0, len)) {
         return NULL;
@@ -2914,6 +2899,34 @@ str_null_check(VALUE str, int *w)
     if (s[len]) {
         s = str_fill_term(str, s, len, minlen);
     }
+    return s;
+}
+
+const char *
+rb_str_null_check(VALUE str)
+{
+    RUBY_ASSERT(RB_TYPE_P(str, T_STRING));
+
+    char *s;
+    long len;
+    RSTRING_GETMEM(str, s, len);
+
+    if (RB_LIKELY(rb_str_enc_fastpath(str))) {
+        if (!s || memchr(s, 0, len)) {
+            rb_raise(rb_eArgError, "string contains null byte");
+        }
+    }
+    else {
+        int w;
+        const char *s = str_null_check(str, &w);
+        if (!s) {
+            if (w) {
+                rb_raise(rb_eArgError, "string contains null char");
+            }
+            rb_raise(rb_eArgError, "string contains null byte");
+        }
+    }
+
     return s;
 }
 
@@ -3765,7 +3778,7 @@ rb_str_buf_append(VALUE str, VALUE str2)
 {
     int str2_cr = rb_enc_str_coderange(str2);
 
-    if (str_enc_fastpath(str)) {
+    if (rb_str_enc_fastpath(str)) {
         switch (str2_cr) {
           case ENC_CODERANGE_7BIT:
             // If RHS is 7bit we can do simple concatenation
@@ -12709,7 +12722,15 @@ VALUE
 rb_interned_str(const char *ptr, long len)
 {
     struct RString fake_str = {RBASIC_INIT};
-    return register_fstring(setup_fake_str(&fake_str, ptr, len, ENCINDEX_US_ASCII), true, false);
+    int encidx = ENCINDEX_US_ASCII;
+    int coderange = ENC_CODERANGE_7BIT;
+    if (len > 0 && search_nonascii(ptr, ptr + len)) {
+        encidx = ENCINDEX_ASCII_8BIT;
+        coderange = ENC_CODERANGE_VALID;
+    }
+    VALUE str = setup_fake_str(&fake_str, ptr, len, encidx);
+    ENC_CODERANGE_SET(str, coderange);
+    return register_fstring(str, true, false);
 }
 
 VALUE

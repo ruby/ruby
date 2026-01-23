@@ -46,8 +46,10 @@ releases.
 
 * RubyGems 4.1.0.dev
 * bundler 4.1.0.dev
+* prism 1.8.0
 * stringio 3.2.1.dev
 * strscan 3.1.7.dev
+* syntax_suggest 2.0.3
 
 ### The following bundled gems are updated.
 
@@ -59,7 +61,8 @@ releases.
 * typeprof 0.31.1
 * debug 1.11.1
 * mutex_m 0.3.0
-* rdoc 7.0.3
+* resolv-replace 0.2.0
+* rdoc 7.1.0
 
 ### RubyGems and Bundler
 

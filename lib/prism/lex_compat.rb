@@ -198,58 +198,6 @@ module Prism
       "__END__": :on___end__
     }.freeze
 
-    # Pretty much a 1:1 copy of Ripper::Lexer::State. We list all the available states
-    # to reimplement to_s without using Ripper.
-    class State
-      # Ripper-internal bitflags.
-      ALL = %i[
-        BEG END ENDARG ENDFN ARG CMDARG MID FNAME DOT CLASS LABEL LABELED FITEM
-      ].map.with_index.to_h { |name, i| [2 ** i, name] }
-      ALL[0] = :NONE
-      ALL.freeze
-      ALL.each { |value, name| const_set(name, value) }
-
-      # :stopdoc:
-
-      attr_reader :to_int, :to_s
-
-      def initialize(i)
-        @to_int = i
-        @to_s = state_name(i)
-        freeze
-      end
-
-      def [](index)
-        case index
-        when 0, :to_int
-          @to_int
-        when 1, :to_s
-          @to_s
-        else
-          nil
-        end
-      end
-
-      alias to_i to_int
-      alias inspect to_s
-      def pretty_print(q) q.text(to_s) end
-      def ==(i) super or to_int == i end
-      def &(i) self.class.new(to_int & i) end
-      def |(i) self.class.new(to_int | i) end
-      def allbits?(i) to_int.allbits?(i) end
-      def anybits?(i) to_int.anybits?(i) end
-      def nobits?(i) to_int.nobits?(i) end
-
-      # :startdoc:
-
-      private
-
-      # Convert the state flags into the format exposed by ripper.
-      def state_name(bits)
-        ALL.filter_map { |flag, name| name if bits & flag != 0  }.join("|")
-      end
-    end
-
     # When we produce tokens, we produce the same arrays that Ripper does.
     # However, we add a couple of convenience methods onto them to make them a
     # little easier to work with. We delegate all other methods to the array.
@@ -277,16 +225,8 @@ module Prism
       end
     end
 
-    # Ripper doesn't include the rest of the token in the event, so we need to
-    # trim it down to just the content on the first line when comparing.
-    class EndContentToken < Token
-      def ==(other) # :nodoc:
-        [self[0], self[1], self[2][0..self[2].index("\n")], self[3]] == other
-      end
-    end
-
     # Tokens where state should be ignored
-    # used for :on_comment, :on_heredoc_end, :on_embexpr_end
+    # used for :on_sp, :on_comment, :on_heredoc_end, :on_embexpr_end
     class IgnoreStateToken < Token
       def ==(other) # :nodoc:
         self[0...-1] == other[0...-1]
@@ -300,8 +240,8 @@ module Prism
     class IdentToken < Token
       def ==(other) # :nodoc:
         (self[0...-1] == other[0...-1]) && (
-          (other[3] == State::LABEL | State::END) ||
-          (other[3] & (State::ARG | State::CMDARG) != 0)
+          (other[3] == Translation::Ripper::EXPR_LABEL | Translation::Ripper::EXPR_END) ||
+          (other[3] & (Translation::Ripper::EXPR_ARG | Translation::Ripper::EXPR_CMDARG) != 0)
         )
       end
     end
@@ -312,8 +252,8 @@ module Prism
       def ==(other) # :nodoc:
         return false unless self[0...-1] == other[0...-1]
 
-        if self[3] == State::ARG | State::LABELED
-          other[3] & State::ARG | State::LABELED != 0
+        if self[3] == Translation::Ripper::EXPR_ARG | Translation::Ripper::EXPR_LABELED
+          other[3] & Translation::Ripper::EXPR_ARG | Translation::Ripper::EXPR_LABELED != 0
         else
           self[3] == other[3]
         end
@@ -331,8 +271,8 @@ module Prism
     class ParamToken < Token
       def ==(other) # :nodoc:
         (self[0...-1] == other[0...-1]) && (
-          (other[3] == State::END) ||
-          (other[3] == State::END | State::LABEL)
+          (other[3] == Translation::Ripper::EXPR_END) ||
+          (other[3] == Translation::Ripper::EXPR_END | Translation::Ripper::EXPR_LABEL)
         )
       end
     end
@@ -671,10 +611,10 @@ module Prism
     BOM_FLUSHED = RUBY_VERSION >= "3.3.0"
     private_constant :BOM_FLUSHED
 
-    attr_reader :source, :options
+    attr_reader :options
 
-    def initialize(source, **options)
-      @source = source
+    def initialize(code, **options)
+      @code = code
       @options = options
     end
 
@@ -684,12 +624,14 @@ module Prism
       state = :default
       heredoc_stack = [[]] #: Array[Array[Heredoc::PlainHeredoc | Heredoc::DashHeredoc | Heredoc::DedentingHeredoc]]
 
-      result = Prism.lex(source, **options)
+      result = Prism.lex(@code, **options)
+      source = result.source
       result_value = result.value
       previous_state = nil #: State?
       last_heredoc_end = nil #: Integer?
+      eof_token = nil
 
-      bom = source.byteslice(0..2) == "\xEF\xBB\xBF"
+      bom = source.slice(0, 3) == "\xEF\xBB\xBF"
 
       result_value.each_with_index do |(token, lex_state), index|
         lineno = token.location.start_line
@@ -727,12 +669,15 @@ module Prism
 
         event = RIPPER.fetch(token.type)
         value = token.value
-        lex_state = State.new(lex_state)
+        lex_state = Translation::Ripper::Lexer::State.cached(lex_state)
 
         token =
           case event
           when :on___end__
-            EndContentToken.new([[lineno, column], event, value, lex_state])
+            # Ripper doesn't include the rest of the token in the event, so we need to
+            # trim it down to just the content on the first line.
+            value = value[0..value.index("\n")]
+            Token.new([[lineno, column], event, value, lex_state])
           when :on_comment
             IgnoreStateToken.new([[lineno, column], event, value, lex_state])
           when :on_heredoc_end
@@ -741,7 +686,7 @@ module Prism
             last_heredoc_end = token.location.end_offset
             IgnoreStateToken.new([[lineno, column], event, value, lex_state])
           when :on_ident
-            if lex_state == State::END
+            if lex_state == Translation::Ripper::EXPR_END
               # If we have an identifier that follows a method name like:
               #
               #     def foo bar
@@ -751,7 +696,7 @@ module Prism
               # yet. We do this more accurately, so we need to allow comparing
               # against both END and END|LABEL.
               ParamToken.new([[lineno, column], event, value, lex_state])
-            elsif lex_state == State::END | State::LABEL
+            elsif lex_state == Translation::Ripper::EXPR_END | Translation::Ripper::EXPR_LABEL
               # In the event that we're comparing identifiers, we're going to
               # allow a little divergence. Ripper doesn't account for local
               # variables introduced through named captures in regexes, and we
@@ -791,13 +736,14 @@ module Prism
                   counter += { on_embexpr_beg: -1, on_embexpr_end: 1 }[current_event] || 0
                 end
 
-                State.new(result_value[current_index][1])
+                Translation::Ripper::Lexer::State.cached(result_value[current_index][1])
               else
                 previous_state
               end
 
             Token.new([[lineno, column], event, value, lex_state])
           when :on_eof
+            eof_token = token
             previous_token = result_value[index - 1][0]
 
             # If we're at the end of the file and the previous token was a
@@ -820,7 +766,7 @@ module Prism
                   end_offset += 3
                 end
 
-                tokens << Token.new([[lineno, 0], :on_nl, source.byteslice(start_offset...end_offset), lex_state])
+                tokens << Token.new([[lineno, 0], :on_nl, source.slice(start_offset, end_offset - start_offset), lex_state])
               end
             end
 
@@ -914,7 +860,89 @@ module Prism
       # We sort by location to compare against Ripper's output
       tokens.sort_by!(&:location)
 
-      Result.new(tokens, result.comments, result.magic_comments, result.data_loc, result.errors, result.warnings, Source.for(source))
+      # Add :on_sp tokens
+      tokens = add_on_sp_tokens(tokens, source, result.data_loc, bom, eof_token)
+
+      Result.new(tokens, result.comments, result.magic_comments, result.data_loc, result.errors, result.warnings, source)
+    end
+
+    def add_on_sp_tokens(tokens, source, data_loc, bom, eof_token)
+      new_tokens = []
+
+      prev_token_state = Translation::Ripper::Lexer::State.cached(Translation::Ripper::EXPR_BEG)
+      prev_token_end = bom ? 3 : 0
+
+      tokens.each do |token|
+        line, column = token.location
+        start_offset = source.line_to_byte_offset(line) + column
+        # Ripper reports columns on line 1 without counting the BOM, so we adjust to get the real offset
+        start_offset += 3 if line == 1 && bom
+
+        if start_offset > prev_token_end
+          sp_value = source.slice(prev_token_end, start_offset - prev_token_end)
+          sp_line = source.line(prev_token_end)
+          sp_column = source.column(prev_token_end)
+          # Ripper reports columns on line 1 without counting the BOM
+          sp_column -= 3 if sp_line == 1 && bom
+          continuation_index = sp_value.byteindex("\\")
+
+          # ripper emits up to three :on_sp tokens when line continuations are used
+          if continuation_index
+            next_whitespace_index = continuation_index + 1
+            next_whitespace_index += 1 if sp_value.byteslice(next_whitespace_index) == "\r"
+            next_whitespace_index += 1
+            first_whitespace = sp_value[0...continuation_index]
+            continuation = sp_value[continuation_index...next_whitespace_index]
+            second_whitespace = sp_value[next_whitespace_index..]
+
+            new_tokens << IgnoreStateToken.new([
+              [sp_line, sp_column],
+              :on_sp,
+              first_whitespace,
+              prev_token_state
+            ]) unless first_whitespace.empty?
+
+            new_tokens << IgnoreStateToken.new([
+              [sp_line, sp_column + continuation_index],
+              :on_sp,
+              continuation,
+              prev_token_state
+            ])
+
+            new_tokens << IgnoreStateToken.new([
+              [sp_line + 1, 0],
+              :on_sp,
+              second_whitespace,
+              prev_token_state
+            ]) unless second_whitespace.empty?
+          else
+            new_tokens << IgnoreStateToken.new([
+              [sp_line, sp_column],
+              :on_sp,
+              sp_value,
+              prev_token_state
+            ])
+          end
+        end
+
+        new_tokens << token
+        prev_token_state = token.state
+        prev_token_end = start_offset + token.value.bytesize
+      end
+
+      unless data_loc # no trailing :on_sp with __END__ as it is always preceded by :on_nl
+        end_offset = eof_token.location.end_offset
+        if prev_token_end < end_offset
+          new_tokens << IgnoreStateToken.new([
+            [source.line(prev_token_end), source.column(prev_token_end)],
+            :on_sp,
+            source.slice(prev_token_end, end_offset - prev_token_end),
+            prev_token_state
+          ])
+        end
+      end
+
+      new_tokens
     end
   end
 

@@ -52,17 +52,29 @@ rb_coverage_supported(VALUE self, VALUE _mode)
 
 /*
  * call-seq:
- *    Coverage.setup                                                          => nil
- *    Coverage.setup(:all)                                                    => nil
- *    Coverage.setup(lines: bool, branches: bool, methods: bool, eval: bool)  => nil
- *    Coverage.setup(oneshot_lines: true)                                     => nil
+ *    Coverage.setup -> nil
+ *    Coverage.setup(type) -> nil
+ *    Coverage.setup(lines: false, branches: false, methods: false, eval: false, oneshot_lines: false) -> nil
  *
- * Set up the coverage measurement.
+ * Performs setup for coverage measurement, but does not start coverage measurement.
+ * To start coverage measurement, use Coverage.resume.
  *
- * Note that this method does not start the measurement itself.
- * Use Coverage.resume to start the measurement.
+ * To perform both setup and start coverage measurement, Coverage.start can be used.
  *
- * You may want to use Coverage.start to setup and then start the measurement.
+ * With argument +type+ given and +type+ is symbol +:all+, enables all types of coverage
+ * (lines, branches, methods, and eval).
+ *
+ * Keyword arguments or hash +type+ can be given with each of the following keys:
+ *
+ * - +lines+: Enables line coverage that records the number of times each line was executed.
+ *   If +lines+ is enabled, +oneshot_lines+ cannot be enabled.
+ *   See {Lines Coverage}[rdoc-ref:Coverage@Lines+Coverage].
+ * - +branches+: Enables branch coverage that records the number of times each
+ *   branch in each conditional was executed. See {Branches Coverage}[rdoc-ref:Coverage@Branch+Coverage].
+ * - +methods+: Enables method coverage that records the number of times each method was exectued.
+ *   See {Methods Coverage}[rdoc-ref:Coverage@Methods+Coverage].
+ * - +eval+: Enables coverage for evaluations (e.g. Kernel#eval, Module#class_eval).
+ *   See {Eval Coverage}[rdoc-ref:Coverage@Eval+Coverage].
  */
 static VALUE
 rb_coverage_setup(int argc, VALUE *argv, VALUE klass)
@@ -467,7 +479,7 @@ rb_coverage_running(VALUE klass)
     return current_state == RUNNING ? Qtrue : Qfalse;
 }
 
-/* Coverage provides coverage measurement feature for Ruby.
+/* \Coverage provides coverage measurement feature for Ruby.
  * This feature is experimental, so these APIs may be changed in future.
  *
  * Caveat: Currently, only process-global coverage measurement is supported.
@@ -503,7 +515,7 @@ rb_coverage_running(VALUE klass)
  *   require "foo.rb"
  *   p Coverage.result  #=> {"foo.rb"=>[1, 1, 10, nil, nil, 1, 1, nil, 0, nil]}
  *
- * == Lines Coverage
+ * == Lines \Coverage
  *
  * If a coverage mode is not explicitly specified when starting coverage, lines
  * coverage is what will run. It reports the number of line executions for each
@@ -523,7 +535,7 @@ rb_coverage_running(VALUE klass)
  * A +nil+ value means coverage is disabled for this line (lines like +else+
  * and +end+).
  *
- * == Oneshot Lines Coverage
+ * == Oneshot Lines \Coverage
  *
  * Oneshot lines coverage tracks and reports on the executed lines while
  * coverage is running. It will not report how many times a line was executed,
@@ -537,7 +549,7 @@ rb_coverage_running(VALUE klass)
  * The value of the oneshot lines coverage result is an array containing the
  * line numbers that were executed.
  *
- * == Branches Coverage
+ * == Branches \Coverage
  *
  * Branches coverage reports how many times each branch within each conditional
  * was executed.
@@ -562,7 +574,7 @@ rb_coverage_running(VALUE klass)
  * 5. The ending line number it appears on in the file.
  * 6. The ending column number it appears on in the file.
  *
- * == Methods Coverage
+ * == Methods \Coverage
  *
  * Methods coverage reports how many times each method was executed.
  *
@@ -600,7 +612,63 @@ rb_coverage_running(VALUE klass)
  * 5. The ending line number the method appears on in the file.
  * 6. The ending column number the method appears on in the file.
  *
- * == All Coverage Modes
+ * == Eval \Coverage
+ *
+ * Eval coverage can be combined with the coverage types above to track
+ * coverage for eval.
+ *
+ *   require "coverage"
+ *   Coverage.start(eval: true, lines: true)
+ *
+ *   eval(<<~RUBY, nil, "eval 1")
+ *     ary = []
+ *     10.times do |i|
+ *       ary << "hello" * i
+ *     end
+ *   RUBY
+ *
+ *   Coverage.result # => {"eval 1" => {lines: [1, 1, 10, nil]}}
+ *
+ * Note that the eval must have a filename assigned, otherwise coverage
+ * will not be measured.
+ *
+ *   require "coverage"
+ *   Coverage.start(eval: true, lines: true)
+ *
+ *   eval(<<~RUBY)
+ *     ary = []
+ *     10.times do |i|
+ *       ary << "hello" * i
+ *     end
+ *   RUBY
+ *
+ *   Coverage.result # => {"(eval)" => {lines: [nil, nil, nil, nil]}}
+ *
+ * Also note that if a line number is assigned to the eval and it is not 1,
+ * then the resulting coverage will be padded with +nil+ if the line number is
+ * greater than 1, and truncated if the line number is less than 1.
+ *
+ *   require "coverage"
+ *   Coverage.start(eval: true, lines: true)
+ *
+ *   eval(<<~RUBY, nil, "eval 1", 3)
+ *     ary = []
+ *     10.times do |i|
+ *       ary << "hello" * i
+ *     end
+ *   RUBY
+ *
+ *  eval(<<~RUBY, nil, "eval 2", -1)
+ *     ary = []
+ *     10.times do |i|
+ *       ary << "hello" * i
+ *     end
+ *   RUBY
+ *
+ *   Coverage.result
+ *   # => {"eval 1" => {lines: [nil, nil, 1, 1, 10, nil]}, "eval 2" => {lines: [10, nil]}}
+ *
+ * == All \Coverage Modes
  *
  * You can also run all modes of coverage simultaneously with this shortcut.
  * Note that running all coverage modes does not run both lines and oneshot

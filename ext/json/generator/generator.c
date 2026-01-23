@@ -63,6 +63,8 @@ struct generate_json_data {
     long depth;
 };
 
+static SIMD_Implementation simd_impl;
+
 static VALUE cState_from_state_s(VALUE self, VALUE opts);
 static VALUE cState_partial_generate(VALUE self, VALUE obj, generator_func, VALUE io);
 static void generate_json(FBuffer *buffer, struct generate_json_data *data, VALUE obj);
@@ -155,8 +157,6 @@ static const unsigned char escape_table_basic[256] = {
      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 };
 
-static unsigned char (*search_escape_basic_impl)(search_state *);
-
 static inline unsigned char search_escape_basic(search_state *search)
 {
     while (search->ptr < search->end) {
@@ -212,11 +212,39 @@ ALWAYS_INLINE(static) void escape_UTF8_char_basic(search_state *search)
  * Everything else (should be UTF-8) is just passed through and
  * appended to the result.
  */
+
+
+#if defined(HAVE_SIMD_NEON)
+static inline unsigned char search_escape_basic_neon(search_state *search);
+#elif defined(HAVE_SIMD_SSE2)
+static inline unsigned char search_escape_basic_sse2(search_state *search);
+#endif
+
+static inline unsigned char search_escape_basic(search_state *search);
+
 static inline void convert_UTF8_to_JSON(search_state *search)
 {
-    while (search_escape_basic_impl(search)) {
+#ifdef HAVE_SIMD
+#if defined(HAVE_SIMD_NEON)
+    while (search_escape_basic_neon(search)) {
         escape_UTF8_char_basic(search);
     }
+#elif defined(HAVE_SIMD_SSE2)
+    if (simd_impl == SIMD_SSE2) {
+        while (search_escape_basic_sse2(search)) {
+            escape_UTF8_char_basic(search);
+        }
+        return;
+    }
+    while (search_escape_basic(search)) {
+        escape_UTF8_char_basic(search);
+    }
+#endif
+#else
+    while (search_escape_basic(search)) {
+        escape_UTF8_char_basic(search);
+    }
+#endif /* HAVE_SIMD */
 }
 
 static inline void escape_UTF8_char(search_state *search, unsigned char ch_len)
@@ -260,6 +288,8 @@ static inline void escape_UTF8_char(search_state *search, unsigned char ch_len)
 
 ALWAYS_INLINE(static) char *copy_remaining_bytes(search_state *search, unsigned long vec_len, unsigned long len)
 {
+    RBIMPL_ASSERT_OR_ASSUME(len < vec_len);
+
     // Flush the buffer so everything up until the last 'len' characters are unflushed.
     search_flush(search);
 
@@ -269,12 +299,18 @@ ALWAYS_INLINE(static) char *copy_remaining_bytes(search_state *search, unsigned 
     char *s = (buf->ptr + buf->len);
 
     // Pad the buffer with dummy characters that won't need escaping.
-    // This seem wateful at first sight, but memset of vector length is very fast.
-    memset(s, 'X', vec_len);
+    // This seem wasteful at first sight, but memset of vector length is very fast.
+    // This is a space as it can be directly represented as an immediate on AArch64.
+    memset(s, ' ', vec_len);
 
     // Optimistically copy the remaining 'len' characters to the output FBuffer. If there are no characters
     // to escape, then everything ends up in the correct spot. Otherwise it was convenient temporary storage.
-    MEMCPY(s, search->ptr, char, len);
+    if (vec_len == 16) {
+        RBIMPL_ASSERT_OR_ASSUME(len >= SIMD_MINIMUM_THRESHOLD);
+        json_fast_memcpy16(s, search->ptr, len);
+    } else {
+        MEMCPY(s, search->ptr, char, len);
+    }
 
     return s;
 }
@@ -1091,6 +1127,7 @@ static void raw_generate_json_string(FBuffer *buffer, struct generate_json_data 
     search.matches_mask = 0;
     search.has_matches = false;
     search.chunk_base = NULL;
+    search.chunk_end = NULL;
 #endif /* HAVE_SIMD */
 
     switch (rb_enc_str_coderange(obj)) {
@@ -2181,22 +2218,5 @@ void Init_generator(void)
 
     rb_require("json/ext/generator/state");
 
-
-    switch (find_simd_implementation()) {
-#ifdef HAVE_SIMD
-#ifdef HAVE_SIMD_NEON
-        case SIMD_NEON:
-            search_escape_basic_impl = search_escape_basic_neon;
-            break;
-#endif /* HAVE_SIMD_NEON */
-#ifdef HAVE_SIMD_SSE2
-        case SIMD_SSE2:
-            search_escape_basic_impl = search_escape_basic_sse2;
-            break;
-#endif /* HAVE_SIMD_SSE2 */
-#endif /* HAVE_SIMD */
-        default:
-            search_escape_basic_impl = search_escape_basic;
-            break;
-    }
+    simd_impl = find_simd_implementation();
 }

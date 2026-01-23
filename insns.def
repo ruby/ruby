@@ -1092,6 +1092,7 @@ invokesuper
 (VALUE val)
 // attr rb_snum_t sp_inc = sp_inc_of_sendish(cd->ci);
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci);
+// attr bool zjit_profile = true;
 {
     VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, true);
     val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_super);
