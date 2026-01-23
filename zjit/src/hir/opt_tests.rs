@@ -11491,7 +11491,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn specialize_polymorphic_send_iseq_with_immediate() {
+    fn specialize_polymorphic_send_with_immediate() {
         set_call_threshold(4);
         eval("
         class C; end
