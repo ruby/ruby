@@ -832,6 +832,38 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_optimize_send_to_aliased_cfunc_from_module() {
+        eval("
+            class C
+              include Enumerable
+              def each; yield 1; end
+              alias bar map
+            end
+            def test(o) = o.bar { |x| x }
+            test C.new; test C.new
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:7:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :o, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint NoSingletonClass(C@0x1000)
+          PatchPoint MethodRedefined(C@0x1000, bar@0x1008, cme:0x1010)
+          v23:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
+          v24:BasicObject = CCallWithFrame v23, :Enumerable#bar@0x1038, block=0x1040
+          v15:BasicObject = GetLocal :o, l0, EP@3
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
     fn test_optimize_nonexistent_top_level_call() {
         eval("
             def foo
