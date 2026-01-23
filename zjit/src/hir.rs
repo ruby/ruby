@@ -805,7 +805,7 @@ pub enum Insn {
     /// `DEFINED_YIELD`
     IsBlockGiven { lep: InsnId },
     /// Test the bit at index of val, a Fixnum.
-    /// Return Qtrue if the bit is set, else Qfalse.
+    /// Return Qtrue if the bit is NOT set, else Qfalse.
     FixnumBitCheck { val: InsnId, index: u8 },
     /// Return Qtrue if `val` is an instance of `class`, else Qfalse.
     /// Equivalent to `class_search_ancestor(CLASS_OF(val), class)`.
@@ -5203,7 +5203,6 @@ impl Function {
             | Insn::DupArrayInclude { target: val, .. }
             | Insn::GetIvar { self_val: val, .. }
             | Insn::CCall { recv: val, .. }
-            | Insn::FixnumBitCheck { val, .. } // TODO (https://github.com/Shopify/ruby/issues/859) this should check Fixnum, but then test_checkkeyword_tests_fixnum_bit fails
             | Insn::DefinedIvar { self_val: val, .. } => {
                 self.assert_subtype(insn_id, val, types::BasicObject)
             }
@@ -5329,6 +5328,9 @@ impl Function {
             | Insn::IfTrue { val, .. }
             | Insn::IfFalse { val, .. } => {
                 self.assert_subtype(insn_id, val, types::CBool)
+            }
+            Insn::FixnumBitCheck { val, .. } => {
+                self.assert_subtype(insn_id, val, types::Fixnum)
             }
             Insn::BoxFixnum { val, .. } => self.assert_subtype(insn_id, val, types::CInt64),
             Insn::UnboxFixnum { val } => {
@@ -6282,6 +6284,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         local_inval = false;
                         state.getlocal(ep_offset)
                     };
+                    let val = fun.push_insn(block, Insn::RefineType { val, new_type: types::Fixnum });
                     state.stack_push(fun.push_insn(block, Insn::FixnumBitCheck { val, index }));
                 }
                 YARVINSN_opt_getconstant_path => {

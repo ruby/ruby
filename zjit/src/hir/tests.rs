@@ -3839,19 +3839,20 @@ pub mod hir_build_tests {
           v8:BasicObject = GetLocal <empty>, l0, EP@3
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          v15:BoolExact = FixnumBitCheck v12, 0
+          v15:Fixnum = RefineType v12, Fixnum
+          v16:BoolExact = FixnumBitCheck v15, 0
           CheckInterrupts
-          v18:CBool = Test v15
-          v19:TrueClass = RefineType v15, Truthy
-          IfTrue v18, bb3(v10, v11, v12)
-          v21:FalseClass = RefineType v15, Falsy
-          v23:Fixnum[1] = Const Value(1)
-          v25:Fixnum[1] = Const Value(1)
-          v28:BasicObject = SendWithoutBlock v23, :+, v25 # SendFallbackReason: Uncategorized(opt_plus)
-          Jump bb3(v10, v28, v12)
-        bb3(v31:BasicObject, v32:BasicObject, v33:BasicObject):
+          v19:CBool = Test v16
+          v20:TrueClass = RefineType v16, Truthy
+          IfTrue v19, bb3(v10, v11, v12)
+          v22:FalseClass = RefineType v16, Falsy
+          v24:Fixnum[1] = Const Value(1)
+          v26:Fixnum[1] = Const Value(1)
+          v29:BasicObject = SendWithoutBlock v24, :+, v26 # SendFallbackReason: Uncategorized(opt_plus)
+          Jump bb3(v10, v29, v12)
+        bb3(v32:BasicObject, v33:BasicObject, v34:BasicObject):
           CheckInterrupts
-          Return v32
+          Return v33
         ");
     }
 
