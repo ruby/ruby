@@ -10741,11 +10741,14 @@ mod hir_opt_tests {
         ");
     }
 
+    // TODO: Come up with a better test?
     #[test]
     fn test_fold_isnil_when_nil() {
         eval(r#"
-            NIL = nil
-            def test = NIL.nil?
+            def test
+                x = nil
+                x&.to_a
+            end
             test
         "#);
         assert_snapshot!(hir_string("test"), @"
@@ -10753,47 +10756,105 @@ mod hir_opt_tests {
         bb0():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          Jump bb2(v1)
-        bb1(v4:BasicObject):
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject):
           EntryPoint JIT(0)
-          Jump bb2(v4)
-        bb2(v6:BasicObject):
-          PatchPoint SingleRactorMode
-          PatchPoint StableConstantNames(0x1000, NIL)
-          v21:NilClass = Const Value(nil)
-          PatchPoint MethodRedefined(NilClass@0x1008, nil?@0x1010, cme:0x1018)
-          v24:TrueClass = Const Value(true)
-          IncrCounter inline_cfunc_optimized_send_count
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:NilClass):
+          v13:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v24
+          v21:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v21
         ")
     }
 
     #[test]
     fn test_fold_isnil_when_definitely_not_nil() {
         eval(r#"
-            NOT_NIL = 1
-            def test = NOT_NIL.nil?
-            test
+            class A
+                attr_accessor :a
+                def initialize
+                    @a = 1
+                end
+            end
+
+            def test(x)
+                if x
+                    x&.a
+                else
+                    0
+                end
+            end
+            test(A.new)
         "#);
         assert_snapshot!(hir_string("test"), @"
-        fn test@<compiled>:3:
+        fn test@<compiled>:10:
         bb0():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          Jump bb2(v1)
-        bb1(v4:BasicObject):
+          v2:BasicObject = GetLocal :x, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
-          Jump bb2(v4)
-        bb2(v6:BasicObject):
-          PatchPoint SingleRactorMode
-          PatchPoint StableConstantNames(0x1000, NOT_NIL)
-          v21:Fixnum[1] = Const Value(1)
-          PatchPoint MethodRedefined(Integer@0x1008, nil?@0x1010, cme:0x1018)
-          v24:FalseClass = Const Value(false)
-          IncrCounter inline_cfunc_optimized_send_count
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
           CheckInterrupts
-          Return v24
+          v15:CBool = Test v9
+          v16:Falsy = RefineType v9, Falsy
+          IfFalse v15, bb3(v8, v16)
+          v18:Truthy = RefineType v9, Truthy
+          CheckInterrupts
+          v27:Truthy = RefineType v18, NotNil
+          v29:BasicObject = SendWithoutBlock v27, :a # SendFallbackReason: Uncategorized(opt_send_without_block)
+          CheckInterrupts
+          Return v29
+        bb3(v34:BasicObject, v35:Falsy):
+          v39:Fixnum[0] = Const Value(0)
+          CheckInterrupts
+          Return v39
+        ")
+    }
+
+    #[test]
+    fn test_dont_fold_isnil_when_might_be_nil() {
+        eval(r#"
+            class A
+                attr_accessor :a
+                def initialize
+                    @a = 1
+                end
+            end
+
+            def test(x)
+                x&.a
+            end
+
+            test(A.new)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:10:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :x, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          CheckInterrupts
+          v16:CBool = IsNil v9
+          v17:NilClass = Const Value(nil)
+          IfTrue v16, bb3(v8, v17, v17)
+          v19:NotNil = RefineType v9, NotNil
+          v21:BasicObject = SendWithoutBlock v19, :a # SendFallbackReason: Uncategorized(opt_send_without_block)
+          Jump bb3(v8, v19, v21)
+        bb3(v23:BasicObject, v24:BasicObject, v25:BasicObject):
+          CheckInterrupts
+          Return v25
         ")
     }
 
