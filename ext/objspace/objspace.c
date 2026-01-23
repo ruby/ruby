@@ -141,8 +141,7 @@ memsize_of_all_m(int argc, VALUE *argv, VALUE self)
 
     if (argc > 0) {
         rb_scan_args(argc, argv, "01", &data.klass);
-        if (!NIL_P(data.klass) && !RB_TYPE_P(data.klass, T_CLASS) && !RB_TYPE_P(data.klass, T_MODULE))
-            rb_raise(rb_eTypeError, "class or module required");
+        if (!NIL_P(data.klass)) rb_obj_is_kind_of(Qnil, data.klass);
     }
 
     each_object_with_flags(total_i, &data);
