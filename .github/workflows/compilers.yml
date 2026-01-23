@@ -51,7 +51,7 @@ jobs:
     timeout-minutes: 60
     services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
       # Set fetch-depth: 10 so that Launchable can receive commits information.
       - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
@@ -74,7 +74,7 @@ jobs:
     timeout-minutes: 60
     services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
       - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
       - name: 'GCC 15 LTO'
@@ -104,7 +104,7 @@ jobs:
     timeout-minutes: 60
     services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
       - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
       - { uses: './.github/actions/compilers', name: 'clang 22', with: { tag: 'clang-22' }, timeout-minutes: 5 }
@@ -125,7 +125,7 @@ jobs:
     timeout-minutes: 60
     services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
       - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
       - { uses: './.github/actions/compilers', name: 'clang 13', with: { tag: 'clang-13' }, timeout-minutes: 5 }
@@ -146,7 +146,7 @@ jobs:
     timeout-minutes: 60
     services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
       - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
       # -Wno-strict-prototypes is necessary with current clang-15 since
@@ -172,7 +172,7 @@ jobs:
     timeout-minutes: 60
     services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
       - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
       - { uses: './.github/actions/compilers', name: 'C++20', with: { CXXFLAGS: '-std=c++20 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }, timeout-minutes: 5 }
@@ -192,7 +192,7 @@ jobs:
     timeout-minutes: 60
     services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
       - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
       - { uses: './.github/actions/compilers', name: 'disable-jit',         with: { append_configure: '--disable-yjit --disable-zjit' }, timeout-minutes: 5 }
@@ -214,7 +214,7 @@ jobs:
     timeout-minutes: 60
     services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
       - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
       - { uses: './.github/actions/compilers', name: 'NDEBUG',                         with: { cppflags: '-DNDEBUG' }, timeout-minutes: 5 }
@@ -234,7 +234,7 @@ jobs:
     timeout-minutes: 60
     services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
       - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
       - { uses: './.github/actions/compilers', name: 'HASH_DEBUG',                     with: { cppflags: '-DHASH_DEBUG' }, timeout-minutes: 5 }
@@ -254,7 +254,7 @@ jobs:
     timeout-minutes: 60
     services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
       - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
       - { uses: './.github/actions/compilers', name: 'USE_LAZY_LOAD',                  with: { cppflags: '-DUSE_LAZY_LOAD' }, timeout-minutes: 5 }
@@ -274,7 +274,7 @@ jobs:
     timeout-minutes: 60
     services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
       - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
       - { uses: './.github/actions/compilers', name: 'GC_DEBUG_STRESS_TO_CLASS',       with: { cppflags: '-DGC_DEBUG_STRESS_TO_CLASS' }, timeout-minutes: 5 }
@@ -293,7 +293,7 @@ jobs:
     timeout-minutes: 60
     services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
       - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
       - { uses: './.github/actions/compilers', name: 'VM_DEBUG_BP_CHECK',              with: { cppflags: '-DVM_DEBUG_BP_CHECK' }, timeout-minutes: 5 }
@@ -319,7 +319,7 @@ jobs:
       - 'compileB'
       - 'compileC'
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
       - uses: ./.github/actions/slack
         with:
