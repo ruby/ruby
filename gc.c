@@ -1257,7 +1257,7 @@ rb_gc_handle_weak_references(VALUE obj)
  * for the majority of simple objects.
  */
 bool
-rb_gc_obj_free_on_sweep_p(VALUE obj)
+rb_gc_obj_needs_cleanup_p(VALUE obj)
 {
     VALUE flags = RBASIC(obj)->flags;
 

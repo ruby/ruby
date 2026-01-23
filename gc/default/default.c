@@ -3521,7 +3521,7 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
 #undef CHECK
 #endif
 
-                if (!rb_gc_obj_free_on_sweep_p(vp)) {
+                if (!rb_gc_obj_needs_cleanup_p(vp)) {
                     if (RB_UNLIKELY(objspace->hook_events & RUBY_INTERNAL_EVENT_FREEOBJ)) {
                         rb_gc_event_hook(vp, RUBY_INTERNAL_EVENT_FREEOBJ);
                     }
