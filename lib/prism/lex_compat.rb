@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 # :markup: markdown
 
-require "delegate"
-
 module Prism
   # This class is responsible for lexing the source using prism and then
   # converting those tokens to be compatible with Ripper. In the vast majority
@@ -201,27 +199,43 @@ module Prism
     # When we produce tokens, we produce the same arrays that Ripper does.
     # However, we add a couple of convenience methods onto them to make them a
     # little easier to work with. We delegate all other methods to the array.
-    class Token < SimpleDelegator
-      # @dynamic initialize, each, []
+    class Token < BasicObject
+      # Create a new token object with the given ripper-compatible array.
+      def initialize(array)
+        @array = array
+      end
 
       # The location of the token in the source.
       def location
-        self[0]
+        @array[0]
       end
 
       # The type of the token.
       def event
-        self[1]
+        @array[1]
       end
 
       # The slice of the source that this token represents.
       def value
-        self[2]
+        @array[2]
       end
 
       # The state of the lexer when this token was produced.
       def state
-        self[3]
+        @array[3]
+      end
+
+      # We want to pretend that this is just an Array.
+      def ==(other) # :nodoc:
+        @array == other
+      end
+
+      def respond_to_missing?(name, include_private = false) # :nodoc:
+        @array.respond_to?(name, include_private)
+      end
+
+      def method_missing(name, ...) # :nodoc:
+        @array.send(name, ...)
       end
     end
 
