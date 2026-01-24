@@ -2644,9 +2644,9 @@ rb_hash_slice(int argc, VALUE *argv, VALUE hash)
  *  Returns a copy of +self+ that excludes entries for the given +keys+;
  *  any +keys+ that are not found are ignored:
  *
- *    h = {foo:0, bar: 1, baz: 2} # => {:foo=>0, :bar=>1, :baz=>2}
- *    h.except(:baz, :foo)        # => {:bar=>1}
- *    h.except(:bar, :nosuch)     # => {:foo=>0, :baz=>2}
+ *    h = {foo:0, bar: 1, baz: 2} # => {foo: 0, bar: 1, baz: 2}
+ *    h.except(:baz, :foo)        # => {bar: 1}
+ *    h.except(:bar, :nosuch)     # => {foo: 0, baz: 2}
  *
  *  Related: see {Methods for Deleting}[rdoc-ref:Hash@Methods+for+Deleting].
  */
