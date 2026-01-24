@@ -3840,7 +3840,7 @@ pub mod hir_build_tests {
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v15:Fixnum = RefineType v12, Fixnum
-          v16:BoolExact = FixnumBitCheck v15, 0
+          v16:BoolExact = FixnumBitIsClear v15, 0
           CheckInterrupts
           v19:CBool = Test v16
           v20:TrueClass = RefineType v16, Truthy

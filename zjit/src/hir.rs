@@ -806,7 +806,7 @@ pub enum Insn {
     IsBlockGiven { lep: InsnId },
     /// Test the bit at index of val, a Fixnum.
     /// Return Qtrue if the bit is NOT set, else Qfalse.
-    FixnumBitCheck { val: InsnId, index: u8 },
+    FixnumBitIsClear { val: InsnId, index: u8 },
     /// Return Qtrue if `val` is an instance of `class`, else Qfalse.
     /// Equivalent to `class_search_ancestor(CLASS_OF(val), class)`.
     IsA { val: InsnId, class: InsnId },
@@ -1136,7 +1136,7 @@ impl Insn {
             Insn::Defined { .. } => effects::Any,
             Insn::GetConstantPath { .. } => effects::Any,
             Insn::IsBlockGiven { .. } => Effect::read_write(abstract_heaps::Other, abstract_heaps::Empty),
-            Insn::FixnumBitCheck { .. } => effects::Any,
+            Insn::FixnumBitIsClear { .. } => effects::Any,
             Insn::IsA { .. } => effects::Empty,
             Insn::GetGlobal { .. } => effects::Any,
             Insn::SetGlobal { .. } => effects::Any,
@@ -1539,7 +1539,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::PatchPoint { invariant, .. } => { write!(f, "PatchPoint {}", invariant.print(self.ptr_map)) },
             Insn::GetConstantPath { ic, .. } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
             Insn::IsBlockGiven { lep } => { write!(f, "IsBlockGiven {lep}") },
-            Insn::FixnumBitCheck {val, index} => { write!(f, "FixnumBitCheck {val}, {index}") },
+            Insn::FixnumBitIsClear {val, index} => { write!(f, "FixnumBitIsClear {val}, {index}") },
             Insn::CCall { cfunc, recv, args, name, return_type: _, elidable: _ } => {
                 write!(f, "CCall {recv}, :{}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfunc))?;
                 for arg in args {
@@ -2175,7 +2175,7 @@ impl Function {
                     }
                 },
             &Return { val } => Return { val: find!(val) },
-            &FixnumBitCheck { val, index } => FixnumBitCheck { val: find!(val), index },
+            &FixnumBitIsClear { val, index } => FixnumBitIsClear { val: find!(val), index },
             &Throw { throw_state, val, state } => Throw { throw_state, val: find!(val), state },
             &StringCopy { val, chilled, state } => StringCopy { val: find!(val), chilled, state },
             &StringIntern { val, state } => StringIntern { val: find!(val), state: find!(state) },
@@ -2484,7 +2484,7 @@ impl Function {
             Insn::DefinedIvar { pushval, .. } => Type::from_value(*pushval).union(types::NilClass),
             Insn::GetConstantPath { .. } => types::BasicObject,
             Insn::IsBlockGiven { .. } => types::BoolExact,
-            Insn::FixnumBitCheck { .. } => types::BoolExact,
+            Insn::FixnumBitIsClear { .. } => types::BoolExact,
             Insn::ArrayMax { .. } => types::BasicObject,
             Insn::ArrayInclude { .. } => types::BoolExact,
             Insn::ArrayPackBuffer { .. } => types::String,
@@ -4424,7 +4424,7 @@ impl Function {
             | &Insn::GetConstantPath { ic: _, state } => {
                 worklist.push_back(state);
             }
-            &Insn::FixnumBitCheck { val, index: _ } => {
+            &Insn::FixnumBitIsClear { val, index: _ } => {
                 worklist.push_back(val)
             }
             &Insn::ArrayMax { ref elements, state }
@@ -5329,7 +5329,7 @@ impl Function {
             | Insn::IfFalse { val, .. } => {
                 self.assert_subtype(insn_id, val, types::CBool)
             }
-            Insn::FixnumBitCheck { val, .. } => {
+            Insn::FixnumBitIsClear { val, .. } => {
                 self.assert_subtype(insn_id, val, types::Fixnum)
             }
             Insn::BoxFixnum { val, .. } => self.assert_subtype(insn_id, val, types::CInt64),
@@ -6285,7 +6285,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         state.getlocal(ep_offset)
                     };
                     let val = fun.push_insn(block, Insn::RefineType { val, new_type: types::Fixnum });
-                    state.stack_push(fun.push_insn(block, Insn::FixnumBitCheck { val, index }));
+                    state.stack_push(fun.push_insn(block, Insn::FixnumBitIsClear { val, index }));
                 }
                 YARVINSN_opt_getconstant_path => {
                     let ic = get_arg(pc, 0).as_ptr();
