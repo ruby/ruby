@@ -802,8 +802,12 @@ module Prism
       # Drop the EOF token from the list
       tokens = tokens[0...-1]
 
-      # We sort by location to compare against Ripper's output
-      tokens.sort_by!(&:location)
+      # We sort by location because Ripper.lex sorts.
+      # Manually implemented instead of `sort_by!(&:location)` for performance.
+      tokens.sort_by! do |token|
+        line, column = token.location
+        source.line_to_byte_offset(line) + column
+      end
 
       # Add :on_sp tokens
       tokens = add_on_sp_tokens(tokens, source, result.data_loc, bom, eof_token)
