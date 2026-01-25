@@ -5037,8 +5037,8 @@ rb_file_s_basename(int argc, VALUE *argv, VALUE _)
     }
 
     n = RSTRING_LEN(fname);
-    if (n == 0 || !*name) {
-        rb_enc_str_new(0, 0, enc);
+    if (n <= 0 || !*name) {
+        return rb_enc_str_new(0, 0, enc);
     }
 
     bool mb_enc = !rb_str_encindex_fastpath(rb_enc_to_index(enc));
