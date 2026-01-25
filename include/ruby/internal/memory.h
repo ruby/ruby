@@ -488,6 +488,18 @@ RBIMPL_ATTR_NORETURN()
  */
 void ruby_malloc_size_overflow(size_t x, size_t y);
 
+RBIMPL_ATTR_NORETURN()
+/**
+ * @private
+ *
+ * This is an implementation detail. People don't use this directly.
+ *
+ * @param[in]  x             Arbitrary value.
+ * @param[in]  y             Arbitrary value.
+ * @exception  rb_eArgError  `x` + `y` would integer overflow.
+ */
+void ruby_malloc_add_size_overflow(size_t x, size_t y);
+
 #ifdef HAVE_RB_GC_GUARDED_PTR_VAL
 volatile VALUE *rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val);
 #endif
@@ -631,6 +643,81 @@ rbimpl_size_mul_or_raise(size_t x, size_t y)
     }
     else {
         ruby_malloc_size_overflow(x, y);
+        RBIMPL_UNREACHABLE_RETURN(0);
+    }
+}
+
+#if defined(__DOXYGEN__)
+RBIMPL_ATTR_CONSTEXPR(CXX14)
+#elif RBIMPL_COMPILER_SINCE(GCC, 7, 0, 0)
+RBIMPL_ATTR_CONSTEXPR(CXX14) /* https://gcc.gnu.org/bugzilla/show_bug.cgi?id=70507 */
+#elif RBIMPL_COMPILER_SINCE(Clang, 7, 0, 0)
+RBIMPL_ATTR_CONSTEXPR(CXX14) /* https://bugs.llvm.org/show_bug.cgi?id=37633 */
+#endif
+RBIMPL_ATTR_CONST()
+/**
+ * @private
+ *
+ * This is an  implementation detail. People don't use this directly.
+ *
+ * @param[in]  x  Arbitrary value.
+ * @param[in]  y  Arbitrary value.
+ * @return     `{ left, right }`,  where `left` is whether there  is an integer
+ *             overflow or not,  and `right` is a  (possibly overflowed) result
+ *             of `x` + `y`.
+ *
+ * @internal
+ */
+static inline struct rbimpl_size_mul_overflow_tag
+rbimpl_size_add_overflow(size_t x, size_t y)
+{
+    struct rbimpl_size_mul_overflow_tag ret = { false,  0, };
+
+#if defined(ckd_add)
+    ret.left = ckd_add(&ret.right, x, y);
+
+#elif RBIMPL_HAS_BUILTIN(__builtin_add_overflow)
+    ret.left = __builtin_add_overflow(x, y, &ret.right);
+
+#elif defined(DSIZE_T)
+    RB_GNUC_EXTENSION DSIZE_T dx = x;
+    RB_GNUC_EXTENSION DSIZE_T dy = y;
+    RB_GNUC_EXTENSION DSIZE_T dz = dx + dy;
+    ret.left = dz > SIZE_MAX;
+    ret.right = (size_t)dz;
+
+#else
+    ret.right = x + y;
+    ret.left = ret.right < y;
+
+#endif
+
+    return ret;
+}
+
+/**
+ * @private
+ *
+ * This is an  implementation detail. People don't use this directly.
+ *
+ * @param[in]  x             Arbitrary value.
+ * @param[in]  y             Arbitrary value.
+ * @exception  rb_eArgError  Multiplication could integer overflow.
+ * @return     `x` + `y`.
+ *
+ * @internal
+ */
+static inline size_t
+rbimpl_size_add_or_raise(size_t x, size_t y)
+{
+    struct rbimpl_size_mul_overflow_tag size =
+        rbimpl_size_add_overflow(x, y);
+
+    if (RB_LIKELY(!size.left)) {
+        return size.right;
+    }
+    else {
+        ruby_malloc_add_size_overflow(x, y);
         RBIMPL_UNREACHABLE_RETURN(0);
     }
 }
