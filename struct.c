@@ -1785,6 +1785,7 @@ rb_data_initialize_m(int argc, const VALUE *argv, VALUE self)
         if (num_members > 0) {
             rb_exc_raise(rb_keyword_error_new("missing", members));
         }
+        OBJ_FREEZE(self);
         return Qnil;
     }
     if (argc > 1 || !RB_TYPE_P(argv[0], T_HASH)) {
