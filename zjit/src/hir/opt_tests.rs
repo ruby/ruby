@@ -3968,6 +3968,37 @@ mod hir_opt_tests {
         ");
     }
 
+    // TODO better placement
+    #[test]
+    fn test_polymorphic_getinstancevariable() {
+        set_call_threshold(3);
+        eval("
+            module Tester
+              def test = @foo
+            end
+
+            class A
+              include Tester
+              def initialize
+                @a = 1
+                @foo = 50
+              end
+            end
+
+            class B
+              include Tester
+              def initialize = (@foo = 100)
+            end
+
+            a = A.new
+            b = B.new
+            a.test
+            b.test
+            a.test
+        ");
+        assert_snapshot!(hir_string_proc("Tester.instance_method(:test)"), @r"");
+    }
+
     #[test]
     fn test_setinstancevariable() {
         eval("

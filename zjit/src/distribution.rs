@@ -79,6 +79,8 @@ pub struct DistributionSummary<T: Copy + PartialEq + Default + std::fmt::Debug, 
 const SKEW_THRESHOLD: f64 = 0.75;
 
 impl<T: Copy + PartialEq + Default + std::fmt::Debug, const N: usize> DistributionSummary<T, N> {
+    const N: usize = N; // TODO: better API
+
     pub fn new(dist: &Distribution<T, N>) -> Self {
         #[cfg(debug_assertions)]
         {
@@ -133,6 +135,10 @@ impl<T: Copy + PartialEq + Default + std::fmt::Debug, const N: usize> Distributi
     pub fn bucket(&self, idx: usize) -> T {
         assert!(idx < N, "index {idx} out of bounds for buckets[{N}]");
         self.buckets[idx]
+    }
+
+    pub fn buckets(&self) -> &[T] {
+        &self.buckets
     }
 }
 

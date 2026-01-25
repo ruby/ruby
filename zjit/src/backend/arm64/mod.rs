@@ -1717,7 +1717,6 @@ mod tests {
 
     use super::*;
     use insta::assert_snapshot;
-    use crate::hir;
 
     static TEMP_REGS: [Reg; 5] = [X1_REG, X9_REG, X10_REG, X14_REG, X15_REG];
 
