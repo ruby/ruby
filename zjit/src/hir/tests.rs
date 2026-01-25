@@ -1843,7 +1843,7 @@ pub mod hir_build_tests {
     }
 
     #[test]
-    fn test_cant_compile_super_forward() {
+    fn test_compile_super_forward() {
         eval("
             def test(...) = super(...)
         ");
@@ -1858,7 +1858,9 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
-          SideExit UnhandledYARVInsn(invokesuperforward)
+          v15:BasicObject = InvokeSuperForward v8, 0x1000, v9 # SendFallbackReason: Uncategorized(invokesuperforward)
+          CheckInterrupts
+          Return v15
         ");
     }
 
