@@ -3704,20 +3704,27 @@ rb_const_list(void *data)
 
 /*
  *  call-seq:
- *     mod.constants(inherit=true)    -> array
+ *    constants(all = true) -> array
  *
- *  Returns an array of the names of the constants accessible in
- *  <i>mod</i>. This includes the names of constants in any included
- *  modules (example at start of section), unless the <i>inherit</i>
- *  parameter is set to <code>false</code>.
+ *  Returns an array of constant names, as symbols.
  *
- *  The implementation makes no guarantees about the order in which the
- *  constants are yielded.
+ *  With +all+ as +true+ (the default),
+ *  includes both locally defined constants and inherited constants:
  *
- *    IO.constants.include?(:SYNC)        #=> true
- *    IO.constants(false).include?(:SYNC) #=> false
+ *    symbols = File.constants
+ *    symbols.size         # => 45
+ *    symbols.sort.take(3) # => [:ALT_SEPARATOR, :APPEND, :BINARY]
  *
- *  Also see Module#const_defined?.
+ *  With +all+ as +false+,
+ *  includes only locally defined constants:
+ *
+ *    symbols = File.constants(false)
+ *    symbols.size         # => 6
+ *    symbols.sort.take(3) # => [:ALT_SEPARATOR, :Constants, :PATH_SEPARATOR]
+ *
+ *  The order of symbols in the returned array is indeterminate.
+ *
+ *  See also Module#const_defined?.
  */
 
 VALUE

@@ -361,24 +361,27 @@ rb_mod_nesting(VALUE _)
 
 /*
  *  call-seq:
- *     Module.constants   -> array
- *     Module.constants(inherited)   -> array
+ *    Module.constants(all = true) -> array
  *
- *  In the first form, returns an array of the names of all
- *  constants accessible from the point of call.
- *  This list includes the names of all modules and classes
- *  defined in the global scope.
+ *  Returns an array of constant names, as symbols.
  *
- *     Module.constants.first(4)
- *        # => [:ARGF, :ARGV, :ArgumentError, :Array]
+ *  With +all+ as +true+ (the default),
+ *  includes both locally defined constants and inherited constants:
  *
- *     Module.constants.include?(:SEEK_SET)   # => false
+ *    symbols = File.constants
+ *    symbols.size         # => 45
+ *    symbols.sort.take(3) # => [:ALT_SEPARATOR, :APPEND, :BINARY]
  *
- *     class IO
- *       Module.constants.include?(:SEEK_SET) # => true
- *     end
+ *  With +all+ as +false+,
+ *  includes only locally defined constants:
  *
- *  The second form calls the instance method +constants+.
+ *    symbols = File.constants(false)
+ *    symbols.size         # => 6
+ *    symbols.sort.take(3) # => [:ALT_SEPARATOR, :Constants, :PATH_SEPARATOR]
+ *
+ *  The order of symbols in the returned array is indeterminate.
+ *
+ *  See also Module#const_defined?.
  */
 
 static VALUE
