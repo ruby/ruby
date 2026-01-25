@@ -126,7 +126,7 @@ static const rb_data_type_t encoding_data_type = {
 };
 
 #define is_encoding_type(obj) (RTYPEDDATA_TYPE(obj) == &encoding_data_type)
-#define is_data_encoding(obj) (rbimpl_rtypeddata_p(obj) && is_encoding_type(obj))
+#define is_data_encoding(obj) is_encoding_type(obj)
 #define is_obj_encoding(obj) (rbimpl_obj_typeddata_p(obj) && is_encoding_type(obj))
 
 int
