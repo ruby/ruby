@@ -1910,13 +1910,24 @@ rb_mod_eqq(VALUE mod, VALUE arg)
  * call-seq:
  *   self <= other -> true, false, or nil
  *
- * Returns whether +self+ is a subclass of +other+ or is the same class as +other+,
- * or +nil+ if there is no relationship between the two:
+ * Compares +self+ and +other+ with respect to ancestry and inclusion.
  *
- *   Float   <= Numeric # => true
- *   Float   <= Float   # => true
- *   Numeric <= Float   # => false
- *   Float   <= Hash    # => nil
+ * Returns +nil+ if there is no such relationship between the two:
+ *
+ *   Array <= Hash       # => nil
+ *
+ * Otherwise, returns +true+ if +other+ is an ancestor of +self+,
+ * or if +self+ includes +other+,
+ * or if the two are the same:
+ *
+ *   File  <= IO         # => true  # IO is an ancestor of File.
+ *   Array <= Enumerable # => true  # Array includes Enumerable.
+ *   Array <= Array      # => true
+ *
+ * Otherwise, returns +false+:
+ *
+ *   IO         <= File  # => false
+ *   Enumerable <= Array # => false
  *
  */
 
@@ -1965,13 +1976,23 @@ rb_class_inherited_p(VALUE mod, VALUE arg)
  * call-seq:
  *   self < other -> true, false, or nil
  *
- * Returns whether +self+ is a subclass of +other+,
- * or +nil+ if there is no relationship between the two:
+ * Compares +self+ and +other+ with respect to ancestry and inclusion.
  *
- *   Float   < Numeric # => true
- *   Numeric < Float   # => false
- *   Float   < Float   # => false
- *   Float   < Hash    # => nil
+ * Returns +nil+ if there is no such relationship between the two:
+ *
+ *   Array < Hash       # => nil
+ *
+ * Otherwise, returns +true+ if +other+ is an ancestor of +self+,
+ * or if +self+ includes +other+:
+ *
+ *   File  < IO         # => true  # IO is an ancestor of File.
+ *   Array < Enumerable # => true  # Array includes Enumerable.
+ *
+ * Otherwise, returns +false+:
+ *
+ *   IO         < File  # => false
+ *   Enumerable < Array # => false
+ *   Array      < Array # => false
  *
  */
 
@@ -1987,13 +2008,24 @@ rb_mod_lt(VALUE mod, VALUE arg)
  * call-seq:
  *   self >= other -> true, false, or nil
  *
- * Returns whether +self+ is a superclass of +other+ or is the same class as +other+,
- * or +nil+ if there is no relationship between the two:
+ * Compares +self+ and +other+ with respect to ancestry and inclusion.
  *
- *   Numeric >= Float   # => true
- *   Float   >= Float   # => true
- *   Float   >= Numeric # => false
- *   Float   >= Hash    # => nil
+ * Returns +nil+ if there is no such relationship between the two:
+ *
+ *   Array >= Hash       # => nil
+ *
+ * Otherwise, returns +true+ if +self+ is an ancestor of +other+,
+ * or if +other+ includes +self+,
+ * or if the two are the same:
+ *
+ *   IO         >= File  # => true  # IO is an ancestor of File.
+ *   Enumerable >= Array # => true  # Array includes Enumerable.
+ *   Array      >= Array # => true
+ *
+ * Otherwise, returns +false+:
+ *
+ *   File  >= IO         # => false
+ *   Array >= Enumerable # => false
  *
  */
 
@@ -2011,13 +2043,23 @@ rb_mod_ge(VALUE mod, VALUE arg)
  * call-seq:
  *   self > other -> true, false, or nil
  *
- * Returns whether +self+ is a superclass of +other+,
- * or +nil+ if there is no relationship between the two:
+ * Compares +self+ and +other+ with respect to ancestry and inclusion.
  *
- *   Float   > Numeric # => false
- *   Numeric > Float   # => true
- *   Float   > Float   # => false
- *   Float   > Hash    # => nil
+ * Returns +nil+ if there is no such relationship between the two:
+ *
+ *   Array > Hash       # => nil
+ *
+ * Otherwise, returns +true+ if +self+ is an ancestor of +other+,
+ * or if +other+ includes +self+:
+ *
+ *   IO         > File  # => true  # IO is an ancestor of File.
+ *   Enumerable > Array # => true  # Array includes Enumerable.
+ *
+ * Otherwise, returns +false+:
+ *
+ *   File  > IO         # => false
+ *   Array > Enumerable # => false
+ *   Array > Array      # => false
  *
  */
 
