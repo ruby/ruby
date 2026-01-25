@@ -6761,6 +6761,9 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
 static int
 compile_call_core(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, const enum node_type type, const NODE *const line_node, const enum node_call_type call_type, int popped, bool assume_receiver);
 
+static int
+compile_super(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, const enum node_type type, int popped);
+
 static void
 defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
               const NODE *const node, LABEL **lfinish, VALUE needstr,
@@ -9197,6 +9200,7 @@ compile_iter0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, c
       //       NEW_CHILD_ISEQ(RNODE_FOR(node)->nd_body, make_name_for_block(iseq),
       //                      ISEQ_TYPE_BLOCK, line);
       //   ADD_SEND_WITH_BLOCK(ret, line_node, idEach, INT2FIX(0), child_iseq);
+      //   break;
       // }
       case RB_CALL_NODE: {
         EXPECT_NODE("compile_iter0", RB_NODE_CALL(node)->block, RB_BLOCK_NODE, COMPILE_NG);
@@ -9204,6 +9208,23 @@ compile_iter0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, c
             NEW_CHILD_ISEQ(RB_NODE_CALL(node)->block, make_name_for_block(iseq),
                            ISEQ_TYPE_BLOCK, line);
         CHECK(compile_call(iseq, ret, node, type, 0));
+        break;
+      }
+      case RB_SUPER_NODE: {
+        EXPECT_NODE("compile_iter0", RB_NODE_SUPER(node)->block, RB_BLOCK_NODE, COMPILE_NG);
+        ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq =
+            NEW_CHILD_ISEQ(RB_NODE_SUPER(node)->block, make_name_for_block(iseq),
+                           ISEQ_TYPE_BLOCK, line);
+        CHECK(compile_super(iseq, ret, node, type, 0));
+        break;
+      }
+      case RB_FORWARDING_SUPER_NODE: {
+        EXPECT_NODE("compile_iter0", RB_NODE_FORWARDING_SUPER(node)->block, RB_BLOCK_NODE, COMPILE_NG);
+        ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq =
+            NEW_CHILD_ISEQ(RB_NODE_FORWARDING_SUPER(node)->block, make_name_for_block(iseq),
+                           ISEQ_TYPE_BLOCK, line);
+        CHECK(compile_super(iseq, ret, node, type, 0));
+        break;
       }
     }
 
@@ -9257,8 +9278,24 @@ compile_iter(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
         }
         break;
       }
-      // case RB_SUPER_NODE:
-      // case RB_FORWARDING_SUPER_NODE:
+      case RB_SUPER_NODE: {
+        if (block_node_p(RB_NODE_SUPER(node)->block)) {
+            return compile_iter0(iseq, ret, node, type, popped);
+        }
+        else {
+            return compile_super(iseq, ret, node, type, popped);
+        }
+        break;
+      }
+      case RB_FORWARDING_SUPER_NODE: {
+        if (block_node_p(RB_NODE_FORWARDING_SUPER(node)->block)) {
+            return compile_iter0(iseq, ret, node, type, popped);
+        }
+        else {
+            return compile_super(iseq, ret, node, type, popped);
+        }
+        break;
+      }
       default:
         rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
     }
@@ -10874,7 +10911,7 @@ compile_op_log(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
 }
 
 static int
-compile_super(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped, const enum node_type type)
+compile_super(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, const enum node_type type, int popped)
 {
     struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
     DECL_ANCHOR(args);
@@ -10887,9 +10924,9 @@ compile_super(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
     INIT_ANCHOR(args);
     ISEQ_COMPILE_DATA(iseq)->current_block = NULL;
 
-    if (type == NODE_SUPER) {
+    if (type == RB_SUPER_NODE) {
         // TODO: block
-        VALUE vargc = setup_args(iseq, args, RNODE_SUPER(node)->nd_args, NULL, &flag, &keywords);
+        VALUE vargc = setup_args(iseq, args, RB_NODE_SUPER(node)->arguments, NULL, &flag, &keywords);
         CHECK(!NIL_P(vargc));
         argc = FIX2INT(vargc);
         if ((flag & VM_CALL_ARGS_BLOCKARG) && (flag & VM_CALL_KW_SPLAT) && !(flag & VM_CALL_KW_SPLAT_MUT)) {
@@ -11004,7 +11041,7 @@ compile_super(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
     }
 
     flag |= VM_CALL_SUPER | VM_CALL_FCALL;
-    if (type == NODE_ZSUPER) flag |= VM_CALL_ZSUPER;
+    if (type == RB_FORWARDING_SUPER_NODE) flag |= VM_CALL_ZSUPER;
     ADD_INSN(ret, node, putself);
     ADD_SEQ(ret, args);
 
@@ -11042,9 +11079,9 @@ compile_yield(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
       default: /* valid */;
     }
 
-    if (RNODE_YIELD(node)->nd_head) {
+    if (RB_NODE_YIELD(node)->arguments) {
         // TODO: block
-        argc = setup_args(iseq, args, RNODE_YIELD(node)->nd_head, NULL, &flag, &keywords);
+        argc = setup_args(iseq, args, RB_NODE_YIELD(node)->arguments, NULL, &flag, &keywords);
         CHECK(!NIL_P(argc));
     }
     else {
@@ -12044,7 +12081,13 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         CHECK(compile_attrasgn(iseq, ret, node, popped));
         break;
       }
-
+      case RB_SUPER_NODE:
+      case RB_FORWARDING_SUPER_NODE: {
+        if (compile_iter(iseq, ret, node, type, popped) == COMPILE_NG) {
+            goto ng;
+        }
+        break;
+      }
       case RB_ARRAY_NODE: {
         CHECK(compile_array(iseq, ret, node, &RB_NODE_ARRAY(node)->elements, popped, TRUE) >= 0);
         break;
@@ -12068,7 +12111,10 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         CHECK(compile_return(iseq, ret, node, popped));
         break;
       }
-
+      case RB_YIELD_NODE: {
+        CHECK(compile_yield(iseq, ret, node, popped));
+        break;
+      }
       case RB_IT_LOCAL_VARIABLE_READ_NODE: {
         if (!popped) {
             int level, local_size;
