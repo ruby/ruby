@@ -480,137 +480,139 @@ rb_coverage_running(VALUE klass)
 }
 
 /* \Coverage provides coverage measurement feature for Ruby.
- * This feature is experimental, so these APIs may be changed in future.
  *
- * Caveat: Currently, only process-global coverage measurement is supported.
- * You cannot measure per-thread coverage.
+ * Only process-global coverage measurement is supported, meaning
+ * that coverage cannot be measure on a per-thread basis.
  *
- * = Usage
+ * = Quick Start
  *
- * 1. require "coverage"
- * 2. do Coverage.start
- * 3. require or load Ruby source file
- * 4. Coverage.result will return a hash that contains filename as key and
- *    coverage array as value. A coverage array gives, for each line, the
- *    number of line execution by the interpreter. A +nil+ value means
- *    coverage is disabled for this line (lines like +else+ and +end+).
+ * 1. Load coverage using <tt>require "coverage"</tt>.
+ * 2. Call Coverage.start to set up and begin coverage measurement.
+ * 3. All Ruby code loaded following the call to Coverage.start will have
+ *    coverage measurement.
+ * 4. Coverage results can be fetched by calling Coverage.result, which returns a
+ *    hash that contains filenames as the keys and coverage arrays as the values.
+ *    Each element of the coverage array gives the number of times each line was
+ *    executed. A +nil+ value means coverage was disabled for that line (e.g.
+ *    lines like +else+ and +end+).
  *
  * = Examples
  *
- *   [foo.rb]
- *   s = 0
- *   10.times do |x|
- *     s += x
+ * In file +fib.rb+:
+ *
+ *   def fibonacci(n)
+ *     if n == 0
+ *       0
+ *     elsif n == 1
+ *       1
+ *     else
+ *       fibonacci(n - 1) + fibonacci(n - 2)
+ *     end
  *   end
  *
- *   if s == 45
- *     p :ok
- *   else
- *     p :ng
- *   end
- *   [EOF]
+ *   puts fibonacci(10)
+ *
+ * In another file, coverage can be measured:
  *
  *   require "coverage"
  *   Coverage.start
- *   require "foo.rb"
- *   p Coverage.result  #=> {"foo.rb"=>[1, 1, 10, nil, nil, 1, 1, nil, 0, nil]}
+ *   require "fib.rb"
+ *   Coverage.result # => {"fib.rb" => [1, 177, 34, 143, 55, nil, 88, nil, nil, nil, 1]}
  *
  * == Lines \Coverage
  *
- * If a coverage mode is not explicitly specified when starting coverage, lines
- * coverage is what will run. It reports the number of line executions for each
- * line.
+ * Lines coverage reports the number of line executions for each line.
+ * If the coverage mode is not explicitly specified when starting coverage,
+ * lines coverage is used as the default.
  *
  *   require "coverage"
  *   Coverage.start(lines: true)
- *   require "foo.rb"
- *   p Coverage.result #=> {"foo.rb"=>{:lines=>[1, 1, 10, nil, nil, 1, 1, nil, 0, nil]}}
+ *   require "fib"
+ *   Coverage.result # => {"fib.rb" => {lines: [1, 177, 34, 143, 55, nil, 88, nil, nil, nil, 1]}}
  *
- * The value of the lines coverage result is an array containing how many times
- * each line was executed. Order in this array is important. For example, the
- * first item in this array, at index 0, reports how many times line 1 of this
- * file was executed while coverage was run (which, in this example, is one
- * time).
+ * The returned hash differs depending on how Coverage.setup or Coverage.start
+ * was executed.
  *
- * A +nil+ value means coverage is disabled for this line (lines like +else+
- * and +end+).
+ * If Coverage.start or Coverage.setup was called with no arguments, it returns a
+ * hash which contains filenames as the keys and coverage arrays as the values.
+ *
+ * If Coverage.start or Coverage.setup was called with <tt>line: true</tt>, it
+ * returns a hash which contains filenames as the keys and hashes as the values.
+ * The value hash has a key +:lines+ where the value is a coverage array.
+ *
+ * Each element of the coverage array gives the number of times the line was
+ * executed. A +nil+ value in the coverage array means coverage was disabled
+ * for that line (e.g. lines like +else+ and +end+).
  *
  * == Oneshot Lines \Coverage
  *
- * Oneshot lines coverage tracks and reports on the executed lines while
- * coverage is running. It will not report how many times a line was executed,
- * only that it was executed.
+ * Oneshot lines coverage is similar to lines coverage, but instead of reporting
+ * the number of times a line was executed, it only reports the lines that were
+ * executed.
  *
  *   require "coverage"
  *   Coverage.start(oneshot_lines: true)
- *   require "foo.rb"
- *   p Coverage.result #=> {"foo.rb"=>{:oneshot_lines=>[1, 2, 3, 6, 7]}}
+ *   require "fib"
+ *   Coverage.result # => {"fib.rb" => {oneshot_lines: [1, 11, 2, 4, 7, 5, 3]}}
  *
  * The value of the oneshot lines coverage result is an array containing the
  * line numbers that were executed.
  *
  * == Branches \Coverage
  *
- * Branches coverage reports how many times each branch within each conditional
+ * Branches coverage reports the number of times each branch within each conditional
  * was executed.
  *
  *   require "coverage"
  *   Coverage.start(branches: true)
- *   require "foo.rb"
- *   p Coverage.result #=> {"foo.rb"=>{:branches=>{[:if, 0, 6, 0, 10, 3]=>{[:then, 1, 7, 2, 7, 7]=>1, [:else, 2, 9, 2, 9, 7]=>0}}}}
+ *   require "fib"
+ *   Coverage.result
+ *   # => {"fib.rb" => {
+ *   #      branches: {
+ *   #        [:if, 0, 2, 2, 8, 5] => {
+ *   #          [:then, 1, 3, 4, 3, 5] => 34,
+ *   #          [:else, 2, 4, 2, 8, 5] => 143},
+ *   #        [:if, 3, 4, 2, 8, 5] => {
+ *   #          [:then, 4, 5, 4, 5, 5] => 55,
+ *   #          [:else, 5, 7, 4, 7, 39] => 88}}}}
  *
  * Each entry within the branches hash is a conditional, the value of which is
- * another hash where each entry is a branch in that conditional. The values
- * are the number of times the method was executed, and the keys are identifying
- * information about the branch.
+ * another hash where each entry is a branch in that conditional. The keys are
+ * arrays containing information about the branch and the values are the number
+ * of times the branch was executed.
  *
- * The information that makes up each key identifying branches or conditionals
- * is the following, from left to right:
+ * The information that makes up the array that are the keys for conditional or
+ * branches are the following, from left to right:
  *
- * 1. A label for the type of branch or conditional.
+ * 1. A label for the type of branch or conditional (e.g. +:if+, +:then+, +:else+).
  * 2. A unique identifier.
- * 3. The starting line number it appears on in the file.
- * 4. The starting column number it appears on in the file.
- * 5. The ending line number it appears on in the file.
- * 6. The ending column number it appears on in the file.
+ * 3. Starting line number.
+ * 4. Starting column number.
+ * 5. Ending line number.
+ * 6. Ending column number.
  *
  * == Methods \Coverage
  *
  * Methods coverage reports how many times each method was executed.
  *
- *   [foo_method.rb]
- *   class Greeter
- *     def greet
- *       "welcome!"
- *     end
- *   end
- *
- *   def hello
- *     "Hi"
- *   end
- *
- *   hello()
- *   Greeter.new.greet()
- *   [EOF]
- *
  *   require "coverage"
  *   Coverage.start(methods: true)
- *   require "foo_method.rb"
- *   p Coverage.result #=> {"foo_method.rb"=>{:methods=>{[Object, :hello, 7, 0, 9, 3]=>1, [Greeter, :greet, 2, 2, 4, 5]=>1}}}
+ *   require "fib"
+ *   p Coverage.result #=> {"fib.rb" => {methods: {[Object, :fibonacci, 1, 0, 9, 3] => 177}}}
  *
- * Each entry within the methods hash represents a method. The values in this
- * hash are the number of times the method was executed, and the keys are
+ * Each entry within the methods hash represents a method. The keys are arrays
+ * containing hash are the number of times the method was executed, and the keys are
  * identifying information about the method.
  *
  * The information that makes up each key identifying a method is the following,
  * from left to right:
  *
- * 1. The class.
- * 2. The method name.
- * 3. The starting line number the method appears on in the file.
- * 4. The starting column number the method appears on in the file.
- * 5. The ending line number the method appears on in the file.
- * 6. The ending column number the method appears on in the file.
+ * 1. Class that the method was defined in.
+ * 2. Method name as a Symbol.
+ * 3. Starting line number of the method.
+ * 4. Starting column number of the method.
+ * 5. Ending line number of the method.
+ * 6. Ending column number of the method.
  *
  * == Eval \Coverage
  *
@@ -670,16 +672,24 @@ rb_coverage_running(VALUE klass)
  *
  * == All \Coverage Modes
  *
- * You can also run all modes of coverage simultaneously with this shortcut.
- * Note that running all coverage modes does not run both lines and oneshot
- * lines. Those modes cannot be run simultaneously. Lines coverage is run in
- * this case, because you can still use it to determine whether or not a line
- * was executed.
+ * All modes of coverage can be enabled simultaneously using the Symbol +:all+.
+ * However, note that this mode runs lines coverage and not oneshot lines since
+ * they cannot be ran simultaneously.
  *
  *   require "coverage"
  *   Coverage.start(:all)
- *   require "foo.rb"
- *   p Coverage.result #=> {"foo.rb"=>{:lines=>[1, 1, 10, nil, nil, 1, 1, nil, 0, nil], :branches=>{[:if, 0, 6, 0, 10, 3]=>{[:then, 1, 7, 2, 7, 7]=>1, [:else, 2, 9, 2, 9, 7]=>0}}, :methods=>{}}}
+ *   require "fib"
+ *   Coverage.result
+ *   # => {"fib.rb" => {
+ *   #      lines: [1, 177, 34, 143, 55, nil, 88, nil, nil, nil, 1],
+ *   #      branches: {
+ *   #        [:if, 0, 2, 2, 8, 5] => {
+ *   #          [:then, 1, 3, 4, 3, 5] => 34,
+ *   #          [:else, 2, 4, 2, 8, 5] => 143},
+ *   #        [:if, 3, 4, 2, 8, 5] => {
+ *   #          [:then, 4, 5, 4, 5, 5] => 55,
+ *   #          [:else, 5, 7, 4, 7, 39] => 88}}}},
+ *   #      methods: {[Object, :fibonacci, 1, 0, 9, 3] => 177}}}
  */
 void
 Init_coverage(void)
