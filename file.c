@@ -5019,7 +5019,7 @@ rb_file_s_basename(int argc, VALUE *argv, VALUE _)
 {
     VALUE fname, fext;
     const char *name, *p;
-    long f, n;
+    long f = 0, n;
     rb_encoding *enc;
 
     fext = Qnil;
