@@ -6852,9 +6852,33 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         break;  // End the block
                     }
 
+                    // When polymorphic, build blocks like the following
+                    //                ┌──────────────────────────────────┐
+                    //                │ switch block                     │
+                    //                │ shape = GetShape                 │
+                    //                │ test0 = BitsEqual expected_shape1, shape
+                    //            ┌───┼ IfTrue test0, load_shape1        │
+                    //            │   │ test1 = BitsEqual expected_shape2, shape
+                    //            │   │ IfTrue test1, load_shape2────────┬─────────────────────┐
+                    //            │   │ ivar = GetIvar self              │                     │
+                    //            │   │ (push ivar in frame state)       │                     │
+                    //            │   │ Jump join_block                  │                     │
+                    //            │   └─────────────────────────┬────────┘                     │
+                    //            │                             │                              │
+                    //            │                             │                              │
+                    //  ┌─────────▼──────────────────────────┐  │  ┌───────────────────────────▼───────┐
+                    //  │ ivar = LoadField self, shape1_index│  │  │ ivar = LoadField self, shape2_inde│
+                    //  │ (push ivar in frame state)         │  │  │ (push ivar in frame state)        │
+                    //  │ Jump join_block──────────────────┐ │  │  │ Jump join_block                   │
+                    //  └──────────────────────────────────┼─┘  │  └─┬─────────────────────────────────┘
+                    //                                     │    │    │
+                    //                  ┌──────────────────▼────▼────▼─────────────────────┐
+                    //                  │join_block                                        │
+                    //                  │(instructions for after the `getinstancevariable`)│
+                    //                  └──────────────────────────────────────────────────┘
                     let mut t_object_varying_shapes = true;
                     if let Some(summary) = fun.polymorphic_summary(&profiles, self_param, exit_state.insn_idx) {
-                        // Only split in cases that vary in shape for now -- all T_OBJECT
+                        // TODO: Only split in cases that vary in shape for now -- all T_OBJECT
                         for &profiled_type in summary.buckets() {
                             if profiled_type.is_empty() { break; }
                             if !profiled_type.flags().is_t_object() {
