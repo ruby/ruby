@@ -155,6 +155,10 @@ module Bundler
     def help(cli = nil)
       cli = self.class.all_aliases[cli] if self.class.all_aliases[cli]
 
+      if Bundler.settings[:plugins] && Bundler::Plugin.command?(cli) && !self.class.all_commands.key?(cli)
+        return Bundler::Plugin.exec_command(cli, ["--help"])
+      end
+
       case cli
       when "gemfile" then command = "gemfile"
       when nil       then command = "bundle"
