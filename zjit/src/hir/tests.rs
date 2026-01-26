@@ -1865,6 +1865,29 @@ pub mod hir_build_tests {
     }
 
     #[test]
+    fn test_compile_super_forward_with_block() {
+        eval("
+            def test(...) = super { |x| x }
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :..., l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v15:BasicObject = InvokeSuperForward v8, 0x1000, v9 # SendFallbackReason: Uncategorized(invokesuperforward)
+          v16:BasicObject = GetLocal :..., l0, EP@3
+          CheckInterrupts
+          Return v15
+        ");
+    }
+
+    #[test]
     fn test_compile_super_forward_with_use() {
         eval("
             def test(...) = super(...) + 1
