@@ -150,6 +150,9 @@
 # For the last example, single-digit versions are automatically extended with
 # a zero to give a sensible result.
 
+# Workaround for directly loading Gem::Version in some cases
+module Gem; end
+
 class Gem::Version
   include Comparable
 
