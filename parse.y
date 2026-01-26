@@ -1186,7 +1186,7 @@ static rb_node_begin_t *rb_node_begin_new(struct parser_params *p, NODE *nd_body
 // static rb_node_rescue_t *rb_node_rescue_new(struct parser_params *p, NODE *nd_head, NODE *nd_resq, NODE *nd_else, const YYLTYPE *loc);
 // static rb_node_resbody_t *rb_node_resbody_new(struct parser_params *p, NODE *nd_args, NODE *nd_exc_var, NODE *nd_body, NODE *nd_next, const YYLTYPE *loc);
 // static rb_node_ensure_t *rb_node_ensure_new(struct parser_params *p, NODE *nd_head, NODE *nd_ensr, const YYLTYPE *loc);
-static rb_node_and_t *rb_node_and_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTYPE *loc, const YYLTYPE *operator_loc);
+// static rb_node_and_t *rb_node_and_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTYPE *loc, const YYLTYPE *operator_loc);
 static rb_node_or_t *rb_node_or_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTYPE *loc, const YYLTYPE *operator_loc);
 static rb_node_masgn_t *rb_node_masgn_new(struct parser_params *p, NODE *nd_head, NODE *nd_args, const YYLTYPE *loc);
 // static rb_node_lasgn_t *rb_node_lasgn_new(struct parser_params *p, ID nd_vid, NODE *nd_value, const YYLTYPE *loc);
@@ -1294,7 +1294,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 // #define NEW_RESCUE(b,res,e,loc) (NODE *)rb_node_rescue_new(p,b,res,e,loc)
 // #define NEW_RESBODY(a,v,ex,n,loc) (NODE *)rb_node_resbody_new(p,a,v,ex,n,loc)
 // #define NEW_ENSURE(b,en,loc) (NODE *)rb_node_ensure_new(p,b,en,loc)
-#define NEW_AND(f,s,loc,op_loc) (NODE *)rb_node_and_new(p,f,s,loc,op_loc)
+// #define NEW_AND(f,s,loc,op_loc) (NODE *)rb_node_and_new(p,f,s,loc,op_loc)
 #define NEW_OR(f,s,loc,op_loc) (NODE *)rb_node_or_new(p,f,s,loc,op_loc)
 #define NEW_MASGN(l,r,loc)   rb_node_masgn_new(p,l,r,loc)
 // #define NEW_LASGN(v,val,loc) (NODE *)rb_node_lasgn_new(p,v,val,loc)
@@ -1400,6 +1400,8 @@ static rb_begin_node_t *rb_new_node_begin_new(struct parser_params *p, rb_statem
 static rb_rescue_node_t *rb_new_node_rescue_new(struct parser_params *p, rb_array_node_t *exceptions, rb_node_t *nd_exc_var, rb_statements_node_t *nd_body, rb_rescue_node_t *nd_next, const YYLTYPE *loc);
 static rb_ensure_node_t *rb_new_node_ensure_new(struct parser_params *p, rb_statements_node_t *nd_ensr, const YYLTYPE *loc);
 static rb_rescue_modifier_node_t *rb_new_node_rescue_modifier_new(struct parser_params *p, rb_node_t *nd_ex, rb_node_t *nd_rex, const YYLTYPE *loc);
+static rb_and_node_t *rb_new_node_and_new(struct parser_params *p, rb_node_t *nd_1st, rb_node_t *nd_2nd, const YYLTYPE *loc, const YYLTYPE *operator_loc);
+static rb_or_node_t *rb_new_node_or_new(struct parser_params *p, rb_node_t *nd_1st, rb_node_t *nd_2nd, const YYLTYPE *loc, const YYLTYPE *operator_loc);
 
 static rb_multi_write_node_t *rb_new_node_multi_write_new(struct parser_params *p, rb_array_node_t *lefts, rb_node_t *rest, rb_array_node_t *rights, const YYLTYPE *loc);
 static rb_local_variable_write_node_t *rb_new_node_local_variable_write_new(struct parser_params *p, ID nd_vid, rb_node_t *nd_value, const YYLTYPE *loc);
@@ -1497,6 +1499,8 @@ static rb_source_encoding_node_t *rb_new_node_source_encoding_new(struct parser_
 #define NEW_RB_RESCUE(ex,v,b,n,loc) rb_new_node_rescue_new(p,ex,v,b,n,loc)
 #define NEW_RB_ENSURE(en,loc) rb_new_node_ensure_new(p,en,loc)
 #define NEW_RB_RESCUE_MODIFIER(e,re,loc) (rb_node_t *)rb_new_node_rescue_modifier_new(p,e,re,loc)
+#define NEW_RB_AND(f,s,loc,op_loc) (rb_node_t *)rb_new_node_and_new(p,f,s,loc,op_loc)
+#define NEW_RB_OR(f,s,loc,op_loc) (rb_node_t *)rb_new_node_or_new(p,f,s,loc,op_loc)
 
 #define NEW_RB_MULTI_WRITE(l,rest,r,loc) rb_new_node_multi_write_new(p,l,rest,r,loc)
 #define NEW_RB_LOCAL_VARIABLE_WRITE(v,val,loc) (rb_node_t *)rb_new_node_local_variable_write_new(p,v,val,loc)
@@ -11842,16 +11846,16 @@ rb_node_begin_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc)
 //     return n;
 // }
 
-static rb_node_and_t *
-rb_node_and_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTYPE *loc, const YYLTYPE *operator_loc)
-{
-    rb_node_and_t *n = NODE_NEWNODE(NODE_AND, rb_node_and_t, loc);
-    n->nd_1st = nd_1st;
-    n->nd_2nd = nd_2nd;
-    n->operator_loc = *operator_loc;
+// static rb_node_and_t *
+// rb_node_and_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTYPE *loc, const YYLTYPE *operator_loc)
+// {
+//     rb_node_and_t *n = NODE_NEWNODE(NODE_AND, rb_node_and_t, loc);
+//     n->nd_1st = nd_1st;
+//     n->nd_2nd = nd_2nd;
+//     n->operator_loc = *operator_loc;
 
-    return n;
-}
+//     return n;
+// }
 
 static rb_node_or_t *
 rb_node_or_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTYPE *loc, const YYLTYPE *operator_loc)
@@ -13492,6 +13496,28 @@ rb_new_node_rescue_modifier_new(struct parser_params *p, rb_node_t *nd_ex, rb_no
     n->expression = nd_ex;
     n->rescue_expression = nd_rex;
     n->keyword_loc = NULL_LOC;
+
+    return n;
+}
+
+static rb_and_node_t *
+rb_new_node_and_new(struct parser_params *p, rb_node_t *nd_1st, rb_node_t *nd_2nd, const YYLTYPE *loc, const YYLTYPE *operator_loc)
+{
+    rb_and_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_AND_NODE, rb_and_node_t, loc);
+    n->left = nd_1st;
+    n->right = nd_2nd;
+    n->operator_loc = *operator_loc;
+
+    return n;
+}
+
+static rb_or_node_t *
+rb_new_node_or_new(struct parser_params *p, rb_node_t *nd_1st, rb_node_t *nd_2nd, const YYLTYPE *loc, const YYLTYPE *operator_loc)
+{
+    rb_or_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_OR_NODE, rb_or_node_t, loc);
+    n->left = nd_1st;
+    n->right = nd_2nd;
+    n->operator_loc = *operator_loc;
 
     return n;
 }
@@ -16152,24 +16178,24 @@ new_nil_at(struct parser_params *p, const rb_code_position_t *pos)
 //     return newline_node(NEW_UNLESS(cc, left, right, loc, keyword_loc, then_keyword_loc, end_keyword_loc));
 // }
 
-#define NEW_AND_OR(type, f, s, loc, op_loc) (type == NODE_AND ? NEW_AND(f,s,loc,op_loc) : NEW_OR(f,s,loc,op_loc))
+#define NEW_AND_OR(type, f, s, loc, op_loc) (type == RB_AND_NODE ? NEW_RB_AND(f,s,loc,op_loc) : NEW_RB_OR(f,s,loc,op_loc))
 
 /* A cached logop tail is usable only if it is still a node of the chain's type
- * whose nd_2nd is the insertion point, i.e. not itself another node of that
+ * whose right is the insertion point, i.e. not itself another node of that
  * type. This rejects a stale cache left over from an earlier parse. */
 static int
-logop_valid_tail(NODE *tail, enum node_type type)
+logop_valid_tail(NODE *tail, enum rb_node_type type)
 {
     NODE *second;
     return tail && nd_type_p(tail, type) &&
-        ((second = RNODE_AND(tail)->nd_2nd) == 0 || !nd_type_p(second, type));
+        ((second = RB_NODE_AND(tail)->right) == 0 || !nd_type_p(second, type));
 }
 
 static NODE*
 logop(struct parser_params *p, ID id, NODE *left, NODE *right,
           const YYLTYPE *op_loc, const YYLTYPE *loc)
 {
-    enum node_type type = id == idAND || id == idANDOP ? NODE_AND : NODE_OR;
+    enum rb_node_type type = id == idAND || id == idANDOP ? RB_AND_NODE : RB_OR_NODE;
     NODE *op;
     /* Snapshot the cache from the previous logop() call before overwriting it. */
     NODE *prev_head = p->logop.head;
@@ -16180,23 +16206,23 @@ logop(struct parser_params *p, ID id, NODE *left, NODE *right,
         /* The insertion point is the far end of left's right branch.
          * Reusing the cached tail keeps a chain such as `a && a && ... && a`
          * linear instead of rescanning the whole branch on every operator. The
-         * cache is validated (its nd_2nd is not another node of the same type)
+         * cache is validated (its right is not another node of the same type)
          * so a stale entry falls back to the scan. */
         if (left == prev_head && logop_valid_tail(prev_tail, type)) {
             node = prev_tail;
         }
         else {
             node = left;
-            while ((second = RNODE_AND(node)->nd_2nd) != 0 && nd_type_p(second, type)) {
+            while ((second = RB_NODE_AND(node)->right) != 0 && nd_type_p(second, type)) {
                 node = second;
             }
         }
-        second = RNODE_AND(node)->nd_2nd;
-        RNODE_AND(node)->nd_2nd = NEW_AND_OR(type, second, right, loc, op_loc);
-        nd_set_line(RNODE_AND(node)->nd_2nd, op_loc->beg_pos.lineno);
-        left->nd_loc.end_pos = loc->end_pos;
+        second = RB_NODE_AND(node)->right;
+        RB_NODE_AND(node)->right = NEW_AND_OR(type, second, right, loc, op_loc);
+        nd_set_line(RB_NODE_AND(node)->right, op_loc->beg_pos.lineno);
+        ((rb_node_t *)left)->location.end_pos = loc->end_pos;
         p->logop.head = left;
-        p->logop.tail = RNODE_AND(node)->nd_2nd;
+        p->logop.tail = RB_NODE_AND(node)->right;
         return left;
     }
     op = NEW_AND_OR(type, left, right, loc, op_loc);
@@ -16210,7 +16236,7 @@ logop(struct parser_params *p, ID id, NODE *left, NODE *right,
     }
     else if (right && nd_type_p(right, type)) {
         node = right;
-        while ((second = RNODE_AND(node)->nd_2nd) != 0 && nd_type_p(second, type)) {
+        while ((second = RB_NODE_AND(node)->right) != 0 && nd_type_p(second, type)) {
             node = second;
         }
         p->logop.tail = node;
