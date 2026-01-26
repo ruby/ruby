@@ -31,9 +31,8 @@ echo>%config_make% # CONFIGURE
   echo #define CONFIGURE_ARGS \
 ) >%confargs%
 :loop
-if "%~1" == "" goto :end
-call set opt=%1
-for /F "usebackq" %%I in ('%opt:^==@%') do set opt1=%%~I
+set "opt=%~1_not_empty_"
+if X%1 == X goto :end
 if "%~1" == "--debug-configure" (echo on & shift & goto :loop)
 if "%~1" == "--no-debug-configure" (echo off & shift & goto :loop)
 if "%~1" == "--prefix" goto :prefix
@@ -71,11 +70,11 @@ if "%~1" == "--without-extensions" goto :witharg
 if "%~1" == "--with-opt-dir" goto :opt-dir
 if "%~1" == "--with-gmp" goto :gmp
 if "%~1" == "--with-gmp-dir" goto :gmp-dir
-if "%opt1:~0,10%" == "--without-" goto :withoutarg
-if "%opt1:~0,7%" == "--with-" goto :witharg
+if "%opt:~0,10%" == "--without-" goto :withoutarg
+if "%opt:~0,7%" == "--with-" goto :witharg
 if "%~1" == "-h" goto :help
 if "%~1" == "--help" goto :help
-  if "%opt1:~0,1%" == "-" (
+  if "%opt:~0,1%" == "-" (
     echo>>%confargs%  %1 \
     set witharg=
   ) else if "%witharg%" == "" (
