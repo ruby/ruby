@@ -643,6 +643,41 @@ class TestGemRemoteFetcher < Gem::TestCase
     end
   end
 
+  def test_fetch_http_with_custom_error_header
+    fetcher = Gem::RemoteFetcher.new nil
+    @fetcher = fetcher
+    url = "http://gems.example.com/error"
+
+    def fetcher.request(uri, request_class, last_modified = nil)
+      res = Gem::Net::HTTPBadRequest.new nil, 403, "Forbidden"
+      res.add_field "X-Error-Message", "Component blocked by policy"
+      res
+    end
+
+    e = assert_raise Gem::RemoteFetcher::FetchError do
+      fetcher.fetch_http Gem::URI.parse(url)
+    end
+
+    assert_equal "Bad response Component blocked by policy 403 (#{url})", e.message
+  end
+
+  def test_fetch_http_without_custom_error_header
+    fetcher = Gem::RemoteFetcher.new nil
+    @fetcher = fetcher
+    url = "http://gems.example.com/error"
+
+    def fetcher.request(uri, request_class, last_modified = nil)
+      res = Gem::Net::HTTPBadRequest.new nil, 403, "Forbidden"
+      res
+    end
+
+    e = assert_raise Gem::RemoteFetcher::FetchError do
+      fetcher.fetch_http Gem::URI.parse(url)
+    end
+
+    assert_equal "Bad response Forbidden 403 (#{url})", e.message
+  end
+
   private
 
   def assert_error(exception_class = Exception)
