@@ -1326,7 +1326,7 @@ rb_gc_obj_needs_cleanup_p(VALUE obj)
 
       case T_BIGNUM:
         if (!(flags & BIGNUM_EMBED_FLAG)) return true;
-        return rb_shape_has_fields(shape_id);
+        return false;
 
       case T_STRUCT:
         if (!(flags & RSTRUCT_EMBED_LEN_MASK)) return true;
