@@ -82,6 +82,9 @@ RSpec.describe "command plugins" do
 
     bundle "greet -h"
     expect(out).to eq("Usage: bundle greet [NAME]")
+
+    bundle "help greet"
+    expect(out).to eq("Usage: bundle greet [NAME]")
   end
 
   it "raises error on redeclaration of command" do
