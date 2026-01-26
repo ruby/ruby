@@ -1282,9 +1282,7 @@ rb_gc_obj_needs_cleanup_p(VALUE obj)
             uintptr_t type = (uintptr_t)RTYPEDDATA(obj)->type;
             if (type & TYPED_DATA_EMBEDDED) {
                 RUBY_DATA_FUNC dfree = ((const rb_data_type_t *)(type & TYPED_DATA_PTR_MASK))->function.dfree;
-                // Fast path for embedded T_DATA with no custom free function.
-                // True when dfree is NULL (RUBY_NEVER_FREE) or -1 (RUBY_TYPED_DEFAULT_FREE).
-                if ((uintptr_t)dfree + 1 <= 1) return false;
+                return (dfree == RUBY_NEVER_FREE || dfree == RUBY_TYPED_DEFAULT_FREE);
             }
         }
         return true;
