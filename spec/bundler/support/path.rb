@@ -114,7 +114,7 @@ module Spec
     end
 
     def tmp_root
-      ruby_core? && (tmpdir = ENV["TMPDIR"]) ? Pathname(tmpdir) : source_root.join("tmp")
+      source_root.join("tmp")
     end
 
     # Bump this version whenever you make a breaking change to the spec setup
