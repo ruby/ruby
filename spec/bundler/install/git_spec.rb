@@ -292,7 +292,7 @@ RSpec.describe "bundle install" do
   end
 
   describe "with excluded groups" do
-    it "works if you exclude a group with a git gem", :ruby => ">= 3.3" do
+    it "works if you exclude a group with a git gem", ruby: ">= 3.3" do
       build_git "production_gem", "1.0"
       build_git "development_gem", "1.0"
 
