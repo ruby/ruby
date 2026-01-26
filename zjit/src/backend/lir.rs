@@ -1750,6 +1750,13 @@ impl Assembler
             for insn in &block.insns {
                 self.expand_branch_insn(insn, &mut insns);
             }
+
+            // If the last instruction of the block is a ret, add a pad patch point after it
+            if let Some(last_insn) = block.insns.last() {
+                if matches!(last_insn, Insn::CRet(_)) {
+                    insns.push(Insn::PadPatchPoint);
+                }
+            }
         }
         insns
     }
