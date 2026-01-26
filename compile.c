@@ -11990,6 +11990,26 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         break;
       }
 
+      case RB_AND_NODE:
+      case RB_OR_NODE: {
+        LABEL *end_label = NEW_LABEL(line);
+        CHECK(COMPILE(ret, "nd_1st", RB_NODE_AND(node)->left));
+        if (!popped) {
+            ADD_INSN(ret, node, dup);
+        }
+        if (type == RB_AND_NODE) {
+            ADD_INSNL(ret, node, branchunless, end_label);
+        }
+        else {
+            ADD_INSNL(ret, node, branchif, end_label);
+        }
+        if (!popped) {
+            ADD_INSN(ret, node, pop);
+        }
+        CHECK(COMPILE_(ret, "nd_2nd", RB_NODE_AND(node)->right, popped));
+        ADD_LABEL(ret, end_label);
+        break;
+      }
       case RB_MULTI_WRITE_NODE:
       case RB_MULTI_TARGET_NODE: {
         CHECK(compile_massign(iseq, ret, node, popped));
