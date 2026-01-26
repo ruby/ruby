@@ -4357,8 +4357,8 @@ rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
  *
  *  First, what's elsewhere. Class \Object:
  *
- *  - Inherits from {class BasicObject}[rdoc-ref:BasicObject@What-27s+Here].
- *  - Includes {module Kernel}[rdoc-ref:Kernel@What-27s+Here].
+ *  - Inherits from {class BasicObject}[rdoc-ref:BasicObject@Whats+Here].
+ *  - Includes {module Kernel}[rdoc-ref:Kernel@Whats+Here].
  *
  *  Here, class \Object provides methods for:
  *
