@@ -5125,6 +5125,34 @@ impl Function {
         Ok(())
     }
 
+    // Validate that every instruction use is from a block-local definition, which is a temporary
+    // constraint until we get a global register allocator.
+    // TODO(tenderworks): Remove this
+    fn temporary_validate_block_local_definite_assignment(&self) -> Result<(), ValidationError> {
+        for block in self.rpo() {
+            let mut assigned = InsnSet::with_capacity(self.insns.len());
+            for &param in &self.blocks[block.0].params {
+                assigned.insert(param);
+            }
+            // Check that each instruction's operands are assigned
+            for &insn_id in &self.blocks[block.0].insns {
+                let insn_id = self.union_find.borrow().find_const(insn_id);
+                let mut operands = VecDeque::new();
+                let insn = self.find(insn_id);
+                self.worklist_traverse_single_insn(&insn, &mut operands);
+                for operand in operands {
+                    if !assigned.get(operand) {
+                        return Err(ValidationError::OperandNotDefined(block, insn_id, operand));
+                    }
+                }
+                if insn.has_output() {
+                    assigned.insert(insn_id);
+                }
+            }
+        }
+        Ok(())
+    }
+
     /// Checks that each instruction('s representative) appears only once in the CFG.
     fn validate_insn_uniqueness(&self) -> Result<(), ValidationError> {
         let mut seen = InsnSet::with_capacity(self.insns.len());
@@ -5425,6 +5453,7 @@ impl Function {
     pub fn validate(&self) -> Result<(), ValidationError> {
         self.validate_block_terminators_and_jumps()?;
         self.validate_definite_assignment()?;
+        self.temporary_validate_block_local_definite_assignment()?;
         self.validate_insn_uniqueness()?;
         self.validate_types()?;
         Ok(())
@@ -7578,6 +7607,16 @@ mod validation_tests {
     }
 
     #[test]
+    fn not_defined_within_bb_block_local() {
+        let mut function = Function::new(std::ptr::null());
+        let entry = function.entry_block;
+        // Create an instruction without making it belong to anything.
+        let dangling = function.new_insn(Insn::Const{val: Const::CBool(true)});
+        let val = function.push_insn(function.entry_block, Insn::ArrayDup { val: dangling, state: InsnId(0usize) });
+        assert_matches_err(function.temporary_validate_block_local_definite_assignment(), ValidationError::OperandNotDefined(entry, val, dangling));
+    }
+
+    #[test]
     fn using_non_output_insn() {
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
@@ -7586,6 +7625,17 @@ mod validation_tests {
         let ret = function.push_insn(function.entry_block, Insn::Return { val: const_ });
         let val = function.push_insn(function.entry_block, Insn::ArrayDup { val: ret, state: InsnId(0usize) });
         assert_matches_err(function.validate_definite_assignment(), ValidationError::OperandNotDefined(entry, val, ret));
+    }
+
+    #[test]
+    fn using_non_output_insn_block_local() {
+        let mut function = Function::new(std::ptr::null());
+        let entry = function.entry_block;
+        let const_ = function.push_insn(function.entry_block, Insn::Const{val: Const::CBool(true)});
+        // Ret is a non-output instruction.
+        let ret = function.push_insn(function.entry_block, Insn::Return { val: const_ });
+        let val = function.push_insn(function.entry_block, Insn::ArrayDup { val: ret, state: InsnId(0usize) });
+        assert_matches_err(function.temporary_validate_block_local_definite_assignment(), ValidationError::OperandNotDefined(entry, val, ret));
     }
 
     #[test]
