@@ -2947,15 +2947,7 @@ timer_thread_check_signal(rb_vm_t *vm)
 static bool
 timer_thread_check_exceed(rb_hrtime_t abs, rb_hrtime_t now)
 {
-    if (abs < now) {
-        return true;
-    }
-    else if (abs - now < RB_HRTIME_PER_MSEC) {
-        return true; // too short time
-    }
-    else {
-        return false;
-    }
+    return abs <= now;
 }
 
 static rb_thread_t *
