@@ -12174,8 +12174,8 @@ rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
  *
  * First, what's elsewhere. Class +Symbol+:
  *
- * - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
- * - Includes {module Comparable}[rdoc-ref:Comparable@What-27s+Here].
+ * - Inherits from {class Object}[rdoc-ref:Object@Whats+Here].
+ * - Includes {module Comparable}[rdoc-ref:Comparable@Whats+Here].
  *
  * Here, class +Symbol+ provides methods that are useful for:
  *

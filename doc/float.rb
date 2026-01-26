@@ -72,9 +72,9 @@
 # First, what's elsewhere. Class \Float:
 #
 # - Inherits from
-#   {class Numeric}[rdoc-ref:Numeric@What-27s+Here]
-#   and {class Object}[rdoc-ref:Object@What-27s+Here].
-# - Includes {module Comparable}[rdoc-ref:Comparable@What-27s+Here].
+#   {class Numeric}[rdoc-ref:Numeric@Whats+Here]
+#   and {class Object}[rdoc-ref:Object@Whats+Here].
+# - Includes {module Comparable}[rdoc-ref:Comparable@Whats+Here].
 #
 # Here, class \Float provides methods for:
 #
