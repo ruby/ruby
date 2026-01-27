@@ -183,14 +183,13 @@ module Prism
     def tunnel(line, column)
       queue = [self] #: Array[Prism::node]
       result = [] #: Array[Prism::node]
-
-      search_offset = source.line_to_byte_offset(line) + column
+      offset = source.byte_offset(line, column)
 
       while (node = queue.shift)
         result << node
 
         node.each_child_node do |child_node|
-          if child_node.start_offset <= search_offset && search_offset < child_node.end_offset
+          if child_node.start_offset <= offset && offset < child_node.end_offset
             queue << child_node
             break
           end

@@ -816,7 +816,7 @@ module Prism
       # Manually implemented instead of `sort_by!(&:location)` for performance.
       tokens.sort_by! do |token|
         line, column = token.location
-        source.line_to_byte_offset(line) + column
+        source.byte_offset(line, column)
       end
 
       # Add :on_sp tokens
@@ -833,8 +833,10 @@ module Prism
 
       tokens.each do |token|
         line, column = token.location
-        start_offset = source.line_to_byte_offset(line) + column
-        # Ripper reports columns on line 1 without counting the BOM, so we adjust to get the real offset
+        start_offset = source.byte_offset(line, column)
+
+        # Ripper reports columns on line 1 without counting the BOM, so we
+        # adjust to get the real offset
         start_offset += 3 if line == 1 && bom
 
         if start_offset > prev_token_end
