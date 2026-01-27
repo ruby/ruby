@@ -820,12 +820,14 @@ module Prism
       end
 
       # Add :on_sp tokens
-      tokens = add_on_sp_tokens(tokens, source, result.data_loc, bom, eof_token)
+      tokens = insert_on_sp(tokens, source, result.data_loc, bom, eof_token)
 
       Result.new(tokens, result.comments, result.magic_comments, result.data_loc, result.errors, result.warnings, source)
     end
 
-    def add_on_sp_tokens(tokens, source, data_loc, bom, eof_token)
+    private
+
+    def insert_on_sp(tokens, source, data_loc, bom, eof_token)
       new_tokens = []
 
       prev_token_state = Translation::Ripper::Lexer::State[Translation::Ripper::EXPR_BEG]
