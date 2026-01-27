@@ -2086,7 +2086,7 @@ static VALUE rb_mod_initialize_exec(VALUE module);
  *
  *    MyModule = Module.new
  *    MyModule.class # => Module
- *    MyModule.name  # => MyModule
+ *    MyModule.name  # => "MyModule"
  *
  *  With a block given, calls the block with the new (not yet named) module:
  *
