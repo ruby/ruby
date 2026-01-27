@@ -12,17 +12,12 @@ static VALUE rb_cPrism<%= node.name %>;
 <%- end -%>
 
 static VALUE
-pm_location_new(const pm_parser_t *parser, const uint8_t *start, const uint8_t *end, VALUE source, bool freeze) {
+pm_location_new(const uint32_t start, const uint32_t length, VALUE source, bool freeze) {
     if (freeze) {
-        VALUE location_argv[] = {
-            source,
-            LONG2FIX(start - parser->start),
-            LONG2FIX(end - start)
-        };
-
+        VALUE location_argv[] = { source, LONG2FIX(start), LONG2FIX(length) };
         return rb_obj_freeze(rb_class_new_instance(3, location_argv, rb_cPrismLocation));
     } else {
-        uint64_t value = ((((uint64_t) (start - parser->start)) << 32) | ((uint32_t) (end - start)));
+        uint64_t value = ((((uint64_t) start) << 32) | ((uint64_t) length));
         return ULL2NUM(value);
     }
 }
@@ -30,7 +25,7 @@ pm_location_new(const pm_parser_t *parser, const uint8_t *start, const uint8_t *
 VALUE
 pm_token_new(const pm_parser_t *parser, const pm_token_t *token, rb_encoding *encoding, VALUE source, bool freeze) {
     ID type = rb_intern(pm_token_type_name(token->type));
-    VALUE location = pm_location_new(parser, token->start, token->end, source, freeze);
+    VALUE location = pm_location_new((uint32_t) (token->start - parser->start), (uint32_t) (token->end - token->start), source, freeze);
 
     VALUE slice = rb_enc_str_new((const char *) token->start, token->end - token->start, encoding);
     if (freeze) rb_obj_freeze(slice);
@@ -200,7 +195,7 @@ pm_ast_new(const pm_parser_t *parser, const pm_node_t *node, rb_encoding *encodi
                     argv[1] = ULONG2NUM(node->node_id);
 
                     // location
-                    argv[2] = pm_location_new(parser, node->location.start, node->location.end, source, freeze);
+                    argv[2] = pm_location_new(node->location.start, node->location.length, source, freeze);
 
                     // flags
                     argv[3] = ULONG2NUM(node->flags);
@@ -237,10 +232,10 @@ pm_ast_new(const pm_parser_t *parser, const pm_node_t *node, rb_encoding *encodi
                     if (freeze) rb_obj_freeze(argv[<%= index %>]);
                     <%- when Prism::Template::LocationField -%>
 #line <%= __LINE__ + 1 %> "prism/templates/ext/prism/<%= File.basename(__FILE__) %>"
-                    argv[<%= index %>] = pm_location_new(parser, cast-><%= field.name %>.start, cast-><%= field.name %>.end, source, freeze);
+                    argv[<%= index %>] = pm_location_new(cast-><%= field.name %>.start, cast-><%= field.name %>.length, source, freeze);
                     <%- when Prism::Template::OptionalLocationField -%>
 #line <%= __LINE__ + 1 %> "prism/templates/ext/prism/<%= File.basename(__FILE__) %>"
-                    argv[<%= index %>] = cast-><%= field.name %>.start == NULL ? Qnil : pm_location_new(parser, cast-><%= field.name %>.start, cast-><%= field.name %>.end, source, freeze);
+                    argv[<%= index %>] = cast-><%= field.name %>.length == 0 ? Qnil : pm_location_new(cast-><%= field.name %>.start, cast-><%= field.name %>.length, source, freeze);
                     <%- when Prism::Template::UInt8Field -%>
 #line <%= __LINE__ + 1 %> "prism/templates/ext/prism/<%= File.basename(__FILE__) %>"
                     argv[<%= index %>] = UINT2NUM(cast-><%= field.name %>);
