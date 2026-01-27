@@ -92,6 +92,10 @@ impl WeakProcessor {
         weak_references.push(object);
     }
 
+    pub fn weak_references_count(&self) -> usize {
+        self.weak_references.lock().unwrap().len()
+    }
+
     pub fn process_weak_stuff(
         &self,
         worker: &mut GCWorker<Ruby>,

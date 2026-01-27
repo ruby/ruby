@@ -1410,6 +1410,7 @@ enum gc_stat_sym {
     gc_stat_sym_free_bytes,
     gc_stat_sym_starting_heap_address,
     gc_stat_sym_last_heap_address,
+    gc_stat_sym_weak_references_count,
     gc_stat_sym_last
 };
 
@@ -1428,6 +1429,7 @@ setup_gc_stat_symbols(void)
         S(free_bytes);
         S(starting_heap_address);
         S(last_heap_address);
+        S(weak_references_count);
     }
 }
 
@@ -1463,6 +1465,7 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
         SET(free_bytes, mmtk_free_bytes());
         SET(starting_heap_address, (size_t)mmtk_starting_heap_address());
         SET(last_heap_address, (size_t)mmtk_last_heap_address());
+        SET(weak_references_count, mmtk_weak_references_count());
 #undef SET
 
     if (!NIL_P(key)) {

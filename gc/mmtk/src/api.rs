@@ -317,6 +317,11 @@ pub extern "C" fn mmtk_weak_references_alive_p(object: ObjectReference) -> bool 
     object.is_reachable()
 }
 
+#[no_mangle]
+pub extern "C" fn mmtk_weak_references_count() -> usize {
+    binding().weak_proc.weak_references_count()
+}
+
 // =============== Compaction ===============
 
 #[no_mangle]
