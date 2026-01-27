@@ -1767,7 +1767,7 @@ module Prism
             end
           else
             parts =
-              if node.value == ""
+              if node.value_loc.nil?
                 []
               elsif node.value.include?("\n")
                 string_nodes_from_line_continuations(node.unescaped, node.value, node.value_loc.start_offset, node.opening)

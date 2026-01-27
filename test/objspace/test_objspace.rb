@@ -54,7 +54,11 @@ class TestObjSpace < Test::Unit::TestCase
     assert_operator(a, :>, b)
     assert_operator(a, :>, 0)
     assert_operator(b, :>, 0)
-    assert_raise(TypeError) {ObjectSpace.memsize_of_all('error')}
+    assert_kind_of(Integer, ObjectSpace.memsize_of_all(Enumerable))
+  end
+
+  def test_memsize_of_all_with_wrong_type
+    assert_raise(TypeError) { ObjectSpace.memsize_of_all(Object.new) }
   end
 
   def test_count_objects_size
@@ -75,16 +79,6 @@ class TestObjSpace < Test::Unit::TestCase
   def test_count_objects_size_with_wrong_type
     assert_raise(TypeError) { ObjectSpace.count_objects_size(0) }
   end
-
-  def test_count_nodes
-    res = ObjectSpace.count_nodes
-    assert_not_empty(res)
-    arg = {}
-    ObjectSpace.count_nodes(arg)
-    assert_not_empty(arg)
-    bug8014 = '[ruby-core:53130] [Bug #8014]'
-    assert_empty(arg.select {|k, v| !(Symbol === k && Integer === v)}, bug8014)
-  end if false
 
   def test_count_tdata_objects
     res = ObjectSpace.count_tdata_objects
@@ -143,7 +137,7 @@ class TestObjSpace < Test::Unit::TestCase
   def test_reachable_objects_during_iteration
     omit 'flaky on Visual Studio with: [BUG] Unnormalized Fixnum value' if /mswin/ =~ RUBY_PLATFORM
     opts = %w[--disable-gem --disable=frozen-string-literal -robjspace]
-    assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
+    assert_ruby_status opts, "#{<<-"begin;"}\n#{<<-'end;'}"
     begin;
       ObjectSpace.each_object{|o|
         o.inspect
@@ -179,7 +173,7 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_trace_object_allocations_stop_first
-    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       require "objspace"
       # Make sure stopping before the tracepoints are initialized doesn't raise. See [Bug #17020]

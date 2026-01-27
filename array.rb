@@ -245,7 +245,8 @@ class Array
         value = nil
         result = Primitive.ary_sized_alloc
         while Primitive.cexpr!(%q{ ary_fetch_next(self, LOCAL_PTR(_i), LOCAL_PTR(value)) })
-          result << yield(value)
+          value = yield(value)
+          Primitive.cexpr!(%q{ rb_ary_push(result, value) })
         end
         result
       end
@@ -270,7 +271,9 @@ class Array
         value = nil
         result = Primitive.ary_sized_alloc
         while Primitive.cexpr!(%q{ ary_fetch_next(self, LOCAL_PTR(_i), LOCAL_PTR(value)) })
-          result << value if yield value
+          if yield value
+            Primitive.cexpr!(%q{ rb_ary_push(result, value) })
+          end
         end
         result
       end

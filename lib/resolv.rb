@@ -487,13 +487,18 @@ class Resolv
     # * Resolv::DNS::Resource::IN::A
     # * Resolv::DNS::Resource::IN::AAAA
     # * Resolv::DNS::Resource::IN::ANY
+    # * Resolv::DNS::Resource::IN::CAA
     # * Resolv::DNS::Resource::IN::CNAME
     # * Resolv::DNS::Resource::IN::HINFO
+    # * Resolv::DNS::Resource::IN::HTTPS
+    # * Resolv::DNS::Resource::IN::LOC
     # * Resolv::DNS::Resource::IN::MINFO
     # * Resolv::DNS::Resource::IN::MX
     # * Resolv::DNS::Resource::IN::NS
     # * Resolv::DNS::Resource::IN::PTR
     # * Resolv::DNS::Resource::IN::SOA
+    # * Resolv::DNS::Resource::IN::SRV
+    # * Resolv::DNS::Resource::IN::SVCB
     # * Resolv::DNS::Resource::IN::TXT
     # * Resolv::DNS::Resource::IN::WKS
     #

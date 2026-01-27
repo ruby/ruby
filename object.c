@@ -162,7 +162,7 @@ rb_obj_setup(VALUE obj, VALUE klass, VALUE type)
  *
  * Returns +true+ or +false+.
  *
- * Like Object#==, if +object+ is an instance of Object
+ * Like Object#==, if +other+ is an instance of \Object
  * (and not an instance of one of its many subclasses).
  *
  * This method is commonly overridden by those subclasses,
@@ -200,14 +200,18 @@ rb_eql(VALUE obj1, VALUE obj2)
 
 /**
  *  call-seq:
- *     obj == other        -> true or false
- *     obj.equal?(other)   -> true or false
- *     obj.eql?(other)     -> true or false
+ *     self == other -> true or false
+ *     equal?(other) -> true or false
+ *     eql?(other) -> true or false
  *
- *  Equality --- At the Object level, #== returns <code>true</code>
- *  only if +obj+ and +other+ are the same object.  Typically, this
- *  method is overridden in descendant classes to provide
- *  class-specific meaning.
+ *  Returns whether +self+ and +other+ are the same object:
+ *
+ *    object = Object.new
+ *    object == object     # => true
+ *    object == Object.new # => false
+ *
+ *  Here in class \Object, #==, #equal?, and #eql? are the same method.
+ *  A subclass may override #== to provide class-specific meaning.
  *
  *  Unlike #==, the #equal? method should never be overridden by
  *  subclasses as it is used to determine object identity (that is,
@@ -1892,11 +1896,12 @@ rb_mod_freeze(VALUE mod)
 
 /*
  *  call-seq:
- *     mod === obj    -> true or false
+ *     self === other -> true or false
  *
- *  Case Equality---Returns <code>true</code> if <i>obj</i> is an
- *  instance of <i>mod</i> or an instance of one of <i>mod</i>'s descendants.
- *  Of limited use for modules, but can be used in <code>case</code> statements
+ *  Returns whether +other+ is an instance of +self+,
+ *  or is an instance of a subclass of +self+.
+ *
+ *  Of limited use for modules, but can be used in +case+ statements
  *  to classify objects by class.
  */
 
@@ -1929,6 +1934,24 @@ rb_mod_eqq(VALUE mod, VALUE arg)
  *   IO         <= File  # => false
  *   Enumerable <= Array # => false
  *
+ * Returns +true+ if +self+ is a descendant of +other+
+ * (+self+ is a subclass of +other+ or +self+ includes +other+) or
+ * if +self+ is the same as +other+:
+ *
+ *   Float <= Numeric    # => true
+ *   Array <= Enumerable # => true
+ *   Float <= Float      # => true
+ *
+ * Returns +false+ if +self+ is an ancestor of +other+
+ * (+self+ is a superclass of +other+ or +self+ is included in +other+):
+ *
+ *   Numeric <= Float    # => false
+ *   Enumerable <= Array # => false
+ *
+ * Returns +nil+ if there is no relationship between the two:
+ *
+ *   Float <= Hash        # => nil
+ *   Enumerable <= String # => nil
  */
 
 VALUE
@@ -1976,23 +1999,24 @@ rb_class_inherited_p(VALUE mod, VALUE arg)
  * call-seq:
  *   self < other -> true, false, or nil
  *
- * Compares +self+ and +other+ with respect to ancestry and inclusion.
+ * Returns +true+ if +self+ is a descendant of +other+
+ * (+self+ is a subclass of +other+ or +self+ includes +other+):
  *
- * Returns +nil+ if there is no such relationship between the two:
+ *   Float < Numeric    # => true
+ *   Array < Enumerable # => true
  *
- *   Array < Hash       # => nil
+ * Returns +false+ if +self+ is an ancestor of +other+
+ * (+self+ is a superclass of +other+ or +self+ is included in +other+) or
+ * if +self+ is the same as +other+:
  *
- * Otherwise, returns +true+ if +other+ is an ancestor of +self+,
- * or if +self+ includes +other+:
- *
- *   File  < IO         # => true  # IO is an ancestor of File.
- *   Array < Enumerable # => true  # Array includes Enumerable.
- *
- * Otherwise, returns +false+:
- *
- *   IO         < File  # => false
+ *   Numeric < Float    # => false
  *   Enumerable < Array # => false
- *   Array      < Array # => false
+ *   Float < Float      # => false
+ *
+ * Returns +nil+ if there is no relationship between the two:
+ *
+ *   Float < Hash        # => nil
+ *   Enumerable < String # => nil
  *
  */
 
@@ -2010,22 +2034,24 @@ rb_mod_lt(VALUE mod, VALUE arg)
  *
  * Compares +self+ and +other+ with respect to ancestry and inclusion.
  *
- * Returns +nil+ if there is no such relationship between the two:
+ * Returns +true+ if +self+ is an ancestor of +other+
+ * (+self+ is a superclass of +other+ or +self+ is included in +other+) or
+ * if +self+ is the same as +other+:
  *
- *   Array >= Hash       # => nil
+ *   Numeric >= Float    # => true
+ *   Enumerable >= Array # => true
+ *   Float >= Float      # => true
  *
- * Otherwise, returns +true+ if +self+ is an ancestor of +other+,
- * or if +other+ includes +self+,
- * or if the two are the same:
+ * Returns +false+ if +self+ is a descendant of +other+
+ * (+self+ is a subclass of +other+ or +self+ includes +other+):
  *
- *   IO         >= File  # => true  # IO is an ancestor of File.
- *   Enumerable >= Array # => true  # Array includes Enumerable.
- *   Array      >= Array # => true
- *
- * Otherwise, returns +false+:
- *
- *   File  >= IO         # => false
+ *   Float >= Numeric    # => false
  *   Array >= Enumerable # => false
+ *
+ * Returns +nil+ if there is no relationship between the two:
+ *
+ *   Float >= Hash        # => nil
+ *   Enumerable >= String # => nil
  *
  */
 
@@ -2043,23 +2069,24 @@ rb_mod_ge(VALUE mod, VALUE arg)
  * call-seq:
  *   self > other -> true, false, or nil
  *
- * Compares +self+ and +other+ with respect to ancestry and inclusion.
+ * Returns +true+ if +self+ is an ancestor of +other+
+ * (+self+ is a superclass of +other+ or +self+ is included in +other+):
  *
- * Returns +nil+ if there is no such relationship between the two:
+ *   Numeric > Float    # => true
+ *   Enumerable > Array # => true
  *
- *   Array > Hash       # => nil
+ * Returns +false+ if +self+ is a descendant of +other+
+ * (+self+ is a subclass of +other+ or +self+ includes +other+) or
+ * if +self+ is the same as +other+:
  *
- * Otherwise, returns +true+ if +self+ is an ancestor of +other+,
- * or if +other+ includes +self+:
- *
- *   IO         > File  # => true  # IO is an ancestor of File.
- *   Enumerable > Array # => true  # Array includes Enumerable.
- *
- * Otherwise, returns +false+:
- *
- *   File  > IO         # => false
+ *   Float > Numeric    # => false
  *   Array > Enumerable # => false
- *   Array > Array      # => false
+ *   Float > Float      # => false
+ *
+ * Returns +nil+ if there is no relationship between the two:
+ *
+ *   Float > Hash        # => nil
+ *   Enumerable > String # => nil
  *
  */
 
@@ -4351,8 +4378,8 @@ rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
  *
  *  First, what's elsewhere. Class \Object:
  *
- *  - Inherits from {class BasicObject}[rdoc-ref:BasicObject@What-27s+Here].
- *  - Includes {module Kernel}[rdoc-ref:Kernel@What-27s+Here].
+ *  - Inherits from {class BasicObject}[rdoc-ref:BasicObject@Whats+Here].
+ *  - Includes {module Kernel}[rdoc-ref:Kernel@Whats+Here].
  *
  *  Here, class \Object provides methods for:
  *

@@ -574,7 +574,7 @@ p Foo::Bar
       autoload_path = File.join(tmpdir, "autoload_parallel_race.rb")
       File.write(autoload_path, 'module Foo; end; module Bar; end')
 
-      assert_separately([], <<-RUBY, timeout: 100)
+      assert_ruby_status([], <<-RUBY, timeout: 100)
         autoload_path = #{File.realpath(autoload_path).inspect}
 
         # This should work with no errors or failures.
@@ -617,6 +617,10 @@ p Foo::Bar
   private
 
   def assert_separately(*args, **kwargs)
-    super(*args, **{ timeout: 60 }.merge(kwargs))
+    super(*args, timeout: 60, **kwargs)
+  end
+
+  def assert_ruby_status(*args, **kwargs)
+    super(*args, timeout: 60, **kwargs)
   end
 end

@@ -583,7 +583,7 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_gc_prepend_chain
-    assert_separately([], <<-EOS)
+    assert_ruby_status([], <<-EOS)
       10000.times { |i|
         m1 = Module.new do
           def foo; end
@@ -3073,7 +3073,7 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_prepend_gc
-    assert_separately [], %{
+    assert_ruby_status [], %{
       module Foo
       end
       class Object

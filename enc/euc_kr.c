@@ -188,7 +188,11 @@ OnigEncodingDefine(euc_kr, EUC_KR) = {
   onigenc_not_support_get_ctype_code_range,
   euckr_left_adjust_char_head,
   euckr_is_allowed_reverse_match,
+#ifdef USE_CASE_MAP_API
   onigenc_ascii_only_case_map,
+#else
+  NULL,
+#endif
   0,
   ONIGENC_FLAG_NONE,
 };
@@ -213,7 +217,11 @@ OnigEncodingDefine(euc_cn, EUC_CN) = {
   onigenc_not_support_get_ctype_code_range,
   euckr_left_adjust_char_head,
   euckr_is_allowed_reverse_match,
+#ifdef USE_CASE_MAP_API
   onigenc_ascii_only_case_map,
+#else
+  NULL,
+#endif
   0,
   ONIGENC_FLAG_NONE,
 };

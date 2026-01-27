@@ -75,8 +75,8 @@ PRINTF_ARGS(void rb_warn_deprecated_to_remove(const char *removal, const char *f
 PRINTF_ARGS(void rb_warn_reserved_name(const char *removal, const char *fmt, ...), 2, 3);
 #if RUBY_DEBUG
 # include "ruby/version.h"
-# define RUBY_VERSION_SINCE(major, minor) (RUBY_API_VERSION_CODE >= (major * 10000) + (minor) * 100)
-# define RUBY_VERSION_BEFORE(major, minor) (RUBY_API_VERSION_CODE < (major * 10000) + (minor) * 100)
+# define RUBY_VERSION_SINCE(major, minor) (RUBY_API_VERSION_CODE >= (major) * 10000 + (minor) * 100)
+# define RUBY_VERSION_BEFORE(major, minor) (RUBY_API_VERSION_CODE < (major) * 10000 + (minor) * 100)
 # if defined(RBIMPL_WARNING_PRAGMA0)
 #   define RBIMPL_TODO0(x) RBIMPL_WARNING_PRAGMA0(message(x))
 # elif RBIMPL_COMPILER_IS(MSVC)

@@ -175,6 +175,7 @@ make_counters! {
         exit_unhandled_tailcall,
         exit_unhandled_splat,
         exit_unhandled_kwarg,
+        exit_unhandled_block_arg,
         exit_unknown_special_variable,
         exit_unhandled_hir_insn,
         exit_unhandled_yarv_insn,
@@ -190,9 +191,12 @@ make_counters! {
         exit_guard_bit_equals_failure,
         exit_guard_int_equals_failure,
         exit_guard_shape_failure,
+        exit_expandarray_failure,
         exit_guard_not_frozen_failure,
+        exit_guard_not_shared_failure,
         exit_guard_less_failure,
         exit_guard_greater_eq_failure,
+        exit_guard_super_method_entry,
         exit_patchpoint_bop_redefined,
         exit_patchpoint_method_redefined,
         exit_patchpoint_stable_constant_names,
@@ -206,6 +210,7 @@ make_counters! {
         exit_stackoverflow,
         exit_block_param_proxy_modified,
         exit_block_param_proxy_not_iseq_or_ifunc,
+        exit_block_param_wb_required,
         exit_too_many_keyword_parameters,
     }
 
@@ -224,9 +229,9 @@ make_counters! {
         send_fallback_send_without_block_bop_redefined,
         send_fallback_send_without_block_operands_not_fixnum,
         send_fallback_send_without_block_direct_keyword_mismatch,
-        send_fallback_send_without_block_direct_optional_keywords,
         send_fallback_send_without_block_direct_keyword_count_mismatch,
         send_fallback_send_without_block_direct_missing_keyword,
+        send_fallback_send_without_block_direct_too_many_keywords,
         send_fallback_send_polymorphic,
         send_fallback_send_megamorphic,
         send_fallback_send_no_profiles,
@@ -239,10 +244,21 @@ make_counters! {
         send_fallback_one_or_more_complex_arg_pass,
         // Caller has keyword arguments but callee doesn't expect them.
         send_fallback_unexpected_keyword_args,
+        // Singleton class previously created for receiver class.
+        send_fallback_singleton_class_seen,
         send_fallback_bmethod_non_iseq_proc,
         send_fallback_obj_to_string_not_string,
         send_fallback_send_cfunc_variadic,
         send_fallback_send_cfunc_array_variadic,
+        send_fallback_super_call_with_block,
+        send_fallback_super_class_not_found,
+        send_fallback_super_complex_args_pass,
+        send_fallback_super_fallback_no_profile,
+        send_fallback_super_not_optimized_method_type,
+        send_fallback_super_polymorphic,
+        send_fallback_super_target_not_found,
+        send_fallback_super_target_complex_args_pass,
+        send_fallback_cannot_send_direct,
         send_fallback_uncategorized,
     }
 
@@ -291,6 +307,7 @@ make_counters! {
     compile_error_iseq_stack_too_large,
     compile_error_exception_handler,
     compile_error_out_of_memory,
+    compile_error_label_linking_failure,
     compile_error_jit_to_jit_optional,
     compile_error_register_spill_on_ccall,
     compile_error_register_spill_on_alloc,
@@ -353,10 +370,24 @@ make_counters! {
     unspecialized_send_def_type_refined,
     unspecialized_send_def_type_null,
 
+    // Super call def_type related to send fallback to dynamic dispatch
+    unspecialized_super_def_type_iseq,
+    unspecialized_super_def_type_cfunc,
+    unspecialized_super_def_type_attrset,
+    unspecialized_super_def_type_ivar,
+    unspecialized_super_def_type_bmethod,
+    unspecialized_super_def_type_zsuper,
+    unspecialized_super_def_type_alias,
+    unspecialized_super_def_type_undef,
+    unspecialized_super_def_type_not_implemented,
+    unspecialized_super_def_type_optimized,
+    unspecialized_super_def_type_missing,
+    unspecialized_super_def_type_refined,
+    unspecialized_super_def_type_null,
+
     // Unsupported parameter features
     complex_arg_pass_param_rest,
     complex_arg_pass_param_post,
-    complex_arg_pass_param_kw_opt,
     complex_arg_pass_param_kwrest,
     complex_arg_pass_param_block,
     complex_arg_pass_param_forwardable,
@@ -436,6 +467,10 @@ pub enum CompileError {
     ExceptionHandler,
     OutOfMemory,
     ParseError(ParseError),
+    /// When a ZJIT function is too large, the branches may have
+    /// offsets that don't fit in one instruction. We error in
+    /// error that case.
+    LabelLinkingFailure,
 }
 
 /// Return a raw pointer to the exit counter for a given CompileError
@@ -449,6 +484,7 @@ pub fn exit_counter_for_compile_error(compile_error: &CompileError) -> Counter {
         IseqStackTooLarge       => compile_error_iseq_stack_too_large,
         ExceptionHandler        => compile_error_exception_handler,
         OutOfMemory             => compile_error_out_of_memory,
+        LabelLinkingFailure     => compile_error_label_linking_failure,
         ParseError(parse_error) => match parse_error {
             StackUnderflow(_)       => compile_error_parse_stack_underflow,
             MalformedIseq(_)        => compile_error_parse_malformed_iseq,
@@ -499,6 +535,7 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         UnknownSpecialVariable(_)     => exit_unknown_special_variable,
         UnhandledHIRInsn(_)           => exit_unhandled_hir_insn,
         UnhandledYARVInsn(_)          => exit_unhandled_yarv_insn,
+        UnhandledBlockArg             => exit_unhandled_block_arg,
         FixnumAddOverflow             => exit_fixnum_add_overflow,
         FixnumSubOverflow             => exit_fixnum_sub_overflow,
         FixnumMultOverflow            => exit_fixnum_mult_overflow,
@@ -508,17 +545,20 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         BoxFixnumOverflow             => exit_box_fixnum_overflow,
         GuardType(_)                  => exit_guard_type_failure,
         GuardTypeNot(_)               => exit_guard_type_not_failure,
-        GuardBitEquals(_)             => exit_guard_bit_equals_failure,
         GuardShape(_)                 => exit_guard_shape_failure,
+        ExpandArray                   => exit_expandarray_failure,
         GuardNotFrozen                => exit_guard_not_frozen_failure,
+        GuardNotShared                => exit_guard_not_shared_failure,
         GuardLess                     => exit_guard_less_failure,
         GuardGreaterEq                => exit_guard_greater_eq_failure,
+        GuardSuperMethodEntry         => exit_guard_super_method_entry,
         CalleeSideExit                => exit_callee_side_exit,
         ObjToStringFallback           => exit_obj_to_string_fallback,
         Interrupt                     => exit_interrupt,
         StackOverflow                 => exit_stackoverflow,
         BlockParamProxyModified       => exit_block_param_proxy_modified,
         BlockParamProxyNotIseqOrIfunc => exit_block_param_proxy_not_iseq_or_ifunc,
+        BlockParamWbRequired          => exit_block_param_wb_required,
         TooManyKeywordParameters      => exit_too_many_keyword_parameters,
         PatchPoint(Invariant::BOPRedefined { .. })
                                       => exit_patchpoint_bop_redefined,
@@ -560,9 +600,9 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SendWithoutBlockBopRedefined              => send_fallback_send_without_block_bop_redefined,
         SendWithoutBlockOperandsNotFixnum         => send_fallback_send_without_block_operands_not_fixnum,
         SendWithoutBlockDirectKeywordMismatch     => send_fallback_send_without_block_direct_keyword_mismatch,
-        SendWithoutBlockDirectOptionalKeywords    => send_fallback_send_without_block_direct_optional_keywords,
         SendWithoutBlockDirectKeywordCountMismatch=> send_fallback_send_without_block_direct_keyword_count_mismatch,
         SendWithoutBlockDirectMissingKeyword       => send_fallback_send_without_block_direct_missing_keyword,
+        SendWithoutBlockDirectTooManyKeywords     => send_fallback_send_without_block_direct_too_many_keywords,
         SendPolymorphic                           => send_fallback_send_polymorphic,
         SendMegamorphic                           => send_fallback_send_megamorphic,
         SendNoProfiles                            => send_fallback_send_no_profiles,
@@ -570,12 +610,21 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SendCfuncArrayVariadic                    => send_fallback_send_cfunc_array_variadic,
         ComplexArgPass                            => send_fallback_one_or_more_complex_arg_pass,
         UnexpectedKeywordArgs                     => send_fallback_unexpected_keyword_args,
+        SingletonClassSeen                        => send_fallback_singleton_class_seen,
         ArgcParamMismatch                         => send_fallback_argc_param_mismatch,
         BmethodNonIseqProc                        => send_fallback_bmethod_non_iseq_proc,
         SendNotOptimizedMethodType(_)             => send_fallback_send_not_optimized_method_type,
         SendNotOptimizedNeedPermission            => send_fallback_send_not_optimized_need_permission,
         CCallWithFrameTooManyArgs                 => send_fallback_ccall_with_frame_too_many_args,
         ObjToStringNotString                      => send_fallback_obj_to_string_not_string,
+        SuperCallWithBlock                        => send_fallback_super_call_with_block,
+        SuperClassNotFound                        => send_fallback_super_class_not_found,
+        SuperComplexArgsPass                      => send_fallback_super_complex_args_pass,
+        SuperNoProfiles                           => send_fallback_super_fallback_no_profile,
+        SuperNotOptimizedMethodType(_)            => send_fallback_super_not_optimized_method_type,
+        SuperPolymorphic                          => send_fallback_super_polymorphic,
+        SuperTargetNotFound                       => send_fallback_super_target_not_found,
+        SuperTargetComplexArgsPass                => send_fallback_super_target_complex_args_pass,
         Uncategorized(_)                          => send_fallback_uncategorized,
     }
 }
@@ -635,6 +684,27 @@ pub fn send_fallback_counter_for_method_type(method_type: crate::hir::MethodType
     }
 }
 
+pub fn send_fallback_counter_for_super_method_type(method_type: crate::hir::MethodType) -> Counter {
+    use crate::hir::MethodType::*;
+    use crate::stats::Counter::*;
+
+    match method_type {
+        Iseq => unspecialized_super_def_type_iseq,
+        Cfunc => unspecialized_super_def_type_cfunc,
+        Attrset => unspecialized_super_def_type_attrset,
+        Ivar => unspecialized_super_def_type_ivar,
+        Bmethod => unspecialized_super_def_type_bmethod,
+        Zsuper => unspecialized_super_def_type_zsuper,
+        Alias => unspecialized_super_def_type_alias,
+        Undefined => unspecialized_super_def_type_undef,
+        NotImplemented => unspecialized_super_def_type_not_implemented,
+        Optimized => unspecialized_super_def_type_optimized,
+        Missing => unspecialized_super_def_type_missing,
+        Refined => unspecialized_super_def_type_refined,
+        Null => unspecialized_super_def_type_null,
+    }
+}
+
 /// Primitive called in zjit.rb. Zero out all the counters.
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_reset_stats_bang(_ec: EcPtr, _self: VALUE) -> VALUE {
@@ -646,6 +716,21 @@ pub extern "C" fn rb_zjit_reset_stats_bang(_ec: EcPtr, _self: VALUE) -> VALUE {
 
     // Reset exit counters for YARV instructions
     exit_counters.as_mut_slice().fill(0);
+
+    // Reset send fallback counters
+    ZJITState::get_send_fallback_counters().as_mut_slice().fill(0);
+
+    // Reset not-inlined counters
+    ZJITState::get_not_inlined_cfunc_counter_pointers().iter_mut()
+        .for_each(|b| { **(b.1) = 0; });
+
+    // Reset not-annotated counters
+    ZJITState::get_not_annotated_cfunc_counter_pointers().iter_mut()
+        .for_each(|b| { **(b.1) = 0; });
+
+    // Reset ccall counters
+    ZJITState::get_ccall_counter_pointers().iter_mut()
+        .for_each(|b| { **(b.1) = 0; });
 
     Qnil
 }

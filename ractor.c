@@ -1348,7 +1348,7 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
 
       case T_STRUCT:
         {
-            long len = RSTRUCT_LEN(obj);
+            long len = RSTRUCT_LEN_RAW(obj);
             const VALUE *ptr = RSTRUCT_CONST_PTR(obj);
 
             for (long i=0; i<len; i++) {
@@ -1909,7 +1909,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
 
       case T_STRUCT:
         {
-            long len = RSTRUCT_LEN(obj);
+            long len = RSTRUCT_LEN_RAW(obj);
             const VALUE *ptr = RSTRUCT_CONST_PTR(obj);
 
             for (long i=0; i<len; i++) {

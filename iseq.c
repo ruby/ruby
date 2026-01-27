@@ -1142,7 +1142,7 @@ pm_iseq_new_with_opt(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpa
     int32_t start_line = node->parser->start_line;
 
     pm_line_column_t start = pm_newline_list_line_column(&node->parser->newline_list, location->start, start_line);
-    pm_line_column_t end = pm_newline_list_line_column(&node->parser->newline_list, location->end, start_line);
+    pm_line_column_t end = pm_newline_list_line_column(&node->parser->newline_list, location->start + location->length, start_line);
 
     rb_code_location_t code_location = (rb_code_location_t) {
         .beg_pos = { .lineno = (int) start.line, .column = (int) start.column },
@@ -3345,6 +3345,7 @@ iseq_type_id(enum rb_iseq_type type)
 static VALUE
 iseq_data_to_ary(const rb_iseq_t *iseq)
 {
+    VALUE iseq_value = (VALUE)iseq;
     unsigned int i;
     long l;
     const struct rb_iseq_constant_body *const iseq_body = ISEQ_BODY(iseq);
@@ -3677,6 +3678,9 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     rb_ary_push(val, params);
     rb_ary_push(val, exception);
     rb_ary_push(val, body);
+
+    RB_GC_GUARD(iseq_value);
+
     return val;
 }
 

@@ -303,9 +303,34 @@ module Test
 
       def separated_runner(token, out = nil)
         include(*Test::Unit::TestCase.ancestors.select {|c| !c.is_a?(Class) })
+
         out = out ? IO.new(out, 'w') : STDOUT
+
+        # avoid method redefinitions
+        out_write = out.method(:write)
+        integer_to_s = Integer.instance_method(:to_s)
+        array_pack = Array.instance_method(:pack)
+        marshal_dump = Marshal.method(:dump)
+        assertions_ivar_set = Test::Unit::Assertions.method(:instance_variable_set)
+        assertions_ivar_get = Test::Unit::Assertions.method(:instance_variable_get)
+        Test::Unit::Assertions.module_eval do
+          @_assertions = 0
+
+          undef _assertions=
+          define_method(:_assertions=, ->(n) {assertions_ivar_set.call(:@_assertions, n)})
+
+          undef _assertions
+          define_method(:_assertions, -> {assertions_ivar_get.call(:@_assertions)})
+        end
+        # assume Method#call and UnboundMethod#bind_call need to work as the original
+
         at_exit {
-          out.puts "#{token}<error>", [Marshal.dump($!)].pack('m'), "#{token}</error>", "#{token}assertions=#{self._assertions}"
+          assertions = assertions_ivar_get.call(:@_assertions)
+          out_write.call <<~OUT
+          <error id="#{token}" assertions=#{integer_to_s.bind_call(assertions)}>
+          #{array_pack.bind_call([marshal_dump.call($!)], 'm0')}
+          </error id="#{token}">
+          OUT
         }
         if defined?(Test::Unit::Runner)
           Test::Unit::Runner.class_variable_set(:@@stop_auto_run, true)
@@ -359,15 +384,16 @@ eom
         end
         raise if $!
         abort = status.coredump? || (status.signaled? && ABORT_SIGNALS.include?(status.termsig))
+        marshal_error = nil
         assert(!abort, FailDesc[status, nil, stderr])
-        self._assertions += res[/^#{token_re}assertions=(\d+)/, 1].to_i
-        begin
-          res = Marshal.load(res[/^#{token_re}<error>\n\K.*\n(?=#{token_re}<\/error>$)/m].unpack1("m"))
+        res.scan(/^<error id="#{token_re}" assertions=(\d+)>\n(.*?)\n(?=<\/error id="#{token_re}">$)/m) do
+          self._assertions += $1.to_i
+          res = Marshal.load($2.unpack1("m")) or next
         rescue => marshal_error
           ignore_stderr = nil
           res = nil
-        end
-        if res and !(SystemExit === res)
+        else
+          next if SystemExit === res
           if bt = res.backtrace
             bt.each do |l|
               l.sub!(/\A-:(\d+)/){"#{file}:#{line + $1.to_i}"}
@@ -379,7 +405,7 @@ eom
           raise res
         end
 
-        # really is it succeed?
+        # really did it succeed?
         unless ignore_stderr
           # the body of assert_separately must not output anything to detect error
           assert(stderr.empty?, FailDesc[status, "assert_separately failed with error message", stderr])

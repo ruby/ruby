@@ -185,12 +185,19 @@ define rp
     print (struct RBasic *)($arg0)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_DATA
-    if ((struct RTypedData *)($arg0))->type & 1
-      printf "%sT_DATA%s(%s): ", $color_type, $color_end, ((const rb_data_type_t *)(((struct RTypedData *)($arg0))->type & ~1))->wrap_struct_name
-      print (struct RTypedData *)($arg0)
+    if ($flags & RUBY_TYPED_FL_IS_TYPED_DATA)
+      set $data = (struct RTypedData *)($arg0)
+      set $type = (const rb_data_type_t *)($data->type & ~1)
+      printf "%sT_DATA%s(%s): ", $color_type, $color_end, $type->wrap_struct_name
+      print *$type
+      if ($data->type & 1)
+        print (void *)&$data->data
+      else
+        print $data
+      end
     else
       printf "%sT_DATA%s: ", $color_type, $color_end
-      print (struct RData *)($arg0)
+      print *(struct RData *)($arg0)
     end
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_MATCH

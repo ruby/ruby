@@ -393,7 +393,7 @@ These keyword-value pairs specify encoding options:
 
   - <tt>:replace: nil</tt> (default): Set replacement string to default value:
     <tt>"\uFFFD"</tt> ("�") for a Unicode encoding, <tt>'?'</tt> otherwise.
-  - <tt>:replace: _some_string_</tt>: Set replacement string to the given +some_string+;
+  - <tt>:replace: some_string</tt>: Set replacement string to the given +some_string+;
     overrides +:fallback+.
 
   Examples:
@@ -407,12 +407,12 @@ These keyword-value pairs specify encoding options:
   One of these may be specified:
 
   - <tt>:fallback: nil</tt> (default): No replacement fallback.
-  - <tt>:fallback: _hash_like_object_</tt>: Set replacement fallback to the given
-    +hash_like_object+; the replacement string is <tt>_hash_like_object_[X]</tt>.
-  - <tt>:fallback: _method_</tt>: Set replacement fallback to the given
-    +method+; the replacement string is <tt>_method_(X)</tt>.
-  - <tt>:fallback: _proc_</tt>: Set replacement fallback to the given
-    +proc+; the replacement string is <tt>_proc_[X]</tt>.
+  - <tt>:fallback: hash_like_object</tt>: Set replacement fallback to the given
+    +hash_like_object+; the replacement string is <tt>hash_like_object[X]</tt>.
+  - <tt>:fallback: method</tt>: Set replacement fallback to the given
+    +method+; the replacement string is <tt>method(X)</tt>.
+  - <tt>:fallback: proc</tt>: Set replacement fallback to the given
+    +proc+; the replacement string is <tt>proc[X]</tt>.
 
   Examples:
 

@@ -18,6 +18,7 @@
 #include <float.h>
 #endif
 
+#include <limits.h>
 #include "id.h"
 #include "internal.h"
 #include "internal/class.h"
@@ -33,79 +34,93 @@
 /*
  * Document-class: Enumerator
  *
- * A class which allows both internal and external iteration.
+ * \Class \Enumerator supports:
  *
- * An Enumerator can be created by the following methods.
- * - Object#to_enum
- * - Object#enum_for
- * - Enumerator.new
+ * - {External iteration}[rdoc-ref:Enumerator@External+Iteration].
+ * - {Internal iteration}[rdoc-ref:Enumerator@Internal+Iteration].
  *
- * Most methods have two forms: a block form where the contents
- * are evaluated for each item in the enumeration, and a non-block form
- * which returns a new Enumerator wrapping the iteration.
+ * An \Enumerator may be created by the following methods:
  *
- *   enumerator = %w(one two three).each
- *   puts enumerator.class # => Enumerator
+ * - Object#to_enum.
+ * - Object#enum_for.
+ * - Enumerator.new.
  *
- *   enumerator.each_with_object("foo") do |item, obj|
- *     puts "#{obj}: #{item}"
- *   end
+ * In addition, certain Ruby methods return \Enumerator objects:
+ * a Ruby iterator method that accepts a block
+ * may return an \Enumerator if no block is given.
+ * There are many such methods, for example, in classes Array and Hash.
+ * (In the documentation for those classes, search for `new_enumerator`.)
  *
- *   # foo: one
- *   # foo: two
- *   # foo: three
+ * == Internal Iteration
  *
- *   enum_with_obj = enumerator.each_with_object("foo")
- *   puts enum_with_obj.class # => Enumerator
+ * In _internal iteration_, an iterator method drives the iteration
+ * and the caller's block handles the processing;
+ * this example uses method #each_with_index:
  *
- *   enum_with_obj.each do |item, obj|
- *     puts "#{obj}: #{item}"
- *   end
+ *   words = %w[foo bar baz] # => ["foo", "bar", "baz"]
+ *   enumerator = words.each # => #<Enumerator: ...>
+ *   enumerator.each_with_index {|word, i| puts "#{i}: #{word}" }
+ *   0: foo
+ *   1: bar
+ *   2: baz
  *
- *   # foo: one
- *   # foo: two
- *   # foo: three
+ * Iterator methods in class \Enumerator include:
  *
- * This allows you to chain Enumerators together.  For example, you
- * can map a list's elements to strings containing the index
- * and the element as a string via:
+ * - #each:
+ *   passes each item to the block.
+ * - #each_with_index:
+ *   passes each item and its index to the block.
+ * - #each_with_object (aliased as #with_object):
+ *   passes each item and a given object to the block.
+ * - #with_index:
+ *   like #each_with_index, but starting at a given offset (instead of zero).
  *
- *   puts %w[foo bar baz].map.with_index { |w, i| "#{i}:#{w}" }
- *   # => ["0:foo", "1:bar", "2:baz"]
+ * \Class \Enumerator includes module Enumerable,
+ * which provides many more iterator methods.
  *
  * == External Iteration
  *
- * An Enumerator can also be used as an external iterator.
- * For example, Enumerator#next returns the next value of the iterator
- * or raises StopIteration if the Enumerator is at the end.
+ * In _external iteration_, the user's program both drives the iteration
+ * and handles the processing in stream-like fashion;
+ * this example uses method #next:
  *
- *   e = [1,2,3].each   # returns an enumerator object.
- *   puts e.next   # => 1
- *   puts e.next   # => 2
- *   puts e.next   # => 3
- *   puts e.next   # raises StopIteration
+ *   words = %w[foo bar baz]
+ *   enumerator = words.each
+ *   enumerator.next # => "foo"
+ *   enumerator.next # => "bar"
+ *   enumerator.next # => "baz"
+ *   enumerator.next # Raises StopIteration: iteration reached an end
  *
- * +next+, +next_values+, +peek+, and +peek_values+ are the only methods
- * which use external iteration (and Array#zip(Enumerable-not-Array) which uses +next+ internally).
+ * External iteration methods in class \Enumerator include:
  *
- * These methods do not affect other internal enumeration methods,
- * unless the underlying iteration method itself has side-effect, e.g. IO#each_line.
+ * - #feed:
+ *   sets the value that is next to be returned.
+ * - #next:
+ *   returns the next value and increments the position.
+ * - #next_values:
+ *   returns the next value in a 1-element array and increments the position.
+ * - #peek:
+ *   returns the next value but does not increment the position.
+ * - #peek_values:
+ *   returns the next value in a 1-element array but does not increment the position.
+ * - #rewind:
+ *   sets the position to zero.
  *
- * FrozenError will be raised if these methods are called against a frozen enumerator.
- * Since +rewind+ and +feed+ also change state for external iteration,
- * these methods may raise FrozenError too.
+ * Each of these methods raises FrozenError if called from a frozen \Enumerator.
  *
- * External iteration differs *significantly* from internal iteration
- * due to using a Fiber:
- * - The Fiber adds some overhead compared to internal enumeration.
- * - The stacktrace will only include the stack from the Enumerator, not above.
- * - Fiber-local variables are *not* inherited inside the Enumerator Fiber,
- *   which instead starts with no Fiber-local variables.
- * - Fiber storage variables *are* inherited and are designed
- *   to handle Enumerator Fibers. Assigning to a Fiber storage variable
- *   only affects the current Fiber, so if you want to change state
- *   in the caller Fiber of the Enumerator Fiber, you need to use an
- *   extra indirection (e.g., use some object in the Fiber storage
+ * == External Iteration and \Fiber
+ *
+ * External iteration that uses Fiber differs *significantly* from internal iteration:
+ *
+ * - Using \Fiber adds some overhead compared to internal enumeration.
+ * - The stacktrace will only include the stack from the \Enumerator, not above.
+ * - \Fiber-local variables are *not* inherited inside the \Enumerator \Fiber,
+ *   which instead starts with no \Fiber-local variables.
+ * - \Fiber storage variables *are* inherited and are designed
+ *   to handle \Enumerator Fibers. Assigning to a \Fiber storage variable
+ *   only affects the current \Fiber, so if you want to change state
+ *   in the caller \Fiber of the \Enumerator \Fiber, you need to use an
+ *   extra indirection (e.g., use some object in the \Fiber storage
  *   variable and mutate some ivar of it).
  *
  * Concretely:
@@ -125,7 +140,7 @@
  *   e.each { p _1 }
  *   p Fiber[:storage_var] # => 2 (it ran in the same Fiber/"stack" as the current Fiber)
  *
- * == Convert External Iteration to Internal Iteration
+ * == Converting External Iteration to Internal Iteration
  *
  * You can use an external iterator to implement an internal iterator as follows:
  *
@@ -444,28 +459,31 @@ convert_to_feasible_size_value(VALUE obj)
 
 /*
  * call-seq:
- *   Enumerator.new(size = nil) { |yielder| ... }
+ *   Enumerator.new(size = nil) {|yielder| ... }
  *
- * Creates a new Enumerator object, which can be used as an
- * Enumerable.
+ * Returns a new \Enumerator object that can be used for iteration.
  *
- * Iteration is defined by the given block, in
- * which a "yielder" object, given as block parameter, can be used to
- * yield a value by calling the +yield+ method (aliased as <code><<</code>):
+ * The given block defines the iteration;
+ * it is called with a "yielder" object that can yield an object
+ * via a call to method <tt>yielder.yield</tt>:
  *
- *   fib = Enumerator.new do |y|
- *     a = b = 1
- *     loop do
- *       y << a
- *       a, b = b, a + b
+ *   fib = Enumerator.new do |yielder|
+ *     n = next_n = 1
+ *     while true do
+ *       yielder.yield(n)
+ *       n, next_n = next_n, n + next_n
  *     end
  *   end
  *
  *   fib.take(10) # => [1, 1, 2, 3, 5, 8, 13, 21, 34, 55]
  *
- * The optional parameter can be used to specify how to calculate the size
- * in a lazy fashion (see Enumerator#size). It can either be a value or
- * a callable object.
+ * Parameter +size+ specifies how the size is to be calculated (see #size);
+ * it can either be a value or a callable object:
+ *
+ *   Enumerator.new{}.size          # => nil
+ *   Enumerator.new(42){}.size      # => 42
+ *   Enumerator.new(-> {42}){}.size # => 42
+ *
  */
 static VALUE
 enumerator_initialize(int argc, VALUE *argv, VALUE obj)
@@ -4008,7 +4026,7 @@ arith_seq_take(VALUE self, VALUE num)
             ary = rb_ary_new_capa((n < len) ? n : len);
             while (n > 0 && i < end) {
                 rb_ary_push(ary, LONG2FIX(i));
-                if (i + unit < i) break;
+                if (i > LONG_MAX - unit) break;
                 i += unit;
                 --n;
             }
@@ -4021,7 +4039,7 @@ arith_seq_take(VALUE self, VALUE num)
             ary = rb_ary_new_capa((n < len) ? n : len);
             while (n > 0 && i > end) {
                 rb_ary_push(ary, LONG2FIX(i));
-                if (i + unit > i) break;
+                if (i < LONG_MIN - unit) break;
                 i += unit;
                 --n;
             }

@@ -13,7 +13,7 @@ void pm_prettyprint(void) {}
 static inline void
 prettyprint_location(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm_location_t *location) {
     pm_line_column_t start = pm_newline_list_line_column(&parser->newline_list, location->start, parser->start_line);
-    pm_line_column_t end = pm_newline_list_line_column(&parser->newline_list, location->end, parser->start_line);
+    pm_line_column_t end = pm_newline_list_line_column(&parser->newline_list, location->start + location->length, parser->start_line);
     pm_buffer_append_format(output_buffer, "(%" PRIi32 ",%" PRIu32 ")-(%" PRIi32 ",%" PRIu32 ")", start.line, start.column, end.line, end.column);
 }
 
@@ -106,17 +106,17 @@ prettyprint_node(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm
                 pm_buffer_append_byte(output_buffer, ' ');
                 prettyprint_location(output_buffer, parser, location);
                 pm_buffer_append_string(output_buffer, " = \"", 4);
-                pm_buffer_append_source(output_buffer, location->start, (size_t) (location->end - location->start), PM_BUFFER_ESCAPING_RUBY);
+                pm_buffer_append_source(output_buffer, parser->start + location->start, (size_t) location->length, PM_BUFFER_ESCAPING_RUBY);
                 pm_buffer_append_string(output_buffer, "\"\n", 2);
             <%- when Prism::Template::OptionalLocationField -%>
                 pm_location_t *location = &cast-><%= field.name %>;
-                if (location->start == NULL) {
+                if (location->length == 0) {
                     pm_buffer_append_string(output_buffer, " nil\n", 5);
                 } else {
                     pm_buffer_append_byte(output_buffer, ' ');
                     prettyprint_location(output_buffer, parser, location);
                     pm_buffer_append_string(output_buffer, " = \"", 4);
-                    pm_buffer_append_source(output_buffer, location->start, (size_t) (location->end - location->start), PM_BUFFER_ESCAPING_RUBY);
+                    pm_buffer_append_source(output_buffer, parser->start + location->start, (size_t) location->length, PM_BUFFER_ESCAPING_RUBY);
                     pm_buffer_append_string(output_buffer, "\"\n", 2);
                 }
             <%- when Prism::Template::UInt8Field -%>

@@ -40,6 +40,7 @@ class TestRipper::Generic < Test::Unit::TestCase
           end
         }
       end
+      assert(true) if scripts.empty?
     end;
   end
 end

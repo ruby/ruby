@@ -24,6 +24,9 @@ MAKEFILE = Makefile
 CPU = PROCESSOR_LEVEL
 CC = $(CC) -nologo -source-charset:utf-8
 CPP = $(CC) -EP
+!if "$(HAVE_BASERUBY)" != "no" && "$(BASERUBY)" == ""
+BASERUBY = ruby
+!endif
 
 all: -prologue- -generic- -epilogue-
 i386-mswin32: -prologue- -i386- -epilogue-
@@ -33,11 +36,11 @@ i686-mswin32: -prologue- -i686- -epilogue-
 alpha-mswin32: -prologue- -alpha- -epilogue-
 x64-mswin64: -prologue- -x64- -epilogue-
 
--prologue-: -basic-vars-
+-prologue-: -basic-vars- -baseruby- -gmp-
 -generic-: -osname-
 
 -basic-vars-: nul
-	@type << > $(MAKEFILE)
+	@rem <<$(MAKEFILE)
 ### Makefile for ruby $(TARGET_OS) ###
 MAKE = nmake
 srcdir = $(srcdir:\=/)
@@ -46,9 +49,13 @@ prefix = $(prefix:\=/)
 <<
 	@type $(config_make) >>$(MAKEFILE)
 	@del $(config_make) > nul
-!if "$(HAVE_BASERUBY)" != "no" && "$(BASERUBY)" != ""
-	$(BASERUBY:/=\) "$(srcdir)/tool/missing-baseruby.bat"
+
+-baseruby-: nul
+!if "$(HAVE_BASERUBY)" != "no"
+	@cd $(srcdir:/=\)\tool && $(BASERUBY:/=\) missing-baseruby.bat --verbose || exit $(HAVE_BASERUBY:yes=non-)0
 !endif
+
+-gmp-:
 !if "$(WITH_GMP)" != "no"
 	@($(CC) $(XINCFLAGS) <<conftest.c -link $(XLDFLAGS) gmp.lib > nul && (echo USE_GMP = yes) || exit /b 0) >>$(MAKEFILE)
 #include <gmp.h>
@@ -143,8 +150,8 @@ main(void)
 <<
 	@( \
 	  $(CC) -O2 $@.c && .\$@ || \
-	  set bug=%ERRORLEVEL% \
-	  echo This compiler has an optimization bug \
+	  (set bug=%ERRORLEVEL% & \
+	  echo This compiler has an optimization bug) \
 	) & $(WIN32DIR:/=\)\rm.bat $@.* & exit /b %bug%
 
 -version-: nul verconf.mk
@@ -269,4 +276,6 @@ AS = $(AS) -nologo
 $(BANG)include $$(srcdir)/win32/Makefile.sub
 <<
 	@$(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat config.h config.status
+	-@move /y $(MAKEFILE_NEW) $(MAKEFILE_BACK) > nul 2> nul
+	@ren $(MAKEFILE) $(MAKEFILE_NEW)
 	@echo type 'nmake' to make ruby.

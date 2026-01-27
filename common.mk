@@ -269,21 +269,15 @@ MAKE_LINK = $(MINIRUBY) -rfileutils -e "include FileUtils::Verbose" \
 # For release builds
 YJIT_RUSTC_ARGS = --crate-name=yjit \
 	$(JIT_RUST_FLAGS) \
+	$(RUSTC_FLAGS) \
 	--edition=2021 \
-	-g \
-	-C lto=thin \
-	-C opt-level=3 \
-	-C overflow-checks=on \
 	'--out-dir=$(CARGO_TARGET_DIR)/release/' \
 	'$(top_srcdir)/yjit/src/lib.rs'
 
 ZJIT_RUSTC_ARGS = --crate-name=zjit \
 	$(JIT_RUST_FLAGS) \
+	$(RUSTC_FLAGS) \
 	--edition=2024 \
-	-g \
-	-C lto=thin \
-	-C opt-level=3 \
-	-C overflow-checks=on \
 	'--out-dir=$(CARGO_TARGET_DIR)/release/' \
 	'$(top_srcdir)/zjit/src/lib.rs'
 
@@ -803,7 +797,7 @@ clean-platform distclean-platform realclean-platform:
 
 RUBYSPEC_CAPIEXT = spec/ruby/optional/capi/ext
 RUBYSPEC_CAPIEXT_SRCDIR = $(srcdir)/$(RUBYSPEC_CAPIEXT)
-RUBYSPEC_CAPIEXT_DEPS = $(RUBYSPEC_CAPIEXT_SRCDIR)/rubyspec.h $(RUBY_H_INCLUDES) $(LIBRUBY)
+RUBYSPEC_CAPIEXT_DEPS = $(RUBYSPEC_CAPIEXT_SRCDIR)/rubyspec.h $(RUBY_H_INCLUDES) {$(VPATH)}internal/abi.h $(LIBRUBY)
 RUBYSPEC_CAPIEXT_BUILD = $(enable_shared:yes=rubyspec-capiext)
 
 rubyspec-capiext: build-ext $(DOT_WAIT)
@@ -1619,6 +1613,11 @@ no-test-bundled-gems-spec:
 test-syntax-suggest:
 
 check: $(DOT_WAIT) $(PREPARE_SYNTAX_SUGGEST) test-syntax-suggest
+
+RAKER = $(XRUBY) -I$(srcdir)/gems/lib$(PATH_SEPARATOR)$(srcdir)/.bundle/lib \
+	-rrubygems $(srcdir)/.bundle/bin/rake
+rake:
+	$(RAKER) $(RAKE_OPTS) $(RAKE)
 
 test-bundler-precheck: $(TEST_RUNNABLE)-test-bundler-precheck
 no-test-bundler-precheck:

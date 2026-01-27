@@ -333,7 +333,7 @@ class TestSignal < Test::Unit::TestCase
 
   def test_sigwait_fd_unused
     t = EnvUtil.apply_timeout_scale(0.1)
-    assert_separately([], <<-End)
+    assert_ruby_status([], <<-End)
       tgt = $$
       trap(:TERM) { exit(0) }
       e = "Process.daemon; sleep #{t * 2}; Process.kill(:TERM,\#{tgt})"

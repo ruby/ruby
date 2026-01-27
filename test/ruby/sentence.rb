@@ -211,7 +211,7 @@ class Sentence
   # returns new sentence object which
   # _target_ is substituted by the block.
   #
-  # Sentence#subst invokes <tt>_target_ === _string_</tt> for each
+  # Sentence#subst invokes <tt>target === string</tt> for each
   # string in the sentence.
   # The strings which === returns true are substituted by the block.
   # The block is invoked with the substituting string.

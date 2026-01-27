@@ -413,8 +413,6 @@ fn main() {
         .allowlist_function("rb_FL_TEST_RAW")
         .allowlist_function("rb_RB_TYPE_P")
         .allowlist_function("rb_BASIC_OP_UNREDEFINED_P")
-        .allowlist_function("rb_RSTRUCT_LEN")
-        .allowlist_function("rb_RSTRUCT_SET")
         .allowlist_function("rb_vm_ci_argc")
         .allowlist_function("rb_vm_ci_mid")
         .allowlist_function("rb_vm_ci_flag")

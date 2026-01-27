@@ -207,6 +207,17 @@ wmap_inspect_i(st_data_t k, st_data_t v, st_data_t data)
     return ST_CONTINUE;
 }
 
+/* call-seq:
+ *   inspect -> new_string
+ *
+ * Returns a new string containing the \WeakMap entries:
+ *
+ *   m = ObjectSpace::WeakMap.new
+ *   m["one"] = 1
+ *   m["two"] = 2
+ *   m.inspect
+ *   # => "#<ObjectSpace::WeakMap:0x00007c457b2523e8: #<String:0x00007c457b2674f0> => 1, #<String:0x00007c457b27b8d8> => 2>"
+ */
 static VALUE
 wmap_inspect(VALUE self)
 {

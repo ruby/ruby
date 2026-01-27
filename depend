@@ -300,6 +300,7 @@ ast.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 ast.$(OBJEXT): $(top_srcdir)/internal/serial.h
 ast.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 ast.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+ast.$(OBJEXT): $(top_srcdir)/internal/struct.h
 ast.$(OBJEXT): $(top_srcdir)/internal/symbol.h
 ast.$(OBJEXT): $(top_srcdir)/internal/variable.h
 ast.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -539,6 +540,7 @@ bignum.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/serial.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+bignum.$(OBJEXT): $(top_srcdir)/internal/struct.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/variable.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/vm.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/warnings.h
@@ -753,6 +755,7 @@ box.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 box.$(OBJEXT): $(top_srcdir)/internal/st.h
 box.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 box.$(OBJEXT): $(top_srcdir)/internal/string.h
+box.$(OBJEXT): $(top_srcdir)/internal/struct.h
 box.$(OBJEXT): $(top_srcdir)/internal/variable.h
 box.$(OBJEXT): $(top_srcdir)/internal/vm.h
 box.$(OBJEXT): $(top_srcdir)/internal/warnings.h
@@ -796,6 +799,7 @@ box.$(OBJEXT): {$(VPATH)}constant.h
 box.$(OBJEXT): {$(VPATH)}darray.h
 box.$(OBJEXT): {$(VPATH)}debug_counter.h
 box.$(OBJEXT): {$(VPATH)}defines.h
+box.$(OBJEXT): {$(VPATH)}encindex.h
 box.$(OBJEXT): {$(VPATH)}encoding.h
 box.$(OBJEXT): {$(VPATH)}eval_intern.h
 box.$(OBJEXT): {$(VPATH)}id.h
@@ -991,6 +995,7 @@ builtin.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 builtin.$(OBJEXT): $(top_srcdir)/internal/serial.h
 builtin.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 builtin.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+builtin.$(OBJEXT): $(top_srcdir)/internal/struct.h
 builtin.$(OBJEXT): $(top_srcdir)/internal/variable.h
 builtin.$(OBJEXT): $(top_srcdir)/internal/vm.h
 builtin.$(OBJEXT): $(top_srcdir)/internal/warnings.h
@@ -1226,6 +1231,7 @@ class.$(OBJEXT): $(top_srcdir)/internal/serial.h
 class.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 class.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 class.$(OBJEXT): $(top_srcdir)/internal/string.h
+class.$(OBJEXT): $(top_srcdir)/internal/struct.h
 class.$(OBJEXT): $(top_srcdir)/internal/variable.h
 class.$(OBJEXT): $(top_srcdir)/internal/vm.h
 class.$(OBJEXT): $(top_srcdir)/internal/warnings.h
@@ -1245,6 +1251,7 @@ class.$(OBJEXT): {$(VPATH)}config.h
 class.$(OBJEXT): {$(VPATH)}constant.h
 class.$(OBJEXT): {$(VPATH)}debug_counter.h
 class.$(OBJEXT): {$(VPATH)}defines.h
+class.$(OBJEXT): {$(VPATH)}encindex.h
 class.$(OBJEXT): {$(VPATH)}encoding.h
 class.$(OBJEXT): {$(VPATH)}id.h
 class.$(OBJEXT): {$(VPATH)}id_table.h
@@ -1444,6 +1451,7 @@ compar.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 compar.$(OBJEXT): {$(VPATH)}compar.c
 compar.$(OBJEXT): {$(VPATH)}config.h
 compar.$(OBJEXT): {$(VPATH)}defines.h
+compar.$(OBJEXT): {$(VPATH)}encindex.h
 compar.$(OBJEXT): {$(VPATH)}encoding.h
 compar.$(OBJEXT): {$(VPATH)}id.h
 compar.$(OBJEXT): {$(VPATH)}intern.h
@@ -1636,6 +1644,7 @@ compile.$(OBJEXT): $(top_srcdir)/internal/serial.h
 compile.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 compile.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 compile.$(OBJEXT): $(top_srcdir)/internal/string.h
+compile.$(OBJEXT): $(top_srcdir)/internal/struct.h
 compile.$(OBJEXT): $(top_srcdir)/internal/symbol.h
 compile.$(OBJEXT): $(top_srcdir)/internal/thread.h
 compile.$(OBJEXT): $(top_srcdir)/internal/variable.h
@@ -1895,6 +1904,7 @@ complex.$(OBJEXT): $(top_srcdir)/internal/serial.h
 complex.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 complex.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 complex.$(OBJEXT): $(top_srcdir)/internal/string.h
+complex.$(OBJEXT): $(top_srcdir)/internal/struct.h
 complex.$(OBJEXT): $(top_srcdir)/internal/variable.h
 complex.$(OBJEXT): $(top_srcdir)/internal/vm.h
 complex.$(OBJEXT): $(top_srcdir)/internal/warnings.h
@@ -1914,6 +1924,7 @@ complex.$(OBJEXT): {$(VPATH)}config.h
 complex.$(OBJEXT): {$(VPATH)}constant.h
 complex.$(OBJEXT): {$(VPATH)}debug_counter.h
 complex.$(OBJEXT): {$(VPATH)}defines.h
+complex.$(OBJEXT): {$(VPATH)}encindex.h
 complex.$(OBJEXT): {$(VPATH)}encoding.h
 complex.$(OBJEXT): {$(VPATH)}id.h
 complex.$(OBJEXT): {$(VPATH)}id_table.h
@@ -2119,6 +2130,7 @@ concurrent_set.$(OBJEXT): {$(VPATH)}concurrent_set.c
 concurrent_set.$(OBJEXT): {$(VPATH)}config.h
 concurrent_set.$(OBJEXT): {$(VPATH)}debug_counter.h
 concurrent_set.$(OBJEXT): {$(VPATH)}defines.h
+concurrent_set.$(OBJEXT): {$(VPATH)}encindex.h
 concurrent_set.$(OBJEXT): {$(VPATH)}encoding.h
 concurrent_set.$(OBJEXT): {$(VPATH)}id.h
 concurrent_set.$(OBJEXT): {$(VPATH)}id_table.h
@@ -2312,6 +2324,7 @@ cont.$(OBJEXT): $(top_srcdir)/internal/serial.h
 cont.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 cont.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 cont.$(OBJEXT): $(top_srcdir)/internal/string.h
+cont.$(OBJEXT): $(top_srcdir)/internal/struct.h
 cont.$(OBJEXT): $(top_srcdir)/internal/thread.h
 cont.$(OBJEXT): $(top_srcdir)/internal/variable.h
 cont.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -2356,6 +2369,7 @@ cont.$(OBJEXT): {$(VPATH)}constant.h
 cont.$(OBJEXT): {$(VPATH)}cont.c
 cont.$(OBJEXT): {$(VPATH)}debug_counter.h
 cont.$(OBJEXT): {$(VPATH)}defines.h
+cont.$(OBJEXT): {$(VPATH)}encindex.h
 cont.$(OBJEXT): {$(VPATH)}encoding.h
 cont.$(OBJEXT): {$(VPATH)}eval_intern.h
 cont.$(OBJEXT): {$(VPATH)}fiber/scheduler.h
@@ -2552,6 +2566,7 @@ debug.$(OBJEXT): $(top_srcdir)/internal/serial.h
 debug.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 debug.$(OBJEXT): $(top_srcdir)/internal/signal.h
 debug.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+debug.$(OBJEXT): $(top_srcdir)/internal/struct.h
 debug.$(OBJEXT): $(top_srcdir)/internal/variable.h
 debug.$(OBJEXT): $(top_srcdir)/internal/vm.h
 debug.$(OBJEXT): $(top_srcdir)/internal/warnings.h
@@ -4897,6 +4912,7 @@ enumerator.$(OBJEXT): {$(VPATH)}config.h
 enumerator.$(OBJEXT): {$(VPATH)}constant.h
 enumerator.$(OBJEXT): {$(VPATH)}debug_counter.h
 enumerator.$(OBJEXT): {$(VPATH)}defines.h
+enumerator.$(OBJEXT): {$(VPATH)}encindex.h
 enumerator.$(OBJEXT): {$(VPATH)}encoding.h
 enumerator.$(OBJEXT): {$(VPATH)}enumerator.c
 enumerator.$(OBJEXT): {$(VPATH)}id.h
@@ -5095,6 +5111,7 @@ error.$(OBJEXT): $(top_srcdir)/internal/serial.h
 error.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 error.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 error.$(OBJEXT): $(top_srcdir)/internal/string.h
+error.$(OBJEXT): $(top_srcdir)/internal/struct.h
 error.$(OBJEXT): $(top_srcdir)/internal/symbol.h
 error.$(OBJEXT): $(top_srcdir)/internal/thread.h
 error.$(OBJEXT): $(top_srcdir)/internal/variable.h
@@ -5116,6 +5133,7 @@ error.$(OBJEXT): {$(VPATH)}config.h
 error.$(OBJEXT): {$(VPATH)}constant.h
 error.$(OBJEXT): {$(VPATH)}debug_counter.h
 error.$(OBJEXT): {$(VPATH)}defines.h
+error.$(OBJEXT): {$(VPATH)}encindex.h
 error.$(OBJEXT): {$(VPATH)}encoding.h
 error.$(OBJEXT): {$(VPATH)}error.c
 error.$(OBJEXT): {$(VPATH)}id.h
@@ -5320,6 +5338,7 @@ eval.$(OBJEXT): $(top_srcdir)/internal/serial.h
 eval.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 eval.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 eval.$(OBJEXT): $(top_srcdir)/internal/string.h
+eval.$(OBJEXT): $(top_srcdir)/internal/struct.h
 eval.$(OBJEXT): $(top_srcdir)/internal/thread.h
 eval.$(OBJEXT): $(top_srcdir)/internal/variable.h
 eval.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -5362,6 +5381,7 @@ eval.$(OBJEXT): {$(VPATH)}config.h
 eval.$(OBJEXT): {$(VPATH)}constant.h
 eval.$(OBJEXT): {$(VPATH)}debug_counter.h
 eval.$(OBJEXT): {$(VPATH)}defines.h
+eval.$(OBJEXT): {$(VPATH)}encindex.h
 eval.$(OBJEXT): {$(VPATH)}encoding.h
 eval.$(OBJEXT): {$(VPATH)}eval.c
 eval.$(OBJEXT): {$(VPATH)}eval_error.c
@@ -5573,6 +5593,7 @@ file.$(OBJEXT): $(top_srcdir)/internal/array.h
 file.$(OBJEXT): $(top_srcdir)/internal/class.h
 file.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 file.$(OBJEXT): $(top_srcdir)/internal/dir.h
+file.$(OBJEXT): $(top_srcdir)/internal/encoding.h
 file.$(OBJEXT): $(top_srcdir)/internal/error.h
 file.$(OBJEXT): $(top_srcdir)/internal/file.h
 file.$(OBJEXT): $(top_srcdir)/internal/gc.h
@@ -5854,6 +5875,7 @@ gc.$(OBJEXT): {$(VPATH)}darray.h
 gc.$(OBJEXT): {$(VPATH)}debug.h
 gc.$(OBJEXT): {$(VPATH)}debug_counter.h
 gc.$(OBJEXT): {$(VPATH)}defines.h
+gc.$(OBJEXT): {$(VPATH)}encindex.h
 gc.$(OBJEXT): {$(VPATH)}encoding.h
 gc.$(OBJEXT): {$(VPATH)}eval_intern.h
 gc.$(OBJEXT): {$(VPATH)}gc.c
@@ -6362,6 +6384,7 @@ hash.$(OBJEXT): {$(VPATH)}config.h
 hash.$(OBJEXT): {$(VPATH)}constant.h
 hash.$(OBJEXT): {$(VPATH)}debug_counter.h
 hash.$(OBJEXT): {$(VPATH)}defines.h
+hash.$(OBJEXT): {$(VPATH)}encindex.h
 hash.$(OBJEXT): {$(VPATH)}encoding.h
 hash.$(OBJEXT): {$(VPATH)}hash.c
 hash.$(OBJEXT): {$(VPATH)}hash.rbinc
@@ -6563,6 +6586,7 @@ imemo.$(OBJEXT): $(top_srcdir)/internal/serial.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/st.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+imemo.$(OBJEXT): $(top_srcdir)/internal/struct.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/variable.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/vm.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/warnings.h
@@ -6948,6 +6972,7 @@ io.$(OBJEXT): $(top_srcdir)/internal/serial.h
 io.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 io.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 io.$(OBJEXT): $(top_srcdir)/internal/string.h
+io.$(OBJEXT): $(top_srcdir)/internal/struct.h
 io.$(OBJEXT): $(top_srcdir)/internal/thread.h
 io.$(OBJEXT): $(top_srcdir)/internal/transcode.h
 io.$(OBJEXT): $(top_srcdir)/internal/variable.h
@@ -7190,6 +7215,7 @@ io_buffer.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 io_buffer.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 io_buffer.$(OBJEXT): {$(VPATH)}config.h
 io_buffer.$(OBJEXT): {$(VPATH)}defines.h
+io_buffer.$(OBJEXT): {$(VPATH)}encindex.h
 io_buffer.$(OBJEXT): {$(VPATH)}encoding.h
 io_buffer.$(OBJEXT): {$(VPATH)}fiber/scheduler.h
 io_buffer.$(OBJEXT): {$(VPATH)}id.h
@@ -7396,6 +7422,7 @@ iseq.$(OBJEXT): $(top_srcdir)/internal/serial.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/string.h
+iseq.$(OBJEXT): $(top_srcdir)/internal/struct.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/symbol.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/thread.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/variable.h
@@ -7440,6 +7467,7 @@ iseq.$(OBJEXT): {$(VPATH)}config.h
 iseq.$(OBJEXT): {$(VPATH)}constant.h
 iseq.$(OBJEXT): {$(VPATH)}debug_counter.h
 iseq.$(OBJEXT): {$(VPATH)}defines.h
+iseq.$(OBJEXT): {$(VPATH)}encindex.h
 iseq.$(OBJEXT): {$(VPATH)}encoding.h
 iseq.$(OBJEXT): {$(VPATH)}eval_intern.h
 iseq.$(OBJEXT): {$(VPATH)}id.h
@@ -7645,6 +7673,7 @@ jit.$(OBJEXT): $(top_srcdir)/internal/serial.h
 jit.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 jit.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 jit.$(OBJEXT): $(top_srcdir)/internal/string.h
+jit.$(OBJEXT): $(top_srcdir)/internal/struct.h
 jit.$(OBJEXT): $(top_srcdir)/internal/variable.h
 jit.$(OBJEXT): $(top_srcdir)/internal/vm.h
 jit.$(OBJEXT): $(top_srcdir)/internal/warnings.h
@@ -7687,6 +7716,7 @@ jit.$(OBJEXT): {$(VPATH)}config.h
 jit.$(OBJEXT): {$(VPATH)}constant.h
 jit.$(OBJEXT): {$(VPATH)}debug_counter.h
 jit.$(OBJEXT): {$(VPATH)}defines.h
+jit.$(OBJEXT): {$(VPATH)}encindex.h
 jit.$(OBJEXT): {$(VPATH)}encoding.h
 jit.$(OBJEXT): {$(VPATH)}id.h
 jit.$(OBJEXT): {$(VPATH)}id_table.h
@@ -7897,6 +7927,7 @@ load.$(OBJEXT): $(top_srcdir)/internal/serial.h
 load.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 load.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 load.$(OBJEXT): $(top_srcdir)/internal/string.h
+load.$(OBJEXT): $(top_srcdir)/internal/struct.h
 load.$(OBJEXT): $(top_srcdir)/internal/thread.h
 load.$(OBJEXT): $(top_srcdir)/internal/variable.h
 load.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -7940,6 +7971,7 @@ load.$(OBJEXT): {$(VPATH)}constant.h
 load.$(OBJEXT): {$(VPATH)}darray.h
 load.$(OBJEXT): {$(VPATH)}defines.h
 load.$(OBJEXT): {$(VPATH)}dln.h
+load.$(OBJEXT): {$(VPATH)}encindex.h
 load.$(OBJEXT): {$(VPATH)}encoding.h
 load.$(OBJEXT): {$(VPATH)}eval_intern.h
 load.$(OBJEXT): {$(VPATH)}id.h
@@ -9035,6 +9067,7 @@ memory_view.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 memory_view.$(OBJEXT): $(top_srcdir)/internal/serial.h
 memory_view.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 memory_view.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+memory_view.$(OBJEXT): $(top_srcdir)/internal/struct.h
 memory_view.$(OBJEXT): $(top_srcdir)/internal/variable.h
 memory_view.$(OBJEXT): $(top_srcdir)/internal/vm.h
 memory_view.$(OBJEXT): $(top_srcdir)/internal/warnings.h
@@ -9252,6 +9285,7 @@ miniinit.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/serial.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+miniinit.$(OBJEXT): $(top_srcdir)/internal/struct.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/variable.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/vm.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/warnings.h
@@ -9508,6 +9542,7 @@ node.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 node.$(OBJEXT): $(top_srcdir)/internal/serial.h
 node.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 node.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+node.$(OBJEXT): $(top_srcdir)/internal/struct.h
 node.$(OBJEXT): $(top_srcdir)/internal/variable.h
 node.$(OBJEXT): $(top_srcdir)/internal/vm.h
 node.$(OBJEXT): $(top_srcdir)/internal/warnings.h
@@ -9722,6 +9757,7 @@ node_dump.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/serial.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+node_dump.$(OBJEXT): $(top_srcdir)/internal/struct.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/variable.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/vm.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/warnings.h
@@ -9939,6 +9975,7 @@ numeric.$(OBJEXT): $(top_srcdir)/internal/serial.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/string.h
+numeric.$(OBJEXT): $(top_srcdir)/internal/struct.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/util.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/variable.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -9958,6 +9995,7 @@ numeric.$(OBJEXT): {$(VPATH)}builtin.h
 numeric.$(OBJEXT): {$(VPATH)}config.h
 numeric.$(OBJEXT): {$(VPATH)}constant.h
 numeric.$(OBJEXT): {$(VPATH)}defines.h
+numeric.$(OBJEXT): {$(VPATH)}encindex.h
 numeric.$(OBJEXT): {$(VPATH)}encoding.h
 numeric.$(OBJEXT): {$(VPATH)}id.h
 numeric.$(OBJEXT): {$(VPATH)}id_table.h
@@ -10179,6 +10217,7 @@ object.$(OBJEXT): {$(VPATH)}config.h
 object.$(OBJEXT): {$(VPATH)}constant.h
 object.$(OBJEXT): {$(VPATH)}debug_counter.h
 object.$(OBJEXT): {$(VPATH)}defines.h
+object.$(OBJEXT): {$(VPATH)}encindex.h
 object.$(OBJEXT): {$(VPATH)}encoding.h
 object.$(OBJEXT): {$(VPATH)}id.h
 object.$(OBJEXT): {$(VPATH)}id_table.h
@@ -10377,6 +10416,7 @@ pack.$(OBJEXT): $(top_srcdir)/internal/serial.h
 pack.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 pack.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 pack.$(OBJEXT): $(top_srcdir)/internal/string.h
+pack.$(OBJEXT): $(top_srcdir)/internal/struct.h
 pack.$(OBJEXT): $(top_srcdir)/internal/symbol.h
 pack.$(OBJEXT): $(top_srcdir)/internal/variable.h
 pack.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -10396,6 +10436,7 @@ pack.$(OBJEXT): {$(VPATH)}builtin.h
 pack.$(OBJEXT): {$(VPATH)}config.h
 pack.$(OBJEXT): {$(VPATH)}constant.h
 pack.$(OBJEXT): {$(VPATH)}defines.h
+pack.$(OBJEXT): {$(VPATH)}encindex.h
 pack.$(OBJEXT): {$(VPATH)}encoding.h
 pack.$(OBJEXT): {$(VPATH)}id.h
 pack.$(OBJEXT): {$(VPATH)}id_table.h
@@ -10601,6 +10642,7 @@ parse.$(OBJEXT): $(top_srcdir)/internal/serial.h
 parse.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 parse.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 parse.$(OBJEXT): $(top_srcdir)/internal/string.h
+parse.$(OBJEXT): $(top_srcdir)/internal/struct.h
 parse.$(OBJEXT): $(top_srcdir)/internal/symbol.h
 parse.$(OBJEXT): $(top_srcdir)/internal/thread.h
 parse.$(OBJEXT): $(top_srcdir)/internal/variable.h
@@ -10621,6 +10663,7 @@ parse.$(OBJEXT): {$(VPATH)}config.h
 parse.$(OBJEXT): {$(VPATH)}constant.h
 parse.$(OBJEXT): {$(VPATH)}defines.h
 parse.$(OBJEXT): {$(VPATH)}defs/keywords
+parse.$(OBJEXT): {$(VPATH)}encindex.h
 parse.$(OBJEXT): {$(VPATH)}encoding.h
 parse.$(OBJEXT): {$(VPATH)}id.h
 parse.$(OBJEXT): {$(VPATH)}id_table.h
@@ -12059,6 +12102,7 @@ proc.$(OBJEXT): $(top_srcdir)/internal/serial.h
 proc.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 proc.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 proc.$(OBJEXT): $(top_srcdir)/internal/string.h
+proc.$(OBJEXT): $(top_srcdir)/internal/struct.h
 proc.$(OBJEXT): $(top_srcdir)/internal/symbol.h
 proc.$(OBJEXT): $(top_srcdir)/internal/variable.h
 proc.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -12101,6 +12145,7 @@ proc.$(OBJEXT): {$(VPATH)}config.h
 proc.$(OBJEXT): {$(VPATH)}constant.h
 proc.$(OBJEXT): {$(VPATH)}debug_counter.h
 proc.$(OBJEXT): {$(VPATH)}defines.h
+proc.$(OBJEXT): {$(VPATH)}encindex.h
 proc.$(OBJEXT): {$(VPATH)}encoding.h
 proc.$(OBJEXT): {$(VPATH)}eval_intern.h
 proc.$(OBJEXT): {$(VPATH)}id.h
@@ -12310,6 +12355,7 @@ process.$(OBJEXT): $(top_srcdir)/internal/serial.h
 process.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 process.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 process.$(OBJEXT): $(top_srcdir)/internal/string.h
+process.$(OBJEXT): $(top_srcdir)/internal/struct.h
 process.$(OBJEXT): $(top_srcdir)/internal/thread.h
 process.$(OBJEXT): $(top_srcdir)/internal/time.h
 process.$(OBJEXT): $(top_srcdir)/internal/variable.h
@@ -12331,6 +12377,7 @@ process.$(OBJEXT): {$(VPATH)}constant.h
 process.$(OBJEXT): {$(VPATH)}debug_counter.h
 process.$(OBJEXT): {$(VPATH)}defines.h
 process.$(OBJEXT): {$(VPATH)}dln.h
+process.$(OBJEXT): {$(VPATH)}encindex.h
 process.$(OBJEXT): {$(VPATH)}encoding.h
 process.$(OBJEXT): {$(VPATH)}fiber/scheduler.h
 process.$(OBJEXT): {$(VPATH)}hrtime.h
@@ -12560,6 +12607,7 @@ ractor.$(OBJEXT): {$(VPATH)}config.h
 ractor.$(OBJEXT): {$(VPATH)}constant.h
 ractor.$(OBJEXT): {$(VPATH)}debug_counter.h
 ractor.$(OBJEXT): {$(VPATH)}defines.h
+ractor.$(OBJEXT): {$(VPATH)}encindex.h
 ractor.$(OBJEXT): {$(VPATH)}encoding.h
 ractor.$(OBJEXT): {$(VPATH)}eval_intern.h
 ractor.$(OBJEXT): {$(VPATH)}id.h
@@ -12765,6 +12813,7 @@ random.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 random.$(OBJEXT): $(top_srcdir)/internal/serial.h
 random.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 random.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+random.$(OBJEXT): $(top_srcdir)/internal/struct.h
 random.$(OBJEXT): $(top_srcdir)/internal/variable.h
 random.$(OBJEXT): $(top_srcdir)/internal/vm.h
 random.$(OBJEXT): $(top_srcdir)/internal/warnings.h
@@ -12992,6 +13041,7 @@ range.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 range.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 range.$(OBJEXT): {$(VPATH)}config.h
 range.$(OBJEXT): {$(VPATH)}defines.h
+range.$(OBJEXT): {$(VPATH)}encindex.h
 range.$(OBJEXT): {$(VPATH)}encoding.h
 range.$(OBJEXT): {$(VPATH)}id.h
 range.$(OBJEXT): {$(VPATH)}id_table.h
@@ -13390,6 +13440,7 @@ re.$(OBJEXT): $(top_srcdir)/internal/serial.h
 re.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 re.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 re.$(OBJEXT): $(top_srcdir)/internal/string.h
+re.$(OBJEXT): $(top_srcdir)/internal/struct.h
 re.$(OBJEXT): $(top_srcdir)/internal/time.h
 re.$(OBJEXT): $(top_srcdir)/internal/variable.h
 re.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -14617,6 +14668,7 @@ ruby.$(OBJEXT): $(top_srcdir)/internal/serial.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/string.h
+ruby.$(OBJEXT): $(top_srcdir)/internal/struct.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/thread.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/variable.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -14660,6 +14712,7 @@ ruby.$(OBJEXT): {$(VPATH)}constant.h
 ruby.$(OBJEXT): {$(VPATH)}debug_counter.h
 ruby.$(OBJEXT): {$(VPATH)}defines.h
 ruby.$(OBJEXT): {$(VPATH)}dln.h
+ruby.$(OBJEXT): {$(VPATH)}encindex.h
 ruby.$(OBJEXT): {$(VPATH)}encoding.h
 ruby.$(OBJEXT): {$(VPATH)}eval_intern.h
 ruby.$(OBJEXT): {$(VPATH)}id.h
@@ -14868,6 +14921,7 @@ ruby_parser.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 ruby_parser.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 ruby_parser.$(OBJEXT): {$(VPATH)}config.h
 ruby_parser.$(OBJEXT): {$(VPATH)}defines.h
+ruby_parser.$(OBJEXT): {$(VPATH)}encindex.h
 ruby_parser.$(OBJEXT): {$(VPATH)}encoding.h
 ruby_parser.$(OBJEXT): {$(VPATH)}intern.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal.h
@@ -15259,6 +15313,7 @@ set.$(OBJEXT): $(top_srcdir)/internal/serial.h
 set.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 set.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 set.$(OBJEXT): $(top_srcdir)/internal/string.h
+set.$(OBJEXT): $(top_srcdir)/internal/struct.h
 set.$(OBJEXT): $(top_srcdir)/internal/symbol.h
 set.$(OBJEXT): $(top_srcdir)/internal/variable.h
 set.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -15277,6 +15332,7 @@ set.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 set.$(OBJEXT): {$(VPATH)}config.h
 set.$(OBJEXT): {$(VPATH)}constant.h
 set.$(OBJEXT): {$(VPATH)}defines.h
+set.$(OBJEXT): {$(VPATH)}encindex.h
 set.$(OBJEXT): {$(VPATH)}encoding.h
 set.$(OBJEXT): {$(VPATH)}id.h
 set.$(OBJEXT): {$(VPATH)}id_table.h
@@ -15649,6 +15705,7 @@ shape.$(OBJEXT): {$(VPATH)}config.h
 shape.$(OBJEXT): {$(VPATH)}constant.h
 shape.$(OBJEXT): {$(VPATH)}debug_counter.h
 shape.$(OBJEXT): {$(VPATH)}defines.h
+shape.$(OBJEXT): {$(VPATH)}encindex.h
 shape.$(OBJEXT): {$(VPATH)}encoding.h
 shape.$(OBJEXT): {$(VPATH)}id.h
 shape.$(OBJEXT): {$(VPATH)}id_table.h
@@ -15863,6 +15920,7 @@ signal.$(OBJEXT): {$(VPATH)}config.h
 signal.$(OBJEXT): {$(VPATH)}constant.h
 signal.$(OBJEXT): {$(VPATH)}debug_counter.h
 signal.$(OBJEXT): {$(VPATH)}defines.h
+signal.$(OBJEXT): {$(VPATH)}encindex.h
 signal.$(OBJEXT): {$(VPATH)}encoding.h
 signal.$(OBJEXT): {$(VPATH)}eval_intern.h
 signal.$(OBJEXT): {$(VPATH)}id.h
@@ -16072,6 +16130,7 @@ sprintf.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 sprintf.$(OBJEXT): {$(VPATH)}config.h
 sprintf.$(OBJEXT): {$(VPATH)}constant.h
 sprintf.$(OBJEXT): {$(VPATH)}defines.h
+sprintf.$(OBJEXT): {$(VPATH)}encindex.h
 sprintf.$(OBJEXT): {$(VPATH)}encoding.h
 sprintf.$(OBJEXT): {$(VPATH)}id.h
 sprintf.$(OBJEXT): {$(VPATH)}id_table.h
@@ -16428,6 +16487,7 @@ strftime.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 strftime.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 strftime.$(OBJEXT): {$(VPATH)}config.h
 strftime.$(OBJEXT): {$(VPATH)}defines.h
+strftime.$(OBJEXT): {$(VPATH)}encindex.h
 strftime.$(OBJEXT): {$(VPATH)}encoding.h
 strftime.$(OBJEXT): {$(VPATH)}intern.h
 strftime.$(OBJEXT): {$(VPATH)}internal.h
@@ -16896,6 +16956,7 @@ struct.$(OBJEXT): {$(VPATH)}config.h
 struct.$(OBJEXT): {$(VPATH)}constant.h
 struct.$(OBJEXT): {$(VPATH)}debug_counter.h
 struct.$(OBJEXT): {$(VPATH)}defines.h
+struct.$(OBJEXT): {$(VPATH)}encindex.h
 struct.$(OBJEXT): {$(VPATH)}encoding.h
 struct.$(OBJEXT): {$(VPATH)}id.h
 struct.$(OBJEXT): {$(VPATH)}id_table.h
@@ -17109,8 +17170,10 @@ symbol.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 symbol.$(OBJEXT): {$(VPATH)}builtin.h
 symbol.$(OBJEXT): {$(VPATH)}config.h
 symbol.$(OBJEXT): {$(VPATH)}constant.h
+symbol.$(OBJEXT): {$(VPATH)}darray.h
 symbol.$(OBJEXT): {$(VPATH)}debug_counter.h
 symbol.$(OBJEXT): {$(VPATH)}defines.h
+symbol.$(OBJEXT): {$(VPATH)}encindex.h
 symbol.$(OBJEXT): {$(VPATH)}encoding.h
 symbol.$(OBJEXT): {$(VPATH)}id.c
 symbol.$(OBJEXT): {$(VPATH)}id.h
@@ -17321,6 +17384,7 @@ thread.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 thread.$(OBJEXT): $(top_srcdir)/internal/signal.h
 thread.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 thread.$(OBJEXT): $(top_srcdir)/internal/string.h
+thread.$(OBJEXT): $(top_srcdir)/internal/struct.h
 thread.$(OBJEXT): $(top_srcdir)/internal/thread.h
 thread.$(OBJEXT): $(top_srcdir)/internal/time.h
 thread.$(OBJEXT): $(top_srcdir)/internal/variable.h
@@ -17367,6 +17431,7 @@ thread.$(OBJEXT): {$(VPATH)}constant.h
 thread.$(OBJEXT): {$(VPATH)}debug.h
 thread.$(OBJEXT): {$(VPATH)}debug_counter.h
 thread.$(OBJEXT): {$(VPATH)}defines.h
+thread.$(OBJEXT): {$(VPATH)}encindex.h
 thread.$(OBJEXT): {$(VPATH)}encoding.h
 thread.$(OBJEXT): {$(VPATH)}eval_intern.h
 thread.$(OBJEXT): {$(VPATH)}fiber/scheduler.h
@@ -17577,6 +17642,7 @@ time.$(OBJEXT): $(top_srcdir)/internal/serial.h
 time.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 time.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 time.$(OBJEXT): $(top_srcdir)/internal/string.h
+time.$(OBJEXT): $(top_srcdir)/internal/struct.h
 time.$(OBJEXT): $(top_srcdir)/internal/time.h
 time.$(OBJEXT): $(top_srcdir)/internal/variable.h
 time.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -17596,6 +17662,7 @@ time.$(OBJEXT): {$(VPATH)}builtin.h
 time.$(OBJEXT): {$(VPATH)}config.h
 time.$(OBJEXT): {$(VPATH)}constant.h
 time.$(OBJEXT): {$(VPATH)}defines.h
+time.$(OBJEXT): {$(VPATH)}encindex.h
 time.$(OBJEXT): {$(VPATH)}encoding.h
 time.$(OBJEXT): {$(VPATH)}id.h
 time.$(OBJEXT): {$(VPATH)}id_table.h
@@ -17798,6 +17865,7 @@ transcode.$(OBJEXT): {$(VPATH)}config.h
 transcode.$(OBJEXT): {$(VPATH)}constant.h
 transcode.$(OBJEXT): {$(VPATH)}debug_counter.h
 transcode.$(OBJEXT): {$(VPATH)}defines.h
+transcode.$(OBJEXT): {$(VPATH)}encindex.h
 transcode.$(OBJEXT): {$(VPATH)}encoding.h
 transcode.$(OBJEXT): {$(VPATH)}id.h
 transcode.$(OBJEXT): {$(VPATH)}id_table.h
@@ -18179,6 +18247,7 @@ variable.$(OBJEXT): {$(VPATH)}config.h
 variable.$(OBJEXT): {$(VPATH)}constant.h
 variable.$(OBJEXT): {$(VPATH)}debug_counter.h
 variable.$(OBJEXT): {$(VPATH)}defines.h
+variable.$(OBJEXT): {$(VPATH)}encindex.h
 variable.$(OBJEXT): {$(VPATH)}encoding.h
 variable.$(OBJEXT): {$(VPATH)}id.h
 variable.$(OBJEXT): {$(VPATH)}id_table.h
@@ -18655,6 +18724,7 @@ vm.$(OBJEXT): {$(VPATH)}constant.h
 vm.$(OBJEXT): {$(VPATH)}debug_counter.h
 vm.$(OBJEXT): {$(VPATH)}defines.h
 vm.$(OBJEXT): {$(VPATH)}defs/opt_operand.def
+vm.$(OBJEXT): {$(VPATH)}encindex.h
 vm.$(OBJEXT): {$(VPATH)}encoding.h
 vm.$(OBJEXT): {$(VPATH)}eval_intern.h
 vm.$(OBJEXT): {$(VPATH)}id.h
@@ -18876,6 +18946,7 @@ vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/serial.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/string.h
+vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/struct.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/variable.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/vm.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/warnings.h
@@ -18918,6 +18989,7 @@ vm_backtrace.$(OBJEXT): {$(VPATH)}constant.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}debug.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}debug_counter.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}defines.h
+vm_backtrace.$(OBJEXT): {$(VPATH)}encindex.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}encoding.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}eval_intern.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}id.h
@@ -19109,6 +19181,7 @@ vm_dump.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 vm_dump.$(OBJEXT): $(top_srcdir)/internal/serial.h
 vm_dump.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 vm_dump.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+vm_dump.$(OBJEXT): $(top_srcdir)/internal/struct.h
 vm_dump.$(OBJEXT): $(top_srcdir)/internal/variable.h
 vm_dump.$(OBJEXT): $(top_srcdir)/internal/vm.h
 vm_dump.$(OBJEXT): $(top_srcdir)/internal/warnings.h
@@ -19556,6 +19629,7 @@ vm_trace.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/serial.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+vm_trace.$(OBJEXT): $(top_srcdir)/internal/struct.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/symbol.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/thread.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/variable.h
@@ -20008,6 +20082,7 @@ yjit.$(OBJEXT): $(top_srcdir)/internal/serial.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/string.h
+yjit.$(OBJEXT): $(top_srcdir)/internal/struct.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/variable.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/vm.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/warnings.h
@@ -20051,6 +20126,7 @@ yjit.$(OBJEXT): {$(VPATH)}constant.h
 yjit.$(OBJEXT): {$(VPATH)}debug.h
 yjit.$(OBJEXT): {$(VPATH)}debug_counter.h
 yjit.$(OBJEXT): {$(VPATH)}defines.h
+yjit.$(OBJEXT): {$(VPATH)}encindex.h
 yjit.$(OBJEXT): {$(VPATH)}encoding.h
 yjit.$(OBJEXT): {$(VPATH)}id.h
 yjit.$(OBJEXT): {$(VPATH)}id_table.h
@@ -20262,6 +20338,7 @@ zjit.$(OBJEXT): $(top_srcdir)/internal/serial.h
 zjit.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 zjit.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 zjit.$(OBJEXT): $(top_srcdir)/internal/string.h
+zjit.$(OBJEXT): $(top_srcdir)/internal/struct.h
 zjit.$(OBJEXT): $(top_srcdir)/internal/variable.h
 zjit.$(OBJEXT): $(top_srcdir)/internal/vm.h
 zjit.$(OBJEXT): $(top_srcdir)/internal/warnings.h
@@ -20305,6 +20382,7 @@ zjit.$(OBJEXT): {$(VPATH)}constant.h
 zjit.$(OBJEXT): {$(VPATH)}debug.h
 zjit.$(OBJEXT): {$(VPATH)}debug_counter.h
 zjit.$(OBJEXT): {$(VPATH)}defines.h
+zjit.$(OBJEXT): {$(VPATH)}encindex.h
 zjit.$(OBJEXT): {$(VPATH)}encoding.h
 zjit.$(OBJEXT): {$(VPATH)}id.h
 zjit.$(OBJEXT): {$(VPATH)}id_table.h

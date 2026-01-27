@@ -32,4 +32,17 @@ class TestBundlerGem < Gem::TestCase
     assert Gem::BUNDLED_GEMS.warning?(path, specs: {})
     assert_nil Gem::BUNDLED_GEMS.warning?(path, specs: {})
   end
+
+  def test_no_warning_for_hyphenated_gem
+    # When benchmark-ips gem is in specs, requiring "benchmark/ips" should not warn
+    # about the benchmark gem (Bug #21828)
+    assert_nil Gem::BUNDLED_GEMS.warning?("benchmark/ips", specs: {"benchmark-ips" => true})
+  end
+
+  def test_warning_without_hyphenated_gem
+    # When benchmark-ips is NOT in specs, requiring "benchmark/ips" should warn
+    warning = Gem::BUNDLED_GEMS.warning?("benchmark/ips", specs: {})
+    assert warning
+    assert_match(/benchmark/, warning)
+  end
 end

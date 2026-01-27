@@ -133,7 +133,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_yjit_enable_with_monkey_patch
-    assert_separately(%w[--yjit-disable], <<~RUBY)
+    assert_ruby_status(%w[--yjit-disable], <<~RUBY)
       # This lets rb_method_entry_at(rb_mKernel, ...) return NULL
       Kernel.prepend(Module.new)
 
@@ -654,6 +654,26 @@ class TestYJIT < Test::Unit::TestCase
       Foo = Struct.new(:foo, :bar)
       foo(Foo.new(123))
       foo(Foo.new(123))
+    RUBY
+  end
+
+  def test_struct_aset_guards_recv_is_not_frozen
+    assert_compiles(<<~RUBY, result: :ok, exits: { opt_send_without_block: 1 })
+      def foo(obj)
+        obj.foo = 123
+      end
+
+      Foo = Struct.new(:foo)
+      obj = Foo.new(123)
+      100.times do
+        foo(obj)
+      end
+      obj.freeze
+      begin
+        foo(obj)
+      rescue FrozenError
+        :ok
+      end
     RUBY
   end
 
@@ -1782,6 +1802,18 @@ class TestYJIT < Test::Unit::TestCase
       foo
       foo
     RUBY
+  end
+
+  def test_yjit_dump_insns
+    # Testing that this undocumented debugging feature doesn't crash
+    args = [
+      '--yjit-call-threshold=1',
+      '--yjit-dump-insns',
+      '-e def foo(case:) = {case:}[:case]',
+      '-e foo(case:0)',
+    ]
+    _out, _err, status = invoke_ruby(args, '', true, true)
+    assert_not_predicate(status, :signaled?)
   end
 
   private

@@ -32,6 +32,7 @@ mod bits {
   pub const DynamicSymbol: u64 = 1u64 << 20;
   pub const Empty: u64 = 0u64;
   pub const FalseClass: u64 = 1u64 << 21;
+  pub const Falsy: u64 = FalseClass | NilClass;
   pub const Fixnum: u64 = 1u64 << 22;
   pub const Float: u64 = Flonum | HeapFloat;
   pub const Flonum: u64 = 1u64 << 23;
@@ -47,6 +48,7 @@ mod bits {
   pub const ModuleExact: u64 = 1u64 << 27;
   pub const ModuleSubclass: u64 = 1u64 << 28;
   pub const NilClass: u64 = 1u64 << 29;
+  pub const NotNil: u64 = BasicObject & !NilClass;
   pub const Numeric: u64 = Float | Integer | NumericExact | NumericSubclass;
   pub const NumericExact: u64 = 1u64 << 30;
   pub const NumericSubclass: u64 = 1u64 << 31;
@@ -70,14 +72,17 @@ mod bits {
   pub const Subclass: u64 = ArraySubclass | BasicObjectSubclass | HashSubclass | ModuleSubclass | NumericSubclass | ObjectSubclass | RangeSubclass | RegexpSubclass | SetSubclass | StringSubclass;
   pub const Symbol: u64 = DynamicSymbol | StaticSymbol;
   pub const TrueClass: u64 = 1u64 << 43;
+  pub const Truthy: u64 = BasicObject & !Falsy;
   pub const Undef: u64 = 1u64 << 44;
-  pub const AllBitPatterns: [(&str, u64); 71] = [
+  pub const AllBitPatterns: [(&str, u64); 74] = [
     ("Any", Any),
     ("RubyValue", RubyValue),
     ("Immediate", Immediate),
     ("Undef", Undef),
     ("BasicObject", BasicObject),
     ("Object", Object),
+    ("NotNil", NotNil),
+    ("Truthy", Truthy),
     ("BuiltinExact", BuiltinExact),
     ("BoolExact", BoolExact),
     ("TrueClass", TrueClass),
@@ -103,6 +108,7 @@ mod bits {
     ("Numeric", Numeric),
     ("NumericSubclass", NumericSubclass),
     ("NumericExact", NumericExact),
+    ("Falsy", Falsy),
     ("NilClass", NilClass),
     ("Module", Module),
     ("ModuleSubclass", ModuleSubclass),
@@ -180,6 +186,7 @@ pub mod types {
   pub const DynamicSymbol: Type = Type::from_bits(bits::DynamicSymbol);
   pub const Empty: Type = Type::from_bits(bits::Empty);
   pub const FalseClass: Type = Type::from_bits(bits::FalseClass);
+  pub const Falsy: Type = Type::from_bits(bits::Falsy);
   pub const Fixnum: Type = Type::from_bits(bits::Fixnum);
   pub const Float: Type = Type::from_bits(bits::Float);
   pub const Flonum: Type = Type::from_bits(bits::Flonum);
@@ -195,6 +202,7 @@ pub mod types {
   pub const ModuleExact: Type = Type::from_bits(bits::ModuleExact);
   pub const ModuleSubclass: Type = Type::from_bits(bits::ModuleSubclass);
   pub const NilClass: Type = Type::from_bits(bits::NilClass);
+  pub const NotNil: Type = Type::from_bits(bits::NotNil);
   pub const Numeric: Type = Type::from_bits(bits::Numeric);
   pub const NumericExact: Type = Type::from_bits(bits::NumericExact);
   pub const NumericSubclass: Type = Type::from_bits(bits::NumericSubclass);
@@ -218,6 +226,7 @@ pub mod types {
   pub const Subclass: Type = Type::from_bits(bits::Subclass);
   pub const Symbol: Type = Type::from_bits(bits::Symbol);
   pub const TrueClass: Type = Type::from_bits(bits::TrueClass);
+  pub const Truthy: Type = Type::from_bits(bits::Truthy);
   pub const Undef: Type = Type::from_bits(bits::Undef);
   pub const ExactBitsAndClass: [(u64, *const VALUE); 17] = [
     (bits::ObjectExact, &raw const crate::cruby::rb_cObject),

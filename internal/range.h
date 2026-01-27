@@ -18,19 +18,19 @@ static inline VALUE RANGE_EXCL(VALUE r);
 static inline VALUE
 RANGE_BEG(VALUE r)
 {
-    return RSTRUCT(r)->as.ary[0];
+    return RSTRUCT_GET_RAW(r, 0);
 }
 
 static inline VALUE
 RANGE_END(VALUE r)
 {
-    return RSTRUCT_GET(r, 1);
+    return RSTRUCT_GET_RAW(r, 1);
 }
 
 static inline VALUE
 RANGE_EXCL(VALUE r)
 {
-    return RSTRUCT_GET(r, 2);
+    return RSTRUCT_GET_RAW(r, 2);
 }
 
 VALUE

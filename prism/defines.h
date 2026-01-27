@@ -257,4 +257,37 @@
     #define PRISM_FALLTHROUGH
 #endif
 
+/**
+ * We need to align nodes in the AST to a pointer boundary so that it can be
+ * safely cast to different node types. Use PRISM_ALIGNAS/PRISM_ALIGNOF to
+ * specify alignment in a compiler-agnostic way.
+ */
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L /* C11 or later */
+    #include <stdalign.h>
+
+    /** Specify alignment for a type or variable. */
+    #define PRISM_ALIGNAS(size) alignas(size)
+
+    /** Get the alignment requirement of a type. */
+    #define PRISM_ALIGNOF(type) alignof(type)
+#elif defined(__GNUC__) || defined(__clang__)
+    /** Specify alignment for a type or variable. */
+    #define PRISM_ALIGNAS(size) __attribute__((aligned(size)))
+
+    /** Get the alignment requirement of a type. */
+    #define PRISM_ALIGNOF(type) __alignof__(type)
+#elif defined(_MSC_VER)
+    /** Specify alignment for a type or variable. */
+    #define PRISM_ALIGNAS(size) __declspec(align(size))
+
+    /** Get the alignment requirement of a type. */
+    #define PRISM_ALIGNOF(type) __alignof(type)
+#else
+    /** Void because this platform does not support specifying alignment. */
+    #define PRISM_ALIGNAS(size)
+
+    /** Fallback to sizeof as alignment requirement of a type. */
+    #define PRISM_ALIGNOF(type) sizeof(type)
+#endif
+
 #endif

@@ -448,9 +448,10 @@ class VCS
     end
 
     def branch_beginning(url)
-      cmd_read(%W[ #{COMMAND} log -n1 --format=format:%H
+      year = cmd_read(%W[ #{COMMAND} log -n1 --format=%cd --date=format:%Y #{url} --]).to_i
+      cmd_read(%W[ #{COMMAND} log --format=format:%H --reverse --since=#{year-1}-12-25
                    --author=matz --committer=matz --grep=started\\.$
-                   #{url.to_str} -- version.h include/ruby/version.h])
+                   #{url} -- version.h include/ruby/version.h])[/.*/]
     end
 
     def export_changelog(url = '@', from = nil, to = nil, _path = nil, path: _path, base_url: true)
@@ -458,7 +459,7 @@ class VCS
         rev or next
         rev unless rev.empty?
       end
-      unless (from && /./.match(from)) or ((from = branch_beginning(url)) && /./.match(from))
+      unless from&.match?(/./) or (from = branch_beginning(url))&.match?(/./)
         warn "no starting commit found", uplevel: 1
         from = nil
       end
