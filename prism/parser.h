@@ -479,17 +479,11 @@ typedef struct {
     /** The embedded base node. */
     pm_list_node_t node;
 
-    /** A pointer to the start of the key in the source. */
-    const uint8_t *key_start;
+    /** The key of the magic comment. */
+    pm_location_t key;
 
-    /** A pointer to the start of the value in the source. */
-    const uint8_t *value_start;
-
-    /** The length of the key in the source. */
-    uint32_t key_length;
-
-    /** The length of the value in the source. */
-    uint32_t value_length;
+    /** The value of the magic comment. */
+    pm_location_t value;
 } pm_magic_comment_t;
 
 /**
