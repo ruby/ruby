@@ -617,9 +617,15 @@ kqueue_wait(rb_vm_t *vm)
     struct timespec *timeout = NULL;
     int timeout_ms = timer_thread_set_timeout(vm);
 
-    if (timeout_ms >= 0) {
+    if (timeout_ms > 0) {
         calculated_timeout.tv_sec = timeout_ms / 1000;
         calculated_timeout.tv_nsec = (timeout_ms % 1000) * 1000000;
+        timeout = &calculated_timeout;
+    }
+    else if (timeout_ms == 0) {
+        // Relying on the absence of other members of struct timespec is not strictly portable,
+        // and kevent needs a 0-valued timespec to mean immediate timeout.
+        memset(&calculated_timeout, 0, sizeof(struct timespec));
         timeout = &calculated_timeout;
     }
 

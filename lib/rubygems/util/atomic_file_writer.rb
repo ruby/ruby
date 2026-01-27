@@ -30,6 +30,7 @@ module Gem
       flags |= File::SHARE_DELETE if defined?(File::SHARE_DELETE)
 
       File.open(tmp_path, flags) do |temp_file|
+        temp_file.binmode
         if old_stat
           # Set correct permissions on new file
           begin

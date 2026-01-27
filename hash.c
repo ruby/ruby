@@ -2644,9 +2644,9 @@ rb_hash_slice(int argc, VALUE *argv, VALUE hash)
  *  Returns a copy of +self+ that excludes entries for the given +keys+;
  *  any +keys+ that are not found are ignored:
  *
- *    h = {foo:0, bar: 1, baz: 2} # => {:foo=>0, :bar=>1, :baz=>2}
- *    h.except(:baz, :foo)        # => {:bar=>1}
- *    h.except(:bar, :nosuch)     # => {:foo=>0, :baz=>2}
+ *    h = {foo:0, bar: 1, baz: 2} # => {foo: 0, bar: 1, baz: 2}
+ *    h.except(:baz, :foo)        # => {bar: 1}
+ *    h.except(:bar, :nosuch)     # => {foo: 0, baz: 2}
  *
  *  Related: see {Methods for Deleting}[rdoc-ref:Hash@Methods+for+Deleting].
  */
@@ -2923,7 +2923,7 @@ NOINSERT_UPDATE_CALLBACK(hash_aset_str)
  *    h = {foo: 0, bar: 1}
  *    h[:baz] = 2 # => 2
  *    h[:baz]     # => 2
- *    h           # => {:foo=>0, :bar=>1, :baz=>2}
+ *    h           # => {foo: 0, bar: 1, baz: 2}
  *
  *  Related: #[]; see also {Methods for Assigning}[rdoc-ref:Hash@Methods+for+Assigning].
  */
@@ -7216,8 +7216,8 @@ static const rb_data_type_t env_data_type = {
  *
  *  First, what's elsewhere. Class +Hash+:
  *
- *  - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
- *  - Includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],
+ *  - Inherits from {class Object}[rdoc-ref:Object@Whats+Here].
+ *  - Includes {module Enumerable}[rdoc-ref:Enumerable@Whats+Here],
  *    which provides dozens of additional methods.
  *
  *  Here, class +Hash+ provides methods that are useful for:
@@ -7528,8 +7528,8 @@ Init_Hash(void)
      *
      * First, what's elsewhere. Class +ENV+:
      *
-     * - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
-     * - Extends {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],
+     * - Inherits from {class Object}[rdoc-ref:Object@Whats+Here].
+     * - Extends {module Enumerable}[rdoc-ref:Enumerable@Whats+Here],
      *
      * Here, class +ENV+ provides methods that are useful for:
      *

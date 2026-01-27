@@ -68,7 +68,7 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -158,7 +158,7 @@ jobs:
         include:
           # Test --call-threshold=2 with 2 iterations in total
           - ruby_opts: '--zjit-call-threshold=2'
-            bench_opts: '--warmup=1 --bench=1'
+            bench_opts: '--warmup=1 --bench=1 --excludes=lobsters'
             configure: '--enable-zjit=dev_nodebug' # --enable-zjit=dev is too slow
 
     runs-on: macos-14
@@ -172,7 +172,7 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - uses: ./.github/actions/setup/macos
 
@@ -192,7 +192,7 @@ jobs:
         run: echo "MAKEFLAGS=" >> "$GITHUB_ENV"
 
       - name: Checkout ruby-bench
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           repository: ruby/ruby-bench
           path: ruby-bench

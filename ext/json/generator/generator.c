@@ -288,6 +288,8 @@ static inline void escape_UTF8_char(search_state *search, unsigned char ch_len)
 
 ALWAYS_INLINE(static) char *copy_remaining_bytes(search_state *search, unsigned long vec_len, unsigned long len)
 {
+    RBIMPL_ASSERT_OR_ASSUME(len < vec_len);
+
     // Flush the buffer so everything up until the last 'len' characters are unflushed.
     search_flush(search);
 
@@ -297,12 +299,18 @@ ALWAYS_INLINE(static) char *copy_remaining_bytes(search_state *search, unsigned 
     char *s = (buf->ptr + buf->len);
 
     // Pad the buffer with dummy characters that won't need escaping.
-    // This seem wateful at first sight, but memset of vector length is very fast.
-    memset(s, 'X', vec_len);
+    // This seem wasteful at first sight, but memset of vector length is very fast.
+    // This is a space as it can be directly represented as an immediate on AArch64.
+    memset(s, ' ', vec_len);
 
     // Optimistically copy the remaining 'len' characters to the output FBuffer. If there are no characters
     // to escape, then everything ends up in the correct spot. Otherwise it was convenient temporary storage.
-    MEMCPY(s, search->ptr, char, len);
+    if (vec_len == 16) {
+        RBIMPL_ASSERT_OR_ASSUME(len >= SIMD_MINIMUM_THRESHOLD);
+        json_fast_memcpy16(s, search->ptr, len);
+    } else {
+        MEMCPY(s, search->ptr, char, len);
+    }
 
     return s;
 }

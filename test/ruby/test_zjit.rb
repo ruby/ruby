@@ -470,6 +470,110 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:getblockparamproxy]
   end
 
+  def test_getblockparam
+    assert_compiles '2', %q{
+      def test(&blk)
+        blk
+      end
+      test { 2 }.call
+      test { 2 }.call
+    }, insns: [:getblockparam]
+  end
+
+  def test_getblockparam_proxy_side_exit_restores_block_local
+    assert_compiles '2', %q{
+      def test(&block)
+        b = block
+        # sideexits here
+        raise "test" unless block
+        b ? 2 : 3
+      end
+      test {}
+      test {}
+    }, insns: [:getblockparam, :getblockparamproxy]
+  end
+
+  def test_getblockparam_used_twice_in_args
+    assert_compiles '1', %q{
+      def f(*args) = args
+      def test(&blk)
+        b = blk
+        f(*[1], blk)
+        blk
+      end
+      test {1}.call
+      test {1}.call
+    }, insns: [:getblockparam]
+  end
+
+  def test_optimized_method_call_proc_call
+    assert_compiles '2', %q{
+      p = proc { |x| x * 2 }
+      def test(p)
+        p.call(1)
+      end
+      test(p)
+      test(p)
+    }, call_threshold: 2, insns: [:opt_send_without_block]
+  end
+
+  def test_optimized_method_call_proc_aref
+    assert_compiles '4', %q{
+      p = proc { |x| x * 2 }
+      def test(p)
+        p[2]
+      end
+      test(p)
+      test(p)
+    }, call_threshold: 2, insns: [:opt_aref]
+  end
+
+  def test_optimized_method_call_proc_yield
+    assert_compiles '6', %q{
+      p = proc { |x| x * 2 }
+      def test(p)
+        p.yield(3)
+      end
+      test(p)
+      test(p)
+    }, call_threshold: 2, insns: [:opt_send_without_block]
+  end
+
+  def test_optimized_method_call_proc_kw_splat
+    assert_compiles '3', %q{
+      p = proc { |**kw| kw[:a] + kw[:b] }
+      def test(p, h)
+        p.call(**h)
+      end
+      h = { a: 1, b: 2 }
+      test(p, h)
+      test(p, h)
+    }, call_threshold: 2, insns: [:opt_send_without_block]
+  end
+
+  def test_optimized_method_call_proc_call_splat
+    assert_compiles '43', %q{
+      p = proc { |x| x + 1 }
+      def test(p)
+        ary = [42]
+        p.call(*ary)
+      end
+      test(p)
+      test(p)
+    }, call_threshold: 2
+  end
+
+  def test_optimized_method_call_proc_call_kwarg
+    assert_compiles '1', %q{
+      p = proc { |a:| a }
+      def test(p)
+        p.call(a: 1)
+      end
+      test(p)
+      test(p)
+    }, call_threshold: 2
+  end
+
   def test_call_a_forwardable_method
     assert_runs '[]', %q{
       def test_root = forwardable
@@ -758,6 +862,61 @@ class TestZJIT < Test::Unit::TestCase
         test(z: 2)
       rescue ArgumentError
         :error
+      end
+
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_pos_optional_with_maybe_too_many_args
+    assert_compiles '[[1, 2, 3, 4, 5, 6], [10, 20, 30, 4, 5, 6], [10, 20, 30, 40, 50, 60]]', %q{
+      def target(a = 1, b = 2, c = 3, d = 4, e = 5, f:) = [a, b, c, d, e, f]
+      def test = [target(f: 6), target(10, 20, 30, f: 6), target(10, 20, 30, 40, 50, f: 60)]
+      test
+      test
+    }, call_threshold: 2
+  end
+
+  def test_send_kwarg_partial_optional
+    assert_compiles '[[1, 2, 3], [1, 20, 3], [10, 2, 30]]', %q{
+      def test(a: 1, b: 2, c: 3) = [a, b, c]
+      def entry = [test, test(b: 20), test(c: 30, a: 10)]
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_kwarg_optional_a_lot
+    assert_compiles '[[1, 2, 3, 4, 5, 6], [1, 2, 3, 7, 8, 9], [2, 4, 6, 8, 10, 12]]', %q{
+      def test(a: 1, b: 2, c: 3, d: 4, e: 5, f: 6) = [a, b, c, d, e, f]
+      def entry = [test, test(d: 7, f: 9, e: 8), test(f: 12, e: 10, d: 8, c: 6, b: 4, a: 2)]
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_kwarg_non_constant_default
+    assert_compiles '[[1, 2], [10, 2]]', %q{
+      def make_default = 2
+      def test(a: 1, b: make_default) = [a, b]
+      def entry = [test, test(a: 10)]
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_kwarg_optional_static_with_side_exit
+    # verify frame reconstruction with synthesized keyword defaults is correct
+    assert_compiles '[10, 2, 10]', %q{
+      def callee(a: 1, b: 2)
+        # use binding to force side-exit
+        x = binding.local_variable_get(:a)
+        [a, b, x]
+      end
+
+      def entry
+        callee(a: 10) # b should get default value
       end
 
       entry
@@ -1317,6 +1476,230 @@ class TestZJIT < Test::Unit::TestCase
 
       test
       test
+    }, call_threshold: 2
+  end
+
+  def test_invokesuper_with_optional_keyword_args
+    assert_compiles '[1, 2, 3]', %q{
+      class Parent
+        def foo(a, b: 2, c: 3) = [a, b, c]
+      end
+
+      class Child < Parent
+        def foo(a) = super(a)
+      end
+
+      def test = Child.new.foo(1)
+
+      test
+      test
+    }, call_threshold: 2
+  end
+
+  def test_invokesuperforward
+    assert_compiles '[1, 2, 3]', %q{
+      class A
+        def foo(a,b,c) = [a,b,c]
+      end
+
+      class B < A
+        def foo(...) = super
+      end
+
+      def test
+        B.new.foo(1, 2, 3)
+      end
+
+      test
+      test
+    }, call_threshold: 2
+  end
+
+  def test_invokesuperforward_with_args_kwargs_and_block
+    assert_compiles '[[1, 2], {x: 3}, 4]', %q{
+      class A
+        def foo(*args, **kwargs, &block)
+          [args, kwargs, block&.call]
+        end
+      end
+
+      class B < A
+        def foo(...) = super
+      end
+
+      def test
+        B.new.foo(1, 2, x: 3) { 4 }
+      end
+
+      test
+      test
+    }, call_threshold: 2
+  end
+
+  def test_send_with_non_constant_keyword_default
+    assert_compiles '[[2, 4, 16], [10, 4, 16], [2, 20, 16], [2, 4, 30], [10, 20, 30]]', %q{
+      def dbl(x = 1) = x * 2
+
+      def foo(a: dbl, b: dbl(2), c: dbl(2 ** 3))
+        [a, b, c]
+      end
+
+      def test
+        [
+          foo,
+          foo(a: 10),
+          foo(b: 20),
+          foo(c: 30),
+          foo(a: 10, b: 20, c: 30)
+        ]
+      end
+
+      test
+      test
+    }, call_threshold: 2
+  end
+
+  def test_send_with_non_constant_keyword_default_not_evaluated_when_provided
+    assert_compiles '[1, 2, 3]', %q{
+      def foo(a: raise, b: raise, c: raise)
+        [a, b, c]
+      end
+
+      def test
+        foo(a: 1, b: 2, c: 3)
+      end
+
+      test
+      test
+    }, call_threshold: 2
+  end
+
+  def test_send_with_non_constant_keyword_default_evaluated_when_not_provided
+    assert_compiles '["a", "b", "c"]', %q{
+      def raise_a = raise "a"
+      def raise_b = raise "b"
+      def raise_c = raise "c"
+
+      def foo(a: raise_a, b: raise_b, c: raise_c)
+        [a, b, c]
+      end
+
+      def test_a
+        foo(b: 2, c: 3)
+      rescue RuntimeError => e
+        e.message
+      end
+
+      def test_b
+        foo(a: 1, c: 3)
+      rescue RuntimeError => e
+        e.message
+      end
+
+      def test_c
+        foo(a: 1, b: 2)
+      rescue RuntimeError => e
+        e.message
+      end
+
+      def test
+        [test_a, test_b, test_c]
+      end
+
+      test
+      test
+    }, call_threshold: 2
+  end
+
+  def test_send_with_non_constant_keyword_default_jit_to_jit
+    # Test that kw_bits passing works correctly in JIT-to-JIT calls
+    assert_compiles '[2, 4, 6]', %q{
+      def make_default(x) = x * 2
+
+      def callee(a: make_default(1), b: make_default(2), c: make_default(3))
+        [a, b, c]
+      end
+
+      def caller_method
+        callee
+      end
+
+      # Warm up callee first so it gets JITted
+      callee
+      callee
+
+      # Now warm up caller - this creates JIT-to-JIT call
+      caller_method
+      caller_method
+    }, call_threshold: 2
+  end
+
+  def test_send_with_non_constant_keyword_default_side_exit
+    # Verify frame reconstruction includes correct values for non-constant defaults
+    assert_compiles '[10, 2, 30]', %q{
+      def make_b = 2
+
+      def callee(a: 1, b: make_b, c: 3)
+        x = binding.local_variable_get(:a)
+        y = binding.local_variable_get(:b)
+        z = binding.local_variable_get(:c)
+        [x, y, z]
+      end
+
+      def test
+        callee(a: 10, c: 30)
+      end
+
+      test
+      test
+    }, call_threshold: 2
+  end
+
+  def test_send_with_non_constant_keyword_default_evaluation_order
+    # Verify defaults are evaluated left-to-right and only when not provided
+    assert_compiles '[["a", "b", "c"], ["b", "c"], ["a", "c"], ["a", "b"]]', %q{
+      def log(x)
+        $order << x
+        x
+      end
+
+      def foo(a: log("a"), b: log("b"), c: log("c"))
+        [a, b, c]
+      end
+
+      def test
+        results = []
+
+        $order = []
+        foo
+        results << $order.dup
+
+        $order = []
+        foo(a: "A")
+        results << $order.dup
+
+        $order = []
+        foo(b: "B")
+        results << $order.dup
+
+        $order = []
+        foo(c: "C")
+        results << $order.dup
+
+        results
+      end
+
+      test
+      test
+    }, call_threshold: 2
+  end
+
+  def test_send_with_too_many_non_constant_keyword_defaults
+    assert_compiles '35', %q{
+      def many_kwargs( k1: 1, k2: 2, k3: 3, k4: 4, k5: 5, k6: 6, k7: 7, k8: 8, k9: 9, k10: 10, k11: 11, k12: 12, k13: 13, k14: 14, k15: 15, k16: 16, k17: 17, k18: 18, k19: 19, k20: 20, k21: 21, k22: 22, k23: 23, k24: 24, k25: 25, k26: 26, k27: 27, k28: 28, k29: 29, k30: 30, k31: 31, k32: 32, k33: 33, k34: k33 + 1) = k1 + k34
+      def t = many_kwargs
+      t
+      t
     }, call_threshold: 2
   end
 
@@ -4349,6 +4732,82 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 14, num_profiles: 5
   end
 
+  def test_is_a_string_special_case
+    assert_compiles '[true, false, false, false, false, false]', %q{
+      def test(x)
+        x.is_a?(String)
+      end
+      test("foo")
+      [test("bar"), test(1), test(false), test(:foo), test([]), test({})]
+    }
+  end
+
+  def test_is_a_array_special_case
+    assert_compiles '[true, true, false, false, false, false, false]', %q{
+      def test(x)
+        x.is_a?(Array)
+      end
+      test([])
+      [test([1,2,3]), test([]), test(1), test(false), test(:foo), test("foo"), test({})]
+    }
+  end
+
+  def test_is_a_hash_special_case
+    assert_compiles '[true, true, false, false, false, false, false]', %q{
+      def test(x)
+        x.is_a?(Hash)
+      end
+      test({})
+      [test({:a => "b"}), test({}), test(1), test(false), test(:foo), test([]), test("foo")]
+    }
+  end
+
+  def test_is_a_hash_subclass
+    assert_compiles 'true', %q{
+      class MyHash < Hash
+      end
+      def test(x)
+        x.is_a?(Hash)
+      end
+      test({})
+      test(MyHash.new)
+    }
+  end
+
+  def test_is_a_normal_case
+    assert_compiles '[true, false]', %q{
+      class MyClass
+      end
+      def test(x)
+        x.is_a?(MyClass)
+      end
+      test("a")
+      [test(MyClass.new), test("a")]
+    }
+  end
+
+  def test_exit_tracing
+    # This is a very basic smoke test. The StackProf format
+    # this option generates is external to us.
+    Dir.mktmpdir("zjit_test_exit_tracing") do |tmp_dir|
+      assert_compiles('true', <<~RUBY, extra_args: ['-C', tmp_dir, '--zjit-trace-exits'])
+        def test(object) = object.itself
+
+        # induce an exit just for good measure
+        array = []
+        test(array)
+        test(array)
+        def array.itself = :not_itself
+        test(array)
+
+        RubyVM::ZJIT.exit_locations.is_a?(Hash)
+      RUBY
+      dump_files = Dir.glob('zjit_exits_*.dump', base: tmp_dir)
+      assert_equal(1, dump_files.length)
+      refute(File.empty?(File.join(tmp_dir, dump_files.first)))
+    end
+  end
+
   private
 
   # Assert that every method call in `test_script` can be compiled by ZJIT
@@ -4409,10 +4868,11 @@ class TestZJIT < Test::Unit::TestCase
     stats: false,
     debug: true,
     allowed_iseqs: nil,
+    extra_args: nil,
     timeout: 1000,
     pipe_fd: nil
   )
-    args = ["--disable-gems"]
+    args = ["--disable-gems", *extra_args]
     if zjit
       args << "--zjit-call-threshold=#{call_threshold}"
       args << "--zjit-num-profiles=#{num_profiles}"

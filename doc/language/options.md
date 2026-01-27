@@ -640,7 +640,7 @@ Option `--encoding` is an alias for
 
 Option `--external-encoding`
 sets the default external encoding for the invoked Ruby program;
-for values of +encoding+,
+for values of `encoding`,
 see {Encoding: Names and Aliases}[rdoc-ref:encodings.rdoc@Names+and+Aliases].
 
 ```console
@@ -662,7 +662,7 @@ For a shorter help message, use option `-h`.
 
 Option `--internal-encoding`
 sets the default internal encoding for the invoked Ruby program;
-for values of +encoding+,
+for values of `encoding`,
 see {Encoding: Names and Aliases}[rdoc-ref:encodings.rdoc@Names+and+Aliases].
 
 ```console

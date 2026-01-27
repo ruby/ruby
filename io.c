@@ -15469,8 +15469,8 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  *  First, what's elsewhere. Class \IO:
  *
- *  - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
- *  - Includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],
+ *  - Inherits from {class Object}[rdoc-ref:Object@Whats+Here].
+ *  - Includes {module Enumerable}[rdoc-ref:Enumerable@Whats+Here],
  *    which provides dozens of additional methods.
  *
  *  Here, class \IO provides methods that are useful for:

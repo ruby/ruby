@@ -1595,7 +1595,7 @@ q.pop
   # [Bug #21342]
   def test_unlock_locked_mutex_with_collected_fiber
     bug21127 = '[ruby-core:120930] [Bug #21127]'
-    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}", bug21127)
     begin;
       5.times do
         m = Mutex.new
@@ -1650,6 +1650,53 @@ q.pop
           raise "FAILED!" if mutexes.any?(&:owned?)
         end.resume
       end
+    end;
+  end
+
+  # [Bug #21836]
+  def test_mn_threads_sub_millisecond_sleep
+    assert_separately([{'RUBY_MN_THREADS' => '1'}], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 30)
+    begin;
+      t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      1000.times { sleep 0.0001 }
+      t1 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      elapsed = t1 - t0
+      assert_operator elapsed, :>=, 0.1, "sub-millisecond sleeps should not return immediately"
+    end;
+  end
+
+  # [Bug #21840]
+  def test_mutex_owner_doesnt_starve_waiters
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      require "tempfile"
+      temp = Tempfile.new("temp")
+      m = Mutex.new
+
+      def fib(n)
+        return n if n <= 1
+        fib(n - 1) + fib(n - 2)
+      end
+
+      t1_running = false
+      Thread.new do
+        t1_running = true
+        loop do
+          fib(20)
+          m.synchronize do
+            File.open(temp.path) { } # reset timeslice due to blocking operation
+          end
+        end
+      end
+
+      loop until t1_running
+
+      3.times.map do
+        Thread.new do
+          m.synchronize do
+          end
+        end
+      end.each(&:join)
     end;
   end
 end

@@ -596,6 +596,7 @@ rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val)
 #endif
 
 static const char *obj_type_name(VALUE obj);
+static st_table *id2ref_tbl;
 #include "gc/default/default.c"
 
 #if USE_MODULAR_GC && !defined(HAVE_DLOPEN)
@@ -1242,6 +1243,113 @@ rb_gc_handle_weak_references(VALUE obj)
     }
 }
 
+/*
+ * Returns true if the object requires a full rb_gc_obj_free() call during sweep,
+ * false if it can be freed quickly without calling destructors or cleanup.
+ *
+ * Objects that return false are:
+ * - Simple embedded objects without external allocations
+ * - Objects without finalizers
+ * - Objects without object IDs registered in id2ref
+ * - Objects without generic instance variables
+ *
+ * This is used by the GC sweep fast path to avoid function call overhead
+ * for the majority of simple objects.
+ */
+bool
+rb_gc_obj_needs_cleanup_p(VALUE obj)
+{
+    VALUE flags = RBASIC(obj)->flags;
+
+    if (flags & FL_FINALIZE) return true;
+
+    switch (flags & RUBY_T_MASK) {
+      case T_IMEMO:
+        switch (imemo_type(obj)) {
+          case imemo_constcache:
+          case imemo_cref:
+          case imemo_ifunc:
+          case imemo_memo:
+          case imemo_svar:
+          case imemo_throw_data:
+            return false;
+          default:
+            return true;
+        }
+
+      case T_DATA:
+      case T_OBJECT:
+      case T_STRING:
+      case T_ARRAY:
+      case T_HASH:
+      case T_BIGNUM:
+      case T_STRUCT:
+      case T_FLOAT:
+      case T_RATIONAL:
+      case T_COMPLEX:
+        break;
+
+      case T_FILE:
+      case T_SYMBOL:
+      case T_CLASS:
+      case T_ICLASS:
+      case T_MODULE:
+      case T_REGEXP:
+      case T_MATCH:
+        return true;
+    }
+
+    shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
+    if (id2ref_tbl && rb_shape_has_object_id(shape_id)) return true;
+
+    switch (flags & RUBY_T_MASK) {
+      case T_OBJECT:
+        if (flags & ROBJECT_HEAP) return true;
+        return false;
+
+      case T_DATA:
+        if (flags & RUBY_TYPED_FL_IS_TYPED_DATA) {
+            uintptr_t type = (uintptr_t)RTYPEDDATA(obj)->type;
+            if (type & TYPED_DATA_EMBEDDED) {
+                RUBY_DATA_FUNC dfree = ((const rb_data_type_t *)(type & TYPED_DATA_PTR_MASK))->function.dfree;
+                if (dfree == RUBY_NEVER_FREE || dfree == RUBY_TYPED_DEFAULT_FREE) {
+                    return false;
+                }
+            }
+        }
+        return true;
+
+      case T_STRING:
+        if (flags & (RSTRING_NOEMBED | RSTRING_FSTR)) return true;
+        return rb_shape_has_fields(shape_id);
+
+      case T_ARRAY:
+        if (!(flags & RARRAY_EMBED_FLAG)) return true;
+        return rb_shape_has_fields(shape_id);
+
+      case T_HASH:
+        if (flags & RHASH_ST_TABLE_FLAG) return true;
+        return rb_shape_has_fields(shape_id);
+
+      case T_BIGNUM:
+        if (!(flags & BIGNUM_EMBED_FLAG)) return true;
+        return rb_shape_has_fields(shape_id);
+
+      case T_STRUCT:
+        if (!(flags & RSTRUCT_EMBED_LEN_MASK)) return true;
+        if (flags & RSTRUCT_GEN_FIELDS) return rb_shape_has_fields(shape_id);
+        return false;
+
+      case T_FLOAT:
+      case T_RATIONAL:
+      case T_COMPLEX:
+        return rb_shape_has_fields(shape_id);
+
+      default:
+        UNREACHABLE_RETURN(true);
+    }
+}
+
 static void
 io_fptr_finalize(void *fptr)
 {
@@ -1709,63 +1817,68 @@ rb_gc_copy_finalizer(VALUE dest, VALUE obj)
 
 /*
  *  call-seq:
- *     ObjectSpace.define_finalizer(obj, aProc=proc())
+ *     ObjectSpace.define_finalizer(obj) {|id| ... } -> array
+ *     ObjectSpace.define_finalizer(obj, finalizer) -> array
  *
- *  Adds <i>aProc</i> as a finalizer, to be called after <i>obj</i>
- *  was destroyed. The object ID of the <i>obj</i> will be passed
- *  as an argument to <i>aProc</i>. If <i>aProc</i> is a lambda or
- *  method, make sure it can be called with a single argument.
+ *  Adds a new finalizer for +obj+ that is called when +obj+ is destroyed
+ *  by the garbage collector or when Ruby shuts down (which ever comes first).
  *
- *  The return value is an array <code>[0, aProc]</code>.
+ *  With a block given, uses the block as the callback. Without a block given,
+ *  uses a callable object +finalizer+ as the callback. The callback is called
+ *  when +obj+ is destroyed with a single argument +id+ which is the object
+ *  ID of +obj+ (see Object#object_id).
  *
- *  The two recommended patterns are to either create the finaliser proc
- *  in a non-instance method where it can safely capture the needed state,
- *  or to use a custom callable object that stores the needed state
- *  explicitly as instance variables.
+ *  The return value is an array <code>[0, callback]</code>, where +callback+
+ *  is a Proc created from the block if one was given or +finalizer+ otherwise.
+ *
+ *  Note that defining a finalizer in an instance method of the object may prevent
+ *  the object from being garbage collected since if the block or +finalizer+ refers
+ *  to +obj+ then +obj+ will never be reclaimed by the garbage collector. For example,
+ *  the following script demonstrates the issue:
  *
  *      class Foo
- *        def initialize(data_needed_for_finalization)
- *          ObjectSpace.define_finalizer(self, self.class.create_finalizer(data_needed_for_finalization))
- *        end
- *
- *        def self.create_finalizer(data_needed_for_finalization)
- *          proc {
- *            puts "finalizing #{data_needed_for_finalization}"
- *          }
+ *        def define_final
+ *          ObjectSpace.define_finalizer(self) do |id|
+ *            puts "Running finalizer for #{id}!"
+ *          end
  *        end
  *      end
  *
- *      class Bar
- *       class Remover
- *          def initialize(data_needed_for_finalization)
- *            @data_needed_for_finalization = data_needed_for_finalization
- *          end
+ *      obj = Foo.new
+ *      obj.define_final
  *
+ *  There are two patterns to solve this issue:
+ *
+ *  - Create the finalizer in a non-instance method so it can safely capture
+ *    the needed state:
+ *
+ *      class Foo
+ *        def define_final
+ *          ObjectSpace.define_finalizer(self, self.class.create_finalizer)
+ *        end
+ *
+ *        def self.create_finalizer
+ *          proc do |id|
+ *            puts "Running finalizer for #{id}!"
+ *          end
+ *        end
+ *      end
+ *
+ *  - Use a callable object:
+ *
+ *      class Foo
+ *        class Finalizer
  *          def call(id)
- *            puts "finalizing #{@data_needed_for_finalization}"
+ *            puts "Running finalizer for #{id}!"
  *          end
  *        end
  *
- *        def initialize(data_needed_for_finalization)
- *          ObjectSpace.define_finalizer(self, Remover.new(data_needed_for_finalization))
+ *        def define_final
+ *          ObjectSpace.define_finalizer(self, Finalizer.new)
  *        end
  *      end
  *
- *  Note that if your finalizer references the object to be
- *  finalized it will never be run on GC, although it will still be
- *  run at exit. You will get a warning if you capture the object
- *  to be finalized as the receiver of the finalizer.
- *
- *      class CapturesSelf
- *        def initialize(name)
- *          ObjectSpace.define_finalizer(self, proc {
- *            # this finalizer will only be run on exit
- *            puts "finalizing #{name}"
- *          })
- *        end
- *      end
- *
- *  Also note that finalization can be unpredictable and is never guaranteed
+ *  Note that finalization can be unpredictable and is never guaranteed
  *  to be run except on exit.
  */
 
@@ -1826,7 +1939,6 @@ rb_gc_pointer_to_heap_p(VALUE obj)
 #define OBJ_ID_INCREMENT (RUBY_IMMEDIATE_MASK + 1)
 #define LAST_OBJECT_ID() (object_id_counter * OBJ_ID_INCREMENT)
 static VALUE id2ref_value = 0;
-static st_table *id2ref_tbl = NULL;
 
 #if SIZEOF_SIZE_T == SIZEOF_LONG_LONG
 static size_t object_id_counter = 1;

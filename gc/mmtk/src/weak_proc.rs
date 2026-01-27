@@ -270,7 +270,10 @@ struct UpdateGlobalTables {
 }
 impl GlobalTableProcessingWork for UpdateGlobalTables {
     fn process_table(&mut self) {
-        (crate::upcalls().update_global_tables)(self.idx)
+        (crate::upcalls().update_global_tables)(
+            self.idx,
+            crate::mmtk().get_plan().current_gc_may_move_object(),
+        )
     }
 }
 impl GCWork<Ruby> for UpdateGlobalTables {

@@ -223,14 +223,6 @@ typedef struct rb_iseq_param_keyword rb_seq_param_keyword_struct;
 
 ID rb_get_symbol_id(VALUE namep);
 
-VALUE
-rb_optimized_call(VALUE *recv, rb_execution_context_t *ec, int argc, VALUE *argv, int kw_splat, VALUE block_handler)
-{
-    rb_proc_t *proc;
-    GetProcPtr(recv, proc);
-    return rb_vm_invoke_proc(ec, proc, argc, argv, kw_splat, block_handler);
-}
-
 // If true, the iseq has only opt_invokebuiltin_delegate(_leave) and leave insns.
 static bool
 invokebuiltin_delegate_leave_p(const rb_iseq_t *iseq)

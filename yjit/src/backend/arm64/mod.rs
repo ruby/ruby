@@ -878,14 +878,13 @@ impl Assembler
             }
         }
 
-        /// Emit a push instruction for the given operand by adding to the stack
-        /// pointer and then storing the given value.
+        /// Push a value to the stack by subtracting from the stack pointer then storing,
+        /// leaving an 8-byte gap for alignment.
         fn emit_push(cb: &mut CodeBlock, opnd: A64Opnd) {
             str_pre(cb, opnd, A64Opnd::new_mem(64, C_SP_REG, -C_SP_STEP));
         }
 
-        /// Emit a pop instruction into the given operand by loading the value
-        /// and then subtracting from the stack pointer.
+        /// Pop a value from the stack by loading `[sp]` then adding to the stack pointer.
         fn emit_pop(cb: &mut CodeBlock, opnd: A64Opnd) {
             ldr_post(cb, opnd, A64Opnd::new_mem(64, C_SP_REG, C_SP_STEP));
         }

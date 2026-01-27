@@ -210,6 +210,7 @@ make_counters! {
         exit_stackoverflow,
         exit_block_param_proxy_modified,
         exit_block_param_proxy_not_iseq_or_ifunc,
+        exit_block_param_wb_required,
         exit_too_many_keyword_parameters,
     }
 
@@ -228,9 +229,9 @@ make_counters! {
         send_fallback_send_without_block_bop_redefined,
         send_fallback_send_without_block_operands_not_fixnum,
         send_fallback_send_without_block_direct_keyword_mismatch,
-        send_fallback_send_without_block_direct_optional_keywords,
         send_fallback_send_without_block_direct_keyword_count_mismatch,
         send_fallback_send_without_block_direct_missing_keyword,
+        send_fallback_send_without_block_direct_too_many_keywords,
         send_fallback_send_polymorphic,
         send_fallback_send_megamorphic,
         send_fallback_send_no_profiles,
@@ -306,6 +307,7 @@ make_counters! {
     compile_error_iseq_stack_too_large,
     compile_error_exception_handler,
     compile_error_out_of_memory,
+    compile_error_label_linking_failure,
     compile_error_jit_to_jit_optional,
     compile_error_register_spill_on_ccall,
     compile_error_register_spill_on_alloc,
@@ -386,7 +388,6 @@ make_counters! {
     // Unsupported parameter features
     complex_arg_pass_param_rest,
     complex_arg_pass_param_post,
-    complex_arg_pass_param_kw_opt,
     complex_arg_pass_param_kwrest,
     complex_arg_pass_param_block,
     complex_arg_pass_param_forwardable,
@@ -475,6 +476,10 @@ pub enum CompileError {
     ExceptionHandler,
     OutOfMemory,
     ParseError(ParseError),
+    /// When a ZJIT function is too large, the branches may have
+    /// offsets that don't fit in one instruction. We error in
+    /// error that case.
+    LabelLinkingFailure,
 }
 
 /// Return a raw pointer to the exit counter for a given CompileError
@@ -488,6 +493,7 @@ pub fn exit_counter_for_compile_error(compile_error: &CompileError) -> Counter {
         IseqStackTooLarge       => compile_error_iseq_stack_too_large,
         ExceptionHandler        => compile_error_exception_handler,
         OutOfMemory             => compile_error_out_of_memory,
+        LabelLinkingFailure     => compile_error_label_linking_failure,
         ParseError(parse_error) => match parse_error {
             StackUnderflow(_)       => compile_error_parse_stack_underflow,
             MalformedIseq(_)        => compile_error_parse_malformed_iseq,
@@ -561,6 +567,7 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         StackOverflow                 => exit_stackoverflow,
         BlockParamProxyModified       => exit_block_param_proxy_modified,
         BlockParamProxyNotIseqOrIfunc => exit_block_param_proxy_not_iseq_or_ifunc,
+        BlockParamWbRequired          => exit_block_param_wb_required,
         TooManyKeywordParameters      => exit_too_many_keyword_parameters,
         PatchPoint(Invariant::BOPRedefined { .. })
                                       => exit_patchpoint_bop_redefined,
@@ -602,9 +609,9 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SendWithoutBlockBopRedefined              => send_fallback_send_without_block_bop_redefined,
         SendWithoutBlockOperandsNotFixnum         => send_fallback_send_without_block_operands_not_fixnum,
         SendWithoutBlockDirectKeywordMismatch     => send_fallback_send_without_block_direct_keyword_mismatch,
-        SendWithoutBlockDirectOptionalKeywords    => send_fallback_send_without_block_direct_optional_keywords,
         SendWithoutBlockDirectKeywordCountMismatch=> send_fallback_send_without_block_direct_keyword_count_mismatch,
         SendWithoutBlockDirectMissingKeyword       => send_fallback_send_without_block_direct_missing_keyword,
+        SendWithoutBlockDirectTooManyKeywords     => send_fallback_send_without_block_direct_too_many_keywords,
         SendPolymorphic                           => send_fallback_send_polymorphic,
         SendMegamorphic                           => send_fallback_send_megamorphic,
         SendNoProfiles                            => send_fallback_send_no_profiles,
@@ -718,6 +725,21 @@ pub extern "C" fn rb_zjit_reset_stats_bang(_ec: EcPtr, _self: VALUE) -> VALUE {
 
     // Reset exit counters for YARV instructions
     exit_counters.as_mut_slice().fill(0);
+
+    // Reset send fallback counters
+    ZJITState::get_send_fallback_counters().as_mut_slice().fill(0);
+
+    // Reset not-inlined counters
+    ZJITState::get_not_inlined_cfunc_counter_pointers().iter_mut()
+        .for_each(|b| { **(b.1) = 0; });
+
+    // Reset not-annotated counters
+    ZJITState::get_not_annotated_cfunc_counter_pointers().iter_mut()
+        .for_each(|b| { **(b.1) = 0; });
+
+    // Reset ccall counters
+    ZJITState::get_ccall_counter_pointers().iter_mut()
+        .for_each(|b| { **(b.1) = 0; });
 
     Qnil
 }

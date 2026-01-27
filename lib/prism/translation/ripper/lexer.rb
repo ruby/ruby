@@ -38,6 +38,13 @@ module Prism
           def allbits?(i) to_int.allbits?(i) end
           def anybits?(i) to_int.anybits?(i) end
           def nobits?(i) to_int.nobits?(i) end
+
+          # Instances are frozen and there are only a handful of them so we cache them here.
+          STATES = Hash.new { |h,k| h[k] = State.new(k) }
+
+          def self.cached(i)
+            STATES[i]
+          end
         end
 
         class Elem
@@ -47,7 +54,7 @@ module Prism
             @pos = pos
             @event = event
             @tok = tok
-            @state = State.new(state)
+            @state = State.cached(state)
             @message = message
           end
 
@@ -100,21 +107,17 @@ module Prism
           end
         end
 
-        def initialize(...)
-          super
-          @lex_compat = Prism.lex_compat(@source, filepath: filename, line: lineno)
+        # Pretty much just the same as Prism.lex_compat.
+        def lex(raise_errors: false)
+          Ripper.lex(@source, filename, lineno, raise_errors: raise_errors)
         end
 
         # Returns the lex_compat result wrapped in `Elem`. Errors are omitted.
         # Since ripper is a streaming parser, tokens are expected to be emitted in the order
         # that the parser encounters them. This is not implemented.
-        def parse(raise_errors: false)
-          if @lex_compat.failure? && raise_errors
-            raise SyntaxError, @lex_compat.errors.first.message
-          else
-            @lex_compat.value.map do |position, event, token, state|
-              Elem.new(position, event, token, state.to_int)
-            end
+        def parse(...)
+          lex(...).map do |position, event, token, state|
+            Elem.new(position, event, token, state.to_int)
           end
         end
 

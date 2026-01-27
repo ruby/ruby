@@ -21,16 +21,16 @@ require 'English'
 
 ### Matched \Data
 
-|   Variable    |      \English       | Contains                          | Initially | Read-Only | Reset By        |
-|:-------------:|:-------------------:|-----------------------------------|:---------:|:---------:|-----------------|
-|     `$~`      | `$LAST_MATCH_INFO`  | \MatchData object or `nil`        |   `nil`   |    No     | Matcher methods |
-|     `$&`      |      `$MATCH`       | Matched substring or `nil`        |   `nil`   |    No     | Matcher methods |
-|   `` $` ``    |    `$PRE_MATCH`     | Substring left of match or `nil`  |   `nil`   |    No     | Matcher methods |
-|     `$'`      |    `$POST_MATCH`    | Substring right of match or `nil` |   `nil`   |    No     | Matcher methods |
-|     `$+`      | `$LAST_PAREN_MATCH` | Last group matched or `nil`       |   `nil`   |    No     | Matcher methods |
-|     `$1`      |                     | First group matched or `nil`      |   `nil`   |   Yes     | Matcher methods |
-|     `$2`      |                     | Second group matched or `nil`     |   `nil`   |   Yes     | Matcher methods |
-| <tt>$_n_</tt> |                     | <i>n</i>th group matched or `nil` |   `nil`   |   Yes     | Matcher methods |
+| Variable  |      \English       | Contains                          | Initially | Read-Only | Reset By        |
+|:---------:|:-------------------:|-----------------------------------|:---------:|:---------:|-----------------|
+|   `$~`    | `$LAST_MATCH_INFO`  | \MatchData object or `nil`        |   `nil`   |    No     | Matcher methods |
+|   `$&`    |      `$MATCH`       | Matched substring or `nil`        |   `nil`   |    No     | Matcher methods |
+| `` $` ``  |    `$PRE_MATCH`     | Substring left of match or `nil`  |   `nil`   |    No     | Matcher methods |
+|   `$'`    |    `$POST_MATCH`    | Substring right of match or `nil` |   `nil`   |    No     | Matcher methods |
+|   `$+`    | `$LAST_PAREN_MATCH` | Last group matched or `nil`       |   `nil`   |    No     | Matcher methods |
+|   `$1`    |                     | First group matched or `nil`      |   `nil`   |   Yes     | Matcher methods |
+|   `$2`    |                     | Second group matched or `nil`     |   `nil`   |   Yes     | Matcher methods |
+|   `$n`    |                     | <i>n</i>th group matched or `nil` |   `nil`   |   Yes     | Matcher methods |
 
 ### Separators
 
@@ -167,7 +167,7 @@ English - `$LAST_PAREN_MATCH`.
 
 ### `$1`, `$2`, \Etc. (Matched Group)
 
-For <tt>$_n_</tt> the <i>n</i>th group of the match.
+For <tt>$n</tt> the <i>n</i>th group of the match.
 
 No \English.
 
@@ -282,9 +282,9 @@ by Kernel#load and Kernel#require.
 Singleton method `$LOAD_PATH.resolve_feature_path(feature)`
 returns:
 
-- <tt>[:rb, _path_]</tt>, where `path` is the path to the Ruby file to be
+- <tt>[:rb, path]</tt>, where `path` is the path to the Ruby file to be
   loaded for the given `feature`.
-- <tt>[:so, _path_]</tt>, where `path` is the path to the shared object file
+- <tt>[:so, path]</tt>, where `path` is the path to the shared object file
   to be loaded for the given `feature`.
 - `nil` if there is no such `feature` and `path`.
 

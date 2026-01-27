@@ -74,7 +74,7 @@ typedef struct MMTk_RubyUpcalls {
     void (*handle_weak_references)(MMTk_ObjectReference object, bool moving);
     void (*call_obj_free)(MMTk_ObjectReference object);
     size_t (*vm_live_bytes)(void);
-    void (*update_global_tables)(int tbl_idx);
+    void (*update_global_tables)(int tbl_idx, bool moving);
     int (*global_tables_count)(void);
     void (*update_finalizer_table)(void);
     bool (*special_const_p)(MMTk_ObjectReference object);
