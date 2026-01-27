@@ -9,7 +9,6 @@ module Prism
       class Lexer < Ripper # :nodoc:
         # :stopdoc:
         class State
-
           attr_reader :to_int, :to_s
 
           def initialize(i)
@@ -39,10 +38,12 @@ module Prism
           def anybits?(i) to_int.anybits?(i) end
           def nobits?(i) to_int.nobits?(i) end
 
-          # Instances are frozen and there are only a handful of them so we cache them here.
-          STATES = Hash.new { |h,k| h[k] = State.new(k) }
+          # Instances are frozen and there are only a handful of them so we
+          # cache them here.
+          STATES = Hash.new { |hash, key| hash[key] = State.new(key) }
+          private_constant :STATES
 
-          def self.cached(i)
+          def self.[](i)
             STATES[i]
           end
         end
@@ -54,7 +55,7 @@ module Prism
             @pos = pos
             @event = event
             @tok = tok
-            @state = State.cached(state)
+            @state = State[state]
             @message = message
           end
 
