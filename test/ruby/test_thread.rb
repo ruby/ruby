@@ -1667,22 +1667,24 @@ q.pop
 
   # [Bug #21840]
   def test_mutex_owner_doesnt_starve_waiters
-    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
+      require "tempfile"
+      temp = Tempfile.new("temp")
       m = Mutex.new
 
-      fib = lambda { |n|
+      def fib(n)
         return n if n <= 1
         fib(n - 1) + fib(n - 2)
-      }
+      end
 
       t1_running = false
-      t1 = Thread.new do
+      Thread.new do
         t1_running = true
         loop do
           fib(20)
           m.synchronize do
-            File.open(__FILE__) { } # reset timeslice due to blocking operation
+            File.open(temp.path) { } # reset timeslice due to blocking operation
           end
         end
       end

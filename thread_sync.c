@@ -466,7 +466,7 @@ rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial)
     struct sync_waiter *cur = 0, *next;
 
 
-    if (mutex->wait_waking) {
+    if (mutex->wait_waking && ec_serial) {
         uint32_t saved = mutex->saved_running_time_us;
         if (th->running_time_us < saved) {
             th->running_time_us = saved;
