@@ -233,8 +233,13 @@ module OpenSSL
     end
 
     def test_new_with_no_keys
-      # generated with:
-      #   openssl pkcs12 -certpbe PBE-SHA1-3DES -in <@mycert> -nokeys -export
+      # Generated with the following steps:
+      #   Print the value of the @mycert such as by `puts @mycert.to_s` and
+      #   save the value as the file `mycert.pem`.
+      #   Run the following commands:
+      #   openssl pkcs12 -certpbe PBE-SHA1-3DES -in <(cat mycert.pem) \
+      #     -nokeys -export -passout pass:abc123 -out /tmp/p12.out
+      #   base64 -w 60 /tmp/p12.out
       str = <<~EOF.unpack1("m")
 MIIGJAIBAzCCBeoGCSqGSIb3DQEHAaCCBdsEggXXMIIF0zCCBc8GCSqGSIb3
 DQEHBqCCBcAwggW8AgEAMIIFtQYJKoZIhvcNAQcBMBwGCiqGSIb3DQEMAQMw
@@ -282,8 +287,10 @@ AA==
     end
 
     def test_new_with_no_certs
-      # generated with:
-      #   openssl pkcs12 -inkey fixtures/openssl/pkey/rsa-1.pem -nocerts -export
+      # Generated with the folowing steps:
+      #   openssl pkcs12 -inkey test/openssl/fixtures/pkey/rsa-1.pem \
+      #     -nocerts -export -passout pass:abc123 -out /tmp/p12.out
+      #   base64 -w 60 /tmp/p12.out
       str = <<~EOF.unpack1("m")
 MIIJ7wIBAzCCCbUGCSqGSIb3DQEHAaCCCaYEggmiMIIJnjCCCZoGCSqGSIb3
 DQEHAaCCCYsEggmHMIIJgzCCCX8GCyqGSIb3DQEMCgECoIIJbjCCCWowHAYK
