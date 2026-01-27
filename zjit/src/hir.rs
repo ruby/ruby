@@ -5751,34 +5751,31 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
             } else if opcode == YARVINSN_getblockparamproxy || opcode == YARVINSN_trace_getblockparamproxy {
                 if get_option!(stats) {
                     let iseq_insn_idx = exit_state.insn_idx;
-                    if let Some(operand_types) = profiles.payload.profile.get_operand_types(iseq_insn_idx) {
-                        if let [block_handler_distribution] = &operand_types {
-                            let summary = TypeDistributionSummary::new(&block_handler_distribution);
+                    if let Some(operand_types) = profiles.payload.profile.get_operand_types(iseq_insn_idx)
+                        && let [block_handler_distribution] = &operand_types {
+                        let summary = TypeDistributionSummary::new(block_handler_distribution);
 
-                            if summary.is_monomorphic() {
-                                let block_handler = summary.bucket(0).class();
-                                if block_handler == VALUE(0) {
-                                    fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_nil));
-                                } else if (block_handler.0 & 0x03) == 0x01 {
-                                    // Tagged iseq block (low bits = 01)
-                                    fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_iseq));
-                                } else if (block_handler.0 & 0x03) == 0x03 {
-                                    // Tagged ifunc block (low bits = 11)
-                                    fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_ifunc));
-                                } else if block_handler.symbol_p() {
-                                    // Symbol block
-                                    fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_symbol));
-                                } else if unsafe { rb_obj_is_proc(block_handler).test() } {
-                                    // Proc block
-                                    fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_proc));
-                                }
-                            } else if summary.is_polymorphic() || summary.is_skewed_polymorphic() {
-                              fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_polymorphic));
-                            } else if summary.is_megamorphic() || summary.is_skewed_megamorphic() {
-                              fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_megamorphic));
+                        if summary.is_monomorphic() {
+                            let block_handler = summary.bucket(0).class();
+                            if block_handler == VALUE(0) {
+                                fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_nil));
+                            } else if (block_handler.0 & 0x03) == 0x01 {
+                                // Tagged iseq block (low bits = 01)
+                                fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_iseq));
+                            } else if (block_handler.0 & 0x03) == 0x03 {
+                                // Tagged ifunc block (low bits = 11)
+                                fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_ifunc));
+                            } else if block_handler.symbol_p() {
+                                // Symbol block
+                                fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_symbol));
+                            } else if unsafe { rb_obj_is_proc(block_handler).test() } {
+                                // Proc block
+                                fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_proc));
                             }
-                        } else {
-                            fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_no_profiles));
+                        } else if summary.is_polymorphic() || summary.is_skewed_polymorphic() {
+                          fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_polymorphic));
+                        } else if summary.is_megamorphic() || summary.is_skewed_megamorphic() {
+                          fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_megamorphic));
                         }
                     } else {
                         fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_no_profiles));
@@ -6150,9 +6147,31 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_getblockparamproxy => {
                     let level = get_arg(pc, 1).as_u32();
-                    fun.push_insn(block, Insn::GuardBlockParamProxy { level, state: exit_id });
-                    // TODO(Shopify/ruby#753): GC root, so we should be able to avoid unnecessary GC tracing
-                    state.stack_push(fun.push_insn(block, Insn::Const { val: Const::Value(unsafe { rb_block_param_proxy }) }));
+
+                    if let Some(operand_types) = profiles.payload.profile.get_operand_types(exit_state.insn_idx)
+                        && let [block_handler_distribution] = &operand_types {
+                        let summary = TypeDistributionSummary::new(block_handler_distribution);
+                        let block_handler = summary.bucket(0).class();
+
+                        if summary.is_monomorphic() && block_handler == VALUE(0) {
+                            let block_handler = fun.push_insn(block, Insn::GetBlockHandler);
+                            fun.push_insn(block, Insn::GuardBitEquals {
+                                val: block_handler,
+                                expected: Const::Value(VALUE(VM_BLOCK_HANDLER_NONE as usize)),
+                                reason: SideExitReason::UnhandledBlockArg,
+                                state: exit_id,
+                            });
+                            state.stack_push(fun.push_insn(block, Insn::Const { val: Const::Value(Qnil) }));
+                        } else {
+                            fun.push_insn(block, Insn::GuardBlockParamProxy { level, state: exit_id });
+                            // TODO(Shopify/ruby#753): GC root, so we should be able to avoid unnecessary GC tracing
+                            state.stack_push(fun.push_insn(block, Insn::Const { val: Const::Value(unsafe { rb_block_param_proxy }) }));
+                        }
+                    } else {
+                        fun.push_insn(block, Insn::GuardBlockParamProxy { level, state: exit_id });
+                        // TODO(Shopify/ruby#753): GC root, so we should be able to avoid unnecessary GC tracing
+                        state.stack_push(fun.push_insn(block, Insn::Const { val: Const::Value(unsafe { rb_block_param_proxy }) }));
+                    }
                 }
                 YARVINSN_pop => { state.stack_pop()?; }
                 YARVINSN_dup => { state.stack_push(state.stack_top()?); }
