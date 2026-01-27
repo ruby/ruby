@@ -1652,4 +1652,49 @@ q.pop
       end
     end;
   end
+
+  # [Bug #21836]
+  def test_mn_threads_sub_millisecond_sleep
+    assert_separately([{'RUBY_MN_THREADS' => '1'}], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 30)
+    begin;
+      t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      1000.times { sleep 0.0001 }
+      t1 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      elapsed = t1 - t0
+      assert_operator elapsed, :>=, 0.1, "sub-millisecond sleeps should not return immediately"
+    end;
+  end
+
+  # [Bug #21840]
+  def test_mutex_owner_doesnt_starve_waiters
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      m = Mutex.new
+
+      fib = lambda { |n|
+        return n if n <= 1
+        fib(n - 1) + fib(n - 2)
+      }
+
+      t1_running = false
+      t1 = Thread.new do
+        t1_running = true
+        loop do
+          fib(20)
+          m.synchronize do
+            File.open(__FILE__) { } # reset timeslice due to blocking operation
+          end
+        end
+      end
+
+      loop until t1_running
+
+      3.times.map do
+        Thread.new do
+          m.synchronize do
+          end
+        end
+      end.each(&:join)
+    end;
+  end
 end

@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 # :markup: markdown
 
-require "delegate"
-
 module Prism
   # This class is responsible for lexing the source using prism and then
   # converting those tokens to be compatible with Ripper. In the vast majority
@@ -201,27 +199,43 @@ module Prism
     # When we produce tokens, we produce the same arrays that Ripper does.
     # However, we add a couple of convenience methods onto them to make them a
     # little easier to work with. We delegate all other methods to the array.
-    class Token < SimpleDelegator
-      # @dynamic initialize, each, []
+    class Token < BasicObject
+      # Create a new token object with the given ripper-compatible array.
+      def initialize(array)
+        @array = array
+      end
 
       # The location of the token in the source.
       def location
-        self[0]
+        @array[0]
       end
 
       # The type of the token.
       def event
-        self[1]
+        @array[1]
       end
 
       # The slice of the source that this token represents.
       def value
-        self[2]
+        @array[2]
       end
 
       # The state of the lexer when this token was produced.
       def state
-        self[3]
+        @array[3]
+      end
+
+      # We want to pretend that this is just an Array.
+      def ==(other) # :nodoc:
+        @array == other
+      end
+
+      def respond_to_missing?(name, include_private = false) # :nodoc:
+        @array.respond_to?(name, include_private)
+      end
+
+      def method_missing(name, ...) # :nodoc:
+        @array.send(name, ...)
       end
     end
 
@@ -230,50 +244,6 @@ module Prism
     class IgnoreStateToken < Token
       def ==(other) # :nodoc:
         self[0...-1] == other[0...-1]
-      end
-    end
-
-    # Ident tokens for the most part are exactly the same, except sometimes we
-    # know an ident is a local when ripper doesn't (when they are introduced
-    # through named captures in regular expressions). In that case we don't
-    # compare the state.
-    class IdentToken < Token
-      def ==(other) # :nodoc:
-        (self[0...-1] == other[0...-1]) && (
-          (other[3] == Translation::Ripper::EXPR_LABEL | Translation::Ripper::EXPR_END) ||
-          (other[3] & (Translation::Ripper::EXPR_ARG | Translation::Ripper::EXPR_CMDARG) != 0)
-        )
-      end
-    end
-
-    # Ignored newlines can occasionally have a LABEL state attached to them, so
-    # we compare the state differently here.
-    class IgnoredNewlineToken < Token
-      def ==(other) # :nodoc:
-        return false unless self[0...-1] == other[0...-1]
-
-        if self[3] == Translation::Ripper::EXPR_ARG | Translation::Ripper::EXPR_LABELED
-          other[3] & Translation::Ripper::EXPR_ARG | Translation::Ripper::EXPR_LABELED != 0
-        else
-          self[3] == other[3]
-        end
-      end
-    end
-
-    # If we have an identifier that follows a method name like:
-    #
-    #     def foo bar
-    #
-    # then Ripper will mark bar as END|LABEL if there is a local in a parent
-    # scope named bar because it hasn't pushed the local table yet. We do this
-    # more accurately, so we need to allow comparing against both END and
-    # END|LABEL.
-    class ParamToken < Token
-      def ==(other) # :nodoc:
-        (self[0...-1] == other[0...-1]) && (
-          (other[3] == Translation::Ripper::EXPR_END) ||
-          (other[3] == Translation::Ripper::EXPR_END | Translation::Ripper::EXPR_LABEL)
-        )
       end
     end
 
@@ -685,33 +655,18 @@ module Prism
             # want to bother comparing the state on them.
             last_heredoc_end = token.location.end_offset
             IgnoreStateToken.new([[lineno, column], event, value, lex_state])
-          when :on_ident
-            if lex_state == Translation::Ripper::EXPR_END
-              # If we have an identifier that follows a method name like:
-              #
-              #     def foo bar
-              #
-              # then Ripper will mark bar as END|LABEL if there is a local in a
-              # parent scope named bar because it hasn't pushed the local table
-              # yet. We do this more accurately, so we need to allow comparing
-              # against both END and END|LABEL.
-              ParamToken.new([[lineno, column], event, value, lex_state])
-            elsif lex_state == Translation::Ripper::EXPR_END | Translation::Ripper::EXPR_LABEL
-              # In the event that we're comparing identifiers, we're going to
-              # allow a little divergence. Ripper doesn't account for local
-              # variables introduced through named captures in regexes, and we
-              # do, which accounts for this difference.
-              IdentToken.new([[lineno, column], event, value, lex_state])
-            else
-              Token.new([[lineno, column], event, value, lex_state])
-            end
           when :on_embexpr_end
             IgnoreStateToken.new([[lineno, column], event, value, lex_state])
-          when :on_ignored_nl
-            # Ignored newlines can occasionally have a LABEL state attached to
-            # them which doesn't actually impact anything. We don't mirror that
-            # state so we ignored it.
-            IgnoredNewlineToken.new([[lineno, column], event, value, lex_state])
+          when :on_words_sep
+            # Ripper emits one token each per line.
+            value.each_line.with_index do |line, index|
+              if index > 0
+                lineno += 1
+                column = 0
+              end
+              tokens << Token.new([[lineno, column], event, line, lex_state])
+            end
+            tokens.pop
           when :on_regexp_end
             # On regex end, Ripper scans and then sets end state, so the ripper
             # lexed output is begin, when it should be end. prism sets lex state
@@ -857,8 +812,12 @@ module Prism
       # Drop the EOF token from the list
       tokens = tokens[0...-1]
 
-      # We sort by location to compare against Ripper's output
-      tokens.sort_by!(&:location)
+      # We sort by location because Ripper.lex sorts.
+      # Manually implemented instead of `sort_by!(&:location)` for performance.
+      tokens.sort_by! do |token|
+        line, column = token.location
+        source.line_to_byte_offset(line) + column
+      end
 
       # Add :on_sp tokens
       tokens = add_on_sp_tokens(tokens, source, result.data_loc, bom, eof_token)

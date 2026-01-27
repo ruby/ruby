@@ -960,6 +960,15 @@ class Gem::Specification < Gem::BasicSpecification
 
   ##
   # Return the best specification that contains the file matching +path+
+  # amongst the specs that are not loaded. This method is different than
+  # +find_inactive_by_path+ as it will filter out loaded specs by their name.
+
+  def self.find_unloaded_by_path(path)
+    specification_record.find_unloaded_by_path(path)
+  end
+
+  ##
+  # Return the best specification that contains the file matching +path+
   # amongst the specs that are not activated.
 
   def self.find_inactive_by_path(path)

@@ -8423,12 +8423,12 @@ rb_ary_deconstruct(VALUE ary)
  *
  *      [1, 'one', :one, [2, 'two', :two]]
  *
- *  - A {%w or %W string-array Literal}[rdoc-ref:syntax/literals.rdoc@25w+and+-25W-3A+String-Array+Literals]:
+ *  - A {%w or %W string-array Literal}[rdoc-ref:syntax/literals.rdoc@w-and-w-String-Array-Literals]:
  *
  *      %w[foo bar baz] # => ["foo", "bar", "baz"]
  *      %w[1 % *]       # => ["1", "%", "*"]
  *
- *  - A {%i or %I symbol-array Literal}[rdoc-ref:syntax/literals.rdoc@25i+and+-25I-3A+Symbol-Array+Literals]:
+ *  - A {%i or %I symbol-array Literal}[rdoc-ref:syntax/literals.rdoc@i+and-I-Symbol-Array+Literals]:
  *
  *      %i[foo bar baz] # => [:foo, :bar, :baz]
  *      %i[1 % *]       # => [:"1", :%, :*]
@@ -8690,8 +8690,8 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  First, what's elsewhere. Class \Array:
  *
- *  - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
- *  - Includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],
+ *  - Inherits from {class Object}[rdoc-ref:Object@Whats-Here].
+ *  - Includes {module Enumerable}[rdoc-ref:Enumerable@Whats-Here],
  *    which provides dozens of additional methods.
  *
  *  Here, class \Array provides methods that are useful for:

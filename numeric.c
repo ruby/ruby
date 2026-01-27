@@ -3680,9 +3680,9 @@ rb_int128_to_numeric(rb_int128_t n)
  * First, what's elsewhere. Class \Integer:
  *
  * - Inherits from
- *   {class Numeric}[rdoc-ref:Numeric@What-27s+Here]
- *   and {class Object}[rdoc-ref:Object@What-27s+Here].
- * - Includes {module Comparable}[rdoc-ref:Comparable@What-27s+Here].
+ *   {class Numeric}[rdoc-ref:Numeric@Whats+Here]
+ *   and {class Object}[rdoc-ref:Object@Whats+Here].
+ * - Includes {module Comparable}[rdoc-ref:Comparable@Whats+Here].
  *
  * Here, class \Integer provides methods for:
  *
@@ -6365,8 +6365,8 @@ int_s_try_convert(VALUE self, VALUE num)
  *
  * First, what's elsewhere. Class \Numeric:
  *
- * - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
- * - Includes {module Comparable}[rdoc-ref:Comparable@What-27s+Here].
+ * - Inherits from {class Object}[rdoc-ref:Object@Whats+Here].
+ * - Includes {module Comparable}[rdoc-ref:Comparable@Whats+Here].
  *
  * Here, class \Numeric provides methods for:
  *

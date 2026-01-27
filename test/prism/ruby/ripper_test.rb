@@ -62,18 +62,10 @@ module Prism
     ]
 
     omitted_lex = [
-      "comments.txt",
-      "heredoc_percent_q_newline_delimiter.txt",
       "heredoc_with_escaped_newline_at_start.txt",
       "heredocs_with_fake_newlines.txt",
       "indented_file_end.txt",
-      "seattlerb/TestRubyParserShared.txt",
-      "seattlerb/class_comments.txt",
-      "seattlerb/module_comments.txt",
-      "seattlerb/parse_line_block_inline_comment_leading_newlines.txt",
-      "seattlerb/parse_line_block_inline_multiline_comment.txt",
       "spanning_heredoc_newlines.txt",
-      "strings.txt",
       "whitequark/dedenting_heredoc.txt",
       "whitequark/procarg0.txt",
     ]

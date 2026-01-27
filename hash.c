@@ -7216,8 +7216,8 @@ static const rb_data_type_t env_data_type = {
  *
  *  First, what's elsewhere. Class +Hash+:
  *
- *  - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
- *  - Includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],
+ *  - Inherits from {class Object}[rdoc-ref:Object@Whats+Here].
+ *  - Includes {module Enumerable}[rdoc-ref:Enumerable@Whats+Here],
  *    which provides dozens of additional methods.
  *
  *  Here, class +Hash+ provides methods that are useful for:
@@ -7528,8 +7528,8 @@ Init_Hash(void)
      *
      * First, what's elsewhere. Class +ENV+:
      *
-     * - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
-     * - Extends {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],
+     * - Inherits from {class Object}[rdoc-ref:Object@Whats+Here].
+     * - Extends {module Enumerable}[rdoc-ref:Enumerable@Whats+Here],
      *
      * Here, class +ENV+ provides methods that are useful for:
      *

@@ -21,8 +21,17 @@ use crate::state::rb_zjit_record_exit_stack;
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, PartialOrd, Ord)]
 pub struct BlockId(pub usize);
 
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, PartialOrd, Ord)]
+pub struct VRegId(pub usize);
+
 impl From<BlockId> for usize {
     fn from(val: BlockId) -> Self {
+        val.0
+    }
+}
+
+impl From<VRegId> for usize {
+    fn from(val: VRegId) -> Self {
         val.0
     }
 }
@@ -30,6 +39,12 @@ impl From<BlockId> for usize {
 impl std::fmt::Display for BlockId {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "l{}", self.0)
+    }
+}
+
+impl std::fmt::Display for VRegId {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "v{}", self.0)
     }
 }
 
@@ -131,7 +146,7 @@ pub enum MemBase
     /// Register: Every Opnd::Mem should have MemBase::Reg as of emit.
     Reg(u8),
     /// Virtual register: Lowered to MemBase::Reg or MemBase::Stack in alloc_regs.
-    VReg(usize),
+    VReg(VRegId),
     /// Stack slot: Lowered to MemBase::Reg in scratch_split.
     Stack { stack_idx: usize, num_bits: u8 },
 }
@@ -158,7 +173,7 @@ impl fmt::Display for Mem {
         write!(f, "[")?;
         match self.base {
             MemBase::Reg(reg_no) => write!(f, "{}", mem_base_reg(reg_no))?,
-            MemBase::VReg(idx) => write!(f, "v{idx}")?,
+            MemBase::VReg(idx) => write!(f, "{idx}")?,
             MemBase::Stack { stack_idx, num_bits } if num_bits == 64 => write!(f, "Stack[{stack_idx}]")?,
             MemBase::Stack { stack_idx, num_bits } => write!(f, "Stack{num_bits}[{stack_idx}]")?,
         }
@@ -196,7 +211,7 @@ pub enum Opnd
     Value(VALUE),
 
     /// Virtual register. Lowered to Reg or Mem in Assembler::alloc_regs().
-    VReg{ idx: usize, num_bits: u8 },
+    VReg{ idx: VRegId, num_bits: u8 },
 
     // Low-level operands, for lowering
     Imm(i64),           // Raw signed immediate
@@ -212,8 +227,8 @@ impl fmt::Display for Opnd {
             None => write!(f, "None"),
             Value(VALUE(value)) if *value < 10 => write!(f, "Value({value:x})"),
             Value(VALUE(value)) => write!(f, "Value(0x{value:x})"),
-            VReg { idx, num_bits } if *num_bits == 64 => write!(f, "v{idx}"),
-            VReg { idx, num_bits } => write!(f, "VReg{num_bits}(v{idx})"),
+            VReg { idx, num_bits } if *num_bits == 64 => write!(f, "{idx}"),
+            VReg { idx, num_bits } => write!(f, "VReg{num_bits}({idx})"),
             Imm(value) if value.abs() < 10 => write!(f, "Imm({value:x})"),
             Imm(value) => write!(f, "Imm(0x{value:x})"),
             UImm(value) if *value < 10 => write!(f, "{value:x}"),
@@ -282,7 +297,7 @@ impl Opnd
     }
 
     /// Unwrap the index of a VReg
-    pub fn vreg_idx(&self) -> usize {
+    pub fn vreg_idx(&self) -> VRegId {
         match self {
             Opnd::VReg { idx, .. } => *idx,
             _ => unreachable!("trying to unwrap {self:?} into VReg"),
@@ -321,10 +336,10 @@ impl Opnd
     pub fn map_index(self, indices: &[usize]) -> Opnd {
         match self {
             Opnd::VReg { idx, num_bits } => {
-                Opnd::VReg { idx: indices[idx], num_bits }
+                Opnd::VReg { idx: VRegId(indices[idx.0]), num_bits }
             }
             Opnd::Mem(Mem { base: MemBase::VReg(idx), disp, num_bits }) => {
-                Opnd::Mem(Mem { base: MemBase::VReg(indices[idx]), disp, num_bits })
+                Opnd::Mem(Mem { base: MemBase::VReg(VRegId(indices[idx.0])), disp, num_bits })
             },
             _ => self
         }
@@ -1355,12 +1370,44 @@ impl LiveRange {
     }
 }
 
+/// Type-safe wrapper around `Vec<LiveRange>` that can be indexed by VRegId
+#[derive(Clone, Debug, Default)]
+pub struct LiveRanges(Vec<LiveRange>);
+
+impl LiveRanges {
+    pub fn new(size: usize) -> Self {
+        Self(vec![LiveRange { start: None, end: None }; size])
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn get(&self, vreg_id: VRegId) -> Option<&LiveRange> {
+        self.0.get(vreg_id.0)
+    }
+}
+
+impl std::ops::Index<VRegId> for LiveRanges {
+    type Output = LiveRange;
+
+    fn index(&self, idx: VRegId) -> &Self::Output {
+        &self.0[idx.0]
+    }
+}
+
+impl std::ops::IndexMut<VRegId> for LiveRanges {
+    fn index_mut(&mut self, idx: VRegId) -> &mut Self::Output {
+        &mut self.0[idx.0]
+    }
+}
+
 /// StackState manages which stack slots are used by which VReg
 pub struct StackState {
     /// The maximum number of spilled VRegs at a time
     stack_size: usize,
     /// Map from index at the C stack for spilled VRegs to Some(vreg_idx) if allocated
-    stack_slots: Vec<Option<usize>>,
+    stack_slots: Vec<Option<VRegId>>,
     /// Copy of Assembler::stack_base_idx. Used for calculating stack slot offsets.
     stack_base_idx: usize,
 }
@@ -1376,7 +1423,7 @@ impl StackState {
     }
 
     /// Allocate a stack slot for a given vreg_idx
-    fn alloc_stack(&mut self, vreg_idx: usize) -> Opnd {
+    fn alloc_stack(&mut self, vreg_idx: VRegId) -> Opnd {
         for stack_idx in 0..self.stack_size {
             if self.stack_slots[stack_idx].is_none() {
                 self.stack_slots[stack_idx] = Some(vreg_idx);
@@ -1437,7 +1484,7 @@ struct RegisterPool {
 
     /// Some(vreg_idx) if the register at the index in `pool` is used by the VReg.
     /// None if the register is not in use.
-    pool: Vec<Option<usize>>,
+    pool: Vec<Option<VRegId>>,
 
     /// The number of live registers.
     /// Provides a quick way to query `pool.filter(|r| r.is_some()).count()`
@@ -1461,7 +1508,7 @@ impl RegisterPool {
 
     /// Mutate the pool to indicate that the register at the index
     /// has been allocated and is live.
-    fn alloc_opnd(&mut self, vreg_idx: usize) -> Opnd {
+    fn alloc_opnd(&mut self, vreg_idx: VRegId) -> Opnd {
         for (reg_idx, reg) in self.regs.iter().enumerate() {
             if self.pool[reg_idx].is_none() {
                 self.pool[reg_idx] = Some(vreg_idx);
@@ -1473,7 +1520,7 @@ impl RegisterPool {
     }
 
     /// Allocate a specific register
-    fn take_reg(&mut self, reg: &Reg, vreg_idx: usize) -> Opnd {
+    fn take_reg(&mut self, reg: &Reg, vreg_idx: VRegId) -> Opnd {
         let reg_idx = self.regs.iter().position(|elem| elem.reg_no == reg.reg_no)
             .unwrap_or_else(|| panic!("Unable to find register: {}", reg.reg_no));
         assert_eq!(self.pool[reg_idx], None, "register already allocated for VReg({:?})", self.pool[reg_idx]);
@@ -1499,7 +1546,7 @@ impl RegisterPool {
     }
 
     /// Return a list of (Reg, vreg_idx) tuples for all live registers
-    fn live_regs(&self) -> Vec<(Reg, usize)> {
+    fn live_regs(&self) -> Vec<(Reg, VRegId)> {
         let mut live_regs = Vec::with_capacity(self.live_regs);
         for (reg_idx, &reg) in self.regs.iter().enumerate() {
             if let Some(vreg_idx) = self.pool[reg_idx] {
@@ -1510,7 +1557,7 @@ impl RegisterPool {
     }
 
     /// Return vreg_idx if a given register is already in use
-    fn vreg_for(&self, reg: &Reg) -> Option<usize> {
+    fn vreg_for(&self, reg: &Reg) -> Option<VRegId> {
         let reg_idx = self.regs.iter().position(|elem| elem.reg_no == reg.reg_no).unwrap();
         self.pool[reg_idx]
     }
@@ -1536,7 +1583,7 @@ pub struct Assembler {
     current_block_id: BlockId,
 
     /// Live range for each VReg indexed by its `idx``
-    pub(super) live_ranges: Vec<LiveRange>,
+    pub(super) live_ranges: LiveRanges,
 
     /// Names of labels
     pub(super) label_names: Vec<String>,
@@ -1568,7 +1615,7 @@ impl Assembler
             leaf_ccall_stack_size: None,
             basic_blocks: Vec::default(),
             current_block_id: BlockId(0),
-            live_ranges: Vec::default(),
+            live_ranges: LiveRanges::default(),
             idx: 0,
         }
     }
@@ -1602,7 +1649,7 @@ impl Assembler
 
         // Initialize live_ranges to match the old assembler's size
         // This allows reusing VRegs from the old assembler
-        asm.live_ranges.resize(old_asm.live_ranges.len(), LiveRange { start: None, end: None });
+        asm.live_ranges = LiveRanges::new(old_asm.live_ranges.len());
 
         asm
     }
@@ -1780,8 +1827,8 @@ impl Assembler
 
     /// Build an Opnd::VReg and initialize its LiveRange
     pub(super) fn new_vreg(&mut self, num_bits: u8) -> Opnd {
-        let vreg = Opnd::VReg { idx: self.live_ranges.len(), num_bits };
-        self.live_ranges.push(LiveRange { start: None, end: None });
+        let vreg = Opnd::VReg { idx: VRegId(self.live_ranges.len()), num_bits };
+        self.live_ranges.0.push(LiveRange { start: None, end: None });
         vreg
     }
 
@@ -1794,7 +1841,7 @@ impl Assembler
 
         // Initialize the live range of the output VReg to insn_idx..=insn_idx
         if let Some(Opnd::VReg { idx, .. }) = insn.out_opnd() {
-            assert!(*idx < self.live_ranges.len());
+            assert!(idx.0 < self.live_ranges.len());
             assert_eq!(self.live_ranges[*idx], LiveRange { start: None, end: None });
             self.live_ranges[*idx] = LiveRange { start: Some(insn_idx), end: Some(insn_idx) };
         }
@@ -1805,7 +1852,7 @@ impl Assembler
             match *opnd {
                 Opnd::VReg { idx, .. } |
                 Opnd::Mem(Mem { base: MemBase::VReg(idx), .. }) => {
-                    assert!(idx < self.live_ranges.len());
+                    assert!(idx.0 < self.live_ranges.len());
                     assert_ne!(self.live_ranges[idx].end, None);
                     self.live_ranges[idx].end = Some(self.live_ranges[idx].end().max(insn_idx));
                 }
@@ -1894,7 +1941,7 @@ impl Assembler
         let mut vreg_opnd: Vec<Option<Opnd>> = vec![None; self.live_ranges.len()];
 
         // List of registers saved before a C call, paired with the VReg index.
-        let mut saved_regs: Vec<(Reg, usize)> = vec![];
+        let mut saved_regs: Vec<(Reg, VRegId)> = vec![];
 
         // Remember the indexes of Insn::FrameSetup to update the stack size later
         let mut frame_setup_idxs: Vec<(BlockId, usize)> = vec![];
@@ -1906,7 +1953,7 @@ impl Assembler
 
         let asm = &mut asm_local;
 
-        let live_ranges: Vec<LiveRange> = take(&mut self.live_ranges);
+        let live_ranges = take(&mut self.live_ranges);
 
         while let Some((index, mut insn)) = iterator.next(asm) {
             // Remember the index of FrameSetup to bump slot_count when we know the max number of spilled VRegs.
@@ -1924,7 +1971,7 @@ impl Assembler
                         let new_opnd = pool.alloc_opnd(vreg_idx);
                         asm.mov(new_opnd, C_RET_OPND);
                         pool.dealloc_opnd(&Opnd::Reg(C_RET_REG));
-                        vreg_opnd[vreg_idx] = Some(new_opnd);
+                        vreg_opnd[vreg_idx.0] = Some(new_opnd);
                     }
 
                     true
@@ -1943,7 +1990,7 @@ impl Assembler
                         // uses this operand. If it is, we can return the allocated
                         // register to the pool.
                         if live_ranges[idx].end() == index {
-                            if let Some(opnd) = vreg_opnd[idx] {
+                            if let Some(opnd) = vreg_opnd[idx.0] {
                                 pool.dealloc_opnd(&opnd);
                             } else {
                                 unreachable!("no register allocated for insn {:?}", insn);
@@ -1987,7 +2034,7 @@ impl Assembler
             };
             if let Some(vreg_idx) = vreg_idx {
                 if live_ranges[vreg_idx].end() == index {
-                    debug!("Allocating a register for VReg({}) at instruction index {} even though it does not live past this index", vreg_idx, index);
+                    debug!("Allocating a register for {vreg_idx} at instruction index {index} even though it does not live past this index");
                 }
                 // This is going to be the output operand that we will set on the
                 // instruction. CCall and LiveReg need to use a specific register.
@@ -2012,7 +2059,7 @@ impl Assembler
 
                     if let Some(Opnd::VReg{ idx, .. }) = opnd_iter.next() {
                         if live_ranges[*idx].end() == index {
-                            if let Some(Opnd::Reg(reg)) = vreg_opnd[*idx] {
+                            if let Some(Opnd::Reg(reg)) = vreg_opnd[idx.0] {
                                 out_reg = Some(pool.take_reg(&reg, vreg_idx));
                             }
                         }
@@ -2031,7 +2078,7 @@ impl Assembler
                 // extends beyond the index of the instruction.
                 let out = insn.out_opnd_mut().unwrap();
                 let out_opnd = out_opnd.with_num_bits(out_num_bits);
-                vreg_opnd[out.vreg_idx()] = Some(out_opnd);
+                vreg_opnd[out.vreg_idx().0] = Some(out_opnd);
                 *out = out_opnd;
             }
 
@@ -2040,10 +2087,10 @@ impl Assembler
             while let Some(opnd) = opnd_iter.next() {
                 match *opnd {
                     Opnd::VReg { idx, num_bits } => {
-                        *opnd = vreg_opnd[idx].unwrap().with_num_bits(num_bits);
+                        *opnd = vreg_opnd[idx.0].unwrap().with_num_bits(num_bits);
                     },
                     Opnd::Mem(Mem { base: MemBase::VReg(idx), disp, num_bits }) => {
-                        *opnd = match vreg_opnd[idx].unwrap() {
+                        *opnd = match vreg_opnd[idx.0].unwrap() {
                             Opnd::Reg(reg) => Opnd::Mem(Mem { base: MemBase::Reg(reg.reg_no), disp, num_bits }),
                             // If the base is spilled, lower it to MemBase::Stack, which scratch_split will lower to MemBase::Reg.
                             Opnd::Mem(mem) => Opnd::Mem(Mem { base: pool.stack_state.mem_to_stack_membase(mem), disp, num_bits }),
@@ -2058,7 +2105,7 @@ impl Assembler
             // register
             if let Some(idx) = vreg_idx {
                 if live_ranges[idx].end() == index {
-                    if let Some(opnd) = vreg_opnd[idx] {
+                    if let Some(opnd) = vreg_opnd[idx.0] {
                         pool.dealloc_opnd(&opnd);
                     } else {
                         unreachable!("no register allocated for insn {:?}", insn);
@@ -2849,7 +2896,7 @@ impl Assembler {
         asm_local.accept_scratch_reg = self.accept_scratch_reg;
         asm_local.stack_base_idx = self.stack_base_idx;
         asm_local.label_names = self.label_names.clone();
-        asm_local.live_ranges.resize(self.live_ranges.len(), LiveRange { start: None, end: None });
+        asm_local.live_ranges = LiveRanges::new(self.live_ranges.len());
 
         // Create one giant block to linearize everything into
         asm_local.new_block_without_id();

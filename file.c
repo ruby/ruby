@@ -5019,7 +5019,7 @@ rb_file_s_basename(int argc, VALUE *argv, VALUE _)
 {
     VALUE fname, fext;
     const char *name, *p;
-    long f, n;
+    long f = 0, n;
     rb_encoding *enc;
 
     fext = Qnil;
@@ -5037,8 +5037,8 @@ rb_file_s_basename(int argc, VALUE *argv, VALUE _)
     }
 
     n = RSTRING_LEN(fname);
-    if (n == 0 || !*name) {
-        rb_enc_str_new(0, 0, enc);
+    if (n <= 0 || !*name) {
+        return rb_enc_str_new(0, 0, enc);
     }
 
     bool mb_enc = !rb_str_encindex_fastpath(rb_enc_to_index(enc));
@@ -7507,7 +7507,7 @@ const char ruby_null_device[] =
  *
  *  First, what's elsewhere. Class \File:
  *
- *  - Inherits from {class IO}[rdoc-ref:IO@What-27s+Here],
+ *  - Inherits from {class IO}[rdoc-ref:IO@Whats+Here],
  *    in particular, methods for creating, reading, and writing files
  *  - Includes module FileTest,
  *    which provides dozens of additional methods.

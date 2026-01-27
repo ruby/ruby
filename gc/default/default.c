@@ -843,6 +843,7 @@ heap_page_in_global_empty_pages_pool(rb_objspace_t *objspace, struct heap_page *
 #define GET_HEAP_WB_UNPROTECTED_BITS(x) (&GET_HEAP_PAGE(x)->wb_unprotected_bits[0])
 #define GET_HEAP_MARKING_BITS(x)        (&GET_HEAP_PAGE(x)->marking_bits[0])
 
+
 #define RVALUE_AGE_BITMAP_INDEX(n)  (NUM_IN_PAGE(n) / (BITS_BITLENGTH / RVALUE_AGE_BIT_COUNT))
 #define RVALUE_AGE_BITMAP_OFFSET(n) ((NUM_IN_PAGE(n) % (BITS_BITLENGTH / RVALUE_AGE_BIT_COUNT)) * RVALUE_AGE_BIT_COUNT)
 
@@ -3481,43 +3482,6 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
         rb_asan_unpoison_object(vp, false);
         if (bitset & 1) {
             switch (BUILTIN_TYPE(vp)) {
-              default: /* majority case */
-                gc_report(2, objspace, "page_sweep: free %p\n", (void *)p);
-#if RGENGC_CHECK_MODE
-                if (!is_full_marking(objspace)) {
-                    if (RVALUE_OLD_P(objspace, vp)) rb_bug("page_sweep: %p - old while minor GC.", (void *)p);
-                    if (RVALUE_REMEMBERED(objspace, vp)) rb_bug("page_sweep: %p - remembered.", (void *)p);
-                }
-#endif
-
-                if (RVALUE_WB_UNPROTECTED(objspace, vp)) CLEAR_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(vp), vp);
-
-#if RGENGC_CHECK_MODE
-#define CHECK(x) if (x(objspace, vp) != FALSE) rb_bug("obj_free: " #x "(%s) != FALSE", rb_obj_info(vp))
-                CHECK(RVALUE_WB_UNPROTECTED);
-                CHECK(RVALUE_MARKED);
-                CHECK(RVALUE_MARKING);
-                CHECK(RVALUE_UNCOLLECTIBLE);
-#undef CHECK
-#endif
-
-                rb_gc_event_hook(vp, RUBY_INTERNAL_EVENT_FREEOBJ);
-
-                rb_gc_obj_free_vm_weak_references(vp);
-                if (rb_gc_obj_free(objspace, vp)) {
-                    // always add free slots back to the swept pages freelist,
-                    // so that if we're compacting, we can re-use the slots
-                    (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, BASE_SLOT_SIZE);
-                    RVALUE_AGE_SET_BITMAP(vp, 0);
-                    heap_page_add_freeobj(objspace, sweep_page, vp);
-                    gc_report(3, objspace, "page_sweep: %s is added to freelist\n", rb_obj_info(vp));
-                    ctx->freed_slots++;
-                }
-                else {
-                    ctx->final_slots++;
-                }
-                break;
-
               case T_MOVED:
                 if (objspace->flags.during_compacting) {
                     /* The sweep cursor shouldn't have made it to any
@@ -3537,6 +3501,54 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
                 break;
               case T_NONE:
                 ctx->empty_slots++; /* already freed */
+                break;
+
+              default:
+#if RGENGC_CHECK_MODE
+                if (!is_full_marking(objspace)) {
+                    if (RVALUE_OLD_P(objspace, vp)) rb_bug("page_sweep: %p - old while minor GC.", (void *)p);
+                    if (RVALUE_REMEMBERED(objspace, vp)) rb_bug("page_sweep: %p - remembered.", (void *)p);
+                }
+#endif
+                if (RVALUE_WB_UNPROTECTED(objspace, vp)) CLEAR_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(vp), vp);
+
+#if RGENGC_CHECK_MODE
+#define CHECK(x) if (x(objspace, vp) != FALSE) rb_bug("obj_free: " #x "(%s) != FALSE", rb_obj_info(vp))
+                CHECK(RVALUE_WB_UNPROTECTED);
+                CHECK(RVALUE_MARKED);
+                CHECK(RVALUE_MARKING);
+                CHECK(RVALUE_UNCOLLECTIBLE);
+#undef CHECK
+#endif
+
+                if (!rb_gc_obj_needs_cleanup_p(vp)) {
+                    if (RB_UNLIKELY(objspace->hook_events & RUBY_INTERNAL_EVENT_FREEOBJ)) {
+                        rb_gc_event_hook(vp, RUBY_INTERNAL_EVENT_FREEOBJ);
+                    }
+
+                    (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, BASE_SLOT_SIZE);
+                    RVALUE_AGE_SET_BITMAP(vp, 0);
+                    heap_page_add_freeobj(objspace, sweep_page, vp);
+                    gc_report(3, objspace, "page_sweep: %s (fast path) added to freelist\n", rb_obj_info(vp));
+                    ctx->freed_slots++;
+                }
+                else {
+                    gc_report(2, objspace, "page_sweep: free %p\n", (void *)p);
+
+                    rb_gc_event_hook(vp, RUBY_INTERNAL_EVENT_FREEOBJ);
+
+                    rb_gc_obj_free_vm_weak_references(vp);
+                    if (rb_gc_obj_free(objspace, vp)) {
+                        (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, BASE_SLOT_SIZE);
+                        RVALUE_AGE_SET_BITMAP(vp, 0);
+                        heap_page_add_freeobj(objspace, sweep_page, vp);
+                        gc_report(3, objspace, "page_sweep: %s is added to freelist\n", rb_obj_info(vp));
+                        ctx->freed_slots++;
+                    }
+                    else {
+                        ctx->final_slots++;
+                    }
+                }
                 break;
             }
         }

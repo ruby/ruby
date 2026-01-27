@@ -163,8 +163,8 @@
 #
 # First, what's elsewhere. Class +String+:
 #
-# - Inherits from the {Object class}[rdoc-ref:Object@What-27s+Here].
-# - Includes the {Comparable module}[rdoc-ref:Comparable@What-27s+Here].
+# - Inherits from the {Object class}[rdoc-ref:Object@Whats+Here].
+# - Includes the {Comparable module}[rdoc-ref:Comparable@Whats+Here].
 #
 # Here, class +String+ provides methods that are useful for:
 #

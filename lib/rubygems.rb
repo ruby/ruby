@@ -193,11 +193,12 @@ module Gem
     begin
       spec.activate
     rescue Gem::LoadError => e # this could fail due to gem dep collisions, go lax
-      spec_by_name = Gem::Specification.find_by_name(spec.name)
-      if spec_by_name.nil?
+      spec = Gem::Specification.find_unloaded_by_path(path)
+      spec ||= Gem::Specification.find_by_name(spec.name)
+      if spec.nil?
         raise e
       else
-        spec_by_name.activate
+        spec.activate
       end
     end
 

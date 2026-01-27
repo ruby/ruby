@@ -390,7 +390,7 @@ impl Assembler {
         }
 
         let mut asm_local = Assembler::new_with_asm(&self);
-        let live_ranges: Vec<LiveRange> = take(&mut self.live_ranges);
+        let live_ranges = take(&mut self.live_ranges);
         let mut iterator = self.instruction_iterator();
         let asm = &mut asm_local;
 
@@ -755,7 +755,7 @@ impl Assembler {
         asm_local.accept_scratch_reg = true;
         asm_local.stack_base_idx = self.stack_base_idx;
         asm_local.label_names = self.label_names.clone();
-        asm_local.live_ranges.resize(self.live_ranges.len(), LiveRange { start: None, end: None });
+        asm_local.live_ranges = LiveRanges::new(self.live_ranges.len());
 
         // Create one giant block to linearize everything into
         asm_local.new_block_without_id();
@@ -1691,7 +1691,7 @@ impl Assembler {
 ///
 /// If a, b, and c are all registers.
 fn merge_three_reg_mov(
-    live_ranges: &[LiveRange],
+    live_ranges: &LiveRanges,
     iterator: &mut InsnIter,
     asm: &mut Assembler,
     left: &Opnd,
