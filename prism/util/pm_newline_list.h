@@ -43,7 +43,7 @@ typedef struct {
     /** The line number. */
     int32_t line;
 
-    /** The column number. */
+    /** The column in bytes. */
     uint32_t column;
 } pm_line_column_t;
 

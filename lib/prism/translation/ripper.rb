@@ -475,7 +475,7 @@ module Prism
       # The current line number of the parser.
       attr_reader :lineno
 
-      # The current column number of the parser.
+      # The current column in bytes of the parser.
       attr_reader :column
 
       # Create a new Translation::Ripper object with the given source.
