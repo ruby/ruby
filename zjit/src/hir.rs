@@ -936,6 +936,14 @@ pub enum Insn {
         state: InsnId,
         reason: SendFallbackReason,
     },
+    InvokeSuperForward {
+        recv: InsnId,
+        cd: *const rb_call_data,
+        blockiseq: IseqPtr,
+        args: Vec<InsnId>,
+        state: InsnId,
+        reason: SendFallbackReason,
+    },
     InvokeBlock {
         cd: *const rb_call_data,
         args: Vec<InsnId>,
@@ -1183,6 +1191,7 @@ impl Insn {
             Insn::Send { .. } => effects::Any,
             Insn::SendForward { .. } => effects::Any,
             Insn::InvokeSuper { .. } => effects::Any,
+            Insn::InvokeSuperForward { .. } => effects::Any,
             Insn::InvokeBlock { .. } => effects::Any,
             Insn::SendWithoutBlockDirect { .. } => effects::Any,
             Insn::InvokeBuiltin { .. } => effects::Any,
@@ -1465,6 +1474,14 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::InvokeSuper { recv, blockiseq, args, reason, .. } => {
                 write!(f, "InvokeSuper {recv}, {:p}", self.ptr_map.map_ptr(blockiseq))?;
+                for arg in args {
+                    write!(f, ", {arg}")?;
+                }
+                write!(f, " # SendFallbackReason: {reason}")?;
+                Ok(())
+            }
+            Insn::InvokeSuperForward { recv, blockiseq, args, reason, .. } => {
+                write!(f, "InvokeSuperForward {recv}, {:p}", self.ptr_map.map_ptr(blockiseq))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
@@ -2277,6 +2294,14 @@ impl Function {
                 state,
                 reason,
             },
+            &InvokeSuperForward { recv, cd, blockiseq, ref args, state, reason } => InvokeSuperForward {
+                recv: find!(recv),
+                cd,
+                blockiseq,
+                args: find_vec!(args),
+                state,
+                reason,
+            },
             &InvokeBlock { cd, ref args, state, reason } => InvokeBlock {
                 cd,
                 args: find_vec!(args),
@@ -2356,6 +2381,7 @@ impl Function {
                 | SendForward { reason, .. }
                 | SendWithoutBlock { reason, .. }
                 | InvokeSuper { reason, .. }
+                | InvokeSuperForward { reason, .. }
                 | InvokeBlock { reason, .. }
                 => *reason = dynamic_send_reason,
                 _ => unreachable!("unexpected instruction {} at {insn_id}", self.find(insn_id))
@@ -2477,6 +2503,7 @@ impl Function {
             Insn::Send { .. } => types::BasicObject,
             Insn::SendForward { .. } => types::BasicObject,
             Insn::InvokeSuper { .. } => types::BasicObject,
+            Insn::InvokeSuperForward { .. } => types::BasicObject,
             Insn::InvokeBlock { .. } => types::BasicObject,
             Insn::InvokeProc { .. } => types::BasicObject,
             Insn::InvokeBuiltin { return_type, .. } => return_type.unwrap_or(types::BasicObject),
@@ -4592,6 +4619,7 @@ impl Function {
             | &Insn::SendWithoutBlockDirect { recv, ref args, state, .. }
             | &Insn::InvokeBuiltin { recv, ref args, state, .. }
             | &Insn::InvokeSuper { recv, ref args, state, .. }
+            | &Insn::InvokeSuperForward { recv, ref args, state, .. }
             | &Insn::InvokeProc { recv, ref args, state, .. } => {
                 worklist.push_back(recv);
                 worklist.extend(args);
@@ -5252,6 +5280,7 @@ impl Function {
             | Insn::Send { recv, ref args, .. }
             | Insn::SendForward { recv, ref args, .. }
             | Insn::InvokeSuper { recv, ref args, .. }
+            | Insn::InvokeSuperForward { recv, ref args, .. }
             | Insn::CCallWithFrame { recv, ref args, .. }
             | Insn::CCallVariadic { recv, ref args, .. }
             | Insn::InvokeBuiltin { recv, ref args, .. }
@@ -6813,6 +6842,35 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let recv = state.stack_pop()?;
                     let blockiseq: IseqPtr = get_arg(pc, 1).as_ptr();
                     let result = fun.push_insn(block, Insn::InvokeSuper { recv, cd, blockiseq, args, state: exit_id, reason: Uncategorized(opcode) });
+                    state.stack_push(result);
+
+                    if !blockiseq.is_null() {
+                        // Reload locals that may have been modified by the blockiseq.
+                        // TODO: Avoid reloading locals that are not referenced by the blockiseq
+                        // or not used after this. Max thinks we could eventually DCE them.
+                        for local_idx in 0..state.locals.len() {
+                            let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
+                            // TODO: We could use `use_sp: true` with PatchPoint
+                            let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0, use_sp: false, rest_param: false });
+                            state.setlocal(ep_offset, val);
+                        }
+                    }
+                }
+                YARVINSN_invokesuperforward => {
+                    let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
+                    let blockiseq: IseqPtr = get_arg(pc, 1).as_iseq();
+                    let call_info = unsafe { rb_get_call_data_ci(cd) };
+                    let flags = unsafe { rb_vm_ci_flag(call_info) };
+                    let forwarding = (flags & VM_CALL_FORWARDING) != 0;
+                    if let Err(call_type) = unhandled_call_type(flags) {
+                        // Can't handle tailcall; side-exit into the interpreter
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
+                        break;  // End the block
+                    }
+                    let argc = unsafe { vm_ci_argc((*cd).ci) };
+                    let args = state.stack_pop_n(argc as usize + usize::from(forwarding))?;
+                    let recv = state.stack_pop()?;
+                    let result = fun.push_insn(block, Insn::InvokeSuperForward { recv, cd, blockiseq, args, state: exit_id, reason: Uncategorized(opcode) });
                     state.stack_push(result);
 
                     if !blockiseq.is_null() {

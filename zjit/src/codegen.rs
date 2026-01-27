@@ -481,6 +481,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::SendWithoutBlock { cd, state, reason, .. } => gen_send_without_block(jit, asm, cd, &function.frame_state(state), reason),
         Insn::SendWithoutBlockDirect { cme, iseq, recv, args, kw_bits, state, .. } => gen_send_iseq_direct(cb, jit, asm, *cme, *iseq, opnd!(recv), opnds!(args), *kw_bits, &function.frame_state(*state), None),
         &Insn::InvokeSuper { cd, blockiseq, state, reason, .. } => gen_invokesuper(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
+        &Insn::InvokeSuperForward { cd, blockiseq, state, reason, .. } => gen_invokesuperforward(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::InvokeBlock { cd, state, reason, .. } => gen_invokeblock(jit, asm, cd, &function.frame_state(state), reason),
         Insn::InvokeProc { recv, args, state, kw_splat } => gen_invokeproc(jit, asm, opnd!(recv), opnds!(args), *kw_splat, &function.frame_state(*state)),
         // Ensure we have enough room fit ec, self, and arguments
@@ -1634,6 +1635,29 @@ fn gen_invokesuper(
     asm_ccall!(
         asm,
         rb_vm_invokesuper,
+        EC, CFP, Opnd::const_ptr(cd), VALUE::from(blockiseq).into()
+    )
+}
+
+/// Compile a dynamic dispatch for `super` with `...`
+fn gen_invokesuperforward(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    cd: *const rb_call_data,
+    blockiseq: IseqPtr,
+    state: &FrameState,
+    reason: SendFallbackReason,
+) -> lir::Opnd {
+    gen_incr_send_fallback_counter(asm, reason);
+
+    gen_prepare_non_leaf_call(jit, asm, state);
+    asm_comment!(asm, "call super with dynamic dispatch (forwarding)");
+    unsafe extern "C" {
+        fn rb_vm_invokesuperforward(ec: EcPtr, cfp: CfpPtr, cd: VALUE, blockiseq: IseqPtr) -> VALUE;
+    }
+    asm_ccall!(
+        asm,
+        rb_vm_invokesuperforward,
         EC, CFP, Opnd::const_ptr(cd), VALUE::from(blockiseq).into()
     )
 }
