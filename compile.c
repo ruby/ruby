@@ -970,6 +970,19 @@ get_string_value2(const NODE *node)
     }
 }
 
+static VALUE
+get_valias_id(const NODE *node)
+{
+    switch (nd_type(node)) {
+      case RB_GLOBAL_VARIABLE_READ_NODE:
+        return RB_NODE_GLOBAL_VARIABLE_READ(node)->name;
+      case RB_BACK_REFERENCE_READ_NODE:
+        return RB_NODE_BACK_REFERENCE_READ(node)->name;
+      default:
+        rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
+    }
+}
+
 VALUE
 rb_iseq_compile_callback(rb_iseq_t *iseq, const struct rb_iseq_new_with_callback_callback_func * ifunc)
 {
@@ -12266,6 +12279,25 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         }
         break;
       }
+      case RB_NUMBERED_REFERENCE_READ_NODE: {
+        if (!popped) {
+            if (!RB_NODE_NUMBERED_REFERENCE_READ(node)->number) {
+                ADD_INSN(ret, node, putnil);
+                break;
+            }
+            ADD_INSN2(ret, node, getspecial, INT2FIX(1) /* '~'  */,
+                      INT2FIX(RB_NODE_NUMBERED_REFERENCE_READ(node)->number << 1));
+        }
+        break;
+      }
+      case RB_BACK_REFERENCE_READ_NODE: {
+        if (!popped) {
+            const char *str = rb_id2name(RB_NODE_BACK_REFERENCE_READ(node)->name);
+            ADD_INSN2(ret, node, getspecial, INT2FIX(1) /* '~' */,
+                      INT2FIX(0x01 | ((long)str[1] << 1)));
+        }
+        break;
+      }
 
       case RB_SYMBOL_NODE: {
         if (!popped) {
@@ -12335,7 +12367,29 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
 
         break;
       }
+      case RB_ALIAS_METHOD_NODE: {
+        ADD_INSN1(ret, node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+        ADD_INSN1(ret, node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CBASE));
+        CHECK(COMPILE(ret, "alias arg1", RB_NODE_ALIAS_METHOD(node)->new_name));
+        CHECK(COMPILE(ret, "alias arg2", RB_NODE_ALIAS_METHOD(node)->old_name));
+        ADD_SEND(ret, node, id_core_set_method_alias, INT2FIX(3));
 
+        if (popped) {
+            ADD_INSN(ret, node, pop);
+        }
+        break;
+      }
+      case RB_ALIAS_GLOBAL_VARIABLE_NODE: {
+        ADD_INSN1(ret, node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+        ADD_INSN1(ret, node, putobject, ID2SYM(get_valias_id(RB_NODE_ALIAS_GLOBAL_VARIABLE(node)->new_name)));
+        ADD_INSN1(ret, node, putobject, ID2SYM(get_valias_id(RB_NODE_ALIAS_GLOBAL_VARIABLE(node)->old_name)));
+        ADD_SEND(ret, node, id_core_set_variable_alias, INT2FIX(2));
+
+        if (popped) {
+            ADD_INSN(ret, node, pop);
+        }
+        break;
+      }
       case RB_CLASS_NODE: {
         const rb_iseq_t *class_iseq = NEW_CHILD_ISEQ(node,
                                                      rb_str_freeze(rb_sprintf("<class:%"PRIsVALUE">", rb_id2str(RB_NODE_CLASS(node)->name))),
