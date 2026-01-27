@@ -306,6 +306,14 @@ A file called `zjit_exits_{pid}.dump` will be created in the same directory as `
 stackprof path/to/zjit_exits_{pid}.dump
 ```
 
+### Viewing HIR as text
+
+The compiled zjit HIR can be viewed as text using the `--zjit-dump-hir` option. However, HIR will only be generated if the `zjit-call-threshold` is reached (default 30). By setting the threshold to 1 you can easily view the HIR for code snippets such as `1 + 1`:
+
+```bash
+./miniruby --zjit --zjit-dump-hir --zjit-call-threshold=1 -e "1 + 1"
+```
+
 ### Viewing HIR in Iongraph
 
 Using `--zjit-dump-hir-iongraph` will dump all compiled functions into a directory named `/tmp/zjit-iongraph-{PROCESS_PID}`. Each file will be named `func_{ZJIT_FUNC_NAME}.json`. In order to use them in the Iongraph viewer, you'll need to use `jq` to collate them to a single file. An example invocation of `jq` is shown below for reference.
