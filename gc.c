@@ -1278,15 +1278,6 @@ rb_gc_obj_needs_cleanup_p(VALUE obj)
         }
 
       case T_DATA:
-        if (flags & RUBY_TYPED_FL_IS_TYPED_DATA) {
-            uintptr_t type = (uintptr_t)RTYPEDDATA(obj)->type;
-            if (type & TYPED_DATA_EMBEDDED) {
-                RUBY_DATA_FUNC dfree = ((const rb_data_type_t *)(type & TYPED_DATA_PTR_MASK))->function.dfree;
-                return (dfree == RUBY_NEVER_FREE || dfree == RUBY_TYPED_DEFAULT_FREE);
-            }
-        }
-        return true;
-
       case T_OBJECT:
       case T_STRING:
       case T_ARRAY:
@@ -1298,7 +1289,13 @@ rb_gc_obj_needs_cleanup_p(VALUE obj)
       case T_COMPLEX:
         break;
 
-      default:
+      case T_FILE:
+      case T_SYMBOL:
+      case T_CLASS:
+      case T_ICLASS:
+      case T_MODULE:
+      case T_REGEXP:
+      case T_MATCH:
         return true;
     }
 
@@ -1309,6 +1306,18 @@ rb_gc_obj_needs_cleanup_p(VALUE obj)
       case T_OBJECT:
         if (flags & ROBJECT_HEAP) return true;
         return false;
+
+      case T_DATA:
+        if (flags & RUBY_TYPED_FL_IS_TYPED_DATA) {
+            uintptr_t type = (uintptr_t)RTYPEDDATA(obj)->type;
+            if (type & TYPED_DATA_EMBEDDED) {
+                RUBY_DATA_FUNC dfree = ((const rb_data_type_t *)(type & TYPED_DATA_PTR_MASK))->function.dfree;
+                if (dfree == RUBY_NEVER_FREE || dfree == RUBY_TYPED_DEFAULT_FREE) {
+                    return false;
+                }
+            }
+        }
+        return true;
 
       case T_STRING:
         if (flags & (RSTRING_NOEMBED | RSTRING_FSTR)) return true;
@@ -1324,7 +1333,7 @@ rb_gc_obj_needs_cleanup_p(VALUE obj)
 
       case T_BIGNUM:
         if (!(flags & BIGNUM_EMBED_FLAG)) return true;
-        return false;
+        return rb_shape_has_fields(shape_id);
 
       case T_STRUCT:
         if (!(flags & RSTRUCT_EMBED_LEN_MASK)) return true;
