@@ -6938,13 +6938,13 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                                 let branch_insn_idx = exit_state.insn_idx as u32;
                                 let locals_count = state.locals.len();
                                 let stack_count = state.stack.len();
-                                let (get_field_block, field_block_self, mut get_field_state, _) = new_branch_block(&mut fun, branch_insn_idx, &exit_state, locals_count, stack_count);
+                                let (load_block, load_block_self, mut get_field_state, _) = new_branch_block(&mut fun, branch_insn_idx, &exit_state, locals_count, stack_count);
                                 let expected_shape = fun.push_insn(block, Insn::Const { val: Const::CShape(profiled_type.shape()) });
                                 let test_id = fun.push_insn(block, Insn::IsBitEqual { left: shape, right: expected_shape });
                                 fun.push_insn(block, Insn::IfTrue {
                                     val: test_id,
                                     target: BranchEdge {
-                                        target: get_field_block,
+                                        target: load_block,
                                         args: state.as_args(self_param)
                                     }
                                 });
@@ -6952,18 +6952,18 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                                 let ivar = if profiled_type.flags().is_embedded() {
                                     // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
                                     let offset = ROBJECT_OFFSET_AS_ARY as i32 + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
-                                    fun.push_insn(get_field_block, Insn::LoadField { recv: self_val, id, offset, return_type: types::BasicObject })
+                                    fun.push_insn(load_block, Insn::LoadField { recv: load_block_self, id, offset, return_type: types::BasicObject })
                                 } else {
-                                    let as_heap = fun.push_insn(get_field_block, Insn::LoadField { recv: self_val, id: ID!(_as_heap), offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32, return_type: types::CPtr });
+                                    let as_heap = fun.push_insn(load_block, Insn::LoadField { recv: load_block_self, id: ID!(_as_heap), offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32, return_type: types::CPtr });
 
                                     let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
-                                    fun.push_insn(get_field_block, Insn::LoadField { recv: as_heap, id, offset, return_type: types::BasicObject })
+                                    fun.push_insn(load_block, Insn::LoadField { recv: as_heap, id, offset, return_type: types::BasicObject })
                                 };
 
                                 get_field_state.stack_push(ivar);
-                                fun.push_insn(get_field_block, Insn::Jump(BranchEdge {
+                                fun.push_insn(load_block, Insn::Jump(BranchEdge {
                                     target: join_block,
-                                    args: get_field_state.as_args(field_block_self),
+                                    args: get_field_state.as_args(load_block_self),
                                 }));
                             }
 
