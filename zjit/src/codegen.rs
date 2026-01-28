@@ -1028,8 +1028,8 @@ fn gen_ccall(asm: &mut Assembler, cfunc: *const u8, name: ID, recv: Opnd, args: 
 // VM_CFP_TO_CAPTURED_BLOCK then turns &cfp->self into a block handler.
 // rb_captured_block->code.iseq aliases with cfp->block_code.
 fn gen_block_handler_specval(asm: &mut Assembler, blockiseq: IseqPtr) -> lir::Opnd {
-    asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_BLOCK_CODE), VALUE::from(blockiseq).into());
-    let cfp_self_addr = asm.lea(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF));
+    asm.store(Opnd::mem(VALUE_BITS, CFP, RUBY_OFFSET_CFP_BLOCK_CODE), VALUE::from(blockiseq).into());
+    let cfp_self_addr = asm.lea(Opnd::mem(VALUE_BITS, CFP, RUBY_OFFSET_CFP_SELF));
     asm.or(cfp_self_addr, Opnd::Imm(1))
 }
 
