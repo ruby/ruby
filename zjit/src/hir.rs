@@ -1297,6 +1297,20 @@ fn get_local_var_name_for_printer(iseq: Option<IseqPtr>, level: u32, ep_offset: 
     Some(format!(":{}", id.contents_lossy()))
 }
 
+/// Construct a qualified method name for display/debug output.
+/// Returns strings like "Array#length" for instance methods or "Foo.bar" for singleton methods.
+fn qualified_method_name(class: VALUE, method_id: ID) -> String {
+    let method_name = method_id.contents_lossy();
+    // rb_zjit_singleton_class_p also checks if it's a class
+    if unsafe { rb_zjit_singleton_class_p(class) } {
+        let class_name = get_class_name(unsafe { rb_class_attached_object(class) });
+        format!("{class_name}.{method_name}")
+    } else {
+        let class_name = get_class_name(class);
+        format!("{class_name}#{method_name}")
+    }
+}
+
 static REGEXP_FLAGS: &[(u32, &str)] = &[
     (ONIG_OPTION_MULTILINE, "MULTILINE"),
     (ONIG_OPTION_IGNORECASE, "IGNORECASE"),
@@ -3504,6 +3518,40 @@ impl Function {
                         };
                     }
                     Insn::InvokeSuper { recv, cd, blockiseq, args, state, .. } => {
+                        // Helper to emit common guards for super call optimization.
+                        fn emit_super_call_guards(
+                            fun: &mut Function,
+                            block: BlockId,
+                            super_cme: *const rb_callable_method_entry_t,
+                            current_cme: *const rb_callable_method_entry_t,
+                            mid: ID,
+                            state: InsnId,
+                        ) {
+                            fun.push_insn(block, Insn::PatchPoint {
+                                invariant: Invariant::MethodRedefined {
+                                    klass: unsafe { (*super_cme).defined_class },
+                                    method: mid,
+                                    cme: super_cme
+                                },
+                                state
+                            });
+
+                            let lep = fun.push_insn(block, Insn::GetLEP);
+                            fun.push_insn(block, Insn::GuardSuperMethodEntry {
+                                lep,
+                                cme: current_cme,
+                                state
+                            });
+
+                            let block_handler = fun.push_insn(block, Insn::GetBlockHandler { lep });
+                            fun.push_insn(block, Insn::GuardBitEquals {
+                                val: block_handler,
+                                expected: Const::Value(VALUE(VM_BLOCK_HANDLER_NONE as usize)),
+                                reason: SideExitReason::UnhandledBlockArg,
+                                state
+                            });
+                        }
+
                         // Don't handle calls with literal blocks (e.g., super { ... })
                         if !blockiseq.is_null() {
                             self.push_insn_id(block, insn_id);
@@ -3567,68 +3615,107 @@ impl Function {
                             continue;
                         }
 
-                        // Check if it's an ISEQ method; bail if it isn't.
                         let def_type = unsafe { get_cme_def_type(super_cme) };
-                        if def_type != VM_METHOD_TYPE_ISEQ {
+
+                        if def_type == VM_METHOD_TYPE_ISEQ {
+                            // Check if the super method's parameters support direct send.
+                            // If not, we can't do direct dispatch.
+                            let super_iseq = unsafe { get_def_iseq_ptr((*super_cme).def) };
+                            // TODO: pass Option<blockiseq> to can_direct_send when we start specializing `super { ... }`.
+                            if !can_direct_send(self, block, super_iseq, ci, insn_id, args.as_slice(), None) {
+                                self.push_insn_id(block, insn_id);
+                                self.set_dynamic_send_reason(insn_id, SuperTargetComplexArgsPass);
+                                continue;
+                            }
+
+                            let Ok((send_state, processed_args, kw_bits)) = self.prepare_direct_send_args(block, &args, ci, super_iseq, state)
+                                .inspect_err(|&reason| self.set_dynamic_send_reason(insn_id, reason)) else {
+                                self.push_insn_id(block, insn_id); continue;
+                            };
+
+                            emit_super_call_guards(self, block, super_cme, current_cme, mid, state);
+
+                            // Use SendDirect with the super method's CME and ISEQ.
+                            let send_direct = self.push_insn(block, Insn::SendDirect {
+                                recv,
+                                cd,
+                                cme: super_cme,
+                                iseq: super_iseq,
+                                args: processed_args,
+                                kw_bits,
+                                state: send_state,
+                                blockiseq: None,
+                            });
+                            self.make_equal_to(insn_id, send_direct);
+
+                        } else if def_type == VM_METHOD_TYPE_CFUNC {
+                            let cfunc = unsafe { get_cme_def_body_cfunc(super_cme) };
+                            let cfunc_argc = unsafe { get_mct_argc(cfunc) };
+                            let cfunc_ptr = unsafe { get_mct_func(cfunc) }.cast();
+
+                            match cfunc_argc {
+                                // C function with fixed argument count.
+                                0.. => {
+                                    // Check argc matches
+                                    if args.len() != cfunc_argc as usize {
+                                        self.push_insn_id(block, insn_id);
+                                        self.set_dynamic_send_reason(insn_id, ArgcParamMismatch);
+                                        continue;
+                                    }
+
+                                    emit_super_call_guards(self, block, super_cme, current_cme, mid, state);
+
+                                    // Use CCallWithFrame for the C function.
+                                    let name = rust_str_to_id(&qualified_method_name(unsafe { (*super_cme).owner }, unsafe { (*super_cme).called_id }));
+                                    let ccall = self.push_insn(block, Insn::CCallWithFrame {
+                                        cd,
+                                        cfunc: cfunc_ptr,
+                                        recv,
+                                        args: args.clone(),
+                                        cme: super_cme,
+                                        name,
+                                        state,
+                                        return_type: types::BasicObject,
+                                        elidable: false,
+                                        blockiseq: None,
+                                    });
+                                    self.make_equal_to(insn_id, ccall);
+                                }
+
+                                // Variadic C function: func(int argc, VALUE *argv, VALUE recv)
+                                -1 => {
+                                    emit_super_call_guards(self, block, super_cme, current_cme, mid, state);
+
+                                    // Use CCallVariadic for the variadic C function.
+                                    let name = rust_str_to_id(&qualified_method_name(unsafe { (*super_cme).owner }, unsafe { (*super_cme).called_id }));
+                                    let ccall = self.push_insn(block, Insn::CCallVariadic {
+                                        cfunc: cfunc_ptr,
+                                        recv,
+                                        args: args.clone(),
+                                        cme: super_cme,
+                                        name,
+                                        state,
+                                        return_type: types::BasicObject,
+                                        elidable: false,
+                                        blockiseq: None,
+                                    });
+                                    self.make_equal_to(insn_id, ccall);
+                                }
+
+                                // Array-variadic: (self, args_ruby_array).
+                                -2 => {
+                                    self.push_insn_id(block, insn_id);
+                                    self.set_dynamic_send_reason(insn_id, SuperNotOptimizedMethodType(MethodType::Cfunc));
+                                    continue;
+                                }
+                                _ => unreachable!("unknown cfunc argc: {}", cfunc_argc)
+                            }
+                        } else {
+                            // Other method types (not ISEQ or CFUNC)
                             self.push_insn_id(block, insn_id);
                             self.set_dynamic_send_reason(insn_id, SuperNotOptimizedMethodType(MethodType::from(def_type)));
                             continue;
                         }
-
-                        // Check if the super method's parameters support direct send.
-                        // If not, we can't do direct dispatch.
-                        let super_iseq = unsafe { get_def_iseq_ptr((*super_cme).def) };
-                        // TODO: pass Option<blockiseq> to can_direct_send when we start specializing super { ... }
-                        if !can_direct_send(self, block, super_iseq, ci, insn_id, args.as_slice(), None) {
-                            self.push_insn_id(block, insn_id);
-                            self.set_dynamic_send_reason(insn_id, SuperTargetComplexArgsPass);
-                            continue;
-                        }
-
-                        // Add PatchPoint for method redefinition.
-                        self.push_insn(block, Insn::PatchPoint {
-                            invariant: Invariant::MethodRedefined {
-                                klass: unsafe { (*super_cme).defined_class },
-                                method: mid,
-                                cme: super_cme
-                            },
-                            state
-                        });
-
-                        // Guard that we're calling `super` from the expected method context.
-                        let lep = self.push_insn(block, Insn::GetLEP);
-                        self.push_insn(block, Insn::GuardSuperMethodEntry {
-                            lep,
-                            cme: current_cme,
-                            state
-                        });
-
-                        // Guard that no block is being passed (implicit or explicit).
-                        let block_handler = self.push_insn(block, Insn::GetBlockHandler { lep });
-                        self.push_insn(block, Insn::GuardBitEquals {
-                            val: block_handler,
-                            expected: Const::Value(VALUE(VM_BLOCK_HANDLER_NONE as usize)),
-                            reason: SideExitReason::UnhandledBlockArg,
-                            state
-                        });
-
-                        let Ok((send_state, processed_args, kw_bits)) = self.prepare_direct_send_args(block, &args, ci, super_iseq, state)
-                            .inspect_err(|&reason| self.set_dynamic_send_reason(insn_id, reason)) else {
-                            self.push_insn_id(block, insn_id); continue;
-                        };
-
-                        // Use SendDirect with the super method's CME and ISEQ.
-                        let send_direct = self.push_insn(block, Insn::SendDirect {
-                            recv,
-                            cd,
-                            cme: super_cme,
-                            iseq: super_iseq,
-                            args: processed_args,
-                            kw_bits,
-                            state: send_state,
-                            blockiseq: None,
-                        });
-                        self.make_equal_to(insn_id, send_direct);
                     }
                     _ => { self.push_insn_id(block, insn_id); }
                 }
@@ -4294,18 +4381,6 @@ impl Function {
             }
 
             Err(())
-        }
-
-        fn qualified_method_name(class: VALUE, method_id: ID) -> String {
-            let method_name = method_id.contents_lossy();
-            // rb_zjit_singleton_class_p also checks if it's a class
-            if unsafe { rb_zjit_singleton_class_p(class) } {
-                let class_name = get_class_name(unsafe { rb_class_attached_object(class) });
-                format!("{class_name}.{method_name}")
-            } else {
-                let class_name = get_class_name(class);
-                format!("{class_name}#{method_name}")
-            }
         }
 
         fn count_not_inlined_cfunc(fun: &mut Function, block: BlockId, cme: *const rb_callable_method_entry_t) {

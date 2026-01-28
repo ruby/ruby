@@ -11406,7 +11406,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_invokesuper_to_cfunc_remains_invokesuper() {
+    fn test_invokesuper_to_cfunc_optimizes_to_ccall() {
         eval("
             class MyArray < Array
               def length
@@ -11418,10 +11418,10 @@ mod hir_opt_tests {
         ");
 
         let hir = hir_string_proc("MyArray.new.method(:length)");
-        assert!(hir.contains("InvokeSuper "), "Expected unoptimized InvokeSuper but got:\n{hir}");
-        assert!(!hir.contains("SendDirect"), "Should not optimize to SendDirect for CFUNC:\n{hir}");
+        assert!(!hir.contains("InvokeSuper "), "Expected unoptimized InvokeSuper but got:\n{hir}");
+        assert!(hir.contains("CCallWithFrame"), "Should optimize to CCallWithFrame for non-variadic cfunc:\n{hir}");
 
-        assert_snapshot!(hir, @r"
+        assert_snapshot!(hir, @"
         fn length@<compiled>:4:
         bb0():
           EntryPoint interpreter
@@ -11431,9 +11431,64 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
-          v11:BasicObject = InvokeSuper v6, 0x1000 # SendFallbackReason: super: unsupported target method type Cfunc
+          PatchPoint MethodRedefined(Array@0x1000, length@0x1008, cme:0x1010)
+          v17:CPtr = GetLEP
+          GuardSuperMethodEntry v17, 0x1038
+          v19:RubyValue = GetBlockHandler v17
+          v20:FalseClass = GuardBitEquals v19, Value(false)
+          v21:BasicObject = CCallWithFrame v6, :Array#length@0x1040
           CheckInterrupts
-          Return v11
+          Return v21
+        ");
+    }
+
+    #[test]
+    fn test_invokesuper_to_variadic_cfunc_optimizes_to_ccall() {
+        eval("
+            class MyString < String
+              def byteindex(needle, offset = 0)
+                super(needle, offset)
+              end
+            end
+
+            MyString.new('hello world').byteindex('world', 0); MyString.new('hello world').byteindex('world', 0)
+        ");
+
+        let hir = hir_string_proc("MyString.new('hello world').method(:byteindex)");
+        assert!(!hir.contains("InvokeSuper "), "InvokeSuper should optimize to CCallVariadic but got:\n{hir}");
+        assert!(hir.contains("CCallVariadic"), "Should optimize to CCallVariadic for variadic cfunc:\n{hir}");
+
+        assert_snapshot!(hir, @"
+        fn byteindex@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :needle, l0, SP@5
+          v3:BasicObject = GetLocal :offset, l0, SP@4
+          v4:CPtr = LoadPC
+          v5:CPtr[CPtr(0x1000)] = Const CPtr(0x1008)
+          v6:CBool = IsBitEqual v4, v5
+          IfTrue v6, bb2(v1, v2, v3)
+          Jump bb4(v1, v2, v3)
+        bb1(v10:BasicObject, v11:BasicObject):
+          EntryPoint JIT(0)
+          v12:NilClass = Const Value(nil)
+          Jump bb2(v10, v11, v12)
+        bb2(v19:BasicObject, v20:BasicObject, v21:BasicObject):
+          v24:Fixnum[0] = Const Value(0)
+          Jump bb4(v19, v20, v24)
+        bb3(v15:BasicObject, v16:BasicObject, v17:BasicObject):
+          EntryPoint JIT(1)
+          Jump bb4(v15, v16, v17)
+        bb4(v27:BasicObject, v28:BasicObject, v29:BasicObject):
+          PatchPoint MethodRedefined(String@0x1010, byteindex@0x1018, cme:0x1020)
+          v42:CPtr = GetLEP
+          GuardSuperMethodEntry v42, 0x1008
+          v44:RubyValue = GetBlockHandler v42
+          v45:FalseClass = GuardBitEquals v44, Value(false)
+          v46:BasicObject = CCallVariadic v27, :String#byteindex@0x1048, v28, v29
+          CheckInterrupts
+          Return v46
         ");
     }
 
