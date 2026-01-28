@@ -1020,9 +1020,9 @@ pub enum Insn {
     GuardTypeNot { val: InsnId, guard_type: Type, state: InsnId },
     /// Side-exit if val is not the expected Const.
     GuardBitEquals { val: InsnId, expected: Const, reason: SideExitReason, state: InsnId },
-    /// Side-exit if (val & mask) == 0 (i.e., the masked bits are not set).
+    /// Side-exit if (val & mask) == 0
     GuardBitSet { val: InsnId, mask: Const, reason: SideExitReason, state: InsnId },
-    /// Side-exit if (val & mask) != 0 (i.e., any of the masked bits are set).
+    /// Side-exit if (val & mask) != 0
     GuardBitNotSet { val: InsnId, mask: Const, reason: SideExitReason, state: InsnId },
     /// Side-exit if val doesn't have the expected shape.
     GuardShape { val: InsnId, shape: ShapeId, state: InsnId },
