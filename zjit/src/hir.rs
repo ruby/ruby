@@ -506,6 +506,7 @@ pub enum SideExitReason {
     Interrupt,
     BlockParamProxyModified,
     BlockParamProxyNotIseqOrIfunc,
+    BlockParamProxyNotNil,
     BlockParamWbRequired,
     StackOverflow,
     FixnumModByZero,
@@ -1022,6 +1023,8 @@ pub enum Insn {
     /// Side-exit if the block param has been modified or the block handler for the frame
     /// is neither ISEQ nor ifunc, which makes it incompatible with rb_block_param_proxy.
     GuardBlockParamProxy { level: u32, state: InsnId },
+    /// Side-exit if the block handler is not nil (VM_BLOCK_HANDLER_NONE).
+    GuardBlockParamProxyNil { level: u32, state: InsnId },
     /// Side-exit if val is frozen. Does *not* check if the val is an immediate; assumes that it is
     /// a heap object.
     GuardNotFrozen { recv: InsnId, state: InsnId },
@@ -1065,7 +1068,8 @@ impl Insn {
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. }
             | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
-            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::GuardSuperMethodEntry { .. }
+            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::GuardBlockParamProxyNil { .. }
+            | Insn::GuardSuperMethodEntry { .. }
             | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. }
             | Insn::ArrayAset { .. } => false,
             _ => true,
@@ -1221,6 +1225,7 @@ impl Insn {
             Insn::GuardBitEquals { .. } => effects::Any,
             Insn::GuardShape { .. } => effects::Any,
             Insn::GuardBlockParamProxy { .. } => effects::Any,
+            Insn::GuardBlockParamProxyNil { .. } => effects::Any,
             Insn::GuardNotFrozen { .. } => effects::Any,
             Insn::GuardNotShared { .. } => effects::Any,
             Insn::GuardGreaterEq { .. } => effects::Any,
@@ -1542,6 +1547,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GuardBitEquals { val, expected, .. } => { write!(f, "GuardBitEquals {val}, {}", expected.print(self.ptr_map)) },
             &Insn::GuardShape { val, shape, .. } => { write!(f, "GuardShape {val}, {:p}", self.ptr_map.map_shape(shape)) },
             Insn::GuardBlockParamProxy { level, .. } => write!(f, "GuardBlockParamProxy l{level}"),
+            Insn::GuardBlockParamProxyNil { level, .. } => write!(f, "GuardBlockParamProxyNil l{level}"),
             Insn::GuardNotFrozen { recv, .. } => write!(f, "GuardNotFrozen {recv}"),
             Insn::GuardNotShared { recv, .. } => write!(f, "GuardNotShared {recv}"),
             Insn::GuardLess { left, right, .. } => write!(f, "GuardLess {left}, {right}"),
@@ -2220,6 +2226,7 @@ impl Function {
             &GuardBitEquals { val, expected, reason, state } => GuardBitEquals { val: find!(val), expected, reason, state },
             &GuardShape { val, shape, state } => GuardShape { val: find!(val), shape, state },
             &GuardBlockParamProxy { level, state } => GuardBlockParamProxy { level, state: find!(state) },
+            &GuardBlockParamProxyNil { level, state } => GuardBlockParamProxyNil { level, state: find!(state) },
             &GuardNotFrozen { recv, state } => GuardNotFrozen { recv: find!(recv), state },
             &GuardNotShared { recv, state } => GuardNotShared { recv: find!(recv), state },
             &GuardGreaterEq { left, right, state } => GuardGreaterEq { left: find!(left), right: find!(right), state },
@@ -2418,7 +2425,8 @@ impl Function {
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. }
             | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
-            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::GuardSuperMethodEntry { .. }
+            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::GuardBlockParamProxyNil { .. }
+            | Insn::GuardSuperMethodEntry { .. }
             | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. } | Insn::ArrayAset { .. } =>
                 panic!("Cannot infer type of instruction with no output: {}. See Insn::has_output().", self.insns[insn.0]),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
@@ -4672,6 +4680,7 @@ impl Function {
                 worklist.push_back(val);
             }
             &Insn::GuardBlockParamProxy { state, .. } |
+            &Insn::GuardBlockParamProxyNil { state, .. } |
             &Insn::GetGlobal { state, .. } |
             &Insn::GetSpecialSymbol { state, .. } |
             &Insn::GetSpecialNumber { state, .. } |
@@ -5223,6 +5232,7 @@ impl Function {
             | Insn::Jump { .. }
             | Insn::EntryPoint { .. }
             | Insn::GuardBlockParamProxy { .. }
+            | Insn::GuardBlockParamProxyNil { .. }
             | Insn::GuardSuperMethodEntry { .. }
             | Insn::GetBlockHandler { .. }
             | Insn::PatchPoint { .. }
@@ -6552,18 +6562,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     match profiled_block_type {
                         Some(ty) if ty == VALUE(VM_BLOCK_HANDLER_NONE as usize) => {
-                            // If the block parameter is profiled as being as nil,
-                            // guard nil and push nil onto the stack instead of the block proxy
-                            let lep = fun.push_insn(block, Insn::GetLEP);
-                            let block_handler = fun.push_insn(block, Insn::GetBlockHandler { lep });
-
-                            fun.push_insn(block, Insn::GuardBitEquals {
-                                val: block_handler,
-                                expected: Const::Value(VALUE(VM_BLOCK_HANDLER_NONE as usize)),
-                                reason: SideExitReason::UnhandledBlockArg,
-                                state: exit_id,
-                            });
-
+                            fun.push_insn(block, Insn::GuardBlockParamProxyNil { level, state: exit_id });
                             state.stack_push(fun.push_insn(block, Insn::Const { val: Const::Value(Qnil) }));
                         }
                         _ => {

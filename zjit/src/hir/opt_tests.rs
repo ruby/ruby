@@ -6551,14 +6551,12 @@ mod hir_opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:ArrayExact = NewArray
-          v15:CPtr = GetLEP
-          v16:RubyValue = GetBlockHandler v15
-          v17:FalseClass = GuardBitEquals v16, Value(false)
-          v18:NilClass = Const Value(nil)
+          GuardBlockParamProxyNil l0
+          v16:NilClass = Const Value(nil)
           IncrCounter complex_arg_pass_caller_blockarg
-          v20:BasicObject = Send v13, 0x1000, :map, v18 # SendFallbackReason: Complex argument passing
+          v18:BasicObject = Send v13, 0x1000, :map, v16 # SendFallbackReason: Complex argument passing
           CheckInterrupts
-          Return v20
+          Return v18
         ");
     }
 

@@ -530,6 +530,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::GuardTypeNot { val, guard_type, state } => gen_guard_type_not(jit, asm, opnd!(val), *guard_type, &function.frame_state(*state)),
         &Insn::GuardBitEquals { val, expected, reason, state } => gen_guard_bit_equals(jit, asm, opnd!(val), expected, reason, &function.frame_state(state)),
         &Insn::GuardBlockParamProxy { level, state } => no_output!(gen_guard_block_param_proxy(jit, asm, level, &function.frame_state(state))),
+        &Insn::GuardBlockParamProxyNil { level, state } => no_output!(gen_guard_block_param_proxy_nil(jit, asm, level, &function.frame_state(state))),
         Insn::GuardNotFrozen { recv, state } => gen_guard_not_frozen(jit, asm, opnd!(recv), &function.frame_state(*state)),
         Insn::GuardNotShared { recv, state } => gen_guard_not_shared(jit, asm, opnd!(recv), &function.frame_state(*state)),
         &Insn::GuardLess { left, right, state } => gen_guard_less(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
@@ -804,6 +805,19 @@ fn gen_guard_block_param_proxy(jit: &JITState, asm: &mut Assembler, level: u32, 
     let block_handler = asm.load(Opnd::mem(64, ep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL));
     asm.test(block_handler, 0x1.into());
     asm.jz(side_exit(jit, state, SideExitReason::BlockParamProxyNotIseqOrIfunc));
+}
+
+fn gen_guard_block_param_proxy_nil(jit: &JITState, asm: &mut Assembler, level: u32, state: &FrameState) {
+    // Bail out if the `&block` local variable has been modified
+    let ep = gen_get_ep(asm, level);
+    let flags = Opnd::mem(64, ep, SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32));
+    asm.test(flags, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into());
+    asm.jnz(side_exit(jit, state, SideExitReason::BlockParamProxyModified));
+
+    // Bail out if the block handler is not nil (VM_BLOCK_HANDLER_NONE)
+    let block_handler = asm.load(Opnd::mem(64, ep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL));
+    asm.cmp(block_handler, VM_BLOCK_HANDLER_NONE.into());
+    asm.jnz(side_exit(jit, state, SideExitReason::BlockParamProxyNotNil));
 }
 
 fn gen_guard_not_frozen(jit: &JITState, asm: &mut Assembler, recv: Opnd, state: &FrameState) -> Opnd {
