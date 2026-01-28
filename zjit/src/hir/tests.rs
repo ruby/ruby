@@ -2038,7 +2038,7 @@ pub mod hir_build_tests {
         eval("
             def test(a, ...) = foo(a, ...)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb0():
           EntryPoint interpreter
@@ -2056,8 +2056,12 @@ pub mod hir_build_tests {
         bb2(v16:BasicObject, v17:BasicObject, v18:ArrayExact, v19:BasicObject, v20:BasicObject, v21:NilClass):
           v28:ArrayExact = ToArray v18
           PatchPoint NoEPEscape(test)
-          GuardBlockParamProxy l0
-          v34:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1000))
+          v33:CPtr = GetEP 0
+          v34:CInt64 = LoadField v33, :_env_data_index_flags@0x1000
+          v35:CInt64 = GuardBitNotSet v34, CInt64(512)
+          v36:CInt64 = LoadField v33, :_env_data_index_specval@0x1001
+          v37:CInt64 = GuardBitSet v36, CInt64(1)
+          v38:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
           SideExit UnhandledYARVInsn(splatkw)
         ");
     }
@@ -3409,7 +3413,7 @@ pub mod hir_build_tests {
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("Dir", "open"));
         assert!(iseq_contains_opcode(iseq, YARVINSN_opt_invokebuiltin_delegate), "iseq Dir.open does not contain invokebuiltin");
         let function = iseq_to_hir(iseq).unwrap();
-        assert_snapshot!(hir_string_function(&function), @r"
+        assert_snapshot!(hir_string_function(&function), @"
         fn open@<internal:dir>:
         bb0():
           EntryPoint interpreter
@@ -3428,20 +3432,24 @@ pub mod hir_build_tests {
         bb2(v16:BasicObject, v17:BasicObject, v18:BasicObject, v19:BasicObject, v20:BasicObject, v21:NilClass):
           v25:BasicObject = InvokeBuiltin dir_s_open, v16, v17, v18
           PatchPoint NoEPEscape(open)
-          GuardBlockParamProxy l0
-          v32:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1000))
+          v31:CPtr = GetEP 0
+          v32:CInt64 = LoadField v31, :_env_data_index_flags@0x1000
+          v33:CInt64 = GuardBitNotSet v32, CInt64(512)
+          v34:CInt64 = LoadField v31, :_env_data_index_specval@0x1001
+          v35:CInt64 = GuardBitSet v34, CInt64(1)
+          v36:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
           CheckInterrupts
-          v35:CBool[true] = Test v32
-          v36 = RefineType v32, Falsy
-          IfFalse v35, bb3(v16, v17, v18, v19, v20, v25)
-          v38:HeapObject[BlockParamProxy] = RefineType v32, Truthy
-          v42:BasicObject = InvokeBlock, v25 # SendFallbackReason: Uncategorized(invokeblock)
-          v45:BasicObject = InvokeBuiltin dir_s_close, v16, v25
+          v39:CBool[true] = Test v36
+          v40 = RefineType v36, Falsy
+          IfFalse v39, bb3(v16, v17, v18, v19, v20, v25)
+          v42:HeapObject[BlockParamProxy] = RefineType v36, Truthy
+          v46:BasicObject = InvokeBlock, v25 # SendFallbackReason: Uncategorized(invokeblock)
+          v49:BasicObject = InvokeBuiltin dir_s_close, v16, v25
           CheckInterrupts
-          Return v42
-        bb3(v51, v52, v53, v54, v55, v56):
+          Return v46
+        bb3(v55, v56, v57, v58, v59, v60):
           CheckInterrupts
-          Return v56
+          Return v60
         ");
     }
 
