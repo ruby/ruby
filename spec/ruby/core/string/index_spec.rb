@@ -231,15 +231,13 @@ describe "String#index with Regexp" do
     $~.should == nil
   end
 
-  ruby_bug "#20421", ""..."3.3" do
-    it "always clear $~" do
-      "a".index(/a/)
-      $~.should_not == nil
+  it "always clear $~" do
+    "a".index(/a/)
+    $~.should_not == nil
 
-      string = "blablabla"
-      string.index(/bla/, string.length + 1)
-      $~.should == nil
-    end
+    string = "blablabla"
+    string.index(/bla/, string.length + 1)
+    $~.should == nil
   end
 
   it "starts the search at the given offset" do
@@ -330,21 +328,10 @@ describe "String#index with Regexp" do
     "われわわれ".index(/わ/, 3).should == 3
   end
 
-  ruby_bug "#19763", ""..."3.3.0" do
-    it "raises an Encoding::CompatibilityError if the encodings are incompatible" do
-      re = Regexp.new "れ".encode(Encoding::EUC_JP)
-      -> do
-        "あれ".index re
-      end.should raise_error(Encoding::CompatibilityError, "incompatible encoding regexp match (EUC-JP regexp with UTF-8 string)")
-    end
-  end
-
-  # The exception message was incorrectly "incompatible character encodings: UTF-8 and EUC-JP" before 3.3.0
-  # Still test that the right exception class is used before that.
   it "raises an Encoding::CompatibilityError if the encodings are incompatible" do
     re = Regexp.new "れ".encode(Encoding::EUC_JP)
     -> do
       "あれ".index re
-    end.should raise_error(Encoding::CompatibilityError)
+    end.should raise_error(Encoding::CompatibilityError, "incompatible encoding regexp match (EUC-JP regexp with UTF-8 string)")
   end
 end

@@ -72,12 +72,10 @@ describe "Hash.ruby2_keywords_hash" do
     Hash.ruby2_keywords_hash(hash).default_proc.should == pr
   end
 
-  ruby_version_is '3.3' do
-    it "retains compare_by_identity_flag" do
-      hash = {}.compare_by_identity
-      Hash.ruby2_keywords_hash(hash).compare_by_identity?.should == true
-      hash[:a] = 1
-      Hash.ruby2_keywords_hash(hash).compare_by_identity?.should == true
-    end
+  it "retains compare_by_identity_flag" do
+    hash = {}.compare_by_identity
+    Hash.ruby2_keywords_hash(hash).compare_by_identity?.should == true
+    hash[:a] = 1
+    Hash.ruby2_keywords_hash(hash).compare_by_identity?.should == true
   end
 end

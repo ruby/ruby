@@ -11,17 +11,8 @@ describe "String#start_with?" do
     "\xA9".should.start_with?("\xA9") # A9 is not a character head for UTF-8
   end
 
-  ruby_version_is ""..."3.3" do
-    it "does not check we are matching only part of a character" do
-      "\xe3\x81\x82".size.should == 1
-      "\xe3\x81\x82".should.start_with?("\xe3")
-    end
-  end
-
-  ruby_version_is "3.3" do # #19784
-    it "checks we are matching only part of a character" do
-      "\xe3\x81\x82".size.should == 1
-      "\xe3\x81\x82".should_not.start_with?("\xe3")
-    end
+  it "checks we are matching only part of a character" do
+    "\xe3\x81\x82".size.should == 1
+    "\xe3\x81\x82".should_not.start_with?("\xe3")
   end
 end

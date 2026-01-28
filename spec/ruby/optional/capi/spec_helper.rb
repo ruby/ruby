@@ -59,7 +59,11 @@ def compile_extension(name)
   tmpdir = tmp("cext_#{name}")
   Dir.mkdir(tmpdir)
   begin
-    ["#{core_ext_dir}/rubyspec.h", "#{spec_ext_dir}/#{ext}.c"].each do |file|
+    files = ["#{core_ext_dir}/rubyspec.h", "#{spec_ext_dir}/#{ext}.c"]
+    if spec_ext_dir != core_ext_dir
+      files += Dir.glob("#{spec_ext_dir}/*.h")
+    end
+    files.each do |file|
       if cxx and file.end_with?('.c')
         cp file, "#{tmpdir}/#{File.basename(file, '.c')}.cpp"
       else

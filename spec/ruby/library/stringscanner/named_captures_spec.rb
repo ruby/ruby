@@ -16,11 +16,9 @@ describe "StringScanner#named_captures" do
     @s.named_captures.should == {}
   end
 
-  # https://github.com/ruby/strscan/issues/132
-  ruby_bug "", ""..."3.3" do # fixed in strscan v3.0.7
-    it "returns {} if there is no any matching done" do
-      @s.named_captures.should == {}
-    end
+  # https://github.com/ruby/strscan/issues/132 fixed in strscan v3.0.7
+  it "returns {} if there is no any matching done" do
+    @s.named_captures.should == {}
   end
 
   it "returns nil for an optional named capturing group if it doesn't match" do

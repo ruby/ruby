@@ -52,10 +52,8 @@ describe :module_class_eval, shared: true do
     ModuleSpecs.send(@method, "[__FILE__, __LINE__]", "test", 102).should == ["test", 102]
   end
 
-  ruby_version_is "3.3" do
-    it "uses the caller location as default filename" do
-      ModuleSpecs.send(@method, "[__FILE__, __LINE__]").should == ["(eval at #{__FILE__}:#{__LINE__})", 1]
-    end
+  it "uses the caller location as default filename" do
+    ModuleSpecs.send(@method, "[__FILE__, __LINE__]").should == ["(eval at #{__FILE__}:#{__LINE__})", 1]
   end
 
   it "converts a non-string filename to a string using to_str" do
