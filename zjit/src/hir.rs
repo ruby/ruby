@@ -3100,8 +3100,6 @@ impl Function {
                             if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice(), false) {
                                 self.push_insn_id(block, insn_id); continue;
                             }
-                            // Can't pass a block to a block for now
-                            assert!((unsafe { rb_vm_ci_flag(ci) } & VM_CALL_ARGS_BLOCKARG) == 0, "SendWithoutBlock but has a block arg");
 
                             // Patch points:
                             // Check for "defined with an un-shareable Proc in a different Ractor"
