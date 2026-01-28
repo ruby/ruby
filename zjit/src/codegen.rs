@@ -1532,8 +1532,10 @@ fn gen_send_iseq_direct(
     let needs_block = params.flags.has_block() != 0;
 
     // Set up arguments
-    let cargs_len: usize = 1 /* recv */ + args.len() + if needs_block { 1 } else { 0 };
-    let mut c_args = Vec::with_capacity(cargs_len);
+    let mut c_args = Vec::with_capacity({
+        // This is a heuristic to avoid re-allocation, not necessary for correctness
+        1 /* recv */ + args.len() + if needs_block { 1 } else { 0 }
+    });
     c_args.push(recv);
     c_args.extend(&args);
     if needs_block {
