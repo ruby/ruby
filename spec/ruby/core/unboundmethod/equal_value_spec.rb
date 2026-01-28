@@ -110,9 +110,6 @@ describe "UnboundMethod#==" do
     c.method(:n).should == Class.instance_method(:new).bind(c)
   end
 
-  # On CRuby < 3.2, the 2 specs below pass due to method/instance_method skipping zsuper methods.
-  # We are interested in the general pattern working, i.e. the combination of method/instance_method
-  # and #== exposes the wanted behavior.
   it "considers methods through visibility change equal" do
     c = Class.new do
       class << self

@@ -53,11 +53,11 @@ describe "Addrinfo#initialize" do
         @addrinfo.ip_port.should == 25
       end
 
-      it "returns the INET6 pfamily" do
+      it "returns the specified family" do
         @addrinfo.pfamily.should == Socket::PF_INET6
       end
 
-      it "returns the INET6 afamily" do
+      it "returns the specified family" do
         @addrinfo.afamily.should == Socket::AF_INET6
       end
 
@@ -83,11 +83,11 @@ describe "Addrinfo#initialize" do
         @addrinfo.ip_port.should == 25
       end
 
-      it "returns the INET6 pfamily" do
+      it "returns the specified family" do
         @addrinfo.pfamily.should == Socket::PF_INET6
       end
 
-      it "returns the INET6 afamily" do
+      it "returns the specified family" do
         @addrinfo.afamily.should == Socket::AF_INET6
       end
 
@@ -113,11 +113,11 @@ describe "Addrinfo#initialize" do
         @addrinfo.ip_port.should == 25
       end
 
-      it "returns the INET6 pfamily" do
+      it "returns the specified family" do
         @addrinfo.pfamily.should == Socket::PF_INET6
       end
 
-      it "returns the INET6 afamily" do
+      it "returns the specified family" do
         @addrinfo.afamily.should == Socket::AF_INET6
       end
 
@@ -147,11 +147,11 @@ describe "Addrinfo#initialize" do
         @addrinfo.ip_port.should == 46102
       end
 
-      it "returns the INET pfamily" do
+      it "returns the specified family" do
         @addrinfo.pfamily.should == Socket::PF_INET
       end
 
-      it "returns the INET afamily" do
+      it "returns the specified family" do
         @addrinfo.afamily.should == Socket::AF_INET
       end
 
@@ -217,11 +217,11 @@ describe "Addrinfo#initialize" do
         @addrinfo.ip_port.should == 46102
       end
 
-      it "returns the INET pfamily" do
+      it "returns the specified family" do
         @addrinfo.pfamily.should == Socket::PF_INET
       end
 
-      it "returns the INET afamily" do
+      it "returns the specified family" do
         @addrinfo.afamily.should == Socket::AF_INET
       end
 
@@ -247,11 +247,11 @@ describe "Addrinfo#initialize" do
         @addrinfo.ip_port.should == 46102
       end
 
-      it "returns the INET pfamily" do
+      it "returns the specified family" do
         @addrinfo.pfamily.should == Socket::PF_INET
       end
 
-      it "returns the INET afamily" do
+      it "returns the specified family" do
         @addrinfo.afamily.should == Socket::AF_INET
       end
 
@@ -311,11 +311,11 @@ describe "Addrinfo#initialize" do
         @addrinfo.ip_port.should == 46102
       end
 
-      it "returns the INET pfamily" do
+      it "returns the specified family" do
         @addrinfo.pfamily.should == Socket::PF_INET
       end
 
-      it "returns the INET afamily" do
+      it "returns the specified family" do
         @addrinfo.afamily.should == Socket::AF_INET
       end
 
@@ -514,13 +514,13 @@ describe "Addrinfo#initialize" do
       @sockaddr = Socket.sockaddr_in(80, '127.0.0.1')
     end
 
-    it 'returns an Addrinfo with :PF_INET family' do
+    it 'returns an Addrinfo with the specified family' do
       addr = Addrinfo.new(@sockaddr, :PF_INET)
 
       addr.pfamily.should == Socket::PF_INET
     end
 
-    it 'returns an Addrinfo with :INET family' do
+    it 'returns an Addrinfo with the specified family' do
       addr = Addrinfo.new(@sockaddr, :INET)
 
       addr.pfamily.should == Socket::PF_INET
@@ -544,13 +544,13 @@ describe "Addrinfo#initialize" do
       @sockaddr = Socket.sockaddr_in(80, '127.0.0.1')
     end
 
-    it 'returns an Addrinfo with "PF_INET" family' do
+    it 'returns an Addrinfo with the specified family' do
       addr = Addrinfo.new(@sockaddr, 'PF_INET')
 
       addr.pfamily.should == Socket::PF_INET
     end
 
-    it 'returns an Addrinfo with "INET" family' do
+    it 'returns an Addrinfo with the specified family' do
       addr = Addrinfo.new(@sockaddr, 'INET')
 
       addr.pfamily.should == Socket::PF_INET

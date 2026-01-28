@@ -44,14 +44,12 @@ describe "Data#with" do
     data_copy.unit.should == "m"
   end
 
-  ruby_version_is "3.3" do
-    it "calls #initialize" do
-      data = DataSpecs::DataWithOverriddenInitialize.new(42, "m")
-      ScratchPad.clear
+  it "calls #initialize" do
+    data = DataSpecs::DataWithOverriddenInitialize.new(42, "m")
+    ScratchPad.clear
 
-      data.with(amount: 0)
+    data.with(amount: 0)
 
-      ScratchPad.recorded.should == [:initialize, [], {amount: 0, unit: "m"}]
-    end
+    ScratchPad.recorded.should == [:initialize, [], {amount: 0, unit: "m"}]
   end
 end

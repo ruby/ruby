@@ -554,20 +554,10 @@ describe "Time.new with a timezone argument" do
       Time.new("2020-12-25T00:56:17.123456789876 +09:00").subsec.should == 0.123456789
     end
 
-    ruby_version_is ""..."3.3" do
-      it "raise TypeError is can't convert precision keyword argument into Integer" do
-        -> {
-          Time.new("2021-12-25 00:00:00.123456789876 +09:00", precision: "")
-        }.should raise_error(TypeError, "no implicit conversion from string")
-      end
-    end
-
-    ruby_version_is "3.3" do
-      it "raise TypeError is can't convert precision keyword argument into Integer" do
-        -> {
-          Time.new("2021-12-25 00:00:00.123456789876 +09:00", precision: "")
-        }.should raise_error(TypeError, "no implicit conversion of String into Integer")
-      end
+    it "raise TypeError is can't convert precision keyword argument into Integer" do
+      -> {
+        Time.new("2021-12-25 00:00:00.123456789876 +09:00", precision: "")
+      }.should raise_error(TypeError, "no implicit conversion of String into Integer")
     end
 
     it "raises ArgumentError if part of time string is missing" do

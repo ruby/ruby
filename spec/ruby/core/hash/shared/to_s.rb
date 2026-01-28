@@ -89,5 +89,36 @@ describe :hash_to_s, shared: true do
     it "adds quotes to symbol keys that are not valid symbol literals" do
       { "needs-quotes": 1 }.send(@method).should == '{"needs-quotes": 1}'
     end
+
+    it "can be evaled" do
+      no_quote = '{a: 1, a!: 1, a?: 1}'
+      eval(no_quote).inspect.should == no_quote
+      [
+        '{"": 1}',
+        '{"0": 1, "!": 1, "%": 1, "&": 1, "*": 1, "+": 1, "-": 1, "/": 1, "<": 1, ">": 1, "^": 1, "`": 1, "|": 1, "~": 1}',
+        '{"@a": 1, "$a": 1, "+@": 1, "a=": 1, "[]": 1}',
+        '{"a\"b": 1, "@@a": 1, "<=>": 1, "===": 1, "[]=": 1}',
+      ].each do |quote|
+        eval(quote).inspect.should == quote
+      end
+    end
+
+    it "can be evaled when Encoding.default_external is changed" do
+      external = Encoding.default_external
+
+      Encoding.default_external = Encoding::ASCII
+      utf8_ascii_hash = '{"\\u3042": 1}'
+      eval(utf8_ascii_hash).inspect.should == utf8_ascii_hash
+
+      Encoding.default_external = Encoding::UTF_8
+      utf8_hash = "{\u3042: 1}"
+      eval(utf8_hash).inspect.should == utf8_hash
+
+      Encoding.default_external = Encoding::Windows_31J
+      sjis_hash = "{\x87]: 1}".dup.force_encoding('sjis')
+      eval(sjis_hash).inspect.should == sjis_hash
+    ensure
+      Encoding.default_external = external
+    end
   end
 end

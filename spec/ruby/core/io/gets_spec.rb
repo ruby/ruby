@@ -338,23 +338,11 @@ describe "IO#gets" do
     @io.gets.encoding.should == Encoding::BINARY
   end
 
-  ruby_version_is ''...'3.3' do
-    it "transcodes to internal encoding if the IO object's external encoding is BINARY" do
-      Encoding.default_external = Encoding::BINARY
-      Encoding.default_internal = Encoding::UTF_8
-      @io = new_io @name, 'r'
-      @io.set_encoding Encoding::BINARY, Encoding::UTF_8
-      @io.gets.encoding.should == Encoding::UTF_8
-    end
-  end
-
-  ruby_version_is '3.3' do
-    it "ignores the internal encoding if the IO object's external encoding is BINARY" do
-      Encoding.default_external = Encoding::BINARY
-      Encoding.default_internal = Encoding::UTF_8
-      @io = new_io @name, 'r'
-      @io.set_encoding Encoding::BINARY, Encoding::UTF_8
-      @io.gets.encoding.should == Encoding::BINARY
-    end
+  it "ignores the internal encoding if the IO object's external encoding is BINARY" do
+    Encoding.default_external = Encoding::BINARY
+    Encoding.default_internal = Encoding::UTF_8
+    @io = new_io @name, 'r'
+    @io.set_encoding Encoding::BINARY, Encoding::UTF_8
+    @io.gets.encoding.should == Encoding::BINARY
   end
 end
