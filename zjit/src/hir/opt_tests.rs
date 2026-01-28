@@ -6510,7 +6510,7 @@ mod hir_opt_tests {
     fn test_do_not_optimize_send_with_block_forwarding() {
         eval(r#"
             def test(&block) = [].map(&block)
-            test; test
+            test { |x| x }; test { |x| x }
         "#);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
@@ -6530,6 +6530,35 @@ mod hir_opt_tests {
           v18:BasicObject = Send v13, 0x1008, :map, v16 # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v18
+        ");
+    }
+
+    #[test]
+    fn test_replace_block_param_proxy_with_nil() {
+        eval(r#"
+            def test(&block) = [].map(&block)
+            test; test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :block, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v13:ArrayExact = NewArray
+          v15:CPtr = GetLEP
+          v16:RubyValue = GetBlockHandler v15
+          v17:FalseClass = GuardBitEquals v16, Value(false)
+          v18:NilClass = Const Value(nil)
+          IncrCounter complex_arg_pass_caller_blockarg
+          v20:BasicObject = Send v13, 0x1000, :map, v18 # SendFallbackReason: Complex argument passing
+          CheckInterrupts
+          Return v20
         ");
     }
 
