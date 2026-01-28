@@ -1840,10 +1840,7 @@ pub enum ValidationError {
 }
 
 /// Check if we can do a direct send to the given iseq with the given args.
-/// If `allow_block_param` is true, methods with `&block` parameters are allowed.
-/// This is used for Send (with block) optimization where we pass a block to a method
-/// that accepts one.
-fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq_t, ci: *const rb_callinfo, send_insn: InsnId, args: &[InsnId], allow_block_param: bool) -> bool {
+fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq_t, ci: *const rb_callinfo, send_insn: InsnId, args: &[InsnId], blockiseq: Option<IseqPtr>) -> bool {
     let mut can_send = true;
     let mut count_failure = |counter| {
         can_send = false;
@@ -1851,11 +1848,14 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
     };
     let params = unsafe { iseq.params() };
 
+    let caller_has_literal_block: bool = blockiseq.is_some();
+    let callee_has_block_param = 0 != params.flags.has_block();
+
     use Counter::*;
     if 0 != params.flags.has_rest()    { count_failure(complex_arg_pass_param_rest) }
     if 0 != params.flags.has_post()    { count_failure(complex_arg_pass_param_post) }
-    // Allow &block param when explicitly permitted (for Send with block optimization)
-    if !allow_block_param && 0 != params.flags.has_block() { count_failure(complex_arg_pass_param_block) }
+    if callee_has_block_param && !caller_has_literal_block
+                                       { count_failure(complex_arg_pass_param_block) }
     if 0 != params.flags.forwardable() { count_failure(complex_arg_pass_param_forwardable) }
 
     if 0 != params.flags.has_kwrest()  { count_failure(complex_arg_pass_param_kwrest) }
@@ -1890,7 +1890,10 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
     let kwarg = unsafe { rb_vm_ci_kwarg(ci) };
     let caller_kw_count = if kwarg.is_null() { 0 } else { (unsafe { get_cikw_keyword_len(kwarg) }) as usize };
     let caller_positional = args.len() - caller_kw_count;
-    let block_arg = if allow_block_param && 0 != params.flags.has_block() { 1 } else { 0 };
+    // Right now, the JIT entrypoint accepts the block as an param
+    // We may remove it, remove the block_arg addition to match
+    // See: https://github.com/ruby/ruby/pull/15911#discussion_r2710544982
+    let block_arg = if 0 != params.flags.has_block() { 1 } else { 0 };
     let final_argc = caller_positional + kw_total_num as usize + block_arg;
     if final_argc + 1 > C_ARG_OPNDS.len() { // +1 for self
         function.set_dynamic_send_reason(send_insn, TooManyArgsForLir);
@@ -3060,7 +3063,7 @@ impl Function {
                             // Only specialize positional-positional calls
                             // TODO(max): Handle other kinds of parameter passing
                             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
-                            if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice(), false) {
+                            if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice(), None) {
                                 self.push_insn_id(block, insn_id); continue;
                             }
 
@@ -3098,7 +3101,7 @@ impl Function {
                             let capture = unsafe { proc_block.as_.captured.as_ref() };
                             let iseq = unsafe { *capture.code.iseq.as_ref() };
 
-                            if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice(), false) {
+                            if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice(), None) {
                                 self.push_insn_id(block, insn_id); continue;
                             }
 
@@ -3325,7 +3328,7 @@ impl Function {
                             // Only specialize positional-positional calls
                             // TODO(max): Handle other kinds of parameter passing
                             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
-                            if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice(), true) {
+                            if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice(), Some(blockiseq)) {
                                 self.push_insn_id(block, insn_id); continue;
                             }
 
@@ -3538,7 +3541,8 @@ impl Function {
                         // Check if the super method's parameters support direct send.
                         // If not, we can't do direct dispatch.
                         let super_iseq = unsafe { get_def_iseq_ptr((*super_cme).def) };
-                        if !can_direct_send(self, block, super_iseq, ci, insn_id, args.as_slice(), false) {
+                        // TODO: pass Option<blockiseq> to can_direct_send when we start specializing super { ... }
+                        if !can_direct_send(self, block, super_iseq, ci, insn_id, args.as_slice(), None) {
                             self.push_insn_id(block, insn_id);
                             self.set_dynamic_send_reason(insn_id, SuperTargetComplexArgsPass);
                             continue;
