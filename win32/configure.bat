@@ -66,8 +66,16 @@ for /f "delims== tokens=1,*" %%I in ("%~1") do ((set "opt=%%I") && (set "arg=%%J
     set "var=%opt%"
     goto :name
   )
-  set "target=%opt%"
-  echo>>%confargs%  "--target=%opt:$=$$%" \
+  set "arg=%opt%"
+  set "eq=="
+  set "opt=--target"
+  set "target=%arg%"
+:loopend
+  if not "%arg%" == "" (
+    echo>>%confargs%  "%opt%=%arg:$=$$%" \
+  ) else (
+    echo>>%confargs%  "%opt%%eq%" \
+  )
 goto :loop ;
 :target
   if "%eq%" == "" (set "arg=%~1" & shift)
@@ -76,6 +84,7 @@ goto :loop ;
     exit /b 1
   )
   set "target=%arg%"
+  set "opt=--target"
   echo>>%confargs%  "--target=%arg:$=$$%" \
 goto :loop ;
 :program_name
@@ -92,13 +101,11 @@ goto :unknown_opt
 :name
   if "%eq%" == "" (set "arg=%~1" & shift)
   echo>> %config_make% %var% = %arg%
-  echo>>%confargs%  "%opt%=%arg:$=$$%" \
-goto :loop ;
+goto :loopend ;
 :dir
   if "%eq%" == "" (set "arg=%~1" & shift)
   echo>> %config_make% %opt:~2% = %arg:\=/%
-  echo>>%confargs%  "%opt%=%arg:$=$$%" \
-goto :loop ;
+goto :loopend ;
 :enable
   echo>>%confargs%  "%opt%" \
   if %enable% == yes (set "opt=%opt:~9%") else (set "opt=%opt:~10%")
@@ -128,7 +135,11 @@ goto :loop ;
 :witharg
   if "%opt%" == "--with-static-linked-ext" goto :extstatic
   if "%eq%" == "" (set "arg=%~1" & shift)
-  echo>>%confargs%  "%opt%=%arg:$=$$%" \
+  if not "%arg%" == "" (
+    echo>>%confargs%  "%opt%=%arg:$=$$%" \
+  ) else (
+    echo>>%confargs%  "%opt%%eq%" \
+  )
   if "%opt%" == "--with-baseruby" goto :baseruby
   if "%opt%" == "--with-ntver" goto :ntver
   if "%opt%" == "--with-libdir" goto :libdir
@@ -149,23 +160,19 @@ goto :loop ;
     call set NTVER=_WIN32_WINNT_%%NTVER%%
   )
   echo>> %config_make% NTVER = %NTVER%
-  echo>>%confargs%  "%opt%=%arg:$=$$%" \
-goto :loop ;
+goto :loopend ;
 :extout
   if "%eq%" == "" (set "arg=%~1" & shift)
   if not "%arg%" == ".ext" (echo>> %config_make% EXTOUT = %arg%)
-  echo>>%confargs%  "%opt%=%arg:$=$$%" \
-goto :loop ;
+goto :loopend ;
 :path
   if "%eq%" == "" (set "arg=%~1" & shift)
   set "pathlist=%pathlist%%arg:\=/%;"
-  echo>>%confargs%  "%opt%=%arg:$=$$%" \
-goto :loop ;
+goto :loopend ;
 :extstatic
   if "%eq%" == "" (set "arg=static" & shift)
   echo>> %config_make% EXTSTATIC = %arg%
-  echo>>%confargs%  "%opt%=%arg:$=$$%" \
-goto :loop ;
+goto :loopend ;
 :baseruby
   echo>> %config_make% HAVE_BASERUBY = yes
   echo>> %config_make% BASERUBY = %arg%
