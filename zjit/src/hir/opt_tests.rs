@@ -2873,12 +2873,13 @@ mod hir_opt_tests {
 
     #[test]
     fn test_send_direct_iseq_with_block() {
-        eval("
-            def foo(&block) = 1
-            def test = foo {|| }
+        let result = eval("
+            def foo(a, b, &block) = block.call(a, b)
+            def test = foo(1, 2) { |a, b| a + b }
             test
             test
         ");
+        assert_eq!(VALUE::fixnum_from_usize(3), result);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
         bb0():
@@ -2889,12 +2890,14 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
+          v11:Fixnum[1] = Const Value(1)
+          v13:Fixnum[2] = Const Value(2)
           PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-          v18:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v19:BasicObject = SendDirect v18, 0x1038, :foo (0x1048)
+          v22:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v23:BasicObject = SendDirect v22, 0x1038, :foo (0x1048), v11, v13
           CheckInterrupts
-          Return v19
+          Return v23
         ");
     }
 
@@ -6542,7 +6545,7 @@ mod hir_opt_tests {
 
     #[test]
     fn test_send_direct_iseq_with_block_no_callee_block_param() {
-        eval(r#"
+        let result = eval(r#"
             def foo
               yield 1
             end
@@ -6550,6 +6553,7 @@ mod hir_opt_tests {
             def test = foo { |x| x * 2 }
             test; test
         "#);
+        assert_eq!(VALUE::fixnum_from_usize(2), result);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:6:
         bb0():
