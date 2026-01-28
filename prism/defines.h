@@ -263,13 +263,11 @@
  * specify alignment in a compiler-agnostic way.
  */
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L /* C11 or later */
-    #include <stdalign.h>
-
     /** Specify alignment for a type or variable. */
-    #define PRISM_ALIGNAS(size) alignas(size)
+    #define PRISM_ALIGNAS _Alignas
 
     /** Get the alignment requirement of a type. */
-    #define PRISM_ALIGNOF(type) alignof(type)
+    #define PRISM_ALIGNOF _Alignof
 #elif defined(__GNUC__) || defined(__clang__)
     /** Specify alignment for a type or variable. */
     #define PRISM_ALIGNAS(size) __attribute__((aligned(size)))
