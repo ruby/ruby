@@ -1096,16 +1096,68 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
-  def test_invokesuper_to_cfunc
-    assert_compiles '["MyArray", 3]', %q{
-      class MyArray < Array
+  def test_invokesuper_to_cfunc_no_args
+    assert_compiles '["MyString", 3]', %q{
+      class MyString < String
         def length
-          ["MyArray", super]
+          ["MyString", super]
         end
       end
 
       def test
-        MyArray.new([1, 2, 3]).length
+        MyString.new("abc").length
+      end
+
+      test  # profile invokesuper
+      test  # compile + run compiled code
+    }, call_threshold: 2
+  end
+
+  def test_invokesuper_to_cfunc_simple_args
+    assert_compiles '["MyString", true]', %q{
+      class MyString < String
+        def include?(other)
+          ["MyString", super(other)]
+        end
+      end
+
+      def test
+        MyString.new("abc").include?("bc")
+      end
+
+      test  # profile invokesuper
+      test  # compile + run compiled code
+    }, call_threshold: 2
+  end
+
+
+  def test_invokesuper_to_cfunc_with_optional_arg
+    assert_compiles '["MyString", 6]', %q{
+      class MyString < String
+        def byteindex(needle, offset = 0)
+          ["MyString", super(needle, offset)]
+        end
+      end
+
+      def test
+        MyString.new("hello world").byteindex("world")
+      end
+
+      test  # profile invokesuper
+      test  # compile + run compiled code
+    }, call_threshold: 2
+  end
+
+  def test_invokesuper_to_cfunc_varargs
+    assert_compiles '["MyString", true]', %q{
+      class MyString < String
+        def end_with?(str)
+          ["MyString", super(str)]
+        end
+      end
+
+      def test
+        MyString.new("abc").end_with?("bc")
       end
 
       test  # profile invokesuper
