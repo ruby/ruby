@@ -986,10 +986,10 @@ assert_equal '333', %q{
   a + b + c + d + e + f
 }
 
-assert_equal "  from hash default value\n" \
+assert_equal "  from hash default proc\n" \
     "  from instance variable @ivar\n" \
     "  from block self #<Foo @ivar={}>\n" \
-    "  from hash default value\n" \
+    "  from hash default proc\n" \
     "  from instance variable @ivar\n" \
     "  from instance variable @foo", %q{
   class Foo

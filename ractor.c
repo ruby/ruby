@@ -1347,7 +1347,11 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
         {
             const VALUE ifnone = RHASH_IFNONE(obj);
             if (obj_traverse_i(ifnone, data)) {
-                rb_ractor_error_chain_append(data->chain, "\n  from hash default value");
+                if (RB_FL_TEST_RAW(obj, RHASH_PROC_DEFAULT)) {
+                    rb_ractor_error_chain_append(data->chain, "\n  from hash default proc");
+                } else {
+                    rb_ractor_error_chain_append(data->chain, "\n  from hash default value");
+                }
                 return 1;
             }
 

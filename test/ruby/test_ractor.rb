@@ -234,9 +234,14 @@ class TestRactor < Test::Unit::TestCase
     assert_unshareable({ -> {} => true }, /from hash key #<Proc:0x[[:xdigit:]]+ #{__FILE__}:#{__LINE__}/)
   end
 
-  def test_error_includes_hash_default
+  def test_error_includes_hash_default_proc
     h = Hash.new {}
-    assert_unshareable(h, /from hash default value/)
+    assert_unshareable(h, /from hash default proc/)
+  end
+
+  def test_error_includes_hash_default_value
+    h = Hash.new(Mutex.new)
+    assert_unshareable(h, /from hash default value/, exception: Ractor::Error)
   end
 
   def test_error_includes_struct_member
@@ -272,7 +277,7 @@ class TestRactor < Test::Unit::TestCase
         $!
       end.value
       assert_kind_of Ractor::IsolationError, e
-      assert_match(/from hash default value/, e.message)
+      assert_match(/from hash default proc/, e.message)
     RUBY
   end
 
@@ -288,7 +293,7 @@ class TestRactor < Test::Unit::TestCase
         $!
       end.value
       assert_kind_of(Ractor::IsolationError, e)
-      assert_match(/from hash default value/, e.message)
+      assert_match(/from hash default proc/, e.message)
     RUBY
   end
 
