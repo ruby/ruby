@@ -1023,7 +1023,8 @@ pub enum Insn {
     /// Side-exit if the block param has been modified or the block handler for the frame
     /// is neither ISEQ nor ifunc, which makes it incompatible with rb_block_param_proxy.
     GuardBlockParamProxy { level: u32, state: InsnId },
-    /// Side-exit if the block handler is not nil (VM_BLOCK_HANDLER_NONE).
+    /// Side-exit if the block param has been modified or the block handler for the frame
+    /// is not nil (VM_BLOCK_HANDLER_NONE).
     GuardBlockParamProxyNil { level: u32, state: InsnId },
     /// Side-exit if val is frozen. Does *not* check if the val is an immediate; assumes that it is
     /// a heap object.
