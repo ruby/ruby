@@ -3324,9 +3324,6 @@ impl Function {
                         }
 
                         if def_type == VM_METHOD_TYPE_ISEQ {
-                            // TODO(max): Allow non-iseq; cache cme
-                            // Only specialize positional-positional calls
-                            // TODO(max): Handle other kinds of parameter passing
                             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
                             if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice(), Some(blockiseq)) {
                                 self.push_insn_id(block, insn_id); continue;
