@@ -10,8 +10,6 @@ typedef struct rb_mutex_struct {
     rb_thread_t *th; // even if the fiber is collected, we might need access to the thread in mutex_free
     struct rb_mutex_struct *next_mutex;
     struct ccan_list_head waitq; /* protected by GVL */
-    uint32_t saved_running_time_us;
-    bool wait_waking; // Is there a thread waiting to be woken up by this mutex? Reset during every wakeup.
 } rb_mutex_t;
 
 /* sync_waiter is always on-stack */
@@ -214,15 +212,8 @@ mutex_locked(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial)
 static inline bool
 do_mutex_trylock(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial)
 {
-    // NOTE: we can successfully lock a mutex even if there are other threads waiting on it. First one to it wins.
     if (mutex->ec_serial == 0) {
         RUBY_DEBUG_LOG("%p ok", mutex);
-        if (mutex->wait_waking) {
-            // If we acquired `mutex` without contention and before the thread that was popped off the waitq, we're going
-            // to set our running_time back to what it was here during mutex unlock if it got reset during our critical
-            // section. This is to prevent starvation of other threads waiting on the mutex.
-            mutex->saved_running_time_us = th->running_time_us;
-        }
 
         mutex_locked(mutex, th, ec_serial);
         return true;
@@ -359,8 +350,7 @@ do_mutex_lock(struct mutex_args *args, int interruptible_p)
                 }
                 ccan_list_del(&sync_waiter.node);
 
-                // If mutex->ec_serial != 0, the mutex was locked by another thread before we had the chance to acquire it.
-                // We'll put ourselves on the waitq and sleep again.
+                // unlocked by another thread while sleeping
                 if (!mutex->ec_serial) {
                     mutex_set_owner(mutex, th, ec_serial);
                 }
@@ -401,7 +391,6 @@ do_mutex_lock(struct mutex_args *args, int interruptible_p)
 
         if (saved_ints) th->ec->interrupt_flag = saved_ints;
         if (mutex->ec_serial == ec_serial) mutex_locked(mutex, th, ec_serial);
-        mutex->wait_waking = false;
     }
 
     RUBY_DEBUG_LOG("%p locked", mutex);
@@ -465,15 +454,6 @@ rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial)
 
     struct sync_waiter *cur = 0, *next;
 
-
-    if (mutex->wait_waking && ec_serial) {
-        uint32_t saved = mutex->saved_running_time_us;
-        if (th->running_time_us < saved) {
-            th->running_time_us = saved;
-        }
-    }
-
-    mutex->saved_running_time_us = 0;
     mutex->ec_serial = 0;
     thread_mutex_remove(th, mutex);
 
@@ -489,7 +469,6 @@ rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial)
               case THREAD_RUNNABLE: /* from someone else calling Thread#run */
               case THREAD_STOPPED_FOREVER: /* likely (rb_mutex_lock) */
                 RUBY_DEBUG_LOG("wakeup th:%u", rb_th_serial(cur->th));
-                mutex->wait_waking = true;
                 rb_threadptr_interrupt(cur->th);
                 return NULL;
               case THREAD_STOPPED: /* probably impossible */
@@ -501,6 +480,7 @@ rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial)
             }
         }
     }
+
     // We did not find any threads to wake up, so we can just return with no error:
     return NULL;
 }
