@@ -259,33 +259,37 @@ class TestRactor < Test::Unit::TestCase
   end
 
   def test_error_for_module_instance_variable
-    h = Hash.new {}.freeze
-    mod = Module.new do
-      attr_reader :unshareable
-      @unshareable = h
-    end
-    mod.extend(mod)
-    e = Ractor.new(mod) do |mod|
-      mod.unshareable
-    rescue
-      $!
-    end.value
-    assert_kind_of Ractor::IsolationError, e
-    assert_match(/from hash default value/, e.message)
-  end
-
-  module ModuleWithUnshareableConstant
-    UNSHAREABLE = Hash.new {}.freeze
+    assert_ractor(<<~'RUBY')
+      h = Hash.new {}.freeze
+      mod = Module.new do
+        attr_reader :unshareable
+        @unshareable = h
+      end
+      mod.extend(mod)
+      e = Ractor.new(mod) do |mod|
+        mod.unshareable
+      rescue
+        $!
+      end.value
+      assert_kind_of Ractor::IsolationError, e
+      assert_match(/from hash default value/, e.message)
+    RUBY
   end
 
   def test_error_for_module_constant
-    e = Ractor.new do
-      ModuleWithUnshareableConstant::UNSHAREABLE
-    rescue
-      $!
-    end.value
-    assert_kind_of(Ractor::IsolationError, e)
-    assert_match(/from hash default value/, e.message)
+    assert_ractor(<<~'RUBY')
+      module ModuleWithUnshareableConstant
+        UNSHAREABLE = Hash.new {}.freeze
+      end
+
+      e = Ractor.new do
+        ModuleWithUnshareableConstant::UNSHAREABLE
+      rescue
+        $!
+      end.value
+      assert_kind_of(Ractor::IsolationError, e)
+      assert_match(/from hash default value/, e.message)
+    RUBY
   end
 
   def assert_make_shareable(obj)
