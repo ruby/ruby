@@ -292,36 +292,6 @@ void rb_gc_writebarrier_remember(VALUE obj);
 const char *rb_obj_info(VALUE obj);
 void ruby_annotate_mmap(const void *addr, unsigned long size, const char *name);
 
-#if defined(HAVE_MALLOC_USABLE_SIZE) || defined(HAVE_MALLOC_SIZE) || defined(_WIN32)
-
-static inline void *
-ruby_sized_xrealloc_inlined(void *ptr, size_t new_size, size_t old_size)
-{
-    return ruby_xrealloc(ptr, new_size);
-}
-
-static inline void *
-ruby_sized_xrealloc2_inlined(void *ptr, size_t new_count, size_t elemsiz, size_t old_count)
-{
-    return ruby_xrealloc2(ptr, new_count, elemsiz);
-}
-
-static inline void
-ruby_sized_xfree_inlined(void *ptr, size_t size)
-{
-    ruby_xfree(ptr);
-}
-
-# define SIZED_REALLOC_N(x, y, z, w) REALLOC_N(x, y, z)
-
-static inline void *
-ruby_sized_realloc_n(void *ptr, size_t new_count, size_t element_size, size_t old_count)
-{
-    return ruby_xrealloc2(ptr, new_count, element_size);
-}
-
-#else
-
 static inline void *
 ruby_sized_xrealloc_inlined(void *ptr, size_t new_size, size_t old_size)
 {
@@ -348,8 +318,6 @@ ruby_sized_realloc_n(void *ptr, size_t new_count, size_t element_size, size_t ol
 {
     return ruby_sized_xrealloc2(ptr, new_count, element_size, old_count);
 }
-
-#endif /* HAVE_MALLOC_USABLE_SIZE */
 
 #define ruby_sized_xrealloc ruby_sized_xrealloc_inlined
 #define ruby_sized_xrealloc2 ruby_sized_xrealloc2_inlined
