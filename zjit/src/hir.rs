@@ -6122,7 +6122,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                         if summary.is_monomorphic() {
                             let block_handler = summary.bucket(0).class();
-                            if block_handler == VALUE(0) {
+                            if block_handler == VALUE(VM_BLOCK_HANDLER_NONE as usize) {
                                 fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_nil));
                             } else if (block_handler.0 & 0x03) == 0x01 {
                                 // Tagged iseq block (low bits = 01)
