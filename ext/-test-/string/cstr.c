@@ -111,9 +111,10 @@ bug_str_s_cstr_noembed(VALUE self, VALUE str)
     FL_SET((str2), STR_NOEMBED);
     memcpy(buf, RSTRING_PTR(str), capacity);
     RBASIC(str2)->flags &= ~(STR_SHARED | FL_USER5 | FL_USER6);
-    RSTRING(str2)->as.heap.aux.capa = capacity;
+    RSTRING(str2)->as.heap.aux.capa = RSTRING_LEN(str);
     RSTRING(str2)->as.heap.ptr = buf;
     RSTRING(str2)->len = RSTRING_LEN(str);
+
     TERM_FILL(RSTRING_END(str2), TERM_LEN(str));
     return str2;
 }
