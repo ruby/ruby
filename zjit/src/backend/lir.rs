@@ -1746,6 +1746,8 @@ impl Assembler
         let mut insns = Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY);
 
         for block in self.sorted_blocks() {
+            insns.push(Insn::PadPatchPoint);
+
             // Process each instruction, expanding branch params if needed
             for insn in &block.insns {
                 self.expand_branch_insn(insn, &mut insns);
