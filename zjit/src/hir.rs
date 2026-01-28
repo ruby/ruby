@@ -5467,18 +5467,14 @@ impl Function {
             | Insn::GuardBitNotSet { val, mask, .. } => {
                 match mask {
                     Const::Value(_) => self.assert_subtype(insn_id, val, types::RubyValue),
-                    Const::CInt8(_) => self.assert_subtype(insn_id, val, types::CInt8),
-                    Const::CInt16(_) => self.assert_subtype(insn_id, val, types::CInt16),
-                    Const::CInt32(_) => self.assert_subtype(insn_id, val, types::CInt32),
-                    Const::CInt64(_) => self.assert_subtype(insn_id, val, types::CInt64),
-                    Const::CUInt8(_) => self.assert_subtype(insn_id, val, types::CUInt8),
-                    Const::CUInt16(_) => self.assert_subtype(insn_id, val, types::CUInt16),
-                    Const::CUInt32(_) => self.assert_subtype(insn_id, val, types::CUInt32),
-                    Const::CShape(_) => self.assert_subtype(insn_id, val, types::CShape),
-                    Const::CUInt64(_) => self.assert_subtype(insn_id, val, types::CUInt64),
-                    Const::CBool(_) => self.assert_subtype(insn_id, val, types::CBool),
-                    Const::CDouble(_) => self.assert_subtype(insn_id, val, types::CDouble),
-                    Const::CPtr(_) => self.assert_subtype(insn_id, val, types::CPtr),
+                    Const::CInt8(_) | Const::CInt16(_) | Const::CInt32(_) | Const::CInt64(_) |
+                    Const::CUInt8(_) | Const::CUInt16(_) | Const::CUInt32(_) | Const::CUInt64(_)
+                        if self.is_a(val, types::CInt) || self.is_a(val, types::RubyValue) => {
+                        Ok(())
+                    }
+                    _ => {
+                        return Err(ValidationError::MiscValidationError(insn_id, "GuardBitSet can only compare RubyValue/CInt, RubyValue/RubyValue, or CInt/CInt".to_string()));
+                    }
                 }
             }
             Insn::GuardLess { left, right, .. }
