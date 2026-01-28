@@ -166,8 +166,9 @@ fn profile_getblockparamproxy(profiler: &mut Profiler, profile: &mut IseqProfile
     let level = profiler.insn_opnd(1).as_u32();
     let ep = unsafe { get_cfp_ep_level(profiler.cfp, level) };
     let block_handler = unsafe { *ep.offset(VM_ENV_DATA_INDEX_SPECVAL as isize) };
+    let untagged = unsafe { rb_vm_untag_block_handler(block_handler) };
 
-    let ty = ProfiledType::object(block_handler);
+    let ty = ProfiledType::object(untagged);
     VALUE::from(profiler.iseq).write_barrier(ty.class());
     types[0].observe(ty);
 }

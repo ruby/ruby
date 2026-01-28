@@ -6156,20 +6156,18 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         let summary = TypeDistributionSummary::new(block_handler_distribution);
 
                         if summary.is_monomorphic() {
-                            let block_handler = summary.bucket(0).class();
-                            if block_handler == VALUE(VM_BLOCK_HANDLER_NONE as usize) {
-                                fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_nil));
-                            } else if (block_handler.0 & 0x03) == 0x01 {
-                                // Tagged iseq block (low bits = 01)
+                            let obj = summary.bucket(0).class();
+                            if unsafe { rb_IMEMO_TYPE_P(obj, imemo_iseq) == 1} {
                                 fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_iseq));
-                            } else if (block_handler.0 & 0x03) == 0x03 {
-                                // Tagged ifunc block (low bits = 11)
+                            } else if unsafe { rb_IMEMO_TYPE_P(obj, imemo_ifunc) == 1} {
                                 fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_ifunc));
-                            } else if block_handler.symbol_p() {
-                                // Symbol block
+                            }
+                            else if obj.nil_p() {
+                                fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_nil));
+                            }
+                            else if obj.symbol_p() {
                                 fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_symbol));
-                            } else if unsafe { rb_obj_is_proc(block_handler).test() } {
-                                // Proc block
+                            } else if unsafe { rb_obj_is_proc(obj).test() } {
                                 fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_proc));
                             }
                         } else if summary.is_polymorphic() || summary.is_skewed_polymorphic() {
@@ -6592,7 +6590,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let block_handler = fun.push_insn(block, Insn::LoadField { recv: ep, id: ID!(_env_data_index_specval), offset: SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL, return_type: types::CInt64 });
 
                     match profiled_block_type {
-                        Some(ty) if ty == VALUE(VM_BLOCK_HANDLER_NONE as usize) => {
+                        Some(ty) if ty.nil_p() => {
                             fun.push_insn(block, Insn::GuardBitEquals { val: block_handler, expected: Const::CInt64(VM_BLOCK_HANDLER_NONE.into()), reason: SideExitReason::BlockParamProxyNotNil, state: exit_id });
                             state.stack_push(fun.push_insn(block, Insn::Const { val: Const::Value(Qnil) }));
                         }
