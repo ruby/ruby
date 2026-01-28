@@ -1526,7 +1526,9 @@ fn gen_send_iseq_direct(
     let params = unsafe { iseq.params() };
 
     // For &block, the JIT entrypoint expects the block_handler as an argument
-    // TODO: is it actually necessary? it appears nothing actually read from it?
+    // This HIR param is not actually used, things read from specval from the VM frame today.
+    // TODO: Remove unused param from HIR, or pass specval through c_args.
+    // See https://github.com/ruby/ruby/pull/15911#discussion_r2710544982
     let needs_block = params.flags.has_block() != 0;
 
     // Set up arguments
