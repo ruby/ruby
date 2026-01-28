@@ -6117,8 +6117,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
             } else if opcode == YARVINSN_getblockparamproxy || opcode == YARVINSN_trace_getblockparamproxy {
                 if get_option!(stats) {
                     let iseq_insn_idx = exit_state.insn_idx;
-                    if let Some(operand_types) = profiles.payload.profile.get_operand_types(iseq_insn_idx)
-                        && let [block_handler_distribution] = &operand_types {
+                    if let Some([block_handler_distribution]) = profiles.payload.profile.get_operand_types(iseq_insn_idx) {
                         let summary = TypeDistributionSummary::new(block_handler_distribution);
 
                         if summary.is_monomorphic() {
@@ -6544,29 +6543,34 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_getblockparamproxy => {
                     let level = get_arg(pc, 1).as_u32();
 
-                    if let Some(operand_types) = profiles.payload.profile.get_operand_types(exit_state.insn_idx)
-                        && let [block_handler_distribution] = &operand_types {
+                    let profiled_block_type = if let Some([block_handler_distribution]) = profiles.payload.profile.get_operand_types(exit_state.insn_idx) {
                         let summary = TypeDistributionSummary::new(block_handler_distribution);
-                        let block_handler = summary.bucket(0).class();
+                        summary.is_monomorphic().then_some(summary.bucket(0).class())
+                    } else {
+                        None
+                    };
 
-                        if summary.is_monomorphic() && block_handler == VALUE(0) {
-                            let block_handler = fun.push_insn(block, Insn::GetBlockHandler);
+                    match profiled_block_type {
+                        Some(ty) if ty == VALUE(VM_BLOCK_HANDLER_NONE as usize) => {
+                            // If the block parameter is profiled as being as nil,
+                            // guard nil and push nil onto the stack instead of the block proxy
+                            let lep = fun.push_insn(block, Insn::GetLEP);
+                            let block_handler = fun.push_insn(block, Insn::GetBlockHandler { lep });
+
                             fun.push_insn(block, Insn::GuardBitEquals {
                                 val: block_handler,
                                 expected: Const::Value(VALUE(VM_BLOCK_HANDLER_NONE as usize)),
                                 reason: SideExitReason::UnhandledBlockArg,
                                 state: exit_id,
                             });
+
                             state.stack_push(fun.push_insn(block, Insn::Const { val: Const::Value(Qnil) }));
-                        } else {
+                        }
+                        _ => {
                             fun.push_insn(block, Insn::GuardBlockParamProxy { level, state: exit_id });
                             // TODO(Shopify/ruby#753): GC root, so we should be able to avoid unnecessary GC tracing
                             state.stack_push(fun.push_insn(block, Insn::Const { val: Const::Value(unsafe { rb_block_param_proxy }) }));
                         }
-                    } else {
-                        fun.push_insn(block, Insn::GuardBlockParamProxy { level, state: exit_id });
-                        // TODO(Shopify/ruby#753): GC root, so we should be able to avoid unnecessary GC tracing
-                        state.stack_push(fun.push_insn(block, Insn::Const { val: Const::Value(unsafe { rb_block_param_proxy }) }));
                     }
                 }
                 YARVINSN_getblockparam => {
