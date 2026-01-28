@@ -573,11 +573,9 @@ dump_object(VALUE obj, struct dump_config *dc)
         break;
 
       case T_DATA:
-        if (RTYPEDDATA_P(obj)) {
-            dump_append(dc, ", \"struct\":\"");
-            dump_append(dc, RTYPEDDATA_TYPE(obj)->wrap_struct_name);
-            dump_append(dc, "\"");
-        }
+        dump_append(dc, ", \"struct\":\"");
+        dump_append(dc, RTYPEDDATA_TYPE(obj)->wrap_struct_name);
+        dump_append(dc, "\"");
         break;
 
       case T_FLOAT:

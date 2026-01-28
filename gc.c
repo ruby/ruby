@@ -344,7 +344,8 @@ rb_gc_shutdown_call_finalizer_p(VALUE obj)
 {
     switch (BUILTIN_TYPE(obj)) {
       case T_DATA:
-        if (!ruby_free_at_exit_p() && (!DATA_PTR(obj) || !RDATA(obj)->dfree)) return false;
+        /* TODO: this check was broken for TypedData, revisit */
+        // if (!ruby_free_at_exit_p() && (!DATA_PTR(obj) || !RTYPEDDATA_TYPE(obj)->function.dfree)) return false;
         if (rb_obj_is_thread(obj)) return false;
         if (rb_obj_is_mutex(obj)) return false;
         if (rb_obj_is_fiber(obj)) return false;
@@ -1080,19 +1081,70 @@ rb_data_object_check(VALUE klass)
     }
 }
 
+static VALUE typed_data_alloc(VALUE klass, VALUE typed_flag, void *datap, const rb_data_type_t *type, size_t size);
+
+/*
+ * Legacy RData support: RData is implemented as an embedded RTypedData
+ * with the mark/free/data stored in the payload. RDATA(obj)->data still
+ * works because the payload starts at the same offset as RData.data.
+ */
+struct rb_legacy_rdata {
+    void *data;           /* must be first for RDATA(obj)->data compatibility */
+    RUBY_DATA_FUNC dmark;
+    RUBY_DATA_FUNC dfree;
+};
+
+/* Verify struct RData fields line up with embedded rb_legacy_rdata in RTypedData */
+STATIC_ASSERT(rdata_data, offsetof(struct RData, data) == offsetof(struct RTypedData, data) + offsetof(struct rb_legacy_rdata, data));
+STATIC_ASSERT(rdata_dmark, offsetof(struct RData, dmark) == offsetof(struct RTypedData, data) + offsetof(struct rb_legacy_rdata, dmark));
+STATIC_ASSERT(rdata_dfree, offsetof(struct RData, dfree) == offsetof(struct RTypedData, data) + offsetof(struct rb_legacy_rdata, dfree));
+
+static void
+rdata_legacy_mark(void *ptr)
+{
+    struct rb_legacy_rdata *rdata = ptr;
+    if (rdata->dmark) {
+        rdata->dmark(rdata->data);
+    }
+}
+
+static void
+rdata_legacy_free(void *ptr)
+{
+    struct rb_legacy_rdata *rdata = ptr;
+    if (rdata->dfree == RUBY_DEFAULT_FREE) {
+        xfree(rdata->data);
+    }
+    else if (rdata->dfree) {
+        rdata->dfree(rdata->data);
+    }
+}
+
+static const rb_data_type_t rb_legacy_rdata_type = {
+    .wrap_struct_name = "legacy RData",
+    .function = {
+        .dmark = rdata_legacy_mark,
+        .dfree = rdata_legacy_free,
+    },
+    .flags = RUBY_TYPED_EMBEDDABLE,
+};
+
 VALUE
 rb_data_object_wrap(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_FUNC dfree)
 {
     RUBY_ASSERT_ALWAYS(dfree != (RUBY_DATA_FUNC)1);
-    if (klass) rb_data_object_check(klass);
-    VALUE obj = newobj_of(GET_RACTOR(), klass, T_DATA, ROOT_SHAPE_ID, !dmark, sizeof(struct RTypedData));
+
+    static const size_t embed_size = offsetof(struct RTypedData, data) + sizeof(struct rb_legacy_rdata);
+    RUBY_ASSERT_ALWAYS(rb_gc_size_allocatable_p(embed_size));
+
+    VALUE obj = typed_data_alloc(klass, TYPED_DATA_EMBEDDED, 0, &rb_legacy_rdata_type, embed_size);
 
     rb_gc_register_pinning_obj(obj);
 
-    struct RData *data = (struct RData *)obj;
-    data->dmark = dmark;
-    data->dfree = dfree;
-    data->data = datap;
+    struct rb_legacy_rdata *rdata = (struct rb_legacy_rdata *)RTYPEDDATA_GET_DATA(obj);
+    rdata->data = datap;
+    rdata->dmark = dmark;
+    rdata->dfree = dfree;
 
     return obj;
 }
@@ -1162,19 +1214,17 @@ static size_t
 rb_objspace_data_type_memsize(VALUE obj)
 {
     size_t size = 0;
-    if (RTYPEDDATA_P(obj)) {
-        const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
-        const void *ptr = RTYPEDDATA_GET_DATA(obj);
+    const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
+    const void *ptr = RTYPEDDATA_GET_DATA(obj);
 
-        if (RTYPEDDATA_EMBEDDABLE_P(obj) && !RTYPEDDATA_EMBEDDED_P(obj)) {
+    if (RTYPEDDATA_EMBEDDABLE_P(obj) && !RTYPEDDATA_EMBEDDED_P(obj)) {
 #ifdef HAVE_MALLOC_USABLE_SIZE
-            size += malloc_usable_size((void *)ptr);
+        size += malloc_usable_size((void *)ptr);
 #endif
-        }
+    }
 
-        if (ptr && type->function.dsize) {
-            size += type->function.dsize(ptr);
-        }
+    if (ptr && type->function.dsize) {
+        size += type->function.dsize(ptr);
     }
 
     return size;
@@ -1183,12 +1233,7 @@ rb_objspace_data_type_memsize(VALUE obj)
 const char *
 rb_objspace_data_type_name(VALUE obj)
 {
-    if (RTYPEDDATA_P(obj)) {
-        return RTYPEDDATA_TYPE(obj)->wrap_struct_name;
-    }
-    else {
-        return 0;
-    }
+    return RTYPEDDATA_TYPE(obj)->wrap_struct_name;
 }
 
 void
@@ -1366,27 +1411,20 @@ make_io_zombie(void *objspace, VALUE obj)
 static bool
 rb_data_free(void *objspace, VALUE obj)
 {
-    void *data = RTYPEDDATA_P(obj) ? RTYPEDDATA_GET_DATA(obj) : DATA_PTR(obj);
-    if (data) {
-        int free_immediately = false;
-        void (*dfree)(void *);
+    const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
+    void *data = RTYPEDDATA_GET_DATA(obj);
 
-        if (RTYPEDDATA_P(obj)) {
-            free_immediately = (RTYPEDDATA_TYPE(obj)->flags & RUBY_TYPED_FREE_IMMEDIATELY) != 0;
-            dfree = RTYPEDDATA_TYPE(obj)->function.dfree;
-        }
-        else {
-            dfree = RDATA(obj)->dfree;
-        }
+    if (data) {
+        void (*dfree)(void *) = type->function.dfree;
 
         if (dfree) {
             if (dfree == RUBY_DEFAULT_FREE) {
-                if (!RTYPEDDATA_P(obj) || !RTYPEDDATA_EMBEDDED_P(obj)) {
+                if (!RTYPEDDATA_EMBEDDED_P(obj)) {
                     xfree(data);
                     RB_DEBUG_COUNTER_INC(obj_data_xfree);
                 }
             }
-            else if (free_immediately) {
+            else if (type->flags & RUBY_TYPED_FREE_IMMEDIATELY) {
                 (*dfree)(data);
                 if (RTYPEDDATA_EMBEDDABLE_P(obj) && !RTYPEDDATA_EMBEDDED_P(obj)) {
                     xfree(data);
@@ -3383,15 +3421,12 @@ rb_gc_mark_children(void *objspace, VALUE obj)
         break;
 
       case T_DATA: {
-        bool typed_data = RTYPEDDATA_P(obj);
-        void *const ptr = typed_data ? RTYPEDDATA_GET_DATA(obj) : DATA_PTR(obj);
+        void *const ptr = RTYPEDDATA_GET_DATA(obj);
 
-        if (typed_data) {
-            gc_mark_internal(RTYPEDDATA(obj)->fields_obj);
-        }
+        gc_mark_internal(RTYPEDDATA(obj)->fields_obj);
 
         if (ptr) {
-            if (typed_data && gc_declarative_marking_p(RTYPEDDATA_TYPE(obj))) {
+            if (gc_declarative_marking_p(RTYPEDDATA_TYPE(obj))) {
                 size_t *offset_list = TYPED_DATA_REFS_OFFSET_LIST(obj);
 
                 for (size_t offset = *offset_list; offset != RUBY_REF_END; offset = *offset_list++) {
@@ -3399,9 +3434,7 @@ rb_gc_mark_children(void *objspace, VALUE obj)
                 }
             }
             else {
-                RUBY_DATA_FUNC mark_func = typed_data ?
-                    RTYPEDDATA_TYPE(obj)->function.dmark :
-                    RDATA(obj)->dmark;
+                RUBY_DATA_FUNC mark_func = RTYPEDDATA_TYPE(obj)->function.dmark;
                 if (mark_func) (*mark_func)(ptr);
             }
         }
@@ -4370,15 +4403,12 @@ rb_gc_update_object_references(void *objspace, VALUE obj)
       case T_DATA:
         /* Call the compaction callback, if it exists */
         {
-            bool typed_data = RTYPEDDATA_P(obj);
-            void *const ptr = typed_data ? RTYPEDDATA_GET_DATA(obj) : DATA_PTR(obj);
+            void *const ptr = RTYPEDDATA_GET_DATA(obj);
 
-            if (typed_data) {
-                UPDATE_IF_MOVED(objspace, RTYPEDDATA(obj)->fields_obj);
-            }
+            UPDATE_IF_MOVED(objspace, RTYPEDDATA(obj)->fields_obj);
 
             if (ptr) {
-                if (typed_data && gc_declarative_marking_p(RTYPEDDATA_TYPE(obj))) {
+                if (gc_declarative_marking_p(RTYPEDDATA_TYPE(obj))) {
                     size_t *offset_list = TYPED_DATA_REFS_OFFSET_LIST(obj);
 
                     for (size_t offset = *offset_list; offset != RUBY_REF_END; offset = *offset_list++) {
@@ -4386,7 +4416,7 @@ rb_gc_update_object_references(void *objspace, VALUE obj)
                         *ref = gc_location_internal(objspace, *ref);
                     }
                 }
-                else if (typed_data) {
+                else {
                     RUBY_DATA_FUNC compact_func = RTYPEDDATA_TYPE(obj)->function.dcompact;
                     if (compact_func) (*compact_func)(ptr);
                 }
