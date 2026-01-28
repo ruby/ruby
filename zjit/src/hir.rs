@@ -1890,7 +1890,8 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
     let kwarg = unsafe { rb_vm_ci_kwarg(ci) };
     let caller_kw_count = if kwarg.is_null() { 0 } else { (unsafe { get_cikw_keyword_len(kwarg) }) as usize };
     let caller_positional = args.len() - caller_kw_count;
-    let final_argc = caller_positional + kw_total_num as usize;
+    let block_arg = if allow_block_param && 0 != params.flags.has_block() { 1 } else { 0 };
+    let final_argc = caller_positional + kw_total_num as usize + block_arg;
     if final_argc + 1 > C_ARG_OPNDS.len() { // +1 for self
         function.set_dynamic_send_reason(send_insn, TooManyArgsForLir);
         return false;
