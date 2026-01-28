@@ -18,8 +18,6 @@ module Prism
         # The direct translating of types between the two lexers.
         TYPES = {
           # These tokens should never appear in the output of the lexer.
-          MISSING: nil,
-          NOT_PROVIDED: nil,
           EMBDOC_END: nil,
           EMBDOC_LINE: nil,
 

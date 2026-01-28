@@ -639,7 +639,7 @@ module Prism
 
         event = RIPPER.fetch(token.type)
         value = token.value
-        lex_state = Translation::Ripper::Lexer::State.cached(lex_state)
+        lex_state = Translation::Ripper::Lexer::State[lex_state]
 
         token =
           case event
@@ -691,7 +691,7 @@ module Prism
                   counter += { on_embexpr_beg: -1, on_embexpr_end: 1 }[current_event] || 0
                 end
 
-                Translation::Ripper::Lexer::State.cached(result_value[current_index][1])
+                Translation::Ripper::Lexer::State[result_value[current_index][1]]
               else
                 previous_state
               end
@@ -820,15 +820,17 @@ module Prism
       end
 
       # Add :on_sp tokens
-      tokens = add_on_sp_tokens(tokens, source, result.data_loc, bom, eof_token)
+      tokens = insert_on_sp(tokens, source, result.data_loc, bom, eof_token)
 
       Result.new(tokens, result.comments, result.magic_comments, result.data_loc, result.errors, result.warnings, source)
     end
 
-    def add_on_sp_tokens(tokens, source, data_loc, bom, eof_token)
+    private
+
+    def insert_on_sp(tokens, source, data_loc, bom, eof_token)
       new_tokens = []
 
-      prev_token_state = Translation::Ripper::Lexer::State.cached(Translation::Ripper::EXPR_BEG)
+      prev_token_state = Translation::Ripper::Lexer::State[Translation::Ripper::EXPR_BEG]
       prev_token_end = bom ? 3 : 0
 
       tokens.each do |token|

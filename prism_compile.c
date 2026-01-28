@@ -144,7 +144,7 @@ pm_iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line, int node
     ((pm_node_location_t) { .line = pm_newline_list_line(&(parser)->newline_list, ((const pm_node_t *) (node))->location.start, (parser)->start_line), .node_id = ((const pm_node_t *) (node))->node_id })
 
 #define PM_NODE_END_LOCATION(parser, node) \
-    ((pm_node_location_t) { .line = pm_newline_list_line(&(parser)->newline_list, ((const pm_node_t *) (node))->location.end, (parser)->start_line), .node_id = ((const pm_node_t *) (node))->node_id })
+    ((pm_node_location_t) { .line = pm_newline_list_line(&(parser)->newline_list, ((const pm_node_t *) (node))->location.start + ((const pm_node_t *) (node))->location.length, (parser)->start_line), .node_id = ((const pm_node_t *) (node))->node_id })
 
 #define PM_LOCATION_START_LOCATION(parser, location, id) \
     ((pm_node_location_t) { .line = pm_newline_list_line(&(parser)->newline_list, (location)->start, (parser)->start_line), .node_id = id })
@@ -153,7 +153,7 @@ pm_iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line, int node
     pm_newline_list_line_column(&(parser)->newline_list, ((const pm_node_t *) (node))->location.start, (parser)->start_line)
 
 #define PM_NODE_END_LINE_COLUMN(parser, node) \
-    pm_newline_list_line_column(&(parser)->newline_list, ((const pm_node_t *) (node))->location.end, (parser)->start_line)
+    pm_newline_list_line_column(&(parser)->newline_list, ((const pm_node_t *) (node))->location.start + ((const pm_node_t *) (node))->location.length, (parser)->start_line)
 
 #define PM_LOCATION_START_LINE_COLUMN(parser, location) \
     pm_newline_list_line_column(&(parser)->newline_list, (location)->start, (parser)->start_line)
@@ -3231,7 +3231,7 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
 
     scope->base.type = PM_SCOPE_NODE;
     scope->base.location.start = node->location.start;
-    scope->base.location.end = node->location.end;
+    scope->base.location.length = node->location.length;
 
     scope->previous = previous;
     scope->ast_node = (pm_node_t *) node;
@@ -3272,7 +3272,7 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
 
         if (cast->statements != NULL) {
             scope->base.location.start = cast->statements->base.location.start;
-            scope->base.location.end = cast->statements->base.location.end;
+            scope->base.location.length = cast->statements->base.location.length;
         }
 
         break;
@@ -3652,7 +3652,7 @@ static void
 pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node, ID method_id, LABEL *start)
 {
     const pm_location_t *message_loc = &call_node->message_loc;
-    if (message_loc->start == NULL) message_loc = &call_node->base.location;
+    if (message_loc->length == 0) message_loc = &call_node->base.location;
 
     const pm_node_location_t location = PM_LOCATION_START_LOCATION(scope_node->parser, message_loc, call_node->base.node_id);
 
@@ -3666,16 +3666,34 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
 
     if (PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION)) {
         if (PM_BRANCH_COVERAGE_P(iseq)) {
-            const uint8_t *cursors[3] = {
-                call_node->closing_loc.end,
-                call_node->arguments == NULL ? NULL : call_node->arguments->base.location.end,
-                call_node->message_loc.end
-            };
+            uint32_t end_cursor;
+            bool end_found = false;
 
-            const uint8_t *end_cursor = cursors[0];
-            end_cursor = (end_cursor == NULL || cursors[1] == NULL) ? cursors[1] : (end_cursor > cursors[1] ? end_cursor : cursors[1]);
-            end_cursor = (end_cursor == NULL || cursors[2] == NULL) ? cursors[2] : (end_cursor > cursors[2] ? end_cursor : cursors[2]);
-            if (!end_cursor) end_cursor = call_node->closing_loc.end;
+            if (call_node->closing_loc.length > 0) {
+                uint32_t cursor = call_node->closing_loc.start + call_node->closing_loc.length;
+                end_cursor = cursor;
+                end_found = true;
+            }
+
+            if (call_node->arguments != NULL) {
+                uint32_t cursor = call_node->arguments->base.location.start + call_node->arguments->base.location.length;
+                if (!end_found || cursor > end_cursor) {
+                    end_cursor = cursor;
+                    end_found = true;
+                }
+            }
+
+            if (call_node->message_loc.length > 0) {
+                uint32_t cursor = call_node->message_loc.start + call_node->message_loc.length;
+                if (!end_found || cursor > end_cursor) {
+                    end_cursor = cursor;
+                    end_found = true;
+                }
+            }
+
+            if (!end_found) {
+                end_cursor = call_node->closing_loc.start + call_node->closing_loc.length;
+            }
 
             const pm_line_column_t start_location = PM_NODE_START_LINE_COLUMN(scope_node->parser, call_node);
             const pm_line_column_t end_location = pm_newline_list_line_column(&scope_node->parser->newline_list, end_cursor, scope_node->parser->start_line);
@@ -3822,9 +3840,9 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
  * node.
  */
 static inline VALUE
-pm_compile_back_reference_ref(const pm_back_reference_read_node_t *node)
+pm_compile_back_reference_ref(const pm_scope_node_t *scope_node, const pm_back_reference_read_node_t *node)
 {
-    const char *type = (const char *) (node->base.location.start + 1);
+    const char *type = (const char *) (scope_node->parser->start + node->base.location.start + 1);
 
     // Since a back reference is `$<char>`, Ruby represents the ID as an
     // rb_intern on the value after the `$`.
@@ -4215,7 +4233,7 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
         // defined?($+)
         //          ^^
         const pm_back_reference_read_node_t *cast = (const pm_back_reference_read_node_t *) node;
-        VALUE ref = pm_compile_back_reference_ref(cast);
+        VALUE ref = pm_compile_back_reference_ref(scope_node, cast);
 
         PUSH_INSN(ret, location, putnil);
         PUSH_INSN3(ret, location, defined, INT2FIX(DEFINED_REF), ref, PUSH_VAL(DEFINED_GVAR));
@@ -7066,13 +7084,13 @@ pm_compile_alias_global_variable_node(rb_iseq_t *iseq, const pm_alias_global_var
 
     {
         const pm_location_t *name_loc = &node->new_name->location;
-        VALUE operand = ID2SYM(rb_intern3((const char *) name_loc->start, name_loc->end - name_loc->start, scope_node->encoding));
+        VALUE operand = ID2SYM(rb_intern3((const char *) (scope_node->parser->start + name_loc->start), name_loc->length, scope_node->encoding));
         PUSH_INSN1(ret, *location, putobject, operand);
     }
 
     {
         const pm_location_t *name_loc = &node->old_name->location;
-        VALUE operand = ID2SYM(rb_intern3((const char *) name_loc->start, name_loc->end - name_loc->start, scope_node->encoding));
+        VALUE operand = ID2SYM(rb_intern3((const char *) (scope_node->parser->start + name_loc->start), name_loc->length, scope_node->encoding));
         PUSH_INSN1(ret, *location, putobject, operand);
     }
 
@@ -7351,7 +7369,7 @@ pm_compile_call_node(rb_iseq_t *iseq, const pm_call_node_t *node, LINK_ANCHOR *c
     ID method_id = pm_constant_id_lookup(scope_node, node->name);
 
     const pm_location_t *message_loc = &node->message_loc;
-    if (message_loc->start == NULL) message_loc = &node->base.location;
+    if (message_loc->length == 0) message_loc = &node->base.location;
 
     const pm_node_location_t location = PM_LOCATION_START_LOCATION(scope_node->parser, message_loc, node->base.node_id);
     const char *builtin_func;
@@ -8719,7 +8737,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // ^^
         if (!popped) {
             const pm_back_reference_read_node_t *cast = (const pm_back_reference_read_node_t *) node;
-            VALUE backref = pm_compile_back_reference_ref(cast);
+            VALUE backref = pm_compile_back_reference_ref(scope_node, cast);
 
             PUSH_INSN2(ret, location, getspecial, INT2FIX(1), backref);
         }
@@ -10578,7 +10596,7 @@ pm_parse_errors_format_sort(const pm_parser_t *parser, const pm_list_t *error_li
 
     for (pm_diagnostic_t *error = (pm_diagnostic_t *) error_list->head; error != finish; error = (pm_diagnostic_t *) error->node.next) {
         pm_line_column_t start = pm_newline_list_line_column(newline_list, error->location.start, start_line);
-        pm_line_column_t end = pm_newline_list_line_column(newline_list, error->location.end, start_line);
+        pm_line_column_t end = pm_newline_list_line_column(newline_list, error->location.start + error->location.length, start_line);
 
         // We're going to insert this error into the array in sorted order. We
         // do this by finding the first error that has a line number greater
@@ -10942,7 +10960,7 @@ static bool
 pm_parse_process_error_utf8_p(const pm_parser_t *parser, const pm_location_t *location)
 {
     const size_t start_line = pm_newline_list_line_column(&parser->newline_list, location->start, 1).line;
-    const size_t end_line = pm_newline_list_line_column(&parser->newline_list, location->end, 1).line;
+    const size_t end_line = pm_newline_list_line_column(&parser->newline_list, location->start + location->length, 1).line;
 
     const uint8_t *start = parser->start + parser->newline_list.offsets[start_line - 1];
     const uint8_t *end = ((end_line == parser->newline_list.size) ? parser->end : (parser->start + parser->newline_list.offsets[end_line]));
