@@ -478,8 +478,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::Snapshot { .. } => return Ok(()), // we don't need to do anything for this instruction at the moment
         &Insn::Send { cd, blockiseq, state, reason, .. } => gen_send(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::SendForward { cd, blockiseq, state, reason, .. } => gen_send_forward(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
+        Insn::SendDirect { cme, iseq, recv, args, kw_bits, blockiseq, state, .. } => gen_send_iseq_direct(cb, jit, asm, *cme, *iseq, opnd!(recv), opnds!(args), *kw_bits, &function.frame_state(*state), *blockiseq),
         &Insn::SendWithoutBlock { cd, state, reason, .. } => gen_send_without_block(jit, asm, cd, &function.frame_state(state), reason),
-        Insn::SendWithoutBlockDirect { cme, iseq, recv, args, kw_bits, state, .. } => gen_send_iseq_direct(cb, jit, asm, *cme, *iseq, opnd!(recv), opnds!(args), *kw_bits, &function.frame_state(*state), None),
         &Insn::InvokeSuper { cd, blockiseq, state, reason, .. } => gen_invokesuper(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::InvokeSuperForward { cd, blockiseq, state, reason, .. } => gen_invokesuperforward(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::InvokeBlock { cd, state, reason, .. } => gen_invokeblock(jit, asm, cd, &function.frame_state(state), reason),
@@ -1024,6 +1024,15 @@ fn gen_ccall(asm: &mut Assembler, cfunc: *const u8, name: ID, recv: Opnd, args: 
     asm.ccall(cfunc, cfunc_args)
 }
 
+// Change cfp->block_code in the current frame. See vm_caller_setup_arg_block().
+// VM_CFP_TO_CAPTURED_BLOCK then turns &cfp->self into a block handler.
+// rb_captured_block->code.iseq aliases with cfp->block_code.
+fn gen_block_handler_specval(asm: &mut Assembler, blockiseq: IseqPtr) -> lir::Opnd {
+    asm.store(Opnd::mem(VALUE_BITS, CFP, RUBY_OFFSET_CFP_BLOCK_CODE), VALUE::from(blockiseq).into());
+    let cfp_self_addr = asm.lea(Opnd::mem(VALUE_BITS, CFP, RUBY_OFFSET_CFP_SELF));
+    asm.or(cfp_self_addr, Opnd::Imm(1))
+}
+
 /// Generate code for a variadic C function call
 /// func(int argc, VALUE *argv, VALUE recv)
 fn gen_ccall_variadic(
@@ -1053,13 +1062,8 @@ fn gen_ccall_variadic(
     gen_spill_stack(jit, asm, state);
     gen_spill_locals(jit, asm, state);
 
-    let block_handler_specval = if let Some(block_iseq) = blockiseq {
-        // Change cfp->block_code in the current frame. See vm_caller_setup_arg_block().
-        // VM_CFP_TO_CAPTURED_BLOCK then turns &cfp->self into a block handler.
-        // rb_captured_block->code.iseq aliases with cfp->block_code.
-        asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_BLOCK_CODE), VALUE::from(block_iseq).into());
-        let cfp_self_addr = asm.lea(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF));
-        asm.or(cfp_self_addr, Opnd::Imm(1))
+    let block_handler_specval = if let Some(blockiseq) = blockiseq {
+        gen_block_handler_specval(asm, blockiseq)
     } else {
         VM_BLOCK_HANDLER_NONE.into()
     };
@@ -1446,7 +1450,7 @@ fn gen_send_iseq_direct(
     args: Vec<Opnd>,
     kw_bits: u32,
     state: &FrameState,
-    block_handler: Option<Opnd>,
+    blockiseq: Option<IseqPtr>,
 ) -> lir::Opnd {
     gen_incr_counter(asm, Counter::iseq_optimized_send_count);
 
@@ -1461,6 +1465,12 @@ fn gen_send_iseq_direct(
 
     gen_spill_locals(jit, asm, state);
     gen_spill_stack(jit, asm, state);
+
+    // This mirrors vm_caller_setup_arg_block() in for the `blockiseq != NULL` case.
+    // The HIR specialization guards ensure we will only reach here for literal blocks,
+    // not &block forwarding, &:foo, etc. Thise are rejected in `type_specialize` by
+    // `unspecializable_call_type`.
+    let block_handler = blockiseq.map(|b| gen_block_handler_specval(asm, b));
 
     let (frame_type, specval) = if VM_METHOD_TYPE_BMETHOD == unsafe { get_cme_def_type(cme) } {
         // Extract EP from the Proc instance
@@ -1513,11 +1523,25 @@ fn gen_send_iseq_direct(
     asm.mov(CFP, new_cfp);
     asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP as i32), CFP);
 
-    // Set up arguments
-    let mut c_args = vec![recv];
-    c_args.extend(&args);
-
     let params = unsafe { iseq.params() };
+
+    // For &block, the JIT entrypoint expects the block_handler as an argument
+    // This HIR param is not actually used, things read from specval from the VM frame today.
+    // TODO: Remove unused param from HIR, or pass specval through c_args.
+    // See https://github.com/ruby/ruby/pull/15911#discussion_r2710544982
+    let needs_block = params.flags.has_block() != 0;
+
+    // Set up arguments
+    let mut c_args = Vec::with_capacity({
+        // This is a heuristic to avoid re-allocation, not necessary for correctness
+        1 /* recv */ + args.len() + if needs_block { 1 } else { 0 }
+    });
+    c_args.push(recv);
+    c_args.extend(&args);
+    if needs_block {
+        c_args.push(specval);
+    }
+
     let num_optionals_passed = if params.flags.has_opt() != 0 {
         // See vm_call_iseq_setup_normal_opt_start in vm_inshelper.c
         let lead_num = params.lead_num as u32;
@@ -2714,7 +2738,7 @@ fn function_stub_hit_body(cb: &mut CodeBlock, iseq_call: &IseqCallRef) -> Result
     Ok(jit_entry_ptr)
 }
 
-/// Compile a stub for an ISEQ called by SendWithoutBlockDirect
+/// Compile a stub for an ISEQ called by SendDirect
 fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodePtr, CompileError> {
     let (mut asm, scratch_reg) = Assembler::new_with_scratch_reg();
     asm.new_block_without_id();
