@@ -625,10 +625,10 @@ pub enum SendFallbackReason {
     SendWithoutBlockNotOptimizedNeedPermission,
     SendWithoutBlockBopRedefined,
     SendWithoutBlockOperandsNotFixnum,
-    SendWithoutBlockDirectKeywordMismatch,
-    SendWithoutBlockDirectKeywordCountMismatch,
-    SendWithoutBlockDirectMissingKeyword,
-    SendWithoutBlockDirectTooManyKeywords,
+    SendDirectKeywordMismatch,
+    SendDirectKeywordCountMismatch,
+    SendDirectMissingKeyword,
+    SendDirectTooManyKeywords,
     SendPolymorphic,
     SendMegamorphic,
     SendNoProfiles,
@@ -686,10 +686,10 @@ impl Display for SendFallbackReason {
             SendNotOptimizedNeedPermission => write!(f, "Send: method private or protected and no FCALL"),
             SendWithoutBlockBopRedefined => write!(f, "SendWithoutBlock: basic operation was redefined"),
             SendWithoutBlockOperandsNotFixnum => write!(f, "SendWithoutBlock: operands are not fixnums"),
-            SendWithoutBlockDirectKeywordMismatch => write!(f, "SendWithoutBlockDirect: keyword mismatch"),
-            SendWithoutBlockDirectKeywordCountMismatch => write!(f, "SendWithoutBlockDirect: keyword count mismatch"),
-            SendWithoutBlockDirectMissingKeyword => write!(f, "SendWithoutBlockDirect: missing keyword"),
-            SendWithoutBlockDirectTooManyKeywords => write!(f, "SendWithoutBlockDirect: too many keywords for fixnum bitmask"),
+            SendDirectKeywordMismatch => write!(f, "SendDirect: keyword mismatch"),
+            SendDirectKeywordCountMismatch => write!(f, "SendDirect: keyword count mismatch"),
+            SendDirectMissingKeyword => write!(f, "SendDirect: missing keyword"),
+            SendDirectTooManyKeywords => write!(f, "SendDirect: too many keywords for fixnum bitmask"),
             SendPolymorphic => write!(f, "Send: polymorphic call site"),
             SendMegamorphic => write!(f, "Send: megamorphic call site"),
             SendNoProfiles => write!(f, "Send: no profile data available"),
@@ -958,7 +958,7 @@ pub enum Insn {
         kw_splat: bool,
     },
 
-    /// Optimized ISEQ call with a literal block
+    /// Optimized ISEQ call
     SendDirect {
         recv: InsnId,
         cd: *const rb_call_data,
@@ -966,18 +966,7 @@ pub enum Insn {
         iseq: IseqPtr,
         args: Vec<InsnId>,
         kw_bits: u32,
-        blockiseq: IseqPtr,
-        state: InsnId,
-    },
-
-    /// Optimized ISEQ call
-    SendWithoutBlockDirect {
-        recv: InsnId,
-        cd: *const rb_call_data,
-        cme: *const rb_callable_method_entry_t,
-        iseq: IseqPtr,
-        args: Vec<InsnId>,
-        kw_bits: u32,
+        blockiseq: Option<IseqPtr>,
         state: InsnId,
     },
 
@@ -1206,7 +1195,6 @@ impl Insn {
             Insn::InvokeSuperForward { .. } => effects::Any,
             Insn::InvokeBlock { .. } => effects::Any,
             Insn::SendDirect { .. } => effects::Any,
-            Insn::SendWithoutBlockDirect { .. } => effects::Any,
             Insn::InvokeBuiltin { .. } => effects::Any,
             Insn::EntryPoint { .. } => effects::Any,
             Insn::Return { .. } => effects::Any,
@@ -1461,13 +1449,6 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::SendDirect { recv, cd, iseq, args, blockiseq, .. } => {
                 write!(f, "SendDirect {recv}, {:p}, :{} ({:?})", self.ptr_map.map_ptr(blockiseq), ruby_call_method_name(*cd), self.ptr_map.map_ptr(iseq))?;
-                for arg in args {
-                    write!(f, ", {arg}")?;
-                }
-                Ok(())
-            }
-            Insn::SendWithoutBlockDirect { recv, cd, iseq, args, .. } => {
-                write!(f, "SendWithoutBlockDirect {recv}, :{} ({:?})", ruby_call_method_name(*cd), self.ptr_map.map_ptr(iseq))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
@@ -2286,15 +2267,6 @@ impl Function {
                 state,
                 reason,
             },
-            &SendWithoutBlockDirect { recv, cd, cme, iseq, ref args, kw_bits, state } => SendWithoutBlockDirect {
-                recv: find!(recv),
-                cd,
-                cme,
-                iseq,
-                args: find_vec!(args),
-                kw_bits,
-                state,
-            },
             &SendDirect { recv, cd, cme, iseq, ref args, kw_bits, blockiseq, state } => SendDirect {
                 recv: find!(recv),
                 cd,
@@ -2535,7 +2507,6 @@ impl Function {
             Insn::PutSpecialObject { .. } => types::BasicObject,
             Insn::SendWithoutBlock { .. } => types::BasicObject,
             Insn::SendDirect { .. } => types::BasicObject,
-            Insn::SendWithoutBlockDirect { .. } => types::BasicObject,
             Insn::Send { .. } => types::BasicObject,
             Insn::SendForward { .. } => types::BasicObject,
             Insn::InvokeSuper { .. } => types::BasicObject,
@@ -2702,7 +2673,7 @@ impl Function {
     }
 
     /// Prepare arguments for a direct send, handling keyword argument reordering and default synthesis.
-    /// Returns the (state, processed_args, kw_bits) to use for the SendWithoutBlockDirect instruction,
+    /// Returns the (state, processed_args, kw_bits) to use for the SendDirect instruction,
     /// or Err with the fallback reason if direct send isn't possible.
     fn prepare_direct_send_args(
         &mut self,
@@ -2747,7 +2718,7 @@ impl Function {
         if callee_keyword.is_null() {
             if !kwarg.is_null() {
                 // Caller is passing kwargs but callee doesn't expect them.
-                return Err(SendWithoutBlockDirectKeywordMismatch);
+                return Err(SendDirectKeywordMismatch);
             }
             // Neither caller nor callee have keywords - nothing to do
             return Ok((args.to_vec(), args.len(), 0));
@@ -2760,7 +2731,7 @@ impl Function {
         // When there are 31+ keywords, CRuby uses a hash instead of a fixnum bitmask
         // for kw_bits. Fall back to VM dispatch for this rare case.
         if callee_kw_count >= VM_KW_SPECIFIED_BITS_MAX as usize {
-            return Err(SendWithoutBlockDirectTooManyKeywords);
+            return Err(SendDirectTooManyKeywords);
         }
 
         let callee_kw_required = unsafe { (*callee_keyword).required_num } as usize;
@@ -2769,7 +2740,7 @@ impl Function {
 
         // Caller can't provide more keywords than callee expects (no **kwrest support yet).
         if caller_kw_count > callee_kw_count {
-            return Err(SendWithoutBlockDirectKeywordCountMismatch);
+            return Err(SendDirectKeywordCountMismatch);
         }
 
         // The keyword arguments are the last arguments in the args vector.
@@ -2799,7 +2770,7 @@ impl Function {
             if !found {
                 // Caller is passing an unknown keyword - this will raise ArgumentError.
                 // Fall back to VM dispatch to handle the error.
-                return Err(SendWithoutBlockDirectKeywordMismatch);
+                return Err(SendDirectKeywordMismatch);
             }
         }
 
@@ -2823,7 +2794,7 @@ impl Function {
             if !found {
                 // Required keyword not provided by caller which will raise an ArgumentError.
                 if i < callee_kw_required {
-                    return Err(SendWithoutBlockDirectMissingKeyword);
+                    return Err(SendDirectMissingKeyword);
                 }
 
                 // Optional keyword not provided - use default value
@@ -3001,7 +2972,7 @@ impl Function {
         }
     }
 
-    /// Rewrite eligible Send/SendWithoutBlock opcodes into SendDirect/SendWithoutBlockDirect
+    /// Rewrite eligible Send/SendWithoutBlock opcodes into SendDirect
     /// opcodes if we know the target ISEQ statically. This removes run-time method lookups and
     /// opens the door for inlining.
     /// Also try and inline constant caches, specialize object allocations, and more.
@@ -3075,7 +3046,7 @@ impl Function {
                             def_type = unsafe { get_cme_def_type(cme) };
                         }
 
-                        // If the call site info indicates that the `Function` has overly complex arguments, then do not optimize into a `SendWithoutBlockDirect`.
+                        // If the call site info indicates that the `Function` has overly complex arguments, then do not optimize into a `SendDirect`.
                         // Optimized methods(`VM_METHOD_TYPE_OPTIMIZED`) handle their own argument constraints (e.g., kw_splat for Proc call).
                         if def_type != VM_METHOD_TYPE_OPTIMIZED && unspecializable_call_type(flags) {
                             self.count_complex_call_features(block, flags);
@@ -3111,7 +3082,7 @@ impl Function {
                                 self.push_insn_id(block, insn_id); continue;
                             };
 
-                            let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state });
+                            let send_direct = self.push_insn(block, Insn::SendDirect { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state, blockiseq: None });
                             self.make_equal_to(insn_id, send_direct);
                         } else if def_type == VM_METHOD_TYPE_BMETHOD {
                             let procv = unsafe { rb_get_def_bmethod_proc((*cme).def) };
@@ -3154,7 +3125,7 @@ impl Function {
                                 self.push_insn_id(block, insn_id); continue;
                             };
 
-                            let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state });
+                            let send_direct = self.push_insn(block, Insn::SendDirect { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state, blockiseq: None });
                             self.make_equal_to(insn_id, send_direct);
                         } else if def_type == VM_METHOD_TYPE_IVAR && args.is_empty() {
                             // Check if we're accessing ivars of a Class or Module object as they require single-ractor mode.
@@ -3342,7 +3313,7 @@ impl Function {
                             def_type = unsafe { get_cme_def_type(cme) };
                         }
 
-                        // If the call site info indicates that the `Function` has overly complex arguments, then do not optimize into a `SendWithoutBlockDirect`.
+                        // If the call site info indicates that the `Function` has overly complex arguments, then do not optimize into a `SendDirect`.
                         // Optimized methods(`VM_METHOD_TYPE_OPTIMIZED`) handle their own argument constraints (e.g., kw_splat for Proc call).
                         if def_type != VM_METHOD_TYPE_OPTIMIZED && unspecializable_call_type(flags) {
                             self.count_complex_call_features(block, flags);
@@ -3385,7 +3356,7 @@ impl Function {
                                 iseq,
                                 args: processed_args,
                                 kw_bits,
-                                blockiseq,
+                                blockiseq: Some(blockiseq),
                                 state: send_state,
                             });
                             self.make_equal_to(insn_id, send_direct);
@@ -3606,15 +3577,16 @@ impl Function {
                             self.push_insn_id(block, insn_id); continue;
                         };
 
-                        // Use SendWithoutBlockDirect with the super method's CME and ISEQ.
-                        let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect {
+                        // Use SendDirect with the super method's CME and ISEQ.
+                        let send_direct = self.push_insn(block, Insn::SendDirect {
                             recv,
                             cd,
                             cme: super_cme,
                             iseq: super_iseq,
                             args: processed_args,
                             kw_bits,
-                            state: send_state
+                            state: send_state,
+                            blockiseq: None,
                         });
                         self.make_equal_to(insn_id, send_direct);
                     }
@@ -3632,7 +3604,7 @@ impl Function {
             for insn_id in old_insns {
                 match self.find(insn_id) {
                     // Reject block ISEQs to avoid autosplat and other block parameter complications.
-                    Insn::SendWithoutBlockDirect { recv, iseq, cd, args, state, .. } => {
+                    Insn::SendDirect { recv, iseq, cd, args, state, blockiseq: None, .. } => {
                         let call_info = unsafe { (*cd).ci };
                         let ci_flags = unsafe { vm_ci_flag(call_info) };
                         // .send call is not currently supported for builtins
@@ -4729,7 +4701,6 @@ impl Function {
             | &Insn::CCallVariadic { recv, ref args, state, .. }
             | &Insn::CCallWithFrame { recv, ref args, state, .. }
             | &Insn::SendDirect { recv, ref args, state, .. }
-            | &Insn::SendWithoutBlockDirect { recv, ref args, state, .. }
             | &Insn::InvokeBuiltin { recv, ref args, state, .. }
             | &Insn::InvokeSuper { recv, ref args, state, .. }
             | &Insn::InvokeSuperForward { recv, ref args, state, .. }
@@ -5390,7 +5361,6 @@ impl Function {
             // Instructions with recv and a Vec of Ruby objects
             Insn::SendWithoutBlock { recv, ref args, .. }
             | Insn::SendDirect { recv, ref args, .. }
-            | Insn::SendWithoutBlockDirect { recv, ref args, .. }
             | Insn::Send { recv, ref args, .. }
             | Insn::SendForward { recv, ref args, .. }
             | Insn::InvokeSuper { recv, ref args, .. }

@@ -478,9 +478,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::Snapshot { .. } => return Ok(()), // we don't need to do anything for this instruction at the moment
         &Insn::Send { cd, blockiseq, state, reason, .. } => gen_send(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::SendForward { cd, blockiseq, state, reason, .. } => gen_send_forward(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
-        Insn::SendDirect { cme, iseq, recv, args, kw_bits, blockiseq, state, .. } => gen_send_with_block_iseq_direct(cb, jit, asm, *cme, *iseq, opnd!(recv), opnds!(args), *kw_bits, *blockiseq, &function.frame_state(*state)),
+        Insn::SendDirect { cme, iseq, recv, args, kw_bits, blockiseq, state, .. } => gen_send_iseq_direct(cb, jit, asm, *cme, *iseq, opnd!(recv), opnds!(args), *kw_bits, &function.frame_state(*state), *blockiseq),
         &Insn::SendWithoutBlock { cd, state, reason, .. } => gen_send_without_block(jit, asm, cd, &function.frame_state(state), reason),
-        Insn::SendWithoutBlockDirect { cme, iseq, recv, args, kw_bits, state, .. } => gen_send_iseq_direct(cb, jit, asm, *cme, *iseq, opnd!(recv), opnds!(args), *kw_bits, &function.frame_state(*state), None),
         &Insn::InvokeSuper { cd, blockiseq, state, reason, .. } => gen_invokesuper(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::InvokeSuperForward { cd, blockiseq, state, reason, .. } => gen_invokesuperforward(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::InvokeBlock { cd, state, reason, .. } => gen_invokeblock(jit, asm, cd, &function.frame_state(state), reason),
@@ -1438,39 +1437,6 @@ fn gen_send_without_block(
     )
 }
 
-/// Compile a direct call to an ISEQ method with a literal block (`foo { ... }`).
-fn gen_send_with_block_iseq_direct(
-    cb: &mut CodeBlock,
-    jit: &mut JITState,
-    asm: &mut Assembler,
-    cme: *const rb_callable_method_entry_t,
-    iseq: IseqPtr,
-    recv: Opnd,
-    args: Vec<Opnd>,
-    kw_bits: u32,
-    blockiseq: IseqPtr,
-    state: &FrameState,
-) -> lir::Opnd {
-    // This mirrors vm_caller_setup_arg_block() in for the `blockiseq != NULL` case.
-    // The HIR specialization guards ensure we will only reach here for literal blocks,
-    // not &block forwarding, &:foo, etc. Thise are rejected in `type_specialize` by
-    // `unspecializable_call_type`.
-    let block_handler = gen_block_handler_specval(asm, blockiseq);
-
-    gen_send_iseq_direct(
-        cb,
-        jit,
-        asm,
-        cme,
-        iseq,
-        recv,
-        args,
-        kw_bits,
-        state,
-        Some(block_handler),
-    )
-}
-
 /// Compile a direct call to an ISEQ method.
 /// If `block_handler` is provided, it's used as the specval for the new frame (for forwarding blocks).
 /// Otherwise, `VM_BLOCK_HANDLER_NONE` is used.
@@ -1484,7 +1450,7 @@ fn gen_send_iseq_direct(
     args: Vec<Opnd>,
     kw_bits: u32,
     state: &FrameState,
-    block_handler: Option<Opnd>,
+    blockiseq: Option<IseqPtr>,
 ) -> lir::Opnd {
     gen_incr_counter(asm, Counter::iseq_optimized_send_count);
 
@@ -1499,6 +1465,12 @@ fn gen_send_iseq_direct(
 
     gen_spill_locals(jit, asm, state);
     gen_spill_stack(jit, asm, state);
+
+    // This mirrors vm_caller_setup_arg_block() in for the `blockiseq != NULL` case.
+    // The HIR specialization guards ensure we will only reach here for literal blocks,
+    // not &block forwarding, &:foo, etc. Thise are rejected in `type_specialize` by
+    // `unspecializable_call_type`.
+    let block_handler = blockiseq.map(|b| gen_block_handler_specval(asm, b));
 
     let (frame_type, specval) = if VM_METHOD_TYPE_BMETHOD == unsafe { get_cme_def_type(cme) } {
         // Extract EP from the Proc instance
@@ -2762,7 +2734,7 @@ fn function_stub_hit_body(cb: &mut CodeBlock, iseq_call: &IseqCallRef) -> Result
     Ok(jit_entry_ptr)
 }
 
-/// Compile a stub for an ISEQ called by SendWithoutBlockDirect
+/// Compile a stub for an ISEQ called by SendDirect
 fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodePtr, CompileError> {
     let (mut asm, scratch_reg) = Assembler::new_with_scratch_reg();
     asm.new_block_without_id();
