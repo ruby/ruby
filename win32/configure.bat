@@ -66,15 +66,18 @@ for /f "delims== tokens=1,*" %%I in ("%~1") do ((set "opt=%%I") && (set "arg=%%J
     set "var=%opt%"
     goto :name
   )
-  set "eq=="
+  set "target=%opt%"
+  echo>>%confargs%  "--target=%opt:$=$$%" \
+goto :loop ;
 :target
   if "%eq%" == "" (set "arg=%~1" & shift)
-  echo>> %config_make% target = %arg%
-  echo>>%confargs% "--target=%arg:$=$$%" \
-  if "%arg%" == "x64-mswin64" (
-    echo>> %config_make% TARGET_OS = mswin64
+  if "%arg%" == "" (
+    echo 1>&2 %configure%: missing argument for %opt%
+    exit /b 1
   )
-goto :loop
+  set "target=%arg%"
+  echo>>%confargs%  "--target=%arg:$=$$%" \
+goto :loop ;
 :program_name
   if "%eq%" == "" (set "arg=%~1" & shift)
   for /f "delims=- tokens=1,*" %I in ("%opt%") do set "var=%%J"
@@ -220,7 +223,7 @@ goto :loop ;
   echo   --with-ntver=XXXX       same as --with-ntver=_WIN32_WINNT_XXXX
   echo Note that '[1m=,;[m' need to be enclosed within double quotes in batch file command line.
   del %confargs% %config_make%
-goto :exit
+goto :EOF
 :unknown_opt
   (
     echo %configure%: unknown option %opt%
@@ -256,6 +259,7 @@ if "%debug_configure%" == "yes" (type %config_make%)
 
 nmake -al -f %WIN32DIR%/setup.mak "WIN32DIR=%WIN32DIR%" ^
     config_make=%config_make% ^
-    MAKEFILE=Makefile.new MAKEFILE_BACK=Makefile.old MAKEFILE_NEW=Makefile
-:exit
-@endlocal
+    MAKEFILE=Makefile.new MAKEFILE_BACK=Makefile.old MAKEFILE_NEW=Makefile ^
+    %target%
+set error=%ERRORLEVEL%
+if exist %config_make% del /q %config_make%
