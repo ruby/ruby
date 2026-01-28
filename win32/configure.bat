@@ -19,8 +19,7 @@ call set "WIN32DIR=%%WIN32DIR:/%~n0:/:=:/:%%"
 set "WIN32DIR=%WIN32DIR:~0,-3%"
 
 set configure=%~0
-set XINCFLAGS=
-set XLDFLAGS=
+set optdirs=
 set pathlist=
 set config_make=confargs~%RANDOM%.mak
 set confargs=%config_make:.mak=.sub%
@@ -156,7 +155,7 @@ goto :loop ;
 goto :loop ;
 :path
   if "%eq%" == "" (set "arg=%~1" & shift)
-  set pathlist=%pathlist%%arg%;
+  set "pathlist=%pathlist%%arg:\=/%;"
   echo>>%confargs%  "%opt%=%arg:$=$$%" \
 goto :loop ;
 :extstatic
@@ -193,14 +192,13 @@ goto :loop ;
     echo 1>&2 %configure%: missing argument for %opt%
     exit /b 1
   )
-  for %%I in (%arg:;= %) do (
-    set d=%%I
-    call pushd %%d:/=\%% && (
-      call set XINCFLAGS=%%XINCFLAGS%% -I%%CD:\=/%%/include
-      call set XLDFLAGS=%%XLDFLAGS%% -libpath:%%CD:\=/%%/lib
+  :optdir-loop
+  for /f "delims=; tokens=1,*" %%I in ("%arg%") do (set "d=%%I" & set "arg=%%J")
+    pushd %d:/=\% && (
+      set "optdirs=%optdirs%;%CD:\=/%"
       popd
     )
-  )
+  if not "%arg%" == "" goto :optdir-loop
 goto :loop ;
 :help
   echo Configuration:
@@ -231,18 +229,28 @@ goto :exit
   exit /b 1
 :end
 if "%debug_configure%" == "yes" (type %confargs%)
+if not "%optdirs%" == "" (echo>>%config_make% optdirs = %optdirs:~1%)
 (
+  echo.
   echo configure_args = \
   type %confargs%
   echo # configure_args
-  if NOT "%XINCFLAGS%" == "" echo XINCFLAGS = %XINCFLAGS%
-  if NOT "%XLDFLAGS%" == "" echo XLDFLAGS = %XLDFLAGS%
-  if NOT "%pathlist%" == "" (
+
+  echo.
+  echo !if "$(optdirs)" != ""
+  for %%I in ("$(optdirs:\=/)" "$(optdirs:/;=;)") do @echo optdirs = %%~I
+  echo XINCFLAGS = -I"$(optdirs:;=/include" -I")/include"
+  echo XLDFLAGS = -libpath:"$(optdirs:;=/lib" -libpath:")/lib"
+  echo !endif
+
+  if not "%pathlist%" == "" (
+    echo.
     call echo PATH = %%pathlist:;=/bin;%%$^(PATH^)
     call echo INCLUDE = %%pathlist:;=/include;%%$^(INCLUDE^)
     call echo LIB = %%pathlist:;=/lib;%%$^(LIB^)
   )
 ) >> %config_make%
+
 del %confargs%
 if "%debug_configure%" == "yes" (type %config_make%)
 
