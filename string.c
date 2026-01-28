@@ -1559,7 +1559,7 @@ rb_str_tmp_frozen_no_embed_acquire(VALUE orig)
     }
 
     RSTRING(str)->len = RSTRING(orig)->len;
-    RSTRING(str)->as.heap.aux.capa = capa;
+    RSTRING(str)->as.heap.aux.capa = capa + (TERM_LEN(orig) - TERM_LEN(str));
 
     return str;
 }
@@ -3135,7 +3135,7 @@ str_subseq(VALUE str, long beg, long len)
 
     const int termlen = TERM_LEN(str);
     if (!SHARABLE_SUBSTRING_P(beg, len, RSTRING_LEN(str))) {
-        str2 = rb_str_new(RSTRING_PTR(str) + beg, len);
+        str2 = rb_enc_str_new(RSTRING_PTR(str) + beg, len, rb_str_enc_get(str));
         RB_GC_GUARD(str);
         return str2;
     }
@@ -7814,7 +7814,7 @@ mapping_buffer_free(void *p)
     while (current_buffer) {
         previous_buffer = current_buffer;
         current_buffer  = current_buffer->next;
-        ruby_sized_xfree(previous_buffer, previous_buffer->capa);
+        ruby_sized_xfree(previous_buffer, offsetof(mapping_buffer, space) + previous_buffer->capa);
     }
 }
 

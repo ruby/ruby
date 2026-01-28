@@ -301,9 +301,24 @@ int ruby_rgengc_debug;
 #ifndef GC_ENABLE_LAZY_SWEEP
 # define GC_ENABLE_LAZY_SWEEP   1
 #endif
+
+#ifndef VERIFY_FREE_SIZE
+#if RUBY_DEBUG
+#define VERIFY_FREE_SIZE 1
+#else
+#define VERIFY_FREE_SIZE 0
+#endif
+#endif
+
+#if VERIFY_FREE_SIZE
+#undef CALC_EXACT_MALLOC_SIZE
+#define CALC_EXACT_MALLOC_SIZE 1
+#endif
+
 #ifndef CALC_EXACT_MALLOC_SIZE
 # define CALC_EXACT_MALLOC_SIZE 0
 #endif
+
 #if defined(HAVE_MALLOC_USABLE_SIZE) || CALC_EXACT_MALLOC_SIZE > 0
 # ifndef MALLOC_ALLOCATED_SIZE
 #  define MALLOC_ALLOCATED_SIZE 0
@@ -8255,6 +8270,11 @@ rb_gc_impl_free(void *objspace_ptr, void *ptr, size_t old_size)
     }
 #if CALC_EXACT_MALLOC_SIZE
     struct malloc_obj_info *info = (struct malloc_obj_info *)ptr - 1;
+#if VERIFY_FREE_SIZE
+    if (old_size && (old_size + sizeof(struct malloc_obj_info)) != info->size) {
+        rb_bug("buffer %p freed with size %lu, but was allocated with size %lu", ptr, old_size, info->size - sizeof(struct malloc_obj_info));
+    }
+#endif
     ptr = info;
     old_size = info->size;
 #endif
