@@ -212,6 +212,7 @@ make_counters! {
         exit_block_param_proxy_not_iseq_or_ifunc,
         exit_block_param_wb_required,
         exit_too_many_keyword_parameters,
+        exit_write_barrier_required,
     }
 
     // Send fallback counters that are summed as dynamic_send_count
@@ -560,6 +561,7 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         BlockParamProxyNotIseqOrIfunc => exit_block_param_proxy_not_iseq_or_ifunc,
         BlockParamWbRequired          => exit_block_param_wb_required,
         TooManyKeywordParameters      => exit_too_many_keyword_parameters,
+        WriteBarrierRequired          => exit_write_barrier_required,
         PatchPoint(Invariant::BOPRedefined { .. })
                                       => exit_patchpoint_bop_redefined,
         PatchPoint(Invariant::MethodRedefined { .. })
