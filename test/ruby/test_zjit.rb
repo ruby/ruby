@@ -452,6 +452,56 @@ class TestZJIT < Test::Unit::TestCase
     assert_compiles '-2', 'def test = (-2.9).to_i; test'
   end
 
+  def test_send_forwarded_block_arg_nil_then_non_nil
+    # Regression test: when a forwarded &block arg is profiled as nil, the nil
+    # block optimization must update the frame state to match the stripped args.
+    # Otherwise the saved SP is off by one, causing a stack consistency error
+    # when the guard side-exits for a non-nil block.
+    assert_runs ':ok', <<~RUBY, call_threshold: 2
+      def inner(callable = nil, &block)
+        callable || block
+      end
+
+      def outer(&block)
+        inner(&block)
+      end
+
+      100.times { outer }
+      result = outer { |x| x }
+      result.is_a?(Proc) ? :ok : :fail
+    RUBY
+  end
+
+  def test_send_forwarded_nil_block_arg_with_polymorphic_receiver
+    # Regression test: the nil block optimization strips the block arg from the
+    # frame state used to set up the callee frame, but the pre-call guards
+    # (receiver GuardType, method-redefinition PatchPoint) must keep using the
+    # original frame state that still has the block arg on the stack. Otherwise a
+    # guard side-exit re-executes the send with a stack that is missing the block
+    # arg slot, corrupting the pushed frame's EP (VM_ENV_FLAGS assertion failure).
+    # A polymorphic receiver forces the receiver GuardType to side-exit.
+    assert_runs ':ok', <<~RUBY, call_threshold: 2
+      class Base
+        def self.inner(model, name, &block)
+          block ? block.call : model
+        end
+        def self.outer(model, name, &block)
+          inner(model, name, &block)
+        end
+      end
+      class A < Base; end
+      class B < Base; end
+      class C < Base; end
+      class D < Base; end
+
+      1000.times do |i|
+        klass = [A, B, C, D][i % 4]
+        klass.outer(i, :n)
+      end
+      :ok
+    RUBY
+  end
+
   private
 
   # Assert that every method call in `test_script` can be compiled by ZJIT
