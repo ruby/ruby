@@ -5120,19 +5120,27 @@ all_string_result_p(const NODE *node)
 {
     if (!node) return FALSE;
     switch (nd_type(node)) {
-      case NODE_STR: case NODE_DSTR: case NODE_FILE:
+      case RB_STRING_NODE: case RB_INTERPOLATED_STRING_NODE: case RB_SOURCE_FILE_NODE:
         return TRUE;
-      case NODE_IF: case NODE_UNLESS:
-        if (!RNODE_IF(node)->nd_body || !RNODE_IF(node)->nd_else) return FALSE;
-        if (all_string_result_p(RNODE_IF(node)->nd_body))
-            return all_string_result_p(RNODE_IF(node)->nd_else);
+      case RB_IF_NODE: case RB_UNLESS_NODE:
+        if (!RB_NODE_IF(node)->statements || !RB_NODE_IF(node)->subsequent) return FALSE;
+        if (all_string_result_p(RB_NODE_IF(node)->statements))
+            return all_string_result_p(RB_NODE_IF(node)->subsequent);
         return FALSE;
-      case NODE_AND: case NODE_OR:
-        if (!RNODE_AND(node)->nd_2nd)
-            return all_string_result_p(RNODE_AND(node)->nd_1st);
-        if (!all_string_result_p(RNODE_AND(node)->nd_1st))
+      case RB_AND_NODE: case RB_OR_NODE:
+        if (!RB_NODE_AND(node)->right)
+            return all_string_result_p(RB_NODE_AND(node)->left);
+        if (!all_string_result_p(RB_NODE_AND(node)->left))
             return FALSE;
-        return all_string_result_p(RNODE_AND(node)->nd_2nd);
+        return all_string_result_p(RB_NODE_AND(node)->right);
+      case RB_STATEMENTS_NODE: {
+        const rb_node_list2_t *list = &RB_NODE_STATEMENTS(node)->body;
+        if (RB_NODE_LIST_LEN(list) == 1)
+            return all_string_result_p(list->nodes[0]);
+        return FALSE;
+      }
+      case RB_ELSE_NODE:
+        return all_string_result_p(RB_NODE_ELSE(node)->statements);
       default:
         return FALSE;
     }
@@ -5185,19 +5193,15 @@ flush_dstr_fragment(struct dstr_ctxt *args)
 static int
 compile_dstr_fragments_0(struct dstr_ctxt *args, const NODE *const node)
 {
-    const struct RNode_LIST *list = RNODE_DSTR(node)->nd_next;
-    rb_parser_string_t *str = RNODE_DSTR(node)->string;
+    const rb_node_list2_t *list = &RB_NODE_INTERPOLATED_STRING(node)->parts;
 
-    if (str) {
-        CHECK(append_dstr_fragment(args, node, str));
-    }
+    for (size_t i = 0; i < RB_NODE_LIST_LEN(list); i++) {
+        const NODE *const head = list->nodes[i];
 
-    while (list) {
-        const NODE *const head = list->nd_head;
-        if (nd_type_p(head, NODE_STR)) {
-            CHECK(append_dstr_fragment(args, node, RNODE_STR(head)->string));
+        if (nd_type_p(head, RB_STRING_NODE)) {
+            CHECK(append_dstr_fragment(args, node, RB_NODE_STRING(head)->unescaped));
         }
-        else if (nd_type_p(head, NODE_DSTR)) {
+        else if (nd_type_p(head, RB_INTERPOLATED_STRING_NODE)) {
             CHECK(compile_dstr_fragments_0(args, head));
         }
         else {
@@ -5206,8 +5210,8 @@ compile_dstr_fragments_0(struct dstr_ctxt *args, const NODE *const node)
             CHECK(COMPILE(args->ret, "each string", head));
             args->cnt++;
         }
-        list = (struct RNode_LIST *)list->nd_next;
     }
+
     return COMPILE_OK;
 }
 
@@ -5245,16 +5249,8 @@ static int
 compile_dstr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node)
 {
     int cnt;
-    if (!RNODE_DSTR(node)->nd_next) {
-        VALUE lit = rb_node_dstr_string_val(node);
-        ADD_INSN1(ret, node, dupstring, lit);
-        RB_OBJ_SET_SHAREABLE(lit);
-        RB_OBJ_WRITTEN(iseq, Qundef, lit);
-    }
-    else {
-        CHECK(compile_dstr_fragments(iseq, ret, node, &cnt, FALSE));
-        ADD_INSN1(ret, node, concatstrings, INT2FIX(cnt));
-    }
+    CHECK(compile_dstr_fragments(iseq, ret, node, &cnt, FALSE));
+    ADD_INSN1(ret, node, concatstrings, INT2FIX(cnt));
     return COMPILE_OK;
 }
 
@@ -5440,7 +5436,7 @@ compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
     RUBY_ASSERT(kw_arg_ptr != NULL);
     RUBY_ASSERT(flag != NULL);
 
-    rb_node_list2_t *list = &root_node->elements;
+    const rb_node_list2_t *list = &root_node->elements;
 
     if (RB_NODE_LIST_LEN(list)) {
         int seen_nodes = 0;
@@ -7231,7 +7227,7 @@ compile_args(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const rb_arguments_node_t 
     int stack_len = 0;
     bool splatted = false;
     NODE *node;
-    rb_node_list2_t *list = &nd_args->arguments;
+    const rb_node_list2_t *list = &nd_args->arguments;
 
     for (size_t i = 0; i < RB_NODE_LIST_LEN(list); i++) {
         node = list->nodes[i];
@@ -11688,7 +11684,7 @@ compile_shareable_literal_constant(rb_iseq_t *iseq, LINK_ANCHOR *ret, enum rb_pa
 
       case RB_ARRAY_NODE:{
         const rb_array_node_t *cast = RB_NODE_ARRAY(node);
-        rb_node_list2_t *list = &cast->elements;
+        const rb_node_list2_t *list = &cast->elements;
 
         if (RB_NODE_LIST_EMPTY_P(list)) {
             // NODE_ZLIST
@@ -11742,7 +11738,7 @@ compile_shareable_literal_constant(rb_iseq_t *iseq, LINK_ANCHOR *ret, enum rb_pa
       case RB_HASH_NODE:{
         // else
         const rb_hash_node_t *cast = RB_NODE_HASH(node);
-        rb_node_list2_t *list = &cast->elements;
+        const rb_node_list2_t *list = &cast->elements;
 
         for (size_t i = 0; i < RB_NODE_LIST_LEN(list); i++) {
             NODE *n = list->nodes[i];
@@ -12317,7 +12313,8 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         }
         break;
       }
-      case RB_SOURCE_FILE_NODE: {
+      case RB_SOURCE_FILE_NODE:
+      case RB_STRING_NODE: {
         debugp_param("nd_lit", get_string_value2(node));
         if (!popped) {
             VALUE lit = get_string_value2(node);
@@ -12342,6 +12339,23 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
             }
             RB_OBJ_WRITTEN(iseq, Qundef, lit);
         }
+        break;
+      }
+      case RB_INTERPOLATED_STRING_NODE: {
+        compile_dstr(iseq, ret, node);
+
+        if (popped) {
+            ADD_INSN(ret, node, pop);
+        }
+        break;
+      }
+
+      case RB_EMBEDDED_STATEMENTS_NODE: {
+        CHECK(compile_evstr(iseq, ret, RB_NODE_EMBEDDED_STATEMENTS(node)->statements, popped));
+        break;
+      }
+      case RB_EMBEDDED_VARIABLE_NODE: {
+        CHECK(compile_evstr(iseq, ret, RB_NODE_EMBEDDED_VARIABLE(node)->variable, popped));
         break;
       }
 
