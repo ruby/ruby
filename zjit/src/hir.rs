@@ -6926,7 +6926,12 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             let mut join_state = state.clone();
                             join_state.stack_pop_n(argc as usize)?;
                             queue.push_back((join_state, join_block, insn_idx, local_inval));
-                            fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::PolymorphicFallthrough });
+                            // In the fallthrough case, do a generic interpreter send and then join.
+                            let args = state.stack_pop_n(argc as usize)?;
+                            let recv = state.stack_pop()?;
+                            let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, state: exit_id, reason: Uncategorized(opcode) });
+                            state.stack_push(send);
+                            fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: state.as_args(self_param) }));
                             break;  // End the block
                         }
                     }

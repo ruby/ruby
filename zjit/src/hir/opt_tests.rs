@@ -6407,24 +6407,25 @@ mod hir_opt_tests {
           IfTrue v14, bb4(v8, v9, v9)
           v23:CBool = HasType v9, HeapObject[class_exact:C]
           IfTrue v23, bb5(v8, v9, v9)
-          SideExit PolymorphicFallthrough
+          v32:BasicObject = SendWithoutBlock v9, :foo # SendFallbackReason: Uncategorized(opt_send_without_block)
+          Jump bb3(v8, v9, v32)
         bb4(v15:BasicObject, v16:BasicObject, v17:BasicObject):
           v19:HeapObject[class_exact:C] = RefineType v17, HeapObject[class_exact:C]
           PatchPoint NoSingletonClass(C@0x1000)
           PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
           IncrCounter getivar_fallback_not_monomorphic
-          v43:BasicObject = GetIvar v19, :@foo
-          Jump bb3(v15, v16, v43)
+          v44:BasicObject = GetIvar v19, :@foo
+          Jump bb3(v15, v16, v44)
         bb5(v24:BasicObject, v25:BasicObject, v26:BasicObject):
           v28:HeapObject[class_exact:C] = RefineType v26, HeapObject[class_exact:C]
           PatchPoint NoSingletonClass(C@0x1000)
           PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
           IncrCounter getivar_fallback_not_monomorphic
-          v46:BasicObject = GetIvar v28, :@foo
-          Jump bb3(v24, v25, v46)
-        bb3(v33:BasicObject, v34:BasicObject, v35:BasicObject):
+          v47:BasicObject = GetIvar v28, :@foo
+          Jump bb3(v24, v25, v47)
+        bb3(v34:BasicObject, v35:BasicObject, v36:BasicObject):
           CheckInterrupts
-          Return v35
+          Return v36
         ");
     }
 
@@ -11467,26 +11468,28 @@ mod hir_opt_tests {
           IfTrue v14, bb4(v8, v9, v9)
           v23:CBool = HasType v9, HeapObject[class_exact:D]
           IfTrue v23, bb5(v8, v9, v9)
-          SideExit PolymorphicFallthrough
+          v32:BasicObject = SendWithoutBlock v9, :foo # SendFallbackReason: Uncategorized(opt_send_without_block)
+          Jump bb3(v8, v9, v32)
         bb4(v15:BasicObject, v16:BasicObject, v17:BasicObject):
           PatchPoint NoSingletonClass(C@0x1000)
           PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
           IncrCounter inline_iseq_optimized_send_count
-          v53:Fixnum[3] = Const Value(3)
-          Jump bb3(v15, v16, v53)
+          v54:Fixnum[3] = Const Value(3)
+          Jump bb3(v15, v16, v54)
         bb5(v24:BasicObject, v25:BasicObject, v26:BasicObject):
           PatchPoint NoSingletonClass(D@0x1038)
           PatchPoint MethodRedefined(D@0x1038, foo@0x1008, cme:0x1040)
           IncrCounter inline_iseq_optimized_send_count
-          v55:Fixnum[4] = Const Value(4)
-          Jump bb3(v24, v25, v55)
-        bb3(v33:BasicObject, v34:BasicObject, v35:Fixnum):
-          v38:Fixnum[2] = Const Value(2)
+          v56:Fixnum[4] = Const Value(4)
+          Jump bb3(v24, v25, v56)
+        bb3(v34:BasicObject, v35:BasicObject, v36:BasicObject):
+          v39:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1068, +@0x1070, cme:0x1078)
-          v58:Fixnum = FixnumAdd v35, v38
+          v59:Fixnum = GuardType v36, Fixnum
+          v60:Fixnum = FixnumAdd v59, v39
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v58
+          Return v60
         ");
     }
 
@@ -11517,7 +11520,8 @@ mod hir_opt_tests {
           IfTrue v14, bb4(v8, v9, v9)
           v23:CBool = HasType v9, Fixnum
           IfTrue v23, bb5(v8, v9, v9)
-          SideExit PolymorphicFallthrough
+          v32:BasicObject = SendWithoutBlock v9, :itself # SendFallbackReason: Uncategorized(opt_send_without_block)
+          Jump bb3(v8, v9, v32)
         bb4(v15:BasicObject, v16:BasicObject, v17:BasicObject):
           v19:HeapObject[class_exact:C] = RefineType v17, HeapObject[class_exact:C]
           PatchPoint NoSingletonClass(C@0x1000)
@@ -11529,9 +11533,9 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Integer@0x1038, itself@0x1008, cme:0x1010)
           IncrCounter inline_cfunc_optimized_send_count
           Jump bb3(v24, v25, v28)
-        bb3(v33:BasicObject, v34:BasicObject, v35:HeapObject|Fixnum):
+        bb3(v34:BasicObject, v35:BasicObject, v36:BasicObject):
           CheckInterrupts
-          Return v35
+          Return v36
         ");
     }
 }
