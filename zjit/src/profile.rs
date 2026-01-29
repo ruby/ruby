@@ -150,7 +150,6 @@ fn profile_block_handler(profiler: &mut Profiler, profile: &mut IseqProfile) {
     if types.is_empty() {
         types.resize(1, TypeDistribution::new());
     }
-
     let obj = profiler.peek_at_block_handler();
     let ty = ProfiledType::object(obj);
     VALUE::from(profiler.iseq).write_barrier(ty.class());
