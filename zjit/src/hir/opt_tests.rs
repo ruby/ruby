@@ -9513,7 +9513,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_no_inline_send_with_block_with_multiple_params() {
+    fn test_inline_send_with_block_with_multiple_params() {
         eval(r#"
             def callee = 123
             def test
@@ -9535,9 +9535,10 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, callee@0x1008, cme:0x1010)
           v18:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v19:BasicObject = SendDirect v18, 0x1038, :callee (0x1048)
+          IncrCounter inline_iseq_optimized_send_count
+          v21:Fixnum[123] = Const Value(123)
           CheckInterrupts
-          Return v19
+          Return v21
         ");
     }
 
