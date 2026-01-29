@@ -1396,6 +1396,8 @@ pub(crate) mod ids {
         name: self_              content: b"self"
         name: rb_ivar_get_at_no_ractor_check
         name: _shape_id
+        name: _env_data_index_flags
+        name: _env_data_index_specval
     }
 
     /// Get an CRuby `ID` to an interned string, e.g. a particular method name.

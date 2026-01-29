@@ -3875,7 +3875,7 @@ mod hir_opt_tests {
         eval("
             def test(&block) = tap(&block)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb0():
           EntryPoint interpreter
@@ -3886,11 +3886,15 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
-          GuardBlockParamProxy l0
-          v15:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1000))
-          v17:BasicObject = Send v8, 0x1008, :tap, v15 # SendFallbackReason: Uncategorized(send)
+          v14:CPtr = GetEP 0
+          v15:CInt64 = LoadField v14, :_env_data_index_flags@0x1000
+          v16:CInt64 = GuardBitNotSet v15, CUInt64(512)
+          v17:CInt64 = LoadField v14, :_env_data_index_specval@0x1001
+          v18:CInt64 = GuardBitSet v17, CUInt64(1)
+          v19:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
+          v21:BasicObject = Send v8, 0x1010, :tap, v19 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
-          Return v17
+          Return v21
         ");
     }
 
@@ -6520,9 +6524,9 @@ mod hir_opt_tests {
     fn test_do_not_optimize_send_with_block_forwarding() {
         eval(r#"
             def test(&block) = [].map(&block)
-            test; test
+            test { |x| x }; test { |x| x }
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb0():
           EntryPoint interpreter
@@ -6534,12 +6538,81 @@ mod hir_opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:ArrayExact = NewArray
-          GuardBlockParamProxy l0
-          v16:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1000))
+          v15:CPtr = GetEP 0
+          v16:CInt64 = LoadField v15, :_env_data_index_flags@0x1000
+          v17:CInt64 = GuardBitNotSet v16, CUInt64(512)
+          v18:CInt64 = LoadField v15, :_env_data_index_specval@0x1001
+          v19:CInt64 = GuardBitSet v18, CUInt64(1)
+          v20:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
           IncrCounter complex_arg_pass_caller_blockarg
-          v18:BasicObject = Send v13, 0x1008, :map, v16 # SendFallbackReason: Complex argument passing
+          v22:BasicObject = Send v13, 0x1010, :map, v20 # SendFallbackReason: Complex argument passing
           CheckInterrupts
-          Return v18
+          Return v22
+        ");
+    }
+
+    #[test]
+    fn test_replace_block_param_proxy_with_nil() {
+        eval(r#"
+            def test(&block) = [].map(&block)
+            test; test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :block, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v13:ArrayExact = NewArray
+          v15:CPtr = GetEP 0
+          v16:CInt64 = LoadField v15, :_env_data_index_flags@0x1000
+          v17:CInt64 = GuardBitNotSet v16, CUInt64(512)
+          v18:CInt64 = LoadField v15, :_env_data_index_specval@0x1001
+          v19:CInt64[0] = GuardBitEquals v18, CInt64(0)
+          v20:NilClass = Const Value(nil)
+          IncrCounter complex_arg_pass_caller_blockarg
+          v22:BasicObject = Send v13, 0x1008, :map, v20 # SendFallbackReason: Complex argument passing
+          CheckInterrupts
+          Return v22
+        ");
+    }
+
+    #[test]
+    fn test_replace_block_param_proxy_with_nil_nested() {
+        eval(r#"
+            def test(&block)
+              proc do
+                [].map(&block)
+              end
+            end
+            test; test
+        "#);
+        assert_snapshot!(hir_string_proc("test"), @"
+        fn block in test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:ArrayExact = NewArray
+          v12:CPtr = GetEP 1
+          v13:CInt64 = LoadField v12, :_env_data_index_flags@0x1000
+          v14:CInt64 = GuardBitNotSet v13, CUInt64(512)
+          v15:CInt64 = LoadField v12, :_env_data_index_specval@0x1001
+          v16:CInt64 = GuardBitSet v15, CUInt64(1)
+          v17:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
+          IncrCounter complex_arg_pass_caller_blockarg
+          v19:BasicObject = Send v10, 0x1010, :map, v17 # SendFallbackReason: Complex argument passing
+          CheckInterrupts
+          Return v19
         ");
     }
 
