@@ -494,7 +494,6 @@ pub enum SideExitReason {
     GuardType(Type),
     GuardTypeNot(Type),
     GuardShape(ShapeId),
-    PolymorphicFallthrough,
     ExpandArray,
     GuardNotFrozen,
     GuardNotShared,

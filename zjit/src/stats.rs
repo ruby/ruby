@@ -575,7 +575,6 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
                                       => exit_patchpoint_single_ractor_mode,
         PatchPoint(Invariant::NoSingletonClass { .. })
                                       => exit_patchpoint_no_singleton_class,
-        PolymorphicFallthrough => exit_polymorphic_fallthrough,
     }
 }
 
