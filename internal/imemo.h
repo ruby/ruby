@@ -94,7 +94,7 @@ struct vm_ifunc {
 struct rb_imemo_tmpbuf_struct {
     VALUE flags;
     VALUE *ptr; /* malloc'ed buffer */
-    size_t cnt; /* buffer size in VALUE */
+    size_t size; /* buffer size in bytes */
 };
 
 /*! MEMO

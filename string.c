@@ -1559,7 +1559,7 @@ rb_str_tmp_frozen_no_embed_acquire(VALUE orig)
     }
 
     RSTRING(str)->len = RSTRING(orig)->len;
-    RSTRING(str)->as.heap.aux.capa = capa;
+    RSTRING(str)->as.heap.aux.capa = capa + (TERM_LEN(orig) - TERM_LEN(str));
 
     return str;
 }
@@ -7814,7 +7814,7 @@ mapping_buffer_free(void *p)
     while (current_buffer) {
         previous_buffer = current_buffer;
         current_buffer  = current_buffer->next;
-        ruby_sized_xfree(previous_buffer, previous_buffer->capa);
+        ruby_sized_xfree(previous_buffer, offsetof(mapping_buffer, space) + previous_buffer->capa);
     }
 }
 
