@@ -3680,15 +3680,15 @@ impl Function {
                                 continue;
                             }
 
-                            let return_type = props.return_type;
-                            let elidable = props.elidable;
-                            // Filter for a leaf and GC free function
-                            if props.leaf && props.no_gc {
-                                fun.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
-                                let ccall = fun.push_insn(block, Insn::CCall { cfunc, recv, args, name, return_type, elidable });
-                                fun.make_equal_to(send_insn_id, ccall);
-                                continue;
-                            }
+                            // let return_type = props.return_type;
+                            // let elidable = props.elidable;
+                            // // Filter for a leaf and GC free function
+                            // if props.leaf && props.no_gc {
+                            //     fun.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
+                            //     let ccall = fun.push_insn(block, Insn::CCall { cfunc, recv, args, name, return_type, elidable });
+                            //     fun.make_equal_to(send_insn_id, ccall);
+                            //     continue;
+                            // }
 
                             match cfunc_argc {
                                 // C function with fixed argument count.
