@@ -748,8 +748,8 @@ fn gen_setlocal(jit: &mut JITState, asm: &mut Assembler, val: Opnd, val_type: Ty
         // TODO(Jacob): Figure out what modified `VM_ENV_FLAG_WB_REQUIRED`
         let ep = gen_get_ep(asm, level);
         let flags = Opnd::mem(VALUE_BITS, ep, SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32));
-        asm.test(flags, VM_ENV_FLAG_WB_REQUIRED.into());
-        asm.jnz(side_exit(jit, state, SideExitReason::WriteBarrierRequired));
+        // asm.test(flags, VM_ENV_FLAG_WB_REQUIRED.into());
+        // asm.jnz(side_exit(jit, state, SideExitReason::WriteBarrierRequired));
         // TODO(Jacob): Remove the write barrier check that is somehow buried in these next few lines
         // We're potentially writing a reference to an IMEMO/env object,
         // so take care of the write barrier with a function.

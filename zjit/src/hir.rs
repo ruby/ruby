@@ -6781,6 +6781,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_setlocal => {
                     let ep_offset = get_arg(pc, 0).as_u32();
                     let level = get_arg(pc, 1).as_u32();
+                    // TODO(Jacob): Add guard here
+                    // TODO(Jacob): Figure out if we should change ALL of the setlocals and what the differences are
                     fun.push_insn(block, Insn::SetLocal { val: state.stack_pop()?, ep_offset, level, state: exit_id });
                 }
                 YARVINSN_getblockparamproxy => {
