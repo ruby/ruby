@@ -333,6 +333,8 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                     };
 
                     gen_if_false(&mut asm, val_opnd, branch_edge, fall_through_edge);
+                    assert!(asm.current_block().insns.last().unwrap().is_terminator());
+
                     asm.set_current_block(fall_through_target);
 
                     let label = jit.get_label(&mut asm, fall_through_target, block_id);
@@ -356,6 +358,8 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                     };
 
                     gen_if_true(&mut asm, val_opnd, branch_edge, fall_through_edge);
+                    assert!(asm.current_block().insns.last().unwrap().is_terminator());
+
                     asm.set_current_block(fall_through_target);
 
                     let label = jit.get_label(&mut asm, fall_through_target, block_id);
@@ -368,6 +372,8 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                         args: target.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
                     };
                     gen_jump(&mut asm, branch_edge);
+                    assert!(asm.current_block().insns.last().unwrap().is_terminator());
+
                 },
                 _ => {
                     if let Err(last_snapshot) = gen_insn(cb, &mut jit, &mut asm, function, insn_id, &insn) {
@@ -382,8 +388,8 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                 }
             }
         }
-        // Make sure the last patch point has enough space to insert a jump
-        asm.pad_patch_point();
+        // Blocks should always end with control flow
+        assert!(asm.current_block().insns.last().unwrap().is_terminator());
     }
 
     // Generate code if everything can be compiled
