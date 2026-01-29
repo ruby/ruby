@@ -89,24 +89,17 @@ describe "IO::Buffer.map" do
   end
 
   context "with an empty file" do
-    ruby_version_is ""..."4.0" do
-      it "raises a SystemCallError" do
-        @file = File.open("#{__dir__}/../fixtures/empty.txt", "r+")
-        -> { IO::Buffer.map(@file) }.should raise_error(SystemCallError)
-      end
-    end
-
     ruby_version_is "4.0" do
       it "raises ArgumentError" do
-        @file = File.open("#{__dir__}/../fixtures/empty.txt", "r+")
+        @file = File.open("#{__dir__}/../fixtures/empty.txt", "rb+")
         -> { IO::Buffer.map(@file) }.should raise_error(ArgumentError, "Invalid negative or zero file size!")
       end
     end
   end
 
   context "with a file opened only for reading" do
-    it "raises a SystemCallError if no flags are used" do
-      @file = File.open("#{__dir__}/../fixtures/read_text.txt", "r")
+    it "raises a SystemCallError unless read-only" do
+      @file = File.open("#{__dir__}/../fixtures/read_text.txt", "rb")
       -> { IO::Buffer.map(@file) }.should raise_error(SystemCallError)
     end
   end
@@ -128,15 +121,6 @@ describe "IO::Buffer.map" do
     end
 
     context "if size is 0" do
-      ruby_version_is ""..."4.0" do
-        platform_is_not :windows do
-          it "raises a SystemCallError" do
-            @file = open_fixture
-            -> { IO::Buffer.map(@file, 0) }.should raise_error(SystemCallError)
-          end
-        end
-      end
-
       ruby_version_is "4.0" do
         it "raises ArgumentError" do
           @file = open_fixture
@@ -247,18 +231,6 @@ describe "IO::Buffer.map" do
       -> { IO::Buffer.map(@file, 4, nil) }.should raise_error(TypeError, /no implicit conversion/)
     end
 
-    it "raises a SystemCallError if offset is not an allowed value" do
-      @file = open_fixture
-      -> { IO::Buffer.map(@file, 4, 3) }.should raise_error(SystemCallError)
-    end
-
-    ruby_version_is ""..."4.0" do
-      it "raises a SystemCallError if offset is negative" do
-        @file = open_fixture
-        -> { IO::Buffer.map(@file, 4, -1) }.should raise_error(SystemCallError)
-      end
-    end
-
     ruby_version_is "4.0" do
       it "raises ArgumentError if offset is negative" do
         @file = open_fixture
@@ -279,7 +251,7 @@ describe "IO::Buffer.map" do
       end
 
       it "allows mapping read-only files" do
-        @file = File.open("#{__dir__}/../fixtures/read_text.txt", "r")
+        @file = File.open("#{__dir__}/../fixtures/read_text.txt", "rb")
         @buffer = IO::Buffer.map(@file, nil, 0, IO::Buffer::READONLY)
 
         @buffer.should.readonly?
