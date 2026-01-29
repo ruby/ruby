@@ -557,7 +557,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::GetLocal { ep_offset, level, use_sp, .. } => gen_getlocal(asm, ep_offset, level, use_sp),
         &Insn::IsBlockParamModified { level } => gen_is_block_param_modified(asm, level),
         &Insn::GetBlockParam { ep_offset, level, state } => gen_getblockparam(jit, asm, ep_offset, level, &function.frame_state(state)),
-        &Insn::SetLocal { val, ep_offset, level, state } => no_output!(gen_setlocal(jit, asm, opnd!(val), function.type_of(val), ep_offset, level, &function.frame_state(state))),
+        &Insn::SetLocal { val, ep_offset, level, state } => no_output!(gen_setlocal(asm, opnd!(val), function.type_of(val), ep_offset, level, &function.frame_state(state))),
         Insn::GetConstantPath { ic, state } => gen_get_constant_path(jit, asm, *ic, &function.frame_state(*state)),
         Insn::GetClassVar { id, ic, state } => gen_getclassvar(jit, asm, *id, *ic, &function.frame_state(*state)),
         Insn::SetClassVar { id, val, ic, state } => no_output!(gen_setclassvar(jit, asm, *id, opnd!(val), *ic, &function.frame_state(*state))),
@@ -730,7 +730,7 @@ fn gen_getlocal(asm: &mut Assembler, local_ep_offset: u32, level: u32, use_sp: b
 /// Set a local variable from a higher scope or the heap. `local_ep_offset` is in number of VALUEs.
 /// We generate this instruction with level=0 only when the local variable is on the heap, so we
 /// can't optimize the level=0 case using the SP register.
-fn gen_setlocal(jit: &mut JITState, asm: &mut Assembler, val: Opnd, val_type: Type, local_ep_offset: u32, level: u32, state: &FrameState) {
+fn gen_setlocal(asm: &mut Assembler, val: Opnd, val_type: Type, local_ep_offset: u32, level: u32, state: &FrameState) {
     let local_ep_offset = c_int::try_from(local_ep_offset).unwrap_or_else(|_| panic!("Could not convert local_ep_offset {local_ep_offset} to i32"));
     if level > 0 {
         gen_incr_counter(asm, Counter::vm_write_to_parent_iseq_local_count);
