@@ -1913,7 +1913,26 @@ rb_mod_eqq(VALUE mod, VALUE arg)
 
 /*
  * call-seq:
- *   mod <= other   ->  true, false, or nil
+ *   self <= other -> true, false, or nil
+ *
+ * Compares +self+ and +other+ with respect to ancestry and inclusion.
+ *
+ * Returns +nil+ if there is no such relationship between the two:
+ *
+ *   Array <= Hash       # => nil
+ *
+ * Otherwise, returns +true+ if +other+ is an ancestor of +self+,
+ * or if +self+ includes +other+,
+ * or if the two are the same:
+ *
+ *   File  <= IO         # => true  # IO is an ancestor of File.
+ *   Array <= Enumerable # => true  # Array includes Enumerable.
+ *   Array <= Array      # => true
+ *
+ * Otherwise, returns +false+:
+ *
+ *   IO         <= File  # => false
+ *   Enumerable <= Array # => false
  *
  * Returns +true+ if +self+ is a descendant of +other+
  * (+self+ is a subclass of +other+ or +self+ includes +other+) or
@@ -2011,7 +2030,9 @@ rb_mod_lt(VALUE mod, VALUE arg)
 
 /*
  * call-seq:
- *   mod >= other   ->  true, false, or nil
+ *   self >= other -> true, false, or nil
+ *
+ * Compares +self+ and +other+ with respect to ancestry and inclusion.
  *
  * Returns +true+ if +self+ is an ancestor of +other+
  * (+self+ is a superclass of +other+ or +self+ is included in +other+) or
