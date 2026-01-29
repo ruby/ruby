@@ -2930,7 +2930,7 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
           v31:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v8, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v32:BasicObject = SendDirect v31, 0x1038, :foo (0x1048)
+          IncrCounter inline_iseq_optimized_send_count
           v20:BasicObject = GetLocal :a, l0, EP@3
           v24:BasicObject = GetLocal :a, l0, EP@3
           CheckInterrupts
@@ -9449,6 +9449,122 @@ mod hir_opt_tests {
           IncrCounter inline_iseq_optimized_send_count
           CheckInterrupts
           Return v20
+        ");
+    }
+
+    #[test]
+    fn test_inline_send_with_block_with_no_params() {
+        eval(r#"
+            def callee = 123
+            def test
+              callee do
+              end
+            end
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint NoSingletonClass(Object@0x1000)
+          PatchPoint MethodRedefined(Object@0x1000, callee@0x1008, cme:0x1010)
+          v18:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          IncrCounter inline_iseq_optimized_send_count
+          v21:Fixnum[123] = Const Value(123)
+          CheckInterrupts
+          Return v21
+        ");
+    }
+
+    #[test]
+    fn test_inline_send_with_block_with_one_param() {
+        eval(r#"
+            def callee = 123
+            def test
+              callee do |_|
+              end
+            end
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint NoSingletonClass(Object@0x1000)
+          PatchPoint MethodRedefined(Object@0x1000, callee@0x1008, cme:0x1010)
+          v18:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          IncrCounter inline_iseq_optimized_send_count
+          v21:Fixnum[123] = Const Value(123)
+          CheckInterrupts
+          Return v21
+        ");
+    }
+
+    #[test]
+    fn test_no_inline_send_with_block_with_multiple_params() {
+        eval(r#"
+            def callee = 123
+            def test
+              callee do |_a, _b|
+              end
+            end
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint NoSingletonClass(Object@0x1000)
+          PatchPoint MethodRedefined(Object@0x1000, callee@0x1008, cme:0x1010)
+          v18:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v19:BasicObject = SendDirect v18, 0x1038, :callee (0x1048)
+          CheckInterrupts
+          Return v19
+        ");
+    }
+
+    #[test]
+    fn test_no_inline_send_with_symbol_block() {
+        eval(r#"
+            def callee = 123
+            public def the_block = 456
+            def test
+              callee(&:the_block)
+            end
+            puts test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:5:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:StaticSymbol[:the_block] = Const Value(VALUE(0x1000))
+          v13:BasicObject = Send v6, 0x1008, :callee, v11 # SendFallbackReason: Uncategorized(send)
+          CheckInterrupts
+          Return v13
         ");
     }
 

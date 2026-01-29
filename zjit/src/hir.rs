@@ -3604,12 +3604,18 @@ impl Function {
             for insn_id in old_insns {
                 match self.find(insn_id) {
                     // Reject block ISEQs to avoid autosplat and other block parameter complications.
-                    Insn::SendDirect { recv, iseq, cd, args, state, blockiseq: None, .. } => {
+                    Insn::SendDirect { recv, iseq, cd, args, state, blockiseq, .. } => {
                         let call_info = unsafe { (*cd).ci };
                         let ci_flags = unsafe { vm_ci_flag(call_info) };
                         // .send call is not currently supported for builtins
                         if ci_flags & VM_CALL_OPT_SEND != 0 {
                             self.push_insn_id(block, insn_id); continue;
+                        }
+                        if let Some(blockiseq) = blockiseq {
+                            // Avoid autosplat by bailing out if the blockiseq has more than one parameter
+                            if unsafe { rb_get_iseq_body_param_size(blockiseq) } > 1 {
+                                self.push_insn_id(block, insn_id); continue;
+                            }
                         }
                         let Some(value) = iseq_get_return_value(iseq, None, ci_flags) else {
                             self.push_insn_id(block, insn_id); continue;
