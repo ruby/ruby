@@ -3643,8 +3643,10 @@ impl Function {
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
                 match self.find(insn_id) {
-                    // Reject block ISEQs to avoid autosplat and other block parameter complications.
-                    Insn::SendDirect { recv, iseq, cd, args, state, blockiseq: None, .. } => {
+                    // We can inline SendDirect with blockiseq because we are prohibiting `yield`
+                    // and `.call`, which would trigger autosplat. We only inline constants and
+                    // variables and builtin calls.
+                    Insn::SendDirect { recv, iseq, cd, args, state, .. } => {
                         let call_info = unsafe { (*cd).ci };
                         let ci_flags = unsafe { vm_ci_flag(call_info) };
                         // .send call is not currently supported for builtins
