@@ -480,7 +480,17 @@ module Prism
 
       # Create a new Translation::Ripper object with the given source.
       def initialize(source, filename = "(ripper)", lineno = 1)
-        @source = source
+        if source.is_a?(IO)
+          @source = source.read
+        elsif source.respond_to?(:gets)
+          @source = +""
+          while line = source.gets
+            @source << line
+          end
+        else
+          @source = source.to_str
+        end
+
         @filename = filename
         @lineno = lineno
         @column = 0

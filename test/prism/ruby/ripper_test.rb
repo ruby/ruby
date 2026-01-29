@@ -145,6 +145,36 @@ module Prism
       assert_equal(Ripper.tokenize(source), Translation::Ripper.tokenize(source))
     end
 
+    def test_sexp_coercion
+      string_like = Object.new
+      def string_like.to_str
+        "a"
+      end
+      assert_equal Ripper.sexp(string_like), Translation::Ripper.sexp(string_like)
+
+      File.open(__FILE__) do |file1|
+        File.open(__FILE__) do |file2|
+          assert_equal Ripper.sexp(file1), Translation::Ripper.sexp(file2)
+        end
+      end
+
+      File.open(__FILE__) do |file1|
+        File.open(__FILE__) do |file2|
+          object1_with_gets = Object.new
+          object1_with_gets.define_singleton_method(:gets) do
+            file1.gets
+          end
+
+          object2_with_gets = Object.new
+          object2_with_gets.define_singleton_method(:gets) do
+            file2.gets
+          end
+
+          assert_equal Ripper.sexp(object1_with_gets), Translation::Ripper.sexp(object2_with_gets)
+        end
+      end
+    end
+
     # Check that the hardcoded values don't change without us noticing.
     def test_internals
       actual = Translation::Ripper.constants.select { |name| name.start_with?("EXPR_") }.sort
