@@ -11419,9 +11419,8 @@ mod hir_opt_tests {
 
         let hir = hir_string_proc("MyArray.new.method(:length)");
         assert!(!hir.contains("InvokeSuper "), "Expected unoptimized InvokeSuper but got:\n{hir}");
-        assert!(hir.contains("CCallWithFrame"), "Should optimize to CCallWithFrame for non-variadic cfunc:\n{hir}");
 
-        assert_snapshot!(hir, @"
+        assert_snapshot!(hir, @r"
         fn length@<compiled>:4:
         bb0():
           EntryPoint interpreter
@@ -11432,13 +11431,49 @@ mod hir_opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint MethodRedefined(Array@0x1000, length@0x1008, cme:0x1010)
-          v17:CPtr = GetLEP
-          GuardSuperMethodEntry v17, 0x1038
-          v19:RubyValue = GetBlockHandler v17
-          v20:FalseClass = GuardBitEquals v19, Value(false)
-          v21:BasicObject = CCallWithFrame v6, :Array#length@0x1040
+          v20:CPtr = GetLEP
+          GuardSuperMethodEntry v20, 0x1038
+          v22:RubyValue = GetBlockHandler v20
+          v23:FalseClass = GuardBitEquals v22, Value(false)
+          v16:Array = GuardType v6, Array
+          v17:CInt64 = ArrayLength v16
+          v18:Fixnum = BoxFixnum v17
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v21
+          Return v18
+        ");
+    }
+
+    #[test]
+    fn test_inline_invokesuper_to_basicobject_initialize() {
+        eval("
+            class C
+              def initialize
+                super
+              end
+            end
+
+            C.new
+        ");
+        assert_snapshot!(hir_string_proc("C.instance_method(:initialize)"), @r"
+        fn initialize@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint MethodRedefined(BasicObject@0x1000, initialize@0x1008, cme:0x1010)
+          v18:CPtr = GetLEP
+          GuardSuperMethodEntry v18, 0x1038
+          v20:RubyValue = GetBlockHandler v18
+          v21:FalseClass = GuardBitEquals v20, Value(false)
+          v16:NilClass = Const Value(nil)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v16
         ");
     }
 

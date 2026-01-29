@@ -3653,6 +3653,31 @@ impl Function {
                             let cfunc_argc = unsafe { get_mct_argc(cfunc) };
                             let cfunc_ptr = unsafe { get_mct_func(cfunc) }.cast();
 
+                            let props = ZJITState::get_method_annotations().get_cfunc_properties(super_cme);
+                            // TODO(max): Count
+                            // if props.is_none() && get_option!(stats) {
+                            //     count_not_annotated_cfunc(self, block, super_cme);
+                            // }
+                            let props = props.unwrap_or_default();
+
+                            // Try inlining the cfunc into HIR
+                            let tmp_block = self.new_block(u32::MAX);
+                            if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args, state) {
+                                // Copy contents of tmp_block to block
+                                assert_ne!(block, tmp_block);
+                                emit_super_call_guards(self, block, super_cme, current_cme, mid, state);
+                                let insns = std::mem::take(&mut self.blocks[tmp_block.0].insns);
+                                self.blocks[block.0].insns.extend(insns);
+                                self.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
+                                self.make_equal_to(insn_id, replacement);
+                                if self.type_of(replacement).bit_equal(types::Any) {
+                                    // Not set yet; infer type
+                                    self.insn_types[replacement.0] = self.infer_type(replacement);
+                                }
+                                self.remove_block(tmp_block);
+                                continue;
+                            }
+
                             match cfunc_argc {
                                 // C function with fixed argument count.
                                 0.. => {
