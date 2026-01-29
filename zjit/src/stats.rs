@@ -212,7 +212,6 @@ make_counters! {
         exit_block_param_proxy_not_iseq_or_ifunc,
         exit_block_param_wb_required,
         exit_too_many_keyword_parameters,
-        exit_polymorphic_fallthrough,
     }
 
     // Send fallback counters that are summed as dynamic_send_count
