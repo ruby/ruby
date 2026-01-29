@@ -2126,28 +2126,52 @@ static VALUE rb_mod_initialize_exec(VALUE module);
 
 /*
  *  call-seq:
- *    Module.new                  -> mod
- *    Module.new {|mod| block }   -> mod
+ *    Module.new -> new_module
+ *    Module.new {|module| ... } -> new_module
  *
- *  Creates a new anonymous module. If a block is given, it is passed
- *  the module object, and the block is evaluated in the context of this
- *  module like #module_eval.
+ *  Returns a new anonymous module.
  *
- *     fred = Module.new do
- *       def meth1
- *         "hello"
- *       end
- *       def meth2
- *         "bye"
- *       end
- *     end
- *     a = "my string"
- *     a.extend(fred)   #=> "my string"
- *     a.meth1          #=> "hello"
- *     a.meth2          #=> "bye"
+ *  The module may be assigned to a name,
+ *  which should be a constant name
+ *  in capitalized {camel case}[https://en.wikipedia.org/wiki/Camel_case]
+ *  (e.g., +MyModule+, not +MY_MODULE+).
  *
- *  Assign the module to a constant (name starting uppercase) if you
- *  want to treat it like a regular module.
+ *  With no block given, returns the new module.
+ *
+ *    MyModule = Module.new
+ *    MyModule.class # => Module
+ *    MyModule.name  # => "MyModule"
+ *
+ *  With a block given, calls the block with the new (not yet named) module:
+ *
+ *    MyModule = Module.new {|m| p [m.class, m.name] }
+ *    # => MyModule
+ *    MyModule.class # => Module
+      MyModule.name  # => "MyModule"
+ *
+ *  Output (from the block):
+ *
+ *    [Module, nil]
+ *
+ *  The block may define methods and constants for the module:
+ *
+ *    MyModule = Module.new do |m|
+ *      MY_CONSTANT = "#{MyModule} constant value"
+ *      def self.method1 = "#{MyModule} first method (singleton)"
+ *      def method2 =      "#{MyModule} Second method (instance)"
+ *    end
+ *    MyModule.method1 # => "MyModule first method (singleton)"
+ *    class Foo
+ *      include MyModule
+ *      def speak
+ *        MY_CONSTANT
+ *      end
+ *    end
+ *    foo = Foo.new
+ *    foo.method2      # => "MyModule Second method (instance)"
+ *    foo.speak
+ *    # => "MyModule constant value"
+ *
  */
 
 static VALUE
