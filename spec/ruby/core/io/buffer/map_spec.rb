@@ -105,6 +105,7 @@ describe "IO::Buffer.map" do
       it "raises ArgumentError" do
         file_name = tmp("empty.txt")
         @file = File.open(file_name, "wb+")
+        @tmp_files << file_name
         -> { IO::Buffer.map(@file) }.should raise_error(ArgumentError, "Invalid negative or zero file size!")
       end
     end
