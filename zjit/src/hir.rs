@@ -1022,9 +1022,9 @@ pub enum Insn {
     /// Side-exit if val is not the expected Const.
     GuardBitEquals { val: InsnId, expected: Const, reason: SideExitReason, state: InsnId },
     /// Side-exit if (val & mask) == 0
-    GuardBitSet { val: InsnId, mask: Const, reason: SideExitReason, state: InsnId },
+    GuardAnyBitSet { val: InsnId, mask: Const, reason: SideExitReason, state: InsnId },
     /// Side-exit if (val & mask) != 0
-    GuardBitNotSet { val: InsnId, mask: Const, reason: SideExitReason, state: InsnId },
+    GuardNoBitsSet { val: InsnId, mask: Const, reason: SideExitReason, state: InsnId },
     /// Side-exit if val doesn't have the expected shape.
     GuardShape { val: InsnId, shape: ShapeId, state: InsnId },
     /// Side-exit if val is frozen. Does *not* check if the val is an immediate; assumes that it is
@@ -1225,8 +1225,8 @@ impl Insn {
             Insn::GuardType { .. } => effects::Any,
             Insn::GuardTypeNot { .. } => effects::Any,
             Insn::GuardBitEquals { .. } => effects::Any,
-            Insn::GuardBitSet { .. } => effects::Any,
-            Insn::GuardBitNotSet { .. } => effects::Any,
+            Insn::GuardAnyBitSet { .. } => effects::Any,
+            Insn::GuardNoBitsSet { .. } => effects::Any,
             Insn::GuardShape { .. } => effects::Any,
             Insn::GuardNotFrozen { .. } => effects::Any,
             Insn::GuardNotShared { .. } => effects::Any,
@@ -1547,8 +1547,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::RefineType { val, new_type, .. } => { write!(f, "RefineType {val}, {}", new_type.print(self.ptr_map)) },
             Insn::GuardTypeNot { val, guard_type, .. } => { write!(f, "GuardTypeNot {val}, {}", guard_type.print(self.ptr_map)) },
             Insn::GuardBitEquals { val, expected, .. } => { write!(f, "GuardBitEquals {val}, {}", expected.print(self.ptr_map)) },
-            Insn::GuardBitSet { val, mask, .. } => { write!(f, "GuardBitSet {val}, {}", mask.print(self.ptr_map)) },
-            Insn::GuardBitNotSet { val, mask, .. } => { write!(f, "GuardBitNotSet {val}, {}", mask.print(self.ptr_map)) },
+            Insn::GuardAnyBitSet { val, mask, .. } => { write!(f, "GuardBitSet {val}, {}", mask.print(self.ptr_map)) },
+            Insn::GuardNoBitsSet { val, mask, .. } => { write!(f, "GuardBitNotSet {val}, {}", mask.print(self.ptr_map)) },
             &Insn::GuardShape { val, shape, .. } => { write!(f, "GuardShape {val}, {:p}", self.ptr_map.map_shape(shape)) },
             Insn::GuardNotFrozen { recv, .. } => write!(f, "GuardNotFrozen {recv}"),
             Insn::GuardNotShared { recv, .. } => write!(f, "GuardNotShared {recv}"),
@@ -2228,8 +2228,8 @@ impl Function {
             &GuardType { val, guard_type, state } => GuardType { val: find!(val), guard_type, state },
             &GuardTypeNot { val, guard_type, state } => GuardTypeNot { val: find!(val), guard_type, state },
             &GuardBitEquals { val, expected, reason, state } => GuardBitEquals { val: find!(val), expected, reason, state },
-            &GuardBitSet { val, mask, reason, state } => GuardBitSet { val: find!(val), mask, reason, state },
-            &GuardBitNotSet { val, mask, reason, state } => GuardBitNotSet { val: find!(val), mask, reason, state },
+            &GuardAnyBitSet { val, mask, reason, state } => GuardAnyBitSet { val: find!(val), mask, reason, state },
+            &GuardNoBitsSet { val, mask, reason, state } => GuardNoBitsSet { val: find!(val), mask, reason, state },
             &GuardShape { val, shape, state } => GuardShape { val: find!(val), shape, state },
             &GuardNotFrozen { recv, state } => GuardNotFrozen { recv: find!(recv), state },
             &GuardNotShared { recv, state } => GuardNotShared { recv: find!(recv), state },
@@ -2488,8 +2488,8 @@ impl Function {
             Insn::RefineType { val, new_type, .. } => self.type_of(*val).intersection(*new_type),
             Insn::GuardTypeNot { .. } => types::BasicObject,
             Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_const(*expected)),
-            Insn::GuardBitSet { val, .. } => self.type_of(*val),
-            Insn::GuardBitNotSet { val, .. } => self.type_of(*val),
+            Insn::GuardAnyBitSet { val, .. } => self.type_of(*val),
+            Insn::GuardNoBitsSet { val, .. } => self.type_of(*val),
             Insn::GuardShape { val, .. } => self.type_of(*val),
             Insn::GuardNotFrozen { recv, .. } | Insn::GuardNotShared { recv, .. } => self.type_of(*recv),
             Insn::GuardLess { left, .. } => self.type_of(*left),
@@ -2663,8 +2663,8 @@ impl Function {
             | Insn::GuardTypeNot { val, .. }
             | Insn::GuardShape { val, .. }
             | Insn::GuardBitEquals { val, .. }
-            | Insn::GuardBitSet { val, .. }
-            | Insn::GuardBitNotSet { val, .. } => self.chase_insn(val),
+            | Insn::GuardAnyBitSet { val, .. }
+            | Insn::GuardNoBitsSet { val, .. } => self.chase_insn(val),
             | Insn::RefineType { val, .. } => self.chase_insn(val),
             _ => id,
         }
@@ -4538,8 +4538,8 @@ impl Function {
             | &Insn::GuardType { val, state, .. }
             | &Insn::GuardTypeNot { val, state, .. }
             | &Insn::GuardBitEquals { val, state, .. }
-            | &Insn::GuardBitSet { val, state, .. }
-            | &Insn::GuardBitNotSet { val, state, .. }
+            | &Insn::GuardAnyBitSet { val, state, .. }
+            | &Insn::GuardNoBitsSet { val, state, .. }
             | &Insn::GuardShape { val, state, .. }
             | &Insn::GuardNotFrozen { recv: val, state }
             | &Insn::GuardNotShared { recv: val, state }
@@ -5464,8 +5464,8 @@ impl Function {
                     Const::CPtr(_) => self.assert_subtype(insn_id, val, types::CPtr),
                 }
             }
-            Insn::GuardBitSet { val, mask, .. }
-            | Insn::GuardBitNotSet { val, mask, .. } => {
+            Insn::GuardAnyBitSet { val, mask, .. }
+            | Insn::GuardNoBitsSet { val, mask, .. } => {
                 match mask {
                     Const::Value(_) => self.assert_subtype(insn_id, val, types::RubyValue),
                     Const::CInt8(_) | Const::CInt16(_) | Const::CInt32(_) | Const::CInt64(_) |
@@ -6582,7 +6582,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     let ep = fun.push_insn(block, Insn::GetEP { level });
                     let flags = fun.push_insn(block, Insn::LoadField { recv: ep, id: ID!(_env_data_index_flags), offset: SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32), return_type: types::CInt64 });
-                    fun.push_insn(block, Insn::GuardBitNotSet { val: flags, mask: Const::CInt64(VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into()), reason: SideExitReason::BlockParamProxyModified, state: exit_id });
+                    fun.push_insn(block, Insn::GuardNoBitsSet { val: flags, mask: Const::CInt64(VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into()), reason: SideExitReason::BlockParamProxyModified, state: exit_id });
 
                     let block_handler = fun.push_insn(block, Insn::LoadField { recv: ep, id: ID!(_env_data_index_specval), offset: SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL, return_type: types::CInt64 });
 
@@ -6600,7 +6600,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             const _: () = assert!(RUBY_SYMBOL_FLAG & 1 == 0, "guard below rejects symbol block handlers");
 
                             // Bail out if the block handler is neither ISEQ nor ifunc
-                            fun.push_insn(block, Insn::GuardBitSet { val: block_handler, mask: Const::CInt64(0x1), reason: SideExitReason::BlockParamProxyNotIseqOrIfunc, state: exit_id });
+                            fun.push_insn(block, Insn::GuardAnyBitSet { val: block_handler, mask: Const::CInt64(0x1), reason: SideExitReason::BlockParamProxyNotIseqOrIfunc, state: exit_id });
                             // TODO(Shopify/ruby#753): GC root, so we should be able to avoid unnecessary GC tracing
                             state.stack_push(fun.push_insn(block, Insn::Const { val: Const::Value(unsafe { rb_block_param_proxy }) }));
                         }
