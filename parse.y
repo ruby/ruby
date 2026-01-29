@@ -1761,6 +1761,7 @@ static NODE *last_arg_append(struct parser_params *p, NODE *args, NODE *last_arg
 static NODE *rest_arg_append(struct parser_params *p, NODE *args, NODE *rest_arg, const YYLTYPE *loc);
 
 static void rb_node_list_move(rb_node_list2_t *dest, rb_node_list2_t *src);
+static void rb_node_list_replace(rb_node_list2_t *dest, rb_node_list2_t *src);
 static rb_arguments_node_t *arg_append2(struct parser_params *p, rb_arguments_node_t *args, rb_node_t *node, const YYLTYPE *loc);
 static rb_node_t *node_array_append(struct parser_params *p, rb_array_node_t *nd_ary, rb_node_t *node, const YYLTYPE *loc);
 
@@ -1857,7 +1858,7 @@ static VALUE reg_compile(struct parser_params*, rb_parser_string_t*, int);
 static void reg_fragment_setenc(struct parser_params*, rb_parser_string_t*, int);
 
 static int literal_concat0(struct parser_params *p, rb_parser_string_t *head, rb_parser_string_t *tail);
-static NODE *heredoc_dedent(struct parser_params*,NODE*);
+static rb_node_t *heredoc_dedent(struct parser_params*,rb_node_t*);
 
 static void check_literal_when(struct parser_params *p, NODE *args, const YYLTYPE *loc);
 
@@ -3066,7 +3067,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %after-pop-stack after_pop_stack
 
 %union {
-    NODE *node;
+    rb_node_t *node;
     rb_node_fcall_t *node_fcall;
     rb_node_args_aux_t *node_args_aux;
     rb_node_opt_arg_t *node_opt_arg;
@@ -5397,7 +5398,7 @@ f_marg		: f_norm_arg
                         $$ = assignable_target(p, $1, &@$);
                         mark_lvar_used(p, $$);
                         if (!RB_NODE_TYPE_P($$, RB_LOCAL_VARIABLE_TARGET_NODE))
-                            rb_bug("unexpected node: %s", ruby_node_name(nd_type($$)));;
+                            rb_bug("unexpected node: %s", ruby_node_name(nd_type($$)));
                         $$ = local_variable_target2required_parameter(p, $$);
                     }
                 | tLPAREN f_margs rparen
@@ -9323,54 +9324,42 @@ dedent_string(struct parser_params *p, rb_parser_string_t *string, int width)
     return i;
 }
 
-static NODE *
-heredoc_dedent(struct parser_params *p, NODE *root)
+static rb_node_t *
+heredoc_dedent(struct parser_params *p, rb_node_t *root)
 {
-    NODE *node, *str_node, *prev_node;
+    rb_node_t *node;
+    rb_array_node_t *nd_ary;
+    const rb_node_list2_t *list;
     int indent = p->heredoc_indent;
-    rb_parser_string_t *prev_lit = 0;
 
     if (indent <= 0) return root;
     if (!root) return root;
-
-    prev_node = node = str_node = root;
-    if (nd_type_p(root, NODE_LIST)) str_node = RNODE_LIST(root)->nd_head;
-
-    while (str_node) {
-        rb_parser_string_t *lit = RNODE_STR(str_node)->string;
-        if (nd_fl_newline(str_node)) {
-            dedent_string(p, lit, indent);
-        }
-        if (!prev_lit) {
-            prev_lit = lit;
-        }
-        else if (!literal_concat0(p, prev_lit, lit)) {
-            return 0;
-        }
-        else {
-            NODE *end = RNODE_LIST(node)->as.nd_end;
-            node = RNODE_LIST(prev_node)->nd_next = RNODE_LIST(node)->nd_next;
-            if (!node) {
-                if (nd_type_p(prev_node, NODE_DSTR))
-                    nd_set_type(prev_node, NODE_STR);
-                break;
-            }
-            RNODE_LIST(node)->as.nd_end = end;
-            goto next_str;
-        }
-
-        str_node = 0;
-        while ((nd_type_p(node, NODE_LIST) || nd_type_p(node, NODE_DSTR)) && (node = RNODE_LIST(prev_node = node)->nd_next) != 0) {
-          next_str:
-            if (!nd_type_p(node, NODE_LIST)) break;
-            if ((str_node = RNODE_LIST(node)->nd_head) != 0) {
-                enum node_type type = nd_type(str_node);
-                if (type == NODE_STR || type == NODE_DSTR) break;
-                prev_lit = 0;
-                str_node = 0;
-            }
-        }
+    if (RB_NODE_TYPE_P(root, RB_STRING_NODE)) {
+        dedent_string(p, RB_NODE_STRING(root)->unescaped, indent);
+        return root;
     }
+    if (!RB_NODE_TYPE_P(root, RB_INTERPOLATED_STRING_NODE)) {
+        rb_bug("unexpected node: %s", ruby_node_name(nd_type(root)));
+        UNREACHABLE_RETURN(0);
+    }
+
+    nd_ary = (rb_array_node_t *)NEW_RB_ZARRAY(&NULL_LOC);
+    list = &RB_NODE_INTERPOLATED_STRING(root)->parts;
+
+    for (size_t i = 0; i < RB_NODE_LIST_LEN(list); i++) {
+        node = list->nodes[i];
+
+        if (RB_NODE_TYPE_P(node, RB_STRING_NODE)) {
+            if (rb_node_fl_newline(node)) {
+                rb_parser_string_t *str = RB_NODE_STRING(node)->unescaped;
+                dedent_string(p, str, indent);
+                if (PARSER_STRING_LEN(str) == 0) continue;
+            }
+        }
+        rb_node_list_append(&nd_ary->elements, node);
+    }
+
+    rb_node_list_replace(&RB_NODE_INTERPOLATED_STRING(root)->parts, &nd_ary->elements);
     return root;
 }
 
@@ -9641,7 +9630,7 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
               flush_str:
                 set_yylval_str(str);
 #ifndef RIPPER
-                if (bol) nd_set_fl_newline(yylval.node);
+                if (bol) rb_node_set_fl_newline(yylval.node);
 #endif
                 flush_string_content(p, enc, 0);
                 return tSTRING_CONTENT;
@@ -9670,7 +9659,7 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
 #endif
 
 #ifndef RIPPER
-    if (bol) nd_set_fl_newline(yylval.node);
+    if (bol) rb_node_set_fl_newline(yylval.node);
 #endif
     return tSTRING_CONTENT;
 }
@@ -15684,6 +15673,13 @@ rb_node_list_move(rb_node_list2_t *dest, rb_node_list2_t *src)
     dest->capacity = src->capacity;
     dest->nodes = src->nodes;
     rb_node_list_init(src);
+}
+
+static void
+rb_node_list_replace(rb_node_list2_t *dest, rb_node_list2_t *src)
+{
+    rb_node_list_free(dest);
+    rb_node_list_move(dest, src);
 }
 
 static rb_node_t *
