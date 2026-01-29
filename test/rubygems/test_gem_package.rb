@@ -1845,4 +1845,75 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     assert_equal %w[lib/code.rb], package.contents
   end
+
+  def test_invalid_windows_filename
+    package = Gem::Package.new @gem
+
+    if Gem.win_platform?
+      assert package.invalid_windows_filename?("spec/internal/:memory")
+      assert package.invalid_windows_filename?("file:name.rb")
+      assert package.invalid_windows_filename?("file<name.rb")
+      assert package.invalid_windows_filename?('file"name.rb')
+    end
+  end
+
+  def test_invalid_file_name_error_message
+    error = Gem::Package::InvalidFileNameError.new("spec/internal/:memory", "crono-2.0.1")
+    assert_match(%r{The gem contains a file 'spec/internal/:memory'}, error.message)
+    assert_match(/characters in its name that are not allowed on Windows/, error.message)
+    assert_match(/This is a problem with the 'crono-2.0.1' gem, not Rubygems/, error.message)
+    assert_match(/Please report this issue to the gem author/, error.message)
+  end
+
+  def test_extract_tar_gz_invalid_filename
+    pend "Windows filename validation only applies on Windows" unless Gem.win_platform?
+
+    package = Gem::Package.new @gem
+    package.verify
+
+    tgz_io = util_tar_gz do |tar|
+      tar.add_file "spec/internal/:memory", 0o644 do |io|
+        io.write "test content"
+      end
+    end
+
+    e = assert_raise Gem::Package::InvalidFileNameError do
+      package.extract_tar_gz tgz_io, @destination
+    end
+
+    assert_match(%r{The gem contains a file 'spec/internal/:memory'}, e.message)
+    assert_match(/characters in its name that are not allowed on Windows/, e.message)
+    assert_match(/This is a problem with the 'a-2' gem, not Rubygems/, e.message)
+  end
+
+  def test_build_warns_on_invalid_windows_filename
+    pend "Windows filename validation only applies on non-Windows" if Gem.win_platform?
+
+    spec = Gem::Specification.new "test_gem", "1.0"
+    spec.summary = "test"
+    spec.authors = "test"
+    spec.files = ["lib/code.rb", "lib/file:name.rb"]
+
+    FileUtils.mkdir "lib"
+
+    File.open "lib/code.rb", "w" do |io|
+      io.write "# lib/code.rb"
+    end
+
+    File.open "lib/file:name.rb", "w" do |io|
+      io.write "# lib/file:name.rb"
+    end
+
+    package = Gem::Package.new spec.file_name
+    package.spec = spec
+
+    ui = Gem::MockGemUi.new
+    use_ui ui do
+      package.build
+    end
+
+    assert_match(%r{filename 'lib/file:name\.rb' contains characters that are invalid on Windows}, ui.error)
+    assert_match(/This gem may fail to install on Windows/, ui.error)
+    assert_path_exist spec.file_name
+  end
 end

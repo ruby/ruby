@@ -89,6 +89,18 @@ class Gem::Package
 
   class TarInvalidError < Error; end
 
+  ##
+  # Raised when a filename contains characters that are invalid on Windows
+
+  class InvalidFileNameError < Error
+    def initialize(filename, gem_name = nil)
+      message = "The gem contains a file '#{filename}' with characters in its name that are not allowed on Windows (e.g., colons)."
+      message += " This is a problem with the '#{gem_name}' gem, not Rubygems." if gem_name
+      message += " Please report this issue to the gem author."
+      super message
+    end
+  end
+
   attr_accessor :build_time # :nodoc:
 
   ##
@@ -309,6 +321,10 @@ class Gem::Package
 
   def add_files(tar) # :nodoc:
     @spec.files.each do |file|
+      if invalid_windows_filename?(file)
+        alert_warning "filename '#{file}' contains characters that are invalid on Windows (e.g., colons). This gem may fail to install on Windows."
+      end
+
       stat = File.lstat file
 
       if stat.symlink?
@@ -507,6 +523,11 @@ EOM
         full_name = entry.full_name
         next unless File.fnmatch pattern, full_name, File::FNM_DOTMATCH
 
+        if Gem.win_platform? && invalid_windows_filename?(full_name)
+          gem_name = @spec ? @spec.full_name : "unknown"
+          raise Gem::Package::InvalidFileNameError.new(full_name, gem_name)
+        end
+
         destination = install_location full_name, destination_dir
 
         if entry.symlink?
@@ -593,6 +614,16 @@ EOM
     def normalize_path(pathname) # :nodoc:
       pathname
     end
+  end
+
+  ##
+  # Checks if a filename contains characters that are invalid on Windows.
+  # Windows doesn't allow: < > : " | ? * \ and control characters (0x00-0x1F).
+  # Colons are the most common issue since they're allowed on Unix.
+  # Note: Colons are only valid as drive letter separators (e.g., C:), not in filenames.
+
+  def invalid_windows_filename?(filename) # :nodoc:
+    filename.to_s.split("/").any? { |part| part.match?(/[:<>"|?*\\\x00-\x1f]/) }
   end
 
   ##
