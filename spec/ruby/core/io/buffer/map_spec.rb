@@ -2,20 +2,32 @@ require_relative '../../../spec_helper'
 
 describe "IO::Buffer.map" do
   before :all do
-    @big_file_name = tmp("big_file")
-    # Usually 4 kibibytes + 16 bytes
-    File.write(@big_file_name, "12345678" * (IO::Buffer::PAGE_SIZE / 8 + 2))
+    @tmp_files = []
+
+    @big_file_name = nil
+    @small_file_name = nil
   end
 
   after :all do
-    File.delete(@big_file_name)
+    @tmp_files.each {|file| File.delete(file)}
   end
 
   def open_fixture
-    File.open("#{__dir__}/../fixtures/read_text.txt", "rb+")
+    unless @small_file_name
+      @small_file_name = tmp("read_text.txt")
+      File.copy_stream(fixture(__dir__, "read_text.txt"), @small_file_name)
+      @tmp_files << @small_file_name
+    end
+    File.open(@small_file_name, "rb+")
   end
 
   def open_big_file_fixture
+    unless @big_file_name
+      @big_file_name = tmp("big_file")
+      # Usually 4 kibibytes + 16 bytes
+      File.write(@big_file_name, "12345678" * (IO::Buffer::PAGE_SIZE / 8 + 2))
+      @tmp_files << @big_file_name
+    end
     File.open(@big_file_name, "rb+")
   end
 
@@ -91,7 +103,8 @@ describe "IO::Buffer.map" do
   context "with an empty file" do
     ruby_version_is "4.0" do
       it "raises ArgumentError" do
-        @file = File.open("#{__dir__}/../fixtures/empty.txt", "rb+")
+        file_name = tmp("empty.txt")
+        @file = File.open(file_name, "wb+")
         -> { IO::Buffer.map(@file) }.should raise_error(ArgumentError, "Invalid negative or zero file size!")
       end
     end
@@ -99,7 +112,7 @@ describe "IO::Buffer.map" do
 
   context "with a file opened only for reading" do
     it "raises a SystemCallError unless read-only" do
-      @file = File.open("#{__dir__}/../fixtures/read_text.txt", "rb")
+      @file = File.open(fixture(__dir__, "read_text.txt"), "rb")
       -> { IO::Buffer.map(@file) }.should raise_error(SystemCallError)
     end
   end
@@ -251,7 +264,7 @@ describe "IO::Buffer.map" do
       end
 
       it "allows mapping read-only files" do
-        @file = File.open("#{__dir__}/../fixtures/read_text.txt", "rb")
+        @file = File.open(fixture(__dir__, "read_text.txt"), "rb")
         @buffer = IO::Buffer.map(@file, nil, 0, IO::Buffer::READONLY)
 
         @buffer.should.readonly?
@@ -284,7 +297,7 @@ describe "IO::Buffer.map" do
       end
 
       it "allows mapping read-only files and modifying the buffer" do
-        @file = File.open("#{__dir__}/../fixtures/read_text.txt", "rb")
+        @file = File.open(fixture(__dir__, "read_text.txt"), "rb")
         @buffer = IO::Buffer.map(@file, nil, 0, IO::Buffer::PRIVATE)
 
         @buffer.should.private?

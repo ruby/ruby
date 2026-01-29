@@ -12,10 +12,15 @@ describe "IO::Buffer#shared?" do
   end
 
   it "is true for a non-private buffer created with .map" do
-    file = File.open("#{__dir__}/../fixtures/read_text.txt", "r+")
+    path = tmp("read_text.txt")
+    File.copy_stream(fixture(__dir__, "read_text.txt"), path)
+    file = File.open(path, "r+")
     @buffer = IO::Buffer.map(file)
-    file.close
     @buffer.shared?.should be_true
+  ensure
+    @buffer.free
+    file.close
+    File.unlink(path)
   end
 
   it "is false for an unshared buffer" do
