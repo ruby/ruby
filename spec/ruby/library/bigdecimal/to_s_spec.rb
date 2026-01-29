@@ -52,10 +52,8 @@ describe "BigDecimal#to_s" do
     BigDecimal("1.2345").to_s('0F').should == "1.2345"
   end
 
-  version_is BigDecimal::VERSION, "3.1.5" do #ruby_version_is '3.3' do
-    it "inserts a space every n chars to integer part, if integer n is supplied" do
-      BigDecimal('1000010').to_s('5F').should == "10 00010.0"
-    end
+  it "inserts a space every n chars to integer part, if integer n is supplied" do
+    BigDecimal('1000010').to_s('5F').should == "10 00010.0"
   end
 
   it "can return a leading space for values > 0" do

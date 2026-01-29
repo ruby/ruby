@@ -460,7 +460,7 @@ module Net   #:nodoc:
   #
   # First, what's elsewhere. Class Net::HTTP:
   #
-  # - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
+  # - Inherits from {class Object}[rdoc-ref:Object#class-object-whats-here].
   #
   # This is a categorized summary of methods and attributes.
   #
@@ -1304,7 +1304,7 @@ module Net   #:nodoc:
 
     # Sets whether to determine the proxy from environment variable
     # '<tt>ENV['http_proxy']</tt>';
-    # see {Proxy Using ENV['http_proxy']}[rdoc-ref:Net::HTTP@Proxy+Using+-27ENV-5B-27http_proxy-27-5D-27].
+    # see {Proxy Using ENV['http_proxy']}[rdoc-ref:Net::HTTP@Proxy+Using+ENVHTTPProxy].
     attr_writer :proxy_from_env
 
     # Sets the proxy address;

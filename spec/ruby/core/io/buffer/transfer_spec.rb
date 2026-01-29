@@ -60,17 +60,15 @@ describe "IO::Buffer#transfer" do
     end
   end
 
-  ruby_version_is "3.3" do
-    context "with a String-backed buffer created with .string" do
-      it "transfers memory to a new buffer, breaking the transaction by nullifying the original" do
-        IO::Buffer.string(4) do |buffer|
-          info = buffer.to_s
-          @buffer = buffer.transfer
-          @buffer.to_s.should == info
-          buffer.null?.should be_true
-        end
-        @buffer.null?.should be_false
+  context "with a String-backed buffer created with .string" do
+    it "transfers memory to a new buffer, breaking the transaction by nullifying the original" do
+      IO::Buffer.string(4) do |buffer|
+        info = buffer.to_s
+        @buffer = buffer.transfer
+        @buffer.to_s.should == info
+        buffer.null?.should be_true
       end
+      @buffer.null?.should be_false
     end
   end
 

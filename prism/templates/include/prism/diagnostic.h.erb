@@ -100,25 +100,25 @@ const char * pm_diagnostic_id_human(pm_diagnostic_id_t diag_id);
  * memory for its message.
  *
  * @param list The list to append to.
- * @param start The start of the diagnostic.
- * @param end The end of the diagnostic.
+ * @param start The source offset of the start of the diagnostic.
+ * @param length The length of the diagnostic.
  * @param diag_id The diagnostic ID.
  * @return Whether the diagnostic was successfully appended.
  */
-bool pm_diagnostic_list_append(pm_list_t *list, const uint8_t *start, const uint8_t *end, pm_diagnostic_id_t diag_id);
+bool pm_diagnostic_list_append(pm_list_t *list, uint32_t start, uint32_t length, pm_diagnostic_id_t diag_id);
 
 /**
  * Append a diagnostic to the given list of diagnostics that is using a format
  * string for its message.
  *
  * @param list The list to append to.
- * @param start The start of the diagnostic.
- * @param end The end of the diagnostic.
+ * @param start The source offset of the start of the diagnostic.
+ * @param length The length of the diagnostic.
  * @param diag_id The diagnostic ID.
  * @param ... The arguments to the format string for the message.
  * @return Whether the diagnostic was successfully appended.
  */
-bool pm_diagnostic_list_append_format(pm_list_t *list, const uint8_t *start, const uint8_t *end, pm_diagnostic_id_t diag_id, ...);
+bool pm_diagnostic_list_append_format(pm_list_t *list, uint32_t start, uint32_t length, pm_diagnostic_id_t diag_id, ...);
 
 /**
  * Deallocate the internal state of the given diagnostic list.

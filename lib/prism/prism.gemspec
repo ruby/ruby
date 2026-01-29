@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |spec|
   spec.name = "prism"
-  spec.version = "1.8.0"
+  spec.version = "1.9.0"
   spec.authors = ["Shopify"]
   spec.email = ["ruby@shopify.com"]
 
@@ -77,7 +77,6 @@ Gem::Specification.new do |spec|
     "lib/prism/ffi.rb",
     "lib/prism/inspect_visitor.rb",
     "lib/prism/lex_compat.rb",
-    "lib/prism/lex_ripper.rb",
     "lib/prism/mutation_compiler.rb",
     "lib/prism/node_ext.rb",
     "lib/prism/node.rb",

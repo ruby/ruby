@@ -1,4 +1,5 @@
 #include "ruby.h"
+#include "ruby/vm.h"
 #include "rubyspec.h"
 
 #include <errno.h>
@@ -337,6 +338,15 @@ static VALUE kernel_spec_rb_set_end_proc(VALUE self, VALUE io) {
   return Qnil;
 }
 
+static void at_exit_hook(ruby_vm_t *vm) {
+  puts("ruby_vm_at_exit hook ran");
+}
+
+static VALUE kernel_spec_ruby_vm_at_exit(VALUE self) {
+  ruby_vm_at_exit(at_exit_hook);
+  return self;
+}
+
 static VALUE kernel_spec_rb_f_sprintf(VALUE self, VALUE ary) {
   return rb_f_sprintf((int)RARRAY_LEN(ary), RARRAY_PTR(ary));
 }
@@ -434,6 +444,7 @@ void Init_kernel_spec(void) {
   rb_define_method(cls, "rb_yield_splat", kernel_spec_rb_yield_splat, 1);
   rb_define_method(cls, "rb_exec_recursive", kernel_spec_rb_exec_recursive, 1);
   rb_define_method(cls, "rb_set_end_proc", kernel_spec_rb_set_end_proc, 1);
+  rb_define_method(cls, "ruby_vm_at_exit", kernel_spec_ruby_vm_at_exit, 0);
   rb_define_method(cls, "rb_f_sprintf", kernel_spec_rb_f_sprintf, 1);
   rb_define_method(cls, "rb_str_format", kernel_spec_rb_str_format, 3);
   rb_define_method(cls, "rb_make_backtrace", kernel_spec_rb_make_backtrace, 0);

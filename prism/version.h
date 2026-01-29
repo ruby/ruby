@@ -14,7 +14,7 @@
 /**
  * The minor version of the Prism library as an int.
  */
-#define PRISM_VERSION_MINOR 8
+#define PRISM_VERSION_MINOR 9
 
 /**
  * The patch version of the Prism library as an int.
@@ -24,6 +24,6 @@
 /**
  * The version of the Prism library as a constant string.
  */
-#define PRISM_VERSION "1.8.0"
+#define PRISM_VERSION "1.9.0"
 
 #endif

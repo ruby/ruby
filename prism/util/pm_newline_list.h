@@ -26,9 +26,6 @@
  * sorted/inserted in ascending order.
  */
 typedef struct {
-    /** A pointer to the start of the source string. */
-    const uint8_t *start;
-
     /** The number of offsets in the list. */
     size_t size;
 
@@ -36,7 +33,7 @@ typedef struct {
     size_t capacity;
 
     /** The list of offsets. */
-    size_t *offsets;
+    uint32_t *offsets;
 } pm_newline_list_t;
 
 /**
@@ -46,7 +43,7 @@ typedef struct {
     /** The line number. */
     int32_t line;
 
-    /** The column number. */
+    /** The column in bytes. */
     uint32_t column;
 } pm_line_column_t;
 
@@ -55,41 +52,39 @@ typedef struct {
  * allocation of the offsets succeeds, otherwise returns false.
  *
  * @param list The list to initialize.
- * @param start A pointer to the start of the source string.
  * @param capacity The initial capacity of the list.
  * @return True if the allocation of the offsets succeeds, otherwise false.
  */
-bool pm_newline_list_init(pm_newline_list_t *list, const uint8_t *start, size_t capacity);
+bool pm_newline_list_init(pm_newline_list_t *list, size_t capacity);
 
 /**
  * Clear out the newlines that have been appended to the list.
  *
  * @param list The list to clear.
  */
-void
-pm_newline_list_clear(pm_newline_list_t *list);
+void pm_newline_list_clear(pm_newline_list_t *list);
 
 /**
  * Append a new offset to the newline list. Returns true if the reallocation of
  * the offsets succeeds (if one was necessary), otherwise returns false.
  *
  * @param list The list to append to.
- * @param cursor A pointer to the offset to append.
+ * @param cursor The offset to append.
  * @return True if the reallocation of the offsets succeeds (if one was
  *     necessary), otherwise false.
  */
-bool pm_newline_list_append(pm_newline_list_t *list, const uint8_t *cursor);
+bool pm_newline_list_append(pm_newline_list_t *list, uint32_t cursor);
 
 /**
  * Returns the line of the given offset. If the offset is not in the list, the
  * line of the closest offset less than the given offset is returned.
  *
  * @param list The list to search.
- * @param cursor A pointer to the offset to search for.
+ * @param cursor The offset to search for.
  * @param start_line The line to start counting from.
  * @return The line of the given offset.
  */
-int32_t pm_newline_list_line(const pm_newline_list_t *list, const uint8_t *cursor, int32_t start_line);
+int32_t pm_newline_list_line(const pm_newline_list_t *list, uint32_t cursor, int32_t start_line);
 
 /**
  * Returns the line and column of the given offset. If the offset is not in the
@@ -97,11 +92,11 @@ int32_t pm_newline_list_line(const pm_newline_list_t *list, const uint8_t *curso
  * are returned.
  *
  * @param list The list to search.
- * @param cursor A pointer to the offset to search for.
+ * @param cursor The offset to search for.
  * @param start_line The line to start counting from.
  * @return The line and column of the given offset.
  */
-pm_line_column_t pm_newline_list_line_column(const pm_newline_list_t *list, const uint8_t *cursor, int32_t start_line);
+pm_line_column_t pm_newline_list_line_column(const pm_newline_list_t *list, uint32_t cursor, int32_t start_line);
 
 /**
  * Free the internal memory allocated for the newline list.

@@ -66,6 +66,7 @@ describe "Float#round" do
   it "works for corner cases" do
     42.0.round(308).should eql(42.0)
     1.0e307.round(2).should eql(1.0e307)
+    120.0.round(-1).should eql(120)
   end
 
   # redmine:5271
@@ -145,37 +146,35 @@ describe "Float#round" do
     -4.809999999999999.round(5, half: :even).should eql(-4.81)
   end
 
-  ruby_bug "#19318", ""..."3.3" do
-    # These numbers are neighbouring floating point numbers round a
-    # precise value. They test that the rounding modes work correctly
-    # round that value and precision is not lost which might cause
-    # incorrect results.
-    it "does not lose precision during the rounding process" do
-      767573.1875850001.round(5, half: nil).should eql(767573.18759)
-      767573.1875850001.round(5, half: :up).should eql(767573.18759)
-      767573.1875850001.round(5, half: :down).should eql(767573.18759)
-      767573.1875850001.round(5, half: :even).should eql(767573.18759)
-      -767573.1875850001.round(5, half: nil).should eql(-767573.18759)
-      -767573.1875850001.round(5, half: :up).should eql(-767573.18759)
-      -767573.1875850001.round(5, half: :down).should eql(-767573.18759)
-      -767573.1875850001.round(5, half: :even).should eql(-767573.18759)
-      767573.187585.round(5, half: nil).should eql(767573.18759)
-      767573.187585.round(5, half: :up).should eql(767573.18759)
-      767573.187585.round(5, half: :down).should eql(767573.18758)
-      767573.187585.round(5, half: :even).should eql(767573.18758)
-      -767573.187585.round(5, half: nil).should eql(-767573.18759)
-      -767573.187585.round(5, half: :up).should eql(-767573.18759)
-      -767573.187585.round(5, half: :down).should eql(-767573.18758)
-      -767573.187585.round(5, half: :even).should eql(-767573.18758)
-      767573.1875849998.round(5, half: nil).should eql(767573.18758)
-      767573.1875849998.round(5, half: :up).should eql(767573.18758)
-      767573.1875849998.round(5, half: :down).should eql(767573.18758)
-      767573.1875849998.round(5, half: :even).should eql(767573.18758)
-      -767573.1875849998.round(5, half: nil).should eql(-767573.18758)
-      -767573.1875849998.round(5, half: :up).should eql(-767573.18758)
-      -767573.1875849998.round(5, half: :down).should eql(-767573.18758)
-      -767573.1875849998.round(5, half: :even).should eql(-767573.18758)
-    end
+  # These numbers are neighbouring floating point numbers round a
+  # precise value. They test that the rounding modes work correctly
+  # round that value and precision is not lost which might cause
+  # incorrect results.
+  it "does not lose precision during the rounding process" do
+    767573.1875850001.round(5, half: nil).should eql(767573.18759)
+    767573.1875850001.round(5, half: :up).should eql(767573.18759)
+    767573.1875850001.round(5, half: :down).should eql(767573.18759)
+    767573.1875850001.round(5, half: :even).should eql(767573.18759)
+    -767573.1875850001.round(5, half: nil).should eql(-767573.18759)
+    -767573.1875850001.round(5, half: :up).should eql(-767573.18759)
+    -767573.1875850001.round(5, half: :down).should eql(-767573.18759)
+    -767573.1875850001.round(5, half: :even).should eql(-767573.18759)
+    767573.187585.round(5, half: nil).should eql(767573.18759)
+    767573.187585.round(5, half: :up).should eql(767573.18759)
+    767573.187585.round(5, half: :down).should eql(767573.18758)
+    767573.187585.round(5, half: :even).should eql(767573.18758)
+    -767573.187585.round(5, half: nil).should eql(-767573.18759)
+    -767573.187585.round(5, half: :up).should eql(-767573.18759)
+    -767573.187585.round(5, half: :down).should eql(-767573.18758)
+    -767573.187585.round(5, half: :even).should eql(-767573.18758)
+    767573.1875849998.round(5, half: nil).should eql(767573.18758)
+    767573.1875849998.round(5, half: :up).should eql(767573.18758)
+    767573.1875849998.round(5, half: :down).should eql(767573.18758)
+    767573.1875849998.round(5, half: :even).should eql(767573.18758)
+    -767573.1875849998.round(5, half: nil).should eql(-767573.18758)
+    -767573.1875849998.round(5, half: :up).should eql(-767573.18758)
+    -767573.1875849998.round(5, half: :down).should eql(-767573.18758)
+    -767573.1875849998.round(5, half: :even).should eql(-767573.18758)
   end
 
   it "raises FloatDomainError for exceptional values with a half option" do
@@ -197,7 +196,13 @@ describe "Float#round" do
     it "returns 0 for 0 or undefined ndigits" do
       (0.0).round.should == 0
       (-0.0).round(0).should == 0
-      (0.0).round(half: :up) == 0
+      (0.0).round(half: :up).should == 0
+    end
+
+    it "returns 0 for negative ndigits" do
+      (0.0).round(-1).should == 0
+      (-0.0).round(-1).should == 0
+      (0.0).round(-1, half: :up).should == 0
     end
   end
 end

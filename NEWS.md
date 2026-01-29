@@ -46,7 +46,7 @@ releases.
 
 * RubyGems 4.1.0.dev
 * bundler 4.1.0.dev
-* prism 1.8.0
+* prism 1.9.0
 * stringio 3.2.1.dev
 * strscan 3.1.7.dev
 * syntax_suggest 2.0.3
@@ -62,6 +62,7 @@ releases.
 * debug 1.11.1
 * mutex_m 0.3.0
 * resolv-replace 0.2.0
+* syslog 0.4.0
 * rdoc 7.1.0
 
 ### RubyGems and Bundler

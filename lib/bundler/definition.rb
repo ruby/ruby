@@ -1077,7 +1077,7 @@ module Bundler
             end
           end
 
-          if parent_dep
+          if parent_dep && parent_dep.source.is_a?(Source::Path)
             replacement_source = parent_dep.source
           else
             replacement_source = sources.get(lockfile_source)

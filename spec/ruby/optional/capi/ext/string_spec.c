@@ -581,6 +581,14 @@ static VALUE string_spec_rb_str_to_interned_str(VALUE self, VALUE str) {
   return rb_str_to_interned_str(str);
 }
 
+static VALUE string_spec_rb_interned_str(VALUE self, VALUE str, VALUE len) {
+  return rb_interned_str(RSTRING_PTR(str), FIX2LONG(len));
+}
+
+static VALUE string_spec_rb_interned_str_cstr(VALUE self, VALUE str) {
+  return rb_interned_str_cstr(RSTRING_PTR(str));
+}
+
 void Init_string_spec(void) {
   VALUE cls = rb_define_class("CApiStringSpecs", rb_cObject);
   rb_define_method(cls, "rb_cstr2inum", string_spec_rb_cstr2inum, 2);
@@ -681,6 +689,8 @@ void Init_string_spec(void) {
   rb_define_method(cls, "rb_enc_interned_str_cstr", string_spec_rb_enc_interned_str_cstr, 2);
   rb_define_method(cls, "rb_enc_interned_str", string_spec_rb_enc_interned_str, 3);
   rb_define_method(cls, "rb_str_to_interned_str", string_spec_rb_str_to_interned_str, 1);
+  rb_define_method(cls, "rb_interned_str", string_spec_rb_interned_str, 2);
+  rb_define_method(cls, "rb_interned_str_cstr", string_spec_rb_interned_str_cstr, 1);
 }
 
 #ifdef __cplusplus

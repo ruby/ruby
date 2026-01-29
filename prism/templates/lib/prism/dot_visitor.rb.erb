@@ -169,7 +169,7 @@ module Prism
       "Node_#{node.object_id}"
     end
 
-    # Inspect a location to display the start and end line and column numbers.
+    # Inspect a location to display the start and end line and columns in bytes.
     def location_inspect(location)
       "(#{location.start_line},#{location.start_column})-(#{location.end_line},#{location.end_column})"
     end

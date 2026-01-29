@@ -14,14 +14,18 @@ describe "IO::Buffer#initialize" do
 
   it "creates a buffer with default state" do
     @buffer = IO::Buffer.new
+
+    @buffer.should_not.external?
+
     @buffer.should_not.shared?
+    @buffer.should_not.private?
     @buffer.should_not.readonly?
 
     @buffer.should_not.empty?
     @buffer.should_not.null?
 
-    # This is run-time state, set by #locked.
     @buffer.should_not.locked?
+    @buffer.should.valid?
   end
 
   context "with size argument" do
@@ -29,25 +33,24 @@ describe "IO::Buffer#initialize" do
       size = IO::Buffer::PAGE_SIZE - 1
       @buffer = IO::Buffer.new(size)
       @buffer.size.should == size
+      @buffer.should_not.empty?
+
       @buffer.should.internal?
       @buffer.should_not.mapped?
-      @buffer.should_not.empty?
     end
 
     it "creates a new mapped buffer if size is greater than or equal to IO::Buffer::PAGE_SIZE" do
       size = IO::Buffer::PAGE_SIZE
       @buffer = IO::Buffer.new(size)
       @buffer.size.should == size
+      @buffer.should_not.empty?
+
       @buffer.should_not.internal?
       @buffer.should.mapped?
-      @buffer.should_not.empty?
     end
 
     it "creates a null buffer if size is 0" do
       @buffer = IO::Buffer.new(0)
-      @buffer.size.should.zero?
-      @buffer.should_not.internal?
-      @buffer.should_not.mapped?
       @buffer.should.null?
       @buffer.should.empty?
     end
@@ -77,27 +80,40 @@ describe "IO::Buffer#initialize" do
       @buffer.should_not.empty?
     end
 
+    it "allows extra flags" do
+      @buffer = IO::Buffer.new(10, IO::Buffer::INTERNAL | IO::Buffer::SHARED | IO::Buffer::READONLY)
+      @buffer.should.internal?
+      @buffer.should.shared?
+      @buffer.should.readonly?
+    end
+
+    it "ignores flags if size is 0" do
+      @buffer = IO::Buffer.new(0, 0xffff)
+      @buffer.should.null?
+      @buffer.should.empty?
+
+      @buffer.should_not.internal?
+      @buffer.should_not.mapped?
+      @buffer.should_not.external?
+
+      @buffer.should_not.shared?
+      @buffer.should_not.readonly?
+
+      @buffer.should_not.locked?
+      @buffer.should.valid?
+    end
+
     it "raises IO::Buffer::AllocationError if neither IO::Buffer::MAPPED nor IO::Buffer::INTERNAL is given" do
       -> { IO::Buffer.new(10, IO::Buffer::READONLY) }.should raise_error(IO::Buffer::AllocationError, "Could not allocate buffer!")
       -> { IO::Buffer.new(10, 0) }.should raise_error(IO::Buffer::AllocationError, "Could not allocate buffer!")
     end
 
-    ruby_version_is "3.3" do
-      it "raises ArgumentError if flags is negative" do
-        -> { IO::Buffer.new(10, -1) }.should raise_error(ArgumentError, "Flags can't be negative!")
-      end
+    it "raises ArgumentError if flags is negative" do
+      -> { IO::Buffer.new(10, -1) }.should raise_error(ArgumentError, "Flags can't be negative!")
     end
 
-    ruby_version_is ""..."3.3" do
-      it "raises IO::Buffer::AllocationError with non-Integer flags" do
-        -> { IO::Buffer.new(10, 0.0) }.should raise_error(IO::Buffer::AllocationError, "Could not allocate buffer!")
-      end
-    end
-
-    ruby_version_is "3.3" do
-      it "raises TypeError with non-Integer flags" do
-        -> { IO::Buffer.new(10, 0.0) }.should raise_error(TypeError, "not an Integer")
-      end
+    it "raises TypeError with non-Integer flags" do
+      -> { IO::Buffer.new(10, 0.0) }.should raise_error(TypeError, "not an Integer")
     end
   end
 end

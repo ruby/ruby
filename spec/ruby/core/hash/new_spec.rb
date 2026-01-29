@@ -34,7 +34,7 @@ describe "Hash.new" do
     -> { Hash.new(nil) { 0 } }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is "3.3"..."3.4" do
+  ruby_version_is ""..."3.4" do
     it "emits a deprecation warning if keyword arguments are passed" do
       -> { Hash.new(unknown: true) }.should complain(
         Regexp.new(Regexp.escape("Calling Hash.new with keyword arguments is deprecated and will be removed in Ruby 3.4; use Hash.new({ key: value }) instead"))

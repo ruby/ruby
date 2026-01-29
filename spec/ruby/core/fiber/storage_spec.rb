@@ -161,13 +161,11 @@ describe "Fiber.[]=" do
     -> { Fiber[Object.new] = 44 }.should raise_error(TypeError)
   end
 
-  ruby_version_is "3.3" do
-    it "deletes the fiber storage key when assigning nil" do
-      Fiber.new(storage: {life: 42}) {
-        Fiber[:life] = nil
-        Fiber.current.storage
-      }.resume.should == {}
-    end
+  it "deletes the fiber storage key when assigning nil" do
+    Fiber.new(storage: {life: 42}) {
+      Fiber[:life] = nil
+      Fiber.current.storage
+    }.resume.should == {}
   end
 end
 

@@ -1142,7 +1142,7 @@ pm_iseq_new_with_opt(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpa
     int32_t start_line = node->parser->start_line;
 
     pm_line_column_t start = pm_newline_list_line_column(&node->parser->newline_list, location->start, start_line);
-    pm_line_column_t end = pm_newline_list_line_column(&node->parser->newline_list, location->end, start_line);
+    pm_line_column_t end = pm_newline_list_line_column(&node->parser->newline_list, location->start + location->length, start_line);
 
     rb_code_location_t code_location = (rb_code_location_t) {
         .beg_pos = { .lineno = (int) start.line, .column = (int) start.column },

@@ -935,16 +935,16 @@ module Prism
       node = yield node if block_given?
 
       if expected.begin == 0
-        assert_equal 0, node.location.start_column
+        assert_equal 0, node.location.start_column, "#{kind} start_column"
       end
 
       if expected.end == source.length
-        assert_equal source.split("\n").last.length, node.location.end_column
+        assert_equal source.split("\n").last.length, node.location.end_column, "#{kind} end_column"
       end
 
       assert_kind_of kind, node
-      assert_equal expected.begin, node.location.start_offset
-      assert_equal expected.end, node.location.end_offset
+      assert_equal expected.begin, node.location.start_offset, "#{kind} start_offset"
+      assert_equal expected.end, node.location.end_offset, "#{kind} end_offset"
     end
   end
 end

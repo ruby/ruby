@@ -1496,6 +1496,46 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_invokesuperforward
+    assert_compiles '[1, 2, 3]', %q{
+      class A
+        def foo(a,b,c) = [a,b,c]
+      end
+
+      class B < A
+        def foo(...) = super
+      end
+
+      def test
+        B.new.foo(1, 2, 3)
+      end
+
+      test
+      test
+    }, call_threshold: 2
+  end
+
+  def test_invokesuperforward_with_args_kwargs_and_block
+    assert_compiles '[[1, 2], {x: 3}, 4]', %q{
+      class A
+        def foo(*args, **kwargs, &block)
+          [args, kwargs, block&.call]
+        end
+      end
+
+      class B < A
+        def foo(...) = super
+      end
+
+      def test
+        B.new.foo(1, 2, x: 3) { 4 }
+      end
+
+      test
+      test
+    }, call_threshold: 2
+  end
+
   def test_send_with_non_constant_keyword_default
     assert_compiles '[[2, 4, 16], [10, 4, 16], [2, 20, 16], [2, 4, 30], [10, 20, 30]]', %q{
       def dbl(x = 1) = x * 2

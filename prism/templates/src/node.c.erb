@@ -226,10 +226,8 @@ pm_dump_json_constant(pm_buffer_t *buffer, const pm_parser_t *parser, pm_constan
 }
 
 static void
-pm_dump_json_location(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_location_t *location) {
-    uint32_t start = (uint32_t) (location->start - parser->start);
-    uint32_t end = (uint32_t) (location->end - parser->start);
-    pm_buffer_append_format(buffer, "{\"start\":%" PRIu32 ",\"end\":%" PRIu32 "}", start, end);
+pm_dump_json_location(pm_buffer_t *buffer, const pm_location_t *location) {
+    pm_buffer_append_format(buffer, "{\"start\":%" PRIu32 ",\"length\":%" PRIu32 "}", location->start, location->length);
 }
 
 /**
@@ -243,7 +241,7 @@ pm_dump_json(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *no
             pm_buffer_append_string(buffer, "{\"type\":\"<%= node.name %>\",\"location\":", <%= node.name.bytesize + 22 %>);
 
             const pm_<%= node.human %>_t *cast = (const pm_<%= node.human %>_t *) node;
-            pm_dump_json_location(buffer, parser, &cast->base.location);
+            pm_dump_json_location(buffer, &cast->base.location);
             <%- [*node.flags, *node.fields].each_with_index do |field, index| -%>
 
             // Dump the <%= field.name %> field
@@ -290,10 +288,10 @@ pm_dump_json(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *no
             }
             pm_buffer_append_byte(buffer, ']');
             <%- when Prism::Template::LocationField -%>
-            pm_dump_json_location(buffer, parser, &cast-><%= field.name %>);
+            pm_dump_json_location(buffer, &cast-><%= field.name %>);
             <%- when Prism::Template::OptionalLocationField -%>
-            if (cast-><%= field.name %>.start != NULL) {
-                pm_dump_json_location(buffer, parser, &cast-><%= field.name %>);
+            if (cast-><%= field.name %>.length != 0) {
+                pm_dump_json_location(buffer, &cast-><%= field.name %>);
             } else {
                 pm_buffer_append_string(buffer, "null", 4);
             }

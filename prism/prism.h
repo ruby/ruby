@@ -143,11 +143,10 @@ PRISM_EXPORTED_FUNCTION void pm_serialize_parse_stream(pm_buffer_t *buffer, void
 /**
  * Serialize the given list of comments to the given buffer.
  *
- * @param parser The parser to serialize.
  * @param list The list of comments to serialize.
  * @param buffer The buffer to serialize to.
  */
-void pm_serialize_comment_list(pm_parser_t *parser, pm_list_t *list, pm_buffer_t *buffer);
+void pm_serialize_comment_list(pm_list_t *list, pm_buffer_t *buffer);
 
 /**
  * Serialize the name of the encoding to the buffer.

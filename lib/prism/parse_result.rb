@@ -76,13 +76,13 @@ module Prism
       source.byteslice(byte_offset, length) or raise
     end
 
-    # Converts the line number to a byte offset corresponding to the start of that line
-    def line_to_byte_offset(line)
-      l = line - @start_line
-      if l < 0 || l >= offsets.size
-        raise ArgumentError, "line #{line} is out of range"
-      end
-      offsets[l]
+    # Converts the line number and column in bytes to a byte offset.
+    def byte_offset(line, column)
+      normal = line - @start_line
+      raise IndexError if normal < 0
+      offsets.fetch(normal) + column
+    rescue IndexError
+      raise ArgumentError, "line #{line} is out of range"
     end
 
     # Binary search through the offsets to find the line number for the given
@@ -103,7 +103,7 @@ module Prism
       offsets[find_line(byte_offset) + 1] || source.bytesize
     end
 
-    # Return the column number for the given byte offset.
+    # Return the column in bytes for the given byte offset.
     def column(byte_offset)
       byte_offset - line_start(byte_offset)
     end
@@ -113,7 +113,7 @@ module Prism
       (source.byteslice(0, byte_offset) or raise).length
     end
 
-    # Return the column number in characters for the given byte offset.
+    # Return the column in characters for the given byte offset.
     def character_column(byte_offset)
       character_offset(byte_offset) - character_offset(line_start(byte_offset))
     end
@@ -146,7 +146,7 @@ module Prism
       CodeUnitsCache.new(source, encoding)
     end
 
-    # Returns the column number in code units for the given encoding for the
+    # Returns the column in code units for the given encoding for the
     # given byte offset.
     def code_units_column(byte_offset, encoding)
       code_units_offset(byte_offset, encoding) - code_units_offset(line_start(byte_offset), encoding)
@@ -253,7 +253,7 @@ module Prism
       byte_offset
     end
 
-    # Return the column number in characters for the given byte offset.
+    # Return the column in characters for the given byte offset.
     def character_column(byte_offset)
       byte_offset - line_start(byte_offset)
     end
@@ -428,19 +428,19 @@ module Prism
       source.line(end_offset)
     end
 
-    # The column number in bytes where this location starts from the start of
+    # The column in bytes where this location starts from the start of
     # the line.
     def start_column
       source.column(start_offset)
     end
 
-    # The column number in characters where this location ends from the start of
+    # The column in characters where this location ends from the start of
     # the line.
     def start_character_column
       source.character_column(start_offset)
     end
 
-    # The column number in code units of the given encoding where this location
+    # The column in code units of the given encoding where this location
     # starts from the start of the line.
     def start_code_units_column(encoding = Encoding::UTF_16LE)
       source.code_units_column(start_offset, encoding)
@@ -452,19 +452,19 @@ module Prism
       cache[start_offset] - cache[source.line_start(start_offset)]
     end
 
-    # The column number in bytes where this location ends from the start of the
+    # The column in bytes where this location ends from the start of the
     # line.
     def end_column
       source.column(end_offset)
     end
 
-    # The column number in characters where this location ends from the start of
+    # The column in characters where this location ends from the start of
     # the line.
     def end_character_column
       source.character_column(end_offset)
     end
 
-    # The column number in code units of the given encoding where this location
+    # The column in code units of the given encoding where this location
     # ends from the start of the line.
     def end_code_units_column(encoding = Encoding::UTF_16LE)
       source.code_units_column(end_offset, encoding)

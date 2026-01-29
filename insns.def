@@ -145,6 +145,7 @@ getblockparamproxy
 (lindex_t idx, rb_num_t level)
 ()
 (VALUE val)
+// attr bool zjit_profile = true;
 {
     const VALUE *ep = vm_get_ep(GET_EP(), level);
     VM_ASSERT(VM_ENV_LOCAL_P(ep));

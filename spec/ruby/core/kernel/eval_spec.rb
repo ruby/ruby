@@ -159,22 +159,6 @@ describe "Kernel#eval" do
     end
   end
 
-  ruby_version_is ""..."3.3" do
-    it "uses (eval) filename if none is provided" do
-      eval("__FILE__").should == "(eval)"
-      eval("__FILE__", binding).should == "(eval)"
-      eval("__FILE__", binding, "success").should == "success"
-      eval("eval '__FILE__', binding").should == "(eval)"
-      eval("eval '__FILE__', binding", binding).should == "(eval)"
-      eval("eval '__FILE__', binding", binding, 'success').should == '(eval)'
-      eval("eval '__FILE__', binding, 'success'", binding).should == 'success'
-    end
-
-    it 'uses (eval) for __FILE__ and 1 for __LINE__ with a binding argument' do
-      eval("[__FILE__, __LINE__]", binding).should == ["(eval)", 1]
-    end
-  end
-
   context "parameter forwarding" do
     it "allows anonymous rest parameter forwarding" do
       object = Object.new
@@ -244,20 +228,18 @@ describe "Kernel#eval" do
     end
   end
 
-  ruby_version_is "3.3" do
-    it "uses (eval at __FILE__:__LINE__) if none is provided" do
-      eval("__FILE__").should == "(eval at #{__FILE__}:#{__LINE__})"
-      eval("__FILE__", binding).should == "(eval at #{__FILE__}:#{__LINE__})"
-      eval("__FILE__", binding, "success").should == "success"
-      eval("eval '__FILE__', binding").should == "(eval at (eval at #{__FILE__}:#{__LINE__}):1)"
-      eval("eval '__FILE__', binding", binding).should == "(eval at (eval at #{__FILE__}:#{__LINE__}):1)"
-      eval("eval '__FILE__', binding", binding, 'success').should == "(eval at success:1)"
-      eval("eval '__FILE__', binding, 'success'", binding).should == 'success'
-    end
+  it "uses (eval at __FILE__:__LINE__) if none is provided" do
+    eval("__FILE__").should == "(eval at #{__FILE__}:#{__LINE__})"
+    eval("__FILE__", binding).should == "(eval at #{__FILE__}:#{__LINE__})"
+    eval("__FILE__", binding, "success").should == "success"
+    eval("eval '__FILE__', binding").should == "(eval at (eval at #{__FILE__}:#{__LINE__}):1)"
+    eval("eval '__FILE__', binding", binding).should == "(eval at (eval at #{__FILE__}:#{__LINE__}):1)"
+    eval("eval '__FILE__', binding", binding, 'success').should == "(eval at success:1)"
+    eval("eval '__FILE__', binding, 'success'", binding).should == 'success'
+  end
 
-    it 'uses (eval at __FILE__:__LINE__) for __FILE__ and 1 for __LINE__ with a binding argument' do
-      eval("[__FILE__, __LINE__]", binding).should == ["(eval at #{__FILE__}:#{__LINE__})", 1]
-    end
+  it 'uses (eval at __FILE__:__LINE__) for __FILE__ and 1 for __LINE__ with a binding argument' do
+    eval("[__FILE__, __LINE__]", binding).should == ["(eval at #{__FILE__}:#{__LINE__})", 1]
   end
   # Found via Rubinius bug github:#149
   it "does not alter the value of __FILE__ in the binding" do

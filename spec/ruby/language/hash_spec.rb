@@ -167,6 +167,17 @@ describe "Hash literal" do
       {**nil}.should == {}
       {a: 1, **nil}.should == {a: 1}
     end
+
+    it "expands nil using ** into {} and provides a copy to the callable" do
+      ScratchPad.record []
+      insert = -> key, **kw do
+        kw[key] = 1
+        ScratchPad << kw
+      end
+      insert.call(:foo, **nil)
+      insert.call(:bar, **nil)
+      ScratchPad.recorded.should == [{ foo: 1 }, { bar: 1 }]
+    end
   end
 
   it "expands an '**{}' or '**obj' element with the last key/value pair taking precedence" do
@@ -264,17 +275,15 @@ describe "The ** operator" do
     h.should == { one: 1, two: 2 }
   end
 
-  ruby_bug "#20012", ""..."3.3" do
-    it "makes a copy when calling a method taking a positional Hash" do
-      def m(h)
-        h.delete(:one); h
-      end
-
-      h = { one: 1, two: 2 }
-      m(**h).should == { two: 2 }
-      m(**h).should_not.equal?(h)
-      h.should == { one: 1, two: 2 }
+  it "makes a copy when calling a method taking a positional Hash" do
+    def m(h)
+      h.delete(:one); h
     end
+
+    h = { one: 1, two: 2 }
+    m(**h).should == { two: 2 }
+    m(**h).should_not.equal?(h)
+    h.should == { one: 1, two: 2 }
   end
 
   describe "hash with omitted value" do

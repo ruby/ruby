@@ -4,22 +4,25 @@ require 'stringio'
 require 'time'
 
 module URI
-  # Allows the opening of various resources including URIs.
+  # Allows the opening of various resources including URIs. Example:
   #
-  # If the first argument responds to the 'open' method, 'open' is called on
+  #   require "open-uri"
+  #   URI.open("http://example.com") { |f| f.read }
+  #
+  # If the first argument responds to the +open+ method, +open+ is called on
   # it with the rest of the arguments.
   #
   # If the first argument is a string that begins with <code>(protocol)://</code>, it is parsed by
-  # URI.parse.  If the parsed object responds to the 'open' method,
-  # 'open' is called on it with the rest of the arguments.
+  # URI.parse.  If the parsed object responds to the +open+ method,
+  # +open+ is called on it with the rest of the arguments.
   #
   # Otherwise, Kernel#open is called.
   #
   # OpenURI::OpenRead#open provides URI::HTTP#open, URI::HTTPS#open and
   # URI::FTP#open, Kernel#open.
   #
-  # We can accept URIs and strings that begin with http://, https:// and
-  # ftp://. In these cases, the opened file object is extended by OpenURI::Meta.
+  # We can accept URIs and strings that begin with <code>http://</code>, <code>https://</code> and
+  # <code>ftp://</code>. In these cases, the opened file object is extended by OpenURI::Meta.
   def self.open(name, *rest, &block)
     if name.respond_to?(:open)
       name.open(*rest, &block)

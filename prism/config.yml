@@ -653,10 +653,6 @@ tokens:
     comment: "a separator between words in a list"
   - name: __END__
     comment: "marker for the point in the file at which the parser should stop"
-  - name: MISSING
-    comment: "a token that was expected but not found"
-  - name: NOT_PROVIDED
-    comment: "a token that was not present but it is okay"
 flags:
   - name: ArgumentsNodeFlags
     values:

@@ -80,8 +80,8 @@ mod snapshot_tests {
           PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
           v24:HeapObject[class_exact*:Object@VALUE(0x1010)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1010)]
           v25:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v13, v15, v11], locals: [] }
-          v26:BasicObject = SendWithoutBlockDirect v24, :foo (0x1048), v13, v15, v11
-          v18:Any = Snapshot FrameState { pc: 0x1050, stack: [v26], locals: [] }
+          v26:BasicObject = SendDirect v24, 0x1048, :foo (0x1058), v13, v15, v11
+          v18:Any = Snapshot FrameState { pc: 0x1060, stack: [v26], locals: [] }
           PatchPoint NoTracePoint
           CheckInterrupts
           Return v26
@@ -114,8 +114,8 @@ mod snapshot_tests {
           PatchPoint NoSingletonClass(Object@0x1010)
           PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
           v22:HeapObject[class_exact*:Object@VALUE(0x1010)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1010)]
-          v23:BasicObject = SendWithoutBlockDirect v22, :foo (0x1048), v11, v13
-          v16:Any = Snapshot FrameState { pc: 0x1050, stack: [v23], locals: [] }
+          v23:BasicObject = SendDirect v22, 0x1048, :foo (0x1058), v11, v13
+          v16:Any = Snapshot FrameState { pc: 0x1060, stack: [v23], locals: [] }
           PatchPoint NoTracePoint
           CheckInterrupts
           Return v23
@@ -1843,7 +1843,7 @@ pub mod hir_build_tests {
     }
 
     #[test]
-    fn test_cant_compile_super_forward() {
+    fn test_compile_super_forward() {
         eval("
             def test(...) = super(...)
         ");
@@ -1858,7 +1858,79 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
-          SideExit UnhandledYARVInsn(invokesuperforward)
+          v15:BasicObject = InvokeSuperForward v8, 0x1000, v9 # SendFallbackReason: Uncategorized(invokesuperforward)
+          CheckInterrupts
+          Return v15
+        ");
+    }
+
+    #[test]
+    fn test_compile_super_forward_with_block() {
+        eval("
+            def test(...) = super { |x| x }
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :..., l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v15:BasicObject = InvokeSuperForward v8, 0x1000, v9 # SendFallbackReason: Uncategorized(invokesuperforward)
+          v16:BasicObject = GetLocal :..., l0, EP@3
+          CheckInterrupts
+          Return v15
+        ");
+    }
+
+    #[test]
+    fn test_compile_super_forward_with_use() {
+        eval("
+            def test(...) = super(...) + 1
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :..., l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v15:BasicObject = InvokeSuperForward v8, 0x1000, v9 # SendFallbackReason: Uncategorized(invokesuperforward)
+          v17:Fixnum[1] = Const Value(1)
+          v20:BasicObject = SendWithoutBlock v15, :+, v17 # SendFallbackReason: Uncategorized(opt_plus)
+          CheckInterrupts
+          Return v20
+        ");
+    }
+
+    #[test]
+    fn test_compile_super_forward_with_arg() {
+        eval("
+            def test(...) = super(1, ...)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :..., l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:Fixnum[1] = Const Value(1)
+          v17:BasicObject = InvokeSuperForward v8, 0x1000, v14, v9 # SendFallbackReason: Uncategorized(invokesuperforward)
+          CheckInterrupts
+          Return v17
         ");
     }
 
@@ -1966,7 +2038,7 @@ pub mod hir_build_tests {
         eval("
             def test(a, ...) = foo(a, ...)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb0():
           EntryPoint interpreter
@@ -1984,8 +2056,12 @@ pub mod hir_build_tests {
         bb2(v16:BasicObject, v17:BasicObject, v18:ArrayExact, v19:BasicObject, v20:BasicObject, v21:NilClass):
           v28:ArrayExact = ToArray v18
           PatchPoint NoEPEscape(test)
-          GuardBlockParamProxy l0
-          v34:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1000))
+          v33:CPtr = GetEP 0
+          v34:CInt64 = LoadField v33, :_env_data_index_flags@0x1000
+          v35:CInt64 = GuardBitNotSet v34, CUInt64(512)
+          v36:CInt64 = LoadField v33, :_env_data_index_specval@0x1001
+          v37:CInt64 = GuardBitSet v36, CUInt64(1)
+          v38:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
           SideExit UnhandledYARVInsn(splatkw)
         ");
     }
@@ -3337,7 +3413,7 @@ pub mod hir_build_tests {
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("Dir", "open"));
         assert!(iseq_contains_opcode(iseq, YARVINSN_opt_invokebuiltin_delegate), "iseq Dir.open does not contain invokebuiltin");
         let function = iseq_to_hir(iseq).unwrap();
-        assert_snapshot!(hir_string_function(&function), @r"
+        assert_snapshot!(hir_string_function(&function), @"
         fn open@<internal:dir>:
         bb0():
           EntryPoint interpreter
@@ -3356,20 +3432,24 @@ pub mod hir_build_tests {
         bb2(v16:BasicObject, v17:BasicObject, v18:BasicObject, v19:BasicObject, v20:BasicObject, v21:NilClass):
           v25:BasicObject = InvokeBuiltin dir_s_open, v16, v17, v18
           PatchPoint NoEPEscape(open)
-          GuardBlockParamProxy l0
-          v32:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1000))
+          v31:CPtr = GetEP 0
+          v32:CInt64 = LoadField v31, :_env_data_index_flags@0x1000
+          v33:CInt64 = GuardBitNotSet v32, CUInt64(512)
+          v34:CInt64 = LoadField v31, :_env_data_index_specval@0x1001
+          v35:CInt64 = GuardBitSet v34, CUInt64(1)
+          v36:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
           CheckInterrupts
-          v35:CBool[true] = Test v32
-          v36 = RefineType v32, Falsy
-          IfFalse v35, bb3(v16, v17, v18, v19, v20, v25)
-          v38:HeapObject[BlockParamProxy] = RefineType v32, Truthy
-          v42:BasicObject = InvokeBlock, v25 # SendFallbackReason: Uncategorized(invokeblock)
-          v45:BasicObject = InvokeBuiltin dir_s_close, v16, v25
+          v39:CBool[true] = Test v36
+          v40 = RefineType v36, Falsy
+          IfFalse v39, bb3(v16, v17, v18, v19, v20, v25)
+          v42:HeapObject[BlockParamProxy] = RefineType v36, Truthy
+          v46:BasicObject = InvokeBlock, v25 # SendFallbackReason: Uncategorized(invokeblock)
+          v49:BasicObject = InvokeBuiltin dir_s_close, v16, v25
           CheckInterrupts
-          Return v42
-        bb3(v51, v52, v53, v54, v55, v56):
+          Return v46
+        bb3(v55, v56, v57, v58, v59, v60):
           CheckInterrupts
-          Return v56
+          Return v60
         ");
     }
 

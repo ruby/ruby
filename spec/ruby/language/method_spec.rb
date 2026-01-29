@@ -1234,10 +1234,8 @@ describe "A method call with a space between method name and parentheses" do
       args.should == [true]
     end
 
-    ruby_version_is "3.3" do
-      it "supports multiple statements" do
-        eval("m (1; 2)").should == [2]
-      end
+    it "supports multiple statements" do
+      eval("m (1; 2)").should == [2]
     end
   end
 

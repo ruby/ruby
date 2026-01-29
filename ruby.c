@@ -2200,7 +2200,7 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
         // If we found an __END__ marker, then we're going to define a global
         // DATA constant that is a file object that can be read to read the
         // contents after the marker.
-        if (NIL_P(error) && result->parser.data_loc.start != NULL) {
+        if (NIL_P(error) && result->parser.data_loc.length != 0) {
             rb_define_global_const("DATA", rb_stdin);
         }
     }
@@ -2237,17 +2237,17 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
         // If we found an __END__ marker, then we're going to define a global
         // DATA constant that is a file object that can be read to read the
         // contents after the marker.
-        if (NIL_P(error) && result->parser.data_loc.start != NULL) {
+        if (NIL_P(error) && result->parser.data_loc.length != 0) {
             int xflag = opt->xflag;
             VALUE file = open_load_file(script_name, &xflag);
 
             const pm_parser_t *parser = &result->parser;
-            size_t offset = parser->data_loc.start - parser->start + 7;
+            uint32_t offset = parser->data_loc.start + 7;
 
             if ((parser->start + offset < parser->end) && parser->start[offset] == '\r') offset++;
             if ((parser->start + offset < parser->end) && parser->start[offset] == '\n') offset++;
 
-            rb_funcall(file, rb_intern_const("seek"), 2, SIZET2NUM(offset), INT2FIX(SEEK_SET));
+            rb_funcall(file, rb_intern_const("seek"), 2, UINT2NUM(offset), INT2FIX(SEEK_SET));
             rb_define_global_const("DATA", file);
         }
     }

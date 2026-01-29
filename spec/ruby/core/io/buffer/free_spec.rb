@@ -49,17 +49,15 @@ describe "IO::Buffer#free" do
     end
   end
 
-  ruby_version_is "3.3" do
-    context "with a String-backed buffer created with .string" do
-      it "disassociates the buffer from the string and nullifies the buffer" do
-        string =
-          IO::Buffer.string(4) do |buffer|
-            buffer.set_string("meat")
-            buffer.free
-            buffer.null?.should be_true
-          end
-        string.should == "meat"
-      end
+  context "with a String-backed buffer created with .string" do
+    it "disassociates the buffer from the string and nullifies the buffer" do
+      string =
+        IO::Buffer.string(4) do |buffer|
+          buffer.set_string("meat")
+          buffer.free
+          buffer.null?.should be_true
+        end
+      string.should == "meat"
     end
   end
 

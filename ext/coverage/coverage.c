@@ -70,7 +70,7 @@ rb_coverage_supported(VALUE self, VALUE _mode)
  *   If +lines+ is enabled, +oneshot_lines+ cannot be enabled.
  *   See {Lines Coverage}[rdoc-ref:Coverage@Lines+Coverage].
  * - +branches+: Enables branch coverage that records the number of times each
- *   branch in each conditional was executed. See {Branches Coverage}[rdoc-ref:Coverage@Branch+Coverage].
+ *   branch in each conditional was executed. See {Branches Coverage}[rdoc-ref:Coverage@Branches+Coverage].
  * - +methods+: Enables method coverage that records the number of times each method was exectued.
  *   See {Methods Coverage}[rdoc-ref:Coverage@Methods+Coverage].
  * - +eval+: Enables coverage for evaluations (e.g. Kernel#eval, Module#class_eval).

@@ -91,6 +91,7 @@ fn profile_insn(bare_opcode: ruby_vminsn_type, ec: EcPtr) {
         YARVINSN_opt_size      => profile_operands(profiler, profile, 1),
         YARVINSN_opt_succ      => profile_operands(profiler, profile, 1),
         YARVINSN_invokeblock   => profile_block_handler(profiler, profile),
+        YARVINSN_getblockparamproxy => profile_getblockparamproxy(profiler, profile),
         YARVINSN_invokesuper   => profile_invokesuper(profiler, profile),
         YARVINSN_opt_send_without_block | YARVINSN_send => {
             let cd: *const rb_call_data = profiler.insn_opnd(0).as_ptr();
@@ -151,6 +152,22 @@ fn profile_block_handler(profiler: &mut Profiler, profile: &mut IseqProfile) {
     }
     let obj = profiler.peek_at_block_handler();
     let ty = ProfiledType::object(obj);
+    VALUE::from(profiler.iseq).write_barrier(ty.class());
+    types[0].observe(ty);
+}
+
+fn profile_getblockparamproxy(profiler: &mut Profiler, profile: &mut IseqProfile) {
+    let types = &mut profile.opnd_types[profiler.insn_idx];
+    if types.is_empty() {
+        types.resize(1, TypeDistribution::new());
+    }
+
+    let level = profiler.insn_opnd(1).as_u32();
+    let ep = unsafe { get_cfp_ep_level(profiler.cfp, level) };
+    let block_handler = unsafe { *ep.offset(VM_ENV_DATA_INDEX_SPECVAL as isize) };
+    let untagged = unsafe { rb_vm_untag_block_handler(block_handler) };
+
+    let ty = ProfiledType::object(untagged);
     VALUE::from(profiler.iseq).write_barrier(ty.class());
     types[0].observe(ty);
 }

@@ -45,19 +45,19 @@ module Prism
     def test_unterminated_string_closing
       statement = Prism.parse_statement("'hello")
       assert_equal statement.unescaped, "hello"
-      assert_empty statement.closing
+      assert_nil statement.closing
     end
 
     def test_unterminated_interpolated_string_closing
       statement = Prism.parse_statement('"hello')
       assert_equal statement.unescaped, "hello"
-      assert_empty statement.closing
+      assert_nil statement.closing
     end
 
     def test_unterminated_empty_string_closing
       statement = Prism.parse_statement('"')
       assert_empty statement.unescaped
-      assert_empty statement.closing
+      assert_nil statement.closing
     end
 
     def test_invalid_message_name
@@ -84,7 +84,7 @@ module Prism
 
     def test_incomplete_def_closing_loc
       statement = Prism.parse_statement("def f; 123")
-      assert_empty(statement.end_keyword)
+      assert_nil(statement.end_keyword)
     end
 
     private

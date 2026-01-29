@@ -69,7 +69,7 @@ enum DistributionKind {
     SkewedMegamorphic,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DistributionSummary<T: Copy + PartialEq + Default + std::fmt::Debug, const N: usize> {
     kind: DistributionKind,
     buckets: [T; N],

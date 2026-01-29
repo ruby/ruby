@@ -33,8 +33,13 @@ module Prism
           queue << child
 
           if compare
-            assert_operator current.location.start_offset, :<=, child.location.start_offset
-            assert_operator current.location.end_offset, :>=, child.location.end_offset
+            assert_operator current.location.start_offset, :<=, child.location.start_offset, -> {
+              "[#{fixture.full_path}] Parent node #{current.class} at #{current.location} does not start before child node #{child.class} at #{child.location}"
+            }
+
+            assert_operator current.location.end_offset, :>=, child.location.end_offset, -> {
+              "[#{fixture.full_path}] Parent node #{current.class} at #{current.location} does not end after child node #{child.class} at #{child.location}"
+            }
           end
         end
       end

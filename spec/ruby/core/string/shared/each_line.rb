@@ -159,4 +159,18 @@ describe :string_each_line, shared: true do
       a.should == ["hello\r\n", "world\r\n"]
     end
   end
+
+  it "does not split lines for dummy UTF-16" do
+    "a\nb".encode(Encoding::UTF_16).lines.should == [
+      "\xFE\xFF\x00\x61\x00\n\x00\x62".dup.force_encoding(Encoding::UTF_16)
+    ]
+
+    str = "\x00\n\n\x00".dup.force_encoding(Encoding::UTF_16)
+    str.lines.should == [str]
+  end
+
+  it "raises Encoding::ConverterNotFoundError for dummy UTF-7" do
+    str = "a\nb".dup.force_encoding(Encoding::UTF_7)
+    -> { str.lines }.should raise_error(Encoding::ConverterNotFoundError)
+  end
 end

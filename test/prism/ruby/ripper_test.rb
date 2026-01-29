@@ -136,7 +136,7 @@ module Prism
       assert_equal(expected, lexer.parse[0].to_a)
       assert_equal(lexer.parse[0].to_a, lexer.scan[0].to_a)
 
-      assert_equal(%i[on_int on_sp on_op], Translation::Ripper::Lexer.new("1 +").lex.map(&:event))
+      assert_equal(%i[on_int on_sp on_op], Translation::Ripper::Lexer.new("1 +").lex.map { |token| token[1] })
       assert_raise(SyntaxError) { Translation::Ripper::Lexer.new("1 +").lex(raise_errors: true) }
     end
 
@@ -169,13 +169,13 @@ module Prism
       # Prism emits tokens by their order in the code, not in parse order
       ripper.sort_by! { |elem| elem[0] }
 
-      [prism.size, ripper.size].max.times do |i|
-        expected = ripper[i]
-        actual = prism[i]
+      [prism.size, ripper.size].max.times do |index|
+        expected = ripper[index]
+        actual = prism[index]
 
-        # Since tokens related to heredocs are not emitted in the same order,
-        # the state also doesn't line up.
-        if expected && actual && expected[1] == :on_heredoc_end && actual[1] == :on_heredoc_end
+        # There are some tokens that have slightly different state that do not
+        # effect the parse tree, so they may not match.
+        if expected && actual && expected[1] == actual[1] && %i[on_comment on_heredoc_end on_embexpr_end on_sp].include?(expected[1])
           expected[3] = actual[3] = nil
         end
 

@@ -17,15 +17,13 @@ describe "Warning.[]=" do
     end
   end
 
-  ruby_version_is '3.3' do
-    it "enables or disables performance warnings" do
-      original = Warning[:performance]
-      begin
-        Warning[:performance] = !original
-        Warning[:performance].should == !original
-      ensure
-        Warning[:performance] = original
-      end
+  it "enables or disables performance warnings" do
+    original = Warning[:performance]
+    begin
+      Warning[:performance] = !original
+      Warning[:performance].should == !original
+    ensure
+      Warning[:performance] = original
     end
   end
 

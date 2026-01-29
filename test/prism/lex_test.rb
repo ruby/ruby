@@ -3,6 +3,7 @@
 return if !(RUBY_ENGINE == "ruby" && RUBY_VERSION >= "3.2.0")
 
 require_relative "test_helper"
+require "ripper"
 
 module Prism
   class LexTest < TestCase
@@ -49,7 +50,7 @@ module Prism
     if RUBY_VERSION >= "3.3"
       def test_lex_compare
         prism = Prism.lex_compat(File.read(__FILE__), version: "current").value
-        ripper = Prism.lex_ripper(File.read(__FILE__))
+        ripper = Ripper.lex(File.read(__FILE__))
         assert_equal(ripper, prism)
       end
     end

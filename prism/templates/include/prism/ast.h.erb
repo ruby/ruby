@@ -46,15 +46,19 @@ typedef struct {
 } pm_token_t;
 
 /**
- * This represents a range of bytes in the source string to which a node or
- * token corresponds.
+ * This struct represents a slice in the source code, defined by an offset and
+ * a length. Note that we have confirmation that we can represent all locations
+ * within Ruby source files using 32-bit integers per:
+ *
+ *     https://bugs.ruby-lang.org/issues/20488#note-1
+ *
  */
 typedef struct {
-    /** A pointer to the start location of the range in the source. */
-    const uint8_t *start;
+    /** The offset of the location from the start of the source. */
+    uint32_t start;
 
-    /** A pointer to the end location of the range in the source. */
-    const uint8_t *end;
+    /** The length of the location. */
+    uint32_t length;
 } pm_location_t;
 
 struct pm_node;
@@ -112,7 +116,7 @@ static const pm_node_flags_t PM_NODE_FLAG_STATIC_LITERAL = 0x2;
 typedef struct pm_node {
     /**
      * This represents the type of the node. It somewhat maps to the nodes that
-     * existed in the original grammar and ripper, but it's not a 1:1 mapping.
+     * existed in the original grammar and ripper, but it is not a 1:1 mapping.
      */
     pm_node_type_t type;
 
@@ -129,7 +133,7 @@ typedef struct pm_node {
     uint32_t node_id;
 
     /**
-     * This is the location of the node in the source. It's a range of bytes
+     * This is the location of the node in the source. It is a range of bytes
      * containing a start and an end.
      */
     pm_location_t location;
@@ -160,6 +164,15 @@ typedef struct pm_node {
  * Return true if the given flag is set on the given node.
  */
 #define PM_NODE_FLAG_P(node_, flag_) ((PM_NODE_FLAGS(node_) & (flag_)) != 0)
+
+/**
+ * The alignment required for a child node within a parent node.
+ */
+#ifdef _MSC_VER
+#define PM_NODE_ALIGNAS __declspec(align(8))
+#else
+#define PM_NODE_ALIGNAS PRISM_ALIGNAS(PRISM_ALIGNOF(void *))
+#endif
 <%- nodes.each do |node| -%>
 
 /**
@@ -182,7 +195,6 @@ typedef struct pm_node {
 typedef struct pm_<%= node.human %> {
     /** The embedded base node. */
     pm_node_t base;
-
 <%- node.fields.each do |field| -%>
 
     /**
@@ -195,7 +207,7 @@ typedef struct pm_<%= node.human %> {
     <%- end -%>
      */
     <%= case field
-    when Prism::Template::NodeField, Prism::Template::OptionalNodeField then "struct #{field.c_type} *#{field.name}"
+    when Prism::Template::NodeField, Prism::Template::OptionalNodeField then "PM_NODE_ALIGNAS struct #{field.c_type} *#{field.name}"
     when Prism::Template::NodeListField then "struct pm_node_list #{field.name}"
     when Prism::Template::ConstantField, Prism::Template::OptionalConstantField then "pm_constant_id_t #{field.name}"
     when Prism::Template::ConstantListField then "pm_constant_id_list_t #{field.name}"

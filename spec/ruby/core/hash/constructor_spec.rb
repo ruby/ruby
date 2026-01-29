@@ -44,23 +44,23 @@ describe "Hash.[]" do
 
   it "raises for elements that are not arrays" do
     -> {
-      Hash[[:a]].should == {}
-    }.should raise_error(ArgumentError)
+      Hash[[:a]]
+    }.should raise_error(ArgumentError, "wrong element type Symbol at 0 (expected array)")
     -> {
-      Hash[[:nil]].should == {}
-    }.should raise_error(ArgumentError)
+      Hash[[nil]]
+    }.should raise_error(ArgumentError, "wrong element type nil at 0 (expected array)")
   end
 
   it "raises an ArgumentError for arrays of more than 2 elements" do
-    ->{ Hash[[[:a, :b, :c]]].should == {} }.should raise_error(ArgumentError)
+    ->{
+      Hash[[[:a, :b, :c]]]
+    }.should raise_error(ArgumentError, "invalid number of elements (3 for 1..2)")
   end
 
   it "raises an ArgumentError when passed a list of value-invalid-pairs in an array" do
     -> {
-      -> {
-        Hash[[[:a, 1], [:b], 42, [:d, 2], [:e, 2, 3], []]]
-      }.should complain(/ignoring wrong elements/)
-    }.should raise_error(ArgumentError)
+      Hash[[[:a, 1], [:b], 42, [:d, 2], [:e, 2, 3], []]]
+    }.should raise_error(ArgumentError, "wrong element type Integer at 2 (expected array)")
   end
 
   describe "passed a single argument which responds to #to_hash" do
@@ -117,13 +117,11 @@ describe "Hash.[]" do
     Hash[hash].default_proc.should be_nil
   end
 
-  ruby_version_is '3.3' do
-    it "does not retain compare_by_identity flag" do
-      hash = { a: 1 }.compare_by_identity
-      Hash[hash].compare_by_identity?.should == false
+  it "does not retain compare_by_identity flag" do
+    hash = { a: 1 }.compare_by_identity
+    Hash[hash].compare_by_identity?.should == false
 
-      hash = {}.compare_by_identity
-      Hash[hash].compare_by_identity?.should == false
-    end
+    hash = {}.compare_by_identity
+    Hash[hash].compare_by_identity?.should == false
   end
 end
