@@ -1014,9 +1014,7 @@ newobj_of(rb_ractor_t *cr, VALUE klass, VALUE flags, shape_id_t shape_id, bool w
         int lev = RB_GC_VM_LOCK_NO_BARRIER();
         {
             size_t slot_size = rb_gc_obj_slot_size(obj);
-            if (slot_size > RVALUE_SIZE) {
-                memset((char *)obj + RVALUE_SIZE, 0, slot_size - RVALUE_SIZE);
-            }
+            memset((char *)obj + sizeof(struct RBasic), 0, slot_size - sizeof(struct RBasic));
 
             /* We must disable GC here because the callback could call xmalloc
              * which could potentially trigger a GC, and a lot of code is unsafe
@@ -1163,17 +1161,19 @@ rb_objspace_data_type_memsize(VALUE obj)
 {
     size_t size = 0;
     if (RTYPEDDATA_P(obj)) {
-        const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
         const void *ptr = RTYPEDDATA_GET_DATA(obj);
 
-        if (RTYPEDDATA_EMBEDDABLE_P(obj) && !RTYPEDDATA_EMBEDDED_P(obj)) {
+        if (ptr) {
+            const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
+            if (RTYPEDDATA_EMBEDDABLE_P(obj) && !RTYPEDDATA_EMBEDDED_P(obj)) {
 #ifdef HAVE_MALLOC_USABLE_SIZE
-            size += malloc_usable_size((void *)ptr);
+                size += malloc_usable_size((void *)ptr);
 #endif
-        }
+            }
 
-        if (ptr && type->function.dsize) {
-            size += type->function.dsize(ptr);
+            if (type->function.dsize) {
+                size += type->function.dsize(ptr);
+            }
         }
     }
 
