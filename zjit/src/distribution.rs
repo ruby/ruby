@@ -69,7 +69,7 @@ enum DistributionKind {
     SkewedMegamorphic,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DistributionSummary<T: Copy + PartialEq + Default + std::fmt::Debug, const N: usize> {
     kind: DistributionKind,
     buckets: [T; N],
@@ -133,6 +133,10 @@ impl<T: Copy + PartialEq + Default + std::fmt::Debug, const N: usize> Distributi
     pub fn bucket(&self, idx: usize) -> T {
         assert!(idx < N, "index {idx} out of bounds for buckets[{N}]");
         self.buckets[idx]
+    }
+
+    pub fn buckets(&self) -> &[T] {
+        &self.buckets
     }
 }
 
