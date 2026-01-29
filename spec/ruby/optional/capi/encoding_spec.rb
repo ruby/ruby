@@ -745,4 +745,34 @@ describe "C-API Encoding function" do
       ruby_exe(code, args: "2>&1", exit_status: 1).should.include?('too many encoding (> 256) (EncodingError)')
     end
   end
+
+  describe "ONIGENC_IS_UNICODE" do
+    it "is true only for select UTF-related encodings" do
+      unicode = [
+        Encoding::UTF_8,
+        Encoding::UTF8_DOCOMO,
+        Encoding::UTF8_KDDI,
+        Encoding::UTF8_MAC,
+        Encoding::UTF8_SOFTBANK,
+        Encoding::CESU_8,
+        Encoding::UTF_16LE,
+        Encoding::UTF_16BE,
+        Encoding::UTF_32LE,
+        Encoding::UTF_32BE
+      ]
+      unicode.each do |enc|
+        @s.should.ONIGENC_IS_UNICODE(enc)
+      end
+
+      (Encoding.list - unicode).each { |enc|
+        @s.should_not.ONIGENC_IS_UNICODE(enc)
+      }
+    end
+
+    # Redundant with the above but more explicit
+    it "is false for the dummy UTF-16 and UTF-32 encodings" do
+      @s.should_not.ONIGENC_IS_UNICODE(Encoding::UTF_16)
+      @s.should_not.ONIGENC_IS_UNICODE(Encoding::UTF_32)
+    end
+  end
 end

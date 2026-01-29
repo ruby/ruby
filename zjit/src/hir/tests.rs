@@ -80,8 +80,8 @@ mod snapshot_tests {
           PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
           v24:HeapObject[class_exact*:Object@VALUE(0x1010)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1010)]
           v25:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v13, v15, v11], locals: [] }
-          v26:BasicObject = SendWithoutBlockDirect v24, :foo (0x1048), v13, v15, v11
-          v18:Any = Snapshot FrameState { pc: 0x1050, stack: [v26], locals: [] }
+          v26:BasicObject = SendDirect v24, 0x1048, :foo (0x1058), v13, v15, v11
+          v18:Any = Snapshot FrameState { pc: 0x1060, stack: [v26], locals: [] }
           PatchPoint NoTracePoint
           CheckInterrupts
           Return v26
@@ -114,8 +114,8 @@ mod snapshot_tests {
           PatchPoint NoSingletonClass(Object@0x1010)
           PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
           v22:HeapObject[class_exact*:Object@VALUE(0x1010)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1010)]
-          v23:BasicObject = SendWithoutBlockDirect v22, :foo (0x1048), v11, v13
-          v16:Any = Snapshot FrameState { pc: 0x1050, stack: [v23], locals: [] }
+          v23:BasicObject = SendDirect v22, 0x1048, :foo (0x1058), v11, v13
+          v16:Any = Snapshot FrameState { pc: 0x1060, stack: [v23], locals: [] }
           PatchPoint NoTracePoint
           CheckInterrupts
           Return v23

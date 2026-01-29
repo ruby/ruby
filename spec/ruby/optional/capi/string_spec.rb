@@ -1369,8 +1369,133 @@ describe "C-API String function" do
       result1.should_not.equal?(result2)
     end
 
+    it "preserves the encoding of the original string" do
+      result1 = @s.rb_str_to_interned_str("hello".dup.force_encoding(Encoding::US_ASCII))
+      result2 = @s.rb_str_to_interned_str("hello".dup.force_encoding(Encoding::UTF_8))
+      result1.encoding.should == Encoding::US_ASCII
+      result2.encoding.should == Encoding::UTF_8
+    end
+
     it "returns the same string as String#-@" do
       @s.rb_str_to_interned_str("hello").should.equal?(-"hello")
+    end
+  end
+
+  describe "rb_interned_str" do
+    it "returns a frozen string" do
+      str = "hello"
+      result = @s.rb_interned_str(str, str.bytesize)
+      result.should.is_a?(String)
+      result.should.frozen?
+      result.encoding.should == Encoding::US_ASCII
+    end
+
+    it "returns the same frozen string" do
+      str = "hello"
+      result1 = @s.rb_interned_str(str, str.bytesize)
+      result2 = @s.rb_interned_str(str, str.bytesize)
+      result1.should.equal?(result2)
+    end
+
+    it "supports strings with embedded null bytes" do
+      str = "foo\x00bar\x00baz".b
+      result = @s.rb_interned_str(str, str.bytesize)
+      result.should == str
+    end
+
+    it "return US_ASCII encoding for an empty string" do
+      result = @s.rb_interned_str("", 0)
+      result.should == ""
+      result.encoding.should == Encoding::US_ASCII
+    end
+
+    it "returns US_ASCII encoding for strings of only 7 bit ASCII" do
+      0x00.upto(0x7f).each do |char|
+        result = @s.rb_interned_str(char.chr, 1)
+        result.encoding.should == Encoding::US_ASCII
+      end
+    end
+
+    ruby_bug "21842", ""..."4.1" do
+      it "returns BINARY encoding for strings that use the 8th bit" do
+        0x80.upto(0xff) do |char|
+          result = @s.rb_interned_str(char.chr, 1)
+          result.encoding.should == Encoding::BINARY
+        end
+      end
+    end
+
+    it 'returns the same string when using non-ascii characters' do
+      str = 'こんにちは'
+      result1 = @s.rb_interned_str(str, str.bytesize)
+      result2 = @s.rb_interned_str(str, str.bytesize)
+      result1.should.equal?(result2)
+    end
+
+    ruby_bug "21842", ""..."4.1" do
+      it "returns the same string as String#-@" do
+        str = "hello".dup.force_encoding(Encoding::US_ASCII)
+        @s.rb_interned_str(str, str.bytesize).should.equal?(-str)
+      end
+    end
+  end
+
+  describe "rb_interned_str_cstr" do
+    it "returns a frozen string" do
+      str = "hello"
+      result = @s.rb_interned_str_cstr(str)
+      result.should.is_a?(String)
+      result.should.frozen?
+      result.encoding.should == Encoding::US_ASCII
+    end
+
+    it "returns the same frozen string" do
+      str = "hello"
+      result1 = @s.rb_interned_str_cstr(str)
+      result2 = @s.rb_interned_str_cstr(str)
+      result1.should.equal?(result2)
+    end
+
+    it "does not support strings with embedded null bytes" do
+      str = "foo\x00bar\x00baz".b
+      result = @s.rb_interned_str_cstr(str)
+      result.should == "foo"
+    end
+
+    it "return US_ASCII encoding for an empty string" do
+      result = @s.rb_interned_str_cstr("")
+      result.should == ""
+      result.encoding.should == Encoding::US_ASCII
+    end
+
+    it "returns US_ASCII encoding for strings of only 7 bit ASCII" do
+      0x01.upto(0x7f).each do |char|
+        result = @s.rb_interned_str_cstr(char.chr)
+        result.encoding.should == Encoding::US_ASCII
+      end
+    end
+
+    ruby_bug "21842", ""..."4.1" do
+      it "returns BINARY encoding for strings that use the 8th bit" do
+        0x80.upto(0xff) do |char|
+          result = @s.rb_interned_str_cstr(char.chr)
+          result.encoding.should == Encoding::BINARY
+        end
+      end
+    end
+
+    it 'returns the same string when using non-ascii characters' do
+      str = 'こんにちは'
+      result1 = @s.rb_interned_str_cstr(str)
+      result2 = @s.rb_interned_str_cstr(str)
+      result1.should.equal?(result2)
+    end
+
+    ruby_bug "21842", ""..."4.1" do
+      it "returns the same string as String#-@" do
+        str = "hello".dup.force_encoding(Encoding::US_ASCII)
+        @s.rb_interned_str_cstr(str).should.equal?(-str)
+      end
     end
   end
 end

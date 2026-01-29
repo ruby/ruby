@@ -44,17 +44,15 @@ describe "IO::Buffer#resize" do
       end
     end
 
-    ruby_version_is "3.3" do
-      it "resizes private buffer, discarding excess contents" do
-        File.open(__FILE__, "r") do |file|
-          @buffer = IO::Buffer.map(file, nil, 0, IO::Buffer::PRIVATE)
-          @buffer.resize(10)
-          @buffer.size.should == 10
-          @buffer.get_string.should == "require_re"
-          @buffer.resize(12)
-          @buffer.size.should == 12
-          @buffer.get_string.should == "require_re\0\0"
-        end
+    it "resizes private buffer, discarding excess contents" do
+      File.open(__FILE__, "r") do |file|
+        @buffer = IO::Buffer.map(file, nil, 0, IO::Buffer::PRIVATE)
+        @buffer.resize(10)
+        @buffer.size.should == 10
+        @buffer.get_string.should == "require_re"
+        @buffer.resize(12)
+        @buffer.size.should == 12
+        @buffer.get_string.should == "require_re\0\0"
       end
     end
   end
@@ -76,12 +74,10 @@ describe "IO::Buffer#resize" do
     end
   end
 
-  ruby_version_is "3.3" do
-    context "with a String-backed buffer created with .string" do
-      it "disallows resizing, raising IO::Buffer::AccessError" do
-        IO::Buffer.string(4) do |buffer|
-          -> { buffer.resize(10) }.should raise_error(IO::Buffer::AccessError, "Cannot resize external buffer!")
-        end
+  context "with a String-backed buffer created with .string" do
+    it "disallows resizing, raising IO::Buffer::AccessError" do
+      IO::Buffer.string(4) do |buffer|
+        -> { buffer.resize(10) }.should raise_error(IO::Buffer::AccessError, "Cannot resize external buffer!")
       end
     end
   end

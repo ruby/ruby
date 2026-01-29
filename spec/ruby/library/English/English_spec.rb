@@ -130,18 +130,6 @@ describe "English" do
     $LAST_MATCH_INFO.should == $~
   end
 
-  ruby_version_is ""..."3.3" do
-    it "aliases $IGNORECASE to $=" do
-      $VERBOSE, verbose = nil, $VERBOSE
-      begin
-        $IGNORECASE.should_not be_nil
-        $IGNORECASE.should == $=
-      ensure
-        $VERBOSE = verbose
-      end
-    end
-  end
-
   it "aliases $ARGV to $*" do
     $ARGV.should_not be_nil
     $ARGV.should == $*

@@ -129,37 +129,34 @@ describe "The for expression" do
     n.should == 3
   end
 
-  # Segfault in MRI 3.3 and lower: https://bugs.ruby-lang.org/issues/20468
-  ruby_bug "#20468", ""..."3.4" do
-    it "allows an attribute with safe navigation as an iterator name" do
-      class OFor
-        attr_accessor :target
+  it "allows an attribute with safe navigation as an iterator name" do
+    class OFor
+      attr_accessor :target
+    end
+
+    ofor = OFor.new
+    m = [1,2,3]
+    n = 0
+    eval <<~RUBY
+      for ofor&.target in m
+        n += 1
       end
+    RUBY
+    ofor.target.should == 3
+    n.should == 3
+  end
 
-      ofor = OFor.new
-      m = [1,2,3]
-      n = 0
-      eval <<~RUBY
-        for ofor&.target in m
-          n += 1
-        end
-      RUBY
-      ofor.target.should == 3
-      n.should == 3
-    end
-
-    it "allows an attribute with safe navigation on a nil base as an iterator name" do
-      ofor = nil
-      m = [1,2,3]
-      n = 0
-      eval <<~RUBY
-        for ofor&.target in m
-          n += 1
-        end
-      RUBY
-      ofor.should be_nil
-      n.should == 3
-    end
+  it "allows an attribute with safe navigation on a nil base as an iterator name" do
+    ofor = nil
+    m = [1,2,3]
+    n = 0
+    eval <<~RUBY
+      for ofor&.target in m
+        n += 1
+      end
+    RUBY
+    ofor.should be_nil
+    n.should == 3
   end
 
   it "allows an array index writer as an iterator name" do

@@ -88,7 +88,7 @@ module Prism
       #      # => ["def", " ", "m", "(", "a", ")", " ", "nil", " ", "end"]
       #
       def self.tokenize(...)
-        lex(...).map(&:value)
+        lex(...).map { |token| token[2] }
       end
 
       # This contains a table of all of the parser events and their

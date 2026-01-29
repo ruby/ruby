@@ -63,27 +63,19 @@ describe "Kernel#sleep" do
     actual_duration.should > 0.01 # 100 * 0.0001 => 0.01
   end
 
-  ruby_version_is ""..."3.3" do
-    it "raises a TypeError when passed nil" do
-      -> { sleep(nil)   }.should raise_error(TypeError)
+  it "accepts a nil duration" do
+    running = false
+    t = Thread.new do
+      running = true
+      sleep(nil)
+      5
     end
-  end
 
-  ruby_version_is "3.3" do
-    it "accepts a nil duration" do
-      running = false
-      t = Thread.new do
-        running = true
-        sleep(nil)
-        5
-      end
+    Thread.pass until running
+    Thread.pass while t.status and t.status != "sleep"
 
-      Thread.pass until running
-      Thread.pass while t.status and t.status != "sleep"
-
-      t.wakeup
-      t.value.should == 5
-    end
+    t.wakeup
+    t.value.should == 5
   end
 
   context "Kernel.sleep with Fiber scheduler" do

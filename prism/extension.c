@@ -201,9 +201,24 @@ build_options_i(VALUE key, VALUE value, VALUE argument) {
             const char *version = check_string(value);
 
             if (RSTRING_LEN(value) == 7 && strncmp(version, "current", 7) == 0) {
-                const char *current_version = RSTRING_PTR(rb_const_get(rb_cObject, rb_intern("RUBY_VERSION")));
-                if (!pm_options_version_set(options, current_version, 3)) {
-                    rb_exc_raise(rb_exc_new_cstr(rb_cPrismCurrentVersionError, current_version));
+                const char *ruby_version = RSTRING_PTR(rb_const_get(rb_cObject, rb_intern("RUBY_VERSION")));
+                if (!pm_options_version_set(options, ruby_version, 3)) {
+                    rb_exc_raise(rb_exc_new_cstr(rb_cPrismCurrentVersionError, ruby_version));
+                }
+            } else if (RSTRING_LEN(value) == 7 && strncmp(version, "nearest", 7) == 0) {
+                const char *ruby_version = RSTRING_PTR(rb_const_get(rb_cObject, rb_intern("RUBY_VERSION")));
+                const char *nearest_version;
+
+                if (ruby_version[0] < '3' || (ruby_version[0] == '3' && ruby_version[2] < '3')) {
+                    nearest_version = "3.3";
+                } else if (ruby_version[0] > '4' || (ruby_version[0] == '4' && ruby_version[2] > '1')) {
+                    nearest_version = "4.1";
+                } else {
+                    nearest_version = ruby_version;
+                }
+
+                if (!pm_options_version_set(options, nearest_version, 3)) {
+                    rb_raise(rb_eArgError, "invalid nearest version: %s", nearest_version);
                 }
             } else if (!pm_options_version_set(options, version, RSTRING_LEN(value))) {
                 rb_raise(rb_eArgError, "invalid version: %" PRIsVALUE, value);
@@ -894,8 +909,10 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
  *       version of Ruby syntax (which you can trigger with `nil` or
  *       `"latest"`). You may also restrict the syntax to a specific version of
  *       Ruby, e.g., with `"3.3.0"`. To parse with the same syntax version that
- *       the current Ruby is running use `version: "current"`. Raises
- *       ArgumentError if the version is not currently supported by Prism.
+ *       the current Ruby is running use `version: "current"`. To parse with the
+ *       nearest version to the current Ruby that is running, use
+ *       `version: "nearest"`. Raises ArgumentError if the version is not
+ *       currently supported by Prism.
  */
 static VALUE
 parse(int argc, VALUE *argv, VALUE self) {

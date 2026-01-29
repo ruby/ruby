@@ -84,11 +84,9 @@ describe "BasicObject#instance_eval" do
 
   end
 
-  ruby_version_is "3.3" do
-    it "uses the caller location as default location" do
-      f = Object.new
-      f.instance_eval("[__FILE__, __LINE__]").should == ["(eval at #{__FILE__}:#{__LINE__})", 1]
-    end
+  it "uses the caller location as default location" do
+    f = Object.new
+    f.instance_eval("[__FILE__, __LINE__]").should == ["(eval at #{__FILE__}:#{__LINE__})", 1]
   end
 
   it "has access to receiver's instance variables" do
