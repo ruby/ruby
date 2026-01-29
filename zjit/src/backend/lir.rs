@@ -2225,6 +2225,11 @@ impl Assembler
         fn compile_exit(asm: &mut Assembler, exit: &SideExit) {
             let SideExit { pc, stack, locals } = exit;
 
+            // Side exit blocks are not part of the CFG at the moment,
+            // so we need to manually ensure that patchpoints get padded
+            // so that nobody stomps on us
+            asm.pad_patch_point();
+
             asm_comment!(asm, "save cfp->pc");
             asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), *pc);
 
