@@ -6407,7 +6407,7 @@ mod hir_opt_tests {
           IfTrue v14, bb4(v8, v9, v9)
           v23:CBool = HasType v9, HeapObject[class_exact:C]
           IfTrue v23, bb5(v8, v9, v9)
-          v32:BasicObject = SendWithoutBlock v9, :foo # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v32:BasicObject = SendWithoutBlock v9, :foo # SendFallbackReason: SendWithoutBlock: polymorphic fallback
           Jump bb3(v8, v9, v32)
         bb4(v15:BasicObject, v16:BasicObject, v17:BasicObject):
           v19:HeapObject[class_exact:C] = RefineType v17, HeapObject[class_exact:C]
@@ -11468,7 +11468,7 @@ mod hir_opt_tests {
           IfTrue v14, bb4(v8, v9, v9)
           v23:CBool = HasType v9, HeapObject[class_exact:D]
           IfTrue v23, bb5(v8, v9, v9)
-          v32:BasicObject = SendWithoutBlock v9, :foo # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v32:BasicObject = SendWithoutBlock v9, :foo # SendFallbackReason: SendWithoutBlock: polymorphic fallback
           Jump bb3(v8, v9, v32)
         bb4(v15:BasicObject, v16:BasicObject, v17:BasicObject):
           PatchPoint NoSingletonClass(C@0x1000)
@@ -11520,7 +11520,7 @@ mod hir_opt_tests {
           IfTrue v14, bb4(v8, v9, v9)
           v23:CBool = HasType v9, Fixnum
           IfTrue v23, bb5(v8, v9, v9)
-          v32:BasicObject = SendWithoutBlock v9, :itself # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v32:BasicObject = SendWithoutBlock v9, :itself # SendFallbackReason: SendWithoutBlock: polymorphic fallback
           Jump bb3(v8, v9, v32)
         bb4(v15:BasicObject, v16:BasicObject, v17:BasicObject):
           v19:HeapObject[class_exact:C] = RefineType v17, HeapObject[class_exact:C]

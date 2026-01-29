@@ -625,6 +625,7 @@ pub enum SendFallbackReason {
     SendWithoutBlockNotOptimizedNeedPermission,
     SendWithoutBlockBopRedefined,
     SendWithoutBlockOperandsNotFixnum,
+    SendWithoutBlockPolymorphicFallback,
     SendDirectKeywordMismatch,
     SendDirectKeywordCountMismatch,
     SendDirectMissingKeyword,
@@ -686,6 +687,7 @@ impl Display for SendFallbackReason {
             SendNotOptimizedNeedPermission => write!(f, "Send: method private or protected and no FCALL"),
             SendWithoutBlockBopRedefined => write!(f, "SendWithoutBlock: basic operation was redefined"),
             SendWithoutBlockOperandsNotFixnum => write!(f, "SendWithoutBlock: operands are not fixnums"),
+            SendWithoutBlockPolymorphicFallback => write!(f, "SendWithoutBlock: polymorphic fallback"),
             SendDirectKeywordMismatch => write!(f, "SendDirect: keyword mismatch"),
             SendDirectKeywordCountMismatch => write!(f, "SendDirect: keyword count mismatch"),
             SendDirectMissingKeyword => write!(f, "SendDirect: missing keyword"),
@@ -6929,7 +6931,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             // In the fallthrough case, do a generic interpreter send and then join.
                             let args = state.stack_pop_n(argc as usize)?;
                             let recv = state.stack_pop()?;
-                            let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, state: exit_id, reason: Uncategorized(opcode) });
+                            let reason = SendWithoutBlockPolymorphicFallback;
+                            let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, state: exit_id, reason });
                             state.stack_push(send);
                             fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: state.as_args(self_param) }));
                             break;  // End the block
