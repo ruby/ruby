@@ -3660,6 +3660,8 @@ impl Function {
                             // }
                             let props = props.unwrap_or_default();
 
+                            // TODO(max): Move these below into the cfunc_argc cases
+                            // TODO(max): Move this all into a new reduce_send_to_ccall equivalent
                             // Try inlining the cfunc into HIR
                             let tmp_block = self.new_block(u32::MAX);
                             if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args, state) {
