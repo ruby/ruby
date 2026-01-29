@@ -39,6 +39,14 @@ class TestBundlerGem < Gem::TestCase
     assert_nil Gem::BUNDLED_GEMS.warning?("benchmark/ips", specs: {"benchmark-ips" => true})
   end
 
+  def test_no_warning_for_subfeatures_of_hyphenated_gem
+    # When benchmark-ips gem is in specs, requiring any "benchmark/*" subfeature
+    # should not warn, since hyphenated gems may provide multiple files
+    # (e.g., benchmark-ips provides benchmark/ips, benchmark/timing, benchmark/compare)
+    assert_nil Gem::BUNDLED_GEMS.warning?("benchmark/timing", specs: {"benchmark-ips" => true})
+    assert_nil Gem::BUNDLED_GEMS.warning?("benchmark/compare", specs: {"benchmark-ips" => true})
+  end
+
   def test_warning_without_hyphenated_gem
     # When benchmark-ips is NOT in specs, requiring "benchmark/ips" should warn
     warning = Gem::BUNDLED_GEMS.warning?("benchmark/ips", specs: {})
