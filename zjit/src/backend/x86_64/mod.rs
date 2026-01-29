@@ -1173,7 +1173,7 @@ mod tests {
         asm.cret(val64);
 
         asm.frame_teardown(JIT_PRESERVED_REGS);
-        assert_disasm_snapshot!(lir_string(&mut asm), @r"
+        assert_disasm_snapshot!(lir_string(&mut asm), @"
         bb0:
           # bb0(): foo@/tmp/a.rb:1
           FrameSetup 1, r13, rbx, r12
@@ -1186,6 +1186,7 @@ mod tests {
           Je bb0
           CRet v0
           FrameTeardown r13, rbx, r12
+          PadPatchPoint
         ");
     }
 
