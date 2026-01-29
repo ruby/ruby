@@ -5467,14 +5467,12 @@ impl Function {
             Insn::GuardAnyBitSet { val, mask, .. }
             | Insn::GuardNoBitsSet { val, mask, .. } => {
                 match mask {
-                    Const::Value(_) => self.assert_subtype(insn_id, val, types::RubyValue),
-                    Const::CInt8(_) | Const::CInt16(_) | Const::CInt32(_) | Const::CInt64(_) |
                     Const::CUInt8(_) | Const::CUInt16(_) | Const::CUInt32(_) | Const::CUInt64(_)
                         if self.is_a(val, types::CInt) || self.is_a(val, types::RubyValue) => {
                         Ok(())
                     }
                     _ => {
-                        return Err(ValidationError::MiscValidationError(insn_id, "GuardBitSet can only compare RubyValue/CInt, RubyValue/RubyValue, or CInt/CInt".to_string()));
+                        Err(ValidationError::MiscValidationError(insn_id, "GuardAnyBitSet/GuardNoBitsSet can only compare RubyValue/CUInt or CInt/CUInt".to_string()))
                     }
                 }
             }
@@ -6582,7 +6580,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     let ep = fun.push_insn(block, Insn::GetEP { level });
                     let flags = fun.push_insn(block, Insn::LoadField { recv: ep, id: ID!(_env_data_index_flags), offset: SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32), return_type: types::CInt64 });
-                    fun.push_insn(block, Insn::GuardNoBitsSet { val: flags, mask: Const::CInt64(VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into()), reason: SideExitReason::BlockParamProxyModified, state: exit_id });
+                    fun.push_insn(block, Insn::GuardNoBitsSet { val: flags, mask: Const::CUInt64(VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into()), reason: SideExitReason::BlockParamProxyModified, state: exit_id });
 
                     let block_handler = fun.push_insn(block, Insn::LoadField { recv: ep, id: ID!(_env_data_index_specval), offset: SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL, return_type: types::CInt64 });
 
@@ -6600,7 +6598,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             const _: () = assert!(RUBY_SYMBOL_FLAG & 1 == 0, "guard below rejects symbol block handlers");
 
                             // Bail out if the block handler is neither ISEQ nor ifunc
-                            fun.push_insn(block, Insn::GuardAnyBitSet { val: block_handler, mask: Const::CInt64(0x1), reason: SideExitReason::BlockParamProxyNotIseqOrIfunc, state: exit_id });
+                            fun.push_insn(block, Insn::GuardAnyBitSet { val: block_handler, mask: Const::CUInt64(0x1), reason: SideExitReason::BlockParamProxyNotIseqOrIfunc, state: exit_id });
                             // TODO(Shopify/ruby#753): GC root, so we should be able to avoid unnecessary GC tracing
                             state.stack_push(fun.push_insn(block, Insn::Const { val: Const::Value(unsafe { rb_block_param_proxy }) }));
                         }

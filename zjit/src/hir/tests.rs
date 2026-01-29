@@ -2058,9 +2058,9 @@ pub mod hir_build_tests {
           PatchPoint NoEPEscape(test)
           v33:CPtr = GetEP 0
           v34:CInt64 = LoadField v33, :_env_data_index_flags@0x1000
-          v35:CInt64 = GuardBitNotSet v34, CInt64(512)
+          v35:CInt64 = GuardBitNotSet v34, CUInt64(512)
           v36:CInt64 = LoadField v33, :_env_data_index_specval@0x1001
-          v37:CInt64 = GuardBitSet v36, CInt64(1)
+          v37:CInt64 = GuardBitSet v36, CUInt64(1)
           v38:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
           SideExit UnhandledYARVInsn(splatkw)
         ");
@@ -3434,9 +3434,9 @@ pub mod hir_build_tests {
           PatchPoint NoEPEscape(open)
           v31:CPtr = GetEP 0
           v32:CInt64 = LoadField v31, :_env_data_index_flags@0x1000
-          v33:CInt64 = GuardBitNotSet v32, CInt64(512)
+          v33:CInt64 = GuardBitNotSet v32, CUInt64(512)
           v34:CInt64 = LoadField v31, :_env_data_index_specval@0x1001
-          v35:CInt64 = GuardBitSet v34, CInt64(1)
+          v35:CInt64 = GuardBitSet v34, CUInt64(1)
           v36:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
           CheckInterrupts
           v39:CBool[true] = Test v36

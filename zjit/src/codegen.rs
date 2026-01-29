@@ -2296,14 +2296,19 @@ fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd,
     val
 }
 
+fn mask_to_opnd(mask: crate::hir::Const) -> Option<Opnd> {
+    match mask {
+        crate::hir::Const::CUInt8(v) => Some(Opnd::UImm(v as u64)),
+        crate::hir::Const::CUInt16(v) => Some(Opnd::UImm(v as u64)),
+        crate::hir::Const::CUInt32(v) => Some(Opnd::UImm(v as u64)),
+        crate::hir::Const::CUInt64(v) => Some(Opnd::UImm(v)),
+        _ => None
+    }
+}
+
 /// Compile a bitmask check with a side exit if none of the masked bits are not set
 fn gen_guard_any_bit_set(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, mask: crate::hir::Const, reason: SideExitReason, state: &FrameState) -> lir::Opnd {
-    let mask_opnd: Opnd = match mask {
-        crate::hir::Const::Value(v) => { Opnd::Value(v) }
-        crate::hir::Const::CInt64(v) => { v.into() }
-        crate::hir::Const::CUInt64(v) => { Opnd::UImm(v) }
-        _ => panic!("gen_guard_bit_set: unexpected hir::Const {mask:?}"),
-    };
+    let mask_opnd = mask_to_opnd(mask).unwrap_or_else(|| panic!("gen_guard_any_bit_set: unexpected hir::Const {mask:?}"));
     asm.test(val, mask_opnd);
     asm.jz(side_exit(jit, state, reason));
     val
@@ -2311,12 +2316,7 @@ fn gen_guard_any_bit_set(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd
 
 /// Compile a bitmask check with a side exit if any of the masked bits are set
 fn gen_guard_no_bits_set(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, mask: crate::hir::Const, reason: SideExitReason, state: &FrameState) -> lir::Opnd {
-    let mask_opnd: Opnd = match mask {
-        crate::hir::Const::Value(v) => { Opnd::Value(v) }
-        crate::hir::Const::CInt64(v) => { v.into() }
-        crate::hir::Const::CUInt64(v) => { Opnd::UImm(v) }
-        _ => panic!("gen_guard_bit_not_set: unexpected hir::Const {mask:?}"),
-    };
+    let mask_opnd = mask_to_opnd(mask).unwrap_or_else(|| panic!("gen_guard_no_bits_set: unexpected hir::Const {mask:?}"));
     asm.test(val, mask_opnd);
     asm.jnz(side_exit(jit, state, reason));
     val
