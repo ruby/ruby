@@ -6407,9 +6407,29 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
-          v14:BasicObject = SendWithoutBlock v9, :foo # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v14:CBool = HasType v9, HeapObject[class_exact:C]
+          IfTrue v14, bb4(v8, v9, v9)
+          v23:CBool = HasType v9, HeapObject[class_exact:C]
+          IfTrue v23, bb5(v8, v9, v9)
+          v32:BasicObject = SendWithoutBlock v9, :foo # SendFallbackReason: SendWithoutBlock: polymorphic fallback
+          Jump bb3(v8, v9, v32)
+        bb4(v15:BasicObject, v16:BasicObject, v17:BasicObject):
+          v19:HeapObject[class_exact:C] = RefineType v17, HeapObject[class_exact:C]
+          PatchPoint NoSingletonClass(C@0x1000)
+          PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
+          IncrCounter getivar_fallback_not_monomorphic
+          v44:BasicObject = GetIvar v19, :@foo
+          Jump bb3(v15, v16, v44)
+        bb5(v24:BasicObject, v25:BasicObject, v26:BasicObject):
+          v28:HeapObject[class_exact:C] = RefineType v26, HeapObject[class_exact:C]
+          PatchPoint NoSingletonClass(C@0x1000)
+          PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
+          IncrCounter getivar_fallback_not_monomorphic
+          v47:BasicObject = GetIvar v28, :@foo
+          Jump bb3(v24, v25, v47)
+        bb3(v34:BasicObject, v35:BasicObject, v36:BasicObject):
           CheckInterrupts
-          Return v14
+          Return v36
         ");
     }
 
@@ -11485,6 +11505,110 @@ mod hir_opt_tests {
           v47:Fixnum[6] = Const Value(6)
           CheckInterrupts
           Return v47
+        ");
+    }
+
+    #[test]
+    fn specialize_polymorphic_send_iseq() {
+        set_call_threshold(4);
+        eval("
+        class C
+          def foo = 3
+        end
+
+        class D
+          def foo = 4
+        end
+
+        def test o
+          o.foo + 2
+        end
+
+        test C.new; test D.new; test C.new; test D.new
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:11:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :o, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:CBool = HasType v9, HeapObject[class_exact:C]
+          IfTrue v14, bb4(v8, v9, v9)
+          v23:CBool = HasType v9, HeapObject[class_exact:D]
+          IfTrue v23, bb5(v8, v9, v9)
+          v32:BasicObject = SendWithoutBlock v9, :foo # SendFallbackReason: SendWithoutBlock: polymorphic fallback
+          Jump bb3(v8, v9, v32)
+        bb4(v15:BasicObject, v16:BasicObject, v17:BasicObject):
+          PatchPoint NoSingletonClass(C@0x1000)
+          PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
+          IncrCounter inline_iseq_optimized_send_count
+          v54:Fixnum[3] = Const Value(3)
+          Jump bb3(v15, v16, v54)
+        bb5(v24:BasicObject, v25:BasicObject, v26:BasicObject):
+          PatchPoint NoSingletonClass(D@0x1038)
+          PatchPoint MethodRedefined(D@0x1038, foo@0x1008, cme:0x1040)
+          IncrCounter inline_iseq_optimized_send_count
+          v56:Fixnum[4] = Const Value(4)
+          Jump bb3(v24, v25, v56)
+        bb3(v34:BasicObject, v35:BasicObject, v36:BasicObject):
+          v39:Fixnum[2] = Const Value(2)
+          PatchPoint MethodRedefined(Integer@0x1068, +@0x1070, cme:0x1078)
+          v59:Fixnum = GuardType v36, Fixnum
+          v60:Fixnum = FixnumAdd v59, v39
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v60
+        ");
+    }
+
+    #[test]
+    fn specialize_polymorphic_send_with_immediate() {
+        set_call_threshold(4);
+        eval("
+        class C; end
+
+        def test o
+          o.itself
+        end
+
+        test C.new; test 3; test C.new; test 4
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:5:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :o, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:CBool = HasType v9, HeapObject[class_exact:C]
+          IfTrue v14, bb4(v8, v9, v9)
+          v23:CBool = HasType v9, Fixnum
+          IfTrue v23, bb5(v8, v9, v9)
+          v32:BasicObject = SendWithoutBlock v9, :itself # SendFallbackReason: SendWithoutBlock: polymorphic fallback
+          Jump bb3(v8, v9, v32)
+        bb4(v15:BasicObject, v16:BasicObject, v17:BasicObject):
+          v19:HeapObject[class_exact:C] = RefineType v17, HeapObject[class_exact:C]
+          PatchPoint NoSingletonClass(C@0x1000)
+          PatchPoint MethodRedefined(C@0x1000, itself@0x1008, cme:0x1010)
+          IncrCounter inline_cfunc_optimized_send_count
+          Jump bb3(v15, v16, v19)
+        bb5(v24:BasicObject, v25:BasicObject, v26:BasicObject):
+          v28:Fixnum = RefineType v26, Fixnum
+          PatchPoint MethodRedefined(Integer@0x1038, itself@0x1008, cme:0x1010)
+          IncrCounter inline_cfunc_optimized_send_count
+          Jump bb3(v24, v25, v28)
+        bb3(v34:BasicObject, v35:BasicObject, v36:BasicObject):
+          CheckInterrupts
+          Return v36
         ");
     }
 }

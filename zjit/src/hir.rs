@@ -626,6 +626,7 @@ pub enum SendFallbackReason {
     SendWithoutBlockNotOptimizedNeedPermission,
     SendWithoutBlockBopRedefined,
     SendWithoutBlockOperandsNotFixnum,
+    SendWithoutBlockPolymorphicFallback,
     SendDirectKeywordMismatch,
     SendDirectKeywordCountMismatch,
     SendDirectMissingKeyword,
@@ -687,6 +688,7 @@ impl Display for SendFallbackReason {
             SendNotOptimizedNeedPermission => write!(f, "Send: method private or protected and no FCALL"),
             SendWithoutBlockBopRedefined => write!(f, "SendWithoutBlock: basic operation was redefined"),
             SendWithoutBlockOperandsNotFixnum => write!(f, "SendWithoutBlock: operands are not fixnums"),
+            SendWithoutBlockPolymorphicFallback => write!(f, "SendWithoutBlock: polymorphic fallback"),
             SendDirectKeywordMismatch => write!(f, "SendDirect: keyword mismatch"),
             SendDirectKeywordCountMismatch => write!(f, "SendDirect: keyword count mismatch"),
             SendDirectMissingKeyword => write!(f, "SendDirect: missing keyword"),
@@ -1016,6 +1018,8 @@ pub enum Insn {
     /// Refine the known type information of with additional type information.
     /// Computes the intersection of the existing type and the new type.
     RefineType { val: InsnId, new_type: Type },
+    /// Return CBool[true] if val has type Type and CBool[false] otherwise.
+    HasType { val: InsnId, expected: Type },
 
     /// Side-exit if val doesn't have the expected type.
     GuardType { val: InsnId, guard_type: Type, state: InsnId },
@@ -1242,6 +1246,7 @@ impl Insn {
             Insn::CheckInterrupts { .. } => effects::Any,
             Insn::InvokeProc { .. } => effects::Any,
             Insn::RefineType { .. } => effects::Empty,
+            Insn::HasType { .. } => effects::Empty,
         }
     }
 
@@ -1546,6 +1551,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::FixnumRShift { left, right, .. } => { write!(f, "FixnumRShift {left}, {right}") },
             Insn::GuardType { val, guard_type, .. } => { write!(f, "GuardType {val}, {}", guard_type.print(self.ptr_map)) },
             Insn::RefineType { val, new_type, .. } => { write!(f, "RefineType {val}, {}", new_type.print(self.ptr_map)) },
+            Insn::HasType { val, expected, .. } => { write!(f, "HasType {val}, {}", expected.print(self.ptr_map)) },
             Insn::GuardTypeNot { val, guard_type, .. } => { write!(f, "GuardTypeNot {val}, {}", guard_type.print(self.ptr_map)) },
             Insn::GuardBitEquals { val, expected, .. } => { write!(f, "GuardBitEquals {val}, {}", expected.print(self.ptr_map)) },
             Insn::GuardAnyBitSet { val, mask, .. } => { write!(f, "GuardBitSet {val}, {}", mask.print(self.ptr_map)) },
@@ -2235,6 +2241,7 @@ impl Function {
             &IfTrue { val, ref target } => IfTrue { val: find!(val), target: find_branch_edge!(target) },
             &IfFalse { val, ref target } => IfFalse { val: find!(val), target: find_branch_edge!(target) },
             &RefineType { val, new_type } => RefineType { val: find!(val), new_type },
+            &HasType { val, expected } => HasType { val: find!(val), expected },
             &GuardType { val, guard_type, state } => GuardType { val: find!(val), guard_type, state },
             &GuardTypeNot { val, guard_type, state } => GuardTypeNot { val: find!(val), guard_type, state },
             &GuardBitEquals { val, expected, reason, state } => GuardBitEquals { val: find!(val), expected, reason, state },
@@ -2497,6 +2504,7 @@ impl Function {
             &Insn::CCallVariadic { return_type, .. } => return_type,
             Insn::GuardType { val, guard_type, .. } => self.type_of(*val).intersection(*guard_type),
             Insn::RefineType { val, new_type, .. } => self.type_of(*val).intersection(*new_type),
+            Insn::HasType { .. } => types::CBool,
             Insn::GuardTypeNot { .. } => types::BasicObject,
             Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_const(*expected)),
             Insn::GuardAnyBitSet { val, .. } => self.type_of(*val),
@@ -2858,6 +2866,22 @@ impl Function {
             return ReceiverTypeResolution::StaticallyKnown { class };
         }
         self.resolve_receiver_type_from_profile(recv, insn_idx)
+    }
+
+    fn polymorphic_summary(&self, profiles: &ProfileOracle, recv: InsnId, insn_idx: usize) -> Option<TypeDistributionSummary> {
+        let Some(entries) = profiles.types.get(&insn_idx) else {
+            return None;
+        };
+        let recv = self.chase_insn(recv);
+        for (entry_insn, entry_type_summary) in entries {
+            if self.union_find.borrow().find_const(*entry_insn) == recv {
+                if entry_type_summary.is_polymorphic() {
+                    return Some(entry_type_summary.clone());
+                }
+                return None;
+            }
+        }
+        None
     }
 
     /// Resolve the receiver type for method dispatch optimization from profile data.
@@ -4608,6 +4632,7 @@ impl Function {
                 worklist.push_back(state);
             }
             | &Insn::RefineType { val, .. }
+            | &Insn::HasType { val, .. }
             | &Insn::Return { val }
             | &Insn::Test { val }
             | &Insn::SetLocal { val, .. }
@@ -5579,6 +5604,7 @@ impl Function {
                 self.assert_subtype(insn_id, class, types::Class)
             }
             Insn::RefineType { .. } => Ok(()),
+            Insn::HasType { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
         }
     }
 
@@ -6938,6 +6964,71 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         break;  // End the block
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
+
+                    {
+                        fn new_branch_block(
+                            fun: &mut Function,
+                            cd: *const rb_call_data,
+                            argc: usize,
+                            opcode: u32,
+                            new_type: Type,
+                            insn_idx: u32,
+                            exit_state: &FrameState,
+                            locals_count: usize,
+                            stack_count: usize,
+                            join_block: BlockId,
+                        ) -> BlockId {
+                            let block = fun.new_block(insn_idx);
+                            let self_param = fun.push_insn(block, Insn::Param);
+                            let mut state = exit_state.clone();
+                            state.locals.clear();
+                            state.stack.clear();
+                            state.locals.extend((0..locals_count).map(|_| fun.push_insn(block, Insn::Param)));
+                            state.stack.extend((0..stack_count).map(|_| fun.push_insn(block, Insn::Param)));
+                            let snapshot = fun.push_insn(block, Insn::Snapshot { state: state.clone() });
+                            let args = state.stack_pop_n(argc).unwrap();
+                            let recv = state.stack_pop().unwrap();
+                            let refined_recv = fun.push_insn(block, Insn::RefineType { val: recv, new_type });
+                            state.replace(recv, refined_recv);
+                            let send = fun.push_insn(block, Insn::SendWithoutBlock { recv: refined_recv, cd, args, state: snapshot, reason: Uncategorized(opcode) });
+                            state.stack_push(send);
+                            fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: state.as_args(self_param) }));
+                            block
+                        }
+                        let branch_insn_idx = exit_state.insn_idx as u32;
+                        let locals_count = state.locals.len();
+                        let stack_count = state.stack.len();
+                        let recv = state.stack_topn(argc as usize)?;  // args are on top
+                        let entry_args = state.as_args(self_param);
+                        if let Some(summary) = fun.polymorphic_summary(&profiles, recv, exit_state.insn_idx) {
+                            let join_block = insn_idx_to_block.get(&insn_idx).copied().unwrap_or_else(|| fun.new_block(insn_idx));
+                            // TODO(max): Only iterate over unique classes, not unique (class, shape) pairs.
+                            for &profiled_type in summary.buckets() {
+                                if profiled_type.is_empty() { break; }
+                                let expected = Type::from_profiled_type(profiled_type);
+                                let has_type = fun.push_insn(block, Insn::HasType { val: recv, expected });
+                                let iftrue_block =
+                                    new_branch_block(&mut fun, cd, argc as usize, opcode, expected, branch_insn_idx, &exit_state, locals_count, stack_count, join_block);
+                                let target = BranchEdge { target: iftrue_block, args: entry_args.clone() };
+                                fun.push_insn(block, Insn::IfTrue { val: has_type, target });
+                            }
+                            // Continue compilation from the join block at the next instruction.
+                            // Make a copy of the current state without the args (pop the receiver
+                            // and push the result) because we just use the locals/stack sizes to
+                            // make the right number of Params
+                            let mut join_state = state.clone();
+                            join_state.stack_pop_n(argc as usize)?;
+                            queue.push_back((join_state, join_block, insn_idx, local_inval));
+                            // In the fallthrough case, do a generic interpreter send and then join.
+                            let args = state.stack_pop_n(argc as usize)?;
+                            let recv = state.stack_pop()?;
+                            let reason = SendWithoutBlockPolymorphicFallback;
+                            let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, state: exit_id, reason });
+                            state.stack_push(send);
+                            fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: state.as_args(self_param) }));
+                            break;  // End the block
+                        }
+                    }
 
                     let args = state.stack_pop_n(argc as usize)?;
                     let recv = state.stack_pop()?;
