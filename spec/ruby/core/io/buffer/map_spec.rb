@@ -12,11 +12,11 @@ describe "IO::Buffer.map" do
   end
 
   def open_fixture
-    File.open("#{__dir__}/../fixtures/read_text.txt", "r+")
+    File.open("#{__dir__}/../fixtures/read_text.txt", "rb+")
   end
 
   def open_big_file_fixture
-    File.open(@big_file_name, "r+")
+    File.open(@big_file_name, "rb+")
   end
 
   after :each do
@@ -308,11 +308,11 @@ describe "IO::Buffer.map" do
         @buffer.set_string("test12345")
         @buffer.get_string.should == "test12345".b
 
-        @file.read.should == "abcâdef\n"
+        @file.read.should == "abcâdef\n".b
       end
 
       it "allows mapping read-only files and modifying the buffer" do
-        @file = File.open("#{__dir__}/../fixtures/read_text.txt", "r")
+        @file = File.open("#{__dir__}/../fixtures/read_text.txt", "rb")
         @buffer = IO::Buffer.map(@file, nil, 0, IO::Buffer::PRIVATE)
 
         @buffer.should.private?
@@ -323,7 +323,7 @@ describe "IO::Buffer.map" do
         @buffer.set_string("test12345")
         @buffer.get_string.should == "test12345".b
 
-        @file.read.should == "abcâdef\n"
+        @file.read.should == "abcâdef\n".b
       end
 
       platform_is_not :windows do
