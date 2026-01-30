@@ -850,7 +850,7 @@ pub enum Insn {
     /// Get the block parameter as a Proc.
     GetBlockParam { level: u32, ep_offset: u32, state: InsnId },
     /// Set a local variable in a higher scope or the heap
-    SetLocal { level: u32, ep_offset: u32, val: InsnId, state: InsnId },
+    SetLocal { level: u32, ep_offset: u32, val: InsnId },
     GetSpecialSymbol { symbol_type: SpecialBackrefSymbol, state: InsnId },
     GetSpecialNumber { nth: u64, state: InsnId },
 
@@ -2376,7 +2376,7 @@ impl Function {
             &SetIvar { self_val, id, ic, val, state } => SetIvar { self_val: find!(self_val), id, ic, val: find!(val), state },
             &GetClassVar { id, ic, state } => GetClassVar { id, ic, state },
             &SetClassVar { id, val, ic, state } => SetClassVar { id, val: find!(val), ic, state },
-            &SetLocal { val, ep_offset, level, state } => SetLocal { val: find!(val), ep_offset, level, state },
+            &SetLocal { val, ep_offset, level } => SetLocal { val: find!(val), ep_offset, level },
             &GetSpecialSymbol { symbol_type, state } => GetSpecialSymbol { symbol_type, state },
             &GetSpecialNumber { nth, state } => GetSpecialNumber { nth, state },
             &ToArray { val, state } => ToArray { val: find!(val), state },
@@ -6750,11 +6750,12 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     }
                 }
                 YARVINSN_setlocal_WC_0 => {
+                    // TODO(Jacob): Modify this to use guards
                     let ep_offset = get_arg(pc, 0).as_u32();
                     let val = state.stack_pop()?;
                     if ep_escaped || has_blockiseq { // TODO: figure out how to drop has_blockiseq here
                         // Write the local using EP
-                        fun.push_insn(block, Insn::SetLocal { val, ep_offset, level: 0, state: exit_id });
+                        fun.push_insn(block, Insn::SetLocal { val, ep_offset, level: 0 });
                     } else if local_inval {
                         // If there has been any non-leaf call since JIT entry or the last patch point,
                         // add a patch point to make sure locals have not been escaped.
@@ -6770,8 +6771,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     state.stack_push(fun.push_insn(block, Insn::GetLocal { ep_offset, level: 1, use_sp: false, rest_param: false }));
                 }
                 YARVINSN_setlocal_WC_1 => {
+                    // TODO(Jacob): Modify this to use guards
                     let ep_offset = get_arg(pc, 0).as_u32();
-                    fun.push_insn(block, Insn::SetLocal { val: state.stack_pop()?, ep_offset, level: 1, state: exit_id });
+                    fun.push_insn(block, Insn::SetLocal { val: state.stack_pop()?, ep_offset, level: 1 });
                 }
                 YARVINSN_getlocal => {
                     let ep_offset = get_arg(pc, 0).as_u32();
@@ -6779,11 +6781,14 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     state.stack_push(fun.push_insn(block, Insn::GetLocal { ep_offset, level, use_sp: false, rest_param: false }));
                 }
                 YARVINSN_setlocal => {
+                    // TODO(Jacob): Make sure this works
+                    // TODO(Jacob): Clean up the offset, levels, ep chasing, etc
                     let ep_offset = get_arg(pc, 0).as_u32();
                     let level = get_arg(pc, 1).as_u32();
-                    // TODO(Jacob): Add guard here
-                    // TODO(Jacob): Figure out if we should change ALL of the setlocals and what the differences are
-                    fun.push_insn(block, Insn::SetLocal { val: state.stack_pop()?, ep_offset, level, state: exit_id });
+                    let ep = fun.push_insn(block, Insn::GetEP { level });
+                    let flags = fun.push_insn(block, Insn::LoadField { recv: ep, id: ID!(_env_data_index_flags), offset: SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32), return_type: types::CInt64 });
+                    fun.push_insn(block, Insn::GuardNoBitsSet { val: flags, mask: Const::CUInt64(VM_ENV_FLAG_WB_REQUIRED.into()), reason: SideExitReason::WriteBarrierRequired, state: exit_id });
+                    fun.push_insn(block, Insn::SetLocal { val: state.stack_pop()?, ep_offset, level });
                 }
                 YARVINSN_getblockparamproxy => {
                     let level = get_arg(pc, 1).as_u32();

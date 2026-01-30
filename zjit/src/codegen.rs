@@ -557,7 +557,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::GetLocal { ep_offset, level, use_sp, .. } => gen_getlocal(asm, ep_offset, level, use_sp),
         &Insn::IsBlockParamModified { level } => gen_is_block_param_modified(asm, level),
         &Insn::GetBlockParam { ep_offset, level, state } => gen_getblockparam(jit, asm, ep_offset, level, &function.frame_state(state)),
-        &Insn::SetLocal { val, ep_offset, level, state } => no_output!(gen_setlocal(asm, opnd!(val), function.type_of(val), ep_offset, level, &function.frame_state(state))),
+        &Insn::SetLocal { val, ep_offset, level } => no_output!(gen_setlocal(jit, asm, opnd!(val), function.type_of(val), ep_offset, level )),
         Insn::GetConstantPath { ic, state } => gen_get_constant_path(jit, asm, *ic, &function.frame_state(*state)),
         Insn::GetClassVar { id, ic, state } => gen_getclassvar(jit, asm, *id, *ic, &function.frame_state(*state)),
         Insn::SetClassVar { id, val, ic, state } => no_output!(gen_setclassvar(jit, asm, *id, opnd!(val), *ic, &function.frame_state(*state))),
@@ -730,32 +730,15 @@ fn gen_getlocal(asm: &mut Assembler, local_ep_offset: u32, level: u32, use_sp: b
 /// Set a local variable from a higher scope or the heap. `local_ep_offset` is in number of VALUEs.
 /// We generate this instruction with level=0 only when the local variable is on the heap, so we
 /// can't optimize the level=0 case using the SP register.
-fn gen_setlocal(asm: &mut Assembler, val: Opnd, val_type: Type, local_ep_offset: u32, level: u32, state: &FrameState) {
+// TODO(Jacob): remove superfluous arguments from function
+fn gen_setlocal(jit: &mut JITState, asm: &mut Assembler, val: Opnd, val_type: Type, local_ep_offset: u32, level: u32) {
     let local_ep_offset = c_int::try_from(local_ep_offset).unwrap_or_else(|_| panic!("Could not convert local_ep_offset {local_ep_offset} to i32"));
     if level > 0 {
         gen_incr_counter(asm, Counter::vm_write_to_parent_iseq_local_count);
     }
     let ep = gen_get_ep(asm, level);
-
-    // When we've proved that we're writing an immediate,
-    // we can skip the write barrier.
-    if val_type.is_immediate() {
-        let offset = -(SIZEOF_VALUE_I32 * local_ep_offset);
-        asm.mov(Opnd::mem(64, ep, offset), val);
-    } else {
-        // Side exit if the write barrier is required.
-        // TODO(Jacob): Convert to guard, and maybe fix up other getblock case that uses this
-        // TODO(Jacob): Figure out what modified `VM_ENV_FLAG_WB_REQUIRED`
-        let ep = gen_get_ep(asm, level);
-        let flags = Opnd::mem(VALUE_BITS, ep, SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32));
-        // asm.test(flags, VM_ENV_FLAG_WB_REQUIRED.into());
-        // asm.jnz(side_exit(jit, state, SideExitReason::WriteBarrierRequired));
-        // TODO(Jacob): Remove the write barrier check that is somehow buried in these next few lines
-        // We're potentially writing a reference to an IMEMO/env object,
-        // so take care of the write barrier with a function.
-        let local_index = -local_ep_offset;
-        asm_ccall!(asm, rb_vm_env_write, ep, local_index.into(), val);
-    }
+    let offset = -(SIZEOF_VALUE_I32 * local_ep_offset);
+    asm.mov(Opnd::mem(64, ep, offset), val);
 }
 
 /// Returns 1 (as CBool) when VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM is set; returns 0 otherwise.
