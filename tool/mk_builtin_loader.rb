@@ -289,6 +289,7 @@ def generate_cexpr(ofile, lineno, line_file, body_lineno, text, locals, func_nam
 
   f.puts '{'
   lineno += 1
+  locals_referenced = 0
   # locals is nil outside methods
   locals&.reverse_each&.with_index{|param, i|
     next unless Symbol === param
@@ -296,6 +297,13 @@ def generate_cexpr(ofile, lineno, line_file, body_lineno, text, locals, func_nam
     lvar = local_candidates.include?(param)
     next unless lvar or local_ptrs.include?(param)
     f.puts "VALUE *const #{param}__ptr = (VALUE *)&ec->cfp->ep[#{-3 - i}];"
+    if i > 63
+      # That's a lot of locals in a Primitive! Unlikely but possible.
+      # In that case, set every bit.
+      locals_referenced = ((1<<64)-1)
+    else
+      locals_referenced |= (1 << i)
+    end
     f.puts "MAYBE_UNUSED(const VALUE) #{param} = *#{param}__ptr;" if lvar
     lineno += lvar ? 2 : 1
   }
@@ -310,7 +318,7 @@ def generate_cexpr(ofile, lineno, line_file, body_lineno, text, locals, func_nam
   f.puts
   lineno += 3
 
-  return lineno, f.string
+  return lineno, f.string, locals_referenced
 end
 
 def mk_builtin_header file
@@ -351,12 +359,14 @@ def mk_builtin_header file
     f.puts
     lineno = __LINE__ - lineno - 1
     line_file = file
+    reads_writes_locals = {}
 
     inlines.each{|cfunc_name, (body_lineno, text, locals, func_name)|
       if String === cfunc_name
         f.puts "static VALUE #{cfunc_name}(struct rb_execution_context_struct *ec, const VALUE self)"
         lineno += 1
-        lineno, str = generate_cexpr(ofile, lineno, line_file, body_lineno, text, locals, func_name)
+        lineno, str, locals_referenced = generate_cexpr(ofile, lineno, line_file, body_lineno, text, locals, func_name)
+        reads_writes_locals[cfunc_name] = locals_referenced
         f.write str
       else
         # cinit!
@@ -384,9 +394,10 @@ def mk_builtin_header file
     f.puts "  // table definition"
     f.puts "  static const struct rb_builtin_function #{table}[] = {"
     bs.each.with_index{|(func, (argc, cfunc_name)), i|
-      f.puts "    RB_BUILTIN_FUNCTION(#{i}, #{func}, #{cfunc_name}, #{argc}),"
+      locals_bitset = "0x"+reads_writes_locals.fetch(cfunc_name, 0).to_s(16)
+      f.puts "    RB_BUILTIN_FUNCTION(#{i}, #{func}, #{cfunc_name}, #{argc}, #{locals_bitset}),"
     }
-    f.puts "    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0),"
+    f.puts "    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0, 0),"
     f.puts "  };"
 
     f.puts

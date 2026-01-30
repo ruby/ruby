@@ -11,13 +11,19 @@ struct rb_builtin_function {
     // for load
     const int index;
     const char * const name;
+
+    // for JIT analysis
+    // If every bit is set, the function may reference any local variable
+    // (including those with an index over 63).
+    const uint64_t locals_referenced;
 };
 
-#define RB_BUILTIN_FUNCTION(_i, _name, _fname, _arity) {\
+#define RB_BUILTIN_FUNCTION(_i, _name, _fname, _arity, _locals) {\
   .name = _i < 0 ? NULL : #_name, \
   .func_ptr = (void *)(uintptr_t)_fname, \
   .argc = _arity, \
   .index = _i, \
+  .locals_referenced = _locals, \
 }
 
 void rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin_function *table);
