@@ -3564,13 +3564,7 @@ impl Function {
                         assert!(flags & VM_CALL_FCALL != 0);
 
                         // Reject calls with complex argument handling.
-                        let complex_arg_types = VM_CALL_ARGS_SPLAT
-                            | VM_CALL_KW_SPLAT
-                            | VM_CALL_KWARG
-                            | VM_CALL_ARGS_BLOCKARG
-                            | VM_CALL_FORWARDING;
-
-                        if (flags & complex_arg_types) != 0 {
+                        if unspecializable_c_call_type(flags) {
                             self.push_insn_id(block, insn_id);
                             self.set_dynamic_send_reason(insn_id, SuperComplexArgsPass);
                             continue;
@@ -3608,14 +3602,18 @@ impl Function {
                         }
 
                         // Look up the super method.
-                        let super_cme = unsafe { rb_callable_method_entry(superclass, mid) };
+                        let mut super_cme = unsafe { rb_callable_method_entry(superclass, mid) };
                         if super_cme.is_null() {
                             self.push_insn_id(block, insn_id);
                             self.set_dynamic_send_reason(insn_id, SuperTargetNotFound);
                             continue;
                         }
 
-                        let def_type = unsafe { get_cme_def_type(super_cme) };
+                        let mut def_type = unsafe { get_cme_def_type(super_cme) };
+                        while def_type == VM_METHOD_TYPE_ALIAS {
+                            super_cme = unsafe { rb_aliased_callable_method_entry(super_cme) };
+                            def_type = unsafe { get_cme_def_type(super_cme) };
+                        }
 
                         if def_type == VM_METHOD_TYPE_ISEQ {
                             // Check if the super method's parameters support direct send.
@@ -3653,6 +3651,12 @@ impl Function {
                             let cfunc_argc = unsafe { get_mct_argc(cfunc) };
                             let cfunc_ptr = unsafe { get_mct_func(cfunc) }.cast();
 
+                            let props = ZJITState::get_method_annotations().get_cfunc_properties(super_cme);
+                            if props.is_none() && get_option!(stats) {
+                                self.count_not_annotated_cfunc(block, super_cme);
+                            }
+                            let props = props.unwrap_or_default();
+
                             match cfunc_argc {
                                 // C function with fixed argument count.
                                 0.. => {
@@ -3665,20 +3669,48 @@ impl Function {
 
                                     emit_super_call_guards(self, block, super_cme, current_cme, mid, state);
 
+                                    // Try inlining the cfunc into HIR
+                                    let tmp_block = self.new_block(u32::MAX);
+                                    if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args, state) {
+                                        // Copy contents of tmp_block to block
+                                        assert_ne!(block, tmp_block);
+                                        let insns = std::mem::take(&mut self.blocks[tmp_block.0].insns);
+                                        self.blocks[block.0].insns.extend(insns);
+                                        self.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
+                                        self.make_equal_to(insn_id, replacement);
+                                        if self.type_of(replacement).bit_equal(types::Any) {
+                                            // Not set yet; infer type
+                                            self.insn_types[replacement.0] = self.infer_type(replacement);
+                                        }
+                                        self.remove_block(tmp_block);
+                                        continue;
+                                    }
+
                                     // Use CCallWithFrame for the C function.
                                     let name = rust_str_to_id(&qualified_method_name(unsafe { (*super_cme).owner }, unsafe { (*super_cme).called_id }));
-                                    let ccall = self.push_insn(block, Insn::CCallWithFrame {
-                                        cd,
-                                        cfunc: cfunc_ptr,
-                                        recv,
-                                        args: args.clone(),
-                                        cme: super_cme,
-                                        name,
-                                        state,
-                                        return_type: types::BasicObject,
-                                        elidable: false,
-                                        blockiseq: None,
-                                    });
+                                    let return_type = props.return_type;
+                                    let elidable = props.elidable;
+                                    // Filter for a leaf and GC free function
+                                    let ccall = if props.leaf && props.no_gc {
+                                        self.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
+                                        self.push_insn(block, Insn::CCall { cfunc: cfunc_ptr, recv, args, name, return_type, elidable })
+                                    } else {
+                                        if get_option!(stats) {
+                                            self.count_not_inlined_cfunc(block, super_cme);
+                                        }
+                                        self.push_insn(block, Insn::CCallWithFrame {
+                                            cd,
+                                            cfunc: cfunc_ptr,
+                                            recv,
+                                            args: args.clone(),
+                                            cme: super_cme,
+                                            name,
+                                            state,
+                                            return_type: types::BasicObject,
+                                            elidable: false,
+                                            blockiseq: None,
+                                        })
+                                    };
                                     self.make_equal_to(insn_id, ccall);
                                 }
 
@@ -3686,19 +3718,48 @@ impl Function {
                                 -1 => {
                                     emit_super_call_guards(self, block, super_cme, current_cme, mid, state);
 
+                                    // Try inlining the cfunc into HIR
+                                    let tmp_block = self.new_block(u32::MAX);
+                                    if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args, state) {
+                                        // Copy contents of tmp_block to block
+                                        assert_ne!(block, tmp_block);
+                                        emit_super_call_guards(self, block, super_cme, current_cme, mid, state);
+                                        let insns = std::mem::take(&mut self.blocks[tmp_block.0].insns);
+                                        self.blocks[block.0].insns.extend(insns);
+                                        self.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
+                                        self.make_equal_to(insn_id, replacement);
+                                        if self.type_of(replacement).bit_equal(types::Any) {
+                                            // Not set yet; infer type
+                                            self.insn_types[replacement.0] = self.infer_type(replacement);
+                                        }
+                                        self.remove_block(tmp_block);
+                                        continue;
+                                    }
+
                                     // Use CCallVariadic for the variadic C function.
                                     let name = rust_str_to_id(&qualified_method_name(unsafe { (*super_cme).owner }, unsafe { (*super_cme).called_id }));
-                                    let ccall = self.push_insn(block, Insn::CCallVariadic {
-                                        cfunc: cfunc_ptr,
-                                        recv,
-                                        args: args.clone(),
-                                        cme: super_cme,
-                                        name,
-                                        state,
-                                        return_type: types::BasicObject,
-                                        elidable: false,
-                                        blockiseq: None,
-                                    });
+                                    let return_type = props.return_type;
+                                    let elidable = props.elidable;
+                                    // Filter for a leaf and GC free function
+                                    let ccall = if props.leaf && props.no_gc {
+                                        self.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
+                                        self.push_insn(block, Insn::CCall { cfunc: cfunc_ptr, recv, args, name, return_type, elidable })
+                                    } else {
+                                        if get_option!(stats) {
+                                            self.count_not_inlined_cfunc(block, super_cme);
+                                        }
+                                        self.push_insn(block, Insn::CCallVariadic {
+                                            cfunc: cfunc_ptr,
+                                            recv,
+                                            args: args.clone(),
+                                            cme: super_cme,
+                                            name,
+                                            state,
+                                            return_type: types::BasicObject,
+                                            elidable: false,
+                                            blockiseq: None,
+                                        })
+                                    };
                                     self.make_equal_to(insn_id, ccall);
                                 }
 
@@ -3981,6 +4042,28 @@ impl Function {
         self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass: recv_class, method: method_id, cme }, state });
     }
 
+    fn count_not_inlined_cfunc(&mut self, block: BlockId, cme: *const rb_callable_method_entry_t) {
+        let owner = unsafe { (*cme).owner };
+        let called_id = unsafe { (*cme).called_id };
+        let qualified_method_name = qualified_method_name(owner, called_id);
+        let not_inlined_cfunc_counter_pointers = ZJITState::get_not_inlined_cfunc_counter_pointers();
+        let counter_ptr = not_inlined_cfunc_counter_pointers.entry(qualified_method_name.clone()).or_insert_with(|| Box::new(0));
+        let counter_ptr = &mut **counter_ptr as *mut u64;
+
+        self.push_insn(block, Insn::IncrCounterPtr { counter_ptr });
+    }
+
+    fn count_not_annotated_cfunc(&mut self, block: BlockId, cme: *const rb_callable_method_entry_t) {
+        let owner = unsafe { (*cme).owner };
+        let called_id = unsafe { (*cme).called_id };
+        let qualified_method_name = qualified_method_name(owner, called_id);
+        let not_annotated_cfunc_counter_pointers = ZJITState::get_not_annotated_cfunc_counter_pointers();
+        let counter_ptr = not_annotated_cfunc_counter_pointers.entry(qualified_method_name.clone()).or_insert_with(|| Box::new(0));
+        let counter_ptr = &mut **counter_ptr as *mut u64;
+
+        self.push_insn(block, Insn::IncrCounterPtr { counter_ptr });
+    }
+
     /// Optimize Send/SendWithoutBlock that land in a C method to a direct CCall without
     /// runtime lookup.
     fn optimize_c_calls(&mut self) {
@@ -4124,7 +4207,7 @@ impl Function {
                     }
 
                     if get_option!(stats) {
-                        count_not_inlined_cfunc(fun, block, cme);
+                        fun.count_not_inlined_cfunc(block, cme);
                     }
 
                     let ccall = fun.push_insn(block, Insn::CCallVariadic {
@@ -4238,7 +4321,7 @@ impl Function {
 
                     let props = ZJITState::get_method_annotations().get_cfunc_properties(cme);
                     if props.is_none() && get_option!(stats) {
-                        count_not_annotated_cfunc(fun, block, cme);
+                        fun.count_not_annotated_cfunc(block, cme);
                     }
                     let props = props.unwrap_or_default();
 
@@ -4277,7 +4360,7 @@ impl Function {
                         fun.make_equal_to(send_insn_id, ccall);
                     } else {
                         if get_option!(stats) {
-                            count_not_inlined_cfunc(fun, block, cme);
+                            fun.count_not_inlined_cfunc(block, cme);
                         }
                         let ccall = fun.push_insn(block, Insn::CCallWithFrame {
                             cd,
@@ -4326,7 +4409,7 @@ impl Function {
                         let cfunc = unsafe { get_mct_func(cfunc) }.cast();
                         let props = ZJITState::get_method_annotations().get_cfunc_properties(cme);
                         if props.is_none() && get_option!(stats) {
-                            count_not_annotated_cfunc(fun, block, cme);
+                            fun.count_not_annotated_cfunc(block, cme);
                         }
                         let props = props.unwrap_or_default();
 
@@ -4349,7 +4432,7 @@ impl Function {
 
                         // No inlining; emit a call
                         if get_option!(stats) {
-                            count_not_inlined_cfunc(fun, block, cme);
+                            fun.count_not_inlined_cfunc(block, cme);
                         }
                         let return_type = props.return_type;
                         let elidable = props.elidable;
@@ -4381,28 +4464,6 @@ impl Function {
             }
 
             Err(())
-        }
-
-        fn count_not_inlined_cfunc(fun: &mut Function, block: BlockId, cme: *const rb_callable_method_entry_t) {
-            let owner = unsafe { (*cme).owner };
-            let called_id = unsafe { (*cme).called_id };
-            let qualified_method_name = qualified_method_name(owner, called_id);
-            let not_inlined_cfunc_counter_pointers = ZJITState::get_not_inlined_cfunc_counter_pointers();
-            let counter_ptr = not_inlined_cfunc_counter_pointers.entry(qualified_method_name.clone()).or_insert_with(|| Box::new(0));
-            let counter_ptr = &mut **counter_ptr as *mut u64;
-
-            fun.push_insn(block, Insn::IncrCounterPtr { counter_ptr });
-        }
-
-        fn count_not_annotated_cfunc(fun: &mut Function, block: BlockId, cme: *const rb_callable_method_entry_t) {
-            let owner = unsafe { (*cme).owner };
-            let called_id = unsafe { (*cme).called_id };
-            let qualified_method_name = qualified_method_name(owner, called_id);
-            let not_annotated_cfunc_counter_pointers = ZJITState::get_not_annotated_cfunc_counter_pointers();
-            let counter_ptr = not_annotated_cfunc_counter_pointers.entry(qualified_method_name.clone()).or_insert_with(|| Box::new(0));
-            let counter_ptr = &mut **counter_ptr as *mut u64;
-
-            fun.push_insn(block, Insn::IncrCounterPtr { counter_ptr });
         }
 
         for block in self.rpo() {
