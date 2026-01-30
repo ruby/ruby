@@ -24,7 +24,10 @@ module Prism
       except << "whitequark/ruby_bug_19281.txt"
     end
 
+    # https://bugs.ruby-lang.org/issues/21168#note-5
     except << "command_method_call_2.txt"
+    # https://bugs.ruby-lang.org/issues/21669
+    except << "4.1/void_value.txt"
 
     Fixture.each_for_current_ruby(except: except) do |fixture|
       define_method(fixture.test_name) { assert_valid_syntax(fixture.read) }

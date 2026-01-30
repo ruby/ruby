@@ -230,6 +230,8 @@ module Prism
       refute_warning("foo = 1", compare: false, command_line: "e")
       refute_warning("foo = 1", compare: false, scopes: [[]])
 
+      refute_warning("foo(bar = 1)")
+
       assert_warning("def foo; bar = 1; end", "unused")
       assert_warning("def foo; bar, = 1; end", "unused")
 
@@ -261,6 +263,23 @@ module Prism
       refute_warning("def foo; bar = 1; tap { baz = bar; baz }; end")
 
       refute_warning("def foo; bar = 1; end", line: -2, compare: false)
+    end
+
+    def test_unused_local_variable_or_assign_with_begin_node
+      assert_warning(<<~RUBY, "assigned but unused variable - foo", compare: false)
+        var ||= begin
+          foo = bar
+          baz
+        end
+      RUBY
+
+      assert_warning(<<~RUBY, "assigned but unused variable - foo", compare: false)
+        foo = false
+        var ||= begin
+          foo = true
+          bar
+        end
+      RUBY
     end
 
     def test_void_statements
