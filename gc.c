@@ -1455,7 +1455,7 @@ rb_gc_obj_free(void *objspace, VALUE obj)
                 st_free_table(ROBJECT_FIELDS_HASH(obj));
             }
             else {
-                xfree(ROBJECT(obj)->as.heap.fields);
+                SIZED_FREE_N(ROBJECT(obj)->as.heap.fields, ROBJECT_FIELDS_CAPACITY(obj));
                 RB_DEBUG_COUNTER_INC(obj_obj_ptr);
             }
         }
@@ -1550,7 +1550,7 @@ rb_gc_obj_free(void *objspace, VALUE obj)
             }
 #endif
             onig_region_free(&rm->regs, 0);
-            xfree(rm->char_offset);
+            SIZED_FREE_N(rm->char_offset, rm->char_offset_num_allocated);
 
             RB_DEBUG_COUNTER_INC(obj_match_ptr);
         }
@@ -1587,7 +1587,7 @@ rb_gc_obj_free(void *objspace, VALUE obj)
 
       case T_BIGNUM:
         if (!BIGNUM_EMBED_P(obj) && BIGNUM_DIGITS(obj)) {
-            xfree(BIGNUM_DIGITS(obj));
+            SIZED_FREE_N(BIGNUM_DIGITS(obj), BIGNUM_LEN(obj));
             RB_DEBUG_COUNTER_INC(obj_bignum_ptr);
         }
         else {
@@ -1605,7 +1605,7 @@ rb_gc_obj_free(void *objspace, VALUE obj)
             RB_DEBUG_COUNTER_INC(obj_struct_embed);
         }
         else {
-            xfree((void *)RSTRUCT(obj)->as.heap.ptr);
+            SIZED_FREE_N(RSTRUCT(obj)->as.heap.ptr, RSTRUCT(obj)->as.heap.len);
             RB_DEBUG_COUNTER_INC(obj_struct_ptr);
         }
         break;
@@ -3657,7 +3657,7 @@ rb_gc_unregister_address(VALUE *addr)
 
     if (tmp->varptr == addr) {
         vm->global_object_list = tmp->next;
-        xfree(tmp);
+        SIZED_FREE(tmp);
         return;
     }
     while (tmp->next) {
@@ -3665,7 +3665,7 @@ rb_gc_unregister_address(VALUE *addr)
             struct global_object_list *t = tmp->next;
 
             tmp->next = tmp->next->next;
-            xfree(t);
+            SIZED_FREE(t);
             break;
         }
         tmp = tmp->next;
@@ -3780,8 +3780,8 @@ gc_ref_update_object(void *objspace, VALUE v)
         if (slot_size >= embed_size) {
             // Object can be re-embedded
             memcpy(ROBJECT(v)->as.ary, ptr, sizeof(VALUE) * ROBJECT_FIELDS_COUNT(v));
+            SIZED_FREE_N(ptr, ROBJECT_FIELDS_CAPACITY(v));
             FL_UNSET_RAW(v, ROBJECT_HEAP);
-            xfree(ptr);
             ptr = ROBJECT(v)->as.ary;
         }
     }
