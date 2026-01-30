@@ -3982,13 +3982,16 @@ mod hir_opt_tests {
         ");
     }
 
-    // TODO better placement
     #[test]
     fn test_polymorphic_getinstancevariable() {
         set_call_threshold(3);
         eval("
             module Tester
-              def test = @foo
+              def test
+                x = 1
+                y = 2
+                @foo
+              end
             end
 
             class A
@@ -4042,6 +4045,59 @@ mod hir_opt_tests {
           CheckInterrupts
           Return v30
         ");
+    }
+
+    #[test]
+    fn test_polymorphic_getinstancevariable_all_cases() {
+        // Test all 3 polymorphic getivar cases:
+        // 1. nil (ivar not in shape) - class C has no @foo
+        // 2. embedded T_OBJECT (single LoadField) - class A has few ivars
+        // 3. extended T_OBJECT (two LoadFields) - class B has many ivars, forcing heap storage
+        set_call_threshold(4);
+        eval(r#"
+            module Tester
+              def test
+                x = 1
+                @foo
+              end
+            end
+
+            class A
+              include Tester
+              def initialize
+                @foo = 100
+              end
+            end
+
+            class B
+              include Tester
+              def initialize
+                # Many ivars to force extended (heap) storage
+                100.times { |i| instance_variable_set("@v#{i}", i) }
+                @foo = 200
+              end
+            end
+
+            class C
+              include Tester
+              def initialize
+                # No @foo - should return nil
+                @other = 999
+              end
+            end
+
+            a = A.new
+            b = B.new
+            c = C.new
+            # Multiple calls to ensure all shapes are profiled
+            a.test
+            b.test
+            c.test
+            a.test
+            b.test
+            c.test
+        "#);
+        assert_snapshot!(hir_string_proc("Tester.instance_method(:test)"), @"");
     }
 
     #[test]
