@@ -201,6 +201,45 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_timer_thread_create_snt_for_dedicated_task
+    omit "timer thread works differently" if windows?
+    omit "test relies on this as a best-effort safety mechanism" unless defined?(Process::WNOHANG)
+    assert_separately([{ "RUBY_MAX_CPU" => "2" }], <<~'RUBY', timeout: 30)
+      $VERBOSE = nil
+      CHILD_PID = 0
+
+      rs = []
+      2.times do |i|
+        rs << Ractor.new(i) do |j|
+          if j == 0
+            pid = spawn("sleep 60", close_others: true)
+            Object.const_set(:CHILD_PID, pid)
+            Process.waitpid(pid) # block forever (dedicated task)
+          else
+            while CHILD_PID == 0
+              sleep 1 # make sure first ractor blocks forever first (this is what we're testing)
+            end
+            1_000.times do
+              [nil] * 100
+            end
+          end
+        end
+      end
+
+      rs.last.join
+      begin
+        result = Process.waitpid(CHILD_PID, Process::WNOHANG)
+      rescue Errno::ECHILD, Errno::ESRCH
+        # If it's somehow not a child (not running?), don't send it a signal
+      else
+        if result.nil?
+          Process.kill('KILL', CHILD_PID) rescue nil
+        end
+      end
+      rs.first.join # reap
+    RUBY
+  end
+
   def test_symbol_proc_is_shareable
     pr = :symbol.to_proc
     assert_make_shareable(pr)

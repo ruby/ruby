@@ -394,25 +394,14 @@ nt_free_stack(void *mstack)
     rb_native_mutex_unlock(&nt_machine_stack_lock);
 }
 
-
 static int
 native_thread_check_and_create_shared(rb_vm_t *vm)
 {
     bool need_to_make = false;
 
-    rb_native_mutex_lock(&vm->ractor.sched.lock);
+    ractor_sched_lock(vm, NULL);
     {
-        unsigned int schedulable_ractor_cnt = vm->ractor.cnt;
-        RUBY_ASSERT(schedulable_ractor_cnt >= 1);
-
-        if (!vm->ractor.main_ractor->threads.sched.enable_mn_threads)
-            schedulable_ractor_cnt--; // do not need snt for main ractor
-
-        unsigned int snt_cnt = vm->ractor.sched.snt_cnt;
-        if (((int)snt_cnt < MINIMUM_SNT) ||
-            (snt_cnt < schedulable_ractor_cnt  &&
-             snt_cnt < vm->ractor.sched.max_cpu)) {
-
+        if (need_more_shared_native_threads_p(vm)) {
             RUBY_DEBUG_LOG("added snt:%u dnt:%u ractor_cnt:%u grq_cnt:%u",
                            vm->ractor.sched.snt_cnt,
                            vm->ractor.sched.dnt_cnt,
@@ -426,7 +415,7 @@ native_thread_check_and_create_shared(rb_vm_t *vm)
             RUBY_DEBUG_LOG("snt:%d ractor_cnt:%d", (int)vm->ractor.sched.snt_cnt, (int)vm->ractor.cnt);
         }
     }
-    rb_native_mutex_unlock(&vm->ractor.sched.lock);
+    ractor_sched_unlock(vm, NULL);
 
     if (need_to_make) {
         struct rb_native_thread *nt = native_thread_alloc();
