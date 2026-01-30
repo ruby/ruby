@@ -1,0 +1,18 @@
+x = begin
+  return
+  ^~~~~~ unexpected void value expression
+rescue
+  return
+else
+  return
+end
+
+x = begin
+  return
+rescue
+  "OK"
+else
+  return
+  ^~~~~~ unexpected void value expression
+end
+

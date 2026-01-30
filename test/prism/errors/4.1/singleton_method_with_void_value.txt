@@ -1,0 +1,4 @@
+def ((return; 1)).bar; end
+      ^~~~~~ unexpected void value expression
+              ^ cannot define singleton method for literals
+
