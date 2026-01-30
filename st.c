@@ -107,6 +107,7 @@
 #elif defined RUBY_EXPORT
 #include "internal.h"
 #include "internal/bits.h"
+#include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/sanitizers.h"
 #include "internal/set_table.h"
@@ -173,7 +174,14 @@ static const struct st_hash_type type_strcasehash = {
 #define malloc ruby_xmalloc
 #define calloc ruby_xcalloc
 #define realloc ruby_xrealloc
+#define sized_realloc ruby_sized_xrealloc
 #define free ruby_xfree
+#define sized_free ruby_sized_xfree
+#define free_fixed_ptr(v) ruby_sized_xfree((v), sizeof(*(v)))
+#else
+#define sized_realloc(ptr, new_size, old_size) realloc(ptr, new_size)
+#define sized_free(v, s) free(v)
+#define free_fixed_ptr(v) free(v)
 #endif
 
 #define EQUAL(tab,x,y) ((x) == (y) || (*(tab)->type->compare)((x),(y)) == 0)
@@ -551,7 +559,7 @@ st_init_existing_table_with_size(st_table *tab, const struct st_hash_type *type,
         tab->bins = (st_index_t *) malloc(bins_size(tab));
 #ifndef RUBY
         if (tab->bins == NULL) {
-            free(tab);
+            free_fixed_ptr(tab);
             return NULL;
         }
 #endif
@@ -585,7 +593,7 @@ st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
     st_init_existing_table_with_size(tab, type, size);
 #else
     if (st_init_existing_table_with_size(tab, type, size) == NULL) {
-        free(tab);
+        free_fixed_ptr(tab);
         return NULL;
     }
 #endif
@@ -661,13 +669,36 @@ st_clear(st_table *tab)
     tab->rebuilds_num++;
 }
 
+static inline size_t
+st_entries_memsize(const st_table *tab)
+{
+    return get_allocated_entries(tab) * sizeof(st_table_entry);
+}
+
+static inline size_t
+st_bins_memsize(const st_table *tab)
+{
+    return tab->bins == NULL ? 0 : bins_size(tab);
+}
+
+static inline void
+st_free_entries(const st_table *tab)
+{
+    sized_free(tab->entries, st_entries_memsize(tab));
+}
+
+static inline void
+st_free_bins(const st_table *tab)
+{
+    sized_free(tab->bins, st_bins_memsize(tab));
+}
 /* Free table TAB space.  */
 void
 st_free_table(st_table *tab)
 {
-    free(tab->bins);
-    free(tab->entries);
-    free(tab);
+    st_free_bins(tab);
+    st_free_entries(tab);
+    free_fixed_ptr(tab);
 }
 
 /* Return byte size of memory allocated for table TAB.  */
@@ -676,8 +707,8 @@ st_memsize(const st_table *tab)
 {
     RUBY_ASSERT(tab != NULL);
     return(sizeof(st_table)
-           + (tab->bins == NULL ? 0 : bins_size(tab))
-           + get_allocated_entries(tab) * sizeof(st_table_entry));
+           + st_bins_memsize(tab)
+           + st_entries_memsize(tab));
 }
 
 static st_index_t
@@ -799,14 +830,15 @@ rebuild_table_with(st_table *const new_tab, st_table *const tab)
 static void
 rebuild_move_table(st_table *const new_tab, st_table *const tab)
 {
+    st_free_bins(tab);
+    st_free_entries(tab);
+
     tab->entry_power = new_tab->entry_power;
     tab->bin_power = new_tab->bin_power;
     tab->size_ind = new_tab->size_ind;
-    free(tab->bins);
     tab->bins = new_tab->bins;
-    free(tab->entries);
     tab->entries = new_tab->entries;
-    free(new_tab);
+    free_fixed_ptr(new_tab);
 }
 
 static void
@@ -2135,16 +2167,17 @@ st_expand_table(st_table *tab, st_index_t siz)
     tmp = st_init_table_with_size(tab->type, siz);
     n = get_allocated_entries(tab);
     MEMCPY(tmp->entries, tab->entries, st_table_entry, n);
-    free(tab->entries);
-    free(tab->bins);
-    free(tmp->bins);
+    st_free_bins(tab);
+    st_free_entries(tab);
+    st_free_bins(tmp);
+
     tab->entry_power = tmp->entry_power;
     tab->bin_power = tmp->bin_power;
     tab->size_ind = tmp->size_ind;
     tab->entries = tmp->entries;
     tab->bins = NULL;
     tab->rebuilds_num++;
-    free(tmp);
+    free_fixed_ptr(tmp);
 }
 
 /* Rehash using linear search.  Return TRUE if we found that the table
@@ -2156,7 +2189,7 @@ st_rehash_linear(st_table *tab)
     st_index_t i, j;
     st_table_entry *p, *q;
 
-    free(tab->bins);
+    st_free_bins(tab);
     tab->bins = NULL;
 
     for (i = tab->entries_start; i < tab->entries_bound; i++) {
@@ -2188,10 +2221,11 @@ st_rehash_indexed(st_table *tab)
 {
     int eq_p, rebuilt_p;
     st_index_t i;
-    st_index_t const n = bins_size(tab);
+
+    if (!tab->bins) {
+        tab->bins = malloc(bins_size(tab));
+    }
     unsigned int const size_ind = get_size_ind(tab);
-    st_index_t *bins = realloc(tab->bins, n);
-    tab->bins = bins;
     initialize_bins(tab);
     for (i = tab->entries_start; i < tab->entries_bound; i++) {
         st_table_entry *p = &tab->entries[i];
@@ -2207,10 +2241,10 @@ st_rehash_indexed(st_table *tab)
 
         ind = hash_bin(p->hash, tab);
         for (;;) {
-            st_index_t bin = get_bin(bins, size_ind, ind);
+            st_index_t bin = get_bin(tab->bins, size_ind, ind);
             if (EMPTY_OR_DELETED_BIN_P(bin)) {
                 /* ok, new room */
-                set_bin(bins, size_ind, ind, i + ENTRY_BASE);
+                set_bin(tab->bins, size_ind, ind, i + ENTRY_BASE);
                 break;
             }
             else {
@@ -2446,6 +2480,16 @@ set_make_tab_empty(set_table *tab)
         set_initialize_bins(tab);
 }
 
+static inline size_t
+set_entries_memsize(set_table *tab)
+{
+    size_t memsize = set_get_allocated_entries(tab) * sizeof(set_table_entry);
+    if (set_has_bins(tab)) {
+        memsize += set_bins_size(tab);
+    }
+    return memsize;
+}
+
 static set_table *
 set_init_existing_table_with_size(set_table *tab, const struct st_hash_type *type, st_index_t size)
 {
@@ -2471,12 +2515,7 @@ set_init_existing_table_with_size(set_table *tab, const struct st_hash_type *typ
     tab->bin_power = features[n].bin_power;
     tab->size_ind = features[n].size_ind;
 
-    size_t memsize = 0;
-    if (set_has_bins(tab)) {
-        memsize += set_bins_size(tab);
-    }
-    memsize += set_get_allocated_entries(tab) * sizeof(set_table_entry);
-    tab->entries = (set_table_entry *)malloc(memsize);
+    tab->entries = (set_table_entry *)malloc(set_entries_memsize(tab));
     set_make_tab_empty(tab);
     tab->rebuilds_num = 0;
     return tab;
@@ -2526,8 +2565,8 @@ set_table_clear(set_table *tab)
 void
 set_free_table(set_table *tab)
 {
-    free(tab->entries);
-    free(tab);
+    sized_free(tab->entries, set_entries_memsize(tab));
+    free_fixed_ptr(tab);
 }
 
 /* Return byte size of memory allocated for table TAB.  */
@@ -2625,12 +2664,14 @@ set_rebuild_table_with(set_table *const new_tab, set_table *const tab)
 static void
 set_rebuild_move_table(set_table *const new_tab, set_table *const tab)
 {
+    sized_free(tab->entries, set_entries_memsize(tab));
+    tab->entries = new_tab->entries;
+
     tab->entry_power = new_tab->entry_power;
     tab->bin_power = new_tab->bin_power;
     tab->size_ind = new_tab->size_ind;
-    free(tab->entries);
-    tab->entries = new_tab->entries;
-    free(new_tab);
+
+    free_fixed_ptr(new_tab);
 }
 
 static void
