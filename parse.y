@@ -1995,7 +1995,7 @@ parser_memhash(const void *ptr, long len)
 #define STRING_TERM_LEN(str) (1)
 #define STRING_TERM_FILL(str) (str->ptr[str->len] = '\0')
 #define PARSER_STRING_RESIZE_CAPA_TERM(p,str,capacity,termlen) do {\
-    SIZED_REALLOC_N(str->ptr, char, (size_t)total + termlen, STRING_SIZE(str)); \
+    REALLOC_N(str->ptr, char, (size_t)total + termlen); \
     str->len = total; \
 } while (0)
 #define STRING_SET_LEN(str, n) do { \
