@@ -4850,7 +4850,7 @@ rb_hash_any_p(int argc, VALUE *argv, VALUE hash)
  *    h.dig(:hello) # => nil
  *    h.default_proc = -> (hash, _key) { hash }
  *    h.dig(:hello, :world)
- *    # => {:foo=>{:bar=>[:a, :b, :c]}}
+ *    # => {foo: {bar: [:a, :b, :c]}}
  *
  *  Related: {Methods for Fetching}[rdoc-ref:Hash@Methods+for+Fetching].
  */
