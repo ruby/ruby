@@ -11408,20 +11408,20 @@ mod hir_opt_tests {
     #[test]
     fn test_invokesuper_to_cfunc_optimizes_to_ccall() {
         eval("
-            class MyArray < Array
-              def length
+            class C < Hash
+              def size
                 super
               end
             end
 
-            MyArray.new.length; MyArray.new.length
+            C.new.size
         ");
 
-        let hir = hir_string_proc("MyArray.new.method(:length)");
+        let hir = hir_string_proc("C.new.method(:size)");
         assert!(!hir.contains("InvokeSuper "), "Expected unoptimized InvokeSuper but got:\n{hir}");
 
         assert_snapshot!(hir, @r"
-        fn length@<compiled>:4:
+        fn size@<compiled>:4:
         bb0():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
@@ -11430,17 +11430,15 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
-          PatchPoint MethodRedefined(Array@0x1000, length@0x1008, cme:0x1010)
-          v20:CPtr = GetLEP
-          GuardSuperMethodEntry v20, 0x1038
-          v22:RubyValue = GetBlockHandler v20
-          v23:FalseClass = GuardBitEquals v22, Value(false)
-          v16:Array = GuardType v6, Array
-          v17:CInt64 = ArrayLength v16
-          v18:Fixnum = BoxFixnum v17
+          PatchPoint MethodRedefined(Hash@0x1000, size@0x1008, cme:0x1010)
+          v17:CPtr = GetLEP
+          GuardSuperMethodEntry v17, 0x1038
+          v19:RubyValue = GetBlockHandler v17
+          v20:FalseClass = GuardBitEquals v19, Value(false)
           IncrCounter inline_cfunc_optimized_send_count
+          v22:Fixnum = CCall v6, :Hash#size@0x1040
           CheckInterrupts
-          Return v18
+          Return v22
         ");
     }
 
@@ -11466,14 +11464,14 @@ mod hir_opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint MethodRedefined(BasicObject@0x1000, initialize@0x1008, cme:0x1010)
-          v18:CPtr = GetLEP
-          GuardSuperMethodEntry v18, 0x1038
-          v20:RubyValue = GetBlockHandler v18
-          v21:FalseClass = GuardBitEquals v20, Value(false)
-          v16:NilClass = Const Value(nil)
+          v17:CPtr = GetLEP
+          GuardSuperMethodEntry v17, 0x1038
+          v19:RubyValue = GetBlockHandler v17
+          v20:FalseClass = GuardBitEquals v19, Value(false)
+          v21:NilClass = Const Value(nil)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v16
+          Return v21
         ");
     }
 
