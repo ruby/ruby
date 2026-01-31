@@ -720,7 +720,7 @@ static const rb_data_type_t queue_data_type = {
         .dsize = queue_memsize,
         .dcompact = queue_mark_and_move,
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
 };
 
 static VALUE
@@ -825,7 +825,7 @@ static const rb_data_type_t szqueue_data_type = {
         .dcompact = szqueue_mark_and_move,
     },
     .parent = &queue_data_type,
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
 };
 
 static VALUE
