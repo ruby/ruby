@@ -4001,7 +4001,7 @@ pub mod hir_build_tests {
         eval(r#"
             [].each {|| }
         "#);
-        assert_snapshot!(hir_string_proc("Array.instance_method(:each)"), @r"
+        assert_snapshot!(hir_string_proc("[].method(:each)"), @r"
         fn each@<internal:array>:
         bb0():
           EntryPoint interpreter
