@@ -6866,7 +6866,7 @@ const char ruby_null_device[] =
  *  Methods File.new and File.open each may take string argument +mode+, which:
  *
  *  - Begins with a 1- or 2-character
- *    {read/write mode}[rdoc-ref:File@Read-2FWrite+Mode].
+ *    {read/write mode}[rdoc-ref:File@ReadWrite+Mode].
  *  - May also contain a 1-character {data mode}[rdoc-ref:File@Data+Mode].
  *  - May also contain a 1-character
  *    {file-create mode}[rdoc-ref:File@File-Create+Mode].
