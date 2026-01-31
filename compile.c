@@ -12551,6 +12551,16 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         CHECK(compile_kw_arg(iseq, ret, node, popped));
         break;
       }
+      case RB_INTERPOLATED_SYMBOL_NODE: {
+        compile_dstr(iseq, ret, node);
+        if (!popped) {
+            ADD_INSN(ret, node, intern);
+        }
+        else {
+            ADD_INSN(ret, node, pop);
+        }
+        break;
+      }
 
       // case NODE_BLOCK:
       //   CHECK(compile_block(iseq, ret, node, popped));
