@@ -298,10 +298,7 @@ ractor_free(void *ptr)
     }
 
     ractor_sync_free(r);
-    if (r->main_ractor) {
-        ruby_mimfree(r);
-    }
-    else {
+    if (!r->main_ractor) {
         ruby_xfree(r);
     }
 }
@@ -469,10 +466,12 @@ ractor_alloc(VALUE klass)
     return rv;
 }
 
+static rb_ractor_t _main_ractor;
+
 rb_ractor_t *
 rb_ractor_main_alloc(void)
 {
-    rb_ractor_t *r = ruby_mimcalloc(1, sizeof(rb_ractor_t));
+    rb_ractor_t *r = &_main_ractor;
     if (r == NULL) {
         fprintf(stderr, "[FATAL] failed to allocate memory for main ractor\n");
         exit(EXIT_FAILURE);
