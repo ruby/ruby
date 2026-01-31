@@ -14954,9 +14954,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *     ["ARGV", ["-"]]
  *     ["ARGF.read", "Open the pod bay doors, Hal.\n"]
  *
- * When no character <tt>'-'</tt> is given, stream <tt>$stdin</tt> is ignored
- * (exception:
- * see {Specifying $stdin in ARGV}[rdoc-ref:ARGF@Specifying+-24stdin+in+ARGV]):
+ * When no character <tt>'-'</tt> is given, stream <tt>$stdin</tt> is ignored.
  *
  * - Command and output:
  *
