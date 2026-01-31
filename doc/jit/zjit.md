@@ -308,10 +308,17 @@ stackprof path/to/zjit_exits_{pid}.dump
 
 ### Viewing HIR as text
 
-The compiled zjit HIR can be viewed as text using the `--zjit-dump-hir` option. However, HIR will only be generated if the `zjit-call-threshold` is reached (default 30). By setting the threshold to 1 you can easily view the HIR for code snippets such as `1 + 1`:
+The compiled ZJIT HIR can be viewed as text using the `--zjit-dump-hir` option. However, HIR will only be generated if the call threshold is reached (default 30). By setting the threshold to 1 you can easily view the HIR for code snippets such as `1 + 1`:
 
 ```bash
 ./miniruby --zjit --zjit-dump-hir --zjit-call-threshold=1 -e "1 + 1"
+```
+
+Note that this disables profiling. To inject interpreter profiles into ZJIT, consider running your sample code 30 times:
+
+```bash
+./miniruby --zjit --zjit-dump-hir -e "30.times { 1 + 1 }"
+```
 ```
 
 ### Viewing HIR in Iongraph
