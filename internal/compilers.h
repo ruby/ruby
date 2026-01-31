@@ -98,7 +98,7 @@ rb_obj_builtin_type(VALUE obj)
  *      ...
  *   };
  */
-#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
+#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L) && !defined(_MSC_VER)
 # define BITFIELD(type, name, size) type name : size
 #else
 # define BITFIELD(type, name, size) unsigned int name : size
