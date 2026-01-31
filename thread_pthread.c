@@ -1109,10 +1109,9 @@ thread_sched_to_waiting_until_wakeup(struct rb_thread_sched *sched, rb_thread_t 
     {
         if (!RUBY_VM_INTERRUPTED(th->ec)) {
             bool can_direct_transfer = !th_has_dedicated_nt(th);
-            th->status = THREAD_STOPPED_FOREVER;
+            // NOTE: th->status is set before and after this sleep outside of this function in `sleep_forever`
             thread_sched_wakeup_next_thread(sched, th, can_direct_transfer);
             thread_sched_wait_running_turn(sched, th, can_direct_transfer);
-            th->status = THREAD_RUNNABLE;
         }
         else {
             RUBY_DEBUG_LOG("th:%u interrupted", rb_th_serial(th));
@@ -2948,15 +2947,7 @@ timer_thread_check_signal(rb_vm_t *vm)
 static bool
 timer_thread_check_exceed(rb_hrtime_t abs, rb_hrtime_t now)
 {
-    if (abs < now) {
-        return true;
-    }
-    else if (abs - now < RB_HRTIME_PER_MSEC) {
-        return true; // too short time
-    }
-    else {
-        return false;
-    }
+    return abs <= now;
 }
 
 static rb_thread_t *

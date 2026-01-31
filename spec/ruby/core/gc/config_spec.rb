@@ -40,6 +40,20 @@ ruby_version_is "3.4" do
         GC.config.should == previous
       end
 
+      ruby_version_is ""..."4.0" do
+        it "returns the same as GC.config but without the :implementation key" do
+          previous = GC.config
+          GC.config({}).should == previous.except(:implementation)
+        end
+      end
+
+      ruby_version_is "4.0" do
+        it "returns the same as GC.config, including the :implementation key" do
+          previous = GC.config
+          GC.config({}).should == previous
+        end
+      end
+
       it "raises an ArgumentError if options include global keys" do
         -> { GC.config(implementation: "default") }.should raise_error(ArgumentError, 'Attempting to set read-only key "Implementation"')
       end

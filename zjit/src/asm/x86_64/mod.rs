@@ -679,6 +679,7 @@ pub fn call_label(cb: &mut CodeBlock, label: Label) {
     cb.label_ref(label, 5, |cb, src_addr, dst_addr| {
         cb.write_byte(0xE8);
         cb.write_int((dst_addr - src_addr) as u64, 32);
+        Ok(())
     });
 }
 
@@ -795,6 +796,7 @@ fn write_jcc<const OP: u8>(cb: &mut CodeBlock, label: Label) {
         cb.write_byte(0x0F);
         cb.write_byte(OP);
         cb.write_int((dst_addr - src_addr) as u64, 32);
+        Ok(())
     });
 }
 
@@ -834,6 +836,7 @@ pub fn jmp_label(cb: &mut CodeBlock, label: Label) {
     cb.label_ref(label, 5, |cb, src_addr, dst_addr| {
         cb.write_byte(0xE9);
         cb.write_int((dst_addr - src_addr) as u64, 32);
+        Ok(())
     });
 }
 

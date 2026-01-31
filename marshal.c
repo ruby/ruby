@@ -1084,7 +1084,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
           case T_STRUCT:
             w_class(TYPE_STRUCT, obj, arg, TRUE);
             {
-                long len = RSTRUCT_LEN(obj);
+                long len = RSTRUCT_LEN_RAW(obj);
                 VALUE mem;
                 long i;
 
@@ -1092,7 +1092,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
                 mem = rb_struct_members(obj);
                 for (i=0; i<len; i++) {
                     w_symbol(RARRAY_AREF(mem, i), arg);
-                    w_object(RSTRUCT_GET(obj, i), arg, limit);
+                    w_object(RSTRUCT_GET_RAW(obj, i), arg, limit);
                 }
             }
             break;

@@ -109,4 +109,23 @@ describe "Symbol#inspect" do
       input.inspect.should == expected
     end
   end
+
+  it "quotes BINARY symbols" do
+    sym = "foo\xA4".b.to_sym
+    sym.inspect.should == ':"foo\xA4"'
+  end
+
+  it "quotes symbols in non-ASCII-compatible encodings" do
+    Encoding.list.reject(&:ascii_compatible?).reject(&:dummy?).each do |encoding|
+      sym = "foo".encode(encoding).to_sym
+      sym.inspect.should == ':"foo"'
+    end
+  end
+
+  it "quotes and escapes symbols in dummy encodings" do
+    Encoding.list.select(&:dummy?).each do |encoding|
+      sym = "abcd".dup.force_encoding(encoding).to_sym
+      sym.inspect.should == ':"\x61\x62\x63\x64"'
+    end
+  end
 end

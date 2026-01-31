@@ -1669,6 +1669,30 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("hoge fuga", h["body"])
   end
 
+  def test_matchdata_large_capture_groups_stack
+    env = {"RUBY_THREAD_MACHINE_STACK_SIZE" => (256 * 1024).to_s}
+    assert_separately([env], <<~'RUBY')
+      n = 20000
+      require "rbconfig/sizeof"
+      stack = RubyVM::DEFAULT_PARAMS[:thread_machine_stack_size]
+      size = RbConfig::SIZEOF["long"]
+      required = (n + 1) * 4 * size
+      if !stack || stack == 0 || stack >= required
+        omit "thread machine stack size not reduced (#{stack}:#{required})"
+      end
+
+      inspect = Thread.new do
+        str = "\u{3042}" * n
+        m = Regexp.new("(.)" * n).match(str)
+        assert_not_nil(m)
+        assert_equal([n - 1, n], m.offset(n))
+        m.inspect
+      end.value
+
+      assert_include(inspect, "MatchData")
+    RUBY
+  end
+
   def test_regexp_popped
     EnvUtil.suppress_warning do
       assert_nothing_raised { eval("a = 1; /\#{ a }/; a") }

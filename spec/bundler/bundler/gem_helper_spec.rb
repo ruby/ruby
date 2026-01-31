@@ -386,6 +386,7 @@ RSpec.describe Bundler::GemHelper do
         credentials = double("credentials", "file?" => true)
         allow(Bundler.user_home).to receive(:join).
           with(".gem/credentials").and_return(credentials)
+        allow(Bundler.user_home).to receive(:join).and_call_original
       end
 
       describe "success messaging" do

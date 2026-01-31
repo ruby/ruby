@@ -180,11 +180,6 @@ VALUE rb_data_object_wrap(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_D
  */
 VALUE rb_data_object_zalloc(VALUE klass, size_t size, RUBY_DATA_FUNC dmark, RUBY_DATA_FUNC dfree);
 
-/**
- * @private
- * Documented in include/ruby/internal/globals.h
- */
-RUBY_EXTERN VALUE rb_cObject;
 RBIMPL_SYMBOL_EXPORT_END()
 
 /**

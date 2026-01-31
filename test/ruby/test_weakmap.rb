@@ -203,7 +203,7 @@ class TestWeakMap < Test::Unit::TestCase
       @wm[i] = obj
     end
 
-    assert_separately([], <<-'end;')
+    assert_ruby_status([], <<-'end;')
       wm = ObjectSpace::WeakMap.new
       obj = Object.new
       100.times do
@@ -224,7 +224,7 @@ class TestWeakMap < Test::Unit::TestCase
       assert_equal(val, wm[key])
     end;
 
-    assert_separately(["-W0"], <<-'end;')
+    assert_ruby_status(["-W0"], <<-'end;')
       wm = ObjectSpace::WeakMap.new
 
       ary = 10_000.times.map do

@@ -324,7 +324,7 @@ class TestGCCompact < Test::Unit::TestCase
       }.resume
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
-      assert_operator(stats.dig(:moved_up, :T_ARRAY) || 0, :>=, ARY_COUNT - 15)
+      assert_operator(stats.dig(:moved_up, :T_ARRAY) || 0, :>=, (0.9995 * ARY_COUNT).to_i)
       refute_empty($arys.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
     end;
   end
@@ -364,7 +364,7 @@ class TestGCCompact < Test::Unit::TestCase
   def test_compact_objects_of_varying_sizes
     omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
 
-    assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
     begin;
       $objects = []
       160.times do |n|

@@ -1501,7 +1501,7 @@ num_equal(VALUE x, VALUE y)
  *  call-seq:
  *     self == other -> true or false
  *
- *  Returns +true+ if +other+ has the same value as +self+, +false+ otherwise:
+ *  Returns whether +other+ is numerically equal to +self+:
  *
  *     2.0 == 2              # => true
  *     2.0 == 2.0            # => true
@@ -1638,7 +1638,8 @@ rb_float_cmp(VALUE x, VALUE y)
  *  call-seq:
  *    self > other -> true or false
  *
- *  Returns +true+ if +self+ is numerically greater than +other+:
+ *  Returns whether the value of +self+ is greater than the value of +other+;
+ *  +other+ must be numeric, but may not be Complex:
  *
  *    2.0 > 1              # => true
  *    2.0 > 1.0            # => true
@@ -1674,7 +1675,8 @@ rb_float_gt(VALUE x, VALUE y)
  *  call-seq:
  *    self >= other -> true or false
  *
- *  Returns +true+ if +self+ is numerically greater than or equal to +other+:
+ *  Returns whether the value of +self+ is greater than or equal to the value of +other+;
+ *  +other+ must be numeric, but may not be Complex:
  *
  *    2.0 >= 1              # => true
  *    2.0 >= 1.0            # => true
@@ -3678,9 +3680,9 @@ rb_int128_to_numeric(rb_int128_t n)
  * First, what's elsewhere. Class \Integer:
  *
  * - Inherits from
- *   {class Numeric}[rdoc-ref:Numeric@What-27s+Here]
- *   and {class Object}[rdoc-ref:Object@What-27s+Here].
- * - Includes {module Comparable}[rdoc-ref:Comparable@What-27s+Here].
+ *   {class Numeric}[rdoc-ref:Numeric@Whats+Here]
+ *   and {class Object}[rdoc-ref:Object@Whats+Here].
+ * - Includes {module Comparable}[rdoc-ref:Comparable@Whats+Here].
  *
  * Here, class \Integer provides methods for:
  *
@@ -4851,7 +4853,7 @@ fix_equal(VALUE x, VALUE y)
  *  call-seq:
  *    self == other -> true or false
  *
- *  Returns +true+ if +self+ is numerically equal to +other+; +false+ otherwise.
+ *  Returns whether +self+ is numerically equal to +other+:
  *
  *    1 == 2     #=> false
  *    1 == 1.0   #=> true
@@ -4957,7 +4959,8 @@ fix_gt(VALUE x, VALUE y)
  *  call-seq:
  *    self > other -> true or false
  *
- * Returns +true+ if the value of +self+ is greater than that of +other+:
+ * Returns whether the value of +self+ is greater than the value of +other+;
+ * +other+ must be numeric, but may not be Complex:
  *
  *    1 > 0              # => true
  *    1 > 1              # => false
@@ -5001,10 +5004,10 @@ fix_ge(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *    self >= real -> true or false
+ *    self >= other -> true or false
  *
- *  Returns +true+ if the value of +self+ is greater than or equal to
- *  that of +other+:
+ *  Returns whether the value of +self+ is greater than or equal to the value of +other+;
+ *  +other+ must be numeric, but may not be Complex:
  *
  *    1 >= 0              # => true
  *    1 >= 1              # => true
@@ -6362,8 +6365,8 @@ int_s_try_convert(VALUE self, VALUE num)
  *
  * First, what's elsewhere. Class \Numeric:
  *
- * - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
- * - Includes {module Comparable}[rdoc-ref:Comparable@What-27s+Here].
+ * - Inherits from {class Object}[rdoc-ref:Object@Whats+Here].
+ * - Includes {module Comparable}[rdoc-ref:Comparable@Whats+Here].
  *
  * Here, class \Numeric provides methods for:
  *

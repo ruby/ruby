@@ -11,6 +11,7 @@ of each.
 - `MakeMakefile`: A module used to generate a Makefile for C extensions
 - `RbConfig`: Information about your Ruby configuration and build
 - `Gem`: A package management framework for Ruby
+- `Pathname`: Representation of the name of a file or directory on the filesystem. Pathname is a core class, but only methods that depend on other libraries are provided as a library.
 
 ## Extensions
 
@@ -58,7 +59,6 @@ of each.
 - Time ([GitHub][time]): Extends the Time class with methods for parsing and conversion
 - Timeout ([GitHub][timeout]): Auto-terminate potentially long-running operations in Ruby
 - TmpDir ([GitHub][tmpdir]): Extends the Dir class to manage the OS temporary file path
-- TSort ([GitHub][tsort]): Topological sorting using Tarjan's algorithm
 - UN ([GitHub][un]): Utilities to replace common UNIX commands
 - URI ([GitHub][uri]): A Ruby module providing support for Uniform Resource Identifiers
 - YAML ([GitHub][yaml]): The Ruby client library for the Psych YAML implementation
@@ -75,7 +75,6 @@ of each.
 - IO#wait ([GitHub][io-wait]): Provides the feature for waiting until IO is readable or writable without blocking.
 - JSON ([GitHub][json]): Implements JavaScript Object Notation for Ruby
 - OpenSSL ([GitHub][openssl]): Provides SSL, TLS, and general-purpose cryptography for Ruby
-- Pathname ([GitHub][pathname]): Representation of the name of a file or directory on the filesystem
 - Psych ([GitHub][psych]): A YAML parser and emitter for Ruby
 - StringIO ([GitHub][stringio]): Pseudo-I/O on String objects
 - StringScanner ([GitHub][strscan]): Provides lexical scanning operations on a String
@@ -126,6 +125,7 @@ of each.
 - [reline][reline-doc] ([GitHub][reline]): GNU Readline and Editline in a pure Ruby implementation
 - [readline]: Wrapper for the Readline extension and Reline
 - [fiddle]: A libffi wrapper for Ruby
+- [tsort]: Topological sorting using Tarjan's algorithm
 
 ## Tools
 

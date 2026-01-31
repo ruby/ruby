@@ -198,7 +198,6 @@ pub use rb_FL_TEST as FL_TEST;
 pub use rb_FL_TEST_RAW as FL_TEST_RAW;
 pub use rb_RB_TYPE_P as RB_TYPE_P;
 pub use rb_BASIC_OP_UNREDEFINED_P as BASIC_OP_UNREDEFINED_P;
-pub use rb_RSTRUCT_LEN as RSTRUCT_LEN;
 pub use rb_vm_ci_argc as vm_ci_argc;
 pub use rb_vm_ci_mid as vm_ci_mid;
 pub use rb_vm_ci_flag as vm_ci_flag;
@@ -1397,6 +1396,8 @@ pub(crate) mod ids {
         name: self_              content: b"self"
         name: rb_ivar_get_at_no_ractor_check
         name: _shape_id
+        name: _env_data_index_flags
+        name: _env_data_index_specval
     }
 
     /// Get an CRuby `ID` to an interned string, e.g. a particular method name.

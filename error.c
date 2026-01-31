@@ -1383,14 +1383,14 @@ rb_unexpected_type(VALUE x, int t)
 int
 rb_typeddata_inherited_p(const rb_data_type_t *child, const rb_data_type_t *parent)
 {
-    return rb_typeddata_inherited_p_inline(child, parent);
+    return rbimpl_typeddata_inherited_p_inline(child, parent);
 }
 
 #undef rb_typeddata_is_kind_of
 int
 rb_typeddata_is_kind_of(VALUE obj, const rb_data_type_t *data_type)
 {
-    return rb_typeddata_is_kind_of_inline(obj, data_type);
+    return rbimpl_typeddata_is_kind_of_inline(obj, data_type);
 }
 
 #undef rb_typeddata_is_instance_of
@@ -2159,9 +2159,9 @@ try_convert_to_exception(VALUE obj)
 
 /*
  *  call-seq:
- *    self == object -> true or false
+ *    self == other -> true or false
  *
- *  Returns whether +object+ is the same class as +self+
+ *  Returns whether +other+ is the same class as +self+
  *  and its #message and #backtrace are equal to those of +self+.
  *
  */

@@ -3,7 +3,7 @@
 **********************************************************************/
 /*-
  * Copyright (c) 2002-2007  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
- * Copyright (c) 2011-2016  K.Takata  <kentkt AT csc DOT jp>
+ * Copyright (c) 2011-2019  K.Takata  <kentkt AT csc DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -63,14 +63,18 @@ onig_error_code_to_format(OnigPosition code)
     p = "parse depth limit over"; break;
   case ONIGERR_DEFAULT_ENCODING_IS_NOT_SET:
     p = "default multibyte-encoding is not set"; break;
+#if 0
   case ONIGERR_SPECIFIED_ENCODING_CANT_CONVERT_TO_WIDE_CHAR:
     p = "can't convert to wide-char on specified multibyte-encoding"; break;
+#endif
   case ONIGERR_INVALID_ARGUMENT:
     p = "invalid argument"; break;
   case ONIGERR_END_PATTERN_AT_LEFT_BRACE:
     p = "end pattern at left brace"; break;
+#if 0
   case ONIGERR_END_PATTERN_AT_LEFT_BRACKET:
     p = "end pattern at left bracket"; break;
+#endif
   case ONIGERR_EMPTY_CHAR_CLASS:
     p = "empty char-class"; break;
   case ONIGERR_PREMATURE_END_OF_CHAR_CLASS:
@@ -87,16 +91,20 @@ onig_error_code_to_format(OnigPosition code)
     p = "invalid control-code syntax"; break;
   case ONIGERR_CHAR_CLASS_VALUE_AT_END_OF_RANGE:
     p = "char-class value at end of range"; break;
+#if 0
   case ONIGERR_CHAR_CLASS_VALUE_AT_START_OF_RANGE:
     p = "char-class value at start of range"; break;
+#endif
   case ONIGERR_UNMATCHED_RANGE_SPECIFIER_IN_CHAR_CLASS:
     p = "unmatched range specifier in char-class"; break;
   case ONIGERR_TARGET_OF_REPEAT_OPERATOR_NOT_SPECIFIED:
     p = "target of repeat operator is not specified"; break;
   case ONIGERR_TARGET_OF_REPEAT_OPERATOR_INVALID:
     p = "target of repeat operator is invalid"; break;
+#if 0
   case ONIGERR_NESTED_REPEAT_OPERATOR:
     p = "nested repeat operator"; break;
+#endif
   case ONIGERR_UNMATCHED_CLOSE_PARENTHESIS:
     p = "unmatched close parenthesis"; break;
   case ONIGERR_END_PATTERN_WITH_UNMATCHED_PARENTHESIS:
@@ -121,14 +129,18 @@ onig_error_code_to_format(OnigPosition code)
     p = "upper is smaller than lower in repeat range"; break;
   case ONIGERR_EMPTY_RANGE_IN_CHAR_CLASS:
     p = "empty range in char class"; break;
+#if 0
   case ONIGERR_MISMATCH_CODE_LENGTH_IN_CLASS_RANGE:
     p = "mismatch multibyte code length in char-class range"; break;
+#endif
   case ONIGERR_TOO_MANY_MULTI_BYTE_RANGES:
     p = "too many multibyte code ranges are specified"; break;
   case ONIGERR_TOO_SHORT_MULTI_BYTE_STRING:
     p = "too short multibyte code string"; break;
+#if 0
   case ONIGERR_TOO_BIG_BACKREF_NUMBER:
     p = "too big backref number"; break;
+#endif
   case ONIGERR_INVALID_BACKREF:
 #ifdef USE_NAMED_GROUP
     p = "invalid backref number/name"; break;
@@ -161,8 +173,10 @@ onig_error_code_to_format(OnigPosition code)
     p = "multiplex definition name <%n> call"; break;
   case ONIGERR_NEVER_ENDING_RECURSION:
     p = "never ending recursion"; break;
+#ifdef USE_CAPTURE_HISTORY
   case ONIGERR_GROUP_NUMBER_OVER_FOR_CAPTURE_HISTORY:
     p = "group number is too big for capture history"; break;
+#endif
   case ONIGERR_INVALID_CHAR_PROPERTY_NAME:
     p = "invalid character property name {%n}"; break;
   case ONIGERR_TOO_MANY_CAPTURE_GROUPS:

@@ -192,6 +192,22 @@ describe "A block yielded a single" do
       m(obj) { |a, b, c| [a, b, c] }.should == [1, 2, nil]
     end
 
+    it "calls #respond_to? on a BasicObject to check if object has method #to_ary" do
+      ScratchPad.record []
+      obj = BasicObject.new
+      def obj.respond_to?(name, *)
+        ScratchPad << [:respond_to?, name]
+        name == :to_ary ? true : super
+      end
+      def obj.to_ary
+        ScratchPad << :to_ary
+        [1, 2]
+      end
+
+      m(obj) { |a, b, c| [a, b, c] }.should == [1, 2, nil]
+      ScratchPad.recorded.should == [[:respond_to?, :to_ary], :to_ary]
+    end
+
     it "receives the object if it does not respond to #respond_to?" do
       obj = BasicObject.new
 
@@ -1041,8 +1057,8 @@ describe "Anonymous block forwarding" do
   end
 end
 
-describe "`it` calls without arguments in a block with no ordinary parameters" do
-  ruby_version_is "3.3"..."3.4" do
+describe "`it` calls without arguments in a block" do
+  ruby_version_is ""..."3.4" do
     it "emits a deprecation warning" do
       -> {
         eval "proc { it }"
@@ -1094,38 +1110,11 @@ describe "`it` calls without arguments in a block with no ordinary parameters" d
       end
     end
   end
-
-  ruby_version_is "3.4" do
-    it "does not emit a deprecation warning" do
-      -> {
-        eval "proc { it }"
-      }.should_not complain
-    end
-
-    it "acts as the first argument if no local variables exist" do
-      eval("proc { it * 2 }").call(5).should == 10
-    end
-
-    it "can be reassigned to act as a local variable" do
-      eval("proc { tmp = it; it = tmp * 2; it }").call(21).should == 42
-    end
-
-    it "can be used in nested calls" do
-      eval("proc { it.map { it * 2 } }").call([1, 2, 3]).should == [2, 4, 6]
-    end
-
-    it "cannot be mixed with numbered parameters" do
-      -> {
-        eval "proc { it + _1 }"
-      }.should raise_error(SyntaxError, /numbered parameters are not allowed when 'it' is already used|'it' is already used in/)
-
-      -> {
-        eval "proc { _1 + it }"
-      }.should raise_error(SyntaxError, /numbered parameter is already used in|'it' is not allowed when a numbered parameter is already used/)
-    end
-  end
 end
 
+# Duplicates specs in language/it_parameter_spec.rb
+# Need them here to run on Ruby versions prior 3.4
+# TODO: remove when the minimal supported Ruby version is 3.4
 describe "if `it` is defined as a variable" do
   it "treats `it` as a captured variable if defined outside of a block" do
     it = 5

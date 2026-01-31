@@ -387,13 +387,14 @@ rb_ary_make_embedded(VALUE ary)
     if (!ARY_EMBED_P(ary)) {
         const VALUE *buf = ARY_HEAP_PTR(ary);
         long len = ARY_HEAP_LEN(ary);
+        long capa = ARY_HEAP_CAPA(ary);
 
         FL_SET_EMBED(ary);
         ARY_SET_EMBED_LEN(ary, len);
 
         MEMCPY((void *)ARY_EMBED_PTR(ary), (void *)buf, VALUE, len);
 
-        ary_heap_free_ptr(ary, buf, len * sizeof(VALUE));
+        ary_heap_free_ptr(ary, buf, capa * sizeof(VALUE));
     }
 }
 
@@ -428,7 +429,7 @@ ary_resize_capa(VALUE ary, long capacity)
 
             if (len > capacity) len = capacity;
             MEMCPY((VALUE *)RARRAY(ary)->as.ary, ptr, VALUE, len);
-            ary_heap_free_ptr(ary, ptr, old_capa);
+            ary_heap_free_ptr(ary, ptr, old_capa * sizeof(VALUE));
 
             FL_SET_EMBED(ary);
             ARY_SET_LEN(ary, len);
@@ -1789,14 +1790,10 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
 
 /*
  *  call-seq:
- *    self[index] -> object or nil
- *    self[start, length] -> object or nil
+ *    self[offset] -> object or nil
+ *    self[offset, size] -> object or nil
  *    self[range] -> object or nil
  *    self[aseq] -> object or nil
- *    slice(index) -> object or nil
- *    slice(start, length) -> object or nil
- *    slice(range) -> object or nil
- *    slice(aseq) -> object or nil
  *
  *  Returns elements from +self+; does not modify +self+.
  *
@@ -1804,27 +1801,27 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *
  *    a = [:foo, 'bar', 2]
  *
- *    # Single argument index: returns one element.
+ *    # Single argument offset: returns one element.
  *    a[0]     # => :foo          # Zero-based index.
  *    a[-1]    # => 2             # Negative index counts backwards from end.
  *
- *    # Arguments start and length: returns an array.
+ *    # Arguments offset and size: returns an array.
  *    a[1, 2]  # => ["bar", 2]
- *    a[-2, 2] # => ["bar", 2]    # Negative start counts backwards from end.
+ *    a[-2, 2] # => ["bar", 2]    # Negative offset counts backwards from end.
  *
  *    # Single argument range: returns an array.
  *    a[0..1]  # => [:foo, "bar"]
  *    a[0..-2] # => [:foo, "bar"] # Negative range-begin counts backwards from end.
  *    a[-2..2] # => ["bar", 2]    # Negative range-end counts backwards from end.
  *
- *  When a single integer argument +index+ is given, returns the element at offset +index+:
+ *  When a single integer argument +offset+ is given, returns the element at offset +offset+:
  *
  *    a = [:foo, 'bar', 2]
  *    a[0] # => :foo
  *    a[2] # => 2
  *    a # => [:foo, "bar", 2]
  *
- *  If +index+ is negative, counts backwards from the end of +self+:
+ *  If +offset+ is negative, counts backwards from the end of +self+:
  *
  *    a = [:foo, 'bar', 2]
  *    a[-1] # => 2
@@ -1832,29 +1829,29 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *
  *  If +index+ is out of range, returns +nil+.
  *
- *  When two Integer arguments +start+ and +length+ are given,
- *  returns a new array of size +length+ containing successive elements beginning at offset +start+:
+ *  When two Integer arguments +offset+ and +size+ are given,
+ *  returns a new array of size +size+ containing successive elements beginning at offset +offset+:
  *
  *    a = [:foo, 'bar', 2]
  *    a[0, 2] # => [:foo, "bar"]
  *    a[1, 2] # => ["bar", 2]
  *
- *  If <tt>start + length</tt> is greater than <tt>self.length</tt>,
- *  returns all elements from offset +start+ to the end:
+ *  If <tt>offset + size</tt> is greater than <tt>self.size</tt>,
+ *  returns all elements from offset +offset+ to the end:
  *
  *    a = [:foo, 'bar', 2]
  *    a[0, 4] # => [:foo, "bar", 2]
  *    a[1, 3] # => ["bar", 2]
  *    a[2, 2] # => [2]
  *
- *  If <tt>start == self.size</tt> and <tt>length >= 0</tt>,
+ *  If <tt>offset == self.size</tt> and <tt>size >= 0</tt>,
  *  returns a new empty array.
  *
- *  If +length+ is negative, returns +nil+.
+ *  If +size+ is negative, returns +nil+.
  *
  *  When a single Range argument +range+ is given,
- *  treats <tt>range.min</tt> as +start+ above
- *  and <tt>range.size</tt> as +length+ above:
+ *  treats <tt>range.min</tt> as +offset+ above
+ *  and <tt>range.size</tt> as +size+ above:
  *
  *    a = [:foo, 'bar', 2]
  *    a[0..1] # => [:foo, "bar"]
@@ -8427,12 +8424,12 @@ rb_ary_deconstruct(VALUE ary)
  *
  *      [1, 'one', :one, [2, 'two', :two]]
  *
- *  - A {%w or %W string-array Literal}[rdoc-ref:syntax/literals.rdoc@25w+and+-25W-3A+String-Array+Literals]:
+ *  - A {%w or %W string-array Literal}[rdoc-ref:syntax/literals.rdoc@w-and-w-String-Array-Literals]:
  *
  *      %w[foo bar baz] # => ["foo", "bar", "baz"]
  *      %w[1 % *]       # => ["1", "%", "*"]
  *
- *  - A {%i or %I symbol-array Literal}[rdoc-ref:syntax/literals.rdoc@25i+and+-25I-3A+Symbol-Array+Literals]:
+ *  - A {%i or %I symbol-array Literal}[rdoc-ref:syntax/literals.rdoc@i+and-I-Symbol-Array+Literals]:
  *
  *      %i[foo bar baz] # => [:foo, :bar, :baz]
  *      %i[1 % *]       # => [:"1", :%, :*]
@@ -8694,8 +8691,8 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  First, what's elsewhere. Class \Array:
  *
- *  - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
- *  - Includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],
+ *  - Inherits from {class Object}[rdoc-ref:Object@Whats-Here].
+ *  - Includes {module Enumerable}[rdoc-ref:Enumerable@Whats-Here],
  *    which provides dozens of additional methods.
  *
  *  Here, class \Array provides methods that are useful for:

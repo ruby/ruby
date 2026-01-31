@@ -650,6 +650,22 @@ class JSONGeneratorTest < Test::Unit::TestCase
     json = '"\\nabc"'
     assert_equal json, generate(data)
     #
+    data = "\n"
+    json = '"\\n"'
+    assert_equal json, generate(data)
+    #
+    (0..16).each do |i|
+      data = ('a' * i) + "\n"
+      json = '"' + ('a' * i) + '\\n"'
+      assert_equal json, generate(data)
+    end
+    #
+    (0..16).each do |i|
+      data =  "\n" + ('a' * i)
+      json = '"' + '\\n' + ('a' * i) + '"'
+      assert_equal json, generate(data)
+    end
+    #
     data = ["'"]
     json = '["\\\'"]'
     assert_equal '["\'"]', generate(data)

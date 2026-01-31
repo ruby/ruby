@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/27abfe03-3e96-4220-b6f1-278bb0c87684" width="400">
+</p>
+
 # ZJIT: ADVANCED RUBY JIT PROTOTYPE
 
 ZJIT is a method-based just-in-time (JIT) compiler for Ruby. It uses profile
@@ -45,7 +49,7 @@ ZJIT.
 
 ## Build Instructions
 
-Refer to [Building Ruby](rdoc-ref:contributing/building_ruby.md) for general build prerequists.
+Refer to [Building Ruby](rdoc-ref:contributing/building_ruby.md) for general build prerequisites.
 Additionally, ZJIT requires Rust 1.85.0 or later. Release builds need only `rustc`. Development
 builds require `cargo` and may download dependencies. GNU Make is required.
 
@@ -300,6 +304,21 @@ A file called `zjit_exits_{pid}.dump` will be created in the same directory as `
 
 ```bash
 stackprof path/to/zjit_exits_{pid}.dump
+```
+
+### Viewing HIR as text
+
+The compiled ZJIT HIR can be viewed as text using the `--zjit-dump-hir` option. However, HIR will only be generated if the call threshold is reached (default 30). By setting the threshold to 1 you can easily view the HIR for code snippets such as `1 + 1`:
+
+```bash
+./miniruby --zjit --zjit-dump-hir --zjit-call-threshold=1 -e "1 + 1"
+```
+
+Note that this disables profiling. To inject interpreter profiles into ZJIT, consider running your sample code 30 times:
+
+```bash
+./miniruby --zjit --zjit-dump-hir -e "30.times { 1 + 1 }"
+```
 ```
 
 ### Viewing HIR in Iongraph

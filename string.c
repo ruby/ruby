@@ -146,27 +146,7 @@ VALUE rb_cSymbol;
     RSTRING(str)->len = (n); \
 } while (0)
 
-static inline bool
-str_encindex_fastpath(int encindex)
-{
-    // The overwhelming majority of strings are in one of these 3 encodings.
-    switch (encindex) {
-      case ENCINDEX_ASCII_8BIT:
-      case ENCINDEX_UTF_8:
-      case ENCINDEX_US_ASCII:
-        return true;
-      default:
-        return false;
-    }
-}
-
-static inline bool
-str_enc_fastpath(VALUE str)
-{
-    return str_encindex_fastpath(ENCODING_GET_INLINED(str));
-}
-
-#define TERM_LEN(str) (str_enc_fastpath(str) ? 1 : rb_enc_mbminlen(rb_enc_from_index(ENCODING_GET(str))))
+#define TERM_LEN(str) (rb_str_enc_fastpath(str) ? 1 : rb_enc_mbminlen(rb_enc_from_index(ENCODING_GET(str))))
 #define TERM_FILL(ptr, termlen) do {\
     char *const term_fill_ptr = (ptr);\
     const int term_fill_len = (termlen);\
@@ -313,7 +293,9 @@ rb_str_make_embedded(VALUE str)
     RUBY_ASSERT(rb_str_reembeddable_p(str));
     RUBY_ASSERT(!STR_EMBED_P(str));
 
+    int termlen = TERM_LEN(str);
     char *buf = RSTRING(str)->as.heap.ptr;
+    long old_capa = RSTRING(str)->as.heap.aux.capa + termlen;
     long len = RSTRING(str)->len;
 
     STR_SET_EMBED(str);
@@ -321,10 +303,10 @@ rb_str_make_embedded(VALUE str)
 
     if (len > 0) {
         memcpy(RSTRING_PTR(str), buf, len);
-        ruby_xfree(buf);
+        ruby_sized_xfree(buf, old_capa);
     }
 
-    TERM_FILL(RSTRING(str)->as.embed.ary + len, TERM_LEN(str));
+    TERM_FILL(RSTRING(str)->as.embed.ary + len, termlen);
 }
 
 void
@@ -960,7 +942,7 @@ static inline bool
 rb_enc_str_asciicompat(VALUE str)
 {
     int encindex = ENCODING_GET_INLINED(str);
-    return str_encindex_fastpath(encindex) || rb_enc_asciicompat(rb_enc_get_from_index(encindex));
+    return rb_str_encindex_fastpath(encindex) || rb_enc_asciicompat(rb_enc_get_from_index(encindex));
 }
 
 int
@@ -1579,7 +1561,7 @@ rb_str_tmp_frozen_no_embed_acquire(VALUE orig)
     }
 
     RSTRING(str)->len = RSTRING(orig)->len;
-    RSTRING(str)->as.heap.aux.capa = capa;
+    RSTRING(str)->as.heap.aux.capa = capa + (TERM_LEN(orig) - TERM_LEN(str));
 
     return str;
 }
@@ -2796,7 +2778,7 @@ rb_must_asciicompat(VALUE str)
         rb_raise(rb_eTypeError, "not encoding capable object");
     }
 
-    if (RB_LIKELY(str_encindex_fastpath(encindex))) {
+    if (RB_LIKELY(rb_str_encindex_fastpath(encindex))) {
         return;
     }
 
@@ -2897,16 +2879,21 @@ str_null_check(VALUE str, int *w)
 {
     char *s = RSTRING_PTR(str);
     long len = RSTRING_LEN(str);
-    rb_encoding *enc = rb_enc_get(str);
-    const int minlen = rb_enc_mbminlen(enc);
+    int minlen = 1;
 
-    if (minlen > 1) {
-        *w = 1;
-        if (str_null_char(s, len, minlen, enc)) {
-            return NULL;
+    if (RB_UNLIKELY(!rb_str_enc_fastpath(str))) {
+        rb_encoding *enc = rb_str_enc_get(str);
+        minlen = rb_enc_mbminlen(enc);
+
+        if (minlen > 1) {
+            *w = 1;
+            if (str_null_char(s, len, minlen, enc)) {
+                return NULL;
+            }
+            return str_fill_term(str, s, len, minlen);
         }
-        return str_fill_term(str, s, len, minlen);
     }
+
     *w = 0;
     if (!s || memchr(s, 0, len)) {
         return NULL;
@@ -2914,6 +2901,34 @@ str_null_check(VALUE str, int *w)
     if (s[len]) {
         s = str_fill_term(str, s, len, minlen);
     }
+    return s;
+}
+
+const char *
+rb_str_null_check(VALUE str)
+{
+    RUBY_ASSERT(RB_TYPE_P(str, T_STRING));
+
+    char *s;
+    long len;
+    RSTRING_GETMEM(str, s, len);
+
+    if (RB_LIKELY(rb_str_enc_fastpath(str))) {
+        if (!s || memchr(s, 0, len)) {
+            rb_raise(rb_eArgError, "string contains null byte");
+        }
+    }
+    else {
+        int w;
+        const char *s = str_null_check(str, &w);
+        if (!s) {
+            if (w) {
+                rb_raise(rb_eArgError, "string contains null char");
+            }
+            rb_raise(rb_eArgError, "string contains null byte");
+        }
+    }
+
     return s;
 }
 
@@ -3122,7 +3137,7 @@ str_subseq(VALUE str, long beg, long len)
 
     const int termlen = TERM_LEN(str);
     if (!SHARABLE_SUBSTRING_P(beg, len, RSTRING_LEN(str))) {
-        str2 = rb_str_new(RSTRING_PTR(str) + beg, len);
+        str2 = rb_enc_str_new(RSTRING_PTR(str) + beg, len, rb_str_enc_get(str));
         RB_GC_GUARD(str);
         return str2;
     }
@@ -3461,13 +3476,16 @@ rb_str_resize(VALUE str, long len)
             str_make_independent_expand(str, slen, len - slen, termlen);
         }
         else if (str_embed_capa(str) >= len + termlen) {
+            capa = RSTRING(str)->as.heap.aux.capa;
             char *ptr = STR_HEAP_PTR(str);
             STR_SET_EMBED(str);
             if (slen > len) slen = len;
             if (slen > 0) MEMCPY(RSTRING(str)->as.embed.ary, ptr, char, slen);
             TERM_FILL(RSTRING(str)->as.embed.ary + len, termlen);
             STR_SET_LEN(str, len);
-            if (independent) ruby_xfree(ptr);
+            if (independent) {
+                ruby_sized_xfree(ptr, capa + termlen);
+            }
             return str;
         }
         else if (!independent) {
@@ -3765,7 +3783,7 @@ rb_str_buf_append(VALUE str, VALUE str2)
 {
     int str2_cr = rb_enc_str_coderange(str2);
 
-    if (str_enc_fastpath(str)) {
+    if (rb_str_enc_fastpath(str)) {
         switch (str2_cr) {
           case ENC_CODERANGE_7BIT:
             // If RHS is 7bit we can do simple concatenation
@@ -4239,11 +4257,11 @@ rb_str_cmp(VALUE str1, VALUE str2)
 
 /*
  *  call-seq:
- *    self == object -> true or false
+ *    self == other -> true or false
  *
- *  Returns whether +object+ is equal to +self+.
+ *  Returns whether +other+ is equal to +self+.
  *
- *  When +object+ is a string, returns whether +object+ has the same length and content as +self+:
+ *  When +other+ is a string, returns whether +other+ has the same length and content as +self+:
  *
  *    s = 'foo'
  *    s == 'foo'  # => true
@@ -4254,11 +4272,11 @@ rb_str_cmp(VALUE str1, VALUE str2)
  *
  *    "\u{e4 f6 fc}".encode(Encoding::ISO_8859_1) == ("\u{c4 d6 dc}") # => false
  *
- *  When +object+ is not a string:
+ *  When +other+ is not a string:
  *
- *  - If +object+ responds to method <tt>to_str</tt>,
- *    <tt>object == self</tt> is called and its return value is returned.
- *  - If +object+ does not respond to <tt>to_str</tt>,
+ *  - If +other+ responds to method <tt>to_str</tt>,
+ *    <tt>other == self</tt> is called and its return value is returned.
+ *  - If +other+ does not respond to <tt>to_str</tt>,
  *    +false+ is returned.
  *
  *  Related: {Comparing}[rdoc-ref:String@Comparing].
@@ -5011,12 +5029,15 @@ rb_str_byterindex_m(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    self =~ object -> integer or nil
+ *    self =~ other -> integer or nil
  *
- *  When +object+ is a Regexp, returns the index of the first substring in +self+
- *  matched by +object+,
- *  or +nil+ if no match is found;
- *  updates {Regexp-related global variables}[rdoc-ref:Regexp@Global+Variables]:
+ *  When +other+ is a Regexp:
+ *
+ *  - Returns the integer index (in characters) of the first match
+ *    for +self+ and +other+, or +nil+ if none;
+ *  - Updates {Regexp-related global variables}[rdoc-ref:Regexp@Global+Variables].
+ *
+ *  Examples:
  *
  *    'foo' =~ /f/ # => 0
  *    $~           # => #<MatchData "f">
@@ -5034,8 +5055,8 @@ rb_str_byterindex_m(int argc, VALUE *argv, VALUE str)
  *    /(?<number>\d+)/ =~ 'no. 9' # => 4
  *    number                      # => "9" # Assigned.
  *
- *  If +object+ is not a Regexp, returns the value
- *  returned by <tt>object =~ self</tt>.
+ *  When +other+ is not a Regexp, returns the value
+ *  returned by <tt>other =~ self</tt>.
  *
  *  Related: see {Querying}[rdoc-ref:String@Querying].
  */
@@ -5713,8 +5734,8 @@ rb_str_aref(VALUE str, VALUE indx)
 
 /*
  *  call-seq:
- *    self[index] -> new_string or nil
- *    self[start, length] -> new_string or nil
+ *    self[offset] -> new_string or nil
+ *    self[offset, size] -> new_string or nil
  *    self[range] -> new_string or nil
  *    self[regexp, capture = 0] -> new_string or nil
  *    self[substring] -> new_string or nil
@@ -7798,7 +7819,7 @@ mapping_buffer_free(void *p)
     while (current_buffer) {
         previous_buffer = current_buffer;
         current_buffer  = current_buffer->next;
-        ruby_sized_xfree(previous_buffer, previous_buffer->capa);
+        ruby_sized_xfree(previous_buffer, offsetof(mapping_buffer, space) + previous_buffer->capa);
     }
 }
 
@@ -12158,8 +12179,8 @@ rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
  *
  * First, what's elsewhere. Class +Symbol+:
  *
- * - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
- * - Includes {module Comparable}[rdoc-ref:Comparable@What-27s+Here].
+ * - Inherits from {class Object}[rdoc-ref:Object@Whats+Here].
+ * - Includes {module Comparable}[rdoc-ref:Comparable@Whats+Here].
  *
  * Here, class +Symbol+ provides methods that are useful for:
  *
@@ -12218,9 +12239,9 @@ rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    symbol == object -> true or false
+ *    self == other -> true or false
  *
- *  Returns +true+ if +object+ is the same object as +self+, +false+ otherwise.
+ *  Returns whether +other+ is the same object as +self+.
  */
 
 #define sym_equal rb_obj_equal
@@ -12445,9 +12466,9 @@ sym_casecmp_p(VALUE sym, VALUE other)
 
 /*
  *  call-seq:
- *    symbol =~ object -> integer or nil
+ *    self =~ other -> integer or nil
  *
- *  Equivalent to <tt>symbol.to_s =~ object</tt>,
+ *  Equivalent to <tt>self.to_s =~ other</tt>,
  *  including possible updates to global variables;
  *  see String#=~.
  *
@@ -12493,11 +12514,11 @@ sym_match_m_p(int argc, VALUE *argv, VALUE sym)
 
 /*
  *  call-seq:
- *    symbol[index] -> string or nil
- *    symbol[start, length] -> string or nil
- *    symbol[range] -> string or nil
- *    symbol[regexp, capture = 0] -> string or nil
- *    symbol[substring] -> string or nil
+ *    self[offset] -> string or nil
+ *    self[offset, size] -> string or nil
+ *    self[range] -> string or nil
+ *    self[regexp, capture = 0] -> string or nil
+ *    self[substring] -> string or nil
  *
  *  Equivalent to <tt>symbol.to_s[]</tt>; see String#[].
  *
@@ -12706,7 +12727,15 @@ VALUE
 rb_interned_str(const char *ptr, long len)
 {
     struct RString fake_str = {RBASIC_INIT};
-    return register_fstring(setup_fake_str(&fake_str, ptr, len, ENCINDEX_US_ASCII), true, false);
+    int encidx = ENCINDEX_US_ASCII;
+    int coderange = ENC_CODERANGE_7BIT;
+    if (len > 0 && search_nonascii(ptr, ptr + len)) {
+        encidx = ENCINDEX_ASCII_8BIT;
+        coderange = ENC_CODERANGE_VALID;
+    }
+    VALUE str = setup_fake_str(&fake_str, ptr, len, encidx);
+    ENC_CODERANGE_SET(str, coderange);
+    return register_fstring(str, true, false);
 }
 
 VALUE

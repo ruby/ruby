@@ -550,10 +550,10 @@ free_global_variable(struct rb_global_variable *var)
     struct trace_var *trace = var->trace;
     while (trace) {
         struct trace_var *next = trace->next;
-        xfree(trace);
+        SIZED_FREE(trace);
         trace = next;
     }
-    xfree(var);
+    SIZED_FREE(var);
 }
 
 static enum rb_id_table_iterator_result
@@ -564,7 +564,7 @@ free_global_entry_i(VALUE val, void *arg)
     if (entry->var->counter == 0) {
         free_global_variable(entry->var);
     }
-    ruby_xfree(entry);
+    SIZED_FREE(entry);
     return ID_TABLE_DELETE;
 }
 
@@ -902,7 +902,7 @@ remove_trace(struct rb_global_variable *var)
         next = trace->next;
         if (next->removed) {
             trace->next = next->next;
-            xfree(next);
+            SIZED_FREE(next);
         }
         else {
             trace = next;
@@ -1565,8 +1565,10 @@ obj_transition_too_complex(VALUE obj, st_table *table)
       case T_OBJECT:
         {
             VALUE *old_fields = NULL;
+            uint32_t old_fields_len = 0;
             if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
                 old_fields = ROBJECT_FIELDS(obj);
+                old_fields_len = ROBJECT_FIELDS_CAPACITY(obj);
             }
             else {
                 FL_SET_RAW(obj, ROBJECT_HEAP);
@@ -1574,7 +1576,7 @@ obj_transition_too_complex(VALUE obj, st_table *table)
             RBASIC_SET_SHAPE_ID(obj, shape_id);
             ROBJECT_SET_FIELDS_HASH(obj, table);
             if (old_fields) {
-                xfree(old_fields);
+                SIZED_FREE_N(old_fields, old_fields_len);
             }
         }
         break;
@@ -1697,13 +1699,18 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
             MEMMOVE(&fields[removed_index], &fields[removed_index + 1], VALUE, trailing_fields);
             RBASIC_SET_SHAPE_ID(fields_obj, next_shape_id);
 
-            if (FL_TEST_RAW(fields_obj, OBJ_FIELD_HEAP) && rb_obj_embedded_size(new_fields_count) <= rb_gc_obj_slot_size(fields_obj)) {
-                // Re-embed objects when instances become small enough
-                // This is necessary because YJIT assumes that objects with the same shape
-                // have the same embeddedness for efficiency (avoid extra checks)
-                FL_UNSET_RAW(fields_obj, ROBJECT_HEAP);
-                MEMCPY(rb_imemo_fields_ptr(fields_obj), fields, VALUE, new_fields_count);
-                xfree(fields);
+            if (FL_TEST_RAW(fields_obj, OBJ_FIELD_HEAP)) {
+                if (rb_obj_embedded_size(new_fields_count) <= rb_gc_obj_slot_size(fields_obj)) {
+                    // Re-embed objects when instances become small enough
+                    // This is necessary because YJIT assumes that objects with the same shape
+                    // have the same embeddedness for efficiency (avoid extra checks)
+                    FL_UNSET_RAW(fields_obj, ROBJECT_HEAP);
+                    MEMCPY(rb_imemo_fields_ptr(fields_obj), fields, VALUE, new_fields_count);
+                    SIZED_FREE_N(fields, RSHAPE_CAPACITY(old_shape_id));
+                }
+                else if (RSHAPE_CAPACITY(old_shape_id) != RSHAPE_CAPACITY(next_shape_id)) {
+                    IMEMO_OBJ_FIELDS(fields_obj)->as.external.ptr = ruby_sized_xrealloc(fields, RSHAPE_CAPACITY(next_shape_id) * sizeof(VALUE), RSHAPE_CAPACITY(old_shape_id) * sizeof(VALUE));
+                }
             }
         }
         else {
@@ -2693,7 +2700,7 @@ autoload_data_free(void *ptr)
         ccan_list_del_init(&autoload_const->cnode);
     }
 
-    ruby_xfree(p);
+    SIZED_FREE(p);
 }
 
 static size_t
@@ -2732,7 +2739,7 @@ autoload_const_free(void *ptr)
     struct autoload_const *autoload_const = ptr;
 
     ccan_list_del(&autoload_const->cnode);
-    ruby_xfree(ptr);
+    SIZED_FREE(autoload_const);
 }
 
 static const rb_data_type_t autoload_const_type = {
@@ -3584,7 +3591,7 @@ rb_const_remove(VALUE mod, ID id)
     if (rb_id_table_lookup(RCLASS_WRITABLE_CONST_TBL(mod), id, &writable_ce)) {
         rb_id_table_delete(RCLASS_WRITABLE_CONST_TBL(mod), id);
         if ((rb_const_entry_t *)writable_ce != ce) {
-            xfree((rb_const_entry_t *)writable_ce);
+            SIZED_FREE((rb_const_entry_t *)writable_ce);
         }
     }
 
@@ -3599,7 +3606,7 @@ rb_const_remove(VALUE mod, ID id)
     }
 
     if (ce != const_lookup(RCLASS_PRIME_CONST_TBL(mod), id)) {
-        ruby_xfree(ce);
+        SIZED_FREE(ce);
     }
     // else - skip free'ing the ce because it still exists in the prime classext
 

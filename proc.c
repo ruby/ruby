@@ -98,7 +98,7 @@ proc_memsize(const void *ptr)
     return sizeof(rb_proc_t);
 }
 
-static const rb_data_type_t proc_data_type = {
+const rb_data_type_t ruby_proc_data_type = {
     "proc",
     {
         proc_mark_and_move,
@@ -108,6 +108,8 @@ static const rb_data_type_t proc_data_type = {
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
+
+#define proc_data_type ruby_proc_data_type
 
 VALUE
 rb_proc_alloc(VALUE klass)
@@ -1423,10 +1425,10 @@ rb_proc_get_iseq(VALUE self, int *is_proc)
 }
 
 /* call-seq:
- *   prc == other -> true or false
- *   prc.eql?(other) -> true or false
+ *   self == other -> true or false
+ *   eql?(other) -> true or false
  *
- * Two procs are the same if, and only if, they were created from the same code block.
+ * Returns whether +self+ and +other+ were created from the same code block:
  *
  *   def return_block(&block)
  *     block
@@ -1980,10 +1982,9 @@ method_entry_defined_class(const rb_method_entry_t *me)
 
 /*
  * call-seq:
- *   meth.eql?(other_meth)  -> true or false
- *   meth == other_meth  -> true or false
+ *   self == other -> true or false
  *
- * Two method objects are equal if they are bound to the same
+ * Returns whether +self+ and +other+ are bound to the same
  * object and refer to the same method definition and the classes
  * defining the methods are the same class or module.
  */
@@ -2372,29 +2373,29 @@ rb_obj_singleton_method(VALUE obj, VALUE vid)
  *
  *  Returns an +UnboundMethod+ representing the given
  *  instance method in _mod_.
+ *  See +UnboundMethod+ about how to utilize it
  *
- *     class Interpreter
- *       def do_a() print "there, "; end
- *       def do_d() print "Hello ";  end
- *       def do_e() print "!\n";     end
- *       def do_v() print "Dave";    end
- *       Dispatcher = {
- *         "a" => instance_method(:do_a),
- *         "d" => instance_method(:do_d),
- *         "e" => instance_method(:do_e),
- *         "v" => instance_method(:do_v)
- *       }
- *       def interpret(string)
- *         string.each_char {|b| Dispatcher[b].bind(self).call }
- *       end
- *     end
+ *    class Person
+ *      def initialize(name)
+ *        @name = name
+ *      end
  *
- *     interpreter = Interpreter.new
- *     interpreter.interpret('dave')
+ *      def hi
+ *        puts "Hi, I'm #{@name}!"
+ *      end
+ *    end
+ *
+ *     dave = Person.new('Dave')
+ *     thomas = Person.new('Thomas')
+ *
+ *     hi = Person.instance_method(:hi)
+ *     hi.bind_call(dave)
+ *     hi.bind_call(thomas)
  *
  *  <em>produces:</em>
  *
- *     Hello there, Dave!
+ *     Hi, I'm Dave!
+ *     Hi, I'm Thomas!
  */
 
 static VALUE

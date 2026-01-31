@@ -201,9 +201,24 @@ build_options_i(VALUE key, VALUE value, VALUE argument) {
             const char *version = check_string(value);
 
             if (RSTRING_LEN(value) == 7 && strncmp(version, "current", 7) == 0) {
-                const char *current_version = RSTRING_PTR(rb_const_get(rb_cObject, rb_intern("RUBY_VERSION")));
-                if (!pm_options_version_set(options, current_version, 3)) {
-                    rb_exc_raise(rb_exc_new_cstr(rb_cPrismCurrentVersionError, current_version));
+                const char *ruby_version = RSTRING_PTR(rb_const_get(rb_cObject, rb_intern("RUBY_VERSION")));
+                if (!pm_options_version_set(options, ruby_version, 3)) {
+                    rb_exc_raise(rb_exc_new_cstr(rb_cPrismCurrentVersionError, ruby_version));
+                }
+            } else if (RSTRING_LEN(value) == 7 && strncmp(version, "nearest", 7) == 0) {
+                const char *ruby_version = RSTRING_PTR(rb_const_get(rb_cObject, rb_intern("RUBY_VERSION")));
+                const char *nearest_version;
+
+                if (ruby_version[0] < '3' || (ruby_version[0] == '3' && ruby_version[2] < '3')) {
+                    nearest_version = "3.3";
+                } else if (ruby_version[0] > '4' || (ruby_version[0] == '4' && ruby_version[2] > '1')) {
+                    nearest_version = "4.1";
+                } else {
+                    nearest_version = ruby_version;
+                }
+
+                if (!pm_options_version_set(options, nearest_version, 3)) {
+                    rb_raise(rb_eArgError, "invalid nearest version: %s", nearest_version);
                 }
             } else if (!pm_options_version_set(options, version, RSTRING_LEN(value))) {
                 rb_raise(rb_eArgError, "invalid version: %" PRIsVALUE, value);
@@ -455,23 +470,23 @@ rb_class_new_instance_freeze(int argc, const VALUE *argv, VALUE klass, bool free
  * Create a new Location instance from the given parser and bounds.
  */
 static inline VALUE
-parser_location(const pm_parser_t *parser, VALUE source, bool freeze, const uint8_t *start, size_t length) {
-    VALUE argv[] = { source, LONG2FIX(start - parser->start), LONG2FIX(length) };
+parser_location(VALUE source, bool freeze, uint32_t start, uint32_t length) {
+    VALUE argv[] = { source, LONG2FIX(start), LONG2FIX(length) };
     return rb_class_new_instance_freeze(3, argv, rb_cPrismLocation, freeze);
 }
 
 /**
  * Create a new Location instance from the given parser and location.
  */
-#define PARSER_LOCATION_LOC(parser, source, freeze, loc) \
-    parser_location(parser, source, freeze, loc.start, (size_t) (loc.end - loc.start))
+#define PARSER_LOCATION(source, freeze, location) \
+    parser_location(source, freeze, location.start, location.length)
 
 /**
  * Build a new Comment instance from the given parser and comment.
  */
 static inline VALUE
-parser_comment(const pm_parser_t *parser, VALUE source, bool freeze, const pm_comment_t *comment) {
-    VALUE argv[] = { PARSER_LOCATION_LOC(parser, source, freeze, comment->location) };
+parser_comment(VALUE source, bool freeze, const pm_comment_t *comment) {
+    VALUE argv[] = { PARSER_LOCATION(source, freeze, comment->location) };
     VALUE type = (comment->type == PM_COMMENT_EMBDOC) ? rb_cPrismEmbDocComment : rb_cPrismInlineComment;
     return rb_class_new_instance_freeze(1, argv, type, freeze);
 }
@@ -488,7 +503,7 @@ parser_comments(const pm_parser_t *parser, VALUE source, bool freeze) {
         comment != NULL;
         comment = (const pm_comment_t *) comment->node.next
     ) {
-        VALUE value = parser_comment(parser, source, freeze, comment);
+        VALUE value = parser_comment(source, freeze, comment);
         rb_ary_push(comments, value);
     }
 
@@ -500,9 +515,9 @@ parser_comments(const pm_parser_t *parser, VALUE source, bool freeze) {
  * Build a new MagicComment instance from the given parser and magic comment.
  */
 static inline VALUE
-parser_magic_comment(const pm_parser_t *parser, VALUE source, bool freeze, const pm_magic_comment_t *magic_comment) {
-    VALUE key_loc = parser_location(parser, source, freeze, magic_comment->key_start, magic_comment->key_length);
-    VALUE value_loc = parser_location(parser, source, freeze, magic_comment->value_start, magic_comment->value_length);
+parser_magic_comment(VALUE source, bool freeze, const pm_magic_comment_t *magic_comment) {
+    VALUE key_loc = parser_location(source, freeze, magic_comment->key.start, magic_comment->key.length);
+    VALUE value_loc = parser_location(source, freeze, magic_comment->value.start, magic_comment->value.length);
     VALUE argv[] = { key_loc, value_loc };
     return rb_class_new_instance_freeze(2, argv, rb_cPrismMagicComment, freeze);
 }
@@ -519,7 +534,7 @@ parser_magic_comments(const pm_parser_t *parser, VALUE source, bool freeze) {
         magic_comment != NULL;
         magic_comment = (const pm_magic_comment_t *) magic_comment->node.next
     ) {
-        VALUE value = parser_magic_comment(parser, source, freeze, magic_comment);
+        VALUE value = parser_magic_comment(source, freeze, magic_comment);
         rb_ary_push(magic_comments, value);
     }
 
@@ -533,10 +548,10 @@ parser_magic_comments(const pm_parser_t *parser, VALUE source, bool freeze) {
  */
 static VALUE
 parser_data_loc(const pm_parser_t *parser, VALUE source, bool freeze) {
-    if (parser->data_loc.end == NULL) {
+    if (parser->data_loc.length == 0) {
         return Qnil;
     } else {
-        return PARSER_LOCATION_LOC(parser, source, freeze, parser->data_loc);
+        return parser_location(source, freeze, parser->data_loc.start, parser->data_loc.length);
     }
 }
 
@@ -554,7 +569,7 @@ parser_errors(const pm_parser_t *parser, rb_encoding *encoding, VALUE source, bo
     ) {
         VALUE type = ID2SYM(rb_intern(pm_diagnostic_id_human(error->diag_id)));
         VALUE message = rb_obj_freeze(rb_enc_str_new_cstr(error->message, encoding));
-        VALUE location = PARSER_LOCATION_LOC(parser, source, freeze, error->location);
+        VALUE location = PARSER_LOCATION(source, freeze, error->location);
 
         VALUE level = Qnil;
         switch (error->level) {
@@ -594,7 +609,7 @@ parser_warnings(const pm_parser_t *parser, rb_encoding *encoding, VALUE source, 
     ) {
         VALUE type = ID2SYM(rb_intern(pm_diagnostic_id_human(warning->diag_id)));
         VALUE message = rb_obj_freeze(rb_enc_str_new_cstr(warning->message, encoding));
-        VALUE location = PARSER_LOCATION_LOC(parser, source, freeze, warning->location);
+        VALUE location = PARSER_LOCATION(source, freeze, warning->location);
 
         VALUE level = Qnil;
         switch (warning->level) {
@@ -894,8 +909,10 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
  *       version of Ruby syntax (which you can trigger with `nil` or
  *       `"latest"`). You may also restrict the syntax to a specific version of
  *       Ruby, e.g., with `"3.3.0"`. To parse with the same syntax version that
- *       the current Ruby is running use `version: "current"`. Raises
- *       ArgumentError if the version is not currently supported by Prism.
+ *       the current Ruby is running use `version: "current"`. To parse with the
+ *       nearest version to the current Ruby that is running, use
+ *       `version: "nearest"`. Raises ArgumentError if the version is not
+ *       currently supported by Prism.
  */
 static VALUE
 parse(int argc, VALUE *argv, VALUE self) {

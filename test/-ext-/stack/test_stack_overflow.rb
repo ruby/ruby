@@ -17,7 +17,7 @@ class Test_StackOverflow < Test::Unit::TestCase
       require '-test-/stack'
 
       assert_raise(SystemStackError) do
-        Thread.alloca_overflow
+        Thread.stack_overflow
       end
     RUBY
   end
@@ -29,7 +29,7 @@ class Test_StackOverflow < Test::Unit::TestCase
 
       thread = Thread.new do
         Thread.current.report_on_exception = false
-        Thread.alloca_overflow
+        Thread.stack_overflow
       end
 
       assert_raise(SystemStackError) do
@@ -44,7 +44,7 @@ class Test_StackOverflow < Test::Unit::TestCase
       GC.disable
 
       fiber = Fiber.new do
-        Thread.alloca_overflow
+        Thread.stack_overflow
       end
 
       assert_raise(SystemStackError) do

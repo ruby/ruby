@@ -1864,16 +1864,7 @@ typedef struct rb_postponed_job_queue {
     rb_atomic_t triggered_bitset;
 } rb_postponed_job_queues_t;
 
-void
-rb_vm_postponed_job_queue_init(rb_vm_t *vm)
-{
-    /* use mimmalloc; postponed job registration is a dependency of objspace, so this gets
-     * called _VERY_ early inside Init_BareVM */
-    rb_postponed_job_queues_t *pjq = ruby_mimmalloc(sizeof(rb_postponed_job_queues_t));
-    pjq->triggered_bitset = 0;
-    memset(pjq->table, 0, sizeof(pjq->table));
-    vm->postponed_job_queue = pjq;
-}
+static rb_postponed_job_queues_t postponed_job_queue;
 
 static rb_execution_context_t *
 get_valid_ec(rb_vm_t *vm)
@@ -1886,23 +1877,13 @@ get_valid_ec(rb_vm_t *vm)
 void
 rb_vm_postponed_job_atfork(void)
 {
-    rb_vm_t *vm = GET_VM();
-    rb_postponed_job_queues_t *pjq = vm->postponed_job_queue;
+    rb_postponed_job_queues_t *pjq = &postponed_job_queue;
     /* make sure we set the interrupt flag on _this_ thread if we carried any pjobs over
      * from the other side of the fork */
     if (pjq->triggered_bitset) {
-        RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(get_valid_ec(vm));
+        RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(get_valid_ec(GET_VM()));
     }
 
-}
-
-/* Frees the memory managed by the postponed job infrastructure at shutdown */
-void
-rb_vm_postponed_job_free(void)
-{
-    rb_vm_t *vm = GET_VM();
-    ruby_xfree(vm->postponed_job_queue);
-    vm->postponed_job_queue = NULL;
 }
 
 // Used for VM memsize reporting. Returns the total size of the postponed job
@@ -1926,7 +1907,7 @@ rb_postponed_job_preregister(unsigned int flags, rb_postponed_job_func_t func, v
      * of concurrent calls to both _preregister and _register functions on the same
      * func, however, the data may get mixed up between them. */
 
-    rb_postponed_job_queues_t *pjq = GET_VM()->postponed_job_queue;
+    rb_postponed_job_queues_t *pjq = &postponed_job_queue;
     for (unsigned int i = 0; i < PJOB_TABLE_SIZE; i++) {
         /* Try and set this slot to equal `func` */
         rb_postponed_job_func_t existing_func = (rb_postponed_job_func_t)(uintptr_t)RUBY_ATOMIC_PTR_CAS(pjq->table[i].func, NULL, (void *)(uintptr_t)func);
@@ -1951,11 +1932,10 @@ rb_postponed_job_preregister(unsigned int flags, rb_postponed_job_func_t func, v
 void
 rb_postponed_job_trigger(rb_postponed_job_handle_t h)
 {
-    rb_vm_t *vm = GET_VM();
-    rb_postponed_job_queues_t *pjq = vm->postponed_job_queue;
+    rb_postponed_job_queues_t *pjq = &postponed_job_queue;
 
     RUBY_ATOMIC_OR(pjq->triggered_bitset, (((rb_atomic_t)1UL) << h));
-    RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(get_valid_ec(vm));
+    RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(get_valid_ec(GET_VM()));
 }
 
 
@@ -1988,7 +1968,7 @@ rb_postponed_job_register_one(unsigned int flags, rb_postponed_job_func_t func, 
 void
 rb_postponed_job_flush(rb_vm_t *vm)
 {
-    rb_postponed_job_queues_t *pjq = GET_VM()->postponed_job_queue;
+    rb_postponed_job_queues_t *pjq = &postponed_job_queue;
     rb_execution_context_t *ec = GET_EC();
     const rb_atomic_t block_mask = POSTPONED_JOB_INTERRUPT_MASK | TRAP_INTERRUPT_MASK;
     volatile rb_atomic_t saved_mask = ec->interrupt_mask & block_mask;

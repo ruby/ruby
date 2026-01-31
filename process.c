@@ -4233,7 +4233,7 @@ rb_proc__fork(VALUE _obj)
  *    puts "Before the fork: #{Process.pid}"
  *    fork do
  *      puts "In the child process: #{Process.pid}"
- *    end                   # => 382141
+ *    end                   # => 420520
  *    puts "After the fork: #{Process.pid}"
  *
  *  Output:

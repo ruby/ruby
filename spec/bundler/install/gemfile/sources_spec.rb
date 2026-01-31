@@ -1079,4 +1079,161 @@ RSpec.describe "bundle install with gems on multiple sources" do
       expect(lockfile).to eq original_lockfile.gsub("bigdecimal (1.0.0)", "bigdecimal (3.3.1)")
     end
   end
+
+  context "when switching a gem with components from rubygems to git source" do
+    before do
+      build_repo2 do
+        build_gem "rails", "7.0.0" do |s|
+          s.add_dependency "actionpack", "7.0.0"
+          s.add_dependency "activerecord", "7.0.0"
+        end
+        build_gem "actionpack", "7.0.0"
+        build_gem "activerecord", "7.0.0"
+        # propshaft also depends on actionpack, creating the conflict
+        build_gem "propshaft", "1.0.0" do |s|
+          s.add_dependency "actionpack", ">= 7.0.0"
+        end
+      end
+
+      build_git "rails", "7.0.0", path: lib_path("rails") do |s|
+        s.add_dependency "actionpack", "7.0.0"
+        s.add_dependency "activerecord", "7.0.0"
+      end
+
+      build_git "actionpack", "7.0.0", path: lib_path("rails")
+      build_git "activerecord", "7.0.0", path: lib_path("rails")
+
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        gem "rails", "7.0.0"
+        gem "propshaft"
+      G
+    end
+
+    it "moves component gems to the git source in the lockfile" do
+      expect(lockfile).to include("remote: https://gem.repo2")
+      expect(lockfile).to include("rails (7.0.0)")
+      expect(lockfile).to include("actionpack (7.0.0)")
+      expect(lockfile).to include("activerecord (7.0.0)")
+      expect(lockfile).to include("propshaft (1.0.0)")
+
+      gemfile <<-G
+        source "https://gem.repo2"
+        gem "rails", git: "#{lib_path("rails")}"
+        gem "propshaft"
+      G
+
+      bundle "install"
+
+      expect(lockfile).to include("remote: #{lib_path("rails")}")
+      expect(lockfile).to include("rails (7.0.0)")
+      expect(lockfile).to include("actionpack (7.0.0)")
+      expect(lockfile).to include("activerecord (7.0.0)")
+
+      # Component gems should NOT remain in the GEM section
+      # Extract just the GEM section by splitting on GIT first, then GEM
+      gem_section = lockfile.split("GEM\n").last.split(/\n(PLATFORMS|DEPENDENCIES)/)[0]
+      expect(gem_section).not_to include("actionpack (7.0.0)")
+      expect(gem_section).not_to include("activerecord (7.0.0)")
+    end
+  end
+
+  context "when switching a gem with components from rubygems to path source" do
+    before do
+      build_repo2 do
+        build_gem "rails", "7.0.0" do |s|
+          s.add_dependency "actionpack", "7.0.0"
+          s.add_dependency "activerecord", "7.0.0"
+        end
+        build_gem "actionpack", "7.0.0"
+        build_gem "activerecord", "7.0.0"
+        # propshaft also depends on actionpack, creating the conflict
+        build_gem "propshaft", "1.0.0" do |s|
+          s.add_dependency "actionpack", ">= 7.0.0"
+        end
+      end
+
+      build_lib "rails", "7.0.0", path: lib_path("rails") do |s|
+        s.add_dependency "actionpack", "7.0.0"
+        s.add_dependency "activerecord", "7.0.0"
+      end
+
+      build_lib "actionpack", "7.0.0", path: lib_path("rails")
+      build_lib "activerecord", "7.0.0", path: lib_path("rails")
+
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        gem "rails", "7.0.0"
+        gem "propshaft"
+      G
+    end
+
+    it "moves component gems to the path source in the lockfile" do
+      expect(lockfile).to include("remote: https://gem.repo2")
+      expect(lockfile).to include("rails (7.0.0)")
+      expect(lockfile).to include("actionpack (7.0.0)")
+      expect(lockfile).to include("activerecord (7.0.0)")
+      expect(lockfile).to include("propshaft (1.0.0)")
+
+      gemfile <<-G
+        source "https://gem.repo2"
+        gem "rails", path: "#{lib_path("rails")}"
+        gem "propshaft"
+      G
+
+      bundle "install"
+
+      expect(lockfile).to include("remote: #{lib_path("rails")}")
+      expect(lockfile).to include("rails (7.0.0)")
+      expect(lockfile).to include("actionpack (7.0.0)")
+      expect(lockfile).to include("activerecord (7.0.0)")
+
+      # Component gems should NOT remain in the GEM section
+      # Extract just the GEM section by splitting appropriately
+      gem_section = lockfile.split("GEM\n").last.split(/\n(PLATFORMS|DEPENDENCIES)/)[0]
+      expect(gem_section).not_to include("actionpack (7.0.0)")
+      expect(gem_section).not_to include("activerecord (7.0.0)")
+    end
+  end
+
+  context "when a scoped rubygems source is missing a transitive dependency" do
+    before do
+      build_repo2 do
+        build_gem "fallback_dep", "1.0.0"
+        build_gem "foo", "1.0.0"
+      end
+
+      build_repo3 do
+        build_gem "private_parent", "1.0.0" do |s|
+          s.add_dependency "fallback_dep"
+        end
+      end
+
+      gemfile <<-G
+        source "https://gem.repo2"
+
+        gem "foo"
+
+        source "https://gem.repo3" do
+          gem "private_parent", "1.0.0"
+        end
+      G
+
+      bundle :install, artifice: "compact_index"
+    end
+
+    it "falls back to the default rubygems source for that dependency" do
+      build_repo2 do
+        build_gem "foo", "2.0.0"
+      end
+
+      system_gems []
+
+      bundle "update foo", artifice: "compact_index"
+
+      expect(the_bundle).to include_gems("private_parent 1.0.0", "fallback_dep 1.0.0", "foo 2.0.0")
+      expect(the_bundle).to include_gems("private_parent 1.0.0", source: "remote3")
+      expect(the_bundle).to include_gems("fallback_dep 1.0.0", source: "remote2")
+    end
+  end
 end

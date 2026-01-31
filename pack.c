@@ -736,7 +736,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
 
           case 'w':		/* BER compressed integer  */
             while (len-- > 0) {
-                VALUE buf = rb_str_new(0, 0);
+                VALUE buf;
                 size_t numbytes;
                 int sign;
                 char *cp;

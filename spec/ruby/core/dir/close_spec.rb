@@ -24,7 +24,7 @@ describe "Dir#close" do
     dir.close.should == nil
   end
 
-  ruby_version_is '3.3'...'3.4' do
+  ruby_version_is ''...'3.4' do
     platform_is_not :windows do
       it "does not raise an error even if the file descriptor is closed with another Dir instance" do
         dir = Dir.open DirSpecs.mock_dir

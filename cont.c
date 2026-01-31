@@ -281,7 +281,7 @@ rb_free_shared_fiber_pool(void)
     struct fiber_pool_allocation *allocations = shared_fiber_pool.allocations;
     while (allocations) {
         struct fiber_pool_allocation *next = allocations->next;
-        xfree(allocations);
+        SIZED_FREE(allocations);
         allocations = next;
     }
 }
@@ -657,7 +657,7 @@ fiber_pool_allocation_free(struct fiber_pool_allocation * allocation)
 
     allocation->pool->count -= allocation->count;
 
-    ruby_xfree(allocation);
+    SIZED_FREE(allocation);
 }
 #endif
 
@@ -1088,7 +1088,7 @@ cont_free(void *ptr)
     RUBY_FREE_ENTER("cont");
 
     if (cont->type == CONTINUATION_CONTEXT) {
-        ruby_xfree(cont->saved_ec.vm_stack);
+        SIZED_FREE_N(cont->saved_ec.vm_stack, cont->saved_ec.vm_stack_size);
         RUBY_FREE_UNLESS_NULL(cont->machine.stack);
     }
     else {
@@ -1102,7 +1102,12 @@ cont_free(void *ptr)
     VM_ASSERT(cont->jit_cont != NULL);
     jit_cont_free(cont->jit_cont);
     /* free rb_cont_t or rb_fiber_t */
-    ruby_xfree(ptr);
+    if (cont->type == CONTINUATION_CONTEXT) {
+        SIZED_FREE(cont);
+    }
+    else {
+        SIZED_FREE((rb_fiber_t *)cont);
+    }
     RUBY_FREE_LEAVE("cont");
 }
 
@@ -1215,6 +1220,7 @@ rb_obj_is_fiber(VALUE obj)
 static void
 cont_save_machine_stack(rb_thread_t *th, rb_context_t *cont)
 {
+    const size_t old_stack_size = cont->machine.stack_size;
     size_t size;
 
     SET_MACHINE_STACK_END(&th->ec->machine.stack_end);
@@ -1229,10 +1235,10 @@ cont_save_machine_stack(rb_thread_t *th, rb_context_t *cont)
     }
 
     if (cont->machine.stack) {
-        REALLOC_N(cont->machine.stack, VALUE, size);
+        SIZED_REALLOC_N(cont->machine.stack, VALUE, cont->machine.stack_size, old_stack_size);
     }
     else {
-        cont->machine.stack = ALLOC_N(VALUE, size);
+        cont->machine.stack = ALLOC_N(VALUE, cont->machine.stack_size);
     }
 
     FLUSH_REGISTER_WINDOWS;
@@ -2568,7 +2574,7 @@ rb_fiber_start(rb_fiber_t *fiber)
 void
 rb_threadptr_root_fiber_setup(rb_thread_t *th)
 {
-    rb_fiber_t *fiber = ruby_mimcalloc(1, sizeof(rb_fiber_t));
+    rb_fiber_t *fiber = ZALLOC(rb_fiber_t);
     if (!fiber) {
         rb_bug("%s", strerror(errno)); /* ... is it possible to call rb_bug here? */
     }
@@ -3400,7 +3406,7 @@ fiber_pool_free(void *ptr)
     RUBY_FREE_ENTER("fiber_pool");
 
     fiber_pool_allocation_free(fiber_pool->allocations);
-    ruby_xfree(fiber_pool);
+    SIZED_FREE(fiber_pool);
 
     RUBY_FREE_LEAVE("fiber_pool");
 }

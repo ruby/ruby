@@ -31,10 +31,6 @@ pm_token_type_human(pm_token_type_t token_type) {
     switch (token_type) {
         case PM_TOKEN_EOF:
             return "end-of-input";
-        case PM_TOKEN_MISSING:
-            return "missing token";
-        case PM_TOKEN_NOT_PROVIDED:
-            return "not provided token";
         case PM_TOKEN_AMPERSAND:
             return "'&'";
         case PM_TOKEN_AMPERSAND_AMPERSAND:

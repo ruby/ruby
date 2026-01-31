@@ -83,15 +83,15 @@ pm_strspn_whitespace(const uint8_t *string, ptrdiff_t length) {
  * searching past the given maximum number of characters.
  */
 size_t
-pm_strspn_whitespace_newlines(const uint8_t *string, ptrdiff_t length, pm_newline_list_t *newline_list) {
+pm_strspn_whitespace_newlines(const uint8_t *string, ptrdiff_t length, pm_newline_list_t *newline_list, uint32_t start_offset) {
     if (length <= 0) return 0;
 
-    size_t size = 0;
-    size_t maximum = (size_t) length;
+    uint32_t size = 0;
+    uint32_t maximum = (uint32_t) length;
 
     while (size < maximum && (pm_byte_table[string[size]] & PRISM_CHAR_BIT_WHITESPACE)) {
         if (string[size] == '\n') {
-            pm_newline_list_append(newline_list, string + size);
+            pm_newline_list_append(newline_list, start_offset + size + 1);
         }
 
         size++;

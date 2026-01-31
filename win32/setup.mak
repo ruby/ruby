@@ -22,8 +22,11 @@ MAKE = $(MAKE) -f $(MAKEFILE)
 MAKEFILE = Makefile
 !endif
 CPU = PROCESSOR_LEVEL
-CC = $(CC) -nologo -source-charset:utf-8
+CC = $(CC) -nologo
 CPP = $(CC) -EP
+!if "$(HAVE_BASERUBY)" != "no" && "$(BASERUBY)" == ""
+BASERUBY = ruby
+!endif
 
 all: -prologue- -generic- -epilogue-
 i386-mswin32: -prologue- -i386- -epilogue-
@@ -32,13 +35,14 @@ i586-mswin32: -prologue- -i586- -epilogue-
 i686-mswin32: -prologue- -i686- -epilogue-
 alpha-mswin32: -prologue- -alpha- -epilogue-
 x64-mswin64: -prologue- -x64- -epilogue-
+arm64-mswin64: -prologue- -arm64- -epilogue-
 
--prologue-: -basic-vars-
+-prologue-: -basic-vars- -baseruby- -gmp-
 -generic-: -osname-
 
 -basic-vars-: nul
-	@type << > $(MAKEFILE)
-### Makefile for ruby $(TARGET_OS) ###
+	@rem <<$(MAKEFILE)
+### Makefile for ruby ###
 MAKE = nmake
 srcdir = $(srcdir:\=/)
 prefix = $(prefix:\=/)
@@ -46,9 +50,13 @@ prefix = $(prefix:\=/)
 <<
 	@type $(config_make) >>$(MAKEFILE)
 	@del $(config_make) > nul
-!if "$(HAVE_BASERUBY)" != "no" && "$(BASERUBY)" != ""
-	$(BASERUBY:/=\) "$(srcdir)/tool/missing-baseruby.bat"
+
+-baseruby-: nul
+!if "$(HAVE_BASERUBY)" != "no"
+	@cd $(srcdir:/=\)\tool && $(BASERUBY:/=\) missing-baseruby.bat --verbose || exit $(HAVE_BASERUBY:yes=non-)0
 !endif
+
+-gmp-:
 !if "$(WITH_GMP)" != "no"
 	@($(CC) $(XINCFLAGS) <<conftest.c -link $(XLDFLAGS) gmp.lib > nul && (echo USE_GMP = yes) || exit /b 0) >>$(MAKEFILE)
 #include <gmp.h>
@@ -63,20 +71,31 @@ int main(void) {mpz_init(x); return 0;}
 	@echo # TARGET>>$(MAKEFILE)
 
 -osname32-: -osname-section-
-	@echo TARGET_OS = mswin32>>$(MAKEFILE)
-
--osname64-: -osname-section-
-	@echo TARGET_OS = mswin64>>$(MAKEFILE)
-
--osname-: -osname-section-
-	@echo !ifndef TARGET_OS>>$(MAKEFILE)
-	@($(CC) -c <<conftest.c > nul && (echo TARGET_OS = mswin32) || (echo TARGET_OS = mswin64)) >>$(MAKEFILE)
+	@$(CPP) -Tc <<"checking if target OS is 32bit" >>$(MAKEFILE)
 #ifdef _WIN64
 #error
+#else
+TARGET_OS = mswin32
 #endif
 <<
-	@echo !endif>>$(MAKEFILE)
-	@$(WIN32DIR:/=\)\rm.bat conftest.*
+
+-osname64-: -osname-section-
+	@$(CPP) -Tc <<"checking if target OS is 64bit" >>$(MAKEFILE)
+#ifndef _WIN64
+#error
+#else
+TARGET_OS = mswin64
+#endif
+<<
+
+-osname-: -osname-section-
+	@$(CPP) -Tc <<"checking for target OS" 2>nul | findstr = >>$(MAKEFILE)
+#ifdef _WIN64
+TARGET_OS = mswin64
+#else
+TARGET_OS = mswin32
+#endif
+<<
 
 -compiler-: -compiler-section- -version- -runtime- -headers-
 
@@ -143,8 +162,8 @@ main(void)
 <<
 	@( \
 	  $(CC) -O2 $@.c && .\$@ || \
-	  set bug=%ERRORLEVEL% \
-	  echo This compiler has an optimization bug \
+	  (set bug=%ERRORLEVEL% & \
+	  echo This compiler has an optimization bug) \
 	) & $(WIN32DIR:/=\)\rm.bat $@.* & exit /b %bug%
 
 -version-: nul verconf.mk
@@ -204,27 +223,54 @@ del %0 & exit
 <<
 
 -generic-: nul
-	@$(CPP) <<conftest.c 2>nul | findstr = >>$(MAKEFILE)
+	@$(CPP) -Tc <<checking-target 2>nul | findstr = >>$(MAKEFILE)
 #if defined _M_ARM64
 MACHINE = arm64
 #elif defined _M_X64
 MACHINE = x64
 #else
 MACHINE = x86
-#endif
-<<
 !if defined($(CPU))
-	@echo>>$(MAKEFILE) $(CPU) = $(PROCESSOR_LEVEL)
+$(CPU) = $(PROCESSOR_LEVEL)
 !endif
+#endif
 
 -alpha-: -osname32-
-	@echo MACHINE = alpha>>$(MAKEFILE)
+	@$(CPP) -Tc <<"checking if compiler is for $(@:-=)" >>$(MAKEFILE)
+#ifndef _M_ALPHA
+#error Not compiler for $(@:-=)
+#else
+MACHINE = $(@:-=)
+#endif
+<<
+
 -x64-: -osname64-
-	@echo MACHINE = x64>>$(MAKEFILE)
+	@$(CPP) -Tc <<"checking if compiler is for $(@:-=)" >>$(MAKEFILE)
+#ifndef _M_AMD64
+#error Not compiler for $(@:-=)
+#else
+MACHINE = $(@:-=)
+#endif
+<<
+
 -ix86-: -osname32-
-	@echo MACHINE = x86>>$(MAKEFILE)
+	@$(CPP) -Tc <<"checking if compiler is for $(@:-=)" >>$(MAKEFILE)
+#ifndef _M_IX86
+#error Not compiler for $(@:-=)
+#else
+#define ix86 x86
+MACHINE = $(@:-=)
+#endif
+<<
+
 -arm64-: -osname64-
-	@echo MACHINE = arm64>>$(MAKEFILE)
+	@$(CPP) -Tc <<"checking if compiler is for $(@:-=)" >>$(MAKEFILE)
+#ifndef _M_ARM64
+#error Not compiler for $(@:-=)
+#else
+MACHINE = $(@:-=)
+#endif
+<<
 
 -i386-: -ix86-
 	@echo $(CPU) = 3>>$(MAKEFILE)
@@ -254,7 +300,7 @@ MACHINE = x86
 # XLDFLAGS =
 # RFLAGS = -r
 # EXTLIBS =
-CC = $(CC)
+CC = $(CC) -source-charset:utf-8
 !if "$(AS)" != "ml64"
 AS = $(AS) -nologo
 !endif
@@ -269,4 +315,6 @@ AS = $(AS) -nologo
 $(BANG)include $$(srcdir)/win32/Makefile.sub
 <<
 	@$(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat config.h config.status
+	-@move /y $(MAKEFILE_NEW) $(MAKEFILE_BACK) > nul 2> nul
+	@move /y $(MAKEFILE) $(MAKEFILE_NEW) > nul
 	@echo type 'nmake' to make ruby.

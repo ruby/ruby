@@ -95,10 +95,13 @@ cmpint(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     obj > other    -> true or false
+ *    self > other -> true or false
  *
- *  Compares two objects based on the receiver's <code><=></code>
- *  method, returning true if it returns a value greater than 0.
+ *  Returns whether +self+ is "greater than" +other+;
+ *  equivalent to <tt>(self <=> other) > 0</tt>:
+ *
+ *    'foo' > 'foo'  # => false
+ *    'food' > 'foo' # => true
  */
 
 static VALUE
@@ -109,10 +112,15 @@ cmp_gt(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     obj >= other    -> true or false
+ *    self >= other -> true or false
  *
- *  Compares two objects based on the receiver's <code><=></code>
- *  method, returning true if it returns a value greater than or equal to 0.
+ *  Returns whether +self+ is "greater than or equal to" +other+;
+ *  equivalent to <tt>(self <=> other) >= 0</tt>:
+ *
+ *    'food' >= 'foo'  # => true
+ *    'foo'  >= 'foo'  # => true
+ *    'foo'  >= 'food' # => false
+ *
  */
 
 static VALUE

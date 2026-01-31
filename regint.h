@@ -5,7 +5,7 @@
 **********************************************************************/
 /*-
  * Copyright (c) 2002-2013  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
- * Copyright (c) 2011-2016  K.Takata  <kentkt AT csc DOT jp>
+ * Copyright (c) 2011-2019  K.Takata  <kentkt AT csc DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -91,7 +91,7 @@
 #define DEFAULT_MATCH_STACK_LIMIT_SIZE              0 /* unlimited */
 #define DEFAULT_PARSE_DEPTH_LIMIT                4096
 
-#define OPT_EXACT_MAXLEN   24
+#define OPT_EXACT_MAXLEN   24	/* This must be smaller than ONIG_CHAR_TABLE_SIZE. */
 
 /* check config */
 #if defined(USE_PERL_SUBEXP_CALL) || defined(USE_CAPITAL_P_NAMED_GROUP)

@@ -504,18 +504,18 @@ These methods return backtrace information:
 By default, Ruby sets the backtrace of the exception to the location where it
 was raised.
 
-The developer might adjust this by either providing +backtrace+ argument
+The developer might adjust this by either providing `backtrace` argument
 to Kernel#raise, or using Exception#set_backtrace.
 
 Note that:
 
-- by default, both +backtrace+ and +backtrace_locations+ represent the same backtrace;
+- by default, both `backtrace` and `backtrace_locations` represent the same backtrace;
 - if the developer sets the backtrace by one of the above methods to an array of
   Thread::Backtrace::Location, they still represent the same backtrace;
 - if the developer sets the backtrace to a string or an array of strings:
-  - by Kernel#raise: +backtrace_locations+ become +nil+;
-  - by Exception#set_backtrace: +backtrace_locations+ preserve the original
+  - by Kernel#raise: `backtrace_locations` become `nil`;
+  - by Exception#set_backtrace: `backtrace_locations` preserve the original
     value;
-- if the developer sets the backtrace to +nil+ by Exception#set_backtrace,
-  +backtrace_locations+ preserve the original value; but if the exception is then
-  reraised, both +backtrace+ and +backtrace_locations+ become the location of reraise.
+- if the developer sets the backtrace to `nil` by Exception#set_backtrace,
+  `backtrace_locations` preserve the original value; but if the exception is then
+  reraised, both `backtrace` and `backtrace_locations` become the location of reraise.

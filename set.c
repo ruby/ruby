@@ -141,7 +141,7 @@ set_mark(void *ptr)
 static void
 set_free_embedded(struct set_object *sobj)
 {
-    free((&sobj->table)->entries);
+    xfree((&sobj->table)->entries);
 }
 
 static void
@@ -1187,7 +1187,7 @@ set_reset_table_with_type(VALUE set, const struct st_hash_type *type)
         set_iter(set, set_merge_i, (st_data_t)&args);
         set_free_embedded(sobj);
         memcpy(&sobj->table, new, sizeof(*new));
-        free(new);
+        xfree(new);
     }
     else {
         sobj->table.type = type;
@@ -2051,8 +2051,8 @@ rb_set_size(VALUE set)
  *
  * First, what's elsewhere. \Class \Set:
  *
- * - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
- * - Includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],
+ * - Inherits from {class Object}[rdoc-ref:Object@Whats+Here].
+ * - Includes {module Enumerable}[rdoc-ref:Enumerable@Whats+Here],
  *   which provides dozens of additional methods.
  *
  * In particular, class \Set does not have many methods of its own

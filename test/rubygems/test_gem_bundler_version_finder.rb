@@ -66,7 +66,7 @@ class TestGemBundlerVersionFinder < Gem::TestCase
       f.write(config_content)
       f.flush
 
-      bvf.stub(:bundler_config_file, f.path) do
+      bvf.stub(:bundler_global_config_file, f.path) do
         assert_nil bvf.bundler_version
       end
     end
@@ -81,7 +81,7 @@ class TestGemBundlerVersionFinder < Gem::TestCase
       f.write(config_with_single_quoted_version)
       f.flush
 
-      bvf.stub(:bundler_config_file, f.path) do
+      bvf.stub(:bundler_global_config_file, f.path) do
         assert_nil bvf.bundler_version
       end
     end
@@ -98,15 +98,30 @@ class TestGemBundlerVersionFinder < Gem::TestCase
       f.write(config_content)
       f.flush
 
-      bvf.stub(:bundler_config_file, f.path) do
+      bvf.stub(:bundler_global_config_file, f.path) do
         assert_equal v("1.1.1.1"), bvf.bundler_version
       end
     end
   end
 
   def test_bundler_version_with_bundle_config_non_existent_file
-    bvf.stub(:bundler_config_file, "/non/existent/path") do
+    bvf.stub(:bundler_global_config_file, "/non/existent/path") do
       assert_nil bvf.bundler_version
+    end
+  end
+
+  def test_bundler_version_set_on_local_config
+    config_content = <<~CONFIG
+      BUNDLE_VERSION: "1.2.3"
+    CONFIG
+
+    Tempfile.create("bundle_config") do |f|
+      f.write(config_content)
+      f.flush
+
+      bvf.stub(:bundler_local_config_file, f.path) do
+        assert_equal v("1.2.3"), bvf.bundler_version
+      end
     end
   end
 
@@ -120,7 +135,7 @@ class TestGemBundlerVersionFinder < Gem::TestCase
       f.write(config_without_version)
       f.flush
 
-      bvf.stub(:bundler_config_file, f.path) do
+      bvf.stub(:bundler_global_config_file, f.path) do
         assert_nil bvf.bundler_version
       end
     end
