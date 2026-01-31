@@ -83,7 +83,8 @@
 static enum rb_id_table_iterator_result
 cvar_table_free_i(VALUE value, void *ctx)
 {
-    xfree((void *)value);
+    struct rb_cvar_class_tbl_entry *entry = (struct rb_cvar_class_tbl_entry *)value;
+    SIZED_FREE(entry);
     return ID_TABLE_CONTINUE;
 }
 
@@ -118,11 +119,15 @@ rb_class_classext_free(VALUE klass, rb_classext_t *ext, bool is_prime)
 
     if (RCLASSEXT_SUPERCLASSES_WITH_SELF(ext)) {
         RUBY_ASSERT(is_prime); // superclasses should only be used on prime
-        xfree(RCLASSEXT_SUPERCLASSES(ext));
+        size_t depth = RCLASSEXT_SUPERCLASS_DEPTH(ext);
+        if (depth != RCLASS_MAX_SUPERCLASS_DEPTH) {
+            depth++;
+        }
+        SIZED_FREE_N(RCLASSEXT_SUPERCLASSES(ext), depth);
     }
 
     if (!is_prime) { // the prime classext will be freed with RClass
-        xfree(ext);
+        SIZED_FREE(ext);
     }
 }
 
@@ -141,7 +146,7 @@ rb_iclass_classext_free(VALUE klass, rb_classext_t *ext, bool is_prime)
     rb_class_classext_free_subclasses(ext, klass, false);
 
     if (!is_prime) { // the prime classext will be freed with RClass
-        xfree(ext);
+        SIZED_FREE(ext);
     }
 }
 
@@ -159,7 +164,7 @@ iclass_free_orphan_classext(VALUE klass, rb_classext_t *ext)
 
     rb_class_classext_free_subclasses(ext, klass, true); // replacing this classext with a newer one
 
-    xfree(ext);
+    SIZED_FREE(ext);
 }
 
 struct rb_class_set_box_classext_args {
@@ -655,7 +660,7 @@ remove_class_from_subclasses(struct st_table *tbl, VALUE box_id, VALUE klass)
                 }
             }
 
-            xfree(entry);
+            SIZED_FREE(entry);
 
             break;
         }
@@ -688,7 +693,7 @@ rb_class_classext_free_subclasses(rb_classext_t *ext, VALUE klass, bool replacin
 
     while (entry) {
         next = entry->next;
-        xfree(entry);
+        SIZED_FREE(entry);
         entry = next;
     }
     VM_ASSERT(
@@ -696,7 +701,7 @@ rb_class_classext_free_subclasses(rb_classext_t *ext, VALUE klass, bool replacin
         "box_subclasses refcount (%p) %ld", anchor->box_subclasses, rb_box_subclasses_ref_count(anchor->box_subclasses));
     st_delete(tbl, &box_id, NULL);
     rb_box_subclasses_ref_dec(anchor->box_subclasses);
-    xfree(anchor);
+    SIZED_FREE(anchor);
 
     if (RCLASSEXT_BOX_SUPER_SUBCLASSES(ext)) {
         rb_box_subclasses_t *box_sub = RCLASSEXT_BOX_SUPER_SUBCLASSES(ext);
