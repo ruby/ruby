@@ -1901,7 +1901,7 @@ void
 rb_vm_postponed_job_free(void)
 {
     rb_vm_t *vm = GET_VM();
-    ruby_xfree(vm->postponed_job_queue);
+    ruby_mimfree(vm->postponed_job_queue);
     vm->postponed_job_queue = NULL;
 }
 

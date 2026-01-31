@@ -215,6 +215,7 @@ typedef struct rb_context_struct {
     enum context_type type;
     int argc;
     int kw_splat;
+    bool root;
     VALUE self;
     VALUE value;
 
@@ -1102,7 +1103,12 @@ cont_free(void *ptr)
     VM_ASSERT(cont->jit_cont != NULL);
     jit_cont_free(cont->jit_cont);
     /* free rb_cont_t or rb_fiber_t */
-    ruby_xfree(ptr);
+    if (cont->root) {
+        ruby_mimfree(ptr);
+    }
+    else {
+        ruby_xfree(ptr);
+    }
     RUBY_FREE_LEAVE("cont");
 }
 
@@ -2574,6 +2580,7 @@ rb_threadptr_root_fiber_setup(rb_thread_t *th)
     }
 
     fiber->cont.type = FIBER_CONTEXT;
+    fiber->cont.root = true;
     fiber->cont.saved_ec.fiber_ptr = fiber;
     fiber->cont.saved_ec.serial = next_ec_serial(th->ractor);
     fiber->cont.saved_ec.thread_ptr = th;

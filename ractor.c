@@ -298,7 +298,12 @@ ractor_free(void *ptr)
     }
 
     ractor_sync_free(r);
-    ruby_xfree(r);
+    if (r->main_ractor) {
+        ruby_mimfree(r);
+    }
+    else {
+        ruby_xfree(r);
+    }
 }
 
 static size_t
@@ -478,6 +483,7 @@ rb_ractor_main_alloc(void)
     r->pub.self = Qnil;
     r->newobj_cache = rb_gc_ractor_cache_alloc(r);
     r->next_ec_serial = 1;
+    r->main_ractor = true;
     ruby_single_main_ractor = r;
 
     return r;
