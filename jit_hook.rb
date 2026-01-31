@@ -4,7 +4,8 @@ class Module
   private def with_jit(&block) # :nodoc:
     if defined?(RubyVM::ZJIT)
       RubyVM::ZJIT.send(:add_jit_hook, block)
-    elsif defined?(RubyVM::YJIT)
+    end
+    if defined?(RubyVM::YJIT)
       RubyVM::YJIT.send(:add_jit_hook, block)
     end
   end
