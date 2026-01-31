@@ -8279,6 +8279,10 @@ rb_gc_impl_free(void *objspace_ptr, void *ptr, size_t old_size)
 #if CALC_EXACT_MALLOC_SIZE
     struct malloc_obj_info *info = (struct malloc_obj_info *)ptr - 1;
 #if VERIFY_FREE_SIZE
+    if (!info->size) {
+        rb_bug("buffer %p has no recorded size. Was it allocated with ruby_mimalloc? If so it should be freed with ruby_mimfree", ptr);
+    }
+
     if (old_size && (old_size + sizeof(struct malloc_obj_info)) != info->size) {
         rb_bug("buffer %p freed with old_size=%lu, but was allocated with size=%lu", ptr, old_size, info->size - sizeof(struct malloc_obj_info));
     }
