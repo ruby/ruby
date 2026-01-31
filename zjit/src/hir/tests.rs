@@ -3999,53 +3999,55 @@ pub mod hir_build_tests {
     #[test]
     fn test_each_reloads_locals() {
         eval(r#"
+            [].each {|| }
         "#);
         assert_snapshot!(hir_string_proc("Array.instance_method(:each)"), @r"
-        fn test@<compiled>:2:
+        fn each@<internal:array>:
         bb0():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :k1, l0, SP@37
-          v3:BasicObject = GetLocal :k2, l0, SP@36
-          v4:BasicObject = GetLocal :k3, l0, SP@35
-          v5:BasicObject = GetLocal :k4, l0, SP@34
-          v6:BasicObject = GetLocal :k5, l0, SP@33
-          v7:BasicObject = GetLocal :k6, l0, SP@32
-          v8:BasicObject = GetLocal :k7, l0, SP@31
-          v9:BasicObject = GetLocal :k8, l0, SP@30
-          v10:BasicObject = GetLocal :k9, l0, SP@29
-          v11:BasicObject = GetLocal :k10, l0, SP@28
-          v12:BasicObject = GetLocal :k11, l0, SP@27
-          v13:BasicObject = GetLocal :k12, l0, SP@26
-          v14:BasicObject = GetLocal :k13, l0, SP@25
-          v15:BasicObject = GetLocal :k14, l0, SP@24
-          v16:BasicObject = GetLocal :k15, l0, SP@23
-          v17:BasicObject = GetLocal :k16, l0, SP@22
-          v18:BasicObject = GetLocal :k17, l0, SP@21
-          v19:BasicObject = GetLocal :k18, l0, SP@20
-          v20:BasicObject = GetLocal :k19, l0, SP@19
-          v21:BasicObject = GetLocal :k20, l0, SP@18
-          v22:BasicObject = GetLocal :k21, l0, SP@17
-          v23:BasicObject = GetLocal :k22, l0, SP@16
-          v24:BasicObject = GetLocal :k23, l0, SP@15
-          v25:BasicObject = GetLocal :k24, l0, SP@14
-          v26:BasicObject = GetLocal :k25, l0, SP@13
-          v27:BasicObject = GetLocal :k26, l0, SP@12
-          v28:BasicObject = GetLocal :k27, l0, SP@11
-          v29:BasicObject = GetLocal :k28, l0, SP@10
-          v30:BasicObject = GetLocal :k29, l0, SP@9
-          v31:BasicObject = GetLocal :k30, l0, SP@8
-          v32:BasicObject = GetLocal :k31, l0, SP@7
-          v33:BasicObject = GetLocal :k32, l0, SP@6
-          v34:BasicObject = GetLocal :k33, l0, SP@5
-          v35:BasicObject = GetLocal <empty>, l0, SP@4
-          Jump bb2(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19, v20, v21, v22, v23, v24, v25, v26, v27, v28, v29, v30, v31, v32, v33, v34, v35)
-        bb1(v38:BasicObject, v39:BasicObject, v40:BasicObject, v41:BasicObject, v42:BasicObject, v43:BasicObject, v44:BasicObject, v45:BasicObject, v46:BasicObject, v47:BasicObject, v48:BasicObject, v49:BasicObject, v50:BasicObject, v51:BasicObject, v52:BasicObject, v53:BasicObject, v54:BasicObject, v55:BasicObject, v56:BasicObject, v57:BasicObject, v58:BasicObject, v59:BasicObject, v60:BasicObject, v61:BasicObject, v62:BasicObject, v63:BasicObject, v64:BasicObject, v65:BasicObject, v66:BasicObject, v67:BasicObject, v68:BasicObject, v69:BasicObject, v70:BasicObject, v71:BasicObject):
+          v2:NilClass = Const Value(nil)
+          v3:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject):
           EntryPoint JIT(0)
-          v72:BasicObject = GetLocal <empty>, l0, EP@3
-          Jump bb2(v38, v39, v40, v41, v42, v43, v44, v45, v46, v47, v48, v49, v50, v51, v52, v53, v54, v55, v56, v57, v58, v59, v60, v61, v62, v63, v64, v65, v66, v67, v68, v69, v70, v71, v72)
-        bb2(v74:BasicObject, v75:BasicObject, v76:BasicObject, v77:BasicObject, v78:BasicObject, v79:BasicObject, v80:BasicObject, v81:BasicObject, v82:BasicObject, v83:BasicObject, v84:BasicObject, v85:BasicObject, v86:BasicObject, v87:BasicObject, v88:BasicObject, v89:BasicObject, v90:BasicObject, v91:BasicObject, v92:BasicObject, v93:BasicObject, v94:BasicObject, v95:BasicObject, v96:BasicObject, v97:BasicObject, v98:BasicObject, v99:BasicObject, v100:BasicObject, v101:BasicObject, v102:BasicObject, v103:BasicObject, v104:BasicObject, v105:BasicObject, v106:BasicObject, v107:BasicObject, v108:BasicObject):
-          SideExit TooManyKeywordParameters
+          v7:NilClass = Const Value(nil)
+          v8:NilClass = Const Value(nil)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:NilClass, v12:NilClass):
+          v16:NilClass = Const Value(nil)
+          v18:TrueClass|NilClass = Defined yield, v16
+          CheckInterrupts
+          v21:CBool = Test v18
+          v22:TrueClass = RefineType v18, Truthy
+          IfTrue v21, bb4(v10, v11, v12)
+          v24:NilClass = RefineType v18, Falsy
+          v27:BasicObject = InvokeBuiltin <inline_expr>, v10
+          Jump bb3(v10, v11, v12, v27)
+        bb4(v29:BasicObject, v30:NilClass, v31:NilClass):
+          v35:Fixnum[0] = Const Value(0)
+          v39:NilClass = Const Value(nil)
+          CheckInterrupts
+          Jump bb6(v29, v35, v39)
+        bb6(v54:BasicObject, v55:BasicObject, v56:BasicObject):
+          v59:BasicObject = InvokeBuiltin <inline_expr>, v54
+          v60:BasicObject = GetLocal :_i, l0, EP@4
+          v61:BasicObject = GetLocal :value, l0, EP@3
+          CheckInterrupts
+          v64:CBool = Test v59
+          v65:Truthy = RefineType v59, Truthy
+          IfTrue v64, bb5(v54, v60, v61)
+          v67:Falsy = RefineType v59, Falsy
+          v69:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v54
+        bb5(v77:BasicObject, v78:BasicObject, v79:BasicObject):
+          PatchPoint NoEPEscape(each)
+          v86:BasicObject = InvokeBlock, v79 # SendFallbackReason: Uncategorized(invokeblock)
+          Jump bb6(v77, v78, v79)
+        bb3(v45:BasicObject, v46:NilClass, v47:NilClass, v48:BasicObject):
+          CheckInterrupts
+          Return v48
         ");
         }
  }
