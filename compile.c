@@ -1692,7 +1692,7 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     debugs("[compile step 6.1 (remove unused catch tables)] \n");
     RUBY_ASSERT(ISEQ_COMPILE_DATA(iseq));
     if (!ISEQ_COMPILE_DATA(iseq)->catch_except_p && ISEQ_BODY(iseq)->catch_table) {
-        xfree(ISEQ_BODY(iseq)->catch_table);
+        ruby_sized_xfree(ISEQ_BODY(iseq)->catch_table, iseq_catch_table_bytes(ISEQ_BODY(iseq)->catch_table->size));
         ISEQ_BODY(iseq)->catch_table = NULL;
     }
 
@@ -2398,8 +2398,8 @@ get_cvar_ic_value(rb_iseq_t *iseq,ID id)
     dump_disasm_list_with_cursor(FIRST_ELEMENT(anchor), list, dest)
 
 #define BADINSN_ERROR \
-    (xfree(generated_iseq), \
-     xfree(insns_info), \
+    (SIZED_FREE_N(generated_iseq, generated_iseq_size), \
+     SIZED_FREE_N(insns_info, insns_info_size), \
      BADINSN_DUMP(anchor, list, NULL), \
      COMPILE_ERROR)
 
@@ -2665,8 +2665,13 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     }
 
     /* make instruction sequence */
+    const int generated_iseq_size = code_index;
     generated_iseq = ALLOC_N(VALUE, code_index);
+
+    const int insns_info_size = insn_num;
     insns_info = ALLOC_N(struct iseq_insn_info_entry, insn_num);
+
+    const int positions_size = insn_num;
     positions = ALLOC_N(unsigned int, insn_num);
     if (ISEQ_IS_SIZE(body)) {
         body->is_entries = ZALLOC_N(union iseq_inline_storage_entry, ISEQ_IS_SIZE(body));
@@ -2693,12 +2698,13 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 
     bool needs_bitmap = false;
 
-    if (ISEQ_MBITS_BUFLEN(code_index) == 1) {
+    const size_t mark_offset_bits_size = ISEQ_MBITS_BUFLEN(code_index);
+    if (mark_offset_bits_size == 1) {
         mark_offset_bits = &ISEQ_COMPILE_DATA(iseq)->mark_bits.single;
         ISEQ_COMPILE_DATA(iseq)->is_single_mark_bit = true;
     }
     else {
-        mark_offset_bits = ZALLOC_N(iseq_bits_t, ISEQ_MBITS_BUFLEN(code_index));
+        mark_offset_bits = ZALLOC_N(iseq_bits_t, mark_offset_bits_size);
         ISEQ_COMPILE_DATA(iseq)->mark_bits.list = mark_offset_bits;
         ISEQ_COMPILE_DATA(iseq)->is_single_mark_bit = false;
     }
@@ -2891,11 +2897,11 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                     }
                     else if (diff < 0) {
                         int label_no = adjust->label ? adjust->label->label_no : -1;
-                        xfree(generated_iseq);
-                        xfree(insns_info);
-                        xfree(positions);
+                        SIZED_FREE_N(generated_iseq, generated_iseq_size);
+                        SIZED_FREE_N(insns_info, insns_info_size);
+                        SIZED_FREE_N(positions, positions_size);
                         if (ISEQ_MBITS_BUFLEN(code_size) > 1) {
-                            xfree(mark_offset_bits);
+                            SIZED_FREE_N(mark_offset_bits, ISEQ_MBITS_BUFLEN(code_index));
                         }
                         debug_list(anchor, list);
                         COMPILE_ERROR(iseq, adjust->line_no,
@@ -2927,7 +2933,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
         else {
             body->mark_bits.list = NULL;
             ISEQ_COMPILE_DATA(iseq)->mark_bits.list = NULL;
-            ruby_xfree(mark_offset_bits);
+            SIZED_FREE_N(mark_offset_bits, mark_offset_bits_size);
         }
     }
 
@@ -2935,9 +2941,9 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     body->insns_info.body = insns_info;
     body->insns_info.positions = positions;
 
-    REALLOC_N(insns_info, struct iseq_insn_info_entry, insns_info_index);
+    SIZED_REALLOC_N(insns_info, struct iseq_insn_info_entry, insns_info_index, insns_info_size);
     body->insns_info.body = insns_info;
-    REALLOC_N(positions, unsigned int, insns_info_index);
+    SIZED_REALLOC_N(positions, unsigned int, insns_info_index, positions_size);
     body->insns_info.positions = positions;
     body->insns_info.size = insns_info_index;
 
@@ -13127,7 +13133,7 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
         }
         else {
             load_body->mark_bits.list = 0;
-            ruby_xfree(mark_offset_bits);
+            SIZED_FREE_N(mark_offset_bits, ISEQ_MBITS_BUFLEN(iseq_size));
         }
     }
 
@@ -13312,7 +13318,7 @@ ibf_load_local_table(const struct ibf_load *load, ibf_offset_t local_table_offse
         }
 
         if (size == 1 && table[0] == idERROR_INFO) {
-            xfree(table);
+            ruby_sized_xfree(table, sizeof(ID) * size);
             return rb_iseq_shared_exc_local_tbl;
         }
         else {
@@ -13616,7 +13622,7 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
 
     positions = rb_iseq_insns_info_decode_positions(ISEQ_BODY(iseq));
     const ibf_offset_t insns_info_positions_offset = ibf_dump_insns_info_positions(dump, positions, body->insns_info.size);
-    ruby_xfree(positions);
+    SIZED_FREE_N(positions, ISEQ_BODY(iseq)->insns_info.size);
 
     const ibf_offset_t local_table_offset = ibf_dump_local_table(dump, iseq);
     const ibf_offset_t lvar_states_offset = ibf_dump_lvar_states(dump, iseq);
@@ -14944,7 +14950,7 @@ static void
 ibf_loader_free(void *ptr)
 {
     struct ibf_load *load = (struct ibf_load *)ptr;
-    ruby_xfree(load);
+    SIZED_FREE(load);
 }
 
 static size_t
