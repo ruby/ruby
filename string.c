@@ -293,7 +293,9 @@ rb_str_make_embedded(VALUE str)
     RUBY_ASSERT(rb_str_reembeddable_p(str));
     RUBY_ASSERT(!STR_EMBED_P(str));
 
+    int termlen = TERM_LEN(str);
     char *buf = RSTRING(str)->as.heap.ptr;
+    long old_capa = RSTRING(str)->as.heap.aux.capa + termlen;
     long len = RSTRING(str)->len;
 
     STR_SET_EMBED(str);
@@ -301,10 +303,10 @@ rb_str_make_embedded(VALUE str)
 
     if (len > 0) {
         memcpy(RSTRING_PTR(str), buf, len);
-        ruby_xfree(buf);
+        ruby_sized_xfree(buf, old_capa);
     }
 
-    TERM_FILL(RSTRING(str)->as.embed.ary + len, TERM_LEN(str));
+    TERM_FILL(RSTRING(str)->as.embed.ary + len, termlen);
 }
 
 void
@@ -3474,13 +3476,16 @@ rb_str_resize(VALUE str, long len)
             str_make_independent_expand(str, slen, len - slen, termlen);
         }
         else if (str_embed_capa(str) >= len + termlen) {
+            capa = RSTRING(str)->as.heap.aux.capa;
             char *ptr = STR_HEAP_PTR(str);
             STR_SET_EMBED(str);
             if (slen > len) slen = len;
             if (slen > 0) MEMCPY(RSTRING(str)->as.embed.ary, ptr, char, slen);
             TERM_FILL(RSTRING(str)->as.embed.ary + len, termlen);
             STR_SET_LEN(str, len);
-            if (independent) ruby_xfree(ptr);
+            if (independent) {
+                ruby_sized_xfree(ptr, capa + termlen);
+            }
             return str;
         }
         else if (!independent) {
