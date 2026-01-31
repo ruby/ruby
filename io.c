@@ -15071,7 +15071,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  Like a File stream, an \IO stream has:
  *
  *  - A read/write mode, which may be read-only, write-only, or read/write;
- *    see {Read/Write Mode}[rdoc-ref:File@Read-2FWrite+Mode].
+ *    see {Read/Write Mode}[rdoc-ref:File@ReadWrite+Mode].
  *  - A data mode, which may be text-only or binary;
  *    see {Data Mode}[rdoc-ref:File@Data+Mode].
  *  - Internal and external encodings;
