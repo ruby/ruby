@@ -4050,6 +4050,70 @@ pub mod hir_build_tests {
           Return v48
         ");
         }
+
+    #[test]
+    fn test_map_reloads_locals() {
+        eval(r#"
+            [].map {|| }
+        "#);
+        assert_snapshot!(hir_string_proc("[].method(:map)"), @r"
+        fn map@<internal:array>:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          v3:NilClass = Const Value(nil)
+          v4:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3, v4)
+        bb1(v7:BasicObject):
+          EntryPoint JIT(0)
+          v8:NilClass = Const Value(nil)
+          v9:NilClass = Const Value(nil)
+          v10:NilClass = Const Value(nil)
+          Jump bb2(v7, v8, v9, v10)
+        bb2(v12:BasicObject, v13:NilClass, v14:NilClass, v15:NilClass):
+          v19:NilClass = Const Value(nil)
+          v21:TrueClass|NilClass = Defined yield, v19
+          CheckInterrupts
+          v24:CBool = Test v21
+          v25:TrueClass = RefineType v21, Truthy
+          IfTrue v24, bb4(v12, v13, v14, v15)
+          v27:NilClass = RefineType v21, Falsy
+          v30:BasicObject = InvokeBuiltin <inline_expr>, v12
+          Jump bb3(v12, v13, v14, v15, v30)
+        bb4(v32:BasicObject, v33:NilClass, v34:NilClass, v35:NilClass):
+          v39:Fixnum[0] = Const Value(0)
+          v43:NilClass = Const Value(nil)
+          v47:BasicObject = InvokeBuiltin ary_sized_alloc, v32
+          PatchPoint NoEPEscape(map)
+          CheckInterrupts
+          Jump bb6(v32, v39, v43, v47)
+        bb6(v65:BasicObject, v66:BasicObject, v67:BasicObject, v68:BasicObject):
+          v71:BasicObject = InvokeBuiltin <inline_expr>, v65
+          v72:BasicObject = GetLocal :_i, l0, EP@5
+          v73:BasicObject = GetLocal :value, l0, EP@4
+          CheckInterrupts
+          v76:CBool = Test v71
+          v77:Truthy = RefineType v71, Truthy
+          IfTrue v76, bb5(v65, v72, v73, v68)
+          v79:Falsy = RefineType v71, Falsy
+          v81:NilClass = Const Value(nil)
+          PatchPoint NoEPEscape(map)
+          CheckInterrupts
+          Return v68
+        bb5(v91:BasicObject, v92:BasicObject, v93:BasicObject, v94:BasicObject):
+          PatchPoint NoEPEscape(map)
+          v101:BasicObject = InvokeBlock, v93 # SendFallbackReason: Uncategorized(invokeblock)
+          PatchPoint NoEPEscape(map)
+          v107:BasicObject = InvokeBuiltin <inline_expr>, v91
+          v108:BasicObject = GetLocal :value, l0, EP@4
+          v109:BasicObject = GetLocal :result, l0, EP@3
+          Jump bb6(v91, v92, v108, v109)
+        bb3(v55:BasicObject, v56:NilClass, v57:NilClass, v58:NilClass, v59:BasicObject):
+          CheckInterrupts
+          Return v59
+        ");
+        }
  }
 
  /// Test successor and predecessor set computations.

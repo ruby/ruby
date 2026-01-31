@@ -297,12 +297,13 @@ def generate_cexpr(ofile, lineno, line_file, body_lineno, text, locals, func_nam
     lvar = local_candidates.include?(param)
     next unless lvar or local_ptrs.include?(param)
     f.puts "VALUE *const #{param}__ptr = (VALUE *)&ec->cfp->ep[#{-3 - i}];"
-    if i > 63
+    local_idx = locals.size - i - 1
+    if local_idx > 63
       # That's a lot of locals in a Primitive! Unlikely but possible.
       # In that case, set every bit.
       locals_referenced = ((1<<64)-1)
     else
-      locals_referenced |= (1 << i)
+      locals_referenced |= (1 << local_idx)
     end
     f.puts "MAYBE_UNUSED(const VALUE) #{param} = *#{param}__ptr;" if lvar
     lineno += lvar ? 2 : 1

@@ -6490,9 +6490,9 @@ mod hir_opt_tests {
           v11:ArrayExact = ArrayDup v10
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, map@0x1010, cme:0x1018)
-          v21:BasicObject = CCallWithFrame v11, :Array#map@0x1040, block=0x1048
+          v20:BasicObject = SendDirect v11, 0x1040, :map (0x1050)
           CheckInterrupts
-          Return v21
+          Return v20
         ");
     }
 
