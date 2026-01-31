@@ -318,7 +318,7 @@ Alternatives:
   will not be honored:
 
     - Example {source}[https://github.com/ruby/ruby/blob/34d802f32f00df1ac0220b62f72605827c16bad8/file.c#L6570-L6596].
-    - Corresponding {output}[rdoc-ref:File@Read-2FWrite+Mode].
+    - Corresponding {output}[rdoc-ref:File@ReadWrite+Mode].
 
 - (Markdown format only): A {Github Flavored Markdown (GFM) table}[https://github.github.com/gfm/#tables-extension-],
   using special formatting for the text:

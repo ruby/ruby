@@ -3311,7 +3311,7 @@ rb_str_freeze(VALUE str)
  *
  * Otherwise returns <tt>self.dup</tt>, which is not frozen.
  *
- * Related: see {Freezing/Unfreezing}[rdoc-ref:String@Freezing-2FUnfreezing].
+ * Related: see {Freezing/Unfreezing}[rdoc-ref:String@FreezingUnfreezing].
  */
 static VALUE
 str_uplus(VALUE str)
@@ -3356,7 +3356,7 @@ str_uplus(VALUE str)
  *
  *   'foo'.dedup.gsub!('o')
  *
- * Related: see {Freezing/Unfreezing}[rdoc-ref:String@Freezing-2FUnfreezing].
+ * Related: see {Freezing/Unfreezing}[rdoc-ref:String@FreezingUnfreezing].
  */
 static VALUE
 str_uminus(VALUE str)
