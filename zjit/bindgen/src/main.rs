@@ -74,6 +74,7 @@ fn main() {
         .allowlist_function("rb_str_buf_append")
         .allowlist_function("rb_str_dup")
         .allowlist_function("rb_str_getbyte")
+        .allowlist_function("rb_str_eql")
         .allowlist_type("ruby_preserved_encindex")
         .allowlist_function("rb_class2name")
 

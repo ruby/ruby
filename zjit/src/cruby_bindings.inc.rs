@@ -2012,6 +2012,7 @@ unsafe extern "C" {
     ) -> VALUE;
     pub fn rb_obj_as_string_result(str_: VALUE, obj: VALUE) -> VALUE;
     pub fn rb_str_concat_literals(num: usize, strary: *const VALUE) -> VALUE;
+    pub fn rb_str_eql(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_ec_str_resurrect(
         ec: *mut rb_execution_context_struct,
         str_: VALUE,
