@@ -79,6 +79,7 @@ enum context_type {
 
 struct cont_saved_vm_stack {
     VALUE *ptr;
+    size_t size;
 #ifdef CAPTURE_JUST_VALID_VM_STACK
     size_t slen;  /* length of stack (head of ec->vm_stack) */
     size_t clen;  /* length of control frames (tail of ec->vm_stack) */
@@ -1089,7 +1090,7 @@ cont_free(void *ptr)
 
     if (cont->type == CONTINUATION_CONTEXT) {
         SIZED_FREE_N(cont->saved_ec.vm_stack, cont->saved_ec.vm_stack_size);
-        RUBY_FREE_UNLESS_NULL(cont->machine.stack);
+        SIZED_FREE_N(cont->machine.stack, cont->machine.stack_size);
     }
     else {
         rb_fiber_t *fiber = (rb_fiber_t*)cont;
@@ -1097,7 +1098,7 @@ cont_free(void *ptr)
         fiber_stack_release_locked(fiber);
     }
 
-    RUBY_FREE_UNLESS_NULL(cont->saved_vm_stack.ptr);
+    SIZED_FREE_N(cont->saved_vm_stack.ptr, cont->saved_vm_stack.size);
 
     VM_ASSERT(cont->jit_cont != NULL);
     jit_cont_free(cont->jit_cont);
@@ -1293,7 +1294,7 @@ jit_cont_new(rb_execution_context_t *ec)
     // We need to use calloc instead of something like ZALLOC to avoid triggering GC here.
     // When this function is called from rb_thread_alloc through rb_threadptr_root_fiber_setup,
     // the thread is still being prepared and marking it causes SEGV.
-    cont = calloc(1, sizeof(struct rb_jit_cont));
+    cont = ruby_mimcalloc(1, sizeof(struct rb_jit_cont));
     if (cont == NULL)
         rb_memerror();
     cont->ec = ec;
@@ -1332,7 +1333,7 @@ jit_cont_free(struct rb_jit_cont *cont)
     }
     rb_native_mutex_unlock(&jit_cont_lock);
 
-    free(cont);
+    ruby_mimfree(cont);
 }
 
 // Call a given callback against all on-stack ISEQs.
@@ -1383,7 +1384,7 @@ rb_jit_cont_finish(void)
     struct rb_jit_cont *cont, *next;
     for (cont = first_jit_cont; cont != NULL; cont = next) {
         next = cont->next;
-        free(cont); // Don't use xfree because it's allocated by calloc.
+        ruby_mimfree(cont); // Don't use xfree because it's allocated by mimcalloc.
     }
     rb_native_mutex_destroy(&jit_cont_lock);
 }
@@ -1492,6 +1493,7 @@ cont_capture(volatile int *volatile stat)
 #ifdef CAPTURE_JUST_VALID_VM_STACK
     cont->saved_vm_stack.slen = ec->cfp->sp - ec->vm_stack;
     cont->saved_vm_stack.clen = ec->vm_stack + ec->vm_stack_size - (VALUE*)ec->cfp;
+    cont->saved_vm_stack.size = cont->saved_vm_stack.slen + cont->saved_vm_stack.clen;
     cont->saved_vm_stack.ptr = ALLOC_N(VALUE, cont->saved_vm_stack.slen + cont->saved_vm_stack.clen);
     MEMCPY(cont->saved_vm_stack.ptr,
            ec->vm_stack,
@@ -1501,6 +1503,7 @@ cont_capture(volatile int *volatile stat)
            VALUE,
            cont->saved_vm_stack.clen);
 #else
+           cont->saved_vm_stack.size = ec->vm_stack_size;
     cont->saved_vm_stack.ptr = ALLOC_N(VALUE, ec->vm_stack_size);
     MEMCPY(cont->saved_vm_stack.ptr, ec->vm_stack, VALUE, ec->vm_stack_size);
 #endif
