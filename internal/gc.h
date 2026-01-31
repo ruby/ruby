@@ -314,7 +314,7 @@ ruby_sized_xfree_inlined(void *ptr, size_t size)
     ((v) = (T *)ruby_sized_xrealloc2((void *)(v), (m), sizeof(T), (n)))
 
 # define SIZED_FREE(v) ruby_sized_xfree((void *)(v), sizeof(*(v)))
-# define SIZED_FREE_N(v, n) ruby_sized_xfree((void *)(v), sizeof(*(v)) * n)
+# define SIZED_FREE_N(v, n) ruby_sized_xfree((void *)(v), sizeof(*(v)) * (n))
 
 static inline void *
 ruby_sized_realloc_n(void *ptr, size_t new_count, size_t element_size, size_t old_count)

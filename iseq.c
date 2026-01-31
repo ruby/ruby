@@ -88,7 +88,7 @@ free_arena(struct iseq_compile_data_storage *cur)
 
     while (cur) {
         next = cur->next;
-        ruby_xfree(cur);
+        ruby_sized_xfree(cur, offsetof(struct iseq_compile_data_storage, buff) + cur->size * sizeof(char));
         cur = next;
     }
 }
@@ -102,7 +102,7 @@ compile_data_free(struct iseq_compile_data *compile_data)
         if (compile_data->ivar_cache_table) {
             rb_id_table_free(compile_data->ivar_cache_table);
         }
-        ruby_xfree(compile_data);
+        SIZED_FREE(compile_data);
     }
 }
 
@@ -152,13 +152,14 @@ iseq_clear_ic_references(const rb_iseq_t *iseq)
         if (segments == NULL)
             continue;
 
-        for (int i = 0; segments[i]; i++) {
+        int i;
+        for (i = 0; segments[i]; i++) {
             ID id = segments[i];
             if (id == idNULL) continue;
             remove_from_constant_cache(id, ic);
         }
 
-        ruby_xfree((void *)segments);
+        SIZED_FREE_N(segments, i + 1);
     }
 }
 
@@ -198,38 +199,41 @@ rb_iseq_free(const rb_iseq_t *iseq)
 #if USE_ZJIT
         rb_zjit_iseq_free(iseq);
 #endif
-        ruby_xfree((void *)body->iseq_encoded);
-        ruby_xfree((void *)body->insns_info.body);
-        ruby_xfree((void *)body->insns_info.positions);
+        SIZED_FREE_N(body->iseq_encoded, body->iseq_size);
+        SIZED_FREE_N(body->insns_info.body, body->insns_info.size);
+        SIZED_FREE_N(body->insns_info.positions, body->insns_info.size);
 #if VM_INSN_INFO_TABLE_IMPL == 2
         ruby_xfree(body->insns_info.succ_index_table);
 #endif
-        ruby_xfree((void *)body->is_entries);
-        ruby_xfree(body->call_data);
-        ruby_xfree((void *)body->catch_table);
-        ruby_xfree((void *)body->param.opt_table);
+        SIZED_FREE_N(body->is_entries, ISEQ_IS_SIZE(body));
+        SIZED_FREE_N(body->call_data, body->ci_size);
+        if (body->catch_table) {
+            ruby_sized_xfree(body->catch_table, iseq_catch_table_bytes(body->catch_table->size));
+        }
+        SIZED_FREE_N(body->param.opt_table, body->param.opt_num + 1);
         if (ISEQ_MBITS_BUFLEN(body->iseq_size) > 1 && body->mark_bits.list) {
-            ruby_xfree((void *)body->mark_bits.list);
+            SIZED_FREE_N(body->mark_bits.list, ISEQ_MBITS_BUFLEN(body->iseq_size));
         }
 
-        ruby_xfree(body->variable.original_iseq);
+        ISEQ_ORIGINAL_ISEQ_CLEAR(iseq);
 
-        if (body->param.keyword != NULL) {
-            if (body->param.keyword->table != &body->local_table[body->param.keyword->bits_start - body->param.keyword->num])
-                ruby_xfree((void *)body->param.keyword->table);
-            if (body->param.keyword->default_values) {
-                ruby_xfree((void *)body->param.keyword->default_values);
+        struct rb_iseq_param_keyword *pkw = (struct rb_iseq_param_keyword *)body->param.keyword;
+        if (pkw != NULL) {
+            if (pkw->table != &body->local_table[pkw->bits_start - pkw->num])
+                SIZED_FREE_N(pkw->table, pkw->required_num);
+            if (pkw->default_values) {
+                SIZED_FREE_N(pkw->default_values, pkw->num - pkw->required_num);
             }
-            ruby_xfree((void *)body->param.keyword);
+            SIZED_FREE(pkw);
         }
         if (LIKELY(body->local_table != rb_iseq_shared_exc_local_tbl)) {
-            ruby_xfree((void *)body->local_table);
+            SIZED_FREE_N(body->local_table, body->local_table_size);
         }
-        ruby_xfree((void *)body->lvar_states);
+        SIZED_FREE_N(body->lvar_states, body->local_table_size);
 
         compile_data_free(ISEQ_COMPILE_DATA(iseq));
         if (body->outer_variables) rb_id_table_free(body->outer_variables);
-        ruby_xfree(body);
+        SIZED_FREE(body);
     }
 
     RUBY_FREE_LEAVE("iseq");
@@ -758,7 +762,7 @@ rb_iseq_insns_info_encode_positions(const rb_iseq_t *iseq)
     if (body->insns_info.succ_index_table) ruby_xfree(body->insns_info.succ_index_table);
     body->insns_info.succ_index_table = succ_index_table_create(max_pos, data, size);
 #if VM_CHECK_MODE == 0
-    ruby_xfree(body->insns_info.positions);
+    SIZED_FREE_N(body->insns_info.positions, body->insns_info.size);
     body->insns_info.positions = NULL;
 #endif
 #endif
