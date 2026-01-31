@@ -12349,6 +12349,28 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         }
         break;
       }
+      case RB_X_STRING_NODE: {
+        ADD_CALL_RECEIVER(ret, node);
+        VALUE str = rb_node_str_string_val2(node);
+        ADD_INSN1(ret, node, putobject, str);
+        RB_OBJ_WRITTEN(iseq, Qundef, str);
+        ADD_CALL(ret, node, idBackquote, INT2FIX(1));
+
+        if (popped) {
+            ADD_INSN(ret, node, pop);
+        }
+        break;
+      }
+      case RB_INTERPOLATED_X_STRING_NODE: {
+        ADD_CALL_RECEIVER(ret, node);
+        compile_dstr(iseq, ret, node);
+        ADD_CALL(ret, node, idBackquote, INT2FIX(1));
+
+        if (popped) {
+            ADD_INSN(ret, node, pop);
+        }
+        break;
+      }
 
       case RB_EMBEDDED_STATEMENTS_NODE: {
         CHECK(compile_evstr(iseq, ret, RB_NODE_EMBEDDED_STATEMENTS(node)->statements, popped));
