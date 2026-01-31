@@ -26,7 +26,7 @@ A regexp may be used:
     re.match('good')        # => nil
 
   See sections {Method match}[rdoc-ref:Regexp@Method+match]
-  and {Operator =~}[rdoc-ref:Regexp@Operator+-3D~].
+  and {Operator =~}[rdoc-ref:Regexp@Operator-].
 
 - To determine whether a string matches a given pattern:
 
