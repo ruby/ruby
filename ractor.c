@@ -299,7 +299,7 @@ ractor_free(void *ptr)
 
     ractor_sync_free(r);
     if (!r->main_ractor) {
-        ruby_xfree(r);
+        SIZED_FREE(r);
     }
 }
 
@@ -2212,7 +2212,7 @@ rb_ractor_local_storage_delkey(rb_ractor_local_key_t key)
     RB_VM_LOCKING() {
         if (freed_ractor_local_keys.cnt == freed_ractor_local_keys.capa) {
             freed_ractor_local_keys.capa = freed_ractor_local_keys.capa ? freed_ractor_local_keys.capa * 2 : 4;
-            REALLOC_N(freed_ractor_local_keys.keys, rb_ractor_local_key_t, freed_ractor_local_keys.capa);
+            SIZED_REALLOC_N(freed_ractor_local_keys.keys, rb_ractor_local_key_t, freed_ractor_local_keys.capa, freed_ractor_local_keys.cnt);
         }
         freed_ractor_local_keys.keys[freed_ractor_local_keys.cnt++] = key;
     }
@@ -2311,12 +2311,12 @@ void
 rb_ractor_finish_marking(void)
 {
     for (int i=0; i<freed_ractor_local_keys.cnt; i++) {
-        ruby_xfree(freed_ractor_local_keys.keys[i]);
+        SIZED_FREE(freed_ractor_local_keys.keys[i]);
     }
     freed_ractor_local_keys.cnt = 0;
     if (freed_ractor_local_keys.capa > DEFAULT_KEYS_CAPA) {
         freed_ractor_local_keys.capa = DEFAULT_KEYS_CAPA;
-        REALLOC_N(freed_ractor_local_keys.keys, rb_ractor_local_key_t, DEFAULT_KEYS_CAPA);
+        SIZED_REALLOC_N(freed_ractor_local_keys.keys, rb_ractor_local_key_t, DEFAULT_KEYS_CAPA, freed_ractor_local_keys.capa);
     }
 }
 
