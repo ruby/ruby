@@ -822,12 +822,12 @@ mod hir_opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint NoSingletonClass(C@0x1000)
-          PatchPoint MethodRedefined(C@0x1000, fun_new_map@0x1008, cme:0x1010)
-          v22:ArraySubclass[class_exact:C] = GuardType v9, ArraySubclass[class_exact:C]
-          v23:BasicObject = SendDirect v22, 0x1038, :fun_new_map (0x1048)
+          PatchPoint MethodRedefined(C@0x1000, fun_new_index@0x1008, cme:0x1010)
+          v23:ArraySubclass[class_exact:C] = GuardType v9, ArraySubclass[class_exact:C]
+          v24:BasicObject = CCallVariadic v23, :fun_new_index@0x1038
           v15:BasicObject = GetLocal :o, l0, EP@3
           CheckInterrupts
-          Return v23
+          Return v24
         ");
     }
 
