@@ -7336,6 +7336,27 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         return_type,
                     });
                     state.stack_push(insn_id);
+
+                    let locals_referenced = bf.locals_referenced;
+                    if locals_referenced == u64::MAX {
+                        // The builtin may reference any local; reload all locals after the call
+                        for local_idx in 0..state.locals.len() {
+                            let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
+                            // TODO: We could use `use_sp: true` with PatchPoint
+                            let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0, use_sp: false, rest_param: false });
+                            state.setlocal(ep_offset, val);
+                        }
+                    } else {
+                        // Reload only the locals in `locals_referenced`
+                        for local_idx in 0..state.locals.len() {
+                            if locals_referenced & (1 << local_idx) != 0 {
+                                let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
+                                // TODO: We could use `use_sp: true` with PatchPoint
+                                let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0, use_sp: false, rest_param: false });
+                                state.setlocal(ep_offset, val);
+                            }
+                        }
+                    }
                 }
                 YARVINSN_opt_invokebuiltin_delegate |
                 YARVINSN_opt_invokebuiltin_delegate_leave => {
@@ -7365,6 +7386,27 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         return_type,
                     });
                     state.stack_push(insn_id);
+
+                    let locals_referenced = bf.locals_referenced;
+                    if locals_referenced == u64::MAX {
+                        // The builtin may reference any local; reload all locals after the call
+                        for local_idx in 0..state.locals.len() {
+                            let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
+                            // TODO: We could use `use_sp: true` with PatchPoint
+                            let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0, use_sp: false, rest_param: false });
+                            state.setlocal(ep_offset, val);
+                        }
+                    } else {
+                        // Reload only the locals in `locals_referenced`
+                        for local_idx in 0..state.locals.len() {
+                            if locals_referenced & (1 << local_idx) != 0 {
+                                let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
+                                // TODO: We could use `use_sp: true` with PatchPoint
+                                let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0, use_sp: false, rest_param: false });
+                                state.setlocal(ep_offset, val);
+                            }
+                        }
+                    }
                 }
                 YARVINSN_objtostring => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
