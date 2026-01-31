@@ -139,17 +139,10 @@ set_mark(void *ptr)
 }
 
 static void
-set_free_embedded(struct set_object *sobj)
-{
-    xfree((&sobj->table)->entries);
-}
-
-static void
 set_free(void *ptr)
 {
     struct set_object *sobj = ptr;
-    set_free_embedded(sobj);
-    memset(&sobj->table, 0, sizeof(sobj->table));
+    set_free_embedded_table(&sobj->table);
 }
 
 static size_t
@@ -546,7 +539,7 @@ set_i_initialize_copy(VALUE set, VALUE other)
     struct set_object *sobj;
     TypedData_Get_Struct(set, struct set_object, &set_data_type, sobj);
 
-    set_free_embedded(sobj);
+    set_free_embedded_table(&sobj->table);
     set_copy(&sobj->table, RSET_TABLE(other));
     rb_gc_writebarrier_remember(set);
 
@@ -1185,9 +1178,9 @@ set_reset_table_with_type(VALUE set, const struct st_hash_type *type)
             .into = new
         };
         set_iter(set, set_merge_i, (st_data_t)&args);
-        set_free_embedded(sobj);
+        set_free_embedded_table(&sobj->table);
         memcpy(&sobj->table, new, sizeof(*new));
-        xfree(new);
+        SIZED_FREE(new);
     }
     else {
         sobj->table.type = type;

@@ -1173,17 +1173,13 @@ hash_st_free(VALUE hash)
 {
     HASH_ASSERT(RHASH_ST_TABLE_P(hash));
 
-    st_table *tab = RHASH_ST_TABLE(hash);
-
-    xfree(tab->bins);
-    xfree(tab->entries);
+    rb_st_free_embedded_table(RHASH_ST_TABLE(hash));
 }
 
 static void
 hash_st_free_and_clear_table(VALUE hash)
 {
     hash_st_free(hash);
-
     RHASH_ST_CLEAR(hash);
 }
 

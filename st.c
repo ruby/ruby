@@ -692,12 +692,19 @@ st_free_bins(const st_table *tab)
 {
     sized_free(tab->bins, st_bins_memsize(tab));
 }
+
+void
+st_free_embedded_table(st_table *tab)
+{
+    st_free_bins(tab);
+    st_free_entries(tab);
+}
+
 /* Free table TAB space.  */
 void
 st_free_table(st_table *tab)
 {
-    st_free_bins(tab);
-    st_free_entries(tab);
+    st_free_embedded_table(tab);
     free_fixed_ptr(tab);
 }
 
@@ -2560,12 +2567,18 @@ set_table_clear(set_table *tab)
     tab->rebuilds_num++;
 }
 
+void
+set_free_embedded_table(set_table *tab)
+{
+    sized_free(tab->entries, set_entries_memsize(tab));
+}
+
 /* Free table TAB space. This should only be used if you passed NULL to
    set_init_table_with_size/set_copy when creating the table. */
 void
 set_free_table(set_table *tab)
 {
-    sized_free(tab->entries, set_entries_memsize(tab));
+    set_free_embedded_table(tab);
     free_fixed_ptr(tab);
 }
 
