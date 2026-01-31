@@ -258,7 +258,7 @@ static void
 binding_free(void *ptr)
 {
     RUBY_FREE_ENTER("binding");
-    ruby_xfree(ptr);
+    SIZED_FREE((rb_binding_t *)ptr);
     RUBY_FREE_LEAVE("binding");
 }
 
