@@ -550,7 +550,7 @@ static enum rb_id_table_iterator_result
 free_const_entry_i(VALUE value, void *data)
 {
     rb_const_entry_t *ce = (rb_const_entry_t *)value;
-    xfree(ce);
+    SIZED_FREE(ce);
     return ID_TABLE_CONTINUE;
 }
 
@@ -565,11 +565,12 @@ static inline void
 imemo_fields_free(struct rb_fields *fields)
 {
     if (FL_TEST_RAW((VALUE)fields, OBJ_FIELD_HEAP)) {
-        if (rb_shape_obj_too_complex_p((VALUE)fields)) {
+        shape_id_t shape_id = RBASIC_SHAPE_ID((VALUE)fields);
+        if (rb_shape_too_complex_p(shape_id)) {
             st_free_table(fields->as.complex.table);
         }
         else {
-            xfree(fields->as.external.ptr);
+            SIZED_FREE_N(fields->as.external.ptr, RSHAPE_CAPACITY(shape_id));
         }
     }
 }
@@ -587,7 +588,9 @@ rb_imemo_free(VALUE obj)
 
         if (ci->kwarg) {
             ((struct rb_callinfo_kwarg *)ci->kwarg)->references--;
-            if (ci->kwarg->references == 0) xfree((void *)ci->kwarg);
+            if (ci->kwarg->references == 0) {
+                ruby_sized_xfree((void *)ci->kwarg, rb_callinfo_kwarg_bytes(ci->kwarg->keyword_len));
+            }
         }
         RB_DEBUG_COUNTER_INC(obj_imemo_callinfo);
 
@@ -605,7 +608,7 @@ rb_imemo_free(VALUE obj)
         rb_env_t *env = (rb_env_t *)obj;
 
         RUBY_ASSERT(VM_ENV_ESCAPED_P(env->ep));
-        xfree((VALUE *)env->env);
+        SIZED_FREE_N(env->env, env->env_size);
         RB_DEBUG_COUNTER_INC(obj_imemo_env);
 
         break;
@@ -636,7 +639,7 @@ rb_imemo_free(VALUE obj)
 
         break;
       case imemo_tmpbuf:
-        xfree(((rb_imemo_tmpbuf_t *)obj)->ptr);
+        ruby_sized_xfree(((rb_imemo_tmpbuf_t *)obj)->ptr, ((rb_imemo_tmpbuf_t *)obj)->size);
         RB_DEBUG_COUNTER_INC(obj_imemo_tmpbuf);
 
         break;
