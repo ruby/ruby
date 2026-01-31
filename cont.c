@@ -215,7 +215,6 @@ typedef struct rb_context_struct {
     enum context_type type;
     int argc;
     int kw_splat;
-    bool root;
     VALUE self;
     VALUE value;
 
@@ -1103,11 +1102,11 @@ cont_free(void *ptr)
     VM_ASSERT(cont->jit_cont != NULL);
     jit_cont_free(cont->jit_cont);
     /* free rb_cont_t or rb_fiber_t */
-    if (cont->root) {
-        ruby_mimfree(ptr);
+    if (cont->type == CONTINUATION_CONTEXT) {
+        SIZED_FREE(cont);
     }
     else {
-        ruby_xfree(ptr);
+        SIZED_FREE((rb_fiber_t *)cont);
     }
     RUBY_FREE_LEAVE("cont");
 }
@@ -2575,13 +2574,12 @@ rb_fiber_start(rb_fiber_t *fiber)
 void
 rb_threadptr_root_fiber_setup(rb_thread_t *th)
 {
-    rb_fiber_t *fiber = ruby_mimcalloc(1, sizeof(rb_fiber_t));
+    rb_fiber_t *fiber = ZALLOC(rb_fiber_t);
     if (!fiber) {
         rb_bug("%s", strerror(errno)); /* ... is it possible to call rb_bug here? */
     }
 
     fiber->cont.type = FIBER_CONTEXT;
-    fiber->cont.root = true;
     fiber->cont.saved_ec.fiber_ptr = fiber;
     fiber->cont.saved_ec.serial = next_ec_serial(th->ractor);
     fiber->cont.saved_ec.thread_ptr = th;
