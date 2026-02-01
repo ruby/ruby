@@ -303,7 +303,7 @@ rb_str_make_embedded(VALUE str)
 
     if (len > 0) {
         memcpy(RSTRING_PTR(str), buf, len);
-        ruby_sized_xfree(buf, old_capa);
+        SIZED_FREE_N(buf, old_capa);
     }
 
     TERM_FILL(RSTRING(str)->as.embed.ary + len, termlen);
@@ -1464,7 +1464,7 @@ str_replace_shared_without_enc(VALUE str2, VALUE str)
             }
             char *ptr2 = STR_HEAP_PTR(str2);
             if (ptr2 != ptr) {
-                ruby_sized_xfree(ptr2, STR_HEAP_SIZE(str2));
+                SIZED_FREE_N(ptr2, STR_HEAP_SIZE(str2));
             }
         }
         FL_SET(str2, STR_NOEMBED);
@@ -1743,7 +1743,7 @@ rb_str_free(VALUE str)
     }
     else {
         RB_DEBUG_COUNTER_INC(obj_str_ptr);
-        ruby_sized_xfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
+        SIZED_FREE_N(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
     }
 }
 
@@ -2705,7 +2705,7 @@ str_make_independent_expand(VALUE str, long len, long expand, const int termlen)
         memcpy(ptr, oldptr, len);
     }
     if (FL_TEST_RAW(str, STR_NOEMBED|STR_NOFREE|STR_SHARED) == STR_NOEMBED) {
-        xfree(oldptr);
+        SIZED_FREE_N(oldptr, STR_HEAP_SIZE(str));
     }
     STR_SET_NOEMBED(str);
     FL_UNSET(str, STR_SHARED|STR_NOFREE);
@@ -2763,7 +2763,7 @@ str_discard(VALUE str)
 {
     str_modifiable(str);
     if (!STR_EMBED_P(str) && !FL_TEST(str, STR_SHARED|STR_NOFREE)) {
-        ruby_sized_xfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
+        SIZED_FREE_N(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
         RSTRING(str)->as.heap.ptr = 0;
         STR_SET_LEN(str, 0);
     }
@@ -3484,7 +3484,7 @@ rb_str_resize(VALUE str, long len)
             TERM_FILL(RSTRING(str)->as.embed.ary + len, termlen);
             STR_SET_LEN(str, len);
             if (independent) {
-                ruby_sized_xfree(ptr, capa + termlen);
+                SIZED_FREE_N(ptr, capa + termlen);
             }
             return str;
         }
@@ -5770,11 +5770,14 @@ rb_str_drop_bytes(VALUE str, long len)
     nlen = olen - len;
     if (str_embed_capa(str) >= nlen + TERM_LEN(str)) {
         char *oldptr = ptr;
+        size_t old_capa = RSTRING(str)->as.heap.aux.capa + TERM_LEN(str);
         int fl = (int)(RBASIC(str)->flags & (STR_NOEMBED|STR_SHARED|STR_NOFREE));
         STR_SET_EMBED(str);
         ptr = RSTRING(str)->as.embed.ary;
         memmove(ptr, oldptr + len, nlen);
-        if (fl == STR_NOEMBED) xfree(oldptr);
+        if (fl == STR_NOEMBED) {
+            SIZED_FREE_N(oldptr, old_capa);
+        }
     }
     else {
         if (!STR_SHARED_P(str)) {
@@ -8409,7 +8412,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 
             int r = rb_enc_precise_mbclen((char *)s, (char *)send, e1);
             if (!MBCLEN_CHARFOUND_P(r)) {
-                xfree(buf);
+                SIZED_FREE_N(buf, max + termlen);
                 rb_raise(rb_eArgError, "invalid byte sequence in %s", rb_enc_name(e1));
             }
             clen = MBCLEN_CHARFOUND_LEN(r);
@@ -8461,7 +8464,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
             t += tlen;
         }
         if (!STR_EMBED_P(str)) {
-            ruby_sized_xfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
+            SIZED_FREE_N(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
         }
         TERM_FILL((char *)t, termlen);
         RSTRING(str)->as.heap.ptr = (char *)buf;
@@ -8497,7 +8500,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 
             int r = rb_enc_precise_mbclen((char *)s, (char *)send, e1);
             if (!MBCLEN_CHARFOUND_P(r)) {
-                xfree(buf);
+                SIZED_FREE_N(buf, max + termlen);
                 rb_raise(rb_eArgError, "invalid byte sequence in %s", rb_enc_name(e1));
             }
             clen = MBCLEN_CHARFOUND_LEN(r);
@@ -8545,7 +8548,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
             t += tlen;
         }
         if (!STR_EMBED_P(str)) {
-            ruby_sized_xfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
+            SIZED_FREE_N(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
         }
         TERM_FILL((char *)t, termlen);
         RSTRING(str)->as.heap.ptr = (char *)buf;
