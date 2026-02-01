@@ -40,7 +40,7 @@ mark_cc_entry_i(VALUE ccs_ptr, void *data)
             VM_ASSERT(!vm_cc_super_p(cc) && !vm_cc_refinement_p(cc));
             vm_cc_invalidate(cc);
         }
-        ruby_xfree(ccs);
+        ruby_sized_xfree(ccs, vm_ccs_alloc_size(ccs->capa));
         return ID_TABLE_DELETE;
     }
     else {
@@ -71,7 +71,7 @@ cc_table_free_i(VALUE ccs_ptr, void *data)
     struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_ptr;
     VM_ASSERT(vm_ccs_p(ccs));
 
-    ruby_xfree(ccs);
+    ruby_sized_xfree(ccs, vm_ccs_alloc_size(ccs->capa));
 
     return ID_TABLE_CONTINUE;
 }
@@ -201,7 +201,7 @@ rb_vm_ccs_invalidate_and_free(struct rb_class_cc_entries *ccs)
 {
     RB_DEBUG_COUNTER_INC(ccs_free);
     vm_ccs_invalidate(ccs);
-    ruby_xfree(ccs);
+    ruby_sized_xfree(ccs, vm_ccs_alloc_size(ccs->capa));
 }
 
 void
@@ -572,7 +572,7 @@ invalidate_ccs_in_iclass_cc_tbl(VALUE value, void *data)
 {
     struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)value;
     vm_cme_invalidate((rb_callable_method_entry_t *)ccs->cme);
-    xfree(ccs);
+    ruby_sized_xfree(ccs, vm_ccs_alloc_size(ccs->capa));
     return ID_TABLE_DELETE;
 }
 
@@ -845,7 +845,7 @@ method_definition_release(rb_method_definition_t *def)
         if (reference_count_was == 1) {
             if (METHOD_DEBUG) fprintf(stderr, "-%p-%s:1->0 (remove)\n", (void *)def,
                                       rb_id2name(def->original_id));
-            xfree(def);
+            SIZED_FREE(def);
         }
         else {
             if (METHOD_DEBUG) fprintf(stderr, "-%p-%s:%d->%d (dec)\n", (void *)def, rb_id2name(def->original_id),
