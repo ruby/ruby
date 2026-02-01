@@ -340,7 +340,7 @@ clean_hooks(rb_hook_list_t *list)
                     change_c_events--;
                 }
             }
-            xfree(hook);
+            SIZED_FREE(hook);
         }
         else {
             list->events |= hook->events; /* update active events */
@@ -350,7 +350,7 @@ clean_hooks(rb_hook_list_t *list)
 
     if (hook_list_targeted_p(list)) {
         if (list->events == 0) {
-            ruby_xfree(list);
+            SIZED_FREE(list);
         }
     }
     else {
