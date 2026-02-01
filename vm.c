@@ -3927,7 +3927,7 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
         size_t size = vm->default_params.thread_vm_stack_size / sizeof(VALUE);
         VALUE *stack = ALLOC_N(VALUE, size);
         rb_ec_initialize_vm_stack(th->ec, stack, size);
-        rb_thread_malloc_stack_set(th, stack);
+        rb_thread_malloc_stack_set(th, stack, size);
     }
     else {
         VM_ASSERT(th->ec->cfp == NULL);
