@@ -271,7 +271,7 @@ box_entry_free(void *ptr)
     cleanup_all_local_extensions(box->ruby_dln_libmap);
 
     box_root_free(ptr);
-    xfree(ptr);
+    SIZED_FREE(box);
 }
 
 static size_t
