@@ -1481,7 +1481,7 @@ rb_io_buffer_locked(VALUE self)
  *  * for a buffer created from scratch: free memory.
  *  * for a buffer created from string: undo the association.
  *
- *  After the buffer is freed, no further operations can't be performed on it.
+ *  After the buffer is freed, no further operations can be performed on it.
  *
  *  You can resize a freed buffer to re-allocate it.
  *
@@ -3500,7 +3500,7 @@ memory_not(unsigned char * restrict output, unsigned char * restrict base, size_
  *  call-seq:
  *    ~source -> io_buffer
  *
- *  Generate a new buffer the same size as the source by applying the binary NOT
+ *  Generate a new buffer the same size as the source by applying the unary NOT
  *  operation to the source.
  *
  *    ~IO::Buffer.for("1234567890")
@@ -3690,7 +3690,7 @@ memory_not_inplace(unsigned char * restrict base, size_t size)
  *  call-seq:
  *    source.not! -> io_buffer
  *
- *  Modify the source buffer in place by applying the binary NOT
+ *  Modify the source buffer in place by applying the unary NOT
  *  operation to the source.
  *
  *    source = IO::Buffer.for("1234567890").dup # Make a read/write copy.
