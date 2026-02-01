@@ -522,6 +522,7 @@ native_thread_create_shared(rb_thread_t *th)
     th->ec->machine.stack_start = (void *)((uintptr_t)machine_stack + machine_stack_size);
     th->ec->machine.stack_maxsize = machine_stack_size; // TODO
     th->sched.context_stack = machine_stack;
+    th->sched.context_stack_size = machine_stack_size;
 
     th->sched.context = ruby_xmalloc(sizeof(struct coroutine_context));
     coroutine_initialize(th->sched.context, co_start, machine_stack, machine_stack_size);
