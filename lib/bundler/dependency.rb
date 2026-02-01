@@ -58,6 +58,12 @@ module Bundler
       @glob = @options["glob"]
     end
 
+    def sparse_checkout
+      return @sparse_checkout if defined?(@sparse_checkout)
+
+      @sparse_checkout = @options["sparse_checkout"]
+    end
+
     def platforms
       @platforms ||= Array(@options["platforms"])
     end

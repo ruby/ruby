@@ -49,7 +49,7 @@ module Bundler
     PATH         = "PATH"
     PLUGIN       = "PLUGIN SOURCE"
     SPECS        = "  specs:"
-    OPTIONS      = /^  ([a-z]+): (.*)$/i
+    OPTIONS      = /^  ([a-z_]+): (.*)$/i
     SOURCE       = [GIT, GEM, PATH, PLUGIN].freeze
 
     SECTIONS_BY_VERSION_INTRODUCED = {

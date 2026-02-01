@@ -7,7 +7,7 @@ module Bundler
     class Git < Path
       autoload :GitProxy, File.expand_path("git/git_proxy", __dir__)
 
-      attr_reader :uri, :ref, :branch, :options, :glob, :submodules
+      attr_reader :uri, :ref, :branch, :options, :glob, :submodules, :sparse_checkout
 
       def initialize(options)
         @options = options
@@ -25,6 +25,7 @@ module Bundler
         @branch     = options["branch"]
         @ref        = options["ref"] || options["branch"] || options["tag"]
         @submodules = options["submodules"]
+        @sparse_checkout = options["sparse_checkout"]
         @name       = options["name"]
         @version    = options["version"].to_s.strip.gsub("-", ".pre.")
 
@@ -58,12 +59,13 @@ module Bundler
         %w[ref branch tag submodules].each do |opt|
           out << "  #{opt}: #{options[opt]}\n" if options[opt]
         end
+        out << "  sparse_checkout: #{@sparse_checkout}\n" if @sparse_checkout
         out << "  glob: #{@glob}\n" unless default_glob?
         out << "  specs:\n"
       end
 
       def to_gemfile
-        specifiers = %w[ref branch tag submodules glob].map do |opt|
+        specifiers = %w[ref branch tag submodules glob sparse_checkout].map do |opt|
           "#{opt}: #{options[opt]}" if options[opt]
         end
 
@@ -71,14 +73,15 @@ module Bundler
       end
 
       def hash
-        [self.class, uri, ref, branch, name, glob, submodules].hash
+        [self.class, uri, ref, branch, name, glob, submodules, sparse_checkout].hash
       end
 
       def eql?(other)
         other.is_a?(Git) && uri == other.uri && ref == other.ref &&
           branch == other.branch && name == other.name &&
           glob == other.glob &&
-          submodules == other.submodules
+          submodules == other.submodules &&
+          sparse_checkout == other.sparse_checkout
       end
 
       alias_method :==, :eql?
@@ -87,7 +90,8 @@ module Bundler
         other.is_a?(Git) && uri == other.uri &&
           name == other.name &&
           glob == other.glob &&
-          submodules == other.submodules
+          submodules == other.submodules &&
+          sparse_checkout == other.sparse_checkout
       end
 
       def to_s
@@ -127,17 +131,13 @@ module Bundler
       # checkout of the git repository. When using local git
       # repos, this is set to the local repo.
       def install_path
-        @install_path ||= begin
-          git_scope = "#{base_name}-#{shortref_for_path(revision)}"
-
-          Bundler.install_path.join(git_scope)
-        end
+        @install_path ||= Bundler.install_path.join("#{base_name}-#{shortref_for_path(revision, sparse_checkout: @sparse_checkout)}")
       end
 
       alias_method :path, :install_path
 
       def extension_dir_name
-        "#{base_name}-#{shortref_for_path(revision)}"
+        "#{base_name}-#{shortref_for_path(revision, sparse_checkout: @sparse_checkout)}"
       end
 
       def unlock!
@@ -252,7 +252,7 @@ module Bundler
       end
 
       def app_cache_dirname
-        "#{base_name}-#{shortref_for_path(locked_revision || revision)}"
+        "#{base_name}-#{shortref_for_path(locked_revision || revision, sparse_checkout: @sparse_checkout)}"
       end
 
       def revision
@@ -388,8 +388,10 @@ module Bundler
         ref[0..6]
       end
 
-      def shortref_for_path(ref)
-        ref[0..11]
+      def shortref_for_path(ref, sparse_checkout: nil)
+        scope = ref[0..11]
+        scope += "-#{Bundler::Digest.sha1(sparse_checkout)[0..7]}" if sparse_checkout
+        scope
       end
 
       def glob_for_display
@@ -443,7 +445,9 @@ module Bundler
       end
 
       def git_scope
-        "#{base_name}-#{uri_hash}"
+        scope = "#{base_name}-#{uri_hash}"
+        scope += "-#{Bundler::Digest.sha1(@sparse_checkout)[0..7]}" if @sparse_checkout
+        scope
       end
 
       def extension_cache_slug(_)
