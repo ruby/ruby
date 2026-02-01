@@ -4956,7 +4956,7 @@ pm_multi_target_state_update(pm_multi_target_state_t *state)
         previous = current;
         current = current->next;
 
-        xfree(previous);
+        SIZED_FREE(previous);
     }
 }
 
@@ -10538,7 +10538,7 @@ pm_parse_result_free(pm_parse_result_t *result)
     }
 
     if (result->parsed) {
-        xfree(result->node.constants);
+        SIZED_FREE_N(result->node.constants, result->node.parser->constant_pool.size);
         pm_scope_node_destroy(&result->node);
     }
 
@@ -10942,7 +10942,7 @@ pm_parse_errors_format(const pm_parser_t *parser, const pm_list_t *error_list, p
     }
 
     // Finally, we'll free the array of errors that we allocated.
-    xfree(errors);
+    SIZED_FREE_N(errors, error_list->size);
 }
 
 #undef PM_ERROR_TRUNCATE
@@ -11232,9 +11232,9 @@ pm_read_file(pm_string_t *string, const char *filepath)
     int length = MultiByteToWideChar(CP_UTF8, 0, filepath, -1, NULL, 0);
     if (length == 0) return PM_STRING_INIT_ERROR_GENERIC;
 
-    WCHAR *wfilepath = xmalloc(sizeof(WCHAR) * ((size_t) length));
+    WCHAR *wfilepath = ALLOC_N(WCHAR, length);
     if ((wfilepath == NULL) || (MultiByteToWideChar(CP_UTF8, 0, filepath, -1, wfilepath, length) == 0)) {
-        xfree(wfilepath);
+        SIZED_FREE_N(wfilepath, length);
         return PM_STRING_INIT_ERROR_GENERIC;
     }
 
@@ -11249,7 +11249,7 @@ pm_read_file(pm_string_t *string, const char *filepath)
             }
         }
 
-        xfree(wfilepath);
+        SIZED_FREE_N(wfilepath, length);
         return result;
     }
 
@@ -11257,7 +11257,7 @@ pm_read_file(pm_string_t *string, const char *filepath)
     DWORD file_size = GetFileSize(file, NULL);
     if (file_size == INVALID_FILE_SIZE) {
         CloseHandle(file);
-        xfree(wfilepath);
+        SIZED_FREE_N(wfilepath, length);
         return PM_STRING_INIT_ERROR_GENERIC;
     }
 
@@ -11265,7 +11265,7 @@ pm_read_file(pm_string_t *string, const char *filepath)
     // the source to a constant empty string and return.
     if (file_size == 0) {
         CloseHandle(file);
-        xfree(wfilepath);
+        SIZED_FREE_N(wfilepath, length);
         const uint8_t source[] = "";
         *string = (pm_string_t) { .type = PM_STRING_CONSTANT, .source = source, .length = 0 };
         return PM_STRING_INIT_SUCCESS;
@@ -11275,7 +11275,7 @@ pm_read_file(pm_string_t *string, const char *filepath)
     HANDLE mapping = CreateFileMapping(file, NULL, PAGE_READONLY, 0, 0, NULL);
     if (mapping == NULL) {
         CloseHandle(file);
-        xfree(wfilepath);
+        SIZED_FREE_N(wfilepath, length);
         return PM_STRING_INIT_ERROR_GENERIC;
     }
 
@@ -11283,7 +11283,7 @@ pm_read_file(pm_string_t *string, const char *filepath)
     uint8_t *source = (uint8_t *) MapViewOfFile(mapping, FILE_MAP_READ, 0, 0, 0);
     CloseHandle(mapping);
     CloseHandle(file);
-    xfree(wfilepath);
+    SIZED_FREE_N(wfilepath, length);
 
     if (source == NULL) {
         return PM_STRING_INIT_ERROR_GENERIC;
