@@ -1890,7 +1890,7 @@ rb_ensure_iv_list_size(VALUE obj, uint32_t current_len, uint32_t new_capacity)
     RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
 
     if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
-        REALLOC_N(ROBJECT(obj)->as.heap.fields, VALUE, new_capacity);
+        SIZED_REALLOC_N(ROBJECT(obj)->as.heap.fields, VALUE, new_capacity, current_len);
     }
     else {
         VALUE *ptr = ROBJECT_FIELDS(obj);
