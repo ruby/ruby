@@ -198,9 +198,6 @@ RUBY_ATTR_MALLOC void *rb_xcalloc_mul_add(size_t, size_t, size_t);
 void *rb_xrealloc_mul_add(const void *, size_t, size_t, size_t);
 RUBY_ATTR_MALLOC void *rb_xmalloc_mul_add_mul(size_t, size_t, size_t, size_t);
 RUBY_ATTR_MALLOC void *rb_xcalloc_mul_add_mul(size_t, size_t, size_t, size_t);
-static inline void *ruby_sized_xrealloc_inlined(void *ptr, size_t new_size, size_t old_size) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2));
-static inline void *ruby_sized_xrealloc2_inlined(void *ptr, size_t new_count, size_t elemsiz, size_t old_count) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2, 3));
-static inline void ruby_sized_xfree_inlined(void *ptr, size_t size);
 void rb_gc_obj_id_moved(VALUE obj);
 void rb_gc_register_pinning_obj(VALUE obj);
 
@@ -290,24 +287,6 @@ void rb_gc_writebarrier_remember(VALUE obj);
 const char *rb_obj_info(VALUE obj);
 void ruby_annotate_mmap(const void *addr, unsigned long size, const char *name);
 
-static inline void *
-ruby_sized_xrealloc_inlined(void *ptr, size_t new_size, size_t old_size)
-{
-    return ruby_sized_xrealloc(ptr, new_size, old_size);
-}
-
-static inline void *
-ruby_sized_xrealloc2_inlined(void *ptr, size_t new_count, size_t elemsiz, size_t old_count)
-{
-    return ruby_sized_xrealloc2(ptr, new_count, elemsiz, old_count);
-}
-
-static inline void
-ruby_sized_xfree_inlined(void *ptr, size_t size)
-{
-    ruby_sized_xfree(ptr, size);
-}
-
 # define SIZED_REALLOC_N(v, T, m, n) \
     ((v) = (T *)ruby_sized_xrealloc2((void *)(v), (m), sizeof(T), (n)))
 
@@ -319,10 +298,6 @@ ruby_sized_realloc_n(void *ptr, size_t new_count, size_t element_size, size_t ol
 {
     return ruby_sized_xrealloc2(ptr, new_count, element_size, old_count);
 }
-
-#define ruby_sized_xrealloc ruby_sized_xrealloc_inlined
-#define ruby_sized_xrealloc2 ruby_sized_xrealloc2_inlined
-#define ruby_sized_xfree ruby_sized_xfree_inlined
 
 void rb_gc_verify_shareable(VALUE);
 bool rb_gc_checking_shareable(void);
