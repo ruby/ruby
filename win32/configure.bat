@@ -5,12 +5,12 @@ set PROMPT=$E[94m+$E[m$S
 if "%~dp0" == "%CD%\" (
     echo don't run in win32 directory.
     exit /b 999
-) else if "%0" == "%~nx0" (
+) else if "%~0" == "%~nx0" (
     set "WIN32DIR=%~$PATH:0"
-) else if "%0" == "%~n0" (
+) else if "%~0" == "%~n0" (
     set "WIN32DIR=%~$PATH:0"
 ) else (
-    set "WIN32DIR=%0"
+    set "WIN32DIR=%~0"
 )
 
 set "WIN32DIR=%WIN32DIR:\=/%:/:"
