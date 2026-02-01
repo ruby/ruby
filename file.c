@@ -5020,23 +5020,21 @@ ruby_enc_find_basename(const char *name, long *baselen, long *alllen, rb_encodin
 static VALUE
 rb_file_s_basename(int argc, VALUE *argv, VALUE _)
 {
-    VALUE fname, fext;
-    const char *name, *p;
+    VALUE fname, fext = Qnil;
+    const char *name, *p, *fp = 0;
     long f = 0, n;
     rb_encoding *enc;
 
-    fext = Qnil;
-    if (rb_check_arity(argc, 1, 2) == 2) {
-        fext = argv[1];
-        StringValue(fext);
-        check_path_encoding(fext);
-        enc = rb_str_enc_get(fext);
-    }
+    argc = rb_check_arity(argc, 1, 2);
     fname = argv[0];
     CheckPath(fname, name);
+    if (argc == 2) {
+        fext = argv[1];
+        fp = StringValueCStr(fext);
+        check_path_encoding(fext);
+    }
     if (NIL_P(fext) || !(enc = rb_enc_compatible(fname, fext))) {
         enc = rb_str_enc_get(fname);
-        fext = Qnil;
     }
 
     n = RSTRING_LEN(fname);
@@ -5047,12 +5045,10 @@ rb_file_s_basename(int argc, VALUE *argv, VALUE _)
     bool mb_enc = !rb_str_encindex_fastpath(rb_enc_to_index(enc));
     p = enc_find_basename(name, &f, &n, mb_enc, enc);
     if (n >= 0) {
-        if (NIL_P(fext)) {
+        if (!fp) {
             f = n;
         }
         else {
-            const char *fp;
-            fp = StringValueCStr(fext);
             if (!(f = rmext(p, f, n, fp, RSTRING_LEN(fext), enc))) {
                 f = n;
             }
