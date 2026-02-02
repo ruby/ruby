@@ -3523,6 +3523,10 @@ vm_call_iseq_setup_tailcall(rb_execution_context_t *ec, rb_control_frame_t *cfp,
         }
     }
 
+    if (VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_METHOD) {
+        RUBY_DTRACE_METHOD_RETURN_HOOK(ec, 0, 0);
+    }
+
     vm_pop_frame(ec, cfp, cfp->ep);
     cfp = ec->cfp;
 
@@ -3536,6 +3540,8 @@ vm_call_iseq_setup_tailcall(rb_execution_context_t *ec, rb_control_frame_t *cfp,
     for (i=0; i < ISEQ_BODY(iseq)->param.size; i++) {
         *sp++ = src_argv[i];
     }
+
+    RUBY_DTRACE_METHOD_ENTRY_HOOK(ec, me->owner, me->def->original_id);
 
     vm_push_frame(ec, iseq, VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL | finish_flag,
                   calling->recv, calling->block_handler, (VALUE)me,
