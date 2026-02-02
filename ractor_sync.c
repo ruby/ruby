@@ -28,27 +28,15 @@ ractor_port_mark(void *ptr)
     }
 }
 
-static void
-ractor_port_free(void *ptr)
-{
-    SIZED_FREE((struct ractor_port *)ptr);
-}
-
-static size_t
-ractor_port_memsize(const void *ptr)
-{
-    return sizeof(struct ractor_port);
-}
-
 static const rb_data_type_t ractor_port_data_type = {
     "ractor/port",
     {
         ractor_port_mark,
-        ractor_port_free,
-        ractor_port_memsize,
+        RUBY_TYPED_DEFAULT_FREE,
+        NULL, // memsize
         NULL, // update
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FROZEN_SHAREABLE,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FROZEN_SHAREABLE | RUBY_TYPED_EMBEDDABLE,
 };
 
 static st_data_t
@@ -62,8 +50,7 @@ static struct ractor_port *
 RACTOR_PORT_PTR(VALUE self)
 {
     VM_ASSERT(rb_typeddata_is_kind_of(self, &ractor_port_data_type));
-    struct ractor_port *rp = DATA_PTR(self);
-    return rp;
+    return RTYPEDDATA_GET_DATA(self);
 }
 
 static VALUE
