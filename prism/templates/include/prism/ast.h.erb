@@ -22,7 +22,7 @@
  */
 typedef enum pm_token_type {
 <%- tokens.each do |token| -%>
-    /** <%= token.comment %> */
+    /** <%= Prism::Template::Doxygen.verbatim(token.comment) %> */
     PM_TOKEN_<%= token.name %><%= " = #{token.value}" if token.value %>,
 
 <%- end -%>
