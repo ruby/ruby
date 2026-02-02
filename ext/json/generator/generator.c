@@ -1540,7 +1540,9 @@ static VALUE cState_partial_generate(VALUE self, VALUE obj, generator_func func,
         .obj = obj,
         .func = func
     };
-    return rb_ensure(generate_json_try, (VALUE)&data, generate_json_ensure, (VALUE)&data);
+    VALUE result = rb_ensure(generate_json_try, (VALUE)&data, generate_json_ensure, (VALUE)&data);
+    RB_GC_GUARD(self);
+    return result;
 }
 
 /* call-seq:
