@@ -998,6 +998,7 @@ rb_iseq_compile_callback(rb_iseq_t *iseq, const struct rb_iseq_new_with_callback
 }
 
 static bool drop_unreachable_return(LINK_ANCHOR *ret);
+static int compile_dregx(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped);
 
 VALUE
 rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
@@ -1094,10 +1095,10 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
             {
                 break;
             }
-          case RB_INTERPOLATED_REGULAR_EXPRESSION_NODE:
-            {
-                break;
-            }
+          // case RB_INTERPOLATED_REGULAR_EXPRESSION_NODE:
+          //   {
+          //       break;
+          //   }
           case RB_POST_EXECUTION_NODE:
             {
                 break;
@@ -1181,7 +1182,8 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
             CHECK(COMPILE_POPPED(ret, "ensure", node));
             break;
           case ISEQ_TYPE_PLAIN:
-            CHECK(COMPILE(ret, "ensure", node));
+            EXPECT_NODE("ISEQ_TYPE_PLAIN", node, RB_INTERPOLATED_REGULAR_EXPRESSION_NODE, COMPILE_NG);
+            CHECK(compile_dregx(iseq, ret, node, false));
             break;
           default:
             COMPILE_ERROR(ERROR_ARGS "unknown scope: %d", ISEQ_BODY(iseq)->type);
@@ -2270,7 +2272,7 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
                 dv = rb_node_sym_string_val2(val_node);
                 break;
               case RB_REGULAR_EXPRESSION_NODE:
-                dv = rb_node_regx_string_val(val_node);
+                dv = rb_node_regx_string_val2(val_node);
                 break;
               case RB_SOURCE_LINE_NODE:
                 dv = rb_node_line_lineno_val2(val_node);
@@ -5258,17 +5260,7 @@ static int
 compile_dregx(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
 {
     int cnt;
-    int cflag = (int)RNODE_DREGX(node)->as.nd_cflag;
-
-    if (!RNODE_DREGX(node)->nd_next) {
-        if (!popped) {
-            VALUE src = rb_node_dregx_string_val(node);
-            VALUE match = iseq_reg_compile(iseq, src, cflag, NULL, 0);
-            ADD_INSN1(ret, node, putobject, match);
-            RB_OBJ_WRITTEN(iseq, Qundef, match);
-        }
-        return COMPILE_OK;
-    }
+    int cflag = node_regx_options(node->flags);
 
     CHECK(compile_dstr_fragments(iseq, ret, node, &cnt, TRUE));
     ADD_INSN2(ret, node, toregexp, INT2FIX(cflag), INT2FIX(cnt));
@@ -5574,7 +5566,7 @@ static_literal_value(const NODE *node, rb_iseq_t *iseq)
       case RB_SYMBOL_NODE:
         return rb_node_sym_string_val2(node);
       case RB_REGULAR_EXPRESSION_NODE:
-        return RB_OBJ_SET_SHAREABLE(rb_node_regx_string_val(node));
+        return RB_OBJ_SET_SHAREABLE(rb_node_regx_string_val2(node));
       case RB_SOURCE_LINE_NODE:
         return rb_node_line_lineno_val(node);
       case RB_SOURCE_ENCODING_NODE:
@@ -11623,7 +11615,7 @@ compile_shareable_literal_constant(rb_iseq_t *iseq, LINK_ANCHOR *ret, enum rb_pa
         *value_p = rb_node_sym_string_val2(node);
         goto compile;
       case RB_REGULAR_EXPRESSION_NODE:
-        *value_p = rb_node_regx_string_val(node);
+        *value_p = rb_node_regx_string_val2(node);
         goto compile;
       case RB_SOURCE_LINE_NODE:
         *value_p = rb_node_line_lineno_val2(node);
@@ -12371,7 +12363,6 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         }
         break;
       }
-
       case RB_EMBEDDED_STATEMENTS_NODE: {
         CHECK(compile_evstr(iseq, ret, RB_NODE_EMBEDDED_STATEMENTS(node)->statements, popped));
         break;
@@ -12380,7 +12371,34 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         CHECK(compile_evstr(iseq, ret, RB_NODE_EMBEDDED_VARIABLE(node)->variable, popped));
         break;
       }
+      case RB_REGULAR_EXPRESSION_NODE: {
+        if (!popped) {
+            VALUE lit = rb_node_regx_string_val2(node);
+            RB_OBJ_SET_SHAREABLE(lit);
+            ADD_INSN1(ret, node, putobject, lit);
+            RB_OBJ_WRITTEN(iseq, Qundef, lit);
+        }
+        break;
+      }
+      case RB_INTERPOLATED_REGULAR_EXPRESSION_NODE: {
+        if (rb_node_get_fl(node) & RB_REGULAR_EXPRESSION_FLAGS_ONCE) {
+            int ic_index = body->ise_size++;
+            const rb_iseq_t *block_iseq;
+            block_iseq = NEW_CHILD_ISEQ(node, make_name_for_block(iseq), ISEQ_TYPE_PLAIN, line);
 
+            ADD_INSN2(ret, node, once, block_iseq, INT2FIX(ic_index));
+            RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)block_iseq);
+
+            if (popped) {
+                ADD_INSN(ret, node, pop);
+            }
+            break;
+        }
+        else {
+            compile_dregx(iseq, ret, node, popped);
+            break;
+        }
+      }
       case RB_DEF_NODE: {
         ID mid = RB_NODE_DEF(node)->name;
         const rb_iseq_t *method_iseq = NEW_ISEQ(node,

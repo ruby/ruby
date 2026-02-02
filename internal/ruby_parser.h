@@ -27,12 +27,15 @@ VALUE rb_str_new_parser_string(rb_parser_string_t *str);
 VALUE rb_str_new_mutable_parser_string(rb_parser_string_t *str);
 rb_parser_string_t *rb_parser_lex_get_str(struct parser_params *p, struct lex_pointer_string *ptr_str);
 
+int node_regx_options(rb_node_flags_t flags);
+
 VALUE rb_node_str_string_val(const NODE *);
 VALUE rb_node_str_string_val2(const rb_node_t *);
 VALUE rb_node_sym_string_val(const NODE *);
 VALUE rb_node_sym_string_val2(const rb_node_t *);
 VALUE rb_node_dstr_string_val(const NODE *);
 VALUE rb_node_regx_string_val(const NODE *);
+VALUE rb_node_regx_string_val2(const rb_node_t *);
 VALUE rb_node_dregx_string_val(const NODE *);
 VALUE rb_node_line_lineno_val(const NODE *);
 VALUE rb_node_line_lineno_val2(const rb_node_t *);
