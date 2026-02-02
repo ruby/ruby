@@ -3542,7 +3542,7 @@ impl Function {
                             // Guard that it matches the expected CME
                             fun.push_insn(block, Insn::GuardBitEquals { val: method_entry, expected: Const::Value(current_cme.into()), reason: SideExitReason::GuardSuperMethodEntry, state });
 
-                            let block_handler = fun.push_insn(block, Insn::GetBlockHandler { lep });
+                            let block_handler = fun.push_insn(block, Insn::LoadField { recv: lep, id: ID!(_ep_specval), offset: SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL, return_type: types::RubyValue });
                             fun.push_insn(block, Insn::GuardBitEquals {
                                 val: block_handler,
                                 expected: Const::Value(VALUE(VM_BLOCK_HANDLER_NONE as usize)),

@@ -11270,9 +11270,9 @@ mod hir_opt_tests {
           v17:CPtr = GetLEP
           v18:RubyValue = LoadField v17, :_ep_method_entry@0x1038
           v19:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v18, Value(VALUE(0x1040))
-          v20:RubyValue = GetBlockHandler v17
+          v20:RubyValue = LoadField v17, :_ep_specval@0x1048
           v21:FalseClass = GuardBitEquals v20, Value(false)
-          v22:BasicObject = SendDirect v6, 0x1048, :foo (0x1058)
+          v22:BasicObject = SendDirect v6, 0x1050, :foo (0x1060)
           CheckInterrupts
           Return v22
         ");
@@ -11315,11 +11315,11 @@ mod hir_opt_tests {
           v26:CPtr = GetLEP
           v27:RubyValue = LoadField v26, :_ep_method_entry@0x1038
           v28:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v27, Value(VALUE(0x1040))
-          v29:RubyValue = GetBlockHandler v26
+          v29:RubyValue = LoadField v26, :_ep_specval@0x1048
           v30:FalseClass = GuardBitEquals v29, Value(false)
-          v31:BasicObject = SendDirect v8, 0x1048, :foo (0x1058), v9
+          v31:BasicObject = SendDirect v8, 0x1050, :foo (0x1060), v9
           v17:Fixnum[1] = Const Value(1)
-          PatchPoint MethodRedefined(Integer@0x1060, +@0x1068, cme:0x1070)
+          PatchPoint MethodRedefined(Integer@0x1068, +@0x1070, cme:0x1078)
           v34:Fixnum = GuardType v31, Fixnum
           v35:Fixnum = FixnumAdd v34, v17
           IncrCounter inline_cfunc_optimized_send_count
@@ -11436,10 +11436,10 @@ mod hir_opt_tests {
           v17:CPtr = GetLEP
           v18:RubyValue = LoadField v17, :_ep_method_entry@0x1038
           v19:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v18, Value(VALUE(0x1040))
-          v20:RubyValue = GetBlockHandler v17
+          v20:RubyValue = LoadField v17, :_ep_specval@0x1048
           v21:FalseClass = GuardBitEquals v20, Value(false)
           IncrCounter inline_cfunc_optimized_send_count
-          v23:Fixnum = CCall v6, :Hash#size@0x1048
+          v23:Fixnum = CCall v6, :Hash#size@0x1050
           CheckInterrupts
           Return v23
         ");
@@ -11470,7 +11470,7 @@ mod hir_opt_tests {
           v17:CPtr = GetLEP
           v18:RubyValue = LoadField v17, :_ep_method_entry@0x1038
           v19:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v18, Value(VALUE(0x1040))
-          v20:RubyValue = GetBlockHandler v17
+          v20:RubyValue = LoadField v17, :_ep_specval@0x1048
           v21:FalseClass = GuardBitEquals v20, Value(false)
           v22:NilClass = Const Value(nil)
           IncrCounter inline_cfunc_optimized_send_count
@@ -11522,9 +11522,9 @@ mod hir_opt_tests {
           v42:CPtr = GetLEP
           v43:RubyValue = LoadField v42, :_ep_method_entry@0x1048
           v44:CallableMethodEntry[VALUE(0x1050)] = GuardBitEquals v43, Value(VALUE(0x1050))
-          v45:RubyValue = GetBlockHandler v42
+          v45:RubyValue = LoadField v42, :_ep_specval@0x1058
           v46:FalseClass = GuardBitEquals v45, Value(false)
-          v47:BasicObject = CCallVariadic v27, :String#byteindex@0x1058, v28, v29
+          v47:BasicObject = CCallVariadic v27, :String#byteindex@0x1060, v28, v29
           CheckInterrupts
           Return v47
         ");
