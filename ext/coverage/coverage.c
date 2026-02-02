@@ -164,14 +164,14 @@ rb_coverage_resume(VALUE klass)
 
 /*
  * call-seq:
- *    Coverage.start                                                          => nil
- *    Coverage.start(:all)                                                    => nil
- *    Coverage.start(lines: bool, branches: bool, methods: bool, eval: bool)  => nil
- *    Coverage.start(oneshot_lines: true)                                     => nil
+ *    Coverage.start -> nil
+ *    Coverage.start(type) -> nil
+ *    Coverage.start(lines: false, branches: false, methods: false, eval: false, oneshot_lines: false) -> nil
  *
- * Enables the coverage measurement.
- * See the documentation of Coverage class in detail.
- * This is equivalent to Coverage.setup and Coverage.resume.
+ * Enables coverage measurement.
+ * This method is equivalent to calling Coverage.setup with the arguments provided,
+ * and then calling Coverage.resume. See their respective documentation for more
+ * details.
  */
 static VALUE
 rb_coverage_start(int argc, VALUE *argv, VALUE klass)
