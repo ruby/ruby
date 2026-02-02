@@ -40,6 +40,7 @@ firstline, predefined = __LINE__+1, %[\
   to_proc
   to_io
   to_a
+  to_h
   to_s
   to_i
   to_f

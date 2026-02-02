@@ -1857,6 +1857,12 @@ rb_check_hash_type(VALUE hash)
     return rb_check_convert_type_with_id(hash, T_HASH, "Hash", idTo_hash);
 }
 
+VALUE
+rb_check_to_hash(VALUE hash)
+{
+    return rb_check_convert_type_with_id(hash, T_HASH, "Hash", idTo_h);
+}
+
 /*
  *  call-seq:
  *    Hash.try_convert(object) -> object, new_hash, or nil
