@@ -169,7 +169,7 @@
 # Here, class +String+ provides methods that are useful for:
 #
 # - {Creating a \String}[rdoc-ref:String@Creating+a+String].
-# - {Freezing/Unfreezing a \String}[rdoc-ref:String@Freezing-2FUnfreezing].
+# - {Freezing/Unfreezing a \String}[rdoc-ref:String@FreezingUnfreezing].
 # - {Querying a \String}[rdoc-ref:String@Querying].
 # - {Comparing Strings}[rdoc-ref:String@Comparing].
 # - {Modifying a \String}[rdoc-ref:String@Modifying].

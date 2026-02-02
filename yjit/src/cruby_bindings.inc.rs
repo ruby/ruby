@@ -1234,7 +1234,7 @@ extern "C" {
     pub fn rb_get_def_bmethod_proc(def: *mut rb_method_definition_t) -> VALUE;
     pub fn rb_jit_get_proc_ptr(procv: VALUE) -> *mut rb_proc_t;
     pub fn rb_optimized_call(
-        recv: *mut VALUE,
+        recv: VALUE,
         ec: *mut rb_execution_context_t,
         argc: ::std::os::raw::c_int,
         argv: *mut VALUE,

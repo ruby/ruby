@@ -18,7 +18,7 @@ net-pop             0.1.2   https://github.com/ruby/net-pop
 net-smtp            0.5.1   https://github.com/ruby/net-smtp
 matrix              0.4.3   https://github.com/ruby/matrix
 prime               0.1.4   https://github.com/ruby/prime
-rbs                 3.10.2  https://github.com/ruby/rbs
+rbs                 3.10.3  https://github.com/ruby/rbs
 typeprof            0.31.1  https://github.com/ruby/typeprof
 debug               1.11.1  https://github.com/ruby/debug
 racc                1.8.1   https://github.com/ruby/racc
@@ -34,7 +34,7 @@ drb                 2.2.3   https://github.com/ruby/drb
 nkf                 0.2.0   https://github.com/ruby/nkf
 syslog              0.4.0   https://github.com/ruby/syslog
 csv                 3.3.5   https://github.com/ruby/csv
-repl_type_completor 0.1.12  https://github.com/ruby/repl_type_completor   26b8e964557690c0b539cff8940bcfb1591f1fe6
+repl_type_completor 0.1.13  https://github.com/ruby/repl_type_completor
 ostruct             0.6.3   https://github.com/ruby/ostruct
 pstore              0.2.0   https://github.com/ruby/pstore
 benchmark           0.5.0   https://github.com/ruby/benchmark

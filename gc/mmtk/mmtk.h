@@ -129,6 +129,8 @@ void mmtk_declare_weak_references(MMTk_ObjectReference object);
 
 bool mmtk_weak_references_alive_p(MMTk_ObjectReference object);
 
+size_t mmtk_weak_references_count(void);
+
 void mmtk_register_pinning_obj(MMTk_ObjectReference obj);
 
 void mmtk_object_reference_write_post(MMTk_Mutator *mutator, MMTk_ObjectReference object);

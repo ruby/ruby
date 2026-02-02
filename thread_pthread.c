@@ -1822,8 +1822,8 @@ native_thread_destroy_atfork(struct rb_native_thread *nt)
          */
 
         RB_ALTSTACK_FREE(nt->altstack);
-        ruby_xfree(nt->nt_context);
-        ruby_xfree(nt);
+        SIZED_FREE(nt->nt_context);
+        SIZED_FREE(nt);
     }
 }
 
@@ -2201,7 +2201,7 @@ native_thread_create_dedicated(rb_thread_t *th)
     th->sched.malloc_stack = true;
     rb_ec_initialize_vm_stack(th->ec, vm_stack, vm_stack_word_size);
     th->sched.context_stack = vm_stack;
-
+    th->sched.context_stack_size = vm_stack_word_size;
 
     int err = native_thread_create0(th->nt);
     if (!err) {
@@ -2339,7 +2339,7 @@ rb_threadptr_sched_free(rb_thread_t *th)
 #if USE_MN_THREADS
     if (th->sched.malloc_stack) {
         // has dedicated
-        ruby_xfree(th->sched.context_stack);
+        SIZED_FREE_N((VALUE *)th->sched.context_stack, th->sched.context_stack_size);
         native_thread_destroy(th->nt);
     }
     else {
@@ -2347,11 +2347,11 @@ rb_threadptr_sched_free(rb_thread_t *th)
         // TODO: how to free nt and nt->altstack?
     }
 
-    ruby_xfree(th->sched.context);
+    SIZED_FREE(th->sched.context);
     th->sched.context = NULL;
     // VM_ASSERT(th->sched.context == NULL);
 #else
-    ruby_xfree(th->sched.context_stack);
+    SIZED_FREE_N((VALUE *)th->sched.context_stack, th->sched.context_stack_size);
     native_thread_destroy(th->nt);
 #endif
 
@@ -3447,7 +3447,7 @@ rb_internal_thread_remove_event_hook(rb_internal_thread_event_hook_t * hook)
     }
 
     if (success) {
-        ruby_xfree(hook);
+        SIZED_FREE(hook);
     }
     return success;
 }
@@ -3489,10 +3489,11 @@ rb_thread_lock_native_thread(void)
 }
 
 void
-rb_thread_malloc_stack_set(rb_thread_t *th, void *stack)
+rb_thread_malloc_stack_set(rb_thread_t *th, void *stack, size_t stack_size)
 {
     th->sched.malloc_stack = true;
     th->sched.context_stack = stack;
+    th->sched.context_stack_size = stack_size;
 }
 
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */

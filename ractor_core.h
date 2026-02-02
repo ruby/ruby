@@ -104,6 +104,7 @@ struct rb_ractor_struct {
     VALUE debug;
 
     bool malloc_gc_disabled;
+    bool main_ractor;
     void *newobj_cache;
 }; // rb_ractor_t is defined in vm_core.h
 

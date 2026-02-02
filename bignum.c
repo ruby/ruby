@@ -3036,20 +3036,21 @@ rb_big_realloc(VALUE big, size_t len)
     else {
         if (len <= embed_capa) {
             ds = RBIGNUM(big)->as.heap.digits;
+            size_t old_len = RBIGNUM(big)->as.heap.len;
             FL_SET_RAW(big, BIGNUM_EMBED_FLAG);
             BIGNUM_SET_LEN(big, len);
             (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)RBIGNUM(big)->as.ary, embed_capa * sizeof(BDIGIT));
             if (ds) {
                 MEMCPY(RBIGNUM(big)->as.ary, ds, BDIGIT, len);
-                xfree(ds);
+                SIZED_FREE_N(ds, old_len);
             }
         }
         else {
             if (BIGNUM_LEN(big) == 0) {
                 RBIGNUM(big)->as.heap.digits = ALLOC_N(BDIGIT, len);
             }
-            else if (BIGNUM_LEN(big) < len) {
-                REALLOC_N(RBIGNUM(big)->as.heap.digits, BDIGIT, len);
+            else if (BIGNUM_LEN(big) != len) {
+                SIZED_REALLOC_N(RBIGNUM(big)->as.heap.digits, BDIGIT, len, BIGNUM_LEN(big));
             }
         }
     }

@@ -2038,7 +2038,7 @@ pub mod hir_build_tests {
         eval("
             def test(a, ...) = foo(a, ...)
         ");
-        assert_snapshot!(hir_string("test"), @"
+        assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0():
           EntryPoint interpreter
@@ -2058,9 +2058,9 @@ pub mod hir_build_tests {
           PatchPoint NoEPEscape(test)
           v33:CPtr = GetEP 0
           v34:CInt64 = LoadField v33, :_env_data_index_flags@0x1000
-          v35:CInt64 = GuardBitNotSet v34, CUInt64(512)
+          v35:CInt64 = GuardNoBitsSet v34, CUInt64(512)
           v36:CInt64 = LoadField v33, :_env_data_index_specval@0x1001
-          v37:CInt64 = GuardBitSet v36, CUInt64(1)
+          v37:CInt64 = GuardAnyBitSet v36, CUInt64(1)
           v38:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
           SideExit UnhandledYARVInsn(splatkw)
         ");
@@ -3413,7 +3413,7 @@ pub mod hir_build_tests {
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("Dir", "open"));
         assert!(iseq_contains_opcode(iseq, YARVINSN_opt_invokebuiltin_delegate), "iseq Dir.open does not contain invokebuiltin");
         let function = iseq_to_hir(iseq).unwrap();
-        assert_snapshot!(hir_string_function(&function), @"
+        assert_snapshot!(hir_string_function(&function), @r"
         fn open@<internal:dir>:
         bb0():
           EntryPoint interpreter
@@ -3434,9 +3434,9 @@ pub mod hir_build_tests {
           PatchPoint NoEPEscape(open)
           v31:CPtr = GetEP 0
           v32:CInt64 = LoadField v31, :_env_data_index_flags@0x1000
-          v33:CInt64 = GuardBitNotSet v32, CUInt64(512)
+          v33:CInt64 = GuardNoBitsSet v32, CUInt64(512)
           v34:CInt64 = LoadField v31, :_env_data_index_specval@0x1001
-          v35:CInt64 = GuardBitSet v34, CUInt64(1)
+          v35:CInt64 = GuardAnyBitSet v34, CUInt64(1)
           v36:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
           CheckInterrupts
           v39:CBool[true] = Test v36

@@ -387,13 +387,14 @@ rb_ary_make_embedded(VALUE ary)
     if (!ARY_EMBED_P(ary)) {
         const VALUE *buf = ARY_HEAP_PTR(ary);
         long len = ARY_HEAP_LEN(ary);
+        long capa = ARY_HEAP_CAPA(ary);
 
         FL_SET_EMBED(ary);
         ARY_SET_EMBED_LEN(ary, len);
 
         MEMCPY((void *)ARY_EMBED_PTR(ary), (void *)buf, VALUE, len);
 
-        ary_heap_free_ptr(ary, buf, len * sizeof(VALUE));
+        ary_heap_free_ptr(ary, buf, capa * sizeof(VALUE));
     }
 }
 
@@ -428,7 +429,7 @@ ary_resize_capa(VALUE ary, long capacity)
 
             if (len > capacity) len = capacity;
             MEMCPY((VALUE *)RARRAY(ary)->as.ary, ptr, VALUE, len);
-            ary_heap_free_ptr(ary, ptr, old_capa);
+            ary_heap_free_ptr(ary, ptr, old_capa * sizeof(VALUE));
 
             FL_SET_EMBED(ary);
             ARY_SET_LEN(ary, len);

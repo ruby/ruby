@@ -61,15 +61,15 @@ nil
 
 See also:
 
-- {Option -a}[rdoc-ref:@a-3A+Split+Input+Lines+into+Fields]:
+- {Option -a}[rdoc-ref:@-a+Split+Input+Lines+into+Fields]:
   Split input lines into fields.
-- {Option -F}[rdoc-ref:@F-3A+Set+Input+Field+Separator]:
+- {Option -F}[rdoc-ref:@-F+Set+Input+Field+Separator]:
   Set input field separator.
-- {Option -l}[rdoc-ref:@l-3A+Set+Output+Record+Separator-3B+Chop+Lines]:
+- {Option -l}[rdoc-ref:@-l+Set+Output+Record+Separator+Chop+Lines]:
   Set output record separator; chop lines.
-- {Option -n}[rdoc-ref:@n-3A+Run+Program+in+gets+Loop]:
+- {Option -n}[rdoc-ref:@-n+Run+Program+in+gets+Loop]:
   Run program in `gets` loop.
-- {Option -p}[rdoc-ref:@p-3A+-n-2C+with+Printing]:
+- {Option -p}[rdoc-ref:@-p+-n+with+Printing]:
   `-n`, with printing.
 
 ### `-a`: Split Input Lines into Fields
@@ -91,15 +91,15 @@ and the default field separator  is `$;`.
 
 See also:
 
-- {Option -0}[rdoc-ref:@0-3A+Set+-24-2F+-28Input+Record+Separator-29]:
+- {Option -0}[rdoc-ref:@-0+Set++Input+Record+Separator]:
   Set `$/` (input record separator).
-- {Option -F}[rdoc-ref:@F-3A+Set+Input+Field+Separator]:
+- {Option -F}[rdoc-ref:@-F+Set+Input+Field+Separator]:
   Set input field separator.
-- {Option -l}[rdoc-ref:@l-3A+Set+Output+Record+Separator-3B+Chop+Lines]:
+- {Option -l}[rdoc-ref:@-l+Set+Output+Record+Separator+Chop+Lines]:
   Set output record separator; chop lines.
-- {Option -n}[rdoc-ref:@n-3A+Run+Program+in+gets+Loop]:
+- {Option -n}[rdoc-ref:@-n+Run+Program+in+gets+Loop]:
   Run program in `gets` loop.
-- {Option -p}[rdoc-ref:@p-3A+-n-2C+with+Printing]:
+- {Option -p}[rdoc-ref:@-p+-n+with+Printing]:
   `-n`, with printing.
 
 ### `-c`: Check Syntax
@@ -186,9 +186,9 @@ Whitespace between the option and its argument may be omitted.
 
 See also:
 
-- {Option --external-encoding}[options_md.html#label--external-encoding-3A+Set+Default+External+Encoding]:
+- {Option --external-encoding}[rdoc-ref:@--external+encoding+Set+Default+External+Encoding]:
   Set default external encoding.
-- {Option --internal-encoding}[options_md.html#label--internal-encoding-3A+Set+Default+Internal+Encoding]:
+- {Option --internal-encoding}[rdoc-ref:@--internal+encoding+Set+Default+Internal+Encoding]:
   Set default internal encoding.
 
 Option `--encoding` is an alias for option `-E`.
@@ -221,15 +221,15 @@ The argument must immediately follow the option
 
 See also:
 
-- {Option -0}[rdoc-ref:@0-3A+Set+-24-2F+-28Input+Record+Separator-29]:
+- {Option -0}[rdoc-ref:@-0+Set++Input+Record+Separator]:
   Set `$/` (input record separator).
-- {Option -a}[rdoc-ref:@a-3A+Split+Input+Lines+into+Fields]:
+- {Option -a}[rdoc-ref:@-a+Split+Input+Lines+into+Fields]:
   Split input lines into fields.
-- {Option -l}[rdoc-ref:@l-3A+Set+Output+Record+Separator-3B+Chop+Lines]:
+- {Option -l}[rdoc-ref:@-l+Set+Output+Record+Separator+Chop+Lines]:
   Set output record separator; chop lines.
-- {Option -n}[rdoc-ref:@n-3A+Run+Program+in+gets+Loop]:
+- {Option -n}[rdoc-ref:@-n+Run+Program+in+gets+Loop]:
   Run program in `gets` loop.
-- {Option -p}[rdoc-ref:@p-3A+-n-2C+with+Printing]:
+- {Option -p}[rdoc-ref:@-p+-n+with+Printing]:
   `-n`, with printing.
 
 ### `-h`: Print Short Help Message
@@ -307,15 +307,15 @@ $ ruby -ln -e 'p $_' desiderata.txt
 
 See also:
 
-- {Option -0}[rdoc-ref:@0-3A+Set+-24-2F+-28Input+Record+Separator-29]:
+- {Option -0}[rdoc-ref:@-0+Set++Input+Record+Separator]:
   Set `$/` (input record separator).
-- {Option -a}[rdoc-ref:@a-3A+Split+Input+Lines+into+Fields]:
+- {Option -a}[rdoc-ref:@-a+Split+Input+Lines+into+Fields]:
   Split input lines into fields.
-- {Option -F}[rdoc-ref:@F-3A+Set+Input+Field+Separator]:
+- {Option -F}[rdoc-ref:@-F+Set+Input+Field+Separator]:
   Set input field separator.
-- {Option -n}[rdoc-ref:@n-3A+Run+Program+in+gets+Loop]:
+- {Option -n}[rdoc-ref:@-n+Run+Program+in+gets+Loop]:
   Run program in `gets` loop.
-- {Option -p}[rdoc-ref:@p-3A+-n-2C+with+Printing]:
+- {Option -p}[rdoc-ref:@-p+-n+with+Printing]:
   `-n`, with printing.
 
 ### `-n`: Run Program in `gets` Loop
@@ -341,15 +341,15 @@ be on good terms with all persons.
 
 See also:
 
-- {Option -0}[rdoc-ref:@0-3A+Set+-24-2F+-28Input+Record+Separator-29]:
+- {Option -0}[rdoc-ref:@-0+Set++Input+Record+Separator]:
   Set `$/` (input record separator).
-- {Option -a}[rdoc-ref:@a-3A+Split+Input+Lines+into+Fields]:
+- {Option -a}[rdoc-ref:@-a+Split+Input+Lines+into+Fields]:
   Split input lines into fields.
-- {Option -F}[rdoc-ref:@F-3A+Set+Input+Field+Separator]:
+- {Option -F}[rdoc-ref:@-F+Set+Input+Field+Separator]:
   Set input field separator.
-- {Option -l}[rdoc-ref:@l-3A+Set+Output+Record+Separator-3B+Chop+Lines]:
+- {Option -l}[rdoc-ref:@-l+Set+Output+Record+Separator+Chop+Lines]:
   Set output record separator; chop lines.
-- {Option -p}[rdoc-ref:@p-3A+-n-2C+with+Printing]:
+- {Option -p}[rdoc-ref:@-p+-n+with+Printing]:
   `-n`, with printing.
 
 ### `-p`: `-n`, with Printing
@@ -370,15 +370,15 @@ be on good terms with all persons.
 
 See also:
 
-- {Option -0}[rdoc-ref:@0-3A+Set+-24-2F+-28Input+Record+Separator-29]:
+- {Option -0}[rdoc-ref:@-0+Set++Input+Record+Separator]:
   Set `$/` (input record separator).
-- {Option -a}[rdoc-ref:@a-3A+Split+Input+Lines+into+Fields]:
+- {Option -a}[rdoc-ref:@-a+Split+Input+Lines+into+Fields]:
   Split input lines into fields.
-- {Option -F}[rdoc-ref:@F-3A+Set+Input+Field+Separator]:
+- {Option -F}[rdoc-ref:@-F+Set+Input+Field+Separator]:
   Set input field separator.
-- {Option -l}[rdoc-ref:@l-3A+Set+Output+Record+Separator-3B+Chop+Lines]:
+- {Option -l}[rdoc-ref:@-l+Set+Output+Record+Separator+Chop+Lines]:
   Set output record separator; chop lines.
-- {Option -n}[rdoc-ref:@n-3A+Run+Program+in+gets+Loop]:
+- {Option -n}[rdoc-ref:@-n+Run+Program+in+gets+Loop]:
   Run program in `gets` loop.
 
 ### `-r`: Require Library
@@ -427,7 +427,7 @@ $ ruby -s t.rb -foo=baz -bar=bat
 ```
 
 The option may not be used with
-{option -e}[rdoc-ref:@e-3A+Execute+Given+Ruby+Code]
+{option -e}[rdoc-ref:@-e+Execute+Given+Ruby+Code]
 
 ### `-S`: Search Directories in `ENV['PATH']`
 
@@ -595,7 +595,7 @@ The supported features:
 - `frozen-string-literal`: Freeze all string literals (default: disabled).
 - `jit`: JIT compiler (default: disabled).
 
-See also {option --enable}[options_md.html#label--enable-3A+Enable+Features].
+See also {option --enable}[rdoc-ref:@--enable+Enable+Features].
 
 ### `--dump`: Dump Items
 
@@ -606,15 +606,15 @@ Some of the argument values cause the command to behave as if a different
 option was given:
 
 - `--dump=copyright`:
-  Same as {option \-\-copyright}[options_md.html#label--copyright-3A+Print+Ruby+Copyright].
+  Same as {option \-\-copyright}[rdoc-ref:@--copyright+Print+Ruby+Copyright].
 - `--dump=help`:
-  Same as {option \-\-help}[options_md.html#label--help-3A+Print+Help+Message].
+  Same as {option \-\-help}[rdoc-ref:@--help+Print+Help+Message].
 - `--dump=syntax`:
-  Same as {option -c}[rdoc-ref:@c-3A+Check+Syntax].
+  Same as {option -c}[rdoc-ref:@-c+Check+Syntax].
 - `--dump=usage`:
-  Same as {option -h}[rdoc-ref:@h-3A+Print+Short+Help+Message].
+  Same as {option -h}[rdoc-ref:@-h+Print+Short+Help+Message].
 - `--dump=version`:
-  Same as {option \-\-version}[options_md.html#label--version-3A+Print+Ruby+Version].
+  Same as {option \-\-version}[rdoc-ref:@--version+Print+Ruby+Version].
 
 For other argument values and examples,
 see {Option --dump}[option_dump_md.html].
@@ -629,7 +629,7 @@ ruby --enable=gems,rubyopt t.rb
 ```
 
 For the features,
-see {option --disable}[options_md.html#label--disable-3A+Disable+Features].
+see {option --disable}[rdoc-ref:@--disable+Disable+Features].
 
 ### `--encoding`: Alias for `-E`.
 

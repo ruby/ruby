@@ -1,4 +1,3 @@
-
 // this file is included by ractor.c
 
 struct ractor_port {
@@ -32,7 +31,7 @@ ractor_port_mark(void *ptr)
 static void
 ractor_port_free(void *ptr)
 {
-    xfree(ptr);
+    SIZED_FREE((struct ractor_port *)ptr);
 }
 
 static size_t
@@ -231,7 +230,7 @@ ractor_basket_mark(const struct ractor_basket *b)
 static void
 ractor_basket_free(struct ractor_basket *b)
 {
-    xfree(b);
+    SIZED_FREE(b);
 }
 
 static struct ractor_basket *
@@ -285,7 +284,7 @@ ractor_queue_free(struct ractor_queue *rq)
 
     VM_ASSERT(ccan_list_empty(&rq->set));
 
-    xfree(rq);
+    SIZED_FREE(rq);
 }
 
 RBIMPL_ATTR_MAYBE_UNUSED()
@@ -575,7 +574,7 @@ ractor_monitor(rb_execution_context_t *ec, VALUE self, VALUE port)
     RACTOR_UNLOCK(r);
 
     if (terminated) {
-        xfree(rm);
+        SIZED_FREE(rm);
         ractor_port_send(ec, port, ractor_exit_token(r->sync.legacy_exc), Qfalse);
 
         return Qfalse;
@@ -603,7 +602,7 @@ ractor_unmonitor(rb_execution_context_t *ec, VALUE self, VALUE port)
                                    (unsigned int)ractor_port_id(&rm->port),
                                    (unsigned int)rb_ractor_id(rm->port.r));
                     ccan_list_del(&rm->node);
-                    xfree(rm);
+                    SIZED_FREE(rm);
                 }
             }
         }
@@ -641,7 +640,7 @@ ractor_notify_exit(rb_execution_context_t *ec, rb_ractor_t *cr, VALUE legacy, bo
         ractor_try_send(ec, &rm->port, token, false);
 
         ccan_list_del(&rm->node);
-        xfree(rm);
+        SIZED_FREE(rm);
     }
 
     VM_ASSERT(ccan_list_empty(&cr->sync.monitors));
@@ -1260,7 +1259,7 @@ ractor_selector_free(void *ptr)
 {
     struct ractor_selector *s = ptr;
     st_free_table(s->ports);
-    ruby_xfree(ptr);
+    SIZED_FREE(s);
 }
 
 static size_t

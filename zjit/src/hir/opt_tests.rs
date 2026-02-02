@@ -2930,7 +2930,7 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
           v31:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v8, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v32:BasicObject = SendDirect v31, 0x1038, :foo (0x1048)
+          IncrCounter inline_iseq_optimized_send_count
           v20:BasicObject = GetLocal :a, l0, EP@3
           v24:BasicObject = GetLocal :a, l0, EP@3
           CheckInterrupts
@@ -3875,7 +3875,7 @@ mod hir_opt_tests {
         eval("
             def test(&block) = tap(&block)
         ");
-        assert_snapshot!(hir_string("test"), @"
+        assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0():
           EntryPoint interpreter
@@ -3888,9 +3888,9 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           v14:CPtr = GetEP 0
           v15:CInt64 = LoadField v14, :_env_data_index_flags@0x1000
-          v16:CInt64 = GuardBitNotSet v15, CUInt64(512)
+          v16:CInt64 = GuardNoBitsSet v15, CUInt64(512)
           v17:CInt64 = LoadField v14, :_env_data_index_specval@0x1001
-          v18:CInt64 = GuardBitSet v17, CUInt64(1)
+          v18:CInt64 = GuardAnyBitSet v17, CUInt64(1)
           v19:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
           v21:BasicObject = Send v8, 0x1010, :tap, v19 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
@@ -6546,7 +6546,7 @@ mod hir_opt_tests {
             def test(&block) = [].map(&block)
             test { |x| x }; test { |x| x }
         "#);
-        assert_snapshot!(hir_string("test"), @"
+        assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0():
           EntryPoint interpreter
@@ -6560,9 +6560,9 @@ mod hir_opt_tests {
           v13:ArrayExact = NewArray
           v15:CPtr = GetEP 0
           v16:CInt64 = LoadField v15, :_env_data_index_flags@0x1000
-          v17:CInt64 = GuardBitNotSet v16, CUInt64(512)
+          v17:CInt64 = GuardNoBitsSet v16, CUInt64(512)
           v18:CInt64 = LoadField v15, :_env_data_index_specval@0x1001
-          v19:CInt64 = GuardBitSet v18, CUInt64(1)
+          v19:CInt64 = GuardAnyBitSet v18, CUInt64(1)
           v20:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
           IncrCounter complex_arg_pass_caller_blockarg
           v22:BasicObject = Send v13, 0x1010, :map, v20 # SendFallbackReason: Complex argument passing
@@ -6577,7 +6577,7 @@ mod hir_opt_tests {
             def test(&block) = [].map(&block)
             test; test
         "#);
-        assert_snapshot!(hir_string("test"), @"
+        assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0():
           EntryPoint interpreter
@@ -6591,7 +6591,7 @@ mod hir_opt_tests {
           v13:ArrayExact = NewArray
           v15:CPtr = GetEP 0
           v16:CInt64 = LoadField v15, :_env_data_index_flags@0x1000
-          v17:CInt64 = GuardBitNotSet v16, CUInt64(512)
+          v17:CInt64 = GuardNoBitsSet v16, CUInt64(512)
           v18:CInt64 = LoadField v15, :_env_data_index_specval@0x1001
           v19:CInt64[0] = GuardBitEquals v18, CInt64(0)
           v20:NilClass = Const Value(nil)
@@ -6612,7 +6612,7 @@ mod hir_opt_tests {
             end
             test; test
         "#);
-        assert_snapshot!(hir_string_proc("test"), @"
+        assert_snapshot!(hir_string_proc("test"), @r"
         fn block in test@<compiled>:4:
         bb0():
           EntryPoint interpreter
@@ -6625,9 +6625,9 @@ mod hir_opt_tests {
           v10:ArrayExact = NewArray
           v12:CPtr = GetEP 1
           v13:CInt64 = LoadField v12, :_env_data_index_flags@0x1000
-          v14:CInt64 = GuardBitNotSet v13, CUInt64(512)
+          v14:CInt64 = GuardNoBitsSet v13, CUInt64(512)
           v15:CInt64 = LoadField v12, :_env_data_index_specval@0x1001
-          v16:CInt64 = GuardBitSet v15, CUInt64(1)
+          v16:CInt64 = GuardAnyBitSet v15, CUInt64(1)
           v17:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
           IncrCounter complex_arg_pass_caller_blockarg
           v19:BasicObject = Send v10, 0x1010, :map, v17 # SendFallbackReason: Complex argument passing
@@ -9546,6 +9546,123 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_inline_send_with_block_with_no_params() {
+        eval(r#"
+            def callee = 123
+            def test
+              callee do
+              end
+            end
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint NoSingletonClass(Object@0x1000)
+          PatchPoint MethodRedefined(Object@0x1000, callee@0x1008, cme:0x1010)
+          v18:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          IncrCounter inline_iseq_optimized_send_count
+          v21:Fixnum[123] = Const Value(123)
+          CheckInterrupts
+          Return v21
+        ");
+    }
+
+    #[test]
+    fn test_inline_send_with_block_with_one_param() {
+        eval(r#"
+            def callee = 123
+            def test
+              callee do |_|
+              end
+            end
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint NoSingletonClass(Object@0x1000)
+          PatchPoint MethodRedefined(Object@0x1000, callee@0x1008, cme:0x1010)
+          v18:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          IncrCounter inline_iseq_optimized_send_count
+          v21:Fixnum[123] = Const Value(123)
+          CheckInterrupts
+          Return v21
+        ");
+    }
+
+    #[test]
+    fn test_inline_send_with_block_with_multiple_params() {
+        eval(r#"
+            def callee = 123
+            def test
+              callee do |_a, _b|
+              end
+            end
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint NoSingletonClass(Object@0x1000)
+          PatchPoint MethodRedefined(Object@0x1000, callee@0x1008, cme:0x1010)
+          v18:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          IncrCounter inline_iseq_optimized_send_count
+          v21:Fixnum[123] = Const Value(123)
+          CheckInterrupts
+          Return v21
+        ");
+    }
+
+    #[test]
+    fn test_no_inline_send_with_symbol_block() {
+        eval(r#"
+            def callee = 123
+            public def the_block = 456
+            def test
+              callee(&:the_block)
+            end
+            puts test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:5:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:StaticSymbol[:the_block] = Const Value(VALUE(0x1000))
+          v13:BasicObject = Send v6, 0x1008, :callee, v11 # SendFallbackReason: Uncategorized(send)
+          CheckInterrupts
+          Return v13
+        ");
+    }
+
+    #[test]
     fn test_optimize_stringexact_eq_stringexact() {
         eval(r#"
             def test(l, r) = l == r
@@ -11289,23 +11406,22 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_invokesuper_to_cfunc_remains_invokesuper() {
+    fn test_invokesuper_to_cfunc_optimizes_to_ccall() {
         eval("
-            class MyArray < Array
-              def length
+            class C < Hash
+              def size
                 super
               end
             end
 
-            MyArray.new.length; MyArray.new.length
+            C.new.size
         ");
 
-        let hir = hir_string_proc("MyArray.new.method(:length)");
-        assert!(hir.contains("InvokeSuper "), "Expected unoptimized InvokeSuper but got:\n{hir}");
-        assert!(!hir.contains("SendDirect"), "Should not optimize to SendDirect for CFUNC:\n{hir}");
+        let hir = hir_string_proc("C.new.method(:size)");
+        assert!(!hir.contains("InvokeSuper "), "Expected unoptimized InvokeSuper but got:\n{hir}");
 
         assert_snapshot!(hir, @r"
-        fn length@<compiled>:4:
+        fn size@<compiled>:4:
         bb0():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
@@ -11314,9 +11430,98 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
-          v11:BasicObject = InvokeSuper v6, 0x1000 # SendFallbackReason: super: unsupported target method type Cfunc
+          PatchPoint MethodRedefined(Hash@0x1000, size@0x1008, cme:0x1010)
+          v17:CPtr = GetLEP
+          GuardSuperMethodEntry v17, 0x1038
+          v19:RubyValue = GetBlockHandler v17
+          v20:FalseClass = GuardBitEquals v19, Value(false)
+          IncrCounter inline_cfunc_optimized_send_count
+          v22:Fixnum = CCall v6, :Hash#size@0x1040
           CheckInterrupts
-          Return v11
+          Return v22
+        ");
+    }
+
+    #[test]
+    fn test_inline_invokesuper_to_basicobject_initialize() {
+        eval("
+            class C
+              def initialize
+                super
+              end
+            end
+
+            C.new
+        ");
+        assert_snapshot!(hir_string_proc("C.instance_method(:initialize)"), @r"
+        fn initialize@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint MethodRedefined(BasicObject@0x1000, initialize@0x1008, cme:0x1010)
+          v17:CPtr = GetLEP
+          GuardSuperMethodEntry v17, 0x1038
+          v19:RubyValue = GetBlockHandler v17
+          v20:FalseClass = GuardBitEquals v19, Value(false)
+          v21:NilClass = Const Value(nil)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v21
+        ");
+    }
+
+    #[test]
+    fn test_invokesuper_to_variadic_cfunc_optimizes_to_ccall() {
+        eval("
+            class MyString < String
+              def byteindex(needle, offset = 0)
+                super(needle, offset)
+              end
+            end
+
+            MyString.new('hello world').byteindex('world', 0); MyString.new('hello world').byteindex('world', 0)
+        ");
+
+        let hir = hir_string_proc("MyString.new('hello world').method(:byteindex)");
+        assert!(!hir.contains("InvokeSuper "), "InvokeSuper should optimize to CCallVariadic but got:\n{hir}");
+        assert!(hir.contains("CCallVariadic"), "Should optimize to CCallVariadic for variadic cfunc:\n{hir}");
+
+        assert_snapshot!(hir, @"
+        fn byteindex@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :needle, l0, SP@5
+          v3:BasicObject = GetLocal :offset, l0, SP@4
+          v4:CPtr = LoadPC
+          v5:CPtr[CPtr(0x1000)] = Const CPtr(0x1008)
+          v6:CBool = IsBitEqual v4, v5
+          IfTrue v6, bb2(v1, v2, v3)
+          Jump bb4(v1, v2, v3)
+        bb1(v10:BasicObject, v11:BasicObject):
+          EntryPoint JIT(0)
+          v12:NilClass = Const Value(nil)
+          Jump bb2(v10, v11, v12)
+        bb2(v19:BasicObject, v20:BasicObject, v21:BasicObject):
+          v24:Fixnum[0] = Const Value(0)
+          Jump bb4(v19, v20, v24)
+        bb3(v15:BasicObject, v16:BasicObject, v17:BasicObject):
+          EntryPoint JIT(1)
+          Jump bb4(v15, v16, v17)
+        bb4(v27:BasicObject, v28:BasicObject, v29:BasicObject):
+          PatchPoint MethodRedefined(String@0x1010, byteindex@0x1018, cme:0x1020)
+          v42:CPtr = GetLEP
+          GuardSuperMethodEntry v42, 0x1008
+          v44:RubyValue = GetBlockHandler v42
+          v45:FalseClass = GuardBitEquals v44, Value(false)
+          v46:BasicObject = CCallVariadic v27, :String#byteindex@0x1048, v28, v29
+          CheckInterrupts
+          Return v46
         ");
     }
 

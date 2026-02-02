@@ -73,7 +73,7 @@ describe "IO::Buffer.map" do
     @buffer.should.valid?
   end
 
-  platform_is_not :windows do
+  platform_is_not :windows, :openbsd do
     it "is shareable across processes" do
       file_name = tmp("shared_buffer")
       @file = File.open(file_name, "w+")

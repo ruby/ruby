@@ -5,12 +5,12 @@ set PROMPT=$E[94m+$E[m$S
 if "%~dp0" == "%CD%\" (
     echo don't run in win32 directory.
     exit /b 999
-) else if "%0" == "%~nx0" (
+) else if "%~0" == "%~nx0" (
     set "WIN32DIR=%~$PATH:0"
-) else if "%0" == "%~n0" (
+) else if "%~0" == "%~n0" (
     set "WIN32DIR=%~$PATH:0"
 ) else (
-    set "WIN32DIR=%0"
+    set "WIN32DIR=%~0"
 )
 
 set "WIN32DIR=%WIN32DIR:\=/%:/:"
@@ -204,9 +204,11 @@ goto :loop ;
   )
   :optdir-loop
   for /f "delims=; tokens=1,*" %%I in ("%arg%") do (set "d=%%I" & set "arg=%%J")
-    pushd %d:/=\% && (
+    pushd %d:/=\% 2> nul && (
       set "optdirs=%optdirs%;%CD:\=/%"
       popd
+    ) || (
+      set "optdirs=%optdirs%;%d:\=/%"
     )
   if not "%arg%" == "" goto :optdir-loop
 goto :loop ;
@@ -239,7 +241,7 @@ goto :EOF
   exit /b 1
 :end
 if "%debug_configure%" == "yes" (type %confargs%)
-if not "%optdirs%" == "" (echo>>%config_make% optdirs = %optdirs:~1%)
+if defined optdirs (for %%I in ("%optdirs:~1%") do echo>>%config_make% optdirs = %%~I)
 (
   echo.
   echo configure_args = \

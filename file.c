@@ -3674,13 +3674,15 @@ enc_path_skip_prefix(const char *path, const char *end, bool mb_enc, rb_encoding
     if (path + 2 <= end && isdirsep(path[0]) && isdirsep(path[1])) {
         path += 2;
         while (path < end && isdirsep(*path)) path++;
-        if ((path = enc_path_next(path, end, mb_enc, enc)) < end && path[0] && path[1] && !isdirsep(path[1]))
+        if ((path = enc_path_next(path, end, mb_enc, enc)) < end &&
+            path + 2 <= end && !isdirsep(path[1])) {
             path = enc_path_next(path + 1, end, mb_enc, enc);
+        }
         return (char *)path;
     }
 #endif
 #ifdef DOSISH_DRIVE_LETTER
-    if (has_drive_letter(path))
+    if (path + 2 <= end && has_drive_letter(path))
         return (char *)(path + 2);
 #endif
 #endif /* defined(DOSISH_UNC) || defined(DOSISH_DRIVE_LETTER) */
@@ -4022,13 +4024,13 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     enc = rb_enc_get(fname);
     BUFINIT();
 
-    if (s[0] == '~' && abs_mode == 0) {      /* execute only if NOT absolute_path() */
+    if (s < fend && s[0] == '~' && abs_mode == 0) {      /* execute only if NOT absolute_path() */
         long userlen = 0;
-        if (isdirsep(s[1]) || s[1] == '\0') {
+        if (s + 1 == fend || isdirsep(s[1])) {
             buf = 0;
             b = 0;
             rb_str_set_len(result, 0);
-            if (*++s) ++s;
+            if (++s < fend) ++s;
             rb_default_home_dir(result);
         }
         else {
@@ -4058,8 +4060,8 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     }
 #ifdef DOSISH_DRIVE_LETTER
     /* skip drive letter */
-    else if (has_drive_letter(s)) {
-        if (isdirsep(s[2])) {
+    else if (s + 1 < fend && has_drive_letter(s)) {
+        if (s + 2 < fend && isdirsep(s[2])) {
             /* specified drive letter, and full path */
             /* skip drive letter */
             BUFCHECK(bdiff + 2 >= buflen);
@@ -4093,7 +4095,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
         }
     }
 #endif /* DOSISH_DRIVE_LETTER */
-    else if (!rb_is_absolute_path(s)) {
+    else if (s == fend || !rb_is_absolute_path(s)) {
         if (!NIL_P(dname)) {
             rb_file_expand_path_internal(dname, Qnil, abs_mode, long_name, result);
             rb_enc_associate(result, fs_enc_check(result, fname));
@@ -4106,7 +4108,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
             p = e;
         }
 #if defined DOSISH || defined __CYGWIN__
-        if (isdirsep(*s)) {
+        if (s < fend && isdirsep(*s)) {
             /* specified full path, but not drive letter nor UNC */
             /* we need to get the drive letter or UNC share name */
             p = skipprefix(buf, p, true, enc);
@@ -4118,7 +4120,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     else {
         size_t len;
         b = s;
-        do s++; while (isdirsep(*s));
+        do s++; while (s < fend && isdirsep(*s));
         len = s - b;
         p = buf + len;
         BUFCHECK(bdiff >= buflen);
@@ -4140,16 +4142,17 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     root = skipprefix(buf, p+1, true, enc);
 
     b = s;
-    while (*s) {
+    while (s < fend) {
         switch (*s) {
           case '.':
             if (b == s++) {	/* beginning of path element */
-                switch (*s) {
-                  case '\0':
+                if (s == fend) {
                     b = s;
                     break;
+                }
+                switch (*s) {
                   case '.':
-                    if (*(s+1) == '\0' || isdirsep(*(s+1))) {
+                    if (s+1 == fend || isdirsep(*(s+1))) {
                         /* We must go back to the parent */
                         char *n;
                         *p = '\0';
@@ -4163,7 +4166,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
                     }
 #if USE_NTFS
                     else {
-                        do ++s; while (istrailinggarbage(*s));
+                        do ++s; while (s < fend && istrailinggarbage(*s));
                     }
 #endif /* USE_NTFS */
                     break;
@@ -4931,11 +4934,11 @@ enc_find_basename(const char *name, long *baselen, long *alllen, bool mb_enc, rb
     root = name;
 #endif
 
-    while (isdirsep(*name)) {
+    while (name < end && isdirsep(*name)) {
         name++;
     }
 
-    if (!*name) {
+    if (name == end) {
         p = name - 1;
         f = 1;
 #if defined DOSISH_DRIVE_LETTER || defined DOSISH_UNC
@@ -5017,23 +5020,21 @@ ruby_enc_find_basename(const char *name, long *baselen, long *alllen, rb_encodin
 static VALUE
 rb_file_s_basename(int argc, VALUE *argv, VALUE _)
 {
-    VALUE fname, fext;
-    const char *name, *p;
+    VALUE fname, fext = Qnil;
+    const char *name, *p, *fp = 0;
     long f = 0, n;
     rb_encoding *enc;
 
-    fext = Qnil;
-    if (rb_check_arity(argc, 1, 2) == 2) {
-        fext = argv[1];
-        StringValue(fext);
-        check_path_encoding(fext);
-        enc = rb_str_enc_get(fext);
-    }
+    argc = rb_check_arity(argc, 1, 2);
     fname = argv[0];
     CheckPath(fname, name);
+    if (argc == 2) {
+        fext = argv[1];
+        fp = StringValueCStr(fext);
+        check_path_encoding(fext);
+    }
     if (NIL_P(fext) || !(enc = rb_enc_compatible(fname, fext))) {
         enc = rb_str_enc_get(fname);
-        fext = Qnil;
     }
 
     n = RSTRING_LEN(fname);
@@ -5044,12 +5045,10 @@ rb_file_s_basename(int argc, VALUE *argv, VALUE _)
     bool mb_enc = !rb_str_encindex_fastpath(rb_enc_to_index(enc));
     p = enc_find_basename(name, &f, &n, mb_enc, enc);
     if (n >= 0) {
-        if (NIL_P(fext)) {
+        if (!fp) {
             f = n;
         }
         else {
-            const char *fp;
-            fp = StringValueCStr(fext);
             if (!(f = rmext(p, f, n, fp, RSTRING_LEN(fext), enc))) {
                 f = n;
             }
@@ -5139,7 +5138,7 @@ rb_file_dirname_n(VALUE fname, int n)
         return rb_enc_str_new(".", 1, enc);
     }
 #ifdef DOSISH_DRIVE_LETTER
-    if (has_drive_letter(name) && isdirsep(*(name + 2))) {
+    if (name + 3 < end && has_drive_letter(name) && isdirsep(*(name + 2))) {
         const char *top = skiproot(name + 2, end);
         dirname = rb_enc_str_new(name, 3, enc);
         rb_str_cat(dirname, top, p - top);
@@ -5148,7 +5147,7 @@ rb_file_dirname_n(VALUE fname, int n)
 #endif
     dirname = rb_enc_str_new(name, p - name, enc);
 #ifdef DOSISH_DRIVE_LETTER
-    if (has_drive_letter(name) && root == name + 2 && p - name == 2)
+    if (root == name + 2 && p == root && name[1] == ':')
         rb_str_cat(dirname, ".", 1);
 #endif
     return dirname;
@@ -6866,7 +6865,7 @@ const char ruby_null_device[] =
  *  Methods File.new and File.open each may take string argument +mode+, which:
  *
  *  - Begins with a 1- or 2-character
- *    {read/write mode}[rdoc-ref:File@Read-2FWrite+Mode].
+ *    {read/write mode}[rdoc-ref:File@ReadWrite+Mode].
  *  - May also contain a 1-character {data mode}[rdoc-ref:File@Data+Mode].
  *  - May also contain a 1-character
  *    {file-create mode}[rdoc-ref:File@File-Create+Mode].

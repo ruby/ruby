@@ -298,7 +298,9 @@ ractor_free(void *ptr)
     }
 
     ractor_sync_free(r);
-    ruby_xfree(r);
+    if (!r->main_ractor) {
+        SIZED_FREE(r);
+    }
 }
 
 static size_t
@@ -464,10 +466,12 @@ ractor_alloc(VALUE klass)
     return rv;
 }
 
+static rb_ractor_t _main_ractor;
+
 rb_ractor_t *
 rb_ractor_main_alloc(void)
 {
-    rb_ractor_t *r = ruby_mimcalloc(1, sizeof(rb_ractor_t));
+    rb_ractor_t *r = &_main_ractor;
     if (r == NULL) {
         fprintf(stderr, "[FATAL] failed to allocate memory for main ractor\n");
         exit(EXIT_FAILURE);
@@ -478,6 +482,7 @@ rb_ractor_main_alloc(void)
     r->pub.self = Qnil;
     r->newobj_cache = rb_gc_ractor_cache_alloc(r);
     r->next_ec_serial = 1;
+    r->main_ractor = true;
     ruby_single_main_ractor = r;
 
     return r;
@@ -2207,7 +2212,7 @@ rb_ractor_local_storage_delkey(rb_ractor_local_key_t key)
     RB_VM_LOCKING() {
         if (freed_ractor_local_keys.cnt == freed_ractor_local_keys.capa) {
             freed_ractor_local_keys.capa = freed_ractor_local_keys.capa ? freed_ractor_local_keys.capa * 2 : 4;
-            REALLOC_N(freed_ractor_local_keys.keys, rb_ractor_local_key_t, freed_ractor_local_keys.capa);
+            SIZED_REALLOC_N(freed_ractor_local_keys.keys, rb_ractor_local_key_t, freed_ractor_local_keys.capa, freed_ractor_local_keys.cnt);
         }
         freed_ractor_local_keys.keys[freed_ractor_local_keys.cnt++] = key;
     }
@@ -2306,12 +2311,12 @@ void
 rb_ractor_finish_marking(void)
 {
     for (int i=0; i<freed_ractor_local_keys.cnt; i++) {
-        ruby_xfree(freed_ractor_local_keys.keys[i]);
+        SIZED_FREE(freed_ractor_local_keys.keys[i]);
     }
     freed_ractor_local_keys.cnt = 0;
     if (freed_ractor_local_keys.capa > DEFAULT_KEYS_CAPA) {
         freed_ractor_local_keys.capa = DEFAULT_KEYS_CAPA;
-        REALLOC_N(freed_ractor_local_keys.keys, rb_ractor_local_key_t, DEFAULT_KEYS_CAPA);
+        SIZED_REALLOC_N(freed_ractor_local_keys.keys, rb_ractor_local_key_t, DEFAULT_KEYS_CAPA, freed_ractor_local_keys.capa);
     }
 }
 

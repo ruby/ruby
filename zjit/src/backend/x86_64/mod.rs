@@ -421,7 +421,7 @@ impl Assembler {
             }
         }
 
-        /// If a given operand is Opnd::Mem and it uses MemBase::Stack, lower it to MemBase::Reg using a scratch regsiter.
+        /// If a given operand is Opnd::Mem and it uses MemBase::Stack, lower it to MemBase::Reg using a scratch register.
         fn split_stack_membase(asm: &mut Assembler, opnd: Opnd, scratch_opnd: Opnd, stack_state: &StackState) -> Opnd {
             if let Opnd::Mem(Mem { base: stack_membase @ MemBase::Stack { .. }, disp, num_bits }) = opnd {
                 let base = Opnd::Mem(stack_state.stack_membase_to_mem(stack_membase));
@@ -1173,7 +1173,7 @@ mod tests {
         asm.cret(val64);
 
         asm.frame_teardown(JIT_PRESERVED_REGS);
-        assert_disasm_snapshot!(lir_string(&mut asm), @r"
+        assert_disasm_snapshot!(lir_string(&mut asm), @"
         bb0:
           # bb0(): foo@/tmp/a.rb:1
           FrameSetup 1, r13, rbx, r12
@@ -1186,6 +1186,7 @@ mod tests {
           Je bb0
           CRet v0
           FrameTeardown r13, rbx, r12
+          PadPatchPoint
         ");
     }
 
