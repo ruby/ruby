@@ -41,7 +41,7 @@
  *           This is done for classes defined from C to allow storing them in global variables.
  * 1:    RUBY_FL_SINGLETON
  *           This class is a singleton class.
- * 2:    RCLASS_PRIME_CLASSEXT_PRIME_WRITABLE
+ * 2:    RCLASS_PRIME_CLASSEXT_WRITABLE
  *           This class's prime classext is the only classext and writable from any boxes.
  *           If unset, the prime classext is writable only from the root box.
  * 3:    RCLASS_IS_INITIALIZED
@@ -52,7 +52,7 @@
 
 /* Flags of T_ICLASS
  *
- * 2:    RCLASS_PRIME_CLASSEXT_PRIME_WRITABLE
+ * 2:    RCLASS_PRIME_CLASSEXT_WRITABLE
  *           This module's prime classext is the only classext and writable from any boxes.
  *           If unset, the prime classext is writable only from the root box.
  * 4:    RCLASS_BOXABLE
@@ -66,7 +66,7 @@
  *           This is done for classes defined from C to allow storing them in global variables.
  * 1:    <reserved>
  *          Ensures that RUBY_FL_SINGLETON is never set on a T_MODULE. See `rb_class_real`.
- * 2:    RCLASS_PRIME_CLASSEXT_PRIME_WRITABLE
+ * 2:    RCLASS_PRIME_CLASSEXT_WRITABLE
  *           This module's prime classext is the only classext and writable from any boxes.
  *           If unset, the prime classext is writable only from the root box.
  * 3:    RCLASS_IS_INITIALIZED
