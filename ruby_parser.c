@@ -1075,6 +1075,52 @@ rb_node_regx_string_val(const NODE *node)
     return rb_reg_compile(str, node_reg->options, NULL, 0);
 }
 
+#define RE_ONIG_OPTION_IGNORECASE 1
+#define RE_ONIG_OPTION_EXTEND     (RE_ONIG_OPTION_IGNORECASE<<1)
+#define RE_ONIG_OPTION_MULTILINE  (RE_ONIG_OPTION_EXTEND<<1)
+#define RE_OPTION_ONCE (1<<16)
+#define RE_OPTION_ENCODING_SHIFT 8
+#define RE_OPTION_ENCODING(e) (((e)&0xff)<<RE_OPTION_ENCODING_SHIFT)
+
+int
+node_regx_options(rb_node_flags_t flags)
+{
+    int options = 0;
+    int kcode = 0;
+
+    if (flags & RB_REGULAR_EXPRESSION_FLAGS_EUC_JP) {
+        kcode = 'e';
+        options |= ARG_ENCODING_FIXED;
+    }
+    else if (flags & RB_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT) {
+        options |= ARG_ENCODING_NONE;
+    }
+    else if (flags & RB_REGULAR_EXPRESSION_FLAGS_WINDOWS_31J) {
+        kcode = 's';
+        options |= ARG_ENCODING_FIXED;
+    }
+    else if (flags & RB_REGULAR_EXPRESSION_FLAGS_UTF_8) {
+        kcode = 'u';
+        options |= ARG_ENCODING_FIXED;
+    }
+
+    if (flags & RB_REGULAR_EXPRESSION_FLAGS_IGNORE_CASE) options |= RE_ONIG_OPTION_IGNORECASE;
+    if (flags & RB_REGULAR_EXPRESSION_FLAGS_EXTENDED) options |= RE_ONIG_OPTION_EXTEND;
+    if (flags & RB_REGULAR_EXPRESSION_FLAGS_MULTI_LINE) options |= RE_ONIG_OPTION_MULTILINE;
+
+    return options | RE_OPTION_ENCODING(kcode);
+}
+
+VALUE
+rb_node_regx_string_val2(const rb_node_t *node)
+{
+    rb_regular_expression_node_t *node_reg = RB_NODE_REGULAR_EXPRESSION(node);
+    rb_parser_string_t *string = node_reg->unescaped;
+    VALUE str = rb_enc_str_new(string->ptr, string->len, string->enc);
+
+    return rb_reg_compile(str, node_regx_options(node->flags), NULL, 0);
+}
+
 VALUE
 rb_node_line_lineno_val(const NODE *node)
 {
