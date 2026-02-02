@@ -1398,6 +1398,7 @@ pub(crate) mod ids {
         name: _shape_id
         name: _env_data_index_flags
         name: _env_data_index_specval
+        name: _ep_method_entry
     }
 
     /// Get an CRuby `ID` to an interned string, e.g. a particular method name.

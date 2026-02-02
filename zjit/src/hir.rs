@@ -3537,11 +3537,10 @@ impl Function {
                             });
 
                             let lep = fun.push_insn(block, Insn::GetLEP);
-                            fun.push_insn(block, Insn::GuardSuperMethodEntry {
-                                lep,
-                                cme: current_cme,
-                                state
-                            });
+                            // Load ep[VM_ENV_DATA_INDEX_ME_CREF]
+                            let method_entry = fun.push_insn(block, Insn::LoadField { recv: lep, id: ID!(_ep_method_entry), offset: SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_ME_CREF, return_type: types::RubyValue });
+                            // Guard that it matches the expected CME
+                            fun.push_insn(block, Insn::GuardBitEquals { val: method_entry, expected: Const::Value(current_cme.into()), reason: SideExitReason::GuardSuperMethodEntry, state });
 
                             let block_handler = fun.push_insn(block, Insn::GetBlockHandler { lep });
                             fun.push_insn(block, Insn::GuardBitEquals {

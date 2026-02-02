@@ -11268,12 +11268,13 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           PatchPoint MethodRedefined(A@0x1000, foo@0x1008, cme:0x1010)
           v17:CPtr = GetLEP
-          GuardSuperMethodEntry v17, 0x1038
-          v19:RubyValue = GetBlockHandler v17
-          v20:FalseClass = GuardBitEquals v19, Value(false)
-          v21:BasicObject = SendDirect v6, 0x1040, :foo (0x1050)
+          v18:RubyValue = LoadField v17, :_ep_method_entry@0x1038
+          v19:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v18, Value(VALUE(0x1040))
+          v20:RubyValue = GetBlockHandler v17
+          v21:FalseClass = GuardBitEquals v20, Value(false)
+          v22:BasicObject = SendDirect v6, 0x1048, :foo (0x1058)
           CheckInterrupts
-          Return v21
+          Return v22
         ");
     }
 
@@ -11312,17 +11313,18 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(A@0x1000, foo@0x1008, cme:0x1010)
           v26:CPtr = GetLEP
-          GuardSuperMethodEntry v26, 0x1038
-          v28:RubyValue = GetBlockHandler v26
-          v29:FalseClass = GuardBitEquals v28, Value(false)
-          v30:BasicObject = SendDirect v8, 0x1040, :foo (0x1050), v9
+          v27:RubyValue = LoadField v26, :_ep_method_entry@0x1038
+          v28:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v27, Value(VALUE(0x1040))
+          v29:RubyValue = GetBlockHandler v26
+          v30:FalseClass = GuardBitEquals v29, Value(false)
+          v31:BasicObject = SendDirect v8, 0x1048, :foo (0x1058), v9
           v17:Fixnum[1] = Const Value(1)
-          PatchPoint MethodRedefined(Integer@0x1058, +@0x1060, cme:0x1068)
-          v33:Fixnum = GuardType v30, Fixnum
-          v34:Fixnum = FixnumAdd v33, v17
+          PatchPoint MethodRedefined(Integer@0x1060, +@0x1068, cme:0x1070)
+          v34:Fixnum = GuardType v31, Fixnum
+          v35:Fixnum = FixnumAdd v34, v17
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v34
+          Return v35
         ");
     }
 
@@ -11432,13 +11434,14 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           PatchPoint MethodRedefined(Hash@0x1000, size@0x1008, cme:0x1010)
           v17:CPtr = GetLEP
-          GuardSuperMethodEntry v17, 0x1038
-          v19:RubyValue = GetBlockHandler v17
-          v20:FalseClass = GuardBitEquals v19, Value(false)
+          v18:RubyValue = LoadField v17, :_ep_method_entry@0x1038
+          v19:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v18, Value(VALUE(0x1040))
+          v20:RubyValue = GetBlockHandler v17
+          v21:FalseClass = GuardBitEquals v20, Value(false)
           IncrCounter inline_cfunc_optimized_send_count
-          v22:Fixnum = CCall v6, :Hash#size@0x1040
+          v23:Fixnum = CCall v6, :Hash#size@0x1048
           CheckInterrupts
-          Return v22
+          Return v23
         ");
     }
 
@@ -11465,13 +11468,14 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           PatchPoint MethodRedefined(BasicObject@0x1000, initialize@0x1008, cme:0x1010)
           v17:CPtr = GetLEP
-          GuardSuperMethodEntry v17, 0x1038
-          v19:RubyValue = GetBlockHandler v17
-          v20:FalseClass = GuardBitEquals v19, Value(false)
-          v21:NilClass = Const Value(nil)
+          v18:RubyValue = LoadField v17, :_ep_method_entry@0x1038
+          v19:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v18, Value(VALUE(0x1040))
+          v20:RubyValue = GetBlockHandler v17
+          v21:FalseClass = GuardBitEquals v20, Value(false)
+          v22:NilClass = Const Value(nil)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v21
+          Return v22
         ");
     }
 
@@ -11491,7 +11495,7 @@ mod hir_opt_tests {
         assert!(!hir.contains("InvokeSuper "), "InvokeSuper should optimize to CCallVariadic but got:\n{hir}");
         assert!(hir.contains("CCallVariadic"), "Should optimize to CCallVariadic for variadic cfunc:\n{hir}");
 
-        assert_snapshot!(hir, @"
+        assert_snapshot!(hir, @r"
         fn byteindex@<compiled>:3:
         bb0():
           EntryPoint interpreter
@@ -11516,12 +11520,13 @@ mod hir_opt_tests {
         bb4(v27:BasicObject, v28:BasicObject, v29:BasicObject):
           PatchPoint MethodRedefined(String@0x1010, byteindex@0x1018, cme:0x1020)
           v42:CPtr = GetLEP
-          GuardSuperMethodEntry v42, 0x1008
-          v44:RubyValue = GetBlockHandler v42
-          v45:FalseClass = GuardBitEquals v44, Value(false)
-          v46:BasicObject = CCallVariadic v27, :String#byteindex@0x1048, v28, v29
+          v43:RubyValue = LoadField v42, :_ep_method_entry@0x1048
+          v44:CallableMethodEntry[VALUE(0x1050)] = GuardBitEquals v43, Value(VALUE(0x1050))
+          v45:RubyValue = GetBlockHandler v42
+          v46:FalseClass = GuardBitEquals v45, Value(false)
+          v47:BasicObject = CCallVariadic v27, :String#byteindex@0x1058, v28, v29
           CheckInterrupts
-          Return v46
+          Return v47
         ");
     }
 
