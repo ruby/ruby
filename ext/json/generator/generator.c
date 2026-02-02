@@ -1374,7 +1374,7 @@ static void generate_json_fixnum(FBuffer *buffer, struct generate_json_data *dat
 static void generate_json_bignum(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
 {
     VALUE tmp = rb_funcall(obj, i_to_s, 0);
-    fbuffer_append_str(buffer, tmp);
+    fbuffer_append_str(buffer, StringValue(tmp));
 }
 
 #ifdef RUBY_INTEGER_UNIFICATION
