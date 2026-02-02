@@ -838,7 +838,7 @@ fn gen_guard_super_method_entry(
     asm_comment!(asm, "guard super method entry");
     let ep_me_opnd = Opnd::mem(64, lep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_ME_CREF);
     let ep_me = asm.load(ep_me_opnd);
-    asm.cmp(ep_me, Opnd::UImm(cme as u64));
+    asm.cmp(ep_me, Opnd::Value(cme.into()));
     asm.jne(side_exit(jit, state, SideExitReason::GuardSuperMethodEntry));
 }
 
