@@ -49,6 +49,14 @@ module Prism
       end
     end
 
+    # This module contains methods for escaping characters in Doxygen comments.
+    module Doxygen
+      # Similar to /verbatim ... /endverbatim but doesn't wrap the result in a code block.
+      def self.verbatim(value)
+        value.gsub(/[\.*%!`#<>_+-]/, '\\\\\0')
+      end
+    end
+
     # A comment attached to a field or node.
     class ConfigComment
       attr_reader :value

@@ -919,7 +919,7 @@ CODE
   end
 
   def test_safe_multi_ractor_subclasses_list_mutation
-    assert_ractor "#{<<~"begin;"}\n#{<<~'end;'}"
+    assert_ractor "#{<<~"begin;"}\n#{<<~'end;'}", signal: :SEGV
     begin;
       4.times.map do
         Ractor.new do

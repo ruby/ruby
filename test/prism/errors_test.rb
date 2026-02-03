@@ -7,7 +7,7 @@ require_relative "test_helper"
 module Prism
   class ErrorsTest < TestCase
     base = File.expand_path("errors", __dir__)
-    filepaths = Dir["**/*.txt", base: base]
+    filepaths = Dir[ENV.fetch("FOCUS", "**/*.txt"), base: base]
 
     filepaths.each do |filepath|
       ruby_versions_for(filepath).each do |version|
@@ -100,6 +100,10 @@ module Prism
       refute_empty errors, "Expected errors in #{filepath}"
 
       actual = result.errors_format
+      if expected != actual && ENV["UPDATE_SNAPSHOTS"]
+        File.write(filepath, actual)
+      end
+
       assert_equal expected, actual, "Expected errors to match for #{filepath}"
     end
   end

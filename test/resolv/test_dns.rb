@@ -721,13 +721,14 @@ class TestResolvDNS < Test::Unit::TestCase
 
         client_thread = Thread.new do
           Resolv::DNS.open(nameserver_port: [[server1_address, server1_port], [server2_address, server2_port]]) do |dns|
-            dns.timeouts = [0.1, 0.2]
+            dns.timeouts = [EnvUtil.apply_timeout_scale(0.1),
+                            EnvUtil.apply_timeout_scale(0.2)]
             dns.getresources('foo.example.org', Resolv::DNS::Resource::IN::A)
           end
         end
 
         udp_server1_thread = Thread.new do
-          msg, (_, client_port, _, client_address) = Timeout.timeout(5) { u1.recvfrom(4096) }
+          msg, (_, client_port, _, client_address) = Timeout.timeout(EnvUtil.apply_timeout_scale(5)) { u1.recvfrom(4096) }
           id, word2, _qdcount, _ancount, _nscount, _arcount = msg.unpack('nnnnnn')
           opcode = (word2 & 0x7800) >> 11
           rd = (word2 & 0x0100) >> 8

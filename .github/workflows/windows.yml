@@ -83,7 +83,8 @@ jobs:
           Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
           iwr -useb get.scoop.sh | iex
           Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
-          scoop install vcpkg uutils-coreutils
+          scoop install vcpkg
+          scoop install uutils-coreutils@0.5.0
         shell: pwsh
 
       - name: Restore vcpkg artifact

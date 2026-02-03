@@ -758,8 +758,9 @@ module Prism
         end
       end
 
-      # Drop the EOF token from the list
-      tokens = tokens[0...-1]
+      # Drop the EOF token from the list. The EOF token may not be
+      # present if the source was syntax invalid
+      tokens = tokens[0...-1] if tokens.dig(-1, 1) == :on_eof
 
       # We sort by location because Ripper.lex sorts.
       tokens.sort_by! do |token|
@@ -804,7 +805,7 @@ module Prism
             next_whitespace_index += 1
             first_whitespace = sp_value[0...continuation_index]
             continuation = sp_value[continuation_index...next_whitespace_index]
-            second_whitespace = sp_value[next_whitespace_index..]
+            second_whitespace = sp_value[next_whitespace_index..] || ""
 
             new_tokens << [[sp_line, sp_column], :on_sp, first_whitespace, prev_token_state] unless first_whitespace.empty?
             new_tokens << [[sp_line, sp_column + continuation_index], :on_sp, continuation, prev_token_state]
@@ -819,7 +820,7 @@ module Prism
         prev_token_end = start_offset + token[2].bytesize
       end
 
-      unless data_loc # no trailing :on_sp with __END__ as it is always preceded by :on_nl
+      if !data_loc && eof_token # no trailing :on_sp with __END__ as it is always preceded by :on_nl
         end_offset = eof_token.location.end_offset
         if prev_token_end < end_offset
           new_tokens << [

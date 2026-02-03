@@ -161,23 +161,25 @@ static inline void fbuffer_append_reserved_char(FBuffer *fb, char chr)
 
 static void fbuffer_append_str(FBuffer *fb, VALUE str)
 {
-    const char *newstr = StringValuePtr(str);
-    unsigned long len = RSTRING_LEN(str);
+    const char *ptr;
+    unsigned long len;
+    RSTRING_GETMEM(str, ptr, len);
 
-    fbuffer_append(fb, newstr, len);
+    fbuffer_append(fb, ptr, len);
 }
 
 static void fbuffer_append_str_repeat(FBuffer *fb, VALUE str, size_t repeat)
 {
-    const char *newstr = StringValuePtr(str);
-    unsigned long len = RSTRING_LEN(str);
+    const char *ptr;
+    unsigned long len;
+    RSTRING_GETMEM(str, ptr, len);
 
     fbuffer_inc_capa(fb, repeat * len);
     while (repeat) {
 #if JSON_DEBUG
         fb->requested = len;
 #endif
-        fbuffer_append_reserved(fb, newstr, len);
+        fbuffer_append_reserved(fb, ptr, len);
         repeat--;
     }
 }
