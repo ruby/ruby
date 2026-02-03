@@ -46,6 +46,7 @@ releases.
 
 * RubyGems 4.1.0.dev
 * bundler 4.1.0.dev
+* json 2.18.1
 * prism 1.9.0
 * resolv 0.7.1
 * stringio 3.2.1.dev
