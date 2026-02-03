@@ -1,8 +1,7 @@
 #! ./miniruby
 
 dir = File.expand_path("../..", __FILE__)
-$:.unshift(dir)
-$:.unshift(".")
+$:.unshift(Dir.pwd, "#{dir}/tool/lib", "#{dir}/lib")
 if $".grep(/mkmf/).empty?
   $" << "mkmf.rb"
   load File.expand_path("lib/mkmf.rb", dir)
@@ -147,6 +146,6 @@ if MODULE_TYPE == :static
     Dir.mkdir 'enc'
   rescue Errno::EEXIST
   end
-  require 'tool/lib/output'
+  require 'output'
   Output.new(path: "enc/encinit.c", ifchange: true).write(tmp)
 end

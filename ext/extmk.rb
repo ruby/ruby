@@ -36,9 +36,8 @@ DUMMY_SIGNATURE = "***DUMMY MAKEFILE***"
 
 srcdir = File.dirname(File.dirname(__FILE__))
 unless defined?(CROSS_COMPILING) and CROSS_COMPILING
-  $:.replace([File.expand_path("lib", srcdir), Dir.pwd])
+  $:.replace([Dir.pwd, File.expand_path("lib", srcdir)])
 end
-$:.unshift(srcdir)
 require 'rbconfig'
 
 $topdir = "."
