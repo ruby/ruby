@@ -140,6 +140,17 @@ module Prism
       assert_raise(SyntaxError) { Translation::Ripper::Lexer.new("1 +").lex(raise_errors: true) }
     end
 
+
+    # On syntax invalid code the output doesn't always match up
+    # In these cases we just want to make sure that it doesn't raise.
+    def test_lex_invalid_syntax
+      assert_nothing_raised do
+        Translation::Ripper.lex('scan/\p{alpha}/')
+      end
+
+      assert_equal(Ripper.lex('if;)'), Translation::Ripper.lex('if;)'))
+    end
+
     def test_tokenize
       source = "foo;1;BAZ"
       assert_equal(Ripper.tokenize(source), Translation::Ripper.tokenize(source))
