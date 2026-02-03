@@ -841,11 +841,13 @@ heap_page_in_global_empty_pages_pool(rb_objspace_t *objspace, struct heap_page *
 #define GET_PAGE_HEADER(x) (&GET_PAGE_BODY(x)->header)
 #define GET_HEAP_PAGE(x)   (GET_PAGE_HEADER(x)->page)
 
-static inline uint32_t
-compute_slot_div_magic(unsigned short slot_size)
-{
-    return (uint32_t)(UINT32_MAX / slot_size) + 1;
-}
+static const uint32_t slot_div_magics[HEAP_COUNT] = {
+    0x06666667U,
+    0x03333334U,
+    0x0199999aU,
+    0x00cccccdU,
+    0x00666667U,
+};
 
 static inline size_t
 slot_index_for_offset(size_t offset, uint32_t div_magic)
@@ -2006,7 +2008,7 @@ heap_add_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page)
     page->start = start;
     page->total_slots = slot_count;
     page->slot_size = heap->slot_size;
-    page->slot_div_magic = compute_slot_div_magic(heap->slot_size);
+    page->slot_div_magic = slot_div_magics[heap - heaps];
     page->heap = heap;
 
     asan_unlock_freelist(page);
