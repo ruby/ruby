@@ -74,9 +74,7 @@ static void generate_json_string(FBuffer *buffer, struct generate_json_data *dat
 static void generate_json_null(FBuffer *buffer, struct generate_json_data *data, VALUE obj);
 static void generate_json_false(FBuffer *buffer, struct generate_json_data *data, VALUE obj);
 static void generate_json_true(FBuffer *buffer, struct generate_json_data *data, VALUE obj);
-#ifdef RUBY_INTEGER_UNIFICATION
 static void generate_json_integer(FBuffer *buffer, struct generate_json_data *data, VALUE obj);
-#endif
 static void generate_json_fixnum(FBuffer *buffer, struct generate_json_data *data, VALUE obj);
 static void generate_json_bignum(FBuffer *buffer, struct generate_json_data *data, VALUE obj);
 static void generate_json_float(FBuffer *buffer, struct generate_json_data *data, VALUE obj);
@@ -815,7 +813,6 @@ static VALUE mArray_to_json(int argc, VALUE *argv, VALUE self)
     return cState_partial_generate(Vstate, self, generate_json_array, Qfalse);
 }
 
-#ifdef RUBY_INTEGER_UNIFICATION
 /*
  * call-seq: to_json(*)
  *
@@ -827,32 +824,6 @@ static VALUE mInteger_to_json(int argc, VALUE *argv, VALUE self)
     VALUE Vstate = cState_from_state_s(cState, argc == 1 ? argv[0] : Qnil);
     return cState_partial_generate(Vstate, self, generate_json_integer, Qfalse);
 }
-
-#else
-/*
- * call-seq: to_json(*)
- *
- * Returns a JSON string representation for this Integer number.
- */
-static VALUE mFixnum_to_json(int argc, VALUE *argv, VALUE self)
-{
-    rb_check_arity(argc, 0, 1);
-    VALUE Vstate = cState_from_state_s(cState, argc == 1 ? argv[0] : Qnil);
-    return cState_partial_generate(Vstate, self, generate_json_fixnum, Qfalse);
-}
-
-/*
- * call-seq: to_json(*)
- *
- * Returns a JSON string representation for this Integer number.
- */
-static VALUE mBignum_to_json(int argc, VALUE *argv, VALUE self)
-{
-    rb_check_arity(argc, 0, 1);
-    VALUE Vstate = cState_from_state_s(cState, argc == 1 ? argv[0] : Qnil);
-    return cState_partial_generate(Vstate, self, generate_json_bignum, Qfalse);
-}
-#endif
 
 /*
  * call-seq: to_json(*)
@@ -1377,7 +1348,6 @@ static void generate_json_bignum(FBuffer *buffer, struct generate_json_data *dat
     fbuffer_append_str(buffer, StringValue(tmp));
 }
 
-#ifdef RUBY_INTEGER_UNIFICATION
 static void generate_json_integer(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
 {
     if (FIXNUM_P(obj))
@@ -1385,7 +1355,6 @@ static void generate_json_integer(FBuffer *buffer, struct generate_json_data *da
     else
         generate_json_bignum(buffer, data, obj);
 }
-#endif
 
 static void generate_json_float(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
 {
@@ -2165,16 +2134,9 @@ void Init_generator(void)
     VALUE mArray = rb_define_module_under(mGeneratorMethods, "Array");
     rb_define_method(mArray, "to_json", mArray_to_json, -1);
 
-#ifdef RUBY_INTEGER_UNIFICATION
     VALUE mInteger = rb_define_module_under(mGeneratorMethods, "Integer");
     rb_define_method(mInteger, "to_json", mInteger_to_json, -1);
-#else
-    VALUE mFixnum = rb_define_module_under(mGeneratorMethods, "Fixnum");
-    rb_define_method(mFixnum, "to_json", mFixnum_to_json, -1);
 
-    VALUE mBignum = rb_define_module_under(mGeneratorMethods, "Bignum");
-    rb_define_method(mBignum, "to_json", mBignum_to_json, -1);
-#endif
     VALUE mFloat = rb_define_module_under(mGeneratorMethods, "Float");
     rb_define_method(mFloat, "to_json", mFloat_to_json, -1);
 
