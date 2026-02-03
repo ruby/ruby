@@ -11091,6 +11091,7 @@ pathname.$(OBJEXT): {$(VPATH)}st.h
 pathname.$(OBJEXT): {$(VPATH)}subst.h
 prism/api_node.$(OBJEXT): $(hdrdir)/ruby.h
 prism/api_node.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+prism/api_node.$(OBJEXT): $(hdrdir)/ruby/version.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/api_node.c
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/ast.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/defines.h
@@ -11286,6 +11287,7 @@ prism/api_node.$(OBJEXT): {$(VPATH)}st.h
 prism/api_node.$(OBJEXT): {$(VPATH)}subst.h
 prism/api_pack.$(OBJEXT): $(hdrdir)/ruby.h
 prism/api_pack.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+prism/api_pack.$(OBJEXT): $(hdrdir)/ruby/version.h
 prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/api_pack.c
 prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/ast.h
 prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/defines.h
@@ -11496,6 +11498,7 @@ prism/encoding.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 prism/encoding.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 prism/extension.$(OBJEXT): $(hdrdir)/ruby.h
 prism/extension.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+prism/extension.$(OBJEXT): $(hdrdir)/ruby/version.h
 prism/extension.$(OBJEXT): $(top_srcdir)/prism/ast.h
 prism/extension.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/extension.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
@@ -11885,6 +11888,7 @@ prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.c
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 prism_init.$(OBJEXT): $(hdrdir)/ruby.h
 prism_init.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+prism_init.$(OBJEXT): $(hdrdir)/ruby/version.h
 prism_init.$(OBJEXT): $(top_srcdir)/prism/ast.h
 prism_init.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism_init.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
