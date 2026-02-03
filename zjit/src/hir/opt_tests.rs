@@ -52,10 +52,10 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:NilClass):
           v13:TrueClass = Const Value(true)
           CheckInterrupts
-          v23:TrueClass = RefineType v13, Truthy
-          v26:Fixnum[3] = Const Value(3)
+          v22:TrueClass = RefineType v13, Truthy
+          v25:Fixnum[3] = Const Value(3)
           CheckInterrupts
-          Return v26
+          Return v25
         ");
     }
 
@@ -85,10 +85,10 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:NilClass):
           v13:FalseClass = Const Value(false)
           CheckInterrupts
-          v21:FalseClass = RefineType v13, Falsy
-          v36:Fixnum[4] = Const Value(4)
+          v20:FalseClass = RefineType v13, Falsy
+          v35:Fixnum[4] = Const Value(4)
           CheckInterrupts
-          Return v36
+          Return v35
         ");
     }
 
@@ -1486,10 +1486,10 @@ mod hir_opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:NilClass):
           v13:Fixnum[2] = Const Value(2)
-          v18:Fixnum[1] = Const Value(1)
-          v26:RangeExact = NewRangeFixnum v18 NewRangeInclusive v13
+          v17:Fixnum[1] = Const Value(1)
+          v25:RangeExact = NewRangeFixnum v17 NewRangeInclusive v13
           CheckInterrupts
-          Return v26
+          Return v25
         ");
     }
 
@@ -1516,10 +1516,10 @@ mod hir_opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:NilClass):
           v13:Fixnum[2] = Const Value(2)
-          v18:Fixnum[1] = Const Value(1)
-          v26:RangeExact = NewRangeFixnum v18 NewRangeExclusive v13
+          v17:Fixnum[1] = Const Value(1)
+          v25:RangeExact = NewRangeFixnum v17 NewRangeExclusive v13
           CheckInterrupts
-          Return v26
+          Return v25
         ");
     }
 
@@ -1653,9 +1653,9 @@ mod hir_opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:NilClass):
           v13:ArrayExact = NewArray
-          v18:Fixnum[5] = Const Value(5)
+          v17:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v18
+          Return v17
         ");
     }
 
@@ -1746,9 +1746,9 @@ mod hir_opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:NilClass):
           v13:RangeExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v18:Fixnum[5] = Const Value(5)
+          v17:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v18
+          Return v17
         ");
     }
 
@@ -1779,9 +1779,9 @@ mod hir_opt_tests {
           v17:StringExact = StringCopy v16
           v19:RangeExact = NewRange v14 NewRangeInclusive v17
           PatchPoint NoEPEscape(test)
-          v25:Fixnum[0] = Const Value(0)
+          v24:Fixnum[0] = Const Value(0)
           CheckInterrupts
-          Return v25
+          Return v24
         ");
     }
 
@@ -1808,9 +1808,9 @@ mod hir_opt_tests {
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:NilClass):
           v17:ArrayExact = NewArray v11
-          v22:Fixnum[5] = Const Value(5)
+          v21:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v22
+          Return v21
         ");
     }
 
@@ -1836,9 +1836,9 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:NilClass):
           v13:HashExact = NewHash
           PatchPoint NoEPEscape(test)
-          v19:Fixnum[5] = Const Value(5)
+          v18:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v19
+          Return v18
         ");
     }
 
@@ -1868,9 +1868,9 @@ mod hir_opt_tests {
           v22:StaticSymbol[:b] = Const Value(VALUE(0x1008))
           v25:HashExact = NewHash v19: v13, v22: v14
           PatchPoint NoEPEscape(test)
-          v31:Fixnum[5] = Const Value(5)
+          v30:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v31
+          Return v30
         ");
     }
 
@@ -1897,9 +1897,9 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:NilClass):
           v13:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v14:ArrayExact = ArrayDup v13
-          v19:Fixnum[5] = Const Value(5)
+          v18:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v19
+          Return v18
         ");
     }
 
@@ -1925,9 +1925,9 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:NilClass):
           v13:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v14:HashExact = HashDup v13
-          v19:Fixnum[5] = Const Value(5)
+          v18:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v19
+          Return v18
         ");
     }
 
@@ -1952,9 +1952,9 @@ mod hir_opt_tests {
           v6:NilClass = Const Value(nil)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:NilClass):
-          v17:Fixnum[5] = Const Value(5)
+          v16:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v17
+          Return v16
         ");
     }
 
@@ -1981,9 +1981,9 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:NilClass):
           v13:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v14:StringExact = StringCopy v13
-          v19:Fixnum[5] = Const Value(5)
+          v18:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v19
+          Return v18
         ");
     }
 
@@ -2431,9 +2431,9 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Array@0x1000, itself@0x1008, cme:0x1010)
           IncrCounter inline_cfunc_optimized_send_count
           PatchPoint NoEPEscape(test)
-          v21:Fixnum[1] = Const Value(1)
+          v20:Fixnum[1] = Const Value(1)
           CheckInterrupts
-          Return v21
+          Return v20
         ");
     }
 
@@ -2461,15 +2461,15 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:NilClass):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, M)
-          v29:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v28:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint NoSingletonClass(Module@0x1010)
           PatchPoint MethodRedefined(Module@0x1010, name@0x1018, cme:0x1020)
           IncrCounter inline_cfunc_optimized_send_count
-          v34:StringExact|NilClass = CCall v29, :Module#name@0x1048
+          v33:StringExact|NilClass = CCall v28, :Module#name@0x1048
           PatchPoint NoEPEscape(test)
-          v22:Fixnum[1] = Const Value(1)
+          v21:Fixnum[1] = Const Value(1)
           CheckInterrupts
-          Return v22
+          Return v21
         ");
     }
 
@@ -2801,9 +2801,9 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, first@0x1010, cme:0x1018)
           IncrCounter inline_iseq_optimized_send_count
-          v32:BasicObject = InvokeBuiltin leaf <inline_expr>, v17
+          v31:BasicObject = InvokeBuiltin leaf <inline_expr>, v17
           CheckInterrupts
-          Return v32
+          Return v31
         ");
     }
 
@@ -4207,11 +4207,11 @@ mod hir_opt_tests {
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:NilClass):
           v16:ArrayExact = NewArray
-          v23:ArrayExact = ToArray v16
+          v22:ArrayExact = ToArray v16
           IncrCounter complex_arg_pass_caller_splat
-          v25:BasicObject = SendWithoutBlock v11, :call, v23 # SendFallbackReason: Complex argument passing
+          v24:BasicObject = SendWithoutBlock v11, :call, v22 # SendFallbackReason: Complex argument passing
           CheckInterrupts
-          Return v25
+          Return v24
         ");
     }
 
@@ -5107,9 +5107,9 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:NilClass):
           v13:NilClass = Const Value(nil)
           CheckInterrupts
-          v22:NilClass = Const Value(nil)
+          v21:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v22
+          Return v21
         ");
     }
 
@@ -5136,11 +5136,11 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:NilClass):
           v13:Fixnum[1] = Const Value(1)
           CheckInterrupts
-          v24:Fixnum[1] = RefineType v13, NotNil
+          v23:Fixnum[1] = RefineType v13, NotNil
           PatchPoint MethodRedefined(Integer@0x1000, itself@0x1008, cme:0x1010)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v24
+          Return v23
         ");
     }
 
@@ -7290,18 +7290,18 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:NilClass):
           v13:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v14:ArrayExact = ArrayDup v13
-          v20:Fixnum[0] = Const Value(0)
+          v19:Fixnum[0] = Const Value(0)
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
-          v31:CInt64[0] = UnboxFixnum v20
-          v32:CInt64 = ArrayLength v14
-          v33:CInt64[0] = GuardLess v31, v32
-          v34:CInt64[0] = Const CInt64(0)
-          v35:CInt64[0] = GuardGreaterEq v33, v34
-          v36:BasicObject = ArrayAref v14, v35
+          v30:CInt64[0] = UnboxFixnum v19
+          v31:CInt64 = ArrayLength v14
+          v32:CInt64[0] = GuardLess v30, v31
+          v33:CInt64[0] = Const CInt64(0)
+          v34:CInt64[0] = GuardGreaterEq v32, v33
+          v35:BasicObject = ArrayAref v14, v34
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v36
+          Return v35
         ");
     }
 
@@ -7400,13 +7400,13 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:NilClass):
           v13:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v14:HashExact = HashDup v13
-          v20:Fixnum[1] = Const Value(1)
+          v19:Fixnum[1] = Const Value(1)
           PatchPoint NoSingletonClass(Hash@0x1008)
           PatchPoint MethodRedefined(Hash@0x1008, []@0x1010, cme:0x1018)
-          v31:BasicObject = HashAref v14, v20
+          v30:BasicObject = HashAref v14, v19
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v31
+          Return v30
         ");
     }
 
@@ -7522,14 +7522,14 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:NilClass):
           v13:HashExact = NewHash
           PatchPoint NoEPEscape(test)
-          v22:Fixnum[1] = Const Value(1)
-          v24:Fixnum[3] = Const Value(3)
+          v21:Fixnum[1] = Const Value(1)
+          v23:Fixnum[3] = Const Value(3)
           PatchPoint NoSingletonClass(Hash@0x1000)
           PatchPoint MethodRedefined(Hash@0x1000, []=@0x1008, cme:0x1010)
-          HashAset v13, v22, v24
+          HashAset v13, v21, v23
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v24
+          Return v23
         ");
     }
 
@@ -9494,21 +9494,21 @@ mod hir_opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:NilClass):
           v13:ArrayExact = NewArray
-          v20:ArrayExact = ToArray v13
+          v19:ArrayExact = ToArray v13
           IncrCounter complex_arg_pass_caller_splat
-          v22:BasicObject = SendWithoutBlock v8, :foo, v20 # SendFallbackReason: Complex argument passing
-          v26:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v27:StringExact = StringCopy v26
+          v21:BasicObject = SendWithoutBlock v8, :foo, v19 # SendFallbackReason: Complex argument passing
+          v25:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v26:StringExact = StringCopy v25
           PatchPoint NoEPEscape(test)
-          v32:ArrayExact = ToArray v13
+          v31:ArrayExact = ToArray v13
           IncrCounter complex_arg_pass_caller_splat
-          v34:BasicObject = SendWithoutBlock v27, :display, v32 # SendFallbackReason: Complex argument passing
+          v33:BasicObject = SendWithoutBlock v26, :display, v31 # SendFallbackReason: Complex argument passing
           PatchPoint NoEPEscape(test)
-          v42:ArrayExact = ToArray v13
+          v41:ArrayExact = ToArray v13
           IncrCounter complex_arg_pass_caller_splat
-          v44:BasicObject = SendWithoutBlock v8, :itself, v42 # SendFallbackReason: Complex argument passing
+          v43:BasicObject = SendWithoutBlock v8, :itself, v41 # SendFallbackReason: Complex argument passing
           CheckInterrupts
-          Return v44
+          Return v43
         ");
     }
 
@@ -11537,16 +11537,16 @@ mod hir_opt_tests {
         bb3(v15:BasicObject, v16:BasicObject, v17:BasicObject):
           EntryPoint JIT(1)
           Jump bb4(v15, v16, v17)
-        bb4(v28:BasicObject, v29:BasicObject, v30:BasicObject):
+        bb4(v27:BasicObject, v28:BasicObject, v29:BasicObject):
           PatchPoint MethodRedefined(String@0x1010, byteindex@0x1018, cme:0x1020)
-          v43:CPtr = GetLEP
-          v44:RubyValue = LoadField v43, :_ep_method_entry@0x1048
-          v45:CallableMethodEntry[VALUE(0x1050)] = GuardBitEquals v44, Value(VALUE(0x1050))
-          v46:RubyValue = LoadField v43, :_ep_specval@0x1058
-          v47:FalseClass = GuardBitEquals v46, Value(false)
-          v48:BasicObject = CCallVariadic v28, :String#byteindex@0x1060, v29, v30
+          v42:CPtr = GetLEP
+          v43:RubyValue = LoadField v42, :_ep_method_entry@0x1048
+          v44:CallableMethodEntry[VALUE(0x1050)] = GuardBitEquals v43, Value(VALUE(0x1050))
+          v45:RubyValue = LoadField v42, :_ep_specval@0x1058
+          v46:FalseClass = GuardBitEquals v45, Value(false)
+          v47:BasicObject = CCallVariadic v27, :String#byteindex@0x1060, v28, v29
           CheckInterrupts
-          Return v48
+          Return v47
         ");
     }
 
@@ -11685,10 +11685,10 @@ mod hir_opt_tests {
         bb3(v13:BasicObject, v14:BasicObject):
           EntryPoint JIT(1)
           Jump bb4(v13, v14)
-        bb4(v25:BasicObject, v26:BasicObject):
-          v32:BasicObject = InvokeSuper v25, 0x1018, v26 # SendFallbackReason: super: complex argument passing to `super` call
+        bb4(v24:BasicObject, v25:BasicObject):
+          v31:BasicObject = InvokeSuper v24, 0x1018, v25 # SendFallbackReason: super: complex argument passing to `super` call
           CheckInterrupts
-          Return v32
+          Return v31
         ");
     }
 
