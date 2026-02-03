@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 require 'fiddle/import'
 
+# Generic namespace for Windows platform-specific features.
 module Win32
   # :stopdoc:
   WCHAR = Encoding::UTF_16LE
