@@ -201,16 +201,10 @@ build_options_i(VALUE key, VALUE value, VALUE argument) {
             const char *version = check_string(value);
 
             if (RSTRING_LEN(value) == 7 && strncmp(version, "current", 7) == 0) {
-                VALUE ruby_version_string = rb_const_get(rb_cObject, rb_intern("RUBY_VERSION"));
-                const char *ruby_version = RSTRING_PTR(ruby_version_string);
                 if (!pm_options_version_set(options, ruby_version, 3)) {
-                    rb_exc_raise(rb_exc_new_str(rb_cPrismCurrentVersionError, ruby_version_string));
+                    rb_exc_raise(rb_exc_new_cstr(rb_cPrismCurrentVersionError, ruby_version));
                 }
-
-                RB_GC_GUARD(ruby_version_string); // Do not move ruby_version while running the code above
             } else if (RSTRING_LEN(value) == 7 && strncmp(version, "nearest", 7) == 0) {
-                VALUE ruby_version_string = rb_const_get(rb_cObject, rb_intern("RUBY_VERSION"));
-                const char *ruby_version = RSTRING_PTR(ruby_version_string);
                 const char *nearest_version;
 
                 if (ruby_version[0] < '3' || (ruby_version[0] == '3' && ruby_version[2] < '3')) {
@@ -224,8 +218,6 @@ build_options_i(VALUE key, VALUE value, VALUE argument) {
                 if (!pm_options_version_set(options, nearest_version, 3)) {
                     rb_raise(rb_eArgError, "invalid nearest version: %s", nearest_version);
                 }
-
-                RB_GC_GUARD(ruby_version_string); // Do not move ruby_version while running the code above
             } else if (!pm_options_version_set(options, version, RSTRING_LEN(value))) {
                 rb_raise(rb_eArgError, "invalid version: %" PRIsVALUE, value);
             }

@@ -5,6 +5,7 @@
 
 #include <ruby.h>
 #include <ruby/encoding.h>
+#include <ruby/version.h>
 #include "prism.h"
 
 VALUE pm_source_new(const pm_parser_t *parser, rb_encoding *encoding, bool freeze);
