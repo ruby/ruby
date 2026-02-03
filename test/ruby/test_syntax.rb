@@ -1539,10 +1539,10 @@ eom
       begin raise; rescue; return; end
       return false; raise
       return 1; raise
-      "#{return}"
-      raise((return; "should not raise"))
+      "#{return if true}"
+      raise((return if true; "should not raise"))
       begin raise; ensure return; end; self
-      nil&defined?0--begin e=no_method_error(); return; 0;end
+      nil&defined?0--begin e=no_method_error(); return if true; 0;end
       return puts('ignored') #=> ignored
       BEGIN {return}
       END {return if false}

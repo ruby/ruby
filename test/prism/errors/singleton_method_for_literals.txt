@@ -2,8 +2,6 @@ def (1).g; end
      ^ cannot define singleton method for literals
 def ((a; 1)).foo; end
          ^ cannot define singleton method for literals
-def ((return; 1)).bar; end
-              ^ cannot define singleton method for literals
 def (((1))).foo; end
        ^ cannot define singleton method for literals
 def (__FILE__).foo; end

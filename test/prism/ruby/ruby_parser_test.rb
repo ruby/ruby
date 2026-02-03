@@ -83,6 +83,8 @@ module Prism
       "3.3-3.3/keyword_args_in_array_assignment.txt",
       "3.3-3.3/return_in_sclass.txt",
 
+      "3.3-4.0/void_value.txt",
+
       "3.4/circular_parameters.txt",
 
       "4.0/endless_methods_command_call.txt",

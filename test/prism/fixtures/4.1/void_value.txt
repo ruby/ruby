@@ -1,0 +1,7 @@
+x = begin
+  return
+rescue
+  "OK"
+else
+  return
+end

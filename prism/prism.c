@@ -1055,6 +1055,13 @@ pm_parser_constant_id_token(pm_parser_t *parser, const pm_token_t *token) {
 }
 
 /**
+ * This macro allows you to define a case statement for all of the nodes that
+ * may result in a void value.
+ */
+#define PM_CASE_VOID_VALUE PM_RETURN_NODE: case PM_BREAK_NODE: case PM_NEXT_NODE: \
+    case PM_REDO_NODE: case PM_RETRY_NODE: case PM_MATCH_REQUIRED_NODE
+
+/**
  * Check whether or not the given node is value expression.
  * If the node is value node, it returns NULL.
  * If not, it returns the pointer to the node to be inspected as "void expression".
@@ -1065,12 +1072,7 @@ pm_check_value_expression(pm_parser_t *parser, pm_node_t *node) {
 
     while (node != NULL) {
         switch (PM_NODE_TYPE(node)) {
-            case PM_RETURN_NODE:
-            case PM_BREAK_NODE:
-            case PM_NEXT_NODE:
-            case PM_REDO_NODE:
-            case PM_RETRY_NODE:
-            case PM_MATCH_REQUIRED_NODE:
+            case PM_CASE_VOID_VALUE:
                 return void_node != NULL ? void_node : node;
             case PM_MATCH_PREDICATE_NODE:
                 return NULL;
@@ -1090,25 +1092,36 @@ pm_check_value_expression(pm_parser_t *parser, pm_node_t *node) {
 
                     node = UP(cast->ensure_clause);
                 } else if (cast->rescue_clause != NULL) {
-                    if (cast->statements == NULL) return NULL;
+                    // https://bugs.ruby-lang.org/issues/21669
+                    if (cast->else_clause == NULL || parser->version < PM_OPTIONS_VERSION_CRUBY_4_1) {
+                        if (cast->statements == NULL) return NULL;
 
-                    pm_node_t *vn = pm_check_value_expression(parser, UP(cast->statements));
-                    if (vn == NULL) return NULL;
-                    if (void_node == NULL) void_node = vn;
+                        pm_node_t *vn = pm_check_value_expression(parser, UP(cast->statements));
+                        if (vn == NULL) return NULL;
+                        if (void_node == NULL) void_node = vn;
+                    }
 
                     for (pm_rescue_node_t *rescue_clause = cast->rescue_clause; rescue_clause != NULL; rescue_clause = rescue_clause->subsequent) {
                         pm_node_t *vn = pm_check_value_expression(parser, UP(rescue_clause->statements));
+
                         if (vn == NULL) {
+                            // https://bugs.ruby-lang.org/issues/21669
+                            if (parser->version >= PM_OPTIONS_VERSION_CRUBY_4_1) {
+                                return NULL;
+                            }
                             void_node = NULL;
                             break;
-                        }
-                        if (void_node == NULL) {
-                            void_node = vn;
                         }
                     }
 
                     if (cast->else_clause != NULL) {
                         node = UP(cast->else_clause);
+
+                        // https://bugs.ruby-lang.org/issues/21669
+                        if (parser->version >= PM_OPTIONS_VERSION_CRUBY_4_1) {
+                            pm_node_t *vn = pm_check_value_expression(parser, node);
+                            if (vn != NULL) return vn;
+                        }
                     } else {
                         return void_node;
                     }
@@ -1116,6 +1129,50 @@ pm_check_value_expression(pm_parser_t *parser, pm_node_t *node) {
                     node = UP(cast->statements);
                 }
 
+                break;
+            }
+            case PM_CASE_NODE: {
+                // https://bugs.ruby-lang.org/issues/21669
+                if (parser->version < PM_OPTIONS_VERSION_CRUBY_4_1) {
+                    return NULL;
+                }
+
+                pm_case_node_t *cast = (pm_case_node_t *) node;
+                if (cast->else_clause == NULL) return NULL;
+
+                pm_node_t *condition;
+                PM_NODE_LIST_FOREACH(&cast->conditions, index, condition) {
+                    assert(PM_NODE_TYPE_P(condition, PM_WHEN_NODE));
+
+                    pm_when_node_t *cast = (pm_when_node_t *) condition;
+                    pm_node_t  *vn = pm_check_value_expression(parser, UP(cast->statements));
+                    if (vn == NULL) return NULL;
+                    if (void_node == NULL) void_node = vn;
+                }
+
+                node = UP(cast->else_clause);
+                break;
+            }
+            case PM_CASE_MATCH_NODE: {
+                // https://bugs.ruby-lang.org/issues/21669
+                if (parser->version < PM_OPTIONS_VERSION_CRUBY_4_1) {
+                    return NULL;
+                }
+
+                pm_case_match_node_t *cast = (pm_case_match_node_t *) node;
+                if (cast->else_clause == NULL) return NULL;
+
+                pm_node_t *condition;
+                PM_NODE_LIST_FOREACH(&cast->conditions, index, condition) {
+                    assert(PM_NODE_TYPE_P(condition, PM_IN_NODE));
+
+                    pm_in_node_t *cast = (pm_in_node_t *) condition;
+                    pm_node_t  *vn = pm_check_value_expression(parser, UP(cast->statements));
+                    if (vn == NULL) return NULL;
+                    if (void_node == NULL) void_node = vn;
+                }
+
+                node = UP(cast->else_clause);
                 break;
             }
             case PM_ENSURE_NODE: {
@@ -1130,6 +1187,22 @@ pm_check_value_expression(pm_parser_t *parser, pm_node_t *node) {
             }
             case PM_STATEMENTS_NODE: {
                 pm_statements_node_t *cast = (pm_statements_node_t *) node;
+
+                // https://bugs.ruby-lang.org/issues/21669
+                if (parser->version >= PM_OPTIONS_VERSION_CRUBY_4_1) {
+                    pm_node_t *body_part;
+                    PM_NODE_LIST_FOREACH(&cast->body, index, body_part) {
+                        switch (PM_NODE_TYPE(body_part)) {
+                            case PM_CASE_VOID_VALUE:
+                                if (void_node == NULL) {
+                                    void_node = body_part;
+                                }
+                                return void_node;
+                            default: break;
+                        }
+                    }
+                }
+
                 node = cast->body.nodes[cast->body.size - 1];
                 break;
             }
