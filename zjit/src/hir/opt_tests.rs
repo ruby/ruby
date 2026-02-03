@@ -1778,13 +1778,10 @@ mod hir_opt_tests {
           v16:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           v17:StringExact = StringCopy v16
           v19:RangeExact = NewRange v14 NewRangeInclusive v17
-          v21:CPtr = GetEP 0
-          v23:CInt64 = LoadField v21, :_env_data_index_flags@0x1010
-          v24:CInt64 = GuardNoBitsSet v23, CUInt64(8)
           PatchPoint NoEPEscape(test)
-          v28:Fixnum[0] = Const Value(0)
+          v25:Fixnum[0] = Const Value(0)
           CheckInterrupts
-          Return v28
+          Return v25
         ");
     }
 
@@ -1838,13 +1835,10 @@ mod hir_opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:NilClass):
           v13:HashExact = NewHash
-          v15:CPtr = GetEP 0
-          v17:CInt64 = LoadField v15, :_env_data_index_flags@0x1000
-          v18:CInt64 = GuardNoBitsSet v17, CUInt64(8)
           PatchPoint NoEPEscape(test)
-          v22:Fixnum[5] = Const Value(5)
+          v19:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v22
+          Return v19
         ");
     }
 
@@ -1873,13 +1867,10 @@ mod hir_opt_tests {
           v19:StaticSymbol[:a] = Const Value(VALUE(0x1000))
           v22:StaticSymbol[:b] = Const Value(VALUE(0x1008))
           v25:HashExact = NewHash v19: v13, v22: v14
-          v27:CPtr = GetEP 0
-          v29:CInt64 = LoadField v27, :_env_data_index_flags@0x1010
-          v30:CInt64 = GuardNoBitsSet v29, CUInt64(8)
           PatchPoint NoEPEscape(test)
-          v34:Fixnum[5] = Const Value(5)
+          v31:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v34
+          Return v31
         ");
     }
 
@@ -2439,13 +2430,10 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Array@0x1000)
           PatchPoint MethodRedefined(Array@0x1000, itself@0x1008, cme:0x1010)
           IncrCounter inline_cfunc_optimized_send_count
-          v17:CPtr = GetEP 0
-          v19:CInt64 = LoadField v17, :_env_data_index_flags@0x1038
-          v20:CInt64 = GuardNoBitsSet v19, CUInt64(8)
           PatchPoint NoEPEscape(test)
-          v24:Fixnum[1] = Const Value(1)
+          v21:Fixnum[1] = Const Value(1)
           CheckInterrupts
-          Return v24
+          Return v21
         ");
     }
 
@@ -2473,18 +2461,15 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:NilClass):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, M)
-          v32:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v29:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint NoSingletonClass(Module@0x1010)
           PatchPoint MethodRedefined(Module@0x1010, name@0x1018, cme:0x1020)
           IncrCounter inline_cfunc_optimized_send_count
-          v37:StringExact|NilClass = CCall v32, :Module#name@0x1048
-          v18:CPtr = GetEP 0
-          v20:CInt64 = LoadField v18, :_env_data_index_flags@0x1050
-          v21:CInt64 = GuardNoBitsSet v20, CUInt64(8)
+          v34:StringExact|NilClass = CCall v29, :Module#name@0x1048
           PatchPoint NoEPEscape(test)
-          v25:Fixnum[1] = Const Value(1)
+          v22:Fixnum[1] = Const Value(1)
           CheckInterrupts
-          Return v25
+          Return v22
         ");
     }
 
@@ -7536,18 +7521,15 @@ mod hir_opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:NilClass):
           v13:HashExact = NewHash
-          v15:CPtr = GetEP 0
-          v17:CInt64 = LoadField v15, :_env_data_index_flags@0x1000
-          v18:CInt64 = GuardNoBitsSet v17, CUInt64(8)
           PatchPoint NoEPEscape(test)
-          v25:Fixnum[1] = Const Value(1)
-          v27:Fixnum[3] = Const Value(3)
-          PatchPoint NoSingletonClass(Hash@0x1008)
-          PatchPoint MethodRedefined(Hash@0x1008, []=@0x1010, cme:0x1018)
-          HashAset v13, v25, v27
+          v22:Fixnum[1] = Const Value(1)
+          v24:Fixnum[3] = Const Value(3)
+          PatchPoint NoSingletonClass(Hash@0x1000)
+          PatchPoint MethodRedefined(Hash@0x1000, []=@0x1008, cme:0x1010)
+          HashAset v13, v22, v24
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v27
+          Return v24
         ");
     }
 
