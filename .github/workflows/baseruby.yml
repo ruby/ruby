@@ -48,12 +48,12 @@ jobs:
           - ruby-3.3
 
     steps:
-      - uses: ruby/setup-ruby@ae195bbe749a7cef685ac729197124a48305c1cb # v1.276.0
+      - uses: ruby/setup-ruby@90be1154f987f4dc0fe0dd0feedac9e473aa4ba8 # v1.286.0
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler: none
 
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - uses: ./.github/actions/setup/ubuntu
 

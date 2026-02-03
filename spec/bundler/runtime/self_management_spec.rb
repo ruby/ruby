@@ -171,6 +171,24 @@ RSpec.describe "Self management" do
       expect(out).to eq(previous_minor)
     end
 
+    it "requires the right bundler version from the config and run bundle CLI without re-exec" do
+      unless Bundler.rubygems.provides?(">= 4.1.0.dev")
+        skip "This spec can only run when Gem::BundlerVersionFinder.bundler_versions reads bundler configs"
+      end
+
+      lockfile_bundled_with(current_version)
+
+      bundle "config set --local version #{previous_minor}"
+      bundle "config set --local path.system true"
+      bundle "install"
+
+      script = bundled_app("script.rb")
+      create_file(script, "p 'executed once'")
+
+      bundle "-v", env: { "RUBYOPT" => "-r#{script}" }
+      expect(out).to eq(%("executed once"\n9.3.0))
+    end
+
     it "does not try to install when using bundle config version global" do
       lockfile_bundled_with(previous_minor)
 

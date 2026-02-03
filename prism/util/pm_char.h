@@ -31,10 +31,12 @@ size_t pm_strspn_whitespace(const uint8_t *string, ptrdiff_t length);
  * @param string The string to search.
  * @param length The maximum number of characters to search.
  * @param newline_list The list of newlines to populate.
+ * @param start_offset The offset at which the string occurs in the source, for
+ *   the purpose of tracking newlines.
  * @return The number of characters at the start of the string that are
  *     whitespace.
  */
-size_t pm_strspn_whitespace_newlines(const uint8_t *string, ptrdiff_t length, pm_newline_list_t *newline_list);
+size_t pm_strspn_whitespace_newlines(const uint8_t *string, ptrdiff_t length, pm_newline_list_t *newline_list, uint32_t start_offset);
 
 /**
  * Returns the number of characters at the start of the string that are inline

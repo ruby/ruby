@@ -77,19 +77,6 @@ struct rb_fiber_scheduler_blocking_operation {
     volatile rb_atomic_t status;
 };
 
-static void
-blocking_operation_mark(void *ptr)
-{
-    // No Ruby objects to mark in our struct
-}
-
-static void
-blocking_operation_free(void *ptr)
-{
-    rb_fiber_scheduler_blocking_operation_t *blocking_operation = (rb_fiber_scheduler_blocking_operation_t *)ptr;
-    ruby_xfree(blocking_operation);
-}
-
 static size_t
 blocking_operation_memsize(const void *ptr)
 {
@@ -99,11 +86,11 @@ blocking_operation_memsize(const void *ptr)
 static const rb_data_type_t blocking_operation_data_type = {
     "Fiber::Scheduler::BlockingOperation",
     {
-        blocking_operation_mark,
-        blocking_operation_free,
+        NULL, // nothing to mark
+        RUBY_DEFAULT_FREE,
         blocking_operation_memsize,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 /*

@@ -7,6 +7,7 @@ use std::sync::{Arc, Mutex};
 use crate::codegen::local_size_and_idx_to_ep_offset;
 use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, vm_stack_canary};
 use crate::hir::{Invariant, SideExitReason};
+use crate::hir;
 use crate::options::{TraceExits, debug, get_option};
 use crate::cruby::VALUE;
 use crate::payload::IseqVersionRef;
@@ -14,6 +15,119 @@ use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, side_exit_coun
 use crate::virtualmem::CodePtr;
 use crate::asm::{CodeBlock, Label};
 use crate::state::rb_zjit_record_exit_stack;
+
+/// LIR Block ID. Unique ID for each block, and also defined in LIR so
+/// we can differentiate it from HIR block ids.
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, PartialOrd, Ord)]
+pub struct BlockId(pub usize);
+
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, PartialOrd, Ord)]
+pub struct VRegId(pub usize);
+
+impl From<BlockId> for usize {
+    fn from(val: BlockId) -> Self {
+        val.0
+    }
+}
+
+impl From<VRegId> for usize {
+    fn from(val: VRegId) -> Self {
+        val.0
+    }
+}
+
+impl std::fmt::Display for BlockId {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "l{}", self.0)
+    }
+}
+
+impl std::fmt::Display for VRegId {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "v{}", self.0)
+    }
+}
+
+/// Dummy HIR block ID used when creating test or invalid LIR blocks
+const DUMMY_HIR_BLOCK_ID: usize = usize::MAX;
+/// Dummy RPO index used when creating test or invalid LIR blocks
+const DUMMY_RPO_INDEX: usize = usize::MAX;
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct BranchEdge {
+    pub target: BlockId,
+    pub args: Vec<Opnd>,
+}
+
+#[derive(Clone, Debug)]
+pub struct BasicBlock {
+    // Unique id for this block
+    pub id: BlockId,
+
+    // HIR block this LIR block was lowered from. Not injective: multiple LIR blocks may share
+    // the same hir_block_id because we split HIR blocks into multiple LIR blocks during lowering.
+    pub hir_block_id: hir::BlockId,
+
+    pub is_entry: bool,
+
+    // Instructions in this basic block
+    pub insns: Vec<Insn>,
+
+    // Input parameters for this block
+    pub parameters: Vec<Opnd>,
+
+    // RPO position of the source HIR block
+    pub rpo_index: usize,
+}
+
+pub struct EdgePair(Option<BranchEdge>, Option<BranchEdge>);
+
+impl BasicBlock {
+    fn new(id: BlockId, hir_block_id: hir::BlockId, is_entry: bool, rpo_index: usize) -> Self {
+        Self {
+            id,
+            hir_block_id,
+            is_entry,
+            insns: vec![],
+            parameters: vec![],
+            rpo_index,
+        }
+    }
+
+    pub fn add_parameter(&mut self, param: Opnd) {
+        self.parameters.push(param);
+    }
+
+    pub fn push_insn(&mut self, insn: Insn) {
+        self.insns.push(insn);
+    }
+
+    pub fn edges(&self) -> EdgePair {
+        assert!(self.insns.last().unwrap().is_terminator());
+        let extract_edge = |insn: &Insn| -> Option<BranchEdge> {
+            if let Some(Target::Block(edge)) = insn.target() {
+                Some(edge.clone())
+            } else {
+                None
+            }
+        };
+
+        match self.insns.as_slice() {
+            [] => panic!("empty block"),
+            [.., second_last, last] => {
+                EdgePair(extract_edge(second_last), extract_edge(last))
+            },
+            [.., last] => {
+                EdgePair(extract_edge(last), None)
+            }
+        }
+    }
+
+    /// Sort key for scheduling blocks in code layout order
+    pub fn sort_key(&self) -> (usize, usize) {
+        (self.rpo_index, self.id.0)
+    }
+}
 
 pub use crate::backend::current::{
     mem_base_reg,
@@ -32,7 +146,7 @@ pub enum MemBase
     /// Register: Every Opnd::Mem should have MemBase::Reg as of emit.
     Reg(u8),
     /// Virtual register: Lowered to MemBase::Reg or MemBase::Stack in alloc_regs.
-    VReg(usize),
+    VReg(VRegId),
     /// Stack slot: Lowered to MemBase::Reg in scratch_split.
     Stack { stack_idx: usize, num_bits: u8 },
 }
@@ -59,7 +173,7 @@ impl fmt::Display for Mem {
         write!(f, "[")?;
         match self.base {
             MemBase::Reg(reg_no) => write!(f, "{}", mem_base_reg(reg_no))?,
-            MemBase::VReg(idx) => write!(f, "v{idx}")?,
+            MemBase::VReg(idx) => write!(f, "{idx}")?,
             MemBase::Stack { stack_idx, num_bits } if num_bits == 64 => write!(f, "Stack[{stack_idx}]")?,
             MemBase::Stack { stack_idx, num_bits } => write!(f, "Stack{num_bits}[{stack_idx}]")?,
         }
@@ -97,7 +211,7 @@ pub enum Opnd
     Value(VALUE),
 
     /// Virtual register. Lowered to Reg or Mem in Assembler::alloc_regs().
-    VReg{ idx: usize, num_bits: u8 },
+    VReg{ idx: VRegId, num_bits: u8 },
 
     // Low-level operands, for lowering
     Imm(i64),           // Raw signed immediate
@@ -113,8 +227,8 @@ impl fmt::Display for Opnd {
             None => write!(f, "None"),
             Value(VALUE(value)) if *value < 10 => write!(f, "Value({value:x})"),
             Value(VALUE(value)) => write!(f, "Value(0x{value:x})"),
-            VReg { idx, num_bits } if *num_bits == 64 => write!(f, "v{idx}"),
-            VReg { idx, num_bits } => write!(f, "VReg{num_bits}(v{idx})"),
+            VReg { idx, num_bits } if *num_bits == 64 => write!(f, "{idx}"),
+            VReg { idx, num_bits } => write!(f, "VReg{num_bits}({idx})"),
             Imm(value) if value.abs() < 10 => write!(f, "Imm({value:x})"),
             Imm(value) => write!(f, "Imm(0x{value:x})"),
             UImm(value) if *value < 10 => write!(f, "{value:x}"),
@@ -183,7 +297,7 @@ impl Opnd
     }
 
     /// Unwrap the index of a VReg
-    pub fn vreg_idx(&self) -> usize {
+    pub fn vreg_idx(&self) -> VRegId {
         match self {
             Opnd::VReg { idx, .. } => *idx,
             _ => unreachable!("trying to unwrap {self:?} into VReg"),
@@ -222,10 +336,10 @@ impl Opnd
     pub fn map_index(self, indices: &[usize]) -> Opnd {
         match self {
             Opnd::VReg { idx, num_bits } => {
-                Opnd::VReg { idx: indices[idx], num_bits }
+                Opnd::VReg { idx: VRegId(indices[idx.0]), num_bits }
             }
             Opnd::Mem(Mem { base: MemBase::VReg(idx), disp, num_bits }) => {
-                Opnd::Mem(Mem { base: MemBase::VReg(indices[idx]), disp, num_bits })
+                Opnd::Mem(Mem { base: MemBase::VReg(VRegId(indices[idx.0])), disp, num_bits })
             },
             _ => self
         }
@@ -309,13 +423,15 @@ pub struct SideExit {
 
 /// Branch target (something that we can jump to)
 /// for branch instructions
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub enum Target
 {
     /// Pointer to a piece of ZJIT-generated code
     CodePtr(CodePtr),
     /// A label within the generated code
     Label(Label),
+    /// An LIR branch edge
+    Block(BranchEdge),
     /// Side exit to the interpreter
     SideExit {
         /// Context used for compiling the side exit
@@ -323,6 +439,32 @@ pub enum Target
         /// We use this to increment exit counters
         reason: SideExitReason,
     },
+}
+
+impl fmt::Debug for Target {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Target::CodePtr(ptr) => write!(f, "CodePtr({:?})", ptr),
+            Target::Label(label) => write!(f, "Label({:?})", label),
+            Target::Block(edge) => {
+                if edge.args.is_empty() {
+                    write!(f, "Block({:?})", edge.target)
+                } else {
+                    write!(f, "Block({:?}(", edge.target)?;
+                    for (i, arg) in edge.args.iter().enumerate() {
+                        if i > 0 {
+                            write!(f, ", ")?;
+                        }
+                        write!(f, "{:?}", arg)?;
+                    }
+                    write!(f, "))")
+                }
+            }
+            Target::SideExit { exit, reason } => {
+                write!(f, "SideExit {{ exit: {:?}, reason: {:?} }}", exit, reason)
+            }
+        }
+    }
 }
 
 impl Target
@@ -377,17 +519,19 @@ pub enum Insn {
     /// Pop a register from the C stack
     CPop { out: Opnd },
 
-    /// Pop all of the caller-save registers and the flags from the C stack
-    CPopAll,
-
     /// Pop a register from the C stack and store it into another register
     CPopInto(Opnd),
+
+    /// Pop a pair of registers from the C stack and store it into a pair of registers.
+    /// The registers are popped from left to right.
+    CPopPairInto(Opnd, Opnd),
 
     /// Push a register onto the C stack
     CPush(Opnd),
 
-    /// Push all of the caller-save registers and the flags to the C stack
-    CPushAll,
+    /// Push a pair of registers onto the C stack.
+    /// The registers are pushed from left to right.
+    CPushPair(Opnd, Opnd),
 
     // C function call with N arguments (variadic)
     CCall {
@@ -614,10 +758,10 @@ impl Insn {
             Insn::Comment(_) => "Comment",
             Insn::Cmp { .. } => "Cmp",
             Insn::CPop { .. } => "CPop",
-            Insn::CPopAll => "CPopAll",
             Insn::CPopInto(_) => "CPopInto",
+            Insn::CPopPairInto(_, _) => "CPopPairInto",
             Insn::CPush(_) => "CPush",
-            Insn::CPushAll => "CPushAll",
+            Insn::CPushPair(_, _) => "CPushPair",
             Insn::CCall { .. } => "CCall",
             Insn::CRet(_) => "CRet",
             Insn::CSelE { .. } => "CSelE",
@@ -769,6 +913,29 @@ impl Insn {
             _ => None
         }
     }
+
+    /// Returns true if this instruction is a terminator (ends a basic block).
+    pub fn is_terminator(&self) -> bool {
+        match self {
+            Insn::Jbe(_) |
+            Insn::Jb(_) |
+            Insn::Je(_) |
+            Insn::Jl(_) |
+            Insn::Jg(_) |
+            Insn::Jge(_) |
+            Insn::Jmp(_) |
+            Insn::JmpOpnd(_) |
+            Insn::Jne(_) |
+            Insn::Jnz(_) |
+            Insn::Jo(_) |
+            Insn::JoMul(_) |
+            Insn::Jz(_) |
+            Insn::Joz(..) |
+            Insn::Jonz(..) |
+            Insn::CRet(_) => true,
+            _ => false
+        }
+    }
 }
 
 /// An iterator that will yield a non-mutable reference to each operand in turn
@@ -804,22 +971,33 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::Label(target) |
             Insn::LeaJumpTarget { target, .. } |
             Insn::PatchPoint { target, .. } => {
-                if let Target::SideExit { exit: SideExit { stack, locals, .. }, .. } = target {
-                    let stack_idx = self.idx;
-                    if stack_idx < stack.len() {
-                        let opnd = &stack[stack_idx];
-                        self.idx += 1;
-                        return Some(opnd);
-                    }
+                match target {
+                    Target::SideExit { exit: SideExit { stack, locals, .. }, .. } => {
+                        let stack_idx = self.idx;
+                        if stack_idx < stack.len() {
+                            let opnd = &stack[stack_idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
 
-                    let local_idx = self.idx - stack.len();
-                    if local_idx < locals.len() {
-                        let opnd = &locals[local_idx];
-                        self.idx += 1;
-                        return Some(opnd);
+                        let local_idx = self.idx - stack.len();
+                        if local_idx < locals.len() {
+                            let opnd = &locals[local_idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
+                        None
                     }
+                    Target::Block(edge) => {
+                        if self.idx < edge.args.len() {
+                            let opnd = &edge.args[self.idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
+                        None
+                    }
+                    _ => None
                 }
-                None
             }
 
             Insn::Joz(opnd, target) |
@@ -829,30 +1007,40 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
                     return Some(opnd);
                 }
 
-                if let Target::SideExit { exit: SideExit { stack, locals, .. }, .. } = target {
-                    let stack_idx = self.idx - 1;
-                    if stack_idx < stack.len() {
-                        let opnd = &stack[stack_idx];
-                        self.idx += 1;
-                        return Some(opnd);
-                    }
+                match target {
+                    Target::SideExit { exit: SideExit { stack, locals, .. }, .. } => {
+                        let stack_idx = self.idx - 1;
+                        if stack_idx < stack.len() {
+                            let opnd = &stack[stack_idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
 
-                    let local_idx = stack_idx - stack.len();
-                    if local_idx < locals.len() {
-                        let opnd = &locals[local_idx];
-                        self.idx += 1;
-                        return Some(opnd);
+                        let local_idx = stack_idx - stack.len();
+                        if local_idx < locals.len() {
+                            let opnd = &locals[local_idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
+                        None
                     }
+                    Target::Block(edge) => {
+                        let arg_idx = self.idx - 1;
+                        if arg_idx < edge.args.len() {
+                            let opnd = &edge.args[arg_idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
+                        None
+                    }
+                    _ => None
                 }
-                None
             }
 
             Insn::BakeString(_) |
             Insn::Breakpoint |
             Insn::Comment(_) |
             Insn::CPop { .. } |
-            Insn::CPopAll |
-            Insn::CPushAll |
             Insn::PadPatchPoint |
             Insn::PosMarker(_) => None,
 
@@ -875,6 +1063,8 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             },
             Insn::Add { left: opnd0, right: opnd1, .. } |
             Insn::And { left: opnd0, right: opnd1, .. } |
+            Insn::CPushPair(opnd0, opnd1) |
+            Insn::CPopPairInto(opnd0, opnd1) |
             Insn::Cmp { left: opnd0, right: opnd1 } |
             Insn::CSelE { truthy: opnd0, falsy: opnd1, .. } |
             Insn::CSelG { truthy: opnd0, falsy: opnd1, .. } |
@@ -973,22 +1163,33 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::Label(target) |
             Insn::LeaJumpTarget { target, .. } |
             Insn::PatchPoint { target, .. } => {
-                if let Target::SideExit { exit: SideExit { stack, locals, .. }, .. } = target {
-                    let stack_idx = self.idx;
-                    if stack_idx < stack.len() {
-                        let opnd = &mut stack[stack_idx];
-                        self.idx += 1;
-                        return Some(opnd);
-                    }
+                match target {
+                    Target::SideExit { exit: SideExit { stack, locals, .. }, .. } => {
+                        let stack_idx = self.idx;
+                        if stack_idx < stack.len() {
+                            let opnd = &mut stack[stack_idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
 
-                    let local_idx = self.idx - stack.len();
-                    if local_idx < locals.len() {
-                        let opnd = &mut locals[local_idx];
-                        self.idx += 1;
-                        return Some(opnd);
+                        let local_idx = self.idx - stack.len();
+                        if local_idx < locals.len() {
+                            let opnd = &mut locals[local_idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
+                        None
                     }
+                    Target::Block(edge) => {
+                        if self.idx < edge.args.len() {
+                            let opnd = &mut edge.args[self.idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
+                        None
+                    }
+                    _ => None
                 }
-                None
             }
 
             Insn::Joz(opnd, target) |
@@ -998,30 +1199,40 @@ impl<'a> InsnOpndMutIterator<'a> {
                     return Some(opnd);
                 }
 
-                if let Target::SideExit { exit: SideExit { stack, locals, .. }, .. } = target {
-                    let stack_idx = self.idx - 1;
-                    if stack_idx < stack.len() {
-                        let opnd = &mut stack[stack_idx];
-                        self.idx += 1;
-                        return Some(opnd);
-                    }
+                match target {
+                    Target::SideExit { exit: SideExit { stack, locals, .. }, .. } => {
+                        let stack_idx = self.idx - 1;
+                        if stack_idx < stack.len() {
+                            let opnd = &mut stack[stack_idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
 
-                    let local_idx = stack_idx - stack.len();
-                    if local_idx < locals.len() {
-                        let opnd = &mut locals[local_idx];
-                        self.idx += 1;
-                        return Some(opnd);
+                        let local_idx = stack_idx - stack.len();
+                        if local_idx < locals.len() {
+                            let opnd = &mut locals[local_idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
+                        None
                     }
+                    Target::Block(edge) => {
+                        let arg_idx = self.idx - 1;
+                        if arg_idx < edge.args.len() {
+                            let opnd = &mut edge.args[arg_idx];
+                            self.idx += 1;
+                            return Some(opnd);
+                        }
+                        None
+                    }
+                    _ => None
                 }
-                None
             }
 
             Insn::BakeString(_) |
             Insn::Breakpoint |
             Insn::Comment(_) |
             Insn::CPop { .. } |
-            Insn::CPopAll |
-            Insn::CPushAll |
             Insn::FrameSetup { .. } |
             Insn::FrameTeardown { .. } |
             Insn::PadPatchPoint |
@@ -1046,6 +1257,8 @@ impl<'a> InsnOpndMutIterator<'a> {
             },
             Insn::Add { left: opnd0, right: opnd1, .. } |
             Insn::And { left: opnd0, right: opnd1, .. } |
+            Insn::CPushPair(opnd0, opnd1) |
+            Insn::CPopPairInto(opnd0, opnd1) |
             Insn::Cmp { left: opnd0, right: opnd1 } |
             Insn::CSelE { truthy: opnd0, falsy: opnd1, .. } |
             Insn::CSelG { truthy: opnd0, falsy: opnd1, .. } |
@@ -1157,12 +1370,44 @@ impl LiveRange {
     }
 }
 
+/// Type-safe wrapper around `Vec<LiveRange>` that can be indexed by VRegId
+#[derive(Clone, Debug, Default)]
+pub struct LiveRanges(Vec<LiveRange>);
+
+impl LiveRanges {
+    pub fn new(size: usize) -> Self {
+        Self(vec![LiveRange { start: None, end: None }; size])
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn get(&self, vreg_id: VRegId) -> Option<&LiveRange> {
+        self.0.get(vreg_id.0)
+    }
+}
+
+impl std::ops::Index<VRegId> for LiveRanges {
+    type Output = LiveRange;
+
+    fn index(&self, idx: VRegId) -> &Self::Output {
+        &self.0[idx.0]
+    }
+}
+
+impl std::ops::IndexMut<VRegId> for LiveRanges {
+    fn index_mut(&mut self, idx: VRegId) -> &mut Self::Output {
+        &mut self.0[idx.0]
+    }
+}
+
 /// StackState manages which stack slots are used by which VReg
 pub struct StackState {
     /// The maximum number of spilled VRegs at a time
     stack_size: usize,
     /// Map from index at the C stack for spilled VRegs to Some(vreg_idx) if allocated
-    stack_slots: Vec<Option<usize>>,
+    stack_slots: Vec<Option<VRegId>>,
     /// Copy of Assembler::stack_base_idx. Used for calculating stack slot offsets.
     stack_base_idx: usize,
 }
@@ -1178,7 +1423,7 @@ impl StackState {
     }
 
     /// Allocate a stack slot for a given vreg_idx
-    fn alloc_stack(&mut self, vreg_idx: usize) -> Opnd {
+    fn alloc_stack(&mut self, vreg_idx: VRegId) -> Opnd {
         for stack_idx in 0..self.stack_size {
             if self.stack_slots[stack_idx].is_none() {
                 self.stack_slots[stack_idx] = Some(vreg_idx);
@@ -1239,7 +1484,7 @@ struct RegisterPool {
 
     /// Some(vreg_idx) if the register at the index in `pool` is used by the VReg.
     /// None if the register is not in use.
-    pool: Vec<Option<usize>>,
+    pool: Vec<Option<VRegId>>,
 
     /// The number of live registers.
     /// Provides a quick way to query `pool.filter(|r| r.is_some()).count()`
@@ -1263,7 +1508,7 @@ impl RegisterPool {
 
     /// Mutate the pool to indicate that the register at the index
     /// has been allocated and is live.
-    fn alloc_opnd(&mut self, vreg_idx: usize) -> Opnd {
+    fn alloc_opnd(&mut self, vreg_idx: VRegId) -> Opnd {
         for (reg_idx, reg) in self.regs.iter().enumerate() {
             if self.pool[reg_idx].is_none() {
                 self.pool[reg_idx] = Some(vreg_idx);
@@ -1275,7 +1520,7 @@ impl RegisterPool {
     }
 
     /// Allocate a specific register
-    fn take_reg(&mut self, reg: &Reg, vreg_idx: usize) -> Opnd {
+    fn take_reg(&mut self, reg: &Reg, vreg_idx: VRegId) -> Opnd {
         let reg_idx = self.regs.iter().position(|elem| elem.reg_no == reg.reg_no)
             .unwrap_or_else(|| panic!("Unable to find register: {}", reg.reg_no));
         assert_eq!(self.pool[reg_idx], None, "register already allocated for VReg({:?})", self.pool[reg_idx]);
@@ -1301,7 +1546,7 @@ impl RegisterPool {
     }
 
     /// Return a list of (Reg, vreg_idx) tuples for all live registers
-    fn live_regs(&self) -> Vec<(Reg, usize)> {
+    fn live_regs(&self) -> Vec<(Reg, VRegId)> {
         let mut live_regs = Vec::with_capacity(self.live_regs);
         for (reg_idx, &reg) in self.regs.iter().enumerate() {
             if let Some(vreg_idx) = self.pool[reg_idx] {
@@ -1312,7 +1557,7 @@ impl RegisterPool {
     }
 
     /// Return vreg_idx if a given register is already in use
-    fn vreg_for(&self, reg: &Reg) -> Option<usize> {
+    fn vreg_for(&self, reg: &Reg) -> Option<VRegId> {
         let reg_idx = self.regs.iter().position(|elem| elem.reg_no == reg.reg_no).unwrap();
         self.pool[reg_idx]
     }
@@ -1330,10 +1575,15 @@ const ASSEMBLER_INSNS_CAPACITY: usize = 256;
 /// optimized and lowered
 #[derive(Clone)]
 pub struct Assembler {
-    pub(super) insns: Vec<Insn>,
+    pub basic_blocks: Vec<BasicBlock>,
+
+    /// The block to which new instructions are added. Used during HIR to LIR lowering to
+    /// determine which LIR block we should add instructions to. Set by `set_current_block()`
+    /// and automatically set to new entry blocks created by `new_block()`.
+    current_block_id: BlockId,
 
     /// Live range for each VReg indexed by its `idx``
-    pub(super) live_ranges: Vec<LiveRange>,
+    pub(super) live_ranges: LiveRanges,
 
     /// Names of labels
     pub(super) label_names: Vec<String>,
@@ -1348,7 +1598,10 @@ pub struct Assembler {
     pub(super) stack_base_idx: usize,
 
     /// If Some, the next ccall should verify its leafness
-    leaf_ccall_stack_size: Option<usize>
+    leaf_ccall_stack_size: Option<usize>,
+
+    /// Current instruction index, incremented for each instruction pushed
+    idx: usize,
 }
 
 impl Assembler
@@ -1356,12 +1609,14 @@ impl Assembler
     /// Create an Assembler with defaults
     pub fn new() -> Self {
         Self {
-            insns: Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY),
-            live_ranges: Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY),
             label_names: Vec::default(),
             accept_scratch_reg: false,
             stack_base_idx: 0,
             leaf_ccall_stack_size: None,
+            basic_blocks: Vec::default(),
+            current_block_id: BlockId(0),
+            live_ranges: LiveRanges::default(),
+            idx: 0,
         }
     }
 
@@ -1385,9 +1640,60 @@ impl Assembler
             stack_base_idx: old_asm.stack_base_idx,
             ..Self::new()
         };
-        // Bump the initial VReg index to allow the use of the VRegs for the old Assembler
-        asm.live_ranges.resize(old_asm.live_ranges.len(), LiveRange { start: None, end: None });
+
+        // Initialize basic blocks from the old assembler, preserving hir_block_id and entry flag
+        // but with empty instruction lists
+        for old_block in &old_asm.basic_blocks {
+            asm.new_block_from_old_block(&old_block);
+        }
+
+        // Initialize live_ranges to match the old assembler's size
+        // This allows reusing VRegs from the old assembler
+        asm.live_ranges = LiveRanges::new(old_asm.live_ranges.len());
+
         asm
+    }
+
+    // Create a new LIR basic block.  Returns the newly created block ID
+    pub fn new_block(&mut self, hir_block_id: hir::BlockId, is_entry: bool, rpo_index: usize) -> BlockId {
+        let bb_id = BlockId(self.basic_blocks.len());
+        let lir_bb = BasicBlock::new(bb_id, hir_block_id, is_entry, rpo_index);
+        self.basic_blocks.push(lir_bb);
+        if is_entry {
+            self.set_current_block(bb_id);
+        }
+        bb_id
+    }
+
+    // Create a new LIR basic block from an old one.  This should only be used
+    // when creating new assemblers during passes when we want to translate
+    // one assembler to a new one.
+    pub fn new_block_from_old_block(&mut self, old_block: &BasicBlock) -> BlockId {
+        let bb_id = BlockId(self.basic_blocks.len());
+        let lir_bb = BasicBlock::new(bb_id, old_block.hir_block_id, old_block.is_entry, old_block.rpo_index);
+        self.basic_blocks.push(lir_bb);
+        bb_id
+    }
+
+    // Create a LIR basic block without a valid HIR block ID (for testing or internal use).
+    pub fn new_block_without_id(&mut self) -> BlockId {
+        self.new_block(hir::BlockId(DUMMY_HIR_BLOCK_ID), true, DUMMY_RPO_INDEX)
+    }
+
+    pub fn set_current_block(&mut self, block_id: BlockId) {
+        self.current_block_id = block_id;
+    }
+
+    pub fn current_block(&mut self) -> &mut BasicBlock {
+        &mut self.basic_blocks[self.current_block_id.0]
+    }
+
+    /// Return basic blocks sorted by RPO index, then by block ID.
+    /// TODO: Use a more advanced scheduling algorithm
+    pub fn sorted_blocks(&self) -> Vec<&BasicBlock> {
+        let mut sorted: Vec<&BasicBlock> = self.basic_blocks.iter().collect();
+        sorted.sort_by_key(|block| block.sort_key());
+        sorted
     }
 
     /// Return true if `opnd` is or depends on `reg`
@@ -1400,11 +1706,114 @@ impl Assembler
     }
 
     pub fn instruction_iterator(&mut self) -> InsnIter {
-        let insns = take(&mut self.insns);
-        InsnIter {
-            old_insns_iter: insns.into_iter(),
+        let mut blocks = take(&mut self.basic_blocks);
+        blocks.sort_by_key(|block| block.sort_key());
+
+        let mut iter = InsnIter {
+            blocks,
+            current_block_idx: 0,
+            current_insn_iter: vec![].into_iter(), // Will be replaced immediately
             peeked: None,
             index: 0,
+        };
+
+        // Set up first block's iterator
+        if !iter.blocks.is_empty() {
+            iter.current_insn_iter = take(&mut iter.blocks[0].insns).into_iter();
+        }
+
+        iter
+    }
+
+    /// Return an operand for a basic block argument at a given index.
+    /// To simplify the implementation, we allocate a fixed register or a stack slot
+    /// for each basic block argument.
+    pub fn param_opnd(idx: usize) -> Opnd {
+        use crate::backend::current::ALLOC_REGS;
+        use crate::cruby::SIZEOF_VALUE_I32;
+
+        if idx < ALLOC_REGS.len() {
+            Opnd::Reg(ALLOC_REGS[idx])
+        } else {
+            // With FrameSetup, the address that NATIVE_BASE_PTR points to stores an old value in the register.
+            // To avoid clobbering it, we need to start from the next slot, hence `+ 1` for the index.
+            Opnd::mem(64, NATIVE_BASE_PTR, (idx - ALLOC_REGS.len() + 1) as i32 * -SIZEOF_VALUE_I32)
+        }
+    }
+
+    pub fn linearize_instructions(&self) -> Vec<Insn> {
+        // Emit instructions with labels, expanding branch parameters
+        let mut insns = Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY);
+
+        let blocks = self.sorted_blocks();
+        let num_blocks = blocks.len();
+
+        for (block_id, block) in blocks.iter().enumerate() {
+            // Entry blocks shouldn't ever be preceded by something that can
+            // stomp on this block.
+            if !block.is_entry {
+                insns.push(Insn::PadPatchPoint);
+            }
+
+            // Process each instruction, expanding branch params if needed
+            for insn in &block.insns {
+                self.expand_branch_insn(insn, &mut insns);
+            }
+
+            // Make sure we don't stomp on the next function
+            if block_id == num_blocks - 1 {
+                insns.push(Insn::PadPatchPoint);
+            }
+        }
+        insns
+    }
+
+    /// Expand and linearize a branch instruction:
+    /// 1. If the branch has Target::Block with arguments, insert a ParallelMov first
+    /// 2. Convert Target::Block to Target::Label
+    /// 3. Push the converted instruction
+    fn expand_branch_insn(&self, insn: &Insn, insns: &mut Vec<Insn>) {
+        // Helper to process branch arguments and return the label target
+        let mut process_edge = |edge: &BranchEdge| -> Label {
+            if !edge.args.is_empty() {
+                insns.push(Insn::ParallelMov {
+                    moves: edge.args.iter().enumerate()
+                        .map(|(idx, &arg)| (Assembler::param_opnd(idx), arg))
+                        .collect()
+                });
+            }
+            self.block_label(edge.target)
+        };
+
+        // Convert Target::Block to Target::Label, processing args if needed
+        let stripped_insn = match insn {
+            Insn::Jmp(Target::Block(edge)) => Insn::Jmp(Target::Label(process_edge(edge))),
+            Insn::Jz(Target::Block(edge)) => Insn::Jz(Target::Label(process_edge(edge))),
+            Insn::Jnz(Target::Block(edge)) => Insn::Jnz(Target::Label(process_edge(edge))),
+            Insn::Je(Target::Block(edge)) => Insn::Je(Target::Label(process_edge(edge))),
+            Insn::Jne(Target::Block(edge)) => Insn::Jne(Target::Label(process_edge(edge))),
+            Insn::Jl(Target::Block(edge)) => Insn::Jl(Target::Label(process_edge(edge))),
+            Insn::Jg(Target::Block(edge)) => Insn::Jg(Target::Label(process_edge(edge))),
+            Insn::Jge(Target::Block(edge)) => Insn::Jge(Target::Label(process_edge(edge))),
+            Insn::Jbe(Target::Block(edge)) => Insn::Jbe(Target::Label(process_edge(edge))),
+            Insn::Jb(Target::Block(edge)) => Insn::Jb(Target::Label(process_edge(edge))),
+            Insn::Jo(Target::Block(edge)) => Insn::Jo(Target::Label(process_edge(edge))),
+            Insn::JoMul(Target::Block(edge)) => Insn::JoMul(Target::Label(process_edge(edge))),
+            Insn::Joz(opnd, Target::Block(edge)) => Insn::Joz(*opnd, Target::Label(process_edge(edge))),
+            Insn::Jonz(opnd, Target::Block(edge)) => Insn::Jonz(*opnd, Target::Label(process_edge(edge))),
+            _ => insn.clone()
+        };
+
+        // Push the stripped instruction
+        insns.push(stripped_insn);
+    }
+
+    // Get the label for a given block by extracting it from the first instruction.
+    pub(super) fn block_label(&self, block_id: BlockId) -> Label {
+        let block = &self.basic_blocks[block_id.0];
+        match block.insns.first() {
+            Some(Insn::Label(Target::Label(label))) => *label,
+            other => panic!("Expected first instruction of block {:?} to be a Label, but found: {:?}", block_id, other),
         }
     }
 
@@ -1432,8 +1841,8 @@ impl Assembler
 
     /// Build an Opnd::VReg and initialize its LiveRange
     pub(super) fn new_vreg(&mut self, num_bits: u8) -> Opnd {
-        let vreg = Opnd::VReg { idx: self.live_ranges.len(), num_bits };
-        self.live_ranges.push(LiveRange { start: None, end: None });
+        let vreg = Opnd::VReg { idx: VRegId(self.live_ranges.len()), num_bits };
+        self.live_ranges.0.push(LiveRange { start: None, end: None });
         vreg
     }
 
@@ -1442,11 +1851,11 @@ impl Assembler
     /// operands to this instruction.
     pub fn push_insn(&mut self, insn: Insn) {
         // Index of this instruction
-        let insn_idx = self.insns.len();
+        let insn_idx = self.idx;
 
         // Initialize the live range of the output VReg to insn_idx..=insn_idx
         if let Some(Opnd::VReg { idx, .. }) = insn.out_opnd() {
-            assert!(*idx < self.live_ranges.len());
+            assert!(idx.0 < self.live_ranges.len());
             assert_eq!(self.live_ranges[*idx], LiveRange { start: None, end: None });
             self.live_ranges[*idx] = LiveRange { start: Some(insn_idx), end: Some(insn_idx) };
         }
@@ -1457,7 +1866,7 @@ impl Assembler
             match *opnd {
                 Opnd::VReg { idx, .. } |
                 Opnd::Mem(Mem { base: MemBase::VReg(idx), .. }) => {
-                    assert!(idx < self.live_ranges.len());
+                    assert!(idx.0 < self.live_ranges.len());
                     assert_ne!(self.live_ranges[idx].end, None);
                     self.live_ranges[idx].end = Some(self.live_ranges[idx].end().max(insn_idx));
                 }
@@ -1473,7 +1882,9 @@ impl Assembler
             }
         }
 
-        self.insns.push(insn);
+        self.idx += 1;
+
+        self.current_block().push_insn(insn);
     }
 
     /// Create a new label instance that we can jump to
@@ -1531,6 +1942,7 @@ impl Assembler
         Some(new_moves)
     }
 
+
     /// Sets the out field on the various instructions that require allocated
     /// registers because their output is used as the operand on a subsequent
     /// instruction. This is our implementation of the linear scan algorithm.
@@ -1543,20 +1955,25 @@ impl Assembler
         let mut vreg_opnd: Vec<Option<Opnd>> = vec![None; self.live_ranges.len()];
 
         // List of registers saved before a C call, paired with the VReg index.
-        let mut saved_regs: Vec<(Reg, usize)> = vec![];
+        let mut saved_regs: Vec<(Reg, VRegId)> = vec![];
 
         // Remember the indexes of Insn::FrameSetup to update the stack size later
-        let mut frame_setup_idxs: Vec<usize> = vec![];
+        let mut frame_setup_idxs: Vec<(BlockId, usize)> = vec![];
 
         // live_ranges is indexed by original `index` given by the iterator.
-        let mut asm = Assembler::new_with_asm(&self);
-        let live_ranges: Vec<LiveRange> = take(&mut self.live_ranges);
-        let mut iterator = self.insns.into_iter().enumerate().peekable();
+        let mut asm_local = Assembler::new_with_asm(&self);
 
-        while let Some((index, mut insn)) = iterator.next() {
+        let iterator = &mut self.instruction_iterator();
+
+        let asm = &mut asm_local;
+
+        let live_ranges = take(&mut self.live_ranges);
+
+        while let Some((index, mut insn)) = iterator.next(asm) {
             // Remember the index of FrameSetup to bump slot_count when we know the max number of spilled VRegs.
             if let Insn::FrameSetup { .. } = insn {
-                frame_setup_idxs.push(asm.insns.len());
+                assert!(asm.current_block().is_entry);
+                frame_setup_idxs.push((asm.current_block().id, asm.current_block().insns.len()));
             }
 
             let before_ccall = match (&insn, iterator.peek().map(|(_, insn)| insn)) {
@@ -1568,7 +1985,7 @@ impl Assembler
                         let new_opnd = pool.alloc_opnd(vreg_idx);
                         asm.mov(new_opnd, C_RET_OPND);
                         pool.dealloc_opnd(&Opnd::Reg(C_RET_REG));
-                        vreg_opnd[vreg_idx] = Some(new_opnd);
+                        vreg_opnd[vreg_idx.0] = Some(new_opnd);
                     }
 
                     true
@@ -1587,7 +2004,7 @@ impl Assembler
                         // uses this operand. If it is, we can return the allocated
                         // register to the pool.
                         if live_ranges[idx].end() == index {
-                            if let Some(opnd) = vreg_opnd[idx] {
+                            if let Some(opnd) = vreg_opnd[idx.0] {
                                 pool.dealloc_opnd(&opnd);
                             } else {
                                 unreachable!("no register allocated for insn {:?}", insn);
@@ -1604,9 +2021,19 @@ impl Assembler
                 saved_regs = pool.live_regs();
 
                 // Save live registers
-                for &(reg, _) in saved_regs.iter() {
-                    asm.cpush(Opnd::Reg(reg));
-                    pool.dealloc_opnd(&Opnd::Reg(reg));
+                for pair in saved_regs.chunks(2) {
+                    match *pair {
+                        [(reg0, _), (reg1, _)] => {
+                            asm.cpush_pair(Opnd::Reg(reg0), Opnd::Reg(reg1));
+                            pool.dealloc_opnd(&Opnd::Reg(reg0));
+                            pool.dealloc_opnd(&Opnd::Reg(reg1));
+                        }
+                        [(reg, _)] => {
+                            asm.cpush(Opnd::Reg(reg));
+                            pool.dealloc_opnd(&Opnd::Reg(reg));
+                        }
+                        _ => unreachable!("chunks(2)")
+                    }
                 }
                 // On x86_64, maintain 16-byte stack alignment
                 if cfg!(target_arch = "x86_64") && saved_regs.len() % 2 == 1 {
@@ -1621,7 +2048,7 @@ impl Assembler
             };
             if let Some(vreg_idx) = vreg_idx {
                 if live_ranges[vreg_idx].end() == index {
-                    debug!("Allocating a register for VReg({}) at instruction index {} even though it does not live past this index", vreg_idx, index);
+                    debug!("Allocating a register for {vreg_idx} at instruction index {index} even though it does not live past this index");
                 }
                 // This is going to be the output operand that we will set on the
                 // instruction. CCall and LiveReg need to use a specific register.
@@ -1646,7 +2073,7 @@ impl Assembler
 
                     if let Some(Opnd::VReg{ idx, .. }) = opnd_iter.next() {
                         if live_ranges[*idx].end() == index {
-                            if let Some(Opnd::Reg(reg)) = vreg_opnd[*idx] {
+                            if let Some(Opnd::Reg(reg)) = vreg_opnd[idx.0] {
                                 out_reg = Some(pool.take_reg(&reg, vreg_idx));
                             }
                         }
@@ -1665,7 +2092,7 @@ impl Assembler
                 // extends beyond the index of the instruction.
                 let out = insn.out_opnd_mut().unwrap();
                 let out_opnd = out_opnd.with_num_bits(out_num_bits);
-                vreg_opnd[out.vreg_idx()] = Some(out_opnd);
+                vreg_opnd[out.vreg_idx().0] = Some(out_opnd);
                 *out = out_opnd;
             }
 
@@ -1674,10 +2101,10 @@ impl Assembler
             while let Some(opnd) = opnd_iter.next() {
                 match *opnd {
                     Opnd::VReg { idx, num_bits } => {
-                        *opnd = vreg_opnd[idx].unwrap().with_num_bits(num_bits);
+                        *opnd = vreg_opnd[idx.0].unwrap().with_num_bits(num_bits);
                     },
                     Opnd::Mem(Mem { base: MemBase::VReg(idx), disp, num_bits }) => {
-                        *opnd = match vreg_opnd[idx].unwrap() {
+                        *opnd = match vreg_opnd[idx.0].unwrap() {
                             Opnd::Reg(reg) => Opnd::Mem(Mem { base: MemBase::Reg(reg.reg_no), disp, num_bits }),
                             // If the base is spilled, lower it to MemBase::Stack, which scratch_split will lower to MemBase::Reg.
                             Opnd::Mem(mem) => Opnd::Mem(Mem { base: pool.stack_state.mem_to_stack_membase(mem), disp, num_bits }),
@@ -1692,7 +2119,7 @@ impl Assembler
             // register
             if let Some(idx) = vreg_idx {
                 if live_ranges[idx].end() == index {
-                    if let Some(opnd) = vreg_opnd[idx] {
+                    if let Some(opnd) = vreg_opnd[idx.0] {
                         pool.dealloc_opnd(&opnd);
                     } else {
                         unreachable!("no register allocated for insn {:?}", insn);
@@ -1703,17 +2130,6 @@ impl Assembler
             // Push instruction(s)
             let is_ccall = matches!(insn, Insn::CCall { .. });
             match insn {
-                Insn::ParallelMov { moves } => {
-                    // For trampolines that use scratch registers, attempt to lower ParallelMov without scratch_reg.
-                    if let Some(moves) = Self::resolve_parallel_moves(&moves, None) {
-                        for (dst, src) in moves {
-                            asm.mov(dst, src);
-                        }
-                    } else {
-                        // If it needs a scratch_reg, leave it to *_split_with_scratch_regs to handle it.
-                        asm.push_insn(Insn::ParallelMov { moves });
-                    }
-                }
                 Insn::CCall { opnds, fptr, start_marker, end_marker, out } => {
                     // Split start_marker and end_marker here to avoid inserting push/pop between them.
                     if let Some(start_marker) = start_marker {
@@ -1737,17 +2153,27 @@ impl Assembler
                     asm.cpop_into(Opnd::Reg(saved_regs.last().unwrap().0));
                 }
                 // Restore saved registers
-                for &(reg, vreg_idx) in saved_regs.iter().rev() {
-                    asm.cpop_into(Opnd::Reg(reg));
-                    pool.take_reg(&reg, vreg_idx);
+                for pair in saved_regs.chunks(2).rev() {
+                    match *pair {
+                        [(reg, vreg_idx)] => {
+                            asm.cpop_into(Opnd::Reg(reg));
+                            pool.take_reg(&reg, vreg_idx);
+                        }
+                        [(reg0, vreg_idx0), (reg1, vreg_idx1)] => {
+                            asm.cpop_pair_into(Opnd::Reg(reg1), Opnd::Reg(reg0));
+                            pool.take_reg(&reg1, vreg_idx1);
+                            pool.take_reg(&reg0, vreg_idx0);
+                        }
+                        _ => unreachable!("chunks(2)")
+                    }
                 }
                 saved_regs.clear();
             }
         }
 
         // Extend the stack space for spilled operands
-        for frame_setup_idx in frame_setup_idxs {
-            match &mut asm.insns[frame_setup_idx] {
+        for (block_id, frame_setup_idx) in frame_setup_idxs {
+            match &mut asm.basic_blocks[block_id.0].insns[frame_setup_idx] {
                 Insn::FrameSetup { slot_count, .. } => {
                     *slot_count += pool.stack_state.stack_size;
                 }
@@ -1756,7 +2182,7 @@ impl Assembler
         }
 
         assert!(pool.is_empty(), "Expected all registers to be returned to the pool");
-        Ok(asm)
+        Ok(asm_local)
     }
 
     /// Compile the instructions down to machine code.
@@ -1799,6 +2225,11 @@ impl Assembler
         fn compile_exit(asm: &mut Assembler, exit: &SideExit) {
             let SideExit { pc, stack, locals } = exit;
 
+            // Side exit blocks are not part of the CFG at the moment,
+            // so we need to manually ensure that patchpoints get padded
+            // so that nobody stomps on us
+            asm.pad_patch_point();
+
             asm_comment!(asm, "save cfp->pc");
             asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), *pc);
 
@@ -1830,16 +2261,19 @@ impl Assembler
 
         // Extract targets first so that we can update instructions while referencing part of them.
         let mut targets = HashMap::new();
-        for (idx, insn) in self.insns.iter().enumerate() {
-            if let Some(target @ Target::SideExit { .. }) = insn.target() {
-                targets.insert(idx, target.clone());
+
+        for block in self.sorted_blocks().iter() {
+            for (idx, insn) in block.insns.iter().enumerate() {
+                if let Some(target @ Target::SideExit { .. }) = insn.target() {
+                    targets.insert((block.id.0, idx), target.clone());
+                }
             }
         }
 
         // Map from SideExit to compiled Label. This table is used to deduplicate side exit code.
         let mut compiled_exits: HashMap<SideExit, Label> = HashMap::new();
 
-        for (idx, target) in targets {
+        for ((block_id, idx), target) in targets {
             // Compile a side exit. Note that this is past the split pass and alloc_regs(),
             // so you can't use an instruction that returns a VReg.
             if let Target::SideExit { exit: exit @ SideExit { pc, .. }, reason } = target {
@@ -1867,10 +2301,7 @@ impl Assembler
                     }
 
                     if should_record_exit {
-                        // Preserve caller-saved registers that may be used in the shared exit.
-                        self.cpush_all();
                         asm_ccall!(self, rb_zjit_record_exit_stack, pc);
-                        self.cpop_all();
                     }
 
                     // If the side exit has already been compiled, jump to it.
@@ -1895,24 +2326,25 @@ impl Assembler
                     new_exit
                 };
 
-                *self.insns[idx].target_mut().unwrap() = counted_exit.unwrap_or(compiled_exit);
+                *self.basic_blocks[block_id].insns[idx].target_mut().unwrap() = counted_exit.unwrap_or(compiled_exit);
             }
         }
     }
 }
 
-const BOLD_BEGIN: &str = "\x1b[1m";
-const BOLD_END: &str = "\x1b[22m";
-
 /// Return a result of fmt::Display for Assembler without escape sequence
 pub fn lir_string(asm: &Assembler) -> String {
-    format!("{asm}").replace(BOLD_BEGIN, "").replace(BOLD_END, "")
+    use crate::ttycolors::TTY_TERMINAL_COLOR;
+    format!("{asm}").replace(TTY_TERMINAL_COLOR.bold_begin, "").replace(TTY_TERMINAL_COLOR.bold_end, "")
 }
 
 impl fmt::Display for Assembler {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // Count the number of duplicated label names to disambiguate them if needed
         let mut label_counts: HashMap<&String, usize> = HashMap::new();
+        let colors = crate::ttycolors::get_colors();
+        let bold_begin = colors.bold_begin;
+        let bold_end = colors.bold_end;
         for label_name in self.label_names.iter() {
             let counter = label_counts.entry(label_name).or_insert(0);
             *counter += 1;
@@ -1929,10 +2361,10 @@ impl fmt::Display for Assembler {
             }
         }
 
-        for insn in self.insns.iter() {
+        for insn in self.linearize_instructions().iter() {
             match insn {
                 Insn::Comment(comment) => {
-                    writeln!(f, "    {BOLD_BEGIN}# {comment}{BOLD_END}")?;
+                    writeln!(f, "    {bold_begin}# {comment}{bold_end}")?;
                 }
                 Insn::Label(target) => {
                     let &Target::Label(Label(label_idx)) = target else {
@@ -1965,6 +2397,20 @@ impl fmt::Display for Assembler {
                             Target::CodePtr(code_ptr) => write!(f, " {code_ptr:?}")?,
                             Target::Label(Label(label_idx)) => write!(f, " {}", label_name(self, *label_idx, &label_counts))?,
                             Target::SideExit { reason, .. } => write!(f, " Exit({reason})")?,
+                            Target::Block(edge) => {
+                                if edge.args.is_empty() {
+                                    write!(f, " bb{}", edge.target.0)?;
+                                } else {
+                                    write!(f, " bb{}(", edge.target.0)?;
+                                    for (i, arg) in edge.args.iter().enumerate() {
+                                        if i > 0 {
+                                            write!(f, ", ")?;
+                                        }
+                                        write!(f, "{}", arg)?;
+                                    }
+                                    write!(f, ")")?;
+                                }
+                            }
                         }
                     }
 
@@ -1972,6 +2418,17 @@ impl fmt::Display for Assembler {
                     if let Some(Target::SideExit { .. }) = insn.target() {
                         // If the instruction has a SideExit, avoid using opnd_iter(), which has stack/locals.
                         // Here, only handle instructions that have both Opnd and Target.
+                        match insn {
+                            Insn::Joz(opnd, _) |
+                            Insn::Jonz(opnd, _) |
+                            Insn::LeaJumpTarget { out: opnd, target: _ } => {
+                                write!(f, ", {opnd}")?;
+                            }
+                            _ => {}
+                        }
+                    } else if let Some(Target::Block(_)) = insn.target() {
+                        // If the instruction has a Block target, avoid using opnd_iter() for branch args
+                        // since they're already printed inline with the target. Only print non-target operands.
                         match insn {
                             Insn::Joz(opnd, _) |
                             Insn::Jonz(opnd, _) |
@@ -1999,7 +2456,7 @@ impl fmt::Debug for Assembler {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         writeln!(fmt, "Assembler")?;
 
-        for (idx, insn) in self.insns.iter().enumerate() {
+        for (idx, insn) in self.linearize_instructions().iter().enumerate() {
             writeln!(fmt, "    {idx:03} {insn:?}")?;
         }
 
@@ -2008,7 +2465,9 @@ impl fmt::Debug for Assembler {
 }
 
 pub struct InsnIter {
-    old_insns_iter: std::vec::IntoIter<Insn>,
+    blocks: Vec<BasicBlock>,
+    current_block_idx: usize,
+    current_insn_iter: std::vec::IntoIter<Insn>,
     peeked: Option<(usize, Insn)>,
     index: usize,
 }
@@ -2019,7 +2478,7 @@ impl InsnIter {
     pub fn peek(&mut self) -> Option<&(usize, Insn)> {
         // If we don't have a peeked value, get one
         if self.peeked.is_none() {
-            let insn = self.old_insns_iter.next()?;
+            let insn = self.current_insn_iter.next()?;
             let idx = self.index;
             self.index += 1;
             self.peeked = Some((idx, insn));
@@ -2028,17 +2487,34 @@ impl InsnIter {
         self.peeked.as_ref()
     }
 
-    // Get the next instruction.  Right now we're passing the "new" assembler
-    // (the assembler we're copying in to) as a parameter.  Once we've
-    // introduced basic blocks to LIR, we'll use the to set the correct BB
-    // on the new assembler, but for now it is unused.
-    pub fn next(&mut self, _new_asm: &mut Assembler) -> Option<(usize, Insn)> {
+    // Get the next instruction, advancing to the next block when current block is exhausted.
+    // Sets the current block on new_asm when moving to a new block.
+    pub fn next(&mut self, new_asm: &mut Assembler) -> Option<(usize, Insn)> {
         // If we have a peeked value, return it
         if let Some(item) = self.peeked.take() {
             return Some(item);
         }
-        // Otherwise get the next from underlying iterator
-        let insn = self.old_insns_iter.next()?;
+
+        // Try to get the next instruction from current block
+        if let Some(insn) = self.current_insn_iter.next() {
+            let idx = self.index;
+            self.index += 1;
+            return Some((idx, insn));
+        }
+
+        // Current block is exhausted, move to next block
+        self.current_block_idx += 1;
+        if self.current_block_idx >= self.blocks.len() {
+            return None;
+        }
+
+        // Set up the next block
+        let next_block = &mut self.blocks[self.current_block_idx];
+        new_asm.set_current_block(next_block.id);
+        self.current_insn_iter = take(&mut next_block.insns).into_iter();
+
+        // Get first instruction from the new block
+        let insn = self.current_insn_iter.next()?;
         let idx = self.index;
         self.index += 1;
         Some((idx, insn))
@@ -2134,21 +2610,27 @@ impl Assembler {
         out
     }
 
-    pub fn cpop_all(&mut self) {
-        self.push_insn(Insn::CPopAll);
-    }
-
     pub fn cpop_into(&mut self, opnd: Opnd) {
         assert!(matches!(opnd, Opnd::Reg(_)), "Destination of cpop_into must be a register, got: {opnd:?}");
         self.push_insn(Insn::CPopInto(opnd));
+    }
+
+    #[track_caller]
+    pub fn cpop_pair_into(&mut self, opnd0: Opnd, opnd1: Opnd) {
+        assert!(matches!(opnd0, Opnd::Reg(_) | Opnd::VReg{ .. }), "Destination of cpop_pair_into must be a register, got: {opnd0:?}");
+        assert!(matches!(opnd1, Opnd::Reg(_) | Opnd::VReg{ .. }), "Destination of cpop_pair_into must be a register, got: {opnd1:?}");
+        self.push_insn(Insn::CPopPairInto(opnd0, opnd1));
     }
 
     pub fn cpush(&mut self, opnd: Opnd) {
         self.push_insn(Insn::CPush(opnd));
     }
 
-    pub fn cpush_all(&mut self) {
-        self.push_insn(Insn::CPushAll);
+    #[track_caller]
+    pub fn cpush_pair(&mut self, opnd0: Opnd, opnd1: Opnd) {
+        assert!(matches!(opnd0, Opnd::Reg(_) | Opnd::VReg{ .. }), "Destination of cpush_pair must be a register, got: {opnd0:?}");
+        assert!(matches!(opnd1, Opnd::Reg(_) | Opnd::VReg{ .. }), "Destination of cpush_pair must be a register, got: {opnd1:?}");
+        self.push_insn(Insn::CPushPair(opnd0, opnd1));
     }
 
     pub fn cret(&mut self, opnd: Opnd) {
@@ -2425,6 +2907,43 @@ impl Assembler {
         self.push_insn(Insn::Xor { left, right, out });
         out
     }
+
+    /// This is used for trampolines that don't allow scratch registers.
+    /// Linearizes all blocks into a single giant block.
+    pub fn resolve_parallel_mov_pass(self) -> Assembler {
+        let mut asm_local = Assembler::new();
+        asm_local.accept_scratch_reg = self.accept_scratch_reg;
+        asm_local.stack_base_idx = self.stack_base_idx;
+        asm_local.label_names = self.label_names.clone();
+        asm_local.live_ranges = LiveRanges::new(self.live_ranges.len());
+
+        // Create one giant block to linearize everything into
+        asm_local.new_block_without_id();
+
+        // Get linearized instructions with branch parameters expanded into ParallelMov
+        let linearized_insns = self.linearize_instructions();
+
+        // Process each linearized instruction
+        for insn in linearized_insns {
+            match insn {
+                Insn::ParallelMov { moves } => {
+                    // Resolve parallel moves without scratch register
+                    if let Some(resolved_moves) = Assembler::resolve_parallel_moves(&moves, None) {
+                        for (dst, src) in resolved_moves {
+                            asm_local.mov(dst, src);
+                        }
+                    } else {
+                        unreachable!("ParallelMov requires scratch register but scratch_reg is not allowed");
+                    }
+                }
+                _ => {
+                    asm_local.push_insn(insn);
+                }
+            }
+        }
+
+        asm_local
+    }
 }
 
 /// Macro to use format! for Insn::Comment, which skips a format! call
@@ -2506,6 +3025,9 @@ impl AssemblerPanicHook {
 
     /// Dump Assembler, highlighting the insn_idx line
     fn dump_asm(asm: &Assembler, insn_idx: usize) {
+        let colors = crate::ttycolors::get_colors();
+        let bold_begin = colors.bold_begin;
+        let bold_end = colors.bold_end;
         let lir_string = lir_string(asm);
         let lines: Vec<&str> = lir_string.split('\n').collect();
 
@@ -2520,7 +3042,7 @@ impl AssemblerPanicHook {
         eprintln!("Failed to compile LIR at insn_idx={insn_idx}:");
         for (idx, line) in lines.iter().enumerate().filter(|(idx, _)| (min_idx..=max_idx).contains(idx)) {
             if idx == insn_idx && line.starts_with("  ") {
-                eprintln!("{BOLD_BEGIN}=>{}{BOLD_END}", &line["  ".len()..]);
+                eprintln!("{bold_begin}=>{}{bold_end}", &line["  ".len()..]);
             } else {
                 eprintln!("{line}");
             }

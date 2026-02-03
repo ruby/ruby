@@ -653,7 +653,7 @@ class Ractor
   # in the Proc will be replaced with the value passed via the `self:` keyword,
   # or +nil+ if not given.
   #
-  # In a shareable Proc, access to any outer variables if prohibited.
+  # In a shareable Proc, access to any outer variables is prohibited.
   #
   #     a = 42
   #     Ractor.shareable_proc{ p a }

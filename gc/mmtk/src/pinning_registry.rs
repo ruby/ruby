@@ -110,6 +110,11 @@ impl GCWork<Ruby> for PinPinningChildren {
                 target_object
             );
             if pin {
+                debug_assert!(
+                    target_object.get_forwarded_object().is_none(),
+                    "Trying to pin {target_object} but has been moved"
+                );
+
                 pinned_objs.push(target_object);
             }
             target_object

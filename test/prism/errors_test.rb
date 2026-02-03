@@ -7,7 +7,7 @@ require_relative "test_helper"
 module Prism
   class ErrorsTest < TestCase
     base = File.expand_path("errors", __dir__)
-    filepaths = Dir["**/*.txt", base: base]
+    filepaths = Dir[ENV.fetch("FOCUS", "**/*.txt"), base: base]
 
     filepaths.each do |filepath|
       ruby_versions_for(filepath).each do |version|
@@ -45,19 +45,19 @@ module Prism
     def test_unterminated_string_closing
       statement = Prism.parse_statement("'hello")
       assert_equal statement.unescaped, "hello"
-      assert_empty statement.closing
+      assert_nil statement.closing
     end
 
     def test_unterminated_interpolated_string_closing
       statement = Prism.parse_statement('"hello')
       assert_equal statement.unescaped, "hello"
-      assert_empty statement.closing
+      assert_nil statement.closing
     end
 
     def test_unterminated_empty_string_closing
       statement = Prism.parse_statement('"')
       assert_empty statement.unescaped
-      assert_empty statement.closing
+      assert_nil statement.closing
     end
 
     def test_invalid_message_name
@@ -82,6 +82,11 @@ module Prism
       assert_empty result.errors
     end
 
+    def test_incomplete_def_closing_loc
+      statement = Prism.parse_statement("def f; 123")
+      assert_nil(statement.end_keyword)
+    end
+
     private
 
     def assert_errors(filepath, version)
@@ -95,6 +100,10 @@ module Prism
       refute_empty errors, "Expected errors in #{filepath}"
 
       actual = result.errors_format
+      if expected != actual && ENV["UPDATE_SNAPSHOTS"]
+        File.write(filepath, actual)
+      end
+
       assert_equal expected, actual, "Expected errors to match for #{filepath}"
     end
   end

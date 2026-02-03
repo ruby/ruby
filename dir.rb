@@ -31,7 +31,7 @@
 # A \Dir object is in some ways array-like:
 #
 # - It has instance methods #children, #each, and #each_child.
-# - It includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here].
+# - It includes {module Enumerable}[rdoc-ref:Enumerable@Whats+Here].
 #
 # == \Dir As Stream-Like
 #
@@ -85,8 +85,8 @@
 #
 # First, what's elsewhere. Class \Dir:
 #
-# - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
-# - Includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],
+# - Inherits from {class Object}[rdoc-ref:Object@Whats+Here].
+# - Includes {module Enumerable}[rdoc-ref:Enumerable@Whats+Here],
 #   which provides dozens of additional methods.
 #
 # Here, class \Dir provides methods that are useful for:
@@ -319,14 +319,14 @@ class Dir
   #
   #     Dir.glob('io.?') # => ["io.c"]
   #
-  # - <tt>'[_set_]'</tt>: Matches any one character in the string _set_;
+  # - <tt>'[set]'</tt>: Matches any one character in the string _set_;
   #   behaves like a {Regexp character class}[rdoc-ref:Regexp@Character+Classes],
   #   including set negation (<tt>'[^a-z]'</tt>):
   #
   #     Dir.glob('*.[a-z][a-z]').take(3)
   #     # => ["CONTRIBUTING.md", "COPYING.ja", "KNOWNBUGS.rb"]
   #
-  # - <tt>'{_abc_,_xyz_}'</tt>:
+  # - <tt>'{abc,xyz}'</tt>:
   #   Matches either string _abc_ or string _xyz_;
   #   behaves like {Regexp alternation}[rdoc-ref:Regexp@Alternation]:
   #
@@ -388,10 +388,10 @@ class Dir
   #
   # - File::FNM_EXTGLOB:
   #   enables the pattern extension
-  #   <tt>'{_a_,_b_}'</tt>, which matches pattern _a_ and pattern _b_;
+  #   <tt>'{a,b}'</tt>, which matches pattern _a_ and pattern _b_;
   #   behaves like a
   #   {regexp union}[rdoc-ref:Regexp.union]
-  #   (e.g., <tt>'(?:_a_|_b_)'</tt>):
+  #   (e.g., <tt>'(?:a|b)'</tt>):
   #
   #     pattern = '{LEGAL,BSDL}'
   #     Dir.glob(pattern)      # => ["LEGAL", "BSDL"]

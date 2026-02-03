@@ -17,6 +17,29 @@ class TestAssertion < Test::Unit::TestCase
     end
   end
 
+  def test_assertion_count_separately
+    beginning = self._assertions
+
+    assert_separately([], "")
+    assertions_at_nothing = self._assertions - beginning
+
+    prev_assertions = self._assertions + assertions_at_nothing
+    assert_separately([], "assert true")
+    assert_equal(1, self._assertions - prev_assertions)
+
+    omit unless Process.respond_to?(:fork)
+    prev_assertions = self._assertions + assertions_at_nothing
+    assert_separately([], "Process.fork {assert true}; assert true")
+    assert_equal(2, self._assertions - prev_assertions)
+
+    prev_assertions = self._assertions + assertions_at_nothing
+    # TODO: assertions before `fork` are counted twice; it is possible
+    # to reset `_assertions` at `Process._fork`, but the hook can
+    # interfere in other tests.
+    assert_separately([], "assert true; Process.fork {assert true}")
+    assert_equal(3, self._assertions - prev_assertions)
+  end
+
   def return_in_assert_raise
     assert_raise(RuntimeError) do
       return

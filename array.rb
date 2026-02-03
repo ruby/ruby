@@ -245,7 +245,8 @@ class Array
         value = nil
         result = Primitive.ary_sized_alloc
         while Primitive.cexpr!(%q{ ary_fetch_next(self, LOCAL_PTR(_i), LOCAL_PTR(value)) })
-          result << yield(value)
+          value = yield(value)
+          Primitive.cexpr!(%q{ rb_ary_push(result, value) })
         end
         result
       end
@@ -270,7 +271,9 @@ class Array
         value = nil
         result = Primitive.ary_sized_alloc
         while Primitive.cexpr!(%q{ ary_fetch_next(self, LOCAL_PTR(_i), LOCAL_PTR(value)) })
-          result << value if yield value
+          if yield value
+            Primitive.cexpr!(%q{ rb_ary_push(result, value) })
+          end
         end
         result
       end
@@ -278,6 +281,24 @@ class Array
       if Primitive.rb_builtin_basic_definition_p(:filter)
         undef :filter
         alias filter select
+      end
+    end
+
+    if Primitive.rb_builtin_basic_definition_p(:find)
+      undef :find
+
+      def find(if_none_proc = nil) # :nodoc:
+        Primitive.attr! :inline_block, :c_trace
+
+        unless defined?(yield)
+          return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
+        end
+        _i = 0
+        value = nil
+        while Primitive.cexpr!(%q{ ary_fetch_next(self, LOCAL_PTR(_i), LOCAL_PTR(value)) })
+          return value if yield(value)
+        end
+        if_none_proc&.call
       end
     end
   end

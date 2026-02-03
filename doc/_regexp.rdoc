@@ -414,21 +414,21 @@ Each of these anchors matches a boundary:
 
 Lookahead anchors:
 
-- <tt>(?=_pat_)</tt>: Positive lookahead assertion:
+- <tt>(?=pat)</tt>: Positive lookahead assertion:
   ensures that the following characters match _pat_,
   but doesn't include those characters in the matched substring.
 
-- <tt>(?!_pat_)</tt>: Negative lookahead assertion:
+- <tt>(?!pat)</tt>: Negative lookahead assertion:
   ensures that the following characters <i>do not</i> match _pat_,
   but doesn't include those characters in the matched substring.
 
 Lookbehind anchors:
 
-- <tt>(?<=_pat_)</tt>: Positive lookbehind assertion:
+- <tt>(?<=pat)</tt>: Positive lookbehind assertion:
   ensures that the preceding characters match _pat_, but
   doesn't include those characters in the matched substring.
 
-- <tt>(?<!_pat_)</tt>: Negative lookbehind assertion:
+- <tt>(?<!pat)</tt>: Negative lookbehind assertion:
   ensures that the preceding characters do not match
   _pat_, but doesn't include those characters in the matched substring.
 
@@ -574,7 +574,7 @@ A simple regexp has (at most) one match:
   re.match('1943-02-04').size # => 1
   re.match('foo')             # => nil
 
-Adding one or more pairs of parentheses, <tt>(_subexpression_)</tt>,
+Adding one or more pairs of parentheses, <tt>(subexpression)</tt>,
 defines _groups_, which may result in multiple matched substrings,
 called _captures_:
 
@@ -647,8 +647,8 @@ A regexp may contain any number of groups:
 
 - For a large number of groups:
 
-  - The ordinary <tt>\\_n_</tt> notation applies only for _n_ in range (1..9).
-  - The <tt>MatchData[_n_]</tt> notation applies for any non-negative _n_.
+  - The ordinary <tt>\\n</tt> notation applies only for _n_ in range (1..9).
+  - The <tt>MatchData[n]</tt> notation applies for any non-negative _n_.
 
 - <tt>\0</tt> is a special backreference, referring to the entire matched string;
   it may not be used within the regexp itself,
@@ -661,7 +661,7 @@ A regexp may contain any number of groups:
 
 As seen above, a capture can be referred to by its number.
 A capture can also have a name,
-prefixed as <tt>?<_name_></tt> or <tt>?'_name_'</tt>,
+prefixed as <tt>?<name></tt> or <tt>?'name'</tt>,
 and the name (symbolized) may be used as an index in <tt>MatchData[]</tt>:
 
   md = /\$(?<dollars>\d+)\.(?'cents'\d+)/.match("$3.67")
@@ -676,7 +676,7 @@ When a regexp contains a named capture, there are no unnamed captures:
   /\$(?<dollars>\d+)\.(\d+)/.match("$3.67")
   # => #<MatchData "$3.67" dollars:"3">
 
-A named group may be backreferenced as <tt>\k<_name_></tt>:
+A named group may be backreferenced as <tt>\k<name></tt>:
 
   /(?<vowel>[aeiou]).\k<vowel>.\k<vowel>/.match('ototomy')
   # => #<MatchData "ototo" vowel:"o">
@@ -732,10 +732,10 @@ see {Atomic Group}[https://www.regular-expressions.info/atomic.html].
 
 ==== Subexpression Calls
 
-As seen above, a backreference number (<tt>\\_n_</tt>) or name (<tt>\k<_name_></tt>)
+As seen above, a backreference number (<tt>\\n</tt>) or name (<tt>\k<name></tt>)
 gives access to a captured _substring_;
 the corresponding regexp _subexpression_ may also be accessed,
-via the number (<tt>\\g<i>n</i></tt>) or name (<tt>\g<_name_></tt>):
+via the number n (<tt>\\gn</tt>) or name (<tt>\g<name></tt>):
 
   /\A(?<paren>\(\g<paren>*\))*\z/.match('(())')
   # ^1
@@ -768,12 +768,12 @@ See {Subexpression calls}[https://learnbyexample.github.io/Ruby_Regexp/groupings
 
 ==== Conditionals
 
-The conditional construct takes the form <tt>(?(_cond_)_yes_|_no_)</tt>, where:
+The conditional construct takes the form <tt>(?(cond)yes|no)</tt>, where:
 
 - _cond_ may be a capture number or name.
 - The match to be applied is _yes_ if _cond_ is captured;
   otherwise the match to be applied is _no_.
-- If not needed, <tt>|_no_</tt> may be omitted.
+- If not needed, <tt>|no</tt> may be omitted.
 
 Examples:
 
@@ -802,7 +802,7 @@ The absence operator is a special group that matches anything which does _not_ m
 
 ==== Unicode Properties
 
-The <tt>/\p{_property_name_}/</tt> construct (with lowercase +p+)
+The <tt>/\p{property_name}/</tt> construct (with lowercase +p+)
 matches characters using a Unicode property name,
 much like a character class;
 property +Alpha+ specifies alphabetic characters:
@@ -1033,23 +1033,23 @@ See also {Extended Mode}[rdoc-ref:Regexp@Extended+Mode].
 
 Each of these modifiers sets a mode for the regexp:
 
-- +i+: <tt>/_pattern_/i</tt> sets
+- +i+: <tt>/pattern/i</tt> sets
   {Case-Insensitive Mode}[rdoc-ref:Regexp@Case-Insensitive+Mode].
-- +m+: <tt>/_pattern_/m</tt> sets
+- +m+: <tt>/pattern/m</tt> sets
   {Multiline Mode}[rdoc-ref:Regexp@Multiline+Mode].
-- +x+: <tt>/_pattern_/x</tt> sets
+- +x+: <tt>/pattern/x</tt> sets
   {Extended Mode}[rdoc-ref:Regexp@Extended+Mode].
-- +o+: <tt>/_pattern_/o</tt> sets
+- +o+: <tt>/pattern/o</tt> sets
   {Interpolation Mode}[rdoc-ref:Regexp@Interpolation+Mode].
 
 Any, all, or none of these may be applied.
 
 Modifiers +i+, +m+, and +x+ may be applied to subexpressions:
 
-- <tt>(?_modifier_)</tt> turns the mode "on" for ensuing subexpressions
-- <tt>(?-_modifier_)</tt> turns the mode "off" for ensuing subexpressions
-- <tt>(?_modifier_:_subexp_)</tt> turns the mode "on" for _subexp_ within the group
-- <tt>(?-_modifier_:_subexp_)</tt> turns the mode "off" for _subexp_ within the group
+- <tt>(?modifier)</tt> turns the mode "on" for ensuing subexpressions
+- <tt>(?-modifier)</tt> turns the mode "off" for ensuing subexpressions
+- <tt>(?modifier:subexp)</tt> turns the mode "on" for _subexp_ within the group
+- <tt>(?-modifier:subexp)</tt> turns the mode "off" for _subexp_ within the group
 
 Example:
 
@@ -1166,22 +1166,22 @@ A regular expression containing non-US-ASCII characters
 is assumed to use the source encoding.
 This can be overridden with one of the following modifiers.
 
-- <tt>/_pat_/n</tt>: US-ASCII if only containing US-ASCII characters,
+- <tt>/pat/n</tt>: US-ASCII if only containing US-ASCII characters,
   otherwise ASCII-8BIT:
 
     /foo/n.encoding     # => #<Encoding:US-ASCII>
     /foo\xff/n.encoding # => #<Encoding:ASCII-8BIT>
     /foo\x7f/n.encoding # => #<Encoding:US-ASCII>
 
-- <tt>/_pat_/u</tt>: UTF-8
+- <tt>/pat/u</tt>: UTF-8
 
     /foo/u.encoding # => #<Encoding:UTF-8>
 
-- <tt>/_pat_/e</tt>: EUC-JP
+- <tt>/pat/e</tt>: EUC-JP
 
     /foo/e.encoding # => #<Encoding:EUC-JP>
 
-- <tt>/_pat_/s</tt>: Windows-31J
+- <tt>/pat/s</tt>: Windows-31J
 
     /foo/s.encoding # => #<Encoding:Windows-31J>
 

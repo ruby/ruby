@@ -946,14 +946,14 @@ class TestRubyOptimization < Test::Unit::TestCase
   end
 
   def test_peephole_optimization_without_trace
-    assert_separately [], <<-END
+    assert_ruby_status [], <<-END
       RubyVM::InstructionSequence.compile_option = {trace_instruction: false}
       eval "def foo; 1.times{|(a), &b| nil && a}; end"
     END
   end
 
   def test_clear_unreachable_keyword_args
-    assert_separately [], <<-END, timeout: 60
+    assert_ruby_status [], <<-END, timeout: 60
       script =  <<-EOS
         if true
         else
@@ -1080,7 +1080,7 @@ class TestRubyOptimization < Test::Unit::TestCase
   class Objtostring
   end
 
-  def test_objtostring
+  def test_objtostring_immediate
     assert_raise(NoMethodError){"#{BasicObject.new}"}
     assert_redefine_method('Symbol', 'to_s', <<-'end')
       assert_match %r{\A#<Symbol:0x[0-9a-f]+>\z}, "#{:foo}"
@@ -1094,11 +1094,17 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_redefine_method('FalseClass', 'to_s', <<-'end')
       assert_match %r{\A#<FalseClass:0x[0-9a-f]+>\z}, "#{false}"
     end
+  end
+
+  def test_objtostring_fixnum
     assert_redefine_method('Integer', 'to_s', <<-'end')
       (-1..10).each { |i|
         assert_match %r{\A#<Integer:0x[0-9a-f]+>\z}, "#{i}"
       }
     end
+  end
+
+  def test_objtostring
     assert_equal "TestRubyOptimization::Objtostring", "#{Objtostring}"
     assert_match %r{\A#<Class:0x[0-9a-f]+>\z}, "#{Class.new}"
     assert_match %r{\A#<Module:0x[0-9a-f]+>\z}, "#{Module.new}"

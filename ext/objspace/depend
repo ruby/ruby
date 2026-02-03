@@ -401,6 +401,7 @@ objspace.o: $(top_srcdir)/internal/sanitizers.h
 objspace.o: $(top_srcdir)/internal/serial.h
 objspace.o: $(top_srcdir)/internal/set_table.h
 objspace.o: $(top_srcdir)/internal/static_assert.h
+objspace.o: $(top_srcdir)/internal/struct.h
 objspace.o: $(top_srcdir)/internal/variable.h
 objspace.o: $(top_srcdir)/internal/vm.h
 objspace.o: $(top_srcdir)/internal/warnings.h
@@ -601,6 +602,7 @@ objspace_dump.o: $(top_srcdir)/ccan/list/list.h
 objspace_dump.o: $(top_srcdir)/ccan/str/str.h
 objspace_dump.o: $(top_srcdir)/constant.h
 objspace_dump.o: $(top_srcdir)/debug_counter.h
+objspace_dump.o: $(top_srcdir)/encindex.h
 objspace_dump.o: $(top_srcdir)/id_table.h
 objspace_dump.o: $(top_srcdir)/internal.h
 objspace_dump.o: $(top_srcdir)/internal/array.h
@@ -617,6 +619,7 @@ objspace_dump.o: $(top_srcdir)/internal/serial.h
 objspace_dump.o: $(top_srcdir)/internal/set_table.h
 objspace_dump.o: $(top_srcdir)/internal/static_assert.h
 objspace_dump.o: $(top_srcdir)/internal/string.h
+objspace_dump.o: $(top_srcdir)/internal/struct.h
 objspace_dump.o: $(top_srcdir)/internal/variable.h
 objspace_dump.o: $(top_srcdir)/internal/vm.h
 objspace_dump.o: $(top_srcdir)/internal/warnings.h

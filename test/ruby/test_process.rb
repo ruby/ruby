@@ -1568,7 +1568,7 @@ class TestProcess < Test::Unit::TestCase
   def test_wait_exception
     bug11340 = '[ruby-dev:49176] [Bug #11340]'
     t0 = t1 = nil
-    sec = 3
+    sec = EnvUtil.apply_timeout_scale(3)
     code = "puts;STDOUT.flush;Thread.start{gets;exit};sleep(#{sec})"
     IO.popen([RUBY, '-e', code], 'r+') do |f|
       pid = f.pid
@@ -1996,7 +1996,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_popen_reopen
-    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       io = File.open(IO::NULL)
       io2 = io.dup
@@ -2387,7 +2387,7 @@ EOS
   end
 
   def test_deadlock_by_signal_at_forking
-    assert_separately(%W(- #{RUBY}), <<-INPUT, timeout: 100)
+    assert_ruby_status(%W(- #{RUBY}), <<-INPUT, timeout: 100)
       ruby = ARGV.shift
       GC.start # reduce garbage
       GC.disable # avoid triggering CoW after forks

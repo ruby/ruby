@@ -265,16 +265,16 @@ and _never_ when referring to the class itself.
 
 When writing an explicit link, follow these guidelines.
 
-#### +rdoc-ref+ Scheme
+#### `rdoc-ref` Scheme
 
-Use the +rdoc-ref+ scheme for:
+Use the `rdoc-ref` scheme for:
 
 - A link in core documentation to other core documentation.
 - A link in core documentation to documentation in a standard library package.
 - A link in a standard library package to other documentation in that same
   standard library package.
 
-See section "+rdoc-ref+ Scheme" in [links].
+See section "`rdoc-ref` Scheme" in [links].
 
 #### URL-Based Link
 
@@ -297,7 +297,7 @@ The name of a variable (as specified in its call-seq) should be marked up as
 [monofont].
 
 Also, use monofont text for the name of a transient variable
-(i.e., one defined and used only in the discussion, such as +n+).
+(i.e., one defined and used only in the discussion, such as `n`).
 
 ### HTML Tags
 
@@ -318,7 +318,7 @@ Alternatives:
   will not be honored:
 
     - Example {source}[https://github.com/ruby/ruby/blob/34d802f32f00df1ac0220b62f72605827c16bad8/file.c#L6570-L6596].
-    - Corresponding {output}[rdoc-ref:File@Read-2FWrite+Mode].
+    - Corresponding {output}[rdoc-ref:File@ReadWrite+Mode].
 
 - (Markdown format only): A {Github Flavored Markdown (GFM) table}[https://github.github.com/gfm/#tables-extension-],
   using special formatting for the text:
@@ -491,10 +491,10 @@ Return types:
 
 - If the method can return multiple different types,
   separate the types with "or" and, if necessary, commas.
-- If the method can return multiple types, use +object+.
-- If the method returns the receiver, use +self+.
+- If the method can return multiple types, use `object`.
+- If the method returns the receiver, use `self`.
 - If the method returns an object of the same class,
-  prefix `new_` if and only if the object is not +self+;
+  prefix `new_` if and only if the object is not `self`;
   example: `new_array`.
 
 Aliases:

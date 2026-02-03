@@ -28,6 +28,9 @@ module Prism
 
       # https://bugs.ruby-lang.org/issues/21168#note-5
       "command_method_call_2.txt",
+
+      # https://bugs.ruby-lang.org/issues/21669
+      "4.1/void_value.txt"
     ]
 
     Fixture.each_for_current_ruby(except: except) do |fixture|

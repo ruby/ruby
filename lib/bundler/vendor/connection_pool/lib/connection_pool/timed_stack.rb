@@ -54,9 +54,12 @@ class Bundler::ConnectionPool::TimedStack
   # immediately returned. If no connection is available within the given
   # timeout a Bundler::ConnectionPool::TimeoutError is raised.
   #
-  # +:timeout+ is the only checked entry in +options+ and is preferred over
-  # the +timeout+ argument (which will be removed in a future release). Other
-  # options may be used by subclasses that extend TimedStack.
+  # @option options [Float] :timeout (0.5) Wait this many seconds for an available entry
+  # @option options [Class] :exception (Bundler::ConnectionPool::TimeoutError) Exception class to raise
+  #   if an entry was not available within the timeout period. Use `exception: false` to return nil.
+  #
+  # The +timeout+ argument will be removed in 3.0.
+  # Other options may be used by subclasses that extend TimedStack.
   def pop(timeout = 0.5, options = {})
     options, timeout = timeout, 0.5 if Hash === timeout
     timeout = options.fetch :timeout, timeout
@@ -73,7 +76,14 @@ class Bundler::ConnectionPool::TimedStack
         return connection if connection
 
         to_wait = deadline - current_time
-        raise Bundler::ConnectionPool::TimeoutError, "Waited #{timeout} sec, #{length}/#{@max} available" if to_wait <= 0
+        if to_wait <= 0
+          exc = options.fetch(:exception, Bundler::ConnectionPool::TimeoutError)
+          if exc
+            raise Bundler::ConnectionPool::TimeoutError, "Waited #{timeout} sec, #{length}/#{@max} available"
+          else
+            return nil
+          end
+        end
         @resource.wait(@mutex, to_wait)
       end
     end

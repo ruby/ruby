@@ -14,11 +14,9 @@ describe "IO::Buffer#empty?" do
     @buffer.empty?.should be_true
   end
 
-  ruby_version_is "3.3" do
-    it "is true for a 0-length String-backed buffer created with .string" do
-      IO::Buffer.string(0) do |buffer|
-        buffer.empty?.should be_true
-      end
+  it "is true for a 0-length String-backed buffer created with .string" do
+    IO::Buffer.string(0) do |buffer|
+      buffer.empty?.should be_true
     end
   end
 

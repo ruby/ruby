@@ -301,9 +301,24 @@ int ruby_rgengc_debug;
 #ifndef GC_ENABLE_LAZY_SWEEP
 # define GC_ENABLE_LAZY_SWEEP   1
 #endif
+
+#ifndef VERIFY_FREE_SIZE
+#if RUBY_DEBUG
+#define VERIFY_FREE_SIZE 1
+#else
+#define VERIFY_FREE_SIZE 0
+#endif
+#endif
+
+#if VERIFY_FREE_SIZE
+#undef CALC_EXACT_MALLOC_SIZE
+#define CALC_EXACT_MALLOC_SIZE 1
+#endif
+
 #ifndef CALC_EXACT_MALLOC_SIZE
 # define CALC_EXACT_MALLOC_SIZE 0
 #endif
+
 #if defined(HAVE_MALLOC_USABLE_SIZE) || CALC_EXACT_MALLOC_SIZE > 0
 # ifndef MALLOC_ALLOCATED_SIZE
 #  define MALLOC_ALLOCATED_SIZE 0
@@ -505,7 +520,6 @@ typedef struct rb_objspace {
         unsigned int during_compacting : 1;
         unsigned int during_reference_updating : 1;
         unsigned int gc_stressful: 1;
-        unsigned int has_newobj_hook: 1;
         unsigned int during_minor_gc : 1;
         unsigned int during_incremental_marking : 1;
         unsigned int measure_gc : 1;
@@ -844,14 +858,15 @@ heap_page_in_global_empty_pages_pool(rb_objspace_t *objspace, struct heap_page *
 #define GET_HEAP_WB_UNPROTECTED_BITS(x) (&GET_HEAP_PAGE(x)->wb_unprotected_bits[0])
 #define GET_HEAP_MARKING_BITS(x)        (&GET_HEAP_PAGE(x)->marking_bits[0])
 
-#define RVALUE_AGE_BITMAP_INDEX(n)  (NUM_IN_PAGE(n) / (BITS_BITLENGTH / RVALUE_AGE_BIT_COUNT))
-#define RVALUE_AGE_BITMAP_OFFSET(n) ((NUM_IN_PAGE(n) % (BITS_BITLENGTH / RVALUE_AGE_BIT_COUNT)) * RVALUE_AGE_BIT_COUNT)
-
 static int
 RVALUE_AGE_GET(VALUE obj)
 {
     bits_t *age_bits = GET_HEAP_PAGE(obj)->age_bits;
-    return (int)(age_bits[RVALUE_AGE_BITMAP_INDEX(obj)] >> RVALUE_AGE_BITMAP_OFFSET(obj)) & RVALUE_AGE_BIT_MASK;
+    int idx = BITMAP_INDEX(obj) * 2;
+    int shift = BITMAP_OFFSET(obj);
+    int lo = (age_bits[idx] >> shift) & 1;
+    int hi = (age_bits[idx + 1] >> shift) & 1;
+    return lo | (hi << 1);
 }
 
 static void
@@ -859,10 +874,12 @@ RVALUE_AGE_SET_BITMAP(VALUE obj, int age)
 {
     RUBY_ASSERT(age <= RVALUE_OLD_AGE);
     bits_t *age_bits = GET_HEAP_PAGE(obj)->age_bits;
-    // clear the bits
-    age_bits[RVALUE_AGE_BITMAP_INDEX(obj)] &= ~(RVALUE_AGE_BIT_MASK << (RVALUE_AGE_BITMAP_OFFSET(obj)));
-    // shift the correct value in
-    age_bits[RVALUE_AGE_BITMAP_INDEX(obj)] |= ((bits_t)age << RVALUE_AGE_BITMAP_OFFSET(obj));
+    int idx = BITMAP_INDEX(obj) * 2;
+    int shift = BITMAP_OFFSET(obj);
+    bits_t mask = (bits_t)1 << shift;
+
+    age_bits[idx]     = (age_bits[idx]     & ~mask) | ((bits_t)(age & 1) << shift);
+    age_bits[idx + 1] = (age_bits[idx + 1] & ~mask) | ((bits_t)((age >> 1) & 1) << shift);
 }
 
 static void
@@ -1520,7 +1537,6 @@ rb_gc_impl_set_event_hook(void *objspace_ptr, const rb_event_flag_t event)
 {
     rb_objspace_t *objspace = objspace_ptr;
     objspace->hook_events = event & RUBY_INTERNAL_EVENT_OBJSPACE_MASK;
-    objspace->flags.has_newobj_hook = !!(objspace->hook_events & RUBY_INTERNAL_EVENT_NEWOBJ);
 }
 
 unsigned long long
@@ -3483,43 +3499,6 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
         rb_asan_unpoison_object(vp, false);
         if (bitset & 1) {
             switch (BUILTIN_TYPE(vp)) {
-              default: /* majority case */
-                gc_report(2, objspace, "page_sweep: free %p\n", (void *)p);
-#if RGENGC_CHECK_MODE
-                if (!is_full_marking(objspace)) {
-                    if (RVALUE_OLD_P(objspace, vp)) rb_bug("page_sweep: %p - old while minor GC.", (void *)p);
-                    if (RVALUE_REMEMBERED(objspace, vp)) rb_bug("page_sweep: %p - remembered.", (void *)p);
-                }
-#endif
-
-                if (RVALUE_WB_UNPROTECTED(objspace, vp)) CLEAR_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(vp), vp);
-
-#if RGENGC_CHECK_MODE
-#define CHECK(x) if (x(objspace, vp) != FALSE) rb_bug("obj_free: " #x "(%s) != FALSE", rb_obj_info(vp))
-                CHECK(RVALUE_WB_UNPROTECTED);
-                CHECK(RVALUE_MARKED);
-                CHECK(RVALUE_MARKING);
-                CHECK(RVALUE_UNCOLLECTIBLE);
-#undef CHECK
-#endif
-
-                rb_gc_event_hook(vp, RUBY_INTERNAL_EVENT_FREEOBJ);
-
-                rb_gc_obj_free_vm_weak_references(vp);
-                if (rb_gc_obj_free(objspace, vp)) {
-                    // always add free slots back to the swept pages freelist,
-                    // so that if we're compacting, we can re-use the slots
-                    (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, BASE_SLOT_SIZE);
-                    RVALUE_AGE_SET_BITMAP(vp, 0);
-                    heap_page_add_freeobj(objspace, sweep_page, vp);
-                    gc_report(3, objspace, "page_sweep: %s is added to freelist\n", rb_obj_info(vp));
-                    ctx->freed_slots++;
-                }
-                else {
-                    ctx->final_slots++;
-                }
-                break;
-
               case T_MOVED:
                 if (objspace->flags.during_compacting) {
                     /* The sweep cursor shouldn't have made it to any
@@ -3531,7 +3510,6 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
                 }
                 gc_report(3, objspace, "page_sweep: %s is added to freelist\n", rb_obj_info(vp));
                 ctx->empty_slots++;
-                RVALUE_AGE_SET_BITMAP(vp, 0);
                 heap_page_add_freeobj(objspace, sweep_page, vp);
                 break;
               case T_ZOMBIE:
@@ -3539,6 +3517,51 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
                 break;
               case T_NONE:
                 ctx->empty_slots++; /* already freed */
+                break;
+
+              default:
+#if RGENGC_CHECK_MODE
+                if (!is_full_marking(objspace)) {
+                    if (RVALUE_OLD_P(objspace, vp)) rb_bug("page_sweep: %p - old while minor GC.", (void *)p);
+                    if (RVALUE_REMEMBERED(objspace, vp)) rb_bug("page_sweep: %p - remembered.", (void *)p);
+                }
+#endif
+
+#if RGENGC_CHECK_MODE
+#define CHECK(x) if (x(objspace, vp) != FALSE) rb_bug("obj_free: " #x "(%s) != FALSE", rb_obj_info(vp))
+                CHECK(RVALUE_WB_UNPROTECTED);
+                CHECK(RVALUE_MARKED);
+                CHECK(RVALUE_MARKING);
+                CHECK(RVALUE_UNCOLLECTIBLE);
+#undef CHECK
+#endif
+
+                if (!rb_gc_obj_needs_cleanup_p(vp)) {
+                    if (RB_UNLIKELY(objspace->hook_events & RUBY_INTERNAL_EVENT_FREEOBJ)) {
+                        rb_gc_event_hook(vp, RUBY_INTERNAL_EVENT_FREEOBJ);
+                    }
+
+                    (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, BASE_SLOT_SIZE);
+                    heap_page_add_freeobj(objspace, sweep_page, vp);
+                    gc_report(3, objspace, "page_sweep: %s (fast path) added to freelist\n", rb_obj_info(vp));
+                    ctx->freed_slots++;
+                }
+                else {
+                    gc_report(2, objspace, "page_sweep: free %p\n", (void *)p);
+
+                    rb_gc_event_hook(vp, RUBY_INTERNAL_EVENT_FREEOBJ);
+
+                    rb_gc_obj_free_vm_weak_references(vp);
+                    if (rb_gc_obj_free(objspace, vp)) {
+                        (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, BASE_SLOT_SIZE);
+                        heap_page_add_freeobj(objspace, sweep_page, vp);
+                        gc_report(3, objspace, "page_sweep: %s is added to freelist\n", rb_obj_info(vp));
+                        ctx->freed_slots++;
+                    }
+                    else {
+                        ctx->final_slots++;
+                    }
+                }
                 break;
             }
         }
@@ -3583,6 +3606,18 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
                   bitmap_plane_count == HEAP_PAGE_BITMAP_LIMIT);
 
     bits_t slot_mask = heap->slot_bits_mask;
+
+    // Clear wb_unprotected and age bits for all unmarked slots
+    {
+        bits_t *wb_unprotected_bits = sweep_page->wb_unprotected_bits;
+        bits_t *age_bits = sweep_page->age_bits;
+        for (int i = 0; i < bitmap_plane_count; i++) {
+            bits_t unmarked = ~bits[i] & slot_mask;
+            wb_unprotected_bits[i] &= ~unmarked;
+            age_bits[i * 2] &= ~unmarked;
+            age_bits[i * 2 + 1] &= ~unmarked;
+        }
+    }
 
     // Skip out of range slots at the head of the page
     bitset = ~bits[0];
@@ -3812,7 +3847,7 @@ gc_sweep_finish_heap(rb_objspace_t *objspace, rb_heap_t *heap)
                     heap_allocatable_slots_expand(objspace, heap, swept_slots, heap->total_slots);
                 }
             }
-            else {
+            else if (objspace->heap_pages.allocatable_slots < (min_free_slots - swept_slots)) {
                 gc_needs_major_flags |= GPR_FLAG_MAJOR_BY_NOFREE;
                 heap->force_major_gc_count++;
             }
@@ -6872,12 +6907,6 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
       case T_ZOMBIE:
         return FALSE;
       case T_SYMBOL:
-        // TODO: restore original behavior
-        // if (RSYMBOL(obj)->id & ~ID_SCOPE_MASK) {
-        //     return FALSE;
-        // }
-        return false;
-        /* fall through */
       case T_STRING:
       case T_OBJECT:
       case T_FLOAT:
@@ -7452,7 +7481,6 @@ enum gc_stat_sym {
     gc_stat_sym_oldmalloc_increase_bytes,
     gc_stat_sym_oldmalloc_increase_bytes_limit,
 #endif
-    gc_stat_sym_weak_references_count,
 #if RGENGC_PROFILE
     gc_stat_sym_total_generated_normal_object_count,
     gc_stat_sym_total_generated_shady_object_count,
@@ -7503,7 +7531,6 @@ setup_gc_stat_symbols(void)
         S(oldmalloc_increase_bytes);
         S(oldmalloc_increase_bytes_limit);
 #endif
-        S(weak_references_count);
 #if RGENGC_PROFILE
         S(total_generated_normal_object_count);
         S(total_generated_shady_object_count);
@@ -8251,6 +8278,15 @@ rb_gc_impl_free(void *objspace_ptr, void *ptr, size_t old_size)
     }
 #if CALC_EXACT_MALLOC_SIZE
     struct malloc_obj_info *info = (struct malloc_obj_info *)ptr - 1;
+#if VERIFY_FREE_SIZE
+    if (!info->size) {
+        rb_bug("buffer %p has no recorded size. Was it allocated with ruby_mimalloc? If so it should be freed with ruby_mimfree", ptr);
+    }
+
+    if (old_size && (old_size + sizeof(struct malloc_obj_info)) != info->size) {
+        rb_bug("buffer %p freed with old_size=%lu, but was allocated with size=%lu", ptr, old_size, info->size - sizeof(struct malloc_obj_info));
+    }
+#endif
     ptr = info;
     old_size = info->size;
 #endif
@@ -8357,6 +8393,11 @@ rb_gc_impl_realloc(void *objspace_ptr, void *ptr, size_t new_size, size_t old_si
         struct malloc_obj_info *info = (struct malloc_obj_info *)ptr - 1;
         new_size += sizeof(struct malloc_obj_info);
         ptr = info;
+#if VERIFY_FREE_SIZE
+        if (old_size && (old_size + sizeof(struct malloc_obj_info)) != info->size) {
+            rb_bug("buffer %p realloced with old_size=%lu, but was allocated with size=%lu", ptr, old_size, info->size - sizeof(struct malloc_obj_info));
+        }
+#endif
         old_size = info->size;
     }
 #endif

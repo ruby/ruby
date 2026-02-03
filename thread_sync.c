@@ -696,13 +696,20 @@ queue_mark_and_move(void *ptr)
     }
 }
 
+static inline void
+queue_free_buffer(struct rb_queue *q)
+{
+    if (q->buffer) {
+        SIZED_FREE_N(q->buffer, q->capa);
+    }
+}
+
 static void
 queue_free(void *ptr)
 {
     struct rb_queue *q = ptr;
-    if (q->buffer) {
-        ruby_sized_xfree(q->buffer, q->capa * sizeof(VALUE));
-    }
+    queue_free_buffer(q);
+    SIZED_FREE(q);
 }
 
 static size_t
@@ -806,7 +813,8 @@ static void
 szqueue_free(void *ptr)
 {
     struct rb_szqueue *sq = ptr;
-    queue_free(&sq->q);
+    queue_free_buffer(&sq->q);
+    SIZED_FREE(sq);
 }
 
 static size_t

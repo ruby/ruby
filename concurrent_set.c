@@ -61,7 +61,7 @@ static void
 concurrent_set_free(void *ptr)
 {
     struct concurrent_set *set = ptr;
-    xfree(set->entries);
+    SIZED_FREE_N(set->entries, set->capacity);
 }
 
 static size_t

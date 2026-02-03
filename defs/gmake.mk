@@ -517,7 +517,7 @@ fix-depends check-depends: all hello
 # because the same named directory exists in the source tree.
 $(RUBYSPEC_CAPIEXT)/%.$(DLEXT): $(srcdir)/$(RUBYSPEC_CAPIEXT)/%.c $(RUBYSPEC_CAPIEXT_DEPS) \
 	| build-ext
-	$(ECHO) building $@
+	$(no_silence:no=$(ECHO) building $@)
 	$(Q) $(MAKEDIRS) $(@D)
 	$(Q) $(DLDSHARED) -L. $(XDLDFLAGS) $(XLDFLAGS) $(LDFLAGS) $(INCFLAGS) $(CPPFLAGS) $(OUTFLAG)$@ $< $(LIBRUBYARG)
 ifneq ($(POSTLINK),)
@@ -541,24 +541,25 @@ ruby.pc: $(filter-out ruby.pc,$(ruby_pc))
 #    Just update the version in the title of NEWS.md.
 
 matz: up
-matz: OLD := $(MAJOR).$(MINOR).0
+matz-commit: OLD := $(MAJOR).$(MINOR).0
 ifdef NEW
-matz: MAJOR := $(word 1,$(subst ., ,$(NEW)))
-matz: MINOR := $(word 2,$(subst ., ,$(NEW)))
-matz: $(DOT_WAIT) bump_news
+matz-commit: MAJOR := $(word 1,$(subst ., ,$(NEW)))
+matz-commit: MINOR := $(word 2,$(subst ., ,$(NEW)))
+matz-commit: $(DOT_WAIT) bump_news
 bump_news$(DOT_WAIT): up
 bump_headers$(DOT_WAIT): bump_news
 else
-matz: MINOR := $(shell expr $(MINOR) + 1)
-matz: $(DOT_WAIT) reset_news
+matz-commit: MINOR := $(shell expr $(MINOR) + 1)
+matz-commit: $(DOT_WAIT) reset_news
 flush_news$(DOT_WAIT): up
 bump_headers$(DOT_WAIT): reset_news
 endif
 
-matz: $(DOT_WAIT) bump_headers
-matz: override NEW := $(MAJOR).$(MINOR).0
-matz: files := include/ruby/version.h include/ruby/internal/abi.h
-matz: message := Development of $(NEW) started.
+matz: $(DOT_WAIT) matz-commit
+matz-commit: bump_headers
+matz-commit: override NEW := $(MAJOR).$(MINOR).0
+matz-commit: files := include/ruby/version.h include/ruby/internal/abi.h
+matz-commit: message := Development of $(NEW) started.
 
 flush_news:
 	$(GIT_IN_SRC) mv -f NEWS.md doc/NEWS/NEWS-$(OLD).md
@@ -589,9 +590,22 @@ bump_news:
 	-e 'BEGIN {new = ARGV.shift; print gets("").sub(/Ruby \K[0-9.]+/, new)}' \
 	$(NEW) NEWS.md
 
-matz:
+matz: matz-commit matz-push
+
+matz-commit:
 	$(GIT_IN_SRC) add NEWS.md $(files)
 	$(GIT_IN_SRC) commit -m "$(message)"
+
+GIT_REMOTE_ORIGIN = origin
+
+matz-push: matz-commit
+	$(eval origin_url := $(shell $(GIT_IN_SRC) remote get-url $(GIT_REMOTE_ORIGIN)))
+	$(if $(origin_url),,@false)
+	$(eval last_commit := $(shell $(GIT_IN_SRC) log -n1 --format=%H --author=matz HEAD~..HEAD))
+	$(if $(last_commit),,$(ECHO) No matz commits 1>&2; false)
+	$(if $(filter 12-25 12-26,$(shell date +%m-%d)),,$(ECHO) Not the release date 1>&2; false)
+	$(ECHO) $$'\e[31m'Pushing to $$'\e[7m'$(GIT_REMOTE_ORIGIN)$$'\e[27m'" ($(origin_url))"$$'\e[m'
+	$(GIT_IN_SRC) push $(GIT_REMOTE_ORIGIN)
 
 tags:
 	$(MAKE) GIT="$(GIT)" -C "$(srcdir)" -f defs/tags.mk

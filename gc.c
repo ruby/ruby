@@ -596,6 +596,7 @@ rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val)
 #endif
 
 static const char *obj_type_name(VALUE obj);
+static st_table *id2ref_tbl;
 #include "gc/default/default.c"
 
 #if USE_MODULAR_GC && !defined(HAVE_DLOPEN)
@@ -1013,9 +1014,7 @@ newobj_of(rb_ractor_t *cr, VALUE klass, VALUE flags, shape_id_t shape_id, bool w
         int lev = RB_GC_VM_LOCK_NO_BARRIER();
         {
             size_t slot_size = rb_gc_obj_slot_size(obj);
-            if (slot_size > RVALUE_SIZE) {
-                memset((char *)obj + RVALUE_SIZE, 0, slot_size - RVALUE_SIZE);
-            }
+            memset((char *)obj + sizeof(struct RBasic), 0, slot_size - sizeof(struct RBasic));
 
             /* We must disable GC here because the callback could call xmalloc
              * which could potentially trigger a GC, and a lot of code is unsafe
@@ -1162,17 +1161,19 @@ rb_objspace_data_type_memsize(VALUE obj)
 {
     size_t size = 0;
     if (RTYPEDDATA_P(obj)) {
-        const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
         const void *ptr = RTYPEDDATA_GET_DATA(obj);
 
-        if (RTYPEDDATA_EMBEDDABLE_P(obj) && !RTYPEDDATA_EMBEDDED_P(obj)) {
+        if (ptr) {
+            const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
+            if (RTYPEDDATA_EMBEDDABLE_P(obj) && !RTYPEDDATA_EMBEDDED_P(obj)) {
 #ifdef HAVE_MALLOC_USABLE_SIZE
-            size += malloc_usable_size((void *)ptr);
+                size += malloc_usable_size((void *)ptr);
 #endif
-        }
+            }
 
-        if (ptr && type->function.dsize) {
-            size += type->function.dsize(ptr);
+            if (type->function.dsize) {
+                size += type->function.dsize(ptr);
+            }
         }
     }
 
@@ -1239,6 +1240,113 @@ rb_gc_handle_weak_references(VALUE obj)
       }
       default:
         rb_bug("rb_gc_handle_weak_references: type not supported\n");
+    }
+}
+
+/*
+ * Returns true if the object requires a full rb_gc_obj_free() call during sweep,
+ * false if it can be freed quickly without calling destructors or cleanup.
+ *
+ * Objects that return false are:
+ * - Simple embedded objects without external allocations
+ * - Objects without finalizers
+ * - Objects without object IDs registered in id2ref
+ * - Objects without generic instance variables
+ *
+ * This is used by the GC sweep fast path to avoid function call overhead
+ * for the majority of simple objects.
+ */
+bool
+rb_gc_obj_needs_cleanup_p(VALUE obj)
+{
+    VALUE flags = RBASIC(obj)->flags;
+
+    if (flags & FL_FINALIZE) return true;
+
+    switch (flags & RUBY_T_MASK) {
+      case T_IMEMO:
+        switch (imemo_type(obj)) {
+          case imemo_constcache:
+          case imemo_cref:
+          case imemo_ifunc:
+          case imemo_memo:
+          case imemo_svar:
+          case imemo_throw_data:
+            return false;
+          default:
+            return true;
+        }
+
+      case T_DATA:
+      case T_OBJECT:
+      case T_STRING:
+      case T_ARRAY:
+      case T_HASH:
+      case T_BIGNUM:
+      case T_STRUCT:
+      case T_FLOAT:
+      case T_RATIONAL:
+      case T_COMPLEX:
+        break;
+
+      case T_FILE:
+      case T_SYMBOL:
+      case T_CLASS:
+      case T_ICLASS:
+      case T_MODULE:
+      case T_REGEXP:
+      case T_MATCH:
+        return true;
+    }
+
+    shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
+    if (id2ref_tbl && rb_shape_has_object_id(shape_id)) return true;
+
+    switch (flags & RUBY_T_MASK) {
+      case T_OBJECT:
+        if (flags & ROBJECT_HEAP) return true;
+        return false;
+
+      case T_DATA:
+        if (flags & RUBY_TYPED_FL_IS_TYPED_DATA) {
+            uintptr_t type = (uintptr_t)RTYPEDDATA(obj)->type;
+            if (type & TYPED_DATA_EMBEDDED) {
+                RUBY_DATA_FUNC dfree = ((const rb_data_type_t *)(type & TYPED_DATA_PTR_MASK))->function.dfree;
+                if (dfree == RUBY_NEVER_FREE || dfree == RUBY_TYPED_DEFAULT_FREE) {
+                    return false;
+                }
+            }
+        }
+        return true;
+
+      case T_STRING:
+        if (flags & (RSTRING_NOEMBED | RSTRING_FSTR)) return true;
+        return rb_shape_has_fields(shape_id);
+
+      case T_ARRAY:
+        if (!(flags & RARRAY_EMBED_FLAG)) return true;
+        return rb_shape_has_fields(shape_id);
+
+      case T_HASH:
+        if (flags & RHASH_ST_TABLE_FLAG) return true;
+        return rb_shape_has_fields(shape_id);
+
+      case T_BIGNUM:
+        if (!(flags & BIGNUM_EMBED_FLAG)) return true;
+        return rb_shape_has_fields(shape_id);
+
+      case T_STRUCT:
+        if (!(flags & RSTRUCT_EMBED_LEN_MASK)) return true;
+        if (flags & RSTRUCT_GEN_FIELDS) return rb_shape_has_fields(shape_id);
+        return false;
+
+      case T_FLOAT:
+      case T_RATIONAL:
+      case T_COMPLEX:
+        return rb_shape_has_fields(shape_id);
+
+      default:
+        UNREACHABLE_RETURN(true);
     }
 }
 
@@ -1347,7 +1455,7 @@ rb_gc_obj_free(void *objspace, VALUE obj)
                 st_free_table(ROBJECT_FIELDS_HASH(obj));
             }
             else {
-                xfree(ROBJECT(obj)->as.heap.fields);
+                SIZED_FREE_N(ROBJECT(obj)->as.heap.fields, ROBJECT_FIELDS_CAPACITY(obj));
                 RB_DEBUG_COUNTER_INC(obj_obj_ptr);
             }
         }
@@ -1442,7 +1550,7 @@ rb_gc_obj_free(void *objspace, VALUE obj)
             }
 #endif
             onig_region_free(&rm->regs, 0);
-            xfree(rm->char_offset);
+            SIZED_FREE_N(rm->char_offset, rm->char_offset_num_allocated);
 
             RB_DEBUG_COUNTER_INC(obj_match_ptr);
         }
@@ -1479,7 +1587,7 @@ rb_gc_obj_free(void *objspace, VALUE obj)
 
       case T_BIGNUM:
         if (!BIGNUM_EMBED_P(obj) && BIGNUM_DIGITS(obj)) {
-            xfree(BIGNUM_DIGITS(obj));
+            SIZED_FREE_N(BIGNUM_DIGITS(obj), BIGNUM_LEN(obj));
             RB_DEBUG_COUNTER_INC(obj_bignum_ptr);
         }
         else {
@@ -1497,7 +1605,7 @@ rb_gc_obj_free(void *objspace, VALUE obj)
             RB_DEBUG_COUNTER_INC(obj_struct_embed);
         }
         else {
-            xfree((void *)RSTRUCT(obj)->as.heap.ptr);
+            SIZED_FREE_N(RSTRUCT(obj)->as.heap.ptr, RSTRUCT(obj)->as.heap.len);
             RB_DEBUG_COUNTER_INC(obj_struct_ptr);
         }
         break;
@@ -1709,63 +1817,68 @@ rb_gc_copy_finalizer(VALUE dest, VALUE obj)
 
 /*
  *  call-seq:
- *     ObjectSpace.define_finalizer(obj, aProc=proc())
+ *     ObjectSpace.define_finalizer(obj) {|id| ... } -> array
+ *     ObjectSpace.define_finalizer(obj, finalizer) -> array
  *
- *  Adds <i>aProc</i> as a finalizer, to be called after <i>obj</i>
- *  was destroyed. The object ID of the <i>obj</i> will be passed
- *  as an argument to <i>aProc</i>. If <i>aProc</i> is a lambda or
- *  method, make sure it can be called with a single argument.
+ *  Adds a new finalizer for +obj+ that is called when +obj+ is destroyed
+ *  by the garbage collector or when Ruby shuts down (which ever comes first).
  *
- *  The return value is an array <code>[0, aProc]</code>.
+ *  With a block given, uses the block as the callback. Without a block given,
+ *  uses a callable object +finalizer+ as the callback. The callback is called
+ *  when +obj+ is destroyed with a single argument +id+ which is the object
+ *  ID of +obj+ (see Object#object_id).
  *
- *  The two recommended patterns are to either create the finaliser proc
- *  in a non-instance method where it can safely capture the needed state,
- *  or to use a custom callable object that stores the needed state
- *  explicitly as instance variables.
+ *  The return value is an array <code>[0, callback]</code>, where +callback+
+ *  is a Proc created from the block if one was given or +finalizer+ otherwise.
+ *
+ *  Note that defining a finalizer in an instance method of the object may prevent
+ *  the object from being garbage collected since if the block or +finalizer+ refers
+ *  to +obj+ then +obj+ will never be reclaimed by the garbage collector. For example,
+ *  the following script demonstrates the issue:
  *
  *      class Foo
- *        def initialize(data_needed_for_finalization)
- *          ObjectSpace.define_finalizer(self, self.class.create_finalizer(data_needed_for_finalization))
- *        end
- *
- *        def self.create_finalizer(data_needed_for_finalization)
- *          proc {
- *            puts "finalizing #{data_needed_for_finalization}"
- *          }
+ *        def define_final
+ *          ObjectSpace.define_finalizer(self) do |id|
+ *            puts "Running finalizer for #{id}!"
+ *          end
  *        end
  *      end
  *
- *      class Bar
- *       class Remover
- *          def initialize(data_needed_for_finalization)
- *            @data_needed_for_finalization = data_needed_for_finalization
- *          end
+ *      obj = Foo.new
+ *      obj.define_final
  *
+ *  There are two patterns to solve this issue:
+ *
+ *  - Create the finalizer in a non-instance method so it can safely capture
+ *    the needed state:
+ *
+ *      class Foo
+ *        def define_final
+ *          ObjectSpace.define_finalizer(self, self.class.create_finalizer)
+ *        end
+ *
+ *        def self.create_finalizer
+ *          proc do |id|
+ *            puts "Running finalizer for #{id}!"
+ *          end
+ *        end
+ *      end
+ *
+ *  - Use a callable object:
+ *
+ *      class Foo
+ *        class Finalizer
  *          def call(id)
- *            puts "finalizing #{@data_needed_for_finalization}"
+ *            puts "Running finalizer for #{id}!"
  *          end
  *        end
  *
- *        def initialize(data_needed_for_finalization)
- *          ObjectSpace.define_finalizer(self, Remover.new(data_needed_for_finalization))
+ *        def define_final
+ *          ObjectSpace.define_finalizer(self, Finalizer.new)
  *        end
  *      end
  *
- *  Note that if your finalizer references the object to be
- *  finalized it will never be run on GC, although it will still be
- *  run at exit. You will get a warning if you capture the object
- *  to be finalized as the receiver of the finalizer.
- *
- *      class CapturesSelf
- *        def initialize(name)
- *          ObjectSpace.define_finalizer(self, proc {
- *            # this finalizer will only be run on exit
- *            puts "finalizing #{name}"
- *          })
- *        end
- *      end
- *
- *  Also note that finalization can be unpredictable and is never guaranteed
+ *  Note that finalization can be unpredictable and is never guaranteed
  *  to be run except on exit.
  */
 
@@ -1826,7 +1939,6 @@ rb_gc_pointer_to_heap_p(VALUE obj)
 #define OBJ_ID_INCREMENT (RUBY_IMMEDIATE_MASK + 1)
 #define LAST_OBJECT_ID() (object_id_counter * OBJ_ID_INCREMENT)
 static VALUE id2ref_value = 0;
-static st_table *id2ref_tbl = NULL;
 
 #if SIZEOF_SIZE_T == SIZEOF_LONG_LONG
 static size_t object_id_counter = 1;
@@ -2461,9 +2573,8 @@ rb_obj_memsize_of(VALUE obj)
         break;
 
       case T_STRUCT:
-        if ((RBASIC(obj)->flags & RSTRUCT_EMBED_LEN_MASK) == 0 &&
-            RSTRUCT(obj)->as.heap.ptr) {
-            size += sizeof(VALUE) * RSTRUCT_LEN(obj);
+        if (RSTRUCT_EMBED_LEN(obj) == 0) {
+            size += sizeof(VALUE) * RSTRUCT_LEN_RAW(obj);
         }
         break;
 
@@ -3171,7 +3282,7 @@ gc_mark_classext_iclass(rb_classext_t *ext, bool prime, VALUE box_value, void *a
 void
 rb_gc_move_obj_during_marking(VALUE from, VALUE to)
 {
-    if (rb_obj_gen_fields_p(to)) {
+    if (rb_obj_using_gen_fields_table_p(to)) {
         rb_mark_generic_ivar(from);
     }
 }
@@ -3181,7 +3292,7 @@ rb_gc_mark_children(void *objspace, VALUE obj)
 {
     struct gc_mark_classext_foreach_arg foreach_args;
 
-    if (rb_obj_gen_fields_p(obj)) {
+    if (rb_obj_using_gen_fields_table_p(obj)) {
         rb_mark_generic_ivar(obj);
     }
 
@@ -3546,7 +3657,7 @@ rb_gc_unregister_address(VALUE *addr)
 
     if (tmp->varptr == addr) {
         vm->global_object_list = tmp->next;
-        xfree(tmp);
+        SIZED_FREE(tmp);
         return;
     }
     while (tmp->next) {
@@ -3554,7 +3665,7 @@ rb_gc_unregister_address(VALUE *addr)
             struct global_object_list *t = tmp->next;
 
             tmp->next = tmp->next->next;
-            xfree(t);
+            SIZED_FREE(t);
             break;
         }
         tmp = tmp->next;
@@ -3669,8 +3780,8 @@ gc_ref_update_object(void *objspace, VALUE v)
         if (slot_size >= embed_size) {
             // Object can be re-embedded
             memcpy(ROBJECT(v)->as.ary, ptr, sizeof(VALUE) * ROBJECT_FIELDS_COUNT(v));
+            SIZED_FREE_N(ptr, ROBJECT_FIELDS_CAPACITY(v));
             FL_UNSET_RAW(v, ROBJECT_HEAP);
-            xfree(ptr);
             ptr = ROBJECT(v)->as.ary;
         }
     }

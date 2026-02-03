@@ -592,6 +592,7 @@ gem = #{@gemname}
 build_complete = $(TARGET_GEM_DIR)/gem.build_complete
 install-so: build_complete
 clean-so:: clean-build_complete
+$(build_complete) $(OBJS): $(TARGET_SO_DIR_TIMESTAMP)
 
 build_complete: $(build_complete)
 $(build_complete): $(TARGET_SO)

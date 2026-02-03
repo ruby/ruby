@@ -842,7 +842,7 @@ class TestRequire < Test::Unit::TestCase
     }
 
     # [Bug #21567]
-    assert_separately(%w[-rtempfile], "#{<<~"begin;"}\n#{<<~"end;"}")
+    assert_ruby_status(%w[-rtempfile], "#{<<~"begin;"}\n#{<<~"end;"}")
     begin;
       class MyString
         def initialize(path)
@@ -1029,7 +1029,7 @@ class TestRequire < Test::Unit::TestCase
 
   def test_require_with_public_method_missing
     # [Bug #19793]
-    assert_separately(["-W0", "-rtempfile"], __FILE__, __LINE__, <<~RUBY, timeout: 60)
+    assert_ruby_status(["-W0", "-rtempfile"], <<~RUBY, timeout: 60)
       GC.stress = true
 
       class Object

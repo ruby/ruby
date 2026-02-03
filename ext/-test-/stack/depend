@@ -172,6 +172,7 @@ stack.o: $(hdrdir)/ruby/oniguruma.h
 stack.o: $(hdrdir)/ruby/ruby.h
 stack.o: $(hdrdir)/ruby/st.h
 stack.o: $(hdrdir)/ruby/subst.h
+stack.o: $(top_srcdir)/encindex.h
 stack.o: $(top_srcdir)/internal/compilers.h
 stack.o: $(top_srcdir)/internal/string.h
 stack.o: stack.c

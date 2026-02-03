@@ -131,7 +131,8 @@ module Bundler
     attr_reader :orig_exception
 
     def initialize(orig_exception, msg)
-      full_message = msg + "\nGem Load Error is: #{orig_exception.message}\n"\
+      full_message = msg + "\nGem Load Error is:
+                      #{orig_exception.full_message(highlight: false)}\n"\
                       "Backtrace for gem load error is:\n"\
                       "#{orig_exception.backtrace.join("\n")}\n"\
                       "Bundler Error Backtrace:\n"
@@ -221,7 +222,9 @@ module Bundler
   class DirectoryRemovalError < BundlerError
     def initialize(orig_exception, msg)
       full_message = "#{msg}.\n" \
-                     "The underlying error was #{orig_exception.class}: #{orig_exception.message}, with backtrace:\n" \
+                     "The underlying error was #{orig_exception.class}:
+                     #{orig_exception.full_message(highlight: false)},
+                     with backtrace:\n" \
                      "  #{orig_exception.backtrace.join("\n  ")}\n\n" \
                      "Bundler Error Backtrace:"
       super(full_message)

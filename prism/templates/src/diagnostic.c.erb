@@ -447,12 +447,12 @@ pm_diagnostic_level(pm_diagnostic_id_t diag_id) {
  * Append an error to the given list of diagnostic.
  */
 bool
-pm_diagnostic_list_append(pm_list_t *list, const uint8_t *start, const uint8_t *end, pm_diagnostic_id_t diag_id) {
+pm_diagnostic_list_append(pm_list_t *list, uint32_t start, uint32_t length, pm_diagnostic_id_t diag_id) {
     pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) xcalloc(1, sizeof(pm_diagnostic_t));
     if (diagnostic == NULL) return false;
 
     *diagnostic = (pm_diagnostic_t) {
-        .location = { start, end },
+        .location = { .start = start, .length = length },
         .diag_id = diag_id,
         .message = pm_diagnostic_message(diag_id),
         .owned = false,
@@ -468,7 +468,7 @@ pm_diagnostic_list_append(pm_list_t *list, const uint8_t *start, const uint8_t *
  * string for its message.
  */
 bool
-pm_diagnostic_list_append_format(pm_list_t *list, const uint8_t *start, const uint8_t *end, pm_diagnostic_id_t diag_id, ...) {
+pm_diagnostic_list_append_format(pm_list_t *list, uint32_t start, uint32_t length, pm_diagnostic_id_t diag_id, ...) {
     va_list arguments;
     va_start(arguments, diag_id);
 
@@ -485,19 +485,19 @@ pm_diagnostic_list_append_format(pm_list_t *list, const uint8_t *start, const ui
         return false;
     }
 
-    size_t length = (size_t) (result + 1);
-    char *message = (char *) xmalloc(length);
+    size_t message_length = (size_t) (result + 1);
+    char *message = (char *) xmalloc(message_length);
     if (message == NULL) {
         xfree(diagnostic);
         return false;
     }
 
     va_start(arguments, diag_id);
-    vsnprintf(message, length, format, arguments);
+    vsnprintf(message, message_length, format, arguments);
     va_end(arguments);
 
     *diagnostic = (pm_diagnostic_t) {
-        .location = { start, end },
+        .location = { .start = start, .length = length },
         .diag_id = diag_id,
         .message = message,
         .owned = true,

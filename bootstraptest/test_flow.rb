@@ -376,7 +376,7 @@ assert_equal %q{[1, 4, 7, 5, 8, 9]}, %q{$a = []; begin; ; $a << 1
     ; $a << 3
   end; $a << 4
   def m2; $a << 5
-    m1(:a, :b, (return 1; :c)); $a << 6
+    m1(:a, :b, (return 1 if true; :c)); $a << 6
   end; $a << 7
   m2; $a << 8
 ; $a << 9
@@ -399,7 +399,7 @@ assert_equal %q{[1, 3, 11, 4, 5, 6, 7, 12, 13]}, %q{$a = []; begin; ; $a << 1
     m2(begin; $a << 5
          2; $a << 6
        ensure; $a << 7
-         return 3; $a << 8
+         return 3 if true; $a << 8
        end); $a << 9
     4; $a << 10
   end; $a << 11

@@ -80,6 +80,8 @@ nonempty_memcpy(void *dest, const void *src, size_t n)
 #define st_init_table_with_size rb_parser_st_init_table_with_size
 #undef st_init_existing_table_with_size
 #define st_init_existing_table_with_size rb_parser_st_init_existing_table_with_size
+#undef st_free_embedded_table
+#define st_free_embedded_table rb_parser_st_free_embedded_table
 #undef st_insert
 #define st_insert rb_parser_st_insert
 #undef st_lookup

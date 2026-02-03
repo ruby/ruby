@@ -1084,7 +1084,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
           case T_STRUCT:
             w_class(TYPE_STRUCT, obj, arg, TRUE);
             {
-                long len = RSTRUCT_LEN(obj);
+                long len = RSTRUCT_LEN_RAW(obj);
                 VALUE mem;
                 long i;
 
@@ -1092,7 +1092,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
                 mem = rb_struct_members(obj);
                 for (i=0; i<len; i++) {
                     w_symbol(RARRAY_AREF(mem, i), arg);
-                    w_object(RSTRUCT_GET(obj, i), arg, limit);
+                    w_object(RSTRUCT_GET_RAW(obj, i), arg, limit);
                 }
             }
             break;
@@ -2350,7 +2350,7 @@ r_object(struct load_arg *arg)
 static void
 clear_load_arg(struct load_arg *arg)
 {
-    xfree(arg->buf);
+    ruby_sized_xfree(arg->buf, BUFSIZ);
     arg->buf = NULL;
     arg->buflen = 0;
     arg->offset = 0;
@@ -2590,7 +2590,7 @@ marshal_compat_table_mark_and_move(void *tbl)
 static int
 marshal_compat_table_free_i(st_data_t key, st_data_t value, st_data_t _)
 {
-    xfree((marshal_compat_t *)value);
+    SIZED_FREE((marshal_compat_t *)value);
     return ST_CONTINUE;
 }
 

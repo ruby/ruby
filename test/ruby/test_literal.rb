@@ -682,6 +682,11 @@ class TestRubyLiteral < Test::Unit::TestCase
     $VERBOSE = verbose_bak
   end
 
+  def test_rational_float
+    assert_equal(12, 0.12r * 100)
+    assert_equal(12, 0.1_2r * 100)
+  end
+
   def test_symbol_list
     assert_equal([:foo, :bar], %i[foo bar])
     assert_equal([:"\"foo"], %i["foo])

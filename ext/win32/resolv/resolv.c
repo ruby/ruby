@@ -53,6 +53,7 @@ wchar_to_utf8(const WCHAR *w, int n)
     return str;
 }
 
+/* :nodoc: */
 static VALUE
 get_dns_server_list(VALUE self)
 {
@@ -80,7 +81,6 @@ get_dns_server_list(VALUE self)
 
     return nameservers;
 }
-
 
 static const WCHAR TCPIP_Params[] = L"SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters";
 
@@ -116,6 +116,7 @@ reg_open_key(VALUE klass, HKEY hkey, const WCHAR *wname)
     return rb_ensure(rb_yield, k, hkey_close, k);
 }
 
+/* :nodoc: */
 static VALUE
 tcpip_params_open(VALUE klass)
 {

@@ -1336,6 +1336,28 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[@cls[1,2], nil, 'dog', 'cat'], a.prepend(@cls[1, 2]))
   end
 
+  def test_tolerant_to_redefinition
+    *code = __FILE__, __LINE__+1, "#{<<-"{#"}\n#{<<-'};'}"
+    {#
+      module M
+        def <<(a)
+          super(a * 2)
+        end
+      end
+      class Array; prepend M; end
+      ary = [*1..10]
+      mapped = ary.map {|i| i}
+      selected = ary.select {true}
+      module M
+        remove_method :<<
+      end
+      assert_equal(ary, mapped)
+      assert_equal(ary, selected)
+    };
+    assert_separately(%w[--disable-yjit], *code)
+    assert_separately(%w[--enable-yjit], *code)
+  end
+
   def test_push
     a = @cls[1, 2, 3]
     assert_equal(@cls[1, 2, 3, 4, 5], a.push(4, 5))

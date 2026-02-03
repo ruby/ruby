@@ -522,6 +522,7 @@ native_thread_create_shared(rb_thread_t *th)
     th->ec->machine.stack_start = (void *)((uintptr_t)machine_stack + machine_stack_size);
     th->ec->machine.stack_maxsize = machine_stack_size; // TODO
     th->sched.context_stack = machine_stack;
+    th->sched.context_stack_size = machine_stack_size;
 
     th->sched.context = ruby_xmalloc(sizeof(struct coroutine_context));
     coroutine_initialize(th->sched.context, co_start, machine_stack, machine_stack_size);
@@ -617,9 +618,15 @@ kqueue_wait(rb_vm_t *vm)
     struct timespec *timeout = NULL;
     int timeout_ms = timer_thread_set_timeout(vm);
 
-    if (timeout_ms >= 0) {
+    if (timeout_ms > 0) {
         calculated_timeout.tv_sec = timeout_ms / 1000;
         calculated_timeout.tv_nsec = (timeout_ms % 1000) * 1000000;
+        timeout = &calculated_timeout;
+    }
+    else if (timeout_ms == 0) {
+        // Relying on the absence of other members of struct timespec is not strictly portable,
+        // and kevent needs a 0-valued timespec to mean immediate timeout.
+        memset(&calculated_timeout, 0, sizeof(struct timespec));
         timeout = &calculated_timeout;
     }
 

@@ -65,15 +65,6 @@ describe "IO.read" do
   end
 
   platform_is_not :windows do
-    ruby_version_is ""..."3.3" do
-      it "uses an :open_args option" do
-        string = IO.read(@fname, nil, 0, open_args: ["r", nil, {encoding: Encoding::US_ASCII}])
-        string.encoding.should == Encoding::US_ASCII
-
-        string = IO.read(@fname, nil, 0, open_args: ["r", nil, {}])
-        string.encoding.should == Encoding::UTF_8
-      end
-    end
   end
 
   it "disregards other options if :open_args is given" do
@@ -135,18 +126,9 @@ describe "IO.read" do
     -> { IO.read @fname, -1 }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is ''...'3.3' do
-    it "raises an Errno::EINVAL when not passed a valid offset" do
-      -> { IO.read @fname, 0, -1  }.should raise_error(Errno::EINVAL)
-      -> { IO.read @fname, -1, -1 }.should raise_error(Errno::EINVAL)
-    end
-  end
-
-  ruby_version_is '3.3' do
-    it "raises an ArgumentError when not passed a valid offset" do
-      -> { IO.read @fname, 0, -1  }.should raise_error(ArgumentError)
-      -> { IO.read @fname, -1, -1 }.should raise_error(ArgumentError)
-    end
+  it "raises an ArgumentError when not passed a valid offset" do
+    -> { IO.read @fname, 0, -1  }.should raise_error(ArgumentError)
+    -> { IO.read @fname, -1, -1 }.should raise_error(ArgumentError)
   end
 
   it "uses the external encoding specified via the :external_encoding option" do
@@ -232,14 +214,12 @@ ruby_version_is ""..."4.0" do
       end
     end
 
-    ruby_version_is "3.3" do
-      # https://bugs.ruby-lang.org/issues/19630
-      it "warns about deprecation" do
-        cmd = "|echo ok"
-        -> {
-          IO.read(cmd)
-        }.should complain(/IO process creation with a leading '\|'/)
-      end
+    # https://bugs.ruby-lang.org/issues/19630
+    it "warns about deprecation" do
+      cmd = "|echo ok"
+      -> {
+        IO.read(cmd)
+      }.should complain(/IO process creation with a leading '\|'/)
     end
   end
 end
@@ -322,11 +302,9 @@ describe "IO#read" do
     -> { @io.read(nil, 'frozen-string'.freeze) }.should raise_error(FrozenError)
   end
 
-  ruby_bug "", ""..."3.3" do
-    it "raise FrozenError if the output buffer is frozen (2)" do
-      @io.read
-      -> { @io.read(1, ''.freeze) }.should raise_error(FrozenError)
-    end
+  it "raise FrozenError if the output buffer is frozen (2)" do
+    @io.read
+    -> { @io.read(1, ''.freeze) }.should raise_error(FrozenError)
   end
 
   it "consumes zero bytes when reading zero bytes" do

@@ -2,8 +2,8 @@
   regexec.c -  Onigmo (Oniguruma-mod) (regular expression library)
 **********************************************************************/
 /*-
- * Copyright (c) 2002-2008  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
- * Copyright (c) 2011-2016  K.Takata  <kentkt AT csc DOT jp>
+ * Copyright (c) 2002-2018  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+ * Copyright (c) 2011-2019  K.Takata  <kentkt AT csc DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -4401,39 +4401,19 @@ bm_search_notrev(regex_t* reg, const UChar* target, const UChar* target_end,
 
   s = text;
 
-  if (IS_NULL(reg->int_map)) {
-    while (s < end) {
-      p = se = s + tlen1;
-      t = tail;
-      while (*p == *t) {
-        if (t == target) return (UChar* )s;
-        p--; t--;
-      }
-      if (s + 1 >= end) break;
-      skip = reg->map[se[1]];
-      t = s;
-      do {
-        s += enclen(enc, s, end);
-      } while ((s - t) < skip && s < end);
+  while (s < end) {
+    p = se = s + tlen1;
+    t = tail;
+    while (*p == *t) {
+      if (t == target) return (UChar* )s;
+      p--; t--;
     }
-  }
-  else {
-# if OPT_EXACT_MAXLEN >= ONIG_CHAR_TABLE_SIZE
-    while (s < end) {
-      p = se = s + tlen1;
-      t = tail;
-      while (*p == *t) {
-        if (t == target) return (UChar* )s;
-        p--; t--;
-      }
-      if (s + 1 >= end) break;
-      skip = reg->int_map[se[1]];
-      t = s;
-      do {
-        s += enclen(enc, s, end);
-      } while ((s - t) < skip && s < end);
-    }
-# endif
+    if (s + 1 >= end) break;
+    skip = reg->map[se[1]];
+    t = s;
+    do {
+      s += enclen(enc, s, end);
+    } while ((s - t) < skip && s < end);
   }
 
   return (UChar* )NULL;
@@ -4460,32 +4440,17 @@ bm_search(regex_t* reg, const UChar* target, const UChar* target_end,
     end = text_end;
 
   s = text + tlen1;
-  if (IS_NULL(reg->int_map)) {
-    while (s < end) {
-      p = s;
-      t = tail;
-      while (*p == *t) {
-        if (t == target) return (UChar* )p;
-        p--; t--;
-      }
-      if (s + 1 >= end) break;
-      s += reg->map[s[1]];
+  while (s < end) {
+    p = s;
+    t = tail;
+    while (*p == *t) {
+      if (t == target) return (UChar* )p;
+      p--; t--;
     }
+    if (s + 1 >= end) break;
+    s += reg->map[s[1]];
   }
-  else { /* see int_map[] */
-# if OPT_EXACT_MAXLEN >= ONIG_CHAR_TABLE_SIZE
-    while (s < end) {
-      p = s;
-      t = tail;
-      while (*p == *t) {
-        if (t == target) return (UChar* )p;
-        p--; t--;
-      }
-      if (s + 1 >= end) break;
-      s += reg->int_map[s[1]];
-    }
-# endif
-  }
+
   return (UChar* )NULL;
 }
 
@@ -4514,35 +4479,17 @@ bm_search_notrev_ic(regex_t* reg, const UChar* target, const UChar* target_end,
 
   s = text;
 
-  if (IS_NULL(reg->int_map)) {
-    while (s < end) {
-      se = s + tlen1;
-      if (str_lower_case_match(enc, case_fold_flag, target, target_end,
-                               s, se + 1))
-        return (UChar* )s;
-      if (s + 1 >= end) break;
-      skip = reg->map[se[1]];
-      t = s;
-      do {
-        s += enclen(enc, s, end);
-      } while ((s - t) < skip && s < end);
-    }
-  }
-  else {
-# if OPT_EXACT_MAXLEN >= ONIG_CHAR_TABLE_SIZE
-    while (s < end) {
-      se = s + tlen1;
-      if (str_lower_case_match(enc, case_fold_flag, target, target_end,
-                               s, se + 1))
-        return (UChar* )s;
-      if (s + 1 >= end) break;
-      skip = reg->int_map[se[1]];
-      t = s;
-      do {
-        s += enclen(enc, s, end);
-      } while ((s - t) < skip && s < end);
-    }
-# endif
+  while (s < end) {
+    se = s + tlen1;
+    if (str_lower_case_match(enc, case_fold_flag, target, target_end,
+                             s, se + 1))
+      return (UChar* )s;
+    if (s + 1 >= end) break;
+    skip = reg->map[se[1]];
+    t = s;
+    do {
+      s += enclen(enc, s, end);
+    } while ((s - t) < skip && s < end);
   }
 
   return (UChar* )NULL;
@@ -4571,82 +4518,17 @@ bm_search_ic(regex_t* reg, const UChar* target, const UChar* target_end,
     end = text_end;
 
   s = text + tlen1;
-  if (IS_NULL(reg->int_map)) {
-    while (s < end) {
-      p = s - tlen1;
-      if (str_lower_case_match(enc, case_fold_flag, target, target_end,
-                               p, s + 1))
-        return (UChar* )p;
-      if (s + 1 >= end) break;
-      s += reg->map[s[1]];
-    }
-  }
-  else { /* see int_map[] */
-# if OPT_EXACT_MAXLEN >= ONIG_CHAR_TABLE_SIZE
-    while (s < end) {
-      p = s - tlen1;
-      if (str_lower_case_match(enc, case_fold_flag, target, target_end,
-                               p, s + 1))
-        return (UChar* )p;
-      if (s + 1 >= end) break;
-      s += reg->int_map[s[1]];
-    }
-# endif
-  }
-  return (UChar* )NULL;
-}
-
-#ifdef USE_INT_MAP_BACKWARD
-static int
-set_bm_backward_skip(UChar* s, UChar* end, OnigEncoding enc ARG_UNUSED,
-                     int** skip)
-{
-  int i, len;
-
-  if (IS_NULL(*skip)) {
-    *skip = (int* )xmalloc(sizeof(int) * ONIG_CHAR_TABLE_SIZE);
-    if (IS_NULL(*skip)) return ONIGERR_MEMORY;
-  }
-
-  len = (int )(end - s);
-  for (i = 0; i < ONIG_CHAR_TABLE_SIZE; i++)
-    (*skip)[i] = len;
-
-  for (i = len - 1; i > 0; i--)
-    (*skip)[s[i]] = i;
-
-  return 0;
-}
-
-static UChar*
-bm_search_backward(regex_t* reg, const UChar* target, const UChar* target_end,
-                   const UChar* text, const UChar* adjust_text,
-                   const UChar* text_end, const UChar* text_start)
-{
-  const UChar *s, *t, *p;
-
-  s = text_end - (target_end - target);
-  if (text_start < s)
-    s = text_start;
-  else
-    s = ONIGENC_LEFT_ADJUST_CHAR_HEAD(reg->enc, adjust_text, s, text_end);
-
-  while (s >= text) {
-    p = s;
-    t = target;
-    while (t < target_end && *p == *t) {
-      p++; t++;
-    }
-    if (t == target_end)
-      return (UChar* )s;
-
-    s -= reg->int_map_backward[*s];
-    s = ONIGENC_LEFT_ADJUST_CHAR_HEAD(reg->enc, adjust_text, s, text_end);
+  while (s < end) {
+    p = s - tlen1;
+    if (str_lower_case_match(enc, case_fold_flag, target, target_end,
+                             p, s + 1))
+      return (UChar* )p;
+    if (s + 1 >= end) break;
+    s += reg->map[s[1]];
   }
 
   return (UChar* )NULL;
 }
-#endif
 
 static UChar*
 map_search(OnigEncoding enc, UChar map[],
@@ -4894,21 +4776,7 @@ backward_search_range(regex_t* reg, const UChar* str, const UChar* end,
 
   case ONIG_OPTIMIZE_EXACT_BM:
   case ONIG_OPTIMIZE_EXACT_BM_NOT_REV:
-#ifdef USE_INT_MAP_BACKWARD
-    if (IS_NULL(reg->int_map_backward)) {
-      int r;
-      if (s - range < BM_BACKWARD_SEARCH_LENGTH_THRESHOLD)
-        goto exact_method;
-
-      r = set_bm_backward_skip(reg->exact, reg->exact_end, reg->enc,
-                               &(reg->int_map_backward));
-      if (r) return r;
-    }
-    p = bm_search_backward(reg, reg->exact, reg->exact_end, range, adjrange,
-                           end, p);
-#else
     goto exact_method;
-#endif
     break;
 
   case ONIG_OPTIMIZE_MAP:

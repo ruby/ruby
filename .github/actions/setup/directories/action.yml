@@ -95,12 +95,12 @@ runs:
         git config --global init.defaultBranch garbage
 
     - if: inputs.checkout
-      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         path: ${{ inputs.srcdir }}
         fetch-depth: ${{ inputs.fetch-depth }}
 
-    - uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
+    - uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
       with:
         path: ${{ inputs.srcdir }}/.downloaded-cache
         key: ${{ runner.os }}-${{ runner.arch }}-downloaded-cache

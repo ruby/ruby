@@ -1,10 +1,11 @@
 #ifndef PRISM_EXT_NODE_H
 #define PRISM_EXT_NODE_H
 
-#define EXPECTED_PRISM_VERSION "1.7.0"
+#define EXPECTED_PRISM_VERSION "1.9.0"
 
 #include <ruby.h>
 #include <ruby/encoding.h>
+#include <ruby/version.h>
 #include "prism.h"
 
 VALUE pm_source_new(const pm_parser_t *parser, rb_encoding *encoding, bool freeze);

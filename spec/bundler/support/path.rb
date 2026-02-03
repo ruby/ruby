@@ -114,7 +114,17 @@ module Spec
     end
 
     def tmp_root
-      source_root.join("tmp")
+      if ruby_core? && (tmpdir = ENV["TMPDIR"])
+        # Use realpath to resolve any symlinks in TMPDIR (e.g., on macOS /var -> /private/var)
+        real = begin
+          File.realpath(tmpdir)
+        rescue Errno::ENOENT, Errno::EACCES
+          tmpdir
+        end
+        Pathname(real)
+      else
+        source_root.join("tmp")
+      end
     end
 
     # Bump this version whenever you make a breaking change to the spec setup

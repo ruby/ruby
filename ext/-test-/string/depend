@@ -172,6 +172,7 @@ capacity.o: $(hdrdir)/ruby/oniguruma.h
 capacity.o: $(hdrdir)/ruby/ruby.h
 capacity.o: $(hdrdir)/ruby/st.h
 capacity.o: $(hdrdir)/ruby/subst.h
+capacity.o: $(top_srcdir)/encindex.h
 capacity.o: $(top_srcdir)/internal/compilers.h
 capacity.o: $(top_srcdir)/internal/string.h
 capacity.o: capacity.c
@@ -679,6 +680,7 @@ cstr.o: $(hdrdir)/ruby/oniguruma.h
 cstr.o: $(hdrdir)/ruby/ruby.h
 cstr.o: $(hdrdir)/ruby/st.h
 cstr.o: $(hdrdir)/ruby/subst.h
+cstr.o: $(top_srcdir)/encindex.h
 cstr.o: $(top_srcdir)/internal.h
 cstr.o: $(top_srcdir)/internal/compilers.h
 cstr.o: $(top_srcdir)/internal/string.h
@@ -1535,6 +1537,7 @@ fstring.o: $(hdrdir)/ruby/oniguruma.h
 fstring.o: $(hdrdir)/ruby/ruby.h
 fstring.o: $(hdrdir)/ruby/st.h
 fstring.o: $(hdrdir)/ruby/subst.h
+fstring.o: $(top_srcdir)/encindex.h
 fstring.o: $(top_srcdir)/internal/compilers.h
 fstring.o: $(top_srcdir)/internal/string.h
 fstring.o: fstring.c
