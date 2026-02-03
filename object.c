@@ -1934,24 +1934,6 @@ rb_mod_eqq(VALUE mod, VALUE arg)
  *   IO         <= File  # => false
  *   Enumerable <= Array # => false
  *
- * Returns +true+ if +self+ is a descendant of +other+
- * (+self+ is a subclass of +other+ or +self+ includes +other+) or
- * if +self+ is the same as +other+:
- *
- *   Float <= Numeric    # => true
- *   Array <= Enumerable # => true
- *   Float <= Float      # => true
- *
- * Returns +false+ if +self+ is an ancestor of +other+
- * (+self+ is a superclass of +other+ or +self+ is included in +other+):
- *
- *   Numeric <= Float    # => false
- *   Enumerable <= Array # => false
- *
- * Returns +nil+ if there is no relationship between the two:
- *
- *   Float <= Hash        # => nil
- *   Enumerable <= String # => nil
  */
 
 VALUE
