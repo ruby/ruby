@@ -6757,6 +6757,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let val = state.stack_pop()?;
                     if ep_escaped || has_blockiseq { // TODO: figure out how to drop has_blockiseq here
                         // Write the local using EP
+                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.without_locals() }); // skip spilling locals
+                        let flags = fun.push_insn(block, Insn::LoadField { recv: ep, id: ID!(_env_data_index_flags), offset: SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32), return_type: types::CInt64 });
+                        fun.push_insn(block, Insn::GuardNoBitsSet { val: flags, mask: Const::CUInt64(VM_ENV_FLAG_WB_REQUIRED.into()), reason: SideExitReason::WriteBarrierRequired, state: exit_id });
                         fun.push_insn(block, Insn::SetLocal { val, ep, ep_offset, level });
                     } else if local_inval {
                         // If there has been any non-leaf call since JIT entry or the last patch point,

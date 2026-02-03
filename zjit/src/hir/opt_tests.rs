@@ -2941,15 +2941,18 @@ mod hir_opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:NilClass):
           v13:Fixnum[1] = Const Value(1)
+          v15:CPtr = GetEP 0
+          v17:CInt64 = LoadField v15, :_env_data_index_flags@0x1000
+          v18:CInt64 = GuardNoBitsSet v17, CUInt64(8)
           SetLocal :a, l0, EP@3, v13
-          PatchPoint NoSingletonClass(Object@0x1000)
-          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-          v31:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v8, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          PatchPoint NoSingletonClass(Object@0x1008)
+          PatchPoint MethodRedefined(Object@0x1008, foo@0x1010, cme:0x1018)
+          v35:HeapObject[class_exact*:Object@VALUE(0x1008)] = GuardType v8, HeapObject[class_exact*:Object@VALUE(0x1008)]
           IncrCounter inline_iseq_optimized_send_count
-          v20:BasicObject = GetLocal :a, l0, EP@3
           v24:BasicObject = GetLocal :a, l0, EP@3
+          v28:BasicObject = GetLocal :a, l0, EP@3
           CheckInterrupts
-          Return v24
+          Return v28
         ");
     }
 
@@ -3430,15 +3433,18 @@ mod hir_opt_tests {
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:NilClass):
           v16:ArrayExact = NewArray
+          v18:CPtr = GetEP 0
+          v20:CInt64 = LoadField v18, :_env_data_index_flags@0x1000
+          v21:CInt64 = GuardNoBitsSet v20, CUInt64(8)
           SetLocal :a, l0, EP@3, v16
-          v22:TrueClass = Const Value(true)
+          v26:TrueClass = Const Value(true)
           IncrCounter complex_arg_pass_caller_kwarg
-          v24:BasicObject = Send v11, 0x1000, :each_line, v22 # SendFallbackReason: Complex argument passing
-          v25:BasicObject = GetLocal :s, l0, EP@4
-          v26:BasicObject = GetLocal :a, l0, EP@3
+          v28:BasicObject = Send v11, 0x1008, :each_line, v26 # SendFallbackReason: Complex argument passing
+          v29:BasicObject = GetLocal :s, l0, EP@4
           v30:BasicObject = GetLocal :a, l0, EP@3
+          v34:BasicObject = GetLocal :a, l0, EP@3
           CheckInterrupts
-          Return v30
+          Return v34
         ");
     }
 
@@ -6538,20 +6544,23 @@ mod hir_opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:NilClass):
           v13:ArrayExact = NewArray
+          v15:CPtr = GetEP 0
+          v17:CInt64 = LoadField v15, :_env_data_index_flags@0x1000
+          v18:CInt64 = GuardNoBitsSet v17, CUInt64(8)
           SetLocal :result, l0, EP@3, v13
           PatchPoint SingleRactorMode
-          PatchPoint StableConstantNames(0x1000, A)
-          v36:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint StableConstantNames(0x1008, A)
+          v40:ArrayExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
           PatchPoint SingleRactorMode
-          PatchPoint StableConstantNames(0x1010, B)
-          v39:ArrayExact[VALUE(0x1018)] = Const Value(VALUE(0x1018))
-          PatchPoint NoSingletonClass(Array@0x1020)
-          PatchPoint MethodRedefined(Array@0x1020, zip@0x1028, cme:0x1030)
-          v43:BasicObject = CCallVariadic v36, :zip@0x1058, v39
-          v25:BasicObject = GetLocal :result, l0, EP@3
+          PatchPoint StableConstantNames(0x1018, B)
+          v43:ArrayExact[VALUE(0x1020)] = Const Value(VALUE(0x1020))
+          PatchPoint NoSingletonClass(Array@0x1028)
+          PatchPoint MethodRedefined(Array@0x1028, zip@0x1030, cme:0x1038)
+          v47:BasicObject = CCallVariadic v40, :zip@0x1060, v43
           v29:BasicObject = GetLocal :result, l0, EP@3
+          v33:BasicObject = GetLocal :result, l0, EP@3
           CheckInterrupts
-          Return v29
+          Return v33
         ");
     }
 
@@ -10577,25 +10586,28 @@ mod hir_opt_tests {
          Jump bb2(v8, v9, v10, v11, v12)
        bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:BasicObject, v18:NilClass):
          CheckInterrupts
+         v30:CPtr = GetEP 0
+         v32:CInt64 = LoadField v30, :_env_data_index_flags@0x1000
+         v33:CInt64 = GuardNoBitsSet v32, CUInt64(8)
          SetLocal :formatted, l0, EP@3, v15
          PatchPoint SingleRactorMode
-         v57:HeapBasicObject = GuardType v14, HeapBasicObject
-         v58:CShape = LoadField v57, :_shape_id@0x1000
-         v59:CShape[0x1001] = GuardBitEquals v58, CShape(0x1001)
-         StoreField v57, :@formatted@0x1002, v15
-         WriteBarrier v57, v15
-         v62:CShape[0x1003] = Const CShape(0x1003)
-         StoreField v57, :_shape_id@0x1000, v62
-         v46:Class[VMFrozenCore] = Const Value(VALUE(0x1008))
+         v61:HeapBasicObject = GuardType v14, HeapBasicObject
+         v62:CShape = LoadField v61, :_shape_id@0x1001
+         v63:CShape[0x1002] = GuardBitEquals v62, CShape(0x1002)
+         StoreField v61, :@formatted@0x1003, v15
+         WriteBarrier v61, v15
+         v66:CShape[0x1004] = Const CShape(0x1004)
+         StoreField v61, :_shape_id@0x1001, v66
+         v50:Class[VMFrozenCore] = Const Value(VALUE(0x1008))
          PatchPoint NoSingletonClass(Class@0x1010)
          PatchPoint MethodRedefined(Class@0x1010, lambda@0x1018, cme:0x1020)
-         v67:BasicObject = CCallWithFrame v46, :RubyVM::FrozenCore.lambda@0x1048, block=0x1050
-         v49:BasicObject = GetLocal :a, l0, EP@6
-         v50:BasicObject = GetLocal :_b, l0, EP@5
-         v51:BasicObject = GetLocal :_c, l0, EP@4
-         v52:BasicObject = GetLocal :formatted, l0, EP@3
+         v71:BasicObject = CCallWithFrame v50, :RubyVM::FrozenCore.lambda@0x1048, block=0x1050
+         v53:BasicObject = GetLocal :a, l0, EP@6
+         v54:BasicObject = GetLocal :_b, l0, EP@5
+         v55:BasicObject = GetLocal :_c, l0, EP@4
+         v56:BasicObject = GetLocal :formatted, l0, EP@3
          CheckInterrupts
-         Return v67
+         Return v71
        ");
     }
 
@@ -11594,14 +11606,17 @@ mod hir_opt_tests {
         bb2(v10:BasicObject, v11:BasicObject, v12:NilClass):
           PatchPoint NoSingletonClass(B@0x1000)
           PatchPoint MethodRedefined(B@0x1000, proc@0x1008, cme:0x1010)
-          v35:HeapObject[class_exact:B] = GuardType v10, HeapObject[class_exact:B]
-          v36:BasicObject = CCallWithFrame v35, :Kernel#proc@0x1038, block=0x1040
+          v39:HeapObject[class_exact:B] = GuardType v10, HeapObject[class_exact:B]
+          v40:BasicObject = CCallWithFrame v39, :Kernel#proc@0x1038, block=0x1040
           v18:BasicObject = GetLocal :blk, l0, EP@4
-          SetLocal :other_block, l0, EP@3, v36
-          v25:BasicObject = GetLocal :other_block, l0, EP@3
-          v27:BasicObject = InvokeSuper v10, 0x1048, v25 # SendFallbackReason: super: complex argument passing to `super` call
+          v21:CPtr = GetEP 0
+          v23:CInt64 = LoadField v21, :_env_data_index_flags@0x1048
+          v24:CInt64 = GuardNoBitsSet v23, CUInt64(8)
+          SetLocal :other_block, l0, EP@3, v40
+          v29:BasicObject = GetLocal :other_block, l0, EP@3
+          v31:BasicObject = InvokeSuper v10, 0x1050, v29 # SendFallbackReason: super: complex argument passing to `super` call
           CheckInterrupts
-          Return v27
+          Return v31
         ");
     }
 
