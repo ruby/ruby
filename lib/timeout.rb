@@ -305,6 +305,7 @@ module Timeout
     end
   end
 
+  # See Timeout.timeout
   private def timeout(*args, &block)
     Timeout.timeout(*args, &block)
   end
