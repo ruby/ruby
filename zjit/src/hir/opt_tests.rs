@@ -6986,9 +6986,10 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(C@0x1000)
           PatchPoint MethodRedefined(C@0x1000, foo=@0x1008, cme:0x1010)
           v29:HeapObject[class_exact:C] = GuardType v11, HeapObject[class_exact:C]
-          v30:HeapObject[class_exact:C] = GuardNotFrozen v29
-          StoreField v30, :foo=@0x1038, v12
-          WriteBarrier v30, v12
+          v30:CUInt64 = LoadField v29, :_rbasic_flags@0x1038
+          v31:CUInt64 = GuardNoBitsSet v30, CUInt64(2048)
+          StoreField v29, :foo=@0x1039, v12
+          WriteBarrier v29, v12
           CheckInterrupts
           Return v12
         ");
@@ -7018,10 +7019,11 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(C@0x1000)
           PatchPoint MethodRedefined(C@0x1000, foo=@0x1008, cme:0x1010)
           v29:HeapObject[class_exact:C] = GuardType v11, HeapObject[class_exact:C]
-          v30:HeapObject[class_exact:C] = GuardNotFrozen v29
-          v31:CPtr = LoadField v30, :_as_heap@0x1038
-          StoreField v31, :foo=@0x1039, v12
-          WriteBarrier v30, v12
+          v30:CUInt64 = LoadField v29, :_rbasic_flags@0x1038
+          v31:CUInt64 = GuardNoBitsSet v30, CUInt64(2048)
+          v32:CPtr = LoadField v29, :_as_heap@0x1039
+          StoreField v32, :foo=@0x103a, v12
+          WriteBarrier v29, v12
           CheckInterrupts
           Return v12
         ");

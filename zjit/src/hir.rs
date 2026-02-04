@@ -3011,6 +3011,15 @@ impl Function {
         }
     }
 
+    pub fn load_rbasic_flags(&mut self, block: BlockId, recv: InsnId) -> InsnId {
+        self.push_insn(block, Insn::LoadField { recv, id: ID!(_rbasic_flags), offset: RUBY_OFFSET_RBASIC_FLAGS, return_type: types::CUInt64 })
+    }
+
+    pub fn guard_not_frozen(&mut self, block: BlockId, recv: InsnId, state: InsnId) {
+        // We know that all Struct are HeapObject, so no need to insert a GuardType(HeapObject).
+        let flags = self.load_rbasic_flags(block, recv);
+        self.push_insn(block, Insn::GuardNoBitsSet { val: flags, mask: Const::CUInt64(RUBY_FL_FREEZE as u64), reason: SideExitReason::GuardNotFrozen, state });
+    }
     /// Rewrite eligible Send/SendWithoutBlock opcodes into SendDirect
     /// opcodes if we know the target ISEQ statically. This removes run-time method lookups and
     /// opens the door for inlining.
@@ -3259,8 +3268,7 @@ impl Function {
                                     //
                                     // No need for a GuardShape.
                                     if let OptimizedMethodType::StructAset = opt_type {
-                                        // We know that all Struct are HeapObject, so no need to insert a GuardType(HeapObject).
-                                        recv = self.push_insn(block, Insn::GuardNotFrozen { recv, state });
+                                        self.guard_not_frozen(block, recv, state);
                                     }
 
                                     let (target, offset) = if is_embedded {
