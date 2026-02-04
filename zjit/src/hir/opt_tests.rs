@@ -11859,17 +11859,25 @@ mod hir_opt_tests {
           v14:HeapBasicObject = RefineType v6, HeapBasicObject
           v17:Fixnum[2] = Const Value(2)
           PatchPoint SingleRactorMode
-          IncrCounter setivar_fallback_not_monomorphic
-          SetIvar v14, :@b, v17
+          v49:CShape = LoadField v14, :_shape_id@0x1000
+          v50:CShape[0x1003] = GuardBitEquals v49, CShape(0x1003)
+          StoreField v14, :@b@0x1004, v17
+          WriteBarrier v14, v17
+          v53:CShape[0x1005] = Const CShape(0x1005)
+          StoreField v14, :_shape_id@0x1000, v53
           v21:HeapBasicObject = RefineType v14, HeapBasicObject
           v24:Fixnum[3] = Const Value(3)
           PatchPoint SingleRactorMode
-          IncrCounter setivar_fallback_not_monomorphic
-          SetIvar v21, :@c, v24
+          v56:CShape = LoadField v21, :_shape_id@0x1000
+          v57:CShape[0x1005] = GuardBitEquals v56, CShape(0x1005)
+          StoreField v21, :@c@0x1006, v24
+          WriteBarrier v21, v24
+          v60:CShape[0x1007] = Const CShape(0x1007)
+          StoreField v21, :_shape_id@0x1000, v60
           v28:HeapBasicObject = RefineType v21, HeapBasicObject
           v31:Fixnum[4] = Const Value(4)
           PatchPoint SingleRactorMode
-          IncrCounter setivar_fallback_not_monomorphic
+          IncrCounter setivar_fallback_new_shape_needs_extension
           SetIvar v28, :@d, v31
           CheckInterrupts
           Return v31
