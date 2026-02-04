@@ -6621,6 +6621,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let v = state.stack_pop()?;
                     let local_iseq = unsafe { rb_get_iseq_body_local_iseq(iseq) };
                     let insn = if op_type == DEFINED_YIELD as usize && unsafe { rb_get_iseq_body_type(local_iseq) } != ISEQ_TYPE_METHOD {
+                        // `yield` goes to the block handler stowed in the "local" iseq which is
+                        // the current iseq or a parent. Only the "method" iseq type can be passed a
+                        // block handler. (e.g. `yield` in the top level script is a syntax error.)
+                        //
+                        // Similar to gen_is_block_given
                         Insn::Const { val: Const::Value(Qnil) }
                     } else {
                         Insn::Defined { op_type, obj, pushval, v, state: exit_id }
