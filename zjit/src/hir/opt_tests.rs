@@ -11816,4 +11816,123 @@ mod hir_opt_tests {
           Return v36
         ");
     }
+
+    #[test]
+    fn test_inline_hash_key_p_with_string_exact_key() {
+        eval(r#"
+        def test(hash, key) = hash.key?(key)
+        test({}, "hello")
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :hash, l0, SP@5
+          v3:BasicObject = GetLocal :key, l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint NoSingletonClass(Hash@0x1000)
+          PatchPoint MethodRedefined(Hash@0x1000, key?@0x1008, cme:0x1010)
+          v26:HashExact = GuardType v11, HashExact
+          PatchPoint MethodRedefined(String@0x1038, eql?@0x1040, cme:0x1048)
+          PatchPoint NoSingletonClass(String@0x1038)
+          v30:StringExact = GuardType v12, StringExact
+          v31:CPtr[CPtr(0x1070)] = Const CPtr(0x1078)
+          v32:CBool = CCall v26, :rb_hash_stlike_lookup@0x1080, v26, v30, v31
+          v33:BoolExact = BoxBool v32
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v33
+        ");
+    }
+
+    #[test]
+    fn test_no_inline_hash_key_p_with_redefined_string_eql_p() {
+        eval(r#"
+        class String
+          def eql?(other) = false
+        end
+        def test(hash, key) = hash.key?(key)
+        test({}, "hello")
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:5:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :hash, l0, SP@5
+          v3:BasicObject = GetLocal :key, l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint NoSingletonClass(Hash@0x1000)
+          PatchPoint MethodRedefined(Hash@0x1000, key?@0x1008, cme:0x1010)
+          v26:HashExact = GuardType v11, HashExact
+          v27:BoolExact = CCallWithFrame v26, :Hash#key?@0x1038, v12
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn test_no_inline_hash_key_p_with_string_subclass() {
+        eval(r#"
+        class C < String; end
+        def test(hash, key) = hash.key?(key)
+        test({}, C.new("hello"))
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :hash, l0, SP@5
+          v3:BasicObject = GetLocal :key, l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint NoSingletonClass(Hash@0x1000)
+          PatchPoint MethodRedefined(Hash@0x1000, key?@0x1008, cme:0x1010)
+          v26:HashExact = GuardType v11, HashExact
+          v27:BoolExact = CCallWithFrame v26, :Hash#key?@0x1038, v12
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn test_no_inline_hash_key_p_with_hash_subclass() {
+        eval(r#"
+        class C < Hash; end
+        def test(hash, key) = hash.key?(key)
+        test(C.new({}), "hello")
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :hash, l0, SP@5
+          v3:BasicObject = GetLocal :key, l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint NoSingletonClass(C@0x1000)
+          PatchPoint MethodRedefined(C@0x1000, key?@0x1008, cme:0x1010)
+          v26:HashSubclass[class_exact:C] = GuardType v11, HashSubclass[class_exact:C]
+          v27:BoolExact = CCallWithFrame v26, :Hash#key?@0x1038, v12
+          CheckInterrupts
+          Return v27
+        ");
+    }
 }

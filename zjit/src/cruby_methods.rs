@@ -232,6 +232,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cHash, "[]=", inline_hash_aset);
     annotate!(rb_cHash, "size", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cHash, "empty?", types::BoolExact, no_gc, leaf, elidable);
+    annotate!(rb_cHash, "key?", inline_hash_key_p, types::BoolExact);
     annotate!(rb_cNilClass, "nil?", inline_nilclass_nil_p);
     annotate!(rb_mKernel, "nil?", inline_kernel_nil_p);
     annotate!(rb_mKernel, "respond_to?", inline_kernel_respond_to_p);
@@ -408,6 +409,33 @@ fn inline_hash_aset(fun: &mut hir::Function, block: hir::BlockId, recv: hir::Ins
         let _ = fun.push_insn(block, hir::Insn::HashAset { hash: recv, key, val, state });
         // Hash#[]= returns the value, not the hash
         Some(val)
+    } else {
+        None
+    }
+}
+
+fn inline_hash_key_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[key] = args else { return None; };
+    if fun.likely_a(recv, types::HashExact, state)
+        && fun.likely_a(key, types::StringExact, state)
+        && fun.assume_expected_cfunc(block, unsafe { rb_cString }, ID!(eql_p), rb_str_eql as _, state) {
+        let recv = fun.coerce_to(block, recv, types::HashExact, state);
+        let key = fun.coerce_to(block, key, types::StringExact, state);
+        let null = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CPtr(std::ptr::null()) });
+        let return_type = types::CBool;
+        let elidable = true;
+        // hash_stlike_lookup will not call any Ruby code when an exact String is used as the key,
+        // provided String#eql? has not yet been redefined
+        let val = fun.push_insn(block, hir::Insn::CCall {
+            cfunc: rb_hash_stlike_lookup as _,
+            recv,
+            args: vec![recv, key, null],
+            name: ID!(rb_hash_stlike_lookup),
+            return_type,
+            elidable,
+        });
+        let result = fun.push_insn(block, hir::Insn::BoxBool { val });
+        Some(result)
     } else {
         None
     }
