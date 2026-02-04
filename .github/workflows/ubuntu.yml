@@ -177,30 +177,30 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
 
-  # make-ibm:
-  #   strategy:
-  #     matrix:
-  #       include:
-  #         - test_task: check
-  #           os: ubuntu-24.04-ppc64le
-  #         - test_task: check
-  #           os: ubuntu-24.04-s390x
-  #     fail-fast: false
+  make-ibm:
+    strategy:
+      matrix:
+        include:
+          - test_task: check
+            os: ubuntu-24.04-ppc64le
+          - test_task: check
+            os: ubuntu-24.04-s390x
+      fail-fast: false
 
-  #   env: *make-env
+    env: *make-env
 
-  #   runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
 
-  #   if: >-
-  #     ${{github.repository == 'ruby/ruby'
-  #     && !(false
-  #     || contains(github.event.head_commit.message, '[DOC]')
-  #     || contains(github.event.pull_request.title, '[DOC]')
-  #     || contains(github.event.pull_request.labels.*.name, 'Documentation')
-  #     || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
-  #     )}}
+    if: >-
+      ${{github.repository == 'ruby/ruby'
+      && !(false
+      || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
+      )}}
 
-  #   steps: *make-steps
+    steps: *make-steps
 
   # Separated from `make` job to avoid making it a required status check
   ruby-bench:
