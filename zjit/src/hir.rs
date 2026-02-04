@@ -3020,6 +3020,12 @@ impl Function {
         let flags = self.load_rbasic_flags(block, recv);
         self.push_insn(block, Insn::GuardNoBitsSet { val: flags, mask: Const::CUInt64(RUBY_FL_FREEZE as u64), reason: SideExitReason::GuardNotFrozen, state });
     }
+
+    pub fn guard_not_shared(&mut self, block: BlockId, recv: InsnId, state: InsnId) {
+        let flags = self.load_rbasic_flags(block, recv);
+        self.push_insn(block, Insn::GuardNoBitsSet { val: flags, mask: Const::CUInt64(RUBY_ELTS_SHARED as u64), reason: SideExitReason::GuardNotShared, state });
+    }
+
     /// Rewrite eligible Send/SendWithoutBlock opcodes into SendDirect
     /// opcodes if we know the target ISEQ statically. This removes run-time method lookups and
     /// opens the door for inlining.

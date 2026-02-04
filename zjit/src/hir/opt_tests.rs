@@ -7640,15 +7640,17 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Array@0x1000)
           PatchPoint MethodRedefined(Array@0x1000, []=@0x1008, cme:0x1010)
           v31:ArrayExact = GuardType v9, ArrayExact
-          v32:ArrayExact = GuardNotFrozen v31
-          v33:ArrayExact = GuardNotShared v32
-          v34:CInt64[1] = UnboxFixnum v16
-          v35:CInt64 = ArrayLength v33
-          v36:CInt64[1] = GuardLess v34, v35
-          v37:CInt64[0] = Const CInt64(0)
-          v38:CInt64[1] = GuardGreaterEq v36, v37
-          ArrayAset v33, v38, v18
-          WriteBarrier v33, v18
+          v32:CUInt64 = LoadField v31, :_rbasic_flags@0x1038
+          v33:CUInt64 = GuardNoBitsSet v32, CUInt64(2048)
+          v34:CUInt64 = LoadField v31, :_rbasic_flags@0x1038
+          v35:CUInt64 = GuardNoBitsSet v34, CUInt64(4096)
+          v36:CInt64[1] = UnboxFixnum v16
+          v37:CInt64 = ArrayLength v31
+          v38:CInt64[1] = GuardLess v36, v37
+          v39:CInt64[0] = Const CInt64(0)
+          v40:CInt64[1] = GuardGreaterEq v38, v39
+          ArrayAset v31, v40, v18
+          WriteBarrier v31, v18
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v18
@@ -7680,15 +7682,17 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Array@0x1000, []=@0x1008, cme:0x1010)
           v35:ArrayExact = GuardType v13, ArrayExact
           v36:Fixnum = GuardType v14, Fixnum
-          v37:ArrayExact = GuardNotFrozen v35
-          v38:ArrayExact = GuardNotShared v37
-          v39:CInt64 = UnboxFixnum v36
-          v40:CInt64 = ArrayLength v38
-          v41:CInt64 = GuardLess v39, v40
-          v42:CInt64[0] = Const CInt64(0)
-          v43:CInt64 = GuardGreaterEq v41, v42
-          ArrayAset v38, v43, v15
-          WriteBarrier v38, v15
+          v37:CUInt64 = LoadField v35, :_rbasic_flags@0x1038
+          v38:CUInt64 = GuardNoBitsSet v37, CUInt64(2048)
+          v39:CUInt64 = LoadField v35, :_rbasic_flags@0x1038
+          v40:CUInt64 = GuardNoBitsSet v39, CUInt64(4096)
+          v41:CInt64 = UnboxFixnum v36
+          v42:CInt64 = ArrayLength v35
+          v43:CInt64 = GuardLess v41, v42
+          v44:CInt64[0] = Const CInt64(0)
+          v45:CInt64 = GuardGreaterEq v43, v44
+          ArrayAset v35, v45, v15
+          WriteBarrier v35, v15
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v15
@@ -8006,8 +8010,9 @@ mod hir_opt_tests {
           v35:CInt64 = GuardLess v33, v34
           v36:CInt64[0] = Const CInt64(0)
           v37:CInt64 = GuardGreaterEq v35, v36
-          v38:StringExact = GuardNotFrozen v30
-          v39:Fixnum = StringSetbyteFixnum v38, v31, v32
+          v38:CUInt64 = LoadField v30, :_rbasic_flags@0x1039
+          v39:CUInt64 = GuardNoBitsSet v38, CUInt64(2048)
+          v40:Fixnum = StringSetbyteFixnum v30, v31, v32
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v32
@@ -8047,8 +8052,9 @@ mod hir_opt_tests {
           v35:CInt64 = GuardLess v33, v34
           v36:CInt64[0] = Const CInt64(0)
           v37:CInt64 = GuardGreaterEq v35, v36
-          v38:StringSubclass[class_exact:MyString] = GuardNotFrozen v30
-          v39:Fixnum = StringSetbyteFixnum v38, v31, v32
+          v38:CUInt64 = LoadField v30, :_rbasic_flags@0x1039
+          v39:CUInt64 = GuardNoBitsSet v38, CUInt64(2048)
+          v40:Fixnum = StringSetbyteFixnum v30, v31, v32
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v32

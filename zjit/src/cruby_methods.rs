@@ -352,7 +352,7 @@ fn inline_array_aset(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
             let recv = fun.coerce_to(block, recv, types::ArrayExact, state);
             let index = fun.coerce_to(block, index, types::Fixnum, state);
             fun.guard_not_frozen(block, recv, state);
-            let recv = fun.push_insn(block, hir::Insn::GuardNotShared { recv, state });
+            fun.guard_not_shared(block, recv, state);
 
             // Bounds check: unbox Fixnum index and guard 0 <= idx < length.
             let index = fun.push_insn(block, hir::Insn::UnboxFixnum { val: index });
@@ -381,9 +381,8 @@ fn inline_array_push(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
 fn inline_array_pop(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     // Only inline the case of no arguments.
     let &[] = args else { return None; };
-    // We know that all Array are HeapObject, so no need to insert a GuardType(HeapObject).
-    fun.guard_not_frozen(block, recv, state);
-    Some(fun.push_insn(block, hir::Insn::ArrayPop { array: arr, state }))
+    fun.guard_not_shared(block, recv, state);
+    Some(fun.push_insn(block, hir::Insn::ArrayPop { array: recv, state }))
 }
 
 fn inline_hash_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
