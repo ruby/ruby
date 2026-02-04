@@ -26,14 +26,14 @@ A regexp may be used:
     re.match('good')        # => nil
 
   See sections {Method match}[rdoc-ref:Regexp@Method+match]
-  and {Operator =~}[rdoc-ref:Regexp@Operator+-3D~].
+  and {Operator =~}[rdoc-ref:Regexp@Operator-].
 
 - To determine whether a string matches a given pattern:
 
     re.match?('food') # => true
     re.match?('good') # => false
 
-  See section {Method match?}[rdoc-ref:Regexp@Method+match-3F].
+  See section {Method match?}[rdoc-ref:Regexp@Method+match].
 
 - As an argument for calls to certain methods in other classes and modules;
   most such methods accept an argument that may be either a string
@@ -64,7 +64,7 @@ A regular expression may be created with:
     /foo/ # => /foo/
 
 - A <tt>%r</tt> regexp literal
-  (see {%r: Regexp Literals}[rdoc-ref:syntax/literals.rdoc@25r-3A+Regexp+Literals]):
+  (see {%r: Regexp Literals}[rdoc-ref:syntax/literals.rdoc@r-regexp+literals]):
 
     # Same delimiter character at beginning and end;
     # useful for avoiding escaping characters
@@ -113,7 +113,7 @@ none sets {global variables}[rdoc-ref:Regexp@Global+Variables]:
 Certain regexp-oriented methods assign values to global variables:
 
 - <tt>#match</tt>: see {Method match}[rdoc-ref:Regexp@Method+match].
-- <tt>#=~</tt>: see {Operator =~}[rdoc-ref:Regexp@Operator+-3D~].
+- <tt>#=~</tt>: see {Operator =~}[rdoc-ref:Regexp@Operator-].
 
 The affected global variables are:
 
@@ -561,9 +561,9 @@ Quantifier matching may be greedy, lazy, or possessive:
 More:
 
 - About greedy and lazy matching, see
-  {Choosing Minimal or Maximal Repetition}[https://doc.lagout.org/programmation/Regular%20Expressions/Regular%20Expressions%20Cookbook_%20Detailed%20Solutions%20in%20Eight%20Programming%20Languages%20%282nd%20ed.%29%20%5BGoyvaerts%20%26%20Levithan%202012-09-06%5D.pdf#tutorial-backtrack].
+  {Choosing Minimal or Maximal Repetition}[https://www.oreilly.com/library/view/regular-expressions-cookbook/9780596802837/ch02s13.html].
 - About possessive matching, see
-  {Eliminate Needless Backtracking}[https://doc.lagout.org/programmation/Regular%20Expressions/Regular%20Expressions%20Cookbook_%20Detailed%20Solutions%20in%20Eight%20Programming%20Languages%20%282nd%20ed.%29%20%5BGoyvaerts%20%26%20Levithan%202012-09-06%5D.pdf#tutorial-backtrack].
+  {Eliminate Needless Backtracking}[https://www.oreilly.com/library/view/regular-expressions-cookbook/9780596802837/ch02s14.html].
 
 === Groups and Captures
 
@@ -764,7 +764,7 @@ The pattern:
 9.  Matches the fourth character in the string, <tt>')'</tt>.
 10. Matches the end of the string.
 
-See {Subexpression calls}[https://learnbyexample.github.io/Ruby_Regexp/groupings-and-backreferences.html?highlight=subexpression#subexpression-calls].
+See {Subexpression calls}[https://learnbyexample.github.io/Ruby_Regexp/groupings-and-backreferences.html#subexpression-calls].
 
 ==== Conditionals
 
