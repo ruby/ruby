@@ -528,6 +528,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::IsBitEqual { left, right } => gen_is_bit_equal(asm, opnd!(left), opnd!(right)),
         &Insn::IsBitNotEqual { left, right } => gen_is_bit_not_equal(asm, opnd!(left), opnd!(right)),
         &Insn::BoxBool { val } => gen_box_bool(asm, opnd!(val)),
+        &Insn::BoolNot { val } => gen_bool_not(asm, opnd!(val)),
         &Insn::BoxFixnum { val, state } => gen_box_fixnum(jit, asm, opnd!(val), &function.frame_state(state)),
         &Insn::UnboxFixnum { val } => gen_unbox_fixnum(asm, opnd!(val)),
         Insn::Test { val } => gen_test(asm, opnd!(val)),
@@ -2167,6 +2168,11 @@ fn gen_is_bit_not_equal(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) 
 fn gen_box_bool(asm: &mut Assembler, val: lir::Opnd) -> lir::Opnd {
     asm.test(val, val);
     asm.csel_nz(Opnd::Value(Qtrue), Opnd::Value(Qfalse))
+}
+
+/// Invert a CBool (0 <-> 1).
+fn gen_bool_not(asm: &mut Assembler, val: lir::Opnd) -> lir::Opnd {
+    asm.xor(val, Opnd::UImm(1))
 }
 
 fn gen_box_fixnum(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, state: &FrameState) -> lir::Opnd {

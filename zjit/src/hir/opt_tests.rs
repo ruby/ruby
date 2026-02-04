@@ -479,9 +479,10 @@ mod hir_opt_tests {
           v10:Fixnum[1] = Const Value(1)
           v12:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1000, !=@0x1008, cme:0x1010)
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-          v43:TrueClass = Const Value(true)
+          PatchPoint MethodRedefined(Integer@0x1000, ==@0x1038, cme:0x1040)
           IncrCounter inline_cfunc_optimized_send_count
+          IncrCounter opt_neq_negate_applied_count
+          v51:TrueClass = Const Value(true)
           CheckInterrupts
           v24:Fixnum[3] = Const Value(3)
           CheckInterrupts
@@ -513,9 +514,10 @@ mod hir_opt_tests {
           v10:Fixnum[2] = Const Value(2)
           v12:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1000, !=@0x1008, cme:0x1010)
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-          v43:FalseClass = Const Value(false)
+          PatchPoint MethodRedefined(Integer@0x1000, ==@0x1038, cme:0x1040)
           IncrCounter inline_cfunc_optimized_send_count
+          IncrCounter opt_neq_negate_applied_count
+          v51:FalseClass = Const Value(false)
           CheckInterrupts
           v33:Fixnum[4] = Const Value(4)
           CheckInterrupts
@@ -561,11 +563,275 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint NoSingletonClass(CustomEq@0x1000)
           PatchPoint MethodRedefined(CustomEq@0x1000, !=@0x1008, cme:0x1010)
-          v28:HeapObject[class_exact:CustomEq] = GuardType v9, HeapObject[class_exact:CustomEq]
-          v29:BoolExact = CCallWithFrame v28, :BasicObject#!=@0x1038, v9
+          PatchPoint MethodRedefined(CustomEq@0x1000, ==@0x1038, cme:0x1040)
+          v29:HeapObject[class_exact:CustomEq] = GuardType v9, HeapObject[class_exact:CustomEq]
+          v30:BasicObject = SendDirect v29, 0x1068, :== (0x1078), v9
+          IncrCounter opt_neq_negate_applied_count
           v20:NilClass = Const Value(nil)
           CheckInterrupts
           Return v20
+        ");
+    }
+
+    #[test]
+    fn opt_neq_cfunc_rewritten_to_eq() {
+        eval("
+            def test(str)
+              str != nil
+            end
+
+            test 'x'
+            test 'x'
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :str, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:NilClass = Const Value(nil)
+          PatchPoint NoSingletonClass(String@0x1000)
+          PatchPoint MethodRedefined(String@0x1000, !=@0x1008, cme:0x1010)
+          PatchPoint MethodRedefined(String@0x1000, ==@0x1038, cme:0x1040)
+          v27:StringExact = GuardType v9, StringExact
+          v28:BoolExact = CCallWithFrame v27, :String#==@0x1068, v14
+          IncrCounter opt_neq_negate_applied_count
+          v30:CBool = Test v28
+          v31:CBool = BoolNot v30
+          v32:BoolExact = BoxBool v31
+          CheckInterrupts
+          Return v32
+        ");
+    }
+
+    #[test]
+    fn opt_neq_iseq_rewritten_to_eq() {
+        eval("
+            class CustomEq
+              def ==(o)
+                self.equal?(o)
+              end
+            end
+
+            def test(obj)
+              obj != obj
+            end
+
+            obj = CustomEq.new
+            test(obj)
+            test(obj)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:9:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :obj, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint NoSingletonClass(CustomEq@0x1000)
+          PatchPoint MethodRedefined(CustomEq@0x1000, !=@0x1008, cme:0x1010)
+          PatchPoint MethodRedefined(CustomEq@0x1000, ==@0x1038, cme:0x1040)
+          v25:HeapObject[class_exact:CustomEq] = GuardType v9, HeapObject[class_exact:CustomEq]
+          v26:BasicObject = SendDirect v25, 0x1068, :== (0x1078), v9
+          IncrCounter opt_neq_negate_applied_count
+          v28:CBool = Test v26
+          v29:CBool = BoolNot v28
+          v30:BoolExact = BoxBool v29
+          CheckInterrupts
+          Return v30
+        ");
+    }
+
+    #[test]
+    fn opt_neq_basic_object_not_rewritten() {
+        eval("
+            class C; end
+            def test(a, b)
+              a != b
+            end
+
+            a = C.new
+            b = C.new
+            test a, b
+            test a, b
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :a, l0, SP@5
+          v3:BasicObject = GetLocal :b, l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint NoSingletonClass(C@0x1000)
+          PatchPoint MethodRedefined(C@0x1000, !=@0x1008, cme:0x1010)
+          v27:HeapObject[class_exact:C] = GuardType v11, HeapObject[class_exact:C]
+          PatchPoint MethodRedefined(C@0x1000, ==@0x1038, cme:0x1040)
+          v30:CBool = IsBitNotEqual v27, v12
+          v31:BoolExact = BoxBool v30
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v31
+        ");
+    }
+
+    #[test]
+    fn opt_neq_string_string_rewritten_to_eq_inline() {
+        eval("
+            def test(a, b)
+              a != b
+            end
+
+            test 'x', 'y'
+            test 'x', 'y'
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :a, l0, SP@5
+          v3:BasicObject = GetLocal :b, l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1000)
+          PatchPoint MethodRedefined(String@0x1000, !=@0x1008, cme:0x1010)
+          PatchPoint MethodRedefined(String@0x1000, ==@0x1038, cme:0x1040)
+          v29:StringExact = GuardType v11, StringExact
+          v30:String = GuardType v12, String
+          v31:BoolExact = CCall v29, :String#==@0x1068, v30
+          IncrCounter inline_cfunc_optimized_send_count
+          IncrCounter opt_neq_negate_applied_count
+          v34:CBool = Test v31
+          v35:CBool = BoolNot v34
+          v36:BoolExact = BoxBool v35
+          CheckInterrupts
+          Return v36
+        ");
+    }
+
+    #[test]
+    fn opt_neq_integer_rewritten_to_eq() {
+        eval("
+            def test(a)
+              a != nil
+            end
+
+            test 1
+            test 1
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :a, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(Integer@0x1000, !=@0x1008, cme:0x1010)
+          PatchPoint MethodRedefined(Integer@0x1000, ==@0x1038, cme:0x1040)
+          v26:Fixnum = GuardType v9, Fixnum
+          v27:BoolExact = CCallWithFrame v26, :Integer#==@0x1068, v14
+          IncrCounter opt_neq_negate_applied_count
+          v29:CBool = Test v27
+          v30:CBool = BoolNot v29
+          v31:BoolExact = BoxBool v30
+          CheckInterrupts
+          Return v31
+        ");
+    }
+
+    #[test]
+    fn opt_neq_integer_rewritten_to_eq_inline() {
+        eval("
+            def test(a, b)
+              a != b
+            end
+
+            test 1, 2
+            test 1, 2
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :a, l0, SP@5
+          v3:BasicObject = GetLocal :b, l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1000, !=@0x1008, cme:0x1010)
+          PatchPoint MethodRedefined(Integer@0x1000, ==@0x1038, cme:0x1040)
+          v28:Fixnum = GuardType v11, Fixnum
+          v29:Fixnum = GuardType v12, Fixnum
+          v30:BoolExact = FixnumEq v28, v29
+          IncrCounter inline_cfunc_optimized_send_count
+          IncrCounter opt_neq_negate_applied_count
+          v33:CBool = Test v30
+          v34:CBool = BoolNot v33
+          v35:BoolExact = BoxBool v34
+          CheckInterrupts
+          Return v35
+        ");
+    }
+
+    #[test]
+    fn opt_neq_overridden_not_rewritten() {
+        eval("
+            class CustomNeq
+              def !=(o)
+                'neq'
+              end
+            end
+
+            def test(obj)
+              obj != obj
+            end
+
+            obj = CustomNeq.new
+            test(obj)
+            test(obj)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:9:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :obj, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint NoSingletonClass(CustomNeq@0x1000)
+          PatchPoint MethodRedefined(CustomNeq@0x1000, !=@0x1008, cme:0x1010)
+          v23:HeapObject[class_exact:CustomNeq] = GuardType v9, HeapObject[class_exact:CustomNeq]
+          v24:BasicObject = SendDirect v23, 0x1038, :!= (0x1048), v9
+          CheckInterrupts
+          Return v24
         ");
     }
 
@@ -2321,10 +2587,11 @@ mod hir_opt_tests {
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           PatchPoint MethodRedefined(Integer@0x1000, !=@0x1008, cme:0x1010)
-          v30:Fixnum = GuardType v11, Fixnum
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-          v32:Fixnum = GuardType v12, Fixnum
+          PatchPoint MethodRedefined(Integer@0x1000, ==@0x1038, cme:0x1040)
+          v32:Fixnum = GuardType v11, Fixnum
+          v33:Fixnum = GuardType v12, Fixnum
           IncrCounter inline_cfunc_optimized_send_count
+          IncrCounter opt_neq_negate_applied_count
           v23:Fixnum[5] = Const Value(5)
           CheckInterrupts
           Return v23

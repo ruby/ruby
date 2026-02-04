@@ -250,6 +250,7 @@ make_counters! {
         send_fallback_singleton_class_seen,
         send_fallback_bmethod_non_iseq_proc,
         send_fallback_obj_to_string_not_string,
+        send_fallback_opt_neq_expected_cfunc_failed,
         send_fallback_send_cfunc_variadic,
         send_fallback_send_cfunc_array_variadic,
         send_fallback_super_call_with_block,
@@ -417,6 +418,9 @@ make_counters! {
     // The number of times we ran a dynamic check
     guard_type_count,
     guard_shape_count,
+
+    // opt_neq rewrite counters
+    opt_neq_negate_applied_count,
 
     invokeblock_handler_monomorphic_iseq,
     invokeblock_handler_monomorphic_ifunc,
@@ -630,6 +634,7 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SendNotOptimizedNeedPermission            => send_fallback_send_not_optimized_need_permission,
         CCallWithFrameTooManyArgs                 => send_fallback_ccall_with_frame_too_many_args,
         ObjToStringNotString                      => send_fallback_obj_to_string_not_string,
+        OptNeqExpectedCfuncFailed                 => send_fallback_opt_neq_expected_cfunc_failed,
         SuperCallWithBlock                        => send_fallback_super_call_with_block,
         SuperClassNotFound                        => send_fallback_super_class_not_found,
         SuperComplexArgsPass                      => send_fallback_super_complex_args_pass,

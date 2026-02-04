@@ -209,6 +209,7 @@ class << RubyVM::ZJIT
       :send_count,
       :dynamic_send_count,
       :optimized_send_count,
+      :opt_neq_negate_applied_count,
       :dynamic_setivar_count,
       :dynamic_getivar_count,
       :dynamic_definedivar_count,

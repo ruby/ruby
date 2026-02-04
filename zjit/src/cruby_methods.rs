@@ -212,7 +212,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cString, "setbyte", inline_string_setbyte);
     annotate!(rb_cString, "empty?", inline_string_empty_p, types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cString, "<<", inline_string_append);
-    annotate!(rb_cString, "==", inline_string_eq);
+    annotate!(rb_cString, "==", inline_string_eq, types::BoolExact);
     // Not elidable; has a side effect of setting the encoding if ENC_CODERANGE_UNKNOWN.
     // TOOD(max): Turn this into a load/compare. Will need to side-exit or do the full call if
     // ENC_CODERANGE_UNKNOWN.
@@ -241,7 +241,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cBasicObject, "initialize", inline_basic_object_initialize);
     annotate!(rb_cInteger, "succ", inline_integer_succ);
     annotate!(rb_cInteger, "^", inline_integer_xor);
-    annotate!(rb_cInteger, "==", inline_integer_eq);
+    annotate!(rb_cInteger, "==", inline_integer_eq, types::BoolExact);
     annotate!(rb_cInteger, "+", inline_integer_plus);
     annotate!(rb_cInteger, "-", inline_integer_minus);
     annotate!(rb_cInteger, "*", inline_integer_mult);
