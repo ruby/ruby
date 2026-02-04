@@ -1030,12 +1030,6 @@ pub enum Insn {
     GuardAnyBitSet { val: InsnId, mask: Const, reason: SideExitReason, state: InsnId },
     /// Side-exit if (val & mask) != 0
     GuardNoBitsSet { val: InsnId, mask: Const, reason: SideExitReason, state: InsnId },
-    /// Side-exit if val is frozen. Does *not* check if the val is an immediate; assumes that it is
-    /// a heap object.
-    GuardNotFrozen { recv: InsnId, state: InsnId },
-    /// Side-exit if val is shared. Does *not* check if the val is an immediate; assumes
-    /// that it is a heap object.
-    GuardNotShared { recv: InsnId, state: InsnId },
     /// Side-exit if left is not greater than or equal to right (both operands are C long).
     GuardGreaterEq { left: InsnId, right: InsnId, state: InsnId },
     /// Side-exit if left is not less than right (both operands are C long).
@@ -1225,8 +1219,6 @@ impl Insn {
             Insn::GuardBitEquals { .. } => effects::Any,
             Insn::GuardAnyBitSet { .. } => effects::Any,
             Insn::GuardNoBitsSet { .. } => effects::Any,
-            Insn::GuardNotFrozen { .. } => effects::Any,
-            Insn::GuardNotShared { .. } => effects::Any,
             Insn::GuardGreaterEq { .. } => effects::Any,
             Insn::GuardLess { .. } => effects::Any,
             Insn::PatchPoint { .. } => effects::Any,
@@ -1560,8 +1552,6 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GuardBitEquals { val, expected, .. } => { write!(f, "GuardBitEquals {val}, {}", expected.print(self.ptr_map)) },
             Insn::GuardAnyBitSet { val, mask, .. } => { write!(f, "GuardAnyBitSet {val}, {}", mask.print(self.ptr_map)) },
             Insn::GuardNoBitsSet { val, mask, .. } => { write!(f, "GuardNoBitsSet {val}, {}", mask.print(self.ptr_map)) },
-            Insn::GuardNotFrozen { recv, .. } => write!(f, "GuardNotFrozen {recv}"),
-            Insn::GuardNotShared { recv, .. } => write!(f, "GuardNotShared {recv}"),
             Insn::GuardLess { left, right, .. } => write!(f, "GuardLess {left}, {right}"),
             Insn::GuardGreaterEq { left, right, .. } => write!(f, "GuardGreaterEq {left}, {right}"),
             &Insn::GetBlockParam { level, ep_offset, .. } => {
@@ -2248,8 +2238,6 @@ impl Function {
             &GuardBitEquals { val, expected, reason, state } => GuardBitEquals { val: find!(val), expected, reason, state },
             &GuardAnyBitSet { val, mask, reason, state } => GuardAnyBitSet { val: find!(val), mask, reason, state },
             &GuardNoBitsSet { val, mask, reason, state } => GuardNoBitsSet { val: find!(val), mask, reason, state },
-            &GuardNotFrozen { recv, state } => GuardNotFrozen { recv: find!(recv), state },
-            &GuardNotShared { recv, state } => GuardNotShared { recv: find!(recv), state },
             &GuardGreaterEq { left, right, state } => GuardGreaterEq { left: find!(left), right: find!(right), state },
             &GuardLess { left, right, state } => GuardLess { left: find!(left), right: find!(right), state },
             &IsBlockGiven { lep } => IsBlockGiven { lep: find!(lep) },
@@ -2507,7 +2495,6 @@ impl Function {
             Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_const(*expected)),
             Insn::GuardAnyBitSet { val, .. } => self.type_of(*val),
             Insn::GuardNoBitsSet { val, .. } => self.type_of(*val),
-            Insn::GuardNotFrozen { recv, .. } | Insn::GuardNotShared { recv, .. } => self.type_of(*recv),
             Insn::GuardLess { left, .. } => self.type_of(*left),
             Insn::GuardGreaterEq { left, .. } => self.type_of(*left),
             Insn::FixnumAdd  { .. } => types::Fixnum,
@@ -4780,8 +4767,6 @@ impl Function {
             | &Insn::GuardBitEquals { val, state, .. }
             | &Insn::GuardAnyBitSet { val, state, .. }
             | &Insn::GuardNoBitsSet { val, state, .. }
-            | &Insn::GuardNotFrozen { recv: val, state }
-            | &Insn::GuardNotShared { recv: val, state }
             | &Insn::ToArray { val, state }
             | &Insn::IsMethodCfunc { val, state, .. }
             | &Insn::ToNewArray { val, state }
@@ -5512,9 +5497,6 @@ impl Function {
             | Insn::FixnumBitCheck { val, .. } // TODO (https://github.com/Shopify/ruby/issues/859) this should check Fixnum, but then test_checkkeyword_tests_fixnum_bit fails
             | Insn::DefinedIvar { self_val: val, .. } => {
                 self.assert_subtype(insn_id, val, types::BasicObject)
-            }
-            Insn::GuardNotFrozen { recv, .. } | Insn::GuardNotShared { recv, .. } => {
-                self.assert_subtype(insn_id, recv, types::HeapBasicObject)
             }
             // Instructions with 2 Ruby object operands
             Insn::SetIvar { self_val: left, val: right, .. }

@@ -538,8 +538,6 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::GuardBitEquals { val, expected, reason, state } => gen_guard_bit_equals(jit, asm, opnd!(val), expected, reason, &function.frame_state(state)),
         &Insn::GuardAnyBitSet { val, mask, reason, state } => gen_guard_any_bit_set(jit, asm, opnd!(val), mask, reason, &function.frame_state(state)),
         &Insn::GuardNoBitsSet { val, mask, reason, state } => gen_guard_no_bits_set(jit, asm, opnd!(val), mask, reason, &function.frame_state(state)),
-        Insn::GuardNotFrozen { recv, state } => gen_guard_not_frozen(jit, asm, opnd!(recv), &function.frame_state(*state)),
-        Insn::GuardNotShared { recv, state } => gen_guard_not_shared(jit, asm, opnd!(recv), &function.frame_state(*state)),
         &Insn::GuardLess { left, right, state } => gen_guard_less(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
         &Insn::GuardGreaterEq { left, right, state } => gen_guard_greater_eq(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
         Insn::PatchPoint { invariant, state } => no_output!(gen_patch_point(jit, asm, invariant, &function.frame_state(*state))),
@@ -790,25 +788,6 @@ fn gen_getblockparam(jit: &mut JITState, asm: &mut Assembler, ep_offset: u32, le
     // Read the Proc from EP.
     let ep = gen_get_ep(asm, level);
     asm.load(Opnd::mem(VALUE_BITS, ep, offset))
-}
-
-fn gen_guard_not_frozen(jit: &JITState, asm: &mut Assembler, recv: Opnd, state: &FrameState) -> Opnd {
-    let recv = asm.load(recv);
-    // It's a heap object, so check the frozen flag
-    let flags = asm.load(Opnd::mem(64, recv, RUBY_OFFSET_RBASIC_FLAGS));
-    asm.test(flags, (RUBY_FL_FREEZE as u64).into());
-    // Side-exit if frozen
-    asm.jnz(side_exit(jit, state, GuardNotFrozen));
-    recv
-}
-
-fn gen_guard_not_shared(jit: &JITState, asm: &mut Assembler, recv: Opnd, state: &FrameState) -> Opnd {
-    let recv = asm.load(recv);
-    // It's a heap object, so check the shared flag
-    let flags = asm.load(Opnd::mem(VALUE_BITS, recv, RUBY_OFFSET_RBASIC_FLAGS));
-    asm.test(flags, (RUBY_ELTS_SHARED as u64).into());
-    asm.jnz(side_exit(jit, state, SideExitReason::GuardNotShared));
-    recv
 }
 
 fn gen_guard_less(jit: &JITState, asm: &mut Assembler, left: Opnd, right: Opnd, state: &FrameState) -> Opnd {
