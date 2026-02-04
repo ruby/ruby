@@ -2627,6 +2627,7 @@ pub mod hir_build_tests {
           v10:Fixnum[1] = Const Value(1)
           PatchPoint SingleRactorMode
           SetIvar v6, :@foo, v10
+          v15:HeapBasicObject = RefineType v6, HeapBasicObject
           CheckInterrupts
           Return v10
         ");
