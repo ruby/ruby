@@ -8,8 +8,6 @@ module Gem
     RbConfig::CONFIG
   end
 end
-# only needs Gem::Platform
-require 'rubygems/platform'
 
 # :stopdoc:
 $extension = nil
@@ -39,6 +37,9 @@ unless defined?(CROSS_COMPILING) and CROSS_COMPILING
   $:.replace([Dir.pwd, File.expand_path("lib", srcdir)])
 end
 require 'rbconfig'
+
+# only needs Gem::Platform
+require 'rubygems/platform'
 
 $topdir = "."
 $top_srcdir = srcdir
