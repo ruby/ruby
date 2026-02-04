@@ -280,7 +280,7 @@ RSpec.describe "bundled_gems.rb" do
     # Original issue is childprocess 5.0.0 and logger.
     build_lib "fileutils2", "5.0.0" do |s|
       # bootsnap expand required feature to full path
-      rubylibpath = File.expand_path(File.join(__dir__, "..", "lib"))
+      rubylibpath = File.realpath(File.join(__dir__, "..", "lib"))
       s.write "lib/fileutils2.rb", "require '#{rubylibpath}/fileutils'"
     end
 
