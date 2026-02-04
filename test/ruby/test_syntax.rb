@@ -2013,17 +2013,135 @@ eom
     assert_equal(1, b.new.foo(1), bug21256)
   end
 
+  BUG_21669 = '[Bug #21669]'
+
+  def test_value_expr_in_block
+    assert_syntax_error("#{<<~"{#"}\n#{<<~'};'}", /void value expression/, nil, "#{BUG_21669} 2.1")
+    {#
+      x = begin
+        return
+        "NG"
+      end
+    };
+  end
+
   def test_value_expr_in_condition
     mesg = /void value expression/
     assert_syntax_error("tap {a = (true ? next : break)}", mesg)
     assert_valid_syntax("tap {a = (true ? true : break)}")
     assert_valid_syntax("tap {a = (break if false)}")
     assert_valid_syntax("tap {a = (break unless true)}")
+
+    assert_syntax_error("#{<<~"{#"}\n#{<<~'};'}", /void value expression/, nil, "#{BUG_21669} 1.4")
+    {#
+      x = if rand < 0.5
+        return
+      else
+        return
+      end
+    };
+
+    assert_syntax_error("#{<<~"{#"}\n#{<<~'};'}", /void value expression/, nil, "#{BUG_21669} 2.2")
+    {#
+      x = if rand < 0.5
+        return
+        "NG"
+      else
+        return
+      end
+    };
+
+    assert_valid_syntax("#{<<~"{#"}\n#{<<~'};'}", "#{BUG_21669} 2.3")
+    {#
+      x = begin
+        return if true
+        "OK"
+      end
+    };
+
+    assert_valid_syntax("#{<<~"{#"}\n#{<<~'};'}")
+    {#
+      x = if true
+        return "NG"
+      else
+        "OK"
+      end
+    };
+
+    assert_valid_syntax("#{<<~"{#"}\n#{<<~'};'}")
+    {#
+      x = if false
+        "OK"
+      else
+        return "NG"
+      end
+    };
   end
 
   def test_value_expr_in_singleton
     mesg = /void value expression/
     assert_syntax_error("class << (return); end", mesg)
+  end
+
+  def test_value_expr_in_rescue
+    assert_valid_syntax("#{<<~"{#"}\n#{<<~'};'}", "#{BUG_21669} 1.1")
+    {#
+      x = begin
+        raise
+        return
+      rescue
+        "OK"
+      else
+        return
+      end
+    };
+
+    assert_syntax_error("#{<<~"{#"}\n#{<<~'};'}", /void value expression/, nil, "#{BUG_21669} 1.2")
+    {#
+      x = begin
+        foo
+      rescue
+        return
+      else
+        return
+      end
+    };
+  end
+
+  def test_value_expr_in_case
+    assert_syntax_error("#{<<~"{#"}\n#{<<~'};'}", /void value expression/, nil, "#{BUG_21669} 1.3")
+    {#
+      x =
+        case a
+        when 1; return
+        when 2; return
+        else return
+        end
+    };
+  end
+
+  def test_value_expr_in_case2
+    assert_syntax_error("#{<<~"{#"}\n#{<<~'};'}", /void value expression/, nil, "#{BUG_21669} 1.3")
+    {#
+      x =
+        case
+        when 1; return
+        when 2; return
+        else return
+        end
+    };
+  end
+
+  def test_value_expr_in_case3
+    assert_syntax_error("#{<<~"{#"}\n#{<<~'};'}", /void value expression/, nil, "#{BUG_21669} 1.3")
+    {#
+      x =
+        case a
+        in 1; return
+        in 2; return
+        else return
+        end
+    };
   end
 
   def test_tautological_condition

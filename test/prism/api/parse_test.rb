@@ -154,6 +154,10 @@ module Prism
       end
     end
 
+    def test_nearest
+      assert Prism.parse_success?("1 + 1", version: "nearest")
+    end
+
     def test_scopes
       assert_kind_of Prism::CallNode, Prism.parse_statement("foo")
       assert_kind_of Prism::LocalVariableReadNode, Prism.parse_statement("foo", scopes: [[:foo]])

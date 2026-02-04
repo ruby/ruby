@@ -1030,23 +1030,10 @@ pub enum Insn {
     GuardAnyBitSet { val: InsnId, mask: Const, reason: SideExitReason, state: InsnId },
     /// Side-exit if (val & mask) != 0
     GuardNoBitsSet { val: InsnId, mask: Const, reason: SideExitReason, state: InsnId },
-    /// Side-exit if val doesn't have the expected shape.
-    GuardShape { val: InsnId, shape: ShapeId, state: InsnId },
-    /// Side-exit if val is frozen. Does *not* check if the val is an immediate; assumes that it is
-    /// a heap object.
-    GuardNotFrozen { recv: InsnId, state: InsnId },
-    /// Side-exit if val is shared. Does *not* check if the val is an immediate; assumes
-    /// that it is a heap object.
-    GuardNotShared { recv: InsnId, state: InsnId },
     /// Side-exit if left is not greater than or equal to right (both operands are C long).
     GuardGreaterEq { left: InsnId, right: InsnId, state: InsnId },
     /// Side-exit if left is not less than right (both operands are C long).
     GuardLess { left: InsnId, right: InsnId, state: InsnId },
-    /// Side-exit if the method entry at ep[VM_ENV_DATA_INDEX_ME_CREF] doesn't match the expected CME.
-    /// Used to ensure super calls are made from the expected method context.
-    GuardSuperMethodEntry { lep: InsnId, cme: *const rb_callable_method_entry_t, state: InsnId },
-    /// Get the block handler from ep[VM_ENV_DATA_INDEX_SPECVAL] at the local EP (LEP).
-    GetBlockHandler { lep: InsnId },
 
     /// Generate no code (or padding if necessary) and insert a patch point
     /// that can be rewritten to a side exit when the Invariant is broken.
@@ -1075,7 +1062,7 @@ impl Insn {
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. }
             | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
-            | Insn::CheckInterrupts { .. } | Insn::GuardSuperMethodEntry { .. }
+            | Insn::CheckInterrupts { .. }
             | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. }
             | Insn::ArrayAset { .. } => false,
             _ => true,
@@ -1232,12 +1219,7 @@ impl Insn {
             Insn::GuardBitEquals { .. } => effects::Any,
             Insn::GuardAnyBitSet { .. } => effects::Any,
             Insn::GuardNoBitsSet { .. } => effects::Any,
-            Insn::GuardShape { .. } => effects::Any,
-            Insn::GuardNotFrozen { .. } => effects::Any,
-            Insn::GuardNotShared { .. } => effects::Any,
             Insn::GuardGreaterEq { .. } => effects::Any,
-            Insn::GuardSuperMethodEntry { .. } => effects::Any,
-            Insn::GetBlockHandler { .. } => effects::Any,
             Insn::GuardLess { .. } => effects::Any,
             Insn::PatchPoint { .. } => effects::Any,
             Insn::SideExit { .. } => effects::Any,
@@ -1570,13 +1552,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GuardBitEquals { val, expected, .. } => { write!(f, "GuardBitEquals {val}, {}", expected.print(self.ptr_map)) },
             Insn::GuardAnyBitSet { val, mask, .. } => { write!(f, "GuardAnyBitSet {val}, {}", mask.print(self.ptr_map)) },
             Insn::GuardNoBitsSet { val, mask, .. } => { write!(f, "GuardNoBitsSet {val}, {}", mask.print(self.ptr_map)) },
-            &Insn::GuardShape { val, shape, .. } => { write!(f, "GuardShape {val}, {:p}", self.ptr_map.map_shape(shape)) },
-            Insn::GuardNotFrozen { recv, .. } => write!(f, "GuardNotFrozen {recv}"),
-            Insn::GuardNotShared { recv, .. } => write!(f, "GuardNotShared {recv}"),
             Insn::GuardLess { left, right, .. } => write!(f, "GuardLess {left}, {right}"),
             Insn::GuardGreaterEq { left, right, .. } => write!(f, "GuardGreaterEq {left}, {right}"),
-            Insn::GuardSuperMethodEntry { lep, cme, .. } => write!(f, "GuardSuperMethodEntry {lep}, {:p}", self.ptr_map.map_ptr(cme)),
-            Insn::GetBlockHandler { lep } => write!(f, "GetBlockHandler {lep}"),
             &Insn::GetBlockParam { level, ep_offset, .. } => {
                 let name = get_local_var_name_for_printer(self.iseq, level, ep_offset)
                     .map_or(String::new(), |x| format!("{x}, "));
@@ -2261,13 +2238,8 @@ impl Function {
             &GuardBitEquals { val, expected, reason, state } => GuardBitEquals { val: find!(val), expected, reason, state },
             &GuardAnyBitSet { val, mask, reason, state } => GuardAnyBitSet { val: find!(val), mask, reason, state },
             &GuardNoBitsSet { val, mask, reason, state } => GuardNoBitsSet { val: find!(val), mask, reason, state },
-            &GuardShape { val, shape, state } => GuardShape { val: find!(val), shape, state },
-            &GuardNotFrozen { recv, state } => GuardNotFrozen { recv: find!(recv), state },
-            &GuardNotShared { recv, state } => GuardNotShared { recv: find!(recv), state },
             &GuardGreaterEq { left, right, state } => GuardGreaterEq { left: find!(left), right: find!(right), state },
             &GuardLess { left, right, state } => GuardLess { left: find!(left), right: find!(right), state },
-            &GuardSuperMethodEntry { lep, cme, state } => GuardSuperMethodEntry { lep: find!(lep), cme, state },
-            &GetBlockHandler { lep } => GetBlockHandler { lep: find!(lep) },
             &IsBlockGiven { lep } => IsBlockGiven { lep: find!(lep) },
             &GetBlockParam { level, ep_offset, state } => GetBlockParam { level, ep_offset, state: find!(state) },
             &FixnumAdd { left, right, state } => FixnumAdd { left: find!(left), right: find!(right), state },
@@ -2461,7 +2433,7 @@ impl Function {
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. }
             | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
-            | Insn::CheckInterrupts { .. } | Insn::GuardSuperMethodEntry { .. }
+            | Insn::CheckInterrupts { .. }
             | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. } | Insn::ArrayAset { .. } =>
                 panic!("Cannot infer type of instruction with no output: {}. See Insn::has_output().", self.insns[insn.0]),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
@@ -2523,8 +2495,6 @@ impl Function {
             Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_const(*expected)),
             Insn::GuardAnyBitSet { val, .. } => self.type_of(*val),
             Insn::GuardNoBitsSet { val, .. } => self.type_of(*val),
-            Insn::GuardShape { val, .. } => self.type_of(*val),
-            Insn::GuardNotFrozen { recv, .. } | Insn::GuardNotShared { recv, .. } => self.type_of(*recv),
             Insn::GuardLess { left, .. } => self.type_of(*left),
             Insn::GuardGreaterEq { left, .. } => self.type_of(*left),
             Insn::FixnumAdd  { .. } => types::Fixnum,
@@ -2582,7 +2552,6 @@ impl Function {
             Insn::GetLocal { .. } => types::BasicObject,
             Insn::IsBlockParamModified { .. } => types::CBool,
             Insn::GetBlockParam { .. } => types::BasicObject,
-            Insn::GetBlockHandler { .. } => types::RubyValue,
             // The type of Snapshot doesn't really matter; it's never materialized. It's used only
             // as a reference for FrameState, which we use to generate side-exit code.
             Insn::Snapshot { .. } => types::Any,
@@ -2694,7 +2663,6 @@ impl Function {
         match self.insns[id.0] {
             Insn::GuardType { val, .. }
             | Insn::GuardTypeNot { val, .. }
-            | Insn::GuardShape { val, .. }
             | Insn::GuardBitEquals { val, .. }
             | Insn::GuardAnyBitSet { val, .. }
             | Insn::GuardNoBitsSet { val, .. } => self.chase_insn(val),
@@ -2916,7 +2884,7 @@ impl Function {
         let recv = self.chase_insn(recv);
 
         for (entry_insn, entry_type_summary) in entries {
-            if self.union_find.borrow().find_const(*entry_insn) == recv {
+            if self.chase_insn(*entry_insn) == recv {
                 if entry_type_summary.is_monomorphic() {
                     let profiled_type = entry_type_summary.bucket(0);
                     return ReceiverTypeResolution::Monomorphic { profiled_type };
@@ -3028,6 +2996,20 @@ impl Function {
                 false
             }
         }
+    }
+
+    pub fn load_rbasic_flags(&mut self, block: BlockId, recv: InsnId) -> InsnId {
+        self.push_insn(block, Insn::LoadField { recv, id: ID!(_rbasic_flags), offset: RUBY_OFFSET_RBASIC_FLAGS, return_type: types::CUInt64 })
+    }
+
+    pub fn guard_not_frozen(&mut self, block: BlockId, recv: InsnId, state: InsnId) {
+        let flags = self.load_rbasic_flags(block, recv);
+        self.push_insn(block, Insn::GuardNoBitsSet { val: flags, mask: Const::CUInt64(RUBY_FL_FREEZE as u64), reason: SideExitReason::GuardNotFrozen, state });
+    }
+
+    pub fn guard_not_shared(&mut self, block: BlockId, recv: InsnId, state: InsnId) {
+        let flags = self.load_rbasic_flags(block, recv);
+        self.push_insn(block, Insn::GuardNoBitsSet { val: flags, mask: Const::CUInt64(RUBY_ELTS_SHARED as u64), reason: SideExitReason::GuardNotShared, state });
     }
 
     /// Rewrite eligible Send/SendWithoutBlock opcodes into SendDirect
@@ -3278,8 +3260,7 @@ impl Function {
                                     //
                                     // No need for a GuardShape.
                                     if let OptimizedMethodType::StructAset = opt_type {
-                                        // We know that all Struct are HeapObject, so no need to insert a GuardType(HeapObject).
-                                        recv = self.push_insn(block, Insn::GuardNotFrozen { recv, state });
+                                        self.guard_not_frozen(block, recv, state);
                                     }
 
                                     let (target, offset) = if is_embedded {
@@ -3537,13 +3518,12 @@ impl Function {
                             });
 
                             let lep = fun.push_insn(block, Insn::GetLEP);
-                            fun.push_insn(block, Insn::GuardSuperMethodEntry {
-                                lep,
-                                cme: current_cme,
-                                state
-                            });
+                            // Load ep[VM_ENV_DATA_INDEX_ME_CREF]
+                            let method_entry = fun.push_insn(block, Insn::LoadField { recv: lep, id: ID!(_ep_method_entry), offset: SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_ME_CREF, return_type: types::RubyValue });
+                            // Guard that it matches the expected CME
+                            fun.push_insn(block, Insn::GuardBitEquals { val: method_entry, expected: Const::Value(current_cme.into()), reason: SideExitReason::GuardSuperMethodEntry, state });
 
-                            let block_handler = fun.push_insn(block, Insn::GetBlockHandler { lep });
+                            let block_handler = fun.push_insn(block, Insn::LoadField { recv: lep, id: ID!(_ep_specval), offset: SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL, return_type: types::RubyValue });
                             fun.push_insn(block, Insn::GuardBitEquals {
                                 val: block_handler,
                                 expected: Const::Value(VALUE(VM_BLOCK_HANDLER_NONE as usize)),
@@ -4704,7 +4684,6 @@ impl Function {
             | &Insn::IncrCounter(_)
             | &Insn::IncrCounterPtr { .. } =>
                 {}
-            &Insn::GetBlockHandler { lep }
             | &Insn::IsBlockGiven { lep } => {
                 worklist.push_back(lep);
             }
@@ -4787,9 +4766,6 @@ impl Function {
             | &Insn::GuardBitEquals { val, state, .. }
             | &Insn::GuardAnyBitSet { val, state, .. }
             | &Insn::GuardNoBitsSet { val, state, .. }
-            | &Insn::GuardShape { val, state, .. }
-            | &Insn::GuardNotFrozen { recv: val, state }
-            | &Insn::GuardNotShared { recv: val, state }
             | &Insn::ToArray { val, state }
             | &Insn::IsMethodCfunc { val, state, .. }
             | &Insn::ToNewArray { val, state }
@@ -4942,10 +4918,6 @@ impl Function {
             &Insn::GetSpecialNumber { state, .. } |
             &Insn::ObjectAllocClass { state, .. } |
             &Insn::SideExit { state, .. } => worklist.push_back(state),
-            &Insn::GuardSuperMethodEntry { lep, state, .. } => {
-                worklist.push_back(lep);
-                worklist.push_back(state);
-            }
             &Insn::UnboxFixnum { val } => worklist.push_back(val),
             &Insn::FixnumAref { recv, index } => {
                 worklist.push_back(recv);
@@ -5488,8 +5460,6 @@ impl Function {
             | Insn::Snapshot { .. }
             | Insn::Jump { .. }
             | Insn::EntryPoint { .. }
-            | Insn::GuardSuperMethodEntry { .. }
-            | Insn::GetBlockHandler { .. }
             | Insn::PatchPoint { .. }
             | Insn::SideExit { .. }
             | Insn::IncrCounter { .. }
@@ -5508,7 +5478,6 @@ impl Function {
             Insn::Test { val }
             | Insn::IsNil { val }
             | Insn::IsMethodCfunc { val, .. }
-            | Insn::GuardShape { val, .. }
             | Insn::SetGlobal { val, .. }
             | Insn::SetLocal { val, .. }
             | Insn::SetClassVar { val, .. }
@@ -5527,9 +5496,6 @@ impl Function {
             | Insn::FixnumBitCheck { val, .. } // TODO (https://github.com/Shopify/ruby/issues/859) this should check Fixnum, but then test_checkkeyword_tests_fixnum_bit fails
             | Insn::DefinedIvar { self_val: val, .. } => {
                 self.assert_subtype(insn_id, val, types::BasicObject)
-            }
-            Insn::GuardNotFrozen { recv, .. } | Insn::GuardNotShared { recv, .. } => {
-                self.assert_subtype(insn_id, recv, types::HeapBasicObject)
             }
             // Instructions with 2 Ruby object operands
             Insn::SetIvar { self_val: left, val: right, .. }
@@ -6326,7 +6292,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
         visited.insert(block);
 
         // Load basic block params first
-        let self_param = fun.push_insn(block, Insn::Param);
+        let mut self_param = fun.push_insn(block, Insn::Param);
         let mut state = {
             let mut result = FrameState::new(iseq);
             let local_size = if jit_entry_insns.contains(&insn_idx) { num_locals(iseq) } else { incoming_state.locals.len() };
@@ -7340,6 +7306,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     }
                     let val = state.stack_pop()?;
                     fun.push_insn(block, Insn::SetIvar { self_val: self_param, id, ic, val, state: exit_id });
+                    // SetIvar will raise if self is an immediate. If it raises, we will have
+                    // exited JIT code. So upgrade the type within JIT code to a heap object.
+                    self_param = fun.push_insn(block, Insn::RefineType { val: self_param, new_type: types::HeapBasicObject });
                 }
                 YARVINSN_getclassvariable => {
                     let id = ID(get_arg(pc, 0).as_u64());

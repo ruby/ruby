@@ -1,6 +1,6 @@
 .\" generated with Ronn-NG/v0.10.1
 .\" http://github.com/apjanke/ronn-ng/tree/0.10.1
-.TH "BUNDLE\-CONFIG" "1" "September 2025" ""
+.TH "BUNDLE\-CONFIG" "1" "February 2026" ""
 .SH "NAME"
 \fBbundle\-config\fR \- Set bundler configuration options
 .SH "SYNOPSIS"
@@ -248,7 +248,16 @@ bundle config set \-\-local local\.GEM_NAME /path/to/local/git/repository
 .fi
 .IP "" 0
 .P
-For example, in order to use a local Rack repository, a developer could call:
+Important: This feature only works for gems that are specified with a git source in your Gemfile\. It does not work for gems installed from RubyGems or other sources\. The gem must be defined with \fBgit:\fR option pointing to a remote repository\.
+.P
+For example, if your Gemfile contains:
+.IP "" 4
+.nf
+gem "rack", git: "https://github\.com/rack/rack\.git", branch: "main"
+.fi
+.IP "" 0
+.P
+Then you can use a local Rack repository by running:
 .IP "" 4
 .nf
 bundle config set \-\-local local\.rack ~/Work/git/rack
@@ -260,6 +269,13 @@ Now instead of checking out the remote git repository, the local override will b
 Bundler does many checks to ensure a developer won't work with invalid references\. Particularly, we force a developer to specify a branch in the \fBGemfile\fR in order to use this feature\. If the branch specified in the \fBGemfile\fR and the current branch in the local git repository do not match, Bundler will abort\. This ensures that a developer is always working against the correct branches, and prevents accidental locking to a different branch\.
 .P
 Finally, Bundler also ensures that the current revision in the \fBGemfile\.lock\fR exists in the local git repository\. By doing this, Bundler forces you to fetch the latest changes in the remotes\.
+.P
+If you need to temporarily use a local version of a gem that is normally installed from RubyGems (not from git), use a path source instead:
+.IP "" 4
+.nf
+gem "rack", path: "~/Work/git/rack"
+.fi
+.IP "" 0
 .SH "MIRRORS OF GEM SOURCES"
 Bundler supports overriding gem sources with mirrors\. This allows you to configure rubygems\.org as the gem source in your Gemfile while still using your mirror to fetch gems\.
 .IP "" 4
