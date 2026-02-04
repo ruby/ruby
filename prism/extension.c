@@ -205,18 +205,14 @@ build_options_i(VALUE key, VALUE value, VALUE argument) {
                     rb_exc_raise(rb_exc_new_cstr(rb_cPrismCurrentVersionError, ruby_version));
                 }
             } else if (RSTRING_LEN(value) == 7 && strncmp(version, "nearest", 7) == 0) {
-                const char *nearest_version;
-
-                if (ruby_version[0] < '3' || (ruby_version[0] == '3' && ruby_version[2] < '3')) {
-                    nearest_version = "3.3";
-                } else if (ruby_version[0] > '4' || (ruby_version[0] == '4' && ruby_version[2] > '1')) {
-                    nearest_version = "4.1";
-                } else {
-                    nearest_version = ruby_version;
-                }
-
-                if (!pm_options_version_set(options, nearest_version, 3)) {
-                    rb_raise(rb_eArgError, "invalid nearest version: %s", nearest_version);
+                if (!pm_options_version_set(options, ruby_version, 3)) {
+                    // Prism doesn't know this specific version. Is it lower?
+                    if (ruby_version[0] < '3' || (ruby_version[0] == '3' && ruby_version[2] < '3')) {
+                        options->version == PM_OPTIONS_VERSION_CRUBY_3_3;
+                    } else {
+                        // Must be higher.
+                        options->version == PM_OPTIONS_VERSION_LATEST;
+                    }
                 }
             } else if (!pm_options_version_set(options, version, RSTRING_LEN(value))) {
                 rb_raise(rb_eArgError, "invalid version: %" PRIsVALUE, value);
