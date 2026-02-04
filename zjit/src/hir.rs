@@ -3003,7 +3003,6 @@ impl Function {
     }
 
     pub fn guard_not_frozen(&mut self, block: BlockId, recv: InsnId, state: InsnId) {
-        // We know that all Struct are HeapObject, so no need to insert a GuardType(HeapObject).
         let flags = self.load_rbasic_flags(block, recv);
         self.push_insn(block, Insn::GuardNoBitsSet { val: flags, mask: Const::CUInt64(RUBY_FL_FREEZE as u64), reason: SideExitReason::GuardNotFrozen, state });
     }
