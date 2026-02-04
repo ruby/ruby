@@ -100,7 +100,7 @@ def compile_extension(name)
 
       # Do not capture stderr as we want to show compiler warnings
       make, opts = setup_make
-      output = IO.popen([make, "V=1", "DESTDIR=", opts], &:read)
+      output = IO.popen([*make, "V=1", "DESTDIR=", opts], &:read)
       raise "#{make} failed:\n#{output}" unless $?.success?
       $stderr.puts output if debug
 
@@ -117,22 +117,34 @@ end
 def setup_make
   make = ENV['MAKE']
   make ||= (RbConfig::CONFIG['host_os'].include?("mswin") ? "nmake" : "make")
-  make_flags = ENV["MAKEFLAGS"] || ''
+  env = %w[MFLAGS MAKEFLAGS GNUMAKEFLAGS].to_h {|var| [env, ENV[var]]}
+  make_flags = env["MAKEFLAGS"] || ''
 
   # suppress logo of nmake.exe to stderr
   if File.basename(make, ".*").downcase == "nmake" and !make_flags.include?("l")
-    ENV["MAKEFLAGS"] = "l#{make_flags}"
+    env["MAKEFLAGS"] = "l#{make_flags}"
   end
 
   opts = {}
   if /(?:\A|\s)--jobserver-(?:auth|fds)=(\d+),(\d+)/ =~ make_flags
     [$1, $2].each do |fd|
-      fd = fd.to_i(10)
+      fd = IO.for_fd(fd.to_i(10), autoclose: false)
       opts[fd] = fd
+    rescue
+      # Jobserver is not usable, maybe no `+` flag or on Windows.
+      job_options = /\A\s*(?:-j\d+\s*|-\S+\Kj\d+)|(?:\G|\s)\K--jobserver-(?:auth|fds)=\S+\s*/
+      env["MAKEFLAGS"] = make_flags.gsub(job_options, '')
+      %w[GNUMAKEFLAGS MFLAGS].each do |var|
+        if flags = env[var]
+          env[var] = flags.gsub(job_options, '')
+        end
+      end
+      opts.clear
+      break
     end
   end
 
-  [make, opts]
+  [[env, make], opts]
 end
 
 def load_extension(name)
