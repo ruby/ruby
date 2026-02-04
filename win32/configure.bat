@@ -1,7 +1,13 @@
 @echo off
 @setlocal EnableExtensions DisableDelayedExpansion || exit /b -1
 set PROMPT=$E[94m+$E[m$S
+goto :main
 
+:set
+set %*
+exit /b
+
+:main
 if "%~dp0" == "%CD%\" (
     echo don't run in win32 directory.
     exit /b 999
@@ -14,11 +20,12 @@ if "%~dp0" == "%CD%\" (
 )
 
 set "WIN32DIR=%WIN32DIR:\=/%:/:"
-call set "WIN32DIR=%%WIN32DIR:%~x0:/:=:/:%%"
-call set "WIN32DIR=%%WIN32DIR:/%~n0:/:=:/:%%"
+call :set "WIN32DIR=%%WIN32DIR:%~x0:/:=:/:%%"
+call :set "WIN32DIR=%%WIN32DIR:/%~n0:/:=:/:%%"
 set "WIN32DIR=%WIN32DIR:~0,-3%"
 
 set configure=%~0
+set target=
 set optdirs=
 set pathlist=
 set config_make=confargs~%RANDOM%.mak
@@ -88,7 +95,6 @@ goto :loop ;
   echo>>%confargs%  "--target=%arg:$=$$%" \
 goto :loop ;
 :program_name
-  if "%eq%" == "" (set "arg=%~1" & shift)
   for /f "delims=- tokens=1,*" %I in ("%opt%") do set "var=%%J"
   if "%var%" == "prefix" (set "var=PROGRAM_PREFIX" & goto :name)
   if "%var%" == "suffix" (set "var=PROGRAM_SUFFIX" & goto :name)
@@ -109,7 +115,7 @@ goto :loopend ;
 :enable
   echo>>%confargs%  "%opt%" \
   if %enable% == yes (set "opt=%opt:~9%") else (set "opt=%opt:~10%")
-  if "%opt%" == "rdoc" (
+  if "%opt%" == "install-doc" (
     echo>> %config_make% RDOCTARGET = %enable:yes=r%doc
   )
   if "%opt%" == "install-static-library" (
@@ -155,9 +161,9 @@ goto :loop ;
   if "%eq%" == "" (set "NTVER=%~1" & shift) else (set "NTVER=%arg%")
   if /i not "%NTVER:~0,2%" == "0x" if /i not "%NTVER:~0,13%" == "_WIN32_WINNT_" (
     for %%i in (A B C D E F G H I J K L M N O P Q R S T U V W X Y Z) do (
-      call set NTVER=%%NTVER:%%i=%%i%%
+      call :set NTVER=%%NTVER:%%i=%%i%%
     )
-    call set NTVER=_WIN32_WINNT_%%NTVER%%
+    call :set NTVER=_WIN32_WINNT_%%NTVER%%
   )
   echo>> %config_make% NTVER = %NTVER%
 goto :loopend ;
@@ -170,7 +176,7 @@ goto :loopend ;
   set "pathlist=%pathlist%%arg:\=/%;"
 goto :loopend ;
 :extstatic
-  if "%eq%" == "" (set "arg=static" & shift)
+  if "%eq%" == "" (set "arg=static")
   echo>> %config_make% EXTSTATIC = %arg%
 goto :loopend ;
 :baseruby
@@ -205,7 +211,7 @@ goto :loop ;
   :optdir-loop
   for /f "delims=; tokens=1,*" %%I in ("%arg%") do (set "d=%%I" & set "arg=%%J")
     pushd %d:/=\% 2> nul && (
-      set "optdirs=%optdirs%;%CD:\=/%"
+      call :set "optdirs=%optdirs%;%%CD:\=/%%"
       popd
     ) || (
       set "optdirs=%optdirs%;%d:\=/%"
@@ -241,7 +247,7 @@ goto :EOF
   exit /b 1
 :end
 if "%debug_configure%" == "yes" (type %confargs%)
-if defined optdirs (for %%I in ("%optdirs:~1%") do echo>>%config_make% optdirs = %%~I)
+if defined optdirs (echo>>%config_make% optdirs = %optdirs:~1%)
 (
   echo.
   echo configure_args = \
