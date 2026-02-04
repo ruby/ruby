@@ -538,12 +538,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::GuardBitEquals { val, expected, reason, state } => gen_guard_bit_equals(jit, asm, opnd!(val), expected, reason, &function.frame_state(state)),
         &Insn::GuardAnyBitSet { val, mask, reason, state } => gen_guard_any_bit_set(jit, asm, opnd!(val), mask, reason, &function.frame_state(state)),
         &Insn::GuardNoBitsSet { val, mask, reason, state } => gen_guard_no_bits_set(jit, asm, opnd!(val), mask, reason, &function.frame_state(state)),
-        Insn::GuardNotFrozen { recv, state } => gen_guard_not_frozen(jit, asm, opnd!(recv), &function.frame_state(*state)),
-        Insn::GuardNotShared { recv, state } => gen_guard_not_shared(jit, asm, opnd!(recv), &function.frame_state(*state)),
         &Insn::GuardLess { left, right, state } => gen_guard_less(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
         &Insn::GuardGreaterEq { left, right, state } => gen_guard_greater_eq(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
-        &Insn::GuardSuperMethodEntry { lep, cme, state } => no_output!(gen_guard_super_method_entry(jit, asm, opnd!(lep), cme, &function.frame_state(state))),
-        Insn::GetBlockHandler { lep } => gen_get_block_handler(asm, opnd!(lep)),
         Insn::PatchPoint { invariant, state } => no_output!(gen_patch_point(jit, asm, invariant, &function.frame_state(*state))),
         Insn::CCall { cfunc, recv, args, name, return_type: _, elidable: _ } => gen_ccall(asm, *cfunc, *name, opnd!(recv), opnds!(args)),
         // Give up CCallWithFrame for 7+ args since asm.ccall() supports at most 6 args (recv + args).
@@ -585,7 +581,6 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::ToArray { val, state } => { gen_to_array(jit, asm, opnd!(val), &function.frame_state(state)) },
         &Insn::DefinedIvar { self_val, id, pushval, .. } => { gen_defined_ivar(asm, opnd!(self_val), id, pushval) },
         &Insn::ArrayExtend { left, right, state } => { no_output!(gen_array_extend(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state))) },
-        &Insn::GuardShape { val, shape, state } => gen_guard_shape(jit, asm, opnd!(val), shape, &function.frame_state(state)),
         Insn::LoadPC => gen_load_pc(asm),
         Insn::LoadEC => gen_load_ec(),
         &Insn::GetEP { level } => gen_get_ep(asm, level),
@@ -795,25 +790,6 @@ fn gen_getblockparam(jit: &mut JITState, asm: &mut Assembler, ep_offset: u32, le
     asm.load(Opnd::mem(VALUE_BITS, ep, offset))
 }
 
-fn gen_guard_not_frozen(jit: &JITState, asm: &mut Assembler, recv: Opnd, state: &FrameState) -> Opnd {
-    let recv = asm.load(recv);
-    // It's a heap object, so check the frozen flag
-    let flags = asm.load(Opnd::mem(64, recv, RUBY_OFFSET_RBASIC_FLAGS));
-    asm.test(flags, (RUBY_FL_FREEZE as u64).into());
-    // Side-exit if frozen
-    asm.jnz(side_exit(jit, state, GuardNotFrozen));
-    recv
-}
-
-fn gen_guard_not_shared(jit: &JITState, asm: &mut Assembler, recv: Opnd, state: &FrameState) -> Opnd {
-    let recv = asm.load(recv);
-    // It's a heap object, so check the shared flag
-    let flags = asm.load(Opnd::mem(VALUE_BITS, recv, RUBY_OFFSET_RBASIC_FLAGS));
-    asm.test(flags, (RUBY_ELTS_SHARED as u64).into());
-    asm.jnz(side_exit(jit, state, SideExitReason::GuardNotShared));
-    recv
-}
-
 fn gen_guard_less(jit: &JITState, asm: &mut Assembler, left: Opnd, right: Opnd, state: &FrameState) -> Opnd {
     asm.cmp(left, right);
     asm.jge(side_exit(jit, state, SideExitReason::GuardLess));
@@ -824,28 +800,6 @@ fn gen_guard_greater_eq(jit: &JITState, asm: &mut Assembler, left: Opnd, right: 
     asm.cmp(left, right);
     asm.jl(side_exit(jit, state, SideExitReason::GuardGreaterEq));
     left
-}
-
-/// Guard that the method entry at ep[VM_ENV_DATA_INDEX_ME_CREF] matches the expected CME.
-/// This ensures we're calling super from the expected method context.
-fn gen_guard_super_method_entry(
-    jit: &JITState,
-    asm: &mut Assembler,
-    lep: Opnd,
-    cme: *const rb_callable_method_entry_t,
-    state: &FrameState,
-) {
-    asm_comment!(asm, "guard super method entry");
-    let ep_me_opnd = Opnd::mem(64, lep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_ME_CREF);
-    let ep_me = asm.load(ep_me_opnd);
-    asm.cmp(ep_me, Opnd::UImm(cme as u64));
-    asm.jne(side_exit(jit, state, SideExitReason::GuardSuperMethodEntry));
-}
-
-/// Get the block handler from ep[VM_ENV_DATA_INDEX_SPECVAL] at the local EP (LEP).
-fn gen_get_block_handler(asm: &mut Assembler, lep: Opnd) -> Opnd {
-    asm_comment!(asm, "get block handler from LEP");
-    asm.load(Opnd::mem(64, lep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL))
 }
 
 fn gen_get_constant_path(jit: &JITState, asm: &mut Assembler, ic: *const iseq_inline_constant_cache, state: &FrameState) -> Opnd {
@@ -1241,16 +1195,6 @@ fn gen_defined_ivar(asm: &mut Assembler, self_val: Opnd, id: ID, pushval: VALUE)
 fn gen_array_extend(jit: &mut JITState, asm: &mut Assembler, left: Opnd, right: Opnd, state: &FrameState) {
     gen_prepare_non_leaf_call(jit, asm, state);
     asm_ccall!(asm, rb_ary_concat, left, right);
-}
-
-fn gen_guard_shape(jit: &mut JITState, asm: &mut Assembler, val: Opnd, shape: ShapeId, state: &FrameState) -> Opnd {
-    gen_incr_counter(asm, Counter::guard_shape_count);
-    let shape_id_offset = unsafe { rb_shape_id_offset() };
-    let val = asm.load(val);
-    let shape_opnd = Opnd::mem(SHAPE_ID_NUM_BITS as u8, val, shape_id_offset);
-    asm.cmp(shape_opnd, Opnd::UImm(shape.0 as u64));
-    asm.jne(side_exit(jit, state, SideExitReason::GuardShape(shape)));
-    val
 }
 
 fn gen_load_pc(asm: &mut Assembler) -> Opnd {

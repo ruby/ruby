@@ -6986,9 +6986,10 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(C@0x1000)
           PatchPoint MethodRedefined(C@0x1000, foo=@0x1008, cme:0x1010)
           v29:HeapObject[class_exact:C] = GuardType v11, HeapObject[class_exact:C]
-          v30:HeapObject[class_exact:C] = GuardNotFrozen v29
-          StoreField v30, :foo=@0x1038, v12
-          WriteBarrier v30, v12
+          v30:CUInt64 = LoadField v29, :_rbasic_flags@0x1038
+          v31:CUInt64 = GuardNoBitsSet v30, CUInt64(2048)
+          StoreField v29, :foo=@0x1039, v12
+          WriteBarrier v29, v12
           CheckInterrupts
           Return v12
         ");
@@ -7018,10 +7019,11 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(C@0x1000)
           PatchPoint MethodRedefined(C@0x1000, foo=@0x1008, cme:0x1010)
           v29:HeapObject[class_exact:C] = GuardType v11, HeapObject[class_exact:C]
-          v30:HeapObject[class_exact:C] = GuardNotFrozen v29
-          v31:CPtr = LoadField v30, :_as_heap@0x1038
-          StoreField v31, :foo=@0x1039, v12
-          WriteBarrier v30, v12
+          v30:CUInt64 = LoadField v29, :_rbasic_flags@0x1038
+          v31:CUInt64 = GuardNoBitsSet v30, CUInt64(2048)
+          v32:CPtr = LoadField v29, :_as_heap@0x1039
+          StoreField v32, :foo=@0x103a, v12
+          WriteBarrier v29, v12
           CheckInterrupts
           Return v12
         ");
@@ -7638,15 +7640,17 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Array@0x1000)
           PatchPoint MethodRedefined(Array@0x1000, []=@0x1008, cme:0x1010)
           v31:ArrayExact = GuardType v9, ArrayExact
-          v32:ArrayExact = GuardNotFrozen v31
-          v33:ArrayExact = GuardNotShared v32
-          v34:CInt64[1] = UnboxFixnum v16
-          v35:CInt64 = ArrayLength v33
-          v36:CInt64[1] = GuardLess v34, v35
-          v37:CInt64[0] = Const CInt64(0)
-          v38:CInt64[1] = GuardGreaterEq v36, v37
-          ArrayAset v33, v38, v18
-          WriteBarrier v33, v18
+          v32:CUInt64 = LoadField v31, :_rbasic_flags@0x1038
+          v33:CUInt64 = GuardNoBitsSet v32, CUInt64(2048)
+          v34:CUInt64 = LoadField v31, :_rbasic_flags@0x1038
+          v35:CUInt64 = GuardNoBitsSet v34, CUInt64(4096)
+          v36:CInt64[1] = UnboxFixnum v16
+          v37:CInt64 = ArrayLength v31
+          v38:CInt64[1] = GuardLess v36, v37
+          v39:CInt64[0] = Const CInt64(0)
+          v40:CInt64[1] = GuardGreaterEq v38, v39
+          ArrayAset v31, v40, v18
+          WriteBarrier v31, v18
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v18
@@ -7678,15 +7682,17 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Array@0x1000, []=@0x1008, cme:0x1010)
           v35:ArrayExact = GuardType v13, ArrayExact
           v36:Fixnum = GuardType v14, Fixnum
-          v37:ArrayExact = GuardNotFrozen v35
-          v38:ArrayExact = GuardNotShared v37
-          v39:CInt64 = UnboxFixnum v36
-          v40:CInt64 = ArrayLength v38
-          v41:CInt64 = GuardLess v39, v40
-          v42:CInt64[0] = Const CInt64(0)
-          v43:CInt64 = GuardGreaterEq v41, v42
-          ArrayAset v38, v43, v15
-          WriteBarrier v38, v15
+          v37:CUInt64 = LoadField v35, :_rbasic_flags@0x1038
+          v38:CUInt64 = GuardNoBitsSet v37, CUInt64(2048)
+          v39:CUInt64 = LoadField v35, :_rbasic_flags@0x1038
+          v40:CUInt64 = GuardNoBitsSet v39, CUInt64(4096)
+          v41:CInt64 = UnboxFixnum v36
+          v42:CInt64 = ArrayLength v35
+          v43:CInt64 = GuardLess v41, v42
+          v44:CInt64[0] = Const CInt64(0)
+          v45:CInt64 = GuardGreaterEq v43, v44
+          ArrayAset v35, v45, v15
+          WriteBarrier v35, v15
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v15
@@ -8004,8 +8010,9 @@ mod hir_opt_tests {
           v35:CInt64 = GuardLess v33, v34
           v36:CInt64[0] = Const CInt64(0)
           v37:CInt64 = GuardGreaterEq v35, v36
-          v38:StringExact = GuardNotFrozen v30
-          v39:Fixnum = StringSetbyteFixnum v38, v31, v32
+          v38:CUInt64 = LoadField v30, :_rbasic_flags@0x1039
+          v39:CUInt64 = GuardNoBitsSet v38, CUInt64(2048)
+          v40:Fixnum = StringSetbyteFixnum v30, v31, v32
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v32
@@ -8045,8 +8052,9 @@ mod hir_opt_tests {
           v35:CInt64 = GuardLess v33, v34
           v36:CInt64[0] = Const CInt64(0)
           v37:CInt64 = GuardGreaterEq v35, v36
-          v38:StringSubclass[class_exact:MyString] = GuardNotFrozen v30
-          v39:Fixnum = StringSetbyteFixnum v38, v31, v32
+          v38:CUInt64 = LoadField v30, :_rbasic_flags@0x1039
+          v39:CUInt64 = GuardNoBitsSet v38, CUInt64(2048)
+          v40:Fixnum = StringSetbyteFixnum v30, v31, v32
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v32
@@ -11268,12 +11276,13 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           PatchPoint MethodRedefined(A@0x1000, foo@0x1008, cme:0x1010)
           v17:CPtr = GetLEP
-          GuardSuperMethodEntry v17, 0x1038
-          v19:RubyValue = GetBlockHandler v17
-          v20:FalseClass = GuardBitEquals v19, Value(false)
-          v21:BasicObject = SendDirect v6, 0x1040, :foo (0x1050)
+          v18:RubyValue = LoadField v17, :_ep_method_entry@0x1038
+          v19:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v18, Value(VALUE(0x1040))
+          v20:RubyValue = LoadField v17, :_ep_specval@0x1048
+          v21:FalseClass = GuardBitEquals v20, Value(false)
+          v22:BasicObject = SendDirect v6, 0x1050, :foo (0x1060)
           CheckInterrupts
-          Return v21
+          Return v22
         ");
     }
 
@@ -11312,17 +11321,18 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(A@0x1000, foo@0x1008, cme:0x1010)
           v26:CPtr = GetLEP
-          GuardSuperMethodEntry v26, 0x1038
-          v28:RubyValue = GetBlockHandler v26
-          v29:FalseClass = GuardBitEquals v28, Value(false)
-          v30:BasicObject = SendDirect v8, 0x1040, :foo (0x1050), v9
+          v27:RubyValue = LoadField v26, :_ep_method_entry@0x1038
+          v28:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v27, Value(VALUE(0x1040))
+          v29:RubyValue = LoadField v26, :_ep_specval@0x1048
+          v30:FalseClass = GuardBitEquals v29, Value(false)
+          v31:BasicObject = SendDirect v8, 0x1050, :foo (0x1060), v9
           v17:Fixnum[1] = Const Value(1)
-          PatchPoint MethodRedefined(Integer@0x1058, +@0x1060, cme:0x1068)
-          v33:Fixnum = GuardType v30, Fixnum
-          v34:Fixnum = FixnumAdd v33, v17
+          PatchPoint MethodRedefined(Integer@0x1068, +@0x1070, cme:0x1078)
+          v34:Fixnum = GuardType v31, Fixnum
+          v35:Fixnum = FixnumAdd v34, v17
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v34
+          Return v35
         ");
     }
 
@@ -11432,13 +11442,14 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           PatchPoint MethodRedefined(Hash@0x1000, size@0x1008, cme:0x1010)
           v17:CPtr = GetLEP
-          GuardSuperMethodEntry v17, 0x1038
-          v19:RubyValue = GetBlockHandler v17
-          v20:FalseClass = GuardBitEquals v19, Value(false)
+          v18:RubyValue = LoadField v17, :_ep_method_entry@0x1038
+          v19:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v18, Value(VALUE(0x1040))
+          v20:RubyValue = LoadField v17, :_ep_specval@0x1048
+          v21:FalseClass = GuardBitEquals v20, Value(false)
           IncrCounter inline_cfunc_optimized_send_count
-          v22:Fixnum = CCall v6, :Hash#size@0x1040
+          v23:Fixnum = CCall v6, :Hash#size@0x1050
           CheckInterrupts
-          Return v22
+          Return v23
         ");
     }
 
@@ -11465,13 +11476,14 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           PatchPoint MethodRedefined(BasicObject@0x1000, initialize@0x1008, cme:0x1010)
           v17:CPtr = GetLEP
-          GuardSuperMethodEntry v17, 0x1038
-          v19:RubyValue = GetBlockHandler v17
-          v20:FalseClass = GuardBitEquals v19, Value(false)
-          v21:NilClass = Const Value(nil)
+          v18:RubyValue = LoadField v17, :_ep_method_entry@0x1038
+          v19:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v18, Value(VALUE(0x1040))
+          v20:RubyValue = LoadField v17, :_ep_specval@0x1048
+          v21:FalseClass = GuardBitEquals v20, Value(false)
+          v22:NilClass = Const Value(nil)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v21
+          Return v22
         ");
     }
 
@@ -11491,7 +11503,7 @@ mod hir_opt_tests {
         assert!(!hir.contains("InvokeSuper "), "InvokeSuper should optimize to CCallVariadic but got:\n{hir}");
         assert!(hir.contains("CCallVariadic"), "Should optimize to CCallVariadic for variadic cfunc:\n{hir}");
 
-        assert_snapshot!(hir, @"
+        assert_snapshot!(hir, @r"
         fn byteindex@<compiled>:3:
         bb0():
           EntryPoint interpreter
@@ -11516,12 +11528,13 @@ mod hir_opt_tests {
         bb4(v27:BasicObject, v28:BasicObject, v29:BasicObject):
           PatchPoint MethodRedefined(String@0x1010, byteindex@0x1018, cme:0x1020)
           v42:CPtr = GetLEP
-          GuardSuperMethodEntry v42, 0x1008
-          v44:RubyValue = GetBlockHandler v42
-          v45:FalseClass = GuardBitEquals v44, Value(false)
-          v46:BasicObject = CCallVariadic v27, :String#byteindex@0x1048, v28, v29
+          v43:RubyValue = LoadField v42, :_ep_method_entry@0x1048
+          v44:CallableMethodEntry[VALUE(0x1050)] = GuardBitEquals v43, Value(VALUE(0x1050))
+          v45:RubyValue = LoadField v42, :_ep_specval@0x1058
+          v46:FalseClass = GuardBitEquals v45, Value(false)
+          v47:BasicObject = CCallVariadic v27, :String#byteindex@0x1060, v28, v29
           CheckInterrupts
-          Return v46
+          Return v47
         ");
     }
 
