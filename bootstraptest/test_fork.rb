@@ -85,12 +85,17 @@ assert_equal 'ok', %q{
   10.times do
     pid = fork{ exit!(0) }
     deadline = now + 10
-    until Process.waitpid(pid, Process::WNOHANG)
+    while true
+      _, status = Process.waitpid2(pid, Process::WNOHANG)
+      break if status
       if now > deadline
         Process.kill(:KILL, pid)
         raise "failed"
       end
       sleep 0.001
+    end
+    unless status.success?
+      raise "child exited with status #{status}"
     end
   rescue NotImplementedError
   end
