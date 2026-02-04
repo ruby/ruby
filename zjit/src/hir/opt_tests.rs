@@ -3888,7 +3888,7 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           v14:CPtr = GetEP 0
           v15:CInt64 = LoadField v14, :_env_data_index_flags@0x1000
-          v16:CInt64 = GuardNoBitsSet v15, CUInt64(512)
+          v16:CInt64 = GuardNoBitsSet v15, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM=CUInt64(512)
           v17:CInt64 = LoadField v14, :_env_data_index_specval@0x1001
           v18:CInt64 = GuardAnyBitSet v17, CUInt64(1)
           v19:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
@@ -6560,7 +6560,7 @@ mod hir_opt_tests {
           v13:ArrayExact = NewArray
           v15:CPtr = GetEP 0
           v16:CInt64 = LoadField v15, :_env_data_index_flags@0x1000
-          v17:CInt64 = GuardNoBitsSet v16, CUInt64(512)
+          v17:CInt64 = GuardNoBitsSet v16, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM=CUInt64(512)
           v18:CInt64 = LoadField v15, :_env_data_index_specval@0x1001
           v19:CInt64 = GuardAnyBitSet v18, CUInt64(1)
           v20:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
@@ -6591,7 +6591,7 @@ mod hir_opt_tests {
           v13:ArrayExact = NewArray
           v15:CPtr = GetEP 0
           v16:CInt64 = LoadField v15, :_env_data_index_flags@0x1000
-          v17:CInt64 = GuardNoBitsSet v16, CUInt64(512)
+          v17:CInt64 = GuardNoBitsSet v16, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM=CUInt64(512)
           v18:CInt64 = LoadField v15, :_env_data_index_specval@0x1001
           v19:CInt64[0] = GuardBitEquals v18, CInt64(0)
           v20:NilClass = Const Value(nil)
@@ -6625,7 +6625,7 @@ mod hir_opt_tests {
           v10:ArrayExact = NewArray
           v12:CPtr = GetEP 1
           v13:CInt64 = LoadField v12, :_env_data_index_flags@0x1000
-          v14:CInt64 = GuardNoBitsSet v13, CUInt64(512)
+          v14:CInt64 = GuardNoBitsSet v13, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM=CUInt64(512)
           v15:CInt64 = LoadField v12, :_env_data_index_specval@0x1001
           v16:CInt64 = GuardAnyBitSet v15, CUInt64(1)
           v17:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
@@ -6987,7 +6987,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(C@0x1000, foo=@0x1008, cme:0x1010)
           v29:HeapObject[class_exact:C] = GuardType v11, HeapObject[class_exact:C]
           v30:CUInt64 = LoadField v29, :_rbasic_flags@0x1038
-          v31:CUInt64 = GuardNoBitsSet v30, CUInt64(2048)
+          v31:CUInt64 = GuardNoBitsSet v30, RUBY_FL_FREEZE=CUInt64(2048)
           StoreField v29, :foo=@0x1039, v12
           WriteBarrier v29, v12
           CheckInterrupts
@@ -7020,7 +7020,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(C@0x1000, foo=@0x1008, cme:0x1010)
           v29:HeapObject[class_exact:C] = GuardType v11, HeapObject[class_exact:C]
           v30:CUInt64 = LoadField v29, :_rbasic_flags@0x1038
-          v31:CUInt64 = GuardNoBitsSet v30, CUInt64(2048)
+          v31:CUInt64 = GuardNoBitsSet v30, RUBY_FL_FREEZE=CUInt64(2048)
           v32:CPtr = LoadField v29, :_as_heap@0x1039
           StoreField v32, :foo=@0x103a, v12
           WriteBarrier v29, v12
@@ -7641,9 +7641,9 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Array@0x1000, []=@0x1008, cme:0x1010)
           v31:ArrayExact = GuardType v9, ArrayExact
           v32:CUInt64 = LoadField v31, :_rbasic_flags@0x1038
-          v33:CUInt64 = GuardNoBitsSet v32, CUInt64(2048)
+          v33:CUInt64 = GuardNoBitsSet v32, RUBY_FL_FREEZE=CUInt64(2048)
           v34:CUInt64 = LoadField v31, :_rbasic_flags@0x1038
-          v35:CUInt64 = GuardNoBitsSet v34, CUInt64(4096)
+          v35:CUInt64 = GuardNoBitsSet v34, RUBY_ELTS_SHARED=CUInt64(4096)
           v36:CInt64[1] = UnboxFixnum v16
           v37:CInt64 = ArrayLength v31
           v38:CInt64[1] = GuardLess v36, v37
@@ -7683,9 +7683,9 @@ mod hir_opt_tests {
           v35:ArrayExact = GuardType v13, ArrayExact
           v36:Fixnum = GuardType v14, Fixnum
           v37:CUInt64 = LoadField v35, :_rbasic_flags@0x1038
-          v38:CUInt64 = GuardNoBitsSet v37, CUInt64(2048)
+          v38:CUInt64 = GuardNoBitsSet v37, RUBY_FL_FREEZE=CUInt64(2048)
           v39:CUInt64 = LoadField v35, :_rbasic_flags@0x1038
-          v40:CUInt64 = GuardNoBitsSet v39, CUInt64(4096)
+          v40:CUInt64 = GuardNoBitsSet v39, RUBY_ELTS_SHARED=CUInt64(4096)
           v41:CInt64 = UnboxFixnum v36
           v42:CInt64 = ArrayLength v35
           v43:CInt64 = GuardLess v41, v42
@@ -8011,7 +8011,7 @@ mod hir_opt_tests {
           v36:CInt64[0] = Const CInt64(0)
           v37:CInt64 = GuardGreaterEq v35, v36
           v38:CUInt64 = LoadField v30, :_rbasic_flags@0x1039
-          v39:CUInt64 = GuardNoBitsSet v38, CUInt64(2048)
+          v39:CUInt64 = GuardNoBitsSet v38, RUBY_FL_FREEZE=CUInt64(2048)
           v40:Fixnum = StringSetbyteFixnum v30, v31, v32
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
@@ -8053,7 +8053,7 @@ mod hir_opt_tests {
           v36:CInt64[0] = Const CInt64(0)
           v37:CInt64 = GuardGreaterEq v35, v36
           v38:CUInt64 = LoadField v30, :_rbasic_flags@0x1039
-          v39:CUInt64 = GuardNoBitsSet v38, CUInt64(2048)
+          v39:CUInt64 = GuardNoBitsSet v38, RUBY_FL_FREEZE=CUInt64(2048)
           v40:Fixnum = StringSetbyteFixnum v30, v31, v32
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
