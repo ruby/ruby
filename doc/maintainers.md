@@ -222,6 +222,7 @@ consensus on ruby-core/ruby-dev.
 * Kevin Newton ([kddnewton])
 * Eileen Uchitelle ([eileencodes])
 * Aaron Patterson ([tenderlove])
+* Earlopain ([earlopain])
 * https://github.com/ruby/prism
 * https://rubygems.org/gems/prism
 
@@ -673,6 +674,7 @@ It may needs to make consensus on ruby-core/ruby-dev before making major changes
 [colby-swandale]: https://github.com/colby-swandale
 [drbrain]: https://github.com/drbrain
 [duerst]: https://github.com/duerst
+[earlopain]: https://github.com/earlopain
 [eban]: https://github.com/eban
 [eileencodes]: https://github.com/eileencodes
 [hasumikin]: https://github.com/hasumikin
