@@ -650,6 +650,49 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn opt_neq_string_subclass_overridden_rewritten_to_eq_iseq() {
+        eval("
+            class MyStr < String
+              def ==(o)
+                super
+              end
+            end
+
+            def test(s)
+              s != 'x'
+            end
+
+            test MyStr.new('x')
+            test MyStr.new('x')
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:9:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :s, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v15:StringExact = StringCopy v14
+          PatchPoint NoSingletonClass(MyStr@0x1008)
+          PatchPoint MethodRedefined(MyStr@0x1008, !=@0x1010, cme:0x1018)
+          PatchPoint MethodRedefined(MyStr@0x1008, ==@0x1040, cme:0x1048)
+          v27:StringSubclass[class_exact:MyStr] = GuardType v9, StringSubclass[class_exact:MyStr]
+          v28:BasicObject = SendDirect v27, 0x1070, :== (0x1080), v15
+          IncrCounter opt_neq_negate_applied_count
+          v30:CBool = Test v28
+          v31:CBool = BoolNot v30
+          v32:BoolExact = BoxBool v31
+          CheckInterrupts
+          Return v32
+        ");
+    }
+
+    #[test]
     fn opt_neq_basic_object_not_rewritten() {
         eval("
             class C; end
