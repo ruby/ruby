@@ -27,6 +27,7 @@
 #include "internal.h"
 #include "internal/array.h"
 #include "internal/complex.h"
+#include "internal/error.h"
 #include "internal/gc.h"
 #include "internal/numeric.h"
 #include "internal/object.h"
@@ -2562,7 +2563,7 @@ nurat_convert(VALUE klass, VALUE numv, VALUE denv, int raise)
 
     if (NIL_P(a1) || NIL_P(a2)) {
         if (!raise) return Qnil;
-        rb_raise(rb_eTypeError, "can't convert nil into Rational");
+        rb_cant_convert(Qnil, "Rational");
     }
 
     if (RB_TYPE_P(a1, T_COMPLEX)) {

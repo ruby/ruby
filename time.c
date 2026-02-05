@@ -36,6 +36,7 @@
 #include "internal/array.h"
 #include "internal/hash.h"
 #include "internal/compar.h"
+#include "internal/error.h"
 #include "internal/numeric.h"
 #include "internal/rational.h"
 #include "internal/string.h"
@@ -564,8 +565,7 @@ NORETURN(static void num_exact_fail(VALUE v));
 static void
 num_exact_fail(VALUE v)
 {
-    rb_raise(rb_eTypeError, "can't convert %"PRIsVALUE" into an exact number",
-             rb_obj_class(v));
+    rb_cant_convert(v, "an exact number");
 }
 
 static VALUE
@@ -2924,8 +2924,7 @@ time_timespec(VALUE num, int interval)
             t.tv_nsec = NUM2LONG(f);
         }
         else {
-            rb_raise(rb_eTypeError, "can't convert %"PRIsVALUE" into %s",
-                     rb_obj_class(num), tstr);
+            rb_cant_convert(num, tstr);
         }
     }
     return t;

@@ -54,7 +54,7 @@ platform_is_not :windows do
     it "raises TypeError when value cannot be converted to Integer" do
       -> {
         Dir.for_fd(nil)
-      }.should raise_error(TypeError, "no implicit conversion from nil to integer")
+      }.should raise_consistent_error(TypeError, "no implicit conversion of nil into Integer")
     end
 
     it "raises a SystemCallError if the file descriptor given is not valid" do
