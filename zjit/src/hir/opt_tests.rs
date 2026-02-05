@@ -479,10 +479,9 @@ mod hir_opt_tests {
           v10:Fixnum[1] = Const Value(1)
           v12:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1000, !=@0x1008, cme:0x1010)
-          PatchPoint MethodRedefined(Integer@0x1000, ==@0x1038, cme:0x1040)
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
+          v43:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
-          IncrCounter opt_neq_negate_applied_count
-          v51:TrueClass = Const Value(true)
           CheckInterrupts
           v24:Fixnum[3] = Const Value(3)
           CheckInterrupts
@@ -514,10 +513,9 @@ mod hir_opt_tests {
           v10:Fixnum[2] = Const Value(2)
           v12:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1000, !=@0x1008, cme:0x1010)
-          PatchPoint MethodRedefined(Integer@0x1000, ==@0x1038, cme:0x1040)
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
+          v43:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
-          IncrCounter opt_neq_negate_applied_count
-          v51:FalseClass = Const Value(false)
           CheckInterrupts
           v33:Fixnum[4] = Const Value(4)
           CheckInterrupts
@@ -762,7 +760,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn opt_neq_integer_rewritten_to_eq_inline() {
+    fn opt_neq_integer_not_rewritten_inline() {
         eval("
             def test(a, b)
               a != b
@@ -784,17 +782,13 @@ mod hir_opt_tests {
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           PatchPoint MethodRedefined(Integer@0x1000, !=@0x1008, cme:0x1010)
-          PatchPoint MethodRedefined(Integer@0x1000, ==@0x1038, cme:0x1040)
-          v28:Fixnum = GuardType v11, Fixnum
-          v29:Fixnum = GuardType v12, Fixnum
-          v30:BoolExact = FixnumEq v28, v29
+          v26:Fixnum = GuardType v11, Fixnum
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
+          v28:Fixnum = GuardType v12, Fixnum
+          v29:BoolExact = FixnumNeq v26, v28
           IncrCounter inline_cfunc_optimized_send_count
-          IncrCounter opt_neq_negate_applied_count
-          v33:CBool = Test v30
-          v34:CBool = BoolNot v33
-          v35:BoolExact = BoxBool v34
           CheckInterrupts
-          Return v35
+          Return v29
         ");
     }
 
@@ -2587,11 +2581,10 @@ mod hir_opt_tests {
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           PatchPoint MethodRedefined(Integer@0x1000, !=@0x1008, cme:0x1010)
-          PatchPoint MethodRedefined(Integer@0x1000, ==@0x1038, cme:0x1040)
-          v32:Fixnum = GuardType v11, Fixnum
-          v33:Fixnum = GuardType v12, Fixnum
+          v30:Fixnum = GuardType v11, Fixnum
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
+          v32:Fixnum = GuardType v12, Fixnum
           IncrCounter inline_cfunc_optimized_send_count
-          IncrCounter opt_neq_negate_applied_count
           v23:Fixnum[5] = Const Value(5)
           CheckInterrupts
           Return v23

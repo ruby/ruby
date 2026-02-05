@@ -3039,16 +3039,11 @@ impl Function {
         }
     }
 
-    fn negate_truthiness(&mut self, block: BlockId, val: InsnId) -> InsnId {
-        let test = self.push_insn(block, Insn::Test { val });
-        let not = self.push_insn(block, Insn::BoolNot { val: test });
-        self.push_insn(block, Insn::BoxBool { val: not })
-    }
-
     fn opt_neq_rewrite_for(&self, reason: &SendFallbackReason, recv_class: VALUE, method_id: ID) -> (ID, bool) {
         match reason {
         Uncategorized(opcode) if *opcode == YARVINSN_opt_neq
             && self.expected_cfunc(recv_class, ID!(neq), rb_obj_not_equal as *mut c_void).is_some()
+            // Note: BasicObject#!= can be inlined separately (see inline_basic_object_neq).
             // Skip rewrite when == is rb_obj_equal: BasicObject#!= can be inlined to IsBitNotEqual, as rewriting would add extra negate ops with no benefit.
             && self.expected_cfunc(recv_class, ID!(eq), rb_obj_equal as *mut c_void).is_none() =>
             {
@@ -3058,10 +3053,38 @@ impl Function {
         }
     }
 
+    fn opt_neq_rewrite_for_fixnum(
+        &self,
+        reason: &SendFallbackReason,
+        recv_class: VALUE,
+        method_id: ID,
+        self_type: Type,
+        profiled_type: &Option<ProfiledType>,
+        args: &[InsnId],
+        state: InsnId,
+    ) -> (ID, bool) {
+        let (mut lookup_mid, mut negate) = self.opt_neq_rewrite_for(reason, recv_class, method_id);
+        // If both operands are fixnums, prefer keeping FixnumNeq to avoid extra negate ops.
+        // See: inline_basic_object_neq.
+        let recv_is_fixnum =
+            self_type.is_subtype(types::Fixnum) ||
+            profiled_type.as_ref().is_some_and(|ty| ty.is_fixnum());
+        let arg_is_fixnum =
+            args.first().is_some_and(|arg| self.likely_a(*arg, types::Fixnum, state));
+        let prefer_fixnum_neq = recv_is_fixnum && arg_is_fixnum;
+        if negate && prefer_fixnum_neq {
+            lookup_mid = method_id;
+            negate = false;
+        }
+        (lookup_mid, negate)
+    }
+
     fn maybe_negate_opt_neq(&mut self, block: BlockId, negate: bool, val: InsnId) -> InsnId {
         if negate {
             self.push_insn(block, Insn::IncrCounter(Counter::opt_neq_negate_applied_count));
-            self.negate_truthiness(block, val)
+            let test = self.push_insn(block, Insn::Test { val });
+            let not = self.push_insn(block, Insn::BoolNot { val: test });
+            self.push_insn(block, Insn::BoxBool { val: not })
         } else {
             val
         }
@@ -4326,7 +4349,16 @@ impl Function {
             };
 
             // If this is an opt_neq rewrite, use the eq method id and remember to negate later.
-            let (lookup_mid, negate) = fun.opt_neq_rewrite_for(&reason, recv_class, method_id);
+            // Keep FixnumNeq when both operands are fixnums to avoid extra negate ops.
+            let (lookup_mid, negate) = fun.opt_neq_rewrite_for_fixnum(
+                &reason,
+                recv_class,
+                method_id,
+                self_type,
+                &profiled_type,
+                args.as_slice(),
+                state,
+            );
 
             // Do method lookup
             let mut cme: *const rb_callable_method_entry_struct = unsafe { rb_callable_method_entry(recv_class, lookup_mid) };
