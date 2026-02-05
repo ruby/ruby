@@ -3163,7 +3163,7 @@ rb_ary_to_a(VALUE ary)
  *  forms each sub-array into a key-value pair in the new hash:
  *
  *    a = [['foo', 'zero'], ['bar', 'one'], ['baz', 'two']]
- *    a.to_h # => {"foo"=>"zero", "bar"=>"one", "baz"=>"two"}
+ *    a.to_h # => {"foo" => "zero", "bar" => "one", "baz" => "two"}
  *    [].to_h # => {}
  *
  *  With a block given, the block must return a 2-element array;
@@ -3172,7 +3172,7 @@ rb_ary_to_a(VALUE ary)
  *
  *    a = ['foo', :bar, 1, [2, 3], {baz: 4}]
  *    a.to_h {|element| [element, element.class] }
- *    # => {"foo"=>String, :bar=>Symbol, 1=>Integer, [2, 3]=>Array, {:baz=>4}=>Hash}
+ *    # => {"foo" => String, bar: Symbol, 1 => Integer, [2, 3] => Array, {baz: 4} => Hash}
  *
  *  Related: see {Methods for Converting}[rdoc-ref:Array@Methods+for+Converting].
  */
