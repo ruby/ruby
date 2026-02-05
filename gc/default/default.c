@@ -2011,6 +2011,9 @@ heap_add_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page)
     page->slot_div_magic = slot_div_magics[heap - heaps];
     page->heap = heap;
 
+    memset(&page->wb_unprotected_bits[0], 0, HEAP_PAGE_BITMAP_SIZE);
+    memset(&page->age_bits[0], 0, sizeof(page->age_bits));
+
     asan_unlock_freelist(page);
     page->freelist = NULL;
     asan_unpoison_memory_region(page->body, HEAP_PAGE_SIZE, false);
