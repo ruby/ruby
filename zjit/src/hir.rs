@@ -669,8 +669,6 @@ pub enum SendFallbackReason {
     SuperPolymorphic,
     /// The `super` target call uses a complex argument pattern that the optimizer does not support.
     SuperTargetComplexArgsPass,
-    /// opt_neq rewrite expected a cfunc target but failed to confirm it.
-    OptNeqExpectedCfuncFailed,
     /// Initial fallback reason for every instruction, which should be mutated to
     /// a more actionable reason when an attempt to specialize the instruction fails.
     Uncategorized(ruby_vminsn_type),
@@ -717,7 +715,6 @@ impl Display for SendFallbackReason {
             SuperPolymorphic => write!(f, "super: polymorphic call site"),
             SuperTargetNotFound => write!(f, "super: profiled target method cannot be found"),
             SuperTargetComplexArgsPass => write!(f, "super: complex argument passing to `super` target call"),
-            OptNeqExpectedCfuncFailed => write!(f, "opt_neq: expected cfunc target but failed to confirm"),
             Uncategorized(insn) => write!(f, "Uncategorized({})", insn_name(*insn as usize)),
         }
     }
@@ -3206,9 +3203,9 @@ impl Function {
                                 self.push_insn_id(block, insn_id); continue;
                             }
 
-                            if negate && !self.assume_expected_cfunc(block, klass, ID!(neq), rb_obj_not_equal as *mut c_void, state) {
-                                self.set_dynamic_send_reason(insn_id, OptNeqExpectedCfuncFailed);
-                                self.push_insn_id(block, insn_id); continue;
+                            if negate {
+                                // Keep a patchpoint for BasicObject#!= (rb_obj_not_equal) when rewriting.
+                                let _ = self.assume_expected_cfunc(block, klass, ID!(neq), rb_obj_not_equal as *mut c_void, state);
                             }
 
                             // Add PatchPoint for method redefinition
@@ -3391,11 +3388,7 @@ impl Function {
                                 },
                             };
                         } else {
-                            // For opt_neq rewrite, CFUNC will be optimized in optimize_c_calls,
-                            // so avoid marking it as a non-optimized method type here.
-                            if !(negate && def_type == VM_METHOD_TYPE_CFUNC) {
-                                self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedMethodType(MethodType::from(def_type)));
-                            }
+                            self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedMethodType(MethodType::from(def_type)));
                             self.push_insn_id(block, insn_id); continue;
                         }
                     }
@@ -4411,15 +4404,15 @@ impl Function {
                         return Err(());
                     }
 
-                    // Check singleton class assumption before emitting other patchpoints
+                    // Check singleton class assumption first, before emitting other patchpoints
                     if !fun.assume_no_singleton_classes(block, recv_class, state) {
                         fun.set_dynamic_send_reason(send_insn_id, SingletonClassSeen);
                         return Err(());
                     }
 
-                    if negate && !fun.assume_expected_cfunc(block, recv_class, ID!(neq), rb_obj_not_equal as *mut c_void, state) {
-                        fun.set_dynamic_send_reason(send_insn_id, OptNeqExpectedCfuncFailed);
-                        return Err(());
+                    if negate {
+                        // Keep a patchpoint for BasicObject#!= (rb_obj_not_equal) when rewriting.
+                        let _ = fun.assume_expected_cfunc(block, recv_class, ID!(neq), rb_obj_not_equal as *mut c_void, state);
                     }
 
                     // Commit to the replacement. Put PatchPoint.
@@ -4501,15 +4494,15 @@ impl Function {
                         fun.set_dynamic_send_reason(send_insn_id, ComplexArgPass);
                         return Err(());
                     } else {
-                        // Check singleton class assumption before emitting other patchpoints
+                        // Check singleton class assumption first, before emitting other patchpoints
                         if !fun.assume_no_singleton_classes(block, recv_class, state) {
                             fun.set_dynamic_send_reason(send_insn_id, SingletonClassSeen);
                             return Err(());
                         }
 
-                        if negate && !fun.assume_expected_cfunc(block, recv_class, ID!(neq), rb_obj_not_equal as *mut c_void, state) {
-                            fun.set_dynamic_send_reason(send_insn_id, OptNeqExpectedCfuncFailed);
-                            return Err(());
+                        if negate {
+                            // Keep a patchpoint for BasicObject#!= (rb_obj_not_equal) when rewriting.
+                            let _ = fun.assume_expected_cfunc(block, recv_class, ID!(neq), rb_obj_not_equal as *mut c_void, state);
                         }
 
                         fun.gen_patch_points_for_optimized_ccall(block, recv_class, lookup_mid, cme, state);
