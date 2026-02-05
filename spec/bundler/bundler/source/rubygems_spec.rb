@@ -45,6 +45,36 @@ RSpec.describe Bundler::Source::Rubygems do
     end
   end
 
+  describe "#clear_cache" do
+    it "clears the installed_specs cache" do
+      source = described_class.new
+
+      # Access installed_specs to populate the cache
+      source.send(:installed_specs)
+      expect(source.instance_variable_get(:@installed_specs)).not_to be_nil
+
+      # Expire the cache
+      source.clear_cache
+
+      # Cache should be cleared
+      expect(source.instance_variable_get(:@installed_specs)).to be_nil
+    end
+
+    it "clears the default_specs cache" do
+      source = described_class.new
+
+      # Access default_specs to populate the cache
+      source.send(:default_specs)
+      expect(source.instance_variable_get(:@default_specs)).not_to be_nil
+
+      # Expire the cache
+      source.clear_cache
+
+      # Cache should be cleared
+      expect(source.instance_variable_get(:@default_specs)).to be_nil
+    end
+  end
+
   describe "log debug information" do
     it "log the time spent downloading and installing a gem" do
       build_repo2 do
