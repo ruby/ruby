@@ -7628,11 +7628,12 @@ build_postexe_iseq(rb_iseq_t *iseq, LINK_ANCHOR *ret, const void *ptr)
     iseq_set_local_table(iseq, 0, 0);
 }
 
-static void
-compile_named_capture_assign(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node)
+static int compile_lasgn_lhs(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, ID id);
+
+static int
+compile_named_capture_assign(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, const rb_node_list2_t *const list)
 {
     const NODE *vars;
-    LINK_ELEMENT *last;
     int line = nd_line(node);
     const NODE *line_node = node;
     LABEL *fail_label = NEW_LABEL(line), *end_label = NEW_LABEL(line);
@@ -7645,19 +7646,20 @@ compile_named_capture_assign(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE
     ADD_INSN(ret, line_node, dup);
     ADD_INSNL(ret, line_node, branchunless, fail_label);
 
-    for (vars = node; vars; vars = RNODE_BLOCK(vars)->nd_next) {
+    for (size_t i = 0; i < RB_NODE_LIST_LEN(list); i++) {
         INSN *cap;
-        if (RNODE_BLOCK(vars)->nd_next) {
+        vars = list->nodes[i];
+        EXPECT_NODE("compile_named_capture_assign/target", vars, RB_LOCAL_VARIABLE_TARGET_NODE, COMPILE_NG);
+        ID id = RB_NODE_LOCAL_VARIABLE_TARGET(vars)->name;
+        if (i != (RB_NODE_LIST_LEN(list) - 1)) {
             ADD_INSN(ret, line_node, dup);
         }
-        last = ret->last;
-        NO_CHECK(COMPILE_POPPED(ret, "capture", RNODE_BLOCK(vars)->nd_head));
-        last = last->next; /* putobject :var */
-        cap = new_insn_send(iseq, nd_line(line_node), nd_node_id(line_node), idAREF, INT2FIX(1),
-                            NULL, INT2FIX(0), NULL);
-        ELEM_INSERT_PREV(last->next, (LINK_ELEMENT *)cap);
+        ADD_INSN1(ret, line_node, putobject, ID2SYM(id));
+        ADD_SEND_R(ret, line_node, idAREF, INT2FIX(1), NULL, INT2FIX(0), NULL);
+        cap = (INSN *)ret->last;
+        CHECK(compile_lasgn_lhs(iseq, ret, line_node, id));
 #if !defined(NAMED_CAPTURE_SINGLE_OPT) || NAMED_CAPTURE_SINGLE_OPT-0
-        if (!RNODE_BLOCK(vars)->nd_next && vars == node) {
+        if (RB_NODE_LIST_LEN(list) == 1) {
             /* only one name */
             DECL_ANCHOR(nom);
 
@@ -7669,23 +7671,25 @@ compile_named_capture_assign(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE
             ADD_INSN(nom, line_node, putnil);
 # endif
             ADD_LABEL(nom, end_label);
+
             (nom->last->next = cap->link.next)->prev = nom->last;
             (cap->link.next = nom->anchor.next)->prev = &cap->link;
-            return;
+            return COMPILE_OK;
         }
 #endif
     }
     ADD_INSNL(ret, line_node, jump, end_label);
     ADD_LABEL(ret, fail_label);
     ADD_INSN(ret, line_node, pop);
-    for (vars = node; vars; vars = RNODE_BLOCK(vars)->nd_next) {
-        last = ret->last;
-        NO_CHECK(COMPILE_POPPED(ret, "capture", RNODE_BLOCK(vars)->nd_head));
-        last = last->next; /* putobject :var */
-        ((INSN*)last)->insn_id = BIN(putnil);
-        ((INSN*)last)->operand_size = 0;
+    for (size_t i = 0; i < RB_NODE_LIST_LEN(list); i++) {
+        vars = list->nodes[i];
+        ID id = RB_NODE_LOCAL_VARIABLE_TARGET(vars)->name;
+        ADD_INSN(ret, line_node, putnil);
+        CHECK(compile_lasgn_lhs(iseq, ret, line_node, id));
     }
     ADD_LABEL(ret, end_label);
+
+    return COMPILE_OK;
 }
 
 static int
@@ -11190,9 +11194,9 @@ compile_match(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
     ADD_SEQ(ret, val);
     ADD_SEND(ret, node, idEqTilde, INT2FIX(1));
 
-    if (nd_type_p(node, NODE_MATCH2) && RNODE_MATCH2(node)->nd_args) {
-        compile_named_capture_assign(iseq, ret, RNODE_MATCH2(node)->nd_args);
-    }
+    // if (nd_type_p(node, NODE_MATCH2) && RNODE_MATCH2(node)->nd_args) {
+    //     compile_named_capture_assign(iseq, ret, RNODE_MATCH2(node)->nd_args, node);
+    // }
 
     if (popped) {
         ADD_INSN(ret, node, pop);
@@ -12286,7 +12290,14 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         }
         break;
       }
-
+      case RB_MATCH_WRITE_NODE: {
+        CHECK(COMPILE(ret, "match_write/call", (rb_node_t *)RB_NODE_MATCH_WRITE(node)->call));
+        CHECK(compile_named_capture_assign(iseq, ret, node, &RB_NODE_MATCH_WRITE(node)->targets));
+        if (popped) {
+            ADD_INSN(ret, node, pop);
+        }
+        break;
+      }
       case RB_SYMBOL_NODE: {
         if (!popped) {
             ADD_INSN1(ret, node, putobject, rb_node_sym_string_val2(node));

@@ -80,7 +80,7 @@ syntax_error_new(void)
 }
 #endif
 
-static NODE *reg_named_capture_assign(struct parser_params* p, VALUE regexp, const YYLTYPE *loc, rb_parser_assignable_func assignable);
+static rb_array_node_t *reg_named_capture_assign(struct parser_params* p, VALUE regexp, const YYLTYPE *loc, rb_parser_assignable_func assignable);
 
 #define compile_callback rb_suppress_tracing
 #endif /* !UNIVERSAL_PARSER */
@@ -1410,6 +1410,7 @@ static rb_instance_variable_write_node_t *rb_new_node_instance_variable_write_ne
 static rb_constant_write_node_t *rb_new_node_constant_write_new(struct parser_params *p, ID nd_vid, rb_node_t *nd_value, const YYLTYPE *loc);
 static rb_constant_path_write_node_t *rb_new_node_constant_path_write_new(struct parser_params *p, rb_node_t *nd_path, rb_node_t *nd_value, const YYLTYPE *loc);
 static rb_class_variable_write_node_t *rb_new_node_class_variable_write_new(struct parser_params *p, ID nd_vid, rb_node_t *nd_value, const YYLTYPE *loc);
+static rb_match_write_node_t *rb_new_node_match_write_new(struct parser_params *p, rb_call_node_t *nd_call, rb_array_node_t *nd_ary, const YYLTYPE *loc);
 static rb_local_variable_target_node_t *rb_new_node_local_variable_target_new(struct parser_params *p, ID nd_vid, const YYLTYPE *loc);
 static rb_global_variable_target_node_t *rb_new_node_global_variable_target_new(struct parser_params *p, ID nd_vid, const YYLTYPE *loc);
 static rb_instance_variable_target_node_t *rb_new_node_instance_variable_target_new(struct parser_params *p, ID nd_vid, const YYLTYPE *loc);
@@ -1525,6 +1526,7 @@ static rb_source_encoding_node_t *rb_new_node_source_encoding_new(struct parser_
 #define NEW_RB_CONSTANT_PATH_WRITE(path,val,loc) (rb_node_t *)rb_new_node_constant_path_write_new(p,path,val,loc)
 #define NEW_RB_SHAREABLE_CONSTANT(n,s,loc) (rb_node_t *)rb_new_node_shareable_constant_new(p,n,s,loc)
 #define NEW_RB_CLASS_VARIABLE_WRITE(v,val,loc) (rb_node_t *)rb_new_node_class_variable_write_new(p,v,val,loc)
+#define NEW_RB_MATCH_WRITE(c,ts,loc) (rb_node_t *)rb_new_node_match_write_new(p,c,ts,loc)
 #define NEW_LTARGET(v,loc) (rb_node_t *)rb_new_node_local_variable_target_new(p,v,loc)
 #define NEW_RB_GLOBAL_VARIABLE_TARGET(v,loc) (rb_node_t *)rb_new_node_global_variable_target_new(p,v,loc)
 #define NEW_RB_INSTANCE_VARIABLE_TARGET(v,loc) (rb_node_t *)rb_new_node_instance_variable_target_new(p,v,loc)
@@ -1769,6 +1771,7 @@ static NODE *last_arg_append(struct parser_params *p, NODE *args, NODE *last_arg
 static NODE *rest_arg_append(struct parser_params *p, NODE *args, NODE *rest_arg, const YYLTYPE *loc);
 
 static void rb_node_list_move(rb_node_list2_t *dest, rb_node_list2_t *src);
+static void rb_node_list_init_with_src(rb_node_list2_t *dest, rb_node_list2_t *src);
 static void rb_node_list_replace(rb_node_list2_t *dest, rb_node_list2_t *src);
 static rb_arguments_node_t *arg_append2(struct parser_params *p, rb_arguments_node_t *args, rb_node_t *node, const YYLTYPE *loc);
 static rb_node_t *node_array_append(struct parser_params *p, rb_array_node_t *nd_ary, rb_node_t *node, const YYLTYPE *loc);
@@ -1858,7 +1861,7 @@ static rb_node_t *new_xstring(struct parser_params *p, rb_node_t *node, const YY
 
 static NODE *symbol_append(struct parser_params *p, NODE *symbols, NODE *symbol);
 
-static NODE *match_op(struct parser_params*,NODE*,NODE*,const YYLTYPE*,const YYLTYPE*);
+static rb_node_t *match_op(struct parser_params*,rb_node_t*,rb_node_t*,const YYLTYPE*,const YYLTYPE*);
 
 static rb_ast_id_table_t *local_tbl(struct parser_params*);
 
@@ -13047,9 +13050,9 @@ static rb_multi_write_node_t *
 rb_new_node_multi_write_new(struct parser_params *p, rb_array_node_t *lefts, rb_node_t *rest, rb_array_node_t *rights, const YYLTYPE *loc)
 {
     rb_multi_write_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_MULTI_WRITE_NODE, rb_multi_write_node_t, loc);
-    lefts ? rb_node_list_move(&n->lefts, &lefts->elements) : rb_node_list_init(&n->lefts);
+    lefts ? rb_node_list_init_with_src(&n->lefts, &lefts->elements) : rb_node_list_init(&n->lefts);
     n->rest = rest;
-    rights ? rb_node_list_move(&n->rights, &rights->elements) : rb_node_list_init(&n->rights);
+    rights ? rb_node_list_init_with_src(&n->rights, &rights->elements) : rb_node_list_init(&n->rights);
     n->value = NULL;
     n->lparen_loc = NULL_LOC;
     n->rparen_loc = NULL_LOC;
@@ -13152,6 +13155,16 @@ rb_new_node_class_variable_write_new(struct parser_params *p, ID nd_vid, rb_node
     return n;
 }
 
+static rb_match_write_node_t *
+rb_new_node_match_write_new(struct parser_params *p, rb_call_node_t *nd_call, rb_array_node_t *nd_ary, const YYLTYPE *loc)
+{
+    rb_match_write_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_MATCH_WRITE_NODE, rb_match_write_node_t, loc);
+    n->call = nd_call;
+    rb_node_list_init_with_src(&n->targets, &nd_ary->elements);
+
+    return n;
+}
+
 static rb_local_variable_target_node_t *
 rb_new_node_local_variable_target_new(struct parser_params *p, ID nd_vid, const YYLTYPE *loc)
 {
@@ -13238,9 +13251,9 @@ static rb_multi_target_node_t *
 rb_new_node_multi_target_new(struct parser_params *p, rb_array_node_t *lefts, rb_node_t *rest, rb_array_node_t *rights, const YYLTYPE *loc)
 {
     rb_multi_target_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_MULTI_TARGET_NODE, rb_multi_target_node_t, loc);
-    lefts ? rb_node_list_move(&n->lefts, &lefts->elements) : rb_node_list_init(&n->lefts);
+    lefts ? rb_node_list_init_with_src(&n->lefts, &lefts->elements) : rb_node_list_init(&n->lefts);
     n->rest = rest;
-    rights ? rb_node_list_move(&n->rights, &rights->elements) : rb_node_list_init(&n->rights);
+    rights ? rb_node_list_init_with_src(&n->rights, &rights->elements) : rb_node_list_init(&n->rights);
     n->lparen_loc = NULL_LOC;
     n->rparen_loc = NULL_LOC;
 
@@ -14782,49 +14795,29 @@ last_expr_once_body(NODE *node)
     return nd_once_body(node);
 }
 
-static NODE*
-match_op(struct parser_params *p, NODE *node1, NODE *node2, const YYLTYPE *op_loc, const YYLTYPE *loc)
+static rb_node_t*
+match_op(struct parser_params *p, rb_node_t *node1, rb_node_t *node2, const YYLTYPE *op_loc, const YYLTYPE *loc)
 {
-    NODE *n;
+    rb_node_t *n;
     int line = op_loc->beg_pos.lineno;
 
     value_expr(p, node1);
     value_expr(p, node2);
 
-    if ((n = last_expr_once_body(node1)) != 0) {
-        switch (nd_type(n)) {
-          case NODE_DREGX:
-            {
-                NODE *match = NEW_MATCH2(node1, node2, loc);
-                nd_set_line(match, line);
-                return match;
-            }
-
-          case NODE_REGX:
-            {
-                const VALUE lit = rb_node_regx_string_val(n);
-                if (!NIL_P(lit)) {
-                    NODE *match = NEW_MATCH2(node1, node2, loc);
-                    RNODE_MATCH2(match)->nd_args = reg_named_capture_assign(p, lit, loc, assignable);
-                    nd_set_line(match, line);
-                    return match;
-                }
-            }
-        }
-    }
-
-    if ((n = last_expr_once_body(node2)) != 0) {
-        NODE *match3;
-
-        switch (nd_type(n)) {
-          case NODE_DREGX:
-            match3 = NEW_MATCH3(node2, node1, loc);
-            return match3;
-        }
-    }
-
-    n = NEW_CALL(node1, tMATCH, NEW_LIST(node2, &node2->nd_loc), loc);
+    n = NEW_RB_CALL(node1, tMATCH, NEW_RB_ARGUMENTS(node2, &node2->location), 0, loc);
     nd_set_line(n, line);
+
+    if (RB_NODE_TYPE_P(node1, RB_REGULAR_EXPRESSION_NODE)) {
+        const VALUE lit = rb_node_regx_string_val2(node1);
+        if (!NIL_P(lit)) {
+            rb_array_node_t *nd_ary = reg_named_capture_assign(p, lit, loc, assignable);
+            if (nd_ary) {
+                n = NEW_RB_MATCH_WRITE((rb_call_node_t *)n, nd_ary, loc);
+                nd_set_line(n, line);
+            }
+        }
+    }
+
     return n;
 }
 
@@ -15754,6 +15747,13 @@ rb_node_list_move(rb_node_list2_t *dest, rb_node_list2_t *src)
 }
 
 static void
+rb_node_list_init_with_src(rb_node_list2_t *dest, rb_node_list2_t *src)
+{
+    rb_node_list_init(dest);
+    rb_node_list_move(dest, src);
+}
+
+static void
 rb_node_list_replace(rb_node_list2_t *dest, rb_node_list2_t *src)
 {
     rb_node_list_free(dest);
@@ -15763,10 +15763,12 @@ rb_node_list_replace(rb_node_list2_t *dest, rb_node_list2_t *src)
 static rb_node_t *
 node_array_append(struct parser_params *p, rb_array_node_t *nd_ary, rb_node_t *node, const YYLTYPE *loc)
 {
+    if (nd_ary == 0) return NEW_RB_ARRAY(node, loc);
+
     rb_node_list_append(&nd_ary->elements, node);
     rb_nd_set_loc(nd_ary, loc);
 
-    return nd_ary;
+    return (rb_node_t *)nd_ary;
 }
 
 static NODE *
@@ -17599,7 +17601,7 @@ reg_fragment_setenc(struct parser_params* p, rb_parser_string_t *str, int option
 typedef struct {
     struct parser_params* parser;
     rb_encoding *enc;
-    NODE *succ_block;
+    rb_node_t *succ_block;
     const YYLTYPE *loc;
     rb_parser_assignable_func assignable;
 } reg_named_capture_assign_t;
@@ -17617,7 +17619,7 @@ reg_named_capture_assign_iter(const OnigUChar *name, const OnigUChar *name_end,
     return rb_reg_named_capture_assign_iter_impl(p, s, len, enc, &arg->succ_block, arg->loc, arg->assignable);
 }
 
-static NODE *
+static rb_array_node_t *
 reg_named_capture_assign(struct parser_params* p, VALUE regexp, const YYLTYPE *loc, rb_parser_assignable_func assignable)
 {
     reg_named_capture_assign_t arg;
@@ -17630,7 +17632,7 @@ reg_named_capture_assign(struct parser_params* p, VALUE regexp, const YYLTYPE *l
     onig_foreach_name(RREGEXP_PTR(regexp), reg_named_capture_assign_iter, &arg);
 
     if (!arg.succ_block) return 0;
-    return RNODE_BLOCK(arg.succ_block)->nd_next;
+    return arg.succ_block;
 }
 #endif
 
@@ -17656,10 +17658,10 @@ rb_reg_named_capture_assign_iter_impl(struct parser_params *p, const char *s, lo
     if (len < MAX_WORD_LENGTH && rb_reserved_word(s, (int)len)) {
         if (!lvar_defined(p, var)) return ST_CONTINUE;
     }
-    node = node_assign(p, assignable(p, var, 0, loc), NEW_RB_SYMBOL(rb_str_to_parser_string(p, rb_id2str(var)), loc, &NULL_LOC, loc, &NULL_LOC), NO_LEX_CTXT, loc);
+    node = assignable_target(p, var, loc);
     succ = *succ_block;
     if (!succ) succ = NEW_ERROR(loc);
-    succ = block_append(p, succ, node);
+    succ = node_array_append(p, succ, node, loc);
     *succ_block = succ;
     return ST_CONTINUE;
 }
