@@ -219,40 +219,40 @@ class TestRactor < Test::Unit::TestCase
         @unshareable = -> {}
       end
     end.new
-    assert_unshareable(obj, /from instance variable @unshareable of an instance of #<Class:/)
+    assert_unshareable(obj, detailed_message: /from instance variable @unshareable of an instance of #<Class:/)
   end
 
   def test_error_includes_array_index
-    assert_unshareable([0, -> {}], /from Array element at index 1/)
+    assert_unshareable([0, -> {}], detailed_message: /from Array element at index 1/)
   end
 
   def test_error_includes_hash_key_and_value
-    assert_unshareable({ unshareable: -> {} }, /from Hash value at key :unshareable/)
+    assert_unshareable({ unshareable: -> {} }, detailed_message: /from Hash value at key :unshareable/)
   end
 
   def test_error_includes_hash_unshareable_key
-    assert_unshareable({ -> {} => true }, /from Hash key #<Proc:0x[[:xdigit:]]+ #{__FILE__}:#{__LINE__}/)
+    assert_unshareable({ -> {} => true }, detailed_message: /from Hash key #<Proc:0x[[:xdigit:]]+ #{__FILE__}:#{__LINE__}/)
   end
 
   def test_error_includes_hash_default_proc
     h = Hash.new {}
-    assert_unshareable(h, /from Hash default proc/)
+    assert_unshareable(h, detailed_message: /from Hash default proc/)
   end
 
   def test_error_includes_hash_default_value
     h = Hash.new(Mutex.new)
-    assert_unshareable(h, /from Hash default value/, exception: Ractor::Error)
+    assert_unshareable(h, detailed_message: /from Hash default value/, exception: Ractor::Error)
   end
 
   S = Struct.new(:member)
   def test_error_includes_struct_member
     s = S.new(-> {})
-    assert_unshareable(s, /from member :member of an instance of TestRactor::S/)
+    assert_unshareable(s, detailed_message: /from member :member of an instance of TestRactor::S/)
   end
 
   def test_error_includes_block_self
     pr = -> {}
-    assert_unshareable(pr, /from block's self \(an instance of #{self.class.name}\)/)
+    assert_unshareable(pr, detailed_message: /from block's self \(an instance of #{self.class.name}\)/)
   end
 
   def test_error_wraps_freeze_error
@@ -278,7 +278,7 @@ class TestRactor < Test::Unit::TestCase
         $!
       end.value
       assert_kind_of Ractor::IsolationError, e
-      assert_match(/from Hash default proc/, e.message)
+      assert_match(/from Hash default proc/, e.detailed_message)
     RUBY
   end
 
@@ -294,7 +294,7 @@ class TestRactor < Test::Unit::TestCase
         $!
       end.value
       assert_kind_of(Ractor::IsolationError, e)
-      assert_match(/from Hash default proc/, e.message)
+      assert_match(/from Hash default proc/, e.detailed_message)
     RUBY
   end
 
@@ -304,11 +304,12 @@ class TestRactor < Test::Unit::TestCase
     assert Ractor.shareable?(obj), "object didn't become shareable"
   end
 
-  def assert_unshareable(obj, msg=nil, exception: Ractor::IsolationError)
+  def assert_unshareable(obj, msg=//, detailed_message: nil, exception: Ractor::IsolationError)
     refute Ractor.shareable?(obj), "object is already shareable"
     e = assert_raise_with_message(exception, msg) do
       Ractor.make_shareable(obj)
     end
+    assert_match(detailed_message, e.detailed_message) if detailed_message
     refute Ractor.shareable?(obj), "despite raising, object became shareable"
     e
   end

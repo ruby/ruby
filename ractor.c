@@ -32,6 +32,8 @@ static VALUE rb_eRactorMovedError;
 static VALUE rb_eRactorClosedError;
 static VALUE rb_cRactorMovedObject;
 
+static ID id_reference_chain;
+
 static void vm_ractor_blocking_cnt_inc(rb_vm_t *vm, rb_ractor_t *r, const char *file, int line);
 
 
@@ -1039,13 +1041,37 @@ ractor_moved_missing(int argc, VALUE *argv, VALUE self)
  *
  */
 
+/*
+ * call-seq:
+ *   detailed_message(highlight: false, **kwargs) -> string
+ *
+ * Returns the message string with the reference chain appended.
+ */
+static VALUE
+ractor_error_detailed_message(int argc, VALUE *argv, VALUE exc)
+{
+    // Call super to get the base detailed_message
+    VALUE base_message = rb_call_super_kw(argc, argv, RB_PASS_CALLED_KEYWORDS);
+
+    VALUE chain = rb_attr_get(exc, id_reference_chain);
+    if (NIL_P(chain)) {
+        return base_message;
+    }
+
+    return rb_sprintf("%"PRIsVALUE"%"PRIsVALUE, base_message, chain);
+}
+
 void
 Init_Ractor(void)
 {
     rb_cRactor = rb_define_class("Ractor", rb_cObject);
     rb_undef_alloc_func(rb_cRactor);
 
+    id_reference_chain = rb_intern_const("reference_chain");
+
     rb_eRactorError          = rb_define_class_under(rb_cRactor, "Error", rb_eRuntimeError);
+    rb_define_method(rb_eRactorError, "detailed_message", ractor_error_detailed_message, -1);
+
     rb_eRactorIsolationError = rb_define_class_under(rb_cRactor, "IsolationError", rb_eRactorError);
     rb_eRactorRemoteError    = rb_define_class_under(rb_cRactor, "RemoteError", rb_eRactorError);
     rb_eRactorMovedError     = rb_define_class_under(rb_cRactor, "MovedError",  rb_eRactorError);
@@ -1631,13 +1657,16 @@ rb_ractor_make_shareable(VALUE obj)
     VALUE exception = Qfalse;
     if (rb_obj_traverse(obj, make_shareable_check_shareable, null_leave, mark_shareable, &chain, &exception)) {
         if (exception) {
-            VALUE id_mesg = rb_intern("mesg");
-            VALUE message = rb_attr_get(exception, id_mesg);
-            message = rb_sprintf("%"PRIsVALUE"%"PRIsVALUE, message, chain);
-            rb_ivar_set(exception, id_mesg, message);
+            if (!NIL_P(chain)) {
+                rb_ivar_set(exception, id_reference_chain, chain);
+            }
             rb_exc_raise(exception);
         }
-        rb_raise(rb_eRactorError, "can not make shareable object for %+"PRIsVALUE"%"PRIsVALUE, obj, chain);
+        exception = rb_exc_new3(rb_eRactorError, rb_sprintf("can not make shareable object for %+"PRIsVALUE, obj));
+        if (!NIL_P(chain)) {
+            rb_ivar_set(exception, id_reference_chain, chain);
+        }
+        rb_exc_raise(exception);
     }
     RB_GC_GUARD(chain);
     RB_GC_GUARD(exception);
@@ -1668,6 +1697,23 @@ rb_ractor_ensure_main_ractor(const char *msg)
     if (!rb_ractor_main_p()) {
         rb_raise(rb_eRactorIsolationError, "%s", msg);
     }
+}
+
+NORETURN(void rb_ractor_raise_isolation_error_with_chain(VALUE klass, VALUE chain, const char *fmt, ...));
+
+void
+rb_ractor_raise_isolation_error_with_chain(VALUE klass, VALUE chain, const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    VALUE message = rb_vsprintf(fmt, args);
+    va_end(args);
+
+    VALUE exception = rb_exc_new_str(klass, message);
+    if (!NIL_P(chain)) {
+        rb_ivar_set(exception, id_reference_chain, chain);
+    }
+    rb_exc_raise(exception);
 }
 
 static enum obj_traverse_iterator_result

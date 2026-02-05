@@ -1006,7 +1006,7 @@ output
   begin
     Ractor.make_shareable(Bar.new(Foo.new))
   rescue Ractor::Error
-    $!.to_s.lines[1..].join
+    $!.detailed_message.lines[1..].join
   end
 }
 

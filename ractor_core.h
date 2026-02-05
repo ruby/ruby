@@ -151,6 +151,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 void rb_ractor_finish_marking(void);
 
 bool rb_ractor_shareable_p_continue(VALUE obj, VALUE *chain);
+NORETURN(void rb_ractor_raise_isolation_error_with_chain(VALUE klass, VALUE chain, const char *fmt, ...));
 
 // THIS FUNCTION SHOULD NOT CALL WHILE INCREMENTAL MARKING!!
 // This function is for T_DATA::free_func
