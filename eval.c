@@ -368,24 +368,25 @@ rb_mod_nesting(VALUE _)
 
 /*
  *  call-seq:
- *     Module.constants   -> array
- *     Module.constants(inherited)   -> array
+ *     Module.constants -> array
+ *     Module.constants(inherited) -> array
  *
- *  In the first form, returns an array of the names of all
- *  constants accessible from the point of call.
+ *  When no argument is provided, returns the names of all constants
+ *  accessible from the point of call as an array of symbols.
  *  This list includes the names of all modules and classes
  *  defined in the global scope.
  *
- *     Module.constants.first(4)
- *        # => [:ARGF, :ARGV, :ArgumentError, :Array]
+ *    class Foo
+ *      HELLO = 1
  *
- *     Module.constants.include?(:SEEK_SET)   # => false
+ *      def self.my_constants = Module.constants
+ *    end
  *
- *     class IO
- *       Module.constants.include?(:SEEK_SET) # => true
- *     end
+ *    Foo.my_constants - Module.constants # => [:HELLO]
  *
- *  The second form calls the instance method +constants+.
+ *  With argument +inherited+ given, it is equivalent to calling
+ *  Module#constants on the class +Module+. See Module#constants
+ *  for more details.
  */
 
 static VALUE
