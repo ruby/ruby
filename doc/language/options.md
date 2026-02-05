@@ -391,7 +391,7 @@ the option may be given more than once:
 $ ruby -e 'p defined?(JSON); p defined?(CSV)'
 nil
 nil
-$ ruby -r CSV -r JSON -e 'p defined?(JSON); p defined?(CSV)'
+$ ruby -r csv -r json -e 'p defined?(JSON); p defined?(CSV)'
 "constant"
 "constant"
 ```
@@ -685,4 +685,3 @@ and disables input from `$stdin`.
 ### `--version`: Print Ruby Version
 
 Option `--version` prints the version of the Ruby interpreter, then exits.
-
