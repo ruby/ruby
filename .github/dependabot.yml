@@ -13,9 +13,15 @@ updates:
     schedule:
       interval: 'daily'
   - package-ecosystem: 'cargo'
-    directory: '/yjit'
+    directories:
+      - '/yjit'
+      - '/zjit'
     schedule:
       interval: 'daily'
+    groups:
+      jit:
+        patterns:
+          - "*"
   - package-ecosystem: 'vcpkg'
     directory: '/'
     schedule:
