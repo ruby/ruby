@@ -186,6 +186,9 @@ static inline void Check_Type(VALUE v, enum ruby_value_type t);
 static inline bool rb_typeddata_is_instance_of_inline(VALUE obj, const rb_data_type_t *data_type);
 #define rb_typeddata_is_instance_of rb_typeddata_is_instance_of_inline
 void rb_bug_without_die(const char *fmt, ...);
+NORETURN(void rb_no_implicit_conversion(VALUE val, const char *tname));
+NORETURN(void rb_cant_convert(VALUE val, const char *tname));
+NORETURN(void rb_cant_convert_invalid_return(VALUE val, const char *tname, const char *method_name, VALUE ret));
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* error.c (export) */

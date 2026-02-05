@@ -90,11 +90,11 @@ describe :sizedqueue_enq, shared: true do
       q = @object.call(1)
       -> {
         q.send(@method, 2, timeout: "1")
-      }.should raise_error(TypeError, "no implicit conversion to float from string")
+      }.should raise_consistent_error(TypeError, "no implicit conversion of String into Float")
 
       -> {
         q.send(@method, 2, timeout: false)
-      }.should raise_error(TypeError, "no implicit conversion to float from false")
+      }.should raise_consistent_error(TypeError, "no implicit conversion of false into Float")
     end
 
     it "raise ArgumentError if non_block = true is passed too" do

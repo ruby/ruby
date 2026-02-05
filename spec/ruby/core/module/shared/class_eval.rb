@@ -66,7 +66,7 @@ describe :module_class_eval, shared: true do
 
   it "raises a TypeError when the given filename can't be converted to string using to_str" do
     (file = mock('123')).should_receive(:to_str).and_return(123)
-    -> { ModuleSpecs.send(@method, "1+1", file) }.should raise_error(TypeError, /can't convert MockObject to String/)
+    -> { ModuleSpecs.send(@method, "1+1", file) }.should raise_consistent_error(TypeError, /can't convert MockObject into String/)
   end
 
   it "converts non string eval-string to string using to_str" do
@@ -85,7 +85,7 @@ describe :module_class_eval, shared: true do
     -> { ModuleSpecs.send(@method, o) }.should raise_error(TypeError, "no implicit conversion of MockObject into String")
 
     (o = mock('123')).should_receive(:to_str).and_return(123)
-    -> { ModuleSpecs.send(@method, o) }.should raise_error(TypeError, /can't convert MockObject to String/)
+    -> { ModuleSpecs.send(@method, o) }.should raise_consistent_error(TypeError, /can't convert MockObject into String/)
   end
 
   it "raises an ArgumentError when no arguments and no block are given" do

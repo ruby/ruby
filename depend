@@ -1892,6 +1892,7 @@ complex.$(OBJEXT): $(top_srcdir)/internal/box.h
 complex.$(OBJEXT): $(top_srcdir)/internal/class.h
 complex.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 complex.$(OBJEXT): $(top_srcdir)/internal/complex.h
+complex.$(OBJEXT): $(top_srcdir)/internal/error.h
 complex.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 complex.$(OBJEXT): $(top_srcdir)/internal/gc.h
 complex.$(OBJEXT): $(top_srcdir)/internal/imemo.h
@@ -9963,6 +9964,7 @@ numeric.$(OBJEXT): $(top_srcdir)/internal/class.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/complex.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/enumerator.h
+numeric.$(OBJEXT): $(top_srcdir)/internal/error.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/gc.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/hash.h
@@ -13221,6 +13223,7 @@ rational.$(OBJEXT): $(top_srcdir)/internal/box.h
 rational.$(OBJEXT): $(top_srcdir)/internal/class.h
 rational.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 rational.$(OBJEXT): $(top_srcdir)/internal/complex.h
+rational.$(OBJEXT): $(top_srcdir)/internal/error.h
 rational.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 rational.$(OBJEXT): $(top_srcdir)/internal/gc.h
 rational.$(OBJEXT): $(top_srcdir)/internal/imemo.h
@@ -13231,6 +13234,7 @@ rational.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 rational.$(OBJEXT): $(top_srcdir)/internal/serial.h
 rational.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 rational.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+rational.$(OBJEXT): $(top_srcdir)/internal/string.h
 rational.$(OBJEXT): $(top_srcdir)/internal/variable.h
 rational.$(OBJEXT): $(top_srcdir)/internal/vm.h
 rational.$(OBJEXT): $(top_srcdir)/internal/warnings.h
@@ -13248,6 +13252,7 @@ rational.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 rational.$(OBJEXT): {$(VPATH)}config.h
 rational.$(OBJEXT): {$(VPATH)}constant.h
 rational.$(OBJEXT): {$(VPATH)}defines.h
+rational.$(OBJEXT): {$(VPATH)}encindex.h
 rational.$(OBJEXT): {$(VPATH)}encoding.h
 rational.$(OBJEXT): {$(VPATH)}id.h
 rational.$(OBJEXT): {$(VPATH)}id_table.h
@@ -17669,6 +17674,7 @@ time.$(OBJEXT): $(top_srcdir)/internal/bits.h
 time.$(OBJEXT): $(top_srcdir)/internal/box.h
 time.$(OBJEXT): $(top_srcdir)/internal/compar.h
 time.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+time.$(OBJEXT): $(top_srcdir)/internal/error.h
 time.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 time.$(OBJEXT): $(top_srcdir)/internal/gc.h
 time.$(OBJEXT): $(top_srcdir)/internal/hash.h

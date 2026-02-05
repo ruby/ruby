@@ -29,7 +29,7 @@ describe "Integer.try_convert" do
     obj.should_receive(:to_int).and_return(Object.new)
     -> {
       Integer.try_convert obj
-    }.should raise_error(TypeError, "can't convert MockObject to Integer (MockObject#to_int gives Object)")
+    }.should raise_consistent_error(TypeError, "can't convert MockObject into Integer (MockObject#to_int gives Object)")
   end
 
   it "responds with a different error message when it raises a TypeError, depending on the type of the non-Integer object :to_int returns" do
@@ -37,7 +37,7 @@ describe "Integer.try_convert" do
     obj.should_receive(:to_int).and_return("A String")
     -> {
       Integer.try_convert obj
-    }.should raise_error(TypeError, "can't convert MockObject to Integer (MockObject#to_int gives String)")
+    }.should raise_consistent_error(TypeError, "can't convert MockObject into Integer (MockObject#to_int gives String)")
   end
 
   it "does not rescue exceptions raised by #to_int" do

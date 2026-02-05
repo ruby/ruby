@@ -75,7 +75,7 @@ describe "Process.detach" do
       pid = MockObject.new('mock-enumerable')
       pid.should_receive(:to_int).and_return(:symbol)
 
-      -> { Process.detach(pid) }.should raise_error(TypeError, "can't convert MockObject to Integer (MockObject#to_int gives Symbol)")
+      -> { Process.detach(pid) }.should raise_consistent_error(TypeError, "can't convert MockObject into Integer (MockObject#to_int gives Symbol)")
     end
   end
 end
