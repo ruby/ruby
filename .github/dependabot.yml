@@ -1,17 +1,16 @@
 version: 2
 updates:
   - package-ecosystem: 'github-actions'
-    directory: '/'
+    directories:
+      - '/'
+      - '/.github/actions/slack'
+      - '/.github/actions/setup/directories'
     schedule:
       interval: 'daily'
-  - package-ecosystem: 'github-actions'
-    directory: '/.github/actions/slack'
-    schedule:
-      interval: 'daily'
-  - package-ecosystem: 'github-actions'
-    directory: '/.github/actions/setup/directories'
-    schedule:
-      interval: 'daily'
+    groups:
+      github-actions:
+        patterns:
+          - "*"
   - package-ecosystem: 'cargo'
     directories:
       - '/yjit'
