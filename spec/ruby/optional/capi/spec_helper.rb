@@ -89,6 +89,12 @@ def compile_extension(name)
           $ruby = ENV.values_at('RUBY_EXE', 'RUBY_FLAGS').join(' ')
           # MRI magic to consider building non-bundled extensions
           $extout = nil
+          if RbConfig::CONFIG.key?("buildlibdir") # The top directory where the libruby is built.
+            # Prepend the dummy macro to bypass the conversion in `with_destdir` on DOSISH
+            # platforms, where the drive letter is replaced with `$(DESTDIR)`.  `DESTDIR` is
+            # overridden by the command line argument bellow.
+            RbConfig::MAKEFILE_CONFIG["buildlibdir"] = "$(empty)" + RbConfig::CONFIG["buildlibdir"]
+          end
           append_cflags '-Wno-declaration-after-statement'
           #{"append_cflags #{ruby_repository_extra_include_dir.inspect}" if ruby_repository_extra_include_dir}
           create_makefile(#{ext.inspect})
@@ -117,7 +123,7 @@ end
 def setup_make
   make = ENV['MAKE']
   make ||= (RbConfig::CONFIG['host_os'].include?("mswin") ? "nmake" : "make")
-  env = %w[MFLAGS MAKEFLAGS GNUMAKEFLAGS].to_h {|var| [env, ENV[var]]}
+  env = %w[MFLAGS MAKEFLAGS GNUMAKEFLAGS].to_h {|var| [var, ENV[var]]}
   make_flags = env["MAKEFLAGS"] || ''
 
   # suppress logo of nmake.exe to stderr
