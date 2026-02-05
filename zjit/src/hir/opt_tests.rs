@@ -721,11 +721,12 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(C@0x1000, !=@0x1008, cme:0x1010)
           v27:HeapObject[class_exact:C] = GuardType v11, HeapObject[class_exact:C]
           PatchPoint MethodRedefined(C@0x1000, ==@0x1038, cme:0x1040)
-          v30:CBool = IsBitNotEqual v27, v12
-          v31:BoolExact = BoxBool v30
+          PatchPoint NoSingletonClass(C@0x1000)
+          v31:CBool = IsBitNotEqual v27, v12
+          v32:BoolExact = BoxBool v31
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v31
+          Return v32
         ");
     }
 
