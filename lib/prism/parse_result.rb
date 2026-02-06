@@ -163,7 +163,7 @@ module Prism
 
     # Binary search through the offsets to find the line number for the given
     # byte offset.
-    def find_line(byte_offset)
+    def find_line(byte_offset) # :nodoc:
       index = offsets.bsearch_index { |offset| offset > byte_offset } || offsets.length
       index - 1
     end
@@ -350,7 +350,7 @@ module Prism
     end
 
     # Returns a string representation of this location.
-    def inspect
+    def inspect # :nodoc:
       "#<Prism::Location @start_offset=#{@start_offset} @length=#{@length} start_line=#{start_line}>"
     end
 
@@ -477,12 +477,12 @@ module Prism
     end
 
     # Implement the hash pattern matching interface for Location.
-    def deconstruct_keys(keys)
+    def deconstruct_keys(keys) # :nodoc:
       { start_offset: start_offset, end_offset: end_offset }
     end
 
     # Implement the pretty print interface for Location.
-    def pretty_print(q)
+    def pretty_print(q) # :nodoc:
       q.text("(#{start_line},#{start_column})-(#{end_line},#{end_column})")
     end
 
@@ -528,7 +528,7 @@ module Prism
     end
 
     # Implement the hash pattern matching interface for Comment.
-    def deconstruct_keys(keys)
+    def deconstruct_keys(keys) # :nodoc:
       { location: location }
     end
 
@@ -548,7 +548,7 @@ module Prism
     end
 
     # Returns a string representation of this comment.
-    def inspect
+    def inspect # :nodoc:
       "#<Prism::InlineComment @location=#{location.inspect}>"
     end
   end
@@ -562,7 +562,7 @@ module Prism
     end
 
     # Returns a string representation of this comment.
-    def inspect
+    def inspect # :nodoc:
       "#<Prism::EmbDocComment @location=#{location.inspect}>"
     end
   end
@@ -592,12 +592,12 @@ module Prism
     end
 
     # Implement the hash pattern matching interface for MagicComment.
-    def deconstruct_keys(keys)
+    def deconstruct_keys(keys) # :nodoc:
       { key_loc: key_loc, value_loc: value_loc }
     end
 
     # Returns a string representation of this magic comment.
-    def inspect
+    def inspect # :nodoc:
       "#<Prism::MagicComment @key=#{key.inspect} @value=#{value.inspect}>"
     end
   end
@@ -626,12 +626,12 @@ module Prism
     end
 
     # Implement the hash pattern matching interface for ParseError.
-    def deconstruct_keys(keys)
+    def deconstruct_keys(keys) # :nodoc:
       { type: type, message: message, location: location, level: level }
     end
 
     # Returns a string representation of this error.
-    def inspect
+    def inspect # :nodoc:
       "#<Prism::ParseError @type=#{@type.inspect} @message=#{@message.inspect} @location=#{@location.inspect} @level=#{@level.inspect}>"
     end
   end
@@ -660,12 +660,12 @@ module Prism
     end
 
     # Implement the hash pattern matching interface for ParseWarning.
-    def deconstruct_keys(keys)
+    def deconstruct_keys(keys) # :nodoc:
       { type: type, message: message, location: location, level: level }
     end
 
     # Returns a string representation of this warning.
-    def inspect
+    def inspect # :nodoc:
       "#<Prism::ParseWarning @type=#{@type.inspect} @message=#{@message.inspect} @location=#{@location.inspect} @level=#{@level.inspect}>"
     end
   end
@@ -705,7 +705,7 @@ module Prism
     end
 
     # Implement the hash pattern matching interface for Result.
-    def deconstruct_keys(keys)
+    def deconstruct_keys(keys) # :nodoc:
       { comments: comments, magic_comments: magic_comments, data_loc: data_loc, errors: errors, warnings: warnings }
     end
 
@@ -752,7 +752,7 @@ module Prism
     end
 
     # Implement the hash pattern matching interface for ParseResult.
-    def deconstruct_keys(keys)
+    def deconstruct_keys(keys) # :nodoc:
       super.merge!(value: value)
     end
 
@@ -786,7 +786,7 @@ module Prism
     end
 
     # Implement the hash pattern matching interface for LexResult.
-    def deconstruct_keys(keys)
+    def deconstruct_keys(keys) # :nodoc:
       super.merge!(value: value)
     end
   end
@@ -804,7 +804,7 @@ module Prism
     end
 
     # Implement the hash pattern matching interface for ParseLexResult.
-    def deconstruct_keys(keys)
+    def deconstruct_keys(keys) # :nodoc:
       super.merge!(value: value)
     end
   end
@@ -830,7 +830,7 @@ module Prism
     end
 
     # Implement the hash pattern matching interface for Token.
-    def deconstruct_keys(keys)
+    def deconstruct_keys(keys) # :nodoc:
       { type: type, value: value, location: location }
     end
 
@@ -842,7 +842,7 @@ module Prism
     end
 
     # Implement the pretty print interface for Token.
-    def pretty_print(q)
+    def pretty_print(q) # :nodoc:
       q.group do
         q.text(type.to_s)
         self.location.pretty_print(q)
@@ -864,7 +864,7 @@ module Prism
     end
 
     # Returns a string representation of this token.
-    def inspect
+    def inspect # :nodoc:
       location
       super
     end

@@ -106,8 +106,7 @@ module Prism
     end
     <%- nodes.each do |node| -%>
 
-    # Visit a <%= node.name %> node.
-    def visit_<%= node.human %>(node)
+    def visit_<%= node.human %>(node) # :nodoc:
       table = Table.new("<%= node.name %>")
       id = node_id(node)
       <%- if (node_flags = node.flags) -%>
@@ -165,19 +164,19 @@ module Prism
     private
 
     # Generate a unique node ID for a node throughout the digraph.
-    def node_id(node)
+    def node_id(node) # :nodoc:
       "Node_#{node.object_id}"
     end
 
     # Inspect a location to display the start and end line and columns in bytes.
-    def location_inspect(location)
+    def location_inspect(location) # :nodoc:
       "(#{location.start_line},#{location.start_column})-(#{location.end_line},#{location.end_column})"
     end
     <%- flags.each do |flag| -%>
 
     # Inspect a node that has <%= flag.human %> flags to display the flags as a
     # comma-separated list.
-    def <%= flag.human %>_inspect(node)
+    def <%= flag.human %>_inspect(node) # :nodoc:
       flags = [] #: Array[String]
       <%- flag.values.each do |value| -%>
       flags << "<%= value.name.downcase %>" if node.<%= value.name.downcase %>?

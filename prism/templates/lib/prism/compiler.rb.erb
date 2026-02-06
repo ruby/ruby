@@ -18,24 +18,23 @@ module Prism
   #
   class Compiler < Visitor
     # Visit an individual node.
-    def visit(node)
+    def visit(node) # :nodoc:
       node&.accept(self)
     end
 
     # Visit a list of nodes.
-    def visit_all(nodes)
+    def visit_all(nodes) # :nodoc:
       nodes.map { |node| node&.accept(self) }
     end
 
     # Visit the child nodes of the given node.
-    def visit_child_nodes(node)
+    def visit_child_nodes(node) # :nodoc:
       node.each_child_node.map { |node| node.accept(self) }
     end
 
     <%- nodes.each_with_index do |node, index| -%>
 <%= "\n" if index != 0 -%>
-    # Compile a <%= node.name %> node
-    def visit_<%= node.human %>(node)
+    def visit_<%= node.human %>(node) # :nodoc:
       node.each_child_node.map { |node| node.accept(self) }
     end
     <%- end -%>

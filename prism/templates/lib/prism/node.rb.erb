@@ -161,7 +161,7 @@ module Prism
 
     # Similar to inspect, but respects the current level of indentation given by
     # the pretty print object.
-    def pretty_print(q)
+    def pretty_print(q) # :nodoc:
       q.seplist(inspect.chomp.each_line, -> { q.breakable }) do |line|
         q.text(line.chomp)
       end
@@ -409,8 +409,7 @@ module Prism
     # def deconstruct: () -> Array[Node?]
     alias deconstruct child_nodes
 
-    # def deconstruct_keys: (Array[Symbol] keys) -> { <%= (["node_id: Integer", "location: Location"] + node.fields.map { |field| "#{field.name}: #{field.rbs_class}" }).join(", ") %> }
-    def deconstruct_keys(keys)
+    def deconstruct_keys(keys) # :nodoc:
       { <%= (["node_id: node_id", "location: location"] + node.fields.map { |field| "#{field.name}: #{field.name}" }).join(", ") %> }
     end
     <%- if (node_flags = node.flags) -%>
@@ -487,8 +486,7 @@ module Prism
     <%- end -%>
     <%- end -%>
 
-    # def inspect -> String
-    def inspect
+    def inspect # :nodoc:
       InspectVisitor.compose(self)
     end
 

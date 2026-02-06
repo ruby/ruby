@@ -233,7 +233,7 @@ module Prism
   # The version constant is set by reading the result of calling pm_version.
   VERSION = LibRubyParser.pm_version.read_string.freeze
 
-  class << self
+  class << self # :nodoc:
     # Mirror the Prism.dump API by using the serialization API.
     def dump(source, **options)
       LibRubyParser::PrismString.with_string(source) { |string| dump_common(string, options) }
@@ -554,7 +554,7 @@ module Prism
 
   # Here we are going to patch StringQuery to put in the class-level methods so
   # that it can maintain a consistent interface
-  class StringQuery
+  class StringQuery # :nodoc:
     class << self
       # Mirrors the C extension's StringQuery::local? method.
       def local?(string)
