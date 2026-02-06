@@ -770,16 +770,36 @@ NOINLINE(static) VALUE json_string_unescape(JSON_ParserState *state, JSON_Parser
 }
 
 #define MAX_FAST_INTEGER_SIZE 18
+#define MAX_NUMBER_STACK_BUFFER 128
+
+typedef VALUE (*json_number_decode_func_t)(const char *ptr);
+
+static inline VALUE json_decode_large_number(const char *start, long len, json_number_decode_func_t func)
+{
+    if (RB_LIKELY(len < MAX_NUMBER_STACK_BUFFER)) {
+        char buffer[MAX_NUMBER_STACK_BUFFER];
+        MEMCPY(buffer, start, char, len);
+        buffer[len] = '\0';
+        return func(buffer);
+    } else {
+        VALUE buffer_v = rb_str_tmp_new(len);
+        char *buffer = RSTRING_PTR(buffer_v);
+        MEMCPY(buffer, start, char, len);
+        buffer[len] = '\0';
+        VALUE number = func(buffer);
+        RB_GC_GUARD(buffer_v);
+        return number;
+    }
+}
+
+static VALUE json_decode_inum(const char *buffer)
+{
+    return rb_cstr2inum(buffer, 10);
+}
 
 NOINLINE(static) VALUE json_decode_large_integer(const char *start, long len)
 {
-    VALUE buffer_v;
-    char *buffer = RB_ALLOCV_N(char, buffer_v, len + 1);
-    MEMCPY(buffer, start, char, len);
-    buffer[len] = '\0';
-    VALUE number = rb_cstr2inum(buffer, 10);
-    RB_ALLOCV_END(buffer_v);
-    return number;
+    return json_decode_large_number(start, len, json_decode_inum);
 }
 
 static inline VALUE json_decode_integer(uint64_t mantissa, int mantissa_digits, bool negative, const char *start, const char *end)
@@ -794,22 +814,14 @@ static inline VALUE json_decode_integer(uint64_t mantissa, int mantissa_digits, 
     return json_decode_large_integer(start, end - start);
 }
 
+static VALUE json_decode_dnum(const char *buffer)
+{
+    return DBL2NUM(rb_cstr_to_dbl(buffer, 1));
+}
+
 NOINLINE(static) VALUE json_decode_large_float(const char *start, long len)
 {
-    if (RB_LIKELY(len < 64)) {
-        char buffer[64];
-        MEMCPY(buffer, start, char, len);
-        buffer[len] = '\0';
-        return DBL2NUM(rb_cstr_to_dbl(buffer, 1));
-    }
-
-    VALUE buffer_v;
-    char *buffer = RB_ALLOCV_N(char, buffer_v, len + 1);
-    MEMCPY(buffer, start, char, len);
-    buffer[len] = '\0';
-    VALUE number = DBL2NUM(rb_cstr_to_dbl(buffer, 1));
-    RB_ALLOCV_END(buffer_v);
-    return number;
+    return json_decode_large_number(start, len, json_decode_dnum);
 }
 
 /* Ruby JSON optimized float decoder using vendored Ryu algorithm
