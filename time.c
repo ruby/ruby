@@ -3821,8 +3821,7 @@ time_to_i(VALUE time)
  *  {Epoch seconds}[rdoc-ref:Time@Epoch+Seconds];
  *  subseconds are included.
  *
- *  The stored value of +self+ is a
- *  {Rational}[rdoc-ref:Rational@#method-i-to_f],
+ *  The stored value of +self+ is a Rational,
  *  which means that the returned value may be approximate:
  *
  *    Time.utc(1970, 1, 1, 0, 0, 0).to_f         # => 0.0
