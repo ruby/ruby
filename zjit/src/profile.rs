@@ -378,6 +378,26 @@ impl IseqProfile {
         self.opnd_types.get(insn_idx).map(|v| &**v)
     }
 
+    /// Profile send operands from the stack at runtime.
+    /// `iseq` is the ISEQ to write-barrier against.
+    /// `insn_idx` is the YARV instruction index.
+    /// `sp` is the current stack pointer (after the args and receiver).
+    /// `argc` is the number of arguments (not counting receiver).
+    /// This profiles all args + receiver (argc + 1 operands).
+    pub fn profile_send_at(&mut self, iseq: IseqPtr, insn_idx: usize, sp: *const VALUE, argc: usize) {
+        let n = argc + 1; // args + receiver
+        let types = &mut self.opnd_types[insn_idx];
+        if types.is_empty() {
+            types.resize(n, TypeDistribution::new());
+        }
+        for i in 0..n {
+            let obj = unsafe { *sp.offset(-1 - (n - i - 1) as isize) };
+            let ty = ProfiledType::new(obj);
+            VALUE::from(iseq).write_barrier(ty.class());
+            types[i].observe(ty);
+        }
+    }
+
     pub fn get_super_method_entry(&self, insn_idx: usize) -> Option<*const rb_callable_method_entry_t> {
         let Some(entry) = self.super_cme.get(&insn_idx) else { return None };
         let summary = TypeDistributionSummary::new(entry);
