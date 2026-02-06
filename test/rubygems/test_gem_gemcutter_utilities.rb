@@ -150,7 +150,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
 
     util_sign_in
 
-    assert_equal "", @sign_in_ui.output
+    assert_match(/You are already signed in/, @sign_in_ui.output)
   end
 
   def test_sign_in_skips_with_key_override
@@ -158,7 +158,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
     @cmd.options[:key] = :KEY
     util_sign_in
 
-    assert_equal "", @sign_in_ui.output
+    assert_match(/You are already signed in/, @sign_in_ui.output)
   end
 
   def test_sign_in_with_other_credentials_doesnt_overwrite_other_keys
