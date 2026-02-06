@@ -9,7 +9,7 @@ use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_
 use crate::hir::{Invariant, SideExitReason};
 use crate::hir;
 use crate::options::{TraceExits, debug, get_option};
-use crate::cruby::VALUE;
+use crate::cruby::{Iseq, VALUE};
 use crate::payload::IseqVersionRef;
 use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, side_exit_counter, CompileError};
 use crate::virtualmem::CodePtr;
@@ -410,6 +410,21 @@ impl From<u32> for Opnd {
 impl From<VALUE> for Opnd {
     fn from(value: VALUE) -> Self {
         Opnd::Value(value)
+    }
+}
+
+impl From<Iseq> for Opnd {
+    fn from(iseq: Iseq) -> Self {
+        VALUE::from(iseq).into()
+    }
+}
+
+impl From<Option<Iseq>> for Opnd {
+    fn from(opt: Option<Iseq>) -> Self {
+        match opt {
+            Some(iseq) => iseq.into(),
+            None => Opnd::const_ptr::<VALUE>(std::ptr::null()),
+        }
     }
 }
 

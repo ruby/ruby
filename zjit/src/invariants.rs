@@ -132,7 +132,7 @@ impl Invariants {
     fn update_ep_escape_iseqs(&mut self) {
         let updated = std::mem::take(&mut self.ep_escape_iseqs)
             .into_iter()
-            .map(|iseq| unsafe { rb_gc_location(iseq.into()) }.as_iseq())
+            .map(|iseq| unsafe { rb_gc_location(iseq.into()) }.as_iseq_ptr())
             .collect();
         self.ep_escape_iseqs = updated;
     }
@@ -143,7 +143,7 @@ impl Invariants {
             .into_iter()
             .map(|(iseq, patch_points)| {
                 let new_iseq = unsafe { rb_gc_location(iseq.into()) };
-                (new_iseq.as_iseq(), patch_points)
+                (new_iseq.as_iseq_ptr(), patch_points)
             })
             .collect();
         self.no_ep_escape_iseq_patch_points = updated;

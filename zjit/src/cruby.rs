@@ -254,8 +254,31 @@ pub struct VALUE(pub usize);
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct ID(pub ::std::os::raw::c_ulong);
 
-/// Pointer to an ISEQ
+/// An unchecked raw pointer to an ISEQ (possibly null)
 pub type IseqPtr = *const rb_iseq_t;
+
+/// A checked ISEQ pointer, guaranteed to be a valid non-null iseq handle
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
+pub struct Iseq(std::ptr::NonNull<rb_iseq_t>);
+
+impl Iseq {
+    pub fn new(ptr: IseqPtr) -> Option<Self> {
+        #[cfg(debug_assertions)]
+        if !ptr.is_null() {
+            unsafe { rb_assert_iseq_handle(VALUE(ptr as usize)) }
+        }
+
+        std::ptr::NonNull::new(ptr as *mut _).map(Self)
+    }
+
+    pub fn as_ptr(self) -> IseqPtr {
+        self.0.as_ptr() as *const _
+    }
+
+    pub fn as_nullable_ptr(iseq: Option<Iseq>) -> IseqPtr {
+        iseq.map_or(std::ptr::null(), |iseq| iseq.as_ptr())
+    }
+}
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct ShapeId(pub u32);
@@ -625,30 +648,14 @@ impl VALUE {
         us as *mut T
     }
 
-    /// For working with opaque pointers and encoding null check.
-    /// Similar to [std::ptr::NonNull], but for `*const T`. `NonNull<T>`
-    /// is for `*mut T` while our C functions are setup to use `*const T`.
-    /// Casting from `NonNull<T>` to `*const T` is too noisy.
-    pub fn as_optional_ptr<T>(self) -> Option<*const T> {
-        let ptr: *const T = self.as_ptr();
-
-        if ptr.is_null() {
-            None
-        } else {
-            Some(ptr)
-        }
+    /// Assert that `self` is an `Option<Iseq>` in debug builds
+    pub fn as_iseq(self) -> Option<Iseq> {
+        Iseq::new(self.as_ptr())
     }
 
-    /// Assert that `self` is an iseq in debug builds
-    pub fn as_iseq(self) -> IseqPtr {
-        let ptr: IseqPtr = self.as_ptr();
-
-        #[cfg(debug_assertions)]
-        if !ptr.is_null() {
-            unsafe { rb_assert_iseq_handle(self) }
-        }
-
-        ptr
+    /// Assert that `self` is a (possibly null) IseqPtr in debug builds
+    pub fn as_iseq_ptr(self) -> IseqPtr {
+        Iseq::as_nullable_ptr(self.as_iseq())
     }
 
     pub fn cme_p(self) -> bool {
@@ -709,6 +716,18 @@ impl From<IseqPtr> for VALUE {
     /// For `.into()` convenience
     fn from(iseq: IseqPtr) -> Self {
         VALUE(iseq as usize)
+    }
+}
+
+impl IseqAccess for Iseq {
+    unsafe fn params<'a>(self) -> &'a IseqParameters {
+        unsafe { self.as_ptr().params() }
+    }
+}
+
+impl From<Iseq> for VALUE {
+    fn from(iseq: Iseq) -> Self {
+        VALUE(iseq.as_ptr() as usize)
     }
 }
 
