@@ -215,9 +215,6 @@
     /** Exclude the JSON serialization API. */
     #define PRISM_EXCLUDE_JSON
 
-    /** Exclude the Array#pack parser API. */
-    #define PRISM_EXCLUDE_PACK
-
     /** Exclude the prettyprint API. */
     #define PRISM_EXCLUDE_PRETTYPRINT
 
