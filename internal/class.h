@@ -109,8 +109,18 @@ struct rb_classext_struct {
     const VALUE origin_;
     const VALUE refined_class;
     union {
-        struct {
+        union {
+            /**
+             * Old-style allocator. The function receive the class of the object
+             * to allocate and returns a new object.
+             */
             rb_alloc_func_t allocator;
+            /**
+             * New-style allocator. The function the class of the object to allocate
+             * and an optional reference to the object that has to be duped or cloned.
+             * When not copying a previous object, the reference is set to `Qundef`.
+             */
+            rb_copy_alloc_func_t copy_allocator;
         } class;
         struct {
             VALUE attached_object;
@@ -128,6 +138,7 @@ struct rb_classext_struct {
     bool iclass_is_origin : 1;
     bool iclass_origin_shared_mtbl : 1;
     bool superclasses_with_self : 1;
+    bool copy_allocator : 1;
     VALUE classpath;
 };
 typedef struct rb_classext_struct rb_classext_t;
@@ -659,6 +670,17 @@ static inline rb_alloc_func_t
 RCLASS_ALLOCATOR(VALUE klass)
 {
     RBIMPL_ASSERT_TYPE(klass, T_CLASS);
+    RUBY_ASSERT(!RCLASS_EXT_PRIME(klass)->copy_allocator);
+    if (RCLASS_SINGLETON_P(klass)) {
+        return 0;
+    }
+    return RCLASS_EXT_PRIME(klass)->as.class.allocator;
+}
+
+static inline rb_alloc_func_t
+RCLASS_RAW_ALLOCATOR(VALUE klass)
+{
+    RBIMPL_ASSERT_TYPE(klass, T_CLASS);
     if (RCLASS_SINGLETON_P(klass)) {
         return 0;
     }
@@ -671,6 +693,37 @@ RCLASS_SET_ALLOCATOR(VALUE klass, rb_alloc_func_t allocator)
     RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS));
     RUBY_ASSERT(!RCLASS_SINGLETON_P(klass));
     RCLASS_EXT_PRIME(klass)->as.class.allocator = allocator; // Allocator is set only on the initial definition
+    RCLASS_EXT_PRIME(klass)->copy_allocator = false;
+}
+
+static inline bool
+RCLASS_COPY_ALLOCATOR_P(VALUE klass)
+{
+    RBIMPL_ASSERT_TYPE(klass, T_CLASS);
+    if (RCLASS_SINGLETON_P(klass)) {
+        return false;
+    }
+    return RCLASS_EXT_PRIME(klass)->copy_allocator;
+}
+
+static inline rb_copy_alloc_func_t
+RCLASS_COPY_ALLOCATOR(VALUE klass)
+{
+    RBIMPL_ASSERT_TYPE(klass, T_CLASS);
+    if (RCLASS_SINGLETON_P(klass)) {
+        return 0;
+    }
+    RUBY_ASSERT(RCLASS_EXT_PRIME(klass)->copy_allocator);
+    return RCLASS_EXT_PRIME(klass)->as.class.copy_allocator;
+}
+
+static inline void
+RCLASS_SET_COPY_ALLOCATOR(VALUE klass, rb_copy_alloc_func_t allocator)
+{
+    RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS));
+    RUBY_ASSERT(!RCLASS_SINGLETON_P(klass));
+    RCLASS_EXT_PRIME(klass)->as.class.copy_allocator = allocator; // Allocator is set only on the initial definition
+    RCLASS_EXT_PRIME(klass)->copy_allocator = true;
 }
 
 static inline void
