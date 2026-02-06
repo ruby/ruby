@@ -5771,6 +5771,29 @@ gc_marks_continue(rb_objspace_t *objspace, rb_heap_t *heap)
     return marking_finished;
 }
 
+
+
+#ifdef HAVE_PTHREAD_H
+
+static pthread_t mark_thread_id;
+rb_nativethread_cond_t mark_thread_cond;
+
+void *mark_thread_func(void *_arg)
+{
+}
+
+void gc_start_mark_thread(rb_objspace_t *objspace)
+{
+    rb_native_cond_initialize(&mark_thread_cond);
+    pthread_create(&mark_thread_id, NULL, mark_thread_func, NULL);
+}
+#else
+void gc_start_mark_thread(rb_objspace_t *objspace)
+{
+}
+#endif
+
+
 static void
 gc_marks_start(rb_objspace_t *objspace, int full_mark)
 {
@@ -9566,6 +9589,8 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
 
     objspace->profile.invoke_time = getrusage_time();
     finalizer_table = st_init_numtable();
+
+    gc_start_mark_thread();
 }
 
 void
