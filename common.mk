@@ -1644,7 +1644,8 @@ test-bundler: $(TEST_RUNNABLE)-test-bundler
 yes-test-bundler: $(PREPARE_BUNDLER)
 	$(gnumake_recursive)$(XRUBY) \
 		-r./$(arch)-fake \
-		-C $(srcdir) -Ispec/bundler -Ispec/lib spec/bin/rspec \
+		-I$(srcdir)/spec/bundler -I$(srcdir)/spec/lib \
+		-e 'Dir.chdir(ARGV.shift); load("spec/bin/rspec")' $(srcdir) \
 		-r spec_helper $(RSPECOPTS) spec/bundler/$(BUNDLER_SPECS)
 no-test-bundler:
 
