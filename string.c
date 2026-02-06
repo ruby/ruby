@@ -7060,7 +7060,7 @@ rb_str_include(VALUE str, VALUE arg)
  *    'abcdef'.to_i # => 0
  *    '2'.to_i(2)   # => 0
  *
- *  Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
+ *  Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non-String].
  */
 
 static VALUE
@@ -7092,7 +7092,7 @@ rb_str_to_i(int argc, VALUE *argv, VALUE str)
  *
  *    'abcdef'.to_f # => 0.0
  *
- * See {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
+ * See {Converting to Non-String}[rdoc-ref:String@Converting+to+Non-String].
  */
 
 static VALUE
@@ -9619,7 +9619,7 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
  *     "This is line four.",
  *     "This is line five."]
  *
- *  Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
+ *  Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non-String].
  */
 
 static VALUE
@@ -10762,7 +10762,7 @@ rb_str_scan(VALUE str, VALUE pat)
  *    '0o777'.hex   # => 0
  *    '0d999'.hex   # => 55705
  *
- *  Related: See {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
+ *  Related: See {Converting to Non-String}[rdoc-ref:String@Converting+to+Non-String].
  */
 
 static VALUE
@@ -10848,7 +10848,7 @@ rb_str_hex(VALUE str)
  *    'foo'.oct      # => 0
  *    ''.oct         # => 0
  *
- *  Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
+ *  Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non-String].
  */
 
 static VALUE
