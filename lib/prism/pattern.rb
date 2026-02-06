@@ -41,7 +41,7 @@ module Prism
     class CompilationError < StandardError
       # Create a new CompilationError with the given representation of the node
       # that caused the error.
-      def initialize(repr)
+      def initialize(repr) # :nodoc:
         super(<<~ERROR)
           prism was unable to compile the pattern you provided into a usable
           expression. It failed on to understand the node represented by:

@@ -12,7 +12,7 @@ require "ffi"
 # autoloaded from within a non-main Ractor.
 require "prism/serialize" if defined?(Ractor)
 
-module Prism
+module Prism # :nodoc:
   module LibRubyParser # :nodoc:
     extend FFI::Library
 
@@ -233,7 +233,7 @@ module Prism
   # The version constant is set by reading the result of calling pm_version.
   VERSION = LibRubyParser.pm_version.read_string.freeze
 
-  class << self # :nodoc:
+  class << self
     # Mirror the Prism.dump API by using the serialization API.
     def dump(source, **options)
       LibRubyParser::PrismString.with_string(source) { |string| dump_common(string, options) }

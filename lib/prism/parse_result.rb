@@ -519,7 +519,7 @@ module Prism
   # This represents a comment that was encountered during parsing. It is the
   # base class for all comment types.
   class Comment
-    # The location of this comment in the source.
+    # The Location of this comment in the source.
     attr_reader :location
 
     # Create a new comment object with the given location.
@@ -556,7 +556,7 @@ module Prism
   # EmbDocComment objects correspond to comments that are surrounded by =begin
   # and =end.
   class EmbDocComment < Comment
-    # This can only be true for inline comments.
+    # Returns false. This can only be true for inline comments.
     def trailing?
       false
     end
@@ -670,9 +670,9 @@ module Prism
     end
   end
 
-  # This represents the result of a call to ::parse or ::parse_file. It contains
-  # the requested structure, any comments that were encounters, and any errors
-  # that were encountered.
+  # This represents the result of a call to Prism.parse or Prism.parse_file.
+  # It contains the requested structure, any comments that were encounters,
+  # and any errors that were encountered.
   class Result
     # The list of comments that were encountered during parsing.
     attr_reader :comments

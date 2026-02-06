@@ -254,137 +254,137 @@ module Prism
   # DesugarCompiler is a compiler that desugars Ruby code into a more primitive
   # form. This is useful for consumers that want to deal with fewer node types.
   class DesugarCompiler < MutationCompiler
-    # @@foo &&= bar
+    # `@@foo &&= bar`
     #
     # becomes
     #
-    # @@foo && @@foo = bar
+    # `@@foo && @@foo = bar`
     def visit_class_variable_and_write_node(node)
       node.desugar
     end
 
-    # @@foo ||= bar
+    # `@@foo ||= bar`
     #
     # becomes
     #
-    # defined?(@@foo) ? @@foo : @@foo = bar
+    # `defined?(@@foo) ? @@foo : @@foo = bar`
     def visit_class_variable_or_write_node(node)
       node.desugar
     end
 
-    # @@foo += bar
+    # `@@foo += bar`
     #
     # becomes
     #
-    # @@foo = @@foo + bar
+    # `@@foo = @@foo + bar`
     def visit_class_variable_operator_write_node(node)
       node.desugar
     end
 
-    # Foo &&= bar
+    # `Foo &&= bar`
     #
     # becomes
     #
-    # Foo && Foo = bar
+    # `Foo && Foo = bar`
     def visit_constant_and_write_node(node)
       node.desugar
     end
 
-    # Foo ||= bar
+    # `Foo ||= bar`
     #
     # becomes
     #
-    # defined?(Foo) ? Foo : Foo = bar
+    # `defined?(Foo) ? Foo : Foo = bar`
     def visit_constant_or_write_node(node)
       node.desugar
     end
 
-    # Foo += bar
+    # `Foo += bar`
     #
     # becomes
     #
-    # Foo = Foo + bar
+    # `Foo = Foo + bar`
     def visit_constant_operator_write_node(node)
       node.desugar
     end
 
-    # $foo &&= bar
+    # `$foo &&= bar`
     #
     # becomes
     #
-    # $foo && $foo = bar
+    # `$foo && $foo = bar`
     def visit_global_variable_and_write_node(node)
       node.desugar
     end
 
-    # $foo ||= bar
+    # `$foo ||= bar`
     #
     # becomes
     #
-    # defined?($foo) ? $foo : $foo = bar
+    # `defined?($foo) ? $foo : $foo = bar`
     def visit_global_variable_or_write_node(node)
       node.desugar
     end
 
-    # $foo += bar
+    # `$foo += bar`
     #
     # becomes
     #
-    # $foo = $foo + bar
+    # `$foo = $foo + bar`
     def visit_global_variable_operator_write_node(node)
       node.desugar
     end
 
-    # @foo &&= bar
+    # `@foo &&= bar`
     #
     # becomes
     #
-    # @foo && @foo = bar
+    # `@foo && @foo = bar`
     def visit_instance_variable_and_write_node(node)
       node.desugar
     end
 
-    # @foo ||= bar
+    # `@foo ||= bar`
     #
     # becomes
     #
-    # @foo || @foo = bar
+    # `@foo || @foo = bar`
     def visit_instance_variable_or_write_node(node)
       node.desugar
     end
 
-    # @foo += bar
+    # `@foo += bar`
     #
     # becomes
     #
-    # @foo = @foo + bar
+    # `@foo = @foo + bar`
     def visit_instance_variable_operator_write_node(node)
       node.desugar
     end
 
-    # foo &&= bar
+    # `foo &&= bar`
     #
     # becomes
     #
-    # foo && foo = bar
+    # `foo && foo = bar`
     def visit_local_variable_and_write_node(node)
       node.desugar
     end
 
-    # foo ||= bar
+    # `foo ||= bar`
     #
     # becomes
     #
-    # foo || foo = bar
+    # `foo || foo = bar`
     def visit_local_variable_or_write_node(node)
       node.desugar
     end
 
-    # foo += bar
+    # `foo += bar`
     #
     # becomes
     #
-    # foo = foo + bar
+    # `foo = foo + bar`
     def visit_local_variable_operator_write_node(node)
       node.desugar
     end

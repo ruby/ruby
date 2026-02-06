@@ -56,18 +56,18 @@ module Prism
   end
 
   # :call-seq:
-  #   Prism::lex_compat(source, **options) -> LexCompat::Result
+  #   lex_compat(source, **options) -> LexCompat::Result
   #
   # Returns a parse result whose value is an array of tokens that closely
-  # resembles the return value of Ripper::lex.
+  # resembles the return value of Ripper.lex.
   #
-  # For supported options, see Prism::parse.
+  # For supported options, see Prism.parse.
   def self.lex_compat(source, **options)
     LexCompat.new(source, **options).result # steep:ignore
   end
 
   # :call-seq:
-  #   Prism::load(source, serialized, freeze) -> ParseResult
+  #   load(source, serialized, freeze) -> ParseResult
   #
   # Load the serialized AST using the source as a reference into a tree.
   def self.load(source, serialized, freeze = false)
