@@ -8,7 +8,7 @@ module SyntaxSuggest
   #
   # 1. Sanitize/format input source
   # 2. Search for invalid blocks
-  # 3. Format invalid blocks into something meaninful
+  # 3. Format invalid blocks into something meaningful
   #
   # The Code frontier is a critical part of the second step
   #
