@@ -37,7 +37,7 @@ module Net   #:nodoc:
   # For information about \HTTP, see:
   #
   # - {Hypertext Transfer Protocol}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol].
-  # - {Technical overview}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Technical_overview].
+  # - {Technology}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Technology].
   #
   # == About the Examples
   #
@@ -72,7 +72,7 @@ module Net   #:nodoc:
   #
   # - If performance is important, consider using sessions, which lower request overhead.
   #   This {session}[rdoc-ref:Net::HTTP@Sessions] has multiple requests for
-  #   {HTTP methods}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Request_methods]
+  #   {HTTP methods}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Method]
   #   and {WebDAV methods}[https://en.wikipedia.org/wiki/WebDAV#Implementation]:
   #
   #     Net::HTTP.start(hostname) do |http|
@@ -198,7 +198,7 @@ module Net   #:nodoc:
   # In the block, you can use these instance methods,
   # each of which that sends a single request:
   #
-  # - {HTTP methods}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Request_methods]:
+  # - {HTTP methods}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Method]:
   #
   #   - #get, #request_get: GET.
   #   - #head, #request_head: HEAD.
@@ -447,7 +447,7 @@ module Net   #:nodoc:
   # if the response has header <tt>'Content-Range'</tt>.
   #
   # Otherwise decompression (or not) depends on the value of header
-  # {Content-Encoding}[https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#content-encoding-response-header]:
+  # {Content-Encoding}[https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Content-Encoding_2]:
   #
   # - <tt>'deflate'</tt>, <tt>'gzip'</tt>, or <tt>'x-gzip'</tt>:
   #   decompresses the body and deletes the header.
