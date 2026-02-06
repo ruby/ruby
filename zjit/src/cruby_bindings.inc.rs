@@ -1960,6 +1960,7 @@ unsafe extern "C" {
     pub fn rb_ivar_set(obj: VALUE, name: ID, val: VALUE) -> VALUE;
     pub fn rb_ivar_defined(obj: VALUE, name: ID) -> VALUE;
     pub fn rb_attr_get(obj: VALUE, name: ID) -> VALUE;
+    pub fn rb_const_get(space: VALUE, name: ID) -> VALUE;
     pub fn rb_class_allocate_instance(klass: VALUE) -> VALUE;
     pub fn rb_obj_equal(obj1: VALUE, obj2: VALUE) -> VALUE;
     pub fn rb_reg_new_ary(ary: VALUE, options: ::std::os::raw::c_int) -> VALUE;
@@ -1982,6 +1983,7 @@ unsafe extern "C" {
         id: ID,
     ) -> *const rb_callable_method_entry_t;
     pub static mut rb_cISeq: VALUE;
+    pub static mut rb_cRubyVM: VALUE;
     pub static mut rb_mRubyVMFrozenCore: VALUE;
     pub static mut rb_block_param_proxy: VALUE;
     pub fn rb_vm_ep_local_ep(ep: *const VALUE) -> *const VALUE;

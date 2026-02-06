@@ -4069,6 +4069,54 @@ pub mod hir_build_tests {
           SideExit TooManyKeywordParameters
         ");
     }
+
+    #[test]
+    fn test_array_each() {
+        assert_snapshot!(hir_string_proc("Array.instance_method(:each)"), @r"
+        fn each@<internal:array>:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject):
+          EntryPoint JIT(0)
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:NilClass):
+          v13:NilClass = Const Value(nil)
+          v15:TrueClass|NilClass = Defined yield, v13
+          v17:CBool = Test v15
+          v18:NilClass = RefineType v15, Falsy
+          IfFalse v17, bb3(v8, v9)
+          v20:TrueClass = RefineType v15, Truthy
+          Jump bb5(v8, v9)
+        bb3(v23:BasicObject, v24:NilClass):
+          v28:BasicObject = InvokeBuiltin <inline_expr>, v23
+          Jump bb4(v23, v24, v28)
+        bb4(v40:BasicObject, v41:NilClass, v42:BasicObject):
+          CheckInterrupts
+          Return v42
+        bb5(v30:BasicObject, v31:NilClass):
+          v35:Fixnum[0] = Const Value(0)
+          Jump bb7(v30, v35)
+        bb7(v48:BasicObject, v49:BasicObject):
+          v52:BasicObject = InvokeBuiltin rb_jit_ary_at_end, v48, v49
+          v54:CBool = Test v52
+          v55:Falsy = RefineType v52, Falsy
+          IfFalse v54, bb6(v48, v49)
+          v57:Truthy = RefineType v52, Truthy
+          v59:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v48
+        bb6(v67:BasicObject, v68:BasicObject):
+          v72:BasicObject = InvokeBuiltin rb_jit_ary_at, v67, v68
+          v74:BasicObject = InvokeBlock, v72 # SendFallbackReason: Uncategorized(invokeblock)
+          v78:BasicObject = InvokeBuiltin rb_jit_fixnum_inc, v67, v68
+          PatchPoint NoEPEscape(each)
+          Jump bb7(v67, v78)
+        ");
+    }
  }
 
  /// Test successor and predecessor set computations.
