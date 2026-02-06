@@ -2583,7 +2583,7 @@ autoload_load_body(VALUE crr_obj)
 {
     struct cross_ractor_require *crr;
     TypedData_Get_Struct(crr_obj, struct cross_ractor_require, &cross_ractor_require_data_type, crr);
-    return rb_autoload_load(crr->as.autoload.module, crr->as.autoload.name);
+    return rb_autoload_load(crr->as.autoload.module, crr->as.autoload.name, false);
 }
 
 static VALUE

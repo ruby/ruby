@@ -127,7 +127,7 @@ VALUE rb_class_name(VALUE obj);
  *
  * @shyouhei has no idea why extension libraries should use this API.
  */
-VALUE rb_autoload_load(VALUE space, ID name);
+VALUE rb_autoload_load(VALUE space, ID name, bool defining_class);
 
 /**
  * Queries if an autoload is defined at a point.
