@@ -934,5 +934,11 @@ RSpec.describe "bundle clean" do
     bundle :clean
 
     should_have_gems "bundler-#{version}"
+  ensure
+    ["bundler-#{version}.gem", "bundler-#{version}.gemspec"].each do |filename|
+      Pathname(vendored_gems(filename)).tap do |path|
+        FileUtils.rm_rf(path.basename)
+      end
+    end
   end
 end
