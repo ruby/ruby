@@ -1434,5 +1434,4 @@ Init_prism(void) {
 
     // Next, initialize the other APIs.
     Init_prism_api_node();
-    Init_prism_pack();
 }
