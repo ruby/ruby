@@ -400,10 +400,7 @@ static void emit_parse_warning(const char *message, JSON_ParserState *state)
 
 #define PARSE_ERROR_FRAGMENT_LEN 32
 
-#ifdef RBIMPL_ATTR_NORETURN
-RBIMPL_ATTR_NORETURN()
-#endif
-static void raise_parse_error(const char *format, JSON_ParserState *state)
+NORETURN(static) void raise_parse_error(const char *format, JSON_ParserState *state)
 {
     unsigned char buffer[PARSE_ERROR_FRAGMENT_LEN + 3];
     long line, column;
@@ -449,10 +446,7 @@ static void raise_parse_error(const char *format, JSON_ParserState *state)
     rb_exc_raise(exc);
 }
 
-#ifdef RBIMPL_ATTR_NORETURN
-RBIMPL_ATTR_NORETURN()
-#endif
-static void raise_parse_error_at(const char *format, JSON_ParserState *state, const char *at)
+NORETURN(static) void raise_parse_error_at(const char *format, JSON_ParserState *state, const char *at)
 {
     state->cursor = at;
     raise_parse_error(format, state);
@@ -777,7 +771,7 @@ NOINLINE(static) VALUE json_string_unescape(JSON_ParserState *state, JSON_Parser
 
 #define MAX_FAST_INTEGER_SIZE 18
 
-static VALUE json_decode_large_integer(const char *start, long len)
+NOINLINE(static) VALUE json_decode_large_integer(const char *start, long len)
 {
     VALUE buffer_v;
     char *buffer = RB_ALLOCV_N(char, buffer_v, len + 1);
@@ -788,8 +782,7 @@ static VALUE json_decode_large_integer(const char *start, long len)
     return number;
 }
 
-static inline VALUE
-json_decode_integer(uint64_t mantissa, int mantissa_digits, bool negative, const char *start, const char *end)
+static inline VALUE json_decode_integer(uint64_t mantissa, int mantissa_digits, bool negative, const char *start, const char *end)
 {
     if (RB_LIKELY(mantissa_digits < MAX_FAST_INTEGER_SIZE)) {
         if (negative) {
@@ -801,7 +794,7 @@ json_decode_integer(uint64_t mantissa, int mantissa_digits, bool negative, const
     return json_decode_large_integer(start, end - start);
 }
 
-static VALUE json_decode_large_float(const char *start, long len)
+NOINLINE(static) VALUE json_decode_large_float(const char *start, long len)
 {
     if (RB_LIKELY(len < 64)) {
         char buffer[64];
@@ -868,7 +861,7 @@ static VALUE json_find_duplicated_key(size_t count, const VALUE *pairs)
     return Qfalse;
 }
 
-static void emit_duplicate_key_warning(JSON_ParserState *state, VALUE duplicate_key)
+NOINLINE(static) void emit_duplicate_key_warning(JSON_ParserState *state, VALUE duplicate_key)
 {
     VALUE message = rb_sprintf(
         "detected duplicate key %"PRIsVALUE" in JSON object. This will raise an error in json 3.0 unless enabled via `allow_duplicate_key: true`",
@@ -879,10 +872,7 @@ static void emit_duplicate_key_warning(JSON_ParserState *state, VALUE duplicate_
     RB_GC_GUARD(message);
 }
 
-#ifdef RBIMPL_ATTR_NORETURN
-RBIMPL_ATTR_NORETURN()
-#endif
-static void raise_duplicate_key_error(JSON_ParserState *state, VALUE duplicate_key)
+NORETURN(static) void raise_duplicate_key_error(JSON_ParserState *state, VALUE duplicate_key)
 {
     VALUE message = rb_sprintf(
         "duplicate key %"PRIsVALUE,
