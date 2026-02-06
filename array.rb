@@ -217,7 +217,7 @@ class Array
       undef :each
 
       def each # :nodoc:
-        Primitive.attr! :inline_block, :c_trace
+        Primitive.attr! :inline_block, :c_trace, :without_interrupts
 
         unless defined?(yield)
           return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
@@ -235,7 +235,7 @@ class Array
       undef :map
 
       def map # :nodoc:
-        Primitive.attr! :inline_block, :c_trace
+        Primitive.attr! :inline_block, :c_trace, :without_interrupts
 
         unless defined?(yield)
           return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
@@ -261,7 +261,7 @@ class Array
       undef :select
 
       def select # :nodoc:
-        Primitive.attr! :inline_block, :c_trace
+        Primitive.attr! :inline_block, :c_trace, :without_interrupts
 
         unless defined?(yield)
           return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
@@ -288,7 +288,7 @@ class Array
       undef :find
 
       def find(if_none_proc = nil) # :nodoc:
-        Primitive.attr! :inline_block, :c_trace
+        Primitive.attr! :inline_block, :c_trace, :without_interrupts
 
         unless defined?(yield)
           return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
