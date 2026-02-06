@@ -222,10 +222,10 @@ class Array
         unless defined?(yield)
           return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
         end
-        _i = 0
-        value = nil
-        while Primitive.cexpr!(%q{ ary_fetch_next(self, LOCAL_PTR(_i), LOCAL_PTR(value)) })
-          yield value
+        i = 0
+        until Primitive.rb_jit_ary_at_end(i)
+          yield Primitive.rb_jit_ary_at(i)
+          i = Primitive.rb_jit_fixnum_inc(i)
         end
         self
       end
@@ -241,12 +241,12 @@ class Array
           return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
         end
 
-        _i = 0
-        value = nil
+        i = 0
         result = Primitive.ary_sized_alloc
-        while Primitive.cexpr!(%q{ ary_fetch_next(self, LOCAL_PTR(_i), LOCAL_PTR(value)) })
-          value = yield(value)
-          Primitive.cexpr!(%q{ rb_ary_push(result, value) })
+        until Primitive.rb_jit_ary_at_end(i)
+          _value = yield(Primitive.rb_jit_ary_at(i))
+          Primitive.cexpr!(%q{ rb_ary_push(result, _value) })
+          i = Primitive.rb_jit_fixnum_inc(i)
         end
         result
       end
@@ -267,13 +267,14 @@ class Array
           return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
         end
 
-        _i = 0
-        value = nil
+        i = 0
         result = Primitive.ary_sized_alloc
-        while Primitive.cexpr!(%q{ ary_fetch_next(self, LOCAL_PTR(_i), LOCAL_PTR(value)) })
+        until Primitive.rb_jit_ary_at_end(i)
+          value = Primitive.rb_jit_ary_at(i)
           if yield value
             Primitive.cexpr!(%q{ rb_ary_push(result, value) })
           end
+          i = Primitive.rb_jit_fixnum_inc(i)
         end
         result
       end
@@ -293,10 +294,11 @@ class Array
         unless defined?(yield)
           return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
         end
-        _i = 0
-        value = nil
-        while Primitive.cexpr!(%q{ ary_fetch_next(self, LOCAL_PTR(_i), LOCAL_PTR(value)) })
+        i = 0
+        until Primitive.rb_jit_ary_at_end(i)
+          value = Primitive.rb_jit_ary_at(i)
           return value if yield(value)
+          i = Primitive.rb_jit_fixnum_inc(i)
         end
         if_none_proc&.call
       end

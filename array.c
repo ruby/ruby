@@ -2694,18 +2694,25 @@ ary_enum_length(VALUE ary, VALUE args, VALUE eobj)
     return rb_ary_length(ary);
 }
 
-// Primitive to avoid a race condition in Array#each.
-// Return `true` and write `value` and `index` if the element exists.
+// Return true if the index is at or past the end of the array.
 static VALUE
-ary_fetch_next(VALUE self, VALUE *index, VALUE *value)
+rb_jit_ary_at_end(rb_execution_context_t *ec, VALUE self, VALUE index)
 {
-    long i = NUM2LONG(*index);
-    if (i >= RARRAY_LEN(self)) {
-        return Qfalse;
-    }
-    *value = RARRAY_AREF(self, i);
-    *index = LONG2NUM(i + 1);
-    return Qtrue;
+    return FIX2LONG(index) >= RARRAY_LEN(self) ? Qtrue : Qfalse;
+}
+
+// Return the element at the given fixnum index.
+static VALUE
+rb_jit_ary_at(rb_execution_context_t *ec, VALUE self, VALUE index)
+{
+    return RARRAY_AREF(self, FIX2LONG(index));
+}
+
+// Increment a fixnum by 1.
+static VALUE
+rb_jit_fixnum_inc(rb_execution_context_t *ec, VALUE self, VALUE num)
+{
+    return LONG2FIX(FIX2LONG(num) + 1);
 }
 
 /*
