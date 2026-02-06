@@ -5617,7 +5617,11 @@ rb_obj_info_dump_loc(VALUE obj, const char *file, int line, const char *func)
 void
 rb_gc_before_fork(void)
 {
-    rb_gc_impl_before_fork(rb_gc_get_objspace());
+    void *objspace = rb_gc_get_objspace();
+    rb_gc_impl_before_fork(objspace);
+    /* Prevent GCC from eliminating this function */
+    VALUE guard = (VALUE)objspace;
+    RB_GC_GUARD(guard);
 }
 
 void
