@@ -44,4 +44,4 @@ then searches for the last matching substring
   'hello'.rpartition('')      # => ["hello", "", ""]
   'こんにちは'.rpartition('に') # => ["こん", "に", "ちは"]
 
-Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
+Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non-String].
