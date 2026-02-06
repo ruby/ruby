@@ -627,8 +627,6 @@ update-src::
 
 update-download:: update-config_files
 
-after-update:: prereq
-
 gcov:
 	$(Q) $(BASERUBY) $(tooldir)/run-gcov.rb
 
