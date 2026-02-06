@@ -5731,6 +5731,18 @@ gc_marks_rest(rb_objspace_t *objspace)
     gc_marks_finish(objspace);
 }
 
+/* Background marking thread related declarations */
+static rb_objspace_t *mark_thread_objspace = NULL;
+static rb_vm_t *mark_thread_vm = NULL;  // VM pointer for marking thread
+static bool mark_thread_should_mark = false;
+static bool mark_thread_should_exit = false;
+static bool mark_thread_marking_done = false;
+static bool mark_thread_full_mark = false;
+
+/* Forward declarations for marking thread functions */
+static void gc_request_marking(rb_objspace_t *objspace, rb_execution_context_t *ec, bool full_mark);
+static bool gc_wait_for_marking(rb_objspace_t *objspace, rb_execution_context_t *ec);
+
 static bool
 gc_marks_step(rb_objspace_t *objspace, size_t slots)
 {
@@ -5752,43 +5764,217 @@ gc_marks_continue(rb_objspace_t *objspace, rb_heap_t *heap)
     GC_ASSERT(dont_gc_val() == FALSE || objspace->profile.latest_gc_info & GPR_FLAG_METHOD);
     bool marking_finished = true;
 
-    gc_marking_enter(objspace);
-
-    if (heap->free_pages) {
-        gc_report(2, objspace, "gc_marks_continue: has pooled pages");
-
-        marking_finished = gc_marks_step(objspace, objspace->rincgc.step_slots);
+#ifdef HAVE_PTHREAD_H
+    if (mark_thread_objspace) {
+        rb_execution_context_t *ec = GET_EC();
+        // Use background thread for incremental marking
+        gc_request_marking(objspace, ec, false); // incremental marking
+        marking_finished = gc_wait_for_marking(objspace, ec);
     }
-    else {
-        gc_report(2, objspace, "gc_marks_continue: no more pooled pages (stack depth: %"PRIdSIZE").\n",
-                  mark_stack_size(&objspace->mark_stack));
-        heap->force_incremental_marking_finish_count++;
-        gc_marks_rest(objspace);
-    }
+    else
+#endif
+    {
+        // Fallback to direct marking
+        gc_marking_enter(objspace);
 
-    gc_marking_exit(objspace);
+        if (heap->free_pages) {
+            gc_report(2, objspace, "gc_marks_continue: has pooled pages");
+
+            marking_finished = gc_marks_step(objspace, objspace->rincgc.step_slots);
+        }
+        else {
+            gc_report(2, objspace, "gc_marks_continue: no more pooled pages (stack depth: %"PRIdSIZE").\n",
+                      mark_stack_size(&objspace->mark_stack));
+            heap->force_incremental_marking_finish_count++;
+            gc_marks_rest(objspace);
+        }
+
+        gc_marking_exit(objspace);
+    }
 
     return marking_finished;
 }
 
 
 
-#ifdef HAVE_PTHREAD_H
+/* Background Marking Thread Implementation
+ *
+ * This implementation runs GC marking in a dedicated background thread to
+ * improve GC performance. The synchronization model ensures safety:
+ *
+ * 1. The main thread takes the VM lock and barrier (via gc_enter) before
+ *    requesting marking, ensuring all threads in all ractors have stopped.
+ *
+ * 2. The main thread signals mark_thread_cond to wake the marking thread,
+ *    then waits on mark_done_cond for marking to complete.
+ *
+ * 3. The marking thread performs either full marking (gc_marks_rest) or
+ *    incremental marking (gc_marks_step) based on the request.
+ *
+ * 4. After marking completes, the marking thread signals mark_done_cond
+ *    and returns to waiting on mark_thread_cond.
+ *
+ * 5. The main thread continues execution after marking is done.
+ *
+ * Both condition variables are coupled to the VM lock (vm->ractor.sync.lock),
+ * ensuring proper synchronization between threads.
+ */
 
+#ifdef HAVE_PTHREAD_H
 static pthread_t mark_thread_id;
-rb_nativethread_cond_t mark_thread_cond;
+static rb_nativethread_cond_t mark_thread_cond;
+static rb_nativethread_lock_t mark_thread_mutex;
+static rb_nativethread_cond_t mark_done_cond;
+static bool mark_thread_marking_finished;
 
 void *mark_thread_func(void *_arg)
 {
+    rb_objspace_t *objspace = (rb_objspace_t *)_arg;
+
+    rb_native_mutex_lock(&mark_thread_mutex);
+    bool marking_finished;
+
+    while (true) {
+        marking_finished = false;
+        // Wait for marking request
+        while (!mark_thread_should_mark && !mark_thread_should_exit) {
+            rb_native_cond_wait(&mark_thread_cond, &mark_thread_mutex);
+        }
+
+        if (mark_thread_should_exit) {
+            rb_native_mutex_unlock(&mark_thread_mutex);
+            break;
+        }
+
+        // Get VM from the stored pointer
+        rb_vm_t *vm = mark_thread_vm;
+        VM_ASSERT(vm != NULL);
+        VM_ASSERT(vm->gc.marking_ec != NULL);
+#ifdef RB_THREAD_LOCAL_SPECIFIER
+        rb_current_ec_set(vm->gc.marking_ec);
+#else
+        native_tls_set(ruby_current_ec_key, vm->gc.marking_ec);
+#endif
+
+        bool full_mark = mark_thread_full_mark;
+        mark_thread_should_mark = false;
+
+        // Perform marking with VM barrier already taken by gc_enter in the main thread
+        gc_marking_enter(objspace);
+
+        if (full_mark || !is_incremental_marking(objspace)) {
+            // Full marking - mark everything
+            gc_marks_rest(objspace);
+            marking_finished = true;
+        } else {
+            // Incremental marking - process a step
+            marking_finished = gc_marks_step(objspace, objspace->rincgc.step_slots);
+
+            if (marking_finished) {
+                // If incremental marking finished, no need to call gc_marks_rest
+                // as gc_marks_step already called gc_marks_finish
+            } else {
+                // Check if any heap has no free pages, forcing completion
+                bool force_finish = false;
+                for (int i = 0; i < HEAP_COUNT; i++) {
+                    if (heaps[i].free_pages == NULL) {
+                        force_finish = true;
+                        break;
+                    }
+                }
+
+                if (force_finish) {
+                    gc_marks_rest(objspace);
+                    marking_finished = true;
+                }
+            }
+        }
+
+        // Signal marking completion
+        mark_thread_marking_done = true;
+        mark_thread_marking_finished = marking_finished;
+        mark_thread_should_mark = false;
+        rb_native_cond_signal(&mark_done_cond);
+    }
+
+    return NULL;
 }
 
 void gc_start_mark_thread(rb_objspace_t *objspace)
 {
+    mark_thread_objspace = objspace;
     rb_native_cond_initialize(&mark_thread_cond);
-    pthread_create(&mark_thread_id, NULL, mark_thread_func, NULL);
+    rb_native_mutex_initialize(&mark_thread_mutex);
+    rb_native_cond_initialize(&mark_done_cond);
+    // Don't create thread yet - will be created on first use
+    mark_thread_id = 0;
+}
+
+static void
+gc_stop_mark_thread(void)
+{
+    if (mark_thread_objspace) {
+        // Signal thread to exit
+        rb_native_mutex_lock(&mark_thread_mutex);
+        mark_thread_should_exit = true;
+        rb_native_cond_signal(&mark_thread_cond);
+        rb_native_mutex_unlock(&mark_thread_mutex);
+
+        // Wait for thread to exit
+        pthread_join(mark_thread_id, NULL);
+
+        // Cleanup
+        rb_native_mutex_destroy(&mark_thread_mutex);
+        rb_native_cond_destroy(&mark_thread_cond);
+        rb_native_cond_destroy(&mark_done_cond);
+        mark_thread_objspace = NULL;
+    }
+}
+
+static void
+gc_request_marking(rb_objspace_t *objspace, rb_execution_context_t *ec, bool full_mark)
+{
+    // Create thread on first use when VM is ready
+    if (!mark_thread_id) {
+        if (!ruby_current_vm_ptr) {
+            // VM not ready, can't use marking thread
+            return;
+        }
+        pthread_create(&mark_thread_id, NULL, mark_thread_func, objspace);
+    }
+
+    // Request marking from the background thread
+    // The barrier (rb_gc_vm_barrier) should have been taken by gc_enter
+    mark_thread_full_mark = full_mark;
+    mark_thread_marking_done = false;
+    mark_thread_should_mark = true;
+    mark_thread_vm = rb_ec_vm_ptr(ec);  // Store VM pointer for marking thread
+    mark_thread_vm->gc.marking_ec = ec;
+    rb_native_mutex_lock(&mark_thread_mutex); // unlocked in `wait_for_marking`
+    rb_native_cond_signal(&mark_thread_cond);
+}
+
+static bool
+gc_wait_for_marking(rb_objspace_t *objspace, rb_execution_context_t *ec)
+{
+    // Wait for marking to complete
+    // VM lock should already be held by caller
+    // This ensures the main thread waits while the background thread
+    // performs marking, maintaining the barrier throughout marking
+    while (!mark_thread_marking_done) {
+        rb_native_cond_wait(&mark_done_cond, &mark_thread_mutex);
+    }
+    bool marking_finished = mark_thread_marking_finished;
+    rb_native_mutex_unlock(&mark_thread_mutex);
+    rb_ec_vm_ptr(ec)->gc.marking_ec = NULL;
+    return marking_finished;
 }
 #else
 void gc_start_mark_thread(rb_objspace_t *objspace)
+{
+}
+
+static void gc_stop_mark_thread(void)
 {
 }
 #endif
@@ -5854,16 +6040,40 @@ static bool
 gc_marks(rb_objspace_t *objspace, int full_mark)
 {
     gc_prof_mark_timer_start(objspace);
-    gc_marking_enter(objspace);
 
     bool marking_finished = false;
+    rb_execution_context_t *ec = GET_EC();
 
     /* setup marking */
-
     gc_marks_start(objspace, full_mark);
-    if (!is_incremental_marking(objspace)) {
-        gc_marks_rest(objspace);
-        marking_finished = true;
+
+#ifdef HAVE_PTHREAD_H
+    if (mark_thread_objspace && ruby_current_vm_ptr) {
+        // Use background thread for marking only if VM is initialized
+        // The VM lock should already be held by the caller
+        gc_request_marking(objspace, ec, full_mark || !is_incremental_marking(objspace));
+        if (mark_thread_id) {  // Only if thread was successfully created
+            marking_finished = gc_wait_for_marking(objspace, ec);
+            gc_marking_exit(objspace);
+        }
+        else {
+            // Fall back to direct marking
+            goto direct_marking;
+        }
+    }
+    else
+#endif
+    {
+direct_marking:
+        // Fallback to direct marking
+        gc_marking_enter(objspace);
+
+        if (!is_incremental_marking(objspace)) {
+            gc_marks_rest(objspace);
+            marking_finished = true;
+        }
+
+        gc_marking_exit(objspace);
     }
 
 #if RGENGC_PROFILE > 0
@@ -5873,7 +6083,6 @@ gc_marks(rb_objspace_t *objspace, int full_mark)
     }
 #endif
 
-    gc_marking_exit(objspace);
     gc_prof_mark_timer_stop(objspace);
 
     return marking_finished;
@@ -9389,6 +9598,10 @@ rb_gc_impl_objspace_free(void *objspace_ptr)
     if (is_lazy_sweeping(objspace))
         rb_bug("lazy sweeping underway when freeing object space");
 
+#ifdef HAVE_PTHREAD_H
+    gc_stop_mark_thread();
+#endif
+
     free(objspace->profile.records);
     objspace->profile.records = NULL;
 
@@ -9590,7 +9803,7 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
     objspace->profile.invoke_time = getrusage_time();
     finalizer_table = st_init_numtable();
 
-    gc_start_mark_thread();
+    gc_start_mark_thread(objspace);
 }
 
 void

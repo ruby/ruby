@@ -806,6 +806,7 @@ typedef struct rb_vm_struct {
             void *data;
             void (*mark_func)(VALUE v, void *data);
         } *mark_func_data;
+        struct rb_execution_context_struct *marking_ec;
     } gc;
 
     rb_at_exit_list *at_exit;

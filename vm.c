@@ -273,8 +273,8 @@ vm_ep_in_heap_p_(const rb_execution_context_t *ec, const VALUE *ep)
 int
 rb_vm_ep_in_heap_p(const VALUE *ep)
 {
-    const rb_execution_context_t *ec = GET_EC();
-    if (ec->vm_stack == NULL) return TRUE;
+    const rb_execution_context_t *ec = rb_current_execution_context(false);
+    if (!ec || ec->vm_stack == NULL) return TRUE;
     return vm_ep_in_heap_p_(ec, ep);
 }
 #endif
@@ -3720,7 +3720,7 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
 
     /* mark machine stack */
     if (ec->machine.stack_start && ec->machine.stack_end &&
-        ec != GET_EC() /* marked for current ec at the first stage of marking */
+        rb_ec_vm_ptr(ec)->gc.marking_ec != ec /* marked for current ec at the first stage of marking */
         ) {
         rb_gc_mark_machine_context(ec);
     }
