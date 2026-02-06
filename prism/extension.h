@@ -14,7 +14,6 @@ VALUE pm_ast_new(const pm_parser_t *parser, const pm_node_t *node, rb_encoding *
 VALUE pm_integer_new(const pm_integer_t *integer);
 
 void Init_prism_api_node(void);
-void Init_prism_pack(void);
 RUBY_FUNC_EXPORTED void Init_prism(void);
 
 #endif
