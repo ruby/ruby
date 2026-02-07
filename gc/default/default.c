@@ -5767,14 +5767,12 @@ gc_marks_continue(rb_objspace_t *objspace, rb_heap_t *heap)
     bool marking_finished = false;
 
 #ifdef HAVE_PTHREAD_H
-    if (0 && mark_thread_objspace && ruby_current_vm_ptr) {
+    if (mark_thread_objspace && ruby_current_vm_ptr) {
         rb_execution_context_t *ec = GET_EC();
+        RB_VM_SAVE_MACHINE_CONTEXT(rb_ec_thread_ptr(ec));
         // Use background thread for incremental marking
         if (gc_request_marking(objspace, ec, heap, false, false)) {
             GC_ASSERT(mark_thread_id != 0);
-            if (!heap->free_pages) { // marking rest, needs to mark roots
-                RB_VM_SAVE_MACHINE_CONTEXT(rb_ec_thread_ptr(ec));
-            }
             marking_finished = gc_wait_for_marking(objspace, ec);
         }
         else {
@@ -5959,7 +5957,7 @@ static bool
 gc_request_marking(rb_objspace_t *objspace, rb_execution_context_t *ec, rb_heap_t *heap, bool full_mark, bool mark_roots)
 {
     // Create thread on first use when VM is ready
-    if (!mark_thread_id) {
+    if (RB_UNLIKELY(!mark_thread_id)) {
         if (!ruby_current_vm_ptr || !objspace) {
             // VM not ready, can't use marking thread
             return false;
@@ -5972,11 +5970,11 @@ gc_request_marking(rb_objspace_t *objspace, rb_execution_context_t *ec, rb_heap_
     mark_thread_full_mark = full_mark;
     mark_thread_marking_done = false;
     mark_thread_should_mark = true;
-    mark_thread_vm = rb_ec_vm_ptr(ec);  // Store VM pointer for marking thread
+    mark_thread_vm = rb_ec_vm_ptr(ec);
     mark_thread_vm->gc.marking_ec = ec;
     mark_thread_heap = heap;
     mark_thread_mark_roots = mark_roots;
-    rb_native_mutex_lock(&mark_thread_mutex); // unlocked in `wait_for_marking`
+    rb_native_mutex_lock(&mark_thread_mutex);
     rb_native_cond_signal(&mark_thread_cond);
     return true;
 }
@@ -5984,10 +5982,6 @@ gc_request_marking(rb_objspace_t *objspace, rb_execution_context_t *ec, rb_heap_
 static bool
 gc_wait_for_marking(rb_objspace_t *objspace, rb_execution_context_t *ec)
 {
-    // Wait for marking to complete
-    // VM lock should already be held by caller
-    // This ensures the main thread waits while the background thread
-    // performs marking, maintaining the barrier throughout marking
     while (!mark_thread_marking_done) {
         rb_native_cond_wait(&mark_done_cond, &mark_thread_mutex);
     }
@@ -6077,14 +6071,8 @@ gc_marks(rb_objspace_t *objspace, int full_mark)
         rb_thread_t *th = rb_ec_thread_ptr(ec);
         RB_VM_SAVE_MACHINE_CONTEXT(th);
         if (gc_request_marking(objspace, ec, NULL, full_mark, true)) {
-            if (mark_thread_id) {  // Only if thread was successfully created
-                marking_finished = gc_wait_for_marking(objspace, ec);
-                GC_ASSERT(marking_finished);
-            }
-            else {
-                // Fall back to direct marking
-                goto direct_marking;
-            }
+            marking_finished = gc_wait_for_marking(objspace, ec);
+            GC_ASSERT(marking_finished);
         }
         else {
             goto direct_marking;
