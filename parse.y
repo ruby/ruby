@@ -110,6 +110,10 @@ static rb_parser_string_t *rb_parser_string_deep_copy(struct parser_params *p, c
 #undef nd_set_line
 #define nd_set_line(n,l) rb_nd_set_line((n), (l))
 
+#define nd_set_first_loc_old nd_set_first_loc
+#undef nd_set_first_loc
+#define nd_set_first_loc(n,l) rb_nd_set_first_loc((n), (l))
+
 #define nd_set_node_id_old nd_set_node_id
 #undef nd_set_node_id
 #define nd_set_node_id(n, i) rb_nd_set_node_id((n), (i))
@@ -1266,7 +1270,7 @@ static rb_node_postexe_t *rb_node_postexe_new(struct parser_params *p, NODE *nd_
 // static rb_node_sym_t *rb_node_sym_new(struct parser_params *p, VALUE str, const YYLTYPE *loc);
 // static rb_node_dsym_t *rb_node_dsym_new(struct parser_params *p, rb_parser_string_t *string, long nd_alen, NODE *nd_next, const YYLTYPE *loc);
 // static rb_node_attrasgn_t *rb_node_attrasgn_new(struct parser_params *p, NODE *nd_recv, ID nd_mid, NODE *nd_args, const YYLTYPE *loc);
-static rb_node_lambda_t *rb_node_lambda_new(struct parser_params *p, rb_node_args_t *nd_args, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *operator_loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc);
+// static rb_node_lambda_t *rb_node_lambda_new(struct parser_params *p, rb_node_args_t *nd_args, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *operator_loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc);
 static rb_node_aryptn_t *rb_node_aryptn_new(struct parser_params *p, NODE *pre_args, NODE *rest_arg, NODE *post_args, const YYLTYPE *loc);
 static rb_node_hshptn_t *rb_node_hshptn_new(struct parser_params *p, NODE *nd_pconst, NODE *nd_pkwargs, NODE *nd_pkwrestarg, const YYLTYPE *loc);
 static rb_node_fndptn_t *rb_node_fndptn_new(struct parser_params *p, NODE *pre_rest_arg, NODE *args, NODE *post_rest_arg, const YYLTYPE *loc);
@@ -1374,7 +1378,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 // #define NEW_SYM(str,loc) (NODE *)rb_node_sym_new(p,str,loc)
 // #define NEW_DSYM(s,l,n,loc) (NODE *)rb_node_dsym_new(p,s,l,n,loc)
 // #define NEW_ATTRASGN(r,m,a,loc) (NODE *)rb_node_attrasgn_new(p,r,m,a,loc)
-#define NEW_LAMBDA(a,b,loc,op_loc,o_loc,c_loc) (NODE *)rb_node_lambda_new(p,a,b,loc,op_loc,o_loc,c_loc)
+// #define NEW_LAMBDA(a,b,loc,op_loc,o_loc,c_loc) (NODE *)rb_node_lambda_new(p,a,b,loc,op_loc,o_loc,c_loc)
 #define NEW_ARYPTN(pre,r,post,loc) (NODE *)rb_node_aryptn_new(p,pre,r,post,loc)
 #define NEW_HSHPTN(c,kw,kwrest,loc) (NODE *)rb_node_hshptn_new(p,c,kw,kwrest,loc)
 #define NEW_FNDPTN(pre,a,post,loc) (NODE *)rb_node_fndptn_new(p,pre,a,post,loc)
@@ -1494,6 +1498,8 @@ static rb_next_node_t *rb_new_node_next_new(struct parser_params *p, struct rb_a
 static rb_integer_node_t *rb_new_node_integer_new(struct parser_params *p, pm_integer_t *value, const YYLTYPE *loc);
 static rb_float_node_t *rb_new_node_float_new(struct parser_params *p, double value, const YYLTYPE *loc);
 static rb_interpolated_symbol_node_t *rb_new_node_interpolated_symbol_new(struct parser_params *p, rb_node_t *nd_head, const YYLTYPE *loc);
+static rb_lambda_node_t *rb_new_node_lambda_new(struct parser_params *p, rb_node_t *nd_args, rb_node_t *nd_body, const YYLTYPE *loc, const YYLTYPE *operator_loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc);
+
 static rb_source_line_node_t *rb_new_node_source_line_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_source_file_node_t *rb_new_node_source_file_new(struct parser_params *p, VALUE str, const YYLTYPE *loc);
 static rb_source_encoding_node_t *rb_new_node_source_encoding_new(struct parser_params *p, const YYLTYPE *loc);
@@ -1620,6 +1626,7 @@ static rb_source_encoding_node_t *rb_new_node_source_encoding_new(struct parser_
 #define NEW_RB_INTERPOLATED_SYMBOL(h,loc) (rb_node_t *)rb_new_node_interpolated_symbol_new(p,h,loc)
 
 #define NEW_RB_ATTRASGN(r,m,a,fl,loc) NEW_RB_CALL(r,m,a,fl|RB_CALL_NODE_FLAGS_ATTRIBUTE_WRITE,loc)
+#define NEW_RB_LAMBDA(a,b,loc,op_loc,o_loc,c_loc) (rb_node_t *)rb_new_node_lambda_new(p,a,b,loc,op_loc,o_loc,c_loc)
 
 #define NEW_RB_SOURCE_LINE(loc) (rb_node_t *)rb_new_node_source_line_new(p,loc)
 #define NEW_RB_SOURCE_FILE(str,loc) (rb_node_t *)rb_new_node_source_file_new(p,str,loc)
@@ -3220,7 +3227,8 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <node> lambda
 %type <node_block> brace_body do_body
 %type <locations_lambda_body> lambda_body
-%type <node_params> f_larglist f_largs largs_tail
+%type <node_block_params> f_larglist
+%type <node_params> f_largs largs_tail
 %type <node_block> brace_block cmd_brace_block do_block
 %type <new_node> none fitem
 %type <new_node> lhs
@@ -5597,8 +5605,8 @@ lambda		: tLAMBDA[lpar]
                         nd_args = args_with_numbered(p, $args, max_numparam, it_id);
                         {
                             YYLTYPE loc = code_loc_gen(&@lpar, &@body);
-                            $$ = NEW_LAMBDA(nd_args, $body->node, &loc, &@lpar, &$body->opening_loc, &$body->closing_loc);
-                            nd_set_line(RNODE_LAMBDA($$)->nd_body, @body.end_pos.lineno);
+                            $$ = NEW_RB_LAMBDA(nd_args, $body->node, &loc, &@lpar, &$body->opening_loc, &$body->closing_loc);
+                            nd_set_line(RB_NODE_LAMBDA($$)->body, @body.end_pos.lineno);
                             nd_set_line($$, @args.end_pos.lineno);
                             nd_set_first_loc($$, @lpar.beg_pos);
                             xfree($body);
@@ -5612,7 +5620,7 @@ lambda		: tLAMBDA[lpar]
 f_larglist	: '(' f_largs[args] opt_bv_decl ')'
                     {
                         p->ctxt.in_argdef = 0;
-                        $$ = $args;
+                        $$ = NEW_RB_BLOCK_PARAMETERS($args, $opt_bv_decl, &@$);
                         p->max_numparam = ORDINAL_PARAM;
                     /*% ripper: paren!($:args) %*/
                     }
@@ -5621,7 +5629,7 @@ f_larglist	: '(' f_largs[args] opt_bv_decl ')'
                         p->ctxt.in_argdef = 0;
                         if (!args_info_empty_p($args))
                             p->max_numparam = ORDINAL_PARAM;
-                        $$ = $args;
+                        $$ = NEW_RB_BLOCK_PARAMETERS($args, 0, &@$);
                     }
                 ;
 
@@ -12001,21 +12009,21 @@ rb_node_or_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTYP
 //     return n;
 // }
 
-static rb_node_lambda_t *
-rb_node_lambda_new(struct parser_params *p, rb_node_args_t *nd_args, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *operator_loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc)
-{
-    /* Keep the order of node creation */
-    NODE *scope = NEW_SCOPE(nd_args, nd_body, NULL, loc);
-    YYLTYPE lambda_loc = code_loc_gen(operator_loc, closing_loc);
-    rb_node_lambda_t *n = NODE_NEWNODE(NODE_LAMBDA, rb_node_lambda_t, &lambda_loc);
-    RNODE_SCOPE(scope)->nd_parent = &n->node;
-    n->nd_body = scope;
-    n->operator_loc = *operator_loc;
-    n->opening_loc = *opening_loc;
-    n->closing_loc = *closing_loc;
+// static rb_node_lambda_t *
+// rb_node_lambda_new(struct parser_params *p, rb_node_args_t *nd_args, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *operator_loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc)
+// {
+//     /* Keep the order of node creation */
+//     NODE *scope = NEW_SCOPE(nd_args, nd_body, NULL, loc);
+//     YYLTYPE lambda_loc = code_loc_gen(operator_loc, closing_loc);
+//     rb_node_lambda_t *n = NODE_NEWNODE(NODE_LAMBDA, rb_node_lambda_t, &lambda_loc);
+//     RNODE_SCOPE(scope)->nd_parent = &n->node;
+//     n->nd_body = scope;
+//     n->operator_loc = *operator_loc;
+//     n->opening_loc = *opening_loc;
+//     n->closing_loc = *closing_loc;
 
-    return n;
-}
+//     return n;
+// }
 
 static rb_node_case_t *
 rb_node_case_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *case_keyword_loc, const YYLTYPE *end_keyword_loc)
@@ -13595,6 +13603,20 @@ rb_new_node_interpolated_symbol_new(struct parser_params *p, rb_node_t *nd_head,
     rb_node_list_append(&n->parts, nd_head);
     n->opening_loc = NULL_LOC;
     n->closing_loc = NULL_LOC;
+
+    return n;
+}
+
+static rb_lambda_node_t *
+rb_new_node_lambda_new(struct parser_params *p, rb_node_t *nd_args, rb_node_t *nd_body, const YYLTYPE *loc, const YYLTYPE *operator_loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc)
+{
+    rb_lambda_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_LAMBDA_NODE, rb_lambda_node_t, loc);
+    n->locals = local_tbl(p);
+    n->parameters = nd_args;
+    n->body = nd_body;
+    n->operator_loc = *operator_loc;
+    n->opening_loc = *opening_loc;
+    n->closing_loc = *closing_loc;
 
     return n;
 }
