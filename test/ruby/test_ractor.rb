@@ -201,6 +201,57 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  # [Feature #21869]
+  def test_receive_all_collects_all_messages
+    assert_ractor(<<~'RUBY')
+      port = Ractor::Port.new
+      r = Ractor.new(port) do |p|
+        p.send 'm1'
+        p.send 'm2'
+      end
+      sleep 0.1 # ensure the messages are sent before we call receive_all
+      assert_equal ['m1', 'm2'], port.receive_all
+      r.join
+    RUBY
+  end
+
+  # [Feature #21869]
+  def test_receive_all_with_count_limit
+    assert_ractor(<<~'RUBY')
+      port = Ractor::Port.new
+      r = Ractor.new(port) do |p|
+        p.send 'a'
+        p.send 'b'
+        p.send 'c'
+      end
+      sleep 0.1 # ensure the messages are sent before we call receive_all
+      msgs = port.receive_all(2)
+      assert_equal 2, msgs.length
+      assert_equal ['a', 'b'], msgs
+      r.join
+    RUBY
+  end
+
+  # [Feature #21869]
+  def test_receive_all_zero_returns_empty
+    assert_ractor(<<~'RUBY')
+      port = Ractor::Port.new
+      assert_equal [], port.receive_all(0)
+    RUBY
+  end
+
+  # [Feature #21869]
+  def test_ractor_receive_all_on_default_port
+    assert_ractor(<<~'RUBY')
+      dp = Ractor.current.default_port
+      r = Ractor.new(dp) do |p|
+        p.send 'x'
+      end
+      assert_equal ['x'], Ractor.receive_all
+      r.join
+    RUBY
+  end
+
   def test_symbol_proc_is_shareable
     pr = :symbol.to_proc
     assert_make_shareable(pr)
