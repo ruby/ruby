@@ -609,7 +609,7 @@ ruby - Copyright (C) 1993-2024 Yukihiro Matsumoto
 ### `--debug`: Alias for `-d`
 
 Option `--debug` is an alias for
-{option -d}[rdoc-ref:@d-3A+Set+-24DEBUG+to+true].
+{option -d}[rdoc-ref:@-d+Set+DEBUG+to+true].
 
 ### `--disable`: Disable Features
 
@@ -667,7 +667,7 @@ see {option --disable}[rdoc-ref:@--disable+Disable+Features].
 ### `--encoding`: Alias for `-E`.
 
 Option `--encoding` is an alias for
-{option -E}[rdoc-ref:@E-3A+Set+Default+Encodings].
+{option -E}[rdoc-ref:@-E+Set+Default+Encodings].
 
 ### `--external-encoding`: Set Default External \Encoding
 
