@@ -8,6 +8,7 @@
 #include "vm_core.h"
 #include "vm_sync.h"
 #include "ractor_core.h"
+#include "internal/class.h"
 #include "internal/complex.h"
 #include "internal/error.h"
 #include "internal/gc.h"
@@ -1545,6 +1546,9 @@ mark_shareable(VALUE obj)
     }
 
     rb_obj_set_shareable_no_assert(obj);
+    if (RCLASS_SINGLETON_P(RBASIC(obj)->klass)) {
+        rb_obj_set_shareable_no_assert(RBASIC(obj)->klass);
+    }
     return traverse_cont;
 }
 
@@ -1592,9 +1596,14 @@ shareable_p_enter(VALUE obj)
     else if (RB_TYPE_P(obj, T_CLASS)  ||
              RB_TYPE_P(obj, T_MODULE) ||
              RB_TYPE_P(obj, T_ICLASS)) {
-        // TODO: remove it
-        mark_shareable(obj);
-        return traverse_skip;
+        if (RCLASS_SINGLETON_P(obj) && !RB_OBJ_SHAREABLE_P(RCLASS_ATTACHED_OBJECT(obj))) {
+            return traverse_stop;
+        }
+        else {
+            // TODO: remove it
+            mark_shareable(obj);
+            return traverse_skip;
+        }
     }
     else if (RB_OBJ_FROZEN_RAW(obj) &&
              allow_frozen_shareable_p(obj)) {
