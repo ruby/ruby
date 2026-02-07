@@ -217,7 +217,7 @@ static int
 free_loaded_feature_index_i(st_data_t key, st_data_t value, st_data_t arg)
 {
     if (!FIXNUM_P(value)) {
-        rb_darray_free((void *)value);
+        rb_darray_free_sized((void *)value, long);
     }
     return ST_CONTINUE;
 }

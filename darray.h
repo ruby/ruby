@@ -161,6 +161,18 @@ rb_darray_free(void *ary)
     xfree(ary);
 }
 
+void ruby_sized_xfree(void *x, size_t size);
+
+static inline void
+rb_darray_free_sized0(void *ary, size_t element_size)
+{
+    const rb_darray_meta_t *meta = ary;
+    if (meta) {
+        ruby_sized_xfree(ary, sizeof(*meta) + (element_size * meta->capa));
+    }
+}
+#define rb_darray_free_sized(ary, T) rb_darray_free_sized0((ary), sizeof(T))
+
 static inline void
 rb_darray_free_without_gc(void *ary)
 {
@@ -191,13 +203,16 @@ rb_darray_calloc_mul_add_without_gc(size_t x, size_t y, size_t z)
     return ptr;
 }
 
+void *ruby_sized_xrealloc(void *ptr, size_t new_size, size_t old_size);
+
 /* Internal function. Like rb_xrealloc_mul_add. */
 static inline void *
-rb_darray_realloc_mul_add(void *orig_ptr, size_t x, size_t y, size_t z)
+rb_darray_realloc_mul_add(void *orig_ptr, size_t capa, size_t element_size, size_t header_size)
 {
-    size_t size = rbimpl_size_add_or_raise(rbimpl_size_mul_or_raise(x, y), z);
+    size_t size = rbimpl_size_add_or_raise(rbimpl_size_mul_or_raise(capa, element_size), header_size);
+    size_t old_size = (rb_darray_capa(orig_ptr) * element_size) + header_size; // We know it won't overflow
 
-    void *ptr = xrealloc(orig_ptr, size);
+    void *ptr = ruby_sized_xrealloc(orig_ptr, size, old_size);
     RUBY_ASSERT(ptr != NULL);
 
     return ptr;

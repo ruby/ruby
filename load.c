@@ -343,7 +343,7 @@ loaded_features_index_clear_i(st_data_t key, st_data_t val, st_data_t arg)
 {
     VALUE obj = (VALUE)val;
     if (!SPECIAL_CONST_P(obj)) {
-        rb_darray_free((void *)obj);
+        rb_darray_free_sized((void *)obj, long);
     }
     return ST_DELETE;
 }
