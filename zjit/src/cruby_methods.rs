@@ -523,17 +523,7 @@ fn inline_string_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::Ins
     if fun.likely_a(recv, types::String, state) && fun.likely_a(other, types::String, state) {
         let recv = fun.coerce_to(block, recv, types::String, state);
         let other = fun.coerce_to(block, other, types::String, state);
-        let return_type = types::BoolExact;
-        let elidable = true;
-        // TODO(max): Make StringEqual its own opcode so that we can later constant-fold StringEqual(a, a) => true
-        let result = fun.push_insn(block, hir::Insn::CCall {
-            cfunc: rb_yarv_str_eql_internal as *const u8,
-            recv,
-            args: vec![other],
-            name: ID!(string_eq),
-            return_type,
-            elidable,
-        });
+        let result = fun.push_insn(block, hir::Insn::StringEqual { left: recv, right: other });
         return Some(result);
     }
     None

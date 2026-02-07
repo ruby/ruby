@@ -9684,7 +9684,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(String@0x1000, ==@0x1008, cme:0x1010)
           v27:StringExact = GuardType v11, StringExact
           v28:String = GuardType v12, String
-          v29:BoolExact = CCall v27, :String#==@0x1038, v28
+          v29:BoolExact = StringEqual v27, v28
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v29
@@ -9715,7 +9715,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(C@0x1000, ==@0x1008, cme:0x1010)
           v27:StringSubclass[class_exact:C] = GuardType v11, StringSubclass[class_exact:C]
           v28:String = GuardType v12, String
-          v29:BoolExact = CCall v27, :String#==@0x1038, v28
+          v29:BoolExact = StringEqual v27, v28
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v29
@@ -9746,7 +9746,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(String@0x1000, ==@0x1008, cme:0x1010)
           v27:StringExact = GuardType v11, StringExact
           v28:String = GuardType v12, String
-          v29:BoolExact = CCall v27, :String#==@0x1038, v28
+          v29:BoolExact = StringEqual v27, v28
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v29
@@ -9775,7 +9775,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(String@0x1000, ===@0x1008, cme:0x1010)
           v26:StringExact = GuardType v11, StringExact
           v27:String = GuardType v12, String
-          v28:BoolExact = CCall v26, :String#==@0x1038, v27
+          v28:BoolExact = StringEqual v26, v27
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v28
@@ -9806,7 +9806,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(C@0x1000, ===@0x1008, cme:0x1010)
           v26:StringSubclass[class_exact:C] = GuardType v11, StringSubclass[class_exact:C]
           v27:String = GuardType v12, String
-          v28:BoolExact = CCall v26, :String#==@0x1038, v27
+          v28:BoolExact = StringEqual v26, v27
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v28
@@ -9837,10 +9837,287 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(String@0x1000, ===@0x1008, cme:0x1010)
           v26:StringExact = GuardType v11, StringExact
           v27:String = GuardType v12, String
-          v28:BoolExact = CCall v26, :String#==@0x1038, v27
+          v28:BoolExact = StringEqual v26, v27
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v28
+        ");
+    }
+
+    #[test]
+    fn test_fold_string_equal_same_operand_true() {
+        eval(r#"
+            def test(s) = s == s
+            test("x")
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :s, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1000)
+          PatchPoint MethodRedefined(String@0x1000, ==@0x1008, cme:0x1010)
+          v24:StringExact = GuardType v9, StringExact
+          v25:String = GuardType v9, String
+          v28:TrueClass = Const Value(true)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v28
+        ");
+    }
+
+    #[test]
+    fn test_fold_string_eqq_same_operand_true() {
+        eval(r#"
+            def test(s) = s === s
+            test("x")
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :s, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1000)
+          PatchPoint MethodRedefined(String@0x1000, ===@0x1008, cme:0x1010)
+          v23:StringExact = GuardType v9, StringExact
+          v24:String = GuardType v9, String
+          v27:TrueClass = Const Value(true)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn test_fold_string_equal_frozen_local_same_operand_true() {
+        eval(r#"
+            def test
+              str = "a".freeze
+              str == str
+            end
+
+            test
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject):
+          EntryPoint JIT(0)
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:NilClass):
+          PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE)
+          v14:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, ==@0x1010, cme:0x1018)
+          v31:TrueClass = Const Value(true)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v31
+        ");
+    }
+
+    #[test]
+    fn test_fold_string_equal_frozen_distinct_literals_false() {
+        eval(r#"
+            def test
+              "a".freeze == "b".freeze
+            end
+
+            test
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE)
+          v11:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE)
+          v14:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint NoSingletonClass(String@0x1010)
+          PatchPoint MethodRedefined(String@0x1010, ==@0x1018, cme:0x1020)
+          v27:FalseClass = Const Value(false)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn test_fold_string_equal_distinct_string_literals_true() {
+        eval(r#"
+            def test
+              "a" == "a"
+            end
+
+            test
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v11:StringExact = StringCopy v10
+          v13:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v14:StringExact = StringCopy v13
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, ==@0x1010, cme:0x1018)
+          v27:TrueClass = Const Value(true)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn test_fold_string_equal_distinct_string_literals_false() {
+        eval(r#"
+            def test
+              "a" == "b"
+            end
+
+            test
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v11:StringExact = StringCopy v10
+          v13:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v14:StringExact = StringCopy v13
+          PatchPoint NoSingletonClass(String@0x1010)
+          PatchPoint MethodRedefined(String@0x1010, ==@0x1018, cme:0x1020)
+          v27:FalseClass = Const Value(false)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn test_not_fold_string_equal_distinct_objects() {
+        eval(r#"
+            def test(s, t) = s == t
+            test("x", "x")
+            test("x", "x")
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :s, l0, SP@5
+          v3:BasicObject = GetLocal :t, l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1000)
+          PatchPoint MethodRedefined(String@0x1000, ==@0x1008, cme:0x1010)
+          v27:StringExact = GuardType v11, StringExact
+          v28:String = GuardType v12, String
+          v29:BoolExact = StringEqual v27, v28
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v29
+        ");
+    }
+
+    #[test]
+    fn test_not_fold_string_equal_one_side_known_literal() {
+        eval(r#"
+            def test(s) = "a" == s
+            test("a")
+            test("a")
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :s, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v13:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v14:StringExact = StringCopy v13
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, ==@0x1010, cme:0x1018)
+          v26:String = GuardType v9, String
+          v27:BoolExact = StringEqual v14, v26
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn test_not_fold_string_not_equal_same_operand_false() {
+        eval(r#"
+            def test(s) = s != s
+            test("x")
+            test("x")
+        "#);
+        assert_contains_opcode("test", YARVINSN_opt_neq);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :s, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1000)
+          PatchPoint MethodRedefined(String@0x1000, !=@0x1008, cme:0x1010)
+          v24:StringExact = GuardType v9, StringExact
+          v25:BoolExact = CCallWithFrame v24, :BasicObject#!=@0x1038, v9
+          CheckInterrupts
+          Return v25
         ");
     }
 

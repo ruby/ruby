@@ -1898,6 +1898,46 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:opt_eq], call_threshold: 2
   end
 
+  def test_opt_eq_string_same_operand
+    assert_compiles '[true, true]', %q{
+      def test(s) = s == s
+      test("x") # profile opt_eq
+      [test("x"), test("y")]
+    }, insns: [:opt_eq], call_threshold: 2
+  end
+
+  def test_opt_eq_string_distinct_literals
+    assert_compiles '[false, false]', %q{
+      def test = "a" == "b"
+      test # profile opt_eq
+      [test, test]
+    }, insns: [:opt_eq], call_threshold: 2
+  end
+
+  def test_opt_eq_string_one_side_known_literal
+    assert_compiles '[true, false]', %q{
+      def test(s) = "a" == s
+      test("a") # profile opt_eq
+      [test("a"), test("b")]
+    }, insns: [:opt_eq], call_threshold: 2
+  end
+
+  def test_opt_eq_string_distinct_objects
+    assert_compiles '[true, false]', %q{
+      def test(s, t) = s == t
+      test("x", "x") # profile opt_eq
+      [test("x", "x"), test("x", "y")]
+    }, insns: [:opt_eq], call_threshold: 2
+  end
+
+  def test_opt_eqq_string_same_operand
+    assert_compiles '[true, true]', %q{
+      def test(s) = s === s
+      test("x") # profile opt_send_without_block
+      [test("x"), test("y")]
+    }, insns: [:opt_send_without_block], call_threshold: 2
+  end
+
   def test_opt_neq_dynamic
     # TODO(max): Don't split this test; instead, run all tests with and without
     # profiling.
