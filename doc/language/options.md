@@ -129,6 +129,24 @@ $ basename `pwd`
 ruby
 ```
 
+This option is accumulative; relative paths are solved from the
+previous working directory.
+
+```console
+$ ruby -C / -C usr -e 'puts Dir.pwd'
+/usr
+```
+
+If the argument is not an existing directory, a fatal error will
+occur:
+
+```console
+$ ruby -C /nonexistent
+ruby: Can't chdir to /nonexistent (fatal)
+$ ruby -C /dev/null
+ruby: Can't chdir to /dev/null (fatal)
+```
+
 Whitespace between the option and its argument may be omitted.
 
 ### `-d`: Set `$DEBUG` to `true`
@@ -273,6 +291,16 @@ $ ruby -I my_lib -I some_lib -e 'p $LOAD_PATH.take(2)'
 $ popd
 ```
 
+This option and {option `-C`}[rdoc-ref:@-C+Set+Working+Directory] will
+be applied in the order in the command line; expansion of `-I` options
+are affected by preceeding `-C` options.
+
+```console
+$ ruby -C / -Ilib -C usr -Ilib -e 'puts $:[0, 2]'
+/lib
+/usr/lib
+```
+
 Whitespace between the option and its argument may be omitted.
 
 ### `-l`: Set Output Record Separator; Chop Lines
@@ -395,6 +423,11 @@ $ ruby -r csv -r json -e 'p defined?(JSON); p defined?(CSV)'
 "constant"
 "constant"
 ```
+
+The library is loaded with the `Kernel#require` method, after the
+other options such as {`-C`}[rdoc-ref:@-C+Set+Working+Directory],
+{`-I`}[rdoc-ref:@-I+Add+to+LOADPATH], and "custom options" by
+{`-s`}[rdoc-ref:@-s+Define+Global+Variable], are applied:
 
 Whitespace between the option and its argument may be omitted.
 
