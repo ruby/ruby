@@ -4100,19 +4100,19 @@ pub mod hir_build_tests {
         bb5(v30:BasicObject, v31:NilClass):
           v35:Fixnum[0] = Const Value(0)
           Jump bb7(v30, v35)
-        bb7(v48:BasicObject, v49:BasicObject):
-          v52:BasicObject = InvokeBuiltin rb_jit_ary_at_end, v48, v49
+        bb7(v48:BasicObject, v49:Fixnum):
+          v52:BoolExact = InvokeBuiltin rb_jit_ary_at_end, v48, v49
           v54:CBool = Test v52
-          v55:Falsy = RefineType v52, Falsy
+          v55:FalseClass = RefineType v52, Falsy
           IfFalse v54, bb6(v48, v49)
-          v57:Truthy = RefineType v52, Truthy
+          v57:TrueClass = RefineType v52, Truthy
           v59:NilClass = Const Value(nil)
           CheckInterrupts
           Return v48
-        bb6(v67:BasicObject, v68:BasicObject):
+        bb6(v67:BasicObject, v68:Fixnum):
           v72:BasicObject = InvokeBuiltin rb_jit_ary_at, v67, v68
           v74:BasicObject = InvokeBlock, v72 # SendFallbackReason: Uncategorized(invokeblock)
-          v78:BasicObject = InvokeBuiltin rb_jit_fixnum_inc, v67, v68
+          v78:Fixnum = InvokeBuiltin rb_jit_fixnum_inc, v67, v68
           PatchPoint NoEPEscape(each)
           Jump bb7(v67, v78)
         ");
