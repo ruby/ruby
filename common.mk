@@ -940,14 +940,6 @@ rbconfig.rb: $(RBCONFIG)
 
 $(HAVE_BASERUBY:no=)$(RBCONFIG)$(HAVE_BASERUBY:no=): $(PREP)
 $(RBCONFIG): $(tooldir)/mkconfig.rb config.status $(srcdir)/version.h $(srcdir)/common.mk
-$(RBCONFIG): unicode-version
-
-unicode-version:
-	$(Q)$(BOOTSTRAPRUBY) -n \
-	-e 'BEGIN{version=ARGV.shift;mis=ARGV.dup}' \
-	-e 'END{abort "UNICODE version mismatch: #{mis}" unless mis.empty?}' \
-	-e '(mis.delete(ARGF.path); ARGF.close) if /ONIG_UNICODE_VERSION_STRING +"#{Regexp.quote(version)}"/o' \
-	$(UNICODE_VERSION) $(UNICODE_DATA_HEADERS)
 
 $(RBCONFIG):
 	$(Q)$(BOOTSTRAPRUBY) $(tooldir)/mkconfig.rb \
