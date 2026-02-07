@@ -1016,6 +1016,7 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
              nd_type_p(node, RB_SINGLETON_CLASS_NODE) ||
              nd_type_p(node, RB_MODULE_NODE) ||
              nd_type_p(node, RB_BLOCK_NODE) ||
+             nd_type_p(node, RB_LAMBDA_NODE) ||
              nd_type_p(node, RB_DEF_NODE)) {
         const rb_ast_id_table_t *locals = NULL;
         const NODE *args = NULL;
@@ -1088,7 +1089,10 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
             }
           case RB_LAMBDA_NODE:
             {
-                // args = cast->parameters;
+                const rb_lambda_node_t *cast = (const rb_lambda_node_t *)node;
+                locals = cast->locals;
+                args = cast->parameters;
+                body = (NODE *)cast->body;
                 break;
             }
           case RB_FOR_NODE:
@@ -12586,6 +12590,21 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
             ADD_INSN(ret, node, intern);
         }
         else {
+            ADD_INSN(ret, node, pop);
+        }
+        break;
+      }
+
+      case RB_LAMBDA_NODE: {
+        /* compile same as lambda{...} */
+        const rb_iseq_t *block = NEW_CHILD_ISEQ(node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, line);
+        VALUE argc = INT2FIX(0);
+
+        ADD_INSN1(ret, node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+        ADD_CALL_WITH_BLOCK(ret, node, idLambda, argc, block);
+        RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)block);
+
+        if (popped) {
             ADD_INSN(ret, node, pop);
         }
         break;

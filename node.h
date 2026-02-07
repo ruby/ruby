@@ -125,13 +125,14 @@ rb_nd_line(const rb_node_t *n)
     if (!n) return -1;
     return n->line;
 }
+
 /*
  * rb_node_t version of `nd_set_line`
  */
 static inline void
 rb_nd_set_line(rb_node_t *n, int l)
 {
-	n->line = l;
+    n->line = l;
 }
 
 #define NODE_SPECIAL_REQUIRED_KEYWORD ((NODE *)-1)
@@ -166,6 +167,7 @@ rb_nd_set_line(rb_node_t *n, int l)
 #define rb_nd_first_column(n) ((int)(RB_NODE(n)->location.beg_pos.column))
 #define rb_nd_first_lineno(n) ((int)(RB_NODE(n)->location.beg_pos.lineno))
 #define rb_nd_first_loc(n) (RB_NODE(n)->location.beg_pos)
+#define rb_nd_set_first_loc(n, v) (RB_NODE(n)->location.beg_pos = (v))
 
 #define rb_nd_last_column(n) ((int)(RB_NODE(n)->location.end_pos.column))
 #define rb_nd_last_lineno(n) ((int)(RB_NODE(n)->location.end_pos.lineno))
