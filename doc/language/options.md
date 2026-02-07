@@ -437,6 +437,10 @@ Option `-s` specifies that a "custom option" is to define a global variable
 in the invoked Ruby program:
 
 - The custom option must appear _after_ the program name.
+- If there is no script name in the command line (using {option
+  -e}[rdoc-ref:@-e+Execute+Given+Ruby+Code] or implicit reading from
+  `$stdin`), the custom options must be separated from the other
+  interpreter options with a `--`.
 - The custom option must begin with single hyphen (e.g., `-foo`),
   not two hyphens (e.g., `--foo`).
 - The name of the global variable is based on the option name:
@@ -458,9 +462,6 @@ $ ruby -s t.rb -foo
 $ ruby -s t.rb -foo=baz -bar=bat
 ["baz", "bat"]
 ```
-
-The option may not be used with
-{option -e}[rdoc-ref:@-e+Execute+Given+Ruby+Code]
 
 ### `-S`: Search Directories in `ENV['PATH']`
 
