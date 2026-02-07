@@ -3111,9 +3111,10 @@ mark_current_machine_context(rb_execution_context_t *ec)
 void
 rb_gc_save_machine_context(void)
 {
-    rb_thread_t *thread = GET_THREAD();
-
-    RB_VM_SAVE_MACHINE_CONTEXT(thread);
+    rb_execution_context_t *ec = GET_EC();
+    if (ec != rb_ec_vm_ptr(ec)->gc.marking_ec) {
+        RB_VM_SAVE_MACHINE_CONTEXT(rb_ec_thread_ptr(ec));
+    }
 }
 
 
