@@ -350,6 +350,34 @@ class Ractor
     Ractor.current.default_port.receive
   end
 
+  #
+  # call-seq:
+  #
+  # call-seq:
+  #    Ractor.receive_all -> [objs] or nil
+  #    Ractor.receive_all(limit) -> [objs] or nil
+  #
+  # Receives messages from the current ractor's default port. If +limit+ is
+  # given, at most +limit+ messages are returned; otherwise all available
+  # messages are returned. If no messages are available then the call blocks
+  # until at least one message arrives. Raises ArgumentError if +limit+ is
+  # given and is less than or equal to 0. Returns nil if no messages are
+  # available. Invoked messages are removed from the message queue. If the
+  # port is closed and there are no more messages in the message queue the
+  # method raises Ractor::ClosedError.
+  #
+  # Examples:
+  #
+  #    # collect all available messages
+  #    msgs = Ractor.receive_all
+  #
+  #    # collect up to 2 messages (may return fewer if fewer are queued)
+  #    msgs = Ractor.receive_all(2)
+
+  def self.receive_all(limit = nil)
+    Ractor.current.default_port.receive_all(limit)
+  end
+
   class << self
     alias recv receive
   end
@@ -359,6 +387,11 @@ class Ractor
     default_port.receive
   end
   alias recv receive
+
+  # same as Ractor.receive_all
+  def receive_all(limit = nil)
+    default_port.receive_all(limit)
+  end
 
   #
   # call-seq:
@@ -741,6 +774,37 @@ class Ractor
     def receive
       __builtin_cexpr! %q{
         ractor_port_receive(ec, self)
+      }
+    end
+
+    # call-seq:
+    #    port.receive_all -> [msgs] or nil
+    #    port.receive_all(limit) -> [msgs] or nil
+    #
+    # Receives messages from the port (which were sent there by Port#send).
+    # Only the ractor that created the port can receive messages this way.
+    # If +limit+ is given, at most +limit+ messages are returned; otherwise
+    # all available messages are returned. If the message queue is empty the
+    # method blocks until at least one message arrives. Raises ArgumentError
+    # if +limit+ is given and is less than or equal to 0. Returns nil if no
+    # messages are available. Invoked messages are removed from the message queue.
+    # If the port is closed and there are no more messages in the message queue
+    # the method raises Ractor::ClosedError.
+    #
+    # Examples:
+    #
+    #    port = Ractor::Port.new
+    #    r = Ractor.new(port) do |p|
+    #      p.send 'm1'
+    #      p.send 'm2'
+    #    end
+    #    port.receive_all      #=> ['m1', 'm2']
+    #    port.receive_all(1)   #=> ['m1']  # up to one message
+    #    port.receive_all(0)   #=> raises ArgumentError
+
+    def receive_all(limit = nil)
+      __builtin_cexpr! %q{
+        ractor_port_receive_all(ec, limit, self)
       }
     end
 
