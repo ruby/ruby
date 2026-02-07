@@ -274,6 +274,10 @@ impl Type {
         else if val.is_nil() { types::NilClass }
         else if val.is_true() { types::TrueClass }
         else if val.is_false() { types::FalseClass }
+        // Handle types that have an immediate/heap split (see from_heap_object)
+        else if val.class() == unsafe { rb_cInteger } { types::Bignum }
+        else if val.class() == unsafe { rb_cFloat } { types::HeapFloat }
+        else if val.class() == unsafe { rb_cSymbol } { types::DynamicSymbol }
         else { Self::from_class(val.class()) }
     }
 

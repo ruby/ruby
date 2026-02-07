@@ -115,6 +115,24 @@ pub type TypeDistribution = Distribution<ProfiledType, DISTRIBUTION_SIZE>;
 
 pub type TypeDistributionSummary = DistributionSummary<ProfiledType, DISTRIBUTION_SIZE>;
 
+impl TypeDistributionSummary {
+    /// Iterate over profiled types, deduplicating by type identity (ignoring shape).
+    /// This is useful because the profile stores (class, shape) pairs, but
+    /// for polymorphic dispatch we only care about unique type identities.
+    pub fn unique_classes(&self) -> impl Iterator<Item = ProfiledType> + '_ {
+        let mut seen: [ProfiledType; DISTRIBUTION_SIZE] = [ProfiledType::empty(); DISTRIBUTION_SIZE];
+        let mut seen_count = 0;
+        self.buckets().iter().filter_map(move |&profiled_type| {
+            if profiled_type.is_empty() { return None; }
+            let key = profiled_type.without_shape();
+            if seen[..seen_count].contains(&key) { return None; }
+            seen[seen_count] = key;
+            seen_count += 1;
+            Some(profiled_type)
+        })
+    }
+}
+
 /// Profile the Type of top-`n` stack operands
 fn profile_operands(profiler: &mut Profiler, profile: &mut IseqProfile, n: usize) {
     let types = &mut profile.opnd_types[profiler.insn_idx];
@@ -349,6 +367,12 @@ impl ProfiledType {
 
     pub fn is_false(&self) -> bool {
         self.class == unsafe { rb_cFalseClass } && self.flags.is_immediate()
+    }
+
+    /// Return a copy with the shape cleared, for comparing type identity
+    /// without considering shape differences.
+    pub fn without_shape(&self) -> Self {
+        Self { class: self.class, shape: INVALID_SHAPE_ID, flags: self.flags }
     }
 }
 
