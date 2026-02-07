@@ -2737,11 +2737,18 @@ rb_threadptr_ready(rb_thread_t *th)
 static VALUE
 rb_threadptr_raise(rb_thread_t *target_th, int argc, VALUE *argv)
 {
+    VALUE exc;
+
     if (rb_threadptr_dead(target_th)) {
         return Qnil;
     }
 
-    VALUE exception = rb_exception_setup(argc, argv);
+    if (argc == 0) {
+        exc = rb_exc_new(rb_eRuntimeError, 0, 0);
+    }
+    else {
+        exc = rb_make_exception(argc, argv);
+    }
 
     /* making an exception object can switch thread,
        so we need to check thread deadness again */
@@ -2749,7 +2756,8 @@ rb_threadptr_raise(rb_thread_t *target_th, int argc, VALUE *argv)
         return Qnil;
     }
 
-    rb_threadptr_pending_interrupt_enque(target_th, exception);
+    rb_ec_setup_exception(GET_EC(), exc, Qundef);
+    rb_threadptr_pending_interrupt_enque(target_th, exc);
     rb_threadptr_interrupt(target_th);
 
     return Qnil;
@@ -2933,7 +2941,14 @@ thread_raise_m(int argc, VALUE *argv, VALUE self)
     const rb_thread_t *current_th = GET_THREAD();
 
     threadptr_check_pending_interrupt_queue(target_th);
-    rb_threadptr_raise(target_th, argc, argv);
+
+    if (rb_threadptr_dead(target_th)) {
+        return Qnil;
+    }
+
+    VALUE exception = rb_exception_setup(argc, argv);
+    rb_threadptr_pending_interrupt_enque(target_th, exception);
+    rb_threadptr_interrupt(target_th);
 
     /* To perform Thread.current.raise as Kernel.raise */
     if (current_th == target_th) {
