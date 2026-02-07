@@ -3996,6 +3996,125 @@ pub mod hir_build_tests {
           SideExit TooManyKeywordParameters
         ");
     }
+
+    #[test]
+    fn test_each_reloads_locals() {
+        eval(r#"
+            [].each {|| }
+        "#);
+        assert_snapshot!(hir_string_proc("[].method(:each)"), @r"
+        fn each@<internal:array>:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          v3:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject):
+          EntryPoint JIT(0)
+          v7:NilClass = Const Value(nil)
+          v8:NilClass = Const Value(nil)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:NilClass, v12:NilClass):
+          v16:NilClass = Const Value(nil)
+          v18:TrueClass|NilClass = Defined yield, v16
+          CheckInterrupts
+          v21:CBool = Test v18
+          v22:TrueClass = RefineType v18, Truthy
+          IfTrue v21, bb4(v10, v11, v12)
+          v24:NilClass = RefineType v18, Falsy
+          v27:BasicObject = InvokeBuiltin <inline_expr>, v10
+          Jump bb3(v10, v11, v12, v27)
+        bb4(v29:BasicObject, v30:NilClass, v31:NilClass):
+          v35:Fixnum[0] = Const Value(0)
+          v39:NilClass = Const Value(nil)
+          CheckInterrupts
+          Jump bb6(v29, v35, v39)
+        bb6(v54:BasicObject, v55:BasicObject, v56:BasicObject):
+          v59:BasicObject = InvokeBuiltin <inline_expr>, v54
+          v60:BasicObject = GetLocal :_i, l0, EP@4
+          v61:BasicObject = GetLocal :value, l0, EP@3
+          CheckInterrupts
+          v64:CBool = Test v59
+          v65:Truthy = RefineType v59, Truthy
+          IfTrue v64, bb5(v54, v60, v61)
+          v67:Falsy = RefineType v59, Falsy
+          v69:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v54
+        bb5(v77:BasicObject, v78:BasicObject, v79:BasicObject):
+          PatchPoint NoEPEscape(each)
+          v86:BasicObject = InvokeBlock, v79 # SendFallbackReason: Uncategorized(invokeblock)
+          Jump bb6(v77, v78, v79)
+        bb3(v45:BasicObject, v46:NilClass, v47:NilClass, v48:BasicObject):
+          CheckInterrupts
+          Return v48
+        ");
+        }
+
+    #[test]
+    fn test_map_reloads_locals() {
+        eval(r#"
+            [].map {|| }
+        "#);
+        assert_snapshot!(hir_string_proc("[].method(:map)"), @r"
+        fn map@<internal:array>:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          v3:NilClass = Const Value(nil)
+          v4:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3, v4)
+        bb1(v7:BasicObject):
+          EntryPoint JIT(0)
+          v8:NilClass = Const Value(nil)
+          v9:NilClass = Const Value(nil)
+          v10:NilClass = Const Value(nil)
+          Jump bb2(v7, v8, v9, v10)
+        bb2(v12:BasicObject, v13:NilClass, v14:NilClass, v15:NilClass):
+          v19:NilClass = Const Value(nil)
+          v21:TrueClass|NilClass = Defined yield, v19
+          CheckInterrupts
+          v24:CBool = Test v21
+          v25:TrueClass = RefineType v21, Truthy
+          IfTrue v24, bb4(v12, v13, v14, v15)
+          v27:NilClass = RefineType v21, Falsy
+          v30:BasicObject = InvokeBuiltin <inline_expr>, v12
+          Jump bb3(v12, v13, v14, v15, v30)
+        bb4(v32:BasicObject, v33:NilClass, v34:NilClass, v35:NilClass):
+          v39:Fixnum[0] = Const Value(0)
+          v43:NilClass = Const Value(nil)
+          v47:BasicObject = InvokeBuiltin ary_sized_alloc, v32
+          PatchPoint NoEPEscape(map)
+          CheckInterrupts
+          Jump bb6(v32, v39, v43, v47)
+        bb6(v65:BasicObject, v66:BasicObject, v67:BasicObject, v68:BasicObject):
+          v71:BasicObject = InvokeBuiltin <inline_expr>, v65
+          v72:BasicObject = GetLocal :_i, l0, EP@5
+          v73:BasicObject = GetLocal :value, l0, EP@4
+          CheckInterrupts
+          v76:CBool = Test v71
+          v77:Truthy = RefineType v71, Truthy
+          IfTrue v76, bb5(v65, v72, v73, v68)
+          v79:Falsy = RefineType v71, Falsy
+          v81:NilClass = Const Value(nil)
+          PatchPoint NoEPEscape(map)
+          CheckInterrupts
+          Return v68
+        bb5(v91:BasicObject, v92:BasicObject, v93:BasicObject, v94:BasicObject):
+          PatchPoint NoEPEscape(map)
+          v101:BasicObject = InvokeBlock, v93 # SendFallbackReason: Uncategorized(invokeblock)
+          PatchPoint NoEPEscape(map)
+          v107:BasicObject = InvokeBuiltin <inline_expr>, v91
+          v108:BasicObject = GetLocal :value, l0, EP@4
+          v109:BasicObject = GetLocal :result, l0, EP@3
+          Jump bb6(v91, v92, v108, v109)
+        bb3(v55:BasicObject, v56:NilClass, v57:NilClass, v58:NilClass, v59:BasicObject):
+          CheckInterrupts
+          Return v59
+        ");
+        }
  }
 
  /// Test successor and predecessor set computations.

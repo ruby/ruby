@@ -1127,6 +1127,12 @@ pub mod test_utils {
             crate::cruby::ids::init(); // for ID! usages in tests
         }
 
+        // Call ZJIT hooks to install Ruby implementations of builtins like Array#each
+        unsafe {
+            let zjit = rb_const_get(rb_cRubyVM, rust_str_to_id("ZJIT"));
+            rb_funcallv(zjit, rust_str_to_id("call_jit_hooks"), 0, std::ptr::null());
+        }
+
         // Set up globals for convenience
         let zjit_entry = ZJITState::init();
 
