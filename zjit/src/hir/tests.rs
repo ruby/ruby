@@ -891,17 +891,26 @@ pub mod hir_build_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:BasicObject = GetLocal :l2, l2, EP@4
+          v12:CPtr = GetEP 1
+          v13:CInt64 = LoadField v12, :_env_data_index_flags@0x1000
+          v14:CInt64 = GuardNoBitsSet v13, CUInt64(8)
           SetLocal :l1, l1, EP@3, v10
-          v15:BasicObject = GetLocal :l1, l1, EP@3
-          v17:BasicObject = GetLocal :l2, l2, EP@4
-          v20:BasicObject = SendWithoutBlock v15, :+, v17 # SendFallbackReason: Uncategorized(opt_plus)
-          SetLocal :l2, l2, EP@4, v20
-          v25:BasicObject = GetLocal :l2, l2, EP@4
-          v27:BasicObject = GetLocal :l3, l3, EP@5
-          v30:BasicObject = SendWithoutBlock v25, :+, v27 # SendFallbackReason: Uncategorized(opt_plus)
-          SetLocal :l3, l3, EP@5, v30
+          v18:BasicObject = GetLocal :l1, l1, EP@3
+          v20:BasicObject = GetLocal :l2, l2, EP@4
+          v23:BasicObject = SendWithoutBlock v18, :+, v20 # SendFallbackReason: Uncategorized(opt_plus)
+          v25:CPtr = GetEP 2
+          v26:CInt64 = LoadField v25, :_env_data_index_flags@0x1000
+          v27:CInt64 = GuardNoBitsSet v26, CUInt64(8)
+          SetLocal :l2, l2, EP@4, v23
+          v31:BasicObject = GetLocal :l2, l2, EP@4
+          v33:BasicObject = GetLocal :l3, l3, EP@5
+          v36:BasicObject = SendWithoutBlock v31, :+, v33 # SendFallbackReason: Uncategorized(opt_plus)
+          v39:CPtr = GetEP 3
+          v40:CInt64 = LoadField v39, :_env_data_index_flags@0x1000
+          v41:CInt64 = GuardNoBitsSet v40, CUInt64(8)
+          SetLocal :l3, l3, EP@5, v36
           CheckInterrupts
-          Return v30
+          Return v36
         "
         );
     }
@@ -2241,9 +2250,9 @@ pub mod hir_build_tests {
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_HASH)
           v32:Fixnum = ArrayHash v15, v16
           PatchPoint NoEPEscape(test)
-          v39:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v40:ArrayExact = ArrayDup v39
-          v42:BasicObject = SendWithoutBlock v14, :puts, v40 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v38:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v39:ArrayExact = ArrayDup v38
+          v41:BasicObject = SendWithoutBlock v14, :puts, v39 # SendFallbackReason: Uncategorized(opt_send_without_block)
           PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v32
@@ -2430,9 +2439,9 @@ pub mod hir_build_tests {
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_INCLUDE_P)
           v33:BoolExact = ArrayInclude v15, v16 | v16
           PatchPoint NoEPEscape(test)
-          v40:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v41:ArrayExact = ArrayDup v40
-          v43:BasicObject = SendWithoutBlock v14, :puts, v41 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v39:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v40:ArrayExact = ArrayDup v39
+          v42:BasicObject = SendWithoutBlock v14, :puts, v40 # SendFallbackReason: Uncategorized(opt_send_without_block)
           PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v33
@@ -3187,9 +3196,9 @@ pub mod hir_build_tests {
           PatchPoint SingleRactorMode
           v26:BasicObject = GetIvar v12, :@c
           PatchPoint NoEPEscape(reverse_odd)
-          v38:ArrayExact = NewArray v20, v23, v26
+          v37:ArrayExact = NewArray v20, v23, v26
           CheckInterrupts
-          Return v38
+          Return v37
 
         fn reverse_even@<compiled>:8:
         bb0():
@@ -3217,9 +3226,9 @@ pub mod hir_build_tests {
           PatchPoint SingleRactorMode
           v32:BasicObject = GetIvar v14, :@d
           PatchPoint NoEPEscape(reverse_even)
-          v46:ArrayExact = NewArray v23, v26, v29, v32
+          v45:ArrayExact = NewArray v23, v26, v29, v32
           CheckInterrupts
-          Return v46
+          Return v45
         ");
     }
 
@@ -3433,24 +3442,24 @@ pub mod hir_build_tests {
         bb2(v16:BasicObject, v17:BasicObject, v18:BasicObject, v19:BasicObject, v20:BasicObject, v21:NilClass):
           v25:BasicObject = InvokeBuiltin dir_s_open, v16, v17, v18
           PatchPoint NoEPEscape(open)
-          v31:CPtr = GetEP 0
-          v32:CInt64 = LoadField v31, :_env_data_index_flags@0x1000
-          v33:CInt64 = GuardNoBitsSet v32, CUInt64(512)
-          v34:CInt64 = LoadField v31, :_env_data_index_specval@0x1001
-          v35:CInt64 = GuardAnyBitSet v34, CUInt64(1)
-          v36:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
+          v30:CPtr = GetEP 0
+          v31:CInt64 = LoadField v30, :_env_data_index_flags@0x1000
+          v32:CInt64 = GuardNoBitsSet v31, CUInt64(512)
+          v33:CInt64 = LoadField v30, :_env_data_index_specval@0x1001
+          v34:CInt64 = GuardAnyBitSet v33, CUInt64(1)
+          v35:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
           CheckInterrupts
-          v39:CBool[true] = Test v36
-          v40 = RefineType v36, Falsy
-          IfFalse v39, bb3(v16, v17, v18, v19, v20, v25)
-          v42:HeapObject[BlockParamProxy] = RefineType v36, Truthy
-          v46:BasicObject = InvokeBlock, v25 # SendFallbackReason: Uncategorized(invokeblock)
-          v49:BasicObject = InvokeBuiltin dir_s_close, v16, v25
+          v38:CBool[true] = Test v35
+          v39 = RefineType v35, Falsy
+          IfFalse v38, bb3(v16, v17, v18, v19, v20, v25)
+          v41:HeapObject[BlockParamProxy] = RefineType v35, Truthy
+          v45:BasicObject = InvokeBlock, v25 # SendFallbackReason: Uncategorized(invokeblock)
+          v48:BasicObject = InvokeBuiltin dir_s_close, v16, v25
           CheckInterrupts
-          Return v46
-        bb3(v55, v56, v57, v58, v59, v60):
+          Return v45
+        bb3(v54, v55, v56, v57, v58, v59):
           CheckInterrupts
-          Return v60
+          Return v59
         ");
     }
 
