@@ -4433,6 +4433,7 @@ iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
         ISEQ_COMPILE_DATA(iseq)->option->tailcall_optimization;
     const int do_si = ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction;
     const int do_ou = ISEQ_COMPILE_DATA(iseq)->option->operands_unification;
+    const int do_noint = ISEQ_BODY(iseq)->builtin_attrs & BUILTIN_ATTR_NOINT;
     int rescue_level = 0;
     int tailcallopt = do_tailcallopt;
 
@@ -4463,6 +4464,22 @@ iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
             }
             if (do_ou) {
                 insn_operands_unification((INSN *)list);
+            }
+
+            if (do_noint) {
+                INSN *item = (INSN *)list;
+                if (IS_INSN_ID(item, jump)) {
+                    item->insn_id = BIN(jump_noint);
+                }
+                else if (IS_INSN_ID(item, branchif)) {
+                    item->insn_id = BIN(branchif_noint);
+                }
+                else if (IS_INSN_ID(item, branchunless)) {
+                    item->insn_id = BIN(branchunless_noint);
+                }
+                else if (IS_INSN_ID(item, branchnil)) {
+                    item->insn_id = BIN(branchnil_noint);
+                }
             }
 
             if (do_block_optimization) {
@@ -9222,6 +9239,9 @@ compile_builtin_attr(rb_iseq_t *iseq, const NODE *node)
         else if (strcmp(RSTRING_PTR(string), "c_trace") == 0) {
             // Let the iseq act like a C method in backtraces
             ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_C_TRACE;
+        }
+        else if (strcmp(RSTRING_PTR(string), "noint") == 0) {
+            ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_NOINT;
         }
         else {
             goto unknown_arg;

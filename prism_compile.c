@@ -3441,6 +3441,9 @@ pm_compile_builtin_attr(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, cons
             // Let the iseq act like a C method in backtraces
             ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_C_TRACE;
         }
+        else if (strcmp(RSTRING_PTR(string), "noint") == 0) {
+            ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_NOINT;
+        }
         else {
             COMPILE_ERROR(iseq, node_location->line, "unknown argument to attr!: %s", RSTRING_PTR(string));
             return COMPILE_NG;

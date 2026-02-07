@@ -823,11 +823,11 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint NoSingletonClass(C@0x1000)
           PatchPoint MethodRedefined(C@0x1000, fun_new_map@0x1008, cme:0x1010)
-          v23:ArraySubclass[class_exact:C] = GuardType v9, ArraySubclass[class_exact:C]
-          v24:BasicObject = CCallWithFrame v23, :C#fun_new_map@0x1038, block=0x1040
+          v22:ArraySubclass[class_exact:C] = GuardType v9, ArraySubclass[class_exact:C]
+          v23:BasicObject = SendDirect v22, 0x1038, :fun_new_map (0x1048)
           v15:BasicObject = GetLocal :o, l0, EP@3
           CheckInterrupts
-          Return v24
+          Return v23
         ");
     }
 
@@ -6490,9 +6490,9 @@ mod hir_opt_tests {
           v11:ArrayExact = ArrayDup v10
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, map@0x1010, cme:0x1018)
-          v21:BasicObject = CCallWithFrame v11, :Array#map@0x1040, block=0x1048
+          v20:BasicObject = SendDirect v11, 0x1040, :map (0x1050)
           CheckInterrupts
-          Return v21
+          Return v20
         ");
     }
 
@@ -11885,6 +11885,55 @@ mod hir_opt_tests {
           SetIvar v28, :@d, v31
           CheckInterrupts
           Return v31
+        ");
+    }
+
+    #[test]
+    fn test_array_each() {
+        eval("[1, 2, 3].each { |x| x }");
+        assert_snapshot!(hir_string_proc("Array.instance_method(:each)"), @r"
+        fn each@<internal:array>:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject):
+          EntryPoint JIT(0)
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:NilClass):
+          v13:NilClass = Const Value(nil)
+          v15:TrueClass|NilClass = Defined yield, v13
+          v17:CBool = Test v15
+          IfFalse v17, bb3(v8, v9)
+          v35:Fixnum[0] = Const Value(0)
+          Jump bb7(v8, v35)
+        bb3(v23:BasicObject, v24:NilClass):
+          v28:BasicObject = InvokeBuiltin <inline_expr>, v23
+          CheckInterrupts
+          Return v28
+        bb7(v48:BasicObject, v49:Fixnum):
+          v83:Array = RefineType v48, Array
+          v84:CInt64 = ArrayLength v83
+          v85:Fixnum = BoxFixnum v84
+          v86:BoolExact = FixnumGe v49, v85
+          IncrCounter inline_cfunc_optimized_send_count
+          v54:CBool = Test v86
+          IfFalse v54, bb6(v48, v49)
+          CheckInterrupts
+          Return v48
+        bb6(v67:BasicObject, v68:Fixnum):
+          v88:Array = RefineType v67, Array
+          v89:CInt64 = UnboxFixnum v68
+          v90:BasicObject = ArrayAref v88, v89
+          IncrCounter inline_cfunc_optimized_send_count
+          v74:BasicObject = InvokeBlock, v90 # SendFallbackReason: Uncategorized(invokeblock)
+          v92:Fixnum[1] = Const Value(1)
+          v93:Fixnum = FixnumAdd v68, v92
+          IncrCounter inline_cfunc_optimized_send_count
+          PatchPoint NoEPEscape(each)
+          Jump bb7(v67, v93)
         ");
     }
 }

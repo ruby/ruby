@@ -4641,7 +4641,7 @@ fn gen_branchif(
     let jump_offset = jit.get_arg(0).as_i32();
 
     // Check for interrupts, but only on backward branches that may create loops
-    if jump_offset < 0 {
+    if jump_offset < 0 && jit.get_opcode() != YARVINSN_branchif_noint as usize {
         gen_check_ints(asm, Counter::branchif_interrupted);
     }
 
@@ -4693,7 +4693,7 @@ fn gen_branchunless(
     let jump_offset = jit.get_arg(0).as_i32();
 
     // Check for interrupts, but only on backward branches that may create loops
-    if jump_offset < 0 {
+    if jump_offset < 0 && jit.get_opcode() != YARVINSN_branchunless_noint as usize {
         gen_check_ints(asm, Counter::branchunless_interrupted);
     }
 
@@ -4746,7 +4746,7 @@ fn gen_branchnil(
     let jump_offset = jit.get_arg(0).as_i32();
 
     // Check for interrupts, but only on backward branches that may create loops
-    if jump_offset < 0 {
+    if jump_offset < 0 && jit.get_opcode() != YARVINSN_branchnil_noint as usize {
         gen_check_ints(asm, Counter::branchnil_interrupted);
     }
 
@@ -4901,7 +4901,7 @@ fn gen_jump(
     let jump_offset = jit.get_arg(0).as_i32();
 
     // Check for interrupts, but only on backward branches that may create loops
-    if jump_offset < 0 {
+    if jump_offset < 0 && jit.get_opcode() != YARVINSN_jump_noint as usize {
         gen_check_ints(asm, Counter::jump_interrupted);
     }
 
@@ -10777,6 +10777,10 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_branchnil => Some(gen_branchnil),
         YARVINSN_throw => Some(gen_throw),
         YARVINSN_jump => Some(gen_jump),
+        YARVINSN_branchif_noint => Some(gen_branchif),
+        YARVINSN_branchunless_noint => Some(gen_branchunless),
+        YARVINSN_branchnil_noint => Some(gen_branchnil),
+        YARVINSN_jump_noint => Some(gen_jump),
         YARVINSN_opt_new => Some(gen_opt_new),
 
         YARVINSN_getblockparamproxy => Some(gen_getblockparamproxy),

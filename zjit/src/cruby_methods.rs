@@ -14,6 +14,13 @@ use std::ffi::c_void;
 use crate::hir_type::{types, Type};
 use crate::hir;
 
+// Array iteration builtin functions (defined in array.c)
+unsafe extern "C" {
+    fn ary_at_end(ec: EcPtr, self_: VALUE, index: VALUE) -> VALUE;
+    fn ary_at(ec: EcPtr, self_: VALUE, index: VALUE) -> VALUE;
+    fn fixnum_inc(ec: EcPtr, self_: VALUE, num: VALUE) -> VALUE;
+}
+
 pub struct Annotations {
     cfuncs: HashMap<*mut c_void, FnProperties>,
     builtin_funcs: HashMap<*mut c_void, FnProperties>,
@@ -269,6 +276,11 @@ pub fn init() -> Annotations {
     annotate_builtin!(rb_mKernel, "frozen?", types::BoolExact);
     annotate_builtin!(rb_cSymbol, "name", types::StringExact);
     annotate_builtin!(rb_cSymbol, "to_s", types::StringExact);
+
+    // Array iteration builtins (used in with_jit Array#each, map, select, find)
+    builtin_funcs.insert(fixnum_inc as *mut c_void, FnProperties { inline: inline_fixnum_inc, return_type: types::Fixnum, ..Default::default() });
+    builtin_funcs.insert(ary_at as *mut c_void, FnProperties { inline: inline_ary_at, ..Default::default() });
+    builtin_funcs.insert(ary_at_end as *mut c_void, FnProperties { inline: inline_ary_at_end, return_type: types::BoolExact, ..Default::default() });
 
     Annotations {
         cfuncs: std::mem::take(cfuncs),
@@ -887,4 +899,34 @@ fn inline_kernel_class(fun: &mut hir::Function, block: hir::BlockId, _recv: hir:
     let recv_class = fun.type_of(recv).runtime_exact_ruby_class()?;
     let real_class = unsafe { rb_class_real(recv_class) };
     Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(real_class) }))
+}
+
+/// Inline `fixnum_inc(ec, self, num)` implies FixnumAdd(num, 1).
+/// num is always a Fixnum (starts at 0 and is incremented by fixnum_inc).
+fn inline_fixnum_inc(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[_self, num] = args else { return None; };
+    let one = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(VALUE::fixnum_from_usize(1)) });
+    let result = fun.push_insn(block, hir::Insn::FixnumAdd { left: num, right: one, state });
+    Some(result)
+}
+
+/// Inline `ary_at(ec, self, index)` implies ArrayAref.
+/// Called from Array#each etc. where self is Array and index is in bounds.
+fn inline_ary_at(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[recv, index] = args else { return None; };
+    let recv = fun.push_insn(block, hir::Insn::RefineType { val: recv, new_type: types::Array });
+    let index = fun.push_insn(block, hir::Insn::UnboxFixnum { val: index });
+    let result = fun.push_insn(block, hir::Insn::ArrayAref { array: recv, index });
+    Some(result)
+}
+
+/// Inline `ary_at_end(ec, self, index)` implies index >= ArrayLength(self).
+/// Called from Array#each etc. where self is Array and index is Fixnum.
+fn inline_ary_at_end(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[recv, index] = args else { return None; };
+    let recv = fun.push_insn(block, hir::Insn::RefineType { val: recv, new_type: types::Array });
+    let length_cint = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
+    let length = fun.push_insn(block, hir::Insn::BoxFixnum { val: length_cint, state });
+    let result = fun.push_insn(block, hir::Insn::FixnumGe { left: index, right: length });
+    Some(result)
 }

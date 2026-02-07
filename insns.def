@@ -1265,6 +1265,56 @@ branchnil
     }
 }
 
+/* same as jump, but without interrupt check */
+DEFINE_INSN
+jump_noint
+(OFFSET dst)
+()
+()
+// attr bool leaf = true;
+{
+    JUMP(dst);
+}
+
+/* same as branchif, but without interrupt check */
+DEFINE_INSN
+branchif_noint
+(OFFSET dst)
+(VALUE val)
+()
+// attr bool leaf = true;
+{
+    if (RTEST(val)) {
+        JUMP(dst);
+    }
+}
+
+/* same as branchunless, but without interrupt check */
+DEFINE_INSN
+branchunless_noint
+(OFFSET dst)
+(VALUE val)
+()
+// attr bool leaf = true;
+{
+    if (!RTEST(val)) {
+        JUMP(dst);
+    }
+}
+
+/* same as branchnil, but without interrupt check */
+DEFINE_INSN
+branchnil_noint
+(OFFSET dst)
+(VALUE val)
+()
+// attr bool leaf = true;
+{
+    if (NIL_P(val)) {
+        JUMP(dst);
+    }
+}
+
 /**********************************************************/
 /* for optimize                                           */
 /**********************************************************/

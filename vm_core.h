@@ -403,6 +403,8 @@ enum rb_builtin_attr {
     BUILTIN_ATTR_INLINE_BLOCK = 0x04,
     // The iseq acts like a C method in backtraces.
     BUILTIN_ATTR_C_TRACE = 0x08,
+    // The iseq uses noint branch/jump opcodes that skip interrupt checking.
+    BUILTIN_ATTR_NOINT = 0x10,
 };
 
 typedef VALUE (*rb_jit_func_t)(struct rb_execution_context_struct *, struct rb_control_frame_struct *);

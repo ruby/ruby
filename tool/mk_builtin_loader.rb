@@ -6,7 +6,7 @@ require_relative 'ruby_vm/helpers/c_escape'
 
 SUBLIBS = {}
 REQUIRED = {}
-BUILTIN_ATTRS = %w[leaf inline_block use_block c_trace]
+BUILTIN_ATTRS = %w[leaf inline_block use_block c_trace noint]
 
 module CompileWarning
   @@warnings = 0
