@@ -690,19 +690,16 @@ extract_raise_options(int argc, VALUE *argv, VALUE *cause)
         CONST_ID(keywords[0], "cause");
     }
 
-    if (argc > 0) {
-        VALUE options;
-        argc = rb_scan_args(argc, argv, "*:", NULL, &options);
+    RUBY_ASSERT(argc > 0);
+    RUBY_ASSERT(RB_TYPE_P(argv[argc - 1], T_HASH));
 
-        if (!NIL_P(options)) {
-            if (!RHASH_EMPTY_P(options)) {
-                // Extract optional cause keyword argument, leaving any other options alone:
-                rb_get_kwargs(options, keywords, 0, -2, cause);
+    VALUE options = argv[--argc];
 
-                // If there were any other options, add them back to the arguments:
-                if (!RHASH_EMPTY_P(options)) argv[argc++] = options;
-            }
-        }
+    if (!RHASH_EMPTY_P(options)) {
+        options = rb_hash_dup(options);
+        rb_get_kwargs(options, keywords, 0, -2, cause);
+
+        if (!RHASH_EMPTY_P(options)) argv[argc++] = options;
     }
 
     return argc;
@@ -717,13 +714,15 @@ extract_raise_options(int argc, VALUE *argv, VALUE *cause)
  * @return                    Prepared exception object with cause applied
  */
 VALUE
-rb_exception_setup(int argc, VALUE *argv)
+rb_exception_setup(int argc, VALUE *argv, int kw_splat)
 {
     rb_execution_context_t *ec = GET_EC();
 
     // Extract cause keyword argument:
     VALUE cause = Qundef;
-    argc = extract_raise_options(argc, argv, &cause);
+    if (kw_splat) {
+        argc = extract_raise_options(argc, argv, &cause);
+    }
 
     // Validate cause-only case:
     if (argc == 0 && !UNDEF_P(cause)) {
@@ -797,7 +796,9 @@ VALUE
 rb_f_raise(int argc, VALUE *argv)
 {
     VALUE cause = Qundef;
-    argc = extract_raise_options(argc, argv, &cause);
+    if (rb_keyword_given_p()) {
+        argc = extract_raise_options(argc, argv, &cause);
+    }
 
     VALUE exception;
 

@@ -550,6 +550,7 @@ rb_thread_free_native_thread(void *th_ptr)
 }
 
 static VALUE rb_threadptr_raise(rb_thread_t *, int, VALUE *);
+static VALUE rb_threadptr_raise_kw(rb_thread_t *, int, VALUE *);
 static VALUE rb_thread_to_s(VALUE thread);
 
 void
@@ -2734,6 +2735,13 @@ rb_threadptr_ready(rb_thread_t *th)
     rb_threadptr_interrupt(th);
 }
 
+static void
+rb_threadptr_raise_exc(rb_thread_t *target_th, VALUE exception)
+{
+    rb_threadptr_pending_interrupt_enque(target_th, exception);
+    rb_threadptr_interrupt(target_th);
+}
+
 static VALUE
 rb_threadptr_raise(rb_thread_t *target_th, int argc, VALUE *argv)
 {
@@ -2741,17 +2749,22 @@ rb_threadptr_raise(rb_thread_t *target_th, int argc, VALUE *argv)
         return Qnil;
     }
 
-    VALUE exception = rb_exception_setup(argc, argv);
+    VALUE exception = rb_exception_setup(argc, argv, 0);
 
-    /* making an exception object can switch thread,
-       so we need to check thread deadness again */
+    rb_threadptr_raise_exc(target_th, exception);
+    return Qnil;
+}
+
+static VALUE
+rb_threadptr_raise_kw(rb_thread_t *target_th, int argc, VALUE *argv)
+{
     if (rb_threadptr_dead(target_th)) {
         return Qnil;
     }
 
-    rb_threadptr_pending_interrupt_enque(target_th, exception);
-    rb_threadptr_interrupt(target_th);
+    VALUE exception = rb_exception_setup(argc, argv, rb_keyword_given_p());
 
+    rb_threadptr_raise_exc(target_th, exception);
     return Qnil;
 }
 
@@ -2933,7 +2946,7 @@ thread_raise_m(int argc, VALUE *argv, VALUE self)
     const rb_thread_t *current_th = GET_THREAD();
 
     threadptr_check_pending_interrupt_queue(target_th);
-    rb_threadptr_raise(target_th, argc, argv);
+    rb_threadptr_raise_kw(target_th, argc, argv);
 
     /* To perform Thread.current.raise as Kernel.raise */
     if (current_th == target_th) {
