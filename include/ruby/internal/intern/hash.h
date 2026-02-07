@@ -69,6 +69,19 @@ void rb_st_foreach_safe(struct st_table *st, st_foreach_callback_func *func, st_
  */
 VALUE rb_check_hash_type(VALUE obj);
 
+/**
+ * Try  converting an  object to  its hash  representation using  its `to_h`
+ * method, if any.  If there is no such thing, returns ::RUBY_Qnil.
+ *
+ * @param[in]  obj            Arbitrary ruby object to convert.
+ * @exception  rb_eTypeError  `obj.to_h` returned something non-Hash.
+ * @retval     RUBY_Qnil      No conversion from `obj` to hash defined.
+ * @retval     otherwise      Converted hash representation of `obj`.
+ * @see        rb_check_hash_type
+ * @see        rb_check_to_array
+ */
+VALUE rb_check_to_hash(VALUE obj);
+
 RBIMPL_ATTR_NONNULL(())
 /**
  * Iterates   over  a   hash.   This   basically   does  the   same  thing   as

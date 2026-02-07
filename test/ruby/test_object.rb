@@ -421,13 +421,16 @@ class TestObject < Test::Unit::TestCase
 
   def test_convert_hash
     assert_equal({}, Hash(nil))
-    assert_equal({}, Hash([]))
     assert_equal({key: :value}, Hash(key: :value))
+    assert_equal({}, Hash([]))
+    assert_equal({1=>2}, Hash([[1,2]]))
     assert_raise(TypeError) { Hash([1,2]) }
     assert_raise(TypeError) { Hash(Object.new) }
     o = Object.new
-    def o.to_hash; {a: 1, b: 2}; end
-    assert_equal({a: 1, b: 2}, Hash(o))
+    def o.to_h; {a: 1}; end
+    assert_equal({a: 1}, Hash(o))
+    def o.to_hash; {b: 2}; end
+    assert_equal({b: 2}, Hash(o))
     o.singleton_class.remove_method(:to_hash)
     def o.to_hash; 9; end
     assert_raise(TypeError) { Hash(o) }
