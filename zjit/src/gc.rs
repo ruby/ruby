@@ -131,7 +131,7 @@ fn iseq_update_references(payload: &mut IseqPayload) {
 
 fn iseq_version_update_references(mut version: IseqVersionRef) {
     // Move ISEQ in the payload
-    unsafe { version.as_mut() }.iseq = unsafe { rb_gc_location(version.as_ref().iseq.into()) }.as_iseq();
+    unsafe { version.as_mut() }.iseq = unsafe { rb_gc_location(version.as_ref().iseq.into()) }.as_iseq_ptr();
 
     // Move ISEQ references in incoming IseqCalls
     for iseq_call in unsafe { version.as_mut() }.incoming.iter_mut() {

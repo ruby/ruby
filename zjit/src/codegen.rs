@@ -895,7 +895,7 @@ fn gen_ccall_with_frame(
     recv: Opnd,
     args: Vec<Opnd>,
     cme: *const rb_callable_method_entry_t,
-    blockiseq: Option<IseqPtr>,
+    blockiseq: Option<Iseq>,
     state: &FrameState,
 ) -> lir::Opnd {
     gen_incr_counter(asm, Counter::non_variadic_cfunc_optimized_send_count);
@@ -915,7 +915,7 @@ fn gen_ccall_with_frame(
         // Change cfp->block_code in the current frame. See vm_caller_setup_arg_block().
         // VM_CFP_TO_CAPTURED_BLOCK then turns &cfp->self into a block handler.
         // rb_captured_block->code.iseq aliases with cfp->block_code.
-        asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_BLOCK_CODE), VALUE::from(block_iseq).into());
+        asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_BLOCK_CODE), block_iseq.into());
         let cfp_self_addr = asm.lea(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF));
         asm.or(cfp_self_addr, Opnd::Imm(1))
     } else {
@@ -970,8 +970,8 @@ fn gen_ccall(asm: &mut Assembler, cfunc: *const u8, name: ID, recv: Opnd, args: 
 // Change cfp->block_code in the current frame. See vm_caller_setup_arg_block().
 // VM_CFP_TO_CAPTURED_BLOCK then turns &cfp->self into a block handler.
 // rb_captured_block->code.iseq aliases with cfp->block_code.
-fn gen_block_handler_specval(asm: &mut Assembler, blockiseq: IseqPtr) -> lir::Opnd {
-    asm.store(Opnd::mem(VALUE_BITS, CFP, RUBY_OFFSET_CFP_BLOCK_CODE), VALUE::from(blockiseq).into());
+fn gen_block_handler_specval(asm: &mut Assembler, blockiseq: Iseq) -> lir::Opnd {
+    asm.store(Opnd::mem(VALUE_BITS, CFP, RUBY_OFFSET_CFP_BLOCK_CODE), blockiseq.into());
     let cfp_self_addr = asm.lea(Opnd::mem(VALUE_BITS, CFP, RUBY_OFFSET_CFP_SELF));
     asm.or(cfp_self_addr, Opnd::Imm(1))
 }
@@ -986,7 +986,7 @@ fn gen_ccall_variadic(
     recv: Opnd,
     args: Vec<Opnd>,
     cme: *const rb_callable_method_entry_t,
-    blockiseq: Option<IseqPtr>,
+    blockiseq: Option<Iseq>,
     state: &FrameState,
 ) -> lir::Opnd {
     gen_incr_counter(asm, Counter::variadic_cfunc_optimized_send_count);
@@ -1306,7 +1306,7 @@ fn gen_send(
     jit: &mut JITState,
     asm: &mut Assembler,
     cd: *const rb_call_data,
-    blockiseq: IseqPtr,
+    blockiseq: Option<Iseq>,
     state: &FrameState,
     reason: SendFallbackReason,
 ) -> lir::Opnd {
@@ -1320,7 +1320,7 @@ fn gen_send(
     asm_ccall!(
         asm,
         rb_vm_send,
-        EC, CFP, Opnd::const_ptr(cd), VALUE::from(blockiseq).into()
+        EC, CFP, Opnd::const_ptr(cd), blockiseq.into()
     )
 }
 
@@ -1329,7 +1329,7 @@ fn gen_send_forward(
     jit: &mut JITState,
     asm: &mut Assembler,
     cd: *const rb_call_data,
-    blockiseq: IseqPtr,
+    blockiseq: Option<Iseq>,
     state: &FrameState,
     reason: SendFallbackReason,
 ) -> lir::Opnd {
@@ -1344,7 +1344,7 @@ fn gen_send_forward(
     asm_ccall!(
         asm,
         rb_vm_sendforward,
-        EC, CFP, Opnd::const_ptr(cd), VALUE::from(blockiseq).into()
+        EC, CFP, Opnd::const_ptr(cd), blockiseq.into()
     )
 }
 
@@ -1378,17 +1378,17 @@ fn gen_send_iseq_direct(
     jit: &mut JITState,
     asm: &mut Assembler,
     cme: *const rb_callable_method_entry_t,
-    iseq: IseqPtr,
+    iseq: Iseq,
     recv: Opnd,
     args: Vec<Opnd>,
     kw_bits: u32,
     state: &FrameState,
-    blockiseq: Option<IseqPtr>,
+    blockiseq: Option<Iseq>,
 ) -> lir::Opnd {
     gen_incr_counter(asm, Counter::iseq_optimized_send_count);
 
-    let local_size = unsafe { get_iseq_body_local_table_size(iseq) }.to_usize();
-    let stack_growth = state.stack_size() + local_size + unsafe { get_iseq_body_stack_max(iseq) }.to_usize();
+    let local_size = unsafe { get_iseq_body_local_table_size(iseq.as_ptr()) }.to_usize();
+    let stack_growth = state.stack_size() + local_size + unsafe { get_iseq_body_stack_max(iseq.as_ptr()) }.to_usize();
     gen_stack_overflow_check(jit, asm, state, stack_growth);
 
     // Save cfp->pc and cfp->sp for the caller frame
@@ -1437,8 +1437,8 @@ fn gen_send_iseq_direct(
     // We write this to the local table slot at bits_start so that:
     // 1. The interpreter can read it via checkkeyword if we side-exit
     // 2. The JIT entry can read it via GetLocal
-    if unsafe { rb_get_iseq_flags_has_kw(iseq) } {
-        let keyword = unsafe { rb_get_iseq_body_param_keyword(iseq) };
+    if unsafe { rb_get_iseq_flags_has_kw(iseq.as_ptr()) } {
+        let keyword = unsafe { rb_get_iseq_body_param_keyword(iseq.as_ptr()) };
         let bits_start = unsafe { (*keyword).bits_start } as usize;
         let unspecified_bits = VALUE::fixnum_from_usize(kw_bits as usize);
         let bits_offset = (state.stack().len() - args.len() + bits_start) * SIZEOF_VALUE;
@@ -1501,7 +1501,7 @@ fn gen_send_iseq_direct(
     }
 
     // Make a method call. The target address will be rewritten once compiled.
-    let iseq_call = IseqCall::new(iseq, num_optionals_passed);
+    let iseq_call = IseqCall::new(iseq.as_ptr(), num_optionals_passed);
     let dummy_ptr = cb.get_write_ptr().raw_ptr(cb);
     jit.iseq_calls.push(iseq_call.clone());
     let ret = asm.ccall_with_iseq_call(dummy_ptr, c_args, &iseq_call);
@@ -1578,7 +1578,7 @@ fn gen_invokesuper(
     jit: &mut JITState,
     asm: &mut Assembler,
     cd: *const rb_call_data,
-    blockiseq: IseqPtr,
+    blockiseq: Option<Iseq>,
     state: &FrameState,
     reason: SendFallbackReason,
 ) -> lir::Opnd {
@@ -1592,7 +1592,7 @@ fn gen_invokesuper(
     asm_ccall!(
         asm,
         rb_vm_invokesuper,
-        EC, CFP, Opnd::const_ptr(cd), VALUE::from(blockiseq).into()
+        EC, CFP, Opnd::const_ptr(cd), blockiseq.into()
     )
 }
 
@@ -1601,7 +1601,7 @@ fn gen_invokesuperforward(
     jit: &mut JITState,
     asm: &mut Assembler,
     cd: *const rb_call_data,
-    blockiseq: IseqPtr,
+    blockiseq: Option<Iseq>,
     state: &FrameState,
     reason: SendFallbackReason,
 ) -> lir::Opnd {
@@ -1615,7 +1615,7 @@ fn gen_invokesuperforward(
     asm_ccall!(
         asm,
         rb_vm_invokesuperforward,
-        EC, CFP, Opnd::const_ptr(cd), VALUE::from(blockiseq).into()
+        EC, CFP, Opnd::const_ptr(cd), blockiseq.into()
     )
 }
 
@@ -2519,7 +2519,7 @@ fn gen_prepare_non_leaf_call(jit: &JITState, asm: &mut Assembler, state: &FrameS
 /// Frame metadata written by gen_push_frame()
 struct ControlFrame {
     recv: Opnd,
-    iseq: Option<IseqPtr>,
+    iseq: Option<Iseq>,
     cme: *const rb_callable_method_entry_t,
     frame_type: u32,
     /// The [`VM_ENV_DATA_INDEX_SPECVAL`] slot of the frame.
@@ -2536,7 +2536,7 @@ fn gen_push_frame(asm: &mut Assembler, argc: usize, state: &FrameState, frame: C
     asm_comment!(asm, "push cme, specval, frame type");
     // ep[-2]: cref of cme
     let local_size = if let Some(iseq) = frame.iseq {
-        (unsafe { get_iseq_body_local_table_size(iseq) }) as i32
+        (unsafe { get_iseq_body_local_table_size(iseq.as_ptr()) }) as i32
     } else {
         0
     };
@@ -2558,7 +2558,7 @@ fn gen_push_frame(asm: &mut Assembler, argc: usize, state: &FrameState, frame: C
     if let Some(iseq) = frame.iseq {
         // cfp_opnd(RUBY_OFFSET_CFP_PC): written by the callee frame on side-exits, non-leaf calls, or calls with GC
         // cfp_opnd(RUBY_OFFSET_CFP_SP): written by the callee frame on side-exits, non-leaf calls, or calls with GC
-        asm.mov(cfp_opnd(RUBY_OFFSET_CFP_ISEQ), VALUE::from(iseq).into());
+        asm.mov(cfp_opnd(RUBY_OFFSET_CFP_ISEQ), iseq.into());
     } else {
         // C frames don't have a PC and ISEQ in normal operation.
         // When runtime checks are enabled we poison the PC so accidental reads stand out.

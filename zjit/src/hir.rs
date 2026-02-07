@@ -892,7 +892,7 @@ pub enum Insn {
         state: InsnId,
         return_type: Type,
         elidable: bool,
-        blockiseq: Option<IseqPtr>,
+        blockiseq: Option<Iseq>,
     },
 
     /// Call a variadic C function with signature: func(int argc, VALUE *argv, VALUE recv)
@@ -906,7 +906,7 @@ pub enum Insn {
         state: InsnId,
         return_type: Type,
         elidable: bool,
-        blockiseq: Option<IseqPtr>,
+        blockiseq: Option<Iseq>,
     },
 
     /// Un-optimized fallback implementation (dynamic dispatch) for send-ish instructions
@@ -921,7 +921,7 @@ pub enum Insn {
     Send {
         recv: InsnId,
         cd: *const rb_call_data,
-        blockiseq: IseqPtr,
+        blockiseq: Option<Iseq>,
         args: Vec<InsnId>,
         state: InsnId,
         reason: SendFallbackReason,
@@ -929,7 +929,7 @@ pub enum Insn {
     SendForward {
         recv: InsnId,
         cd: *const rb_call_data,
-        blockiseq: IseqPtr,
+        blockiseq: Option<Iseq>,
         args: Vec<InsnId>,
         state: InsnId,
         reason: SendFallbackReason,
@@ -937,7 +937,7 @@ pub enum Insn {
     InvokeSuper {
         recv: InsnId,
         cd: *const rb_call_data,
-        blockiseq: IseqPtr,
+        blockiseq: Option<Iseq>,
         args: Vec<InsnId>,
         state: InsnId,
         reason: SendFallbackReason,
@@ -945,7 +945,7 @@ pub enum Insn {
     InvokeSuperForward {
         recv: InsnId,
         cd: *const rb_call_data,
-        blockiseq: IseqPtr,
+        blockiseq: Option<Iseq>,
         args: Vec<InsnId>,
         state: InsnId,
         reason: SendFallbackReason,
@@ -969,10 +969,10 @@ pub enum Insn {
         recv: InsnId,
         cd: *const rb_call_data,
         cme: *const rb_callable_method_entry_t,
-        iseq: IseqPtr,
+        iseq: Iseq,
         args: Vec<InsnId>,
         kw_bits: u32,
-        blockiseq: Option<IseqPtr>,
+        blockiseq: Option<Iseq>,
         state: InsnId,
     },
 
@@ -1846,7 +1846,7 @@ pub enum ValidationError {
 }
 
 /// Check if we can do a direct send to the given iseq with the given args.
-fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq_t, ci: *const rb_callinfo, send_insn: InsnId, args: &[InsnId], blockiseq: Option<IseqPtr>) -> bool {
+fn can_direct_send(function: &mut Function, block: BlockId, iseq: Iseq, ci: *const rb_callinfo, send_insn: InsnId, args: &[InsnId], blockiseq: Option<Iseq>) -> bool {
     let mut can_send = true;
     let mut count_failure = |counter| {
         can_send = false;
@@ -2690,7 +2690,7 @@ impl Function {
         block: BlockId,
         args: &[InsnId],
         ci: *const rb_callinfo,
-        iseq: IseqPtr,
+        iseq: Iseq,
         state: InsnId,
     ) -> Result<(InsnId, Vec<InsnId>, u32), SendFallbackReason> {
         let kwarg = unsafe { rb_vm_ci_kwarg(ci) };
@@ -2722,9 +2722,9 @@ impl Function {
         block: BlockId,
         args: &[InsnId],
         kwarg: *const rb_callinfo_kwarg,
-        iseq: IseqPtr,
+        iseq: Iseq,
     ) -> Result<(Vec<InsnId>, usize, u32), SendFallbackReason> {
-        let callee_keyword = unsafe { rb_get_iseq_body_param_keyword(iseq) };
+        let callee_keyword = unsafe { rb_get_iseq_body_param_keyword(iseq.as_ptr()) };
         if callee_keyword.is_null() {
             if !kwarg.is_null() {
                 // Caller is passing kwargs but callee doesn't expect them.
@@ -3099,6 +3099,10 @@ impl Function {
                             // Only specialize positional-positional calls
                             // TODO(max): Handle other kinds of parameter passing
                             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
+
+                            // SAFETY: def_type == VM_METHOD_TYPE_ISEQ should guarentee iseq is non-null
+                            let iseq = Iseq::new(iseq).unwrap();
+
                             if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice(), None) {
                                 self.push_insn_id(block, insn_id); continue;
                             }
@@ -3136,6 +3140,9 @@ impl Function {
                             }
                             let capture = unsafe { proc_block.as_.captured.as_ref() };
                             let iseq = unsafe { *capture.code.iseq.as_ref() };
+
+                            // SAFETY: proc_block.type_ == block_type_iseq should guarentee iseq is non-null
+                            let iseq = Iseq::new(iseq).unwrap();
 
                             if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice(), None) {
                                 self.push_insn_id(block, insn_id); continue;
@@ -3360,7 +3367,11 @@ impl Function {
 
                         if def_type == VM_METHOD_TYPE_ISEQ {
                             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
-                            if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice(), Some(blockiseq)) {
+
+                            // SAFETY: def_type == VM_METHOD_TYPE_ISEQ should guarentee iseq is non-null
+                            let iseq = Iseq::new(iseq).unwrap();
+
+                            if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice(), blockiseq) {
                                 self.push_insn_id(block, insn_id); continue;
                             }
 
@@ -3390,7 +3401,7 @@ impl Function {
                                 iseq,
                                 args: processed_args,
                                 kw_bits,
-                                blockiseq: Some(blockiseq),
+                                blockiseq,
                                 state: send_state,
                             });
                             self.make_equal_to(insn_id, send_direct);
@@ -3533,7 +3544,7 @@ impl Function {
                         }
 
                         // Don't handle calls with literal blocks (e.g., super { ... })
-                        if !blockiseq.is_null() {
+                        if blockiseq.is_some() {
                             self.push_insn_id(block, insn_id);
                             self.set_dynamic_send_reason(insn_id, SuperCallWithBlock);
                             continue;
@@ -3599,6 +3610,10 @@ impl Function {
                             // Check if the super method's parameters support direct send.
                             // If not, we can't do direct dispatch.
                             let super_iseq = unsafe { get_def_iseq_ptr((*super_cme).def) };
+
+                            // SAFETY: def_type == VM_METHOD_TYPE_ISEQ should guarentee iseq is non-null
+                            let super_iseq = Iseq::new(super_iseq).unwrap();
+
                             // TODO: pass Option<blockiseq> to can_direct_send when we start specializing `super { ... }`.
                             if !can_direct_send(self, block, super_iseq, ci, insn_id, args.as_slice(), None) {
                                 self.push_insn_id(block, insn_id);
@@ -3781,7 +3796,7 @@ impl Function {
                         if ci_flags & VM_CALL_OPT_SEND != 0 {
                             self.push_insn_id(block, insn_id); continue;
                         }
-                        let Some(value) = iseq_get_return_value(iseq, None, ci_flags) else {
+                        let Some(value) = iseq_get_return_value(iseq.as_ptr(), None, ci_flags) else {
                             self.push_insn_id(block, insn_id); continue;
                         };
                         match value {
@@ -4116,8 +4131,6 @@ impl Function {
                 fun.set_dynamic_send_reason(send_insn_id, ComplexArgPass);
                 return Err(());
             }
-
-            let blockiseq = if blockiseq.is_null() { None } else { Some(blockiseq) };
 
             let cfunc = unsafe { get_cme_def_body_cfunc(cme) };
             // Find the `argc` (arity) of the C method, which describes the parameters it expects
@@ -6117,8 +6130,8 @@ fn compute_bytecode_info(iseq: *const rb_iseq_t, opt_table: &[u32]) -> BytecodeI
                 }
             }
             YARVINSN_send | YARVINSN_invokesuper => {
-                let blockiseq: IseqPtr = get_arg(pc, 1).as_iseq();
-                if !blockiseq.is_null() {
+                let blockiseq = get_arg(pc, 1).as_iseq();
+                if blockiseq.is_some() {
                     has_blockiseq = true;
                 }
             }
@@ -7141,7 +7154,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_send => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
-                    let blockiseq: IseqPtr = get_arg(pc, 1).as_iseq();
+                    let blockiseq = get_arg(pc, 1).as_iseq();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
                     let flags = unsafe { rb_vm_ci_flag(call_info) };
                     if let Err(call_type) = unhandled_call_type(flags) {
@@ -7157,7 +7170,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let send = fun.push_insn(block, Insn::Send { recv, cd, blockiseq, args, state: exit_id, reason: Uncategorized(opcode) });
                     state.stack_push(send);
 
-                    if !blockiseq.is_null() {
+                    if blockiseq.is_some() {
                         // Reload locals that may have been modified by the blockiseq.
                         // TODO: Avoid reloading locals that are not referenced by the blockiseq
                         // or not used after this. Max thinks we could eventually DCE them.
@@ -7171,7 +7184,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_sendforward => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
-                    let blockiseq: IseqPtr = get_arg(pc, 1).as_iseq();
+                    let blockiseq = get_arg(pc, 1).as_iseq();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
                     let flags = unsafe { rb_vm_ci_flag(call_info) };
                     let forwarding = (flags & VM_CALL_FORWARDING) != 0;
@@ -7187,7 +7200,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let send_forward = fun.push_insn(block, Insn::SendForward { recv, cd, blockiseq, args, state: exit_id, reason: Uncategorized(opcode) });
                     state.stack_push(send_forward);
 
-                    if !blockiseq.is_null() {
+                    if blockiseq.is_some() {
                         // Reload locals that may have been modified by the blockiseq.
                         for local_idx in 0..state.locals.len() {
                             let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
@@ -7210,11 +7223,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let block_arg = (flags & VM_CALL_ARGS_BLOCKARG) != 0;
                     let args = state.stack_pop_n(argc as usize + usize::from(block_arg))?;
                     let recv = state.stack_pop()?;
-                    let blockiseq: IseqPtr = get_arg(pc, 1).as_ptr();
+                    let blockiseq = get_arg(pc, 1).as_iseq();
                     let result = fun.push_insn(block, Insn::InvokeSuper { recv, cd, blockiseq, args, state: exit_id, reason: Uncategorized(opcode) });
                     state.stack_push(result);
 
-                    if !blockiseq.is_null() {
+                    if blockiseq.is_some() {
                         // Reload locals that may have been modified by the blockiseq.
                         // TODO: Avoid reloading locals that are not referenced by the blockiseq
                         // or not used after this. Max thinks we could eventually DCE them.
@@ -7228,7 +7241,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_invokesuperforward => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
-                    let blockiseq: IseqPtr = get_arg(pc, 1).as_iseq();
+                    let blockiseq = get_arg(pc, 1).as_iseq();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
                     let flags = unsafe { rb_vm_ci_flag(call_info) };
                     let forwarding = (flags & VM_CALL_FORWARDING) != 0;
@@ -7243,7 +7256,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let result = fun.push_insn(block, Insn::InvokeSuperForward { recv, cd, blockiseq, args, state: exit_id, reason: Uncategorized(opcode) });
                     state.stack_push(result);
 
-                    if !blockiseq.is_null() {
+                    if blockiseq.is_some() {
                         // Reload locals that may have been modified by the blockiseq.
                         // TODO: Avoid reloading locals that are not referenced by the blockiseq
                         // or not used after this. Max thinks we could eventually DCE them.
