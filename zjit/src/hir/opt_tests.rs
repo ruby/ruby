@@ -12030,18 +12030,27 @@ mod hir_opt_tests {
           v28:BasicObject = InvokeBuiltin <inline_expr>, v23
           CheckInterrupts
           Return v28
-        bb7(v48:BasicObject, v49:BasicObject):
-          v52:BasicObject = InvokeBuiltin rb_jit_ary_at_end, v48, v49
-          v54:CBool = Test v52
+        bb7(v48:BasicObject, v49:Fixnum):
+          v83:Array = RefineType v48, Array
+          v84:CInt64 = ArrayLength v83
+          v85:Fixnum = BoxFixnum v84
+          v86:BoolExact = FixnumGe v49, v85
+          IncrCounter inline_cfunc_optimized_send_count
+          v54:CBool = Test v86
           IfFalse v54, bb6(v48, v49)
           CheckInterrupts
           Return v48
-        bb6(v67:BasicObject, v68:BasicObject):
-          v72:BasicObject = InvokeBuiltin rb_jit_ary_at, v67, v68
-          v74:BasicObject = InvokeBlock, v72 # SendFallbackReason: Uncategorized(invokeblock)
-          v78:BasicObject = InvokeBuiltin rb_jit_fixnum_inc, v67, v68
+        bb6(v67:BasicObject, v68:Fixnum):
+          v88:Array = RefineType v67, Array
+          v89:CInt64 = UnboxFixnum v68
+          v90:BasicObject = ArrayAref v88, v89
+          IncrCounter inline_cfunc_optimized_send_count
+          v74:BasicObject = InvokeBlock, v90 # SendFallbackReason: Uncategorized(invokeblock)
+          v92:Fixnum[1] = Const Value(1)
+          v93:Fixnum = FixnumAdd v68, v92
+          IncrCounter inline_cfunc_optimized_send_count
           PatchPoint NoEPEscape(each)
-          Jump bb7(v67, v78)
+          Jump bb7(v67, v93)
         ");
     }
 }

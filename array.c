@@ -2695,21 +2695,21 @@ ary_enum_length(VALUE ary, VALUE args, VALUE eobj)
 }
 
 // Return true if the index is at or past the end of the array.
-static VALUE
+VALUE
 rb_jit_ary_at_end(rb_execution_context_t *ec, VALUE self, VALUE index)
 {
     return FIX2LONG(index) >= RARRAY_LEN(self) ? Qtrue : Qfalse;
 }
 
 // Return the element at the given fixnum index.
-static VALUE
+VALUE
 rb_jit_ary_at(rb_execution_context_t *ec, VALUE self, VALUE index)
 {
     return RARRAY_AREF(self, FIX2LONG(index));
 }
 
 // Increment a fixnum by 1.
-static VALUE
+VALUE
 rb_jit_fixnum_inc(rb_execution_context_t *ec, VALUE self, VALUE num)
 {
     return LONG2FIX(FIX2LONG(num) + 1);
