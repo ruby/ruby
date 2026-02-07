@@ -9,7 +9,7 @@ module JSON
         # Instantiates a new State object, configured by _opts_.
         #
         # Argument +opts+, if given, contains a \Hash of options for the generation.
-        # See {Generating Options}[#module-JSON-label-Generating+Options].
+        # See {Generating Options}[rdoc-ref:JSON@Generating+Options].
         def initialize(opts = nil)
           if opts && !opts.empty?
             configure(opts)
