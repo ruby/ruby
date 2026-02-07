@@ -783,6 +783,12 @@ impl ID {
     }
 }
 
+impl Display for ID {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.contents_lossy())
+    }
+}
+
 /// Produce a Ruby string from a Rust string slice
 pub fn rust_str_to_ruby(str: &str) -> VALUE {
     unsafe { rb_utf8_str_new(str.as_ptr() as *const _, str.len() as i64) }
@@ -1401,6 +1407,9 @@ pub(crate) mod ids {
         name: _ep_method_entry
         name: _ep_specval
         name: _rbasic_flags
+        name: RUBY_FL_FREEZE
+        name: RUBY_ELTS_SHARED
+        name: VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM
     }
 
     /// Get an CRuby `ID` to an interned string, e.g. a particular method name.

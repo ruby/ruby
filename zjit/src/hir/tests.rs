@@ -2058,7 +2058,7 @@ pub mod hir_build_tests {
           PatchPoint NoEPEscape(test)
           v33:CPtr = GetEP 0
           v34:CInt64 = LoadField v33, :_env_data_index_flags@0x1000
-          v35:CInt64 = GuardNoBitsSet v34, CUInt64(512)
+          v35:CInt64 = GuardNoBitsSet v34, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM=CUInt64(512)
           v36:CInt64 = LoadField v33, :_env_data_index_specval@0x1001
           v37:CInt64 = GuardAnyBitSet v36, CUInt64(1)
           v38:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
@@ -3435,7 +3435,7 @@ pub mod hir_build_tests {
           PatchPoint NoEPEscape(open)
           v31:CPtr = GetEP 0
           v32:CInt64 = LoadField v31, :_env_data_index_flags@0x1000
-          v33:CInt64 = GuardNoBitsSet v32, CUInt64(512)
+          v33:CInt64 = GuardNoBitsSet v32, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM=CUInt64(512)
           v34:CInt64 = LoadField v31, :_env_data_index_specval@0x1001
           v35:CInt64 = GuardAnyBitSet v34, CUInt64(1)
           v36:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
