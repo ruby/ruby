@@ -96,6 +96,12 @@ rb_obj_embedded_size(uint32_t fields_count)
     return offsetof(struct RObject, as.ary) + (sizeof(VALUE) * fields_count);
 }
 
+/**
+ * Hide `obj` from `ObjectSpace`.
+ *
+ * \param[in] The `obj` to hide
+ * \return The now-hidden object
+ **/
 VALUE
 rb_obj_hide(VALUE obj)
 {
