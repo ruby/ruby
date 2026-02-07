@@ -3841,10 +3841,109 @@ impl Function {
         for block in self.rpo() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             assert!(self.blocks[block.0].insns.is_empty());
-            for insn_id in old_insns {
+            let mut old_insns_iter = old_insns.into_iter();
+            while let Some(insn_id) = old_insns_iter.next() {
                 match self.find(insn_id) {
-                    Insn::GetIvar { self_val, id, ic: _, state } => {
+                    Insn::GetIvar { self_val, id, ic, state } => {
                         let frame_state = self.frame_state(state);
+
+                        // First check for polymorphic profile data
+                        let polymorphic_shapes: Option<Vec<ProfiledType>> = self.profiles.as_ref().and_then(|profiles| {
+                            self.polymorphic_summary(profiles, self_val, frame_state.insn_idx)
+                        }).and_then(|summary| {
+                            let shapes: Vec<ProfiledType> = summary.buckets().iter()
+                                .filter(|t| !t.is_empty() && t.flags().is_t_object())
+                                .copied()
+                                .collect();
+                            if shapes.is_empty() { None } else { Some(shapes) }
+                        });
+
+                        // Handle polymorphic case with block splitting
+                        if let Some(shapes) = polymorphic_shapes {
+                            eprintln!("[optimize_getivar] Found polymorphic GetIvar with {} T_OBJECT shapes", shapes.len());
+
+                            // 1. Build switch structure in current block
+                            let guarded_self = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
+                            let shape = self.load_shape(block, guarded_self);
+
+                            // 2. Create join block for remaining instructions
+                            let join_block = self.new_block(frame_state.insn_idx as u32);
+                            let join_param = self.push_insn(join_block, Insn::Param); // for ivar result
+
+                            // 3. For each profiled shape, create LoadField block
+                            for profiled_type in &shapes {
+                                let ivar_index = {
+                                    let mut index: u16 = 0;
+                                    if unsafe { rb_shape_get_iv_index(profiled_type.shape().0, id, &mut index) } {
+                                        Some(index)
+                                    } else {
+                                        None
+                                    }
+                                };
+
+                                // Shape check in switch block
+                                let expected_shape = self.push_insn(block, Insn::Const { val: Const::CShape(profiled_type.shape()) });
+                                let test = self.push_insn(block, Insn::IsBitEqual { left: shape, right: expected_shape });
+                                // New block for loading the ivar when it has an index
+                                if let Some(ivar_index) = ivar_index {
+                                    let load_block = self.new_block(frame_state.insn_idx as u32);
+
+                                    self.push_insn(block, Insn::IfTrue {
+                                        val: test,
+                                        target: BranchEdge { target: load_block, args: vec![] } // No args - intentional cross-BB ref
+                                    });
+
+                                    // LoadField in load_block - CROSS-BB REFERENCE to guarded_self from switch block
+                                    let ivar = if profiled_type.flags().is_embedded() {
+                                        let offset = ROBJECT_OFFSET_AS_ARY as i32 + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
+                                        self.push_insn(load_block, Insn::LoadField { recv: guarded_self, id, offset, return_type: types::BasicObject })
+                                    } else {
+                                        // Load heap fields pointer, then load ivar - both cross-BB refs
+                                        let as_heap = self.push_insn(load_block, Insn::LoadField { recv: guarded_self, id: ID!(_as_heap), offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32, return_type: types::CPtr });
+                                        let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
+                                        self.push_insn(load_block, Insn::LoadField { recv: as_heap, id, offset, return_type: types::BasicObject })
+                                    };
+
+                                    self.push_insn(load_block, Insn::Jump(BranchEdge {
+                                        target: join_block,
+                                        args: vec![ivar]
+                                    }));
+                                } else {
+                                    // If there is no IVAR index, then the ivar was undefined when we
+                                    // entered the compiler.  That means we can just return nil for this
+                                    // shape + iv name. Branch directly to join block with nil.
+                                    let nil = self.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
+                                    self.push_insn(block, Insn::IfTrue {
+                                        val: test,
+                                        target: BranchEdge { target: join_block, args: vec![nil] }
+                                    });
+                                }
+                            }
+
+                            // 4. Fallback path in switch block - use GetIvar
+                            self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_polymorphic_no_match));
+                            let fallback_ivar = self.push_insn(block, Insn::GetIvar { self_val, id, ic, state });
+                            self.push_insn(block, Insn::Jump(BranchEdge {
+                                target: join_block,
+                                args: vec![fallback_ivar]
+                            }));
+
+                            // 5. Map original GetIvar to join block's param
+                            self.make_equal_to(insn_id, join_param);
+
+                            // 6. Move remaining instructions to join_block
+                            // TODO(alan): check if these visited by rpo.
+                            for remaining_insn in old_insns_iter.by_ref() {
+                                self.push_insn_id(join_block, remaining_insn);
+                            }
+
+                            eprintln!("[optimize_getivar] Created switch block with {} LoadField blocks", shapes.len());
+                            eprintln!("[optimize_getivar] HIR after polymorphic getivar optimization:\n{}", FunctionPrinter::without_snapshot(self));
+
+                            break; // Exit the instruction loop for this block
+                        }
+
+                        // Fall through to existing monomorphic/skewed polymorphic handling
                         let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.insn_idx) else {
                             // No (monomorphic/skewed polymorphic) profile info
                             self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_not_monomorphic));
@@ -6231,6 +6330,25 @@ fn invalidates_locals(opcode: u32, operands: *const VALUE) -> bool {
 /// The index of the self parameter in the HIR function
 pub const SELF_PARAM_IDX: usize = 0;
 
+// TODO place this better
+fn new_branch_block(
+    fun: &mut Function,
+    insn_idx: u32,
+    exit_state: &FrameState,
+    locals_count: usize,
+    stack_count: usize,
+) -> (BlockId, InsnId, FrameState, InsnId) {
+    let block = fun.new_block(insn_idx);
+    let self_param = fun.push_insn(block, Insn::Param);
+    let mut state = exit_state.clone();
+    state.locals.clear();
+    state.stack.clear();
+    state.locals.extend((0..locals_count).map(|_| fun.push_insn(block, Insn::Param)));
+    state.stack.extend((0..stack_count).map(|_| fun.push_insn(block, Insn::Param)));
+    let snapshot = fun.push_insn(block, Insn::Snapshot { state: state.clone() });
+    (block, self_param, state, snapshot)
+}
+
 /// Compile ISEQ into High-level IR
 pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     if !ZJITState::can_compile_iseq(iseq) {
@@ -6819,24 +6937,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     }
                 }
                 YARVINSN_getblockparam => {
-                    fn new_branch_block(
-                        fun: &mut Function,
-                        insn_idx: u32,
-                        exit_state: &FrameState,
-                        locals_count: usize,
-                        stack_count: usize,
-                    ) -> (BlockId, InsnId, FrameState, InsnId) {
-                        let block = fun.new_block(insn_idx);
-                        let self_param = fun.push_insn(block, Insn::Param);
-                        let mut state = exit_state.clone();
-                        state.locals.clear();
-                        state.stack.clear();
-                        state.locals.extend((0..locals_count).map(|_| fun.push_insn(block, Insn::Param)));
-                        state.stack.extend((0..stack_count).map(|_| fun.push_insn(block, Insn::Param)));
-                        let snapshot = fun.push_insn(block, Insn::Snapshot { state: state.clone() });
-                        (block, self_param, state, snapshot)
-                    }
-
                     fn finish_getblockparam_branch(
                         fun: &mut Function,
                         block: BlockId,
@@ -7291,6 +7391,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledYARVInsn(opcode) });
                         break;  // End the block
                     }
+
                     let result = fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id });
                     state.stack_push(result);
                 }

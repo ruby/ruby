@@ -3983,6 +3983,124 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_polymorphic_getinstancevariable() {
+        set_call_threshold(3);
+        eval("
+            module Tester
+              def test
+                x = 1
+                y = 2
+                @foo
+              end
+            end
+
+            class A
+              include Tester
+              def initialize
+                @a = 1
+                @foo = 50
+              end
+            end
+
+            class B
+              include Tester
+              def initialize = (@foo = 100)
+            end
+
+            a = A.new
+            b = B.new
+            a.test
+            b.test
+            a.test
+        ");
+        assert_snapshot!(hir_string_proc("Tester.instance_method(:test)"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          v11:HeapBasicObject = GuardType v6, HeapBasicObject
+          v12:CShape = LoadField v11, :_shape_id@0x1000
+          v15:CShape[0x1001] = Const CShape(0x1001)
+          v16:CBool = IsBitEqual v12, v15
+          IfTrue v16, bb4(v6)
+          v22:CShape[0x1002] = Const CShape(0x1002)
+          v23:CBool = IsBitEqual v12, v22
+          IfTrue v23, bb5(v6)
+          IncrCounter getivar_fallback_not_monomorphic
+          v27:BasicObject = GetIvar v6, :@foo
+          Jump bb3(v6, v27)
+        bb4(v13:BasicObject):
+          v18:BasicObject = LoadField v13, :@foo@0x1003
+          Jump bb3(v13, v18)
+        bb5(v20:BasicObject):
+          v25:BasicObject = LoadField v20, :@foo@0x1004
+          Jump bb3(v20, v25)
+        bb3(v29:BasicObject, v30:BasicObject):
+          CheckInterrupts
+          Return v30
+        ");
+    }
+
+    #[test]
+    fn test_polymorphic_getinstancevariable_all_cases() {
+        // Test all 3 polymorphic getivar cases:
+        // 1. nil (ivar not in shape) - class C has no @foo
+        // 2. embedded T_OBJECT (single LoadField) - class A has few ivars
+        // 3. extended T_OBJECT (two LoadFields) - class B has many ivars, forcing heap storage
+        set_call_threshold(4);
+        eval(r#"
+            module Tester
+              def test
+                x = 1
+                @foo
+              end
+            end
+
+            class A
+              include Tester
+              def initialize
+                @foo = 100
+              end
+            end
+
+            class B
+              include Tester
+              def initialize
+                # Many ivars to force extended (heap) storage
+                100.times { |i| instance_variable_set("@v#{i}", i) }
+                @foo = 200
+              end
+            end
+
+            class C
+              include Tester
+              def initialize
+                # No @foo - should return nil
+                @other = 999
+              end
+            end
+
+            a = A.new
+            b = B.new
+            c = C.new
+            # Multiple calls to ensure all shapes are profiled
+            a.test
+            b.test
+            c.test
+            a.test
+            b.test
+            c.test
+        "#);
+        assert_snapshot!(hir_string_proc("Tester.instance_method(:test)"), @"");
+    }
+
+    #[test]
     fn test_setinstancevariable() {
         eval("
             def test = @foo = 1
