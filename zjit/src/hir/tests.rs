@@ -1124,6 +1124,52 @@ pub mod hir_build_tests {
     }
 
     #[test]
+    fn defined_yield_in_method_local_iseq_returns_defined() {
+        eval("
+            def test = defined?(yield)
+        ");
+        assert_contains_opcode("test", YARVINSN_defined);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          v12:StringExact|NilClass = Defined yield, v10
+          CheckInterrupts
+          Return v12
+        ");
+    }
+
+    #[test]
+    fn defined_yield_in_non_method_local_iseq_returns_nil() {
+        eval("
+            define_method(:test) { defined?(yield) }
+        ");
+        assert_contains_opcode("test", YARVINSN_defined);
+        assert_snapshot!(hir_string("test"), @r"
+        fn block in <compiled>@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          v12:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v12
+        ");
+    }
+
+    #[test]
     fn test_return_const() {
         eval("
             def test(cond)
