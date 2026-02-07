@@ -1,5 +1,6 @@
 // this file is included by ractor.c
 
+#include "ruby/internal/special_consts.h"
 struct ractor_port {
     rb_ractor_t *r;
     st_data_t id_;
@@ -14,6 +15,7 @@ ractor_port_id(const struct ractor_port *rp)
 static VALUE rb_cRactorPort;
 
 static VALUE ractor_receive(rb_execution_context_t *ec, const struct ractor_port *rp, const rb_hrtime_t *end);
+static VALUE ractor_receive_all(rb_execution_context_t *ec, const struct ractor_port *rp, long limit);
 static VALUE ractor_send(rb_execution_context_t *ec, const struct ractor_port *rp, VALUE obj, VALUE move);
 static struct ractor_basket *ractor_basket_new_ref(VALUE shareable);
 static void ractor_send_basket(rb_execution_context_t *ec, const struct ractor_port *rp, struct ractor_basket *b, bool raise_on_error);
@@ -168,6 +170,31 @@ ractor_port_receive(rb_execution_context_t *ec, VALUE self, VALUE timeout)
 
     // no message before the timeout
     return UNDEF_P(v) ? Qnil : v;
+}
+
+static VALUE
+ractor_port_receive_all(rb_execution_context_t *ec, VALUE limit_value, VALUE self)
+{
+    const struct ractor_port *rp = RACTOR_PORT_PTR(self);
+
+    if (rp->r != rb_ec_ractor_ptr(ec)) {
+        rb_raise(rb_eRactorError, "only allowed from the creator Ractor of this port");
+    }
+
+    long limit = -1;
+    if (limit_value != Qnil) {
+        if (!RB_INTEGER_TYPE_P(limit_value)) {
+            rb_raise(rb_eTypeError, "limit must be an Integer");
+        }
+        else {
+            limit = NUM2LONG(limit_value);
+            if (limit <= 0) {
+                rb_raise(rb_eArgError, "limit must be greater than 0");
+            }
+        }
+    }
+
+    return ractor_receive_all(ec, rp, limit);
 }
 
 static VALUE
@@ -1592,6 +1619,43 @@ ractor_receive(rb_execution_context_t *ec, const struct ractor_port *rp, const r
             return ractor_try_receive(ec, cr, rp);
         }
     }
+}
+
+static VALUE
+ractor_receive_all(rb_execution_context_t *ec, const struct ractor_port *rp, long limit)
+{
+    rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
+    VM_ASSERT(cr == rp->r);
+
+    RUBY_DEBUG_LOG("port:%u", (unsigned int)ractor_port_id(rp));
+
+    VALUE ary = rb_ary_new();
+
+    while (1) {
+        VALUE v = ractor_try_receive(ec, cr, rp);
+
+        if (v == Qundef) {
+            if (RARRAY_LENINT(ary) == 0) {
+                ractor_wait_receive(ec, cr, NULL);
+                continue;
+            }
+            else {
+                break;
+            }
+        }
+
+        rb_ary_push(ary, v);
+
+        if (limit >= 0 && RARRAY_LENINT(ary) == limit) {
+            break;
+        }
+    }
+
+    if (RARRAY_LENINT(ary) == 0) {
+        return Qnil;
+    }
+
+    return ary;
 }
 
 // A timeout argument becomes an absolute deadline, or 0 for `timeout: 0`, which
