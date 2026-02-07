@@ -3263,7 +3263,7 @@ fiber_raise(rb_fiber_t *fiber, VALUE exception)
 VALUE
 rb_fiber_raise(VALUE fiber, int argc, VALUE *argv)
 {
-    VALUE exception = rb_exception_setup(argc, argv);
+    VALUE exception = rb_exception_setup(argc, argv, rb_keyword_given_p());
 
     return fiber_raise(fiber_ptr(fiber), exception);
 }
