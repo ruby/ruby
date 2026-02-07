@@ -1565,7 +1565,7 @@ before_exec(void)
 }
 
 static void
-after_exec(void)
+after_exec(void) // in parent
 {
     rb_thread_reset_timer_thread();
     rb_thread_start_timer_thread();

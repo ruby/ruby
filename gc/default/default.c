@@ -5734,13 +5734,15 @@ gc_marks_rest(rb_objspace_t *objspace)
 /* Background marking thread related declarations */
 static rb_objspace_t *mark_thread_objspace = NULL;
 static rb_vm_t *mark_thread_vm = NULL;  // VM pointer for marking thread
+static rb_heap_t *mark_thread_heap = NULL;
 static bool mark_thread_should_mark = false;
 static bool mark_thread_should_exit = false;
 static bool mark_thread_marking_done = false;
 static bool mark_thread_full_mark = false;
+static pthread_t mark_thread_id;
 
 /* Forward declarations for marking thread functions */
-static void gc_request_marking(rb_objspace_t *objspace, rb_execution_context_t *ec, bool full_mark);
+static void gc_request_marking(rb_objspace_t *objspace, rb_execution_context_t *ec, rb_heap_t *heap, bool full_mark);
 static bool gc_wait_for_marking(rb_objspace_t *objspace, rb_execution_context_t *ec);
 
 static bool
@@ -5768,7 +5770,8 @@ gc_marks_continue(rb_objspace_t *objspace, rb_heap_t *heap)
     if (mark_thread_objspace) {
         rb_execution_context_t *ec = GET_EC();
         // Use background thread for incremental marking
-        gc_request_marking(objspace, ec, false); // incremental marking
+        gc_request_marking(objspace, ec, heap, false); // incremental marking
+        GC_ASSERT(mark_thread_id != 0);
         marking_finished = gc_wait_for_marking(objspace, ec);
     }
     else
@@ -5821,7 +5824,6 @@ gc_marks_continue(rb_objspace_t *objspace, rb_heap_t *heap)
  */
 
 #ifdef HAVE_PTHREAD_H
-static pthread_t mark_thread_id;
 static rb_nativethread_cond_t mark_thread_cond;
 static rb_nativethread_lock_t mark_thread_mutex;
 static rb_nativethread_cond_t mark_done_cond;
@@ -5842,7 +5844,6 @@ void *mark_thread_func(void *_arg)
         }
 
         if (mark_thread_should_exit) {
-            rb_native_mutex_unlock(&mark_thread_mutex);
             break;
         }
 
@@ -5859,36 +5860,26 @@ void *mark_thread_func(void *_arg)
         bool full_mark = mark_thread_full_mark;
         mark_thread_should_mark = false;
 
-        // Perform marking with VM barrier already taken by gc_enter in the main thread
         gc_marking_enter(objspace);
 
-        if (full_mark || !is_incremental_marking(objspace)) {
+        if (full_mark) {
+            GC_ASSERT(mark_thread_heap == NULL);
             // Full marking - mark everything
             gc_marks_rest(objspace);
             marking_finished = true;
         } else {
-            // Incremental marking - process a step
-            marking_finished = gc_marks_step(objspace, objspace->rincgc.step_slots);
-
-            if (marking_finished) {
-                // If incremental marking finished, no need to call gc_marks_rest
-                // as gc_marks_step already called gc_marks_finish
-            } else {
-                // Check if any heap has no free pages, forcing completion
-                bool force_finish = false;
-                for (int i = 0; i < HEAP_COUNT; i++) {
-                    if (heaps[i].free_pages == NULL) {
-                        force_finish = true;
-                        break;
-                    }
+            if (mark_thread_heap) {
+                if (mark_thread_heap->free_pages) {
+                    marking_finished = gc_marks_step(objspace, objspace->rincgc.step_slots);
                 }
-
-                if (force_finish) {
+                else {
+                    mark_thread_heap->force_incremental_marking_finish_count++;
                     gc_marks_rest(objspace);
                     marking_finished = true;
                 }
             }
         }
+        gc_marking_exit(objspace);
 
         // Signal marking completion
         mark_thread_marking_done = true;
@@ -5897,42 +5888,53 @@ void *mark_thread_func(void *_arg)
         rb_native_cond_signal(&mark_done_cond);
     }
 
+    rb_native_mutex_unlock(&mark_thread_mutex);
     return NULL;
 }
 
-void gc_start_mark_thread(rb_objspace_t *objspace)
+void
+gc_start_mark_thread(rb_objspace_t *objspace, bool init_sync_prims)
 {
-    mark_thread_objspace = objspace;
-    rb_native_cond_initialize(&mark_thread_cond);
-    rb_native_mutex_initialize(&mark_thread_mutex);
-    rb_native_cond_initialize(&mark_done_cond);
+    if (objspace) mark_thread_objspace = objspace;
+    mark_thread_should_mark = false;
+    mark_thread_should_exit = false;
     // Don't create thread yet - will be created on first use
     mark_thread_id = 0;
+    if (init_sync_prims) {
+        rb_native_cond_initialize(&mark_thread_cond);
+        rb_native_mutex_initialize(&mark_thread_mutex);
+        rb_native_cond_initialize(&mark_done_cond);
+    }
 }
 
-static void
-gc_stop_mark_thread(void)
+void
+gc_stop_mark_thread(bool cleanup_sync_prims)
 {
-    if (mark_thread_objspace) {
+    if (mark_thread_objspace && mark_thread_id) {
         // Signal thread to exit
         rb_native_mutex_lock(&mark_thread_mutex);
         mark_thread_should_exit = true;
         rb_native_cond_signal(&mark_thread_cond);
+
+        // If marking is in progress, signal it to stop
+        if (mark_thread_should_mark && !mark_thread_marking_done) {
+            rb_native_cond_signal(&mark_done_cond);
+        }
         rb_native_mutex_unlock(&mark_thread_mutex);
 
         // Wait for thread to exit
         pthread_join(mark_thread_id, NULL);
-
-        // Cleanup
-        rb_native_mutex_destroy(&mark_thread_mutex);
-        rb_native_cond_destroy(&mark_thread_cond);
-        rb_native_cond_destroy(&mark_done_cond);
-        mark_thread_objspace = NULL;
+        mark_thread_id = 0;
+        if (cleanup_sync_prims) {
+            rb_native_mutex_destroy(&mark_thread_mutex);
+            rb_native_cond_destroy(&mark_thread_cond);
+            rb_native_cond_destroy(&mark_done_cond);
+        }
     }
 }
 
 static void
-gc_request_marking(rb_objspace_t *objspace, rb_execution_context_t *ec, bool full_mark)
+gc_request_marking(rb_objspace_t *objspace, rb_execution_context_t *ec, rb_heap_t *heap, bool full_mark)
 {
     // Create thread on first use when VM is ready
     if (!mark_thread_id) {
@@ -5950,6 +5952,7 @@ gc_request_marking(rb_objspace_t *objspace, rb_execution_context_t *ec, bool ful
     mark_thread_should_mark = true;
     mark_thread_vm = rb_ec_vm_ptr(ec);  // Store VM pointer for marking thread
     mark_thread_vm->gc.marking_ec = ec;
+    mark_thread_heap = heap;
     rb_native_mutex_lock(&mark_thread_mutex); // unlocked in `wait_for_marking`
     rb_native_cond_signal(&mark_thread_cond);
 }
@@ -5967,14 +5970,15 @@ gc_wait_for_marking(rb_objspace_t *objspace, rb_execution_context_t *ec)
     bool marking_finished = mark_thread_marking_finished;
     rb_native_mutex_unlock(&mark_thread_mutex);
     rb_ec_vm_ptr(ec)->gc.marking_ec = NULL;
+    mark_thread_heap = NULL;
     return marking_finished;
 }
 #else
-void gc_start_mark_thread(rb_objspace_t *objspace)
+void gc_start_mark_thread(rb_objspace_t *objspace, bool init_sync_prims)
 {
 }
 
-static void gc_stop_mark_thread(void)
+static void gc_stop_mark_thread(bool cleanup_sync_prims)
 {
 }
 #endif
@@ -6048,13 +6052,11 @@ gc_marks(rb_objspace_t *objspace, int full_mark)
     gc_marks_start(objspace, full_mark);
 
 #ifdef HAVE_PTHREAD_H
-    if (mark_thread_objspace && ruby_current_vm_ptr) {
-        // Use background thread for marking only if VM is initialized
-        // The VM lock should already be held by the caller
-        gc_request_marking(objspace, ec, full_mark || !is_incremental_marking(objspace));
+    // Temporarily disable marking thread to debug assertion failures
+    if (0 && mark_thread_objspace && ruby_current_vm_ptr && !is_incremental_marking(objspace)) {
+        gc_request_marking(objspace, ec, NULL, true);
         if (mark_thread_id) {  // Only if thread was successfully created
             marking_finished = gc_wait_for_marking(objspace, ec);
-            gc_marking_exit(objspace);
         }
         else {
             // Fall back to direct marking
@@ -9599,7 +9601,7 @@ rb_gc_impl_objspace_free(void *objspace_ptr)
         rb_bug("lazy sweeping underway when freeing object space");
 
 #ifdef HAVE_PTHREAD_H
-    gc_stop_mark_thread();
+    gc_stop_mark_thread(true);
 #endif
 
     free(objspace->profile.records);
@@ -9803,7 +9805,7 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
     objspace->profile.invoke_time = getrusage_time();
     finalizer_table = st_init_numtable();
 
-    gc_start_mark_thread(objspace);
+    gc_start_mark_thread(objspace, true);
 }
 
 void

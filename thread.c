@@ -4945,6 +4945,7 @@ rb_clear_coverages(void)
 }
 
 #if defined(HAVE_WORKING_FORK)
+extern void gc_start_mark_thread(void *arg, bool cleanup);
 
 static void
 rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const rb_thread_t *))
@@ -4956,6 +4957,7 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
     vm->ractor.main_thread = th;
     r->threads.main = th;
     r->status_ = ractor_created;
+    gc_start_mark_thread(NULL, true);
 
     thread_sched_atfork(TH_SCHED(th));
     ubf_list_atfork();
