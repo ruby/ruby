@@ -1305,6 +1305,8 @@ VALUE rb_proc_isolate_bang(VALUE self, VALUE replace_self);
 VALUE rb_proc_ractor_make_shareable(VALUE proc, VALUE replace_self);
 RUBY_SYMBOL_EXPORT_END
 
+bool rb_proc_ractor_make_shareable_continue(VALUE self, VALUE replace_self, VALUE *chain);
+
 typedef struct {
     VALUE flags; /* imemo header */
     rb_iseq_t *iseq;
