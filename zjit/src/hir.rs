@@ -797,6 +797,8 @@ pub enum Insn {
     IsBitNotEqual { left: InsnId, right: InsnId },
     /// Convert a C `bool` to a Ruby `Qtrue`/`Qfalse`. Same as `RBOOL` macro.
     BoxBool { val: InsnId },
+    /// Invert a C `bool` (0 -> 1, 1 -> 0).
+    BoolNot { val: InsnId },
     /// Convert a C `long` to a Ruby `Fixnum`. Side exit on overflow.
     BoxFixnum { val: InsnId, state: InsnId },
     UnboxFixnum { val: InsnId },
@@ -1135,6 +1137,7 @@ impl Insn {
             Insn::IsBitEqual { .. } => effects::Empty,
             Insn::IsBitNotEqual { .. } => effects::Any,
             Insn::BoxBool { .. } => effects::Empty,
+            Insn::BoolNot { .. } => effects::Empty,
             Insn::BoxFixnum { .. } => effects::Empty,
             Insn::UnboxFixnum { .. } => effects::Any,
             Insn::FixnumAref { .. } => effects::Empty,
@@ -1441,6 +1444,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::IsBitEqual { left, right } => write!(f, "IsBitEqual {left}, {right}"),
             Insn::IsBitNotEqual { left, right } => write!(f, "IsBitNotEqual {left}, {right}"),
             Insn::BoxBool { val } => write!(f, "BoxBool {val}"),
+            Insn::BoolNot { val } => write!(f, "BoolNot {val}"),
             Insn::BoxFixnum { val, .. } => write!(f, "BoxFixnum {val}"),
             Insn::UnboxFixnum { val } => write!(f, "UnboxFixnum {val}"),
             Insn::FixnumAref { recv, index } => write!(f, "FixnumAref {recv}, {index}"),
@@ -1455,8 +1459,15 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 write!(f, " # SendFallbackReason: {reason}")?;
                 Ok(())
             }
-            Insn::SendDirect { recv, cd, iseq, args, blockiseq, .. } => {
-                write!(f, "SendDirect {recv}, {:p}, :{} ({:?})", self.ptr_map.map_ptr(blockiseq), ruby_call_method_name(*cd), self.ptr_map.map_ptr(iseq))?;
+            Insn::SendDirect { recv, cd, cme, iseq, args, blockiseq, .. } => {
+                let cme = *cme;
+                let called_id = unsafe { (*cme).called_id };
+                let method_name = if called_id.0 == 0 {
+                    ruby_call_method_name(*cd)
+                } else {
+                    called_id.contents_lossy().into_owned()
+                };
+                write!(f, "SendDirect {recv}, {:p}, :{} ({:?})", self.ptr_map.map_ptr(blockiseq), method_name, self.ptr_map.map_ptr(iseq))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
@@ -2225,6 +2236,7 @@ impl Function {
             &IsBitEqual { left, right } => IsBitEqual { left: find!(left), right: find!(right) },
             &IsBitNotEqual { left, right } => IsBitNotEqual { left: find!(left), right: find!(right) },
             &BoxBool { val } => BoxBool { val: find!(val) },
+            &BoolNot { val } => BoolNot { val: find!(val) },
             &BoxFixnum { val, state } => BoxFixnum { val: find!(val), state: find!(state) },
             &UnboxFixnum { val } => UnboxFixnum { val: find!(val) },
             &FixnumAref { recv, index } => FixnumAref { recv: find!(recv), index: find!(index) },
@@ -2459,6 +2471,7 @@ impl Function {
             Insn::IsBitEqual { .. } => types::CBool,
             Insn::IsBitNotEqual { .. } => types::CBool,
             Insn::BoxBool { .. } => types::BoolExact,
+            Insn::BoolNot { .. } => types::CBool,
             Insn::BoxFixnum { .. } => types::Fixnum,
             Insn::UnboxFixnum { val } => self
                 .type_of(*val)
@@ -2905,18 +2918,22 @@ impl Function {
         ReceiverTypeResolution::NoProfile
     }
 
-    pub fn assume_expected_cfunc(&mut self, block: BlockId, class: VALUE, method_id: ID, cfunc: *mut c_void, state: InsnId) -> bool {
+    fn expected_cfunc(&self, class: VALUE, method_id: ID, cfunc: *mut c_void) -> Option<*const rb_callable_method_entry_struct> {
         let cme = unsafe { rb_callable_method_entry(class, method_id) };
-        if cme.is_null() { return false; }
+        if cme.is_null() { return None; }
         let def_type = unsafe { get_cme_def_type(cme) };
-        if def_type != VM_METHOD_TYPE_CFUNC { return false; }
+        if def_type != VM_METHOD_TYPE_CFUNC { return None; }
         if unsafe { get_mct_func(get_cme_def_body_cfunc(cme)) } != cfunc {
-            return false;
+            return None;
         }
+        Some(cme)
+    }
+
+    pub fn assume_expected_cfunc(&mut self, block: BlockId, class: VALUE, method_id: ID, cfunc: *mut c_void, state: InsnId) -> bool {
+        let Some(cme) = self.expected_cfunc(class, method_id, cfunc) else {
+            return false;
+        };
         self.gen_patch_points_for_optimized_ccall(block, class, method_id, cme, state);
-        if !self.assume_no_singleton_classes(block, class, state) {
-            return false;
-        }
         true
     }
 
@@ -2987,6 +3004,57 @@ impl Function {
         }
     }
 
+    fn opt_neq_rewrite_for(&self, reason: &SendFallbackReason, recv_class: VALUE, method_id: ID) -> (ID, bool) {
+        match reason {
+        Uncategorized(opcode) if *opcode == YARVINSN_opt_neq
+            && self.expected_cfunc(recv_class, ID!(neq), rb_obj_not_equal as *mut c_void).is_some()
+            // Note: BasicObject#!= can be inlined separately (see inline_basic_object_neq).
+            // Skip rewrite when == is rb_obj_equal: BasicObject#!= can be inlined to IsBitNotEqual, as rewriting would add extra negate ops with no benefit.
+            && self.expected_cfunc(recv_class, ID!(eq), rb_obj_equal as *mut c_void).is_none() =>
+            {
+                (ID!(eq), true)
+            }
+            _ => (method_id, false),
+        }
+    }
+
+    fn opt_neq_rewrite_for_fixnum(
+        &self,
+        reason: &SendFallbackReason,
+        recv_class: VALUE,
+        method_id: ID,
+        self_type: Type,
+        profiled_type: &Option<ProfiledType>,
+        args: &[InsnId],
+        state: InsnId,
+    ) -> (ID, bool) {
+        let (mut lookup_mid, mut negate) = self.opt_neq_rewrite_for(reason, recv_class, method_id);
+        // If both operands are fixnums, prefer keeping FixnumNeq to avoid extra negate ops.
+        // See: inline_basic_object_neq.
+        let recv_is_fixnum =
+            self_type.is_subtype(types::Fixnum) ||
+            profiled_type.as_ref().is_some_and(|ty| ty.is_fixnum());
+        let arg_is_fixnum =
+            args.first().is_some_and(|arg| self.likely_a(*arg, types::Fixnum, state));
+        let prefer_fixnum_neq = recv_is_fixnum && arg_is_fixnum;
+        if negate && prefer_fixnum_neq {
+            lookup_mid = method_id;
+            negate = false;
+        }
+        (lookup_mid, negate)
+    }
+
+    fn maybe_negate_opt_neq(&mut self, block: BlockId, negate: bool, val: InsnId) -> InsnId {
+        if negate {
+            self.push_insn(block, Insn::IncrCounter(Counter::opt_neq_negate_applied_count));
+            let test = self.push_insn(block, Insn::Test { val });
+            let not = self.push_insn(block, Insn::BoolNot { val: test });
+            self.push_insn(block, Insn::BoxBool { val: not })
+        } else {
+            val
+        }
+    }
+
     fn is_metaclass(&self, object: VALUE) -> bool {
         unsafe {
             if RB_TYPE_P(object, RUBY_T_CLASS) && rb_zjit_singleton_class_p(object) {
@@ -3027,7 +3095,7 @@ impl Function {
                         self.try_rewrite_freeze(block, insn_id, recv, state),
                     Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(minusat) && args.is_empty() =>
                         self.try_rewrite_uminus(block, insn_id, recv, state),
-                    Insn::SendWithoutBlock { mut recv, cd, args, state, .. } => {
+                    Insn::SendWithoutBlock { mut recv, cd, args, state, reason, .. } => {
                         let frame_state = self.frame_state(state);
                         let (klass, profiled_type) = match self.resolve_receiver_type(recv, self.type_of(recv), frame_state.insn_idx) {
                             ReceiverTypeResolution::StaticallyKnown { class } => (class, None),
@@ -3061,8 +3129,12 @@ impl Function {
                         let flags = unsafe { rb_vm_ci_flag(ci) };
 
                         let mid = unsafe { vm_ci_mid(ci) };
+
+                        // If this is an opt_neq rewrite, use the eq method id and remember to negate later.
+                        let (lookup_mid, negate) = self.opt_neq_rewrite_for(&reason, klass, mid);
+
                         // Do method lookup
-                        let mut cme = unsafe { rb_callable_method_entry(klass, mid) };
+                        let mut cme = unsafe { rb_callable_method_entry(klass, lookup_mid) };
                         if cme.is_null() {
                             self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedMethodType(MethodType::Null));
                             self.push_insn_id(block, insn_id); continue;
@@ -3085,12 +3157,16 @@ impl Function {
                             cme = unsafe { rb_aliased_callable_method_entry(cme) };
                             def_type = unsafe { get_cme_def_type(cme) };
                         }
-
                         // If the call site info indicates that the `Function` has overly complex arguments, then do not optimize into a `SendDirect`.
                         // Optimized methods(`VM_METHOD_TYPE_OPTIMIZED`) handle their own argument constraints (e.g., kw_splat for Proc call).
                         if def_type != VM_METHOD_TYPE_OPTIMIZED && unspecializable_call_type(flags) {
                             self.count_complex_call_features(block, flags);
                             self.set_dynamic_send_reason(insn_id, ComplexArgPass);
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+                        if negate && def_type != VM_METHOD_TYPE_ISEQ {
+                            // For opt_neq rewrite, only inline ISEQ methods here. Other method types
+                            // skip type_specialize; CFUNC is handled later in optimize_c_calls.
                             self.push_insn_id(block, insn_id); continue;
                         }
 
@@ -3109,8 +3185,13 @@ impl Function {
                                 self.push_insn_id(block, insn_id); continue;
                             }
 
+                            if negate {
+                                // Keep a patchpoint for BasicObject#!= (rb_obj_not_equal) when rewriting.
+                                let _ = self.assume_expected_cfunc(block, klass, ID!(neq), rb_obj_not_equal as *mut c_void, state);
+                            }
+
                             // Add PatchPoint for method redefinition
-                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: lookup_mid, cme }, state });
 
                             // Add GuardType for profiled receiver
                             if let Some(profiled_type) = profiled_type {
@@ -3123,7 +3204,8 @@ impl Function {
                             };
 
                             let send_direct = self.push_insn(block, Insn::SendDirect { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state, blockiseq: None });
-                            self.make_equal_to(insn_id, send_direct);
+                            let replacement = self.maybe_negate_opt_neq(block, negate, send_direct);
+                            self.make_equal_to(insn_id, replacement);
                         } else if def_type == VM_METHOD_TYPE_BMETHOD {
                             let procv = unsafe { rb_get_def_bmethod_proc((*cme).def) };
                             let proc = unsafe { rb_jit_get_proc_ptr(procv) };
@@ -3152,7 +3234,7 @@ impl Function {
                                 self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
                                 self.push_insn_id(block, insn_id); continue;
                             }
-                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: lookup_mid, cme }, state });
 
                             if let Some(profiled_type) = profiled_type {
                                 recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
@@ -3177,7 +3259,7 @@ impl Function {
                                 self.push_insn_id(block, insn_id); continue;
                             }
 
-                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: lookup_mid, cme }, state });
                             if let Some(profiled_type) = profiled_type {
                                 recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
                             }
@@ -3192,7 +3274,7 @@ impl Function {
                                 self.push_insn_id(block, insn_id); continue;
                             }
 
-                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: lookup_mid, cme }, state });
                             if let Some(profiled_type) = profiled_type {
                                 recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
                             }
@@ -3214,7 +3296,7 @@ impl Function {
                                         self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
                                         self.push_insn_id(block, insn_id); continue;
                                     }
-                                    self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+                                    self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: lookup_mid, cme }, state });
                                     if let Some(profiled_type) = profiled_type {
                                         recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
                                     }
@@ -3249,7 +3331,7 @@ impl Function {
                                         self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
                                         self.push_insn_id(block, insn_id); continue;
                                     }
-                                    self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+                                    self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: lookup_mid, cme }, state });
                                     if let Some(profiled_type) = profiled_type {
                                         recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
                                     }
@@ -3273,11 +3355,11 @@ impl Function {
                                     };
 
                                     let replacement = if let (OptimizedMethodType::StructAset, &[val]) = (opt_type, args.as_slice()) {
-                                        self.push_insn(block, Insn::StoreField { recv: target, id: mid, offset, val });
+                                        self.push_insn(block, Insn::StoreField { recv: target, id: lookup_mid, offset, val });
                                         self.push_insn(block, Insn::WriteBarrier { recv, val });
                                         val
                                     } else { // StructAref
-                                        self.push_insn(block, Insn::LoadField { recv: target, id: mid, offset, return_type: types::BasicObject })
+                                        self.push_insn(block, Insn::LoadField { recv: target, id: lookup_mid, offset, return_type: types::BasicObject })
                                     };
                                     self.make_equal_to(insn_id, replacement);
                                 },
@@ -4222,7 +4304,7 @@ impl Function {
             send: Insn,
             send_insn_id: InsnId,
         ) -> Result<(), ()> {
-            let Insn::SendWithoutBlock { mut recv, cd, args, state, .. } = send else {
+            let Insn::SendWithoutBlock { mut recv, cd, args, state, reason, .. } = send else {
                 return Err(());
             };
 
@@ -4239,8 +4321,20 @@ impl Function {
                 ReceiverTypeResolution::SkewedMegamorphic { .. } | ReceiverTypeResolution::Polymorphic | ReceiverTypeResolution::Megamorphic | ReceiverTypeResolution::NoProfile => return Err(()),
             };
 
+            // If this is an opt_neq rewrite, use the eq method id and remember to negate later.
+            // Keep FixnumNeq when both operands are fixnums to avoid extra negate ops.
+            let (lookup_mid, negate) = fun.opt_neq_rewrite_for_fixnum(
+                &reason,
+                recv_class,
+                method_id,
+                self_type,
+                &profiled_type,
+                args.as_slice(),
+                state,
+            );
+
             // Do method lookup
-            let mut cme: *const rb_callable_method_entry_struct = unsafe { rb_callable_method_entry(recv_class, method_id) };
+            let mut cme: *const rb_callable_method_entry_struct = unsafe { rb_callable_method_entry(recv_class, lookup_mid) };
             if cme.is_null() {
                 fun.set_dynamic_send_reason(send_insn_id, SendWithoutBlockNotOptimizedMethodType(MethodType::Null));
                 return Err(());
@@ -4296,8 +4390,13 @@ impl Function {
                         return Err(());
                     }
 
+                    if negate {
+                        // Keep a patchpoint for BasicObject#!= (rb_obj_not_equal) when rewriting.
+                        let _ = fun.assume_expected_cfunc(block, recv_class, ID!(neq), rb_obj_not_equal as *mut c_void, state);
+                    }
+
                     // Commit to the replacement. Put PatchPoint.
-                    fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, cme, state);
+                    fun.gen_patch_points_for_optimized_ccall(block, recv_class, lookup_mid, cme, state);
 
                     let props = ZJITState::get_method_annotations().get_cfunc_properties(cme);
                     if props.is_none() && get_option!(stats) {
@@ -4319,6 +4418,7 @@ impl Function {
                         let insns = std::mem::take(&mut fun.blocks[tmp_block.0].insns);
                         fun.blocks[block.0].insns.extend(insns);
                         fun.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
+                        let replacement = fun.maybe_negate_opt_neq(block, negate, replacement);
                         fun.make_equal_to(send_insn_id, replacement);
                         if fun.type_of(replacement).bit_equal(types::Any) {
                             // Not set yet; infer type
@@ -4337,7 +4437,8 @@ impl Function {
                     if props.leaf && props.no_gc {
                         fun.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
                         let ccall = fun.push_insn(block, Insn::CCall { cfunc, recv, args, name, return_type, elidable });
-                        fun.make_equal_to(send_insn_id, ccall);
+                        let replacement = fun.maybe_negate_opt_neq(block, negate, ccall);
+                        fun.make_equal_to(send_insn_id, replacement);
                     } else {
                         if get_option!(stats) {
                             fun.count_not_inlined_cfunc(block, cme);
@@ -4354,7 +4455,8 @@ impl Function {
                             elidable,
                             blockiseq: None,
                         });
-                        fun.make_equal_to(send_insn_id, ccall);
+                        let replacement = fun.maybe_negate_opt_neq(block, negate, ccall);
+                        fun.make_equal_to(send_insn_id, replacement);
                     }
 
                     return Ok(());
@@ -4378,7 +4480,12 @@ impl Function {
                             return Err(());
                         }
 
-                        fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, cme, state);
+                        if negate {
+                            // Keep a patchpoint for BasicObject#!= (rb_obj_not_equal) when rewriting.
+                            let _ = fun.assume_expected_cfunc(block, recv_class, ID!(neq), rb_obj_not_equal as *mut c_void, state);
+                        }
+
+                        fun.gen_patch_points_for_optimized_ccall(block, recv_class, lookup_mid, cme, state);
 
                         if let Some(profiled_type) = profiled_type {
                             // Guard receiver class
@@ -4401,6 +4508,7 @@ impl Function {
                             let insns = std::mem::take(&mut fun.blocks[tmp_block.0].insns);
                             fun.blocks[block.0].insns.extend(insns);
                             fun.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
+                            let replacement = fun.maybe_negate_opt_neq(block, negate, replacement);
                             fun.make_equal_to(send_insn_id, replacement);
                             if fun.type_of(replacement).bit_equal(types::Any) {
                                 // Not set yet; infer type
@@ -4429,7 +4537,8 @@ impl Function {
                             blockiseq: None,
                         });
 
-                        fun.make_equal_to(send_insn_id, ccall);
+                        let replacement = fun.maybe_negate_opt_neq(block, negate, ccall);
+                        fun.make_equal_to(send_insn_id, replacement);
                         return Ok(())
                     }
 
@@ -4639,6 +4748,23 @@ impl Function {
                     Insn::Test { val } if self.type_of(val).is_known_truthy() => {
                         self.new_insn(Insn::Const { val: Const::CBool(true) })
                     }
+                    Insn::BoolNot { val } => {
+                        match self.find(val) {
+                            Insn::Const { val: Const::CBool(b) } => {
+                                self.new_insn(Insn::Const { val: Const::CBool(!b) })
+                            }
+                            _ => insn_id,
+                        }
+                    }
+                    Insn::BoxBool { val } => {
+                        match self.find(val) {
+                            Insn::Const { val: Const::CBool(b) } => {
+                                let val = if b { Qtrue } else { Qfalse };
+                                self.new_insn(Insn::Const { val: Const::Value(val) })
+                            }
+                            _ => insn_id,
+                        }
+                    }
                     Insn::IfTrue { val, target } if self.is_a(val, Type::from_cbool(true)) => {
                         self.new_insn(Insn::Jump(target))
                     }
@@ -4754,6 +4880,7 @@ impl Function {
             | &Insn::Test { val }
             | &Insn::SetLocal { val, .. }
             | &Insn::BoxBool { val }
+            | &Insn::BoolNot { val }
             | &Insn::IsNil { val } =>
                 worklist.push_back(val),
             &Insn::SetGlobal { val, state, .. }
@@ -5614,6 +5741,7 @@ impl Function {
                 }
             }
             Insn::BoxBool { val }
+            | Insn::BoolNot { val }
             | Insn::IfTrue { val, .. }
             | Insn::IfFalse { val, .. } => {
                 self.assert_subtype(insn_id, val, types::CBool)

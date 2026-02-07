@@ -418,6 +418,9 @@ make_counters! {
     guard_type_count,
     guard_shape_count,
 
+    // opt_neq rewrite counters
+    opt_neq_negate_applied_count,
+
     invokeblock_handler_monomorphic_iseq,
     invokeblock_handler_monomorphic_ifunc,
     invokeblock_handler_monomorphic_other,

@@ -1916,6 +1916,51 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_opt_neq_string_literal
+    assert_compiles '[false, true]', %q{
+      def test(a) = a != "x"
+      test("x") # profile opt_neq
+      [test("x"), test("y")]
+    }, insns: [:opt_neq], call_threshold: 1
+  end
+
+  def test_opt_neq_integer_literal
+    assert_compiles '[false, true]', %q{
+      def test(a) = a != 2
+      test(2) # profile opt_neq
+      [test(2), test(3)]
+    }, insns: [:opt_neq], call_threshold: 1
+  end
+
+  def test_opt_neq_iseq_rewritten
+    assert_compiles '[2, false]', %q{
+      class CustomEq
+        attr_reader :count
+        def ==(o)
+          @count = @count.to_i + 1
+          self.equal?(o)
+        end
+      end
+      def test(obj) = obj != obj
+      obj = CustomEq.new
+      test(obj) # profile opt_neq
+      result = test(obj)
+      [obj.count, result]
+    }, insns: [:opt_neq], call_threshold: 1
+  end
+
+  def test_opt_neq_overridden
+    assert_compiles '["neq", "neq"]', %q{
+      class CustomNeq
+        def !=(o) = "neq"
+      end
+      def test(obj) = obj != obj
+      obj = CustomNeq.new
+      test(obj) # profile opt_neq
+      [test(obj), test(obj)]
+    }, insns: [:opt_neq], call_threshold: 1
+  end
+
   def test_opt_lt
     assert_compiles '[true, false, false]', %q{
       def test(a, b) = a < b
