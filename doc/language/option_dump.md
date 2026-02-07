@@ -1,7 +1,7 @@
 # Option `--dump`
 
 For other argument values,
-see {Option --dump}[options_md.html#label--dump-3A+Dump+Items].
+see {Option `--dump`}[rdoc-ref:options.md@--dump+Dump+Items].
 
 For the examples here, we use this program:
 

@@ -650,7 +650,7 @@ option was given:
   Same as [option `--version`][--version].
 
 For other argument values and examples,
-see {Option --dump}[option_dump_md.html].
+see {Option `--dump`}[rdoc-ref:option_dump.md].
 
 ### `--enable`: Enable Features
 
