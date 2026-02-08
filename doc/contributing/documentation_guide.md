@@ -7,7 +7,7 @@ in the Ruby core and in the Ruby standard library.
 ## Generating documentation
 
 Most Ruby documentation lives in the source files and is written in
-[RDoc format](https://ruby.github.io/rdoc/RDoc/MarkupReference.html).
+[RDoc format][reference].
 
 Some pages live under the `doc` folder and can be written in either
 `.rdoc` or `.md` format, determined by the file extension.
@@ -46,11 +46,11 @@ Use your judgment about what the user needs to know.
 - Organize material with
   [headings].
 - Refer to authoritative and relevant sources using
-  [links](https://ruby.github.io/rdoc/RDoc/MarkupReference.html#class-RDoc::MarkupReference-label-Links).
+- [links][reference].
 - Use simple verb tenses: simple present, simple past, simple future.
 - Use simple sentence structure, not compound or complex structure.
 - Avoid:
-    - Excessive comma-separated phrases; consider a [list].
+    - Excessive comma-separated phrases; consider a [list][lists].
     - Idioms and culture-specific references.
     - Overuse of headings.
     - Using US-ASCII-incompatible characters in C source files;
@@ -109,12 +109,12 @@ involving new files `doc/*.rdoc`:
 
 Ruby is documented using RDoc.
 For information on \RDoc syntax and features, see the
-[RDoc Markup Reference](https://ruby.github.io/rdoc/RDoc/MarkupReference.html).
+[reference][reference].
 
 ### Output from `irb`
 
 For code examples, consider using interactive Ruby,
-[irb](https://ruby-doc.org/stdlib/libdoc/irb/rdoc/IRB.html).
+[irb][irb].
 
 For a code example that includes `irb` output,
 consider aligning `# => ...` in successive lines.
@@ -134,15 +134,15 @@ Do not use formal headings in the documentation for a method or constant.
 
 In the rare case where heading-like structures are needed
 within the documentation for a method or constant, use
-[bold text](https://ruby.github.io/rdoc/RDoc/MarkupReference.html#class-RDoc::MarkupReference-label-Bold)
+[bold text][bold]
 as pseudo-headings.
 
 ### Blank Lines
 
 A blank line begins a new paragraph.
 
-A [code block](https://ruby.github.io/rdoc/RDoc/MarkupReference.html#class-RDoc::MarkupReference-label-Code+Blocks)
-or [list] should be preceded by and followed by a blank line.
+A [code block][code blocks]
+or [list][lists] should be preceded by and followed by a blank line.
 This is unnecessary for the HTML output, but helps in the `ri` output.
 
 ### \Method Names
@@ -312,10 +312,9 @@ In particular, avoid building tables with HTML tags
 
 Alternatives:
 
-- A {verbatim text block}[https://ruby.github.io/rdoc/RDoc/MarkupReference.html#class-RDoc::MarkupReference-label-Verbatim+Text+Blocks],
+- A [verbatim text block][verbatim text blocks],
   using spaces and punctuation to format the text;
-  note that {text markup}[https://ruby.github.io/rdoc/RDoc/MarkupReference.html#class-RDoc::MarkupReference-label-Text+Markup]
-  will not be honored:
+  note that [text markup][text markup] will not be honored:
 
     - Example {source}[https://github.com/ruby/ruby/blob/34d802f32f00df1ac0220b62f72605827c16bad8/file.c#L6570-L6596].
     - Corresponding {output}[rdoc-ref:File@ReadWrite+Mode].
@@ -376,7 +375,7 @@ Guidelines:
       (and do not list the aliases separately).
     - Check the rendered documentation to determine whether \RDoc has recognized
       the method and linked to it;  if not, manually insert a
-      [link](https://ruby.github.io/rdoc/RDoc/MarkupReference.html#class-RDoc::MarkupReference-label-Links).
+      [link][links].
 
 - If there are numerous entries, consider grouping them into subsections with headings.
 - If there are more than a few such subsections,
@@ -402,7 +401,7 @@ For methods written in Ruby, \RDoc documents the calling sequence automatically.
 
 For methods written in C, \RDoc cannot determine what arguments
 the method accepts, so those need to be documented using \RDoc directive
-[`call-seq:`](https://ruby.github.io/rdoc/RDoc/MarkupReference.html#class-RDoc::MarkupReference-label-Directives+for+Method+Documentation).
+[`call-seq:`][call-seq]
 
 For a singleton method, use the form:
 
@@ -577,7 +576,7 @@ argument passed if it is not obvious, not explicitly mentioned in the
 details, and not implicitly shown in the examples.
 
 If there is more than one argument or block argument, use a
-[labeled list](https://ruby.github.io/rdoc/RDoc/MarkupReference.html#class-RDoc::MarkupReference-label-Labeled+Lists).
+[labeled list][lists].
 
 ### Corner Cases and Exceptions
 
@@ -618,6 +617,14 @@ For methods that accept multiple argument types, in some cases it can
 be useful to document the different argument types separately.  It's
 best to use a separate paragraph for each case you are discussing.
 
-[headings]: https://ruby.github.io/rdoc/RDoc/MarkupReference.html#class-RDoc::MarkupReference-label-Headings
-[list]: https://ruby.github.io/rdoc/RDoc/MarkupReference.html#class-RDoc::MarkupReference-label-Lists
-[monofont]: https://ruby.github.io/rdoc/RDoc/MarkupReference.html#class-RDoc::MarkupReference-label-Monofont
+[bold]:                 https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#bold
+[call-seq]:             https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#directive-for-specifying-rdoc-source-format
+[code blocks]:          https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#code-blocks
+[headings]:             https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#headings
+[irb]:                  https://ruby.github.io/irb/index.html
+[links]:                https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#links
+[lists]:                https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#lists
+[monofont]:             https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#monofont
+[reference]:            https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html
+[text markup]:          https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#text-markup
+[verbatim text blocks]: https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#verbatim-text-blocks
