@@ -102,7 +102,6 @@ struct rb_imemo_tmpbuf_struct {
  * */
 struct MEMO {
     VALUE flags;
-    VALUE reserved;
     const VALUE v1;
     const VALUE v2;
     union {
