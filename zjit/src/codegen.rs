@@ -562,6 +562,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::IsBlockParamModified { level } => gen_is_block_param_modified(asm, level),
         &Insn::GetBlockParam { ep_offset, level, state } => gen_getblockparam(jit, asm, ep_offset, level, &function.frame_state(state)),
         &Insn::SetLocal { val, ep_offset, level } => no_output!(gen_setlocal(asm, opnd!(val), function.type_of(val), ep_offset, level)),
+        Insn::GetConstant { klass, id, allow_nil, state } => gen_getconstant(jit, asm, opnd!(klass), *id, opnd!(allow_nil), &function.frame_state(*state)),
         Insn::GetConstantPath { ic, state } => gen_get_constant_path(jit, asm, *ic, &function.frame_state(*state)),
         Insn::GetClassVar { id, ic, state } => gen_getclassvar(jit, asm, *id, *ic, &function.frame_state(*state)),
         Insn::SetClassVar { id, val, ic, state } => no_output!(gen_setclassvar(jit, asm, *id, opnd!(val), *ic, &function.frame_state(*state))),
@@ -857,6 +858,17 @@ fn gen_get_constant_path(jit: &JITState, asm: &mut Assembler, ic: *const iseq_in
     gen_prepare_non_leaf_call(jit, asm, state);
 
     asm_ccall!(asm, rb_vm_opt_getconstant_path, EC, CFP, Opnd::const_ptr(ic))
+}
+
+fn gen_getconstant(jit: &mut JITState, asm: &mut Assembler, klass: Opnd, id: ID, allow_nil: Opnd, state: &FrameState) -> Opnd {
+    unsafe extern "C" {
+        fn rb_vm_get_ev_const(ec: EcPtr, klass: VALUE, id: ID, allow_nil: VALUE) -> VALUE;
+    }
+
+    // Constant lookup can raise and run arbitrary Ruby code via const_missing.
+    gen_prepare_non_leaf_call(jit, asm, state);
+
+    asm_ccall!(asm, rb_vm_get_ev_const, EC, klass, id.0.into(), allow_nil)
 }
 
 fn gen_fixnum_bit_check(asm: &mut Assembler, val: Opnd, index: u8) -> Opnd {
