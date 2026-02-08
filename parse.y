@@ -4903,7 +4903,6 @@ primary		: inline_primary
             | tLBRACE assoc_list[list] '}'
                 {
                     $$ = new_hash(p, $list, &@$);
-                    RNODE_HASH($$)->nd_brace = TRUE;
                 /*% ripper: hash!($:list) %*/
                 }
             | k_return[kw]
