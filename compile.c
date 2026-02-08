@@ -5592,9 +5592,9 @@ static_literal_value(const NODE *node, rb_iseq_t *iseq)
 }
 
 static int
-compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, const rb_node_list2_t *list, int popped, bool first_chunk)
+compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *line_node, const rb_node_list2_t *list, int popped, bool first_chunk)
 {
-    const NODE *line_node = node;
+    const NODE *node;
 
     if (list->size == 0) {
         if (!popped) {
@@ -5609,14 +5609,6 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, const r
         }
         return 1;
     }
-
-    // TODO: Optimize
-    for (size_t i = 0; i < list->size; i++) {
-        NO_CHECK(COMPILE_(ret, "array element", list->nodes[i], popped));
-    }
-    ADD_INSN1(ret, line_node, newarray, INT2FIX(list->size));
-
-    return 1;
 
     /* Compilation of an array literal.
      * The following code is essentially the same as:
@@ -5655,84 +5647,99 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, const r
      *     putobject 1; putobject 2; putobject 3; newarray 3; ...; pushtoarraykwsplat kw
      */
 
-//     const int max_stack_len = 0x100;
-//     const int min_tmp_ary_len = 0x40;
-//     int stack_len = 0;
+    const int max_stack_len = 0x100;
+    const int min_tmp_ary_len = 0x40;
+    int stack_len = 0;
 
-//     /* Either create a new array, or push to the existing array */
-// #define FLUSH_CHUNK \
-//     if (stack_len) {                                            \
-//         if (first_chunk) ADD_INSN1(ret, line_node, newarray, INT2FIX(stack_len)); \
-//         else ADD_INSN1(ret, line_node, pushtoarray, INT2FIX(stack_len));     \
-//         first_chunk = FALSE; \
-//         stack_len = 0;                            \
-//     }
+    /* Either create a new array, or push to the existing array */
+#define FLUSH_CHUNK \
+    if (stack_len) {                                            \
+        if (first_chunk) ADD_INSN1(ret, line_node, newarray, INT2FIX(stack_len)); \
+        else ADD_INSN1(ret, line_node, pushtoarray, INT2FIX(stack_len));     \
+        first_chunk = FALSE; \
+        stack_len = 0;                            \
+    }
 
-//     while (node) {
-//         int count = 1;
+    for (size_t i = 0; i < RB_NODE_LIST_LEN(list);) {
+        int count = 1;
+        node = list->nodes[i];
 
-//         /* pre-allocation check (this branch can be omittable) */
-//         if (static_literal_node_p(RNODE_LIST(node)->nd_head, iseq, false)) {
-//             /* count the elements that are optimizable */
-//             const NODE *node_tmp = RNODE_LIST(node)->nd_next;
-//             for (; node_tmp && static_literal_node_p(RNODE_LIST(node_tmp)->nd_head, iseq, false); node_tmp = RNODE_LIST(node_tmp)->nd_next)
-//                 count++;
+        /* pre-allocation check (this branch can be omittable) */
+        if (static_literal_node_p(node, iseq, false)) {
+            /* count the elements that are optimizable */
+            size_t j = i + 1;
+            for (; j < RB_NODE_LIST_LEN(list) && static_literal_node_p(list->nodes[j], iseq, false); j++)
+                count++;
 
-//             if ((first_chunk && stack_len == 0 && !node_tmp) || count >= min_tmp_ary_len) {
-//                 /* The literal contains only optimizable elements, or the subarray is long enough */
-//                 VALUE ary = rb_ary_hidden_new(count);
+            if ((first_chunk && stack_len == 0 && (j == RB_NODE_LIST_LEN(list))) || count >= min_tmp_ary_len) {
+                /* The literal contains only optimizable elements, or the subarray is long enough */
+                VALUE ary = rb_ary_hidden_new(count);
 
-//                 /* Create a hidden array */
-//                 for (; count; count--, node = RNODE_LIST(node)->nd_next)
-//                     rb_ary_push(ary, static_literal_value(RNODE_LIST(node)->nd_head, iseq));
-//                 RB_OBJ_SET_FROZEN_SHAREABLE(ary);
+                /* Create a hidden array */
+                for (; count; count--, i++) {
+                    node = list->nodes[i];
+                    rb_ary_push(ary, static_literal_value(node, iseq));
+                }
+                RB_OBJ_SET_FROZEN_SHAREABLE(ary);
 
-//                 /* Emit optimized code */
-//                 FLUSH_CHUNK;
-//                 if (first_chunk) {
-//                     ADD_INSN1(ret, line_node, duparray, ary);
-//                     first_chunk = FALSE;
-//                 }
-//                 else {
-//                     ADD_INSN1(ret, line_node, putobject, ary);
-//                     ADD_INSN(ret, line_node, concattoarray);
-//                 }
-//                 RB_OBJ_SET_SHAREABLE(ary);
-//                 RB_OBJ_WRITTEN(iseq, Qundef, ary);
-//             }
-//         }
+                /* Emit optimized code */
+                FLUSH_CHUNK;
+                if (first_chunk) {
+                    ADD_INSN1(ret, line_node, duparray, ary);
+                    first_chunk = FALSE;
+                }
+                else {
+                    ADD_INSN1(ret, line_node, putobject, ary);
+                    ADD_INSN(ret, line_node, concattoarray);
+                }
+                RB_OBJ_SET_SHAREABLE(ary);
+                RB_OBJ_WRITTEN(iseq, Qundef, ary);
+            }
+        }
 
-//         /* Base case: Compile "count" elements */
-//         for (; count; count--, node = RNODE_LIST(node)->nd_next) {
-//             if (CPDEBUG > 0) {
-//                 EXPECT_NODE("compile_array", node, NODE_LIST, -1);
-//             }
+        /* Base case: Compile "count" elements */
+        for (; count; count--, i++) {
+            node = list->nodes[i];
 
-//             if (!RNODE_LIST(node)->nd_next && keyword_node_p(RNODE_LIST(node)->nd_head)) {
-//                 /* Create array or push existing non-keyword elements onto array */
-//                 if (stack_len == 0 && first_chunk) {
-//                     ADD_INSN1(ret, line_node, newarray, INT2FIX(0));
-//                 }
-//                 else {
-//                     FLUSH_CHUNK;
-//                 }
-//                 NO_CHECK(COMPILE_(ret, "array element", RNODE_LIST(node)->nd_head, 0));
-//                 ADD_INSN(ret, line_node, pushtoarraykwsplat);
-//                 return 1;
-//             }
-//             else {
-//                 NO_CHECK(COMPILE_(ret, "array element", RNODE_LIST(node)->nd_head, 0));
-//                 stack_len++;
-//             }
+            if ((i == RB_NODE_LIST_LEN(list) - 1) && nd_type_p(node, RB_KEYWORD_HASH_NODE)) {
+                /* Create array or push existing non-keyword elements onto array */
+                if (stack_len == 0 && first_chunk) {
+                    ADD_INSN1(ret, line_node, newarray, INT2FIX(0));
+                }
+                else {
+                    FLUSH_CHUNK;
+                }
+                NO_CHECK(COMPILE_(ret, "array element", node, 0));
+                ADD_INSN(ret, line_node, pushtoarraykwsplat);
+                return 1;
+            }
+            else if (nd_type_p(node, RB_SPLAT_NODE)) {
+                FLUSH_CHUNK;
 
-//             /* If there are many pushed elements, flush them to avoid stack overflow */
-//             if (stack_len >= max_stack_len) FLUSH_CHUNK;
-//         }
-//     }
+                NO_CHECK(COMPILE_(ret, "array element", RB_NODE_SPLAT(node)->expression, 0));
+                if (first_chunk) {
+                    /* [*ary, ...] */
+                    ADD_INSN1(ret, node, splatarray, Qtrue);
+                    first_chunk = FALSE;
+                }
+                else {
+                    /* [..., *ary, ...] */
+                    ADD_INSN(ret, node, concattoarray);
+                }
+            }
+            else {
+                NO_CHECK(COMPILE_(ret, "array element", node, 0));
+                stack_len++;
+            }
 
-//     FLUSH_CHUNK;
-// #undef FLUSH_CHUNK
-//     return 1;
+            /* If there are many pushed elements, flush them to avoid stack overflow */
+            if (stack_len >= max_stack_len) FLUSH_CHUNK;
+        }
+    }
+
+    FLUSH_CHUNK;
+#undef FLUSH_CHUNK
+    return 1;
 }
 
 static inline int
@@ -12197,6 +12204,10 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       }
       case RB_HASH_NODE: {
         CHECK(compile_hash(iseq, ret, node, &RB_NODE_HASH(node)->elements, FALSE, popped) >= 0);
+        break;
+      }
+      case RB_KEYWORD_HASH_NODE: {
+        CHECK(compile_hash(iseq, ret, node, &RB_NODE_KEYWORD_HASH(node)->elements, FALSE, popped) >= 0);
         break;
       }
       case RB_IMPLICIT_NODE: {
