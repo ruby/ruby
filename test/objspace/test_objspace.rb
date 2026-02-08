@@ -703,8 +703,9 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_dump_includes_slot_size
-    str = "TEST"
-    dump = ObjectSpace.dump(str)
+    klass = Class.new
+    obj = klass.new
+    dump = ObjectSpace.dump(obj)
 
     assert_includes dump, "\"slot_size\":#{GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]}"
   end
