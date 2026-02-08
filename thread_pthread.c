@@ -90,11 +90,6 @@ static const void *const condattr_monotonic = NULL;
   #endif
 #endif
 
-#ifndef MINIMUM_SNT
-// make at least MINIMUM_SNT snts for debug.
-#define MINIMUM_SNT 0
-#endif
-
 #ifdef HAVE_SCHED_YIELD
 #define native_thread_yield() (void)sched_yield()
 #else
@@ -559,20 +554,6 @@ ractor_sched_timeslice_threads_contain_p(rb_vm_t *vm, rb_thread_t *th)
 
 static void ractor_sched_barrier_join_signal_locked(rb_vm_t *vm);
 
-static bool
-need_more_shared_native_threads_p(rb_vm_t *vm)
-{
-    ASSERT_ractor_sched_locked(vm, NULL);
-
-    unsigned int schedulable_ractor_cnt = vm->ractor.cnt;
-    unsigned int snt_cnt = vm->ractor.sched.snt_cnt;
-    RUBY_ASSERT(schedulable_ractor_cnt >= 1);
-    if (!vm->ractor.main_ractor->threads.sched.enable_mn_threads) {
-        schedulable_ractor_cnt--; // do not need snt for main ractor
-    }
-    return snt_cnt < MINIMUM_SNT || (snt_cnt < schedulable_ractor_cnt && snt_cnt < vm->ractor.sched.max_cpu);
-}
-
 // setup timeslice signals by the timer thread.
 static void
 thread_sched_setup_running_threads(struct rb_thread_sched *sched, rb_ractor_t *cr, rb_vm_t *vm,
@@ -583,7 +564,6 @@ thread_sched_setup_running_threads(struct rb_thread_sched *sched, rb_ractor_t *c
 #endif
 
     rb_thread_t *del_timeslice_th;
-    bool wakeup_timer_thread = false;
 
     if (del_th && sched->is_running_timeslice) {
         del_timeslice_th = del_th;
@@ -612,12 +592,6 @@ thread_sched_setup_running_threads(struct rb_thread_sched *sched, rb_ractor_t *c
                 ractor_sched_barrier_join_signal_locked(vm);
             }
             sched->is_running = false;
-
-            // If we need more SNTs, the timer thread should be awake and monitoring the situation so it can correct it.
-            if (!del_th->has_dedicated_nt && del_th->nt->dedicated > 0 && (sched->running != NULL || vm->ractor.sched.grq_cnt > 0) &&
-                need_more_shared_native_threads_p(vm)) {
-                wakeup_timer_thread = true;
-            }
         }
 
         if (add_th) {
@@ -642,17 +616,13 @@ thread_sched_setup_running_threads(struct rb_thread_sched *sched, rb_ractor_t *c
             ccan_list_add(&vm->ractor.sched.timeslice_threads, &add_timeslice_th->sched.node.timeslice_threads);
             sched->is_running_timeslice = true;
             if (was_empty) {
-                wakeup_timer_thread = true;
+                timer_thread_wakeup_locked(vm);
             }
         }
 
         if (del_timeslice_th) {
             VM_ASSERT(ractor_sched_timeslice_threads_contain_p(vm, del_timeslice_th));
             ccan_list_del_init(&del_timeslice_th->sched.node.timeslice_threads);
-        }
-
-        if (wakeup_timer_thread) {
-            timer_thread_wakeup_locked(vm);
         }
 
         VM_ASSERT(ractor_sched_running_threads_size(vm) == vm->ractor.sched.running_cnt);
@@ -1292,6 +1262,11 @@ ractor_sched_enq(rb_vm_t *vm, rb_ractor_t *r)
 
 #ifndef SNT_KEEP_SECONDS
 #define SNT_KEEP_SECONDS 0
+#endif
+
+#ifndef MINIMUM_SNT
+// make at least MINIMUM_SNT snts for debug.
+#define MINIMUM_SNT 0
 #endif
 
 static rb_ractor_t *
