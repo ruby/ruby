@@ -6673,6 +6673,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_opt_getconstant_path => {
                     let ic = get_arg(pc, 0).as_ptr();
+                    // FIXME: Redundant Snapshot. `exit_id` above already captures the same `exit_state`.
                     let snapshot = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     state.stack_push(fun.push_insn(block, Insn::GetConstantPath { ic, state: snapshot }));
                 }
