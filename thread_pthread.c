@@ -570,7 +570,11 @@ need_more_shared_native_threads_p(rb_vm_t *vm)
     if (!vm->ractor.main_ractor->threads.sched.enable_mn_threads) {
         schedulable_ractor_cnt--; // do not need snt for main ractor
     }
-    return snt_cnt < MINIMUM_SNT || (snt_cnt < schedulable_ractor_cnt && snt_cnt < vm->ractor.sched.max_cpu);
+    return
+#if MINIMUM_SNT != 0
+        snt_cnt < MINIMUM_SNT ||
+#endif
+            (snt_cnt < schedulable_ractor_cnt && snt_cnt < vm->ractor.sched.max_cpu);
 }
 
 // setup timeslice signals by the timer thread.
