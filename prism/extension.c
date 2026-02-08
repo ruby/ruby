@@ -390,10 +390,10 @@ dump_input(pm_string_t *input, const pm_options_t *options) {
 
 /**
  * call-seq:
- *   Prism::dump(source, **options) -> String
+ *   dump(source, **options) -> String
  *
  * Dump the AST corresponding to the given string to a string. For supported
- * options, see Prism::parse.
+ * options, see Prism.parse.
  */
 static VALUE
 dump(int argc, VALUE *argv, VALUE self) {
@@ -423,10 +423,10 @@ dump(int argc, VALUE *argv, VALUE self) {
 
 /**
  * call-seq:
- *   Prism::dump_file(filepath, **options) -> String
+ *   dump_file(filepath, **options) -> String
  *
  * Dump the AST corresponding to the given file to a string. For supported
- * options, see Prism::parse.
+ * options, see Prism.parse.
  */
 static VALUE
 dump_file(int argc, VALUE *argv, VALUE self) {
@@ -795,10 +795,10 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
 
 /**
  * call-seq:
- *   Prism::lex(source, **options) -> LexResult
+ *   lex(source, **options) -> LexResult
  *
  * Return a LexResult instance that contains an array of Token instances
- * corresponding to the given string. For supported options, see Prism::parse.
+ * corresponding to the given string. For supported options, see Prism.parse.
  */
 static VALUE
 lex(int argc, VALUE *argv, VALUE self) {
@@ -815,10 +815,10 @@ lex(int argc, VALUE *argv, VALUE self) {
 
 /**
  * call-seq:
- *   Prism::lex_file(filepath, **options) -> LexResult
+ *   lex_file(filepath, **options) -> LexResult
  *
  * Return a LexResult instance that contains an array of Token instances
- * corresponding to the given file. For supported options, see Prism::parse.
+ * corresponding to the given file. For supported options, see Prism.parse.
  */
 static VALUE
 lex_file(int argc, VALUE *argv, VALUE self) {
@@ -866,7 +866,7 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
 
 /**
  * call-seq:
- *   Prism::parse(source, **options) -> ParseResult
+ *   parse(source, **options) -> ParseResult
  *
  * Parse the given string and return a ParseResult instance. The options that
  * are supported are:
@@ -934,10 +934,10 @@ parse(int argc, VALUE *argv, VALUE self) {
 
 /**
  * call-seq:
- *   Prism::parse_file(filepath, **options) -> ParseResult
+ *   parse_file(filepath, **options) -> ParseResult
  *
  * Parse the given file and return a ParseResult instance. For supported
- * options, see Prism::parse.
+ * options, see Prism.parse.
  */
 static VALUE
 parse_file(int argc, VALUE *argv, VALUE self) {
@@ -969,11 +969,11 @@ profile_input(pm_string_t *input, const pm_options_t *options) {
 
 /**
  * call-seq:
- *   Prism::profile(source, **options) -> nil
+ *   profile(source, **options) -> nil
  *
  * Parse the given string and return nothing. This method is meant to allow
  * profilers to avoid the overhead of reifying the AST to Ruby. For supported
- * options, see Prism::parse.
+ * options, see Prism.parse.
  */
 static VALUE
 profile(int argc, VALUE *argv, VALUE self) {
@@ -990,11 +990,11 @@ profile(int argc, VALUE *argv, VALUE self) {
 
 /**
  * call-seq:
- *   Prism::profile_file(filepath, **options) -> nil
+ *   profile_file(filepath, **options) -> nil
  *
  * Parse the given file and return nothing. This method is meant to allow
  * profilers to avoid the overhead of reifying the AST to Ruby. For supported
- * options, see Prism::parse.
+ * options, see Prism.parse.
  */
 static VALUE
 profile_file(int argc, VALUE *argv, VALUE self) {
@@ -1042,10 +1042,10 @@ parse_stream_fgets(char *string, int size, void *stream) {
 
 /**
  * call-seq:
- *   Prism::parse_stream(stream, **options) -> ParseResult
+ *   parse_stream(stream, **options) -> ParseResult
  *
  * Parse the given object that responds to `gets` and return a ParseResult
- * instance. The options that are supported are the same as Prism::parse.
+ * instance. The options that are supported are the same as Prism.parse.
  */
 static VALUE
 parse_stream(int argc, VALUE *argv, VALUE self) {
@@ -1095,10 +1095,10 @@ parse_input_comments(pm_string_t *input, const pm_options_t *options) {
 
 /**
  * call-seq:
- *   Prism::parse_comments(source, **options) -> Array
+ *   parse_comments(source, **options) -> Array
  *
  * Parse the given string and return an array of Comment objects. For supported
- * options, see Prism::parse.
+ * options, see Prism.parse.
  */
 static VALUE
 parse_comments(int argc, VALUE *argv, VALUE self) {
@@ -1115,10 +1115,10 @@ parse_comments(int argc, VALUE *argv, VALUE self) {
 
 /**
  * call-seq:
- *   Prism::parse_file_comments(filepath, **options) -> Array
+ *   parse_file_comments(filepath, **options) -> Array
  *
  * Parse the given file and return an array of Comment objects. For supported
- * options, see Prism::parse.
+ * options, see Prism.parse.
  */
 static VALUE
 parse_file_comments(int argc, VALUE *argv, VALUE self) {
@@ -1137,17 +1137,17 @@ parse_file_comments(int argc, VALUE *argv, VALUE self) {
 
 /**
  * call-seq:
- *   Prism::parse_lex(source, **options) -> ParseLexResult
+ *   parse_lex(source, **options) -> ParseLexResult
  *
  * Parse the given string and return a ParseLexResult instance that contains a
  * 2-element array, where the first element is the AST and the second element is
  * an array of Token instances.
  *
  * This API is only meant to be used in the case where you need both the AST and
- * the tokens. If you only need one or the other, use either Prism::parse or
- * Prism::lex.
+ * the tokens. If you only need one or the other, use either Prism.parse or
+ * Prism.lex.
  *
- * For supported options, see Prism::parse.
+ * For supported options, see Prism.parse.
  */
 static VALUE
 parse_lex(int argc, VALUE *argv, VALUE self) {
@@ -1164,17 +1164,17 @@ parse_lex(int argc, VALUE *argv, VALUE self) {
 
 /**
  * call-seq:
- *   Prism::parse_lex_file(filepath, **options) -> ParseLexResult
+ *   parse_lex_file(filepath, **options) -> ParseLexResult
  *
  * Parse the given file and return a ParseLexResult instance that contains a
  * 2-element array, where the first element is the AST and the second element is
  * an array of Token instances.
  *
  * This API is only meant to be used in the case where you need both the AST and
- * the tokens. If you only need one or the other, use either Prism::parse_file
- * or Prism::lex_file.
+ * the tokens. If you only need one or the other, use either Prism.parse_file
+ * or Prism.lex_file.
  *
- * For supported options, see Prism::parse.
+ * For supported options, see Prism.parse.
  */
 static VALUE
 parse_lex_file(int argc, VALUE *argv, VALUE self) {
@@ -1210,10 +1210,10 @@ parse_input_success_p(pm_string_t *input, const pm_options_t *options) {
 
 /**
  * call-seq:
- *   Prism::parse_success?(source, **options) -> bool
+ *   parse_success?(source, **options) -> bool
  *
  * Parse the given string and return true if it parses without errors. For
- * supported options, see Prism::parse.
+ * supported options, see Prism.parse.
  */
 static VALUE
 parse_success_p(int argc, VALUE *argv, VALUE self) {
@@ -1230,10 +1230,10 @@ parse_success_p(int argc, VALUE *argv, VALUE self) {
 
 /**
  * call-seq:
- *   Prism::parse_failure?(source, **options) -> bool
+ *   parse_failure?(source, **options) -> bool
  *
  * Parse the given string and return true if it parses with errors. For
- * supported options, see Prism::parse.
+ * supported options, see Prism.parse.
  */
 static VALUE
 parse_failure_p(int argc, VALUE *argv, VALUE self) {
@@ -1242,10 +1242,10 @@ parse_failure_p(int argc, VALUE *argv, VALUE self) {
 
 /**
  * call-seq:
- *   Prism::parse_file_success?(filepath, **options) -> bool
+ *   parse_file_success?(filepath, **options) -> bool
  *
  * Parse the given file and return true if it parses without errors. For
- * supported options, see Prism::parse.
+ * supported options, see Prism.parse.
  */
 static VALUE
 parse_file_success_p(int argc, VALUE *argv, VALUE self) {
@@ -1264,10 +1264,10 @@ parse_file_success_p(int argc, VALUE *argv, VALUE self) {
 
 /**
  * call-seq:
- *   Prism::parse_file_failure?(filepath, **options) -> bool
+ *   parse_file_failure?(filepath, **options) -> bool
  *
  * Parse the given file and return true if it parses with errors. For
- * supported options, see Prism::parse.
+ * supported options, see Prism.parse.
  */
 static VALUE
 parse_file_failure_p(int argc, VALUE *argv, VALUE self) {
@@ -1298,7 +1298,7 @@ string_query(pm_string_query_t result) {
 
 /**
  * call-seq:
- *   Prism::StringQuery::local?(string) -> bool
+ *   local?(string) -> bool
  *
  * Returns true if the string constitutes a valid local variable name. Note that
  * this means the names that can be set through Binding#local_variable_set, not
@@ -1312,7 +1312,7 @@ string_query_local_p(VALUE self, VALUE string) {
 
 /**
  * call-seq:
- *   Prism::StringQuery::constant?(string) -> bool
+ *   constant?(string) -> bool
  *
  * Returns true if the string constitutes a valid constant name. Note that this
  * means the names that can be set through Module#const_set, not necessarily the
@@ -1326,7 +1326,7 @@ string_query_constant_p(VALUE self, VALUE string) {
 
 /**
  * call-seq:
- *   Prism::StringQuery::method_name?(string) -> bool
+ *   method_name?(string) -> bool
  *
  * Returns true if the string constitutes a valid method name.
  */

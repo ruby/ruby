@@ -19,7 +19,7 @@ module Prism
     # seattlerb/ruby_parser gem's syntax tree.
     class RubyParser
       # A prism visitor that builds Sexp objects.
-      class Compiler < ::Prism::Compiler
+      class Compiler < ::Prism::Compiler # :nodoc:
         # This is the name of the file that we are compiling. We set it on every
         # Sexp object that is generated, and also use it to compile `__FILE__`
         # nodes.

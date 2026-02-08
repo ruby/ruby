@@ -1036,7 +1036,8 @@ module JSON
     #   JSON.new(options = nil, &block)
     #
     # Argument +options+, if given, contains a \Hash of options for both parsing and generating.
-    # See {Parsing Options}[#module-JSON-label-Parsing+Options], and {Generating Options}[#module-JSON-label-Generating+Options].
+    # See {Parsing Options}[rdoc-ref:JSON@Parsing+Options],
+    # and {Generating Options}[rdoc-ref:JSON@Generating+Options].
     #
     # For generation, the <tt>strict: true</tt> option is always set. When a Ruby object with no native \JSON counterpart is
     # encountered, the block provided to the initialize method is invoked, and must return a Ruby object that has a native

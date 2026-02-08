@@ -400,10 +400,7 @@ static void emit_parse_warning(const char *message, JSON_ParserState *state)
 
 #define PARSE_ERROR_FRAGMENT_LEN 32
 
-#ifdef RBIMPL_ATTR_NORETURN
-RBIMPL_ATTR_NORETURN()
-#endif
-static void raise_parse_error(const char *format, JSON_ParserState *state)
+NORETURN(static) void raise_parse_error(const char *format, JSON_ParserState *state)
 {
     unsigned char buffer[PARSE_ERROR_FRAGMENT_LEN + 3];
     long line, column;
@@ -449,10 +446,7 @@ static void raise_parse_error(const char *format, JSON_ParserState *state)
     rb_exc_raise(exc);
 }
 
-#ifdef RBIMPL_ATTR_NORETURN
-RBIMPL_ATTR_NORETURN()
-#endif
-static void raise_parse_error_at(const char *format, JSON_ParserState *state, const char *at)
+NORETURN(static) void raise_parse_error_at(const char *format, JSON_ParserState *state, const char *at)
 {
     state->cursor = at;
     raise_parse_error(format, state);
@@ -776,20 +770,39 @@ NOINLINE(static) VALUE json_string_unescape(JSON_ParserState *state, JSON_Parser
 }
 
 #define MAX_FAST_INTEGER_SIZE 18
+#define MAX_NUMBER_STACK_BUFFER 128
 
-static VALUE json_decode_large_integer(const char *start, long len)
+typedef VALUE (*json_number_decode_func_t)(const char *ptr);
+
+static inline VALUE json_decode_large_number(const char *start, long len, json_number_decode_func_t func)
 {
-    VALUE buffer_v;
-    char *buffer = RB_ALLOCV_N(char, buffer_v, len + 1);
-    MEMCPY(buffer, start, char, len);
-    buffer[len] = '\0';
-    VALUE number = rb_cstr2inum(buffer, 10);
-    RB_ALLOCV_END(buffer_v);
-    return number;
+    if (RB_LIKELY(len < MAX_NUMBER_STACK_BUFFER)) {
+        char buffer[MAX_NUMBER_STACK_BUFFER];
+        MEMCPY(buffer, start, char, len);
+        buffer[len] = '\0';
+        return func(buffer);
+    } else {
+        VALUE buffer_v = rb_str_tmp_new(len);
+        char *buffer = RSTRING_PTR(buffer_v);
+        MEMCPY(buffer, start, char, len);
+        buffer[len] = '\0';
+        VALUE number = func(buffer);
+        RB_GC_GUARD(buffer_v);
+        return number;
+    }
 }
 
-static inline VALUE
-json_decode_integer(uint64_t mantissa, int mantissa_digits, bool negative, const char *start, const char *end)
+static VALUE json_decode_inum(const char *buffer)
+{
+    return rb_cstr2inum(buffer, 10);
+}
+
+NOINLINE(static) VALUE json_decode_large_integer(const char *start, long len)
+{
+    return json_decode_large_number(start, len, json_decode_inum);
+}
+
+static inline VALUE json_decode_integer(uint64_t mantissa, int mantissa_digits, bool negative, const char *start, const char *end)
 {
     if (RB_LIKELY(mantissa_digits < MAX_FAST_INTEGER_SIZE)) {
         if (negative) {
@@ -801,22 +814,14 @@ json_decode_integer(uint64_t mantissa, int mantissa_digits, bool negative, const
     return json_decode_large_integer(start, end - start);
 }
 
-static VALUE json_decode_large_float(const char *start, long len)
+static VALUE json_decode_dnum(const char *buffer)
 {
-    if (RB_LIKELY(len < 64)) {
-        char buffer[64];
-        MEMCPY(buffer, start, char, len);
-        buffer[len] = '\0';
-        return DBL2NUM(rb_cstr_to_dbl(buffer, 1));
-    }
+    return DBL2NUM(rb_cstr_to_dbl(buffer, 1));
+}
 
-    VALUE buffer_v;
-    char *buffer = RB_ALLOCV_N(char, buffer_v, len + 1);
-    MEMCPY(buffer, start, char, len);
-    buffer[len] = '\0';
-    VALUE number = DBL2NUM(rb_cstr_to_dbl(buffer, 1));
-    RB_ALLOCV_END(buffer_v);
-    return number;
+NOINLINE(static) VALUE json_decode_large_float(const char *start, long len)
+{
+    return json_decode_large_number(start, len, json_decode_dnum);
 }
 
 /* Ruby JSON optimized float decoder using vendored Ryu algorithm
@@ -868,7 +873,7 @@ static VALUE json_find_duplicated_key(size_t count, const VALUE *pairs)
     return Qfalse;
 }
 
-static void emit_duplicate_key_warning(JSON_ParserState *state, VALUE duplicate_key)
+NOINLINE(static) void emit_duplicate_key_warning(JSON_ParserState *state, VALUE duplicate_key)
 {
     VALUE message = rb_sprintf(
         "detected duplicate key %"PRIsVALUE" in JSON object. This will raise an error in json 3.0 unless enabled via `allow_duplicate_key: true`",
@@ -879,10 +884,7 @@ static void emit_duplicate_key_warning(JSON_ParserState *state, VALUE duplicate_
     RB_GC_GUARD(message);
 }
 
-#ifdef RBIMPL_ATTR_NORETURN
-RBIMPL_ATTR_NORETURN()
-#endif
-static void raise_duplicate_key_error(JSON_ParserState *state, VALUE duplicate_key)
+NORETURN(static) void raise_duplicate_key_error(JSON_ParserState *state, VALUE duplicate_key)
 {
     VALUE message = rb_sprintf(
         "duplicate key %"PRIsVALUE,

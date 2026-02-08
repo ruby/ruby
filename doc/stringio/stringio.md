@@ -690,11 +690,11 @@ Reading:
 
 [basic reading]:         rdoc-ref:StringIO@Basic+Reading
 [basic writing]:         rdoc-ref:StringIO@Basic+Writing
-[bom (byte order mark)]: rdoc-ref:StringIO@BOM+-28Byte+Order+Mark-29
+[bom (byte order mark)]: rdoc-ref:StringIO@BOM+Byte+Order+Mark
 [data mode]:             rdoc-ref:StringIO@Data+Mode
 [encodings]:             rdoc-ref:StringIO@Encodings
 [end-of-stream]:         rdoc-ref:StringIO@End-of-Stream
 [line number]:           rdoc-ref:StringIO@Line+Number
-[open/closed streams]:   rdoc-ref:StringIO@Open-2FClosed+Streams
+[open/closed streams]:   rdoc-ref:StringIO@OpenClosed+Streams
 [position]:              rdoc-ref:StringIO@Position
-[read/write mode]:       rdoc-ref:StringIO@Read-2FWrite+Mode
+[read/write mode]:       rdoc-ref:StringIO@ReadWrite+Mode

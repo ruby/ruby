@@ -594,6 +594,8 @@ module Prism
       # Visitor methods
       ##########################################################################
 
+      # :stopdoc:
+
       # alias foo bar
       # ^^^^^^^^^^^^^
       def visit_alias_method_node(node)
@@ -3457,6 +3459,8 @@ module Prism
         @lineno = location.start_line
         @column = location.start_column
       end
+
+      # :startdoc:
 
       ##########################################################################
       # Ripper interface

@@ -20,6 +20,7 @@
 #include "internal/array.h"
 #include "internal/class.h"
 #include "internal/complex.h"
+#include "internal/error.h"
 #include "internal/math.h"
 #include "internal/numeric.h"
 #include "internal/object.h"
@@ -2411,7 +2412,7 @@ nucomp_convert(VALUE klass, VALUE a1, VALUE a2, int raise)
 {
     if (NIL_P(a1) || NIL_P(a2)) {
         if (!raise) return Qnil;
-        rb_raise(rb_eTypeError, "can't convert nil into Complex");
+        rb_cant_convert(Qnil, "Complex");
     }
 
     if (RB_TYPE_P(a1, T_STRING)) {

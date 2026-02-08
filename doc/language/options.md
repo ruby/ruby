@@ -61,15 +61,15 @@ nil
 
 See also:
 
-- {Option -a}[rdoc-ref:@-a+Split+Input+Lines+into+Fields]:
+- [Option `-a`][-a]:
   Split input lines into fields.
-- {Option -F}[rdoc-ref:@-F+Set+Input+Field+Separator]:
+- [Option `-F`][-F]:
   Set input field separator.
-- {Option -l}[rdoc-ref:@-l+Set+Output+Record+Separator+Chop+Lines]:
+- [Option `-l`][-l]:
   Set output record separator; chop lines.
-- {Option -n}[rdoc-ref:@-n+Run+Program+in+gets+Loop]:
+- [Option `-n`][-n]:
   Run program in `gets` loop.
-- {Option -p}[rdoc-ref:@-p+-n+with+Printing]:
+- [Option `-p`][-p]:
   `-n`, with printing.
 
 ### `-a`: Split Input Lines into Fields
@@ -91,15 +91,15 @@ and the default field separator  is `$;`.
 
 See also:
 
-- {Option -0}[rdoc-ref:@-0+Set++Input+Record+Separator]:
+- [Option `-0`][-0]:
   Set `$/` (input record separator).
-- {Option -F}[rdoc-ref:@-F+Set+Input+Field+Separator]:
+- [Option `-F`][-F]:
   Set input field separator.
-- {Option -l}[rdoc-ref:@-l+Set+Output+Record+Separator+Chop+Lines]:
+- [Option `-l`][-l]:
   Set output record separator; chop lines.
-- {Option -n}[rdoc-ref:@-n+Run+Program+in+gets+Loop]:
+- [Option `-n`][-n]:
   Run program in `gets` loop.
-- {Option -p}[rdoc-ref:@-p+-n+with+Printing]:
+- [Option `-p`][-p]:
   `-n`, with printing.
 
 ### `-c`: Check Syntax
@@ -129,6 +129,24 @@ $ basename `pwd`
 ruby
 ```
 
+This option is accumulative; relative paths are solved from the
+previous working directory.
+
+```console
+$ ruby -C / -C usr -e 'puts Dir.pwd'
+/usr
+```
+
+If the argument is not an existing directory, a fatal error will
+occur:
+
+```console
+$ ruby -C /nonexistent
+ruby: Can't chdir to /nonexistent (fatal)
+$ ruby -C /dev/null
+ruby: Can't chdir to /dev/null (fatal)
+```
+
 Whitespace between the option and its argument may be omitted.
 
 ### `-d`: Set `$DEBUG` to `true`
@@ -147,7 +165,7 @@ $ ruby -d -e 'p $DEBUG'
 true
 ```
 
-Option `--debug` is an alias for option `-d`.
+[Option `--debug`][--debug] is an alias for option `-d`.
 
 ### `-e`: Execute Given Ruby Code
 
@@ -186,9 +204,9 @@ Whitespace between the option and its argument may be omitted.
 
 See also:
 
-- {Option --external-encoding}[rdoc-ref:@--external+encoding+Set+Default+External+Encoding]:
+- [Option `--external-encoding`][--external-encoding]:
   Set default external encoding.
-- {Option --internal-encoding}[rdoc-ref:@--internal+encoding+Set+Default+Internal+Encoding]:
+- [Option `--internal-encoding`][--internal-encoding]:
   Set default internal encoding.
 
 Option `--encoding` is an alias for option `-E`.
@@ -221,15 +239,15 @@ The argument must immediately follow the option
 
 See also:
 
-- {Option -0}[rdoc-ref:@-0+Set++Input+Record+Separator]:
+- [Option `-0`][-0]:
   Set `$/` (input record separator).
-- {Option -a}[rdoc-ref:@-a+Split+Input+Lines+into+Fields]:
+- [Option `-a`][-a]:
   Split input lines into fields.
-- {Option -l}[rdoc-ref:@-l+Set+Output+Record+Separator+Chop+Lines]:
+- [Option `-l`][-l]:
   Set output record separator; chop lines.
-- {Option -n}[rdoc-ref:@-n+Run+Program+in+gets+Loop]:
+- [Option `-n`][-n]:
   Run program in `gets` loop.
-- {Option -p}[rdoc-ref:@-p+-n+with+Printing]:
+- [Option `-p`][-p]:
   `-n`, with printing.
 
 ### `-h`: Print Short Help Message
@@ -273,6 +291,16 @@ $ ruby -I my_lib -I some_lib -e 'p $LOAD_PATH.take(2)'
 $ popd
 ```
 
+This option and [option `-C`][-C] will
+be applied in the order in the command line; expansion of `-I` options
+are affected by preceeding `-C` options.
+
+```console
+$ ruby -C / -Ilib -C usr -Ilib -e 'puts $:[0, 2]'
+/lib
+/usr/lib
+```
+
 Whitespace between the option and its argument may be omitted.
 
 ### `-l`: Set Output Record Separator; Chop Lines
@@ -307,15 +335,15 @@ $ ruby -ln -e 'p $_' desiderata.txt
 
 See also:
 
-- {Option -0}[rdoc-ref:@-0+Set++Input+Record+Separator]:
+- [Option `-0`][-0]:
   Set `$/` (input record separator).
-- {Option -a}[rdoc-ref:@-a+Split+Input+Lines+into+Fields]:
+- [Option `-a`][-a]:
   Split input lines into fields.
-- {Option -F}[rdoc-ref:@-F+Set+Input+Field+Separator]:
+- [Option `-F`][-F]:
   Set input field separator.
-- {Option -n}[rdoc-ref:@-n+Run+Program+in+gets+Loop]:
+- [Option `-n`][-n]:
   Run program in `gets` loop.
-- {Option -p}[rdoc-ref:@-p+-n+with+Printing]:
+- [Option `-p`][-p]:
   `-n`, with printing.
 
 ### `-n`: Run Program in `gets` Loop
@@ -341,15 +369,15 @@ be on good terms with all persons.
 
 See also:
 
-- {Option -0}[rdoc-ref:@-0+Set++Input+Record+Separator]:
+- [Option `-0`][-0]:
   Set `$/` (input record separator).
-- {Option -a}[rdoc-ref:@-a+Split+Input+Lines+into+Fields]:
+- [Option `-a`][-a]:
   Split input lines into fields.
-- {Option -F}[rdoc-ref:@-F+Set+Input+Field+Separator]:
+- [Option `-F`][-F]:
   Set input field separator.
-- {Option -l}[rdoc-ref:@-l+Set+Output+Record+Separator+Chop+Lines]:
+- [Option `-l`][-l]:
   Set output record separator; chop lines.
-- {Option -p}[rdoc-ref:@-p+-n+with+Printing]:
+- [Option `-p`][-p]:
   `-n`, with printing.
 
 ### `-p`: `-n`, with Printing
@@ -370,15 +398,15 @@ be on good terms with all persons.
 
 See also:
 
-- {Option -0}[rdoc-ref:@-0+Set++Input+Record+Separator]:
+- [Option `-0`][-0]:
   Set `$/` (input record separator).
-- {Option -a}[rdoc-ref:@-a+Split+Input+Lines+into+Fields]:
+- [Option `-a`][-a]:
   Split input lines into fields.
-- {Option -F}[rdoc-ref:@-F+Set+Input+Field+Separator]:
+- [Option `-F`][-F]:
   Set input field separator.
-- {Option -l}[rdoc-ref:@-l+Set+Output+Record+Separator+Chop+Lines]:
+- [Option `-l`][-l]:
   Set output record separator; chop lines.
-- {Option -n}[rdoc-ref:@-n+Run+Program+in+gets+Loop]:
+- [Option `-n`][-n]:
   Run program in `gets` loop.
 
 ### `-r`: Require Library
@@ -391,10 +419,14 @@ the option may be given more than once:
 $ ruby -e 'p defined?(JSON); p defined?(CSV)'
 nil
 nil
-$ ruby -r CSV -r JSON -e 'p defined?(JSON); p defined?(CSV)'
+$ ruby -r csv -r json -e 'p defined?(JSON); p defined?(CSV)'
 "constant"
 "constant"
 ```
+
+The library is loaded with the `Kernel#require` method, after the
+other options such as [`-C`][-C], [`-I`][-I], and "custom options" by
+[`-s`][-s], are applied:
 
 Whitespace between the option and its argument may be omitted.
 
@@ -404,6 +436,10 @@ Option `-s` specifies that a "custom option" is to define a global variable
 in the invoked Ruby program:
 
 - The custom option must appear _after_ the program name.
+- If there is no script name in the command line (using {option
+  -e}[rdoc-ref:@-e+Execute+Given+Ruby+Code] or implicit reading from
+  `$stdin`), the custom options must be separated from the other
+  interpreter options with a `--`.
 - The custom option must begin with single hyphen (e.g., `-foo`),
   not two hyphens (e.g., `--foo`).
 - The name of the global variable is based on the option name:
@@ -425,9 +461,6 @@ $ ruby -s t.rb -foo
 $ ruby -s t.rb -foo=baz -bar=bat
 ["baz", "bat"]
 ```
-
-The option may not be used with
-{option -e}[rdoc-ref:@-e+Execute+Given+Ruby+Code]
 
 ### `-S`: Search Directories in `ENV['PATH']`
 
@@ -576,7 +609,7 @@ ruby - Copyright (C) 1993-2024 Yukihiro Matsumoto
 ### `--debug`: Alias for `-d`
 
 Option `--debug` is an alias for
-{option -d}[rdoc-ref:@d-3A+Set+-24DEBUG+to+true].
+[option `-d`][-d].
 
 ### `--disable`: Disable Features
 
@@ -595,7 +628,7 @@ The supported features:
 - `frozen-string-literal`: Freeze all string literals (default: disabled).
 - `jit`: JIT compiler (default: disabled).
 
-See also {option --enable}[rdoc-ref:@--enable+Enable+Features].
+See also [option `--enable`][--enable].
 
 ### `--dump`: Dump Items
 
@@ -606,18 +639,18 @@ Some of the argument values cause the command to behave as if a different
 option was given:
 
 - `--dump=copyright`:
-  Same as {option \-\-copyright}[rdoc-ref:@--copyright+Print+Ruby+Copyright].
+  Same as [option `--copyright`][--copyright].
 - `--dump=help`:
-  Same as {option \-\-help}[rdoc-ref:@--help+Print+Help+Message].
+  Same as [option `--help`][--help].
 - `--dump=syntax`:
-  Same as {option -c}[rdoc-ref:@-c+Check+Syntax].
+  Same as [option `-c`][-c].
 - `--dump=usage`:
-  Same as {option -h}[rdoc-ref:@-h+Print+Short+Help+Message].
+  Same as [option `-h`][-h].
 - `--dump=version`:
-  Same as {option \-\-version}[rdoc-ref:@--version+Print+Ruby+Version].
+  Same as [option `--version`][--version].
 
 For other argument values and examples,
-see {Option --dump}[option_dump_md.html].
+see {Option `--dump`}[rdoc-ref:option_dump.md].
 
 ### `--enable`: Enable Features
 
@@ -629,19 +662,19 @@ ruby --enable=gems,rubyopt t.rb
 ```
 
 For the features,
-see {option --disable}[rdoc-ref:@--disable+Disable+Features].
+see [option `--disable`][--disable].
 
 ### `--encoding`: Alias for `-E`.
 
 Option `--encoding` is an alias for
-{option -E}[rdoc-ref:@E-3A+Set+Default+Encodings].
+[option `-E`][-E].
 
 ### `--external-encoding`: Set Default External \Encoding
 
 Option `--external-encoding`
 sets the default external encoding for the invoked Ruby program;
 for values of `encoding`,
-see {Encoding: Names and Aliases}[rdoc-ref:encodings.rdoc@Names+and+Aliases].
+see [Encoding: Names and Aliases].
 
 ```console
 $ ruby -e 'puts Encoding::default_external'
@@ -663,7 +696,7 @@ For a shorter help message, use option `-h`.
 Option `--internal-encoding`
 sets the default internal encoding for the invoked Ruby program;
 for values of `encoding`,
-see {Encoding: Names and Aliases}[rdoc-ref:encodings.rdoc@Names+and+Aliases].
+see [Encoding: Names and Aliases].
 
 ```console
 $ ruby -e 'puts Encoding::default_internal.nil?'
@@ -686,3 +719,26 @@ and disables input from `$stdin`.
 
 Option `--version` prints the version of the Ruby interpreter, then exits.
 
+[-0]: rdoc-ref:@-0+Set++Input+Record+Separator
+[-C]: rdoc-ref:@-C+Set+Working+Directory
+[-E]: rdoc-ref:@-E+Set+Default+Encodings
+[-F]: rdoc-ref:@-F+Set+Input+Field+Separator
+[-I]: rdoc-ref:@-I+Add+to+LOADPATH
+[-a]: rdoc-ref:@-a+Split+Input+Lines+into+Fields
+[-c]: rdoc-ref:@-c+Check+Syntax
+[-d]: rdoc-ref:@-d+Set+DEBUG+to+true
+[-e]: rdoc-ref:@-e+Execute+Given+Ruby+Code
+[-h]: rdoc-ref:@-h+Print+Short+Help+Message
+[-l]: rdoc-ref:@-l+Set+Output+Record+Separator+Chop+Lines
+[-n]: rdoc-ref:@-n+Run+Program+in+gets+Loop
+[-p]: rdoc-ref:@-p+-n+with+Printing
+[-s]: rdoc-ref:@-s+Define+Global+Variable
+[--copyright]: rdoc-ref:@--copyright+Print+Ruby+Copyright
+[--debug]: rdoc-ref:@--debug+Alias+for+-d
+[--disable]: rdoc-ref:@--disable+Disable+Features
+[--enable]: rdoc-ref:@--enable+Enable+Features
+[--external-encoding]: rdoc-ref:@--external+encoding+Set+Default+External+Encoding
+[--internal-encoding]: rdoc-ref:@--internal+encoding+Set+Default+Internal+Encoding
+[--help]: rdoc-ref:@--help+Print+Help+Message
+[--version]: rdoc-ref:@--version+Print+Ruby+Version
+[Encoding: Names and Aliases]: rdoc-ref:encodings.rdoc@Names+and+Aliases

@@ -1,7 +1,26 @@
 @echo off
 @setlocal EnableExtensions DisableDelayedExpansion || exit /b -1
 set PROMPT=$E[94m+$E[m$S
+goto :main
 
+:set
+set %*
+exit /b
+
+:shift
+call %~dp0shellsplit.cmd
+set "argv1=%argv2%"
+set "argv2=%argv%"
+if not defined argv1 if defined argv2 goto :shift
+exit /b
+
+:take_arg
+if defined arg exit /b
+if not defined argv2 exit /b
+if not "%argv2:~0,1%"=="-" (set "arg=%argv2%" & call :shift)
+exit /b
+
+:main
 if "%~dp0" == "%CD%\" (
     echo don't run in win32 directory.
     exit /b 999
@@ -14,11 +33,13 @@ if "%~dp0" == "%CD%\" (
 )
 
 set "WIN32DIR=%WIN32DIR:\=/%:/:"
-call set "WIN32DIR=%%WIN32DIR:%~x0:/:=:/:%%"
-call set "WIN32DIR=%%WIN32DIR:/%~n0:/:=:/:%%"
+call :set "WIN32DIR=%%WIN32DIR:%~x0:/:=:/:%%"
+call :set "WIN32DIR=%%WIN32DIR:/%~n0:/:=:/:%%"
 set "WIN32DIR=%WIN32DIR:~0,-3%"
 
 set configure=%~0
+set args=%*
+set target=
 set optdirs=
 set pathlist=
 set config_make=confargs~%RANDOM%.mak
@@ -27,12 +48,21 @@ set debug_configure=
 echo>%config_make% # CONFIGURE
 type nul > %confargs%
 :loop
-if [%1] == [] goto :end ;
-if "%~1" == "" (shift & goto :loop)
-for /f "delims== tokens=1,*" %%I in ("%~1") do ((set "opt=%%I") && (set "arg=%%J"))
-  set "eq=="
-  if "%arg%" == "" if not "%~1" == "%opt%=%arg%" (set "eq=")
-  shift
+call :shift
+if not defined argv1 goto :end
+for /f "delims== tokens=1,*" %%I in (" %argv1% ") do ((set "opt=%%I") && (set "arg=%%J"))
+  set "opt=%opt:~1%"
+  if defined arg (
+    set "eq=="
+    set "arg=%arg:~0,-1%"
+  ) else (
+    set "eq="
+    set "opt=%opt:~0,-1%"
+  )
+  if "%opt%"=="" (
+    echo 1>&2 %configure%: assignment for empty variable name %argv1%
+    exit /b 1
+  )
   if "%opt%" == "--debug-configure" (
     echo on
     set "debug_configure=yes"
@@ -78,7 +108,7 @@ for /f "delims== tokens=1,*" %%I in ("%~1") do ((set "opt=%%I") && (set "arg=%%J
   )
 goto :loop ;
 :target
-  if "%eq%" == "" (set "arg=%~1" & shift)
+  if "%eq%" == "" call :take_arg
   if "%arg%" == "" (
     echo 1>&2 %configure%: missing argument for %opt%
     exit /b 1
@@ -88,7 +118,6 @@ goto :loop ;
   echo>>%confargs%  "--target=%arg:$=$$%" \
 goto :loop ;
 :program_name
-  if "%eq%" == "" (set "arg=%~1" & shift)
   for /f "delims=- tokens=1,*" %I in ("%opt%") do set "var=%%J"
   if "%var%" == "prefix" (set "var=PROGRAM_PREFIX" & goto :name)
   if "%var%" == "suffix" (set "var=PROGRAM_SUFFIX" & goto :name)
@@ -99,32 +128,37 @@ goto :loop ;
   )
 goto :unknown_opt
 :name
-  if "%eq%" == "" (set "arg=%~1" & shift)
+  if "%eq%" == "" call :take_arg
   echo>> %config_make% %var% = %arg%
 goto :loopend ;
 :dir
-  if "%eq%" == "" (set "arg=%~1" & shift)
+  if "%eq%" == "" call :take_arg
   echo>> %config_make% %opt:~2% = %arg:\=/%
 goto :loopend ;
 :enable
-  echo>>%confargs%  "%opt%" \
-  if %enable% == yes (set "opt=%opt:~9%") else (set "opt=%opt:~10%")
-  if "%opt%" == "rdoc" (
+  if %enable% == yes (
+    if "%eq%" == "" call :take_arg
+    set "feature=%opt:~9%"
+  ) else (
+    set "feature=%opt:~10%"
+  )
+  if %enable% == yes if defined arg (set "enable=%arg%")
+  if "%feature%" == "install-doc" (
     echo>> %config_make% RDOCTARGET = %enable:yes=r%doc
   )
-  if "%opt%" == "install-static-library" (
+  if "%feature%" == "install-static-library" (
     echo>> %config_make% INSTALL_STATIC_LIBRARY = %enable%
   )
-  if "%opt%" == "debug-env" (
+  if "%feature%" == "debug-env" (
     echo>> %config_make% ENABLE_DEBUG_ENV = %enable%
   )
-  if "%opt%" == "devel" (
+  if "%feature%" == "devel" (
     echo>> %config_make% RUBY_DEVEL = %enable%
   )
-  if "%opt%" == "rubygems" (
-    echo>> %config_make% USE_RUBYGEMS = %enable%
+  if "%feature%" == "rubygems" (
+     echo>> %config_make% USE_RUBYGEMS = %enable%
   )
-goto :loop ;
+goto :loopend ;
 :withoutarg
   echo>>%confargs%  "%opt%" \
   if "%opt%" == "--without-baseruby" goto :nobaseruby
@@ -134,7 +168,7 @@ goto :loop ;
 goto :loop ;
 :witharg
   if "%opt%" == "--with-static-linked-ext" goto :extstatic
-  if "%eq%" == "" (set "arg=%~1" & shift)
+  if "%eq%" == "" call :take_arg
   if not "%arg%" == "" (
     echo>>%confargs%  "%opt%=%arg:$=$$%" \
   ) else (
@@ -152,25 +186,25 @@ goto :loop ;
 :ntver
   ::- For version constants, see
   ::- https://learn.microsoft.com/en-us/cpp/porting/modifying-winver-and-win32-winnt#remarks
-  if "%eq%" == "" (set "NTVER=%~1" & shift) else (set "NTVER=%arg%")
+  if "%eq%" == "" (set "NTVER=%~1" & call :shift) else (set "NTVER=%arg%")
   if /i not "%NTVER:~0,2%" == "0x" if /i not "%NTVER:~0,13%" == "_WIN32_WINNT_" (
     for %%i in (A B C D E F G H I J K L M N O P Q R S T U V W X Y Z) do (
-      call set NTVER=%%NTVER:%%i=%%i%%
+      call :set NTVER=%%NTVER:%%i=%%i%%
     )
-    call set NTVER=_WIN32_WINNT_%%NTVER%%
+    call :set NTVER=_WIN32_WINNT_%%NTVER%%
   )
   echo>> %config_make% NTVER = %NTVER%
 goto :loopend ;
 :extout
-  if "%eq%" == "" (set "arg=%~1" & shift)
+  if "%eq%" == "" call :take_arg
   if not "%arg%" == ".ext" (echo>> %config_make% EXTOUT = %arg%)
 goto :loopend ;
 :path
-  if "%eq%" == "" (set "arg=%~1" & shift)
+  if "%eq%" == "" call :take_arg
   set "pathlist=%pathlist%%arg:\=/%;"
 goto :loopend ;
 :extstatic
-  if "%eq%" == "" (set "arg=static" & shift)
+  if "%eq%" == "" (set "arg=static")
   echo>> %config_make% EXTSTATIC = %arg%
 goto :loopend ;
 :baseruby
@@ -205,7 +239,7 @@ goto :loop ;
   :optdir-loop
   for /f "delims=; tokens=1,*" %%I in ("%arg%") do (set "d=%%I" & set "arg=%%J")
     pushd %d:/=\% 2> nul && (
-      set "optdirs=%optdirs%;%CD:\=/%"
+      call :set "optdirs=%optdirs%;%%CD:\=/%%"
       popd
     ) || (
       set "optdirs=%optdirs%;%d:\=/%"
@@ -230,7 +264,7 @@ goto :loop ;
   echo   --with-ntver=0xXXXX     target NT version (shouldn't use with old SDK)
   echo   --with-ntver=_WIN32_WINNT_XXXX
   echo   --with-ntver=XXXX       same as --with-ntver=_WIN32_WINNT_XXXX
-  echo Note that '[1m=,;[m' need to be enclosed within double quotes in batch file command line.
+  echo Note that parameters containing spaces must be enclosed within double quotes.
   del %confargs% %config_make%
 goto :EOF
 :unknown_opt
@@ -241,7 +275,7 @@ goto :EOF
   exit /b 1
 :end
 if "%debug_configure%" == "yes" (type %confargs%)
-if defined optdirs (for %%I in ("%optdirs:~1%") do echo>>%config_make% optdirs = %%~I)
+if defined optdirs (echo>>%config_make% optdirs = %optdirs:~1%)
 (
   echo.
   echo configure_args = \

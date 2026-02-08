@@ -1542,13 +1542,13 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     def a.to_a = 1
     def a.to_hash = 1
     def a.to_proc = 1
-    assert_raise_with_message(TypeError, "can't convert TestException::Ex to Array (TestException::Ex#to_a gives Integer)") do
+    assert_raise_with_message(TypeError, "can't convert TestException::Ex into Array (TestException::Ex#to_a gives Integer)") do
       x(*a)
     end
-    assert_raise_with_message(TypeError, "can't convert TestException::Ex to Hash (TestException::Ex#to_hash gives Integer)") do
+    assert_raise_with_message(TypeError, "can't convert TestException::Ex into Hash (TestException::Ex#to_hash gives Integer)") do
       x(**a)
     end
-    assert_raise_with_message(TypeError, "can't convert TestException::Ex to Proc (TestException::Ex#to_proc gives Integer)") do
+    assert_raise_with_message(TypeError, "can't convert TestException::Ex into Proc (TestException::Ex#to_proc gives Integer)") do
       x(&a)
     end
   end

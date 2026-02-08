@@ -79,7 +79,7 @@ describe "Module#instance_method" do
     obj = Object.new
     def obj.to_str() [] end
 
-    -> { ModuleSpecs::InstanceMeth.instance_method(obj) }.should raise_error(TypeError, /can't convert Object to String/)
+    -> { ModuleSpecs::InstanceMeth.instance_method(obj) }.should raise_consistent_error(TypeError, /can't convert Object into String/)
   end
 
   it "raises a NameError if the method has been undefined" do

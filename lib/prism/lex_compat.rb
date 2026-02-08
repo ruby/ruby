@@ -20,7 +20,7 @@ module Prism
       end
 
       # Implement the hash pattern matching interface for Result.
-      def deconstruct_keys(keys)
+      def deconstruct_keys(keys) # :nodoc:
         super.merge!(value: value)
       end
     end

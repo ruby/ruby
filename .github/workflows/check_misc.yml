@@ -28,6 +28,15 @@ jobs:
           # Skip overwriting MATZBOT_AUTO_UPDATE_TOKEN
           checkout: '' # false (ref: https://github.com/actions/runner/issues/2238)
 
+      - name: Re-generate Makefiles
+        run: |
+          # config.status needs to run as a shell script
+          { echo ':&&exit'; cat tool/prereq.status; } > config.status
+          : # same as actions/setup/directories/action.yml
+          for mk in Makefile GNUmakefile; do
+            sed -f tool/prereq.status template/$mk.in > $mk
+          done
+
       - name: Check for code styles
         run: |
           set -x
@@ -74,7 +83,6 @@ jobs:
         run: |
           set -- $(sed 's/#.*//;/^rdoc /!d' gems/bundled_gems)
           { echo version=$2; echo ref=$4; } >> $GITHUB_OUTPUT
-          echo RDOC='ruby -W0 --disable-gems tool/rdoc-srcdir -q' >> $GITHUB_ENV
 
       - name: Checkout rdoc
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -84,7 +92,7 @@ jobs:
           path: .bundle/gems/rdoc-${{ steps.rdoc.outputs.version }}
         if: ${{ steps.rdoc.outputs.ref != '' }}
 
-      - name: Generate rdoc
+      - name: Generate rdoc scripts
         run: |
           set -x
           gempath=$(ruby -e 'print Gem.user_dir, "/bin"')
@@ -98,12 +106,12 @@ jobs:
 
       - name: Core docs coverage
         run: |
-          $RDOC -C -x ^ext -x ^lib .
+          make XRUBY=ruby RDOC_DEPENDS= RBCONFIG=update-rbconfig rdoc-coverage
 
       - name: Generate docs
         id: docs
         run: |
-          $RDOC --op html .
+          make XRUBY=ruby RDOC_DEPENDS= RBCONFIG=update-rbconfig html
           echo htmlout=ruby-html-${GITHUB_SHA:0:10} >> $GITHUB_OUTPUT
         # Generate only when document commit/PR
         if: >-

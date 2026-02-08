@@ -12,7 +12,7 @@ require "ffi"
 # autoloaded from within a non-main Ractor.
 require "prism/serialize" if defined?(Ractor)
 
-module Prism
+module Prism # :nodoc:
   module LibRubyParser # :nodoc:
     extend FFI::Library
 
@@ -554,7 +554,7 @@ module Prism
 
   # Here we are going to patch StringQuery to put in the class-level methods so
   # that it can maintain a consistent interface
-  class StringQuery
+  class StringQuery # :nodoc:
     class << self
       # Mirrors the C extension's StringQuery::local? method.
       def local?(string)

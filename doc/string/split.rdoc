@@ -98,4 +98,4 @@ But the latter:
 - Has poorer performance because it creates an intermediate array.
 - Returns an array (instead of +self+).
 
-Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
+Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non-String].

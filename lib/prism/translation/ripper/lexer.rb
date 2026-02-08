@@ -7,8 +7,7 @@ module Prism
   module Translation
     class Ripper
       class Lexer < Ripper # :nodoc:
-        # :stopdoc:
-        class State
+        class State # :nodoc:
           attr_reader :to_int, :to_s
 
           def initialize(i)
@@ -48,7 +47,7 @@ module Prism
           end
         end
 
-        class Elem
+        class Elem # :nodoc:
           attr_accessor :pos, :event, :tok, :state, :message
 
           def initialize(pos, event, tok, state, message = nil)
@@ -128,8 +127,6 @@ module Prism
         def scan(...)
           parse(...)
         end
-
-        # :startdoc:
       end
     end
   end

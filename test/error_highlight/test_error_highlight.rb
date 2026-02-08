@@ -1085,10 +1085,11 @@ nil can't be coerced into Integer (TypeError)
     end
   end
 
+  OF_NIL_INTO_INTEGER = RUBY_VERSION < "4.1." ? "from nil to integer" : "of nil into Integer"
   def test_args_CALL_2
     v = []
     assert_error_message(TypeError, <<~END) do
-no implicit conversion from nil to integer (TypeError)
+no implicit conversion #{OF_NIL_INTO_INTEGER} (TypeError)
 
       v[nil]
         ^^^
@@ -1115,7 +1116,7 @@ undefined method `[]=' for #{ recv }
   def test_args_ATTRASGN_2
     v = []
     assert_error_message(TypeError, <<~END) do
-no implicit conversion from nil to integer (TypeError)
+no implicit conversion #{OF_NIL_INTO_INTEGER} (TypeError)
 
       v [nil] = 1
          ^^^^^^^^
@@ -1177,7 +1178,7 @@ no implicit conversion of Symbol into String (TypeError)
     v = []
 
     assert_error_message(TypeError, <<~END) do
-no implicit conversion from nil to integer (TypeError)
+no implicit conversion #{OF_NIL_INTO_INTEGER} (TypeError)
 
       v [nil] += 42
          ^^^^^^^^^^

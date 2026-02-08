@@ -41,7 +41,7 @@ module Prism
     class CompilationError < StandardError
       # Create a new CompilationError with the given representation of the node
       # that caused the error.
-      def initialize(repr)
+      def initialize(repr) # :nodoc:
         super(<<~ERROR)
           prism was unable to compile the pattern you provided into a usable
           expression. It failed on to understand the node represented by:
@@ -100,23 +100,23 @@ module Prism
 
     # Shortcut for combining two procs into one that returns true if both return
     # true.
-    def combine_and(left, right)
+    def combine_and(left, right) # :nodoc:
       ->(other) { left.call(other) && right.call(other) }
     end
 
     # Shortcut for combining two procs into one that returns true if either
     # returns true.
-    def combine_or(left, right)
+    def combine_or(left, right) # :nodoc:
       ->(other) { left.call(other) || right.call(other) }
     end
 
     # Raise an error because the given node is not supported.
-    def compile_error(node)
+    def compile_error(node) # :nodoc:
       raise CompilationError, node.inspect
     end
 
     # in [foo, bar, baz]
-    def compile_array_pattern_node(node)
+    def compile_array_pattern_node(node) # :nodoc:
       compile_error(node) if !node.rest.nil? || node.posts.any?
 
       constant = node.constant
@@ -141,12 +141,12 @@ module Prism
     end
 
     # in foo | bar
-    def compile_alternation_pattern_node(node)
+    def compile_alternation_pattern_node(node) # :nodoc:
       combine_or(compile_node(node.left), compile_node(node.right))
     end
 
     # in Prism::ConstantReadNode
-    def compile_constant_path_node(node)
+    def compile_constant_path_node(node) # :nodoc:
       parent = node.parent
 
       if parent.is_a?(ConstantReadNode) && parent.slice == "Prism"
@@ -161,12 +161,12 @@ module Prism
 
     # in ConstantReadNode
     # in String
-    def compile_constant_read_node(node)
+    def compile_constant_read_node(node) # :nodoc:
       compile_constant_name(node, node.name)
     end
 
     # Compile a name associated with a constant.
-    def compile_constant_name(node, name)
+    def compile_constant_name(node, name) # :nodoc:
       if Prism.const_defined?(name, false)
         clazz = Prism.const_get(name)
 
@@ -182,7 +182,7 @@ module Prism
 
     # in InstanceVariableReadNode[name: Symbol]
     # in { name: Symbol }
-    def compile_hash_pattern_node(node)
+    def compile_hash_pattern_node(node) # :nodoc:
       compile_error(node) if node.rest
       compiled_constant = compile_node(node.constant) if node.constant
 
@@ -212,12 +212,12 @@ module Prism
     end
 
     # in nil
-    def compile_nil_node(node)
+    def compile_nil_node(node) # :nodoc:
       ->(attribute) { attribute.nil? }
     end
 
     # in /foo/
-    def compile_regular_expression_node(node)
+    def compile_regular_expression_node(node) # :nodoc:
       regexp = Regexp.new(node.unescaped, node.closing[1..])
 
       ->(attribute) { regexp === attribute }
@@ -225,7 +225,7 @@ module Prism
 
     # in ""
     # in "foo"
-    def compile_string_node(node)
+    def compile_string_node(node) # :nodoc:
       string = node.unescaped
 
       ->(attribute) { string === attribute }
@@ -233,7 +233,7 @@ module Prism
 
     # in :+
     # in :foo
-    def compile_symbol_node(node)
+    def compile_symbol_node(node) # :nodoc:
       symbol = node.unescaped.to_sym
 
       ->(attribute) { symbol === attribute }
@@ -241,7 +241,7 @@ module Prism
 
     # Compile any kind of node. Dispatch out to the individual compilation
     # methods based on the type of node.
-    def compile_node(node)
+    def compile_node(node) # :nodoc:
       case node
       when AlternationPatternNode
         compile_alternation_pattern_node(node)

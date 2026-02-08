@@ -22,7 +22,7 @@ RUST_LIB_TOUCH = touch $@
 #    ld: warning: object file (target/debug/libjit.a(<libcapstone object>)) was built for
 #    newer macOS version (15.2) than being linked (15.0)
 # This limits us to an older set of macOS API in the rust code, but we don't use any.
-$(RUST_LIB): $(srcdir)/ruby.rs
+$(RUST_LIB): $(srcdir)/ruby.rs target/.rustc-version
 	$(Q)if [ '$(ZJIT_SUPPORT)' != no -a '$(YJIT_SUPPORT)' != no ]; then \
 	    echo 'building YJIT and ZJIT ($(JIT_CARGO_SUPPORT:yes=release) mode)'; \
 	elif [ '$(ZJIT_SUPPORT)' != no ]; then \
@@ -37,7 +37,7 @@ $(RUST_LIB): $(srcdir)/ruby.rs
 	$(RUST_LIB_TOUCH)
 else ifneq ($(strip $(RLIB_DIR)),) # combo build
 
-$(RUST_LIB): $(srcdir)/ruby.rs
+$(RUST_LIB): $(srcdir)/ruby.rs target/.rustc-version
 	$(ECHO) 'building $(@F)'
 	$(gnumake_recursive)$(Q) $(RUSTC) --edition=2024 \
 	    $(RUSTC_FLAGS) \
@@ -54,7 +54,7 @@ $(RUST_LIB): $(srcdir)/ruby.rs
 JIT_RLIB = $(TOP_BUILD_DIR)/$(RLIB_DIR)/libjit.rlib
 $(YJIT_RLIB): $(JIT_RLIB)
 $(ZJIT_RLIB): $(JIT_RLIB)
-$(JIT_RLIB):
+$(JIT_RLIB): target/.rustc-version
 	$(ECHO) 'building $(@F)'
 	$(gnumake_recursive)$(Q) $(RUSTC) --crate-name=jit \
 	    --edition=2024 \
@@ -76,6 +76,17 @@ endif
 
 rust-libobj: $(RUST_LIBOBJ)
 rust-lib: $(RUST_LIB)
+
+rustc-version-check: target/.rustc-version
+
+target/.rustc-version: PHONY
+	$(eval prev_version := $(if $(wildcard $@),$(shell cat $@)))
+	$(eval curr_version := $(shell $(RUSTC) -V | cut -d' ' -f2))
+	$(eval clean := $(filter-out $(prev_version),$(curr_version)))
+	$(if $(clean),$(ECHO) Cleaning $(@D) for rustc $(curr_version))
+	$(if $(clean),$(Q)$(RMALL) $(@D))
+	$(if $(clean),$(Q)$(MAKEDIRS) $(@D))
+	$(if $(clean),$(Q)echo $(curr_version) > $@)
 
 # For Darwin only: a list of symbols that we want the glommed Rust static lib to export.
 # Unfortunately, using wildcard like '_rb_*' with -exported-symbol does not work, at least

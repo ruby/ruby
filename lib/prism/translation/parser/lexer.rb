@@ -10,7 +10,7 @@ module Prism
     class Parser
       # Accepts a list of prism tokens and converts them into the expected
       # format for the parser gem.
-      class Lexer
+      class Lexer # :nodoc:
         # These tokens are always skipped
         TYPES_ALWAYS_SKIP = Set.new(%i[IGNORED_NEWLINE __END__ EOF])
         private_constant :TYPES_ALWAYS_SKIP
@@ -188,8 +188,8 @@ module Prism
         # without them. We should find another way to do this, but in the
         # meantime we'll hide them from the documentation and mark them as
         # private constants.
-        EXPR_BEG = 0x1 # :nodoc:
-        EXPR_LABEL = 0x400 # :nodoc:
+        EXPR_BEG = 0x1
+        EXPR_LABEL = 0x400
 
         # It is used to determine whether `do` is of the token type `kDO` or `kDO_LAMBDA`.
         #
@@ -232,7 +232,7 @@ module Prism
           @offset_cache = offset_cache
         end
 
-        Range = ::Parser::Source::Range # :nodoc:
+        Range = ::Parser::Source::Range
         private_constant :Range
 
         # Convert the prism tokens into the expected format for the parser gem.

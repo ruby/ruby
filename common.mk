@@ -75,6 +75,7 @@ HTMLOUT       = $(EXTOUT)/html
 CAPIOUT       = doc/capi
 INSTALL_DOC_OPTS = --rdoc-output="$(RDOCOUT)" --html-output="$(HTMLOUT)"
 RDOC_GEN_OPTS = --no-force-update \
+	--exclude '^lib/rubygems/core_ext/kernel_require\.rb$$' \
 	$(empty)
 
 INITOBJS      = dmyext.$(OBJEXT) dmyenc.$(OBJEXT)
@@ -608,11 +609,12 @@ post-install-dbg::
 
 srcs-doc: prepare-gems
 
-rdoc: PHONY main srcs-doc
+RDOC_DEPENDS = main srcs-doc
+rdoc: PHONY $(RDOC_DEPENDS) $(RBCONFIG)
 	@echo Generating RDoc documentation
 	$(Q) $(RDOC) --ri --op "$(RDOCOUT)" $(RDOC_GEN_OPTS) $(RDOCFLAGS) .
 
-html: PHONY main srcs-doc
+html: PHONY $(RDOC_DEPENDS) $(RBCONFIG)
 	@echo Generating RDoc HTML files
 	$(Q) $(RDOC) --op "$(HTMLOUT)" $(RDOC_GEN_OPTS) $(RDOCFLAGS) .
 
@@ -620,11 +622,11 @@ RDOC_COVERAGE_EXCLUDES = -x ^ext/json -x ^ext/openssl -x ^ext/psych \
 	-x ^lib/bundler -x ^lib/rubygems \
 	-x ^lib/did_you_mean -x ^lib/error_highlight -x ^lib/syntax_suggest
 
-rdoc-coverage: PHONY main srcs-doc
+rdoc-coverage: PHONY $(RDOC_DEPENDS) $(RBCONFIG)
 	@echo Generating RDoc coverage report
 	$(Q) $(RDOC) --quiet -C $(RDOCFLAGS) $(RDOC_COVERAGE_EXCLUDES) .
 
-undocumented: PHONY main srcs-doc
+undocumented: PHONY $(RDOC_DEPENDS) $(RBCONFIG)
 	$(Q) $(RDOC) --quiet -C $(RDOCFLAGS) $(RDOC_COVERAGE_EXCLUDES) . | \
 	sed -n \
 	-e '/^ *# in file /{' -e 's///;N;s/\n/: /p' -e '}' \
@@ -938,14 +940,6 @@ rbconfig.rb: $(RBCONFIG)
 
 $(HAVE_BASERUBY:no=)$(RBCONFIG)$(HAVE_BASERUBY:no=): $(PREP)
 $(RBCONFIG): $(tooldir)/mkconfig.rb config.status $(srcdir)/version.h $(srcdir)/common.mk
-$(RBCONFIG): unicode-version
-
-unicode-version:
-	$(Q)$(BOOTSTRAPRUBY) -n \
-	-e 'BEGIN{version=ARGV.shift;mis=ARGV.dup}' \
-	-e 'END{abort "UNICODE version mismatch: #{mis}" unless mis.empty?}' \
-	-e '(mis.delete(ARGF.path); ARGF.close) if /ONIG_UNICODE_VERSION_STRING +"#{Regexp.quote(version)}"/o' \
-	$(UNICODE_VERSION) $(UNICODE_DATA_HEADERS)
 
 $(RBCONFIG):
 	$(Q)$(BOOTSTRAPRUBY) $(tooldir)/mkconfig.rb \
@@ -1129,7 +1123,7 @@ $(NEWLINE_C): $(srcdir)/enc/trans/newline.trans $(tooldir)/transcode-tblgen.rb
 	$(Q) $(BASERUBY) "$(tooldir)/transcode-tblgen.rb" -vo $@ $(srcdir)/enc/trans/newline.trans
 enc/trans/newline.$(OBJEXT): $(NEWLINE_C)
 
-verconf.h: $(srcdir)/template/verconf.h.tmpl $(tooldir)/generic_erb.rb $(RBCONFIG)
+verconf.h: $(srcdir)/template/verconf.h.tmpl $(tooldir)/generic_erb.rb rbconfig.rb
 	$(ECHO) creating $@
 	$(Q) $(BOOTSTRAPRUBY) "$(tooldir)/generic_erb.rb" -o $@ $(srcdir)/template/verconf.h.tmpl
 
@@ -1643,7 +1637,8 @@ test-bundler: $(TEST_RUNNABLE)-test-bundler
 yes-test-bundler: $(PREPARE_BUNDLER)
 	$(gnumake_recursive)$(XRUBY) \
 		-r./$(arch)-fake \
-		-C $(srcdir) -Ispec/bundler -Ispec/lib spec/bin/rspec \
+		-I$(srcdir)/spec/bundler -I$(srcdir)/spec/lib \
+		-e 'Dir.chdir(ARGV.shift); load("spec/bin/rspec")' $(srcdir) \
 		-r spec_helper $(RSPECOPTS) spec/bundler/$(BUNDLER_SPECS)
 no-test-bundler:
 

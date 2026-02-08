@@ -41,41 +41,31 @@ module Prism
     end
 
     # Register a listener for one or more events.
-    #
-    # def register: (Listener, *Symbol) -> void
     def register(listener, *events)
       register_events(listener, events)
     end
 
     # Register all public methods of a listener that match the pattern
     # `on_<node_name>_(enter|leave)`.
-    #
-    # def register_public_methods: (Listener) -> void
     def register_public_methods(listener)
       register_events(listener, listener.public_methods(false).grep(/\Aon_.+_(?:enter|leave)\z/))
     end
 
     # Register a listener for the given events.
-    private def register_events(listener, events)
+    private def register_events(listener, events) # :nodoc:
       events.each { |event| (listeners[event] ||= []) << listener }
     end
 
     # Walks `root` dispatching events to all registered listeners.
-    #
-    # def dispatch: (Node) -> void
     alias dispatch visit
 
     # Dispatches a single event for `node` to all registered listeners.
-    #
-    # def dispatch_once: (Node) -> void
     def dispatch_once(node)
       node.accept(DispatchOnce.new(listeners))
     end
     <%- nodes.each do |node| -%>
 
-    # Dispatch enter and leave events for <%= node.name %> nodes and continue
-    # walking the tree.
-    def visit_<%= node.human %>(node)
+    def visit_<%= node.human %>(node) # :nodoc:
       listeners[:on_<%= node.human %>_enter]&.each { |listener| listener.on_<%= node.human %>_enter(node) }
       super
       listeners[:on_<%= node.human %>_leave]&.each { |listener| listener.on_<%= node.human %>_leave(node) }

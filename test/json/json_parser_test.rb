@@ -135,6 +135,10 @@ class JSONParserTest < Test::Unit::TestCase
     bignum = Integer('1234567890' * 10)
     assert_equal(bignum, JSON.parse(bignum.to_s))
     assert_equal(bignum.to_f, JSON.parse(bignum.to_s + ".0"))
+
+    bignum = Integer('1234567890' * 50)
+    assert_equal(bignum, JSON.parse(bignum.to_s))
+    assert_equal(bignum.to_f, JSON.parse(bignum.to_s + ".0"))
   end
 
   def test_parse_bigdecimals
