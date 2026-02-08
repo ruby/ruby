@@ -12199,6 +12199,10 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         CHECK(compile_hash(iseq, ret, node, &RB_NODE_HASH(node)->elements, FALSE, popped) >= 0);
         break;
       }
+      case RB_IMPLICIT_NODE: {
+        CHECK(COMPILE_(ret, "hash value (implicit)", RB_NODE_IMPLICIT(node)->value, popped));
+        break;
+      }
       case RB_RETURN_NODE: {
         CHECK(compile_return(iseq, ret, node, popped));
         break;
