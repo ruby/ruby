@@ -858,7 +858,7 @@ class TestGemPackage < Gem::Package::TarTestCase
                  "#{@destination} is not allowed", e.message)
   end
 
-  def test_load_spec
+  def test_load_spec_from_metadata
     entry = StringIO.new Gem::Util.gzip @spec.to_yaml
     def entry.full_name
       "metadata.gz"
@@ -866,7 +866,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     package = Gem::Package.new "nonexistent.gem"
 
-    spec = package.load_spec entry
+    spec = package.load_spec_from_metadata entry
 
     assert_equal @spec, spec
   end
