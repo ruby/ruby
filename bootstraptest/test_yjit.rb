@@ -2483,6 +2483,32 @@ assert_equal '[0, 2]', %q{
   B.new.foo
 }
 
+# invokesuper in a weird block
+assert_equal '["block->A#itself", "block->singleton#itself"]', %q{
+  # This test runs the same block as first as a block and then as a method,
+  # testing the routine that finds the currently running method, which is
+  # relevant for `super`.
+  class BlockIseqDuality
+    prepend(Module.new do
+      def itself
+        nested = -> { "block->" + super() }
+        @singleton_itself.define_singleton_method(:itself, &nested)
+        nested
+      end
+    end)
+
+    attr_reader :singleton_itself
+    def initialize = (@singleton_itself = "singleton#itself")
+
+    def itself = "A#itself"
+  end
+
+  tester = BlockIseqDuality.new
+  super_lambda = tester.itself
+  super_lambda.call # warmup
+  [super_lambda.call, tester.singleton_itself.itself]
+}
+
 # invokesuper zsuper in a bmethod
 assert_equal 'ok', %q{
   class Foo

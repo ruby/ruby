@@ -973,6 +973,40 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_super_bmethod
+    # Bmethod defined at class scope
+    assert_compiles(<<~'RUBY', insns: %i[invokesuper], result: true, exits: {})
+      class SuperItself
+        define_method(:itself) { super() }
+      end
+
+      obj = SuperItself.new
+      obj.itself
+      obj.itself == obj
+    RUBY
+
+    # Bmethod defined inside a method (the block's local_iseq is ISEQ_TYPE_METHOD
+    # but the CME is at the bmethod frame, not the enclosing method's frame)
+    assert_compiles(<<~'RUBY', insns: %i[invokesuper], result: "Base#foo via bmethod", exits: {})
+      class Base
+        def foo = "Base#foo"
+      end
+
+      class SetupHelper
+        def add_bmethod_to(klass)
+          klass.define_method(:foo) { super() + " via bmethod" }
+        end
+      end
+
+      class Target < Base; end
+
+      SetupHelper.new.add_bmethod_to(Target)
+      obj = Target.new
+      obj.foo
+      obj.foo
+    RUBY
+  end
+
   # Tests calling a variadic cfunc with many args
   def test_build_large_struct
     assert_compiles(<<~RUBY, insns: %i[opt_send_without_block], call_threshold: 2)
