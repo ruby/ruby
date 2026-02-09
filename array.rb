@@ -244,8 +244,8 @@ class Array
         i = 0
         result = Primitive.ary_sized_alloc
         until Primitive.rb_jit_ary_at_end(i)
-          _value = yield(Primitive.rb_jit_ary_at(i))
-          Primitive.cexpr!(%q{ rb_ary_push(result, _value) })
+          value = yield(Primitive.rb_jit_ary_at(i))
+          Primitive.rb_jit_ary_push(result, value)
           i = Primitive.rb_jit_fixnum_inc(i)
         end
         result
@@ -272,7 +272,7 @@ class Array
         until Primitive.rb_jit_ary_at_end(i)
           value = Primitive.rb_jit_ary_at(i)
           if yield value
-            Primitive.cexpr!(%q{ rb_ary_push(result, value) })
+            Primitive.rb_jit_ary_push(result, value)
           end
           i = Primitive.rb_jit_fixnum_inc(i)
         end
