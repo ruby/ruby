@@ -91,7 +91,10 @@ git clone https://github.com/ruby/ruby yjit
 cd yjit
 ```
 
-The YJIT `ruby` binary can be built with either GCC or Clang. It can be built either in dev (debug) mode or in release mode. For maximum performance, compile YJIT in release mode with GCC. More detailed build instructions are provided in the [Ruby README](https://github.com/ruby/ruby#how-to-build).
+The YJIT `ruby` binary can be built with either GCC or Clang.
+It can be built either in dev (debug) mode or in release mode.
+For maximum performance, compile YJIT in release mode with GCC.
+See [Building Ruby](rdoc-ref:./contributing/building_ruby_md.html#building-ruby).
 
 ```sh
 # Configure in release mode for maximum performance, build and install
