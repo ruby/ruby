@@ -6,8 +6,8 @@ in the Ruby core and in the Ruby standard library.
 
 ## Generating documentation
 
-Most Ruby documentation lives in the source files and is written in
-[RDoc format][reference].
+Most Ruby documentation lives in the source files, and is written in \RDoc format
+(described in the [RDoc Markup Reference]).
 
 Some pages live under the `doc` folder and can be written in either
 `.rdoc` or `.md` format, determined by the file extension.
@@ -43,10 +43,8 @@ Use your judgment about what the user needs to know.
 - Write short declarative or imperative sentences.
 - Group sentences into (ideally short) paragraphs,
   each covering a single topic.
-- Organize material with
-  [headings].
-- Refer to authoritative and relevant sources using
-- [links][reference].
+- Organize material with [headings].
+- Refer to authoritative and relevant sources using [links].
 - Use simple verb tenses: simple present, simple past, simple future.
 - Use simple sentence structure, not compound or complex structure.
 - Avoid:
@@ -108,8 +106,8 @@ involving new files `doc/*.rdoc`:
 ### \RDoc
 
 Ruby is documented using RDoc.
-For information on \RDoc syntax and features, see the
-[reference][reference].
+For information on \RDoc syntax and features,
+see the [RDoc Markup Reference].
 
 ### Output from `irb`
 
@@ -133,9 +131,8 @@ Organize a long discussion for a class or module with [headings].
 Do not use formal headings in the documentation for a method or constant.
 
 In the rare case where heading-like structures are needed
-within the documentation for a method or constant, use
-[bold text][bold]
-as pseudo-headings.
+within the documentation for a method or constant,
+use [bold text][bold text] as pseudo-headings.
 
 ### Blank Lines
 
@@ -617,14 +614,14 @@ For methods that accept multiple argument types, in some cases it can
 be useful to document the different argument types separately.  It's
 best to use a separate paragraph for each case you are discussing.
 
-[bold]:                 https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#bold
-[call-seq]:             https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#directive-for-specifying-rdoc-source-format
-[code blocks]:          https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#code-blocks
-[headings]:             https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#headings
-[irb]:                  https://ruby.github.io/irb/index.html
-[links]:                https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#links
-[lists]:                https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#lists
-[monofont]:             https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#monofont
-[reference]:            https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html
-[text markup]:          https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#text-markup
-[verbatim text blocks]: https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#verbatim-text-blocks
+[bold text]:             https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#bold
+[call-seq]:              https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#directive-for-specifying-rdoc-source-format
+[code blocks]:           https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#code-blocks
+[headings]:              https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#headings
+[irb]:                   https://ruby.github.io/irb/index.html
+[links]:                 https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#links
+[lists]:                 https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#lists
+[monofont]:              https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#monofont
+[RDoc Markup Reference]: https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html
+[text markup]:           https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#text-markup
+[verbatim text blocks]:  https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#verbatim-text-blocks
