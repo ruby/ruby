@@ -3380,6 +3380,21 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 1, insns: [:opt_getconstant_path]
   end
 
+  def test_getconstant
+    assert_compiles '1', %q{
+      class Foo
+        CONST = 1
+      end
+
+      def test(klass)
+        klass::CONST
+      end
+
+      test(Foo)
+      test(Foo)
+    }, call_threshold: 2, insns: [:getconstant]
+  end
+
   def test_expandarray_no_splat
     assert_compiles '[3, 4]', %q{
       def test(o)

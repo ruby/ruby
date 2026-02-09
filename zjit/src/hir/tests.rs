@@ -2630,6 +2630,32 @@ pub mod hir_build_tests {
     }
 
     #[test]
+    fn test_getconstant() {
+        eval("
+            def test(klass)
+              klass::ARGV
+            end
+        ");
+        assert_contains_opcode("test", YARVINSN_getconstant);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :klass, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:FalseClass = Const Value(false)
+          v16:BasicObject = GetConstant v9, :ARGV, v14
+          CheckInterrupts
+          Return v16
+        ");
+    }
+
+    #[test]
     fn test_getinstancevariable() {
         eval("
             def test = @foo
