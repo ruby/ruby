@@ -2006,6 +2006,8 @@ method_eq(VALUE method, VALUE other)
 
     klass1 = method_entry_defined_class(m1->me);
     klass2 = method_entry_defined_class(m2->me);
+    if (RB_TYPE_P(klass1, T_ICLASS)) klass1 = RBASIC_CLASS(klass1);
+    if (RB_TYPE_P(klass2, T_ICLASS)) klass2 = RBASIC_CLASS(klass2);
 
     if (!rb_method_entry_eq(m1->me, m2->me) ||
         klass1 != klass2 ||

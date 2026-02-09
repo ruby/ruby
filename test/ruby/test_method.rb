@@ -111,6 +111,20 @@ class TestMethod < Test::Unit::TestCase
     end
   end
 
+  def test_unbound_method_equality_with_extended_module
+    m = Module.new { def hello; "hello"; end }
+    base = Class.new { extend m }
+    sub = Class.new(base)
+
+    from_module = m.instance_method(:hello)
+    from_base   = base.method(:hello).unbind
+    from_sub    = sub.method(:hello).unbind
+
+    assert_equal(from_module, from_base)
+    assert_equal(from_module, from_sub)
+    assert_equal(from_base, from_sub)
+  end
+
   def test_callee
     assert_equal(:test_callee, __method__)
     assert_equal(:m, Class.new {def m; __method__; end}.new.m)
