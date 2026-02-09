@@ -2715,6 +2715,14 @@ rb_jit_fixnum_inc(rb_execution_context_t *ec, VALUE self, VALUE num)
     return LONG2FIX(FIX2LONG(num) + 1);
 }
 
+// Push a value onto an array and return the value.
+VALUE
+rb_jit_ary_push(rb_execution_context_t *ec, VALUE self, VALUE ary, VALUE val)
+{
+    rb_ary_push(ary, val);
+    return val;
+}
+
 /*
  *  call-seq:
  *    each {|element| ... } -> self
