@@ -454,11 +454,14 @@ dump_object(VALUE obj, struct dump_config *dc)
             {
                 VALUE klass = ((const struct rb_callcache *)obj)->klass;
                 if (klass != Qundef) {
-                    mid = vm_cc_cme((const struct rb_callcache *)obj)->called_id;
-                    if (mid != 0) {
-                        dump_append(dc, ", \"called_id\":");
-                        dump_append_id(dc, mid);
+                    const rb_callable_method_entry_t *cme = vm_cc_cme((const struct rb_callcache *)obj);
+                    if (cme) {
+                        mid = cme->called_id;
+                        if (mid != 0) {
+                            dump_append(dc, ", \"called_id\":");
+                            dump_append_id(dc, mid);
 
+                        }
                     }
 
                     dump_append(dc, ", \"receiver_class\":");
