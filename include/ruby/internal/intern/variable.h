@@ -360,6 +360,47 @@ VALUE rb_mod_constants(int argc, const VALUE *argv, VALUE recv);
 VALUE rb_mod_remove_const(VALUE space, VALUE name);
 
 /**
+ * Resembles `Module#undef_const`. Defines an undef of a constant.  -- What?
+ *
+ * In ruby, there are two separate concepts called "undef_const" and "remove_const".
+ * The thing you imagine when you  "un-define" a constant is remove_const.  This
+ * one on the other hand is masking of a previous constant definition.  Suppose
+ * for instance:
+ *
+ * ```ruby
+ * class Foo
+ *   FOO = 1
+ * end
+ *
+ * class Bar < Foo
+ * end
+ *
+ * class Baz < Foo
+ *   undef_const :FOO # <--- (*1)
+ * end
+ *
+ * Foo::FOO # => 1
+ * Bar::FOO # => 1
+ * Baz::FOO # NameError
+ * ```
+ *
+ * This `undef_const :FOO` at `(*1)` must not eliminate `Foo::FOO`, because that
+ * constant is also acceptable via `Foo::FOO` and `Bar::FOO`.  So  instead of
+ * physically removing the target constant, `undef` inserts a special filtering
+ * entry to the class (`Baz` in this case).  That entry, when accessed, acts as
+ * if there was not a valid constant defined, halting constant lookup and
+ * triggering `const_missing`.
+ *
+ * @param[out]  space  Target namespace.
+ * @param[in]   name   Variable name to remove, either in Symbol or String.
+ * @return      space
+ * @pre         Constant named `space::name` is marked as undefined.
+ * @note        This method works whether or not the constant is already defined
+ *              in the module.
+ */
+VALUE rb_mod_undef_const(VALUE space, VALUE name);
+
+/**
  * Queries if the constant is defined at the namespace.
  *
  * @param[in]  space        Target namespace.
