@@ -1124,6 +1124,52 @@ pub mod hir_build_tests {
     }
 
     #[test]
+    fn defined_yield_in_method_local_iseq_returns_defined() {
+        eval("
+            def test = defined?(yield)
+        ");
+        assert_contains_opcode("test", YARVINSN_defined);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          v12:StringExact|NilClass = Defined yield, v10
+          CheckInterrupts
+          Return v12
+        ");
+    }
+
+    #[test]
+    fn defined_yield_in_non_method_local_iseq_returns_nil() {
+        eval("
+            define_method(:test) { defined?(yield) }
+        ");
+        assert_contains_opcode("test", YARVINSN_defined);
+        assert_snapshot!(hir_string("test"), @r"
+        fn block in <compiled>@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          v12:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v12
+        ");
+    }
+
+    #[test]
     fn test_return_const() {
         eval("
             def test(cond)
@@ -2058,7 +2104,7 @@ pub mod hir_build_tests {
           PatchPoint NoEPEscape(test)
           v33:CPtr = GetEP 0
           v34:CInt64 = LoadField v33, :_env_data_index_flags@0x1000
-          v35:CInt64 = GuardNoBitsSet v34, CUInt64(512)
+          v35:CInt64 = GuardNoBitsSet v34, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM=CUInt64(512)
           v36:CInt64 = LoadField v33, :_env_data_index_specval@0x1001
           v37:CInt64 = GuardAnyBitSet v36, CUInt64(1)
           v38:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
@@ -3435,7 +3481,7 @@ pub mod hir_build_tests {
           PatchPoint NoEPEscape(open)
           v31:CPtr = GetEP 0
           v32:CInt64 = LoadField v31, :_env_data_index_flags@0x1000
-          v33:CInt64 = GuardNoBitsSet v32, CUInt64(512)
+          v33:CInt64 = GuardNoBitsSet v32, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM=CUInt64(512)
           v34:CInt64 = LoadField v31, :_env_data_index_specval@0x1001
           v35:CInt64 = GuardAnyBitSet v34, CUInt64(1)
           v36:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
@@ -3834,11 +3880,12 @@ pub mod hir_build_tests {
         bb2(v12:BasicObject, v13:BasicObject, v14:NilClass, v15:NilClass):
           v21:ArrayExact = GuardType v13, ArrayExact
           v22:CInt64 = ArrayLength v21
-          v23:CInt64[2] = GuardBitEquals v22, CInt64(2)
-          v24:CInt64[1] = Const CInt64(1)
-          v25:BasicObject = ArrayAref v21, v24
-          v26:CInt64[0] = Const CInt64(0)
-          v27:BasicObject = ArrayAref v21, v26
+          v23:CInt64[2] = Const CInt64(2)
+          v24:CInt64 = GuardGreaterEq v22, v23
+          v25:CInt64[1] = Const CInt64(1)
+          v26:BasicObject = ArrayAref v21, v25
+          v27:CInt64[0] = Const CInt64(0)
+          v28:BasicObject = ArrayAref v21, v27
           PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v13

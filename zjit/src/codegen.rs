@@ -536,10 +536,10 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::GuardType { val, guard_type, state } => gen_guard_type(jit, asm, opnd!(val), *guard_type, &function.frame_state(*state)),
         Insn::GuardTypeNot { val, guard_type, state } => gen_guard_type_not(jit, asm, opnd!(val), *guard_type, &function.frame_state(*state)),
         &Insn::GuardBitEquals { val, expected, reason, state } => gen_guard_bit_equals(jit, asm, opnd!(val), expected, reason, &function.frame_state(state)),
-        &Insn::GuardAnyBitSet { val, mask, reason, state } => gen_guard_any_bit_set(jit, asm, opnd!(val), mask, reason, &function.frame_state(state)),
-        &Insn::GuardNoBitsSet { val, mask, reason, state } => gen_guard_no_bits_set(jit, asm, opnd!(val), mask, reason, &function.frame_state(state)),
+        &Insn::GuardAnyBitSet { val, mask, reason, state, .. } => gen_guard_any_bit_set(jit, asm, opnd!(val), mask, reason, &function.frame_state(state)),
+        &Insn::GuardNoBitsSet { val, mask, reason, state, .. } => gen_guard_no_bits_set(jit, asm, opnd!(val), mask, reason, &function.frame_state(state)),
         &Insn::GuardLess { left, right, state } => gen_guard_less(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
-        &Insn::GuardGreaterEq { left, right, state } => gen_guard_greater_eq(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
+        &Insn::GuardGreaterEq { left, right, state, .. } => gen_guard_greater_eq(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
         Insn::PatchPoint { invariant, state } => no_output!(gen_patch_point(jit, asm, invariant, &function.frame_state(*state))),
         Insn::CCall { cfunc, recv, args, name, return_type: _, elidable: _ } => gen_ccall(asm, *cfunc, *name, opnd!(recv), opnds!(args)),
         // Give up CCallWithFrame for 7+ args since asm.ccall() supports at most 6 args (recv + args).
@@ -672,15 +672,13 @@ fn gen_defined(jit: &JITState, asm: &mut Assembler, op_type: usize, obj: VALUE, 
             //
             // Similar to gen_is_block_given
             let local_iseq = unsafe { rb_get_iseq_body_local_iseq(jit.iseq) };
-            if unsafe { rb_get_iseq_body_type(local_iseq) } == ISEQ_TYPE_METHOD {
-                let lep = gen_get_lep(jit, asm);
-                let block_handler = asm.load(Opnd::mem(64, lep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL));
-                let pushval = asm.load(pushval.into());
-                asm.cmp(block_handler, VM_BLOCK_HANDLER_NONE.into());
-                asm.csel_e(Qnil.into(), pushval)
-            } else {
-                Qnil.into()
-            }
+            assert_eq!(unsafe { rb_get_iseq_body_type(local_iseq) }, ISEQ_TYPE_METHOD,
+                       "defined?(yield) in non-method iseq should be handled by HIR construction");
+            let lep = gen_get_lep(jit, asm);
+            let block_handler = asm.load(Opnd::mem(64, lep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL));
+            let pushval = asm.load(pushval.into());
+            asm.cmp(block_handler, VM_BLOCK_HANDLER_NONE.into());
+            asm.csel_e(Qnil.into(), pushval)
         }
         _ => {
             // Save the PC and SP because the callee may allocate or call #respond_to?
