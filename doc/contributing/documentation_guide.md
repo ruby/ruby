@@ -132,7 +132,7 @@ Do not use formal headings in the documentation for a method or constant.
 
 In the rare case where heading-like structures are needed
 within the documentation for a method or constant,
-use [bold text][bold text] as pseudo-headings.
+use [bold text] as pseudo-headings.
 
 ### Blank Lines
 
