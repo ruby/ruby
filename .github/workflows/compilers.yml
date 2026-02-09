@@ -55,11 +55,11 @@ jobs:
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
       # Set fetch-depth: 10 so that Launchable can receive commits information.
       - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
-      - name: 'clang 18 LTO'
+      - name: 'clang 22 LTO'
         uses: './.github/actions/compilers'
         with:
-          tag: clang-18
-          with_gcc: 'clang-18 -flto=auto'
+          tag: clang-22
+          with_gcc: 'clang-22 -flto=auto'
           optflags: '-O2'
           enable_shared: false
         timeout-minutes: 30
