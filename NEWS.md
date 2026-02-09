@@ -19,6 +19,8 @@ Note: We're only listing outstanding class updates.
       end_line, end_column]`. The previous 2-element format `[path,
       line]` can still be obtained by calling `.take(2)` on the result.
       [[Feature #6012]]
+    * `Array#pack` accepts a new format `R` and `r` for unpacking unsigned
+      and signed LEB128 encoded integers. [[Feature #21785]]
 
 * Set
 
@@ -91,3 +93,4 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 
 [Feature #6012]: https://bugs.ruby-lang.org/issues/6012
 [Feature #21390]: https://bugs.ruby-lang.org/issues/21390
+[Feature #21785]: https://bugs.ruby-lang.org/issues/21785
