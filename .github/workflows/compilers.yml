@@ -55,11 +55,11 @@ jobs:
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
       # Set fetch-depth: 10 so that Launchable can receive commits information.
       - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
-      - name: 'clang 18 LTO'
+      - name: 'clang 22 LTO'
         uses: './.github/actions/compilers'
         with:
-          tag: clang-18
-          with_gcc: 'clang-18 -flto=auto'
+          tag: clang-22
+          with_gcc: 'clang-22 -flto=auto'
           optflags: '-O2'
           enable_shared: false
         timeout-minutes: 30
@@ -107,6 +107,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
       - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
+      - { uses: './.github/actions/compilers', name: 'clang 23', with: { tag: 'clang-23' }, timeout-minutes: 5 }
       - { uses: './.github/actions/compilers', name: 'clang 22', with: { tag: 'clang-22' }, timeout-minutes: 5 }
       - { uses: './.github/actions/compilers', name: 'clang 21', with: { tag: 'clang-21' }, timeout-minutes: 5 }
       - { uses: './.github/actions/compilers', name: 'clang 20', with: { tag: 'clang-20' }, timeout-minutes: 5 }
