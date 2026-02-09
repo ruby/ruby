@@ -5546,11 +5546,14 @@ impl Function {
             // Instructions with 2 Ruby object operands
             Insn::SetIvar { self_val: left, val: right, .. }
             | Insn::NewRange { low: left, high: right, .. }
-            | Insn::GetConstant { klass: left, allow_nil: right, .. }
             | Insn::AnyToString { val: left, str: right, .. }
             | Insn::WriteBarrier { recv: left, val: right } => {
                 self.assert_subtype(insn_id, left, types::BasicObject)?;
                 self.assert_subtype(insn_id, right, types::BasicObject)
+            }
+            Insn::GetConstant { klass, allow_nil, .. } => {
+                self.assert_subtype(insn_id, klass, types::BasicObject)?;
+                self.assert_subtype(insn_id, allow_nil, types::BoolExact)
             }
             // Instructions with recv and a Vec of Ruby objects
             Insn::SendWithoutBlock { recv, ref args, .. }
@@ -6673,7 +6676,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_opt_getconstant_path => {
                     let ic = get_arg(pc, 0).as_ptr();
-                    // FIXME: Redundant Snapshot. `exit_id` above already captures the same `exit_state`.
+                    // TODO: Remove this extra Snapshot and pass `exit_id` to `GetConstantPath` instead.
                     let snapshot = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     state.stack_push(fun.push_insn(block, Insn::GetConstantPath { ic, state: snapshot }));
                 }
