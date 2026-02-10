@@ -965,10 +965,33 @@ rb_node_integer_literal_val(const NODE *n)
 }
 
 VALUE
+rb_node_integer_literal_val2(const rb_node_t *n)
+{
+    const rb_integer_node_t *node = RB_NODE_INTEGER(n);
+    VALUE val = integer_value(node->val->ptr, node->integer_base);
+    if (node->minus) {
+        val = negative_numeric(val);
+    }
+    return val;
+}
+
+VALUE
 rb_node_float_literal_val(const NODE *n)
 {
     const rb_node_float_t *node = RNODE_FLOAT(n);
     double d = strtod(node->val, 0);
+    if (node->minus) {
+        d = -d;
+    }
+    VALUE val = DBL2NUM(d);
+    return val;
+}
+
+VALUE
+rb_node_float_literal_val2(const rb_node_t *n)
+{
+    const rb_float_node_t *node = RB_NODE_FLOAT(n);
+    double d = strtod(node->val->ptr, 0);
     if (node->minus) {
         d = -d;
     }
@@ -983,6 +1006,21 @@ rb_node_rational_literal_val(const NODE *n)
     const rb_node_rational_t *node = RNODE_RATIONAL(n);
 
     lit = rational_value(node->val, node->base, node->seen_point);
+
+    if (node->minus) {
+        lit = negative_numeric(lit);
+    }
+
+    return lit;
+}
+
+VALUE
+rb_node_rational_literal_val2(const rb_node_t *n)
+{
+    VALUE lit;
+    const rb_rational_node_t *node = RB_NODE_RATIONAL(n);
+
+    lit = rational_value(node->val->ptr, node->integer_base, node->seen_point);
 
     if (node->minus) {
         lit = negative_numeric(lit);
@@ -1010,6 +1048,38 @@ rb_node_imaginary_literal_val(const NODE *n)
       }
       case rational_literal:
         lit = rational_value(node->val, node->base, node->seen_point);
+        break;
+      default:
+        rb_bug("unreachable");
+    }
+
+    lit = rb_complex_raw(INT2FIX(0), lit);
+
+    if (node->minus) {
+        lit = negative_numeric(lit);
+    }
+    return lit;
+}
+
+VALUE
+rb_node_imaginary_literal_val2(const rb_node_t *n)
+{
+    VALUE lit;
+    const rb_imaginary_node_t *node = RB_NODE_IMAGINARY(n);
+
+    enum rb_numeric_type type = node->type;
+
+    switch (type) {
+      case integer_literal:
+        lit = integer_value(node->val->ptr, node->integer_base);
+        break;
+      case float_literal:{
+        double d = strtod(node->val->ptr, 0);
+        lit = DBL2NUM(d);
+        break;
+      }
+      case rational_literal:
+        lit = rational_value(node->val->ptr, node->integer_base, node->seen_point);
         break;
       default:
         rb_bug("unreachable");

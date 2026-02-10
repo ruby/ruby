@@ -2527,9 +2527,11 @@ nodes:
                  ^^^^^^^^^^
   - name: FloatNode
     fields:
-      - name: value
-        type: double
+      - name: val
+        type: string
         comment: The value of the floating point number as a Float.
+      - name: minus
+        type: uint8
     comment: |
       Represents a floating point number literal.
 
@@ -2952,12 +2954,17 @@ nodes:
           ^^^^^^^^^^^^^^^
   - name: ImaginaryNode
     fields:
-      - name: numeric
-        type: node
-        kind:
-          - FloatNode
-          - IntegerNode
-          - RationalNode
+      - name: val
+        type: string
+        comment: The value of the integer literal as a number.
+      - name: minus
+        type: uint8
+      - name: integer_base
+        type: uint8
+      - name: seen_point
+        type: uint8
+      - name: type
+        type: uint8
     comment: |
       Represents an imaginary number literal.
 
@@ -3247,9 +3254,13 @@ nodes:
   - name: IntegerNode
     flags: IntegerBaseFlags
     fields:
-      - name: value
-        type: integer
+      - name: val
+        type: string
         comment: The value of the integer literal as a number.
+      - name: minus
+        type: uint8
+      - name: integer_base
+        type: uint8
     comment: |
       Represents an integer number literal.
 
@@ -4239,18 +4250,15 @@ nodes:
   - name: RationalNode
     flags: IntegerBaseFlags
     fields:
-      - name: numerator
-        type: integer
-        comment: |
-          The numerator of the rational number.
-
-              1.5r # numerator 3
-      - name: denominator
-        type: integer
-        comment: |
-          The denominator of the rational number.
-
-              1.5r # denominator 2
+      - name: val
+        type: string
+        comment: The value of the integer literal as a number.
+      - name: minus
+        type: uint8
+      - name: integer_base
+        type: uint8
+      - name: seen_point
+        type: uint8
     comment: |
       Represents a rational number literal.
 

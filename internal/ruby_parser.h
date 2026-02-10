@@ -45,9 +45,13 @@ VALUE rb_node_encoding_val(const NODE *);
 VALUE rb_node_encoding_val2(const rb_node_t *);
 
 VALUE rb_node_integer_literal_val(const NODE *);
+VALUE rb_node_integer_literal_val2(const rb_node_t *);
 VALUE rb_node_float_literal_val(const NODE *);
+VALUE rb_node_float_literal_val2(const rb_node_t *);
 VALUE rb_node_rational_literal_val(const NODE *);
+VALUE rb_node_rational_literal_val2(const rb_node_t *);
 VALUE rb_node_imaginary_literal_val(const NODE *);
+VALUE rb_node_imaginary_literal_val2(const rb_node_t *);
 
 void rb_source_hash_init(rb_source_hash_state_t *state);
 void rb_source_hash_update(rb_source_hash_state_t *state, const uint8_t *ptr, size_t len);
