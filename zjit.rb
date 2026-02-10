@@ -165,13 +165,13 @@ class << RubyVM::ZJIT
 
   # Get the summary of ZJIT statistics as a String
   def stats_string
+    return unless stats = self.stats
     buf = +"***ZJIT: Printing ZJIT statistics on exit***\n"
-    stats = self.stats
 
-    if stats[:guard_type_count].nonzero?
+    if stats[:guard_type_count]&.nonzero?
       stats[:guard_type_exit_ratio] = stats[:exit_guard_type_failure].to_f / stats[:guard_type_count] * 100
     end
-    if stats[:guard_shape_count].nonzero?
+    if stats[:guard_shape_count]&.nonzero?
       stats[:guard_shape_exit_ratio] = stats[:exit_guard_shape_failure].to_f / stats[:guard_shape_count] * 100
     end
 
