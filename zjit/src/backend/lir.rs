@@ -121,6 +121,10 @@ impl BasicBlock {
         }
     }
 
+    pub fn is_dummy(&self) -> bool {
+        self.hir_block_id == hir::BlockId(DUMMY_HIR_BLOCK_ID)
+    }
+
     pub fn add_parameter(&mut self, param: Opnd) {
         self.parameters.push(param);
     }
@@ -2526,9 +2530,9 @@ impl Assembler
     /// Also sets the from/to range on each block.
     /// Returns the next available instruction ID after numbering.
     pub fn number_instructions(&mut self, start: usize) -> usize {
-        let rpo_order = self.rpo();
+        let block_ids = self.block_order();
         let mut insn_id = start;
-        for block_id in rpo_order {
+        for block_id in block_ids {
             let block = &mut self.basic_blocks[block_id.0];
             let block_start = insn_id;
             insn_id += 2;
@@ -2725,6 +2729,65 @@ pub fn lir_string(asm: &Assembler) -> String {
     format!("{asm}").replace(TTY_TERMINAL_COLOR.bold_begin, "").replace(TTY_TERMINAL_COLOR.bold_end, "")
 }
 
+/// Format live intervals as a grid showing which VRegs are alive at each instruction
+pub fn lir_intervals_string(asm: &Assembler, intervals: &[Interval]) -> String {
+    let mut output = String::new();
+    let num_vregs = intervals.len();
+
+    // Print header with VReg indices
+    output.push_str("         ");
+    for i in 0..num_vregs {
+        output.push_str(&format!(" v{:<2}", i));
+    }
+    output.push('\n');
+
+    // Print separator
+    output.push_str("         ");
+    for _ in 0..num_vregs {
+        output.push_str(" ---");
+    }
+    output.push('\n');
+
+    // Collect all numbered instruction positions in RPO order
+    for block_id in asm.rpo() {
+        let block = &asm.basic_blocks[block_id.0];
+
+        for (insn, insn_id) in block.insns.iter().zip(&block.insn_ids) {
+            // Skip labels (they're not numbered)
+            let Some(insn_id) = insn_id else { continue; };
+
+            // Print instruction ID
+            output.push_str(&format!("i{:<6}: ", insn_id.0));
+
+            // For each VReg, check if it's alive at this position
+            for vreg_idx in 0..num_vregs {
+                let is_alive = intervals[vreg_idx].range.start.is_some() &&
+                               intervals[vreg_idx].range.end.is_some() &&
+                               intervals[vreg_idx].survives(insn_id.0);
+
+                if is_alive {
+                    output.push_str("  █ ");
+                } else {
+                    output.push_str("  . ");
+                }
+            }
+
+            // Show the instruction text using Debug formatting
+            output.push_str(&format!(" {:?}", insn));
+            output.push('\n');
+        }
+    }
+
+    output
+}
+
+/// Convenience function that analyzes liveness, builds intervals, and formats them as a grid
+pub fn debug_intervals(asm: &mut Assembler) -> String {
+    let live_in = asm.analyze_liveness();
+    let intervals = asm.build_intervals(live_in);
+    lir_intervals_string(asm, &intervals)
+}
+
 impl fmt::Display for Assembler {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // Count the number of duplicated label names to disambiguate them if needed
@@ -2748,7 +2811,7 @@ impl fmt::Display for Assembler {
             }
         }
 
-        for block_id in self.rpo() {
+        for block_id in self.block_order() {
             let bb = &self.basic_blocks[block_id.0];
             let params = &bb.parameters;
             for (insn_id, insn) in bb.insn_ids.iter().zip(&bb.insns) {
@@ -2946,6 +3009,10 @@ impl Assembler {
 
     pub fn bake_string(&mut self, text: &str) {
         self.push_insn(Insn::BakeString(text.to_string()));
+    }
+
+    pub fn is_ruby_code(&self) -> bool {
+        self.basic_blocks.len() > 1 || !self.basic_blocks[0].is_dummy()
     }
 
     #[allow(dead_code)]
@@ -3852,5 +3919,22 @@ mod tests {
 
         assert_eq!(intervals[r15_idx.0].range.start, Some(38));
         assert_eq!(intervals[r15_idx.0].range.end, Some(42));
+    }
+
+    #[test]
+    fn test_debug_intervals() {
+        let TestFunc { mut asm, .. } = build_func();
+
+        // Number instructions
+        asm.number_instructions(16);
+
+        // Get the debug output
+        let output = debug_intervals(&mut asm);
+
+        // Verify it contains the grid structure
+        assert!(output.contains("v0"));  // Header with vreg names
+        assert!(output.contains("---"));  // Separator
+        assert!(output.contains("█"));    // Live marker
+        assert!(output.contains("."));    // Dead marker
     }
 }

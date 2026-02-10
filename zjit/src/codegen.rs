@@ -328,10 +328,17 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
         }
 
         // Compile all instructions
-        for &insn_id in block.insns() {
+        for (insn_idx, &insn_id) in block.insns().enumerate() {
             let insn = function.find(insn_id);
+
+            // IfTrue and IfFalse should never be terminators
+            if matches!(insn, Insn::IfTrue {..} | Insn::IfFalse {..}) {
+                assert!(!insn.is_terminator(), "IfTrue/IfFalse should not be terminators");
+            }
+
             match insn {
                 Insn::IfFalse { val, target } => {
+
                     let val_opnd = jit.get_opnd(val);
 
                     let lir_target = hir_to_lir[target.target.0].unwrap();
@@ -390,6 +397,8 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                     gen_jump(&mut asm, branch_edge);
                     assert!(asm.current_block().insns.last().unwrap().is_terminator());
 
+                    // Jump should always be the last instruction in an HIR block
+                    assert!(insn_idx == block.insns().len() - 1, "Jump must be the last instruction in HIR block");
                 },
                 _ => {
                     if let Err(last_snapshot) = gen_insn(cb, &mut jit, &mut asm, function, insn_id, &insn) {
@@ -407,6 +416,8 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
         // Blocks should always end with control flow
         assert!(asm.current_block().insns.last().unwrap().is_terminator());
     }
+
+    assert!(!asm.rpo().is_empty());
 
     // Generate code if everything can be compiled
     let result = asm.compile(cb);
