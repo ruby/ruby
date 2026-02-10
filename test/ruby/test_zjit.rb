@@ -27,6 +27,18 @@ class TestZJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_stats_string_no_zjit
+    assert_runs 'nil', <<~RUBY, zjit: false
+      RubyVM::ZJIT.stats_string
+    RUBY
+    assert_runs 'true', <<~RUBY, stats: false
+      RubyVM::ZJIT.stats_string.is_a?(String)
+    RUBY
+    assert_runs 'true', <<~RUBY, stats: true
+      RubyVM::ZJIT.stats_string.is_a?(String)
+    RUBY
+  end
+
   def test_stats_quiet
     # Test that --zjit-stats-quiet collects stats but doesn't print them
     script = <<~RUBY
