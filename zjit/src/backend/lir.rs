@@ -2749,8 +2749,12 @@ pub fn lir_intervals_string(asm: &Assembler, intervals: &[Interval]) -> String {
     output.push('\n');
 
     // Collect all numbered instruction positions in RPO order
-    for block_id in asm.rpo() {
+    for block_id in asm.block_order() {
         let block = &asm.basic_blocks[block_id.0];
+
+        // Print basic block label header
+        let label = asm.block_label(block_id);
+        output.push_str(&format!("\n{}:\n", asm.label_names[label.0]));
 
         for (insn, insn_id) in block.insns.iter().zip(&block.insn_ids) {
             // Skip labels (they're not numbered)
@@ -2772,8 +2776,36 @@ pub fn lir_intervals_string(asm: &Assembler, intervals: &[Interval]) -> String {
                 }
             }
 
-            // Show the instruction text using Debug formatting
-            output.push_str(&format!(" {:?}", insn));
+            // Show the instruction text using compact formatting
+            output.push_str(" ");
+
+            // Print output operand if any
+            if let Some(out) = insn.out_opnd() {
+                output.push_str(&format!("{out} = "));
+            }
+
+            // Print the instruction name
+            output.push_str(insn.op());
+
+            // Print operands
+            if let Insn::ParallelMov { moves } = insn {
+                for (i, (dst, src)) in moves.iter().enumerate() {
+                    if i == 0 {
+                        output.push_str(&format!(" {dst} <- {src}"));
+                    } else {
+                        output.push_str(&format!(", {dst} <- {src}"));
+                    }
+                }
+            } else if insn.opnd_iter().count() > 0 {
+                for (i, opnd) in insn.opnd_iter().enumerate() {
+                    if i == 0 {
+                        output.push_str(&format!(" {opnd}"));
+                    } else {
+                        output.push_str(&format!(", {opnd}"));
+                    }
+                }
+            }
+
             output.push('\n');
         }
     }
