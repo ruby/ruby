@@ -16,7 +16,7 @@ updates:
       - '/yjit'
       - '/zjit'
     exclude-paths:
-      - '/gc/mmtk/**'
+      - 'gc/mmtk/**'
     schedule:
       interval: 'daily'
     groups:
