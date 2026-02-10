@@ -295,7 +295,16 @@ up a local override:
 
     bundle config set --local local.GEM_NAME /path/to/local/git/repository
 
-For example, in order to use a local Rack repository, a developer could call:
+Important: This feature only works for gems that are specified with a git
+source in your Gemfile. It does not work for gems installed from RubyGems
+or other sources. The gem must be defined with `git:` option pointing to a
+remote repository.
+
+For example, if your Gemfile contains:
+
+    gem "rack", git: "https://github.com/rack/rack.git", branch: "main"
+
+Then you can use a local Rack repository by running:
 
     bundle config set --local local.rack ~/Work/git/rack
 
@@ -320,6 +329,11 @@ accidental locking to a different branch.
 Finally, Bundler also ensures that the current revision in the
 `Gemfile.lock` exists in the local git repository. By doing this, Bundler
 forces you to fetch the latest changes in the remotes.
+
+If you need to temporarily use a local version of a gem that is normally
+installed from RubyGems (not from git), use a path source instead:
+
+    gem "rack", path: "~/Work/git/rack"
 
 ## MIRRORS OF GEM SOURCES
 
