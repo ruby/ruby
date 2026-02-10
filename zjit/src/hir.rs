@@ -6280,6 +6280,17 @@ fn locals_written_in_block(parent_iseq: IseqPtr, blockiseq: IseqPtr, target_dept
       }
       insn_idx += insn_len(opcode as usize);
   }
+
+  // Also scan rescue/ensure handler ISEQs referenced from the catch table.
+  // These are child ISEQs (one level deeper than blockiseq) that can write
+  // to the parent's locals via setlocal with higher level values.
+  let catch_size = unsafe { rb_get_iseq_body_catch_table_size(blockiseq) };
+  for i in 0..catch_size {
+      let handler_iseq = unsafe { rb_get_iseq_catch_table_entry_iseq(blockiseq, i) };
+      if !handler_iseq.is_null() {
+          locals_written_in_block(parent_iseq, handler_iseq, target_depth + 1, written);
+      }
+  }
 }
 
 /// Reload locals that may have been modified by the blockiseq.

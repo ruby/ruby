@@ -4257,6 +4257,89 @@ pub mod hir_build_tests {
           Return v35
         ");
     }
+
+    #[test]
+    fn reload_local_written_in_rescue() {
+        eval(r#"
+            def test
+              a = 1
+              b = 2
+              tap do
+                begin
+                  raise
+                rescue
+                  b = 3
+                end
+              end
+              a + b
+            end
+        "#);
+        assert_contains_opcode("test", YARVINSN_send);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          v3:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject):
+          EntryPoint JIT(0)
+          v7:NilClass = Const Value(nil)
+          v8:NilClass = Const Value(nil)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:NilClass, v12:NilClass):
+          v16:Fixnum[1] = Const Value(1)
+          v20:Fixnum[2] = Const Value(2)
+          v25:BasicObject = Send v10, 0x1000, :tap # SendFallbackReason: Uncategorized(send)
+          v26:BasicObject = GetLocal :b, l0, EP@3
+          PatchPoint NoEPEscape(test)
+          v35:BasicObject = SendWithoutBlock v16, :+, v26 # SendFallbackReason: Uncategorized(opt_plus)
+          CheckInterrupts
+          Return v35
+        ");
+    }
+
+    #[test]
+    fn dont_reload_local_not_written_in_rescue() {
+        eval(r#"
+            def test
+              a = 1
+              b = 2
+              tap do
+                begin
+                  raise
+                rescue
+                  a
+                end
+              end
+              a + b
+            end
+        "#);
+        assert_contains_opcode("test", YARVINSN_send);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          v3:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject):
+          EntryPoint JIT(0)
+          v7:NilClass = Const Value(nil)
+          v8:NilClass = Const Value(nil)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:NilClass, v12:NilClass):
+          v16:Fixnum[1] = Const Value(1)
+          v20:Fixnum[2] = Const Value(2)
+          v25:BasicObject = Send v10, 0x1000, :tap # SendFallbackReason: Uncategorized(send)
+          PatchPoint NoEPEscape(test)
+          v34:BasicObject = SendWithoutBlock v16, :+, v20 # SendFallbackReason: Uncategorized(opt_plus)
+          CheckInterrupts
+          Return v34
+        ");
+    }
  }
 
  /// Test successor and predecessor set computations.
