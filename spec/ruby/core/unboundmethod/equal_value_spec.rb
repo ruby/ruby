@@ -97,7 +97,7 @@ describe "UnboundMethod#==" do
     (@includer == @includee).should == true
   end
 
-  ruby_version_is "4.1" do
+  ruby_bug "#21873", ""..."4.1" do
     it "returns true if same method is present in an object through module inclusion" do
       (@mixin == @includer_base).should == true
       (@includer_base == @mixin).should == true
