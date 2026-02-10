@@ -35,6 +35,12 @@ describe "UnboundMethod#==" do
 
     @method_one = UnboundMethodSpecs::Methods.instance_method(:one)
     @method_two = UnboundMethodSpecs::Methods.instance_method(:two)
+
+    @mixin = UnboundMethodSpecs::Mixin.instance_method(:mixin_method)
+    @includer_base = UnboundMethodSpecs::IncluderBase.new.method(:mixin_method).unbind
+    @includer_child = UnboundMethodSpecs::IncluderChild.new.method(:mixin_method).unbind
+    @extender_base = UnboundMethodSpecs::ExtenderBase.method(:mixin_method).unbind
+    @extender_child = UnboundMethodSpecs::ExtenderChild.method(:mixin_method).unbind
   end
 
   it "returns true if objects refer to the same method" do
@@ -107,6 +113,30 @@ describe "UnboundMethod#==" do
     it "returns true if methods are the same but added from an included Module" do
       (@includee == @includer).should == true
       (@includer == @includee).should == true
+    end
+  end
+
+  ruby_bug "#21873", ""..."3.4" do
+    it "returns true if same method is present in an object through module inclusion" do
+      (@mixin == @includer_base).should == true
+      (@includer_base == @mixin).should == true
+
+      (@mixin == @includer_child).should == true
+      (@includer_child == @mixin).should == true
+
+      (@includer_base == @includer_child).should == true
+      (@includer_child == @includer_base).should == true
+    end
+
+    it "returns true if same method is present in an object through module extension" do
+      (@mixin == @extender_base).should == true
+      (@extender_base == @mixin).should == true
+
+      (@mixin == @extender_child).should == true
+      (@extender_child == @mixin).should == true
+
+      (@extender_base == @extender_child).should == true
+      (@extender_child == @extender_base).should == true
     end
   end
 
