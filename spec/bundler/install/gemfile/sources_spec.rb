@@ -1195,4 +1195,45 @@ RSpec.describe "bundle install with gems on multiple sources" do
       expect(gem_section).not_to include("activerecord (7.0.0)")
     end
   end
+
+  context "when a scoped rubygems source is missing a transitive dependency" do
+    before do
+      build_repo2 do
+        build_gem "fallback_dep", "1.0.0"
+        build_gem "foo", "1.0.0"
+      end
+
+      build_repo3 do
+        build_gem "private_parent", "1.0.0" do |s|
+          s.add_dependency "fallback_dep"
+        end
+      end
+
+      gemfile <<-G
+        source "https://gem.repo2"
+
+        gem "foo"
+
+        source "https://gem.repo3" do
+          gem "private_parent", "1.0.0"
+        end
+      G
+
+      bundle :install, artifice: "compact_index"
+    end
+
+    it "falls back to the default rubygems source for that dependency" do
+      build_repo2 do
+        build_gem "foo", "2.0.0"
+      end
+
+      system_gems []
+
+      bundle "update foo", artifice: "compact_index"
+
+      expect(the_bundle).to include_gems("private_parent 1.0.0", "fallback_dep 1.0.0", "foo 2.0.0")
+      expect(the_bundle).to include_gems("private_parent 1.0.0", source: "remote3")
+      expect(the_bundle).to include_gems("fallback_dep 1.0.0", source: "remote2")
+    end
+  end
 end
