@@ -1096,6 +1096,14 @@ impl Assembler {
         let asm = self.x86_split();
         asm_dump!(asm, split);
 
+        // Dump live intervals if requested
+        if let Some(crate::options::Options { dump_lir: Some(dump_lirs), .. }) = unsafe { crate::options::OPTIONS.as_ref() } {
+            if dump_lirs.contains(&crate::options::DumpLIR::live_intervals) {
+                let mut asm_for_intervals = asm.clone();
+                println!("LIR live_intervals:\n{}", crate::backend::lir::debug_intervals(&mut asm_for_intervals));
+            }
+        }
+
         let mut asm = asm.alloc_regs(regs)?;
         asm_dump!(asm, alloc_regs);
 

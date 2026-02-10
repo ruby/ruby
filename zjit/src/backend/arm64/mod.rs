@@ -1636,8 +1636,20 @@ impl Assembler {
         let use_scratch_reg = !self.accept_scratch_reg;
         asm_dump!(self, init);
 
-        let asm = self.arm64_split();
-        asm_dump!(asm, split);
+        let mut asm = self.arm64_split();
+
+        if asm.is_ruby_code() {
+            asm_dump!(asm, split);
+            asm.number_instructions(16);
+
+            // Dump live intervals if requested
+            if let Some(crate::options::Options { dump_lir: Some(dump_lirs), .. }) = unsafe { crate::options::OPTIONS.as_ref() } {
+                if dump_lirs.contains(&crate::options::DumpLIR::live_intervals) {
+                    let mut asm_for_intervals = asm.clone();
+                    println!("LIR live_intervals:\n{}", crate::backend::lir::debug_intervals(&mut asm_for_intervals));
+                }
+            }
+        }
 
         let mut asm = asm.alloc_regs(regs)?;
         asm_dump!(asm, alloc_regs);
