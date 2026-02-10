@@ -823,11 +823,10 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint NoSingletonClass(C@0x1000)
           PatchPoint MethodRedefined(C@0x1000, fun_new_map@0x1008, cme:0x1010)
-          v22:ArraySubclass[class_exact:C] = GuardType v9, ArraySubclass[class_exact:C]
-          v23:BasicObject = SendDirect v22, 0x1038, :fun_new_map (0x1048)
-          v15:BasicObject = GetLocal :o, l0, EP@3
+          v21:ArraySubclass[class_exact:C] = GuardType v9, ArraySubclass[class_exact:C]
+          v22:BasicObject = SendDirect v21, 0x1038, :fun_new_map (0x1048)
           CheckInterrupts
-          Return v23
+          Return v22
         ");
     }
 
@@ -855,11 +854,10 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint NoSingletonClass(C@0x1000)
           PatchPoint MethodRedefined(C@0x1000, bar@0x1008, cme:0x1010)
-          v23:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          v24:BasicObject = CCallWithFrame v23, :Enumerable#bar@0x1038, block=0x1040
-          v15:BasicObject = GetLocal :o, l0, EP@3
+          v22:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
+          v23:BasicObject = CCallWithFrame v22, :Enumerable#bar@0x1038, block=0x1040
           CheckInterrupts
-          Return v24
+          Return v23
         ");
     }
 
@@ -2955,12 +2953,11 @@ mod hir_opt_tests {
           v13:Fixnum[1] = Const Value(1)
           PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-          v31:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v8, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v30:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v8, HeapObject[class_exact*:Object@VALUE(0x1000)]
           IncrCounter inline_iseq_optimized_send_count
-          v19:BasicObject = GetLocal :a, l0, EP@3
           PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v19
+          Return v13
         ");
     }
 
@@ -3444,11 +3441,9 @@ mod hir_opt_tests {
           v21:TrueClass = Const Value(true)
           IncrCounter complex_arg_pass_caller_kwarg
           v23:BasicObject = Send v11, 0x1000, :each_line, v21 # SendFallbackReason: Complex argument passing
-          v24:BasicObject = GetLocal :s, l0, EP@4
-          v25:BasicObject = GetLocal :a, l0, EP@3
           PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v25
+          Return v16
         ");
     }
 
@@ -6550,17 +6545,16 @@ mod hir_opt_tests {
           v13:ArrayExact = NewArray
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, A)
-          v36:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v35:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1010, B)
-          v39:ArrayExact[VALUE(0x1018)] = Const Value(VALUE(0x1018))
+          v38:ArrayExact[VALUE(0x1018)] = Const Value(VALUE(0x1018))
           PatchPoint NoSingletonClass(Array@0x1020)
           PatchPoint MethodRedefined(Array@0x1020, zip@0x1028, cme:0x1030)
-          v43:BasicObject = CCallVariadic v36, :zip@0x1058, v39
-          v24:BasicObject = GetLocal :result, l0, EP@3
+          v42:BasicObject = CCallVariadic v35, :zip@0x1058, v38
           PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v24
+          Return v13
         ");
     }
 
@@ -10585,23 +10579,19 @@ mod hir_opt_tests {
          CheckInterrupts
          SetLocal :formatted, l0, EP@3, v15
          PatchPoint SingleRactorMode
-         v57:HeapBasicObject = GuardType v14, HeapBasicObject
-         v58:CShape = LoadField v57, :_shape_id@0x1000
-         v59:CShape[0x1001] = GuardBitEquals v58, CShape(0x1001)
-         StoreField v57, :@formatted@0x1002, v15
-         WriteBarrier v57, v15
-         v62:CShape[0x1003] = Const CShape(0x1003)
-         StoreField v57, :_shape_id@0x1000, v62
+         v53:HeapBasicObject = GuardType v14, HeapBasicObject
+         v54:CShape = LoadField v53, :_shape_id@0x1000
+         v55:CShape[0x1001] = GuardBitEquals v54, CShape(0x1001)
+         StoreField v53, :@formatted@0x1002, v15
+         WriteBarrier v53, v15
+         v58:CShape[0x1003] = Const CShape(0x1003)
+         StoreField v53, :_shape_id@0x1000, v58
          v46:Class[VMFrozenCore] = Const Value(VALUE(0x1008))
          PatchPoint NoSingletonClass(Class@0x1010)
          PatchPoint MethodRedefined(Class@0x1010, lambda@0x1018, cme:0x1020)
-         v67:BasicObject = CCallWithFrame v46, :RubyVM::FrozenCore.lambda@0x1048, block=0x1050
-         v49:BasicObject = GetLocal :a, l0, EP@6
-         v50:BasicObject = GetLocal :_b, l0, EP@5
-         v51:BasicObject = GetLocal :_c, l0, EP@4
-         v52:BasicObject = GetLocal :formatted, l0, EP@3
+         v63:BasicObject = CCallWithFrame v46, :RubyVM::FrozenCore.lambda@0x1048, block=0x1050
          CheckInterrupts
-         Return v67
+         Return v63
        ");
     }
 
@@ -11600,14 +11590,13 @@ mod hir_opt_tests {
         bb2(v10:BasicObject, v11:BasicObject, v12:NilClass):
           PatchPoint NoSingletonClass(B@0x1000)
           PatchPoint MethodRedefined(B@0x1000, proc@0x1008, cme:0x1010)
-          v35:HeapObject[class_exact:B] = GuardType v10, HeapObject[class_exact:B]
-          v36:BasicObject = CCallWithFrame v35, :Kernel#proc@0x1038, block=0x1040
-          v18:BasicObject = GetLocal :blk, l0, EP@4
-          SetLocal :other_block, l0, EP@3, v36
-          v25:BasicObject = GetLocal :other_block, l0, EP@3
-          v27:BasicObject = InvokeSuper v10, 0x1048, v25 # SendFallbackReason: super: complex argument passing to `super` call
+          v33:HeapObject[class_exact:B] = GuardType v10, HeapObject[class_exact:B]
+          v34:BasicObject = CCallWithFrame v33, :Kernel#proc@0x1038, block=0x1040
+          SetLocal :other_block, l0, EP@3, v34
+          v23:BasicObject = GetLocal :other_block, l0, EP@3
+          v25:BasicObject = InvokeSuper v10, 0x1048, v23 # SendFallbackReason: super: complex argument passing to `super` call
           CheckInterrupts
-          Return v27
+          Return v25
         ");
     }
 
@@ -11981,27 +11970,20 @@ mod hir_opt_tests {
           v70:Falsy = RefineType v59, Falsy
           PatchPoint NoSingletonClass(Object@0x1018)
           PatchPoint MethodRedefined(Object@0x1018, lambda@0x1020, cme:0x1028)
-          v114:HeapObject[class_exact*:Object@VALUE(0x1018)] = GuardType v57, HeapObject[class_exact*:Object@VALUE(0x1018)]
-          v115:BasicObject = CCallWithFrame v114, :Kernel#lambda@0x1050, block=0x1058
-          v74:BasicObject = GetLocal :list, l0, EP@6
-          v76:BasicObject = GetLocal :iter_method, l0, EP@4
-          v77:BasicObject = GetLocal :kwsplat, l0, EP@3
-          SetLocal :sep, l0, EP@5, v115
-          Jump bb7(v57, v74, v115, v76, v77)
-        bb7(v81:BasicObject, v82:BasicObject, v83:BasicObject, v84:BasicObject, v85:BasicObject):
+          v106:HeapObject[class_exact*:Object@VALUE(0x1018)] = GuardType v57, HeapObject[class_exact*:Object@VALUE(0x1018)]
+          v107:BasicObject = CCallWithFrame v106, :Kernel#lambda@0x1050, block=0x1058
+          SetLocal :sep, l0, EP@5, v107
+          Jump bb7(v57, v58, v107, v60, v61)
+        bb7(v77:BasicObject, v78:BasicObject, v79:BasicObject, v80:BasicObject, v81:NilClass):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1060, CONST)
-          v110:HashExact[VALUE(0x1068)] = Const Value(VALUE(0x1068))
-          SetLocal :kwsplat, l0, EP@3, v110
-          v95:BasicObject = GetLocal :list, l0, EP@6
-          v97:BasicObject = GetLocal :iter_method, l0, EP@4
-          v99:BasicObject = Send v95, 0x1070, :__send__, v97 # SendFallbackReason: Send: unsupported method type Optimized
-          v100:BasicObject = GetLocal :list, l0, EP@6
-          v101:BasicObject = GetLocal :sep, l0, EP@5
-          v102:BasicObject = GetLocal :iter_method, l0, EP@4
-          v103:BasicObject = GetLocal :kwsplat, l0, EP@3
+          v102:HashExact[VALUE(0x1068)] = Const Value(VALUE(0x1068))
+          SetLocal :kwsplat, l0, EP@3, v102
+          v91:BasicObject = GetLocal :list, l0, EP@6
+          v93:BasicObject = GetLocal :iter_method, l0, EP@4
+          v95:BasicObject = Send v91, 0x1070, :__send__, v93 # SendFallbackReason: Send: unsupported method type Optimized
           CheckInterrupts
-          Return v99
+          Return v95
         ");
     }
 
