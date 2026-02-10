@@ -3104,35 +3104,5 @@ impl IseqCall {
 }
 
 #[cfg(test)]
-mod tests {
-    use crate::codegen::MAX_ISEQ_VERSIONS;
-    use crate::cruby::test_utils::*;
-    use crate::payload::*;
-
-    #[test]
-    fn test_max_iseq_versions() {
-        eval(&format!("
-            TEST = -1
-            def test = TEST
-
-            # compile and invalidate MAX+1 times
-            i = 0
-            while i < {MAX_ISEQ_VERSIONS} + 1
-              test; test # compile a version
-
-              Object.send(:remove_const, :TEST)
-              TEST = i
-
-              i += 1
-            end
-        "));
-
-        // It should not exceed MAX_ISEQ_VERSIONS
-        let iseq = get_method_iseq("self", "test");
-        let payload = get_or_create_iseq_payload(iseq);
-        assert_eq!(payload.versions.len(), MAX_ISEQ_VERSIONS);
-
-        // The last call should not discard the JIT code
-        assert!(matches!(unsafe { payload.versions.last().unwrap().as_ref() }.status, IseqStatus::Compiled(_)));
-    }
-}
+#[path = "codegen_tests.rs"]
+mod tests;

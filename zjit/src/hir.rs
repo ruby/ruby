@@ -19,7 +19,7 @@ use crate::profile::{TypeDistributionSummary, ProfiledType};
 use crate::stats::Counter;
 use SendFallbackReason::*;
 
-mod tests;
+pub(crate) mod tests;
 mod opt_tests;
 
 /// An index of an [`Insn`] in a [`Function`]. This is a popular
