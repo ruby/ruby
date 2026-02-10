@@ -2282,16 +2282,16 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
                 dv = rb_node_line_lineno_val2(val_node);
                 break;
               case RB_INTEGER_NODE:
-                dv = rb_node_integer_literal_val(val_node);
+                dv = rb_node_integer_literal_val2(val_node);
                 break;
               case RB_FLOAT_NODE:
-                dv = rb_node_float_literal_val(val_node);
+                dv = rb_node_float_literal_val2(val_node);
                 break;
               case RB_RATIONAL_NODE:
-                dv = rb_node_rational_literal_val(val_node);
+                dv = rb_node_rational_literal_val2(val_node);
                 break;
               case RB_IMAGINARY_NODE:
-                dv = rb_node_imaginary_literal_val(val_node);
+                dv = rb_node_imaginary_literal_val2(val_node);
                 break;
               case RB_SOURCE_ENCODING_NODE:
                 dv = rb_node_encoding_val2(val_node);
@@ -5547,20 +5547,20 @@ static_literal_value(const NODE *node, rb_iseq_t *iseq)
     switch (nd_type(node)) {
       case RB_INTEGER_NODE:
         {
-            VALUE lit = rb_node_integer_literal_val(node);
+            VALUE lit = rb_node_integer_literal_val2(node);
             if (!SPECIAL_CONST_P(lit)) RB_OBJ_SET_SHAREABLE(lit);
             return lit;
         }
       case RB_FLOAT_NODE:
         {
-            VALUE lit = rb_node_float_literal_val(node);
+            VALUE lit = rb_node_float_literal_val2(node);
             if (!SPECIAL_CONST_P(lit)) RB_OBJ_SET_SHAREABLE(lit);
             return lit;
         }
       case RB_RATIONAL_NODE:
-        return rb_ractor_make_shareable(rb_node_rational_literal_val(node));
+        return rb_ractor_make_shareable(rb_node_rational_literal_val2(node));
       case RB_IMAGINARY_NODE:
-        return rb_ractor_make_shareable(rb_node_imaginary_literal_val(node));
+        return rb_ractor_make_shareable(rb_node_imaginary_literal_val2(node));
       case RB_NIL_NODE:
         return Qnil;
       case RB_TRUE_NODE:
@@ -7708,11 +7708,11 @@ optimizable_range_item_p(const NODE *n)
 {
     if (!n) return FALSE;
     switch (nd_type(n)) {
-      case NODE_LINE:
+      case RB_SOURCE_LINE_NODE:
         return TRUE;
-      case NODE_INTEGER:
+      case RB_INTEGER_NODE:
         return TRUE;
-      case NODE_NIL:
+      case RB_NIL_NODE:
         return TRUE;
       default:
         return FALSE;
@@ -7723,17 +7723,17 @@ static VALUE
 optimized_range_item(const NODE *n)
 {
     switch (nd_type(n)) {
-      case NODE_LINE:
-        return rb_node_line_lineno_val(n);
-      case NODE_INTEGER:
-        return rb_node_integer_literal_val(n);
-      case NODE_FLOAT:
-        return rb_node_float_literal_val(n);
-      case NODE_RATIONAL:
-        return rb_node_rational_literal_val(n);
-      case NODE_IMAGINARY:
-        return rb_node_imaginary_literal_val(n);
-      case NODE_NIL:
+      case RB_SOURCE_LINE_NODE:
+        return rb_node_line_lineno_val2(n);
+      case RB_INTEGER_NODE:
+        return rb_node_integer_literal_val2(n);
+      case RB_FLOAT_NODE:
+        return rb_node_float_literal_val2(n);
+      case RB_RATIONAL_NODE:
+        return rb_node_rational_literal_val2(n);
+      case RB_IMAGINARY_NODE:
+        return rb_node_imaginary_literal_val2(n);
+      case RB_NIL_NODE:
         return Qnil;
       default:
         rb_bug("unexpected node: %s", ruby_node_name(nd_type(n)));
@@ -11356,11 +11356,12 @@ compile_constant_path_write(rb_iseq_t *iseq, LINK_ANCHOR *const ret, enum rb_par
 }
 
 static int
-compile_dots(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped, const int excl)
+compile_dots(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
 {
+    const int excl = rb_node_get_fl(node) & RB_RANGE_FLAGS_EXCLUDE_END;
     VALUE flag = INT2FIX(excl);
-    const NODE *b = RNODE_DOT2(node)->nd_beg;
-    const NODE *e = RNODE_DOT2(node)->nd_end;
+    const NODE *b = RB_NODE_RANGE(node)->left;
+    const NODE *e = RB_NODE_RANGE(node)->right;
 
     if (optimizable_range_item_p(b) && optimizable_range_item_p(e)) {
         if (!popped) {
@@ -11636,16 +11637,16 @@ compile_shareable_literal_constant(rb_iseq_t *iseq, LINK_ANCHOR *ret, enum rb_pa
         *value_p = rb_node_line_lineno_val2(node);
         goto compile;
       case RB_INTEGER_NODE:
-        *value_p = rb_node_integer_literal_val(node);
+        *value_p = rb_node_integer_literal_val2(node);
         goto compile;
       case RB_FLOAT_NODE:
-        *value_p = rb_node_float_literal_val(node);
+        *value_p = rb_node_float_literal_val2(node);
         goto compile;
       case RB_RATIONAL_NODE:
-        *value_p = rb_node_rational_literal_val(node);
+        *value_p = rb_node_rational_literal_val2(node);
         goto compile;
       case RB_IMAGINARY_NODE:
-        *value_p = rb_node_imaginary_literal_val(node);
+        *value_p = rb_node_imaginary_literal_val2(node);
         goto compile;
       case RB_SOURCE_ENCODING_NODE:
         *value_p = rb_node_encoding_val2(node);
@@ -12335,6 +12336,46 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         }
         break;
       }
+      case RB_INTEGER_NODE: {
+        VALUE lit = rb_node_integer_literal_val2(node);
+        if (!SPECIAL_CONST_P(lit)) RB_OBJ_SET_SHAREABLE(lit);
+        debugp_param("integer", lit);
+        if (!popped) {
+            ADD_INSN1(ret, node, putobject, lit);
+            RB_OBJ_WRITTEN(iseq, Qundef, lit);
+        }
+        break;
+      }
+      case RB_FLOAT_NODE: {
+        VALUE lit = rb_node_float_literal_val2(node);
+        if (!SPECIAL_CONST_P(lit)) RB_OBJ_SET_SHAREABLE(lit);
+        debugp_param("float", lit);
+        if (!popped) {
+            ADD_INSN1(ret, node, putobject, lit);
+            RB_OBJ_WRITTEN(iseq, Qundef, lit);
+        }
+        break;
+      }
+      case RB_RATIONAL_NODE: {
+        VALUE lit = rb_node_rational_literal_val2(node);
+        rb_ractor_make_shareable(lit);
+        debugp_param("rational", lit);
+        if (!popped) {
+            ADD_INSN1(ret, node, putobject, lit);
+            RB_OBJ_WRITTEN(iseq, Qundef, lit);
+        }
+        break;
+      }
+      case RB_IMAGINARY_NODE: {
+        VALUE lit = rb_node_imaginary_literal_val2(node);
+        rb_ractor_make_shareable(lit);
+        debugp_param("imaginary", lit);
+        if (!popped) {
+            ADD_INSN1(ret, node, putobject, lit);
+            RB_OBJ_WRITTEN(iseq, Qundef, lit);
+        }
+        break;
+      }
       case RB_SOURCE_FILE_NODE:
       case RB_STRING_NODE: {
         debugp_param("nd_lit", get_string_value2(node));
@@ -12533,6 +12574,11 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         else {
             CHECK(compile_colon3(iseq, ret, node, popped));
         }
+        break;
+      }
+
+      case RB_RANGE_NODE: {
+        CHECK(compile_dots(iseq, ret, node, popped));
         break;
       }
 
