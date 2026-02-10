@@ -21,7 +21,7 @@ require "bundler"
 
 # If we use shared GEM_HOME and install multiple versions, it may cause
 # unexpected test failures.
-gem "diff-lcs"
+gem "diff-lcs", "< 2.0"
 
 require "rspec/core"
 require "rspec/expectations"
