@@ -5486,3 +5486,52 @@ assert_normal_exit %q{
   test
   test
 }
+
+# regression test for tracing invalidation with on-stack compiled methods
+# Exercises the on_stack_iseqs path in rb_yjit_tracing_invalidate_all
+# where delayed deallocation must not create aliasing &mut references
+# to IseqPayload (use-after-free of version_map backing storage).
+assert_normal_exit %q{
+  def deep = 42
+  def mid = deep
+  def outer = mid
+
+  # Compile all three methods with YJIT
+  10.times { outer }
+
+  # Enable tracing from within a call chain so that outer/mid/deep
+  # are on the stack when rb_yjit_tracing_invalidate_all runs.
+  # This triggers the on_stack_iseqs (delayed deallocation) path.
+  def deep
+    TracePoint.new(:line) {}.enable
+    42
+  end
+
+  outer
+
+  # After invalidation, verify YJIT can recompile and run correctly
+  def deep = 42
+  10.times { outer }
+}
+
+# regression test for tracing invalidation with on-stack fibers
+# Suspended fibers have iseqs on their stack that must survive invalidation.
+assert_equal '42', %q{
+  def compiled_method
+    Fiber.yield
+    42
+  end
+
+  # Compile the method
+  10.times { compiled_method rescue nil }
+
+  fiber = Fiber.new { compiled_method }
+  fiber.resume # suspends inside compiled_method — it's now on the fiber's stack
+
+  # Enable tracing while compiled_method is on the fiber's stack.
+  # This triggers rb_yjit_tracing_invalidate_all with on-stack iseqs.
+  TracePoint.new(:call) {}.enable
+
+  # Resume the fiber — compiled_method's iseq must still be valid
+  fiber.resume.to_s
+}
