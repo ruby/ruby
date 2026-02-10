@@ -155,6 +155,19 @@ module Gem
     end
 
     ##
+    # Return the best specification that contains the file matching +path+
+    # amongst the specs that are not loaded. This method is different than
+    # +find_inactive_by_path+ as it will filter out loaded specs by their name.
+
+    def find_unloaded_by_path(path)
+      stub = stubs.find do |s|
+        next if Gem.loaded_specs[s.name]
+        s.contains_requirable_file? path
+      end
+      stub&.to_spec
+    end
+
+    ##
     # Return the best specification in the record that contains the file
     # matching +path+ amongst the specs that are not activated.
 

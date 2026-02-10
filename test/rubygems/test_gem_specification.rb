@@ -3013,6 +3013,65 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
     assert_match "#{w}:  bin/exec is missing #! line\n", @ui.error, "error"
   end
 
+  def test_validate_executables_with_space
+    util_setup_validate
+
+    FileUtils.mkdir_p File.join(@tempdir, "bin")
+    File.write File.join(@tempdir, "bin", "echo hax"), "#!/usr/bin/env ruby\n"
+
+    @a1.executables = ["echo hax"]
+
+    e = assert_raise Gem::InvalidSpecificationException do
+      use_ui @ui do
+        Dir.chdir @tempdir do
+          @a1.validate
+        end
+      end
+    end
+
+    assert_match "executable \"echo hax\" contains invalid characters", e.message
+  end
+
+  def test_validate_executables_with_path_separator
+    util_setup_validate
+
+    FileUtils.mkdir_p File.join(@tempdir, "bin")
+    File.write File.join(@tempdir, "exe"), "#!/usr/bin/env ruby\n"
+
+    @a1.executables = Gem.win_platform? ? ["..\\exe"] : ["../exe"]
+
+    e = assert_raise Gem::InvalidSpecificationException do
+      use_ui @ui do
+        Dir.chdir @tempdir do
+          @a1.validate
+        end
+      end
+    end
+
+    assert_match "executable \"#{Gem.win_platform? ? "..\\exe" : "../exe"}\" contains invalid characters", e.message
+  end
+
+  def test_validate_executables_with_path_list_separator
+    sep = Gem.win_platform? ? ";" : ":"
+
+    util_setup_validate
+
+    FileUtils.mkdir_p File.join(@tempdir, "bin")
+    File.write File.join(@tempdir, "bin", "foo#{sep}bar"), "#!/usr/bin/env ruby\n"
+
+    @a1.executables = ["foo#{sep}bar"]
+
+    e = assert_raise Gem::InvalidSpecificationException do
+      use_ui @ui do
+        Dir.chdir @tempdir do
+          @a1.validate
+        end
+      end
+    end
+
+    assert_match "executable \"foo#{sep}bar\" contains invalid characters", e.message
+  end
+
   def test_validate_empty_require_paths
     util_setup_validate
 
