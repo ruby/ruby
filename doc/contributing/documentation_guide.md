@@ -6,7 +6,7 @@ in the Ruby core and in the Ruby standard library.
 
 ## Generating documentation
 
-Most Ruby documentation lives in the source files, and is written in \RDoc format
+Most Ruby documentation lives in the source files, and is written in RDoc format
 (described in the [RDoc Markup Reference]).
 
 Some pages live under the `doc` folder and can be written in either
@@ -103,10 +103,10 @@ involving new files `doc/*.rdoc`:
      */
     ```
 
-### \RDoc
+### RDoc
 
 Ruby is documented using RDoc.
-For information on \RDoc syntax and features,
+For information on RDoc syntax and features,
 see the [RDoc Markup Reference].
 
 ### Output from `irb`
@@ -182,7 +182,7 @@ renders as:
 > - File.new
 > - File#read.
 
-In general, \RDoc's auto-linking should not be suppressed.
+In general, RDoc's auto-linking should not be suppressed.
 For example, we should write just plain _Float_ (which is auto-linked):
 
 ```rdoc
@@ -370,7 +370,7 @@ Guidelines:
       and a short description.
     - If the method has aliases, mention them in parentheses before the colon
       (and do not list the aliases separately).
-    - Check the rendered documentation to determine whether \RDoc has recognized
+    - Check the rendered documentation to determine whether RDoc has recognized
       the method and linked to it;  if not, manually insert a
       [link][links].
 
@@ -394,10 +394,10 @@ The general structure of the method documentation should be:
 
 ### Calling Sequence (for methods written in C)
 
-For methods written in Ruby, \RDoc documents the calling sequence automatically.
+For methods written in Ruby, RDoc documents the calling sequence automatically.
 
-For methods written in C, \RDoc cannot determine what arguments
-the method accepts, so those need to be documented using \RDoc directive
+For methods written in C, RDoc cannot determine what arguments
+the method accepts, so those need to be documented using RDoc directive
 [`call-seq:`][call-seq]
 
 For a singleton method, use the form:
