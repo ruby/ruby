@@ -112,7 +112,7 @@ see the [RDoc Markup Reference].
 ### Output from `irb`
 
 For code examples, consider using interactive Ruby,
-[irb][irb].
+[irb].
 
 For a code example that includes `irb` output,
 consider aligning `# => ...` in successive lines.
