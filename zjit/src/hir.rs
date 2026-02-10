@@ -2643,7 +2643,6 @@ impl Function {
         while let Some(block) = worklist.pop_front() {
             in_worklist.remove(block);
             if !reachable.get(block) { continue; }
-
             for insn_id in &self.blocks[block.0].insns {
                 let insn_type = match self.find(*insn_id) {
                     Insn::IfTrue { val, target } => {
