@@ -1480,7 +1480,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::SendDirect { recv, cd, cme, iseq, args, blockiseq, .. } => {
                 let cme = *cme;
                 let called_id = unsafe { (*cme).called_id };
-                let method_name = if called_id.0 == 0 {
+                let method_name = if called_id == ID(0) {
                     ruby_call_method_name(*cd)
                 } else {
                     called_id.contents_lossy().into_owned()

@@ -732,9 +732,6 @@ fn inline_basic_object_neq(fun: &mut hir::Function, block: hir::BlockId, recv: h
     if !fun.assume_expected_cfunc(block, recv_class, ID!(eq), rb_obj_equal as _, state) {
         return None;
     }
-    if !fun.assume_no_singleton_classes(block, recv_class, state) {
-        return None;
-    }
     let c_result = fun.push_insn(block, hir::Insn::IsBitNotEqual { left: recv, right: other });
     let result = fun.push_insn(block, hir::Insn::BoxBool { val: c_result });
     Some(result)
@@ -755,9 +752,6 @@ fn inline_eqq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, a
     let &[other] = args else { return None; };
     let recv_class = fun.type_of(recv).runtime_exact_ruby_class()?;
     if !fun.assume_expected_cfunc(block, recv_class, ID!(eq), rb_obj_equal as _, state) {
-        return None;
-    }
-    if !fun.assume_no_singleton_classes(block, recv_class, state) {
         return None;
     }
     let c_result = fun.push_insn(block, hir::Insn::IsBitEqual { left: recv, right: other });
