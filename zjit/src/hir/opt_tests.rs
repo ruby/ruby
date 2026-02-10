@@ -11342,6 +11342,29 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_invokesuper_from_a_block() {
+        _ = eval("
+            define_method(:itself) { super() }
+            itself
+        ");
+
+        assert_snapshot!(hir_string("itself"), @"
+        fn block in <compiled>@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:BasicObject = InvokeSuper v6, 0x1000 # SendFallbackReason: super: call from within a block
+          CheckInterrupts
+          Return v11
+        ");
+    }
+
+    #[test]
     fn test_invokesuper_with_positional_args_optimizes_to_direct() {
         eval("
             class A
