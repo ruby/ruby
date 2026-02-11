@@ -4340,6 +4340,46 @@ pub mod hir_build_tests {
           Return v34
         ");
     }
+
+    #[test]
+    fn reload_block_param_read_in_nested_block() {
+        // getblockparam writes to the local slot (materializes the Proc),
+        // so reading &block in a nested block is effectively a write
+        // that locals_written_in_block must detect.
+        eval(r#"
+            def test(&block)
+              tap { block }
+              block
+            end
+        "#);
+        assert_contains_opcode("test", YARVINSN_send);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :block, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:BasicObject = Send v8, 0x1000, :tap # SendFallbackReason: Uncategorized(send)
+          v15:BasicObject = GetLocal :block, l0, EP@3
+          v19:CBool = IsBlockParamModified l0
+          IfTrue v19, bb3(v8, v15)
+          Jump bb4(v8, v15)
+        bb3(v20:BasicObject, v21:BasicObject):
+          v28:BasicObject = GetLocal :block, l0, EP@3
+          Jump bb5(v20, v28, v28)
+        bb4(v23:BasicObject, v24:BasicObject):
+          v30:BasicObject = GetBlockParam :block, l0, EP@3
+          Jump bb5(v23, v30, v30)
+        bb5(v32:BasicObject, v33:BasicObject, v34:BasicObject):
+          CheckInterrupts
+          Return v34
+        ");
+    }
  }
 
  /// Test successor and predecessor set computations.

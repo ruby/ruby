@@ -6271,7 +6271,7 @@ fn locals_written_in_block(parent_iseq: IseqPtr, blockiseq: IseqPtr, target_dept
       let opcode = unsafe { rb_vm_insn_decode(*pc) } as u32;
 
       match opcode {
-          YARVINSN_setlocal | YARVINSN_setblockparam
+          YARVINSN_setlocal | YARVINSN_setblockparam | YARVINSN_getblockparam
               if get_arg(pc, 1).as_u32() == target_depth =>
           {
               let ep_offset = get_arg(pc, 0).as_u32();
