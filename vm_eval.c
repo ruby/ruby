@@ -1991,7 +1991,12 @@ eval_string_with_cref(VALUE self, VALUE src, rb_cref_t *cref, VALUE file, int li
 
     // EP is not escaped to the heap here, but captured and reused by another frame.
     // ZJIT's locals are incompatible with it unlike YJIT's, so invalidate the ISEQ for ZJIT.
-    rb_zjit_invalidate_no_ep_escape(cfp->iseq);
+    // Walk up parent ISEQs since eval can write to locals in any enclosing block scope.
+    // Stop at the method boundary since `def` creates a new scope that eval can't cross.
+    for (const rb_iseq_t *iseq = cfp->iseq; iseq; iseq = ISEQ_BODY(iseq)->parent_iseq) {
+        rb_zjit_invalidate_no_ep_escape(iseq);
+        if (ISEQ_BODY(iseq)->type == ISEQ_TYPE_METHOD) break;
+    }
 
     iseq = eval_make_iseq(src, file, line, &block);
     if (!iseq) {

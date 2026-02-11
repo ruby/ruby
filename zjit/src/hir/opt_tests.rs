@@ -2962,6 +2962,101 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn reload_local_written_in_rescue_handler() {
+        eval("
+            def test
+              a = 1
+              b = 2
+              tap do
+                begin
+                  raise
+                rescue
+                  b = 3
+                end
+              end
+              a + b
+            end
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          v3:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject):
+          EntryPoint JIT(0)
+          v7:NilClass = Const Value(nil)
+          v8:NilClass = Const Value(nil)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:NilClass, v12:NilClass):
+          v16:Fixnum[1] = Const Value(1)
+          v20:Fixnum[2] = Const Value(2)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          PatchPoint MethodRedefined(Object@0x1000, tap@0x1008, cme:0x1010)
+          v42:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v10, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v43:BasicObject = SendDirect v42, 0x1038, :tap (0x1048)
+          v26:BasicObject = GetLocal :b, l0, EP@3
+          PatchPoint NoEPEscape(test)
+          PatchPoint MethodRedefined(Integer@0x1050, +@0x1058, cme:0x1060)
+          v46:Fixnum = GuardType v26, Fixnum
+          v47:Fixnum = FixnumAdd v16, v46
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v47
+        ");
+    }
+
+    #[test]
+    fn eval_in_block_escapes_parent_ep() {
+        eval("
+            class EvalLocal; def f; yield; end; end
+            def test
+              a = 1
+              EvalLocal.new.f { eval('a = 2') }
+              a
+            end
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject):
+          EntryPoint JIT(0)
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:NilClass):
+          v13:Fixnum[1] = Const Value(1)
+          SetLocal :a, l0, EP@3, v13
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, EvalLocal)
+          v59:Class[EvalLocal@0x1008] = Const Value(VALUE(0x1008))
+          v21:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(EvalLocal@0x1008, new@0x1009, cme:0x1010)
+          v62:HeapObject[class_exact:EvalLocal] = ObjectAllocClass EvalLocal:VALUE(0x1008)
+          PatchPoint NoSingletonClass(EvalLocal@0x1008)
+          PatchPoint MethodRedefined(EvalLocal@0x1008, initialize@0x1038, cme:0x1040)
+          v70:NilClass = Const Value(nil)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          PatchPoint NoSingletonClass(EvalLocal@0x1008)
+          PatchPoint MethodRedefined(EvalLocal@0x1008, f@0x1068, cme:0x1070)
+          v66:BasicObject = SendDirect v62, 0x1098, :f (0x10a8)
+          v52:BasicObject = GetLocal :a, l0, EP@3
+          CheckInterrupts
+          Return v52
+        ");
+    }
+
+    #[test]
     fn dont_specialize_call_to_iseq_with_rest() {
         eval("
             def foo(*args) = 1
