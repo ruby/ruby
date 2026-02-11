@@ -6267,7 +6267,8 @@ fn locals_written_in_block(parent_iseq: IseqPtr, blockiseq: IseqPtr, target_dept
 
   while insn_idx < iseq_size {
       let pc = unsafe { rb_iseq_pc_at_idx(blockiseq, insn_idx) };
-      let opcode = unsafe { rb_iseq_opcode_at_pc(blockiseq, pc) } as u32;
+      // Use rb_vm_insn_decode to get the bare opcode, stripping zjit/trace specializations.
+      let opcode = unsafe { rb_vm_insn_decode(*pc) } as u32;
 
       match opcode {
           YARVINSN_setlocal | YARVINSN_setblockparam
