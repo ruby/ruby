@@ -768,21 +768,24 @@ module Prism
         source.byte_offset(line, column)
       end
 
-      # Add :on_sp tokens
-      tokens = insert_on_sp(tokens, source, result.data_loc, bom, eof_token)
+      tokens = post_process_tokens(tokens, source, result.data_loc, bom, eof_token)
 
       Result.new(tokens, result.comments, result.magic_comments, result.data_loc, result.errors, result.warnings, source)
     end
 
     private
 
-    def insert_on_sp(tokens, source, data_loc, bom, eof_token)
+    def post_process_tokens(tokens, source, data_loc, bom, eof_token)
       new_tokens = []
 
       prev_token_state = Translation::Ripper::Lexer::State[Translation::Ripper::EXPR_BEG]
       prev_token_end = bom ? 3 : 0
 
       tokens.each do |token|
+        # Skip missing heredoc ends.
+        next if token[1] == :on_heredoc_end && token[2] == ""
+
+        # Add :on_sp tokens.
         line, column = token[0]
         start_offset = source.byte_offset(line, column)
 
