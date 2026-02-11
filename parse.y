@@ -1483,6 +1483,7 @@ static rb_keyword_hash_node_t *rb_new_node_keyword_hash_new(struct parser_params
 static rb_arguments_node_t *rb_new_node_arguments_new0(struct parser_params *p, const YYLTYPE *loc);
 static rb_arguments_node_t *rb_new_node_arguments_new(struct parser_params *p, rb_node_t *nd_head, const YYLTYPE *loc);
 static rb_block_argument_node_t *rb_new_node_block_argument_new(struct parser_params *p, rb_node_t *nd_body, const YYLTYPE *loc, const YYLTYPE *operator_loc);
+static rb_forwarding_arguments_node_t *rb_new_node_forwarding_arguments_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_def_node_t *rb_new_node_def_new(struct parser_params *p, rb_node_t *nd_recv, ID nd_mid, const YYLTYPE *loc);
 static rb_alias_method_node_t *rb_new_node_alias_method_new(struct parser_params *p, rb_node_t *nd_1st, rb_node_t *nd_2nd, const YYLTYPE *loc, const YYLTYPE *keyword_loc);
 static rb_alias_global_variable_node_t *rb_new_node_alias_global_variable_new(struct parser_params *p, rb_node_t *nd_alias, rb_node_t *nd_orig, const YYLTYPE *loc, const YYLTYPE *keyword_loc);
@@ -1609,6 +1610,7 @@ static rb_source_encoding_node_t *rb_new_node_source_encoding_new(struct parser_
 #define NEW_RB_IMPLICIT(v,loc) rb_new_node_implicit_new(p,v,loc)
 #define NEW_RB_KEYWORD_HASH(loc) rb_new_node_keyword_hash_new(p,loc)
 #define NEW_RB_BLOCK_ARGUMENT(a,loc,op_loc) rb_new_node_block_argument_new(p,a,loc,op_loc)
+#define NEW_RB_FORWARDING_ARGUMENTS(loc) rb_new_node_forwarding_arguments_new(p,loc)
 #define NEW_RB_DEF(i,r,loc) rb_new_node_def_new(p,i,r,loc)
 #define NEW_RB_ALIAS_METHOD(n,o,loc,k_loc) (rb_node_t* )rb_new_node_alias_method_new(p,n,o,loc,k_loc)
 #define NEW_RB_ALIAS_GLOBAL_VARIABLE(n,o,loc,k_loc) (rb_node_t* )rb_new_node_alias_global_variable_new(p,n,o,loc,k_loc)
@@ -1935,7 +1937,7 @@ static int  local_id(struct parser_params *p, ID id);
 static int  local_id_ref(struct parser_params*, ID, ID **);
 #define internal_id rb_parser_internal_id
 ID internal_id(struct parser_params*);
-static NODE *new_args_forward_call(struct parser_params*, NODE*, const YYLTYPE*, const YYLTYPE*);
+static rb_arguments_node_t *new_args_forward_call(struct parser_params *p, rb_array_node_t *leading, const YYLTYPE *loc, const YYLTYPE *argsloc);
 static int check_forwarding_args(struct parser_params*);
 static void add_forwarding_args(struct parser_params *p);
 static void forwarding_arg_check(struct parser_params *p, ID arg, ID all, const char *var);
@@ -14028,6 +14030,14 @@ rb_new_node_block_argument_new(struct parser_params *p, rb_node_t *nd_body, cons
     return n;
 }
 
+static rb_forwarding_arguments_node_t *
+rb_new_node_forwarding_arguments_new(struct parser_params *p, const YYLTYPE *loc)
+{
+    rb_forwarding_arguments_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_FORWARDING_ARGUMENTS_NODE, rb_forwarding_arguments_node_t, loc);
+
+    return n;
+}
+
 static rb_def_node_t *
 rb_new_node_def_new(struct parser_params *p, rb_node_t *nd_recv, ID nd_mid, const YYLTYPE *loc)
 {
@@ -17442,16 +17452,15 @@ forwarding_arg_check(struct parser_params *p, ID arg, ID all, const char *var)
     }
 }
 
-static NODE *
-new_args_forward_call(struct parser_params *p, NODE *leading, const YYLTYPE *loc, const YYLTYPE *argsloc)
+static rb_arguments_node_t *
+new_args_forward_call(struct parser_params *p, rb_array_node_t *leading, const YYLTYPE *loc, const YYLTYPE *argsloc)
 {
-    NODE *rest = NEW_LVAR(idFWD_REST, loc);
-    NODE *kwrest = list_append(p, NEW_LIST(0, loc), NEW_LVAR(idFWD_KWREST, loc));
-    rb_node_block_pass_t *block = NEW_BLOCK_PASS(NEW_LVAR(idFWD_BLOCK, loc), argsloc, &NULL_LOC);
-    NODE *args = leading ? rest_arg_append(p, leading, rest, argsloc) : NEW_SPLAT(rest, loc, &NULL_LOC);
-    block->forwarding = TRUE;
-    args = arg_append(p, args, new_keyword_hash(p, kwrest, loc), argsloc);
-    return arg_blk_pass(args, block);
+    rb_arguments_node_t *nd_args;
+
+    if (!leading) return NEW_RB_ARGUMENTS(NEW_RB_FORWARDING_ARGUMENTS(loc), argsloc);
+
+    nd_args = array2arguments(p, leading);
+    return arg_append2(p, nd_args, NEW_RB_FORWARDING_ARGUMENTS(loc), argsloc);
 }
 
 static rb_node_t *
