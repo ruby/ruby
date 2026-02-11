@@ -11,6 +11,15 @@ Note that each entry is kept to a minimum, see links for details.
 
 Note: We're only listing outstanding class updates.
 
+* Kernel
+
+    * `Kernel#autoload_relative` and `Module#autoload_relative` are added.
+      These methods work like `autoload`, but resolve the file path relative
+      to the file where the method is called, similar to `require_relative`.
+      This makes it easier to autoload constants from files in the same
+      directory without hardcoding absolute paths or manipulating `$LOAD_PATH`.
+      [[Feature #15330]]
+
 * Method
 
     * `Method#source_location`, `Proc#source_location`, and
@@ -90,4 +99,5 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 ## JIT
 
 [Feature #6012]: https://bugs.ruby-lang.org/issues/6012
+[Feature #15330]: https://bugs.ruby-lang.org/issues/15330
 [Feature #21390]: https://bugs.ruby-lang.org/issues/21390
