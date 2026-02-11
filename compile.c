@@ -7288,6 +7288,10 @@ compile_args(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const rb_arguments_node_t 
             // then do nothing here
             *kwnode_ptr = (rb_keyword_hash_node_t *)node;
             break;
+          case RB_FORWARDING_ARGUMENTS_NODE:
+            // forwarding (`...`) is processed by setup_args
+            // then do nothing here
+            break;
           default:
             NO_CHECK(COMPILE_(ret, "array element", node, FALSE));
 
@@ -7509,7 +7513,7 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const rb_arguments_node_t *
            const rb_block_argument_node_t *block, unsigned int *flag, struct rb_callinfo_kwarg **keywords)
 {
     VALUE ret;
-    unsigned int dup_rest = SPLATARRAY_TRUE, initial_dup_rest;
+    unsigned int dup_rest = SPLATARRAY_TRUE, initial_dup_rest, forwarding;
     rb_node_list2_t *list = argn ? &argn->arguments : NULL;
 
     if (argn) {
@@ -7519,6 +7523,7 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const rb_arguments_node_t *
         for (size_t i =0; i < RB_NODE_LIST_LEN(list); i++) {
             NODE *node = list->nodes[i];
             if (nd_type_p(node, RB_SPLAT_NODE)) splatn++;
+            if (nd_type_p(node, RB_FORWARDING_ARGUMENTS_NODE)) forwarding = 1;
         }
 
         if (splatn == 1 && setup_args_splat_last_p(list)) dup_rest = SPLATARRAY_FALSE;
@@ -7601,43 +7606,34 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const rb_arguments_node_t *
     }
     initial_dup_rest = dup_rest;
 
+    if (forwarding && ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->param.flags.forwardable) {
+        int idx = ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->local_table_size;// - get_local_var_idx(iseq, idDot3);
+        int argc = 0;
+
+        // Only compile leading args:
+        //   foo(x, y, ...)
+        //       ^^^^
+        argc += setup_args_core(iseq, args, argn, &dup_rest, flag, keywords);
+        *flag |= VM_CALL_FORWARDING;
+
+        ADD_GETLOCAL(args, argn, idx, get_lvar_level(iseq));
+        setup_args_splat_mut(flag, dup_rest, initial_dup_rest);
+        return INT2FIX(argc);
+    }
+
     // BlockNode is also stored in `block` however it should be handled by `compile_iter`
     if (block && nd_type_p(block, RB_BLOCK_ARGUMENT_NODE)) {
         DECL_ANCHOR(arg_block);
         INIT_ANCHOR(arg_block);
 
-        if (false && RNODE_BLOCK_PASS(argn)->forwarding && ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->param.flags.forwardable) {
-            int idx = ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->local_table_size;// - get_local_var_idx(iseq, idDot3);
+        *flag |= VM_CALL_ARGS_BLOCKARG;
 
-            RUBY_ASSERT(nd_type_p(RNODE_BLOCK_PASS(argn)->nd_head, NODE_ARGSPUSH));
-            const NODE * arg_node =
-                RNODE_ARGSPUSH(RNODE_BLOCK_PASS(argn)->nd_head)->nd_head;
-
-            int argc = 0;
-
-            // Only compile leading args:
-            //   foo(x, y, ...)
-            //       ^^^^
-            if (nd_type_p(arg_node, NODE_ARGSCAT)) {
-                argc += setup_args_core(iseq, args, RNODE_ARGSCAT(arg_node)->nd_head, &dup_rest, flag, keywords);
-            }
-
-            *flag |= VM_CALL_FORWARDING;
-
-            ADD_GETLOCAL(args, argn, idx, get_lvar_level(iseq));
-            setup_args_splat_mut(flag, dup_rest, initial_dup_rest);
-            return INT2FIX(argc);
+        if (block->expression) {
+            NO_CHECK(COMPILE(arg_block, "block", block->expression));
         }
         else {
-            *flag |= VM_CALL_ARGS_BLOCKARG;
-
-            if (block->expression) {
-                NO_CHECK(COMPILE(arg_block, "block", block->expression));
-            }
-            else {
-                /* m(&) */
-                NO_CHECK(compile_lvar(iseq, arg_block, block, '&'));
-            }
+            /* m(&) */
+            NO_CHECK(compile_lvar(iseq, arg_block, block, '&'));
         }
 
         if (LIST_INSN_SIZE_ONE(arg_block)) {
