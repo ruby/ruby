@@ -2817,11 +2817,9 @@ pub fn lir_intervals_string(asm: &Assembler, intervals: &[Interval]) -> String {
     output
 }
 
-/// Convenience function that analyzes liveness, builds intervals, and formats them as a grid
-pub fn debug_intervals(asm: &mut Assembler) -> String {
-    let live_in = asm.analyze_liveness();
-    let intervals = asm.build_intervals(live_in);
-    lir_intervals_string(asm, &intervals)
+/// Format live intervals as a grid showing which VRegs are alive at each instruction
+pub fn debug_intervals(asm: &Assembler, intervals: &[Interval]) -> String {
+    lir_intervals_string(asm, intervals)
 }
 
 impl fmt::Display for Assembler {
@@ -3965,7 +3963,9 @@ mod tests {
         asm.number_instructions(16);
 
         // Get the debug output
-        let output = debug_intervals(&mut asm);
+        let live_in = asm.analyze_liveness();
+        let intervals = asm.build_intervals(live_in);
+        let output = debug_intervals(&asm, &intervals);
 
         // Verify it contains the grid structure
         assert!(output.contains("v0"));  // Header with vreg names
