@@ -4288,16 +4288,24 @@ rb_int_mul(VALUE x, VALUE y)
     return rb_num_coerce_bin(x, y, '*');
 }
 
+static bool
+accurate_in_double(long i)
+{
+#if SIZEOF_LONG * CHAR_BIT > DBL_MANT_DIG
+    return ((i < 0 ? -i : i) < (1L << DBL_MANT_DIG));
+#else
+    return true;
+#endif
+}
+
 static double
 fix_fdiv_double(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
         long iy = FIX2LONG(y);
-#if SIZEOF_LONG * CHAR_BIT > DBL_MANT_DIG
-        if ((iy < 0 ? -iy : iy) >= (1L << DBL_MANT_DIG)) {
+        if (!accurate_in_double(iy)) {
             return rb_big_fdiv_double(rb_int2big(FIX2LONG(x)), rb_int2big(iy));
         }
-#endif
         return double_div_double(FIX2LONG(x), iy);
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
@@ -4311,10 +4319,29 @@ fix_fdiv_double(VALUE x, VALUE y)
     }
 }
 
+static bool
+int_accurate_in_double(VALUE n)
+{
+    if (FIXNUM_P(n)) {
+        return accurate_in_double(FIX2LONG(n));
+    }
+    RUBY_ASSERT(RB_TYPE_P(n, T_BIGNUM));
+#if SIZEOF_LONG * CHAR_BIT <= DBL_MANT_DIG
+    int nlz;
+    size_t size = rb_absint_size(n, &nlz);
+    const size_t mant_size = roomof(DBL_MANT_DIG, CHAR_BIT);
+    if (size < mant_size) return true;
+    if (size > mant_size) return false;
+    if (nlz >= (CHAR_BIT * mant_size - DBL_MANT_DIG)) return true;
+#endif
+    return false;
+}
+
 double
 rb_int_fdiv_double(VALUE x, VALUE y)
 {
-    if (RB_INTEGER_TYPE_P(y) && !FIXNUM_ZERO_P(y)) {
+    if (RB_INTEGER_TYPE_P(y) && !FIXNUM_ZERO_P(y) &&
+        !(int_accurate_in_double(x) && int_accurate_in_double(y))) {
         VALUE gcd = rb_gcd(x, y);
         if (!FIXNUM_ZERO_P(gcd) && gcd != INT2FIX(1)) {
             x = rb_int_idiv(x, gcd);
