@@ -1099,8 +1099,10 @@ impl Assembler {
         // Dump live intervals if requested
         if let Some(crate::options::Options { dump_lir: Some(dump_lirs), .. }) = unsafe { crate::options::OPTIONS.as_ref() } {
             if dump_lirs.contains(&crate::options::DumpLIR::live_intervals) {
-                let mut asm_for_intervals = asm.clone();
-                println!("LIR live_intervals:\n{}", crate::backend::lir::debug_intervals(&mut asm_for_intervals));
+                let asm_for_intervals = asm.clone();
+                let live_in = asm_for_intervals.analyze_liveness();
+                let intervals = asm_for_intervals.build_intervals(live_in);
+                println!("LIR live_intervals:\n{}", crate::backend::lir::debug_intervals(&asm_for_intervals, &intervals));
             }
         }
 
