@@ -841,13 +841,7 @@ heap_page_in_global_empty_pages_pool(rb_objspace_t *objspace, struct heap_page *
 #define GET_PAGE_HEADER(x) (&GET_PAGE_BODY(x)->header)
 #define GET_HEAP_PAGE(x)   (GET_PAGE_HEADER(x)->page)
 
-static const uint32_t slot_div_magics[HEAP_COUNT] = {
-    0x06666667U,
-    0x03333334U,
-    0x0199999aU,
-    0x00cccccdU,
-    0x00666667U,
-};
+static uint32_t slot_div_magics[HEAP_COUNT];
 
 static inline size_t
 slot_index_for_offset(size_t offset, uint32_t div_magic)
@@ -9517,6 +9511,7 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
         rb_heap_t *heap = &heaps[i];
 
         heap->slot_size = (1 << i) * BASE_SLOT_SIZE;
+        slot_div_magics[i] = (uint32_t)(((uint64_t)1 << 32) / heap->slot_size + 1);
 
         ccan_list_head_init(&heap->pages);
     }
