@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 require 'optparse'
-require 'shellwords'
 require 'tmpdir'
 
 GitRef = Struct.new(:ref, :commit_hash)
@@ -10,15 +9,21 @@ def log_info(s)
 end
 
 def log_error(s)
-  puts "\e[31m#{s}\e[0m"
+  warn "\e[31mError: #{s}\e[0m"
 end
 
 def run(*args, **options)
   system(*args, options.merge(exception: true))
 end
 
+def macos?
+  Gem::Platform.local == 'darwin'
+end
+
 class RubyWorktree
   attr_reader :name, :path
+
+  BREW_REQUIRED_PACKAGES = %w[openssl readline libyaml].freeze
 
   def initialize(name:, ref:, force_reconfigure: false)
     @name = name
@@ -35,20 +40,25 @@ class RubyWorktree
         run('./autogen.sh')
 
         prefix = File.join(Dir.home, '.rubies', name)
-        brew_prefixes = %w[openssl readline libyaml].map do |pkg|
-          `brew --prefix #{pkg}`.strip
-        end
-        # TODO: make this work on linux
-        run(
+
+        cmd = [
           './configure',
           '--enable-zjit=dev',
-          "--prefix=#{Shellwords.escape(prefix)}",
-          '--disable-install-doc',
-          "--with-opt-dir=#{brew_prefixes.join(':')}"
-        )
+          "--prefix=#{prefix}",
+          '--disable-install-doc'
+        ]
+
+        if macos?
+          brew_prefixes = BREW_REQUIRED_PACKAGES.map do |pkg|
+            `brew --prefix #{pkg}`.strip
+          end
+          cmd << "--with-opt-dir=#{brew_prefixes.join(':')}"
+        end
+
+        run(*cmd)
       end
-      run('make -j miniruby')
-      run('make install')
+      run('make', '-j', 'miniruby')
+      run('make', 'install')
     end
   end
 
@@ -98,23 +108,23 @@ OptionParser.new do |opts|
   opts.banner = "Usage: #{$0} [options]"
 
   opts.on('--before REF', 'Git ref for ruby (before)') do |ref|
-    ref = parse_ref ref
-    if ref.nil?
-      warn "#{ref} is not a valid git ref"
+    git_ref = parse_ref ref
+    if git_ref.nil?
+      log_error "'#{ref}' is not a valid git ref"
       exit 1
     end
 
-    options[:before] = ref
+    options[:before] = git_ref
   end
 
   opts.on('--after REF', 'Git ref for ruby (after)') do |ref|
-    ref = parse_ref ref
+    git_ref = parse_ref ref
     if ref.nil?
-      warn "#{ref} is not a valid git ref"
+      log_error "'#{ref}' is not a valid git ref"
       exit 1
     end
 
-    options[:after] = ref
+    options[:after] = git_ref
   end
 
   opts.on('--bench-path PATH', 'Path to the ruby-bench repository clone') do |path|
