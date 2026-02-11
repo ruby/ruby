@@ -512,6 +512,7 @@ pub enum SideExitReason {
     FixnumModByZero,
     FixnumDivByZero,
     BoxFixnumOverflow,
+    NoProfileSend { cd: *const rb_call_data },
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -588,6 +589,7 @@ impl std::fmt::Display for SideExitReason {
             SideExitReason::GuardTypeNot(guard_type) => write!(f, "GuardTypeNot({guard_type})"),
             SideExitReason::GuardNotShared => write!(f, "GuardNotShared"),
             SideExitReason::PatchPoint(invariant) => write!(f, "PatchPoint({invariant})"),
+            SideExitReason::NoProfileSend { .. } => write!(f, "NoProfileSend"),
             _ => write!(f, "{self:?}"),
         }
     }
@@ -3071,8 +3073,11 @@ impl Function {
                                 continue;
                             }
                             ReceiverTypeResolution::NoProfile => {
-                                if get_option!(stats) {
-                                    self.set_dynamic_send_reason(insn_id, SendWithoutBlockNoProfiles);
+                                // Always mark NoProfile so convert_no_profile_sends
+                                // can replace remaining ones with SideExit later
+                                match &mut self.insns[insn_id.0] {
+                                    Insn::SendWithoutBlock { reason, .. } => *reason = SendWithoutBlockNoProfiles,
+                                    _ => unreachable!()
                                 }
                                 self.push_insn_id(block, insn_id);
                                 continue;
@@ -4529,6 +4534,28 @@ impl Function {
             .unwrap_or(insn_id)
     }
 
+    /// Replace remaining SendWithoutBlock instructions that still have NoProfiles
+    /// reason with SideExit. These are sends that couldn't be optimized by any
+    /// earlier pass (type_specialize, optimize_c_calls, etc.) due to lack of
+    /// profile data. The SideExit will trigger profiling and recompilation at runtime.
+    fn convert_no_profile_sends(&mut self) {
+        for block in self.rpo() {
+            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
+            for insn_id in old_insns {
+                match self.find(insn_id) {
+                    Insn::SendWithoutBlock { cd, state, reason: SendFallbackReason::SendWithoutBlockNoProfiles, .. } => {
+                        self.push_insn(block, Insn::SideExit {
+                            state,
+                            reason: SideExitReason::NoProfileSend { cd },
+                        });
+                        break; // SideExit is terminal; remaining insns are unreachable
+                    }
+                    _ => { self.push_insn_id(block, insn_id); },
+                }
+            }
+        }
+    }
+
     /// Use type information left by `infer_types` to fold away operations that can be evaluated at compile-time.
     ///
     /// It can fold fixnum math, truthiness tests, and branches with constant conditionals.
@@ -5255,6 +5282,7 @@ impl Function {
         run_pass!(inline);
         run_pass!(optimize_getivar);
         run_pass!(optimize_c_calls);
+        run_pass!(convert_no_profile_sends);
         run_pass!(fold_constants);
         run_pass!(clean_cfg);
         run_pass!(eliminate_dead_code);

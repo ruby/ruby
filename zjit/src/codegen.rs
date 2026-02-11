@@ -16,13 +16,14 @@ use crate::gc::append_gc_offsets;
 use crate::payload::{get_or_create_iseq_payload, IseqCodePtrs, IseqVersion, IseqVersionRef, IseqStatus};
 use crate::state::ZJITState;
 use crate::stats::{CompileError, exit_counter_for_compile_error, exit_counter_for_unhandled_hir_insn, incr_counter, incr_counter_by, send_fallback_counter, send_fallback_counter_for_method_type, send_fallback_counter_for_super_method_type, send_fallback_counter_ptr_for_opcode, send_without_block_fallback_counter_for_method_type, send_without_block_fallback_counter_for_optimized_method_type};
-use crate::stats::{counter_ptr, with_time_stat, Counter, Counter::{compile_time_ns, exit_compile_error}};
+use crate::stats::{counter_ptr, exit_counter_ptr, side_exit_counter, with_time_stat, Counter, Counter::{compile_time_ns, exit_compile_error}};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, Assembler, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_STACK_PTR, Opnd, SP, SideExit, Target, asm_ccall, asm_comment};
 use crate::hir::{iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
 use crate::hir::{Const, FrameState, Function, Insn, InsnId, SendFallbackReason};
 use crate::hir_type::{types, Type};
-use crate::options::get_option;
+use crate::options::{TraceExits, get_option};
+use crate::state::rb_zjit_record_exit_stack;
 use crate::cast::IntoUsize;
 
 /// At the moment, we support recompiling each ISEQ only once.
@@ -564,6 +565,49 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::SetClassVar { id, val, ic, state } => no_output!(gen_setclassvar(jit, asm, *id, opnd!(val), *ic, &function.frame_state(*state))),
         Insn::SetIvar { self_val, id, ic, val, state } => no_output!(gen_setivar(jit, asm, opnd!(self_val), *id, *ic, opnd!(val), &function.frame_state(*state))),
         Insn::FixnumBitCheck { val, index } => gen_fixnum_bit_check(asm, opnd!(val), *index),
+        Insn::SideExit { state, reason: reason @ SideExitReason::NoProfileSend { cd } } => {
+            let state = &function.frame_state(*state);
+            // Set cfp->pc to the current instruction (NOT next) so the interpreter
+            // re-executes the send instruction after the side exit.
+            // gen_save_pc_for_gc advances to the next instruction, which is wrong here.
+            asm_comment!(asm, "save PC to CFP");
+            asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::const_ptr(state.pc));
+            // Set cfp->sp and spill stack/locals so the callback can read receiver/args
+            // and so the interpreter has the correct stack state when it resumes.
+            gen_save_sp(asm, state.stack_size());
+            gen_spill_stack(jit, asm, state);
+            gen_spill_locals(jit, asm, state);
+            let ci = unsafe { get_call_data_ci(*cd) };
+            let argc = unsafe { vm_ci_argc(ci) };
+            asm_comment!(asm, "profile and recompile for no-profile send");
+            asm_ccall!(asm, no_profile_send_recompile,
+                EC,
+                Opnd::Value(VALUE::from(jit.iseq)),
+                Opnd::UImm(state.insn_idx() as u64),
+                Opnd::Imm(argc as i64)
+            );
+            // Increment exit counter (matching what compile_exits does for other side exits)
+            if get_option!(stats) {
+                asm_comment!(asm, "increment a side exit counter");
+                asm.incr_counter(Opnd::const_ptr(exit_counter_ptr(*reason)), 1.into());
+            }
+            // Record exit for --zjit-trace-exits. This is safe because
+            // the stack/locals were already spilled to the interpreter stack above.
+            let should_record_exit = get_option!(trace_side_exits).map(|trace| match trace {
+                TraceExits::All => true,
+                TraceExits::Counter(counter) if counter == side_exit_counter(*reason) => true,
+                _ => false,
+            }).unwrap_or(false);
+            if should_record_exit {
+                asm_ccall!(asm, rb_zjit_record_exit_stack, Opnd::const_ptr(state.pc));
+            }
+            // The stack/locals are already spilled, so just exit to the interpreter
+            // without going through compile_exit (which would try to write stack values
+            // from registers that the ccalls above may have clobbered).
+            asm_comment!(asm, "exit to the interpreter");
+            asm.frame_teardown(&[]);
+            no_output!(asm.cret(Opnd::UImm(Qundef.as_u64())))
+        }
         Insn::SideExit { state, reason } => no_output!(gen_side_exit(jit, asm, reason, &function.frame_state(*state))),
         Insn::PutSpecialObject { value_type } => gen_putspecialobject(asm, *value_type),
         Insn::AnyToString { val, str, state } => gen_anytostring(asm, opnd!(val), opnd!(str), &function.frame_state(*state)),
@@ -1369,20 +1413,6 @@ fn gen_send_without_block(
     gen_incr_send_fallback_counter(asm, reason);
 
     gen_prepare_non_leaf_call(jit, asm, state);
-
-    // If this send has no profile data, call a recompile callback that profiles
-    // the receiver/args on the stack and triggers recompilation of this ISEQ.
-    if matches!(reason, SendFallbackReason::SendWithoutBlockNoProfiles) {
-        let ci = unsafe { get_call_data_ci(cd) };
-        let argc = unsafe { vm_ci_argc(ci) };
-        asm_comment!(asm, "trigger recompilation for no-profile send");
-        asm_ccall!(asm, no_profile_send_recompile,
-            EC,
-            Opnd::Value(VALUE::from(jit.iseq)),
-            Opnd::UImm(state.insn_idx() as u64),
-            Opnd::Imm(argc as i64)
-        );
-    }
 
     asm_comment!(asm, "call #{} with dynamic dispatch", ruby_call_method_name(cd));
     unsafe extern "C" {

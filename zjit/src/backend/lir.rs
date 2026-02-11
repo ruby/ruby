@@ -2220,9 +2220,8 @@ impl Assembler
 
     /// Compile Target::SideExit and convert it into Target::CodePtr for all instructions
     pub fn compile_exits(&mut self) {
-        /// Compile the main side-exit code. This function takes only SideExit so
-        /// that it can be safely deduplicated by using SideExit as a dedup key.
-        fn compile_exit(asm: &mut Assembler, exit: &SideExit) {
+        /// Write the interpreter state (pc, sp, stack, locals) for a side exit.
+        fn write_exit_state(asm: &mut Assembler, exit: &SideExit) {
             let SideExit { pc, stack, locals } = exit;
 
             // Side exit blocks are not part of the CFG at the moment,
@@ -2249,6 +2248,12 @@ impl Assembler
                     asm.store(Opnd::mem(64, SP, (-local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32), opnd);
                 }
             }
+        }
+
+        /// Compile the main side-exit code. This function takes only SideExit so
+        /// that it can be safely deduplicated by using SideExit as a dedup key.
+        fn compile_exit(asm: &mut Assembler, exit: &SideExit) {
+            write_exit_state(asm, exit);
 
             asm_comment!(asm, "exit to the interpreter");
             asm.frame_teardown(&[]); // matching the setup in gen_entry_point()
@@ -2301,20 +2306,29 @@ impl Assembler
                     }
 
                     if should_record_exit {
+                        // Write state to memory BEFORE calling rb_zjit_record_exit_stack,
+                        // because the ccall clobbers caller-saved registers that may hold
+                        // stack/local values needed by compile_exit.
+                        write_exit_state(self, &exit);
                         asm_ccall!(self, rb_zjit_record_exit_stack, pc);
-                    }
-
-                    // If the side exit has already been compiled, jump to it.
-                    // Otherwise, let it fall through and compile the exit next.
-                    if let Some(&exit_label) = compiled_exits.get(&exit) {
-                        self.jmp(Target::Label(exit_label));
+                        // Exit directly — state is already written, don't go through
+                        // compile_exit which would try to read clobbered registers.
+                        asm_comment!(self, "exit to the interpreter");
+                        self.frame_teardown(&[]); // matching the setup in gen_entry_point()
+                        self.cret(Opnd::UImm(Qundef.as_u64()));
+                    } else {
+                        // If the side exit has already been compiled, jump to it.
+                        // Otherwise, let it fall through and compile the exit next.
+                        if let Some(&exit_label) = compiled_exits.get(&exit) {
+                            self.jmp(Target::Label(exit_label));
+                        }
                     }
                     Some(counted_exit)
                 } else {
                     None
                 };
 
-                // Compile the shared side exit if not compiled yet
+                // Compile the shared side exit if not compiled yet (used when not recording)
                 let compiled_exit = if let Some(&compiled_exit) = compiled_exits.get(&exit) {
                     Target::Label(compiled_exit)
                 } else {

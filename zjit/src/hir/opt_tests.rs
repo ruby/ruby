@@ -5381,9 +5381,7 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           v16:Fixnum[1] = Const Value(1)
           v18:Fixnum[10] = Const Value(10)
-          v22:BasicObject = SendWithoutBlock v9, :[]=, v16, v18 # SendFallbackReason: Uncategorized(opt_aset)
-          CheckInterrupts
-          Return v18
+          SideExit NoProfileSend
         ");
     }
 
@@ -8836,9 +8834,7 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          v17:BasicObject = SendWithoutBlock v11, :^ # SendFallbackReason: Uncategorized(opt_send_without_block)
-          CheckInterrupts
-          Return v17
+          SideExit NoProfileSend
         ");
     }
 
@@ -12056,12 +12052,10 @@ mod hir_opt_tests {
 
     #[test]
     fn recompile_no_profile_send() {
-        // With call_threshold=2, the first call profiles and the second compiles.
-        // In fib, recursive calls increment the call count, so compilation may
-        // trigger mid-execution before all send sites are profiled.
-        // The first recursive send (test(n-1)) gets profiled and compiles to
-        // SendDirect, while the second (test(n-2)) lacks profile data and
-        // falls back to dynamic dispatch (SendWithoutBlock).
+        // With call_threshold=2 and num_profiles=1, the 1st call profiles and
+        // the 2nd call triggers compilation. Use n=1 so n < 2 returns early
+        // and the recursive sends are never reached during profiling/compilation.
+        // This means the sends have no profile data → SideExit NoProfileSend.
         eval("
             def test_no_profile(n)
               if n < 2
@@ -12069,11 +12063,13 @@ mod hir_opt_tests {
               end
               test_no_profile(n - 1) + test_no_profile(n - 2)
             end
-            test_no_profile(5)
+            test_no_profile(1)
+            test_no_profile(1)
         ");
         let before = hir_string("test_no_profile");
 
-        // Execute again to trigger recompilation for no-profile sends.
+        // Execute with n=5 to hit SideExits, which profile sends and recompile.
+        // Each SideExit profiles one send, so one call may not profile all sends.
         eval("test_no_profile(5)");
         let after = hir_string("test_no_profile");
 
@@ -12091,31 +12087,17 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           v14:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1000, <@0x1008, cme:0x1010)
-          v67:Fixnum = GuardType v9, Fixnum
-          v68:BoolExact = FixnumLt v67, v14
+          v63:Fixnum = GuardType v9, Fixnum
+          v64:BoolExact = FixnumLt v63, v14
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          v20:CBool = Test v68
+          v20:CBool = Test v64
           IfFalse v20, bb3(v8, v9)
           CheckInterrupts
           Return v9
         bb3(v30:BasicObject, v31:BasicObject):
           v37:Fixnum[1] = Const Value(1)
-          PatchPoint MethodRedefined(Integer@0x1000, -@0x1038, cme:0x1040)
-          v72:Fixnum = GuardType v31, Fixnum
-          v73:Fixnum = FixnumSub v72, v37
-          IncrCounter inline_cfunc_optimized_send_count
-          PatchPoint NoSingletonClass(Object@0x1068)
-          PatchPoint MethodRedefined(Object@0x1068, test_no_profile@0x1070, cme:0x1078)
-          v63:HeapObject[class_exact*:Object@VALUE(0x1068)] = GuardType v30, HeapObject[class_exact*:Object@VALUE(0x1068)]
-          v64:BasicObject = SendDirect v63, 0x10a0, :test_no_profile (0x10b0), v73
-          PatchPoint NoEPEscape(test_no_profile)
-          v48:Fixnum[2] = Const Value(2)
-          v51:BasicObject = SendWithoutBlock v31, :-, v48 # SendFallbackReason: Uncategorized(opt_minus)
-          v53:BasicObject = SendWithoutBlock v30, :test_no_profile, v51 # SendFallbackReason: Uncategorized(opt_send_without_block)
-          v56:BasicObject = SendWithoutBlock v64, :+, v53 # SendFallbackReason: Uncategorized(opt_plus)
-          CheckInterrupts
-          Return v56
+          SideExit NoProfileSend
 
         after:
         fn test_no_profile@<compiled>:3:
@@ -12150,11 +12132,11 @@ mod hir_opt_tests {
           v64:BasicObject = SendDirect v63, 0x10a0, :test_no_profile (0x10b0), v73
           PatchPoint NoEPEscape(test_no_profile)
           v48:Fixnum[2] = Const Value(2)
-          v51:BasicObject = SendWithoutBlock v31, :-, v48 # SendFallbackReason: Uncategorized(opt_minus)
-          v53:BasicObject = SendWithoutBlock v30, :test_no_profile, v51 # SendFallbackReason: Uncategorized(opt_send_without_block)
-          v56:BasicObject = SendWithoutBlock v64, :+, v53 # SendFallbackReason: Uncategorized(opt_plus)
-          CheckInterrupts
-          Return v56
+          PatchPoint MethodRedefined(Integer@0x1000, -@0x1038, cme:0x1040)
+          v77:Fixnum = GuardType v31, Fixnum
+          v78:Fixnum = FixnumSub v77, v48
+          IncrCounter inline_cfunc_optimized_send_count
+          SideExit NoProfileSend
         ");
     }
 }

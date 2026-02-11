@@ -213,6 +213,7 @@ make_counters! {
         exit_block_param_proxy_not_nil,
         exit_block_param_wb_required,
         exit_too_many_keyword_parameters,
+        exit_no_profile_send,
     }
 
     // Send fallback counters that are summed as dynamic_send_count
@@ -586,6 +587,7 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
                                       => exit_patchpoint_single_ractor_mode,
         PatchPoint(Invariant::NoSingletonClass { .. })
                                       => exit_patchpoint_no_singleton_class,
+        NoProfileSend { .. }          => exit_no_profile_send,
     }
 }
 
