@@ -22283,28 +22283,6 @@ pm_parse_stream_read(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t 
 }
 
 /**
- * Determine if there was an unterminated heredoc at the end of the input, which
- * would mean the stream isn't finished and we should keep reading.
- *
- * For the other lex modes we can check if the lex mode has been closed, but for
- * heredocs when we hit EOF we close the lex mode and then go back to parse the
- * rest of the line after the heredoc declaration so that we get more of the
- * syntax tree.
- */
-static bool
-pm_parse_stream_unterminated_heredoc_p(pm_parser_t *parser) {
-    pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) parser->error_list.head;
-
-    for (; diagnostic != NULL; diagnostic = (pm_diagnostic_t *) diagnostic->node.next) {
-        if (diagnostic->diag_id == PM_ERR_HEREDOC_TERM) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-/**
  * Parse a stream of Ruby source and return the tree.
  *
  * Prism is designed around having the entire source in memory at once, but you
@@ -22319,7 +22297,7 @@ pm_parse_stream(pm_parser_t *parser, pm_buffer_t *buffer, void *stream, pm_parse
     pm_parser_init(parser, (const uint8_t *) pm_buffer_value(buffer), pm_buffer_length(buffer), options);
     pm_node_t *node = pm_parse(parser);
 
-    while (!eof && parser->error_list.size > 0 && (parser->lex_modes.index > 0 || pm_parse_stream_unterminated_heredoc_p(parser))) {
+    while (!eof && parser->error_list.size > 0) {
         pm_node_destroy(parser, node);
         eof = pm_parse_stream_read(buffer, stream, stream_fgets, stream_feof);
 

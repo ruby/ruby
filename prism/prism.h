@@ -17,7 +17,6 @@
 #include "prism/diagnostic.h"
 #include "prism/node.h"
 #include "prism/options.h"
-#include "prism/pack.h"
 #include "prism/parser.h"
 #include "prism/prettyprint.h"
 #include "prism/regexp.h"

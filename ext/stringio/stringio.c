@@ -160,8 +160,18 @@ strio_substr(struct StringIO *ptr, long pos, long len, rb_encoding *enc)
 #define STRIO_WRITABLE FL_USER5
 #define STRIO_READWRITE (STRIO_READABLE|STRIO_WRITABLE)
 typedef char strio_flags_check[(STRIO_READABLE/FMODE_READABLE == STRIO_WRITABLE/FMODE_WRITABLE) * 2 - 1];
+#ifndef RB_FL_TEST_RAW
+# define RB_FL_TEST_RAW(obj, bits) (RBASIC(obj)->flags & (bits))
+#endif
+#ifndef RB_FL_SET_RAW
+# define RB_FL_SET_RAW(obj, bits) (RBASIC(obj)->flags |= (bits))
+#endif
+#ifndef RB_FL_UNSET_RAW
+# define RB_FL_UNSET_RAW(obj, bits) (RBASIC(obj)->flags &= ~(bits))
+#endif
+
 #define STRIO_MODE_SET_P(strio, mode) \
-    ((RBASIC(strio)->flags & STRIO_##mode) && \
+    (RB_FL_TEST_RAW(strio, STRIO_##mode) && \
      ((struct StringIO*)DATA_PTR(strio))->flags & FMODE_##mode)
 #define CLOSED(strio) (!STRIO_MODE_SET_P(strio, READWRITE))
 #define READABLE(strio) STRIO_MODE_SET_P(strio, READABLE)
@@ -370,7 +380,7 @@ strio_init(int argc, VALUE *argv, struct StringIO *ptr, VALUE self)
     ptr->pos = 0;
     ptr->lineno = 0;
     if (ptr->flags & FMODE_SETENC_BY_BOM) set_encoding_by_bom(ptr);
-    RBASIC(self)->flags |= (ptr->flags & FMODE_READWRITE) * (STRIO_READABLE / FMODE_READABLE);
+    RB_FL_SET_RAW(self, (ptr->flags & FMODE_READWRITE) * (STRIO_READABLE / FMODE_READABLE));
     return self;
 }
 
@@ -564,7 +574,7 @@ static VALUE
 strio_close(VALUE self)
 {
     StringIO(self);
-    RBASIC(self)->flags &= ~STRIO_READWRITE;
+    RB_FL_UNSET_RAW(self, STRIO_READWRITE);
     return Qnil;
 }
 
@@ -592,7 +602,7 @@ strio_close_read(VALUE self)
     if (!(ptr->flags & FMODE_READABLE)) {
 	rb_raise(rb_eIOError, "closing non-duplex IO for reading");
     }
-    RBASIC(self)->flags &= ~STRIO_READABLE;
+    RB_FL_UNSET_RAW(self, STRIO_READABLE);
     return Qnil;
 }
 
@@ -618,7 +628,7 @@ strio_close_write(VALUE self)
     if (!(ptr->flags & FMODE_WRITABLE)) {
 	rb_raise(rb_eIOError, "closing non-duplex IO for writing");
     }
-    RBASIC(self)->flags &= ~STRIO_WRITABLE;
+    RB_FL_UNSET_RAW(self, STRIO_WRITABLE);
     return Qnil;
 }
 
@@ -736,8 +746,8 @@ strio_copy(VALUE copy, VALUE orig)
     }
     DATA_PTR(copy) = ptr;
     RB_OBJ_WRITTEN(copy, old_string, ptr->string);
-    RBASIC(copy)->flags &= ~STRIO_READWRITE;
-    RBASIC(copy)->flags |= RBASIC(orig)->flags & STRIO_READWRITE;
+    RB_FL_UNSET_RAW(copy, STRIO_READWRITE);
+    RB_FL_SET_RAW(copy, RB_FL_TEST_RAW(orig, STRIO_READWRITE));
     ++ptr->count;
     return copy;
 }

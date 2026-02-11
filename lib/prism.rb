@@ -21,7 +21,6 @@ module Prism
   autoload :InspectVisitor, "prism/inspect_visitor"
   autoload :LexCompat, "prism/lex_compat"
   autoload :MutationCompiler, "prism/mutation_compiler"
-  autoload :Pack, "prism/pack"
   autoload :Pattern, "prism/pattern"
   autoload :Reflection, "prism/reflection"
   autoload :Relocation, "prism/relocation"
