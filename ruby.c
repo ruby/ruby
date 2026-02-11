@@ -2301,6 +2301,16 @@ process_options_global_setup(const ruby_cmdline_options_t *opt, const rb_iseq_t 
     rb_exec_event_hook_script_compiled(ec, iseq, script);
 }
 
+static bool
+has_dir_sep(const char *path)
+{
+    if (strchr(path, '/')) return true;
+#ifdef _WIN32
+    if (strchr(path, '\\')) return true;
+#endif
+    return false;
+}
+
 static VALUE
 process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 {
@@ -2406,7 +2416,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
             if (!opt->script || opt->script[0] == '\0') {
                 opt->script = "-";
             }
-            else if (opt->do_search) {
+            else if (opt->do_search && !has_dir_sep(opt->script)) {
                 const char *path = getenv("RUBYPATH");
 
                 opt->script = 0;

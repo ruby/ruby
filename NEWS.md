@@ -66,7 +66,8 @@ releases.
 * resolv-replace 0.2.0
 * syslog 0.4.0
 * repl_type_completor 0.1.13
-* rdoc 7.1.0
+* rdoc 7.2.0
+* irb 1.17.0
 
 ### RubyGems and Bundler
 
