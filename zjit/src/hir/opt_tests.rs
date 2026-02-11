@@ -8481,6 +8481,159 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_optimize_array_push_with_array_subclass() {
+        eval("
+            class PushSubArray < Array
+              def <<(val) = super
+            end
+            test = PushSubArray.new
+            test << 1
+        ");
+        assert_snapshot!(hir_string_proc("PushSubArray.new.method(:<<)"), @r"
+        fn <<@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :val, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(Array@0x1000, <<@0x1008, cme:0x1010)
+          v21:CPtr = GetLEP
+          v22:RubyValue = LoadField v21, :_ep_method_entry@0x1038
+          v23:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v22, Value(VALUE(0x1040))
+          v24:RubyValue = LoadField v21, :_ep_specval@0x1048
+          v25:FalseClass = GuardBitEquals v24, Value(false)
+          v26:Array = GuardType v8, Array
+          ArrayPush v26, v9
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v26
+        ");
+    }
+
+    #[test]
+    fn test_optimize_array_pop_with_array_subclass() {
+        eval("
+            class PopSubArray < Array
+              def pop = super
+            end
+            test = PopSubArray.new([1])
+            test.pop
+        ");
+        assert_snapshot!(hir_string_proc("PopSubArray.new.method(:pop)"), @r"
+        fn pop@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint MethodRedefined(Array@0x1000, pop@0x1008, cme:0x1010)
+          v17:CPtr = GetLEP
+          v18:RubyValue = LoadField v17, :_ep_method_entry@0x1038
+          v19:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v18, Value(VALUE(0x1040))
+          v20:RubyValue = LoadField v17, :_ep_specval@0x1048
+          v21:FalseClass = GuardBitEquals v20, Value(false)
+          PatchPoint MethodRedefined(Array@0x1000, pop@0x1008, cme:0x1010)
+          v27:CPtr = GetLEP
+          v28:RubyValue = LoadField v27, :_ep_method_entry@0x1038
+          v29:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v28, Value(VALUE(0x1040))
+          v30:RubyValue = LoadField v27, :_ep_specval@0x1048
+          v31:FalseClass = GuardBitEquals v30, Value(false)
+          v22:Array = GuardType v6, Array
+          v23:CUInt64 = LoadField v22, :_rbasic_flags@0x1049
+          v24:CUInt64 = GuardNoBitsSet v23, RUBY_ELTS_SHARED=CUInt64(4096)
+          v25:BasicObject = ArrayPop v22
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v25
+        ");
+    }
+
+    #[test]
+    fn test_optimize_array_aref_with_array_subclass_and_fixnum() {
+        eval("
+            class ArefSubArray < Array
+              def [](idx) = super
+            end
+            test = ArefSubArray.new([1])
+            test[0]
+        ");
+        assert_snapshot!(hir_string_proc("ArefSubArray.new.method(:[])"), @r"
+        fn []@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :idx, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(Array@0x1000, []@0x1008, cme:0x1010)
+          v21:CPtr = GetLEP
+          v22:RubyValue = LoadField v21, :_ep_method_entry@0x1038
+          v23:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v22, Value(VALUE(0x1040))
+          v24:RubyValue = LoadField v21, :_ep_specval@0x1048
+          v25:FalseClass = GuardBitEquals v24, Value(false)
+          PatchPoint MethodRedefined(Array@0x1000, []@0x1008, cme:0x1010)
+          v35:CPtr = GetLEP
+          v36:RubyValue = LoadField v35, :_ep_method_entry@0x1038
+          v37:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v36, Value(VALUE(0x1040))
+          v38:RubyValue = LoadField v35, :_ep_specval@0x1048
+          v39:FalseClass = GuardBitEquals v38, Value(false)
+          v26:Array = GuardType v8, Array
+          v27:Fixnum = GuardType v9, Fixnum
+          v28:CInt64 = UnboxFixnum v27
+          v29:CInt64 = ArrayLength v26
+          v30:CInt64 = GuardLess v28, v29
+          v31:CInt64[0] = Const CInt64(0)
+          v32:CInt64 = GuardGreaterEq v30, v31
+          v33:BasicObject = ArrayAref v26, v32
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v33
+        ");
+    }
+
+    #[test]
+    fn test_dont_optimize_array_aref_with_array_subclass_and_non_fixnum() {
+        eval("
+            class ArefSubArrayRange < Array
+              def [](idx) = super
+            end
+            test = ArefSubArrayRange.new([1, 2, 3])
+            test[0..1]
+        ");
+        assert_snapshot!(hir_string_proc("ArefSubArrayRange.new.method(:[])"), @r"
+        fn []@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :idx, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(Array@0x1000, []@0x1008, cme:0x1010)
+          v21:CPtr = GetLEP
+          v22:RubyValue = LoadField v21, :_ep_method_entry@0x1038
+          v23:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v22, Value(VALUE(0x1040))
+          v24:RubyValue = LoadField v21, :_ep_specval@0x1048
+          v25:FalseClass = GuardBitEquals v24, Value(false)
+          v26:BasicObject = CCallVariadic v8, :Array#[]@0x1050, v9
+          CheckInterrupts
+          Return v26
+        ");
+    }
+
+    #[test]
     fn test_optimize_array_length() {
         eval("
             def test(arr) = arr.length
