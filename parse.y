@@ -4772,7 +4772,7 @@ block_arg	: tAMPER arg_value
                 | tAMPER
                     {
                         forwarding_arg_check(p, idFWD_BLOCK, idFWD_ALL, "block");
-                        $$ = NEW_RB_BLOCK_ARGUMENT(NEW_LVAR(idFWD_BLOCK, &@1), &@$, &@1);
+                        $$ = NEW_RB_BLOCK_ARGUMENT(0, &@$, &@1);
                     /*% ripper: Qnil %*/
                     }
                 ;
@@ -4823,7 +4823,7 @@ arg_splat	: tSTAR arg_value
                 | tSTAR /* none */
                     {
                         forwarding_arg_check(p, idFWD_REST, idFWD_ALL, "rest");
-                        $$ = NEW_RB_SPLAT(NEW_LVAR(idFWD_REST, &@tSTAR), &@$, &@tSTAR);
+                        $$ = NEW_RB_SPLAT(0, &@$, &@tSTAR);
                     /*% ripper: Qnil %*/
                     }
                 ;
@@ -16960,9 +16960,9 @@ warn_duplicate_keys(struct parser_params *p, rb_array_node_t *hash)
             rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
         }
 
-        /* keyword splat, e.g. {k: 1, **z, k: 2} */
+        /* keyword splat, e.g. {k: 1, **, k: 2} */
         if (!head) {
-            head = value;
+            continue;
         }
 
         if (nd_type_st_key_enable_p(head)) {
