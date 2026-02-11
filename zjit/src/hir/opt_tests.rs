@@ -2997,16 +2997,17 @@ mod hir_opt_tests {
           v20:Fixnum[2] = Const Value(2)
           PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, tap@0x1008, cme:0x1010)
-          v42:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v10, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v43:BasicObject = SendDirect v42, 0x1038, :tap (0x1048)
+          v44:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v10, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v45:BasicObject = SendDirect v44, 0x1038, :tap (0x1048)
           v26:BasicObject = GetLocal :b, l0, EP@3
           PatchPoint NoEPEscape(test)
+          PatchPoint NoEPEscape(test)
           PatchPoint MethodRedefined(Integer@0x1050, +@0x1058, cme:0x1060)
-          v46:Fixnum = GuardType v26, Fixnum
-          v47:Fixnum = FixnumAdd v16, v46
+          v48:Fixnum = GuardType v26, Fixnum
+          v49:Fixnum = FixnumAdd v16, v48
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v47
+          Return v49
         ");
     }
 

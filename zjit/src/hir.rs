@@ -6307,19 +6307,40 @@ fn locals_written_in_block(parent_iseq: IseqPtr, blockiseq: IseqPtr, target_dept
   }
 }
 
-/// Reload locals that may have been modified by the blockiseq.
-fn reload_modified_locals(fun: &mut Function, block: BlockId, state: &mut FrameState, iseq: IseqPtr, blockiseq: IseqPtr) {
+/// Reload locals that may have been modified by the blockiseq, and if any were
+/// reloaded, guard against EP escape (e.g. eval writing to locals we can't
+/// detect by scanning bytecode).
+///
+/// `pc` must point to the send instruction and `opcode` must be its decoded opcode.
+/// We build a side-exit snapshot pointing to the *next* instruction so the interpreter
+/// doesn't re-execute the send. We compute next_pc with pointer arithmetic
+/// (`pc + insn_len`) rather than `rb_iseq_pc_at_idx` to avoid a bounds-check assertion.
+fn reload_modified_locals(fun: &mut Function, block: BlockId, state: &mut FrameState, iseq: IseqPtr, blockiseq: IseqPtr, pc: *const VALUE, opcode: u32, insn_idx: u32) {
     // TODO: Avoid reloading locals that are not referenced by the blockiseq
     // or not used after this. Max thinks we could eventually DCE them.
     let mut locals = BitSet::with_capacity(state.locals.len());
     locals_written_in_block(iseq, blockiseq, 1, &mut locals);
+    let mut reloaded = false;
     for local_idx in 0..state.locals.len() {
         if locals.get(local_idx) {
             let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
             // TODO: We could use `use_sp: true` with PatchPoint
             let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0, use_sp: false, rest_param: false });
             state.setlocal(ep_offset, val);
+            reloaded = true;
         }
+    }
+
+    // Only add a NoEPEscape guard when we actually reloaded locals. If we didn't
+    // reload any, the subsequent getlocal PatchPoints (from local_inval) handle it.
+    // The snapshot omits locals so the interpreter reads them from the frame.
+    if reloaded {
+        let len = insn_len(opcode as usize) as usize;
+        let mut pp_state = state.clone();
+        pp_state.pc = unsafe { pc.add(len) };
+        pp_state.insn_idx = insn_idx as usize + len;
+        let pp_exit_id = fun.push_insn(block, Insn::Snapshot { state: pp_state.without_locals() });
+        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: pp_exit_id });
     }
 }
 
@@ -7281,7 +7302,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     state.stack_push(send);
 
                     if !blockiseq.is_null() {
-                        reload_modified_locals(&mut fun, block, &mut state, iseq, blockiseq);
+                        reload_modified_locals(&mut fun, block, &mut state, iseq, blockiseq, pc, opcode, insn_idx);
                     }
                 }
                 YARVINSN_sendforward => {
@@ -7303,7 +7324,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     state.stack_push(send_forward);
 
                     if !blockiseq.is_null() {
-                        reload_modified_locals(&mut fun, block, &mut state, iseq, blockiseq);
+                        reload_modified_locals(&mut fun, block, &mut state, iseq, blockiseq, pc, opcode, insn_idx);
                     }
                 }
                 YARVINSN_invokesuper => {
@@ -7324,7 +7345,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     state.stack_push(result);
 
                     if !blockiseq.is_null() {
-                        reload_modified_locals(&mut fun, block, &mut state, iseq, blockiseq);
+                        reload_modified_locals(&mut fun, block, &mut state, iseq, blockiseq, pc, opcode, insn_idx);
                     }
                 }
                 YARVINSN_invokesuperforward => {
@@ -7345,7 +7366,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     state.stack_push(result);
 
                     if !blockiseq.is_null() {
-                        reload_modified_locals(&mut fun, block, &mut state, iseq, blockiseq);
+                        reload_modified_locals(&mut fun, block, &mut state, iseq, blockiseq, pc, opcode, insn_idx);
                     }
                 }
                 YARVINSN_invokeblock => {

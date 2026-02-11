@@ -4216,9 +4216,10 @@ pub mod hir_build_tests {
           v25:BasicObject = Send v10, 0x1000, :tap # SendFallbackReason: Uncategorized(send)
           v26:BasicObject = GetLocal :b, l0, EP@3
           PatchPoint NoEPEscape(test)
-          v35:BasicObject = SendWithoutBlock v16, :+, v26 # SendFallbackReason: Uncategorized(opt_plus)
+          PatchPoint NoEPEscape(test)
+          v37:BasicObject = SendWithoutBlock v16, :+, v26 # SendFallbackReason: Uncategorized(opt_plus)
           CheckInterrupts
-          Return v35
+          Return v37
         ");
     }
 
@@ -4252,9 +4253,10 @@ pub mod hir_build_tests {
           v25:BasicObject = Send v10, 0x1000, :tap # SendFallbackReason: Uncategorized(send)
           v26:BasicObject = GetLocal :b, l0, EP@3
           PatchPoint NoEPEscape(test)
-          v35:BasicObject = SendWithoutBlock v16, :+, v26 # SendFallbackReason: Uncategorized(opt_plus)
+          PatchPoint NoEPEscape(test)
+          v37:BasicObject = SendWithoutBlock v16, :+, v26 # SendFallbackReason: Uncategorized(opt_plus)
           CheckInterrupts
-          Return v35
+          Return v37
         ");
     }
 
@@ -4294,9 +4296,10 @@ pub mod hir_build_tests {
           v25:BasicObject = Send v10, 0x1000, :tap # SendFallbackReason: Uncategorized(send)
           v26:BasicObject = GetLocal :b, l0, EP@3
           PatchPoint NoEPEscape(test)
-          v35:BasicObject = SendWithoutBlock v16, :+, v26 # SendFallbackReason: Uncategorized(opt_plus)
+          PatchPoint NoEPEscape(test)
+          v37:BasicObject = SendWithoutBlock v16, :+, v26 # SendFallbackReason: Uncategorized(opt_plus)
           CheckInterrupts
-          Return v35
+          Return v37
         ");
     }
 
@@ -4366,18 +4369,19 @@ pub mod hir_build_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           v14:BasicObject = Send v8, 0x1000, :tap # SendFallbackReason: Uncategorized(send)
           v15:BasicObject = GetLocal :block, l0, EP@3
-          v19:CBool = IsBlockParamModified l0
-          IfTrue v19, bb3(v8, v15)
+          PatchPoint NoEPEscape(test)
+          v21:CBool = IsBlockParamModified l0
+          IfTrue v21, bb3(v8, v15)
           Jump bb4(v8, v15)
-        bb3(v20:BasicObject, v21:BasicObject):
-          v28:BasicObject = GetLocal :block, l0, EP@3
-          Jump bb5(v20, v28, v28)
-        bb4(v23:BasicObject, v24:BasicObject):
-          v30:BasicObject = GetBlockParam :block, l0, EP@3
-          Jump bb5(v23, v30, v30)
-        bb5(v32:BasicObject, v33:BasicObject, v34:BasicObject):
+        bb3(v22:BasicObject, v23:BasicObject):
+          v30:BasicObject = GetLocal :block, l0, EP@3
+          Jump bb5(v22, v30, v30)
+        bb4(v25:BasicObject, v26:BasicObject):
+          v32:BasicObject = GetBlockParam :block, l0, EP@3
+          Jump bb5(v25, v32, v32)
+        bb5(v34:BasicObject, v35:BasicObject, v36:BasicObject):
           CheckInterrupts
-          Return v34
+          Return v36
         ");
     }
  }
