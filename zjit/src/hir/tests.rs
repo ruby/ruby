@@ -151,7 +151,7 @@ mod snapshot_tests {
           v23:Fixnum[7] = Const Value(7)
           v25:Fixnum[8] = Const Value(8)
           v26:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13, v15, v17, v19, v21, v23, v25], locals: [] }
-          v27:BasicObject = SendWithoutBlock v6, :foo, v11, v13, v15, v17, v19, v21, v23, v25 # SendFallbackReason: Too many arguments for LIR
+          v27:BasicObject = Send v6, :foo, v11, v13, v15, v17, v19, v21, v23, v25 # SendFallbackReason: Too many arguments for LIR
           v28:Any = Snapshot FrameState { pc: 0x1010, stack: [v27], locals: [] }
           PatchPoint NoTracePoint
           CheckInterrupts
@@ -641,7 +641,7 @@ pub mod hir_build_tests {
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
           v12:Fixnum[2] = Const Value(2)
-          v15:BasicObject = SendWithoutBlock v10, :+, v12 # SendFallbackReason: Uncategorized(opt_plus)
+          v15:BasicObject = Send v10, :+, v12 # SendFallbackReason: Uncategorized(opt_plus)
           CheckInterrupts
           Return v15
         ");
@@ -894,11 +894,11 @@ pub mod hir_build_tests {
           SetLocal :l1, l1, EP@3, v10
           v15:BasicObject = GetLocal :l1, l1, EP@3
           v17:BasicObject = GetLocal :l2, l2, EP@4
-          v20:BasicObject = SendWithoutBlock v15, :+, v17 # SendFallbackReason: Uncategorized(opt_plus)
+          v20:BasicObject = Send v15, :+, v17 # SendFallbackReason: Uncategorized(opt_plus)
           SetLocal :l2, l2, EP@4, v20
           v25:BasicObject = GetLocal :l2, l2, EP@4
           v27:BasicObject = GetLocal :l3, l3, EP@5
-          v30:BasicObject = SendWithoutBlock v25, :+, v27 # SendFallbackReason: Uncategorized(opt_plus)
+          v30:BasicObject = Send v25, :+, v27 # SendFallbackReason: Uncategorized(opt_plus)
           SetLocal :l3, l3, EP@5, v30
           CheckInterrupts
           Return v30
@@ -1268,7 +1268,7 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          v19:BasicObject = SendWithoutBlock v11, :+, v12 # SendFallbackReason: Uncategorized(opt_plus)
+          v19:BasicObject = Send v11, :+, v12 # SendFallbackReason: Uncategorized(opt_plus)
           CheckInterrupts
           Return v19
         ");
@@ -1293,7 +1293,7 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          v19:BasicObject = SendWithoutBlock v11, :-, v12 # SendFallbackReason: Uncategorized(opt_minus)
+          v19:BasicObject = Send v11, :-, v12 # SendFallbackReason: Uncategorized(opt_minus)
           CheckInterrupts
           Return v19
         ");
@@ -1318,7 +1318,7 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          v19:BasicObject = SendWithoutBlock v11, :*, v12 # SendFallbackReason: Uncategorized(opt_mult)
+          v19:BasicObject = Send v11, :*, v12 # SendFallbackReason: Uncategorized(opt_mult)
           CheckInterrupts
           Return v19
         ");
@@ -1343,7 +1343,7 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          v19:BasicObject = SendWithoutBlock v11, :/, v12 # SendFallbackReason: Uncategorized(opt_div)
+          v19:BasicObject = Send v11, :/, v12 # SendFallbackReason: Uncategorized(opt_div)
           CheckInterrupts
           Return v19
         ");
@@ -1368,7 +1368,7 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          v19:BasicObject = SendWithoutBlock v11, :%, v12 # SendFallbackReason: Uncategorized(opt_mod)
+          v19:BasicObject = Send v11, :%, v12 # SendFallbackReason: Uncategorized(opt_mod)
           CheckInterrupts
           Return v19
         ");
@@ -1393,7 +1393,7 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          v19:BasicObject = SendWithoutBlock v11, :==, v12 # SendFallbackReason: Uncategorized(opt_eq)
+          v19:BasicObject = Send v11, :==, v12 # SendFallbackReason: Uncategorized(opt_eq)
           CheckInterrupts
           Return v19
         ");
@@ -1418,7 +1418,7 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          v19:BasicObject = SendWithoutBlock v11, :!=, v12 # SendFallbackReason: Uncategorized(opt_neq)
+          v19:BasicObject = Send v11, :!=, v12 # SendFallbackReason: Uncategorized(opt_neq)
           CheckInterrupts
           Return v19
         ");
@@ -1443,7 +1443,7 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          v19:BasicObject = SendWithoutBlock v11, :<, v12 # SendFallbackReason: Uncategorized(opt_lt)
+          v19:BasicObject = Send v11, :<, v12 # SendFallbackReason: Uncategorized(opt_lt)
           CheckInterrupts
           Return v19
         ");
@@ -1468,7 +1468,7 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          v19:BasicObject = SendWithoutBlock v11, :<=, v12 # SendFallbackReason: Uncategorized(opt_le)
+          v19:BasicObject = Send v11, :<=, v12 # SendFallbackReason: Uncategorized(opt_le)
           CheckInterrupts
           Return v19
         ");
@@ -1493,7 +1493,7 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          v19:BasicObject = SendWithoutBlock v11, :>, v12 # SendFallbackReason: Uncategorized(opt_gt)
+          v19:BasicObject = Send v11, :>, v12 # SendFallbackReason: Uncategorized(opt_gt)
           CheckInterrupts
           Return v19
         ");
@@ -1533,7 +1533,7 @@ pub mod hir_build_tests {
           Jump bb4(v10, v16, v20)
         bb4(v26:BasicObject, v27:BasicObject, v28:BasicObject):
           v32:Fixnum[0] = Const Value(0)
-          v35:BasicObject = SendWithoutBlock v28, :>, v32 # SendFallbackReason: Uncategorized(opt_gt)
+          v35:BasicObject = Send v28, :>, v32 # SendFallbackReason: Uncategorized(opt_gt)
           CheckInterrupts
           v38:CBool = Test v35
           v39:Truthy = RefineType v35, Truthy
@@ -1544,9 +1544,9 @@ pub mod hir_build_tests {
           Return v27
         bb3(v51:BasicObject, v52:BasicObject, v53:BasicObject):
           v58:Fixnum[1] = Const Value(1)
-          v61:BasicObject = SendWithoutBlock v52, :+, v58 # SendFallbackReason: Uncategorized(opt_plus)
+          v61:BasicObject = Send v52, :+, v58 # SendFallbackReason: Uncategorized(opt_plus)
           v66:Fixnum[1] = Const Value(1)
-          v69:BasicObject = SendWithoutBlock v53, :-, v66 # SendFallbackReason: Uncategorized(opt_minus)
+          v69:BasicObject = Send v53, :-, v66 # SendFallbackReason: Uncategorized(opt_minus)
           Jump bb4(v51, v61, v69)
         ");
     }
@@ -1570,7 +1570,7 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          v19:BasicObject = SendWithoutBlock v11, :>=, v12 # SendFallbackReason: Uncategorized(opt_ge)
+          v19:BasicObject = Send v11, :>=, v12 # SendFallbackReason: Uncategorized(opt_ge)
           CheckInterrupts
           Return v19
         ");
@@ -1639,7 +1639,7 @@ pub mod hir_build_tests {
         bb2(v6:BasicObject):
           v11:Fixnum[2] = Const Value(2)
           v13:Fixnum[3] = Const Value(3)
-          v15:BasicObject = SendWithoutBlock v6, :bar, v11, v13 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v15:BasicObject = Send v6, :bar, v11, v13 # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
           Return v15
         ");
@@ -1726,7 +1726,7 @@ pub mod hir_build_tests {
           v18:StringExact = StringCopy v17
           v20:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
           v21:StringExact = StringCopy v20
-          v23:BasicObject = SendWithoutBlock v6, :unknown_method, v12, v15, v18, v21 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v23:BasicObject = Send v6, :unknown_method, v12, v15, v18, v21 # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
           Return v23
         ");
@@ -1749,7 +1749,7 @@ pub mod hir_build_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v15:ArrayExact = ToArray v9
-          v17:BasicObject = SendWithoutBlock v8, :foo, v15 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v17:BasicObject = Send v8, :foo, v15 # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
           Return v17
         ");
@@ -1794,7 +1794,7 @@ pub mod hir_build_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v14:Fixnum[1] = Const Value(1)
-          v16:BasicObject = SendWithoutBlock v8, :foo, v14 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v16:BasicObject = Send v8, :foo, v14 # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
           Return v16
         ");
@@ -1816,7 +1816,7 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
-          v15:BasicObject = SendWithoutBlock v8, :foo, v9 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v15:BasicObject = Send v8, :foo, v9 # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
           Return v15
         ");
@@ -1951,7 +1951,7 @@ pub mod hir_build_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           v15:BasicObject = InvokeSuperForward v8, 0x1000, v9 # SendFallbackReason: Uncategorized(invokesuperforward)
           v17:Fixnum[1] = Const Value(1)
-          v20:BasicObject = SendWithoutBlock v15, :+, v17 # SendFallbackReason: Uncategorized(opt_plus)
+          v20:BasicObject = Send v15, :+, v17 # SendFallbackReason: Uncategorized(opt_plus)
           CheckInterrupts
           Return v20
         ");
@@ -2021,12 +2021,12 @@ pub mod hir_build_tests {
           v14:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
           v16:HashExact = NewHash
           PatchPoint NoEPEscape(test)
-          v21:BasicObject = SendWithoutBlock v14, :core#hash_merge_kwd, v16, v9 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v21:BasicObject = Send v14, :core#hash_merge_kwd, v16, v9 # SendFallbackReason: Uncategorized(opt_send_without_block)
           v23:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
           v26:StaticSymbol[:b] = Const Value(VALUE(0x1008))
           v28:Fixnum[1] = Const Value(1)
-          v30:BasicObject = SendWithoutBlock v23, :core#hash_merge_ptr, v21, v26, v28 # SendFallbackReason: Uncategorized(opt_send_without_block)
-          v32:BasicObject = SendWithoutBlock v8, :foo, v30 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v30:BasicObject = Send v23, :core#hash_merge_ptr, v21, v26, v28 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v32:BasicObject = Send v8, :foo, v30 # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
           Return v32
         ");
@@ -2051,7 +2051,7 @@ pub mod hir_build_tests {
           v15:ArrayExact = ToNewArray v9
           v17:Fixnum[1] = Const Value(1)
           ArrayPush v15, v17
-          v21:BasicObject = SendWithoutBlock v8, :foo, v15 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v21:BasicObject = Send v8, :foo, v15 # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
           Return v21
         ");
@@ -2134,11 +2134,11 @@ pub mod hir_build_tests {
           v16:CBool = IsMethodCFunc v11, :new
           IfFalse v16, bb3(v6, v13, v11)
           v18:HeapBasicObject = ObjectAlloc v11
-          v20:BasicObject = SendWithoutBlock v18, :initialize # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v20:BasicObject = Send v18, :initialize # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
           Jump bb4(v6, v18, v20)
         bb3(v24:BasicObject, v25:NilClass, v26:BasicObject):
-          v29:BasicObject = SendWithoutBlock v26, :new # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v29:BasicObject = Send v26, :new # SendFallbackReason: Uncategorized(opt_send_without_block)
           Jump bb4(v24, v29, v25)
         bb4(v32:BasicObject, v33:BasicObject, v34:BasicObject):
           CheckInterrupts
@@ -2251,7 +2251,7 @@ pub mod hir_build_tests {
           v12:NilClass = Const Value(nil)
           Jump bb2(v8, v9, v10, v11, v12)
         bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:NilClass, v18:NilClass):
-          v25:BasicObject = SendWithoutBlock v15, :+, v16 # SendFallbackReason: Uncategorized(opt_plus)
+          v25:BasicObject = Send v15, :+, v16 # SendFallbackReason: Uncategorized(opt_plus)
           SideExit UnhandledNewarraySend(MIN)
         ");
     }
@@ -2283,13 +2283,13 @@ pub mod hir_build_tests {
           v12:NilClass = Const Value(nil)
           Jump bb2(v8, v9, v10, v11, v12)
         bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:NilClass, v18:NilClass):
-          v25:BasicObject = SendWithoutBlock v15, :+, v16 # SendFallbackReason: Uncategorized(opt_plus)
+          v25:BasicObject = Send v15, :+, v16 # SendFallbackReason: Uncategorized(opt_plus)
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_HASH)
           v32:Fixnum = ArrayHash v15, v16
           PatchPoint NoEPEscape(test)
           v39:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v40:ArrayExact = ArrayDup v39
-          v42:BasicObject = SendWithoutBlock v14, :puts, v40 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v42:BasicObject = Send v14, :puts, v40 # SendFallbackReason: Uncategorized(opt_send_without_block)
           PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v32
@@ -2325,7 +2325,7 @@ pub mod hir_build_tests {
           v12:NilClass = Const Value(nil)
           Jump bb2(v8, v9, v10, v11, v12)
         bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:NilClass, v18:NilClass):
-          v25:BasicObject = SendWithoutBlock v15, :+, v16 # SendFallbackReason: Uncategorized(opt_plus)
+          v25:BasicObject = Send v15, :+, v16 # SendFallbackReason: Uncategorized(opt_plus)
           SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_HASH))
         ");
     }
@@ -2357,7 +2357,7 @@ pub mod hir_build_tests {
           v12:NilClass = Const Value(nil)
           Jump bb2(v8, v9, v10, v11, v12)
         bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:NilClass, v18:NilClass):
-          v25:BasicObject = SendWithoutBlock v15, :+, v16 # SendFallbackReason: Uncategorized(opt_plus)
+          v25:BasicObject = Send v15, :+, v16 # SendFallbackReason: Uncategorized(opt_plus)
           v31:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v32:StringExact = StringCopy v31
           SideExit UnhandledNewarraySend(PACK)
@@ -2391,7 +2391,7 @@ pub mod hir_build_tests {
           v12:NilClass = Const Value(nil)
           Jump bb2(v8, v9, v10, v11, v12)
         bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:NilClass, v18:NilClass):
-          v25:BasicObject = SendWithoutBlock v15, :+, v16 # SendFallbackReason: Uncategorized(opt_plus)
+          v25:BasicObject = Send v15, :+, v16 # SendFallbackReason: Uncategorized(opt_plus)
           v29:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v30:StringExact = StringCopy v29
           v36:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
@@ -2435,7 +2435,7 @@ pub mod hir_build_tests {
           v12:NilClass = Const Value(nil)
           Jump bb2(v8, v9, v10, v11, v12)
         bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:NilClass, v18:NilClass):
-          v25:BasicObject = SendWithoutBlock v15, :+, v16 # SendFallbackReason: Uncategorized(opt_plus)
+          v25:BasicObject = Send v15, :+, v16 # SendFallbackReason: Uncategorized(opt_plus)
           v29:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v30:StringExact = StringCopy v29
           v36:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
@@ -2472,13 +2472,13 @@ pub mod hir_build_tests {
           v12:NilClass = Const Value(nil)
           Jump bb2(v8, v9, v10, v11, v12)
         bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:NilClass, v18:NilClass):
-          v25:BasicObject = SendWithoutBlock v15, :+, v16 # SendFallbackReason: Uncategorized(opt_plus)
+          v25:BasicObject = Send v15, :+, v16 # SendFallbackReason: Uncategorized(opt_plus)
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_INCLUDE_P)
           v33:BoolExact = ArrayInclude v15, v16 | v16
           PatchPoint NoEPEscape(test)
           v40:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v41:ArrayExact = ArrayDup v40
-          v43:BasicObject = SendWithoutBlock v14, :puts, v41 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v43:BasicObject = Send v14, :puts, v41 # SendFallbackReason: Uncategorized(opt_send_without_block)
           PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v33
@@ -2519,7 +2519,7 @@ pub mod hir_build_tests {
           v12:NilClass = Const Value(nil)
           Jump bb2(v8, v9, v10, v11, v12)
         bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:NilClass, v18:NilClass):
-          v25:BasicObject = SendWithoutBlock v15, :+, v16 # SendFallbackReason: Uncategorized(opt_plus)
+          v25:BasicObject = Send v15, :+, v16 # SendFallbackReason: Uncategorized(opt_plus)
           SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_INCLUDE_P))
         ");
     }
@@ -2598,7 +2598,7 @@ pub mod hir_build_tests {
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v18:ArrayExact = NewArray v11, v12
-          v21:BasicObject = SendWithoutBlock v18, :length # SendFallbackReason: Uncategorized(opt_length)
+          v21:BasicObject = Send v18, :length # SendFallbackReason: Uncategorized(opt_length)
           CheckInterrupts
           Return v21
         ");
@@ -2623,7 +2623,7 @@ pub mod hir_build_tests {
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v18:ArrayExact = NewArray v11, v12
-          v21:BasicObject = SendWithoutBlock v18, :size # SendFallbackReason: Uncategorized(opt_size)
+          v21:BasicObject = Send v18, :size # SendFallbackReason: Uncategorized(opt_size)
           CheckInterrupts
           Return v21
         ");
@@ -3020,7 +3020,7 @@ pub mod hir_build_tests {
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v16:NilClass = Const Value(nil)
           v20:Fixnum[1] = Const Value(1)
-          v24:BasicObject = SendWithoutBlock v11, :[]=, v12, v20 # SendFallbackReason: Uncategorized(opt_aset)
+          v24:BasicObject = Send v11, :[]=, v12, v20 # SendFallbackReason: Uncategorized(opt_aset)
           CheckInterrupts
           Return v20
         ");
@@ -3044,7 +3044,7 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          v19:BasicObject = SendWithoutBlock v11, :[], v12 # SendFallbackReason: Uncategorized(opt_aref)
+          v19:BasicObject = Send v11, :[], v12 # SendFallbackReason: Uncategorized(opt_aref)
           CheckInterrupts
           Return v19
         ");
@@ -3067,7 +3067,7 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
-          v15:BasicObject = SendWithoutBlock v9, :empty? # SendFallbackReason: Uncategorized(opt_empty_p)
+          v15:BasicObject = Send v9, :empty? # SendFallbackReason: Uncategorized(opt_empty_p)
           CheckInterrupts
           Return v15
         ");
@@ -3090,7 +3090,7 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
-          v15:BasicObject = SendWithoutBlock v9, :succ # SendFallbackReason: Uncategorized(opt_succ)
+          v15:BasicObject = Send v9, :succ # SendFallbackReason: Uncategorized(opt_succ)
           CheckInterrupts
           Return v15
         ");
@@ -3114,7 +3114,7 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          v19:BasicObject = SendWithoutBlock v11, :&, v12 # SendFallbackReason: Uncategorized(opt_and)
+          v19:BasicObject = Send v11, :&, v12 # SendFallbackReason: Uncategorized(opt_and)
           CheckInterrupts
           Return v19
         ");
@@ -3138,7 +3138,7 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          v19:BasicObject = SendWithoutBlock v11, :|, v12 # SendFallbackReason: Uncategorized(opt_or)
+          v19:BasicObject = Send v11, :|, v12 # SendFallbackReason: Uncategorized(opt_or)
           CheckInterrupts
           Return v19
         ");
@@ -3161,7 +3161,7 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
-          v15:BasicObject = SendWithoutBlock v9, :! # SendFallbackReason: Uncategorized(opt_not)
+          v15:BasicObject = Send v9, :! # SendFallbackReason: Uncategorized(opt_not)
           CheckInterrupts
           Return v15
         ");
@@ -3185,7 +3185,7 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          v19:BasicObject = SendWithoutBlock v11, :=~, v12 # SendFallbackReason: Uncategorized(opt_regexpmatch2)
+          v19:BasicObject = Send v11, :=~, v12 # SendFallbackReason: Uncategorized(opt_regexpmatch2)
           CheckInterrupts
           Return v19
         ");
@@ -3215,7 +3215,7 @@ pub mod hir_build_tests {
           v12:BasicObject = PutSpecialObject CBase
           v14:StaticSymbol[:aliased] = Const Value(VALUE(0x1008))
           v16:StaticSymbol[:__callee__] = Const Value(VALUE(0x1010))
-          v18:BasicObject = SendWithoutBlock v10, :core#set_method_alias, v12, v14, v16 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v18:BasicObject = Send v10, :core#set_method_alias, v12, v14, v16 # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
           Return v18
         ");
@@ -3317,7 +3317,7 @@ pub mod hir_build_tests {
           v17:NilClass = Const Value(nil)
           IfTrue v16, bb3(v8, v17, v17)
           v19:NotNil = RefineType v9, NotNil
-          v21:BasicObject = SendWithoutBlock v19, :itself # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v21:BasicObject = Send v19, :itself # SendFallbackReason: Uncategorized(opt_send_without_block)
           Jump bb3(v8, v19, v21)
         bb3(v23:BasicObject, v24:BasicObject, v25:BasicObject):
           CheckInterrupts
@@ -3359,7 +3359,7 @@ pub mod hir_build_tests {
           v25:NilClass = Const Value(nil)
           IfTrue v24, bb4(v8, v25, v25)
           v27:Truthy = RefineType v18, NotNil
-          v29:BasicObject = SendWithoutBlock v27, :itself # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v29:BasicObject = Send v27, :itself # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
           Return v29
         bb3(v34:BasicObject, v35:Falsy):
@@ -3640,14 +3640,14 @@ pub mod hir_build_tests {
           v13:NilClass = Const Value(nil)
           v16:Fixnum[0] = Const Value(0)
           v18:Fixnum[1] = Const Value(1)
-          v21:BasicObject = SendWithoutBlock v9, :[], v16, v18 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v21:BasicObject = Send v9, :[], v16, v18 # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
           v25:CBool = Test v21
           v26:Truthy = RefineType v21, Truthy
           IfTrue v25, bb3(v8, v9, v13, v9, v16, v18, v26)
           v28:Falsy = RefineType v21, Falsy
           v31:Fixnum[2] = Const Value(2)
-          v34:BasicObject = SendWithoutBlock v9, :[]=, v16, v18, v31 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v34:BasicObject = Send v9, :[]=, v16, v18, v31 # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
           Return v31
         bb3(v40:BasicObject, v41:BasicObject, v42:NilClass, v43:BasicObject, v44:Fixnum[0], v45:Fixnum[1], v46:Truthy):
@@ -4001,7 +4001,7 @@ pub mod hir_build_tests {
           v21:FalseClass = RefineType v15, Falsy
           v23:Fixnum[1] = Const Value(1)
           v25:Fixnum[1] = Const Value(1)
-          v28:BasicObject = SendWithoutBlock v23, :+, v25 # SendFallbackReason: Uncategorized(opt_plus)
+          v28:BasicObject = Send v23, :+, v25 # SendFallbackReason: Uncategorized(opt_plus)
           Jump bb3(v10, v28, v12)
         bb3(v31:BasicObject, v32:BasicObject, v33:BasicObject):
           CheckInterrupts
