@@ -4018,6 +4018,12 @@ impl Function {
                 return Err(());
             }
 
+            let blockiseq = match blockiseq {
+                None => unreachable!("went to reduce_send_without_block_to_ccall"),
+                Some(p) if p.is_null() => None,
+                Some(blockiseq) => Some(blockiseq),
+            };
+
             let cfunc = unsafe { get_cme_def_body_cfunc(cme) };
             // Find the `argc` (arity) of the C method, which describes the parameters it expects
             let cfunc_argc = unsafe { get_mct_argc(cfunc) };
