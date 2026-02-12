@@ -9856,15 +9856,6 @@ parser_lex(pm_parser_t *parser) {
             // We'll check if we're at the end of the file. If we are, then we
             // need to return the EOF token.
             if (parser->current.end >= parser->end) {
-                // We may be missing closing tokens. We should pop modes one by one
-                // to do the appropriate cleanup like moving next_start for heredocs.
-                // Only when no mode is remaining will we actually emit the EOF token.
-                if (parser->lex_modes.current->mode != PM_LEX_DEFAULT) {
-                    lex_mode_pop(parser);
-                    parser_lex(parser);
-                    return;
-                }
-
                 // If we hit EOF, but the EOF came immediately after a newline,
                 // set the start of the token to the newline.  This way any EOF
                 // errors will be reported as happening on that line rather than
