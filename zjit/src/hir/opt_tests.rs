@@ -863,6 +863,37 @@ mod hir_opt_tests {
         ");
     }
 
+    // Regression test: when specialized_instruction is disabled, YARVINSN_send
+    // + ARGS_BLOCKARG results in a null blockiseq that could reach all the way
+    // to reduce_send_to_ccall. If it doesn't get normalized there, it makes
+    // its way to gen_ccall_with_frame which assumed the Option is non-null and
+    // causes a crash when the C function tries to yield.
+    #[test]
+    fn test_send_to_cfunc_without_specialized_instruction() {
+        eval_with_options("
+            def test(a) = a.length
+            test([1,2,3]); test([1,2,3])
+        ", "{ specialized_instruction: false }");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :a, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint NoSingletonClass(Array@0x1000)
+          PatchPoint MethodRedefined(Array@0x1000, length@0x1008, cme:0x1010)
+          v22:ArrayExact = GuardType v9, ArrayExact
+          v23:BasicObject = CCallWithFrame v22, :Array#length@0x1038
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
     #[test]
     fn test_optimize_nonexistent_top_level_call() {
         eval("
