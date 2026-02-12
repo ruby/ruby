@@ -2,32 +2,116 @@
 require 'fileutils'
 require 'optparse'
 require 'tmpdir'
+require 'logger'
 
 GitRef = Struct.new(:ref, :commit_hash)
 
-BEFORE_NAME = 'ruby-zjit-before'.freeze
-AFTER_NAME = 'ruby-zjit-after'.freeze
-DATA_FILENAME = File.join('data', 'zjit_diff')
-RUBY_BENCH_REPO_URL = 'https://github.com/ruby/ruby-bench.git'.freeze
+class CommandRunner
+  def initialize(quiet: false)
+    @quiet = quiet
+  end
 
-def log_info(msg)
-  puts "\e[32m#{msg}\e[0m"
+  def cmd(*args, quiet: nil)
+    quiet = @quiet if quiet.nil?
+    options = { exception: true }
+    options = options.merge(out: File::NULL) if quiet
+    system(*args, **options)
+  end
 end
 
-def log_error(msg)
-  warn "\e[31mError: #{msg}\e[0m"
-end
+class ZJITDiff
+  BEFORE_NAME = 'ruby-zjit-before'.freeze
+  AFTER_NAME = 'ruby-zjit-after'.freeze
+  DATA_FILENAME = File.join('data', 'zjit_diff')
+  RUBY_BENCH_REPO_URL = 'https://github.com/ruby/ruby-bench.git'.freeze
 
-def run(*args, **options)
-  system(*args, options.merge(exception: true))
-end
+  def initialize(options)
+    @runner = CommandRunner.new(quiet: options[:quiet])
+    @log = Logger.new($stderr)
+    @options = options
+  end
 
-def macos?
-  Gem::Platform.local == 'darwin'
-end
+  def run!
+    before = RubyWorktree.new(name: BEFORE_NAME,
+                              ref: @options[:before],
+                              runner: @runner,
+                              logger: @log,
+                              force_reconfigure: @options[:force_reconfigure])
+    before.build
+    after = RubyWorktree.new(name: AFTER_NAME,
+                             ref: @options[:after],
+                             runner: @runner,
+                             logger: @log,
+                             force_reconfigure: @options[:force_reconfigure])
+    after.build
 
-def ruby_dir(name)
-  File.join(Dir.home, '.rubies', name)
+    @log.info('Running benchmarks')
+    ruby_bench_path = @options[:bench_path] || setup_ruby_bench
+    run_benchmarks(ruby_bench_path)
+  end
+
+  private
+
+  def run_benchmarks(ruby_bench_path)
+    Dir.chdir(ruby_bench_path) do
+      @runner.cmd('./run_benchmarks.rb',
+                  '--chruby',
+                  "#{BEFORE_NAME} --zjit-stats;#{AFTER_NAME} --zjit-stats",
+                  '--out-name',
+                  DATA_FILENAME,
+                  *@options[:bench_args],
+                  *@options[:name_filters])
+
+      @runner.cmd('./misc/zjit_diff.rb', "#{DATA_FILENAME}.json", quiet: false)
+    end
+  end
+
+  def macos?
+    Gem::Platform.local == 'darwin'
+  end
+
+  def ruby_dir(name)
+    File.join(Dir.home, '.rubies', name)
+  end
+
+  def setup_ruby_bench
+    path = File.join(Dir.tmpdir, 'ruby-bench')
+    if Dir.exist?(path)
+      @log.info('ruby-bench already cloned, pulling from upstream')
+      Dir.chdir(path) do
+        @runner.cmd('git', 'pull')
+      end
+    else
+      @log.info("ruby-bench not cloned yet, cloning repository to #{path}")
+      @runner.cmd('git', 'clone', RUBY_BENCH_REPO_URL, path)
+    end
+    Dir.chdir(path) do
+      @runner.cmd('bundle', 'install')
+    end
+    path
+  end
+
+  def clean
+    [BEFORE_NAME, AFTER_NAME].each do |name|
+      path = File.join(Dir.tmpdir, name)
+      if Dir.exist?(path)
+        @log.info "Removing worktree at #{path}"
+        system('git', 'worktree', 'remove', '--force', path)
+      end
+
+      path = ruby_dir(name)
+      if Dir.exist?(path)
+        @log.info "Removing ruby installation at #{path}"
+        FileUtils.rm_rf(path)
+      end
+    end
+
+    bench_path = File.join(Dir.tmpdir, 'ruby-bench')
+    return unless Dir.exist?(bench_path)
+
+    @log.info("Removing ruby-bench clone at #{bench_path}")
+    FileUtils.rm_rf(bench_path)
+  end
 end
 
 class RubyWorktree
@@ -35,11 +119,13 @@ class RubyWorktree
 
   BREW_REQUIRED_PACKAGES = %w[openssl readline libyaml].freeze
 
-  def initialize(name:, ref:, force_reconfigure: false)
+  def initialize(name:, ref:, runner:, logger:, force_reconfigure: false)
     @name = name
     @path = File.join(Dir.tmpdir, name)
     @ref = ref
     @force_reconfigure = force_reconfigure
+    @runner = runner
+    @log = logger
 
     setup_worktree
   end
@@ -47,7 +133,7 @@ class RubyWorktree
   def build
     Dir.chdir(@path) do
       if !File.exist?('Makefile') || @force_reconfigure
-        run('./autogen.sh')
+        @runner.cmd('./autogen.sh')
 
         cmd = [
           './configure',
@@ -63,10 +149,10 @@ class RubyWorktree
           cmd << "--with-opt-dir=#{brew_prefixes.join(':')}"
         end
 
-        run(*cmd)
+        @runner.cmd(*cmd)
       end
-      run('make', '-j', 'miniruby')
-      run('make', 'install')
+      @runner.cmd('make', '-j', 'miniruby')
+      @runner.cmd('make', 'install')
     end
   end
 
@@ -74,13 +160,13 @@ class RubyWorktree
 
   def setup_worktree
     if Dir.exist?(@path)
-      log_info "Existing worktree found at #{@path}"
+      @log.info "Existing worktree found at #{@path}"
       Dir.chdir(@path) do
-        run('git', 'checkout', @ref.commit_hash)
+        @runner.cmd('git', 'checkout', @ref.commit_hash)
       end
     else
-      log_info "Creating worktree for ref '#{@ref.ref}' at #{@path}"
-      run('git', 'worktree', 'add', '--detach', @path, @ref.commit_hash)
+      @log.info "Creating worktree for ref '#{@ref.ref}' at #{@path}"
+      @runner.cmd('git', 'worktree', 'add', '--detach', @path, @ref.commit_hash)
     end
   end
 end
@@ -92,45 +178,6 @@ def parse_ref(ref)
   GitRef.new(ref: ref, commit_hash: out.strip)
 end
 
-def setup_ruby_bench
-  path = File.join(Dir.tmpdir, 'ruby-bench')
-  if Dir.exist?(path)
-    log_info('ruby-bench already cloned, pulling from upstream')
-    Dir.chdir(path) do
-      run('git', 'pull')
-    end
-  else
-    log_info("ruby-bench not cloned yet, cloning repository to #{path}")
-    run('git', 'clone', RUBY_BENCH_REPO_URL, path)
-  end
-  Dir.chdir(path) do
-    run('bundle', 'install')
-  end
-  path
-end
-
-def clean
-  [BEFORE_NAME, AFTER_NAME].each do |name|
-    path = File.join(Dir.tmpdir, name)
-    if Dir.exist?(path)
-      log_info "Removing worktree at #{path}"
-      system('git', 'worktree', 'remove', '--force', path)
-    end
-
-    path = ruby_dir(name)
-    if Dir.exist?(path)
-      log_info "Removing ruby installation at #{path}"
-      FileUtils.rm_rf(path)
-    end
-  end
-
-  bench_path = File.join(Dir.tmpdir, 'ruby-bench')
-  return unless Dir.exist?(bench_path)
-
-  log_info("Removing ruby-bench clone at #{bench_path}")
-  FileUtils.rm_rf(bench_path)
-end
-
 options = {}
 
 OptionParser.new do |opts|
@@ -139,7 +186,7 @@ OptionParser.new do |opts|
   opts.on('--before REF', 'Git ref for ruby (before)') do |ref|
     git_ref = parse_ref ref
     if git_ref.nil?
-      log_error "'#{ref}' is not a valid git ref"
+      warn "Error: '#{ref}' is not a valid git ref"
       exit 1
     end
 
@@ -149,7 +196,7 @@ OptionParser.new do |opts|
   opts.on('--after REF', 'Git ref for ruby (after)') do |ref|
     git_ref = parse_ref ref
     if git_ref.nil?
-      log_error "'#{ref}' is not a valid git ref"
+      warn "Error: '#{ref}' is not a valid git ref"
       exit 1
     end
 
@@ -170,6 +217,10 @@ OptionParser.new do |opts|
     options[:force_reconfigure] = true
   end
 
+  opts.on('--quiet', 'Silence output of commands except for benchmark result') do
+    options[:quiet] = true
+  end
+
   opts.on('--clean', 'Remove temporary git worktrees, ruby-bench clone and chruby versions then exit') do
     options[:clean] = true
   end
@@ -185,23 +236,4 @@ end
 options[:name_filters] += ARGV unless ARGV.empty?
 options[:after] ||= parse_ref('HEAD')
 
-# Build both versions
-before = RubyWorktree.new(name: BEFORE_NAME, ref: options[:before], force_reconfigure: options[:force_reconfigure])
-before.build
-after = RubyWorktree.new(name: AFTER_NAME, ref: options[:after], force_reconfigure: options[:force_reconfigure])
-after.build
-
-# Setup ruby bench and run the benchmarks
-ruby_bench_path = options[:bench_path] || setup_ruby_bench
-
-Dir.chdir(ruby_bench_path) do
-  run('./run_benchmarks.rb',
-      '--chruby',
-      "#{BEFORE_NAME} --zjit-stats;#{AFTER_NAME} --zjit-stats",
-      '--out-name',
-      DATA_FILENAME,
-      *options[:bench_args],
-      *options[:name_filters])
-
-  run('./misc/zjit_diff.rb', "#{DATA_FILENAME}.json")
-end
+ZJITDiff.new(options).run!
