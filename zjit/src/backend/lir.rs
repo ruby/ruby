@@ -1791,7 +1791,8 @@ impl Assembler
     // one assembler to a new one.
     pub fn new_block_from_old_block(&mut self, old_block: &BasicBlock) -> BlockId {
         let bb_id = BlockId(self.basic_blocks.len());
-        let lir_bb = BasicBlock::new(bb_id, old_block.hir_block_id, old_block.is_entry, old_block.rpo_index);
+        let mut lir_bb = BasicBlock::new(bb_id, old_block.hir_block_id, old_block.is_entry, old_block.rpo_index);
+        lir_bb.parameters = old_block.parameters.clone();
         self.basic_blocks.push(lir_bb);
         bb_id
     }
@@ -1981,9 +1982,19 @@ impl Assembler
     }
 
     /// Build an Opnd::VReg and initialize its LiveRange
-    pub(super) fn new_vreg(&mut self, num_bits: u8) -> Opnd {
+    pub fn new_vreg(&mut self, num_bits: u8) -> Opnd {
         let vreg = Opnd::VReg { idx: VRegId(self.live_ranges.len()), num_bits };
         self.live_ranges.0.push(LiveRange { start: None, end: None });
+        vreg
+    }
+
+    /// Build an Opnd::VReg for use as a block parameter, with its live range
+    /// initialized at the current instruction index.
+    pub fn new_block_param(&mut self, num_bits: u8) -> Opnd {
+        let vreg = self.new_vreg(num_bits);
+        if let Opnd::VReg { idx, .. } = vreg {
+            self.live_ranges[idx] = LiveRange { start: Some(self.idx), end: Some(self.idx) };
+        }
         vreg
     }
 
@@ -3087,6 +3098,14 @@ impl InsnIter {
         // Set up the next block
         let next_block = &mut self.blocks[self.current_block_idx];
         new_asm.set_current_block(next_block.id);
+
+        // Initialize live ranges for VReg block parameters at the current index
+        for param in &new_asm.basic_blocks[next_block.id.0].parameters {
+            if let Opnd::VReg { idx, .. } = param {
+                new_asm.live_ranges[*idx] = LiveRange { start: Some(self.index), end: Some(self.index) };
+            }
+        }
+
         self.current_insn_iter = take(&mut next_block.insns).into_iter();
 
         // Get first instruction from the new block
