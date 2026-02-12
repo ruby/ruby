@@ -1,5 +1,3 @@
-use std::sync::atomic::AtomicUsize;
-use std::sync::atomic::Ordering;
 use std::sync::Mutex;
 
 use mmtk::scheduler::GCWork;
@@ -15,7 +13,6 @@ use crate::Ruby;
 pub struct WeakProcessor {
     non_parallel_obj_free_candidates: Mutex<Vec<ObjectReference>>,
     parallel_obj_free_candidates: Vec<Mutex<Vec<ObjectReference>>>,
-    parallel_obj_free_candidates_counter: AtomicUsize,
 
     /// Objects that needs `obj_free` called when dying.
     /// If it is a bottleneck, replace it with a lock-free data structure,
@@ -34,7 +31,6 @@ impl WeakProcessor {
         Self {
             non_parallel_obj_free_candidates: Mutex::new(Vec::new()),
             parallel_obj_free_candidates: vec![Mutex::new(Vec::new())],
-            parallel_obj_free_candidates_counter: AtomicUsize::new(0),
             weak_references: Mutex::new(Vec::new()),
         }
     }
@@ -62,15 +58,17 @@ impl WeakProcessor {
         }
 
         if can_parallel_free {
-            let idx = self
-                .parallel_obj_free_candidates_counter
-                .fetch_add(1, Ordering::Relaxed)
-                % self.parallel_obj_free_candidates.len();
-
-            self.parallel_obj_free_candidates[idx]
-                .lock()
-                .unwrap()
-                .extend_from_slice(objects);
+            let num_buckets = self.parallel_obj_free_candidates.len();
+            for idx in 0..num_buckets {
+                let mut bucket = self.parallel_obj_free_candidates[idx]
+                    .lock()
+                    .unwrap();
+                for (i, &obj) in objects.iter().enumerate() {
+                    if i % num_buckets == idx {
+                        bucket.push(obj);
+                    }
+                }
+            }
         } else {
             self.non_parallel_obj_free_candidates
                 .lock()
