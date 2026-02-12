@@ -628,7 +628,7 @@ typedef struct gc_function_map {
     void (*stress_set)(void *objspace_ptr, VALUE flag);
     VALUE (*stress_get)(void *objspace_ptr);
     // Object allocation
-    VALUE (*new_obj)(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size);
+    VALUE (*new_obj)(void *objspace_ptr, void *cache_ptr, bool wb_protected, size_t alloc_size);
     size_t (*obj_slot_size)(VALUE obj);
     size_t (*heap_id_for_size)(void *objspace_ptr, size_t size);
     bool (*size_allocatable_p)(size_t size);
@@ -1012,8 +1012,19 @@ gc_validate_pc(VALUE obj)
 static inline VALUE
 newobj_of(rb_ractor_t *cr, VALUE klass, VALUE flags, shape_id_t shape_id, bool wb_protected, size_t size)
 {
-    VALUE obj = rb_gc_impl_new_obj(rb_gc_get_objspace(), cr->newobj_cache, klass, flags, wb_protected, size);
+    void *objspace = rb_gc_get_objspace();
+
+    if (RB_UNLIKELY(rb_gc_impl_stress_to_class_p(objspace, klass))) {
+        rb_memerror();
+    }
+
+    VALUE obj = rb_gc_impl_new_obj(objspace, cr->newobj_cache, wb_protected, size);
+
+    RBASIC(obj)->flags = flags;
+    *((VALUE *)&RBASIC(obj)->klass) = klass;
     RBASIC_SET_SHAPE_ID_NO_CHECKS(obj, shape_id);
+
+    rb_gc_impl_post_alloc_init(objspace, obj, flags, wb_protected);
 
     gc_validate_pc(obj);
 
