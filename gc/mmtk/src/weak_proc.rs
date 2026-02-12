@@ -52,7 +52,11 @@ impl WeakProcessor {
     ///
     /// Amortizes mutex acquisition over the entire batch. Called when a
     /// mutator's local buffer is flushed (buffer full or stop-the-world).
-    pub fn add_obj_free_candidates_batch(&self, objects: &[ObjectReference], can_parallel_free: bool) {
+    pub fn add_obj_free_candidates_batch(
+        &self,
+        objects: &[ObjectReference],
+        can_parallel_free: bool,
+    ) {
         if objects.is_empty() {
             return;
         }
