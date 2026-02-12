@@ -1817,6 +1817,26 @@ impl Assembler
         sorted
     }
 
+    /// Validate that jump instructions only appear as the last two instructions in each block.
+    /// This is a CFG invariant that ensures proper control flow structure.
+    /// Only active in debug builds.
+    pub fn validate_jump_positions(&self) {
+        for block in &self.basic_blocks {
+            let insns = &block.insns;
+            let len = insns.len();
+
+            // Check all instructions except the last two
+            for (i, insn) in insns.iter().enumerate() {
+                debug_assert!(
+                    !insn.is_terminator() || i >= len.saturating_sub(2),
+                    "Invalid jump position in block {:?}: {:?} at position {} (block has {} instructions). \
+                     Jumps must only appear in the last two positions.",
+                    block.id, insn.op(), i, len
+                );
+            }
+        }
+    }
+
     /// Return true if `opnd` is or depends on `reg`
     pub fn has_reg(opnd: Opnd, reg: Reg) -> bool {
         match opnd {
@@ -2787,27 +2807,8 @@ pub fn lir_intervals_string(asm: &Assembler, intervals: &[Interval]) -> String {
                     output.push_str(&format!("{out} = "));
                 }
 
-                // Print the instruction name
-                output.push_str(insn.op());
-
-                // Print operands
-                if let Insn::ParallelMov { moves } = insn {
-                    for (i, (dst, src)) in moves.iter().enumerate() {
-                        if i == 0 {
-                            output.push_str(&format!(" {dst} <- {src}"));
-                        } else {
-                            output.push_str(&format!(", {dst} <- {src}"));
-                        }
-                    }
-                } else if insn.opnd_iter().count() > 0 {
-                    for (i, opnd) in insn.opnd_iter().enumerate() {
-                        if i == 0 {
-                            output.push_str(&format!(" {opnd}"));
-                        } else {
-                            output.push_str(&format!(", {opnd}"));
-                        }
-                    }
-                }
+                // Use the helper function to format instruction (reuses Display logic)
+                output.push_str(&format_insn_compact(asm, insn));
             }
 
             output.push('\n');
@@ -2820,6 +2821,79 @@ pub fn lir_intervals_string(asm: &Assembler, intervals: &[Interval]) -> String {
 /// Format live intervals as a grid showing which VRegs are alive at each instruction
 pub fn debug_intervals(asm: &Assembler, intervals: &[Interval]) -> String {
     lir_intervals_string(asm, intervals)
+}
+
+/// Helper function to format a single instruction (without the output part, which is already printed)
+/// Returns a string formatted like: "OpName target operand1, operand2, ..."
+fn format_insn_compact(asm: &Assembler, insn: &Insn) -> String {
+    let mut output = String::new();
+
+    // Print the instruction name
+    output.push_str(insn.op());
+
+    // Print target (before operands, to match --zjit-dump-lir format)
+    if let Some(target) = insn.target() {
+        match target {
+            Target::CodePtr(code_ptr) => output.push_str(&format!(" {code_ptr:?}")),
+            Target::Label(Label(label_idx)) => output.push_str(&format!(" {}", asm.label_names[*label_idx])),
+            Target::SideExit { reason, .. } => output.push_str(&format!(" Exit({reason})")),
+            Target::Block(edge) => {
+                let label = asm.block_label(edge.target);
+                let name = &asm.label_names[label.0];
+                if edge.args.is_empty() {
+                    output.push_str(&format!(" {name}"));
+                } else {
+                    output.push_str(&format!(" {name}("));
+                    for (i, arg) in edge.args.iter().enumerate() {
+                        if i > 0 {
+                            output.push_str(", ");
+                        }
+                        output.push_str(&format!("{}", arg));
+                    }
+                    output.push_str(")");
+                }
+            }
+        }
+    }
+
+    // Print operands (but skip branch args since they're already printed with target)
+    if let Some(Target::SideExit { .. }) = insn.target() {
+        match insn {
+            Insn::Joz(opnd, _) |
+            Insn::Jonz(opnd, _) |
+            Insn::LeaJumpTarget { out: opnd, target: _ } => {
+                output.push_str(&format!(", {opnd}"));
+            }
+            _ => {}
+        }
+    } else if let Some(Target::Block(_)) = insn.target() {
+        match insn {
+            Insn::Joz(opnd, _) |
+            Insn::Jonz(opnd, _) |
+            Insn::LeaJumpTarget { out: opnd, target: _ } => {
+                output.push_str(&format!(", {opnd}"));
+            }
+            _ => {}
+        }
+    } else if let Insn::ParallelMov { moves } = insn {
+        for (i, (dst, src)) in moves.iter().enumerate() {
+            if i == 0 {
+                output.push_str(&format!(" {dst} <- {src}"));
+            } else {
+                output.push_str(&format!(", {dst} <- {src}"));
+            }
+        }
+    } else if insn.opnd_iter().count() > 0 {
+        for (i, opnd) in insn.opnd_iter().enumerate() {
+            if i == 0 {
+                output.push_str(&format!(" {opnd}"));
+            } else {
+                output.push_str(&format!(", {opnd}"));
+            }
+        }
+    }
+
+    output
 }
 
 impl fmt::Display for Assembler {
@@ -2897,10 +2971,12 @@ impl fmt::Display for Assembler {
                                 Target::Label(Label(label_idx)) => write!(f, " {}", label_name(self, *label_idx, &label_counts))?,
                                 Target::SideExit { reason, .. } => write!(f, " Exit({reason})")?,
                                 Target::Block(edge) => {
+                                    let label = self.block_label(edge.target);
+                                    let name = label_name(self, label.0, &label_counts);
                                     if edge.args.is_empty() {
-                                        write!(f, " bb{}", edge.target.0)?;
+                                        write!(f, " {name}")?;
                                     } else {
-                                        write!(f, " bb{}(", edge.target.0)?;
+                                        write!(f, " {name}(")?;
                                         for (i, arg) in edge.args.iter().enumerate() {
                                             if i > 0 {
                                                 write!(f, ", ")?;
