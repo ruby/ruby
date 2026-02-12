@@ -83,7 +83,7 @@ error !
 #define INSN_FUNC_CONV
 #endif
 
-#define INSN_FUNC_RET rb_control_frame_t *
+#define INSN_FUNC_RET VALUE
 #define INSN_FUNC_PARAMS rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE *reg_pc
 #define INSN_FUNC_ARGS ec, reg_cfp, reg_pc
 
@@ -207,7 +207,7 @@ default:                        \
 
 #define VM_SP_CNT(ec, sp) ((sp) - (ec)->vm_stack)
 
-#if OPT_CALL_THREADED_CODE || OPT_TAILCALL_THREADED_CODE
+#if OPT_CALL_THREADED_CODE
 #define THROW_EXCEPTION(exc) do { \
     ec->errinfo = (VALUE)(exc); \
     return 0; \
