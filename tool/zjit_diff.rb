@@ -4,12 +4,12 @@ require 'tmpdir'
 
 GitRef = Struct.new(:ref, :commit_hash)
 
-def log_info(s)
-  puts "\e[32m#{s}\e[0m"
+def log_info(msg)
+  puts "\e[32m#{msg}\e[0m"
 end
 
-def log_error(s)
-  warn "\e[31mError: #{s}\e[0m"
+def log_error(msg)
+  warn "\e[31mError: #{msg}\e[0m"
 end
 
 def run(*args, **options)
@@ -127,16 +127,18 @@ OptionParser.new do |opts|
     options[:after] = git_ref
   end
 
-  opts.on('--bench-path PATH', 'Path to the ruby-bench repository clone') do |path|
+  opts.on('--bench-path PATH',
+          'Path to an existing ruby-bench repository clone ' \
+          '(if not specified, ruby-bench will be cloned automatically to a temporary directory)') do |path|
     options[:bench_path] = path
-  end
-
-  opts.on('--force-reconfigure', 'Force reconfiguration even if Makefile exists') do
-    options[:force_reconfigure] = true
   end
 
   opts.on('--bench-args ARGS', 'Args to pass to ruby-bench') do |bench_args|
     options[:bench_args] = bench_args
+  end
+
+  opts.on('--force-reconfigure', 'Force running ./configure again for existing worktrees even if Makefile exists') do
+    options[:force_reconfigure] = true
   end
 
   options[:name_filters] = []
