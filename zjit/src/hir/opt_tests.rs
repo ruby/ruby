@@ -2956,10 +2956,9 @@ mod hir_opt_tests {
           v13:Fixnum[1] = Const Value(1)
           PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-          v32:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v8, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v30:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v8, HeapObject[class_exact*:Object@VALUE(0x1000)]
           IncrCounter inline_iseq_optimized_send_count
-          v35:Fixnum[1] = Const Value(1)
-          PatchPoint NoEPEscape(test)
+          v33:Fixnum[1] = Const Value(1)
           PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v13
@@ -3002,17 +3001,16 @@ mod hir_opt_tests {
           v20:Fixnum[2] = Const Value(2)
           PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, tap@0x1008, cme:0x1010)
-          v44:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v10, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v45:BasicObject = SendDirect v44, 0x1038, :tap (0x1048)
+          v42:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v10, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v43:BasicObject = SendDirect v42, 0x1038, :tap (0x1048)
           v26:BasicObject = GetLocal :b, l0, EP@3
           PatchPoint NoEPEscape(test)
-          PatchPoint NoEPEscape(test)
           PatchPoint MethodRedefined(Integer@0x1050, +@0x1058, cme:0x1060)
-          v48:Fixnum = GuardType v26, Fixnum
-          v49:Fixnum = FixnumAdd v16, v48
+          v46:Fixnum = GuardType v26, Fixnum
+          v47:Fixnum = FixnumAdd v16, v46
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v49
+          Return v47
         ");
     }
 
@@ -3044,22 +3042,21 @@ mod hir_opt_tests {
           SetLocal :a, l0, EP@3, v13
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, EvalLocal)
-          v61:Class[EvalLocal@0x1008] = Const Value(VALUE(0x1008))
+          v60:Class[EvalLocal@0x1008] = Const Value(VALUE(0x1008))
           v21:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(EvalLocal@0x1008, new@0x1009, cme:0x1010)
-          v64:HeapObject[class_exact:EvalLocal] = ObjectAllocClass EvalLocal:VALUE(0x1008)
+          v63:HeapObject[class_exact:EvalLocal] = ObjectAllocClass EvalLocal:VALUE(0x1008)
           PatchPoint NoSingletonClass(EvalLocal@0x1008)
           PatchPoint MethodRedefined(EvalLocal@0x1008, initialize@0x1038, cme:0x1040)
-          v72:NilClass = Const Value(nil)
+          v71:NilClass = Const Value(nil)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           PatchPoint NoSingletonClass(EvalLocal@0x1008)
           PatchPoint MethodRedefined(EvalLocal@0x1008, f@0x1068, cme:0x1070)
-          v68:BasicObject = SendDirect v64, 0x1098, :f (0x10a8)
+          v67:BasicObject = SendDirect v63, 0x1098, :f (0x10a8)
           PatchPoint NoEPEscape(test)
-          v54:BasicObject = GetLocal :a, l0, EP@3
           CheckInterrupts
-          Return v54
+          Return v13
         ");
     }
 
@@ -3543,7 +3540,6 @@ mod hir_opt_tests {
           v21:TrueClass = Const Value(true)
           IncrCounter complex_arg_pass_caller_kwarg
           v23:BasicObject = Send v11, 0x1000, :each_line, v21 # SendFallbackReason: Complex argument passing
-          PatchPoint NoEPEscape(test)
           PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v16
@@ -6650,14 +6646,13 @@ mod hir_opt_tests {
           v13:ArrayExact = NewArray
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, A)
-          v37:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v35:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1010, B)
-          v40:ArrayExact[VALUE(0x1018)] = Const Value(VALUE(0x1018))
+          v38:ArrayExact[VALUE(0x1018)] = Const Value(VALUE(0x1018))
           PatchPoint NoSingletonClass(Array@0x1020)
           PatchPoint MethodRedefined(Array@0x1020, zip@0x1028, cme:0x1030)
-          v44:BasicObject = CCallVariadic v37, :zip@0x1058, v40
-          PatchPoint NoEPEscape(test)
+          v42:BasicObject = CCallVariadic v35, :zip@0x1058, v38
           PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v13
@@ -11702,14 +11697,13 @@ mod hir_opt_tests {
         bb2(v10:BasicObject, v11:BasicObject, v12:NilClass):
           PatchPoint NoSingletonClass(B@0x1000)
           PatchPoint MethodRedefined(B@0x1000, proc@0x1008, cme:0x1010)
-          v35:HeapObject[class_exact:B] = GuardType v10, HeapObject[class_exact:B]
-          v36:BasicObject = CCallWithFrame v35, :Kernel#proc@0x1038, block=0x1040
+          v34:HeapObject[class_exact:B] = GuardType v10, HeapObject[class_exact:B]
+          v35:BasicObject = CCallWithFrame v34, :Kernel#proc@0x1038, block=0x1040
           PatchPoint NoEPEscape(foo)
-          SetLocal :other_block, l0, EP@3, v36
-          v25:BasicObject = GetLocal :other_block, l0, EP@3
-          v27:BasicObject = InvokeSuper v10, 0x1048, v25 # SendFallbackReason: super: complex argument passing to `super` call
+          SetLocal :other_block, l0, EP@3, v35
+          v26:BasicObject = InvokeSuper v10, 0x1048, v35 # SendFallbackReason: super: complex argument passing to `super` call
           CheckInterrupts
-          Return v27
+          Return v26
         ");
     }
 

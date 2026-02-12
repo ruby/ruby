@@ -4147,10 +4147,9 @@ pub mod hir_build_tests {
           v20:Fixnum[2] = Const Value(2)
           v25:BasicObject = Send v10, 0x1000, :tap # SendFallbackReason: Uncategorized(send)
           PatchPoint NoEPEscape(test)
-          PatchPoint NoEPEscape(test)
-          v36:BasicObject = SendWithoutBlock v16, :+, v20 # SendFallbackReason: Uncategorized(opt_plus)
+          v34:BasicObject = SendWithoutBlock v16, :+, v20 # SendFallbackReason: Uncategorized(opt_plus)
           CheckInterrupts
-          Return v36
+          Return v34
         ");
     }
 
@@ -4183,10 +4182,9 @@ pub mod hir_build_tests {
           v20:Fixnum[2] = Const Value(2)
           v25:BasicObject = Send v10, 0x1000, :tap # SendFallbackReason: Uncategorized(send)
           PatchPoint NoEPEscape(test)
-          PatchPoint NoEPEscape(test)
-          v36:BasicObject = SendWithoutBlock v16, :+, v20 # SendFallbackReason: Uncategorized(opt_plus)
+          v34:BasicObject = SendWithoutBlock v16, :+, v20 # SendFallbackReason: Uncategorized(opt_plus)
           CheckInterrupts
-          Return v36
+          Return v34
         ");
     }
 
@@ -4220,10 +4218,9 @@ pub mod hir_build_tests {
           v25:BasicObject = Send v10, 0x1000, :tap # SendFallbackReason: Uncategorized(send)
           v26:BasicObject = GetLocal :b, l0, EP@3
           PatchPoint NoEPEscape(test)
-          PatchPoint NoEPEscape(test)
-          v37:BasicObject = SendWithoutBlock v16, :+, v26 # SendFallbackReason: Uncategorized(opt_plus)
+          v35:BasicObject = SendWithoutBlock v16, :+, v26 # SendFallbackReason: Uncategorized(opt_plus)
           CheckInterrupts
-          Return v37
+          Return v35
         ");
     }
 
@@ -4257,10 +4254,9 @@ pub mod hir_build_tests {
           v25:BasicObject = Send v10, 0x1000, :tap # SendFallbackReason: Uncategorized(send)
           v26:BasicObject = GetLocal :b, l0, EP@3
           PatchPoint NoEPEscape(test)
-          PatchPoint NoEPEscape(test)
-          v37:BasicObject = SendWithoutBlock v16, :+, v26 # SendFallbackReason: Uncategorized(opt_plus)
+          v35:BasicObject = SendWithoutBlock v16, :+, v26 # SendFallbackReason: Uncategorized(opt_plus)
           CheckInterrupts
-          Return v37
+          Return v35
         ");
     }
 
@@ -4300,10 +4296,9 @@ pub mod hir_build_tests {
           v25:BasicObject = Send v10, 0x1000, :tap # SendFallbackReason: Uncategorized(send)
           v26:BasicObject = GetLocal :b, l0, EP@3
           PatchPoint NoEPEscape(test)
-          PatchPoint NoEPEscape(test)
-          v37:BasicObject = SendWithoutBlock v16, :+, v26 # SendFallbackReason: Uncategorized(opt_plus)
+          v35:BasicObject = SendWithoutBlock v16, :+, v26 # SendFallbackReason: Uncategorized(opt_plus)
           CheckInterrupts
-          Return v37
+          Return v35
         ");
     }
 
@@ -4342,10 +4337,9 @@ pub mod hir_build_tests {
           v20:Fixnum[2] = Const Value(2)
           v25:BasicObject = Send v10, 0x1000, :tap # SendFallbackReason: Uncategorized(send)
           PatchPoint NoEPEscape(test)
-          PatchPoint NoEPEscape(test)
-          v36:BasicObject = SendWithoutBlock v16, :+, v20 # SendFallbackReason: Uncategorized(opt_plus)
+          v34:BasicObject = SendWithoutBlock v16, :+, v20 # SendFallbackReason: Uncategorized(opt_plus)
           CheckInterrupts
-          Return v36
+          Return v34
         ");
     }
 
