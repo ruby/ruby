@@ -2223,6 +2223,74 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
     return obj;
 }
 
+void
+rb_gc_impl_post_alloc_init(void *objspace_ptr, VALUE obj, VALUE flags, bool wb_protected)
+{
+    rb_objspace_t *objspace = objspace_ptr;
+
+    GC_ASSERT(BUILTIN_TYPE(obj) != T_NONE);
+
+    int t = flags & RUBY_T_MASK;
+    if (t == T_CLASS || t == T_MODULE || t == T_ICLASS) {
+        RVALUE_AGE_SET_CANDIDATE(objspace, obj);
+    }
+
+#if RACTOR_CHECK_MODE
+    void rb_ractor_setup_belonging(VALUE obj);
+    rb_ractor_setup_belonging(obj);
+#endif
+
+#if RGENGC_CHECK_MODE
+    int lev = RB_GC_VM_LOCK_NO_BARRIER();
+    {
+        check_rvalue_consistency(objspace, obj);
+        GC_ASSERT(RVALUE_MARKED(objspace, obj) == FALSE);
+        GC_ASSERT(RVALUE_MARKING(objspace, obj) == FALSE);
+        GC_ASSERT(RVALUE_OLD_P(objspace, obj) == FALSE);
+        GC_ASSERT(RVALUE_WB_UNPROTECTED(objspace, obj) == FALSE);
+        if (RVALUE_REMEMBERED(objspace, obj)) rb_bug("newobj: %s is remembered.", rb_obj_info(obj));
+    }
+    RB_GC_VM_UNLOCK_NO_BARRIER(lev);
+#endif
+
+    if (RB_UNLIKELY(wb_protected == FALSE)) {
+        MARK_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), obj);
+    }
+
+#if RGENGC_PROFILE
+    if (wb_protected) {
+        objspace->profile.total_generated_normal_object_count++;
+#if RGENGC_PROFILE >= 2
+        objspace->profile.generated_normal_object_count_types[BUILTIN_TYPE(obj)]++;
+#endif
+    }
+    else {
+        objspace->profile.total_generated_shady_object_count++;
+#if RGENGC_PROFILE >= 2
+        objspace->profile.generated_shady_object_count_types[BUILTIN_TYPE(obj)]++;
+#endif
+    }
+#endif
+
+#if GC_DEBUG
+    GET_RVALUE_OVERHEAD(obj)->file = rb_gc_impl_source_location_cstr(&GET_RVALUE_OVERHEAD(obj)->line);
+    GC_ASSERT(!SPECIAL_CONST_P(obj));
+#endif
+
+    gc_report(5, objspace, "newobj: %s\n", rb_obj_info(obj));
+}
+
+bool
+rb_gc_impl_stress_to_class_p(void *objspace_ptr, VALUE klass)
+{
+    rb_objspace_t *objspace = objspace_ptr;
+
+    if (RB_UNLIKELY(stress_to_class)) {
+        return rb_hash_lookup2(stress_to_class, klass, Qundef) != Qundef;
+    }
+    return false;
+}
+
 size_t
 rb_gc_impl_obj_slot_size(VALUE obj)
 {
