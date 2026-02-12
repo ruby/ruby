@@ -1334,16 +1334,77 @@ pub mod test_utils {
 #[cfg(test)]
 pub use test_utils::*;
 
-/// Get class name from a class pointer.
+/// Get class name from a class pointer. For anonymous classes, includes the
+/// superclass name for context (e.g. `#<Class(String):0x00007f...>`).
 pub fn get_class_name(class: VALUE) -> String {
     // type checks for rb_class2name()
-    if unsafe { RB_TYPE_P(class, RUBY_T_MODULE) || RB_TYPE_P(class, RUBY_T_CLASS) } {
+    let name = if unsafe { RB_TYPE_P(class, RUBY_T_MODULE) || RB_TYPE_P(class, RUBY_T_CLASS) } {
         Some(class)
     } else {
         None
     }.and_then(|class| unsafe {
         cstr_to_rust_string(rb_class2name(class))
-    }).unwrap_or_else(|| "Unknown".to_string())
+    }).unwrap_or_else(|| "Unknown".to_string());
+
+    // For anonymous classes, include the superclass name for context.
+    // Use rb_class_real to resolve through iclasses (internal include/prepend
+    // wrappers) before checking rb_mod_name, which returns Qnil for anonymous classes.
+    // e.g. "#<Class:0x7f...>" with superclass String => "#<Class(String):0x7f...>"
+    if unsafe { RB_TYPE_P(class, RUBY_T_CLASS) && rb_mod_name(rb_class_real(class)) == Qnil } {
+        let super_class = unsafe { rb_class_get_superclass(class) };
+        if super_class != Qnil {
+            let super_name = get_class_name(super_class);
+            return format!("#<Class({super_name}):{:#x}>", class.0);
+        }
+    }
+
+    name
+}
+
+
+#[cfg(test)]
+mod class_name_tests {
+    use super::*;
+    use test_utils::{eval, with_rubyvm};
+
+    #[test]
+    fn named_class() {
+        with_rubyvm(|| {
+            assert_eq!(get_class_name(eval("String")), "String");
+        });
+    }
+
+    #[test]
+    fn named_module() {
+        with_rubyvm(|| {
+            assert_eq!(get_class_name(eval("Kernel")), "Kernel");
+        });
+    }
+
+    #[test]
+    fn anonymous_class_includes_superclass() {
+        with_rubyvm(|| {
+            let name = get_class_name(eval("Class.new(String)"));
+            assert!(name.starts_with("#<Class(String):0x"), "got: {name}");
+        });
+    }
+
+    #[test]
+    fn anonymous_class_nested_superclass() {
+        with_rubyvm(|| {
+            let name = get_class_name(eval("Class.new(Class.new(String))"));
+            assert!(name.starts_with("#<Class(#<Class(String):0x"), "got: {name}");
+        });
+    }
+
+    #[test]
+    fn anonymous_module_unchanged() {
+        with_rubyvm(|| {
+            let name = get_class_name(eval("Module.new"));
+            assert!(name.starts_with("#<Module:0x"), "got: {name}");
+        });
+    }
+
 }
 
 pub fn class_has_leaf_allocator(class: VALUE) -> bool {
