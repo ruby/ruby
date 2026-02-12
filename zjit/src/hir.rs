@@ -6116,42 +6116,82 @@ pub fn jit_entry_insns(iseq: IseqPtr) -> Vec<u32> {
 
 struct BytecodeInfo {
     jump_targets: Vec<u32>,
+    /// Bytecode offsets where `local_inval` must be true on entry because at least
+    /// one predecessor exits with a non-leaf instruction still "pending" (i.e. no
+    /// getlocal/setlocal consumed the invalidation before the edge).
+    local_inval_targets: HashSet<u32>,
 }
 
 fn compute_bytecode_info(iseq: *const rb_iseq_t, opt_table: &[u32]) -> BytecodeInfo {
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
-    let mut insn_idx = 0;
+    let mut insn_idx: u32 = 0;
     let mut jump_targets: HashSet<u32> = opt_table.iter().copied().collect();
+    let mut local_inval_targets: HashSet<u32> = HashSet::new();
+    // Simulate local_inval through a linear scan. At branches/jumps,
+    // propagate the current value to the target with OR-merge.
+    let mut local_inval = false;
     while insn_idx < iseq_size {
-        // Get the current pc and opcode
         let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
-
-        // try_into() call below is unfortunate. Maybe pick i32 instead of usize for opcodes.
         let opcode: u32 = unsafe { rb_iseq_opcode_at_pc(iseq, pc) }
             .try_into()
             .unwrap();
+
+        // At a join point, merge in whatever predecessors already propagated.
+        if local_inval_targets.contains(&insn_idx) {
+            local_inval = true;
+        }
+
+        // Non-leaf instructions set local_inval.
+        if invalidates_locals(opcode, unsafe { pc.offset(1) }) {
+            local_inval = true;
+        }
+        // getlocal/setlocal at level 0 would insert a PatchPoint and clear local_inval.
+        if local_inval {
+            match opcode {
+                YARVINSN_getlocal_WC_0 | YARVINSN_setlocal_WC_0 => { local_inval = false; }
+                _ => {}
+            }
+        }
+
         insn_idx += insn_len(opcode as usize);
+
+        // Propagate local_inval along CFG edges.
         match opcode {
-            YARVINSN_branchunless | YARVINSN_jump | YARVINSN_branchif | YARVINSN_branchnil
-            | YARVINSN_branchunless_without_ints | YARVINSN_jump_without_ints | YARVINSN_branchif_without_ints | YARVINSN_branchnil_without_ints => {
+            YARVINSN_branchunless | YARVINSN_branchif | YARVINSN_branchnil
+            | YARVINSN_branchunless_without_ints | YARVINSN_branchif_without_ints | YARVINSN_branchnil_without_ints => {
                 let offset = get_arg(pc, 0).as_i64();
-                jump_targets.insert(insn_idx_at_offset(insn_idx, offset));
+                let target = insn_idx_at_offset(insn_idx, offset);
+                jump_targets.insert(target);
+                if local_inval { local_inval_targets.insert(target); }
+                // Fallthrough also propagates
+                if local_inval { local_inval_targets.insert(insn_idx); }
+            }
+            YARVINSN_jump | YARVINSN_jump_without_ints => {
+                let offset = get_arg(pc, 0).as_i64();
+                let target = insn_idx_at_offset(insn_idx, offset);
+                jump_targets.insert(target);
+                if local_inval { local_inval_targets.insert(target); }
+                // After an unconditional jump, reset for the fallthrough.
+                local_inval = false;
             }
             YARVINSN_opt_new => {
                 let offset = get_arg(pc, 1).as_i64();
-                jump_targets.insert(insn_idx_at_offset(insn_idx, offset));
+                let target = insn_idx_at_offset(insn_idx, offset);
+                jump_targets.insert(target);
+                if local_inval { local_inval_targets.insert(target); }
             }
             YARVINSN_leave | YARVINSN_opt_invokebuiltin_delegate_leave => {
                 if insn_idx < iseq_size {
                     jump_targets.insert(insn_idx);
                 }
+                local_inval = false;
             }
             _ => {}
         }
     }
     let mut result = jump_targets.into_iter().collect::<Vec<_>>();
     result.sort();
-    BytecodeInfo { jump_targets: result }
+    BytecodeInfo { jump_targets: result, local_inval_targets }
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -6354,7 +6394,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
     // Compute a map of PC->Block by finding jump targets
     let jit_entry_insns = jit_entry_insns(iseq);
-    let BytecodeInfo { jump_targets } = compute_bytecode_info(iseq, &jit_entry_insns);
+    let BytecodeInfo { jump_targets, local_inval_targets } = compute_bytecode_info(iseq, &jit_entry_insns);
 
     // Make all empty basic blocks. The ordering of the BBs matters for getting fallthrough jumps
     // in good places, but it's not necessary for correctness. TODO: Higher quality scheduling during lowering.
@@ -6406,6 +6446,12 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
         // Compile each block only once
         if visited.contains(&block) { continue; }
         visited.insert(block);
+
+        // If a bytecode pre-analysis found that any predecessor exits with
+        // local_inval=true, override it here regardless of queue ordering.
+        if local_inval_targets.contains(&insn_idx) {
+            local_inval = true;
+        }
 
         // Load basic block params first
         let mut self_param = fun.push_insn(block, Insn::Param);
@@ -7302,7 +7348,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     if !blockiseq.is_null() {
                         reload_modified_locals(&mut fun, block, &mut state, iseq, blockiseq, pc, opcode, insn_idx);
-                        local_inval = false;
                     }
                 }
                 YARVINSN_sendforward => {
@@ -7325,7 +7370,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     if !blockiseq.is_null() {
                         reload_modified_locals(&mut fun, block, &mut state, iseq, blockiseq, pc, opcode, insn_idx);
-                        local_inval = false;
                     }
                 }
                 YARVINSN_invokesuper => {
@@ -7347,7 +7391,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     if !blockiseq.is_null() {
                         reload_modified_locals(&mut fun, block, &mut state, iseq, blockiseq, pc, opcode, insn_idx);
-                        local_inval = false;
                     }
                 }
                 YARVINSN_invokesuperforward => {
@@ -7369,7 +7412,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     if !blockiseq.is_null() {
                         reload_modified_locals(&mut fun, block, &mut state, iseq, blockiseq, pc, opcode, insn_idx);
-                        local_inval = false;
                     }
                 }
                 YARVINSN_invokeblock => {
