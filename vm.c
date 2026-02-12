@@ -1569,6 +1569,18 @@ rb_proc_isolate(VALUE self)
 VALUE
 rb_proc_ractor_make_shareable(VALUE self, VALUE replace_self)
 {
+    VALUE chain = Qnil;
+    if (!rb_proc_ractor_make_shareable_continue(self, replace_self, &chain)) {
+        rb_raise(rb_eRactorIsolationError,
+                    "Proc's self is not shareable: %" PRIsVALUE "%"PRIsVALUE,
+                    self, chain);
+    }
+    return self;
+}
+
+bool
+rb_proc_ractor_make_shareable_continue(VALUE self, VALUE replace_self, VALUE *chain)
+{
     const rb_iseq_t *iseq = vm_proc_iseq(self);
 
     if (iseq) {
@@ -1580,10 +1592,14 @@ rb_proc_ractor_make_shareable(VALUE self, VALUE replace_self)
 
         if (proc->block.type != block_type_iseq) rb_raise(rb_eRuntimeError, "not supported yet");
 
-        if (!rb_ractor_shareable_p(vm_block_self(&proc->block))) {
-            rb_raise(rb_eRactorIsolationError,
-                     "Proc's self is not shareable: %" PRIsVALUE,
-                     self);
+        VALUE block_self = vm_block_self(&proc->block);
+        if (!RB_SPECIAL_CONST_P(block_self) &&
+                !RB_OBJ_SHAREABLE_P(block_self)) {
+            if (!rb_ractor_shareable_p_continue(block_self, chain)) {
+                rb_ractor_error_chain_append(chain, "\n  from block's self (an instance of %"PRIsVALUE")",
+                                             rb_class_real(CLASS_OF(block_self)));
+                return false;
+            }
         }
 
         VALUE read_only_variables = Qfalse;
@@ -1601,15 +1617,15 @@ rb_proc_ractor_make_shareable(VALUE self, VALUE replace_self)
         if (block->type != block_type_symbol) rb_raise(rb_eRuntimeError, "not supported yet");
 
         VALUE proc_self = vm_block_self(block);
-        if (!rb_ractor_shareable_p(proc_self)) {
-            rb_raise(rb_eRactorIsolationError,
-                     "Proc's self is not shareable: %" PRIsVALUE,
-                     self);
+        if (!rb_ractor_shareable_p_continue(proc_self, chain)) {
+            rb_ractor_error_chain_append(chain, "\n  from proc's self (an instance of %"PRIsVALUE")",
+                                             rb_class_real(CLASS_OF(proc_self)));
+            return false;
         }
     }
 
     RB_OBJ_SET_FROZEN_SHAREABLE(self);
-    return self;
+    return true;
 }
 
 VALUE
