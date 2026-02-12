@@ -518,4 +518,75 @@ End
 
 end
 
+class SingleLineFormat < Test::Unit::TestCase # :nodoc:
+
+  def test_singleline_format_with_breakables
+    singleline_format = PrettyPrint.singleline_format("".dup) do |q|
+      q.group 0, "(", ")" do
+        q.text "abc"
+        q.breakable
+        q.text "def"
+        q.breakable
+        q.text "ghi"
+        q.breakable
+        q.text "jkl"
+        q.breakable
+        q.text "mno"
+        q.breakable
+        q.text "pqr"
+        q.breakable
+        q.text "stu"
+      end
+    end
+    expected = <<'End'.chomp
+(abc def ghi jkl mno pqr stu)
+End
+
+    assert_equal(expected, singleline_format)
+  end
+
+  def test_singleline_format_with_fill_breakables
+    singleline_format = PrettyPrint.singleline_format("".dup) do |q|
+      q.group 0, "(", ")" do
+        q.text "abc"
+        q.fill_breakable
+        q.text "def"
+        q.fill_breakable
+        q.text "ghi"
+        q.fill_breakable
+        q.text "jkl"
+        q.fill_breakable
+        q.text "mno"
+        q.fill_breakable
+        q.text "pqr"
+        q.fill_breakable
+        q.text "stu"
+      end
+    end
+      expected = <<'End'.chomp
+(abc def ghi jkl mno pqr stu)
+End
+
+    assert_equal(expected, singleline_format)
+  end
+
+  def test_singleline_format_with_group_sub
+    singleline_format = PrettyPrint.singleline_format("".dup) do |q|
+      q.group 0, "(", ")" do
+        q.group_sub do
+          q.text "abc"
+          q.breakable
+          q.text "def"
+        end
+        q.breakable
+        q.text "ghi"
+      end
+    end
+    expected = <<'End'.chomp
+(abc def ghi)
+End
+
+    assert_equal(expected, singleline_format)
+  end
+end
 end

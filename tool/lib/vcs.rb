@@ -595,15 +595,6 @@ class VCS
               s = s.join('')
             end
 
-            s.gsub!(%r[(?!<\w)([-\w]+/[-\w]+)(?:@(\h{8,40})|#(\d{5,}))\b]) do
-              path = defined?($2) ? "commit/#{$2}" : "pull/#{$3}"
-              "[#$&](https://github.com/#{$1}/#{path})"
-            end
-            if %r[^ +(https://github\.com/[^/]+/[^/]+/)commit/\h+\n(?=(?: +\n(?i: +Co-authored-by: .*\n)+)?(?:\n|\Z))] =~ s
-              issue = "#{$1}pull/"
-              s.gsub!(/\b(?:(?i:fix(?:e[sd])?) +|GH-)\K#(?=\d+\b)|\(\K#(?=\d+\))/) {issue}
-            end
-
             s.gsub!(/ +\n/, "\n")
             s.sub!(/^Notes:/, '  \&')
             w.print sep, h, s
