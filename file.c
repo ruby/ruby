@@ -2408,6 +2408,21 @@ rb_file_ftype(mode_t mode)
         t = "socket";
     }
 #endif
+#ifdef S_ISDOOR
+    else if (S_ISDOOR(mode)) {
+        t = "door";
+    }
+#endif
+#ifdef S_ISPORT
+    else if (S_ISPORT(mode)) {
+        t = "port";
+    }
+#endif
+#ifdef S_ISWHT
+    else if (S_ISWHT(mode)) {
+        t = "whiteout";
+    }
+#endif
     else {
         t = "unknown";
     }
@@ -6154,6 +6169,72 @@ rb_stat_c(VALUE obj)
 
 /*
  *  call-seq:
+ *     stat.door?    -> true or false
+ *
+ *  Returns <code>true</code> if the file is a door
+ *  <code>false</code> if it isn't or if the operating system doesn't
+ *  support this feature.
+ *
+ *     File.stat("/dev/tty").chardev?   #=> true
+ *
+ */
+
+static VALUE
+rb_stat_door_p(VALUE obj)
+{
+#ifdef S_ISDOOR
+    if (S_ISDOOR(get_stat(obj)->ST_(mode))) return Qtrue;
+
+#endif
+    return Qfalse;
+}
+
+/*
+ *  call-seq:
+ *     stat.port?    -> true or false
+ *
+ *  Returns <code>true</code> if the file is a port
+ *  <code>false</code> if it isn't or if the operating system doesn't
+ *  support this feature.
+ *
+ *     File.stat("/dev/tty").chardev?   #=> true
+ *
+ */
+
+static VALUE
+rb_stat_port_p(VALUE obj)
+{
+#ifdef S_ISPORT
+    if (S_ISPORT(get_stat(obj)->ST_(mode))) return Qtrue;
+
+#endif
+    return Qfalse;
+}
+
+/*
+ *  call-seq:
+ *     stat.whiteout?    -> true or false
+ *
+ *  Returns <code>true</code> if the file is a whiteout
+ *  <code>false</code> if it isn't or if the operating system doesn't
+ *  support this feature.
+ *
+ *     File.stat("/dev/tty").chardev?   #=> true
+ *
+ */
+
+static VALUE
+rb_stat_whiteout_p(VALUE obj)
+{
+#ifdef S_ISWHITEOUT
+    if (S_ISWHITEOUT(get_stat(obj)->ST_(mode))) return Qtrue;
+
+#endif
+    return Qfalse;
+}
+
+/*
+ *  call-seq:
  *     stat.owned?    -> true or false
  *
  *  Returns <code>true</code> if the effective user id of the process is
@@ -8198,6 +8279,9 @@ Init_File(void)
     rb_define_method(rb_cStat, "pipe?",  rb_stat_p, 0);
     rb_define_method(rb_cStat, "symlink?",  rb_stat_l, 0);
     rb_define_method(rb_cStat, "socket?",  rb_stat_S, 0);
+    rb_define_method(rb_cStat, "door?",  rb_stat_door_p, 0);
+    rb_define_method(rb_cStat, "port?",  rb_stat_port_p, 0);
+    rb_define_method(rb_cStat, "whiteout?",  rb_stat_whiteout_p, 0);
 
     rb_define_method(rb_cStat, "blockdev?",  rb_stat_b, 0);
     rb_define_method(rb_cStat, "chardev?",  rb_stat_c, 0);
