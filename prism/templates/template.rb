@@ -6,7 +6,7 @@ require "fileutils"
 require "yaml"
 
 module Prism
-  module Template
+  module Template # :nodoc: all
     SERIALIZE_ONLY_SEMANTICS_FIELDS = ENV.fetch("PRISM_SERIALIZE_ONLY_SEMANTICS_FIELDS", false)
     REMOVE_ON_ERROR_TYPES = SERIALIZE_ONLY_SEMANTICS_FIELDS
     CHECK_FIELD_KIND = ENV.fetch("CHECK_FIELD_KIND", false)

@@ -1,4 +1,5 @@
 <% # -*- ruby -*-
+# :stopdoc:
 require_relative 'templates/template'
 
 script = File.basename(__FILE__)
