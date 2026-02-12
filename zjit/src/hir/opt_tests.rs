@@ -6434,23 +6434,62 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           v14:CBool = HasType v9, HeapObject[class_exact:C]
           IfTrue v14, bb4(v8, v9, v9)
-          v23:CBool = HasType v9, HeapObject[class_exact:C]
-          IfTrue v23, bb5(v8, v9, v9)
-          v32:BasicObject = SendWithoutBlock v9, :foo # SendFallbackReason: SendWithoutBlock: polymorphic fallback
-          Jump bb3(v8, v9, v32)
+          v23:BasicObject = SendWithoutBlock v9, :foo # SendFallbackReason: SendWithoutBlock: polymorphic fallback
+          Jump bb3(v8, v9, v23)
         bb4(v15:BasicObject, v16:BasicObject, v17:BasicObject):
           v19:HeapObject[class_exact:C] = RefineType v17, HeapObject[class_exact:C]
           PatchPoint NoSingletonClass(C@0x1000)
           PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
           IncrCounter getivar_fallback_not_monomorphic
-          v44:BasicObject = GetIvar v19, :@foo
+          v35:BasicObject = GetIvar v19, :@foo
+          Jump bb3(v15, v16, v35)
+        bb3(v25:BasicObject, v26:BasicObject, v27:BasicObject):
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn test_polymorphic_fixnum_and_bignum() {
+        // Fixnum and Bignum both have class Integer, but they should be
+        // treated as different types for polymorphic dispatch because
+        // Fixnum is an immediate and Bignum is a heap object.
+        set_call_threshold(5);
+        eval("
+            def test(x) = x.to_s
+            fixnum = 1
+            bignum = 10**100
+            test(fixnum)
+            test(bignum)
+            test(fixnum)
+            test(bignum)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :x, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:CBool = HasType v9, Bignum
+          IfTrue v14, bb4(v8, v9, v9)
+          v23:CBool = HasType v9, Fixnum
+          IfTrue v23, bb5(v8, v9, v9)
+          v32:BasicObject = SendWithoutBlock v9, :to_s # SendFallbackReason: SendWithoutBlock: polymorphic fallback
+          Jump bb3(v8, v9, v32)
+        bb4(v15:BasicObject, v16:BasicObject, v17:BasicObject):
+          v19:Bignum = RefineType v17, Bignum
+          PatchPoint MethodRedefined(Integer@0x1000, to_s@0x1008, cme:0x1010)
+          v44:StringExact = CCallVariadic v19, :Integer#to_s@0x1038
           Jump bb3(v15, v16, v44)
         bb5(v24:BasicObject, v25:BasicObject, v26:BasicObject):
-          v28:HeapObject[class_exact:C] = RefineType v26, HeapObject[class_exact:C]
-          PatchPoint NoSingletonClass(C@0x1000)
-          PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
-          IncrCounter getivar_fallback_not_monomorphic
-          v47:BasicObject = GetIvar v28, :@foo
+          v28:Fixnum = RefineType v26, Fixnum
+          PatchPoint MethodRedefined(Integer@0x1000, to_s@0x1008, cme:0x1010)
+          v47:StringExact = CCallVariadic v28, :Integer#to_s@0x1038
           Jump bb3(v24, v25, v47)
         bb3(v34:BasicObject, v35:BasicObject, v36:BasicObject):
           CheckInterrupts
@@ -7249,7 +7288,7 @@ mod hir_opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(Integer@0x1000, to_s@0x1008, cme:0x1010)
-          v21:Integer = GuardType v9, Integer
+          v21:Bignum = GuardType v9, Bignum
           v22:StringExact = CCallVariadic v21, :Integer#to_s@0x1038
           CheckInterrupts
           Return v22
@@ -8224,7 +8263,7 @@ mod hir_opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(Integer@0x1000, succ@0x1008, cme:0x1010)
-          v22:Integer = GuardType v9, Integer
+          v22:Bignum = GuardType v9, Bignum
           v23:BasicObject = CCallWithFrame v22, :Integer#succ@0x1038
           CheckInterrupts
           Return v23
@@ -8766,7 +8805,7 @@ mod hir_opt_tests {
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           PatchPoint MethodRedefined(Integer@0x1000, ^@0x1008, cme:0x1010)
-          v25:Integer = GuardType v11, Integer
+          v25:Bignum = GuardType v11, Bignum
           v26:BasicObject = CCallWithFrame v25, :Integer#^@0x1038, v12
           CheckInterrupts
           Return v26
