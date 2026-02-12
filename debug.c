@@ -368,7 +368,7 @@ setup_debug_log_filter(void)
 
             if (len >= MAX_DEBUG_LOG_FILTER_LEN) {
                 fprintf(stderr, "too long: %s (max:%d)\n", str, MAX_DEBUG_LOG_FILTER_LEN - 1);
-                exit(1);
+                exit(EXIT_FAILURE);
             }
 
             // body
@@ -396,7 +396,7 @@ setup_debug_log(void)
             debug_log.mem = (char *)malloc(MAX_DEBUG_LOG * MAX_DEBUG_LOG_MESSAGE_LEN);
             if (debug_log.mem == NULL) {
                 fprintf(stderr, "setup_debug_log failed (can't allocate memory)\n");
-                exit(1);
+                exit(EXIT_FAILURE);
             }
             ruby_debug_log_mode |= ruby_debug_log_memory;
         }
@@ -424,7 +424,7 @@ setup_debug_log(void)
                         break;
                       default:
                         fprintf(stderr, "can not parse RUBY_DEBUG_LOG filename: %s\n", log_config);
-                        exit(1);
+                        exit(EXIT_FAILURE);
                     }
                 }
                 else {
@@ -433,13 +433,13 @@ setup_debug_log(void)
 
                 if (j >= DEBUG_LOG_MAX_PATH) {
                     fprintf(stderr, "RUBY_DEBUG_LOG=%s is too long\n", log_config);
-                    exit(1);
+                    exit(EXIT_FAILURE);
                 }
             }
 
             if ((debug_log.output = fopen(debug_log.output_file, "w")) == NULL) {
                 fprintf(stderr, "can not open %s for RUBY_DEBUG_LOG\n", log_config);
-                exit(1);
+                exit(EXIT_FAILURE);
             }
             setvbuf(debug_log.output, NULL, _IONBF, 0);
         }

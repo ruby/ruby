@@ -714,7 +714,7 @@ ruby_modular_gc_init(void)
                 break;
               default:
                 fprintf(stderr, "Only alphanumeric, dash, and underscore is allowed in "RUBY_GC_LIBRARY"\n");
-                exit(1);
+                exit(EXIT_FAILURE);
             }
         }
 
@@ -761,7 +761,7 @@ ruby_modular_gc_init(void)
         handle = dlopen(gc_so_path, RTLD_LAZY | RTLD_GLOBAL);
         if (!handle) {
             fprintf(stderr, "ruby_modular_gc_init: Shared library %s cannot be opened: %s\n", gc_so_path, dlerror());
-            exit(1);
+            exit(EXIT_FAILURE);
         }
 
         gc_functions.modular_gc_loaded_p = true;
@@ -773,7 +773,7 @@ ruby_modular_gc_init(void)
         gc_functions.name = dlsym(handle, func_name); \
         if (!gc_functions.name) { \
             fprintf(stderr, "ruby_modular_gc_init: %s function not exported by library %s\n", func_name, gc_so_path); \
-            exit(1); \
+            exit(EXIT_FAILURE); \
         } \
     } \
     else { \

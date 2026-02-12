@@ -8079,7 +8079,7 @@ popen_finish(VALUE port, VALUE klass)
             rb_protect(rb_yield, Qnil, NULL);
             rb_io_flush(rb_ractor_stdout());
             rb_io_flush(rb_ractor_stderr());
-            _exit(0);
+            _exit(EXIT_SUCCESS);
         }
         return Qnil;
     }
