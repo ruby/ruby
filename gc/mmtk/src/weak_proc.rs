@@ -48,13 +48,16 @@ impl WeakProcessor {
         }
     }
 
-    /// Add an object as a candidate for `obj_free`.
+    /// Add a batch of objects as candidates for `obj_free`.
     ///
-    /// Multiple mutators can call it concurrently, so it has `&self`.
-    pub fn add_obj_free_candidate(&self, object: ObjectReference, can_parallel_free: bool) {
+    /// Amortizes mutex acquisition over the entire batch. Called when a
+    /// mutator's local buffer is flushed (buffer full or stop-the-world).
+    pub fn add_obj_free_candidates_batch(&self, objects: &[ObjectReference], can_parallel_free: bool) {
+        if objects.is_empty() {
+            return;
+        }
+
         if can_parallel_free {
-            // Newly allocated objects are placed in parallel_obj_free_candidates using
-            // round-robin. This may not be ideal for load balancing.
             let idx = self
                 .parallel_obj_free_candidates_counter
                 .fetch_add(1, Ordering::Relaxed)
@@ -63,12 +66,12 @@ impl WeakProcessor {
             self.parallel_obj_free_candidates[idx]
                 .lock()
                 .unwrap()
-                .push(object);
+                .extend_from_slice(objects);
         } else {
             self.non_parallel_obj_free_candidates
                 .lock()
                 .unwrap()
-                .push(object);
+                .extend_from_slice(objects);
         }
     }
 

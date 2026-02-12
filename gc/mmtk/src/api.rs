@@ -297,12 +297,16 @@ pub unsafe extern "C" fn mmtk_post_alloc(
     memory_manager::post_alloc::<Ruby>(unsafe { &mut *mutator }, refer, bytes, semantics)
 }
 
-// TODO: Replace with buffered mmtk_add_obj_free_candidates
 #[no_mangle]
-pub extern "C" fn mmtk_add_obj_free_candidate(object: ObjectReference, can_parallel_free: bool) {
+pub unsafe extern "C" fn mmtk_add_obj_free_candidates(
+    objects: *const ObjectReference,
+    count: usize,
+    can_parallel_free: bool,
+) {
+    let objects = unsafe { std::slice::from_raw_parts(objects, count) };
     binding()
         .weak_proc
-        .add_obj_free_candidate(object, can_parallel_free)
+        .add_obj_free_candidates_batch(objects, can_parallel_free)
 }
 
 // =============== Weak references ===============
