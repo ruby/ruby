@@ -176,12 +176,13 @@ if options[:clean]
   exit(0)
 end
 
+# Build both versions
 before = RubyWorktree.new(name: BEFORE_NAME, ref: options[:before], force_reconfigure: options[:force_reconfigure])
 before.build
 after = RubyWorktree.new(name: AFTER_NAME, ref: options[:after], force_reconfigure: options[:force_reconfigure])
 after.build
 
-# Setup ruby bench
+# Setup ruby bench and run the benchmarks
 ruby_bench_path = options[:bench_path] || setup_ruby_bench
 
 Dir.chdir(ruby_bench_path) do
