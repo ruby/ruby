@@ -2783,9 +2783,20 @@ pub fn lir_intervals_string(asm: &Assembler, intervals: &[Interval]) -> String {
     for block_id in asm.block_order() {
         let block = &asm.basic_blocks[block_id.0];
 
-        // Print basic block label header
+        // Print basic block label header with parameters
         let label = asm.block_label(block_id);
-        output.push_str(&format!("\n{}:\n", asm.label_names[label.0]));
+        if block.parameters.is_empty() {
+            output.push_str(&format!("\n{}():\n", asm.label_names[label.0]));
+        } else {
+            output.push_str(&format!("\n{}(", asm.label_names[label.0]));
+            for (idx, param) in block.parameters.iter().enumerate() {
+                if idx > 0 {
+                    output.push_str(", ");
+                }
+                output.push_str(&format!("{param}"));
+            }
+            output.push_str("):\n");
+        }
 
         for (insn, insn_id) in block.insns.iter().zip(&block.insn_ids) {
             // Skip labels (they're not numbered)

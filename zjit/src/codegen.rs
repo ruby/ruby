@@ -1332,13 +1332,9 @@ fn gen_const_uint32(val: u32) -> lir::Opnd {
 
 /// Compile a basic block argument
 fn gen_param(asm: &mut Assembler, idx: usize) -> lir::Opnd {
-    // Allocate a register or a stack slot
-    match Assembler::param_opnd(idx) {
-        // If it's a register, insert LiveReg instruction to reserve the register
-        // in the register pool for register allocation.
-        param @ Opnd::Reg(_) => asm.live_reg_opnd(param),
-        param => param,
-    }
+    let vreg = asm.new_block_param(64);
+    asm.current_block().add_parameter(vreg);
+    vreg
 }
 
 /// Compile a jump to a basic block
