@@ -6307,9 +6307,12 @@ fn locals_written_in_block(parent_iseq: IseqPtr, blockiseq: IseqPtr, target_dept
   }
 }
 
-/// Reload locals that may have been modified by the blockiseq, and if any were
-/// reloaded, guard against EP escape (e.g. eval writing to locals we can't
-/// detect by scanning bytecode).
+/// Reload locals that may have been modified by the blockiseq, and guard
+/// against EP escape (e.g. eval writing to locals we can't detect by scanning
+/// bytecode). The PatchPoint is always emitted even when no locals were visibly
+/// written, because eval inside a block can write locals without any visible
+/// setlocal. Without the guard, a subsequent gen_spill_locals could overwrite
+/// the EP with stale JIT-side values.
 ///
 /// `pc` must point to the send instruction and `opcode` must be its decoded opcode.
 /// We build a side-exit snapshot pointing to the *next* instruction so the interpreter
@@ -6320,28 +6323,24 @@ fn reload_modified_locals(fun: &mut Function, block: BlockId, state: &mut FrameS
     // or not used after this. Max thinks we could eventually DCE them.
     let mut locals = BitSet::with_capacity(state.locals.len());
     locals_written_in_block(iseq, blockiseq, 1, &mut locals);
-    let mut reloaded = false;
     for local_idx in 0..state.locals.len() {
         if locals.get(local_idx) {
             let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
             // TODO: We could use `use_sp: true` with PatchPoint
             let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0, use_sp: false, rest_param: false });
             state.setlocal(ep_offset, val);
-            reloaded = true;
         }
     }
 
-    // Only add a NoEPEscape guard when we actually reloaded locals. If we didn't
-    // reload any, the subsequent getlocal PatchPoints (from local_inval) handle it.
+    // Always guard against EP escape after a send-with-block. Even if no locals
+    // were visibly written by the block bytecode, eval could have modified them.
     // The snapshot omits locals so the interpreter reads them from the frame.
-    if reloaded {
-        let len = insn_len(opcode as usize) as usize;
-        let mut pp_state = state.clone();
-        pp_state.pc = unsafe { pc.add(len) };
-        pp_state.insn_idx = insn_idx as usize + len;
-        let pp_exit_id = fun.push_insn(block, Insn::Snapshot { state: pp_state.without_locals() });
-        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: pp_exit_id });
-    }
+    let len = insn_len(opcode as usize) as usize;
+    let mut pp_state = state.clone();
+    pp_state.pc = unsafe { pc.add(len) };
+    pp_state.insn_idx = insn_idx as usize + len;
+    let pp_exit_id = fun.push_insn(block, Insn::Snapshot { state: pp_state.without_locals() });
+    fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: pp_exit_id });
 }
 
 /// Compile ISEQ into High-level IR
@@ -7303,6 +7302,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     if !blockiseq.is_null() {
                         reload_modified_locals(&mut fun, block, &mut state, iseq, blockiseq, pc, opcode, insn_idx);
+                        local_inval = false;
                     }
                 }
                 YARVINSN_sendforward => {
@@ -7325,6 +7325,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     if !blockiseq.is_null() {
                         reload_modified_locals(&mut fun, block, &mut state, iseq, blockiseq, pc, opcode, insn_idx);
+                        local_inval = false;
                     }
                 }
                 YARVINSN_invokesuper => {
@@ -7346,6 +7347,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     if !blockiseq.is_null() {
                         reload_modified_locals(&mut fun, block, &mut state, iseq, blockiseq, pc, opcode, insn_idx);
+                        local_inval = false;
                     }
                 }
                 YARVINSN_invokesuperforward => {
@@ -7367,6 +7369,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     if !blockiseq.is_null() {
                         reload_modified_locals(&mut fun, block, &mut state, iseq, blockiseq, pc, opcode, insn_idx);
+                        local_inval = false;
                     }
                 }
                 YARVINSN_invokeblock => {
