@@ -803,7 +803,7 @@ assert_equal 'true', %q{
 }
 
 # given block Proc will be isolated, so can not access outer variables.
-assert_equal 'ArgumentError', %q{
+assert_equal 'Ractor::IsolationError', %q{
   begin
     a = true
     r = Ractor.new do

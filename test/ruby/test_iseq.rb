@@ -157,7 +157,7 @@ class TestISeq < Test::Unit::TestCase
 
   def test_ractor_unshareable_outer_variable
     name = "\u{2603 26a1}"
-    assert_raise_with_message(ArgumentError, /\(#{name}\)/) do
+    assert_raise_with_message(Ractor::IsolationError, /\(#{name}\)/) do
       eval("#{name} = nil; Ractor.shareable_proc{#{name} = nil}")
     end
 
