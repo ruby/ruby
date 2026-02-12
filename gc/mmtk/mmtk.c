@@ -1329,6 +1329,11 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
 
     unsigned int lev = RB_GC_VM_LOCK();
     {
+        struct MMTk_ractor_cache *rc;
+        ccan_list_for_each(&objspace->ractor_caches, rc, list_node) {
+            mmtk_flush_obj_free_buffer(rc);
+        }
+
         struct MMTk_RawVecOfObjRef registered_candidates = mmtk_get_all_obj_free_candidates();
         for (size_t i = 0; i < registered_candidates.len; i++) {
             VALUE obj = (VALUE)registered_candidates.ptr[i];
