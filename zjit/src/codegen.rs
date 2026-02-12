@@ -91,6 +91,25 @@ impl JITState {
             }
         }
     }
+
+    fn jnz(&mut self, asm: &mut Assembler, target: Target) {
+        let hir_block_id = asm.current_block().hir_block_id;
+        let rpo_idx = asm.current_block().rpo_index;
+
+        let fall_through_target = asm.new_block(hir_block_id, false, rpo_idx);
+
+        let fall_through_edge = lir::BranchEdge {
+            target: fall_through_target,
+            args: vec![]
+        };
+        asm.jnz(target);
+        asm.jmp(Target::Block(fall_through_edge));
+
+        asm.set_current_block(fall_through_target);
+
+        let label = self.get_label(asm, fall_through_target, hir_block_id);
+        asm.write_label(label);
+    }
 }
 
 /// CRuby API to compile a given ISEQ.
@@ -418,6 +437,9 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
     }
 
     assert!(!asm.rpo().is_empty());
+
+    // Validate CFG invariants after HIR to LIR lowering
+    asm.validate_jump_positions();
 
     // Generate code if everything can be compiled
     let result = asm.compile(cb);
@@ -1163,7 +1185,7 @@ fn gen_check_interrupts(jit: &mut JITState, asm: &mut Assembler, state: &FrameSt
     // signal_exec, or rb_postponed_job_flush.
     let interrupt_flag = asm.load(Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_FLAG as i32));
     asm.test(interrupt_flag, interrupt_flag);
-    asm.jnz(side_exit(jit, state, SideExitReason::Interrupt));
+    jit.jnz(asm, side_exit(jit, state, SideExitReason::Interrupt));
 }
 
 fn gen_hash_dup(asm: &mut Assembler, val: Opnd, state: &FrameState) -> lir::Opnd {
