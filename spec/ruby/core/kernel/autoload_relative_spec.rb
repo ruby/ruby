@@ -3,10 +3,6 @@ require_relative 'fixtures/classes'
 
 # Specs for Kernel#autoload_relative
 
-def check_autoload_relative(const)
-  autoload? const
-end
-
 ruby_version_is "4.1" do
   describe "Kernel#autoload_relative" do
     before :each do
