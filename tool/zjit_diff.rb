@@ -26,6 +26,10 @@ def macos?
   Gem::Platform.local == 'darwin'
 end
 
+def ruby_dir(name)
+  File.join(Dir.home, '.rubies', name)
+end
+
 class RubyWorktree
   attr_reader :name, :path
 
@@ -45,12 +49,10 @@ class RubyWorktree
       if !File.exist?('Makefile') || @force_reconfigure
         run('./autogen.sh')
 
-        prefix = File.join(Dir.home, '.rubies', name)
-
         cmd = [
           './configure',
           '--enable-zjit=dev',
-          "--prefix=#{prefix}",
+          "--prefix=#{ruby_dir(@name)}",
           '--disable-install-doc'
         ]
 
@@ -114,12 +116,18 @@ def clean
       log_info "Removing worktree at #{path}"
       system('git', 'worktree', 'remove', '--force', path)
     end
+
+    path = ruby_dir(name)
+    if Dir.exist?(path)
+      log_info "Removing ruby installation at #{path}"
+      FileUtils.rm_rf(path)
+    end
   end
 
   bench_path = File.join(Dir.tmpdir, 'ruby-bench')
   return unless Dir.exist?(bench_path)
 
-  log_info "Removing ruby-bench clone at #{bench_path}"
+  log_info("Removing ruby-bench clone at #{bench_path}")
   FileUtils.rm_rf(bench_path)
 end
 
@@ -139,7 +147,6 @@ OptionParser.new do |opts|
   end
 
   opts.on('--after REF', 'Git ref for ruby (after)') do |ref|
-    ref ||= 'HEAD'
     git_ref = parse_ref ref
     if git_ref.nil?
       log_error "'#{ref}' is not a valid git ref"
@@ -163,19 +170,20 @@ OptionParser.new do |opts|
     options[:force_reconfigure] = true
   end
 
-  opts.on('--clean', 'Remove temporary git worktrees and ruby-bench clone and exit') do
+  opts.on('--clean', 'Remove temporary git worktrees, ruby-bench clone and chruby versions then exit') do
     options[:clean] = true
   end
 
   options[:name_filters] = []
 end.parse!
 
-options[:name_filters] += ARGV unless ARGV.empty?
-
 if options[:clean]
   clean
   exit(0)
 end
+
+options[:name_filters] += ARGV unless ARGV.empty?
+options[:after] ||= parse_ref('HEAD')
 
 # Build both versions
 before = RubyWorktree.new(name: BEFORE_NAME, ref: options[:before], force_reconfigure: options[:force_reconfigure])
