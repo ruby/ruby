@@ -3745,16 +3745,39 @@ impl Function {
         })
     }
 
+    // TODO(Jacob): Complete this
+    // MVP Escape analysis demonstration (thanks Kevin!)
+    //
+    // scalar replace the following. No object allocation, it just returns 200
+    // p = Point.new(10, 20)
+    // a = p.x
+    // b = p.y
+    // area = a * b
+
     fn escape_type_of(instruction: Insn) -> EscapeType {
         match instruction {
+            // Object creation starts as NoEscape
+            Insn::ObjectAlloc { .. } => EscapeType::NoEscape,
+            Insn::ObjectAllocClass { .. } => EscapeType::NoEscape,
+
+            // We need some example that has MethodEscape or GlobalEscape for an initial test
+
+
             // TODO(Jacob): Fill out each of the values here with our paper annotations from the burst
             // TODO(Jacob): Eventually, this should not use any wildcard and should match for every single HIR instruction
             _ => EscapeType::NoEscape,
         }
     }
 
+    // TODO(Jacob): handle the paper's x = p.f case. something like load / store or arrayload or attribute accessors can be scalar replaced (if the escape type is NoEscape)
+    // fn replace() {
+
+    // }
+
     // TODO(Jacob): We probably need a function to do rewriting of escapable allocations here. TBD
 
+    // TODO(Jacob): Find a way to make different tests run just a single pass
+    // TODO(Jacob): Make a clear note about potentially altering tracepoint semantics
     // TODO(Jacob): Make some escape analysis tests. Ask someone else to make sure the examples I'm using are correct for ruby and matter
     fn scalar_replace(&mut self) {
         // Design sketch
