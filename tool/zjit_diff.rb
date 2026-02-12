@@ -6,15 +6,24 @@ require 'logger'
 
 GitRef = Struct.new(:ref, :commit_hash)
 
+def macos?
+  Gem::Platform.local == 'darwin'
+end
+
+def ruby_dir(name)
+  File.join(Dir.home, '.rubies', name)
+end
+
 class CommandRunner
   def initialize(quiet: false)
     @quiet = quiet
   end
 
-  def cmd(*args, quiet: nil)
-    quiet = @quiet if quiet.nil?
-    options = { exception: true }
-    options = options.merge(out: File::NULL) if quiet
+  def cmd(*args, **options)
+    if options[:out].nil?
+      options[:out] = @quiet ? File::NULL : $stderr
+    end
+    options = options.merge(exception: true)
     system(*args, **options)
   end
 end
@@ -50,48 +59,7 @@ class ZJITDiff
     run_benchmarks(ruby_bench_path)
   end
 
-  private
-
-  def run_benchmarks(ruby_bench_path)
-    Dir.chdir(ruby_bench_path) do
-      @runner.cmd('./run_benchmarks.rb',
-                  '--chruby',
-                  "#{BEFORE_NAME} --zjit-stats;#{AFTER_NAME} --zjit-stats",
-                  '--out-name',
-                  DATA_FILENAME,
-                  *@options[:bench_args],
-                  *@options[:name_filters])
-
-      @runner.cmd('./misc/zjit_diff.rb', "#{DATA_FILENAME}.json", quiet: false)
-    end
-  end
-
-  def macos?
-    Gem::Platform.local == 'darwin'
-  end
-
-  def ruby_dir(name)
-    File.join(Dir.home, '.rubies', name)
-  end
-
-  def setup_ruby_bench
-    path = File.join(Dir.tmpdir, 'ruby-bench')
-    if Dir.exist?(path)
-      @log.info('ruby-bench already cloned, pulling from upstream')
-      Dir.chdir(path) do
-        @runner.cmd('git', 'pull')
-      end
-    else
-      @log.info("ruby-bench not cloned yet, cloning repository to #{path}")
-      @runner.cmd('git', 'clone', RUBY_BENCH_REPO_URL, path)
-    end
-    Dir.chdir(path) do
-      @runner.cmd('bundle', 'install')
-    end
-    path
-  end
-
-  def clean
+  def clean!
     [BEFORE_NAME, AFTER_NAME].each do |name|
       path = File.join(Dir.tmpdir, name)
       if Dir.exist?(path)
@@ -111,6 +79,36 @@ class ZJITDiff
 
     @log.info("Removing ruby-bench clone at #{bench_path}")
     FileUtils.rm_rf(bench_path)
+  end
+
+  private
+
+  def run_benchmarks(ruby_bench_path)
+    Dir.chdir(ruby_bench_path) do
+      @runner.cmd('./run_benchmarks.rb',
+                  '--chruby',
+                  "#{BEFORE_NAME} --zjit-stats;#{AFTER_NAME} --zjit-stats",
+                  '--out-name',
+                  DATA_FILENAME,
+                  *@options[:bench_args],
+                  *@options[:name_filters])
+
+      @runner.cmd('./misc/zjit_diff.rb', "#{DATA_FILENAME}.json", out: $stdout)
+    end
+  end
+
+  def setup_ruby_bench
+    path = File.join(Dir.tmpdir, 'ruby-bench')
+    if Dir.exist?(path)
+      @log.info('ruby-bench already cloned, pulling from upstream')
+      Dir.chdir(path) do
+        @runner.cmd('git', 'pull')
+      end
+    else
+      @log.info("ruby-bench not cloned yet, cloning repository to #{path}")
+      @runner.cmd('git', 'clone', RUBY_BENCH_REPO_URL, path)
+    end
+    path
   end
 end
 
@@ -228,12 +226,14 @@ OptionParser.new do |opts|
   options[:name_filters] = []
 end.parse!
 
-if options[:clean]
-  clean
-  exit(0)
-end
-
 options[:name_filters] += ARGV unless ARGV.empty?
 options[:after] ||= parse_ref('HEAD')
 
-ZJITDiff.new(options).run!
+zjit_diff = ZJITDiff.new(options)
+
+if options[:clean]
+  zjit_diff.clean!
+  exit(0)
+end
+
+zjit_diff.run!
