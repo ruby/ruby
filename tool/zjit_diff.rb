@@ -1,8 +1,14 @@
 #!/usr/bin/env ruby
+require 'fileutils'
 require 'optparse'
 require 'tmpdir'
 
 GitRef = Struct.new(:ref, :commit_hash)
+
+BEFORE_NAME = 'ruby-zjit-before'.freeze
+AFTER_NAME = 'ruby-zjit-after'.freeze
+DATA_FILENAME = File.join('data', 'zjit_diff')
+RUBY_BENCH_REPO_URL = 'https://github.com/ruby/ruby-bench.git'.freeze
 
 def log_info(msg)
   puts "\e[32m#{msg}\e[0m"
@@ -78,7 +84,6 @@ class RubyWorktree
 end
 
 def parse_ref(ref)
-  # TODO: Ensure that this is a commit
   out = `git rev-parse --verify #{ref}`
   return nil unless $?.success?
 
@@ -100,6 +105,22 @@ def setup_ruby_bench
     run('bundle', 'install')
   end
   path
+end
+
+def clean
+  [BEFORE_NAME, AFTER_NAME].each do |name|
+    path = File.join(Dir.tmpdir, name)
+    if Dir.exist?(path)
+      log_info "Removing worktree at #{path}"
+      system('git', 'worktree', 'remove', '--force', path)
+    end
+  end
+
+  bench_path = File.join(Dir.tmpdir, 'ruby-bench')
+  return unless Dir.exist?(bench_path)
+
+  log_info "Removing ruby-bench clone at #{bench_path}"
+  FileUtils.rm_rf(bench_path)
 end
 
 options = {}
@@ -141,15 +162,19 @@ OptionParser.new do |opts|
     options[:force_reconfigure] = true
   end
 
+  opts.on('--clean', 'Remove temporary git worktrees and ruby-bench clone and exit') do
+    options[:clean] = true
+  end
+
   options[:name_filters] = []
 end.parse!
 
 options[:name_filters] += ARGV unless ARGV.empty?
 
-BEFORE_NAME = 'ruby-zjit-before'.freeze
-AFTER_NAME = 'ruby-zjit-after'.freeze
-DATA_FILENAME = File.join('data', 'zjit_diff')
-RUBY_BENCH_REPO_URL = 'https://github.com/ruby/ruby-bench.git'.freeze
+if options[:clean]
+  clean
+  exit(0)
+end
 
 before = RubyWorktree.new(name: BEFORE_NAME, ref: options[:before], force_reconfigure: options[:force_reconfigure])
 before.build
