@@ -1554,6 +1554,9 @@ rb_mod_autoload(VALUE mod, VALUE sym, VALUE file)
  *  loaded is replaced with _filename_.  If _const_ is defined but not
  *  as autoload, does nothing.
  *
+ *  The relative path is converted to an absolute path, which is what
+ *  will be returned by Module#autoload? for the constant.
+ *
  *  Raises LoadError if called without file context (e.g., from eval).
  */
 
@@ -1658,6 +1661,9 @@ rb_f_autoload(VALUE obj, VALUE sym, VALUE file)
  *  If _const_ is defined as autoload, the file name to be loaded is
  *  replaced with _filename_.  If _const_ is defined but not as
  *  autoload, does nothing.
+ *
+ *  The relative path is converted to an absolute path, which is what
+ *  will be returned by Kernel#autoload? for the constant.
  *
  *  Raises LoadError if called without file context (e.g., from eval).
  */
