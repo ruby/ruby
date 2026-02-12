@@ -139,8 +139,9 @@ OptionParser.new do |opts|
   end
 
   opts.on('--after REF', 'Git ref for ruby (after)') do |ref|
+    ref ||= 'HEAD'
     git_ref = parse_ref ref
-    if ref.nil?
+    if git_ref.nil?
       log_error "'#{ref}' is not a valid git ref"
       exit 1
     end
