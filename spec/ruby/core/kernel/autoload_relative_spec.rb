@@ -7,7 +7,6 @@ ruby_version_is "4.1" do
   describe "Kernel#autoload_relative" do
     before :each do
       @loaded_features = $".dup
-      @dir = fixture(__FILE__, ".")
     end
 
     after :each do
