@@ -31,6 +31,8 @@ static VALUE rb_eRactorRemoteError;
 static VALUE rb_eRactorMovedError;
 static VALUE rb_eRactorClosedError;
 static VALUE rb_cRactorMovedObject;
+static ID id_outer_variables;
+static ID id_yield_called;
 
 static void vm_ractor_blocking_cnt_inc(rb_vm_t *vm, rb_ractor_t *r, const char *file, int line);
 
@@ -947,6 +949,78 @@ ractor_moved_missing(int argc, VALUE *argv, VALUE self)
     rb_raise(rb_eRactorMovedError, "can not send any methods to a moved object");
 }
 
+static VALUE
+isolation_error_initialize(int argc, VALUE *argv, VALUE self)
+{
+    VALUE options;
+
+    rb_call_super(rb_scan_args(argc, argv, "01:", NULL, &options), argv);
+
+    if (!NIL_P(options)) {
+        ID keywords[2];
+        VALUE values[numberof(keywords)];
+        int i;
+        keywords[0] = id_outer_variables;
+        keywords[1] = id_yield_called;
+        rb_get_kwargs(options, keywords, 0, numberof(values), values);
+        for (i = 0; i < numberof(values); ++i) {
+            if (!UNDEF_P(values[i])) {
+                rb_ivar_set(self, keywords[i], values[i]);
+            }
+        }
+    }
+
+    return self;
+}
+
+/*
+ * call-seq:
+ *   isolation_error.outer_variables  -> array
+ *
+ * Return the outer variables that caused this IsolationError exception.
+ */
+static VALUE
+isolation_error_outer_variables(VALUE self)
+{
+    VALUE vars = rb_ivar_get(self, id_outer_variables);
+    if (!NIL_P(vars)) return vars;
+    return rb_ary_new();
+}
+
+/*
+ * call-seq:
+ *   isolation_error.yield_called  -> boolean
+ *
+ * Return whether the yield was called in the Proc that caused this IsolationError exception.
+ */
+static VALUE
+isolation_error_yield_called(VALUE self)
+{
+    VALUE called = rb_ivar_get(self, id_yield_called);
+    if (!NIL_P(called)) return called;
+    return Qfalse;
+}
+
+/*
+ * call-seq:
+ *   rb_raise_isolation_error(message, outer_variables, yield_called)
+ *
+ * Raise a new Ractor::IsolationError exception with the given message, outer variables, and whether yield was called.
+ */
+void
+rb_raise_isolation_error(VALUE message, VALUE outer_variables, VALUE yield_called)
+{
+    VALUE exc = rb_exc_new_str(rb_eRactorIsolationError, message);
+
+    if (!NIL_P(outer_variables)) {
+        rb_ivar_set(exc, id_outer_variables, outer_variables);
+    }
+    if (!NIL_P(yield_called)) {
+        rb_ivar_set(exc, id_yield_called, yield_called);
+    }
+    rb_exc_raise(exc);
+}
+
 /*
  *  Document-class: Ractor::Error
  *
@@ -1047,6 +1121,9 @@ Init_Ractor(void)
 
     rb_eRactorError          = rb_define_class_under(rb_cRactor, "Error", rb_eRuntimeError);
     rb_eRactorIsolationError = rb_define_class_under(rb_cRactor, "IsolationError", rb_eRactorError);
+    rb_define_method(rb_eRactorIsolationError, "initialize", isolation_error_initialize, -1);
+    rb_define_method(rb_eRactorIsolationError, "outer_variables", isolation_error_outer_variables, 0);
+    rb_define_method(rb_eRactorIsolationError, "yield_called", isolation_error_yield_called, 0);
     rb_eRactorRemoteError    = rb_define_class_under(rb_cRactor, "RemoteError", rb_eRactorError);
     rb_eRactorMovedError     = rb_define_class_under(rb_cRactor, "MovedError",  rb_eRactorError);
     rb_eRactorClosedError    = rb_define_class_under(rb_cRactor, "ClosedError", rb_eStopIteration);
@@ -1065,6 +1142,9 @@ Init_Ractor(void)
     rb_define_method(rb_cRactorMovedObject, "equal?", ractor_moved_missing, -1);
     rb_define_method(rb_cRactorMovedObject, "instance_eval", ractor_moved_missing, -1);
     rb_define_method(rb_cRactorMovedObject, "instance_exec", ractor_moved_missing, -1);
+
+    id_outer_variables = rb_intern_const("outer_variables");
+    id_yield_called = rb_intern_const("yield_called");
 
     Init_RactorPort();
 }

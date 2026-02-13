@@ -814,6 +814,71 @@ assert_equal 'Ractor::IsolationError', %q{
   end
 }
 
+# IsolationError#outer_variables returns the list of outer variables
+assert_equal '["a"]', %q{
+  begin
+    a = true
+    r = Ractor.new do
+      a
+    end
+  rescue Ractor::IsolationError => e
+    e.outer_variables.inspect
+  end
+}
+
+# IsolationError#yield_called is false when only outer variables are accessed
+assert_equal 'false', %q{
+  begin
+    a = true
+    r = Ractor.new do
+      a
+    end
+  rescue Ractor::IsolationError => e
+    e.yield_called.inspect
+  end
+}
+
+# IsolationError#yield_called is true when yield is used
+assert_equal 'true', %q{
+  def test_yield
+    begin
+      r = Ractor.new do
+        yield
+      end
+    rescue Ractor::IsolationError => e
+      e.yield_called.inspect
+    end
+  end
+  test_yield
+}
+
+# IsolationError#outer_variables is empty when only yield is used
+assert_equal '[]', %q{
+  def test_yield_outer
+    begin
+      r = Ractor.new do
+        yield
+      end
+    rescue Ractor::IsolationError => e
+      e.outer_variables.inspect
+    end
+  end
+  test_yield_outer
+}
+
+# IsolationError#outer_variables returns multiple variables
+assert_equal '2', %q{
+  begin
+    a = 1
+    b = 2
+    r = Ractor.new do
+      a + b
+    end
+  rescue Ractor::IsolationError => e
+    e.outer_variables.size
+  end
+}
+
 # eval with outer locals in a Ractor raises SyntaxError
 # [Bug #21522]
 assert_equal 'SyntaxError', %q{

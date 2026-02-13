@@ -1450,7 +1450,8 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
                         VALUE name = rb_id2str(id);
                         VALUE msg = rb_sprintf("cannot make a shareable Proc because "
                                                "the outer variable '%" PRIsVALUE "' may be reassigned.", name);
-                        rb_exc_raise(rb_exc_new_str(rb_eRactorIsolationError, msg));
+                        VALUE outer_variables = rb_ary_new_from_args(1, name);
+                        rb_raise_isolation_error(msg, outer_variables, Qfalse);
                     }
 
                     // check shareable
@@ -1459,11 +1460,17 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
                         VALUE name = rb_id2str(id);
                         VALUE msg = rb_sprintf("cannot make a shareable Proc because it can refer"
                                                " unshareable object %+" PRIsVALUE " from ", v);
-                        if (name)
+                        VALUE outer_variables;
+
+                        if (name) {
+                            outer_variables = rb_ary_new_from_args(1, name);
                             rb_str_catf(msg, "variable '%" PRIsVALUE "'", name);
-                        else
+                        }
+                        else {
+                            outer_variables = Qnil;
                             rb_str_cat_cstr(msg, "a hidden variable");
-                        rb_exc_raise(rb_exc_new_str(rb_eRactorIsolationError, msg));
+                        }
+                        rb_raise_isolation_error(msg, outer_variables, Qfalse);
                     }
                     RB_OBJ_WRITE((VALUE)copied_env, &env_body[j], v);
                     rb_ary_delete_at(read_only_variables, i);
@@ -1511,20 +1518,23 @@ proc_shared_outer_variables(struct rb_id_table *outer_variables, bool isolate, c
     if (data.ary != Qfalse) {
         VALUE str = rb_sprintf("can not %s because it accesses outer variables", message);
         VALUE ary = data.ary;
+        VALUE names = rb_ary_new();
         const char *sep = " (";
         for (long i = 0; i < RARRAY_LEN(ary); i++) {
             VALUE name = rb_id2str(NUM2ID(RARRAY_AREF(ary, i)));
             if (!name) continue;
+            rb_ary_push(names, name);
             rb_str_cat_cstr(str, sep);
             sep = ", ";
             rb_str_append(str, name);
         }
         if (*sep == ',') rb_str_cat_cstr(str, ")");
         rb_str_cat_cstr(str, data.yield ? " and uses 'yield'." : ".");
-        rb_exc_raise(rb_exc_new_str(rb_eRactorIsolationError, str));
+        rb_raise_isolation_error(str, names, data.yield ? Qtrue : Qfalse);
     }
     else if (data.yield) {
-        rb_raise(rb_eRactorIsolationError, "can not %s because it uses 'yield'.", message);
+        VALUE str = rb_sprintf("can not %s because it uses 'yield'.", message);
+        rb_raise_isolation_error(str, Qnil, Qtrue);
     }
 
     return data.read_only;
