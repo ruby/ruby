@@ -95,7 +95,6 @@ of each.
 - [test-unit]: A compatibility layer for MiniTest
 - [rexml][rexml-doc] ([GitHub][rexml]): An XML toolkit for Ruby
 - [rss]: A family of libraries supporting various XML-based "feeds"
-- [net-ftp]: Support for the File Transfer Protocol
 - [net-imap]: Ruby client API for the Internet Message Access Protocol
 - [net-pop]: Ruby client library for POP3
 - [net-smtp]: Simple Mail Transfer Protocol client library for Ruby
@@ -164,7 +163,6 @@ of each.
 [matrix]: https://github.com/ruby/matrix
 [minitest]: https://github.com/seattlerb/minitest
 [mutex_m]: https://github.com/ruby/mutex_m
-[net-ftp]: https://github.com/ruby/net-ftp
 [net-http]: https://github.com/ruby/net-http
 [net-imap]: https://github.com/ruby/net-imap
 [net-pop]: https://github.com/ruby/net-pop
