@@ -430,11 +430,6 @@ It may needs to make consensus on ruby-core/ruby-dev before making major changes
 * https://github.com/ruby/net-imap
 * https://rubygems.org/gems/net-imap
 
-### net-pop
-
-* https://github.com/ruby/net-pop
-* https://rubygems.org/gems/net-pop
-
 ### net-smtp
 
 * TOMITA Masahiro ([tmtm])
