@@ -687,7 +687,12 @@ size_t rb_gc_impl_obj_slot_size(VALUE obj);
 # endif
 #endif
 
-#define BASE_SLOT_SIZE (sizeof(struct RBasic) + sizeof(VALUE[RBIMPL_RVALUE_EMBED_LEN_MAX]) + RVALUE_OVERHEAD)
+#if SIZEOF_VALUE >= 8
+#define BASE_SLOT_SIZE_LOG2 6
+#else
+#define BASE_SLOT_SIZE_LOG2 5
+#endif
+#define BASE_SLOT_SIZE (1 << BASE_SLOT_SIZE_LOG2)
 
 #ifndef MAX
 # define MAX(a, b) (((a) > (b)) ? (a) : (b))
@@ -764,7 +769,7 @@ struct free_slot {
 
 struct heap_page {
     unsigned short slot_size;
-    uint32_t slot_div_magic;
+    unsigned char slot_size_log2;
     unsigned short total_slots;
     unsigned short free_slots;
     unsigned short final_slots;
@@ -841,15 +846,13 @@ heap_page_in_global_empty_pages_pool(rb_objspace_t *objspace, struct heap_page *
 #define GET_PAGE_HEADER(x) (&GET_PAGE_BODY(x)->header)
 #define GET_HEAP_PAGE(x)   (GET_PAGE_HEADER(x)->page)
 
-static uint32_t slot_div_magics[HEAP_COUNT];
-
 static inline size_t
-slot_index_for_offset(size_t offset, uint32_t div_magic)
+slot_index_for_offset(size_t offset, unsigned char slot_size_log2)
 {
-    return (size_t)(((uint64_t)offset * div_magic) >> 32);
+    return offset >> slot_size_log2;
 }
 
-#define SLOT_INDEX(page, p)          slot_index_for_offset((uintptr_t)(p) - (page)->start, (page)->slot_div_magic)
+#define SLOT_INDEX(page, p)          slot_index_for_offset((uintptr_t)(p) - (page)->start, (page)->slot_size_log2)
 #define SLOT_BITMAP_INDEX(page, p)   (SLOT_INDEX(page, p) / BITS_BITLENGTH)
 #define SLOT_BITMAP_OFFSET(page, p)  (SLOT_INDEX(page, p) & (BITS_BITLENGTH - 1))
 #define SLOT_BITMAP_BIT(page, p)     ((bits_t)1 << SLOT_BITMAP_OFFSET(page, p))
@@ -1977,19 +1980,16 @@ heap_add_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page)
     GC_ASSERT(!heap->sweeping_page);
     GC_ASSERT(heap_page_in_global_empty_pages_pool(objspace, page));
 
-    /* Align start to the first slot_size boundary after the page header */
+    /* Align start to slot_size boundary (both are powers of 2) */
     uintptr_t start = (uintptr_t)page->body + sizeof(struct heap_page_header);
-    size_t remainder = start % heap->slot_size;
-    if (remainder != 0) {
-        start += heap->slot_size - remainder;
-    }
+    start = (start + heap->slot_size - 1) & ~((uintptr_t)heap->slot_size - 1);
 
     int slot_count = (int)((HEAP_PAGE_SIZE - (start - (uintptr_t)page->body))/heap->slot_size);
 
     page->start = start;
     page->total_slots = slot_count;
     page->slot_size = heap->slot_size;
-    page->slot_div_magic = slot_div_magics[heap - heaps];
+    page->slot_size_log2 = BASE_SLOT_SIZE_LOG2 + (unsigned char)(heap - heaps);
     page->heap = heap;
 
     memset(&page->wb_unprotected_bits[0], 0, HEAP_PAGE_BITMAP_SIZE);
@@ -2237,7 +2237,7 @@ heap_slot_size(unsigned char pool_id)
 {
     GC_ASSERT(pool_id < HEAP_COUNT);
 
-    size_t slot_size = (1 << pool_id) * BASE_SLOT_SIZE;
+    size_t slot_size = BASE_SLOT_SIZE << pool_id;
 
 #if RGENGC_CHECK_MODE
     rb_objspace_t *objspace = rb_gc_get_objspace();
@@ -2356,10 +2356,10 @@ heap_idx_for_size(size_t size)
 {
     size += RVALUE_OVERHEAD;
 
-    size_t slot_count = CEILDIV(size, BASE_SLOT_SIZE);
+    if (size <= BASE_SLOT_SIZE) return 0;
 
-    /* heap_idx is ceil(log2(slot_count)) */
-    size_t heap_idx = 64 - nlz_int64(slot_count - 1);
+    /* ceil(log2(size)) - BASE_SLOT_SIZE_LOG2 */
+    size_t heap_idx = 64 - nlz_int64(size - 1) - BASE_SLOT_SIZE_LOG2;
 
     if (heap_idx >= HEAP_COUNT) {
         rb_bug("heap_idx_for_size: allocation size too large "
@@ -9515,11 +9515,12 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
         rb_bug("Could not preregister postponed job for GC");
     }
 
+    GC_ASSERT(sizeof(struct RBasic) + sizeof(VALUE[RBIMPL_RVALUE_EMBED_LEN_MAX]) + RVALUE_OVERHEAD <= BASE_SLOT_SIZE);
+
     for (int i = 0; i < HEAP_COUNT; i++) {
         rb_heap_t *heap = &heaps[i];
 
-        heap->slot_size = (1 << i) * BASE_SLOT_SIZE;
-        slot_div_magics[i] = (uint32_t)((uint64_t)UINT32_MAX / heap->slot_size + 1);
+        heap->slot_size = BASE_SLOT_SIZE << i;
 
         ccan_list_head_init(&heap->pages);
     }
