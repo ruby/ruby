@@ -424,12 +424,6 @@ It may needs to make consensus on ruby-core/ruby-dev before making major changes
 * https://github.com/ruby/rss
 * https://rubygems.org/gems/rss
 
-### net-ftp
-
-* Shugo Maeda ([shugo])
-* https://github.com/ruby/net-ftp
-* https://rubygems.org/gems/net-ftp
-
 ### net-imap
 
 * Nicholas A. Evans ([nevans])
@@ -711,7 +705,6 @@ It may needs to make consensus on ruby-core/ruby-dev before making major changes
 [k-tsj]: https://github.com/k-tsj
 [nevans]: https://github.com/nevans
 [tmtm]: https://github.com/tmtm
-[shugo]: https://github.com/shugo
 [soutaro]: https://github.com/soutaro
 [yui-knk]: https://github.com/yui-knk
 [hasumikin]: https://github.com/hasumikin
