@@ -726,4 +726,4 @@ for one byte in the input or output string.
 
 - <tt>'^'</tt> - Only for unpacking; the current position:
 
-    "foo\0\0\0".unpack("Z*C")    # => ["foo", 6]
+    "foo\0\0\0".unpack("Z*^")    # => ["foo", 4]
