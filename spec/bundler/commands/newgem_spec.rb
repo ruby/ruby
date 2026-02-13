@@ -1982,9 +1982,17 @@ Usage: "bundle gem NAME [OPTIONS]"
       it { expect(err).to include("Invalid gem name #{subject}") }
     end
 
+    context "starting with a number" do
+      subject { "1gem" }
+      it { expect(err).to include("Invalid gem name #{subject}") }
+    end
+
     context "including capital letter" do
       subject { "CAPITAL" }
-      it { expect(err).to include("Invalid gem name #{subject}") }
+      it "should warn but not error" do
+        expect(err).to include("Gem names with capital letters are not recommended")
+        expect(bundled_app("#{subject}/#{subject}.gemspec")).to exist
+      end
     end
 
     context "starting with an existing const name" do

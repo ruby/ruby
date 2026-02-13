@@ -430,9 +430,13 @@ module Bundler
     end
 
     def ensure_safe_gem_name(name, constant_array)
-      if /(^\d)|[A-Z]/.match?(name)
-        Bundler.ui.error "Invalid gem name #{name} Please give a name which does not start with numbers nor include capital letters."
+      if /^\d/.match?(name)
+        Bundler.ui.error "Invalid gem name #{name} Please give a name which does not start with numbers."
         exit 1
+      end
+
+      if /[A-Z]/.match?(name)
+        Bundler.ui.warn "Gem names with capital letters are not recommended. Please use only lowercase letters, numbers, and hyphens."
       end
 
       constant_name = constant_array.join("::")
