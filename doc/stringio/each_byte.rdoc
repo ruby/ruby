@@ -7,10 +7,7 @@ returns +self+:
   strio.each_byte {|byte| bytes.push(byte) }
   strio.eof? # => true
   bytes # => [104, 101, 108, 108, 111]
-  bytes = []
-  strio = StringIO.new('тест')      # Four 2-byte characters.
-  strio.each_byte {|byte| bytes.push(byte) }
-  bytes # => [209, 130, 208, 181, 209, 129, 209, 130]
+
   bytes = []
   strio = StringIO.new('こんにちは')  # Five 3-byte characters.
   strio.each_byte {|byte| bytes.push(byte) }
