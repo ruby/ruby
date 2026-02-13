@@ -9511,7 +9511,7 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
         rb_heap_t *heap = &heaps[i];
 
         heap->slot_size = (1 << i) * BASE_SLOT_SIZE;
-        slot_div_magics[i] = (uint32_t)(((uint64_t)1 << 32) / heap->slot_size + 1);
+        slot_div_magics[i] = (uint32_t)((uint64_t)UINT32_MAX / heap->slot_size + 1);
 
         ccan_list_head_init(&heap->pages);
     }
