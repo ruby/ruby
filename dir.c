@@ -933,37 +933,37 @@ dir_yield_with_type(VALUE arg, VALUE path, unsigned char dtype)
     VALUE type;
     switch (dtype) {
 #ifdef DT_BLK
-        case DT_BLK:
-            type = sym_block_device;
-            break;
+      case DT_BLK:
+        type = sym_block_device;
+        break;
 #endif
 #ifdef DT_CHR
-        case DT_CHR:
-            type = sym_character_device;
-            break;
+      case DT_CHR:
+        type = sym_character_device;
+        break;
 #endif
-        case DT_DIR:
-            type = sym_directory;
-            break;
+      case DT_DIR:
+        type = sym_directory;
+        break;
 #ifdef DT_FIFO
-        case DT_FIFO:
-            type = sym_fifo;
-            break;
+      case DT_FIFO:
+        type = sym_fifo;
+        break;
 #endif
-        case DT_LNK:
-            type = sym_link;
-            break;
-        case DT_REG:
-            type = sym_file;
-            break;
+      case DT_LNK:
+        type = sym_link;
+        break;
+      case DT_REG:
+        type = sym_file;
+        break;
 #ifdef DT_SOCK
-        case DT_SOCK:
-            type = sym_socket;
-            break;
+      case DT_SOCK:
+        type = sym_socket;
+        break;
 #endif
-        default:
-            type = sym_unknown;
-            break;
+      default:
+        type = sym_unknown;
+        break;
     }
 
     if (NIL_P(arg)) {
