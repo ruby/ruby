@@ -506,16 +506,16 @@ fnmatch(
 VALUE rb_cDir;
 static VALUE sym_directory, sym_link, sym_file, sym_unknown;
 
-#ifdef DT_BLK
+#if defined(DT_BLK) || defined(S_IFBLK)
 static VALUE sym_block_device;
 #endif
-#ifdef DT_CHR
+#if defined(DT_CHR) || defined(S_IFCHR)
 static VALUE sym_character_device;
 #endif
-#ifdef DT_FIFO
+#if defined(DT_FIFO) || defined(S_IFIFO)
 static VALUE sym_fifo;
 #endif
-#ifdef DT_SOCK
+#if defined(DT_SOCK) || defined(S_IFSOCK)
 static VALUE sym_socket;
 #endif
 
@@ -919,19 +919,26 @@ dir_read(VALUE dir)
     }
 }
 
-static VALUE dir_each_entry(VALUE, VALUE (*)(VALUE, VALUE, unsigned char), VALUE, int);
+struct dir_entry_args {
+    struct dir_data *dirp;
+    struct dirent *dp;
+};
+
+static VALUE dir_each_entry(VALUE, VALUE (*)(VALUE, VALUE, struct dir_entry_args *), VALUE, int);
 
 static VALUE
-dir_yield(VALUE arg, VALUE path, unsigned char dtype)
+dir_yield(VALUE arg, VALUE path, struct dir_entry_args *_unused)
 {
     return rb_yield(path);
 }
 
+static int do_lstat(int fd, const char *path, struct stat *pst, int flags, rb_encoding *enc);
+
 static VALUE
-dir_yield_with_type(VALUE arg, VALUE path, unsigned char dtype)
+dir_yield_with_type(VALUE arg, VALUE path, struct dir_entry_args *dir_entry)
 {
     VALUE type;
-    switch (dtype) {
+    switch (dir_entry->dp->d_type) {
 #ifdef DT_BLK
       case DT_BLK:
         type = sym_block_device;
@@ -965,6 +972,47 @@ dir_yield_with_type(VALUE arg, VALUE path, unsigned char dtype)
         type = sym_unknown;
         break;
     }
+
+#ifdef HAVE_DIRFD
+    if (RUBY_DEBUG || RB_UNLIKELY(type == sym_unknown)) {
+        struct stat st;
+        if (do_lstat(dirfd(dir_entry->dirp->dir), dir_entry->dp->d_name, &st, 0, rb_filesystem_encoding()) == 0) {
+            switch (st.st_mode & S_IFMT) {
+              case S_IFDIR:
+                type = sym_directory;
+                break;
+              case S_IFLNK:
+                type = sym_link;
+                break;
+              case S_IFREG:
+                type = sym_file;
+                break;
+#ifdef S_IFSOCK
+              case S_IFSOCK:
+                type = sym_socket;
+                break;
+#endif
+#ifdef S_IFIFO
+              case S_IFIFO:
+                type = sym_fifo;
+                break;
+#endif
+#ifdef S_IFBLK
+              case S_IFBLK:
+                type = sym_block_device;
+                break;
+#endif
+#ifdef S_IFCHR
+              case S_IFCHR:
+                type = sym_character_device;
+                break;
+#endif
+              default:
+                break;
+            }
+        }
+    }
+#endif // HAVE_DIRFD
 
     if (NIL_P(arg)) {
         return rb_yield_values(2, path, type);
@@ -1001,7 +1049,7 @@ dir_each(VALUE dir)
 }
 
 static VALUE
-dir_each_entry(VALUE dir, VALUE (*each)(VALUE, VALUE, unsigned char), VALUE arg, int children_only)
+dir_each_entry(VALUE dir, VALUE (*each)(VALUE, VALUE, struct dir_entry_args *), VALUE arg, int children_only)
 {
     struct dir_data *dirp;
     struct dirent *dp;
@@ -1027,7 +1075,11 @@ dir_each_entry(VALUE dir, VALUE (*each)(VALUE, VALUE, unsigned char), VALUE arg,
         else
 #endif
         path = rb_external_str_new_with_enc(name, namlen, dirp->enc);
-        (*each)(arg, path, dp->d_type);
+        struct dir_entry_args each_args = {
+            .dirp = dirp,
+            .dp = dp,
+        };
+        (*each)(arg, path, &each_args);
     }
     return dir;
 }
@@ -1865,7 +1917,7 @@ nogvl_stat(void *args)
 
 /* System call with warning */
 static int
-do_stat(int fd, size_t baselen, const char *path, struct stat *pst, int flags, rb_encoding *enc)
+do_stat(int fd, const char *path, struct stat *pst, int flags, rb_encoding *enc)
 {
 #if USE_OPENDIR_AT
     struct fstatat_args args;
@@ -1897,7 +1949,7 @@ nogvl_lstat(void *args)
 #endif
 
 static int
-do_lstat(int fd, size_t baselen, const char *path, struct stat *pst, int flags, rb_encoding *enc)
+do_lstat(int fd, const char *path, struct stat *pst, int flags, rb_encoding *enc)
 {
 #if USE_OPENDIR_AT
     struct fstatat_args args;
@@ -2840,7 +2892,7 @@ glob_helper(
 
     if (*path) {
         if (match_all && pathtype == path_unknown) {
-            if (do_lstat(fd, baselen, path, &st, flags, enc) == 0) {
+            if (do_lstat(fd, path, &st, flags, enc) == 0) {
                 pathtype = IFTODT(st.st_mode);
             }
             else {
@@ -2848,7 +2900,7 @@ glob_helper(
             }
         }
         if (match_dir && (pathtype == path_unknown || pathtype == path_symlink)) {
-            if (do_stat(fd, baselen, path, &st, flags, enc) == 0) {
+            if (do_stat(fd, path, &st, flags, enc) == 0) {
                 pathtype = IFTODT(st.st_mode);
             }
             else {
@@ -2976,7 +3028,7 @@ glob_helper(
             if (recursive && dotfile < ((flags & FNM_DOTMATCH) ? 2 : 1) &&
                 new_pathtype == path_unknown) {
                 /* RECURSIVE never match dot files unless FNM_DOTMATCH is set */
-                if (do_lstat(fd, baselen, buf, &st, flags, enc) == 0)
+                if (do_lstat(fd, buf, &st, flags, enc) == 0)
                     new_pathtype = IFTODT(st.st_mode);
                 else
                     new_pathtype = path_noent;
@@ -3532,7 +3584,7 @@ dir_foreach(int argc, VALUE *argv, VALUE io)
 }
 
 static VALUE
-dir_entry_ary_push(VALUE ary, VALUE entry, unsigned char ftype)
+dir_entry_ary_push(VALUE ary, VALUE entry, struct dir_entry_args *_unused)
 {
     return rb_ary_push(ary, entry);
 }
@@ -3935,16 +3987,16 @@ Init_Dir(void)
     sym_file = ID2SYM(rb_intern("file"));
     sym_unknown = ID2SYM(rb_intern("unknown"));
 
-#ifdef DT_BLK
+#if defined(DT_BLK) || defined(S_IFBLK)
     sym_block_device = ID2SYM(rb_intern("blockSpecial"));
 #endif
-#ifdef DT_CHR
+#if defined(DT_CHR) || defined(S_IFCHR)
     sym_character_device = ID2SYM(rb_intern("characterSpecial"));
 #endif
-#ifdef DT_FIFO
+#if defined(DT_FIFO) || defined(S_IFIFO)
     sym_fifo = ID2SYM(rb_intern("fifo"));
 #endif
-#ifdef DT_SOCK
+#if defined(DT_SOCK) || defined(S_IFSOCK)
     sym_socket = ID2SYM(rb_intern("socket"));
 #endif
 
