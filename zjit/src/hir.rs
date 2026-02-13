@@ -3192,8 +3192,7 @@ impl Function {
 
                             let getivar = self.push_insn(block, Insn::GetIvar { self_val: recv, id, ic: std::ptr::null(), state });
                             self.make_equal_to(insn_id, getivar);
-                        } else if !has_block && def_type == VM_METHOD_TYPE_ATTRSET && args.len() == 1 {
-                            let val = args[0];
+                        } else if let (false, VM_METHOD_TYPE_ATTRSET, &[val]) = (has_block, def_type, args.as_slice()) {
                             // Check if we're accessing ivars of a Class or Module object as they require single-ractor mode.
                             // We omit gen_prepare_non_leaf_call on gen_getivar, so it's unsafe to raise for multi-ractor mode.
                             if self.is_metaclass(klass) && !self.assume_single_ractor_mode(block, state) {
