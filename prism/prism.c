@@ -9783,6 +9783,12 @@ parser_lex(pm_parser_t *parser) {
     unsigned int semantic_token_seen = parser->semantic_token_seen;
     parser->semantic_token_seen = true;
 
+    // We'll jump to this label when we are about to encounter an EOF.
+    // If we still have lex_modes on the stack, we pop them so that cleanup
+    // can happen. For example, we should still continue parsing after a heredoc
+    // identifier, even if the heredoc body was syntax invalid.
+    switch_lex_modes:
+
     switch (parser->lex_modes.current->mode) {
         case PM_LEX_DEFAULT:
         case PM_LEX_EMBEXPR:
@@ -9856,6 +9862,14 @@ parser_lex(pm_parser_t *parser) {
             // We'll check if we're at the end of the file. If we are, then we
             // need to return the EOF token.
             if (parser->current.end >= parser->end) {
+                // We may be missing closing tokens. We should pop modes one by one
+                // to do the appropriate cleanup like moving next_start for heredocs.
+                // Only when no mode is remaining will we actually emit the EOF token.
+                if (parser->lex_modes.current->mode != PM_LEX_DEFAULT) {
+                    lex_mode_pop(parser);
+                    goto switch_lex_modes;
+                }
+
                 // If we hit EOF, but the EOF came immediately after a newline,
                 // set the start of the token to the newline.  This way any EOF
                 // errors will be reported as happening on that line rather than
@@ -15433,7 +15447,7 @@ parse_string_part(pm_parser_t *parser, uint16_t depth) {
             pm_token_t opening = parser->previous;
             pm_statements_node_t *statements = NULL;
 
-            if (!match1(parser, PM_TOKEN_EMBEXPR_END)) {
+            if (!match3(parser, PM_TOKEN_EMBEXPR_END, PM_TOKEN_HEREDOC_END, PM_TOKEN_EOF)) {
                 pm_accepts_block_stack_push(parser, true);
                 statements = parse_statements(parser, PM_CONTEXT_EMBEXPR, (uint16_t) (depth + 1));
                 pm_accepts_block_stack_pop(parser);

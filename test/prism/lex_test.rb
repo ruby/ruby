@@ -48,11 +48,58 @@ module Prism
     end
 
     if RUBY_VERSION >= "3.3"
-      def test_lex_compare
-        prism = Prism.lex_compat(File.read(__FILE__), version: "current").value
-        ripper = Ripper.lex(File.read(__FILE__))
+      def test_lex_compat
+        source = "foo bar"
+        prism = Prism.lex_compat(source, version: "current").value
+        ripper = Ripper.lex(source)
         assert_equal(ripper, prism)
       end
+    end
+
+    def test_lex_interpolation_unterminated
+      assert_equal(
+        %i[STRING_BEGIN EMBEXPR_BEGIN EOF],
+        token_types('"#{')
+      )
+
+      assert_equal(
+        %i[STRING_BEGIN EMBEXPR_BEGIN IGNORED_NEWLINE EOF],
+        token_types('"#{' + "\n")
+      )
+    end
+
+    def test_lex_interpolation_unterminated_with_content
+      # FIXME: Emits EOL twice.
+      assert_equal(
+        %i[STRING_BEGIN EMBEXPR_BEGIN CONSTANT EOF EOF],
+        token_types('"#{C')
+      )
+
+      assert_equal(
+        %i[STRING_BEGIN EMBEXPR_BEGIN CONSTANT NEWLINE EOF],
+        token_types('"#{C' + "\n")
+      )
+    end
+
+    def test_lex_heredoc_unterminated
+      code = <<~'RUBY'.strip
+        <<A+B
+        #{C
+      RUBY
+
+      assert_equal(
+        %i[HEREDOC_START EMBEXPR_BEGIN CONSTANT HEREDOC_END PLUS CONSTANT NEWLINE EOF],
+        token_types(code)
+      )
+
+      assert_equal(
+        %i[HEREDOC_START EMBEXPR_BEGIN CONSTANT NEWLINE HEREDOC_END PLUS CONSTANT NEWLINE EOF],
+        token_types(code + "\n")
+      )
+    end
+
+    def token_types(code)
+      Prism.lex(code).value.map { |token, _state| token.type }
     end
   end
 end

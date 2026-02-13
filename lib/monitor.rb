@@ -6,9 +6,6 @@
 # This library is distributed under the terms of the Ruby license.
 # You can freely distribute/modify this library.
 #
-
-require 'monitor.so'
-
 #
 # In concurrent programming, a monitor is an object or module intended to be
 # used safely by more than one thread. The defining characteristic of a
@@ -89,65 +86,14 @@ require 'monitor.so'
 # MonitorMixin module.
 #
 module MonitorMixin
+  ConditionVariable = Monitor::ConditionVariable # :nodoc:
+
   #
   # FIXME: This isn't documented in Nutshell.
   #
   # Since MonitorMixin.new_cond returns a ConditionVariable, and the example
   # above calls while_wait and signal, this class should be documented.
   #
-  class ConditionVariable
-    #
-    # Releases the lock held in the associated monitor and waits; reacquires the lock on wakeup.
-    #
-    # If +timeout+ is given, this method returns after +timeout+ seconds passed,
-    # even if no other thread doesn't signal.
-    #
-    def wait(timeout = nil)
-      @monitor.mon_check_owner
-      @monitor.wait_for_cond(@cond, timeout)
-    end
-
-    #
-    # Calls wait repeatedly while the given block yields a truthy value.
-    #
-    def wait_while
-      while yield
-        wait
-      end
-    end
-
-    #
-    # Calls wait repeatedly until the given block yields a truthy value.
-    #
-    def wait_until
-      until yield
-        wait
-      end
-    end
-
-    #
-    # Wakes up the first thread in line waiting for this lock.
-    #
-    def signal
-      @monitor.mon_check_owner
-      @cond.signal
-    end
-
-    #
-    # Wakes up all threads waiting for this lock.
-    #
-    def broadcast
-      @monitor.mon_check_owner
-      @cond.broadcast
-    end
-
-    private
-
-    def initialize(monitor) # :nodoc:
-      @monitor = monitor
-      @cond = Thread::ConditionVariable.new
-    end
-  end
 
   def self.extend_object(obj) # :nodoc:
     super(obj)
@@ -245,26 +191,7 @@ module MonitorMixin
   end
 end
 
-# Use the Monitor class when you want to have a lock object for blocks with
-# mutual exclusion.
-#
-#   require 'monitor'
-#
-#   lock = Monitor.new
-#   lock.synchronize do
-#     # exclusive access
-#   end
-#
-class Monitor
-  #
-  # Creates a new MonitorMixin::ConditionVariable associated with the
-  # Monitor object.
-  #
-  def new_cond
-    ::MonitorMixin::ConditionVariable.new(self)
-  end
-
-  # for compatibility
+class Monitor # :nodoc:
   alias try_mon_enter try_enter
   alias mon_try_enter try_enter
   alias mon_enter enter

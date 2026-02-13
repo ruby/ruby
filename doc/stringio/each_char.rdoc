@@ -7,10 +7,7 @@ returns +self+:
   strio.each_char {|char| chars.push(char) }
   strio.eof? # => true
   chars      # => ["h", "e", "l", "l", "o"]
-  chars = []
-  strio = StringIO.new('тест')
-  strio.each_char {|char| chars.push(char) }
-  chars      # => ["т", "е", "с", "т"]
+
   chars = []
   strio = StringIO.new('こんにちは')
   strio.each_char {|char| chars.push(char) }

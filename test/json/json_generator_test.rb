@@ -39,14 +39,6 @@ class JSONGeneratorTest < Test::Unit::TestCase
     JSON
   end
 
-  def silence
-    v = $VERBOSE
-    $VERBOSE = nil
-    yield
-  ensure
-    $VERBOSE = v
-  end
-
   def test_generate
     json = generate(@hash)
     assert_equal(parse(@json2), parse(json))

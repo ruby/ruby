@@ -7,7 +7,13 @@ class <%= config[:minitest_constant_name] %> < Minitest::Test
     refute_nil ::<%= config[:constant_name] %>::VERSION
   end
 
+<%- if config[:ext] == 'rust' -%>
+  def test_hello_world
+    assert_equal "Hello earth, from Rust!", <%= config[:constant_name] %>.hello("world")
+  end
+<%- else -%>
   def test_it_does_something_useful
     assert false
   end
+<%- end -%>
 end

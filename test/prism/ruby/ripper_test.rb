@@ -81,6 +81,16 @@ module Prism
       define_method("#{fixture.test_name}_lex") { assert_ripper_lex(fixture.read) }
     end
 
+    def test_lex_ignored_missing_heredoc_end
+      ["", "-", "~"].each do |type|
+        source = "<<#{type}FOO\n"
+        assert_ripper_lex(source)
+
+        source = "<<#{type}'FOO'\n"
+        assert_ripper_lex(source)
+      end
+    end
+
     module Events
       attr_reader :events
 

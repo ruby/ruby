@@ -767,13 +767,15 @@ ruby_modular_gc_init(void)
         gc_functions.modular_gc_loaded_p = true;
     }
 
+    unsigned int err_count = 0;
+
 # define load_modular_gc_func(name) do { \
     if (handle) { \
         const char *func_name = "rb_gc_impl_" #name; \
         gc_functions.name = dlsym(handle, func_name); \
         if (!gc_functions.name) { \
             fprintf(stderr, "ruby_modular_gc_init: %s function not exported by library %s\n", func_name, gc_so_path); \
-            exit(EXIT_FAILURE); \
+            err_count++; \
         } \
     } \
     else { \
@@ -857,6 +859,11 @@ ruby_modular_gc_init(void)
     load_modular_gc_func(garbage_object_p);
     load_modular_gc_func(set_event_hook);
     load_modular_gc_func(copy_attributes);
+
+    if (err_count > 0) {
+        fprintf(stderr, "ruby_modular_gc_init: found %u missing exports in library %s\n", err_count, gc_so_path);
+        exit(EXIT_FAILURE);
+    }
 
 # undef load_modular_gc_func
 

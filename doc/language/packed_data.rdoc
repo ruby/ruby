@@ -53,6 +53,8 @@ These tables summarize the directives for packing and unpacking.
 
   U             | UTF-8 character
   w             | BER-compressed integer
+  R             | LEB128 encoded unsigned integer
+  r             | LEB128 encoded signed integer
 
 === For Floats
 
@@ -98,6 +100,7 @@ These tables summarize the directives for packing and unpacking.
   @         | skip to the offset given by the length argument
   X         | skip backward one byte
   x         | skip forward one byte
+  ^         | return the current offset
 
 == Packing and Unpacking
 
@@ -720,3 +723,7 @@ for one byte in the input or output string.
     "\x00\x00\x02".unpack("CxC") # => [0, 2]
     "\x00\x00\x02".unpack("x3C") # => [nil]
     "\x00\x00\x02".unpack("x4C") # Raises ArgumentError
+
+- <tt>'^'</tt> - Only for unpacking; the current position:
+
+    "foo\0\0\0".unpack("Z*C")    # => ["foo", 6]

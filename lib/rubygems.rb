@@ -351,6 +351,8 @@ module Gem
   def self.clear_paths
     @paths         = nil
     @user_home     = nil
+    @cache_home    = nil
+    @data_home     = nil
     Gem::Specification.reset
     Gem::Security.reset if defined?(Gem::Security)
   end

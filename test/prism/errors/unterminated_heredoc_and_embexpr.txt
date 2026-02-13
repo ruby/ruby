@@ -1,0 +1,11 @@
+<<A+B
+  ^ unterminated heredoc; can't find string "A" anywhere before EOF
+   ^ unexpected '+', ignoring it
+  ^ unterminated heredoc; can't find string "A" anywhere before EOF
+#{C
+   ^ unexpected heredoc ending; expected an argument
+   ^ unexpected heredoc ending, expecting end-of-input
+   ^ unexpected heredoc ending, ignoring it
+   ^ unexpected end-of-input, assuming it is closing the parent top level context
+^ expected a `}` to close the embedded expression
+
