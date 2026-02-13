@@ -863,11 +863,11 @@ mod hir_opt_tests {
         ");
     }
 
-    // Regression test: when specialized_instruction is disabled, YARVINSN_send
-    // + ARGS_BLOCKARG results in a null blockiseq that could reach all the way
-    // to reduce_send_to_ccall. If it doesn't get normalized there, it makes
-    // its way to gen_ccall_with_frame which assumed the Option is non-null and
-    // causes a crash when the C function tries to yield.
+    // Regression test: when specialized_instruction is disabled, the compiler
+    // doesn't convert `send` to `opt_send_without_block`, so a no-block call
+    // reaches ZJIT as `YARVINSN_send` with a null blockiseq. This becomes
+    // `Send { blockiseq: Some(null_ptr) }` which must be normalized to None in
+    // reduce_send_to_ccall, otherwise CCallWithFrame gens wrong block handler.
     #[test]
     fn test_send_to_cfunc_without_specialized_instruction() {
         eval_with_options("
