@@ -315,7 +315,7 @@ class TestGCCompact < Test::Unit::TestCase
       GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
       Fiber.new {
-        ary = "hello".chars
+        ary = "hello world".chars # > 6 elements to exceed pool 0 embed capacity
         $arys = ARY_COUNT.times.map do
           x = []
           ary.each { |e| x << e }

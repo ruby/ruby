@@ -269,7 +269,7 @@ module GC
   #   GC.stat_heap
   #   # =>
   #   {0 =>
-  #     {slot_size: 40,
+  #     {slot_size: 64,
   #      heap_eden_pages: 246,
   #      heap_eden_slots: 402802,
   #      total_allocated_pages: 246,
@@ -278,7 +278,7 @@ module GC
   #      total_allocated_objects: 33867152,
   #      total_freed_objects: 33520523},
   #    1 =>
-  #     {slot_size: 80,
+  #     {slot_size: 128,
   #      heap_eden_pages: 84,
   #      heap_eden_slots: 68746,
   #      total_allocated_pages: 84,
@@ -287,7 +287,7 @@ module GC
   #      total_allocated_objects: 147491,
   #      total_freed_objects: 90699},
   #    2 =>
-  #     {slot_size: 160,
+  #     {slot_size: 256,
   #      heap_eden_pages: 157,
   #      heap_eden_slots: 64182,
   #      total_allocated_pages: 157,
@@ -296,7 +296,7 @@ module GC
   #      total_allocated_objects: 211460,
   #      total_freed_objects: 190075},
   #    3 =>
-  #     {slot_size: 320,
+  #     {slot_size: 512,
   #      heap_eden_pages: 8,
   #      heap_eden_slots: 1631,
   #      total_allocated_pages: 8,
@@ -305,7 +305,7 @@ module GC
   #      total_allocated_objects: 1422,
   #      total_freed_objects: 700},
   #    4 =>
-  #     {slot_size: 640,
+  #     {slot_size: 1024,
   #      heap_eden_pages: 16,
   #      heap_eden_slots: 1628,
   #      total_allocated_pages: 16,
@@ -326,7 +326,7 @@ module GC
   #
   #   GC.stat_heap(2)
   #   # =>
-  #   {slot_size: 160,
+  #   {slot_size: 256,
   #    heap_eden_pages: 157,
   #    heap_eden_slots: 64182,
   #    total_allocated_pages: 157,
@@ -338,7 +338,7 @@ module GC
   # With arguments +heap_id+ and +key+ given,
   # returns the value for the given key in the given heap:
   #
-  #   GC.stat_heap(2, :slot_size) # => 160
+  #   GC.stat_heap(2, :slot_size) # => 256
   #
   # With arguments +nil+ and +hash+ given,
   # merges the statistics for all heaps into the given hash:
