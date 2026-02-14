@@ -69,7 +69,7 @@ releases.
 * minitest 6.0.1
 * test-unit 3.7.7
 * rss 0.3.2
-* net-imap 0.6.2
+* net-imap 0.6.3
 * rbs 3.10.3
 * typeprof 0.31.1
 * debug 1.11.1
