@@ -11352,7 +11352,7 @@ pm_read_file(pm_string_t *string, const char *filepath)
         }
 
         size_t length = (size_t) len;
-        uint8_t *source = malloc(length); // FIXME: using raw malloc because that's what Prism uses.
+        uint8_t *source = xmalloc(length);
         memcpy(source, RSTRING_PTR(contents), length);
         *string = (pm_string_t) { .type = PM_STRING_OWNED, .source = source, .length = length };
 

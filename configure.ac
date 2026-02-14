@@ -4680,6 +4680,9 @@ m4_foreach(parser, [available_parsers],
     [AC_MSG_ERROR([Unknown parser: $with_parser])]
 )
 
+# Use the ruby allocator for prism. See prism/defines.h
+RUBY_APPEND_OPTIONS(XCFLAGS, -DPRISM_XALLOCATOR)
+
 arch_hdrdir="${EXTOUT}/include/${arch}/ruby"
 AS_MKDIR_P("${arch_hdrdir}")
 config_h="${arch_hdrdir}/config.h"
