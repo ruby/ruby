@@ -803,8 +803,12 @@ get_nd_recv(const NODE *node)
         return RB_NODE_INDEX_OR_WRITE(node)->receiver;
       case RB_INDEX_AND_WRITE_NODE:
         return RB_NODE_INDEX_AND_WRITE(node)->receiver;
-      case NODE_OP_ASGN2:
-        return RNODE_OP_ASGN2(node)->nd_recv;
+      case RB_CALL_OPERATOR_WRITE_NODE:
+        return RB_NODE_CALL_OPERATOR_WRITE(node)->receiver;
+      case RB_CALL_OR_WRITE_NODE:
+        return RB_NODE_CALL_OR_WRITE(node)->receiver;
+      case RB_CALL_AND_WRITE_NODE:
+        return RB_NODE_CALL_AND_WRITE(node)->receiver;
       default:
         rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
     }
@@ -10804,12 +10808,12 @@ compile_op_asgn1(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
 }
 
 static int
-compile_op_asgn2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
+compile_op_asgn2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, const NODE *const nd_recv, ID vid, ID aid, ID mid, const NODE *const nd_value, int popped)
 {
     const int line = nd_line(node);
-    ID atype = RNODE_OP_ASGN2(node)->nd_mid;
-    ID vid = RNODE_OP_ASGN2(node)->nd_vid, aid = rb_id_attrset(vid);
+    ID atype = mid;
     int asgnflag;
+    int qcall = rb_node_get_fl(node) & RB_CALL_NODE_FLAGS_SAFE_NAVIGATION;
     LABEL *lfin = NEW_LABEL(line);
     LABEL *lcfin = NEW_LABEL(line);
     LABEL *lskip = 0;
@@ -10866,9 +10870,9 @@ compile_op_asgn2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
 
     */
 
-    asgnflag = COMPILE_RECV(ret, "NODE_OP_ASGN2#recv", node, RNODE_OP_ASGN2(node)->nd_recv);
+    asgnflag = COMPILE_RECV(ret, "NODE_OP_ASGN2#recv", node, nd_recv);
     CHECK(asgnflag != -1);
-    if (RNODE_OP_ASGN2(node)->nd_aid) {
+    if (qcall) {
         lskip = NEW_LABEL(line);
         ADD_INSN(ret, node, dup);
         ADD_INSNL(ret, node, branchnil, lskip);
@@ -10889,7 +10893,7 @@ compile_op_asgn2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
         if (!popped) {
             ADD_INSN(ret, node, pop);
         }
-        CHECK(COMPILE(ret, "NODE_OP_ASGN2 val", RNODE_OP_ASGN2(node)->nd_value));
+        CHECK(COMPILE(ret, "NODE_OP_ASGN2 val", nd_value));
         if (!popped) {
             ADD_INSN(ret, node, swap);
             ADD_INSN1(ret, node, topn, INT2FIX(1));
@@ -10905,7 +10909,7 @@ compile_op_asgn2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
         ADD_LABEL(ret, lfin);
     }
     else {
-        CHECK(COMPILE(ret, "NODE_OP_ASGN2 val", RNODE_OP_ASGN2(node)->nd_value));
+        CHECK(COMPILE(ret, "NODE_OP_ASGN2 val", nd_value));
         ADD_SEND(ret, node, atype, INT2FIX(1));
         if (!popped) {
             ADD_INSN(ret, node, swap);
@@ -12242,6 +12246,21 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       case RB_INDEX_AND_WRITE_NODE: {
         rb_index_and_write_node_t *cast = (rb_index_and_write_node_t *)node;
         CHECK(compile_op_asgn1(iseq, ret, node, cast->receiver, idANDOP, cast->arguments, cast->value, popped));
+        break;
+      }
+      case RB_CALL_OPERATOR_WRITE_NODE: {
+        rb_call_operator_write_node_t *cast = (rb_call_operator_write_node_t *)node;
+        CHECK(compile_op_asgn2(iseq, ret, node, cast->receiver, cast->read_name, cast->write_name, cast->binary_operator, cast->value, popped));
+        break;
+      }
+      case RB_CALL_OR_WRITE_NODE: {
+        rb_call_or_write_node_t *cast = (rb_call_or_write_node_t *)node;
+        CHECK(compile_op_asgn2(iseq, ret, node, cast->receiver, cast->read_name, cast->write_name, idOROP, cast->value, popped));
+        break;
+      }
+      case RB_CALL_AND_WRITE_NODE: {
+        rb_call_and_write_node_t *cast = (rb_call_and_write_node_t *)node;
+        CHECK(compile_op_asgn2(iseq, ret, node, cast->receiver, cast->read_name, cast->write_name, idANDOP, cast->value, popped));
         break;
       }
 
