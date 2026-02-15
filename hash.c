@@ -5355,6 +5355,42 @@ env_fetch(int argc, VALUE *argv, VALUE _)
     return env;
 }
 
+/*
+ * call-seq:
+ *   ENV.fetch_values(*names) -> array of values
+ *   ENV.fetch_values(*names) {|name| ... } -> array of values
+ *
+ * Returns an Array containing the environment variable values associated with
+ * the given names:
+ *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
+ *   ENV.fetch_values('foo', 'baz') # => ["0", "2"]
+ *
+ * Otherwise if a block is given yields +name+ to
+ * the block and returns the block's return value:
+ *   ENV.fetch_values('foo', 'bam') {|key| key.to_s} # => ["0", "bam"]
+ *
+ * Raises KeyError if +name+ is valid, but not found and block is not given:
+ *   ENV.fetch_values('foo', 'bam') # Raises KeyError (key not found: "bam")
+ *
+ * Returns an empty Array if no names given.
+ *
+ * Raises an exception if any name is invalid.
+ * See {Invalid Names and Values}[rdoc-ref:ENV@Invalid+Names+and+Values].
+ */
+
+static VALUE
+env_fetch_values(int argc, VALUE *argv, VALUE ehash)
+{
+    VALUE result = rb_ary_new2(argc);
+    long i;
+
+    for (i=0; i<argc; i++) {
+        rb_ary_push(result, env_fetch(1, &argv[i], ehash));
+    }
+
+    return result;
+}
+
 #if defined(_WIN32) || (defined(HAVE_SETENV) && defined(HAVE_UNSETENV))
 #elif defined __sun
 static int
@@ -7577,6 +7613,7 @@ Init_Hash(void)
      * - ::clone: Raises an exception.
      * - ::except: Returns a hash of all name/value pairs except those given.
      * - ::fetch: Returns the value for the given name.
+     * - ::fetch_values: Returns array containing the values associated with given names.
      * - ::inspect: Returns the contents of +ENV+ as a string.
      * - ::invert: Returns a hash whose keys are the +ENV+ values,
          and whose values are the corresponding +ENV+ names.
@@ -7612,6 +7649,7 @@ Init_Hash(void)
 
     rb_define_singleton_method(envtbl, "[]", rb_f_getenv, 1);
     rb_define_singleton_method(envtbl, "fetch", env_fetch, -1);
+    rb_define_singleton_method(envtbl, "fetch_values", env_fetch_values, -1);
     rb_define_singleton_method(envtbl, "[]=", env_aset_m, 2);
     rb_define_singleton_method(envtbl, "store", env_aset_m, 2);
     rb_define_singleton_method(envtbl, "each", env_each_pair, 0);
