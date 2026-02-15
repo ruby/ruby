@@ -959,6 +959,10 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
         argument_kw_error(ec, iseq, cme, "unknown", rb_hash_keys(keyword_hash));
     }
 
+    if (calling->block_handler != VM_BLOCK_HANDLER_NONE && ISEQ_BODY(iseq)->param.flags.accepts_no_block) {
+        rb_raise(rb_eArgError, "no block accepted");
+    }
+
     if (ISEQ_BODY(iseq)->param.flags.has_block) {
         if (ISEQ_BODY(iseq)->local_iseq == iseq) {
             /* Do nothing */

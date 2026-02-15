@@ -3920,6 +3920,18 @@ nodes:
 
           nil
           ^^^
+  - name: NoBlockParameterNode
+    fields:
+      - name: operator_loc
+        type: location
+      - name: keyword_loc
+        type: location
+    comment: |
+      Represents the use of `&nil` inside method parameters.
+
+          def a(&nil)
+                ^^^^
+          end
   - name: NoKeywordsParameterNode
     fields:
       - name: operator_loc
@@ -3927,7 +3939,7 @@ nodes:
       - name: keyword_loc
         type: location
     comment: |
-      Represents the use of `**nil` inside method arguments.
+      Represents the use of `**nil` inside method parameters.
 
           def a(**nil)
                 ^^^^^
@@ -4053,6 +4065,7 @@ nodes:
           - on error: NoKeywordsParameterNode
           # On parsing error of `f(..., ...)`, the first forwarding parameter is moved here:
           - on error: ForwardingParameterNode
+          - on error: NoBlockParameterNode
       - name: keywords
         type: node[]
         kind:
@@ -4066,7 +4079,9 @@ nodes:
           - NoKeywordsParameterNode
       - name: block
         type: node?
-        kind: BlockParameterNode
+        kind:
+          - BlockParameterNode
+          - NoBlockParameterNode
     comment: |
       Represents the list of parameters on a method, block, or lambda definition.
 

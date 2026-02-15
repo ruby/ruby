@@ -3791,6 +3791,12 @@ rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc)
         CONST_ID(block, "block");
         rb_ary_push(args, PARAM(body->param.block_start, block));
     }
+    if (body->param.flags.accepts_no_block) {
+        ID noblock;
+        CONST_ID(noblock, "noblock");
+        PARAM_TYPE(noblock);
+        rb_ary_push(args, a);
+    }
     return args;
 }
 
