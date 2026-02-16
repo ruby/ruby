@@ -77,6 +77,7 @@ releases.
 * resolv-replace 0.2.0
 * syslog 0.4.0
 * repl_type_completor 0.1.13
+* pstore 0.2.1
 * rdoc 7.2.0
 * irb 1.17.0
 
