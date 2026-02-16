@@ -1438,6 +1438,20 @@ static rb_index_and_write_node_t *rb_new_node_index_and_write_new(struct parser_
 static rb_call_operator_write_node_t *rb_new_node_call_operator_write_new(struct parser_params *p, rb_node_t *nd_recv, rb_node_t *nd_value, ID nd_vid, ID nd_mid, rb_call_node_flags_t flags, const YYLTYPE *loc, const YYLTYPE *call_operator_loc, const YYLTYPE *message_loc, const YYLTYPE *binary_operator_loc);
 static rb_call_or_write_node_t *rb_new_node_call_or_write_new(struct parser_params *p, rb_node_t *nd_recv, rb_node_t *nd_value, ID nd_vid, const YYLTYPE *loc, const YYLTYPE *call_operator_loc, const YYLTYPE *message_loc, const YYLTYPE *operator_loc);
 static rb_call_and_write_node_t *rb_new_node_call_and_write_new(struct parser_params *p, rb_node_t *nd_recv, rb_node_t *nd_value, ID nd_vid, const YYLTYPE *loc, const YYLTYPE *call_operator_loc, const YYLTYPE *message_loc, const YYLTYPE *operator_loc);
+static rb_local_variable_operator_write_node_t *rb_new_node_local_variable_operator_write_new(struct parser_params *p, ID nd_vid, ID nd_mid, rb_node_t *nd_value, uint32_t depth, const YYLTYPE *loc);
+static rb_instance_variable_operator_write_node_t *rb_new_node_instance_variable_operator_write_new(struct parser_params *p, ID nd_vid, ID nd_mid, rb_node_t *nd_value, const YYLTYPE *loc);
+static rb_class_variable_operator_write_node_t *rb_new_node_class_variable_operator_write_new(struct parser_params *p, ID nd_vid, ID nd_mid, rb_node_t *nd_value, const YYLTYPE *loc);
+static rb_global_variable_operator_write_node_t *rb_new_node_global_variable_operator_write_new(struct parser_params *p, ID nd_vid, ID nd_mid, rb_node_t *nd_value, const YYLTYPE *loc);
+
+static rb_local_variable_or_write_node_t *rb_new_node_local_variable_or_write_new(struct parser_params *p, ID nd_vid, rb_node_t *nd_value, uint32_t depth, const YYLTYPE *loc);
+static rb_instance_variable_or_write_node_t *rb_new_node_instance_variable_or_write_new(struct parser_params *p, ID nd_vid, rb_node_t *nd_value, const YYLTYPE *loc);
+static rb_class_variable_or_write_node_t *rb_new_node_class_variable_or_write_new(struct parser_params *p, ID nd_vid, rb_node_t *nd_value, const YYLTYPE *loc);
+static rb_global_variable_or_write_node_t *rb_new_node_global_variable_or_write_new(struct parser_params *p, ID nd_vid, rb_node_t *nd_value, const YYLTYPE *loc);
+
+static rb_local_variable_and_write_node_t *rb_new_node_local_variable_and_write_new(struct parser_params *p, ID nd_vid, rb_node_t *nd_value, uint32_t depth, const YYLTYPE *loc);
+static rb_instance_variable_and_write_node_t *rb_new_node_instance_variable_and_write_new(struct parser_params *p, ID nd_vid, rb_node_t *nd_value, const YYLTYPE *loc);
+static rb_class_variable_and_write_node_t *rb_new_node_class_variable_and_write_new(struct parser_params *p, ID nd_vid, rb_node_t *nd_value, const YYLTYPE *loc);
+static rb_global_variable_and_write_node_t *rb_new_node_global_variable_and_write_new(struct parser_params *p, ID nd_vid, rb_node_t *nd_value, const YYLTYPE *locl);
 
 static rb_call_node_t *rb_new_node_call_new(struct parser_params *p, rb_node_t *nd_recv, ID nd_mid, rb_arguments_node_t *nd_args, rb_call_node_flags_t flags, const YYLTYPE *loc);
 static rb_super_node_t *rb_new_node_super_new(struct parser_params *p, rb_arguments_node_t *nd_args, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *lparen_loc, const YYLTYPE *rparen_loc);
@@ -1565,6 +1579,20 @@ static rb_source_encoding_node_t *rb_new_node_source_encoding_new(struct parser_
 #define NEW_RB_CALL_OPERATOR_WRITE(r,t,i,o,val,loc,c_op_loc,m_loc,b_op_loc) (rb_node_t *)rb_new_node_call_operator_write_new(p,r,val,i,o,t,loc,c_op_loc,m_loc,b_op_loc)
 #define NEW_RB_CALL_OR_WRITE(r,i,val,loc,c_op_loc,m_loc,b_op_loc) (rb_node_t *)rb_new_node_call_or_write_new(p,r,val,i,loc,c_op_loc,m_loc,b_op_loc)
 #define NEW_RB_CALL_AND_WRITE(r,i,val,loc,c_op_loc,m_loc,b_op_loc) (rb_node_t *)rb_new_node_call_and_write_new(p,r,val,i,loc,c_op_loc,m_loc,b_op_loc)
+#define NEW_RB_LOCAL_VARIABLE_OPERATOR_WRITE(v,i,val,d,loc) (rb_node_t *)rb_new_node_local_variable_operator_write_new(p,v,i,val,d,loc)
+#define NEW_RB_INSTANCE_VARIABLE_OPERATOR_WRITE(v,i,val,loc) (rb_node_t *)rb_new_node_instance_variable_operator_write_new(p,v,i,val,loc)
+#define NEW_RB_CLASS_VARIABLE_OPERATOR_WRITE(v,i,val,loc) (rb_node_t *)rb_new_node_class_variable_operator_write_new(p,v,i,val,loc)
+#define NEW_RB_GLOBAL_VARIABLE_OPERATOR_WRITE(v,i,val,loc) (rb_node_t *)rb_new_node_global_variable_operator_write_new(p,v,i,val,loc)
+
+#define NEW_RB_LOCAL_VARIABLE_OR_WRITE(i,val,d,loc) (rb_node_t *)rb_new_node_local_variable_or_write_new(p,i,val,d,loc)
+#define NEW_RB_INSTANCE_VARIABLE_OR_WRITE(i,val,loc) (rb_node_t *)rb_new_node_instance_variable_or_write_new(p,i,val,loc)
+#define NEW_RB_CLASS_VARIABLE_OR_WRITE(i,val,loc) (rb_node_t *)rb_new_node_class_variable_or_write_new(p,i,val,loc)
+#define NEW_RB_GLOBAL_VARIABLE_OR_WRITE(i,val,loc) (rb_node_t *)rb_new_node_global_variable_or_write_new(p,i,val,loc)
+
+#define NEW_RB_LOCAL_VARIABLE_AND_WRITE(i,val,d,loc) (rb_node_t *)rb_new_node_local_variable_and_write_new(p,i,val,d,loc)
+#define NEW_RB_INSTANCE_VARIABLE_AND_WRITE(i,val,loc) (rb_node_t *)rb_new_node_instance_variable_and_write_new(p,i,val,loc)
+#define NEW_RB_CLASS_VARIABLE_AND_WRITE(i,val,loc) (rb_node_t *)rb_new_node_class_variable_and_write_new(p,i,val,loc)
+#define NEW_RB_GLOBAL_VARIABLE_AND_WRITE(i,val,loc) (rb_node_t *)rb_new_node_global_variable_and_write_new(p,i,val,loc)
 
 #define NEW_RB_CALL(r,m,a,fl,loc) (rb_node_t *)rb_new_node_call_new(p,r,m,a,fl,loc)
 #define NEW_RB_OPCALL(r,m,a,loc) NEW_RB_CALL(r,m,a,0,loc)
@@ -1869,7 +1897,7 @@ static rb_node_t *attrset_target(struct parser_params *p, rb_node_t *recv, ID at
 static VALUE rb_backref_error(struct parser_params*,NODE*);
 static rb_node_t *node_assign(struct parser_params*,rb_node_t*,rb_node_t*,struct lex_context,const YYLTYPE*);
 
-static NODE *new_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, struct lex_context, const YYLTYPE *loc);
+static rb_node_t *new_op_assign(struct parser_params *p, rb_node_t *lhs, ID op, rb_node_t *rhs, struct lex_context, const YYLTYPE *loc);
 static rb_node_t *new_ary_op_assign(struct parser_params *p, rb_node_t *ary, rb_arguments_node_t *args, ID op, rb_node_t *rhs, const YYLTYPE *args_loc, const YYLTYPE *loc, const YYLTYPE *call_operator_loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc, const YYLTYPE *binary_operator_loc);
 static rb_node_t *new_attr_op_assign(struct parser_params *p, rb_node_t *lhs, ID atype, ID attr, ID op, rb_node_t *rhs, const YYLTYPE *loc, const YYLTYPE *call_operator_loc, const YYLTYPE *message_loc, const YYLTYPE *binary_operator_loc);
 static NODE *new_const_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, struct lex_context, const YYLTYPE *loc);
@@ -13396,6 +13424,157 @@ rb_new_node_call_and_write_new(struct parser_params *p, rb_node_t *nd_recv, rb_n
     return n;
 }
 
+static rb_local_variable_operator_write_node_t *
+rb_new_node_local_variable_operator_write_new(struct parser_params *p, ID nd_vid, ID nd_mid, rb_node_t *nd_value, uint32_t depth, const YYLTYPE *loc)
+{
+    rb_local_variable_operator_write_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_LOCAL_VARIABLE_OPERATOR_WRITE_NODE, rb_local_variable_operator_write_node_t, loc);
+    n->name = nd_vid;
+    n->binary_operator = nd_mid;
+    n->value = nd_value;
+    n->depth = depth;
+    n->name_loc = NULL_LOC;
+    n->binary_operator_loc = NULL_LOC;
+
+    return n;
+}
+
+static rb_instance_variable_operator_write_node_t *
+rb_new_node_instance_variable_operator_write_new(struct parser_params *p, ID nd_vid, ID nd_mid, rb_node_t *nd_value, const YYLTYPE *loc)
+{
+    rb_instance_variable_operator_write_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_INSTANCE_VARIABLE_OPERATOR_WRITE_NODE, rb_instance_variable_operator_write_node_t, loc);
+    n->name = nd_vid;
+    n->binary_operator = nd_mid;
+    n->value = nd_value;
+    n->name_loc = NULL_LOC;
+    n->binary_operator_loc = NULL_LOC;
+
+    return n;
+}
+
+static rb_class_variable_operator_write_node_t *
+rb_new_node_class_variable_operator_write_new(struct parser_params *p, ID nd_vid, ID nd_mid, rb_node_t *nd_value, const YYLTYPE *loc)
+{
+    rb_class_variable_operator_write_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_CLASS_VARIABLE_OPERATOR_WRITE_NODE, rb_class_variable_operator_write_node_t, loc);
+    n->name = nd_vid;
+    n->binary_operator = nd_mid;
+    n->value = nd_value;
+    n->name_loc = NULL_LOC;
+    n->binary_operator_loc = NULL_LOC;
+
+    return n;
+}
+
+static rb_global_variable_operator_write_node_t *
+rb_new_node_global_variable_operator_write_new(struct parser_params *p, ID nd_vid, ID nd_mid, rb_node_t *nd_value, const YYLTYPE *loc)
+{
+    rb_global_variable_operator_write_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_GLOBAL_VARIABLE_OPERATOR_WRITE_NODE, rb_global_variable_operator_write_node_t, loc);
+    n->name = nd_vid;
+    n->binary_operator = nd_mid;
+    n->value = nd_value;
+    n->name_loc = NULL_LOC;
+    n->binary_operator_loc = NULL_LOC;
+
+    return n;
+}
+
+static rb_local_variable_or_write_node_t *
+rb_new_node_local_variable_or_write_new(struct parser_params *p, ID nd_vid, rb_node_t *nd_value, uint32_t depth, const YYLTYPE *loc)
+{
+    rb_local_variable_or_write_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_LOCAL_VARIABLE_OR_WRITE_NODE, rb_local_variable_or_write_node_t, loc);
+    n->name = nd_vid;
+    n->value = nd_value;
+    n->depth = depth;
+    n->name_loc = NULL_LOC;
+    n->operator_loc = NULL_LOC;
+
+    return n;
+}
+
+static rb_instance_variable_or_write_node_t *
+rb_new_node_instance_variable_or_write_new(struct parser_params *p, ID nd_vid, rb_node_t *nd_value, const YYLTYPE *loc)
+{
+    rb_instance_variable_or_write_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_INSTANCE_VARIABLE_OR_WRITE_NODE, rb_instance_variable_or_write_node_t, loc);
+    n->name = nd_vid;
+    n->value = nd_value;
+    n->name_loc = NULL_LOC;
+    n->operator_loc = NULL_LOC;
+
+    return n;
+}
+
+static rb_class_variable_or_write_node_t *
+rb_new_node_class_variable_or_write_new(struct parser_params *p, ID nd_vid, rb_node_t *nd_value, const YYLTYPE *loc)
+{
+    rb_class_variable_or_write_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_CLASS_VARIABLE_OR_WRITE_NODE, rb_class_variable_or_write_node_t, loc);
+    n->name = nd_vid;
+    n->value = nd_value;
+    n->name_loc = NULL_LOC;
+    n->operator_loc = NULL_LOC;
+
+    return n;
+}
+
+static rb_global_variable_or_write_node_t *
+rb_new_node_global_variable_or_write_new(struct parser_params *p, ID nd_vid, rb_node_t *nd_value, const YYLTYPE *loc)
+{
+    rb_global_variable_or_write_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_GLOBAL_VARIABLE_OR_WRITE_NODE, rb_global_variable_or_write_node_t, loc);
+    n->name = nd_vid;
+    n->value = nd_value;
+    n->name_loc = NULL_LOC;
+    n->operator_loc = NULL_LOC;
+
+    return n;
+}
+
+static rb_local_variable_and_write_node_t *
+rb_new_node_local_variable_and_write_new(struct parser_params *p, ID nd_vid, rb_node_t *nd_value, uint32_t depth, const YYLTYPE *loc)
+{
+    rb_local_variable_and_write_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_LOCAL_VARIABLE_AND_WRITE_NODE, rb_local_variable_and_write_node_t, loc);
+    n->name = nd_vid;
+    n->value = nd_value;
+    n->depth = depth;
+    n->name_loc = NULL_LOC;
+    n->operator_loc = NULL_LOC;
+
+    return n;
+}
+
+static rb_instance_variable_and_write_node_t *
+rb_new_node_instance_variable_and_write_new(struct parser_params *p, ID nd_vid, rb_node_t *nd_value, const YYLTYPE *loc)
+{
+    rb_instance_variable_and_write_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_INSTANCE_VARIABLE_AND_WRITE_NODE, rb_instance_variable_and_write_node_t, loc);
+    n->name = nd_vid;
+    n->value = nd_value;
+    n->name_loc = NULL_LOC;
+    n->operator_loc = NULL_LOC;
+
+    return n;
+}
+
+static rb_class_variable_and_write_node_t *
+rb_new_node_class_variable_and_write_new(struct parser_params *p, ID nd_vid, rb_node_t *nd_value, const YYLTYPE *loc)
+{
+    rb_class_variable_and_write_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_CLASS_VARIABLE_AND_WRITE_NODE, rb_class_variable_and_write_node_t, loc);
+    n->name = nd_vid;
+    n->value = nd_value;
+    n->name_loc = NULL_LOC;
+    n->operator_loc = NULL_LOC;
+
+    return n;
+}
+
+static rb_global_variable_and_write_node_t *
+rb_new_node_global_variable_and_write_new(struct parser_params *p, ID nd_vid, rb_node_t *nd_value, const YYLTYPE *loc)
+{
+    rb_global_variable_and_write_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_GLOBAL_VARIABLE_AND_WRITE_NODE, rb_global_variable_and_write_node_t, loc);
+    n->name = nd_vid;
+    n->value = nd_value;
+    n->name_loc = NULL_LOC;
+    n->operator_loc = NULL_LOC;
+
+    return n;
+}
+
 static rb_call_node_t *
 rb_new_node_call_new(struct parser_params *p, rb_node_t *nd_recv, ID nd_mid, rb_arguments_node_t *nd_args, rb_call_node_flags_t flags, const YYLTYPE *loc)
 {
@@ -17177,35 +17356,92 @@ new_unique_key_hash(struct parser_params *p, NODE *hash, const YYLTYPE *loc)
     return NEW_HASH(hash, loc);
 }
 
-static NODE *
-new_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, struct lex_context ctxt, const YYLTYPE *loc)
+static rb_node_t *
+new_op_assign(struct parser_params *p, rb_node_t *lhs, ID op, rb_node_t *rhs, struct lex_context ctxt, const YYLTYPE *loc)
 {
-    NODE *asgn;
+    rb_node_t *asgn;
 
     if (lhs) {
-        ID vid = get_nd_vid(p, lhs);
-        YYLTYPE lhs_loc = lhs->nd_loc;
-        /* A constant read can raise NameError. Prism has no separate read node
-         * for `Const op= value` and reports the whole expression, so give the
-         * NODE_CONST the location of the whole operator assignment as well,
-         * for consistent Thread::Backtrace::Location#source_range between both
-         * parsers. */
-        const YYLTYPE *read_loc = nd_type_p(lhs, NODE_CDECL) ? loc : &lhs_loc;
         if (op == tOROP) {
-            set_nd_value(p, lhs, rhs);
-            nd_set_loc(lhs, loc);
-            asgn = NEW_OP_ASGN_OR(gettable(p, vid, read_loc), lhs, loc);
+            switch (nd_type(lhs)) {
+              case RB_LOCAL_VARIABLE_WRITE_NODE: {
+                rb_local_variable_write_node_t *cast = (rb_local_variable_write_node_t *)lhs;
+                asgn = NEW_RB_LOCAL_VARIABLE_OR_WRITE(cast->name, rhs, cast->depth, loc);
+                break;
+              }
+              case RB_INSTANCE_VARIABLE_WRITE_NODE: {
+                rb_instance_variable_write_node_t *cast = (rb_instance_variable_write_node_t *)lhs;
+                asgn = NEW_RB_INSTANCE_VARIABLE_OR_WRITE(cast->name, rhs, loc);
+                break;
+              }
+              case RB_CLASS_VARIABLE_WRITE_NODE: {
+                rb_class_variable_write_node_t *cast = (rb_class_variable_write_node_t *)lhs;
+                asgn = NEW_RB_CLASS_VARIABLE_OR_WRITE(cast->name, rhs, loc);
+                break;
+              }
+              case RB_GLOBAL_VARIABLE_WRITE_NODE: {
+                rb_global_variable_write_node_t *cast = (rb_global_variable_write_node_t *)lhs;
+                asgn = NEW_RB_GLOBAL_VARIABLE_OR_WRITE(cast->name, rhs, loc);
+                break;
+              }
+              default:
+                rb_bug("unexpected node: %s", rb_node_type_to_str(RB_NODE_TYPE(lhs)));
+                UNREACHABLE_RETURN(0);
+            }
         }
         else if (op == tANDOP) {
-            set_nd_value(p, lhs, rhs);
-            nd_set_loc(lhs, loc);
-            asgn = NEW_OP_ASGN_AND(gettable(p, vid, read_loc), lhs, loc);
+            switch (nd_type(lhs)) {
+              case RB_LOCAL_VARIABLE_WRITE_NODE: {
+                rb_local_variable_write_node_t *cast = (rb_local_variable_write_node_t *)lhs;
+                asgn = NEW_RB_LOCAL_VARIABLE_AND_WRITE(cast->name, rhs, cast->depth, loc);
+                break;
+              }
+              case RB_INSTANCE_VARIABLE_WRITE_NODE: {
+                rb_instance_variable_write_node_t *cast = (rb_instance_variable_write_node_t *)lhs;
+                asgn = NEW_RB_INSTANCE_VARIABLE_AND_WRITE(cast->name, rhs, loc);
+                break;
+              }
+              case RB_CLASS_VARIABLE_WRITE_NODE: {
+                rb_class_variable_write_node_t *cast = (rb_class_variable_write_node_t *)lhs;
+                asgn = NEW_RB_CLASS_VARIABLE_AND_WRITE(cast->name, rhs, loc);
+                break;
+              }
+              case RB_GLOBAL_VARIABLE_WRITE_NODE: {
+                rb_global_variable_write_node_t *cast = (rb_global_variable_write_node_t *)lhs;
+                asgn = NEW_RB_GLOBAL_VARIABLE_AND_WRITE(cast->name, rhs, loc);
+                break;
+              }
+              default:
+                rb_bug("unexpected node: %s", rb_node_type_to_str(RB_NODE_TYPE(lhs)));
+                UNREACHABLE_RETURN(0);
+            }
         }
         else {
-            asgn = lhs;
-            rhs = NEW_CALL(gettable(p, vid, read_loc), op, NEW_LIST(rhs, &rhs->nd_loc), loc);
-            set_nd_value(p, asgn, rhs);
-            nd_set_loc(asgn, loc);
+            switch (nd_type(lhs)) {
+              case RB_LOCAL_VARIABLE_WRITE_NODE: {
+                rb_local_variable_write_node_t *cast = (rb_local_variable_write_node_t *)lhs;
+                asgn = NEW_RB_LOCAL_VARIABLE_OPERATOR_WRITE(cast->name, op, rhs, cast->depth, loc);
+                break;
+              }
+              case RB_INSTANCE_VARIABLE_WRITE_NODE: {
+                rb_instance_variable_write_node_t *cast = (rb_instance_variable_write_node_t *)lhs;
+                asgn = NEW_RB_INSTANCE_VARIABLE_OPERATOR_WRITE(cast->name, op, rhs, loc);
+                break;
+              }
+              case RB_CLASS_VARIABLE_WRITE_NODE: {
+                rb_class_variable_write_node_t *cast = (rb_class_variable_write_node_t *)lhs;
+                asgn = NEW_RB_CLASS_VARIABLE_OPERATOR_WRITE(cast->name, op, rhs, loc);
+                break;
+              }
+              case RB_GLOBAL_VARIABLE_WRITE_NODE: {
+                rb_global_variable_write_node_t *cast = (rb_global_variable_write_node_t *)lhs;
+                asgn = NEW_RB_GLOBAL_VARIABLE_OPERATOR_WRITE(cast->name, op, rhs, loc);
+                break;
+              }
+              default:
+                rb_bug("unexpected node: %s", rb_node_type_to_str(RB_NODE_TYPE(lhs)));
+                UNREACHABLE_RETURN(0);
+            }
         }
     }
     else {
