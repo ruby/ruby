@@ -6226,9 +6226,11 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
     }
     else {
         repl = argv[1];
-        hash = rb_check_hash_type(argv[1]);
-        if (NIL_P(hash)) {
-            StringValue(repl);
+        if (!RB_TYPE_P(repl, T_STRING)) {
+            hash = rb_check_hash_type(repl);
+            if (NIL_P(hash)) {
+                StringValue(repl);
+            }
         }
     }
 
@@ -6356,15 +6358,17 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
         break;
       case 2:
         repl = argv[1];
-        hash = rb_check_hash_type(argv[1]);
-        if (NIL_P(hash)) {
-            StringValue(repl);
-        }
-        else if (rb_hash_default_unredefined(hash) && !FL_TEST_RAW(hash, RHASH_PROC_DEFAULT)) {
-            mode = FAST_MAP;
-        }
-        else {
-            mode = MAP;
+        if (!RB_TYPE_P(repl, T_STRING)) {
+            hash = rb_check_hash_type(repl);
+            if (NIL_P(hash)) {
+                StringValue(repl);
+            }
+            else if (rb_hash_default_unredefined(hash) && !FL_TEST_RAW(hash, RHASH_PROC_DEFAULT)) {
+                mode = FAST_MAP;
+            }
+            else {
+                mode = MAP;
+            }
         }
         break;
       default:
