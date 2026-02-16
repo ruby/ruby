@@ -71,7 +71,7 @@ error !
 
 #define LABEL(x)  insn_func_##x
 #define ELABEL(x)
-#define LABEL_PTR(x) (const void *)((char *)&LABEL(x))
+#define LABEL_PTR(x) (const void *)&LABEL(x)
 
 #if RBIMPL_HAS_ATTRIBUTE(preserve_none)
 #define ATTR_PRESERVE_NONE __attribute__((preserve_none))
