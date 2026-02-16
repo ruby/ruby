@@ -20,9 +20,7 @@ class CommandRunner
   end
 
   def cmd(*args, **options)
-    if options[:out].nil?
-      options[:out] = @quiet ? File::NULL : $stderr
-    end
+    options[:out] ||= @quiet ? File::NULL : $stderr
     options = options.merge(exception: true)
     system(*args, **options)
   end
@@ -40,7 +38,7 @@ class ZJITDiff
     @options = options
   end
 
-  def run!
+  def bench!
     before = RubyWorktree.new(name: BEFORE_NAME,
                               ref: @options[:before],
                               runner: @runner,
@@ -176,64 +174,84 @@ def parse_ref(ref)
   GitRef.new(ref: ref, commit_hash: out.strip)
 end
 
+DEFAULT_BENCHMARKS = %w[lobsters railsbench].freeze
+
 options = {}
 
-OptionParser.new do |opts|
+subtext = <<~HELP
+  Subcommands:
+     bench :  Run benchmarks
+     clean :  Clean temporary files created by benchmarks
+  See '#{$0} COMMAND --help' for more information on a specific command.
+HELP
+
+top_level = OptionParser.new do |opts|
   opts.banner = "Usage: #{$0} [options]"
+  opts.separator('')
+  opts.separator(subtext)
+end
 
-  opts.on('--before REF', 'Git ref for ruby (before)') do |ref|
-    git_ref = parse_ref ref
-    if git_ref.nil?
-      warn "Error: '#{ref}' is not a valid git ref"
-      exit 1
+subcommands = {
+  'bench' => OptionParser.new do |opts|
+    opts.banner = "Usage: #{$0} [options] <benchmarks to run>"
+
+    opts.on('--before REF', 'Git ref for ruby (before)') do |ref|
+      git_ref = parse_ref ref
+      if git_ref.nil?
+        warn "Error: '#{ref}' is not a valid git ref"
+        exit 1
+      end
+
+      options[:before] = git_ref
     end
 
-    options[:before] = git_ref
-  end
+    opts.on('--after REF', 'Git ref for ruby (after)') do |ref|
+      git_ref = parse_ref ref
+      if git_ref.nil?
+        warn "Error: '#{ref}' is not a valid git ref"
+        exit 1
+      end
 
-  opts.on('--after REF', 'Git ref for ruby (after)') do |ref|
-    git_ref = parse_ref ref
-    if git_ref.nil?
-      warn "Error: '#{ref}' is not a valid git ref"
-      exit 1
+      options[:after] = git_ref
     end
 
-    options[:after] = git_ref
+    opts.on('--bench-path PATH',
+            'Path to an existing ruby-bench repository clone ' \
+            '(if not specified, ruby-bench will be cloned automatically to a temporary directory)') do |path|
+      options[:bench_path] = path
+    end
+
+    opts.on('--bench-args ARGS', 'Args to pass to ruby-bench') do |bench_args|
+      options[:bench_args] = bench_args
+    end
+
+    opts.on('--force-reconfigure', 'Force running ./configure again for existing worktrees even if Makefile exists') do
+      options[:force_reconfigure] = true
+    end
+
+    opts.on('--quiet', 'Silence output of commands except for benchmark result') do
+      options[:quiet] = true
+    end
+
+    opts.separator('')
+    opts.separator('If no benchmarks are specified, the benchmarks that will be run are:')
+    opts.separator(DEFAULT_BENCHMARKS.join(', '))
+  end,
+  'clean' => OptionParser.new do |opts|
   end
+}
 
-  opts.on('--bench-path PATH',
-          'Path to an existing ruby-bench repository clone ' \
-          '(if not specified, ruby-bench will be cloned automatically to a temporary directory)') do |path|
-    options[:bench_path] = path
-  end
-
-  opts.on('--bench-args ARGS', 'Args to pass to ruby-bench') do |bench_args|
-    options[:bench_args] = bench_args
-  end
-
-  opts.on('--force-reconfigure', 'Force running ./configure again for existing worktrees even if Makefile exists') do
-    options[:force_reconfigure] = true
-  end
-
-  opts.on('--quiet', 'Silence output of commands except for benchmark result') do
-    options[:quiet] = true
-  end
-
-  opts.on('--clean', 'Remove temporary git worktrees, ruby-bench clone and chruby versions then exit') do
-    options[:clean] = true
-  end
-
-  options[:name_filters] = []
-end.parse!
-
-options[:name_filters] += ARGV unless ARGV.empty?
-options[:after] ||= parse_ref('HEAD')
+top_level.order!
+command = ARGV.shift
+subcommands[command].order!
 
 zjit_diff = ZJITDiff.new(options)
 
-if options[:clean]
+case command
+when 'bench'
+  options[:name_filters] = ARGV.empty ? DEFAULT_BENCHMARKS : ARGV
+  options[:after] ||= parse_ref('HEAD')
+  zjit_diff.bench!
+when 'clean'
   zjit_diff.clean!
-  exit(0)
 end
-
-zjit_diff.run!
