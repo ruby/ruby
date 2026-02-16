@@ -164,7 +164,7 @@ VALUE rb_cSymbol;
         if (str_embed_capa(str) < capacity + termlen) {\
             char *const tmp = ALLOC_N(char, (size_t)(capacity) + (termlen));\
             const long tlen = RSTRING_LEN(str);\
-            memcpy(tmp, RSTRING_PTR(str), tlen);\
+            memcpy(tmp, RSTRING_PTR(str), str_embed_capa(str));\
             RSTRING(str)->as.heap.ptr = tmp;\
             RSTRING(str)->len = tlen;\
             STR_SET_NOEMBED(str);\
