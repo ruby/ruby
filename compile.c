@@ -11001,34 +11001,49 @@ compile_op_cdecl(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
 }
 
 static int
-compile_op_log(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped, const enum node_type type)
+compile_op_log(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, ID name, const NODE *const nd_value, int popped, bool op_and)
 {
     const int line = nd_line(node);
     LABEL *lfin = NEW_LABEL(line);
-    LABEL *lassign;
+    LABEL *lassign = NEW_LABEL(line);
 
-    if (type == NODE_OP_ASGN_OR && !nd_type_p(RNODE_OP_ASGN_OR(node)->nd_head, NODE_IVAR)) {
-        LABEL *lfinish[2];
-        lfinish[0] = lfin;
-        lfinish[1] = 0;
-        defined_expr(iseq, ret, RNODE_OP_ASGN_OR(node)->nd_head, lfinish, Qfalse, false);
-        lassign = lfinish[1];
-        if (!lassign) {
-            lassign = NEW_LABEL(line);
-        }
+    if (nd_type_p(node, RB_CLASS_VARIABLE_OR_WRITE_NODE)) {
+        ADD_INSN(ret, node, putnil);
+        ADD_INSN3(ret, node, defined, INT2FIX(DEFINED_CVAR), ID2SYM(name), Qtrue);
         ADD_INSNL(ret, node, branchunless, lassign);
     }
-    else {
-        lassign = NEW_LABEL(line);
+    else if (nd_type_p(node, RB_GLOBAL_VARIABLE_OR_WRITE_NODE)) {
+        ADD_INSN(ret, node, putnil);
+        ADD_INSN3(ret, node, defined, INT2FIX(DEFINED_GVAR), ID2SYM(name), Qtrue);
+        ADD_INSNL(ret, node, branchunless, lassign);
     }
 
-    CHECK(COMPILE(ret, "NODE_OP_ASGN_AND/OR#nd_head", RNODE_OP_ASGN_OR(node)->nd_head));
+    switch (nd_type(node)) {
+      case RB_LOCAL_VARIABLE_AND_WRITE_NODE:
+      case RB_LOCAL_VARIABLE_OR_WRITE_NODE:
+        CHECK(compile_lvar(iseq, ret, node, name));
+        break;
+      case RB_INSTANCE_VARIABLE_AND_WRITE_NODE:
+      case RB_INSTANCE_VARIABLE_OR_WRITE_NODE:
+        ADD_INSN2(ret, node, getinstancevariable, ID2SYM(name), get_ivar_ic_value(iseq, name));
+        break;
+      case RB_CLASS_VARIABLE_AND_WRITE_NODE:
+      case RB_CLASS_VARIABLE_OR_WRITE_NODE:
+        ADD_INSN2(ret, node, getclassvariable, ID2SYM(name), get_cvar_ic_value(iseq, name));
+        break;
+      case RB_GLOBAL_VARIABLE_AND_WRITE_NODE:
+      case RB_GLOBAL_VARIABLE_OR_WRITE_NODE:
+        ADD_INSN1(ret, node, getglobal, ID2SYM(name));
+        break;
+      default:
+        UNKNOWN_NODE("compile_op_log", node, COMPILE_NG);
+    }
 
     if (!popped) {
         ADD_INSN(ret, node, dup);
     }
 
-    if (type == NODE_OP_ASGN_AND) {
+    if (op_and) {
         ADD_INSNL(ret, node, branchunless, lfin);
     }
     else {
@@ -11040,7 +11055,32 @@ compile_op_log(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
     }
 
     ADD_LABEL(ret, lassign);
-    CHECK(COMPILE_(ret, "NODE_OP_ASGN_AND/OR#nd_value", RNODE_OP_ASGN_OR(node)->nd_value, popped));
+    CHECK(COMPILE(ret, "NODE_OP_ASGN_AND/OR#nd_value", nd_value));
+    if (!popped) {
+        ADD_INSN(ret, node, dup);
+    }
+
+    switch (nd_type(node)) {
+      case RB_LOCAL_VARIABLE_AND_WRITE_NODE:
+      case RB_LOCAL_VARIABLE_OR_WRITE_NODE:
+        CHECK(compile_lasgn_lhs(iseq, ret, node, name));
+        break;
+      case RB_INSTANCE_VARIABLE_AND_WRITE_NODE:
+      case RB_INSTANCE_VARIABLE_OR_WRITE_NODE:
+        ADD_INSN2(ret, node, setinstancevariable, ID2SYM(name), get_ivar_ic_value(iseq, name));
+        break;
+      case RB_CLASS_VARIABLE_AND_WRITE_NODE:
+      case RB_CLASS_VARIABLE_OR_WRITE_NODE:
+        ADD_INSN2(ret, node, setclassvariable, ID2SYM(name), get_cvar_ic_value(iseq, name));
+        break;
+      case RB_GLOBAL_VARIABLE_AND_WRITE_NODE:
+      case RB_GLOBAL_VARIABLE_OR_WRITE_NODE:
+        ADD_INSN1(ret, node, setglobal, ID2SYM(name));
+        break;
+      default:
+        UNKNOWN_NODE("compile_op_log", node, COMPILE_NG);
+    }
+
     ADD_LABEL(ret, lfin);
     return COMPILE_OK;
 }
@@ -12261,6 +12301,83 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       case RB_CALL_AND_WRITE_NODE: {
         rb_call_and_write_node_t *cast = (rb_call_and_write_node_t *)node;
         CHECK(compile_op_asgn2(iseq, ret, node, cast->receiver, cast->read_name, cast->write_name, idANDOP, cast->value, popped));
+        break;
+      }
+
+      case RB_LOCAL_VARIABLE_OPERATOR_WRITE_NODE: {
+        rb_local_variable_operator_write_node_t *cast = (rb_local_variable_operator_write_node_t *)node;
+        CHECK(compile_lvar(iseq, ret, node, cast->name));
+        CHECK(COMPILE(ret, "op asgn value", cast->value));
+        ADD_SEND_R(ret, node, cast->binary_operator, INT2FIX(1), NULL, INT2FIX(0), NULL);
+        if (!popped) {
+            ADD_INSN(ret, node, dup);
+        }
+        CHECK(compile_lasgn_lhs(iseq, ret, node, cast->name));
+        break;
+      }
+      case RB_INSTANCE_VARIABLE_OPERATOR_WRITE_NODE: {
+        rb_instance_variable_operator_write_node_t *cast = (rb_instance_variable_operator_write_node_t *)node;
+        ADD_INSN2(ret, node, getinstancevariable, ID2SYM(cast->name), get_ivar_ic_value(iseq, cast->name));
+        CHECK(COMPILE(ret, "op asgn value", cast->value));
+        ADD_SEND_R(ret, node, cast->binary_operator, INT2FIX(1), NULL, INT2FIX(0), NULL);
+        if (!popped) {
+            ADD_INSN(ret, node, dup);
+        }
+        ADD_INSN2(ret, node, setinstancevariable, ID2SYM(cast->name), get_ivar_ic_value(iseq, cast->name));
+        break;
+      }
+      case RB_CLASS_VARIABLE_OPERATOR_WRITE_NODE: {
+        rb_class_variable_operator_write_node_t *cast = (rb_class_variable_operator_write_node_t *)node;
+        ADD_INSN2(ret, node, getclassvariable, ID2SYM(cast->name), get_cvar_ic_value(iseq, cast->name));
+        CHECK(COMPILE(ret, "op asgn value", cast->value));
+        ADD_SEND_R(ret, node, cast->binary_operator, INT2FIX(1), NULL, INT2FIX(0), NULL);
+        if (!popped) {
+            ADD_INSN(ret, node, dup);
+        }
+        ADD_INSN2(ret, node, setclassvariable, ID2SYM(cast->name), get_cvar_ic_value(iseq, cast->name));
+        break;
+      }
+      case RB_GLOBAL_VARIABLE_OPERATOR_WRITE_NODE: {
+        rb_global_variable_operator_write_node_t *cast = (rb_global_variable_operator_write_node_t *)node;
+        ADD_INSN1(ret, node, getglobal, ID2SYM(cast->name));
+        CHECK(COMPILE(ret, "op asgn value", cast->value));
+        ADD_SEND_R(ret, node, cast->binary_operator, INT2FIX(1), NULL, INT2FIX(0), NULL);
+        if (!popped) {
+            ADD_INSN(ret, node, dup);
+        }
+        ADD_INSN1(ret, node, setglobal, ID2SYM(cast->name));
+        break;
+      }
+      case RB_LOCAL_VARIABLE_AND_WRITE_NODE: {
+        CHECK(compile_op_log(iseq, ret, node, RB_NODE_LOCAL_VARIABLE_AND_WRITE(node)->name, RB_NODE_LOCAL_VARIABLE_AND_WRITE(node)->value, popped, TRUE));
+        break;
+      }
+      case RB_INSTANCE_VARIABLE_AND_WRITE_NODE: {
+        CHECK(compile_op_log(iseq, ret, node, RB_NODE_INSTANCE_VARIABLE_AND_WRITE(node)->name, RB_NODE_INSTANCE_VARIABLE_AND_WRITE(node)->value, popped, TRUE));
+        break;
+      }
+      case RB_CLASS_VARIABLE_AND_WRITE_NODE: {
+        CHECK(compile_op_log(iseq, ret, node, RB_NODE_CLASS_VARIABLE_AND_WRITE(node)->name, RB_NODE_CLASS_VARIABLE_AND_WRITE(node)->value, popped, TRUE));
+        break;
+      }
+      case RB_GLOBAL_VARIABLE_AND_WRITE_NODE: {
+        CHECK(compile_op_log(iseq, ret, node, RB_NODE_GLOBAL_VARIABLE_AND_WRITE(node)->name, RB_NODE_GLOBAL_VARIABLE_AND_WRITE(node)->value, popped, TRUE));
+        break;
+      }
+      case RB_LOCAL_VARIABLE_OR_WRITE_NODE: {
+        CHECK(compile_op_log(iseq, ret, node, RB_NODE_LOCAL_VARIABLE_OR_WRITE(node)->name, RB_NODE_LOCAL_VARIABLE_OR_WRITE(node)->value, popped, FALSE));
+        break;
+      }
+      case RB_INSTANCE_VARIABLE_OR_WRITE_NODE: {
+        CHECK(compile_op_log(iseq, ret, node, RB_NODE_INSTANCE_VARIABLE_OR_WRITE(node)->name, RB_NODE_INSTANCE_VARIABLE_OR_WRITE(node)->value, popped, FALSE));
+        break;
+      }
+      case RB_CLASS_VARIABLE_OR_WRITE_NODE: {
+        CHECK(compile_op_log(iseq, ret, node, RB_NODE_CLASS_VARIABLE_OR_WRITE(node)->name, RB_NODE_CLASS_VARIABLE_OR_WRITE(node)->value, popped, FALSE));
+        break;
+      }
+      case RB_GLOBAL_VARIABLE_OR_WRITE_NODE: {
+        CHECK(compile_op_log(iseq, ret, node, RB_NODE_GLOBAL_VARIABLE_OR_WRITE(node)->name, RB_NODE_GLOBAL_VARIABLE_OR_WRITE(node)->value, popped, FALSE));
         break;
       }
 
