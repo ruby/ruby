@@ -3,15 +3,14 @@ require 'fileutils'
 require 'optparse'
 require 'tmpdir'
 require 'logger'
+require 'digest'
 
 GitRef = Struct.new(:ref, :commit_hash)
 
+RUBIES_DIR = File.join(Dir.home, '.diffs')
+
 def macos?
   Gem::Platform.local == 'darwin'
-end
-
-def ruby_dir(name)
-  File.join(Dir.home, '.rubies', name)
 end
 
 class CommandRunner
@@ -39,18 +38,18 @@ class ZJITDiff
   end
 
   def bench!
-    before = RubyWorktree.new(name: BEFORE_NAME,
-                              ref: @options[:before],
+    @before = RubyWorktree.new(name: BEFORE_NAME,
+                               ref: @options[:before],
+                               runner: @runner,
+                               logger: @log,
+                               force_rebuild: @options[:force_rebuild])
+    @before.build!
+    @after = RubyWorktree.new(name: AFTER_NAME,
+                              ref: @options[:after],
                               runner: @runner,
                               logger: @log,
-                              force_reconfigure: @options[:force_reconfigure])
-    before.build
-    after = RubyWorktree.new(name: AFTER_NAME,
-                             ref: @options[:after],
-                             runner: @runner,
-                             logger: @log,
-                             force_reconfigure: @options[:force_reconfigure])
-    after.build
+                              force_rebuild: @options[:force_rebuild])
+    @after.build!
 
     @log.info('Running benchmarks')
     ruby_bench_path = @options[:bench_path] || setup_ruby_bench
@@ -64,12 +63,11 @@ class ZJITDiff
         @log.info "Removing worktree at #{path}"
         system('git', 'worktree', 'remove', '--force', path)
       end
+    end
 
-      path = ruby_dir(name)
-      if Dir.exist?(path)
-        @log.info "Removing ruby installation at #{path}"
-        FileUtils.rm_rf(path)
-      end
+    if Dir.exist?(RUBIES_DIR)
+      @log.info 'Removing ruby installations from ~/.diffs'
+      FileUtils.rm_rf(RUBIES_DIR)
     end
 
     bench_path = File.join(Dir.tmpdir, 'ruby-bench')
@@ -83,9 +81,10 @@ class ZJITDiff
 
   def run_benchmarks(ruby_bench_path)
     Dir.chdir(ruby_bench_path) do
-      @runner.cmd('./run_benchmarks.rb',
+      @runner.cmd({ 'RUBIES_DIR' => RUBIES_DIR },
+                  './run_benchmarks.rb',
                   '--chruby',
-                  "#{BEFORE_NAME} --zjit-stats;#{AFTER_NAME} --zjit-stats",
+                  "#{@before.hash} --zjit-stats;#{@after.hash} --zjit-stats",
                   '--out-name',
                   DATA_FILENAME,
                   *@options[:bench_args],
@@ -111,43 +110,54 @@ class ZJITDiff
 end
 
 class RubyWorktree
-  attr_reader :name, :path
+  attr_reader :hash
 
   BREW_REQUIRED_PACKAGES = %w[openssl readline libyaml].freeze
 
-  def initialize(name:, ref:, runner:, logger:, force_reconfigure: false)
-    @name = name
+  def initialize(name:, ref:, runner:, logger:, force_rebuild: false)
     @path = File.join(Dir.tmpdir, name)
     @ref = ref
-    @force_reconfigure = force_reconfigure
+    @force_rebuild = force_rebuild
     @runner = runner
     @log = logger
 
     setup_worktree
   end
 
-  def build
+  def build!
     Dir.chdir(@path) do
-      if !File.exist?('Makefile') || @force_reconfigure
+      configure_cmd_args = ['--enable-zjit=dev', '--disable-install-doc']
+      if macos?
+        brew_prefixes = BREW_REQUIRED_PACKAGES.map do |pkg|
+          `brew --prefix #{pkg}`.strip
+        end
+        configure_cmd_args << "--with-opt-dir=#{brew_prefixes.join(':')}"
+      end
+      configure_cmd_hash = Digest::MD5.hexdigest(configure_cmd_args.join(''))
+
+      build_cmd_args = ['-j', 'miniruby']
+      build_cmd_hash = Digest::MD5.hexdigest(build_cmd_args.join(''))
+
+      @hash = "#{configure_cmd_hash}-#{build_cmd_hash}-#{@ref.commit_hash}"
+      prefix = File.join(RUBIES_DIR, @hash)
+
+      if Dir.exist?(prefix) && !@force_rebuild
+        @log.info("Found existing build for #{@ref.ref}, skipping build")
+        return
+      end
+
+      unless File.exist?('Makefile')
         @runner.cmd('./autogen.sh')
 
         cmd = [
           './configure',
-          '--enable-zjit=dev',
-          "--prefix=#{ruby_dir(@name)}",
-          '--disable-install-doc'
+          *configure_cmd_args,
+          "--prefix=#{prefix}"
         ]
-
-        if macos?
-          brew_prefixes = BREW_REQUIRED_PACKAGES.map do |pkg|
-            `brew --prefix #{pkg}`.strip
-          end
-          cmd << "--with-opt-dir=#{brew_prefixes.join(':')}"
-        end
 
         @runner.cmd(*cmd)
       end
-      @runner.cmd('make', '-j', 'miniruby')
+      @runner.cmd('make', *build_cmd_args)
       @runner.cmd('make', 'install')
     end
   end
@@ -225,8 +235,9 @@ subcommands = {
       options[:bench_args] = bench_args
     end
 
-    opts.on('--force-reconfigure', 'Force running ./configure again for existing worktrees even if Makefile exists') do
-      options[:force_reconfigure] = true
+    opts.on('--force-rebuild',
+            'Force building ruby again instead of using even if existing builds exist in the cache at ~/.diffs') do
+      options[:force_rebuild] = true
     end
 
     opts.on('--quiet', 'Silence output of commands except for benchmark result') do
@@ -249,7 +260,7 @@ zjit_diff = ZJITDiff.new(options)
 
 case command
 when 'bench'
-  options[:name_filters] = ARGV.empty ? DEFAULT_BENCHMARKS : ARGV
+  options[:name_filters] = ARGV.empty? ? DEFAULT_BENCHMARKS : ARGV
   options[:after] ||= parse_ref('HEAD')
   zjit_diff.bench!
 when 'clean'
