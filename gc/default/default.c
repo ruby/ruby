@@ -187,7 +187,7 @@ static RB_THREAD_LOCAL_SPECIFIER int malloc_increase_local;
 #define USE_TICK_T                 (PRINT_ENTER_EXIT_TICK || PRINT_ROOT_TICKS)
 
 #ifndef HEAP_COUNT
-# define HEAP_COUNT 5
+# define HEAP_COUNT 6
 #endif
 
 typedef struct ractor_newobj_heap_cache {
@@ -691,12 +691,12 @@ size_t rb_gc_impl_obj_slot_size(VALUE obj);
 
 #if SIZEOF_VALUE >= 8
 static const size_t pool_slot_sizes[HEAP_COUNT] = {
-    64, 128, 256, 512, 1024,
+    32, 64, 128, 256, 512, 1024,
 };
 static uint8_t size_to_heap_idx[1024 / 8 + 1];
 #else
 static const size_t pool_slot_sizes[HEAP_COUNT] = {
-    32, 64, 128, 256, 512,
+    16, 32, 64, 128, 256, 512,
 };
 static uint8_t size_to_heap_idx[512 / 8 + 1];
 #endif
@@ -9515,7 +9515,7 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
         rb_bug("Could not preregister postponed job for GC");
     }
 
-    GC_ASSERT(RVALUE_SLOT_SIZE <= pool_slot_sizes[0]);
+    GC_ASSERT(RVALUE_SLOT_SIZE <= pool_slot_sizes[1]);
 
     for (int i = 0; i < HEAP_COUNT; i++) {
         rb_heap_t *heap = &heaps[i];
