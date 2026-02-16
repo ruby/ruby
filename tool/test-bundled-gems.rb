@@ -93,6 +93,7 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   puts "#{github_actions ? "::group::\e\[93m" : "\n"}Testing the #{gem} gem#{github_actions ? "\e\[m" : ""}"
   print "[command]" if github_actions
   p test_command
+  start_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
   timeouts = {nil => first_timeout, INT: 30, TERM: 10, KILL: nil}
   if /mingw|mswin/ =~ RUBY_PLATFORM
     timeouts.delete(:TERM)      # Inner process signal on Windows
@@ -119,12 +120,17 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     break
   end
 
+  elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_at
   print "::endgroup::\n" if github_actions
-  unless $?.success?
 
+  t = " in %.6f sec" % elapsed
+
+  if $?.success?
+    puts colorize.decorate("Test passed#{t}", "pass")
+  else
     mesg = "Tests failed " +
            ($?.signaled? ? "by SIG#{Signal.signame($?.termsig)}" :
-              "with exit code #{$?.exitstatus}")
+              "with exit code #{$?.exitstatus}") + t
     puts colorize.decorate(mesg, "fail")
     if allowed_failures.include?(gem)
       mesg = "Ignoring test failures for #{gem} due to \$TEST_BUNDLED_GEMS_ALLOW_FAILURES or DEFAULT_ALLOWED_FAILURES"
