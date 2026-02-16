@@ -1125,9 +1125,22 @@ module Bundler
     end
 
     def preload_git_sources
-      sources.git_sources.each {|source| preload_git_source_worker.enq(source) }
+      needed_git_sources.each {|source| preload_git_source_worker.enq(source) }
     ensure
       preload_git_source_worker.stop
+    end
+
+    # Git sources needed for the requested groups (excludes sources only used by --without groups)
+    def needed_git_sources
+      needed_deps = dependencies_for(requested_groups)
+      sources.git_sources.select do |source|
+        needed_deps.any? {|d| d.source == source }
+      end
+    end
+
+    # Git sources that should be excluded (only used by --without groups)
+    def excluded_git_sources
+      sources.git_sources - needed_git_sources
     end
 
     def find_source_requirements
@@ -1141,10 +1154,10 @@ module Bundler
       # specs will be available later when the resolver knows where to
       # look for that gemspec (or its dependencies)
       source_requirements = if precompute_source_requirements_for_indirect_dependencies?
-        all_requirements = source_map.all_requirements
+        all_requirements = source_map.all_requirements(excluded_git_sources)
         { default: default_source }.merge(all_requirements)
       else
-        { default: Source::RubygemsAggregate.new(sources, source_map) }.merge(source_map.direct_requirements)
+        { default: Source::RubygemsAggregate.new(sources, source_map, excluded_git_sources) }.merge(source_map.direct_requirements)
       end
       source_requirements.merge!(source_map.locked_requirements) if nothing_changed?
       metadata_dependencies.each do |dep|

@@ -1538,6 +1538,49 @@ rb_mod_autoload(VALUE mod, VALUE sym, VALUE file)
 
 /*
  *  call-seq:
+ *     mod.autoload_relative(const, filename)   -> nil
+ *
+ *  Registers _filename_ to be loaded (using Kernel::require)
+ *  the first time that _const_ (which may be a String or
+ *  a symbol) is accessed in the namespace of _mod_. The _filename_
+ *  is interpreted as relative to the directory of the file where
+ *  autoload_relative is called.
+ *
+ *     module A
+ *     end
+ *     A.autoload_relative(:B, "b.rb")
+ *
+ *  If _const_ in _mod_ is defined as autoload, the file name to be
+ *  loaded is replaced with _filename_.  If _const_ is defined but not
+ *  as autoload, does nothing.
+ *
+ *  The relative path is converted to an absolute path, which is what
+ *  will be returned by Module#autoload? for the constant.
+ *
+ *  Raises LoadError if called without file context (e.g., from eval).
+ */
+
+static VALUE
+rb_mod_autoload_relative(VALUE mod, VALUE sym, VALUE file)
+{
+    ID id = rb_to_id(sym);
+    VALUE base, absolute_path;
+
+    FilePathValue(file);
+
+    base = rb_current_realfilepath();
+    if (NIL_P(base)) {
+        rb_loaderror("cannot infer basepath (autoload_relative called without file context)");
+    }
+    base = rb_file_dirname(base);
+    absolute_path = rb_file_absolute_path(file, base);
+
+    rb_autoload_str(mod, id, absolute_path);
+    return Qnil;
+}
+
+/*
+ *  call-seq:
  *     mod.autoload?(name, inherit=true)   -> String or nil
  *
  *  Returns _filename_ to be loaded if _name_ is registered as
@@ -1601,6 +1644,38 @@ rb_f_autoload(VALUE obj, VALUE sym, VALUE file)
         rb_raise(rb_eTypeError, "Can not set autoload on singleton class");
     }
     return rb_mod_autoload(klass, sym, file);
+}
+
+/*
+ *  call-seq:
+ *     autoload_relative(const, filename)   -> nil
+ *
+ *  Registers _filename_ to be loaded (using Kernel::require)
+ *  the first time that _const_ (which may be a String or
+ *  a symbol) is accessed. The _filename_ is interpreted as
+ *  relative to the directory of the file where autoload_relative
+ *  is called.
+ *
+ *     autoload_relative(:MyModule, "my_module.rb")
+ *
+ *  If _const_ is defined as autoload, the file name to be loaded is
+ *  replaced with _filename_.  If _const_ is defined but not as
+ *  autoload, does nothing.
+ *
+ *  The relative path is converted to an absolute path, which is what
+ *  will be returned by Kernel#autoload? for the constant.
+ *
+ *  Raises LoadError if called without file context (e.g., from eval).
+ */
+
+static VALUE
+rb_f_autoload_relative(VALUE obj, VALUE sym, VALUE file)
+{
+    VALUE klass = rb_class_real(rb_vm_cbase());
+    if (!klass) {
+        rb_raise(rb_eTypeError, "Can not set autoload on singleton class");
+    }
+    return rb_mod_autoload_relative(klass, sym, file);
 }
 
 /*
@@ -1689,7 +1764,9 @@ Init_load(void)
     rb_define_global_function("require", rb_f_require, 1);
     rb_define_global_function("require_relative", rb_f_require_relative, 1);
     rb_define_method(rb_cModule, "autoload", rb_mod_autoload, 2);
+    rb_define_method(rb_cModule, "autoload_relative", rb_mod_autoload_relative, 2);
     rb_define_method(rb_cModule, "autoload?", rb_mod_autoload_p, -1);
     rb_define_global_function("autoload", rb_f_autoload, 2);
+    rb_define_global_function("autoload_relative", rb_f_autoload_relative, 2);
     rb_define_global_function("autoload?", rb_f_autoload_p, -1);
 }

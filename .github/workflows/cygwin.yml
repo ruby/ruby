@@ -46,6 +46,8 @@ jobs:
         uses: cygwin/cygwin-install-action@master
         with:
           packages: ruby gcc-core make autoconf libtool libssl-devel libyaml-devel libffi-devel zlib-devel rubygems
+          site: |
+            https://cygwin.osuosl.org/
 
       - name: configure
         run: |

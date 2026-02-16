@@ -2412,7 +2412,7 @@ rb_file_ftype(mode_t mode)
         t = "unknown";
     }
 
-    return rb_usascii_str_new2(t);
+    return rb_fstring_cstr(t);
 }
 
 /*

@@ -213,6 +213,24 @@ class TestRactor < Test::Unit::TestCase
     assert_unshareable(pr, /not supported yet/, exception: RuntimeError)
   end
 
+  def test_ractor_new_raises_isolation_error_if_outer_variables_are_accessed
+    assert_raise(Ractor::IsolationError) do
+      channel = Ractor::Port.new
+      Ractor.new(channel) do
+        inbound_work = Ractor::Port.new
+        channel << inbound_work
+      end
+    end
+  end
+
+  def test_ractor_new_raises_isolation_error_if_proc_uses_yield
+    assert_raise(Ractor::IsolationError) do
+      Ractor.new do
+        yield
+      end
+    end
+  end
+
   def assert_make_shareable(obj)
     refute Ractor.shareable?(obj), "object was already shareable"
     Ractor.make_shareable(obj)

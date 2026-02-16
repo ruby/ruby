@@ -689,8 +689,8 @@ rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool i
 bool
 rb_gc_impl_during_gc_p(void *objspace_ptr)
 {
-    // TODO
-    return false;
+    struct objspace *objspace = objspace_ptr;
+    return objspace->world_stopped;
 }
 
 static void

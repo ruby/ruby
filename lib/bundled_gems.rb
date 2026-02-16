@@ -129,13 +129,10 @@ module Gem::BUNDLED_GEMS # :nodoc:
     return if specs.include?(name)
 
     # Don't warn if a hyphenated gem provides this feature
-    # (e.g., benchmark-ips provides benchmark/ips, not the benchmark gem)
+    # (e.g., benchmark-ips provides benchmark/ips, benchmark/timing, etc.)
     if subfeature
-      feature_parts = feature.split("/")
-      if feature_parts.size >= 2
-        hyphenated_gem = "#{feature_parts[0]}-#{feature_parts[1]}"
-        return if specs.include?(hyphenated_gem)
-      end
+      prefix = feature.split("/").first + "-"
+      return if specs.any? { |spec, _| spec.start_with?(prefix) }
     end
 
     return if WARNED[name]

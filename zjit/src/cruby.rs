@@ -1197,6 +1197,15 @@ pub mod test_utils {
         })
     }
 
+    /// Evaluate a given Ruby program with compile options
+    pub fn eval_with_options(program: &str, options_expr: &str) -> VALUE {
+        with_rubyvm(|| {
+            let options = eval(options_expr);
+            let wrapped_iseq = compile_to_wrapped_iseq_with_options(&unindent(program, false), options);
+            unsafe { rb_funcallv(wrapped_iseq, ID!(eval), 0, null()) }
+        })
+    }
+
     /// Get the #inspect of a given Ruby program in Rust string
     pub fn inspect(program: &str) -> String {
         let inspect = format!("({program}).inspect");
@@ -1252,10 +1261,15 @@ pub mod test_utils {
 
     /// Compile a program into a RubyVM::InstructionSequence object
     fn compile_to_wrapped_iseq(program: &str) -> VALUE {
+        compile_to_wrapped_iseq_with_options(program, Qnil)
+    }
+
+    fn compile_to_wrapped_iseq_with_options(program: &str, options: VALUE) -> VALUE {
         let bytes = program.as_bytes().as_ptr() as *const c_char;
         unsafe {
             let program_str = rb_utf8_str_new(bytes, program.len().try_into().unwrap());
-            rb_funcallv(rb_cISeq, ID!(compile), 1, &program_str)
+            let args = [program_str, Qnil, Qnil, VALUE(1_usize.wrapping_shl(1) | 1), options];
+            rb_funcallv(rb_cISeq, ID!(compile), args.len() as c_int, args.as_ptr())
         }
     }
 

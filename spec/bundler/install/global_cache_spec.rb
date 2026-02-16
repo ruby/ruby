@@ -8,7 +8,13 @@ RSpec.describe "global gem caching" do
     let(:source2) { "http://gemserver.example.org" }
 
     def cache_base
-      home(".bundle", "cache", "gems")
+      # Use the unified global gem cache path if available (from RubyGems),
+      # otherwise fall back to the Bundler-specific cache location
+      if Gem.respond_to?(:global_gem_cache_path)
+        Pathname.new(Gem.global_gem_cache_path)
+      else
+        home(".bundle", "cache", "gems")
+      end
     end
 
     def source_global_cache(*segments)

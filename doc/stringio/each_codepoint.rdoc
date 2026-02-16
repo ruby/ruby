@@ -9,10 +9,7 @@ Each codepoint is the integer value for a character; returns self:
   strio.each_codepoint {|codepoint| codepoints.push(codepoint) }
   strio.eof? # => true
   codepoints # => [104, 101, 108, 108, 111]
-  codepoints = []
-  strio = StringIO.new('тест')
-  strio.each_codepoint {|codepoint| codepoints.push(codepoint) }
-  codepoints # => [1090, 1077, 1089, 1090]
+
   codepoints = []
   strio = StringIO.new('こんにちは')
   strio.each_codepoint {|codepoint| codepoints.push(codepoint) }

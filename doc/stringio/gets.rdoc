@@ -19,10 +19,10 @@ With no arguments given, reads a line using the default record separator
   strio.eof? # => true
   strio.gets # => nil
 
-  strio = StringIO.new('Привет')  # Six 2-byte characters
+  strio = StringIO.new('こんにちは')  # Five 3-byte characters.
   strio.pos  # => 0
-  strio.gets # => "Привет"
-  strio.pos  # => 12
+  strio.gets # => "こんにちは"
+  strio.pos  # => 15
 
 <b>Argument +sep+</b>
 
@@ -67,11 +67,11 @@ but in other cases the position may be anywhere:
 
 The position need not be at a character boundary:
 
-  strio = StringIO.new('Привет') # Six 2-byte characters.
-  strio.pos = 2                  # At beginning of second character.
-  strio.gets # => "ривет"
-  strio.pos = 3                  # In middle of second character.
-  strio.gets # => "\x80ивет"
+  strio = StringIO.new('こんにちは')  # Five 3-byte characters.
+  strio.pos = 3                     # At beginning of second character.
+  strio.gets  # => "んにちは"
+  strio.pos = 4                     # Within second character.
+  strio.gets  # => "\x82\x93にちは"
 
 <b>Special Record Separators</b>
 

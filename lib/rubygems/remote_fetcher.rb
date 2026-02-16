@@ -111,9 +111,13 @@ class Gem::RemoteFetcher
   # always replaced.
 
   def download(spec, source_uri, install_dir = Gem.dir)
+    gem_file_name = File.basename spec.cache_file
+
     install_cache_dir = File.join install_dir, "cache"
     cache_dir =
-      if Dir.pwd == install_dir # see fetch_command
+      if Gem.configuration.global_gem_cache
+        Gem.global_gem_cache_path
+      elsif Dir.pwd == install_dir # see fetch_command
         install_dir
       elsif File.writable?(install_cache_dir) || (File.writable?(install_dir) && !File.exist?(install_cache_dir))
         install_cache_dir
@@ -121,7 +125,6 @@ class Gem::RemoteFetcher
         File.join Gem.user_dir, "cache"
       end
 
-    gem_file_name = File.basename spec.cache_file
     local_gem_path = File.join cache_dir, gem_file_name
 
     require "fileutils"
@@ -234,7 +237,9 @@ class Gem::RemoteFetcher
 
       fetch_http(location, last_modified, head, depth + 1)
     else
-      raise FetchError.new("bad response #{response.message} #{response.code}", uri)
+      custom_error = response["X-Error-Message"]
+      error_detail = custom_error || response.message
+      raise FetchError.new("Bad response #{error_detail} #{response.code}", uri)
     end
   end
 

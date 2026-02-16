@@ -11,6 +11,15 @@ Note that each entry is kept to a minimum, see links for details.
 
 Note: We're only listing outstanding class updates.
 
+* Kernel
+
+    * `Kernel#autoload_relative` and `Module#autoload_relative` are added.
+      These methods work like `autoload`, but resolve the file path relative
+      to the file where the method is called, similar to `require_relative`.
+      This makes it easier to autoload constants from files in the same
+      directory without hardcoding absolute paths or manipulating `$LOAD_PATH`.
+      [[Feature #15330]]
+
 * Method
 
     * `Method#source_location`, `Proc#source_location`, and
@@ -19,6 +28,8 @@ Note: We're only listing outstanding class updates.
       end_line, end_column]`. The previous 2-element format `[path,
       line]` can still be obtained by calling `.take(2)` on the result.
       [[Feature #6012]]
+    * `Array#pack` accepts a new format `R` and `r` for unpacking unsigned
+      and signed LEB128 encoded integers. [[Feature #21785]]
 
 * Set
 
@@ -58,7 +69,7 @@ releases.
 * minitest 6.0.1
 * test-unit 3.7.7
 * rss 0.3.2
-* net-imap 0.6.2
+* net-imap 0.6.3
 * rbs 3.10.3
 * typeprof 0.31.1
 * debug 1.11.1
@@ -66,6 +77,7 @@ releases.
 * resolv-replace 0.2.0
 * syslog 0.4.0
 * repl_type_completor 0.1.13
+* pstore 0.2.1
 * rdoc 7.2.0
 * irb 1.17.0
 
@@ -90,4 +102,6 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 ## JIT
 
 [Feature #6012]: https://bugs.ruby-lang.org/issues/6012
+[Feature #15330]: https://bugs.ruby-lang.org/issues/15330
 [Feature #21390]: https://bugs.ruby-lang.org/issues/21390
+[Feature #21785]: https://bugs.ruby-lang.org/issues/21785

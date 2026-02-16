@@ -1,0 +1,65 @@
+---
+name: Build gems
+
+on:
+  push:
+    tags:
+      - "v*"
+      - "cross-gem/*"
+  workflow_dispatch:
+
+jobs:
+  ci-data:
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.fetch.outputs.result }}
+    steps:
+      - uses: oxidize-rb/actions/fetch-ci-data@v1
+        id: fetch
+        with:
+          supported-ruby-platforms: |
+            exclude: ["arm-linux", "x64-mingw32"]
+          stable-ruby-versions: |
+            exclude: ["head"]
+
+  source-gem:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - name: Build gem
+        run: bundle exec rake build
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: source-gem
+          path: pkg/*.gem
+
+  cross-gem:
+    name: Compile native gem for ${{ matrix.platform }}
+    runs-on: ubuntu-latest
+    needs: ci-data
+    strategy:
+      matrix:
+        platform: ${{ fromJSON(needs.ci-data.outputs.result).supported-ruby-platforms }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - uses: oxidize-rb/actions/cross-gem@v1
+        id: cross-gem
+        with:
+          platform: ${{ matrix.platform }}
+          ruby-versions: ${{ join(fromJSON(needs.ci-data.outputs.result).stable-ruby-versions, ',') }}
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: cross-gem
+          path: ${{ steps.cross-gem.outputs.gem-path }}

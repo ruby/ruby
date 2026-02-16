@@ -409,13 +409,15 @@ strio.pos = 24
 strio.gets   # => "Fourth line\n"
 strio.pos    # => 36
 
-strio = StringIO.new('тест') # Four 2-byte characters.
-strio.pos = 0 # At first byte of first character.
-strio.read    # => "тест"
-strio.pos = 1 # At second byte of first character.
-strio.read    # => "\x82ест"
-strio.pos = 2 # At first of second character.
-strio.read    # => "ест"
+strio = StringIO.new('こんにちは')  # Five 3-byte characters.
+strio.pos = 0  # At first byte of first character.
+strio.read     # => "こんにちは"
+strio.pos = 1  # At second byte of first character.
+strio.read     # => "\x81\x93んにちは"
+strio.pos = 2  # At third byte of first character.
+strio.read     # => "\x93んにちは"
+strio.pos = 3  # At first byte of second character.
+strio.read     # => "んにちは"
 
 strio = StringIO.new(TEXT)
 strio.pos = 15

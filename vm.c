@@ -1521,10 +1521,10 @@ proc_shared_outer_variables(struct rb_id_table *outer_variables, bool isolate, c
         }
         if (*sep == ',') rb_str_cat_cstr(str, ")");
         rb_str_cat_cstr(str, data.yield ? " and uses 'yield'." : ".");
-        rb_exc_raise(rb_exc_new_str(rb_eArgError, str));
+        rb_exc_raise(rb_exc_new_str(rb_eRactorIsolationError, str));
     }
     else if (data.yield) {
-        rb_raise(rb_eArgError, "can not %s because it uses 'yield'.", message);
+        rb_raise(rb_eRactorIsolationError, "can not %s because it uses 'yield'.", message);
     }
 
     return data.read_only;

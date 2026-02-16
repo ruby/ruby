@@ -340,12 +340,28 @@ rb_iseq_mark_and_move_each_body_value(const rb_iseq_t *iseq, VALUE *original_ise
 }
 
 static bool
-cc_is_active(const struct rb_callcache *cc)
+cc_is_active(const struct rb_callcache *cc, bool reference_updating)
 {
-    RUBY_ASSERT(cc);
-    RUBY_ASSERT(vm_cc_markable(cc));
+    if (cc) {
+        if (cc == rb_vm_empty_cc() || rb_vm_empty_cc_for_super()) {
+            return false;
+        }
 
-    return vm_cc_valid(cc) && !METHOD_ENTRY_INVALIDATED(vm_cc_cme(cc));
+        if (reference_updating) {
+            cc = (const struct rb_callcache *)rb_gc_location((VALUE)cc);
+        }
+
+        if (vm_cc_markable(cc) && vm_cc_valid(cc)) {
+            const struct rb_callable_method_entry_struct *cme = vm_cc_cme(cc);
+            if (reference_updating) {
+                cme = (const struct rb_callable_method_entry_struct *)rb_gc_location((VALUE)cme);
+            }
+            if (!METHOD_ENTRY_INVALIDATED(cme)) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 void
@@ -369,30 +385,16 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
         if (body->mandatory_only_iseq) rb_gc_mark_and_move_ptr(&body->mandatory_only_iseq);
 
         if (body->call_data) {
-            struct rb_call_data *cds = body->call_data;
             for (unsigned int i = 0; i < body->ci_size; i++) {
+                struct rb_call_data *cds = body->call_data;
 
                 if (cds[i].ci) rb_gc_mark_and_move_ptr(&cds[i].ci);
 
-                const struct rb_callcache *cc = cds[i].cc;
-                if (!cc || cc == rb_vm_empty_cc() || cc == rb_vm_empty_cc_for_super()) {
-                    // No need for marking, reference updating, or clearing
-                    // We also want to avoid reassigning to improve CoW
-                    continue;
+                if (cc_is_active(cds[i].cc, reference_updating)) {
+                    rb_gc_mark_and_move_ptr(&cds[i].cc);
                 }
-
-                if (reference_updating) {
-                    rb_gc_move_ptr(&cds[i].cc);
-                }
-                else {
-                    if (cc_is_active(cc)) {
-                        rb_gc_mark_movable((VALUE)cc);
-                    }
-                    else {
-                        // Either the CC or CME has been invalidated. Replace
-                        // it with the empty CC so that it can be GC'd.
-                        cds[i].cc = rb_vm_empty_cc();
-                    }
+                else if (cds[i].cc != rb_vm_empty_cc()) {
+                    cds[i].cc = rb_vm_empty_cc();
                 }
             }
         }
@@ -3785,7 +3787,13 @@ rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc)
         }
         rb_ary_push(args, a);
     }
-    if (body->param.flags.has_block) {
+    if (body->param.flags.accepts_no_block) {
+        ID noblock;
+        CONST_ID(noblock, "noblock");
+        PARAM_TYPE(noblock);
+        rb_ary_push(args, a);
+    }
+    else if (body->param.flags.has_block) {
         CONST_ID(block, "block");
         rb_ary_push(args, PARAM(body->param.block_start, block));
     }

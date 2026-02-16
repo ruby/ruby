@@ -322,7 +322,7 @@ fn inline_thread_current(fun: &mut hir::Function, block: hir::BlockId, _recv: hi
 
 fn inline_kernel_itself(_fun: &mut hir::Function, _block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
     if args.is_empty() {
-        // No need to coerce the receiver; that is done by the SendWithoutBlock rewriting.
+        // No need to coerce the receiver; that is done by the Send rewriting.
         return Some(recv);
     }
     None

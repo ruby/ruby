@@ -614,6 +614,95 @@ p Foo::Bar
     end
   end
 
+  def test_autoload_relative_toplevel
+    Dir.mktmpdir('autoload_relative') do |tmpdir|
+      main_file = File.join(tmpdir, 'main.rb')
+      module_file = File.join(tmpdir, 'test_module.rb')
+
+      File.write(module_file, <<-RUBY)
+        module AutoloadRelativeTest
+          VERSION = '1.0'
+        end
+      RUBY
+
+      File.write(main_file, <<-RUBY)
+        autoload_relative :AutoloadRelativeTest, 'test_module.rb'
+        puts AutoloadRelativeTest::VERSION
+      RUBY
+
+      assert_in_out_err([main_file], '', ['1.0'], [])
+    end
+  end
+
+  def test_autoload_relative_module_level
+    Dir.mktmpdir('autoload_relative') do |tmpdir|
+      main_file = File.join(tmpdir, 'main_mod.rb')
+      module_file = File.join(tmpdir, 'nested_module.rb')
+
+      File.write(module_file, <<-RUBY)
+        module Container
+          module NestedModule
+            MSG = 'loaded'
+          end
+        end
+      RUBY
+
+      File.write(main_file, <<-RUBY)
+        module Container
+          autoload_relative :NestedModule, 'nested_module.rb'
+        end
+        puts Container::NestedModule::MSG
+      RUBY
+
+      assert_in_out_err([main_file], '', ['loaded'], [])
+    end
+  end
+
+  def test_autoload_relative_query
+    Dir.mktmpdir('autoload_relative') do |tmpdir|
+      main_file = File.join(tmpdir, 'query_test.rb')
+      module_file = File.join(tmpdir, 'query_module.rb')
+
+      File.write(module_file, 'module QueryModule; end')
+
+      File.write(main_file, <<-RUBY)
+        autoload_relative :QueryModule, 'query_module.rb'
+        path = autoload?(:QueryModule)
+        # Use realpath for comparison to handle symlinks (e.g., /var -> /private/var on macOS)
+        real_tmpdir = File.realpath('#{tmpdir}')
+        puts path.start_with?(real_tmpdir) && path.end_with?('query_module.rb')
+      RUBY
+
+      assert_in_out_err([main_file], '', ['true'], [])
+    end
+  end
+
+  def test_autoload_relative_nested_directory
+    Dir.mktmpdir('autoload_relative') do |tmpdir|
+      nested_dir = File.join(tmpdir, 'nested')
+      Dir.mkdir(nested_dir)
+
+      main_file = File.join(tmpdir, 'nested_test.rb')
+      module_file = File.join(nested_dir, 'deep_module.rb')
+
+      File.write(module_file, 'module DeepModule; VALUE = 42; end')
+
+      File.write(main_file, <<-RUBY)
+        autoload_relative :DeepModule, 'nested/deep_module.rb'
+        puts DeepModule::VALUE
+      RUBY
+
+      assert_in_out_err([main_file], '', ['42'], [])
+    end
+  end
+
+  def test_autoload_relative_no_basepath
+    # Test that autoload_relative raises an error when called from eval without file context
+    assert_raise(LoadError) do
+      eval('autoload_relative :TestConst, "test.rb"')
+    end
+  end
+
   private
 
   def assert_separately(*args, **kwargs)

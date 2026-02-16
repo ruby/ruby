@@ -1079,6 +1079,39 @@ impl rb_iseq_constant_body_rb_iseq_parameters__bindgen_ty_1 {
         }
     }
     #[inline]
+    pub fn accepts_no_block(&self) -> ::std::os::raw::c_uint {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(14usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_accepts_no_block(&mut self, val: ::std::os::raw::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(14usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub unsafe fn accepts_no_block_raw(this: *const Self) -> ::std::os::raw::c_uint {
+        unsafe {
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
+                ::std::ptr::addr_of!((*this)._bitfield_1),
+                14usize,
+                1u8,
+            ) as u32)
+        }
+    }
+    #[inline]
+    pub unsafe fn set_accepts_no_block_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
+                ::std::ptr::addr_of_mut!((*this)._bitfield_1),
+                14usize,
+                1u8,
+                val as u64,
+            )
+        }
+    }
+    #[inline]
     pub fn new_bitfield_1(
         has_lead: ::std::os::raw::c_uint,
         has_opt: ::std::os::raw::c_uint,
@@ -1094,6 +1127,7 @@ impl rb_iseq_constant_body_rb_iseq_parameters__bindgen_ty_1 {
         anon_kwrest: ::std::os::raw::c_uint,
         use_block: ::std::os::raw::c_uint,
         forwardable: ::std::os::raw::c_uint,
+        accepts_no_block: ::std::os::raw::c_uint,
     ) -> __BindgenBitfieldUnit<[u8; 2usize]> {
         let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 2usize]> = Default::default();
         __bindgen_bitfield_unit.set(0usize, 1u8, {
@@ -1151,6 +1185,10 @@ impl rb_iseq_constant_body_rb_iseq_parameters__bindgen_ty_1 {
         __bindgen_bitfield_unit.set(13usize, 1u8, {
             let forwardable: u32 = unsafe { ::std::mem::transmute(forwardable) };
             forwardable as u64
+        });
+        __bindgen_bitfield_unit.set(14usize, 1u8, {
+            let accepts_no_block: u32 = unsafe { ::std::mem::transmute(accepts_no_block) };
+            accepts_no_block as u64
         });
         __bindgen_bitfield_unit
     }

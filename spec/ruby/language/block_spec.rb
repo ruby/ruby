@@ -1110,6 +1110,17 @@ describe "`it` calls without arguments in a block" do
       end
     end
   end
+
+  ruby_version_is "4.1" do
+    it "works alongside disallowed block argument" do
+      no_block = eval <<-EOF
+        proc {|arg1, &nil| arg1}
+      EOF
+
+      no_block.call(:a).should == :a
+      -> { no_block.call(:a) {} }.should raise_error(ArgumentError, 'no block accepted')
+    end
+  end
 end
 
 # Duplicates specs in language/it_parameter_spec.rb

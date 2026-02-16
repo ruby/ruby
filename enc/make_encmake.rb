@@ -1,7 +1,11 @@
 #! ./miniruby
 
 dir = File.expand_path("../..", __FILE__)
-$:.unshift(Dir.pwd, "#{dir}/tool/lib", "#{dir}/lib")
+# The source lib directory provides the standard library for miniruby.
+# Don't add it when running with baseruby to avoid loading both
+# baseruby's cgi/escape.so and source cgi/escape.rb via erb.
+$:.unshift("#{dir}/lib") unless defined?(CROSS_COMPILING)
+$:.unshift(Dir.pwd, "#{dir}/tool/lib")
 if $".grep(/mkmf/).empty?
   $" << "mkmf.rb"
   load File.expand_path("lib/mkmf.rb", dir)

@@ -884,7 +884,7 @@ pub enum Insn {
 
     /// Call a C function that pushes a frame
     CCallWithFrame {
-        cd: *const rb_call_data, // cd for falling back to SendWithoutBlock
+        cd: *const rb_call_data, // cd for falling back to Send
         cfunc: *const u8,
         recv: InsnId,
         args: Vec<InsnId>,
@@ -912,17 +912,10 @@ pub enum Insn {
 
     /// Un-optimized fallback implementation (dynamic dispatch) for send-ish instructions
     /// Ignoring keyword arguments etc for now
-    SendWithoutBlock {
-        recv: InsnId,
-        cd: *const rb_call_data,
-        args: Vec<InsnId>,
-        state: InsnId,
-        reason: SendFallbackReason,
-    },
     Send {
         recv: InsnId,
         cd: *const rb_call_data,
-        blockiseq: IseqPtr,
+        blockiseq: Option<IseqPtr>,
         args: Vec<InsnId>,
         state: InsnId,
         reason: SendFallbackReason,
@@ -1012,7 +1005,7 @@ pub enum Insn {
     FixnumLShift { left: InsnId, right: InsnId, state: InsnId },
     FixnumRShift { left: InsnId, right: InsnId },
 
-    // Distinct from `SendWithoutBlock` with `mid:to_s` because does not have a patch point for String to_s being redefined
+    // Distinct from `Send` with `mid:to_s` because does not have a patch point for String to_s being redefined
     ObjToString { val: InsnId, cd: *const rb_call_data, state: InsnId },
     AnyToString { val: InsnId, str: InsnId, state: InsnId },
 
@@ -1187,7 +1180,6 @@ impl Insn {
                 }
             },
             Insn::CCallVariadic { .. } => effects::Any,
-            Insn::SendWithoutBlock { .. } => effects::Any,
             Insn::Send { .. } => effects::Any,
             Insn::SendForward { .. } => effects::Any,
             Insn::InvokeSuper { .. } => effects::Any,
@@ -1449,14 +1441,6 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::Jump(target) => { write!(f, "Jump {target}") }
             Insn::IfTrue { val, target } => { write!(f, "IfTrue {val}, {target}") }
             Insn::IfFalse { val, target } => { write!(f, "IfFalse {val}, {target}") }
-            Insn::SendWithoutBlock { recv, cd, args, reason, .. } => {
-                write!(f, "SendWithoutBlock {recv}, :{}", ruby_call_method_name(*cd))?;
-                for arg in args {
-                    write!(f, ", {arg}")?;
-                }
-                write!(f, " # SendFallbackReason: {reason}")?;
-                Ok(())
-            }
             Insn::SendDirect { recv, cd, iseq, args, blockiseq, .. } => {
                 write!(f, "SendDirect {recv}, {:p}, :{} ({:?})", self.ptr_map.map_ptr(blockiseq), ruby_call_method_name(*cd), self.ptr_map.map_ptr(iseq))?;
                 for arg in args {
@@ -1468,7 +1452,11 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 // For tests, we want to check HIR snippets textually. Addresses change
                 // between runs, making tests fail. Instead, pick an arbitrary hex value to
                 // use as a "pointer" so we can check the rest of the HIR.
-                write!(f, "Send {recv}, {:p}, :{}", self.ptr_map.map_ptr(blockiseq), ruby_call_method_name(*cd))?;
+                if let Some(blockiseq) = *blockiseq {
+                    write!(f, "Send {recv}, {:p}, :{}", self.ptr_map.map_ptr(blockiseq), ruby_call_method_name(*cd))?;
+                } else {
+                    write!(f, "Send {recv}, :{}", ruby_call_method_name(*cd))?;
+                }
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
@@ -2275,13 +2263,6 @@ impl Function {
                 str: find!(str),
                 state,
             },
-            &SendWithoutBlock { recv, cd, ref args, state, reason } => SendWithoutBlock {
-                recv: find!(recv),
-                cd,
-                args: find_vec!(args),
-                state,
-                reason,
-            },
             &SendDirect { recv, cd, cme, iseq, ref args, kw_bits, blockiseq, state } => SendDirect {
                 recv: find!(recv),
                 cd,
@@ -2402,7 +2383,6 @@ impl Function {
             match self.insns.get_mut(insn_id.0).unwrap() {
                 Send { reason, .. }
                 | SendForward { reason, .. }
-                | SendWithoutBlock { reason, .. }
                 | InvokeSuper { reason, .. }
                 | InvokeSuperForward { reason, .. }
                 | InvokeBlock { reason, .. }
@@ -2522,7 +2502,6 @@ impl Function {
             Insn::FixnumLShift { .. } => types::Fixnum,
             Insn::FixnumRShift { .. } => types::Fixnum,
             Insn::PutSpecialObject { .. } => types::BasicObject,
-            Insn::SendWithoutBlock { .. } => types::BasicObject,
             Insn::SendDirect { .. } => types::BasicObject,
             Insn::Send { .. } => types::BasicObject,
             Insn::SendForward { .. } => types::BasicObject,
@@ -3034,7 +3013,7 @@ impl Function {
         self.push_insn(block, Insn::GuardNoBitsSet { val: flags, mask: Const::CUInt64(RUBY_ELTS_SHARED as u64), mask_name: Some(ID!(RUBY_ELTS_SHARED)), reason: SideExitReason::GuardNotShared, state });
     }
 
-    /// Rewrite eligible Send/SendWithoutBlock opcodes into SendDirect
+    /// Rewrite eligible Send opcodes into SendDirect
     /// opcodes if we know the target ISEQ statically. This removes run-time method lookups and
     /// opens the door for inlining.
     /// Also try and inline constant caches, specialize object allocations, and more.
@@ -3045,11 +3024,12 @@ impl Function {
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
                 match self.find(insn_id) {
-                    Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(freeze) && args.is_empty() =>
+                    Insn::Send { recv, blockiseq: None, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(freeze) && args.is_empty() =>
                         self.try_rewrite_freeze(block, insn_id, recv, state),
-                    Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(minusat) && args.is_empty() =>
+                    Insn::Send { recv, blockiseq: None, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(minusat) && args.is_empty() =>
                         self.try_rewrite_uminus(block, insn_id, recv, state),
-                    Insn::SendWithoutBlock { mut recv, cd, args, state, .. } => {
+                    Insn::Send { mut recv, cd, state, blockiseq, args, .. } => {
+                        let has_block = blockiseq.is_some();
                         let frame_state = self.frame_state(state);
                         let (klass, profiled_type) = match self.resolve_receiver_type(recv, self.type_of(recv), frame_state.insn_idx) {
                             ReceiverTypeResolution::StaticallyKnown { class } => (class, None),
@@ -3058,21 +3038,24 @@ impl Function {
                             ReceiverTypeResolution::SkewedMegamorphic { .. }
                             | ReceiverTypeResolution::Megamorphic => {
                                 if get_option!(stats) {
-                                    self.set_dynamic_send_reason(insn_id, SendWithoutBlockMegamorphic);
+                                    let reason = if has_block { SendMegamorphic } else { SendWithoutBlockMegamorphic };
+                                    self.set_dynamic_send_reason(insn_id, reason);
                                 }
                                 self.push_insn_id(block, insn_id);
                                 continue;
                             }
                             ReceiverTypeResolution::Polymorphic => {
                                 if get_option!(stats) {
-                                    self.set_dynamic_send_reason(insn_id, SendWithoutBlockPolymorphic);
+                                    let reason = if has_block { SendPolymorphic } else { SendWithoutBlockPolymorphic };
+                                    self.set_dynamic_send_reason(insn_id, reason);
                                 }
                                 self.push_insn_id(block, insn_id);
                                 continue;
                             }
                             ReceiverTypeResolution::NoProfile => {
                                 if get_option!(stats) {
-                                    self.set_dynamic_send_reason(insn_id, SendWithoutBlockNoProfiles);
+                                    let reason = if has_block { SendNoProfiles } else { SendWithoutBlockNoProfiles };
+                                    self.set_dynamic_send_reason(insn_id, reason);
                                 }
                                 self.push_insn_id(block, insn_id);
                                 continue;
@@ -3086,7 +3069,8 @@ impl Function {
                         // Do method lookup
                         let mut cme = unsafe { rb_callable_method_entry(klass, mid) };
                         if cme.is_null() {
-                            self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedMethodType(MethodType::Null));
+                            let reason = if has_block { SendNotOptimizedMethodType(MethodType::Null) } else { SendWithoutBlockNotOptimizedMethodType(MethodType::Null) };
+                            self.set_dynamic_send_reason(insn_id, reason);
                             self.push_insn_id(block, insn_id); continue;
                         }
                         // Load an overloaded cme if applicable. See vm_search_cc().
@@ -3098,7 +3082,8 @@ impl Function {
                             (METHOD_VISI_PRIVATE, true) => {}
                             (METHOD_VISI_PROTECTED, true) => {}
                             _ => {
-                                self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedNeedPermission);
+                                let reason = if has_block { SendNotOptimizedNeedPermission } else { SendWithoutBlockNotOptimizedNeedPermission };
+                                self.set_dynamic_send_reason(insn_id, reason);
                                 self.push_insn_id(block, insn_id); continue;
                             }
                         }
@@ -3121,7 +3106,7 @@ impl Function {
                             // Only specialize positional-positional calls
                             // TODO(max): Handle other kinds of parameter passing
                             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
-                            if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice(), None) {
+                            if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice(), blockiseq) {
                                 self.push_insn_id(block, insn_id); continue;
                             }
 
@@ -3144,9 +3129,9 @@ impl Function {
                                 self.push_insn_id(block, insn_id); continue;
                             };
 
-                            let send_direct = self.push_insn(block, Insn::SendDirect { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state, blockiseq: None });
+                            let send_direct = self.push_insn(block, Insn::SendDirect { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state, blockiseq });
                             self.make_equal_to(insn_id, send_direct);
-                        } else if def_type == VM_METHOD_TYPE_BMETHOD {
+                        } else if !has_block && def_type == VM_METHOD_TYPE_BMETHOD {
                             let procv = unsafe { rb_get_def_bmethod_proc((*cme).def) };
                             let proc = unsafe { rb_jit_get_proc_ptr(procv) };
                             let proc_block = unsafe { &(*proc).block };
@@ -3187,7 +3172,7 @@ impl Function {
 
                             let send_direct = self.push_insn(block, Insn::SendDirect { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state, blockiseq: None });
                             self.make_equal_to(insn_id, send_direct);
-                        } else if def_type == VM_METHOD_TYPE_IVAR && args.is_empty() {
+                        } else if !has_block && def_type == VM_METHOD_TYPE_IVAR && args.is_empty() {
                             // Check if we're accessing ivars of a Class or Module object as they require single-ractor mode.
                             // We omit gen_prepare_non_leaf_call on gen_getivar, so it's unsafe to raise for multi-ractor mode.
                             if self.is_metaclass(klass) && !self.assume_single_ractor_mode(block, state) {
@@ -3207,7 +3192,7 @@ impl Function {
 
                             let getivar = self.push_insn(block, Insn::GetIvar { self_val: recv, id, ic: std::ptr::null(), state });
                             self.make_equal_to(insn_id, getivar);
-                        } else if let (VM_METHOD_TYPE_ATTRSET, &[val]) = (def_type, args.as_slice()) {
+                        } else if let (false, VM_METHOD_TYPE_ATTRSET, &[val]) = (has_block, def_type, args.as_slice()) {
                             // Check if we're accessing ivars of a Class or Module object as they require single-ractor mode.
                             // We omit gen_prepare_non_leaf_call on gen_getivar, so it's unsafe to raise for multi-ractor mode.
                             if self.is_metaclass(klass) && !self.assume_single_ractor_mode(block, state) {
@@ -3222,7 +3207,7 @@ impl Function {
 
                             self.push_insn(block, Insn::SetIvar { self_val: recv, id, ic: std::ptr::null(), val, state });
                             self.make_equal_to(insn_id, val);
-                        } else if def_type == VM_METHOD_TYPE_OPTIMIZED {
+                        } else if !has_block && def_type == VM_METHOD_TYPE_OPTIMIZED {
                             let opt_type: OptimizedMethodType = unsafe { get_cme_def_body_optimized_type(cme) }.into();
                             match (opt_type, args.as_slice()) {
                                 (OptimizedMethodType::Call, _) => {
@@ -3309,115 +3294,8 @@ impl Function {
                                 },
                             };
                         } else {
-                            self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedMethodType(MethodType::from(def_type)));
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                    }
-                    Insn::Send { mut recv, cd, state, blockiseq, args, .. } => {
-                        let frame_state = self.frame_state(state);
-                        let (klass, profiled_type) = match self.resolve_receiver_type(recv, self.type_of(recv), frame_state.insn_idx) {
-                            ReceiverTypeResolution::StaticallyKnown { class } => (class, None),
-                            ReceiverTypeResolution::Monomorphic { profiled_type }
-                            | ReceiverTypeResolution::SkewedPolymorphic { profiled_type } => (profiled_type.class(), Some(profiled_type)),
-                            ReceiverTypeResolution::SkewedMegamorphic { .. }
-                            | ReceiverTypeResolution::Megamorphic => {
-                                if get_option!(stats) {
-                                    self.set_dynamic_send_reason(insn_id, SendMegamorphic);
-                                }
-                                self.push_insn_id(block, insn_id);
-                                continue;
-                            }
-                            ReceiverTypeResolution::Polymorphic => {
-                                if get_option!(stats) {
-                                    self.set_dynamic_send_reason(insn_id, SendPolymorphic);
-                                }
-                                self.push_insn_id(block, insn_id);
-                                continue;
-                            }
-                            ReceiverTypeResolution::NoProfile => {
-                                if get_option!(stats) {
-                                    self.set_dynamic_send_reason(insn_id, SendNoProfiles);
-                                }
-                                self.push_insn_id(block, insn_id);
-                                continue;
-                            }
-                        };
-                        let ci = unsafe { get_call_data_ci(cd) }; // info about the call site
-
-                        let flags = unsafe { rb_vm_ci_flag(ci) };
-
-                        let mid = unsafe { vm_ci_mid(ci) };
-                        // Do method lookup
-                        let mut cme = unsafe { rb_callable_method_entry(klass, mid) };
-                        if cme.is_null() {
-                            self.set_dynamic_send_reason(insn_id, SendNotOptimizedMethodType(MethodType::Null));
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        // Load an overloaded cme if applicable. See vm_search_cc().
-                        // It allows you to use a faster ISEQ if possible.
-                        cme = unsafe { rb_check_overloaded_cme(cme, ci) };
-                        let visibility = unsafe { METHOD_ENTRY_VISI(cme) };
-                        match (visibility, flags & VM_CALL_FCALL != 0) {
-                            (METHOD_VISI_PUBLIC, _) => {}
-                            (METHOD_VISI_PRIVATE, true) => {}
-                            (METHOD_VISI_PROTECTED, true) => {}
-                            _ => {
-                                self.set_dynamic_send_reason(insn_id, SendNotOptimizedNeedPermission);
-                                self.push_insn_id(block, insn_id); continue;
-                            }
-                        }
-                        let mut def_type = unsafe { get_cme_def_type(cme) };
-                        while def_type == VM_METHOD_TYPE_ALIAS {
-                            cme = unsafe { rb_aliased_callable_method_entry(cme) };
-                            def_type = unsafe { get_cme_def_type(cme) };
-                        }
-
-                        // If the call site info indicates that the `Function` has overly complex arguments, then do not optimize into a `SendDirect`.
-                        // Optimized methods(`VM_METHOD_TYPE_OPTIMIZED`) handle their own argument constraints (e.g., kw_splat for Proc call).
-                        if def_type != VM_METHOD_TYPE_OPTIMIZED && unspecializable_call_type(flags) {
-                            self.count_complex_call_features(block, flags);
-                            self.set_dynamic_send_reason(insn_id, ComplexArgPass);
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-
-                        if def_type == VM_METHOD_TYPE_ISEQ {
-                            let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
-                            if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice(), Some(blockiseq)) {
-                                self.push_insn_id(block, insn_id); continue;
-                            }
-
-                            // Check singleton class assumption first, before emitting other patchpoints
-                            if !self.assume_no_singleton_classes(block, klass, state) {
-                                self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
-                                self.push_insn_id(block, insn_id); continue;
-                            }
-
-                            // Add PatchPoint for method redefinition
-                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
-
-                            // Add GuardType for profiled receiver
-                            if let Some(profiled_type) = profiled_type {
-                                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
-                            }
-
-                            let Ok((send_state, processed_args, kw_bits)) = self.prepare_direct_send_args(block, &args, ci, iseq, state)
-                                .inspect_err(|&reason| self.set_dynamic_send_reason(insn_id, reason)) else {
-                                self.push_insn_id(block, insn_id); continue;
-                            };
-
-                            let send_direct = self.push_insn(block, Insn::SendDirect {
-                                recv,
-                                cd,
-                                cme,
-                                iseq,
-                                args: processed_args,
-                                kw_bits,
-                                blockiseq: Some(blockiseq),
-                                state: send_state,
-                            });
-                            self.make_equal_to(insn_id, send_direct);
-                        } else {
-                            self.set_dynamic_send_reason(insn_id, SendNotOptimizedMethodType(MethodType::from(def_type)));
+                            let reason = if has_block { SendNotOptimizedMethodType(MethodType::from(def_type)) } else { SendWithoutBlockNotOptimizedMethodType(MethodType::from(def_type)) };
+                            self.set_dynamic_send_reason(insn_id, reason);
                             self.push_insn_id(block, insn_id); continue;
                         }
                     }
@@ -3440,7 +3318,7 @@ impl Function {
                     }
                     Insn::ObjToString { val, cd, state, .. } => {
                         if self.is_a(val, types::String) {
-                            // behaves differently from `SendWithoutBlock` with `mid:to_s` because ObjToString should not have a patch point for String to_s being redefined
+                            // behaves differently from `Send` with `mid:to_s` because ObjToString should not have a patch point for String to_s being redefined
                             self.make_equal_to(insn_id, val); continue;
                         }
 
@@ -3457,7 +3335,7 @@ impl Function {
                             self.make_equal_to(insn_id, guard);
                         } else {
                             let recv = self.push_insn(block, Insn::GuardType { val, guard_type: Type::from_profiled_type(recv_type), state});
-                            let send_to_s = self.push_insn(block, Insn::SendWithoutBlock { recv, cd, args: vec![], state, reason: ObjToStringNotString });
+                            let send_to_s = self.push_insn(block, Insn::Send { recv, cd, blockiseq: None, args: vec![], state, reason: ObjToStringNotString });
                             self.make_equal_to(insn_id, send_to_s);
                         }
                     }
@@ -4066,7 +3944,7 @@ impl Function {
         self.push_insn(block, Insn::IncrCounterPtr { counter_ptr });
     }
 
-    /// Optimize Send/SendWithoutBlock that land in a C method to a direct CCall without
+    /// Optimize Send that land in a C method to a direct CCall without
     /// runtime lookup.
     fn optimize_c_calls(&mut self) {
         if unsafe { rb_zjit_method_tracing_currently_enabled() } {
@@ -4139,7 +4017,11 @@ impl Function {
                 return Err(());
             }
 
-            let blockiseq = if blockiseq.is_null() { None } else { Some(blockiseq) };
+            let blockiseq = match blockiseq {
+                None => unreachable!("went to reduce_send_without_block_to_ccall"),
+                Some(p) if p.is_null() => None,
+                Some(blockiseq) => Some(blockiseq),
+            };
 
             let cfunc = unsafe { get_cme_def_body_cfunc(cme) };
             // Find the `argc` (arity) of the C method, which describes the parameters it expects
@@ -4236,7 +4118,7 @@ impl Function {
             }
         }
 
-        // Try to reduce a SendWithoutBlock insn to a CCall/CCallWithFrame
+        // Try to reduce a Send insn with blockiseq: None to a CCall/CCallWithFrame
         fn reduce_send_without_block_to_ccall(
             fun: &mut Function,
             block: BlockId,
@@ -4244,7 +4126,7 @@ impl Function {
             send: Insn,
             send_insn_id: InsnId,
         ) -> Result<(), ()> {
-            let Insn::SendWithoutBlock { mut recv, cd, args, state, .. } = send else {
+            let Insn::Send { mut recv, cd, args, state, .. } = send else {
                 return Err(());
             };
 
@@ -4474,7 +4356,7 @@ impl Function {
             for insn_id in old_insns {
                 let send = self.find(insn_id);
                 match send {
-                    send @ Insn::SendWithoutBlock { recv, .. } => {
+                    send @ Insn::Send { recv, blockiseq: None, .. } => {
                         let recv_type = self.type_of(recv);
                         if reduce_send_without_block_to_ccall(self, block, recv_type, send, insn_id).is_ok() {
                             continue;
@@ -4877,7 +4759,6 @@ impl Function {
             }
             &Insn::Send { recv, ref args, state, .. }
             | &Insn::SendForward { recv, ref args, state, .. }
-            | &Insn::SendWithoutBlock { recv, ref args, state, .. }
             | &Insn::CCallVariadic { recv, ref args, state, .. }
             | &Insn::CCallWithFrame { recv, ref args, state, .. }
             | &Insn::SendDirect { recv, ref args, state, .. }
@@ -5537,8 +5418,7 @@ impl Function {
                 self.assert_subtype(insn_id, allow_nil, types::BoolExact)
             }
             // Instructions with recv and a Vec of Ruby objects
-            Insn::SendWithoutBlock { recv, ref args, .. }
-            | Insn::SendDirect { recv, ref args, .. }
+            Insn::SendDirect { recv, ref args, .. }
             | Insn::Send { recv, ref args, .. }
             | Insn::SendForward { recv, ref args, .. }
             | Insn::InvokeSuper { recv, ref args, .. }
@@ -7030,7 +6910,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     let args = state.stack_pop_n(argc as usize)?;
                     let recv = state.stack_pop()?;
-                    let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, state: exit_id, reason: Uncategorized(opcode) });
+                    let send = fun.push_insn(block, Insn::Send { recv, cd, blockiseq: None, args, state: exit_id, reason: Uncategorized(opcode) });
                     state.stack_push(send);
                 }
                 YARVINSN_opt_hash_freeze => {
@@ -7153,7 +7033,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             let recv = state.stack_pop().unwrap();
                             let refined_recv = fun.push_insn(block, Insn::RefineType { val: recv, new_type });
                             state.replace(recv, refined_recv);
-                            let send = fun.push_insn(block, Insn::SendWithoutBlock { recv: refined_recv, cd, args, state: snapshot, reason: Uncategorized(opcode) });
+                            let send = fun.push_insn(block, Insn::Send { recv: refined_recv, cd, blockiseq: None, args, state: snapshot, reason: Uncategorized(opcode) });
                             state.stack_push(send);
                             fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: state.as_args(self_param) }));
                             block
@@ -7186,7 +7066,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             let args = state.stack_pop_n(argc as usize)?;
                             let recv = state.stack_pop()?;
                             let reason = SendWithoutBlockPolymorphicFallback;
-                            let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, state: exit_id, reason });
+                            let send = fun.push_insn(block, Insn::Send { recv, cd, blockiseq: None, args, state: exit_id, reason });
                             state.stack_push(send);
                             fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: state.as_args(self_param) }));
                             break;  // End the block
@@ -7195,7 +7075,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     let args = state.stack_pop_n(argc as usize)?;
                     let recv = state.stack_pop()?;
-                    let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, state: exit_id, reason: Uncategorized(opcode) });
+                    let send = fun.push_insn(block, Insn::Send { recv, cd, blockiseq: None, args, state: exit_id, reason: Uncategorized(opcode) });
                     state.stack_push(send);
                 }
                 YARVINSN_send => {
@@ -7213,7 +7093,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     let args = state.stack_pop_n(argc as usize + usize::from(block_arg))?;
                     let recv = state.stack_pop()?;
-                    let send = fun.push_insn(block, Insn::Send { recv, cd, blockiseq, args, state: exit_id, reason: Uncategorized(opcode) });
+                    let send = fun.push_insn(block, Insn::Send { recv, cd, blockiseq: Some(blockiseq), args, state: exit_id, reason: Uncategorized(opcode) });
                     state.stack_push(send);
 
                     if !blockiseq.is_null() {

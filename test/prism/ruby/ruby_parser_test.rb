@@ -85,16 +85,11 @@ module Prism
 
       "3.3-4.0/void_value.txt",
 
-      "3.4/circular_parameters.txt",
-
-      "4.0/endless_methods_command_call.txt",
-      "4.0/leading_logical.txt",
-
       # https://bugs.ruby-lang.org/issues/21168#note-5
       "command_method_call_2.txt",
     ]
 
-    Fixture.each(except: failures) do |fixture|
+    Fixture.each_for_version(version: "3.3", except: failures) do |fixture|
       define_method(fixture.test_name) do
         assert_ruby_parser(fixture, todos.include?(fixture.path))
       end

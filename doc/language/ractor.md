@@ -97,10 +97,10 @@ This isolation occurs at Ractor creation time (when `Ractor.new` is called). If 
 begin
   a = true
   r = Ractor.new do
-    a #=> ArgumentError because this block accesses outer variable `a`.
+    a #=> Ractor::IsolationError because this block accesses outer variable `a`.
   end
   r.join # wait for ractor to finish
-rescue ArgumentError
+rescue Ractor::IsolationError
 end
 ```
 

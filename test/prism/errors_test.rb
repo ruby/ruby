@@ -87,6 +87,28 @@ module Prism
       assert_nil(statement.end_keyword)
     end
 
+    def test_unclosed_interpolation
+      statement = Prism.parse_statement("\"\#{")
+      assert_equal('"', statement.opening)
+      assert_nil(statement.closing)
+
+      assert_equal(1, statement.parts.count)
+      assert_equal('#{', statement.parts[0].opening)
+      assert_equal("", statement.parts[0].closing)
+      assert_nil(statement.parts[0].statements)
+    end
+
+    def test_unclosed_heredoc_and_interpolation
+      statement = Prism.parse_statement("<<D\n\#{")
+      assert_equal("<<D", statement.opening)
+      assert_nil(statement.closing)
+
+      assert_equal(1, statement.parts.count)
+      assert_equal('#{', statement.parts[0].opening)
+      assert_equal("", statement.parts[0].closing)
+      assert_nil(statement.parts[0].statements)
+    end
+
     private
 
     def assert_errors(filepath, version)
