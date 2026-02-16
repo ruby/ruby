@@ -389,6 +389,7 @@ dump_input(pm_string_t *input, const pm_options_t *options) {
 }
 
 /**
+ * :markup: markdown
  * call-seq:
  *   dump(source, **options) -> String
  *
@@ -422,6 +423,7 @@ dump(int argc, VALUE *argv, VALUE self) {
 }
 
 /**
+ * :markup: markdown
  * call-seq:
  *   dump_file(filepath, **options) -> String
  *
@@ -794,6 +796,7 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
 }
 
 /**
+ * :markup: markdown
  * call-seq:
  *   lex(source, **options) -> LexResult
  *
@@ -814,6 +817,7 @@ lex(int argc, VALUE *argv, VALUE self) {
 }
 
 /**
+ * :markup: markdown
  * call-seq:
  *   lex_file(filepath, **options) -> LexResult
  *
@@ -865,6 +869,7 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
 }
 
 /**
+ * :markup: markdown
  * call-seq:
  *   parse(source, **options) -> ParseResult
  *
@@ -933,6 +938,7 @@ parse(int argc, VALUE *argv, VALUE self) {
 }
 
 /**
+ * :markup: markdown
  * call-seq:
  *   parse_file(filepath, **options) -> ParseResult
  *
@@ -968,6 +974,7 @@ profile_input(pm_string_t *input, const pm_options_t *options) {
 }
 
 /**
+ * :markup: markdown
  * call-seq:
  *   profile(source, **options) -> nil
  *
@@ -989,6 +996,7 @@ profile(int argc, VALUE *argv, VALUE self) {
 }
 
 /**
+ * :markup: markdown
  * call-seq:
  *   profile_file(filepath, **options) -> nil
  *
@@ -1041,6 +1049,7 @@ parse_stream_fgets(char *string, int size, void *stream) {
 }
 
 /**
+ * :markup: markdown
  * call-seq:
  *   parse_stream(stream, **options) -> ParseResult
  *
@@ -1094,6 +1103,7 @@ parse_input_comments(pm_string_t *input, const pm_options_t *options) {
 }
 
 /**
+ * :markup: markdown
  * call-seq:
  *   parse_comments(source, **options) -> Array
  *
@@ -1114,6 +1124,7 @@ parse_comments(int argc, VALUE *argv, VALUE self) {
 }
 
 /**
+ * :markup: markdown
  * call-seq:
  *   parse_file_comments(filepath, **options) -> Array
  *
@@ -1136,6 +1147,7 @@ parse_file_comments(int argc, VALUE *argv, VALUE self) {
 }
 
 /**
+ * :markup: markdown
  * call-seq:
  *   parse_lex(source, **options) -> ParseLexResult
  *
@@ -1163,6 +1175,7 @@ parse_lex(int argc, VALUE *argv, VALUE self) {
 }
 
 /**
+ * :markup: markdown
  * call-seq:
  *   parse_lex_file(filepath, **options) -> ParseLexResult
  *
@@ -1209,6 +1222,7 @@ parse_input_success_p(pm_string_t *input, const pm_options_t *options) {
 }
 
 /**
+ * :markup: markdown
  * call-seq:
  *   parse_success?(source, **options) -> bool
  *
@@ -1229,6 +1243,7 @@ parse_success_p(int argc, VALUE *argv, VALUE self) {
 }
 
 /**
+ * :markup: markdown
  * call-seq:
  *   parse_failure?(source, **options) -> bool
  *
@@ -1241,6 +1256,7 @@ parse_failure_p(int argc, VALUE *argv, VALUE self) {
 }
 
 /**
+ * :markup: markdown
  * call-seq:
  *   parse_file_success?(filepath, **options) -> bool
  *
@@ -1263,6 +1279,7 @@ parse_file_success_p(int argc, VALUE *argv, VALUE self) {
 }
 
 /**
+ * :markup: markdown
  * call-seq:
  *   parse_file_failure?(filepath, **options) -> bool
  *
@@ -1297,6 +1314,7 @@ string_query(pm_string_query_t result) {
 }
 
 /**
+ * :markup: markdown
  * call-seq:
  *   local?(string) -> bool
  *
@@ -1311,6 +1329,7 @@ string_query_local_p(VALUE self, VALUE string) {
 }
 
 /**
+ * :markup: markdown
  * call-seq:
  *   constant?(string) -> bool
  *
@@ -1325,6 +1344,7 @@ string_query_constant_p(VALUE self, VALUE string) {
 }
 
 /**
+ * :markup: markdown
  * call-seq:
  *   method_name?(string) -> bool
  *
