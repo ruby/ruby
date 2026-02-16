@@ -1010,7 +1010,7 @@ static VALUE
 ossl_pkcs7si_get_signed_time(VALUE self)
 {
     PKCS7_SIGNER_INFO *p7si;
-    ASN1_TYPE *asn1obj;
+    const ASN1_TYPE *asn1obj;
 
     GetPKCS7si(self, p7si);
 
