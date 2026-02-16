@@ -40,6 +40,9 @@ module Prism
     # https://bugs.ruby-lang.org/issues/21669
     incorrect << "4.1/void_value.txt"
 
+    # https://bugs.ruby-lang.org/issues/19979
+    incorrect << "4.1/noblock.txt"
+
     # Skip these tests that we haven't implemented yet.
     omitted_sexp_raw = [
       "bom_leading_space.txt",

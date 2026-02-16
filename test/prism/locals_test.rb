@@ -30,7 +30,7 @@ module Prism
       "command_method_call_2.txt",
 
       # https://bugs.ruby-lang.org/issues/21669
-      "4.1/void_value.txt"
+      "4.1/void_value.txt",
     ]
 
     Fixture.each_for_current_ruby(except: except) do |fixture|
@@ -207,7 +207,7 @@ module Prism
               end
             end
 
-            if params.block
+            if params.block.is_a?(BlockParameterNode)
               sorted << (params.block.name || :&)
             end
 

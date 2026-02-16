@@ -13949,7 +13949,7 @@ parse_parameters(
                 pm_token_t operator = parser->previous;
                 pm_node_t *param;
 
-                if (accept1(parser, PM_TOKEN_KEYWORD_NIL)) {
+                if (parser->version >= PM_OPTIONS_VERSION_CRUBY_4_1 && accept1(parser, PM_TOKEN_KEYWORD_NIL)) {
                     param = (pm_node_t *) pm_no_block_parameter_node_create(parser, &operator, &parser->previous);
                 } else {
                     pm_token_t name = {0};
