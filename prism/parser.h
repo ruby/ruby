@@ -13,7 +13,7 @@
 #include "prism/static_literals.h"
 #include "prism/util/pm_constant_pool.h"
 #include "prism/util/pm_list.h"
-#include "prism/util/pm_newline_list.h"
+#include "prism/util/pm_line_offset_list.h"
 #include "prism/util/pm_string.h"
 
 #include <stdbool.h>
@@ -782,8 +782,8 @@ struct pm_parser {
      */
     pm_constant_pool_t constant_pool;
 
-    /** This is the list of newline offsets in the source file. */
-    pm_newline_list_t newline_list;
+    /** This is the list of line offsets in the source file. */
+    pm_line_offset_list_t line_offsets;
 
     /**
      * We want to add a flag to integer nodes that indicates their base. We only

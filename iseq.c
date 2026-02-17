@@ -982,7 +982,7 @@ rb_iseq_new_top(const VALUE ast_value, VALUE name, VALUE path, VALUE realpath, c
 rb_iseq_t *
 pm_iseq_new_top(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent, int *error_state)
 {
-    iseq_new_setup_coverage(path, (int) (node->parser->newline_list.size - 1));
+    iseq_new_setup_coverage(path, (int) (node->parser->line_offsets.size - 1));
 
     return pm_iseq_new_with_opt(node, name, path, realpath, 0, parent, 0,
                                 ISEQ_TYPE_TOP, &COMPILE_OPTION_DEFAULT, error_state);
@@ -1006,7 +1006,7 @@ rb_iseq_new_main(const VALUE ast_value, VALUE path, VALUE realpath, const rb_ise
 rb_iseq_t *
 pm_iseq_new_main(pm_scope_node_t *node, VALUE path, VALUE realpath, const rb_iseq_t *parent, int opt, int *error_state)
 {
-    iseq_new_setup_coverage(path, (int) (node->parser->newline_list.size - 1));
+    iseq_new_setup_coverage(path, (int) (node->parser->line_offsets.size - 1));
 
     return pm_iseq_new_with_opt(node, rb_fstring_lit("<main>"),
                                 path, realpath, 0,
@@ -1035,7 +1035,7 @@ pm_iseq_new_eval(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath,
     if (rb_get_coverage_mode() & COVERAGE_TARGET_EVAL) {
         VALUE coverages = rb_get_coverages();
         if (RTEST(coverages) && RTEST(path) && !RTEST(rb_hash_has_key(coverages, path))) {
-            iseq_setup_coverage(coverages, path, ((int) (node->parser->newline_list.size - 1)) + first_lineno - 1);
+            iseq_setup_coverage(coverages, path, ((int) (node->parser->line_offsets.size - 1)) + first_lineno - 1);
         }
     }
 
@@ -1145,8 +1145,8 @@ pm_iseq_new_with_opt(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpa
     pm_location_t *location = &node->base.location;
     int32_t start_line = node->parser->start_line;
 
-    pm_line_column_t start = pm_newline_list_line_column(&node->parser->newline_list, location->start, start_line);
-    pm_line_column_t end = pm_newline_list_line_column(&node->parser->newline_list, location->start + location->length, start_line);
+    pm_line_column_t start = pm_line_offset_list_line_column(&node->parser->line_offsets, location->start, start_line);
+    pm_line_column_t end = pm_line_offset_list_line_column(&node->parser->line_offsets, location->start + location->length, start_line);
 
     rb_code_location_t code_location = (rb_code_location_t) {
         .beg_pos = { .lineno = (int) start.line, .column = (int) start.column },

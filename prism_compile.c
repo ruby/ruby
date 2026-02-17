@@ -141,32 +141,32 @@ pm_iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line, int node
     pm_compile_node(iseq, (node), ret, false, scope_node)
 
 #define PM_NODE_START_LOCATION(parser, node) \
-    ((pm_node_location_t) { .line = pm_newline_list_line(&(parser)->newline_list, ((const pm_node_t *) (node))->location.start, (parser)->start_line), .node_id = ((const pm_node_t *) (node))->node_id })
+    ((pm_node_location_t) { .line = pm_line_offset_list_line(&(parser)->line_offsets, ((const pm_node_t *) (node))->location.start, (parser)->start_line), .node_id = ((const pm_node_t *) (node))->node_id })
 
 #define PM_NODE_END_LOCATION(parser, node) \
-    ((pm_node_location_t) { .line = pm_newline_list_line(&(parser)->newline_list, ((const pm_node_t *) (node))->location.start + ((const pm_node_t *) (node))->location.length, (parser)->start_line), .node_id = ((const pm_node_t *) (node))->node_id })
+    ((pm_node_location_t) { .line = pm_line_offset_list_line(&(parser)->line_offsets, ((const pm_node_t *) (node))->location.start + ((const pm_node_t *) (node))->location.length, (parser)->start_line), .node_id = ((const pm_node_t *) (node))->node_id })
 
 #define PM_LOCATION_START_LOCATION(parser, location, id) \
-    ((pm_node_location_t) { .line = pm_newline_list_line(&(parser)->newline_list, (location)->start, (parser)->start_line), .node_id = id })
+    ((pm_node_location_t) { .line = pm_line_offset_list_line(&(parser)->line_offsets, (location)->start, (parser)->start_line), .node_id = id })
 
 #define PM_NODE_START_LINE_COLUMN(parser, node) \
-    pm_newline_list_line_column(&(parser)->newline_list, ((const pm_node_t *) (node))->location.start, (parser)->start_line)
+    pm_line_offset_list_line_column(&(parser)->line_offsets, ((const pm_node_t *) (node))->location.start, (parser)->start_line)
 
 #define PM_NODE_END_LINE_COLUMN(parser, node) \
-    pm_newline_list_line_column(&(parser)->newline_list, ((const pm_node_t *) (node))->location.start + ((const pm_node_t *) (node))->location.length, (parser)->start_line)
+    pm_line_offset_list_line_column(&(parser)->line_offsets, ((const pm_node_t *) (node))->location.start + ((const pm_node_t *) (node))->location.length, (parser)->start_line)
 
 #define PM_LOCATION_START_LINE_COLUMN(parser, location) \
-    pm_newline_list_line_column(&(parser)->newline_list, (location)->start, (parser)->start_line)
+    pm_line_offset_list_line_column(&(parser)->line_offsets, (location)->start, (parser)->start_line)
 
 static int
 pm_node_line_number(const pm_parser_t *parser, const pm_node_t *node)
 {
-    return (int) pm_newline_list_line(&parser->newline_list, node->location.start, parser->start_line);
+    return (int) pm_line_offset_list_line(&parser->line_offsets, node->location.start, parser->start_line);
 }
 
 static int
 pm_location_line_number(const pm_parser_t *parser, const pm_location_t *location) {
-    return (int) pm_newline_list_line(&parser->newline_list, location->start, parser->start_line);
+    return (int) pm_line_offset_list_line(&parser->line_offsets, location->start, parser->start_line);
 }
 
 /**
@@ -3699,7 +3699,7 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
             }
 
             const pm_line_column_t start_location = PM_NODE_START_LINE_COLUMN(scope_node->parser, call_node);
-            const pm_line_column_t end_location = pm_newline_list_line_column(&scope_node->parser->newline_list, end_cursor, scope_node->parser->start_line);
+            const pm_line_column_t end_location = pm_line_offset_list_line_column(&scope_node->parser->line_offsets, end_cursor, scope_node->parser->start_line);
 
             code_location = (rb_code_location_t) {
                 .beg_pos = { .lineno = start_location.line, .column = start_location.column },
@@ -10609,7 +10609,7 @@ typedef struct {
 #define PM_ERROR_TRUNCATE 30
 
 static inline pm_parse_error_t *
-pm_parse_errors_format_sort(const pm_parser_t *parser, const pm_list_t *error_list, const pm_newline_list_t *newline_list) {
+pm_parse_errors_format_sort(const pm_parser_t *parser, const pm_list_t *error_list, const pm_line_offset_list_t *line_offsets) {
     pm_parse_error_t *errors = xcalloc(error_list->size, sizeof(pm_parse_error_t));
     if (errors == NULL) return NULL;
 
@@ -10617,8 +10617,8 @@ pm_parse_errors_format_sort(const pm_parser_t *parser, const pm_list_t *error_li
     pm_diagnostic_t *finish = (pm_diagnostic_t * )error_list->tail->next;
 
     for (pm_diagnostic_t *error = (pm_diagnostic_t *) error_list->head; error != finish; error = (pm_diagnostic_t *) error->node.next) {
-        pm_line_column_t start = pm_newline_list_line_column(newline_list, error->location.start, start_line);
-        pm_line_column_t end = pm_newline_list_line_column(newline_list, error->location.start + error->location.length, start_line);
+        pm_line_column_t start = pm_line_offset_list_line_column(line_offsets, error->location.start, start_line);
+        pm_line_column_t end = pm_line_offset_list_line_column(line_offsets, error->location.start + error->location.length, start_line);
 
         // We're going to insert this error into the array in sorted order. We
         // do this by finding the first error that has a line number greater
@@ -10645,7 +10645,7 @@ pm_parse_errors_format_sort(const pm_parser_t *parser, const pm_list_t *error_li
         if (start.line == end.line) {
             column_end = end.column;
         } else {
-            column_end = (uint32_t) (newline_list->offsets[start.line - start_line + 1] - newline_list->offsets[start.line - start_line] - 1);
+            column_end = (uint32_t) (line_offsets->offsets[start.line - start_line + 1] - line_offsets->offsets[start.line - start_line] - 1);
         }
 
         // Ensure we have at least one column of error.
@@ -10666,20 +10666,20 @@ pm_parse_errors_format_sort(const pm_parser_t *parser, const pm_list_t *error_li
 #define pm_buffer_append_literal(buffer, str) pm_buffer_append_string(buffer, str, rb_strlen_lit(str))
 
 static inline void
-pm_parse_errors_format_line(const pm_parser_t *parser, const pm_newline_list_t *newline_list, const char *number_prefix, int32_t line, uint32_t column_start, uint32_t column_end, pm_buffer_t *buffer) {
+pm_parse_errors_format_line(const pm_parser_t *parser, const pm_line_offset_list_t *line_offsets, const char *number_prefix, int32_t line, uint32_t column_start, uint32_t column_end, pm_buffer_t *buffer) {
     int32_t line_delta = line - parser->start_line;
     assert(line_delta >= 0);
 
     size_t index = (size_t) line_delta;
-    assert(index < newline_list->size);
+    assert(index < line_offsets->size);
 
-    const uint8_t *start = &parser->start[newline_list->offsets[index]];
+    const uint8_t *start = &parser->start[line_offsets->offsets[index]];
     const uint8_t *end;
 
-    if (index >= newline_list->size - 1) {
+    if (index >= line_offsets->size - 1) {
         end = parser->end;
     } else {
-        end = &parser->start[newline_list->offsets[index + 1]];
+        end = &parser->start[line_offsets->offsets[index + 1]];
     }
 
     pm_buffer_append_format(buffer, number_prefix, line);
@@ -10735,9 +10735,9 @@ pm_parse_errors_format(const pm_parser_t *parser, const pm_list_t *error_list, p
     // First, we're going to sort all of the errors by line number using an
     // insertion sort into a newly allocated array.
     const int32_t start_line = parser->start_line;
-    const pm_newline_list_t *newline_list = &parser->newline_list;
+    const pm_line_offset_list_t *line_offsets = &parser->line_offsets;
 
-    pm_parse_error_t *errors = pm_parse_errors_format_sort(parser, error_list, newline_list);
+    pm_parse_error_t *errors = pm_parse_errors_format_sort(parser, error_list, line_offsets);
     if (errors == NULL) return;
 
     // Now we're going to determine how we're going to format line numbers and
@@ -10850,11 +10850,11 @@ pm_parse_errors_format(const pm_parser_t *parser, const pm_list_t *error_list, p
                 }
 
                 pm_buffer_append_string(buffer, "  ", 2);
-                pm_parse_errors_format_line(parser, newline_list, error_format.number_prefix, error->line - 2, 0, 0, buffer);
+                pm_parse_errors_format_line(parser, line_offsets, error_format.number_prefix, error->line - 2, 0, 0, buffer);
             }
 
             pm_buffer_append_string(buffer, "  ", 2);
-            pm_parse_errors_format_line(parser, newline_list, error_format.number_prefix, error->line - 1, 0, 0, buffer);
+            pm_parse_errors_format_line(parser, line_offsets, error_format.number_prefix, error->line - 1, 0, 0, buffer);
         }
 
         // If this is the first error or we're on a new line, then we'll display
@@ -10877,10 +10877,10 @@ pm_parse_errors_format(const pm_parser_t *parser, const pm_list_t *error_list, p
                 if (errors[next_index].column_end > column_end) column_end = errors[next_index].column_end;
             }
 
-            pm_parse_errors_format_line(parser, newline_list, error_format.number_prefix, error->line, error->column_start, column_end, buffer);
+            pm_parse_errors_format_line(parser, line_offsets, error_format.number_prefix, error->line, error->column_start, column_end, buffer);
         }
 
-        const uint8_t *start = &parser->start[newline_list->offsets[error->line - start_line]];
+        const uint8_t *start = &parser->start[line_offsets->offsets[error->line - start_line]];
         if (start == parser->end) pm_buffer_append_byte(buffer, '\n');
 
         // Now we'll display the actual error message. We'll do this by first
@@ -10940,11 +10940,11 @@ pm_parse_errors_format(const pm_parser_t *parser, const pm_list_t *error_list, p
         int32_t next_line;
 
         if (index == error_list->size - 1) {
-            next_line = (((int32_t) newline_list->size) + parser->start_line);
+            next_line = (((int32_t) line_offsets->size) + parser->start_line);
 
             // If the file ends with a newline, subtract one from our "next_line"
             // so that we don't output an extra line at the end of the file
-            if ((parser->start + newline_list->offsets[newline_list->size - 1]) == parser->end) {
+            if ((parser->start + line_offsets->offsets[line_offsets->size - 1]) == parser->end) {
                 next_line--;
             }
         }
@@ -10954,12 +10954,12 @@ pm_parse_errors_format(const pm_parser_t *parser, const pm_list_t *error_list, p
 
         if (next_line - last_line > 1) {
             pm_buffer_append_string(buffer, "  ", 2);
-            pm_parse_errors_format_line(parser, newline_list, error_format.number_prefix, ++last_line, 0, 0, buffer);
+            pm_parse_errors_format_line(parser, line_offsets, error_format.number_prefix, ++last_line, 0, 0, buffer);
         }
 
         if (next_line - last_line > 1) {
             pm_buffer_append_string(buffer, "  ", 2);
-            pm_parse_errors_format_line(parser, newline_list, error_format.number_prefix, ++last_line, 0, 0, buffer);
+            pm_parse_errors_format_line(parser, line_offsets, error_format.number_prefix, ++last_line, 0, 0, buffer);
         }
     }
 
@@ -10981,11 +10981,11 @@ pm_parse_errors_format(const pm_parser_t *parser, const pm_list_t *error_list, p
 static bool
 pm_parse_process_error_utf8_p(const pm_parser_t *parser, const pm_location_t *location)
 {
-    const size_t start_line = pm_newline_list_line_column(&parser->newline_list, location->start, 1).line;
-    const size_t end_line = pm_newline_list_line_column(&parser->newline_list, location->start + location->length, 1).line;
+    const size_t start_line = pm_line_offset_list_line_column(&parser->line_offsets, location->start, 1).line;
+    const size_t end_line = pm_line_offset_list_line_column(&parser->line_offsets, location->start + location->length, 1).line;
 
-    const uint8_t *start = parser->start + parser->newline_list.offsets[start_line - 1];
-    const uint8_t *end = ((end_line == parser->newline_list.size) ? parser->end : (parser->start + parser->newline_list.offsets[end_line]));
+    const uint8_t *start = parser->start + parser->line_offsets.offsets[start_line - 1];
+    const uint8_t *end = ((end_line == parser->line_offsets.size) ? parser->end : (parser->start + parser->line_offsets.offsets[end_line]));
     size_t width;
 
     while (start < end) {
@@ -11127,11 +11127,11 @@ pm_parse_process(pm_parse_result_t *result, pm_node_t *node, VALUE *script_lines
     // If RubyVM.keep_script_lines is set to true, then we need to create that
     // array of script lines here.
     if (script_lines != NULL) {
-        *script_lines = rb_ary_new_capa(parser->newline_list.size);
+        *script_lines = rb_ary_new_capa(parser->line_offsets.size);
 
-        for (size_t index = 0; index < parser->newline_list.size; index++) {
-            size_t offset = parser->newline_list.offsets[index];
-            size_t length = index == parser->newline_list.size - 1 ? ((size_t) (parser->end - (parser->start + offset))) : (parser->newline_list.offsets[index + 1] - offset);
+        for (size_t index = 0; index < parser->line_offsets.size; index++) {
+            size_t offset = parser->line_offsets.offsets[index];
+            size_t length = index == parser->line_offsets.size - 1 ? ((size_t) (parser->end - (parser->start + offset))) : (parser->line_offsets.offsets[index + 1] - offset);
             rb_ary_push(*script_lines, rb_enc_str_new((const char *) parser->start + offset, length, scope_node->encoding));
         }
 
@@ -11215,22 +11215,22 @@ pm_options_frozen_string_literal_init(pm_options_t *options)
 static inline VALUE
 pm_parse_file_script_lines(const pm_scope_node_t *scope_node, const pm_parser_t *parser)
 {
-    const pm_newline_list_t *newline_list = &parser->newline_list;
+    const pm_line_offset_list_t *line_offsets = &parser->line_offsets;
     const char *start = (const char *) parser->start;
     const char *end = (const char *) parser->end;
 
     // If we end exactly on a newline, then there's no need to push on a final
     // segment. If we don't, then we need to push on the last offset up to the
     // end of the string.
-    size_t last_offset = newline_list->offsets[newline_list->size - 1];
+    size_t last_offset = line_offsets->offsets[line_offsets->size - 1];
     bool last_push = start + last_offset != end;
 
     // Create the ruby strings that represent the lines of the source.
-    VALUE lines = rb_ary_new_capa(newline_list->size - (last_push ? 0 : 1));
+    VALUE lines = rb_ary_new_capa(line_offsets->size - (last_push ? 0 : 1));
 
-    for (size_t index = 0; index < newline_list->size - 1; index++) {
-        size_t offset = newline_list->offsets[index];
-        size_t length = newline_list->offsets[index + 1] - offset;
+    for (size_t index = 0; index < line_offsets->size - 1; index++) {
+        size_t offset = line_offsets->offsets[index];
+        size_t length = line_offsets->offsets[index + 1] - offset;
 
         rb_ary_push(lines, rb_enc_str_new(start + offset, length, scope_node->encoding));
     }
