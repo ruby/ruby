@@ -1112,6 +1112,9 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     parse('a {|**nil|}', :on_params) {|_, *v| thru_params = true; arg = v}
     assert_equal true, thru_params
     assert_equal [nil, nil, nil, nil, nil, :nil, nil], arg
+    parse('a {|&nil|}', :on_params) {|_, *v| thru_params = true; arg = v}
+    assert_equal true, thru_params
+    assert_equal [nil, nil, nil, nil, nil, nil, :nil], arg
   end
 
   def test_params_mlhs
@@ -1325,6 +1328,12 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     thru_nokw = false
     parse('def a(**nil) end', :on_nokw_param) {|n, val| thru_nokw = val}
     assert_equal nil, thru_nokw
+  end
+
+  def test_noblock_param
+    thru_noblock = false
+    parse('def a(&nil) end', :on_noblock_param) {|n, val| thru_noblock = val}
+    assert_equal nil, thru_noblock
   end
 
   def test_retry

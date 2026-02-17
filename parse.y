@@ -6565,7 +6565,7 @@ f_block_arg	: blkarg_mark tIDENTIFIER
                 | blkarg_mark keyword_nil
                     {
                         $$ = idNil;
-                    /*% ripper: blockarg!(ID2VAL(idNil)) %*/
+                    /*% ripper: noblock_param!(Qnil) %*/
                     }
                 | blkarg_mark
                     {
