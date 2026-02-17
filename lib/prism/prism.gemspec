@@ -42,6 +42,8 @@ Gem::Specification.new do |spec|
     "docs/serialization.md",
     "docs/testing.md",
     "ext/prism/api_node.c",
+    "ext/prism/depend",
+    "ext/prism/extconf.rb",
     "ext/prism/extension.c",
     "ext/prism/extension.h",
     "include/prism.h",
