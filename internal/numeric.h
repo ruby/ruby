@@ -78,6 +78,7 @@ VALUE rb_int_gt(VALUE x, VALUE y);
 VALUE rb_float_gt(VALUE x, VALUE y);
 VALUE rb_int_ge(VALUE x, VALUE y);
 enum ruby_num_rounding_mode rb_num_get_rounding_option(VALUE opts);
+VALUE rb_int_fdiv(VALUE x, VALUE y);
 double rb_int_fdiv_double(VALUE x, VALUE y);
 VALUE rb_int_pow(VALUE x, VALUE y);
 VALUE rb_float_pow(VALUE x, VALUE y);
