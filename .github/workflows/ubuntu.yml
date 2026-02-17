@@ -208,7 +208,7 @@ jobs:
       matrix:
         include:
           # Using the same setup as ZJIT jobs
-          - bench_opts: '--warmup=1 --bench=1 --excludes=lobsters,shipit'
+          - bench_opts: '--warmup=1 --bench=1 --excludes=shipit'
 
     runs-on: ubuntu-24.04
 
