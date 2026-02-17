@@ -953,6 +953,15 @@ class TestMarshal < Test::Unit::TestCase
     assert_equal([nil, nil], Marshal.load(input))
   end
 
+  def test_bignum_len_overflow
+    assert_raise(ArgumentError) do
+      Marshal.load("\x04\x08l+\x04\x00\x00\x00\x40")
+    end
+    assert_raise(ArgumentError) do
+      Marshal.load("\x04\x08l+\xfc\x00\x00\x00\x80")
+    end
+  end
+
   class TestMarshalFreezeProc < Test::Unit::TestCase
     include MarshalTestLib
 
