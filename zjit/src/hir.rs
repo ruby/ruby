@@ -6307,40 +6307,29 @@ fn locals_written_in_block(parent_iseq: IseqPtr, blockiseq: IseqPtr, target_dept
   }
 }
 
-/// Reload locals that may have been modified by the blockiseq, and guard
-/// against EP escape (e.g. eval writing to locals we can't detect by scanning
-/// bytecode). The PatchPoint is always emitted even when no locals were visibly
-/// written, because eval inside a block can write locals without any visible
-/// setlocal. Without the guard, a subsequent gen_spill_locals could overwrite
-/// the EP with stale JIT-side values.
-///
-/// `pc` must point to the send instruction and `opcode` must be its decoded opcode.
-/// We build a side-exit snapshot pointing to the *next* instruction so the interpreter
-/// doesn't re-execute the send. We compute next_pc with pointer arithmetic
-/// (`pc + insn_len`) rather than `rb_iseq_pc_at_idx` to avoid a bounds-check assertion.
-fn reload_modified_locals(fun: &mut Function, block: BlockId, state: &mut FrameState, iseq: IseqPtr, blockiseq: IseqPtr, pc: *const VALUE, opcode: u32, insn_idx: u32) {
+/// Reload locals that may have been modified by the blockiseq. Updates the
+/// dirty bitset: written locals are reloaded from the frame and marked dirty
+/// (JIT has a fresh value); unwritten locals are marked clean (frame is
+/// authoritative — the block or eval may have modified them).
+fn reload_modified_locals(fun: &mut Function, block: BlockId, state: &mut FrameState, iseq: IseqPtr, blockiseq: IseqPtr, locals_dirty: &mut BitSet<usize>) {
     // TODO: Avoid reloading locals that are not referenced by the blockiseq
     // or not used after this. Max thinks we could eventually DCE them.
-    let mut locals = BitSet::with_capacity(state.locals.len());
-    locals_written_in_block(iseq, blockiseq, 1, &mut locals);
+    let mut written = BitSet::with_capacity(state.locals.len());
+    locals_written_in_block(iseq, blockiseq, 1, &mut written);
     for local_idx in 0..state.locals.len() {
-        if locals.get(local_idx) {
+        if written.get(local_idx) {
             let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
-            // TODO: We could use `use_sp: true` with PatchPoint
             let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0, use_sp: false, rest_param: false });
             state.setlocal(ep_offset, val);
+            locals_dirty.insert(local_idx);
+        } else {
+            // Frame is authoritative for this local. Clear the dirty bit so the
+            // next getlocal reads from the frame instead of using a stale
+            // FrameState value. This prevents gen_spill_locals from overwriting
+            // changes made by eval or other threads.
+            locals_dirty.remove(local_idx);
         }
     }
-
-    // Always guard against EP escape after a send-with-block. Even if no locals
-    // were visibly written by the block bytecode, eval could have modified them.
-    // The snapshot omits locals so the interpreter reads them from the frame.
-    let len = insn_len(opcode as usize) as usize;
-    let mut pp_state = state.clone();
-    pp_state.pc = unsafe { pc.add(len) };
-    pp_state.insn_idx = insn_idx as usize + len;
-    let pp_exit_id = fun.push_insn(block, Insn::Snapshot { state: pp_state.without_locals() });
-    fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: pp_exit_id });
 }
 
 /// Compile ISEQ into High-level IR
@@ -6394,15 +6383,16 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
     // Iteratively fill out basic blocks using a queue.
     // TODO(max): Basic block arguments at edges
+    let local_count = num_locals(iseq);
     let mut queue = VecDeque::new();
     for &insn_idx in jit_entry_insns.iter() {
-        queue.push_back((FrameState::new(iseq), insn_idx_to_block[&insn_idx], /*insn_idx=*/insn_idx, /*local_inval=*/false));
+        queue.push_back((FrameState::new(iseq), insn_idx_to_block[&insn_idx], /*insn_idx=*/insn_idx));
     }
 
     // Keep compiling blocks until the queue becomes empty
     let mut visited = HashSet::new();
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
-    while let Some((incoming_state, block, mut insn_idx, mut local_inval)) = queue.pop_front() {
+    while let Some((incoming_state, block, mut insn_idx)) = queue.pop_front() {
         // Compile each block only once
         if visited.contains(&block) { continue; }
         visited.insert(block);
@@ -6420,6 +6410,12 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
             }
             result
         };
+
+        // All locals start clean — block params mirror the predecessor's state but
+        // the frame is authoritative. The first getlocal for each local will read
+        // from the frame (GetLocal). setlocal marks a local dirty so subsequent
+        // getlocal uses the FrameState value instead.
+        let mut locals_dirty = BitSet::with_capacity(local_count);
 
         // Start the block off with a Snapshot so that if we need to insert a new Guard later on
         // and we don't have a Snapshot handy, we can just iterate backward (at the earliest, to
@@ -6509,10 +6505,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 profiles.profile_stack(&exit_state);
             }
 
-            // Flag a future getlocal/setlocal to add a patch point if this instruction is not leaf.
-            if invalidates_locals(opcode, unsafe { pc.offset(1) }) {
-                local_inval = true;
-            }
+            let is_non_leaf = invalidates_locals(opcode, unsafe { pc.offset(1) });
 
             // We add NoTracePoint patch points before every instruction that could be affected by TracePoint.
             // This ensures that if TracePoint is enabled, we can exit the generated code as fast as possible.
@@ -6732,15 +6725,16 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let index = get_arg(pc, 1).as_u64();
                     let index: u8 = index.try_into().map_err(|_| ParseError::MalformedIseq(insn_idx))?;
                     // Use FrameState to get kw_bits when possible, just like getlocal_WC_0.
-                    let val = if !local_inval {
-                        state.getlocal(ep_offset)
-                    } else if ep_escaped {
+                    let local_idx = ep_offset_to_local_idx(iseq, ep_offset);
+                    let val = if ep_escaped {
                         fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0, use_sp: false, rest_param: false })
-                    } else {
-                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.without_locals() });
-                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: exit_id });
-                        local_inval = false;
+                    } else if locals_dirty.get(local_idx) {
                         state.getlocal(ep_offset)
+                    } else {
+                        let v = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0, use_sp: false, rest_param: false });
+                        state.setlocal(ep_offset, v);
+                        locals_dirty.insert(local_idx);
+                        v
                     };
                     state.stack_push(fun.push_insn(block, Insn::FixnumBitCheck { val, index }));
                 }
@@ -6777,7 +6771,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let not_nil_false_type = types::Truthy;
                     let not_nil_false = fun.push_insn(block, Insn::RefineType { val, new_type: not_nil_false_type });
                     state.replace(val, not_nil_false);
-                    queue.push_back((state.clone(), target, target_idx, local_inval));
+                    queue.push_back((state.clone(), target, target_idx));
                 }
                 YARVINSN_branchif | YARVINSN_branchif_without_ints => {
                     if opcode == YARVINSN_branchif {
@@ -6799,7 +6793,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let nil_false_type = types::Falsy;
                     let nil_false = fun.push_insn(block, Insn::RefineType { val, new_type: nil_false_type });
                     state.replace(val, nil_false);
-                    queue.push_back((state.clone(), target, target_idx, local_inval));
+                    queue.push_back((state.clone(), target, target_idx));
                 }
                 YARVINSN_branchnil | YARVINSN_branchnil_without_ints => {
                     if opcode == YARVINSN_branchnil {
@@ -6820,7 +6814,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let new_type = types::NotNil;
                     let not_nil = fun.push_insn(block, Insn::RefineType { val, new_type });
                     state.replace(val, not_nil);
-                    queue.push_back((state.clone(), target, target_idx, local_inval));
+                    queue.push_back((state.clone(), target, target_idx));
                 }
                 YARVINSN_opt_case_dispatch => {
                     // TODO: Some keys are visible at compile time, so in the future we can
@@ -6846,7 +6840,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         val: test_id,
                         target: BranchEdge { target, args: state.as_args(self_param) }
                     });
-                    queue.push_back((state.clone(), target, target_idx, local_inval));
+                    queue.push_back((state.clone(), target, target_idx));
 
                     // Move on to the fast path
                     let insn_id = fun.push_insn(block, Insn::ObjectAlloc { val, state: exit_id });
@@ -6863,49 +6857,41 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let _branch_id = fun.push_insn(block, Insn::Jump(
                         BranchEdge { target, args: state.as_args(self_param) }
                     ));
-                    queue.push_back((state.clone(), target, target_idx, local_inval));
+                    queue.push_back((state.clone(), target, target_idx));
                     break;  // Don't enqueue the next block as a successor
                 }
                 YARVINSN_getlocal_WC_0 => {
                     let ep_offset = get_arg(pc, 0).as_u32();
-                    if !local_inval {
-                        // The FrameState is the source of truth for locals until invalidated.
-                        // In case of JIT-to-JIT send locals might never end up in EP memory.
-                        let val = state.getlocal(ep_offset);
-                        state.stack_push(val);
-                    } else if ep_escaped {
-                        // Read the local using EP
+                    let local_idx = ep_offset_to_local_idx(iseq, ep_offset);
+                    if ep_escaped {
+                        // EP is escaped — always read from the frame via EP.
                         let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0, use_sp: false, rest_param: false });
-                        state.setlocal(ep_offset, val); // remember the result to spill on side-exits
+                        state.setlocal(ep_offset, val);
+                        state.stack_push(val);
+                    } else if locals_dirty.get(local_idx) {
+                        // JIT owns this local — use the FrameState value.
+                        let val = state.getlocal(ep_offset);
                         state.stack_push(val);
                     } else {
-                        assert!(local_inval); // if check above
-                        // There has been some non-leaf call since JIT entry or the last patch point,
-                        // so add a patch point to make sure locals have not been escaped.
-                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.without_locals() }); // skip spilling locals
-                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: exit_id });
-                        local_inval = false;
-
-                        // Read the local from FrameState
-                        let val = state.getlocal(ep_offset);
+                        // Frame is authoritative — read from the frame, then mark
+                        // dirty so subsequent reads in this block use FrameState.
+                        let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0, use_sp: false, rest_param: false });
+                        state.setlocal(ep_offset, val);
                         state.stack_push(val);
+                        locals_dirty.insert(local_idx);
                     }
                 }
                 YARVINSN_setlocal_WC_0 => {
                     let ep_offset = get_arg(pc, 0).as_u32();
+                    let local_idx = ep_offset_to_local_idx(iseq, ep_offset);
                     let val = state.stack_pop()?;
                     if ep_escaped {
-                        // Write the local using EP
+                        // EP is escaped — always write to the frame via EP.
                         fun.push_insn(block, Insn::SetLocal { val, ep_offset, level: 0 });
-                    } else if local_inval {
-                        // If there has been any non-leaf call since JIT entry or the last patch point,
-                        // add a patch point to make sure locals have not been escaped.
-                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.without_locals() }); // skip spilling locals
-                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: exit_id });
-                        local_inval = false;
                     }
-                    // Write the local into FrameState
+                    // Write the local into FrameState and mark dirty.
                     state.setlocal(ep_offset, val);
+                    locals_dirty.insert(local_idx);
                 }
                 YARVINSN_getlocal_WC_1 => {
                     let ep_offset = get_arg(pc, 0).as_u32();
@@ -7064,7 +7050,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     );
 
                     // Continue compilation from the join block at the next instruction.
-                    queue.push_back((unmodified_state, join_block, insn_idx, local_inval));
+                    queue.push_back((unmodified_state, join_block, insn_idx));
                     break;
                 }
                 YARVINSN_pop => { state.stack_pop()?; }
@@ -7265,7 +7251,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             // make the right number of Params
                             let mut join_state = state.clone();
                             join_state.stack_pop_n(argc as usize)?;
-                            queue.push_back((join_state, join_block, insn_idx, local_inval));
+                            queue.push_back((join_state, join_block, insn_idx));
                             // In the fallthrough case, do a generic interpreter send and then join.
                             let args = state.stack_pop_n(argc as usize)?;
                             let recv = state.stack_pop()?;
@@ -7301,8 +7287,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     state.stack_push(send);
 
                     if !blockiseq.is_null() {
-                        reload_modified_locals(&mut fun, block, &mut state, iseq, blockiseq, pc, opcode, insn_idx);
-                        local_inval = false;
+                        reload_modified_locals(&mut fun, block, &mut state, iseq, blockiseq, &mut locals_dirty);
                     }
                 }
                 YARVINSN_sendforward => {
@@ -7324,8 +7309,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     state.stack_push(send_forward);
 
                     if !blockiseq.is_null() {
-                        reload_modified_locals(&mut fun, block, &mut state, iseq, blockiseq, pc, opcode, insn_idx);
-                        local_inval = false;
+                        reload_modified_locals(&mut fun, block, &mut state, iseq, blockiseq, &mut locals_dirty);
                     }
                 }
                 YARVINSN_invokesuper => {
@@ -7346,8 +7330,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     state.stack_push(result);
 
                     if !blockiseq.is_null() {
-                        reload_modified_locals(&mut fun, block, &mut state, iseq, blockiseq, pc, opcode, insn_idx);
-                        local_inval = false;
+                        reload_modified_locals(&mut fun, block, &mut state, iseq, blockiseq, &mut locals_dirty);
                     }
                 }
                 YARVINSN_invokesuperforward => {
@@ -7368,8 +7351,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     state.stack_push(result);
 
                     if !blockiseq.is_null() {
-                        reload_modified_locals(&mut fun, block, &mut state, iseq, blockiseq, pc, opcode, insn_idx);
-                        local_inval = false;
+                        reload_modified_locals(&mut fun, block, &mut state, iseq, blockiseq, &mut locals_dirty);
                     }
                 }
                 YARVINSN_invokeblock => {
@@ -7581,10 +7563,22 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
             }
 
+            // After every non-leaf instruction, guard against EP escape. If eval
+            // or Binding captured the EP during the call, this side-exits before
+            // the next gen_spill_locals can overwrite the frame with stale values.
+            if is_non_leaf && !ep_escaped {
+                let len = insn_len(opcode as usize) as usize;
+                let mut pp_state = state.clone();
+                pp_state.pc = unsafe { pc.add(len) };
+                pp_state.insn_idx = insn_idx as usize;
+                let pp_exit_id = fun.push_insn(block, Insn::Snapshot { state: pp_state.without_locals() });
+                fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: pp_exit_id });
+            }
+
             if insn_idx_to_block.contains_key(&insn_idx) {
                 let target = insn_idx_to_block[&insn_idx];
                 fun.push_insn(block, Insn::Jump(BranchEdge { target, args: state.as_args(self_param) }));
-                queue.push_back((state, target, insn_idx, local_inval));
+                queue.push_back((state, target, insn_idx));
                 break;  // End the block
             }
         }
@@ -8417,16 +8411,18 @@ mod graphviz_tests {
           bb2 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
         <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject)&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v15">PatchPoint NoTracePoint&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v18">PatchPoint NoTracePoint&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v24">PatchPoint NoTracePoint&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v25">PatchPoint MethodRedefined(Integer@0x1000, |@0x1008, cme:0x1010)&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v26">v26:Fixnum = GuardType v11, Fixnum&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v27">v27:Fixnum = GuardType v12, Fixnum&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v28">v28:Fixnum = FixnumOr v26, v27&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v29">IncrCounter inline_cfunc_optimized_send_count&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v21">PatchPoint NoTracePoint&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v22">CheckInterrupts&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v23">Return v28&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v16">v16:BasicObject = GetLocal :x, l0, EP@4&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v18">v18:BasicObject = GetLocal :y, l0, EP@3&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v20">PatchPoint NoTracePoint&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v26">PatchPoint NoTracePoint&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v27">PatchPoint MethodRedefined(Integer@0x1000, |@0x1008, cme:0x1010)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v28">v28:Fixnum = GuardType v16, Fixnum&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v29">v29:Fixnum = GuardType v18, Fixnum&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v30">v30:Fixnum = FixnumOr v28, v29&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v31">IncrCounter inline_cfunc_optimized_send_count&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v23">PatchPoint NoTracePoint&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v24">CheckInterrupts&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v25">Return v30&nbsp;</TD></TR>
         </TABLE>>];
         }
         "#);
@@ -8467,25 +8463,26 @@ mod graphviz_tests {
           bb2 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
         <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb2(v8:BasicObject, v9:BasicObject)&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v12">PatchPoint NoTracePoint&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v14">CheckInterrupts&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v15">v15:CBool = Test v9&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v16">v16:Falsy = RefineType v9, Falsy&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v17">IfFalse v15, bb3(v8, v16)&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v18">v18:Truthy = RefineType v9, Truthy&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v20">PatchPoint NoTracePoint&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v21">v21:Fixnum[3] = Const Value(3)&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v23">PatchPoint NoTracePoint&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v24">CheckInterrupts&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v25">Return v21&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v13">v13:BasicObject = GetLocal :c, l0, EP@3&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v15">CheckInterrupts&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v16">v16:CBool = Test v13&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v17">v17:Falsy = RefineType v13, Falsy&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v18">IfFalse v16, bb3(v8, v17)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v19">v19:Truthy = RefineType v13, Truthy&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v21">PatchPoint NoTracePoint&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v22">v22:Fixnum[3] = Const Value(3)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v24">PatchPoint NoTracePoint&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v25">CheckInterrupts&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v26">Return v22&nbsp;</TD></TR>
         </TABLE>>];
-          bb2:v17 -> bb3:params:n;
+          bb2:v18 -> bb3:params:n;
           bb3 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb3(v26:BasicObject, v27:Falsy)&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v30">PatchPoint NoTracePoint&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v31">v31:Fixnum[4] = Const Value(4)&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v33">PatchPoint NoTracePoint&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v34">CheckInterrupts&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v35">Return v31&nbsp;</TD></TR>
+        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb3(v27:BasicObject, v28:Falsy)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v31">PatchPoint NoTracePoint&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v32">v32:Fixnum[4] = Const Value(4)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v34">PatchPoint NoTracePoint&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v35">CheckInterrupts&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v36">Return v32&nbsp;</TD></TR>
         </TABLE>>];
         }
         "#);

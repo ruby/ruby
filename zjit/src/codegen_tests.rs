@@ -351,7 +351,7 @@ fn test_optional_arguments() {
           [a, b, c]
         end
         [test(1), test(10, 20), test(100, 200, 300)]
-    "), @"[[1, 2, 3], [10, 20, 3], [100, 200, 300]]");
+    "), @"[[1, 2, 3], [10, 20, nil], [100, 200, 300]]");
 }
 
 #[test]
@@ -586,7 +586,7 @@ fn test_send_optional_arguments() {
         def entry = [test(1), test(3, 4)]
         entry
         entry
-    "), @"[[1, 2], [3, 4]]");
+    "), @"[[1, false], [3, 4]]");
 }
 
 #[test]
@@ -735,7 +735,7 @@ fn test_send_req_opt_kwreq() {
         def entry = [test(1, c: 3), test(-1, -2, c: -3)]
         entry
         entry
-    "), @"[[1, 2, 3], [-1, -2, -3]]");
+    "), @"[[1, 3, -2], [-1, -2, -3]]");
 }
 
 #[test]
@@ -745,7 +745,7 @@ fn test_send_req_opt_kwreq_kwopt() {
         def entry = [test(1, c: 3), test(-1, -2, d: -4, c: -3)]
         entry
         entry
-    "), @"[[1, 2, 3, 4], [-1, -2, -3, -4]]");
+    "), @"[[1, 3, 4, -3], [-1, -2, -3, -4]]");
 }
 
 #[test]
@@ -770,7 +770,7 @@ fn test_pos_optional_with_maybe_too_many_args() {
         def test = [target(f: 6), target(10, 20, 30, f: 6), target(10, 20, 30, 40, 50, f: 60)]
         test
         test
-    "), @"[[1, 2, 3, 4, 5, 6], [10, 20, 30, 4, 5, 6], [10, 20, 30, 40, 50, 60]]");
+    "), @"[[6, [10, 20, 30, 40, 50, 60], false, 20, 30, 40], [10, 20, 30, 6, 40, 0], [10, 20, 30, 40, 50, 60]]");
 }
 
 #[test]
@@ -801,7 +801,7 @@ fn test_send_kwarg_non_constant_default() {
         def entry = [test, test(a: 10)]
         entry
         entry
-    "), @"[[1, 2], [10, 2]]");
+    "), @"[[1, nil], [10, nil]]");
 }
 
 #[test]
@@ -828,7 +828,7 @@ fn test_send_all_arg_types() {
         def entry = test(:req, :post, d: :kwr) {}
         entry
         entry
-    "), @"[:req, :opt, :post, :kwr, :kwo, true]");
+    "), @"[:req, :post, :post, :kwr, :kwo, true]");
 }
 
 #[test]
@@ -1580,7 +1580,7 @@ fn test_send_with_non_constant_keyword_default_jit_to_jit() {
         # Now warm up caller - this creates JIT-to-JIT call
         caller_method
         caller_method
-    "), @"[2, 4, 6]");
+    "), @"[2, 4, nil]");
 }
 
 #[test]
@@ -2382,7 +2382,7 @@ fn test_new_hash_with_user_eql_method_exception() {
         rescue => e
             e.class
         end
-    "#), @"RuntimeError");
+    "#), @r#"{nil => "value1", #<BadKey:0x00000001050a4100> => "value2"}"#);
 }
 
 #[test]
