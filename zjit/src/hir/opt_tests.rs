@@ -12120,16 +12120,16 @@ mod hir_opt_tests {
           v25:CBool = IsMethodCFunc v17, :new
           IfFalse v25, bb3(v10, v11, v12, v19, v17, v11)
           v27:HeapBasicObject = ObjectAlloc v17
-          v29:BasicObject = SendWithoutBlock v27, :initialize, v11 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v29:BasicObject = Send v27, :initialize, v11 # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
           Jump bb4(v10, v11, v12, v27, v29)
         bb3(v33:BasicObject, v34:BasicObject, v35:NilClass, v36:NilClass, v37:BasicObject, v38:BasicObject):
-          v41:BasicObject = SendWithoutBlock v37, :new, v38 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v41:BasicObject = Send v37, :new, v38 # SendFallbackReason: Uncategorized(opt_send_without_block)
           Jump bb4(v33, v34, v35, v41, v36)
         bb4(v44:BasicObject, v45:BasicObject, v46:NilClass, v47:BasicObject, v48:BasicObject):
           PatchPoint NoEPEscape(no_escape)
           v57:StaticSymbol[:@x] = Const Value(VALUE(0x1008))
-          v59:BasicObject = SendWithoutBlock v47, :instance_variable_get, v57 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v59:BasicObject = Send v47, :instance_variable_get, v57 # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
           Return v59
         ");
