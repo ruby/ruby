@@ -100,7 +100,7 @@ class TestRactor < Test::Unit::TestCase
   end
 
   def test_move_nested_hash_during_gc_with_yjit
-    assert_ractor(<<~'RUBY', args: [{ "RUBY_YJIT_ENABLE" => "1" }])
+    assert_ractor(<<~'RUBY', timeout: 20, args: [{ "RUBY_YJIT_ENABLE" => "1" }])
       GC.stress = true
       hash = { foo: { bar: "hello" }, baz: { qux: "there" } }
       result = Ractor.new { Ractor.receive }.send(hash, move: true).value
