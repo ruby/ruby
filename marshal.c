@@ -1429,6 +1429,18 @@ ruby_marshal_read_long(const char **buf, long len)
     return x;
 }
 
+static long
+r_keep_readable(struct load_arg *arg, long len, size_t size)
+{
+    if (UNLIKELY(len < 0)) {
+        rb_raise(rb_eArgError, "negative length");
+    }
+    if (UNLIKELY((unsigned long)len > SIZE_MAX / size || arg->readable >= LONG_MAX - len)) {
+        rb_raise(rb_eArgError, "marshaled data too big");
+    }
+    return len;
+}
+
 static VALUE
 r_bytes1(long len, struct load_arg *arg)
 {
@@ -2009,7 +2021,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
             int sign;
 
             sign = r_byte(arg);
-            len = r_long(arg);
+            len = r_keep_readable(arg, r_long(arg), 2);
 
             if (SIZEOF_VALUE >= 8 && len <= 4) {
                 // Representable within uintptr, likely FIXNUM
@@ -2084,7 +2096,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
 
       case TYPE_ARRAY:
         {
-            long len = r_long(arg);
+            long len = r_keep_readable(arg, r_long(arg), 1);
 
             v = rb_ary_new2(len);
             v = r_entry(v, arg);
@@ -2102,7 +2114,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
       case TYPE_HASH_DEF:
       type_hash:
         {
-            long len = r_long(arg);
+            long len = r_keep_readable(arg, r_long(arg), 2);
 
             v = hash_new_with_size(len);
             v = r_entry(v, arg);
@@ -2128,7 +2140,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
             VALUE slot;
             st_index_t idx = r_prepare(arg);
             VALUE klass = path2class(r_unique(arg));
-            long len = r_long(arg);
+            long len = r_keep_readable(arg, r_long(arg), 2);
 
             v = rb_obj_alloc(klass);
             if (!RB_TYPE_P(v, T_STRUCT)) {
