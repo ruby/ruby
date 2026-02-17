@@ -1638,6 +1638,8 @@ test-bundler: $(TEST_RUNNABLE)-test-bundler
 yes-test-bundler: $(PREPARE_BUNDLER)
 	$(gnumake_recursive)$(XRUBY) \
 		-r./$(arch)-fake \
+		-r$(tooldir)/lib/_tmpdir \
+		-e '$$no_report_tmpdir = true' \
 		-I$(srcdir)/spec/bundler -I$(srcdir)/spec/lib \
 		-e 'Dir.chdir(ARGV.shift); load("spec/bin/rspec")' $(srcdir) \
 		-r spec_helper $(RSPECOPTS) spec/bundler/$(BUNDLER_SPECS)
@@ -1648,6 +1650,8 @@ test-bundler-parallel: $(TEST_RUNNABLE)-test-bundler-parallel
 yes-test-bundler-parallel: $(PREPARE_BUNDLER)
 	$(gnumake_recursive)$(XRUBY) \
 		-r./$(arch)-fake \
+		-r$(tooldir)/lib/_tmpdir \
+		-e '$$no_report_tmpdir = true' \
 		-I$(srcdir)/spec/bundler \
 		-e "ruby = ENV['RUBY']" \
 		-e "ARGV[-1] = File.expand_path(ARGV[-1])" \
