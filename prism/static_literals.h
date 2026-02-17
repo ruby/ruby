@@ -8,7 +8,7 @@
 
 #include "prism/defines.h"
 #include "prism/ast.h"
-#include "prism/util/pm_newline_list.h"
+#include "prism/util/pm_line_offset_list.h"
 
 #include <assert.h>
 #include <stdbool.h>
@@ -91,7 +91,7 @@ typedef struct {
 /**
  * Add a node to the set of static literals.
  *
- * @param newline_list The list of newline offsets to use to calculate lines.
+ * @param line_offsets The list of newline offsets to use to calculate lines.
  * @param start The start of the source being parsed.
  * @param start_line The line number that the parser starts on.
  * @param literals The set of static literals to add the node to.
@@ -99,7 +99,7 @@ typedef struct {
  * @param replace Whether to replace the previous node if one already exists.
  * @return A pointer to the node that is being overwritten, if there is one.
  */
-pm_node_t * pm_static_literals_add(const pm_newline_list_t *newline_list, const uint8_t *start, int32_t start_line, pm_static_literals_t *literals, pm_node_t *node, bool replace);
+pm_node_t * pm_static_literals_add(const pm_line_offset_list_t *line_offsets, const uint8_t *start, int32_t start_line, pm_static_literals_t *literals, pm_node_t *node, bool replace);
 
 /**
  * Free the internal memory associated with the given static literals set.
@@ -112,12 +112,12 @@ void pm_static_literals_free(pm_static_literals_t *literals);
  * Create a string-based representation of the given static literal.
  *
  * @param buffer The buffer to write the string to.
- * @param newline_list The list of newline offsets to use to calculate lines.
+ * @param line_offsets The list of newline offsets to use to calculate lines.
  * @param start The start of the source being parsed.
  * @param start_line The line number that the parser starts on.
  * @param encoding_name The name of the encoding of the source being parsed.
  * @param node The node to create a string representation of.
  */
-void pm_static_literal_inspect(pm_buffer_t *buffer, const pm_newline_list_t *newline_list, const uint8_t *start, int32_t start_line, const char *encoding_name, const pm_node_t *node);
+void pm_static_literal_inspect(pm_buffer_t *buffer, const pm_line_offset_list_t *line_offsets, const uint8_t *start, int32_t start_line, const char *encoding_name, const pm_node_t *node);
 
 #endif

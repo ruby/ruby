@@ -105,9 +105,9 @@ PRISM_FILES = prism/api_node.$(OBJEXT) \
 		prism/util/pm_char.$(OBJEXT) \
 		prism/util/pm_constant_pool.$(OBJEXT) \
 		prism/util/pm_integer.$(OBJEXT) \
+		prism/util/pm_line_offset_list.$(OBJEXT) \
 		prism/util/pm_list.$(OBJEXT) \
 		prism/util/pm_memchr.$(OBJEXT) \
-		prism/util/pm_newline_list.$(OBJEXT) \
 		prism/util/pm_string.$(OBJEXT) \
 		prism/util/pm_strncasecmp.$(OBJEXT) \
 		prism/util/pm_strpbrk.$(OBJEXT) \
