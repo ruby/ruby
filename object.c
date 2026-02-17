@@ -93,6 +93,7 @@ static ID id_instance_variables_to_inspect;
 size_t
 rb_obj_embedded_size(uint32_t fields_count)
 {
+    if (fields_count < 1) fields_count = 1;
     return offsetof(struct RObject, as.ary) + (sizeof(VALUE) * fields_count);
 }
 
