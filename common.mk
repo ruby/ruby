@@ -1561,8 +1561,11 @@ yes-install-for-test-bundled-gems: yes-update-default-gemspecs
 
 test-bundled-gems-fetch: yes-test-bundled-gems-fetch
 yes-test-bundled-gems-fetch: clone-bundled-gems-src
-clone-bundled-gems-src: PHONY
+clone-bundled-gems-src: PHONY $(TIMESTAMPDIR)/bundled-gems-src.time
+$(TIMESTAMPDIR)/bundled-gems-src.time: $(srcdir)/gems/bundled_gems
+	$(Q) $(MAKEDIRS) $(@D)
 	$(Q) $(BASERUBY) -C $(srcdir) tool/fetch-bundled_gems.rb BUNDLED_GEMS="$(BUNDLED_GEMS)" gems/src gems/bundled_gems
+	$(Q) $(TOUCH) $@
 no-test-bundled-gems-fetch:
 
 test-bundled-gems-prepare: $(TEST_RUNNABLE)-test-bundled-gems-prepare
