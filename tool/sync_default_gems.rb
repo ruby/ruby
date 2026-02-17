@@ -107,11 +107,6 @@ module SyncDefaultGems
       ["net-protocol.gemspec", "lib/net/net-protocol.gemspec"],
     ]),
     "open-uri": lib("ruby/open-uri"),
-    "win32-registry": repo("ruby/win32-registry", [
-      ["lib/win32/registry.rb", "ext/win32/lib/win32/registry.rb"],
-      ["test/win32/test_registry.rb", "test/win32/test_registry.rb"],
-      ["win32-registry.gemspec", "ext/win32/win32-registry.gemspec"],
-    ]),
     English: lib("ruby/English"),
     cgi: repo("ruby/cgi", [
       ["ext/cgi", "ext/cgi"],
