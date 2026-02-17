@@ -28,16 +28,10 @@ unless File.exist?("#{n}/.git")
   system(*%W"git clone --depth=1 --no-tags #{u} #{n}") or abort
 end
 
-if r
-  puts "fetching #{color.notice(r)} ..."
-  system("git", "fetch", "origin", r, chdir: n) or abort
-  c = r
-else
-  c = ["v#{v}", v].find do |c|
-    puts "fetching #{color.notice(c)} ..."
-    system("git", "fetch", "origin", "refs/tags/#{c}:refs/tags/#{c}", chdir: n)
-  end or abort
-end
+c = (r ? [r] : ["v#{v}", v]).find do |c|
+  puts "fetching #{n} #{color.notice(c)} ..."
+  system("git", "fetch", "origin", r || "refs/tags/#{c}:refs/tags/#{c}", chdir: n)
+end or abort
 
 checkout = %w"git -c advice.detachedHead=false checkout"
 info = %[, r=#{color.info(r)}] if r
