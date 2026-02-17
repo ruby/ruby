@@ -477,14 +477,14 @@ static attr_index_t
 shape_grow_capa(attr_index_t current_capa)
 {
     const attr_index_t *capacities = rb_shape_tree.capacities;
+    size_t heaps_count = rb_shape_tree.heaps_count;
 
     // First try to use the next size that will be embeddable in a larger object slot.
-    attr_index_t capa;
-    while ((capa = *capacities)) {
+    for (size_t i = 0; i < heaps_count; i++) {
+        attr_index_t capa = capacities[i];
         if (capa > current_capa) {
             return capa;
         }
-        capacities++;
     }
 
     return (attr_index_t)rb_malloc_grow_capa(current_capa, sizeof(VALUE));
@@ -1543,8 +1543,14 @@ Init_default_shapes(void)
     capacities[heaps_count] = 0;
     size_t index;
     for (index = 0; index < heaps_count; index++) {
-        capacities[index] = (heap_sizes[index] - sizeof(struct RBasic)) / sizeof(VALUE);
+        if (heap_sizes[index] > sizeof(struct RBasic)) {
+            capacities[index] = (heap_sizes[index] - sizeof(struct RBasic)) / sizeof(VALUE);
+        }
+        else {
+            capacities[index] = 0;
+        }
     }
+    rb_shape_tree.heaps_count = heaps_count;
     rb_shape_tree.capacities = capacities;
 
 #ifdef HAVE_MMAP
