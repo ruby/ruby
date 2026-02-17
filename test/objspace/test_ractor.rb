@@ -14,7 +14,7 @@ class TestObjSpaceRactor < Test::Unit::TestCase
   end
 
   def test_undefine_finalizer
-    assert_ractor(<<~'RUBY', require: 'objspace', signal: :SEGV)
+    assert_ractor(<<~'RUBY', timeout: 20, require: 'objspace', signal: :SEGV)
       def fin
         ->(id) { }
       end
