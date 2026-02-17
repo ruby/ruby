@@ -900,8 +900,8 @@ test: test-short
 
 # Separate to skip updating encs and exts by `make -o test-precheck`
 # for GNU make.
-test-precheck: $(ENCSTATIC:static=lib)encs $(RUBYSPEC_CAPIEXT_BUILD) exts PHONY $(DOT_WAIT)
-yes-test-all-precheck: programs $(DOT_WAIT) test-precheck
+test-precheck: $(ENCSTATIC:static=lib)encs exts PHONY $(DOT_WAIT)
+yes-test-all-precheck: programs $(DOT_WAIT) test-precheck yes-fake
 
 PRECHECK_TEST_ALL = yes-test-all-precheck
 
@@ -951,7 +951,7 @@ $(RBCONFIG):
 test-rubyspec: test-spec
 yes-test-rubyspec: yes-test-spec
 
-yes-test-spec-precheck: yes-test-all-precheck yes-fake
+yes-test-spec-precheck: yes-test-all-precheck $(RUBYSPEC_CAPIEXT_BUILD)
 
 test-spec: $(TEST_RUNNABLE)-test-spec
 yes-test-spec: yes-test-spec-precheck
@@ -1596,7 +1596,7 @@ yes-test-bundled-gems-run: $(PREPARE_BUNDLED_GEMS)
 no-test-bundled-gems-run: $(PREPARE_BUNDLED_GEMS)
 
 test-bundled-gems-spec: $(TEST_RUNNABLE)-test-bundled-gems-spec
-yes-test-bundled-gems-spec: yes-test-spec-precheck $(PREPARE_BUNDLED_GEMS)
+yes-test-bundled-gems-spec: yes-test-all-precheck $(PREPARE_BUNDLED_GEMS)
 	$(ACTIONS_GROUP)
 	$(gnumake_recursive)$(Q) \
 	$(RUNRUBY) -r./$(arch)-fake -r$(tooldir)/lib/_tmpdir \
