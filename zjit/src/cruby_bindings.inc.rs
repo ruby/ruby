@@ -2202,6 +2202,11 @@ unsafe extern "C" {
     pub fn rb_get_iseq_body_param_lead_num(iseq: *const rb_iseq_t) -> ::std::os::raw::c_int;
     pub fn rb_get_iseq_body_param_opt_num(iseq: *const rb_iseq_t) -> ::std::os::raw::c_int;
     pub fn rb_get_iseq_body_param_opt_table(iseq: *const rb_iseq_t) -> *const VALUE;
+    pub fn rb_get_iseq_body_catch_table_size(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
+    pub fn rb_get_iseq_catch_table_entry_iseq(
+        iseq: *const rb_iseq_t,
+        idx: ::std::os::raw::c_uint,
+    ) -> *const rb_iseq_t;
     pub fn rb_get_ec_cfp(ec: *const rb_execution_context_t) -> *mut rb_control_frame_struct;
     pub fn rb_get_cfp_iseq(cfp: *mut rb_control_frame_struct) -> *const rb_iseq_t;
     pub fn rb_get_cfp_pc(cfp: *mut rb_control_frame_struct) -> *mut VALUE;

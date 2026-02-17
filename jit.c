@@ -366,6 +366,19 @@ rb_get_iseq_body_param_opt_table(const rb_iseq_t *iseq)
     return iseq->body->param.opt_table;
 }
 
+unsigned int
+rb_get_iseq_body_catch_table_size(const rb_iseq_t *iseq)
+{
+    const struct iseq_catch_table *ct = iseq->body->catch_table;
+    return ct ? ct->size : 0;
+}
+
+const rb_iseq_t *
+rb_get_iseq_catch_table_entry_iseq(const rb_iseq_t *iseq, unsigned int idx)
+{
+    return iseq->body->catch_table->entries[idx].iseq;
+}
+
 struct rb_control_frame_struct *
 rb_get_ec_cfp(const rb_execution_context_t *ec)
 {

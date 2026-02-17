@@ -212,7 +212,7 @@ pub extern "C" fn rb_zjit_invalidate_no_ep_escape(iseq: IseqPtr) {
         invariants.ep_escape_iseqs.insert(iseq);
 
         // If the ISEQ has been compiled assuming it doesn't escape EP, invalidate the JIT code.
-        if let Some(patch_points) = invariants.no_ep_escape_iseq_patch_points.get(&iseq) {
+        if let Some(patch_points) = invariants.no_ep_escape_iseq_patch_points.remove(&iseq) {
             debug!("EP is escaped: {}", iseq_name(iseq));
 
             // Invalidate the patch points for this ISEQ

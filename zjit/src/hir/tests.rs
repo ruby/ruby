@@ -1668,7 +1668,7 @@ pub mod hir_build_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v14:BasicObject = Send v9, 0x1000, :each # SendFallbackReason: Uncategorized(send)
-          v15:BasicObject = GetLocal :a, l0, EP@3
+          PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v14
         ");
@@ -1927,7 +1927,7 @@ pub mod hir_build_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v15:BasicObject = InvokeSuperForward v8, 0x1000, v9 # SendFallbackReason: Uncategorized(invokesuperforward)
-          v16:BasicObject = GetLocal :..., l0, EP@3
+          PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v15
         ");
@@ -4115,6 +4115,272 @@ pub mod hir_build_tests {
           v78:Fixnum = InvokeBuiltin rb_jit_fixnum_inc, v67, v68
           PatchPoint NoEPEscape(each)
           Jump bb7(v67, v78)
+        ");
+    }
+
+    #[test]
+    fn dont_reload_across_empty_block() {
+        eval(r#"
+            def test
+              a = 1
+              b = 2
+              tap {}
+              a + b
+            end
+        "#);
+        assert_contains_opcode("test", YARVINSN_send);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          v3:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject):
+          EntryPoint JIT(0)
+          v7:NilClass = Const Value(nil)
+          v8:NilClass = Const Value(nil)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:NilClass, v12:NilClass):
+          v16:Fixnum[1] = Const Value(1)
+          v20:Fixnum[2] = Const Value(2)
+          v25:BasicObject = Send v10, 0x1000, :tap # SendFallbackReason: Uncategorized(send)
+          PatchPoint NoEPEscape(test)
+          v34:BasicObject = SendWithoutBlock v16, :+, v20 # SendFallbackReason: Uncategorized(opt_plus)
+          CheckInterrupts
+          Return v34
+        ");
+    }
+
+    #[test]
+    fn dont_reload_across_read_only_block() {
+        eval(r#"
+            def test
+              a = 1
+              b = 2
+              tap { a + b }
+              a + b
+            end
+        "#);
+        assert_contains_opcode("test", YARVINSN_send);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          v3:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject):
+          EntryPoint JIT(0)
+          v7:NilClass = Const Value(nil)
+          v8:NilClass = Const Value(nil)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:NilClass, v12:NilClass):
+          v16:Fixnum[1] = Const Value(1)
+          v20:Fixnum[2] = Const Value(2)
+          v25:BasicObject = Send v10, 0x1000, :tap # SendFallbackReason: Uncategorized(send)
+          PatchPoint NoEPEscape(test)
+          v34:BasicObject = SendWithoutBlock v16, :+, v20 # SendFallbackReason: Uncategorized(opt_plus)
+          CheckInterrupts
+          Return v34
+        ");
+    }
+
+    #[test]
+    fn only_reload_written_locals_after_block() {
+        eval(r#"
+            def test
+              a = 1
+              b = 2
+              tap { b = 3 }
+              a + b
+            end
+        "#);
+        assert_contains_opcode("test", YARVINSN_send);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          v3:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject):
+          EntryPoint JIT(0)
+          v7:NilClass = Const Value(nil)
+          v8:NilClass = Const Value(nil)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:NilClass, v12:NilClass):
+          v16:Fixnum[1] = Const Value(1)
+          v20:Fixnum[2] = Const Value(2)
+          v25:BasicObject = Send v10, 0x1000, :tap # SendFallbackReason: Uncategorized(send)
+          v26:BasicObject = GetLocal :b, l0, EP@3
+          PatchPoint NoEPEscape(test)
+          v35:BasicObject = SendWithoutBlock v16, :+, v26 # SendFallbackReason: Uncategorized(opt_plus)
+          CheckInterrupts
+          Return v35
+        ");
+    }
+
+    #[test]
+    fn reload_after_write_from_nested_iseq() {
+        eval(r#"
+            def test
+              a = 1
+              b = 2
+              tap { tap { tap { b = 3 } } }
+              a + b
+            end
+        "#);
+        assert_contains_opcode("test", YARVINSN_send);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          v3:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject):
+          EntryPoint JIT(0)
+          v7:NilClass = Const Value(nil)
+          v8:NilClass = Const Value(nil)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:NilClass, v12:NilClass):
+          v16:Fixnum[1] = Const Value(1)
+          v20:Fixnum[2] = Const Value(2)
+          v25:BasicObject = Send v10, 0x1000, :tap # SendFallbackReason: Uncategorized(send)
+          v26:BasicObject = GetLocal :b, l0, EP@3
+          PatchPoint NoEPEscape(test)
+          v35:BasicObject = SendWithoutBlock v16, :+, v26 # SendFallbackReason: Uncategorized(opt_plus)
+          CheckInterrupts
+          Return v35
+        ");
+    }
+
+    #[test]
+    fn reload_local_written_in_rescue() {
+        eval(r#"
+            def test
+              a = 1
+              b = 2
+              tap do
+                begin
+                  raise
+                rescue
+                  b = 3
+                end
+              end
+              a + b
+            end
+        "#);
+        assert_contains_opcode("test", YARVINSN_send);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          v3:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject):
+          EntryPoint JIT(0)
+          v7:NilClass = Const Value(nil)
+          v8:NilClass = Const Value(nil)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:NilClass, v12:NilClass):
+          v16:Fixnum[1] = Const Value(1)
+          v20:Fixnum[2] = Const Value(2)
+          v25:BasicObject = Send v10, 0x1000, :tap # SendFallbackReason: Uncategorized(send)
+          v26:BasicObject = GetLocal :b, l0, EP@3
+          PatchPoint NoEPEscape(test)
+          v35:BasicObject = SendWithoutBlock v16, :+, v26 # SendFallbackReason: Uncategorized(opt_plus)
+          CheckInterrupts
+          Return v35
+        ");
+    }
+
+    #[test]
+    fn dont_reload_local_not_written_in_rescue() {
+        eval(r#"
+            def test
+              a = 1
+              b = 2
+              tap do
+                begin
+                  raise
+                rescue
+                  a
+                end
+              end
+              a + b
+            end
+        "#);
+        assert_contains_opcode("test", YARVINSN_send);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          v3:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject):
+          EntryPoint JIT(0)
+          v7:NilClass = Const Value(nil)
+          v8:NilClass = Const Value(nil)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:NilClass, v12:NilClass):
+          v16:Fixnum[1] = Const Value(1)
+          v20:Fixnum[2] = Const Value(2)
+          v25:BasicObject = Send v10, 0x1000, :tap # SendFallbackReason: Uncategorized(send)
+          PatchPoint NoEPEscape(test)
+          v34:BasicObject = SendWithoutBlock v16, :+, v20 # SendFallbackReason: Uncategorized(opt_plus)
+          CheckInterrupts
+          Return v34
+        ");
+    }
+
+    #[test]
+    fn reload_block_param_read_in_nested_block() {
+        // getblockparam writes to the local slot (materializes the Proc),
+        // so reading &block in a nested block is effectively a write
+        // that locals_written_in_block must detect.
+        eval(r#"
+            def test(&block)
+              tap { block }
+              block
+            end
+        "#);
+        assert_contains_opcode("test", YARVINSN_send);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :block, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:BasicObject = Send v8, 0x1000, :tap # SendFallbackReason: Uncategorized(send)
+          v15:BasicObject = GetLocal :block, l0, EP@3
+          PatchPoint NoEPEscape(test)
+          v21:CBool = IsBlockParamModified l0
+          IfTrue v21, bb3(v8, v15)
+          Jump bb4(v8, v15)
+        bb3(v22:BasicObject, v23:BasicObject):
+          v30:BasicObject = GetLocal :block, l0, EP@3
+          Jump bb5(v22, v30, v30)
+        bb4(v25:BasicObject, v26:BasicObject):
+          v32:BasicObject = GetBlockParam :block, l0, EP@3
+          Jump bb5(v25, v32, v32)
+        bb5(v34:BasicObject, v35:BasicObject, v36:BasicObject):
+          CheckInterrupts
+          Return v36
         ");
     }
  }

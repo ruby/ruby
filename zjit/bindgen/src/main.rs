@@ -404,6 +404,8 @@ fn main() {
         .allowlist_function("rb_get_iseq_body_param_lead_num")
         .allowlist_function("rb_get_iseq_body_param_opt_num")
         .allowlist_function("rb_get_iseq_body_param_opt_table")
+        .allowlist_function("rb_get_iseq_body_catch_table_size")
+        .allowlist_function("rb_get_iseq_catch_table_entry_iseq")
         .allowlist_function("rb_get_cikw_keyword_len")
         .allowlist_function("rb_get_cikw_keywords_idx")
         .allowlist_function("rb_get_call_data_ci")

@@ -6139,6 +6139,90 @@ fn invalidates_locals(opcode: u32, operands: *const VALUE) -> bool {
 /// The index of the self parameter in the HIR function
 pub const SELF_PARAM_IDX: usize = 0;
 
+/// Return (in `written`) which local variables in the parent (currently being compiled) ISEQ are
+/// written to by any of the nested ISEQs in the blockiseq.
+fn locals_written_in_block(parent_iseq: IseqPtr, blockiseq: IseqPtr, target_depth: u32, written: &mut BitSet<usize>) {
+  let iseq_size = unsafe { get_iseq_encoded_size(blockiseq) };
+  let mut insn_idx: u32 = 0;
+
+  while insn_idx < iseq_size {
+      let pc = unsafe { rb_iseq_pc_at_idx(blockiseq, insn_idx) };
+      // Use rb_vm_insn_decode to get the bare opcode, stripping zjit/trace specializations.
+      let opcode = unsafe { rb_vm_insn_decode(*pc) } as u32;
+
+      match opcode {
+          YARVINSN_setlocal | YARVINSN_setblockparam | YARVINSN_getblockparam
+              if get_arg(pc, 1).as_u32() == target_depth =>
+          {
+              let ep_offset = get_arg(pc, 0).as_u32();
+              written.insert(ep_offset_to_local_idx(parent_iseq, ep_offset));
+          }
+          YARVINSN_setlocal_WC_1 if target_depth == 1 => {
+              let ep_offset = get_arg(pc, 0).as_u32();
+              written.insert(ep_offset_to_local_idx(parent_iseq, ep_offset));
+          }
+          YARVINSN_send
+          | YARVINSN_sendforward
+          | YARVINSN_invokesuper
+          | YARVINSN_invokesuperforward => {
+              let nested = get_arg(pc, 1).as_iseq();
+              if !nested.is_null() {
+                  locals_written_in_block(parent_iseq, nested, target_depth + 1, written);
+              }
+          }
+          _ => {}
+      }
+      insn_idx += insn_len(opcode as usize);
+  }
+
+  // Also scan rescue/ensure handler ISEQs referenced from the catch table.
+  // These are child ISEQs (one level deeper than blockiseq) that can write
+  // to the parent's locals via setlocal with higher level values.
+  let catch_size = unsafe { rb_get_iseq_body_catch_table_size(blockiseq) };
+  for i in 0..catch_size {
+      let handler_iseq = unsafe { rb_get_iseq_catch_table_entry_iseq(blockiseq, i) };
+      if !handler_iseq.is_null() {
+          locals_written_in_block(parent_iseq, handler_iseq, target_depth + 1, written);
+      }
+  }
+}
+
+/// Reload locals that may have been modified by the blockiseq, and guard
+/// against EP escape (e.g. eval writing to locals we can't detect by scanning
+/// bytecode). The PatchPoint is always emitted even when no locals were visibly
+/// written, because eval inside a block can write locals without any visible
+/// setlocal. Without the guard, a subsequent gen_spill_locals could overwrite
+/// the EP with stale JIT-side values.
+///
+/// `pc` must point to the send instruction and `opcode` must be its decoded opcode.
+/// We build a side-exit snapshot pointing to the *next* instruction so the interpreter
+/// doesn't re-execute the send. We compute next_pc with pointer arithmetic
+/// (`pc + insn_len`) rather than `rb_iseq_pc_at_idx` to avoid a bounds-check assertion.
+fn reload_modified_locals(fun: &mut Function, block: BlockId, state: &mut FrameState, iseq: IseqPtr, blockiseq: IseqPtr, pc: *const VALUE, opcode: u32, insn_idx: u32) {
+    // TODO: Avoid reloading locals that are not referenced by the blockiseq
+    // or not used after this. Max thinks we could eventually DCE them.
+    let mut locals = BitSet::with_capacity(state.locals.len());
+    locals_written_in_block(iseq, blockiseq, 1, &mut locals);
+    for local_idx in 0..state.locals.len() {
+        if locals.get(local_idx) {
+            let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
+            // TODO: We could use `use_sp: true` with PatchPoint
+            let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0, use_sp: false, rest_param: false });
+            state.setlocal(ep_offset, val);
+        }
+    }
+
+    // Always guard against EP escape after a send-with-block. Even if no locals
+    // were visibly written by the block bytecode, eval could have modified them.
+    // The snapshot omits locals so the interpreter reads them from the frame.
+    let len = insn_len(opcode as usize) as usize;
+    let mut pp_state = state.clone();
+    pp_state.pc = unsafe { pc.add(len) };
+    pp_state.insn_idx = insn_idx as usize + len;
+    let pp_exit_id = fun.push_insn(block, Insn::Snapshot { state: pp_state.without_locals() });
+    fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: pp_exit_id });
+}
+
 /// Compile ISEQ into High-level IR
 pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     if !ZJITState::can_compile_iseq(iseq) {
@@ -7097,15 +7181,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     state.stack_push(send);
 
                     if !blockiseq.is_null() {
-                        // Reload locals that may have been modified by the blockiseq.
-                        // TODO: Avoid reloading locals that are not referenced by the blockiseq
-                        // or not used after this. Max thinks we could eventually DCE them.
-                        for local_idx in 0..state.locals.len() {
-                            let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
-                            // TODO: We could use `use_sp: true` with PatchPoint
-                            let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0, use_sp: false, rest_param: false });
-                            state.setlocal(ep_offset, val);
-                        }
+                        reload_modified_locals(&mut fun, block, &mut state, iseq, blockiseq, pc, opcode, insn_idx);
+                        local_inval = false;
                     }
                 }
                 YARVINSN_sendforward => {
@@ -7127,13 +7204,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     state.stack_push(send_forward);
 
                     if !blockiseq.is_null() {
-                        // Reload locals that may have been modified by the blockiseq.
-                        for local_idx in 0..state.locals.len() {
-                            let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
-                            // TODO: We could use `use_sp: true` with PatchPoint
-                            let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0, use_sp: false, rest_param: false });
-                            state.setlocal(ep_offset, val);
-                        }
+                        reload_modified_locals(&mut fun, block, &mut state, iseq, blockiseq, pc, opcode, insn_idx);
+                        local_inval = false;
                     }
                 }
                 YARVINSN_invokesuper => {
@@ -7154,15 +7226,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     state.stack_push(result);
 
                     if !blockiseq.is_null() {
-                        // Reload locals that may have been modified by the blockiseq.
-                        // TODO: Avoid reloading locals that are not referenced by the blockiseq
-                        // or not used after this. Max thinks we could eventually DCE them.
-                        for local_idx in 0..state.locals.len() {
-                            let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
-                            // TODO: We could use `use_sp: true` with PatchPoint
-                            let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0, use_sp: false, rest_param: false });
-                            state.setlocal(ep_offset, val);
-                        }
+                        reload_modified_locals(&mut fun, block, &mut state, iseq, blockiseq, pc, opcode, insn_idx);
+                        local_inval = false;
                     }
                 }
                 YARVINSN_invokesuperforward => {
@@ -7183,15 +7248,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     state.stack_push(result);
 
                     if !blockiseq.is_null() {
-                        // Reload locals that may have been modified by the blockiseq.
-                        // TODO: Avoid reloading locals that are not referenced by the blockiseq
-                        // or not used after this. Max thinks we could eventually DCE them.
-                        for local_idx in 0..state.locals.len() {
-                            let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
-                            // TODO: We could use `use_sp: true` with PatchPoint
-                            let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0, use_sp: false, rest_param: false });
-                            state.setlocal(ep_offset, val);
-                        }
+                        reload_modified_locals(&mut fun, block, &mut state, iseq, blockiseq, pc, opcode, insn_idx);
+                        local_inval = false;
                     }
                 }
                 YARVINSN_invokeblock => {
