@@ -1632,7 +1632,7 @@ impl Assembler {
             }
         }
 
-        //asm.linear_scan(intervals, 5);
+        let (assignments, num_stack_slots) = asm.linear_scan(intervals, 5);
 
         let mut asm = asm.alloc_regs(regs)?;
         asm_dump!(asm, alloc_regs);
