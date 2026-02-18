@@ -1850,6 +1850,19 @@ class TestYJIT < Test::Unit::TestCase
     assert_not_predicate(status, :signaled?)
   end
 
+  def test_yjit_prelude_bundler_setup
+    Tempfile.create do |f|
+      f.write(<<~'GEMFILE')
+        source "https://rubygems.org"
+        module C
+        end
+        Kernel.prepend(C)
+      GEMFILE
+      f.flush
+      assert_separately([{ "BUNDLER_SETUP" => "bundler/setup", "BUNDLE_GEMFILE" => f.path }, "--enable=gems", "--yjit"], "")
+    end
+  end
+
   private
 
   def code_gc_helpers
