@@ -371,17 +371,15 @@ class TestObject < Test::Unit::TestCase
       o1 = c.new
       o2 = c.new
 
-      # Add enough ivars to exceed pool 0 embed capacity (6 on 64-bit)
+      # Add enough ivars to exceed RVALUE pool embed capacity (4 on 64-bit)
       o1.instance_variable_set(:@d, 3)
       o1.instance_variable_set(:@e, 4)
-      o1.instance_variable_set(:@f, 5)
-      o1.instance_variable_set(:@foo, 6)
       o1.instance_variable_set(:@a, 0)
       o1.instance_variable_set(:@b, 1)
       o1.instance_variable_set(:@c, 2)
       refute_includes ObjectSpace.dump(o1), '"embedded":true'
-      o1.remove_instance_variable(:@foo)
-      o1.remove_instance_variable(:@f)
+      o1.remove_instance_variable(:@e)
+      o1.remove_instance_variable(:@d)
       assert_includes ObjectSpace.dump(o1), '"embedded":true'
 
       o2.instance_variable_set(:@a, 0)
