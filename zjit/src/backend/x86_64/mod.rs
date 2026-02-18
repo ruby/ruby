@@ -140,7 +140,6 @@ impl Assembler {
     {
         let mut asm_local = Assembler::new_with_asm(&self);
         let asm = &mut asm_local;
-        let live_ranges = take(&mut self.live_ranges);
         let mut iterator = self.instruction_iterator();
 
         while let Some((index, mut insn)) = iterator.next(asm) {
@@ -163,15 +162,6 @@ impl Assembler {
                 };
             }
 
-            // When we split an operand, we can create a new VReg not in `live_ranges`.
-            // So when we see a VReg with out-of-range index, it's created from splitting
-            // from the loop above and we know it doesn't outlive the current instruction.
-            let vreg_outlives_insn = |vreg_idx: VRegId| {
-                live_ranges
-                    .get(vreg_idx)
-                    .is_some_and(|live_range: &LiveRange| live_range.end() > index)
-            };
-
             // We are replacing instructions here so we know they are already
             // being used. It is okay not to use their output here.
             #[allow(unused_must_use)]
@@ -182,54 +172,35 @@ impl Assembler {
                 Insn::And { left, right, out } |
                 Insn::Or { left, right, out } |
                 Insn::Xor { left, right, out } => {
-                    match (&left, &right, iterator.peek().map(|(_, insn)| insn)) {
-                        // Merge this insn, e.g. `add REG, right -> out`, and `mov REG, out` if possible
-                        (Opnd::Reg(_), Opnd::UImm(value), Some(Insn::Mov { dest, src }))
-                        if out == src && left == dest && live_ranges[out.vreg_idx()].end() == index + 1 && uimm_num_bits(*value) <= 32 => {
-                            *out = *dest;
-                            asm.push_insn(insn);
-                            iterator.next(asm); // Pop merged Insn::Mov
-                        }
-                        (Opnd::Reg(_), Opnd::Reg(_), Some(Insn::Mov { dest, src }))
-                        if out == src && live_ranges[out.vreg_idx()].end() == index + 1 && *dest == *left => {
-                            *out = *dest;
-                            asm.push_insn(insn);
-                            iterator.next(asm); // Pop merged Insn::Mov
-                        }
-                        _ => {
-                            match (*left, *right) {
-                                (Opnd::Mem(_), Opnd::Mem(_)) => {
-                                    *left = asm.load(*left);
-                                    *right = asm.load(*right);
-                                },
-                                (Opnd::Mem(_), Opnd::UImm(_) | Opnd::Imm(_)) => {
-                                    *left = asm.load(*left);
-                                },
-                                // Instruction output whose live range spans beyond this instruction
-                                (Opnd::VReg { idx, .. }, _) => {
-                                    if vreg_outlives_insn(idx) {
-                                        *left = asm.load(*left);
-                                    }
-                                },
-                                // We have to load memory operands to avoid corrupting them
-                                (Opnd::Mem(_), _) => {
-                                    *left = asm.load(*left);
-                                },
-                                // We have to load register operands to avoid corrupting them
-                                (Opnd::Reg(_), _) => {
-                                    if *left != *out {
-                                        *left = asm.load(*left);
-                                    }
-                                },
-                                // The first operand can't be an immediate value
-                                (Opnd::UImm(_), _) => {
-                                    *left = asm.load(*left);
-                                }
-                                _ => {}
+                    match (*left, *right) {
+                        (Opnd::Mem(_), Opnd::Mem(_)) => {
+                            *left = asm.load(*left);
+                            *right = asm.load(*right);
+                        },
+                        (Opnd::Mem(_), Opnd::UImm(_) | Opnd::Imm(_)) => {
+                            *left = asm.load(*left);
+                        },
+                        // Instruction output whose live range spans beyond this instruction
+                        (Opnd::VReg { idx, .. }, _) => {
+                            *left = asm.load(*left);
+                        },
+                        // We have to load memory operands to avoid corrupting them
+                        (Opnd::Mem(_), _) => {
+                            *left = asm.load(*left);
+                        },
+                        // We have to load register operands to avoid corrupting them
+                        (Opnd::Reg(_), _) => {
+                            if *left != *out {
+                                *left = asm.load(*left);
                             }
-                            asm.push_insn(insn);
+                        },
+                        // The first operand can't be an immediate value
+                        (Opnd::UImm(_), _) => {
+                            *left = asm.load(*left);
                         }
+                        _ => {}
                     }
+                    asm.push_insn(insn);
                 },
                 Insn::Cmp { left, right } => {
                     // Replace `cmp REG, 0` (4 bytes) with `test REG, REG` (3 bytes)
@@ -302,7 +273,7 @@ impl Assembler {
                         // If we have an instruction output whose live range
                         // spans beyond this instruction, we have to load it.
                         Opnd::VReg { idx, .. } => {
-                            if vreg_outlives_insn(idx) {
+                            if true /* conservatively assume vreg outlives insn */ {
                                 *truthy = asm.load(*truthy);
                             }
                         },
@@ -337,7 +308,7 @@ impl Assembler {
                         // If we have an instruction output whose live range
                         // spans beyond this instruction, we have to load it.
                         Opnd::VReg { idx, .. } => {
-                            if vreg_outlives_insn(idx) {
+                            if true /* conservatively assume vreg outlives insn */ {
                                 *opnd = asm.load(*opnd);
                             }
                         },
@@ -369,15 +340,7 @@ impl Assembler {
                     asm.push_insn(insn);
                 },
                 Insn::Lea { .. } => {
-                    // Merge `lea` and `mov` into a single `lea` when possible
-                    match (&insn, iterator.peek().map(|(_, insn)| insn)) {
-                        (Insn::Lea { opnd, out }, Some(Insn::Mov { dest: Opnd::Reg(reg), src }))
-                        if matches!(out, Opnd::VReg { .. }) && out == src && live_ranges[out.vreg_idx()].end() == index + 1 => {
-                            asm.push_insn(Insn::Lea { opnd: *opnd, out: Opnd::Reg(*reg) });
-                            iterator.next(asm); // Pop merged Insn::Mov
-                        }
-                        _ => asm.push_insn(insn),
-                    }
+                    asm.push_insn(insn);
                 },
                 _ => {
                     asm.push_insn(insn);
@@ -472,7 +435,7 @@ impl Assembler {
         asm_local.accept_scratch_reg = true;
         asm_local.stack_base_idx = self.stack_base_idx;
         asm_local.label_names = self.label_names.clone();
-        asm_local.live_ranges = LiveRanges::new(self.live_ranges.len());
+        asm_local.num_vregs = self.num_vregs;
 
         // Create one giant block to linearize everything into
         asm_local.new_block_without_id();

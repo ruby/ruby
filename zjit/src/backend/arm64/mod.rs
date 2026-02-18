@@ -1,5 +1,3 @@
-use std::mem::take;
-
 use crate::asm::{CodeBlock, Label};
 use crate::asm::arm64::*;
 use crate::codegen::split_patch_point;
@@ -390,11 +388,10 @@ impl Assembler {
         }
 
         let mut asm_local = Assembler::new_with_asm(&self);
-        let live_ranges = take(&mut self.live_ranges);
         let mut iterator = self.instruction_iterator();
         let asm = &mut asm_local;
 
-        while let Some((index, mut insn)) = iterator.next(asm) {
+        while let Some((_index, mut insn)) = iterator.next(asm) {
             // Here we're going to map the operands of the instruction to load
             // any Opnd::Value operands into registers if they are heap objects
             // such that only the Op::Load instruction needs to handle that
@@ -417,7 +414,7 @@ impl Assembler {
             // being used. It is okay not to use their output here.
             #[allow(unused_must_use)]
             match &mut insn {
-                Insn::Add { left, right, out } => {
+                Insn::Add { left, right, .. } => {
                     match (*left, *right) {
                         // When one operand is a register, legalize the other operand
                         // into possibly an immdiate and swap the order if necessary.
@@ -428,33 +425,28 @@ impl Assembler {
                             *right = split_shifted_immediate(asm, other_opnd);
                             // Now `right` is either a register or an immediate, both can try to
                             // merge with a subsequent mov.
-                            merge_three_reg_mov(&live_ranges, &mut iterator, asm, left, left, out);
+
                             asm.push_insn(insn);
                         }
                         _ => {
                             *left = split_load_operand(asm, *left);
                             *right = split_shifted_immediate(asm, *right);
-                            merge_three_reg_mov(&live_ranges, &mut iterator, asm, left, right, out);
+
                             asm.push_insn(insn);
                         }
                     }
                 }
-                Insn::Sub { left, right, out } => {
+                Insn::Sub { left, right, .. } => {
                     *left = split_load_operand(asm, *left);
                     *right = split_shifted_immediate(asm, *right);
-                    // Now `right` is either a register or an immediate,
-                    // both can try to merge with a subsequent mov.
-                    merge_three_reg_mov(&live_ranges, &mut iterator, asm, left, left, out);
                     asm.push_insn(insn);
                 }
-                Insn::And { left, right, out } |
-                Insn::Or { left, right, out } |
-                Insn::Xor { left, right, out } => {
+                Insn::And { left, right, .. } |
+                Insn::Or { left, right, .. } |
+                Insn::Xor { left, right, .. } => {
                     let (opnd0, opnd1) = split_boolean_operands(asm, *left, *right);
                     *left = opnd0;
                     *right = opnd1;
-
-                    merge_three_reg_mov(&live_ranges, &mut iterator, asm, left, right, out);
 
                     asm.push_insn(insn);
                 }
@@ -550,29 +542,18 @@ impl Assembler {
                     }
                     asm.cret(C_RET_OPND);
                 },
-                Insn::CSelZ { truthy, falsy, out } |
-                Insn::CSelNZ { truthy, falsy, out } |
-                Insn::CSelE { truthy, falsy, out } |
-                Insn::CSelNE { truthy, falsy, out } |
-                Insn::CSelL { truthy, falsy, out } |
-                Insn::CSelLE { truthy, falsy, out } |
-                Insn::CSelG { truthy, falsy, out } |
-                Insn::CSelGE { truthy, falsy, out } => {
+                Insn::CSelZ { truthy, falsy, .. } |
+                Insn::CSelNZ { truthy, falsy, .. } |
+                Insn::CSelE { truthy, falsy, .. } |
+                Insn::CSelNE { truthy, falsy, .. } |
+                Insn::CSelL { truthy, falsy, .. } |
+                Insn::CSelLE { truthy, falsy, .. } |
+                Insn::CSelG { truthy, falsy, .. } |
+                Insn::CSelGE { truthy, falsy, .. } => {
                     let (opnd0, opnd1) = split_csel_operands(asm, *truthy, *falsy);
                     *truthy = opnd0;
                     *falsy = opnd1;
-                    // Merge `csel` and `mov` into a single `csel` when possible
-                    match iterator.peek().map(|(_, insn)| insn) {
-                        Some(Insn::Mov { dest: Opnd::Reg(reg), src })
-                        if matches!(out, Opnd::VReg { .. }) && *out == *src && live_ranges[out.vreg_idx()].end() == index + 1 => {
-                            *out = Opnd::Reg(*reg);
-                            asm.push_insn(insn);
-                            iterator.next(asm); // Pop merged Insn::Mov
-                        }
-                        _ => {
-                            asm.push_insn(insn);
-                        }
-                    }
+                    asm.push_insn(insn);
                 },
                 Insn::JmpOpnd(opnd) => {
                     if let Opnd::Mem(_) = opnd {
@@ -755,7 +736,7 @@ impl Assembler {
         asm_local.accept_scratch_reg = true;
         asm_local.stack_base_idx = self.stack_base_idx;
         asm_local.label_names = self.label_names.clone();
-        asm_local.live_ranges = LiveRanges::new(self.live_ranges.len());
+        asm_local.num_vregs = self.num_vregs;
 
         // Create one giant block to linearize everything into
         asm_local.new_block_without_id();
@@ -1638,20 +1619,20 @@ impl Assembler {
 
         let mut asm = self.arm64_split();
 
-        if asm.is_ruby_code() {
-            asm_dump!(asm, split);
-            asm.number_instructions(16);
+        asm_dump!(asm, split);
+        asm.number_instructions(16);
 
-            // Dump live intervals if requested
-            if let Some(crate::options::Options { dump_lir: Some(dump_lirs), .. }) = unsafe { crate::options::OPTIONS.as_ref() } {
-                if dump_lirs.contains(&crate::options::DumpLIR::live_intervals) {
-                    let asm_for_intervals = asm.clone();
-                    let live_in = asm_for_intervals.analyze_liveness();
-                    let intervals = asm_for_intervals.build_intervals(live_in);
-                    println!("LIR live_intervals:\n{}", crate::backend::lir::debug_intervals(&asm_for_intervals, &intervals));
-                }
+        let live_in = asm.analyze_liveness();
+        let intervals = asm.build_intervals(live_in);
+
+        // Dump live intervals if requested
+        if let Some(crate::options::Options { dump_lir: Some(dump_lirs), .. }) = unsafe { crate::options::OPTIONS.as_ref() } {
+            if dump_lirs.contains(&crate::options::DumpLIR::live_intervals) {
+                println!("LIR live_intervals:\n{}", crate::backend::lir::debug_intervals(&asm, &intervals));
             }
         }
+
+        //asm.linear_scan(intervals, 5);
 
         let mut asm = asm.alloc_regs(regs)?;
         asm_dump!(asm, alloc_regs);
@@ -1688,37 +1669,6 @@ impl Assembler {
         } else {
             cb.clear_labels();
             Err(CompileError::OutOfMemory)
-        }
-    }
-}
-
-/// LIR Instructions that are lowered to an instruction that have 2 input registers and an output
-/// register can look to merge with a succeeding `Insn::Mov`.
-/// For example:
-///
-///     Add out, a, b
-///     Mov c, out
-///
-/// Can become:
-///
-///     Add c, a, b
-///
-/// If a, b, and c are all registers.
-fn merge_three_reg_mov(
-    live_ranges: &LiveRanges,
-    iterator: &mut InsnIter,
-    asm: &mut Assembler,
-    left: &Opnd,
-    right: &Opnd,
-    out: &mut Opnd,
-) {
-    if let (Opnd::Reg(_) | Opnd::VReg{..},
-            Opnd::Reg(_) | Opnd::VReg{..},
-            Some((mov_idx, Insn::Mov { dest, src })))
-            = (left, right, iterator.peek()) {
-        if out == src && live_ranges[out.vreg_idx()].end() == *mov_idx && matches!(*dest, Opnd::Reg(_) | Opnd::VReg{..}) {
-            *out = *dest;
-            iterator.next(asm); // Pop merged Insn::Mov
         }
     }
 }

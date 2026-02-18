@@ -1441,38 +1441,6 @@ impl LiveRange {
     }
 }
 
-/// Type-safe wrapper around `Vec<LiveRange>` that can be indexed by VRegId
-#[derive(Clone, Debug, Default)]
-pub struct LiveRanges(Vec<LiveRange>);
-
-impl LiveRanges {
-    pub fn new(size: usize) -> Self {
-        Self(vec![LiveRange { start: None, end: None }; size])
-    }
-
-    pub fn len(&self) -> usize {
-        self.0.len()
-    }
-
-    pub fn get(&self, vreg_id: VRegId) -> Option<&LiveRange> {
-        self.0.get(vreg_id.0)
-    }
-}
-
-impl std::ops::Index<VRegId> for LiveRanges {
-    type Output = LiveRange;
-
-    fn index(&self, idx: VRegId) -> &Self::Output {
-        &self.0[idx.0]
-    }
-}
-
-impl std::ops::IndexMut<VRegId> for LiveRanges {
-    fn index_mut(&mut self, idx: VRegId) -> &mut Self::Output {
-        &mut self.0[idx.0]
-    }
-}
-
 /// Live Interval of a VReg
 pub struct Interval {
     pub range: LiveRange,
@@ -1703,8 +1671,8 @@ pub struct Assembler {
     /// and automatically set to new entry blocks created by `new_block()`.
     current_block_id: BlockId,
 
-    /// Live range for each VReg indexed by its `idx``
-    pub(super) live_ranges: LiveRanges,
+    /// Number of VRegs allocated
+    pub(super) num_vregs: usize,
 
     /// Names of labels
     pub(super) label_names: Vec<String>,
@@ -1736,7 +1704,7 @@ impl Assembler
             leaf_ccall_stack_size: None,
             basic_blocks: Vec::default(),
             current_block_id: BlockId(0),
-            live_ranges: LiveRanges::default(),
+            num_vregs: 0,
             idx: 0,
         }
     }
@@ -1768,9 +1736,9 @@ impl Assembler
             asm.new_block_from_old_block(&old_block);
         }
 
-        // Initialize live_ranges to match the old assembler's size
+        // Initialize num_vregs to match the old assembler's size
         // This allows reusing VRegs from the old assembler
-        asm.live_ranges = LiveRanges::new(old_asm.live_ranges.len());
+        asm.num_vregs = old_asm.num_vregs;
 
         asm
     }
@@ -1981,51 +1949,22 @@ impl Assembler
         };
     }
 
-    /// Build an Opnd::VReg and initialize its LiveRange
+    /// Build an Opnd::VReg
     pub fn new_vreg(&mut self, num_bits: u8) -> Opnd {
-        let vreg = Opnd::VReg { idx: VRegId(self.live_ranges.len()), num_bits };
-        self.live_ranges.0.push(LiveRange { start: None, end: None });
+        let vreg = Opnd::VReg { idx: VRegId(self.num_vregs), num_bits };
+        self.num_vregs += 1;
         vreg
     }
 
-    /// Build an Opnd::VReg for use as a block parameter, with its live range
-    /// initialized at the current instruction index.
+    /// Build an Opnd::VReg for use as a block parameter.
     pub fn new_block_param(&mut self, num_bits: u8) -> Opnd {
-        let vreg = self.new_vreg(num_bits);
-        if let Opnd::VReg { idx, .. } = vreg {
-            self.live_ranges[idx] = LiveRange { start: Some(self.idx), end: Some(self.idx) };
-        }
-        vreg
+        self.new_vreg(num_bits)
     }
 
     /// Append an instruction onto the current list of instructions and update
     /// the live ranges of any instructions whose outputs are being used as
     /// operands to this instruction.
     pub fn push_insn(&mut self, insn: Insn) {
-        // Index of this instruction
-        let insn_idx = self.idx;
-
-        // Initialize the live range of the output VReg to insn_idx..=insn_idx
-        if let Some(Opnd::VReg { idx, .. }) = insn.out_opnd() {
-            assert!(idx.0 < self.live_ranges.len());
-            assert_eq!(self.live_ranges[*idx], LiveRange { start: None, end: None });
-            self.live_ranges[*idx] = LiveRange { start: Some(insn_idx), end: Some(insn_idx) };
-        }
-
-        // If we find any VReg from previous instructions, extend the live range to insn_idx
-        let opnd_iter = insn.opnd_iter();
-        for opnd in opnd_iter {
-            match *opnd {
-                Opnd::VReg { idx, .. } |
-                Opnd::Mem(Mem { base: MemBase::VReg(idx), .. }) => {
-                    assert!(idx.0 < self.live_ranges.len());
-                    assert_ne!(self.live_ranges[idx].end, None);
-                    self.live_ranges[idx].end = Some(self.live_ranges[idx].end().max(insn_idx));
-                }
-                _ => {}
-            }
-        }
-
         // If this Assembler should not accept scratch registers, assert no use of them.
         if !self.accept_scratch_reg {
             let opnd_iter = insn.opnd_iter();
@@ -2094,6 +2033,8 @@ impl Assembler
         Some(new_moves)
     }
 
+    fn linear_scan(self, _intervals: Vec<BitSet<usize>>, _num_registers: usize) {
+    }
 
     /// Sets the out field on the various instructions that require allocated
     /// registers because their output is used as the operand on a subsequent
@@ -2104,7 +2045,7 @@ impl Assembler
 
         // Mapping between VReg and register or stack slot for each VReg index.
         // None if no register or stack slot has been allocated for the VReg.
-        let mut vreg_opnd: Vec<Option<Opnd>> = vec![None; self.live_ranges.len()];
+        let mut vreg_opnd: Vec<Option<Opnd>> = vec![None; self.num_vregs];
 
         // List of registers saved before a C call, paired with the VReg index.
         let mut saved_regs: Vec<(Reg, VRegId)> = vec![];
@@ -2112,14 +2053,11 @@ impl Assembler
         // Remember the indexes of Insn::FrameSetup to update the stack size later
         let mut frame_setup_idxs: Vec<(BlockId, usize)> = vec![];
 
-        // live_ranges is indexed by original `index` given by the iterator.
         let mut asm_local = Assembler::new_with_asm(&self);
 
         let iterator = &mut self.instruction_iterator();
 
         let asm = &mut asm_local;
-
-        let live_ranges = take(&mut self.live_ranges);
 
         while let Some((index, mut insn)) = iterator.next(asm) {
             // Remember the index of FrameSetup to bump slot_count when we know the max number of spilled VRegs.
@@ -2155,7 +2093,7 @@ impl Assembler
                         // We're going to check if this is the last instruction that
                         // uses this operand. If it is, we can return the allocated
                         // register to the pool.
-                        if live_ranges[idx].end() == index {
+                        if false /* live_ranges removed */ {
                             if let Some(opnd) = vreg_opnd[idx.0] {
                                 pool.dealloc_opnd(&opnd);
                             } else {
@@ -2199,7 +2137,7 @@ impl Assembler
                 _ => None,
             };
             if let Some(vreg_idx) = vreg_idx {
-                if live_ranges[vreg_idx].end() == index {
+                if false /* live_ranges removed */ {
                     debug!("Allocating a register for {vreg_idx} at instruction index {index} even though it does not live past this index");
                 }
                 // This is going to be the output operand that we will set on the
@@ -2224,7 +2162,7 @@ impl Assembler
                     let mut opnd_iter = insn.opnd_iter();
 
                     if let Some(Opnd::VReg{ idx, .. }) = opnd_iter.next() {
-                        if live_ranges[*idx].end() == index {
+                        if false /* live_ranges removed */ {
                             if let Some(Opnd::Reg(reg)) = vreg_opnd[idx.0] {
                                 out_reg = Some(pool.take_reg(&reg, vreg_idx));
                             }
@@ -2270,7 +2208,7 @@ impl Assembler
             // If we have an output that dies at its definition (it is unused), free up the
             // register
             if let Some(idx) = vreg_idx {
-                if live_ranges[idx].end() == index {
+                if false /* live_ranges removed */ {
                     if let Some(opnd) = vreg_opnd[idx.0] {
                         pool.dealloc_opnd(&opnd);
                     } else {
@@ -2599,7 +2537,7 @@ impl Assembler
     /// - gen: VRegs used (read) in the block before being defined
     pub fn compute_initial_liveness_sets(&self, block_ids: &[BlockId]) -> (Vec<BitSet<usize>>, Vec<BitSet<usize>>) {
         let num_blocks = self.basic_blocks.len();
-        let num_vregs = self.live_ranges.len();
+        let num_vregs = self.num_vregs;
 
         let mut kill_sets: Vec<BitSet<usize>> = vec![BitSet::with_capacity(num_vregs); num_blocks];
         let mut gen_sets: Vec<BitSet<usize>> = vec![BitSet::with_capacity(num_vregs); num_blocks];
@@ -2645,7 +2583,7 @@ impl Assembler
 
     /// Calculate live intervals for each VReg.
     pub fn build_intervals(&self, live_in: Vec<BitSet<usize>>) -> Vec<Interval> {
-        let num_vregs = self.live_ranges.len();
+        let num_vregs = self.num_vregs;
         let mut intervals: Vec<Interval> = (0..num_vregs)
             .map(|_| Interval::new())
             .collect();
@@ -2716,7 +2654,7 @@ impl Assembler
         let (kill_sets, gen_sets) = self.compute_initial_liveness_sets(&po_blocks);
 
         let num_blocks = self.basic_blocks.len();
-        let num_vregs = self.live_ranges.len();
+        let num_vregs = self.num_vregs;
 
         // Initialize live_in sets
         let mut live_in: Vec<BitSet<usize>> = vec![BitSet::with_capacity(num_vregs); num_blocks];
@@ -3109,13 +3047,6 @@ impl InsnIter {
         // Set up the next block
         let next_block = &mut self.blocks[self.current_block_idx];
         new_asm.set_current_block(next_block.id);
-
-        // Initialize live ranges for VReg block parameters at the current index
-        for param in &new_asm.basic_blocks[next_block.id.0].parameters {
-            if let Opnd::VReg { idx, .. } = param {
-                new_asm.live_ranges[*idx] = LiveRange { start: Some(self.index), end: Some(self.index) };
-            }
-        }
 
         self.current_insn_iter = take(&mut next_block.insns).into_iter();
 
@@ -3525,7 +3456,7 @@ impl Assembler {
         asm_local.accept_scratch_reg = self.accept_scratch_reg;
         asm_local.stack_base_idx = self.stack_base_idx;
         asm_local.label_names = self.label_names.clone();
-        asm_local.live_ranges = LiveRanges::new(self.live_ranges.len());
+        asm_local.num_vregs = self.num_vregs;
 
         // Create one giant block to linearize everything into
         asm_local.new_block_without_id();
@@ -3886,7 +3817,7 @@ mod tests {
     fn test_live_in() {
         let TestFunc { asm, r10, r12, r13, b1, b2, b3, b4, .. } = build_func();
 
-        let num_vregs = asm.live_ranges.len();
+        let num_vregs = asm.num_vregs;
         let live_in = asm.analyze_liveness();
 
         // b1: [] - entry block, no variables are live-in
