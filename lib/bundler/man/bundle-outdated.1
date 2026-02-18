@@ -61,42 +61,42 @@ The 3 filtering options do not affect the resolution of versions, merely what ve
 If the regular output shows the following:
 .IP "" 4
 .nf
-* Gem       Current  Latest  Requested  Groups
-* faker     1\.6\.5    1\.6\.6   ~> 1\.4     development, test
-* hashie    1\.2\.0    3\.4\.6   = 1\.2\.0    default
-* headless  2\.2\.3    2\.3\.1   = 2\.2\.3    test
+* Gem       Current  Latest  Requested  Groups              Release Date
+* faker     1\.6\.5    1\.6\.6   ~> 1\.4     development, test   2024\-02\-05
+* hashie    1\.2\.0    3\.4\.6   = 1\.2\.0    default             2023\-11\-10
+* headless  2\.2\.3    2\.3\.1   = 2\.2\.3    test                2022\-08\-19
 .fi
 .IP "" 0
 .P
 \fB\-\-filter\-major\fR would only show:
 .IP "" 4
 .nf
-* Gem       Current  Latest  Requested  Groups
-* hashie    1\.2\.0    3\.4\.6   = 1\.2\.0    default
+* Gem       Current  Latest  Requested  Groups   Release Date
+* hashie    1\.2\.0    3\.4\.6   = 1\.2\.0    default  2023\-11\-10
 .fi
 .IP "" 0
 .P
 \fB\-\-filter\-minor\fR would only show:
 .IP "" 4
 .nf
-* Gem       Current  Latest  Requested  Groups
-* headless  2\.2\.3    2\.3\.1   = 2\.2\.3    test
+* Gem       Current  Latest  Requested  Groups  Release Date
+* headless  2\.2\.3    2\.3\.1   = 2\.2\.3    test    2022\-08\-19
 .fi
 .IP "" 0
 .P
 \fB\-\-filter\-patch\fR would only show:
 .IP "" 4
 .nf
-* Gem       Current  Latest  Requested  Groups
-* faker     1\.6\.5    1\.6\.6   ~> 1\.4     development, test
+* Gem       Current  Latest  Requested  Groups              Release Date
+* faker     1\.6\.5    1\.6\.6   ~> 1\.4     development, test   2024\-02\-05
 .fi
 .IP "" 0
 .P
 Filter options can be combined\. \fB\-\-filter\-minor\fR and \fB\-\-filter\-patch\fR would show:
 .IP "" 4
 .nf
-* Gem       Current  Latest  Requested  Groups
-* faker     1\.6\.5    1\.6\.6   ~> 1\.4     development, test
+* Gem       Current  Latest  Requested  Groups              Release Date
+* faker     1\.6\.5    1\.6\.6   ~> 1\.4     development, test   2024\-02\-05
 .fi
 .IP "" 0
 .P

@@ -1764,7 +1764,7 @@ RSpec.describe "bundle gem" do
       it "configures the crate such that `cargo test` works", :ruby_repo, :mri_only do
         env = setup_rust_env
         gem_path = bundled_app(gem_name)
-        result = sys_exec("cargo test", env: env, dir: gem_path)
+        result = sys_exec("cargo test", env: env, dir: gem_path, timeout: 300)
 
         expect(result).to include("1 passed")
       end
