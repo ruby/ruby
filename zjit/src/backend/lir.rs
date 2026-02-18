@@ -2220,9 +2220,8 @@ impl Assembler
 
     /// Compile Target::SideExit and convert it into Target::CodePtr for all instructions
     pub fn compile_exits(&mut self) {
-        /// Compile the main side-exit code. This function takes only SideExit so
-        /// that it can be safely deduplicated by using SideExit as a dedup key.
-        fn compile_exit(asm: &mut Assembler, exit: &SideExit) {
+        /// Restore VM state (cfp->pc, cfp->sp, stack, locals) for the side exit.
+        fn compile_exit_save_state(asm: &mut Assembler, exit: &SideExit) {
             let SideExit { pc, stack, locals } = exit;
 
             // Side exit blocks are not part of the CFG at the moment,
@@ -2249,10 +2248,20 @@ impl Assembler
                     asm.store(Opnd::mem(64, SP, (-local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32), opnd);
                 }
             }
+        }
 
+        /// Tear down the JIT frame and return to the interpreter.
+        fn compile_exit_return(asm: &mut Assembler) {
             asm_comment!(asm, "exit to the interpreter");
             asm.frame_teardown(&[]); // matching the setup in gen_entry_point()
             asm.cret(Opnd::UImm(Qundef.as_u64()));
+        }
+
+        /// Compile the main side-exit code. This function takes only SideExit so
+        /// that it can be safely deduplicated by using SideExit as a dedup key.
+        fn compile_exit(asm: &mut Assembler, exit: &SideExit) {
+            compile_exit_save_state(asm, exit);
+            compile_exit_return(asm);
         }
 
         fn join_opnds(opnds: &Vec<Opnd>, delimiter: &str) -> String {
@@ -2310,13 +2319,19 @@ impl Assembler
                     }
 
                     if should_record_exit {
+                        // Save VM state before the ccall so that
+                        // rb_profile_frames sees valid cfp->pc and the
+                        // ccall doesn't clobber caller-saved registers
+                        // holding stack/local operands.
+                        compile_exit_save_state(self, &exit);
                         asm_ccall!(self, rb_zjit_record_exit_stack, pc);
-                    }
-
-                    // If the side exit has already been compiled, jump to it.
-                    // Otherwise, let it fall through and compile the exit next.
-                    if let Some(&exit_label) = compiled_exits.get(&exit) {
-                        self.jmp(Target::Label(exit_label));
+                        compile_exit_return(self);
+                    } else {
+                        // If the side exit has already been compiled, jump to it.
+                        // Otherwise, let it fall through and compile the exit next.
+                        if let Some(&exit_label) = compiled_exits.get(&exit) {
+                            self.jmp(Target::Label(exit_label));
+                        }
                     }
                     Some(counted_exit)
                 } else {
