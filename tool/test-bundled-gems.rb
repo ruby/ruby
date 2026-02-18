@@ -89,8 +89,8 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     ENV["RUBYLIB"] = rubylib
   end
 
-  # 93(bright yellow) is copied from .github/workflows/mingw.yml
-  puts "#{github_actions ? "::group::\e\[93m" : "\n"}Testing the #{gem} gem#{github_actions ? "\e\[m" : ""}"
+  print (github_actions ? "::group::" : "\n")
+  puts colorize.decorate("Testing the #{gem} gem", "note")
   print "[command]" if github_actions
   p test_command
   start_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
