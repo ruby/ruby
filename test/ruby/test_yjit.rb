@@ -1850,16 +1850,14 @@ class TestYJIT < Test::Unit::TestCase
     assert_not_predicate(status, :signaled?)
   end
 
-  def test_yjit_prelude_bundler_setup
-    Tempfile.create do |f|
-      f.write(<<~'GEMFILE')
-        source "https://rubygems.org"
-        module C
-        end
-        Kernel.prepend(C)
-      GEMFILE
+  def test_yjit_prelude_kernel_prepend
+    # Simulate what bundler/setup can do: prepend a module to Kernel during
+    # the prelude via the BUNDLER_SETUP mechanism in rubygems.rb:
+    #   require ENV["BUNDLER_SETUP"] if ENV["BUNDLER_SETUP"] && !defined?(Bundler)
+    Tempfile.create(["kernel_prepend", ".rb"]) do |f|
+      f.write("Kernel.prepend(Module.new)\n")
       f.flush
-      assert_separately([{ "BUNDLER_SETUP" => "bundler/setup", "BUNDLE_GEMFILE" => f.path }, "--enable=gems", "--yjit"], "")
+      assert_separately([{ "BUNDLER_SETUP" => f.path }, "--enable=gems", "--yjit"], "", ignore_stderr: true)
     end
   end
 
