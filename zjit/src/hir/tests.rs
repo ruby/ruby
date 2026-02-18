@@ -2892,7 +2892,6 @@ pub mod hir_build_tests {
     fn test_getinstancevariable() {
         eval("
             def test = @foo
-            test
         ");
         assert_contains_opcode("test", YARVINSN_getinstancevariable);
         assert_snapshot!(hir_string("test"), @r"

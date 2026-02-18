@@ -4528,7 +4528,7 @@ mod hir_opt_tests {
         eval("
             def test = @foo
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -4540,12 +4540,241 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           PatchPoint SingleRactorMode
-          IncrCounter getivar_fallback_not_monomorphic
           v11:BasicObject = GetIvar v6, :@foo
           CheckInterrupts
           Return v11
         ");
     }
+
+    #[test]
+    fn test_polymorphic_getinstancevariable() {
+        set_call_threshold(3);
+        eval("
+            module Tester
+              def test = @foo
+            end
+
+            class A
+              include Tester
+              def initialize
+                @a = 1
+                @foo = 50
+              end
+            end
+
+            class B
+              include Tester
+              def initialize = (@foo = 100)
+            end
+
+            a = A.new
+            b = B.new
+            a.test
+            b.test
+            a.test
+        ");
+        assert_snapshot!(hir_string_proc("Tester.instance_method(:test)"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          v11:HeapBasicObject = GuardType v6, HeapBasicObject
+          v12:CShape = LoadField v11, :_shape_id@0x1000
+          v15:CShape[0x1001] = Const CShape(0x1001)
+          v16:CBool = IsBitEqual v12, v15
+          IfTrue v16, bb5(v6)
+          v23:CShape[0x1002] = Const CShape(0x1002)
+          v24:CBool = IsBitEqual v12, v23
+          IfTrue v24, bb6(v6)
+          v29:BasicObject = GetIvar v6, :@foo
+          Jump bb4(v6, v29)
+        bb5(v13:BasicObject):
+          v39:BasicObject = LoadField v13, :@foo@0x1003
+          Jump bb4(v13, v39)
+        bb6(v21:BasicObject):
+          v40:BasicObject = LoadField v21, :@foo@0x1004
+          Jump bb4(v21, v40)
+        bb4(v31:BasicObject, v32:BasicObject):
+          CheckInterrupts
+          Return v32
+        ");
+    }
+
+    #[test]
+    fn test_polymorphic_getinstancevariable_all_cases() {
+        // Test all 3 polymorphic getivar cases:
+        // 1. nil (ivar not in shape) - class C has no @foo
+        // 2. embedded T_OBJECT (single LoadField) - class A has few ivars
+        // 3. extended T_OBJECT (two LoadFields) - class B has many ivars, forcing heap storage
+        set_call_threshold(4);
+        eval(r#"
+            module Tester
+              def test
+                x = 1
+                @foo
+              end
+            end
+
+            class A
+              include Tester
+              def initialize
+                @foo = 100
+              end
+            end
+
+            class B
+              include Tester
+              def initialize
+                # Many ivars to force extended (heap) storage
+                100.times { |i| instance_variable_set("@v#{i}", i) }
+                @foo = 200
+              end
+            end
+
+            class C
+              include Tester
+              def initialize
+                # No @foo - should return nil
+                @other = 999
+              end
+            end
+
+            a = A.new
+            b = B.new
+            c = C.new
+            # Multiple calls to ensure all shapes are profiled
+            a.test
+            b.test
+            c.test
+            a.test
+            b.test
+            c.test
+        "#);
+        assert_snapshot!(hir_string_proc("Tester.instance_method(:test)"), @"
+        fn test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          Jump bb3(v1, v2)
+        bb2():
+          EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:NilClass = Const Value(nil)
+          Jump bb3(v5, v6)
+        bb3(v8:BasicObject, v9:NilClass):
+          v13:Fixnum[1] = Const Value(1)
+          PatchPoint SingleRactorMode
+          v18:HeapBasicObject = GuardType v8, HeapBasicObject
+          v19:CShape = LoadField v18, :_shape_id@0x1000
+          v23:CShape[0x1001] = Const CShape(0x1001)
+          v24:CBool = IsBitEqual v19, v23
+          IfTrue v24, bb5(v8, v13)
+          v32:CShape[0x1002] = Const CShape(0x1002)
+          v33:CBool = IsBitEqual v19, v32
+          IfTrue v33, bb6(v8, v13)
+          v41:CShape[0x1003] = Const CShape(0x1003)
+          v42:CBool = IsBitEqual v19, v41
+          IfTrue v42, bb7(v8, v13)
+          v47:BasicObject = GetIvar v8, :@foo
+          Jump bb4(v8, v13, v47)
+        bb5(v20:BasicObject, v21:Fixnum[1]):
+          v58:NilClass = Const Value(nil)
+          Jump bb4(v20, v21, v58)
+        bb6(v29:BasicObject, v30:Fixnum[1]):
+          v59:BasicObject = LoadField v29, :@foo@0x1004
+          Jump bb4(v29, v30, v59)
+        bb7(v38:BasicObject, v39:Fixnum[1]):
+          v60:CPtr = LoadField v38, :_as_heap@0x1004
+          v61:BasicObject = LoadField v60, :@foo@0x1005
+          Jump bb4(v38, v39, v61)
+        bb4(v49:BasicObject, v50:Fixnum[1], v51:BasicObject):
+          CheckInterrupts
+          Return v51
+        ");
+    }
+
+    #[test]
+    fn test_polymorphic_getivar_one_case_has_too_complex_shape() {
+        // We need shape introspection, but not all build configs have this.
+        if ! eval("defined?(RubyVM::Shape)").test() {
+            return;
+        }
+
+        set_call_threshold(3);
+        let test_result = eval("
+            module Tester
+              def test
+                @foo
+              end
+            end
+
+            class PlainShape
+              include Tester
+              def initialize = (@foo = 100)
+            end
+
+            class TooComplex
+              include Tester
+              def initialize = (@not_foo = nil)
+            end
+
+            shape = RubyVM::Shape
+            plain = PlainShape.new
+            shape.exhaust_shapes
+            too_complex = TooComplex.new
+            if !shape.of(plain).too_complex? && shape.of(too_complex).too_complex?
+              plain.test
+              too_complex.test
+              plain.test
+            else
+              false
+            end
+        ");
+        assert_eq!(VALUE::fixnum_from_usize(100), test_result, "{}", test_result.obj_info());
+
+        assert_snapshot!(hir_string_proc("Tester.instance_method(:test)"), @"
+        fn test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          v11:HeapBasicObject = GuardType v6, HeapBasicObject
+          v12:CShape = LoadField v11, :_shape_id@0x1000
+          v15:CShape[0x1001] = Const CShape(0x1001)
+          v16:CBool = IsBitEqual v12, v15
+          IfTrue v16, bb5(v6)
+          v23:CShape[0x1002] = Const CShape(0x1002)
+          v24:CBool = IsBitEqual v12, v23
+          IfTrue v24, bb6(v6)
+          v29:BasicObject = GetIvar v6, :@foo
+          Jump bb4(v6, v29)
+        bb5(v13:BasicObject):
+          v18:BasicObject = RefineShape v13, 0x1001
+          v19:BasicObject = GetIvar v18, :@foo
+          Jump bb4(v13, v19)
+        bb6(v21:BasicObject):
+          v39:BasicObject = LoadField v21, :@foo@0x1003
+          Jump bb4(v21, v39)
+        bb4(v31:BasicObject, v32:BasicObject):
+          CheckInterrupts
+          Return v32
+        ");
+    }
+
 
     #[test]
     fn test_setinstancevariable() {
@@ -6830,7 +7059,7 @@ mod hir_opt_tests {
             test O
             test O
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:10:
         bb1():
           EntryPoint interpreter
@@ -6846,8 +7075,8 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(C@0x1000)
           PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
           v22:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          v25:CShape = LoadField v22, :_shape_id@0x1038
-          v26:CShape[0x1039] = GuardBitEquals v25, CShape(0x1039)
+          v23:CShape = LoadField v22, :_shape_id@0x1038
+          v24:CShape[0x1039] = GuardBitEquals v23, CShape(0x1039)
           v27:BasicObject = LoadField v22, :@foo@0x103a
           CheckInterrupts
           Return v27
@@ -6872,7 +7101,7 @@ mod hir_opt_tests {
             test O
             test O
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:13:
         bb1():
           EntryPoint interpreter
@@ -6888,8 +7117,8 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(C@0x1000)
           PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
           v22:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          v25:CShape = LoadField v22, :_shape_id@0x1038
-          v26:CShape[0x1039] = GuardBitEquals v25, CShape(0x1039)
+          v23:CShape = LoadField v22, :_shape_id@0x1038
+          v24:CShape[0x1039] = GuardBitEquals v23, CShape(0x1039)
           v27:CPtr = LoadField v22, :_as_heap@0x103a
           v28:BasicObject = LoadField v27, :@foo@0x103b
           CheckInterrupts
@@ -6906,7 +7135,7 @@ mod hir_opt_tests {
             end
             M.test
         ");
-        assert_snapshot!(hir_string_proc("M.method(:test)"), @r"
+        assert_snapshot!(hir_string_proc("M.method(:test)"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -6918,13 +7147,13 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           PatchPoint SingleRactorMode
-          v17:HeapBasicObject = GuardType v6, HeapBasicObject
-          v18:CShape = LoadField v17, :_shape_id@0x1000
-          v19:CShape[0x1001] = GuardBitEquals v18, CShape(0x1001)
-          v20:CUInt16[0] = Const CUInt16(0)
-          v21:BasicObject = CCall v17, :rb_ivar_get_at_no_ractor_check@0x1008, v20
+          v11:HeapBasicObject = GuardType v6, HeapBasicObject
+          v12:CShape = LoadField v11, :_shape_id@0x1000
+          v13:CShape[0x1001] = GuardBitEquals v12, CShape(0x1001)
+          v21:CUInt16[0] = Const CUInt16(0)
+          v22:BasicObject = CCall v11, :rb_ivar_get_at_no_ractor_check@0x1008, v21
           CheckInterrupts
-          Return v21
+          Return v22
         ");
     }
 
@@ -6937,7 +7166,7 @@ mod hir_opt_tests {
             end
             C.test
         ");
-        assert_snapshot!(hir_string_proc("C.method(:test)"), @r"
+        assert_snapshot!(hir_string_proc("C.method(:test)"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -6949,13 +7178,13 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           PatchPoint SingleRactorMode
-          v17:HeapBasicObject = GuardType v6, HeapBasicObject
-          v18:CShape = LoadField v17, :_shape_id@0x1000
-          v19:CShape[0x1001] = GuardBitEquals v18, CShape(0x1001)
-          v20:CUInt16[0] = Const CUInt16(0)
-          v21:BasicObject = CCall v17, :rb_ivar_get_at_no_ractor_check@0x1008, v20
+          v11:HeapBasicObject = GuardType v6, HeapBasicObject
+          v12:CShape = LoadField v11, :_shape_id@0x1000
+          v13:CShape[0x1001] = GuardBitEquals v12, CShape(0x1001)
+          v21:CUInt16[0] = Const CUInt16(0)
+          v22:BasicObject = CCall v11, :rb_ivar_get_at_no_ractor_check@0x1008, v21
           CheckInterrupts
-          Return v21
+          Return v22
         ");
     }
 
@@ -6970,7 +7199,7 @@ mod hir_opt_tests {
             obj.test
             TEST = C.instance_method(:test)
         ");
-        assert_snapshot!(hir_string_proc("TEST"), @r"
+        assert_snapshot!(hir_string_proc("TEST"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -6982,13 +7211,13 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           PatchPoint SingleRactorMode
-          v17:HeapBasicObject = GuardType v6, HeapBasicObject
-          v18:CShape = LoadField v17, :_shape_id@0x1000
-          v19:CShape[0x1001] = GuardBitEquals v18, CShape(0x1001)
-          v20:CUInt16[0] = Const CUInt16(0)
-          v21:BasicObject = CCall v17, :rb_ivar_get_at_no_ractor_check@0x1008, v20
+          v11:HeapBasicObject = GuardType v6, HeapBasicObject
+          v12:CShape = LoadField v11, :_shape_id@0x1000
+          v13:CShape[0x1001] = GuardBitEquals v12, CShape(0x1001)
+          v21:CUInt16[0] = Const CUInt16(0)
+          v22:BasicObject = CCall v11, :rb_ivar_get_at_no_ractor_check@0x1008, v21
           CheckInterrupts
-          Return v21
+          Return v22
         ");
     }
 
@@ -7048,7 +7277,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_dont_optimize_getivar_polymorphic() {
+    fn test_getivar_polymorphic_same_class_varying_shapes() {
         set_call_threshold(3);
         eval("
             class C
@@ -7073,7 +7302,7 @@ mod hir_opt_tests {
             test O1
             test O2
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:20:
         bb1():
           EntryPoint interpreter
@@ -7086,29 +7315,27 @@ mod hir_opt_tests {
           v6:BasicObject = LoadArg :o@1
           Jump bb3(v5, v6)
         bb3(v8:BasicObject, v9:BasicObject):
-          v14:CBool = HasType v9, HeapObject[class_exact:C]
-          IfTrue v14, bb5(v8, v9, v9)
-          v23:CBool = HasType v9, HeapObject[class_exact:C]
-          IfTrue v23, bb6(v8, v9, v9)
-          v32:BasicObject = Send v9, :foo # SendFallbackReason: SendWithoutBlock: polymorphic fallback
-          Jump bb4(v8, v9, v32)
-        bb5(v15:BasicObject, v16:BasicObject, v17:BasicObject):
-          v19:HeapObject[class_exact:C] = RefineType v17, HeapObject[class_exact:C]
+          v14:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
           PatchPoint NoSingletonClass(C@0x1000)
           PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
-          IncrCounter getivar_fallback_not_monomorphic
-          v45:BasicObject = GetIvar v19, :@foo
-          Jump bb4(v15, v16, v45)
-        bb6(v24:BasicObject, v25:BasicObject, v26:BasicObject):
-          v28:HeapObject[class_exact:C] = RefineType v26, HeapObject[class_exact:C]
-          PatchPoint NoSingletonClass(C@0x1000)
-          PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
-          IncrCounter getivar_fallback_not_monomorphic
-          v48:BasicObject = GetIvar v28, :@foo
-          Jump bb4(v24, v25, v48)
-        bb4(v34:BasicObject, v35:BasicObject, v36:BasicObject):
+          v17:CShape = LoadField v14, :_shape_id@0x1038
+          v22:CShape[0x1039] = Const CShape(0x1039)
+          v23:CBool = IsBitEqual v17, v22
+          IfTrue v23, bb5(v8, v14, v14)
+          v32:CShape[0x103a] = Const CShape(0x103a)
+          v33:CBool = IsBitEqual v17, v32
+          IfTrue v33, bb6(v8, v14, v14)
+          v38:BasicObject = GetIvar v14, :@foo
+          Jump bb4(v8, v14, v38)
+        bb5(v18:BasicObject, v19:HeapObject[class_exact:C], v20:HeapObject[class_exact:C]):
+          v49:BasicObject = LoadField v20, :@foo@0x103b
+          Jump bb4(v18, v19, v49)
+        bb6(v28:BasicObject, v29:HeapObject[class_exact:C], v30:HeapObject[class_exact:C]):
+          v50:BasicObject = LoadField v30, :@foo@0x103c
+          Jump bb4(v28, v29, v50)
+        bb4(v40:BasicObject, v41:HeapObject[class_exact:C], v42:BasicObject):
           CheckInterrupts
-          Return v36
+          Return v42
         ");
     }
 
@@ -7128,7 +7355,7 @@ mod hir_opt_tests {
             def test(o) = o.foo
             test obj
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:12:
         bb1():
           EntryPoint interpreter
@@ -7144,7 +7371,6 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(C@0x1000)
           PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
           v22:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          IncrCounter getivar_fallback_too_complex
           v23:BasicObject = GetIvar v22, :@foo
           CheckInterrupts
           Return v23
@@ -7365,7 +7591,7 @@ mod hir_opt_tests {
             test
             test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:7:
         bb1():
           EntryPoint interpreter
@@ -7381,11 +7607,41 @@ mod hir_opt_tests {
           v20:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint NoSingletonClass(C@0x1010)
           PatchPoint MethodRedefined(C@0x1010, foo@0x1018, cme:0x1020)
-          v25:CShape = LoadField v20, :_shape_id@0x1048
-          v26:CShape[0x1049] = GuardBitEquals v25, CShape(0x1049)
+          v23:CShape = LoadField v20, :_shape_id@0x1048
+          v24:CShape[0x1049] = GuardBitEquals v23, CShape(0x1049)
           v27:NilClass = Const Value(nil)
           CheckInterrupts
           Return v27
+        ");
+    }
+
+    #[test]
+    fn test_inline_attr_reader_on_integer() {
+        eval("
+            class Integer
+              attr_reader :ivar
+            end
+
+            def test = 42.ivar
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:6:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:Fixnum[42] = Const Value(42)
+          PatchPoint MethodRedefined(Integer@0x1000, ivar@0x1008, cme:0x1010)
+          v19:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v19
         ");
     }
 
@@ -7401,7 +7657,7 @@ mod hir_opt_tests {
             test
             test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:7:
         bb1():
           EntryPoint interpreter
@@ -7417,8 +7673,8 @@ mod hir_opt_tests {
           v20:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint NoSingletonClass(C@0x1010)
           PatchPoint MethodRedefined(C@0x1010, foo@0x1018, cme:0x1020)
-          v25:CShape = LoadField v20, :_shape_id@0x1048
-          v26:CShape[0x1049] = GuardBitEquals v25, CShape(0x1049)
+          v23:CShape = LoadField v20, :_shape_id@0x1048
+          v24:CShape[0x1049] = GuardBitEquals v23, CShape(0x1049)
           v27:NilClass = Const Value(nil)
           CheckInterrupts
           Return v27
@@ -7436,7 +7692,7 @@ mod hir_opt_tests {
             test C.new
             test C.new
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:6:
         bb1():
           EntryPoint interpreter
@@ -7452,8 +7708,8 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(C@0x1000)
           PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
           v22:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          v25:CShape = LoadField v22, :_shape_id@0x1038
-          v26:CShape[0x1039] = GuardBitEquals v25, CShape(0x1039)
+          v23:CShape = LoadField v22, :_shape_id@0x1038
+          v24:CShape[0x1039] = GuardBitEquals v23, CShape(0x1039)
           v27:NilClass = Const Value(nil)
           CheckInterrupts
           Return v27
@@ -7471,7 +7727,7 @@ mod hir_opt_tests {
             test C.new
             test C.new
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:6:
         bb1():
           EntryPoint interpreter
@@ -7487,8 +7743,8 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(C@0x1000)
           PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
           v22:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          v25:CShape = LoadField v22, :_shape_id@0x1038
-          v26:CShape[0x1039] = GuardBitEquals v25, CShape(0x1039)
+          v23:CShape = LoadField v22, :_shape_id@0x1038
+          v24:CShape[0x1039] = GuardBitEquals v23, CShape(0x1039)
           v27:NilClass = Const Value(nil)
           CheckInterrupts
           Return v27
@@ -11867,7 +12123,7 @@ mod hir_opt_tests {
             test
             test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:11:
         bb1():
           EntryPoint interpreter
@@ -11883,8 +12139,8 @@ mod hir_opt_tests {
           v20:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint NoSingletonClass(TestUnfrozen@0x1010)
           PatchPoint MethodRedefined(TestUnfrozen@0x1010, a@0x1018, cme:0x1020)
-          v25:CShape = LoadField v20, :_shape_id@0x1048
-          v26:CShape[0x1049] = GuardBitEquals v25, CShape(0x1049)
+          v23:CShape = LoadField v20, :_shape_id@0x1048
+          v24:CShape[0x1049] = GuardBitEquals v23, CShape(0x1049)
           v27:BasicObject = LoadField v20, :@a@0x104a
           CheckInterrupts
           Return v27
@@ -12040,8 +12296,8 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(TestDynamic@0x1000)
           PatchPoint MethodRedefined(TestDynamic@0x1000, val@0x1008, cme:0x1010)
           v22:HeapObject[class_exact:TestDynamic] = GuardType v9, HeapObject[class_exact:TestDynamic]
-          v25:CShape = LoadField v22, :_shape_id@0x1038
-          v26:CShape[0x1039] = GuardBitEquals v25, CShape(0x1039)
+          v23:CShape = LoadField v22, :_shape_id@0x1038
+          v24:CShape[0x1039] = GuardBitEquals v23, CShape(0x1039)
           v27:BasicObject = LoadField v22, :@val@0x103a
           CheckInterrupts
           Return v27
@@ -12066,7 +12322,7 @@ mod hir_opt_tests {
             test
             test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:12:
         bb1():
           EntryPoint interpreter
@@ -12084,7 +12340,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(TestNestedAccess@0x1010, x@0x1018, cme:0x1020)
           v52:Fixnum[100] = Const Value(100)
           PatchPoint StableConstantNames(0x1048, NESTED_FROZEN)
-          v33:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v36:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint MethodRedefined(TestNestedAccess@0x1010, y@0x1050, cme:0x1058)
           v54:Fixnum[200] = Const Value(200)
           PatchPoint MethodRedefined(Integer@0x1080, +@0x1088, cme:0x1090)
