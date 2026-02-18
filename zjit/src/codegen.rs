@@ -133,9 +133,9 @@ fn gen_iseq_entry_point(cb: &mut CodeBlock, iseq: IseqPtr, jit_exception: bool) 
     }
 
     // Compile ISEQ into High-level IR
-    let function = compile_iseq(iseq).inspect_err(|_| {
+    let function = crate::stats::with_time_stat(Counter::compile_hir_time_ns, || compile_iseq(iseq).inspect_err(|_| {
         incr_counter!(failed_iseq_count);
-    })?;
+    }))?;
 
     // Compile the High-level IR
     let IseqCodePtrs { start_ptr, .. } = gen_iseq(cb, iseq, Some(&function)).inspect_err(|err| {
@@ -247,11 +247,12 @@ fn gen_iseq_body(cb: &mut CodeBlock, iseq: IseqPtr, mut version: IseqVersionRef,
     // Convert ISEQ into optimized High-level IR if not given
     let function = match function {
         Some(function) => function,
-        None => &compile_iseq(iseq)?,
+        None => &crate::stats::with_time_stat(Counter::compile_hir_time_ns, || compile_iseq(iseq))?,
     };
 
     // Compile the High-level IR
-    let (iseq_code_ptrs, gc_offsets, iseq_calls) = gen_function(cb, iseq, version, function)?;
+    let (iseq_code_ptrs, gc_offsets, iseq_calls) =
+        crate::stats::with_time_stat(Counter::compile_lir_time_ns, || gen_function(cb, iseq, version, function))?;
 
     // Stub callee ISEQs for JIT-to-JIT calls
     for iseq_call in iseq_calls.iter() {
@@ -2645,7 +2646,8 @@ fn compile_iseq(iseq: IseqPtr) -> Result<Function, CompileError> {
         return Err(CompileError::IseqStackTooLarge);
     }
 
-    let mut function = match iseq_to_hir(iseq) {
+    let hir = crate::stats::with_time_stat(Counter::compile_hir_build_time_ns, || iseq_to_hir(iseq));
+    let mut function = match hir {
         Ok(function) => function,
         Err(err) => {
             debug!("ZJIT: iseq_to_hir: {err:?}: {}", iseq_get_location(iseq, 0));
