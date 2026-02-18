@@ -177,6 +177,9 @@ class << RubyVM::ZJIT
     if stats[:code_region_bytes]&.nonzero?
       stats[:side_exit_size_ratio] = stats[:side_exit_size].to_f / stats[:code_region_bytes] * 100
     end
+    if stats[:compile_time_ns]&.nonzero?
+      stats[:compile_side_exit_time_ratio] = stats[:compile_side_exit_time_ns].to_f / stats[:compile_time_ns] * 100
+    end
 
     # Show counters independent from exit_* or dynamic_send_*
     print_counters_with_prefix(prefix: 'not_inlined_cfuncs_', prompt: 'not inlined C methods', buf:, stats:, limit: 20)
@@ -226,6 +229,8 @@ class << RubyVM::ZJIT
       :failed_iseq_count,
 
       :compile_time_ns,
+      :compile_side_exit_time_ns,
+      :compile_side_exit_time_ratio,
       :profile_time_ns,
       :gc_time_ns,
       :invalidation_time_ns,
@@ -296,7 +301,7 @@ class << RubyVM::ZJIT
       case key
       when :ratio_in_zjit
         value = '%0.1f%%' % value
-      when :guard_type_exit_ratio, :guard_shape_exit_ratio, :side_exit_size_ratio
+      when :guard_type_exit_ratio, :guard_shape_exit_ratio, :side_exit_size_ratio, :compile_side_exit_time_ratio
         value = '%0.1f%%' % value
       when /_time_ns\z/
         key = key.to_s.sub(/_time_ns\z/, '_time')

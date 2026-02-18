@@ -162,6 +162,7 @@ make_counters! {
         invalidation_time_ns,
 
         side_exit_size,
+        compile_side_exit_time_ns,
     }
 
     // Exit counters that are summed as side_exit_count

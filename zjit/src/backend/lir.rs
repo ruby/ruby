@@ -2291,6 +2291,9 @@ impl Assembler
             });
         }
 
+        // Measure time spent compiling side-exit LIR
+        let side_exit_start = std::time::Instant::now();
+
         for ((block_id, idx), target) in targets {
             // Compile a side exit. Note that this is past the split pass and alloc_regs(),
             // so you can't use an instruction that returns a VReg.
@@ -2352,6 +2355,12 @@ impl Assembler
 
                 *self.basic_blocks[block_id].insns[idx].target_mut().unwrap() = counted_exit.unwrap_or(compiled_exit);
             }
+        }
+
+        // Measure time spent compiling side-exit LIR
+        if !compiled_exits.is_empty() {
+            let nanos = side_exit_start.elapsed().as_nanos();
+            crate::stats::incr_counter_by(crate::stats::Counter::compile_side_exit_time_ns, nanos as u64);
         }
     }
 }
