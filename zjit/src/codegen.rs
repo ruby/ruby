@@ -228,17 +228,19 @@ pub fn gen_entry_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError>
     // Set up registers for CFP, EC, SP, and basic block arguments
     let mut asm = Assembler::new();
     asm.new_block_without_id();
+    let label = asm.new_label("gen_entry_trampoline");
+    asm.write_label(label);
     gen_entry_prologue(&mut asm);
 
     // Jump to the first block using a call instruction. This trampoline is used
     // as rb_zjit_func_t in jit_exec(), which takes (EC, CFP, rb_jit_func_t).
     // So C_ARG_OPNDS[2] is rb_jit_func_t, which is (EC, CFP) -> VALUE.
-    asm.ccall_reg(C_ARG_OPNDS[2], VALUE_BITS);
+    let out = asm.ccall_reg(C_ARG_OPNDS[2], VALUE_BITS);
 
     // Restore registers for CFP, EC, and SP after use
     asm_comment!(asm, "return to the interpreter");
     asm.frame_teardown(lir::JIT_PRESERVED_REGS);
-    asm.cret(C_RET_OPND);
+    asm.cret(out);
 
     let (code_ptr, gc_offsets) = asm.compile(cb)?;
     assert!(gc_offsets.is_empty());
@@ -1331,7 +1333,7 @@ fn gen_const_uint32(val: u32) -> lir::Opnd {
 }
 
 /// Compile a basic block argument
-fn gen_param(asm: &mut Assembler, idx: usize) -> lir::Opnd {
+fn gen_param(asm: &mut Assembler, _idx: usize) -> lir::Opnd {
     let vreg = asm.new_block_param(64);
     asm.current_block().add_parameter(vreg);
     vreg
@@ -2892,6 +2894,8 @@ fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodeP
 pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> {
     let (mut asm, scratch_reg) = Assembler::new_with_scratch_reg();
     asm.new_block_without_id();
+    let label = asm.new_label("function_stub_hit_trampoline");
+    asm.write_label(label);
     asm_comment!(asm, "function_stub_hit trampoline");
 
     asm.cpop_into(scratch_reg);
@@ -2960,6 +2964,8 @@ pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, C
 pub fn gen_exit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> {
     let mut asm = Assembler::new();
     asm.new_block_without_id();
+    let label = asm.new_label("exit_trampoline");
+    asm.write_label(label);
 
     asm_comment!(asm, "side-exit trampoline");
     asm.frame_teardown(&[]); // matching the setup in gen_entry_point()
@@ -2975,6 +2981,8 @@ pub fn gen_exit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> 
 pub fn gen_exit_trampoline_with_counter(cb: &mut CodeBlock, exit_trampoline: CodePtr) -> Result<CodePtr, CompileError> {
     let mut asm = Assembler::new();
     asm.new_block_without_id();
+    let label = asm.new_label("exit_trampoline_with_counter");
+    asm.write_label(label);
 
     asm_comment!(asm, "function stub exit trampoline");
     gen_incr_counter(&mut asm, exit_compile_error);
