@@ -187,8 +187,24 @@ static RB_THREAD_LOCAL_SPECIFIER int malloc_increase_local;
 #define USE_TICK_T                 (PRINT_ENTER_EXIT_TICK || PRINT_ROOT_TICKS)
 
 #ifndef HEAP_COUNT
-# define HEAP_COUNT 6
+# define HEAP_COUNT 7
 #endif
+
+static const size_t heap_init_slots_table[HEAP_COUNT] = {
+#if SIZEOF_VALUE >= 8
+    /* [0] 32B  */ 2000,
+    /* [1] 48B  */ GC_HEAP_INIT_SLOTS,
+    /* [2] 64B  */ GC_HEAP_INIT_SLOTS / 2,
+    /* [3] 128B */ GC_HEAP_INIT_SLOTS / 4,
+    /* [4] 256B */ GC_HEAP_INIT_SLOTS / 8,
+    /* [5] 512B */ GC_HEAP_INIT_SLOTS / 16,
+    /* [6] 1024B*/ GC_HEAP_INIT_SLOTS / 32,
+#else
+    2000, GC_HEAP_INIT_SLOTS, GC_HEAP_INIT_SLOTS / 2,
+    GC_HEAP_INIT_SLOTS / 4, GC_HEAP_INIT_SLOTS / 8,
+    GC_HEAP_INIT_SLOTS / 16, GC_HEAP_INIT_SLOTS / 32,
+#endif
+};
 
 typedef struct ractor_newobj_heap_cache {
     struct free_slot *freelist;
@@ -691,12 +707,12 @@ size_t rb_gc_impl_obj_slot_size(VALUE obj);
 
 #if SIZEOF_VALUE >= 8
 static const size_t pool_slot_sizes[HEAP_COUNT] = {
-    32, 64, 128, 256, 512, 1024,
+    32, 48, 64, 128, 256, 512, 1024,
 };
 static uint8_t size_to_heap_idx[1024 / 8 + 1];
 #else
 static const size_t pool_slot_sizes[HEAP_COUNT] = {
-    16, 32, 64, 128, 256, 512,
+    16, 24, 32, 64, 128, 256, 512,
 };
 static uint8_t size_to_heap_idx[512 / 8 + 1];
 #endif
@@ -9515,7 +9531,10 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
         rb_bug("Could not preregister postponed job for GC");
     }
 
-    GC_ASSERT(RVALUE_SLOT_SIZE <= pool_slot_sizes[1]);
+    /* A standard RVALUE (RBasic + embedded VALUEs + debug overhead) must fit
+     * in at least one pool.  In debug builds RVALUE_OVERHEAD can push this
+     * beyond the 48-byte pool into the 64-byte pool, which is fine. */
+    GC_ASSERT(rb_gc_impl_size_allocatable_p(sizeof(struct RBasic) + sizeof(VALUE[RBIMPL_RVALUE_EMBED_LEN_MAX])));
 
     for (int i = 0; i < HEAP_COUNT; i++) {
         rb_heap_t *heap = &heaps[i];
@@ -9544,10 +9563,10 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
 #endif
     /* Set size pools allocatable pages. */
     for (int i = 0; i < HEAP_COUNT; i++) {
-        /* Set the default value of heap_init_slots.
-         * Scale inversely with slot size so each pool gets an equal byte
-         * budget (GC_HEAP_INIT_SLOTS * BASE_SLOT_SIZE bytes). */
-        gc_params.heap_init_slots[i] = GC_HEAP_INIT_SLOTS >> i;
+        /* Set the default value of heap_init_slots using a pre-computed
+         * table. Pool 1 (48B on 64-bit) gets the most slots since it holds
+         * the busiest objects; larger pools scale down proportionally. */
+        gc_params.heap_init_slots[i] = heap_init_slots_table[i];
     }
 
     init_mark_stack(&objspace->mark_stack);
