@@ -472,7 +472,7 @@ typedef struct rb_heap_struct {
     uintptr_t compact_cursor_index;
     struct heap_page *pooled_pages;
     size_t total_pages;      /* total page count in a heap */
-    size_t total_slots;      /* total slot count (about total_pages * HEAP_PAGE_OBJ_LIMIT) */
+    size_t total_slots;      /* total slot count */
 
 } rb_heap_t;
 
@@ -592,6 +592,7 @@ typedef struct rb_objspace {
         double gc_sweep_start_time;
         size_t total_allocated_objects_at_gc_start;
         size_t heap_used_at_gc_start;
+        size_t heap_total_slots_at_gc_start;
 
         /* basic statistics */
         size_t count;
@@ -700,7 +701,6 @@ enum {
     HEAP_PAGE_ALIGN = (1UL << HEAP_PAGE_ALIGN_LOG),
     HEAP_PAGE_ALIGN_MASK = (~(~0UL << HEAP_PAGE_ALIGN_LOG)),
     HEAP_PAGE_SIZE = HEAP_PAGE_ALIGN,
-    HEAP_PAGE_OBJ_LIMIT = (unsigned int)((HEAP_PAGE_SIZE - sizeof(struct heap_page_header)) / BASE_SLOT_SIZE),
     HEAP_PAGE_BITMAP_LIMIT = CEILDIV(CEILDIV(HEAP_PAGE_SIZE, BASE_SLOT_SIZE), BITS_BITLENGTH),
     HEAP_PAGE_BITMAP_SIZE = (BITS_SIZE * HEAP_PAGE_BITMAP_LIMIT),
 };
@@ -5454,8 +5454,13 @@ gc_marks_finish(rb_objspace_t *objspace)
             max_free_slots = total_init_slots;
         }
 
+        /* Approximate freeable pages using the average slots-per-pages across all heaps */
         if (sweep_slots > max_free_slots) {
-            heap_pages_freeable_pages = (sweep_slots - max_free_slots) / HEAP_PAGE_OBJ_LIMIT;
+            size_t excess_slots = sweep_slots - max_free_slots;
+            size_t total_heap_pages = heap_eden_total_pages(objspace);
+            heap_pages_freeable_pages = total_heap_pages > 0
+                ? excess_slots * total_heap_pages / total_slots
+                : 0;
         }
         else {
             heap_pages_freeable_pages = 0;
@@ -6500,6 +6505,7 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
     objspace->profile.latest_gc_info = reason;
     objspace->profile.total_allocated_objects_at_gc_start = total_allocated_objects(objspace);
     objspace->profile.heap_used_at_gc_start = rb_darray_size(objspace->heap_pages.sorted);
+    objspace->profile.heap_total_slots_at_gc_start = objspace_available_slots(objspace);
     objspace->profile.weak_references_count = 0;
     gc_prof_setup_new_record(objspace, reason);
     gc_reset_malloc_info(objspace, do_full_mark);
@@ -8655,7 +8661,7 @@ gc_prof_set_heap_info(rb_objspace_t *objspace)
     if (gc_prof_enabled(objspace)) {
         gc_profile_record *record = gc_prof_record(objspace);
         size_t live = objspace->profile.total_allocated_objects_at_gc_start - total_freed_objects(objspace);
-        size_t total = objspace->profile.heap_used_at_gc_start * HEAP_PAGE_OBJ_LIMIT;
+        size_t total = objspace->profile.heap_total_slots_at_gc_start;
 
 #if GC_PROFILE_MORE_DETAIL
         record->heap_use_pages = objspace->profile.heap_used_at_gc_start;
@@ -9551,7 +9557,6 @@ rb_gc_impl_init(void)
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("BASE_SLOT_SIZE")), SIZET2NUM(BASE_SLOT_SIZE - RVALUE_OVERHEAD));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RBASIC_SIZE")), SIZET2NUM(sizeof(struct RBasic)));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OVERHEAD")), SIZET2NUM(RVALUE_OVERHEAD));
-    rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_PAGE_OBJ_LIMIT")), SIZET2NUM(HEAP_PAGE_OBJ_LIMIT));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_PAGE_BITMAP_SIZE")), SIZET2NUM(HEAP_PAGE_BITMAP_SIZE));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_PAGE_SIZE")), SIZET2NUM(HEAP_PAGE_SIZE));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_COUNT")), LONG2FIX(HEAP_COUNT));

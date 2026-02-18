@@ -694,7 +694,6 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_gc_internals
-    assert_not_nil GC::INTERNAL_CONSTANTS[:HEAP_PAGE_OBJ_LIMIT]
     assert_not_nil GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]
   end
 
