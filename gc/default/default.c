@@ -9542,8 +9542,10 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
 #endif
     /* Set size pools allocatable pages. */
     for (int i = 0; i < HEAP_COUNT; i++) {
-        /* Set the default value of heap_init_slots. */
-        gc_params.heap_init_slots[i] = GC_HEAP_INIT_SLOTS;
+        /* Set the default value of heap_init_slots.
+         * Scale inversely with slot size so each pool gets an equal byte
+         * budget (GC_HEAP_INIT_SLOTS * BASE_SLOT_SIZE bytes). */
+        gc_params.heap_init_slots[i] = GC_HEAP_INIT_SLOTS >> i;
     }
 
     init_mark_stack(&objspace->mark_stack);
