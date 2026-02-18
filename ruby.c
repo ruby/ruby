@@ -1824,6 +1824,10 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
 #if USE_YJIT
     rb_yjit_init_builtin_cmes();
 #endif
+#if USE_ZJIT
+    extern void rb_zjit_init_builtin_cmes(void);
+    rb_zjit_init_builtin_cmes();
+#endif
 
     ruby_init_prelude();
 
