@@ -761,7 +761,7 @@ timestamp/distclean:: ext/distclean .bundle/distclean
 timestamp/realclean:: ext/realclean .bundle/realclean
 
 timestamp/clean timestamp/distclean timestamp/realclean::
-	$(Q)$(RM) $(TIMESTAMPDIR)/.*.time $(TIMESTAMPDIR)/$(arch)/.time
+	$(Q)$(RM) $(TIMESTAMPDIR)/*.time $(TIMESTAMPDIR)/.*.time $(TIMESTAMPDIR)/$(arch)/.time
 	$(Q)$(RMDIRS) $(TIMESTAMPDIR)/$(arch) $(TIMESTAMPDIR) 2> $(NULL) || $(NULLCMD)
 
 clean-ext::
