@@ -2404,7 +2404,7 @@ impl Function {
         }
     }
 
-    /// Replace `insn` with the new instruction `replacement`, which will get appended to `insns`.
+    /// Replace `insn` with `replacement`, making all users of `insn` point at `replacement`
     fn make_equal_to(&mut self, insn: InsnId, replacement: InsnId) {
         assert!(self.insns[insn.0].has_output(),
                 "Don't use make_equal_to for instruction with no output");
