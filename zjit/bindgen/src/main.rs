@@ -167,6 +167,8 @@ fn main() {
         .allowlist_var("rb_cClass")
         .allowlist_var("rb_cRegexp")
         .allowlist_var("rb_cISeq")
+        .allowlist_var("rb_cRubyVM")
+        .allowlist_function("rb_const_get")
 
         .allowlist_type("ruby_fl_type")
         .allowlist_type("ruby_fl_ushift")

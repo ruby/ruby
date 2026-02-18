@@ -1666,7 +1666,7 @@ mod tests {
     #[test]
     fn test_mov_immediate() {
         let cb = compile(|cb| mov(cb, X10, A64Opnd::new_uimm(0x5555555555555555)));
-        assert_disasm_snapshot!(cb.disasm(), @"  0x0: orr x10, xzr, #0x5555555555555555");
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: mov x10, #0x5555555555555555");
         assert_snapshot!(cb.hexdump(), @"eaf300b2");
     }
 

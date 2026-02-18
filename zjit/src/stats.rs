@@ -160,6 +160,8 @@ make_counters! {
         profile_time_ns,
         gc_time_ns,
         invalidation_time_ns,
+
+        side_exit_size,
     }
 
     // Exit counters that are summed as side_exit_count
@@ -254,6 +256,7 @@ make_counters! {
         send_fallback_send_cfunc_variadic,
         send_fallback_send_cfunc_array_variadic,
         send_fallback_super_call_with_block,
+        send_fallback_super_from_block,
         send_fallback_super_class_not_found,
         send_fallback_super_complex_args_pass,
         send_fallback_super_fallback_no_profile,
@@ -633,6 +636,7 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         CCallWithFrameTooManyArgs                 => send_fallback_ccall_with_frame_too_many_args,
         ObjToStringNotString                      => send_fallback_obj_to_string_not_string,
         SuperCallWithBlock                        => send_fallback_super_call_with_block,
+        SuperFromBlock                            => send_fallback_super_from_block,
         SuperClassNotFound                        => send_fallback_super_class_not_found,
         SuperComplexArgsPass                      => send_fallback_super_complex_args_pass,
         SuperNoProfiles                           => send_fallback_super_fallback_no_profile,

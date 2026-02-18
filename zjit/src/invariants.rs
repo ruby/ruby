@@ -206,20 +206,22 @@ pub extern "C" fn rb_zjit_invalidate_no_ep_escape(iseq: IseqPtr) {
         return;
     }
 
-    // Remember that this ISEQ may escape EP
-    let invariants = ZJITState::get_invariants();
-    invariants.ep_escape_iseqs.insert(iseq);
+    with_vm_lock(src_loc!(), || {
+        // Remember that this ISEQ may escape EP
+        let invariants = ZJITState::get_invariants();
+        invariants.ep_escape_iseqs.insert(iseq);
 
-    // If the ISEQ has been compiled assuming it doesn't escape EP, invalidate the JIT code.
-    if let Some(patch_points) = invariants.no_ep_escape_iseq_patch_points.get(&iseq) {
-        debug!("EP is escaped: {}", iseq_name(iseq));
+        // If the ISEQ has been compiled assuming it doesn't escape EP, invalidate the JIT code.
+        if let Some(patch_points) = invariants.no_ep_escape_iseq_patch_points.get(&iseq) {
+            debug!("EP is escaped: {}", iseq_name(iseq));
 
-        // Invalidate the patch points for this ISEQ
-        let cb = ZJITState::get_code_block();
-        compile_patch_points!(cb, patch_points, "EP is escaped: {}", iseq_name(iseq));
+            // Invalidate the patch points for this ISEQ
+            let cb = ZJITState::get_code_block();
+            compile_patch_points!(cb, patch_points, "EP is escaped: {}", iseq_name(iseq));
 
-        cb.mark_all_executable();
-    }
+            cb.mark_all_executable();
+        }
+    });
 }
 
 /// Track that JIT code for a ISEQ will assume that base pointer is equal to environment pointer.

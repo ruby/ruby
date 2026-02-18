@@ -783,6 +783,12 @@ impl ID {
     }
 }
 
+impl Display for ID {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.contents_lossy())
+    }
+}
+
 /// Produce a Ruby string from a Rust string slice
 pub fn rust_str_to_ruby(str: &str) -> VALUE {
     unsafe { rb_utf8_str_new(str.as_ptr() as *const _, str.len() as i64) }
@@ -1127,6 +1133,12 @@ pub mod test_utils {
             crate::cruby::ids::init(); // for ID! usages in tests
         }
 
+        // Call ZJIT hooks to install Ruby implementations of builtins like Array#each
+        unsafe {
+            let zjit = rb_const_get(rb_cRubyVM, rust_str_to_id("ZJIT"));
+            rb_funcallv(zjit, rust_str_to_id("call_jit_hooks"), 0, std::ptr::null());
+        }
+
         // Set up globals for convenience
         let zjit_entry = ZJITState::init();
 
@@ -1181,6 +1193,15 @@ pub mod test_utils {
     pub fn eval(program: &str) -> VALUE {
         with_rubyvm(|| {
             let wrapped_iseq = compile_to_wrapped_iseq(&unindent(program, false));
+            unsafe { rb_funcallv(wrapped_iseq, ID!(eval), 0, null()) }
+        })
+    }
+
+    /// Evaluate a given Ruby program with compile options
+    pub fn eval_with_options(program: &str, options_expr: &str) -> VALUE {
+        with_rubyvm(|| {
+            let options = eval(options_expr);
+            let wrapped_iseq = compile_to_wrapped_iseq_with_options(&unindent(program, false), options);
             unsafe { rb_funcallv(wrapped_iseq, ID!(eval), 0, null()) }
         })
     }
@@ -1240,10 +1261,15 @@ pub mod test_utils {
 
     /// Compile a program into a RubyVM::InstructionSequence object
     fn compile_to_wrapped_iseq(program: &str) -> VALUE {
+        compile_to_wrapped_iseq_with_options(program, Qnil)
+    }
+
+    fn compile_to_wrapped_iseq_with_options(program: &str, options: VALUE) -> VALUE {
         let bytes = program.as_bytes().as_ptr() as *const c_char;
         unsafe {
             let program_str = rb_utf8_str_new(bytes, program.len().try_into().unwrap());
-            rb_funcallv(rb_cISeq, ID!(compile), 1, &program_str)
+            let args = [program_str, Qnil, Qnil, VALUE(1_usize.wrapping_shl(1) | 1), options];
+            rb_funcallv(rb_cISeq, ID!(compile), args.len() as c_int, args.as_ptr())
         }
     }
 
@@ -1401,6 +1427,10 @@ pub(crate) mod ids {
         name: _ep_method_entry
         name: _ep_specval
         name: _rbasic_flags
+        name: RUBY_FL_FREEZE
+        name: RUBY_ELTS_SHARED
+        name: VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM
+        name: VM_ENV_FLAG_WB_REQUIRED
     }
 
     /// Get an CRuby `ID` to an interned string, e.g. a particular method name.

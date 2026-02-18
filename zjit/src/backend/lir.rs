@@ -2273,6 +2273,15 @@ impl Assembler
         // Map from SideExit to compiled Label. This table is used to deduplicate side exit code.
         let mut compiled_exits: HashMap<SideExit, Label> = HashMap::new();
 
+        // Mark the start of side-exit code so we can measure its size
+        if !targets.is_empty() {
+            self.pos_marker(move |start_pos, cb| {
+                let end_pos = cb.get_write_ptr();
+                let size = end_pos.as_offset() - start_pos.as_offset();
+                crate::stats::incr_counter_by(crate::stats::Counter::side_exit_size, size as u64);
+            });
+        }
+
         for ((block_id, idx), target) in targets {
             // Compile a side exit. Note that this is past the split pass and alloc_regs(),
             // so you can't use an instruction that returns a VReg.

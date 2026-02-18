@@ -1,7 +1,7 @@
 //! Runtime state of ZJIT.
 
 use crate::codegen::{gen_entry_trampoline, gen_exit_trampoline, gen_exit_trampoline_with_counter, gen_function_stub_hit_trampoline};
-use crate::cruby::{self, rb_bug_panic_hook, rb_vm_insn_count, src_loc, EcPtr, Qnil, Qtrue, rb_vm_insn_addr2opcode, rb_profile_frames, VALUE, VM_INSTRUCTION_SIZE, size_t, rb_gc_mark, with_vm_lock};
+use crate::cruby::{self, rb_bug_panic_hook, rb_vm_insn_count, src_loc, EcPtr, Qnil, Qtrue, rb_vm_insn_addr2opcode, rb_profile_frames, VALUE, VM_INSTRUCTION_SIZE, size_t, rb_gc_mark, with_vm_lock, rust_str_to_id, rb_funcallv, rb_const_get, rb_cRubyVM};
 use crate::cruby_methods;
 use crate::invariants::Invariants;
 use crate::asm::CodeBlock;
@@ -319,7 +319,11 @@ pub extern "C" fn rb_zjit_init(zjit_enabled: bool) {
 
 /// Enable ZJIT compilation.
 fn zjit_enable() {
-    // TODO: call RubyVM::ZJIT::call_jit_hooks here
+    // Call ZJIT hooks before enabling ZJIT to avoid compiling the hooks themselves
+    unsafe {
+        let zjit = rb_const_get(rb_cRubyVM, rust_str_to_id("ZJIT"));
+        rb_funcallv(zjit, rust_str_to_id("call_jit_hooks"), 0, std::ptr::null());
+    }
 
     // Catch panics to avoid UB for unwinding into C frames.
     // See https://doc.rust-lang.org/nomicon/exception-safety.html

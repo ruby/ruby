@@ -1902,7 +1902,7 @@ mod tests {
         0x0: ldnp d8, d25, [x10, #-0x140]
         0x4: .byte 0x6f, 0x2c, 0x20, 0x77
         0x8: .byte 0x6f, 0x72, 0x6c, 0x64
-        0xc: .byte 0x21, 0x00, 0x00, 0x00
+        0xc: udf #0x21
         ");
         assert_snapshot!(cb.hexdump(), @"48656c6c6f2c20776f726c6421000000");
     }
@@ -2053,7 +2053,7 @@ mod tests {
 
         asm.compile_with_num_regs(&mut cb, 0);
         assert_disasm_snapshot!(cb.disasm(), @r"
-            0x0: orr x0, xzr, #0x7fffffff
+            0x0: mov x0, #0x7fffffff
             0x4: add x0, sp, x0
             0x8: mov x0, #8
             0xc: movk x0, #1, lsl #16
@@ -2069,7 +2069,7 @@ mod tests {
             0x34: movk x0, #0xffff, lsl #32
             0x38: movk x0, #0xffff, lsl #48
             0x3c: add x0, sp, x0
-            0x40: orr x0, xzr, #0xffffffff80000000
+            0x40: mov x0, #-0x80000000
             0x44: add x0, sp, x0
         ");
         assert_snapshot!(cb.hexdump(), @"e07b40b2e063208b000180d22000a0f2e063208b000083d2e063208be0230891e02308d1e0ff8292e063208b00ff9fd2c0ffbff2e0ffdff2e0fffff2e063208be08361b2e063208b");
@@ -2137,8 +2137,8 @@ mod tests {
         assert_disasm_snapshot!(cb.disasm(), @"
             0x0: ldr x16, #8
             0x4: b #0x10
-            0x8: .byte 0x00, 0x10, 0x00, 0x00
-            0xc: .byte 0x00, 0x00, 0x00, 0x00
+            0x8: udf #0x1000
+            0xc: udf #0
             0x10: stur x16, [x21]
         ");
         assert_snapshot!(cb.hexdump(), @"50000058030000140010000000000000b00200f8");
@@ -2200,7 +2200,7 @@ mod tests {
         0x8: ldnp d8, d25, [x10, #-0x140]
         0xc: .byte 0x6f, 0x2c, 0x20, 0x77
         0x10: .byte 0x6f, 0x72, 0x6c, 0x64
-        0x14: .byte 0x21, 0x00, 0x00, 0x00
+        0x14: udf #0x21
         0x18: stur x0, [x21]
         ");
         assert_snapshot!(cb.hexdump(), @"50000010e00310aa48656c6c6f2c20776f726c6421000000a00200f8");
@@ -2304,7 +2304,7 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 1);
 
         assert_disasm_snapshot!(cb.disasm(), @r"
-        0x0: orr x0, xzr, #0xffffffff
+        0x0: mov x0, #0xffffffff
         0x4: tst w0, w0
         ");
         assert_snapshot!(cb.hexdump(), @"e07f40b21f00006a");
@@ -2566,7 +2566,7 @@ mod tests {
 
         assert_disasm_snapshot!(cb.disasm(), @"
             0x0: mov x1, #0xffff
-            0x4: orr x1, xzr, #0x10000
+            0x4: mov x1, #0x10000
         ");
         assert_snapshot!(cb.hexdump(), @"e1ff9fd2e10370b2");
     }
