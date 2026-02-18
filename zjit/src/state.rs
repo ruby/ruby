@@ -292,25 +292,28 @@ impl ZJITState {
     }
 }
 
-/// Initialize ZJIT at boot. This is called even if ZJIT is disabled.
+/// Initialize IDs and annotate builtin C method entries.
+/// Must be called at boot before ruby_init_prelude() since the prelude
+/// could redefine core methods (e.g. Kernel.prepend via bundler).
 #[unsafe(no_mangle)]
-pub extern "C" fn rb_zjit_init(zjit_enabled: bool) {
+pub extern "C" fn rb_zjit_init_builtin_cmes() {
     use InitializationState::*;
 
     debug_assert!(
         matches!(unsafe { &ZJIT_STATE }, Uninitialized),
-        "rb_zjit_init should only be called once during boot",
+        "rb_zjit_init_builtin_cmes should only be called once during boot",
     );
 
-    // Initialize IDs and method annotations.
-    // cruby_methods::init() must be called at boot,
-    // as cmes could have been re-defined after boot.
     cruby::ids::init();
 
     let method_annotations = cruby_methods::init();
 
     unsafe { ZJIT_STATE = Initialized(method_annotations); }
+}
 
+/// Initialize ZJIT at boot. This is called even if ZJIT is disabled.
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_init(zjit_enabled: bool) {
     // If --zjit, enable ZJIT immediately
     if zjit_enabled {
         zjit_enable();
