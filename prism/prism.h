@@ -6,6 +6,10 @@
 #ifndef PRISM_H
 #define PRISM_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "prism/defines.h"
 #include "prism/util/pm_buffer.h"
 #include "prism/util/pm_char.h"
@@ -402,5 +406,9 @@ PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_method_name(const uint
  * }
  * ```
  */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
