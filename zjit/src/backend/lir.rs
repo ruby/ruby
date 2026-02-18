@@ -2097,7 +2097,7 @@ impl Assembler
                 }
             } else {
                 // Allocate lowest free register
-                let reg = *free_registers.iter().next().expect("no free regs?");
+                let reg = *free_registers.iter().min().unwrap();
                 free_registers.remove(&reg);
                 assignment[interval.id] = Some(Allocation::Reg(reg));
                 // Insert into sorted active
@@ -2557,10 +2557,12 @@ impl Assembler
             if !seen.insert(block) { continue; }
             stack.push((block, Action::VisitSelf));
             let EdgePair(edge1, edge2) = self.basic_blocks[block.0].edges();
-            if let Some(edge) = edge1 {
+            // Push edge2 before edge1 so that edge1 is popped first from the
+            // LIFO stack, matching the visit order of a recursive DFS.
+            if let Some(edge) = edge2 {
                 stack.push((edge.target, Action::VisitEdges));
             }
-            if let Some(edge) = edge2 {
+            if let Some(edge) = edge1 {
                 stack.push((edge.target, Action::VisitEdges));
             }
         }
