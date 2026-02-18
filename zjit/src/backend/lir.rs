@@ -4120,6 +4120,33 @@ mod tests {
     }
 
     #[test]
+    fn test_linear_scan_spill_less() {
+        let TestFunc { mut asm, r10, r11, r12, r13, r14, r15, .. } = build_func();
+
+        let live_in = asm.analyze_liveness();
+        asm.number_instructions(16);
+        let intervals = asm.build_intervals(live_in);
+
+        // 3 registers — only r10 needs to spill
+        let (assignments, num_stack_slots) = asm.linear_scan(intervals, 3);
+
+        let r10_idx = if let Opnd::VReg { idx, .. } = r10 { idx } else { panic!() };
+        let r11_idx = if let Opnd::VReg { idx, .. } = r11 { idx } else { panic!() };
+        let r12_idx = if let Opnd::VReg { idx, .. } = r12 { idx } else { panic!() };
+        let r13_idx = if let Opnd::VReg { idx, .. } = r13 { idx } else { panic!() };
+        let r14_idx = if let Opnd::VReg { idx, .. } = r14 { idx } else { panic!() };
+        let r15_idx = if let Opnd::VReg { idx, .. } = r15 { idx } else { panic!() };
+
+        assert_eq!(num_stack_slots, 1);
+        assert_eq!(assignments[r10_idx.0], Some(Allocation::Stack(0)));
+        assert_eq!(assignments[r11_idx.0], Some(Allocation::Reg(1)));
+        assert_eq!(assignments[r12_idx.0], Some(Allocation::Reg(1)));
+        assert_eq!(assignments[r13_idx.0], Some(Allocation::Reg(2)));
+        assert_eq!(assignments[r14_idx.0], Some(Allocation::Reg(0)));
+        assert_eq!(assignments[r15_idx.0], Some(Allocation::Reg(2)));
+    }
+
+    #[test]
     fn test_linear_scan_spill() {
         let TestFunc { mut asm, r10, r11, r12, r13, r14, r15, .. } = build_func();
 
