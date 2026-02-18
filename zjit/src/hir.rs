@@ -5136,9 +5136,28 @@ impl Function {
         let mut passes: Vec<Json> = Vec::new();
         let should_dump = get_option!(dump_hir_iongraph);
 
+        macro_rules! ident_equal {
+            ($a:ident, $b:ident) => { stringify!($a) == stringify!($b) };
+        }
+
         macro_rules! run_pass {
             ($name:ident) => {
-                self.$name();
+                // Bucket all strength reduction together
+                let counter = if ident_equal!($name, type_specialize)
+                              || ident_equal!($name, inline)
+                              || ident_equal!($name, optimize_getivar)
+                              || ident_equal!($name, optimize_c_calls) {
+                    Counter::compile_hir_strength_reduce_time_ns
+                } else if ident_equal!($name, fold_constants) {
+                    Counter::compile_hir_fold_constants_time_ns
+                } else if ident_equal!($name, clean_cfg) {
+                    Counter::compile_hir_clean_cfg_time_ns
+                } else if ident_equal!($name, eliminate_dead_code) {
+                    Counter::compile_hir_eliminate_dead_code_time_ns
+                } else {
+                    unimplemented!("Counter for pass {}", stringify!($name));
+                };
+                crate::stats::with_time_stat(counter, || self.$name());
                 #[cfg(debug_assertions)] self.assert_validates();
                 if should_dump {
                     passes.push(
