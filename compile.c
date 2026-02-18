@@ -857,18 +857,18 @@ get_nd_block(const NODE *node)
     }
 }
 
-static ID
-get_node_colon_nd_mid(const NODE *node)
-{
-    switch (nd_type(node)) {
-      case NODE_COLON2:
-        return RNODE_COLON2(node)->nd_mid;
-      case NODE_COLON3:
-        return RNODE_COLON3(node)->nd_mid;
-      default:
-        rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
-    }
-}
+// static ID
+// get_node_colon_nd_mid(const NODE *node)
+// {
+//     switch (nd_type(node)) {
+//       case NODE_COLON2:
+//         return RNODE_COLON2(node)->nd_mid;
+//       case NODE_COLON3:
+//         return RNODE_COLON3(node)->nd_mid;
+//       default:
+//         rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
+//     }
+// }
 
 static NODE *
 get_node_multi_value(const NODE *node)
@@ -10930,28 +10930,23 @@ compile_op_asgn2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
 static int compile_shareable_constant_value(rb_iseq_t *iseq, LINK_ANCHOR *ret, enum rb_parser_shareability shareable, const NODE *lhs, const NODE *value);
 
 static int
-compile_op_cdecl(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
+compile_op_cdecl(rb_iseq_t *iseq, LINK_ANCHOR *const ret, enum rb_parser_shareability shareability, const NODE *const node, const rb_constant_path_node_t *const nd_head, ID nd_aid, const NODE *const nd_value, int popped)
 {
     const int line = nd_line(node);
     LABEL *lfin = 0;
     LABEL *lassign = 0;
     ID mid;
 
-    switch (nd_type(RNODE_OP_CDECL(node)->nd_head)) {
-      case NODE_COLON3:
-        ADD_INSN1(ret, node, putobject, rb_cObject);
-        break;
-      case NODE_COLON2:
-        CHECK(COMPILE(ret, "NODE_OP_CDECL/colon2#nd_head", RNODE_COLON2(RNODE_OP_CDECL(node)->nd_head)->nd_head));
-        break;
-      default:
-        COMPILE_ERROR(ERROR_ARGS "%s: invalid node in NODE_OP_CDECL",
-                      ruby_node_name(nd_type(RNODE_OP_CDECL(node)->nd_head)));
-        return COMPILE_NG;
+    if (nd_head->parent) {
+        CHECK(COMPILE(ret, "NODE_OP_CDECL/colon2#nd_head", nd_head->parent));
     }
-    mid = get_node_colon_nd_mid(RNODE_OP_CDECL(node)->nd_head);
+    else {
+        ADD_INSN1(ret, node, putobject, rb_cObject);
+    }
+
+    mid = nd_head->name;
     /* cref */
-    if (RNODE_OP_CDECL(node)->nd_aid == idOROP) {
+    if (nd_aid == idOROP) {
         lassign = NEW_LABEL(line);
         ADD_INSN(ret, node, dup); /* cref cref */
         ADD_INSN3(ret, node, defined, INT2FIX(DEFINED_CONST_FROM),
@@ -10962,17 +10957,17 @@ compile_op_cdecl(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
     ADD_INSN1(ret, node, putobject, Qtrue);
     ADD_INSN1(ret, node, getconstant, ID2SYM(mid)); /* cref obj */
 
-    if (RNODE_OP_CDECL(node)->nd_aid == idOROP || RNODE_OP_CDECL(node)->nd_aid == idANDOP) {
+    if (nd_aid == idOROP || nd_aid == idANDOP) {
         lfin = NEW_LABEL(line);
         if (!popped) ADD_INSN(ret, node, dup); /* cref [obj] obj */
-        if (RNODE_OP_CDECL(node)->nd_aid == idOROP)
+        if (nd_aid == idOROP)
             ADD_INSNL(ret, node, branchif, lfin);
         else /* idANDOP */
             ADD_INSNL(ret, node, branchunless, lfin);
         /* cref [obj] */
         if (!popped) ADD_INSN(ret, node, pop); /* cref */
         if (lassign) ADD_LABEL(ret, lassign);
-        CHECK(compile_shareable_constant_value(iseq, ret, RNODE_OP_CDECL(node)->shareability, RNODE_OP_CDECL(node)->nd_head, RNODE_OP_CDECL(node)->nd_value));
+        CHECK(compile_shareable_constant_value(iseq, ret, shareability, (NODE *)nd_head, nd_value));
         /* cref value */
         if (popped)
             ADD_INSN1(ret, node, topn, INT2FIX(1)); /* cref value cref */
@@ -10986,9 +10981,9 @@ compile_op_cdecl(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
         ADD_INSN(ret, node, pop); /* [value] */
     }
     else {
-        CHECK(compile_shareable_constant_value(iseq, ret, RNODE_OP_CDECL(node)->shareability, RNODE_OP_CDECL(node)->nd_head, RNODE_OP_CDECL(node)->nd_value));
+        CHECK(compile_shareable_constant_value(iseq, ret, shareability, (NODE *)nd_head, nd_value));
         /* cref obj value */
-        ADD_CALL(ret, node, RNODE_OP_CDECL(node)->nd_aid, INT2FIX(1));
+        ADD_CALL(ret, node, nd_aid, INT2FIX(1));
         /* cref value */
         ADD_INSN(ret, node, swap); /* value cref */
         if (!popped) {
@@ -11000,8 +10995,10 @@ compile_op_cdecl(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
     return COMPILE_OK;
 }
 
+static int compile_constant_read(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, ID id);
+
 static int
-compile_op_log(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, ID name, const NODE *const nd_value, int popped, bool op_and)
+compile_op_log(rb_iseq_t *iseq, LINK_ANCHOR *const ret, enum rb_parser_shareability shareable, const NODE *const node, ID name, const NODE *const nd_value, int popped, bool op_and)
 {
     const int line = nd_line(node);
     LABEL *lfin = NEW_LABEL(line);
@@ -11015,6 +11012,11 @@ compile_op_log(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
     else if (nd_type_p(node, RB_GLOBAL_VARIABLE_OR_WRITE_NODE)) {
         ADD_INSN(ret, node, putnil);
         ADD_INSN3(ret, node, defined, INT2FIX(DEFINED_GVAR), ID2SYM(name), Qtrue);
+        ADD_INSNL(ret, node, branchunless, lassign);
+    }
+    else if (nd_type_p(node, RB_CONSTANT_OR_WRITE_NODE)) {
+        ADD_INSN(ret, node, putnil);
+        ADD_INSN3(ret, node, defined, INT2FIX(DEFINED_CONST), ID2SYM(name), Qtrue);
         ADD_INSNL(ret, node, branchunless, lassign);
     }
 
@@ -11034,6 +11036,10 @@ compile_op_log(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
       case RB_GLOBAL_VARIABLE_AND_WRITE_NODE:
       case RB_GLOBAL_VARIABLE_OR_WRITE_NODE:
         ADD_INSN1(ret, node, getglobal, ID2SYM(name));
+        break;
+      case RB_CONSTANT_AND_WRITE_NODE:
+      case RB_CONSTANT_OR_WRITE_NODE:
+        CHECK(compile_constant_read(iseq, ret, node, name));
         break;
       default:
         UNKNOWN_NODE("compile_op_log", node, COMPILE_NG);
@@ -11055,7 +11061,14 @@ compile_op_log(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
     }
 
     ADD_LABEL(ret, lassign);
-    CHECK(COMPILE(ret, "NODE_OP_ASGN_AND/OR#nd_value", nd_value));
+
+    if (nd_type_p(node, RB_CONSTANT_AND_WRITE_NODE) || nd_type_p(node, RB_CONSTANT_OR_WRITE_NODE)) {
+        CHECK(compile_shareable_constant_value(iseq, ret, shareable, node, nd_value));
+    }
+    else {
+        CHECK(COMPILE(ret, "NODE_OP_ASGN_AND/OR#nd_value", nd_value));
+    }
+
     if (!popped) {
         ADD_INSN(ret, node, dup);
     }
@@ -11076,6 +11089,12 @@ compile_op_log(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
       case RB_GLOBAL_VARIABLE_AND_WRITE_NODE:
       case RB_GLOBAL_VARIABLE_OR_WRITE_NODE:
         ADD_INSN1(ret, node, setglobal, ID2SYM(name));
+        break;
+      case RB_CONSTANT_AND_WRITE_NODE:
+      case RB_CONSTANT_OR_WRITE_NODE:
+        ADD_INSN1(ret, node, putspecialobject,
+                  INT2FIX(VM_SPECIAL_OBJECT_CONST_BASE));
+        ADD_INSN1(ret, node, setconstant, ID2SYM(name));
         break;
       default:
         UNKNOWN_NODE("compile_op_log", node, COMPILE_NG);
@@ -11400,24 +11419,28 @@ const_node_shareability(const rb_shareable_constant_node_t *node)
 }
 
 static int
-compile_constant_write(rb_iseq_t *iseq, LINK_ANCHOR *const ret, enum rb_parser_shareability shareable, const NODE *const node, int popped)
+compile_constant_read(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, ID id)
 {
-    NODE *nd_value;
-    ID name;
+    struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
 
-    switch (nd_type(node)) {
-      case RB_CONSTANT_WRITE_NODE:
-        nd_value = RB_NODE_CONSTANT_WRITE(node)->value;
-        name = RB_NODE_CONSTANT_WRITE(node)->name;
-        break;
-      case RB_CONSTANT_TARGET_NODE:
-        nd_value = NULL;
-        name = RB_NODE_CONSTANT_TARGET(node)->name;
-        break;
-      default:
-        rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
+    if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
+        body->ic_size++;
+        VALUE segments = rb_ary_new_from_args(1, ID2SYM(id));
+        RB_OBJ_SET_FROZEN_SHAREABLE(segments);
+        ADD_INSN1(ret, node, opt_getconstant_path, segments);
+        RB_OBJ_WRITTEN(iseq, Qundef, segments);
     }
+    else {
+        ADD_INSN(ret, node, putnil);
+        ADD_INSN1(ret, node, putobject, Qtrue);
+        ADD_INSN1(ret, node, getconstant, ID2SYM(id));
+    }
+    return COMPILE_OK;
+}
 
+static int
+compile_constant_write(rb_iseq_t *iseq, LINK_ANCHOR *const ret, enum rb_parser_shareability shareable, const NODE *const node, ID name, const NODE *const nd_value, int popped)
+{
     CHECK(compile_shareable_constant_value(iseq, ret, shareable, node, nd_value));
     if (!popped) {
         ADD_INSN(ret, node, dup);
@@ -11460,6 +11483,46 @@ compile_constant_path_write(rb_iseq_t *iseq, LINK_ANCHOR *const ret, enum rb_par
     }
 
     ADD_INSN1(ret, node, setconstant, ID2SYM(name));
+    return COMPILE_OK;
+}
+
+static VALUE const_decl_path(NODE *dest);
+
+static int
+compile_constant_operator_write(rb_iseq_t *iseq, LINK_ANCHOR *const ret, enum rb_parser_shareability shareable, const NODE *const node, int popped)
+{
+    if (shareable != rb_parser_shareable_none) {
+      ADD_INSN1(ret, node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+    }
+    CHECK(compile_constant_read(iseq, ret, node, RB_NODE_CONSTANT_OPERATOR_WRITE(node)->name));
+    CHECK(COMPILE(ret, "const op asgn value", RB_NODE_CONSTANT_OPERATOR_WRITE(node)->value));
+    ADD_SEND_R(ret, node, RB_NODE_CONSTANT_OPERATOR_WRITE(node)->binary_operator, INT2FIX(1), NULL, INT2FIX(0), NULL);
+
+    switch (shareable) {
+      case rb_parser_shareable_none:
+        break;
+      case rb_parser_shareable_literal: {
+        VALUE path = const_decl_path(node);
+        ADD_INSN1(ret, node, putobject, path);
+        RB_OBJ_WRITTEN(iseq, Qundef, path);
+        ADD_SEND_WITH_FLAG(ret, node, rb_intern("ensure_shareable"), INT2FIX(2), INT2FIX(VM_CALL_ARGS_SIMPLE));
+        break;
+      }
+      case rb_parser_shareable_copy:
+        ADD_SEND_WITH_FLAG(ret, node, rb_intern("make_shareable_copy"), INT2FIX(1), INT2FIX(VM_CALL_ARGS_SIMPLE));
+        break;
+      case rb_parser_shareable_everything:
+        ADD_SEND_WITH_FLAG(ret, node, rb_intern("make_shareable"), INT2FIX(1), INT2FIX(VM_CALL_ARGS_SIMPLE));
+        break;
+    }
+
+    if (!popped) {
+        ADD_INSN(ret, node, dup);
+    }
+
+    ADD_INSN1(ret, node, putspecialobject,
+              INT2FIX(VM_SPECIAL_OBJECT_CONST_BASE));
+    ADD_INSN1(ret, node, setconstant, ID2SYM(RB_NODE_CONSTANT_OPERATOR_WRITE(node)->name));
     return COMPILE_OK;
 }
 
@@ -11641,6 +11704,15 @@ node_const_decl_val(const NODE *node)
       case RB_CONSTANT_WRITE_NODE:
         path = rb_id2str(RB_NODE_CONSTANT_WRITE(node)->name);
         goto end;
+      case RB_CONSTANT_OPERATOR_WRITE_NODE:
+        path = rb_id2str(RB_NODE_CONSTANT_OPERATOR_WRITE(node)->name);
+        goto end;
+      case RB_CONSTANT_OR_WRITE_NODE:
+        path = rb_id2str(RB_NODE_CONSTANT_OR_WRITE(node)->name);
+        goto end;
+      case RB_CONSTANT_AND_WRITE_NODE:
+        path = rb_id2str(RB_NODE_CONSTANT_AND_WRITE(node)->name);
+        goto end;
       case RB_CONSTANT_PATH_WRITE_NODE:
         node = RB_NODE_CONSTANT_PATH_WRITE(node)->target;
         break;
@@ -11653,7 +11725,7 @@ node_const_decl_val(const NODE *node)
             // NODE_COLON3
             // ::Const
             path = rb_str_new_cstr("::");
-            rb_str_append(path, rb_id2str(RNODE_COLON3(node)->nd_mid));
+            rb_str_append(path, rb_id2str(RB_NODE_CONSTANT_PATH(node)->name));
             goto end;
         }
       default:
@@ -12226,9 +12298,14 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
                   get_ivar_ic_value(iseq, id));
         break;
       }
-      case RB_CONSTANT_WRITE_NODE:
+      case RB_CONSTANT_WRITE_NODE: {
+        rb_constant_write_node_t *cast = (rb_constant_write_node_t *)node;
+        CHECK(compile_constant_write(iseq, ret, rb_parser_shareable_none, node, cast->name, cast->value, popped));
+        break;
+      }
       case RB_CONSTANT_TARGET_NODE: {
-        CHECK(compile_constant_write(iseq, ret, rb_parser_shareable_none, node, popped));
+        rb_constant_target_node_t *cast = (rb_constant_target_node_t *)node;
+        CHECK(compile_constant_write(iseq, ret, rb_parser_shareable_none, node, cast->name, NULL, popped));
         break;
       }
       case RB_CONSTANT_PATH_WRITE_NODE:
@@ -12242,10 +12319,28 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
 
         switch (nd_type(n)) {
           case RB_CONSTANT_WRITE_NODE:
-            CHECK(compile_constant_write(iseq, ret, shareable, n, popped));
+            CHECK(compile_constant_write(iseq, ret, shareable, n, RB_NODE_CONSTANT_WRITE(n)->name, RB_NODE_CONSTANT_WRITE(n)->value, popped));
             break;
           case RB_CONSTANT_PATH_WRITE_NODE:
             CHECK(compile_constant_path_write(iseq, ret, shareable, n, popped));
+            break;
+          case RB_CONSTANT_OPERATOR_WRITE_NODE:
+            CHECK(compile_constant_operator_write(iseq, ret, shareable, n, popped));
+            break;
+          case RB_CONSTANT_AND_WRITE_NODE:
+            CHECK(compile_op_log(iseq, ret, shareable, n, RB_NODE_CONSTANT_AND_WRITE(n)->name, RB_NODE_CONSTANT_AND_WRITE(n)->value, popped, TRUE));
+            break;
+          case RB_CONSTANT_OR_WRITE_NODE:
+            CHECK(compile_op_log(iseq, ret, shareable, n, RB_NODE_CONSTANT_OR_WRITE(n)->name, RB_NODE_CONSTANT_OR_WRITE(n)->value, popped, FALSE));
+            break;
+          case RB_CONSTANT_PATH_OPERATOR_WRITE_NODE:
+            CHECK(compile_op_cdecl(iseq, ret, shareable, n, RB_NODE_CONSTANT_PATH_OPERATOR_WRITE(n)->target, RB_NODE_CONSTANT_PATH_OPERATOR_WRITE(n)->binary_operator, RB_NODE_CONSTANT_PATH_OPERATOR_WRITE(n)->value, popped));
+            break;
+          case RB_CONSTANT_PATH_AND_WRITE_NODE:
+            CHECK(compile_op_cdecl(iseq, ret, shareable, n, RB_NODE_CONSTANT_PATH_AND_WRITE(n)->target, idANDOP, RB_NODE_CONSTANT_PATH_AND_WRITE(n)->value, popped));
+            break;
+          case RB_CONSTANT_PATH_OR_WRITE_NODE:
+            CHECK(compile_op_cdecl(iseq, ret, shareable, n, RB_NODE_CONSTANT_PATH_OR_WRITE(n)->target, idOROP, RB_NODE_CONSTANT_PATH_OR_WRITE(n)->value, popped));
             break;
           default:
             rb_bug("unexpected node: %s", ruby_node_name(nd_type(n)));
@@ -12303,7 +12398,6 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         CHECK(compile_op_asgn2(iseq, ret, node, cast->receiver, cast->read_name, cast->write_name, idANDOP, cast->value, popped));
         break;
       }
-
       case RB_LOCAL_VARIABLE_OPERATOR_WRITE_NODE: {
         rb_local_variable_operator_write_node_t *cast = (rb_local_variable_operator_write_node_t *)node;
         CHECK(compile_lvar(iseq, ret, node, cast->name));
@@ -12349,38 +12443,61 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         break;
       }
       case RB_LOCAL_VARIABLE_AND_WRITE_NODE: {
-        CHECK(compile_op_log(iseq, ret, node, RB_NODE_LOCAL_VARIABLE_AND_WRITE(node)->name, RB_NODE_LOCAL_VARIABLE_AND_WRITE(node)->value, popped, TRUE));
+        CHECK(compile_op_log(iseq, ret, rb_parser_shareable_none, node, RB_NODE_LOCAL_VARIABLE_AND_WRITE(node)->name, RB_NODE_LOCAL_VARIABLE_AND_WRITE(node)->value, popped, TRUE));
         break;
       }
       case RB_INSTANCE_VARIABLE_AND_WRITE_NODE: {
-        CHECK(compile_op_log(iseq, ret, node, RB_NODE_INSTANCE_VARIABLE_AND_WRITE(node)->name, RB_NODE_INSTANCE_VARIABLE_AND_WRITE(node)->value, popped, TRUE));
+        CHECK(compile_op_log(iseq, ret, rb_parser_shareable_none, node, RB_NODE_INSTANCE_VARIABLE_AND_WRITE(node)->name, RB_NODE_INSTANCE_VARIABLE_AND_WRITE(node)->value, popped, TRUE));
         break;
       }
       case RB_CLASS_VARIABLE_AND_WRITE_NODE: {
-        CHECK(compile_op_log(iseq, ret, node, RB_NODE_CLASS_VARIABLE_AND_WRITE(node)->name, RB_NODE_CLASS_VARIABLE_AND_WRITE(node)->value, popped, TRUE));
+        CHECK(compile_op_log(iseq, ret, rb_parser_shareable_none, node, RB_NODE_CLASS_VARIABLE_AND_WRITE(node)->name, RB_NODE_CLASS_VARIABLE_AND_WRITE(node)->value, popped, TRUE));
         break;
       }
       case RB_GLOBAL_VARIABLE_AND_WRITE_NODE: {
-        CHECK(compile_op_log(iseq, ret, node, RB_NODE_GLOBAL_VARIABLE_AND_WRITE(node)->name, RB_NODE_GLOBAL_VARIABLE_AND_WRITE(node)->value, popped, TRUE));
+        CHECK(compile_op_log(iseq, ret, rb_parser_shareable_none, node, RB_NODE_GLOBAL_VARIABLE_AND_WRITE(node)->name, RB_NODE_GLOBAL_VARIABLE_AND_WRITE(node)->value, popped, TRUE));
         break;
       }
       case RB_LOCAL_VARIABLE_OR_WRITE_NODE: {
-        CHECK(compile_op_log(iseq, ret, node, RB_NODE_LOCAL_VARIABLE_OR_WRITE(node)->name, RB_NODE_LOCAL_VARIABLE_OR_WRITE(node)->value, popped, FALSE));
+        CHECK(compile_op_log(iseq, ret, rb_parser_shareable_none, node, RB_NODE_LOCAL_VARIABLE_OR_WRITE(node)->name, RB_NODE_LOCAL_VARIABLE_OR_WRITE(node)->value, popped, FALSE));
         break;
       }
       case RB_INSTANCE_VARIABLE_OR_WRITE_NODE: {
-        CHECK(compile_op_log(iseq, ret, node, RB_NODE_INSTANCE_VARIABLE_OR_WRITE(node)->name, RB_NODE_INSTANCE_VARIABLE_OR_WRITE(node)->value, popped, FALSE));
+        CHECK(compile_op_log(iseq, ret, rb_parser_shareable_none, node, RB_NODE_INSTANCE_VARIABLE_OR_WRITE(node)->name, RB_NODE_INSTANCE_VARIABLE_OR_WRITE(node)->value, popped, FALSE));
         break;
       }
       case RB_CLASS_VARIABLE_OR_WRITE_NODE: {
-        CHECK(compile_op_log(iseq, ret, node, RB_NODE_CLASS_VARIABLE_OR_WRITE(node)->name, RB_NODE_CLASS_VARIABLE_OR_WRITE(node)->value, popped, FALSE));
+        CHECK(compile_op_log(iseq, ret, rb_parser_shareable_none, node, RB_NODE_CLASS_VARIABLE_OR_WRITE(node)->name, RB_NODE_CLASS_VARIABLE_OR_WRITE(node)->value, popped, FALSE));
         break;
       }
       case RB_GLOBAL_VARIABLE_OR_WRITE_NODE: {
-        CHECK(compile_op_log(iseq, ret, node, RB_NODE_GLOBAL_VARIABLE_OR_WRITE(node)->name, RB_NODE_GLOBAL_VARIABLE_OR_WRITE(node)->value, popped, FALSE));
+        CHECK(compile_op_log(iseq, ret, rb_parser_shareable_none, node, RB_NODE_GLOBAL_VARIABLE_OR_WRITE(node)->name, RB_NODE_GLOBAL_VARIABLE_OR_WRITE(node)->value, popped, FALSE));
         break;
       }
-
+      case RB_CONSTANT_OPERATOR_WRITE_NODE: {
+        CHECK(compile_constant_operator_write(iseq, ret, rb_parser_shareable_none, node, popped));
+        break;
+      }
+      case RB_CONSTANT_PATH_OPERATOR_WRITE_NODE: {
+        CHECK(compile_op_cdecl(iseq, ret, rb_parser_shareable_none, node, RB_NODE_CONSTANT_PATH_OPERATOR_WRITE(node)->target, RB_NODE_CONSTANT_PATH_OPERATOR_WRITE(node)->binary_operator, RB_NODE_CONSTANT_PATH_OPERATOR_WRITE(node)->value, popped));
+        break;
+      }
+      case RB_CONSTANT_OR_WRITE_NODE: {
+        CHECK(compile_op_log(iseq, ret, rb_parser_shareable_none, node, RB_NODE_CONSTANT_OR_WRITE(node)->name, RB_NODE_CONSTANT_OR_WRITE(node)->value, popped, FALSE));
+        break;
+      }
+      case RB_CONSTANT_PATH_OR_WRITE_NODE: {
+        CHECK(compile_op_cdecl(iseq, ret, rb_parser_shareable_none, node, RB_NODE_CONSTANT_PATH_OR_WRITE(node)->target, idOROP, RB_NODE_CONSTANT_PATH_OR_WRITE(node)->value, popped));
+        break;
+      }
+      case RB_CONSTANT_AND_WRITE_NODE: {
+        CHECK(compile_op_log(iseq, ret, rb_parser_shareable_none, node, RB_NODE_CONSTANT_AND_WRITE(node)->name, RB_NODE_CONSTANT_AND_WRITE(node)->value, popped, TRUE));
+        break;
+      }
+      case RB_CONSTANT_PATH_AND_WRITE_NODE: {
+        CHECK(compile_op_cdecl(iseq, ret, rb_parser_shareable_none, node, RB_NODE_CONSTANT_PATH_AND_WRITE(node)->target, idANDOP, RB_NODE_CONSTANT_PATH_AND_WRITE(node)->value, popped));
+        break;
+      }
       case RB_CALL_NODE: {
         if (rb_node_get_fl(node) & RB_CALL_NODE_FLAGS_ATTRIBUTE_WRITE) {
             CHECK(compile_attrasgn(iseq, ret, node, popped));
@@ -12473,20 +12590,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       }
       case RB_CONSTANT_READ_NODE: {
         debugi("nd_vid", RB_NODE_CONSTANT_READ(node)->name);
-
-        if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
-            body->ic_size++;
-            VALUE segments = rb_ary_new_from_args(1, ID2SYM(RB_NODE_CONSTANT_READ(node)->name));
-            RB_OBJ_SET_FROZEN_SHAREABLE(segments);
-            ADD_INSN1(ret, node, opt_getconstant_path, segments);
-            RB_OBJ_WRITTEN(iseq, Qundef, segments);
-        }
-        else {
-            ADD_INSN(ret, node, putnil);
-            ADD_INSN1(ret, node, putobject, Qtrue);
-            ADD_INSN1(ret, node, getconstant, ID2SYM(RB_NODE_CONSTANT_READ(node)->name));
-        }
-
+        CHECK(compile_constant_read(iseq, ret, node, RB_NODE_CONSTANT_READ(node)->name));
         if (popped) {
             ADD_INSN(ret, node, pop);
         }
