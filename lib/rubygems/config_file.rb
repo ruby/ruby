@@ -220,7 +220,8 @@ class Gem::ConfigFile
     @hash.transform_keys! do |k|
       # gemhome and gempath are not working with symbol keys
       if %w[backtrace bulk_threshold verbose update_sources cert_expiration_length_days
-            install_extension_in_lib ipv4_fallback_enabled global_gem_cache sources
+            concurrent_downloads install_extension_in_lib ipv4_fallback_enabled
+            global_gem_cache sources
             disable_default_gem_server ssl_verify_mode ssl_ca_cert ssl_client_cert].include?(k)
         k.to_sym
       else
@@ -233,7 +234,7 @@ class Gem::ConfigFile
     @bulk_threshold              = @hash[:bulk_threshold]              if @hash.key? :bulk_threshold
     @verbose                     = @hash[:verbose]                     if @hash.key? :verbose
     @update_sources              = @hash[:update_sources]              if @hash.key? :update_sources
-    # TODO: We should handle concurrent_downloads same as other options
+    @concurrent_downloads        = @hash[:concurrent_downloads]        if @hash.key? :concurrent_downloads
     @cert_expiration_length_days = @hash[:cert_expiration_length_days] if @hash.key? :cert_expiration_length_days
     @install_extension_in_lib    = @hash[:install_extension_in_lib]    if @hash.key? :install_extension_in_lib
     @ipv4_fallback_enabled       = @hash[:ipv4_fallback_enabled]       if @hash.key? :ipv4_fallback_enabled
