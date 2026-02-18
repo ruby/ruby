@@ -160,6 +160,8 @@ make_counters! {
         profile_time_ns,
         gc_time_ns,
         invalidation_time_ns,
+
+        side_exit_size,
     }
 
     // Exit counters that are summed as side_exit_count
