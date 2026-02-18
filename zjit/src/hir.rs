@@ -1016,6 +1016,12 @@ pub enum Insn {
     /// Refine the known type information of with additional type information.
     /// Computes the intersection of the existing type and the new type.
     RefineType { val: InsnId, new_type: Type },
+    /// Refine the known shape of an object.
+    /// The shape of an object can change, so it doesn't fit well into the HIR type system, so we
+    /// use this instruction as a stopgap to model shape information with the proper lifetime.
+    /// - is_t_object: true for T_OBJECT (use LoadField), false for other types (use CCall)
+    /// - is_embedded: only meaningful when is_t_object=true; indicates embedded vs heap storage
+    RefineShape { val: InsnId, shape: ShapeId, is_t_object: bool, is_embedded: bool },
     /// Return CBool[true] if val has type Type and CBool[false] otherwise.
     HasType { val: InsnId, expected: Type },
 
@@ -1226,6 +1232,7 @@ impl Insn {
             Insn::CheckInterrupts { .. } => effects::Any,
             Insn::InvokeProc { .. } => effects::Any,
             Insn::RefineType { .. } => effects::Empty,
+            Insn::RefineShape { .. } => effects::Empty,
             Insn::HasType { .. } => effects::Empty,
         }
     }
@@ -1541,6 +1548,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::FixnumRShift { left, right, .. } => { write!(f, "FixnumRShift {left}, {right}") },
             Insn::GuardType { val, guard_type, .. } => { write!(f, "GuardType {val}, {}", guard_type.print(self.ptr_map)) },
             Insn::RefineType { val, new_type, .. } => { write!(f, "RefineType {val}, {}", new_type.print(self.ptr_map)) },
+            Insn::RefineShape { val, shape, .. } => { write!(f, "RefineShape {val}, {:p}", self.ptr_map.map_shape(*shape)) },
             Insn::HasType { val, expected, .. } => { write!(f, "HasType {val}, {}", expected.print(self.ptr_map)) },
             Insn::GuardTypeNot { val, guard_type, .. } => { write!(f, "GuardTypeNot {val}, {}", guard_type.print(self.ptr_map)) },
             Insn::GuardBitEquals { val, expected, .. } => { write!(f, "GuardBitEquals {val}, {}", expected.print(self.ptr_map)) },
@@ -2231,6 +2239,7 @@ impl Function {
             &IfTrue { val, ref target } => IfTrue { val: find!(val), target: find_branch_edge!(target) },
             &IfFalse { val, ref target } => IfFalse { val: find!(val), target: find_branch_edge!(target) },
             &RefineType { val, new_type } => RefineType { val: find!(val), new_type },
+            &RefineShape { val, shape, is_t_object, is_embedded } => RefineShape { val: find!(val), shape, is_t_object, is_embedded },
             &HasType { val, expected } => HasType { val: find!(val), expected },
             &GuardType { val, guard_type, state } => GuardType { val: find!(val), guard_type, state },
             &GuardTypeNot { val, guard_type, state } => GuardTypeNot { val: find!(val), guard_type, state },
@@ -2482,6 +2491,7 @@ impl Function {
             &Insn::CCallVariadic { return_type, .. } => return_type,
             Insn::GuardType { val, guard_type, .. } => self.type_of(*val).intersection(*guard_type),
             Insn::RefineType { val, new_type, .. } => self.type_of(*val).intersection(*new_type),
+            Insn::RefineShape { val, .. } => self.type_of(*val),
             Insn::HasType { .. } => types::CBool,
             Insn::GuardTypeNot { .. } => types::BasicObject,
             Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_const(*expected)),
@@ -2663,6 +2673,8 @@ impl Function {
         }
     }
 
+    /// Peal away type changes for a value to find the first instruction in the
+    /// chain for profile ingestion.
     fn chase_insn(&self, insn: InsnId) -> InsnId {
         let id = self.union_find.borrow().find_const(insn);
         match self.insns[id.0] {
@@ -2670,8 +2682,9 @@ impl Function {
             | Insn::GuardTypeNot { val, .. }
             | Insn::GuardBitEquals { val, .. }
             | Insn::GuardAnyBitSet { val, .. }
-            | Insn::GuardNoBitsSet { val, .. } => self.chase_insn(val),
-            | Insn::RefineType { val, .. } => self.chase_insn(val),
+            | Insn::GuardNoBitsSet { val, .. }
+            | Insn::RefineType { val, .. }
+            | Insn::RefineShape { val, .. } => self.chase_insn(val),
             _ => id,
         }
     }
@@ -2864,6 +2877,21 @@ impl Function {
             if self.union_find.borrow().find_const(*entry_insn) == recv {
                 if entry_type_summary.is_polymorphic() {
                     return Some(entry_type_summary.clone());
+                }
+                return None;
+            }
+        }
+        None
+    }
+
+    /// Get monomorphic or skewed polymorphic profile for a receiver at a given instruction.
+    fn monomorphic_profile(&self, profiles: &ProfileOracle, recv: InsnId, insn_idx: usize) -> Option<ProfiledType> {
+        let entries = profiles.types.get(&insn_idx)?;
+        let recv = self.chase_insn(recv);
+        for (entry_insn, entry_type_summary) in entries {
+            if self.union_find.borrow().find_const(*entry_insn) == recv {
+                if entry_type_summary.is_monomorphic() || entry_type_summary.is_skewed_polymorphic() {
+                    return Some(entry_type_summary.bucket(0));
                 }
                 return None;
             }
@@ -3194,7 +3222,38 @@ impl Function {
                             }
                             let id = unsafe { get_cme_def_body_attr_id(cme) };
 
-                            let getivar = self.push_insn(block, Insn::GetIvar { self_val: recv, id, ic: std::ptr::null(), state });
+                            // Add shape guards for optimizable cases (+ RefineShape for T_OBJECT)
+                            let getivar = if let Some(recv_type) = profiled_type {
+                                if !recv_type.flags().is_immediate() && recv_type.shape().is_valid() && !recv_type.shape().is_too_complex() {
+                                    let shape = self.load_shape(block, recv);
+                                    self.guard_shape(block, shape, recv_type.shape(), state);
+                                    // Add RefineShape for optimize_getivar to lower to LoadField (T_OBJECT) or CCall (non-T_OBJECT)
+                                    let refined_recv = self.push_insn(block, Insn::RefineShape {
+                                        val: recv,
+                                        shape: recv_type.shape(),
+                                        is_t_object: recv_type.flags().is_t_object(),
+                                        is_embedded: recv_type.flags().is_embedded()
+                                    });
+                                    self.push_insn(block, Insn::GetIvar { self_val: refined_recv, id, ic: std::ptr::null(), state })
+                                } else {
+                                    self.push_insn(block, Insn::GetIvar { self_val: recv, id, ic: std::ptr::null(), state })
+                                }
+                            } else if let Some(val) = self.type_of(recv).ruby_object() {
+                                // Constant receiver: get shape info from the VALUE directly
+                                let recv_shape = val.shape_id_of();
+                                if recv_shape.is_valid() && !recv_shape.is_too_complex() {
+                                    let shape = self.load_shape(block, recv);
+                                    self.guard_shape(block, shape, recv_shape, state);
+                                    let is_t_object = unsafe { RB_TYPE_P(val, RUBY_T_OBJECT) };
+                                    let is_embedded = is_t_object && val.embedded_p();
+                                    let refined_recv = self.push_insn(block, Insn::RefineShape { val: recv, shape: recv_shape, is_t_object, is_embedded });
+                                    self.push_insn(block, Insn::GetIvar { self_val: refined_recv, id, ic: std::ptr::null(), state })
+                                } else {
+                                    self.push_insn(block, Insn::GetIvar { self_val: recv, id, ic: std::ptr::null(), state })
+                                }
+                            } else {
+                                self.push_insn(block, Insn::GetIvar { self_val: recv, id, ic: std::ptr::null(), state })
+                            };
                             self.make_equal_to(insn_id, getivar);
                         } else if let (false, VM_METHOD_TYPE_ATTRSET, &[val]) = (has_block, def_type, args.as_slice()) {
                             // Check if we're accessing ivars of a Class or Module object as they require single-ractor mode.
@@ -3754,55 +3813,42 @@ impl Function {
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
                 match self.find(insn_id) {
-                    Insn::GetIvar { self_val, id, ic: _, state } => {
-                        let frame_state = self.frame_state(state);
-                        let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.insn_idx) else {
-                            // No (monomorphic/skewed polymorphic) profile info
-                            self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_not_monomorphic));
-                            self.push_insn_id(block, insn_id); continue;
-                        };
-                        if recv_type.flags().is_immediate() {
-                            // Instance variable lookups on immediate values are always nil
-                            self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_immediate));
-                            self.push_insn_id(block, insn_id); continue;
+                    Insn::GetIvar { self_val, id, ic: _, state: _ } => {
+                        // Strength reduce to LoadFields/CCall when receiver has a known shape from RefineShape
+                        if let Insn::RefineShape { val: refined_val, shape: known_shape, is_t_object, is_embedded } = self.find(self_val) {
+                            let mut ivar_index: u16 = 0;
+                            let replacement = if !unsafe { rb_shape_get_iv_index(known_shape.0, id, &mut ivar_index) } {
+                                // Ivar not in this shape, return nil
+                                self.push_insn(block, Insn::Const { val: Const::Value(Qnil) })
+                            } else if is_t_object {
+                                // T_OBJECT: use LoadField
+                                if is_embedded {
+                                    let offset = ROBJECT_OFFSET_AS_ARY as i32 + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
+                                    self.push_insn(block, Insn::LoadField { recv: refined_val, id, offset, return_type: types::BasicObject })
+                                } else {
+                                    let as_heap = self.push_insn(block, Insn::LoadField { recv: refined_val, id: ID!(_as_heap), offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32, return_type: types::CPtr });
+                                    let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
+                                    self.push_insn(block, Insn::LoadField { recv: as_heap, id, offset, return_type: types::BasicObject })
+                                }
+                            } else {
+                                // Non-T_OBJECT: use CCall
+                                // NOTE: it's fine to use rb_ivar_get_at_no_ractor_check because
+                                // getinstancevariable does assume_single_ractor_mode()
+                                let ivar_index_insn: InsnId = self.push_insn(block, Insn::Const { val: Const::CUInt16(ivar_index) });
+                                self.push_insn(block, Insn::CCall {
+                                    cfunc: rb_ivar_get_at_no_ractor_check as *const u8,
+                                    recv: refined_val,
+                                    args: vec![ivar_index_insn],
+                                    name: ID!(rb_ivar_get_at_no_ractor_check),
+                                    return_type: types::BasicObject,
+                                    elidable: true
+                                })
+                            };
+                            self.make_equal_to(insn_id, replacement);
+                            continue;
                         }
-                        assert!(recv_type.shape().is_valid());
-                        if recv_type.shape().is_too_complex() {
-                            // too-complex shapes can't use index access
-                            self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_too_complex));
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
-                        let shape = self.load_shape(block, self_val);
-                        self.guard_shape(block, shape, recv_type.shape(), state);
-                        let mut ivar_index: u16 = 0;
-                        let replacement = if ! unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
-                            // If there is no IVAR index, then the ivar was undefined when we
-                            // entered the compiler.  That means we can just return nil for this
-                            // shape + iv name
-                            self.push_insn(block, Insn::Const { val: Const::Value(Qnil) })
-                        } else if !recv_type.flags().is_t_object() {
-                            // NOTE: it's fine to use rb_ivar_get_at_no_ractor_check because
-                            // getinstancevariable does assume_single_ractor_mode()
-                            let ivar_index_insn: InsnId = self.push_insn(block, Insn::Const { val: Const::CUInt16(ivar_index as u16) });
-                            self.push_insn(block, Insn::CCall {
-                                cfunc: rb_ivar_get_at_no_ractor_check as *const u8,
-                                recv: self_val,
-                                args: vec![ivar_index_insn],
-                                name: ID!(rb_ivar_get_at_no_ractor_check),
-                                return_type: types::BasicObject,
-                                elidable: true })
-                        } else if recv_type.flags().is_embedded() {
-                            // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
-                            let offset = ROBJECT_OFFSET_AS_ARY as i32 + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
-                            self.push_insn(block, Insn::LoadField { recv: self_val, id, offset, return_type: types::BasicObject })
-                        } else {
-                            let as_heap =  self.push_insn(block, Insn::LoadField { recv: self_val, id: ID!(_as_heap), offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32, return_type: types::CPtr });
-
-                            let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
-                            self.push_insn(block, Insn::LoadField { recv: as_heap, id, offset, return_type: types::BasicObject })
-                        };
-                        self.make_equal_to(insn_id, replacement);
+                        // No RefineShape: leave as GetIvar for interpreter fallback
+                        self.push_insn_id(block, insn_id);
                     }
                     Insn::DefinedIvar { self_val, id, pushval, state } => {
                         let frame_state = self.frame_state(state);
@@ -4664,6 +4710,7 @@ impl Function {
                 worklist.push_back(state);
             }
             | &Insn::RefineType { val, .. }
+            | &Insn::RefineShape { val, .. }
             | &Insn::HasType { val, .. }
             | &Insn::Return { val }
             | &Insn::Test { val }
@@ -5630,6 +5677,7 @@ impl Function {
                 self.assert_subtype(insn_id, class, types::Class)
             }
             Insn::RefineType { .. } => Ok(()),
+            Insn::RefineShape { .. } => Ok(()),
             Insn::HasType { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
         }
     }
@@ -6149,6 +6197,25 @@ fn invalidates_locals(opcode: u32, operands: *const VALUE) -> bool {
 
 /// The index of the self parameter in the HIR function
 pub const SELF_PARAM_IDX: usize = 0;
+
+// TODO place this better
+fn new_branch_block(
+    fun: &mut Function,
+    insn_idx: u32,
+    exit_state: &FrameState,
+    locals_count: usize,
+    stack_count: usize,
+) -> (BlockId, InsnId, FrameState, InsnId) {
+    let block = fun.new_block(insn_idx);
+    let self_param = fun.push_insn(block, Insn::Param);
+    let mut state = exit_state.clone();
+    state.locals.clear();
+    state.stack.clear();
+    state.locals.extend((0..locals_count).map(|_| fun.push_insn(block, Insn::Param)));
+    state.stack.extend((0..stack_count).map(|_| fun.push_insn(block, Insn::Param)));
+    let snapshot = fun.push_insn(block, Insn::Snapshot { state: state.clone() });
+    (block, self_param, state, snapshot)
+}
 
 /// Compile ISEQ into High-level IR
 pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
@@ -6769,24 +6836,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     }
                 }
                 YARVINSN_getblockparam => {
-                    fn new_branch_block(
-                        fun: &mut Function,
-                        insn_idx: u32,
-                        exit_state: &FrameState,
-                        locals_count: usize,
-                        stack_count: usize,
-                    ) -> (BlockId, InsnId, FrameState, InsnId) {
-                        let block = fun.new_block(insn_idx);
-                        let self_param = fun.push_insn(block, Insn::Param);
-                        let mut state = exit_state.clone();
-                        state.locals.clear();
-                        state.stack.clear();
-                        state.locals.extend((0..locals_count).map(|_| fun.push_insn(block, Insn::Param)));
-                        state.stack.extend((0..stack_count).map(|_| fun.push_insn(block, Insn::Param)));
-                        let snapshot = fun.push_insn(block, Insn::Snapshot { state: state.clone() });
-                        (block, self_param, state, snapshot)
-                    }
-
                     fn finish_getblockparam_branch(
                         fun: &mut Function,
                         block: BlockId,
@@ -7055,6 +7104,100 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         let recv = state.stack_topn(argc as usize)?;  // args are on top
                         let entry_args = state.as_args(self_param);
                         if let Some(summary) = fun.polymorphic_summary(&profiles, recv, exit_state.insn_idx) {
+                            let first_class = summary.bucket(0).class();
+
+                            // Check if method is attr_reader (VM_METHOD_TYPE_IVAR)
+                            let mid = unsafe { vm_ci_mid(call_info) };
+                            let cme = unsafe { rb_callable_method_entry(first_class, mid) };
+                            let callee_attr_reader = if !cme.is_null() {
+                                let def_type = unsafe { get_cme_def_type(cme) };
+                                def_type == VM_METHOD_TYPE_IVAR && 0 == (flags & VM_CALL_ARGS_BLOCKARG) && argc == 0
+                            } else {
+                                false
+                            };
+
+                            // Check if all profiles have the same class but different shapes (T_OBJECT only)
+                            // and if the method is attr_reader - if so, do shape-based splitting
+                            if callee_attr_reader && summary.buckets().iter()
+                                    .take_while(|pt| !pt.is_empty())
+                                    .all(|pt| pt.class() == first_class && pt.flags().is_t_object())
+                            {
+                                // Shape-based splitting for attr_reader with same-class-different-shapes
+                                let id = unsafe { get_cme_def_body_attr_id(cme) };
+                                let join_block = insn_idx_to_block.get(&insn_idx).copied().unwrap_or_else(|| fun.new_block(insn_idx));
+
+                                // Guard type once and load shape
+                                let guarded_recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_class(first_class), state: exit_id });
+                                fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: first_class }, state: exit_id });
+                                fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass: first_class, method: mid, cme }, state: exit_id });
+                                let shape = fun.load_shape(block, guarded_recv);
+
+                                // Replace recv with guarded_recv on the stack so it flows to branch blocks
+                                state.replace(recv, guarded_recv);
+                                let guarded_entry_args = state.as_args(self_param);
+
+                                // For each profiled shape, create a branch with RefineShape + GetIvar
+                                for &profiled_type in summary.buckets() {
+                                    if profiled_type.is_empty() { break; }
+                                    let load_block = fun.new_block(branch_insn_idx);
+                                    let load_block_self = fun.push_insn(load_block, Insn::Param);
+                                    let mut branch_state = exit_state.clone();
+                                    branch_state.locals.clear();
+                                    branch_state.stack.clear();
+                                    branch_state.locals.extend((0..locals_count).map(|_| fun.push_insn(load_block, Insn::Param)));
+                                    branch_state.stack.extend((0..stack_count).map(|_| fun.push_insn(load_block, Insn::Param)));
+                                    let load_block_exit_id = fun.push_insn(load_block, Insn::Snapshot { state: branch_state.clone() });
+
+                                    // Check shape with IsBitEqual
+                                    let expected_shape = fun.push_insn(block, Insn::Const { val: Const::CShape(profiled_type.shape()) });
+                                    let test_id = fun.push_insn(block, Insn::IsBitEqual { left: shape, right: expected_shape });
+                                    fun.push_insn(block, Insn::IfTrue {
+                                        val: test_id,
+                                        target: BranchEdge {
+                                            target: load_block,
+                                            args: guarded_entry_args.clone()
+                                        }
+                                    });
+
+                                    // Pop recv from branch_state stack (it's the last Param we added)
+                                    let load_block_recv = branch_state.stack_pop().unwrap();
+
+                                    // RefineShape + GetIvar in the branch block (all shapes are T_OBJECT per same_class_varying_shapes check)
+                                    let refined_recv = fun.push_insn(load_block, Insn::RefineShape {
+                                        val: load_block_recv,
+                                        shape: profiled_type.shape(),
+                                        is_t_object: true,
+                                        is_embedded: profiled_type.flags().is_embedded()
+                                    });
+                                    let ivar = fun.push_insn(load_block, Insn::GetIvar {
+                                        self_val: refined_recv,
+                                        id,
+                                        ic: std::ptr::null(),
+                                        state: load_block_exit_id
+                                    });
+                                    branch_state.stack_push(ivar);
+                                    fun.push_insn(load_block, Insn::Jump(BranchEdge {
+                                        target: join_block,
+                                        args: branch_state.as_args(load_block_self),
+                                    }));
+                                }
+
+                                // Fallback: plain GetIvar
+                                let mut join_state = state.clone();
+                                join_state.stack_pop_n(argc as usize)?;
+                                queue.push_back((join_state, join_block, insn_idx, local_inval));
+
+                                state.stack_pop_n(argc as usize)?;  // pop args (none for attr_reader)
+                                state.stack_pop()?;  // pop recv (now guarded_recv)
+                                let ivar = fun.push_insn(block, Insn::GetIvar { self_val: guarded_recv, id, ic: std::ptr::null(), state: exit_id });
+                                state.stack_push(ivar);
+                                fun.push_insn(block, Insn::Jump(BranchEdge {
+                                    target: join_block,
+                                    args: state.as_args(self_param),
+                                }));
+                                break;  // End the block
+                            }
+
                             let join_block = insn_idx_to_block.get(&insn_idx).copied().unwrap_or_else(|| fun.new_block(insn_idx));
                             // TODO(max): Only iterate over unique classes, not unique (class, shape) pairs.
                             for &profiled_type in summary.buckets() {
@@ -7241,8 +7384,114 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledYARVInsn(opcode) });
                         break;  // End the block
                     }
-                    let result = fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id });
-                    state.stack_push(result);
+
+                    // When polymorphic, build blocks like the following
+                    //                ┌──────────────────────────────────┐
+                    //                │ switch block                     │
+                    //                │ shape = GetShape                 │
+                    //                │ test0 = BitsEqual expected_shape1, shape
+                    //            ┌───┼ IfTrue test0, load_shape1        │
+                    //            │   │ test1 = BitsEqual expected_shape2, shape
+                    //            │   │ IfTrue test1, load_shape2────────┬─────────────────────┐
+                    //            │   │ ivar = GetIvar self              │                     │
+                    //            │   │ (push ivar in frame state)       │                     │
+                    //            │   │ Jump join_block                  │                     │
+                    //            │   └─────────────────────────┬────────┘                     │
+                    //            │                             │                              │
+                    //            │                             │                              │
+                    //  ┌─────────▼──────────────────────────┐  │  ┌───────────────────────────▼───────┐
+                    //  │ ivar = LoadField self, shape1_index│  │  │ ivar = LoadField self, shape2_inde│
+                    //  │ (push ivar in frame state)         │  │  │ (push ivar in frame state)        │
+                    //  │ Jump join_block──────────────────┐ │  │  │ Jump join_block                   │
+                    //  └──────────────────────────────────┼─┘  │  └─┬─────────────────────────────────┘
+                    //                                     │    │    │
+                    //                  ┌──────────────────▼────▼────▼─────────────────────┐
+                    //                  │join_block                                        │
+                    //                  │(instructions for after the `getinstancevariable`)│
+                    //                  └──────────────────────────────────────────────────┘
+                    let mut t_object_varying_shapes = true;
+                    if let Some(summary) = fun.polymorphic_summary(&profiles, self_param, exit_state.insn_idx) {
+                        // Only split in cases that vary in shape for now -- all T_OBJECT
+                        for &profiled_type in summary.buckets() {
+                            if profiled_type.is_empty() { break; }
+                            if !profiled_type.flags().is_t_object() {
+                                t_object_varying_shapes = false;
+                            }
+                        }
+
+                        // Just a GetIvar if not splitting
+                        if !t_object_varying_shapes {
+                            let result = fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id });
+                            state.stack_push(result);
+                        } else {
+                            let self_val = fun.push_insn(block, Insn::GuardType { val: self_param, guard_type: types::HeapBasicObject, state: exit_id });
+                            let shape = fun.load_shape(block, self_val);
+                            let join_block = insn_idx_to_block.get(&insn_idx).copied().unwrap_or_else(|| fun.new_block(insn_idx));
+
+                            // For each profiled shape, make a block that handles it
+                            for &profiled_type in summary.buckets() {
+                                if profiled_type.is_empty() { break; }
+                                let branch_insn_idx = exit_state.insn_idx as u32;
+                                let locals_count = state.locals.len();
+                                let stack_count = state.stack.len();
+                                let (load_block, load_block_self, mut get_field_state, load_block_exit_id) = new_branch_block(&mut fun, branch_insn_idx, &exit_state, locals_count, stack_count);
+                                let expected_shape = fun.push_insn(block, Insn::Const { val: Const::CShape(profiled_type.shape()) });
+                                let test_id = fun.push_insn(block, Insn::IsBitEqual { left: shape, right: expected_shape });
+                                fun.push_insn(block, Insn::IfTrue {
+                                    val: test_id,
+                                    target: BranchEdge {
+                                        target: load_block,
+                                        args: state.as_args(self_param)
+                                    }
+                                });
+
+                                // RefineShape records the known shape, GetIvar will be lowered in optimize_getivar
+                                // (all cases are T_OBJECT per t_object_varying_shapes check)
+                                let refined_self = fun.push_insn(load_block, Insn::RefineShape { val: load_block_self, shape: profiled_type.shape(), is_t_object: true, is_embedded: profiled_type.flags().is_embedded() });
+                                let ivar = fun.push_insn(load_block, Insn::GetIvar { self_val: refined_self, id, ic, state: load_block_exit_id });
+
+                                get_field_state.stack_push(ivar);
+                                fun.push_insn(load_block, Insn::Jump(BranchEdge {
+                                    target: join_block,
+                                    args: get_field_state.as_args(load_block_self),
+                                }));
+                            }
+
+                            // The fallback case, just getivar
+                            let ivar = fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id });
+                            state.stack_push(ivar);
+                            fun.push_insn(block, Insn::Jump(BranchEdge {
+                                target: join_block,
+                                args: state.as_args(self_param),
+                            }));
+                            queue.push_back((state, join_block, insn_idx, local_inval));
+                            break;  // End the block
+                        }
+                    } else if let Some(recv_type) = fun.monomorphic_profile(&profiles, self_param, exit_state.insn_idx) {
+                        // Monomorphic case: emit guards and RefineShape + GetIvar
+                        if !recv_type.flags().is_immediate() && recv_type.shape().is_valid() && !recv_type.shape().is_too_complex() {
+                            let self_val = fun.push_insn(block, Insn::GuardType { val: self_param, guard_type: types::HeapBasicObject, state: exit_id });
+                            let shape = fun.load_shape(block, self_val);
+                            fun.guard_shape(block, shape, recv_type.shape(), exit_id);
+                            // RefineShape for optimize_getivar to lower to LoadField (T_OBJECT) or CCall (non-T_OBJECT)
+                            let refined_self = fun.push_insn(block, Insn::RefineShape {
+                                val: self_val,
+                                shape: recv_type.shape(),
+                                is_t_object: recv_type.flags().is_t_object(),
+                                is_embedded: recv_type.flags().is_embedded()
+                            });
+                            let result = fun.push_insn(block, Insn::GetIvar { self_val: refined_self, id, ic, state: exit_id });
+                            state.stack_push(result);
+                        } else {
+                            // Profile exists but not suitable for optimization
+                            let result = fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id });
+                            state.stack_push(result);
+                        }
+                    } else {
+                        // no profile
+                        let result = fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id });
+                        state.stack_push(result);
+                    }
                 }
                 YARVINSN_setinstancevariable => {
                     let id = ID(get_arg(pc, 0).as_u64());

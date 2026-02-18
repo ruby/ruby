@@ -2662,7 +2662,7 @@ pub mod hir_build_tests {
             test
         ");
         assert_contains_opcode("test", YARVINSN_getinstancevariable);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb0():
           EntryPoint interpreter
@@ -2673,9 +2673,13 @@ pub mod hir_build_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
-          v11:BasicObject = GetIvar v6, :@foo
+          v11:HeapBasicObject = GuardType v6, HeapBasicObject
+          v12:CShape = LoadField v11, :_shape_id@0x1000
+          v13:CShape[0x1001] = GuardBitEquals v12, CShape(0x1001)
+          v14:HeapBasicObject = RefineShape v11, 0x1001
+          v15:BasicObject = GetIvar v14, :@foo
           CheckInterrupts
-          Return v11
+          Return v15
         ");
     }
 
