@@ -1159,7 +1159,7 @@ rb_tracearg_eval_script(rb_trace_arg_t *trace_arg)
         rb_raise(rb_eRuntimeError, "not supported by this event");
     }
     if (UNDEF_P(data)) {
-        rb_bug("rb_tracearg_raised_exception: unreachable");
+        rb_bug("rb_tracearg_eval_script: unreachable");
     }
     if (rb_obj_is_iseq(data)) {
         return Qnil;
@@ -1183,7 +1183,7 @@ rb_tracearg_instruction_sequence(rb_trace_arg_t *trace_arg)
         rb_raise(rb_eRuntimeError, "not supported by this event");
     }
     if (UNDEF_P(data)) {
-        rb_bug("rb_tracearg_raised_exception: unreachable");
+        rb_bug("rb_tracearg_instruction_sequence: unreachable");
     }
 
     if (rb_obj_is_iseq(data)) {
