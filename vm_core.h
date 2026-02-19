@@ -722,7 +722,8 @@ typedef struct rb_vm_struct {
             bool locked;
 
             rb_nativethread_cond_t cond; // GRQ
-            unsigned int snt_cnt; // count of shared NTs
+            unsigned int snt_cnt; // count of shared NTs (including waiting)
+            rb_atomic_t waiting_snt_cnt; // count of shared NTs in blocking calls
             unsigned int dnt_cnt; // count of dedicated NTs
 
             unsigned int running_cnt;
