@@ -674,6 +674,7 @@ set_i_join(int argc, VALUE *argv, VALUE set)
 /*
  *  call-seq:
  *    add(obj) -> self
+ *    self << obj -> self
  *
  *  Adds the given object to the set and returns self. Use Set#merge to
  *  add many elements at once.
@@ -1061,6 +1062,7 @@ set_i_intersection(VALUE set, VALUE other)
 /*
  *  call-seq:
  *    include?(item) -> true or false
+ *    self === item -> true or false
  *
  *  Returns true if the set contains the given object:
  *
@@ -1286,6 +1288,7 @@ set_i_xor(VALUE set, VALUE other)
 /*
  *  call-seq:
  *    set | enum -> new_set
+ *    self + enum -> new_set
  *
  *  Returns a new set built by merging the set and the elements of the
  *  given enumerable object.
@@ -1616,6 +1619,7 @@ set_le(VALUE set, VALUE other)
 /*
  *  call-seq:
  *    proper_subset?(set) -> true or false
+ *    self < set -> true or false
  *
  *  Returns true if the set is a proper subset of the given set.
  */
@@ -1630,6 +1634,7 @@ set_i_proper_subset(VALUE set, VALUE other)
 /*
  *  call-seq:
  *    subset?(set) -> true or false
+ *    self <= set -> true or false
  *
  *  Returns true if the set is a subset of the given set.
  */
@@ -1658,6 +1663,7 @@ set_i_proper_superset(VALUE set, VALUE other)
 /*
  *  call-seq:
  *    superset?(set) -> true or false
+ *    self >= set -> true or false
  *
  *  Returns true if the set is a superset of the given set.
  */
