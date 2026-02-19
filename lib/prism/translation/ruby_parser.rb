@@ -1152,6 +1152,12 @@ module Prism
           s(node, :nil)
         end
 
+        # def foo(&nil); end
+        #         ^^^^
+        def visit_no_block_parameter_node(node)
+          :"&nil"
+        end
+
         # def foo(**nil); end
         #         ^^^^^
         def visit_no_keywords_parameter_node(node)
