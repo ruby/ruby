@@ -41,3 +41,18 @@ benchmark:
     str = STR_UNICODE.b
     str.gsub!(BINARY_PATTERN, ESCAPED_CHARS_BINARY)
     str.force_encoding(Encoding::UTF_8)
+
+  single_char_with_string: |
+    STR.gsub("<", "2")
+
+  single_char_with_compatible_encoding: |
+    STR.b.gsub!("<", "2")
+
+  single_char_with_string_bang: |
+    STR.dup.gsub!("<", "2")
+
+  single_char_with_regex: |
+    STR.gsub(/</, "2")
+
+  multi_char_with_string: |
+    STR.gsub("<aa", "234")
