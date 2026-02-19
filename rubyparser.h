@@ -386,6 +386,8 @@ typedef struct RNode_ENSURE {
 
     struct RNode *nd_head;
     struct RNode *nd_ensr;
+    rb_code_location_t ensure_keyword_loc;
+    rb_code_location_t end_keyword_loc;
 } rb_node_ensure_t;
 
 typedef struct {
