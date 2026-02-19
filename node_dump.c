@@ -591,8 +591,10 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("example: foo ||= bar");
       asgn_andor:
         F_NODE(nd_head, RNODE_OP_ASGN_AND, "variable");
-        LAST_NODE;
         F_NODE(nd_value, RNODE_OP_ASGN_AND, "rvalue");
+        F_LOC(name_loc, RNODE_OP_ASGN_AND);
+        LAST_NODE;
+        F_LOC(operator_loc, RNODE_OP_ASGN_AND);
         return;
 
       case NODE_OP_CDECL:

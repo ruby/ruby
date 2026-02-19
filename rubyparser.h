@@ -479,6 +479,8 @@ typedef struct RNode_OP_ASGN_AND {
 
     struct RNode *nd_head;
     struct RNode *nd_value;
+    rb_code_location_t name_loc;
+    rb_code_location_t operator_loc;
 } rb_node_op_asgn_and_t;
 
 typedef struct RNode_OP_ASGN_OR {
@@ -486,6 +488,8 @@ typedef struct RNode_OP_ASGN_OR {
 
     struct RNode *nd_head;
     struct RNode *nd_value;
+    rb_code_location_t name_loc;
+    rb_code_location_t operator_loc;
 } rb_node_op_asgn_or_t;
 
 typedef struct RNode_OP_CDECL {

@@ -902,6 +902,16 @@ node_locations(VALUE ast_value, const NODE *node)
                                     location_new(&RNODE_OP_ASGN2(node)->call_operator_loc),
                                     location_new(&RNODE_OP_ASGN2(node)->message_loc),
                                     location_new(&RNODE_OP_ASGN2(node)->binary_operator_loc));
+      case NODE_OP_ASGN_AND:
+        return rb_ary_new_from_args(3,
+                                    location_new(nd_code_loc(node)),
+                                    location_new(&RNODE_OP_ASGN_AND(node)->name_loc),
+                                    location_new(&RNODE_OP_ASGN_AND(node)->operator_loc));
+      case NODE_OP_ASGN_OR:
+        return rb_ary_new_from_args(3,
+                                    location_new(nd_code_loc(node)),
+                                    location_new(&RNODE_OP_ASGN_OR(node)->name_loc),
+                                    location_new(&RNODE_OP_ASGN_OR(node)->operator_loc));
       case NODE_POSTEXE:
         return rb_ary_new_from_args(4,
                                     location_new(nd_code_loc(node)),
