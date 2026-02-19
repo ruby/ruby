@@ -1690,19 +1690,28 @@ rb_objspace_internal_object_p(VALUE obj)
 struct os_each_struct {
     size_t num;
     VALUE of;
+    unsigned int lock_rec;
 };
 
 static int
 os_obj_of_i(void *vstart, void *vend, size_t stride, void *data)
 {
     struct os_each_struct *oes = (struct os_each_struct *)data;
+    rb_vm_t *vm = GET_VM();
+    ASSERT_vm_locking();
 
     VALUE v = (VALUE)vstart;
     for (; v != (VALUE)vend; v += stride) {
         if (!internal_object_p(v)) {
             if (!oes->of || rb_obj_is_kind_of(v, oes->of)) {
-                if (!rb_multi_ractor_p() || rb_ractor_shareable_p(v)) {
-                    rb_yield(v);
+                if (!rb_multi_ractor_p() || vm->ractor.cnt == 1 || rb_ractor_shareable_p(v)) {
+                    RB_GC_VM_UNLOCK(oes->lock_rec);
+                    {
+                        ASSERT_vm_unlocking();
+                        rb_yield(v);
+                    }
+                    unsigned int rec = RB_GC_VM_LOCK();
+                    oes->lock_rec = rec;
                     oes->num++;
                 }
             }
@@ -1717,9 +1726,14 @@ os_obj_of(VALUE of)
 {
     struct os_each_struct oes;
 
-    oes.num = 0;
-    oes.of = of;
-    rb_objspace_each_objects(os_obj_of_i, &oes);
+    unsigned int rec = RB_GC_VM_LOCK();
+    {
+        oes.num = 0;
+        oes.of = of;
+        oes.lock_rec = rec;
+        rb_objspace_each_objects(os_obj_of_i, &oes);
+    }
+    RB_GC_VM_UNLOCK(oes.lock_rec);
     return SIZET2NUM(oes.num);
 }
 
