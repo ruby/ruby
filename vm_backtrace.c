@@ -576,14 +576,6 @@ rb_backtrace_p(VALUE obj)
 }
 
 static VALUE
-backtrace_alloc(VALUE klass)
-{
-    rb_backtrace_t *bt;
-    VALUE obj = TypedData_Make_Struct(klass, rb_backtrace_t, &backtrace_data_type, bt);
-    return obj;
-}
-
-static VALUE
 backtrace_alloc_capa(long num_frames, rb_backtrace_t **backtrace)
 {
     size_t memsize = offsetof(rb_backtrace_t, backtrace) + num_frames * sizeof(rb_backtrace_location_t);
@@ -592,6 +584,24 @@ backtrace_alloc_capa(long num_frames, rb_backtrace_t **backtrace)
     return btobj;
 }
 
+static VALUE
+backtrace_alloc(VALUE klass, VALUE other)
+{
+    rb_backtrace_t *bt;
+    if (UNDEF_P(other)) {
+        // Regular alloc
+        return TypedData_Make_Struct(klass, rb_backtrace_t, &backtrace_data_type, bt);
+    }
+    else {
+        // Copy
+        rb_backtrace_t *other_bt;
+        TypedData_Get_Struct(other, rb_backtrace_t, &backtrace_data_type, other_bt);
+        VALUE self = backtrace_alloc_capa(other_bt->backtrace_size, &bt);
+        bt->backtrace_size = other_bt->backtrace_size;
+        MEMCPY(bt->backtrace, other_bt->backtrace, rb_backtrace_location_t, other_bt->backtrace_size);
+        return self;
+    }
+}
 
 static long
 backtrace_size(const rb_execution_context_t *ec)
@@ -1415,7 +1425,7 @@ Init_vm_backtrace(void)
      *  settings of the current session.
      */
     rb_cBacktrace = rb_define_class_under(rb_cThread, "Backtrace", rb_cObject);
-    rb_define_alloc_func(rb_cBacktrace, backtrace_alloc);
+    rb_define_copy_alloc_func(rb_cBacktrace, backtrace_alloc);
     rb_undef_method(CLASS_OF(rb_cBacktrace), "new");
     rb_marshal_define_compat(rb_cBacktrace, rb_cArray, backtrace_dump_data, backtrace_load_data);
     rb_define_singleton_method(rb_cBacktrace, "limit", backtrace_limit, 0);
