@@ -1,3 +1,5 @@
+require_relative '../../core/file/fixtures/common'
+
 describe :file_size, shared: true do
   before :each do
     @exists = tmp('i_exist')
@@ -46,9 +48,7 @@ end
 
 describe :file_size_raise_when_missing, shared: true do
   before :each do
-    # TODO: missing_file
-    @missing = tmp("i_dont_exist")
-    rm_r @missing
+    @missing = FileSpecs.missing_path("i_dont_exist")
   end
 
   after :each do
@@ -62,9 +62,7 @@ end
 
 describe :file_size_nil_when_missing, shared: true do
   before :each do
-    # TODO: missing_file
-    @missing = tmp("i_dont_exist")
-    rm_r @missing
+    @missing = FileSpecs.missing_path("i_dont_exist")
   end
 
   after :each do
