@@ -876,6 +876,10 @@ node_locations(VALUE ast_value, const NODE *node)
                                     location_new(&RNODE_IN(node)->in_keyword_loc),
                                     location_new(&RNODE_IN(node)->then_keyword_loc),
                                     location_new(&RNODE_IN(node)->operator_loc));
+      case NODE_MATCH2:
+        return rb_ary_new_from_args(2,
+                                    location_new(nd_code_loc(node)),
+                                    location_new(&RNODE_MATCH2(node)->message_loc));
       case NODE_MODULE:
         return rb_ary_new_from_args(3,
                                     location_new(nd_code_loc(node)),

@@ -1118,7 +1118,7 @@ static rb_node_const_t *rb_node_const_new(struct parser_params *p, ID nd_vid, co
 static rb_node_cvar_t *rb_node_cvar_new(struct parser_params *p, ID nd_vid, const YYLTYPE *loc);
 static rb_node_nth_ref_t *rb_node_nth_ref_new(struct parser_params *p, long nd_nth, const YYLTYPE *loc);
 static rb_node_back_ref_t *rb_node_back_ref_new(struct parser_params *p, long nd_nth, const YYLTYPE *loc);
-static rb_node_match2_t *rb_node_match2_new(struct parser_params *p, NODE *nd_recv, NODE *nd_value, const YYLTYPE *loc);
+static rb_node_match2_t *rb_node_match2_new(struct parser_params *p, NODE *nd_recv, NODE *nd_value, const YYLTYPE *loc, const YYLTYPE *message_loc);
 static rb_node_match3_t *rb_node_match3_new(struct parser_params *p, NODE *nd_recv, NODE *nd_value, const YYLTYPE *loc);
 static rb_node_integer_t * rb_node_integer_new(struct parser_params *p, char* val, int base, const YYLTYPE *loc);
 static rb_node_float_t * rb_node_float_new(struct parser_params *p, char* val, const YYLTYPE *loc);
@@ -1226,7 +1226,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_CVAR(v,loc) (NODE *)rb_node_cvar_new(p,v,loc)
 #define NEW_NTH_REF(n,loc)  (NODE *)rb_node_nth_ref_new(p,n,loc)
 #define NEW_BACK_REF(n,loc) (NODE *)rb_node_back_ref_new(p,n,loc)
-#define NEW_MATCH2(n1,n2,loc) (NODE *)rb_node_match2_new(p,n1,n2,loc)
+#define NEW_MATCH2(n1,n2,loc,m_loc) (NODE *)rb_node_match2_new(p,n1,n2,loc,m_loc)
 #define NEW_MATCH3(r,n2,loc) (NODE *)rb_node_match3_new(p,r,n2,loc)
 #define NEW_INTEGER(val, base,loc) (NODE *)rb_node_integer_new(p,val,base,loc)
 #define NEW_FLOAT(val,loc) (NODE *)rb_node_float_new(p,val,loc)
@@ -1480,7 +1480,7 @@ static NODE *new_xstring(struct parser_params *, NODE *, const YYLTYPE *loc);
 
 static NODE *symbol_append(struct parser_params *p, NODE *symbols, NODE *symbol);
 
-static NODE *match_op(struct parser_params*,NODE*,NODE*,const YYLTYPE*,const YYLTYPE*);
+static NODE *match_op(struct parser_params*,NODE*,NODE*,const YYLTYPE*,const YYLTYPE*, const YYLTYPE*);
 
 static rb_ast_id_table_t *local_tbl(struct parser_params*);
 
@@ -4006,7 +4006,7 @@ arg		: asgn(arg_rhs)
                     }
                 | arg tMATCH arg
                     {
-                        $$ = match_op(p, $1, $3, &@2, &@$);
+                        $$ = match_op(p, $1, $3, &@2, &@$, &@tMATCH);
                     /*% ripper: binary!($:1, ID2VAL(idEqTilde), $:3) %*/
                     }
                 | arg tNMATCH arg
@@ -11735,12 +11735,13 @@ rb_node_zsuper_new(struct parser_params *p, const YYLTYPE *loc)
 }
 
 static rb_node_match2_t *
-rb_node_match2_new(struct parser_params *p, NODE *nd_recv, NODE *nd_value, const YYLTYPE *loc)
+rb_node_match2_new(struct parser_params *p, NODE *nd_recv, NODE *nd_value, const YYLTYPE *loc, const YYLTYPE *message_loc)
 {
     rb_node_match2_t *n = NODE_NEWNODE(NODE_MATCH2, rb_node_match2_t, loc);
     n->nd_recv = nd_recv;
     n->nd_value = nd_value;
     n->nd_args = 0;
+    n->message_loc = *message_loc;
 
     return n;
 }
@@ -12882,7 +12883,7 @@ last_expr_once_body(NODE *node)
 }
 
 static NODE*
-match_op(struct parser_params *p, NODE *node1, NODE *node2, const YYLTYPE *op_loc, const YYLTYPE *loc)
+match_op(struct parser_params *p, NODE *node1, NODE *node2, const YYLTYPE *op_loc, const YYLTYPE *loc, const YYLTYPE *message_loc)
 {
     NODE *n;
     int line = op_loc->beg_pos.lineno;
@@ -12894,7 +12895,7 @@ match_op(struct parser_params *p, NODE *node1, NODE *node2, const YYLTYPE *op_lo
         switch (nd_type(n)) {
           case NODE_DREGX:
             {
-                NODE *match = NEW_MATCH2(node1, node2, loc);
+                NODE *match = NEW_MATCH2(node1, node2, loc, message_loc);
                 nd_set_line(match, line);
                 return match;
             }
@@ -12903,7 +12904,7 @@ match_op(struct parser_params *p, NODE *node1, NODE *node2, const YYLTYPE *op_lo
             {
                 const VALUE lit = rb_node_regx_string_val(n);
                 if (!NIL_P(lit)) {
-                    NODE *match = NEW_MATCH2(node1, node2, loc);
+                    NODE *match = NEW_MATCH2(node1, node2, loc, message_loc);
                     RNODE_MATCH2(match)->nd_args = reg_named_capture_assign(p, lit, loc, assignable);
                     nd_set_line(match, line);
                     return match;
@@ -14258,7 +14259,7 @@ cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *l
       case NODE_DREGX:
         if (!e_option_supplied(p)) SWITCH_BY_COND_TYPE(type, warning, "regex ");
 
-        return NEW_MATCH2(node, NEW_GVAR(idLASTLINE, loc), loc);
+        return NEW_MATCH2(node, NEW_GVAR(idLASTLINE, loc), loc, &NULL_LOC);
 
       case NODE_BLOCK:
         {
