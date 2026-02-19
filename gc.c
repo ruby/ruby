@@ -1272,17 +1272,7 @@ rb_gc_obj_needs_cleanup_p(VALUE obj)
 
     switch (flags & RUBY_T_MASK) {
       case T_IMEMO:
-        switch (imemo_type(obj)) {
-          case imemo_constcache:
-          case imemo_cref:
-          case imemo_ifunc:
-          case imemo_memo:
-          case imemo_svar:
-          case imemo_throw_data:
-            return false;
-          default:
-            return true;
-        }
+        return rb_imemo_needs_cleanup_p(obj);
 
       case T_DATA:
       case T_OBJECT:
