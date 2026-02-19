@@ -183,6 +183,14 @@ class JSONParserTest < Test::Unit::TestCase
     end
   end
 
+  def test_parse_invalid_escape
+    assert_raise JSON::ParserError do
+      parse(%("fo\\o"))
+    end
+
+    assert_equal "foo", parse(%("fo\\o"), allow_invalid_escape: true)
+  end
+
   def test_parse_arrays
     assert_equal([1,2,3], parse('[1,2,3]'))
     assert_equal([1.2,2,3], parse('[1.2,2,3]'))
