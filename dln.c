@@ -77,6 +77,10 @@ void *xrealloc();
 # include <unistd.h>
 #endif
 
+#ifndef UNREACHABLE_RETURN
+# define UNREACHABLE_RETURN(x) return (x)
+#endif
+
 #ifndef dln_loaderror
 static void
 dln_loaderror(const char *format, ...)
@@ -542,9 +546,8 @@ dln_load_and_init(const char *file, const char *init_fct_name)
     }
 #else
     dln_notimplement();
+    UNREACHABLE_RETURN(0);
 #endif
-
-    return 0;			/* dummy return */
 }
 
 void *
@@ -562,6 +565,6 @@ dln_load_feature(const char *file, const char *fname)
     return dln_load_and_init(file, init_fct_name);
 #else
     dln_notimplement();
-    return 0;
+    UNREACHABLE_RETURN(0);
 #endif
 }
