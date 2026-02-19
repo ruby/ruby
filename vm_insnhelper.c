@@ -1134,7 +1134,7 @@ vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, bool allow_
                         am = klass;
                         if (is_defined) return 1;
                         if (rb_autoloading_value(klass, id, &av, NULL)) return av;
-                        rb_autoload_load(klass, id);
+                        rb_autoload_load(klass, id, false);
                         goto search_continue;
                     }
                     else {
@@ -5937,9 +5937,9 @@ vm_define_class(ID id, rb_num_t flags, VALUE cbase, VALUE super)
     vm_check_if_namespace(cbase);
 
     /* find klass */
-    rb_autoload_load(cbase, id);
+    bool check_redefinition = rb_autoload_load(cbase, id, true) != Qundef;
 
-    if ((klass = vm_const_get_under(id, flags, cbase)) != 0) {
+    if (check_redefinition && (klass = vm_const_get_under(id, flags, cbase)) != 0) {
         if (!vm_check_if_class(id, flags, super, klass))
             unmatched_redefinition("class", cbase, id, klass);
         return klass;

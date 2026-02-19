@@ -18560,6 +18560,7 @@ variable.$(OBJEXT): $(top_srcdir)/internal/eval.h
 variable.$(OBJEXT): $(top_srcdir)/internal/gc.h
 variable.$(OBJEXT): $(top_srcdir)/internal/hash.h
 variable.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+variable.$(OBJEXT): $(top_srcdir)/internal/load.h
 variable.$(OBJEXT): $(top_srcdir)/internal/object.h
 variable.$(OBJEXT): $(top_srcdir)/internal/re.h
 variable.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h

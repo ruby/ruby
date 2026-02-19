@@ -26,6 +26,7 @@
 #include "internal/error.h"
 #include "internal/eval.h"
 #include "internal/hash.h"
+#include "internal/load.h"
 #include "internal/object.h"
 #include "internal/gc.h"
 #include "internal/re.h"
@@ -3013,7 +3014,7 @@ autoload_by_someone_else(struct autoload_data *ele)
 }
 
 static VALUE
-check_autoload_required(VALUE mod, ID id, const char **loadingpath)
+check_autoload_required(VALUE mod, ID id, const char **loadingpath, VALUE *feature_out)
 {
     VALUE autoload_const_value = autoload_data(mod, id);
     struct autoload_data *autoload_data;
@@ -3024,6 +3025,7 @@ check_autoload_required(VALUE mod, ID id, const char **loadingpath)
     }
 
     VALUE feature = autoload_data->feature;
+    if (feature_out) *feature_out = feature;
 
     /*
      * if somebody else is autoloading, we MUST wait for them, since
@@ -3129,6 +3131,7 @@ struct autoload_load_arguments {
 
     // The parent autoload data which is shared between multiple constants:
     struct autoload_data *autoload_data;
+    VALUE feature;
 };
 
 static VALUE
@@ -3154,7 +3157,8 @@ autoload_load_needed(VALUE _arguments)
         return Qfalse;
     }
 
-    VALUE autoload_const_value = check_autoload_required(arguments->module, arguments->name, &loading);
+    VALUE feature;
+    VALUE autoload_const_value = check_autoload_required(arguments->module, arguments->name, &loading, &feature);
     if (!autoload_const_value) {
         return Qfalse;
     }
@@ -3169,6 +3173,9 @@ autoload_load_needed(VALUE _arguments)
     if (!(autoload_data = get_autoload_data(autoload_const_value, &autoload_const))) {
         return Qfalse;
     }
+
+    arguments->autoload_data = autoload_data;
+    arguments->feature = feature;
 
     if (NIL_P(autoload_data->mutex)) {
         RB_OBJ_WRITE(autoload_const->autoload_data_value, &autoload_data->mutex, rb_mutex_new());
@@ -3282,7 +3289,7 @@ autoload_try_load(VALUE _arguments)
 }
 
 VALUE
-rb_autoload_load(VALUE module, ID name)
+rb_autoload_load(VALUE module, ID name, bool defining_class)
 {
     rb_const_entry_t *ce = rb_const_lookup(module, name);
 
@@ -3297,7 +3304,7 @@ rb_autoload_load(VALUE module, ID name)
     }
 
     // This state is stored on the stack and is used during the autoload process.
-    struct autoload_load_arguments arguments = {.module = module, .name = name, .mutex = Qnil};
+    struct autoload_load_arguments arguments = {.module = module, .name = name, .mutex = Qnil, .autoload_data = 0, .feature = 0};
 
     // Figure out whether we can autoload the named constant:
     VALUE autoload_const_value = rb_mutex_synchronize(autoload_mutex, autoload_load_needed, (VALUE)&arguments);
@@ -3307,6 +3314,17 @@ rb_autoload_load(VALUE module, ID name)
 
     arguments.flag = ce->flag & (CONST_DEPRECATED | CONST_VISIBILITY_MASK);
 
+    if (defining_class) {
+        RUBY_ASSERT(arguments.feature);
+        if (rb_require_feature_locked_p(arguments.feature)) {
+            // Skip trying to autoload it, the file assoc. with the autoload has already been required by this thread.
+            // This also avoids deadlocks because another thread might have acquired the `arguments.mutex` below
+            // for the same autoloaded constant. In that case, they may be waiting on us to finish the `require`
+            // so we can't wait on them.
+            return Qundef;
+        }
+    }
+
     // Only one thread will enter here at a time:
     VALUE result = rb_mutex_synchronize(arguments.mutex, autoload_try_load, (VALUE)&arguments);
 
@@ -3315,8 +3333,8 @@ rb_autoload_load(VALUE module, ID name)
     // resolves to the constant this thread is trying to load, so proteect this
     // so that it is not freed until we are done with it in `autoload_try_load`:
     RB_GC_GUARD(autoload_const_value);
-
     return result;
+
 }
 
 VALUE
@@ -3336,7 +3354,7 @@ rb_autoload_at_p(VALUE mod, ID id, int recur)
         mod = RCLASS_SUPER(mod);
         if (!mod) return Qnil;
     }
-    load = check_autoload_required(mod, id, 0);
+    load = check_autoload_required(mod, id, 0, 0);
     if (!load) return Qnil;
     return (ele = get_autoload_data(load, 0)) ? ele->feature : Qnil;
 }
@@ -3414,7 +3432,7 @@ rb_const_search_from(VALUE klass, ID id, int exclude, int recurse, int visibilit
                     if (found_in) { *found_in = tmp; }
                     return ac->value;
                 }
-                rb_autoload_load(tmp, id);
+                rb_autoload_load(tmp, id, false);
                 continue;
             }
             if (exclude && tmp == rb_cObject) {
@@ -3756,7 +3774,7 @@ rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
             if (visibility && RB_CONST_PRIVATE_P(ce)) {
                 return (int)Qfalse;
             }
-            if (UNDEF_P(ce->value) && !check_autoload_required(tmp, id, 0) &&
+            if (UNDEF_P(ce->value) && !check_autoload_required(tmp, id, 0, 0) &&
                 !rb_autoloading_value(tmp, id, NULL, NULL))
                 return (int)Qfalse;
 
