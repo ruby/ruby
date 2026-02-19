@@ -18540,6 +18540,7 @@ util.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 util.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 util.$(OBJEXT): {$(VPATH)}missing.h
 util.$(OBJEXT): {$(VPATH)}ruby_atomic.h
+util.$(OBJEXT): {$(VPATH)}ryu.c
 util.$(OBJEXT): {$(VPATH)}st.h
 util.$(OBJEXT): {$(VPATH)}subst.h
 util.$(OBJEXT): {$(VPATH)}util.c

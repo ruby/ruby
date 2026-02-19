@@ -965,7 +965,7 @@ flo_to_s(VALUE flt)
     else if (isnan(value))
         return rb_usascii_str_new2("NaN");
 
-    p = ruby_dtoa(value, 0, 0, &decpt, &sign, &e);
+    p = ruby_ryu_dtoa(value, 0, 0, &decpt, &sign, &e);
     s = sign ? rb_usascii_str_new_cstr("-") : rb_usascii_str_new(0, 0);
     if ((digs = (int)(e - p)) >= (int)sizeof(buf)) digs = (int)sizeof(buf) - 1;
     memcpy(buf, p, digs);
