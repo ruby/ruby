@@ -8971,6 +8971,10 @@ fn gen_struct_aref(
         handle_opt_send_shift_stack(asm, argc);
     }
 
+    // FIXME: That comment isn't quite correct. However I can't
+    // make the code crash so I suspect the code is correct, just not
+    // the comment.
+
     // All structs from the same Struct class should have the same
     // length. So if our comptime_recv is embedded all runtime
     // structs of the same class should be as well, and the same is
