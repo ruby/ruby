@@ -1080,7 +1080,7 @@ static rb_node_for_t *rb_node_for_new(struct parser_params *p, NODE *nd_iter, NO
 static rb_node_for_masgn_t *rb_node_for_masgn_new(struct parser_params *p, NODE *nd_var, const YYLTYPE *loc);
 static rb_node_retry_t *rb_node_retry_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_node_begin_t *rb_node_begin_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc);
-static rb_node_rescue_t *rb_node_rescue_new(struct parser_params *p, NODE *nd_head, NODE *nd_resq, NODE *nd_else, const YYLTYPE *loc);
+static rb_node_rescue_t *rb_node_rescue_new(struct parser_params *p, NODE *nd_head, NODE *nd_resq, NODE *nd_else, const YYLTYPE *loc, const YYLTYPE *keyword_loc);
 static rb_node_resbody_t *rb_node_resbody_new(struct parser_params *p, NODE *nd_args, NODE *nd_exc_var, NODE *nd_body, NODE *nd_next, const YYLTYPE *loc);
 static rb_node_ensure_t *rb_node_ensure_new(struct parser_params *p, NODE *nd_head, NODE *nd_ensr, const YYLTYPE *loc);
 static rb_node_and_t *rb_node_and_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTYPE *loc, const YYLTYPE *operator_loc);
@@ -1188,7 +1188,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_FOR_MASGN(v,loc) (NODE *)rb_node_for_masgn_new(p,v,loc)
 #define NEW_RETRY(loc) (NODE *)rb_node_retry_new(p,loc)
 #define NEW_BEGIN(b,loc) (NODE *)rb_node_begin_new(p,b,loc)
-#define NEW_RESCUE(b,res,e,loc) (NODE *)rb_node_rescue_new(p,b,res,e,loc)
+#define NEW_RESCUE(b,res,e,loc,k_loc) (NODE *)rb_node_rescue_new(p,b,res,e,loc,k_loc)
 #define NEW_RESBODY(a,v,ex,n,loc) (NODE *)rb_node_resbody_new(p,a,v,ex,n,loc)
 #define NEW_ENSURE(b,en,loc) (NODE *)rb_node_ensure_new(p,b,en,loc)
 #define NEW_AND(f,s,loc,op_loc) (NODE *)rb_node_and_new(p,f,s,loc,op_loc)
@@ -1651,7 +1651,7 @@ rescued_expr(struct parser_params *p, NODE *arg, NODE *rescue,
     YYLTYPE loc = code_loc_gen(mod_loc, res_loc);
     rescue = NEW_RESBODY(0, 0, remove_begin(rescue), 0, &loc);
     loc.beg_pos = arg_loc->beg_pos;
-    return NEW_RESCUE(arg, rescue, 0, &loc);
+    return NEW_RESCUE(arg, rescue, 0, &loc, mod_loc);
 }
 
 static NODE *add_block_exit(struct parser_params *p, NODE *node);
@@ -3365,7 +3365,7 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
                         NODE *resq;
                         YYLTYPE loc = code_loc_gen(&@2, &@4);
                         resq = NEW_RESBODY(0, 0, remove_begin($4), 0, &loc);
-                        $$ = NEW_RESCUE(remove_begin($1), resq, 0, &@$);
+                        $$ = NEW_RESCUE(remove_begin($1), resq, 0, &@$, &@modifier_rescue);
                     /*% ripper: rescue_mod!($:1, $:4) %*/
                     }
                 | k_END allow_exits '{' compstmt(stmts) '}'
@@ -3396,7 +3396,7 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
                         YYLTYPE loc = code_loc_gen(&@modifier_rescue, &@resbody);
                         $resbody = NEW_RESBODY(0, 0, remove_begin($resbody), 0, &loc);
                         loc.beg_pos = @mrhs_arg.beg_pos;
-                        $mrhs_arg = NEW_RESCUE($mrhs_arg, $resbody, 0, &loc);
+                        $mrhs_arg = NEW_RESCUE($mrhs_arg, $resbody, 0, &loc, &@modifier_rescue);
                         $$ = node_assign(p, (NODE *)$mlhs, $mrhs_arg, $lex_ctxt, &@$);
                     /*% ripper: massign!($:1, rescue_mod!($:4, $:7)) %*/
                     }
@@ -3437,7 +3437,7 @@ command_rhs	: command_call_value   %prec tOP_ASGN
                     {
                         p->ctxt.in_rescue = $3.in_rescue;
                         YYLTYPE loc = code_loc_gen(&@2, &@4);
-                        $$ = NEW_RESCUE($1, NEW_RESBODY(0, 0, remove_begin($4), 0, &loc), 0, &@$);
+                        $$ = NEW_RESCUE($1, NEW_RESBODY(0, 0, remove_begin($4), 0, &loc), 0, &@$, &@modifier_rescue);
                     /*% ripper: rescue_mod!($:1, $:4) %*/
                     }
                 | command_asgn
@@ -11364,12 +11364,13 @@ rb_node_begin_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc)
 }
 
 static rb_node_rescue_t *
-rb_node_rescue_new(struct parser_params *p, NODE *nd_head, NODE *nd_resq, NODE *nd_else, const YYLTYPE *loc)
+rb_node_rescue_new(struct parser_params *p, NODE *nd_head, NODE *nd_resq, NODE *nd_else, const YYLTYPE *loc, const YYLTYPE *keyword_loc)
 {
     rb_node_rescue_t *n = NODE_NEWNODE(NODE_RESCUE, rb_node_rescue_t, loc);
     n->nd_head = nd_head;
     n->nd_resq = nd_resq;
     n->nd_else = nd_else;
+    n->keyword_loc = *keyword_loc;
 
     return n;
 }
@@ -14874,8 +14875,10 @@ new_bodystmt(struct parser_params *p, NODE *head, NODE *rescue, NODE *rescue_els
     if (rescue) {
         NODE *tmp = rescue_else ? rescue_else : rescue;
         YYLTYPE rescue_loc = code_loc_gen(&head->nd_loc, &tmp->nd_loc);
+        YYLTYPE rescue_keyword_loc = rescue->nd_loc;
+        rescue_keyword_loc.end_pos.column = rescue_keyword_loc.beg_pos.column + 6; // "rescue" is 6 characters
 
-        result = NEW_RESCUE(head, rescue, rescue_else, &rescue_loc);
+        result = NEW_RESCUE(head, rescue, rescue_else, &rescue_loc, &rescue_keyword_loc);
         nd_set_line(result, rescue->nd_loc.beg_pos.lineno);
     }
     if (ensure) {

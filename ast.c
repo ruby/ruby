@@ -918,6 +918,10 @@ node_locations(VALUE ast_value, const NODE *node)
                                     location_new(&RNODE_REGX(node)->opening_loc),
                                     location_new(&RNODE_REGX(node)->content_loc),
                                     location_new(&RNODE_REGX(node)->closing_loc));
+      case NODE_RESCUE:
+        return rb_ary_new_from_args(2,
+                                    location_new(nd_code_loc(node)),
+                                    location_new(&RNODE_RESCUE(node)->keyword_loc));
       case NODE_RETURN:
         return rb_ary_new_from_args(2,
                                     location_new(nd_code_loc(node)),
