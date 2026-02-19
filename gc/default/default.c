@@ -862,8 +862,6 @@ slot_index_for_offset(size_t offset, uint32_t div_magic)
 #define MARK_IN_BITMAP(bits, p)      _MARK_IN_BITMAP(bits, GET_HEAP_PAGE(p), p)
 #define CLEAR_IN_BITMAP(bits, p)     _CLEAR_IN_BITMAP(bits, GET_HEAP_PAGE(p), p)
 
-#define NUM_IN_PAGE(p)   (((bits_t)(p) & HEAP_PAGE_ALIGN_MASK) / BASE_SLOT_SIZE)
-
 #define GET_HEAP_MARK_BITS(x)           (&GET_HEAP_PAGE(x)->mark_bits[0])
 #define GET_HEAP_PINNED_BITS(x)         (&GET_HEAP_PAGE(x)->pinned_bits[0])
 #define GET_HEAP_UNCOLLECTIBLE_BITS(x)  (&GET_HEAP_PAGE(x)->uncollectible_bits[0])
@@ -1979,22 +1977,11 @@ heap_add_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page)
     GC_ASSERT(!heap->sweeping_page);
     GC_ASSERT(heap_page_in_global_empty_pages_pool(objspace, page));
 
-    /* adjust obj_limit (object number available in this page) */
+    /* Align start to the first slot_size boundary after the page header */
     uintptr_t start = (uintptr_t)page->body + sizeof(struct heap_page_header);
-    if (start % BASE_SLOT_SIZE != 0) {
-        int delta = BASE_SLOT_SIZE - (start % BASE_SLOT_SIZE);
-        start = start + delta;
-        GC_ASSERT(NUM_IN_PAGE(start) == 0 || NUM_IN_PAGE(start) == 1);
-
-        /* Find a num in page that is evenly divisible by `stride`.
-         * This is to ensure that objects are aligned with bit planes.
-         * In other words, ensure there are an even number of objects
-         * per bit plane. */
-        if (NUM_IN_PAGE(start) == 1) {
-            start += heap->slot_size - BASE_SLOT_SIZE;
-        }
-
-        GC_ASSERT(NUM_IN_PAGE(start) * BASE_SLOT_SIZE % heap->slot_size == 0);
+    size_t remainder = start % heap->slot_size;
+    if (remainder != 0) {
+        start += heap->slot_size - remainder;
     }
 
     int slot_count = (int)((HEAP_PAGE_SIZE - (start - (uintptr_t)page->body))/heap->slot_size);
