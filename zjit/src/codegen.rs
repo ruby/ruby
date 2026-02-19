@@ -279,12 +279,16 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
 
     // Create all LIR basic blocks corresponding to HIR basic blocks
     for (rpo_idx, &block_id) in reverse_post_order.iter().enumerate() {
+        // Skip the entries superblock — it's an internal CFG artifact
+        if block_id == function.entries_block { continue; }
         let lir_block_id = asm.new_block(block_id, function.is_entry_block(block_id), rpo_idx);
         hir_to_lir[block_id.0] = Some(lir_block_id);
     }
 
     // Compile each basic block
     for (rpo_idx, &block_id) in reverse_post_order.iter().enumerate() {
+        // Skip the entries superblock — it's an internal CFG artifact
+        if block_id == function.entries_block { continue; }
         // Set the current block to the LIR block that corresponds to this
         // HIR block.
         let lir_block_id = hir_to_lir[block_id.0].unwrap();
@@ -611,7 +615,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         | &Insn::Throw { state, .. }
         => return Err(state),
         &Insn::IfFalse { .. } | Insn::IfTrue { .. }
-        | &Insn::Jump { .. } => unreachable!(),
+        | &Insn::Jump { .. } | Insn::Entries { .. } => unreachable!(),
     };
 
     assert!(insn.has_output(), "Cannot write LIR output of HIR instruction with no output: {insn}");
