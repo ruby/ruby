@@ -84,7 +84,7 @@ class Scheduler
         @writable.delete(io) if @writable[io] == fiber
         selected[fiber] = IO::READABLE
       elsif io == @urgent.first
-        @urgent.first.read_nonblock(1024)
+        @urgent.first.read_nonblock(1024) rescue nil
       end
     end
 
@@ -168,7 +168,7 @@ class Scheduler
     self.run
   ensure
     if @urgent
-      @urgent.each(&:close)
+      @urgent.each { it.close rescue nil }
       @urgent = nil
     end
 
@@ -310,7 +310,7 @@ class Scheduler
     end
 
     io = @urgent.last
-    io.write_nonblock('.')
+    io.write_nonblock('.') rescue nil
   end
 
   class FiberInterrupt
@@ -512,6 +512,88 @@ class IOErrorScheduler < Scheduler
 
   def io_write(io, buffer, length, offset)
     return -Errno::EINVAL::Errno
+  end
+
+  def socket_send(sock, dest, buffer, length, flags)
+    return -Errno::ENOTCONN::Errno
+  end
+
+  def socket_recv(sock, buffer, length, flags, recvfrom)
+    return -Errno::ENOTSOCK::Errno
+  end
+
+  def socket_connect(sock, addr)
+    return -Errno::EBADF::Errno
+  end
+
+  def socket_accept(sock, client_sockaddr)
+    return -Errno::ENOTSOCK::Errno
+  end
+end
+
+class SocketIOScheduler < Scheduler
+  def operations
+    @operations ||= []
+  end
+
+  def socket_send(sock, dest, buffer, length, flags)
+    descriptor = sock.fileno
+    string = buffer.get_string
+
+    self.operations << [:socket_send, descriptor, dest, string, length, flags]
+
+    Fiber.blocking do
+      if dest
+        sock.send(string, flags, dest)
+      else
+        sock.send(string, flags)
+      end
+    end
+  end
+
+  def socket_recv(sock, buffer, length, flags, recvfrom)
+    descriptor = sock.fileno
+    length = buffer.size if length == 0
+
+    self.operations << [:socket_recv, descriptor, length, flags, recvfrom]
+
+    Fiber.blocking do
+      str = nil
+      if recvfrom
+        str, addr = sock.recvfrom(length, flags)
+        buffer.set_string(str)
+        str.bytesize
+        [str.bytesize, addr]
+      else
+        str = sock.recv(length, flags)
+        buffer.set_string(str)
+        str.bytesize
+      end
+    end
+  end
+
+  def socket_connect(sock, addr)
+    descriptor = sock.fileno
+
+    self.operations << [:socket_connect, descriptor, addr]
+    addr2 = Addrinfo.new(addr)
+
+    Fiber.blocking do
+      sock.connect(addr2.ip_address, addr2.ip_port)
+    end
+  end
+
+  def socket_accept(sock, client_sockaddr)
+    descriptor = sock.fileno
+
+    Fiber.blocking do
+      conn, addr = Socket.for_fd(sock.fileno).accept
+      s = addr.to_s
+      client_sockaddr.set_string(s)
+      client_sockaddr.resize(s.bytesize)
+      self.operations << [:socket_accept, descriptor, addr.to_s]
+      conn.fileno
+    end
   end
 end
 

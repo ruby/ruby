@@ -10,7 +10,6 @@
  * @brief      Scheduler APIs.
  */
 #include "ruby/internal/config.h"
-
 #include <errno.h>
 
 #ifdef STDC_HEADERS
@@ -499,6 +498,87 @@ VALUE rb_fiber_scheduler_fiber_interrupt(VALUE scheduler, VALUE fiber, VALUE exc
  * @return     The created and scheduled fiber.
  */
 VALUE rb_fiber_scheduler_fiber(VALUE scheduler, int argc, VALUE *argv, int kw_splat);
+
+/**
+ * Non-blocking send to the passed Socket.
+ *
+ * @param[in]   scheduler    Target scheduler.
+ * @param[in]   sock         A socket object to send to.
+ * @param[in]   dest         Optional send destination.
+ * @param[in]   buffer       The buffer to send from.
+ * @param[in]   length       The minimum number of bytes to send.
+ * @param[in]   flags        The flags to use for sending.
+ * @retval      RUBY_Qundef  `scheduler` doesn't have `#socket_send`.
+ * @return      otherwise    What `scheduler.socket_send` returns `[-errno, size]`.
+ */
+VALUE rb_fiber_scheduler_socket_send(VALUE scheduler, VALUE sock, VALUE dest, VALUE buffer, size_t length, int flags);
+
+/**
+ * Non-blocking send to the passed Socket using a native buffer.
+ *
+ * @param[in]   scheduler    Target scheduler.
+ * @param[in]   sock         A socket object to send to.
+ * @param[in]   dest         Optional send destination.
+ * @param[in]   base         The memory to write from.
+ * @param[in]   size         Size of the memory.
+ * @param[in]   length       The minimum number of bytes to write.
+ * @param[in]   flags        The flags to use for sending.
+ * @retval      RUBY_Qundef  `scheduler` doesn't have `#socket_send`.
+ * @return      otherwise    What `scheduler.socket_send` returns `[-errno, size]`.
+ */
+VALUE rb_fiber_scheduler_socket_send_memory(VALUE scheduler, VALUE sock, VALUE dest, const void *base, size_t size, size_t length, int flags);
+
+/**
+ * Non-blocking recv from the passed Socket.
+ *
+ * @param[in]   scheduler    Target scheduler.
+ * @param[in]   sock         A socket object to recv from.
+ * @param[in]   buffer       The buffer to recv into.
+ * @param[in]   length       The minimum number of bytes to recv.
+ * @param[in]   flags        The flags to use for receiving.
+ * @param[in]   recvfrom     Whether to perform recvfrom and return the source addrinfo.
+ * @retval      RUBY_Qundef  `scheduler` doesn't have `#socket_recv`.
+ * @return      otherwise    What `scheduler.socket_recv` returns `[-errno, [size, source_addr]]`.
+ */
+VALUE rb_fiber_scheduler_socket_recv(VALUE scheduler, VALUE sock, VALUE buffer, size_t length, int flags, int recvfrom);
+
+/**
+ * Non-blocking read from the passed Socket using a native buffer.
+ *
+ * @param[in]   scheduler    Target scheduler.
+ * @param[in]   sock         An socket object to read from.
+ * @param[in]   base         The memory to read to.
+ * @param[in]   size         Size of the memory.
+ * @param[in]   length       The minimum number of bytes to read.
+ * @param[in]   flags        The flags to use for receiving.
+ * @param[in]   recvfrom     Whether to perform recvfrom and return the source addrinfo.
+ * @retval      RUBY_Qundef  `scheduler` doesn't have `#socket_recv`.
+ * @return      otherwise    What `scheduler.socket_recv` returns.
+ */
+VALUE rb_fiber_scheduler_socket_recv_memory(VALUE scheduler, VALUE sock, void *base, size_t size, size_t length, int flags, int recvfrom);
+
+/**
+ * Non-blocking connect with the passed Socket to the given address.
+ *
+ * @param[in]   scheduler    Target scheduler.
+ * @param[in]   sock         An socket object to read from.
+ * @param[in]   addr         A packed string containing the destination addrinfo.
+ * @retval      RUBY_Qundef  `scheduler` doesn't have `#socket_connect`.
+ * @return      otherwise    What `scheduler.socket_connect` returns `[-errno, 0]`.
+ */
+VALUE rb_fiber_scheduler_socket_connect(VALUE scheduler, VALUE sock, VALUE addr);
+
+/**
+ * Non-blocking accept connection from the passed Socket.
+ *
+ * @param[in]   scheduler       Target scheduler.
+ * @param[in]   sock            An socket object to read from.
+ * @param[in]   sockaddr        Pointer to sockaddr for peer address
+ * @param[in]   sockaddr_len    Pointer to sockaddr length
+ * @retval      RUBY_Qundef     `scheduler` doesn't have `#socket_accept`.
+ * @return      otherwise       What `scheduler.socket_accept` returns `[-errno, fd]`.
+ */
+VALUE rb_fiber_scheduler_socket_accept(VALUE scheduler, VALUE sock, void *sockaddr, void *len);
 
 RBIMPL_SYMBOL_EXPORT_END()
 

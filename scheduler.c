@@ -30,6 +30,8 @@ static ID id_unblock;
 
 static ID id_yield;
 
+static ID id_size;
+
 static ID id_timeout_after;
 static ID id_kernel_sleep;
 static ID id_process_wait;
@@ -39,6 +41,11 @@ static ID id_io_write, id_io_pwrite;
 static ID id_io_wait;
 static ID id_io_select;
 static ID id_io_close;
+
+static ID id_socket_recv;
+static ID id_socket_send;
+static ID id_socket_connect;
+static ID id_socket_accept;
 
 static ID id_address_resolve;
 
@@ -281,6 +288,7 @@ rb_fiber_scheduler_blocking_operation_new(void *(*function)(void *), void *data,
  *  Hook methods are:
  *
  *  * #io_wait, #io_read, #io_write, #io_pread, #io_pwrite #io_select, and #io_close
+ *  * #socket_recv, #socket_send, #socket_connect, #socket_accept
  *  * #process_wait
  *  * #kernel_sleep
  *  * #timeout_after
@@ -313,6 +321,7 @@ Init_Fiber_Scheduler(void)
     id_block = rb_intern_const("block");
     id_unblock = rb_intern_const("unblock");
     id_yield = rb_intern_const("yield");
+    id_size = rb_intern_const("size");
 
     id_timeout_after = rb_intern_const("timeout_after");
     id_kernel_sleep = rb_intern_const("kernel_sleep");
@@ -333,6 +342,11 @@ Init_Fiber_Scheduler(void)
     id_fiber_interrupt = rb_intern_const("fiber_interrupt");
 
     id_fiber_schedule = rb_intern_const("fiber");
+
+    id_socket_recv = rb_intern_const("socket_recv");
+    id_socket_send = rb_intern_const("socket_send");
+    id_socket_connect = rb_intern_const("socket_connect");
+    id_socket_accept = rb_intern_const("socket_accept");
 
     // Define an anonymous BlockingOperation class for internal use only
     // This is completely hidden from Ruby code and cannot be instantiated directly
@@ -363,6 +377,10 @@ Init_Fiber_Scheduler(void)
     rb_define_method(rb_cFiberScheduler, "yield", rb_fiber_scheduler_yield, 0);
     rb_define_method(rb_cFiberScheduler, "fiber_interrupt", rb_fiber_scheduler_fiber_interrupt, 2);
     rb_define_method(rb_cFiberScheduler, "io_close", rb_fiber_scheduler_io_close, 1);
+    rb_define_method(rb_cFiberScheduler, "socket_recv", rb_fiber_scheduler_socket_recv, 5);
+    rb_define_method(rb_cFiberScheduler, "socket_send", rb_fiber_scheduler_socket_send, 5);
+    rb_define_method(rb_cFiberScheduler, "socket_connect", rb_fiber_scheduler_socket_connect, 2);
+    rb_define_method(rb_cFiberScheduler, "socket_accept", rb_fiber_scheduler_socket_accept, 2);
 #endif
 }
 
@@ -965,6 +983,217 @@ rb_fiber_scheduler_io_pwrite(VALUE scheduler, VALUE io, rb_off_t from, VALUE buf
     }
 }
 
+/*
+ *  Document-method: Fiber::Scheduler#socket_recv
+ *  call-seq: socket_recv(sock, buffer, length, flags, false) -> received length or -errno
+ *  call-seq: socket_recv(sock, buffer, length, flags, true) -> [recv_length, source_addr]  or -errno
+ *
+ *  Invoked by Socket#recv or Socket#recvfrom to receive +length+ bytes from
+ *  +sock+ into a specified +buffer+ (see IO::Buffer).
+ *
+ *  The +length+ argument is the "minimum length to be received". If the IO buffer
+ *  size is 8KiB, but the +length+ is +1024+ (1KiB), up to 8KiB might be received,
+ *  but at least 1KiB will be. Generally, the only case where less data than
+ *  +length+ will be received is if there is an error reading the data.
+ *
+ *  Specifying a +length+ of 0 is valid and means try receiving at least once and
+ *  return any available data.
+ *
+ *  The +flags+ argument is the flag bit mask provided to the OS for the +recv+
+ *  operation.
+ *
+ *  The +recvfrom+ argument specifies whether the method should return a tuple
+ *  containing the number of bytes received and the source address.
+ *
+ *  Suggested implementation should try to receive from +sock+ in a non-blocking
+ *  manner and call #io_wait if the +sock+ is not ready (which will yield
+ *  control to other fibers).
+ *
+ *  See IO::Buffer for an interface available to return data.
+ *
+ *  Expected to return number of bytes received, or, in case of an error,
+ *  <tt>-errno</tt> (negated number corresponding to system's error code).
+ *
+ *  The method should be considered _experimental_.
+ */
+static VALUE
+fiber_scheduler_socket_recv(VALUE _argument) {
+    VALUE *arguments = (VALUE*)_argument;
+
+    return rb_funcallv(arguments[0], id_socket_recv, 5, arguments + 1);
+}
+
+VALUE
+rb_fiber_scheduler_socket_recv(VALUE scheduler, VALUE sock, VALUE buffer, size_t length, int flags, int recvfrom)
+{
+    if (!rb_respond_to(scheduler, id_socket_recv)) {
+        return RUBY_Qundef;
+    }
+
+    VALUE arguments[] = {
+        scheduler, sock, buffer, SIZET2NUM(length), INT2NUM(flags), recvfrom ? Qtrue : Qfalse
+    };
+
+    if (rb_respond_to(scheduler, id_fiber_interrupt)) {
+        return rb_thread_io_blocking_operation(sock, fiber_scheduler_socket_recv, (VALUE)&arguments);
+    } else {
+        return fiber_scheduler_socket_recv((VALUE)&arguments);
+    }
+}
+
+/*
+ *  Document-method: Fiber::Scheduler#socket_send
+ *  call-seq: socket_send(sock, dest, buffer, length, flags) -> written length or -errno
+ *
+ *  Invoked by Socket#send to send +length+ bytes to +sock+ from from a
+ *  specified +buffer+ (see IO::Buffer) with the given +flags+.
+ *
+ *  The +dest+ argument is either nil, a packed sockaddr string or a Addrinfo
+ *  instance denoting the destination address for connection-less sockets. If
+ *  +dest+ is not nil, the method implementation should use the +sendto+ system
+ *  call or equivalent to specify the destination address to the OS.
+ *
+ *  The +length+ argument is the "minimum length to be sent". If the IO buffer
+ *  size is 8KiB, but the +length+ specified is 1024 (1KiB), at most 8KiB will
+ *  be sent, but at least 1KiB will be. Generally, the only case where less data
+ *  than +length+ will be sent is if there is an error sending the data.
+ *
+ *  Specifying a +length+ of 0 is valid and means try sending at least once, as
+ *  much data as possible.
+ *
+ *  The +flags+ argument is the flag bit mask passed to the OS for the +send+
+ *  operation.
+ *
+ *  Suggested implementation should try to send to +sock+ in a non-blocking
+ *  manner and call #io_wait if the +sock+ is not ready (which will yield
+ *  control to other fibers).
+ *
+ *  See IO::Buffer for an interface available to get data from buffer
+ *  efficiently.
+ *
+ *  Expected to return number of bytes sent, or, in case of an error,
+ *  <tt>-errno</tt> (negated number corresponding to system's error code).
+ *
+ *  The method should be considered _experimental_.
+ */
+static VALUE
+fiber_scheduler_socket_send(VALUE _argument) {
+    VALUE *arguments = (VALUE*)_argument;
+
+    return rb_funcallv(arguments[0], id_socket_send, 5, arguments + 1);
+}
+
+VALUE
+rb_fiber_scheduler_socket_send(VALUE scheduler, VALUE sock, VALUE dest, VALUE buffer, size_t length, int flags)
+{
+    if (!rb_respond_to(scheduler, id_socket_send)) {
+        return RUBY_Qundef;
+    }
+
+    VALUE arguments[] = {
+        scheduler, sock, dest, buffer, SIZET2NUM(length), INT2NUM(flags)
+    };
+
+    if (rb_respond_to(scheduler, id_fiber_interrupt)) {
+        return rb_thread_io_blocking_operation(sock, fiber_scheduler_socket_send, (VALUE)&arguments);
+    } else {
+        return fiber_scheduler_socket_send((VALUE)&arguments);
+    }
+}
+
+/*
+ *  Document-method: Fiber::Scheduler#socket_connect
+ *  call-seq: socket_connect(sock, addr) -> 0 or -errno
+ *
+ *  Invoked by Socket#connect to connect the given +sock+ to the given address.
+ *
+ *  The +addr+ argument is a packed sockaddr string.
+ *
+ *  Suggested implementation should try to connect in a non-blocking manner and
+ *  call #io_wait if the +sock+ is not ready (which will yield control to other
+ *  fibers).
+ *
+ *  Expected to return zero if connection is successful, or, in case of an
+ *  error, <tt>-errno</tt> (negated number corresponding to system's error
+ *  code).
+ *
+ *  The method should be considered _experimental_.
+ */
+static VALUE
+fiber_scheduler_socket_connect(VALUE _argument) {
+    VALUE *arguments = (VALUE*)_argument;
+
+    return rb_funcallv(arguments[0], id_socket_connect, 2, arguments + 1);
+}
+
+VALUE
+rb_fiber_scheduler_socket_connect(VALUE scheduler, VALUE sock, VALUE addr)
+{
+    if (!rb_respond_to(scheduler, id_socket_connect)) {
+        return RUBY_Qundef;
+    }
+
+    VALUE arguments[] = {
+        scheduler, sock, addr
+    };
+
+    if (rb_respond_to(scheduler, id_fiber_interrupt)) {
+        return rb_thread_io_blocking_operation(sock, fiber_scheduler_socket_connect, (VALUE)&arguments);
+    } else {
+        return fiber_scheduler_socket_connect((VALUE)&arguments);
+    }
+}
+
+/*
+ *  Document-method: Fiber::Scheduler#socket_accept
+ *  call-seq: socket_accept(sock, client_sockaddr) -> fd or -errno
+ *
+ *  Invoked by Socket#accept to accept an incoming connection on a socket
+ *  listening for connections.
+ *
+ *  The +client_sockaddr+ argument is an IO::Buffer to receive the client's
+ *  +sockaddr+.
+ *
+ *  Suggested implementation should try to accept in a non-blocking manner and
+ *  call #io_wait if the +sock+ is not ready (which will yield control to other
+ *  fibers).
+ *
+ *  Expected to return the accepted fd if successful, or, in case of an error,
+ *  <tt>-errno</tt> (negated number corresponding to system's error code).
+ *
+ *  The method should be considered _experimental_.
+ */
+static VALUE
+fiber_scheduler_socket_accept(VALUE _argument) {
+    VALUE *arguments = (VALUE*)_argument;
+
+    return rb_funcallv(arguments[0], id_socket_accept, 2, arguments + 1);
+}
+
+VALUE
+rb_fiber_scheduler_socket_accept(VALUE scheduler, VALUE sock, void *sockaddr, void *len)
+{
+    if (!rb_respond_to(scheduler, id_socket_accept)) {
+        return RUBY_Qundef;
+    }
+
+    VALUE client_sockaddr = rb_io_buffer_new(sockaddr, *(int *)len, 0);
+
+    VALUE arguments[] = {
+        scheduler, sock, client_sockaddr
+    };
+
+    VALUE peer_fd;
+    if (rb_respond_to(scheduler, id_fiber_interrupt)) {
+        peer_fd = rb_thread_io_blocking_operation(sock, fiber_scheduler_socket_accept, (VALUE)&arguments);
+    } else {
+        peer_fd = fiber_scheduler_socket_accept((VALUE)&arguments);
+    }
+    *(int *)len = NUM2INT(rb_funcall(client_sockaddr, id_size, 0));
+    rb_io_buffer_free(client_sockaddr);
+    return peer_fd;
+}
+
 VALUE
 rb_fiber_scheduler_io_read_memory(VALUE scheduler, VALUE io, void *base, size_t size, size_t length)
 {
@@ -1007,6 +1236,30 @@ rb_fiber_scheduler_io_pwrite_memory(VALUE scheduler, VALUE io, rb_off_t from, co
     VALUE buffer = rb_io_buffer_new((void*)base, size, RB_IO_BUFFER_LOCKED|RB_IO_BUFFER_READONLY);
 
     VALUE result = rb_fiber_scheduler_io_pwrite(scheduler, io, from, buffer, length, 0);
+
+    rb_io_buffer_free_locked(buffer);
+
+    return result;
+}
+
+VALUE
+rb_fiber_scheduler_socket_recv_memory(VALUE scheduler, VALUE sock, void *base, size_t size, size_t length, int flags, int recvfrom)
+{
+    VALUE buffer = rb_io_buffer_new(base, size, RB_IO_BUFFER_LOCKED);
+
+    VALUE result = rb_fiber_scheduler_socket_recv(scheduler, sock, buffer, length, flags, recvfrom);
+
+    rb_io_buffer_free_locked(buffer);
+
+    return result;
+}
+
+VALUE
+rb_fiber_scheduler_socket_send_memory(VALUE scheduler, VALUE sock, VALUE dest, const void *base, size_t size, size_t length, int flags)
+{
+    VALUE buffer = rb_io_buffer_new((void*)base, size, RB_IO_BUFFER_LOCKED|RB_IO_BUFFER_READONLY);
+
+    VALUE result = rb_fiber_scheduler_socket_send(scheduler, sock, dest, buffer, length, flags);
 
     rb_io_buffer_free_locked(buffer);
 
