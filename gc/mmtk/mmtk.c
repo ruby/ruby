@@ -802,7 +802,7 @@ obj_can_parallel_free_p(VALUE obj)
 }
 
 VALUE
-rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size)
+rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, bool wb_protected, size_t alloc_size)
 {
 #define MMTK_ALLOCATION_SEMANTICS_DEFAULT 0
     struct objspace *objspace = objspace_ptr;
@@ -830,18 +830,25 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
 
     alloc_obj++;
     alloc_obj[-1] = alloc_size - sizeof(VALUE);
-    alloc_obj[0] = flags;
-    alloc_obj[1] = klass;
 
     // TODO: implement fast path for mmtk_post_alloc
     mmtk_post_alloc(ractor_cache->mutator, (void*)alloc_obj, alloc_size, MMTK_ALLOCATION_SEMANTICS_DEFAULT);
 
-    // TODO: only add when object needs obj_free to be called
-    mmtk_add_obj_free_candidate(alloc_obj, obj_can_parallel_free_p((VALUE)alloc_obj));
-
     objspace->total_allocated_objects++;
 
     return (VALUE)alloc_obj;
+}
+
+void
+rb_gc_impl_post_alloc_init(void *objspace_ptr, VALUE obj, VALUE flags, bool wb_protected)
+{
+    mmtk_add_obj_free_candidate((VALUE *)obj, obj_can_parallel_free_p(obj));
+}
+
+bool
+rb_gc_impl_stress_to_class_p(void *objspace_ptr, VALUE klass)
+{
+    return false;
 }
 
 size_t

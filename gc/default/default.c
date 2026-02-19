@@ -2177,16 +2177,12 @@ rb_gc_impl_source_location_cstr(int *ptr)
 }
 #endif
 
-static inline VALUE
-newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace, VALUE obj)
+void
+rb_gc_impl_post_alloc_init(void *objspace_ptr, VALUE obj, VALUE flags, bool wb_protected)
 {
-    GC_ASSERT(BUILTIN_TYPE(obj) == T_NONE);
-    GC_ASSERT((flags & FL_WB_PROTECTED) == 0);
-    RBASIC(obj)->flags = flags;
-    *((VALUE *)&RBASIC(obj)->klass) = klass;
-#if RBASIC_SHAPE_ID_FIELD
-    RBASIC(obj)->shape_id = 0;
-#endif
+    rb_objspace_t *objspace = objspace_ptr;
+
+    GC_ASSERT(BUILTIN_TYPE(obj) != T_NONE);
 
     int t = flags & RUBY_T_MASK;
     if (t == T_CLASS || t == T_MODULE || t == T_ICLASS) {
@@ -2202,12 +2198,10 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
     int lev = RB_GC_VM_LOCK_NO_BARRIER();
     {
         check_rvalue_consistency(objspace, obj);
-
         GC_ASSERT(RVALUE_MARKED(objspace, obj) == FALSE);
         GC_ASSERT(RVALUE_MARKING(objspace, obj) == FALSE);
         GC_ASSERT(RVALUE_OLD_P(objspace, obj) == FALSE);
         GC_ASSERT(RVALUE_WB_UNPROTECTED(objspace, obj) == FALSE);
-
         if (RVALUE_REMEMBERED(objspace, obj)) rb_bug("newobj: %s is remembered.", rb_obj_info(obj));
     }
     RB_GC_VM_UNLOCK_NO_BARRIER(lev);
@@ -2234,13 +2228,21 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
 
 #if GC_DEBUG
     GET_RVALUE_OVERHEAD(obj)->file = rb_gc_impl_source_location_cstr(&GET_RVALUE_OVERHEAD(obj)->line);
-    GC_ASSERT(!SPECIAL_CONST_P(obj)); /* check alignment */
+    GC_ASSERT(!SPECIAL_CONST_P(obj));
 #endif
 
     gc_report(5, objspace, "newobj: %s\n", rb_obj_info(obj));
+}
 
-    // RUBY_DEBUG_LOG("obj:%p (%s)", (void *)obj, rb_obj_info(obj));
-    return obj;
+bool
+rb_gc_impl_stress_to_class_p(void *objspace_ptr, VALUE klass)
+{
+    rb_objspace_t *objspace = objspace_ptr;
+
+    if (RB_UNLIKELY(stress_to_class)) {
+        return rb_hash_lookup2(stress_to_class, klass, Qundef) != Qundef;
+    }
+    return false;
 }
 
 size_t
@@ -2470,10 +2472,10 @@ newobj_alloc(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t he
     return obj;
 }
 
-ALWAYS_INLINE(static VALUE newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, int wb_protected, size_t heap_idx));
+ALWAYS_INLINE(static VALUE newobj_slowpath(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t heap_idx));
 
 static inline VALUE
-newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, int wb_protected, size_t heap_idx)
+newobj_slowpath(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t heap_idx)
 {
     VALUE obj;
     unsigned int lev;
@@ -2498,44 +2500,28 @@ newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_new
         }
 
         obj = newobj_alloc(objspace, cache, heap_idx, true);
-        newobj_init(klass, flags, wb_protected, objspace, obj);
     }
     RB_GC_CR_UNLOCK(lev);
 
     return obj;
 }
 
-NOINLINE(static VALUE newobj_slowpath_wb_protected(VALUE klass, VALUE flags,
-                                                   rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t heap_idx));
-NOINLINE(static VALUE newobj_slowpath_wb_unprotected(VALUE klass, VALUE flags,
-                                                     rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t heap_idx));
+NOINLINE(static VALUE newobj_slowpath_noinline(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t heap_idx));
 
 static VALUE
-newobj_slowpath_wb_protected(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t heap_idx)
+newobj_slowpath_noinline(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t heap_idx)
 {
-    return newobj_slowpath(klass, flags, objspace, cache, TRUE, heap_idx);
-}
-
-static VALUE
-newobj_slowpath_wb_unprotected(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t heap_idx)
-{
-    return newobj_slowpath(klass, flags, objspace, cache, FALSE, heap_idx);
+    return newobj_slowpath(objspace, cache, heap_idx);
 }
 
 VALUE
-rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size)
+rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, bool wb_protected, size_t alloc_size)
 {
     VALUE obj;
     rb_objspace_t *objspace = objspace_ptr;
 
     RB_DEBUG_COUNTER_INC(obj_newobj);
     (void)RB_DEBUG_COUNTER_INC_IF(obj_newobj_wb_unprotected, !wb_protected);
-
-    if (RB_UNLIKELY(stress_to_class)) {
-        if (rb_hash_lookup2(stress_to_class, klass, Qundef) != Qundef) {
-            rb_memerror();
-        }
-    }
 
     size_t heap_idx = heap_idx_for_size(alloc_size);
 
@@ -2544,14 +2530,11 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     if (!RB_UNLIKELY(during_gc || ruby_gc_stressful) &&
             wb_protected) {
         obj = newobj_alloc(objspace, cache, heap_idx, false);
-        newobj_init(klass, flags, wb_protected, objspace, obj);
     }
     else {
         RB_DEBUG_COUNTER_INC(obj_newobj_slowpath);
 
-        obj = wb_protected ?
-          newobj_slowpath_wb_protected(klass, flags, objspace, cache, heap_idx) :
-          newobj_slowpath_wb_unprotected(klass, flags, objspace, cache, heap_idx);
+        obj = newobj_slowpath_noinline(objspace, cache, heap_idx);
     }
 
     return obj;
