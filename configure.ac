@@ -1594,6 +1594,44 @@ RUBY_CHECK_SIZEOF(float)
 RUBY_CHECK_SIZEOF(double)
 RUBY_CHECK_SIZEOF(time_t, [long "long long"], [], [@%:@include <time.h>])
 RUBY_CHECK_SIZEOF(clock_t, [], [], [@%:@include <time.h>])
+AC_TYPE_SIZE_T
+RUBY_CHECK_SIGNEDNESS(size_t, [AC_MSG_ERROR(size_t is signed)], [],
+		      [@%:@include <sys/types.h>])
+RUBY_CHECK_SIZEOF(size_t, [int long void*], [], [@%:@include <sys/types.h>])
+RUBY_CHECK_SIZEOF(ptrdiff_t, size_t, [], [@%:@include <stddef.h>])
+RUBY_CHECK_SIZEOF(dev_t)
+RUBY_CHECK_PRINTF_PREFIX(size_t, z)
+RUBY_CHECK_PRINTF_PREFIX(ptrdiff_t, t)
+
+AS_IF([test "x$ac_cv_type_long_long" = xyes], [
+    RUBY_CHECK_PRINTF_PREFIX(long long, ll I64, LL)
+], [test "x$ac_cv_type___int64" = xyes], [
+    RUBY_CHECK_PRINTF_PREFIX(__int64, ll I64, LL)
+])
+
+RUBY_REPLACE_TYPE(pid_t, int, PIDT)
+RUBY_REPLACE_TYPE(uid_t, int, UIDT)
+RUBY_REPLACE_TYPE(gid_t, int, GIDT)
+RUBY_REPLACE_TYPE(time_t, [], TIMET, [@%:@include <time.h>])
+RUBY_REPLACE_TYPE(dev_t, [int long "long long"], DEVT)
+RUBY_REPLACE_TYPE(mode_t, ["unsigned short" "unsigned int" long], MODET, [@%:@include <sys/stat.h>])
+RUBY_REPLACE_TYPE(rlim_t, [int long "long long"], RLIM, [
+@%:@ifdef HAVE_SYS_TYPES_H
+@%:@include <sys/types.h>
+@%:@endif
+@%:@ifdef HAVE_SYS_TYPES_H
+@%:@include <sys/time.h>
+@%:@endif
+@%:@include <sys/resource.h>
+])
+RUBY_REPLACE_TYPE(off_t, [], OFFT)
+RUBY_REPLACE_TYPE(clockid_t, [], CLOCKID, [@%:@ifdef HAVE_TIME_H
+@%:@ include <time.h>
+@%:@endif
+@%:@ifdef HAVE_SYS_TIME_H
+@%:@ include <sys/time.h>
+@%:@endif])
+
 AC_SUBST(X_BUILTIN_BINARY, yes)
 AS_IF([test "$cross_compiling" = yes],
 [dnl miniruby cannot run if cross compiling
@@ -1629,35 +1667,6 @@ AS_IF([test "$rb_cv_packed_struct" != no], [
     AC_DEFINE_UNQUOTED([RBIMPL_ATTR_PACKED_STRUCT_END()], [`echo " $rb_cv_packed_struct " | sed 's/.* x //;s/ *$//'`])
     RUBY_TRY_CFLAGS(-Wno-address-of-packed-member, [AC_DEFINE(USE_UNALIGNED_MEMBER_ACCESS)])
 ])
-
-AS_IF([test "x$ac_cv_type_long_long" = xyes], [
-    RUBY_CHECK_PRINTF_PREFIX(long long, ll I64, LL)
-], [test "x$ac_cv_type___int64" = xyes], [
-    RUBY_CHECK_PRINTF_PREFIX(__int64, ll I64, LL)
-])
-
-RUBY_REPLACE_TYPE(pid_t, int, PIDT)
-RUBY_REPLACE_TYPE(uid_t, int, UIDT)
-RUBY_REPLACE_TYPE(gid_t, int, GIDT)
-RUBY_REPLACE_TYPE(time_t, [], TIMET, [@%:@include <time.h>])
-RUBY_REPLACE_TYPE(dev_t, [int long "long long"], DEVT)
-RUBY_REPLACE_TYPE(mode_t, ["unsigned short" "unsigned int" long], MODET, [@%:@include <sys/stat.h>])
-RUBY_REPLACE_TYPE(rlim_t, [int long "long long"], RLIM, [
-@%:@ifdef HAVE_SYS_TYPES_H
-@%:@include <sys/types.h>
-@%:@endif
-@%:@ifdef HAVE_SYS_TYPES_H
-@%:@include <sys/time.h>
-@%:@endif
-@%:@include <sys/resource.h>
-])
-RUBY_REPLACE_TYPE(off_t, [], OFFT)
-RUBY_REPLACE_TYPE(clockid_t, [], CLOCKID, [@%:@ifdef HAVE_TIME_H
-@%:@ include <time.h>
-@%:@endif
-@%:@ifdef HAVE_SYS_TIME_H
-@%:@ include <sys/time.h>
-@%:@endif])
 
 # __VA_ARGS__ is also tested in AC_PROG_CC_C99 since autoconf 2.60a (around
 # 2006). The check below is redundant and should always success.  Remain not
@@ -1932,15 +1941,6 @@ AS_IF([test "$ac_cv_header_net_socket_h" = yes], [
     ac_cv_header_sys_socket_h=${ac_cv_header_sys_socket_h=yes}
 ])
 
-
-AC_TYPE_SIZE_T
-RUBY_CHECK_SIGNEDNESS(size_t, [AC_MSG_ERROR(size_t is signed)], [],
-		      [@%:@include <sys/types.h>])
-RUBY_CHECK_SIZEOF(size_t, [int long void*], [], [@%:@include <sys/types.h>])
-RUBY_CHECK_SIZEOF(ptrdiff_t, size_t, [], [@%:@include <stddef.h>])
-RUBY_CHECK_SIZEOF(dev_t)
-RUBY_CHECK_PRINTF_PREFIX(size_t, z)
-RUBY_CHECK_PRINTF_PREFIX(ptrdiff_t, t)
 AC_CHECK_MEMBERS([struct stat.st_blksize])
 AC_CHECK_MEMBERS([struct stat.st_blocks])
 AC_CHECK_MEMBERS([struct stat.st_rdev])
