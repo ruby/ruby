@@ -80,6 +80,7 @@ rb_call_inits(void)
     CALL(Prism);
     CALL(unicode_version);
     CALL(Set);
+    CALL(undef_const_sentinel);
 
     // enable builtin loading
     CALL(builtin);

@@ -15,6 +15,7 @@
 
 typedef enum {
     CONST_DEPRECATED = 0x100,
+    CONST_UNDEFINED = 0x200,
 
     CONST_VISIBILITY_MASK = 0xff,
     CONST_PUBLIC    = 0x00,
@@ -29,6 +30,8 @@ typedef enum {
 
 #define RB_CONST_DEPRECATED_P(ce) \
     ((ce)->flag & CONST_DEPRECATED)
+#define RB_CONST_UNDEFINED_P(ce) \
+    ((ce)->flag & CONST_UNDEFINED)
 
 typedef struct rb_const_entry_struct {
     rb_const_flag_t flag;
