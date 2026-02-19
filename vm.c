@@ -1566,8 +1566,10 @@ rb_proc_isolate(VALUE self)
     return dst;
 }
 
+// Attempt to make the Proc shareable.
+// When raise_on_error is false, this function returns Qfalse instead of raising an error.
 VALUE
-rb_proc_ractor_make_shareable(VALUE self, VALUE replace_self)
+rb_proc_ractor_make_shareable(VALUE self, VALUE replace_self, bool raise_on_error)
 {
     const rb_iseq_t *iseq = vm_proc_iseq(self);
 
@@ -1581,9 +1583,14 @@ rb_proc_ractor_make_shareable(VALUE self, VALUE replace_self)
         if (proc->block.type != block_type_iseq) rb_raise(rb_eRuntimeError, "not supported yet");
 
         if (!rb_ractor_shareable_p(vm_block_self(&proc->block))) {
-            rb_raise(rb_eRactorIsolationError,
-                     "Proc's self is not shareable: %" PRIsVALUE,
-                     self);
+            if (raise_on_error) {
+                rb_raise(rb_eRactorIsolationError,
+                            "Proc's self is not shareable: %" PRIsVALUE,
+                            self);
+            }
+            else {
+                return Qfalse;
+            }
         }
 
         VALUE read_only_variables = Qfalse;
@@ -1602,9 +1609,14 @@ rb_proc_ractor_make_shareable(VALUE self, VALUE replace_self)
 
         VALUE proc_self = vm_block_self(block);
         if (!rb_ractor_shareable_p(proc_self)) {
-            rb_raise(rb_eRactorIsolationError,
-                     "Proc's self is not shareable: %" PRIsVALUE,
-                     self);
+            if (raise_on_error) {
+                rb_raise(rb_eRactorIsolationError,
+                        "Proc's self is not shareable: %" PRIsVALUE,
+                        self);
+            }
+            else {
+                return Qfalse;
+            }
         }
     }
 

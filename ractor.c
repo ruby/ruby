@@ -1481,12 +1481,14 @@ make_shareable_check_shareable_freeze(VALUE obj, enum obj_traverse_iterator_resu
 
 static int obj_refer_only_shareables_p(VALUE obj);
 
+// Test if a given object is eligible to be made shareable.
 static enum obj_traverse_iterator_result
 make_shareable_check_shareable(VALUE obj)
 {
     VM_ASSERT(!SPECIAL_CONST_P(obj));
 
     if (rb_ractor_shareable_p(obj)) {
+        // If a object is already shareable, skip traversing its children.
         return traverse_skip;
     }
     else if (!allow_frozen_shareable_p(obj)) {
@@ -1505,7 +1507,7 @@ make_shareable_check_shareable(VALUE obj)
             }
         }
         else if (rb_obj_is_proc(obj)) {
-            rb_proc_ractor_make_shareable(obj, Qundef);
+            rb_proc_ractor_make_shareable(obj, Qundef, true);
             return traverse_cont;
         }
         else {
@@ -1588,6 +1590,12 @@ shareable_p_enter(VALUE obj)
 {
     if (RB_OBJ_SHAREABLE_P(obj)) {
         return traverse_skip;
+    }
+    else if (rb_obj_is_proc(obj)) {
+        if (RB_OBJ_FROZEN_RAW(obj) &&
+            RTEST(rb_proc_ractor_make_shareable(obj, Qundef, false))) {
+            return traverse_skip;
+        }
     }
     else if (RB_TYPE_P(obj, T_CLASS)  ||
              RB_TYPE_P(obj, T_MODULE) ||
@@ -2410,7 +2418,7 @@ ractor_shareable_proc(rb_execution_context_t *ec, VALUE replace_self, bool is_la
     }
     else {
         VALUE proc = is_lambda ? rb_block_lambda() : rb_block_proc();
-        return rb_proc_ractor_make_shareable(rb_proc_dup(proc), replace_self);
+        return rb_proc_ractor_make_shareable(rb_proc_dup(proc), replace_self, true);
     }
 }
 
