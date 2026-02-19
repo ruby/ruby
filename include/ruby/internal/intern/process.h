@@ -31,6 +31,16 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
 /* process.c */
 
 /**
+ * Creates a new instance of Process::Status.
+ *
+ * @param[in] pid The process ID.
+ * @param[in] status The "waitpid status", as returned by waitpid(2). This is NOT the exit status/exit code, see waitpid(2).
+ * @param[in] error Error code (if waitpid(2) returned -1).
+ * @return VALUE An instance of Process::Status.
+ */
+VALUE rb_process_status_new(rb_pid_t pid, int status, int error);
+
+/**
  * Wait for the specified process to terminate, reap it, and return its status.
  *
  * @param[in] pid The process ID to wait for.
