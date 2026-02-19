@@ -964,6 +964,14 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         F_ID(nd_mid, RNODE_DEFS, "method name");
         LAST_NODE;
         F_NODE(nd_defn, RNODE_DEFS, "method definition");
+        F_LOC(name_loc, RNODE_DEFS);
+        F_LOC(def_keyword_loc, RNODE_DEFS);
+        F_LOC(operator_loc, RNODE_DEFS);
+        F_LOC(lparen_loc, RNODE_DEFS);
+        F_LOC(rparen_loc, RNODE_DEFS);
+        F_LOC(equal_loc, RNODE_DEFS);
+        LAST_NODE;
+        F_LOC(end_keyword_loc, RNODE_DEFS);
         return;
 
       case NODE_ALIAS:

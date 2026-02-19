@@ -1467,6 +1467,32 @@ dummy
       assert_locations(node.children[-1].locations, [[1, 0, 1, 11], [1, 0, 1, 8]])
     end
 
+    def test_defs_locations
+      node = ast_parse("def self.foo; end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 17], [1, 9, 1, 12], [1, 0, 1, 3], [1, 8, 1, 9], nil, nil, nil, [1, 14, 1, 17]])
+
+      node = ast_parse("def self.foo(a); end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 20], [1, 9, 1, 12], [1, 0, 1, 3], [1, 8, 1, 9], [1, 12, 1, 13], [1, 14, 1, 15], nil, [1, 17, 1, 20]])
+
+      node = ast_parse("def self.foo a; end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 19], [1, 9, 1, 12], [1, 0, 1, 3], [1, 8, 1, 9], nil, nil, nil, [1, 16, 1, 19]])
+
+      node = ast_parse("def self.foo = 1")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 16], [1, 9, 1, 12], [1, 0, 1, 3], [1, 8, 1, 9], nil, nil, [1, 13, 1, 14], nil])
+
+      node = ast_parse("def self.foo(a) = a")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 19], [1, 9, 1, 12], [1, 0, 1, 3], [1, 8, 1, 9], [1, 12, 1, 13], [1, 14, 1, 15], [1, 16, 1, 17], nil])
+
+      node = ast_parse("def self::foo; end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 18], [1, 10, 1, 13], [1, 0, 1, 3], [1, 8, 1, 10], nil, nil, nil, [1, 15, 1, 18]])
+
+      node = ast_parse("def self::foo(a); end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 21], [1, 10, 1, 13], [1, 0, 1, 3], [1, 8, 1, 10], [1, 13, 1, 14], [1, 15, 1, 16], nil, [1, 18, 1, 21]])
+
+      node = ast_parse("def self::foo = 1")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 17], [1, 10, 1, 13], [1, 0, 1, 3], [1, 8, 1, 10], nil, nil, [1, 14, 1, 15], nil])
+    end
+
     def test_dot2_locations
       node = ast_parse("1..2")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 4], [1, 1, 1, 3]])

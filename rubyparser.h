@@ -846,6 +846,13 @@ typedef struct RNode_DEFS {
     struct RNode *nd_recv;
     ID nd_mid;
     struct RNode *nd_defn;
+    rb_code_location_t name_loc;
+    rb_code_location_t def_keyword_loc;
+    rb_code_location_t operator_loc;
+    rb_code_location_t lparen_loc;
+    rb_code_location_t rparen_loc;
+    rb_code_location_t equal_loc;
+    rb_code_location_t end_keyword_loc;
 } rb_node_defs_t;
 
 typedef struct RNode_ALIAS {

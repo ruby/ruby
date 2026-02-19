@@ -830,6 +830,16 @@ node_locations(VALUE ast_value, const NODE *node)
         return rb_ary_new_from_args(2,
                                     location_new(nd_code_loc(node)),
                                     location_new(&RNODE_DEFINED(node)->keyword_loc));
+      case NODE_DEFS:
+        return rb_ary_new_from_args(8,
+                                    location_new(nd_code_loc(node)),
+                                    location_new(&RNODE_DEFS(node)->name_loc),
+                                    location_new(&RNODE_DEFS(node)->def_keyword_loc),
+                                    location_new(&RNODE_DEFS(node)->operator_loc),
+                                    location_new(&RNODE_DEFS(node)->lparen_loc),
+                                    location_new(&RNODE_DEFS(node)->rparen_loc),
+                                    location_new(&RNODE_DEFS(node)->equal_loc),
+                                    location_new(&RNODE_DEFS(node)->end_keyword_loc));
       case NODE_DOT2:
         return rb_ary_new_from_args(2,
                                     location_new(nd_code_loc(node)),
