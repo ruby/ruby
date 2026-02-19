@@ -2611,12 +2611,12 @@ range_overlap(VALUE range, VALUE other)
  *
  * - Method Range.new:
  *
- *   # Ranges that by default include the given end value.
- *   Range.new(1, 4).to_a     # => [1, 2, 3, 4]
- *   Range.new('a', 'd').to_a # => ["a", "b", "c", "d"]
- *   # Ranges that use third argument +exclude_end+ to exclude the given end value.
- *   Range.new(1, 4, true).to_a     # => [1, 2, 3]
- *   Range.new('a', 'd', true).to_a # => ["a", "b", "c"]
+ *     # Ranges that by default include the given end value.
+ *     Range.new(1, 4).to_a     # => [1, 2, 3, 4]
+ *     Range.new('a', 'd').to_a # => ["a", "b", "c", "d"]
+ *     # Ranges that use third argument +exclude_end+ to exclude the given end value.
+ *     Range.new(1, 4, true).to_a     # => [1, 2, 3]
+ *     Range.new('a', 'd', true).to_a # => ["a", "b", "c"]
  *
  * == Beginless Ranges
  *
