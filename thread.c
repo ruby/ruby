@@ -671,16 +671,20 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
     rb_thread_t *ractor_main_th = th->ractor->threads.main;
 
     // setup ractor
+#if RACTOR_TRACK_BLOCKING
     if (rb_ractor_status_p(th->ractor, ractor_blocking)) {
         RB_VM_LOCK();
         {
             rb_vm_ractor_blocking_cnt_dec(th->vm, th->ractor, __FILE__, __LINE__);
-            rb_ractor_t *r = th->ractor;
-            r->r_stdin = rb_io_prep_stdin();
-            r->r_stdout = rb_io_prep_stdout();
-            r->r_stderr = rb_io_prep_stderr();
         }
         RB_VM_UNLOCK();
+    }
+#endif
+    if (th == ractor_main_th) {
+        rb_ractor_t *r = th->ractor;
+        r->r_stdin = rb_io_prep_stdin();
+        r->r_stdout = rb_io_prep_stdout();
+        r->r_stderr = rb_io_prep_stderr();
     }
 
     // Ensure that we are not joinable.
@@ -5010,7 +5014,9 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
     rb_thread_reset_timer_thread();
     rb_thread_start_timer_thread();
 
+#if RACTOR_TRACK_BLOCKING
     VM_ASSERT(vm->ractor.blocking_cnt == 0);
+#endif
     VM_ASSERT(vm->ractor.cnt == 1);
 }
 

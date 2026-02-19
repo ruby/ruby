@@ -131,6 +131,15 @@ extern int ruby_assert_critical_section_entered;
 #include "vm_opts.h"
 
 #include "ruby/thread_native.h"
+
+// Track ractor blocking state and counts - only needed on win32 for barrier synchronization.
+// On pthread, the scheduler uses running_cnt/barrier_waiting_cnt instead.
+#ifdef HAVE_PTHREAD_H
+# define RACTOR_TRACK_BLOCKING 0
+#else
+# define RACTOR_TRACK_BLOCKING 1
+#endif
+
 /*
  * implementation selector of get_insn_info algorithm
  *   0: linear search
@@ -690,7 +699,9 @@ typedef struct rb_vm_struct {
     struct {
         struct ccan_list_head set;
         unsigned int cnt;
+#if RACTOR_TRACK_BLOCKING
         unsigned int blocking_cnt;
+#endif
 
         struct rb_ractor_struct *main_ractor;
         struct rb_thread_struct *main_thread; // == vm->ractor.main_ractor->threads.main
