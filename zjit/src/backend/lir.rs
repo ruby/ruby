@@ -2136,6 +2136,8 @@ impl Assembler
         // Collect block order upfront so we don't borrow self while mutating
         let block_order = self.block_order();
 
+        // This code is iterating over each block in our CFG and inserting
+        // copy instructions at each edge.
         for &pred_id in &block_order {
             let pred_hir_block_id = self.basic_blocks[pred_id.0].hir_block_id;
             let pred_rpo_index = self.basic_blocks[pred_id.0].rpo_index;
