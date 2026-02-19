@@ -7648,98 +7648,119 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
     (self_param, entry_state)
 }
 
-pub struct Dominators<'a> {
-    f: &'a Function,
-    dominators: Vec<Vec<BlockId>>,
+pub struct Dominators {
+    /// Immediate dominator for each block, indexed by BlockId.
+    /// idom(root) = root (self-loop is sentinel), idom[unreachable] == IDOM_NONE.
+    idoms: Vec<BlockId>,
 }
 
-impl<'a> Dominators<'a> {
-    pub fn new(f: &'a Function) -> Self {
+/// Sentinel value for "no idom computed yet".
+const IDOM_NONE: BlockId = BlockId(usize::MAX);
+
+impl Dominators {
+    pub fn new(f: &Function) -> Self {
         let mut cfi = ControlFlowInfo::new(f);
         Self::with_cfi(f, &mut cfi)
     }
 
-    pub fn with_cfi(f: &'a Function, cfi: &mut ControlFlowInfo) -> Self {
-        let block_ids = f.rpo();
-        let mut dominators = vec![vec![]; f.blocks.len()];
+    /// Compute immediate dominators using the "engineered algorithm" from
+    /// Cooper, Harvey & Kennedy, "A Simple, Fast Dominance Algorithm" (2001),
+    /// Figure 3: <https://www.cs.tufts.edu/~nr/cs257/archive/keith-cooper/dom14.pdf>
+    pub fn with_cfi(f: &Function, cfi: &mut ControlFlowInfo) -> Self {
+        let rpo = f.rpo();
+        let num_blocks = f.blocks.len();
 
-        // Compute dominators for each node using fixed point iteration.
-        // Approach can be found in Figure 1 of:
-        // https://www.cs.tufts.edu/~nr/cs257/archive/keith-cooper/dom14.pdf
-        //
-        // Initially we set:
-        //
-        // dom(entry) = {entry} for each entry block
-        // dom(b != entry) = {all nodes}
-        //
-        // Iteratively, apply:
-        //
-        // dom(b) = {b} union intersect(dom(p) for p in predecessors(b))
-        //
-        // When we've run the algorithm and the dominator set no longer changes
-        // between iterations, then we have found the dominator sets.
-
-        // Set up entries_block as the sole root.
-        // The entries_block is only dominated by itself.
-        dominators[f.entries_block.0] = vec![f.entries_block];
-
-        // Setup the initial dominator sets.
-        for block_id in &block_ids {
-            if *block_id != f.entries_block {
-                // Non-root blocks are initially dominated by all other blocks.
-                dominators[block_id.0] = block_ids.clone();
-            }
+        // Map BlockId → RPO index for O(1) lookup in intersect.
+        let mut rpo_order = vec![usize::MAX; num_blocks];
+        for (idx, &block) in rpo.iter().enumerate() {
+            rpo_order[block.0] = idx;
         }
+
+        // Initialize idom: root's idom is itself, everything else is undefined.
+        let mut idoms = vec![IDOM_NONE; num_blocks];
+        let root = f.entries_block;
+        idoms[root.0] = root;
 
         let mut changed = true;
         while changed {
             changed = false;
+            for &block in &rpo {
+                if block == root { continue; }
 
-            for block_id in &block_ids {
-                if *block_id == f.entries_block {
-                    continue;
+                // Find the first predecessor that already has an idom computed.
+                let preds: Vec<BlockId> = cfi.predecessors(block).collect();
+                let mut new_idom = IDOM_NONE;
+                for &p in &preds {
+                    if idoms[p.0] != IDOM_NONE {
+                        new_idom = p;
+                        break;
+                    }
+                }
+                if new_idom == IDOM_NONE { continue; }
+
+                // Intersect with remaining processed predecessors.
+                for &p in &preds {
+                    if p == new_idom { continue; }
+                    if idoms[p.0] != IDOM_NONE {
+                        new_idom = Self::intersect(&idoms, &rpo_order, p, new_idom);
+                    }
                 }
 
-                // Get all predecessors for a given block.
-                let block_preds: Vec<BlockId> = cfi.predecessors(*block_id).collect();
-                if block_preds.is_empty() {
-                    continue;
-                }
-
-                let mut new_doms = dominators[block_preds[0].0].clone();
-
-                // Compute the intersection of predecessor dominator sets into `new_doms`.
-                for pred_id in &block_preds[1..] {
-                    let pred_doms = &dominators[pred_id.0];
-                    // Only keep a dominator in `new_doms` if it is also found in pred_doms
-                    new_doms.retain(|d| pred_doms.contains(d));
-                }
-
-                // Insert sorted into `new_doms`.
-                match new_doms.binary_search(block_id) {
-                    Ok(_) => {}
-                    Err(pos) => new_doms.insert(pos, *block_id)
-                }
-
-                // If we have computed a new dominator set, then we can update
-                // the dominators and mark that we need another iteration.
-                if dominators[block_id.0] != new_doms {
-                    dominators[block_id.0] = new_doms;
+                if idoms[block.0] != new_idom {
+                    idoms[block.0] = new_idom;
                     changed = true;
                 }
             }
         }
 
-        Self { f, dominators }
+        Self { idoms }
     }
 
+    /// Walk up the dominator tree from two fingers until they meet.
+    /// Uses RPO indices: a node with a *lower* RPO index is *higher* in the tree.
+    fn intersect(idoms: &[BlockId], rpo_order: &[usize], mut b1: BlockId, mut b2: BlockId) -> BlockId {
+        while b1 != b2 {
+            while rpo_order[b1.0] > rpo_order[b2.0] {
+                b1 = idoms[b1.0];
+            }
+            while rpo_order[b2.0] > rpo_order[b1.0] {
+                b2 = idoms[b2.0];
+            }
+        }
+        b1
+    }
 
+    /// Return the immediate dominator of `block`.
+    pub fn idom(&self, block: BlockId) -> BlockId {
+        self.idoms[block.0]
+    }
+
+    /// Return true if `left` is dominated by `right`.
     pub fn is_dominated_by(&self, left: BlockId, right: BlockId) -> bool {
-        self.dominators(left).any(|&b| b == right)
+        if self.idom(left) == IDOM_NONE { return false; }
+        let mut block = left;
+        loop {
+            if block == right { return true; }
+            if self.idom(block) == block { return false; }
+            block = self.idom(block);
+        }
     }
 
-    pub fn dominators(&self, block: BlockId) -> Iter<'_, BlockId> {
-        self.dominators[block.0].iter()
+    /// Compute the full dominator set for `block` by walking the idom chain to the root.
+    /// Returns dominators sorted by BlockId (ascending). Only used in tests;
+    /// production code should use `idom()` or `is_dominated_by()` instead.
+    pub fn dominators(&self, block: BlockId) -> Vec<BlockId> {
+        let mut doms = Vec::new();
+        if self.idom(block) != IDOM_NONE {
+            let mut b = block;
+            loop {
+                doms.push(b);
+                if self.idom(b) == b { break; }
+                b = self.idom(b);
+            }
+        }
+        doms.sort();
+        doms
     }
 }
 
@@ -7831,14 +7852,14 @@ impl<'a> ControlFlowInfo<'a> {
 
 pub struct LoopInfo<'a> {
     cfi: &'a ControlFlowInfo<'a>,
-    dominators: &'a Dominators<'a>,
+    dominators: &'a Dominators,
     loop_depths: HashMap<BlockId, u32>,
     loop_headers: BlockSet,
     back_edge_sources: BlockSet,
 }
 
 impl<'a> LoopInfo<'a> {
-    pub fn new(cfi: &'a ControlFlowInfo<'a>, dominators: &'a Dominators<'a>) -> Self {
+    pub fn new(cfi: &'a ControlFlowInfo<'a>, dominators: &'a Dominators) -> Self {
         let mut loop_headers: BlockSet = BlockSet::with_capacity(cfi.function.num_blocks());
         let mut loop_depths: HashMap<BlockId, u32> = HashMap::new();
         let mut back_edge_sources: BlockSet = BlockSet::with_capacity(cfi.function.num_blocks());
