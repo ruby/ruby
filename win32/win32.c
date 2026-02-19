@@ -7210,7 +7210,46 @@ rb_w32_read_internal(int fd, void *buf, size_t size, rb_off_t *offset)
     }
 
     if (!offset && _osfile(fd) & FTEXT) {
-        return _read(fd, buf, size);
+        ssize_t sret;
+        rb_off_t pre_pos, post_pos;
+
+        errno = 0;
+        pre_pos = _lseeki64(fd, 0, SEEK_CUR);
+        sret = _read(fd, buf, size);
+        if (0 <= sret && (size_t)sret < size && 0 <= pre_pos) {
+            // Check if the EOF character was encountered, then seek back.
+            // This assumes that the C Runtime performs CRLF conversion inline
+            // and leaves the EOF character in the buffer.
+            int lasterrno;
+            size_t last_filled;
+            size_t i;
+
+            lasterrno = errno;
+            post_pos = _lseeki64(fd, 0, SEEK_CUR);
+            last_filled = (size_t)(post_pos - pre_pos);
+            if ((size_t)sret == last_filled) {
+                errno = lasterrno;
+                return sret;
+            }
+            if (size < last_filled) {
+                // This suggests _read() does filling buffer more than once.
+                // Known crt does not do this.
+                // In this state, the address where the last byte read
+                // cannot be determined. If an EOF is encountered,
+                // the file position cannot be corrected.
+                errno = lasterrno;
+                return sret;
+            }
+            for (i = sret; i < last_filled; i++) {
+                if (((char *)buf)[i] == 0x1A) {
+                    // EOF character found and set the file position
+                    _lseeki64(fd, pre_pos + i, SEEK_SET);
+                    errno = lasterrno;
+                    return sret;
+                }
+            }
+        }
+        return sret;
     }
 
     rb_acrt_lowio_lock_fh(fd);
