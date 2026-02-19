@@ -732,6 +732,9 @@ pub enum Insn {
     Const { val: Const },
     /// SSA block parameter. Also used for function parameters in the function's entry block.
     Param,
+    /// Load a function argument from the calling convention.
+    /// Used in JIT entry blocks. idx is the calling convention index, id is for display.
+    LoadArg { idx: u32, id: ID, val_type: Type },
 
     StringCopy { val: InsnId, chilled: bool, state: InsnId },
     StringIntern { val: InsnId, state: InsnId },
@@ -1086,6 +1089,7 @@ impl Insn {
         match &self {
             Insn::Const { .. } => effects::Empty,
             Insn::Param { .. } => effects::Empty,
+            Insn::LoadArg { .. } => effects::Empty,
             Insn::StringCopy { .. } => allocates,
             Insn::StringIntern { .. } => effects::Any,
             Insn::StringConcat { .. } => effects::Any,
@@ -1304,6 +1308,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
         match &self.inner {
             Insn::Const { val } => { write!(f, "Const {}", val.print(self.ptr_map)) }
             Insn::Param => { write!(f, "Param") }
+            Insn::LoadArg { idx, id, .. } => { write!(f, "LoadArg :{}@{idx}", id.contents_lossy()) }
             Insn::NewArray { elements, .. } => {
                 write!(f, "NewArray")?;
                 let mut prefix = " ";
@@ -2182,6 +2187,7 @@ impl Function {
         match &self.insns[insn_id.0] {
             result@(Const {..}
                     | Param
+                    | LoadArg {..}
                     | GetConstantPath {..}
                     | PatchPoint {..}
                     | PutSpecialObject {..}
@@ -2420,6 +2426,7 @@ impl Function {
         assert!(self.insns[insn.0].has_output());
         match &self.insns[insn.0] {
             Insn::Param => unimplemented!("params should not be present in block.insns"),
+            Insn::LoadArg { val_type, .. } => *val_type,
             Insn::SetGlobal { .. } | Insn::Jump(_) | Insn::EntryPoint { .. }
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. } | Insn::Throw { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
@@ -4597,6 +4604,7 @@ impl Function {
         match insn {
             &Insn::Const { .. }
             | &Insn::Param
+            | &Insn::LoadArg { .. }
             | &Insn::EntryPoint { .. }
             | &Insn::LoadPC
             | &Insn::LoadEC
@@ -5376,6 +5384,7 @@ impl Function {
             // Instructions with no InsnId operands (except state) or nothing to assert
             Insn::Const { .. }
             | Insn::Param
+            | Insn::LoadArg { .. }
             | Insn::PutSpecialObject { .. }
             | Insn::LoadField { .. }
             | Insn::GetConstantPath { .. }
@@ -7545,7 +7554,9 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
         None
     };
 
-    let self_param = fun.push_insn(jit_entry_block, Insn::Param);
+    let mut arg_idx: u32 = 0;
+    let self_param = fun.push_insn(jit_entry_block, Insn::LoadArg { idx: arg_idx, id: ID!(self_), val_type: types::BasicObject });
+    arg_idx += 1;
     let mut entry_state = FrameState::new(iseq);
     for local_idx in 0..num_locals(iseq) {
         if (lead_num + passed_opt_num..lead_num + opt_num).contains(&local_idx) {
@@ -7559,7 +7570,9 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
             let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
             entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::GetLocal { level: 0, ep_offset, use_sp: false, rest_param: false }));
         } else if local_idx < param_size {
-            entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::Param));
+            let id = unsafe { rb_zjit_local_id(iseq, local_idx.try_into().unwrap()) };
+            entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::LoadArg { idx: arg_idx, id, val_type: types::BasicObject }));
+            arg_idx += 1;
         } else {
             entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::Const { val: Const::Value(Qnil) }));
         }
@@ -8252,8 +8265,11 @@ mod graphviz_tests {
         </TABLE>>];
           bb0:v4 -> bb2:params:n;
           bb1 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject)&nbsp;</TD></TR>
+        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb1()&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v5">EntryPoint JIT(0)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v6">v6:BasicObject = LoadArg :self@0&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v7">v7:BasicObject = LoadArg :x@1&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v8">v8:BasicObject = LoadArg :y@2&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v9">Jump bb2(v6, v7, v8)&nbsp;</TD></TR>
         </TABLE>>];
           bb1:v9 -> bb2:params:n;
@@ -8302,8 +8318,10 @@ mod graphviz_tests {
         </TABLE>>];
           bb0:v3 -> bb2:params:n;
           bb1 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb1(v5:BasicObject, v6:BasicObject)&nbsp;</TD></TR>
+        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb1()&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v4">EntryPoint JIT(0)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v5">v5:BasicObject = LoadArg :self@0&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v6">v6:BasicObject = LoadArg :c@1&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v7">Jump bb2(v5, v6)&nbsp;</TD></TR>
         </TABLE>>];
           bb1:v7 -> bb2:params:n;
