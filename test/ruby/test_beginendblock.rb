@@ -40,7 +40,8 @@ class TestBeginEndBlock < Test::Unit::TestCase
     assert_in_out_err([], "#{<<~"begin;"}#{<<~'end;'}", [], ['-:2: warning: END in method; use at_exit'])
     begin;
       def end1
-        END {}
+        END {
+        }
       end
     end;
   end
