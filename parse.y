@@ -1106,7 +1106,7 @@ static rb_node_super_t *rb_node_super_new(struct parser_params *p, NODE *nd_args
 static rb_node_zsuper_t * rb_node_zsuper_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_node_list_t *rb_node_list_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc);
 static rb_node_list_t *rb_node_list_new2(struct parser_params *p, NODE *nd_head, long nd_alen, NODE *nd_next, const YYLTYPE *loc);
-static rb_node_zlist_t *rb_node_zlist_new(struct parser_params *p, const YYLTYPE *loc);
+static rb_node_zlist_t *rb_node_zlist_new(struct parser_params *p, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc);
 static rb_node_hash_t *rb_node_hash_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc);
 static rb_node_return_t *rb_node_return_new(struct parser_params *p, NODE *nd_stts, const YYLTYPE *loc, const YYLTYPE *keyword_loc);
 static rb_node_yield_t *rb_node_yield_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *lparen_loc, const YYLTYPE *rparen_loc);
@@ -1214,7 +1214,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_ZSUPER(loc) (NODE *)rb_node_zsuper_new(p,loc)
 #define NEW_LIST(a,loc) (NODE *)rb_node_list_new(p,a,loc)
 #define NEW_LIST2(h,l,n,loc) (NODE *)rb_node_list_new2(p,h,l,n,loc)
-#define NEW_ZLIST(loc) (NODE *)rb_node_zlist_new(p,loc)
+#define NEW_ZLIST(loc,o_loc,c_loc) (NODE *)rb_node_zlist_new(p,loc,o_loc,c_loc)
 #define NEW_HASH(a,loc) (NODE *)rb_node_hash_new(p,a,loc)
 #define NEW_RETURN(s,loc,k_loc) (NODE *)rb_node_return_new(p,s,loc,k_loc)
 #define NEW_YIELD(a,loc,k_loc,l_loc,r_loc) (NODE *)rb_node_yield_new(p,a,loc,k_loc,l_loc,r_loc)
@@ -1474,7 +1474,7 @@ static NODE *new_defined(struct parser_params *p, NODE *expr, const YYLTYPE *loc
 
 static NODE *new_regexp(struct parser_params *, NODE *, int, const YYLTYPE *, const YYLTYPE *, const YYLTYPE *, const YYLTYPE *);
 
-#define make_list(list, loc) ((list) ? (nd_set_loc(list, loc), list) : NEW_ZLIST(loc))
+#define make_list(list, loc, opening_loc, closing_loc) ((list) ? (nd_set_loc(list, loc), list) : NEW_ZLIST(loc, opening_loc, closing_loc))
 
 static NODE *new_xstring(struct parser_params *, NODE *, const YYLTYPE *loc);
 
@@ -3151,7 +3151,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %rule words(begin, word_list) <node>
                 : begin ' '+ word_list tSTRING_END
                     {
-                        $$ = make_list($word_list, &@$);
+                        $$ = make_list($word_list, &@$, &@begin, &@tSTRING_END);
                     /*% ripper: array!($:3) %*/
                     }
                 ;
@@ -4408,7 +4408,7 @@ primary		: inline_primary
                 }
             | tLBRACK aref_args ']'
                 {
-                    $$ = make_list($2, &@$);
+                    $$ = make_list($2, &@$, &@1, &@3);
                 /*% ripper: array!($:2) %*/
                 }
             | tLBRACE assoc_list '}'
@@ -11779,9 +11779,11 @@ rb_node_list_new2(struct parser_params *p, NODE *nd_head, long nd_alen, NODE *nd
 }
 
 static rb_node_zlist_t *
-rb_node_zlist_new(struct parser_params *p, const YYLTYPE *loc)
+rb_node_zlist_new(struct parser_params *p, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc)
 {
     rb_node_zlist_t *n = NODE_NEWNODE(NODE_ZLIST, rb_node_zlist_t, loc);
+    n->opening_loc = *opening_loc;
+    n->closing_loc = *closing_loc;
 
     return n;
 }
@@ -14811,7 +14813,7 @@ new_ary_op_assign(struct parser_params *p, NODE *ary,
     NODE *asgn;
 
     aryset_check(p, args);
-    args = make_list(args, args_loc);
+    args = make_list(args, args_loc, opening_loc, closing_loc);
     asgn = NEW_OP_ASGN1(ary, op, args, rhs, loc, call_operator_loc, opening_loc, closing_loc, binary_operator_loc);
     fixpos(asgn, ary);
     return asgn;

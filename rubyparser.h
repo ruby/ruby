@@ -570,6 +570,9 @@ typedef struct RNode_LIST {
 
 typedef struct RNode_ZLIST {
     NODE node;
+
+    rb_code_location_t opening_loc;
+    rb_code_location_t closing_loc;
 } rb_node_zlist_t;
 
 typedef struct RNode_HASH {
