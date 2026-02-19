@@ -15514,7 +15514,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  - #readchar: Returns the next character read from +self+;
  *    same as #getc, but raises an exception on end-of-stream.
  *  - #readline: Returns the next line read from +self+;
- *    same as #getline, but raises an exception of end-of-stream.
+ *    same as #gets, but raises an exception on end-of-stream.
  *  - #readlines: Returns an array of all lines read read from +self+.
  *  - #readpartial: Returns up to the given number of bytes from +self+.
  *
