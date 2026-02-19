@@ -4442,6 +4442,16 @@ impl Function {
                         // Don't bother re-inferring the type of val; we already know it.
                         continue;
                     }
+                    Insn::GuardShape { val, shape, .. } => {
+                        let recv_type = self.type_of(val);
+                        match recv_type.ruby_object() {
+                            Some(recv_obj) if (recv_obj.is_frozen() && recv_obj.shape_id_of() == shape) => {
+                                self.make_equal_to(insn_id, val);
+                                continue;
+                            }
+                            _ => insn_id,
+                        }
+                    }
                     Insn::LoadField { recv, offset, return_type, .. } if return_type.is_subtype(types::BasicObject) &&
                             u32::try_from(offset).is_ok() => {
                         let offset = (offset as u32).to_usize();
