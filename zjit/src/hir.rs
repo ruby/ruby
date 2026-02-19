@@ -5009,12 +5009,12 @@ impl Function {
 
     /// Return a traversal of the `Function`'s `BlockId`s in reverse post-order.
     pub fn rpo(&self) -> Vec<BlockId> {
-        let mut result = self.po_from(vec![self.entries_block]);
+        let mut result = self.po_from(self.entries_block);
         result.reverse();
         result
     }
 
-    fn po_from(&self, starts: Vec<BlockId>) -> Vec<BlockId> {
+    fn po_from(&self, start: BlockId) -> Vec<BlockId> {
         #[derive(PartialEq)]
         enum Action {
             VisitEdges,
@@ -5022,7 +5022,7 @@ impl Function {
         }
         let mut result = vec![];
         let mut seen = BlockSet::with_capacity(self.blocks.len());
-        let mut stack: Vec<_> = starts.iter().map(|&start| (start, Action::VisitEdges)).collect();
+        let mut stack = vec![(start, Action::VisitEdges)];
         while let Some((block, action)) = stack.pop() {
             if action == Action::VisitSelf {
                 result.push(block);
