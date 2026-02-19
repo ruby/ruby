@@ -703,10 +703,21 @@ signal_enque(int sig)
 static void
 sighandler(int sig)
 {
-    int old_errnum = errno;
 
-    signal_enque(sig);
-    rb_thread_wakeup_timer_thread(sig);
+    bool skip_enq = false;
+    int old_errnum = errno;
+#if defined(RUBY_SIGCHLD)
+    if (sig == RUBY_SIGCHLD) {
+        VALUE cmd = rbimpl_atomic_value_load(&GET_VM()->trap_list.cmd[sig], RBIMPL_ATOMIC_RELAXED);
+        if (cmd == 0 || cmd == Qnil) {
+            skip_enq = true;
+        }
+    }
+#endif
+    if (!skip_enq) {
+        signal_enque(sig);
+        rb_thread_wakeup_timer_thread(sig);
+    }
 
 #if !defined(BSD_SIGNAL) && !defined(POSIX_SIGNAL)
     ruby_signal(sig, sighandler);
@@ -1082,10 +1093,10 @@ signal_exec(VALUE cmd, int sig)
 void
 rb_vm_trap_exit(rb_vm_t *vm)
 {
-    VALUE trap_exit = vm->trap_list.cmd[0];
+    VALUE trap_exit = RUBY_ATOMIC_VALUE_LOAD(vm->trap_list.cmd[0]);
 
     if (trap_exit) {
-        vm->trap_list.cmd[0] = 0;
+        RUBY_ATOMIC_VALUE_SET(vm->trap_list.cmd[0], 0);
         signal_exec(trap_exit, 0);
     }
 }
@@ -1095,7 +1106,7 @@ int
 rb_signal_exec(rb_thread_t *th, int sig)
 {
     rb_vm_t *vm = GET_VM();
-    VALUE cmd = vm->trap_list.cmd[sig];
+    VALUE cmd = RUBY_ATOMIC_VALUE_LOAD(vm->trap_list.cmd[sig]);
 
     if (cmd == 0) {
         switch (sig) {
@@ -1293,7 +1304,7 @@ trap(int sig, sighandler_t func, VALUE command)
         oldfunc = ruby_signal(sig, func);
         if (oldfunc == SIG_ERR) rb_sys_fail_str(rb_signo2signm(sig));
     }
-    oldcmd = vm->trap_list.cmd[sig];
+    oldcmd = RUBY_ATOMIC_VALUE_LOAD(vm->trap_list.cmd[sig]);
     switch (oldcmd) {
       case 0:
       case Qtrue:
@@ -1309,7 +1320,7 @@ trap(int sig, sighandler_t func, VALUE command)
         break;
     }
 
-    ACCESS_ONCE(VALUE, vm->trap_list.cmd[sig]) = command;
+    RUBY_ATOMIC_VALUE_SET(vm->trap_list.cmd[sig], command);
 
     return oldcmd;
 }
