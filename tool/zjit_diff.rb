@@ -90,7 +90,10 @@ class ZJITDiff
                   *@options[:bench_args],
                   *@options[:name_filters])
 
-      @runner.cmd('./misc/zjit_diff.rb', "#{DATA_FILENAME}.json", out: $stdout)
+      report = `./misc/zjit_diff.rb #{DATA_FILENAME}.json`
+      report.gsub!(@before.hash, 'before')
+      report.gsub!(@after.hash, 'after')
+      puts(report)
     end
   end
 
@@ -120,6 +123,7 @@ class RubyWorktree
     @force_rebuild = force_rebuild
     @runner = runner
     @log = logger
+    @hash = nil
 
     setup_worktree
   end
@@ -146,17 +150,15 @@ class RubyWorktree
         return
       end
 
-      unless File.exist?('Makefile')
-        @runner.cmd('./autogen.sh')
+      @runner.cmd('./autogen.sh')
 
-        cmd = [
-          './configure',
-          *configure_cmd_args,
-          "--prefix=#{prefix}"
-        ]
+      cmd = [
+        './configure',
+        *configure_cmd_args,
+        "--prefix=#{prefix}"
+      ]
 
-        @runner.cmd(*cmd)
-      end
+      @runner.cmd(*cmd)
       @runner.cmd('make', *build_cmd_args)
       @runner.cmd('make', 'install')
     end
@@ -192,18 +194,18 @@ subtext = <<~HELP
   Subcommands:
      bench :  Run benchmarks
      clean :  Clean temporary files created by benchmarks
-  See '#{$0} COMMAND --help' for more information on a specific command.
+  See '#{$PROGRAM_NAME} COMMAND --help' for more information on a specific command.
 HELP
 
 top_level = OptionParser.new do |opts|
-  opts.banner = "Usage: #{$0} [options]"
+  opts.banner = "Usage: #{$PROGRAM_NAME} [options]"
   opts.separator('')
   opts.separator(subtext)
 end
 
 subcommands = {
   'bench' => OptionParser.new do |opts|
-    opts.banner = "Usage: #{$0} [options] <benchmarks to run>"
+    opts.banner = "Usage: #{$PROGRAM_NAME} [options] <benchmarks to run>"
 
     opts.on('--before REF', 'Git ref for ruby (before)') do |ref|
       git_ref = parse_ref ref
