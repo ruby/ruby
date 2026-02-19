@@ -2303,6 +2303,46 @@ impl Assembler
                 self.basic_blocks[block_id.0].insn_ids.insert(1 + i, None);
             }
         }
+
+        self.rewrite_instructions(assignments, regs);
+    }
+
+    /// Walk every instruction and replace VReg operands with the physical
+    /// register (or stack slot) from the allocation assignments.
+    fn rewrite_instructions(&mut self, assignments: &[Option<Allocation>], regs: &[Reg]) {
+        for block in self.basic_blocks.iter_mut() {
+            for insn in block.insns.iter_mut() {
+                let mut iter = insn.opnd_iter_mut();
+                while let Some(opnd) = iter.next() {
+                    Self::rewrite_opnd(opnd, assignments, regs);
+                }
+                if let Some(out) = insn.out_opnd_mut() {
+                    Self::rewrite_opnd(out, assignments, regs);
+                }
+            }
+        }
+    }
+
+    fn rewrite_opnd(opnd: &mut Opnd, assignments: &[Option<Allocation>], regs: &[Reg]) {
+        match opnd {
+            Opnd::VReg { idx, .. } => {
+                match assignments[idx.0].unwrap() {
+                    Allocation::Reg(n) => *opnd = Opnd::Reg(regs[n]),
+                    Allocation::Stack(_) => todo!("Stack allocation not yet supported in rewrite_instructions"),
+                }
+            }
+            Opnd::Mem(Mem { base: MemBase::VReg(idx), .. }) => {
+                match assignments[idx.0].unwrap() {
+                    Allocation::Reg(n) => {
+                        if let Opnd::Mem(mem) = opnd {
+                            mem.base = MemBase::Reg(regs[n].reg_no);
+                        }
+                    }
+                    Allocation::Stack(_) => todo!("Stack allocation not yet supported in rewrite_instructions"),
+                }
+            }
+            _ => {}
+        }
     }
 
     /// Sets the out field on the various instructions that require allocated
@@ -4423,6 +4463,14 @@ mod tests {
         assert_eq!(b3_insns.len(), 5);
         assert!(matches!(&b3_insns[3], Insn::Mov { dest, src }
             if *dest == Opnd::Reg(regs[1]) && *src == Opnd::Reg(regs[3])));
+
+        // Verify original instructions in b3 are rewritten to physical registers.
+        // b3: Mul { left: r12, right: r13, out: r14 }, Sub { left: r13, right: UImm(1), out: r15 }
+        // r12→Reg(1), r13→Reg(2), r14→Reg(3), r15→Reg(2)
+        assert!(matches!(&b3_insns[1], Insn::Mul { left, right, out }
+            if *left == Opnd::Reg(regs[1]) && *right == Opnd::Reg(regs[2]) && *out == Opnd::Reg(regs[3])));
+        assert!(matches!(&b3_insns[2], Insn::Sub { left, right, out }
+            if *left == Opnd::Reg(regs[2]) && *right == Opnd::UImm(1) && *out == Opnd::Reg(regs[2])));
     }
 
     #[test]
@@ -4455,6 +4503,17 @@ mod tests {
         // Verify the moves are edge moves (not entry param moves)
         assert!(matches!(&b1_insns[1], Insn::Mov { .. }));
         assert!(matches!(&b1_insns[2], Insn::Mov { .. }));
+
+        // Verify that the Jmp's edge args in b1 are rewritten to physical registers.
+        // Original: Jmp(b2, [UImm(1), v1]) — v1→Reg(1)
+        // UImm(1) stays as-is, v1 becomes Reg(regs[1])
+        if let Insn::Jmp(Target::Block(edge)) = &b1_insns[3] {
+            assert_eq!(edge.args.len(), 2);
+            assert_eq!(edge.args[0], Opnd::UImm(1));
+            assert_eq!(edge.args[1], Opnd::Reg(regs[1]));
+        } else {
+            panic!("Expected Jmp at end of b1");
+        }
     }
 
     fn build_critical_edge() -> (Assembler, Opnd, Opnd, Opnd, Opnd, Opnd, BlockId, BlockId, BlockId) {
