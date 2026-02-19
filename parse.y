@@ -1166,7 +1166,7 @@ static rb_node_attrasgn_t *rb_node_attrasgn_new(struct parser_params *p, NODE *n
 static rb_node_lambda_t *rb_node_lambda_new(struct parser_params *p, rb_node_args_t *nd_args, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *operator_loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc);
 static rb_node_aryptn_t *rb_node_aryptn_new(struct parser_params *p, NODE *pre_args, NODE *rest_arg, NODE *post_args, const YYLTYPE *loc);
 static rb_node_hshptn_t *rb_node_hshptn_new(struct parser_params *p, NODE *nd_pconst, NODE *nd_pkwargs, NODE *nd_pkwrestarg, const YYLTYPE *loc);
-static rb_node_fndptn_t *rb_node_fndptn_new(struct parser_params *p, NODE *pre_rest_arg, NODE *args, NODE *post_rest_arg, const YYLTYPE *loc);
+static rb_node_fndptn_t *rb_node_fndptn_new(struct parser_params *p, NODE *pre_rest_arg, NODE *args, NODE *post_rest_arg, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc);
 static rb_node_line_t *rb_node_line_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_node_file_t *rb_node_file_new(struct parser_params *p, VALUE str, const YYLTYPE *loc);
 static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE *loc);
@@ -1274,7 +1274,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_LAMBDA(a,b,loc,op_loc,o_loc,c_loc) (NODE *)rb_node_lambda_new(p,a,b,loc,op_loc,o_loc,c_loc)
 #define NEW_ARYPTN(pre,r,post,loc) (NODE *)rb_node_aryptn_new(p,pre,r,post,loc)
 #define NEW_HSHPTN(c,kw,kwrest,loc) (NODE *)rb_node_hshptn_new(p,c,kw,kwrest,loc)
-#define NEW_FNDPTN(pre,a,post,loc) (NODE *)rb_node_fndptn_new(p,pre,a,post,loc)
+#define NEW_FNDPTN(pre,a,post,loc,o_loc,c_loc) (NODE *)rb_node_fndptn_new(p,pre,a,post,loc,o_loc,c_loc)
 #define NEW_LINE(loc) (NODE *)rb_node_line_new(p,loc)
 #define NEW_FILE(str,loc) (NODE *)rb_node_file_new(p,str,loc)
 #define NEW_ENCODING(loc) (NODE *)rb_node_encoding_new(p,loc)
@@ -1433,8 +1433,8 @@ static rb_node_args_t *new_args(struct parser_params*,rb_node_args_aux_t*,rb_nod
 static rb_node_args_t *new_args_tail(struct parser_params*,rb_node_kw_arg_t*,ID,ID,const YYLTYPE*);
 static NODE *new_array_pattern(struct parser_params *p, NODE *constant, NODE *pre_arg, NODE *aryptn, const YYLTYPE *loc);
 static NODE *new_array_pattern_tail(struct parser_params *p, NODE *pre_args, int has_rest, NODE *rest_arg, NODE *post_args, const YYLTYPE *loc);
-static NODE *new_find_pattern(struct parser_params *p, NODE *constant, NODE *fndptn, const YYLTYPE *loc);
-static NODE *new_find_pattern_tail(struct parser_params *p, NODE *pre_rest_arg, NODE *args, NODE *post_rest_arg, const YYLTYPE *loc);
+static NODE *new_find_pattern(struct parser_params *p, NODE *constant, NODE *fndptn, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc);
+static NODE *new_find_pattern_tail(struct parser_params *p, NODE *pre_rest_arg, NODE *args, NODE *post_rest_arg, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc);
 static NODE *new_hash_pattern(struct parser_params *p, NODE *constant, NODE *hshptn, const YYLTYPE *loc);
 static NODE *new_hash_pattern_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, const YYLTYPE *loc);
 
@@ -5457,7 +5457,7 @@ p_top_expr_body : p_expr
                     }
                 | p_find
                     {
-                        $$ = new_find_pattern(p, 0, $1, &@$);
+                        $$ = new_find_pattern(p, 0, $1, &@$, &NULL_LOC, &NULL_LOC);
                     /*% ripper: fndptn!(Qnil, *$:1[0..2]) %*/
                     }
                 | p_args_tail
@@ -5527,7 +5527,11 @@ p_expr_basic	: p_value
                 | p_const p_lparen[p_pktbl] p_find rparen
                     {
                         pop_pktbl(p, $p_pktbl);
-                        $$ = new_find_pattern(p, $p_const, $p_find, &@$);
+                        if (nd_type_p($p_find, NODE_FNDPTN)) {
+                            RNODE_FNDPTN($p_find)->opening_loc = @2;
+                            RNODE_FNDPTN($p_find)->closing_loc = @4;
+                        }
+                        $$ = new_find_pattern(p, $p_const, $p_find, &@$, &@2, &@4);
                         nd_set_first_loc($$, @p_const.beg_pos);
                     /*% ripper: fndptn!($:p_const, *$:p_find[0..2]) %*/
                     }
@@ -5554,7 +5558,11 @@ p_expr_basic	: p_value
                 | p_const p_lbracket[p_pktbl] p_find rbracket
                     {
                         pop_pktbl(p, $p_pktbl);
-                        $$ = new_find_pattern(p, $p_const, $p_find, &@$);
+                        if (nd_type_p($p_find, NODE_FNDPTN)) {
+                            RNODE_FNDPTN($p_find)->opening_loc = @2;
+                            RNODE_FNDPTN($p_find)->closing_loc = @4;
+                        }
+                        $$ = new_find_pattern(p, $p_const, $p_find, &@$, &@2, &@4);
                         nd_set_first_loc($$, @p_const.beg_pos);
                     /*% ripper: fndptn!($:p_const, *$:p_find[0..2]) %*/
                     }
@@ -5578,7 +5586,11 @@ p_expr_basic	: p_value
                     }
                 | tLBRACK p_find rbracket
                     {
-                        $$ = new_find_pattern(p, 0, $p_find, &@$);
+                        if (nd_type_p($p_find, NODE_FNDPTN)) {
+                            RNODE_FNDPTN($p_find)->opening_loc = @1;
+                            RNODE_FNDPTN($p_find)->closing_loc = @3;
+                        }
+                        $$ = new_find_pattern(p, 0, $p_find, &@$, &@1, &@3);
                     /*% ripper: fndptn!(Qnil, *$:p_find[0..2]) %*/
                     }
                 | tLBRACK rbracket
@@ -5663,7 +5675,7 @@ p_args_tail	: p_rest
 
 p_find		: p_rest ',' p_args_post ',' p_rest
                     {
-                        $$ = new_find_pattern_tail(p, $1, $3, $5, &@$);
+                        $$ = new_find_pattern_tail(p, $1, $3, $5, &@$, &NULL_LOC, &NULL_LOC);
                     /*% ripper: [$:1, $:3, $:5] %*/
                     }
                 ;
@@ -12369,13 +12381,15 @@ rb_node_hshptn_new(struct parser_params *p, NODE *nd_pconst, NODE *nd_pkwargs, N
 }
 
 static rb_node_fndptn_t *
-rb_node_fndptn_new(struct parser_params *p, NODE *pre_rest_arg, NODE *args, NODE *post_rest_arg, const YYLTYPE *loc)
+rb_node_fndptn_new(struct parser_params *p, NODE *pre_rest_arg, NODE *args, NODE *post_rest_arg, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc)
 {
     rb_node_fndptn_t *n = NODE_NEWNODE(NODE_FNDPTN, rb_node_fndptn_t, loc);
     n->nd_pconst = 0;
     n->pre_rest_arg = pre_rest_arg;
     n->args = args;
     n->post_rest_arg = post_rest_arg;
+    n->opening_loc = *opening_loc;
+    n->closing_loc = *closing_loc;
 
     return n;
 }
@@ -14579,7 +14593,7 @@ new_array_pattern_tail(struct parser_params *p, NODE *pre_args, int has_rest, NO
 }
 
 static NODE*
-new_find_pattern(struct parser_params *p, NODE *constant, NODE *fndptn, const YYLTYPE *loc)
+new_find_pattern(struct parser_params *p, NODE *constant, NODE *fndptn, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc)
 {
     RNODE_FNDPTN(fndptn)->nd_pconst = constant;
 
@@ -14587,11 +14601,11 @@ new_find_pattern(struct parser_params *p, NODE *constant, NODE *fndptn, const YY
 }
 
 static NODE*
-new_find_pattern_tail(struct parser_params *p, NODE *pre_rest_arg, NODE *args, NODE *post_rest_arg, const YYLTYPE *loc)
+new_find_pattern_tail(struct parser_params *p, NODE *pre_rest_arg, NODE *args, NODE *post_rest_arg, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc)
 {
     pre_rest_arg = pre_rest_arg ? pre_rest_arg : NODE_SPECIAL_NO_NAME_REST;
     post_rest_arg = post_rest_arg ? post_rest_arg : NODE_SPECIAL_NO_NAME_REST;
-    NODE *node = NEW_FNDPTN(pre_rest_arg, args, post_rest_arg, loc);
+    NODE *node = NEW_FNDPTN(pre_rest_arg, args, post_rest_arg, loc, opening_loc, closing_loc);
 
     return node;
 }

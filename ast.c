@@ -851,6 +851,11 @@ node_locations(VALUE ast_value, const NODE *node)
         return rb_ary_new_from_args(2,
                                     location_new(nd_code_loc(node)),
                                     location_new(&RNODE_FLIP3(node)->operator_loc));
+      case NODE_FNDPTN:
+        return rb_ary_new_from_args(3,
+                                    location_new(nd_code_loc(node)),
+                                    location_new(&RNODE_FNDPTN(node)->opening_loc),
+                                    location_new(&RNODE_FNDPTN(node)->closing_loc));
       case NODE_FOR:
         return rb_ary_new_from_args(5,
                                     location_new(nd_code_loc(node)),

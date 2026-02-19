@@ -1014,6 +1014,8 @@ typedef struct RNode_FNDPTN {
     NODE *pre_rest_arg;
     NODE *args;
     NODE *post_rest_arg;
+    rb_code_location_t opening_loc;
+    rb_code_location_t closing_loc;
 } rb_node_fndptn_t;
 
 typedef struct RNode_LINE {
