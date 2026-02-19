@@ -3293,28 +3293,6 @@ ruby_ppoll(struct pollfd *fds, nfds_t nfds,
 #  define ppoll(fds,nfds,ts,sigmask) ruby_ppoll((fds),(nfds),(ts),(sigmask))
 #endif
 
-/*
- * Single CPU setups benefit from explicit sched_yield() before ppoll(),
- * since threads may be too starved to enter the GVL waitqueue for
- * us to detect contention.  Instead, we want to kick other threads
- * so they can run and possibly prevent us from entering slow paths
- * in ppoll() or similar syscalls.
- *
- * Confirmed on FreeBSD 11.2 and Linux 4.19.
- * [ruby-core:90417] [Bug #15398]
- */
-#define THREAD_BLOCKING_YIELD(th) do { \
-    const rb_thread_t *next_th; \
-    struct rb_thread_sched *sched = TH_SCHED(th); \
-    RB_VM_SAVE_MACHINE_CONTEXT(th); \
-    thread_sched_to_waiting(sched, (th)); \
-    next_th = sched->running; \
-    rb_native_mutex_unlock(&sched->lock_); \
-    native_thread_yield(); /* TODO: needed? */ \
-    if (!next_th && rb_ractor_living_thread_num(th->ractor) > 1) { \
-        native_thread_yield(); \
-    }
-
 static void
 native_sleep(rb_thread_t *th, rb_hrtime_t *rel)
 {
