@@ -2109,6 +2109,200 @@ impl Assembler
         (assignment, num_stack_slots)
     }
 
+    /// Resolve SSA block parameters by inserting sequentialized move instructions
+    /// at block boundaries. This is SSA deconstruction: after linear_scan assigns
+    /// registers/stack slots, we lower block parameter passing to explicit moves.
+    pub fn resolve_ssa(&mut self, _intervals: &[Interval], assignments: &[Option<Allocation>], regs: &[Reg]) {
+        use crate::backend::parcopy;
+
+        let num_registers = regs.len();
+
+        // Count predecessors for each block
+        let mut num_predecessors: HashMap<BlockId, usize> = HashMap::new();
+        for block_id in self.block_order() {
+            for succ in self.basic_blocks[block_id.0].successors() {
+                *num_predecessors.entry(succ).or_insert(0) += 1;
+            }
+        }
+
+        // Helper: convert an Allocation to an Opnd
+        let alloc_opnd = |alloc: Allocation| -> Opnd {
+            match alloc {
+                Allocation::Reg(n) => Opnd::Reg(regs[n]),
+                Allocation::Stack(_) => todo!("Stack allocation not yet supported in resolve_ssa"),
+            }
+        };
+
+        // Collect block order upfront so we don't borrow self while mutating
+        let block_order = self.block_order();
+
+        for &pred_id in &block_order {
+            let pred_hir_block_id = self.basic_blocks[pred_id.0].hir_block_id;
+            let pred_rpo_index = self.basic_blocks[pred_id.0].rpo_index;
+            let EdgePair(edge1, edge2) = self.basic_blocks[pred_id.0].edges();
+
+            let edges: Vec<BranchEdge> = [edge1, edge2].into_iter().flatten().collect();
+            let num_successors = edges.len();
+
+            for edge in edges {
+                let successor = edge.target;
+                let params = self.basic_blocks[successor.0].parameters.clone();
+
+                // Build the list of register-to-register copies and immediate moves
+                let mut reg_copies: Vec<parcopy::RegisterCopy> = Vec::new();
+                let mut imm_moves: Vec<Insn> = Vec::new();
+
+                for (arg, param) in edge.args.iter().zip(params.iter()) {
+                    let dst_alloc = assignments[param.vreg_idx().0].unwrap();
+                    let dst = alloc_opnd(dst_alloc);
+
+                    let src = match arg {
+                        Opnd::UImm(_) | Opnd::Imm(_) => *arg,
+                        _ => {
+                            let src_alloc = assignments[arg.vreg_idx().0].unwrap();
+                            alloc_opnd(src_alloc)
+                        }
+                    };
+
+                    // Filter self-moves
+                    if src == dst {
+                        continue;
+                    }
+
+                    match src {
+                        Opnd::UImm(_) | Opnd::Imm(_) => {
+                            imm_moves.push(Insn::Mov { dest: dst, src });
+                        }
+                        Opnd::Reg(_) => {
+                            if let (Allocation::Reg(s), Allocation::Reg(d)) = (
+                                assignments[arg.vreg_idx().0].unwrap(),
+                                dst_alloc,
+                            ) {
+                                reg_copies.push(parcopy::RegisterCopy {
+                                    source: parcopy::Register(s as u32),
+                                    destination: parcopy::Register(d as u32),
+                                });
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+
+                // Sequentialize register copies
+                let spare = parcopy::Register(num_registers as u32);
+                let sequentialized = parcopy::sequentialize_register(&reg_copies, spare);
+                let mut moves: Vec<Insn> = sequentialized
+                    .iter()
+                    .map(|copy| Insn::Mov {
+                        dest: Opnd::Reg(regs[copy.destination.0 as usize]),
+                        src: Opnd::Reg(regs[copy.source.0 as usize]),
+                    })
+                    .collect();
+
+                // Append immediate moves (safe because immediates don't get clobbered)
+                moves.extend(imm_moves);
+
+                if moves.is_empty() {
+                    continue;
+                }
+
+                let num_preds = *num_predecessors.get(&successor).unwrap_or(&0);
+                if num_preds > 1 && num_successors > 1 {
+                    // Critical edge: create interstitial block
+                    let new_block_id = self.new_block(pred_hir_block_id, false, pred_rpo_index);
+                    let label = self.new_label("split");
+                    self.basic_blocks[new_block_id.0].push_insn(Insn::Label(label));
+                    for mov in moves {
+                        self.basic_blocks[new_block_id.0].push_insn(mov);
+                    }
+                    self.basic_blocks[new_block_id.0].push_insn(Insn::Jmp(Target::Block(BranchEdge {
+                        target: successor,
+                        args: vec![],
+                    })));
+
+                    // Redirect predecessor's branch to the new block
+                    let pred_insns = &mut self.basic_blocks[pred_id.0].insns;
+                    for insn in pred_insns.iter_mut() {
+                        if let Some(target) = insn.target_mut() {
+                            if let Target::Block(e) = target {
+                                if e.target == successor {
+                                    e.target = new_block_id;
+                                    e.args = vec![];
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                } else if num_successors > 1 {
+                    // Multi-succ: insert at start of successor (after Label)
+                    for (i, mov) in moves.into_iter().enumerate() {
+                        self.basic_blocks[successor.0].insns.insert(1 + i, mov);
+                        self.basic_blocks[successor.0].insn_ids.insert(1 + i, None);
+                    }
+                } else {
+                    // Single-succ: insert at end of predecessor before terminator
+                    let len = self.basic_blocks[pred_id.0].insns.len();
+                    for (i, mov) in moves.into_iter().enumerate() {
+                        self.basic_blocks[pred_id.0].insns.insert(len - 1 + i, mov);
+                        self.basic_blocks[pred_id.0].insn_ids.insert(len - 1 + i, None);
+                    }
+                }
+            }
+        }
+
+        // Handle entry block parameters: move from calling-convention
+        // arrival locations to their allocated registers.
+        // param_opnd(i) gives the fixed location where parameter i arrives
+        // (ALLOC_REGS[i] for register params, stack slot for overflow).
+        for block_id in &block_order {
+            let block = &self.basic_blocks[block_id.0];
+            if !block.is_entry { continue; }
+            let params = block.parameters.clone();
+
+            let mut reg_copies: Vec<parcopy::RegisterCopy> = Vec::new();
+            let mut other_moves: Vec<Insn> = Vec::new();
+
+            for (i, param) in params.iter().enumerate() {
+                let src = Assembler::param_opnd(i);
+                let dst_alloc = assignments[param.vreg_idx().0].unwrap();
+                let dst = alloc_opnd(dst_alloc);
+
+                if src == dst { continue; }
+
+                match (src, dst_alloc) {
+                    (Opnd::Reg(_), Allocation::Reg(d)) => {
+                        // Both are registers — need sequentialization
+                        reg_copies.push(parcopy::RegisterCopy {
+                            source: parcopy::Register(i as u32),
+                            destination: parcopy::Register(d as u32),
+                        });
+                    }
+                    _ => {
+                        // Reg→Stack or Stack→anything — just emit a Mov
+                        other_moves.push(Insn::Mov { dest: dst, src });
+                    }
+                }
+            }
+
+            let spare = parcopy::Register(num_registers as u32);
+            let sequentialized = parcopy::sequentialize_register(&reg_copies, spare);
+            let mut moves: Vec<Insn> = sequentialized
+                .iter()
+                .map(|copy| Insn::Mov {
+                    dest: Opnd::Reg(regs[copy.destination.0 as usize]),
+                    src: Opnd::Reg(regs[copy.source.0 as usize]),
+                })
+                .collect();
+            moves.extend(other_moves);
+
+            // Insert after Label (index 1) in the entry block
+            for (i, mov) in moves.into_iter().enumerate() {
+                self.basic_blocks[block_id.0].insns.insert(1 + i, mov);
+                self.basic_blocks[block_id.0].insn_ids.insert(1 + i, None);
+            }
+        }
+    }
+
     /// Sets the out field on the various instructions that require allocated
     /// registers because their output is used as the operand on a subsequent
     /// instruction. This is our implementation of the linear scan algorithm.
@@ -4190,5 +4384,178 @@ mod tests {
         assert!(output.contains("---"));  // Separator
         assert!(output.contains("█"));    // Live marker
         assert!(output.contains("."));    // Dead marker
+    }
+
+    #[test]
+    fn test_resolve_ssa() {
+        use crate::backend::current::ALLOC_REGS;
+
+        let TestFunc { mut asm, b1, b3, .. } = build_func();
+
+        let live_in = asm.analyze_liveness();
+        asm.number_instructions(16);
+        let intervals = asm.build_intervals(live_in);
+        let (assignments, _) = asm.linear_scan(intervals.clone(), 5);
+
+        let regs = &ALLOC_REGS[..5];
+        asm.resolve_ssa(&intervals, &assignments, regs);
+
+        // Edge b1→b2 (single succ): args=[UImm(1), v1], params=[v2, v3]
+        // v1→Reg(1), v2→Reg(1), v3→Reg(2)
+        // Reg copy: Reg(1)→Reg(2) → Mov(regs[2], regs[1])
+        // Imm move: Mov(regs[1], UImm(1))
+        // Inserted in b1 before Jmp: [Label, Mov, Mov, Jmp]
+        let b1_insns = &asm.basic_blocks[b1.0].insns;
+        assert_eq!(b1_insns.len(), 4);
+        assert!(matches!(&b1_insns[1], Insn::Mov { dest, src }
+            if *dest == Opnd::Reg(regs[2]) && *src == Opnd::Reg(regs[1])));
+        assert!(matches!(&b1_insns[2], Insn::Mov { dest, src }
+            if *dest == Opnd::Reg(regs[1]) && *src == Opnd::UImm(1)));
+
+        // Edge b3→b2 (single succ): args=[v4, v5], params=[v2, v3]
+        // v4→Reg(3), v5→Reg(2), v2→Reg(1), v3→Reg(2)
+        // Reg copy: Reg(3)→Reg(1) → Mov(regs[1], regs[3])
+        // Reg(2)→Reg(2) is self-move, filtered
+        // Inserted in b3 before Jmp: [Label, Mul, Sub, Mov, Jmp]
+        let b3_insns = &asm.basic_blocks[b3.0].insns;
+        assert_eq!(b3_insns.len(), 5);
+        assert!(matches!(&b3_insns[3], Insn::Mov { dest, src }
+            if *dest == Opnd::Reg(regs[1]) && *src == Opnd::Reg(regs[3])));
+    }
+
+    #[test]
+    fn test_resolve_ssa_entry_params() {
+        use crate::backend::current::ALLOC_REGS;
+
+        let TestFunc { mut asm, b1, .. } = build_func();
+
+        let live_in = asm.analyze_liveness();
+        asm.number_instructions(16);
+        let intervals = asm.build_intervals(live_in);
+        let (assignments, _) = asm.linear_scan(intervals.clone(), 5);
+
+        let regs = &ALLOC_REGS[..5];
+
+        // Entry block b1 has parameters [v0, v1].
+        // With 5 registers: v0 → Reg(0) = regs[0], arrival = param_opnd(0) = regs[0] → self-move, filtered
+        //                    v1 → Reg(1) = regs[1], arrival = param_opnd(1) = regs[1] → self-move, filtered
+        // Before resolve_ssa, b1 has: [Label, Jmp] = 2 insns
+        assert_eq!(asm.basic_blocks[b1.0].insns.len(), 2);
+
+        asm.resolve_ssa(&intervals, &assignments, regs);
+
+        // After resolve_ssa, b1 should still have the same number of insns
+        // (plus any edge moves, but no entry param moves since they're all self-moves).
+        // Edge b1→b2 inserts 2 moves before Jmp: [Label, Mov, Mov, Jmp] = 4 insns
+        // No additional entry param moves.
+        let b1_insns = &asm.basic_blocks[b1.0].insns;
+        assert_eq!(b1_insns.len(), 4);
+        // Verify the moves are edge moves (not entry param moves)
+        assert!(matches!(&b1_insns[1], Insn::Mov { .. }));
+        assert!(matches!(&b1_insns[2], Insn::Mov { .. }));
+    }
+
+    fn build_critical_edge() -> (Assembler, Opnd, Opnd, Opnd, Opnd, Opnd, BlockId, BlockId, BlockId) {
+        let mut asm = Assembler::new();
+
+        // Create blocks
+        let b1 = asm.new_block(hir::BlockId(0), true, 0);
+        let b2 = asm.new_block(hir::BlockId(1), false, 1);
+        let b3 = asm.new_block(hir::BlockId(2), false, 2);
+
+        // b1: v0 = Add(123, 0), v1 = Add(v0, 456), Cmp(v1, 0), Jl(b2, [v0]), Jmp(b3, [v1])
+        // v0 is live across b1→b2 edge AND v1 is live across b1→b3 edge
+        // This forces v0 and v1 to have overlapping live ranges → different registers
+        asm.set_current_block(b1);
+        let label_b1 = asm.new_label("bb0");
+        asm.write_label(label_b1);
+        let v0 = asm.new_vreg(64);
+        let v1 = asm.new_vreg(64);
+        asm.basic_blocks[b1.0].push_insn(Insn::Add { left: Opnd::UImm(123), right: Opnd::UImm(0), out: v0 });
+        asm.basic_blocks[b1.0].push_insn(Insn::Add { left: v0, right: Opnd::UImm(456), out: v1 });
+        asm.basic_blocks[b1.0].push_insn(Insn::Cmp { left: v1, right: Opnd::UImm(0) });
+        asm.basic_blocks[b1.0].push_insn(Insn::Jl(Target::Block(BranchEdge { target: b2, args: vec![v0] })));
+        asm.basic_blocks[b1.0].push_insn(Insn::Jmp(Target::Block(BranchEdge { target: b3, args: vec![v1] })));
+
+        // b2(v2): v3 = Add(v2, 789), Jmp(b3, [v3])
+        asm.set_current_block(b2);
+        let label_b2 = asm.new_label("bb1");
+        asm.write_label(label_b2);
+        let v2 = asm.new_block_param(64);
+        asm.basic_blocks[b2.0].add_parameter(v2);
+        let v3 = asm.new_vreg(64);
+        asm.basic_blocks[b2.0].push_insn(Insn::Add { left: v2, right: Opnd::UImm(789), out: v3 });
+        asm.basic_blocks[b2.0].push_insn(Insn::Jmp(Target::Block(BranchEdge { target: b3, args: vec![v3] })));
+
+        // b3(v4): CRet(v4)
+        asm.set_current_block(b3);
+        let label_b3 = asm.new_label("bb2");
+        asm.write_label(label_b3);
+        let v4 = asm.new_block_param(64);
+        asm.basic_blocks[b3.0].add_parameter(v4);
+        asm.basic_blocks[b3.0].push_insn(Insn::CRet(v4));
+
+        (asm, v0, v1, v2, v3, v4, b1, b2, b3)
+    }
+
+    #[test]
+    fn test_resolve_critical_edge() {
+        use crate::backend::current::ALLOC_REGS;
+
+        let (mut asm, _v0, v1, _v2, v3, v4, b1, b2, b3) = build_critical_edge();
+
+        let live_in = asm.analyze_liveness();
+        asm.number_instructions(16);
+        let intervals = asm.build_intervals(live_in);
+        let num_regs = 5;
+        let (assignments, _) = asm.linear_scan(intervals.clone(), num_regs);
+
+        let regs = &ALLOC_REGS[..num_regs];
+        assert_eq!(asm.basic_blocks.len(), 3);
+
+        // Verify v1 and v4 have different allocations (so moves are needed)
+        let v1_alloc = assignments[v1.vreg_idx().0].unwrap();
+        let v4_alloc = assignments[v4.vreg_idx().0].unwrap();
+        assert_ne!(v1_alloc, v4_alloc, "Test setup: v1 and v4 should have different allocations");
+
+        asm.resolve_ssa(&intervals, &assignments, regs);
+
+        // A new interstitial block should have been created for the critical edge b1→b3
+        // b1→b3 is critical because b1 has 2 successors and b3 has 2 predecessors
+        assert_eq!(asm.basic_blocks.len(), 4);
+        let split_block_id = BlockId(3);
+
+        // b1's Jmp should now target the split block instead of b3
+        let b1_insns = &asm.basic_blocks[b1.0].insns;
+        let last_insn = b1_insns.last().unwrap();
+        if let Insn::Jmp(Target::Block(edge)) = last_insn {
+            assert_eq!(edge.target, split_block_id);
+        } else {
+            panic!("Expected Jmp at end of b1");
+        }
+
+        // The split block should contain: Label, Mov(s), Jmp(b3)
+        let split_insns = &asm.basic_blocks[split_block_id.0].insns;
+        assert!(matches!(&split_insns[0], Insn::Label(_)));
+        let split_last = split_insns.last().unwrap();
+        if let Insn::Jmp(Target::Block(edge)) = split_last {
+            assert_eq!(edge.target, b3);
+            assert!(edge.args.is_empty());
+        } else {
+            panic!("Expected Jmp(b3) at end of split block");
+        }
+
+        // The split block should have a Mov for v1→v4
+        let has_mov = split_insns.iter().any(|insn| matches!(insn, Insn::Mov { .. }));
+        assert!(has_mov, "Expected Mov in split block for v1→v4");
+
+        // b2→b3 is not a critical edge (b2 has single succ), so moves go before Jmp in b2
+        let v3_alloc = assignments[v3.vreg_idx().0].unwrap();
+        let b2_insns = &asm.basic_blocks[b2.0].insns;
+        if v3_alloc != v4_alloc {
+            // Check that a Mov was inserted before the Jmp in b2
+            let second_last = &b2_insns[b2_insns.len() - 2];
+            assert!(matches!(second_last, Insn::Mov { .. }), "Expected Mov before Jmp in b2");
+        }
     }
 }
