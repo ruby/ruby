@@ -602,8 +602,9 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         F_NODE(nd_head, RNODE_OP_CDECL, "constant");
         F_ID(nd_aid, RNODE_OP_CDECL, "operator");
         F_SHAREABILITY(shareability, RNODE_OP_CDECL, "shareability");
-        LAST_NODE;
         F_NODE(nd_value, RNODE_OP_CDECL, "rvalue");
+        LAST_NODE;
+        F_LOC(binary_operator_loc, RNODE_OP_CDECL);
         return;
 
       case NODE_CALL:
