@@ -4,16 +4,16 @@ class Colorize
   # call-seq:
   #   Colorize.new(colorize = nil)
   #   Colorize.new(color: color, colors_file: colors_file)
-  def initialize(color = nil, opts = ((_, color = color, nil)[0] if Hash === color))
+  def initialize(_color = nil, color: _color, colors_file: nil)
     @colors = nil
-    @color = opts && opts[:color] || color
+    @color = color
     if color or (color == nil && coloring?)
-      if (%w[smso so].any? {|attr| /\A\e\[.*m\z/ =~ IO.popen("tput #{attr}", "r", :err => IO::NULL, &:read)} rescue nil)
+      if (%w[smso so].any? {|attr| /\A\e\[.*m\z/ =~ IO.popen("tput #{attr}", "r", err: IO::NULL, &:read)} rescue nil)
         @beg = "\e["
-        colors = (colors = ENV['TEST_COLORS']) ? Hash[colors.scan(/(\w+)=([^:\n]*)/)] : {}
-        if opts and colors_file = opts[:colors_file]
+        colors = (colors = ENV['TEST_COLORS']) ? Hash[colors.scan(COLORS_PATTERN)] : {}
+        if colors_file
           begin
-            File.read(colors_file).scan(/(\w+)=([^:\n]*)/) do |n, c|
+            File.read(colors_file).scan(COLORS_PATTERN) do |n, c|
               colors[n] ||= c
             end
           rescue Errno::ENOENT
@@ -24,6 +24,8 @@ class Colorize
     end
     self
   end
+
+  COLORS_PATTERN = /(\w+)=([^:\n]*)/
 
   DEFAULTS = {
     # color names
