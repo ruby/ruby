@@ -1083,6 +1083,14 @@ impl Insn {
         }
     }
 
+    /// Return true if the instruction is a jump (has successor blocks in the CFG).
+    pub fn is_jump(&self) -> bool {
+        match self {
+            Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Jump(_) | Insn::Entries { .. } => true,
+            _ => false,
+        }
+    }
+
     pub fn print<'a>(&self, ptr_map: &'a PtrPrintMap, iseq: Option<IseqPtr>) -> InsnPrinter<'a> {
         InsnPrinter { inner: self.clone(), ptr_map, iseq }
     }
@@ -5031,17 +5039,20 @@ impl Function {
             if !seen.insert(block) { continue; }
             stack.push((block, Action::VisitSelf));
             for insn_id in &self.blocks[block.0].insns {
-                let insn = self.find(*insn_id);
-                match insn {
+                // Instructions without output, including branch instructions, can't be targets of
+                // make_equal_to, so we don't need find() here.
+                match &self.insns[insn_id.0] {
                     Insn::IfTrue { target, .. } | Insn::IfFalse { target, .. } | Insn::Jump(target) => {
                         stack.push((target.target, Action::VisitEdges));
                     }
-                    Insn::Entries { ref targets } => {
+                    Insn::Entries { targets } => {
                         for target in targets {
                             stack.push((*target, Action::VisitEdges));
                         }
                     }
-                    _ => {}
+                    _ => {
+                        debug_assert!(!self.find(*insn_id).is_jump(), "Instruction {:?} should not be in union-find; it has no output", insn_id);
+                    }
                 }
             }
         }
