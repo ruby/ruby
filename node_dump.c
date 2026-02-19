@@ -409,8 +409,10 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("begin statement");
         ANN("format: begin; [nd_body]; end");
         ANN("example: begin; 1; end");
-        LAST_NODE;
         F_NODE(nd_body, RNODE_BEGIN, "body");
+        F_LOC(begin_keyword_loc, RNODE_BEGIN);
+        LAST_NODE;
+        F_LOC(end_keyword_loc, RNODE_BEGIN);
         return;
 
       case NODE_RESCUE:

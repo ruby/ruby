@@ -1079,7 +1079,7 @@ static rb_node_iter_t *rb_node_iter_new(struct parser_params *p, rb_node_args_t 
 static rb_node_for_t *rb_node_for_new(struct parser_params *p, NODE *nd_iter, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *for_keyword_loc, const YYLTYPE *in_keyword_loc, const YYLTYPE *do_keyword_loc, const YYLTYPE *end_keyword_loc);
 static rb_node_for_masgn_t *rb_node_for_masgn_new(struct parser_params *p, NODE *nd_var, const YYLTYPE *loc);
 static rb_node_retry_t *rb_node_retry_new(struct parser_params *p, const YYLTYPE *loc);
-static rb_node_begin_t *rb_node_begin_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc);
+static rb_node_begin_t *rb_node_begin_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *begin_keyword_loc, const YYLTYPE *end_keyword_loc);
 static rb_node_rescue_t *rb_node_rescue_new(struct parser_params *p, NODE *nd_head, NODE *nd_resq, NODE *nd_else, const YYLTYPE *loc);
 static rb_node_resbody_t *rb_node_resbody_new(struct parser_params *p, NODE *nd_args, NODE *nd_exc_var, NODE *nd_body, NODE *nd_next, const YYLTYPE *loc);
 static rb_node_ensure_t *rb_node_ensure_new(struct parser_params *p, NODE *nd_head, NODE *nd_ensr, const YYLTYPE *loc);
@@ -1187,7 +1187,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_FOR(i,b,loc,f_loc,i_loc,d_loc,e_loc) (NODE *)rb_node_for_new(p,i,b,loc,f_loc,i_loc,d_loc,e_loc)
 #define NEW_FOR_MASGN(v,loc) (NODE *)rb_node_for_masgn_new(p,v,loc)
 #define NEW_RETRY(loc) (NODE *)rb_node_retry_new(p,loc)
-#define NEW_BEGIN(b,loc) (NODE *)rb_node_begin_new(p,b,loc)
+#define NEW_BEGIN(b,loc,bk_loc,ek_loc) (NODE *)rb_node_begin_new(p,b,loc,bk_loc,ek_loc)
 #define NEW_RESCUE(b,res,e,loc) (NODE *)rb_node_rescue_new(p,b,res,e,loc)
 #define NEW_RESBODY(a,v,ex,n,loc) (NODE *)rb_node_resbody_new(p,a,v,ex,n,loc)
 #define NEW_ENSURE(b,en,loc) (NODE *)rb_node_ensure_new(p,b,en,loc)
@@ -3185,7 +3185,7 @@ program		:  {
 
 top_stmts	: none
                     {
-                        $$ = NEW_BEGIN(0, &@$);
+                        $$ = NEW_BEGIN(0, &@$, &NULL_LOC, &NULL_LOC);
                     /*% ripper: stmts_add!(stmts_new!, void_stmt!) %*/
                     }
                 | top_stmt
@@ -3208,6 +3208,7 @@ top_stmt	: stmt
                 | keyword_BEGIN begin_block
                     {
                         $$ = $2;
+                        RNODE_BEGIN($$)->begin_keyword_loc = @keyword_BEGIN;
                     /*% ripper: $:2 %*/
                     }
                 ;
@@ -3218,8 +3219,8 @@ begin_block	: block_open compstmt(top_stmts) '}'
                     {
                         restore_block_exit(p, $block_open);
                         p->eval_tree_begin = block_append(p, p->eval_tree_begin,
-                                                          NEW_BEGIN($2, &@$));
-                        $$ = NEW_BEGIN(0, &@$);
+                                                          NEW_BEGIN($2, &@$, &NULL_LOC, &NULL_LOC));
+                        $$ = NEW_BEGIN(0, &@$, &NULL_LOC, &NULL_LOC);
                     /*% ripper: BEGIN!($:2) %*/
                     }
                 ;
@@ -3256,7 +3257,7 @@ bodystmt	: compstmt(stmts)[body]
 
 stmts		: none
                     {
-                        $$ = NEW_BEGIN(0, &@$);
+                        $$ = NEW_BEGIN(0, &@$, &NULL_LOC, &NULL_LOC);
                     /*% ripper: stmts_add!(stmts_new!, void_stmt!) %*/
                     }
                 | stmt_or_begin
@@ -3279,6 +3280,7 @@ stmt_or_begin	: stmt
                   begin_block
                     {
                         $$ = $3;
+                        RNODE_BEGIN($$)->begin_keyword_loc = @keyword_BEGIN;
                     }
                 ;
 
@@ -4380,7 +4382,7 @@ primary		: inline_primary
                 {
                     CMDARG_POP();
                     set_line_body($3, @1.end_pos.lineno);
-                    $$ = NEW_BEGIN($3, &@$);
+                    $$ = NEW_BEGIN($3, &@$, &@k_begin, &@k_end);
                     nd_set_line($$, @1.end_pos.lineno);
                 /*% ripper: begin!($:3) %*/
                 }
@@ -11355,10 +11357,12 @@ rb_node_retry_new(struct parser_params *p, const YYLTYPE *loc)
 }
 
 static rb_node_begin_t *
-rb_node_begin_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc)
+rb_node_begin_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *begin_keyword_loc, const YYLTYPE *end_keyword_loc)
 {
     rb_node_begin_t *n = NODE_NEWNODE(NODE_BEGIN, rb_node_begin_t, loc);
     n->nd_body = nd_body;
+    n->begin_keyword_loc = *begin_keyword_loc;
+    n->end_keyword_loc = *end_keyword_loc;
 
     return n;
 }
