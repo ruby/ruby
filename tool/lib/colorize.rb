@@ -32,6 +32,12 @@ class Colorize
     "bold"=>"1", "faint"=>"2", "underline"=>"4", "reverse"=>"7",
     "bright_black"=>"90", "bright_red"=>"91", "bright_green"=>"92", "bright_yellow"=>"93",
     "bright_blue"=>"94", "bright_magenta"=>"95", "bright_cyan"=>"96", "bright_white"=>"97",
+    "bg_black"=>"40", "bg_red"=>"41", "bg_green"=>"42", "bg_yellow"=>"43",
+    "bg_blue"=>"44", "bg_magenta"=>"45", "bg_cyan"=>"46", "bg_white"=>"47",
+    "bg_bright_black"=>"100", "bg_bright_red"=>"101",
+    "bg_bright_green"=>"102", "bg_bright_yellow"=>"103",
+    "bg_bright_blue"=>"104", "bg_bright_magenta"=>"105",
+    "bg_bright_cyan"=>"106", "bg_bright_white"=>"107",
 
     # abstract decorations
     "pass"=>"green", "fail"=>"red;bold", "skip"=>"yellow;bold",
@@ -70,7 +76,7 @@ class Colorize
 
   def reset_color(colors)
     resets = []
-    colors.scan(/\G;*\K(?:[34]8;5;\d+|2(?:;\d+){3}|\d+)/) do |c|
+    colors.scan(/\G;*\K(?:[34]8;(?:5;\d+|2(?:;\d+){3})|\d+)/) do |c|
       case c
       when '1', '2'
         resets << '22'
@@ -78,9 +84,9 @@ class Colorize
         resets << '24'
       when '7'
         resets << '27'
-      when /\A3\d\z/
+      when /\A[39]\d(?:;|\z)/
         resets << '39'
-      when /\A4\d\z/
+      when /\A(?:4|10)\d(?:;|\z)/
         resets << '49'
       end
     end
