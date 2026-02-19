@@ -55,6 +55,7 @@ attr_index_t rb_ivar_set_index(VALUE obj, ID id, VALUE val);
 attr_index_t rb_obj_field_set(VALUE obj, shape_id_t target_shape_id, ID field_name, VALUE val);
 VALUE rb_ivar_get_at(VALUE obj, attr_index_t index, ID id);
 VALUE rb_ivar_get_at_no_ractor_check(VALUE obj, attr_index_t index);
+VALUE rb_ivar_set_at(VALUE obj, attr_index_t index, ID id, VALUE val);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* variable.c (export) */
