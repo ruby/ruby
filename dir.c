@@ -1586,23 +1586,29 @@ dir_chdir(VALUE dir)
 }
 
 #ifndef _WIN32
+static VALUE
+getcwd_to_str(VALUE arg)
+{
+    const char *path = (const char *)arg;
+#ifdef __APPLE__
+    return rb_str_normalize_ospath(path, strlen(path));
+#else
+    return rb_str_new2(path);
+#endif
+}
+
+static VALUE
+getcwd_xfree(VALUE arg)
+{
+    xfree((void *)arg);
+    return Qnil;
+}
+
 VALUE
 rb_dir_getwd_ospath(void)
 {
-    char *path;
-    VALUE cwd;
-    VALUE path_guard;
-
-    path_guard = rb_imemo_tmpbuf_new();
-    path = ruby_getcwd();
-    rb_imemo_tmpbuf_set_ptr(path_guard, path);
-#ifdef __APPLE__
-    cwd = rb_str_normalize_ospath(path, strlen(path));
-#else
-    cwd = rb_str_new2(path);
-#endif
-    rb_free_tmp_buffer(&path_guard);
-    return cwd;
+    char *path = ruby_getcwd();
+    return rb_ensure(getcwd_to_str, (VALUE)path, getcwd_xfree, (VALUE)path);
 }
 #endif
 
