@@ -997,6 +997,8 @@ typedef struct RNode_ARYPTN {
     NODE *pre_args;
     NODE *rest_arg;
     NODE *post_args;
+    rb_code_location_t opening_loc;
+    rb_code_location_t closing_loc;
 } rb_node_aryptn_t;
 
 typedef struct RNode_HSHPTN {

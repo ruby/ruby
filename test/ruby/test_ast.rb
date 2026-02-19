@@ -1405,6 +1405,35 @@ dummy
       assert_locations(node.children[-1].locations, [[1, 0, 1, 6], [1, 2, 1, 4]])
     end
 
+    def test_aryptn_locations
+      node = ast_parse("case obj; in []; end")
+      assert_locations(node.children[-1].children[1].children[0].locations, [[1, 13, 1, 15], [1, 13, 1, 14], [1, 14, 1, 15]])
+
+      node = ast_parse("case obj; in [a, b, c]; end")
+      assert_locations(node.children[-1].children[1].children[0].locations, [[1, 14, 1, 21], [1, 13, 1, 14], [1, 21, 1, 22]])
+
+      node = ast_parse("case obj; in [a, *rest, b]; end")
+      assert_locations(node.children[-1].children[1].children[0].locations, [[1, 14, 1, 25], [1, 13, 1, 14], [1, 25, 1, 26]])
+
+      node = ast_parse("case obj; in Array(); end")
+      assert_locations(node.children[-1].children[1].children[0].locations, [[1, 13, 1, 20], [1, 18, 1, 19], [1, 19, 1, 20]])
+
+      node = ast_parse("case obj; in Array(a, b); end")
+      assert_locations(node.children[-1].children[1].children[0].locations, [[1, 13, 1, 23], [1, 18, 1, 19], [1, 23, 1, 24]])
+
+      node = ast_parse("case obj; in Array[]; end")
+      assert_locations(node.children[-1].children[1].children[0].locations, [[1, 13, 1, 20], [1, 18, 1, 19], [1, 19, 1, 20]])
+
+      node = ast_parse("case obj; in Array[a, b]; end")
+      assert_locations(node.children[-1].children[1].children[0].locations, [[1, 13, 1, 23], [1, 18, 1, 19], [1, 23, 1, 24]])
+
+      node = ast_parse("[1, 2] => [a, b]")
+      assert_locations(node.children[-1].children[1].children[0].locations, [[1, 11, 1, 15], [1, 10, 1, 11], [1, 15, 1, 16]])
+
+      node = ast_parse("[1, 2] in [a, b]")
+      assert_locations(node.children[-1].children[1].children[0].locations, [[1, 11, 1, 15], [1, 10, 1, 11], [1, 15, 1, 16]])
+    end
+
     def test_block_pass_locations
       node = ast_parse("foo(&bar)")
       assert_locations(node.children[-1].children[-1].locations, [[1, 4, 1, 8], [1, 4, 1, 5]])
