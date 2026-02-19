@@ -1632,9 +1632,9 @@ impl Assembler {
             }
         }
 
-        let (assignments, num_stack_slots) = asm.linear_scan(intervals, 5);
-
-        let mut asm = asm.alloc_regs(regs)?;
+        let (assignments, _num_stack_slots) = asm.linear_scan(intervals.clone(), regs.len());
+        asm.handle_caller_saved_regs(&intervals, &assignments, &regs);
+        asm.resolve_ssa(&intervals, &assignments, &regs);
         asm_dump!(asm, alloc_regs);
 
         // We put compile_exits after alloc_regs to avoid extending live ranges for VRegs spilled on side exits.
