@@ -1,4 +1,6 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
+
 require 'fileutils'
 require 'optparse'
 require 'tmpdir'
@@ -8,8 +10,8 @@ require 'digest'
 GitRef = Struct.new(:ref, :commit_hash)
 
 RUBIES_DIR = File.join(Dir.home, '.diffs')
-BEFORE_NAME = 'ruby-zjit-before'.freeze
-AFTER_NAME = 'ruby-zjit-after'.freeze
+BEFORE_NAME = 'ruby-zjit-before'
+AFTER_NAME = 'ruby-zjit-after'
 
 LOG = Logger.new($stderr)
 
@@ -31,7 +33,7 @@ end
 
 class ZJITDiff
   DATA_FILENAME = File.join('data', 'zjit_diff')
-  RUBY_BENCH_REPO_URL = 'https://github.com/ruby/ruby-bench.git'.freeze
+  RUBY_BENCH_REPO_URL = 'https://github.com/ruby/ruby-bench.git'
 
   def initialize(before_hash:, after_hash:, runner:, options:)
     @before_hash = before_hash
