@@ -35,8 +35,11 @@ mod snapshot_tests {
           v2:BasicObject = GetLocal :a, l0, SP@5
           v3:BasicObject = GetLocal :b, l0, SP@4
           Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          v8:BasicObject = LoadArg :b@2
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v13:Any = Snapshot FrameState { pc: 0x1000, stack: [], locals: [a=v11, b=v12] }
@@ -66,8 +69,9 @@ mod snapshot_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v8:Any = Snapshot FrameState { pc: 0x1000, stack: [], locals: [] }
@@ -102,8 +106,9 @@ mod snapshot_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v8:Any = Snapshot FrameState { pc: 0x1000, stack: [], locals: [] }
@@ -136,8 +141,9 @@ mod snapshot_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v8:Any = Snapshot FrameState { pc: 0x1000, stack: [], locals: [] }
@@ -250,15 +256,18 @@ pub mod hir_build_tests {
           v5:CBool = IsBitEqual v3, v4
           IfTrue v5, bb2(v1, v2)
           Jump bb4(v1, v2)
-        bb1(v9:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v9:BasicObject = LoadArg :self@0
           v10:NilClass = Const Value(nil)
           Jump bb2(v9, v10)
         bb2(v16:BasicObject, v17:BasicObject):
           v20:Fixnum[1] = Const Value(1)
           Jump bb4(v16, v20)
-        bb3(v13:BasicObject, v14:BasicObject):
+        bb3():
           EntryPoint JIT(1)
+          v13:BasicObject = LoadArg :self@0
+          v14:BasicObject = LoadArg :x@1
           Jump bb4(v13, v14)
         bb4(v23:BasicObject, v24:BasicObject):
           v28:Fixnum[123] = Const Value(123)
@@ -277,8 +286,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[123] = Const Value(123)
@@ -297,8 +307,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:ArrayExact = NewArray
@@ -318,8 +329,10 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:BasicObject = GetLocal :a, l0, SP@4
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:BasicObject = LoadArg :a@1
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v14:ArrayExact = NewArray v9
@@ -340,8 +353,11 @@ pub mod hir_build_tests {
           v2:BasicObject = GetLocal :a, l0, SP@5
           v3:BasicObject = GetLocal :b, l0, SP@4
           Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          v8:BasicObject = LoadArg :b@2
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v18:ArrayExact = NewArray v11, v12
@@ -361,8 +377,10 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:BasicObject = GetLocal :a, l0, SP@4
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:BasicObject = LoadArg :a@1
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v14:Fixnum[10] = Const Value(10)
@@ -384,8 +402,11 @@ pub mod hir_build_tests {
           v2:BasicObject = GetLocal :a, l0, SP@5
           v3:BasicObject = GetLocal :b, l0, SP@4
           Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          v8:BasicObject = LoadArg :b@2
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v18:RangeExact = NewRange v11 NewRangeInclusive v12
@@ -405,8 +426,10 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:BasicObject = GetLocal :a, l0, SP@4
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:BasicObject = LoadArg :a@1
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v14:Fixnum[10] = Const Value(10)
@@ -428,8 +451,11 @@ pub mod hir_build_tests {
           v2:BasicObject = GetLocal :a, l0, SP@5
           v3:BasicObject = GetLocal :b, l0, SP@4
           Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          v8:BasicObject = LoadArg :b@2
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v18:RangeExact = NewRange v11 NewRangeExclusive v12
@@ -448,8 +474,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -469,8 +496,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -490,8 +518,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:HashExact = NewHash
@@ -512,8 +541,11 @@ pub mod hir_build_tests {
           v2:BasicObject = GetLocal :aval, l0, SP@5
           v3:BasicObject = GetLocal :bval, l0, SP@4
           Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :aval@1
+          v8:BasicObject = LoadArg :bval@2
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v16:StaticSymbol[:a] = Const Value(VALUE(0x1000))
@@ -534,8 +566,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -555,8 +588,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Bignum[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -575,8 +609,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Flonum[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -595,8 +630,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:HeapFloat[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -615,8 +651,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:StaticSymbol[:foo] = Const Value(VALUE(0x1000))
@@ -635,8 +672,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
@@ -659,8 +697,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_FREEZE)
@@ -685,8 +724,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           SideExit PatchPoint(BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_FREEZE))
@@ -705,8 +745,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
@@ -731,8 +772,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE))
@@ -751,8 +793,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE)
@@ -777,8 +820,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           SideExit PatchPoint(BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE))
@@ -797,8 +841,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_UMINUS)
@@ -823,8 +868,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           SideExit PatchPoint(BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_UMINUS))
@@ -847,8 +893,9 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:NilClass = Const Value(nil)
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
           v6:NilClass = Const Value(nil)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:NilClass):
@@ -886,8 +933,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:BasicObject = GetLocal :l2, l2, EP@4
@@ -924,16 +972,19 @@ pub mod hir_build_tests {
           v6:CBool = IsBitEqual v4, v5
           IfTrue v6, bb2(v1, v2, v3)
           Jump bb4(v1, v2, v3)
-        bb1(v10:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v10:BasicObject = LoadArg :self@0
           v11:NilClass = Const Value(nil)
           v12:NilClass = Const Value(nil)
           Jump bb2(v10, v11, v12)
         bb2(v19:BasicObject, v20:BasicObject, v21:NilClass):
           v25:Fixnum[1] = Const Value(1)
           Jump bb4(v19, v25, v25)
-        bb3(v15:BasicObject, v16:BasicObject):
+        bb3():
           EntryPoint JIT(1)
+          v15:BasicObject = LoadArg :self@0
+          v16:BasicObject = LoadArg :a@1
           v17:NilClass = Const Value(nil)
           Jump bb4(v15, v16, v17)
         bb4(v30:BasicObject, v31:BasicObject, v32:NilClass|Fixnum):
@@ -962,15 +1013,18 @@ pub mod hir_build_tests {
           v6:CBool = IsBitEqual v4, v5
           IfTrue v6, bb2(v1, v2, v3)
           Jump bb4(v1, v2, v3)
-        bb1(v10:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v10:BasicObject = LoadArg :self@0
           v11:NilClass = Const Value(nil)
           v12:NilClass = Const Value(nil)
           Jump bb2(v10, v11, v12)
         bb2(v19:BasicObject, v20:BasicObject, v21:NilClass):
           SideExit UnhandledYARVInsn(trace_putobject_INT2FIX_1_)
-        bb3(v15:BasicObject, v16:BasicObject):
+        bb3():
           EntryPoint JIT(1)
+          v15:BasicObject = LoadArg :self@0
+          v16:BasicObject = LoadArg :a@1
           v17:NilClass = Const Value(nil)
           Jump bb4(v15, v16, v17)
         bb4(v26:BasicObject, v27:BasicObject, v28:NilClass):
@@ -996,14 +1050,17 @@ pub mod hir_build_tests {
           v5:CBool = IsBitEqual v3, v4
           IfTrue v5, bb2(v1, v2)
           Jump bb4(v1, v2)
-        bb1(v9:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v9:BasicObject = LoadArg :self@0
           v10:NilClass = Const Value(nil)
           Jump bb2(v9, v10)
         bb2(v16:BasicObject, v17:BasicObject):
           SideExit UnhandledYARVInsn(definemethod)
-        bb3(v13:BasicObject, v14:BasicObject):
+        bb3():
           EntryPoint JIT(1)
+          v13:BasicObject = LoadArg :self@0
+          v14:BasicObject = LoadArg :a@1
           Jump bb4(v13, v14)
         bb4(v22:BasicObject, v23:BasicObject):
           CheckInterrupts
@@ -1023,12 +1080,15 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:BasicObject = GetLocal :a, l0, SP@4
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
           v6:NilClass = Const Value(nil)
           Jump bb2(v5, v6)
-        bb3(v9:BasicObject, v10:BasicObject):
+        bb3():
           EntryPoint JIT(1)
+          v9:BasicObject = LoadArg :self@0
+          v10:BasicObject = LoadArg :a@1
           Jump bb2(v9, v10)
         bb2(v12:BasicObject, v13:BasicObject):
           CheckInterrupts
@@ -1048,8 +1108,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:StringExact|NilClass = DefinedIvar v6, :@foo
@@ -1076,8 +1137,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:TrueClass|NilClass = DefinedIvar v6, :@foo
@@ -1108,8 +1170,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:NilClass = Const Value(nil)
@@ -1135,8 +1198,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:NilClass = Const Value(nil)
@@ -1158,8 +1222,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:NilClass = Const Value(nil)
@@ -1188,8 +1253,10 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:BasicObject = GetLocal :cond, l0, SP@4
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:BasicObject = LoadArg :cond@1
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           CheckInterrupts
@@ -1227,8 +1294,10 @@ pub mod hir_build_tests {
           v2:BasicObject = GetLocal :cond, l0, SP@5
           v3:NilClass = Const Value(nil)
           Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :cond@1
           v8:NilClass = Const Value(nil)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:NilClass):
@@ -1264,8 +1333,11 @@ pub mod hir_build_tests {
           v2:BasicObject = GetLocal :a, l0, SP@5
           v3:BasicObject = GetLocal :b, l0, SP@4
           Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          v8:BasicObject = LoadArg :b@2
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v19:BasicObject = Send v11, :+, v12 # SendFallbackReason: Uncategorized(opt_plus)
@@ -1289,8 +1361,11 @@ pub mod hir_build_tests {
           v2:BasicObject = GetLocal :a, l0, SP@5
           v3:BasicObject = GetLocal :b, l0, SP@4
           Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          v8:BasicObject = LoadArg :b@2
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v19:BasicObject = Send v11, :-, v12 # SendFallbackReason: Uncategorized(opt_minus)
@@ -1314,8 +1389,11 @@ pub mod hir_build_tests {
           v2:BasicObject = GetLocal :a, l0, SP@5
           v3:BasicObject = GetLocal :b, l0, SP@4
           Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          v8:BasicObject = LoadArg :b@2
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v19:BasicObject = Send v11, :*, v12 # SendFallbackReason: Uncategorized(opt_mult)
@@ -1339,8 +1417,11 @@ pub mod hir_build_tests {
           v2:BasicObject = GetLocal :a, l0, SP@5
           v3:BasicObject = GetLocal :b, l0, SP@4
           Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          v8:BasicObject = LoadArg :b@2
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v19:BasicObject = Send v11, :/, v12 # SendFallbackReason: Uncategorized(opt_div)
@@ -1364,8 +1445,11 @@ pub mod hir_build_tests {
           v2:BasicObject = GetLocal :a, l0, SP@5
           v3:BasicObject = GetLocal :b, l0, SP@4
           Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          v8:BasicObject = LoadArg :b@2
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v19:BasicObject = Send v11, :%, v12 # SendFallbackReason: Uncategorized(opt_mod)
@@ -1389,8 +1473,11 @@ pub mod hir_build_tests {
           v2:BasicObject = GetLocal :a, l0, SP@5
           v3:BasicObject = GetLocal :b, l0, SP@4
           Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          v8:BasicObject = LoadArg :b@2
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v19:BasicObject = Send v11, :==, v12 # SendFallbackReason: Uncategorized(opt_eq)
@@ -1414,8 +1501,11 @@ pub mod hir_build_tests {
           v2:BasicObject = GetLocal :a, l0, SP@5
           v3:BasicObject = GetLocal :b, l0, SP@4
           Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          v8:BasicObject = LoadArg :b@2
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v19:BasicObject = Send v11, :!=, v12 # SendFallbackReason: Uncategorized(opt_neq)
@@ -1439,8 +1529,11 @@ pub mod hir_build_tests {
           v2:BasicObject = GetLocal :a, l0, SP@5
           v3:BasicObject = GetLocal :b, l0, SP@4
           Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          v8:BasicObject = LoadArg :b@2
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v19:BasicObject = Send v11, :<, v12 # SendFallbackReason: Uncategorized(opt_lt)
@@ -1464,8 +1557,11 @@ pub mod hir_build_tests {
           v2:BasicObject = GetLocal :a, l0, SP@5
           v3:BasicObject = GetLocal :b, l0, SP@4
           Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          v8:BasicObject = LoadArg :b@2
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v19:BasicObject = Send v11, :<=, v12 # SendFallbackReason: Uncategorized(opt_le)
@@ -1489,8 +1585,11 @@ pub mod hir_build_tests {
           v2:BasicObject = GetLocal :a, l0, SP@5
           v3:BasicObject = GetLocal :b, l0, SP@4
           Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          v8:BasicObject = LoadArg :b@2
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v19:BasicObject = Send v11, :>, v12 # SendFallbackReason: Uncategorized(opt_gt)
@@ -1521,8 +1620,9 @@ pub mod hir_build_tests {
           v2:NilClass = Const Value(nil)
           v3:NilClass = Const Value(nil)
           Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
           v7:NilClass = Const Value(nil)
           v8:NilClass = Const Value(nil)
           Jump bb2(v6, v7, v8)
@@ -1566,8 +1666,11 @@ pub mod hir_build_tests {
           v2:BasicObject = GetLocal :a, l0, SP@5
           v3:BasicObject = GetLocal :b, l0, SP@4
           Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          v8:BasicObject = LoadArg :b@2
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v19:BasicObject = Send v11, :>=, v12 # SendFallbackReason: Uncategorized(opt_ge)
@@ -1595,8 +1698,9 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:NilClass = Const Value(nil)
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
           v6:NilClass = Const Value(nil)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:NilClass):
@@ -1633,8 +1737,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:Fixnum[2] = Const Value(2)
@@ -1663,8 +1768,10 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:BasicObject = GetLocal :a, l0, SP@4
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:BasicObject = LoadArg :a@1
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v14:BasicObject = Send v9, 0x1000, :each # SendFallbackReason: Uncategorized(send)
@@ -1688,8 +1795,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -1714,8 +1822,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -1744,8 +1853,10 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:BasicObject = GetLocal :a, l0, SP@4
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:BasicObject = LoadArg :a@1
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v15:ArrayExact = ToArray v9
@@ -1767,8 +1878,10 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:BasicObject = GetLocal :a, l0, SP@4
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:BasicObject = LoadArg :a@1
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v15:BasicObject = Send v8, 0x1000, :foo, v9 # SendFallbackReason: Uncategorized(send)
@@ -1789,8 +1902,10 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:BasicObject = GetLocal :a, l0, SP@4
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:BasicObject = LoadArg :a@1
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v14:Fixnum[1] = Const Value(1)
@@ -1812,8 +1927,10 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:BasicObject = GetLocal :a, l0, SP@4
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:BasicObject = LoadArg :a@1
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v15:BasicObject = Send v8, :foo, v9 # SendFallbackReason: Uncategorized(opt_send_without_block)
@@ -1835,8 +1952,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:BasicObject = InvokeSuper v6, 0x1000 # SendFallbackReason: Uncategorized(invokesuper)
@@ -1856,8 +1974,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:BasicObject = InvokeSuper v6, 0x1000 # SendFallbackReason: Uncategorized(invokesuper)
@@ -1877,8 +1996,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:NilClass = Const Value(nil)
@@ -1900,8 +2020,10 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:BasicObject = GetLocal :..., l0, SP@4
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:BasicObject = LoadArg :...@1
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v15:BasicObject = InvokeSuperForward v8, 0x1000, v9 # SendFallbackReason: Uncategorized(invokesuperforward)
@@ -1922,8 +2044,10 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:BasicObject = GetLocal :..., l0, SP@4
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:BasicObject = LoadArg :...@1
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v15:BasicObject = InvokeSuperForward v8, 0x1000, v9 # SendFallbackReason: Uncategorized(invokesuperforward)
@@ -1945,8 +2069,10 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:BasicObject = GetLocal :..., l0, SP@4
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:BasicObject = LoadArg :...@1
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v15:BasicObject = InvokeSuperForward v8, 0x1000, v9 # SendFallbackReason: Uncategorized(invokesuperforward)
@@ -1969,8 +2095,10 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:BasicObject = GetLocal :..., l0, SP@4
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:BasicObject = LoadArg :...@1
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v14:Fixnum[1] = Const Value(1)
@@ -1990,8 +2118,10 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:BasicObject = GetLocal :..., l0, SP@4
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:BasicObject = LoadArg :...@1
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:NilClass = Const Value(nil)
@@ -2014,8 +2144,10 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:BasicObject = GetLocal :a, l0, SP@4
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:BasicObject = LoadArg :a@1
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v14:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
@@ -2044,10 +2176,12 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:ArrayExact = GetLocal :*, l0, SP@4, *
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:ArrayExact):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:BasicObject = LoadArg :*@1
           Jump bb2(v5, v6)
-        bb2(v8:BasicObject, v9:ArrayExact):
+        bb2(v8:BasicObject, v9:BasicObject):
           v15:ArrayExact = ToNewArray v9
           v17:Fixnum[1] = Const Value(1)
           ArrayPush v15, v17
@@ -2069,8 +2203,10 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:BasicObject = GetLocal :..., l0, SP@4
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:BasicObject = LoadArg :...@1
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v15:BasicObject = SendForward v8, 0x1000, :foo, v9 # SendFallbackReason: Uncategorized(sendforward)
@@ -2095,11 +2231,16 @@ pub mod hir_build_tests {
           v5:BasicObject = GetLocal :&, l0, SP@5
           v6:NilClass = Const Value(nil)
           Jump bb2(v1, v2, v3, v4, v5, v6)
-        bb1(v9:BasicObject, v10:BasicObject, v11:ArrayExact, v12:BasicObject, v13:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v9:BasicObject = LoadArg :self@0
+          v10:BasicObject = LoadArg :a@1
+          v11:BasicObject = LoadArg :*@2
+          v12:BasicObject = LoadArg :**@3
+          v13:BasicObject = LoadArg :&@4
           v14:NilClass = Const Value(nil)
           Jump bb2(v9, v10, v11, v12, v13, v14)
-        bb2(v16:BasicObject, v17:BasicObject, v18:ArrayExact, v19:BasicObject, v20:BasicObject, v21:NilClass):
+        bb2(v16:BasicObject, v17:BasicObject, v18:BasicObject, v19:BasicObject, v20:BasicObject, v21:NilClass):
           v28:ArrayExact = ToArray v18
           PatchPoint NoEPEscape(test)
           v33:CPtr = GetEP 0
@@ -2125,8 +2266,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:BasicObject = GetConstantPath 0x1000
@@ -2159,8 +2301,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_MAX)
@@ -2184,8 +2327,11 @@ pub mod hir_build_tests {
           v2:BasicObject = GetLocal :a, l0, SP@5
           v3:BasicObject = GetLocal :b, l0, SP@4
           Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          v8:BasicObject = LoadArg :b@2
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_MAX)
@@ -2216,8 +2362,11 @@ pub mod hir_build_tests {
           v2:BasicObject = GetLocal :a, l0, SP@5
           v3:BasicObject = GetLocal :b, l0, SP@4
           Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          v8:BasicObject = LoadArg :b@2
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_MAX))
@@ -2245,8 +2394,11 @@ pub mod hir_build_tests {
           v4:NilClass = Const Value(nil)
           v5:NilClass = Const Value(nil)
           Jump bb2(v1, v2, v3, v4, v5)
-        bb1(v8:BasicObject, v9:BasicObject, v10:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v8:BasicObject = LoadArg :self@0
+          v9:BasicObject = LoadArg :a@1
+          v10:BasicObject = LoadArg :b@2
           v11:NilClass = Const Value(nil)
           v12:NilClass = Const Value(nil)
           Jump bb2(v8, v9, v10, v11, v12)
@@ -2277,8 +2429,11 @@ pub mod hir_build_tests {
           v4:NilClass = Const Value(nil)
           v5:NilClass = Const Value(nil)
           Jump bb2(v1, v2, v3, v4, v5)
-        bb1(v8:BasicObject, v9:BasicObject, v10:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v8:BasicObject = LoadArg :self@0
+          v9:BasicObject = LoadArg :a@1
+          v10:BasicObject = LoadArg :b@2
           v11:NilClass = Const Value(nil)
           v12:NilClass = Const Value(nil)
           Jump bb2(v8, v9, v10, v11, v12)
@@ -2319,8 +2474,11 @@ pub mod hir_build_tests {
           v4:NilClass = Const Value(nil)
           v5:NilClass = Const Value(nil)
           Jump bb2(v1, v2, v3, v4, v5)
-        bb1(v8:BasicObject, v9:BasicObject, v10:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v8:BasicObject = LoadArg :self@0
+          v9:BasicObject = LoadArg :a@1
+          v10:BasicObject = LoadArg :b@2
           v11:NilClass = Const Value(nil)
           v12:NilClass = Const Value(nil)
           Jump bb2(v8, v9, v10, v11, v12)
@@ -2351,8 +2509,11 @@ pub mod hir_build_tests {
           v4:NilClass = Const Value(nil)
           v5:NilClass = Const Value(nil)
           Jump bb2(v1, v2, v3, v4, v5)
-        bb1(v8:BasicObject, v9:BasicObject, v10:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v8:BasicObject = LoadArg :self@0
+          v9:BasicObject = LoadArg :a@1
+          v10:BasicObject = LoadArg :b@2
           v11:NilClass = Const Value(nil)
           v12:NilClass = Const Value(nil)
           Jump bb2(v8, v9, v10, v11, v12)
@@ -2385,8 +2546,11 @@ pub mod hir_build_tests {
           v4:NilClass = Const Value(nil)
           v5:NilClass = Const Value(nil)
           Jump bb2(v1, v2, v3, v4, v5)
-        bb1(v8:BasicObject, v9:BasicObject, v10:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v8:BasicObject = LoadArg :self@0
+          v9:BasicObject = LoadArg :a@1
+          v10:BasicObject = LoadArg :b@2
           v11:NilClass = Const Value(nil)
           v12:NilClass = Const Value(nil)
           Jump bb2(v8, v9, v10, v11, v12)
@@ -2429,8 +2593,11 @@ pub mod hir_build_tests {
           v4:NilClass = Const Value(nil)
           v5:NilClass = Const Value(nil)
           Jump bb2(v1, v2, v3, v4, v5)
-        bb1(v8:BasicObject, v9:BasicObject, v10:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v8:BasicObject = LoadArg :self@0
+          v9:BasicObject = LoadArg :a@1
+          v10:BasicObject = LoadArg :b@2
           v11:NilClass = Const Value(nil)
           v12:NilClass = Const Value(nil)
           Jump bb2(v8, v9, v10, v11, v12)
@@ -2466,8 +2633,11 @@ pub mod hir_build_tests {
           v4:NilClass = Const Value(nil)
           v5:NilClass = Const Value(nil)
           Jump bb2(v1, v2, v3, v4, v5)
-        bb1(v8:BasicObject, v9:BasicObject, v10:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v8:BasicObject = LoadArg :self@0
+          v9:BasicObject = LoadArg :a@1
+          v10:BasicObject = LoadArg :b@2
           v11:NilClass = Const Value(nil)
           v12:NilClass = Const Value(nil)
           Jump bb2(v8, v9, v10, v11, v12)
@@ -2513,8 +2683,11 @@ pub mod hir_build_tests {
           v4:NilClass = Const Value(nil)
           v5:NilClass = Const Value(nil)
           Jump bb2(v1, v2, v3, v4, v5)
-        bb1(v8:BasicObject, v9:BasicObject, v10:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v8:BasicObject = LoadArg :self@0
+          v9:BasicObject = LoadArg :a@1
+          v10:BasicObject = LoadArg :b@2
           v11:NilClass = Const Value(nil)
           v12:NilClass = Const Value(nil)
           Jump bb2(v8, v9, v10, v11, v12)
@@ -2539,8 +2712,10 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:BasicObject = GetLocal :x, l0, SP@4
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:BasicObject = LoadArg :x@1
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_INCLUDE_P)
@@ -2571,8 +2746,10 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:BasicObject = GetLocal :x, l0, SP@4
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:BasicObject = LoadArg :x@1
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_INCLUDE_P))
@@ -2593,8 +2770,11 @@ pub mod hir_build_tests {
           v2:BasicObject = GetLocal :a, l0, SP@5
           v3:BasicObject = GetLocal :b, l0, SP@4
           Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          v8:BasicObject = LoadArg :b@2
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v18:ArrayExact = NewArray v11, v12
@@ -2618,8 +2798,11 @@ pub mod hir_build_tests {
           v2:BasicObject = GetLocal :a, l0, SP@5
           v3:BasicObject = GetLocal :b, l0, SP@4
           Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          v8:BasicObject = LoadArg :b@2
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v18:ArrayExact = NewArray v11, v12
@@ -2644,8 +2827,10 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:BasicObject = GetLocal :klass, l0, SP@4
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:BasicObject = LoadArg :klass@1
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v14:FalseClass = Const Value(false)
@@ -2668,8 +2853,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
@@ -2692,8 +2878,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
@@ -2748,8 +2935,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:BasicObject = GetClassVar :@@foo
@@ -2774,8 +2962,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[42] = Const Value(42)
@@ -2798,8 +2987,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
@@ -2822,8 +3012,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:BasicObject = GetGlobal :$foo
@@ -2844,8 +3035,10 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:BasicObject = GetLocal :block, l0, SP@4
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:BasicObject = LoadArg :block@1
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:CBool = IsBlockParamModified l0
@@ -2878,8 +3071,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:CBool = IsBlockParamModified l1
@@ -2910,8 +3104,10 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:BasicObject = GetLocal :a, l0, SP@4
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:BasicObject = LoadArg :a@1
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v14:ArrayExact = ToNewArray v9
@@ -2933,8 +3129,10 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:BasicObject = GetLocal :a, l0, SP@4
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:BasicObject = LoadArg :a@1
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:Fixnum[1] = Const Value(1)
@@ -2959,8 +3157,10 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:BasicObject = GetLocal :a, l0, SP@4
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:BasicObject = LoadArg :a@1
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v14:ArrayExact = ToNewArray v9
@@ -2984,8 +3184,10 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:BasicObject = GetLocal :a, l0, SP@4
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:BasicObject = LoadArg :a@1
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v14:ArrayExact = ToNewArray v9
@@ -3014,8 +3216,11 @@ pub mod hir_build_tests {
           v2:BasicObject = GetLocal :a, l0, SP@5
           v3:BasicObject = GetLocal :b, l0, SP@4
           Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          v8:BasicObject = LoadArg :b@2
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v16:NilClass = Const Value(nil)
@@ -3040,8 +3245,11 @@ pub mod hir_build_tests {
           v2:BasicObject = GetLocal :a, l0, SP@5
           v3:BasicObject = GetLocal :b, l0, SP@4
           Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          v8:BasicObject = LoadArg :b@2
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v19:BasicObject = Send v11, :[], v12 # SendFallbackReason: Uncategorized(opt_aref)
@@ -3063,8 +3271,10 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:BasicObject = GetLocal :x, l0, SP@4
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:BasicObject = LoadArg :x@1
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v15:BasicObject = Send v9, :empty? # SendFallbackReason: Uncategorized(opt_empty_p)
@@ -3086,8 +3296,10 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:BasicObject = GetLocal :x, l0, SP@4
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:BasicObject = LoadArg :x@1
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v15:BasicObject = Send v9, :succ # SendFallbackReason: Uncategorized(opt_succ)
@@ -3110,8 +3322,11 @@ pub mod hir_build_tests {
           v2:BasicObject = GetLocal :x, l0, SP@5
           v3:BasicObject = GetLocal :y, l0, SP@4
           Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          v8:BasicObject = LoadArg :y@2
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v19:BasicObject = Send v11, :&, v12 # SendFallbackReason: Uncategorized(opt_and)
@@ -3134,8 +3349,11 @@ pub mod hir_build_tests {
           v2:BasicObject = GetLocal :x, l0, SP@5
           v3:BasicObject = GetLocal :y, l0, SP@4
           Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          v8:BasicObject = LoadArg :y@2
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v19:BasicObject = Send v11, :|, v12 # SendFallbackReason: Uncategorized(opt_or)
@@ -3157,8 +3375,10 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:BasicObject = GetLocal :x, l0, SP@4
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:BasicObject = LoadArg :x@1
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v15:BasicObject = Send v9, :! # SendFallbackReason: Uncategorized(opt_not)
@@ -3181,8 +3401,11 @@ pub mod hir_build_tests {
           v2:BasicObject = GetLocal :regexp, l0, SP@5
           v3:BasicObject = GetLocal :matchee, l0, SP@4
           Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :regexp@1
+          v8:BasicObject = LoadArg :matchee@2
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v19:BasicObject = Send v11, :=~, v12 # SendFallbackReason: Uncategorized(opt_regexpmatch2)
@@ -3207,8 +3430,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
@@ -3245,8 +3469,9 @@ pub mod hir_build_tests {
           v3:NilClass = Const Value(nil)
           v4:NilClass = Const Value(nil)
           Jump bb2(v1, v2, v3, v4)
-        bb1(v7:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
           v8:NilClass = Const Value(nil)
           v9:NilClass = Const Value(nil)
           v10:NilClass = Const Value(nil)
@@ -3272,8 +3497,9 @@ pub mod hir_build_tests {
           v4:NilClass = Const Value(nil)
           v5:NilClass = Const Value(nil)
           Jump bb2(v1, v2, v3, v4, v5)
-        bb1(v8:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v8:BasicObject = LoadArg :self@0
           v9:NilClass = Const Value(nil)
           v10:NilClass = Const Value(nil)
           v11:NilClass = Const Value(nil)
@@ -3308,8 +3534,10 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:BasicObject = GetLocal :x, l0, SP@4
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:BasicObject = LoadArg :x@1
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           CheckInterrupts
@@ -3345,8 +3573,10 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:BasicObject = GetLocal :x, l0, SP@4
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:BasicObject = LoadArg :x@1
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           CheckInterrupts
@@ -3397,8 +3627,10 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:BasicObject = GetLocal :x, l0, SP@4
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:BasicObject = LoadArg :x@1
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           CheckInterrupts
@@ -3446,8 +3678,11 @@ pub mod hir_build_tests {
           v3:BasicObject = GetLocal :exception, l0, SP@5
           v4:BasicObject = GetLocal <empty>, l0, SP@4
           Jump bb2(v1, v2, v3, v4)
-        bb1(v7:BasicObject, v8:BasicObject, v9:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :arg@1
+          v9:BasicObject = LoadArg :exception@2
           v10:BasicObject = GetLocal <empty>, l0, EP@3
           Jump bb2(v7, v8, v9, v10)
         bb2(v12:BasicObject, v13:BasicObject, v14:BasicObject, v15:BasicObject):
@@ -3468,8 +3703,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:HeapObject = InvokeBuiltin leaf <inline_expr>, v6
@@ -3497,9 +3733,13 @@ pub mod hir_build_tests {
           v5:BasicObject = GetLocal :block, l0, SP@5
           v6:NilClass = Const Value(nil)
           Jump bb2(v1, v2, v3, v4, v5, v6)
-        bb1(v9:BasicObject, v10:BasicObject, v11:BasicObject, v13:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v9:BasicObject = LoadArg :self@0
+          v10:BasicObject = LoadArg :name@1
+          v11:BasicObject = LoadArg :encoding@2
           v12:BasicObject = GetLocal <empty>, l0, EP@5
+          v13:BasicObject = LoadArg :block@3
           v14:NilClass = Const Value(nil)
           Jump bb2(v9, v10, v11, v12, v13, v14)
         bb2(v16:BasicObject, v17:BasicObject, v18:BasicObject, v19:BasicObject, v20:BasicObject, v21:NilClass):
@@ -3537,8 +3777,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:BasicObject = InvokeBuiltin gc_enable, v6
@@ -3564,8 +3805,12 @@ pub mod hir_build_tests {
           v4:BasicObject = GetLocal :immediate_sweep, l0, SP@5
           v5:BasicObject = GetLocal <empty>, l0, SP@4
           Jump bb2(v1, v2, v3, v4, v5)
-        bb1(v8:BasicObject, v9:BasicObject, v10:BasicObject, v11:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v8:BasicObject = LoadArg :self@0
+          v9:BasicObject = LoadArg :full_mark@1
+          v10:BasicObject = LoadArg :immediate_mark@2
+          v11:BasicObject = LoadArg :immediate_sweep@3
           v12:BasicObject = GetLocal <empty>, l0, EP@3
           Jump bb2(v8, v9, v10, v11, v12)
         bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:BasicObject, v18:BasicObject):
@@ -3586,8 +3831,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:StringExact = InvokeBuiltin leaf <inline_expr>, v6
@@ -3608,8 +3854,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:StringExact = InvokeBuiltin leaf <inline_expr>, v6
@@ -3633,8 +3880,10 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:BasicObject = GetLocal :x, l0, SP@4
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:BasicObject = LoadArg :x@1
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:NilClass = Const Value(nil)
@@ -3668,8 +3917,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -3694,8 +3944,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
@@ -3725,8 +3976,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -3751,8 +4003,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
@@ -3782,8 +4035,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
@@ -3812,8 +4066,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v12:Fixnum[1] = Const Value(1)
@@ -3824,8 +4079,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v12:Fixnum[2] = Const Value(2)
@@ -3846,8 +4102,9 @@ pub mod hir_build_tests {
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           Jump bb2(v1)
-        bb1(v4:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:BasicObject = InvokeBlock # SendFallbackReason: Uncategorized(invokeblock)
@@ -3871,8 +4128,11 @@ pub mod hir_build_tests {
           v2:BasicObject = GetLocal :x, l0, SP@5
           v3:BasicObject = GetLocal :y, l0, SP@4
           Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          v8:BasicObject = LoadArg :y@2
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v18:BasicObject = InvokeBlock, v11, v12 # SendFallbackReason: Uncategorized(invokeblock)
@@ -3898,8 +4158,10 @@ pub mod hir_build_tests {
           v3:NilClass = Const Value(nil)
           v4:NilClass = Const Value(nil)
           Jump bb2(v1, v2, v3, v4)
-        bb1(v7:BasicObject, v8:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :o@1
           v9:NilClass = Const Value(nil)
           v10:NilClass = Const Value(nil)
           Jump bb2(v7, v8, v9, v10)
@@ -3935,8 +4197,10 @@ pub mod hir_build_tests {
           v3:NilClass = Const Value(nil)
           v4:NilClass = Const Value(nil)
           Jump bb2(v1, v2, v3, v4)
-        bb1(v7:BasicObject, v8:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :o@1
           v9:NilClass = Const Value(nil)
           v10:NilClass = Const Value(nil)
           Jump bb2(v7, v8, v9, v10)
@@ -3963,8 +4227,10 @@ pub mod hir_build_tests {
           v4:NilClass = Const Value(nil)
           v5:NilClass = Const Value(nil)
           Jump bb2(v1, v2, v3, v4, v5)
-        bb1(v8:BasicObject, v9:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v8:BasicObject = LoadArg :self@0
+          v9:BasicObject = LoadArg :o@1
           v10:NilClass = Const Value(nil)
           v11:NilClass = Const Value(nil)
           v12:NilClass = Const Value(nil)
@@ -3988,8 +4254,10 @@ pub mod hir_build_tests {
           v2:BasicObject = GetLocal :kw, l0, SP@5
           v3:BasicObject = GetLocal <empty>, l0, SP@4
           Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :kw@1
           v8:BasicObject = GetLocal <empty>, l0, EP@3
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -4061,8 +4329,42 @@ pub mod hir_build_tests {
           v34:BasicObject = GetLocal :k33, l0, SP@5
           v35:BasicObject = GetLocal <empty>, l0, SP@4
           Jump bb2(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19, v20, v21, v22, v23, v24, v25, v26, v27, v28, v29, v30, v31, v32, v33, v34, v35)
-        bb1(v38:BasicObject, v39:BasicObject, v40:BasicObject, v41:BasicObject, v42:BasicObject, v43:BasicObject, v44:BasicObject, v45:BasicObject, v46:BasicObject, v47:BasicObject, v48:BasicObject, v49:BasicObject, v50:BasicObject, v51:BasicObject, v52:BasicObject, v53:BasicObject, v54:BasicObject, v55:BasicObject, v56:BasicObject, v57:BasicObject, v58:BasicObject, v59:BasicObject, v60:BasicObject, v61:BasicObject, v62:BasicObject, v63:BasicObject, v64:BasicObject, v65:BasicObject, v66:BasicObject, v67:BasicObject, v68:BasicObject, v69:BasicObject, v70:BasicObject, v71:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v38:BasicObject = LoadArg :self@0
+          v39:BasicObject = LoadArg :k1@1
+          v40:BasicObject = LoadArg :k2@2
+          v41:BasicObject = LoadArg :k3@3
+          v42:BasicObject = LoadArg :k4@4
+          v43:BasicObject = LoadArg :k5@5
+          v44:BasicObject = LoadArg :k6@6
+          v45:BasicObject = LoadArg :k7@7
+          v46:BasicObject = LoadArg :k8@8
+          v47:BasicObject = LoadArg :k9@9
+          v48:BasicObject = LoadArg :k10@10
+          v49:BasicObject = LoadArg :k11@11
+          v50:BasicObject = LoadArg :k12@12
+          v51:BasicObject = LoadArg :k13@13
+          v52:BasicObject = LoadArg :k14@14
+          v53:BasicObject = LoadArg :k15@15
+          v54:BasicObject = LoadArg :k16@16
+          v55:BasicObject = LoadArg :k17@17
+          v56:BasicObject = LoadArg :k18@18
+          v57:BasicObject = LoadArg :k19@19
+          v58:BasicObject = LoadArg :k20@20
+          v59:BasicObject = LoadArg :k21@21
+          v60:BasicObject = LoadArg :k22@22
+          v61:BasicObject = LoadArg :k23@23
+          v62:BasicObject = LoadArg :k24@24
+          v63:BasicObject = LoadArg :k25@25
+          v64:BasicObject = LoadArg :k26@26
+          v65:BasicObject = LoadArg :k27@27
+          v66:BasicObject = LoadArg :k28@28
+          v67:BasicObject = LoadArg :k29@29
+          v68:BasicObject = LoadArg :k30@30
+          v69:BasicObject = LoadArg :k31@31
+          v70:BasicObject = LoadArg :k32@32
+          v71:BasicObject = LoadArg :k33@33
           v72:BasicObject = GetLocal <empty>, l0, EP@3
           Jump bb2(v38, v39, v40, v41, v42, v43, v44, v45, v46, v47, v48, v49, v50, v51, v52, v53, v54, v55, v56, v57, v58, v59, v60, v61, v62, v63, v64, v65, v66, v67, v68, v69, v70, v71, v72)
         bb2(v74:BasicObject, v75:BasicObject, v76:BasicObject, v77:BasicObject, v78:BasicObject, v79:BasicObject, v80:BasicObject, v81:BasicObject, v82:BasicObject, v83:BasicObject, v84:BasicObject, v85:BasicObject, v86:BasicObject, v87:BasicObject, v88:BasicObject, v89:BasicObject, v90:BasicObject, v91:BasicObject, v92:BasicObject, v93:BasicObject, v94:BasicObject, v95:BasicObject, v96:BasicObject, v97:BasicObject, v98:BasicObject, v99:BasicObject, v100:BasicObject, v101:BasicObject, v102:BasicObject, v103:BasicObject, v104:BasicObject, v105:BasicObject, v106:BasicObject, v107:BasicObject, v108:BasicObject):
@@ -4079,8 +4381,9 @@ pub mod hir_build_tests {
           v1:BasicObject = LoadSelf
           v2:NilClass = Const Value(nil)
           Jump bb2(v1, v2)
-        bb1(v5:BasicObject):
+        bb1():
           EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
           v6:NilClass = Const Value(nil)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:NilClass):

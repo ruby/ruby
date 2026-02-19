@@ -311,6 +311,16 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
             }
         }
 
+        // In JIT entry blocks, compile LoadArg instructions before other instructions
+        // so that calling convention registers are reserved early, like Param.
+        if function.is_entry_block(block_id) {
+            for &insn_id in block.insns() {
+                if let Insn::LoadArg { idx, .. } = function.find(insn_id) {
+                    jit.opnds[insn_id.0] = Some(gen_param(&mut asm, idx as usize));
+                }
+            }
+        }
+
         // Compile all instructions
         for &insn_id in block.insns() {
             let insn = function.find(insn_id);
@@ -481,6 +491,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::StringIntern { val, state } => gen_intern(asm, opnd!(val), &function.frame_state(*state)),
         Insn::ToRegexp { opt, values, state } => gen_toregexp(jit, asm, *opt, opnds!(values), &function.frame_state(*state)),
         Insn::Param => unreachable!("block.insns should not have Insn::Param"),
+        Insn::LoadArg { .. } => return Ok(()), // compiled in the LoadArg pre-pass above
         Insn::Snapshot { .. } => return Ok(()), // we don't need to do anything for this instruction at the moment
         &Insn::Send { cd, blockiseq: None, state, reason, .. } => gen_send_without_block(jit, asm, cd, &function.frame_state(state), reason),
         &Insn::Send { cd, blockiseq: Some(blockiseq), state, reason, .. } => gen_send(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
