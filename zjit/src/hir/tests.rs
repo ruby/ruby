@@ -4564,10 +4564,10 @@ pub mod hir_build_tests {
 
          let dominators = Dominators::new(&function);
          assert_dominators_contains_self(&function, &dominators);
-         assert!(dominators.dominators(bb0).eq([entries, bb0].iter()));
-         assert!(dominators.dominators(bb1).eq([entries, bb0, bb1].iter()));
-         assert!(dominators.dominators(bb2).eq([entries, bb0, bb1, bb2].iter()));
-         assert!(dominators.dominators(bb3).eq([entries, bb0, bb1, bb2, bb3].iter()));
+         assert_eq!(dominators.dominators(bb0), vec![entries, bb0]);
+         assert_eq!(dominators.dominators(bb1), vec![entries, bb0, bb1]);
+         assert_eq!(dominators.dominators(bb2), vec![entries, bb0, bb1, bb2]);
+         assert_eq!(dominators.dominators(bb3), vec![entries, bb0, bb1, bb2, bb3]);
      }
 
      #[test]
@@ -4608,10 +4608,10 @@ pub mod hir_build_tests {
 
         let dominators = Dominators::new(&function);
         assert_dominators_contains_self(&function, &dominators);
-        assert!(dominators.dominators(bb0).eq([entries, bb0].iter()));
-        assert!(dominators.dominators(bb1).eq([entries, bb0, bb1].iter()));
-        assert!(dominators.dominators(bb2).eq([entries, bb0, bb2].iter()));
-        assert!(dominators.dominators(bb3).eq([entries, bb0, bb3].iter()));
+        assert_eq!(dominators.dominators(bb0), vec![entries, bb0]);
+        assert_eq!(dominators.dominators(bb1), vec![entries, bb0, bb1]);
+        assert_eq!(dominators.dominators(bb2), vec![entries, bb0, bb2]);
+        assert_eq!(dominators.dominators(bb3), vec![entries, bb0, bb3]);
      }
 
     #[test]
@@ -4677,14 +4677,14 @@ pub mod hir_build_tests {
 
         let dominators = Dominators::new(&function);
         assert_dominators_contains_self(&function, &dominators);
-        assert!(dominators.dominators(bb0).eq([entries, bb0].iter()));
-        assert!(dominators.dominators(bb1).eq([entries, bb0, bb1].iter()));
-        assert!(dominators.dominators(bb2).eq([entries, bb0, bb1, bb2].iter()));
-        assert!(dominators.dominators(bb3).eq([entries, bb0, bb1, bb2, bb3].iter()));
-        assert!(dominators.dominators(bb4).eq([entries, bb0, bb1, bb4].iter()));
-        assert!(dominators.dominators(bb5).eq([entries, bb0, bb1, bb5].iter()));
-        assert!(dominators.dominators(bb6).eq([entries, bb0, bb1, bb5, bb6].iter()));
-        assert!(dominators.dominators(bb7).eq([entries, bb0, bb1, bb7].iter()));
+        assert_eq!(dominators.dominators(bb0), vec![entries, bb0]);
+        assert_eq!(dominators.dominators(bb1), vec![entries, bb0, bb1]);
+        assert_eq!(dominators.dominators(bb2), vec![entries, bb0, bb1, bb2]);
+        assert_eq!(dominators.dominators(bb3), vec![entries, bb0, bb1, bb2, bb3]);
+        assert_eq!(dominators.dominators(bb4), vec![entries, bb0, bb1, bb4]);
+        assert_eq!(dominators.dominators(bb5), vec![entries, bb0, bb1, bb5]);
+        assert_eq!(dominators.dominators(bb6), vec![entries, bb0, bb1, bb5, bb6]);
+        assert_eq!(dominators.dominators(bb7), vec![entries, bb0, bb1, bb7]);
     }
 
     #[test]
@@ -4744,12 +4744,12 @@ pub mod hir_build_tests {
 
         let dominators = Dominators::new(&function);
         assert_dominators_contains_self(&function, &dominators);
-        assert!(dominators.dominators(bb0).eq([entries, bb0].iter()));
-        assert!(dominators.dominators(bb1).eq([entries, bb0, bb1].iter()));
-        assert!(dominators.dominators(bb2).eq([entries, bb0, bb1, bb2].iter()));
-        assert!(dominators.dominators(bb3).eq([entries, bb0, bb3].iter()));
-        assert!(dominators.dominators(bb4).eq([entries, bb0, bb4].iter()));
-        assert!(dominators.dominators(bb5).eq([entries, bb0, bb4, bb5].iter()));
+        assert_eq!(dominators.dominators(bb0), vec![entries, bb0]);
+        assert_eq!(dominators.dominators(bb1), vec![entries, bb0, bb1]);
+        assert_eq!(dominators.dominators(bb2), vec![entries, bb0, bb1, bb2]);
+        assert_eq!(dominators.dominators(bb3), vec![entries, bb0, bb3]);
+        assert_eq!(dominators.dominators(bb4), vec![entries, bb0, bb4]);
+        assert_eq!(dominators.dominators(bb5), vec![entries, bb0, bb4, bb5]);
     }
 
     #[test]
@@ -4784,9 +4784,9 @@ pub mod hir_build_tests {
         let dominators = Dominators::new(&function);
         assert_dominators_contains_self(&function, &dominators);
 
-        assert!(dominators.dominators(bb0).eq([entries, bb0].iter()));
-        assert!(dominators.dominators(bb1).eq([entries, bb1].iter()));
-        assert!(dominators.dominators(bb2).eq([entries, bb2].iter()));
+        assert_eq!(dominators.dominators(bb0), vec![entries, bb0]);
+        assert_eq!(dominators.dominators(bb1), vec![entries, bb1]);
+        assert_eq!(dominators.dominators(bb2), vec![entries, bb2]);
 
         assert!(!dominators.is_dominated_by(bb1, bb2));
     }
