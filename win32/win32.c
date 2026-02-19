@@ -7328,8 +7328,7 @@ rb_w32_write_internal(int fd, const void *buf, size_t size, rb_off_t *offset)
     }
 
     // If an offset is given, we can't use `_write`.
-    if (!offset && (_osfile(fd) & FTEXT) &&
-        (!(_osfile(fd) & FPIPE) || fd == fileno(stdout) || fd == fileno(stderr))) {
+    if (!offset && (_osfile(fd) & FTEXT)) {
         ssize_t w = _write(fd, buf, size);
         if (w == (ssize_t)-1 && errno == EINVAL) {
             errno = map_errno(GetLastError());
