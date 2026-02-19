@@ -348,6 +348,7 @@ dln_open(const char *file)
     void *handle;
 
 #if defined(_WIN32)
+# define DLN_DEFINED
     char message[1024];
 
     /* Convert the file path to wide char */
@@ -374,6 +375,7 @@ dln_open(const char *file)
 # endif
 
 #elif defined(USE_DLN_DLOPEN)
+# define DLN_DEFINED
 
 # ifndef RTLD_LAZY
 #  define RTLD_LAZY 1
@@ -505,7 +507,7 @@ abi_check_enabled_p(void)
 static void *
 dln_load_and_init(const char *file, const char *init_fct_name)
 {
-#if defined(_WIN32) || defined(USE_DLN_DLOPEN)
+#if defined(DLN_DEFINED)
     void *handle = dln_open(file);
 
 #ifdef RUBY_DLN_CHECK_ABI
@@ -523,6 +525,7 @@ dln_load_and_init(const char *file, const char *init_fct_name)
     return handle;
 
 #elif defined(_AIX)
+# define DLN_DEFINED
     {
         void (*init_fct)(void);
 
@@ -553,7 +556,7 @@ dln_load(const char *file)
 void *
 dln_load_feature(const char *file, const char *fname)
 {
-#if defined(_WIN32) || defined(USE_DLN_DLOPEN)
+#if defined(DLN_DEFINED)
     char *init_fct_name;
     init_funcname(&init_fct_name, fname);
     return dln_load_and_init(file, init_fct_name);
