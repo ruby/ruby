@@ -908,6 +908,13 @@ node_locations(VALUE ast_value, const NODE *node)
                                     location_new(&RNODE_POSTEXE(node)->keyword_loc),
                                     location_new(&RNODE_POSTEXE(node)->opening_loc),
                                     location_new(&RNODE_POSTEXE(node)->closing_loc));
+      case NODE_QCALL:
+        return rb_ary_new_from_args(5,
+                                    location_new(nd_code_loc(node)),
+                                    location_new(&RNODE_QCALL(node)->call_operator_loc),
+                                    location_new(&RNODE_QCALL(node)->message_loc),
+                                    location_new(&RNODE_QCALL(node)->opening_loc),
+                                    location_new(&RNODE_QCALL(node)->closing_loc));
       case NODE_REDO:
         return rb_ary_new_from_args(2,
                                     location_new(nd_code_loc(node)),
