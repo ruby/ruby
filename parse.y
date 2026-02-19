@@ -323,6 +323,7 @@ struct lex_context {
 };
 
 typedef struct RNode_DEF_TEMP rb_node_def_temp_t;
+typedef struct RNode_ITER_TEMP rb_node_iter_temp_t;
 
 #if defined(__GNUC__) && !defined(__clang__)
 // Suppress "parameter passing for argument of type 'struct
@@ -1075,7 +1076,7 @@ static rb_node_when_t *rb_node_when_new(struct parser_params *p, NODE *nd_head, 
 static rb_node_in_t *rb_node_in_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, NODE *nd_next, const YYLTYPE *loc, const YYLTYPE *in_keyword_loc, const YYLTYPE *then_keyword_loc, const YYLTYPE *operator_loc);
 static rb_node_while_t *rb_node_while_new(struct parser_params *p, NODE *nd_cond, NODE *nd_body, long nd_state, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *closing_loc);
 static rb_node_until_t *rb_node_until_new(struct parser_params *p, NODE *nd_cond, NODE *nd_body, long nd_state, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *closing_loc);
-static rb_node_iter_t *rb_node_iter_new(struct parser_params *p, rb_node_args_t *nd_args, NODE *nd_body, const YYLTYPE *loc);
+static rb_node_iter_t *rb_node_iter_new(struct parser_params *p, rb_node_args_t *nd_args, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc);
 static rb_node_for_t *rb_node_for_new(struct parser_params *p, NODE *nd_iter, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *for_keyword_loc, const YYLTYPE *in_keyword_loc, const YYLTYPE *do_keyword_loc, const YYLTYPE *end_keyword_loc);
 static rb_node_for_masgn_t *rb_node_for_masgn_new(struct parser_params *p, NODE *nd_var, const YYLTYPE *loc);
 static rb_node_retry_t *rb_node_retry_new(struct parser_params *p, const YYLTYPE *loc);
@@ -1183,7 +1184,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_IN(c,t,e,loc,ik_loc,tk_loc,o_loc) (NODE *)rb_node_in_new(p,c,t,e,loc,ik_loc,tk_loc,o_loc)
 #define NEW_WHILE(c,b,n,loc,k_loc,c_loc) (NODE *)rb_node_while_new(p,c,b,n,loc,k_loc,c_loc)
 #define NEW_UNTIL(c,b,n,loc,k_loc,c_loc) (NODE *)rb_node_until_new(p,c,b,n,loc,k_loc,c_loc)
-#define NEW_ITER(a,b,loc) (NODE *)rb_node_iter_new(p,a,b,loc)
+#define NEW_ITER(a,b,loc,o_loc,c_loc) (NODE *)rb_node_iter_new(p,a,b,loc,o_loc,c_loc)
 #define NEW_FOR(i,b,loc,f_loc,i_loc,d_loc,e_loc) (NODE *)rb_node_for_new(p,i,b,loc,f_loc,i_loc,d_loc,e_loc)
 #define NEW_FOR_MASGN(v,loc) (NODE *)rb_node_for_masgn_new(p,v,loc)
 #define NEW_RETRY(loc) (NODE *)rb_node_retry_new(p,loc)
@@ -1284,7 +1285,8 @@ enum internal_node_type {
     NODE_INTERNAL_ONLY = NODE_LAST,
     NODE_DEF_TEMP,
     NODE_EXITS,
-    NODE_INTERNAL_LAST
+    NODE_ITER_TEMP,
+    NODE_INTERNAL_LAST,
 };
 
 static const char *
@@ -1328,6 +1330,22 @@ static rb_node_def_temp_t *def_head_save(struct parser_params *p, rb_node_def_te
 #define NEW_NEXT(s,loc,k_loc) (NODE *)rb_node_next_new(p,s,loc,k_loc)
 #define NEW_REDO(loc,k_loc) (NODE *)rb_node_redo_new(p,loc,k_loc)
 #define NEW_DEF_TEMP(loc) rb_node_def_temp_new(p,loc)
+
+/* This node is parse.y internal  */
+/* for NODE_ITER locations */
+struct RNode_ITER_TEMP {
+    NODE node;
+
+    rb_node_args_t *nd_args;
+    YYLTYPE opening_loc;
+    YYLTYPE closing_loc;
+};
+
+#define RNODE_ITER_TEMP(node) ((struct RNode_ITER_TEMP *)(node))
+
+static rb_node_iter_temp_t *rb_node_iter_temp_new(struct parser_params *p, rb_node_args_t *nd_args, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc);
+
+#define NEW_ITER_TEMP(args,loc,o_loc,c_loc) (NODE *)rb_node_iter_temp_new(p,args,loc,o_loc,c_loc)
 
 /* Make a new internal node, which should not be appeared in the
  * result AST and does not have node_id and location. */
@@ -2783,7 +2801,8 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <node> f_marg f_rest_marg
 %type <node_masgn> f_margs
 %type <node> assoc_list assocs assoc undef_list backref string_dvar for_var
-%type <node_args> block_param opt_block_param_def block_param_def opt_block_param
+%type <node_args> block_param opt_block_param
+%type <node> opt_block_param_def block_param_def
 %type <id> do bv_decls opt_bv_decl bvar
 %type <node> lambda brace_body do_body
 %type <locations_lambda_body> lambda_body
@@ -5072,7 +5091,7 @@ block_param_def	: '|' opt_block_param opt_bv_decl '|'
                     {
                         p->max_numparam = ORDINAL_PARAM;
                         p->ctxt.in_argdef = 0;
-                        $$ = $2;
+                        $$ = NEW_ITER_TEMP($2, &@$, &@1, &@4);
                     /*% ripper: block_var!($:2, $:3) %*/
                     }
                 ;
@@ -5324,8 +5343,15 @@ brace_body	: {$$ = dyna_push(p);}[dyna]<vars>
                         ID it_id = p->it_id;
                         p->max_numparam = $max_numparam;
                         p->it_id = $it_id;
-                        $args = args_with_numbered(p, $args, max_numparam, it_id);
-                        $$ = NEW_ITER($args, $compstmt, &@$);
+
+                        if ($args) {
+                            rb_node_args_t *args = args_with_numbered(p, RNODE_ITER_TEMP($args)->nd_args, max_numparam, it_id);
+                            $$ = NEW_ITER(args, $compstmt, &@$, &RNODE_ITER_TEMP($args)->opening_loc, &RNODE_ITER_TEMP($args)->closing_loc);
+                        }
+                        else {
+                            rb_node_args_t *args = args_with_numbered(p, NULL, max_numparam, it_id);
+                            $$ = NEW_ITER(args, $compstmt, &@$, &NULL_LOC, &NULL_LOC);
+                        }
                     /*% ripper: brace_block!($:args, $:compstmt) %*/
                         restore_block_exit(p, $allow_exits);
                         numparam_pop(p, $numparam);
@@ -5344,8 +5370,15 @@ do_body 	:   {
                         ID it_id = p->it_id;
                         p->max_numparam = $max_numparam;
                         p->it_id = $it_id;
-                        $args = args_with_numbered(p, $args, max_numparam, it_id);
-                        $$ = NEW_ITER($args, $bodystmt, &@$);
+
+                        if ($args) {
+                            rb_node_args_t *args = args_with_numbered(p, RNODE_ITER_TEMP($args)->nd_args, max_numparam, it_id);
+                            $$ = NEW_ITER(args, $bodystmt, &@$, &RNODE_ITER_TEMP($args)->opening_loc, &RNODE_ITER_TEMP($args)->closing_loc);
+                        }
+                        else {
+                            rb_node_args_t *args = args_with_numbered(p, NULL, max_numparam, it_id);
+                            $$ = NEW_ITER(args, $bodystmt, &@$, &NULL_LOC, &NULL_LOC);
+                        }
                     /*% ripper: do_block!($:args, $:bodystmt) %*/
                         CMDARG_POP();
                         restore_block_exit(p, $allow_exits);
@@ -11518,7 +11551,7 @@ rb_node_module_new(struct parser_params *p, NODE *nd_cpath, NODE *nd_body, const
 }
 
 static rb_node_iter_t *
-rb_node_iter_new(struct parser_params *p, rb_node_args_t *nd_args, NODE *nd_body, const YYLTYPE *loc)
+rb_node_iter_new(struct parser_params *p, rb_node_args_t *nd_args, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc)
 {
     /* Keep the order of node creation */
     NODE *scope = NEW_SCOPE(nd_args, nd_body, NULL, loc);
@@ -11526,6 +11559,8 @@ rb_node_iter_new(struct parser_params *p, rb_node_args_t *nd_args, NODE *nd_body
     RNODE_SCOPE(scope)->nd_parent = &n->node;
     n->nd_body = scope;
     n->nd_iter = 0;
+    n->opening_loc = *opening_loc;
+    n->closing_loc = *closing_loc;
 
     return n;
 }
@@ -12488,6 +12523,17 @@ def_head_save(struct parser_params *p, rb_node_def_temp_t *n)
 {
     n->save.numparam_save = numparam_push(p);
     n->save.max_numparam = p->max_numparam;
+    return n;
+}
+
+static rb_node_iter_temp_t *
+rb_node_iter_temp_new(struct parser_params *p, rb_node_args_t *nd_args, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc)
+{
+    rb_node_iter_temp_t *n = NODE_NEWNODE((enum node_type)NODE_ITER_TEMP, rb_node_iter_temp_t, loc);
+    n->nd_args = nd_args;
+    n->opening_loc = *opening_loc;
+    n->closing_loc = *closing_loc;
+
     return n;
 }
 
