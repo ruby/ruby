@@ -2059,7 +2059,10 @@ impl Assembler
         let mut num_stack_slots: usize = 0;
 
         // Collect vreg indices that have valid ranges, sorted by start point
-        let mut sorted_intervals = intervals.clone();
+        let mut sorted_intervals: Vec<Interval> = intervals.iter()
+            .filter(|i| i.range.start.is_some())
+            .cloned()
+            .collect();
         sorted_intervals.sort_by_key(|i| i.range.start.unwrap());
 
         for interval in &sorted_intervals {
@@ -2129,7 +2132,11 @@ impl Assembler
         let alloc_opnd = |alloc: Allocation| -> Opnd {
             match alloc {
                 Allocation::Reg(n) => Opnd::Reg(regs[n]),
-                Allocation::Stack(_) => todo!("Stack allocation not yet supported in resolve_ssa"),
+                Allocation::Stack(n) => Opnd::Mem(Mem {
+                    base: MemBase::Stack { stack_idx: n, num_bits: 64 },
+                    disp: 0,
+                    num_bits: 64,
+                }),
             }
         };
 
@@ -2155,15 +2162,19 @@ impl Assembler
                 let mut imm_moves: Vec<Insn> = Vec::new();
 
                 for (arg, param) in edge.args.iter().zip(params.iter()) {
-                    let dst_alloc = assignments[param.vreg_idx().0].unwrap();
+                    let dst_alloc = match assignments[param.vreg_idx().0] {
+                        Some(alloc) => alloc,
+                        None => continue, // Dead parameter, skip
+                    };
                     let dst = alloc_opnd(dst_alloc);
 
-                    let src = match arg {
-                        Opnd::UImm(_) | Opnd::Imm(_) => *arg,
-                        _ => {
+                    let (src, src_alloc) = match arg {
+                        Opnd::VReg { .. } => {
                             let src_alloc = assignments[arg.vreg_idx().0].unwrap();
-                            alloc_opnd(src_alloc)
+                            (alloc_opnd(src_alloc), Some(src_alloc))
                         }
+                        // Immediates, physical Reg, physical Mem — pass through as-is
+                        _ => (*arg, None),
                     };
 
                     // Filter self-moves
@@ -2171,22 +2182,16 @@ impl Assembler
                         continue;
                     }
 
-                    match src {
-                        Opnd::UImm(_) | Opnd::Imm(_) => {
+                    match (src_alloc, dst_alloc) {
+                        (Some(Allocation::Reg(s)), Allocation::Reg(d)) => {
+                            reg_copies.push(parcopy::RegisterCopy {
+                                source: parcopy::Register(s as u32),
+                                destination: parcopy::Register(d as u32),
+                            });
+                        }
+                        _ => {
                             imm_moves.push(Insn::Mov { dest: dst, src });
                         }
-                        Opnd::Reg(_) => {
-                            if let (Allocation::Reg(s), Allocation::Reg(d)) = (
-                                assignments[arg.vreg_idx().0].unwrap(),
-                                dst_alloc,
-                            ) {
-                                reg_copies.push(parcopy::RegisterCopy {
-                                    source: parcopy::Register(s as u32),
-                                    destination: parcopy::Register(d as u32),
-                                });
-                            }
-                        }
-                        _ => {}
                     }
                 }
 
@@ -2266,7 +2271,10 @@ impl Assembler
 
             for (i, param) in params.iter().enumerate() {
                 let src = Assembler::param_opnd(i);
-                let dst_alloc = assignments[param.vreg_idx().0].unwrap();
+                let dst_alloc = match assignments[param.vreg_idx().0] {
+                    Some(alloc) => alloc,
+                    None => continue, // Dead parameter, skip
+                };
                 let dst = alloc_opnd(dst_alloc);
 
                 if src == dst { continue; }
@@ -2307,6 +2315,148 @@ impl Assembler
         self.rewrite_instructions(assignments, regs);
     }
 
+    /// Handle caller-saved registers around CCall instructions.
+    /// For each CCall, push live caller-saved registers, set up arguments
+    /// in C calling convention registers, and pop saved registers after.
+    pub fn handle_caller_saved_regs(
+        &mut self,
+        intervals: &[Interval],
+        assignments: &[Option<Allocation>],
+        regs: &[Reg],
+    ) {
+        use crate::backend::parcopy;
+        use crate::backend::current::C_RET_OPND;
+
+        let num_registers = regs.len();
+
+        for block in self.basic_blocks.iter_mut() {
+            let old_insns = take(&mut block.insns);
+            let old_ids = take(&mut block.insn_ids);
+
+            let mut new_insns = Vec::with_capacity(old_insns.len());
+            let mut new_ids = Vec::with_capacity(old_ids.len());
+
+            for (mut insn, insn_id) in old_insns.into_iter().zip(old_ids.into_iter()) {
+                if let Insn::CCall { ref mut opnds, ref mut out, .. } = insn {
+                    let insn_number = insn_id.map(|id| id.0).unwrap_or(0);
+
+                    // Find survivors: intervals that survive this instruction
+                    // and are assigned to physical registers
+                    let survivors: Vec<usize> = intervals.iter()
+                        .filter(|interval| {
+                            interval.range.start.is_some()
+                                && interval.range.end.is_some()
+                                && interval.survives(insn_number)
+                                && matches!(assignments[interval.id], Some(Allocation::Reg(_)))
+                        })
+                        .map(|interval| interval.id)
+                        .collect();
+
+                    // Extract arguments from CCall, clear opnds
+                    let args = take(opnds);
+
+                    // Save original output vreg, replace with C_RET_OPND
+                    let mov_input = *out;
+                    *out = C_RET_OPND;
+
+                    // Sequentialize argument moves: each arg goes to regs[i]
+                    let mut reg_copies: Vec<parcopy::RegisterCopy> = Vec::new();
+                    let mut imm_moves: Vec<Insn> = Vec::new();
+
+                    for (i, arg) in args.iter().enumerate() {
+                        assert!(i < regs.len(), "Too many CCall arguments for available registers");
+                        match arg {
+                            Opnd::UImm(_) | Opnd::Imm(_) => {
+                                imm_moves.push(Insn::Mov {
+                                    dest: Opnd::Reg(regs[i]),
+                                    src: *arg,
+                                });
+                            }
+                            _ => {
+                                let src_alloc = assignments[arg.vreg_idx().0].unwrap();
+                                if let Allocation::Reg(s) = src_alloc {
+                                    if s != i {
+                                        reg_copies.push(parcopy::RegisterCopy {
+                                            source: parcopy::Register(s as u32),
+                                            destination: parcopy::Register(i as u32),
+                                        });
+                                    }
+                                } else {
+                                    // Stack-allocated arg: emit a direct mov
+                                    let src_opnd = match src_alloc {
+                                        Allocation::Stack(n) => Opnd::Mem(Mem {
+                                            base: MemBase::Stack { stack_idx: n, num_bits: 64 },
+                                            disp: 0,
+                                            num_bits: 64,
+                                        }),
+                                        _ => unreachable!(),
+                                    };
+                                    imm_moves.push(Insn::Mov {
+                                        dest: Opnd::Reg(regs[i]),
+                                        src: src_opnd,
+                                    });
+                                }
+                            }
+                        }
+                    }
+
+                    let spare = parcopy::Register(num_registers as u32);
+                    let sequentialized = parcopy::sequentialize_register(&reg_copies, spare);
+                    let reg_moves: Vec<Insn> = sequentialized
+                        .iter()
+                        .map(|copy| Insn::Mov {
+                            dest: Opnd::Reg(regs[copy.destination.0 as usize]),
+                            src: Opnd::Reg(regs[copy.source.0 as usize]),
+                        })
+                        .collect();
+
+                    // Emit: pushes, arg moves, CCall, result mov, pops (reversed)
+                    for &s in &survivors {
+                        let reg_n = match assignments[s].unwrap() {
+                            Allocation::Reg(n) => n,
+                            _ => unreachable!(),
+                        };
+                        new_insns.push(Insn::CPush(Opnd::Reg(regs[reg_n])));
+                        new_ids.push(None);
+                    }
+
+                    for mov in reg_moves {
+                        new_insns.push(mov);
+                        new_ids.push(None);
+                    }
+                    for mov in imm_moves {
+                        new_insns.push(mov);
+                        new_ids.push(None);
+                    }
+
+                    // The CCall itself
+                    new_insns.push(insn);
+                    new_ids.push(insn_id);
+
+                    // Move result from C_RET to where mov_input was allocated
+                    new_insns.push(Insn::Mov { dest: mov_input, src: C_RET_OPND });
+                    new_ids.push(None);
+
+                    // Pop in reverse order
+                    for &s in survivors.iter().rev() {
+                        let reg_n = match assignments[s].unwrap() {
+                            Allocation::Reg(n) => n,
+                            _ => unreachable!(),
+                        };
+                        new_insns.push(Insn::CPopInto(Opnd::Reg(regs[reg_n])));
+                        new_ids.push(None);
+                    }
+                } else {
+                    new_insns.push(insn);
+                    new_ids.push(insn_id);
+                }
+            }
+
+            block.insns = new_insns;
+            block.insn_ids = new_ids;
+        }
+    }
+
     /// Walk every instruction and replace VReg operands with the physical
     /// register (or stack slot) from the allocation assignments.
     fn rewrite_instructions(&mut self, assignments: &[Option<Allocation>], regs: &[Reg]) {
@@ -2325,10 +2475,21 @@ impl Assembler
 
     fn rewrite_opnd(opnd: &mut Opnd, assignments: &[Option<Allocation>], regs: &[Reg]) {
         match opnd {
-            Opnd::VReg { idx, .. } => {
+            Opnd::VReg { idx, num_bits } => {
                 match assignments[idx.0].unwrap() {
-                    Allocation::Reg(n) => *opnd = Opnd::Reg(regs[n]),
-                    Allocation::Stack(_) => todo!("Stack allocation not yet supported in rewrite_instructions"),
+                    Allocation::Reg(n) => {
+                        let mut reg = regs[n];
+                        reg.num_bits = *num_bits;
+                        *opnd = Opnd::Reg(reg);
+                    }
+                    Allocation::Stack(n) => {
+                        let num_bits = *num_bits;
+                        *opnd = Opnd::Mem(Mem {
+                            base: MemBase::Stack { stack_idx: n, num_bits },
+                            disp: 0,
+                            num_bits,
+                        });
+                    }
                 }
             }
             Opnd::Mem(Mem { base: MemBase::VReg(idx), .. }) => {
@@ -2338,7 +2499,7 @@ impl Assembler
                             mem.base = MemBase::Reg(regs[n].reg_no);
                         }
                     }
-                    Allocation::Stack(_) => todo!("Stack allocation not yet supported in rewrite_instructions"),
+                    Allocation::Stack(_) => todo!("VReg mem base spilled to stack"),
                 }
             }
             _ => {}
@@ -3199,8 +3360,10 @@ impl fmt::Display for Assembler {
             }
         }
 
-        for block_id in self.block_order() {
-            let bb = &self.basic_blocks[block_id.0];
+        // Use sorted_blocks() instead of block_order() because block_order()
+        // calls rpo() → edges() which requires all blocks end with terminators.
+        // After arm64_scratch_split, blocks may not have terminators.
+        for bb in self.sorted_blocks() {
             let params = &bb.parameters;
             for (insn_id, insn) in bb.insn_ids.iter().zip(&bb.insns) {
                 if let Some(id) = insn_id {
@@ -4618,5 +4781,106 @@ mod tests {
             let second_last = &b2_insns[b2_insns.len() - 2];
             assert!(matches!(second_last, Insn::Mov { .. }), "Expected Mov before Jmp in b2");
         }
+    }
+
+    #[test]
+    fn test_call() {
+        use crate::backend::current::ALLOC_REGS;
+
+        let mut asm = Assembler::new();
+
+        // Single entry block
+        let b1 = asm.new_block(hir::BlockId(0), true, 0);
+        asm.set_current_block(b1);
+        let label = asm.new_label("bb0");
+        asm.write_label(label);
+
+        // v0 = param (entry block parameter)
+        let v0 = asm.new_block_param(64);
+        asm.basic_blocks[b1.0].add_parameter(v0);
+
+        // v1 = Load(UImm(5))
+        let v1 = asm.new_vreg(64);
+        asm.basic_blocks[b1.0].push_insn(Insn::Load { opnd: Opnd::UImm(5), out: v1 });
+
+        // v2 = Add(v1, UImm(1))
+        let v2 = asm.new_vreg(64);
+        asm.basic_blocks[b1.0].push_insn(Insn::Add { left: v1, right: Opnd::UImm(1), out: v2 });
+
+        // v3 = CCall { fptr: UImm(0xF00), opnds: [v2] }
+        let v3 = asm.new_vreg(64);
+        asm.basic_blocks[b1.0].push_insn(Insn::CCall {
+            opnds: vec![v2],
+            fptr: Opnd::UImm(0xF00),
+            start_marker: None,
+            end_marker: None,
+            out: v3,
+        });
+
+        // v4 = Add(v3, v1)
+        let v4 = asm.new_vreg(64);
+        asm.basic_blocks[b1.0].push_insn(Insn::Add { left: v3, right: v1, out: v4 });
+
+        // v5 = Add(v0, v4)
+        let v5 = asm.new_vreg(64);
+        asm.basic_blocks[b1.0].push_insn(Insn::Add { left: v0, right: v4, out: v5 });
+
+        // CRet(v5)
+        asm.basic_blocks[b1.0].push_insn(Insn::CRet(v5));
+
+        // Run liveness + numbering + intervals + linear scan with 2 registers
+        let live_in = asm.analyze_liveness();
+        asm.number_instructions(0);
+        let intervals = asm.build_intervals(live_in);
+        let num_regs = 2;
+        let (assignments, _) = asm.linear_scan(intervals.clone(), num_regs);
+
+        let regs = &ALLOC_REGS[..num_regs];
+
+        // v0 should be spilled (long-lived, only 2 regs)
+        assert!(matches!(assignments[v0.vreg_idx().0], Some(Allocation::Stack(_))),
+            "v0 should be spilled to stack");
+        // v1 should be in a register
+        assert!(matches!(assignments[v1.vreg_idx().0], Some(Allocation::Reg(_))),
+            "v1 should be in a register");
+
+        // Run the pipeline: handle_caller_saved_regs then resolve_ssa
+        asm.handle_caller_saved_regs(&intervals, &assignments, regs);
+        asm.resolve_ssa(&intervals, &assignments, regs);
+
+        let insns = &asm.basic_blocks[b1.0].insns;
+
+        // Find CPush and CPopInto - they should be present for the survivor (v1)
+        let pushes: Vec<_> = insns.iter().filter(|i| matches!(i, Insn::CPush(_))).collect();
+        let pops: Vec<_> = insns.iter().filter(|i| matches!(i, Insn::CPopInto(_))).collect();
+        assert_eq!(pushes.len(), 1, "Expected exactly one CPush for survivor");
+        assert_eq!(pops.len(), 1, "Expected exactly one CPopInto for survivor");
+
+        // The survivor register should match v1's allocation
+        let v1_reg = match assignments[v1.vreg_idx().0].unwrap() {
+            Allocation::Reg(n) => Opnd::Reg(regs[n]),
+            _ => unreachable!(),
+        };
+        assert!(matches!(&pushes[0], Insn::CPush(opnd) if *opnd == v1_reg),
+            "CPush should save v1's register");
+        assert!(matches!(&pops[0], Insn::CPopInto(opnd) if *opnd == v1_reg),
+            "CPopInto should restore v1's register");
+
+        // The CCall should have empty opnds and out = C_RET_OPND (rewritten to regs[0])
+        let ccall = insns.iter().find(|i| matches!(i, Insn::CCall { .. })).unwrap();
+        if let Insn::CCall { opnds, .. } = ccall {
+            assert!(opnds.is_empty(), "CCall opnds should be empty after handle_caller_saved_regs");
+        }
+
+        // v0 should be rewritten to a Stack operand
+        // Find an Add that uses a Stack operand (the v0+v4 add)
+        let has_stack_opnd = insns.iter().any(|i| {
+            if let Insn::Add { left: Opnd::Mem(Mem { base: MemBase::Stack { .. }, .. }), .. } = i {
+                true
+            } else {
+                false
+            }
+        });
+        assert!(has_stack_opnd, "v0 should be rewritten to a Stack memory operand");
     }
 }
