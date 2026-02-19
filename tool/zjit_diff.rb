@@ -8,6 +8,10 @@ require 'digest'
 GitRef = Struct.new(:ref, :commit_hash)
 
 RUBIES_DIR = File.join(Dir.home, '.diffs')
+BEFORE_NAME = 'ruby-zjit-before'.freeze
+AFTER_NAME = 'ruby-zjit-after'.freeze
+
+LOG = Logger.new($stderr)
 
 def macos?
   Gem::Platform.local == 'darwin'
@@ -26,55 +30,20 @@ class CommandRunner
 end
 
 class ZJITDiff
-  BEFORE_NAME = 'ruby-zjit-before'.freeze
-  AFTER_NAME = 'ruby-zjit-after'.freeze
   DATA_FILENAME = File.join('data', 'zjit_diff')
   RUBY_BENCH_REPO_URL = 'https://github.com/ruby/ruby-bench.git'.freeze
 
-  def initialize(options)
-    @runner = CommandRunner.new(quiet: options[:quiet])
-    @log = Logger.new($stderr)
+  def initialize(before_hash:, after_hash:, runner:, options:)
+    @before_hash = before_hash
+    @after_hash = after_hash
+    @runner = runner
     @options = options
   end
 
   def bench!
-    @before = RubyWorktree.new(name: BEFORE_NAME,
-                               ref: @options[:before],
-                               runner: @runner,
-                               logger: @log,
-                               force_rebuild: @options[:force_rebuild])
-    @before.build!
-    @after = RubyWorktree.new(name: AFTER_NAME,
-                              ref: @options[:after],
-                              runner: @runner,
-                              logger: @log,
-                              force_rebuild: @options[:force_rebuild])
-    @after.build!
-
-    @log.info('Running benchmarks')
+    LOG.info('Running benchmarks')
     ruby_bench_path = @options[:bench_path] || setup_ruby_bench
     run_benchmarks(ruby_bench_path)
-  end
-
-  def clean!
-    [BEFORE_NAME, AFTER_NAME].each do |name|
-      path = File.join(Dir.tmpdir, name)
-      if Dir.exist?(path)
-        @log.info "Removing worktree at #{path}"
-        system('git', 'worktree', 'remove', '--force', path)
-      end
-    end
-
-    if Dir.exist?(RUBIES_DIR)
-      @log.info 'Removing ruby installations from ~/.diffs'
-      FileUtils.rm_rf(RUBIES_DIR)
-    end
-
-    bench_path = File.join(Dir.tmpdir, 'ruby-bench')
-    return unless Dir.exist?(bench_path)
-
-    @log.info("Removing ruby-bench clone at #{bench_path}")
-    FileUtils.rm_rf(bench_path)
   end
 
   private
@@ -84,28 +53,25 @@ class ZJITDiff
       @runner.cmd({ 'RUBIES_DIR' => RUBIES_DIR },
                   './run_benchmarks.rb',
                   '--chruby',
-                  "#{@before.hash} --zjit-stats;#{@after.hash} --zjit-stats",
+                  "before::#{@before_hash} --zjit-stats;after::#{@after_hash} --zjit-stats",
                   '--out-name',
                   DATA_FILENAME,
                   *@options[:bench_args],
                   *@options[:name_filters])
 
-      report = `./misc/zjit_diff.rb #{DATA_FILENAME}.json`
-      report.gsub!(@before.hash, 'before')
-      report.gsub!(@after.hash, 'after')
-      puts(report)
+      @runner.cmd('./misc/zjit_diff.rb', "#{DATA_FILENAME}.json", out: $stdout)
     end
   end
 
   def setup_ruby_bench
     path = File.join(Dir.tmpdir, 'ruby-bench')
     if Dir.exist?(path)
-      @log.info('ruby-bench already cloned, pulling from upstream')
+      LOG.info('ruby-bench already cloned, pulling from upstream')
       Dir.chdir(path) do
         @runner.cmd('git', 'pull')
       end
     else
-      @log.info("ruby-bench not cloned yet, cloning repository to #{path}")
+      LOG.info("ruby-bench not cloned yet, cloning repository to #{path}")
       @runner.cmd('git', 'clone', RUBY_BENCH_REPO_URL, path)
     end
     path
@@ -117,12 +83,11 @@ class RubyWorktree
 
   BREW_REQUIRED_PACKAGES = %w[openssl readline libyaml].freeze
 
-  def initialize(name:, ref:, runner:, logger:, force_rebuild: false)
+  def initialize(name:, ref:, runner:, force_rebuild: false)
     @path = File.join(Dir.tmpdir, name)
     @ref = ref
     @force_rebuild = force_rebuild
     @runner = runner
-    @log = logger
     @hash = nil
 
     setup_worktree
@@ -146,7 +111,7 @@ class RubyWorktree
       prefix = File.join(RUBIES_DIR, @hash)
 
       if Dir.exist?(prefix) && !@force_rebuild
-        @log.info("Found existing build for #{@ref.ref}, skipping build")
+        LOG.info("Found existing build for #{@ref.ref}, skipping build")
         return
       end
 
@@ -168,15 +133,36 @@ class RubyWorktree
 
   def setup_worktree
     if Dir.exist?(@path)
-      @log.info "Existing worktree found at #{@path}"
+      LOG.info("Existing worktree found at #{@path}")
       Dir.chdir(@path) do
         @runner.cmd('git', 'checkout', @ref.commit_hash)
       end
     else
-      @log.info "Creating worktree for ref '#{@ref.ref}' at #{@path}"
+      LOG.info("Creating worktree for ref '#{@ref.ref}' at #{@path}")
       @runner.cmd('git', 'worktree', 'add', '--detach', @path, @ref.commit_hash)
     end
   end
+end
+
+def clean!
+  [BEFORE_NAME, AFTER_NAME].each do |name|
+    path = File.join(Dir.tmpdir, name)
+    if Dir.exist?(path)
+      LOG.info("Removing worktree at #{path}")
+      system('git', 'worktree', 'remove', '--force', path)
+    end
+  end
+
+  if Dir.exist?(RUBIES_DIR)
+    LOG.info('Removing ruby installations from ~/.diffs')
+    FileUtils.rm_rf(RUBIES_DIR)
+  end
+
+  bench_path = File.join(Dir.tmpdir, 'ruby-bench')
+  return unless Dir.exist?(bench_path)
+
+  LOG.info("Removing ruby-bench clone at #{bench_path}")
+  FileUtils.rm_rf(bench_path)
 end
 
 def parse_ref(ref)
@@ -258,13 +244,26 @@ top_level.order!
 command = ARGV.shift
 subcommands[command].order!
 
-zjit_diff = ZJITDiff.new(options)
-
 case command
 when 'bench'
   options[:name_filters] = ARGV.empty? ? DEFAULT_BENCHMARKS : ARGV
   options[:after] ||= parse_ref('HEAD')
+
+  runner = CommandRunner.new(quiet: options[:quiet])
+
+  before = RubyWorktree.new(name: BEFORE_NAME,
+                            ref: options[:before],
+                            runner: runner,
+                            force_rebuild: options[:force_rebuild])
+  before.build!
+  after = RubyWorktree.new(name: AFTER_NAME,
+                           ref: options[:after],
+                           runner: runner,
+                           force_rebuild: options[:force_rebuild])
+  after.build!
+
+  zjit_diff = ZJITDiff.new(runner: runner, before_hash: before.hash, after_hash: after.hash, options: options)
   zjit_diff.bench!
 when 'clean'
-  zjit_diff.clean!
+  clean!
 end
