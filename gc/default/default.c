@@ -7569,34 +7569,34 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
     SET(sweeping_time, (size_t)ns_to_ms(objspace->profile.sweeping_time_ns));
 
     /* implementation dependent counters */
+    SET(major_gc_count, objspace->profile.major_gc_count);
+    SET(minor_gc_count, objspace->profile.minor_gc_count);
+    SET(total_allocated_pages, objspace->heap_pages.allocated_pages);
+    SET(total_freed_pages, objspace->heap_pages.freed_pages);
     SET(heap_allocated_pages, rb_darray_size(objspace->heap_pages.sorted));
+    SET(heap_eden_pages, heap_eden_total_pages(objspace));
     SET(heap_empty_pages, objspace->empty_pages_count)
-    SET(heap_allocatable_slots, objspace->heap_pages.allocatable_slots);
     SET(heap_available_slots, objspace_available_slots(objspace));
     SET(heap_live_slots, objspace_live_slots(objspace));
     SET(heap_free_slots, objspace_free_slots(objspace));
     SET(heap_final_slots, total_final_slots_count(objspace));
     SET(heap_marked_slots, objspace->marked_slots);
-    SET(heap_eden_pages, heap_eden_total_pages(objspace));
-    SET(total_allocated_pages, objspace->heap_pages.allocated_pages);
-    SET(total_freed_pages, objspace->heap_pages.freed_pages);
+    SET(heap_allocatable_slots, objspace->heap_pages.allocatable_slots);
     SET(total_allocated_objects, total_allocated_objects(objspace));
     SET(total_freed_objects, total_freed_objects(objspace));
     SET(malloc_increase_bytes, malloc_increase);
     SET(malloc_increase_bytes_limit, malloc_limit);
-    SET(minor_gc_count, objspace->profile.minor_gc_count);
-    SET(major_gc_count, objspace->profile.major_gc_count);
-    SET(compact_count, objspace->profile.compact_count);
-    SET(read_barrier_faults, objspace->profile.read_barrier_faults);
-    SET(total_moved_objects, objspace->rcompactor.total_moved);
-    SET(remembered_wb_unprotected_objects, objspace->rgengc.uncollectible_wb_unprotected_objects);
-    SET(remembered_wb_unprotected_objects_limit, objspace->rgengc.uncollectible_wb_unprotected_objects_limit);
-    SET(old_objects, objspace->rgengc.old_objects);
-    SET(old_objects_limit, objspace->rgengc.old_objects_limit);
 #if RGENGC_ESTIMATE_OLDMALLOC
     SET(oldmalloc_increase_bytes, objspace->malloc_counters.oldmalloc_increase);
     SET(oldmalloc_increase_bytes_limit, objspace->rgengc.oldmalloc_increase_limit);
 #endif
+    SET(old_objects, objspace->rgengc.old_objects);
+    SET(old_objects_limit, objspace->rgengc.old_objects_limit);
+    SET(remembered_wb_unprotected_objects, objspace->rgengc.uncollectible_wb_unprotected_objects);
+    SET(remembered_wb_unprotected_objects_limit, objspace->rgengc.uncollectible_wb_unprotected_objects_limit);
+    SET(compact_count, objspace->profile.compact_count);
+    SET(total_moved_objects, objspace->rcompactor.total_moved);
+    SET(read_barrier_faults, objspace->profile.read_barrier_faults);
 
 #if RGENGC_PROFILE
     SET(total_generated_normal_object_count, objspace->profile.total_generated_normal_object_count);
