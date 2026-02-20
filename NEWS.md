@@ -47,9 +47,10 @@ Other changes are listed in the following sections. We also listed release
 history from the previous bundled version that is Ruby 3.4.0 if it has GitHub
 releases.
 
-### The following bundled gem is promoted from default gems.
+### The following bundled gems are promoted from default gems.
 
 * tsort 0.2.0
+* win32-registry 0.1.2
 
 ### The following default gem is added.
 
@@ -80,6 +81,7 @@ releases.
 * repl_type_completor 0.1.13
 * pstore 0.2.1
 * rdoc 7.2.0
+* win32ole 1.9.3
 * irb 1.17.0
 
 ### RubyGems and Bundler
