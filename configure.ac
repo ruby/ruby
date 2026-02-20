@@ -715,7 +715,7 @@ AS_IF([test "$fdeclspec" = yes], [
     RUBY_APPEND_OPTIONS(cflags, -fdeclspec)
     RUBY_APPEND_OPTIONS(orig_cflags, -fdeclspec)
 ])
-RUBY_TRY_CXXFLAGS(-fdeclspec, [fdeclspec=yes], [fdeclspec=no])
+RUBY_TRY_CXXFLAGS(-fdeclspec, [fdeclspec=yes], [fdeclspec=no], [@%:@include <cstdio>])
 AS_IF([test "$fdeclspec" = yes], [
     RUBY_APPEND_OPTIONS(CXXFLAGS, -fdeclspec)
 ])
