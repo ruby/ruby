@@ -85,7 +85,8 @@ def add_zjit_options cmd
       cmd[run_opts_index] = "RUN_OPTS=#{run_opts.shelljoin}"
     elsif specopts_index
       specopts = Shellwords.split(cmd[specopts_index].delete_prefix("SPECOPTS="))
-      specopts.concat(zjit_opts)
+      # SPECOPTS needs -T before each option to pass it through mspec to Ruby
+      zjit_opts.each { |opt| specopts.concat(["-T", opt]) }
       cmd[specopts_index] = "SPECOPTS=#{specopts.shelljoin}"
     else
       raise "Expected RUN_OPTS or SPECOPTS to be present in make command"
