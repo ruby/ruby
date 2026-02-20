@@ -739,7 +739,7 @@ impl Assembler {
         asm_local.num_vregs = self.num_vregs;
 
         // Create one giant block to linearize everything into
-        asm_local.new_block_without_id();
+        asm_local.new_block_without_id("linearized");
 
         let asm = &mut asm_local;
 
@@ -1620,6 +1620,7 @@ impl Assembler {
         let mut asm = self.arm64_split();
 
         asm_dump!(asm, split);
+
         asm.number_instructions(16);
 
         let live_in = asm.analyze_liveness();
@@ -1687,7 +1688,7 @@ mod tests {
     fn setup_asm() -> (Assembler, CodeBlock) {
         crate::options::rb_zjit_prepare_options(); // Allow `get_option!` in Assembler
         let mut asm = Assembler::new();
-        asm.new_block_without_id();
+        asm.new_block_without_id("test");
         (asm, CodeBlock::new_dummy())
     }
 
@@ -1696,7 +1697,7 @@ mod tests {
         use crate::hir::SideExitReason;
 
         let mut asm = Assembler::new();
-        asm.new_block_without_id();
+        asm.new_block_without_id("test");
         asm.stack_base_idx = 1;
 
         let label = asm.new_label("bb0");
@@ -2111,7 +2112,7 @@ mod tests {
     #[test]
     fn test_store_with_valid_scratch_reg() {
         let (mut asm, scratch_reg) = Assembler::new_with_scratch_reg();
-        asm.new_block_without_id();
+        asm.new_block_without_id("test");
         let mut cb = CodeBlock::new_dummy();
         asm.store(Opnd::mem(64, scratch_reg, 0), 0x83902.into());
 
@@ -2565,7 +2566,7 @@ mod tests {
 
         crate::options::rb_zjit_prepare_options(); // Allow `get_option!` in Assembler
         let mut asm = Assembler::new();
-        asm.new_block_without_id();
+        asm.new_block_without_id("test");
         let mut cb = CodeBlock::new_dummy_sized(memory_required);
 
         let far_label = asm.new_label("far");
