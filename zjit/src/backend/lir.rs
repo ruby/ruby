@@ -375,6 +375,18 @@ impl Opnd
         }
     }
 
+    /// Extract VReg indices from this operand, including memory base VRegs.
+    /// Returns an iterator over all VRegIds referenced by this operand.
+    pub fn vreg_ids(&self) -> impl Iterator<Item = VRegId> {
+        let mut ids = [None, None];
+        match self {
+            Opnd::VReg { idx, .. } => { ids[0] = Some(*idx); }
+            Opnd::Mem(Mem { base: MemBase::VReg(idx), .. }) => { ids[0] = Some(*idx); }
+            _ => {}
+        }
+        ids.into_iter().flatten()
+    }
+
     /// Get the size in bits for this operand if there is one.
     pub fn num_bits(&self) -> Option<u8> {
         match *self {
@@ -3047,9 +3059,9 @@ impl Assembler
                     }
                 }
 
-                // For all input operands that are VRegs, add to gen set
+                // For all input operands that are VRegs (including memory base VRegs), add to gen set
                 for opnd in insn.opnd_iter() {
-                    if let Opnd::VReg { idx, .. } = opnd {
+                    for idx in opnd.vreg_ids() {
                         assert!(!kill_set.get(idx.0));
                         gen_set.insert(idx.0);
                     }
@@ -3114,11 +3126,9 @@ impl Assembler
                     }
                 }
 
-                // For each VReg input, add_range from block start to insn
-                // TODO: We  need to tread memory base vregs as uses, so 
-                // write a function that extracts any vregs from an opnd
+                // For each VReg input (including memory base VRegs), add_range from block start to insn
                 for opnd in insn.opnd_iter() {
-                    if let Opnd::VReg { idx, .. } = opnd {
+                    for idx in opnd.vreg_ids() {
                         intervals[idx.0].add_range(block.from.0, insn_id.0);
                     }
                 }
