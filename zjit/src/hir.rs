@@ -3789,17 +3789,22 @@ impl Function {
     }
 
     fn optimize_getivar(&mut self) {
-        for block in self.rpo() {
+        for mut block in self.rpo() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
                 match self.find(insn_id) {
-                    Insn::GetIvar { self_val, id, ic: _, state } => {
+                    getivar @ Insn::GetIvar { self_val, id, ic: _, state } => {
                         let frame_state = self.frame_state(state);
-                        let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.insn_idx) else {
-                            // No (monomorphic/skewed polymorphic) profile info
-                            self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_not_monomorphic));
-                            self.push_insn_id(block, insn_id); continue;
+                        // If the profiled shape is either monomorphic or skewed polymorphic, proceed to generate a specialized path
+                        let (recv_type, is_skewed) = match self.resolve_receiver_type_from_profile(self_val, frame_state.insn_idx) {
+                            ReceiverTypeResolution::Monomorphic { profiled_type } => (profiled_type, false),
+                            ReceiverTypeResolution::SkewedPolymorphic { profiled_type } => (profiled_type, true),
+                            _ => {
+                                // No (monomorphic/skewed polymorphic) profile info
+                                self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_not_monomorphic));
+                                self.push_insn_id(block, insn_id); continue;
+                            }
                         };
                         if recv_type.flags().is_immediate() {
                             // Instance variable lookups on immediate values are always nil
@@ -3814,7 +3819,23 @@ impl Function {
                         }
                         let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
                         let shape = self.load_shape(block, self_val);
-                        self.guard_shape(block, shape, recv_type.shape(), state);
+
+                        // If the profiled shape is skewed polymorphic, fallback to a C call when the shape doesn't match.
+                        // Otherwise, just side-exit to the interpreter on shape mismatch.
+                        let fallback_block = if is_skewed {
+                            let expected_shape = self.push_insn(block, Insn::Const { val: Const::CShape(recv_type.shape()) });
+                            let is_bit_equal = self.push_insn(block, Insn::IsBitEqual { left: shape, right: expected_shape });
+                            // TODO: we probably shouldn't/can't push blocks in the middle of rpo
+                            let fallback_block = self.new_block(frame_state.insn_idx as u32); // TODO: push params in the block
+                            let fallback_target = BranchEdge { target: fallback_block, args: frame_state.as_args(self_val) };
+                            self.push_insn(block, Insn::IfFalse { val: is_bit_equal, target: fallback_target });
+                            Some(fallback_block)
+                        } else {
+                            self.guard_shape(block, shape, recv_type.shape(), state);
+                            None
+                        };
+
+                        // Compile the fast path
                         let mut ivar_index: u16 = 0;
                         let replacement = if ! unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
                             // If there is no IVAR index, then the ivar was undefined when we
@@ -3842,7 +3863,23 @@ impl Function {
                             let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
                             self.push_insn(block, Insn::LoadField { recv: as_heap, id, offset, return_type: types::BasicObject })
                         };
-                        self.make_equal_to(insn_id, replacement);
+
+                        // If the profiled shape is skewed polymorphic, compile a fallback block and merge two blocks into one.
+                        if let Some(fallback_block) = fallback_block {
+                            // TODO: we probably shouldn't/can't push blocks in the middle of rpo
+                            let merge_block = self.new_block(frame_state.insn_idx as u32); // TODO: push params in the block
+                            //self.make_equal_to(insn_id, replacement);
+                            self.push_insn(block, Insn::Jump(BranchEdge { target: merge_block, args: frame_state.as_args(self_val) })); // TODO: use replacement in the frame state
+
+                            // Compile the fallback block
+                            self.push_insn(fallback_block, getivar);
+                            self.push_insn(fallback_block, Insn::Jump(BranchEdge { target: merge_block, args: frame_state.as_args(self_val) })); // TODO: update frame_state to use params in the fallback_block
+
+                            // TODO: make_equal_to for param pushed to merge_block
+                            block = merge_block; // TODO: this needs to be done in hir_to_iseq using queue.push_back
+                        } else {
+                            self.make_equal_to(insn_id, replacement);
+                        }
                     }
                     Insn::DefinedIvar { self_val, id, pushval, state } => {
                         let frame_state = self.frame_state(state);
