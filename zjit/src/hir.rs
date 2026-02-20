@@ -3717,7 +3717,7 @@ impl Function {
     }
 
     fn inline(&mut self) {
-        for block in self.rpo() {
+        for mut block in self.rpo() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
@@ -3732,6 +3732,22 @@ impl Function {
                         if ci_flags & VM_CALL_OPT_SEND != 0 {
                             self.push_insn_id(block, insn_id); continue;
                         }
+
+                        let frame_state = self.frame_state(state);
+                        let caller_next_block = self.new_block(frame_state.insn_idx as u32);
+                        let return_value = self.push_insn(caller_next_block, Insn::Param);
+                        self.make_equal_to(insn_id, return_value);
+
+                        let callee_block = BlockId(self.num_blocks() + 1);
+                        unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
+                        add_iseq_to_hir(self, iseq, false, Some(caller_next_block)).expect("add_iseq_to_hir failed on inlining");
+
+                        let mut callee_args = vec![recv];
+                        callee_args.extend(args);
+                        self.push_insn(block, Insn::Jump(BranchEdge { target: callee_block, args: callee_args }));
+
+                        block = caller_next_block;
+                        /*
                         let Some(value) = iseq_get_return_value(iseq, None, ci_flags) else {
                             self.push_insn_id(block, insn_id); continue;
                         };
@@ -3762,6 +3778,7 @@ impl Function {
                                 self.make_equal_to(insn_id, replacement);
                             }
                         }
+                        */
                     }
                     _ => { self.push_insn_id(block, insn_id); }
                 }
@@ -6269,9 +6286,16 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     if !ZJITState::can_compile_iseq(iseq) {
         return Err(ParseError::NotAllowed);
     }
+    let mut fun = Function::new(iseq);
+    match add_iseq_to_hir(&mut fun, iseq, true, None) {
+        Ok(()) => Ok(fun),
+        Err(err) => Err(err),
+    }
+}
+
+fn add_iseq_to_hir(mut fun: &mut Function, iseq: *const rb_iseq_t, make_entry_blocks: bool, return_block: Option<BlockId>) -> Result<(), ParseError> {
     let payload = get_or_create_iseq_payload(iseq);
     let mut profiles = ProfileOracle::new(payload);
-    let mut fun = Function::new(iseq);
 
     // Compute a map of PC->Block by finding jump targets
     let jit_entry_insns = jit_entry_insns(iseq);
@@ -6283,7 +6307,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     // Make blocks for optionals first, and put them right next to their JIT entrypoint
     for insn_idx in jit_entry_insns.iter().copied() {
         let jit_entry_block = fun.new_block(insn_idx);
-        fun.jit_entry_blocks.push(jit_entry_block);
+        if make_entry_blocks {
+            fun.jit_entry_blocks.push(jit_entry_block);
+        }
         insn_idx_to_block.entry(insn_idx).or_insert_with(|| fun.new_block(insn_idx));
     }
     // Make blocks for the rest of the jump targets
@@ -6293,16 +6319,18 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     // Done, drop `mut`.
     let insn_idx_to_block = insn_idx_to_block;
 
-    // Compile an entry_block for the interpreter
-    compile_entry_block(&mut fun, jit_entry_insns.as_slice(), &insn_idx_to_block);
+    if make_entry_blocks {
+        // Compile an entry_block for the interpreter
+        compile_entry_block(&mut fun, jit_entry_insns.as_slice(), &insn_idx_to_block);
 
-    // Compile all JIT-to-JIT entry blocks
-    for (jit_entry_idx, insn_idx) in jit_entry_insns.iter().enumerate() {
-        let target_block = insn_idx_to_block.get(insn_idx)
-            .copied()
-            .expect("we make a block for each jump target and \
-                     each entry in the ISEQ opt_table is a jump target");
-        compile_jit_entry_block(&mut fun, jit_entry_idx, target_block);
+        // Compile all JIT-to-JIT entry blocks
+        for (jit_entry_idx, insn_idx) in jit_entry_insns.iter().enumerate() {
+            let target_block = insn_idx_to_block.get(insn_idx)
+                .copied()
+                .expect("we make a block for each jump target and \
+                         each entry in the ISEQ opt_table is a jump target");
+            compile_jit_entry_block(&mut fun, jit_entry_idx, target_block);
+        }
     }
 
     // Check if the EP is escaped for the ISEQ from the beginning. We give up
@@ -7088,7 +7116,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_leave => {
                     fun.push_insn(block, Insn::CheckInterrupts { state: exit_id });
-                    fun.push_insn(block, Insn::Return { val: state.stack_pop()? });
+                    if let Some(return_block) = return_block {
+                        fun.push_insn(block, Insn::Jump(BranchEdge { target: return_block, args: vec![state.stack_pop()?] }));
+                    } else {
+                        fun.push_insn(block, Insn::Return { val: state.stack_pop()? });
+                    }
                     break;  // Don't enqueue the next block as a successor
                 }
                 YARVINSN_throw => {
@@ -7551,11 +7583,13 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     }
 
     fun.profiles = Some(profiles);
-    if let Err(err) = fun.validate() {
-        debug!("ZJIT: {err:?}: Initial HIR:\n{}", FunctionPrinter::without_snapshot(&fun));
-        return Err(ParseError::Validation(err));
+    if make_entry_blocks {
+        if let Err(err) = fun.validate() {
+            debug!("ZJIT: {err:?}: Initial HIR:\n{}", FunctionPrinter::without_snapshot(&fun));
+            return Err(ParseError::Validation(err));
+        }
     }
-    Ok(fun)
+    Ok(())
 }
 
 /// Compile an entry_block for the interpreter
