@@ -800,7 +800,10 @@ RUBYSPEC_CAPIEXT_SRCDIR = $(srcdir)/$(RUBYSPEC_CAPIEXT)
 RUBYSPEC_CAPIEXT_DEPS = $(RUBYSPEC_CAPIEXT_SRCDIR)/rubyspec.h $(RUBY_H_INCLUDES) {$(VPATH)}internal/abi.h $(LIBRUBY)
 RUBYSPEC_CAPIEXT_BUILD = $(enable_shared:yes=rubyspec-capiext)
 
-rubyspec-capiext: build-ext $(DOT_WAIT)
+yes-rubyspec-capiext: build-ext
+	$(ACTIONS_GROUP)
+rubyspec-capiext: build-ext $(DOT_WAIT) yes-rubyspec-capiext $(DOT_WAIT)
+	$(ACTIONS_ENDGROUP)
 # make-dependent rules should be included after this and built after build-ext.
 
 clean-spec: PHONY
