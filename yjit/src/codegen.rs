@@ -2425,20 +2425,81 @@ fn gen_get_ep(asm: &mut Assembler, level: u32) -> Opnd {
     ep_opnd
 }
 
-// Gets the EP of the ISeq of the containing method, or "local level".
-// Equivalent of GET_LEP() macro.
+/// Get the EP of the ISeq of the containing method, or "local level EP".
+/// Equivalent to `GET_LEP()` with a constraint:
+/// `ISEQ_TYPE_METHOD == iseq_under_compilation->body->local_iseq->body->type`.
+/// No bad memory access happens when this condition is not met, just that the
+/// EP returned may not be `VM_ENV_FLAG_LOCAL`. Practically, ISeqs that don't
+/// meet this condition, such as `ISEQ_TYPE_TOP`, also don't need to use this operation.
 fn gen_get_lep(jit: &JITState, asm: &mut Assembler) -> Opnd {
-    // Equivalent of get_lvar_level() in compile.c
-    fn get_lvar_level(iseq: IseqPtr) -> u32 {
-        if iseq == unsafe { rb_get_iseq_body_local_iseq(iseq) } {
-            0
-        } else {
-            1 + get_lvar_level(unsafe { rb_get_iseq_body_parent_iseq(iseq) })
-        }
+    // GET_LEP() chases the parent environment pointer to reach the local environment. Inside
+    // a descendant of ISEQ_TYPE_METHOD, it chases the same number of times as chasing
+    // the parent iseq pointer to reach the local iseq. See get_lvar_level() in compile.c
+    let mut iseq = jit.get_iseq();
+    let local_iseq = unsafe { rb_get_iseq_body_local_iseq(iseq) };
+    let mut level = 0;
+    while iseq != local_iseq {
+        iseq = unsafe { rb_get_iseq_body_parent_iseq(iseq) };
+        level += 1;
     }
-
-    let level = get_lvar_level(jit.get_iseq());
+    asm_comment!(asm, "get_lep(level: {level})");
     gen_get_ep(asm, level)
+}
+
+/// Load the value in the ME_CREF slot of the EP that contains the running CME.
+/// Returns the slot value directly, which is only useful for guarding that the
+/// CME has not changed. Unlike rb_vm_frame_method_entry(), we never dereference
+/// `ep[VM_ENV_DATA_INDEX_ME_CREF]` but rather rely on `ep[VM_ENV_DATA_INDEX_FLAGS]`
+/// to terminate the search, since we load the flags anyways for EP hopping.
+/// When `ep[VM_ENV_DATA_INDEX_ME_CREF]` is not a CME, it can't match the expected
+/// CME, and the guard fails.
+fn gen_get_running_cme_or_sentinal(jit: &JITState, asm: &mut Assembler) -> Opnd {
+    // When not in a block, the running CME is at `cfp->ep`.
+    if jit.iseq == unsafe { rb_get_iseq_body_local_iseq(jit.iseq) } {
+        asm_comment!(asm, "cfp->ep[VM_ENV_DATA_INDEX_ME_CREF]");
+        let lep_opnd = gen_get_ep(asm, 0);
+        Opnd::mem(
+            VALUE_BITS,
+            lep_opnd,
+            SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_ME_CREF,
+        )
+    } else {
+        // Loop through EPs to find the one containing the CME.
+        // Stop when we find an EP with VM_FRAME_FLAG_BMETHOD (bmethod frame with CME)
+        // or VM_ENV_FLAG_LOCAL (local frame which is METHOD/CFUNC/IFUNC with CME).
+        //
+        // We cannot unroll to a static hop count like gen_get_lep() because bmethods
+        // defined inside methods may have a CME that lives at a EP cloers to the
+        // starting EP than at the local and final EP level. Each level of nesting can
+        // dynamically run with and without VM_FRAME_FLAG_BMETHOD set.
+        asm_comment!(asm, "search for running cme");
+        let loop_label = asm.new_label("cme_loop");
+        let done_label = asm.new_label("cme_done");
+
+        let ep_opnd = Opnd::mem(VALUE_BITS, CFP, RUBY_OFFSET_CFP_EP);
+        let ep_opnd = asm.load(ep_opnd);
+
+        asm.write_label(loop_label);
+        // Load flags from ep[VM_ENV_DATA_INDEX_FLAGS]
+        let flags = asm.load(Opnd::mem(VALUE_BITS, ep_opnd, SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32)));
+        // Check if VM_FRAME_FLAG_BMETHOD or VM_ENV_FLAG_LOCAL is set.
+        // If either is set, this EP contains the CME.
+        let check_flags = (VM_FRAME_FLAG_BMETHOD | VM_ENV_FLAG_LOCAL).as_usize();
+        asm.test(flags, check_flags.into());
+        asm.jnz(done_label);
+        // Get the previous EP from the current EP
+        // See GET_PREV_EP(ep) macro
+        // VALUE *prev_ep = ((VALUE *)((ep)[VM_ENV_DATA_INDEX_SPECVAL] & ~0x03))
+        let offs = SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL;
+        let next_ep_opnd = asm.load(Opnd::mem(VALUE_BITS, ep_opnd, offs));
+        let next_ep_opnd = asm.and(next_ep_opnd, (!0x03_i64).into());
+        asm.load_into(ep_opnd, next_ep_opnd);
+        asm.jmp(loop_label);
+        asm.write_label(done_label);
+
+        // Load and return the CME from ep[VM_ENV_DATA_INDEX_ME_CREF]
+        asm.load(Opnd::mem(VALUE_BITS, ep_opnd, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_ME_CREF))
+    }
 }
 
 fn gen_getlocal_generic(
@@ -9832,6 +9893,15 @@ fn gen_invokesuper_specialized(
         return None;
     }
 
+    let ci = unsafe { get_call_data_ci(cd) };
+    let ci_flags = unsafe { vm_ci_flag(ci) };
+
+    // Bail on ZSUPER inside a block method. They always raise.
+    if ci_flags & VM_CALL_ZSUPER != 0 && VM_METHOD_TYPE_BMETHOD == unsafe { get_cme_def_type(me) } {
+        gen_counter_incr(jit, asm, Counter::invokesuper_bmethod_zsuper);
+        return None;
+    }
+
     // FIXME: We should track and invalidate this block when this cme is invalidated
     let current_defined_class = unsafe { (*me).defined_class };
     let mid = unsafe { get_def_original_id((*me).def) };
@@ -9847,14 +9917,8 @@ fn gen_invokesuper_specialized(
     let comptime_superclass =
         unsafe { rb_class_get_superclass(RCLASS_ORIGIN(current_defined_class)) };
 
-    let ci = unsafe { get_call_data_ci(cd) };
-    let argc: i32 = unsafe { vm_ci_argc(ci) }.try_into().unwrap();
-
-    let ci_flags = unsafe { vm_ci_flag(ci) };
-
     // Don't JIT calls that aren't simple
     // Note, not using VM_CALL_ARGS_SIMPLE because sometimes we pass a block.
-
     if ci_flags & VM_CALL_KWARG != 0 {
         gen_counter_incr(jit, asm, Counter::invokesuper_kwarg);
         return None;
@@ -9873,6 +9937,7 @@ fn gen_invokesuper_specialized(
     // cheaper calculations first, but since we specialize on the method entry
     // and so only have to do this once at compile time this is fine to always
     // check and side exit.
+    let argc: i32 = unsafe { vm_ci_argc(ci) }.try_into().unwrap();
     let comptime_recv = jit.peek_at_stack(&asm.ctx, argc as isize);
     if unsafe { rb_obj_is_kind_of(comptime_recv, current_defined_class) } == VALUE(0) {
         gen_counter_incr(jit, asm, Counter::invokesuper_defined_class_mismatch);
@@ -9900,16 +9965,8 @@ fn gen_invokesuper_specialized(
         return None;
     }
 
-    asm_comment!(asm, "guard known me");
-    let lep_opnd = gen_get_lep(jit, asm);
-    let ep_me_opnd = Opnd::mem(
-        64,
-        lep_opnd,
-        SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_ME_CREF,
-    );
-
-    let me_as_value = VALUE(me as usize);
-    asm.cmp(ep_me_opnd, me_as_value.into());
+    let cme_opnd = gen_get_running_cme_or_sentinal(jit, asm);
+    asm.cmp(cme_opnd, VALUE::from(me).into());
     jit_chain_guard(
         JCC_JNE,
         jit,

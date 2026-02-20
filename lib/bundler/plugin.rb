@@ -253,9 +253,12 @@ module Bundler
     # @param [Array<String>] names of inferred source plugins that can be ignored
     def save_plugins(plugins, specs, optional_plugins = [])
       plugins.each do |name|
-        next if index.installed?(name)
-
         spec = specs[name]
+
+        # It's possible that the `plugin` found in the Gemfile don't appear in the specs. For instance when
+        # calling `BUNDLE_WITHOUT=default bundle install`, the plugins will not get installed.
+        next if spec.nil?
+        next if index.installed?(name)
 
         save_plugin(name, spec, optional_plugins.include?(name))
       end

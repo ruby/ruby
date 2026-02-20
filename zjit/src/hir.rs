@@ -655,6 +655,9 @@ pub enum SendFallbackReason {
     SingletonClassSeen,
     /// The super call is passed a block that the optimizer does not support.
     SuperCallWithBlock,
+    /// When the `super` is in a block, finding the running CME for guarding requires a loop. Not
+    /// supported for now.
+    SuperFromBlock,
     /// The profiled super class cannot be found.
     SuperClassNotFound,
     /// The `super` call uses a complex argument pattern that the optimizer does not support.
@@ -707,6 +710,7 @@ impl Display for SendFallbackReason {
             ComplexArgPass => write!(f, "Complex argument passing"),
             UnexpectedKeywordArgs => write!(f, "Unexpected Keyword Args"),
             SingletonClassSeen => write!(f, "Singleton class previously created for receiver class"),
+            SuperFromBlock => write!(f, "super: call from within a block"),
             SuperCallWithBlock => write!(f, "super: call made with a block"),
             SuperClassNotFound => write!(f, "super: profiled class cannot be found"),
             SuperComplexArgsPass => write!(f, "super: complex argument passing to `super` call"),
@@ -728,6 +732,13 @@ pub enum Insn {
     Const { val: Const },
     /// SSA block parameter. Also used for function parameters in the function's entry block.
     Param,
+    /// Load a function argument from the calling convention.
+    /// Used in JIT entry blocks. idx is the calling convention index, id is for display.
+    LoadArg { idx: u32, id: ID, val_type: Type },
+
+    /// Synthetic terminator for the entries superblock. Targets all entry blocks
+    /// so that CFG analyses see a single root. Not lowered to machine code.
+    Entries { targets: Vec<BlockId> },
 
     StringCopy { val: InsnId, chilled: bool, state: InsnId },
     StringIntern { val: InsnId, state: InsnId },
@@ -1052,6 +1063,7 @@ impl Insn {
     pub fn has_output(&self) -> bool {
         match self {
             Insn::Jump(_)
+            | Insn::Entries { .. }
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::EntryPoint { .. } | Insn::Return { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. }
@@ -1066,7 +1078,15 @@ impl Insn {
     /// Return true if the instruction ends a basic block and false otherwise.
     pub fn is_terminator(&self) -> bool {
         match self {
-            Insn::Jump(_) | Insn::Return { .. } | Insn::SideExit { .. } | Insn::Throw { .. } => true,
+            Insn::Jump(_) | Insn::Entries { .. } | Insn::Return { .. } | Insn::SideExit { .. } | Insn::Throw { .. } => true,
+            _ => false,
+        }
+    }
+
+    /// Return true if the instruction is a jump (has successor blocks in the CFG).
+    pub fn is_jump(&self) -> bool {
+        match self {
+            Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Jump(_) | Insn::Entries { .. } => true,
             _ => false,
         }
     }
@@ -1082,6 +1102,7 @@ impl Insn {
         match &self {
             Insn::Const { .. } => effects::Empty,
             Insn::Param { .. } => effects::Empty,
+            Insn::LoadArg { .. } => effects::Empty,
             Insn::StringCopy { .. } => allocates,
             Insn::StringIntern { .. } => effects::Any,
             Insn::StringConcat { .. } => effects::Any,
@@ -1223,6 +1244,7 @@ impl Insn {
             Insn::InvokeProc { .. } => effects::Any,
             Insn::RefineType { .. } => effects::Empty,
             Insn::HasType { .. } => effects::Empty,
+            Insn::Entries { .. } => effects::Any,
         }
     }
 
@@ -1300,6 +1322,16 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
         match &self.inner {
             Insn::Const { val } => { write!(f, "Const {}", val.print(self.ptr_map)) }
             Insn::Param => { write!(f, "Param") }
+            Insn::LoadArg { idx, id, .. } => { write!(f, "LoadArg :{}@{idx}", id.contents_lossy()) }
+            Insn::Entries { targets } => {
+                write!(f, "Entries")?;
+                let mut prefix = " ";
+                for target in targets {
+                    write!(f, "{prefix}{target}")?;
+                    prefix = ", ";
+                }
+                Ok(())
+            }
             Insn::NewArray { elements, .. } => {
                 write!(f, "NewArray")?;
                 let mut prefix = " ";
@@ -1918,6 +1950,8 @@ pub struct Function {
     union_find: std::cell::RefCell<UnionFind<InsnId>>,
     insn_types: Vec<Type>,
     blocks: Vec<Block>,
+    /// Superblock that targets all entry blocks. The sole root for RPO/dominator computation.
+    pub entries_block: BlockId,
     /// Entry block for the interpreter
     entry_block: BlockId,
     /// Entry block for JIT-to-JIT calls. Length will be `opt_num+1`, for callers
@@ -2017,8 +2051,9 @@ impl Function {
             insns: vec![],
             insn_types: vec![],
             union_find: UnionFind::new().into(),
-            blocks: vec![Block::default()],
-            entry_block: BlockId(0),
+            blocks: vec![Block::default(), Block::default()],
+            entries_block: BlockId(0),
+            entry_block: BlockId(1),
             jit_entry_blocks: vec![],
             param_types: vec![],
             profiles: None,
@@ -2178,6 +2213,8 @@ impl Function {
         match &self.insns[insn_id.0] {
             result@(Const {..}
                     | Param
+                    | LoadArg {..}
+                    | Entries {..}
                     | GetConstantPath {..}
                     | PatchPoint {..}
                     | PutSpecialObject {..}
@@ -2416,7 +2453,8 @@ impl Function {
         assert!(self.insns[insn.0].has_output());
         match &self.insns[insn.0] {
             Insn::Param => unimplemented!("params should not be present in block.insns"),
-            Insn::SetGlobal { .. } | Insn::Jump(_) | Insn::EntryPoint { .. }
+            Insn::LoadArg { val_type, .. } => *val_type,
+            Insn::SetGlobal { .. } | Insn::Jump(_) | Insn::Entries { .. } | Insn::EntryPoint { .. }
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. } | Insn::Throw { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. }
@@ -2601,10 +2639,8 @@ impl Function {
             };
         }
 
-        for entry_block in self.entry_blocks() {
-            reachable.insert(entry_block);
-            worklist_add!(entry_block);
-        }
+        reachable.insert(self.entries_block);
+        worklist_add!(self.entries_block);
 
         // Helper to propagate types along a branch edge and enqueue the target if anything changed
         macro_rules! enqueue {
@@ -2647,6 +2683,14 @@ impl Function {
                     }
                     Insn::Jump(target) => {
                         enqueue!(self, target);
+                        continue;
+                    }
+                    Insn::Entries { targets } => {
+                        for target in &targets {
+                            if reachable.insert(*target) {
+                                worklist_add!(*target);
+                            }
+                        }
                         continue;
                     }
                     insn if insn.has_output() => self.infer_type(*insn_id),
@@ -3439,6 +3483,15 @@ impl Function {
                             continue;
                         }
 
+                        let frame_state = self.frame_state(state);
+
+                        // Don't handle super in a block since that needs a loop to find the running CME.
+                        if frame_state.iseq != unsafe { rb_get_iseq_body_local_iseq(frame_state.iseq) } {
+                            self.push_insn_id(block, insn_id);
+                            self.set_dynamic_send_reason(insn_id, SuperFromBlock);
+                            continue;
+                        }
+
                         let ci = unsafe { get_call_data_ci(cd) };
                         let flags = unsafe { rb_vm_ci_flag(ci) };
                         assert!(flags & VM_CALL_FCALL != 0);
@@ -3449,8 +3502,6 @@ impl Function {
                             self.set_dynamic_send_reason(insn_id, SuperComplexArgsPass);
                             continue;
                         }
-
-                        let frame_state = self.frame_state(state);
 
                         // Get the profiled CME from the current method.
                         let Some(profiles) = self.profiles.as_ref() else {
@@ -4489,6 +4540,16 @@ impl Function {
                             _ => None,
                         })
                     }
+                    Insn::FixnumMod { left, right, .. } => {
+                        self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
+                            (Some(l), Some(r)) if r != 0 => {
+                                let l_obj = VALUE::fixnum_from_isize(l as isize);
+                                let r_obj = VALUE::fixnum_from_isize(r as isize);
+                                Some(unsafe { rb_jit_fix_mod_fix(l_obj, r_obj) }.as_fixnum())
+                            },
+                            _ => None,
+                        })
+                    }
                     Insn::FixnumEq { left, right, .. } => {
                         self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => Some(l == r),
@@ -4576,6 +4637,8 @@ impl Function {
         match insn {
             &Insn::Const { .. }
             | &Insn::Param
+            | &Insn::LoadArg { .. }
+            | &Insn::Entries { .. }
             | &Insn::EntryPoint { .. }
             | &Insn::LoadPC
             | &Insn::LoadEC
@@ -4901,8 +4964,16 @@ impl Function {
         let mut num_in_edges = vec![0; self.blocks.len()];
         for block in self.rpo() {
             for &insn in &self.blocks[block.0].insns {
-                if let Insn::IfTrue { target, .. } | Insn::IfFalse { target, .. } | Insn::Jump(target) = self.find(insn) {
-                    num_in_edges[target.target.0] += 1;
+                match self.find(insn) {
+                    Insn::IfTrue { target, .. } | Insn::IfFalse { target, .. } | Insn::Jump(target) => {
+                        num_in_edges[target.target.0] += 1;
+                    }
+                    Insn::Entries { ref targets } => {
+                        for target in targets {
+                            num_in_edges[target.0] += 1;
+                        }
+                    }
+                    _ => {}
                 }
             }
         }
@@ -4937,14 +5008,21 @@ impl Function {
         self.entry_block == block_id || self.jit_entry_blocks.contains(&block_id)
     }
 
+    /// Populate the entries superblock with an Entries instruction targeting all entry blocks.
+    /// Must be called after all entry blocks have been created.
+    fn seal_entries(&mut self) {
+        let targets = self.entry_blocks();
+        self.push_insn(self.entries_block, Insn::Entries { targets });
+    }
+
     /// Return a traversal of the `Function`'s `BlockId`s in reverse post-order.
     pub fn rpo(&self) -> Vec<BlockId> {
-        let mut result = self.po_from(self.entry_blocks());
+        let mut result = self.po_from(self.entries_block);
         result.reverse();
         result
     }
 
-    fn po_from(&self, starts: Vec<BlockId>) -> Vec<BlockId> {
+    fn po_from(&self, start: BlockId) -> Vec<BlockId> {
         #[derive(PartialEq)]
         enum Action {
             VisitEdges,
@@ -4952,7 +5030,7 @@ impl Function {
         }
         let mut result = vec![];
         let mut seen = BlockSet::with_capacity(self.blocks.len());
-        let mut stack: Vec<_> = starts.iter().map(|&start| (start, Action::VisitEdges)).collect();
+        let mut stack = vec![(start, Action::VisitEdges)];
         while let Some((block, action)) = stack.pop() {
             if action == Action::VisitSelf {
                 result.push(block);
@@ -4961,9 +5039,20 @@ impl Function {
             if !seen.insert(block) { continue; }
             stack.push((block, Action::VisitSelf));
             for insn_id in &self.blocks[block.0].insns {
-                let insn = self.find(*insn_id);
-                if let Insn::IfTrue { target, .. } | Insn::IfFalse { target, .. } | Insn::Jump(target) = insn {
-                    stack.push((target.target, Action::VisitEdges));
+                // Instructions without output, including branch instructions, can't be targets of
+                // make_equal_to, so we don't need find() here.
+                match &self.insns[insn_id.0] {
+                    Insn::IfTrue { target, .. } | Insn::IfFalse { target, .. } | Insn::Jump(target) => {
+                        stack.push((target.target, Action::VisitEdges));
+                    }
+                    Insn::Entries { targets } => {
+                        for target in targets {
+                            stack.push((*target, Action::VisitEdges));
+                        }
+                    }
+                    _ => {
+                        debug_assert!(!self.find(*insn_id).is_jump(), "Instruction {:?} should not be in union-find; it has no output", insn_id);
+                    }
                 }
             }
         }
@@ -5115,9 +5204,28 @@ impl Function {
         let mut passes: Vec<Json> = Vec::new();
         let should_dump = get_option!(dump_hir_iongraph);
 
+        macro_rules! ident_equal {
+            ($a:ident, $b:ident) => { stringify!($a) == stringify!($b) };
+        }
+
         macro_rules! run_pass {
             ($name:ident) => {
-                self.$name();
+                // Bucket all strength reduction together
+                let counter = if ident_equal!($name, type_specialize)
+                              || ident_equal!($name, inline)
+                              || ident_equal!($name, optimize_getivar)
+                              || ident_equal!($name, optimize_c_calls) {
+                    Counter::compile_hir_strength_reduce_time_ns
+                } else if ident_equal!($name, fold_constants) {
+                    Counter::compile_hir_fold_constants_time_ns
+                } else if ident_equal!($name, clean_cfg) {
+                    Counter::compile_hir_clean_cfg_time_ns
+                } else if ident_equal!($name, eliminate_dead_code) {
+                    Counter::compile_hir_eliminate_dead_code_time_ns
+                } else {
+                    unimplemented!("Counter for pass {}", stringify!($name));
+                };
+                crate::stats::with_time_stat(counter, || self.$name());
                 #[cfg(debug_assertions)] self.assert_validates();
                 if should_dump {
                     passes.push(
@@ -5236,11 +5344,10 @@ impl Function {
         // missing location.
         let mut assigned_in = vec![None; self.num_blocks()];
         let rpo = self.rpo();
-        // Begin with every block having every variable defined, except for the entry blocks, which
-        // start with nothing defined.
-        let entry_blocks = self.entry_blocks();
+        // Begin with every block having every variable defined, except for entries_block, which
+        // starts with nothing defined.
         for &block in &rpo {
-            if entry_blocks.contains(&block) {
+            if block == self.entries_block {
                 assigned_in[block.0] = Some(InsnSet::with_capacity(self.insns.len()));
             } else {
                 let mut all_ones = InsnSet::with_capacity(self.insns.len());
@@ -5249,7 +5356,7 @@ impl Function {
             }
         }
         let mut worklist = VecDeque::with_capacity(self.num_blocks());
-        worklist.push_back(self.entry_block);
+        worklist.push_back(self.entries_block);
         while let Some(block) = worklist.pop_front() {
             let mut assigned = assigned_in[block.0].clone().unwrap();
             for &param in &self.blocks[block.0].params {
@@ -5265,6 +5372,17 @@ impl Function {
                         // jump target's block_in was modified, we need to queue the block for processing.
                         if block_in.intersect_with(&assigned) {
                             worklist.push_back(target.target);
+                        }
+                    }
+                    Insn::Entries { ref targets } => {
+                        for &target in targets {
+                            let Some(block_in) = assigned_in[target.0].as_mut() else {
+                                return Err(ValidationError::JumpTargetNotInRPO(target));
+                            };
+                            // jump target's block_in was modified, we need to queue the block for processing.
+                            if block_in.intersect_with(&assigned) {
+                                worklist.push_back(target);
+                            }
                         }
                     }
                     insn if insn.has_output() => {
@@ -5355,6 +5473,7 @@ impl Function {
             // Instructions with no InsnId operands (except state) or nothing to assert
             Insn::Const { .. }
             | Insn::Param
+            | Insn::LoadArg { .. }
             | Insn::PutSpecialObject { .. }
             | Insn::LoadField { .. }
             | Insn::GetConstantPath { .. }
@@ -5367,6 +5486,7 @@ impl Function {
             | Insn::LoadSelf
             | Insn::Snapshot { .. }
             | Insn::Jump { .. }
+            | Insn::Entries { .. }
             | Insn::EntryPoint { .. }
             | Insn::PatchPoint { .. }
             | Insn::SideExit { .. }
@@ -5662,6 +5782,11 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
         };
         writeln!(f, "fn {iseq_name}:")?;
         for block_id in fun.rpo() {
+            if !self.display_snapshot_and_tp_patchpoints && block_id == fun.entries_block {
+                // Unless we're doing --zjit-dump-hir=all, skip the entries superblock — it's an
+                // internal CFG artifact
+                continue;
+            }
             write!(f, "{block_id}(")?;
             if !fun.blocks[block_id.0].params.is_empty() {
                 let mut sep = "";
@@ -7412,6 +7537,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
         }
     }
 
+    // Populate the entries superblock with an Entries instruction targeting all entry blocks
+    fun.seal_entries();
+
     fun.set_param_types();
     fun.infer_types();
 
@@ -7524,7 +7652,9 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
         None
     };
 
-    let self_param = fun.push_insn(jit_entry_block, Insn::Param);
+    let mut arg_idx: u32 = 0;
+    let self_param = fun.push_insn(jit_entry_block, Insn::LoadArg { idx: arg_idx, id: ID!(self_), val_type: types::BasicObject });
+    arg_idx += 1;
     let mut entry_state = FrameState::new(iseq);
     for local_idx in 0..num_locals(iseq) {
         if (lead_num + passed_opt_num..lead_num + opt_num).contains(&local_idx) {
@@ -7538,7 +7668,9 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
             let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
             entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::GetLocal { level: 0, ep_offset, use_sp: false, rest_param: false }));
         } else if local_idx < param_size {
-            entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::Param));
+            let id = unsafe { rb_zjit_local_id(iseq, local_idx.try_into().unwrap()) };
+            entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::LoadArg { idx: arg_idx, id, val_type: types::BasicObject }));
+            arg_idx += 1;
         } else {
             entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::Const { val: Const::Value(Qnil) }));
         }
@@ -7546,100 +7678,119 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
     (self_param, entry_state)
 }
 
-pub struct Dominators<'a> {
-    f: &'a Function,
-    dominators: Vec<Vec<BlockId>>,
+pub struct Dominators {
+    /// Immediate dominator for each block, indexed by BlockId.
+    /// idom(root) = root (self-loop is sentinel), idom[unreachable] == IDOM_NONE.
+    idoms: Vec<BlockId>,
 }
 
-impl<'a> Dominators<'a> {
-    pub fn new(f: &'a Function) -> Self {
+/// Sentinel value for "no idom computed yet".
+const IDOM_NONE: BlockId = BlockId(usize::MAX);
+
+impl Dominators {
+    pub fn new(f: &Function) -> Self {
         let mut cfi = ControlFlowInfo::new(f);
         Self::with_cfi(f, &mut cfi)
     }
 
-    pub fn with_cfi(f: &'a Function, cfi: &mut ControlFlowInfo) -> Self {
-        let block_ids = f.rpo();
-        let mut dominators = vec![vec![]; f.blocks.len()];
+    /// Compute immediate dominators using the "engineered algorithm" from
+    /// Cooper, Harvey & Kennedy, "A Simple, Fast Dominance Algorithm" (2001),
+    /// Figure 3: <https://www.cs.tufts.edu/~nr/cs257/archive/keith-cooper/dom14.pdf>
+    pub fn with_cfi(f: &Function, cfi: &mut ControlFlowInfo) -> Self {
+        let rpo = f.rpo();
+        let num_blocks = f.blocks.len();
 
-        // Compute dominators for each node using fixed point iteration.
-        // Approach can be found in Figure 1 of:
-        // https://www.cs.tufts.edu/~nr/cs257/archive/keith-cooper/dom14.pdf
-        //
-        // Initially we set:
-        //
-        // dom(entry) = {entry} for each entry block
-        // dom(b != entry) = {all nodes}
-        //
-        // Iteratively, apply:
-        //
-        // dom(b) = {b} union intersect(dom(p) for p in predecessors(b))
-        //
-        // When we've run the algorithm and the dominator set no longer changes
-        // between iterations, then we have found the dominator sets.
-
-        // Set up entry blocks.
-        // Entry blocks are only dominated by themselves.
-        for entry_block in &f.entry_blocks() {
-            dominators[entry_block.0] = vec![*entry_block];
+        // Map BlockId → RPO index for O(1) lookup in intersect.
+        let mut rpo_order = vec![usize::MAX; num_blocks];
+        for (idx, &block) in rpo.iter().enumerate() {
+            rpo_order[block.0] = idx;
         }
 
-        // Setup the initial dominator sets.
-        for block_id in &block_ids {
-            if !f.entry_blocks().contains(block_id) {
-                // Non entry blocks are initially dominated by all other blocks.
-                dominators[block_id.0] = block_ids.clone();
-            }
-        }
+        // Initialize idom: root's idom is itself, everything else is undefined.
+        let mut idoms = vec![IDOM_NONE; num_blocks];
+        let root = f.entries_block;
+        idoms[root.0] = root;
 
         let mut changed = true;
         while changed {
             changed = false;
+            for &block in &rpo {
+                if block == root { continue; }
 
-            for block_id in &block_ids {
-                if *block_id == f.entry_block {
-                    continue;
+                // Find the first predecessor that already has an idom computed.
+                let preds: Vec<BlockId> = cfi.predecessors(block).collect();
+                let mut new_idom = IDOM_NONE;
+                for &p in &preds {
+                    if idoms[p.0] != IDOM_NONE {
+                        new_idom = p;
+                        break;
+                    }
+                }
+                if new_idom == IDOM_NONE { continue; }
+
+                // Intersect with remaining processed predecessors.
+                for &p in &preds {
+                    if p == new_idom { continue; }
+                    if idoms[p.0] != IDOM_NONE {
+                        new_idom = Self::intersect(&idoms, &rpo_order, p, new_idom);
+                    }
                 }
 
-                // Get all predecessors for a given block.
-                let block_preds: Vec<BlockId> = cfi.predecessors(*block_id).collect();
-                if block_preds.is_empty() {
-                    continue;
-                }
-
-                let mut new_doms = dominators[block_preds[0].0].clone();
-
-                // Compute the intersection of predecessor dominator sets into `new_doms`.
-                for pred_id in &block_preds[1..] {
-                    let pred_doms = &dominators[pred_id.0];
-                    // Only keep a dominator in `new_doms` if it is also found in pred_doms
-                    new_doms.retain(|d| pred_doms.contains(d));
-                }
-
-                // Insert sorted into `new_doms`.
-                match new_doms.binary_search(block_id) {
-                    Ok(_) => {}
-                    Err(pos) => new_doms.insert(pos, *block_id)
-                }
-
-                // If we have computed a new dominator set, then we can update
-                // the dominators and mark that we need another iteration.
-                if dominators[block_id.0] != new_doms {
-                    dominators[block_id.0] = new_doms;
+                if idoms[block.0] != new_idom {
+                    idoms[block.0] = new_idom;
                     changed = true;
                 }
             }
         }
 
-        Self { f, dominators }
+        Self { idoms }
     }
 
+    /// Walk up the dominator tree from two fingers until they meet.
+    /// Uses RPO indices: a node with a *lower* RPO index is *higher* in the tree.
+    fn intersect(idoms: &[BlockId], rpo_order: &[usize], mut b1: BlockId, mut b2: BlockId) -> BlockId {
+        while b1 != b2 {
+            while rpo_order[b1.0] > rpo_order[b2.0] {
+                b1 = idoms[b1.0];
+            }
+            while rpo_order[b2.0] > rpo_order[b1.0] {
+                b2 = idoms[b2.0];
+            }
+        }
+        b1
+    }
 
+    /// Return the immediate dominator of `block`.
+    pub fn idom(&self, block: BlockId) -> BlockId {
+        self.idoms[block.0]
+    }
+
+    /// Return true if `left` is dominated by `right`.
     pub fn is_dominated_by(&self, left: BlockId, right: BlockId) -> bool {
-        self.dominators(left).any(|&b| b == right)
+        if self.idom(left) == IDOM_NONE { return false; }
+        let mut block = left;
+        loop {
+            if block == right { return true; }
+            if self.idom(block) == block { return false; }
+            block = self.idom(block);
+        }
     }
 
-    pub fn dominators(&self, block: BlockId) -> Iter<'_, BlockId> {
-        self.dominators[block.0].iter()
+    /// Compute the full dominator set for `block` by walking the idom chain to the root.
+    /// Returns dominators sorted by BlockId (ascending). Only used in tests;
+    /// production code should use `idom()` or `is_dominated_by()` instead.
+    pub fn dominators(&self, block: BlockId) -> Vec<BlockId> {
+        let mut doms = Vec::new();
+        if self.idom(block) != IDOM_NONE {
+            let mut b = block;
+            loop {
+                doms.push(b);
+                if self.idom(b) == b { break; }
+                b = self.idom(b);
+            }
+        }
+        doms.sort();
+        doms
     }
 }
 
@@ -7667,14 +7818,20 @@ impl<'a> ControlFlowInfo<'a> {
             // Ordering is important so that the expect tests that serialize the predecessors
             // and successors don't fail intermittently.
             // todo(aidenfoxivey): Use `BlockSet` in lieu of `BTreeSet<BlockId>`
-            let successors: BTreeSet<BlockId> = block
-                .insns
-                .iter()
-                .map(|&insn_id| uf.find_const(insn_id))
-                .filter_map(|insn_id| {
-                    Self::extract_jump_target(&function.insns[insn_id.0])
-                })
-                .collect();
+            let mut successors: BTreeSet<BlockId> = BTreeSet::new();
+            for &insn_id in &block.insns {
+                let insn_id = uf.find_const(insn_id);
+                match &function.insns[insn_id.0] {
+                    Insn::Entries { targets } => {
+                        successors.extend(targets);
+                    }
+                    insn => {
+                        if let Some(target) = Self::extract_jump_target(insn) {
+                            successors.insert(target);
+                        }
+                    }
+                }
+            }
 
             // Update predecessors for successor blocks.
             for &succ_id in &successors {
@@ -7725,14 +7882,14 @@ impl<'a> ControlFlowInfo<'a> {
 
 pub struct LoopInfo<'a> {
     cfi: &'a ControlFlowInfo<'a>,
-    dominators: &'a Dominators<'a>,
+    dominators: &'a Dominators,
     loop_depths: HashMap<BlockId, u32>,
     loop_headers: BlockSet,
     back_edge_sources: BlockSet,
 }
 
 impl<'a> LoopInfo<'a> {
-    pub fn new(cfi: &'a ControlFlowInfo<'a>, dominators: &'a Dominators<'a>) -> Self {
+    pub fn new(cfi: &'a ControlFlowInfo<'a>, dominators: &'a Dominators) -> Self {
         let mut loop_headers: BlockSet = BlockSet::with_capacity(cfi.function.num_blocks());
         let mut loop_depths: HashMap<BlockId, u32> = HashMap::new();
         let mut back_edge_sources: BlockSet = BlockSet::with_capacity(cfi.function.num_blocks());
@@ -7849,26 +8006,31 @@ mod rpo_tests {
     #[test]
     fn one_block() {
         let mut function = Function::new(std::ptr::null());
+        let entries = function.entries_block;
         let entry = function.entry_block;
         let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
         function.push_insn(entry, Insn::Return { val });
-        assert_eq!(function.rpo(), vec![entry]);
+        function.seal_entries();
+        assert_eq!(function.rpo(), vec![entries, entry]);
     }
 
     #[test]
     fn jump() {
         let mut function = Function::new(std::ptr::null());
+        let entries = function.entries_block;
         let entry = function.entry_block;
         let exit = function.new_block(0);
         function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
         let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
         function.push_insn(entry, Insn::Return { val });
-        assert_eq!(function.rpo(), vec![entry, exit]);
+        function.seal_entries();
+        assert_eq!(function.rpo(), vec![entries, entry, exit]);
     }
 
     #[test]
     fn diamond_iftrue() {
         let mut function = Function::new(std::ptr::null());
+        let entries = function.entries_block;
         let entry = function.entry_block;
         let side = function.new_block(0);
         let exit = function.new_block(0);
@@ -7878,12 +8040,14 @@ mod rpo_tests {
         function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
         let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
         function.push_insn(entry, Insn::Return { val });
-        assert_eq!(function.rpo(), vec![entry, side, exit]);
+        function.seal_entries();
+        assert_eq!(function.rpo(), vec![entries, entry, side, exit]);
     }
 
     #[test]
     fn diamond_iffalse() {
         let mut function = Function::new(std::ptr::null());
+        let entries = function.entries_block;
         let entry = function.entry_block;
         let side = function.new_block(0);
         let exit = function.new_block(0);
@@ -7893,15 +8057,18 @@ mod rpo_tests {
         function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
         let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
         function.push_insn(entry, Insn::Return { val });
-        assert_eq!(function.rpo(), vec![entry, side, exit]);
+        function.seal_entries();
+        assert_eq!(function.rpo(), vec![entries, entry, side, exit]);
     }
 
     #[test]
     fn a_loop() {
         let mut function = Function::new(std::ptr::null());
+        let entries = function.entries_block;
         let entry = function.entry_block;
         function.push_insn(entry, Insn::Jump(BranchEdge { target: entry, args: vec![] }));
-        assert_eq!(function.rpo(), vec![entry]);
+        function.seal_entries();
+        assert_eq!(function.rpo(), vec![entries, entry]);
     }
 }
 
@@ -7924,6 +8091,7 @@ mod validation_tests {
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
         function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        function.seal_entries();
         assert_matches_err(function.validate(), ValidationError::BlockHasNoTerminator(entry));
     }
 
@@ -7934,6 +8102,7 @@ mod validation_tests {
         let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
         let insn_id = function.push_insn(entry, Insn::Return { val });
         function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        function.seal_entries();
         assert_matches_err(function.validate(), ValidationError::TerminatorNotAtEnd(entry, insn_id, 1));
     }
 
@@ -7944,6 +8113,7 @@ mod validation_tests {
         let side = function.new_block(0);
         let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
         function.push_insn(entry, Insn::IfTrue { val, target: BranchEdge { target: side, args: vec![val, val, val] } });
+        function.seal_entries();
         assert_matches_err(function.validate(), ValidationError::MismatchedBlockArity(entry, 0, 3));
     }
 
@@ -7954,6 +8124,7 @@ mod validation_tests {
         let side = function.new_block(0);
         let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
         function.push_insn(entry, Insn::IfFalse { val, target: BranchEdge { target: side, args: vec![val, val, val] } });
+        function.seal_entries();
         assert_matches_err(function.validate(), ValidationError::MismatchedBlockArity(entry, 0, 3));
     }
 
@@ -7964,6 +8135,7 @@ mod validation_tests {
         let side = function.new_block(0);
         let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
         function.push_insn(entry, Insn::Jump ( BranchEdge { target: side, args: vec![val, val, val] } ));
+        function.seal_entries();
         assert_matches_err(function.validate(), ValidationError::MismatchedBlockArity(entry, 0, 3));
     }
 
@@ -7974,6 +8146,7 @@ mod validation_tests {
         // Create an instruction without making it belong to anything.
         let dangling = function.new_insn(Insn::Const{val: Const::CBool(true)});
         let val = function.push_insn(function.entry_block, Insn::ArrayDup { val: dangling, state: InsnId(0usize) });
+        function.seal_entries();
         assert_matches_err(function.validate_definite_assignment(), ValidationError::OperandNotDefined(entry, val, dangling));
     }
 
@@ -7984,6 +8157,7 @@ mod validation_tests {
         // Create an instruction without making it belong to anything.
         let dangling = function.new_insn(Insn::Const{val: Const::CBool(true)});
         let val = function.push_insn(function.entry_block, Insn::ArrayDup { val: dangling, state: InsnId(0usize) });
+        function.seal_entries();
         assert_matches_err(function.temporary_validate_block_local_definite_assignment(), ValidationError::OperandNotDefined(entry, val, dangling));
     }
 
@@ -7995,6 +8169,7 @@ mod validation_tests {
         // Ret is a non-output instruction.
         let ret = function.push_insn(function.entry_block, Insn::Return { val: const_ });
         let val = function.push_insn(function.entry_block, Insn::ArrayDup { val: ret, state: InsnId(0usize) });
+        function.seal_entries();
         assert_matches_err(function.validate_definite_assignment(), ValidationError::OperandNotDefined(entry, val, ret));
     }
 
@@ -8006,6 +8181,7 @@ mod validation_tests {
         // Ret is a non-output instruction.
         let ret = function.push_insn(function.entry_block, Insn::Return { val: const_ });
         let val = function.push_insn(function.entry_block, Insn::ArrayDup { val: ret, state: InsnId(0usize) });
+        function.seal_entries();
         assert_matches_err(function.temporary_validate_block_local_definite_assignment(), ValidationError::OperandNotDefined(entry, val, ret));
     }
 
@@ -8022,6 +8198,7 @@ mod validation_tests {
         function.push_insn(entry, Insn::IfFalse { val: val1, target: BranchEdge { target: side, args: vec![] } });
         function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
         let val2 = function.push_insn(exit, Insn::ArrayDup { val: v0, state: v0 });
+        function.seal_entries();
         crate::cruby::with_rubyvm(|| {
             function.infer_types();
             assert_matches_err(function.validate_definite_assignment(), ValidationError::OperandNotDefined(exit, val2, v0));
@@ -8041,6 +8218,7 @@ mod validation_tests {
         function.push_insn(entry, Insn::IfFalse { val, target: BranchEdge { target: side, args: vec![] } });
         function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
         let _val = function.push_insn(exit, Insn::ArrayDup { val: v0, state: v0 });
+        function.seal_entries();
         crate::cruby::with_rubyvm(|| {
             function.infer_types();
             // Just checking that we don't panic.
@@ -8056,6 +8234,7 @@ mod validation_tests {
         let val = function.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
         function.push_insn_id(block, val);
         function.push_insn(block, Insn::Return { val });
+        function.seal_entries();
         assert_matches_err(function.validate(), ValidationError::DuplicateInstruction(block, val));
     }
 
@@ -8068,6 +8247,7 @@ mod validation_tests {
         let val1 = function.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
         function.make_equal_to(val1, val0);
         function.push_insn(block, Insn::Return { val: val0 });
+        function.seal_entries();
         assert_matches_err(function.validate(), ValidationError::DuplicateInstruction(block, val0));
     }
 
@@ -8081,6 +8261,7 @@ mod validation_tests {
         function.push_insn(block, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
         function.push_insn_id(exit, val);
         function.push_insn(exit, Insn::Return { val });
+        function.seal_entries();
         assert_matches_err(function.validate(), ValidationError::DuplicateInstruction(exit, val));
     }
 }
@@ -8112,6 +8293,7 @@ mod infer_tests {
             let mut function = Function::new(std::ptr::null());
             let nil = function.push_insn(function.entry_block, Insn::Const { val: Const::Value(Qnil) });
             let val = function.push_insn(function.entry_block, Insn::Test { val: nil });
+            function.seal_entries();
             function.infer_types();
             assert_bit_equal(function.type_of(val), Type::from_cbool(false));
         });
@@ -8123,6 +8305,7 @@ mod infer_tests {
             let mut function = Function::new(std::ptr::null());
             let false_ = function.push_insn(function.entry_block, Insn::Const { val: Const::Value(Qfalse) });
             let val = function.push_insn(function.entry_block, Insn::Test { val: false_ });
+            function.seal_entries();
             function.infer_types();
             assert_bit_equal(function.type_of(val), Type::from_cbool(false));
         });
@@ -8134,6 +8317,7 @@ mod infer_tests {
             let mut function = Function::new(std::ptr::null());
             let true_ = function.push_insn(function.entry_block, Insn::Const { val: Const::Value(Qtrue) });
             let val = function.push_insn(function.entry_block, Insn::Test { val: true_ });
+            function.seal_entries();
             function.infer_types();
             assert_bit_equal(function.type_of(val), Type::from_cbool(true));
         });
@@ -8169,6 +8353,7 @@ mod infer_tests {
         let v1 = function.push_insn(entry, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(4)) });
         function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: vec![v1] }));
         let param = function.push_insn(exit, Insn::Param);
+        function.seal_entries();
         crate::cruby::with_rubyvm(|| {
             function.infer_types();
         });
@@ -8188,6 +8373,7 @@ mod infer_tests {
         let v1 = function.push_insn(entry, Insn::Const { val: Const::Value(Qfalse) });
         function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: vec![v1] }));
         let param = function.push_insn(exit, Insn::Param);
+        function.seal_entries();
         crate::cruby::with_rubyvm(|| {
             function.infer_types();
             assert_bit_equal(function.type_of(param), types::TrueClass.union(types::FalseClass));
@@ -8223,32 +8409,39 @@ mod graphviz_tests {
         mode=hier; overlap=false; splines=true;
           bb0 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
         <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb0()&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v24">Entries bb1, bb2&nbsp;</TD></TR>
+        </TABLE>>];
+          bb1 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb1()&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v0">EntryPoint interpreter&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v1">v1:BasicObject = LoadSelf&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v2">v2:BasicObject = GetLocal :x, l0, SP@5&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v3">v3:BasicObject = GetLocal :y, l0, SP@4&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v4">Jump bb2(v1, v2, v3)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v4">Jump bb3(v1, v2, v3)&nbsp;</TD></TR>
         </TABLE>>];
-          bb0:v4 -> bb2:params:n;
-          bb1 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject)&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v5">EntryPoint JIT(0)&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v9">Jump bb2(v6, v7, v8)&nbsp;</TD></TR>
-        </TABLE>>];
-          bb1:v9 -> bb2:params:n;
+          bb1:v4 -> bb3:params:n;
           bb2 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject)&nbsp;</TD></TR>
+        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb2()&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v5">EntryPoint JIT(0)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v6">v6:BasicObject = LoadArg :self@0&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v7">v7:BasicObject = LoadArg :x@1&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v8">v8:BasicObject = LoadArg :y@2&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v9">Jump bb3(v6, v7, v8)&nbsp;</TD></TR>
+        </TABLE>>];
+          bb2:v9 -> bb3:params:n;
+          bb3 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject)&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v15">PatchPoint NoTracePoint&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v18">PatchPoint NoTracePoint&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v24">PatchPoint NoTracePoint&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v25">PatchPoint MethodRedefined(Integer@0x1000, |@0x1008, cme:0x1010)&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v26">v26:Fixnum = GuardType v11, Fixnum&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v27">v27:Fixnum = GuardType v12, Fixnum&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v28">v28:Fixnum = FixnumOr v26, v27&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v29">IncrCounter inline_cfunc_optimized_send_count&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v25">PatchPoint NoTracePoint&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v26">PatchPoint MethodRedefined(Integer@0x1000, |@0x1008, cme:0x1010)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v27">v27:Fixnum = GuardType v11, Fixnum&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v28">v28:Fixnum = GuardType v12, Fixnum&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v29">v29:Fixnum = FixnumOr v27, v28&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v30">IncrCounter inline_cfunc_optimized_send_count&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v21">PatchPoint NoTracePoint&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v22">CheckInterrupts&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v23">Return v28&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v23">Return v29&nbsp;</TD></TR>
         </TABLE>>];
         }
         "#);
@@ -8274,25 +8467,31 @@ mod graphviz_tests {
         mode=hier; overlap=false; splines=true;
           bb0 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
         <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb0()&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v36">Entries bb1, bb2&nbsp;</TD></TR>
+        </TABLE>>];
+          bb1 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb1()&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v0">EntryPoint interpreter&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v1">v1:BasicObject = LoadSelf&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v2">v2:BasicObject = GetLocal :c, l0, SP@4&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v3">Jump bb2(v1, v2)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v3">Jump bb3(v1, v2)&nbsp;</TD></TR>
         </TABLE>>];
-          bb0:v3 -> bb2:params:n;
-          bb1 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb1(v5:BasicObject, v6:BasicObject)&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v4">EntryPoint JIT(0)&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v7">Jump bb2(v5, v6)&nbsp;</TD></TR>
-        </TABLE>>];
-          bb1:v7 -> bb2:params:n;
+          bb1:v3 -> bb3:params:n;
           bb2 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb2(v8:BasicObject, v9:BasicObject)&nbsp;</TD></TR>
+        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb2()&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v4">EntryPoint JIT(0)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v5">v5:BasicObject = LoadArg :self@0&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v6">v6:BasicObject = LoadArg :c@1&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v7">Jump bb3(v5, v6)&nbsp;</TD></TR>
+        </TABLE>>];
+          bb2:v7 -> bb3:params:n;
+          bb3 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb3(v8:BasicObject, v9:BasicObject)&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v12">PatchPoint NoTracePoint&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v14">CheckInterrupts&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v15">v15:CBool = Test v9&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v16">v16:Falsy = RefineType v9, Falsy&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v17">IfFalse v15, bb3(v8, v16)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v17">IfFalse v15, bb4(v8, v16)&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v18">v18:Truthy = RefineType v9, Truthy&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v20">PatchPoint NoTracePoint&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v21">v21:Fixnum[3] = Const Value(3)&nbsp;</TD></TR>
@@ -8300,9 +8499,9 @@ mod graphviz_tests {
         <TR><TD ALIGN="left" PORT="v24">CheckInterrupts&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v25">Return v21&nbsp;</TD></TR>
         </TABLE>>];
-          bb2:v17 -> bb3:params:n;
-          bb3 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb3(v26:BasicObject, v27:Falsy)&nbsp;</TD></TR>
+          bb3:v17 -> bb4:params:n;
+          bb4 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb4(v26:BasicObject, v27:Falsy)&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v30">PatchPoint NoTracePoint&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v31">v31:Fixnum[4] = Const Value(4)&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v33">PatchPoint NoTracePoint&nbsp;</TD></TR>

@@ -76,9 +76,9 @@ VALUE
 pm_source_new(const pm_parser_t *parser, rb_encoding *encoding, bool freeze) {
     VALUE source_string = rb_enc_str_new((const char *) parser->start, parser->end - parser->start, encoding);
 
-    VALUE offsets = rb_ary_new_capa(parser->newline_list.size);
-    for (size_t index = 0; index < parser->newline_list.size; index++) {
-        rb_ary_push(offsets, ULONG2NUM(parser->newline_list.offsets[index]));
+    VALUE offsets = rb_ary_new_capa(parser->line_offsets.size);
+    for (size_t index = 0; index < parser->line_offsets.size; index++) {
+        rb_ary_push(offsets, ULONG2NUM(parser->line_offsets.offsets[index]));
     }
 
     if (freeze) {

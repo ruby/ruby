@@ -362,11 +362,10 @@ set_compact_after_delete(VALUE set)
 }
 
 static int
-set_table_insert_wb(set_table *tab, VALUE set, VALUE key, VALUE *key_addr)
+set_table_insert_wb(set_table *tab, VALUE set, VALUE key)
 {
     if (tab->type != &identhash && rb_obj_class(key) == rb_cString && !RB_OBJ_FROZEN(key)) {
         key = rb_hash_key_str(key);
-        if (key_addr) *key_addr = key;
     }
     int ret = set_insert(tab, (st_data_t)key);
     if (ret == 0) RB_OBJ_WRITTEN(set, Qundef, key);
@@ -374,9 +373,9 @@ set_table_insert_wb(set_table *tab, VALUE set, VALUE key, VALUE *key_addr)
 }
 
 static int
-set_insert_wb(VALUE set, VALUE key, VALUE *key_addr)
+set_insert_wb(VALUE set, VALUE key)
 {
-    return set_table_insert_wb(RSET_TABLE(set), set, key, key_addr);
+    return set_table_insert_wb(RSET_TABLE(set), set, key);
 }
 
 static VALUE
@@ -413,7 +412,7 @@ set_s_create(int argc, VALUE *argv, VALUE klass)
     int i;
 
     for (i=0; i < argc; i++) {
-        set_table_insert_wb(table, set, argv[i], NULL);
+        set_table_insert_wb(table, set, argv[i]);
     }
 
     return set;
@@ -464,7 +463,7 @@ static VALUE
 set_initialize_without_block(RB_BLOCK_CALL_FUNC_ARGLIST(i, set))
 {
     VALUE element = i;
-    set_insert_wb(set, element, &element);
+    set_insert_wb(set, element);
     return element;
 }
 
@@ -472,7 +471,7 @@ static VALUE
 set_initialize_with_block(RB_BLOCK_CALL_FUNC_ARGLIST(i, set))
 {
     VALUE element = rb_yield(i);
-    set_insert_wb(set, element, &element);
+    set_insert_wb(set, element);
     return element;
 }
 
@@ -513,7 +512,7 @@ set_i_initialize(int argc, VALUE *argv, VALUE set)
             for (i=0; i<RARRAY_LEN(other); i++) {
                 VALUE key = RARRAY_AREF(other, i);
                 if (block_given) key = rb_yield(key);
-                set_table_insert_wb(into, set, key, NULL);
+                set_table_insert_wb(into, set, key);
             }
         }
         else {
@@ -693,7 +692,7 @@ set_i_add(VALUE set, VALUE item)
         }
     }
     else {
-        set_insert_wb(set, item, NULL);
+        set_insert_wb(set, item);
     }
     return set;
 }
@@ -720,7 +719,7 @@ set_i_add_p(VALUE set, VALUE item)
         return Qnil;
     }
     else {
-        return set_insert_wb(set, item, NULL) ? Qnil : set;
+        return set_insert_wb(set, item) ? Qnil : set;
     }
 }
 
@@ -1002,7 +1001,7 @@ set_intersection_i(st_data_t key, st_data_t tmp)
 {
     struct set_intersection_data *data = (struct set_intersection_data *)tmp;
     if (set_table_lookup(data->other, key)) {
-        set_table_insert_wb(data->into, data->set, key, NULL);
+        set_table_insert_wb(data->into, data->set, key);
     }
 
     return ST_CONTINUE;
@@ -1098,7 +1097,7 @@ static int
 set_merge_i(st_data_t key, st_data_t data)
 {
     struct set_merge_args *args = (struct set_merge_args *)data;
-    set_table_insert_wb(args->into, args->set, key, NULL);
+    set_table_insert_wb(args->into, args->set, key);
     return ST_CONTINUE;
 }
 
@@ -1106,7 +1105,7 @@ static VALUE
 set_merge_block(RB_BLOCK_CALL_FUNC_ARGLIST(key, set))
 {
     VALUE element = key;
-    set_insert_wb(set, element, &element);
+    set_insert_wb(set, element);
     return element;
 }
 
@@ -1124,7 +1123,7 @@ set_merge_enum_into(VALUE set, VALUE arg)
         long i;
         set_table *into = RSET_TABLE(set);
         for (i=0; i<RARRAY_LEN(arg); i++) {
-            set_table_insert_wb(into, set, RARRAY_AREF(arg, i), NULL);
+            set_table_insert_wb(into, set, RARRAY_AREF(arg, i));
         }
     }
     else {
@@ -1250,7 +1249,7 @@ set_xor_i(st_data_t key, st_data_t data)
     VALUE element = (VALUE)key;
     VALUE set = (VALUE)data;
     set_table *table = RSET_TABLE(set);
-    if (set_table_insert_wb(table, set, element, &element)) {
+    if (set_table_insert_wb(table, set, element)) {
         set_table_delete(table, &element);
     }
     return ST_CONTINUE;
@@ -1386,7 +1385,7 @@ set_i_each(VALUE set)
 static int
 set_collect_i(st_data_t key, st_data_t data)
 {
-    set_insert_wb((VALUE)data, rb_yield((VALUE)key), NULL);
+    set_insert_wb((VALUE)data, rb_yield((VALUE)key));
     return ST_CONTINUE;
 }
 

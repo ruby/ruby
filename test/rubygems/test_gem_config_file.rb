@@ -113,6 +113,16 @@ class TestGemConfigFile < Gem::TestCase
     assert_equal true, @cfg.global_gem_cache
   end
 
+  def test_initialize_concurrent_downloads
+    File.open @temp_conf, "w" do |fp|
+      fp.puts "concurrent_downloads: 2"
+    end
+
+    util_config_file %W[--config-file #{@temp_conf}]
+
+    assert_equal 2, @cfg.concurrent_downloads
+  end
+
   def test_initialize_handle_arguments_config_file
     util_config_file %W[--config-file #{@temp_conf}]
 

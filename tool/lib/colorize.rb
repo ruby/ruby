@@ -5,7 +5,7 @@ class Colorize
   #   Colorize.new(colorize = nil)
   #   Colorize.new(color: color, colors_file: colors_file)
   def initialize(color = nil, opts = ((_, color = color, nil)[0] if Hash === color))
-    @colors = @reset = nil
+    @colors = nil
     @color = opts && opts[:color] || color
     if color or (color == nil && coloring?)
       if (%w[smso so].any? {|attr| /\A\e\[.*m\z/ =~ IO.popen("tput #{attr}", "r", :err => IO::NULL, &:read)} rescue nil)
@@ -20,7 +20,6 @@ class Colorize
           end
         end
         @colors = colors
-        @reset = "#{@beg}m"
       end
     end
     self
@@ -30,7 +29,7 @@ class Colorize
     # color names
     "black"=>"30", "red"=>"31", "green"=>"32", "yellow"=>"33",
     "blue"=>"34", "magenta"=>"35", "cyan"=>"36", "white"=>"37",
-    "bold"=>"1", "underline"=>"4", "reverse"=>"7",
+    "bold"=>"1", "faint"=>"2", "underline"=>"4", "reverse"=>"7",
     "bright_black"=>"90", "bright_red"=>"91", "bright_green"=>"92", "bright_yellow"=>"93",
     "bright_blue"=>"94", "bright_magenta"=>"95", "bright_cyan"=>"96", "bright_white"=>"97",
 
@@ -46,7 +45,7 @@ class Colorize
   # colorize.decorate(str, name = color_name)
   def decorate(str, name = @color)
     if coloring? and color = resolve_color(name)
-      "#{@beg}#{color}m#{str}#{@reset}"
+      "#{@beg}#{color}m#{str}#{reset_color(color)}"
     else
       str
     end
@@ -67,6 +66,25 @@ class Colorize
       end
       seen[n] = resolve_color(c, seen, colors)
     end
+  end
+
+  def reset_color(colors)
+    resets = []
+    colors.scan(/\G;*\K(?:[34]8;5;\d+|2(?:;\d+){3}|\d+)/) do |c|
+      case c
+      when '1', '2'
+        resets << '22'
+      when '4'
+        resets << '24'
+      when '7'
+        resets << '27'
+      when /\A3\d\z/
+        resets << '39'
+      when /\A4\d\z/
+        resets << '49'
+      end
+    end
+    "#{@beg}#{resets.reverse.join(';')}m"
   end
 
   DEFAULTS.each_key do |name|

@@ -2623,6 +2623,13 @@ module Prism
         on_var_ref(on_kw("nil"))
       end
 
+      # def foo(&nil); end
+      #         ^^^^
+      def visit_no_block_parameter_node(node)
+        bounds(node.location)
+        on_blockarg(:nil)
+      end
+
       # def foo(**nil); end
       #         ^^^^^
       def visit_no_keywords_parameter_node(node)

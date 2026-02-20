@@ -194,6 +194,18 @@ require 'json/common'
 # When enabled:
 #   JSON.parse(%{"Hello\nWorld"}, allow_control_characters: true) # => "Hello\nWorld"
 #
+# ---
+#
+# Option +allow_invalid_escape+ (boolean) specifies whether to ignore backslahes that are followed
+# by an invalid escape character in strings;
+# defaults to +false+.
+#
+# With the default, +false+:
+#   JSON.parse(%{"Hell\\o"}) # invalid escape character in string (JSON::ParserError)
+#
+# When enabled:
+#   JSON.parse(%{"Hell\\o"}, allow_invalid_escape: true) # => "Hello"
+#
 # ====== Output Options
 #
 # Option +freeze+ (boolean) specifies whether the returned objects will be frozen;

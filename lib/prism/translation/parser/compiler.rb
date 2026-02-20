@@ -1390,6 +1390,12 @@ module Prism
           builder.nil(token(node.location))
         end
 
+        # def foo(&nil); end
+        #         ^^^^
+        def visit_no_block_parameter_node(node)
+          builder.blocknilarg(token(node.operator_loc), token(node.keyword_loc))
+        end
+
         # def foo(**nil); end
         #         ^^^^^
         def visit_no_keywords_parameter_node(node)

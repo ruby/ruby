@@ -133,9 +133,9 @@ fn gen_iseq_entry_point(cb: &mut CodeBlock, iseq: IseqPtr, jit_exception: bool) 
     }
 
     // Compile ISEQ into High-level IR
-    let function = compile_iseq(iseq).inspect_err(|_| {
+    let function = crate::stats::with_time_stat(Counter::compile_hir_time_ns, || compile_iseq(iseq).inspect_err(|_| {
         incr_counter!(failed_iseq_count);
-    })?;
+    }))?;
 
     // Compile the High-level IR
     let IseqCodePtrs { start_ptr, .. } = gen_iseq(cb, iseq, Some(&function)).inspect_err(|err| {
@@ -247,11 +247,12 @@ fn gen_iseq_body(cb: &mut CodeBlock, iseq: IseqPtr, mut version: IseqVersionRef,
     // Convert ISEQ into optimized High-level IR if not given
     let function = match function {
         Some(function) => function,
-        None => &compile_iseq(iseq)?,
+        None => &crate::stats::with_time_stat(Counter::compile_hir_time_ns, || compile_iseq(iseq))?,
     };
 
     // Compile the High-level IR
-    let (iseq_code_ptrs, gc_offsets, iseq_calls) = gen_function(cb, iseq, version, function)?;
+    let (iseq_code_ptrs, gc_offsets, iseq_calls) =
+        crate::stats::with_time_stat(Counter::compile_lir_time_ns, || gen_function(cb, iseq, version, function))?;
 
     // Stub callee ISEQs for JIT-to-JIT calls
     for iseq_call in iseq_calls.iter() {
@@ -279,12 +280,16 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
 
     // Create all LIR basic blocks corresponding to HIR basic blocks
     for (rpo_idx, &block_id) in reverse_post_order.iter().enumerate() {
+        // Skip the entries superblock — it's an internal CFG artifact
+        if block_id == function.entries_block { continue; }
         let lir_block_id = asm.new_block(block_id, function.is_entry_block(block_id), rpo_idx);
         hir_to_lir[block_id.0] = Some(lir_block_id);
     }
 
     // Compile each basic block
     for (rpo_idx, &block_id) in reverse_post_order.iter().enumerate() {
+        // Skip the entries superblock — it's an internal CFG artifact
+        if block_id == function.entries_block { continue; }
         // Set the current block to the LIR block that corresponds to this
         // HIR block.
         let lir_block_id = hir_to_lir[block_id.0].unwrap();
@@ -308,6 +313,16 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                     jit.opnds[insn_id.0] = Some(gen_param(&mut asm, idx));
                 },
                 insn => unreachable!("Non-param insn found in block.params: {insn:?}"),
+            }
+        }
+
+        // In JIT entry blocks, compile LoadArg instructions before other instructions
+        // so that calling convention registers are reserved early, like Param.
+        if function.is_entry_block(block_id) {
+            for &insn_id in block.insns() {
+                if let Insn::LoadArg { idx, .. } = function.find(insn_id) {
+                    jit.opnds[insn_id.0] = Some(gen_param(&mut asm, idx as usize));
+                }
             }
         }
 
@@ -481,6 +496,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::StringIntern { val, state } => gen_intern(asm, opnd!(val), &function.frame_state(*state)),
         Insn::ToRegexp { opt, values, state } => gen_toregexp(jit, asm, *opt, opnds!(values), &function.frame_state(*state)),
         Insn::Param => unreachable!("block.insns should not have Insn::Param"),
+        Insn::LoadArg { .. } => return Ok(()), // compiled in the LoadArg pre-pass above
         Insn::Snapshot { .. } => return Ok(()), // we don't need to do anything for this instruction at the moment
         &Insn::Send { cd, blockiseq: None, state, reason, .. } => gen_send_without_block(jit, asm, cd, &function.frame_state(state), reason),
         &Insn::Send { cd, blockiseq: Some(blockiseq), state, reason, .. } => gen_send(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
@@ -600,7 +616,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         | &Insn::Throw { state, .. }
         => return Err(state),
         &Insn::IfFalse { .. } | Insn::IfTrue { .. }
-        | &Insn::Jump { .. } => unreachable!(),
+        | &Insn::Jump { .. } | Insn::Entries { .. } => unreachable!(),
     };
 
     assert!(insn.has_output(), "Cannot write LIR output of HIR instruction with no output: {insn}");
@@ -2630,7 +2646,8 @@ fn compile_iseq(iseq: IseqPtr) -> Result<Function, CompileError> {
         return Err(CompileError::IseqStackTooLarge);
     }
 
-    let mut function = match iseq_to_hir(iseq) {
+    let hir = crate::stats::with_time_stat(Counter::compile_hir_build_time_ns, || iseq_to_hir(iseq));
+    let mut function = match hir {
         Ok(function) => function,
         Err(err) => {
             debug!("ZJIT: iseq_to_hir: {err:?}: {}", iseq_get_location(iseq, 0));

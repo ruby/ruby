@@ -1,5 +1,5 @@
 /**
- * @file pm_newline_list.h
+ * @file pm_line_offset_list.h
  *
  * A list of byte offsets of newlines in a string.
  *
@@ -11,8 +11,8 @@
  * end column on every node in addition to the offsets that we already store,
  * but that would be quite a lot of memory overhead.
  */
-#ifndef PRISM_NEWLINE_LIST_H
-#define PRISM_NEWLINE_LIST_H
+#ifndef PRISM_LINE_OFFSET_LIST_H
+#define PRISM_LINE_OFFSET_LIST_H
 
 #include "prism/defines.h"
 
@@ -22,8 +22,8 @@
 #include <stdlib.h>
 
 /**
- * A list of offsets of newlines in a string. The offsets are assumed to be
- * sorted/inserted in ascending order.
+ * A list of offsets of the start of lines in a string. The offsets are assumed
+ * to be sorted/inserted in ascending order.
  */
 typedef struct {
     /** The number of offsets in the list. */
@@ -34,7 +34,7 @@ typedef struct {
 
     /** The list of offsets. */
     uint32_t *offsets;
-} pm_newline_list_t;
+} pm_line_offset_list_t;
 
 /**
  * A line and column in a string.
@@ -48,32 +48,32 @@ typedef struct {
 } pm_line_column_t;
 
 /**
- * Initialize a new newline list with the given capacity. Returns true if the
- * allocation of the offsets succeeds, otherwise returns false.
+ * Initialize a new line offset list with the given capacity. Returns true if
+ * the allocation of the offsets succeeds, otherwise returns false.
  *
  * @param list The list to initialize.
  * @param capacity The initial capacity of the list.
  * @return True if the allocation of the offsets succeeds, otherwise false.
  */
-bool pm_newline_list_init(pm_newline_list_t *list, size_t capacity);
+bool pm_line_offset_list_init(pm_line_offset_list_t *list, size_t capacity);
 
 /**
- * Clear out the newlines that have been appended to the list.
+ * Clear out the offsets that have been appended to the list.
  *
  * @param list The list to clear.
  */
-void pm_newline_list_clear(pm_newline_list_t *list);
+void pm_line_offset_list_clear(pm_line_offset_list_t *list);
 
 /**
- * Append a new offset to the newline list. Returns true if the reallocation of
- * the offsets succeeds (if one was necessary), otherwise returns false.
+ * Append a new offset to the list. Returns true if the reallocation of the
+ * offsets succeeds (if one was necessary), otherwise returns false.
  *
  * @param list The list to append to.
  * @param cursor The offset to append.
  * @return True if the reallocation of the offsets succeeds (if one was
  *     necessary), otherwise false.
  */
-bool pm_newline_list_append(pm_newline_list_t *list, uint32_t cursor);
+bool pm_line_offset_list_append(pm_line_offset_list_t *list, uint32_t cursor);
 
 /**
  * Returns the line of the given offset. If the offset is not in the list, the
@@ -84,7 +84,7 @@ bool pm_newline_list_append(pm_newline_list_t *list, uint32_t cursor);
  * @param start_line The line to start counting from.
  * @return The line of the given offset.
  */
-int32_t pm_newline_list_line(const pm_newline_list_t *list, uint32_t cursor, int32_t start_line);
+int32_t pm_line_offset_list_line(const pm_line_offset_list_t *list, uint32_t cursor, int32_t start_line);
 
 /**
  * Returns the line and column of the given offset. If the offset is not in the
@@ -96,13 +96,13 @@ int32_t pm_newline_list_line(const pm_newline_list_t *list, uint32_t cursor, int
  * @param start_line The line to start counting from.
  * @return The line and column of the given offset.
  */
-pm_line_column_t pm_newline_list_line_column(const pm_newline_list_t *list, uint32_t cursor, int32_t start_line);
+pm_line_column_t pm_line_offset_list_line_column(const pm_line_offset_list_t *list, uint32_t cursor, int32_t start_line);
 
 /**
- * Free the internal memory allocated for the newline list.
+ * Free the internal memory allocated for the list.
  *
  * @param list The list to free.
  */
-void pm_newline_list_free(pm_newline_list_t *list);
+void pm_line_offset_list_free(pm_line_offset_list_t *list);
 
 #endif

@@ -1,11 +1,11 @@
-#include "prism/util/pm_newline_list.h"
+#include "prism/util/pm_line_offset_list.h"
 
 /**
  * Initialize a new newline list with the given capacity. Returns true if the
  * allocation of the offsets succeeds, otherwise returns false.
  */
 bool
-pm_newline_list_init(pm_newline_list_t *list, size_t capacity) {
+pm_line_offset_list_init(pm_line_offset_list_t *list, size_t capacity) {
     list->offsets = (uint32_t *) xcalloc(capacity, sizeof(uint32_t));
     if (list->offsets == NULL) return false;
 
@@ -21,7 +21,7 @@ pm_newline_list_init(pm_newline_list_t *list, size_t capacity) {
  * Clear out the newlines that have been appended to the list.
  */
 void
-pm_newline_list_clear(pm_newline_list_t *list) {
+pm_line_offset_list_clear(pm_line_offset_list_t *list) {
     list->size = 1;
 }
 
@@ -30,7 +30,7 @@ pm_newline_list_clear(pm_newline_list_t *list) {
  * the offsets succeeds (if one was necessary), otherwise returns false.
  */
 bool
-pm_newline_list_append(pm_newline_list_t *list, uint32_t cursor) {
+pm_line_offset_list_append(pm_line_offset_list_t *list, uint32_t cursor) {
     if (list->size == list->capacity) {
         uint32_t *original_offsets = list->offsets;
 
@@ -53,7 +53,7 @@ pm_newline_list_append(pm_newline_list_t *list, uint32_t cursor) {
  * line of the closest offset less than the given offset is returned.
  */
 int32_t
-pm_newline_list_line(const pm_newline_list_t *list, uint32_t cursor, int32_t start_line) {
+pm_line_offset_list_line(const pm_line_offset_list_t *list, uint32_t cursor, int32_t start_line) {
     size_t left = 0;
     size_t right = list->size - 1;
 
@@ -80,7 +80,7 @@ pm_newline_list_line(const pm_newline_list_t *list, uint32_t cursor, int32_t sta
  * are returned.
  */
 pm_line_column_t
-pm_newline_list_line_column(const pm_newline_list_t *list, uint32_t cursor, int32_t start_line) {
+pm_line_offset_list_line_column(const pm_line_offset_list_t *list, uint32_t cursor, int32_t start_line) {
     size_t left = 0;
     size_t right = list->size - 1;
 
@@ -108,6 +108,6 @@ pm_newline_list_line_column(const pm_newline_list_t *list, uint32_t cursor, int3
  * Free the internal memory allocated for the newline list.
  */
 void
-pm_newline_list_free(pm_newline_list_t *list) {
+pm_line_offset_list_free(pm_line_offset_list_t *list) {
     xfree(list->offsets);
 }

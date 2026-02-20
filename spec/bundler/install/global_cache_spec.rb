@@ -48,6 +48,8 @@ RSpec.describe "global gem caching" do
     end
 
     it "shows a proper error message if a cached gem is corrupted" do
+      skip "This example is not working on ruby/ruby repo" if ruby_core?
+
       source_global_cache.mkpath
       FileUtils.touch(source_global_cache("myrack-1.0.0.gem"))
 

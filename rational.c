@@ -176,22 +176,6 @@ f_idiv(VALUE x, VALUE y)
 #define f_expt10(x) rb_int_pow(INT2FIX(10), x)
 
 inline static int
-f_zero_p(VALUE x)
-{
-    if (RB_INTEGER_TYPE_P(x)) {
-        return FIXNUM_ZERO_P(x);
-    }
-    else if (RB_TYPE_P(x, T_RATIONAL)) {
-        VALUE num = RRATIONAL(x)->num;
-
-        return FIXNUM_ZERO_P(num);
-    }
-    return (int)rb_equal(x, ZERO);
-}
-
-#define f_nonzero_p(x) (!f_zero_p(x))
-
-inline static int
 f_one_p(VALUE x)
 {
     if (RB_INTEGER_TYPE_P(x)) {
@@ -970,8 +954,8 @@ rb_rational_div(VALUE self, VALUE other)
  *    Rational(2, 3).fdiv(0.5)     #=> 1.3333333333333333
  *    Rational(2).fdiv(3)          #=> 0.6666666666666666
  */
-static VALUE
-nurat_fdiv(VALUE self, VALUE other)
+VALUE
+rb_rational_fdiv(VALUE self, VALUE other)
 {
     VALUE div;
     if (f_zero_p(other))
@@ -2774,7 +2758,7 @@ Init_Rational(void)
     rb_define_method(rb_cRational, "*", rb_rational_mul, 1);
     rb_define_method(rb_cRational, "/", rb_rational_div, 1);
     rb_define_method(rb_cRational, "quo", rb_rational_div, 1);
-    rb_define_method(rb_cRational, "fdiv", nurat_fdiv, 1);
+    rb_define_method(rb_cRational, "fdiv", rb_rational_fdiv, 1);
     rb_define_method(rb_cRational, "**", nurat_expt, 1);
 
     rb_define_method(rb_cRational, "<=>", rb_rational_cmp, 1);

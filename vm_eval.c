@@ -1776,7 +1776,7 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
                 /* We need to duplicate the string because the Ruby string may
                  * be embedded so compaction could move the string and the pointer
                  * will change. */
-                char *name_dup = malloc(length + 1); // FIXME: using raw `malloc` because that is what Prism uses.
+                char *name_dup = xmalloc(length + 1);
                 strlcpy(name_dup, name, length + 1);
 
                 RB_GC_GUARD(name_obj);

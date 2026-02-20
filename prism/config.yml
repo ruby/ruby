@@ -4065,6 +4065,9 @@ nodes:
           - on error: NoKeywordsParameterNode
           # On parsing error of `f(..., ...)`, the first forwarding parameter is moved here:
           - on error: ForwardingParameterNode
+          # On parsing error of `f(&nil, &foo)`/`f(&foo, &nil)`, the first forwarding parameter is moved here:
+          - on error: BlockParameterNode
+          - on error: NoBlockParameterNode
       - name: keywords
         type: node[]
         kind:

@@ -741,7 +741,7 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
     pm_parser_register_encoding_changed_callback(&parser, parse_lex_encoding_changed_callback);
 
     VALUE source_string = rb_str_new((const char *) pm_string_source(input), pm_string_length(input));
-    VALUE offsets = rb_ary_new_capa(parser.newline_list.size);
+    VALUE offsets = rb_ary_new_capa(parser.line_offsets.size);
     VALUE source = rb_funcall(rb_cPrismSource, rb_id_source_for, 3, source_string, LONG2NUM(parser.start_line), offsets);
 
     parse_lex_data_t parse_lex_data = {
@@ -767,8 +767,8 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
     rb_encoding *encoding = rb_enc_find(parser.encoding->name);
     rb_enc_associate(source_string, encoding);
 
-    for (size_t index = 0; index < parser.newline_list.size; index++) {
-        rb_ary_push(offsets, ULONG2NUM(parser.newline_list.offsets[index]));
+    for (size_t index = 0; index < parser.line_offsets.size; index++) {
+        rb_ary_push(offsets, ULONG2NUM(parser.line_offsets.offsets[index]));
     }
 
     if (options->freeze) {

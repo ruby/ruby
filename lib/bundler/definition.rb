@@ -249,6 +249,7 @@ module Bundler
     end
 
     def missing_specs
+      preload_git_sources
       resolve.missing_specs_for(requested_dependencies)
     end
 
@@ -1125,9 +1126,17 @@ module Bundler
     end
 
     def preload_git_sources
-      needed_git_sources.each {|source| preload_git_source_worker.enq(source) }
-    ensure
-      preload_git_source_worker.stop
+      if Gem.ruby_version < Gem::Version.new("3.3")
+        # Ruby 3.2 has a bug that incorrectly triggers a circular dependency warning. This version will continue to
+        # fetch git repositories one by one.
+        return
+      end
+
+      begin
+        needed_git_sources.each {|source| preload_git_source_worker.enq(source) }
+      ensure
+        preload_git_source_worker.stop
+      end
     end
 
     # Git sources needed for the requested groups (excludes sources only used by --without groups)
@@ -1144,11 +1153,7 @@ module Bundler
     end
 
     def find_source_requirements
-      if Gem.ruby_version >= Gem::Version.new("3.3")
-        # Ruby 3.2 has a bug that incorrectly triggers a circular dependency warning. This version will continue to
-        # fetch git repositories one by one.
-        preload_git_sources
-      end
+      preload_git_sources
 
       # Record the specs available in each gem's source, so that those
       # specs will be available later when the resolver knows where to

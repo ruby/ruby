@@ -2220,9 +2220,8 @@ impl Assembler
 
     /// Compile Target::SideExit and convert it into Target::CodePtr for all instructions
     pub fn compile_exits(&mut self) {
-        /// Compile the main side-exit code. This function takes only SideExit so
-        /// that it can be safely deduplicated by using SideExit as a dedup key.
-        fn compile_exit(asm: &mut Assembler, exit: &SideExit) {
+        /// Restore VM state (cfp->pc, cfp->sp, stack, locals) for the side exit.
+        fn compile_exit_save_state(asm: &mut Assembler, exit: &SideExit) {
             let SideExit { pc, stack, locals } = exit;
 
             // Side exit blocks are not part of the CFG at the moment,
@@ -2249,10 +2248,20 @@ impl Assembler
                     asm.store(Opnd::mem(64, SP, (-local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32), opnd);
                 }
             }
+        }
 
+        /// Tear down the JIT frame and return to the interpreter.
+        fn compile_exit_return(asm: &mut Assembler) {
             asm_comment!(asm, "exit to the interpreter");
             asm.frame_teardown(&[]); // matching the setup in gen_entry_point()
             asm.cret(Opnd::UImm(Qundef.as_u64()));
+        }
+
+        /// Compile the main side-exit code. This function takes only SideExit so
+        /// that it can be safely deduplicated by using SideExit as a dedup key.
+        fn compile_exit(asm: &mut Assembler, exit: &SideExit) {
+            compile_exit_save_state(asm, exit);
+            compile_exit_return(asm);
         }
 
         fn join_opnds(opnds: &Vec<Opnd>, delimiter: &str) -> String {
@@ -2272,6 +2281,18 @@ impl Assembler
 
         // Map from SideExit to compiled Label. This table is used to deduplicate side exit code.
         let mut compiled_exits: HashMap<SideExit, Label> = HashMap::new();
+
+        // Mark the start of side-exit code so we can measure its size
+        if !targets.is_empty() {
+            self.pos_marker(move |start_pos, cb| {
+                let end_pos = cb.get_write_ptr();
+                let size = end_pos.as_offset() - start_pos.as_offset();
+                crate::stats::incr_counter_by(crate::stats::Counter::side_exit_size, size as u64);
+            });
+        }
+
+        // Measure time spent compiling side-exit LIR
+        let side_exit_start = std::time::Instant::now();
 
         for ((block_id, idx), target) in targets {
             // Compile a side exit. Note that this is past the split pass and alloc_regs(),
@@ -2301,13 +2322,19 @@ impl Assembler
                     }
 
                     if should_record_exit {
+                        // Save VM state before the ccall so that
+                        // rb_profile_frames sees valid cfp->pc and the
+                        // ccall doesn't clobber caller-saved registers
+                        // holding stack/local operands.
+                        compile_exit_save_state(self, &exit);
                         asm_ccall!(self, rb_zjit_record_exit_stack, pc);
-                    }
-
-                    // If the side exit has already been compiled, jump to it.
-                    // Otherwise, let it fall through and compile the exit next.
-                    if let Some(&exit_label) = compiled_exits.get(&exit) {
-                        self.jmp(Target::Label(exit_label));
+                        compile_exit_return(self);
+                    } else {
+                        // If the side exit has already been compiled, jump to it.
+                        // Otherwise, let it fall through and compile the exit next.
+                        if let Some(&exit_label) = compiled_exits.get(&exit) {
+                            self.jmp(Target::Label(exit_label));
+                        }
                     }
                     Some(counted_exit)
                 } else {
@@ -2328,6 +2355,12 @@ impl Assembler
 
                 *self.basic_blocks[block_id].insns[idx].target_mut().unwrap() = counted_exit.unwrap_or(compiled_exit);
             }
+        }
+
+        // Measure time spent compiling side-exit LIR
+        if !compiled_exits.is_empty() {
+            let nanos = side_exit_start.elapsed().as_nanos();
+            crate::stats::incr_counter_by(crate::stats::Counter::compile_side_exit_time_ns, nanos as u64);
         }
     }
 }
