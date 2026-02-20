@@ -26,6 +26,7 @@ class Colorize
   end
 
   COLORS_PATTERN = /(\w+)=([^:\n]*)/
+  private_constant :COLORS_PATTERN
 
   DEFAULTS = {
     # color names
@@ -44,11 +45,8 @@ class Colorize
     # abstract decorations
     "pass"=>"green", "fail"=>"red;bold", "skip"=>"yellow;bold",
     "note"=>"bright_yellow", "notice"=>"bright_yellow", "info"=>"bright_magenta",
-  }
-
-  def coloring?
-    STDOUT.tty? && (!(nc = ENV['NO_COLOR']) || nc.empty?)
-  end
+  }.freeze
+  private_constant :DEFAULTS
 
   # colorize.decorate(str, name = color_name)
   def decorate(str, name = @color)
@@ -57,6 +55,18 @@ class Colorize
     else
       str
     end
+  end
+
+  DEFAULTS.each_key do |name|
+    define_method(name) {|str|
+      decorate(str, name)
+    }
+  end
+
+  private
+
+  def coloring?
+    STDOUT.tty? && (!(nc = ENV['NO_COLOR']) || nc.empty?)
   end
 
   def resolve_color(color = @color, seen = {}, colors = nil)
@@ -93,12 +103,6 @@ class Colorize
       end
     end
     "#{@beg}#{resets.reverse.join(';')}m"
-  end
-
-  DEFAULTS.each_key do |name|
-    define_method(name) {|str|
-      decorate(str, name)
-    }
   end
 end
 
