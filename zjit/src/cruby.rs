@@ -565,7 +565,11 @@ impl VALUE {
     }
 
     pub fn shape_id_of(self) -> ShapeId {
-        ShapeId(unsafe { rb_obj_shape_id(self) })
+        if self.special_const_p() {
+            INVALID_SHAPE_ID
+        } else {
+            ShapeId(unsafe { rb_obj_shape_id(self) })
+        }
     }
 
     pub fn embedded_p(self) -> bool {
