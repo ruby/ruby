@@ -124,6 +124,7 @@ of each.
 - [readline]: Wrapper for the Readline extension and Reline
 - [fiddle]: A libffi wrapper for Ruby
 - [tsort]: Topological sorting using Tarjan's algorithm
+- [win32-registry]: Registry accessor library for the Windows platform.
 
 ## Tools
 
@@ -208,6 +209,7 @@ of each.
 [uri]: https://github.com/ruby/uri
 [weakref]: https://github.com/ruby/weakref
 [win32ole]: https://github.com/ruby/win32ole
+[win32-registry]: https://github.com/ruby/win32-registry
 [yaml]: https://github.com/ruby/yaml
 [zlib]: https://github.com/ruby/zlib
 

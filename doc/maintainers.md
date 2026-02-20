@@ -616,6 +616,12 @@ It may needs to make consensus on ruby-core/ruby-dev before making major changes
 * https://github.com/ruby/tsort
 * https://rubygems.org/gems/tsort
 
+#### win32-registry
+
+* Nakamura Usaku ([unak])
+* https://github.com/ruby/win32-registry
+* https://rubygems.org/gems/win32-registry
+
 ## Platform Maintainers
 
 ### mswin64 (Microsoft Windows)
