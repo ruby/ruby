@@ -1801,8 +1801,11 @@ impl Assembler
     }
 
     // Create a LIR basic block without a valid HIR block ID (for testing or internal use).
-    pub fn new_block_without_id(&mut self) -> BlockId {
-        self.new_block(hir::BlockId(DUMMY_HIR_BLOCK_ID), true, DUMMY_RPO_INDEX)
+    pub fn new_block_without_id(&mut self, name: &str) -> BlockId {
+        let bb_id = self.new_block(hir::BlockId(DUMMY_HIR_BLOCK_ID), true, DUMMY_RPO_INDEX);
+        let label = self.new_label(name);
+        self.write_label(label);
+        bb_id
     }
 
     pub fn set_current_block(&mut self, block_id: BlockId) {
@@ -3993,7 +3996,7 @@ impl Assembler {
         asm_local.num_vregs = self.num_vregs;
 
         // Create one giant block to linearize everything into
-        asm_local.new_block_without_id();
+        asm_local.new_block_without_id("linearized");
 
         // Get linearized instructions with branch parameters expanded into ParallelMov
         let linearized_insns = self.linearize_instructions();

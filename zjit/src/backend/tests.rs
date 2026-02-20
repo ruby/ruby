@@ -7,7 +7,7 @@ use crate::options::rb_zjit_prepare_options;
 #[test]
 fn test_add() {
     let mut asm = Assembler::new();
-    asm.new_block_without_id();
+    asm.new_block_without_id("test");
     let out = asm.add(SP, Opnd::UImm(1));
     let _ = asm.add(out, Opnd::UImm(2));
 }
@@ -16,7 +16,7 @@ fn test_add() {
 fn test_alloc_regs() {
     rb_zjit_prepare_options(); // for asm.alloc_regs
     let mut asm = Assembler::new();
-    asm.new_block_without_id();
+    asm.new_block_without_id("test");
 
     // Get the first output that we're going to reuse later.
     let out1 = asm.add(EC, Opnd::UImm(1));
@@ -66,7 +66,7 @@ fn test_alloc_regs() {
 fn setup_asm() -> (Assembler, CodeBlock) {
     rb_zjit_prepare_options(); // for get_option! on asm.compile
     let mut asm = Assembler::new();
-    asm.new_block_without_id();
+    asm.new_block_without_id("test");
     (asm, CodeBlock::new_dummy())
 }
 
@@ -297,7 +297,7 @@ fn test_no_pos_marker_callback_when_compile_fails() {
     // We don't want to invoke the pos_marker callbacks with positions of malformed code.
     let mut asm = Assembler::new();
     rb_zjit_prepare_options(); // for asm.compile
-    asm.new_block_without_id();
+    asm.new_block_without_id("test");
 
     // Markers around code to exhaust memory limit
     let fail_if_called = |_code_ptr, _cb: &_| panic!("pos_marker callback should not be called");

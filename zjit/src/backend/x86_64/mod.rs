@@ -438,7 +438,7 @@ impl Assembler {
         asm_local.num_vregs = self.num_vregs;
 
         // Create one giant block to linearize everything into
-        asm_local.new_block_without_id();
+        asm_local.new_block_without_id("linearized");
 
         let asm = &mut asm_local;
 
@@ -1117,7 +1117,7 @@ mod tests {
     fn setup_asm() -> (Assembler, CodeBlock) {
         rb_zjit_prepare_options(); // for get_option! on asm.compile
         let mut asm = Assembler::new();
-        asm.new_block_without_id();
+        asm.new_block_without_id("test");
         (asm, CodeBlock::new_dummy())
     }
 
@@ -1126,7 +1126,7 @@ mod tests {
         use crate::hir::SideExitReason;
 
         let mut asm = Assembler::new();
-        asm.new_block_without_id();
+        asm.new_block_without_id("test");
         asm.stack_base_idx = 1;
 
         let label = asm.new_label("bb0");
