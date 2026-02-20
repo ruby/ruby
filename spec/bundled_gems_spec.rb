@@ -22,7 +22,6 @@ RSpec.configure do |config|
     Gem.ruby = ENV["RUBY"] if ENV["RUBY"]
 
     require_relative "bundler/support/rubygems_ext"
-    Spec::Rubygems.test_setup
     Spec::Helpers.install_dev_bundler
     FileUtils.mkdir_p Spec::Path.gem_path
   end
