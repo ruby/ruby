@@ -3234,25 +3234,34 @@ impl Function {
                                         is_t_object: recv_type.flags().is_t_object(),
                                         is_embedded: recv_type.flags().is_embedded()
                                     });
-                                    self.push_insn(block, Insn::GetIvar { self_val: refined_recv, id, ic: std::ptr::null(), state })
+                                    self.push_insn(block, Insn::GetIvar { self_val: refined_recv, id, ic: ptr::null(), state })
                                 } else {
-                                    self.push_insn(block, Insn::GetIvar { self_val: recv, id, ic: std::ptr::null(), state })
+                                    self.push_insn(block, Insn::GetIvar { self_val: recv, id, ic: ptr::null(), state })
                                 }
                             } else if let Some(val) = self.type_of(recv).ruby_object() {
                                 // Constant receiver: get shape info from the VALUE directly
-                                let recv_shape = val.shape_id_of();
-                                if recv_shape.is_valid() && !recv_shape.is_too_complex() {
-                                    let shape = self.load_shape(block, recv);
-                                    self.guard_shape(block, shape, recv_shape, state);
-                                    let is_t_object = unsafe { RB_TYPE_P(val, RUBY_T_OBJECT) };
-                                    let is_embedded = is_t_object && val.embedded_p();
-                                    let refined_recv = self.push_insn(block, Insn::RefineShape { val: recv, shape: recv_shape, is_t_object, is_embedded });
-                                    self.push_insn(block, Insn::GetIvar { self_val: refined_recv, id, ic: std::ptr::null(), state })
+                                // TODO missing snapshot test: attr reader on special const. Also
+                                // missing: fallback reason
+                                if !val.special_const_p() {
+                                    let recv_shape = val.shape_id_of();
+                                    if recv_shape.is_valid() && !recv_shape.is_too_complex() {
+                                        // load_shape is valid here without guard because type says recv is on-heap.
+                                        let shape = self.load_shape(block, recv);
+                                        self.guard_shape(block, shape, recv_shape, state);
+                                        let is_t_object = unsafe { RB_TYPE_P(val, RUBY_T_OBJECT) };
+                                        let is_embedded = is_t_object && val.embedded_p();
+                                        let refined_recv = self.push_insn(block, Insn::RefineShape { val: recv, shape: recv_shape, is_t_object, is_embedded });
+                                        self.push_insn(block, Insn::GetIvar { self_val: refined_recv, id, ic: ptr::null(), state })
+                                    } else {
+                                        self.push_insn(block, Insn::GetIvar { self_val: recv, id, ic: ptr::null(), state })
+                                    }
                                 } else {
-                                    self.push_insn(block, Insn::GetIvar { self_val: recv, id, ic: std::ptr::null(), state })
+                                    // attr_reader on immediates always return nil
+                                    self.push_insn(block, Insn::Const { val: Const::Value(Qnil) })
                                 }
                             } else {
-                                self.push_insn(block, Insn::GetIvar { self_val: recv, id, ic: std::ptr::null(), state })
+                                // No profile and no static type info
+                                self.push_insn(block, Insn::GetIvar { self_val: recv, id, ic: ptr::null(), state })
                             };
                             self.make_equal_to(insn_id, getivar);
                         } else if let (false, VM_METHOD_TYPE_ATTRSET, &[val]) = (has_block, def_type, args.as_slice()) {

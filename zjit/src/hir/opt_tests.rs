@@ -6906,6 +6906,38 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_inline_attr_reader_special_const() {
+        eval("
+            class Integer
+              attr_reader :ivar
+            end
+
+            X = 42
+            def test = X.ivar
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:7:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, X)
+          v20:Fixnum[42] = Const Value(42)
+          PatchPoint MethodRedefined(Integer@0x1008, ivar@0x1010, cme:0x1018)
+          v22:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v22
+        ");
+    }
+
+    #[test]
     fn test_inline_attr_accessor_constant() {
         eval("
             class C
