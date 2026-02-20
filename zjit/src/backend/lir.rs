@@ -135,6 +135,10 @@ impl BasicBlock {
     }
 
     pub fn edges(&self) -> EdgePair {
+        // Stub blocks (from new_block_without_id) have no real CFG structure.
+        if self.rpo_index == DUMMY_RPO_INDEX {
+            return EdgePair(None, None);
+        }
         assert!(self.insns.last().unwrap().is_terminator());
         let extract_edge = |insn: &Insn| -> Option<BranchEdge> {
             if let Some(Target::Block(edge)) = insn.target() {
@@ -2360,7 +2364,7 @@ impl Assembler
             let mut new_ids = Vec::with_capacity(old_ids.len());
 
             for (mut insn, insn_id) in old_insns.into_iter().zip(old_ids.into_iter()) {
-                if let Insn::CCall { ref mut opnds, ref mut out, .. } = insn {
+                if let Insn::CCall { ref mut opnds, ref mut out, ref mut start_marker, ref mut end_marker, .. } = insn {
                     let insn_number = insn_id.map(|id| id.0).unwrap_or(0);
 
                     // Find survivors: intervals that survive this instruction
@@ -2381,6 +2385,11 @@ impl Assembler
                     // Save original output vreg, replace with C_RET_OPND
                     let mov_input = *out;
                     *out = C_RET_OPND;
+
+                    // Extract PosMarkers from the CCall so they get emitted
+                    // as separate instructions at the right code positions.
+                    let start_marker = start_marker.take();
+                    let end_marker = end_marker.take();
 
                     // Sequentialize argument moves: each arg goes to regs[i]
                     let mut reg_copies: Vec<parcopy::RegisterCopy> = Vec::new();
@@ -2460,9 +2469,21 @@ impl Assembler
                         new_ids.push(None);
                     }
 
+                    // Emit start_marker PosMarker before the CCall
+                    if let Some(marker) = start_marker {
+                        new_insns.push(Insn::PosMarker(marker));
+                        new_ids.push(None);
+                    }
+
                     // The CCall itself
                     new_insns.push(insn);
                     new_ids.push(insn_id);
+
+                    // Emit end_marker PosMarker after the CCall
+                    if let Some(marker) = end_marker {
+                        new_insns.push(Insn::PosMarker(marker));
+                        new_ids.push(None);
+                    }
 
                     // Move result from C_RET to where mov_input was allocated
                     new_insns.push(Insn::Mov { dest: mov_input, src: C_RET_OPND });
