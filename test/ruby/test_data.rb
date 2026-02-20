@@ -69,15 +69,53 @@ class TestData < Test::Unit::TestCase
     assert_equal(1, test_kw.foo)
     assert_equal(2, test_kw.bar)
     assert_equal(test_kw, klass.new(foo: 1, bar: 2))
+    assert_equal(test_kw, klass.new('foo' => 1, 'bar' => 2))
+    assert_equal(test_kw, klass.new(0 => 1, 1 => 2))
+    assert_equal(test_kw, klass.new(-2 => 1, -1 => 2))
+    assert_equal(test_kw, klass.new(0.1 => 1, 1.1 => 2))
+    assert_equal(test_kw, klass.new(-2.1 => 1, -1.1 => 2))
+    assert_equal(test_kw, klass.new(0 => 1, bar: 2))
+    assert_equal(test_kw, klass.new(foo: 1, -1 => 2))
+    assert_equal(test_kw, klass.new(foo: 0, bar: 2, 0 => 1))
     assert_equal(test_kw, test)
 
     # Wrong protocol
     assert_raise(ArgumentError) { klass.new(1) }
     assert_raise(ArgumentError) { klass.new(1, 2, 3) }
-    assert_raise(ArgumentError) { klass.new(foo: 1) }
-    assert_raise(ArgumentError) { klass.new(foo: 1, bar: 2, baz: 3) }
+    assert_raise_with_message(ArgumentError, "missing keyword: :bar") do
+      klass.new(foo: 1)
+    end
+    assert_raise_with_message(ArgumentError, "missing keyword: :bar") do
+      klass.new('foo' => 1)
+    end
+    assert_raise_with_message(ArgumentError, "missing keyword: :bar") do
+      klass.new(foo: 1, 'foo' => 1)
+    end
+    assert_raise_with_message(ArgumentError, "missing keyword: :bar") do
+      klass.new(foo: 1, 0 => 1)
+    end
+    assert_raise_with_message(ArgumentError, "unknown keywords: :x, :y") do
+      klass.new(x: 1, y: 2)
+    end
+    assert_raise_with_message(ArgumentError, "missing keyword: :foo") do
+      klass.new(1 => 1)
+    end
+    assert_raise_with_message(ArgumentError, "unknown keyword: :baz") do
+      klass.new(foo: 1, bar: 2, baz: 3)
+    end
+    assert_raise_with_message(ArgumentError, "unknown keyword: 2") do
+      klass.new(0 => 1, 1 => 2, 2 => 3)
+    end
+    assert_raise_with_message(ArgumentError, "unknown keyword: -3") do
+      klass.new(-2 => 1, -1 => 2, -3 => 3)
+    end
+    assert_raise_with_message(ArgumentError, "unknown keyword: 2") do
+      klass.new(0 => 1, 1 => 2, 2.1 => 3)
+    end
     # Could be converted to foo: 1, bar: 2, but too smart is confusing
-    assert_raise(ArgumentError) { klass.new(1, bar: 2) }
+    assert_raise_with_message(ArgumentError, "wrong number of arguments (given 2, expected 0)") do
+      klass.new(1, bar: 2)
+    end
   end
 
   def test_initialize_redefine
