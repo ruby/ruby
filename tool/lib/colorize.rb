@@ -1,9 +1,13 @@
 # frozen-string-literal: true
 
+# Decorate TTY output using ANSI Select Graphic Rendition control
+# sequences.
 class Colorize
   # call-seq:
   #   Colorize.new(colorize = nil)
   #   Colorize.new(color: color, colors_file: colors_file)
+  #
+  # Creates and load color settings.
   def initialize(_color = nil, color: _color, colors_file: nil)
     @colors = nil
     @color = color
