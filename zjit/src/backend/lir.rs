@@ -2312,6 +2312,17 @@ impl Assembler
             }
         }
 
+        // Clear edge args on all branch instructions since the moves have been
+        // materialized as explicit Mov instructions. This prevents
+        // linearize_instructions from generating redundant ParallelMov instructions.
+        for block_id in &block_order {
+            for insn in &mut self.basic_blocks[block_id.0].insns {
+                if let Some(Target::Block(edge)) = insn.target_mut() {
+                    edge.args.clear();
+                }
+            }
+        }
+
         self.rewrite_instructions(assignments, regs);
     }
 
@@ -2410,14 +2421,22 @@ impl Assembler
                         })
                         .collect();
 
-                    // Emit: pushes, arg moves, CCall, result mov, pops (reversed)
-                    for &s in &survivors {
+                    // Insert CPush instructions before any preceding ParallelMov,
+                    // since ParallelMov sets up C calling convention args and
+                    // would clobber the survivor registers we're trying to save.
+                    let insert_pos = if matches!(new_insns.last(), Some(Insn::ParallelMov { .. })) {
+                        new_insns.len() - 1
+                    } else {
+                        new_insns.len()
+                    };
+
+                    for (j, &s) in survivors.iter().enumerate() {
                         let reg_n = match assignments[s].unwrap() {
                             Allocation::Reg(n) => n,
                             _ => unreachable!(),
                         };
-                        new_insns.push(Insn::CPush(Opnd::Reg(regs[reg_n])));
-                        new_ids.push(None);
+                        new_insns.insert(insert_pos + j, Insn::CPush(Opnd::Reg(regs[reg_n])));
+                        new_ids.insert(insert_pos + j, None);
                     }
 
                     for mov in reg_moves {
@@ -4336,13 +4355,13 @@ mod tests {
           Cmp v3, 1
           Jl bb3
           Jmp bb2
-        bb3():
-          v6 = Add v0, v2
-          CRet v6
         bb2():
           v4 = Mul v2, v3
           v5 = Sub v3, 1
           Jmp bb1(v4, v5)
+        bb3():
+          v6 = Add v0, v2
+          CRet v6
         ");
     }
 
@@ -4667,13 +4686,10 @@ mod tests {
         assert!(matches!(&b1_insns[1], Insn::Mov { .. }));
         assert!(matches!(&b1_insns[2], Insn::Mov { .. }));
 
-        // Verify that the Jmp's edge args in b1 are rewritten to physical registers.
-        // Original: Jmp(b2, [UImm(1), v1]) — v1→Reg(1)
-        // UImm(1) stays as-is, v1 becomes Reg(regs[1])
+        // After resolve_ssa, edge args are cleared since the moves have been
+        // materialized as explicit Mov instructions.
         if let Insn::Jmp(Target::Block(edge)) = &b1_insns[3] {
-            assert_eq!(edge.args.len(), 2);
-            assert_eq!(edge.args[0], Opnd::UImm(1));
-            assert_eq!(edge.args[1], Opnd::Reg(regs[1]));
+            assert!(edge.args.is_empty(), "Edge args should be cleared after resolve_ssa");
         } else {
             panic!("Expected Jmp at end of b1");
         }
