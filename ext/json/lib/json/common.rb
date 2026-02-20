@@ -156,15 +156,17 @@ module JSON
     def generator=(generator) # :nodoc:
       old, $VERBOSE = $VERBOSE, nil
       @generator = generator
-      generator_methods = generator::GeneratorMethods
-      for const in generator_methods.constants
-        klass = const_get(const)
-        modul = generator_methods.const_get(const)
-        klass.class_eval do
-          instance_methods(false).each do |m|
-            m.to_s == 'to_json' and remove_method m
+      if generator.const_defined?(:GeneratorMethods)
+        generator_methods = generator::GeneratorMethods
+        for const in generator_methods.constants
+          klass = const_get(const)
+          modul = generator_methods.const_get(const)
+          klass.class_eval do
+            instance_methods(false).each do |m|
+              m.to_s == 'to_json' and remove_method m
+            end
+            include modul
           end
-          include modul
         end
       end
       self.state = generator::State
@@ -1096,6 +1098,30 @@ module JSON
       load(File.read(path, encoding: Encoding::UTF_8))
     end
   end
+
+  module GeneratorMethods
+    # call-seq: to_json(*)
+    #
+    # Converts this object into a JSON string.
+    # If this object doesn't directly maps to a JSON native type,
+    # first convert it to a string (calling #to_s), then converts
+    # it to a JSON string, and returns the result.
+    # This is a fallback, if no special method #to_json was defined for some object.
+    def to_json(state = nil, *)
+      obj = case self
+      when nil, false, true, Integer, Float, Array, Hash
+        self
+      else
+        "#{self}"
+      end
+
+      if state.nil?
+        JSON::State._generate_no_fallback(obj, nil, nil)
+      else
+        JSON::State.from_state(state)._generate_no_fallback(obj)
+      end
+    end
+  end
 end
 
 module ::Kernel
@@ -1140,4 +1166,8 @@ module ::Kernel
   def JSON(object, opts = nil)
     JSON[object, opts]
   end
+end
+
+class Object
+  include JSON::GeneratorMethods
 end

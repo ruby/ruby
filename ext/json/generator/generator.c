@@ -74,7 +74,6 @@ static void generate_json_string(FBuffer *buffer, struct generate_json_data *dat
 static void generate_json_null(FBuffer *buffer, struct generate_json_data *data, VALUE obj);
 static void generate_json_false(FBuffer *buffer, struct generate_json_data *data, VALUE obj);
 static void generate_json_true(FBuffer *buffer, struct generate_json_data *data, VALUE obj);
-static void generate_json_integer(FBuffer *buffer, struct generate_json_data *data, VALUE obj);
 static void generate_json_fixnum(FBuffer *buffer, struct generate_json_data *data, VALUE obj);
 static void generate_json_bignum(FBuffer *buffer, struct generate_json_data *data, VALUE obj);
 static void generate_json_float(FBuffer *buffer, struct generate_json_data *data, VALUE obj);
@@ -701,206 +700,6 @@ static void convert_UTF8_to_ASCII_only_JSON(search_state *search, const unsigned
     }
 }
 
-/*
- * Document-module: JSON::Ext::Generator
- *
- * This is the JSON generator implemented as a C extension. It can be
- * configured to be used by setting
- *
- *  JSON.generator = JSON::Ext::Generator
- *
- * with the method generator= in JSON.
- *
- */
-
-/* Explanation of the following: that's the only way to not pollute
- * standard library's docs with GeneratorMethods::<ClassName> which
- * are uninformative and take a large place in a list of classes
- */
-
-/*
- * Document-module: JSON::Ext::Generator::GeneratorMethods
- * :nodoc:
- */
-
-/*
- * Document-module: JSON::Ext::Generator::GeneratorMethods::Array
- * :nodoc:
- */
-
-/*
- * Document-module: JSON::Ext::Generator::GeneratorMethods::Bignum
- * :nodoc:
- */
-
-/*
- * Document-module: JSON::Ext::Generator::GeneratorMethods::FalseClass
- * :nodoc:
- */
-
-/*
- * Document-module: JSON::Ext::Generator::GeneratorMethods::Fixnum
- * :nodoc:
- */
-
-/*
- * Document-module: JSON::Ext::Generator::GeneratorMethods::Float
- * :nodoc:
- */
-
-/*
- * Document-module: JSON::Ext::Generator::GeneratorMethods::Hash
- * :nodoc:
- */
-
-/*
- * Document-module: JSON::Ext::Generator::GeneratorMethods::Integer
- * :nodoc:
- */
-
-/*
- * Document-module: JSON::Ext::Generator::GeneratorMethods::NilClass
- * :nodoc:
- */
-
-/*
- * Document-module: JSON::Ext::Generator::GeneratorMethods::Object
- * :nodoc:
- */
-
-/*
- * Document-module: JSON::Ext::Generator::GeneratorMethods::String
- * :nodoc:
- */
-
-/*
- * Document-module: JSON::Ext::Generator::GeneratorMethods::String::Extend
- * :nodoc:
- */
-
-/*
- * Document-module: JSON::Ext::Generator::GeneratorMethods::TrueClass
- * :nodoc:
- */
-
-/*
- * call-seq: to_json(state = nil)
- *
- * Returns a JSON string containing a JSON object, that is generated from
- * this Hash instance.
- * _state_ is a JSON::State object, that can also be used to configure the
- * produced JSON string output further.
- */
-static VALUE mHash_to_json(int argc, VALUE *argv, VALUE self)
-{
-    rb_check_arity(argc, 0, 1);
-    VALUE Vstate = cState_from_state_s(cState, argc == 1 ? argv[0] : Qnil);
-    return cState_partial_generate(Vstate, self, generate_json_object, Qfalse);
-}
-
-/*
- * call-seq: to_json(state = nil)
- *
- * Returns a JSON string containing a JSON array, that is generated from
- * this Array instance.
- * _state_ is a JSON::State object, that can also be used to configure the
- * produced JSON string output further.
- */
-static VALUE mArray_to_json(int argc, VALUE *argv, VALUE self)
-{
-    rb_check_arity(argc, 0, 1);
-    VALUE Vstate = cState_from_state_s(cState, argc == 1 ? argv[0] : Qnil);
-    return cState_partial_generate(Vstate, self, generate_json_array, Qfalse);
-}
-
-/*
- * call-seq: to_json(*)
- *
- * Returns a JSON string representation for this Integer number.
- */
-static VALUE mInteger_to_json(int argc, VALUE *argv, VALUE self)
-{
-    rb_check_arity(argc, 0, 1);
-    VALUE Vstate = cState_from_state_s(cState, argc == 1 ? argv[0] : Qnil);
-    return cState_partial_generate(Vstate, self, generate_json_integer, Qfalse);
-}
-
-/*
- * call-seq: to_json(*)
- *
- * Returns a JSON string representation for this Float number.
- */
-static VALUE mFloat_to_json(int argc, VALUE *argv, VALUE self)
-{
-    rb_check_arity(argc, 0, 1);
-    VALUE Vstate = cState_from_state_s(cState, argc == 1 ? argv[0] : Qnil);
-    return cState_partial_generate(Vstate, self, generate_json_float, Qfalse);
-}
-
-/*
- * call-seq: to_json(*)
- *
- * This string should be encoded with UTF-8 A call to this method
- * returns a JSON string encoded with UTF16 big endian characters as
- * \u????.
- */
-static VALUE mString_to_json(int argc, VALUE *argv, VALUE self)
-{
-    rb_check_arity(argc, 0, 1);
-    VALUE Vstate = cState_from_state_s(cState, argc == 1 ? argv[0] : Qnil);
-    return cState_partial_generate(Vstate, self, generate_json_string, Qfalse);
-}
-
-/*
- * call-seq: to_json(*)
- *
- * Returns a JSON string for true: 'true'.
- */
-static VALUE mTrueClass_to_json(int argc, VALUE *argv, VALUE self)
-{
-    rb_check_arity(argc, 0, 1);
-    return rb_utf8_str_new("true", 4);
-}
-
-/*
- * call-seq: to_json(*)
- *
- * Returns a JSON string for false: 'false'.
- */
-static VALUE mFalseClass_to_json(int argc, VALUE *argv, VALUE self)
-{
-    rb_check_arity(argc, 0, 1);
-    return rb_utf8_str_new("false", 5);
-}
-
-/*
- * call-seq: to_json(*)
- *
- * Returns a JSON string for nil: 'null'.
- */
-static VALUE mNilClass_to_json(int argc, VALUE *argv, VALUE self)
-{
-    rb_check_arity(argc, 0, 1);
-    return rb_utf8_str_new("null", 4);
-}
-
-/*
- * call-seq: to_json(*)
- *
- * Converts this object to a string (calling #to_s), converts
- * it to a JSON string, and returns the result. This is a fallback, if no
- * special method #to_json was defined for some object.
- */
-static VALUE mObject_to_json(int argc, VALUE *argv, VALUE self)
-{
-    VALUE state;
-    VALUE string = rb_funcall(self, i_to_s, 0);
-    rb_scan_args(argc, argv, "01", &state);
-    Check_Type(string, T_STRING);
-    state = cState_from_state_s(cState, state);
-    return cState_partial_generate(state, string, generate_json_string, Qfalse);
-}
-
 static void State_mark(void *ptr)
 {
     JSON_Generator_State *state = ptr;
@@ -1348,14 +1147,6 @@ static void generate_json_bignum(FBuffer *buffer, struct generate_json_data *dat
     fbuffer_append_str(buffer, StringValue(tmp));
 }
 
-static void generate_json_integer(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
-{
-    if (FIXNUM_P(obj))
-        generate_json_fixnum(buffer, data, obj);
-    else
-        generate_json_bignum(buffer, data, obj);
-}
-
 static void generate_json_float(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
 {
     double value = RFLOAT_VALUE(obj);
@@ -1399,7 +1190,7 @@ static void generate_json_fragment(FBuffer *buffer, struct generate_json_data *d
     fbuffer_append_str(buffer, fragment);
 }
 
-static void generate_json(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
+static inline void generate_json_general(FBuffer *buffer, struct generate_json_data *data, VALUE obj, bool fallback)
 {
     bool as_json_called = false;
 start:
@@ -1426,15 +1217,15 @@ start:
                 generate_json_bignum(buffer, data, obj);
                 break;
             case T_HASH:
-                if (klass != rb_cHash) goto general;
+                if (fallback && klass != rb_cHash) goto general;
                 generate_json_object(buffer, data, obj);
                 break;
             case T_ARRAY:
-                if (klass != rb_cArray) goto general;
+                if (fallback && klass != rb_cArray) goto general;
                 generate_json_array(buffer, data, obj);
                 break;
             case T_STRING:
-                if (klass != rb_cString) goto general;
+                if (fallback && klass != rb_cString) goto general;
 
                 if (RB_LIKELY(valid_json_string_p(obj))) {
                     raw_generate_json_string(buffer, data, obj);
@@ -1450,7 +1241,7 @@ start:
                 generate_json_symbol(buffer, data, obj);
                 break;
             case T_FLOAT:
-                if (klass != rb_cFloat) goto general;
+                if (fallback && klass != rb_cFloat) goto general;
                 generate_json_float(buffer, data, obj);
                 break;
             case T_STRUCT:
@@ -1474,6 +1265,16 @@ start:
     }
 }
 
+static void generate_json(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
+{
+    generate_json_general(buffer, data, obj, true);
+}
+
+static void generate_json_no_fallback(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
+{
+    generate_json_general(buffer, data, obj, false);
+}
+
 static VALUE generate_json_try(VALUE d)
 {
     struct generate_json_data *data = (struct generate_json_data *)d;
@@ -1491,7 +1292,7 @@ static VALUE generate_json_ensure(VALUE d)
     return Qundef;
 }
 
-static VALUE cState_partial_generate(VALUE self, VALUE obj, generator_func func, VALUE io)
+static inline VALUE cState_partial_generate(VALUE self, VALUE obj, generator_func func, VALUE io)
 {
     GET_STATE(self);
 
@@ -1509,9 +1310,7 @@ static VALUE cState_partial_generate(VALUE self, VALUE obj, generator_func func,
         .obj = obj,
         .func = func
     };
-    VALUE result = rb_ensure(generate_json_try, (VALUE)&data, generate_json_ensure, (VALUE)&data);
-    RB_GC_GUARD(self);
-    return result;
+    return rb_ensure(generate_json_try, (VALUE)&data, generate_json_ensure, (VALUE)&data);
 }
 
 /* call-seq:
@@ -1528,6 +1327,15 @@ static VALUE cState_generate(int argc, VALUE *argv, VALUE self)
     VALUE obj = argv[0];
     VALUE io = argc > 1 ? argv[1] : Qnil;
     return cState_partial_generate(self, obj, generate_json, io);
+}
+
+/* :nodoc: */
+static VALUE cState_generate_no_fallback(int argc, VALUE *argv, VALUE self)
+{
+    rb_check_arity(argc, 1, 2);
+    VALUE obj = argv[0];
+    VALUE io = argc > 1 ? argv[1] : Qnil;
+    return cState_partial_generate(self, obj, generate_json_no_fallback, io);
 }
 
 static VALUE cState_initialize(int argc, VALUE *argv, VALUE self)
@@ -2028,7 +1836,7 @@ static VALUE cState_configure(VALUE self, VALUE opts)
     return self;
 }
 
-static VALUE cState_m_generate(VALUE klass, VALUE obj, VALUE opts, VALUE io)
+static VALUE cState_m_do_generate(VALUE klass, VALUE obj, VALUE opts, VALUE io, generator_func func)
 {
     JSON_Generator_State state = {0};
     state_init(&state);
@@ -2046,14 +1854,21 @@ static VALUE cState_m_generate(VALUE klass, VALUE obj, VALUE opts, VALUE io)
         .state = &state,
         .depth = state.depth,
         .obj = obj,
-        .func = generate_json,
+        .func = func,
     };
     return rb_ensure(generate_json_try, (VALUE)&data, generate_json_ensure, (VALUE)&data);
 }
 
-/*
- *
- */
+static VALUE cState_m_generate(VALUE klass, VALUE obj, VALUE opts, VALUE io)
+{
+    return cState_m_do_generate(klass, obj, opts, io, generate_json);
+}
+
+static VALUE cState_m_generate_no_fallback(VALUE klass, VALUE obj, VALUE opts, VALUE io)
+{
+    return cState_m_do_generate(klass, obj, opts, io, generate_json_no_fallback);
+}
+
 void Init_generator(void)
 {
 #ifdef HAVE_RB_EXT_RACTOR_SAFE
@@ -2118,39 +1933,12 @@ void Init_generator(void)
     rb_define_method(cState, "buffer_initial_length", cState_buffer_initial_length, 0);
     rb_define_method(cState, "buffer_initial_length=", cState_buffer_initial_length_set, 1);
     rb_define_method(cState, "generate", cState_generate, -1);
+    rb_define_method(cState, "_generate_no_fallback", cState_generate_no_fallback, -1);
 
     rb_define_private_method(cState, "allow_duplicate_key?", cState_allow_duplicate_key_p, 0);
 
     rb_define_singleton_method(cState, "generate", cState_m_generate, 3);
-
-    VALUE mGeneratorMethods = rb_define_module_under(mGenerator, "GeneratorMethods");
-
-    VALUE mObject = rb_define_module_under(mGeneratorMethods, "Object");
-    rb_define_method(mObject, "to_json", mObject_to_json, -1);
-
-    VALUE mHash = rb_define_module_under(mGeneratorMethods, "Hash");
-    rb_define_method(mHash, "to_json", mHash_to_json, -1);
-
-    VALUE mArray = rb_define_module_under(mGeneratorMethods, "Array");
-    rb_define_method(mArray, "to_json", mArray_to_json, -1);
-
-    VALUE mInteger = rb_define_module_under(mGeneratorMethods, "Integer");
-    rb_define_method(mInteger, "to_json", mInteger_to_json, -1);
-
-    VALUE mFloat = rb_define_module_under(mGeneratorMethods, "Float");
-    rb_define_method(mFloat, "to_json", mFloat_to_json, -1);
-
-    VALUE mString = rb_define_module_under(mGeneratorMethods, "String");
-    rb_define_method(mString, "to_json", mString_to_json, -1);
-
-    VALUE mTrueClass = rb_define_module_under(mGeneratorMethods, "TrueClass");
-    rb_define_method(mTrueClass, "to_json", mTrueClass_to_json, -1);
-
-    VALUE mFalseClass = rb_define_module_under(mGeneratorMethods, "FalseClass");
-    rb_define_method(mFalseClass, "to_json", mFalseClass_to_json, -1);
-
-    VALUE mNilClass = rb_define_module_under(mGeneratorMethods, "NilClass");
-    rb_define_method(mNilClass, "to_json", mNilClass_to_json, -1);
+    rb_define_singleton_method(cState, "_generate_no_fallback", cState_m_generate_no_fallback, 3);
 
     rb_global_variable(&Encoding_UTF_8);
     Encoding_UTF_8 = rb_const_get(rb_path2class("Encoding"), rb_intern("UTF_8"));
