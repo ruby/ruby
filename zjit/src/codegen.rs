@@ -3192,7 +3192,7 @@ impl IseqCall {
 
     /// Regenerate a IseqCall with a given callback
     fn regenerate(&self, cb: &mut CodeBlock, callback: impl Fn(&mut Assembler)) {
-        cb.with_write_ptr(self.start_addr.get().unwrap(), |cb| {
+        cb.with_write_ptr(self.start_addr.get().expect("expected a start address"), |cb| {
             let mut asm = Assembler::new();
             asm.new_block_without_id();
             callback(&mut asm);
