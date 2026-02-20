@@ -139,7 +139,6 @@ static inline int imemo_type_p(VALUE imemo, enum imemo_type imemo_type);
 static inline bool imemo_throw_data_p(VALUE imemo);
 static inline struct vm_ifunc *rb_vm_ifunc_proc_new(rb_block_call_func_t func, const void *data);
 static inline void *RB_IMEMO_TMPBUF_PTR(VALUE v);
-static inline void *rb_imemo_tmpbuf_set_ptr(VALUE v, void *ptr);
 static inline void MEMO_V1_SET(struct MEMO *m, VALUE v);
 static inline void MEMO_V2_SET(struct MEMO *m, VALUE v);
 
@@ -191,12 +190,6 @@ RB_IMEMO_TMPBUF_PTR(VALUE v)
 {
     const struct rb_imemo_tmpbuf_struct *p = (const void *)v;
     return p->ptr;
-}
-
-static inline void *
-rb_imemo_tmpbuf_set_ptr(VALUE v, void *ptr)
-{
-    return ((rb_imemo_tmpbuf_t *)v)->ptr = ptr;
 }
 
 static inline VALUE
