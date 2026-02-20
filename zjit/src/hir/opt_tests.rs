@@ -4403,14 +4403,16 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:CBool = IsBlockParamModified l1
           IfTrue v10, bb4(v6)
-          v19:BasicObject = GetBlockParam :block, l1, EP@3
-          Jump bb6(v6, v19)
+          v21:BasicObject = GetBlockParam :block, l1, EP@3
+          Jump bb6(v6, v21)
         bb4(v11:BasicObject):
-          v17:BasicObject = GetLocal :block, l1, EP@3
-          Jump bb6(v11, v17)
-        bb6(v21:BasicObject, v22:BasicObject):
+          IncrCounter vm_read_from_parent_iseq_local_count
+          v18:CPtr = GetEP 1
+          v19:BasicObject = LoadField v18, :_ep_local@0x1000
+          Jump bb6(v11, v19)
+        bb6(v23:BasicObject, v24:BasicObject):
           CheckInterrupts
-          Return v22
+          Return v24
         ");
     }
 
