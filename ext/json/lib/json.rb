@@ -201,10 +201,10 @@ require 'json/common'
 # defaults to +false+.
 #
 # With the default, +false+:
-#   JSON.parse(%{"Hell\\o"}) # invalid escape character in string (JSON::ParserError)
+#   JSON.parse('"Hell\o"') # invalid escape character in string (JSON::ParserError)
 #
 # When enabled:
-#   JSON.parse(%{"Hell\\o"}, allow_invalid_escape: true) # => "Hello"
+#   JSON.parse('"Hell\o"', allow_invalid_escape: true) # => "Hello"
 #
 # ====== Output Options
 #
