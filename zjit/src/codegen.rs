@@ -22,6 +22,7 @@ use crate::backend::lir::{self, Assembler, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NAT
 use crate::hir::{iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
 use crate::hir::{Const, FrameState, Function, Insn, InsnId, SendFallbackReason};
 use crate::hir_type::{types, Type};
+use crate::hir_effect::{Effect, abstract_heaps};
 use crate::options::get_option;
 use crate::cast::IntoUsize;
 
@@ -265,6 +266,10 @@ fn gen_iseq_body(cb: &mut CodeBlock, iseq: IseqPtr, mut version: IseqVersionRef,
     Ok(iseq_code_ptrs)
 }
 
+fn spill_local(jit: &JITState, asm: &mut Assembler, local_idx: usize, insn_id: InsnId) {
+    asm.mov(Opnd::mem(64, SP, (-local_idx_to_ep_offset(jit.iseq, local_idx) - 1) * SIZEOF_VALUE_I32), jit.get_opnd(insn_id));
+}
+
 /// Compile a function
 fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, function: &Function) -> Result<(IseqCodePtrs, Vec<CodePtr>, Vec<IseqCallRef>), CompileError> {
     let num_spilled_params = max_num_params(function).saturating_sub(ALLOC_REGS.len());
@@ -327,8 +332,36 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
         }
 
         // Compile all instructions
+        let mut spilled_locals = vec![];
+        let mut last_frame_state = None;
         for &insn_id in block.insns() {
             let insn = function.find(insn_id);
+            if let Insn::Snapshot { ref state } = insn {
+                last_frame_state = Some(state.clone());
+            }
+            let effects = insn.effects_of();
+            if effects.includes(Effect::read(abstract_heaps::Locals)) {
+                // Need to flush locals to the VM frame before
+                let Some(frame_state) = &last_frame_state else {
+                    panic!("Insn {insn_id} {insn} reads locals but there's no preceding Snapshot");
+                };
+                let locals = &frame_state.locals;
+                if locals.len() > spilled_locals.len() {
+                    // Bump the size up
+                    spilled_locals.resize(locals.len(), None);
+                } else if locals.len() < spilled_locals.len() {
+                    // Invalidate locals above the watermark
+                    spilled_locals.truncate(locals.len());
+                }
+                for (i, &local) in locals.iter().enumerate() {
+                    if spilled_locals[i] == Some(local) {
+                        // No need to re-write to the VM frame
+                        continue;
+                    }
+                    spill_local(&mut jit, &mut asm, i, local);
+                    spilled_locals[i] = Some(local);
+                }
+            }
             match insn {
                 Insn::IfFalse { val, target } => {
                     let val_opnd = jit.get_opnd(val);
@@ -2506,13 +2539,7 @@ fn gen_save_sp(asm: &mut Assembler, stack_size: usize) {
 }
 
 /// Spill locals onto the stack.
-fn gen_spill_locals(jit: &JITState, asm: &mut Assembler, state: &FrameState) {
-    // TODO: Avoid spilling locals that have been spilled before and not changed.
-    gen_incr_counter(asm, Counter::vm_write_locals_count);
-    asm_comment!(asm, "spill locals");
-    for (idx, &insn_id) in state.locals().enumerate() {
-        asm.mov(Opnd::mem(64, SP, (-local_idx_to_ep_offset(jit.iseq, idx) - 1) * SIZEOF_VALUE_I32), jit.get_opnd(insn_id));
-    }
+fn gen_spill_locals(_jit: &JITState, _asm: &mut Assembler, _state: &FrameState) {
 }
 
 /// Spill the virtual stack onto the stack.

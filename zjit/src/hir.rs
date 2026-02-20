@@ -1097,7 +1097,7 @@ impl Insn {
 
     // TODO(Jacob): Model SP. ie, all allocations modify stack size but using the effect for stack modification feels excessive
     // TODO(Jacob): Add sideeffect failure bit
-    fn effects_of(&self) -> Effect {
+    pub fn effects_of(&self) -> Effect {
         const allocates: Effect = Effect::read_write(abstract_heaps::PC.union(abstract_heaps::Allocator), abstract_heaps::Allocator);
         match &self {
             Insn::Const { .. } => effects::Empty,
@@ -1173,7 +1173,7 @@ impl Insn {
             Insn::StoreField { .. } => effects::Any,
             Insn::WriteBarrier { .. } => effects::Any,
             Insn::GetLocal   { .. } => Effect::read_write(abstract_heaps::Locals, abstract_heaps::Empty),
-            Insn::SetLocal { .. } => effects::Any,
+            Insn::SetLocal { .. } => Effect::write(abstract_heaps::Locals),
             Insn::GetSpecialSymbol { .. } => effects::Any,
             Insn::GetSpecialNumber { .. } => effects::Any,
             Insn::GetClassVar { .. } => effects::Any,
@@ -1181,9 +1181,9 @@ impl Insn {
             Insn::IsBlockParamModified { .. } => effects::Any,
             Insn::GetBlockParam { .. } => effects::Any,
             Insn::Snapshot { .. } => effects::Empty,
-            Insn::Jump(_) => effects::Any,
-            Insn::IfTrue { .. } => effects::Any,
-            Insn::IfFalse { .. } => effects::Any,
+            Insn::Jump(_) => effects::Control,
+            Insn::IfTrue { .. } => effects::Control,
+            Insn::IfFalse { .. } => effects::Control,
             Insn::CCall { elidable, .. } => {
                 if *elidable {
                     Effect::write(abstract_heaps::Allocator)
@@ -1208,7 +1208,7 @@ impl Insn {
             Insn::InvokeBlock { .. } => effects::Any,
             Insn::SendDirect { .. } => effects::Any,
             Insn::InvokeBuiltin { .. } => effects::Any,
-            Insn::EntryPoint { .. } => effects::Any,
+            Insn::EntryPoint { .. } => effects::Control,
             Insn::Return { .. } => effects::Any,
             Insn::Throw { .. } => effects::Any,
             Insn::FixnumAdd { .. } => effects::Empty,
@@ -5910,8 +5910,8 @@ pub struct FrameState {
     // Ruby bytecode instruction pointer
     pub pc: *const VALUE,
 
-    stack: Vec<InsnId>,
-    locals: Vec<InsnId>,
+    pub stack: Vec<InsnId>,
+    pub locals: Vec<InsnId>,
 }
 
 impl FrameState {
