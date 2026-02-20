@@ -1385,6 +1385,21 @@ fn gen_send_without_block(
     gen_incr_send_fallback_counter(asm, reason);
 
     gen_prepare_non_leaf_call(jit, asm, state);
+
+    // If this send has no profile data, call a recompile callback that profiles
+    // the receiver/args on the stack and triggers recompilation of this ISEQ.
+    if matches!(reason, SendFallbackReason::SendWithoutBlockNoProfiles) {
+        let ci = unsafe { get_call_data_ci(cd) };
+        let argc = unsafe { vm_ci_argc(ci) };
+        asm_comment!(asm, "trigger recompilation for no-profile send");
+        asm_ccall!(asm, no_profile_send_recompile,
+            EC,
+            Opnd::Value(VALUE::from(jit.iseq)),
+            Opnd::UImm(state.insn_idx() as u64),
+            Opnd::Imm(argc as i64)
+        );
+    }
+
     asm_comment!(asm, "call #{} with dynamic dispatch", ruby_call_method_name(cd));
     unsafe extern "C" {
         fn rb_vm_opt_send_without_block(ec: EcPtr, cfp: CfpPtr, cd: VALUE) -> VALUE;
@@ -2713,6 +2728,43 @@ macro_rules! c_callable {
 }
 #[cfg(test)]
 pub(crate) use c_callable;
+
+c_callable! {
+    /// Called from JIT code when a send instruction had no profile data. This function profiles
+    /// the receiver and arguments on the stack, then invalidates the current ISEQ version so that
+    /// the ISEQ will be recompiled with the new profile data on the next call.
+    fn no_profile_send_recompile(ec: EcPtr, iseq_raw: VALUE, insn_idx: u32, argc: i32) {
+        with_vm_lock(src_loc!(), || {
+            let iseq: IseqPtr = iseq_raw.as_iseq();
+            let cfp = unsafe { get_ec_cfp(ec) };
+            let sp = unsafe { get_cfp_sp(cfp) };
+
+            // Profile the receiver and arguments for this send instruction
+            let payload = get_or_create_iseq_payload(iseq);
+            payload.profile.profile_send_at(iseq, insn_idx as usize, sp, argc as usize);
+
+            // Invalidate the current version and reset jit_func so it recompiles on next call
+            let num_versions = payload.versions.len();
+            if let Some(version) = payload.versions.last_mut() {
+                if unsafe { version.as_ref() }.status != IseqStatus::Invalidated
+                    && num_versions < MAX_ISEQ_VERSIONS
+                {
+                    unsafe { version.as_mut() }.status = IseqStatus::Invalidated;
+                    unsafe { rb_iseq_reset_jit_func(iseq) };
+
+                    // Recompile JIT-to-JIT calls into the invalidated ISEQ
+                    let cb = ZJITState::get_code_block();
+                    for incoming in unsafe { version.as_ref() }.incoming.iter() {
+                        if let Err(err) = gen_iseq_call(cb, incoming) {
+                            debug!("{err:?}: gen_iseq_call failed on no-profile recompile: {}", iseq_get_location(incoming.iseq.get(), 0));
+                        }
+                    }
+                    cb.mark_all_executable();
+                }
+            }
+        });
+    }
+}
 
 c_callable! {
     /// Generated code calls this function with the SysV calling convention. See [gen_function_stub].

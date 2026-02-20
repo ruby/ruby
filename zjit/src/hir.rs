@@ -6064,6 +6064,11 @@ impl FrameState {
         args
     }
 
+    /// Get the YARV instruction index for the current instruction
+    pub fn insn_idx(&self) -> usize {
+        self.insn_idx
+    }
+
     /// Get the opcode for the current instruction
     pub fn get_opcode(&self) -> i32 {
         unsafe { rb_iseq_opcode_at_pc(self.iseq, self.pc) }

@@ -12958,4 +12958,108 @@ mod hir_opt_tests {
           Jump bb8(v67, v94)
         ");
     }
+
+    #[test]
+    fn recompile_no_profile_send() {
+        // With call_threshold=2, the first call profiles and the second compiles.
+        // In fib, recursive calls increment the call count, so compilation may
+        // trigger mid-execution before all send sites are profiled.
+        // The first recursive send (test(n-1)) gets profiled and compiles to
+        // SendDirect, while the second (test(n-2)) lacks profile data and
+        // falls back to dynamic dispatch (SendWithoutBlock).
+        eval("
+            def test_no_profile(n)
+              if n < 2
+                return n
+              end
+              test_no_profile(n - 1) + test_no_profile(n - 2)
+            end
+            test_no_profile(5)
+        ");
+        let before = hir_string("test_no_profile");
+
+        // Execute again to trigger recompilation for no-profile sends.
+        eval("test_no_profile(5)");
+        let after = hir_string("test_no_profile");
+
+        assert_snapshot!(format!("before:\n{before}\nafter:\n{after}"), @r"
+        before:
+        fn test_no_profile@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :n, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:Fixnum[2] = Const Value(2)
+          PatchPoint MethodRedefined(Integer@0x1000, <@0x1008, cme:0x1010)
+          v67:Fixnum = GuardType v9, Fixnum
+          v68:BoolExact = FixnumLt v67, v14
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          v20:CBool = Test v68
+          IfFalse v20, bb3(v8, v9)
+          CheckInterrupts
+          Return v9
+        bb3(v30:BasicObject, v31:BasicObject):
+          v37:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1000, -@0x1038, cme:0x1040)
+          v72:Fixnum = GuardType v31, Fixnum
+          v73:Fixnum = FixnumSub v72, v37
+          IncrCounter inline_cfunc_optimized_send_count
+          PatchPoint NoSingletonClass(Object@0x1068)
+          PatchPoint MethodRedefined(Object@0x1068, test_no_profile@0x1070, cme:0x1078)
+          v63:HeapObject[class_exact*:Object@VALUE(0x1068)] = GuardType v30, HeapObject[class_exact*:Object@VALUE(0x1068)]
+          v64:BasicObject = SendDirect v63, 0x10a0, :test_no_profile (0x10b0), v73
+          PatchPoint NoEPEscape(test_no_profile)
+          v48:Fixnum[2] = Const Value(2)
+          v51:BasicObject = SendWithoutBlock v31, :-, v48 # SendFallbackReason: Uncategorized(opt_minus)
+          v53:BasicObject = SendWithoutBlock v30, :test_no_profile, v51 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v56:BasicObject = SendWithoutBlock v64, :+, v53 # SendFallbackReason: Uncategorized(opt_plus)
+          CheckInterrupts
+          Return v56
+
+        after:
+        fn test_no_profile@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :n, l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:Fixnum[2] = Const Value(2)
+          PatchPoint MethodRedefined(Integer@0x1000, <@0x1008, cme:0x1010)
+          v67:Fixnum = GuardType v9, Fixnum
+          v68:BoolExact = FixnumLt v67, v14
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          v20:CBool = Test v68
+          IfFalse v20, bb3(v8, v9)
+          CheckInterrupts
+          Return v9
+        bb3(v30:BasicObject, v31:BasicObject):
+          v37:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1000, -@0x1038, cme:0x1040)
+          v72:Fixnum = GuardType v31, Fixnum
+          v73:Fixnum = FixnumSub v72, v37
+          IncrCounter inline_cfunc_optimized_send_count
+          PatchPoint NoSingletonClass(Object@0x1068)
+          PatchPoint MethodRedefined(Object@0x1068, test_no_profile@0x1070, cme:0x1078)
+          v63:HeapObject[class_exact*:Object@VALUE(0x1068)] = GuardType v30, HeapObject[class_exact*:Object@VALUE(0x1068)]
+          v64:BasicObject = SendDirect v63, 0x10a0, :test_no_profile (0x10b0), v73
+          PatchPoint NoEPEscape(test_no_profile)
+          v48:Fixnum[2] = Const Value(2)
+          v51:BasicObject = SendWithoutBlock v31, :-, v48 # SendFallbackReason: Uncategorized(opt_minus)
+          v53:BasicObject = SendWithoutBlock v30, :test_no_profile, v51 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v56:BasicObject = SendWithoutBlock v64, :+, v53 # SendFallbackReason: Uncategorized(opt_plus)
+          CheckInterrupts
+          Return v56
+        ");
+    }
 }

@@ -4975,3 +4975,22 @@ fn test_local_tracepoint() {
         called
     "), @"true");
 }
+
+#[test]
+fn test_recompile_no_profile_send() {
+    // Test that recursive calls with no-profile sends trigger recompilation.
+    // With call_threshold=2, the first call profiles and the second compiles.
+    // In fib, some recursive paths may not be reached during profiling, leading
+    // to no-profile sends. The recompilation callback should profile the receiver
+    // and trigger recompilation so subsequent calls use optimized sends.
+    assert_snapshot!(inspect("
+        def test(n)
+          if n < 2
+            return n
+          end
+          test(n - 1) + test(n - 2)
+        end
+
+        test(5)
+    "), @"5");
+}
