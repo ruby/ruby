@@ -3240,9 +3240,10 @@ pub fn lir_intervals_string(asm: &Assembler, intervals: &[Interval]) -> String {
                                intervals[vreg_idx].range.end.is_some() &&
                                intervals[vreg_idx].survives(insn_id.0);
 
-                if intervals[vreg_idx].born_at(insn_id.0) {
+                let has_range = intervals[vreg_idx].range.start.is_some();
+                if has_range && intervals[vreg_idx].born_at(insn_id.0) {
                     output.push_str("  v ");
-                } else if intervals[vreg_idx].dies_at(insn_id.0) {
+                } else if has_range && intervals[vreg_idx].dies_at(insn_id.0) {
                     output.push_str("  ^ ");
                 } else if is_alive {
                     output.push_str("  █ ");
