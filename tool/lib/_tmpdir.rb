@@ -28,7 +28,7 @@ END {
       Dir.rmdir(tmpdir)
     rescue Errno::ENOENT
     rescue Errno::ENOTEMPTY
-      unless $no_report_tmpdir
+      unless $no_report_tmpdir ||= nil
         require_relative "colorize"
         colorize = Colorize.new
         ls = Struct.new(:colorize) do
