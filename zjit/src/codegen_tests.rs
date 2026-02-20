@@ -2782,6 +2782,72 @@ fn test_array_fixnum_aset_array_subclass() {
 }
 
 #[test]
+fn test_array_splice_aset() {
+    eval("
+        def test(arr, idx, len)
+            arr[idx, len] = [4, 5, 6]
+        end
+        test([1,2,3], 0, 2)
+    ");
+    assert_snapshot!(inspect("arr = [1,2,3]; test(arr, 0, 2); arr"), @"[4, 5, 6, 3]");
+}
+
+#[test]
+fn test_array_splice_aset_returns_value() {
+    eval("
+        def test(arr, idx, len, val)
+            arr[idx, len] = val
+        end
+        test([1,2,3], 0, 2, [4,5,6])
+    ");
+    assert_snapshot!(inspect("test([1,2,3], 0, 2, [4,5,6])"), @"[4, 5, 6]");
+}
+
+#[test]
+fn test_array_splice_aset_frozen() {
+    assert_snapshot!(inspect("
+        def test(arr, idx, len, val)
+            arr[idx, len] = val
+        end
+        arr = [1,2,3]
+        test(arr, 0, 2, [4,5])
+        test(arr, 0, 2, [4,5])
+        arr.freeze
+        begin
+            test(arr, 0, 2, [4,5])
+        rescue => e
+            e.class
+        end
+    "), @"FrozenError");
+}
+
+#[test]
+fn test_array_splice_aset_shared() {
+    assert_snapshot!(inspect("
+        def test(arr, idx, len, val)
+            arr[idx, len] = val
+        end
+        arr = (0..50).to_a
+        test(arr, 0, 1, [-1])
+        shared = arr[10, 20]
+        test(shared, 0, 1, [999])
+        [arr[10], shared[0], arr[0]]
+    "), @"[10, 999, -1]");
+}
+
+#[test]
+fn test_array_splice_aset_array_subclass() {
+    eval("
+        class MySpliceArray < Array; end
+        def test(arr, idx, len, val)
+            arr[idx, len] = val
+        end
+        test(MySpliceArray.new([1,2,3]), 0, 2, [4,5])
+    ");
+    assert_snapshot!(inspect("arr = MySpliceArray.new([1,2,3]); test(arr, 0, 2, [4,5]); arr.to_a"), @"[4, 5, 3]");
+}
+
+#[test]
 fn test_array_aset_non_fixnum_index() {
     assert_snapshot!(inspect(r#"
         def test(arr, idx)
