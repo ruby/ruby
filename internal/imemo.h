@@ -195,21 +195,13 @@ RB_IMEMO_TMPBUF_PTR(VALUE v)
 static inline VALUE
 rb_imemo_tmpbuf_new_from_an_RString(VALUE str)
 {
-    const void *src;
     VALUE imemo;
-    rb_imemo_tmpbuf_t *tmpbuf;
-    void *dst;
     size_t len;
 
     StringValue(str);
-    /* create tmpbuf to keep the pointer before xmalloc */
-    imemo = rb_imemo_tmpbuf_new();
-    tmpbuf = (rb_imemo_tmpbuf_t *)imemo;
     len = RSTRING_LEN(str);
-    src = RSTRING_PTR(str);
-    dst = ruby_xmalloc(len);
-    memcpy(dst, src, len);
-    tmpbuf->ptr = dst;
+    rb_alloc_tmp_buffer(&imemo, len);
+    memcpy(RB_IMEMO_TMPBUF_PTR(imemo), RSTRING_PTR(str), len);
     return imemo;
 }
 
