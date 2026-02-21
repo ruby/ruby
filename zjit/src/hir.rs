@@ -531,6 +531,14 @@ pub enum MethodType {
     Null,
 }
 
+// TODO(Jacob): collapse methodescape and globalescape. Potentially add some type of sideexit escape.
+#[derive(Debug, Clone, Copy)]
+pub enum EscapeType {
+    NoEscape,
+    MethodEscape,
+    GlobalEscape,
+}
+
 impl From<u32> for MethodType {
     fn from(value: u32) -> Self {
         match value {
@@ -3788,6 +3796,70 @@ impl Function {
         })
     }
 
+    // TODO(Jacob): Complete this
+    // MVP Escape analysis demonstration (thanks Kevin!)
+    //
+    // scalar replace the following. No object allocation, it just returns 200
+    // p = Point.new(10, 20)
+    // a = p.x
+    // b = p.y
+    // area = a * b
+
+    fn escape_type_of(instruction: Insn) -> EscapeType {
+        match instruction {
+            // Object creation starts as NoEscape
+            Insn::ObjectAlloc { .. } => EscapeType::NoEscape,
+            Insn::ObjectAllocClass { .. } => EscapeType::NoEscape,
+
+            // We need some example that has MethodEscape or GlobalEscape for an initial test
+
+
+            // TODO(Jacob): Fill out each of the values here with our paper annotations from the burst
+            // TODO(Jacob): Eventually, this should not use any wildcard and should match for every single HIR instruction
+            _ => EscapeType::NoEscape,
+        }
+    }
+
+    // TODO(Jacob): handle the paper's x = p.f case. something like load / store or arrayload or attribute accessors can be scalar replaced (if the escape type is NoEscape)
+    // fn replace() {
+
+    // }
+
+    // TODO(Jacob): We probably need a function to do rewriting of escapable allocations here. TBD
+
+    // TODO(Jacob): Find a way to make different tests run just a single pass
+    // TODO(Jacob): Make a clear note about potentially altering tracepoint semantics
+    // TODO(Jacob): Make some escape analysis tests. Ask someone else to make sure the examples I'm using are correct for ruby and matter
+    fn scalar_replace(&mut self) {
+        // Design sketch
+        // 1. Walk the basic block and tag each Insn with an escape value. The escape values are part of a lattice. While this lattice is
+        // much simpler than effects or types, it is definitely a lattice. Instructions are lifted to higher escape types, but not lowered.
+        // 2. Union find the Insns by escape type to normalize the overall escape type. (ie. NoEscape connected to GlobalEscape turns both
+        // into GlobalEscape. We use Union-Find because it's fast, matches the academic paper, and is already implemented in ZJIT HIR. But
+        // other set connectivity algorithms are also fine.
+        // 3. Replace things that don't escape. (Read: I don't fully understand how this part works yet...)
+        //
+        // Notes: escape analysis as an algorithm is likely applicable outside of just scalar replacement. We will create separate functions
+        // for escape analysis that scalar_replacement makes use of.
+        // Notes: While the escape values form a lattice, it's simple enough that we aren't using fancy lattice functions to start with.
+        // Perhaps over time this will expand, and we should develop an implementation, or consolidatee effects and types and escapes for a unified
+        // lattice / abstract-interpretation sets of data types and functions for use in ZJIT.
+
+        // TODO: See if there's a way we can collapse the union find to be in one pass here rather than 2
+
+        for block in self.rpo() {
+            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
+            assert!(self.blocks[block.0].insns.is_empty());
+            // Tag each instruction with its escape value.
+            for insn_id in old_insns {
+                // Use the `escape_type_of` function to union together the escape types of each instruction
+                // Then we perform replacement somehow
+                // Yes this is O(n) and doing nothing when we could just do nothing in constant time but it's scaffolding. *shrug*
+                self.push_insn_id(block, insn_id);
+            }
+        }
+    }
+
     fn optimize_getivar(&mut self) {
         for block in self.rpo() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
@@ -5242,6 +5314,7 @@ impl Function {
         // Function is assumed to have types inferred already
         run_pass!(type_specialize);
         run_pass!(inline);
+        run_pass!(scalar_replace);
         run_pass!(optimize_getivar);
         run_pass!(optimize_c_calls);
         run_pass!(fold_constants);

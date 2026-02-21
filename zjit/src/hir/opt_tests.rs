@@ -12958,4 +12958,54 @@ mod hir_opt_tests {
           Jump bb8(v67, v94)
         ");
     }
+
+    #[test]
+    // TODO(Jacob): Clean up this test with a more clear example that won't change with other optimizations
+    // Alternatively, figure out a way to run this test with a single analysis pass active
+    fn test_scalar_replace_instance_variable() {
+        eval("
+            class Shell
+              def initialize(x)
+                @x = x
+              end
+            end
+
+            def no_escape(x)
+              s = Shell.new(x)
+              s.instance_variable_get(:@x)
+            end
+            ");
+        assert_snapshot!(hir_string("no_escape"), @r"
+        fn no_escape@<compiled>:9:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :x, l0, SP@5
+          v3:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject):
+          EntryPoint JIT(0)
+          v8:NilClass = Const Value(nil)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:NilClass):
+          v17:BasicObject = GetConstantPath 0x1000
+          v19:NilClass = Const Value(nil)
+          PatchPoint NoEPEscape(no_escape)
+          v25:CBool = IsMethodCFunc v17, :new
+          IfFalse v25, bb3(v10, v11, v12, v19, v17, v11)
+          v27:HeapBasicObject = ObjectAlloc v17
+          v29:BasicObject = Send v27, :initialize, v11 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          CheckInterrupts
+          Jump bb4(v10, v11, v12, v27, v29)
+        bb3(v33:BasicObject, v34:BasicObject, v35:NilClass, v36:NilClass, v37:BasicObject, v38:BasicObject):
+          v41:BasicObject = Send v37, :new, v38 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          Jump bb4(v33, v34, v35, v41, v36)
+        bb4(v44:BasicObject, v45:BasicObject, v46:NilClass, v47:BasicObject, v48:BasicObject):
+          PatchPoint NoEPEscape(no_escape)
+          v57:StaticSymbol[:@x] = Const Value(VALUE(0x1008))
+          v59:BasicObject = Send v47, :instance_variable_get, v57 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          CheckInterrupts
+          Return v59
+        ");
+    }
 }
