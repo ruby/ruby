@@ -14,6 +14,7 @@ ractor_port_id(const struct ractor_port *rp)
 static VALUE rb_cRactorPort;
 
 static VALUE ractor_receive(rb_execution_context_t *ec, const struct ractor_port *rp);
+static VALUE ractor_receive_all(rb_execution_context_t *ec, const struct ractor_port *rp, long limit);
 static VALUE ractor_send(rb_execution_context_t *ec, const struct ractor_port *rp, VALUE obj, VALUE move);
 static VALUE ractor_try_send(rb_execution_context_t *ec, const struct ractor_port *rp, VALUE obj, VALUE move);
 static void ractor_add_port(rb_ractor_t *r, st_data_t id);
@@ -127,6 +128,28 @@ ractor_port_receive(rb_execution_context_t *ec, VALUE self)
     }
 
     return ractor_receive(ec, rp);
+}
+
+static VALUE
+ractor_port_receive_all(rb_execution_context_t *ec, VALUE limit_value, VALUE self)
+{
+    const struct ractor_port *rp = RACTOR_PORT_PTR(self);
+
+    if (rp->r != rb_ec_ractor_ptr(ec)) {
+        rb_raise(rb_eRactorError, "only allowed from the creator Ractor of this port");
+    }
+
+    long limit = -1;
+    if (limit_value != Qnil) {
+        if (!RB_INTEGER_TYPE_P(limit_value)) {
+            rb_raise(rb_eTypeError, "limit must be an Integer");
+        }
+        else {
+            limit = NUM2LONG(limit_value);
+        }
+    }
+
+    return ractor_receive_all(ec, rp, limit);
 }
 
 static VALUE
@@ -1142,21 +1165,45 @@ ractor_try_receive(rb_execution_context_t *ec, rb_ractor_t *cr, const struct rac
 static VALUE
 ractor_receive(rb_execution_context_t *ec, const struct ractor_port *rp)
 {
+    VALUE messages = ractor_receive_all(ec, rp, 1);
+    return RARRAY_AREF(messages, 0);
+}
+
+static VALUE
+ractor_receive_all(rb_execution_context_t *ec, const struct ractor_port *rp, long limit)
+{
     rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
     VM_ASSERT(cr == rp->r);
 
     RUBY_DEBUG_LOG("port:%u", (unsigned int)ractor_port_id(rp));
 
+    VALUE ary = rb_ary_new();
+
+    if (limit == 0) {
+        return ary;
+    }
+
     while (1) {
         VALUE v = ractor_try_receive(ec, cr, rp);
 
-        if (v != Qundef) {
-            return v;
+        if (v == Qundef) {
+            if (RARRAY_LENINT(ary) == 0) {
+                ractor_wait_receive(ec, cr);
+                continue;
+            }
+            else {
+                break;
+            }
         }
-        else {
-            ractor_wait_receive(ec, cr);
+
+        rb_ary_push(ary, v);
+
+        if (limit >= 0 && RARRAY_LENINT(ary) >= limit) {
+            break;
         }
     }
+
+    return ary;
 }
 
 // Ractor#send
