@@ -1933,6 +1933,15 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
         return false;
     }
 
+    // Caller passing a hash as a positional arg but callee expects keyword-only args will
+    // raise ArgumentError at runtime. Fall back to VM dispatch to handle this correctly.
+    if kwarg.is_null() && !keyword.is_null() {
+        if lead_num == 0 && opt_num == 0 && caller_positional > 0 {
+            function.set_dynamic_send_reason(send_insn, ArgcParamMismatch);
+            return false;
+        }
+    }
+
     can_send
 }
 
