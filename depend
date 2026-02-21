@@ -12853,6 +12853,7 @@ ractor.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/bits.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/box.h
+ractor.$(OBJEXT): $(top_srcdir)/internal/class.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/complex.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/error.h

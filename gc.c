@@ -3278,7 +3278,11 @@ gc_mark_classext_iclass(rb_classext_t *ext, bool prime, VALUE box_value, void *a
         mark_m_tbl(objspace, RCLASSEXT_M_TBL(ext));
     }
     if (RCLASSEXT_INCLUDER(ext)) {
-        gc_mark_internal(RCLASSEXT_INCLUDER(ext));
+        if (LIKELY(!rb_gc_checking_shareable()) ||
+            !RB_TYPE_P(RCLASSEXT_INCLUDER(ext), T_CLASS) || !FL_TEST_RAW(RCLASSEXT_INCLUDER(ext), FL_SINGLETON)) {
+            // module can be included in an unshareable singleton class
+            gc_mark_internal(RCLASSEXT_INCLUDER(ext));
+        }
     }
     mark_m_tbl(objspace, RCLASSEXT_CALLABLE_M_TBL(ext));
     gc_mark_internal(RCLASSEXT_CC_TBL(ext));

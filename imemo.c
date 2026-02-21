@@ -296,8 +296,16 @@ mark_and_move_method_entry(rb_method_entry_t *ment, bool reference_updating)
 {
     rb_method_definition_t *def = ment->def;
 
-    rb_gc_mark_and_move(&ment->owner);
-    rb_gc_mark_and_move(&ment->defined_class);
+    if (LIKELY(!rb_gc_checking_shareable()) ||
+        !RB_TYPE_P(ment->owner, T_CLASS) || !FL_TEST_RAW(ment->owner, FL_SINGLETON)) {
+        // method entry can be owned by a singleton unshareable class
+        rb_gc_mark_and_move(&ment->owner);
+    }
+    if (LIKELY(!rb_gc_checking_shareable()) ||
+        !RB_TYPE_P(ment->defined_class, T_CLASS) || !FL_TEST_RAW(ment->defined_class, FL_SINGLETON)) {
+        // method entry can be defined in a singleton unshareable class
+        rb_gc_mark_and_move(&ment->defined_class);
+    }
 
     if (def) {
         switch (def->type) {
@@ -512,11 +520,10 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
         break;
       }
       case imemo_fields: {
-        rb_gc_mark_and_move((VALUE *)&RBASIC(obj)->klass);
-
-        if (!rb_gc_checking_shareable()) {
+        if (LIKELY(!rb_gc_checking_shareable())) {
             // imemo_fields can refer unshareable objects
             // even if the imemo_fields is shareable.
+            rb_gc_mark_and_move((VALUE *)&RBASIC(obj)->klass);
 
             if (rb_shape_obj_too_complex_p(obj)) {
                 st_table *tbl = rb_imemo_fields_complex_tbl(obj);
