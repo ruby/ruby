@@ -1025,6 +1025,48 @@ class TestObject < Test::Unit::TestCase
     assert_predicate(ys, :frozen?, '[Bug #19169]')
   end
 
+  def test_singleton_class_of_singleton_class_freeze
+    x = Object.new
+    xs = x.singleton_class
+    xxs = xs.singleton_class
+    xxxs = xxs.singleton_class
+    x.freeze
+    assert_predicate(xs, :frozen?, '[Bug #20319]')
+    assert_predicate(xxs, :frozen?, '[Bug #20319]')
+    assert_predicate(xxxs, :frozen?, '[Bug #20319]')
+
+    m = Module.new
+    y = Object.new
+    ys = y.singleton_class
+    ys.prepend(Module.new)
+    yys = ys.singleton_class
+    yys.prepend(Module.new)
+    yyys = yys.singleton_class
+    yyys.prepend(Module.new)
+    y.freeze
+    assert_predicate(ys, :frozen?, '[Bug #20319]')
+    assert_predicate(yys, :frozen?, '[Bug #20319]')
+    assert_predicate(yyys, :frozen?, '[Bug #20319]')
+
+    c = Class.new
+    cs = c.singleton_class
+    ccs = cs.singleton_class
+    cccs = ccs.singleton_class
+    d = Class.new(c)
+    ds = d.singleton_class
+    dds = ds.singleton_class
+    ddds = dds.singleton_class
+    d.freeze
+    assert_predicate(d, :frozen?, '[Bug #20319]')
+    assert_predicate(ds, :frozen?, '[Bug #20319]')
+    assert_predicate(dds, :frozen?, '[Bug #20319]')
+    assert_predicate(ddds, :frozen?, '[Bug #20319]')
+    assert_not_predicate(c, :frozen?, '[Bug #20319]')
+    assert_not_predicate(cs, :frozen?, '[Bug #20319]')
+    assert_not_predicate(ccs, :frozen?, '[Bug #20319]')
+    assert_not_predicate(cccs, :frozen?, '[Bug #20319]')
+  end
+
   def test_redef_method_missing
     bug5473 = '[ruby-core:40287]'
     ['ArgumentError.new("bug5473")', 'ArgumentError, "bug5473"', '"bug5473"'].each do |code|
