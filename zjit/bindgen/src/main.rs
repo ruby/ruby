@@ -283,6 +283,7 @@ fn main() {
         .allowlist_function("rb_jit_get_page_size")
         .allowlist_function("rb_jit_array_len")
         .allowlist_function("rb_jit_fix_div_fix")
+        .allowlist_function("rb_jit_ary_aset_by_rb_ary_splice")
         .allowlist_function("rb_jit_iseq_builtin_attrs")
         .allowlist_function("rb_jit_str_concat_codepoint")
         .allowlist_function("rb_zjit_iseq_inspect")

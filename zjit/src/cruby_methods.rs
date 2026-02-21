@@ -379,6 +379,29 @@ fn inline_array_aset(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
             fun.push_insn(block, hir::Insn::WriteBarrier { recv, val });
             return Some(val);
         }
+    } else if let &[index, len, val] = args {
+        if fun.likely_a(recv, types::ArrayExact, state)
+            && fun.likely_a(index, types::Fixnum, state)
+            && fun.likely_a(len, types::Fixnum, state)
+        {
+            let recv = fun.coerce_to(block, recv, types::ArrayExact, state);
+            let index = fun.coerce_to(block, index, types::Fixnum, state);
+            let len = fun.coerce_to(block, len, types::Fixnum, state);
+            fun.guard_not_frozen(block, recv, state);
+            fun.guard_not_shared(block, recv, state);
+
+            let index = fun.push_insn(block, hir::Insn::UnboxFixnum { val: index });
+            let len = fun.push_insn(block, hir::Insn::UnboxFixnum { val: len });
+            let _ = fun.push_insn(block, hir::Insn::CCall {
+                cfunc: rb_jit_ary_aset_by_rb_ary_splice as _,
+                recv,
+                args: vec![index, len, val],
+                return_type: types::BasicObject,
+                elidable: false,
+                name: ID!(aset),
+            });
+            return Some(val);
+        }
     }
     None
 }
