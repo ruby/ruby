@@ -22,6 +22,10 @@ jobs:
         with:
           token: ${{ (github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull')) && secrets.MATZBOT_AUTO_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
 
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: head
+
       - uses: ./.github/actions/setup/directories
         with:
           makeup: true
