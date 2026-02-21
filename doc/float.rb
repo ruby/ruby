@@ -51,7 +51,7 @@
 # See:
 #
 # - https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html
-# - https://github.com/rdp/ruby_tutorials_core/wiki/Ruby-Talk-FAQ#-why-are-rubys-floats-imprecise
+# - https://github.com/rdp/ruby_tutorials_core/wiki/Ruby-Talk-FAQ#user-content--why-are-rubys-floats-imprecise
 # - https://en.wikipedia.org/wiki/Floating_point#Accuracy_problems
 #
 # Note that precise storage and computation of rational numbers
