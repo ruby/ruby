@@ -204,7 +204,7 @@ void *rb_register_sigaltstack(void *);
 #endif
 
 /* call threaded code */
-#if    OPT_CALL_THREADED_CODE
+#if    OPT_CALL_THREADED_CODE || OPT_TAILCALL_THREADED_CODE
 #if    OPT_DIRECT_THREADED_CODE
 #undef OPT_DIRECT_THREADED_CODE
 #endif /* OPT_DIRECT_THREADED_CODE */
@@ -1175,7 +1175,7 @@ typedef struct rb_thread_struct {
     VALUE value;
 
     /* temporary place of retval on OPT_CALL_THREADED_CODE */
-#if OPT_CALL_THREADED_CODE
+#if OPT_CALL_THREADED_CODE || OPT_TAILCALL_THREADED_CODE
     VALUE retval;
 #endif
 

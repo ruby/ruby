@@ -6715,11 +6715,15 @@ vm_opt_plus(VALUE recv, VALUE obj)
 {
     if (FIXNUM_2_P(recv, obj) &&
         BASIC_OP_UNREDEFINED_P(BOP_PLUS, INTEGER_REDEFINED_OP_FLAG)) {
-        return rb_fix_plus_fix(recv, obj);
+        VALUE val = rb_fix_plus_fix(recv, obj);
+        RBIMPL_ASSUME(!RB_UNDEF_P(val));
+        return val;
     }
     else if (FLONUM_2_P(recv, obj) &&
              BASIC_OP_UNREDEFINED_P(BOP_PLUS, FLOAT_REDEFINED_OP_FLAG)) {
-        return DBL2NUM(RFLOAT_VALUE(recv) + RFLOAT_VALUE(obj));
+        VALUE val = DBL2NUM(RFLOAT_VALUE(recv) + RFLOAT_VALUE(obj));
+        RBIMPL_ASSUME(!RB_UNDEF_P(val));
+        return val;
     }
     else if (SPECIAL_CONST_P(recv) || SPECIAL_CONST_P(obj)) {
         return Qundef;
@@ -6727,17 +6731,22 @@ vm_opt_plus(VALUE recv, VALUE obj)
     else if (RBASIC_CLASS(recv) == rb_cFloat &&
              RBASIC_CLASS(obj)  == rb_cFloat &&
              BASIC_OP_UNREDEFINED_P(BOP_PLUS, FLOAT_REDEFINED_OP_FLAG)) {
-        return DBL2NUM(RFLOAT_VALUE(recv) + RFLOAT_VALUE(obj));
+        VALUE val = DBL2NUM(RFLOAT_VALUE(recv) + RFLOAT_VALUE(obj));
+        RBIMPL_ASSUME(!RB_UNDEF_P(val));
+        return val;
     }
     else if (RBASIC_CLASS(recv) == rb_cString &&
              RBASIC_CLASS(obj) == rb_cString &&
              BASIC_OP_UNREDEFINED_P(BOP_PLUS, STRING_REDEFINED_OP_FLAG)) {
+        /* Can return Qundef */
         return rb_str_opt_plus(recv, obj);
     }
     else if (RBASIC_CLASS(recv) == rb_cArray &&
              RBASIC_CLASS(obj) == rb_cArray &&
              BASIC_OP_UNREDEFINED_P(BOP_PLUS, ARRAY_REDEFINED_OP_FLAG)) {
-        return rb_ary_plus(recv, obj);
+        VALUE val = rb_ary_plus(recv, obj);
+        RBIMPL_ASSUME(!RB_UNDEF_P(val));
+        return val;
     }
     else {
         return Qundef;
