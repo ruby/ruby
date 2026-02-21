@@ -3546,7 +3546,7 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
                         rb_gc_event_hook(vp, RUBY_INTERNAL_EVENT_FREEOBJ);
                     }
 
-                    (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, BASE_SLOT_SIZE);
+                    (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, slot_size);
                     heap_page_add_freeobj(objspace, sweep_page, vp);
                     gc_report(3, objspace, "page_sweep: %s (fast path) added to freelist\n", rb_obj_info(vp));
                     ctx->freed_slots++;
@@ -3558,7 +3558,7 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
 
                     rb_gc_obj_free_vm_weak_references(vp);
                     if (rb_gc_obj_free(objspace, vp)) {
-                        (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, BASE_SLOT_SIZE);
+                        (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, slot_size);
                         heap_page_add_freeobj(objspace, sweep_page, vp);
                         gc_report(3, objspace, "page_sweep: %s is added to freelist\n", rb_obj_info(vp));
                         ctx->freed_slots++;
@@ -8647,18 +8647,29 @@ gc_prof_set_heap_info(rb_objspace_t *objspace)
 {
     if (gc_prof_enabled(objspace)) {
         gc_profile_record *record = gc_prof_record(objspace);
-        size_t live = objspace->profile.total_allocated_objects_at_gc_start - total_freed_objects(objspace);
-        size_t total = objspace->profile.heap_total_slots_at_gc_start;
+
+        /* Sum across all size pools since each has a different slot size. */
+        size_t total = 0;
+        size_t use_size = 0;
+        size_t total_size = 0;
+        for (int i = 0; i < HEAP_COUNT; i++) {
+            rb_heap_t *heap = &heaps[i];
+            size_t heap_live = heap->total_allocated_objects - heap->total_freed_objects - heap->final_slots_count;
+            total += heap->total_slots;
+            use_size += heap_live * heap->slot_size;
+            total_size += heap->total_slots * heap->slot_size;
+        }
 
 #if GC_PROFILE_MORE_DETAIL
+        size_t live = objspace->profile.total_allocated_objects_at_gc_start - total_freed_objects(objspace);
         record->heap_use_pages = objspace->profile.heap_used_at_gc_start;
         record->heap_live_objects = live;
         record->heap_free_objects = total - live;
 #endif
 
         record->heap_total_objects = total;
-        record->heap_use_size = live * BASE_SLOT_SIZE;
-        record->heap_total_size = total * BASE_SLOT_SIZE;
+        record->heap_use_size = use_size;
+        record->heap_total_size = total_size;
     }
 }
 
