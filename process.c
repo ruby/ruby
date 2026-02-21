@@ -2726,9 +2726,7 @@ open_func(void *ptr)
 static void
 rb_execarg_allocate_dup2_tmpbuf(struct rb_execarg *eargp, long len)
 {
-    VALUE tmpbuf = rb_imemo_tmpbuf_new();
-    rb_imemo_tmpbuf_set_ptr(tmpbuf, ruby_xmalloc(run_exec_dup2_tmpbuf_size(len)));
-    eargp->dup2_tmpbuf = tmpbuf;
+    rb_alloc_tmp_buffer(&eargp->dup2_tmpbuf, run_exec_dup2_tmpbuf_size(len));
 }
 
 static VALUE
@@ -3183,8 +3181,7 @@ run_exec_dup2(VALUE ary, VALUE tmpbuf, struct rb_execarg *sargp, char *errmsg, s
     long n, i;
     int ret;
     int extra_fd = -1;
-    struct rb_imemo_tmpbuf_struct *buf = (void *)tmpbuf;
-    struct run_exec_dup2_fd_pair *pairs = (void *)buf->ptr;
+    struct run_exec_dup2_fd_pair *pairs = RB_IMEMO_TMPBUF_PTR(tmpbuf);
 
     n = RARRAY_LEN(ary);
 

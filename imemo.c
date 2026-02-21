@@ -63,29 +63,27 @@ rb_imemo_tmpbuf_new(void)
 }
 
 void *
-rb_alloc_tmp_buffer_with_count(volatile VALUE *store, size_t size, size_t cnt)
+rb_alloc_tmp_buffer(volatile VALUE *store, long len)
 {
+    if (len < 0) {
+        rb_raise(rb_eArgError, "negative buffer size (or size too big)");
+    }
+
     /* Keep the order; allocate an empty imemo first then xmalloc, to
      * get rid of potential memory leak */
     rb_imemo_tmpbuf_t *tmpbuf = (rb_imemo_tmpbuf_t *)rb_imemo_tmpbuf_new();
     *store = (VALUE)tmpbuf;
-    void *ptr = ruby_xmalloc(size);
+    void *ptr = ruby_xmalloc(len);
     tmpbuf->ptr = ptr;
-    tmpbuf->size = size;
+    tmpbuf->size = len;
 
     return ptr;
 }
 
 void *
-rb_alloc_tmp_buffer(volatile VALUE *store, long len)
+rb_alloc_tmp_buffer_with_count(volatile VALUE *store, size_t size, size_t cnt)
 {
-    long cnt;
-
-    if (len < 0 || (cnt = (long)roomof(len, sizeof(VALUE))) < 0) {
-        rb_raise(rb_eArgError, "negative buffer size (or size too big)");
-    }
-
-    return rb_alloc_tmp_buffer_with_count(store, len, cnt);
+    return rb_alloc_tmp_buffer(store, (long)size);
 }
 
 void
