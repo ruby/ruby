@@ -708,7 +708,8 @@ class Pathname
   end
   alias / +
 
-  def plus(path1, path2) # -> path # :nodoc:
+  # (path1, path2) -> path
+  def plus(path1, path2) # :nodoc:
     prefix2 = path2
     index_list2 = []
     basename_list2 = []
