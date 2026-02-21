@@ -231,6 +231,90 @@ class TestRactor < Test::Unit::TestCase
     end
   end
 
+  # Ractor::IsolationError#outer_variables tests
+
+  def test_isolation_error_outer_variables_single
+    err = assert_raise(Ractor::IsolationError) do
+      a = 1
+      Ractor.new { a }
+    end
+    assert_equal ["a"], err.outer_variables.map(&:to_s)
+  end
+
+  def test_isolation_error_outer_variables_multiple
+    err = assert_raise(Ractor::IsolationError) do
+      a = 1
+      b = 2
+      Ractor.new { a + b }
+    end
+    outer = err.outer_variables.map(&:to_s).sort
+    assert_include outer, "a"
+    assert_include outer, "b"
+  end
+
+  def test_isolation_error_outer_variables_empty_for_yield
+    err = assert_raise(Ractor::IsolationError) do
+      Ractor.new { yield }
+    end
+    assert_equal [], err.outer_variables
+  end
+
+  def test_isolation_error_yield_called_true
+    err = assert_raise(Ractor::IsolationError) do
+      Ractor.new { yield }
+    end
+    assert_equal true, err.yield_called
+  end
+
+  def test_isolation_error_yield_called_false_for_outer_variables
+    err = assert_raise(Ractor::IsolationError) do
+      a = 1
+      Ractor.new { a }
+    end
+    assert_equal false, err.yield_called
+  end
+
+  def test_isolation_error_outer_variables_with_shareable_proc
+    err = assert_raise(Ractor::IsolationError) do
+      foo = []
+      Ractor.shareable_proc { foo }
+    end
+    assert_equal ["foo"], err.outer_variables.map(&:to_s)
+  end
+
+  def test_isolation_error_default_outer_variables_without_keywords
+    err = Ractor::IsolationError.new("test error")
+    assert_equal [], err.outer_variables
+    assert_equal false, err.yield_called
+  end
+
+  def test_isolation_error_with_keywords
+    err = Ractor::IsolationError.new("test", outer_variables: ["a", "b"], yield_called: true)
+    assert_equal ["a", "b"], err.outer_variables
+    assert_equal true, err.yield_called
+  end
+
+  def test_isolation_error_outer_variables_reassigned_shareable_proc
+    err = assert_raise(Ractor::IsolationError) do
+      x = 123
+      Ractor.shareable_proc do
+        x
+      end
+      x = 456
+    end
+    assert_equal ["x"], err.outer_variables.map(&:to_s)
+    assert_equal false, err.yield_called
+  end
+
+  def test_isolation_error_outer_variables_unshareable_object_shareable_proc
+    err = assert_raise(Ractor::IsolationError) do
+      arr = []
+      Ractor.shareable_proc { arr }
+    end
+    assert_equal ["arr"], err.outer_variables.map(&:to_s)
+    assert_equal false, err.yield_called
+  end
+
   def assert_make_shareable(obj)
     refute Ractor.shareable?(obj), "object was already shareable"
     Ractor.make_shareable(obj)
