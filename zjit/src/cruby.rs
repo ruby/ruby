@@ -1424,6 +1424,7 @@ pub(crate) mod ids {
         name: _shape_id
         name: _env_data_index_flags
         name: _env_data_index_specval
+        name: _ep_local
         name: _ep_method_entry
         name: _ep_specval
         name: _rbasic_flags

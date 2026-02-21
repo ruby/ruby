@@ -854,6 +854,7 @@ pub enum Insn {
     /// Get a local variable from a higher scope or the heap.
     /// If `use_sp` is true, it uses the SP register to optimize the read.
     /// `rest_param` is used by infer_types to infer the ArrayExact type.
+    /// TODO: Replace the level == 0 + use_sp path with LoadSP + LoadField.
     GetLocal { level: u32, ep_offset: u32, use_sp: bool, rest_param: bool },
     /// Check whether VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM is set in the environment flags.
     /// Returns CBool (0/1).
@@ -1169,7 +1170,7 @@ impl Insn {
             Insn::GetEP { .. } => effects::Empty,
             Insn::GetLEP { .. } => effects::Empty,
             Insn::LoadSelf { .. } => Effect::read_write(abstract_heaps::Frame, abstract_heaps::Empty),
-            Insn::LoadField { .. } => Effect::read_write(abstract_heaps::Other, abstract_heaps::Empty),
+            Insn::LoadField { .. } => Effect::read_write(abstract_heaps::Memory, abstract_heaps::Empty),
             Insn::StoreField { .. } => effects::Any,
             Insn::WriteBarrier { .. } => effects::Any,
             Insn::GetLocal   { .. } => Effect::read_write(abstract_heaps::Locals, abstract_heaps::Empty),
@@ -3055,6 +3056,35 @@ impl Function {
     pub fn guard_not_shared(&mut self, block: BlockId, recv: InsnId, state: InsnId) {
         let flags = self.load_rbasic_flags(block, recv);
         self.push_insn(block, Insn::GuardNoBitsSet { val: flags, mask: Const::CUInt64(RUBY_ELTS_SHARED as u64), mask_name: Some(ID!(RUBY_ELTS_SHARED)), reason: SideExitReason::GuardNotShared, state });
+    }
+
+    fn emit_get_local(
+        &mut self,
+        block: BlockId,
+        ep_offset: u32,
+        level: u32,
+        use_sp: bool,
+        rest_param: bool,
+    ) -> InsnId {
+        if level == 0 {
+            return self.push_insn(block, Insn::GetLocal { ep_offset, level, use_sp, rest_param });
+        }
+
+        assert!(!use_sp, "use_sp optimization should be used only for level=0 locals");
+
+        self.push_insn(block, Insn::IncrCounter(Counter::vm_read_from_parent_iseq_local_count));
+        let ep = self.push_insn(block, Insn::GetEP { level });
+        let ep_offset = i32::try_from(ep_offset)
+            .unwrap_or_else(|_| panic!("Could not convert ep_offset {ep_offset} to i32"));
+        let offset = -(SIZEOF_VALUE_I32 * ep_offset);
+        let return_type = if rest_param { types::ArrayExact } else { types::BasicObject };
+
+        self.push_insn(block, Insn::LoadField {
+            recv: ep,
+            id: ID!(_ep_local),
+            offset,
+            return_type,
+        })
     }
 
     /// Rewrite eligible Send opcodes into SendDirect
@@ -6830,7 +6860,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_getlocal_WC_1 => {
                     let ep_offset = get_arg(pc, 0).as_u32();
-                    state.stack_push(fun.push_insn(block, Insn::GetLocal { ep_offset, level: 1, use_sp: false, rest_param: false }));
+                    state.stack_push(fun.emit_get_local(block, ep_offset, 1, false, false));
                 }
                 YARVINSN_setlocal_WC_1 => {
                     let ep_offset = get_arg(pc, 0).as_u32();
@@ -6839,7 +6869,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_getlocal => {
                     let ep_offset = get_arg(pc, 0).as_u32();
                     let level = get_arg(pc, 1).as_u32();
-                    state.stack_push(fun.push_insn(block, Insn::GetLocal { ep_offset, level, use_sp: false, rest_param: false }));
+                    state.stack_push(fun.emit_get_local(block, ep_offset, level, false, false));
                 }
                 YARVINSN_setlocal => {
                     let ep_offset = get_arg(pc, 0).as_u32();
@@ -6950,12 +6980,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     }));
 
                     // Push modified block: read Proc from EP.
-                    let modified_val = fun.push_insn(modified_block, Insn::GetLocal {
-                        ep_offset,
-                        level,
-                        use_sp: false,
-                        rest_param: false,
-                    });
+                    let modified_val = fun.emit_get_local(modified_block, ep_offset, level, false, false);
                     finish_getblockparam_branch(
                         &mut fun,
                         modified_block,
