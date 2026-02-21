@@ -3216,6 +3216,7 @@ impl Function {
                                 self.push_insn_id(block, insn_id); continue;
                             }
 
+                            // Method test
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
                             if let Some(profiled_type) = profiled_type {
                                 recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
@@ -3826,17 +3827,22 @@ impl Function {
                         // Strength reduce to LoadFields/CCall when receiver has a known shape from RefineShape
                         if let Insn::RefineShape { val: refined_val, shape: known_shape, is_t_object, is_embedded } = self.find(self_val) {
                             let mut ivar_index: u16 = 0;
-                            let replacement = if !unsafe { rb_shape_get_iv_index(known_shape.0, id, &mut ivar_index) } {
+                            let replacement = if known_shape.is_too_complex() {
+                                // Leave the GetIvar as is when the shape is too complex.
+                                // Too-complex shapes are not valid inputs to rb_shape_get_iv_index().
+                                // TODO: set fallback reason
+                                insn_id
+                            } else if !unsafe { rb_shape_get_iv_index(known_shape.0, id, &mut ivar_index) } {
                                 // Ivar not in this shape, return nil
                                 self.push_insn(block, Insn::Const { val: Const::Value(Qnil) })
                             } else if is_t_object {
                                 // T_OBJECT: use LoadField
                                 if is_embedded {
-                                    let offset = ROBJECT_OFFSET_AS_ARY as i32 + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
+                                    let offset = ROBJECT_OFFSET_AS_ARY as i32 + SIZEOF_VALUE_I32 * i32::from(ivar_index);
                                     self.push_insn(block, Insn::LoadField { recv: refined_val, id, offset, return_type: types::BasicObject })
                                 } else {
                                     let as_heap = self.push_insn(block, Insn::LoadField { recv: refined_val, id: ID!(_as_heap), offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32, return_type: types::CPtr });
-                                    let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
+                                    let offset = SIZEOF_VALUE_I32 * i32::from(ivar_index);
                                     self.push_insn(block, Insn::LoadField { recv: as_heap, id, offset, return_type: types::BasicObject })
                                 }
                             } else {
