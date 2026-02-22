@@ -4408,7 +4408,7 @@ mod hir_opt_tests {
         bb4(v11:BasicObject):
           IncrCounter vm_read_from_parent_iseq_local_count
           v18:CPtr = GetEP 1
-          v19:BasicObject = LoadField v18, :_ep_local@0x1000
+          v19:BasicObject = LoadField v18, :block@0x1000
           Jump bb6(v11, v19)
         bb6(v23:BasicObject, v24:BasicObject):
           CheckInterrupts

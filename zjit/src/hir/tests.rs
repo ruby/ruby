@@ -948,22 +948,22 @@ pub mod hir_build_tests {
         bb3(v6:BasicObject):
           IncrCounter vm_read_from_parent_iseq_local_count
           v11:CPtr = GetEP 2
-          v12:BasicObject = LoadField v11, :_ep_local@0x1000
+          v12:BasicObject = LoadField v11, :l2@0x1000
           SetLocal :l1, l1, EP@3, v12
           IncrCounter vm_read_from_parent_iseq_local_count
           v18:CPtr = GetEP 1
-          v19:BasicObject = LoadField v18, :_ep_local@0x1001
+          v19:BasicObject = LoadField v18, :l1@0x1001
           IncrCounter vm_read_from_parent_iseq_local_count
           v22:CPtr = GetEP 2
-          v23:BasicObject = LoadField v22, :_ep_local@0x1000
+          v23:BasicObject = LoadField v22, :l2@0x1000
           v26:BasicObject = Send v19, :+, v23 # SendFallbackReason: Uncategorized(opt_plus)
           SetLocal :l2, l2, EP@4, v26
           IncrCounter vm_read_from_parent_iseq_local_count
           v32:CPtr = GetEP 2
-          v33:BasicObject = LoadField v32, :_ep_local@0x1000
+          v33:BasicObject = LoadField v32, :l2@0x1000
           IncrCounter vm_read_from_parent_iseq_local_count
           v36:CPtr = GetEP 3
-          v37:BasicObject = LoadField v36, :_ep_local@0x1002
+          v37:BasicObject = LoadField v36, :l3@0x1002
           v40:BasicObject = Send v33, :+, v37 # SendFallbackReason: Uncategorized(opt_plus)
           SetLocal :l3, l3, EP@5, v40
           CheckInterrupts
@@ -3100,7 +3100,7 @@ pub mod hir_build_tests {
         bb4(v11:BasicObject):
           IncrCounter vm_read_from_parent_iseq_local_count
           v18:CPtr = GetEP 1
-          v19:BasicObject = LoadField v18, :_ep_local@0x1000
+          v19:BasicObject = LoadField v18, :block@0x1000
           Jump bb6(v11, v19)
         bb5(v13:BasicObject):
           v21:BasicObject = GetBlockParam :block, l1, EP@3

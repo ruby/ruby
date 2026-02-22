@@ -1273,6 +1273,15 @@ pub struct InsnPrinter<'a> {
     iseq: Option<IseqPtr>,
 }
 
+fn get_local_var_id(iseq: IseqPtr, level: u32, ep_offset: u32) -> ID {
+    let mut current_iseq = iseq;
+    for _ in 0..level {
+        current_iseq = unsafe { rb_get_iseq_body_parent_iseq(current_iseq) };
+    }
+    let local_idx = ep_offset_to_local_idx(current_iseq, ep_offset);
+    unsafe { rb_zjit_local_id(current_iseq, local_idx.try_into().unwrap()) }
+}
+
 /// Get the name of a local variable given iseq, level, and ep_offset.
 /// Returns
 /// - `":name"` if iseq is available and name is a real identifier,
@@ -1282,12 +1291,7 @@ pub struct InsnPrinter<'a> {
 ///
 /// This mimics local_var_name() from iseq.c.
 fn get_local_var_name_for_printer(iseq: Option<IseqPtr>, level: u32, ep_offset: u32) -> Option<String> {
-    let mut current_iseq = iseq?;
-    for _ in 0..level {
-        current_iseq = unsafe { rb_get_iseq_body_parent_iseq(current_iseq) };
-    }
-    let local_idx = ep_offset_to_local_idx(current_iseq, ep_offset);
-    let id: ID = unsafe { rb_zjit_local_id(current_iseq, local_idx.try_into().unwrap()) };
+    let id = get_local_var_id(iseq?, level, ep_offset);
 
     if id.0 == 0 || unsafe { rb_id2str(id) } == Qfalse {
         return Some(String::from("<empty>"));
@@ -3074,6 +3078,7 @@ impl Function {
 
         self.push_insn(block, Insn::IncrCounter(Counter::vm_read_from_parent_iseq_local_count));
         let ep = self.push_insn(block, Insn::GetEP { level });
+        let local_id = get_local_var_id(self.iseq, level, ep_offset);
         let ep_offset = i32::try_from(ep_offset)
             .unwrap_or_else(|_| panic!("Could not convert ep_offset {ep_offset} to i32"));
         let offset = -(SIZEOF_VALUE_I32 * ep_offset);
@@ -3081,7 +3086,7 @@ impl Function {
 
         self.push_insn(block, Insn::LoadField {
             recv: ep,
-            id: ID!(_ep_local),
+            id: local_id,
             offset,
             return_type,
         })
