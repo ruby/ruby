@@ -213,6 +213,16 @@ class TestRactor < Test::Unit::TestCase
     assert_unshareable(pr, /not supported yet/, exception: RuntimeError)
   end
 
+  def test_copy_unshareable_object_error_message
+    assert_ractor(<<~'RUBY')
+      pr = proc {}
+      err = assert_raise(Ractor::Error) do
+        Ractor.new(pr) {}.join
+      end
+      assert_match(/can not copy unshareable object/, err.message)
+    RUBY
+  end
+
   def test_ractor_new_raises_isolation_error_if_outer_variables_are_accessed
     assert_raise(Ractor::IsolationError) do
       channel = Ractor::Port.new

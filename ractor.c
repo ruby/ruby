@@ -2075,6 +2075,9 @@ copy_enter(VALUE obj, struct obj_traverse_replace_data *data)
         return traverse_skip;
     }
     else {
+        if (!rb_get_alloc_func(rb_obj_class(obj))) {
+            rb_raise(rb_eRactorError, "can not copy unshareable object %+"PRIsVALUE, obj);
+        }
         data->replacement = rb_obj_clone(obj);
         return traverse_cont;
     }
