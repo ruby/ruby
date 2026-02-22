@@ -6125,10 +6125,10 @@ static VALUE
 rb_node_case_when_optimizable_literal(const NODE *const node)
 {
     switch (nd_type(node)) {
-      case NODE_INTEGER:
-        return rb_node_integer_literal_val(node);
-      case NODE_FLOAT: {
-        VALUE v = rb_node_float_literal_val(node);
+      case RB_INTEGER_NODE:
+        return rb_node_integer_literal_val2(node);
+      case RB_FLOAT_NODE: {
+        VALUE v = rb_node_float_literal_val2(node);
         double ival;
 
         if (modf(RFLOAT_VALUE(v), &ival) == 0.0) {
@@ -6136,98 +6136,67 @@ rb_node_case_when_optimizable_literal(const NODE *const node)
         }
         return v;
       }
-      case NODE_RATIONAL:
-      case NODE_IMAGINARY:
+      case RB_RATIONAL_NODE:
+      case RB_IMAGINARY_NODE:
         return Qundef;
-      case NODE_NIL:
+      case RB_NIL_NODE:
         return Qnil;
-      case NODE_TRUE:
+      case RB_TRUE_NODE:
         return Qtrue;
-      case NODE_FALSE:
+      case RB_SELF_NODE:
         return Qfalse;
-      case NODE_SYM:
-        return rb_node_sym_string_val(node);
-      case NODE_LINE:
-        return rb_node_line_lineno_val(node);
-      case NODE_STR:
-        return rb_node_str_string_val(node);
-      case NODE_FILE:
-        return rb_node_file_path_val(node);
+      case RB_SYMBOL_NODE:
+        return rb_node_sym_string_val2(node);
+      case RB_SOURCE_LINE_NODE:
+        return rb_node_line_lineno_val2(node);
+      case RB_STRING_NODE:
+        return rb_node_str_string_val2(node);
+      case RB_SOURCE_FILE_NODE:
+        return rb_node_file_path_val2(node);
     }
     return Qundef;
 }
 
 static int
-when_vals(rb_iseq_t *iseq, LINK_ANCHOR *const cond_seq, const NODE *vals,
+when_vals(rb_iseq_t *iseq, LINK_ANCHOR *const cond_seq, const NODE *val,
           LABEL *l1, int only_special_literals, VALUE literals)
 {
-    while (vals) {
-        const NODE *val = RNODE_LIST(vals)->nd_head;
-        VALUE lit = rb_node_case_when_optimizable_literal(val);
+    VALUE lit = rb_node_case_when_optimizable_literal(val);
 
-        if (UNDEF_P(lit)) {
-            only_special_literals = 0;
-        }
-        else {
-            cdhash_aset_if_missing(literals, lit, (VALUE)(l1));
-        }
-
-        if (nd_type_p(val, NODE_STR) || nd_type_p(val, NODE_FILE)) {
-            debugp_param("nd_lit", get_string_value(val));
-            lit = get_string_value(val);
-            ADD_INSN1(cond_seq, val, putobject, lit);
-            RB_OBJ_WRITTEN(iseq, Qundef, lit);
-        }
-        else {
-            if (!COMPILE(cond_seq, "when cond", val)) return -1;
-        }
-
-        // Emit pattern === target
-        ADD_INSN1(cond_seq, vals, topn, INT2FIX(1));
-        ADD_CALL(cond_seq, vals, idEqq, INT2FIX(1));
-        ADD_INSNL(cond_seq, val, branchif, l1);
-        vals = RNODE_LIST(vals)->nd_next;
+    if (UNDEF_P(lit)) {
+        only_special_literals = 0;
     }
+    else {
+        cdhash_aset_if_missing(literals, lit, (VALUE)(l1));
+    }
+
+    if (nd_type_p(val, RB_STRING_NODE) || nd_type_p(val, RB_SOURCE_FILE_NODE)) {
+        debugp_param("nd_lit", get_string_value2(val));
+        lit = get_string_value2(val);
+        ADD_INSN1(cond_seq, val, putobject, lit);
+        RB_OBJ_WRITTEN(iseq, Qundef, lit);
+    }
+    else {
+        if (!COMPILE(cond_seq, "when cond", val)) return -1;
+    }
+
+    // Emit pattern === target
+    ADD_INSN1(cond_seq, val, topn, INT2FIX(1));
+    ADD_CALL(cond_seq, val, idEqq, INT2FIX(1));
+    ADD_INSNL(cond_seq, val, branchif, l1);
     return only_special_literals;
 }
 
 static int
-when_splat_vals(rb_iseq_t *iseq, LINK_ANCHOR *const cond_seq, const NODE *vals,
+when_splat_vals(rb_iseq_t *iseq, LINK_ANCHOR *const cond_seq, const NODE *val,
                 LABEL *l1, int only_special_literals, VALUE literals)
 {
-    const NODE *line_node = vals;
-
-    switch (nd_type(vals)) {
-      case NODE_LIST:
-        if (when_vals(iseq, cond_seq, vals, l1, only_special_literals, literals) < 0)
-            return COMPILE_NG;
-        break;
-      case NODE_SPLAT:
-        ADD_INSN (cond_seq, line_node, dup);
-        CHECK(COMPILE(cond_seq, "when splat", RNODE_SPLAT(vals)->nd_head));
-        ADD_INSN1(cond_seq, line_node, splatarray, Qfalse);
-        ADD_INSN1(cond_seq, line_node, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_CASE | VM_CHECKMATCH_ARRAY));
-        ADD_INSNL(cond_seq, line_node, branchif, l1);
-        break;
-      case NODE_ARGSCAT:
-        CHECK(when_splat_vals(iseq, cond_seq, RNODE_ARGSCAT(vals)->nd_head, l1, only_special_literals, literals));
-        CHECK(when_splat_vals(iseq, cond_seq, RNODE_ARGSCAT(vals)->nd_body, l1, only_special_literals, literals));
-        break;
-      case NODE_ARGSPUSH:
-        CHECK(when_splat_vals(iseq, cond_seq, RNODE_ARGSPUSH(vals)->nd_head, l1, only_special_literals, literals));
-        ADD_INSN (cond_seq, line_node, dup);
-        CHECK(COMPILE(cond_seq, "when argspush body", RNODE_ARGSPUSH(vals)->nd_body));
-        ADD_INSN1(cond_seq, line_node, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_CASE));
-        ADD_INSNL(cond_seq, line_node, branchif, l1);
-        break;
-      default:
-        ADD_INSN (cond_seq, line_node, dup);
-        CHECK(COMPILE(cond_seq, "when val", vals));
-        ADD_INSN1(cond_seq, line_node, splatarray, Qfalse);
-        ADD_INSN1(cond_seq, line_node, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_CASE | VM_CHECKMATCH_ARRAY));
-        ADD_INSNL(cond_seq, line_node, branchif, l1);
-        break;
-    }
+    const NODE *line_node = val;
+    ADD_INSN (cond_seq, line_node, dup);
+    CHECK(COMPILE(cond_seq, "when splat", RB_NODE_SPLAT(val)->expression));
+    ADD_INSN1(cond_seq, line_node, splatarray, Qfalse);
+    ADD_INSN1(cond_seq, line_node, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_CASE | VM_CHECKMATCH_ARRAY));
+    ADD_INSNL(cond_seq, line_node, branchif, l1);
     return COMPILE_OK;
 }
 
@@ -7901,7 +7870,7 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int 
 static int
 compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_node, int popped)
 {
-    const NODE *vals;
+    const rb_node_list2_t *vals;
     const NODE *node = orig_node;
     LABEL *endlabel, *elselabel;
     DECL_ANCHOR(head);
@@ -7914,34 +7883,41 @@ compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_nod
     const NODE *line_node;
     VALUE branches = Qfalse;
     int branch_id = 0;
+    const rb_node_list2_t *list = &RB_NODE_CASE(node)->conditions;
+    const rb_else_node_t *nd_else = RB_NODE_CASE(node)->else_clause;
 
     INIT_ANCHOR(head);
     INIT_ANCHOR(body_seq);
     INIT_ANCHOR(cond_seq);
 
-    CHECK(COMPILE(head, "case base", RNODE_CASE(node)->nd_head));
+    CHECK(COMPILE(head, "case base", RB_NODE_CASE(node)->predicate));
 
     branches = decl_branch_base(iseq, nd_node_id(node), nd_code_loc(node), "case");
 
-    node = RNODE_CASE(node)->nd_body;
-    EXPECT_NODE("NODE_CASE", node, NODE_WHEN, COMPILE_NG);
-    type = nd_type(node);
+    node = rb_node_list_first(list);
+    EXPECT_NODE("NODE_CASE", node, RB_WHEN_NODE, COMPILE_NG);
     line = nd_line(node);
-    line_node = node;
 
     endlabel = NEW_LABEL(line);
     elselabel = NEW_LABEL(line);
 
     ADD_SEQ(ret, head);	/* case VAL */
 
-    while (type == NODE_WHEN) {
+    /* when */
+    for (size_t i = 0; i < RB_NODE_LIST_LEN(list); i++) {
+        const NODE *n = list->nodes[i];
+        EXPECT_NODE("NODE_CASE", n, RB_WHEN_NODE, COMPILE_NG);
+        type = nd_type(n);
+        line = nd_line(n);
+        line_node = n;
+
         LABEL *l1;
 
         l1 = NEW_LABEL(line);
         ADD_LABEL(body_seq, l1);
         ADD_INSN(body_seq, line_node, pop);
 
-        const NODE *const coverage_node = RNODE_WHEN(node)->nd_body ? RNODE_WHEN(node)->nd_body : node;
+        const NODE *const coverage_node = RB_NODE_WHEN(n)->statements ? (const NODE *const)RB_NODE_WHEN(n)->statements : n;
         add_trace_branch_coverage(
                 iseq,
                 body_seq,
@@ -7951,45 +7927,36 @@ compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_nod
                 "when",
                 branches);
 
-        CHECK(COMPILE_(body_seq, "when body", RNODE_WHEN(node)->nd_body, popped));
+        CHECK(COMPILE_(body_seq, "when body", RB_NODE_WHEN(n)->statements, popped));
         ADD_INSNL(body_seq, line_node, jump, endlabel);
 
-        vals = RNODE_WHEN(node)->nd_head;
-        if (vals) {
-            switch (nd_type(vals)) {
-              case NODE_LIST:
-                only_special_literals = when_vals(iseq, cond_seq, vals, l1, only_special_literals, literals);
-                if (only_special_literals < 0) return COMPILE_NG;
-                break;
-              case NODE_SPLAT:
-              case NODE_ARGSCAT:
-              case NODE_ARGSPUSH:
-                only_special_literals = 0;
-                CHECK(when_splat_vals(iseq, cond_seq, vals, l1, only_special_literals, literals));
-                break;
-              default:
-                UNKNOWN_NODE("NODE_CASE", vals, COMPILE_NG);
+        vals = &RB_NODE_WHEN(n)->conditions;
+        if (!RB_NODE_LIST_EMPTY_P(vals)) {
+            /* when a, b, c */
+            for (size_t j = 0; j < RB_NODE_LIST_LEN(vals); j++) {
+                const NODE *val = vals->nodes[j];
+
+                if (nd_type_p(val, RB_SPLAT_NODE)) {
+                    only_special_literals = 0;
+                    CHECK(when_splat_vals(iseq, cond_seq, val, l1, only_special_literals, literals));
+                }
+                else {
+                    only_special_literals = when_vals(iseq, cond_seq, val, l1, only_special_literals, literals);
+                    if (only_special_literals < 0) return COMPILE_NG;
+                }
             }
         }
         else {
-            EXPECT_NODE_NONULL("NODE_CASE", node, NODE_LIST, COMPILE_NG);
+            EXPECT_NODE_NONULL("NODE_CASE", n, NODE_LIST, COMPILE_NG);
         }
-
-        node = RNODE_WHEN(node)->nd_next;
-        if (!node) {
-            break;
-        }
-        type = nd_type(node);
-        line = nd_line(node);
-        line_node = node;
     }
     /* else */
-    if (node) {
+    if (nd_else) {
         ADD_LABEL(cond_seq, elselabel);
-        ADD_INSN(cond_seq, line_node, pop);
-        add_trace_branch_coverage(iseq, cond_seq, nd_code_loc(node), nd_node_id(node), branch_id, "else", branches);
-        CHECK(COMPILE_(cond_seq, "else", node, popped));
-        ADD_INSNL(cond_seq, line_node, jump, endlabel);
+        ADD_INSN(cond_seq, (NODE *)nd_else->statements, pop);
+        add_trace_branch_coverage(iseq, cond_seq, nd_code_loc(nd_else), nd_node_id(nd_else), branch_id, "else", branches);
+        CHECK(COMPILE_(cond_seq, "else", nd_else, popped));
+        ADD_INSNL(cond_seq, nd_else, jump, endlabel);
     }
     else {
         debugs("== else (implicit)\n");
@@ -8018,25 +7985,28 @@ compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_nod
 static int
 compile_case2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_node, int popped)
 {
-    const NODE *vals;
-    const NODE *val;
-    const NODE *node = RNODE_CASE2(orig_node)->nd_body;
+    const rb_node_list2_t *vals;
+    const NODE *node = orig_node;
+    const rb_node_list2_t *list = &RB_NODE_CASE(node)->conditions;
     LABEL *endlabel;
     DECL_ANCHOR(body_seq);
     VALUE branches = Qfalse;
     int branch_id = 0;
+    const NODE *const nd_else = (NODE *)RB_NODE_CASE(node)->else_clause;
 
     branches = decl_branch_base(iseq, nd_node_id(orig_node), nd_code_loc(orig_node), "case");
 
     INIT_ANCHOR(body_seq);
     endlabel = NEW_LABEL(nd_line(node));
 
-    while (node && nd_type_p(node, NODE_WHEN)) {
-        const int line = nd_line(node);
+    /* when */
+    for (size_t i = 0; i < RB_NODE_LIST_LEN(list); i++) {
+        const NODE *n = list->nodes[i];
+        const int line = nd_line(n);
         LABEL *l1 = NEW_LABEL(line);
         ADD_LABEL(body_seq, l1);
 
-        const NODE *const coverage_node = RNODE_WHEN(node)->nd_body ? RNODE_WHEN(node)->nd_body : node;
+        const NODE *const coverage_node = RB_NODE_WHEN(n)->statements ? (const NODE *const)RB_NODE_WHEN(n)->statements : n;
         add_trace_branch_coverage(
                 iseq,
                 body_seq,
@@ -8046,40 +8016,35 @@ compile_case2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
                 "when",
                 branches);
 
-        CHECK(COMPILE_(body_seq, "when", RNODE_WHEN(node)->nd_body, popped));
-        ADD_INSNL(body_seq, node, jump, endlabel);
+        CHECK(COMPILE_(body_seq, "when", RB_NODE_WHEN(n)->statements, popped));
+        ADD_INSNL(body_seq, n, jump, endlabel);
 
-        vals = RNODE_WHEN(node)->nd_head;
-        if (!vals) {
-            EXPECT_NODE_NONULL("NODE_WHEN", node, NODE_LIST, COMPILE_NG);
+        vals = &RB_NODE_WHEN(n)->conditions;
+        if (RB_NODE_LIST_EMPTY_P(vals)) {
+            EXPECT_NODE_NONULL("NODE_WHEN", n, NODE_LIST, COMPILE_NG);
         }
-        switch (nd_type(vals)) {
-          case NODE_LIST:
-            while (vals) {
+        /* when a, b, c */
+        for (size_t j = 0; j < RB_NODE_LIST_LEN(vals); j++) {
+            const NODE *val = vals->nodes[j];
+
+            if (nd_type_p(val, RB_SPLAT_NODE)) {
+                ADD_INSN(ret, val, putnil);
+                CHECK(COMPILE(ret, "when2/cond splat", RB_NODE_SPLAT(val)->expression));
+                ADD_INSN1(ret, val, splatarray, Qtrue);
+                ADD_INSN1(ret, val, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_WHEN | VM_CHECKMATCH_ARRAY));
+                ADD_INSNL(ret, val, branchif, l1);
+            }
+            else {
                 LABEL *lnext;
-                val = RNODE_LIST(vals)->nd_head;
                 lnext = NEW_LABEL(nd_line(val));
                 debug_compile("== when2\n", (void)0);
                 CHECK(compile_branch_condition(iseq, ret, val, l1, lnext));
                 ADD_LABEL(ret, lnext);
-                vals = RNODE_LIST(vals)->nd_next;
             }
-            break;
-          case NODE_SPLAT:
-          case NODE_ARGSCAT:
-          case NODE_ARGSPUSH:
-            ADD_INSN(ret, vals, putnil);
-            CHECK(COMPILE(ret, "when2/cond splat", vals));
-            ADD_INSN1(ret, vals, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_WHEN | VM_CHECKMATCH_ARRAY));
-            ADD_INSNL(ret, vals, branchif, l1);
-            break;
-          default:
-            UNKNOWN_NODE("NODE_WHEN", vals, COMPILE_NG);
         }
-        node = RNODE_WHEN(node)->nd_next;
     }
     /* else */
-    const NODE *const coverage_node = node ? node : orig_node;
+    const NODE *const coverage_node = nd_else ? nd_else : orig_node;
     add_trace_branch_coverage(
         iseq,
         ret,
@@ -8088,7 +8053,7 @@ compile_case2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
         branch_id,
         "else",
         branches);
-    CHECK(COMPILE_(ret, "else", node, popped));
+    CHECK(COMPILE_(ret, "else", nd_else, popped));
     ADD_INSNL(ret, orig_node, jump, endlabel);
 
     ADD_SEQ(ret, body_seq);
@@ -12146,7 +12111,15 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         CHECK(COMPILE_(ret, "else", (const NODE *) cast->statements, popped));
         break;
       }
-
+      case RB_CASE_NODE: {
+        if (RB_NODE_CASE(node)->predicate) {
+            CHECK(compile_case(iseq, ret, node, popped));
+        }
+        else {
+            CHECK(compile_case2(iseq, ret, node, popped));
+        }
+        break;
+      }
       case RB_WHILE_NODE:
       case RB_UNTIL_NODE: {
         CHECK(compile_loop(iseq, ret, node, popped, type));

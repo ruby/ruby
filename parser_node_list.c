@@ -81,6 +81,13 @@ rb_node_list_concat(rb_node_list2_t *list, rb_node_list2_t *other) {
 }
 
 rb_node_t *
+rb_node_list_first(rb_node_list2_t *list)
+{
+    if (list->size == 0) return 0;
+    return list->nodes[0];
+}
+
+rb_node_t *
 rb_node_list_last(rb_node_list2_t *list)
 {
     if (list->size == 0) return 0;
