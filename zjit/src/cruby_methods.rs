@@ -342,7 +342,10 @@ fn inline_kernel_block_given_p(fun: &mut hir::Function, block: hir::BlockId, _re
 
 fn inline_array_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     if let &[index] = args {
-        if fun.likely_a(index, types::Fixnum, state) {
+        if fun.likely_a(recv, types::Array, state)
+            && fun.likely_a(index, types::Fixnum, state)
+        {
+            let recv = fun.coerce_to(block, recv, types::Array, state);
             let index = fun.coerce_to(block, index, types::Fixnum, state);
             let index = fun.push_insn(block, hir::Insn::UnboxFixnum { val: index });
             let length = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
@@ -386,6 +389,8 @@ fn inline_array_aset(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
 fn inline_array_push(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     // Inline only the case of `<<` or `push` when called with a single argument.
     if let &[val] = args {
+        if !fun.likely_a(recv, types::Array, state) { return None; }
+        let recv = fun.coerce_to(block, recv, types::Array, state);
         let _ = fun.push_insn(block, hir::Insn::ArrayPush { array: recv, val, state });
         return Some(recv);
     }
@@ -395,6 +400,8 @@ fn inline_array_push(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
 fn inline_array_pop(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     // Only inline the case of no arguments.
     let &[] = args else { return None; };
+    if !fun.likely_a(recv, types::Array, state) { return None; }
+    let recv = fun.coerce_to(block, recv, types::Array, state);
     fun.guard_not_shared(block, recv, state);
     Some(fun.push_insn(block, hir::Insn::ArrayPop { array: recv, state }))
 }
