@@ -3064,7 +3064,7 @@ impl Function {
 
     // TODO: This helper is currently used for level>0 local reads only.
     // Split GetLocal(level==0) into explicit SP/EP helpers in a follow-up.
-    fn emit_get_local_from_ep(
+    fn get_local_from_ep(
         &mut self,
         block: BlockId,
         ep_offset: u32,
@@ -6858,7 +6858,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_getlocal_WC_1 => {
                     let ep_offset = get_arg(pc, 0).as_u32();
-                    state.stack_push(fun.emit_get_local_from_ep(block, ep_offset, 1, types::BasicObject));
+                    state.stack_push(fun.get_local_from_ep(block, ep_offset, 1, types::BasicObject));
                 }
                 YARVINSN_setlocal_WC_1 => {
                     let ep_offset = get_arg(pc, 0).as_u32();
@@ -6870,7 +6870,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     if level == 0 {
                         state.stack_push(fun.push_insn(block, Insn::GetLocal { ep_offset, level, use_sp: false, rest_param: false }));
                     } else {
-                        state.stack_push(fun.emit_get_local_from_ep(block, ep_offset, level, types::BasicObject));
+                        state.stack_push(fun.get_local_from_ep(block, ep_offset, level, types::BasicObject));
                     }
                 }
                 YARVINSN_setlocal => {
@@ -6985,7 +6985,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let modified_val = if level == 0 {
                         fun.push_insn(modified_block, Insn::GetLocal { ep_offset, level, use_sp: false, rest_param: false })
                     } else {
-                        fun.emit_get_local_from_ep(modified_block, ep_offset, level, types::BasicObject)
+                        fun.get_local_from_ep(modified_block, ep_offset, level, types::BasicObject)
                     };
                     finish_getblockparam_branch(
                         &mut fun,
