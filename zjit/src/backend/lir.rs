@@ -2136,8 +2136,20 @@ impl Assembler
     /// registers/stack slots, we lower block parameter passing to explicit moves.
     pub fn resolve_ssa(&mut self, _intervals: &[Interval], assignments: &[Option<Allocation>], regs: &[Reg]) {
         use crate::backend::parcopy;
+        use crate::backend::current::SCRATCH_REG;
 
         let num_registers = regs.len();
+
+        // Map a parcopy Register to a physical Opnd::Reg.
+        // The spare register (index == num_registers) maps to the scratch register.
+        let parcopy_reg = |r: parcopy::Register| -> Opnd {
+            let idx = r.0 as usize;
+            if idx < num_registers {
+                Opnd::Reg(regs[idx])
+            } else {
+                Opnd::Reg(SCRATCH_REG)
+            }
+        };
 
         // Count predecessors for each block
         let mut num_predecessors: HashMap<BlockId, usize> = HashMap::new();
@@ -2220,8 +2232,8 @@ impl Assembler
                 let mut moves: Vec<Insn> = sequentialized
                     .iter()
                     .map(|copy| Insn::Mov {
-                        dest: Opnd::Reg(regs[copy.destination.0 as usize]),
-                        src: Opnd::Reg(regs[copy.source.0 as usize]),
+                        dest: parcopy_reg(copy.destination),
+                        src: parcopy_reg(copy.source),
                     })
                     .collect();
 
@@ -2318,8 +2330,8 @@ impl Assembler
             let mut moves: Vec<Insn> = sequentialized
                 .iter()
                 .map(|copy| Insn::Mov {
-                    dest: Opnd::Reg(regs[copy.destination.0 as usize]),
-                    src: Opnd::Reg(regs[copy.source.0 as usize]),
+                    dest: parcopy_reg(copy.destination),
+                    src: parcopy_reg(copy.source),
                 })
                 .collect();
             moves.extend(other_moves);
@@ -2437,11 +2449,16 @@ impl Assembler
 
                     let spare = parcopy::Register(num_registers as u32);
                     let sequentialized = parcopy::sequentialize_register(&reg_copies, spare);
+                    let scratch_reg = crate::backend::current::SCRATCH_REG;
                     let reg_moves: Vec<Insn> = sequentialized
                         .iter()
-                        .map(|copy| Insn::Mov {
-                            dest: Opnd::Reg(regs[copy.destination.0 as usize]),
-                            src: Opnd::Reg(regs[copy.source.0 as usize]),
+                        .map(|copy| {
+                            let dst_idx = copy.destination.0 as usize;
+                            let src_idx = copy.source.0 as usize;
+                            Insn::Mov {
+                                dest: Opnd::Reg(if dst_idx < num_registers { regs[dst_idx] } else { scratch_reg }),
+                                src: Opnd::Reg(if src_idx < num_registers { regs[src_idx] } else { scratch_reg }),
+                            }
                         })
                         .collect();
 
