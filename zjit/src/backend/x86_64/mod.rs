@@ -106,6 +106,10 @@ pub const ALLOC_REGS: &[Reg] = &[
 const SCRATCH0_OPND: Opnd = Opnd::Reg(R11_REG);
 const SCRATCH1_OPND: Opnd = Opnd::Reg(R10_REG);
 
+/// A scratch register available for use by resolve_ssa to break register copy cycles.
+/// Must not overlap with ALLOC_REGS or other preserved registers.
+pub const SCRATCH_REG: Reg = R11_REG;
+
 impl Assembler {
     /// Return an Assembler with scratch registers disabled in the backend, and a scratch register.
     pub fn new_with_scratch_reg() -> (Self, Opnd) {

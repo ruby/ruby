@@ -205,6 +205,10 @@ pub const ALLOC_REGS: &[Reg] = &[
 /// [`Assembler::arm64_scratch_split`] or [`Assembler::new_with_scratch_reg`].
 const SCRATCH0_OPND: Opnd = Opnd::Reg(X15_REG);
 const SCRATCH1_OPND: Opnd = Opnd::Reg(X17_REG);
+
+/// A scratch register available for use by resolve_ssa to break register copy cycles.
+/// Must not overlap with ALLOC_REGS or other preserved registers.
+pub const SCRATCH_REG: Reg = X15_REG;
 const SCRATCH2_OPND: Opnd = Opnd::Reg(X14_REG);
 
 impl Assembler {
@@ -707,9 +711,9 @@ impl Assembler {
         }
 
         /// If opnd is Opnd::Mem, lower it to scratch_opnd. You should use this when `opnd` is read by the instruction, not written.
-        fn split_memory_read(asm: &mut Assembler, opnd: Opnd, scratch_opnd: Opnd) -> Opnd {
+        fn split_memory_read(asm: &mut Assembler, opnd: Opnd, scratch_opnd: Opnd, stack_state: &StackState) -> Opnd {
             if let Opnd::Mem(_) = opnd {
-                let opnd = split_large_disp(asm, opnd, scratch_opnd);
+                let opnd = split_stack_membase(asm, opnd, scratch_opnd, stack_state);
                 let scratch_opnd = opnd.num_bits().map(|num_bits| scratch_opnd.with_num_bits(num_bits)).unwrap_or(scratch_opnd);
                 asm.load_into(scratch_opnd, opnd);
                 scratch_opnd
@@ -763,8 +767,8 @@ impl Assembler {
                 Insn::CSelLE { truthy: left, falsy: right, out } |
                 Insn::CSelG  { truthy: left, falsy: right, out } |
                 Insn::CSelGE { truthy: left, falsy: right, out } => {
-                    *left = split_memory_read(asm, *left, SCRATCH0_OPND);
-                    *right = split_memory_read(asm, *right, SCRATCH1_OPND);
+                    *left = split_memory_read(asm, *left, SCRATCH0_OPND, &stack_state);
+                    *right = split_memory_read(asm, *right, SCRATCH1_OPND, &stack_state);
                     let mem_out = split_memory_write(out, SCRATCH0_OPND);
 
                     asm.push_insn(insn);
@@ -775,8 +779,8 @@ impl Assembler {
                     }
                 }
                 Insn::Mul { left, right, out } => {
-                    *left = split_memory_read(asm, *left, SCRATCH0_OPND);
-                    *right = split_memory_read(asm, *right, SCRATCH1_OPND);
+                    *left = split_memory_read(asm, *left, SCRATCH0_OPND, &stack_state);
+                    *right = split_memory_read(asm, *right, SCRATCH1_OPND, &stack_state);
                     let mem_out = split_memory_write(out, SCRATCH0_OPND);
                     let reg_out = out.clone();
 
@@ -796,7 +800,7 @@ impl Assembler {
                 }
                 Insn::LShift { opnd, out, .. } |
                 Insn::RShift { opnd, out, .. } => {
-                    *opnd = split_memory_read(asm, *opnd, SCRATCH0_OPND);
+                    *opnd = split_memory_read(asm, *opnd, SCRATCH0_OPND, &stack_state);
                     let mem_out = split_memory_write(out, SCRATCH0_OPND);
 
                     asm.push_insn(insn);
@@ -808,8 +812,8 @@ impl Assembler {
                 }
                 Insn::Cmp { left, right } |
                 Insn::Test { left, right } => {
-                    *left = split_memory_read(asm, *left, SCRATCH0_OPND);
-                    *right = split_memory_read(asm, *right, SCRATCH1_OPND);
+                    *left = split_memory_read(asm, *left, SCRATCH0_OPND, &stack_state);
+                    *right = split_memory_read(asm, *right, SCRATCH1_OPND, &stack_state);
                     asm.push_insn(insn);
                 }
                 // For compile_exits, support splitting simple C arguments here
@@ -871,13 +875,14 @@ impl Assembler {
                     asm.cmp(SCRATCH1_OPND, 0.into());
                     asm.jne(label);
                 }
-                Insn::Store { dest, .. } => {
+                Insn::Store { dest, src } => {
                     *dest = split_stack_membase(asm, *dest, SCRATCH0_OPND, &stack_state);
+                    *src = split_stack_membase(asm, *src, SCRATCH1_OPND, &stack_state);
                     asm.push_insn(insn);
                 }
                 Insn::Mov { dest, src } => {
                     *src = split_stack_membase(asm, *src, SCRATCH0_OPND, &stack_state);
-                    *dest = split_large_disp(asm, *dest, SCRATCH1_OPND);
+                    *dest = split_stack_membase(asm, *dest, SCRATCH1_OPND, &stack_state);
                     match dest {
                         Opnd::Reg(_) => asm.load_into(*dest, *src),
                         Opnd::Mem(_) => asm.store(*dest, *src),
@@ -1633,7 +1638,19 @@ impl Assembler {
             }
         }
 
-        let (assignments, _num_stack_slots) = asm.linear_scan(intervals.clone(), regs.len());
+        let (assignments, num_stack_slots) = asm.linear_scan(intervals.clone(), regs.len());
+
+        // Update FrameSetup slot_count to account for spilled VRegs
+        if num_stack_slots > 0 {
+            for block in asm.basic_blocks.iter_mut() {
+                for insn in block.insns.iter_mut() {
+                    if let Insn::FrameSetup { slot_count, .. } = insn {
+                        *slot_count += num_stack_slots;
+                    }
+                }
+            }
+        }
+
         asm.handle_caller_saved_regs(&intervals, &assignments, &regs);
         asm.resolve_ssa(&intervals, &assignments, &regs);
         asm_dump!(asm, alloc_regs);
