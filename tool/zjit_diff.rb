@@ -6,6 +6,7 @@ require 'optparse'
 require 'tmpdir'
 require 'logger'
 require 'digest'
+require 'shellwords'
 
 GitRef = Struct.new(:ref, :commit_hash)
 
@@ -222,7 +223,7 @@ subcommands = {
     end
 
     opts.on('--bench-args ARGS', 'Args to pass to ruby-bench') do |bench_args|
-      options[:bench_args] = bench_args
+      options[:bench_args] = bench_args.shellsplit
     end
 
     opts.on('--force-rebuild',
