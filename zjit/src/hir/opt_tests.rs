@@ -451,6 +451,64 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_fold_fixnum_xor() {
+        eval("
+            def test
+              2 ^ 5
+            end
+        ");
+
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:Fixnum[2] = Const Value(2)
+          v12:Fixnum[5] = Const Value(5)
+          PatchPoint MethodRedefined(Integer@0x1000, ^@0x1008, cme:0x1010)
+          v24:Fixnum[7] = Const Value(7)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
+    fn test_fold_fixnum_xor_same_negative_number() {
+        eval("
+            def test
+              123 ^ -123
+            end
+        ");
+
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:Fixnum[123] = Const Value(123)
+          v12:Fixnum[-123] = Const Value(-123)
+          PatchPoint MethodRedefined(Integer@0x1000, ^@0x1008, cme:0x1010)
+          v24:Fixnum[-2] = Const Value(-2)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
     fn test_fold_fixnum_less() {
         eval("
             def test
