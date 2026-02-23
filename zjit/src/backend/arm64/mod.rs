@@ -776,7 +776,7 @@ impl Assembler {
                     asm.push_insn(insn);
 
                     if let Some(mem_out) = mem_out {
-                        let mem_out = split_large_disp(asm, mem_out, SCRATCH1_OPND);
+                        let mem_out = split_stack_membase(asm, mem_out, SCRATCH1_OPND, &stack_state);
                         asm.store(mem_out, SCRATCH0_OPND);
                     }
                 }
@@ -789,7 +789,7 @@ impl Assembler {
                     asm.push_insn(insn);
 
                     if let Some(mem_out) = mem_out {
-                        let mem_out = split_large_disp(asm, mem_out, SCRATCH1_OPND);
+                        let mem_out = split_stack_membase(asm, mem_out, SCRATCH1_OPND, &stack_state);
                         asm.store(mem_out, SCRATCH0_OPND);
                     };
 
@@ -808,7 +808,7 @@ impl Assembler {
                     asm.push_insn(insn);
 
                     if let Some(mem_out) = mem_out {
-                        let mem_out = split_large_disp(asm, mem_out, SCRATCH1_OPND);
+                        let mem_out = split_stack_membase(asm, mem_out, SCRATCH1_OPND, &stack_state);
                         asm.store(mem_out, SCRATCH0_OPND);
                     }
                 }
@@ -841,7 +841,7 @@ impl Assembler {
                     asm.push_insn(insn);
 
                     if let Some(mem_out) = mem_out {
-                        let mem_out = split_large_disp(asm, mem_out, SCRATCH1_OPND);
+                        let mem_out = split_stack_membase(asm, mem_out, SCRATCH1_OPND, &stack_state);
                         asm.store(mem_out, SCRATCH0_OPND);
                     }
                 }
