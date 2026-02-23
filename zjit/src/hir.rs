@@ -16,6 +16,7 @@ use crate::hir_type::{Type, types};
 use crate::hir_effect::{Effect, abstract_heaps, effects};
 use crate::bitset::BitSet;
 use crate::profile::{TypeDistributionSummary, ProfiledType};
+use crate::cruby_methods::FnProperties;
 use crate::stats::Counter;
 use SendFallbackReason::*;
 
@@ -3057,11 +3058,540 @@ impl Function {
         self.push_insn(block, Insn::GuardNoBitsSet { val: flags, mask: Const::CUInt64(RUBY_ELTS_SHARED as u64), mask_name: Some(ID!(RUBY_ELTS_SHARED)), reason: SideExitReason::GuardNotShared, state });
     }
 
-    /// Rewrite eligible Send opcodes into SendDirect
-    /// opcodes if we know the target ISEQ statically. This removes run-time method lookups and
-    /// opens the door for inlining.
-    /// Also try and inline constant caches, specialize object allocations, and more.
-    /// Calls to C functions are handled separately in optimize_c_calls.
+    /// Specialize a Send instruction based on the method type.
+    /// Returns Ok(()) if the Send was successfully specialized, Err(()) otherwise.
+    /// On Err, the caller should push the original instruction.
+    fn specialize_send(&mut self, block: BlockId, insn_id: InsnId, mut recv: InsnId, cd: *const rb_call_data, blockiseq: Option<IseqPtr>, args: Vec<InsnId>, state: InsnId) -> Result<(), ()> {
+        let has_block = blockiseq.is_some();
+        let frame_state = self.frame_state(state);
+        let (klass, profiled_type) = match self.resolve_receiver_type(recv, self.type_of(recv), frame_state.insn_idx) {
+            ReceiverTypeResolution::StaticallyKnown { class } => (class, None),
+            ReceiverTypeResolution::Monomorphic { profiled_type }
+            | ReceiverTypeResolution::SkewedPolymorphic { profiled_type } => (profiled_type.class(), Some(profiled_type)),
+            ReceiverTypeResolution::SkewedMegamorphic { .. }
+            | ReceiverTypeResolution::Megamorphic => {
+                if get_option!(stats) {
+                    let reason = if has_block { SendMegamorphic } else { SendWithoutBlockMegamorphic };
+                    self.set_dynamic_send_reason(insn_id, reason);
+                }
+                return Err(());
+            }
+            ReceiverTypeResolution::Polymorphic => {
+                if get_option!(stats) {
+                    let reason = if has_block { SendPolymorphic } else { SendWithoutBlockPolymorphic };
+                    self.set_dynamic_send_reason(insn_id, reason);
+                }
+                return Err(());
+            }
+            ReceiverTypeResolution::NoProfile => {
+                if get_option!(stats) {
+                    let reason = if has_block { SendNoProfiles } else { SendWithoutBlockNoProfiles };
+                    self.set_dynamic_send_reason(insn_id, reason);
+                }
+                return Err(());
+            }
+        };
+        let ci = unsafe { get_call_data_ci(cd) }; // info about the call site
+
+        let flags = unsafe { rb_vm_ci_flag(ci) };
+
+        let mid = unsafe { vm_ci_mid(ci) };
+        // Do method lookup
+        let mut cme = unsafe { rb_callable_method_entry(klass, mid) };
+        if cme.is_null() {
+            let reason = if has_block { SendNotOptimizedMethodType(MethodType::Null) } else { SendWithoutBlockNotOptimizedMethodType(MethodType::Null) };
+            self.set_dynamic_send_reason(insn_id, reason);
+            return Err(());
+        }
+        // Load an overloaded cme if applicable. See vm_search_cc().
+        // It allows you to use a faster ISEQ if possible.
+        cme = unsafe { rb_check_overloaded_cme(cme, ci) };
+        let visibility = unsafe { METHOD_ENTRY_VISI(cme) };
+        match (visibility, flags & VM_CALL_FCALL != 0) {
+            (METHOD_VISI_PUBLIC, _) => {}
+            (METHOD_VISI_PRIVATE, true) => {}
+            (METHOD_VISI_PROTECTED, true) => {}
+            _ => {
+                let reason = if has_block { SendNotOptimizedNeedPermission } else { SendWithoutBlockNotOptimizedNeedPermission };
+                self.set_dynamic_send_reason(insn_id, reason);
+                return Err(());
+            }
+        }
+        let mut def_type = unsafe { get_cme_def_type(cme) };
+        while def_type == VM_METHOD_TYPE_ALIAS {
+            cme = unsafe { rb_aliased_callable_method_entry(cme) };
+            def_type = unsafe { get_cme_def_type(cme) };
+        }
+
+        // If the call site info indicates that the `Function` has overly complex arguments, then do not optimize into a `SendDirect`.
+        // Optimized methods(`VM_METHOD_TYPE_OPTIMIZED`) handle their own argument constraints (e.g., kw_splat for Proc call).
+        if def_type != VM_METHOD_TYPE_OPTIMIZED && unspecializable_call_type(flags) {
+            self.count_complex_call_features(block, flags);
+            self.set_dynamic_send_reason(insn_id, ComplexArgPass);
+            return Err(());
+        }
+
+        if def_type == VM_METHOD_TYPE_ISEQ {
+            // TODO(max): Allow non-iseq; cache cme
+            // Only specialize positional-positional calls
+            // TODO(max): Handle other kinds of parameter passing
+            let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
+            if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice(), blockiseq) {
+                return Err(());
+            }
+
+            // Check singleton class assumption first, before emitting other patchpoints
+            if !self.assume_no_singleton_classes(block, klass, state) {
+                self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
+                return Err(());
+            }
+
+            // Add PatchPoint for method redefinition
+            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+
+            // Add GuardType for profiled receiver
+            if let Some(profiled_type) = profiled_type {
+                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+            }
+
+            let Ok((send_state, processed_args, kw_bits)) = self.prepare_direct_send_args(block, &args, ci, iseq, state)
+                .inspect_err(|&reason| self.set_dynamic_send_reason(insn_id, reason)) else {
+                return Err(());
+            };
+
+            // Try to inline simple returns (constants, locals, receiver, builtins)
+            let ci_flags = unsafe { vm_ci_flag(ci) };
+            if ci_flags & VM_CALL_OPT_SEND == 0 {
+                if let Some(value) = iseq_get_return_value(iseq, None, ci_flags) {
+                    match value {
+                        IseqReturn::LocalVariable(idx) => {
+                            self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
+                            self.make_equal_to(insn_id, processed_args[idx as usize]);
+                            return Ok(());
+                        }
+                        IseqReturn::Value(value) => {
+                            self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
+                            let replacement = self.push_insn(block, Insn::Const { val: Const::Value(value) });
+                            self.make_equal_to(insn_id, replacement);
+                            return Ok(());
+                        }
+                        IseqReturn::Receiver => {
+                            self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
+                            self.make_equal_to(insn_id, recv);
+                            return Ok(());
+                        }
+                        IseqReturn::InvokeLeafBuiltin(bf, return_type) => {
+                            self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
+                            let replacement = self.push_insn(block, Insn::InvokeBuiltin {
+                                bf,
+                                recv,
+                                args: vec![recv],
+                                state,
+                                leaf: true,
+                                return_type,
+                            });
+                            self.make_equal_to(insn_id, replacement);
+                            return Ok(());
+                        }
+                    }
+                }
+            }
+            // If not inlineable, keep the SendDirect
+            let send_direct = self.push_insn(block, Insn::SendDirect { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state, blockiseq });
+            self.make_equal_to(insn_id, send_direct);
+        } else if !has_block && def_type == VM_METHOD_TYPE_BMETHOD {
+            let procv = unsafe { rb_get_def_bmethod_proc((*cme).def) };
+            let proc = unsafe { rb_jit_get_proc_ptr(procv) };
+            let proc_block = unsafe { &(*proc).block };
+            // Target ISEQ bmethods. Can't handle for example, `define_method(:foo, &:foo)`
+            // which makes a `block_type_symbol` bmethod.
+            if proc_block.type_ != block_type_iseq {
+                self.set_dynamic_send_reason(insn_id, BmethodNonIseqProc);
+                return Err(());
+            }
+            let capture = unsafe { proc_block.as_.captured.as_ref() };
+            let iseq = unsafe { *capture.code.iseq.as_ref() };
+
+            if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice(), None) {
+                return Err(());
+            }
+
+            // Patch points:
+            // Check for "defined with an un-shareable Proc in a different Ractor"
+            if !procv.shareable_p() && !self.assume_single_ractor_mode(block, state) {
+                // TODO(alan): Turn this into a ractor belonging guard to work better in multi ractor mode.
+                return Err(());
+            }
+            // Check singleton class assumption first, before emitting other patchpoints
+            if !self.assume_no_singleton_classes(block, klass, state) {
+                self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
+                return Err(());
+            }
+            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+
+            if let Some(profiled_type) = profiled_type {
+                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+            }
+
+            let Ok((send_state, processed_args, kw_bits)) = self.prepare_direct_send_args(block, &args, ci, iseq, state)
+                .inspect_err(|&reason| self.set_dynamic_send_reason(insn_id, reason)) else {
+                return Err(());
+            };
+
+            // Try to inline simple returns (constants, locals, receiver, builtins)
+            let ci_flags = unsafe { vm_ci_flag(ci) };
+            if ci_flags & VM_CALL_OPT_SEND == 0 {
+                if let Some(value) = iseq_get_return_value(iseq, None, ci_flags) {
+                    match value {
+                        IseqReturn::LocalVariable(idx) => {
+                            self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
+                            self.make_equal_to(insn_id, processed_args[idx as usize]);
+                            return Ok(());
+                        }
+                        IseqReturn::Value(value) => {
+                            self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
+                            let replacement = self.push_insn(block, Insn::Const { val: Const::Value(value) });
+                            self.make_equal_to(insn_id, replacement);
+                            return Ok(());
+                        }
+                        IseqReturn::Receiver => {
+                            self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
+                            self.make_equal_to(insn_id, recv);
+                            return Ok(());
+                        }
+                        IseqReturn::InvokeLeafBuiltin(bf, return_type) => {
+                            self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
+                            let replacement = self.push_insn(block, Insn::InvokeBuiltin {
+                                bf,
+                                recv,
+                                args: vec![recv],
+                                state,
+                                leaf: true,
+                                return_type,
+                            });
+                            self.make_equal_to(insn_id, replacement);
+                            return Ok(());
+                        }
+                    }
+                }
+            }
+            // If not inlineable, keep the SendDirect
+            let send_direct = self.push_insn(block, Insn::SendDirect { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state, blockiseq: None });
+            self.make_equal_to(insn_id, send_direct);
+        } else if !has_block && def_type == VM_METHOD_TYPE_IVAR && args.is_empty() {
+            // Check if we're accessing ivars of a Class or Module object as they require single-ractor mode.
+            // We omit gen_prepare_non_leaf_call on gen_getivar, so it's unsafe to raise for multi-ractor mode.
+            if self.is_metaclass(klass) && !self.assume_single_ractor_mode(block, state) {
+                return Err(());
+            }
+            // Check singleton class assumption first, before emitting other patchpoints
+            if !self.assume_no_singleton_classes(block, klass, state) {
+                self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
+                return Err(());
+            }
+
+            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+            if let Some(profiled_type) = profiled_type {
+                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+            }
+            let id = unsafe { get_cme_def_body_attr_id(cme) };
+            let insn_idx = frame_state.insn_idx;
+
+            // Try to lower all the way to LoadField
+            if let Some(replacement) = self.emit_getivar(block, recv, id, insn_idx, state) {
+                self.make_equal_to(insn_id, replacement);
+            } else {
+                // Partial specialization: emit GetIvar (optimize_getivar will handle later)
+                let getivar = self.push_insn(block, Insn::GetIvar { self_val: recv, id, ic: std::ptr::null(), state });
+                self.make_equal_to(insn_id, getivar);
+            }
+        } else if let (false, VM_METHOD_TYPE_ATTRSET, &[val]) = (has_block, def_type, args.as_slice()) {
+            // Check if we're accessing ivars of a Class or Module object as they require single-ractor mode.
+            // We omit gen_prepare_non_leaf_call on gen_getivar, so it's unsafe to raise for multi-ractor mode.
+            if self.is_metaclass(klass) && !self.assume_single_ractor_mode(block, state) {
+                return Err(());
+            }
+
+            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+            if let Some(profiled_type) = profiled_type {
+                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+            }
+            let id = unsafe { get_cme_def_body_attr_id(cme) };
+            let insn_idx = frame_state.insn_idx;
+
+            // Try to lower all the way to StoreField
+            if self.emit_setivar(block, recv, id, val, insn_idx, state).is_ok() {
+                self.make_equal_to(insn_id, val);
+            } else {
+                // Partial specialization: emit SetIvar (optimize_getivar will handle later)
+                self.push_insn(block, Insn::SetIvar { self_val: recv, id, ic: std::ptr::null(), val, state });
+                self.make_equal_to(insn_id, val);
+            }
+        } else if !has_block && def_type == VM_METHOD_TYPE_OPTIMIZED {
+            let opt_type: OptimizedMethodType = unsafe { get_cme_def_body_optimized_type(cme) }.into();
+            match (opt_type, args.as_slice()) {
+                (OptimizedMethodType::Call, _) => {
+                    if flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KWARG) != 0 {
+                        self.count_complex_call_features(block, flags);
+                        self.set_dynamic_send_reason(insn_id, ComplexArgPass);
+                        return Err(());
+                    }
+                    // Check singleton class assumption first, before emitting other patchpoints
+                    if !self.assume_no_singleton_classes(block, klass, state) {
+                        self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
+                        return Err(());
+                    }
+                    self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+                    if let Some(profiled_type) = profiled_type {
+                        recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+                    }
+                    let kw_splat = flags & VM_CALL_KW_SPLAT != 0;
+                    let invoke_proc = self.push_insn(block, Insn::InvokeProc { recv, args: args.clone(), state, kw_splat });
+                    self.make_equal_to(insn_id, invoke_proc);
+                }
+                (OptimizedMethodType::StructAref, &[]) | (OptimizedMethodType::StructAset, &[_]) => {
+                    if unspecializable_call_type(flags) {
+                        self.count_complex_call_features(block, flags);
+                        self.set_dynamic_send_reason(insn_id, ComplexArgPass);
+                        return Err(());
+                    }
+                    let index: i32 = unsafe { get_cme_def_body_optimized_index(cme) }
+                                    .try_into()
+                                    .unwrap();
+                    // We are going to use an encoding that takes a 4-byte immediate which
+                    // limits the offset to INT32_MAX.
+                    {
+                        let native_index = (index as i64) * (SIZEOF_VALUE as i64);
+                        if native_index > (i32::MAX as i64) {
+                            return Err(());
+                        }
+                    }
+                    // Get the profiled type to check if the fields is embedded or heap allocated.
+                    let Some(is_embedded) = self.profiled_type_of_at(recv, frame_state.insn_idx).map(|t| t.flags().is_struct_embedded()) else {
+                        // No (monomorphic/skewed polymorphic) profile info
+                        return Err(());
+                    };
+                    // Check singleton class assumption first, before emitting other patchpoints
+                    if !self.assume_no_singleton_classes(block, klass, state) {
+                        self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
+                        return Err(());
+                    }
+                    self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+                    if let Some(profiled_type) = profiled_type {
+                        recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+                    }
+                    // All structs from the same Struct class should have the same
+                    // length. So if our recv is embedded all runtime
+                    // structs of the same class should be as well, and the same is
+                    // true of the converse.
+                    //
+                    // No need for a GuardShape.
+                    if let OptimizedMethodType::StructAset = opt_type {
+                        self.guard_not_frozen(block, recv, state);
+                    }
+
+                    let (target, offset) = if is_embedded {
+                        let offset = RUBY_OFFSET_RSTRUCT_AS_ARY + (SIZEOF_VALUE_I32 * index);
+                        (recv, offset)
+                    } else {
+                        let as_heap = self.push_insn(block, Insn::LoadField { recv, id: ID!(_as_heap), offset: RUBY_OFFSET_RSTRUCT_AS_HEAP_PTR, return_type: types::CPtr });
+                        let offset = SIZEOF_VALUE_I32 * index;
+                        (as_heap, offset)
+                    };
+
+                    let replacement = if let (OptimizedMethodType::StructAset, &[val]) = (opt_type, args.as_slice()) {
+                        self.push_insn(block, Insn::StoreField { recv: target, id: mid, offset, val });
+                        self.push_insn(block, Insn::WriteBarrier { recv, val });
+                        val
+                    } else { // StructAref
+                        self.push_insn(block, Insn::LoadField { recv: target, id: mid, offset, return_type: types::BasicObject })
+                    };
+                    self.make_equal_to(insn_id, replacement);
+                },
+                _ => {
+                    self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedMethodTypeOptimized(OptimizedMethodType::from(opt_type)));
+                    return Err(());
+                },
+            };
+        } else if def_type == VM_METHOD_TYPE_CFUNC {
+            // Guard: skip if method tracing is enabled
+            if unsafe { rb_zjit_method_tracing_currently_enabled() } { return Err(()); }
+
+            let argc = unsafe { vm_ci_argc(ci) };
+
+            // Arg complexity checks differ by block presence
+            if has_block {
+                if unspecializable_c_call_type(flags) {
+                    // Only count features NOT already counted above.
+                    if !unspecializable_call_type(flags) {
+                        self.count_complex_call_features(block, flags);
+                    }
+                    self.set_dynamic_send_reason(insn_id, ComplexArgPass);
+                    return Err(());
+                }
+            }
+
+            // Map blockiseq: Some(null) => None, Some(iseq) => Some(iseq), None => None
+            let resolved_blockiseq = match blockiseq {
+                None => None,
+                Some(p) if p.is_null() => None,
+                Some(blockiseq) => Some(blockiseq),
+            };
+
+            let cfunc = unsafe { get_cme_def_body_cfunc(cme) };
+            let cfunc_argc = unsafe { get_mct_argc(cfunc) };
+            let cfunc_ptr = unsafe { get_mct_func(cfunc) }.cast();
+
+            match cfunc_argc {
+                0.. => {
+                    // (self, arg0, arg1, ..., argc) form
+                    if !has_block {
+                        if flags & VM_CALL_ARGS_SIMPLE == 0 {
+                            // Only count features NOT already counted in the general check above.
+                            if !unspecializable_call_type(flags) {
+                                self.count_complex_call_features(block, flags);
+                            }
+                            self.set_dynamic_send_reason(insn_id, ComplexArgPass);
+                            return Err(());
+                        }
+                    }
+                    // Bail on argc mismatch
+                    if argc != cfunc_argc as u32 {
+                        return Err(());
+                    }
+
+                    // Check singleton class assumption first, before emitting other patchpoints
+                    if !self.assume_no_singleton_classes(block, klass, state) {
+                        self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
+                        return Err(());
+                    }
+
+                    // Commit to the replacement. Put PatchPoints.
+                    self.gen_patch_points_for_optimized_ccall(block, klass, mid, cme, state);
+
+                    let props = ZJITState::get_method_annotations().get_cfunc_properties(cme);
+                    if props.is_none() && get_option!(stats) {
+                        self.count_not_annotated_cfunc(block, cme);
+                    }
+                    let props = props.unwrap_or_default();
+
+                    if let Some(profiled_type) = profiled_type {
+                        // Guard receiver class
+                        recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+                        self.insn_types[recv.0] = self.infer_type(recv);
+                    }
+
+                    // Try inlining the cfunc into HIR
+                    if let Some(replacement) = self.try_inline_cfunc(block, recv, &args, state, &props) {
+                        self.make_equal_to(insn_id, replacement);
+                        return Ok(());
+                    }
+
+                    // No inlining; emit a call
+                    let cfunc_fn = unsafe { get_mct_func(cfunc) }.cast();
+                    let name = rust_str_to_id(&qualified_method_name(unsafe { (*cme).owner }, unsafe { (*cme).called_id }));
+                    let return_type = props.return_type;
+                    let elidable = props.elidable;
+                    // Filter for a leaf and GC free function (only when no block)
+                    if !has_block && props.leaf && props.no_gc {
+                        self.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
+                        let ccall = self.push_insn(block, Insn::CCall { cfunc: cfunc_fn, recv, args, name, return_type, elidable });
+                        self.make_equal_to(insn_id, ccall);
+                    } else {
+                        if get_option!(stats) {
+                            self.count_not_inlined_cfunc(block, cme);
+                        }
+                        let ccall = self.push_insn(block, Insn::CCallWithFrame {
+                            cd,
+                            cfunc: cfunc_fn,
+                            recv,
+                            args,
+                            cme,
+                            name,
+                            state,
+                            return_type: if has_block { types::BasicObject } else { return_type },
+                            elidable: if has_block { false } else { elidable },
+                            blockiseq: resolved_blockiseq,
+                        });
+                        self.make_equal_to(insn_id, ccall);
+                    }
+                }
+                -1 => {
+                    // Variadic method: func(int argc, VALUE *argv, VALUE recv)
+                    if !has_block {
+                        if flags & VM_CALL_ARGS_SIMPLE == 0 {
+                            if !unspecializable_call_type(flags) {
+                                self.count_complex_call_features(block, flags);
+                            }
+                            self.set_dynamic_send_reason(insn_id, ComplexArgPass);
+                            return Err(());
+                        }
+                    }
+
+                    // Check singleton class assumption first, before emitting other patchpoints
+                    if !self.assume_no_singleton_classes(block, klass, state) {
+                        self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
+                        return Err(());
+                    }
+
+                    self.gen_patch_points_for_optimized_ccall(block, klass, mid, cme, state);
+
+                    let props = ZJITState::get_method_annotations().get_cfunc_properties(cme);
+                    if props.is_none() && get_option!(stats) {
+                        self.count_not_annotated_cfunc(block, cme);
+                    }
+                    let props = props.unwrap_or_default();
+
+                    if let Some(profiled_type) = profiled_type {
+                        // Guard receiver class
+                        recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+                        self.insn_types[recv.0] = self.infer_type(recv);
+                    }
+
+                    // Try inlining the cfunc into HIR
+                    if let Some(replacement) = self.try_inline_cfunc(block, recv, &args, state, &props) {
+                        self.make_equal_to(insn_id, replacement);
+                        return Ok(());
+                    }
+
+                    // No inlining; emit a call
+                    if get_option!(stats) {
+                        self.count_not_inlined_cfunc(block, cme);
+                    }
+                    let return_type = if has_block { types::BasicObject } else { props.return_type };
+                    let elidable = if has_block { false } else { props.elidable };
+                    let name = if has_block { mid } else { rust_str_to_id(&qualified_method_name(unsafe { (*cme).owner }, unsafe { (*cme).called_id })) };
+                    let ccall = self.push_insn(block, Insn::CCallVariadic {
+                        cfunc: cfunc_ptr,
+                        recv,
+                        args,
+                        cme,
+                        name,
+                        state,
+                        return_type,
+                        elidable,
+                        blockiseq: resolved_blockiseq,
+                    });
+                    self.make_equal_to(insn_id, ccall);
+                }
+                -2 => {
+                    // (self, args_ruby_array) parameter form
+                    let reason = if has_block { SendCfuncArrayVariadic } else { SendWithoutBlockCfuncArrayVariadic };
+                    self.set_dynamic_send_reason(insn_id, reason);
+                    return Err(());
+                }
+                _ => unreachable!("unknown cfunc kind: argc={}", cfunc_argc)
+            }
+        } else {
+            let reason = if has_block { SendNotOptimizedMethodType(MethodType::from(def_type)) } else { SendWithoutBlockNotOptimizedMethodType(MethodType::from(def_type)) };
+            self.set_dynamic_send_reason(insn_id, reason);
+            return Err(());
+        }
+        Ok(())
+    }
+
+    /// Rewrite eligible Send opcodes into specialized forms via `specialize_send`.
+    /// Also inline constant caches, specialize object allocations, and more.
     fn type_specialize(&mut self) {
         for block in self.rpo() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
@@ -3072,275 +3602,9 @@ impl Function {
                         self.try_rewrite_freeze(block, insn_id, recv, state),
                     Insn::Send { recv, blockiseq: None, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(minusat) && args.is_empty() =>
                         self.try_rewrite_uminus(block, insn_id, recv, state),
-                    Insn::Send { mut recv, cd, state, blockiseq, args, .. } => {
-                        let has_block = blockiseq.is_some();
-                        let frame_state = self.frame_state(state);
-                        let (klass, profiled_type) = match self.resolve_receiver_type(recv, self.type_of(recv), frame_state.insn_idx) {
-                            ReceiverTypeResolution::StaticallyKnown { class } => (class, None),
-                            ReceiverTypeResolution::Monomorphic { profiled_type }
-                            | ReceiverTypeResolution::SkewedPolymorphic { profiled_type } => (profiled_type.class(), Some(profiled_type)),
-                            ReceiverTypeResolution::SkewedMegamorphic { .. }
-                            | ReceiverTypeResolution::Megamorphic => {
-                                if get_option!(stats) {
-                                    let reason = if has_block { SendMegamorphic } else { SendWithoutBlockMegamorphic };
-                                    self.set_dynamic_send_reason(insn_id, reason);
-                                }
-                                self.push_insn_id(block, insn_id);
-                                continue;
-                            }
-                            ReceiverTypeResolution::Polymorphic => {
-                                if get_option!(stats) {
-                                    let reason = if has_block { SendPolymorphic } else { SendWithoutBlockPolymorphic };
-                                    self.set_dynamic_send_reason(insn_id, reason);
-                                }
-                                self.push_insn_id(block, insn_id);
-                                continue;
-                            }
-                            ReceiverTypeResolution::NoProfile => {
-                                if get_option!(stats) {
-                                    let reason = if has_block { SendNoProfiles } else { SendWithoutBlockNoProfiles };
-                                    self.set_dynamic_send_reason(insn_id, reason);
-                                }
-                                self.push_insn_id(block, insn_id);
-                                continue;
-                            }
-                        };
-                        let ci = unsafe { get_call_data_ci(cd) }; // info about the call site
-
-                        let flags = unsafe { rb_vm_ci_flag(ci) };
-
-                        let mid = unsafe { vm_ci_mid(ci) };
-                        // Do method lookup
-                        let mut cme = unsafe { rb_callable_method_entry(klass, mid) };
-                        if cme.is_null() {
-                            let reason = if has_block { SendNotOptimizedMethodType(MethodType::Null) } else { SendWithoutBlockNotOptimizedMethodType(MethodType::Null) };
-                            self.set_dynamic_send_reason(insn_id, reason);
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        // Load an overloaded cme if applicable. See vm_search_cc().
-                        // It allows you to use a faster ISEQ if possible.
-                        cme = unsafe { rb_check_overloaded_cme(cme, ci) };
-                        let visibility = unsafe { METHOD_ENTRY_VISI(cme) };
-                        match (visibility, flags & VM_CALL_FCALL != 0) {
-                            (METHOD_VISI_PUBLIC, _) => {}
-                            (METHOD_VISI_PRIVATE, true) => {}
-                            (METHOD_VISI_PROTECTED, true) => {}
-                            _ => {
-                                let reason = if has_block { SendNotOptimizedNeedPermission } else { SendWithoutBlockNotOptimizedNeedPermission };
-                                self.set_dynamic_send_reason(insn_id, reason);
-                                self.push_insn_id(block, insn_id); continue;
-                            }
-                        }
-                        let mut def_type = unsafe { get_cme_def_type(cme) };
-                        while def_type == VM_METHOD_TYPE_ALIAS {
-                            cme = unsafe { rb_aliased_callable_method_entry(cme) };
-                            def_type = unsafe { get_cme_def_type(cme) };
-                        }
-
-                        // If the call site info indicates that the `Function` has overly complex arguments, then do not optimize into a `SendDirect`.
-                        // Optimized methods(`VM_METHOD_TYPE_OPTIMIZED`) handle their own argument constraints (e.g., kw_splat for Proc call).
-                        if def_type != VM_METHOD_TYPE_OPTIMIZED && unspecializable_call_type(flags) {
-                            self.count_complex_call_features(block, flags);
-                            self.set_dynamic_send_reason(insn_id, ComplexArgPass);
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-
-                        if def_type == VM_METHOD_TYPE_ISEQ {
-                            // TODO(max): Allow non-iseq; cache cme
-                            // Only specialize positional-positional calls
-                            // TODO(max): Handle other kinds of parameter passing
-                            let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
-                            if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice(), blockiseq) {
-                                self.push_insn_id(block, insn_id); continue;
-                            }
-
-                            // Check singleton class assumption first, before emitting other patchpoints
-                            if !self.assume_no_singleton_classes(block, klass, state) {
-                                self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
-                                self.push_insn_id(block, insn_id); continue;
-                            }
-
-                            // Add PatchPoint for method redefinition
-                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
-
-                            // Add GuardType for profiled receiver
-                            if let Some(profiled_type) = profiled_type {
-                                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
-                            }
-
-                            let Ok((send_state, processed_args, kw_bits)) = self.prepare_direct_send_args(block, &args, ci, iseq, state)
-                                .inspect_err(|&reason| self.set_dynamic_send_reason(insn_id, reason)) else {
-                                self.push_insn_id(block, insn_id); continue;
-                            };
-
-                            let send_direct = self.push_insn(block, Insn::SendDirect { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state, blockiseq });
-                            self.make_equal_to(insn_id, send_direct);
-                        } else if !has_block && def_type == VM_METHOD_TYPE_BMETHOD {
-                            let procv = unsafe { rb_get_def_bmethod_proc((*cme).def) };
-                            let proc = unsafe { rb_jit_get_proc_ptr(procv) };
-                            let proc_block = unsafe { &(*proc).block };
-                            // Target ISEQ bmethods. Can't handle for example, `define_method(:foo, &:foo)`
-                            // which makes a `block_type_symbol` bmethod.
-                            if proc_block.type_ != block_type_iseq {
-                                self.set_dynamic_send_reason(insn_id, BmethodNonIseqProc);
-                                self.push_insn_id(block, insn_id); continue;
-                            }
-                            let capture = unsafe { proc_block.as_.captured.as_ref() };
-                            let iseq = unsafe { *capture.code.iseq.as_ref() };
-
-                            if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice(), None) {
-                                self.push_insn_id(block, insn_id); continue;
-                            }
-
-                            // Patch points:
-                            // Check for "defined with an un-shareable Proc in a different Ractor"
-                            if !procv.shareable_p() && !self.assume_single_ractor_mode(block, state) {
-                                // TODO(alan): Turn this into a ractor belonging guard to work better in multi ractor mode.
-                                self.push_insn_id(block, insn_id); continue;
-                            }
-                            // Check singleton class assumption first, before emitting other patchpoints
-                            if !self.assume_no_singleton_classes(block, klass, state) {
-                                self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
-                                self.push_insn_id(block, insn_id); continue;
-                            }
-                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
-
-                            if let Some(profiled_type) = profiled_type {
-                                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
-                            }
-
-                            let Ok((send_state, processed_args, kw_bits)) = self.prepare_direct_send_args(block, &args, ci, iseq, state)
-                                .inspect_err(|&reason| self.set_dynamic_send_reason(insn_id, reason)) else {
-                                self.push_insn_id(block, insn_id); continue;
-                            };
-
-                            let send_direct = self.push_insn(block, Insn::SendDirect { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state, blockiseq: None });
-                            self.make_equal_to(insn_id, send_direct);
-                        } else if !has_block && def_type == VM_METHOD_TYPE_IVAR && args.is_empty() {
-                            // Check if we're accessing ivars of a Class or Module object as they require single-ractor mode.
-                            // We omit gen_prepare_non_leaf_call on gen_getivar, so it's unsafe to raise for multi-ractor mode.
-                            if self.is_metaclass(klass) && !self.assume_single_ractor_mode(block, state) {
-                                self.push_insn_id(block, insn_id); continue;
-                            }
-                            // Check singleton class assumption first, before emitting other patchpoints
-                            if !self.assume_no_singleton_classes(block, klass, state) {
-                                self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
-                                self.push_insn_id(block, insn_id); continue;
-                            }
-
-                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
-                            if let Some(profiled_type) = profiled_type {
-                                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
-                            }
-                            let id = unsafe { get_cme_def_body_attr_id(cme) };
-
-                            let getivar = self.push_insn(block, Insn::GetIvar { self_val: recv, id, ic: std::ptr::null(), state });
-                            self.make_equal_to(insn_id, getivar);
-                        } else if let (false, VM_METHOD_TYPE_ATTRSET, &[val]) = (has_block, def_type, args.as_slice()) {
-                            // Check if we're accessing ivars of a Class or Module object as they require single-ractor mode.
-                            // We omit gen_prepare_non_leaf_call on gen_getivar, so it's unsafe to raise for multi-ractor mode.
-                            if self.is_metaclass(klass) && !self.assume_single_ractor_mode(block, state) {
-                                self.push_insn_id(block, insn_id); continue;
-                            }
-
-                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
-                            if let Some(profiled_type) = profiled_type {
-                                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
-                            }
-                            let id = unsafe { get_cme_def_body_attr_id(cme) };
-
-                            self.push_insn(block, Insn::SetIvar { self_val: recv, id, ic: std::ptr::null(), val, state });
-                            self.make_equal_to(insn_id, val);
-                        } else if !has_block && def_type == VM_METHOD_TYPE_OPTIMIZED {
-                            let opt_type: OptimizedMethodType = unsafe { get_cme_def_body_optimized_type(cme) }.into();
-                            match (opt_type, args.as_slice()) {
-                                (OptimizedMethodType::Call, _) => {
-                                    if flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KWARG) != 0 {
-                                        self.count_complex_call_features(block, flags);
-                                        self.set_dynamic_send_reason(insn_id, ComplexArgPass);
-                                        self.push_insn_id(block, insn_id); continue;
-                                    }
-                                    // Check singleton class assumption first, before emitting other patchpoints
-                                    if !self.assume_no_singleton_classes(block, klass, state) {
-                                        self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
-                                        self.push_insn_id(block, insn_id); continue;
-                                    }
-                                    self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
-                                    if let Some(profiled_type) = profiled_type {
-                                        recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
-                                    }
-                                    let kw_splat = flags & VM_CALL_KW_SPLAT != 0;
-                                    let invoke_proc = self.push_insn(block, Insn::InvokeProc { recv, args: args.clone(), state, kw_splat });
-                                    self.make_equal_to(insn_id, invoke_proc);
-                                }
-                                (OptimizedMethodType::StructAref, &[]) | (OptimizedMethodType::StructAset, &[_]) => {
-                                    if unspecializable_call_type(flags) {
-                                        self.count_complex_call_features(block, flags);
-                                        self.set_dynamic_send_reason(insn_id, ComplexArgPass);
-                                        self.push_insn_id(block, insn_id); continue;
-                                    }
-                                    let index: i32 = unsafe { get_cme_def_body_optimized_index(cme) }
-                                                    .try_into()
-                                                    .unwrap();
-                                    // We are going to use an encoding that takes a 4-byte immediate which
-                                    // limits the offset to INT32_MAX.
-                                    {
-                                        let native_index = (index as i64) * (SIZEOF_VALUE as i64);
-                                        if native_index > (i32::MAX as i64) {
-                                            self.push_insn_id(block, insn_id); continue;
-                                        }
-                                    }
-                                    // Get the profiled type to check if the fields is embedded or heap allocated.
-                                    let Some(is_embedded) = self.profiled_type_of_at(recv, frame_state.insn_idx).map(|t| t.flags().is_struct_embedded()) else {
-                                        // No (monomorphic/skewed polymorphic) profile info
-                                        self.push_insn_id(block, insn_id); continue;
-                                    };
-                                    // Check singleton class assumption first, before emitting other patchpoints
-                                    if !self.assume_no_singleton_classes(block, klass, state) {
-                                        self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
-                                        self.push_insn_id(block, insn_id); continue;
-                                    }
-                                    self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
-                                    if let Some(profiled_type) = profiled_type {
-                                        recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
-                                    }
-                                    // All structs from the same Struct class should have the same
-                                    // length. So if our recv is embedded all runtime
-                                    // structs of the same class should be as well, and the same is
-                                    // true of the converse.
-                                    //
-                                    // No need for a GuardShape.
-                                    if let OptimizedMethodType::StructAset = opt_type {
-                                        self.guard_not_frozen(block, recv, state);
-                                    }
-
-                                    let (target, offset) = if is_embedded {
-                                        let offset = RUBY_OFFSET_RSTRUCT_AS_ARY + (SIZEOF_VALUE_I32 * index);
-                                        (recv, offset)
-                                    } else {
-                                        let as_heap = self.push_insn(block, Insn::LoadField { recv, id: ID!(_as_heap), offset: RUBY_OFFSET_RSTRUCT_AS_HEAP_PTR, return_type: types::CPtr });
-                                        let offset = SIZEOF_VALUE_I32 * index;
-                                        (as_heap, offset)
-                                    };
-
-                                    let replacement = if let (OptimizedMethodType::StructAset, &[val]) = (opt_type, args.as_slice()) {
-                                        self.push_insn(block, Insn::StoreField { recv: target, id: mid, offset, val });
-                                        self.push_insn(block, Insn::WriteBarrier { recv, val });
-                                        val
-                                    } else { // StructAref
-                                        self.push_insn(block, Insn::LoadField { recv: target, id: mid, offset, return_type: types::BasicObject })
-                                    };
-                                    self.make_equal_to(insn_id, replacement);
-                                },
-                                _ => {
-                                    self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedMethodTypeOptimized(OptimizedMethodType::from(opt_type)));
-                                    self.push_insn_id(block, insn_id); continue;
-                                },
-                            };
-                        } else {
-                            let reason = if has_block { SendNotOptimizedMethodType(MethodType::from(def_type)) } else { SendWithoutBlockNotOptimizedMethodType(MethodType::from(def_type)) };
-                            self.set_dynamic_send_reason(insn_id, reason);
-                            self.push_insn_id(block, insn_id); continue;
+                    Insn::Send { recv, cd, state, blockiseq, args, .. } => {
+                        if self.specialize_send(block, insn_id, recv, cd, blockiseq, args, state).is_err() {
+                            self.push_insn_id(block, insn_id);
                         }
                     }
                     Insn::GetConstantPath { ic, state, .. } => {
@@ -3601,19 +3865,8 @@ impl Function {
                                     emit_super_call_guards(self, block, super_cme, current_cme, mid, state);
 
                                     // Try inlining the cfunc into HIR
-                                    let tmp_block = self.new_block(u32::MAX);
-                                    if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args, state) {
-                                        // Copy contents of tmp_block to block
-                                        assert_ne!(block, tmp_block);
-                                        let insns = std::mem::take(&mut self.blocks[tmp_block.0].insns);
-                                        self.blocks[block.0].insns.extend(insns);
-                                        self.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
+                                    if let Some(replacement) = self.try_inline_cfunc(block, recv, &args, state, &props) {
                                         self.make_equal_to(insn_id, replacement);
-                                        if self.type_of(replacement).bit_equal(types::Any) {
-                                            // Not set yet; infer type
-                                            self.insn_types[replacement.0] = self.infer_type(replacement);
-                                        }
-                                        self.remove_block(tmp_block);
                                         continue;
                                     }
 
@@ -3650,20 +3903,8 @@ impl Function {
                                     emit_super_call_guards(self, block, super_cme, current_cme, mid, state);
 
                                     // Try inlining the cfunc into HIR
-                                    let tmp_block = self.new_block(u32::MAX);
-                                    if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args, state) {
-                                        // Copy contents of tmp_block to block
-                                        assert_ne!(block, tmp_block);
-                                        emit_super_call_guards(self, block, super_cme, current_cme, mid, state);
-                                        let insns = std::mem::take(&mut self.blocks[tmp_block.0].insns);
-                                        self.blocks[block.0].insns.extend(insns);
-                                        self.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
+                                    if let Some(replacement) = self.try_inline_cfunc(block, recv, &args, state, &props) {
                                         self.make_equal_to(insn_id, replacement);
-                                        if self.type_of(replacement).bit_equal(types::Any) {
-                                            // Not set yet; infer type
-                                            self.insn_types[replacement.0] = self.infer_type(replacement);
-                                        }
-                                        self.remove_block(tmp_block);
                                         continue;
                                     }
 
@@ -3716,60 +3957,6 @@ impl Function {
         self.infer_types();
     }
 
-    fn inline(&mut self) {
-        for block in self.rpo() {
-            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
-            assert!(self.blocks[block.0].insns.is_empty());
-            for insn_id in old_insns {
-                match self.find(insn_id) {
-                    // We can inline SendDirect with blockiseq because we are prohibiting `yield`
-                    // and `.call`, which would trigger autosplat. We only inline constants and
-                    // variables and builtin calls.
-                    Insn::SendDirect { recv, iseq, cd, args, state, .. } => {
-                        let call_info = unsafe { (*cd).ci };
-                        let ci_flags = unsafe { vm_ci_flag(call_info) };
-                        // .send call is not currently supported for builtins
-                        if ci_flags & VM_CALL_OPT_SEND != 0 {
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        let Some(value) = iseq_get_return_value(iseq, None, ci_flags) else {
-                            self.push_insn_id(block, insn_id); continue;
-                        };
-                        match value {
-                            IseqReturn::LocalVariable(idx) => {
-                                self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
-                                self.make_equal_to(insn_id, args[idx as usize]);
-                            }
-                            IseqReturn::Value(value) => {
-                                self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
-                                let replacement = self.push_insn(block, Insn::Const { val: Const::Value(value) });
-                                self.make_equal_to(insn_id, replacement);
-                            }
-                            IseqReturn::Receiver => {
-                                self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
-                                self.make_equal_to(insn_id, recv);
-                            }
-                            IseqReturn::InvokeLeafBuiltin(bf, return_type) => {
-                                self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
-                                let replacement = self.push_insn(block, Insn::InvokeBuiltin {
-                                    bf,
-                                    recv,
-                                    args: vec![recv],
-                                    state,
-                                    leaf: true,
-                                    return_type,
-                                });
-                                self.make_equal_to(insn_id, replacement);
-                            }
-                        }
-                    }
-                    _ => { self.push_insn_id(block, insn_id); }
-                }
-            }
-        }
-        self.infer_types();
-    }
-
     fn load_shape(&mut self, block: BlockId, recv: InsnId) -> InsnId {
         self.push_insn(block, Insn::LoadField {
             recv,
@@ -3788,6 +3975,138 @@ impl Function {
         })
     }
 
+    /// Try to lower a GetIvar into GuardType + GuardShape + LoadField.
+    /// Returns Some(replacement_insn) on success, None on failure.
+    fn emit_getivar(&mut self, block: BlockId, self_val: InsnId, id: ID, insn_idx: usize, state: InsnId) -> Option<InsnId> {
+        let recv_type = self.profiled_type_of_at(self_val, insn_idx)?;
+        if recv_type.flags().is_immediate() {
+            return None;
+        }
+        assert!(recv_type.shape().is_valid());
+        if recv_type.shape().is_too_complex() {
+            return None;
+        }
+        let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
+        let shape = self.load_shape(block, self_val);
+        self.guard_shape(block, shape, recv_type.shape(), state);
+        let mut ivar_index: u16 = 0;
+        let replacement = if ! unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
+            // If there is no IVAR index, then the ivar was undefined when we
+            // entered the compiler.  That means we can just return nil for this
+            // shape + iv name
+            self.push_insn(block, Insn::Const { val: Const::Value(Qnil) })
+        } else if !recv_type.flags().is_t_object() {
+            // NOTE: it's fine to use rb_ivar_get_at_no_ractor_check because
+            // getinstancevariable does assume_single_ractor_mode()
+            let ivar_index_insn: InsnId = self.push_insn(block, Insn::Const { val: Const::CUInt16(ivar_index as u16) });
+            self.push_insn(block, Insn::CCall {
+                cfunc: rb_ivar_get_at_no_ractor_check as *const u8,
+                recv: self_val,
+                args: vec![ivar_index_insn],
+                name: ID!(rb_ivar_get_at_no_ractor_check),
+                return_type: types::BasicObject,
+                elidable: true })
+        } else if recv_type.flags().is_embedded() {
+            // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
+            let offset = ROBJECT_OFFSET_AS_ARY as i32 + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
+            self.push_insn(block, Insn::LoadField { recv: self_val, id, offset, return_type: types::BasicObject })
+        } else {
+            let as_heap =  self.push_insn(block, Insn::LoadField { recv: self_val, id: ID!(_as_heap), offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32, return_type: types::CPtr });
+
+            let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
+            self.push_insn(block, Insn::LoadField { recv: as_heap, id, offset, return_type: types::BasicObject })
+        };
+        Some(replacement)
+    }
+
+    /// Try to lower a SetIvar into GuardType + GuardShape + StoreField + WriteBarrier.
+    /// Returns Ok(()) on success, Err(()) on failure.
+    fn emit_setivar(&mut self, block: BlockId, self_val: InsnId, id: ID, val: InsnId, insn_idx: usize, state: InsnId) -> Result<(), ()> {
+        let Some(recv_type) = self.profiled_type_of_at(self_val, insn_idx) else {
+            return Err(());
+        };
+        if recv_type.flags().is_immediate() {
+            return Err(());
+        }
+        assert!(recv_type.shape().is_valid());
+        if !recv_type.flags().is_t_object() {
+            return Err(());
+        }
+        if recv_type.shape().is_too_complex() {
+            return Err(());
+        }
+        if recv_type.shape().is_frozen() {
+            return Err(());
+        }
+        let mut ivar_index: u16 = 0;
+        let mut next_shape_id = recv_type.shape();
+        if !unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
+            // Current shape does not contain this ivar; do a shape transition.
+            let current_shape_id = recv_type.shape();
+            let class = recv_type.class();
+            // We're only looking at T_OBJECT so ignore all of the imemo stuff.
+            assert!(recv_type.flags().is_t_object());
+            next_shape_id = ShapeId(unsafe { rb_shape_transition_add_ivar_no_warnings(class, current_shape_id.0, id) });
+            let new_shape_too_complex = unsafe { rb_jit_shape_too_complex_p(next_shape_id.0) };
+            if new_shape_too_complex {
+                return Err(());
+            }
+            let ivar_result = unsafe { rb_shape_get_iv_index(next_shape_id.0, id, &mut ivar_index) };
+            assert!(ivar_result, "New shape must have the ivar index");
+            let current_capacity = unsafe { rb_jit_shape_capacity(current_shape_id.0) };
+            let next_capacity = unsafe { rb_jit_shape_capacity(next_shape_id.0) };
+            let needs_extension = next_capacity != current_capacity;
+            if needs_extension {
+                return Err(());
+            }
+            // Fall through to emitting the ivar write
+        }
+        let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
+        let shape = self.load_shape(block, self_val);
+        self.guard_shape(block, shape, recv_type.shape(), state);
+        // Current shape contains this ivar
+        let (ivar_storage, offset) = if recv_type.flags().is_embedded() {
+            // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
+            let offset = ROBJECT_OFFSET_AS_ARY as i32 + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
+            (self_val, offset)
+        } else {
+            let as_heap = self.push_insn(block, Insn::LoadField { recv: self_val, id: ID!(_as_heap), offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32, return_type: types::CPtr });
+            let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
+            (as_heap, offset)
+        };
+        self.push_insn(block, Insn::StoreField { recv: ivar_storage, id, offset, val });
+        self.push_insn(block, Insn::WriteBarrier { recv: self_val, val });
+        if next_shape_id != recv_type.shape() {
+            // Write the new shape ID
+            let shape_id = self.push_insn(block, Insn::Const { val: Const::CShape(next_shape_id) });
+            let shape_id_offset = unsafe { rb_shape_id_offset() };
+            self.push_insn(block, Insn::StoreField { recv: self_val, id: ID!(_shape_id), offset: shape_id_offset, val: shape_id });
+        }
+        Ok(())
+    }
+
+    /// Try to inline a C function or builtin using the provided properties.
+    /// Creates a temporary block, attempts inline, copies results to `block` on success.
+    /// Returns Some(replacement_insn) on success, None on failure.
+    fn try_inline_cfunc(&mut self, block: BlockId, recv: InsnId, args: &[InsnId], state: InsnId, props: &FnProperties) -> Option<InsnId> {
+        let tmp_block = self.new_block(u32::MAX);
+        if let Some(replacement) = (props.inline)(self, tmp_block, recv, args, state) {
+            // Copy contents of tmp_block to block
+            assert_ne!(block, tmp_block);
+            let insns = std::mem::take(&mut self.blocks[tmp_block.0].insns);
+            self.blocks[block.0].insns.extend(insns);
+            self.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
+            if self.type_of(replacement).bit_equal(types::Any) {
+                // Not set yet; infer type
+                self.insn_types[replacement.0] = self.infer_type(replacement);
+            }
+            self.remove_block(tmp_block);
+            Some(replacement)
+        } else {
+            None
+        }
+    }
+
     fn optimize_getivar(&mut self) {
         for block in self.rpo() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
@@ -3795,54 +4114,13 @@ impl Function {
             for insn_id in old_insns {
                 match self.find(insn_id) {
                     Insn::GetIvar { self_val, id, ic: _, state } => {
-                        let frame_state = self.frame_state(state);
-                        let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.insn_idx) else {
-                            // No (monomorphic/skewed polymorphic) profile info
-                            self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_not_monomorphic));
-                            self.push_insn_id(block, insn_id); continue;
-                        };
-                        if recv_type.flags().is_immediate() {
-                            // Instance variable lookups on immediate values are always nil
-                            self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_immediate));
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        assert!(recv_type.shape().is_valid());
-                        if recv_type.shape().is_too_complex() {
-                            // too-complex shapes can't use index access
-                            self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_too_complex));
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
-                        let shape = self.load_shape(block, self_val);
-                        self.guard_shape(block, shape, recv_type.shape(), state);
-                        let mut ivar_index: u16 = 0;
-                        let replacement = if ! unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
-                            // If there is no IVAR index, then the ivar was undefined when we
-                            // entered the compiler.  That means we can just return nil for this
-                            // shape + iv name
-                            self.push_insn(block, Insn::Const { val: Const::Value(Qnil) })
-                        } else if !recv_type.flags().is_t_object() {
-                            // NOTE: it's fine to use rb_ivar_get_at_no_ractor_check because
-                            // getinstancevariable does assume_single_ractor_mode()
-                            let ivar_index_insn: InsnId = self.push_insn(block, Insn::Const { val: Const::CUInt16(ivar_index as u16) });
-                            self.push_insn(block, Insn::CCall {
-                                cfunc: rb_ivar_get_at_no_ractor_check as *const u8,
-                                recv: self_val,
-                                args: vec![ivar_index_insn],
-                                name: ID!(rb_ivar_get_at_no_ractor_check),
-                                return_type: types::BasicObject,
-                                elidable: true })
-                        } else if recv_type.flags().is_embedded() {
-                            // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
-                            let offset = ROBJECT_OFFSET_AS_ARY as i32 + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
-                            self.push_insn(block, Insn::LoadField { recv: self_val, id, offset, return_type: types::BasicObject })
+                        let insn_idx = self.frame_state(state).insn_idx;
+                        if let Some(replacement) = self.emit_getivar(block, self_val, id, insn_idx, state) {
+                            self.make_equal_to(insn_id, replacement);
                         } else {
-                            let as_heap =  self.push_insn(block, Insn::LoadField { recv: self_val, id: ID!(_as_heap), offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32, return_type: types::CPtr });
-
-                            let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
-                            self.push_insn(block, Insn::LoadField { recv: as_heap, id, offset, return_type: types::BasicObject })
-                        };
-                        self.make_equal_to(insn_id, replacement);
+                            self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_not_monomorphic));
+                            self.push_insn_id(block, insn_id);
+                        }
                     }
                     Insn::DefinedIvar { self_val, id, pushval, state } => {
                         let frame_state = self.frame_state(state);
@@ -3882,83 +4160,12 @@ impl Function {
                         self.make_equal_to(insn_id, replacement);
                     }
                     Insn::SetIvar { self_val, id, val, state, ic: _ } => {
-                        let frame_state = self.frame_state(state);
-                        let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.insn_idx) else {
-                            // No (monomorphic/skewed polymorphic) profile info
-                            self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_not_monomorphic));
-                            self.push_insn_id(block, insn_id); continue;
-                        };
-                        if recv_type.flags().is_immediate() {
-                            // Instance variable lookups on immediate values are always nil
-                            self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_immediate));
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        assert!(recv_type.shape().is_valid());
-                        if !recv_type.flags().is_t_object() {
-                            // Check if the receiver is a T_OBJECT
-                            self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_not_t_object));
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        if recv_type.shape().is_too_complex() {
-                            // too-complex shapes can't use index access
-                            self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_too_complex));
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        if recv_type.shape().is_frozen() {
-                            // Can't set ivars on frozen objects
-                            self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_frozen));
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        let mut ivar_index: u16 = 0;
-                        let mut next_shape_id = recv_type.shape();
-                        if !unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
-                            // Current shape does not contain this ivar; do a shape transition.
-                            let current_shape_id = recv_type.shape();
-                            let class = recv_type.class();
-                            // We're only looking at T_OBJECT so ignore all of the imemo stuff.
-                            assert!(recv_type.flags().is_t_object());
-                            next_shape_id = ShapeId(unsafe { rb_shape_transition_add_ivar_no_warnings(class, current_shape_id.0, id) });
-                            // If the VM ran out of shapes, or this class generated too many leaf,
-                            // it may be de-optimized into OBJ_TOO_COMPLEX_SHAPE (hash-table).
-                            let new_shape_too_complex = unsafe { rb_jit_shape_too_complex_p(next_shape_id.0) };
-                            // TODO(max): Is it OK to bail out here after making a shape transition?
-                            if new_shape_too_complex {
-                                self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_new_shape_too_complex));
-                                self.push_insn_id(block, insn_id); continue;
-                            }
-                            let ivar_result = unsafe { rb_shape_get_iv_index(next_shape_id.0, id, &mut ivar_index) };
-                            assert!(ivar_result, "New shape must have the ivar index");
-                            let current_capacity = unsafe { rb_jit_shape_capacity(current_shape_id.0) };
-                            let next_capacity = unsafe { rb_jit_shape_capacity(next_shape_id.0) };
-                            // If the new shape has a different capacity, or is TOO_COMPLEX, we'll have to
-                            // reallocate it.
-                            let needs_extension = next_capacity != current_capacity;
-                            if needs_extension {
-                                self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_new_shape_needs_extension));
-                                self.push_insn_id(block, insn_id); continue;
-                            }
-                            // Fall through to emitting the ivar write
-                        }
-                        let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
-                        let shape = self.load_shape(block, self_val);
-                        self.guard_shape(block, shape, recv_type.shape(), state);
-                        // Current shape contains this ivar
-                        let (ivar_storage, offset) = if recv_type.flags().is_embedded() {
-                            // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
-                            let offset = ROBJECT_OFFSET_AS_ARY as i32 + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
-                            (self_val, offset)
+                        let insn_idx = self.frame_state(state).insn_idx;
+                        if self.emit_setivar(block, self_val, id, val, insn_idx, state).is_ok() {
+                            // Successfully lowered
                         } else {
-                            let as_heap = self.push_insn(block, Insn::LoadField { recv: self_val, id: ID!(_as_heap), offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32, return_type: types::CPtr });
-                            let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
-                            (as_heap, offset)
-                        };
-                        self.push_insn(block, Insn::StoreField { recv: ivar_storage, id, offset, val });
-                        self.push_insn(block, Insn::WriteBarrier { recv: self_val, val });
-                        if next_shape_id != recv_type.shape() {
-                            // Write the new shape ID
-                            let shape_id = self.push_insn(block, Insn::Const { val: Const::CShape(next_shape_id) });
-                            let shape_id_offset = unsafe { rb_shape_id_offset() };
-                            self.push_insn(block, Insn::StoreField { recv: self_val, id: ID!(_shape_id), offset: shape_id_offset, val: shape_id });
+                            self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_not_monomorphic));
+                            self.push_insn_id(block, insn_id);
                         }
                     }
                     _ => { self.push_insn_id(block, insn_id); }
@@ -3995,446 +4202,17 @@ impl Function {
         self.push_insn(block, Insn::IncrCounterPtr { counter_ptr });
     }
 
-    /// Optimize Send that land in a C method to a direct CCall without
-    /// runtime lookup.
-    fn optimize_c_calls(&mut self) {
-        if unsafe { rb_zjit_method_tracing_currently_enabled() } {
-            return;
-        }
-
-        // Try to reduce a Send insn to a CCallWithFrame
-        fn reduce_send_to_ccall(
-            fun: &mut Function,
-            block: BlockId,
-            self_type: Type,
-            send: Insn,
-            send_insn_id: InsnId,
-        ) -> Result<(), ()> {
-            let Insn::Send { mut recv, cd, blockiseq, args, state, .. } = send else {
-                return Err(());
-            };
-
-            let call_info = unsafe { (*cd).ci };
-            let argc = unsafe { vm_ci_argc(call_info) };
-            let method_id = unsafe { rb_vm_ci_mid(call_info) };
-
-            // If we have info about the class of the receiver
-            let iseq_insn_idx = fun.frame_state(state).insn_idx;
-            let (recv_class, profiled_type) = match fun.resolve_receiver_type(recv, self_type, iseq_insn_idx) {
-                ReceiverTypeResolution::StaticallyKnown { class } => (class, None),
-                ReceiverTypeResolution::Monomorphic { profiled_type }
-                | ReceiverTypeResolution::SkewedPolymorphic { profiled_type} => (profiled_type.class(), Some(profiled_type)),
-                ReceiverTypeResolution::SkewedMegamorphic { .. } | ReceiverTypeResolution::Polymorphic | ReceiverTypeResolution::Megamorphic | ReceiverTypeResolution::NoProfile => return Err(()),
-            };
-
-            // Do method lookup
-            let mut cme: *const rb_callable_method_entry_struct = unsafe { rb_callable_method_entry(recv_class, method_id) };
-            if cme.is_null() {
-                fun.set_dynamic_send_reason(send_insn_id, SendNotOptimizedMethodType(MethodType::Null));
-                return Err(());
-            }
-
-            // Filter for C methods
-            let mut def_type = unsafe { get_cme_def_type(cme) };
-            while def_type == VM_METHOD_TYPE_ALIAS {
-                cme = unsafe { rb_aliased_callable_method_entry(cme) };
-                def_type = unsafe { get_cme_def_type(cme) };
-            }
-            if def_type != VM_METHOD_TYPE_CFUNC {
-                return Err(());
-            }
-
-
-            let ci_flags = unsafe { vm_ci_flag(call_info) };
-            let visibility = unsafe { METHOD_ENTRY_VISI(cme) };
-            match (visibility, ci_flags & VM_CALL_FCALL != 0) {
-                (METHOD_VISI_PUBLIC, _) => {}
-                (METHOD_VISI_PRIVATE, true) => {}
-                (METHOD_VISI_PROTECTED, true) => {}
-                _ => {
-                    fun.set_dynamic_send_reason(send_insn_id, SendNotOptimizedNeedPermission);
-                    return Err(());
-                }
-            }
-
-            // When seeing &block argument, fall back to dynamic dispatch for now
-            // TODO: Support block forwarding
-            if unspecializable_c_call_type(ci_flags) {
-                // Only count features NOT already counted in type_specialize.
-                if !unspecializable_call_type(ci_flags) {
-                    fun.count_complex_call_features(block, ci_flags);
-                }
-                fun.set_dynamic_send_reason(send_insn_id, ComplexArgPass);
-                return Err(());
-            }
-
-            let blockiseq = match blockiseq {
-                None => unreachable!("went to reduce_send_without_block_to_ccall"),
-                Some(p) if p.is_null() => None,
-                Some(blockiseq) => Some(blockiseq),
-            };
-
-            let cfunc = unsafe { get_cme_def_body_cfunc(cme) };
-            // Find the `argc` (arity) of the C method, which describes the parameters it expects
-            let cfunc_argc = unsafe { get_mct_argc(cfunc) };
-            let cfunc_ptr = unsafe { get_mct_func(cfunc) }.cast();
-
-            match cfunc_argc {
-                0.. => {
-                    // (self, arg0, arg1, ..., argc) form
-                    //
-                    // Bail on argc mismatch
-                    if argc != cfunc_argc as u32 {
-                        return Err(());
-                    }
-
-                    // Check singleton class assumption first, before emitting other patchpoints
-                    if !fun.assume_no_singleton_classes(block, recv_class, state) {
-                        fun.set_dynamic_send_reason(send_insn_id, SingletonClassSeen);
-                        return Err(());
-                    }
-
-                    // Commit to the replacement. Put PatchPoint.
-                    fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, cme, state);
-
-                    if let Some(profiled_type) = profiled_type {
-                        // Guard receiver class
-                        recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
-                        fun.insn_types[recv.0] = fun.infer_type(recv);
-                    }
-
-                    // Emit a call
-                    let cfunc = unsafe { get_mct_func(cfunc) }.cast();
-
-                    let name = rust_str_to_id(&qualified_method_name(unsafe { (*cme).owner }, unsafe { (*cme).called_id }));
-                    let ccall = fun.push_insn(block, Insn::CCallWithFrame {
-                        cd,
-                        cfunc,
-                        recv,
-                        args,
-                        cme,
-                        name,
-                        state,
-                        return_type: types::BasicObject,
-                        elidable: false,
-                        blockiseq,
-                    });
-                    fun.make_equal_to(send_insn_id, ccall);
-                    Ok(())
-                }
-                // Variadic method
-                -1 => {
-                    // The method gets a pointer to the first argument
-                    // func(int argc, VALUE *argv, VALUE recv)
-
-                    // Check singleton class assumption first, before emitting other patchpoints
-                    if !fun.assume_no_singleton_classes(block, recv_class, state) {
-                        fun.set_dynamic_send_reason(send_insn_id, SingletonClassSeen);
-                        return Err(());
-                    }
-
-                    fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, cme, state);
-
-                    if let Some(profiled_type) = profiled_type {
-                        // Guard receiver class
-                        recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
-                        fun.insn_types[recv.0] = fun.infer_type(recv);
-                    }
-
-                    if get_option!(stats) {
-                        fun.count_not_inlined_cfunc(block, cme);
-                    }
-
-                    let ccall = fun.push_insn(block, Insn::CCallVariadic {
-                        cfunc: cfunc_ptr,
-                        recv,
-                        args,
-                        cme,
-                        name: method_id,
-                        state,
-                        return_type: types::BasicObject,
-                        elidable: false,
-                        blockiseq
-                    });
-
-                    fun.make_equal_to(send_insn_id, ccall);
-                    Ok(())
-                }
-                -2 => {
-                    // (self, args_ruby_array)
-                    fun.set_dynamic_send_reason(send_insn_id, SendCfuncArrayVariadic);
-                    Err(())
-                }
-                _ => unreachable!("unknown cfunc kind: argc={argc}")
-            }
-        }
-
-        // Try to reduce a Send insn with blockiseq: None to a CCall/CCallWithFrame
-        fn reduce_send_without_block_to_ccall(
-            fun: &mut Function,
-            block: BlockId,
-            self_type: Type,
-            send: Insn,
-            send_insn_id: InsnId,
-        ) -> Result<(), ()> {
-            let Insn::Send { mut recv, cd, args, state, .. } = send else {
-                return Err(());
-            };
-
-            let call_info = unsafe { (*cd).ci };
-            let argc = unsafe { vm_ci_argc(call_info) };
-            let method_id = unsafe { rb_vm_ci_mid(call_info) };
-
-            // If we have info about the class of the receiver
-            let iseq_insn_idx = fun.frame_state(state).insn_idx;
-            let (recv_class, profiled_type) = match fun.resolve_receiver_type(recv, self_type, iseq_insn_idx) {
-                ReceiverTypeResolution::StaticallyKnown { class } => (class, None),
-                ReceiverTypeResolution::Monomorphic { profiled_type }
-                | ReceiverTypeResolution::SkewedPolymorphic { profiled_type } => (profiled_type.class(), Some(profiled_type)),
-                ReceiverTypeResolution::SkewedMegamorphic { .. } | ReceiverTypeResolution::Polymorphic | ReceiverTypeResolution::Megamorphic | ReceiverTypeResolution::NoProfile => return Err(()),
-            };
-
-            // Do method lookup
-            let mut cme: *const rb_callable_method_entry_struct = unsafe { rb_callable_method_entry(recv_class, method_id) };
-            if cme.is_null() {
-                fun.set_dynamic_send_reason(send_insn_id, SendWithoutBlockNotOptimizedMethodType(MethodType::Null));
-                return Err(());
-            }
-
-            // Filter for C methods
-            let mut def_type = unsafe { get_cme_def_type(cme) };
-            while def_type == VM_METHOD_TYPE_ALIAS {
-                cme = unsafe { rb_aliased_callable_method_entry(cme) };
-                def_type = unsafe { get_cme_def_type(cme) };
-            }
-            if def_type != VM_METHOD_TYPE_CFUNC {
-                return Err(());
-            }
-
-            let ci_flags = unsafe { vm_ci_flag(call_info) };
-            let visibility = unsafe { METHOD_ENTRY_VISI(cme) };
-            match (visibility, ci_flags & VM_CALL_FCALL != 0) {
-                (METHOD_VISI_PUBLIC, _) => {}
-                (METHOD_VISI_PRIVATE, true) => {}
-                (METHOD_VISI_PROTECTED, true) => {}
-                _ => {
-                    fun.set_dynamic_send_reason(send_insn_id, SendWithoutBlockNotOptimizedNeedPermission);
-                    return Err(());
-                }
-            }
-
-            // Find the `argc` (arity) of the C method, which describes the parameters it expects
-            let cfunc = unsafe { get_cme_def_body_cfunc(cme) };
-            let cfunc_argc = unsafe { get_mct_argc(cfunc) };
-            match cfunc_argc {
-                0.. => {
-                    // (self, arg0, arg1, ..., argc) form
-                    //
-                    // Bail on argc mismatch
-                    if argc != cfunc_argc as u32 {
-                        return Err(());
-                    }
-
-                    // Filter for simple call sites (i.e. no splats etc.)
-                    if ci_flags & VM_CALL_ARGS_SIMPLE == 0 {
-                        // Only count features NOT already counted in type_specialize.
-                        if !unspecializable_call_type(ci_flags) {
-                            fun.count_complex_call_features(block, ci_flags);
-                        }
-                        fun.set_dynamic_send_reason(send_insn_id, ComplexArgPass);
-                        return Err(());
-                    }
-
-                    // Check singleton class assumption first, before emitting other patchpoints
-                    if !fun.assume_no_singleton_classes(block, recv_class, state) {
-                        fun.set_dynamic_send_reason(send_insn_id, SingletonClassSeen);
-                        return Err(());
-                    }
-
-                    // Commit to the replacement. Put PatchPoint.
-                    fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, cme, state);
-
-                    let props = ZJITState::get_method_annotations().get_cfunc_properties(cme);
-                    if props.is_none() && get_option!(stats) {
-                        fun.count_not_annotated_cfunc(block, cme);
-                    }
-                    let props = props.unwrap_or_default();
-
-                    if let Some(profiled_type) = profiled_type {
-                        // Guard receiver class
-                        recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
-                        fun.insn_types[recv.0] = fun.infer_type(recv);
-                    }
-
-                    // Try inlining the cfunc into HIR
-                    let tmp_block = fun.new_block(u32::MAX);
-                    if let Some(replacement) = (props.inline)(fun, tmp_block, recv, &args, state) {
-                        // Copy contents of tmp_block to block
-                        assert_ne!(block, tmp_block);
-                        let insns = std::mem::take(&mut fun.blocks[tmp_block.0].insns);
-                        fun.blocks[block.0].insns.extend(insns);
-                        fun.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
-                        fun.make_equal_to(send_insn_id, replacement);
-                        if fun.type_of(replacement).bit_equal(types::Any) {
-                            // Not set yet; infer type
-                            fun.insn_types[replacement.0] = fun.infer_type(replacement);
-                        }
-                        fun.remove_block(tmp_block);
-                        return Ok(());
-                    }
-
-                    // No inlining; emit a call
-                    let cfunc = unsafe { get_mct_func(cfunc) }.cast();
-                    let name = rust_str_to_id(&qualified_method_name(unsafe { (*cme).owner }, unsafe { (*cme).called_id }));
-                    let return_type = props.return_type;
-                    let elidable = props.elidable;
-                    // Filter for a leaf and GC free function
-                    if props.leaf && props.no_gc {
-                        fun.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
-                        let ccall = fun.push_insn(block, Insn::CCall { cfunc, recv, args, name, return_type, elidable });
-                        fun.make_equal_to(send_insn_id, ccall);
-                    } else {
-                        if get_option!(stats) {
-                            fun.count_not_inlined_cfunc(block, cme);
-                        }
-                        let ccall = fun.push_insn(block, Insn::CCallWithFrame {
-                            cd,
-                            cfunc,
-                            recv,
-                            args,
-                            cme,
-                            name,
-                            state,
-                            return_type,
-                            elidable,
-                            blockiseq: None,
-                        });
-                        fun.make_equal_to(send_insn_id, ccall);
-                    }
-
-                    return Ok(());
-                }
-                // Variadic method
-                -1 => {
-                    // The method gets a pointer to the first argument
-                    // func(int argc, VALUE *argv, VALUE recv)
-                    let ci_flags = unsafe { vm_ci_flag(call_info) };
-                    if ci_flags & VM_CALL_ARGS_SIMPLE == 0 {
-                        // Only count features NOT already counted in type_specialize.
-                        if !unspecializable_call_type(ci_flags) {
-                            fun.count_complex_call_features(block, ci_flags);
-                        }
-                        fun.set_dynamic_send_reason(send_insn_id, ComplexArgPass);
-                        return Err(());
-                    } else {
-                        // Check singleton class assumption first, before emitting other patchpoints
-                        if !fun.assume_no_singleton_classes(block, recv_class, state) {
-                            fun.set_dynamic_send_reason(send_insn_id, SingletonClassSeen);
-                            return Err(());
-                        }
-
-                        fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, cme, state);
-
-                        if let Some(profiled_type) = profiled_type {
-                            // Guard receiver class
-                            recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
-                            fun.insn_types[recv.0] = fun.infer_type(recv);
-                        }
-
-                        let cfunc = unsafe { get_mct_func(cfunc) }.cast();
-                        let props = ZJITState::get_method_annotations().get_cfunc_properties(cme);
-                        if props.is_none() && get_option!(stats) {
-                            fun.count_not_annotated_cfunc(block, cme);
-                        }
-                        let props = props.unwrap_or_default();
-
-                        // Try inlining the cfunc into HIR
-                        let tmp_block = fun.new_block(u32::MAX);
-                        if let Some(replacement) = (props.inline)(fun, tmp_block, recv, &args, state) {
-                            // Copy contents of tmp_block to block
-                            assert_ne!(block, tmp_block);
-                            let insns = std::mem::take(&mut fun.blocks[tmp_block.0].insns);
-                            fun.blocks[block.0].insns.extend(insns);
-                            fun.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
-                            fun.make_equal_to(send_insn_id, replacement);
-                            if fun.type_of(replacement).bit_equal(types::Any) {
-                                // Not set yet; infer type
-                                fun.insn_types[replacement.0] = fun.infer_type(replacement);
-                            }
-                            fun.remove_block(tmp_block);
-                            return Ok(());
-                        }
-
-                        // No inlining; emit a call
-                        if get_option!(stats) {
-                            fun.count_not_inlined_cfunc(block, cme);
-                        }
-                        let return_type = props.return_type;
-                        let elidable = props.elidable;
-                        let name = rust_str_to_id(&qualified_method_name(unsafe { (*cme).owner }, unsafe { (*cme).called_id }));
-                        let ccall = fun.push_insn(block, Insn::CCallVariadic {
-                            cfunc,
-                            recv,
-                            args,
-                            cme,
-                            name,
-                            state,
-                            return_type,
-                            elidable,
-                            blockiseq: None,
-                        });
-
-                        fun.make_equal_to(send_insn_id, ccall);
-                        return Ok(())
-                    }
-
-                    // Fall through for complex cases (splat, kwargs, etc.)
-                }
-                -2 => {
-                    // (self, args_ruby_array) parameter form
-                    // Falling through for now
-                    fun.set_dynamic_send_reason(send_insn_id, SendWithoutBlockCfuncArrayVariadic);
-                }
-                _ => unreachable!("unknown cfunc kind: argc={argc}")
-            }
-
-            Err(())
-        }
-
+    /// Try to inline InvokeBuiltin instructions using method annotations.
+    fn optimize_builtins(&mut self) {
         for block in self.rpo() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
-                let send = self.find(insn_id);
-                match send {
-                    send @ Insn::Send { recv, blockiseq: None, .. } => {
-                        let recv_type = self.type_of(recv);
-                        if reduce_send_without_block_to_ccall(self, block, recv_type, send, insn_id).is_ok() {
-                            continue;
-                        }
-                    }
-                    send @ Insn::Send { recv, .. } => {
-                        let recv_type = self.type_of(recv);
-                        if reduce_send_to_ccall(self, block, recv_type, send, insn_id).is_ok() {
-                            continue;
-                        }
-                    }
+                match self.find(insn_id) {
                     Insn::InvokeBuiltin { bf, recv, args, state, .. } => {
                         let props = ZJITState::get_method_annotations().get_builtin_properties(&bf).unwrap_or_default();
-                        // Try inlining the cfunc into HIR
-                        let tmp_block = self.new_block(u32::MAX);
-                        if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args, state) {
-                            // Copy contents of tmp_block to block
-                            assert_ne!(block, tmp_block);
-                            let insns = std::mem::take(&mut self.blocks[tmp_block.0].insns);
-                            self.blocks[block.0].insns.extend(insns);
-                            self.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
+                        if let Some(replacement) = self.try_inline_cfunc(block, recv, &args, state, &props) {
                             self.make_equal_to(insn_id, replacement);
-                            if self.type_of(replacement).bit_equal(types::Any) {
-                                // Not set yet; infer type
-                                self.insn_types[replacement.0] = self.infer_type(replacement);
-                            }
-                            self.remove_block(tmp_block);
                             continue;
                         }
                     }
@@ -5212,9 +4990,8 @@ impl Function {
             ($name:ident) => {
                 // Bucket all strength reduction together
                 let counter = if ident_equal!($name, type_specialize)
-                              || ident_equal!($name, inline)
                               || ident_equal!($name, optimize_getivar)
-                              || ident_equal!($name, optimize_c_calls) {
+                              || ident_equal!($name, optimize_builtins) {
                     Counter::compile_hir_strength_reduce_time_ns
                 } else if ident_equal!($name, fold_constants) {
                     Counter::compile_hir_fold_constants_time_ns
@@ -5241,9 +5018,8 @@ impl Function {
 
         // Function is assumed to have types inferred already
         run_pass!(type_specialize);
-        run_pass!(inline);
         run_pass!(optimize_getivar);
-        run_pass!(optimize_c_calls);
+        run_pass!(optimize_builtins);
         run_pass!(fold_constants);
         run_pass!(clean_cfg);
         run_pass!(eliminate_dead_code);
