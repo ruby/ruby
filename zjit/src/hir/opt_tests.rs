@@ -12304,22 +12304,23 @@ mod hir_opt_tests {
     fn test_scalar_replace_instance_variable() {
         eval("
             class Shell
-              def initialize(x)
-                @x = x
-              end
+                attr_accessor :x
             end
 
-            def no_escape(x)
-              s = Shell.new(x)
-              s.instance_variable_get(:@x)
+            def no_escape(value)
+              s = Shell.new()
+              s.x = value
+              s.x
             end
+
+            no_escape(5)
             ");
         assert_snapshot!(hir_string("no_escape"), @r"
-        fn no_escape@<compiled>:9:
+        fn no_escape@<compiled>:7:
         bb0():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :x, l0, SP@5
+          v2:BasicObject = GetLocal :value, l0, SP@5
           v3:NilClass = Const Value(nil)
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject):
@@ -12327,24 +12328,75 @@ mod hir_opt_tests {
           v8:NilClass = Const Value(nil)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:NilClass):
-          v17:BasicObject = GetConstantPath 0x1000
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, Shell)
+          v68:Class[Shell@0x1008] = Const Value(VALUE(0x1008))
           v19:NilClass = Const Value(nil)
-          PatchPoint NoEPEscape(no_escape)
-          v25:CBool = IsMethodCFunc v17, :new
-          IfFalse v25, bb3(v10, v11, v12, v19, v17, v11)
-          v27:HeapBasicObject = ObjectAlloc v17
-          v29:BasicObject = Send v27, :initialize, v11 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          PatchPoint MethodRedefined(Shell@0x1008, new@0x1009, cme:0x1010)
+          v71:HeapObject[class_exact:Shell] = ObjectAllocClass Shell:VALUE(0x1008)
+          PatchPoint NoSingletonClass(Shell@0x1008)
+          PatchPoint MethodRedefined(Shell@0x1008, initialize@0x1038, cme:0x1040)
+          v93:NilClass = Const Value(nil)
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Jump bb4(v10, v11, v12, v27, v29)
-        bb3(v33:BasicObject, v34:BasicObject, v35:NilClass, v36:NilClass, v37:BasicObject, v38:BasicObject):
-          v41:BasicObject = Send v37, :new, v38 # SendFallbackReason: Uncategorized(opt_send_without_block)
-          Jump bb4(v33, v34, v35, v41, v36)
-        bb4(v44:BasicObject, v45:BasicObject, v46:NilClass, v47:BasicObject, v48:BasicObject):
           PatchPoint NoEPEscape(no_escape)
-          v57:StaticSymbol[:@x] = Const Value(VALUE(0x1008))
-          v59:BasicObject = Send v47, :instance_variable_get, v57 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          PatchPoint MethodRedefined(Shell@0x1008, x=@0x1068, cme:0x1070)
+          v80:CShape = LoadField v71, :_shape_id@0x1098
+          v81:CShape[0x1099] = GuardBitEquals v80, CShape(0x1099)
+          StoreField v71, :@x@0x109a, v11
+          WriteBarrier v71, v11
+          v84:CShape[0x109b] = Const CShape(0x109b)
+          StoreField v71, :_shape_id@0x1098, v84
+          PatchPoint NoEPEscape(no_escape)
+          PatchPoint NoSingletonClass(Shell@0x1008)
+          PatchPoint MethodRedefined(Shell@0x1008, x@0x109c, cme:0x10a0)
+          v87:CShape = LoadField v71, :_shape_id@0x1098
+          v88:CShape[0x109b] = GuardBitEquals v87, CShape(0x109b)
+          v89:BasicObject = LoadField v71, :@x@0x109a
           CheckInterrupts
-          Return v59
+          Return v89
         ");
     }
+    #[test]
+    // TODO(Jacob): Clean up this test with a more clear example that won't change with other optimizations
+    // Alternatively, figure out a way to run this test with a single analysis pass active
+    fn test_scalar_replace_array() {
+        eval("
+            def no_escape(value)
+              s = [value]
+              s[0]
+            end
+
+            no_escape(5)
+            ");
+        assert_snapshot!(hir_string("no_escape"), @r"
+        fn no_escape@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :value, l0, SP@5
+          v3:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject):
+          EntryPoint JIT(0)
+          v8:NilClass = Const Value(nil)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:NilClass):
+          v17:ArrayExact = NewArray v11
+          v22:Fixnum[0] = Const Value(0)
+          PatchPoint NoSingletonClass(Array@0x1000)
+          PatchPoint MethodRedefined(Array@0x1000, []@0x1008, cme:0x1010)
+          v33:CInt64[0] = UnboxFixnum v22
+          v34:CInt64 = ArrayLength v17
+          v35:CInt64[0] = GuardLess v33, v34
+          v36:CInt64[0] = Const CInt64(0)
+          v37:CInt64[0] = GuardGreaterEq v35, v36
+          v38:BasicObject = ArrayAref v17, v37
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v38
+        ");
+    }
+
+    // TODO: Add tests that do escape and don't get optimized
 }
