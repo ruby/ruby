@@ -8421,7 +8421,7 @@ mod hir_opt_tests {
           v45:CUInt64 = GuardNoBitsSet v44, RUBY_ELTS_SHARED=CUInt64(4096)
           v46:CInt64 = UnboxFixnum v40
           v47:CInt64 = UnboxFixnum v41
-          v48:BasicObject = CCall v39, :[]=@0x1040, v46, v47, v18
+          ArraySplice v39, v46, v47, v18
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v18

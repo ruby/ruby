@@ -777,6 +777,8 @@ pub enum Insn {
     ArrayPush { array: InsnId, val: InsnId, state: InsnId },
     ArrayAref { array: InsnId, index: InsnId },
     ArrayAset { array: InsnId, index: InsnId, val: InsnId },
+    /// Splice val into array at [beg, len]. Can allocate and raise IndexError.
+    ArraySplice { array: InsnId, beg: InsnId, len: InsnId, val: InsnId, state: InsnId },
     ArrayPop { array: InsnId, state: InsnId },
     /// Return the length of the array as a C `long` ([`types::CInt64`])
     ArrayLength { array: InsnId },
@@ -1070,7 +1072,7 @@ impl Insn {
             | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
             | Insn::CheckInterrupts { .. }
             | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. }
-            | Insn::ArrayAset { .. } => false,
+            | Insn::ArrayAset { .. } | Insn::ArraySplice { .. } => false,
             _ => true,
         }
     }
@@ -1137,6 +1139,7 @@ impl Insn {
             Insn::ArrayPush { .. } => effects::Any,
             Insn::ArrayAref { ..  } => effects::Any,
             Insn::ArrayAset { .. } => effects::Any,
+            Insn::ArraySplice { .. } => effects::Any,
             Insn::ArrayPop { ..  } => effects::Any,
             Insn::ArrayLength { .. } => Effect::write(abstract_heaps::Empty),
             Insn::HashAref { .. } => effects::Any,
@@ -1346,6 +1349,9 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::ArrayAset { array, index, val, ..} => {
                 write!(f, "ArrayAset {array}, {index}, {val}")
+            }
+            Insn::ArraySplice { array, beg, len, val, .. } => {
+                write!(f, "ArraySplice {array}, {beg}, {len}, {val}")
             }
             Insn::ArrayPop { array, .. } => {
                 write!(f, "ArrayPop {array}")
@@ -2386,6 +2392,7 @@ impl Function {
             &NewRangeFixnum { low, high, flag, state } => NewRangeFixnum { low: find!(low), high: find!(high), flag, state: find!(state) },
             &ArrayAref { array, index } => ArrayAref { array: find!(array), index: find!(index) },
             &ArrayAset { array, index, val } => ArrayAset { array: find!(array), index: find!(index), val: find!(val) },
+            &ArraySplice { array, beg, len, val, state } => ArraySplice { array: find!(array), beg: find!(beg), len: find!(len), val: find!(val), state },
             &ArrayPop { array, state } => ArrayPop { array: find!(array), state: find!(state) },
             &ArrayLength { array } => ArrayLength { array: find!(array) },
             &ArrayMax { ref elements, state } => ArrayMax { elements: find_vec!(elements), state: find!(state) },
@@ -2460,7 +2467,8 @@ impl Function {
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. }
             | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
             | Insn::CheckInterrupts { .. }
-            | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. } | Insn::ArrayAset { .. } =>
+            | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. } | Insn::ArrayAset { .. }
+            | Insn::ArraySplice { .. } =>
                 panic!("Cannot infer type of instruction with no output: {}. See Insn::has_output().", self.insns[insn.0]),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
             Insn::Const { val: Const::CBool(val) } => Type::from_cbool(*val),
@@ -4802,6 +4810,13 @@ impl Function {
                 worklist.push_back(index);
                 worklist.push_back(val);
             }
+            &Insn::ArraySplice { array, beg, len, val, state } => {
+                worklist.push_back(array);
+                worklist.push_back(beg);
+                worklist.push_back(len);
+                worklist.push_back(val);
+                worklist.push_back(state);
+            }
             &Insn::ArrayPop { array, state } => {
                 worklist.push_back(array);
                 worklist.push_back(state);
@@ -5618,6 +5633,12 @@ impl Function {
             Insn::ArrayAset { array, index, .. } => {
                 self.assert_subtype(insn_id, array, types::ArrayExact)?;
                 self.assert_subtype(insn_id, index, types::CInt64)
+            }
+            Insn::ArraySplice { array, beg, len, val, .. } => {
+                self.assert_subtype(insn_id, array, types::ArrayExact)?;
+                self.assert_subtype(insn_id, beg, types::CInt64)?;
+                self.assert_subtype(insn_id, len, types::CInt64)?;
+                self.assert_subtype(insn_id, val, types::BasicObject)
             }
             // Instructions with Hash operands
             Insn::HashAref { hash, .. }

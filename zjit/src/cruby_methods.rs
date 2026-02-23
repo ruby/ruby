@@ -392,13 +392,8 @@ fn inline_array_aset(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
 
             let index = fun.push_insn(block, hir::Insn::UnboxFixnum { val: index });
             let len = fun.push_insn(block, hir::Insn::UnboxFixnum { val: len });
-            let _ = fun.push_insn(block, hir::Insn::CCall {
-                cfunc: rb_jit_ary_aset_by_rb_ary_splice as _,
-                recv,
-                args: vec![index, len, val],
-                return_type: types::BasicObject,
-                elidable: false,
-                name: ID!(aset),
+            let _ = fun.push_insn(block, hir::Insn::ArraySplice {
+                array: recv, beg: index, len, val, state,
             });
             return Some(val);
         }

@@ -2848,6 +2848,49 @@ fn test_array_splice_aset_array_subclass() {
 }
 
 #[test]
+fn test_array_splice_aset_negative_length() {
+    assert_snapshot!(inspect("
+        def test(arr, idx, len, val)
+            arr[idx, len] = val
+        end
+        arr = [1,2,3]
+        test(arr, 0, 2, [4,5])
+        begin
+            test(arr, 0, -1, [4,5])
+        rescue => e
+            e.class
+        end
+    "), @"IndexError");
+}
+
+#[test]
+fn test_array_splice_aset_index_out_of_bounds() {
+    assert_snapshot!(inspect("
+        def test(arr, idx, len, val)
+            arr[idx, len] = val
+        end
+        arr = [1,2,3]
+        test(arr, 0, 2, [4,5])
+        begin
+            test(arr, -100, 2, [4,5])
+        rescue => e
+            e.class
+        end
+    "), @"IndexError");
+}
+
+#[test]
+fn test_array_splice_aset_single_value() {
+    eval("
+        def test(arr, idx, len, val)
+            arr[idx, len] = val
+        end
+        test([1,2,3], 0, 2, 42)
+    ");
+    assert_snapshot!(inspect("arr = [1,2,3]; test(arr, 0, 2, 42); arr"), @"[42, 3]");
+}
+
+#[test]
 fn test_array_aset_non_fixnum_index() {
     assert_snapshot!(inspect(r#"
         def test(arr, idx)
