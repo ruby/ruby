@@ -3062,27 +3062,20 @@ impl Function {
         self.push_insn(block, Insn::GuardNoBitsSet { val: flags, mask: Const::CUInt64(RUBY_ELTS_SHARED as u64), mask_name: Some(ID!(RUBY_ELTS_SHARED)), reason: SideExitReason::GuardNotShared, state });
     }
 
-    fn emit_get_local(
+    // TODO: This helper is currently used for level>0 local reads only.
+    // Split GetLocal(level==0) into explicit SP/EP helpers in a follow-up.
+    fn emit_get_local_from_ep(
         &mut self,
         block: BlockId,
         ep_offset: u32,
         level: u32,
-        use_sp: bool,
-        rest_param: bool,
+        return_type: Type,
     ) -> InsnId {
-        if level == 0 {
-            return self.push_insn(block, Insn::GetLocal { ep_offset, level, use_sp, rest_param });
-        }
-
-        assert!(!use_sp, "use_sp optimization should be used only for level=0 locals");
-
-        self.push_insn(block, Insn::IncrCounter(Counter::vm_read_from_parent_iseq_local_count));
         let ep = self.push_insn(block, Insn::GetEP { level });
         let local_id = get_local_var_id(self.iseq, level, ep_offset);
         let ep_offset = i32::try_from(ep_offset)
             .unwrap_or_else(|_| panic!("Could not convert ep_offset {ep_offset} to i32"));
         let offset = -(SIZEOF_VALUE_I32 * ep_offset);
-        let return_type = if rest_param { types::ArrayExact } else { types::BasicObject };
 
         self.push_insn(block, Insn::LoadField {
             recv: ep,
@@ -6865,7 +6858,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_getlocal_WC_1 => {
                     let ep_offset = get_arg(pc, 0).as_u32();
-                    state.stack_push(fun.emit_get_local(block, ep_offset, 1, false, false));
+                    state.stack_push(fun.emit_get_local_from_ep(block, ep_offset, 1, types::BasicObject));
                 }
                 YARVINSN_setlocal_WC_1 => {
                     let ep_offset = get_arg(pc, 0).as_u32();
@@ -6874,7 +6867,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_getlocal => {
                     let ep_offset = get_arg(pc, 0).as_u32();
                     let level = get_arg(pc, 1).as_u32();
-                    state.stack_push(fun.emit_get_local(block, ep_offset, level, false, false));
+                    if level == 0 {
+                        state.stack_push(fun.push_insn(block, Insn::GetLocal { ep_offset, level, use_sp: false, rest_param: false }));
+                    } else {
+                        state.stack_push(fun.emit_get_local_from_ep(block, ep_offset, level, types::BasicObject));
+                    }
                 }
                 YARVINSN_setlocal => {
                     let ep_offset = get_arg(pc, 0).as_u32();
@@ -6985,7 +6982,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     }));
 
                     // Push modified block: read Proc from EP.
-                    let modified_val = fun.emit_get_local(modified_block, ep_offset, level, false, false);
+                    let modified_val = if level == 0 {
+                        fun.push_insn(modified_block, Insn::GetLocal { ep_offset, level, use_sp: false, rest_param: false })
+                    } else {
+                        fun.emit_get_local_from_ep(modified_block, ep_offset, level, types::BasicObject)
+                    };
                     finish_getblockparam_branch(
                         &mut fun,
                         modified_block,

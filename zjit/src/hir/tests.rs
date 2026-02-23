@@ -946,28 +946,23 @@ pub mod hir_build_tests {
           v4:BasicObject = LoadArg :self@0
           Jump bb3(v4)
         bb3(v6:BasicObject):
-          IncrCounter vm_read_from_parent_iseq_local_count
-          v11:CPtr = GetEP 2
-          v12:BasicObject = LoadField v11, :l2@0x1000
-          SetLocal :l1, l1, EP@3, v12
-          IncrCounter vm_read_from_parent_iseq_local_count
-          v18:CPtr = GetEP 1
-          v19:BasicObject = LoadField v18, :l1@0x1001
-          IncrCounter vm_read_from_parent_iseq_local_count
-          v22:CPtr = GetEP 2
-          v23:BasicObject = LoadField v22, :l2@0x1000
-          v26:BasicObject = Send v19, :+, v23 # SendFallbackReason: Uncategorized(opt_plus)
-          SetLocal :l2, l2, EP@4, v26
-          IncrCounter vm_read_from_parent_iseq_local_count
-          v32:CPtr = GetEP 2
-          v33:BasicObject = LoadField v32, :l2@0x1000
-          IncrCounter vm_read_from_parent_iseq_local_count
-          v36:CPtr = GetEP 3
-          v37:BasicObject = LoadField v36, :l3@0x1002
-          v40:BasicObject = Send v33, :+, v37 # SendFallbackReason: Uncategorized(opt_plus)
-          SetLocal :l3, l3, EP@5, v40
+          v10:CPtr = GetEP 2
+          v11:BasicObject = LoadField v10, :l2@0x1000
+          SetLocal :l1, l1, EP@3, v11
+          v16:CPtr = GetEP 1
+          v17:BasicObject = LoadField v16, :l1@0x1001
+          v19:CPtr = GetEP 2
+          v20:BasicObject = LoadField v19, :l2@0x1000
+          v23:BasicObject = Send v17, :+, v20 # SendFallbackReason: Uncategorized(opt_plus)
+          SetLocal :l2, l2, EP@4, v23
+          v28:CPtr = GetEP 2
+          v29:BasicObject = LoadField v28, :l2@0x1000
+          v31:CPtr = GetEP 3
+          v32:BasicObject = LoadField v31, :l3@0x1002
+          v35:BasicObject = Send v29, :+, v32 # SendFallbackReason: Uncategorized(opt_plus)
+          SetLocal :l3, l3, EP@5, v35
           CheckInterrupts
-          Return v40
+          Return v35
         "
         );
     }
@@ -3098,16 +3093,15 @@ pub mod hir_build_tests {
           IfTrue v10, bb4(v6)
           Jump bb5(v6)
         bb4(v11:BasicObject):
-          IncrCounter vm_read_from_parent_iseq_local_count
-          v18:CPtr = GetEP 1
-          v19:BasicObject = LoadField v18, :block@0x1000
-          Jump bb6(v11, v19)
+          v17:CPtr = GetEP 1
+          v18:BasicObject = LoadField v17, :block@0x1000
+          Jump bb6(v11, v18)
         bb5(v13:BasicObject):
-          v21:BasicObject = GetBlockParam :block, l1, EP@3
-          Jump bb6(v13, v21)
-        bb6(v23:BasicObject, v24:BasicObject):
+          v20:BasicObject = GetBlockParam :block, l1, EP@3
+          Jump bb6(v13, v20)
+        bb6(v22:BasicObject, v23:BasicObject):
           CheckInterrupts
-          Return v24
+          Return v23
         ");
     }
 
