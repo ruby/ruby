@@ -4902,6 +4902,63 @@ impl Function {
         self.infer_types();
     }
 
+    fn optimize_load_store(&mut self) {
+        // TODO: Add specific tests for load_store
+        // TODO: Add dead store elimination
+        // The key for the hashmap should be type and offset, with a value of value
+        // This lets us to index in with both load and store fields since insn_ids are probably always going to be different and we can't easily match on that
+        // So... how do we match against and store the enum label without all the data?? not sure yet :/
+        let mut compile_time_heap: HashMap<(InsnId, i32), InsnId>  = HashMap::new();
+        for block in self.rpo() {
+            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
+            let mut new_insns = vec![];
+            for insn_id in old_insns {
+                let replacement_insn: InsnId = match self.find(insn_id) {
+                    Insn::StoreField { recv, offset, val, .. } => {
+                        let key = (recv, offset);
+
+                        let heap_entry = compile_time_heap.get(&key).copied();
+                        // TODO(Jacob): Switch from actual to partial equality
+                        if Some(val) == heap_entry {
+                            // TODO(Jacob): Add TBAA to avoid removing so many entries
+                            compile_time_heap.retain(|(_, off), _| *off == offset);
+                            // If the value is already stored, short circuit and don't add an instruction to the block
+                            continue
+                        }
+                        // TODO(Jacob): Add TBAA to avoid removing so many entries
+                        compile_time_heap.retain(|(_, off), _| *off == offset);
+                        compile_time_heap.insert(key, val);
+                        insn_id
+                    },
+                    Insn::LoadField { recv, offset, .. } => {
+                        let key = (recv, offset);
+                        match compile_time_heap.entry(key) {
+                            std::collections::hash_map::Entry::Occupied(entry) => {
+                                // If the value is already saved, we can't short circuit like we can with a store.
+                                // However, we can avoid the load with a reference to the representative to the union from SSA.
+                                self.make_equal_to(insn_id, *entry.get());
+                            }
+                            std::collections::hash_map::Entry::Vacant(_) => {
+                                // TODO(Jacob): Make sure this is correct, could be wrong?
+                                compile_time_heap.insert(key, insn_id);
+                            }
+                        }
+                        insn_id
+                    },
+                    insn => {
+                        // If an instruction affects memory and we haven't modeled it, the compile_time_heap is invalidated
+                        if insn.effects_of().includes(Effect::write(abstract_heaps::Memory)) {
+                            compile_time_heap.clear();
+                        }
+                        insn_id
+                    }
+                };
+                new_insns.push(replacement_insn);
+            }
+            self.blocks[block.0].insns = new_insns;
+        }
+    }
+
     /// Fold a binary operator on fixnums.
     fn fold_fixnum_bop(&mut self, insn_id: InsnId, left: InsnId, right: InsnId, f: impl FnOnce(Option<i64>, Option<i64>) -> Option<i64>) -> InsnId {
         f(self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value())
@@ -5501,6 +5558,7 @@ impl Function {
         run_pass!(inline);
         run_pass!(optimize_getivar);
         run_pass!(optimize_c_calls);
+        run_pass!(optimize_load_store);
         run_pass!(fold_constants);
         run_pass!(clean_cfg);
         run_pass!(remove_redundant_patch_points);
