@@ -2284,20 +2284,20 @@ pub mod hir_build_tests {
           v4:BasicObject = LoadArg :self@0
           Jump bb3(v4)
         bb3(v6:BasicObject):
-          v11:BasicObject = GetConstantPath 0x1000
-          v13:NilClass = Const Value(nil)
-          v16:CBool = IsMethodCFunc v11, :new
-          IfFalse v16, bb4(v6, v13, v11)
-          v18:HeapBasicObject = ObjectAlloc v11
-          v20:BasicObject = Send v18, :initialize # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v10:BasicObject = GetConstantPath 0x1000
+          v12:NilClass = Const Value(nil)
+          v15:CBool = IsMethodCFunc v10, :new
+          IfFalse v15, bb4(v6, v12, v10)
+          v17:HeapBasicObject = ObjectAlloc v10
+          v19:BasicObject = Send v17, :initialize # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
-          Jump bb5(v6, v18, v20)
-        bb4(v24:BasicObject, v25:NilClass, v26:BasicObject):
-          v29:BasicObject = Send v26, :new # SendFallbackReason: Uncategorized(opt_send_without_block)
-          Jump bb5(v24, v29, v25)
-        bb5(v32:BasicObject, v33:BasicObject, v34:BasicObject):
+          Jump bb5(v6, v17, v19)
+        bb4(v23:BasicObject, v24:NilClass, v25:BasicObject):
+          v28:BasicObject = Send v25, :new # SendFallbackReason: Uncategorized(opt_send_without_block)
+          Jump bb5(v23, v28, v24)
+        bb5(v31:BasicObject, v32:BasicObject, v33:BasicObject):
           CheckInterrupts
-          Return v33
+          Return v32
         ");
     }
 
