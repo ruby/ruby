@@ -9,7 +9,7 @@ require 'digest'
 
 GitRef = Struct.new(:ref, :commit_hash)
 
-RUBIES_DIR = File.join(Dir.home, '.diffs')
+RUBIES_DIR = File.join(Dir.home, '.zjit-diff')
 BEFORE_NAME = 'ruby-zjit-before'
 AFTER_NAME = 'ruby-zjit-after'
 
@@ -156,7 +156,7 @@ def clean!
   end
 
   if Dir.exist?(RUBIES_DIR)
-    LOG.info('Removing ruby installations from ~/.diffs')
+    LOG.info("Removing ruby installations from #{RUBIES_DIR}")
     FileUtils.rm_rf(RUBIES_DIR)
   end
 
