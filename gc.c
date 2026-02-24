@@ -5054,12 +5054,6 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
                     APPEND_F("r:%d", r->pub.id);
                 }
             }
-            else {
-                const char * const type_name = rb_objspace_data_type_name(obj);
-                if (type_name) {
-                    APPEND_F("%s", type_name);
-                }
-            }
             break;
           }
           case T_IMEMO: {
