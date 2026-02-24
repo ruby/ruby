@@ -1230,13 +1230,13 @@ impl Insn {
             Insn::FixnumRShift { .. } => effects::Empty,
             Insn::ObjToString { .. } => effects::Any,
             Insn::AnyToString { .. } => effects::Any,
-            Insn::GuardType { .. } => effects::Any,
-            Insn::GuardTypeNot { .. } => effects::Any,
-            Insn::GuardBitEquals { .. } => effects::Any,
-            Insn::GuardAnyBitSet { .. } => effects::Any,
-            Insn::GuardNoBitsSet { .. } => effects::Any,
-            Insn::GuardGreaterEq { .. } => effects::Any,
-            Insn::GuardLess { .. } => effects::Any,
+            Insn::GuardType { .. } => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Control),
+            Insn::GuardTypeNot { .. } => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Control),
+            Insn::GuardBitEquals { .. } => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Control),
+            Insn::GuardAnyBitSet { .. } => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Control),
+            Insn::GuardNoBitsSet { .. } => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Control),
+            Insn::GuardGreaterEq { .. } => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Control),
+            Insn::GuardLess { .. } => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Control),
             Insn::PatchPoint { .. } => Effect::read_write(abstract_heaps::PatchPoint, abstract_heaps::Control),
             Insn::SideExit { .. } => effects::Any,
             Insn::IncrCounter(_) => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Other),
@@ -8504,7 +8504,6 @@ mod graphviz_tests {
         <TR><TD ALIGN="left" PORT="v28">v28:Fixnum = GuardType v12, Fixnum&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v29">v29:Fixnum = FixnumOr v27, v28&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v30">IncrCounter inline_cfunc_optimized_send_count&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v21">PatchPoint NoTracePoint&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v22">CheckInterrupts&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v23">Return v29&nbsp;</TD></TR>
         </TABLE>>];
