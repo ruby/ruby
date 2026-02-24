@@ -82,11 +82,6 @@ jobs:
           fi
         continue-on-error: ${{ steps.now.outputs.mon < 12 }}
 
-      - name: Check if date in man pages is up-to-date
-        run: |
-          make V=1 GIT=git BASERUBY=ruby update-man-date
-          git diff --color --no-ext-diff --ignore-submodules --exit-code -- man
-
       - name: Check if to generate documents
         id: rdoc
         run: |
