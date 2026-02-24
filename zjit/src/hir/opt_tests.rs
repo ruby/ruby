@@ -563,6 +563,96 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_fold_fixnum_or() {
+        eval("
+            def test
+              4 | 1
+            end
+        ");
+
+        assert_snapshot!(inspect("test"), @"5");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:Fixnum[4] = Const Value(4)
+          v12:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1000, |@0x1008, cme:0x1010)
+          v25:Fixnum[5] = Const Value(5)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v25
+        ");
+    }
+
+    #[test]
+    fn test_fold_fixnum_or_with_negative_self() {
+        eval("
+            def test
+              -4 | 1
+            end
+        ");
+
+        assert_snapshot!(inspect("test"), @"-3");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:Fixnum[-4] = Const Value(-4)
+          v12:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1000, |@0x1008, cme:0x1010)
+          v25:Fixnum[-3] = Const Value(-3)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v25
+        ");
+    }
+
+    #[test]
+    fn test_fold_fixnum_or_with_negative_other() {
+        eval("
+            def test
+              4 | -1
+            end
+        ");
+
+        assert_snapshot!(inspect("test"), @"-1");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:Fixnum[4] = Const Value(4)
+          v12:Fixnum[-1] = Const Value(-1)
+          PatchPoint MethodRedefined(Integer@0x1000, |@0x1008, cme:0x1010)
+          v25:Fixnum[-1] = Const Value(-1)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v25
+        ");
+    }
+
+    #[test]
     fn test_fold_fixnum_less() {
         eval("
             def test
