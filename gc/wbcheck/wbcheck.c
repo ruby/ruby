@@ -216,7 +216,7 @@ typedef struct {
     wbcheck_object_list_t *objects_to_verify; // Objects that need verification after write barriers
     wbcheck_object_list_t *current_refs; // Current list for collecting references during marking
     wbcheck_object_list_t *mark_queue; // Queue of gray objects for tri-color marking
-    wbcheck_object_list_t *weak_references; // Array of weak reference pointers (VALUE* cast to VALUE)
+    wbcheck_object_list_t *weak_references; // Objects holding weak references, found during marking
     wbcheck_phase_t phase;   // Current GC phase
     bool gc_enabled;         // Whether GC is allowed to run
     bool gc_stress;          // GC stress mode (run GC on every allocation)
@@ -699,6 +699,11 @@ wbcheck_mark_gray(rb_wbcheck_objspace_t *objspace, VALUE obj)
 
     info->color = WBCHECK_COLOR_GRAY;
     wbcheck_object_list_append(objspace->mark_queue, obj);
+
+    if (RB_FL_TEST_RAW(obj, RUBY_FL_WEAK_REFERENCE)) {
+        wbcheck_object_list_append(objspace->weak_references, obj);
+    }
+
     WBCHECK_DEBUG("wbcheck: marked gray: %p\n", (void *)obj);
 }
 
@@ -857,42 +862,19 @@ wbcheck_sweep_phase(rb_wbcheck_objspace_t *objspace)
                   freed_objects, objects_before, objects_after, objspace->gc_threshold);
 }
 
-// Clear weak references to dead objects during GC
+// Process weak references after marking - call rb_gc_handle_weak_references
+// on each object that was flagged with RUBY_FL_WEAK_REFERENCE and collected
+// during the mark phase.
 static void
-wbcheck_clear_weak_references(rb_wbcheck_objspace_t *objspace)
+wbcheck_process_weak_references(rb_wbcheck_objspace_t *objspace)
 {
-    size_t cleared_count = 0;
+    WBCHECK_DEBUG("wbcheck: processing %zu weak reference objects\n", objspace->weak_references->count);
 
-    //fprintf(stderr, "clearing %i weak references\n", objspace->weak_references->count);
     for (size_t i = 0; i < objspace->weak_references->count; i++) {
-        VALUE *weak_ptr = (VALUE *)objspace->weak_references->items[i];
-        VALUE obj = *weak_ptr;
-
-        // It's possible our weak reference was replaced (during obj_free ?)
-        if (RB_SPECIAL_CONST_P(obj)) {
-            continue;
-        }
-
-        // Look up the object in our table
-        st_data_t value;
-        if (st_lookup(objspace->object_table, (st_data_t)obj, &value)) {
-            rb_wbcheck_object_info_t *info = (rb_wbcheck_object_info_t *)value;
-
-            // If object is white (unmarked), clear the weak reference
-            if (info->color == WBCHECK_COLOR_WHITE) {
-                *weak_ptr = Qundef;
-                cleared_count++;
-                WBCHECK_DEBUG("wbcheck: cleared weak reference to dead object %p\n", (void *)obj);
-            }
-        } else {
-            // All objects should be in our table - this is a bug
-            rb_bug("wbcheck: weak reference to object %p not in our object table", (void *)obj);
-        }
+        VALUE obj = objspace->weak_references->items[i];
+        rb_gc_handle_weak_references(obj);
     }
 
-    WBCHECK_DEBUG("wbcheck: cleared %zu weak references\n", cleared_count);
-
-    // Clear the weak references array for next GC
     objspace->weak_references->count = 0;
 }
 
@@ -909,8 +891,8 @@ wbcheck_full_gc(rb_wbcheck_objspace_t *objspace)
     // Now start tri-color marking
     wbcheck_mark_phase(objspace);
 
-    // Clear weak references to dead objects before sweeping
-    wbcheck_clear_weak_references(objspace);
+    // Process weak references after marking, before sweeping
+    wbcheck_process_weak_references(objspace);
 
     // Sweep unmarked objects
     wbcheck_sweep_phase(objspace);
@@ -959,8 +941,6 @@ maybe_gc(void *objspace_ptr)
         wbcheck_full_gc(objspace);
     }
 
-    // hack needed due to bad state tracking
-    objspace->weak_references->count = 0;
 }
 
 static void
@@ -1134,31 +1114,34 @@ rb_gc_impl_mark_maybe(void *objspace_ptr, VALUE obj)
     }
 }
 
+// Weak references
 void
-rb_gc_impl_mark_weak(void *objspace_ptr, VALUE *ptr)
+rb_gc_impl_declare_weak_references(void *objspace_ptr, VALUE obj)
 {
-    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
-
-    // Crash if we're trying to mark_weak something invalid
-    wbcheck_get_object_info(*ptr);
-
-    wbcheck_object_list_append(objspace->weak_references, (VALUE)ptr);
+    FL_SET_RAW(obj, RUBY_FL_WEAK_REFERENCE);
 }
 
-void
-rb_gc_impl_remove_weak(void *objspace_ptr, VALUE parent_obj, VALUE *ptr)
+bool
+rb_gc_impl_handle_weak_references_alive_p(void *objspace_ptr, VALUE obj)
 {
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
 
-    // Since wbcheck is stop-the-world and not incremental, we don't need to remove
-    // weak references during normal operation (like default.c does)
+    st_data_t value;
+    if (st_lookup(objspace->object_table, (st_data_t)obj, &value)) {
+        rb_wbcheck_object_info_t *info = (rb_wbcheck_object_info_t *)value;
+        return info->color != WBCHECK_COLOR_WHITE;
+    }
 
-    RUBY_ASSERT_ALWAYS(objspace->phase == WBCHECK_PHASE_MUTATOR);
-
-    return;
+    return false;
 }
 
 // Compaction
+void
+rb_gc_impl_register_pinning_obj(void *objspace_ptr, VALUE obj)
+{
+    /* no-op */
+}
+
 bool
 rb_gc_impl_object_moved_p(void *objspace_ptr, VALUE obj)
 {
@@ -1760,8 +1743,3 @@ rb_gc_impl_copy_attributes(void *objspace_ptr, VALUE dest, VALUE obj)
     rb_gc_impl_copy_finalizer(objspace_ptr, dest, obj);
 }
 
-bool
-rb_gc_impl_checking_shareable(void *objspace_ptr)
-{
-    return false;
-}
