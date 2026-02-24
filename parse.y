@@ -315,6 +315,7 @@ struct lex_context {
     unsigned int in_def: 1;
     unsigned int in_class: 1;
     unsigned int has_trailing_semicolon: 1;
+    YYLTYPE ensure_keyword_loc;
     BITFIELD(enum rb_parser_shareability, shareable_constant_value, 2);
     BITFIELD(enum rescue_context, in_rescue, 2);
     unsigned int cant_return: 1;
@@ -1082,7 +1083,7 @@ static rb_node_retry_t *rb_node_retry_new(struct parser_params *p, const YYLTYPE
 static rb_node_begin_t *rb_node_begin_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc);
 static rb_node_rescue_t *rb_node_rescue_new(struct parser_params *p, NODE *nd_head, NODE *nd_resq, NODE *nd_else, const YYLTYPE *loc);
 static rb_node_resbody_t *rb_node_resbody_new(struct parser_params *p, NODE *nd_args, NODE *nd_exc_var, NODE *nd_body, NODE *nd_next, const YYLTYPE *loc);
-static rb_node_ensure_t *rb_node_ensure_new(struct parser_params *p, NODE *nd_head, NODE *nd_ensr, const YYLTYPE *loc);
+static rb_node_ensure_t *rb_node_ensure_new(struct parser_params *p, NODE *nd_head, NODE *nd_ensr, const YYLTYPE *loc, const YYLTYPE *ensure_keyword_loc, const YYLTYPE *end_keyword_loc);
 static rb_node_and_t *rb_node_and_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTYPE *loc, const YYLTYPE *operator_loc);
 static rb_node_or_t *rb_node_or_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTYPE *loc, const YYLTYPE *operator_loc);
 static rb_node_masgn_t *rb_node_masgn_new(struct parser_params *p, NODE *nd_head, NODE *nd_args, const YYLTYPE *loc);
@@ -1190,7 +1191,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_BEGIN(b,loc) (NODE *)rb_node_begin_new(p,b,loc)
 #define NEW_RESCUE(b,res,e,loc) (NODE *)rb_node_rescue_new(p,b,res,e,loc)
 #define NEW_RESBODY(a,v,ex,n,loc) (NODE *)rb_node_resbody_new(p,a,v,ex,n,loc)
-#define NEW_ENSURE(b,en,loc) (NODE *)rb_node_ensure_new(p,b,en,loc)
+#define NEW_ENSURE(b,en,loc,ens_loc,end_loc) (NODE *)rb_node_ensure_new(p,b,en,loc,ens_loc,end_loc)
 #define NEW_AND(f,s,loc,op_loc) (NODE *)rb_node_and_new(p,f,s,loc,op_loc)
 #define NEW_OR(f,s,loc,op_loc) (NODE *)rb_node_or_new(p,f,s,loc,op_loc)
 #define NEW_MASGN(l,r,loc)   rb_node_masgn_new(p,l,r,loc)
@@ -4379,6 +4380,9 @@ primary		: inline_primary
               k_end
                 {
                     CMDARG_POP();
+                    if ($3 && nd_type_p($3, NODE_ENSURE)) {
+                        RNODE_ENSURE($3)->end_keyword_loc = @k_end;
+                    }
                     set_line_body($3, @1.end_pos.lineno);
                     $$ = NEW_BEGIN($3, &@$);
                     nd_set_line($$, @1.end_pos.lineno);
@@ -4821,6 +4825,7 @@ k_ensure	: keyword_ensure
                     {
                         token_info_warn(p, "ensure", p->token_info, 1, &@$);
                         $$ = p->ctxt;
+                        p->ctxt.ensure_keyword_loc = @keyword_ensure;
                     }
                 ;
 
@@ -11387,11 +11392,13 @@ rb_node_resbody_new(struct parser_params *p, NODE *nd_args, NODE *nd_exc_var, NO
 }
 
 static rb_node_ensure_t *
-rb_node_ensure_new(struct parser_params *p, NODE *nd_head, NODE *nd_ensr, const YYLTYPE *loc)
+rb_node_ensure_new(struct parser_params *p, NODE *nd_head, NODE *nd_ensr, const YYLTYPE *loc, const YYLTYPE *ensure_keyword_loc, const YYLTYPE *end_keyword_loc)
 {
     rb_node_ensure_t *n = NODE_NEWNODE(NODE_ENSURE, rb_node_ensure_t, loc);
     n->nd_head = nd_head;
     n->nd_ensr = nd_ensr;
+    n->ensure_keyword_loc = *ensure_keyword_loc;
+    n->end_keyword_loc = *end_keyword_loc;
 
     return n;
 }
@@ -14879,7 +14886,7 @@ new_bodystmt(struct parser_params *p, NODE *head, NODE *rescue, NODE *rescue_els
         nd_set_line(result, rescue->nd_loc.beg_pos.lineno);
     }
     if (ensure) {
-        result = NEW_ENSURE(result, ensure, loc);
+        result = NEW_ENSURE(result, ensure, loc, &p->ctxt.ensure_keyword_loc, &NULL_LOC);
     }
     fixpos(result, head);
     return result;
