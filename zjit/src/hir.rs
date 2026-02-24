@@ -118,7 +118,7 @@ impl std::fmt::Display for BranchEdge {
 }
 
 /// Invalidation reasons
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Invariant {
     /// Basic operation is redefined
     BOPRedefined {
@@ -1237,10 +1237,10 @@ impl Insn {
             Insn::GuardNoBitsSet { .. } => effects::Any,
             Insn::GuardGreaterEq { .. } => effects::Any,
             Insn::GuardLess { .. } => effects::Any,
-            Insn::PatchPoint { .. } => effects::Any,
+            Insn::PatchPoint { .. } => Effect::read_write(abstract_heaps::PatchPoint, abstract_heaps::Control),
             Insn::SideExit { .. } => effects::Any,
-            Insn::IncrCounter(_) => effects::Any,
-            Insn::IncrCounterPtr { .. } => effects::Any,
+            Insn::IncrCounter(_) => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Other),
+            Insn::IncrCounterPtr { .. } => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Other),
             Insn::CheckInterrupts { .. } => effects::Any,
             Insn::InvokeProc { .. } => effects::Any,
             Insn::RefineType { .. } => effects::Empty,
@@ -5037,6 +5037,29 @@ impl Function {
         }
     }
 
+    /// Remove duplicate PatchPoint instructions within each basic block.
+    /// Two PatchPoints are redundant if they assert the same Invariant and no
+    /// intervening instruction could invalidate it (i.e., writes to PatchPoint).
+    fn remove_redundant_patch_points(&mut self) {
+        for block_id in self.rpo() {
+            let mut seen = HashSet::new();
+            let insns = std::mem::take(&mut self.blocks[block_id.0].insns);
+            let mut new_insns = Vec::with_capacity(insns.len());
+            for insn_id in insns {
+                let insn = self.find(insn_id);
+                if let Insn::PatchPoint { invariant, .. } = insn {
+                    if !seen.insert(invariant) {
+                        continue;
+                    }
+                } else if insn.effects_of().write_bits().overlaps(abstract_heaps::PatchPoint) {
+                    seen.clear();
+                }
+                new_insns.push(insn_id);
+            }
+            self.blocks[block_id.0].insns = new_insns;
+        }
+    }
+
     /// Return a list that has entry_block and then jit_entry_blocks
     fn entry_blocks(&self) -> Vec<BlockId> {
         let mut entry_blocks = self.jit_entry_blocks.clone();
@@ -5260,6 +5283,8 @@ impl Function {
                     Counter::compile_hir_fold_constants_time_ns
                 } else if ident_equal!($name, clean_cfg) {
                     Counter::compile_hir_clean_cfg_time_ns
+                } else if ident_equal!($name, remove_redundant_patch_points) {
+                    Counter::compile_hir_remove_redundant_patch_points_time_ns
                 } else if ident_equal!($name, eliminate_dead_code) {
                     Counter::compile_hir_eliminate_dead_code_time_ns
                 } else {
@@ -5286,6 +5311,7 @@ impl Function {
         run_pass!(optimize_c_calls);
         run_pass!(fold_constants);
         run_pass!(clean_cfg);
+        run_pass!(remove_redundant_patch_points);
         run_pass!(eliminate_dead_code);
 
         if should_dump {
@@ -8473,8 +8499,6 @@ mod graphviz_tests {
           bb3 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
         <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject)&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v15">PatchPoint NoTracePoint&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v18">PatchPoint NoTracePoint&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v25">PatchPoint NoTracePoint&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v26">PatchPoint MethodRedefined(Integer@0x1000, |@0x1008, cme:0x1010)&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v27">v27:Fixnum = GuardType v11, Fixnum&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v28">v28:Fixnum = GuardType v12, Fixnum&nbsp;</TD></TR>
@@ -8536,7 +8560,6 @@ mod graphviz_tests {
         <TR><TD ALIGN="left" PORT="v18">v18:Truthy = RefineType v9, Truthy&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v20">PatchPoint NoTracePoint&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v21">v21:Fixnum[3] = Const Value(3)&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v23">PatchPoint NoTracePoint&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v24">CheckInterrupts&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v25">Return v21&nbsp;</TD></TR>
         </TABLE>>];
@@ -8545,7 +8568,6 @@ mod graphviz_tests {
         <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb4(v26:BasicObject, v27:Falsy)&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v30">PatchPoint NoTracePoint&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v31">v31:Fixnum[4] = Const Value(4)&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v33">PatchPoint NoTracePoint&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v34">CheckInterrupts&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v35">Return v31&nbsp;</TD></TR>
         </TABLE>>];

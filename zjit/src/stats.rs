@@ -169,6 +169,7 @@ make_counters! {
         compile_hir_strength_reduce_time_ns,
         compile_hir_fold_constants_time_ns,
         compile_hir_clean_cfg_time_ns,
+        compile_hir_remove_redundant_patch_points_time_ns,
         compile_hir_eliminate_dead_code_time_ns,
         compile_lir_time_ns,
     }

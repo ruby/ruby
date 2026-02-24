@@ -49,20 +49,11 @@ mod snapshot_tests {
           v10:Fixnum[1] = Const Value(1)
           v12:Fixnum[2] = Const Value(2)
           v13:Any = Snapshot FrameState { pc: 0x1008, stack: [v10, v12], locals: [] }
-          PatchPoint NoTracePoint
-          PatchPoint NoTracePoint
           PatchPoint MethodRedefined(Integer@0x1010, +@0x1018, cme:0x1020)
-          v34:Fixnum[3] = Const Value(3)
           IncrCounter inline_cfunc_optimized_send_count
-          v17:Fixnum[3] = Const Value(3)
-          v18:Any = Snapshot FrameState { pc: 0x1048, stack: [v34, v17], locals: [] }
-          PatchPoint NoTracePoint
-          PatchPoint NoTracePoint
-          PatchPoint MethodRedefined(Integer@0x1010, +@0x1018, cme:0x1020)
           v35:Fixnum[6] = Const Value(6)
           IncrCounter inline_cfunc_optimized_send_count
-          v21:Any = Snapshot FrameState { pc: 0x1050, stack: [v35], locals: [] }
-          PatchPoint NoTracePoint
+          v21:Any = Snapshot FrameState { pc: 0x1048, stack: [v35], locals: [] }
           CheckInterrupts
           Return v35
         ");
