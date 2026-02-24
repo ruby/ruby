@@ -423,7 +423,6 @@ make_counters! {
     vm_write_locals_count,
     vm_write_stack_count,
     vm_write_to_parent_iseq_local_count,
-    vm_read_from_parent_iseq_local_count,
     // TODO(max): Implement
     // vm_reify_stack_count,
 

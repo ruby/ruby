@@ -570,7 +570,6 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::GetIvar { self_val, id, ic, state: _ } => gen_getivar(jit, asm, opnd!(self_val), *id, *ic),
         Insn::SetGlobal { id, val, state } => no_output!(gen_setglobal(jit, asm, *id, opnd!(val), &function.frame_state(*state))),
         Insn::GetGlobal { id, state } => gen_getglobal(jit, asm, *id, &function.frame_state(*state)),
-        &Insn::GetLocal { ep_offset, level, use_sp, .. } => gen_getlocal(asm, ep_offset, level, use_sp),
         &Insn::IsBlockParamModified { ep } => gen_is_block_param_modified(asm, opnd!(ep)),
         &Insn::GetBlockParam { ep_offset, level, state } => gen_getblockparam(jit, asm, ep_offset, level, &function.frame_state(state)),
         &Insn::SetLocal { val, ep_offset, level } => no_output!(gen_setlocal(asm, opnd!(val), function.type_of(val), ep_offset, level)),
@@ -600,6 +599,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::ArrayExtend { left, right, state } => { no_output!(gen_array_extend(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state))) },
         Insn::LoadPC => gen_load_pc(asm),
         Insn::LoadEC => gen_load_ec(),
+        Insn::LoadSP => gen_load_sp(),
         &Insn::GetEP { level } => gen_get_ep(asm, level),
         Insn::GetLEP => gen_get_lep(jit, asm),
         Insn::LoadSelf => gen_load_self(),
@@ -720,26 +720,6 @@ fn gen_is_block_given(asm: &mut Assembler, lep: Opnd) -> Opnd {
 
 fn gen_unbox_fixnum(asm: &mut Assembler, val: Opnd) -> Opnd {
     asm.rshift(val, Opnd::UImm(1))
-}
-
-/// Get a local variable from a higher scope or the heap. `local_ep_offset` is in number of VALUEs.
-/// We generate this instruction with level=0 only when the local variable is on the heap, so we
-/// can't optimize the level=0 case using the SP register.
-fn gen_getlocal(asm: &mut Assembler, local_ep_offset: u32, level: u32, use_sp: bool) -> lir::Opnd {
-    let local_ep_offset = i32::try_from(local_ep_offset).unwrap_or_else(|_| panic!("Could not convert local_ep_offset {local_ep_offset} to i32"));
-    if level > 0 {
-        gen_incr_counter(asm, Counter::vm_read_from_parent_iseq_local_count);
-    }
-    let local = if use_sp {
-        assert_eq!(level, 0, "use_sp optimization should be used only for level=0 locals");
-        let offset = -(SIZEOF_VALUE_I32 * (local_ep_offset + 1));
-        Opnd::mem(64, SP, offset)
-    } else {
-        let ep = gen_get_ep(asm, level);
-        let offset = -(SIZEOF_VALUE_I32 * local_ep_offset);
-        Opnd::mem(64, ep, offset)
-    };
-    asm.load(local)
 }
 
 /// Set a local variable from a higher scope or the heap. `local_ep_offset` is in number of VALUEs.
@@ -1230,6 +1210,10 @@ fn gen_load_ec() -> Opnd {
     EC
 }
 
+fn gen_load_sp() -> Opnd {
+    SP
+}
+
 fn gen_load_self() -> Opnd {
     Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF)
 }
@@ -1461,7 +1445,7 @@ fn gen_send_iseq_direct(
     // which optional keyword arguments need their defaults evaluated.
     // We write this to the local table slot at bits_start so that:
     // 1. The interpreter can read it via checkkeyword if we side-exit
-    // 2. The JIT entry can read it via GetLocal
+    // 2. The JIT entry can read it from the callee frame slot
     if unsafe { rb_get_iseq_flags_has_kw(iseq) } {
         let keyword = unsafe { rb_get_iseq_body_param_keyword(iseq) };
         let bits_start = unsafe { (*keyword).bits_start } as usize;
