@@ -25,6 +25,50 @@ mod snapshot_tests {
     }
 
     #[test]
+    fn test_remove_redundant_patch_points() {
+        eval("
+            def test = 1 + 2 + 3
+            test
+            test
+        ");
+        assert_snapshot!(optimized_hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          Entries bb1, bb2
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v8:Any = Snapshot FrameState { pc: 0x1000, stack: [], locals: [] }
+          PatchPoint NoTracePoint
+          v10:Fixnum[1] = Const Value(1)
+          v12:Fixnum[2] = Const Value(2)
+          v13:Any = Snapshot FrameState { pc: 0x1008, stack: [v10, v12], locals: [] }
+          PatchPoint NoTracePoint
+          PatchPoint NoTracePoint
+          PatchPoint MethodRedefined(Integer@0x1010, +@0x1018, cme:0x1020)
+          v34:Fixnum[3] = Const Value(3)
+          IncrCounter inline_cfunc_optimized_send_count
+          v17:Fixnum[3] = Const Value(3)
+          v18:Any = Snapshot FrameState { pc: 0x1048, stack: [v34, v17], locals: [] }
+          PatchPoint NoTracePoint
+          PatchPoint NoTracePoint
+          PatchPoint MethodRedefined(Integer@0x1010, +@0x1018, cme:0x1020)
+          v35:Fixnum[6] = Const Value(6)
+          IncrCounter inline_cfunc_optimized_send_count
+          v21:Any = Snapshot FrameState { pc: 0x1050, stack: [v35], locals: [] }
+          PatchPoint NoTracePoint
+          CheckInterrupts
+          Return v35
+        ");
+    }
+
+    #[test]
     fn test_new_array_with_elements() {
         eval("def test(a, b) = [a, b]");
         assert_snapshot!(hir_string("test"), @r"
