@@ -623,9 +623,6 @@ mod hir_opt_tests {
           v60:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          v23:Fixnum[2] = Const Value(2)
-          v25:Fixnum[2] = Const Value(2)
-          PatchPoint MethodRedefined(Integer@0x1000, <=@0x1008, cme:0x1010)
           v62:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
@@ -697,9 +694,6 @@ mod hir_opt_tests {
           v60:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          v23:Fixnum[2] = Const Value(2)
-          v25:Fixnum[2] = Const Value(2)
-          PatchPoint MethodRedefined(Integer@0x1000, >=@0x1008, cme:0x1010)
           v62:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts

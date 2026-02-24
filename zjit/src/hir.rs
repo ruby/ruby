@@ -1241,7 +1241,7 @@ impl Insn {
             Insn::SideExit { .. } => effects::Any,
             Insn::IncrCounter(_) => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Other),
             Insn::IncrCounterPtr { .. } => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Other),
-            Insn::CheckInterrupts { .. } => effects::Any,
+            Insn::CheckInterrupts { .. } => Effect::read_write(abstract_heaps::InterruptFlag, abstract_heaps::Control),
             Insn::InvokeProc { .. } => effects::Any,
             Insn::RefineType { .. } => effects::Empty,
             Insn::HasType { .. } => effects::Empty,
