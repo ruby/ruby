@@ -893,6 +893,7 @@ impl Assembler {
                 }
                 // Resolve ParallelMov that couldn't be handled without a scratch register.
                 Insn::ParallelMov { moves } => {
+                    panic!();
                     for (dst, src) in Self::resolve_parallel_moves(moves, Some(SCRATCH0_OPND)).unwrap() {
                         let src = split_stack_membase(asm, src, SCRATCH1_OPND, &stack_state);
                         let dst = split_large_disp(asm, dst, SCRATCH2_OPND);
@@ -1641,6 +1642,23 @@ impl Assembler {
         }
 
         let (assignments, num_stack_slots) = asm.linear_scan(intervals.clone(), regs.len());
+
+        // Dump vreg-to-physical-register mapping if requested
+        if let Some(crate::options::Options { dump_lir: Some(dump_lirs), .. }) = unsafe { crate::options::OPTIONS.as_ref() } {
+            if dump_lirs.contains(&crate::options::DumpLIR::alloc_regs) {
+                println!("VReg assignments:");
+                for (i, alloc) in assignments.iter().enumerate() {
+                    if let Some(alloc) = alloc {
+                        let range = &intervals[i].range;
+                        let alloc_str = match alloc {
+                            Allocation::Reg(n) => format!("{}", regs[*n]),
+                            Allocation::Stack(n) => format!("Stack[{}]", n),
+                        };
+                        println!("  v{} => {} (range: {:?}..{:?})", i, alloc_str, range.start, range.end);
+                    }
+                }
+            }
+        }
 
         // Update FrameSetup slot_count to account for spilled VRegs
         if num_stack_slots > 0 {

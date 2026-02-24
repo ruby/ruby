@@ -2237,14 +2237,6 @@ impl Assembler
                     })
                     .collect();
 
-                // Append non-register moves. Moves to memory/stack must come before
-                // moves to registers, because a register-destination move may clobber
-                // a source needed by a memory-destination move.
-                imm_moves.sort_by_key(|m| {
-                    if let Insn::Mov { dest: Opnd::Reg(_), .. } = m { 1 } else { 0 }
-                });
-                moves.extend(imm_moves);
-
                 if moves.is_empty() {
                     continue;
                 }
