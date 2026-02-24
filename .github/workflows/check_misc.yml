@@ -84,6 +84,9 @@ jobs:
 
       - name: Check if date in man pages is up-to-date
         run: |
+          # update-man-date uses git log to find when man pages were last
+          # modified, which needs more history than the shallow clone provides.
+          git fetch --no-tags --deepen=100 origin HEAD
           make V=1 GIT=git BASERUBY=ruby update-man-date
           git diff --color --no-ext-diff --ignore-submodules --exit-code -- man
 
