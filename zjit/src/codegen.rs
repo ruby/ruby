@@ -571,7 +571,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::SetGlobal { id, val, state } => no_output!(gen_setglobal(jit, asm, *id, opnd!(val), &function.frame_state(*state))),
         Insn::GetGlobal { id, state } => gen_getglobal(jit, asm, *id, &function.frame_state(*state)),
         &Insn::GetLocal { ep_offset, level, use_sp, .. } => gen_getlocal(asm, ep_offset, level, use_sp),
-        &Insn::IsBlockParamModified { level } => gen_is_block_param_modified(asm, level),
+        &Insn::IsBlockParamModified { ep } => gen_is_block_param_modified(asm, opnd!(ep)),
         &Insn::GetBlockParam { ep_offset, level, state } => gen_getblockparam(jit, asm, ep_offset, level, &function.frame_state(state)),
         &Insn::SetLocal { val, ep_offset, level } => no_output!(gen_setlocal(asm, opnd!(val), function.type_of(val), ep_offset, level)),
         Insn::GetConstant { klass, id, allow_nil, state } => gen_getconstant(jit, asm, opnd!(klass), *id, opnd!(allow_nil), &function.frame_state(*state)),
@@ -766,8 +766,7 @@ fn gen_setlocal(asm: &mut Assembler, val: Opnd, val_type: Type, local_ep_offset:
 }
 
 /// Returns 1 (as CBool) when VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM is set; returns 0 otherwise.
-fn gen_is_block_param_modified(asm: &mut Assembler, level: u32) -> Opnd {
-    let ep = gen_get_ep(asm, level);
+fn gen_is_block_param_modified(asm: &mut Assembler, ep: Opnd) -> Opnd {
     let flags = asm.load(Opnd::mem(VALUE_BITS, ep, SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32)));
     asm.test(flags, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into());
     asm.csel_nz(Opnd::Imm(1), Opnd::Imm(0))

@@ -858,7 +858,7 @@ pub enum Insn {
     GetLocal { level: u32, ep_offset: u32, use_sp: bool, rest_param: bool },
     /// Check whether VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM is set in the environment flags.
     /// Returns CBool (0/1).
-    IsBlockParamModified { level: u32 },
+    IsBlockParamModified { ep: InsnId },
     /// Get the block parameter as a Proc.
     GetBlockParam { level: u32, ep_offset: u32, state: InsnId },
     /// Set a local variable in a higher scope or the heap
@@ -1658,8 +1658,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 let name = get_local_var_name_for_printer(self.iseq, level, ep_offset).map_or(String::new(), |x| format!("{x}, "));
                 write!(f, "GetLocal {name}l{level}, EP@{ep_offset}{}", if rest_param { ", *" } else { "" })
             },
-            &Insn::IsBlockParamModified { level } => {
-                write!(f, "IsBlockParamModified l{level}")
+            &Insn::IsBlockParamModified { ep } => {
+                write!(f, "IsBlockParamModified {ep}")
             },
             &Insn::SetLocal { val, level, ep_offset } => {
                 let name = get_local_var_name_for_printer(self.iseq, level, ep_offset).map_or(String::new(), |x| format!("{x}, "));
@@ -2225,7 +2225,6 @@ impl Function {
                     | PutSpecialObject {..}
                     | GetGlobal {..}
                     | GetLocal {..}
-                    | IsBlockParamModified {..}
                     | SideExit {..}
                     | EntryPoint {..}
                     | LoadPC
@@ -2278,6 +2277,7 @@ impl Function {
             &GuardGreaterEq { left, right, reason, state } => GuardGreaterEq { left: find!(left), right: find!(right), reason, state },
             &GuardLess { left, right, state } => GuardLess { left: find!(left), right: find!(right), state },
             &IsBlockGiven { lep } => IsBlockGiven { lep: find!(lep) },
+            &IsBlockParamModified { ep } => IsBlockParamModified { ep: find!(ep) },
             &GetBlockParam { level, ep_offset, state } => GetBlockParam { level, ep_offset, state: find!(state) },
             &FixnumAdd { left, right, state } => FixnumAdd { left: find!(left), right: find!(right), state },
             &FixnumSub { left, right, state } => FixnumSub { left: find!(left), right: find!(right), state },
@@ -4686,13 +4686,15 @@ impl Function {
             | &Insn::GetLEP
             | &Insn::LoadSelf
             | &Insn::GetLocal { .. }
-            | &Insn::IsBlockParamModified { .. }
             | &Insn::PutSpecialObject { .. }
             | &Insn::IncrCounter(_)
             | &Insn::IncrCounterPtr { .. } =>
                 {}
             | &Insn::IsBlockGiven { lep } => {
                 worklist.push_back(lep);
+            }
+            &Insn::IsBlockParamModified { ep } => {
+                worklist.push_back(ep);
             }
             &Insn::PatchPoint { state, .. }
             | &Insn::CheckInterrupts { state }
@@ -5544,6 +5546,7 @@ impl Function {
             | Insn::LoadField { .. }
             | Insn::GetConstantPath { .. }
             | Insn::IsBlockGiven { .. }
+            | Insn::IsBlockParamModified { .. }
             | Insn::GetGlobal { .. }
             | Insn::LoadPC
             | Insn::LoadEC
@@ -5564,7 +5567,6 @@ impl Function {
             | Insn::GetSpecialSymbol { .. }
             | Insn::GetLocal { .. }
             | Insn::GetBlockParam { .. }
-            | Insn::IsBlockParamModified { .. }
             | Insn::StoreField { .. } => {
                 Ok(())
             }
@@ -6995,7 +6997,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     // If the block param is already a Proc (modified), read it from EP.
                     // Otherwise, convert it to a Proc and store it to EP.
-                    let is_modified = fun.push_insn(block, Insn::IsBlockParamModified { level });
+                    let ep = fun.push_insn(block, Insn::GetEP { level });
+                    let is_modified = fun.push_insn(block, Insn::IsBlockParamModified { ep });
 
                     let locals_count = state.locals.len();
                     let stack_count = state.stack.len();

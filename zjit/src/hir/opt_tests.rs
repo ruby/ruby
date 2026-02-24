@@ -4476,16 +4476,17 @@ mod hir_opt_tests {
           v6:BasicObject = LoadArg :block@1
           Jump bb3(v5, v6)
         bb3(v8:BasicObject, v9:BasicObject):
-          v13:CBool = IsBlockParamModified l0
-          IfTrue v13, bb4(v8, v9)
-          v24:BasicObject = GetBlockParam :block, l0, EP@3
-          Jump bb6(v8, v24, v24)
-        bb4(v14:BasicObject, v15:BasicObject):
-          v22:BasicObject = GetLocal :block, l0, EP@3
-          Jump bb6(v14, v22, v22)
-        bb6(v26:BasicObject, v27:BasicObject, v28:BasicObject):
+          v13:CPtr = GetEP 0
+          v14:CBool = IsBlockParamModified v13
+          IfTrue v14, bb4(v8, v9)
+          v25:BasicObject = GetBlockParam :block, l0, EP@3
+          Jump bb6(v8, v25, v25)
+        bb4(v15:BasicObject, v16:BasicObject):
+          v23:BasicObject = GetLocal :block, l0, EP@3
+          Jump bb6(v15, v23, v23)
+        bb6(v27:BasicObject, v28:BasicObject, v29:BasicObject):
           CheckInterrupts
-          Return v28
+          Return v29
         ");
     }
 
@@ -4509,17 +4510,18 @@ mod hir_opt_tests {
           v4:BasicObject = LoadArg :self@0
           Jump bb3(v4)
         bb3(v6:BasicObject):
-          v10:CBool = IsBlockParamModified l1
-          IfTrue v10, bb4(v6)
-          v20:BasicObject = GetBlockParam :block, l1, EP@3
-          Jump bb6(v6, v20)
-        bb4(v11:BasicObject):
-          v17:CPtr = GetEP 1
-          v18:BasicObject = LoadField v17, :block@0x1000
-          Jump bb6(v11, v18)
-        bb6(v22:BasicObject, v23:BasicObject):
+          v10:CPtr = GetEP 1
+          v11:CBool = IsBlockParamModified v10
+          IfTrue v11, bb4(v6)
+          v21:BasicObject = GetBlockParam :block, l1, EP@3
+          Jump bb6(v6, v21)
+        bb4(v12:BasicObject):
+          v18:CPtr = GetEP 1
+          v19:BasicObject = LoadField v18, :block@0x1000
+          Jump bb6(v12, v19)
+        bb6(v23:BasicObject, v24:BasicObject):
           CheckInterrupts
-          Return v23
+          Return v24
         ");
     }
 
