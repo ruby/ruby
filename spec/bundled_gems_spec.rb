@@ -24,15 +24,15 @@ RSpec.configure do |config|
     require_relative "bundler/support/rubygems_ext"
     Spec::Helpers.install_dev_bundler
     FileUtils.mkdir_p Spec::Path.gem_path
+
+    %w[sinatra rack tilt rack-protection rack-session rack-test mustermann base64 logger compact_index].each do |gem|
+      path, = Dir[File.expand_path("../.bundle/gems/#{gem}-*/lib", __dir__)]
+      $LOAD_PATH.unshift(path) if path
+    end
   end
 
   config.around(:each) do |example|
     FileUtils.cp_r Spec::Path.pristine_system_gem_path, Spec::Path.system_gem_path
-    FileUtils.mkdir_p Spec::Path.base_system_gem_path.join("gems")
-    %w[sinatra rack tilt rack-protection rack-session rack-test mustermann base64 logger compact_index].each do |gem|
-      path, = Dir[File.expand_path("../.bundle/gems/#{gem}-*", __dir__)]
-      FileUtils.cp_r path, Spec::Path.base_system_gem_path.join("gems")
-    end
 
     with_gem_path_as(system_gem_path) do
       Bundler.ui.silence { example.run }
