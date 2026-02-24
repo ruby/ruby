@@ -626,28 +626,22 @@ pub enum ReceiverTypeResolution {
 /// Reason why a send-ish instruction cannot be optimized from a fallback instruction
 #[derive(Debug, Clone, Copy)]
 pub enum SendFallbackReason {
-    SendWithoutBlockPolymorphic,
-    SendWithoutBlockMegamorphic,
-    SendWithoutBlockNoProfiles,
-    SendWithoutBlockCfuncNotVariadic,
-    SendWithoutBlockCfuncArrayVariadic,
-    SendWithoutBlockNotOptimizedMethodType(MethodType),
-    SendWithoutBlockNotOptimizedMethodTypeOptimized(OptimizedMethodType),
-    SendWithoutBlockNotOptimizedNeedPermission,
-    SendWithoutBlockBopRedefined,
-    SendWithoutBlockOperandsNotFixnum,
-    SendWithoutBlockPolymorphicFallback,
-    SendDirectKeywordMismatch,
+    SendBopRedefined,
+    SendCfuncArrayVariadic,
+    SendCfuncNotVariadic,
+    SendCfuncVariadic,
     SendDirectKeywordCountMismatch,
+    SendDirectKeywordMismatch,
     SendDirectMissingKeyword,
     SendDirectTooManyKeywords,
-    SendPolymorphic,
     SendMegamorphic,
     SendNoProfiles,
-    SendCfuncVariadic,
-    SendCfuncArrayVariadic,
     SendNotOptimizedMethodType(MethodType),
+    SendNotOptimizedMethodTypeOptimized(OptimizedMethodType),
     SendNotOptimizedNeedPermission,
+    SendOperandsNotFixnum,
+    SendPolymorphic,
+    SendPolymorphicFallback,
     CCallWithFrameTooManyArgs,
     ObjToStringNotString,
     TooManyArgsForLir,
@@ -690,28 +684,22 @@ pub enum SendFallbackReason {
 impl Display for SendFallbackReason {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            SendWithoutBlockPolymorphic => write!(f, "SendWithoutBlock: polymorphic call site"),
-            SendWithoutBlockMegamorphic => write!(f, "SendWithoutBlock: megamorphic call site"),
-            SendWithoutBlockNoProfiles => write!(f, "SendWithoutBlock: no profile data available"),
-            SendWithoutBlockCfuncNotVariadic => write!(f, "SendWithoutBlock: C function is not variadic"),
-            SendWithoutBlockCfuncArrayVariadic => write!(f, "SendWithoutBlock: C function expects array variadic"),
-            SendWithoutBlockNotOptimizedMethodType(method_type) => write!(f, "SendWithoutBlock: unsupported method type {:?}", method_type),
-            SendWithoutBlockNotOptimizedMethodTypeOptimized(opt_type) => write!(f, "SendWithoutBlock: unsupported optimized method type {:?}", opt_type),
-            SendWithoutBlockNotOptimizedNeedPermission => write!(f, "SendWithoutBlock: method private or protected and no FCALL"),
+            SendBopRedefined => write!(f, "Send: basic operation was redefined"),
+            SendCfuncArrayVariadic => write!(f, "Send: C function expects array variadic"),
+            SendCfuncNotVariadic => write!(f, "Send: C function is not variadic"),
+            SendMegamorphic => write!(f, "Send: megamorphic call site"),
+            SendNoProfiles => write!(f, "Send: no profile data available"),
+            SendNotOptimizedMethodType(method_type) => write!(f, "Send: unsupported method type {:?}", method_type),
+            SendNotOptimizedMethodTypeOptimized(opt_type) => write!(f, "Send: unsupported optimized method type {:?}", opt_type),
             SendNotOptimizedNeedPermission => write!(f, "Send: method private or protected and no FCALL"),
-            SendWithoutBlockBopRedefined => write!(f, "SendWithoutBlock: basic operation was redefined"),
-            SendWithoutBlockOperandsNotFixnum => write!(f, "SendWithoutBlock: operands are not fixnums"),
-            SendWithoutBlockPolymorphicFallback => write!(f, "SendWithoutBlock: polymorphic fallback"),
+            SendOperandsNotFixnum => write!(f, "Send: operands are not fixnums"),
+            SendPolymorphic => write!(f, "Send: polymorphic call site"),
+            SendPolymorphicFallback => write!(f, "Send: polymorphic fallback"),
             SendDirectKeywordMismatch => write!(f, "SendDirect: keyword mismatch"),
             SendDirectKeywordCountMismatch => write!(f, "SendDirect: keyword count mismatch"),
             SendDirectMissingKeyword => write!(f, "SendDirect: missing keyword"),
             SendDirectTooManyKeywords => write!(f, "SendDirect: too many keywords for fixnum bitmask"),
-            SendPolymorphic => write!(f, "Send: polymorphic call site"),
-            SendMegamorphic => write!(f, "Send: megamorphic call site"),
-            SendNoProfiles => write!(f, "Send: no profile data available"),
             SendCfuncVariadic => write!(f, "Send: C function is variadic"),
-            SendCfuncArrayVariadic => write!(f, "Send: C function expects array variadic"),
-            SendNotOptimizedMethodType(method_type) => write!(f, "Send: unsupported method type {:?}", method_type),
             CCallWithFrameTooManyArgs => write!(f, "CCallWithFrame: too many arguments"),
             ObjToStringNotString => write!(f, "ObjToString: result is not a string"),
             TooManyArgsForLir => write!(f, "Too many arguments for LIR"),
@@ -3012,7 +3000,7 @@ impl Function {
     fn rewrite_if_frozen(&mut self, block: BlockId, orig_insn_id: InsnId, self_val: InsnId, klass: u32, bop: u32, state: InsnId) {
         if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, klass) } {
             // If the basic operation is already redefined, we cannot optimize it.
-            self.set_dynamic_send_reason(orig_insn_id, SendWithoutBlockBopRedefined);
+            self.set_dynamic_send_reason(orig_insn_id, SendBopRedefined);
             self.push_insn_id(block, orig_insn_id);
             return;
         }
@@ -3120,24 +3108,21 @@ impl Function {
                             ReceiverTypeResolution::SkewedMegamorphic { .. }
                             | ReceiverTypeResolution::Megamorphic => {
                                 if get_option!(stats) {
-                                    let reason = if has_block { SendMegamorphic } else { SendWithoutBlockMegamorphic };
-                                    self.set_dynamic_send_reason(insn_id, reason);
+                                    self.set_dynamic_send_reason(insn_id, SendMegamorphic);
                                 }
                                 self.push_insn_id(block, insn_id);
                                 continue;
                             }
                             ReceiverTypeResolution::Polymorphic => {
                                 if get_option!(stats) {
-                                    let reason = if has_block { SendPolymorphic } else { SendWithoutBlockPolymorphic };
-                                    self.set_dynamic_send_reason(insn_id, reason);
+                                    self.set_dynamic_send_reason(insn_id, SendPolymorphic);
                                 }
                                 self.push_insn_id(block, insn_id);
                                 continue;
                             }
                             ReceiverTypeResolution::NoProfile => {
                                 if get_option!(stats) {
-                                    let reason = if has_block { SendNoProfiles } else { SendWithoutBlockNoProfiles };
-                                    self.set_dynamic_send_reason(insn_id, reason);
+                                    self.set_dynamic_send_reason(insn_id, SendNoProfiles);
                                 }
                                 self.push_insn_id(block, insn_id);
                                 continue;
@@ -3151,8 +3136,7 @@ impl Function {
                         // Do method lookup
                         let mut cme = unsafe { rb_callable_method_entry(klass, mid) };
                         if cme.is_null() {
-                            let reason = if has_block { SendNotOptimizedMethodType(MethodType::Null) } else { SendWithoutBlockNotOptimizedMethodType(MethodType::Null) };
-                            self.set_dynamic_send_reason(insn_id, reason);
+                            self.set_dynamic_send_reason(insn_id, SendNotOptimizedMethodType(MethodType::Null));
                             self.push_insn_id(block, insn_id); continue;
                         }
                         // Load an overloaded cme if applicable. See vm_search_cc().
@@ -3164,8 +3148,7 @@ impl Function {
                             (METHOD_VISI_PRIVATE, true) => {}
                             (METHOD_VISI_PROTECTED, true) => {}
                             _ => {
-                                let reason = if has_block { SendNotOptimizedNeedPermission } else { SendWithoutBlockNotOptimizedNeedPermission };
-                                self.set_dynamic_send_reason(insn_id, reason);
+                                self.set_dynamic_send_reason(insn_id, SendNotOptimizedNeedPermission);
                                 self.push_insn_id(block, insn_id); continue;
                             }
                         }
@@ -3371,13 +3354,12 @@ impl Function {
                                     self.make_equal_to(insn_id, replacement);
                                 },
                                 _ => {
-                                    self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedMethodTypeOptimized(OptimizedMethodType::from(opt_type)));
+                                    self.set_dynamic_send_reason(insn_id, SendNotOptimizedMethodTypeOptimized(OptimizedMethodType::from(opt_type)));
                                     self.push_insn_id(block, insn_id); continue;
                                 },
                             };
                         } else {
-                            let reason = if has_block { SendNotOptimizedMethodType(MethodType::from(def_type)) } else { SendWithoutBlockNotOptimizedMethodType(MethodType::from(def_type)) };
-                            self.set_dynamic_send_reason(insn_id, reason);
+                            self.set_dynamic_send_reason(insn_id, SendNotOptimizedMethodType(MethodType::from(def_type)));
                             self.push_insn_id(block, insn_id); continue;
                         }
                     }
@@ -4235,7 +4217,7 @@ impl Function {
             // Do method lookup
             let mut cme: *const rb_callable_method_entry_struct = unsafe { rb_callable_method_entry(recv_class, method_id) };
             if cme.is_null() {
-                fun.set_dynamic_send_reason(send_insn_id, SendWithoutBlockNotOptimizedMethodType(MethodType::Null));
+                fun.set_dynamic_send_reason(send_insn_id, SendNotOptimizedMethodType(MethodType::Null));
                 return Err(());
             }
 
@@ -4256,7 +4238,7 @@ impl Function {
                 (METHOD_VISI_PRIVATE, true) => {}
                 (METHOD_VISI_PROTECTED, true) => {}
                 _ => {
-                    fun.set_dynamic_send_reason(send_insn_id, SendWithoutBlockNotOptimizedNeedPermission);
+                    fun.set_dynamic_send_reason(send_insn_id, SendNotOptimizedNeedPermission);
                     return Err(());
                 }
             }
@@ -4431,7 +4413,7 @@ impl Function {
                 -2 => {
                     // (self, args_ruby_array) parameter form
                     // Falling through for now
-                    fun.set_dynamic_send_reason(send_insn_id, SendWithoutBlockCfuncArrayVariadic);
+                    fun.set_dynamic_send_reason(send_insn_id, SendCfuncArrayVariadic);
                 }
                 _ => unreachable!("unknown cfunc kind: argc={argc}")
             }
@@ -7270,7 +7252,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             // In the fallthrough case, do a generic interpreter send and then join.
                             let args = state.stack_pop_n(argc as usize)?;
                             let recv = state.stack_pop()?;
-                            let reason = SendWithoutBlockPolymorphicFallback;
+                            let reason = SendPolymorphicFallback;
                             let send = fun.push_insn(block, Insn::Send { recv, cd, blockiseq: None, args, state: exit_id, reason });
                             state.stack_push(send);
                             fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: state.as_args(self_param) }));

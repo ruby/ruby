@@ -1259,7 +1259,7 @@ mod hir_opt_tests {
           v4:BasicObject = LoadArg :self@0
           Jump bb3(v4)
         bb3(v6:BasicObject):
-          v11:BasicObject = Send v6, :foo # SendFallbackReason: SendWithoutBlock: unsupported method type Null
+          v11:BasicObject = Send v6, :foo # SendFallbackReason: Send: unsupported method type Null
           CheckInterrupts
           Return v11
         ");
@@ -3167,7 +3167,7 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
           v12:Fixnum[0] = Const Value(0)
-          v14:BasicObject = Send v10, :itself, v12 # SendFallbackReason: SendWithoutBlock: unsupported method type Cfunc
+          v14:BasicObject = Send v10, :itself, v12 # SendFallbackReason: Send: unsupported method type Cfunc
           CheckInterrupts
           Return v14
         ");
@@ -5260,7 +5260,7 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:HashExact = NewHash
           v12:NilClass = Const Value(nil)
-          v14:BasicObject = Send v10, :freeze, v12 # SendFallbackReason: SendWithoutBlock: unsupported method type Cfunc
+          v14:BasicObject = Send v10, :freeze, v12 # SendFallbackReason: Send: unsupported method type Cfunc
           CheckInterrupts
           Return v14
         ");
@@ -5356,7 +5356,7 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:ArrayExact = NewArray
           v12:NilClass = Const Value(nil)
-          v14:BasicObject = Send v10, :freeze, v12 # SendFallbackReason: SendWithoutBlock: unsupported method type Cfunc
+          v14:BasicObject = Send v10, :freeze, v12 # SendFallbackReason: Send: unsupported method type Cfunc
           CheckInterrupts
           Return v14
         ");
@@ -5454,7 +5454,7 @@ mod hir_opt_tests {
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v11:StringExact = StringCopy v10
           v13:NilClass = Const Value(nil)
-          v15:BasicObject = Send v11, :freeze, v13 # SendFallbackReason: SendWithoutBlock: unsupported method type Cfunc
+          v15:BasicObject = Send v11, :freeze, v13 # SendFallbackReason: Send: unsupported method type Cfunc
           CheckInterrupts
           Return v15
         ");
@@ -7083,7 +7083,7 @@ mod hir_opt_tests {
           IfTrue v14, bb5(v8, v9, v9)
           v23:CBool = HasType v9, HeapObject[class_exact:C]
           IfTrue v23, bb6(v8, v9, v9)
-          v32:BasicObject = Send v9, :foo # SendFallbackReason: SendWithoutBlock: polymorphic fallback
+          v32:BasicObject = Send v9, :foo # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v8, v9, v32)
         bb5(v15:BasicObject, v16:BasicObject, v17:BasicObject):
           v19:HeapObject[class_exact:C] = RefineType v17, HeapObject[class_exact:C]
@@ -9640,7 +9640,7 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:Fixnum[4] = Const Value(4)
           v12:Fixnum[1] = Const Value(1)
-          v14:BasicObject = Send v10, :succ, v12 # SendFallbackReason: SendWithoutBlock: unsupported method type Cfunc
+          v14:BasicObject = Send v10, :succ, v12 # SendFallbackReason: Send: unsupported method type Cfunc
           CheckInterrupts
           Return v14
         ");
@@ -12162,7 +12162,7 @@ mod hir_opt_tests {
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, Obj)
           v21:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          v12:BasicObject = Send v21, :secret # SendFallbackReason: SendWithoutBlock: method private or protected and no FCALL
+          v12:BasicObject = Send v21, :secret # SendFallbackReason: Send: method private or protected and no FCALL
           CheckInterrupts
           Return v12
         ");
@@ -12218,7 +12218,7 @@ mod hir_opt_tests {
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, Obj)
           v21:BasicObjectExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          v12:BasicObject = Send v21, :initialize # SendFallbackReason: SendWithoutBlock: method private or protected and no FCALL
+          v12:BasicObject = Send v21, :initialize # SendFallbackReason: Send: method private or protected and no FCALL
           CheckInterrupts
           Return v12
         ");
@@ -12246,7 +12246,7 @@ mod hir_opt_tests {
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, Obj)
           v21:ObjectExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          v12:BasicObject = Send v21, :toplevel_method # SendFallbackReason: SendWithoutBlock: method private or protected and no FCALL
+          v12:BasicObject = Send v21, :toplevel_method # SendFallbackReason: Send: method private or protected and no FCALL
           CheckInterrupts
           Return v12
         ");
@@ -12306,7 +12306,7 @@ mod hir_opt_tests {
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, Obj)
           v21:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          v12:BasicObject = Send v21, :secret # SendFallbackReason: SendWithoutBlock: method private or protected and no FCALL
+          v12:BasicObject = Send v21, :secret # SendFallbackReason: Send: method private or protected and no FCALL
           CheckInterrupts
           Return v12
         ");
@@ -12919,7 +12919,7 @@ mod hir_opt_tests {
           IfTrue v14, bb5(v8, v9, v9)
           v23:CBool = HasType v9, HeapObject[class_exact:D]
           IfTrue v23, bb6(v8, v9, v9)
-          v32:BasicObject = Send v9, :foo # SendFallbackReason: SendWithoutBlock: polymorphic fallback
+          v32:BasicObject = Send v9, :foo # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v8, v9, v32)
         bb5(v15:BasicObject, v16:BasicObject, v17:BasicObject):
           PatchPoint NoSingletonClass(C@0x1000)
@@ -12973,7 +12973,7 @@ mod hir_opt_tests {
           IfTrue v14, bb5(v8, v9, v9)
           v23:CBool = HasType v9, Fixnum
           IfTrue v23, bb6(v8, v9, v9)
-          v32:BasicObject = Send v9, :itself # SendFallbackReason: SendWithoutBlock: polymorphic fallback
+          v32:BasicObject = Send v9, :itself # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v8, v9, v32)
         bb5(v15:BasicObject, v16:BasicObject, v17:BasicObject):
           v19:HeapObject[class_exact:C] = RefineType v17, HeapObject[class_exact:C]
