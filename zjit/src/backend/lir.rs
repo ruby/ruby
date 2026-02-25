@@ -2237,9 +2237,6 @@ impl Assembler
         for &block_id in &block_order {
             if !self.basic_blocks[block_id.0].is_entry { continue; }
             if self.basic_blocks[block_id.0].is_dummy() { continue; }
-            println!("#############################");
-            println!("{self}");
-            println!("#############################");
             let params = self.basic_blocks[block_id.0].parameters.clone();
 
             let reg_copies: Vec<parcopy::RegisterCopy<Opnd>> = params.iter().enumerate()

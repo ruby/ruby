@@ -44,7 +44,6 @@ pub struct RegisterCopy<T> {
 // Varies slightly from the original algorithm as it splits the copies between
 // pending and available to reduce state tracking.
 pub fn sequentialize_register<T: PartialEq + Eq + Hash + Ord + std::fmt::Debug + Clone + Copy>(parallel_copies: &[RegisterCopy<T>], spare: T) -> Vec<RegisterCopy<T>> {
-    println!("parallel copies: {parallel_copies:?}");
     let mut sequentialized = Vec::new();
     // `resource` in the original code, this point to the current register
     // holding a particular initial value.
