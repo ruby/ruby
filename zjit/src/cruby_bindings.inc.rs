@@ -1498,8 +1498,8 @@ pub struct rb_callinfo {
     pub flags: VALUE,
     pub kwarg: *const rb_callinfo_kwarg,
     pub mid: VALUE,
-    pub flag: VALUE,
-    pub argc: VALUE,
+    pub flag: ::std::os::raw::c_uint,
+    pub argc: ::std::os::raw::c_uint,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
