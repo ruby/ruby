@@ -1646,6 +1646,8 @@ impl Assembler {
         // Dump vreg-to-physical-register mapping if requested
         if let Some(crate::options::Options { dump_lir: Some(dump_lirs), .. }) = unsafe { crate::options::OPTIONS.as_ref() } {
             if dump_lirs.contains(&crate::options::DumpLIR::alloc_regs) {
+                println!("LIR live_intervals:\n{}", crate::backend::lir::debug_intervals(&asm, &intervals));
+
                 println!("VReg assignments:");
                 for (i, alloc) in assignments.iter().enumerate() {
                     if let Some(alloc) = alloc {

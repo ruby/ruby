@@ -215,7 +215,7 @@ pub use crate::backend::current::{
 pub static JIT_PRESERVED_REGS: &[Opnd] = &[CFP, SP, EC];
 
 // Memory operand base
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Ord, PartialOrd)]
 pub enum MemBase
 {
     /// Register: Every Opnd::Mem should have MemBase::Reg as of emit.
@@ -227,7 +227,7 @@ pub enum MemBase
 }
 
 // Memory location
-#[derive(Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct Mem
 {
     // Base register number or instruction index
@@ -293,6 +293,40 @@ pub enum Opnd
     UImm(u64),          // Raw unsigned immediate
     Mem(Mem),           // Memory location
     Reg(Reg),           // Machine register
+}
+
+impl PartialOrd for Opnd {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Opnd {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        fn case_order(opnd: &Opnd) -> u8 {
+            match opnd {
+                Opnd::None => 0,
+                Opnd::Value(_) => 1,
+                Opnd::VReg { .. } => 2,
+                Opnd::Imm(_) => 3,
+                Opnd::UImm(_) => 4,
+                Opnd::Mem(_) => 5,
+                Opnd::Reg(_) => 6,
+            }
+        }
+        match (self, other) {
+            (Opnd::None, Opnd::None) => std::cmp::Ordering::Equal,
+            (Opnd::Value(l), Opnd::Value(r)) => l.0.cmp(&r.0),
+            (Opnd::VReg { idx: lidx, num_bits: lnum_bits }, Opnd::VReg { idx: ridx, num_bits: rnum_bits }) => (lidx, lnum_bits).cmp(&(ridx, rnum_bits)),
+            (Opnd::Imm(l), Opnd::Imm(r)) => l.cmp(&r),
+            (Opnd::UImm(l), Opnd::UImm(r)) => l.cmp(&r),
+            (Opnd::Mem(l), Opnd::Mem(r)) => l.cmp(&r),
+            (Opnd::Reg(l), Opnd::Reg(r)) => l.cmp(&r),
+            (l, r) => {
+                case_order(l).cmp(&case_order(r))
+            }
+        }
+    }
 }
 
 impl fmt::Display for Opnd {
@@ -2071,6 +2105,13 @@ impl Assembler
         Some(new_moves)
     }
 
+    // TODO: We want to make the following refactoring so that we DON'T have
+    // to parcopy in to entry blocks
+    //
+    // * Move Allocation to Interval
+    // * Pre-allocate pinned regs
+    // * Update linear scan to handle pinned LRs
+    //
     pub fn linear_scan(&self, intervals: Vec<Interval>, num_registers: usize) -> (Vec<Option<Allocation>>, usize) {
         let mut free_registers: BTreeSet<usize> = (0..num_registers).collect();
         let mut active: Vec<&Interval> = Vec::new(); // vreg indices sorted by increasing end point
@@ -2138,19 +2179,6 @@ impl Assembler
         use crate::backend::parcopy;
         use crate::backend::current::SCRATCH_REG;
 
-        let num_registers = regs.len();
-
-        // Map a parcopy Register to a physical Opnd::Reg.
-        // The spare register (index == num_registers) maps to the scratch register.
-        let parcopy_reg = |r: parcopy::Register| -> Opnd {
-            let idx = r.0 as usize;
-            if idx < num_registers {
-                Opnd::Reg(regs[idx])
-            } else {
-                Opnd::Reg(SCRATCH_REG)
-            }
-        };
-
         // Count predecessors for each block
         let mut num_predecessors: HashMap<BlockId, usize> = HashMap::new();
         for block_id in self.block_order() {
@@ -2158,18 +2186,6 @@ impl Assembler
                 *num_predecessors.entry(succ).or_insert(0) += 1;
             }
         }
-
-        // Helper: convert an Allocation to an Opnd
-        let alloc_opnd = |alloc: Allocation| -> Opnd {
-            match alloc {
-                Allocation::Reg(n) => Opnd::Reg(regs[n]),
-                Allocation::Stack(n) => Opnd::Mem(Mem {
-                    base: MemBase::Stack { stack_idx: n, num_bits: 64 },
-                    disp: 0,
-                    num_bits: 64,
-                }),
-            }
-        };
 
         // Collect block order upfront so we don't borrow self while mutating
         let block_order = self.block_order();
@@ -2189,51 +2205,22 @@ impl Assembler
                 let params = self.basic_blocks[successor.0].parameters.clone();
 
                 // Build the list of register-to-register copies and immediate moves
-                let mut reg_copies: Vec<parcopy::RegisterCopy> = Vec::new();
-                let mut imm_moves: Vec<Insn> = Vec::new();
-
-                for (arg, param) in edge.args.iter().zip(params.iter()) {
-                    let dst_alloc = match assignments[param.vreg_idx().0] {
-                        Some(alloc) => alloc,
-                        None => continue, // Dead parameter, skip
-                    };
-                    let dst = alloc_opnd(dst_alloc);
-
-                    let (src, src_alloc) = match arg {
-                        Opnd::VReg { .. } => {
-                            let src_alloc = assignments[arg.vreg_idx().0].unwrap();
-                            (alloc_opnd(src_alloc), Some(src_alloc))
-                        }
-                        // Immediates, physical Reg, physical Mem — pass through as-is
-                        _ => (*arg, None),
-                    };
-
-                    // Filter self-moves
-                    if src == dst {
-                        continue;
-                    }
-
-                    match (src_alloc, dst_alloc) {
-                        (Some(Allocation::Reg(s)), Allocation::Reg(d)) => {
-                            reg_copies.push(parcopy::RegisterCopy {
-                                source: parcopy::Register(s as u32),
-                                destination: parcopy::Register(d as u32),
-                            });
-                        }
-                        _ => {
-                            imm_moves.push(Insn::Mov { dest: dst, src });
-                        }
-                    }
-                }
+                let reg_copies: Vec<parcopy::RegisterCopy<Opnd>> = edge.args
+                    .iter()
+                    .zip(params.iter())
+                    .filter(|(_arg, param)| assignments[param.vreg_idx().0].is_some() )
+                    .map(|(arg, param)| parcopy::RegisterCopy::<Opnd> { destination: *param, source: *arg }).collect();
 
                 // Sequentialize register copies
-                let spare = parcopy::Register(num_registers as u32);
-                let sequentialized = parcopy::sequentialize_register(&reg_copies, spare);
-                let mut moves: Vec<Insn> = sequentialized
+                let sequentialized = parcopy::sequentialize_register(&reg_copies, Opnd::Reg(SCRATCH_REG));
+                let moves: Vec<Insn> = sequentialized
                     .iter()
-                    .map(|copy| Insn::Mov {
-                        dest: parcopy_reg(copy.destination),
-                        src: parcopy_reg(copy.source),
+                    .map(|copy| {
+                        let mut dest = copy.destination.clone();
+                        Self::rewrite_opnd(&mut dest, assignments, regs);
+                        let mut src = copy.source.clone();
+                        Self::rewrite_opnd(&mut src, assignments, regs);
+                        Insn::Mov { dest, src }
                     })
                     .collect();
 
@@ -2285,58 +2272,41 @@ impl Assembler
             }
         }
 
-        // Handle entry block parameters: move from calling-convention
-        // arrival locations to their allocated registers.
-        // param_opnd(i) gives the fixed location where parameter i arrives
-        // (ALLOC_REGS[i] for register params, stack slot for overflow).
-        for block_id in &block_order {
-            let block = &self.basic_blocks[block_id.0];
-            if !block.is_entry { continue; }
-            let params = block.parameters.clone();
+        // Handle entry block parameters: move from calling-convention registers
+        // to their allocated locations, just like inter-block edge moves above.
+        for &block_id in &block_order {
+            if !self.basic_blocks[block_id.0].is_entry { continue; }
+            if self.basic_blocks[block_id.0].is_dummy() { continue; }
+            println!("#############################");
+            println!("{self}");
+            println!("#############################");
+            let params = self.basic_blocks[block_id.0].parameters.clone();
 
-            let mut reg_copies: Vec<parcopy::RegisterCopy> = Vec::new();
-            let mut other_moves: Vec<Insn> = Vec::new();
-
-            for (i, param) in params.iter().enumerate() {
-                let src = Assembler::param_opnd(i);
-                let dst_alloc = match assignments[param.vreg_idx().0] {
-                    Some(alloc) => alloc,
-                    None => continue, // Dead parameter, skip
-                };
-                let dst = alloc_opnd(dst_alloc);
-
-                if src == dst { continue; }
-
-                match (src, dst_alloc) {
-                    (Opnd::Reg(_), Allocation::Reg(d)) => {
-                        // Both are registers — need sequentialization
-                        reg_copies.push(parcopy::RegisterCopy {
-                            source: parcopy::Register(i as u32),
-                            destination: parcopy::Register(d as u32),
-                        });
-                    }
-                    _ => {
-                        // Reg→Stack or Stack→anything — just emit a Mov
-                        other_moves.push(Insn::Mov { dest: dst, src });
-                    }
-                }
-            }
-
-            let spare = parcopy::Register(num_registers as u32);
-            let sequentialized = parcopy::sequentialize_register(&reg_copies, spare);
-            let mut moves: Vec<Insn> = sequentialized
-                .iter()
-                .map(|copy| Insn::Mov {
-                    dest: parcopy_reg(copy.destination),
-                    src: parcopy_reg(copy.source),
+            let reg_copies: Vec<parcopy::RegisterCopy<Opnd>> = params.iter().enumerate()
+                .map(|(i, param)| parcopy::RegisterCopy::<Opnd> {
+                    source: Assembler::param_opnd(i),
+                    destination: *param,
                 })
                 .collect();
-            moves.extend(other_moves);
 
-            // Insert after Label (index 1) in the entry block
+            let sequentialized = parcopy::sequentialize_register(&reg_copies, Opnd::Reg(SCRATCH_REG));
+            let moves: Vec<Insn> = sequentialized
+                .iter()
+                .map(|copy| Insn::Mov {
+                    dest: copy.destination,
+                    src: copy.source,
+                })
+                .collect();
+
+            // Find the position after FrameSetup to insert moves
+            let insert_pos = self.basic_blocks[block_id.0].insns.iter()
+                .position(|insn| matches!(insn, Insn::FrameSetup { .. }))
+                .expect("entry block should have a FrameSetup instruction")
+                + 1;
+
             for (i, mov) in moves.into_iter().enumerate() {
-                self.basic_blocks[block_id.0].insns.insert(1 + i, mov);
-                self.basic_blocks[block_id.0].insn_ids.insert(1 + i, None);
+                self.basic_blocks[block_id.0].insns.insert(insert_pos + i, mov);
+                self.basic_blocks[block_id.0].insn_ids.insert(insert_pos + i, None);
             }
         }
 
@@ -2364,9 +2334,7 @@ impl Assembler
         regs: &[Reg],
     ) {
         use crate::backend::parcopy;
-        use crate::backend::current::C_RET_OPND;
-
-        let num_registers = regs.len();
+        use crate::backend::current::{C_RET_OPND, SCRATCH_REG};
 
         for block in self.basic_blocks.iter_mut() {
             let old_insns = take(&mut block.insns);
@@ -2404,58 +2372,19 @@ impl Assembler
                     let end_marker = end_marker.take();
 
                     // Sequentialize argument moves: each arg goes to regs[i]
-                    let mut reg_copies: Vec<parcopy::RegisterCopy> = Vec::new();
-                    let mut imm_moves: Vec<Insn> = Vec::new();
+                    let reg_copies: Vec<parcopy::RegisterCopy<Opnd>> = args.iter().enumerate()
+                        .map(|(i, arg)| parcopy::RegisterCopy::<Opnd> {
+                            source: *arg,
+                            destination: Opnd::Reg(regs[i]),
+                        })
+                        .collect();
 
-                    for (i, arg) in args.iter().enumerate() {
-                        assert!(i < regs.len(), "Too many CCall arguments for available registers");
-                        match arg {
-                            Opnd::UImm(_) | Opnd::Imm(_) => {
-                                imm_moves.push(Insn::Mov {
-                                    dest: Opnd::Reg(regs[i]),
-                                    src: *arg,
-                                });
-                            }
-                            _ => {
-                                let src_alloc = assignments[arg.vreg_idx().0].unwrap();
-                                if let Allocation::Reg(s) = src_alloc {
-                                    if s != i {
-                                        reg_copies.push(parcopy::RegisterCopy {
-                                            source: parcopy::Register(s as u32),
-                                            destination: parcopy::Register(i as u32),
-                                        });
-                                    }
-                                } else {
-                                    // Stack-allocated arg: emit a direct mov
-                                    let src_opnd = match src_alloc {
-                                        Allocation::Stack(n) => Opnd::Mem(Mem {
-                                            base: MemBase::Stack { stack_idx: n, num_bits: 64 },
-                                            disp: 0,
-                                            num_bits: 64,
-                                        }),
-                                        _ => unreachable!(),
-                                    };
-                                    imm_moves.push(Insn::Mov {
-                                        dest: Opnd::Reg(regs[i]),
-                                        src: src_opnd,
-                                    });
-                                }
-                            }
-                        }
-                    }
-
-                    let spare = parcopy::Register(num_registers as u32);
-                    let sequentialized = parcopy::sequentialize_register(&reg_copies, spare);
-                    let scratch_reg = crate::backend::current::SCRATCH_REG;
-                    let reg_moves: Vec<Insn> = sequentialized
+                    let sequentialized = parcopy::sequentialize_register(&reg_copies, Opnd::Reg(SCRATCH_REG));
+                    let moves: Vec<Insn> = sequentialized
                         .iter()
-                        .map(|copy| {
-                            let dst_idx = copy.destination.0 as usize;
-                            let src_idx = copy.source.0 as usize;
-                            Insn::Mov {
-                                dest: Opnd::Reg(if dst_idx < num_registers { regs[dst_idx] } else { scratch_reg }),
-                                src: Opnd::Reg(if src_idx < num_registers { regs[src_idx] } else { scratch_reg }),
-                            }
+                        .map(|copy| Insn::Mov {
+                            dest: copy.destination,
+                            src: copy.source,
                         })
                         .collect();
 
@@ -2477,11 +2406,7 @@ impl Assembler
                         new_ids.insert(insert_pos + j, None);
                     }
 
-                    for mov in reg_moves {
-                        new_insns.push(mov);
-                        new_ids.push(None);
-                    }
-                    for mov in imm_moves {
+                    for mov in moves {
                         new_insns.push(mov);
                         new_ids.push(None);
                     }
@@ -2545,20 +2470,24 @@ impl Assembler
     fn rewrite_opnd(opnd: &mut Opnd, assignments: &[Option<Allocation>], regs: &[Reg]) {
         match opnd {
             Opnd::VReg { idx, num_bits } => {
-                match assignments[idx.0].unwrap() {
-                    Allocation::Reg(n) => {
-                        let mut reg = regs[n];
-                        reg.num_bits = *num_bits;
-                        *opnd = Opnd::Reg(reg);
+                if let Some(assignment) = assignments[idx.0] {
+                    match assignment {
+                        Allocation::Reg(n) => {
+                            let mut reg = regs[n];
+                            reg.num_bits = *num_bits;
+                            *opnd = Opnd::Reg(reg);
+                        }
+                        Allocation::Stack(n) => {
+                            let num_bits = *num_bits;
+                            *opnd = Opnd::Mem(Mem {
+                                base: MemBase::Stack { stack_idx: n, num_bits },
+                                disp: 0,
+                                num_bits,
+                            });
+                        }
                     }
-                    Allocation::Stack(n) => {
-                        let num_bits = *num_bits;
-                        *opnd = Opnd::Mem(Mem {
-                            base: MemBase::Stack { stack_idx: n, num_bits },
-                            disp: 0,
-                            num_bits,
-                        });
-                    }
+                } else {
+                    panic!("Expected assigment for {opnd}");
                 }
             }
             Opnd::Mem(Mem { base: MemBase::VReg(idx), .. }) => {
