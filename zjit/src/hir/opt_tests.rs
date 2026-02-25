@@ -8415,13 +8415,17 @@ mod hir_opt_tests {
           v39:ArrayExact = GuardType v15, ArrayExact
           v40:Fixnum = GuardType v16, Fixnum
           v41:Fixnum = GuardType v17, Fixnum
-          v42:CUInt64 = LoadField v39, :_rbasic_flags@0x1038
-          v43:CUInt64 = GuardNoBitsSet v42, RUBY_FL_FREEZE=CUInt64(2048)
-          v44:CUInt64 = LoadField v39, :_rbasic_flags@0x1038
-          v45:CUInt64 = GuardNoBitsSet v44, RUBY_ELTS_SHARED=CUInt64(4096)
-          v46:CInt64 = UnboxFixnum v40
-          v47:CInt64 = UnboxFixnum v41
-          ArraySplice v39, v46, v47, v18
+          v42:ArrayExact = GuardType v18, ArrayExact
+          v43:CUInt64 = LoadField v39, :_rbasic_flags@0x1038
+          v44:CUInt64 = GuardNoBitsSet v43, RUBY_FL_FREEZE=CUInt64(2048)
+          v45:CUInt64 = LoadField v39, :_rbasic_flags@0x1038
+          v46:CUInt64 = GuardNoBitsSet v45, RUBY_ELTS_SHARED=CUInt64(4096)
+          v47:CInt64 = UnboxFixnum v40
+          v48:CInt64 = UnboxFixnum v41
+          v49:CInt64[0] = Const CInt64(0)
+          v50:CInt64 = GuardGreaterEq v47, v49
+          v51:CInt64 = GuardGreaterEq v48, v49
+          ArraySplice v39, v50, v51, v42
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v18

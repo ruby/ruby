@@ -383,15 +383,21 @@ fn inline_array_aset(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
         if fun.likely_a(recv, types::ArrayExact, state)
             && fun.likely_a(index, types::Fixnum, state)
             && fun.likely_a(len, types::Fixnum, state)
+            && fun.likely_a(val, types::ArrayExact, state)
         {
             let recv = fun.coerce_to(block, recv, types::ArrayExact, state);
             let index = fun.coerce_to(block, index, types::Fixnum, state);
             let len = fun.coerce_to(block, len, types::Fixnum, state);
+            let val = fun.coerce_to(block, val, types::ArrayExact, state);
             fun.guard_not_frozen(block, recv, state);
             fun.guard_not_shared(block, recv, state);
 
             let index = fun.push_insn(block, hir::Insn::UnboxFixnum { val: index });
             let len = fun.push_insn(block, hir::Insn::UnboxFixnum { val: len });
+            let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
+            use crate::hir::SideExitReason;
+            let index = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: index, right: zero, reason: SideExitReason::GuardGreaterEq, state });
+            let len = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: len, right: zero, reason: SideExitReason::GuardGreaterEq, state });
             let _ = fun.push_insn(block, hir::Insn::ArraySplice {
                 array: recv, beg: index, len, val, state,
             });

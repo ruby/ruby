@@ -481,7 +481,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
             no_output!(gen_array_aset(asm, opnd!(array), opnd!(index), opnd!(val)))
         }
         Insn::ArraySplice { array, beg, len, val, state } => {
-            no_output!(gen_array_splice(jit, asm, opnd!(array), opnd!(beg), opnd!(len), opnd!(val), &function.frame_state(*state)))
+            no_output!(gen_array_splice(asm, opnd!(array), opnd!(beg), opnd!(len), opnd!(val), &function.frame_state(*state)))
         }
         Insn::ArrayPop { array, state } => gen_array_pop(asm, opnd!(array), &function.frame_state(*state)),
         Insn::ArrayLength { array } => gen_array_length(asm, opnd!(array)),
@@ -1715,8 +1715,8 @@ fn gen_array_aset(
     asm.store(Opnd::mem(VALUE_BITS, elem_ptr, 0), val);
 }
 
-fn gen_array_splice(jit: &JITState, asm: &mut Assembler, array: Opnd, beg: Opnd, len: Opnd, val: Opnd, state: &FrameState) {
-    gen_prepare_non_leaf_call(jit, asm, state);
+fn gen_array_splice(asm: &mut Assembler, array: Opnd, beg: Opnd, len: Opnd, val: Opnd, state: &FrameState) {
+    gen_prepare_leaf_call_with_gc(asm, state);
     asm_ccall!(asm, rb_jit_ary_aset_by_rb_ary_splice, array, beg, len, val);
 }
 

@@ -2891,6 +2891,34 @@ fn test_array_splice_aset_single_value() {
 }
 
 #[test]
+fn test_array_splice_aset_non_array_val() {
+    assert_snapshot!(inspect("
+        def test(arr, idx, len, val)
+            arr[idx, len] = val
+        end
+        arr = [1,2,3]
+        test(arr, 0, 2, [4,5])
+        arr2 = [1,2,3]
+        test(arr2, 0, 2, 42)
+        arr2
+    "), @"[42, 3]");
+}
+
+#[test]
+fn test_array_splice_aset_negative_index() {
+    assert_snapshot!(inspect("
+        def test(arr, idx, len, val)
+            arr[idx, len] = val
+        end
+        arr = [1,2,3]
+        test(arr, 0, 2, [4,5])
+        arr2 = [1,2,3]
+        test(arr2, -1, 2, [4,5,6])
+        arr2
+    "), @"[1, 2, 4, 5, 6]");
+}
+
+#[test]
 fn test_array_aset_non_fixnum_index() {
     assert_snapshot!(inspect(r#"
         def test(arr, idx)
