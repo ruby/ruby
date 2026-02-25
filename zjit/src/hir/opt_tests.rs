@@ -13845,7 +13845,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_double_store_removal() {
+    fn test_double_store_with_removal() {
         eval("
             class C
               def initialize
@@ -13883,6 +13883,158 @@ mod hir_opt_tests {
           PatchPoint NoEPEscape(initialize)
           PatchPoint SingleRactorMode
           WriteBarrier v20, v13
+          CheckInterrupts
+          Return v13
+        ");
+    }
+
+    #[test]
+    fn test_double_store_no_removal_with_alias_between() {
+        eval("
+            class C
+              def initialize
+                a = 1
+                @a = a
+                @b = a
+                @a = a
+              end
+            end
+
+            C.new
+        ");
+        assert_snapshot!(hir_string_proc("C.instance_method(:initialize)"), @r"
+        fn initialize@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          Jump bb3(v1, v2)
+        bb2():
+          EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:NilClass = Const Value(nil)
+          Jump bb3(v5, v6)
+        bb3(v8:BasicObject, v9:NilClass):
+          v13:Fixnum[1] = Const Value(1)
+          PatchPoint SingleRactorMode
+          v43:HeapBasicObject = GuardType v8, HeapBasicObject
+          v44:CShape = LoadField v43, :_shape_id@0x1000
+          v45:CShape[0x1001] = GuardBitEquals v44, CShape(0x1001)
+          StoreField v43, :@a@0x1002, v13
+          WriteBarrier v43, v13
+          v48:CShape[0x1003] = Const CShape(0x1003)
+          StoreField v43, :_shape_id@0x1000, v48
+          v20:HeapBasicObject = RefineType v8, HeapBasicObject
+          PatchPoint NoEPEscape(initialize)
+          PatchPoint SingleRactorMode
+          StoreField v20, :@b@0x1004, v13
+          WriteBarrier v20, v13
+          v55:CShape[0x1005] = Const CShape(0x1005)
+          StoreField v20, :_shape_id@0x1000, v55
+          v28:HeapBasicObject = RefineType v20, HeapBasicObject
+          PatchPoint NoEPEscape(initialize)
+          PatchPoint SingleRactorMode
+          WriteBarrier v28, v13
+          CheckInterrupts
+          Return v13
+        ");
+    }
+
+    #[test]
+    fn test_double_store_with_removal_and_insns_between() {
+        eval("
+            class C
+              def initialize
+                a = 1
+                @a = a
+                b = 5
+                b += a
+                @a = a
+              end
+            end
+
+            C.new
+        ");
+        assert_snapshot!(hir_string_proc("C.instance_method(:initialize)"), @r"
+        fn initialize@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          v3:NilClass = Const Value(nil)
+          Jump bb3(v1, v2, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:NilClass = Const Value(nil)
+          v8:NilClass = Const Value(nil)
+          Jump bb3(v6, v7, v8)
+        bb3(v10:BasicObject, v11:NilClass, v12:NilClass):
+          v16:Fixnum[1] = Const Value(1)
+          PatchPoint SingleRactorMode
+          v49:HeapBasicObject = GuardType v10, HeapBasicObject
+          v50:CShape = LoadField v49, :_shape_id@0x1000
+          v51:CShape[0x1001] = GuardBitEquals v50, CShape(0x1001)
+          StoreField v49, :@a@0x1002, v16
+          WriteBarrier v49, v16
+          v54:CShape[0x1003] = Const CShape(0x1003)
+          StoreField v49, :_shape_id@0x1000, v54
+          v23:HeapBasicObject = RefineType v10, HeapBasicObject
+          v26:Fixnum[5] = Const Value(5)
+          PatchPoint NoEPEscape(initialize)
+          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
+          v65:Fixnum[6] = Const Value(6)
+          IncrCounter inline_cfunc_optimized_send_count
+          PatchPoint SingleRactorMode
+          WriteBarrier v23, v16
+          CheckInterrupts
+          Return v16
+        ");
+    }
+
+    #[test]
+    fn test_triple_store_with_removal() {
+        eval("
+            class C
+              def initialize
+                a = 1
+                @a = a
+                @a = a
+                @a = a
+              end
+            end
+
+            C.new
+        ");
+        assert_snapshot!(hir_string_proc("C.instance_method(:initialize)"), @r"
+        fn initialize@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          Jump bb3(v1, v2)
+        bb2():
+          EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:NilClass = Const Value(nil)
+          Jump bb3(v5, v6)
+        bb3(v8:BasicObject, v9:NilClass):
+          v13:Fixnum[1] = Const Value(1)
+          PatchPoint SingleRactorMode
+          v43:HeapBasicObject = GuardType v8, HeapBasicObject
+          v44:CShape = LoadField v43, :_shape_id@0x1000
+          v45:CShape[0x1001] = GuardBitEquals v44, CShape(0x1001)
+          StoreField v43, :@a@0x1002, v13
+          WriteBarrier v43, v13
+          v48:CShape[0x1003] = Const CShape(0x1003)
+          StoreField v43, :_shape_id@0x1000, v48
+          v20:HeapBasicObject = RefineType v8, HeapBasicObject
+          PatchPoint NoEPEscape(initialize)
+          PatchPoint SingleRactorMode
+          WriteBarrier v20, v13
+          v28:HeapBasicObject = RefineType v20, HeapBasicObject
+          StoreField v28, :@a@0x1002, v13
+          WriteBarrier v28, v13
           CheckInterrupts
           Return v13
         ");

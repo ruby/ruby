@@ -4905,18 +4905,7 @@ impl Function {
         self.infer_types();
     }
 
-    // struct Heap {
-    //     fn load(obj, offset)
-    //     fn kill(obj, offset)
-    //     fn store(obj, offset, val)
-    // }
-
     fn optimize_load_store(&mut self) {
-        // TODO: Add specific tests for load_store
-        // TODO: Add dead store elimination
-        // The key for the hashmap should be type and offset, with a value of value
-        // This lets us to index in with both load and store fields since insn_ids are probably always going to be different and we can't easily match on that
-        // So... how do we match against and store the enum label without all the data?? not sure yet :/
         let mut compile_time_heap: HashMap<(InsnId, i32), InsnId>  = HashMap::new();
         for block in self.rpo() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
@@ -4942,13 +4931,12 @@ impl Function {
                         let key = (self.chase_insn(recv), offset);
                         match compile_time_heap.entry(key) {
                             std::collections::hash_map::Entry::Occupied(entry) => {
-                                // If the value is already saved, we can't short circuit like we can with a store.
-                                // However, we can avoid the load with a reference to the representative to the union from SSA.
+                                // If the value is stored already, we should short circuit.
+                                // However, we need to replace insn_id with its representative in the SSA union.
                                 self.make_equal_to(insn_id, *entry.get());
                                 continue
                             }
                             std::collections::hash_map::Entry::Vacant(_) => {
-                                // TODO(Jacob): Make sure this is correct, could be wrong?
                                 compile_time_heap.insert(key, insn_id);
                             }
                         }
