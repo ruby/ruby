@@ -1278,6 +1278,7 @@ rb_gc_obj_needs_cleanup_p(VALUE obj)
           case imemo_ifunc:
           case imemo_memo:
           case imemo_svar:
+          case imemo_callcache:
           case imemo_throw_data:
             return false;
           default:
