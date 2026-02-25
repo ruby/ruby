@@ -431,6 +431,16 @@ impl PtrPrintMap {
     }
 }
 
+struct Offset(i32);
+
+impl std::fmt::LowerHex for Offset {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let prefix = if f.alternate() { "0x" } else { "" };
+        let bare_hex = format!("{:x}", self.0.abs());
+        f.pad_integral(self.0 >= 0, prefix, &bare_hex)
+    }
+}
+
 impl PtrPrintMap {
     /// Map a pointer for printing
     pub fn map_ptr<T>(&self, ptr: *const T) -> *const T {
@@ -467,8 +477,8 @@ impl PtrPrintMap {
         self.map_ptr(id as *const c_void)
     }
 
-    fn map_offset(&self, id: i32) -> *const c_void {
-        self.map_ptr(id as *const c_void)
+    fn map_offset(&self, id: i32) -> Offset {
+        Offset(self.map_ptr(id as *const c_void) as i32)
     }
 
     /// Map shape ID into a pointer for printing
@@ -1644,8 +1654,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             &Insn::GetEP { level } => write!(f, "GetEP {level}"),
             Insn::GetLEP => write!(f, "GetLEP"),
             Insn::LoadSelf => write!(f, "LoadSelf"),
-            &Insn::LoadField { recv, id, offset, return_type: _ } => write!(f, "LoadField {recv}, :{}@{:p}", id.contents_lossy(), self.ptr_map.map_offset(offset)),
-            &Insn::StoreField { recv, id, offset, val } => write!(f, "StoreField {recv}, :{}@{:p}, {val}", id.contents_lossy(), self.ptr_map.map_offset(offset)),
+            &Insn::LoadField { recv, id, offset, return_type: _ } => write!(f, "LoadField {recv}, :{}@{:#x}", id.contents_lossy(), self.ptr_map.map_offset(offset)),
+            &Insn::StoreField { recv, id, offset, val } => write!(f, "StoreField {recv}, :{}@{:#x}, {val}", id.contents_lossy(), self.ptr_map.map_offset(offset)),
             &Insn::WriteBarrier { recv, val } => write!(f, "WriteBarrier {recv}, {val}"),
             Insn::SetIvar { self_val, id, val, .. } => write!(f, "SetIvar {self_val}, :{}, {val}", id.contents_lossy()),
             Insn::GetGlobal { id, .. } => write!(f, "GetGlobal :{}", id.contents_lossy()),
