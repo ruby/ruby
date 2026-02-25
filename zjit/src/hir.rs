@@ -4902,12 +4902,19 @@ impl Function {
         self.infer_types();
     }
 
+    // struct Heap {
+    //     fn load(obj, offset)
+    //     fn kill(obj, offset)
+    //     fn store(obj, offset, val)
+    // }
+
     fn optimize_load_store(&mut self) {
         // TODO: Add specific tests for load_store
         // TODO: Add dead store elimination
         // The key for the hashmap should be type and offset, with a value of value
         // This lets us to index in with both load and store fields since insn_ids are probably always going to be different and we can't easily match on that
         // So... how do we match against and store the enum label without all the data?? not sure yet :/
+        eprintln!("{}", FunctionPrinter::with_snapshot(self));
         let mut compile_time_heap: HashMap<(InsnId, i32), InsnId>  = HashMap::new();
         for block in self.rpo() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
@@ -4916,18 +4923,23 @@ impl Function {
                 let replacement_insn: InsnId = match self.find(insn_id) {
                     Insn::StoreField { recv, offset, val, .. } => {
                         let key = (recv, offset);
-
+                        eprintln!("hi jane");
                         let heap_entry = compile_time_heap.get(&key).copied();
+                        eprintln!("{heap_entry:?}");
                         // TODO(Jacob): Switch from actual to partial equality
                         if Some(val) == heap_entry {
+                            eprintln!("Matched value {val}, {heap_entry:?}");
                             // TODO(Jacob): Add TBAA to avoid removing so many entries
-                            compile_time_heap.retain(|(_, off), _| *off == offset);
+                            eprintln!("Erasing aliasing offsets {offset}");
+                            compile_time_heap.retain(|(_, off), _| *off != offset);
                             // If the value is already stored, short circuit and don't add an instruction to the block
                             continue
                         }
                         // TODO(Jacob): Add TBAA to avoid removing so many entries
-                        compile_time_heap.retain(|(_, off), _| *off == offset);
+                        eprintln!("Erasing aliasing offsets {offset}");
+                        compile_time_heap.retain(|(_, off), _| *off != offset);
                         compile_time_heap.insert(key, val);
+                        eprintln!("Inserted into heap {key:?}, {val}");
                         insn_id
                     },
                     Insn::LoadField { recv, offset, .. } => {
@@ -4948,6 +4960,7 @@ impl Function {
                     insn => {
                         // If an instruction affects memory and we haven't modeled it, the compile_time_heap is invalidated
                         if insn.effects_of().includes(Effect::write(abstract_heaps::Memory)) {
+                            eprintln!("Clearing... {insn:?}");
                             compile_time_heap.clear();
                         }
                         insn_id
@@ -5528,6 +5541,8 @@ impl Function {
                               || ident_equal!($name, optimize_getivar)
                               || ident_equal!($name, optimize_c_calls) {
                     Counter::compile_hir_strength_reduce_time_ns
+                } else if ident_equal!($name, optimize_load_store) {
+                    Counter::compile_hir_optimize_load_store_time_ns
                 } else if ident_equal!($name, fold_constants) {
                     Counter::compile_hir_fold_constants_time_ns
                 } else if ident_equal!($name, clean_cfg) {
