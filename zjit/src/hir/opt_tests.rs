@@ -5205,8 +5205,6 @@ mod hir_opt_tests {
           v14:HeapBasicObject = RefineType v6, HeapBasicObject
           v17:Fixnum[2] = Const Value(2)
           PatchPoint SingleRactorMode
-          v36:CShape = LoadField v14, :_shape_id@0x1000
-          v37:CShape[0x1003] = GuardBitEquals v36, CShape(0x1003)
           StoreField v14, :@bar@0x1004, v17
           WriteBarrier v14, v17
           v40:CShape[0x1005] = Const CShape(0x1005)
@@ -8761,7 +8759,7 @@ mod hir_opt_tests {
             end
             test([])
         ");
-        assert_snapshot!(hir_string("test"), @"
+        assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -8782,8 +8780,7 @@ mod hir_opt_tests {
           v33:ArrayExact = GuardType v10, ArrayExact
           v34:CUInt64 = LoadField v33, :_rbasic_flags@0x1040
           v35:CUInt64 = GuardNoBitsSet v34, RUBY_FL_FREEZE=CUInt64(2048)
-          v36:CUInt64 = LoadField v33, :_rbasic_flags@0x1040
-          v37:CUInt64 = GuardNoBitsSet v36, RUBY_ELTS_SHARED=CUInt64(4096)
+          v37:CUInt64 = GuardNoBitsSet v34, RUBY_ELTS_SHARED=CUInt64(4096)
           v38:CInt64[1] = UnboxFixnum v17
           v39:CInt64 = ArrayLength v33
           v40:CInt64[1] = GuardLess v38, v39
@@ -8805,7 +8802,7 @@ mod hir_opt_tests {
             end
             test([], 0, 1)
         ");
-        assert_snapshot!(hir_string("test"), @"
+        assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -8829,8 +8826,7 @@ mod hir_opt_tests {
           v38:Fixnum = GuardType v15, Fixnum
           v39:CUInt64 = LoadField v37, :_rbasic_flags@0x1040
           v40:CUInt64 = GuardNoBitsSet v39, RUBY_FL_FREEZE=CUInt64(2048)
-          v41:CUInt64 = LoadField v37, :_rbasic_flags@0x1040
-          v42:CUInt64 = GuardNoBitsSet v41, RUBY_ELTS_SHARED=CUInt64(4096)
+          v42:CUInt64 = GuardNoBitsSet v39, RUBY_ELTS_SHARED=CUInt64(4096)
           v43:CInt64 = UnboxFixnum v38
           v44:CInt64 = ArrayLength v37
           v45:CInt64 = GuardLess v43, v44
@@ -13670,8 +13666,6 @@ mod hir_opt_tests {
           v14:HeapBasicObject = RefineType v6, HeapBasicObject
           v17:Fixnum[2] = Const Value(2)
           PatchPoint SingleRactorMode
-          v50:CShape = LoadField v14, :_shape_id@0x1000
-          v51:CShape[0x1003] = GuardBitEquals v50, CShape(0x1003)
           StoreField v14, :@b@0x1004, v17
           WriteBarrier v14, v17
           v54:CShape[0x1005] = Const CShape(0x1005)
@@ -13679,8 +13673,6 @@ mod hir_opt_tests {
           v21:HeapBasicObject = RefineType v14, HeapBasicObject
           v24:Fixnum[3] = Const Value(3)
           PatchPoint SingleRactorMode
-          v57:CShape = LoadField v21, :_shape_id@0x1000
-          v58:CShape[0x1005] = GuardBitEquals v57, CShape(0x1005)
           StoreField v21, :@c@0x1006, v24
           WriteBarrier v21, v24
           v61:CShape[0x1007] = Const CShape(0x1007)
@@ -13890,9 +13882,6 @@ mod hir_opt_tests {
           v20:HeapBasicObject = RefineType v8, HeapBasicObject
           PatchPoint NoEPEscape(initialize)
           PatchPoint SingleRactorMode
-          v43:CShape = LoadField v20, :_shape_id@0x1000
-          v44:CShape[0x1003] = GuardBitEquals v43, CShape(0x1003)
-          StoreField v20, :@a@0x1002, v13
           WriteBarrier v20, v13
           CheckInterrupts
           Return v13

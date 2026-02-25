@@ -1482,7 +1482,7 @@ impl Insn {
             Insn::LoadSelf { .. } => Effect::read_write(abstract_heaps::Frame, abstract_heaps::Empty),
             Insn::LoadField { .. } => Effect::read_write(abstract_heaps::Memory, abstract_heaps::Empty),
             Insn::StoreField { .. } => effects::Any,
-            Insn::WriteBarrier { .. } => effects::Any,
+            Insn::WriteBarrier { .. } => effects::Allocator,
             Insn::SetLocal { .. } => effects::Any,
             Insn::GetSpecialSymbol { .. } => effects::Any,
             Insn::GetSpecialNumber { .. } => effects::Any,
@@ -1583,6 +1583,9 @@ impl Insn {
     /// Note: These are restrictions on the `write` `EffectSet` only. Even instructions with
     /// `read: effects::Any` could potentially be omitted.
     fn is_elidable(&self) -> bool {
+        if let Insn::WriteBarrier { .. } = self {
+            return false
+        }
         abstract_heaps::Allocator.includes(self.effects_of().write_bits())
     }
 }
@@ -4914,7 +4917,6 @@ impl Function {
         // The key for the hashmap should be type and offset, with a value of value
         // This lets us to index in with both load and store fields since insn_ids are probably always going to be different and we can't easily match on that
         // So... how do we match against and store the enum label without all the data?? not sure yet :/
-        eprintln!("{}", FunctionPrinter::with_snapshot(self));
         let mut compile_time_heap: HashMap<(InsnId, i32), InsnId>  = HashMap::new();
         for block in self.rpo() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
@@ -4922,33 +4924,28 @@ impl Function {
             for insn_id in old_insns {
                 let replacement_insn: InsnId = match self.find(insn_id) {
                     Insn::StoreField { recv, offset, val, .. } => {
-                        let key = (recv, offset);
-                        eprintln!("hi jane");
+                        let key = (self.chase_insn(recv), offset);
                         let heap_entry = compile_time_heap.get(&key).copied();
-                        eprintln!("{heap_entry:?}");
                         // TODO(Jacob): Switch from actual to partial equality
                         if Some(val) == heap_entry {
-                            eprintln!("Matched value {val}, {heap_entry:?}");
                             // TODO(Jacob): Add TBAA to avoid removing so many entries
-                            eprintln!("Erasing aliasing offsets {offset}");
                             compile_time_heap.retain(|(_, off), _| *off != offset);
                             // If the value is already stored, short circuit and don't add an instruction to the block
                             continue
                         }
                         // TODO(Jacob): Add TBAA to avoid removing so many entries
-                        eprintln!("Erasing aliasing offsets {offset}");
                         compile_time_heap.retain(|(_, off), _| *off != offset);
                         compile_time_heap.insert(key, val);
-                        eprintln!("Inserted into heap {key:?}, {val}");
                         insn_id
                     },
                     Insn::LoadField { recv, offset, .. } => {
-                        let key = (recv, offset);
+                        let key = (self.chase_insn(recv), offset);
                         match compile_time_heap.entry(key) {
                             std::collections::hash_map::Entry::Occupied(entry) => {
                                 // If the value is already saved, we can't short circuit like we can with a store.
                                 // However, we can avoid the load with a reference to the representative to the union from SSA.
                                 self.make_equal_to(insn_id, *entry.get());
+                                continue
                             }
                             std::collections::hash_map::Entry::Vacant(_) => {
                                 // TODO(Jacob): Make sure this is correct, could be wrong?
@@ -4960,7 +4957,6 @@ impl Function {
                     insn => {
                         // If an instruction affects memory and we haven't modeled it, the compile_time_heap is invalidated
                         if insn.effects_of().includes(Effect::write(abstract_heaps::Memory)) {
-                            eprintln!("Clearing... {insn:?}");
                             compile_time_heap.clear();
                         }
                         insn_id
