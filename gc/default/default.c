@@ -480,6 +480,7 @@ typedef struct rb_heap_struct {
     size_t total_pages;      /* total page count in a heap */
     size_t total_slots;      /* total slot count */
     size_t retired_pages;    /* pages below occupancy threshold, not offered for allocation */
+    struct heap_page *retired_list;    /* retired pages, linked via free_next */
 } rb_heap_t;
 
 enum {
@@ -2089,6 +2090,19 @@ gc_continue(rb_objspace_t *objspace, rb_heap_t *heap)
     gc_exit(objspace, gc_enter_event_continue, &lock_lev);
 }
 
+static bool
+heap_unretire_page(rb_objspace_t *objspace, rb_heap_t *heap)
+{
+    if (heap->free_pages != NULL || heap->retired_list == NULL) return false;
+
+    struct heap_page *page = heap->retired_list;
+    heap->retired_list = page->free_next;
+    page->flags.retired = 0;
+    heap->retired_pages--;
+    heap_add_freepage(heap, page);
+    return true;
+}
+
 static void
 heap_prepare(rb_objspace_t *objspace, rb_heap_t *heap)
 {
@@ -2104,21 +2118,8 @@ heap_prepare(rb_objspace_t *objspace, rb_heap_t *heap)
     /* Continue incremental marking or lazy sweeping, if in any of those steps. */
     gc_continue(objspace, heap);
 
-    /* If sweeping didn't produce free pages but there are retired pages,
-     * un-retire one rather than growing the heap. This is the pressure
-     * valve for the retirement strategy: retired pages' free slots are
-     * counted in the growth heuristic (preventing page thrashing), and
-     * if the allocator actually needs them, we reclaim them here. */
-    if (heap->free_pages == NULL && heap->retired_pages > 0) {
-        struct heap_page *page = NULL;
-        ccan_list_for_each(&heap->pages, page, page_node) {
-            if (page->flags.retired && page->free_slots > 0) {
-                page->flags.retired = 0;
-                heap->retired_pages--;
-                heap_add_freepage(heap, page);
-                break;
-            }
-        }
+    while (heap->free_pages == NULL) {
+        if (!heap_unretire_page(objspace, heap)) break;
     }
 
     if (heap->free_pages == NULL) {
@@ -2147,6 +2148,10 @@ heap_prepare(rb_objspace_t *objspace, rb_heap_t *heap)
             /* If we're not incremental marking (e.g. a minor GC) or finished
              * sweeping and still don't have a free page, then
              * gc_sweep_finish_heap should allow us to create a new page. */
+            while (heap->free_pages == NULL) {
+                if (!heap_unretire_page(objspace, heap)) break;
+            }
+
             if (heap->free_pages == NULL && !heap_page_allocate_and_initialize(objspace, heap)) {
                 if (gc_needs_major_flags == GPR_FLAG_NONE) {
                     rb_bug("cannot create a new page after GC");
@@ -2158,6 +2163,10 @@ heap_prepare(rb_objspace_t *objspace, rb_heap_t *heap)
                     else {
                         /* Do steps of incremental marking or lazy sweeping. */
                         gc_continue(objspace, heap);
+
+                        while (heap->free_pages == NULL) {
+                            if (!heap_unretire_page(objspace, heap)) break;
+                        }
 
                         if (heap->free_pages == NULL &&
                                 !heap_page_allocate_and_initialize(objspace, heap)) {
@@ -3749,6 +3758,7 @@ gc_sweep_start_heap(rb_objspace_t *objspace, rb_heap_t *heap)
     heap->free_pages = NULL;
     heap->pooled_pages = NULL;
     heap->retired_pages = 0;
+    heap->retired_list = NULL;
     {
         struct heap_page *page = NULL;
 
@@ -3895,6 +3905,20 @@ gc_sweep_finish(rb_objspace_t *objspace)
             heap->pooled_pages = NULL;
             objspace->rincgc.pooled_slots = 0;
         }
+
+        /* Merge retired pages back into free_pages — retirement served its
+         * purpose during incremental sweep, now release for allocation. */
+        {
+            struct heap_page *retired = heap->retired_list;
+            while (retired) {
+                struct heap_page *next = retired->free_next;
+                retired->flags.retired = 0;
+                heap_add_freepage(heap, retired);
+                retired = next;
+            }
+            heap->retired_list = NULL;
+            heap->retired_pages = 0;
+        }
     }
 
     rb_gc_event_hook(0, RUBY_INTERNAL_EVENT_GC_END_SWEEP);
@@ -3962,7 +3986,8 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
                  * It will drain passively as remaining objects die. */
                 sweep_page->flags.retired = 1;
                 heap->retired_pages++;
-                sweep_page->free_next = NULL;
+                sweep_page->free_next = heap->retired_list;
+                heap->retired_list = sweep_page;
             }
             else {
                 /* Only count free slots for pages that remain available for allocation. */
@@ -7097,6 +7122,8 @@ gc_sort_heap_by_compare_func(rb_objspace_t *objspace, gc_compact_compare_func co
         size_t i = 0;
 
         heap->free_pages = NULL;
+        heap->retired_list = NULL;
+        heap->retired_pages = 0;
         ccan_list_for_each(&heap->pages, page, page_node) {
             page_list[i++] = page;
             GC_ASSERT(page);
