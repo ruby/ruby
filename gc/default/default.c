@@ -2175,10 +2175,6 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
     RBASIC(obj)->shape_id = 0;
 #endif
 
-    int t = flags & RUBY_T_MASK;
-    if (t == T_CLASS || t == T_MODULE || t == T_ICLASS) {
-        RVALUE_AGE_SET_CANDIDATE(objspace, obj);
-    }
 
 #if RACTOR_CHECK_MODE
     void rb_ractor_setup_belonging(VALUE obj);
@@ -4407,8 +4403,16 @@ gc_aging(rb_objspace_t *objspace, VALUE obj)
 
     if (!RVALUE_PAGE_WB_UNPROTECTED(page, obj)) {
         if (!RVALUE_OLD_P(objspace, obj)) {
-            gc_report(3, objspace, "gc_aging: YOUNG: %s\n", rb_obj_info(obj));
-            RVALUE_AGE_INC(objspace, obj);
+            int t = BUILTIN_TYPE(obj);
+            if (t == T_CLASS || t == T_MODULE || t == T_ICLASS) {
+                gc_report(3, objspace, "gc_aging: YOUNG class: %s\n", rb_obj_info(obj));
+                RVALUE_AGE_SET(obj, RVALUE_OLD_AGE);
+                RVALUE_OLD_UNCOLLECTIBLE_SET(objspace, obj);
+            }
+            else {
+                gc_report(3, objspace, "gc_aging: YOUNG: %s\n", rb_obj_info(obj));
+                RVALUE_AGE_INC(objspace, obj);
+            }
         }
         else if (is_full_marking(objspace)) {
             GC_ASSERT(RVALUE_PAGE_UNCOLLECTIBLE(page, obj) == FALSE);
