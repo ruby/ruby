@@ -3759,14 +3759,12 @@ gc_sweep_start_heap(rb_objspace_t *objspace, rb_heap_t *heap)
     heap->pooled_pages = NULL;
     heap->retired_pages = 0;
     heap->retired_list = NULL;
-    {
+    if (!objspace->flags.immediate_sweep) {
         struct heap_page *page = NULL;
 
         ccan_list_for_each(&heap->pages, page, page_node) {
             page->flags.retired = 0;
-            if (!objspace->flags.immediate_sweep) {
-                page->flags.before_sweep = TRUE;
-            }
+            page->flags.before_sweep = TRUE;
         }
     }
 }
@@ -3980,10 +3978,9 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
         else if (free_slots > 0) {
             int live_slots = sweep_page->total_slots - free_slots;
 
-            if (live_slots > 0 && live_slots <= sweep_page->total_slots / HEAP_PAGE_RETIREMENT_RATIO) {
-                /* Page occupancy below threshold — retire it.
-                 * Keep it in heap->pages but don't offer for allocation.
-                 * It will drain passively as remaining objects die. */
+            if (!objspace->flags.immediate_sweep &&
+                    live_slots > 0 &&
+                    live_slots <= sweep_page->total_slots / HEAP_PAGE_RETIREMENT_RATIO) {
                 sweep_page->flags.retired = 1;
                 heap->retired_pages++;
                 sweep_page->free_next = heap->retired_list;
