@@ -1172,6 +1172,10 @@ impl Insn {
             Insn::LoadSelf { .. } => Effect::read_write(abstract_heaps::Frame, abstract_heaps::Empty),
             Insn::LoadField { .. } => Effect::read_write(abstract_heaps::Memory, abstract_heaps::Empty),
             Insn::StoreField { .. } => effects::Any,
+            // TODO: read(Allocator).write(Allocator).write(Memory), and the write(Memory) should
+            // be ratcheted down to write(Object) or similar. It can write to object flags.
+            // Load/store forwarding will need to treat these effects specially (see flags/shape
+            // field overlap).
             Insn::WriteBarrier { .. } => effects::Any,
             Insn::GetLocal   { .. } => Effect::read_write(abstract_heaps::Locals, abstract_heaps::Empty),
             Insn::SetLocal { .. } => effects::Any,
@@ -3049,6 +3053,10 @@ impl Function {
     }
 
     pub fn load_rbasic_flags(&mut self, block: BlockId, recv: InsnId) -> InsnId {
+        // Technically this also includes the shape (_shape_id) because the (shape, flags) tuple is
+        // a (u32, u32) inside a u64 at RUBY_OFFSET_RBASIC_FLAGS (offset 0). It's fine to load the
+        // shape alongside the flags, but make sure not to *store* the shape accidentally by
+        // writing a u64.
         self.push_insn(block, Insn::LoadField { recv, id: ID!(_rbasic_flags), offset: RUBY_OFFSET_RBASIC_FLAGS, return_type: types::CUInt64 })
     }
 
