@@ -845,6 +845,11 @@ rb_gc_impl_post_alloc_init(void *objspace_ptr, VALUE obj, VALUE flags, bool wb_p
     mmtk_add_obj_free_candidate((VALUE *)obj, obj_can_parallel_free_p(obj));
 }
 
+void
+rb_gc_impl_writebarrier_unprotect_newobj(void *objspace_ptr, VALUE obj)
+{
+}
+
 bool
 rb_gc_impl_stress_to_class_p(void *objspace_ptr, VALUE klass)
 {

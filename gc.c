@@ -653,6 +653,7 @@ typedef struct gc_function_map {
     // Write barriers
     void (*writebarrier)(void *objspace_ptr, VALUE a, VALUE b);
     void (*writebarrier_unprotect)(void *objspace_ptr, VALUE obj);
+    void (*writebarrier_unprotect_newobj)(void *objspace_ptr, VALUE obj);
     void (*writebarrier_remember)(void *objspace_ptr, VALUE obj);
     // Heap walking
     void (*each_objects)(void *objspace_ptr, int (*callback)(void *, void *, size_t, void *), void *data);
@@ -831,6 +832,7 @@ ruby_modular_gc_init(void)
     // Write barriers
     load_modular_gc_func(writebarrier);
     load_modular_gc_func(writebarrier_unprotect);
+    load_modular_gc_func(writebarrier_unprotect_newobj);
     load_modular_gc_func(writebarrier_remember);
     // Heap walking
     load_modular_gc_func(each_objects);
@@ -918,6 +920,7 @@ ruby_modular_gc_init(void)
 // Write barriers
 # define rb_gc_impl_writebarrier rb_gc_functions.writebarrier
 # define rb_gc_impl_writebarrier_unprotect rb_gc_functions.writebarrier_unprotect
+# define rb_gc_impl_writebarrier_unprotect_newobj rb_gc_functions.writebarrier_unprotect_newobj
 # define rb_gc_impl_writebarrier_remember rb_gc_functions.writebarrier_remember
 // Heap walking
 # define rb_gc_impl_each_objects rb_gc_functions.each_objects
@@ -1025,6 +1028,10 @@ newobj_of(rb_ractor_t *cr, VALUE klass, VALUE flags, shape_id_t shape_id, bool w
     RBASIC_SET_SHAPE_ID_NO_CHECKS(obj, shape_id);
 
     rb_gc_impl_post_alloc_init(objspace, obj, flags, wb_protected);
+
+    if (RB_UNLIKELY(wb_protected == FALSE)) {
+        rb_gc_impl_writebarrier_unprotect_newobj(objspace, obj);
+    }
 
     gc_validate_pc(obj);
 

@@ -2211,6 +2211,12 @@ rb_gc_impl_post_alloc_init(void *objspace_ptr, VALUE obj, VALUE flags, bool wb_p
     gc_report(5, objspace, "newobj: %s\n", rb_obj_info(obj));
 }
 
+void
+rb_gc_impl_writebarrier_unprotect_newobj(void *objspace_ptr, VALUE obj)
+{
+    MARK_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), obj);
+}
+
 bool
 rb_gc_impl_stress_to_class_p(void *objspace_ptr, VALUE klass)
 {
