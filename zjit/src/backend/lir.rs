@@ -2329,10 +2329,12 @@ impl Assembler
                     let end_marker = end_marker.take();
 
                     // Sequentialize argument moves: each arg goes to regs[i]
-                    let reg_copies: Vec<parcopy::RegisterCopy<Opnd>> = args.iter().enumerate()
-                        .map(|(i, arg)| parcopy::RegisterCopy::<Opnd> {
-                            source: *arg,
-                            destination: Opnd::Reg(regs[i]),
+                    let reg_copies: Vec<parcopy::RegisterCopy<Opnd>> = args
+                        .iter()
+                        .zip(regs.iter())
+                        .map(|(arg, param)| parcopy::RegisterCopy::<Opnd> {
+                            destination: Opnd::Reg(*param),
+                            source: Self::rewritten_opnd(*arg, assignments, regs),
                         })
                         .collect();
 
@@ -2421,6 +2423,11 @@ impl Assembler
                 }
             }
         }
+    }
+
+    fn rewritten_opnd(mut opnd: Opnd, assignments: &[Option<Allocation>], regs: &[Reg]) -> Opnd {
+        Self::rewrite_opnd(&mut opnd, assignments, regs);
+        opnd
     }
 
     fn rewrite_opnd(opnd: &mut Opnd, assignments: &[Option<Allocation>], regs: &[Reg]) {

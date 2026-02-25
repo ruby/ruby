@@ -1631,7 +1631,7 @@ impl Assembler {
             }
         }
 
-        asm.handle_caller_saved_regs(&intervals, &assignments, &regs);
+        asm.handle_caller_saved_regs(&intervals, &assignments, &C_ARG_REGREGS);
         asm.resolve_ssa(&intervals, &assignments, &regs);
         asm_dump!(asm, alloc_regs);
 
