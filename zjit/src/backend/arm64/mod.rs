@@ -483,34 +483,6 @@ impl Assembler {
                     iterator.next_unmapped(); // Pop merged jump instruction
                 }
                 */
-                Insn::CCall { opnds, .. } => {
-                    assert!(opnds.len() <= C_ARG_OPNDS.len());
-
-                    // Load each operand into the corresponding argument
-                    // register.
-                    // Note: the iteration order is reversed to avoid corrupting x0,
-                    // which is both the return value and first argument register
-                    if !opnds.is_empty() {
-                        let mut args: Vec<(Opnd, Opnd)> = vec![];
-                        for (idx, opnd) in opnds.iter_mut().enumerate().rev() {
-                            // If the value that we're sending is 0, then we can use
-                            // the zero register, so in this case we'll just send
-                            // a UImm of 0 along as the argument to the move.
-                            let value = match opnd {
-                                Opnd::UImm(0) | Opnd::Imm(0) => Opnd::UImm(0),
-                                Opnd::Mem(_) => split_memory_address(asm, *opnd),
-                                _ => *opnd
-                            };
-                            args.push((C_ARG_OPNDS[idx], value));
-                        }
-                        asm.parallel_mov(args);
-                    }
-
-                    // Now we push the CCall without any arguments so that it
-                    // just performs the call.
-                    *opnds = vec![];
-                    asm.push_insn(insn);
-                },
                 Insn::Cmp { left, right } => {
                     let opnd0 = split_load_operand(asm, *left);
                     let opnd0 = split_less_than_32_cmp(asm, opnd0);
@@ -889,19 +861,6 @@ impl Assembler {
                         Opnd::Reg(_) => asm.load_into(*dest, *src),
                         Opnd::Mem(_) => asm.store(*dest, *src),
                         _ => asm.push_insn(insn),
-                    }
-                }
-                // Resolve ParallelMov that couldn't be handled without a scratch register.
-                Insn::ParallelMov { moves } => {
-                    panic!();
-                    for (dst, src) in Self::resolve_parallel_moves(moves, Some(SCRATCH0_OPND)).unwrap() {
-                        let src = split_stack_membase(asm, src, SCRATCH1_OPND, &stack_state);
-                        let dst = split_large_disp(asm, dst, SCRATCH2_OPND);
-                        match dst {
-                            Opnd::Reg(_) => asm.load_into(dst, src),
-                            Opnd::Mem(_) => asm.store(dst, src),
-                            _ => asm.mov(dst, src),
-                        }
                     }
                 }
                 &mut Insn::PatchPoint { ref target, invariant, version } => {
@@ -1367,7 +1326,6 @@ impl Assembler {
                         _ => unreachable!()
                     };
                 },
-                Insn::ParallelMov { .. } => unreachable!("{insn:?} should have been lowered at alloc_regs()"),
                 Insn::Mov { dest, src } => {
                     // This supports the following two kinds of immediates:
                     //   * The value fits into a single movz instruction
@@ -1676,6 +1634,8 @@ impl Assembler {
         asm.handle_caller_saved_regs(&intervals, &assignments, &regs);
         asm.resolve_ssa(&intervals, &assignments, &regs);
         asm_dump!(asm, alloc_regs);
+
+        // We are moved out of SSA after resolve_ssa
 
         // We put compile_exits after alloc_regs to avoid extending live ranges for VRegs spilled on side exits.
         asm.compile_exits();
