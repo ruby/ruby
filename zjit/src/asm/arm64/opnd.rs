@@ -1,7 +1,7 @@
 use std::fmt;
 
 /// This operand represents a register.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Ord, PartialOrd)]
 pub struct A64Reg
 {
     // Size in bits
