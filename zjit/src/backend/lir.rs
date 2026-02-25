@@ -779,10 +779,6 @@ pub enum Insn {
     /// Shift a value left by a certain amount.
     LShift { opnd: Opnd, shift: Opnd, out: Opnd },
 
-    /// A set of parallel moves into registers or memory.
-    /// The backend breaks cycles if there are any cycles between moves.
-    ParallelMov { moves: Vec<(Opnd, Opnd)> },
-
     // A low-level mov instruction. It accepts two operands.
     Mov { dest: Opnd, src: Opnd },
 
@@ -919,7 +915,6 @@ impl Insn {
             Insn::LoadInto { .. } => "LoadInto",
             Insn::LoadSExt { .. } => "LoadSExt",
             Insn::LShift { .. } => "LShift",
-            Insn::ParallelMov { .. } => "ParallelMov",
             Insn::Mov { .. } => "Mov",
             Insn::Not { .. } => "Not",
             Insn::Or { .. } => "Or",
@@ -1228,20 +1223,6 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
                     None
                 }
             },
-            Insn::ParallelMov { moves } => {
-                if self.idx < moves.len() * 2 {
-                    let move_idx = self.idx / 2;
-                    let opnd = if self.idx % 2 == 0 {
-                        &moves[move_idx].0
-                    } else {
-                        &moves[move_idx].1
-                    };
-                    self.idx += 1;
-                    Some(opnd)
-                } else {
-                    None
-                }
-            },
             Insn::FrameSetup { preserved, .. } |
             Insn::FrameTeardown { preserved } => {
                 if self.idx < preserved.len() {
@@ -1416,20 +1397,6 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::CCall { opnds, .. } => {
                 if self.idx < opnds.len() {
                     let opnd = &mut opnds[self.idx];
-                    self.idx += 1;
-                    Some(opnd)
-                } else {
-                    None
-                }
-            },
-            Insn::ParallelMov { moves } => {
-                if self.idx < moves.len() * 2 {
-                    let move_idx = self.idx / 2;
-                    let opnd = if self.idx % 2 == 0 {
-                        &mut moves[move_idx].0
-                    } else {
-                        &mut moves[move_idx].1
-                    };
                     self.idx += 1;
                     Some(opnd)
                 } else {
@@ -1957,13 +1924,6 @@ impl Assembler
     fn expand_branch_insn(&self, insn: &Insn, insns: &mut Vec<Insn>) {
         // Helper to process branch arguments and return the label target
         let mut process_edge = |edge: &BranchEdge| -> Label {
-            if !edge.args.is_empty() {
-                insns.push(Insn::ParallelMov {
-                    moves: edge.args.iter().enumerate()
-                        .map(|(idx, &arg)| (Assembler::param_opnd(idx), arg))
-                        .collect()
-                });
-            }
             self.block_label(edge.target)
         };
 
@@ -2382,20 +2342,19 @@ impl Assembler
                     let sequentialized = parcopy::sequentialize_register(&reg_copies, Opnd::Reg(SCRATCH_REG));
                     let moves: Vec<Insn> = sequentialized
                         .iter()
-                        .map(|copy| Insn::Mov {
-                            dest: copy.destination,
-                            src: copy.source,
+                        .map(|copy| {
+                            let mut dest = copy.destination.clone();
+                            Self::rewrite_opnd(&mut dest, assignments, regs);
+                            let mut src = copy.source.clone();
+                            Self::rewrite_opnd(&mut src, assignments, regs);
+                            Insn::Mov { dest, src }
                         })
                         .collect();
 
                     // Insert CPush instructions before any preceding ParallelMov,
                     // since ParallelMov sets up C calling convention args and
                     // would clobber the survivor registers we're trying to save.
-                    let insert_pos = if matches!(new_insns.last(), Some(Insn::ParallelMov { .. })) {
-                        new_insns.len() - 1
-                    } else {
-                        new_insns.len()
-                    };
+                    let insert_pos = new_insns.len();
 
                     for (j, &s) in survivors.iter().enumerate() {
                         let reg_n = match assignments[s].unwrap() {
@@ -2535,7 +2494,6 @@ impl Assembler
             }
 
             let before_ccall = match (&insn, iterator.peek().map(|(_, insn)| insn)) {
-                (Insn::ParallelMov { .. }, Some(Insn::CCall { .. })) |
                 (Insn::CCall { .. }, _) if !pool.is_empty() => {
                     // If C_RET_REG is in use, move it to another register.
                     // This must happen before last-use registers are deallocated.
@@ -3313,14 +3271,6 @@ fn format_insn_compact(asm: &Assembler, insn: &Insn) -> String {
             }
             _ => {}
         }
-    } else if let Insn::ParallelMov { moves } = insn {
-        for (i, (dst, src)) in moves.iter().enumerate() {
-            if i == 0 {
-                output.push_str(&format!(" {dst} <- {src}"));
-            } else {
-                output.push_str(&format!(", {dst} <- {src}"));
-            }
-        }
     } else if insn.opnd_iter().count() > 0 {
         for (i, opnd) in insn.opnd_iter().enumerate() {
             if i == 0 {
@@ -3452,9 +3402,6 @@ impl fmt::Display for Assembler {
                                 }
                                 _ => {}
                             }
-                        } else if let Insn::ParallelMov { moves } = insn {
-                            // Print operands with a special syntax for ParallelMov
-                            moves.iter().try_fold(" ", |prefix, (dst, src)| write!(f, "{prefix}{dst} <- {src}").and(Ok(", ")))?;
                         } else if insn.opnd_iter().count() > 0 {
                             insn.opnd_iter().try_fold(" ", |prefix, opnd| write!(f, "{prefix}{opnd}").and(Ok(", ")))?;
                         }
@@ -3838,10 +3785,6 @@ impl Assembler {
         out
     }
 
-    pub fn parallel_mov(&mut self, moves: Vec<(Opnd, Opnd)>) {
-        self.push_insn(Insn::ParallelMov { moves });
-    }
-
     pub fn mov(&mut self, dest: Opnd, src: Opnd) {
         assert!(!matches!(dest, Opnd::VReg { .. }), "Destination of mov must not be Opnd::VReg, got: {dest:?}");
         self.push_insn(Insn::Mov { dest, src });
@@ -3944,19 +3887,10 @@ impl Assembler {
         // Get linearized instructions with branch parameters expanded into ParallelMov
         let linearized_insns = self.linearize_instructions();
 
+        // TODO: Aaron, this could be better. We don't need to do this, FIXME
         // Process each linearized instruction
         for insn in linearized_insns {
             match insn {
-                Insn::ParallelMov { moves } => {
-                    // Resolve parallel moves without scratch register
-                    if let Some(resolved_moves) = Assembler::resolve_parallel_moves(&moves, None) {
-                        for (dst, src) in resolved_moves {
-                            asm_local.mov(dst, src);
-                        }
-                    } else {
-                        unreachable!("ParallelMov requires scratch register but scratch_reg is not allowed");
-                    }
-                }
                 _ => {
                     asm_local.push_insn(insn);
                 }
