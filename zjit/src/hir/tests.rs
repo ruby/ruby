@@ -1932,7 +1932,7 @@ pub mod hir_build_tests {
           v6:BasicObject = LoadArg :a@1
           Jump bb3(v5, v6)
         bb3(v8:BasicObject, v9:BasicObject):
-          v15:BasicObject = Send v8, 0x1000, :foo, v9 # SendFallbackReason: Uncategorized(send)
+          v15:BasicObject = Send v8, v9, :foo, v9 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
           Return v15
         ");

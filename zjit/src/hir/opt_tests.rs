@@ -1204,11 +1204,6 @@ mod hir_opt_tests {
         ");
     }
 
-    // Regression test: when specialized_instruction is disabled, the compiler
-    // doesn't convert `send` to `opt_send_without_block`, so a no-block call
-    // reaches ZJIT as `YARVINSN_send` with a null blockiseq. This becomes
-    // `Send { blockiseq: Some(null_ptr) }` which must be normalized to None in
-    // reduce_send_to_ccall, otherwise CCallWithFrame gens wrong block handler.
     #[test]
     fn test_send_to_cfunc_without_specialized_instruction() {
         eval_with_options("
@@ -1231,9 +1226,11 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Array@0x1000)
           PatchPoint MethodRedefined(Array@0x1000, length@0x1008, cme:0x1010)
           v23:ArrayExact = GuardType v9, ArrayExact
-          v24:BasicObject = CCallWithFrame v23, :Array#length@0x1038
+          v24:CInt64 = ArrayLength v23
+          v25:Fixnum = BoxFixnum v24
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v24
+          Return v25
         ");
     }
 
@@ -4445,7 +4442,7 @@ mod hir_opt_tests {
           v17:CInt64 = LoadField v14, :_env_data_index_specval@0x1001
           v18:CInt64 = GuardAnyBitSet v17, CUInt64(1)
           v19:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
-          v21:BasicObject = Send v8, 0x1000, :tap, v19 # SendFallbackReason: Uncategorized(send)
+          v21:BasicObject = Send v8, v19, :tap, v19 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
           Return v21
         ");
@@ -7241,7 +7238,7 @@ mod hir_opt_tests {
           v19:CInt64 = GuardAnyBitSet v18, CUInt64(1)
           v20:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
           IncrCounter complex_arg_pass_caller_blockarg
-          v22:BasicObject = Send v13, 0x1000, :map, v20 # SendFallbackReason: Complex argument passing
+          v22:BasicObject = Send v13, v20, :map, v20 # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v22
         ");
@@ -7274,7 +7271,7 @@ mod hir_opt_tests {
           v19:CInt64[0] = GuardBitEquals v18, CInt64(0)
           v20:NilClass = Const Value(nil)
           IncrCounter complex_arg_pass_caller_blockarg
-          v22:BasicObject = Send v13, 0x1000, :map, v20 # SendFallbackReason: Complex argument passing
+          v22:BasicObject = Send v13, v20, :map, v20 # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v22
         ");
@@ -7309,7 +7306,7 @@ mod hir_opt_tests {
           v16:CInt64 = GuardAnyBitSet v15, CUInt64(1)
           v17:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
           IncrCounter complex_arg_pass_caller_blockarg
-          v19:BasicObject = Send v10, 0x1000, :map, v17 # SendFallbackReason: Complex argument passing
+          v19:BasicObject = Send v10, v17, :map, v17 # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v19
         ");
@@ -10697,7 +10694,7 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v11:StaticSymbol[:the_block] = Const Value(VALUE(0x1000))
-          v13:BasicObject = Send v6, 0x1008, :callee, v11 # SendFallbackReason: Uncategorized(send)
+          v13:BasicObject = Send v6, v11, :callee, v11 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
           Return v13
         ");

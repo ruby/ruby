@@ -722,6 +722,43 @@ impl Display for SendFallbackReason {
     }
 }
 
+/// The block argument supplied to Send family instructions.
+#[derive(Debug, Clone, Copy)]
+pub enum SendBlock {
+    /// None(true) – No block, fallback = YARVINSN_opt_send_without_block
+    /// None(false) – No block, fallback = YARVINSN_send
+    None(bool),
+    /// A literal iseq block (e.g. `foo { ... }`)
+    Literal(IseqPtr),
+    /// A block argument from the stack (e.g. `foo(&block)`, `foo(&:bar)`)
+    BlockArg(InsnId),
+}
+
+impl SendBlock {
+    pub fn is_some(&self) -> bool {
+        !self.is_none()
+    }
+
+    pub fn is_none(&self) -> bool {
+       matches!(self, SendBlock::None(..))
+    }
+
+    pub fn is_literal(&self) -> bool {
+        matches!(self, SendBlock::Literal(..))
+    }
+
+    pub fn is_block_arg(&self) -> bool {
+        matches!(self, SendBlock::BlockArg(..))
+    }
+
+    pub fn as_iseq_ptr(&self) -> IseqPtr {
+        match self {
+            SendBlock::Literal(iseq_ptr) => *iseq_ptr,
+            _ => std::ptr::null(),
+        }
+    }
+}
+
 /// An instruction in the SSA IR. The output of an instruction is referred to by the index of
 /// the instruction ([`InsnId`]). SSA form enables this, and [`UnionFind`] ([`Function::find`])
 /// helps with editing.
@@ -925,8 +962,8 @@ pub enum Insn {
     Send {
         recv: InsnId,
         cd: *const rb_call_data,
-        blockiseq: Option<IseqPtr>,
         args: Vec<InsnId>,
+        block_arg: SendBlock,
         state: InsnId,
         reason: SendFallbackReason,
     },
@@ -1483,14 +1520,20 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 }
                 Ok(())
             }
-            Insn::Send { recv, cd, args, blockiseq, reason, .. } => {
+            Insn::Send { recv, cd, args, block_arg, reason, .. } => {
                 // For tests, we want to check HIR snippets textually. Addresses change
                 // between runs, making tests fail. Instead, pick an arbitrary hex value to
                 // use as a "pointer" so we can check the rest of the HIR.
-                if let Some(blockiseq) = *blockiseq {
-                    write!(f, "Send {recv}, {:p}, :{}", self.ptr_map.map_ptr(blockiseq), ruby_call_method_name(*cd))?;
-                } else {
-                    write!(f, "Send {recv}, :{}", ruby_call_method_name(*cd))?;
+                match block_arg {
+                    SendBlock::Literal(blockiseq) => {
+                        write!(f, "Send {recv}, {:p}, :{}", self.ptr_map.map_ptr(*blockiseq), ruby_call_method_name(*cd))?;
+                    }
+                    SendBlock::BlockArg(insn_id) => {
+                        write!(f, "Send {recv}, {insn_id}, :{}", ruby_call_method_name(*cd))?;
+                    }
+                    SendBlock::None(..) => {
+                        write!(f, "Send {recv}, :{}", ruby_call_method_name(*cd))?;
+                    }
                 }
                 for arg in args {
                     write!(f, ", {arg}")?;
@@ -1876,7 +1919,7 @@ pub enum ValidationError {
 }
 
 /// Check if we can do a direct send to the given iseq with the given args.
-fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq_t, ci: *const rb_callinfo, send_insn: InsnId, args: &[InsnId], blockiseq: Option<IseqPtr>) -> bool {
+fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq_t, ci: *const rb_callinfo, send_insn: InsnId, args: &[InsnId], block_arg: SendBlock) -> bool {
     let mut can_send = true;
     let mut count_failure = |counter| {
         can_send = false;
@@ -1884,7 +1927,7 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
     };
     let params = unsafe { iseq.params() };
 
-    let caller_has_literal_block: bool = blockiseq.is_some();
+    let caller_has_literal_block = block_arg.is_literal();
     let callee_has_block_param = 0 != params.flags.has_block();
 
     use Counter::*;
@@ -2313,11 +2356,11 @@ impl Function {
                 blockiseq,
                 state,
             },
-            &Send { recv, cd, blockiseq, ref args, state, reason } => Send {
+            &Send { recv, cd, ref args, block_arg, state, reason } => Send {
                 recv: find!(recv),
                 cd,
-                blockiseq,
                 args: find_vec!(args),
+                block_arg,
                 state,
                 reason,
             },
@@ -3094,12 +3137,12 @@ impl Function {
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
                 match self.find(insn_id) {
-                    Insn::Send { recv, blockiseq: None, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(freeze) && args.is_empty() =>
+                    Insn::Send { recv, block_arg: SendBlock::None(..), args, state, cd, .. } if ruby_call_method_id(cd) == ID!(freeze) && args.is_empty() =>
                         self.try_rewrite_freeze(block, insn_id, recv, state),
-                    Insn::Send { recv, blockiseq: None, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(minusat) && args.is_empty() =>
+                    Insn::Send { recv, block_arg: SendBlock::None(..), args, state, cd, .. } if ruby_call_method_id(cd) == ID!(minusat) && args.is_empty() =>
                         self.try_rewrite_uminus(block, insn_id, recv, state),
-                    Insn::Send { mut recv, cd, state, blockiseq, args, .. } => {
-                        let has_block = blockiseq.is_some();
+                    Insn::Send { mut recv, cd, state, args, block_arg, .. } => {
+                        let has_block = block_arg.is_some();
                         let frame_state = self.frame_state(state);
                         let (klass, profiled_type) = match self.resolve_receiver_type(recv, self.type_of(recv), frame_state.insn_idx) {
                             ReceiverTypeResolution::StaticallyKnown { class } => (class, None),
@@ -3171,7 +3214,7 @@ impl Function {
                             // Only specialize positional-positional calls
                             // TODO(max): Handle other kinds of parameter passing
                             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
-                            if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice(), blockiseq) {
+                            if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice(), block_arg) {
                                 self.push_insn_id(block, insn_id); continue;
                             }
 
@@ -3194,6 +3237,15 @@ impl Function {
                                 self.push_insn_id(block, insn_id); continue;
                             };
 
+                            let blockiseq = match block_arg {
+                                SendBlock::None(..) => None,
+                                SendBlock::Literal(iseq) => Some(iseq),
+                                SendBlock::BlockArg(..) => {
+                                    debug_assert!(false, "should have failed unspecializable_call_type!");
+                                    self.push_insn_id(block, insn_id); continue;
+                                },
+                            };
+
                             let send_direct = self.push_insn(block, Insn::SendDirect { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state, blockiseq });
                             self.make_equal_to(insn_id, send_direct);
                         } else if !has_block && def_type == VM_METHOD_TYPE_BMETHOD {
@@ -3209,7 +3261,7 @@ impl Function {
                             let capture = unsafe { proc_block.as_.captured.as_ref() };
                             let iseq = unsafe { *capture.code.iseq.as_ref() };
 
-                            if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice(), None) {
+                            if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice(), block_arg) {
                                 self.push_insn_id(block, insn_id); continue;
                             }
 
@@ -3399,7 +3451,7 @@ impl Function {
                             self.make_equal_to(insn_id, guard);
                         } else {
                             let recv = self.push_insn(block, Insn::GuardType { val, guard_type: Type::from_profiled_type(recv_type), state});
-                            let send_to_s = self.push_insn(block, Insn::Send { recv, cd, blockiseq: None, args: vec![], state, reason: ObjToStringNotString });
+                            let send_to_s = self.push_insn(block, Insn::Send { recv, cd, args: vec![], block_arg: SendBlock::None(true), state, reason: ObjToStringNotString });
                             self.make_equal_to(insn_id, send_to_s);
                         }
                     }
@@ -3570,8 +3622,8 @@ impl Function {
                             // Check if the super method's parameters support direct send.
                             // If not, we can't do direct dispatch.
                             let super_iseq = unsafe { get_def_iseq_ptr((*super_cme).def) };
-                            // TODO: pass Option<blockiseq> to can_direct_send when we start specializing `super { ... }`.
-                            if !can_direct_send(self, block, super_iseq, ci, insn_id, args.as_slice(), None) {
+                            // TODO: pass block_arg to can_direct_send when we start specializing `super { ... }`.
+                            if !can_direct_send(self, block, super_iseq, ci, insn_id, args.as_slice(), SendBlock::None(true)) {
                                 self.push_insn_id(block, insn_id);
                                 self.set_dynamic_send_reason(insn_id, SuperTargetComplexArgsPass);
                                 continue;
@@ -4030,7 +4082,7 @@ impl Function {
             send: Insn,
             send_insn_id: InsnId,
         ) -> Result<(), ()> {
-            let Insn::Send { mut recv, cd, blockiseq, args, state, .. } = send else {
+            let Insn::Send { mut recv, cd, args, block_arg, state, .. } = send else {
                 return Err(());
             };
 
@@ -4088,10 +4140,14 @@ impl Function {
                 return Err(());
             }
 
-            let blockiseq = match blockiseq {
-                None => unreachable!("went to reduce_send_without_block_to_ccall"),
-                Some(p) if p.is_null() => None,
-                Some(blockiseq) => Some(blockiseq),
+            let blockiseq = match block_arg {
+                SendBlock::None(..) => None,
+                SendBlock::Literal(iseq) => Some(iseq),
+                SendBlock::BlockArg(..) => {
+                    debug_assert!(false, "should have failed unspecializable_c_call_type!");
+                    fun.set_dynamic_send_reason(send_insn_id, ComplexArgPass);
+                    return Err(());
+                },
             };
 
             let cfunc = unsafe { get_cme_def_body_cfunc(cme) };
@@ -4427,7 +4483,7 @@ impl Function {
             for insn_id in old_insns {
                 let send = self.find(insn_id);
                 match send {
-                    send @ Insn::Send { recv, blockiseq: None, .. } => {
+                    send @ Insn::Send { recv, block_arg: SendBlock::None(..), .. } => {
                         let recv_type = self.type_of(recv);
                         if reduce_send_without_block_to_ccall(self, block, recv_type, send, insn_id).is_ok() {
                             continue;
@@ -7097,7 +7153,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     let args = state.stack_pop_n(argc as usize)?;
                     let recv = state.stack_pop()?;
-                    let send = fun.push_insn(block, Insn::Send { recv, cd, blockiseq: None, args, state: exit_id, reason: Uncategorized(opcode) });
+                    let send = fun.push_insn(block, Insn::Send { recv, cd, args, block_arg: SendBlock::None(true), state: exit_id, reason: Uncategorized(opcode) });
                     state.stack_push(send);
                 }
                 YARVINSN_opt_hash_freeze => {
@@ -7220,7 +7276,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             let recv = state.stack_pop().unwrap();
                             let refined_recv = fun.push_insn(block, Insn::RefineType { val: recv, new_type });
                             state.replace(recv, refined_recv);
-                            let send = fun.push_insn(block, Insn::Send { recv: refined_recv, cd, blockiseq: None, args, state: snapshot, reason: Uncategorized(opcode) });
+                            let send = fun.push_insn(block, Insn::Send { recv: refined_recv, cd, args, block_arg: SendBlock::None(true), state: snapshot, reason: Uncategorized(opcode) });
                             state.stack_push(send);
                             fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: state.as_args(self_param) }));
                             block
@@ -7253,7 +7309,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             let args = state.stack_pop_n(argc as usize)?;
                             let recv = state.stack_pop()?;
                             let reason = SendPolymorphicFallback;
-                            let send = fun.push_insn(block, Insn::Send { recv, cd, blockiseq: None, args, state: exit_id, reason });
+                            let send = fun.push_insn(block, Insn::Send { recv, cd, args, block_arg: SendBlock::None(true), state: exit_id, reason });
                             state.stack_push(send);
                             fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: state.as_args(self_param) }));
                             break;  // End the block
@@ -7262,7 +7318,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     let args = state.stack_pop_n(argc as usize)?;
                     let recv = state.stack_pop()?;
-                    let send = fun.push_insn(block, Insn::Send { recv, cd, blockiseq: None, args, state: exit_id, reason: Uncategorized(opcode) });
+                    let send = fun.push_insn(block, Insn::Send { recv, cd, args, block_arg: SendBlock::None(true), state: exit_id, reason: Uncategorized(opcode) });
                     state.stack_push(send);
                 }
                 YARVINSN_send => {
@@ -7276,11 +7332,26 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         break;  // End the block
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
-                    let block_arg = (flags & VM_CALL_ARGS_BLOCKARG) != 0;
+                    let has_block_arg = (flags & VM_CALL_ARGS_BLOCKARG) != 0;
 
-                    let args = state.stack_pop_n(argc as usize + usize::from(block_arg))?;
+                    let args = state.stack_pop_n(argc as usize + usize::from(has_block_arg))?;
                     let recv = state.stack_pop()?;
-                    let send = fun.push_insn(block, Insn::Send { recv, cd, blockiseq: Some(blockiseq), args, state: exit_id, reason: Uncategorized(opcode) });
+
+                    let block_arg  = match (has_block_arg, blockiseq.is_null()) {
+                        (true, true) => {
+                            let insn = args.last();
+                            debug_assert!(insn.is_some(), "stack_pop_n should be at least 1 with block_arg");
+                            SendBlock::BlockArg(*insn.unwrap())
+                        }
+                        (true, false) => {
+                            debug_assert!(false, "blockiseq and VM_CALL_ARGS_BLOCKARG are mututally exclusive");
+                            unreachable!();
+                        }
+                        (false, false) => SendBlock::Literal(blockiseq),
+                        (false, true) => SendBlock::None(false),
+                    };
+
+                    let send = fun.push_insn(block, Insn::Send { recv, cd, args, block_arg, state: exit_id, reason: Uncategorized(opcode) });
                     state.stack_push(send);
 
                     if !blockiseq.is_null() {
