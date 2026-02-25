@@ -27,9 +27,9 @@ use std::hash::Hash;
 pub struct Register(pub u32);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
-pub struct RegisterCopy {
-    pub source: Register,
-    pub destination: Register,
+pub struct RegisterCopy<T> {
+    pub source: T,
+    pub destination: T,
 }
 
 // Algorithm 13: Parallel copy sequentialization
@@ -43,7 +43,7 @@ pub struct RegisterCopy {
 //
 // Varies slightly from the original algorithm as it splits the copies between
 // pending and available to reduce state tracking.
-pub fn sequentialize_register(parallel_copies: &[RegisterCopy], spare: Register) -> Vec<RegisterCopy> {
+pub fn sequentialize_register<T: PartialEq + Eq + Hash + Ord + std::fmt::Debug + Clone + Copy>(parallel_copies: &[RegisterCopy<T>], spare: T) -> Vec<RegisterCopy<T>> {
     let mut sequentialized = Vec::new();
     // `resource` in the original code, this point to the current register
     // holding a particular initial value.
@@ -124,7 +124,7 @@ mod tests {
     use assert_matches::assert_matches;
 
     // Assumes that each register initially contains the value matching its id.
-    fn execute_sequential(copies: &[RegisterCopy]) -> HashMap<Register, u32> {
+    fn execute_sequential(copies: &[RegisterCopy<Register>]) -> HashMap<Register, u32> {
         let mut register_values = HashMap::new();
         // Initialize registers with their own ids as values.
         for copy in copies {
@@ -137,7 +137,7 @@ mod tests {
         register_values
     }
 
-    fn execute_parallel(copies: &[RegisterCopy]) -> HashMap<Register, u32> {
+    fn execute_parallel(copies: &[RegisterCopy<Register>]) -> HashMap<Register, u32> {
         let mut register_values = HashMap::new();
         // Initialize registers with their own ids as values.
         for copy in copies {
