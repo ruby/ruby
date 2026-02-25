@@ -980,6 +980,7 @@ box.$(OBJEXT): {$(VPATH)}vm_core.h
 box.$(OBJEXT): {$(VPATH)}vm_debug.h
 box.$(OBJEXT): {$(VPATH)}vm_opts.h
 box.$(OBJEXT): {$(VPATH)}vm_sync.h
+box.$(OBJEXT): {$(VPATH)}zjit.h
 builtin.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 builtin.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 builtin.$(OBJEXT): $(CCAN_DIR)/list/list.h

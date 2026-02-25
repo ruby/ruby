@@ -216,6 +216,7 @@ make_counters! {
         exit_patchpoint_no_ep_escape,
         exit_patchpoint_single_ractor_mode,
         exit_patchpoint_no_singleton_class,
+        exit_patchpoint_root_box_only,
         exit_callee_side_exit,
         exit_obj_to_string_fallback,
         exit_interrupt,
@@ -604,6 +605,8 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
                                       => exit_patchpoint_single_ractor_mode,
         PatchPoint(Invariant::NoSingletonClass { .. })
                                       => exit_patchpoint_no_singleton_class,
+        PatchPoint(Invariant::RootBoxOnly)
+                                      => exit_patchpoint_root_box_only,
     }
 }
 

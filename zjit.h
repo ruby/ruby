@@ -28,6 +28,7 @@ void rb_zjit_iseq_free(const rb_iseq_t *iseq);
 void rb_zjit_before_ractor_spawn(void);
 void rb_zjit_tracing_invalidate_all(void);
 void rb_zjit_invalidate_no_singleton_class(VALUE klass);
+void rb_zjit_invalidate_root_box(void);
 #else
 #define rb_zjit_entry 0
 static inline void rb_zjit_compile_iseq(const rb_iseq_t *iseq, bool jit_exception) {}
@@ -40,6 +41,7 @@ static inline void rb_zjit_constant_state_changed(ID id) {}
 static inline void rb_zjit_before_ractor_spawn(void) {}
 static inline void rb_zjit_tracing_invalidate_all(void) {}
 static inline void rb_zjit_invalidate_no_singleton_class(VALUE klass) {}
+static inline void rb_zjit_invalidate_root_box(void) {}
 #endif // #if USE_ZJIT
 
 #define rb_zjit_enabled_p (rb_zjit_entry != 0)

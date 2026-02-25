@@ -7,7 +7,7 @@
 #![allow(clippy::match_like_matches_macro)]
 use crate::{
     backend::lir::C_ARG_OPNDS,
-    cast::IntoUsize, codegen::local_idx_to_ep_offset, cruby::*, invariants::has_singleton_class_of, payload::{get_or_create_iseq_payload, IseqPayload}, options::{debug, get_option, DumpHIR}, state::ZJITState, json::Json
+    cast::IntoUsize, codegen::local_idx_to_ep_offset, cruby::*, invariants::{self, has_singleton_class_of}, payload::{get_or_create_iseq_payload, IseqPayload}, options::{debug, get_option, DumpHIR}, state::ZJITState, json::Json
 };
 use std::{
     cell::RefCell, collections::{BTreeSet, HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, c_int, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter
@@ -151,6 +151,9 @@ pub enum Invariant {
     NoSingletonClass {
         klass: VALUE,
     },
+    /// Only the root box is active, so we can safely read from the prime classext.
+    /// Invalidated if a non-root box duplicates any classext.
+    RootBoxOnly,
 }
 
 impl Invariant {
@@ -290,6 +293,7 @@ impl<'a> std::fmt::Display for InvariantPrinter<'a> {
                     class_name,
                     self.ptr_map.map_ptr(klass.as_ptr::<VALUE>()))
             }
+            Invariant::RootBoxOnly => write!(f, "RootBoxOnly"),
         }
     }
 }
@@ -2182,6 +2186,17 @@ impl Function {
         }
     }
 
+    /// Assume that only the root box is active, so we can safely read from the prime classext.
+    /// Returns true if safe to assume so and emits a PatchPoint.
+    pub fn assume_root_box(&mut self, block: BlockId, state: InsnId) -> bool {
+        if invariants::non_root_box_created() {
+            false
+        } else {
+            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::RootBoxOnly, state });
+            true
+        }
+    }
+
     /// Assume that objects of a given class will have no singleton class.
     /// Returns true if safe to assume so and emits a PatchPoint.
     /// Returns false if we've already seen a singleton class for this class,
@@ -3899,10 +3914,48 @@ impl Function {
                             // entered the compiler.  That means we can just return nil for this
                             // shape + iv name
                             self.push_insn(block, Insn::Const { val: Const::Value(Qnil) })
+                        } else if recv_type.flags().is_t_class_or_module() {
+                            // Class/module ivar: load from prime classext's fields_obj
+                            if self.assume_root_box(block, state) {
+                                // Root box only: load directly from prime classext
+                                let fields_obj = self.push_insn(block, Insn::LoadField {
+                                    recv: self_val, id: ID!(_fields_obj),
+                                    offset: RCLASS_OFFSET_PRIME_FIELDS_OBJ as i32,
+                                    return_type: types::RubyValue,
+                                });
+                                if recv_type.flags().is_fields_embedded() {
+                                    let offset = ROBJECT_OFFSET_AS_ARY as i32
+                                        + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
+                                    self.push_insn(block, Insn::LoadField {
+                                        recv: fields_obj, id, offset,
+                                        return_type: types::BasicObject,
+                                    })
+                                } else {
+                                    let ptr = self.push_insn(block, Insn::LoadField {
+                                        recv: fields_obj, id: ID!(_as_heap),
+                                        offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32,
+                                        return_type: types::CPtr,
+                                    });
+                                    let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
+                                    self.push_insn(block, Insn::LoadField {
+                                        recv: ptr, id, offset,
+                                        return_type: types::BasicObject,
+                                    })
+                                }
+                            } else {
+                                // Non-root box active: fall back to C call
+                                let ivar_index_insn = self.push_insn(block, Insn::Const { val: Const::CUInt16(ivar_index as u16) });
+                                self.push_insn(block, Insn::CCall {
+                                    cfunc: rb_ivar_get_at_no_ractor_check as *const u8,
+                                    recv: self_val,
+                                    args: vec![ivar_index_insn],
+                                    name: ID!(rb_ivar_get_at_no_ractor_check),
+                                    return_type: types::BasicObject,
+                                    elidable: true })
+                            }
                         } else if !recv_type.flags().is_t_object() {
-                            // NOTE: it's fine to use rb_ivar_get_at_no_ractor_check because
-                            // getinstancevariable does assume_single_ractor_mode()
-                            let ivar_index_insn: InsnId = self.push_insn(block, Insn::Const { val: Const::CUInt16(ivar_index as u16) });
+                            // Non-T_OBJECT, non-class/module (e.g. T_DATA): fall back to C call
+                            let ivar_index_insn = self.push_insn(block, Insn::Const { val: Const::CUInt16(ivar_index as u16) });
                             self.push_insn(block, Insn::CCall {
                                 cfunc: rb_ivar_get_at_no_ractor_check as *const u8,
                                 recv: self_val,

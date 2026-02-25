@@ -581,6 +581,10 @@ impl VALUE {
         }
     }
 
+    pub fn class_fields_embedded_p(self) -> bool {
+        unsafe { rb_jit_class_fields_embedded_p(self) }
+    }
+
     pub fn as_fixnum(self) -> i64 {
         assert!(self.fixnum_p());
         (self.0 as i64) >> 1
@@ -1491,6 +1495,7 @@ pub(crate) mod ids {
         name: aref               content: b"[]"
         name: len
         name: _as_heap
+        name: _fields_obj
         name: thread_ptr
         name: self_              content: b"self"
         name: rb_ivar_get_at_no_ractor_check
