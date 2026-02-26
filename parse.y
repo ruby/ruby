@@ -5008,12 +5008,6 @@ block_param	: f_arg ',' f_opt_arg(primary_value) ',' f_rest_arg opt_args_tail(bl
                         $$ = new_args(p, $1, 0, $3, 0, $4, &@$);
                     /*% ripper: params!($:1, Qnil, $:3, Qnil, *$:4[0..2]) %*/
                     }
-                | f_arg excessed_comma
-                    {
-                        $$ = new_args_tail(p, 0, 0, 0, &@2);
-                        $$ = new_args(p, $1, 0, $2, 0, $$, &@$);
-                    /*% ripper: params!($:1, Qnil, $:2, Qnil, Qnil, Qnil, Qnil) %*/
-                    }
                 | f_arg ',' f_rest_arg ',' f_arg opt_args_tail(block_args_tail)
                     {
                         $$ = new_args(p, $1, 0, $3, $5, $6, &@$);
@@ -5074,6 +5068,15 @@ block_param_def	: '|' opt_block_param opt_bv_decl '|'
                         p->ctxt.in_argdef = 0;
                         $$ = $2;
                     /*% ripper: block_var!($:2, $:3) %*/
+                    }
+                | '|' f_arg excessed_comma opt_bv_decl '|'
+                    {
+                        p->max_numparam = ORDINAL_PARAM;
+                        p->ctxt.in_argdef = 0;
+                        $$ = new_args_tail(p, 0, 0, 0, &@3);
+                        $$ = new_args(p, $2, 0, $3, 0, $$, &@$);
+                    /*% ripper: params!($:2, Qnil, $:3, Qnil, Qnil, Qnil, Qnil) %*/
+                    /*% ripper: block_var!($:$, $:4) %*/
                     }
                 ;
 
