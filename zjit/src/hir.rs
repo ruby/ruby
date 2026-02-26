@@ -682,6 +682,12 @@ pub enum SendFallbackReason {
     SuperPolymorphic,
     /// The `super` target call uses a complex argument pattern that the optimizer does not support.
     SuperTargetComplexArgsPass,
+    /// Specialization for `invokeblock` is not yet implemented.
+    SpecializedInvokeBlockNotImplemented,
+    /// Specialization for `sendforward` is not yet implemented.
+    SpecializedSendForwardNotImplemented,
+    /// Specialization for `invokesuperforward` is not yet implemented.
+    SpecializedInvokeSuperForwardNotImplemented,
     /// Initial fallback reason for every instruction, which should be mutated to
     /// a more actionable reason when an attempt to specialize the instruction fails.
     Uncategorized(ruby_vminsn_type),
@@ -729,6 +735,9 @@ impl Display for SendFallbackReason {
             SuperPolymorphic => write!(f, "super: polymorphic call site"),
             SuperTargetNotFound => write!(f, "super: profiled target method cannot be found"),
             SuperTargetComplexArgsPass => write!(f, "super: complex argument passing to `super` target call"),
+            SpecializedInvokeBlockNotImplemented => write!(f, "invokeblock: specialization not implemented"),
+            SpecializedSendForwardNotImplemented => write!(f, "sendforward: specialization not implemented"),
+            SpecializedInvokeSuperForwardNotImplemented => write!(f, "invokesuperforward: specialization not implemented"),
             Uncategorized(insn) => write!(f, "Uncategorized({})", insn_name(*insn as usize)),
         }
     }
@@ -3755,6 +3764,18 @@ impl Function {
                             self.set_dynamic_send_reason(insn_id, SuperNotOptimizedMethodType(MethodType::from(def_type)));
                             continue;
                         }
+                    }
+                    Insn::InvokeBlock { .. } => {
+                        self.set_dynamic_send_reason(insn_id, SpecializedInvokeBlockNotImplemented);
+                        self.push_insn_id(block, insn_id);
+                    }
+                    Insn::SendForward { .. } => {
+                        self.set_dynamic_send_reason(insn_id, SpecializedSendForwardNotImplemented);
+                        self.push_insn_id(block, insn_id);
+                    }
+                    Insn::InvokeSuperForward { .. } => {
+                        self.set_dynamic_send_reason(insn_id, SpecializedInvokeSuperForwardNotImplemented);
+                        self.push_insn_id(block, insn_id);
                     }
                     _ => { self.push_insn_id(block, insn_id); }
                 }

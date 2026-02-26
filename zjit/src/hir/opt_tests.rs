@@ -13248,7 +13248,7 @@ mod hir_opt_tests {
           v90:CInt64 = UnboxFixnum v68
           v91:BasicObject = ArrayAref v89, v90
           IncrCounter inline_cfunc_optimized_send_count
-          v74:BasicObject = InvokeBlock, v91 # SendFallbackReason: Uncategorized(invokeblock)
+          v74:BasicObject = InvokeBlock, v91 # SendFallbackReason: invokeblock: specialization not implemented
           v93:Fixnum[1] = Const Value(1)
           v94:Fixnum = FixnumAdd v68, v93
           IncrCounter inline_cfunc_optimized_send_count

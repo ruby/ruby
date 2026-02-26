@@ -274,6 +274,9 @@ make_counters! {
         send_fallback_super_target_not_found,
         send_fallback_super_target_complex_args_pass,
         send_fallback_cannot_send_direct,
+        send_fallback_specialized_invokeblock_not_implemented,
+        send_fallback_specialized_sendforward_not_implemented,
+        send_fallback_specialized_invokesuperforward_not_implemented,
         send_fallback_uncategorized,
     }
 
@@ -652,6 +655,10 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SuperPolymorphic                          => send_fallback_super_polymorphic,
         SuperTargetNotFound                       => send_fallback_super_target_not_found,
         SuperTargetComplexArgsPass                => send_fallback_super_target_complex_args_pass,
+        SpecializedInvokeBlockNotImplemented      => send_fallback_specialized_invokeblock_not_implemented,
+        SpecializedSendForwardNotImplemented      => send_fallback_specialized_sendforward_not_implemented,
+        SpecializedInvokeSuperForwardNotImplemented
+                                                  => send_fallback_specialized_invokesuperforward_not_implemented,
         Uncategorized(_)                          => send_fallback_uncategorized,
     }
 }
