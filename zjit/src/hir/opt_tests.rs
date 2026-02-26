@@ -3561,8 +3561,8 @@ mod hir_opt_tests {
           v15:Fixnum[2] = Const Value(2)
           PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-          v25:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v27:BasicObject = SendDirect v25, 0x1038, :foo (0x1048), v13, v15, v11
+          v26:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v27:BasicObject = SendDirect v26, 0x1038, :foo (0x1048), v13, v15, v11
           CheckInterrupts
           Return v27
         ");
@@ -3592,8 +3592,8 @@ mod hir_opt_tests {
           v15:Fixnum[1] = Const Value(1)
           PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-          v25:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v27:BasicObject = SendDirect v25, 0x1038, :foo (0x1048), v11, v15, v13
+          v26:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v27:BasicObject = SendDirect v26, 0x1038, :foo (0x1048), v11, v15, v13
           CheckInterrupts
           Return v27
         ");
@@ -3661,8 +3661,8 @@ mod hir_opt_tests {
           v26:Fixnum[3] = Const Value(3)
           PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-          v42:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v44:BasicObject = SendDirect v42, 0x1038, :foo (0x1048), v20, v22, v26, v24
+          v43:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v44:BasicObject = SendDirect v43, 0x1038, :foo (0x1048), v20, v22, v26, v24
           v30:ArrayExact = NewArray v39, v44
           CheckInterrupts
           Return v30
@@ -3690,19 +3690,19 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v11:Fixnum[1] = Const Value(1)
           v13:Fixnum[3] = Const Value(3)
+          v34:Fixnum[4] = Const Value(4)
           PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-          v36:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v37:Fixnum[4] = Const Value(4)
-          v39:BasicObject = SendDirect v36, 0x1038, :foo (0x1048), v11, v13, v37
+          v38:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v39:BasicObject = SendDirect v38, 0x1038, :foo (0x1048), v11, v13, v34
           v18:Fixnum[1] = Const Value(1)
           v20:Fixnum[2] = Const Value(2)
           v22:Fixnum[40] = Const Value(40)
           v24:Fixnum[30] = Const Value(30)
           PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-          v42:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v44:BasicObject = SendDirect v42, 0x1038, :foo (0x1048), v18, v20, v24, v22
+          v43:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v44:BasicObject = SendDirect v43, 0x1038, :foo (0x1048), v18, v20, v24, v22
           v28:ArrayExact = NewArray v39, v44
           CheckInterrupts
           Return v28
@@ -3883,11 +3883,11 @@ mod hir_opt_tests {
           v4:BasicObject = LoadArg :self@0
           Jump bb3(v4)
         bb3(v6:BasicObject):
+          v17:Fixnum[1] = Const Value(1)
           PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-          v19:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v20:Fixnum[1] = Const Value(1)
-          v22:BasicObject = SendDirect v19, 0x1038, :foo (0x1048), v20
+          v21:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v22:BasicObject = SendDirect v21, 0x1038, :foo (0x1048), v17
           CheckInterrupts
           Return v22
         ");
