@@ -3955,8 +3955,34 @@ impl Function {
                                     return_type: types::BasicObject,
                                     elidable: true })
                             }
+                        } else if recv_type.flags().is_typed_data() {
+                            // Typed T_DATA: load from fields_obj at fixed offset in RTypedData
+                            let fields_obj = self.push_insn(block, Insn::LoadField {
+                                recv: self_val, id: ID!(_fields_obj),
+                                offset: RTYPEDDATA_OFFSET_FIELDS_OBJ as i32,
+                                return_type: types::RubyValue,
+                            });
+                            if recv_type.flags().is_fields_embedded() {
+                                let offset = ROBJECT_OFFSET_AS_ARY as i32
+                                    + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
+                                self.push_insn(block, Insn::LoadField {
+                                    recv: fields_obj, id, offset,
+                                    return_type: types::BasicObject,
+                                })
+                            } else {
+                                let ptr = self.push_insn(block, Insn::LoadField {
+                                    recv: fields_obj, id: ID!(_as_heap),
+                                    offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32,
+                                    return_type: types::CPtr,
+                                });
+                                let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
+                                self.push_insn(block, Insn::LoadField {
+                                    recv: ptr, id, offset,
+                                    return_type: types::BasicObject,
+                                })
+                            }
                         } else if !recv_type.flags().is_t_object() {
-                            // Non-T_OBJECT, non-class/module (e.g. T_DATA): fall back to C call
+                            // Non-T_OBJECT, non-class/module, non-typed-data: fall back to C call
                             // NOTE: it's fine to use rb_ivar_get_at_no_ractor_check because
                             // getinstancevariable does assume_single_ractor_mode()
                             let ivar_index_insn = self.push_insn(block, Insn::Const { val: Const::CUInt16(ivar_index as u16) });

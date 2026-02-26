@@ -27,6 +27,9 @@ enum jit_bindgen_constants {
     // Field offset for prime classext's fields_obj from a class pointer
     RCLASS_OFFSET_PRIME_FIELDS_OBJ = offsetof(struct RClass_and_rb_classext_t, classext.fields_obj),
 
+    // Field offset for fields_obj in RTypedData
+    RTYPEDDATA_OFFSET_FIELDS_OBJ = offsetof(struct RTypedData, fields_obj),
+
     // Field offsets for the RString struct
     RUBY_OFFSET_RSTRING_LEN = offsetof(struct RString, len),
 
@@ -538,6 +541,13 @@ bool
 rb_jit_class_fields_embedded_p(VALUE klass)
 {
     VALUE fields_obj = RCLASS_EXT_PRIME(klass)->fields_obj;
+    return !fields_obj || !FL_TEST_RAW(fields_obj, OBJ_FIELD_HEAP);
+}
+
+bool
+rb_jit_typed_data_fields_embedded_p(VALUE obj)
+{
+    VALUE fields_obj = RTYPEDDATA(obj)->fields_obj;
     return !fields_obj || !FL_TEST_RAW(fields_obj, OBJ_FIELD_HEAP);
 }
 

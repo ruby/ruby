@@ -310,6 +310,7 @@ fn main() {
         .allowlist_function("rb_jit_shape_too_complex_p")
         .allowlist_function("rb_jit_multi_ractor_p")
         .allowlist_function("rb_jit_class_fields_embedded_p")
+        .allowlist_function("rb_jit_typed_data_fields_embedded_p")
         .allowlist_function("rb_jit_vm_lock_then_barrier")
         .allowlist_function("rb_jit_vm_unlock")
         .allowlist_function("rb_jit_for_each_iseq")

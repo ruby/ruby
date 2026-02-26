@@ -585,6 +585,14 @@ impl VALUE {
         unsafe { rb_jit_class_fields_embedded_p(self) }
     }
 
+    pub fn typed_data_p(self) -> bool {
+        unsafe { FL_TEST_RAW(self, VALUE(RUBY_FL_USERPRIV0 as usize)) != VALUE(0) }
+    }
+
+    pub fn typed_data_fields_embedded_p(self) -> bool {
+        unsafe { rb_jit_typed_data_fields_embedded_p(self) }
+    }
+
     pub fn as_fixnum(self) -> i64 {
         assert!(self.fixnum_p());
         (self.0 as i64) >> 1
