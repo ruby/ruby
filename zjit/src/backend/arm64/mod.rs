@@ -31,6 +31,10 @@ pub const C_ARG_OPNDS: [Opnd; 6] = [
     Opnd::Reg(X5_REG)
 ];
 
+// Make sure we're using the same c args everywhere
+const _: () = ::core::assert!(C_ARG_OPNDS.len() == C_ARG_REGS.len());
+const _: () = ::core::assert!(C_ARG_OPNDS.len() == C_ARG_REGREGS.len());
+
 // C return value register on this platform
 pub const C_RET_REG: Reg = X0_REG;
 pub const C_RET_OPND: Opnd = Opnd::Reg(X0_REG);
@@ -1632,7 +1636,7 @@ impl Assembler {
         }
 
         asm.handle_caller_saved_regs(&intervals, &assignments, &C_ARG_REGREGS);
-        asm.resolve_ssa(&intervals, &assignments, &regs);
+        asm.resolve_ssa(&intervals, &assignments);
         asm_dump!(asm, alloc_regs);
 
         // We are moved out of SSA after resolve_ssa

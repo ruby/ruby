@@ -2135,7 +2135,7 @@ impl Assembler
     /// Resolve SSA block parameters by inserting sequentialized move instructions
     /// at block boundaries. This is SSA deconstruction: after linear_scan assigns
     /// registers/stack slots, we lower block parameter passing to explicit moves.
-    pub fn resolve_ssa(&mut self, _intervals: &[Interval], assignments: &[Option<Allocation>], regs: &[Reg]) {
+    pub fn resolve_ssa(&mut self, _intervals: &[Interval], assignments: &[Option<Allocation>]) {
         use crate::backend::parcopy;
         use crate::backend::current::SCRATCH_REG;
 
@@ -2278,7 +2278,7 @@ impl Assembler
             }
         }
 
-        self.rewrite_instructions(assignments, regs);
+        self.rewrite_instructions(assignments);
     }
 
     /// Handle caller-saved registers around CCall instructions.
@@ -2300,7 +2300,7 @@ impl Assembler
             let mut new_insns = Vec::with_capacity(old_insns.len());
             let mut new_ids = Vec::with_capacity(old_ids.len());
 
-            for (mut insn, insn_id) in old_insns.into_iter().zip(old_ids.into_iter()) {
+            for (insn, insn_id) in old_insns.into_iter().zip(old_ids.into_iter()) {
                 if let Insn::CCall { opnds, out, start_marker, end_marker, fptr } = insn {
                     let insn_number = insn_id.map(|id| id.0).unwrap_or(0);
 
@@ -2331,6 +2331,8 @@ impl Assembler
                     }
 
                     // Extract arguments from CCall, clear opnds
+
+                    assert!(opnds.len() <= regs.len());
 
                     // Sequentialize argument moves: each arg goes to regs[i]
                     let reg_copies: Vec<parcopy::RegisterCopy<Opnd>> = opnds
@@ -2410,7 +2412,7 @@ impl Assembler
 
     /// Walk every instruction and replace VReg operands with the physical
     /// register (or stack slot) from the allocation assignments.
-    fn rewrite_instructions(&mut self, assignments: &[Option<Allocation>], regs: &[Reg]) {
+    fn rewrite_instructions(&mut self, assignments: &[Option<Allocation>]) {
         for block in self.basic_blocks.iter_mut() {
             for insn in block.insns.iter_mut() {
                 let mut iter = insn.opnd_iter_mut();

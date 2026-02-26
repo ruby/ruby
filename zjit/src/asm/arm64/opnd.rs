@@ -194,8 +194,8 @@ pub const W30: A64Opnd = A64Opnd::Reg(A64Reg { num_bits: 32, reg_no: 30 });
 pub const W31: A64Opnd = A64Opnd::Reg(A64Reg { num_bits: 32, reg_no: 31 });
 
 // C argument registers
-pub const C_ARG_REGS: [A64Opnd; 4] = [X0, X1, X2, X3];
-pub const C_ARG_REGREGS: [A64Reg; 4] = [X0_REG, X1_REG, X2_REG, X3_REG];
+pub const C_ARG_REGS: [A64Opnd; 6] = [X0, X1, X2, X3, X4, X5];
+pub const C_ARG_REGREGS: [A64Reg; 6] = [X0_REG, X1_REG, X2_REG, X3_REG, X4_REG, X5_REG];
 
 impl fmt::Display for A64Reg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
