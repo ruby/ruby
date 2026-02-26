@@ -5,7 +5,7 @@ use std::panic;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use crate::codegen::local_size_and_idx_to_ep_offset;
-use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, vm_stack_canary};
+use crate::cruby::{CfpPtr, Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, vm_stack_canary};
 use crate::hir::{Invariant, SideExitReason};
 use crate::hir;
 use crate::options::{TraceExits, debug, get_option};
@@ -2229,9 +2229,6 @@ impl Assembler
             // so that nobody stomps on us
             asm.pad_patch_point();
 
-            asm_comment!(asm, "save cfp->pc");
-            asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), *pc);
-
             asm_comment!(asm, "save cfp->sp");
             asm.lea_into(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP), Opnd::mem(64, SP, stack.len() as i32 * SIZEOF_VALUE_I32));
 
@@ -2248,6 +2245,15 @@ impl Assembler
                     asm.store(Opnd::mem(64, SP, (-local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32), opnd);
                 }
             }
+
+            asm_comment!(asm, "materialize caller frames");
+            unsafe extern "C" {
+                fn rb_zjit_materialize_frames(cfp: CfpPtr);
+            }
+            asm_ccall!(asm, rb_zjit_materialize_frames, CFP);
+
+            asm_comment!(asm, "save cfp->pc");
+            asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), *pc);
         }
 
         /// Tear down the JIT frame and return to the interpreter.

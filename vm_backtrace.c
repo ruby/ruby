@@ -18,6 +18,7 @@
 #include "ruby/debug.h"
 #include "ruby/encoding.h"
 #include "vm_core.h"
+#include "zjit.h"
 
 static VALUE rb_cBacktrace;
 static VALUE rb_cBacktraceLocation;
@@ -103,7 +104,7 @@ rb_vm_get_sourceline(const rb_control_frame_t *cfp)
 {
     if (VM_FRAME_RUBYFRAME_P(cfp) && cfp->iseq) {
         const rb_iseq_t *iseq = cfp->iseq;
-        int line = calc_lineno(iseq, cfp->pc);
+        int line = calc_lineno(iseq, rb_zjit_cfp_pc(cfp));
         if (line != 0) {
             return line;
         }
@@ -688,7 +689,7 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
 
     for (; cfp != end_cfp && (bt->backtrace_size < num_frames); cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp)) {
         if (cfp->iseq) {
-            if (cfp->pc) {
+            if (cfp->pc || cfp->jit_return) {
                 if (start_frame > 0) {
                     start_frame--;
                 }
@@ -697,7 +698,7 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
                     if (skip_internal && internal) continue;
                     if (!skip_next_frame) {
                         const rb_iseq_t *iseq = cfp->iseq;
-                        const VALUE *pc = cfp->pc;
+                        const VALUE *pc = rb_zjit_cfp_pc(cfp);
                         if (internal && backpatch_counter > 0) {
                             // To keep only one internal frame, discard the previous backpatch frames
                             bt->backtrace_size -= backpatch_counter;
@@ -752,9 +753,9 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
     // is the one of the caller Ruby frame, so if the last entry is a C frame we find the caller Ruby frame here.
     if (backpatch_counter > 0) {
         for (; cfp != end_cfp; cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp)) {
-            if (cfp->iseq && cfp->pc && !(skip_internal && is_internal_location(cfp->iseq))) {
+            if (cfp->iseq && (cfp->pc || cfp->jit_return) && !(skip_internal && is_internal_location(cfp->iseq))) {
                 VM_ASSERT(!skip_next_frame); // ISEQ_TYPE_RESCUE/ISEQ_TYPE_ENSURE should have a caller Ruby ISEQ, not a cfunc
-                bt_backpatch_loc(backpatch_counter, loc, cfp->iseq, cfp->pc);
+                bt_backpatch_loc(backpatch_counter, loc, cfp->iseq, rb_zjit_cfp_pc(cfp));
                 RB_OBJ_WRITTEN(btobj, Qundef, cfp->iseq);
                 if (do_yield) {
                     bt_yield_loc(loc - backpatch_counter, backpatch_counter, btobj);
@@ -1020,7 +1021,7 @@ backtrace_each(const rb_execution_context_t *ec,
     for (i=0, cfp = start_cfp; i<size; i++, cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
         /* fprintf(stderr, "cfp: %d\n", (rb_control_frame_t *)(ec->vm_stack + ec->vm_stack_size) - cfp); */
         if (cfp->iseq) {
-            if (cfp->pc) {
+            if (cfp->pc || cfp->jit_return) {
                 iter_iseq(arg, cfp);
             }
         }
@@ -1053,7 +1054,7 @@ static void
 oldbt_iter_iseq(void *ptr, const rb_control_frame_t *cfp)
 {
     const rb_iseq_t *iseq = cfp->iseq;
-    const VALUE *pc = cfp->pc;
+    const VALUE *pc = rb_zjit_cfp_pc(cfp);
     struct oldbt_arg *arg = (struct oldbt_arg *)ptr;
     VALUE file = arg->filename = rb_iseq_path(iseq);
     VALUE name = ISEQ_BODY(iseq)->location.label;
@@ -1560,7 +1561,7 @@ collect_caller_bindings_iseq(void *arg, const rb_control_frame_t *cfp)
     rb_backtrace_location_t *loc = &data->bt->backtrace[data->bt->backtrace_size++];
     RB_OBJ_WRITE(data->btobj, &loc->cme, rb_vm_frame_method_entry(cfp));
     RB_OBJ_WRITE(data->btobj, &loc->iseq, cfp->iseq);
-    loc->pc = cfp->pc;
+    loc->pc = rb_zjit_cfp_pc(cfp);
     VALUE vloc = location_create(loc, (void *)data->btobj);
     rb_ary_store(frame, CALLER_BINDING_LOC, vloc);
 
@@ -1745,7 +1746,7 @@ thread_profile_frames(rb_execution_context_t *ec, int start, int limit, VALUE *b
     end_cfp = RUBY_VM_NEXT_CONTROL_FRAME(end_cfp);
 
     for (i=0; i<limit && cfp != end_cfp; cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp)) {
-        if (VM_FRAME_RUBYFRAME_P_UNCHECKED(cfp) && cfp->pc != 0) {
+        if (VM_FRAME_RUBYFRAME_P_UNCHECKED(cfp) && (cfp->pc != 0 || cfp->jit_return)) {
             if (start > 0) {
                 start--;
                 continue;
@@ -1761,7 +1762,7 @@ thread_profile_frames(rb_execution_context_t *ec, int start, int limit, VALUE *b
             }
 
             if (lines) {
-                const VALUE *pc = cfp->pc;
+                const VALUE *pc = rb_zjit_cfp_pc(cfp);
                 VALUE *iseq_encoded = ISEQ_BODY(cfp->iseq)->iseq_encoded;
                 VALUE *pc_end = iseq_encoded + ISEQ_BODY(cfp->iseq)->iseq_size;
 
