@@ -3,6 +3,7 @@
 require "bundler/inline"
 require "json"
 require "net/http"
+require "set"
 require "uri"
 
 gemfile do
@@ -31,12 +32,12 @@ def fetch_default_gems_versions(ruby_version)
 
     # versions has "default" and "bundled" keys, each containing Ruby version => version mappings
     selected_version = nil
-    
+
     # Try both "default" and "bundled" categories
     ["default", "bundled"].each do |category|
       category_versions = versions[category] || {}
       next if selected_version
-      
+
       if category_versions.key?(ruby_version)
         selected_version = category_versions[ruby_version]
       else
@@ -49,7 +50,7 @@ def fetch_default_gems_versions(ruby_version)
         end
       end
     end
-    
+
     next unless selected_version
 
     name = g["gem"]
@@ -64,7 +65,7 @@ end
 # Load gem=>version map from a file or from stdgems.org if a Ruby version is given.
 def load_versions(arg)
   if arg.nil?
-    abort "usage: #{File.basename($0)} FROM TO (each can be a file path or Ruby version like 3.4)"
+    abort "usage: #{File.basename($0)} FROM [--update]"
   end
   if File.exist?(arg)
     File.readlines(arg).map(&:split).to_h
@@ -79,10 +80,25 @@ end
 
 # Build a gem=>version map by parsing the "## Stdlib updates" section from Ruby's NEWS.md
 def fetch_versions_to_from_news(arg)
-  url = arg.downcase == "news" ? "https://raw.githubusercontent.com/ruby/ruby/refs/heads/master/NEWS.md" : arg
-  uri = URI.parse(url)
-  body = Net::HTTP.get(uri)
+  if arg.downcase == "news"
+    body = read_local_news_md
+  else
+    uri = URI.parse(arg)
+    body = Net::HTTP.get(uri)
+  end
 
+  parse_stdlib_versions_from_news(body)
+end
+
+def read_local_news_md
+  news_path = File.join(__dir__, "..", "NEWS.md")
+  unless File.exist?(news_path)
+    abort "NEWS.md not found at #{news_path}"
+  end
+  File.read(news_path)
+end
+
+def parse_stdlib_versions_from_news(body)
   # Extract the Stdlib updates section
   start_idx = body.index(/^## Stdlib updates$/)
   unless start_idx
@@ -119,53 +135,180 @@ def fetch_versions_to_from_news(arg)
   map
 end
 
-versions_from = load_versions(ARGV[0])
-versions_to = load_versions("news")
-footnote_link = []
-
-versions_to.each do |name, version|
-  # Skip items which do not exist in the FROM map to reduce API calls
-  next unless versions_from.key?(name)
-  next if name == "RubyGems" || name == "bundler"
-
-  releases = []
-
+def resolve_repo(name)
   case name
   when "minitest"
-    repo = name
-    org = "minitest"
+    { repo: name, org: "minitest" }
   when "test-unit"
-    repo = name
-    org = "test-unit"
+    { repo: name, org: "test-unit" }
   when "bundler"
-    repo = "rubygems"
-    org = "ruby"
+    { repo: "rubygems", org: "ruby" }
   else
-    repo = name
-    org = "ruby"
+    { repo: name, org: "ruby" }
   end
+end
 
+def fetch_release_range(name, from_version, to_version, org, repo)
+  releases = []
   Octokit.releases("#{org}/#{repo}").each do |release|
     releases << release.tag_name
   end
 
-  # Keep only version-like tags and sort descending by semantic version
+  # Keep only version-like tags and sort ascending by semantic version
   releases = releases.select { |t| t =~ /^v\d/ || t =~ /^\d/ || t =~ /^bundler-\d/ }
   releases = releases.sort_by { |t| Gem::Version.new(t.sub(/^bundler-/, "").sub(/^v/, "").tr("_", ".")) }
 
-  start_index = releases.index("v#{versions_from[name]}") || releases.index(versions_from[name]) || releases.index("bundler-v#{versions_from[name]}")
-  end_index = releases.index("v#{versions_to[name]}") || releases.index(versions_to[name]) || releases.index("bundler-v#{versions_to[name]}")
-  release_range = releases[start_index+1..end_index] if start_index && end_index
+  start_index = releases.index("v#{from_version}") || releases.index(from_version) || releases.index("bundler-v#{from_version}")
+  end_index = releases.index("v#{to_version}") || releases.index(to_version) || releases.index("bundler-v#{to_version}")
+  return nil unless start_index && end_index
 
-  next unless release_range
-  next if release_range.empty?
+  range = releases[start_index + 1..end_index]
+  return nil if range.nil? || range.empty?
 
-  puts "* #{name} #{version}"
-  puts "  * #{versions_from[name]} to #{release_range.map { |rel|
- "[#{rel.sub(/^bundler-/, '')}][#{name}-#{rel.sub(/^bundler-/, '')}]"}.join(", ")}"
-  release_range.each do |rel|
-    footnote_link << "[#{name}-#{rel.sub(/^bundler-/, '')}]: https://github.com/#{org}/#{repo}/releases/tag/#{rel}"
-  end
+  range
 end
 
-puts footnote_link.join("\n")
+def collect_gem_updates(versions_from, versions_to)
+  results = []
+
+  versions_to.each do |name, version|
+    # Skip items which do not exist in the FROM map to reduce API calls
+    next unless versions_from.key?(name)
+    next if name == "RubyGems" || name == "bundler"
+
+    info = resolve_repo(name)
+    org = info[:org]
+    repo = info[:repo]
+
+    release_range = fetch_release_range(name, versions_from[name], version, org, repo)
+    next unless release_range
+
+    footnote_links = []
+    release_range.each do |rel|
+      footnote_links << {
+        ref: "#{name}-#{rel.sub(/^bundler-/, '')}",
+        url: "https://github.com/#{org}/#{repo}/releases/tag/#{rel}",
+        tag: rel.sub(/^bundler-/, ''),
+      }
+    end
+
+    results << {
+      name: name,
+      version: version,
+      from_version: versions_from[name],
+      release_range: release_range,
+      footnote_links: footnote_links,
+    }
+  end
+
+  results
+end
+
+def print_results(results)
+  footnote_lines = []
+
+  results.each do |r|
+    puts "* #{r[:name]} #{r[:version]}"
+    links = r[:release_range].map { |rel|
+      "[#{rel.sub(/^bundler-/, '')}][#{r[:name]}-#{rel.sub(/^bundler-/, '')}]"
+    }
+    puts "  * #{r[:from_version]} to #{links.join(', ')}"
+    r[:footnote_links].each do |fl|
+      footnote_lines << "[#{fl[:ref]}]: #{fl[:url]}"
+    end
+  end
+
+  puts footnote_lines.join("\n")
+end
+
+def update_news_md(results)
+  news_path = File.join(__dir__, "..", "NEWS.md")
+  unless File.exist?(news_path)
+    abort "NEWS.md not found at #{news_path}"
+  end
+  content = File.read(news_path)
+  lines = content.lines
+
+  # Build a lookup: gem name => result
+  result_by_name = {}
+  results.each { |r| result_by_name[r[:name]] = r }
+
+  new_lines = []
+  i = 0
+  while i < lines.length
+    line = lines[i]
+
+    # Check if this line is a gem bullet like "* gemname x.y.z"
+    if line =~ /^\* ([A-Za-z0-9_\-]+)\s+(\d+(?:\.\d+){0,3})\b/
+      gem_name = $1
+      gem_name_normalized = gem_name == "RubyGems" ? "RubyGems" : gem_name
+
+      new_lines << line
+
+      if result_by_name.key?(gem_name_normalized)
+        r = result_by_name[gem_name_normalized]
+
+        # Skip any existing sub-bullet lines that follow (lines starting with spaces + *)
+        while i + 1 < lines.length && lines[i + 1] =~ /^\s+\*/
+          i += 1
+        end
+
+        # Insert the version diff sub-bullet
+        links = r[:release_range].map { |rel|
+          "[#{rel.sub(/^bundler-/, '')}][#{r[:name]}-#{rel.sub(/^bundler-/, '')}]"
+        }
+        sub_bullet = "  * #{r[:from_version]} to #{links.join(', ')}\n"
+        new_lines << sub_bullet
+      end
+    else
+      new_lines << line
+    end
+    i += 1
+  end
+
+  # Collect all new footnote links
+  all_footnotes = []
+  results.each do |r|
+    r[:footnote_links].each do |fl|
+      all_footnotes << "[#{fl[:ref]}]: #{fl[:url]}"
+    end
+  end
+
+  # Remove any existing footnote links that we are about to add (avoid duplicates)
+  existing_refs = Set.new(all_footnotes.map { |f| f[/^\[([^\]]+)\]:/, 1] })
+  new_lines = new_lines.reject do |line|
+    if line =~ /^\[([^\]]+)\]:\s+https:\/\/github\.com\//
+      existing_refs.include?($1)
+    else
+      false
+    end
+  end
+
+  # Ensure the file ends with a newline before adding footnotes
+  unless new_lines.last&.end_with?("\n")
+    new_lines << "\n"
+  end
+
+  # Append footnote links at the end of the file
+  all_footnotes.each do |footnote|
+    new_lines << "#{footnote}\n"
+  end
+
+  File.write(news_path, new_lines.join)
+  puts "Updated #{news_path} with #{results.length} gem update entries and #{all_footnotes.length} footnote links."
+end
+
+# --- Main ---
+
+update_mode = ARGV.delete("--update")
+
+versions_from = load_versions(ARGV[0])
+versions_to = load_versions("news")
+
+results = collect_gem_updates(versions_from, versions_to)
+
+print_results(results)
+
+if update_mode
+  update_news_md(results)
+end
