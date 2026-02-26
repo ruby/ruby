@@ -90,6 +90,20 @@ pub extern "C" fn rb_zjit_root_update_references() {
     }
     let invariants = ZJITState::get_invariants();
     invariants.update_references();
+
+    // Update iseq pointers in all JITFrames for GC compaction.
+    // rb_execution_context_update only updates JITFrames currently on the stack,
+    // but JITFrames not on the stack also need their iseq pointers updated
+    // because the JIT code will reuse them on the next call.
+    for jit_frame in ZJITState::get_jit_frames().iter_mut() {
+        let old_iseq = jit_frame.iseq;
+        if !old_iseq.is_null() {
+            let new_iseq = unsafe { rb_gc_location(VALUE::from(old_iseq)) }.as_iseq();
+            if old_iseq != new_iseq {
+                jit_frame.iseq = new_iseq;
+            }
+        }
+    }
 }
 
 fn iseq_mark(payload: &IseqPayload) {
@@ -208,4 +222,16 @@ fn ranges_overlap<T>(left: &Range<T>, right: &Range<T>) -> bool where T: Partial
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_root_mark() {
     gc_mark_raw_samples();
+
+    // Mark iseq pointers in all JITFrames. JITFrames that are currently on the
+    // stack are also marked via rb_execution_context_mark, but JITFrames not on
+    // the stack still need their iseqs kept alive because JIT code will reuse them.
+    if !ZJITState::has_instance() {
+        return;
+    }
+    for jit_frame in ZJITState::get_jit_frames().iter() {
+        if !jit_frame.iseq.is_null() {
+            unsafe { rb_gc_mark_movable(VALUE::from(jit_frame.iseq)); }
+        }
+    }
 }

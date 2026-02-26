@@ -256,8 +256,7 @@ fn main() {
         .allowlist_type("iseq_inline_cvar_cache_entry")
         .blocklist_type("rb_execution_context_.*") // Large struct with various-type fields and an ifdef, so we don't import
         .opaque_type("rb_execution_context_.*")
-        .blocklist_type("rb_control_frame_struct")
-        .opaque_type("rb_control_frame_struct")
+        .allowlist_type("rb_control_frame_struct")
         .allowlist_function("rb_vm_bh_to_procval")
         .allowlist_function("rb_vm_env_write")
         .allowlist_function("rb_vm_ep_local_ep")

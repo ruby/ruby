@@ -6,7 +6,7 @@ use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use crate::bitset::BitSet;
 use crate::codegen::local_size_and_idx_to_ep_offset;
-use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, vm_stack_canary};
+use crate::cruby::{CfpPtr, IseqPtr, Qundef, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, vm_stack_canary};
 use crate::hir::{Invariant, SideExitReason};
 use crate::hir;
 use crate::options::{TraceExits, get_option};
@@ -551,6 +551,7 @@ pub struct SideExit {
     pub pc: Opnd,
     pub stack: Vec<Opnd>,
     pub locals: Vec<Opnd>,
+    pub iseq: IseqPtr,
 }
 
 /// Branch target (something that we can jump to)
@@ -2607,15 +2608,12 @@ impl Assembler
     pub fn compile_exits(&mut self) -> Vec<Insn> {
         /// Restore VM state (cfp->pc, cfp->sp, stack, locals) for the side exit.
         fn compile_exit_save_state(asm: &mut Assembler, exit: &SideExit) {
-            let SideExit { pc, stack, locals } = exit;
+            let SideExit { pc, stack, locals, iseq } = exit;
 
             // Side exit blocks are not part of the CFG at the moment,
             // so we need to manually ensure that patchpoints get padded
             // so that nobody stomps on us
             asm.pad_patch_point();
-
-            asm_comment!(asm, "save cfp->pc");
-            asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), *pc);
 
             asm_comment!(asm, "save cfp->sp");
             asm.lea_into(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP), Opnd::mem(64, SP, stack.len() as i32 * SIZEOF_VALUE_I32));
@@ -2633,6 +2631,22 @@ impl Assembler
                     asm.store(Opnd::mem(64, SP, (-local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32), opnd);
                 }
             }
+
+            asm_comment!(asm, "save cfp->pc");
+            asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), *pc);
+
+            // TODO: can we skip writing this when it's on JIT entry? maybe let materialize_frames handle it?
+            asm_comment!(asm, "save cfp->iseq");
+            asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_ISEQ), VALUE::from(*iseq).into());
+
+            asm_comment!(asm, "save cfp->jit_return");
+            asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), 0.into());
+
+            asm_comment!(asm, "materialize caller frames");
+            unsafe extern "C" {
+                fn rb_zjit_materialize_frames(cfp: CfpPtr);
+            }
+            asm_ccall!(asm, rb_zjit_materialize_frames, CFP);
         }
 
         /// Tear down the JIT frame and return to the interpreter.

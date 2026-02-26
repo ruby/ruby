@@ -2620,6 +2620,7 @@ cont.$(OBJEXT): {$(VPATH)}vm_debug.h
 cont.$(OBJEXT): {$(VPATH)}vm_opts.h
 cont.$(OBJEXT): {$(VPATH)}vm_sync.h
 cont.$(OBJEXT): {$(VPATH)}yjit.h
+cont.$(OBJEXT): {$(VPATH)}zjit.h
 debug.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 debug.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 debug.$(OBJEXT): $(CCAN_DIR)/list/list.h
@@ -5420,6 +5421,7 @@ error.$(OBJEXT): {$(VPATH)}vm_opts.h
 error.$(OBJEXT): {$(VPATH)}vm_sync.h
 error.$(OBJEXT): {$(VPATH)}warning.rbinc
 error.$(OBJEXT): {$(VPATH)}yjit.h
+error.$(OBJEXT): {$(VPATH)}zjit.h
 eval.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 eval.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 eval.$(OBJEXT): $(CCAN_DIR)/list/list.h
@@ -5689,6 +5691,7 @@ eval.$(OBJEXT): {$(VPATH)}vm_core.h
 eval.$(OBJEXT): {$(VPATH)}vm_debug.h
 eval.$(OBJEXT): {$(VPATH)}vm_opts.h
 eval.$(OBJEXT): {$(VPATH)}vm_sync.h
+eval.$(OBJEXT): {$(VPATH)}zjit.h
 explicit_bzero.$(OBJEXT): {$(VPATH)}config.h
 explicit_bzero.$(OBJEXT): {$(VPATH)}explicit_bzero.c
 explicit_bzero.$(OBJEXT): {$(VPATH)}internal/attr/format.h
@@ -8072,6 +8075,7 @@ jit.$(OBJEXT): {$(VPATH)}vm_core.h
 jit.$(OBJEXT): {$(VPATH)}vm_debug.h
 jit.$(OBJEXT): {$(VPATH)}vm_opts.h
 jit.$(OBJEXT): {$(VPATH)}vm_sync.h
+jit.$(OBJEXT): {$(VPATH)}zjit.h
 load.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 load.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 load.$(OBJEXT): $(CCAN_DIR)/list/list.h
@@ -18615,6 +18619,7 @@ thread.$(OBJEXT): {$(VPATH)}vm_core.h
 thread.$(OBJEXT): {$(VPATH)}vm_debug.h
 thread.$(OBJEXT): {$(VPATH)}vm_opts.h
 thread.$(OBJEXT): {$(VPATH)}vm_sync.h
+thread.$(OBJEXT): {$(VPATH)}zjit.h
 time.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 time.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 time.$(OBJEXT): $(CCAN_DIR)/list/list.h
@@ -20210,6 +20215,7 @@ vm_backtrace.$(OBJEXT): {$(VPATH)}vm_core.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}vm_debug.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}vm_opts.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}vm_sync.h
+vm_backtrace.$(OBJEXT): {$(VPATH)}zjit.h
 vm_dump.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 vm_dump.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 vm_dump.$(OBJEXT): $(CCAN_DIR)/list/list.h
@@ -20458,6 +20464,7 @@ vm_dump.$(OBJEXT): {$(VPATH)}vm_core.h
 vm_dump.$(OBJEXT): {$(VPATH)}vm_debug.h
 vm_dump.$(OBJEXT): {$(VPATH)}vm_dump.c
 vm_dump.$(OBJEXT): {$(VPATH)}vm_opts.h
+vm_dump.$(OBJEXT): {$(VPATH)}zjit.h
 vm_sync.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 vm_sync.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 vm_sync.$(OBJEXT): $(CCAN_DIR)/list/list.h

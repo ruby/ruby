@@ -37,6 +37,7 @@
 #include "ruby/vm.h"
 #include "vm_core.h"
 #include "ractor_core.h"
+#include "zjit.h"
 
 NORETURN(static void rb_raise_jump(VALUE, VALUE));
 void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);
@@ -2010,10 +2011,10 @@ errinfo_place(const rb_execution_context_t *ec)
 
     while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, end_cfp)) {
         if (VM_FRAME_RUBYFRAME_P(cfp)) {
-            if (ISEQ_BODY(cfp->iseq)->type == ISEQ_TYPE_RESCUE) {
+            if (ISEQ_BODY(rb_zjit_cfp_iseq(cfp))->type == ISEQ_TYPE_RESCUE) {
                 return &cfp->ep[VM_ENV_INDEX_LAST_LVAR];
             }
-            else if (ISEQ_BODY(cfp->iseq)->type == ISEQ_TYPE_ENSURE &&
+            else if (ISEQ_BODY(rb_zjit_cfp_iseq(cfp))->type == ISEQ_TYPE_ENSURE &&
                      !THROW_DATA_P(cfp->ep[VM_ENV_INDEX_LAST_LVAR]) &&
                      !FIXNUM_P(cfp->ep[VM_ENV_INDEX_LAST_LVAR])) {
                 return &cfp->ep[VM_ENV_INDEX_LAST_LVAR];
