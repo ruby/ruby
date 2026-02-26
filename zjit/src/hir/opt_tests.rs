@@ -8471,6 +8471,78 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_optimize_array_splice_aset_nil_index() {
+        eval("
+            def test(arr, index, len, val)
+              arr[index, len] = val
+            end
+            test([1,2,3], nil, 2, [4,5]) rescue nil
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :arr, l0, SP@7
+          v3:BasicObject = GetLocal :index, l0, SP@6
+          v4:BasicObject = GetLocal :len, l0, SP@5
+          v5:BasicObject = GetLocal :val, l0, SP@4
+          Jump bb3(v1, v2, v3, v4, v5)
+        bb2():
+          EntryPoint JIT(0)
+          v8:BasicObject = LoadArg :self@0
+          v9:BasicObject = LoadArg :arr@1
+          v10:BasicObject = LoadArg :index@2
+          v11:BasicObject = LoadArg :len@3
+          v12:BasicObject = LoadArg :val@4
+          Jump bb3(v8, v9, v10, v11, v12)
+        bb3(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:BasicObject, v18:BasicObject):
+          PatchPoint NoSingletonClass(Array@0x1000)
+          PatchPoint MethodRedefined(Array@0x1000, []=@0x1008, cme:0x1010)
+          v39:ArrayExact = GuardType v15, ArrayExact
+          v40:BasicObject = CCallVariadic v39, :Array#[]=@0x1038, v16, v17, v18
+          CheckInterrupts
+          Return v18
+        ");
+    }
+
+    #[test]
+    fn test_optimize_array_splice_aset_non_array_val() {
+        eval("
+            def test(arr, index, len, val)
+              arr[index, len] = val
+            end
+            test([1,2,3], 0, 2, 42)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :arr, l0, SP@7
+          v3:BasicObject = GetLocal :index, l0, SP@6
+          v4:BasicObject = GetLocal :len, l0, SP@5
+          v5:BasicObject = GetLocal :val, l0, SP@4
+          Jump bb3(v1, v2, v3, v4, v5)
+        bb2():
+          EntryPoint JIT(0)
+          v8:BasicObject = LoadArg :self@0
+          v9:BasicObject = LoadArg :arr@1
+          v10:BasicObject = LoadArg :index@2
+          v11:BasicObject = LoadArg :len@3
+          v12:BasicObject = LoadArg :val@4
+          Jump bb3(v8, v9, v10, v11, v12)
+        bb3(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:BasicObject, v18:BasicObject):
+          PatchPoint NoSingletonClass(Array@0x1000)
+          PatchPoint MethodRedefined(Array@0x1000, []=@0x1008, cme:0x1010)
+          v39:ArrayExact = GuardType v15, ArrayExact
+          v40:BasicObject = CCallVariadic v39, :Array#[]=@0x1038, v16, v17, v18
+          CheckInterrupts
+          Return v18
+        ");
+    }
+
+    #[test]
     fn test_optimize_array_ltlt() {
         eval("
             def test(arr)
