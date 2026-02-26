@@ -2301,11 +2301,13 @@ impl Assembler
             let mut new_ids = Vec::with_capacity(old_ids.len());
 
             for (mut insn, insn_id) in old_insns.into_iter().zip(old_ids.into_iter()) {
-                if let Insn::CCall { ref mut opnds, ref mut out, ref mut start_marker, ref mut end_marker, .. } = insn {
+                if let Insn::CCall { opnds, out, start_marker, end_marker, fptr } = insn {
                     let insn_number = insn_id.map(|id| id.0).unwrap_or(0);
 
-                    // Find survivors: intervals that survive this instruction
-                    // and are assigned to physical registers
+                    // Find survivors: intervals that survive this Call instruction
+                    // We need to preserve the "surviving" registers past the ccall,
+                    // so we're going to push them all on the stack, then pop
+                    // after we make the ccall
                     let survivors: Vec<usize> = intervals.iter()
                         .filter(|interval| {
                             interval.range.start.is_some()
@@ -2316,20 +2318,22 @@ impl Assembler
                         .map(|interval| interval.id)
                         .collect();
 
+                    // Push all survivors on the stack
+                    // TODO: Figure out optimal alignment.  Are these pushes
+                    // encoded optimally?
+                    for &s in &survivors {
+                        let reg_n = match assignments[s].unwrap() {
+                            Allocation::Reg(n) => n,
+                            _ => unreachable!(),
+                        };
+                        new_insns.push(Insn::CPush(Opnd::Reg(ALLOC_REGS[reg_n])));
+                        new_ids.push(None);
+                    }
+
                     // Extract arguments from CCall, clear opnds
-                    let args = take(opnds);
-
-                    // Save original output vreg, replace with C_RET_OPND
-                    let mov_input = *out;
-                    *out = C_RET_OPND;
-
-                    // Extract PosMarkers from the CCall so they get emitted
-                    // as separate instructions at the right code positions.
-                    let start_marker = start_marker.take();
-                    let end_marker = end_marker.take();
 
                     // Sequentialize argument moves: each arg goes to regs[i]
-                    let reg_copies: Vec<parcopy::RegisterCopy<Opnd>> = args
+                    let reg_copies: Vec<parcopy::RegisterCopy<Opnd>> = opnds
                         .iter()
                         .zip(regs.iter())
                         .map(|(arg, param)| parcopy::RegisterCopy::<Opnd> {
@@ -2350,23 +2354,13 @@ impl Assembler
                         })
                         .collect();
 
-                    let insert_pos = new_insns.len();
-
-                    for (j, &s) in survivors.iter().enumerate() {
-                        let reg_n = match assignments[s].unwrap() {
-                            Allocation::Reg(n) => n,
-                            _ => unreachable!(),
-                        };
-                        new_insns.insert(insert_pos + j,
-                            Insn::CPush(Opnd::Reg(ALLOC_REGS[reg_n])));
-                        new_ids.insert(insert_pos + j, None);
-                    }
-
                     for mov in moves {
                         new_insns.push(mov);
                         new_ids.push(None);
                     }
 
+                    // Extract PosMarkers from the CCall so they get emitted
+                    // as separate instructions at the right code positions.
                     // Emit start_marker PosMarker before the CCall
                     if let Some(marker) = start_marker {
                         new_insns.push(Insn::PosMarker(marker));
@@ -2374,7 +2368,14 @@ impl Assembler
                     }
 
                     // The CCall itself
-                    new_insns.push(insn);
+                    new_insns.push(Insn::CCall {
+                        out: C_RET_OPND,
+                        opnds: vec![],  // We've moved everything in to ccall regs, so this should
+                                        // be empty now
+                        start_marker: None,
+                        end_marker: None,
+                        fptr
+                    });
                     new_ids.push(insn_id);
 
                     // Emit end_marker PosMarker after the CCall
@@ -2384,7 +2385,7 @@ impl Assembler
                     }
 
                     // Move result from C_RET to where mov_input was allocated
-                    new_insns.push(Insn::Mov { dest: mov_input, src: C_RET_OPND });
+                    new_insns.push(Insn::Mov { dest: out, src: C_RET_OPND });
                     new_ids.push(None);
 
                     // Pop in reverse order
