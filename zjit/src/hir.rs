@@ -17,6 +17,7 @@ use crate::hir_effect::{Effect, abstract_heaps, effects};
 use crate::bitset::BitSet;
 use crate::profile::{TypeDistributionSummary, ProfiledType};
 use crate::stats::Counter;
+use crate::cruby_methods::FnProperties;
 use SendFallbackReason::*;
 
 pub(crate) mod tests;
@@ -4152,7 +4153,6 @@ impl Function {
             // Find the `argc` (arity) of the C method, which describes the parameters it expects
             let cfunc = unsafe { get_cme_def_body_cfunc(cme) };
             let cfunc_argc = unsafe { get_mct_argc(cfunc) };
-            let cfunc_ptr = unsafe { get_mct_func(cfunc) }.cast();
 
             match cfunc_argc {
                 0.. => {
@@ -4172,29 +4172,60 @@ impl Function {
                     // Commit to the replacement. Put PatchPoint.
                     fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, cme, state);
 
+                    let props = FnProperties::default();
+
                     if let Some(profiled_type) = profiled_type {
                         // Guard receiver class
                         recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
                         fun.insn_types[recv.0] = fun.infer_type(recv);
                     }
 
-                    // Emit a call
-                    let cfunc = unsafe { get_mct_func(cfunc) }.cast();
+                    // Try inlining the cfunc into HIR
+                    let tmp_block = fun.new_block(u32::MAX);
+                    if let Some(replacement) = (props.inline)(fun, tmp_block, recv, &args, state) {
+                        // Copy contents of tmp_block to block
+                        assert_ne!(block, tmp_block);
+                        let insns = std::mem::take(&mut fun.blocks[tmp_block.0].insns);
+                        fun.blocks[block.0].insns.extend(insns);
+                        fun.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
+                        fun.make_equal_to(send_insn_id, replacement);
+                        if fun.type_of(replacement).bit_equal(types::Any) {
+                            // Not set yet; infer type
+                            fun.insn_types[replacement.0] = fun.infer_type(replacement);
+                        }
+                        fun.remove_block(tmp_block);
+                        return Ok(());
+                    }
 
+                    // No inlining; emit a call
+                    let cfunc = unsafe { get_mct_func(cfunc) }.cast();
                     let name = rust_str_to_id(&qualified_method_name(unsafe { (*cme).owner }, unsafe { (*cme).called_id }));
-                    let ccall = fun.push_insn(block, Insn::CCallWithFrame {
-                        cd,
-                        cfunc,
-                        recv,
-                        args,
-                        cme,
-                        name,
-                        state,
-                        return_type: types::BasicObject,
-                        elidable: false,
-                        blockiseq,
-                    });
-                    fun.make_equal_to(send_insn_id, ccall);
+                    let return_type = props.return_type;
+                    let elidable = props.elidable;
+                    // Filter for a leaf and GC free function
+                    if props.leaf && props.no_gc {
+                        fun.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
+                        let ccall = fun.push_insn(block, Insn::CCall { cfunc, recv, args, name, return_type, elidable });
+                        fun.make_equal_to(send_insn_id, ccall);
+                    } else {
+                        if get_option!(stats) {
+                            fun.count_not_inlined_cfunc(block, cme);
+                        }
+                        let ccall = fun.push_insn(block, Insn::CCallWithFrame {
+                            cd,
+                            cfunc,
+                            recv,
+                            args,
+                            cme,
+                            name,
+                            state,
+                            return_type,
+                            elidable,
+                            blockiseq,
+                        });
+                        fun.make_equal_to(send_insn_id, ccall);
+                    }
+
                     Ok(())
                 }
                 // Variadic method
@@ -4216,19 +4247,42 @@ impl Function {
                         fun.insn_types[recv.0] = fun.infer_type(recv);
                     }
 
+                    let cfunc = unsafe { get_mct_func(cfunc) }.cast();
+                    let props = FnProperties::default();
+
+                    // Try inlining the cfunc into HIR
+                    let tmp_block = fun.new_block(u32::MAX);
+                    if let Some(replacement) = (props.inline)(fun, tmp_block, recv, &args, state) {
+                        // Copy contents of tmp_block to block
+                        assert_ne!(block, tmp_block);
+                        let insns = std::mem::take(&mut fun.blocks[tmp_block.0].insns);
+                        fun.blocks[block.0].insns.extend(insns);
+                        fun.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
+                        fun.make_equal_to(send_insn_id, replacement);
+                        if fun.type_of(replacement).bit_equal(types::Any) {
+                            // Not set yet; infer type
+                            fun.insn_types[replacement.0] = fun.infer_type(replacement);
+                        }
+                        fun.remove_block(tmp_block);
+                        return Ok(());
+                    }
+
+                    // No inlining; emit a call
                     if get_option!(stats) {
                         fun.count_not_inlined_cfunc(block, cme);
                     }
-
+                    let return_type = props.return_type;
+                    let elidable = props.elidable;
+                    let name = rust_str_to_id(&qualified_method_name(unsafe { (*cme).owner }, unsafe { (*cme).called_id }));
                     let ccall = fun.push_insn(block, Insn::CCallVariadic {
-                        cfunc: cfunc_ptr,
+                        cfunc,
                         recv,
                         args,
                         cme,
-                        name: method_id,
+                        name,
                         state,
-                        return_type: types::BasicObject,
-                        elidable: false,
+                        return_type,
+                        elidable,
                         blockiseq,
                     });
 

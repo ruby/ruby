@@ -7203,7 +7203,7 @@ mod hir_opt_tests {
           v38:ArrayExact[VALUE(0x1018)] = Const Value(VALUE(0x1018))
           PatchPoint NoSingletonClass(Array@0x1020)
           PatchPoint MethodRedefined(Array@0x1020, zip@0x1028, cme:0x1030)
-          v42:BasicObject = CCallVariadic v35, :zip@0x1058, v38
+          v42:BasicObject = CCallVariadic v35, :Array#zip@0x1058, v38
           v22:BasicObject = GetLocal :result, l0, EP@3
           PatchPoint NoEPEscape(test)
           CheckInterrupts
