@@ -133,7 +133,8 @@ goto :unknown_opt
 goto :loopend ;
 :dir
   if "%eq%" == "" call :take_arg
-  echo>> %config_make% %opt:~2% = %arg:\=/%
+  if defined arg set "arg=%arg:\=/%"
+  echo>> %config_make% %opt:~2% = %arg%
 goto :loopend ;
 :enable
   if %enable% == yes (
