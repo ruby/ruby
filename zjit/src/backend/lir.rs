@@ -2177,9 +2177,9 @@ impl Assembler
                     .iter()
                     .map(|copy| {
                         let mut dest = copy.destination.clone();
-                        Self::rewrite_opnd(&mut dest, assignments, regs);
+                        Self::rewrite_opnd(&mut dest, assignments);
                         let mut src = copy.source.clone();
-                        Self::rewrite_opnd(&mut src, assignments, regs);
+                        Self::rewrite_opnd(&mut src, assignments);
                         Insn::Mov { dest, src }
                     })
                     .collect();
@@ -2291,7 +2291,7 @@ impl Assembler
         regs: &[Reg],
     ) {
         use crate::backend::parcopy;
-        use crate::backend::current::{C_RET_OPND, SCRATCH_REG};
+        use crate::backend::current::{C_RET_OPND, SCRATCH_REG, ALLOC_REGS};
 
         for block in self.basic_blocks.iter_mut() {
             let old_insns = take(&mut block.insns);
@@ -2334,7 +2334,7 @@ impl Assembler
                         .zip(regs.iter())
                         .map(|(arg, param)| parcopy::RegisterCopy::<Opnd> {
                             destination: Opnd::Reg(*param),
-                            source: Self::rewritten_opnd(*arg, assignments, regs),
+                            source: Self::rewritten_opnd(*arg, assignments),
                         })
                         .collect();
 
@@ -2343,16 +2343,13 @@ impl Assembler
                         .iter()
                         .map(|copy| {
                             let mut dest = copy.destination.clone();
-                            Self::rewrite_opnd(&mut dest, assignments, regs);
+                            Self::rewrite_opnd(&mut dest, assignments);
                             let mut src = copy.source.clone();
-                            Self::rewrite_opnd(&mut src, assignments, regs);
+                            Self::rewrite_opnd(&mut src, assignments);
                             Insn::Mov { dest, src }
                         })
                         .collect();
 
-                    // Insert CPush instructions before any preceding ParallelMov,
-                    // since ParallelMov sets up C calling convention args and
-                    // would clobber the survivor registers we're trying to save.
                     let insert_pos = new_insns.len();
 
                     for (j, &s) in survivors.iter().enumerate() {
@@ -2360,7 +2357,8 @@ impl Assembler
                             Allocation::Reg(n) => n,
                             _ => unreachable!(),
                         };
-                        new_insns.insert(insert_pos + j, Insn::CPush(Opnd::Reg(regs[reg_n])));
+                        new_insns.insert(insert_pos + j,
+                            Insn::CPush(Opnd::Reg(ALLOC_REGS[reg_n])));
                         new_ids.insert(insert_pos + j, None);
                     }
 
@@ -2395,7 +2393,7 @@ impl Assembler
                             Allocation::Reg(n) => n,
                             _ => unreachable!(),
                         };
-                        new_insns.push(Insn::CPopInto(Opnd::Reg(regs[reg_n])));
+                        new_insns.push(Insn::CPopInto(Opnd::Reg(ALLOC_REGS[reg_n])));
                         new_ids.push(None);
                     }
                 } else {
@@ -2416,21 +2414,24 @@ impl Assembler
             for insn in block.insns.iter_mut() {
                 let mut iter = insn.opnd_iter_mut();
                 while let Some(opnd) = iter.next() {
-                    Self::rewrite_opnd(opnd, assignments, regs);
+                    Self::rewrite_opnd(opnd, assignments);
                 }
                 if let Some(out) = insn.out_opnd_mut() {
-                    Self::rewrite_opnd(out, assignments, regs);
+                    Self::rewrite_opnd(out, assignments);
                 }
             }
         }
     }
 
-    fn rewritten_opnd(mut opnd: Opnd, assignments: &[Option<Allocation>], regs: &[Reg]) -> Opnd {
-        Self::rewrite_opnd(&mut opnd, assignments, regs);
+    fn rewritten_opnd(mut opnd: Opnd, assignments: &[Option<Allocation>]) -> Opnd {
+        Self::rewrite_opnd(&mut opnd, assignments);
         opnd
     }
 
-    fn rewrite_opnd(opnd: &mut Opnd, assignments: &[Option<Allocation>], regs: &[Reg]) {
+    fn rewrite_opnd(opnd: &mut Opnd, assignments: &[Option<Allocation>]) {
+        use crate::backend::current::ALLOC_REGS;
+        let regs = &ALLOC_REGS;
+
         match opnd {
             Opnd::VReg { idx, num_bits } => {
                 if let Some(assignment) = assignments[idx.0] {
