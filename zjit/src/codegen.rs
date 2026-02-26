@@ -15,12 +15,12 @@ use crate::invariants::{
 use crate::gc::append_gc_offsets;
 use crate::payload::{get_or_create_iseq_payload, IseqCodePtrs, IseqVersion, IseqVersionRef, IseqStatus};
 use crate::state::ZJITState;
-use crate::stats::{CompileError, exit_counter_for_compile_error, exit_counter_for_unhandled_hir_insn, incr_counter, incr_counter_by, send_fallback_counter, send_fallback_counter_for_method_type, send_fallback_counter_for_super_method_type, send_fallback_counter_ptr_for_opcode, send_without_block_fallback_counter_for_method_type, send_without_block_fallback_counter_for_optimized_method_type};
+use crate::stats::{CompileError, exit_counter_for_compile_error, exit_counter_for_unhandled_hir_insn, incr_counter, incr_counter_by, send_fallback_counter, send_fallback_counter_for_method_type, send_fallback_counter_for_super_method_type, send_fallback_counter_ptr_for_opcode, send_fallback_counter_for_optimized_method_type};
 use crate::stats::{counter_ptr, with_time_stat, Counter, Counter::{compile_time_ns, exit_compile_error}};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, Assembler, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_STACK_PTR, Opnd, SP, SideExit, Target, asm_ccall, asm_comment};
 use crate::hir::{iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
-use crate::hir::{Const, FrameState, Function, Insn, InsnId, SendFallbackReason};
+use crate::hir::{Const, FrameState, Function, Insn, InsnId, SendBlock, SendFallbackReason};
 use crate::hir_type::{types, Type};
 use crate::options::get_option;
 use crate::cast::IntoUsize;
@@ -498,8 +498,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::Param => unreachable!("block.insns should not have Insn::Param"),
         Insn::LoadArg { .. } => return Ok(()), // compiled in the LoadArg pre-pass above
         Insn::Snapshot { .. } => return Ok(()), // we don't need to do anything for this instruction at the moment
-        &Insn::Send { cd, blockiseq: None, state, reason, .. } => gen_send_without_block(jit, asm, cd, &function.frame_state(state), reason),
-        &Insn::Send { cd, blockiseq: Some(blockiseq), state, reason, .. } => gen_send(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
+        &Insn::Send { cd, block_arg: SendBlock::None(true), state, reason, .. } => gen_send_without_block(jit, asm, cd, &function.frame_state(state), reason),
+        &Insn::Send { cd, block_arg, state, reason, .. } => gen_send(jit, asm, cd, block_arg.as_iseq_ptr(), &function.frame_state(state), reason),
         &Insn::SendForward { cd, blockiseq, state, reason, .. } => gen_send_forward(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         Insn::SendDirect { cme, iseq, recv, args, kw_bits, blockiseq, state, .. } => gen_send_iseq_direct(cb, jit, asm, *cme, *iseq, opnd!(recv), opnds!(args), *kw_bits, &function.frame_state(*state), *blockiseq),
         &Insn::InvokeSuper { cd, blockiseq, state, reason, .. } => gen_invokesuper(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
@@ -2430,14 +2430,11 @@ fn gen_incr_send_fallback_counter(asm: &mut Assembler, reason: SendFallbackReaso
         Uncategorized(opcode) => {
             gen_incr_counter_ptr(asm, send_fallback_counter_ptr_for_opcode(opcode));
         }
-        SendWithoutBlockNotOptimizedMethodType(method_type) => {
-            gen_incr_counter(asm, send_without_block_fallback_counter_for_method_type(method_type));
-        }
-        SendWithoutBlockNotOptimizedMethodTypeOptimized(method_type) => {
-            gen_incr_counter(asm, send_without_block_fallback_counter_for_optimized_method_type(method_type));
-        }
         SendNotOptimizedMethodType(method_type) => {
             gen_incr_counter(asm, send_fallback_counter_for_method_type(method_type));
+        }
+        SendNotOptimizedMethodTypeOptimized(method_type) => {
+            gen_incr_counter(asm, send_fallback_counter_for_optimized_method_type(method_type));
         }
         SuperNotOptimizedMethodType(method_type) => {
             gen_incr_counter(asm, send_fallback_counter_for_super_method_type(method_type));

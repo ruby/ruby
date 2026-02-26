@@ -230,27 +230,21 @@ make_counters! {
     // Send fallback counters that are summed as dynamic_send_count
     dynamic_send {
         // send_fallback_: Fallback reasons for send-ish instructions
-        send_fallback_send_without_block_polymorphic,
-        send_fallback_send_without_block_megamorphic,
-        send_fallback_send_without_block_no_profiles,
-        send_fallback_send_without_block_cfunc_not_variadic,
-        send_fallback_send_without_block_cfunc_array_variadic,
-        send_fallback_send_without_block_not_optimized_method_type,
-        send_fallback_send_without_block_not_optimized_method_type_optimized,
-        send_fallback_send_without_block_not_optimized_need_permission,
-        send_fallback_too_many_args_for_lir,
-        send_fallback_send_without_block_bop_redefined,
-        send_fallback_send_without_block_operands_not_fixnum,
-        send_fallback_send_without_block_polymorphic_fallback,
-        send_fallback_send_without_block_direct_keyword_mismatch,
-        send_fallback_send_without_block_direct_keyword_count_mismatch,
-        send_fallback_send_without_block_direct_missing_keyword,
-        send_fallback_send_without_block_direct_too_many_keywords,
-        send_fallback_send_polymorphic,
+        send_fallback_send_bop_redefined,
+        send_fallback_send_cfunc_not_variadic,
+        send_fallback_send_direct_keyword_count_mismatch,
+        send_fallback_send_direct_keyword_mismatch,
+        send_fallback_send_direct_missing_keyword,
+        send_fallback_send_direct_too_many_keywords,
         send_fallback_send_megamorphic,
         send_fallback_send_no_profiles,
         send_fallback_send_not_optimized_method_type,
+        send_fallback_send_not_optimized_method_type_optimized,
         send_fallback_send_not_optimized_need_permission,
+        send_fallback_send_operands_not_fixnum,
+        send_fallback_send_polymorphic,
+        send_fallback_send_polymorphic_fallback,
+        send_fallback_too_many_args_for_lir,
         send_fallback_ccall_with_frame_too_many_args,
         send_fallback_argc_param_mismatch,
         // The call has at least one feature on the caller or callee side
@@ -348,28 +342,6 @@ make_counters! {
     // The number of times YARV instructions are executed on JIT code
     zjit_insn_count,
 
-    // Method call def_type related to send without block fallback to dynamic dispatch
-    unspecialized_send_without_block_def_type_iseq,
-    unspecialized_send_without_block_def_type_cfunc,
-    unspecialized_send_without_block_def_type_attrset,
-    unspecialized_send_without_block_def_type_ivar,
-    unspecialized_send_without_block_def_type_bmethod,
-    unspecialized_send_without_block_def_type_zsuper,
-    unspecialized_send_without_block_def_type_alias,
-    unspecialized_send_without_block_def_type_undef,
-    unspecialized_send_without_block_def_type_not_implemented,
-    unspecialized_send_without_block_def_type_optimized,
-    unspecialized_send_without_block_def_type_missing,
-    unspecialized_send_without_block_def_type_refined,
-    unspecialized_send_without_block_def_type_null,
-
-    // Method call optimized_type related to send without block fallback to dynamic dispatch
-    unspecialized_send_without_block_def_type_optimized_send,
-    unspecialized_send_without_block_def_type_optimized_call,
-    unspecialized_send_without_block_def_type_optimized_block_call,
-    unspecialized_send_without_block_def_type_optimized_struct_aref,
-    unspecialized_send_without_block_def_type_optimized_struct_aset,
-
     // Method call def_type related to send fallback to dynamic dispatch
     unspecialized_send_def_type_iseq,
     unspecialized_send_def_type_cfunc,
@@ -384,6 +356,13 @@ make_counters! {
     unspecialized_send_def_type_missing,
     unspecialized_send_def_type_refined,
     unspecialized_send_def_type_null,
+
+    // Method call optimized_type related to send fallback to dynamic dispatch
+    unspecialized_send_def_type_optimized_send,
+    unspecialized_send_def_type_optimized_call,
+    unspecialized_send_def_type_optimized_block_call,
+    unspecialized_send_def_type_optimized_struct_aref,
+    unspecialized_send_def_type_optimized_struct_aset,
 
     // Super call def_type related to send fallback to dynamic dispatch
     unspecialized_super_def_type_iseq,
@@ -611,36 +590,28 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
     use crate::hir::SendFallbackReason::*;
     use crate::stats::Counter::*;
     match reason {
-        SendWithoutBlockPolymorphic               => send_fallback_send_without_block_polymorphic,
-        SendWithoutBlockMegamorphic               => send_fallback_send_without_block_megamorphic,
-        SendWithoutBlockNoProfiles                => send_fallback_send_without_block_no_profiles,
-        SendWithoutBlockCfuncNotVariadic          => send_fallback_send_without_block_cfunc_not_variadic,
-        SendWithoutBlockCfuncArrayVariadic        => send_fallback_send_without_block_cfunc_array_variadic,
-        SendWithoutBlockNotOptimizedMethodType(_) => send_fallback_send_without_block_not_optimized_method_type,
-        SendWithoutBlockNotOptimizedMethodTypeOptimized(_)
-                                                  => send_fallback_send_without_block_not_optimized_method_type_optimized,
-        SendWithoutBlockNotOptimizedNeedPermission
-                                                  => send_fallback_send_without_block_not_optimized_need_permission,
-        TooManyArgsForLir                         => send_fallback_too_many_args_for_lir,
-        SendWithoutBlockBopRedefined              => send_fallback_send_without_block_bop_redefined,
-        SendWithoutBlockOperandsNotFixnum         => send_fallback_send_without_block_operands_not_fixnum,
-        SendWithoutBlockPolymorphicFallback       => send_fallback_send_without_block_polymorphic_fallback,
-        SendDirectKeywordMismatch                 => send_fallback_send_without_block_direct_keyword_mismatch,
-        SendDirectKeywordCountMismatch            => send_fallback_send_without_block_direct_keyword_count_mismatch,
-        SendDirectMissingKeyword                  => send_fallback_send_without_block_direct_missing_keyword,
-        SendDirectTooManyKeywords                 => send_fallback_send_without_block_direct_too_many_keywords,
-        SendPolymorphic                           => send_fallback_send_polymorphic,
+        SendBopRedefined                          => send_fallback_send_bop_redefined,
+        SendCfuncArrayVariadic                    => send_fallback_send_cfunc_array_variadic,
+        SendCfuncNotVariadic                      => send_fallback_send_cfunc_not_variadic,
+        SendCfuncVariadic                         => send_fallback_send_cfunc_variadic,
+        SendDirectKeywordCountMismatch            => send_fallback_send_direct_keyword_count_mismatch,
+        SendDirectKeywordMismatch                 => send_fallback_send_direct_keyword_mismatch,
+        SendDirectMissingKeyword                  => send_fallback_send_direct_missing_keyword,
+        SendDirectTooManyKeywords                 => send_fallback_send_direct_too_many_keywords,
         SendMegamorphic                           => send_fallback_send_megamorphic,
         SendNoProfiles                            => send_fallback_send_no_profiles,
-        SendCfuncVariadic                         => send_fallback_send_cfunc_variadic,
-        SendCfuncArrayVariadic                    => send_fallback_send_cfunc_array_variadic,
+        SendNotOptimizedMethodType(_)             => send_fallback_send_not_optimized_method_type,
+        SendNotOptimizedMethodTypeOptimized(_)    => send_fallback_send_not_optimized_method_type_optimized,
+        SendNotOptimizedNeedPermission            => send_fallback_send_not_optimized_need_permission,
+        SendOperandsNotFixnum                     => send_fallback_send_operands_not_fixnum,
+        SendPolymorphic                           => send_fallback_send_polymorphic,
+        SendPolymorphicFallback                   => send_fallback_send_polymorphic_fallback,
+        TooManyArgsForLir                         => send_fallback_too_many_args_for_lir,
         ComplexArgPass                            => send_fallback_one_or_more_complex_arg_pass,
         UnexpectedKeywordArgs                     => send_fallback_unexpected_keyword_args,
         SingletonClassSeen                        => send_fallback_singleton_class_seen,
         ArgcParamMismatch                         => send_fallback_argc_param_mismatch,
         BmethodNonIseqProc                        => send_fallback_bmethod_non_iseq_proc,
-        SendNotOptimizedMethodType(_)             => send_fallback_send_not_optimized_method_type,
-        SendNotOptimizedNeedPermission            => send_fallback_send_not_optimized_need_permission,
         CCallWithFrameTooManyArgs                 => send_fallback_ccall_with_frame_too_many_args,
         ObjToStringNotString                      => send_fallback_obj_to_string_not_string,
         SuperCallWithBlock                        => send_fallback_super_call_with_block,
@@ -653,40 +624,6 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SuperTargetNotFound                       => send_fallback_super_target_not_found,
         SuperTargetComplexArgsPass                => send_fallback_super_target_complex_args_pass,
         Uncategorized(_)                          => send_fallback_uncategorized,
-    }
-}
-
-pub fn send_without_block_fallback_counter_for_method_type(method_type: crate::hir::MethodType) -> Counter {
-    use crate::hir::MethodType::*;
-    use crate::stats::Counter::*;
-
-    match method_type {
-        Iseq => unspecialized_send_without_block_def_type_iseq,
-        Cfunc => unspecialized_send_without_block_def_type_cfunc,
-        Attrset => unspecialized_send_without_block_def_type_attrset,
-        Ivar => unspecialized_send_without_block_def_type_ivar,
-        Bmethod => unspecialized_send_without_block_def_type_bmethod,
-        Zsuper => unspecialized_send_without_block_def_type_zsuper,
-        Alias => unspecialized_send_without_block_def_type_alias,
-        Undefined => unspecialized_send_without_block_def_type_undef,
-        NotImplemented => unspecialized_send_without_block_def_type_not_implemented,
-        Optimized => unspecialized_send_without_block_def_type_optimized,
-        Missing => unspecialized_send_without_block_def_type_missing,
-        Refined => unspecialized_send_without_block_def_type_refined,
-        Null => unspecialized_send_without_block_def_type_null,
-    }
-}
-
-pub fn send_without_block_fallback_counter_for_optimized_method_type(method_type: crate::hir::OptimizedMethodType) -> Counter {
-    use crate::hir::OptimizedMethodType::*;
-    use crate::stats::Counter::*;
-
-    match method_type {
-        Send => unspecialized_send_without_block_def_type_optimized_send,
-        Call => unspecialized_send_without_block_def_type_optimized_call,
-        BlockCall => unspecialized_send_without_block_def_type_optimized_block_call,
-        StructAref => unspecialized_send_without_block_def_type_optimized_struct_aref,
-        StructAset => unspecialized_send_without_block_def_type_optimized_struct_aset,
     }
 }
 
@@ -708,6 +645,19 @@ pub fn send_fallback_counter_for_method_type(method_type: crate::hir::MethodType
         Missing => unspecialized_send_def_type_missing,
         Refined => unspecialized_send_def_type_refined,
         Null => unspecialized_send_def_type_null,
+    }
+}
+
+pub fn send_fallback_counter_for_optimized_method_type(method_type: crate::hir::OptimizedMethodType) -> Counter {
+    use crate::hir::OptimizedMethodType::*;
+    use crate::stats::Counter::*;
+
+    match method_type {
+        Send => unspecialized_send_def_type_optimized_send,
+        Call => unspecialized_send_def_type_optimized_call,
+        BlockCall => unspecialized_send_def_type_optimized_block_call,
+        StructAref => unspecialized_send_def_type_optimized_struct_aref,
+        StructAset => unspecialized_send_def_type_optimized_struct_aset,
     }
 }
 
