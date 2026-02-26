@@ -62,11 +62,20 @@ def fetch_default_gems_versions(ruby_version)
   map
 end
 
+def previous_ruby_version
+  version_h = File.join(__dir__, "..", "include", "ruby", "version.h")
+  major = minor = nil
+  File.foreach(version_h) do |l|
+    major = $1.to_i if l =~ /^\s*#\s*define\s+RUBY_API_VERSION_MAJOR\s+(\d+)/
+    minor = $1.to_i if l =~ /^\s*#\s*define\s+RUBY_API_VERSION_MINOR\s+(\d+)/
+  end
+  abort "Cannot detect Ruby version from #{version_h}" unless major && minor
+  minor > 0 ? "#{major}.#{minor - 1}" : "#{major - 1}.0"
+end
+
 # Load gem=>version map from a file or from stdgems.org if a Ruby version is given.
 def load_versions(arg)
-  if arg.nil?
-    abort "usage: #{File.basename($0)} FROM [--update]"
-  end
+  arg ||= previous_ruby_version
   if File.exist?(arg)
     File.readlines(arg).map(&:split).to_h
   elsif arg.match?(/^\d+\.\d+(?:\.\d+)?$/)
