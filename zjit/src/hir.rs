@@ -4095,7 +4095,7 @@ impl Function {
             let (recv_class, profiled_type) = match fun.resolve_receiver_type(recv, self_type, iseq_insn_idx) {
                 ReceiverTypeResolution::StaticallyKnown { class } => (class, None),
                 ReceiverTypeResolution::Monomorphic { profiled_type }
-                | ReceiverTypeResolution::SkewedPolymorphic { profiled_type} => (profiled_type.class(), Some(profiled_type)),
+                | ReceiverTypeResolution::SkewedPolymorphic { profiled_type } => (profiled_type.class(), Some(profiled_type)),
                 ReceiverTypeResolution::SkewedMegamorphic { .. } | ReceiverTypeResolution::Polymorphic | ReceiverTypeResolution::Megamorphic | ReceiverTypeResolution::NoProfile => return Err(()),
             };
 
@@ -4115,7 +4115,6 @@ impl Function {
             if def_type != VM_METHOD_TYPE_CFUNC {
                 return Err(());
             }
-
 
             let ci_flags = unsafe { vm_ci_flag(call_info) };
             let visibility = unsafe { METHOD_ENTRY_VISI(cme) };
@@ -4150,8 +4149,8 @@ impl Function {
                 },
             };
 
-            let cfunc = unsafe { get_cme_def_body_cfunc(cme) };
             // Find the `argc` (arity) of the C method, which describes the parameters it expects
+            let cfunc = unsafe { get_cme_def_body_cfunc(cme) };
             let cfunc_argc = unsafe { get_mct_argc(cfunc) };
             let cfunc_ptr = unsafe { get_mct_func(cfunc) }.cast();
 
@@ -4230,7 +4229,7 @@ impl Function {
                         state,
                         return_type: types::BasicObject,
                         elidable: false,
-                        blockiseq
+                        blockiseq,
                     });
 
                     fun.make_equal_to(send_insn_id, ccall);
@@ -4388,7 +4387,7 @@ impl Function {
                         fun.make_equal_to(send_insn_id, ccall);
                     }
 
-                    return Ok(());
+                    Ok(())
                 }
                 // Variadic method
                 -1 => {
@@ -4467,14 +4466,12 @@ impl Function {
                     // Fall through for complex cases (splat, kwargs, etc.)
                 }
                 -2 => {
-                    // (self, args_ruby_array) parameter form
-                    // Falling through for now
+                    // (self, args_ruby_array)
                     fun.set_dynamic_send_reason(send_insn_id, SendCfuncArrayVariadic);
+                    Err(())
                 }
                 _ => unreachable!("unknown cfunc kind: argc={argc}")
             }
-
-            Err(())
         }
 
         for block in self.rpo() {
