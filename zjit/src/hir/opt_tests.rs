@@ -3811,6 +3811,60 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_send_hash_to_kwarg_only_method() {
+        eval(r#"
+            def callee(a:) = a
+            def test = callee({a: 1})
+            begin; test; rescue ArgumentError; end
+            begin; test; rescue ArgumentError; end
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v11:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v12:HashExact = HashDup v11
+          v14:BasicObject = Send v6, :callee, v12 # SendFallbackReason: Argument count does not match parameter count
+          CheckInterrupts
+          Return v14
+        ");
+    }
+
+    #[test]
+    fn test_send_hash_to_optional_kwarg_only_method() {
+        eval(r#"
+            def callee(a: nil) = a
+            def test = callee({a: 1})
+            begin; test; rescue ArgumentError; end
+            begin; test; rescue ArgumentError; end
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v11:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v12:HashExact = HashDup v11
+          v14:BasicObject = Send v6, :callee, v12 # SendFallbackReason: Argument count does not match parameter count
+          CheckInterrupts
+          Return v14
+        ");
+    }
+
+    #[test]
     fn specialize_call_to_iseq_with_optional_param_kw_using_default() {
         eval("
             def foo(int: 1) = int + 1
