@@ -19,6 +19,7 @@
 #include "internal/class.h"
 #include "internal/imemo.h"
 #include "ruby/internal/core/rtypeddata.h"
+#include "zjit.h"
 
 #ifndef _WIN32
 #include <sys/mman.h>
@@ -522,6 +523,9 @@ void
 rb_set_cfp_pc(struct rb_control_frame_struct *cfp, const VALUE *pc)
 {
     cfp->pc = pc;
+    if (rb_zjit_enabled_p) {
+        cfp->jit_return = 0;
+    }
 }
 
 void

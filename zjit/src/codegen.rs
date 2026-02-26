@@ -14,7 +14,7 @@ use crate::invariants::{
     track_root_box_assumption
 };
 use crate::gc::append_gc_offsets;
-use crate::payload::{get_or_create_iseq_payload, IseqCodePtrs, IseqVersion, IseqVersionRef, IseqStatus};
+use crate::payload::{IseqCodePtrs, IseqStatus, IseqVersion, IseqVersionRef, JITFrame, get_or_create_iseq_payload};
 use crate::state::ZJITState;
 use crate::stats::{CompileError, exit_counter_for_compile_error, exit_counter_for_unhandled_hir_insn, incr_counter, incr_counter_by, send_fallback_counter, send_fallback_counter_for_method_type, send_fallback_counter_for_super_method_type, send_fallback_counter_ptr_for_opcode, send_without_block_fallback_counter_for_method_type, send_without_block_fallback_counter_for_optimized_method_type};
 use crate::stats::{counter_ptr, with_time_stat, Counter, Counter::{compile_time_ns, exit_compile_error}};
@@ -32,6 +32,13 @@ pub const MAX_ISEQ_VERSIONS: usize = 2;
 /// Sentinel program counter stored in C frames when runtime checks are enabled.
 const PC_POISON: Option<*const VALUE> = if cfg!(feature = "runtime_checks") {
     Some(usize::MAX as *const VALUE)
+} else {
+    None
+};
+
+/// Sentinel jit_return stored on ISEQ frame push when runtime checks are enabled.
+const JIT_RETURN_POISON: Option<usize> = if cfg!(feature = "runtime_checks") {
+    Some(ZJIT_JIT_RETURN_POISON as usize)
 } else {
     None
 };
@@ -1043,8 +1050,8 @@ fn gen_ccall_with_frame(
         iseq: None,
         cme,
         frame_type: VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL,
-        pc: PC_POISON,
         specval: block_handler_specval,
+        write_block_code: false,
     });
 
     asm_comment!(asm, "switch to new SP register");
@@ -1133,7 +1140,7 @@ fn gen_ccall_variadic(
         cme,
         frame_type: VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL,
         specval: block_handler_specval,
-        pc: PC_POISON,
+        write_block_code: false,
     });
 
     asm_comment!(asm, "switch to new SP register");
@@ -1589,8 +1596,8 @@ fn gen_send_iseq_direct(
         iseq: Some(iseq),
         cme,
         frame_type,
-        pc: None,
         specval,
+        write_block_code: iseq_may_write_block_code(iseq),
     });
 
     // Write "keyword_bits" to the callee's frame if the callee accepts keywords.
@@ -2658,6 +2665,35 @@ fn gen_incr_send_fallback_counter(asm: &mut Assembler, reason: SendFallbackReaso
     }
 }
 
+/// Check if an ISEQ contains instructions that may write to block_code
+/// (send, sendforward, invokesuper, invokesuperforward, invokeblock, and their trace variants).
+/// These instructions call vm_caller_setup_arg_block which writes to cfp->block_code.
+#[allow(non_upper_case_globals)]
+fn iseq_may_write_block_code(iseq: IseqPtr) -> bool {
+    let encoded_size = unsafe { rb_iseq_encoded_size(iseq) };
+    let mut insn_idx: u32 = 0;
+
+    while insn_idx < encoded_size {
+        let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
+        let opcode = unsafe { rb_iseq_opcode_at_pc(iseq, pc) } as u32;
+
+        match opcode {
+            YARVINSN_send | YARVINSN_trace_send |
+            YARVINSN_sendforward | YARVINSN_trace_sendforward |
+            YARVINSN_invokesuper | YARVINSN_trace_invokesuper |
+            YARVINSN_invokesuperforward | YARVINSN_trace_invokesuperforward |
+            YARVINSN_invokeblock | YARVINSN_trace_invokeblock => {
+                return true;
+            }
+            _ => {}
+        }
+
+        insn_idx = insn_idx.saturating_add(unsafe { rb_insn_len(VALUE(opcode as usize)) }.try_into().unwrap());
+    }
+
+    false
+}
+
 /// Save only the PC to CFP. Use this when you need to call gen_save_sp()
 /// immediately after with a custom stack size (e.g., gen_ccall_with_frame
 /// adjusts SP to exclude receiver and arguments).
@@ -2667,7 +2703,11 @@ fn gen_save_pc_for_gc(asm: &mut Assembler, state: &FrameState) {
 
     gen_incr_counter(asm, Counter::vm_write_pc_count);
     asm_comment!(asm, "save PC to CFP");
-    asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::const_ptr(next_pc));
+    if let Some(pc) = PC_POISON {
+        asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::const_ptr(pc));
+    }
+    let jit_frame = JITFrame::new(next_pc, state.iseq, !iseq_may_write_block_code(state.iseq));
+    asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), Opnd::const_ptr(jit_frame));
 }
 
 /// Save the current PC on the CFP as a preparation for calling a C function
@@ -2762,7 +2802,9 @@ struct ControlFrame {
     /// The [`VM_ENV_DATA_INDEX_SPECVAL`] slot of the frame.
     /// For the type of frames we push, block handler or the parent EP.
     specval: lir::Opnd,
-    pc: Option<*const VALUE>,
+    /// Whether to write block_code = 0 at frame push time.
+    /// True when the callee ISEQ may write to block_code (has send/invokesuper/invokeblock).
+    write_block_code: bool,
 }
 
 /// Compile an interpreter frame
@@ -2792,25 +2834,35 @@ fn gen_push_frame(asm: &mut Assembler, argc: usize, state: &FrameState, frame: C
 
     asm_comment!(asm, "push callee control frame");
 
-    if let Some(iseq) = frame.iseq {
-        // cfp_opnd(RUBY_OFFSET_CFP_PC): written by the callee frame on side-exits, non-leaf calls, or calls with GC
-        // cfp_opnd(RUBY_OFFSET_CFP_SP): written by the callee frame on side-exits, non-leaf calls, or calls with GC
-        asm.mov(cfp_opnd(RUBY_OFFSET_CFP_ISEQ), VALUE::from(iseq).into());
+    if frame.iseq.is_some() {
+        // PC, SP, and ISEQ are written lazily by the callee on side-exits, non-leaf calls, or GC.
+        if let Some(jit_return_poison) = JIT_RETURN_POISON {
+            asm.mov(cfp_opnd(RUBY_OFFSET_CFP_JIT_RETURN), jit_return_poison.into());
+        }
+        if frame.write_block_code {
+            asm_comment!(asm, "write block_code for iseq that may use it");
+            asm.mov(cfp_opnd(RUBY_OFFSET_CFP_BLOCK_CODE), 0.into());
+        }
     } else {
-        // C frames don't have a PC and ISEQ in normal operation.
-        // When runtime checks are enabled we poison the PC so accidental reads stand out.
-        if let Some(pc) = frame.pc {
-            asm.mov(cfp_opnd(RUBY_OFFSET_CFP_PC), Opnd::const_ptr(pc));
+        // C frames don't have a PC and ISEQ in normal operation. ISEQ frames set PC on gen_save_pc_for_gc().
+        // When runtime checks are enabled we poison the PC for C frames so accidental reads stand out.
+        if let (None, Some(pc)) = (frame.iseq, PC_POISON) {
+            asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::const_ptr(pc));
         }
         let new_sp = asm.lea(Opnd::mem(64, SP, (ep_offset + 1) * SIZEOF_VALUE_I32));
         asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SP), new_sp);
-        asm.mov(cfp_opnd(RUBY_OFFSET_CFP_ISEQ), 0.into());
+        // block_code must be written explicitly because the interpreter reads
+        // captured->code.ifunc directly from cfp->block_code (not through JITFrame).
+        // Without this, stale data from a previous frame occupying this CFP slot
+        // can be used as an ifunc pointer, causing a segfault.
+        asm.mov(cfp_opnd(RUBY_OFFSET_CFP_BLOCK_CODE), 0.into());
+        let jit_frame = JITFrame::new(std::ptr::null(), std::ptr::null(), false);
+        asm.mov(cfp_opnd(RUBY_OFFSET_CFP_JIT_RETURN), Opnd::const_ptr(jit_frame));
     }
 
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SELF), frame.recv);
     let ep = asm.lea(Opnd::mem(64, SP, ep_offset * SIZEOF_VALUE_I32));
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_EP), ep);
-    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_BLOCK_CODE), 0.into());
 }
 
 /// Stack overflow check: fails if CFP<=SP at any point in the callee.
@@ -2894,6 +2946,7 @@ fn build_side_exit(jit: &JITState, state: &FrameState) -> SideExit {
         pc: Opnd::const_ptr(state.pc),
         stack,
         locals,
+        iseq: jit.iseq,
         recompile: None,
     }
 }
@@ -2972,19 +3025,32 @@ c_callable! {
     /// We should be able to compile most (if not all) function stubs by side-exiting at unsupported
     /// instructions, so this should be used primarily for cb.has_dropped_bytes() situations.
     fn function_stub_hit(iseq_call_ptr: *const c_void, cfp: CfpPtr, sp: *mut VALUE, ec: EcPtr) -> *const u8 {
-        with_vm_lock(src_loc!(), || {
-            // gen_push_frame() doesn't set PC, so we need to set them before exit.
-            // function_stub_hit_body() may allocate and call gc_validate_pc(), so we always set PC.
+        // Make sure cfp is ready to be scanned by other Ractors and GC before taking the barrier
+        {
+            unsafe { Rc::increment_strong_count(iseq_call_ptr as *const IseqCall); }
             let iseq_call = unsafe { Rc::from_raw(iseq_call_ptr as *const IseqCall) };
             let iseq = iseq_call.iseq.get();
             let entry_insn_idxs = crate::hir::jit_entry_insns(iseq);
+            // gen_push_frame() doesn't set PC, so we need to set them before exit.
+            // function_stub_hit_body() may allocate and call gc_validate_pc(), so we always set PC.
             let pc = unsafe { rb_iseq_pc_at_idx(iseq, entry_insn_idxs[iseq_call.jit_entry_idx.to_usize()]) };
             unsafe { rb_set_cfp_pc(cfp, pc) };
+            unsafe { (*cfp).iseq = iseq };
+        }
+
+        with_vm_lock(src_loc!(), || {
+            // Re-create the Rc inside the VM lock because IseqCall's interior
+            // mutability (Cell<IseqPtr>) requires exclusive access.
+            let iseq_call = unsafe { Rc::from_raw(iseq_call_ptr as *const IseqCall) };
+            let iseq = iseq_call.iseq.get();
 
             // JIT-to-JIT calls don't eagerly fill nils to non-parameter locals.
             // If we side-exit from function_stub_hit (before JIT code runs), we need to set them here.
             fn prepare_for_exit(iseq: IseqPtr, cfp: CfpPtr, sp: *mut VALUE, compile_error: &CompileError) {
                 unsafe {
+                    // Caller frames are materialized by jit_exec() after the entry trampoline returns.
+                    // The current frame's pc and iseq are already set by function_stub_hit before this point.
+
                     // Set SP which gen_push_frame() doesn't set
                     rb_set_cfp_sp(cfp, sp);
 

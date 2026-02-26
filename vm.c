@@ -559,6 +559,8 @@ zjit_compile(rb_execution_context_t *ec)
 # define zjit_compile(ec) ((rb_jit_func_t)0)
 #endif
 
+static inline void zjit_materialize_frames(rb_control_frame_t *cfp);
+
 // Execute JIT code compiled by yjit_compile() or zjit_compile()
 static inline VALUE
 jit_exec(rb_execution_context_t *ec)
@@ -578,7 +580,15 @@ jit_exec(rb_execution_context_t *ec)
     if (zjit_entry) {
         rb_jit_func_t func = zjit_compile(ec);
         if (func) {
-            return ((rb_zjit_func_t)zjit_entry)(ec, ec->cfp, func);
+            VALUE result = ((rb_zjit_func_t)zjit_entry)(ec, ec->cfp, func);
+            // Materialize any remaining lightweight ZJIT frames on side exit.
+            // This is done here (once per JIT entry) instead of in each side exit
+            // to reduce generated code size.
+            if (UNDEF_P(result)) {
+                ec->cfp->jit_return = 0;
+                zjit_materialize_frames(ec->cfp);
+            }
+            return result;
         }
     }
 #endif
@@ -931,7 +941,7 @@ rb_control_frame_t *
 rb_vm_get_binding_creatable_next_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
 {
     while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(ec, cfp)) {
-        if (cfp->iseq) {
+        if (rb_zjit_cfp_has_iseq(cfp)) {
             return (rb_control_frame_t *)cfp;
         }
         cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
@@ -1109,13 +1119,14 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
         }
     }
 
+    const rb_iseq_t *iseq = rb_zjit_cfp_iseq(cfp);
     if (!VM_FRAME_RUBYFRAME_P(cfp)) {
         local_size = VM_ENV_DATA_SIZE;
     }
     else {
-        local_size = ISEQ_BODY(cfp->iseq)->local_table_size;
-        if (ISEQ_BODY(cfp->iseq)->param.flags.forwardable && VM_ENV_LOCAL_P(cfp->ep)) {
-            int ci_offset = local_size - ISEQ_BODY(cfp->iseq)->param.size + VM_ENV_DATA_SIZE;
+        local_size = ISEQ_BODY(iseq)->local_table_size;
+        if (ISEQ_BODY(iseq)->param.flags.forwardable && VM_ENV_LOCAL_P(cfp->ep)) {
+            int ci_offset = local_size - ISEQ_BODY(iseq)->param.size + VM_ENV_DATA_SIZE;
 
             CALL_INFO ci = (CALL_INFO)VM_CF_LEP(cfp)[-ci_offset];
             local_size += vm_ci_argc(ci);
@@ -1127,8 +1138,8 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
     // This is done before creating the imemo_env because VM_STACK_ENV_WRITE
     // below leaves the on-stack ep in a state that is unsafe to GC.
     if (VM_FRAME_RUBYFRAME_P(cfp)) {
-        rb_yjit_invalidate_ep_is_bp(cfp->iseq);
-        rb_zjit_invalidate_no_ep_escape(cfp->iseq);
+        rb_yjit_invalidate_ep_is_bp(iseq);
+        rb_zjit_invalidate_no_ep_escape(iseq);
     }
 
     /*
@@ -1156,7 +1167,7 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
     env_ep = &env_body[local_size - 1 /* specval */];
     env_ep[VM_ENV_DATA_INDEX_ENV] = (VALUE)env;
 
-    env->iseq = (rb_iseq_t *)(VM_FRAME_RUBYFRAME_P(cfp) ? cfp->iseq : NULL);
+    env->iseq = (rb_iseq_t *)(VM_FRAME_RUBYFRAME_P(cfp) ? iseq : NULL);
     env->ep = env_ep;
     env->env = env_body;
     env->env_size = env_size;
@@ -1678,8 +1689,8 @@ rb_vm_make_binding(const rb_execution_context_t *ec, const rb_control_frame_t *s
     GetBindingPtr(bindval, bind);
     vm_bind_update_env(bindval, bind, envval);
     RB_OBJ_WRITE(bindval, &bind->block.as.captured.self, cfp->self);
-    RB_OBJ_WRITE(bindval, &bind->block.as.captured.code.iseq, cfp->iseq);
-    RB_OBJ_WRITE(bindval, &bind->pathobj, ISEQ_BODY(ruby_level_cfp->iseq)->location.pathobj);
+    RB_OBJ_WRITE(bindval, &bind->block.as.captured.code.iseq, rb_zjit_cfp_iseq(cfp));
+    RB_OBJ_WRITE(bindval, &bind->pathobj, ISEQ_BODY(rb_zjit_cfp_iseq(ruby_level_cfp))->location.pathobj);
     bind->first_lineno = rb_vm_get_sourceline(ruby_level_cfp);
 
     return bindval;
@@ -1986,9 +1997,9 @@ rb_vm_invoke_proc_with_self(rb_execution_context_t *ec, rb_proc_t *proc, VALUE s
 VALUE *
 rb_vm_svar_lep(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
 {
-    while (cfp->pc == 0 || cfp->iseq == 0) {
+    while (!rb_zjit_cfp_has_pc(cfp) || !rb_zjit_cfp_has_iseq(cfp)) {
         if (VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_IFUNC) {
-            struct vm_ifunc *ifunc = (struct vm_ifunc *)cfp->iseq;
+            struct vm_ifunc *ifunc = (struct vm_ifunc *)rb_zjit_cfp_iseq(cfp);
             return ifunc->svar_lep;
         }
         else {
@@ -2071,7 +2082,7 @@ rb_sourcefile(void)
     const rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
 
     if (cfp) {
-        return RSTRING_PTR(rb_iseq_path(cfp->iseq));
+        return RSTRING_PTR(rb_iseq_path(rb_zjit_cfp_iseq(cfp)));
     }
     else {
         return 0;
@@ -2100,7 +2111,7 @@ rb_source_location(int *pline)
 
     if (cfp && VM_FRAME_RUBYFRAME_P(cfp)) {
         if (pline) *pline = rb_vm_get_sourceline(cfp);
-        return rb_iseq_path(cfp->iseq);
+        return rb_iseq_path(rb_zjit_cfp_iseq(cfp));
     }
     else {
         if (pline) *pline = 0;
@@ -2582,7 +2593,7 @@ hook_before_rewind(rb_execution_context_t *ec, bool cfp_returning_with_value, in
         return;
     }
     else {
-        const rb_iseq_t *iseq = ec->cfp->iseq;
+        const rb_iseq_t *iseq = rb_zjit_cfp_iseq(ec->cfp);
         rb_hook_list_t *local_hooks = NULL;
         unsigned int local_hooks_cnt = iseq->aux.exec.local_hooks_cnt;
         if (RB_UNLIKELY(local_hooks_cnt > 0)) {
@@ -2835,6 +2846,32 @@ vm_exec_loop(rb_execution_context_t *ec, enum ruby_tag_type state,
     return result;
 }
 
+static inline void
+zjit_materialize_frames(rb_control_frame_t *cfp)
+{
+    if (!rb_zjit_enabled_p) return;
+
+    while (true) {
+        if (CFP_JIT_RETURN(cfp)) {
+            const zjit_jit_frame_t *jit_frame = (const zjit_jit_frame_t *)cfp->jit_return;
+            cfp->pc = jit_frame->pc;
+            cfp->iseq = (rb_iseq_t *)jit_frame->iseq;
+            if (jit_frame->materialize_block_code) {
+                cfp->block_code = NULL;
+            }
+            cfp->jit_return = 0;
+        }
+        if (VM_FRAME_FINISHED_P(cfp)) break;
+        cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+    }
+}
+
+void
+rb_zjit_materialize_frames(rb_control_frame_t *cfp)
+{
+    zjit_materialize_frames(cfp);
+}
+
 static inline VALUE
 vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, VALUE errinfo)
 {
@@ -2852,7 +2889,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
         cont_pc = cont_sp = 0;
         catch_iseq = NULL;
 
-        while (ec->cfp->pc == 0 || ec->cfp->iseq == 0) {
+        while (rb_zjit_cfp_pc(ec->cfp) == 0 || rb_zjit_cfp_iseq(ec->cfp) == 0) {
             if (UNLIKELY(VM_FRAME_TYPE(ec->cfp) == VM_FRAME_MAGIC_CFUNC)) {
                 EXEC_EVENT_HOOK_AND_POP_FRAME(ec, RUBY_EVENT_C_RETURN, ec->cfp->self,
                                               rb_vm_frame_method_entry(ec->cfp)->def->original_id,
@@ -2866,7 +2903,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
         }
 
         rb_control_frame_t *const cfp = ec->cfp;
-        epc = cfp->pc - ISEQ_BODY(cfp->iseq)->iseq_encoded;
+        epc = rb_zjit_cfp_pc(cfp) - ISEQ_BODY(rb_zjit_cfp_iseq(cfp))->iseq_encoded;
 
         escape_cfp = NULL;
         if (state == TAG_BREAK || state == TAG_RETURN) {
@@ -2879,7 +2916,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
                         THROW_DATA_STATE_SET(err, state = TAG_BREAK);
                     }
                     else {
-                        ct = ISEQ_BODY(cfp->iseq)->catch_table;
+                        ct = ISEQ_BODY(rb_zjit_cfp_iseq(cfp))->catch_table;
                         if (ct) for (i = 0; i < ct->size; i++) {
                             entry = UNALIGNED_MEMBER_PTR(ct, entries[i]);
                             if (entry->start < epc && entry->end >= epc) {
@@ -2906,13 +2943,14 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
                     /* TAG_BREAK */
                     *cfp->sp++ = THROW_DATA_VAL(err);
                     ec->errinfo = Qnil;
+                    zjit_materialize_frames(cfp);
                     return Qundef;
                 }
             }
         }
 
         if (state == TAG_RAISE) {
-            ct = ISEQ_BODY(cfp->iseq)->catch_table;
+            ct = ISEQ_BODY(rb_zjit_cfp_iseq(cfp))->catch_table;
             if (ct) for (i = 0; i < ct->size; i++) {
                 entry = UNALIGNED_MEMBER_PTR(ct, entries[i]);
                 if (entry->start < epc && entry->end >= epc) {
@@ -2928,7 +2966,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
             }
         }
         else if (state == TAG_RETRY) {
-            ct = ISEQ_BODY(cfp->iseq)->catch_table;
+            ct = ISEQ_BODY(rb_zjit_cfp_iseq(cfp))->catch_table;
             if (ct) for (i = 0; i < ct->size; i++) {
                 entry = UNALIGNED_MEMBER_PTR(ct, entries[i]);
                 if (entry->start < epc && entry->end >= epc) {
@@ -2943,7 +2981,8 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
                         const rb_control_frame_t *escape_cfp;
                         escape_cfp = THROW_DATA_CATCH_FRAME(err);
                         if (cfp == escape_cfp) {
-                            cfp->pc = ISEQ_BODY(cfp->iseq)->iseq_encoded + entry->cont;
+                            zjit_materialize_frames(cfp);
+                            cfp->pc = ISEQ_BODY(rb_zjit_cfp_iseq(cfp))->iseq_encoded + entry->cont;
                             ec->errinfo = Qnil;
                             return Qundef;
                         }
@@ -2961,7 +3000,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
                 /* otherwise = dontcare */
             }[state];
 
-            ct = ISEQ_BODY(cfp->iseq)->catch_table;
+            ct = ISEQ_BODY(rb_zjit_cfp_iseq(cfp))->catch_table;
             if (ct) for (i = 0; i < ct->size; i++) {
                 entry = UNALIGNED_MEMBER_PTR(ct, entries[i]);
 
@@ -2973,7 +3012,8 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
                         break;
                     }
                     else if (entry->type == type) {
-                        cfp->pc = ISEQ_BODY(cfp->iseq)->iseq_encoded + entry->cont;
+                        zjit_materialize_frames(cfp);
+                        cfp->pc = ISEQ_BODY(rb_zjit_cfp_iseq(cfp))->iseq_encoded + entry->cont;
                         cfp->sp = vm_base_ptr(cfp) + entry->sp;
 
                         if (state != TAG_REDO) {
@@ -2987,7 +3027,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
             }
         }
         else {
-            ct = ISEQ_BODY(cfp->iseq)->catch_table;
+            ct = ISEQ_BODY(rb_zjit_cfp_iseq(cfp))->catch_table;
             if (ct) for (i = 0; i < ct->size; i++) {
                 entry = UNALIGNED_MEMBER_PTR(ct, entries[i]);
                 if (entry->start < epc && entry->end >= epc) {
@@ -3007,8 +3047,9 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
             const int arg_size = 1;
 
             rb_iseq_check(catch_iseq);
+            zjit_materialize_frames(cfp); // vm_base_ptr looks at cfp->iseq
             cfp->sp = vm_base_ptr(cfp) + cont_sp;
-            cfp->pc = ISEQ_BODY(cfp->iseq)->iseq_encoded + cont_pc;
+            cfp->pc = ISEQ_BODY(rb_zjit_cfp_iseq(cfp))->iseq_encoded + cont_pc;
 
             /* push block frame */
             cfp->sp[0] = (VALUE)err;
@@ -3630,8 +3671,22 @@ rb_execution_context_update(rb_execution_context_t *ec)
         while (cfp != limit_cfp) {
             const VALUE *ep = cfp->ep;
             cfp->self = rb_gc_location(cfp->self);
-            cfp->iseq = (rb_iseq_t *)rb_gc_location((VALUE)cfp->iseq);
-            cfp->block_code = (void *)rb_gc_location((VALUE)cfp->block_code);
+            if (rb_zjit_enabled_p && CFP_JIT_RETURN(cfp)) {
+                zjit_jit_frame_t *jit_frame = (zjit_jit_frame_t *)cfp->jit_return;
+                if (jit_frame->iseq) {
+                    // ISEQ frame with JITFrame: relocate iseq in JITFrame
+                    jit_frame->iseq = (const rb_iseq_t *)rb_gc_location((VALUE)jit_frame->iseq);
+                }
+                // block_code must always be relocated. For ISEQ frames, the JIT caller
+                // may have written it (gen_block_handler_specval) for passing blocks.
+                // For C frames, rb_iterate0 may have written an ifunc to block_code
+                // after the JIT pushed the frame. NULL is safe to pass to rb_gc_location.
+                cfp->block_code = (void *)rb_gc_location((VALUE)cfp->block_code);
+            }
+            else {
+                cfp->iseq = (rb_iseq_t *)rb_gc_location((VALUE)cfp->iseq);
+                cfp->block_code = (void *)rb_gc_location((VALUE)cfp->block_code);
+            }
 
             if (!VM_ENV_LOCAL_P(ep)) {
                 const VALUE *prev_ep = VM_ENV_PREV_EP(ep);
@@ -3682,7 +3737,9 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
             VM_ASSERT(!!VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED) == vm_ep_in_heap_p_(ec, ep));
 
             rb_gc_mark_movable(cfp->self);
-            rb_gc_mark_movable((VALUE)cfp->iseq);
+            rb_gc_mark_movable((VALUE)rb_zjit_cfp_iseq(cfp));
+            // Mark block_code directly (not through rb_zjit_cfp_block_code)
+            // because rb_iterate0 may write a valid ifunc after JIT frame push.
             rb_gc_mark_movable((VALUE)cfp->block_code);
 
             if (VM_ENV_LOCAL_P(ep) && VM_ENV_BOXED_P(ep)) {

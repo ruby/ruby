@@ -163,6 +163,7 @@ make_counters! {
         gc_time_ns,
         invalidation_time_ns,
 
+        compiled_side_exit_count,
         side_exit_size,
         compile_side_exit_time_ns,
 

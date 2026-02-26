@@ -141,6 +141,7 @@ class << RubyVM::ZJIT
     ], buf:, stats:, right_align: true, base: :send_count)
     print_counters([
       :compiled_iseq_count,
+      :compiled_side_exit_count,
       :failed_iseq_count,
 
       :compile_time_ns,

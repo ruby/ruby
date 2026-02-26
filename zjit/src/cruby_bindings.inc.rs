@@ -1299,6 +1299,16 @@ pub struct rb_block__bindgen_ty_1 {
     pub proc_: __BindgenUnionField<VALUE>,
     pub bindgen_union_field: [u64; 3usize],
 }
+#[repr(C)]
+pub struct rb_control_frame_struct {
+    pub pc: *const VALUE,
+    pub sp: *mut VALUE,
+    pub iseq: *const rb_iseq_t,
+    pub self_: VALUE,
+    pub ep: *const VALUE,
+    pub block_code: *const ::std::os::raw::c_void,
+    pub jit_return: *mut ::std::os::raw::c_void,
+}
 pub type rb_control_frame_t = rb_control_frame_struct;
 #[repr(C)]
 pub struct rb_proc_t {
@@ -1900,6 +1910,8 @@ pub const DEFINED_REF: defined_type = 15;
 pub const DEFINED_FUNC: defined_type = 16;
 pub const DEFINED_CONST_FROM: defined_type = 17;
 pub type defined_type = u32;
+pub const ZJIT_JIT_RETURN_POISON: zjit_poison_values = 2;
+pub type zjit_poison_values = u32;
 pub const ISEQ_BODY_OFFSET_PARAM: zjit_struct_offsets = 16;
 pub type zjit_struct_offsets = u32;
 pub const ROBJECT_OFFSET_AS_HEAP_FIELDS: jit_bindgen_constants = 16;

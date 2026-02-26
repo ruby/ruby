@@ -1988,12 +1988,12 @@ eval_string_with_cref(VALUE self, VALUE src, rb_cref_t *cref, VALUE file, int li
 
     block.as.captured = *VM_CFP_TO_CAPTURED_BLOCK(cfp);
     block.as.captured.self = self;
-    block.as.captured.code.iseq = cfp->iseq;
+    block.as.captured.code.iseq = rb_zjit_cfp_iseq(cfp);
     block.type = block_type_iseq;
 
     // EP is not escaped to the heap here, but captured and reused by another frame.
     // ZJIT's locals are incompatible with it unlike YJIT's, so invalidate the ISEQ for ZJIT.
-    rb_zjit_invalidate_no_ep_escape(cfp->iseq);
+    rb_zjit_invalidate_no_ep_escape(rb_zjit_cfp_iseq(cfp));
 
     iseq = eval_make_iseq(src, file, line, &block);
     if (!iseq) {
@@ -2849,10 +2849,11 @@ rb_current_realfilepath(void)
     rb_control_frame_t *cfp = ec->cfp;
     cfp = vm_get_ruby_level_caller_cfp(ec, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
     if (cfp != NULL) {
-        VALUE path = rb_iseq_realpath(cfp->iseq);
+        const rb_iseq_t *iseq = rb_zjit_cfp_iseq(cfp);
+        VALUE path = rb_iseq_realpath(iseq);
         if (RTEST(path)) return path;
         // eval context
-        path = rb_iseq_path(cfp->iseq);
+        path = rb_iseq_path(iseq);
         if (path == eval_default_path) {
             return Qnil;
         }

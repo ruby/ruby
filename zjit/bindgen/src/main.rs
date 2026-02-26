@@ -256,8 +256,7 @@ fn main() {
         .allowlist_type("iseq_inline_cvar_cache_entry")
         .blocklist_type("rb_execution_context_.*") // Large struct with various-type fields and an ifdef, so we don't import
         .opaque_type("rb_execution_context_.*")
-        .blocklist_type("rb_control_frame_struct")
-        .opaque_type("rb_control_frame_struct")
+        .allowlist_type("rb_control_frame_struct")
         .allowlist_function("rb_vm_bh_to_procval")
         .allowlist_function("rb_vm_env_write")
         .allowlist_function("rb_vm_ep_local_ep")
@@ -310,6 +309,7 @@ fn main() {
         .allowlist_function("rb_zjit_insn_leaf")
         .allowlist_type("jit_bindgen_constants")
         .allowlist_type("zjit_struct_offsets")
+        .allowlist_type("zjit_poison_values")
         .allowlist_function("rb_assert_holding_vm_lock")
         .allowlist_function("rb_jit_shape_too_complex_p")
         .allowlist_function("rb_jit_multi_ractor_p")

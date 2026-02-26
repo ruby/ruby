@@ -9,6 +9,14 @@
 # define ZJIT_STATS (USE_ZJIT && RUBY_DEBUG)
 #endif
 
+// JITFrame is a C ABI compatible struct defined in Rust with #[repr(C)].
+// C code can read its fields directly without calling Rust accessor functions.
+typedef struct zjit_jit_frame {
+    const VALUE *pc;
+    const rb_iseq_t *iseq; // marked in rb_execution_context_mark
+    bool materialize_block_code;
+} zjit_jit_frame_t;
+
 #if USE_ZJIT
 extern void *rb_zjit_entry;
 extern uint64_t rb_zjit_call_threshold;
@@ -45,5 +53,65 @@ static inline void rb_zjit_invalidate_root_box(void) {}
 #endif // #if USE_ZJIT
 
 #define rb_zjit_enabled_p (rb_zjit_entry != 0)
+
+enum zjit_poison_values {
+    // Poison value used on frame push when runtime checks are enabled
+    ZJIT_JIT_RETURN_POISON = 2,
+};
+
+// Check if cfp->jit_return holds a ZJIT lightweight frame (JITFrame pointer).
+// YJIT also uses jit_return (as a return address), so this must only return
+// true when ZJIT is enabled and has set jit_return to a JITFrame pointer.
+static inline bool
+CFP_JIT_RETURN(const rb_control_frame_t *cfp)
+{
+    if (!rb_zjit_enabled_p) return false;
+#if USE_ZJIT
+    RUBY_ASSERT_ALWAYS(cfp->jit_return != (void *)ZJIT_JIT_RETURN_POISON);
+#endif
+    return !!cfp->jit_return;
+}
+
+// Returns true if cfp has an ISEQ, either directly or via JITFrame.
+// When JITFrame is present, it is authoritative (cfp->iseq may be stale).
+// C frames with JITFrame have iseq=NULL, so this returns false for them.
+static inline bool
+rb_zjit_cfp_has_iseq(const rb_control_frame_t *cfp)
+{
+    if (CFP_JIT_RETURN(cfp)) return ((const zjit_jit_frame_t *)cfp->jit_return)->iseq != NULL;
+    return !!cfp->iseq;
+}
+
+// Returns true if cfp has a PC, either directly or via JITFrame.
+// When JITFrame is present, it is authoritative (cfp->pc may be stale/poisoned).
+// C frames with JITFrame have pc=NULL, so this returns false for them.
+static inline bool
+rb_zjit_cfp_has_pc(const rb_control_frame_t *cfp)
+{
+    if (CFP_JIT_RETURN(cfp)) return ((const zjit_jit_frame_t *)cfp->jit_return)->pc != NULL;
+    return !!cfp->pc;
+}
+
+static inline const VALUE*
+rb_zjit_cfp_pc(const rb_control_frame_t *cfp)
+{
+    if (rb_zjit_enabled_p && CFP_JIT_RETURN(cfp)) {
+        return ((const zjit_jit_frame_t *)cfp->jit_return)->pc;
+    }
+    else {
+        return cfp->pc;
+    }
+}
+
+static inline const rb_iseq_t*
+rb_zjit_cfp_iseq(const rb_control_frame_t *cfp)
+{
+    if (rb_zjit_enabled_p && CFP_JIT_RETURN(cfp)) {
+        return ((const zjit_jit_frame_t *)cfp->jit_return)->iseq;
+    }
+    else {
+        return cfp->iseq;
+    }
+}
 
 #endif // #ifndef ZJIT_H
