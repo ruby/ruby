@@ -587,32 +587,6 @@ rb_invalidate_method_caches(struct rb_id_table *cm_tbl, VALUE cc_tbl)
     }
 }
 
-static int
-invalidate_cc_refinement(st_data_t key, st_data_t data)
-{
-    VALUE v = (VALUE)key;
-    void *ptr = rb_asan_poisoned_object_p(v);
-    rb_asan_unpoison_object(v, false);
-
-    if (rb_gc_pointer_to_heap_p(v) &&
-        !rb_objspace_garbage_object_p(v) &&
-        RBASIC(v)->flags) { // liveness check
-        const struct rb_callcache *cc = (const struct rb_callcache *)v;
-
-        VM_ASSERT(vm_cc_refinement_p(cc));
-
-        if (vm_cc_valid(cc)) {
-            vm_cc_invalidate(cc);
-        }
-    }
-
-    if (ptr) {
-        rb_asan_poison_object(v);
-    }
-
-    return ST_CONTINUE;
-}
-
 static st_index_t
 vm_ci_hash(VALUE v)
 {
@@ -722,28 +696,94 @@ rb_vm_ci_free(const struct rb_callinfo *ci)
     st_delete(vm->ci_table, &key, NULL);
 }
 
-void
-rb_vm_insert_cc_refinement(const struct rb_callcache *cc)
-{
-    st_data_t key = (st_data_t)cc;
+struct cc_refinement_entries {
+    VALUE *entries;
+    size_t len;
+    size_t capa;
+};
 
-    rb_vm_t *vm = GET_VM();
-    RB_VM_LOCK_ENTER();
-    {
-        rb_set_insert(vm->cc_refinement_table, key);
+static void
+cc_refinement_set_free(void *ptr)
+{
+    struct cc_refinement_entries *e = ptr;
+    xfree(e->entries);
+}
+
+static size_t
+cc_refinement_set_memsize(const void *ptr)
+{
+    const struct cc_refinement_entries *e = ptr;
+    return e->capa * sizeof(VALUE);
+}
+
+static void
+cc_refinement_set_compact(void *ptr)
+{
+    struct cc_refinement_entries *e = ptr;
+    for (size_t i = 0; i < e->len; i++) {
+        e->entries[i] = rb_gc_location(e->entries[i]);
     }
-    RB_VM_LOCK_LEAVE();
+}
+
+static void
+cc_refinement_set_handle_weak_references(void *ptr)
+{
+    struct cc_refinement_entries *e = ptr;
+    size_t write = 0;
+    for (size_t read = 0; read < e->len; read++) {
+        if (rb_gc_handle_weak_references_alive_p(e->entries[read])) {
+            e->entries[write++] = e->entries[read];
+        }
+    }
+    e->len = write;
+}
+
+static const rb_data_type_t cc_refinement_set_type = {
+    "VM/cc_refinement_set",
+    {
+        NULL,
+        cc_refinement_set_free,
+        cc_refinement_set_memsize,
+        cc_refinement_set_compact,
+        cc_refinement_set_handle_weak_references,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
+};
+
+VALUE
+rb_cc_refinement_set_create(void)
+{
+    struct cc_refinement_entries *e;
+    VALUE obj = TypedData_Make_Struct(0, struct cc_refinement_entries, &cc_refinement_set_type, e);
+
+    e->entries = NULL;
+    e->len = 0;
+    e->capa = 0;
+
+    rb_gc_declare_weak_references(obj);
+
+    return obj;
 }
 
 void
-rb_vm_delete_cc_refinement(const struct rb_callcache *cc)
+rb_vm_insert_cc_refinement(const struct rb_callcache *cc)
 {
-    ASSERT_vm_locking();
-
     rb_vm_t *vm = GET_VM();
-    st_data_t key = (st_data_t)cc;
+    RB_VM_LOCK_ENTER();
+    {
+        struct cc_refinement_entries *e = RTYPEDDATA_GET_DATA(vm->cc_refinement_set);
+        if (e->len == e->capa) {
+            size_t new_capa = e->capa == 0 ? 16 : e->capa * 2;
+            SIZED_REALLOC_N(e->entries, VALUE, new_capa, e->capa);
+            e->capa = new_capa;
+        }
+        e->entries[e->len++] = (VALUE)cc;
 
-    rb_set_table_delete(vm->cc_refinement_table, &key);
+        // We never mark the cc, but we need to issue a writebarrier so that
+        // the refinement set can be added to the remembered set
+        RB_OBJ_WRITTEN(vm->cc_refinement_set, Qundef, (VALUE)cc);
+    }
+    RB_VM_LOCK_LEAVE();
 }
 
 void
@@ -753,9 +793,23 @@ rb_clear_all_refinement_method_cache(void)
 
     RB_VM_LOCK_ENTER();
     {
-        rb_set_table_foreach(vm->cc_refinement_table, invalidate_cc_refinement, (st_data_t)NULL);
-        rb_set_table_clear(vm->cc_refinement_table);
-        rb_set_compact_table(vm->cc_refinement_table);
+        struct cc_refinement_entries *e = RTYPEDDATA_GET_DATA(vm->cc_refinement_set);
+        for (size_t i = 0; i < e->len; i++) {
+            VALUE v = e->entries[i];
+
+            // All objects should be live as weak references are pruned in
+            // cc_refinement_set_handle_weak_references
+            VM_ASSERT(rb_gc_pointer_to_heap_p(v));
+            VM_ASSERT(!rb_objspace_garbage_object_p(v));
+
+            const struct rb_callcache *cc = (const struct rb_callcache *)v;
+            VM_ASSERT(vm_cc_refinement_p(cc));
+
+            if (vm_cc_valid(cc)) {
+                vm_cc_invalidate(cc);
+            }
+        }
+        e->len = 0;
     }
     RB_VM_LOCK_LEAVE();
 

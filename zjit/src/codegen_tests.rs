@@ -822,6 +822,38 @@ fn test_send_kwarg_optional_static_with_side_exit() {
 }
 
 #[test]
+fn test_send_hash_to_kwarg_only_method() {
+    assert_snapshot!(inspect(r#"
+        def callee(a:) = a
+
+        def entry
+          callee({a: 1})
+        rescue ArgumentError
+          "ArgumentError"
+        end
+
+        entry
+        entry
+    "#), @r#""ArgumentError""#);
+}
+
+#[test]
+fn test_send_hash_to_optional_kwarg_only_method() {
+    assert_snapshot!(inspect(r#"
+        def callee(a: nil) = a
+
+        def entry
+          callee({a: 1})
+        rescue ArgumentError
+          "ArgumentError"
+        end
+
+        entry
+        entry
+    "#), @r#""ArgumentError""#);
+}
+
+#[test]
 fn test_send_all_arg_types() {
     assert_snapshot!(inspect("
         def test(a, b = :opt, c, d:, e: :kwo) = [a, b, c, d, e, block_given?]

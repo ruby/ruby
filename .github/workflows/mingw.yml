@@ -37,21 +37,23 @@ jobs:
     env:
       MSYSTEM: ${{ matrix.msystem }}
       MSYS2_ARCH: >-
-        ${{
-        contains(matrix.msystem, 'arm64') && 'aarch64' ||
-        contains(matrix.msystem, '64') && 'x86_64' || 'i686'
-        }}
+        ${{ case(
+        contains(matrix.msystem, 'arm64'), 'aarch64',
+        contains(matrix.msystem, '64'), 'x86_64',
+        'i686'
+        ) }}
       MINGW_PACKAGE_PREFIX: >-
         mingw-w${{
         endsWith(matrix.msystem, '64') && '64' || '32'
-        }}-${{
-        startsWith(matrix.msystem, 'clang') && 'clang' ||
-        startsWith(matrix.msystem, 'ucrt') && 'ucrt' ||
+        }}-${{ case(
+        startsWith(matrix.msystem, 'clang'), 'clang',
+        startsWith(matrix.msystem, 'ucrt'), 'ucrt',
         'mingw'
-        }}-${{
-        contains(matrix.msystem, 'arm64') && 'aarch64' ||
-        endsWith(matrix.msystem, '64') && 'x86_64' || 'i686'
-        }}
+        ) }}-${{ case(
+        contains(matrix.msystem, 'arm64'), 'aarch64',
+        endsWith(matrix.msystem, '64'), 'x86_64',
+        'i686'
+        ) }}
       CFLAGS: '-mtune=generic -O3 -pipe'
       CXXFLAGS: '-mtune=generic -O3 -pipe'
       CPPFLAGS: '-D_FORTIFY_SOURCE=2 -D__USE_MINGW_ANSI_STDIO=1 -DFD_SETSIZE=2048'
