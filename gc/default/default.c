@@ -1646,7 +1646,7 @@ heap_page_add_freeobj(rb_objspace_t *objspace, struct heap_page *page, VALUE obj
         /* obj should belong to page */
         !(page->start <= (uintptr_t)obj &&
           (uintptr_t)obj   <  ((uintptr_t)page->start + (page->total_slots * page->slot_size)) &&
-          obj % pool_slot_sizes[0] == 0)) {
+          obj % sizeof(VALUE) == 0)) {
         rb_bug("heap_page_add_freeobj: %p is not rvalue.", (void *)obj);
     }
 
@@ -2589,7 +2589,7 @@ is_pointer_to_heap(rb_objspace_t *objspace, const void *ptr)
     if (p < heap_pages_lomem || p > heap_pages_himem) return FALSE;
     RB_DEBUG_COUNTER_INC(gc_isptr_range);
 
-    if (p % pool_slot_sizes[0] != 0) return FALSE;
+    if (p % sizeof(VALUE) != 0) return FALSE;
     RB_DEBUG_COUNTER_INC(gc_isptr_align);
 
     page = heap_page_for_ptr(objspace, (uintptr_t)ptr);
@@ -3495,7 +3495,7 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
 
     do {
         VALUE vp = (VALUE)p;
-        GC_ASSERT(vp % pool_slot_sizes[0] == 0);
+        GC_ASSERT(vp % sizeof(VALUE) == 0);
 
         rb_asan_unpoison_object(vp, false);
         if (bitset & 1) {
@@ -5594,7 +5594,7 @@ gc_compact_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t b
 
     do {
         VALUE vp = (VALUE)p;
-        GC_ASSERT(vp % pool_slot_sizes[0] == 0);
+        GC_ASSERT(vp % sizeof(VALUE) == 0);
 
         if (bitset & 1) {
             objspace->rcompactor.considered_count_table[BUILTIN_TYPE(vp)]++;
