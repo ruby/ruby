@@ -215,6 +215,27 @@ module Prism
       assert_location(CaseMatchNode, "case foo; in bar; in baz; else; end")
     end
 
+    def test_case_match_with_standalone_pattern_match_inside_branch
+      source = <<~RUBY
+        x = "x"
+        case x
+        in Integer
+          nil
+        in String
+          x.itself in String
+          p :after
+        end
+      RUBY
+
+      ast = Prism.parse(source).value.statements.body[1]
+      assert_equal 2, ast.conditions.length
+
+      statements = ast.conditions.last.statements.body
+      assert_equal 2, statements.length
+      assert_kind_of MatchPredicateNode, statements.first
+      assert_kind_of CallNode, statements.last
+    end
+
     def test_ClassNode
       assert_location(ClassNode, "class Foo end")
       assert_location(ClassNode, "class Foo < Bar; end")

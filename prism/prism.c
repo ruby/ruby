@@ -21644,19 +21644,53 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
     pm_binding_powers_t current_binding_powers;
     pm_token_type_t current_token_type;
 
-    while (
-        current_token_type = parser->current.type,
-        current_binding_powers = pm_binding_powers[current_token_type],
-        binding_power <= current_binding_powers.left &&
-        current_binding_powers.binary
-     ) {
-        node = parse_expression_infix(parser, node, binding_power, current_binding_powers.right, accepts_command_call, (uint16_t) (depth + 1));
+    while (true) {
+        current_token_type = parser->current.type;
 
-        if (context_terminator(parser->current_context->context, &parser->current)) {
+        // Allow ignored newlines in case/in to be treated as whitespace so that
+        // `in` clauses that start on the next line are still recognized as
+        // statement boundaries.
+        if (current_token_type == PM_TOKEN_IGNORED_NEWLINE && parser->current_context->context == PM_CONTEXT_CASE_IN) {
+            parser_lex(parser);
+            continue;
+        }
+
+        current_binding_powers = pm_binding_powers[current_token_type];
+        if ((binding_power > current_binding_powers.left) || !current_binding_powers.binary) {
+            break;
+        }
+        // Allow ignored newlines in case/in to be treated as whitespace so that
+        // `in` clauses that start on the next line are still recognized as
+        // statement boundaries.
+        if (parser->current.type == PM_TOKEN_IGNORED_NEWLINE && parser->current_context->context == PM_CONTEXT_CASE_IN) {
+            parser_lex(parser);
+            continue;
+        }
+
+        bool is_context_terminator = context_terminator(parser->current_context->context, &parser->current);
+
+        bool case_in_clause = parser->current_context->context == PM_CONTEXT_CASE_IN && parser->current.type == PM_TOKEN_KEYWORD_IN;
+        bool case_in_new_statement =
+            case_in_clause &&
+            (
+                parser->previous.type == PM_TOKEN_NEWLINE ||
+                parser->previous.type == PM_TOKEN_IGNORED_NEWLINE ||
+                parser->previous.type == PM_TOKEN_LABEL ||
+                parser->previous.type == PM_TOKEN_SEMICOLON ||
+                (parser->previous.end < parser->current.start &&
+                 memchr(parser->previous.end, '\n', (size_t) (parser->current.start - parser->previous.end)) != NULL)
+            );
+
+        if (is_context_terminator) {
             // If this token terminates the current context, then we need to
             // stop parsing the expression, as it has become a statement.
-            return node;
+            //
+            // In case/in, a token-level `in` at a clause boundary is still
+            // special and should not be parsed as a match predicate.
+            if (!case_in_clause || case_in_new_statement) return node;
         }
+
+        node = parse_expression_infix(parser, node, binding_power, current_binding_powers.right, accepts_command_call, (uint16_t) (depth + 1));
 
         switch (PM_NODE_TYPE(node)) {
             case PM_MULTI_WRITE_NODE:
