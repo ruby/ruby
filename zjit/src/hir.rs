@@ -3944,6 +3944,8 @@ impl Function {
                                 }
                             } else {
                                 // Non-root box active: fall back to C call
+                                // NOTE: it's fine to use rb_ivar_get_at_no_ractor_check because
+                                // getinstancevariable does assume_single_ractor_mode()
                                 let ivar_index_insn = self.push_insn(block, Insn::Const { val: Const::CUInt16(ivar_index as u16) });
                                 self.push_insn(block, Insn::CCall {
                                     cfunc: rb_ivar_get_at_no_ractor_check as *const u8,
@@ -3955,6 +3957,8 @@ impl Function {
                             }
                         } else if !recv_type.flags().is_t_object() {
                             // Non-T_OBJECT, non-class/module (e.g. T_DATA): fall back to C call
+                            // NOTE: it's fine to use rb_ivar_get_at_no_ractor_check because
+                            // getinstancevariable does assume_single_ractor_mode()
                             let ivar_index_insn = self.push_insn(block, Insn::Const { val: Const::CUInt16(ivar_index as u16) });
                             self.push_insn(block, Insn::CCall {
                                 cfunc: rb_ivar_get_at_no_ractor_check as *const u8,
