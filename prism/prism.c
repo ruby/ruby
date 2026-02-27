@@ -13876,6 +13876,7 @@ parse_parameters(
     bool allows_forwarding_parameters,
     bool accepts_blocks_in_defaults,
     bool in_block,
+    pm_diagnostic_id_t diag_id_forwarding,
     uint16_t depth
 ) {
     pm_do_loop_stack_push(parser, false);
@@ -13931,7 +13932,7 @@ parse_parameters(
             }
             case PM_TOKEN_UDOT_DOT_DOT: {
                 if (!allows_forwarding_parameters) {
-                    pm_parser_err_current(parser, PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES);
+                    pm_parser_err_current(parser, diag_id_forwarding);
                 }
 
                 bool succeeded = update_parameter_state(parser, &parser->current, &order);
@@ -14611,6 +14612,7 @@ parse_block_parameters(
             false,
             accepts_blocks_in_defaults,
             true,
+            is_lambda_literal ? PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES_LAMBDA : PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES_BLOCK,
             (uint16_t) (depth + 1)
         );
         if (!is_lambda_literal) {
@@ -18853,7 +18855,17 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     if (match1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
                         params = NULL;
                     } else {
-                        params = parse_parameters(parser, PM_BINDING_POWER_DEFINED, true, false, true, true, false, (uint16_t) (depth + 1));
+                        params = parse_parameters(
+                            parser,
+                            PM_BINDING_POWER_DEFINED,
+                            true,
+                            false,
+                            true,
+                            true,
+                            false,
+                            PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES,
+                            (uint16_t) (depth + 1)
+                        );
                     }
 
                     lex_state_set(parser, PM_LEX_STATE_BEG);
@@ -18878,7 +18890,17 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
                     lparen = not_provided(parser);
                     rparen = not_provided(parser);
-                    params = parse_parameters(parser, PM_BINDING_POWER_DEFINED, false, false, true, true, false, (uint16_t) (depth + 1));
+                    params = parse_parameters(
+                        parser,
+                        PM_BINDING_POWER_DEFINED,
+                        false,
+                        false,
+                        true,
+                        true,
+                        false,
+                        PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES,
+                        (uint16_t) (depth + 1)
+                    );
 
                     // Reject `def * = 1` and similar. We have to specifically check
                     // for them because they create ambiguity with optional arguments.
