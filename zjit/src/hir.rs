@@ -1171,7 +1171,8 @@ impl Insn {
             Insn::LoadPC { .. } => Effect::read_write(abstract_heaps::PC, abstract_heaps::Empty),
             Insn::LoadEC { .. } => effects::Empty,
             Insn::LoadSP { .. } => effects::Empty,
-            Insn::GetEP { .. } => effects::Empty,
+            // GetEP reads from the current frame pointer (abstract_heaps::Frame) and also traverses previous frames too.
+            Insn::GetEP { .. } => Effect::read_write(abstract_heaps::Memory, abstract_heaps::Empty),
             Insn::LoadSelf { .. } => Effect::read_write(abstract_heaps::Frame, abstract_heaps::Empty),
             Insn::LoadField { .. } => Effect::read_write(abstract_heaps::Memory, abstract_heaps::Empty),
             Insn::StoreField { .. } => effects::Any,
