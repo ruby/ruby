@@ -3094,7 +3094,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
                     }
                 | /* none */
                     {
-                        $$ = new_args_tail(p, 0, 0, 0, &@0);
+                        $$ = new_args_tail(p, 0, 0, 0, &@$);
                     /*% ripper: [Qnil, Qnil, Qnil] %*/
                     }
                 ;
@@ -6260,11 +6260,11 @@ superclass	: '<'
                 ;
 
 f_opt_paren_args: f_paren_args
-                | none
+                | /* none */
                     {
                         p->ctxt.in_argdef = 0;
-                        $$ = new_args_tail(p, 0, 0, 0, &@0);
-                        $$ = new_args(p, 0, 0, 0, 0, $$, &@0);
+                        $$ = new_args_tail(p, 0, 0, 0, &@$);
+                        $$ = new_args(p, 0, 0, 0, 0, $$, &@$);
                     /*% ripper: params!(Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, Qnil) %*/
                     }
                 ;
@@ -6387,8 +6387,8 @@ f_args		: f_arg ',' f_opt_arg(arg_value) ',' f_rest_arg opt_args_tail(args_tail)
                     }
                 | /* none */
                     {
-                        $$ = new_args_tail(p, 0, 0, 0, &@0);
-                        $$ = new_args(p, 0, 0, 0, 0, $$, &@0);
+                        $$ = new_args_tail(p, 0, 0, 0, &@$);
+                        $$ = new_args(p, 0, 0, 0, 0, $$, &@$);
                     /*% ripper: params!(Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, Qnil) %*/
                     }
                 ;
