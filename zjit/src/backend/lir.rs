@@ -3148,30 +3148,36 @@ pub fn lir_intervals_string(asm: &Assembler, intervals: &[Interval]) -> String {
     let mut output = String::new();
     let num_vregs = intervals.len();
 
-    // Print header with VReg indices
-    output.push_str("         ");
-    for i in 0..num_vregs {
-        output.push_str(&format!(" v{:<2}", i));
-    }
-    output.push('\n');
+    let vreg_header = |output: &mut String| {
+        output.push_str("         ");
+        for i in 0..num_vregs {
+            output.push_str(&format!(" v{:<2}", i));
+        }
+        output.push('\n');
 
-    // Print separator
-    output.push_str("         ");
-    for _ in 0..num_vregs {
-        output.push_str(" ---");
-    }
-    output.push('\n');
+        output.push_str("         ");
+        for _ in 0..num_vregs {
+            output.push_str(" ---");
+        }
+        output.push('\n');
+    };
 
     // Collect all numbered instruction positions in RPO order
+    let mut first = true;
     for block_id in asm.block_order() {
         let block = &asm.basic_blocks[block_id.0];
+
+        // Print VReg header before each block
+        if !first { output.push('\n'); }
+        first = false;
+        vreg_header(&mut output);
 
         // Print basic block label header with parameters
         let label = asm.block_label(block_id);
         if block.parameters.is_empty() {
-            output.push_str(&format!("\n{}():\n", asm.label_names[label.0]));
+            output.push_str(&format!("{}():\n", asm.label_names[label.0]));
         } else {
-            output.push_str(&format!("\n{}(", asm.label_names[label.0]));
+            output.push_str(&format!("{}(", asm.label_names[label.0]));
             for (idx, param) in block.parameters.iter().enumerate() {
                 if idx > 0 {
                     output.push_str(", ");
