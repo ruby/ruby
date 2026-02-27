@@ -1037,6 +1037,15 @@ impl Insn {
 
     /// Returns true if this instruction is a terminator (ends a basic block).
     pub fn is_terminator(&self) -> bool {
+        self.is_jump() ||
+            match self {
+                Insn::CRet(_) => true,
+                _ => false
+            }
+    }
+
+    /// Returns true if this instruction is a jump.
+    pub fn is_jump(&self) -> bool {
         match self {
             Insn::Jbe(_) |
             Insn::Jb(_) |
@@ -1052,8 +1061,7 @@ impl Insn {
             Insn::JoMul(_) |
             Insn::Jz(_) |
             Insn::Joz(..) |
-            Insn::Jonz(..) |
-            Insn::CRet(_) => true,
+            Insn::Jonz(..) => true,
             _ => false
         }
     }
@@ -2232,6 +2240,7 @@ impl Assembler
                         self.basic_blocks[successor.0].insn_ids.insert(1 + i, None);
                     }
                 } else {
+                    assert_eq!(num_successors, 1);
                     // Single-succ: insert at end of predecessor before terminator
                     let len = self.basic_blocks[pred_id.0].insns.len();
                     for (i, mov) in moves.into_iter().enumerate() {
