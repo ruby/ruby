@@ -72,7 +72,7 @@ jobs:
       - name: Maintain updated gems list in NEWS
         run: |
           ruby tool/update-NEWS-gemlist.rb bundled
-          ruby tool/update-NEWS-github-releases.rb --update
+          ruby tool/update-NEWS-github-release.rb --update
         if: ${{ env.UPDATE_ENABLED == 'true' }}
 
       - name: Check diffs
