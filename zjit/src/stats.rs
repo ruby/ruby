@@ -302,10 +302,7 @@ make_counters! {
     // Ivar fallback counters that are summed as dynamic_getivar_count
     dynamic_getivar {
         // getivar_fallback_: Fallback reasons for dynamic getivar instructions
-        getivar_fallback_not_monomorphic,
-        getivar_fallback_immediate,
-        getivar_fallback_not_t_object,
-        getivar_fallback_too_complex,
+        getivar_fallback_uncategorized,
     }
 
     // Ivar fallback counters that are summed as dynamic_definedivar_count
