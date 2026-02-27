@@ -2661,6 +2661,7 @@ rb_fiber_start(rb_fiber_t *fiber_arg)
         th->ec->errinfo = Qnil;
         th->ec->root_lep = rb_vm_proc_local_ep(fiber->first_proc);
         th->ec->root_svar = Qfalse;
+        th->ec->svar_table = Qnil;
 
         EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_FIBER_SWITCH, th->self, 0, 0, 0, Qnil);
         cont->value = rb_vm_invoke_proc(th->ec, proc, argc, argv, cont->kw_splat, VM_BLOCK_HANDLER_NONE, cref);
@@ -2750,6 +2751,8 @@ rb_threadptr_root_fiber_terminate(rb_thread_t *th)
     rb_fiber_t *fiber = th->ec->fiber_ptr;
 
     fiber->status = FIBER_TERMINATED;
+
+    th->ec->svar_table = Qnil;
 
     // The vm_stack is `alloca`ed on the thread stack, so it's gone too:
     rb_ec_clear_vm_stack(th->ec);
