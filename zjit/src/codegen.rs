@@ -601,7 +601,6 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::LoadEC => gen_load_ec(),
         Insn::LoadSP => gen_load_sp(),
         &Insn::GetEP { level } => gen_get_ep(asm, level),
-        Insn::GetLEP => gen_get_lep(jit, asm),
         Insn::LoadSelf => gen_load_self(),
         &Insn::LoadField { recv, id, offset, return_type } => gen_load_field(asm, opnd!(recv), id, offset, return_type),
         &Insn::StoreField { recv, id, offset, val } => no_output!(gen_store_field(asm, opnd!(recv), id, offset, opnd!(val), function.type_of(val))),
@@ -630,18 +629,6 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
 /// Gets the EP of the ISeq of the containing method, or "local level".
 /// Equivalent of GET_LEP() macro.
 fn gen_get_lep(jit: &JITState, asm: &mut Assembler) -> Opnd {
-    // Equivalent of get_lvar_level() in compile.c
-    fn get_lvar_level(mut iseq: IseqPtr) -> u32 {
-        let local_iseq = unsafe { rb_get_iseq_body_local_iseq(iseq) };
-        let mut level = 0;
-        while iseq != local_iseq {
-            iseq = unsafe { rb_get_iseq_body_parent_iseq(iseq) };
-            level += 1;
-        }
-
-        level
-    }
-
     let level = get_lvar_level(jit.iseq);
     gen_get_ep(asm, level)
 }

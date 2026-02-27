@@ -333,7 +333,10 @@ fn inline_kernel_block_given_p(fun: &mut hir::Function, block: hir::BlockId, _re
 
     let local_iseq = unsafe { rb_get_iseq_body_local_iseq(fun.iseq()) };
     if unsafe { rb_get_iseq_body_type(local_iseq) } == ISEQ_TYPE_METHOD {
-        let lep = fun.push_insn(block, hir::Insn::GetLEP);
+        // Get the EP of the ISeq of the containing method, or "local level", skipping over block-level EPs.
+        // Equivalent of GET_LEP() macro.
+        let level = crate::cruby::get_lvar_level(fun.iseq());
+        let lep = fun.push_insn(block, hir::Insn::GetEP { level });
         Some(fun.push_insn(block, hir::Insn::IsBlockGiven { lep }))
     } else {
         Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qfalse) }))

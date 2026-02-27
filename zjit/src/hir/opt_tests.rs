@@ -3236,7 +3236,7 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, block_given?@0x1008, cme:0x1010)
           v20:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v21:CPtr = GetLEP
+          v21:CPtr = GetEP 0
           v22:BoolExact = IsBlockGiven v21
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
@@ -8753,7 +8753,7 @@ mod hir_opt_tests {
             test = PushSubArray.new
             test << 1
         ");
-        assert_snapshot!(hir_string_proc("PushSubArray.new.method(:<<)"), @"
+        assert_snapshot!(hir_string_proc("PushSubArray.new.method(:<<)"), @r"
         fn <<@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -8768,7 +8768,7 @@ mod hir_opt_tests {
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
           PatchPoint MethodRedefined(Array@0x1008, <<@0x1010, cme:0x1018)
-          v23:CPtr = GetLEP
+          v23:CPtr = GetEP 0
           v24:RubyValue = LoadField v23, :_ep_method_entry@0x1040
           v25:CallableMethodEntry[VALUE(0x1048)] = GuardBitEquals v24, Value(VALUE(0x1048))
           v26:RubyValue = LoadField v23, :_ep_specval@0x1050
@@ -8802,12 +8802,12 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           PatchPoint MethodRedefined(Array@0x1000, pop@0x1008, cme:0x1010)
-          v18:CPtr = GetLEP
+          v18:CPtr = GetEP 0
           v19:RubyValue = LoadField v18, :_ep_method_entry@0x1038
           v20:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v19, Value(VALUE(0x1040))
           v21:RubyValue = LoadField v18, :_ep_specval@0x1048
           v22:FalseClass = GuardBitEquals v21, Value(false)
-          v28:CPtr = GetLEP
+          v28:CPtr = GetEP 0
           v29:RubyValue = LoadField v28, :_ep_method_entry@0x1038
           v30:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v29, Value(VALUE(0x1040))
           v31:RubyValue = LoadField v28, :_ep_specval@0x1048
@@ -8831,7 +8831,7 @@ mod hir_opt_tests {
             test = ArefSubArray.new([1])
             test[0]
         ");
-        assert_snapshot!(hir_string_proc("ArefSubArray.new.method(:[])"), @"
+        assert_snapshot!(hir_string_proc("ArefSubArray.new.method(:[])"), @r"
         fn []@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -8846,12 +8846,12 @@ mod hir_opt_tests {
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
           PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
-          v23:CPtr = GetLEP
+          v23:CPtr = GetEP 0
           v24:RubyValue = LoadField v23, :_ep_method_entry@0x1040
           v25:CallableMethodEntry[VALUE(0x1048)] = GuardBitEquals v24, Value(VALUE(0x1048))
           v26:RubyValue = LoadField v23, :_ep_specval@0x1050
           v27:FalseClass = GuardBitEquals v26, Value(false)
-          v37:CPtr = GetLEP
+          v37:CPtr = GetEP 0
           v38:RubyValue = LoadField v37, :_ep_method_entry@0x1040
           v39:CallableMethodEntry[VALUE(0x1048)] = GuardBitEquals v38, Value(VALUE(0x1048))
           v40:RubyValue = LoadField v37, :_ep_specval@0x1050
@@ -8879,7 +8879,7 @@ mod hir_opt_tests {
             test = ArefSubArrayRange.new([1, 2, 3])
             test[0..1]
         ");
-        assert_snapshot!(hir_string_proc("ArefSubArrayRange.new.method(:[])"), @"
+        assert_snapshot!(hir_string_proc("ArefSubArrayRange.new.method(:[])"), @r"
         fn []@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -8894,7 +8894,7 @@ mod hir_opt_tests {
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
           PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
-          v23:CPtr = GetLEP
+          v23:CPtr = GetEP 0
           v24:RubyValue = LoadField v23, :_ep_method_entry@0x1040
           v25:CallableMethodEntry[VALUE(0x1048)] = GuardBitEquals v24, Value(VALUE(0x1048))
           v26:RubyValue = LoadField v23, :_ep_specval@0x1050
@@ -12629,7 +12629,7 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           PatchPoint MethodRedefined(A@0x1000, foo@0x1008, cme:0x1010)
-          v18:CPtr = GetLEP
+          v18:CPtr = GetEP 0
           v19:RubyValue = LoadField v18, :_ep_method_entry@0x1038
           v20:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v19, Value(VALUE(0x1040))
           v21:RubyValue = LoadField v18, :_ep_specval@0x1048
@@ -12686,7 +12686,7 @@ mod hir_opt_tests {
         assert!(!hir.contains("InvokeSuper "), "InvokeSuper should optimize to SendDirect but got:\n{hir}");
         assert!(hir.contains("SendDirect"), "Should optimize to SendDirect for call without args or block:\n{hir}");
 
-        assert_snapshot!(hir, @"
+        assert_snapshot!(hir, @r"
         fn foo@<compiled>:10:
         bb1():
           EntryPoint interpreter
@@ -12701,7 +12701,7 @@ mod hir_opt_tests {
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
           PatchPoint MethodRedefined(A@0x1008, foo@0x1010, cme:0x1018)
-          v28:CPtr = GetLEP
+          v28:CPtr = GetEP 0
           v29:RubyValue = LoadField v28, :_ep_method_entry@0x1040
           v30:CallableMethodEntry[VALUE(0x1048)] = GuardBitEquals v29, Value(VALUE(0x1048))
           v31:RubyValue = LoadField v28, :_ep_specval@0x1050
@@ -12827,7 +12827,7 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           PatchPoint MethodRedefined(Hash@0x1000, size@0x1008, cme:0x1010)
-          v18:CPtr = GetLEP
+          v18:CPtr = GetEP 0
           v19:RubyValue = LoadField v18, :_ep_method_entry@0x1038
           v20:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v19, Value(VALUE(0x1040))
           v21:RubyValue = LoadField v18, :_ep_specval@0x1048
@@ -12862,7 +12862,7 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           PatchPoint MethodRedefined(BasicObject@0x1000, initialize@0x1008, cme:0x1010)
-          v18:CPtr = GetLEP
+          v18:CPtr = GetEP 0
           v19:RubyValue = LoadField v18, :_ep_method_entry@0x1038
           v20:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v19, Value(VALUE(0x1040))
           v21:RubyValue = LoadField v18, :_ep_specval@0x1048
@@ -12890,7 +12890,7 @@ mod hir_opt_tests {
         assert!(!hir.contains("InvokeSuper "), "InvokeSuper should optimize to CCallVariadic but got:\n{hir}");
         assert!(hir.contains("CCallVariadic"), "Should optimize to CCallVariadic for variadic cfunc:\n{hir}");
 
-        assert_snapshot!(hir, @"
+        assert_snapshot!(hir, @r"
         fn byteindex@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -12920,7 +12920,7 @@ mod hir_opt_tests {
           Jump bb5(v16, v17, v18)
         bb5(v28:BasicObject, v29:BasicObject, v30:BasicObject):
           PatchPoint MethodRedefined(String@0x1018, byteindex@0x1020, cme:0x1028)
-          v44:CPtr = GetLEP
+          v44:CPtr = GetEP 0
           v45:RubyValue = LoadField v44, :_ep_method_entry@0x1050
           v46:CallableMethodEntry[VALUE(0x1058)] = GuardBitEquals v45, Value(VALUE(0x1058))
           v47:RubyValue = LoadField v44, :_ep_specval@0x1060

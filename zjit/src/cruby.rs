@@ -831,6 +831,18 @@ pub fn iseq_name(iseq: IseqPtr) -> String {
     }
 }
 
+// Equivalent of get_lvar_level() in compile.c
+pub fn get_lvar_level(mut iseq: IseqPtr) -> u32 {
+    let local_iseq = unsafe { rb_get_iseq_body_local_iseq(iseq) };
+    let mut level = 0;
+    while iseq != local_iseq {
+        iseq = unsafe { rb_get_iseq_body_parent_iseq(iseq) };
+        level += 1;
+    }
+
+    level
+}
+
 // Location is the file defining the method, colon, method name.
 // Filenames are sometimes internal strings supplied to eval,
 // so be careful with them.

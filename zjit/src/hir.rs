@@ -881,10 +881,6 @@ pub enum Insn {
     /// Get the EP at the given level from the current CFP.
     GetEP { level: u32 },
 
-    /// Get the EP of the ISeq of the containing method, or "local level", skipping over block-level EPs.
-    /// Equivalent of GET_LEP() macro.
-    GetLEP,
-
     /// Own a FrameState so that instructions can look up their dominating FrameState when
     /// generating deopt side-exits and frame reconstruction metadata. Does not directly generate
     /// any code.
@@ -1176,7 +1172,6 @@ impl Insn {
             Insn::LoadEC { .. } => effects::Empty,
             Insn::LoadSP { .. } => effects::Empty,
             Insn::GetEP { .. } => effects::Empty,
-            Insn::GetLEP { .. } => effects::Empty,
             Insn::LoadSelf { .. } => Effect::read_write(abstract_heaps::Frame, abstract_heaps::Empty),
             Insn::LoadField { .. } => Effect::read_write(abstract_heaps::Memory, abstract_heaps::Empty),
             Insn::StoreField { .. } => effects::Any,
@@ -1663,7 +1658,6 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::LoadEC => write!(f, "LoadEC"),
             Insn::LoadSP => write!(f, "LoadSP"),
             &Insn::GetEP { level } => write!(f, "GetEP {level}"),
-            Insn::GetLEP => write!(f, "GetLEP"),
             Insn::LoadSelf => write!(f, "LoadSelf"),
             &Insn::LoadField { recv, id, offset, return_type: _ } => {
                 let field_name = if id_is_empty(id) {
@@ -2256,7 +2250,6 @@ impl Function {
                     | LoadSP
                     | LoadEC
                     | GetEP {..}
-                    | GetLEP
                     | LoadSelf
                     | IncrCounterPtr {..}
                     | IncrCounter(_)) => result.clone(),
@@ -2596,7 +2589,6 @@ impl Function {
             Insn::LoadSP => types::CPtr,
             Insn::LoadEC => types::CPtr,
             Insn::GetEP { .. } => types::CPtr,
-            Insn::GetLEP => types::CPtr,
             Insn::LoadSelf => types::BasicObject,
             &Insn::LoadField { return_type, .. } => return_type,
             Insn::GetSpecialSymbol { .. } => types::BasicObject,
@@ -3534,7 +3526,10 @@ impl Function {
                                 state
                             });
 
-                            let lep = fun.push_insn(block, Insn::GetLEP);
+                            // Get the EP of the ISeq of the containing method, or "local level", skipping over block-level EPs.
+                            // Equivalent of GET_LEP() macro.
+                            let level = get_lvar_level(fun.iseq);
+                            let lep = fun.push_insn(block, Insn::GetEP { level });
                             // Load ep[VM_ENV_DATA_INDEX_ME_CREF]
                             let method_entry = fun.push_insn(block, Insn::LoadField { recv: lep, id: ID!(_ep_method_entry), offset: SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_ME_CREF, return_type: types::RubyValue });
                             // Guard that it matches the expected CME
@@ -4730,7 +4725,6 @@ impl Function {
             | &Insn::LoadSP
             | &Insn::LoadEC
             | &Insn::GetEP { .. }
-            | &Insn::GetLEP
             | &Insn::LoadSelf
             | &Insn::PutSpecialObject { .. }
             | &Insn::IncrCounter(_)
@@ -5598,7 +5592,6 @@ impl Function {
             | Insn::LoadSP
             | Insn::LoadEC
             | Insn::GetEP { .. }
-            | Insn::GetLEP
             | Insn::LoadSelf
             | Insn::Snapshot { .. }
             | Insn::Jump { .. }
