@@ -1845,7 +1845,9 @@ impl<T: Copy + Into<usize> + PartialEq> UnionFind<T> {
         if idx.into() >= self.forwarded.len() {
             self.forwarded.resize(idx.into()+1, None);
         }
-        self.forwarded[idx.into()] = Some(value);
+        if idx != value {
+            self.forwarded[idx.into()] = Some(value);
+        }
     }
 
     /// Find the set representative for `insn`. Perform path compression at the same time to speed
@@ -1874,7 +1876,10 @@ impl<T: Copy + Into<usize> + PartialEq> UnionFind<T> {
         loop {
             match self.at(result) {
                 None => return result,
-                Some(insn) => result = insn,
+                Some(insn) => {
+                    assert!(result != insn, "cycle detected");
+                    result = insn;
+                }
             }
         }
     }
@@ -8228,6 +8233,13 @@ mod union_find_tests {
         let mut uf = UnionFind::new();
         uf.make_equal_to(3, 4);
         assert_eq!(uf.find(3usize), 4);
+    }
+
+    #[test]
+    fn test_find_halts_with_identity_make_equal_to() {
+        let mut uf = UnionFind::<usize>::new();
+        uf.make_equal_to(0, 0);
+        assert_eq!(uf.find(0), 0);
     }
 
     #[test]
