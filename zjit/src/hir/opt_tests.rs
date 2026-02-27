@@ -4499,9 +4499,7 @@ mod hir_opt_tests {
           v17:CInt64 = LoadField v14, :_env_data_index_specval@0x1001
           v18:CInt64 = GuardAnyBitSet v17, CUInt64(1)
           v19:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
-          v21:BasicObject = Send v8, 0x1000, :tap, v19 # SendFallbackReason: Uncategorized(send)
-          CheckInterrupts
-          Return v21
+          SideExit NoProfileSend recompile
         ");
     }
 
@@ -6026,9 +6024,7 @@ mod hir_opt_tests {
         bb3(v8:BasicObject, v9:BasicObject):
           v16:Fixnum[1] = Const Value(1)
           v18:Fixnum[10] = Const Value(10)
-          v22:BasicObject = Send v9, :[]=, v16, v18 # SendFallbackReason: Uncategorized(opt_aset)
-          CheckInterrupts
-          Return v18
+          SideExit NoProfileSend recompile
         ");
     }
 
@@ -9866,9 +9862,7 @@ mod hir_opt_tests {
           v8:BasicObject = LoadArg :y@2
           Jump bb3(v6, v7, v8)
         bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          v17:BasicObject = Send v11, :^ # SendFallbackReason: Uncategorized(opt_send_without_block)
-          CheckInterrupts
-          Return v17
+          SideExit NoProfileSend recompile
         ");
     }
 
@@ -10751,9 +10745,7 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v11:StaticSymbol[:the_block] = Const Value(VALUE(0x1000))
-          v13:BasicObject = Send v6, 0x1008, :callee, v11 # SendFallbackReason: Uncategorized(send)
-          CheckInterrupts
-          Return v13
+          SideExit NoProfileSend recompile
         ");
     }
 
@@ -13254,6 +13246,93 @@ mod hir_opt_tests {
           IncrCounter inline_cfunc_optimized_send_count
           PatchPoint NoEPEscape(each)
           Jump bb8(v67, v94)
+        ");
+    }
+
+    #[test]
+    fn test_recompile_no_profile_send() {
+        // Define a callee method and a test method that conditionally calls it
+        eval("
+            def greet(x) = x.to_s
+            def test_no_profile(flag)
+              if flag
+                greet(42)
+              else
+                'hello'
+              end
+            end
+        ");
+
+        // With call_threshold=2, num_profiles=1:
+        //   1st call profiles (flag=false, so greet is never reached)
+        //   2nd call compiles (greet has no profile data → SideExit recompile)
+        eval("test_no_profile(false); test_no_profile(false)");
+
+        // The first compilation should have SideExit NoProfileSend recompile
+        // for the greet(42) callsite since it was never profiled.
+        assert_snapshot!(hir_string("test_no_profile"), @r"
+        fn test_no_profile@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :flag, l0, SP@4
+          Jump bb3(v1, v2)
+        bb2():
+          EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:BasicObject = LoadArg :flag@1
+          Jump bb3(v5, v6)
+        bb3(v8:BasicObject, v9:BasicObject):
+          CheckInterrupts
+          v15:CBool = Test v9
+          v16:Falsy = RefineType v9, Falsy
+          IfFalse v15, bb4(v8, v16)
+          v18:Truthy = RefineType v9, Truthy
+          v22:Fixnum[42] = Const Value(42)
+          SideExit NoProfileSend recompile
+        bb4(v29:BasicObject, v30:Falsy):
+          v34:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v35:StringExact = StringCopy v34
+          CheckInterrupts
+          Return v35
+        ");
+
+        // Now call with flag=true. This hits the SideExit, which profiles
+        // the send and invalidates the ISEQ for recompilation.
+        eval("test_no_profile(true)");
+
+        // After profiling via the side exit, rebuilding HIR should now
+        // have a SendDirect for greet instead of SideExit.
+        assert_snapshot!(hir_string("test_no_profile"), @r"
+        fn test_no_profile@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal :flag, l0, SP@4
+          Jump bb3(v1, v2)
+        bb2():
+          EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:BasicObject = LoadArg :flag@1
+          Jump bb3(v5, v6)
+        bb3(v8:BasicObject, v9:BasicObject):
+          CheckInterrupts
+          v15:CBool = Test v9
+          v16:Falsy = RefineType v9, Falsy
+          IfFalse v15, bb4(v8, v16)
+          v18:Truthy = RefineType v9, Truthy
+          v22:Fixnum[42] = Const Value(42)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          PatchPoint MethodRedefined(Object@0x1000, greet@0x1008, cme:0x1010)
+          v43:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v8, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v44:BasicObject = SendDirect v43, 0x1038, :greet (0x1048), v22
+          CheckInterrupts
+          Return v44
+        bb4(v29:BasicObject, v30:Falsy):
+          v34:StringExact[VALUE(0x1050)] = Const Value(VALUE(0x1050))
+          v35:StringExact = StringCopy v34
+          CheckInterrupts
+          Return v35
         ");
     }
 }
