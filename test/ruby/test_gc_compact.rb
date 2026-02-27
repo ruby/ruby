@@ -207,7 +207,7 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_updating_references_for_embed_shared_arrays
-    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
     begin;
@@ -256,7 +256,7 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_updating_references_for_embed_frozen_shared_arrays
-    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
     begin;
@@ -284,7 +284,7 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_moving_arrays_down_heaps
-    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
     begin;
@@ -306,7 +306,7 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_moving_arrays_up_heaps
-    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
     begin;
@@ -330,7 +330,7 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_moving_objects_between_heaps
-    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 60)
     begin;
@@ -362,7 +362,7 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_compact_objects_of_varying_sizes
-    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
 
     assert_ruby_status([], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
     begin;
@@ -378,7 +378,7 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_moving_strings_up_heaps
-    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 30)
     begin;
@@ -399,7 +399,7 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_moving_strings_down_heaps
-    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 30)
     begin;
@@ -419,7 +419,7 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_moving_hashes_down_heaps
-    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
     # AR and ST hashes are in the same size pool on 32 bit
     omit unless RbConfig::SIZEOF["uint64_t"] <= RbConfig::SIZEOF["void*"]
 
