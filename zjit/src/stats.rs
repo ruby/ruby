@@ -225,6 +225,9 @@ make_counters! {
         exit_block_param_proxy_not_nil,
         exit_block_param_wb_required,
         exit_too_many_keyword_parameters,
+        exit_splatkw_not_nil_or_hash,
+        exit_splatkw_polymorphic,
+        exit_splatkw_not_profiled,
     }
 
     // Send fallback counters that are summed as dynamic_send_count
@@ -584,6 +587,9 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         BlockParamProxyNotNil         => exit_block_param_proxy_not_nil,
         BlockParamWbRequired          => exit_block_param_wb_required,
         TooManyKeywordParameters      => exit_too_many_keyword_parameters,
+        SplatKwNotNilOrHash           => exit_splatkw_not_nil_or_hash,
+        SplatKwPolymorphic            => exit_splatkw_polymorphic,
+        SplatKwNotProfiled            => exit_splatkw_not_profiled,
         PatchPoint(Invariant::BOPRedefined { .. })
                                       => exit_patchpoint_bop_redefined,
         PatchPoint(Invariant::MethodRedefined { .. })

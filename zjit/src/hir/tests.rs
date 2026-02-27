@@ -213,6 +213,7 @@ mod snapshot_tests {
 #[cfg(test)]
 pub mod hir_build_tests {
     use super::*;
+    use crate::options::set_call_threshold;
     use insta::assert_snapshot;
 
     fn iseq_contains_opcode(iseq: IseqPtr, expected_opcode: u32) -> bool {
@@ -2339,7 +2340,7 @@ pub mod hir_build_tests {
           v37:CInt64 = LoadField v34, :_env_data_index_specval@0x1005
           v38:CInt64 = GuardAnyBitSet v37, CUInt64(1)
           v39:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
-          SideExit UnhandledYARVInsn(splatkw)
+          SideExit SplatKwNotProfiled
         ");
     }
 
@@ -3200,6 +3201,238 @@ pub mod hir_build_tests {
         bb6(v23:BasicObject, v24:BasicObject):
           CheckInterrupts
           Return v24
+        ");
+    }
+
+    #[test]
+    fn test_splatkw_unprofiled_side_exits() {
+        eval("
+            def foo(**kw, &b) = kw
+            def test(**kw, &b) = foo(**kw, &b)
+        ");
+        assert_contains_opcode("test", YARVINSN_splatkw);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :kw@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :kw@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          v19:CPtr = GetEP 0
+          v20:CInt64 = LoadField v19, :_env_data_index_flags@0x1002
+          v21:CInt64 = GuardNoBitsSet v20, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM=CUInt64(512)
+          v22:CInt64 = LoadField v19, :_env_data_index_specval@0x1003
+          v23:CInt64 = GuardAnyBitSet v22, CUInt64(1)
+          v24:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
+          SideExit SplatKwNotProfiled
+        ");
+    }
+
+    #[test]
+    fn test_splatkw_nil_guards_nil() {
+        eval("
+            def foo(a, ...) = a
+            def test(a, ...) = foo(a, ...)
+            test(1)
+        ");
+        assert_contains_opcode("test", YARVINSN_splatkw);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:ArrayExact = LoadField v2, :*@0x1001
+          v5:BasicObject = LoadField v2, :**@0x1002
+          v6:BasicObject = LoadField v2, :&@0x1003
+          v7:NilClass = Const Value(nil)
+          Jump bb3(v1, v3, v4, v5, v6, v7)
+        bb2():
+          EntryPoint JIT(0)
+          v10:BasicObject = LoadArg :self@0
+          v11:BasicObject = LoadArg :a@1
+          v12:BasicObject = LoadArg :*@2
+          v13:BasicObject = LoadArg :**@3
+          v14:BasicObject = LoadArg :&@4
+          v15:NilClass = Const Value(nil)
+          Jump bb3(v10, v11, v12, v13, v14, v15)
+        bb3(v17:BasicObject, v18:BasicObject, v19:BasicObject, v20:BasicObject, v21:BasicObject, v22:NilClass):
+          v29:ArrayExact = ToArray v19
+          PatchPoint NoEPEscape(test)
+          v34:CPtr = GetEP 0
+          v35:CInt64 = LoadField v34, :_env_data_index_flags@0x1004
+          v36:CInt64 = GuardNoBitsSet v35, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM=CUInt64(512)
+          v37:CInt64 = LoadField v34, :_env_data_index_specval@0x1005
+          v38:CInt64[0] = GuardBitEquals v37, CInt64(0)
+          v39:NilClass = Const Value(nil)
+          v41:NilClass = GuardType v20, NilClass
+          v43:BasicObject = Send v17, 0x1004, :foo, v18, v29, v41, v39 # SendFallbackReason: Uncategorized(send)
+          CheckInterrupts
+          Return v43
+        ");
+    }
+
+    #[test]
+    fn test_splatkw_empty_hash_guards_hash() {
+        eval("
+            def foo(**kw, &b) = kw
+            def test(**kw, &b) = foo(**kw, &b)
+            test(&proc {})
+        ");
+        assert_contains_opcode("test", YARVINSN_splatkw);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :kw@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :kw@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          v19:CPtr = GetEP 0
+          v20:CInt64 = LoadField v19, :_env_data_index_flags@0x1002
+          v21:CInt64 = GuardNoBitsSet v20, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM=CUInt64(512)
+          v22:CInt64 = LoadField v19, :_env_data_index_specval@0x1003
+          v23:CInt64 = GuardAnyBitSet v22, CUInt64(1)
+          v24:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
+          v26:HashExact = GuardType v12, HashExact
+          v28:BasicObject = Send v11, 0x1002, :foo, v26, v24 # SendFallbackReason: Uncategorized(send)
+          CheckInterrupts
+          Return v28
+        ");
+    }
+
+    #[test]
+    fn test_splatkw_hash_guards_hash() {
+        eval("
+            def foo(**kw, &b) = kw
+            def test(**kw, &b) = foo(**kw, &b)
+            test(a: 1, &proc {})
+        ");
+        assert_contains_opcode("test", YARVINSN_splatkw);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :kw@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :kw@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          v19:CPtr = GetEP 0
+          v20:CInt64 = LoadField v19, :_env_data_index_flags@0x1002
+          v21:CInt64 = GuardNoBitsSet v20, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM=CUInt64(512)
+          v22:CInt64 = LoadField v19, :_env_data_index_specval@0x1003
+          v23:CInt64 = GuardAnyBitSet v22, CUInt64(1)
+          v24:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
+          v26:HashExact = GuardType v12, HashExact
+          v28:BasicObject = Send v11, 0x1002, :foo, v26, v24 # SendFallbackReason: Uncategorized(send)
+          CheckInterrupts
+          Return v28
+        ");
+    }
+
+    #[test]
+    fn test_splatkw_polymorphic_side_exits() {
+        set_call_threshold(3);
+        eval("
+            def foo(a, ...) = a
+            def test(a, ...) = foo(a, ...)
+            test(1)
+            test(1, b: 2)
+        ");
+        assert_contains_opcode("test", YARVINSN_splatkw);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:ArrayExact = LoadField v2, :*@0x1001
+          v5:BasicObject = LoadField v2, :**@0x1002
+          v6:BasicObject = LoadField v2, :&@0x1003
+          v7:NilClass = Const Value(nil)
+          Jump bb3(v1, v3, v4, v5, v6, v7)
+        bb2():
+          EntryPoint JIT(0)
+          v10:BasicObject = LoadArg :self@0
+          v11:BasicObject = LoadArg :a@1
+          v12:BasicObject = LoadArg :*@2
+          v13:BasicObject = LoadArg :**@3
+          v14:BasicObject = LoadArg :&@4
+          v15:NilClass = Const Value(nil)
+          Jump bb3(v10, v11, v12, v13, v14, v15)
+        bb3(v17:BasicObject, v18:BasicObject, v19:BasicObject, v20:BasicObject, v21:BasicObject, v22:NilClass):
+          v29:ArrayExact = ToArray v19
+          PatchPoint NoEPEscape(test)
+          v34:CPtr = GetEP 0
+          v35:CInt64 = LoadField v34, :_env_data_index_flags@0x1004
+          v36:CInt64 = GuardNoBitsSet v35, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM=CUInt64(512)
+          v37:CInt64 = LoadField v34, :_env_data_index_specval@0x1005
+          v38:CInt64[0] = GuardBitEquals v37, CInt64(0)
+          v39:NilClass = Const Value(nil)
+          SideExit SplatKwPolymorphic
+        ");
+    }
+
+    #[test]
+    fn test_splatkw_with_non_hash_side_exits() {
+        eval("
+            def foo(a:) = a
+            def test(obj, &block) = foo(**obj, &block)
+            obj = Object.new
+            def obj.to_hash = { a: 1 }
+            test(obj) { 2 }
+        ");
+        assert_contains_opcode("test", YARVINSN_splatkw);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :obj@0x1000
+          v4:BasicObject = LoadField v2, :block@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :obj@1
+          v9:BasicObject = LoadArg :block@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          v19:CPtr = GetEP 0
+          v20:CInt64 = LoadField v19, :_env_data_index_flags@0x1002
+          v21:CInt64 = GuardNoBitsSet v20, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM=CUInt64(512)
+          v22:CInt64 = LoadField v19, :_env_data_index_specval@0x1003
+          v23:CInt64 = GuardAnyBitSet v22, CUInt64(1)
+          v24:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
+          SideExit SplatKwNotNilOrHash
         ");
     }
 

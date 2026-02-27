@@ -569,6 +569,7 @@ splatkw
 (VALUE hash, VALUE block)
 (VALUE obj, VALUE block)
 // attr bool leaf = false; /* has rb_to_hash_type() */
+// attr bool zjit_profile = true;
 {
     if (NIL_P(hash)) {
         obj = Qnil;

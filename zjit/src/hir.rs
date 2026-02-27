@@ -522,6 +522,9 @@ pub enum SideExitReason {
     FixnumModByZero,
     FixnumDivByZero,
     BoxFixnumOverflow,
+    SplatKwNotNilOrHash,
+    SplatKwPolymorphic,
+    SplatKwNotProfiled,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -6707,6 +6710,33 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         fun.push_insn(block, Insn::ToArray { val, state: exit_id })
                     };
                     state.stack_push(obj);
+                }
+                YARVINSN_splatkw => {
+                    let block_val = state.stack_pop()?;
+                    let hash = state.stack_pop()?;
+                    // Get profiled type of hash (operand index 0)
+                    let summary = profiles.payload.profile.get_operand_types(exit_state.insn_idx)
+                        .and_then(|types| types.first())
+                        .map(|dist| TypeDistributionSummary::new(dist));
+                    let Some(summary) = summary else {
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::SplatKwNotProfiled });
+                        break;  // End the block
+                    };
+                    if !summary.is_monomorphic() {
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::SplatKwPolymorphic });
+                        break;  // End the block
+                    }
+                    let ty = Type::from_profiled_type(summary.bucket(0));
+                    let obj = if ty.is_subtype(types::NilClass) {
+                        fun.push_insn(block, Insn::GuardType { val: hash, guard_type: types::NilClass, state: exit_id })
+                    } else if ty.is_subtype(types::HashExact) {
+                        fun.push_insn(block, Insn::GuardType { val: hash, guard_type: types::HashExact, state: exit_id })
+                    } else {
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::SplatKwNotNilOrHash });
+                        break;  // End the block
+                    };
+                    state.stack_push(obj);
+                    state.stack_push(block_val);
                 }
                 YARVINSN_concattoarray => {
                     let right = state.stack_pop()?;
