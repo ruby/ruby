@@ -18,6 +18,7 @@
 #include "internal/string.h"
 #include "internal/class.h"
 #include "internal/imemo.h"
+#include "ruby/internal/core/rtypeddata.h"
 
 enum jit_bindgen_constants {
     // Field offsets for the RObject struct
@@ -549,6 +550,12 @@ rb_jit_typed_data_fields_embedded_p(VALUE obj)
 {
     VALUE fields_obj = RTYPEDDATA(obj)->fields_obj;
     return !fields_obj || !FL_TEST_RAW(fields_obj, OBJ_FIELD_HEAP);
+}
+
+bool
+rb_jit_typed_data_p(VALUE obj)
+{
+    return rbimpl_rtypeddata_p(obj);
 }
 
 // Acquire the VM lock and then signal all other Ruby threads (ractors) to

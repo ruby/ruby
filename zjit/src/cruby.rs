@@ -586,7 +586,7 @@ impl VALUE {
     }
 
     pub fn typed_data_p(self) -> bool {
-        unsafe { FL_TEST_RAW(self, VALUE(RUBY_FL_USERPRIV0 as usize)) != VALUE(0) }
+        unsafe { rb_jit_typed_data_p(self) }
     }
 
     pub fn typed_data_fields_embedded_p(self) -> bool {
