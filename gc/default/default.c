@@ -206,6 +206,31 @@ static const size_t heap_init_slots_table[HEAP_COUNT] = {
 #endif
 };
 
+/* Precomputed reciprocals for fast slot index calculation.
+ * For slot size d: reciprocal = ceil(2^48 / d).
+ * Then offset / d == (uint32_t)((offset * reciprocal) >> 48)
+ * for all offset < HEAP_PAGE_SIZE. */
+#define SLOT_RECIPROCAL_SHIFT 48
+
+static const uint64_t heap_slot_reciprocal_table[HEAP_COUNT] = {
+#if SIZEOF_VALUE >= 8
+    /* 32  */ (1ULL << 48) / 32,
+    /* 48  */ (1ULL << 48) / 48 + 1,
+    /* 64  */ (1ULL << 48) / 64,
+    /* 128 */ (1ULL << 48) / 128,
+    /* 256 */ (1ULL << 48) / 256,
+    /* 512 */ (1ULL << 48) / 512,
+    /* 1024*/ (1ULL << 48) / 1024,
+#else
+    /* 16  */ (1ULL << 48) / 16,
+    /* 24  */ (1ULL << 48) / 24 + 1,
+    /* 32  */ (1ULL << 48) / 32,
+    /* 64  */ (1ULL << 48) / 64,
+    /* 128 */ (1ULL << 48) / 128,
+    /* 256 */ (1ULL << 48) / 256,
+    /* 512 */ (1ULL << 48) / 512,
+#endif
+};
 typedef struct ractor_newobj_heap_cache {
     struct free_slot *freelist;
     struct heap_page *using_page;
@@ -791,8 +816,11 @@ struct free_slot {
 };
 
 struct heap_page {
+    /* Cache line 0: allocation fast path + SLOT_INDEX */
+    struct free_slot *freelist;
+    uintptr_t start;
+    uint64_t slot_size_reciprocal;
     unsigned short slot_size;
-    unsigned char slot_size_log2;
     unsigned short total_slots;
     unsigned short free_slots;
     unsigned short final_slots;
@@ -807,8 +835,6 @@ struct heap_page {
 
     struct heap_page *free_next;
     struct heap_page_body *body;
-    uintptr_t start;
-    struct free_slot *freelist;
     struct ccan_list_node page_node;
 
     bits_t wb_unprotected_bits[HEAP_PAGE_BITMAP_LIMIT];
@@ -870,12 +896,12 @@ heap_page_in_global_empty_pages_pool(rb_objspace_t *objspace, struct heap_page *
 #define GET_HEAP_PAGE(x)   (GET_PAGE_HEADER(x)->page)
 
 static inline size_t
-slot_index_for_offset(size_t offset, unsigned char slot_size_log2)
+slot_index_for_offset(size_t offset, uint64_t reciprocal)
 {
-    return offset >> slot_size_log2;
+    return (uint32_t)(((uint64_t)offset * reciprocal) >> SLOT_RECIPROCAL_SHIFT);
 }
 
-#define SLOT_INDEX(page, p)          slot_index_for_offset((uintptr_t)(p) - (page)->start, (page)->slot_size_log2)
+#define SLOT_INDEX(page, p)          slot_index_for_offset((uintptr_t)(p) - (page)->start, (page)->slot_size_reciprocal)
 #define SLOT_BITMAP_INDEX(page, p)   (SLOT_INDEX(page, p) / BITS_BITLENGTH)
 #define SLOT_BITMAP_OFFSET(page, p)  (SLOT_INDEX(page, p) & (BITS_BITLENGTH - 1))
 #define SLOT_BITMAP_BIT(page, p)     ((bits_t)1 << SLOT_BITMAP_OFFSET(page, p))
@@ -2003,16 +2029,17 @@ heap_add_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page)
     GC_ASSERT(!heap->sweeping_page);
     GC_ASSERT(heap_page_in_global_empty_pages_pool(objspace, page));
 
-    /* Align start to slot_size boundary (both are powers of 2) */
+    /* Align start to slot_size boundary */
     uintptr_t start = (uintptr_t)page->body + sizeof(struct heap_page_header);
-    start = (start + heap->slot_size - 1) & ~((uintptr_t)heap->slot_size - 1);
+    uintptr_t rem = start % heap->slot_size;
+    if (rem) start += heap->slot_size - rem;
 
     int slot_count = (int)((HEAP_PAGE_SIZE - (start - (uintptr_t)page->body))/heap->slot_size);
 
     page->start = start;
     page->total_slots = slot_count;
     page->slot_size = heap->slot_size;
-    page->slot_size_log2 = (unsigned char)(63 - nlz_int64(heap->slot_size));
+    page->slot_size_reciprocal = heap_slot_reciprocal_table[heap - heaps];
     page->heap = heap;
 
     memset(&page->wb_unprotected_bits[0], 0, HEAP_PAGE_BITMAP_SIZE);
