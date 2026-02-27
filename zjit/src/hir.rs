@@ -1255,7 +1255,11 @@ impl Insn {
             Insn::CheckInterrupts { .. } => Effect::read_write(abstract_heaps::InterruptFlag, abstract_heaps::Control),
             Insn::InvokeProc { .. } => effects::Any,
             Insn::RefineType { .. } => effects::Empty,
-            Insn::HasType { .. } => effects::Empty,
+            Insn::HasType { expected, .. }
+                => Effect::read_write(
+                    if expected.is_subtype(types::Immediate) { abstract_heaps::Empty } else { abstract_heaps::Memory },
+                    abstract_heaps::Control
+                ),
             Insn::Entries { .. } => effects::Any,
         }
     }
