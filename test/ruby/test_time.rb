@@ -1421,7 +1421,7 @@ class TestTime < Test::Unit::TestCase
     # Time objects are common in some code, try to keep them small
     omit "Time object size test" if /^(?:i.?86|x86_64)-linux/ !~ RUBY_PLATFORM
     omit "GC is in debug" if GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD] > 0
-    omit "memsize is not accurate due to using malloc_usable_size" if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    omit "memsize is not accurate due to using malloc_usable_size" if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
     omit "Only run this test on 64-bit" if RbConfig::SIZEOF["void*"] != 8
 
     require 'objspace'
@@ -1435,8 +1435,8 @@ class TestTime < Test::Unit::TestCase
     sizeof_vtm = RbConfig::SIZEOF["void*"] * 4 + 8
     data_size = GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] + sizeof_timew + sizeof_vtm
     # Round up to the smallest slot size that fits
-    slot_sizes = GC::INTERNAL_CONSTANTS[:HEAP_COUNT].times.map { |i| GC.stat_heap(i, :slot_size) }
-    expect = slot_sizes.find { |s| s >= data_size } || slot_sizes.last
+    expect = GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]
+    expect <<= 1 while expect < data_size
     assert_operator ObjectSpace.memsize_of(t), :<=, expect
   rescue LoadError => e
     omit "failed to load objspace: #{e.message}"
