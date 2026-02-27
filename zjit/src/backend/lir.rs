@@ -2164,24 +2164,25 @@ impl Assembler
                 let successor = edge.target;
                 let params = self.basic_blocks[successor.0].parameters.clone();
 
-                // Build the list of register-to-register copies and immediate moves
+                // Build the list of register-to-register copies and immediate moves.
+                // Rewrite VRegs to physical registers BEFORE sequentialization so
+                // the parcopy algorithm can see real physical register conflicts.
                 let reg_copies: Vec<parcopy::RegisterCopy<Opnd>> = edge.args
                     .iter()
                     .zip(params.iter())
                     .filter(|(_arg, param)| assignments[param.vreg_idx().0].is_some() )
-                    .map(|(arg, param)| parcopy::RegisterCopy::<Opnd> { destination: *param, source: *arg }).collect();
+                    .map(|(arg, param)| parcopy::RegisterCopy::<Opnd> {
+                        destination: Self::rewritten_opnd(*param, assignments),
+                        source: Self::rewritten_opnd(*arg, assignments),
+                    })
+                    .filter(|copy| copy.source != copy.destination)
+                    .collect();
 
                 // Sequentialize register copies
                 let sequentialized = parcopy::sequentialize_register(&reg_copies, Opnd::Reg(SCRATCH_REG));
                 let moves: Vec<Insn> = sequentialized
                     .iter()
-                    .map(|copy| {
-                        let mut dest = copy.destination.clone();
-                        Self::rewrite_opnd(&mut dest, assignments);
-                        let mut src = copy.source.clone();
-                        Self::rewrite_opnd(&mut src, assignments);
-                        Insn::Mov { dest, src }
-                    })
+                    .map(|copy| Insn::Mov { dest: copy.destination, src: copy.source })
                     .collect();
 
                 if moves.is_empty() {
@@ -2239,11 +2240,14 @@ impl Assembler
             if self.basic_blocks[block_id.0].is_dummy() { continue; }
             let params = self.basic_blocks[block_id.0].parameters.clone();
 
+            // Rewrite VRegs to physical registers before sequentialization
+            // so the parcopy algorithm can detect physical register conflicts.
             let reg_copies: Vec<parcopy::RegisterCopy<Opnd>> = params.iter().enumerate()
                 .map(|(i, param)| parcopy::RegisterCopy::<Opnd> {
                     source: Assembler::param_opnd(i),
-                    destination: *param,
+                    destination: Self::rewritten_opnd(*param, assignments),
                 })
+                .filter(|copy| copy.source != copy.destination)
                 .collect();
 
             let sequentialized = parcopy::sequentialize_register(&reg_copies, Opnd::Reg(SCRATCH_REG));
