@@ -5,13 +5,14 @@ mod bits {
   pub const Control: u8 = 1u8 << 1;
   pub const Empty: u8 = 0u8;
   pub const Frame: u8 = Locals | PC | Stack;
-  pub const Locals: u8 = 1u8 << 2;
-  pub const Memory: u8 = Frame | Other;
-  pub const Other: u8 = 1u8 << 3;
-  pub const PC: u8 = 1u8 << 4;
-  pub const PatchPoint: u8 = 1u8 << 5;
-  pub const Stack: u8 = 1u8 << 6;
-  pub const AllBitPatterns: [(&str, u8); 11] = [
+  pub const InterruptFlag: u8 = 1u8 << 2;
+  pub const Locals: u8 = 1u8 << 3;
+  pub const Memory: u8 = Frame | InterruptFlag | Other;
+  pub const Other: u8 = 1u8 << 4;
+  pub const PC: u8 = 1u8 << 5;
+  pub const PatchPoint: u8 = 1u8 << 6;
+  pub const Stack: u8 = 1u8 << 7;
+  pub const AllBitPatterns: [(&str, u8); 12] = [
     ("Any", Any),
     ("Memory", Memory),
     ("Frame", Frame),
@@ -20,11 +21,12 @@ mod bits {
     ("PC", PC),
     ("Other", Other),
     ("Locals", Locals),
+    ("InterruptFlag", InterruptFlag),
     ("Control", Control),
     ("Allocator", Allocator),
     ("Empty", Empty),
   ];
-  pub const NumEffectBits: u8 = 7;
+  pub const NumEffectBits: u8 = 8;
 }
 pub mod effect_types {
   pub type EffectBits = u8;
@@ -36,6 +38,7 @@ pub mod abstract_heaps {
   pub const Control: AbstractHeap = AbstractHeap::from_bits(bits::Control);
   pub const Empty: AbstractHeap = AbstractHeap::from_bits(bits::Empty);
   pub const Frame: AbstractHeap = AbstractHeap::from_bits(bits::Frame);
+  pub const InterruptFlag: AbstractHeap = AbstractHeap::from_bits(bits::InterruptFlag);
   pub const Locals: AbstractHeap = AbstractHeap::from_bits(bits::Locals);
   pub const Memory: AbstractHeap = AbstractHeap::from_bits(bits::Memory);
   pub const Other: AbstractHeap = AbstractHeap::from_bits(bits::Other);
@@ -50,6 +53,7 @@ pub mod effects {
   pub const Control: Effect = Effect::promote(abstract_heaps::Control);
   pub const Empty: Effect = Effect::promote(abstract_heaps::Empty);
   pub const Frame: Effect = Effect::promote(abstract_heaps::Frame);
+  pub const InterruptFlag: Effect = Effect::promote(abstract_heaps::InterruptFlag);
   pub const Locals: Effect = Effect::promote(abstract_heaps::Locals);
   pub const Memory: Effect = Effect::promote(abstract_heaps::Memory);
   pub const Other: Effect = Effect::promote(abstract_heaps::Other);

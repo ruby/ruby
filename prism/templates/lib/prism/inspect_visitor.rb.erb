@@ -1,3 +1,6 @@
+#--
+# rbs_inline: enabled
+
 module Prism
   # This visitor is responsible for composing the strings that get returned by
   # the various #inspect methods defined on each of the nodes.
@@ -7,8 +10,9 @@ module Prism
     # when we hit an element in that list. In this case, we have a special
     # command that replaces the subsequent indent with the given value.
     class Replace # :nodoc:
-      attr_reader :value
+      attr_reader :value #: String
 
+      #: (String value) -> void
       def initialize(value)
         @value = value
       end
@@ -17,18 +21,25 @@ module Prism
     private_constant :Replace
 
     # The current prefix string.
-    attr_reader :indent # :nodoc:
+    # :stopdoc:
+    attr_reader :indent #: String
+    # :startdoc:
 
     # The list of commands that we need to execute in order to compose the
     # final string.
-    attr_reader :commands # :nodoc:
+    #: stopdoc:
+    attr_reader :commands #: Array[[String | node | Replace, String]]
+    # :startdoc:
 
+    #: (?String indent) -> void
     def initialize(indent = +"") # :nodoc:
       @indent = indent
       @commands = []
     end
 
     # Compose an inspect string for the given node.
+    #--
+    #: (node node) -> String
     def self.compose(node)
       visitor = new
       node.accept(visitor)
@@ -36,6 +47,8 @@ module Prism
     end
 
     # Compose the final string.
+    #--
+    #: () -> String
     def compose # :nodoc:
       buffer = +""
       replace = nil
@@ -65,6 +78,7 @@ module Prism
     end
     <%- nodes.each do |node| -%>
 
+    #: (<%= node.name %> node) -> void
     def visit_<%= node.human %>(node) # :nodoc:
       commands << [inspect_node(<%= node.name.inspect %>, node), indent]
       <%- (fields = [node.flags || Prism::Template::Flags.empty, *node.fields]).each_with_index do |field, index| -%>
@@ -112,12 +126,16 @@ module Prism
     private
 
     # Compose a header for the given node.
+    #--
+    #: (String name, node node) -> String
     def inspect_node(name, node) # :nodoc:
       location = node.location
       "@ #{name} (location: (#{location.start_line},#{location.start_column})-(#{location.end_line},#{location.end_column}))\n"
     end
 
     # Compose a string representing the given inner location field.
+    #--
+    #: (Location? location) -> String
     def inspect_location(location) # :nodoc:
       if location
         "(#{location.start_line},#{location.start_column})-(#{location.end_line},#{location.end_column}) = #{location.slice.inspect}"

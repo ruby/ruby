@@ -1,3 +1,6 @@
+#--
+# rbs_inline: enabled
+
 module Prism
   # The dispatcher class fires events for nodes that are found while walking an
   # AST to all registered listeners. It's useful for performing different types
@@ -32,26 +35,35 @@ module Prism
   #     dispatcher.dispatch_once(integer)
   #
   class Dispatcher < Visitor
-    # attr_reader listeners: Hash[Symbol, Array[Listener]]
-    attr_reader :listeners
+    # A hash mapping event names to arrays of listeners that should be notified
+    # when that event is fired.
+    attr_reader :listeners #: Hash[Symbol, Array[untyped]]
 
     # Initialize a new dispatcher.
+    #--
+    #: () -> void
     def initialize
       @listeners = {}
     end
 
     # Register a listener for one or more events.
+    #--
+    #: (untyped, *Symbol) -> void
     def register(listener, *events)
       register_events(listener, events)
     end
 
     # Register all public methods of a listener that match the pattern
     # `on_<node_name>_(enter|leave)`.
+    #--
+    #: (untyped) -> void
     def register_public_methods(listener)
       register_events(listener, listener.public_methods(false).grep(/\Aon_.+_(?:enter|leave)\z/))
     end
 
     # Register a listener for the given events.
+    #--
+    #: (untyped, Array[Symbol]) -> void
     private def register_events(listener, events) # :nodoc:
       events.each { |event| (listeners[event] ||= []) << listener }
     end
@@ -60,11 +72,14 @@ module Prism
     alias dispatch visit
 
     # Dispatches a single event for `node` to all registered listeners.
+    #--
+    #: (node node) -> void
     def dispatch_once(node)
       node.accept(DispatchOnce.new(listeners))
     end
     <%- nodes.each do |node| -%>
 
+    #: (<%= node.name %> node) -> void
     def visit_<%= node.human %>(node) # :nodoc:
       listeners[:on_<%= node.human %>_enter]&.each { |listener| listener.on_<%= node.human %>_enter(node) }
       super
@@ -73,14 +88,17 @@ module Prism
     <%- end -%>
 
     class DispatchOnce < Visitor # :nodoc:
-      attr_reader :listeners
+      attr_reader :listeners #: Hash[Symbol, Array[untyped]]
 
+      #: (Hash[Symbol, Array[untyped]] listeners) -> void
       def initialize(listeners)
         @listeners = listeners
       end
       <%- nodes.each do |node| -%>
 
       # Dispatch enter and leave events for <%= node.name %> nodes.
+      #--
+      #: (<%= node.name %> node) -> void
       def visit_<%= node.human %>(node)
         listeners[:on_<%= node.human %>_enter]&.each { |listener| listener.on_<%= node.human %>_enter(node) }
         listeners[:on_<%= node.human %>_leave]&.each { |listener| listener.on_<%= node.human %>_leave(node) }

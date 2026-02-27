@@ -133,16 +133,6 @@ ALWAYS_INLINE(static) int string_scan_simd_neon(const char **ptr, const char *en
     return 0;
 }
 
-static inline uint8x16x4_t load_uint8x16_4(const unsigned char *table)
-{
-    uint8x16x4_t tab;
-    tab.val[0] = vld1q_u8(table);
-    tab.val[1] = vld1q_u8(table+16);
-    tab.val[2] = vld1q_u8(table+32);
-    tab.val[3] = vld1q_u8(table+48);
-    return tab;
-}
-
 #endif /* ARM Neon Support.*/
 
 #if defined(__amd64__) || defined(__amd64) || defined(__x86_64__) || defined(__x86_64) || defined(_M_X64) || defined(_M_AMD64)

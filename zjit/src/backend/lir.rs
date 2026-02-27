@@ -2202,7 +2202,7 @@ impl Assembler
         });
 
         #[cfg(feature = "disasm")]
-        if get_option!(dump_disasm) {
+        if get_option!(dump_disasm) && ret.is_ok() {
             let end_addr = cb.get_write_ptr();
             let disasm = crate::disasm::disasm_addr_range(cb, start_addr.raw_ptr(cb) as usize, end_addr.raw_ptr(cb) as usize);
             println!("{}", disasm);

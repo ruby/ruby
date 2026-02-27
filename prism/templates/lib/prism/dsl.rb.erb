@@ -1,3 +1,6 @@
+#--
+# rbs_inline: enabled
+
 module Prism
   # The DSL module provides a set of methods that can be used to create prism
   # nodes in a more concise manner. For example, instead of writing:
@@ -56,17 +59,31 @@ module Prism
     extend self
 
     # Create a new Source object.
+    #--
+    #: (String string) -> Source
     def source(string)
       Source.for(string)
     end
 
     # Create a new Location object.
+    #--
+    #: (?source: Source, ?start_offset: Integer, ?length: Integer) -> Location
     def location(source: default_source, start_offset: 0, length: 0)
       Location.new(source, start_offset, length)
     end
     <%- nodes.each do |node| -%>
+    <%-
+    params = [
+      ["source", "Source"],
+      ["node_id", "Integer"],
+      ["location", "Location"],
+      ["flags", "Integer"]
+    ].concat(node.fields.map { |field| [field.name, field.rbs_class] })
+    -%>
 
     # Create a new <%= node.name %> node.
+    #--
+    #: (<%= params.map { |(name, type)| "?#{name}: #{type}" }.join(", ") %>) -> <%= node.name %>
     def <%= node.human %>(<%= ["source: default_source", "node_id: 0", "location: default_location", "flags: 0", *node.fields.map { |field|
       case field
       when Prism::Template::NodeField
@@ -100,6 +117,8 @@ module Prism
     <%- flags.each do |flag| -%>
 
     # Retrieve the value of one of the <%= flag.name %> flags.
+    #--
+    #: (Symbol name) -> Integer
     def <%= flag.human.chomp("s") %>(name)
       case name
       <%- flag.values.each do |value| -%>
@@ -114,18 +133,24 @@ module Prism
 
     # The default source object that gets attached to nodes and locations if no
     # source is specified.
+    #--
+    #: () -> Source
     def default_source
       Source.for("")
     end
 
     # The default location object that gets attached to nodes if no location is
     # specified, which uses the given source.
+    #--
+    #: () -> Location
     def default_location
       Location.new(default_source, 0, 0)
     end
 
     # The default node that gets attached to nodes if no node is specified for a
     # required node field.
+    #--
+    #: (Source source, Location location) -> node
     def default_node(source, location)
       MissingNode.new(source, -1, location, 0)
     end

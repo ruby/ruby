@@ -139,7 +139,6 @@ static inline int imemo_type_p(VALUE imemo, enum imemo_type imemo_type);
 static inline bool imemo_throw_data_p(VALUE imemo);
 static inline struct vm_ifunc *rb_vm_ifunc_proc_new(rb_block_call_func_t func, const void *data);
 static inline void *RB_IMEMO_TMPBUF_PTR(VALUE v);
-static inline void *rb_imemo_tmpbuf_set_ptr(VALUE v, void *ptr);
 static inline void MEMO_V1_SET(struct MEMO *m, VALUE v);
 static inline void MEMO_V2_SET(struct MEMO *m, VALUE v);
 
@@ -193,30 +192,16 @@ RB_IMEMO_TMPBUF_PTR(VALUE v)
     return p->ptr;
 }
 
-static inline void *
-rb_imemo_tmpbuf_set_ptr(VALUE v, void *ptr)
-{
-    return ((rb_imemo_tmpbuf_t *)v)->ptr = ptr;
-}
-
 static inline VALUE
 rb_imemo_tmpbuf_new_from_an_RString(VALUE str)
 {
-    const void *src;
     VALUE imemo;
-    rb_imemo_tmpbuf_t *tmpbuf;
-    void *dst;
     size_t len;
 
     StringValue(str);
-    /* create tmpbuf to keep the pointer before xmalloc */
-    imemo = rb_imemo_tmpbuf_new();
-    tmpbuf = (rb_imemo_tmpbuf_t *)imemo;
     len = RSTRING_LEN(str);
-    src = RSTRING_PTR(str);
-    dst = ruby_xmalloc(len);
-    memcpy(dst, src, len);
-    tmpbuf->ptr = dst;
+    rb_alloc_tmp_buffer(&imemo, len);
+    memcpy(RB_IMEMO_TMPBUF_PTR(imemo), RSTRING_PTR(str), len);
     return imemo;
 }
 

@@ -1,3 +1,6 @@
+#--
+# rbs_inline: enabled
+
 module Prism
   # A compiler is a visitor that returns the value of each node as it visits.
   # This is as opposed to a visitor which will only walk the tree. This can be
@@ -18,22 +21,29 @@ module Prism
   #
   class Compiler < Visitor
     # Visit an individual node.
+    #--
+    #: (node?) -> untyped
     def visit(node) # :nodoc:
       node&.accept(self)
     end
 
     # Visit a list of nodes.
+    #--
+    #: (Array[node?]) -> untyped
     def visit_all(nodes) # :nodoc:
       nodes.map { |node| node&.accept(self) }
     end
 
     # Visit the child nodes of the given node.
+    #--
+    #: (node) -> Array[untyped]
     def visit_child_nodes(node) # :nodoc:
       node.each_child_node.map { |node| node.accept(self) }
     end
 
     <%- nodes.each_with_index do |node, index| -%>
 <%= "\n" if index != 0 -%>
+    #: (<%= node.name %>) -> Array[untyped]
     def visit_<%= node.human %>(node) # :nodoc:
       node.each_child_node.map { |node| node.accept(self) }
     end

@@ -99,6 +99,7 @@ fn profile_insn(bare_opcode: ruby_vminsn_type, ec: EcPtr) {
             // Profile all the arguments and self (+1).
             profile_operands(profiler, profile, (argc + 1) as usize);
         }
+        YARVINSN_splatkw => profile_operands(profiler, profile, 2),
         _ => {}
     }
 

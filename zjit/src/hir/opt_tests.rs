@@ -216,34 +216,34 @@ mod hir_opt_tests {
             end
             test 1; test 2
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :n, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :n@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v13:Fixnum[0] = Const Value(0)
-          PatchPoint MethodRedefined(Integer@0x1000, *@0x1008, cme:0x1010)
-          v34:Fixnum = GuardType v9, Fixnum
-          v46:Fixnum[0] = Const Value(0)
-          IncrCounter inline_cfunc_optimized_send_count
-          v20:Fixnum[0] = Const Value(0)
-          PatchPoint MethodRedefined(Integer@0x1000, *@0x1008, cme:0x1010)
-          v39:Fixnum = GuardType v9, Fixnum
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v14:Fixnum[0] = Const Value(0)
+          PatchPoint MethodRedefined(Integer@0x1008, *@0x1010, cme:0x1018)
+          v35:Fixnum = GuardType v10, Fixnum
           v47:Fixnum[0] = Const Value(0)
           IncrCounter inline_cfunc_optimized_send_count
-          PatchPoint MethodRedefined(Integer@0x1000, +@0x1038, cme:0x1040)
+          v21:Fixnum[0] = Const Value(0)
+          v40:Fixnum = GuardType v10, Fixnum
           v48:Fixnum[0] = Const Value(0)
           IncrCounter inline_cfunc_optimized_send_count
+          PatchPoint MethodRedefined(Integer@0x1008, +@0x1040, cme:0x1048)
+          v49:Fixnum[0] = Const Value(0)
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v48
+          Return v49
         ");
     }
 
@@ -714,9 +714,6 @@ mod hir_opt_tests {
           v60:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          v23:Fixnum[2] = Const Value(2)
-          v25:Fixnum[2] = Const Value(2)
-          PatchPoint MethodRedefined(Integer@0x1000, <=@0x1008, cme:0x1010)
           v62:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
@@ -788,9 +785,6 @@ mod hir_opt_tests {
           v60:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          v23:Fixnum[2] = Const Value(2)
-          v25:Fixnum[2] = Const Value(2)
-          PatchPoint MethodRedefined(Integer@0x1000, >=@0x1008, cme:0x1010)
           v62:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
@@ -963,26 +957,27 @@ mod hir_opt_tests {
             custom.count
         ");
         assert_eq!(VALUE::fixnum_from_usize(2), result);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:13:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :object, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :object@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :object@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint NoSingletonClass(CustomEq@0x1000)
-          PatchPoint MethodRedefined(CustomEq@0x1000, !=@0x1008, cme:0x1010)
-          v29:HeapObject[class_exact:CustomEq] = GuardType v9, HeapObject[class_exact:CustomEq]
-          v30:BoolExact = CCallWithFrame v29, :BasicObject#!=@0x1038, v9
-          v20:NilClass = Const Value(nil)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :object@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(CustomEq@0x1008)
+          PatchPoint MethodRedefined(CustomEq@0x1008, !=@0x1010, cme:0x1018)
+          v30:HeapObject[class_exact:CustomEq] = GuardType v10, HeapObject[class_exact:CustomEq]
+          v31:BoolExact = CCallWithFrame v30, :BasicObject#!=@0x1040, v10
+          v21:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v20
+          Return v21
         ");
     }
 
@@ -994,26 +989,27 @@ mod hir_opt_tests {
             end
             test(2); test(3)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :a@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:Fixnum[1] = Const Value(1)
-          PatchPoint MethodRedefined(Integer@0x1000, +@0x1008, cme:0x1010)
-          v25:Fixnum = GuardType v9, Fixnum
-          v26:Fixnum = FixnumAdd v25, v14
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
+          v26:Fixnum = GuardType v10, Fixnum
+          v27:Fixnum = FixnumAdd v26, v15
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v26
+          Return v27
         ");
     }
 
@@ -1026,86 +1022,92 @@ mod hir_opt_tests {
             def post(*rest, post) = post
             def block(&b) = nil
         ");
-        assert_snapshot!(hir_strings!("rest", "kw", "kw_rest", "block", "post"), @r"
+        assert_snapshot!(hir_strings!("rest", "kw", "kw_rest", "block", "post"), @"
         fn rest@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:ArrayExact = GetLocal :array, l0, SP@4, *
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:ArrayExact = LoadField v2, :array@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :array@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :array@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
           CheckInterrupts
-          Return v9
+          Return v10
 
         fn kw@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :k, l0, SP@5
-          v3:BasicObject = GetLocal <empty>, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :k@0x1000
+          v4:BasicObject = LoadField v2, :<empty>@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :k@1
-          v8:BasicObject = GetLocal <empty>, l0, EP@3
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :k@1
+          v9:CPtr = GetEP 0
+          v10:BasicObject = LoadField v9, :<empty>@0x1002
+          Jump bb3(v7, v8, v10)
+        bb3(v12:BasicObject, v13:BasicObject, v14:BasicObject):
           CheckInterrupts
-          Return v11
+          Return v13
 
         fn kw_rest@<compiled>:4:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :k, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :k@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :k@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :k@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
           CheckInterrupts
-          Return v9
+          Return v10
 
         fn block@<compiled>:6:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :b, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :b@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :b@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v13:NilClass = Const Value(nil)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :b@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v14:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v13
+          Return v14
 
         fn post@<compiled>:5:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:ArrayExact = GetLocal :rest, l0, SP@5, *
-          v3:BasicObject = GetLocal :post, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:ArrayExact = LoadField v2, :rest@0x1000
+          v4:BasicObject = LoadField v2, :post@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :rest@1
-          v8:BasicObject = LoadArg :post@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :rest@1
+          v9:BasicObject = LoadArg :post@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           CheckInterrupts
-          Return v12
+          Return v13
         ");
     }
 
@@ -1244,26 +1246,28 @@ mod hir_opt_tests {
             def test(o) = o.fun_new_map {|e| e }
             test C.new; test C.new
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:5:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint NoSingletonClass(C@0x1000)
-          PatchPoint MethodRedefined(C@0x1000, fun_new_map@0x1008, cme:0x1010)
-          v23:ArraySubclass[class_exact:C] = GuardType v9, ArraySubclass[class_exact:C]
-          v24:BasicObject = SendDirect v23, 0x1038, :fun_new_map (0x1048)
-          v15:BasicObject = GetLocal :o, l0, EP@3
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, fun_new_map@0x1010, cme:0x1018)
+          v25:ArraySubclass[class_exact:C] = GuardType v10, ArraySubclass[class_exact:C]
+          v26:BasicObject = SendDirect v25, 0x1040, :fun_new_map (0x1050)
+          v16:CPtr = GetEP 0
+          v17:BasicObject = LoadField v16, :o@0x1058
           CheckInterrupts
-          Return v24
+          Return v26
         ");
     }
 
@@ -1278,26 +1282,28 @@ mod hir_opt_tests {
             def test(o) = o.bar { |x| x }
             test C.new; test C.new
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:7:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint NoSingletonClass(C@0x1000)
-          PatchPoint MethodRedefined(C@0x1000, bar@0x1008, cme:0x1010)
-          v24:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          v25:BasicObject = CCallWithFrame v24, :Enumerable#bar@0x1038, block=0x1040
-          v15:BasicObject = GetLocal :o, l0, EP@3
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, bar@0x1010, cme:0x1018)
+          v26:HeapObject[class_exact:C] = GuardType v10, HeapObject[class_exact:C]
+          v27:BasicObject = CCallWithFrame v26, :Enumerable#bar@0x1040, block=0x1048
+          v16:CPtr = GetEP 0
+          v17:BasicObject = LoadField v16, :o@0x1050
           CheckInterrupts
-          Return v25
+          Return v27
         ");
     }
 
@@ -1312,25 +1318,26 @@ mod hir_opt_tests {
             def test(a) = a.length
             test([1,2,3]); test([1,2,3])
         ", "{ specialized_instruction: false }");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :a@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint NoSingletonClass(Array@0x1000)
-          PatchPoint MethodRedefined(Array@0x1000, length@0x1008, cme:0x1010)
-          v23:ArrayExact = GuardType v9, ArrayExact
-          v24:BasicObject = CCallWithFrame v23, :Array#length@0x1038
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, length@0x1010, cme:0x1018)
+          v24:ArrayExact = GuardType v10, ArrayExact
+          v25:BasicObject = CCallWithFrame v24, :Array#length@0x1040
           CheckInterrupts
-          Return v24
+          Return v25
         ");
     }
 
@@ -1654,27 +1661,28 @@ mod hir_opt_tests {
             def test(a, b) = a + b
             test(1,2); test(3,4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:7:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@5
-          v3:BasicObject = GetLocal :b, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :a@1
-          v8:BasicObject = LoadArg :b@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint MethodRedefined(Integer@0x1000, +@0x1008, cme:0x1010)
-          v26:Fixnum = GuardType v11, Fixnum
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
+          v27:Fixnum = GuardType v12, Fixnum
           IncrCounter inline_iseq_optimized_send_count
-          v29:Fixnum[100] = Const Value(100)
+          v30:Fixnum[100] = Const Value(100)
           CheckInterrupts
-          Return v29
+          Return v30
         ");
     }
 
@@ -1684,28 +1692,29 @@ mod hir_opt_tests {
             def test(a, b) = a + b
             test(1,2); test(3,4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@5
-          v3:BasicObject = GetLocal :b, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :a@1
-          v8:BasicObject = LoadArg :b@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint MethodRedefined(Integer@0x1000, +@0x1008, cme:0x1010)
-          v27:Fixnum = GuardType v11, Fixnum
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
           v28:Fixnum = GuardType v12, Fixnum
-          v29:Fixnum = FixnumAdd v27, v28
+          v29:Fixnum = GuardType v13, Fixnum
+          v30:Fixnum = FixnumAdd v28, v29
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v29
+          Return v30
         ");
     }
 
@@ -1715,26 +1724,27 @@ mod hir_opt_tests {
             def test(a) = a + 1
             test(1); test(3)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :a@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:Fixnum[1] = Const Value(1)
-          PatchPoint MethodRedefined(Integer@0x1000, +@0x1008, cme:0x1010)
-          v25:Fixnum = GuardType v9, Fixnum
-          v26:Fixnum = FixnumAdd v25, v14
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
+          v26:Fixnum = GuardType v10, Fixnum
+          v27:Fixnum = FixnumAdd v26, v15
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v26
+          Return v27
         ");
     }
 
@@ -1744,26 +1754,27 @@ mod hir_opt_tests {
             def test(a) = 1 + a
             test(1); test(3)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :a@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v13:Fixnum[1] = Const Value(1)
-          PatchPoint MethodRedefined(Integer@0x1000, +@0x1008, cme:0x1010)
-          v25:Fixnum = GuardType v9, Fixnum
-          v26:Fixnum = FixnumAdd v13, v25
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v14:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
+          v26:Fixnum = GuardType v10, Fixnum
+          v27:Fixnum = FixnumAdd v14, v26
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v26
+          Return v27
         ");
     }
 
@@ -1773,28 +1784,29 @@ mod hir_opt_tests {
             def test(a, b) = a[b]
             test(3, 4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@5
-          v3:BasicObject = GetLocal :b, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :a@1
-          v8:BasicObject = LoadArg :b@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint MethodRedefined(Integer@0x1000, []@0x1008, cme:0x1010)
-          v27:Fixnum = GuardType v11, Fixnum
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, []@0x1010, cme:0x1018)
           v28:Fixnum = GuardType v12, Fixnum
-          v29:Fixnum = FixnumAref v27, v28
+          v29:Fixnum = GuardType v13, Fixnum
+          v30:Fixnum = FixnumAref v28, v29
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v29
+          Return v30
         ");
     }
 
@@ -1885,28 +1897,29 @@ mod hir_opt_tests {
             def test(a, b) = a < b
             test(1,2); test(3,4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@5
-          v3:BasicObject = GetLocal :b, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :a@1
-          v8:BasicObject = LoadArg :b@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint MethodRedefined(Integer@0x1000, <@0x1008, cme:0x1010)
-          v27:Fixnum = GuardType v11, Fixnum
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, <@0x1010, cme:0x1018)
           v28:Fixnum = GuardType v12, Fixnum
-          v29:BoolExact = FixnumLt v27, v28
+          v29:Fixnum = GuardType v13, Fixnum
+          v30:BoolExact = FixnumLt v28, v29
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v29
+          Return v30
         ");
     }
 
@@ -1916,26 +1929,27 @@ mod hir_opt_tests {
             def test(a) = a < 1
             test(1); test(3)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :a@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:Fixnum[1] = Const Value(1)
-          PatchPoint MethodRedefined(Integer@0x1000, <@0x1008, cme:0x1010)
-          v25:Fixnum = GuardType v9, Fixnum
-          v26:BoolExact = FixnumLt v25, v14
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1008, <@0x1010, cme:0x1018)
+          v26:Fixnum = GuardType v10, Fixnum
+          v27:BoolExact = FixnumLt v26, v15
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v26
+          Return v27
         ");
     }
 
@@ -1945,26 +1959,27 @@ mod hir_opt_tests {
             def test(a) = 1 < a
             test(1); test(3)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :a@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v13:Fixnum[1] = Const Value(1)
-          PatchPoint MethodRedefined(Integer@0x1000, <@0x1008, cme:0x1010)
-          v25:Fixnum = GuardType v9, Fixnum
-          v26:BoolExact = FixnumLt v13, v25
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v14:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1008, <@0x1010, cme:0x1018)
+          v26:Fixnum = GuardType v10, Fixnum
+          v27:BoolExact = FixnumLt v14, v26
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v26
+          Return v27
         ");
     }
 
@@ -2037,24 +2052,25 @@ mod hir_opt_tests {
             end
             test(2); test(3)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :a@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v13:Fixnum[1] = Const Value(1)
-          v22:Fixnum = GuardType v9, Fixnum
-          v23:RangeExact = NewRangeFixnum v13 NewRangeInclusive v22
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v14:Fixnum[1] = Const Value(1)
+          v23:Fixnum = GuardType v10, Fixnum
+          v24:RangeExact = NewRangeFixnum v14 NewRangeInclusive v23
           CheckInterrupts
-          Return v23
+          Return v24
         ");
     }
 
@@ -2066,24 +2082,25 @@ mod hir_opt_tests {
             end
             test(2); test(3)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :a@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v13:Fixnum[1] = Const Value(1)
-          v22:Fixnum = GuardType v9, Fixnum
-          v23:RangeExact = NewRangeFixnum v13 NewRangeExclusive v22
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v14:Fixnum[1] = Const Value(1)
+          v23:Fixnum = GuardType v10, Fixnum
+          v24:RangeExact = NewRangeFixnum v14 NewRangeExclusive v23
           CheckInterrupts
-          Return v23
+          Return v24
         ");
     }
 
@@ -2095,24 +2112,25 @@ mod hir_opt_tests {
             end
             test(2); test(3)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :a@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:Fixnum[10] = Const Value(10)
-          v22:Fixnum = GuardType v9, Fixnum
-          v23:RangeExact = NewRangeFixnum v22 NewRangeInclusive v14
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[10] = Const Value(10)
+          v23:Fixnum = GuardType v10, Fixnum
+          v24:RangeExact = NewRangeFixnum v23 NewRangeInclusive v15
           CheckInterrupts
-          Return v23
+          Return v24
         ");
     }
 
@@ -2124,24 +2142,25 @@ mod hir_opt_tests {
             end
             test(2); test(3)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :a@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:Fixnum[10] = Const Value(10)
-          v22:Fixnum = GuardType v9, Fixnum
-          v23:RangeExact = NewRangeFixnum v22 NewRangeExclusive v14
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[10] = Const Value(10)
+          v23:Fixnum = GuardType v10, Fixnum
+          v24:RangeExact = NewRangeFixnum v23 NewRangeExclusive v15
           CheckInterrupts
-          Return v23
+          Return v24
         ");
     }
 
@@ -2181,32 +2200,33 @@ mod hir_opt_tests {
             def test(arr) = arr[0]
             test(arr)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :arr, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :arr@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :arr@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:Fixnum[0] = Const Value(0)
-          PatchPoint NoSingletonClass(Array@0x1000)
-          PatchPoint MethodRedefined(Array@0x1000, []@0x1008, cme:0x1010)
-          v26:ArrayExact = GuardType v9, ArrayExact
-          v27:CInt64[0] = UnboxFixnum v14
-          v28:CInt64 = ArrayLength v26
-          v29:CInt64[0] = GuardLess v27, v28
-          v30:CInt64[0] = Const CInt64(0)
-          v31:CInt64[0] = GuardGreaterEq v29, v30
-          v32:BasicObject = ArrayAref v26, v31
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :arr@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[0] = Const Value(0)
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
+          v27:ArrayExact = GuardType v10, ArrayExact
+          v28:CInt64[0] = UnboxFixnum v15
+          v29:CInt64 = ArrayLength v27
+          v30:CInt64[0] = GuardLess v28, v29
+          v31:CInt64[0] = Const CInt64(0)
+          v32:CInt64[0] = GuardGreaterEq v30, v31
+          v33:BasicObject = ArrayAref v27, v32
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v32
+          Return v33
         ");
         assert_snapshot!(inspect("test [1,2,3]"), @"1");
     }
@@ -2218,27 +2238,28 @@ mod hir_opt_tests {
             def test(arr) = arr[0]
             test(arr)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :arr, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :arr@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :arr@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:Fixnum[0] = Const Value(0)
-          PatchPoint NoSingletonClass(Hash@0x1000)
-          PatchPoint MethodRedefined(Hash@0x1000, []@0x1008, cme:0x1010)
-          v26:HashExact = GuardType v9, HashExact
-          v27:BasicObject = HashAref v26, v14
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :arr@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[0] = Const Value(0)
+          PatchPoint NoSingletonClass(Hash@0x1008)
+          PatchPoint MethodRedefined(Hash@0x1008, []@0x1010, cme:0x1018)
+          v27:HashExact = GuardType v10, HashExact
+          v28:BasicObject = HashAref v27, v15
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v27
+          Return v28
         ");
         assert_snapshot!(inspect("test({0 => 4})"), @"4");
     }
@@ -2315,25 +2336,26 @@ mod hir_opt_tests {
             end
             test(1); test(2)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@5
-          v3:NilClass = Const Value(nil)
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:NilClass = Const Value(nil)
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :a@1
-          v8:NilClass = Const Value(nil)
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:NilClass):
-          v17:ArrayExact = NewArray v11
-          v21:Fixnum[5] = Const Value(5)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:NilClass = Const Value(nil)
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:NilClass):
+          v18:ArrayExact = NewArray v12
+          v22:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v21
+          Return v22
         ");
     }
 
@@ -2374,30 +2396,31 @@ mod hir_opt_tests {
               5
             end
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :aval, l0, SP@6
-          v3:BasicObject = GetLocal :bval, l0, SP@5
-          v4:NilClass = Const Value(nil)
-          Jump bb3(v1, v2, v3, v4)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :aval@0x1000
+          v4:BasicObject = LoadField v2, :bval@0x1001
+          v5:NilClass = Const Value(nil)
+          Jump bb3(v1, v3, v4, v5)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :aval@1
-          v9:BasicObject = LoadArg :bval@2
-          v10:NilClass = Const Value(nil)
-          Jump bb3(v7, v8, v9, v10)
-        bb3(v12:BasicObject, v13:BasicObject, v14:BasicObject, v15:NilClass):
-          v19:StaticSymbol[:a] = Const Value(VALUE(0x1000))
-          v22:StaticSymbol[:b] = Const Value(VALUE(0x1008))
-          v25:HashExact = NewHash v19: v13, v22: v14
+          v8:BasicObject = LoadArg :self@0
+          v9:BasicObject = LoadArg :aval@1
+          v10:BasicObject = LoadArg :bval@2
+          v11:NilClass = Const Value(nil)
+          Jump bb3(v8, v9, v10, v11)
+        bb3(v13:BasicObject, v14:BasicObject, v15:BasicObject, v16:NilClass):
+          v20:StaticSymbol[:a] = Const Value(VALUE(0x1008))
+          v23:StaticSymbol[:b] = Const Value(VALUE(0x1010))
+          v26:HashExact = NewHash v20: v14, v23: v15
           PatchPoint NoEPEscape(test)
-          v31:Fixnum[5] = Const Value(5)
+          v32:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v31
+          Return v32
         ");
     }
 
@@ -2527,28 +2550,29 @@ mod hir_opt_tests {
             end
             test(1, 2); test(3, 4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@5
-          v3:BasicObject = GetLocal :b, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :a@1
-          v8:BasicObject = LoadArg :b@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint MethodRedefined(Integer@0x1000, +@0x1008, cme:0x1010)
-          v31:Fixnum = GuardType v11, Fixnum
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
           v32:Fixnum = GuardType v12, Fixnum
+          v33:Fixnum = GuardType v13, Fixnum
           IncrCounter inline_cfunc_optimized_send_count
-          v23:Fixnum[5] = Const Value(5)
+          v24:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v23
+          Return v24
         ");
     }
 
@@ -2561,28 +2585,29 @@ mod hir_opt_tests {
             end
             test(1, 2); test(3, 4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@5
-          v3:BasicObject = GetLocal :b, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :a@1
-          v8:BasicObject = LoadArg :b@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint MethodRedefined(Integer@0x1000, -@0x1008, cme:0x1010)
-          v31:Fixnum = GuardType v11, Fixnum
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, -@0x1010, cme:0x1018)
           v32:Fixnum = GuardType v12, Fixnum
+          v33:Fixnum = GuardType v13, Fixnum
           IncrCounter inline_cfunc_optimized_send_count
-          v23:Fixnum[5] = Const Value(5)
+          v24:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v23
+          Return v24
         ");
     }
 
@@ -2595,28 +2620,29 @@ mod hir_opt_tests {
             end
             test(1, 2); test(3, 4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@5
-          v3:BasicObject = GetLocal :b, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :a@1
-          v8:BasicObject = LoadArg :b@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint MethodRedefined(Integer@0x1000, *@0x1008, cme:0x1010)
-          v31:Fixnum = GuardType v11, Fixnum
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, *@0x1010, cme:0x1018)
           v32:Fixnum = GuardType v12, Fixnum
+          v33:Fixnum = GuardType v13, Fixnum
           IncrCounter inline_cfunc_optimized_send_count
-          v23:Fixnum[5] = Const Value(5)
+          v24:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v23
+          Return v24
         ");
     }
 
@@ -2629,29 +2655,30 @@ mod hir_opt_tests {
             end
             test(1, 2); test(3, 4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@5
-          v3:BasicObject = GetLocal :b, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :a@1
-          v8:BasicObject = LoadArg :b@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint MethodRedefined(Integer@0x1000, /@0x1008, cme:0x1010)
-          v31:Fixnum = GuardType v11, Fixnum
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, /@0x1010, cme:0x1018)
           v32:Fixnum = GuardType v12, Fixnum
-          v33:Fixnum = FixnumDiv v31, v32
+          v33:Fixnum = GuardType v13, Fixnum
+          v34:Fixnum = FixnumDiv v32, v33
           IncrCounter inline_cfunc_optimized_send_count
-          v23:Fixnum[5] = Const Value(5)
+          v24:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v23
+          Return v24
         ");
     }
 
@@ -2664,29 +2691,30 @@ mod hir_opt_tests {
             end
             test(1, 2); test(3, 4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@5
-          v3:BasicObject = GetLocal :b, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :a@1
-          v8:BasicObject = LoadArg :b@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint MethodRedefined(Integer@0x1000, %@0x1008, cme:0x1010)
-          v31:Fixnum = GuardType v11, Fixnum
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, %@0x1010, cme:0x1018)
           v32:Fixnum = GuardType v12, Fixnum
-          v33:Fixnum = FixnumMod v31, v32
+          v33:Fixnum = GuardType v13, Fixnum
+          v34:Fixnum = FixnumMod v32, v33
           IncrCounter inline_cfunc_optimized_send_count
-          v23:Fixnum[5] = Const Value(5)
+          v24:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v23
+          Return v24
         ");
     }
 
@@ -2699,28 +2727,29 @@ mod hir_opt_tests {
             end
             test(1, 2); test(3, 4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@5
-          v3:BasicObject = GetLocal :b, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :a@1
-          v8:BasicObject = LoadArg :b@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint MethodRedefined(Integer@0x1000, <@0x1008, cme:0x1010)
-          v31:Fixnum = GuardType v11, Fixnum
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, <@0x1010, cme:0x1018)
           v32:Fixnum = GuardType v12, Fixnum
+          v33:Fixnum = GuardType v13, Fixnum
           IncrCounter inline_cfunc_optimized_send_count
-          v23:Fixnum[5] = Const Value(5)
+          v24:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v23
+          Return v24
         ");
     }
 
@@ -2733,28 +2762,29 @@ mod hir_opt_tests {
             end
             test(1, 2); test(3, 4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@5
-          v3:BasicObject = GetLocal :b, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :a@1
-          v8:BasicObject = LoadArg :b@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint MethodRedefined(Integer@0x1000, <=@0x1008, cme:0x1010)
-          v31:Fixnum = GuardType v11, Fixnum
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, <=@0x1010, cme:0x1018)
           v32:Fixnum = GuardType v12, Fixnum
+          v33:Fixnum = GuardType v13, Fixnum
           IncrCounter inline_cfunc_optimized_send_count
-          v23:Fixnum[5] = Const Value(5)
+          v24:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v23
+          Return v24
         ");
     }
 
@@ -2767,28 +2797,29 @@ mod hir_opt_tests {
             end
             test(1, 2); test(3, 4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@5
-          v3:BasicObject = GetLocal :b, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :a@1
-          v8:BasicObject = LoadArg :b@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint MethodRedefined(Integer@0x1000, >@0x1008, cme:0x1010)
-          v31:Fixnum = GuardType v11, Fixnum
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, >@0x1010, cme:0x1018)
           v32:Fixnum = GuardType v12, Fixnum
+          v33:Fixnum = GuardType v13, Fixnum
           IncrCounter inline_cfunc_optimized_send_count
-          v23:Fixnum[5] = Const Value(5)
+          v24:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v23
+          Return v24
         ");
     }
 
@@ -2801,28 +2832,29 @@ mod hir_opt_tests {
             end
             test(1, 2); test(3, 4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@5
-          v3:BasicObject = GetLocal :b, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :a@1
-          v8:BasicObject = LoadArg :b@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint MethodRedefined(Integer@0x1000, >=@0x1008, cme:0x1010)
-          v31:Fixnum = GuardType v11, Fixnum
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, >=@0x1010, cme:0x1018)
           v32:Fixnum = GuardType v12, Fixnum
+          v33:Fixnum = GuardType v13, Fixnum
           IncrCounter inline_cfunc_optimized_send_count
-          v23:Fixnum[5] = Const Value(5)
+          v24:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v23
+          Return v24
         ");
     }
 
@@ -2835,28 +2867,29 @@ mod hir_opt_tests {
             end
             test(1, 2); test(3, 4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@5
-          v3:BasicObject = GetLocal :b, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :a@1
-          v8:BasicObject = LoadArg :b@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint MethodRedefined(Integer@0x1000, ==@0x1008, cme:0x1010)
-          v31:Fixnum = GuardType v11, Fixnum
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, ==@0x1010, cme:0x1018)
           v32:Fixnum = GuardType v12, Fixnum
+          v33:Fixnum = GuardType v13, Fixnum
           IncrCounter inline_cfunc_optimized_send_count
-          v23:Fixnum[5] = Const Value(5)
+          v24:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v23
+          Return v24
         ");
     }
 
@@ -2869,29 +2902,30 @@ mod hir_opt_tests {
             end
             test(1, 2); test(3, 4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@5
-          v3:BasicObject = GetLocal :b, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :a@1
-          v8:BasicObject = LoadArg :b@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint MethodRedefined(Integer@0x1000, !=@0x1008, cme:0x1010)
-          v31:Fixnum = GuardType v11, Fixnum
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, !=@0x1010, cme:0x1018)
+          v32:Fixnum = GuardType v12, Fixnum
           PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-          v33:Fixnum = GuardType v12, Fixnum
+          v34:Fixnum = GuardType v13, Fixnum
           IncrCounter inline_cfunc_optimized_send_count
-          v23:Fixnum[5] = Const Value(5)
+          v24:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v23
+          Return v24
         ");
     }
 
@@ -2929,24 +2963,25 @@ mod hir_opt_tests {
               5
             end
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :klass, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :klass@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :klass@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:FalseClass = Const Value(false)
-          v16:BasicObject = GetConstant v9, :ARGV, v14
-          v20:Fixnum[5] = Const Value(5)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :klass@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:FalseClass = Const Value(false)
+          v17:BasicObject = GetConstant v10, :ARGV, v15
+          v21:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v20
+          Return v21
         ");
     }
 
@@ -2957,24 +2992,25 @@ mod hir_opt_tests {
             test(0) # profile
             test(1)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :x, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :x@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint MethodRedefined(Integer@0x1000, itself@0x1008, cme:0x1010)
-          v22:Fixnum = GuardType v9, Fixnum
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, itself@0x1010, cme:0x1018)
+          v23:Fixnum = GuardType v10, Fixnum
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v22
+          Return v23
         ");
     }
 
@@ -3360,25 +3396,26 @@ mod hir_opt_tests {
         eval("
             def test(x) = 1.zero?
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :x, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :x@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v13:Fixnum[1] = Const Value(1)
-          PatchPoint MethodRedefined(Integer@0x1000, zero?@0x1008, cme:0x1010)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v14:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1008, zero?@0x1010, cme:0x1018)
           IncrCounter inline_iseq_optimized_send_count
-          v24:BasicObject = InvokeBuiltin leaf <inline_expr>, v13
+          v25:BasicObject = InvokeBuiltin leaf <inline_expr>, v14
           CheckInterrupts
-          Return v24
+          Return v25
         ");
     }
 
@@ -3390,29 +3427,30 @@ mod hir_opt_tests {
               a.first
             end
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :x, l0, SP@5
-          v3:NilClass = Const Value(nil)
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          v4:NilClass = Const Value(nil)
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :x@1
-          v8:NilClass = Const Value(nil)
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:NilClass):
-          v16:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v17:ArrayExact = ArrayDup v16
-          PatchPoint NoSingletonClass(Array@0x1008)
-          PatchPoint MethodRedefined(Array@0x1008, first@0x1010, cme:0x1018)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :x@1
+          v9:NilClass = Const Value(nil)
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:NilClass):
+          v17:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v18:ArrayExact = ArrayDup v17
+          PatchPoint NoSingletonClass(Array@0x1010)
+          PatchPoint MethodRedefined(Array@0x1010, first@0x1018, cme:0x1020)
           IncrCounter inline_iseq_optimized_send_count
-          v32:BasicObject = InvokeBuiltin leaf <inline_expr>, v17
+          v33:BasicObject = InvokeBuiltin leaf <inline_expr>, v18
           CheckInterrupts
-          Return v32
+          Return v33
         ");
     }
 
@@ -3461,25 +3499,26 @@ mod hir_opt_tests {
             test c
         ");
 
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:6:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :c, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :c@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :c@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint NoSingletonClass(C@0x1000)
-          PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
-          v22:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          v23:BasicObject = SendDirect v22, 0x1038, :foo (0x1048)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :c@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, foo@0x1010, cme:0x1018)
+          v23:HeapObject[class_exact:C] = GuardType v10, HeapObject[class_exact:C]
+          v24:BasicObject = SendDirect v23, 0x1040, :foo (0x1050)
           CheckInterrupts
-          Return v23
+          Return v24
         ");
     }
 
@@ -3492,7 +3531,7 @@ mod hir_opt_tests {
             test
         ");
         assert_eq!(VALUE::fixnum_from_usize(3), result);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -3507,10 +3546,10 @@ mod hir_opt_tests {
           v13:Fixnum[2] = Const Value(2)
           PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-          v23:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v24:BasicObject = SendDirect v23, 0x1038, :foo (0x1048), v11, v13
+          v24:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v25:BasicObject = SendDirect v24, 0x1038, :foo (0x1048), v11, v13
           CheckInterrupts
-          Return v24
+          Return v25
         ");
     }
 
@@ -3526,7 +3565,7 @@ mod hir_opt_tests {
             test
             test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -3542,12 +3581,13 @@ mod hir_opt_tests {
           v13:Fixnum[1] = Const Value(1)
           PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-          v32:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v8, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v33:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v8, HeapObject[class_exact*:Object@VALUE(0x1000)]
           IncrCounter inline_iseq_optimized_send_count
-          v19:BasicObject = GetLocal :a, l0, EP@3
+          v19:CPtr = GetEP 0
+          v20:BasicObject = LoadField v19, :a@0x1038
           PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v19
+          Return v20
         ");
     }
 
@@ -3658,8 +3698,8 @@ mod hir_opt_tests {
           v15:Fixnum[2] = Const Value(2)
           PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-          v25:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v27:BasicObject = SendDirect v25, 0x1038, :foo (0x1048), v13, v15, v11
+          v26:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v27:BasicObject = SendDirect v26, 0x1038, :foo (0x1048), v13, v15, v11
           CheckInterrupts
           Return v27
         ");
@@ -3689,8 +3729,8 @@ mod hir_opt_tests {
           v15:Fixnum[1] = Const Value(1)
           PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-          v25:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v27:BasicObject = SendDirect v25, 0x1038, :foo (0x1048), v11, v15, v13
+          v26:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v27:BasicObject = SendDirect v26, 0x1038, :foo (0x1048), v11, v15, v13
           CheckInterrupts
           Return v27
         ");
@@ -3758,8 +3798,8 @@ mod hir_opt_tests {
           v26:Fixnum[3] = Const Value(3)
           PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-          v42:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v44:BasicObject = SendDirect v42, 0x1038, :foo (0x1048), v20, v22, v26, v24
+          v43:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v44:BasicObject = SendDirect v43, 0x1038, :foo (0x1048), v20, v22, v26, v24
           v30:ArrayExact = NewArray v39, v44
           CheckInterrupts
           Return v30
@@ -3787,19 +3827,19 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v11:Fixnum[1] = Const Value(1)
           v13:Fixnum[3] = Const Value(3)
+          v34:Fixnum[4] = Const Value(4)
           PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-          v36:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v37:Fixnum[4] = Const Value(4)
-          v39:BasicObject = SendDirect v36, 0x1038, :foo (0x1048), v11, v13, v37
+          v38:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v39:BasicObject = SendDirect v38, 0x1038, :foo (0x1048), v11, v13, v34
           v18:Fixnum[1] = Const Value(1)
           v20:Fixnum[2] = Const Value(2)
           v22:Fixnum[40] = Const Value(40)
           v24:Fixnum[30] = Const Value(30)
           PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-          v42:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v44:BasicObject = SendDirect v42, 0x1038, :foo (0x1048), v18, v20, v24, v22
+          v43:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v44:BasicObject = SendDirect v43, 0x1038, :foo (0x1048), v18, v20, v24, v22
           v28:ArrayExact = NewArray v39, v44
           CheckInterrupts
           Return v28
@@ -3908,6 +3948,60 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_send_hash_to_kwarg_only_method() {
+        eval(r#"
+            def callee(a:) = a
+            def test = callee({a: 1})
+            begin; test; rescue ArgumentError; end
+            begin; test; rescue ArgumentError; end
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v11:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v12:HashExact = HashDup v11
+          v14:BasicObject = Send v6, :callee, v12 # SendFallbackReason: Argument count does not match parameter count
+          CheckInterrupts
+          Return v14
+        ");
+    }
+
+    #[test]
+    fn test_send_hash_to_optional_kwarg_only_method() {
+        eval(r#"
+            def callee(a: nil) = a
+            def test = callee({a: 1})
+            begin; test; rescue ArgumentError; end
+            begin; test; rescue ArgumentError; end
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v11:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v12:HashExact = HashDup v11
+          v14:BasicObject = Send v6, :callee, v12 # SendFallbackReason: Argument count does not match parameter count
+          CheckInterrupts
+          Return v14
+        ");
+    }
+
+    #[test]
     fn specialize_call_to_iseq_with_optional_param_kw_using_default() {
         eval("
             def foo(int: 1) = int + 1
@@ -3926,11 +4020,11 @@ mod hir_opt_tests {
           v4:BasicObject = LoadArg :self@0
           Jump bb3(v4)
         bb3(v6:BasicObject):
+          v17:Fixnum[1] = Const Value(1)
           PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-          v19:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v20:Fixnum[1] = Const Value(1)
-          v22:BasicObject = SendDirect v19, 0x1038, :foo (0x1048), v20
+          v21:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v22:BasicObject = SendDirect v21, 0x1038, :foo (0x1048), v17
           CheckInterrupts
           Return v22
         ");
@@ -4029,30 +4123,32 @@ mod hir_opt_tests {
             test %(a\nb\nc)
             test %()
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :s, l0, SP@5
-          v3:NilClass = Const Value(nil)
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :s@0x1000
+          v4:NilClass = Const Value(nil)
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :s@1
-          v8:NilClass = Const Value(nil)
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:NilClass):
-          v16:ArrayExact = NewArray
-          v21:TrueClass = Const Value(true)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :s@1
+          v9:NilClass = Const Value(nil)
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:NilClass):
+          v17:ArrayExact = NewArray
+          v22:TrueClass = Const Value(true)
           IncrCounter complex_arg_pass_caller_kwarg
-          v23:BasicObject = Send v11, 0x1000, :each_line, v21 # SendFallbackReason: Complex argument passing
-          v24:BasicObject = GetLocal :s, l0, EP@4
-          v25:BasicObject = GetLocal :a, l0, EP@3
+          v24:BasicObject = Send v12, 0x1008, :each_line, v22 # SendFallbackReason: Complex argument passing
+          v25:CPtr = GetEP 0
+          v26:BasicObject = LoadField v25, :s@0x1030
+          v27:BasicObject = LoadField v25, :a@0x1031
           PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v25
+          Return v27
         ");
     }
 
@@ -4461,29 +4557,30 @@ mod hir_opt_tests {
         eval("
             def test(a,b) = [a,b].length
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@5
-          v3:BasicObject = GetLocal :b, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :a@1
-          v8:BasicObject = LoadArg :b@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          v18:ArrayExact = NewArray v11, v12
-          PatchPoint NoSingletonClass(Array@0x1000)
-          PatchPoint MethodRedefined(Array@0x1000, length@0x1008, cme:0x1010)
-          v30:CInt64 = ArrayLength v18
-          v31:Fixnum = BoxFixnum v30
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          v19:ArrayExact = NewArray v12, v13
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, length@0x1010, cme:0x1018)
+          v31:CInt64 = ArrayLength v19
+          v32:Fixnum = BoxFixnum v31
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v31
+          Return v32
         ");
     }
 
@@ -4492,29 +4589,30 @@ mod hir_opt_tests {
         eval("
             def test(a,b) = [a,b].size
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@5
-          v3:BasicObject = GetLocal :b, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :a@1
-          v8:BasicObject = LoadArg :b@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          v18:ArrayExact = NewArray v11, v12
-          PatchPoint NoSingletonClass(Array@0x1000)
-          PatchPoint MethodRedefined(Array@0x1000, size@0x1008, cme:0x1010)
-          v30:CInt64 = ArrayLength v18
-          v31:Fixnum = BoxFixnum v30
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          v19:ArrayExact = NewArray v12, v13
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, size@0x1010, cme:0x1018)
+          v31:CInt64 = ArrayLength v19
+          v32:Fixnum = BoxFixnum v31
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v31
+          Return v32
         ");
     }
 
@@ -4523,28 +4621,29 @@ mod hir_opt_tests {
         eval("
             def test(&block) = tap(&block)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :block, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :block@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :block@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:CPtr = GetEP 0
-          v15:CInt64 = LoadField v14, :_env_data_index_flags@0x1000
-          v16:CInt64 = GuardNoBitsSet v15, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM=CUInt64(512)
-          v17:CInt64 = LoadField v14, :_env_data_index_specval@0x1001
-          v18:CInt64 = GuardAnyBitSet v17, CUInt64(1)
-          v19:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
-          v21:BasicObject = Send v8, 0x1000, :tap, v19 # SendFallbackReason: Uncategorized(send)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :block@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:CPtr = GetEP 0
+          v16:CInt64 = LoadField v15, :_env_data_index_flags@0x1001
+          v17:CInt64 = GuardNoBitsSet v16, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM=CUInt64(512)
+          v18:CInt64 = LoadField v15, :_env_data_index_specval@0x1002
+          v19:CInt64 = GuardAnyBitSet v18, CUInt64(1)
+          v20:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
+          v22:BasicObject = Send v9, 0x1001, :tap, v20 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
-          Return v21
+          Return v22
         ");
     }
 
@@ -4553,29 +4652,32 @@ mod hir_opt_tests {
         eval("
             def test(&block) = block
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :block, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :block@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :block@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v13:CBool = IsBlockParamModified l0
-          IfTrue v13, bb4(v8, v9)
-          v24:BasicObject = GetBlockParam :block, l0, EP@3
-          Jump bb6(v8, v24, v24)
-        bb4(v14:BasicObject, v15:BasicObject):
-          v22:BasicObject = GetLocal :block, l0, EP@3
-          Jump bb6(v14, v22, v22)
-        bb6(v26:BasicObject, v27:BasicObject, v28:BasicObject):
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :block@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v14:CPtr = GetEP 0
+          v15:CBool = IsBlockParamModified v14
+          IfTrue v15, bb4(v9, v10)
+          v27:BasicObject = GetBlockParam :block, l0, EP@3
+          Jump bb6(v9, v27, v27)
+        bb4(v16:BasicObject, v17:BasicObject):
+          v24:CPtr = GetEP 0
+          v25:BasicObject = LoadField v24, :block@0x1001
+          Jump bb6(v16, v25, v25)
+        bb6(v29:BasicObject, v30:BasicObject, v31:BasicObject):
           CheckInterrupts
-          Return v28
+          Return v31
         ");
     }
 
@@ -4588,7 +4690,7 @@ mod hir_opt_tests {
               end
             end
         ");
-        assert_snapshot!(hir_string_proc("test"), @r"
+        assert_snapshot!(hir_string_proc("test"), @"
         fn block in test@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -4599,17 +4701,18 @@ mod hir_opt_tests {
           v4:BasicObject = LoadArg :self@0
           Jump bb3(v4)
         bb3(v6:BasicObject):
-          v10:CBool = IsBlockParamModified l1
-          IfTrue v10, bb4(v6)
-          v20:BasicObject = GetBlockParam :block, l1, EP@3
-          Jump bb6(v6, v20)
-        bb4(v11:BasicObject):
-          v17:CPtr = GetEP 1
-          v18:BasicObject = LoadField v17, :block@0x1000
-          Jump bb6(v11, v18)
-        bb6(v22:BasicObject, v23:BasicObject):
+          v10:CPtr = GetEP 1
+          v11:CBool = IsBlockParamModified v10
+          IfTrue v11, bb4(v6)
+          v21:BasicObject = GetBlockParam :block, l1, EP@3
+          Jump bb6(v6, v21)
+        bb4(v12:BasicObject):
+          v18:CPtr = GetEP 1
+          v19:BasicObject = LoadField v18, :block@0x1000
+          Jump bb6(v12, v19)
+        bb6(v23:BasicObject, v24:BasicObject):
           CheckInterrupts
-          Return v23
+          Return v24
         ");
     }
 
@@ -4724,26 +4827,27 @@ mod hir_opt_tests {
             end
             test p
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :p, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :p@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :p@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:Fixnum[1] = Const Value(1)
-          PatchPoint NoSingletonClass(Proc@0x1000)
-          PatchPoint MethodRedefined(Proc@0x1000, call@0x1008, cme:0x1010)
-          v24:HeapObject[class_exact:Proc] = GuardType v9, HeapObject[class_exact:Proc]
-          v25:BasicObject = InvokeProc v24, v14
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :p@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[1] = Const Value(1)
+          PatchPoint NoSingletonClass(Proc@0x1008)
+          PatchPoint MethodRedefined(Proc@0x1008, call@0x1010, cme:0x1018)
+          v25:HeapObject[class_exact:Proc] = GuardType v10, HeapObject[class_exact:Proc]
+          v26:BasicObject = InvokeProc v25, v15
           CheckInterrupts
-          Return v25
+          Return v26
         ");
     }
 
@@ -4756,26 +4860,27 @@ mod hir_opt_tests {
             end
             test p
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :p, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :p@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :p@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:Fixnum[2] = Const Value(2)
-          PatchPoint NoSingletonClass(Proc@0x1000)
-          PatchPoint MethodRedefined(Proc@0x1000, []@0x1008, cme:0x1010)
-          v25:HeapObject[class_exact:Proc] = GuardType v9, HeapObject[class_exact:Proc]
-          v26:BasicObject = InvokeProc v25, v14
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :p@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[2] = Const Value(2)
+          PatchPoint NoSingletonClass(Proc@0x1008)
+          PatchPoint MethodRedefined(Proc@0x1008, []@0x1010, cme:0x1018)
+          v26:HeapObject[class_exact:Proc] = GuardType v10, HeapObject[class_exact:Proc]
+          v27:BasicObject = InvokeProc v26, v15
           CheckInterrupts
-          Return v26
+          Return v27
         ");
     }
 
@@ -4788,26 +4893,27 @@ mod hir_opt_tests {
             end
             test p
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :p, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :p@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :p@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:Fixnum[3] = Const Value(3)
-          PatchPoint NoSingletonClass(Proc@0x1000)
-          PatchPoint MethodRedefined(Proc@0x1000, yield@0x1008, cme:0x1010)
-          v24:HeapObject[class_exact:Proc] = GuardType v9, HeapObject[class_exact:Proc]
-          v25:BasicObject = InvokeProc v24, v14
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :p@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[3] = Const Value(3)
+          PatchPoint NoSingletonClass(Proc@0x1008)
+          PatchPoint MethodRedefined(Proc@0x1008, yield@0x1010, cme:0x1018)
+          v25:HeapObject[class_exact:Proc] = GuardType v10, HeapObject[class_exact:Proc]
+          v26:BasicObject = InvokeProc v25, v15
           CheckInterrupts
-          Return v25
+          Return v26
         ");
     }
 
@@ -4820,26 +4926,27 @@ mod hir_opt_tests {
             end
             test p
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :p, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :p@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :p@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:Fixnum[1] = Const Value(1)
-          PatchPoint NoSingletonClass(Proc@0x1000)
-          PatchPoint MethodRedefined(Proc@0x1000, ===@0x1008, cme:0x1010)
-          v24:HeapObject[class_exact:Proc] = GuardType v9, HeapObject[class_exact:Proc]
-          v25:BasicObject = InvokeProc v24, v14
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :p@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[1] = Const Value(1)
+          PatchPoint NoSingletonClass(Proc@0x1008)
+          PatchPoint MethodRedefined(Proc@0x1008, ===@0x1010, cme:0x1018)
+          v25:HeapObject[class_exact:Proc] = GuardType v10, HeapObject[class_exact:Proc]
+          v26:BasicObject = InvokeProc v25, v15
           CheckInterrupts
-          Return v25
+          Return v26
         ");
     }
 
@@ -4853,27 +4960,28 @@ mod hir_opt_tests {
             end
             test p
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :p, l0, SP@5
-          v3:NilClass = Const Value(nil)
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :p@0x1000
+          v4:NilClass = Const Value(nil)
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :p@1
-          v8:NilClass = Const Value(nil)
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:NilClass):
-          v16:ArrayExact = NewArray
-          v22:ArrayExact = ToArray v16
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :p@1
+          v9:NilClass = Const Value(nil)
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:NilClass):
+          v17:ArrayExact = NewArray
+          v23:ArrayExact = ToArray v17
           IncrCounter complex_arg_pass_caller_splat
-          v24:BasicObject = Send v11, :call, v22 # SendFallbackReason: Complex argument passing
+          v25:BasicObject = Send v12, :call, v23 # SendFallbackReason: Complex argument passing
           CheckInterrupts
-          Return v24
+          Return v25
         ");
     }
 
@@ -4886,24 +4994,25 @@ mod hir_opt_tests {
             end
             test p
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :p, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :p@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :p@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:Fixnum[1] = Const Value(1)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :p@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[1] = Const Value(1)
           IncrCounter complex_arg_pass_caller_kwarg
-          v16:BasicObject = Send v9, :call, v14 # SendFallbackReason: Complex argument passing
+          v17:BasicObject = Send v10, :call, v15 # SendFallbackReason: Complex argument passing
           CheckInterrupts
-          Return v16
+          Return v17
         ");
     }
 
@@ -5689,25 +5798,26 @@ mod hir_opt_tests {
             test('foo'); test('foo')
         ");
 
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :a@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v13:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          PatchPoint NoSingletonClass(String@0x1008)
-          v28:String = GuardType v9, String
-          v21:StringExact = StringConcat v13, v28
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v14:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint NoSingletonClass(String@0x1010)
+          v29:String = GuardType v10, String
+          v22:StringExact = StringConcat v14, v29
           CheckInterrupts
-          Return v21
+          Return v22
         ");
     }
 
@@ -5723,25 +5833,26 @@ mod hir_opt_tests {
             test(MyString.new(foo)); test(MyString.new(foo))
         ");
 
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:5:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :a@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v13:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          PatchPoint NoSingletonClass(MyString@0x1008)
-          v28:String = GuardType v9, String
-          v21:StringExact = StringConcat v13, v28
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v14:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint NoSingletonClass(MyString@0x1010)
+          v29:String = GuardType v10, String
+          v22:StringExact = StringConcat v14, v29
           CheckInterrupts
-          Return v21
+          Return v22
         ");
     }
 
@@ -5754,28 +5865,29 @@ mod hir_opt_tests {
             test([1,2,3]); test([1,2,3]) # No fast path for array
         ");
 
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :a@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v13:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v27:ArrayExact = GuardType v9, ArrayExact
-          PatchPoint NoSingletonClass(Array@0x1008)
-          PatchPoint MethodRedefined(Array@0x1008, to_s@0x1010, cme:0x1018)
-          v32:BasicObject = CCallWithFrame v27, :Array#to_s@0x1040
-          v19:String = AnyToString v9, str: v32
-          v21:StringExact = StringConcat v13, v19
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v14:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v28:ArrayExact = GuardType v10, ArrayExact
+          PatchPoint NoSingletonClass(Array@0x1010)
+          PatchPoint MethodRedefined(Array@0x1010, to_s@0x1018, cme:0x1020)
+          v33:BasicObject = CCallWithFrame v28, :Array#to_s@0x1048
+          v20:String = AnyToString v10, str: v33
+          v22:StringExact = StringConcat v14, v20
           CheckInterrupts
-          Return v21
+          Return v22
         ");
     }
 
@@ -6052,24 +6164,25 @@ mod hir_opt_tests {
               arr[1] = 10
             end
         "##);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:7:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :arr, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :arr@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :arr@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v16:Fixnum[1] = Const Value(1)
-          v18:Fixnum[10] = Const Value(10)
-          v22:BasicObject = Send v9, :[]=, v16, v18 # SendFallbackReason: Uncategorized(opt_aset)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :arr@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v17:Fixnum[1] = Const Value(1)
+          v19:Fixnum[10] = Const Value(10)
+          v23:BasicObject = Send v10, :[]=, v17, v19 # SendFallbackReason: Uncategorized(opt_aset)
           CheckInterrupts
-          Return v18
+          Return v19
         ");
     }
 
@@ -6179,8 +6292,6 @@ mod hir_opt_tests {
           v23:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
           IncrCounter inline_iseq_optimized_send_count
           v31:StaticSymbol[:b] = Const Value(VALUE(0x1038))
-          PatchPoint SingleRactorMode
-          PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, one@0x1040, cme:0x1048)
           v28:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
           IncrCounter inline_iseq_optimized_send_count
@@ -6385,25 +6496,26 @@ mod hir_opt_tests {
 
             test(nil)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :val, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :val@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :val@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint MethodRedefined(NilClass@0x1000, nil?@0x1008, cme:0x1010)
-          v23:NilClass = GuardType v9, NilClass
-          v24:TrueClass = Const Value(true)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :val@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(NilClass@0x1008, nil?@0x1010, cme:0x1018)
+          v24:NilClass = GuardType v10, NilClass
+          v25:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v24
+          Return v25
         ");
     }
 
@@ -6414,25 +6526,26 @@ mod hir_opt_tests {
 
             test(false)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :val, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :val@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :val@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint MethodRedefined(FalseClass@0x1000, nil?@0x1008, cme:0x1010)
-          v23:FalseClass = GuardType v9, FalseClass
-          v24:FalseClass = Const Value(false)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :val@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(FalseClass@0x1008, nil?@0x1010, cme:0x1018)
+          v24:FalseClass = GuardType v10, FalseClass
+          v25:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v24
+          Return v25
         ");
     }
 
@@ -6443,25 +6556,26 @@ mod hir_opt_tests {
 
             test(true)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :val, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :val@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :val@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint MethodRedefined(TrueClass@0x1000, nil?@0x1008, cme:0x1010)
-          v23:TrueClass = GuardType v9, TrueClass
-          v24:FalseClass = Const Value(false)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :val@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(TrueClass@0x1008, nil?@0x1010, cme:0x1018)
+          v24:TrueClass = GuardType v10, TrueClass
+          v25:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v24
+          Return v25
         ");
     }
 
@@ -6472,25 +6586,26 @@ mod hir_opt_tests {
 
             test(:foo)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :val, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :val@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :val@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint MethodRedefined(Symbol@0x1000, nil?@0x1008, cme:0x1010)
-          v23:StaticSymbol = GuardType v9, StaticSymbol
-          v24:FalseClass = Const Value(false)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :val@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Symbol@0x1008, nil?@0x1010, cme:0x1018)
+          v24:StaticSymbol = GuardType v10, StaticSymbol
+          v25:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v24
+          Return v25
         ");
     }
 
@@ -6501,25 +6616,26 @@ mod hir_opt_tests {
 
             test(1)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :val, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :val@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :val@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint MethodRedefined(Integer@0x1000, nil?@0x1008, cme:0x1010)
-          v23:Fixnum = GuardType v9, Fixnum
-          v24:FalseClass = Const Value(false)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :val@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, nil?@0x1010, cme:0x1018)
+          v24:Fixnum = GuardType v10, Fixnum
+          v25:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v24
+          Return v25
         ");
     }
 
@@ -6530,25 +6646,26 @@ mod hir_opt_tests {
 
             test(1.0)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :val, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :val@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :val@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint MethodRedefined(Float@0x1000, nil?@0x1008, cme:0x1010)
-          v23:Flonum = GuardType v9, Flonum
-          v24:FalseClass = Const Value(false)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :val@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Float@0x1008, nil?@0x1010, cme:0x1018)
+          v24:Flonum = GuardType v10, Flonum
+          v25:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v24
+          Return v25
         ");
     }
 
@@ -6559,26 +6676,27 @@ mod hir_opt_tests {
 
             test('foo')
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :val, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :val@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :val@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint NoSingletonClass(String@0x1000)
-          PatchPoint MethodRedefined(String@0x1000, nil?@0x1008, cme:0x1010)
-          v24:StringExact = GuardType v9, StringExact
-          v25:FalseClass = Const Value(false)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :val@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, nil?@0x1010, cme:0x1018)
+          v25:StringExact = GuardType v10, StringExact
+          v26:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v25
+          Return v26
         ");
     }
 
@@ -6589,26 +6707,27 @@ mod hir_opt_tests {
 
             test([])
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :a@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint NoSingletonClass(Array@0x1000)
-          PatchPoint MethodRedefined(Array@0x1000, !@0x1008, cme:0x1010)
-          v24:ArrayExact = GuardType v9, ArrayExact
-          v25:FalseClass = Const Value(false)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, !@0x1010, cme:0x1018)
+          v25:ArrayExact = GuardType v10, ArrayExact
+          v26:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v25
+          Return v26
         ");
     }
 
@@ -6619,25 +6738,26 @@ mod hir_opt_tests {
 
             test(false)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :a@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint MethodRedefined(FalseClass@0x1000, !@0x1008, cme:0x1010)
-          v23:FalseClass = GuardType v9, FalseClass
-          v24:TrueClass = Const Value(true)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(FalseClass@0x1008, !@0x1010, cme:0x1018)
+          v24:FalseClass = GuardType v10, FalseClass
+          v25:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v24
+          Return v25
         ");
     }
 
@@ -6648,25 +6768,26 @@ mod hir_opt_tests {
 
             test(nil)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :a@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint MethodRedefined(NilClass@0x1000, !@0x1008, cme:0x1010)
-          v23:NilClass = GuardType v9, NilClass
-          v24:TrueClass = Const Value(true)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(NilClass@0x1008, !@0x1010, cme:0x1018)
+          v24:NilClass = GuardType v10, NilClass
+          v25:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v24
+          Return v25
         ");
     }
 
@@ -6680,37 +6801,38 @@ mod hir_opt_tests {
             test(false)
             test(true)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :a@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
           CheckInterrupts
-          v15:CBool = Test v9
-          v16:Falsy = RefineType v9, Falsy
-          IfFalse v15, bb4(v8, v16)
-          v18:Truthy = RefineType v9, Truthy
-          v20:FalseClass = Const Value(false)
+          v16:CBool = Test v10
+          v17:Falsy = RefineType v10, Falsy
+          IfFalse v16, bb4(v9, v17)
+          v19:Truthy = RefineType v10, Truthy
+          v21:FalseClass = Const Value(false)
           CheckInterrupts
-          Jump bb5(v8, v18, v20)
-        bb4(v24:BasicObject, v25:Falsy):
-          v28:NilClass = Const Value(nil)
-          Jump bb5(v24, v25, v28)
-        bb5(v30:BasicObject, v31:BasicObject, v32:Falsy):
-          PatchPoint MethodRedefined(NilClass@0x1000, !@0x1008, cme:0x1010)
-          v44:NilClass = GuardType v32, NilClass
-          v45:TrueClass = Const Value(true)
+          Jump bb5(v9, v19, v21)
+        bb4(v25:BasicObject, v26:Falsy):
+          v29:NilClass = Const Value(nil)
+          Jump bb5(v25, v26, v29)
+        bb5(v31:BasicObject, v32:BasicObject, v33:Falsy):
+          PatchPoint MethodRedefined(NilClass@0x1008, !@0x1010, cme:0x1018)
+          v45:NilClass = GuardType v33, NilClass
+          v46:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v45
+          Return v46
         ");
     }
 
@@ -6721,29 +6843,30 @@ mod hir_opt_tests {
 
             test([])
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :a@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint NoSingletonClass(Array@0x1000)
-          PatchPoint MethodRedefined(Array@0x1000, empty?@0x1008, cme:0x1010)
-          v24:ArrayExact = GuardType v9, ArrayExact
-          v25:CInt64 = ArrayLength v24
-          v26:CInt64[0] = Const CInt64(0)
-          v27:CBool = IsBitEqual v25, v26
-          v28:BoolExact = BoxBool v27
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, empty?@0x1010, cme:0x1018)
+          v25:ArrayExact = GuardType v10, ArrayExact
+          v26:CInt64 = ArrayLength v25
+          v27:CInt64[0] = Const CInt64(0)
+          v28:CBool = IsBitEqual v26, v27
+          v29:BoolExact = BoxBool v28
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v28
+          Return v29
         ");
     }
 
@@ -6754,26 +6877,27 @@ mod hir_opt_tests {
 
             test({})
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :a@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint NoSingletonClass(Hash@0x1000)
-          PatchPoint MethodRedefined(Hash@0x1000, empty?@0x1008, cme:0x1010)
-          v24:HashExact = GuardType v9, HashExact
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(Hash@0x1008)
+          PatchPoint MethodRedefined(Hash@0x1008, empty?@0x1010, cme:0x1018)
+          v25:HashExact = GuardType v10, HashExact
           IncrCounter inline_cfunc_optimized_send_count
-          v26:BoolExact = CCall v24, :Hash#empty?@0x1038
+          v27:BoolExact = CCall v25, :Hash#empty?@0x1040
           CheckInterrupts
-          Return v26
+          Return v27
         ");
     }
 
@@ -6785,29 +6909,30 @@ mod hir_opt_tests {
 
             test(C.new, C.new)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :a, l0, SP@5
-          v3:BasicObject = GetLocal :b, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :a@1
-          v8:BasicObject = LoadArg :b@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint NoSingletonClass(C@0x1000)
-          PatchPoint MethodRedefined(C@0x1000, ==@0x1008, cme:0x1010)
-          v28:HeapObject[class_exact:C] = GuardType v11, HeapObject[class_exact:C]
-          v29:CBool = IsBitEqual v28, v12
-          v30:BoolExact = BoxBool v29
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, ==@0x1010, cme:0x1018)
+          v29:HeapObject[class_exact:C] = GuardType v12, HeapObject[class_exact:C]
+          v30:CBool = IsBitEqual v29, v13
+          v31:BoolExact = BoxBool v30
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v30
+          Return v31
         ");
     }
 
@@ -6818,28 +6943,29 @@ mod hir_opt_tests {
 
             test(1, 2)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :x, l0, SP@5
-          v3:BasicObject = GetLocal :y, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          v4:BasicObject = LoadField v2, :y@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :x@1
-          v8:BasicObject = LoadArg :y@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint MethodRedefined(Integer@0x1000, &@0x1008, cme:0x1010)
-          v27:Fixnum = GuardType v11, Fixnum
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :x@1
+          v9:BasicObject = LoadArg :y@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, &@0x1010, cme:0x1018)
           v28:Fixnum = GuardType v12, Fixnum
-          v29:Fixnum = FixnumAnd v27, v28
+          v29:Fixnum = GuardType v13, Fixnum
+          v30:Fixnum = FixnumAnd v28, v29
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v29
+          Return v30
         ");
     }
 
@@ -6850,28 +6976,29 @@ mod hir_opt_tests {
 
             test(1, 2)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :x, l0, SP@5
-          v3:BasicObject = GetLocal :y, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          v4:BasicObject = LoadField v2, :y@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :x@1
-          v8:BasicObject = LoadArg :y@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint MethodRedefined(Integer@0x1000, |@0x1008, cme:0x1010)
-          v27:Fixnum = GuardType v11, Fixnum
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :x@1
+          v9:BasicObject = LoadArg :y@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, |@0x1010, cme:0x1018)
           v28:Fixnum = GuardType v12, Fixnum
-          v29:Fixnum = FixnumOr v27, v28
+          v29:Fixnum = GuardType v13, Fixnum
+          v30:Fixnum = FixnumOr v28, v29
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v29
+          Return v30
         ");
     }
 
@@ -6920,27 +7047,28 @@ mod hir_opt_tests {
             test O
             test O
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:10:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint NoSingletonClass(C@0x1000)
-          PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
-          v22:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          v25:CShape = LoadField v22, :_shape_id@0x1038
-          v26:CShape[0x1039] = GuardBitEquals v25, CShape(0x1039)
-          v27:BasicObject = LoadField v22, :@foo@0x103a
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, foo@0x1010, cme:0x1018)
+          v23:HeapObject[class_exact:C] = GuardType v10, HeapObject[class_exact:C]
+          v26:CShape = LoadField v23, :_shape_id@0x1040
+          v27:CShape[0x1041] = GuardBitEquals v26, CShape(0x1041)
+          v28:BasicObject = LoadField v23, :@foo@0x1042
           CheckInterrupts
-          Return v27
+          Return v28
         ");
     }
 
@@ -6962,28 +7090,29 @@ mod hir_opt_tests {
             test O
             test O
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:13:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint NoSingletonClass(C@0x1000)
-          PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
-          v22:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          v25:CShape = LoadField v22, :_shape_id@0x1038
-          v26:CShape[0x1039] = GuardBitEquals v25, CShape(0x1039)
-          v27:CPtr = LoadField v22, :_as_heap@0x103a
-          v28:BasicObject = LoadField v27, :@foo@0x103b
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, foo@0x1010, cme:0x1018)
+          v23:HeapObject[class_exact:C] = GuardType v10, HeapObject[class_exact:C]
+          v26:CShape = LoadField v23, :_shape_id@0x1040
+          v27:CShape[0x1041] = GuardBitEquals v26, CShape(0x1041)
+          v28:CPtr = LoadField v23, :_as_heap@0x1042
+          v29:BasicObject = LoadField v28, :@foo@0x1043
           CheckInterrupts
-          Return v28
+          Return v29
         ");
     }
 
@@ -7163,42 +7292,43 @@ mod hir_opt_tests {
             test O1
             test O2
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:20:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:CBool = HasType v9, HeapObject[class_exact:C]
-          IfTrue v14, bb5(v8, v9, v9)
-          v23:CBool = HasType v9, HeapObject[class_exact:C]
-          IfTrue v23, bb6(v8, v9, v9)
-          v32:BasicObject = Send v9, :foo # SendFallbackReason: SendWithoutBlock: polymorphic fallback
-          Jump bb4(v8, v9, v32)
-        bb5(v15:BasicObject, v16:BasicObject, v17:BasicObject):
-          v19:HeapObject[class_exact:C] = RefineType v17, HeapObject[class_exact:C]
-          PatchPoint NoSingletonClass(C@0x1000)
-          PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:CBool = HasType v10, HeapObject[class_exact:C]
+          IfTrue v15, bb5(v9, v10, v10)
+          v24:CBool = HasType v10, HeapObject[class_exact:C]
+          IfTrue v24, bb6(v9, v10, v10)
+          v33:BasicObject = Send v10, :foo # SendFallbackReason: SendWithoutBlock: polymorphic fallback
+          Jump bb4(v9, v10, v33)
+        bb5(v16:BasicObject, v17:BasicObject, v18:BasicObject):
+          v20:HeapObject[class_exact:C] = RefineType v18, HeapObject[class_exact:C]
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, foo@0x1010, cme:0x1018)
           IncrCounter getivar_fallback_not_monomorphic
-          v45:BasicObject = GetIvar v19, :@foo
-          Jump bb4(v15, v16, v45)
-        bb6(v24:BasicObject, v25:BasicObject, v26:BasicObject):
-          v28:HeapObject[class_exact:C] = RefineType v26, HeapObject[class_exact:C]
-          PatchPoint NoSingletonClass(C@0x1000)
-          PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
+          v46:BasicObject = GetIvar v20, :@foo
+          Jump bb4(v16, v17, v46)
+        bb6(v25:BasicObject, v26:BasicObject, v27:BasicObject):
+          v29:HeapObject[class_exact:C] = RefineType v27, HeapObject[class_exact:C]
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, foo@0x1010, cme:0x1018)
           IncrCounter getivar_fallback_not_monomorphic
-          v48:BasicObject = GetIvar v28, :@foo
-          Jump bb4(v24, v25, v48)
-        bb4(v34:BasicObject, v35:BasicObject, v36:BasicObject):
+          v49:BasicObject = GetIvar v29, :@foo
+          Jump bb4(v25, v26, v49)
+        bb4(v35:BasicObject, v36:BasicObject, v37:BasicObject):
           CheckInterrupts
-          Return v36
+          Return v37
         ");
     }
 
@@ -7218,26 +7348,27 @@ mod hir_opt_tests {
             def test(o) = o.foo
             test obj
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:12:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint NoSingletonClass(C@0x1000)
-          PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
-          v22:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, foo@0x1010, cme:0x1018)
+          v23:HeapObject[class_exact:C] = GuardType v10, HeapObject[class_exact:C]
           IncrCounter getivar_fallback_too_complex
-          v23:BasicObject = GetIvar v22, :@foo
+          v24:BasicObject = GetIvar v23, :@foo
           CheckInterrupts
-          Return v23
+          Return v24
         ");
     }
 
@@ -7247,7 +7378,7 @@ mod hir_opt_tests {
             def test = [1, 2, 3].map { |x| x * 2 }
             test; test
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -7262,9 +7393,9 @@ mod hir_opt_tests {
           v11:ArrayExact = ArrayDup v10
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, map@0x1010, cme:0x1018)
-          v21:BasicObject = SendDirect v11, 0x1040, :map (0x1050)
+          v22:BasicObject = SendDirect v11, 0x1040, :map (0x1050)
           CheckInterrupts
-          Return v21
+          Return v22
         ");
     }
 
@@ -7282,7 +7413,7 @@ mod hir_opt_tests {
 
             test; test
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:6:
         bb1():
           EntryPoint interpreter
@@ -7298,16 +7429,17 @@ mod hir_opt_tests {
           v13:ArrayExact = NewArray
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, A)
-          v35:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v36:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint StableConstantNames(0x1010, B)
-          v38:ArrayExact[VALUE(0x1018)] = Const Value(VALUE(0x1018))
+          v39:ArrayExact[VALUE(0x1018)] = Const Value(VALUE(0x1018))
           PatchPoint NoSingletonClass(Array@0x1020)
           PatchPoint MethodRedefined(Array@0x1020, zip@0x1028, cme:0x1030)
-          v42:BasicObject = CCallVariadic v35, :zip@0x1058, v38
-          v22:BasicObject = GetLocal :result, l0, EP@3
+          v43:BasicObject = CCallVariadic v36, :zip@0x1058, v39
+          v22:CPtr = GetEP 0
+          v23:BasicObject = LoadField v22, :result@0x1060
           PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v22
+          Return v23
         ");
     }
 
@@ -7317,30 +7449,31 @@ mod hir_opt_tests {
             def test(&block) = [].map(&block)
             test { |x| x }; test { |x| x }
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :block, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :block@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :block@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v13:ArrayExact = NewArray
-          v15:CPtr = GetEP 0
-          v16:CInt64 = LoadField v15, :_env_data_index_flags@0x1000
-          v17:CInt64 = GuardNoBitsSet v16, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM=CUInt64(512)
-          v18:CInt64 = LoadField v15, :_env_data_index_specval@0x1001
-          v19:CInt64 = GuardAnyBitSet v18, CUInt64(1)
-          v20:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :block@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v14:ArrayExact = NewArray
+          v16:CPtr = GetEP 0
+          v17:CInt64 = LoadField v16, :_env_data_index_flags@0x1001
+          v18:CInt64 = GuardNoBitsSet v17, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM=CUInt64(512)
+          v19:CInt64 = LoadField v16, :_env_data_index_specval@0x1002
+          v20:CInt64 = GuardAnyBitSet v19, CUInt64(1)
+          v21:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
           IncrCounter complex_arg_pass_caller_blockarg
-          v22:BasicObject = Send v13, 0x1000, :map, v20 # SendFallbackReason: Complex argument passing
+          v23:BasicObject = Send v14, 0x1001, :map, v21 # SendFallbackReason: Complex argument passing
           CheckInterrupts
-          Return v22
+          Return v23
         ");
     }
 
@@ -7350,30 +7483,31 @@ mod hir_opt_tests {
             def test(&block) = [].map(&block)
             test; test
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :block, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :block@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :block@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v13:ArrayExact = NewArray
-          v15:CPtr = GetEP 0
-          v16:CInt64 = LoadField v15, :_env_data_index_flags@0x1000
-          v17:CInt64 = GuardNoBitsSet v16, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM=CUInt64(512)
-          v18:CInt64 = LoadField v15, :_env_data_index_specval@0x1001
-          v19:CInt64[0] = GuardBitEquals v18, CInt64(0)
-          v20:NilClass = Const Value(nil)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :block@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v14:ArrayExact = NewArray
+          v16:CPtr = GetEP 0
+          v17:CInt64 = LoadField v16, :_env_data_index_flags@0x1001
+          v18:CInt64 = GuardNoBitsSet v17, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM=CUInt64(512)
+          v19:CInt64 = LoadField v16, :_env_data_index_specval@0x1002
+          v20:CInt64[0] = GuardBitEquals v19, CInt64(0)
+          v21:NilClass = Const Value(nil)
           IncrCounter complex_arg_pass_caller_blockarg
-          v22:BasicObject = Send v13, 0x1000, :map, v20 # SendFallbackReason: Complex argument passing
+          v23:BasicObject = Send v14, 0x1001, :map, v21 # SendFallbackReason: Complex argument passing
           CheckInterrupts
-          Return v22
+          Return v23
         ");
     }
 
@@ -7423,7 +7557,7 @@ mod hir_opt_tests {
             test; test
         "#);
         assert_eq!(VALUE::fixnum_from_usize(2), result);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:6:
         bb1():
           EntryPoint interpreter
@@ -7436,10 +7570,10 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-          v19:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v20:BasicObject = SendDirect v19, 0x1038, :foo (0x1048)
+          v20:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v21:BasicObject = SendDirect v20, 0x1038, :foo (0x1048)
           CheckInterrupts
-          Return v20
+          Return v21
         ");
     }
 
@@ -7526,27 +7660,28 @@ mod hir_opt_tests {
             test C.new
             test C.new
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:6:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint NoSingletonClass(C@0x1000)
-          PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
-          v22:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          v25:CShape = LoadField v22, :_shape_id@0x1038
-          v26:CShape[0x1039] = GuardBitEquals v25, CShape(0x1039)
-          v27:NilClass = Const Value(nil)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, foo@0x1010, cme:0x1018)
+          v23:HeapObject[class_exact:C] = GuardType v10, HeapObject[class_exact:C]
+          v26:CShape = LoadField v23, :_shape_id@0x1040
+          v27:CShape[0x1041] = GuardBitEquals v26, CShape(0x1041)
+          v28:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v27
+          Return v28
         ");
     }
 
@@ -7561,27 +7696,28 @@ mod hir_opt_tests {
             test C.new
             test C.new
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:6:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint NoSingletonClass(C@0x1000)
-          PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
-          v22:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          v25:CShape = LoadField v22, :_shape_id@0x1038
-          v26:CShape[0x1039] = GuardBitEquals v25, CShape(0x1039)
-          v27:NilClass = Const Value(nil)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, foo@0x1010, cme:0x1018)
+          v23:HeapObject[class_exact:C] = GuardType v10, HeapObject[class_exact:C]
+          v26:CShape = LoadField v23, :_shape_id@0x1040
+          v27:CShape[0x1041] = GuardBitEquals v26, CShape(0x1041)
+          v28:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v27
+          Return v28
         ");
     }
 
@@ -7596,30 +7732,31 @@ mod hir_opt_tests {
             test C.new
             test C.new
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:6:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v16:Fixnum[5] = Const Value(5)
-          PatchPoint MethodRedefined(C@0x1000, foo=@0x1008, cme:0x1010)
-          v27:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          v30:CShape = LoadField v27, :_shape_id@0x1038
-          v31:CShape[0x1039] = GuardBitEquals v30, CShape(0x1039)
-          StoreField v27, :@foo@0x103a, v16
-          WriteBarrier v27, v16
-          v34:CShape[0x103b] = Const CShape(0x103b)
-          StoreField v27, :_shape_id@0x1038, v34
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v17:Fixnum[5] = Const Value(5)
+          PatchPoint MethodRedefined(C@0x1008, foo=@0x1010, cme:0x1018)
+          v28:HeapObject[class_exact:C] = GuardType v10, HeapObject[class_exact:C]
+          v31:CShape = LoadField v28, :_shape_id@0x1040
+          v32:CShape[0x1041] = GuardBitEquals v31, CShape(0x1041)
+          StoreField v28, :@foo@0x1042, v17
+          WriteBarrier v28, v17
+          v35:CShape[0x1043] = Const CShape(0x1043)
+          StoreField v28, :_shape_id@0x1040, v35
           CheckInterrupts
-          Return v16
+          Return v17
         ");
     }
 
@@ -7634,30 +7771,31 @@ mod hir_opt_tests {
             test C.new
             test C.new
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:6:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v16:Fixnum[5] = Const Value(5)
-          PatchPoint MethodRedefined(C@0x1000, foo=@0x1008, cme:0x1010)
-          v27:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          v30:CShape = LoadField v27, :_shape_id@0x1038
-          v31:CShape[0x1039] = GuardBitEquals v30, CShape(0x1039)
-          StoreField v27, :@foo@0x103a, v16
-          WriteBarrier v27, v16
-          v34:CShape[0x103b] = Const CShape(0x103b)
-          StoreField v27, :_shape_id@0x1038, v34
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v17:Fixnum[5] = Const Value(5)
+          PatchPoint MethodRedefined(C@0x1008, foo=@0x1010, cme:0x1018)
+          v28:HeapObject[class_exact:C] = GuardType v10, HeapObject[class_exact:C]
+          v31:CShape = LoadField v28, :_shape_id@0x1040
+          v32:CShape[0x1041] = GuardBitEquals v31, CShape(0x1041)
+          StoreField v28, :@foo@0x1042, v17
+          WriteBarrier v28, v17
+          v35:CShape[0x1043] = Const CShape(0x1043)
+          StoreField v28, :_shape_id@0x1040, v35
           CheckInterrupts
-          Return v16
+          Return v17
         ");
     }
 
@@ -7669,25 +7807,26 @@ mod hir_opt_tests {
             test C.new
             test C.new
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint NoSingletonClass(C@0x1000)
-          PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
-          v22:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          v23:BasicObject = LoadField v22, :foo@0x1038
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, foo@0x1010, cme:0x1018)
+          v23:HeapObject[class_exact:C] = GuardType v10, HeapObject[class_exact:C]
+          v24:BasicObject = LoadField v23, :foo@0x1040
           CheckInterrupts
-          Return v23
+          Return v24
         ");
     }
 
@@ -7699,26 +7838,27 @@ mod hir_opt_tests {
             test C.new
             test C.new
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint NoSingletonClass(C@0x1000)
-          PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
-          v22:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          v23:CPtr = LoadField v22, :_as_heap@0x1038
-          v24:BasicObject = LoadField v23, :foo@0x1039
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, foo@0x1010, cme:0x1018)
+          v23:HeapObject[class_exact:C] = GuardType v10, HeapObject[class_exact:C]
+          v24:CPtr = LoadField v23, :_as_heap@0x1040
+          v25:BasicObject = LoadField v24, :foo@0x1041
           CheckInterrupts
-          Return v24
+          Return v25
         ");
     }
 
@@ -7733,25 +7873,26 @@ mod hir_opt_tests {
             test C.new
             test C.new
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint NoSingletonClass(C@0x1000)
-          PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
-          v26:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          v18:Fixnum[5] = Const Value(5)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, foo@0x1010, cme:0x1018)
+          v27:HeapObject[class_exact:C] = GuardType v10, HeapObject[class_exact:C]
+          v19:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v18
+          Return v19
         ");
     }
 
@@ -7764,30 +7905,31 @@ mod hir_opt_tests {
             test C.new, value
             test C.new, value
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@5
-          v3:BasicObject = GetLocal :v, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          v4:BasicObject = LoadField v2, :v@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :o@1
-          v8:BasicObject = LoadArg :v@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint NoSingletonClass(C@0x1000)
-          PatchPoint MethodRedefined(C@0x1000, foo=@0x1008, cme:0x1010)
-          v30:HeapObject[class_exact:C] = GuardType v11, HeapObject[class_exact:C]
-          v31:CUInt64 = LoadField v30, :_rbasic_flags@0x1038
-          v32:CUInt64 = GuardNoBitsSet v31, RUBY_FL_FREEZE=CUInt64(2048)
-          StoreField v30, :foo=@0x1039, v12
-          WriteBarrier v30, v12
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :o@1
+          v9:BasicObject = LoadArg :v@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, foo=@0x1010, cme:0x1018)
+          v31:HeapObject[class_exact:C] = GuardType v12, HeapObject[class_exact:C]
+          v32:CUInt64 = LoadField v31, :_rbasic_flags@0x1040
+          v33:CUInt64 = GuardNoBitsSet v32, RUBY_FL_FREEZE=CUInt64(2048)
+          StoreField v31, :foo=@0x1041, v13
+          WriteBarrier v31, v13
           CheckInterrupts
-          Return v12
+          Return v13
         ");
     }
 
@@ -7800,31 +7942,32 @@ mod hir_opt_tests {
             test C.new, value
             test C.new, value
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@5
-          v3:BasicObject = GetLocal :v, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          v4:BasicObject = LoadField v2, :v@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :o@1
-          v8:BasicObject = LoadArg :v@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint NoSingletonClass(C@0x1000)
-          PatchPoint MethodRedefined(C@0x1000, foo=@0x1008, cme:0x1010)
-          v30:HeapObject[class_exact:C] = GuardType v11, HeapObject[class_exact:C]
-          v31:CUInt64 = LoadField v30, :_rbasic_flags@0x1038
-          v32:CUInt64 = GuardNoBitsSet v31, RUBY_FL_FREEZE=CUInt64(2048)
-          v33:CPtr = LoadField v30, :_as_heap@0x1039
-          StoreField v33, :foo=@0x103a, v12
-          WriteBarrier v30, v12
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :o@1
+          v9:BasicObject = LoadArg :v@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, foo=@0x1010, cme:0x1018)
+          v31:HeapObject[class_exact:C] = GuardType v12, HeapObject[class_exact:C]
+          v32:CUInt64 = LoadField v31, :_rbasic_flags@0x1040
+          v33:CUInt64 = GuardNoBitsSet v32, RUBY_FL_FREEZE=CUInt64(2048)
+          v34:CPtr = LoadField v31, :_as_heap@0x1041
+          StoreField v34, :foo=@0x1042, v13
+          WriteBarrier v31, v13
           CheckInterrupts
-          Return v12
+          Return v13
         ");
     }
 
@@ -7966,25 +8109,26 @@ mod hir_opt_tests {
             def test(o) = o.to_s
             test "foo"
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint NoSingletonClass(String@0x1000)
-          PatchPoint MethodRedefined(String@0x1000, to_s@0x1008, cme:0x1010)
-          v23:StringExact = GuardType v9, StringExact
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, to_s@0x1010, cme:0x1018)
+          v24:StringExact = GuardType v10, StringExact
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v23
+          Return v24
         ");
     }
 
@@ -7994,24 +8138,25 @@ mod hir_opt_tests {
             def test(x) = x.to_s
             test 5
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :x, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :x@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint MethodRedefined(Integer@0x1000, to_s@0x1008, cme:0x1010)
-          v22:Fixnum = GuardType v9, Fixnum
-          v23:StringExact = CCallVariadic v22, :Integer#to_s@0x1038
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, to_s@0x1010, cme:0x1018)
+          v23:Fixnum = GuardType v10, Fixnum
+          v24:StringExact = CCallVariadic v23, :Integer#to_s@0x1040
           CheckInterrupts
-          Return v23
+          Return v24
         ");
     }
 
@@ -8021,24 +8166,25 @@ mod hir_opt_tests {
             def test(x) = x.to_s
             test (2**65)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :x, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :x@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint MethodRedefined(Integer@0x1000, to_s@0x1008, cme:0x1010)
-          v22:Integer = GuardType v9, Integer
-          v23:StringExact = CCallVariadic v22, :Integer#to_s@0x1038
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, to_s@0x1010, cme:0x1018)
+          v23:Integer = GuardType v10, Integer
+          v24:StringExact = CCallVariadic v23, :Integer#to_s@0x1040
           CheckInterrupts
-          Return v23
+          Return v24
         ");
     }
 
@@ -8048,26 +8194,27 @@ mod hir_opt_tests {
             def test(x) = "#{x}"
             test 123
         "##);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :x, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :x@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v13:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v27:Fixnum = GuardType v9, Fixnum
-          PatchPoint MethodRedefined(Integer@0x1008, to_s@0x1010, cme:0x1018)
-          v31:StringExact = CCallVariadic v27, :Integer#to_s@0x1040
-          v21:StringExact = StringConcat v13, v31
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v14:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v28:Fixnum = GuardType v10, Fixnum
+          PatchPoint MethodRedefined(Integer@0x1010, to_s@0x1018, cme:0x1020)
+          v32:StringExact = CCallVariadic v28, :Integer#to_s@0x1048
+          v22:StringExact = StringConcat v14, v32
           CheckInterrupts
-          Return v21
+          Return v22
         ");
     }
 
@@ -8117,34 +8264,35 @@ mod hir_opt_tests {
             end
             test([1, 2, 3], 0)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :arr, l0, SP@5
-          v3:BasicObject = GetLocal :idx, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :arr@0x1000
+          v4:BasicObject = LoadField v2, :idx@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :arr@1
-          v8:BasicObject = LoadArg :idx@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint NoSingletonClass(Array@0x1000)
-          PatchPoint MethodRedefined(Array@0x1000, []@0x1008, cme:0x1010)
-          v28:ArrayExact = GuardType v11, ArrayExact
-          v29:Fixnum = GuardType v12, Fixnum
-          v30:CInt64 = UnboxFixnum v29
-          v31:CInt64 = ArrayLength v28
-          v32:CInt64 = GuardLess v30, v31
-          v33:CInt64[0] = Const CInt64(0)
-          v34:CInt64 = GuardGreaterEq v32, v33
-          v35:BasicObject = ArrayAref v28, v34
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :arr@1
+          v9:BasicObject = LoadArg :idx@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
+          v29:ArrayExact = GuardType v12, ArrayExact
+          v30:Fixnum = GuardType v13, Fixnum
+          v31:CInt64 = UnboxFixnum v30
+          v32:CInt64 = ArrayLength v29
+          v33:CInt64 = GuardLess v31, v32
+          v34:CInt64[0] = Const CInt64(0)
+          v35:CInt64 = GuardGreaterEq v33, v34
+          v36:BasicObject = ArrayAref v29, v35
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v35
+          Return v36
         ");
     }
 
@@ -8157,34 +8305,35 @@ mod hir_opt_tests {
             end
             test(C.new([1, 2, 3]), 0)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :arr, l0, SP@5
-          v3:BasicObject = GetLocal :idx, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :arr@0x1000
+          v4:BasicObject = LoadField v2, :idx@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :arr@1
-          v8:BasicObject = LoadArg :idx@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint NoSingletonClass(C@0x1000)
-          PatchPoint MethodRedefined(C@0x1000, []@0x1008, cme:0x1010)
-          v28:ArraySubclass[class_exact:C] = GuardType v11, ArraySubclass[class_exact:C]
-          v29:Fixnum = GuardType v12, Fixnum
-          v30:CInt64 = UnboxFixnum v29
-          v31:CInt64 = ArrayLength v28
-          v32:CInt64 = GuardLess v30, v31
-          v33:CInt64[0] = Const CInt64(0)
-          v34:CInt64 = GuardGreaterEq v32, v33
-          v35:BasicObject = ArrayAref v28, v34
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :arr@1
+          v9:BasicObject = LoadArg :idx@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, []@0x1010, cme:0x1018)
+          v29:ArraySubclass[class_exact:C] = GuardType v12, ArraySubclass[class_exact:C]
+          v30:Fixnum = GuardType v13, Fixnum
+          v31:CInt64 = UnboxFixnum v30
+          v32:CInt64 = ArrayLength v29
+          v33:CInt64 = GuardLess v31, v32
+          v34:CInt64[0] = Const CInt64(0)
+          v35:CInt64 = GuardGreaterEq v33, v34
+          v36:BasicObject = ArrayAref v29, v35
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v35
+          Return v36
         ");
     }
 
@@ -8229,28 +8378,29 @@ mod hir_opt_tests {
             end
             test({1 => 3}, 1)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :hash, l0, SP@5
-          v3:BasicObject = GetLocal :key, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :hash@0x1000
+          v4:BasicObject = LoadField v2, :key@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :hash@1
-          v8:BasicObject = LoadArg :key@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint NoSingletonClass(Hash@0x1000)
-          PatchPoint MethodRedefined(Hash@0x1000, []@0x1008, cme:0x1010)
-          v28:HashExact = GuardType v11, HashExact
-          v29:BasicObject = HashAref v28, v12
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :hash@1
+          v9:BasicObject = LoadArg :key@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint NoSingletonClass(Hash@0x1008)
+          PatchPoint MethodRedefined(Hash@0x1008, []@0x1010, cme:0x1018)
+          v29:HashExact = GuardType v12, HashExact
+          v30:BasicObject = HashAref v29, v13
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v29
+          Return v30
         ");
     }
 
@@ -8263,27 +8413,28 @@ mod hir_opt_tests {
             end
             test(C.new({0 => 3}), 0)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :hash, l0, SP@5
-          v3:BasicObject = GetLocal :key, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :hash@0x1000
+          v4:BasicObject = LoadField v2, :key@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :hash@1
-          v8:BasicObject = LoadArg :key@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint NoSingletonClass(C@0x1000)
-          PatchPoint MethodRedefined(C@0x1000, []@0x1008, cme:0x1010)
-          v28:HashSubclass[class_exact:C] = GuardType v11, HashSubclass[class_exact:C]
-          v29:BasicObject = CCallWithFrame v28, :Hash#[]@0x1038, v12
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :hash@1
+          v9:BasicObject = LoadArg :key@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, []@0x1010, cme:0x1018)
+          v29:HashSubclass[class_exact:C] = GuardType v12, HashSubclass[class_exact:C]
+          v30:BasicObject = CCallWithFrame v29, :Hash#[]@0x1040, v13
           CheckInterrupts
-          Return v29
+          Return v30
         ");
     }
 
@@ -8360,30 +8511,31 @@ mod hir_opt_tests {
             end
             test({}, 0, 1)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :hash, l0, SP@6
-          v3:BasicObject = GetLocal :key, l0, SP@5
-          v4:BasicObject = GetLocal :val, l0, SP@4
-          Jump bb3(v1, v2, v3, v4)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :hash@0x1000
+          v4:BasicObject = LoadField v2, :key@0x1001
+          v5:BasicObject = LoadField v2, :val@0x1002
+          Jump bb3(v1, v3, v4, v5)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :hash@1
-          v9:BasicObject = LoadArg :key@2
-          v10:BasicObject = LoadArg :val@3
-          Jump bb3(v7, v8, v9, v10)
-        bb3(v12:BasicObject, v13:BasicObject, v14:BasicObject, v15:BasicObject):
-          PatchPoint NoSingletonClass(Hash@0x1000)
-          PatchPoint MethodRedefined(Hash@0x1000, []=@0x1008, cme:0x1010)
-          v36:HashExact = GuardType v13, HashExact
-          HashAset v36, v14, v15
+          v8:BasicObject = LoadArg :self@0
+          v9:BasicObject = LoadArg :hash@1
+          v10:BasicObject = LoadArg :key@2
+          v11:BasicObject = LoadArg :val@3
+          Jump bb3(v8, v9, v10, v11)
+        bb3(v13:BasicObject, v14:BasicObject, v15:BasicObject, v16:BasicObject):
+          PatchPoint NoSingletonClass(Hash@0x1008)
+          PatchPoint MethodRedefined(Hash@0x1008, []=@0x1010, cme:0x1018)
+          v37:HashExact = GuardType v14, HashExact
+          HashAset v37, v15, v16
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v15
+          Return v16
         ");
     }
 
@@ -8396,29 +8548,30 @@ mod hir_opt_tests {
             end
             test(C.new, 0, 1)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :hash, l0, SP@6
-          v3:BasicObject = GetLocal :key, l0, SP@5
-          v4:BasicObject = GetLocal :val, l0, SP@4
-          Jump bb3(v1, v2, v3, v4)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :hash@0x1000
+          v4:BasicObject = LoadField v2, :key@0x1001
+          v5:BasicObject = LoadField v2, :val@0x1002
+          Jump bb3(v1, v3, v4, v5)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :hash@1
-          v9:BasicObject = LoadArg :key@2
-          v10:BasicObject = LoadArg :val@3
-          Jump bb3(v7, v8, v9, v10)
-        bb3(v12:BasicObject, v13:BasicObject, v14:BasicObject, v15:BasicObject):
-          PatchPoint NoSingletonClass(C@0x1000)
-          PatchPoint MethodRedefined(C@0x1000, []=@0x1008, cme:0x1010)
-          v36:HashSubclass[class_exact:C] = GuardType v13, HashSubclass[class_exact:C]
-          v37:BasicObject = CCallWithFrame v36, :Hash#[]=@0x1038, v14, v15
+          v8:BasicObject = LoadArg :self@0
+          v9:BasicObject = LoadArg :hash@1
+          v10:BasicObject = LoadArg :key@2
+          v11:BasicObject = LoadArg :val@3
+          Jump bb3(v8, v9, v10, v11)
+        bb3(v13:BasicObject, v14:BasicObject, v15:BasicObject, v16:BasicObject):
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, []=@0x1010, cme:0x1018)
+          v37:HashSubclass[class_exact:C] = GuardType v14, HashSubclass[class_exact:C]
+          v38:BasicObject = CCallWithFrame v37, :Hash#[]=@0x1040, v15, v16
           CheckInterrupts
-          Return v15
+          Return v16
         ");
     }
 
@@ -8461,38 +8614,39 @@ mod hir_opt_tests {
             end
             test([])
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :arr, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :arr@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :arr@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v16:Fixnum[1] = Const Value(1)
-          v18:Fixnum[10] = Const Value(10)
-          PatchPoint NoSingletonClass(Array@0x1000)
-          PatchPoint MethodRedefined(Array@0x1000, []=@0x1008, cme:0x1010)
-          v32:ArrayExact = GuardType v9, ArrayExact
-          v33:CUInt64 = LoadField v32, :_rbasic_flags@0x1038
-          v34:CUInt64 = GuardNoBitsSet v33, RUBY_FL_FREEZE=CUInt64(2048)
-          v35:CUInt64 = LoadField v32, :_rbasic_flags@0x1038
-          v36:CUInt64 = GuardNoBitsSet v35, RUBY_ELTS_SHARED=CUInt64(4096)
-          v37:CInt64[1] = UnboxFixnum v16
-          v38:CInt64 = ArrayLength v32
-          v39:CInt64[1] = GuardLess v37, v38
-          v40:CInt64[0] = Const CInt64(0)
-          v41:CInt64[1] = GuardGreaterEq v39, v40
-          ArrayAset v32, v41, v18
-          WriteBarrier v32, v18
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :arr@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v17:Fixnum[1] = Const Value(1)
+          v19:Fixnum[10] = Const Value(10)
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, []=@0x1010, cme:0x1018)
+          v33:ArrayExact = GuardType v10, ArrayExact
+          v34:CUInt64 = LoadField v33, :_rbasic_flags@0x1040
+          v35:CUInt64 = GuardNoBitsSet v34, RUBY_FL_FREEZE=CUInt64(2048)
+          v36:CUInt64 = LoadField v33, :_rbasic_flags@0x1040
+          v37:CUInt64 = GuardNoBitsSet v36, RUBY_ELTS_SHARED=CUInt64(4096)
+          v38:CInt64[1] = UnboxFixnum v17
+          v39:CInt64 = ArrayLength v33
+          v40:CInt64[1] = GuardLess v38, v39
+          v41:CInt64[0] = Const CInt64(0)
+          v42:CInt64[1] = GuardGreaterEq v40, v41
+          ArrayAset v33, v42, v19
+          WriteBarrier v33, v19
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v18
+          Return v19
         ");
     }
 
@@ -8504,41 +8658,42 @@ mod hir_opt_tests {
             end
             test([], 0, 1)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :arr, l0, SP@6
-          v3:BasicObject = GetLocal :index, l0, SP@5
-          v4:BasicObject = GetLocal :val, l0, SP@4
-          Jump bb3(v1, v2, v3, v4)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :arr@0x1000
+          v4:BasicObject = LoadField v2, :index@0x1001
+          v5:BasicObject = LoadField v2, :val@0x1002
+          Jump bb3(v1, v3, v4, v5)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :arr@1
-          v9:BasicObject = LoadArg :index@2
-          v10:BasicObject = LoadArg :val@3
-          Jump bb3(v7, v8, v9, v10)
-        bb3(v12:BasicObject, v13:BasicObject, v14:BasicObject, v15:BasicObject):
-          PatchPoint NoSingletonClass(Array@0x1000)
-          PatchPoint MethodRedefined(Array@0x1000, []=@0x1008, cme:0x1010)
-          v36:ArrayExact = GuardType v13, ArrayExact
-          v37:Fixnum = GuardType v14, Fixnum
-          v38:CUInt64 = LoadField v36, :_rbasic_flags@0x1038
-          v39:CUInt64 = GuardNoBitsSet v38, RUBY_FL_FREEZE=CUInt64(2048)
-          v40:CUInt64 = LoadField v36, :_rbasic_flags@0x1038
-          v41:CUInt64 = GuardNoBitsSet v40, RUBY_ELTS_SHARED=CUInt64(4096)
-          v42:CInt64 = UnboxFixnum v37
-          v43:CInt64 = ArrayLength v36
-          v44:CInt64 = GuardLess v42, v43
-          v45:CInt64[0] = Const CInt64(0)
-          v46:CInt64 = GuardGreaterEq v44, v45
-          ArrayAset v36, v46, v15
-          WriteBarrier v36, v15
+          v8:BasicObject = LoadArg :self@0
+          v9:BasicObject = LoadArg :arr@1
+          v10:BasicObject = LoadArg :index@2
+          v11:BasicObject = LoadArg :val@3
+          Jump bb3(v8, v9, v10, v11)
+        bb3(v13:BasicObject, v14:BasicObject, v15:BasicObject, v16:BasicObject):
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, []=@0x1010, cme:0x1018)
+          v37:ArrayExact = GuardType v14, ArrayExact
+          v38:Fixnum = GuardType v15, Fixnum
+          v39:CUInt64 = LoadField v37, :_rbasic_flags@0x1040
+          v40:CUInt64 = GuardNoBitsSet v39, RUBY_FL_FREEZE=CUInt64(2048)
+          v41:CUInt64 = LoadField v37, :_rbasic_flags@0x1040
+          v42:CUInt64 = GuardNoBitsSet v41, RUBY_ELTS_SHARED=CUInt64(4096)
+          v43:CInt64 = UnboxFixnum v38
+          v44:CInt64 = ArrayLength v37
+          v45:CInt64 = GuardLess v43, v44
+          v46:CInt64[0] = Const CInt64(0)
+          v47:CInt64 = GuardGreaterEq v45, v46
+          ArrayAset v37, v47, v16
+          WriteBarrier v37, v16
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v15
+          Return v16
         ");
     }
 
@@ -8552,29 +8707,30 @@ mod hir_opt_tests {
             a = MyArray.new
             test(a, 0, 1)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :arr, l0, SP@6
-          v3:BasicObject = GetLocal :index, l0, SP@5
-          v4:BasicObject = GetLocal :val, l0, SP@4
-          Jump bb3(v1, v2, v3, v4)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :arr@0x1000
+          v4:BasicObject = LoadField v2, :index@0x1001
+          v5:BasicObject = LoadField v2, :val@0x1002
+          Jump bb3(v1, v3, v4, v5)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :arr@1
-          v9:BasicObject = LoadArg :index@2
-          v10:BasicObject = LoadArg :val@3
-          Jump bb3(v7, v8, v9, v10)
-        bb3(v12:BasicObject, v13:BasicObject, v14:BasicObject, v15:BasicObject):
-          PatchPoint NoSingletonClass(MyArray@0x1000)
-          PatchPoint MethodRedefined(MyArray@0x1000, []=@0x1008, cme:0x1010)
-          v36:ArraySubclass[class_exact:MyArray] = GuardType v13, ArraySubclass[class_exact:MyArray]
-          v37:BasicObject = CCallVariadic v36, :Array#[]=@0x1038, v14, v15
+          v8:BasicObject = LoadArg :self@0
+          v9:BasicObject = LoadArg :arr@1
+          v10:BasicObject = LoadArg :index@2
+          v11:BasicObject = LoadArg :val@3
+          Jump bb3(v8, v9, v10, v11)
+        bb3(v13:BasicObject, v14:BasicObject, v15:BasicObject, v16:BasicObject):
+          PatchPoint NoSingletonClass(MyArray@0x1008)
+          PatchPoint MethodRedefined(MyArray@0x1008, []=@0x1010, cme:0x1018)
+          v37:ArraySubclass[class_exact:MyArray] = GuardType v14, ArraySubclass[class_exact:MyArray]
+          v38:BasicObject = CCallVariadic v37, :Array#[]=@0x1040, v15, v16
           CheckInterrupts
-          Return v15
+          Return v16
         ");
     }
 
@@ -8586,27 +8742,28 @@ mod hir_opt_tests {
             end
             test([])
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :arr, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :arr@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :arr@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:Fixnum[1] = Const Value(1)
-          PatchPoint NoSingletonClass(Array@0x1000)
-          PatchPoint MethodRedefined(Array@0x1000, <<@0x1008, cme:0x1010)
-          v26:ArrayExact = GuardType v9, ArrayExact
-          ArrayPush v26, v14
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :arr@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[1] = Const Value(1)
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, <<@0x1010, cme:0x1018)
+          v27:ArrayExact = GuardType v10, ArrayExact
+          ArrayPush v27, v15
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v26
+          Return v27
         ");
     }
 
@@ -8618,27 +8775,28 @@ mod hir_opt_tests {
             end
             test([])
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :arr, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :arr@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :arr@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:Fixnum[1] = Const Value(1)
-          PatchPoint NoSingletonClass(Array@0x1000)
-          PatchPoint MethodRedefined(Array@0x1000, push@0x1008, cme:0x1010)
-          v25:ArrayExact = GuardType v9, ArrayExact
-          ArrayPush v25, v14
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :arr@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[1] = Const Value(1)
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, push@0x1010, cme:0x1018)
+          v26:ArrayExact = GuardType v10, ArrayExact
+          ArrayPush v26, v15
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v25
+          Return v26
         ");
     }
 
@@ -8650,28 +8808,29 @@ mod hir_opt_tests {
             end
             test([])
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :arr, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :arr@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :arr@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:Fixnum[1] = Const Value(1)
-          v16:Fixnum[2] = Const Value(2)
-          v18:Fixnum[3] = Const Value(3)
-          PatchPoint NoSingletonClass(Array@0x1000)
-          PatchPoint MethodRedefined(Array@0x1000, push@0x1008, cme:0x1010)
-          v29:ArrayExact = GuardType v9, ArrayExact
-          v30:BasicObject = CCallVariadic v29, :Array#push@0x1038, v14, v16, v18
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :arr@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[1] = Const Value(1)
+          v17:Fixnum[2] = Const Value(2)
+          v19:Fixnum[3] = Const Value(3)
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, push@0x1010, cme:0x1018)
+          v30:ArrayExact = GuardType v10, ArrayExact
+          v31:BasicObject = CCallVariadic v30, :Array#push@0x1040, v15, v17, v19
           CheckInterrupts
-          Return v30
+          Return v31
         ");
     }
 
@@ -8684,30 +8843,31 @@ mod hir_opt_tests {
             test = PushSubArray.new
             test << 1
         ");
-        assert_snapshot!(hir_string_proc("PushSubArray.new.method(:<<)"), @r"
+        assert_snapshot!(hir_string_proc("PushSubArray.new.method(:<<)"), @"
         fn <<@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :val, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :val@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :val@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint MethodRedefined(Array@0x1000, <<@0x1008, cme:0x1010)
-          v22:CPtr = GetLEP
-          v23:RubyValue = LoadField v22, :_ep_method_entry@0x1038
-          v24:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v23, Value(VALUE(0x1040))
-          v25:RubyValue = LoadField v22, :_ep_specval@0x1048
-          v26:FalseClass = GuardBitEquals v25, Value(false)
-          v27:Array = GuardType v8, Array
-          ArrayPush v27, v9
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :val@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Array@0x1008, <<@0x1010, cme:0x1018)
+          v23:CPtr = GetLEP
+          v24:RubyValue = LoadField v23, :_ep_method_entry@0x1040
+          v25:CallableMethodEntry[VALUE(0x1048)] = GuardBitEquals v24, Value(VALUE(0x1048))
+          v26:RubyValue = LoadField v23, :_ep_specval@0x1050
+          v27:FalseClass = GuardBitEquals v26, Value(false)
+          v28:Array = GuardType v9, Array
+          ArrayPush v28, v10
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v27
+          Return v28
         ");
     }
 
@@ -8737,7 +8897,6 @@ mod hir_opt_tests {
           v20:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v19, Value(VALUE(0x1040))
           v21:RubyValue = LoadField v18, :_ep_specval@0x1048
           v22:FalseClass = GuardBitEquals v21, Value(false)
-          PatchPoint MethodRedefined(Array@0x1000, pop@0x1008, cme:0x1010)
           v28:CPtr = GetLEP
           v29:RubyValue = LoadField v28, :_ep_method_entry@0x1038
           v30:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v29, Value(VALUE(0x1040))
@@ -8762,42 +8921,42 @@ mod hir_opt_tests {
             test = ArefSubArray.new([1])
             test[0]
         ");
-        assert_snapshot!(hir_string_proc("ArefSubArray.new.method(:[])"), @r"
+        assert_snapshot!(hir_string_proc("ArefSubArray.new.method(:[])"), @"
         fn []@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :idx, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :idx@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :idx@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint MethodRedefined(Array@0x1000, []@0x1008, cme:0x1010)
-          v22:CPtr = GetLEP
-          v23:RubyValue = LoadField v22, :_ep_method_entry@0x1038
-          v24:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v23, Value(VALUE(0x1040))
-          v25:RubyValue = LoadField v22, :_ep_specval@0x1048
-          v26:FalseClass = GuardBitEquals v25, Value(false)
-          PatchPoint MethodRedefined(Array@0x1000, []@0x1008, cme:0x1010)
-          v36:CPtr = GetLEP
-          v37:RubyValue = LoadField v36, :_ep_method_entry@0x1038
-          v38:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v37, Value(VALUE(0x1040))
-          v39:RubyValue = LoadField v36, :_ep_specval@0x1048
-          v40:FalseClass = GuardBitEquals v39, Value(false)
-          v27:Array = GuardType v8, Array
-          v28:Fixnum = GuardType v9, Fixnum
-          v29:CInt64 = UnboxFixnum v28
-          v30:CInt64 = ArrayLength v27
-          v31:CInt64 = GuardLess v29, v30
-          v32:CInt64[0] = Const CInt64(0)
-          v33:CInt64 = GuardGreaterEq v31, v32
-          v34:BasicObject = ArrayAref v27, v33
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :idx@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
+          v23:CPtr = GetLEP
+          v24:RubyValue = LoadField v23, :_ep_method_entry@0x1040
+          v25:CallableMethodEntry[VALUE(0x1048)] = GuardBitEquals v24, Value(VALUE(0x1048))
+          v26:RubyValue = LoadField v23, :_ep_specval@0x1050
+          v27:FalseClass = GuardBitEquals v26, Value(false)
+          v37:CPtr = GetLEP
+          v38:RubyValue = LoadField v37, :_ep_method_entry@0x1040
+          v39:CallableMethodEntry[VALUE(0x1048)] = GuardBitEquals v38, Value(VALUE(0x1048))
+          v40:RubyValue = LoadField v37, :_ep_specval@0x1050
+          v41:FalseClass = GuardBitEquals v40, Value(false)
+          v28:Array = GuardType v9, Array
+          v29:Fixnum = GuardType v10, Fixnum
+          v30:CInt64 = UnboxFixnum v29
+          v31:CInt64 = ArrayLength v28
+          v32:CInt64 = GuardLess v30, v31
+          v33:CInt64[0] = Const CInt64(0)
+          v34:CInt64 = GuardGreaterEq v32, v33
+          v35:BasicObject = ArrayAref v28, v34
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v34
+          Return v35
         ");
     }
 
@@ -8810,28 +8969,29 @@ mod hir_opt_tests {
             test = ArefSubArrayRange.new([1, 2, 3])
             test[0..1]
         ");
-        assert_snapshot!(hir_string_proc("ArefSubArrayRange.new.method(:[])"), @r"
+        assert_snapshot!(hir_string_proc("ArefSubArrayRange.new.method(:[])"), @"
         fn []@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :idx, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :idx@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :idx@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint MethodRedefined(Array@0x1000, []@0x1008, cme:0x1010)
-          v22:CPtr = GetLEP
-          v23:RubyValue = LoadField v22, :_ep_method_entry@0x1038
-          v24:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v23, Value(VALUE(0x1040))
-          v25:RubyValue = LoadField v22, :_ep_specval@0x1048
-          v26:FalseClass = GuardBitEquals v25, Value(false)
-          v27:BasicObject = CCallVariadic v8, :Array#[]@0x1050, v9
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :idx@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
+          v23:CPtr = GetLEP
+          v24:RubyValue = LoadField v23, :_ep_method_entry@0x1040
+          v25:CallableMethodEntry[VALUE(0x1048)] = GuardBitEquals v24, Value(VALUE(0x1048))
+          v26:RubyValue = LoadField v23, :_ep_specval@0x1050
+          v27:FalseClass = GuardBitEquals v26, Value(false)
+          v28:BasicObject = CCallVariadic v9, :Array#[]@0x1058, v10
           CheckInterrupts
-          Return v27
+          Return v28
         ");
     }
 
@@ -8842,27 +9002,28 @@ mod hir_opt_tests {
             test([])
         ");
         assert_contains_opcode("test", YARVINSN_opt_length);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :arr, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :arr@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :arr@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint NoSingletonClass(Array@0x1000)
-          PatchPoint MethodRedefined(Array@0x1000, length@0x1008, cme:0x1010)
-          v24:ArrayExact = GuardType v9, ArrayExact
-          v25:CInt64 = ArrayLength v24
-          v26:Fixnum = BoxFixnum v25
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :arr@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, length@0x1010, cme:0x1018)
+          v25:ArrayExact = GuardType v10, ArrayExact
+          v26:CInt64 = ArrayLength v25
+          v27:Fixnum = BoxFixnum v26
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v26
+          Return v27
         ");
     }
 
@@ -8873,27 +9034,28 @@ mod hir_opt_tests {
             test([])
         ");
         assert_contains_opcode("test", YARVINSN_opt_size);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :arr, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :arr@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :arr@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint NoSingletonClass(Array@0x1000)
-          PatchPoint MethodRedefined(Array@0x1000, size@0x1008, cme:0x1010)
-          v24:ArrayExact = GuardType v9, ArrayExact
-          v25:CInt64 = ArrayLength v24
-          v26:Fixnum = BoxFixnum v25
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :arr@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, size@0x1010, cme:0x1018)
+          v25:ArrayExact = GuardType v10, ArrayExact
+          v26:CInt64 = ArrayLength v25
+          v27:Fixnum = BoxFixnum v26
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v26
+          Return v27
         ");
     }
 
@@ -8904,26 +9066,27 @@ mod hir_opt_tests {
             test("foo")
         "#);
         assert_contains_opcode("test", YARVINSN_opt_regexpmatch2);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :s, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :s@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :s@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:RegexpExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          PatchPoint NoSingletonClass(String@0x1008)
-          PatchPoint MethodRedefined(String@0x1008, =~@0x1010, cme:0x1018)
-          v26:StringExact = GuardType v9, StringExact
-          v27:BasicObject = CCallWithFrame v26, :String#=~@0x1040, v14
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :s@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:RegexpExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint NoSingletonClass(String@0x1010)
+          PatchPoint MethodRedefined(String@0x1010, =~@0x1018, cme:0x1020)
+          v27:StringExact = GuardType v10, StringExact
+          v28:BasicObject = CCallWithFrame v27, :String#=~@0x1048, v15
           CheckInterrupts
-          Return v27
+          Return v28
         ");
     }
 
@@ -8933,34 +9096,35 @@ mod hir_opt_tests {
             def test(s, i) = s.getbyte(i)
             test("foo", 0)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :s, l0, SP@5
-          v3:BasicObject = GetLocal :i, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :s@0x1000
+          v4:BasicObject = LoadField v2, :i@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :s@1
-          v8:BasicObject = LoadArg :i@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint NoSingletonClass(String@0x1000)
-          PatchPoint MethodRedefined(String@0x1000, getbyte@0x1008, cme:0x1010)
-          v27:StringExact = GuardType v11, StringExact
-          v28:Fixnum = GuardType v12, Fixnum
-          v29:CInt64 = UnboxFixnum v28
-          v30:CInt64 = LoadField v27, :len@0x1038
-          v31:CInt64 = GuardLess v29, v30
-          v32:CInt64[0] = Const CInt64(0)
-          v33:CInt64 = GuardGreaterEq v31, v32
-          v34:Fixnum = StringGetbyte v27, v31
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :s@1
+          v9:BasicObject = LoadArg :i@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, getbyte@0x1010, cme:0x1018)
+          v28:StringExact = GuardType v12, StringExact
+          v29:Fixnum = GuardType v13, Fixnum
+          v30:CInt64 = UnboxFixnum v29
+          v31:CInt64 = LoadField v28, :len@0x1040
+          v32:CInt64 = GuardLess v30, v31
+          v33:CInt64[0] = Const CInt64(0)
+          v34:CInt64 = GuardGreaterEq v32, v33
+          v35:Fixnum = StringGetbyte v28, v32
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v34
+          Return v35
         ");
     }
 
@@ -8973,34 +9137,35 @@ mod hir_opt_tests {
             end
             test("foo", 0)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :s, l0, SP@5
-          v3:BasicObject = GetLocal :i, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :s@0x1000
+          v4:BasicObject = LoadField v2, :i@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :s@1
-          v8:BasicObject = LoadArg :i@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint NoSingletonClass(String@0x1000)
-          PatchPoint MethodRedefined(String@0x1000, getbyte@0x1008, cme:0x1010)
-          v31:StringExact = GuardType v11, StringExact
-          v32:Fixnum = GuardType v12, Fixnum
-          v33:CInt64 = UnboxFixnum v32
-          v34:CInt64 = LoadField v31, :len@0x1038
-          v35:CInt64 = GuardLess v33, v34
-          v36:CInt64[0] = Const CInt64(0)
-          v37:CInt64 = GuardGreaterEq v35, v36
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :s@1
+          v9:BasicObject = LoadArg :i@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, getbyte@0x1010, cme:0x1018)
+          v32:StringExact = GuardType v12, StringExact
+          v33:Fixnum = GuardType v13, Fixnum
+          v34:CInt64 = UnboxFixnum v33
+          v35:CInt64 = LoadField v32, :len@0x1040
+          v36:CInt64 = GuardLess v34, v35
+          v37:CInt64[0] = Const CInt64(0)
+          v38:CInt64 = GuardGreaterEq v36, v37
           IncrCounter inline_cfunc_optimized_send_count
-          v22:Fixnum[5] = Const Value(5)
+          v23:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v22
+          Return v23
         ");
     }
 
@@ -9012,39 +9177,40 @@ mod hir_opt_tests {
             end
             test("foo", 0, 127)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :s, l0, SP@6
-          v3:BasicObject = GetLocal :idx, l0, SP@5
-          v4:BasicObject = GetLocal :val, l0, SP@4
-          Jump bb3(v1, v2, v3, v4)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :s@0x1000
+          v4:BasicObject = LoadField v2, :idx@0x1001
+          v5:BasicObject = LoadField v2, :val@0x1002
+          Jump bb3(v1, v3, v4, v5)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :s@1
-          v9:BasicObject = LoadArg :idx@2
-          v10:BasicObject = LoadArg :val@3
-          Jump bb3(v7, v8, v9, v10)
-        bb3(v12:BasicObject, v13:BasicObject, v14:BasicObject, v15:BasicObject):
-          PatchPoint NoSingletonClass(String@0x1000)
-          PatchPoint MethodRedefined(String@0x1000, setbyte@0x1008, cme:0x1010)
-          v31:StringExact = GuardType v13, StringExact
-          v32:Fixnum = GuardType v14, Fixnum
+          v8:BasicObject = LoadArg :self@0
+          v9:BasicObject = LoadArg :s@1
+          v10:BasicObject = LoadArg :idx@2
+          v11:BasicObject = LoadArg :val@3
+          Jump bb3(v8, v9, v10, v11)
+        bb3(v13:BasicObject, v14:BasicObject, v15:BasicObject, v16:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, setbyte@0x1010, cme:0x1018)
+          v32:StringExact = GuardType v14, StringExact
           v33:Fixnum = GuardType v15, Fixnum
-          v34:CInt64 = UnboxFixnum v32
-          v35:CInt64 = LoadField v31, :len@0x1038
-          v36:CInt64 = GuardLess v34, v35
-          v37:CInt64[0] = Const CInt64(0)
-          v38:CInt64 = GuardGreaterEq v36, v37
-          v39:CUInt64 = LoadField v31, :_rbasic_flags@0x1039
-          v40:CUInt64 = GuardNoBitsSet v39, RUBY_FL_FREEZE=CUInt64(2048)
-          v41:Fixnum = StringSetbyteFixnum v31, v32, v33
+          v34:Fixnum = GuardType v16, Fixnum
+          v35:CInt64 = UnboxFixnum v33
+          v36:CInt64 = LoadField v32, :len@0x1040
+          v37:CInt64 = GuardLess v35, v36
+          v38:CInt64[0] = Const CInt64(0)
+          v39:CInt64 = GuardGreaterEq v37, v38
+          v40:CUInt64 = LoadField v32, :_rbasic_flags@0x1041
+          v41:CUInt64 = GuardNoBitsSet v40, RUBY_FL_FREEZE=CUInt64(2048)
+          v42:Fixnum = StringSetbyteFixnum v32, v33, v34
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v33
+          Return v34
         ");
     }
 
@@ -9058,39 +9224,40 @@ mod hir_opt_tests {
             end
             test(MyString.new('foo'), 0, 127)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:5:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :s, l0, SP@6
-          v3:BasicObject = GetLocal :idx, l0, SP@5
-          v4:BasicObject = GetLocal :val, l0, SP@4
-          Jump bb3(v1, v2, v3, v4)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :s@0x1000
+          v4:BasicObject = LoadField v2, :idx@0x1001
+          v5:BasicObject = LoadField v2, :val@0x1002
+          Jump bb3(v1, v3, v4, v5)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :s@1
-          v9:BasicObject = LoadArg :idx@2
-          v10:BasicObject = LoadArg :val@3
-          Jump bb3(v7, v8, v9, v10)
-        bb3(v12:BasicObject, v13:BasicObject, v14:BasicObject, v15:BasicObject):
-          PatchPoint NoSingletonClass(MyString@0x1000)
-          PatchPoint MethodRedefined(MyString@0x1000, setbyte@0x1008, cme:0x1010)
-          v31:StringSubclass[class_exact:MyString] = GuardType v13, StringSubclass[class_exact:MyString]
-          v32:Fixnum = GuardType v14, Fixnum
+          v8:BasicObject = LoadArg :self@0
+          v9:BasicObject = LoadArg :s@1
+          v10:BasicObject = LoadArg :idx@2
+          v11:BasicObject = LoadArg :val@3
+          Jump bb3(v8, v9, v10, v11)
+        bb3(v13:BasicObject, v14:BasicObject, v15:BasicObject, v16:BasicObject):
+          PatchPoint NoSingletonClass(MyString@0x1008)
+          PatchPoint MethodRedefined(MyString@0x1008, setbyte@0x1010, cme:0x1018)
+          v32:StringSubclass[class_exact:MyString] = GuardType v14, StringSubclass[class_exact:MyString]
           v33:Fixnum = GuardType v15, Fixnum
-          v34:CInt64 = UnboxFixnum v32
-          v35:CInt64 = LoadField v31, :len@0x1038
-          v36:CInt64 = GuardLess v34, v35
-          v37:CInt64[0] = Const CInt64(0)
-          v38:CInt64 = GuardGreaterEq v36, v37
-          v39:CUInt64 = LoadField v31, :_rbasic_flags@0x1039
-          v40:CUInt64 = GuardNoBitsSet v39, RUBY_FL_FREEZE=CUInt64(2048)
-          v41:Fixnum = StringSetbyteFixnum v31, v32, v33
+          v34:Fixnum = GuardType v16, Fixnum
+          v35:CInt64 = UnboxFixnum v33
+          v36:CInt64 = LoadField v32, :len@0x1040
+          v37:CInt64 = GuardLess v35, v36
+          v38:CInt64[0] = Const CInt64(0)
+          v39:CInt64 = GuardGreaterEq v37, v38
+          v40:CUInt64 = LoadField v32, :_rbasic_flags@0x1041
+          v41:CUInt64 = GuardNoBitsSet v40, RUBY_FL_FREEZE=CUInt64(2048)
+          v42:Fixnum = StringSetbyteFixnum v32, v33, v34
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v33
+          Return v34
         ");
     }
 
@@ -9102,29 +9269,30 @@ mod hir_opt_tests {
             end
             test("foo", 0, 3.14)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :s, l0, SP@6
-          v3:BasicObject = GetLocal :idx, l0, SP@5
-          v4:BasicObject = GetLocal :val, l0, SP@4
-          Jump bb3(v1, v2, v3, v4)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :s@0x1000
+          v4:BasicObject = LoadField v2, :idx@0x1001
+          v5:BasicObject = LoadField v2, :val@0x1002
+          Jump bb3(v1, v3, v4, v5)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :s@1
-          v9:BasicObject = LoadArg :idx@2
-          v10:BasicObject = LoadArg :val@3
-          Jump bb3(v7, v8, v9, v10)
-        bb3(v12:BasicObject, v13:BasicObject, v14:BasicObject, v15:BasicObject):
-          PatchPoint NoSingletonClass(String@0x1000)
-          PatchPoint MethodRedefined(String@0x1000, setbyte@0x1008, cme:0x1010)
-          v31:StringExact = GuardType v13, StringExact
-          v32:BasicObject = CCallWithFrame v31, :String#setbyte@0x1038, v14, v15
+          v8:BasicObject = LoadArg :self@0
+          v9:BasicObject = LoadArg :s@1
+          v10:BasicObject = LoadArg :idx@2
+          v11:BasicObject = LoadArg :val@3
+          Jump bb3(v8, v9, v10, v11)
+        bb3(v13:BasicObject, v14:BasicObject, v15:BasicObject, v16:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, setbyte@0x1010, cme:0x1018)
+          v32:StringExact = GuardType v14, StringExact
+          v33:BasicObject = CCallWithFrame v32, :String#setbyte@0x1040, v15, v16
           CheckInterrupts
-          Return v32
+          Return v33
         ");
     }
 
@@ -9136,29 +9304,30 @@ mod hir_opt_tests {
             end
             test("asdf")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :s, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :s@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :s@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint NoSingletonClass(String@0x1000)
-          PatchPoint MethodRedefined(String@0x1000, empty?@0x1008, cme:0x1010)
-          v24:StringExact = GuardType v9, StringExact
-          v25:CInt64 = LoadField v24, :len@0x1038
-          v26:CInt64[0] = Const CInt64(0)
-          v27:CBool = IsBitEqual v25, v26
-          v28:BoolExact = BoxBool v27
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :s@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, empty?@0x1010, cme:0x1018)
+          v25:StringExact = GuardType v10, StringExact
+          v26:CInt64 = LoadField v25, :len@0x1040
+          v27:CInt64[0] = Const CInt64(0)
+          v28:CBool = IsBitEqual v26, v27
+          v29:BoolExact = BoxBool v28
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v28
+          Return v29
         ");
     }
 
@@ -9171,26 +9340,27 @@ mod hir_opt_tests {
             end
             test("this should get removed")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :s, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :s@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :s@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint NoSingletonClass(String@0x1000)
-          PatchPoint MethodRedefined(String@0x1000, empty?@0x1008, cme:0x1010)
-          v28:StringExact = GuardType v9, StringExact
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :s@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, empty?@0x1010, cme:0x1018)
+          v29:StringExact = GuardType v10, StringExact
           IncrCounter inline_cfunc_optimized_send_count
-          v19:Fixnum[4] = Const Value(4)
+          v20:Fixnum[4] = Const Value(4)
           CheckInterrupts
-          Return v19
+          Return v20
         ");
     }
 
@@ -9201,26 +9371,27 @@ mod hir_opt_tests {
             test(4)
         ");
         assert_contains_opcode("test", YARVINSN_opt_succ);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :x, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :x@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint MethodRedefined(Integer@0x1000, succ@0x1008, cme:0x1010)
-          v23:Fixnum = GuardType v9, Fixnum
-          v24:Fixnum[1] = Const Value(1)
-          v25:Fixnum = FixnumAdd v23, v24
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, succ@0x1010, cme:0x1018)
+          v24:Fixnum = GuardType v10, Fixnum
+          v25:Fixnum[1] = Const Value(1)
+          v26:Fixnum = FixnumAdd v24, v25
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v25
+          Return v26
         ");
     }
 
@@ -9231,24 +9402,25 @@ mod hir_opt_tests {
             test(4 << 70)
         ");
         assert_contains_opcode("test", YARVINSN_opt_succ);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :x, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :x@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint MethodRedefined(Integer@0x1000, succ@0x1008, cme:0x1010)
-          v23:Integer = GuardType v9, Integer
-          v24:BasicObject = CCallWithFrame v23, :Integer#succ@0x1038
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, succ@0x1010, cme:0x1018)
+          v24:Integer = GuardType v10, Integer
+          v25:BasicObject = CCallWithFrame v24, :Integer#succ@0x1040
           CheckInterrupts
-          Return v24
+          Return v25
         ");
     }
 
@@ -9259,26 +9431,27 @@ mod hir_opt_tests {
             test(4)
         ");
         assert_contains_opcode("test", YARVINSN_opt_ltlt);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :x, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :x@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:Fixnum[5] = Const Value(5)
-          PatchPoint MethodRedefined(Integer@0x1000, <<@0x1008, cme:0x1010)
-          v25:Fixnum = GuardType v9, Fixnum
-          v26:Fixnum = FixnumLShift v25, v14
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[5] = Const Value(5)
+          PatchPoint MethodRedefined(Integer@0x1008, <<@0x1010, cme:0x1018)
+          v26:Fixnum = GuardType v10, Fixnum
+          v27:Fixnum = FixnumLShift v26, v15
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v26
+          Return v27
         ");
     }
 
@@ -9289,25 +9462,26 @@ mod hir_opt_tests {
             test(4)
         ");
         assert_contains_opcode("test", YARVINSN_opt_ltlt);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :x, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :x@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:Fixnum[-5] = Const Value(-5)
-          PatchPoint MethodRedefined(Integer@0x1000, <<@0x1008, cme:0x1010)
-          v25:Fixnum = GuardType v9, Fixnum
-          v26:BasicObject = CCallWithFrame v25, :Integer#<<@0x1038, v14
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[-5] = Const Value(-5)
+          PatchPoint MethodRedefined(Integer@0x1008, <<@0x1010, cme:0x1018)
+          v26:Fixnum = GuardType v10, Fixnum
+          v27:BasicObject = CCallWithFrame v26, :Integer#<<@0x1040, v15
           CheckInterrupts
-          Return v26
+          Return v27
         ");
     }
 
@@ -9318,25 +9492,26 @@ mod hir_opt_tests {
             test(4)
         ");
         assert_contains_opcode("test", YARVINSN_opt_ltlt);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :x, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :x@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:Fixnum[64] = Const Value(64)
-          PatchPoint MethodRedefined(Integer@0x1000, <<@0x1008, cme:0x1010)
-          v25:Fixnum = GuardType v9, Fixnum
-          v26:BasicObject = CCallWithFrame v25, :Integer#<<@0x1038, v14
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[64] = Const Value(64)
+          PatchPoint MethodRedefined(Integer@0x1008, <<@0x1010, cme:0x1018)
+          v26:Fixnum = GuardType v10, Fixnum
+          v27:BasicObject = CCallWithFrame v26, :Integer#<<@0x1040, v15
           CheckInterrupts
-          Return v26
+          Return v27
         ");
     }
 
@@ -9347,26 +9522,27 @@ mod hir_opt_tests {
             test(4, 5)
         ");
         assert_contains_opcode("test", YARVINSN_opt_ltlt);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :x, l0, SP@5
-          v3:BasicObject = GetLocal :y, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          v4:BasicObject = LoadField v2, :y@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :x@1
-          v8:BasicObject = LoadArg :y@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint MethodRedefined(Integer@0x1000, <<@0x1008, cme:0x1010)
-          v27:Fixnum = GuardType v11, Fixnum
-          v28:BasicObject = CCallWithFrame v27, :Integer#<<@0x1038, v12
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :x@1
+          v9:BasicObject = LoadArg :y@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, <<@0x1010, cme:0x1018)
+          v28:Fixnum = GuardType v12, Fixnum
+          v29:BasicObject = CCallWithFrame v28, :Integer#<<@0x1040, v13
           CheckInterrupts
-          Return v28
+          Return v29
         ");
     }
 
@@ -9376,26 +9552,27 @@ mod hir_opt_tests {
             def test(x) = x >> 5
             test(4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :x, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :x@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:Fixnum[5] = Const Value(5)
-          PatchPoint MethodRedefined(Integer@0x1000, >>@0x1008, cme:0x1010)
-          v24:Fixnum = GuardType v9, Fixnum
-          v25:Fixnum = FixnumRShift v24, v14
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[5] = Const Value(5)
+          PatchPoint MethodRedefined(Integer@0x1008, >>@0x1010, cme:0x1018)
+          v25:Fixnum = GuardType v10, Fixnum
+          v26:Fixnum = FixnumRShift v25, v15
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v25
+          Return v26
         ");
     }
 
@@ -9405,25 +9582,26 @@ mod hir_opt_tests {
             def test(x) = x >> -5
             test(4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :x, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :x@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:Fixnum[-5] = Const Value(-5)
-          PatchPoint MethodRedefined(Integer@0x1000, >>@0x1008, cme:0x1010)
-          v24:Fixnum = GuardType v9, Fixnum
-          v25:BasicObject = CCallWithFrame v24, :Integer#>>@0x1038, v14
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[-5] = Const Value(-5)
+          PatchPoint MethodRedefined(Integer@0x1008, >>@0x1010, cme:0x1018)
+          v25:Fixnum = GuardType v10, Fixnum
+          v26:BasicObject = CCallWithFrame v25, :Integer#>>@0x1040, v15
           CheckInterrupts
-          Return v25
+          Return v26
         ");
     }
 
@@ -9433,25 +9611,26 @@ mod hir_opt_tests {
             def test(x) = x >> 64
             test(4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :x, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :x@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:Fixnum[64] = Const Value(64)
-          PatchPoint MethodRedefined(Integer@0x1000, >>@0x1008, cme:0x1010)
-          v24:Fixnum = GuardType v9, Fixnum
-          v25:BasicObject = CCallWithFrame v24, :Integer#>>@0x1038, v14
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[64] = Const Value(64)
+          PatchPoint MethodRedefined(Integer@0x1008, >>@0x1010, cme:0x1018)
+          v25:Fixnum = GuardType v10, Fixnum
+          v26:BasicObject = CCallWithFrame v25, :Integer#>>@0x1040, v15
           CheckInterrupts
-          Return v25
+          Return v26
         ");
     }
 
@@ -9461,26 +9640,27 @@ mod hir_opt_tests {
             def test(x, y) = x >> y
             test(4, 5)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :x, l0, SP@5
-          v3:BasicObject = GetLocal :y, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          v4:BasicObject = LoadField v2, :y@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :x@1
-          v8:BasicObject = LoadArg :y@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint MethodRedefined(Integer@0x1000, >>@0x1008, cme:0x1010)
-          v26:Fixnum = GuardType v11, Fixnum
-          v27:BasicObject = CCallWithFrame v26, :Integer#>>@0x1038, v12
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :x@1
+          v9:BasicObject = LoadArg :y@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, >>@0x1010, cme:0x1018)
+          v27:Fixnum = GuardType v12, Fixnum
+          v28:BasicObject = CCallWithFrame v27, :Integer#>>@0x1040, v13
           CheckInterrupts
-          Return v27
+          Return v28
         ");
     }
 
@@ -9490,29 +9670,30 @@ mod hir_opt_tests {
             def test(x, y) = x << y
             test("iron", "fish")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :x, l0, SP@5
-          v3:BasicObject = GetLocal :y, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          v4:BasicObject = LoadField v2, :y@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :x@1
-          v8:BasicObject = LoadArg :y@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint NoSingletonClass(String@0x1000)
-          PatchPoint MethodRedefined(String@0x1000, <<@0x1008, cme:0x1010)
-          v28:StringExact = GuardType v11, StringExact
-          v29:String = GuardType v12, String
-          v30:StringExact = StringAppend v28, v29
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :x@1
+          v9:BasicObject = LoadArg :y@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, <<@0x1010, cme:0x1018)
+          v29:StringExact = GuardType v12, StringExact
+          v30:String = GuardType v13, String
+          v31:StringExact = StringAppend v29, v30
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v28
+          Return v29
         ");
     }
 
@@ -9522,29 +9703,30 @@ mod hir_opt_tests {
             def test(x, y) = x << y
             test("iron", 4)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :x, l0, SP@5
-          v3:BasicObject = GetLocal :y, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          v4:BasicObject = LoadField v2, :y@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :x@1
-          v8:BasicObject = LoadArg :y@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint NoSingletonClass(String@0x1000)
-          PatchPoint MethodRedefined(String@0x1000, <<@0x1008, cme:0x1010)
-          v28:StringExact = GuardType v11, StringExact
-          v29:Fixnum = GuardType v12, Fixnum
-          v30:StringExact = StringAppendCodepoint v28, v29
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :x@1
+          v9:BasicObject = LoadArg :y@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, <<@0x1010, cme:0x1018)
+          v29:StringExact = GuardType v12, StringExact
+          v30:Fixnum = GuardType v13, Fixnum
+          v31:StringExact = StringAppendCodepoint v29, v30
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v28
+          Return v29
         ");
     }
 
@@ -9556,29 +9738,30 @@ mod hir_opt_tests {
             def test(x, y) = x << y
             test("iron", MyString.new)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :x, l0, SP@5
-          v3:BasicObject = GetLocal :y, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          v4:BasicObject = LoadField v2, :y@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :x@1
-          v8:BasicObject = LoadArg :y@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint NoSingletonClass(String@0x1000)
-          PatchPoint MethodRedefined(String@0x1000, <<@0x1008, cme:0x1010)
-          v28:StringExact = GuardType v11, StringExact
-          v29:String = GuardType v12, String
-          v30:StringExact = StringAppend v28, v29
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :x@1
+          v9:BasicObject = LoadArg :y@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, <<@0x1010, cme:0x1018)
+          v29:StringExact = GuardType v12, StringExact
+          v30:String = GuardType v13, String
+          v31:StringExact = StringAppend v29, v30
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v28
+          Return v29
         ");
     }
 
@@ -9590,27 +9773,28 @@ mod hir_opt_tests {
             def test(x, y) = x << y
             test(MyString.new, "iron")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :x, l0, SP@5
-          v3:BasicObject = GetLocal :y, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          v4:BasicObject = LoadField v2, :y@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :x@1
-          v8:BasicObject = LoadArg :y@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint NoSingletonClass(MyString@0x1000)
-          PatchPoint MethodRedefined(MyString@0x1000, <<@0x1008, cme:0x1010)
-          v28:StringSubclass[class_exact:MyString] = GuardType v11, StringSubclass[class_exact:MyString]
-          v29:BasicObject = CCallWithFrame v28, :String#<<@0x1038, v12
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :x@1
+          v9:BasicObject = LoadArg :y@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint NoSingletonClass(MyString@0x1008)
+          PatchPoint MethodRedefined(MyString@0x1008, <<@0x1010, cme:0x1018)
+          v29:StringSubclass[class_exact:MyString] = GuardType v12, StringSubclass[class_exact:MyString]
+          v30:BasicObject = CCallWithFrame v29, :String#<<@0x1040, v13
           CheckInterrupts
-          Return v29
+          Return v30
         ");
     }
 
@@ -9674,26 +9858,27 @@ mod hir_opt_tests {
             def test(x) = x.ascii_only?
             test("iron")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :x, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :x@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint NoSingletonClass(String@0x1000)
-          PatchPoint MethodRedefined(String@0x1000, ascii_only?@0x1008, cme:0x1010)
-          v23:StringExact = GuardType v9, StringExact
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, ascii_only?@0x1010, cme:0x1018)
+          v24:StringExact = GuardType v10, StringExact
           IncrCounter inline_cfunc_optimized_send_count
-          v25:BoolExact = CCall v23, :String#ascii_only?@0x1038
+          v26:BoolExact = CCall v24, :String#ascii_only?@0x1040
           CheckInterrupts
-          Return v25
+          Return v26
         ");
     }
 
@@ -9751,28 +9936,29 @@ mod hir_opt_tests {
             def test(x, y) = x ^ y
             test(1, 2)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :x, l0, SP@5
-          v3:BasicObject = GetLocal :y, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          v4:BasicObject = LoadField v2, :y@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :x@1
-          v8:BasicObject = LoadArg :y@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint MethodRedefined(Integer@0x1000, ^@0x1008, cme:0x1010)
-          v26:Fixnum = GuardType v11, Fixnum
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :x@1
+          v9:BasicObject = LoadArg :y@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, ^@0x1010, cme:0x1018)
           v27:Fixnum = GuardType v12, Fixnum
-          v28:Fixnum = FixnumXor v26, v27
+          v28:Fixnum = GuardType v13, Fixnum
+          v29:Fixnum = FixnumXor v27, v28
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v28
+          Return v29
         ");
     }
 
@@ -9785,28 +9971,29 @@ mod hir_opt_tests {
             end
             test(1, 2)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :x, l0, SP@5
-          v3:BasicObject = GetLocal :y, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          v4:BasicObject = LoadField v2, :y@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :x@1
-          v8:BasicObject = LoadArg :y@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint MethodRedefined(Integer@0x1000, ^@0x1008, cme:0x1010)
-          v30:Fixnum = GuardType v11, Fixnum
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :x@1
+          v9:BasicObject = LoadArg :y@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, ^@0x1010, cme:0x1018)
           v31:Fixnum = GuardType v12, Fixnum
+          v32:Fixnum = GuardType v13, Fixnum
           IncrCounter inline_cfunc_optimized_send_count
-          v22:Fixnum[42] = Const Value(42)
+          v23:Fixnum[42] = Const Value(42)
           CheckInterrupts
-          Return v22
+          Return v23
         ");
     }
 
@@ -9816,78 +10003,81 @@ mod hir_opt_tests {
             def test(x, y) = x ^ y
             test(4 << 70, 1)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :x, l0, SP@5
-          v3:BasicObject = GetLocal :y, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          v4:BasicObject = LoadField v2, :y@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :x@1
-          v8:BasicObject = LoadArg :y@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint MethodRedefined(Integer@0x1000, ^@0x1008, cme:0x1010)
-          v26:Integer = GuardType v11, Integer
-          v27:BasicObject = CCallWithFrame v26, :Integer#^@0x1038, v12
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :x@1
+          v9:BasicObject = LoadArg :y@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, ^@0x1010, cme:0x1018)
+          v27:Integer = GuardType v12, Integer
+          v28:BasicObject = CCallWithFrame v27, :Integer#^@0x1040, v13
           CheckInterrupts
-          Return v27
+          Return v28
         ");
 
         eval("
             def test(x, y) = x ^ y
             test(1, 4 << 70)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :x, l0, SP@5
-          v3:BasicObject = GetLocal :y, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          v4:BasicObject = LoadField v2, :y@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :x@1
-          v8:BasicObject = LoadArg :y@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint MethodRedefined(Integer@0x1000, ^@0x1008, cme:0x1010)
-          v26:Fixnum = GuardType v11, Fixnum
-          v27:BasicObject = CCallWithFrame v26, :Integer#^@0x1038, v12
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :x@1
+          v9:BasicObject = LoadArg :y@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, ^@0x1010, cme:0x1018)
+          v27:Fixnum = GuardType v12, Fixnum
+          v28:BasicObject = CCallWithFrame v27, :Integer#^@0x1040, v13
           CheckInterrupts
-          Return v27
+          Return v28
         ");
 
         eval("
             def test(x, y) = x ^ y
             test(true, 0)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :x, l0, SP@5
-          v3:BasicObject = GetLocal :y, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          v4:BasicObject = LoadField v2, :y@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :x@1
-          v8:BasicObject = LoadArg :y@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint MethodRedefined(TrueClass@0x1000, ^@0x1008, cme:0x1010)
-          v26:TrueClass = GuardType v11, TrueClass
-          v27:BasicObject = CCallWithFrame v26, :TrueClass#^@0x1038, v12
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :x@1
+          v9:BasicObject = LoadArg :y@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(TrueClass@0x1008, ^@0x1010, cme:0x1018)
+          v27:TrueClass = GuardType v12, TrueClass
+          v28:BasicObject = CCallWithFrame v27, :TrueClass#^@0x1040, v13
           CheckInterrupts
-          Return v27
+          Return v28
         ");
     }
 
@@ -9896,24 +10086,25 @@ mod hir_opt_tests {
         eval("
             def test(x, y) = x.^()
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :x, l0, SP@5
-          v3:BasicObject = GetLocal :y, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          v4:BasicObject = LoadField v2, :y@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :x@1
-          v8:BasicObject = LoadArg :y@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          v17:BasicObject = Send v11, :^ # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :x@1
+          v9:BasicObject = LoadArg :y@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          v18:BasicObject = Send v12, :^ # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
-          Return v17
+          Return v18
         ");
     }
 
@@ -9923,26 +10114,27 @@ mod hir_opt_tests {
             def test(hash) = hash.size
             test({foo: 3, bar: 1, baz: 4})
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :hash, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :hash@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :hash@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint NoSingletonClass(Hash@0x1000)
-          PatchPoint MethodRedefined(Hash@0x1000, size@0x1008, cme:0x1010)
-          v24:HashExact = GuardType v9, HashExact
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :hash@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(Hash@0x1008)
+          PatchPoint MethodRedefined(Hash@0x1008, size@0x1010, cme:0x1018)
+          v25:HashExact = GuardType v10, HashExact
           IncrCounter inline_cfunc_optimized_send_count
-          v26:Fixnum = CCall v24, :Hash#size@0x1038
+          v27:Fixnum = CCall v25, :Hash#size@0x1040
           CheckInterrupts
-          Return v26
+          Return v27
         ");
     }
 
@@ -9955,26 +10147,27 @@ mod hir_opt_tests {
             end
             test({foo: 3, bar: 1, baz: 4})
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :hash, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :hash@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :hash@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint NoSingletonClass(Hash@0x1000)
-          PatchPoint MethodRedefined(Hash@0x1000, size@0x1008, cme:0x1010)
-          v28:HashExact = GuardType v9, HashExact
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :hash@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(Hash@0x1008)
+          PatchPoint MethodRedefined(Hash@0x1008, size@0x1010, cme:0x1018)
+          v29:HashExact = GuardType v10, HashExact
           IncrCounter inline_cfunc_optimized_send_count
-          v19:Fixnum[5] = Const Value(5)
+          v20:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v19
+          Return v20
         ");
     }
 
@@ -9987,29 +10180,29 @@ mod hir_opt_tests {
             def test(o) = o.respond_to?(:foo)
             test(C.new)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:5:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:StaticSymbol[:foo] = Const Value(VALUE(0x1000))
-          PatchPoint NoSingletonClass(C@0x1008)
-          PatchPoint MethodRedefined(C@0x1008, respond_to?@0x1010, cme:0x1018)
-          v25:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          PatchPoint NoSingletonClass(C@0x1008)
-          PatchPoint MethodRedefined(C@0x1008, foo@0x1040, cme:0x1048)
-          v29:TrueClass = Const Value(true)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:StaticSymbol[:foo] = Const Value(VALUE(0x1008))
+          PatchPoint NoSingletonClass(C@0x1010)
+          PatchPoint MethodRedefined(C@0x1010, respond_to?@0x1018, cme:0x1020)
+          v26:HeapObject[class_exact:C] = GuardType v10, HeapObject[class_exact:C]
+          PatchPoint MethodRedefined(C@0x1010, foo@0x1048, cme:0x1050)
+          v30:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v29
+          Return v30
         ");
     }
 
@@ -10021,30 +10214,30 @@ mod hir_opt_tests {
             def test(o) = o.respond_to?(:foo)
             test(C.new)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:StaticSymbol[:foo] = Const Value(VALUE(0x1000))
-          PatchPoint NoSingletonClass(C@0x1008)
-          PatchPoint MethodRedefined(C@0x1008, respond_to?@0x1010, cme:0x1018)
-          v25:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          PatchPoint MethodRedefined(C@0x1008, respond_to_missing?@0x1040, cme:0x1048)
-          PatchPoint NoSingletonClass(C@0x1008)
-          PatchPoint MethodRedefined(C@0x1008, foo@0x1070, cme:0x1078)
-          v31:FalseClass = Const Value(false)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:StaticSymbol[:foo] = Const Value(VALUE(0x1008))
+          PatchPoint NoSingletonClass(C@0x1010)
+          PatchPoint MethodRedefined(C@0x1010, respond_to?@0x1018, cme:0x1020)
+          v26:HeapObject[class_exact:C] = GuardType v10, HeapObject[class_exact:C]
+          PatchPoint MethodRedefined(C@0x1010, respond_to_missing?@0x1048, cme:0x1050)
+          PatchPoint MethodRedefined(C@0x1010, foo@0x1078, cme:0x1080)
+          v32:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v31
+          Return v32
         ");
     }
 
@@ -10058,29 +10251,29 @@ mod hir_opt_tests {
             def test(o) = o.respond_to?(:foo)
             test(C.new)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:6:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:StaticSymbol[:foo] = Const Value(VALUE(0x1000))
-          PatchPoint NoSingletonClass(C@0x1008)
-          PatchPoint MethodRedefined(C@0x1008, respond_to?@0x1010, cme:0x1018)
-          v25:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          PatchPoint NoSingletonClass(C@0x1008)
-          PatchPoint MethodRedefined(C@0x1008, foo@0x1040, cme:0x1048)
-          v29:FalseClass = Const Value(false)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:StaticSymbol[:foo] = Const Value(VALUE(0x1008))
+          PatchPoint NoSingletonClass(C@0x1010)
+          PatchPoint MethodRedefined(C@0x1010, respond_to?@0x1018, cme:0x1020)
+          v26:HeapObject[class_exact:C] = GuardType v10, HeapObject[class_exact:C]
+          PatchPoint MethodRedefined(C@0x1010, foo@0x1048, cme:0x1050)
+          v30:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v29
+          Return v30
         ");
     }
 
@@ -10094,30 +10287,30 @@ mod hir_opt_tests {
             def test(o) = o.respond_to?(:foo, false)
             test(C.new)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:6:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:StaticSymbol[:foo] = Const Value(VALUE(0x1000))
-          v16:FalseClass = Const Value(false)
-          PatchPoint NoSingletonClass(C@0x1008)
-          PatchPoint MethodRedefined(C@0x1008, respond_to?@0x1010, cme:0x1018)
-          v27:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          PatchPoint NoSingletonClass(C@0x1008)
-          PatchPoint MethodRedefined(C@0x1008, foo@0x1040, cme:0x1048)
-          v31:FalseClass = Const Value(false)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:StaticSymbol[:foo] = Const Value(VALUE(0x1008))
+          v17:FalseClass = Const Value(false)
+          PatchPoint NoSingletonClass(C@0x1010)
+          PatchPoint MethodRedefined(C@0x1010, respond_to?@0x1018, cme:0x1020)
+          v28:HeapObject[class_exact:C] = GuardType v10, HeapObject[class_exact:C]
+          PatchPoint MethodRedefined(C@0x1010, foo@0x1048, cme:0x1050)
+          v32:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v31
+          Return v32
         ");
     }
 
@@ -10131,30 +10324,30 @@ mod hir_opt_tests {
             def test(o) = o.respond_to?(:foo, nil)
             test(C.new)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:6:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:StaticSymbol[:foo] = Const Value(VALUE(0x1000))
-          v16:NilClass = Const Value(nil)
-          PatchPoint NoSingletonClass(C@0x1008)
-          PatchPoint MethodRedefined(C@0x1008, respond_to?@0x1010, cme:0x1018)
-          v27:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          PatchPoint NoSingletonClass(C@0x1008)
-          PatchPoint MethodRedefined(C@0x1008, foo@0x1040, cme:0x1048)
-          v31:FalseClass = Const Value(false)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:StaticSymbol[:foo] = Const Value(VALUE(0x1008))
+          v17:NilClass = Const Value(nil)
+          PatchPoint NoSingletonClass(C@0x1010)
+          PatchPoint MethodRedefined(C@0x1010, respond_to?@0x1018, cme:0x1020)
+          v28:HeapObject[class_exact:C] = GuardType v10, HeapObject[class_exact:C]
+          PatchPoint MethodRedefined(C@0x1010, foo@0x1048, cme:0x1050)
+          v32:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v31
+          Return v32
         ");
     }
 
@@ -10168,30 +10361,30 @@ mod hir_opt_tests {
             def test(o) = o.respond_to?(:foo, true)
             test(C.new)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:6:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:StaticSymbol[:foo] = Const Value(VALUE(0x1000))
-          v16:TrueClass = Const Value(true)
-          PatchPoint NoSingletonClass(C@0x1008)
-          PatchPoint MethodRedefined(C@0x1008, respond_to?@0x1010, cme:0x1018)
-          v27:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          PatchPoint NoSingletonClass(C@0x1008)
-          PatchPoint MethodRedefined(C@0x1008, foo@0x1040, cme:0x1048)
-          v31:TrueClass = Const Value(true)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:StaticSymbol[:foo] = Const Value(VALUE(0x1008))
+          v17:TrueClass = Const Value(true)
+          PatchPoint NoSingletonClass(C@0x1010)
+          PatchPoint MethodRedefined(C@0x1010, respond_to?@0x1018, cme:0x1020)
+          v28:HeapObject[class_exact:C] = GuardType v10, HeapObject[class_exact:C]
+          PatchPoint MethodRedefined(C@0x1010, foo@0x1048, cme:0x1050)
+          v32:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v31
+          Return v32
         ");
     }
 
@@ -10204,30 +10397,30 @@ mod hir_opt_tests {
             def test(o) = o.respond_to?(:foo, 4)
             test(C.new)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:5:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:StaticSymbol[:foo] = Const Value(VALUE(0x1000))
-          v16:Fixnum[4] = Const Value(4)
-          PatchPoint NoSingletonClass(C@0x1008)
-          PatchPoint MethodRedefined(C@0x1008, respond_to?@0x1010, cme:0x1018)
-          v27:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          PatchPoint NoSingletonClass(C@0x1008)
-          PatchPoint MethodRedefined(C@0x1008, foo@0x1040, cme:0x1048)
-          v31:TrueClass = Const Value(true)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:StaticSymbol[:foo] = Const Value(VALUE(0x1008))
+          v17:Fixnum[4] = Const Value(4)
+          PatchPoint NoSingletonClass(C@0x1010)
+          PatchPoint MethodRedefined(C@0x1010, respond_to?@0x1018, cme:0x1020)
+          v28:HeapObject[class_exact:C] = GuardType v10, HeapObject[class_exact:C]
+          PatchPoint MethodRedefined(C@0x1010, foo@0x1048, cme:0x1050)
+          v32:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v31
+          Return v32
         ");
     }
 
@@ -10240,30 +10433,30 @@ mod hir_opt_tests {
             def test(o) = o.respond_to?(:foo, nil)
             test(C.new)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:5:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:StaticSymbol[:foo] = Const Value(VALUE(0x1000))
-          v16:NilClass = Const Value(nil)
-          PatchPoint NoSingletonClass(C@0x1008)
-          PatchPoint MethodRedefined(C@0x1008, respond_to?@0x1010, cme:0x1018)
-          v27:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          PatchPoint NoSingletonClass(C@0x1008)
-          PatchPoint MethodRedefined(C@0x1008, foo@0x1040, cme:0x1048)
-          v31:TrueClass = Const Value(true)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:StaticSymbol[:foo] = Const Value(VALUE(0x1008))
+          v17:NilClass = Const Value(nil)
+          PatchPoint NoSingletonClass(C@0x1010)
+          PatchPoint MethodRedefined(C@0x1010, respond_to?@0x1018, cme:0x1020)
+          v28:HeapObject[class_exact:C] = GuardType v10, HeapObject[class_exact:C]
+          PatchPoint MethodRedefined(C@0x1010, foo@0x1048, cme:0x1050)
+          v32:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v31
+          Return v32
         ");
     }
 
@@ -10275,30 +10468,30 @@ mod hir_opt_tests {
             def test(o) = o.respond_to?(:foo)
             test(C.new)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:StaticSymbol[:foo] = Const Value(VALUE(0x1000))
-          PatchPoint NoSingletonClass(C@0x1008)
-          PatchPoint MethodRedefined(C@0x1008, respond_to?@0x1010, cme:0x1018)
-          v25:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          PatchPoint MethodRedefined(C@0x1008, respond_to_missing?@0x1040, cme:0x1048)
-          PatchPoint NoSingletonClass(C@0x1008)
-          PatchPoint MethodRedefined(C@0x1008, foo@0x1070, cme:0x1078)
-          v31:FalseClass = Const Value(false)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:StaticSymbol[:foo] = Const Value(VALUE(0x1008))
+          PatchPoint NoSingletonClass(C@0x1010)
+          PatchPoint MethodRedefined(C@0x1010, respond_to?@0x1018, cme:0x1020)
+          v26:HeapObject[class_exact:C] = GuardType v10, HeapObject[class_exact:C]
+          PatchPoint MethodRedefined(C@0x1010, respond_to_missing?@0x1048, cme:0x1050)
+          PatchPoint MethodRedefined(C@0x1010, foo@0x1078, cme:0x1080)
+          v32:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v31
+          Return v32
         ");
     }
 
@@ -10313,26 +10506,27 @@ mod hir_opt_tests {
             def test(o) = o.respond_to?(:foo)
             test(C.new)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:7:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:StaticSymbol[:foo] = Const Value(VALUE(0x1000))
-          PatchPoint NoSingletonClass(C@0x1008)
-          PatchPoint MethodRedefined(C@0x1008, respond_to?@0x1010, cme:0x1018)
-          v25:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          v26:BasicObject = CCallVariadic v25, :Kernel#respond_to?@0x1040, v14
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:StaticSymbol[:foo] = Const Value(VALUE(0x1008))
+          PatchPoint NoSingletonClass(C@0x1010)
+          PatchPoint MethodRedefined(C@0x1010, respond_to?@0x1018, cme:0x1020)
+          v26:HeapObject[class_exact:C] = GuardType v10, HeapObject[class_exact:C]
+          v27:BasicObject = CCallVariadic v26, :Kernel#respond_to?@0x1048, v15
           CheckInterrupts
-          Return v26
+          Return v27
         ");
     }
 
@@ -10642,24 +10836,25 @@ mod hir_opt_tests {
             def test(o) = o.to_sym
             test :foo
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint MethodRedefined(Symbol@0x1000, to_sym@0x1008, cme:0x1010)
-          v21:StaticSymbol = GuardType v9, StaticSymbol
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Symbol@0x1008, to_sym@0x1010, cme:0x1018)
+          v22:StaticSymbol = GuardType v10, StaticSymbol
           IncrCounter inline_iseq_optimized_send_count
           CheckInterrupts
-          Return v21
+          Return v22
         ");
     }
 
@@ -10669,24 +10864,25 @@ mod hir_opt_tests {
             def test(o) = o.to_i
             test 5
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint MethodRedefined(Integer@0x1000, to_i@0x1008, cme:0x1010)
-          v21:Fixnum = GuardType v9, Fixnum
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, to_i@0x1010, cme:0x1018)
+          v22:Fixnum = GuardType v10, Fixnum
           IncrCounter inline_iseq_optimized_send_count
           CheckInterrupts
-          Return v21
+          Return v22
         ");
     }
 
@@ -10700,7 +10896,7 @@ mod hir_opt_tests {
             end
             test
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -10713,11 +10909,11 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, callee@0x1008, cme:0x1010)
-          v19:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v20:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
           IncrCounter inline_iseq_optimized_send_count
-          v22:Fixnum[123] = Const Value(123)
+          v23:Fixnum[123] = Const Value(123)
           CheckInterrupts
-          Return v22
+          Return v23
         ");
     }
 
@@ -10731,7 +10927,7 @@ mod hir_opt_tests {
             end
             test
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -10744,11 +10940,11 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, callee@0x1008, cme:0x1010)
-          v19:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v20:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
           IncrCounter inline_iseq_optimized_send_count
-          v22:Fixnum[123] = Const Value(123)
+          v23:Fixnum[123] = Const Value(123)
           CheckInterrupts
-          Return v22
+          Return v23
         ");
     }
 
@@ -10762,7 +10958,7 @@ mod hir_opt_tests {
             end
             test
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -10775,11 +10971,11 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           PatchPoint NoSingletonClass(Object@0x1000)
           PatchPoint MethodRedefined(Object@0x1000, callee@0x1008, cme:0x1010)
-          v19:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v20:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
           IncrCounter inline_iseq_optimized_send_count
-          v22:Fixnum[123] = Const Value(123)
+          v23:Fixnum[123] = Const Value(123)
           CheckInterrupts
-          Return v22
+          Return v23
         ");
     }
 
@@ -10817,29 +11013,30 @@ mod hir_opt_tests {
             def test(l, r) = l == r
             test("a", "b")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :l, l0, SP@5
-          v3:BasicObject = GetLocal :r, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :l@0x1000
+          v4:BasicObject = LoadField v2, :r@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :l@1
-          v8:BasicObject = LoadArg :r@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint NoSingletonClass(String@0x1000)
-          PatchPoint MethodRedefined(String@0x1000, ==@0x1008, cme:0x1010)
-          v28:StringExact = GuardType v11, StringExact
-          v29:String = GuardType v12, String
-          v30:BoolExact = CCall v28, :String#==@0x1038, v29
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :l@1
+          v9:BasicObject = LoadArg :r@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, ==@0x1010, cme:0x1018)
+          v29:StringExact = GuardType v12, StringExact
+          v30:String = GuardType v13, String
+          v31:BoolExact = CCall v29, :String#==@0x1040, v30
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v30
+          Return v31
         ");
     }
 
@@ -10851,29 +11048,30 @@ mod hir_opt_tests {
             def test(l, r) = l == r
             test(C.new("a"), C.new("b"))
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :l, l0, SP@5
-          v3:BasicObject = GetLocal :r, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :l@0x1000
+          v4:BasicObject = LoadField v2, :r@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :l@1
-          v8:BasicObject = LoadArg :r@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint NoSingletonClass(C@0x1000)
-          PatchPoint MethodRedefined(C@0x1000, ==@0x1008, cme:0x1010)
-          v28:StringSubclass[class_exact:C] = GuardType v11, StringSubclass[class_exact:C]
-          v29:String = GuardType v12, String
-          v30:BoolExact = CCall v28, :String#==@0x1038, v29
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :l@1
+          v9:BasicObject = LoadArg :r@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, ==@0x1010, cme:0x1018)
+          v29:StringSubclass[class_exact:C] = GuardType v12, StringSubclass[class_exact:C]
+          v30:String = GuardType v13, String
+          v31:BoolExact = CCall v29, :String#==@0x1040, v30
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v30
+          Return v31
         ");
     }
 
@@ -10885,29 +11083,30 @@ mod hir_opt_tests {
             def test(l, r) = l == r
             test("a", C.new("b"))
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :l, l0, SP@5
-          v3:BasicObject = GetLocal :r, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :l@0x1000
+          v4:BasicObject = LoadField v2, :r@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :l@1
-          v8:BasicObject = LoadArg :r@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint NoSingletonClass(String@0x1000)
-          PatchPoint MethodRedefined(String@0x1000, ==@0x1008, cme:0x1010)
-          v28:StringExact = GuardType v11, StringExact
-          v29:String = GuardType v12, String
-          v30:BoolExact = CCall v28, :String#==@0x1038, v29
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :l@1
+          v9:BasicObject = LoadArg :r@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, ==@0x1010, cme:0x1018)
+          v29:StringExact = GuardType v12, StringExact
+          v30:String = GuardType v13, String
+          v31:BoolExact = CCall v29, :String#==@0x1040, v30
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v30
+          Return v31
         ");
     }
 
@@ -10917,29 +11116,30 @@ mod hir_opt_tests {
             def test(l, r) = l === r
             test("a", "b")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :l, l0, SP@5
-          v3:BasicObject = GetLocal :r, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :l@0x1000
+          v4:BasicObject = LoadField v2, :r@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :l@1
-          v8:BasicObject = LoadArg :r@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint NoSingletonClass(String@0x1000)
-          PatchPoint MethodRedefined(String@0x1000, ===@0x1008, cme:0x1010)
-          v27:StringExact = GuardType v11, StringExact
-          v28:String = GuardType v12, String
-          v29:BoolExact = CCall v27, :String#==@0x1038, v28
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :l@1
+          v9:BasicObject = LoadArg :r@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, ===@0x1010, cme:0x1018)
+          v28:StringExact = GuardType v12, StringExact
+          v29:String = GuardType v13, String
+          v30:BoolExact = CCall v28, :String#==@0x1040, v29
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v29
+          Return v30
         ");
     }
 
@@ -10951,29 +11151,30 @@ mod hir_opt_tests {
             def test(l, r) = l === r
             test(C.new("a"), C.new("b"))
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :l, l0, SP@5
-          v3:BasicObject = GetLocal :r, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :l@0x1000
+          v4:BasicObject = LoadField v2, :r@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :l@1
-          v8:BasicObject = LoadArg :r@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint NoSingletonClass(C@0x1000)
-          PatchPoint MethodRedefined(C@0x1000, ===@0x1008, cme:0x1010)
-          v27:StringSubclass[class_exact:C] = GuardType v11, StringSubclass[class_exact:C]
-          v28:String = GuardType v12, String
-          v29:BoolExact = CCall v27, :String#==@0x1038, v28
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :l@1
+          v9:BasicObject = LoadArg :r@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, ===@0x1010, cme:0x1018)
+          v28:StringSubclass[class_exact:C] = GuardType v12, StringSubclass[class_exact:C]
+          v29:String = GuardType v13, String
+          v30:BoolExact = CCall v28, :String#==@0x1040, v29
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v29
+          Return v30
         ");
     }
 
@@ -10985,29 +11186,30 @@ mod hir_opt_tests {
             def test(l, r) = l === r
             test("a", C.new("b"))
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :l, l0, SP@5
-          v3:BasicObject = GetLocal :r, l0, SP@4
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :l@0x1000
+          v4:BasicObject = LoadField v2, :r@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :l@1
-          v8:BasicObject = LoadArg :r@2
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          PatchPoint NoSingletonClass(String@0x1000)
-          PatchPoint MethodRedefined(String@0x1000, ===@0x1008, cme:0x1010)
-          v27:StringExact = GuardType v11, StringExact
-          v28:String = GuardType v12, String
-          v29:BoolExact = CCall v27, :String#==@0x1038, v28
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :l@1
+          v9:BasicObject = LoadArg :r@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, ===@0x1010, cme:0x1018)
+          v28:StringExact = GuardType v12, StringExact
+          v29:String = GuardType v13, String
+          v30:BoolExact = CCall v28, :String#==@0x1040, v29
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v29
+          Return v30
         ");
     }
 
@@ -11019,26 +11221,27 @@ mod hir_opt_tests {
             end
             test("asdf")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :s, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :s@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :s@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint NoSingletonClass(String@0x1000)
-          PatchPoint MethodRedefined(String@0x1000, size@0x1008, cme:0x1010)
-          v24:StringExact = GuardType v9, StringExact
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :s@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, size@0x1010, cme:0x1018)
+          v25:StringExact = GuardType v10, StringExact
           IncrCounter inline_cfunc_optimized_send_count
-          v26:Fixnum = CCall v24, :String#size@0x1038
+          v27:Fixnum = CCall v25, :String#size@0x1040
           CheckInterrupts
-          Return v26
+          Return v27
         ");
     }
 
@@ -11051,26 +11254,27 @@ mod hir_opt_tests {
             end
             test("asdf")
         "#);
-       assert_snapshot!(hir_string("test"), @r"
+       assert_snapshot!(hir_string("test"), @"
        fn test@<compiled>:3:
        bb1():
          EntryPoint interpreter
          v1:BasicObject = LoadSelf
-         v2:BasicObject = GetLocal :s, l0, SP@4
-         Jump bb3(v1, v2)
+         v2:CPtr = LoadSP
+         v3:BasicObject = LoadField v2, :s@0x1000
+         Jump bb3(v1, v3)
        bb2():
          EntryPoint JIT(0)
-         v5:BasicObject = LoadArg :self@0
-         v6:BasicObject = LoadArg :s@1
-         Jump bb3(v5, v6)
-       bb3(v8:BasicObject, v9:BasicObject):
-         PatchPoint NoSingletonClass(String@0x1000)
-         PatchPoint MethodRedefined(String@0x1000, size@0x1008, cme:0x1010)
-         v28:StringExact = GuardType v9, StringExact
+         v6:BasicObject = LoadArg :self@0
+         v7:BasicObject = LoadArg :s@1
+         Jump bb3(v6, v7)
+       bb3(v9:BasicObject, v10:BasicObject):
+         PatchPoint NoSingletonClass(String@0x1008)
+         PatchPoint MethodRedefined(String@0x1008, size@0x1010, cme:0x1018)
+         v29:StringExact = GuardType v10, StringExact
          IncrCounter inline_cfunc_optimized_send_count
-         v19:Fixnum[5] = Const Value(5)
+         v20:Fixnum[5] = Const Value(5)
          CheckInterrupts
-         Return v19
+         Return v20
        ");
     }
 
@@ -11082,27 +11286,28 @@ mod hir_opt_tests {
             end
             test("asdf")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :s, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :s@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :s@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint NoSingletonClass(String@0x1000)
-          PatchPoint MethodRedefined(String@0x1000, bytesize@0x1008, cme:0x1010)
-          v23:StringExact = GuardType v9, StringExact
-          v24:CInt64 = LoadField v23, :len@0x1038
-          v25:Fixnum = BoxFixnum v24
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :s@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, bytesize@0x1010, cme:0x1018)
+          v24:StringExact = GuardType v10, StringExact
+          v25:CInt64 = LoadField v24, :len@0x1040
+          v26:Fixnum = BoxFixnum v25
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v25
+          Return v26
         ");
     }
 
@@ -11115,26 +11320,27 @@ mod hir_opt_tests {
             end
             test("asdf")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :s, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :s@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :s@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint NoSingletonClass(String@0x1000)
-          PatchPoint MethodRedefined(String@0x1000, bytesize@0x1008, cme:0x1010)
-          v27:StringExact = GuardType v9, StringExact
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :s@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, bytesize@0x1010, cme:0x1018)
+          v28:StringExact = GuardType v10, StringExact
           IncrCounter inline_cfunc_optimized_send_count
-          v18:Fixnum[5] = Const Value(5)
+          v19:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v18
+          Return v19
         ");
     }
 
@@ -11146,26 +11352,27 @@ mod hir_opt_tests {
             end
             test("asdf")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :s, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :s@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :s@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint NoSingletonClass(String@0x1000)
-          PatchPoint MethodRedefined(String@0x1000, length@0x1008, cme:0x1010)
-          v24:StringExact = GuardType v9, StringExact
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :s@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, length@0x1010, cme:0x1018)
+          v25:StringExact = GuardType v10, StringExact
           IncrCounter inline_cfunc_optimized_send_count
-          v26:Fixnum = CCall v24, :String#length@0x1038
+          v27:Fixnum = CCall v25, :String#length@0x1040
           CheckInterrupts
-          Return v26
+          Return v27
         ");
     }
 
@@ -11175,29 +11382,30 @@ mod hir_opt_tests {
             def test(o) = String === o
             test("asdf")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
           PatchPoint SingleRactorMode
-          PatchPoint StableConstantNames(0x1000, String)
-          v26:Class[String@0x1008] = Const Value(VALUE(0x1008))
+          PatchPoint StableConstantNames(0x1008, String)
+          v27:Class[String@0x1010] = Const Value(VALUE(0x1010))
           PatchPoint NoEPEscape(test)
-          PatchPoint NoSingletonClass(Class@0x1010)
-          PatchPoint MethodRedefined(Class@0x1010, ===@0x1018, cme:0x1020)
-          v30:BoolExact = IsA v9, v26
+          PatchPoint NoSingletonClass(Class@0x1018)
+          PatchPoint MethodRedefined(Class@0x1018, ===@0x1020, cme:0x1028)
+          v31:BoolExact = IsA v10, v27
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v30
+          Return v31
         ");
     }
 
@@ -11207,29 +11415,30 @@ mod hir_opt_tests {
             def test(o) = Kernel === o
             test("asdf")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
           PatchPoint SingleRactorMode
-          PatchPoint StableConstantNames(0x1000, Kernel)
-          v26:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint StableConstantNames(0x1008, Kernel)
+          v27:ModuleExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
           PatchPoint NoEPEscape(test)
-          PatchPoint NoSingletonClass(Module@0x1010)
-          PatchPoint MethodRedefined(Module@0x1010, ===@0x1018, cme:0x1020)
+          PatchPoint NoSingletonClass(Module@0x1018)
+          PatchPoint MethodRedefined(Module@0x1018, ===@0x1020, cme:0x1028)
           IncrCounter inline_cfunc_optimized_send_count
-          v31:BoolExact = CCall v26, :Module#===@0x1048, v9
+          v32:BoolExact = CCall v27, :Module#===@0x1050, v10
           CheckInterrupts
-          Return v31
+          Return v32
         ");
     }
 
@@ -11239,29 +11448,30 @@ mod hir_opt_tests {
             def test(o) = o.is_a?(String)
             test("asdf")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
           PatchPoint SingleRactorMode
-          PatchPoint StableConstantNames(0x1000, String)
-          v24:Class[String@0x1008] = Const Value(VALUE(0x1008))
-          PatchPoint NoSingletonClass(String@0x1008)
-          PatchPoint MethodRedefined(String@0x1008, is_a?@0x1009, cme:0x1010)
-          v28:StringExact = GuardType v9, StringExact
-          v29:BoolExact = IsA v28, v24
+          PatchPoint StableConstantNames(0x1008, String)
+          v25:Class[String@0x1010] = Const Value(VALUE(0x1010))
+          PatchPoint NoSingletonClass(String@0x1010)
+          PatchPoint MethodRedefined(String@0x1010, is_a?@0x1011, cme:0x1018)
+          v29:StringExact = GuardType v10, StringExact
+          v30:BoolExact = IsA v29, v25
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v29
+          Return v30
         ");
     }
 
@@ -11271,28 +11481,29 @@ mod hir_opt_tests {
             def test(o) = o.is_a?(Kernel)
             test("asdf")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
           PatchPoint SingleRactorMode
-          PatchPoint StableConstantNames(0x1000, Kernel)
-          v24:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          PatchPoint NoSingletonClass(String@0x1010)
-          PatchPoint MethodRedefined(String@0x1010, is_a?@0x1018, cme:0x1020)
-          v28:StringExact = GuardType v9, StringExact
-          v29:BasicObject = CCallWithFrame v28, :Kernel#is_a?@0x1048, v24
+          PatchPoint StableConstantNames(0x1008, Kernel)
+          v25:ModuleExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+          PatchPoint NoSingletonClass(String@0x1018)
+          PatchPoint MethodRedefined(String@0x1018, is_a?@0x1020, cme:0x1028)
+          v29:StringExact = GuardType v10, StringExact
+          v30:BasicObject = CCallWithFrame v29, :Kernel#is_a?@0x1050, v25
           CheckInterrupts
-          Return v29
+          Return v30
         ");
     }
 
@@ -11305,29 +11516,30 @@ mod hir_opt_tests {
             end
             test("asdf")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
           PatchPoint SingleRactorMode
-          PatchPoint StableConstantNames(0x1000, Integer)
-          v28:Class[Integer@0x1008] = Const Value(VALUE(0x1008))
-          PatchPoint NoSingletonClass(String@0x1010)
-          PatchPoint MethodRedefined(String@0x1010, is_a?@0x1018, cme:0x1020)
-          v32:StringExact = GuardType v9, StringExact
+          PatchPoint StableConstantNames(0x1008, Integer)
+          v29:Class[Integer@0x1010] = Const Value(VALUE(0x1010))
+          PatchPoint NoSingletonClass(String@0x1018)
+          PatchPoint MethodRedefined(String@0x1018, is_a?@0x1020, cme:0x1028)
+          v33:StringExact = GuardType v10, StringExact
           IncrCounter inline_cfunc_optimized_send_count
-          v20:Fixnum[5] = Const Value(5)
+          v21:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v20
+          Return v21
         ");
     }
 
@@ -11340,29 +11552,30 @@ mod hir_opt_tests {
             end
             test("asdf")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
           PatchPoint SingleRactorMode
-          PatchPoint StableConstantNames(0x1000, Integer)
-          v30:Class[Integer@0x1008] = Const Value(VALUE(0x1008))
+          PatchPoint StableConstantNames(0x1008, Integer)
+          v31:Class[Integer@0x1010] = Const Value(VALUE(0x1010))
           PatchPoint NoEPEscape(test)
-          PatchPoint NoSingletonClass(Class@0x1010)
-          PatchPoint MethodRedefined(Class@0x1010, ===@0x1018, cme:0x1020)
+          PatchPoint NoSingletonClass(Class@0x1018)
+          PatchPoint MethodRedefined(Class@0x1018, ===@0x1020, cme:0x1028)
           IncrCounter inline_cfunc_optimized_send_count
-          v22:Fixnum[5] = Const Value(5)
+          v23:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v22
+          Return v23
         ");
     }
 
@@ -11372,29 +11585,30 @@ mod hir_opt_tests {
             def test(o) = o.kind_of?(String)
             test("asdf")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
           PatchPoint SingleRactorMode
-          PatchPoint StableConstantNames(0x1000, String)
-          v24:Class[String@0x1008] = Const Value(VALUE(0x1008))
-          PatchPoint NoSingletonClass(String@0x1008)
-          PatchPoint MethodRedefined(String@0x1008, kind_of?@0x1009, cme:0x1010)
-          v28:StringExact = GuardType v9, StringExact
-          v29:BoolExact = IsA v28, v24
+          PatchPoint StableConstantNames(0x1008, String)
+          v25:Class[String@0x1010] = Const Value(VALUE(0x1010))
+          PatchPoint NoSingletonClass(String@0x1010)
+          PatchPoint MethodRedefined(String@0x1010, kind_of?@0x1011, cme:0x1018)
+          v29:StringExact = GuardType v10, StringExact
+          v30:BoolExact = IsA v29, v25
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v29
+          Return v30
         ");
     }
 
@@ -11404,28 +11618,29 @@ mod hir_opt_tests {
             def test(o) = o.kind_of?(Kernel)
             test("asdf")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
           PatchPoint SingleRactorMode
-          PatchPoint StableConstantNames(0x1000, Kernel)
-          v24:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          PatchPoint NoSingletonClass(String@0x1010)
-          PatchPoint MethodRedefined(String@0x1010, kind_of?@0x1018, cme:0x1020)
-          v28:StringExact = GuardType v9, StringExact
-          v29:BasicObject = CCallWithFrame v28, :Kernel#kind_of?@0x1048, v24
+          PatchPoint StableConstantNames(0x1008, Kernel)
+          v25:ModuleExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+          PatchPoint NoSingletonClass(String@0x1018)
+          PatchPoint MethodRedefined(String@0x1018, kind_of?@0x1020, cme:0x1028)
+          v29:StringExact = GuardType v10, StringExact
+          v30:BasicObject = CCallWithFrame v29, :Kernel#kind_of?@0x1050, v25
           CheckInterrupts
-          Return v29
+          Return v30
         ");
     }
 
@@ -11438,29 +11653,30 @@ mod hir_opt_tests {
             end
             test("asdf")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
           PatchPoint SingleRactorMode
-          PatchPoint StableConstantNames(0x1000, Integer)
-          v28:Class[Integer@0x1008] = Const Value(VALUE(0x1008))
-          PatchPoint NoSingletonClass(String@0x1010)
-          PatchPoint MethodRedefined(String@0x1010, kind_of?@0x1018, cme:0x1020)
-          v32:StringExact = GuardType v9, StringExact
+          PatchPoint StableConstantNames(0x1008, Integer)
+          v29:Class[Integer@0x1010] = Const Value(VALUE(0x1010))
+          PatchPoint NoSingletonClass(String@0x1018)
+          PatchPoint MethodRedefined(String@0x1018, kind_of?@0x1020, cme:0x1028)
+          v33:StringExact = GuardType v10, StringExact
           IncrCounter inline_cfunc_optimized_send_count
-          v20:Fixnum[5] = Const Value(5)
+          v21:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v20
+          Return v21
         ");
     }
 
@@ -11526,26 +11742,27 @@ mod hir_opt_tests {
             end
             test("this should get removed")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :s, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :s@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :s@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint NoSingletonClass(String@0x1000)
-          PatchPoint MethodRedefined(String@0x1000, length@0x1008, cme:0x1010)
-          v28:StringExact = GuardType v9, StringExact
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :s@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, length@0x1010, cme:0x1018)
+          v29:StringExact = GuardType v10, StringExact
           IncrCounter inline_cfunc_optimized_send_count
-          v19:Fixnum[4] = Const Value(4)
+          v20:Fixnum[4] = Const Value(4)
           CheckInterrupts
-          Return v19
+          Return v20
         ");
     }
 
@@ -11607,31 +11824,32 @@ mod hir_opt_tests {
             def test(o) = o.class.name
             test(C.new)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint NoSingletonClass(C@0x1000)
-          PatchPoint MethodRedefined(C@0x1000, class@0x1008, cme:0x1010)
-          v24:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, class@0x1010, cme:0x1018)
+          v25:HeapObject[class_exact:C] = GuardType v10, HeapObject[class_exact:C]
           IncrCounter inline_iseq_optimized_send_count
-          v28:Class[C@0x1000] = Const Value(VALUE(0x1000))
+          v29:Class[C@0x1008] = Const Value(VALUE(0x1008))
           IncrCounter inline_cfunc_optimized_send_count
-          PatchPoint NoSingletonClass(Class@0x1038)
-          PatchPoint MethodRedefined(Class@0x1038, name@0x1040, cme:0x1048)
+          PatchPoint NoSingletonClass(Class@0x1040)
+          PatchPoint MethodRedefined(Class@0x1040, name@0x1048, cme:0x1050)
           IncrCounter inline_cfunc_optimized_send_count
-          v34:StringExact|NilClass = CCall v28, :Module#name@0x1070
+          v35:StringExact|NilClass = CCall v29, :Module#name@0x1078
           CheckInterrupts
-          Return v34
+          Return v35
         ");
     }
 
@@ -11642,27 +11860,28 @@ mod hir_opt_tests {
             def test(o) = o.class
             test(C.new)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint NoSingletonClass(C@0x1000)
-          PatchPoint MethodRedefined(C@0x1000, class@0x1008, cme:0x1010)
-          v22:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, class@0x1010, cme:0x1018)
+          v23:HeapObject[class_exact:C] = GuardType v10, HeapObject[class_exact:C]
           IncrCounter inline_iseq_optimized_send_count
-          v26:Class[C@0x1000] = Const Value(VALUE(0x1000))
+          v27:Class[C@0x1008] = Const Value(VALUE(0x1008))
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v26
+          Return v27
         ");
     }
 
@@ -11740,45 +11959,47 @@ mod hir_opt_tests {
           @formatted
        ");
        assert_eq!(Qtrue, formatted, "{}", formatted.obj_info());
-       assert_snapshot!(hir_string("read_nil_local"), @r"
+       assert_snapshot!(hir_string("read_nil_local"), @"
        fn read_nil_local@<compiled>:3:
        bb1():
          EntryPoint interpreter
          v1:BasicObject = LoadSelf
-         v2:BasicObject = GetLocal :a, l0, SP@7
-         v3:BasicObject = GetLocal :_b, l0, SP@6
-         v4:BasicObject = GetLocal :_c, l0, SP@5
-         v5:NilClass = Const Value(nil)
-         Jump bb3(v1, v2, v3, v4, v5)
+         v2:CPtr = LoadSP
+         v3:BasicObject = LoadField v2, :a@0x1000
+         v4:BasicObject = LoadField v2, :_b@0x1001
+         v5:BasicObject = LoadField v2, :_c@0x1002
+         v6:NilClass = Const Value(nil)
+         Jump bb3(v1, v3, v4, v5, v6)
        bb2():
          EntryPoint JIT(0)
-         v8:BasicObject = LoadArg :self@0
-         v9:BasicObject = LoadArg :a@1
-         v10:BasicObject = LoadArg :_b@2
-         v11:BasicObject = LoadArg :_c@3
-         v12:NilClass = Const Value(nil)
-         Jump bb3(v8, v9, v10, v11, v12)
-       bb3(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:BasicObject, v18:NilClass):
+         v9:BasicObject = LoadArg :self@0
+         v10:BasicObject = LoadArg :a@1
+         v11:BasicObject = LoadArg :_b@2
+         v12:BasicObject = LoadArg :_c@3
+         v13:NilClass = Const Value(nil)
+         Jump bb3(v9, v10, v11, v12, v13)
+       bb3(v15:BasicObject, v16:BasicObject, v17:BasicObject, v18:BasicObject, v19:NilClass):
          CheckInterrupts
-         SetLocal :formatted, l0, EP@3, v15
+         SetLocal :formatted, l0, EP@3, v16
          PatchPoint SingleRactorMode
-         v58:HeapBasicObject = GuardType v14, HeapBasicObject
-         v59:CShape = LoadField v58, :_shape_id@0x1000
-         v60:CShape[0x1001] = GuardBitEquals v59, CShape(0x1001)
-         StoreField v58, :@formatted@0x1002, v15
-         WriteBarrier v58, v15
-         v63:CShape[0x1003] = Const CShape(0x1003)
-         StoreField v58, :_shape_id@0x1000, v63
-         v46:Class[VMFrozenCore] = Const Value(VALUE(0x1008))
+         v60:HeapBasicObject = GuardType v15, HeapBasicObject
+         v61:CShape = LoadField v60, :_shape_id@0x1003
+         v62:CShape[0x1004] = GuardBitEquals v61, CShape(0x1004)
+         StoreField v60, :@formatted@0x1005, v16
+         WriteBarrier v60, v16
+         v65:CShape[0x1006] = Const CShape(0x1006)
+         StoreField v60, :_shape_id@0x1003, v65
+         v47:Class[VMFrozenCore] = Const Value(VALUE(0x1008))
          PatchPoint NoSingletonClass(Class@0x1010)
          PatchPoint MethodRedefined(Class@0x1010, lambda@0x1018, cme:0x1020)
-         v68:BasicObject = CCallWithFrame v46, :RubyVM::FrozenCore.lambda@0x1048, block=0x1050
-         v49:BasicObject = GetLocal :a, l0, EP@6
-         v50:BasicObject = GetLocal :_b, l0, EP@5
-         v51:BasicObject = GetLocal :_c, l0, EP@4
-         v52:BasicObject = GetLocal :formatted, l0, EP@3
+         v70:BasicObject = CCallWithFrame v47, :RubyVM::FrozenCore.lambda@0x1048, block=0x1050
+         v50:CPtr = GetEP 0
+         v51:BasicObject = LoadField v50, :a@0x1001
+         v52:BasicObject = LoadField v50, :_b@0x1002
+         v53:BasicObject = LoadField v50, :_c@0x1058
+         v54:BasicObject = LoadField v50, :formatted@0x1059
          CheckInterrupts
-         Return v68
+         Return v70
        ");
     }
 
@@ -12114,27 +12335,28 @@ mod hir_opt_tests {
             test o
             test o
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:9:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :obj, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :obj@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :obj@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint NoSingletonClass(TestDynamic@0x1000)
-          PatchPoint MethodRedefined(TestDynamic@0x1000, val@0x1008, cme:0x1010)
-          v22:HeapObject[class_exact:TestDynamic] = GuardType v9, HeapObject[class_exact:TestDynamic]
-          v25:CShape = LoadField v22, :_shape_id@0x1038
-          v26:CShape[0x1039] = GuardBitEquals v25, CShape(0x1039)
-          v27:BasicObject = LoadField v22, :@val@0x103a
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :obj@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(TestDynamic@0x1008)
+          PatchPoint MethodRedefined(TestDynamic@0x1008, val@0x1010, cme:0x1018)
+          v23:HeapObject[class_exact:TestDynamic] = GuardType v10, HeapObject[class_exact:TestDynamic]
+          v26:CShape = LoadField v23, :_shape_id@0x1040
+          v27:CShape[0x1041] = GuardBitEquals v26, CShape(0x1041)
+          v28:BasicObject = LoadField v23, :@val@0x1042
           CheckInterrupts
-          Return v27
+          Return v28
         ");
     }
 
@@ -12442,22 +12664,23 @@ mod hir_opt_tests {
 
         // The output should NOT have NoSingletonClass patchpoint for String, and should
         // fall back to SendWithoutBlock instead of the optimized CCall path.
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :s, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :s@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :s@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v15:BasicObject = Send v9, :length # SendFallbackReason: Singleton class previously created for receiver class
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :s@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v16:BasicObject = Send v10, :length # SendFallbackReason: Singleton class previously created for receiver class
           CheckInterrupts
-          Return v15
+          Return v16
         ");
     }
 
@@ -12553,33 +12776,34 @@ mod hir_opt_tests {
         assert!(!hir.contains("InvokeSuper "), "InvokeSuper should optimize to SendDirect but got:\n{hir}");
         assert!(hir.contains("SendDirect"), "Should optimize to SendDirect for call without args or block:\n{hir}");
 
-        assert_snapshot!(hir, @r"
+        assert_snapshot!(hir, @"
         fn foo@<compiled>:10:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :x, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :x@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          PatchPoint MethodRedefined(A@0x1000, foo@0x1008, cme:0x1010)
-          v27:CPtr = GetLEP
-          v28:RubyValue = LoadField v27, :_ep_method_entry@0x1038
-          v29:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v28, Value(VALUE(0x1040))
-          v30:RubyValue = LoadField v27, :_ep_specval@0x1048
-          v31:FalseClass = GuardBitEquals v30, Value(false)
-          v32:BasicObject = SendDirect v8, 0x1050, :foo (0x1060), v9
-          v17:Fixnum[1] = Const Value(1)
-          PatchPoint MethodRedefined(Integer@0x1068, +@0x1070, cme:0x1078)
-          v35:Fixnum = GuardType v32, Fixnum
-          v36:Fixnum = FixnumAdd v35, v17
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(A@0x1008, foo@0x1010, cme:0x1018)
+          v28:CPtr = GetLEP
+          v29:RubyValue = LoadField v28, :_ep_method_entry@0x1040
+          v30:CallableMethodEntry[VALUE(0x1048)] = GuardBitEquals v29, Value(VALUE(0x1048))
+          v31:RubyValue = LoadField v28, :_ep_specval@0x1050
+          v32:FalseClass = GuardBitEquals v31, Value(false)
+          v33:BasicObject = SendDirect v9, 0x1058, :foo (0x1068), v10
+          v18:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1070, +@0x1078, cme:0x1080)
+          v36:Fixnum = GuardType v33, Fixnum
+          v37:Fixnum = FixnumAdd v36, v18
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v36
+          Return v37
         ");
     }
 
@@ -12605,23 +12829,24 @@ mod hir_opt_tests {
         assert!(hir.contains("InvokeSuper "), "Expected unoptimized InvokeSuper but got:\n{hir}");
         assert!(!hir.contains("SendDirect"), "Should not optimize to SendDirect for explicit blockarg:\n{hir}");
 
-        assert_snapshot!(hir, @r"
+        assert_snapshot!(hir, @"
         fn foo@<compiled>:10:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:ArrayExact = GetLocal :x, l0, SP@4, *
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:ArrayExact = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :x@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v15:ArrayExact = ToArray v9
-          v17:BasicObject = InvokeSuper v8, 0x1000, v15 # SendFallbackReason: super: complex argument passing to `super` call
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v16:ArrayExact = ToArray v10
+          v18:BasicObject = InvokeSuper v9, 0x1008, v16 # SendFallbackReason: super: complex argument passing to `super` call
           CheckInterrupts
-          Return v17
+          Return v18
         ");
     }
 
@@ -12755,43 +12980,44 @@ mod hir_opt_tests {
         assert!(!hir.contains("InvokeSuper "), "InvokeSuper should optimize to CCallVariadic but got:\n{hir}");
         assert!(hir.contains("CCallVariadic"), "Should optimize to CCallVariadic for variadic cfunc:\n{hir}");
 
-        assert_snapshot!(hir, @r"
+        assert_snapshot!(hir, @"
         fn byteindex@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :needle, l0, SP@5
-          v3:BasicObject = GetLocal :offset, l0, SP@4
-          v4:CPtr = LoadPC
-          v5:CPtr[CPtr(0x1000)] = Const CPtr(0x1008)
-          v6:CBool = IsBitEqual v4, v5
-          IfTrue v6, bb3(v1, v2, v3)
-          Jump bb5(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :needle@0x1000
+          v4:BasicObject = LoadField v2, :offset@0x1001
+          v5:CPtr = LoadPC
+          v6:CPtr[CPtr(0x1008)] = Const CPtr(0x1010)
+          v7:CBool = IsBitEqual v5, v6
+          IfTrue v7, bb3(v1, v3, v4)
+          Jump bb5(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v10:BasicObject = LoadArg :self@0
-          v11:BasicObject = LoadArg :needle@1
-          v12:NilClass = Const Value(nil)
-          Jump bb3(v10, v11, v12)
-        bb3(v19:BasicObject, v20:BasicObject, v21:BasicObject):
-          v24:Fixnum[0] = Const Value(0)
-          Jump bb5(v19, v20, v24)
+          v11:BasicObject = LoadArg :self@0
+          v12:BasicObject = LoadArg :needle@1
+          v13:NilClass = Const Value(nil)
+          Jump bb3(v11, v12, v13)
+        bb3(v20:BasicObject, v21:BasicObject, v22:BasicObject):
+          v25:Fixnum[0] = Const Value(0)
+          Jump bb5(v20, v21, v25)
         bb4():
           EntryPoint JIT(1)
-          v15:BasicObject = LoadArg :self@0
-          v16:BasicObject = LoadArg :needle@1
-          v17:BasicObject = LoadArg :offset@2
-          Jump bb5(v15, v16, v17)
-        bb5(v27:BasicObject, v28:BasicObject, v29:BasicObject):
-          PatchPoint MethodRedefined(String@0x1010, byteindex@0x1018, cme:0x1020)
-          v43:CPtr = GetLEP
-          v44:RubyValue = LoadField v43, :_ep_method_entry@0x1048
-          v45:CallableMethodEntry[VALUE(0x1050)] = GuardBitEquals v44, Value(VALUE(0x1050))
-          v46:RubyValue = LoadField v43, :_ep_specval@0x1058
-          v47:FalseClass = GuardBitEquals v46, Value(false)
-          v48:BasicObject = CCallVariadic v27, :String#byteindex@0x1060, v28, v29
+          v16:BasicObject = LoadArg :self@0
+          v17:BasicObject = LoadArg :needle@1
+          v18:BasicObject = LoadArg :offset@2
+          Jump bb5(v16, v17, v18)
+        bb5(v28:BasicObject, v29:BasicObject, v30:BasicObject):
+          PatchPoint MethodRedefined(String@0x1018, byteindex@0x1020, cme:0x1028)
+          v44:CPtr = GetLEP
+          v45:RubyValue = LoadField v44, :_ep_method_entry@0x1050
+          v46:CallableMethodEntry[VALUE(0x1058)] = GuardBitEquals v45, Value(VALUE(0x1058))
+          v47:RubyValue = LoadField v44, :_ep_specval@0x1060
+          v48:FalseClass = GuardBitEquals v47, Value(false)
+          v49:BasicObject = CCallVariadic v28, :String#byteindex@0x1068, v29, v30
           CheckInterrupts
-          Return v48
+          Return v49
         ");
     }
 
@@ -12818,31 +13044,34 @@ mod hir_opt_tests {
         assert!(hir.contains("InvokeSuper "), "Expected unoptimized InvokeSuper but got:\n{hir}");
         assert!(!hir.contains("SendDirect"), "Should not optimize to SendDirect for explicit blockarg:\n{hir}");
 
-        assert_snapshot!(hir, @r"
+        assert_snapshot!(hir, @"
         fn foo@<compiled>:10:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :blk, l0, SP@5
-          v3:NilClass = Const Value(nil)
-          Jump bb3(v1, v2, v3)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :blk@0x1000
+          v4:NilClass = Const Value(nil)
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :blk@1
-          v8:NilClass = Const Value(nil)
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:BasicObject, v12:NilClass):
-          PatchPoint NoSingletonClass(B@0x1000)
-          PatchPoint MethodRedefined(B@0x1000, proc@0x1008, cme:0x1010)
-          v36:HeapObject[class_exact:B] = GuardType v10, HeapObject[class_exact:B]
-          v37:BasicObject = CCallWithFrame v36, :Kernel#proc@0x1038, block=0x1040
-          v18:BasicObject = GetLocal :blk, l0, EP@4
-          SetLocal :other_block, l0, EP@3, v37
-          v25:BasicObject = GetLocal :other_block, l0, EP@3
-          v27:BasicObject = InvokeSuper v10, 0x1048, v25 # SendFallbackReason: super: complex argument passing to `super` call
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :blk@1
+          v9:NilClass = Const Value(nil)
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:NilClass):
+          PatchPoint NoSingletonClass(B@0x1008)
+          PatchPoint MethodRedefined(B@0x1008, proc@0x1010, cme:0x1018)
+          v39:HeapObject[class_exact:B] = GuardType v11, HeapObject[class_exact:B]
+          v40:BasicObject = CCallWithFrame v39, :Kernel#proc@0x1040, block=0x1048
+          v19:CPtr = GetEP 0
+          v20:BasicObject = LoadField v19, :blk@0x1050
+          SetLocal :other_block, l0, EP@3, v40
+          v27:CPtr = GetEP 0
+          v28:BasicObject = LoadField v27, :other_block@0x1051
+          v30:BasicObject = InvokeSuper v11, 0x1058, v28 # SendFallbackReason: super: complex argument passing to `super` call
           CheckInterrupts
-          Return v27
+          Return v30
         ");
     }
 
@@ -12868,23 +13097,24 @@ mod hir_opt_tests {
         assert!(hir.contains("InvokeSuper "), "Expected unoptimized InvokeSuper but got:\n{hir}");
         assert!(!hir.contains("SendDirect"), "Should not optimize to SendDirect for symbol-to-proc:\n{hir}");
 
-        assert_snapshot!(hir, @r"
+        assert_snapshot!(hir, @"
         fn foo@<compiled>:10:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :items, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :items@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :items@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v15:StaticSymbol[:succ] = Const Value(VALUE(0x1000))
-          v17:BasicObject = InvokeSuper v8, 0x1008, v9, v15 # SendFallbackReason: super: complex argument passing to `super` call
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :items@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v16:StaticSymbol[:succ] = Const Value(VALUE(0x1008))
+          v18:BasicObject = InvokeSuper v9, 0x1010, v10, v16 # SendFallbackReason: super: complex argument passing to `super` call
           CheckInterrupts
-          Return v17
+          Return v18
         ");
     }
 
@@ -12909,35 +13139,36 @@ mod hir_opt_tests {
         let hir = hir_string_proc("B.new.method(:foo)");
         assert!(hir.contains("InvokeSuper "), "Expected unoptimized InvokeSuper but got:\n{hir}");
 
-        assert_snapshot!(hir, @r"
+        assert_snapshot!(hir, @"
         fn foo@<compiled>:9:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :content, l0, SP@4
-          v3:CPtr = LoadPC
-          v4:CPtr[CPtr(0x1000)] = Const CPtr(0x1008)
-          v5:CBool = IsBitEqual v3, v4
-          IfTrue v5, bb3(v1, v2)
-          Jump bb5(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :content@0x1000
+          v4:CPtr = LoadPC
+          v5:CPtr[CPtr(0x1008)] = Const CPtr(0x1010)
+          v6:CBool = IsBitEqual v4, v5
+          IfTrue v6, bb3(v1, v3)
+          Jump bb5(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v9:BasicObject = LoadArg :self@0
-          v10:NilClass = Const Value(nil)
-          Jump bb3(v9, v10)
-        bb3(v16:BasicObject, v17:BasicObject):
-          v20:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
-          v21:StringExact = StringCopy v20
-          Jump bb5(v16, v21)
+          v10:BasicObject = LoadArg :self@0
+          v11:NilClass = Const Value(nil)
+          Jump bb3(v10, v11)
+        bb3(v17:BasicObject, v18:BasicObject):
+          v21:StringExact[VALUE(0x1018)] = Const Value(VALUE(0x1018))
+          v22:StringExact = StringCopy v21
+          Jump bb5(v17, v22)
         bb4():
           EntryPoint JIT(1)
-          v13:BasicObject = LoadArg :self@0
-          v14:BasicObject = LoadArg :content@1
-          Jump bb5(v13, v14)
-        bb5(v24:BasicObject, v25:BasicObject):
-          v31:BasicObject = InvokeSuper v24, 0x1018, v25 # SendFallbackReason: super: complex argument passing to `super` call
+          v14:BasicObject = LoadArg :self@0
+          v15:BasicObject = LoadArg :content@1
+          Jump bb5(v14, v15)
+        bb5(v25:BasicObject, v26:BasicObject):
+          v32:BasicObject = InvokeSuper v25, 0x1020, v26 # SendFallbackReason: super: complex argument passing to `super` call
           CheckInterrupts
-          Return v31
+          Return v32
         ");
     }
 
@@ -12960,35 +13191,36 @@ mod hir_opt_tests {
           end
         end
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :x, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :x@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
           CheckInterrupts
-          v15:CBool = Test v9
-          v16:Falsy = RefineType v9, Falsy
-          IfFalse v15, bb6(v8, v16)
-          v18:Truthy = RefineType v9, Truthy
+          v16:CBool = Test v10
+          v17:Falsy = RefineType v10, Falsy
+          IfFalse v16, bb6(v9, v17)
+          v19:Truthy = RefineType v10, Truthy
           CheckInterrupts
-          v26:Truthy = RefineType v18, Truthy
+          v27:Truthy = RefineType v19, Truthy
           CheckInterrupts
-          v34:Truthy = RefineType v26, Truthy
-          v37:Fixnum[3] = Const Value(3)
+          v35:Truthy = RefineType v27, Truthy
+          v38:Fixnum[3] = Const Value(3)
           CheckInterrupts
-          Return v37
-        bb6(v42:BasicObject, v43:Falsy):
-          v47:Fixnum[6] = Const Value(6)
+          Return v38
+        bb6(v43:BasicObject, v44:Falsy):
+          v48:Fixnum[6] = Const Value(6)
           CheckInterrupts
-          Return v47
+          Return v48
         ");
     }
 
@@ -13010,45 +13242,46 @@ mod hir_opt_tests {
 
         test C.new; test D.new; test C.new; test D.new
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:11:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:CBool = HasType v9, HeapObject[class_exact:C]
-          IfTrue v14, bb5(v8, v9, v9)
-          v23:CBool = HasType v9, HeapObject[class_exact:D]
-          IfTrue v23, bb6(v8, v9, v9)
-          v32:BasicObject = Send v9, :foo # SendFallbackReason: SendWithoutBlock: polymorphic fallback
-          Jump bb4(v8, v9, v32)
-        bb5(v15:BasicObject, v16:BasicObject, v17:BasicObject):
-          PatchPoint NoSingletonClass(C@0x1000)
-          PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:CBool = HasType v10, HeapObject[class_exact:C]
+          IfTrue v15, bb5(v9, v10, v10)
+          v24:CBool = HasType v10, HeapObject[class_exact:D]
+          IfTrue v24, bb6(v9, v10, v10)
+          v33:BasicObject = Send v10, :foo # SendFallbackReason: SendWithoutBlock: polymorphic fallback
+          Jump bb4(v9, v10, v33)
+        bb5(v16:BasicObject, v17:BasicObject, v18:BasicObject):
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, foo@0x1010, cme:0x1018)
           IncrCounter inline_iseq_optimized_send_count
-          v55:Fixnum[3] = Const Value(3)
-          Jump bb4(v15, v16, v55)
-        bb6(v24:BasicObject, v25:BasicObject, v26:BasicObject):
-          PatchPoint NoSingletonClass(D@0x1038)
-          PatchPoint MethodRedefined(D@0x1038, foo@0x1008, cme:0x1040)
+          v56:Fixnum[3] = Const Value(3)
+          Jump bb4(v16, v17, v56)
+        bb6(v25:BasicObject, v26:BasicObject, v27:BasicObject):
+          PatchPoint NoSingletonClass(D@0x1040)
+          PatchPoint MethodRedefined(D@0x1040, foo@0x1010, cme:0x1048)
           IncrCounter inline_iseq_optimized_send_count
-          v57:Fixnum[4] = Const Value(4)
-          Jump bb4(v24, v25, v57)
-        bb4(v34:BasicObject, v35:BasicObject, v36:BasicObject):
-          v39:Fixnum[2] = Const Value(2)
-          PatchPoint MethodRedefined(Integer@0x1068, +@0x1070, cme:0x1078)
-          v60:Fixnum = GuardType v36, Fixnum
-          v61:Fixnum = FixnumAdd v60, v39
+          v58:Fixnum[4] = Const Value(4)
+          Jump bb4(v25, v26, v58)
+        bb4(v35:BasicObject, v36:BasicObject, v37:BasicObject):
+          v40:Fixnum[2] = Const Value(2)
+          PatchPoint MethodRedefined(Integer@0x1070, +@0x1078, cme:0x1080)
+          v61:Fixnum = GuardType v37, Fixnum
+          v62:Fixnum = FixnumAdd v61, v40
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v61
+          Return v62
         ");
     }
 
@@ -13064,39 +13297,40 @@ mod hir_opt_tests {
 
         test C.new; test 3; test C.new; test 4
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:5:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :o, l0, SP@4
-          Jump bb3(v1, v2)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:BasicObject = LoadArg :o@1
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:BasicObject):
-          v14:CBool = HasType v9, HeapObject[class_exact:C]
-          IfTrue v14, bb5(v8, v9, v9)
-          v23:CBool = HasType v9, Fixnum
-          IfTrue v23, bb6(v8, v9, v9)
-          v32:BasicObject = Send v9, :itself # SendFallbackReason: SendWithoutBlock: polymorphic fallback
-          Jump bb4(v8, v9, v32)
-        bb5(v15:BasicObject, v16:BasicObject, v17:BasicObject):
-          v19:HeapObject[class_exact:C] = RefineType v17, HeapObject[class_exact:C]
-          PatchPoint NoSingletonClass(C@0x1000)
-          PatchPoint MethodRedefined(C@0x1000, itself@0x1008, cme:0x1010)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:CBool = HasType v10, HeapObject[class_exact:C]
+          IfTrue v15, bb5(v9, v10, v10)
+          v24:CBool = HasType v10, Fixnum
+          IfTrue v24, bb6(v9, v10, v10)
+          v33:BasicObject = Send v10, :itself # SendFallbackReason: SendWithoutBlock: polymorphic fallback
+          Jump bb4(v9, v10, v33)
+        bb5(v16:BasicObject, v17:BasicObject, v18:BasicObject):
+          v20:HeapObject[class_exact:C] = RefineType v18, HeapObject[class_exact:C]
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, itself@0x1010, cme:0x1018)
           IncrCounter inline_cfunc_optimized_send_count
-          Jump bb4(v15, v16, v19)
-        bb6(v24:BasicObject, v25:BasicObject, v26:BasicObject):
-          v28:Fixnum = RefineType v26, Fixnum
-          PatchPoint MethodRedefined(Integer@0x1038, itself@0x1008, cme:0x1010)
+          Jump bb4(v16, v17, v20)
+        bb6(v25:BasicObject, v26:BasicObject, v27:BasicObject):
+          v29:Fixnum = RefineType v27, Fixnum
+          PatchPoint MethodRedefined(Integer@0x1040, itself@0x1010, cme:0x1018)
           IncrCounter inline_cfunc_optimized_send_count
-          Jump bb4(v24, v25, v28)
-        bb4(v34:BasicObject, v35:BasicObject, v36:BasicObject):
+          Jump bb4(v25, v26, v29)
+        bb4(v35:BasicObject, v36:BasicObject, v37:BasicObject):
           CheckInterrupts
-          Return v36
+          Return v37
         ");
     }
 
@@ -13180,84 +13414,89 @@ mod hir_opt_tests {
                 test_ep_escape([1], lambda { }) { |x| }
             }
         ");
-        assert_snapshot!(hir_string("test_ep_escape"), @r"
+        assert_snapshot!(hir_string("test_ep_escape"), @"
         fn test_ep_escape@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal :list, l0, SP@7
-          v3:BasicObject = GetLocal :sep, l0, SP@6
-          v4:BasicObject = GetLocal :iter_method, l0, SP@5
-          v5:NilClass = Const Value(nil)
-          v6:CPtr = LoadPC
-          v7:CPtr[CPtr(0x1000)] = Const CPtr(0x1008)
-          v8:CBool = IsBitEqual v6, v7
-          IfTrue v8, bb3(v1, v2, v3, v4, v5)
-          v10:CPtr[CPtr(0x1000)] = Const CPtr(0x1008)
-          v11:CBool = IsBitEqual v6, v10
-          IfTrue v11, bb5(v1, v2, v3, v4, v5)
-          Jump bb7(v1, v2, v3, v4, v5)
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :list@0x1000
+          v4:BasicObject = LoadField v2, :sep@0x1001
+          v5:BasicObject = LoadField v2, :iter_method@0x1002
+          v6:NilClass = Const Value(nil)
+          v7:CPtr = LoadPC
+          v8:CPtr[CPtr(0x1008)] = Const CPtr(0x1010)
+          v9:CBool = IsBitEqual v7, v8
+          IfTrue v9, bb3(v1, v3, v4, v5, v6)
+          v11:CPtr[CPtr(0x1008)] = Const CPtr(0x1010)
+          v12:CBool = IsBitEqual v7, v11
+          IfTrue v12, bb5(v1, v3, v4, v5, v6)
+          Jump bb7(v1, v3, v4, v5, v6)
         bb2():
           EntryPoint JIT(0)
-          v15:BasicObject = LoadArg :self@0
-          v16:BasicObject = LoadArg :list@1
-          v17:NilClass = Const Value(nil)
+          v16:BasicObject = LoadArg :self@0
+          v17:BasicObject = LoadArg :list@1
           v18:NilClass = Const Value(nil)
           v19:NilClass = Const Value(nil)
-          Jump bb3(v15, v16, v17, v18, v19)
-        bb3(v35:BasicObject, v36:BasicObject, v37:BasicObject, v38:BasicObject, v39:NilClass):
-          v42:NilClass = Const Value(nil)
-          SetLocal :sep, l0, EP@5, v42
-          Jump bb5(v35, v36, v42, v38, v39)
+          v20:NilClass = Const Value(nil)
+          Jump bb3(v16, v17, v18, v19, v20)
+        bb3(v36:BasicObject, v37:BasicObject, v38:BasicObject, v39:BasicObject, v40:NilClass):
+          v43:NilClass = Const Value(nil)
+          SetLocal :sep, l0, EP@5, v43
+          Jump bb5(v36, v37, v43, v39, v40)
         bb4():
           EntryPoint JIT(1)
-          v22:BasicObject = LoadArg :self@0
-          v23:BasicObject = LoadArg :list@1
-          v24:BasicObject = LoadArg :sep@2
-          v25:NilClass = Const Value(nil)
+          v23:BasicObject = LoadArg :self@0
+          v24:BasicObject = LoadArg :list@1
+          v25:BasicObject = LoadArg :sep@2
           v26:NilClass = Const Value(nil)
-          Jump bb5(v22, v23, v24, v25, v26)
-        bb5(v46:BasicObject, v47:BasicObject, v48:BasicObject, v49:BasicObject, v50:NilClass):
-          v53:StaticSymbol[:each] = Const Value(VALUE(0x1010))
-          SetLocal :iter_method, l0, EP@4, v53
-          Jump bb7(v46, v47, v48, v53, v50)
+          v27:NilClass = Const Value(nil)
+          Jump bb5(v23, v24, v25, v26, v27)
+        bb5(v47:BasicObject, v48:BasicObject, v49:BasicObject, v50:BasicObject, v51:NilClass):
+          v54:StaticSymbol[:each] = Const Value(VALUE(0x1018))
+          SetLocal :iter_method, l0, EP@4, v54
+          Jump bb7(v47, v48, v49, v54, v51)
         bb6():
           EntryPoint JIT(2)
-          v29:BasicObject = LoadArg :self@0
-          v30:BasicObject = LoadArg :list@1
-          v31:BasicObject = LoadArg :sep@2
-          v32:BasicObject = LoadArg :iter_method@3
-          v33:NilClass = Const Value(nil)
-          Jump bb7(v29, v30, v31, v32, v33)
-        bb7(v57:BasicObject, v58:BasicObject, v59:BasicObject, v60:BasicObject, v61:NilClass):
+          v30:BasicObject = LoadArg :self@0
+          v31:BasicObject = LoadArg :list@1
+          v32:BasicObject = LoadArg :sep@2
+          v33:BasicObject = LoadArg :iter_method@3
+          v34:NilClass = Const Value(nil)
+          Jump bb7(v30, v31, v32, v33, v34)
+        bb7(v58:BasicObject, v59:BasicObject, v60:BasicObject, v61:BasicObject, v62:NilClass):
           CheckInterrupts
-          v67:CBool = Test v59
-          v68:Truthy = RefineType v59, Truthy
-          IfTrue v67, bb8(v57, v58, v68, v60, v61)
-          v70:Falsy = RefineType v59, Falsy
-          PatchPoint NoSingletonClass(Object@0x1018)
-          PatchPoint MethodRedefined(Object@0x1018, lambda@0x1020, cme:0x1028)
-          v114:HeapObject[class_exact*:Object@VALUE(0x1018)] = GuardType v57, HeapObject[class_exact*:Object@VALUE(0x1018)]
-          v115:BasicObject = CCallWithFrame v114, :Kernel#lambda@0x1050, block=0x1058
-          v74:BasicObject = GetLocal :list, l0, EP@6
-          v76:BasicObject = GetLocal :iter_method, l0, EP@4
-          v77:BasicObject = GetLocal :kwsplat, l0, EP@3
-          SetLocal :sep, l0, EP@5, v115
-          Jump bb8(v57, v74, v115, v76, v77)
-        bb8(v81:BasicObject, v82:BasicObject, v83:BasicObject, v84:BasicObject, v85:BasicObject):
+          v68:CBool = Test v60
+          v69:Truthy = RefineType v60, Truthy
+          IfTrue v68, bb8(v58, v59, v69, v61, v62)
+          v71:Falsy = RefineType v60, Falsy
+          PatchPoint NoSingletonClass(Object@0x1020)
+          PatchPoint MethodRedefined(Object@0x1020, lambda@0x1028, cme:0x1030)
+          v119:HeapObject[class_exact*:Object@VALUE(0x1020)] = GuardType v58, HeapObject[class_exact*:Object@VALUE(0x1020)]
+          v120:BasicObject = CCallWithFrame v119, :Kernel#lambda@0x1058, block=0x1060
+          v75:CPtr = GetEP 0
+          v76:BasicObject = LoadField v75, :list@0x1001
+          v78:BasicObject = LoadField v75, :iter_method@0x1068
+          v79:BasicObject = LoadField v75, :kwsplat@0x1069
+          SetLocal :sep, l0, EP@5, v120
+          Jump bb8(v58, v76, v120, v78, v79)
+        bb8(v83:BasicObject, v84:BasicObject, v85:BasicObject, v86:BasicObject, v87:BasicObject):
           PatchPoint SingleRactorMode
-          PatchPoint StableConstantNames(0x1060, CONST)
-          v110:HashExact[VALUE(0x1068)] = Const Value(VALUE(0x1068))
-          SetLocal :kwsplat, l0, EP@3, v110
-          v94:BasicObject = GetLocal :list, l0, EP@6
-          v96:BasicObject = GetLocal :iter_method, l0, EP@4
-          v98:BasicObject = Send v94, 0x1070, :__send__, v96 # SendFallbackReason: Send: unsupported method type Optimized
-          v99:BasicObject = GetLocal :list, l0, EP@6
-          v100:BasicObject = GetLocal :sep, l0, EP@5
-          v101:BasicObject = GetLocal :iter_method, l0, EP@4
-          v102:BasicObject = GetLocal :kwsplat, l0, EP@3
+          PatchPoint StableConstantNames(0x1070, CONST)
+          v115:HashExact[VALUE(0x1078)] = Const Value(VALUE(0x1078))
+          SetLocal :kwsplat, l0, EP@3, v115
+          v96:CPtr = GetEP 0
+          v97:BasicObject = LoadField v96, :list@0x1001
+          v99:CPtr = GetEP 0
+          v100:BasicObject = LoadField v99, :iter_method@0x1068
+          v102:BasicObject = Send v97, 0x1080, :__send__, v100 # SendFallbackReason: Send: unsupported method type Optimized
+          v103:CPtr = GetEP 0
+          v104:BasicObject = LoadField v103, :list@0x1001
+          v105:BasicObject = LoadField v103, :sep@0x1002
+          v106:BasicObject = LoadField v103, :iter_method@0x1068
+          v107:BasicObject = LoadField v103, :kwsplat@0x1069
           CheckInterrupts
-          Return v98
+          Return v102
         ");
     }
 

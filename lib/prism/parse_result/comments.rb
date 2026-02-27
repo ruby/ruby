@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 # :markup: markdown
+#--
+# rbs_inline: enabled
 
 module Prism
   class ParseResult < Result
@@ -18,32 +20,49 @@ module Prism
     # the comment. Otherwise it will favor attaching to the nearest location
     # that is after the comment.
     class Comments
+      # @rbs!
+      #    # An internal interface for a target that comments can be attached
+      #    # to. This is either going to be a NodeTarget or a CommentTarget.
+      #    interface _CommentTarget
+      #      def start_offset: () -> Integer
+      #      def end_offset: () -> Integer
+      #      def encloses?: (Comment) -> bool
+      #      def leading_comment: (Comment) -> void
+      #      def trailing_comment: (Comment) -> void
+      #    end
+
       # A target for attaching comments that is based on a specific node's
       # location.
       class NodeTarget # :nodoc:
-        attr_reader :node
+        attr_reader :node #: node
 
+        #: (node node) -> void
         def initialize(node)
           @node = node
         end
 
+        #: () -> Integer
         def start_offset
           node.start_offset
         end
 
+        #: () -> Integer
         def end_offset
           node.end_offset
         end
 
+        #: (Comment comment) -> bool
         def encloses?(comment)
           start_offset <= comment.location.start_offset &&
             comment.location.end_offset <= end_offset
         end
 
+        #: (Comment comment) -> void
         def leading_comment(comment)
           node.location.leading_comment(comment)
         end
 
+        #: (Comment comment) -> void
         def trailing_comment(comment)
           node.location.trailing_comment(comment)
         end
@@ -52,44 +71,54 @@ module Prism
       # A target for attaching comments that is based on a location field on a
       # node. For example, the `end` token of a ClassNode.
       class LocationTarget # :nodoc:
-        attr_reader :location
+        attr_reader :location #: Location
 
+        #: (Location location) -> void
         def initialize(location)
           @location = location
         end
 
+        #: () -> Integer
         def start_offset
           location.start_offset
         end
 
+        #: () -> Integer
         def end_offset
           location.end_offset
         end
 
+        #: (Comment comment) -> bool
         def encloses?(comment)
           false
         end
 
+        #: (Comment comment) -> void
         def leading_comment(comment)
           location.leading_comment(comment)
         end
 
+        #: (Comment comment) -> void
         def trailing_comment(comment)
           location.trailing_comment(comment)
         end
       end
 
       # The parse result that we are attaching comments to.
-      attr_reader :parse_result
+      attr_reader :parse_result #: ParseResult
 
       # Create a new Comments object that will attach comments to the given
       # parse result.
+      #--
+      #: (ParseResult parse_result) -> void
       def initialize(parse_result)
         @parse_result = parse_result
       end
 
       # Attach the comments to their respective locations in the tree by
       # mutating the parse result.
+      #--
+      #: () -> void
       def attach!
         parse_result.comments.each do |comment|
           preceding, enclosing, following = nearest_targets(parse_result.value, comment)
@@ -117,11 +146,13 @@ module Prism
 
       # Responsible for finding the nearest targets to the given comment within
       # the context of the given encapsulating node.
+      #--
+      #: (node node, Comment comment) -> [_CommentTarget?, _CommentTarget?, _CommentTarget?]
       def nearest_targets(node, comment)
         comment_start = comment.location.start_offset
         comment_end = comment.location.end_offset
 
-        targets = [] #: Array[_Target]
+        targets = [] #: Array[_CommentTarget]
         node.comment_targets.map do |value|
           case value
           when StatementsNode
@@ -134,8 +165,8 @@ module Prism
         end
 
         targets.sort_by!(&:start_offset)
-        preceding = nil #: _Target?
-        following = nil #: _Target?
+        preceding = nil #: _CommentTarget?
+        following = nil #: _CommentTarget?
 
         left = 0
         right = targets.length

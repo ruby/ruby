@@ -1,3 +1,6 @@
+#--
+# rbs_inline: enabled
+
 require "cgi/escape"
 require "cgi/util" unless defined?(CGI::EscapeExt)
 
@@ -6,14 +9,18 @@ module Prism
   # subtree into a graphviz dot graph.
   class DotVisitor < Visitor
     class Field # :nodoc:
-      attr_reader :name, :value, :port
+      attr_reader :name #: String
+      attr_reader :value #: String?
+      attr_reader :port #: bool
 
+      #: (String name, String? value, bool port) -> void
       def initialize(name, value, port)
         @name = name
         @value = value
         @port = port
       end
 
+      #: () -> String
       def to_dot
         if port
           "<tr><td align=\"left\" colspan=\"2\" port=\"#{name}\">#{name}</td></tr>"
@@ -24,17 +31,21 @@ module Prism
     end
 
     class Table # :nodoc:
-      attr_reader :name, :fields
+      attr_reader :name #: String
+      attr_reader :fields #: Array[Field]
 
+      #: (String name) -> void
       def initialize(name)
         @name = name
         @fields = []
       end
 
+      #: (String name, ?String? value, ?port: bool) -> void
       def field(name, value = nil, port: false)
         fields << Field.new(name, value, port)
       end
 
+      #: () -> String
       def to_dot
         dot = <<~DOT
           <table border="0" cellborder="1" cellspacing="0" cellpadding="4">
@@ -50,26 +61,31 @@ module Prism
     end
 
     class Digraph # :nodoc:
-      attr_reader :nodes, :waypoints, :edges
+      attr_reader :nodes, :waypoints, :edges #: Array[String]
 
+      #: () -> void
       def initialize
         @nodes = []
         @waypoints = []
         @edges = []
       end
 
+      #: (String value) -> void
       def node(value)
         nodes << value
       end
 
+      #: (String value) -> void
       def waypoint(value)
         waypoints << value
       end
 
+      #: (String value) -> void
       def edge(value)
         edges << value
       end
 
+      #: () -> String
       def to_dot
         <<~DOT
           digraph "Prism" {
@@ -93,19 +109,24 @@ module Prism
     private_constant :Field, :Table, :Digraph
 
     # The digraph that is being built.
-    attr_reader :digraph
+    attr_reader :digraph #: Digraph
 
     # Initialize a new dot visitor.
+    #--
+    #: () -> void
     def initialize
       @digraph = Digraph.new
     end
 
     # Convert this visitor into a graphviz dot graph string.
+    #--
+    #: () -> String
     def to_dot
       digraph.to_dot
     end
     <%- nodes.each do |node| -%>
 
+    #: (<%= node.name %>) -> void
     def visit_<%= node.human %>(node) # :nodoc:
       table = Table.new("<%= node.name %>")
       id = node_id(node)
@@ -151,7 +172,7 @@ module Prism
       <%- end -%>
       <%- end -%>
 
-      digraph.nodes << <<~DOT
+      digraph.node(<<~DOT)
         #{id} [
           label=<#{table.to_dot.gsub(/\n/, "\n  ")}>
         ];
@@ -164,11 +185,15 @@ module Prism
     private
 
     # Generate a unique node ID for a node throughout the digraph.
+    #--
+    #: (node) -> String
     def node_id(node) # :nodoc:
       "Node_#{node.object_id}"
     end
 
     # Inspect a location to display the start and end line and columns in bytes.
+    #--
+    #: (Location) -> String
     def location_inspect(location) # :nodoc:
       "(#{location.start_line},#{location.start_column})-(#{location.end_line},#{location.end_column})"
     end
@@ -176,6 +201,8 @@ module Prism
 
     # Inspect a node that has <%= flag.human %> flags to display the flags as a
     # comma-separated list.
+    #--
+    #: (<%= nodes.filter_map { |node| node.name if node.flags == flag }.join(" | ") %> node) -> String
     def <%= flag.human %>_inspect(node) # :nodoc:
       flags = [] #: Array[String]
       <%- flag.values.each do |value| -%>

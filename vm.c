@@ -3236,6 +3236,7 @@ rb_vm_update_references(void *ptr)
         vm->self = rb_gc_location(vm->self);
         vm->mark_object_ary = rb_gc_location(vm->mark_object_ary);
         vm->orig_progname = rb_gc_location(vm->orig_progname);
+        vm->cc_refinement_set = rb_gc_location(vm->cc_refinement_set);
 
         if (vm->root_box)
             rb_box_gc_update_references(vm->root_box);
@@ -3324,6 +3325,7 @@ rb_vm_mark(void *ptr)
         rb_gc_mark_movable(vm->orig_progname);
         rb_gc_mark_movable(vm->coverages);
         rb_gc_mark_movable(vm->me2counter);
+        rb_gc_mark_movable(vm->cc_refinement_set);
 
         rb_gc_mark_values(RUBY_NSIG, vm->trap_list.cmd);
 
@@ -3413,10 +3415,6 @@ ruby_vm_destruct(rb_vm_t *vm)
         if (vm->ci_table) {
             st_free_table(vm->ci_table);
             vm->ci_table = NULL;
-        }
-        if (vm->cc_refinement_table) {
-            rb_set_free_table(vm->cc_refinement_table);
-            vm->cc_refinement_table = NULL;
         }
         RB_ALTSTACK_FREE(vm->main_altstack);
 
@@ -3510,7 +3508,6 @@ vm_memsize(const void *ptr)
         vm_memsize_builtin_function_table(vm->builtin_function_table) +
         rb_id_table_memsize(vm->negative_cme_table) +
         rb_st_memsize(vm->overloaded_cme_table) +
-        rb_set_memsize(vm->cc_refinement_table) +
         vm_memsize_constant_cache()
     );
 
@@ -4736,6 +4733,8 @@ rb_vm_register_global_object(VALUE obj)
     }
 }
 
+VALUE rb_cc_refinement_set_create(void);
+
 void
 Init_vm_objects(void)
 {
@@ -4744,7 +4743,7 @@ Init_vm_objects(void)
     /* initialize mark object array, hash */
     vm->mark_object_ary = pin_array_list_new(Qnil);
     vm->ci_table = st_init_table(&vm_ci_hashtype);
-    vm->cc_refinement_table = rb_set_init_numtable();
+    vm->cc_refinement_set = rb_cc_refinement_set_create();
 }
 
 // Whether JIT is enabled or not, we need to load/undef `#with_jit` for other builtins.

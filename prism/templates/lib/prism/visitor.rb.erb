@@ -1,4 +1,14 @@
+#--
+# rbs_inline: enabled
+
 module Prism
+  # @rbs!
+  #    interface _Visitor
+  #      <% nodes.each do |node| %>
+  #      def visit_<%= node.human %>: (<%= node.name %>) -> void
+  #      <% end %>
+  #    end
+
   # A class that knows how to walk down the tree. None of the individual visit
   # methods are implemented on this visitor, so it forces the consumer to
   # implement each one that they need. For a default implementation that
@@ -6,18 +16,24 @@ module Prism
   class BasicVisitor
     # Calls `accept` on the given node if it is not `nil`, which in turn should
     # call back into this visitor by calling the appropriate `visit_*` method.
+    #--
+    #: (node? node) -> void
     def visit(node)
       # @type self: _Visitor
       node&.accept(self)
     end
 
     # Visits each node in `nodes` by calling `accept` on each one.
+    #--
+    #: (Array[node?] nodes) -> void
     def visit_all(nodes)
       # @type self: _Visitor
       nodes.each { |node| node&.accept(self) }
     end
 
     # Visits the child nodes of `node` by calling `accept` on each one.
+    #--
+    #: (node node) -> void
     def visit_child_nodes(node)
       # @type self: _Visitor
       node.each_child_node { |node| node.accept(self) }
@@ -47,6 +63,8 @@ module Prism
     <%- nodes.each_with_index do |node, index| -%>
 <%= "\n" if index != 0 -%>
     # Visit a <%= node.name %> node
+    #--
+    #: (<%= node.name %> node) -> void
     def visit_<%= node.human %>(node)
       node.each_child_node { |node| node.accept(self) }
     end

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 # :markup: markdown
+#--
+# rbs_inline: enabled
 
 #--
 # Here we are reopening the prism module to provide methods on nodes that aren't
@@ -7,9 +9,9 @@
 #++
 module Prism
   class Node
+    #: (*String replacements) -> void
     def deprecated(*replacements) # :nodoc:
-      location = caller_locations(1, 1)
-      location = location[0].label if location
+      location = caller_locations(1, 1)&.[](0)&.label
       suggest = replacements.map { |replacement| "#{self.class}##{replacement}" }
 
       warn(<<~MSG, uplevel: 1, category: :deprecated)
@@ -23,7 +25,9 @@ module Prism
   module RegularExpressionOptions # :nodoc:
     # Returns a numeric value that represents the flags that were used to create
     # the regular expression.
-    def options
+    #--
+    #: (Integer flags) -> Integer
+    def self.options(flags)
       o = 0
       o |= Regexp::IGNORECASE if flags.anybits?(RegularExpressionFlags::IGNORE_CASE)
       o |= Regexp::EXTENDED if flags.anybits?(RegularExpressionFlags::EXTENDED)
@@ -35,43 +39,87 @@ module Prism
   end
 
   class InterpolatedMatchLastLineNode < Node
-    include RegularExpressionOptions
+    # Returns a numeric value that represents the flags that were used to create
+    # the regular expression.
+    #--
+    #: () -> Integer
+    def options
+      RegularExpressionOptions.options(flags)
+    end
   end
 
   class InterpolatedRegularExpressionNode < Node
-    include RegularExpressionOptions
+    # Returns a numeric value that represents the flags that were used to create
+    # the regular expression.
+    #--
+    #: () -> Integer
+    def options
+      RegularExpressionOptions.options(flags)
+    end
   end
 
   class MatchLastLineNode < Node
-    include RegularExpressionOptions
+    # Returns a numeric value that represents the flags that were used to create
+    # the regular expression.
+    #--
+    #: () -> Integer
+    def options
+      RegularExpressionOptions.options(flags)
+    end
   end
 
   class RegularExpressionNode < Node
-    include RegularExpressionOptions
+    # Returns a numeric value that represents the flags that were used to create
+    # the regular expression.
+    #--
+    #: () -> Integer
+    def options
+      RegularExpressionOptions.options(flags)
+    end
   end
 
   private_constant :RegularExpressionOptions
 
   module HeredocQuery # :nodoc:
     # Returns true if this node was represented as a heredoc in the source code.
-    def heredoc?
+    #--
+    #: (String? opening) -> bool?
+    def self.heredoc?(opening)
+      # @type self: InterpolatedStringNode | InterpolatedXStringNode | StringNode | XStringNode
       opening&.start_with?("<<")
     end
   end
 
   class InterpolatedStringNode < Node
-    include HeredocQuery
+    # Returns true if this node was represented as a heredoc in the source code.
+    #--
+    #: () -> bool?
+    def heredoc?
+      HeredocQuery.heredoc?(opening)
+    end
   end
 
   class InterpolatedXStringNode < Node
-    include HeredocQuery
+    # Returns true if this node was represented as a heredoc in the source code.
+    #--
+    #: () -> bool?
+    def heredoc?
+      HeredocQuery.heredoc?(opening)
+    end
   end
 
   class StringNode < Node
-    include HeredocQuery
+    # Returns true if this node was represented as a heredoc in the source code.
+    #--
+    #: () -> bool?
+    def heredoc?
+      HeredocQuery.heredoc?(opening)
+    end
 
     # Occasionally it's helpful to treat a string as if it were interpolated so
     # that there's a consistent interface for working with strings.
+    #--
+    #: () -> InterpolatedStringNode
     def to_interpolated
       InterpolatedStringNode.new(
         source,
@@ -86,10 +134,17 @@ module Prism
   end
 
   class XStringNode < Node
-    include HeredocQuery
+    # Returns true if this node was represented as a heredoc in the source code.
+    #--
+    #: () -> bool?
+    def heredoc?
+      HeredocQuery.heredoc?(opening)
+    end
 
     # Occasionally it's helpful to treat a string as if it were interpolated so
     # that there's a consistent interface for working with strings.
+    #--
+    #: () -> InterpolatedXStringNode
     def to_interpolated
       InterpolatedXStringNode.new(
         source,
@@ -107,6 +162,8 @@ module Prism
 
   class ImaginaryNode < Node
     # Returns the value of the node as a Ruby Complex.
+    #--
+    #: () -> Complex
     def value
       Complex(0, numeric.value)
     end
@@ -114,12 +171,16 @@ module Prism
 
   class RationalNode < Node
     # Returns the value of the node as a Ruby Rational.
+    #--
+    #: () -> Rational
     def value
       Rational(numerator, denominator)
     end
 
     # Returns the value of the node as an IntegerNode or a FloatNode. This
     # method is deprecated in favor of #value or #numerator/#denominator.
+    #--
+    #: () -> (IntegerNode | FloatNode)
     def numeric
       deprecated("value", "numerator", "denominator")
 
@@ -134,11 +195,15 @@ module Prism
   class ConstantReadNode < Node
     # Returns the list of parts for the full name of this constant.
     # For example: [:Foo]
+    #--
+    #: () -> Array[Symbol]
     def full_name_parts
       [name]
     end
 
     # Returns the full name of this constant. For example: "Foo"
+    #--
+    #: () -> String
     def full_name
       name.to_s
     end
@@ -147,11 +212,15 @@ module Prism
   class ConstantWriteNode < Node
     # Returns the list of parts for the full name of this constant.
     # For example: [:Foo]
+    #--
+    #: () -> Array[Symbol]
     def full_name_parts
       [name]
     end
 
     # Returns the full name of this constant. For example: "Foo"
+    #--
+    #: () -> String
     def full_name
       name.to_s
     end
@@ -173,6 +242,8 @@ module Prism
 
     # Returns the list of parts for the full name of this constant path.
     # For example: [:Foo, :Bar]
+    #--
+    #: () -> Array[Symbol]
     def full_name_parts
       parts = [] #: Array[Symbol]
       current = self #: node?
@@ -195,6 +266,8 @@ module Prism
     end
 
     # Returns the full name of this constant path. For example: "Foo::Bar"
+    #--
+    #: () -> String
     def full_name
       full_name_parts.join("::")
     end
@@ -202,10 +275,12 @@ module Prism
     # Previously, we had a child node on this class that contained either a
     # constant read or a missing node. To not cause a breaking change, we
     # continue to supply that API.
+    #--
+    #: () -> (ConstantReadNode | MissingNode)
     def child
       deprecated("name", "name_loc")
 
-      if name
+      if (name = self.name)
         ConstantReadNode.new(source, -1, name_loc, 0, name)
       else
         MissingNode.new(source, -1, location, 0)
@@ -216,9 +291,11 @@ module Prism
   class ConstantPathTargetNode < Node
     # Returns the list of parts for the full name of this constant path.
     # For example: [:Foo, :Bar]
+    #--
+    #: () -> Array[Symbol]
     def full_name_parts
       parts =
-        case parent
+        case (parent = self.parent)
         when ConstantPathNode, ConstantReadNode
           parent.full_name_parts
         when nil
@@ -228,7 +305,7 @@ module Prism
           raise ConstantPathNode::DynamicPartsInConstantPathError, "Constant target path contains dynamic parts. Cannot compute full name"
         end
 
-      if name.nil?
+      if (name = self.name).nil?
         raise ConstantPathNode::MissingNodesInConstantPathError, "Constant target path contains missing nodes. Cannot compute full name"
       end
 
@@ -236,6 +313,8 @@ module Prism
     end
 
     # Returns the full name of this constant path. For example: "Foo::Bar"
+    #--
+    #: () -> String
     def full_name
       full_name_parts.join("::")
     end
@@ -243,10 +322,12 @@ module Prism
     # Previously, we had a child node on this class that contained either a
     # constant read or a missing node. To not cause a breaking change, we
     # continue to supply that API.
+    #--
+    #: () -> (ConstantReadNode | MissingNode)
     def child
       deprecated("name", "name_loc")
 
-      if name
+      if (name = self.name)
         ConstantReadNode.new(source, -1, name_loc, 0, name)
       else
         MissingNode.new(source, -1, location, 0)
@@ -257,11 +338,15 @@ module Prism
   class ConstantTargetNode < Node
     # Returns the list of parts for the full name of this constant.
     # For example: [:Foo]
+    #--
+    #: () -> Array[Symbol]
     def full_name_parts
       [name]
     end
 
     # Returns the full name of this constant. For example: "Foo"
+    #--
+    #: () -> String
     def full_name
       name.to_s
     end
@@ -269,6 +354,8 @@ module Prism
 
   class ParametersNode < Node
     # Mirrors the Method#parameters method.
+    #--
+    #: () -> Array[[Symbol, Symbol] | [Symbol]]
     def signature
       names = [] #: Array[[Symbol, Symbol] | [Symbol]]
 
@@ -278,7 +365,7 @@ module Prism
 
       optionals.each { |param| names << [:opt, param.name] }
 
-      if rest && rest.is_a?(RestParameterNode)
+      if (rest = self.rest).is_a?(RestParameterNode)
         names << [:rest, rest.name || :*]
       end
 
@@ -309,7 +396,7 @@ module Prism
 
       keyopt.each { |param| names << [:key, param.name] }
 
-      case keyword_rest
+      case (keyword_rest = self.keyword_rest)
       when ForwardingParameterNode
         names.concat([[:rest, :*], [:keyrest, :**], [:block, :&]])
       when KeywordRestParameterNode
@@ -318,7 +405,7 @@ module Prism
         names << [:nokey]
       end
 
-      case block
+      case (block = self.block)
       when BlockParameterNode
         names << [:block, block.name || :&]
       when NoBlockParameterNode
@@ -339,6 +426,8 @@ module Prism
     # can be any amount of space between the message and the = sign. However,
     # sometimes you want the location of the full message including the inner
     # space and the = sign. This method provides that.
+    #--
+    #: () -> Location?
     def full_message_loc
       attribute_write? ? message_loc&.adjoin("=") : message_loc
     end
@@ -347,6 +436,8 @@ module Prism
   class CallOperatorWriteNode < Node
     # Returns the binary operator used to modify the receiver. This method is
     # deprecated in favor of #binary_operator.
+    #--
+    #: () -> Symbol
     def operator
       deprecated("binary_operator")
       binary_operator
@@ -354,6 +445,8 @@ module Prism
 
     # Returns the location of the binary operator used to modify the receiver.
     # This method is deprecated in favor of #binary_operator_loc.
+    #--
+    #: () -> Location
     def operator_loc
       deprecated("binary_operator_loc")
       binary_operator_loc
@@ -363,6 +456,8 @@ module Prism
   class ClassVariableOperatorWriteNode < Node
     # Returns the binary operator used to modify the receiver. This method is
     # deprecated in favor of #binary_operator.
+    #--
+    #: () -> Symbol
     def operator
       deprecated("binary_operator")
       binary_operator
@@ -370,6 +465,8 @@ module Prism
 
     # Returns the location of the binary operator used to modify the receiver.
     # This method is deprecated in favor of #binary_operator_loc.
+    #--
+    #: () -> Location
     def operator_loc
       deprecated("binary_operator_loc")
       binary_operator_loc
@@ -379,6 +476,8 @@ module Prism
   class ConstantOperatorWriteNode < Node
     # Returns the binary operator used to modify the receiver. This method is
     # deprecated in favor of #binary_operator.
+    #--
+    #: () -> Symbol
     def operator
       deprecated("binary_operator")
       binary_operator
@@ -386,6 +485,8 @@ module Prism
 
     # Returns the location of the binary operator used to modify the receiver.
     # This method is deprecated in favor of #binary_operator_loc.
+    #--
+    #: () -> Location
     def operator_loc
       deprecated("binary_operator_loc")
       binary_operator_loc
@@ -395,6 +496,8 @@ module Prism
   class ConstantPathOperatorWriteNode < Node
     # Returns the binary operator used to modify the receiver. This method is
     # deprecated in favor of #binary_operator.
+    #--
+    #: () -> Symbol
     def operator
       deprecated("binary_operator")
       binary_operator
@@ -402,6 +505,8 @@ module Prism
 
     # Returns the location of the binary operator used to modify the receiver.
     # This method is deprecated in favor of #binary_operator_loc.
+    #--
+    #: () -> Location
     def operator_loc
       deprecated("binary_operator_loc")
       binary_operator_loc
@@ -411,6 +516,8 @@ module Prism
   class GlobalVariableOperatorWriteNode < Node
     # Returns the binary operator used to modify the receiver. This method is
     # deprecated in favor of #binary_operator.
+    #--
+    #: () -> Symbol
     def operator
       deprecated("binary_operator")
       binary_operator
@@ -418,6 +525,8 @@ module Prism
 
     # Returns the location of the binary operator used to modify the receiver.
     # This method is deprecated in favor of #binary_operator_loc.
+    #--
+    #: () -> Location
     def operator_loc
       deprecated("binary_operator_loc")
       binary_operator_loc
@@ -427,6 +536,8 @@ module Prism
   class IndexOperatorWriteNode < Node
     # Returns the binary operator used to modify the receiver. This method is
     # deprecated in favor of #binary_operator.
+    #--
+    #: () -> Symbol
     def operator
       deprecated("binary_operator")
       binary_operator
@@ -434,6 +545,8 @@ module Prism
 
     # Returns the location of the binary operator used to modify the receiver.
     # This method is deprecated in favor of #binary_operator_loc.
+    #--
+    #: () -> Location
     def operator_loc
       deprecated("binary_operator_loc")
       binary_operator_loc
@@ -443,6 +556,8 @@ module Prism
   class InstanceVariableOperatorWriteNode < Node
     # Returns the binary operator used to modify the receiver. This method is
     # deprecated in favor of #binary_operator.
+    #--
+    #: () -> Symbol
     def operator
       deprecated("binary_operator")
       binary_operator
@@ -450,6 +565,8 @@ module Prism
 
     # Returns the location of the binary operator used to modify the receiver.
     # This method is deprecated in favor of #binary_operator_loc.
+    #--
+    #: () -> Location
     def operator_loc
       deprecated("binary_operator_loc")
       binary_operator_loc
@@ -459,6 +576,8 @@ module Prism
   class LocalVariableOperatorWriteNode < Node
     # Returns the binary operator used to modify the receiver. This method is
     # deprecated in favor of #binary_operator.
+    #--
+    #: () -> Symbol
     def operator
       deprecated("binary_operator")
       binary_operator
@@ -466,6 +585,8 @@ module Prism
 
     # Returns the location of the binary operator used to modify the receiver.
     # This method is deprecated in favor of #binary_operator_loc.
+    #--
+    #: () -> Location
     def operator_loc
       deprecated("binary_operator_loc")
       binary_operator_loc
@@ -475,6 +596,8 @@ module Prism
   class CaseMatchNode < Node
     # Returns the else clause of the case match node. This method is deprecated
     # in favor of #else_clause.
+    #--
+    #: () -> ElseNode?
     def consequent
       deprecated("else_clause")
       else_clause
@@ -484,6 +607,8 @@ module Prism
   class CaseNode < Node
     # Returns the else clause of the case node. This method is deprecated in
     # favor of #else_clause.
+    #--
+    #: () -> ElseNode?
     def consequent
       deprecated("else_clause")
       else_clause
@@ -493,6 +618,8 @@ module Prism
   class IfNode < Node
     # Returns the subsequent if/elsif/else clause of the if node. This method is
     # deprecated in favor of #subsequent.
+    #--
+    #: () -> (IfNode | ElseNode)?
     def consequent
       deprecated("subsequent")
       subsequent
@@ -502,6 +629,8 @@ module Prism
   class RescueNode < Node
     # Returns the subsequent rescue clause of the rescue node. This method is
     # deprecated in favor of #subsequent.
+    #--
+    #: () -> RescueNode?
     def consequent
       deprecated("subsequent")
       subsequent
@@ -511,6 +640,8 @@ module Prism
   class UnlessNode < Node
     # Returns the else clause of the unless node. This method is deprecated in
     # favor of #else_clause.
+    #--
+    #: () -> ElseNode?
     def consequent
       deprecated("else_clause")
       else_clause

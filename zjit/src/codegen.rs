@@ -570,8 +570,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::GetIvar { self_val, id, ic, state: _ } => gen_getivar(jit, asm, opnd!(self_val), *id, *ic),
         Insn::SetGlobal { id, val, state } => no_output!(gen_setglobal(jit, asm, *id, opnd!(val), &function.frame_state(*state))),
         Insn::GetGlobal { id, state } => gen_getglobal(jit, asm, *id, &function.frame_state(*state)),
-        &Insn::GetLocal { ep_offset, level, use_sp, .. } => gen_getlocal(asm, ep_offset, level, use_sp),
-        &Insn::IsBlockParamModified { level } => gen_is_block_param_modified(asm, level),
+        &Insn::IsBlockParamModified { ep } => gen_is_block_param_modified(asm, opnd!(ep)),
         &Insn::GetBlockParam { ep_offset, level, state } => gen_getblockparam(jit, asm, ep_offset, level, &function.frame_state(state)),
         &Insn::SetLocal { val, ep_offset, level } => no_output!(gen_setlocal(asm, opnd!(val), function.type_of(val), ep_offset, level)),
         Insn::GetConstant { klass, id, allow_nil, state } => gen_getconstant(jit, asm, opnd!(klass), *id, opnd!(allow_nil), &function.frame_state(*state)),
@@ -600,6 +599,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::ArrayExtend { left, right, state } => { no_output!(gen_array_extend(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state))) },
         Insn::LoadPC => gen_load_pc(asm),
         Insn::LoadEC => gen_load_ec(),
+        Insn::LoadSP => gen_load_sp(),
         &Insn::GetEP { level } => gen_get_ep(asm, level),
         Insn::GetLEP => gen_get_lep(jit, asm),
         Insn::LoadSelf => gen_load_self(),
@@ -722,26 +722,6 @@ fn gen_unbox_fixnum(asm: &mut Assembler, val: Opnd) -> Opnd {
     asm.rshift(val, Opnd::UImm(1))
 }
 
-/// Get a local variable from a higher scope or the heap. `local_ep_offset` is in number of VALUEs.
-/// We generate this instruction with level=0 only when the local variable is on the heap, so we
-/// can't optimize the level=0 case using the SP register.
-fn gen_getlocal(asm: &mut Assembler, local_ep_offset: u32, level: u32, use_sp: bool) -> lir::Opnd {
-    let local_ep_offset = i32::try_from(local_ep_offset).unwrap_or_else(|_| panic!("Could not convert local_ep_offset {local_ep_offset} to i32"));
-    if level > 0 {
-        gen_incr_counter(asm, Counter::vm_read_from_parent_iseq_local_count);
-    }
-    let local = if use_sp {
-        assert_eq!(level, 0, "use_sp optimization should be used only for level=0 locals");
-        let offset = -(SIZEOF_VALUE_I32 * (local_ep_offset + 1));
-        Opnd::mem(64, SP, offset)
-    } else {
-        let ep = gen_get_ep(asm, level);
-        let offset = -(SIZEOF_VALUE_I32 * local_ep_offset);
-        Opnd::mem(64, ep, offset)
-    };
-    asm.load(local)
-}
-
 /// Set a local variable from a higher scope or the heap. `local_ep_offset` is in number of VALUEs.
 /// We generate this instruction with level=0 only when the local variable is on the heap, so we
 /// can't optimize the level=0 case using the SP register.
@@ -766,8 +746,7 @@ fn gen_setlocal(asm: &mut Assembler, val: Opnd, val_type: Type, local_ep_offset:
 }
 
 /// Returns 1 (as CBool) when VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM is set; returns 0 otherwise.
-fn gen_is_block_param_modified(asm: &mut Assembler, level: u32) -> Opnd {
-    let ep = gen_get_ep(asm, level);
+fn gen_is_block_param_modified(asm: &mut Assembler, ep: Opnd) -> Opnd {
     let flags = asm.load(Opnd::mem(VALUE_BITS, ep, SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32)));
     asm.test(flags, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into());
     asm.csel_nz(Opnd::Imm(1), Opnd::Imm(0))
@@ -1231,6 +1210,10 @@ fn gen_load_ec() -> Opnd {
     EC
 }
 
+fn gen_load_sp() -> Opnd {
+    SP
+}
+
 fn gen_load_self() -> Opnd {
     Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF)
 }
@@ -1462,7 +1445,7 @@ fn gen_send_iseq_direct(
     // which optional keyword arguments need their defaults evaluated.
     // We write this to the local table slot at bits_start so that:
     // 1. The interpreter can read it via checkkeyword if we side-exit
-    // 2. The JIT entry can read it via GetLocal
+    // 2. The JIT entry can read it from the callee frame slot
     if unsafe { rb_get_iseq_flags_has_kw(iseq) } {
         let keyword = unsafe { rb_get_iseq_body_param_keyword(iseq) };
         let bits_start = unsafe { (*keyword).bits_start } as usize;
@@ -2816,6 +2799,7 @@ fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodeP
     // Call function_stub_hit using the shared trampoline. See `gen_function_stub_hit_trampoline`.
     // Use load_into instead of mov, which is split on arm64, to avoid clobbering ALLOC_REGS.
     asm.load_into(scratch_reg, Opnd::const_ptr(Rc::into_raw(iseq_call)));
+    asm.cpush(scratch_reg);
     asm.jmp(ZJITState::get_function_stub_hit_trampoline().into());
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {
@@ -2830,6 +2814,8 @@ pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, C
     let (mut asm, scratch_reg) = Assembler::new_with_scratch_reg();
     asm.new_block_without_id();
     asm_comment!(asm, "function_stub_hit trampoline");
+
+    asm.cpop_into(scratch_reg);
 
     // Maintain alignment for x86_64, and set up a frame for arm64 properly
     asm.frame_setup(&[]);
@@ -2851,8 +2837,15 @@ pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, C
         asm.cpush(Opnd::Reg(ALLOC_REGS[0])); // maintain alignment for x86_64
     }
 
+    // We can't directly pass the scratch register in to the ccall because
+    // we're going to have parallel move automatically handle coping registers
+    // in to the C calling convention and the parallel move algorithm needs
+    // a scratch register to break any cycles.  If we use the scratch register
+    // as a C call parameter, then parallel move wouldn't be able to break
+    // cycles without clobbering something
+    asm.mov(C_ARG_OPNDS[0], scratch_reg);
     // Compile the stubbed ISEQ
-    let jump_addr = asm_ccall!(asm, function_stub_hit, scratch_reg, CFP, SP);
+    let jump_addr = asm_ccall!(asm, function_stub_hit, C_ARG_OPNDS[0], CFP, SP);
     asm.mov(scratch_reg, jump_addr);
 
     asm_comment!(asm, "restore argument registers");

@@ -1,3 +1,6 @@
+#--
+# rbs_inline: enabled
+
 module Prism
   # This visitor walks through the tree and copies each node as it is being
   # visited. This is useful for consumers that want to mutate the tree, as you
@@ -5,6 +8,7 @@ module Prism
   class MutationCompiler < Compiler
     <%- nodes.each_with_index do |node, index| -%>
 <%= "\n" if index != 0 -%>
+    #: (<%= node.name %>) -> node?
     def visit_<%= node.human %>(node) # :nodoc:
       <%- fields = node.fields.select { |field| [Prism::Template::NodeField, Prism::Template::OptionalNodeField, Prism::Template::NodeListField].include?(field.class) } -%>
       <%- if fields.any? -%>
