@@ -2719,7 +2719,9 @@ rb_jit_fixnum_inc(rb_execution_context_t *ec, VALUE self, VALUE num)
 VALUE
 rb_jit_ary_aset_by_rb_ary_splice(VALUE ary, long beg, long len, VALUE val)
 {
-    return ary_aset_by_rb_ary_splice(ary, beg, len, val);
+    rb_ary_splice(ary, beg, len, RARRAY_CONST_PTR(val), RARRAY_LEN(val));
+    RB_GC_GUARD(val);
+    return val;
 }
 
 // Push a value onto an array and return the value.
