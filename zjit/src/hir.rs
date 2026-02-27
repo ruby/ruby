@@ -3076,11 +3076,11 @@ impl Function {
     fn get_local_from_ep(
         &mut self,
         block: BlockId,
+        ep: InsnId,
         ep_offset: u32,
         level: u32,
         return_type: Type,
     ) -> InsnId {
-        let ep = self.push_insn(block, Insn::GetEP { level });
         let local_id = get_local_var_id(self.iseq, level, ep_offset);
         let ep_offset = i32::try_from(ep_offset)
             .unwrap_or_else(|_| panic!("Could not convert ep_offset {ep_offset} to i32"));
@@ -3088,6 +3088,26 @@ impl Function {
 
         self.push_insn(block, Insn::LoadField {
             recv: ep,
+            id: local_id,
+            offset,
+            return_type,
+        })
+    }
+
+    fn get_local_from_sp(
+        &mut self,
+        block: BlockId,
+        sp: InsnId,
+        ep_offset: u32,
+        return_type: Type,
+    ) -> InsnId {
+        let local_id = get_local_var_id(self.iseq, 0, ep_offset);
+        let ep_offset = i32::try_from(ep_offset)
+            .unwrap_or_else(|_| panic!("Could not convert ep_offset {ep_offset} to i32"));
+        let offset = -(SIZEOF_VALUE_I32 * (ep_offset + 1));
+
+        self.push_insn(block, Insn::LoadField {
+            recv: sp,
             id: local_id,
             offset,
             return_type,
@@ -6733,7 +6753,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let val = if !local_inval {
                         state.getlocal(ep_offset)
                     } else if ep_escaped {
-                        fun.get_local_from_ep(block, ep_offset, 0, types::BasicObject)
+                        let ep = fun.push_insn(block, Insn::GetEP { level: 0 });
+                        fun.get_local_from_ep(block, ep, ep_offset, 0, types::BasicObject)
                     } else {
                         let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.without_locals() });
                         fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: exit_id });
@@ -6871,7 +6892,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         state.stack_push(val);
                     } else if ep_escaped {
                         // Read the local using EP
-                        let val = fun.get_local_from_ep(block, ep_offset, 0, types::BasicObject);
+                        let ep = fun.push_insn(block, Insn::GetEP { level: 0 });
+                        let val = fun.get_local_from_ep(block, ep, ep_offset, 0, types::BasicObject);
                         state.setlocal(ep_offset, val); // remember the result to spill on side-exits
                         state.stack_push(val);
                     } else {
@@ -6905,7 +6927,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_getlocal_WC_1 => {
                     let ep_offset = get_arg(pc, 0).as_u32();
-                    state.stack_push(fun.get_local_from_ep(block, ep_offset, 1, types::BasicObject));
+                    let ep = fun.push_insn(block, Insn::GetEP { level: 1 });
+                    state.stack_push(fun.get_local_from_ep(block, ep, ep_offset, 1, types::BasicObject));
                 }
                 YARVINSN_setlocal_WC_1 => {
                     let ep_offset = get_arg(pc, 0).as_u32();
@@ -6914,7 +6937,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_getlocal => {
                     let ep_offset = get_arg(pc, 0).as_u32();
                     let level = get_arg(pc, 1).as_u32();
-                    state.stack_push(fun.get_local_from_ep(block, ep_offset, level, types::BasicObject));
+                    let ep = fun.push_insn(block, Insn::GetEP { level });
+                    state.stack_push(fun.get_local_from_ep(block, ep, ep_offset, level, types::BasicObject));
                 }
                 YARVINSN_setlocal => {
                     let ep_offset = get_arg(pc, 0).as_u32();
@@ -7026,7 +7050,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     }));
 
                     // Push modified block: read Proc from EP.
+                    let ep = fun.push_insn(modified_block, Insn::GetEP { level });
                     let modified_val = fun.get_local_from_ep(modified_block,
+                        ep,
                         ep_offset,
                         level,
                         types::BasicObject,
@@ -7300,11 +7326,14 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         // Reload locals that may have been modified by the blockiseq.
                         // TODO: Avoid reloading locals that are not referenced by the blockiseq
                         // or not used after this. Max thinks we could eventually DCE them.
+                        let ep = fun.push_insn(block, Insn::GetEP { level: 0 });
                         for local_idx in 0..state.locals.len() {
-                            let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
-                            // TODO: We could use `use_sp: true` with PatchPoint
-                            let val = fun.get_local_from_ep(block, ep_offset, 0, types::BasicObject);
-                            state.setlocal(ep_offset, val);
+                            let ep_offset = local_idx_to_ep_offset(iseq, local_idx);
+                            let ep_offset_u32 = u32::try_from(ep_offset)
+                                .unwrap_or_else(|_| panic!("Could not convert ep_offset {ep_offset} to u32"));
+                            // TODO: We could use `use_sp: true` with PatchPoint.
+                            let val = fun.get_local_from_ep(block, ep, ep_offset_u32, 0, types::BasicObject);
+                            state.setlocal(ep_offset_u32, val);
                         }
                     }
                 }
@@ -7328,11 +7357,14 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     if !blockiseq.is_null() {
                         // Reload locals that may have been modified by the blockiseq.
+                        let ep = fun.push_insn(block, Insn::GetEP { level: 0 });
                         for local_idx in 0..state.locals.len() {
-                            let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
-                            // TODO: We could use `use_sp: true` with PatchPoint
-                            let val = fun.get_local_from_ep(block, ep_offset, 0, types::BasicObject);
-                            state.setlocal(ep_offset, val);
+                            let ep_offset = local_idx_to_ep_offset(iseq, local_idx);
+                            let ep_offset_u32 = u32::try_from(ep_offset)
+                                .unwrap_or_else(|_| panic!("Could not convert ep_offset {ep_offset} to u32"));
+                            // TODO: We could use `use_sp: true` with PatchPoint.
+                            let val = fun.get_local_from_ep(block, ep, ep_offset_u32, 0, types::BasicObject);
+                            state.setlocal(ep_offset_u32, val);
                         }
                     }
                 }
@@ -7357,11 +7389,14 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         // Reload locals that may have been modified by the blockiseq.
                         // TODO: Avoid reloading locals that are not referenced by the blockiseq
                         // or not used after this. Max thinks we could eventually DCE them.
+                        let ep = fun.push_insn(block, Insn::GetEP { level: 0 });
                         for local_idx in 0..state.locals.len() {
-                            let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
-                            // TODO: We could use `use_sp: true` with PatchPoint
-                            let val = fun.get_local_from_ep(block, ep_offset, 0, types::BasicObject);
-                            state.setlocal(ep_offset, val);
+                            let ep_offset = local_idx_to_ep_offset(iseq, local_idx);
+                            let ep_offset_u32 = u32::try_from(ep_offset)
+                                .unwrap_or_else(|_| panic!("Could not convert ep_offset {ep_offset} to u32"));
+                            // TODO: We could use `use_sp: true` with PatchPoint.
+                            let val = fun.get_local_from_ep(block, ep, ep_offset_u32, 0, types::BasicObject);
+                            state.setlocal(ep_offset_u32, val);
                         }
                     }
                 }
@@ -7386,11 +7421,14 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         // Reload locals that may have been modified by the blockiseq.
                         // TODO: Avoid reloading locals that are not referenced by the blockiseq
                         // or not used after this. Max thinks we could eventually DCE them.
+                        let ep = fun.push_insn(block, Insn::GetEP { level: 0 });
                         for local_idx in 0..state.locals.len() {
-                            let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
-                            // TODO: We could use `use_sp: true` with PatchPoint
-                            let val = fun.get_local_from_ep(block, ep_offset, 0, types::BasicObject);
-                            state.setlocal(ep_offset, val);
+                            let ep_offset = local_idx_to_ep_offset(iseq, local_idx);
+                            let ep_offset_u32 = u32::try_from(ep_offset)
+                                .unwrap_or_else(|_| panic!("Could not convert ep_offset {ep_offset} to u32"));
+                            // TODO: We could use `use_sp: true` with PatchPoint.
+                            let val = fun.get_local_from_ep(block, ep, ep_offset_u32, 0, types::BasicObject);
+                            state.setlocal(ep_offset_u32, val);
                         }
                     }
                 }
@@ -7681,15 +7719,16 @@ fn compile_entry_state(fun: &mut Function) -> (InsnId, FrameState) {
 
     let self_param = fun.push_insn(entry_block, Insn::LoadSelf);
     let mut entry_state = FrameState::new(iseq);
-    let use_sp = !iseq_escapes_ep(iseq); // If the ISEQ does not escape EP, we can assume EP + 1 == SP
-    let ep_offset_bias = if use_sp { 1 } else { 0 };
+    // If the ISEQ does not escape EP, we can assume EP + 1 == SP
+    // TODO: This should maybe also consider if the EP has historically been escaped in this iseq.
+    // (see: https://github.com/Shopify/ruby/issues/774)
+    let use_sp = !iseq_escapes_ep(iseq);
     let mut base: Option<InsnId> = None;
     for local_idx in 0..num_locals(iseq) {
         if local_idx < param_size {
             let ep_offset = local_idx_to_ep_offset(iseq, local_idx);
             let ep_offset_u32 = u32::try_from(ep_offset)
                 .unwrap_or_else(|_| panic!("Could not convert ep_offset {ep_offset} to u32"));
-            let local_id = get_local_var_id(iseq, 0, ep_offset_u32);
             let return_type = if Some(local_idx as i32) == rest_param_idx {
                 types::ArrayExact
             } else {
@@ -7699,13 +7738,12 @@ fn compile_entry_state(fun: &mut Function) -> (InsnId, FrameState) {
                 let base_insn = if use_sp { Insn::LoadSP } else { Insn::GetEP { level: 0 } };
                 fun.push_insn(entry_block, base_insn)
             });
-            let offset = -(SIZEOF_VALUE_I32 * (ep_offset + ep_offset_bias));
-            entry_state.locals.push(fun.push_insn(entry_block, Insn::LoadField {
-                recv,
-                id: local_id,
-                offset,
-                return_type,
-            }));
+            let val = if use_sp {
+                fun.get_local_from_sp(entry_block, recv, ep_offset_u32, return_type)
+            } else {
+                fun.get_local_from_ep(entry_block, recv, ep_offset_u32, 0, return_type)
+            };
+            entry_state.locals.push(val);
         } else {
             entry_state.locals.push(fun.push_insn(entry_block, Insn::Const { val: Const::Value(Qnil) }));
         }
@@ -7763,15 +7801,14 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
             let ep_offset = local_idx_to_ep_offset(iseq, local_idx);
             let ep_offset_u32 = u32::try_from(ep_offset)
                 .unwrap_or_else(|_| panic!("Could not convert ep_offset {ep_offset} to u32"));
-            let local_id = get_local_var_id(iseq, 0, ep_offset_u32);
             let ep = *ep.get_or_insert_with(|| fun.push_insn(jit_entry_block, Insn::GetEP { level: 0 }));
-            let offset = -(SIZEOF_VALUE_I32 * ep_offset);
-            entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::LoadField {
-                recv: ep,
-                id: local_id,
-                offset,
-                return_type: types::BasicObject,
-            }));
+            entry_state.locals.push(fun.get_local_from_ep(
+                jit_entry_block,
+                ep,
+                ep_offset_u32,
+                0,
+                types::BasicObject,
+            ));
         } else if local_idx < param_size {
             let id = unsafe { rb_zjit_local_id(iseq, local_idx.try_into().unwrap()) };
             entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::LoadArg { idx: arg_idx, id, val_type: types::BasicObject }));
