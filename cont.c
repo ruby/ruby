@@ -2661,6 +2661,7 @@ rb_fiber_start(rb_fiber_t *fiber_arg)
         th->ec->errinfo = Qnil;
         th->ec->root_lep = rb_vm_proc_local_ep(fiber->first_proc);
         th->ec->root_svar = Qfalse;
+        th->ec->svar_table = Qnil;
 
         EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_FIBER_SWITCH, th->self, 0, 0, 0, Qnil);
         cont->value = rb_vm_invoke_proc(th->ec, proc, argc, argv, cont->kw_splat, VM_BLOCK_HANDLER_NONE, cref);

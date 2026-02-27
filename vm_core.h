@@ -1094,6 +1094,7 @@ struct rb_execution_context_struct {
     /* eval env */
     const VALUE *root_lep;
     VALUE root_svar;
+    VALUE svar_table; /* WeakKeyMap: escaped env → per-thread vm_svar; Qnil until needed */
 
     /* trace information */
     struct rb_trace_arg_struct *trace_arg;

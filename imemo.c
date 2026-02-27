@@ -512,6 +512,7 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
         rb_gc_mark_and_move((VALUE *)&svar->lastline);
         rb_gc_mark_and_move((VALUE *)&svar->backref);
         rb_gc_mark_and_move((VALUE *)&svar->others);
+        rb_gc_mark_and_move((VALUE *)&svar->owner_thread);
 
         break;
       }

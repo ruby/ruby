@@ -55,6 +55,7 @@ struct vm_svar {
     const VALUE lastline;
     const VALUE backref;
     const VALUE others;
+    const VALUE owner_thread; /*!< thread that owns this svar at ep[-2] */
 };
 
 /*! THROW_DATA */
