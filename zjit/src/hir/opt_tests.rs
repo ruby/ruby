@@ -7117,7 +7117,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_optimize_getivar_on_module() {
+    fn test_optimize_getivar_on_module_embedded() {
         eval("
             module M
               @foo = 42
@@ -7149,7 +7149,43 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_optimize_getivar_on_class() {
+    fn test_optimize_getivar_on_module_extended() {
+        eval(r#"
+            module M
+              @foo = 42
+              for i in 0...1000
+                instance_variable_set("@v#{i}", i)
+              end
+              def self.test = @foo
+            end
+            M.test
+        "#);
+        assert_snapshot!(hir_string_proc("M.method(:test)"), @r"
+        fn test@<compiled>:7:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          v17:HeapBasicObject = GuardType v6, HeapBasicObject
+          v18:CShape = LoadField v17, :_shape_id@0x1000
+          v19:CShape[0x1001] = GuardBitEquals v18, CShape(0x1001)
+          PatchPoint RootBoxOnly
+          v21:RubyValue = LoadField v17, :_fields_obj@0x1002
+          v22:CPtr = LoadField v21, :_as_heap@0x1003
+          v23:BasicObject = LoadField v22, :@foo@0x1004
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
+    fn test_optimize_getivar_on_class_embedded() {
         eval("
             class C
               @foo = 42
@@ -7177,6 +7213,42 @@ mod hir_opt_tests {
           v22:BasicObject = LoadField v21, :@foo@0x1003
           CheckInterrupts
           Return v22
+        ");
+    }
+
+    #[test]
+    fn test_optimize_getivar_on_class_extended() {
+        eval(r#"
+            class C
+              @foo = 42
+              for i in 0...1000
+                instance_variable_set("@v#{i}", i)
+              end
+              def self.test = @foo
+            end
+            C.test
+        "#);
+        assert_snapshot!(hir_string_proc("C.method(:test)"), @r"
+        fn test@<compiled>:7:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          v17:HeapBasicObject = GuardType v6, HeapBasicObject
+          v18:CShape = LoadField v17, :_shape_id@0x1000
+          v19:CShape[0x1001] = GuardBitEquals v18, CShape(0x1001)
+          PatchPoint RootBoxOnly
+          v21:RubyValue = LoadField v17, :_fields_obj@0x1002
+          v22:CPtr = LoadField v21, :_as_heap@0x1003
+          v23:BasicObject = LoadField v22, :@foo@0x1004
+          CheckInterrupts
+          Return v23
         ");
     }
 
