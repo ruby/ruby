@@ -224,6 +224,12 @@ pub enum MemBase
     VReg(VRegId),
     /// Stack slot: Lowered to MemBase::Reg in scratch_split.
     Stack { stack_idx: usize, num_bits: u8 },
+    /// A pointer stored in a stack slot, used as a memory base.
+    /// Unlike Stack (which accesses the stack value directly), this loads the
+    /// pointer from the stack slot into a scratch register, then uses it as the
+    /// base for the memory access with the Mem's displacement.
+    /// Created when a VReg used as MemBase is spilled to the stack.
+    StackIndirect { stack_idx: usize },
 }
 
 // Memory location
@@ -250,6 +256,7 @@ impl fmt::Display for Mem {
             MemBase::Reg(reg_no) => write!(f, "{}", mem_base_reg(reg_no))?,
             MemBase::VReg(idx) => write!(f, "{idx}")?,
             MemBase::Stack { stack_idx, num_bits } if num_bits == 64 => write!(f, "Stack[{stack_idx}]")?,
+            MemBase::StackIndirect { stack_idx } => write!(f, "*Stack[{stack_idx}]")?,
             MemBase::Stack { stack_idx, num_bits } => write!(f, "Stack{num_bits}[{stack_idx}]")?,
         }
         if self.disp != 0 {
@@ -2484,7 +2491,14 @@ impl Assembler
                             mem.base = MemBase::Reg(regs[n].reg_no);
                         }
                     }
-                    Allocation::Stack(_) => todo!("VReg mem base spilled to stack"),
+                    Allocation::Stack(n) => {
+                        // The VReg used as a memory base was spilled to a stack slot.
+                        // Mark it as StackIndirect so arm64_scratch_split can load
+                        // the pointer from the stack into a scratch register.
+                        if let Opnd::Mem(mem) = opnd {
+                            mem.base = MemBase::StackIndirect { stack_idx: n };
+                        }
+                    }
                 }
             }
             _ => {}
