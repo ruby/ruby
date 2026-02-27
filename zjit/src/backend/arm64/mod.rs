@@ -406,13 +406,14 @@ impl Assembler {
             // case. If the values aren't heap objects then we'll treat them as
             // if they were just unsigned integer.
             let is_load = matches!(insn, Insn::Load { .. } | Insn::LoadInto { .. });
+            let is_jump = insn.is_jump();
             let mut opnd_iter = insn.opnd_iter_mut();
 
             while let Some(opnd) = opnd_iter.next() {
                 if let Opnd::Value(value) = opnd {
                     if value.special_const_p() {
                         *opnd = Opnd::UImm(value.as_u64());
-                    } else if !is_load {
+                    } else if !is_load && !is_jump {
                         *opnd = asm.load(*opnd);
                     }
                 };
