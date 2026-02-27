@@ -367,6 +367,11 @@ impl fmt::Debug for Opnd {
 
 impl Opnd
 {
+    /// Returns true if this operand is a virtual register
+    pub fn is_vreg(&self) -> bool {
+        matches!(self, Opnd::VReg { .. })
+    }
+
     /// Convenience constructor for memory operands
     pub fn mem(num_bits: u8, base: Opnd, disp: i32) -> Self {
         match base {
@@ -2178,7 +2183,11 @@ impl Assembler
                     .filter(|copy| copy.source != copy.destination)
                     .collect();
 
-                // Sequentialize register copies
+                // Sequentialize register copies.
+                // Copies must use physical registers, not VRegs, so the
+                // parcopy algorithm can detect physical register conflicts.
+                debug_assert!(reg_copies.iter().all(|c| !c.source.is_vreg() && !c.destination.is_vreg()),
+                    "parcopy must operate on physical registers, not VRegs");
                 let sequentialized = parcopy::sequentialize_register(&reg_copies, Opnd::Reg(SCRATCH_REG));
                 let moves: Vec<Insn> = sequentialized
                     .iter()
@@ -2250,6 +2259,8 @@ impl Assembler
                 .filter(|copy| copy.source != copy.destination)
                 .collect();
 
+            debug_assert!(reg_copies.iter().all(|c| !c.source.is_vreg() && !c.destination.is_vreg()),
+                "parcopy must operate on physical registers, not VRegs");
             let sequentialized = parcopy::sequentialize_register(&reg_copies, Opnd::Reg(SCRATCH_REG));
             let moves: Vec<Insn> = sequentialized
                 .iter()
@@ -2348,16 +2359,12 @@ impl Assembler
                         })
                         .collect();
 
+                    debug_assert!(reg_copies.iter().all(|c| !c.source.is_vreg() && !c.destination.is_vreg()),
+                        "parcopy must operate on physical registers, not VRegs");
                     let sequentialized = parcopy::sequentialize_register(&reg_copies, Opnd::Reg(SCRATCH_REG));
                     let moves: Vec<Insn> = sequentialized
                         .iter()
-                        .map(|copy| {
-                            let mut dest = copy.destination.clone();
-                            Self::rewrite_opnd(&mut dest, assignments);
-                            let mut src = copy.source.clone();
-                            Self::rewrite_opnd(&mut src, assignments);
-                            Insn::Mov { dest, src }
-                        })
+                        .map(|copy| Insn::Mov { dest: copy.destination, src: copy.source })
                         .collect();
 
                     for mov in moves {
