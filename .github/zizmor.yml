@@ -1,34 +1,6 @@
 # Ignore existing findings (baseline)
 # Composite action findings are suppressed inline with # zizmor: ignore
 rules:
-  artipacked:
-    ignore:
-      - annocheck.yml
-      - auto_review_pr.yml
-      - baseruby.yml
-      - bundled_gems.yml
-      - check_dependencies.yml
-      - check_misc.yml
-      - codeql-analysis.yml
-      - compilers.yml
-      - cygwin.yml
-      - default_gems_list.yml
-      - macos.yml
-      - mingw.yml
-      - modgc.yml
-      - parse_y.yml
-      - post_push.yml
-      - publish.yml
-      - rust-warnings.yml
-      - spec_guards.yml
-      - sync_default_gems.yml
-      - ubuntu.yml
-      - wasm.yml
-      - windows.yml
-      - yjit-macos.yml
-      - yjit-ubuntu.yml
-      - zjit-macos.yml
-      - zjit-ubuntu.yml
   dangerous-triggers:
     ignore:
       - auto_request_review.yml

@@ -41,6 +41,8 @@ jobs:
       - run: git config --global core.autocrlf input
 
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Setup Cygwin
         uses: cygwin/cygwin-install-action@master

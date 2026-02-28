@@ -21,6 +21,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           token: ${{ (github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull')) && secrets.MATZBOT_AUTO_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
+          persist-credentials: false
 
       - uses: ruby/setup-ruby@09a7688d3b55cf0e976497ff046b70949eeaccfd # v1.288.0
         with:
@@ -94,6 +95,7 @@ jobs:
           repository: ruby/rdoc
           ref: ${{ steps.rdoc.outputs.ref }}
           path: .bundle/gems/rdoc-${{ steps.rdoc.outputs.version }}
+          persist-credentials: false
         if: ${{ steps.rdoc.outputs.ref != '' }}
 
       - name: Generate rdoc scripts

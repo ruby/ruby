@@ -55,6 +55,7 @@ jobs:
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
+          persist-credentials: false
 
       - uses: ./.github/actions/setup/ubuntu
 

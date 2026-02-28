@@ -31,7 +31,7 @@ jobs:
     if: ${{ github.repository == 'ruby/ruby' }}
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2 # zizmor: ignore[artipacked]
         name: Check out ruby/ruby
         with:
           token: ${{ github.repository == 'ruby/ruby' && secrets.MATZBOT_AUTO_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}

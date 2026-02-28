@@ -64,6 +64,7 @@ jobs:
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
+          persist-credentials: false
 
       - uses: ./.github/actions/setup/ubuntu
         with:
@@ -222,6 +223,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - uses: ./.github/actions/setup/ubuntu
 
@@ -240,6 +243,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           repository: ruby/ruby-bench
+          persist-credentials: false
           path: ruby-bench
 
       # If you want to skip failing benchmark, consider using `--excludes`.

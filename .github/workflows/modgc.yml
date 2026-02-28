@@ -52,6 +52,7 @@ jobs:
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
+          persist-credentials: false
 
       - name: Install libraries (macOS)
         uses: ./.github/actions/setup/macos
