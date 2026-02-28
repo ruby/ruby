@@ -1035,7 +1035,6 @@ class TestObject < Test::Unit::TestCase
     assert_predicate(xxs, :frozen?, '[Bug #20319]')
     assert_predicate(xxxs, :frozen?, '[Bug #20319]')
 
-    m = Module.new
     y = Object.new
     ys = y.singleton_class
     ys.prepend(Module.new)
