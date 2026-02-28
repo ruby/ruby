@@ -116,16 +116,16 @@ runs:
     # This is for MinGW.
     - if: runner.os == 'Windows'
       shell: bash
-      run: echo "GNUMAKEFLAGS=-j$((2 * NUMBER_OF_PROCESSORS))" >> $GITHUB_ENV
+      run: echo "GNUMAKEFLAGS=-j$((2 * NUMBER_OF_PROCESSORS))" >> $GITHUB_ENV # zizmor: ignore[github-env]
 
     - if: runner.os == 'Linux'
       shell: bash
-      run: echo "GNUMAKEFLAGS=-sj$((1 + $(nproc)))" >> "$GITHUB_ENV"
+      run: echo "GNUMAKEFLAGS=-sj$((1 + $(nproc)))" >> "$GITHUB_ENV" # zizmor: ignore[github-env]
 
     # macOS' GNU make is so old that they doesn't understand `GNUMAKEFLAGS`.
     - if: runner.os == 'macOS'
       shell: bash
-      run: echo "MAKEFLAGS=-j$((1 + $(sysctl -n hw.activecpu)))" >> "$GITHUB_ENV"
+      run: echo "MAKEFLAGS=-j$((1 + $(sysctl -n hw.activecpu)))" >> "$GITHUB_ENV" # zizmor: ignore[github-env]
 
     - if: inputs.makeup
       shell: bash

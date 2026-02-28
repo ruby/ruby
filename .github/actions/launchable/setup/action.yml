@@ -144,7 +144,7 @@ runs:
 
     - name: Set environment variables for Launchable
       shell: bash
-      run: |
+      run: | # zizmor: ignore[github-env]
         : # GITHUB_PULL_REQUEST_URL are used for commenting test reports in Launchable Github App.
         : # https://github.com/launchableinc/cli/blob/v1.80.1/launchable/utils/link.py#L42
         echo "GITHUB_PULL_REQUEST_URL=${INPUT_PR_HTML_URL}" >> $GITHUB_ENV
@@ -171,7 +171,7 @@ runs:
       working-directory: ${{ inputs.srcdir }}
       # Since updated PATH variable will be available in only subsequent actions, we need to add the path beforehand.
       # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#adding-a-system-path
-      run: echo "$(python -msite --user-base)/bin" >> $GITHUB_PATH
+      run: echo "$(python -msite --user-base)/bin" >> $GITHUB_PATH # zizmor: ignore[github-env]
       if: >-
         ${{
         steps.enable-launchable.outputs.enable-launchable
@@ -184,7 +184,7 @@ runs:
       id: setup-launchable
       shell: bash
       working-directory: ${{ inputs.srcdir }}
-      run: |
+      run: | # zizmor: ignore[github-env]
         set -x
         pip install --user launchable
         : # The build name cannot include a slash, so we replace the string here.
