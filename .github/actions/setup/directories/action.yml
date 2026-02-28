@@ -74,8 +74,11 @@ runs:
     # their bash manually installed.
     - shell: bash
       run: |
-        mkdir -p ${{ inputs.srcdir }}
-        mkdir -p ${{ inputs.builddir }}
+        mkdir -p "${INPUT_SRCDIR}"
+        mkdir -p "${INPUT_BUILDDIR}"
+      env:
+        INPUT_SRCDIR: ${{ inputs.srcdir }}
+        INPUT_BUILDDIR: ${{ inputs.builddir }}
 
     # Did you know that actions/checkout works without git(1)?  We are
     # checking that here.
@@ -170,16 +173,22 @@ runs:
         done
         # drop {a..z}.rb if case-insensitive filesystem
         grep -F A.rb a.rb > /dev/null && set "${@:27}"
-        echo clean="cd ${{ inputs.builddir }} && rm $*" >> $GITHUB_OUTPUT
+        echo clean="cd ${INPUT_BUILDDIR} && rm $*" >> $GITHUB_OUTPUT
+      env:
+        INPUT_BUILDDIR: ${{ inputs.builddir }}
 
     - if: inputs.clean == 'true'
       shell: bash
       id: clean
       run: |
-        echo distclean='cd ${{ inputs.builddir }} && ${{ inputs.make-command }} distclean' >> $GITHUB_OUTPUT
-        echo remained-files='find ${{ inputs.builddir }} -ls' >> $GITHUB_OUTPUT
-        [ "${{ inputs.builddir }}" = "${{ inputs.srcdir }}" ] ||
-        echo final='rmdir ${{ inputs.builddir }}' >> $GITHUB_OUTPUT
+        echo distclean="cd ${INPUT_BUILDDIR} && ${INPUT_MAKE_COMMAND} distclean" >> $GITHUB_OUTPUT
+        echo remained-files="find ${INPUT_BUILDDIR} -ls" >> $GITHUB_OUTPUT
+        [ "${INPUT_BUILDDIR}" = "${INPUT_SRCDIR}" ] ||
+        echo final="rmdir ${INPUT_BUILDDIR}" >> $GITHUB_OUTPUT
+      env:
+        INPUT_BUILDDIR: ${{ inputs.builddir }}
+        INPUT_SRCDIR: ${{ inputs.srcdir }}
+        INPUT_MAKE_COMMAND: ${{ inputs.make-command }}
 
     - name: clean
       uses: gacts/run-and-post-run@81b6ce503cde93862cec047c54652e45c5dca991 # v1.4.3

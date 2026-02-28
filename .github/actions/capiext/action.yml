@@ -49,9 +49,10 @@ runs:
       run: |
         touch spec/ruby/optional/capi/ext/*.$DLEXT
         [ ! -f spec/ruby/optional/capi/ext/\*.$DLEXT ]
-        ${{ inputs.make }} SPECOPTS=optional/capi test-spec
+        ${INPUT_MAKE} SPECOPTS=optional/capi test-spec
       env:
         DLEXT: ${{ steps.config.outputs.DLEXT }}
+        INPUT_MAKE: ${{ inputs.make }}
       working-directory: ${{ inputs.builddir }}
       if: ${{ steps.cache.outputs.cache-hit }}
 

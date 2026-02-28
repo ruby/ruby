@@ -81,7 +81,9 @@ runs:
   using: composite
   steps:
     - shell: bash
-      run: docker pull --quiet 'ghcr.io/ruby/ruby-ci-image:${{ inputs.tag }}'
+      run: docker pull --quiet "ghcr.io/ruby/ruby-ci-image:${INPUT_TAG}"
+      env:
+        INPUT_TAG: ${{ inputs.tag }}
 
     - name: Enable Launchable conditionally
       id: enable-launchable
@@ -99,28 +101,28 @@ runs:
         docker run
         --rm
         --user=root
-        --volume '${{ github.workspace }}:/github/workspace:ro'
+        --volume "${GITHUB_WORKSPACE}:/github/workspace:ro"
         --workdir=/github/workspace
         --entrypoint=/github/workspace/.github/actions/compilers/entrypoint.sh
         --env CI
         --env GITHUB_ACTION
-        --env INPUT_WITH_GCC='${{ inputs.with_gcc || inputs.tag }}'
-        --env INPUT_CFLAGS='${{ inputs.CFLAGS }}'
-        --env INPUT_CXXFLAGS='${{ inputs.CXXFLAGS }}'
-        --env INPUT_OPTFLAGS='${{ inputs.OPTFLAGS }}'
-        --env INPUT_CPPFLAGS='${{ inputs.cppflags }}'
-        --env INPUT_APPEND_CONFIGURE='${{ inputs.append_configure }}'
-        --env INPUT_CHECK='${{ inputs.check }}'
-        --env INPUT_TEST_ALL='${{ inputs.test_all }}'
-        --env INPUT_TEST_SPEC='${{ inputs.test_spec }}'
-        --env INPUT_ENABLE_SHARED='${{ inputs.enable_shared }}'
-        --env INPUT_STATIC_EXTS='${{ inputs.static_exts }}'
-        --env LAUNCHABLE_ORGANIZATION='${{ github.repository_owner }}'
-        --env LAUNCHABLE_WORKSPACE='${{ github.event.repository.name }}'
-        --env LAUNCHABLE_ENABLED='${{ steps.enable-launchable.outputs.enable-launchable || false }}'
-        --env GITHUB_PR_HEAD_SHA='${{ github.event.pull_request.head.sha || github.sha }}'
-        --env GITHUB_PULL_REQUEST_URL='${{ github.event.pull_request.html_url }}'
-        --env GITHUB_REF='${{ github.ref }}'
+        --env INPUT_WITH_GCC
+        --env INPUT_CFLAGS
+        --env INPUT_CXXFLAGS
+        --env INPUT_OPTFLAGS
+        --env INPUT_CPPFLAGS
+        --env INPUT_APPEND_CONFIGURE
+        --env INPUT_CHECK
+        --env INPUT_TEST_ALL
+        --env INPUT_TEST_SPEC
+        --env INPUT_ENABLE_SHARED
+        --env INPUT_STATIC_EXTS
+        --env LAUNCHABLE_ORGANIZATION
+        --env LAUNCHABLE_WORKSPACE
+        --env LAUNCHABLE_ENABLED
+        --env GITHUB_PR_HEAD_SHA
+        --env GITHUB_PULL_REQUEST_URL
+        --env GITHUB_REF
         --env GITHUB_ACTIONS
         --env GITHUB_RUN_ID
         --env GITHUB_REPOSITORY
@@ -130,4 +132,23 @@ runs:
         --env GITHUB_SHA
         --env GITHUB_HEAD_REF
         --env GITHUB_SERVER_URL
-        'ghcr.io/ruby/ruby-ci-image:${{ inputs.tag }}'
+        "ghcr.io/ruby/ruby-ci-image:${INPUT_TAG}"
+      env:
+        INPUT_TAG: ${{ inputs.tag }}
+        INPUT_WITH_GCC: ${{ inputs.with_gcc || inputs.tag }}
+        INPUT_CFLAGS: ${{ inputs.CFLAGS }}
+        INPUT_CXXFLAGS: ${{ inputs.CXXFLAGS }}
+        INPUT_OPTFLAGS: ${{ inputs.OPTFLAGS }}
+        INPUT_CPPFLAGS: ${{ inputs.cppflags }}
+        INPUT_APPEND_CONFIGURE: ${{ inputs.append_configure }}
+        INPUT_CHECK: ${{ inputs.check }}
+        INPUT_TEST_ALL: ${{ inputs.test_all }}
+        INPUT_TEST_SPEC: ${{ inputs.test_spec }}
+        INPUT_ENABLE_SHARED: ${{ inputs.enable_shared }}
+        INPUT_STATIC_EXTS: ${{ inputs.static_exts }}
+        LAUNCHABLE_ORGANIZATION: ${{ github.repository_owner }}
+        LAUNCHABLE_WORKSPACE: ${{ github.event.repository.name }}
+        LAUNCHABLE_ENABLED: ${{ steps.enable-launchable.outputs.enable-launchable || false }}
+        GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        GITHUB_PULL_REQUEST_URL: ${{ github.event.pull_request.html_url }}
+        GITHUB_REF: ${{ github.ref }}

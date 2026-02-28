@@ -147,17 +147,23 @@ runs:
       run: |
         : # GITHUB_PULL_REQUEST_URL are used for commenting test reports in Launchable Github App.
         : # https://github.com/launchableinc/cli/blob/v1.80.1/launchable/utils/link.py#L42
-        echo "GITHUB_PULL_REQUEST_URL=${{ github.event.pull_request.html_url }}" >> $GITHUB_ENV
+        echo "GITHUB_PULL_REQUEST_URL=${INPUT_PR_HTML_URL}" >> $GITHUB_ENV
         : # The following envs are necessary in Launchable tokenless authentication.
         : # https://github.com/launchableinc/cli/blob/v1.80.1/launchable/utils/authentication.py#L20
-        echo "LAUNCHABLE_ORGANIZATION=${{ github.repository_owner }}" >> $GITHUB_ENV
-        echo "LAUNCHABLE_WORKSPACE=${{ github.event.repository.name }}" >> $GITHUB_ENV
+        echo "LAUNCHABLE_ORGANIZATION=${INPUT_REPOSITORY_OWNER}" >> $GITHUB_ENV
+        echo "LAUNCHABLE_WORKSPACE=${INPUT_REPOSITORY_NAME}" >> $GITHUB_ENV
         : # https://github.com/launchableinc/cli/blob/v1.80.1/launchable/utils/authentication.py#L71
-        echo "GITHUB_PR_HEAD_SHA=${{ github.event.pull_request.head.sha || github.sha }}" >> $GITHUB_ENV
-        echo "LAUNCHABLE_TOKEN=${{ inputs.launchable-token }}" >> $GITHUB_ENV
+        echo "GITHUB_PR_HEAD_SHA=${INPUT_PR_HEAD_SHA}" >> $GITHUB_ENV
+        echo "LAUNCHABLE_TOKEN=${INPUT_LAUNCHABLE_TOKEN}" >> $GITHUB_ENV
         : # To prevent a slowdown in CI, disable request retries when the Launchable server is unstable.
         echo "LAUNCHABLE_SKIP_TIMEOUT_RETRY=1" >> $GITHUB_ENV
         echo "LAUNCHABLE_COMMIT_TIMEOUT=1" >> $GITHUB_ENV
+      env:
+        INPUT_PR_HTML_URL: ${{ github.event.pull_request.html_url }}
+        INPUT_REPOSITORY_OWNER: ${{ github.repository_owner }}
+        INPUT_REPOSITORY_NAME: ${{ github.event.repository.name }}
+        INPUT_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        INPUT_LAUNCHABLE_TOKEN: ${{ inputs.launchable-token }}
       if: steps.enable-launchable.outputs.enable-launchable
 
     - name: Set up path
@@ -182,18 +188,18 @@ runs:
         set -x
         pip install --user launchable
         : # The build name cannot include a slash, so we replace the string here.
-        github_ref="${{ github.ref }}"
+        github_ref="${INPUT_GITHUB_REF}"
         github_ref="${github_ref//\//_}"
         : # With the --name option, we need to configure a unique identifier for this build.
         : # To avoid setting the same build name as the CI which runs on other branches, we use the branch name here.
         build_name="${github_ref}_${GITHUB_PR_HEAD_SHA}"
-        test_opts="${{ inputs.test-opts }}"
+        test_opts="${INPUT_TEST_OPTS}"
         test_opts="${test_opts// /}"
         test_opts="${test_opts//=/:}"
         test_all_test_suite='test-all'
         btest_test_suite='btest'
         test_spec_test_suite='test-spec'
-        if [ "${{ inputs.is-yjit }}" = "true" ]; then
+        if [ "${INPUT_IS_YJIT}" = "true" ]; then
           test_all_test_suite="yjit-${test_all_test_suite}"
           btest_test_suite="yjit-${btest_test_suite}"
           test_spec_test_suite="yjit-${test_spec_test_suite}"
@@ -206,10 +212,10 @@ runs:
           session=$(launchable record session \
             --build "${build_name}" \
             --observation \
-            --flavor os="${{ inputs.os }}" \
-            --flavor test_task="${{ inputs.test-task }}" \
+            --flavor os="${INPUT_OS}" \
+            --flavor test_task="${INPUT_TEST_TASK}" \
             --flavor test_opts="${test_opts}" \
-            --flavor workflow="${{ github.workflow }}" \
+            --flavor workflow="${INPUT_WORKFLOW}" \
             --test-suite ${suite} \
             )
           echo "${target}_session=${session}" >> $GITHUB_OUTPUT
@@ -230,6 +236,12 @@ runs:
         echo launchable_setup_dir=$(pwd) >> $GITHUB_OUTPUT
       if: steps.enable-launchable.outputs.enable-launchable
       env:
+        INPUT_GITHUB_REF: ${{ github.ref }}
+        INPUT_TEST_OPTS: ${{ inputs.test-opts }}
+        INPUT_IS_YJIT: ${{ inputs.is-yjit }}
+        INPUT_OS: ${{ inputs.os }}
+        INPUT_TEST_TASK: ${{ inputs.test-task }}
+        INPUT_WORKFLOW: ${{ github.workflow }}
         test_all_enabled: ${{ steps.global.outputs.test_all_enabled }}
         btest_enabled: ${{ steps.global.outputs.btest_enabled }}
         test_spec_enabled: ${{ steps.global.outputs.test_spec_enabled }}
