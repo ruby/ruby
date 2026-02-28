@@ -265,6 +265,31 @@ RSpec.describe "bundler plugin install" do
       plugin_should_be_installed("foo")
     end
 
+    it "overrides the index with the new plugin version" do
+      gemfile <<-G
+        source 'https://gem.repo2'
+        plugin 'foo', "1.0"
+        gem 'myrack', "1.0.0"
+      G
+
+      bundle "install"
+
+      update_repo2 do
+        build_plugin "foo", "2.0.0"
+      end
+
+      gemfile <<-G
+        source 'https://gem.repo2'
+        plugin 'foo', "2.0"
+        gem 'myrack', "1.0.0"
+      G
+
+      bundle "install"
+
+      expected = local_plugin_gem("foo-2.0.0", "lib").to_s
+      expect(Bundler::Plugin.index.load_paths("foo")).to eq([expected])
+    end
+
     it "respects bundler groups" do
       gemfile <<-G
         source 'https://gem.repo2'
