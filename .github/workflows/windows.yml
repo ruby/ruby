@@ -59,7 +59,7 @@ jobs:
       - run: md build
         working-directory:
 
-      - uses: ruby/setup-ruby@90be1154f987f4dc0fe0dd0feedac9e473aa4ba8 # v1.286.0
+      - uses: ruby/setup-ruby@09a7688d3b55cf0e976497ff046b70949eeaccfd # v1.288.0
         with:
           # windows-11-arm has only 3.4.1, 3.4.2, 3.4.3, head
           ruby-version: ${{ !endsWith(matrix.os, 'arm') && '3.1' || '3.4' }}
