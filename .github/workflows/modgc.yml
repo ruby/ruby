@@ -104,7 +104,7 @@ jobs:
           $SETARCH ../src/configure -C --disable-install-doc --with-modular-gc=${{ env.MODULAR_GC_DIR }}
           ${arch:+--target=$arch-$OSTYPE --host=$arch-$OSTYPE}
 
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: actions-rust-lang/setup-rust-toolchain@1780873c7b576612439a134613cc4cc74ce5538c # v1.15.2
       - name: Set MMTk environment variables
         run: |
           echo 'EXCLUDES=../src/test/.excludes-mmtk' >> $GITHUB_ENV

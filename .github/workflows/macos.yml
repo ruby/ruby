@@ -173,7 +173,7 @@ jobs:
 
       - name: Resolve job ID
         id: job_id
-        uses: actions/github-script@main
+        uses: actions/github-script@450193c5abd4cdb17ba9f3ffcfe8f635c4bb6c2a # main
         env:
           matrix: ${{ toJson(matrix) }}
         with:

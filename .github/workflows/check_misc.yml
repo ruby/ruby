@@ -22,7 +22,7 @@ jobs:
         with:
           token: ${{ (github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull')) && secrets.MATZBOT_AUTO_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
 
-      - uses: ruby/setup-ruby@v1
+      - uses: ruby/setup-ruby@09a7688d3b55cf0e976497ff046b70949eeaccfd # v1.288.0
         with:
           ruby-version: head
 
@@ -127,7 +127,7 @@ jobs:
           }}
 
       - name: Upload docs
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           path: html
           name: ${{ steps.docs.outputs.htmlout }}
