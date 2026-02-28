@@ -303,7 +303,7 @@ impl ProfiledType {
                 flags.0 |= Flags::IS_FIELDS_EMBEDDED;
             }
         }
-        if unsafe { RB_TYPE_P(obj, RUBY_T_DATA) } && obj.typed_data_p() {
+        if obj.typed_data_p() {
             flags.0 |= Flags::IS_TYPED_DATA;
             if obj.typed_data_fields_embedded_p() {
                 flags.0 |= Flags::IS_FIELDS_EMBEDDED;

@@ -552,12 +552,6 @@ rb_jit_typed_data_fields_embedded_p(VALUE obj)
     return !fields_obj || !FL_TEST_RAW(fields_obj, OBJ_FIELD_HEAP);
 }
 
-bool
-rb_jit_typed_data_p(VALUE obj)
-{
-    return rbimpl_rtypeddata_p(obj);
-}
-
 // Acquire the VM lock and then signal all other Ruby threads (ractors) to
 // contend for the VM lock, putting them to sleep. ZJIT and YJIT use this to
 // evict threads running inside generated code so among other things, it can

@@ -81,6 +81,7 @@ fn main() {
         .allowlist_type("RBasic")
 
         .allowlist_type("ruby_rstring_flags")
+        .allowlist_type("rbimpl_typeddata_flags")
 
         // This function prints info about a value and is useful for debugging
         .allowlist_function("rb_raw_obj_info")
