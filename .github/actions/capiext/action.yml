@@ -46,13 +46,12 @@ runs:
     - name: Run test-spec with previous CAPI extension binaries
       id: check
       shell: bash
-      run: |
+      run: | # zizmor: ignore[template-injection]
         touch spec/ruby/optional/capi/ext/*.$DLEXT
         [ ! -f spec/ruby/optional/capi/ext/\*.$DLEXT ]
-        ${INPUT_MAKE} SPECOPTS=optional/capi test-spec
+        ${{ inputs.make }} SPECOPTS=optional/capi test-spec
       env:
         DLEXT: ${{ steps.config.outputs.DLEXT }}
-        INPUT_MAKE: ${{ inputs.make }}
       working-directory: ${{ inputs.builddir }}
       if: ${{ steps.cache.outputs.cache-hit }}
 
