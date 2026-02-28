@@ -3770,11 +3770,31 @@ gc_ractor_newobj_cache_clear(void *c, void *data)
     }
 }
 
+static int
+gc_sweep_weak_table_i(VALUE val, void *data)
+{
+    rb_objspace_t *objspace = data;
+    if (RB_SPECIAL_CONST_P(val)) return ST_CONTINUE;
+    if (RVALUE_MARKED(objspace, val)) return ST_CONTINUE;
+    return ST_DELETE;
+}
+
 static void
 gc_sweep_start(rb_objspace_t *objspace)
 {
     gc_mode_transition(objspace, gc_mode_sweeping);
     objspace->rincgc.pooled_slots = 0;
+
+    for (int table = 0; table < RB_GC_VM_WEAK_TABLE_COUNT; table++) {
+        if (!rb_gc_vm_weak_table_essential_p(table)) continue;
+        rb_gc_vm_weak_table_foreach(
+            gc_sweep_weak_table_i,
+            NULL,
+            objspace,
+            true,
+            table
+        );
+    }
 
 #if GC_CAN_COMPILE_COMPACTION
     if (objspace->flags.during_compacting) {

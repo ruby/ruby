@@ -73,6 +73,7 @@ MODULAR_GC_FN void rb_gc_vm_unlock_no_barrier(unsigned int lev, const char *file
 MODULAR_GC_FN void rb_gc_vm_barrier(void);
 MODULAR_GC_FN size_t rb_gc_obj_optimal_size(VALUE obj);
 MODULAR_GC_FN void rb_gc_mark_children(void *objspace, VALUE obj);
+MODULAR_GC_FN bool rb_gc_vm_weak_table_essential_p(enum rb_gc_vm_weak_tables table);
 MODULAR_GC_FN void rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback, vm_table_update_callback_func update_callback, void *data, bool weak_only, enum rb_gc_vm_weak_tables table);
 MODULAR_GC_FN void rb_gc_update_object_references(void *objspace, VALUE obj);
 MODULAR_GC_FN void rb_gc_update_vm_references(void *objspace);
