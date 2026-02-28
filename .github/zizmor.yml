@@ -20,11 +20,6 @@ rules:
     ignore:
       - mingw.yml
       - windows.yml
-  template-injection:
-    ignore:
-      - modgc.yml
-      - publish.yml
-      - release.yml
   unpinned-images:
     ignore:
       - compilers.yml
