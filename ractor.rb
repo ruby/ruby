@@ -569,6 +569,13 @@ class Ractor
     }
   end
 
+  # Returns true if the ractor's default port queue is empty (non-blocking).
+  def empty?
+    __builtin_cexpr! %q{
+      ractor_empty_p(ec, self);
+    }
+  end
+
   #
   # call-seq:
   #    ractor.join -> self
@@ -817,6 +824,16 @@ class Ractor
     def closed?
       __builtin_cexpr! %q{
         ractor_port_closed_p(ec, self);
+      }
+    end
+
+    # call-seq:
+    #    port.empty? -> true/false
+    #
+    # Returns true if the port's message queue is empty. This is non-blocking.
+    def empty?
+      __builtin_cexpr! %q{
+        ractor_port_empty_p(ec, self);
       }
     end
 
