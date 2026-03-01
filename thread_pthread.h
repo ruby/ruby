@@ -135,6 +135,7 @@ struct rb_thread_sched {
     // thread completes the transfer of control, it can interrupt and resume running.
     // The new thread clears this field when it takes control.
     struct rb_thread_struct *runnable_hot_th;
+    int runnable_hot_th_waiting;
     bool is_running;
     bool is_running_timeslice;
     bool enable_mn_threads;

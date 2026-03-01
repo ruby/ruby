@@ -883,7 +883,7 @@ thread_sched_wait_running_turn(struct rb_thread_sched *sched, rb_thread_t *th, b
                 }
                 thread_sched_set_locked(sched, th);
 
-                if (sched->runnable_hot_th != NULL) {
+                if (sched->runnable_hot_th != NULL && sched->runnable_hot_th_waiting) {
                     VM_ASSERT(sched->runnable_hot_th != th);
                     // Give the hot thread a chance to preempt, if it's actively spinning.
                     // On multicore, this reduces the rate of core-switching. On single-core it
@@ -943,6 +943,7 @@ thread_sched_wait_running_turn(struct rb_thread_sched *sched, rb_thread_t *th, b
     // Control transfer to the current thread is now complete. The original thread
     // cannot steal control at this point.
     sched->runnable_hot_th = NULL;
+    sched->runnable_hot_th_waiting = 0;
 
     // VM_ASSERT(ractor_sched_running_threads_contain_p(th->vm, th)); need locking
     RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_RESUMED, th);
@@ -980,6 +981,13 @@ thread_sched_to_running_common(struct rb_thread_sched *sched, rb_thread_t *th)
 static void
 thread_sched_to_running(struct rb_thread_sched *sched, rb_thread_t *th)
 {
+    // We are reading and writing these sched fields without lock cover, but
+    // there are no correctness issues resulting from stale cache or delayed writeback.
+    // When it works, this causes the next-scheduled thread to yield the sched lock
+    // briefly so that we can grab it if we're still spinning (not descheduled yet).
+    if (sched->runnable_hot_th == th) {
+        sched->runnable_hot_th_waiting = 1;
+    }
     thread_sched_lock(sched, th);
     {
         thread_sched_to_running_common(sched, th);
@@ -1053,6 +1061,7 @@ thread_sched_to_waiting_common(struct rb_thread_sched *sched, rb_thread_t *th, b
     native_thread_dedicated_inc(th->vm, th->ractor, th->nt);
     if (!yield_immediately) {
         sched->runnable_hot_th = th;
+        sched->runnable_hot_th_waiting = 0;
     }
     thread_sched_wakeup_next_thread(sched, th, false);
 }
