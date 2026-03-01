@@ -106,6 +106,8 @@ struct rb_ractor_struct {
     bool malloc_gc_disabled;
     bool main_ractor;
     void *newobj_cache;
+
+    VALUE finalizer_queue;  /* per-ractor linked list of ready-to-fire finalizers, 0 = empty */
 }; // rb_ractor_t is defined in vm_core.h
 
 enum ractor_wakeup_status {

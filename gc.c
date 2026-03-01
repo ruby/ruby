@@ -1848,6 +1848,7 @@ struct rb_weak_finalizer {
     VALUE self;        /* back-reference to this TypedData VALUE (for queue linking) */
     VALUE target;      /* weak reference to target object (NOT marked by dmark) */
     VALUE next_queued; /* next finalizer VALUE in ready-to-fire queue, or 0 */
+    rb_ractor_t *ractor; /* ractor that registered this finalizer */
     union {
         struct {
             VALUE objid;       /* object_id, captured at registration time */
@@ -1862,7 +1863,6 @@ struct rb_weak_finalizer {
 };
 
 static st_table *finalizer_table;               /* object_id -> finalizer VALUE */
-static VALUE finalizer_ready_queue;              /* linked list head (VALUE), 0 = empty */
 static rb_postponed_job_handle_t finalizer_pjob;
 static VALUE dfree_finalizer_list;               /* linked list head of deferred free weak finalizers, 0 = empty */
 
@@ -1903,13 +1903,13 @@ get_weak_final(long i, void *data)
 }
 
 static void
-finalizer_fire_ready_queue(void *data)
+finalizer_fire_ractor_queue(rb_ractor_t *r)
 {
     VALUE queue;
 
-    /* Atomically grab the queue */
-    while ((queue = finalizer_ready_queue) != 0) {
-        if (RUBY_ATOMIC_VALUE_CAS(finalizer_ready_queue, queue, 0) == queue) {
+    /* Atomically grab the ractor's queue */
+    while ((queue = r->finalizer_queue) != 0) {
+        if (RUBY_ATOMIC_VALUE_CAS(r->finalizer_queue, queue, 0) == queue) {
             break;
         }
     }
@@ -1948,6 +1948,72 @@ finalizer_fire_ready_queue(void *data)
     }
 
     rb_gc_unset_pending_interrupt();
+}
+
+static VALUE
+finalizer_interrupt_exec_func(void *data)
+{
+    finalizer_fire_ractor_queue(GET_RACTOR());
+    return Qnil;
+}
+
+static rb_ractor_t *
+finalizer_target_ractor(rb_ractor_t *r)
+{
+    while (rb_ractor_status_p(r, ractor_terminated)) {
+        rb_ractor_t *s = r->sync.successor;
+        if (!s) return NULL;
+        r = s;
+    }
+    return r;
+}
+
+void
+rb_gc_ractor_inherit_finalizer_queue(rb_ractor_t *successor, rb_ractor_t *predecessor)
+{
+    VALUE queue;
+    do {
+        queue = predecessor->finalizer_queue;
+    } while (RUBY_ATOMIC_VALUE_CAS(predecessor->finalizer_queue, queue, 0) != queue);
+
+    if (!queue) return;
+
+    VALUE tail = queue;
+    while (1) {
+        struct rb_weak_finalizer *fin = RTYPEDDATA_GET_DATA(tail);
+        if (!fin->next_queued) break;
+        tail = fin->next_queued;
+    }
+
+    struct rb_weak_finalizer *tail_fin = RTYPEDDATA_GET_DATA(tail);
+    VALUE old_head;
+    do {
+        old_head = successor->finalizer_queue;
+        tail_fin->next_queued = old_head;
+    } while (RUBY_ATOMIC_VALUE_CAS(successor->finalizer_queue, old_head, queue) != old_head);
+
+    rb_postponed_job_trigger(finalizer_pjob);
+}
+
+static void
+finalizer_fire_ready_queue(void *data)
+{
+    rb_ractor_t *cr = GET_RACTOR();
+
+    /* Fire our own queue directly */
+    finalizer_fire_ractor_queue(cr);
+
+    /* Dispatch to other ractors that have pending finalizers */
+    if (!ruby_single_main_ractor) {
+        rb_ractor_t *r;
+        RB_VM_LOCKING() {
+            ccan_list_for_each(&GET_VM()->ractor.set, r, vmlr_node) {
+                if (r != cr && r->finalizer_queue && r->threads.main) {
+                    rb_ractor_interrupt_exec(r, finalizer_interrupt_exec_func, NULL, rb_interrupt_exec_flag_none);
+                }
+            }
+        }
+    }
 }
 
 static void
@@ -1995,6 +2061,16 @@ weak_finalizer_handle_weak_references(void *ptr)
     /* Already fired or unregistered */
     if (target == Qundef) return;
 
+    if (!rb_gc_handle_weak_references_alive_p(rb_ractor_self(fin->ractor))) {
+        rb_ractor_t *new_owner = fin->ractor->sync.successor;
+        while (new_owner && !rb_gc_handle_weak_references_alive_p(rb_ractor_self(new_owner))) {
+            new_owner = new_owner->sync.successor;
+        }
+        if (!new_owner) new_owner = GET_VM()->ractor.main_ractor;
+        rb_gc_ractor_inherit_finalizer_queue(new_owner, fin->ractor);
+        fin->ractor = new_owner;
+    }
+
     if (rb_gc_handle_weak_references_alive_p(target)) {
         return; /* target still alive */
     }
@@ -2007,17 +2083,22 @@ weak_finalizer_handle_weak_references(void *ptr)
         extract_dfree_from_target(target, &fin->as.dfree.dfree, &fin->as.dfree.dfree_data);
     }
 
-    /* Target is dead: enqueue self into ready queue and trigger postponed job */
+    /* Target is dead: enqueue self into owning ractor's ready queue */
     fin->target = Qundef;
+
+    rb_ractor_t *r = finalizer_target_ractor(fin->ractor);
+    if (!r) r = fin->ractor;
 
     VALUE self = fin->self;
     VALUE old_head;
     do {
-        old_head = finalizer_ready_queue;
+        old_head = r->finalizer_queue;
         fin->next_queued = old_head;
-    } while (RUBY_ATOMIC_VALUE_CAS(finalizer_ready_queue, old_head, self) != old_head);
+    } while (RUBY_ATOMIC_VALUE_CAS(r->finalizer_queue, old_head, self) != old_head);
 
-    rb_postponed_job_trigger(finalizer_pjob);
+    if (!rb_ractor_status_p(r, ractor_terminated)) {
+        rb_postponed_job_trigger(finalizer_pjob);
+    }
 }
 
 static const rb_data_type_t weak_finalizer_type = {
@@ -2070,6 +2151,7 @@ rb_gc_register_deferred_free(VALUE obj)
     fin->self = finalizer;
     fin->target = obj;
     fin->next_queued = 0;
+    fin->ractor = GET_RACTOR();
     FL_SET_RAW(finalizer, WEAK_FINALIZER_DFREE);
 
     /* Link into dfree_finalizer_list */
@@ -2162,6 +2244,7 @@ rb_gc_copy_finalizer(VALUE dest, VALUE obj)
     fin->target = dest;
     fin->as.callback.objid = dest_objid;
     fin->next_queued = 0;
+    fin->ractor = GET_RACTOR();
     RB_OBJ_WRITE(finalizer, &fin->as.callback.callbacks, callbacks_copy);
 
     rb_gc_declare_weak_references(finalizer);
@@ -2294,6 +2377,7 @@ rb_define_finalizer(VALUE obj, VALUE block)
         fin->target = obj;
         fin->as.callback.objid = objid;
         fin->next_queued = 0;
+        fin->ractor = GET_RACTOR();
         RB_OBJ_WRITE(finalizer, &fin->as.callback.callbacks, rb_ary_new3(1, block));
 
         rb_gc_declare_weak_references(finalizer);

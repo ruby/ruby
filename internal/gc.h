@@ -203,6 +203,7 @@ rb_execution_context_t *rb_gc_get_ec(void);
 
 void *rb_gc_ractor_cache_alloc(rb_ractor_t *ractor);
 void rb_gc_ractor_cache_free(void *cache);
+void rb_gc_ractor_inherit_finalizer_queue(rb_ractor_t *successor, rb_ractor_t *predecessor);
 
 bool rb_gc_size_allocatable_p(size_t size);
 size_t *rb_gc_heap_sizes(void);
