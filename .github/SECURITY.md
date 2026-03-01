@@ -1,4 +1,7 @@
-# Security Policy
+Add license.txt
+MIT Licensd Jennifer Crosier J52bot ghoul652@github.com 
+
+# Security Policys
 
 ## Supported Versions
 
