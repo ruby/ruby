@@ -8076,7 +8076,7 @@ static int iseq_compile_pattern_set_eqq_errmsg(rb_iseq_t *iseq, LINK_ANCHOR *con
 #define CASE3_BI_OFFSET_KEY_ERROR_KEY       4
 
 static int
-iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, LABEL *matched, LABEL *unmatched, bool in_single_pattern, bool in_alt_pattern, int base_index, bool use_deconstructed_cache)
+iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, LABEL *matched, LABEL *unmatched, bool in_single_pattern, bool in_alt_pattern, int base_index, bool use_deconstructed_cache)
 {
     const int line = nd_line(node);
     const NODE *line_node = node;
@@ -8607,6 +8607,12 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
       //   ADD_INSNL(ret, line_node, jump, unmatched);
       //   break;
       // }
+      case RB_PINNED_VARIABLE_NODE:
+        node = RB_NODE_PINNED_VARIABLE(node)->variable;
+        goto compile_value;
+      case RB_PINNED_EXPRESSION_NODE:
+        node = RB_NODE_PINNED_EXPRESSION(node)->expression;
+        goto compile_value;
       case RB_SYMBOL_NODE:
       case RB_REGULAR_EXPRESSION_NODE:
       case RB_SOURCE_LINE_NODE:
@@ -8634,9 +8640,8 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
       case RB_SELF_NODE:
       case RB_NIL_NODE:
       case RB_CONSTANT_PATH_NODE:
+      compile_value:
       // case NODE_BEGIN:
-      // case NODE_BLOCK:
-      // case NODE_ONCE:
         CHECK(COMPILE(ret, "case in literal", node)); // (1)
         if (in_single_pattern) {
             ADD_INSN1(ret, line_node, dupn, INT2FIX(2));
@@ -8995,7 +9000,7 @@ compile_case3(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
     type = nd_type(node);
     line = nd_line(node);
     line_node = node;
-    single_pattern = RB_NODE_LIST_LEN(conditions) == 1;
+    single_pattern = RB_NODE_LIST_LEN(conditions) == 1 && !nd_else;
 
     endlabel = NEW_LABEL(line);
     elselabel = NEW_LABEL(line);

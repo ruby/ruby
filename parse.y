@@ -1538,7 +1538,8 @@ static rb_break_node_t *rb_new_node_break_new(struct parser_params *p, struct rb
 static rb_next_node_t *rb_new_node_next_new(struct parser_params *p, struct rb_arguments_node *arguments, const YYLTYPE *loc, const YYLTYPE *keyword_loc);
 static rb_interpolated_symbol_node_t *rb_new_node_interpolated_symbol_new(struct parser_params *p, rb_node_t *nd_head, const YYLTYPE *loc);
 static rb_lambda_node_t *rb_new_node_lambda_new(struct parser_params *p, rb_node_t *nd_args, rb_node_t *nd_body, const YYLTYPE *loc, const YYLTYPE *operator_loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc);
-
+static rb_pinned_variable_node_t *rb_new_node_pinned_variable_new(struct parser_params *p, rb_node_t *nd_var, const YYLTYPE *loc, const YYLTYPE *operator_loc);
+static rb_pinned_expression_node_t *rb_new_node_pinned_expression_new(struct parser_params *p, rb_node_t *nd_expr, const YYLTYPE *loc, const YYLTYPE *operator_loc, const YYLTYPE *lparen_loc, const YYLTYPE *rparen_loc);
 static rb_source_line_node_t *rb_new_node_source_line_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_source_file_node_t *rb_new_node_source_file_new(struct parser_params *p, VALUE str, const YYLTYPE *loc);
 static rb_source_encoding_node_t *rb_new_node_source_encoding_new(struct parser_params *p, const YYLTYPE *loc);
@@ -1697,7 +1698,8 @@ static rb_source_encoding_node_t *rb_new_node_source_encoding_new(struct parser_
 
 #define NEW_RB_ATTRASGN(r,m,a,fl,loc) NEW_RB_CALL(r,m,a,fl|RB_CALL_NODE_FLAGS_ATTRIBUTE_WRITE,loc)
 #define NEW_RB_LAMBDA(a,b,loc,op_loc,o_loc,c_loc) (rb_node_t *)rb_new_node_lambda_new(p,a,b,loc,op_loc,o_loc,c_loc)
-
+#define NEW_RB_PINNED_VARIABLE(v,loc,op_loc) (rb_node_t *)rb_new_node_pinned_variable_new(p,v,loc,op_loc)
+#define NEW_RB_PINNED_EXPRESSION(e,loc,op_loc,lp_loc,rp_loc) (rb_node_t *)rb_new_node_pinned_expression_new(p,e,loc,op_loc,lp_loc,rp_loc)
 #define NEW_RB_SOURCE_LINE(loc) (rb_node_t *)rb_new_node_source_line_new(p,loc)
 #define NEW_RB_SOURCE_FILE(str,loc) (rb_node_t *)rb_new_node_source_file_new(p,str,loc)
 #define NEW_RB_SOURCE_ENCODING(loc) (rb_node_t *)rb_new_node_source_encoding_new(p,loc)
@@ -6385,22 +6387,31 @@ p_var_ref	: '^' tIDENTIFIER
                         if (!n) {
                             n = NEW_ERROR(&@$);
                         }
-                        else if (!(nd_type_p(n, NODE_LVAR) || nd_type_p(n, NODE_DVAR))) {
+                        else if (!(nd_type_p(n, RB_LOCAL_VARIABLE_READ_NODE))) {
                             compile_error(p, "%"PRIsVALUE": no such local variable", rb_id2str($2));
+                        }
+                        else {
+                            n = NEW_RB_PINNED_VARIABLE(n, &@1, &@$);
                         }
                         $$ = n;
                     /*% ripper: var_ref!($:2) %*/
                     }
                 | '^' nonlocal_var
                     {
-                        if (!($$ = gettable(p, $2, &@$))) $$ = NEW_ERROR(&@$);
+                        NODE *n = gettable(p, $2, &@$);
+                        if (!n) {
+                            $$ = NEW_ERROR(&@$);
+                        }
+                        else {
+                            $$ = NEW_RB_PINNED_VARIABLE(n, &@1, &@$);
+                        }
                     /*% ripper: var_ref!($:2) %*/
                     }
                 ;
 
 p_expr_ref	: '^' tLPAREN expr_value rparen
                     {
-                        $$ = NEW_BLOCK($3, &@$);
+                        $$ = NEW_RB_PINNED_EXPRESSION($3, &@$, &@1, &@2, &@4);
                     /*% ripper: begin!($:3) %*/
                     }
                 ;
@@ -14101,6 +14112,28 @@ rb_new_node_lambda_new(struct parser_params *p, rb_node_t *nd_args, rb_node_t *n
     n->operator_loc = *operator_loc;
     n->opening_loc = *opening_loc;
     n->closing_loc = *closing_loc;
+
+    return n;
+}
+
+static rb_pinned_variable_node_t *
+rb_new_node_pinned_variable_new(struct parser_params *p, rb_node_t *nd_var, const YYLTYPE *loc, const YYLTYPE *operator_loc)
+{
+    rb_pinned_variable_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_PINNED_VARIABLE_NODE, rb_pinned_variable_node_t, loc);
+    n->variable = nd_var;
+    n->operator_loc = *operator_loc;
+
+    return n;
+}
+
+static rb_pinned_expression_node_t *
+rb_new_node_pinned_expression_new(struct parser_params *p, rb_node_t *nd_expr, const YYLTYPE *loc, const YYLTYPE *operator_loc, const YYLTYPE *lparen_loc, const YYLTYPE *rparen_loc)
+{
+    rb_pinned_expression_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_PINNED_EXPRESSION_NODE, rb_pinned_expression_node_t, loc);
+    n->expression = nd_expr;
+    n->operator_loc = *operator_loc;
+    n->lparen_loc = *lparen_loc;
+    n->rparen_loc = *rparen_loc;
 
     return n;
 }
