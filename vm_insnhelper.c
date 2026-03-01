@@ -1137,6 +1137,9 @@ vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, bool allow_
                         rb_autoload_load(klass, id);
                         goto search_continue;
                     }
+                    else if (RB_CONST_UNDEFINED_P(ce)) {
+                        return rb_const_get(klass, id);
+                    }
                     else {
                         if (is_defined) {
                             return 1;

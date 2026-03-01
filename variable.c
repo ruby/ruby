@@ -51,6 +51,8 @@ typedef void rb_gvar_compact_t(void *var);
 static struct rb_id_table *rb_global_tbl;
 static ID autoload;
 
+static VALUE undef_const_sentinel;
+
 // This hash table maps file paths to loadable features. We use this to track
 // autoload state until it's no longer needed.
 // feature (file path) => struct autoload_data
@@ -83,6 +85,15 @@ Init_var_tables(void)
     autoload_features = rb_ident_hash_new();
     rb_obj_hide(autoload_features);
     rb_vm_register_global_object(autoload_features);
+}
+
+void
+Init_undef_const_sentinel(void)
+{
+    undef_const_sentinel = rb_class_new_instance(0, NULL, rb_cObject);
+    rb_obj_freeze(undef_const_sentinel);
+    rb_obj_hide(undef_const_sentinel);
+    rb_vm_register_global_object(undef_const_sentinel);
 }
 
 static inline bool
@@ -3252,7 +3263,7 @@ autoload_try_load(VALUE _arguments)
     // After we loaded the feature, if the constant is not defined, we remove it completely:
     rb_const_entry_t *ce = rb_const_lookup(arguments->module, arguments->name);
 
-    if (!ce || UNDEF_P(ce->value)) {
+    if (!ce || UNDEF_P(ce->value) || RB_CONST_UNDEFINED_P(ce)) {
         result = Qfalse;
 
         rb_const_remove(arguments->module, arguments->name);
@@ -3438,6 +3449,7 @@ rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility, VA
 
     if (klass == rb_cObject) exclude = FALSE;
     value = rb_const_search_from(klass, id, exclude, recurse, visibility, found_in);
+    if (value == undef_const_sentinel) return Qundef;
     if (!UNDEF_P(value)) return value;
     if (exclude) return value;
     if (BUILTIN_TYPE(klass) != T_MODULE) return value;
@@ -3493,6 +3505,9 @@ rb_const_location_from(VALUE klass, ID id, int exclude, int recurse, int visibil
             if (visibility && RB_CONST_PRIVATE_P(ce)) {
                 return Qnil;
             }
+            if (RB_CONST_UNDEFINED_P(ce)) {
+                return ce->value;
+            }
             if (exclude && klass == rb_cObject) {
                 goto not_found;
             }
@@ -3527,6 +3542,7 @@ rb_const_location(VALUE klass, ID id, int exclude, int recurse, int visibility)
 
     if (klass == rb_cObject) exclude = FALSE;
     loc = rb_const_location_from(klass, id, exclude, recurse, visibility);
+    if (loc == undef_const_sentinel) return Qnil;
     if (!NIL_P(loc)) return loc;
     if (exclude) return loc;
     if (BUILTIN_TYPE(klass) != T_MODULE) return loc;
@@ -3544,6 +3560,36 @@ VALUE
 rb_const_source_location_at(VALUE klass, ID id)
 {
     return rb_const_location(klass, id, TRUE, FALSE, FALSE);
+}
+
+static void const_set_with_flag(VALUE klass, ID id, VALUE val, rb_const_flag_t flag);
+
+/*
+ *  call-seq:
+ *     undef_const(sym)   -> self
+ *
+ *  Makes constant lookups for the named constant in the class result in
+ *  missing constant handling. Contrast this with <code>remove_const</code>,
+ *  which deletes the constant from the particular class; Ruby will still search
+ *  superclasses and mixed-in modules for the constant.
+ */
+
+VALUE
+rb_mod_undef_const(VALUE mod, VALUE name)
+{
+    rb_check_frozen(mod);
+
+    const ID id = id_for_var(mod, name, a, constant);
+
+    if (!id) {
+        undefined_constant(mod, name);
+    }
+    if (rb_const_lookup(mod, id)) {
+        // Avoid warning if constant already defined
+        rb_const_remove(mod, id);
+    }
+    const_set_with_flag(mod, id, undef_const_sentinel, CONST_PUBLIC | CONST_UNDEFINED);
+    return mod;
 }
 
 /*
@@ -3602,6 +3648,9 @@ rb_const_remove(VALUE mod, ID id)
 
     if (UNDEF_P(val)) {
         autoload_delete(mod, id);
+        val = Qnil;
+    }
+    if (RB_CONST_UNDEFINED_P(ce)) {
         val = Qnil;
     }
 
@@ -3756,6 +3805,9 @@ rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
             if (visibility && RB_CONST_PRIVATE_P(ce)) {
                 return (int)Qfalse;
             }
+            if (RB_CONST_UNDEFINED_P(ce)) {
+                return (int)Qfalse;
+            }
             if (UNDEF_P(ce->value) && !check_autoload_required(tmp, id, 0) &&
                 !rb_autoloading_value(tmp, id, NULL, NULL))
                 return (int)Qfalse;
@@ -3863,7 +3915,7 @@ const_added(VALUE klass, ID const_name)
 }
 
 static void
-const_set(VALUE klass, ID id, VALUE val)
+const_set_with_flag(VALUE klass, ID id, VALUE val, rb_const_flag_t flag)
 {
     rb_const_entry_t *ce;
 
@@ -3886,12 +3938,12 @@ const_set(VALUE klass, ID id, VALUE val)
             rb_clear_constant_cache_for_id(id);
             ce = ZALLOC(rb_const_entry_t);
             rb_id_table_insert(tbl, id, (VALUE)ce);
-            setup_const_entry(ce, klass, val, CONST_PUBLIC);
+            setup_const_entry(ce, klass, val, flag);
         }
         else {
             struct autoload_const ac = {
                 .module = klass, .name = id,
-                .value = val, .flag = CONST_PUBLIC,
+                .value = val, .flag = flag,
                 /* fill the rest with 0 */
             };
             ac.file = rb_source_location(&ac.line);
@@ -3927,6 +3979,12 @@ const_set(VALUE klass, ID id, VALUE val)
             }
         }
     }
+}
+
+static void
+const_set(VALUE klass, ID id, VALUE val)
+{
+    const_set_with_flag(klass, id, val, CONST_PUBLIC);
 }
 
 void
