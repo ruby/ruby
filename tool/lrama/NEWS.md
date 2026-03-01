@@ -1,6 +1,44 @@
 # NEWS for Lrama
 
-## Lrama 0.8.0 (2026-xx-xx)
+## Lrama 0.8.0 (2026-03-01)
+
+### Support parser generation without %union directive (Bison compatibility)
+
+When writing simple parsers or prototypes, defining `%union` can be cumbersome and unnecessary.
+Lrama now supports generating parsers without the `%union` directive, defaulting `YYSTYPE` to `int`, the same behavior as Bison.
+
+When `%union` is not defined:
+
+- `YYSTYPE` defaults to `int`
+- Semantic value references are generated without union member access
+- The generated parser behaves identically to Bison-generated parsers
+
+https://github.com/ruby/lrama/pull/765
+
+### Allow named references on parameterized rule calls inside %rule
+
+Named references (e.g. `[opt]`) can now be used with parameterized rule calls inside a `%rule` body.
+Previously, writing `f_opt_arg(value)[opt]` inside a `%rule` resulted in a parse error.
+
+```yacc
+%rule example(X): f_opt_arg(X)[opt] { $$ = $opt; }
+                ;
+```
+
+https://github.com/ruby/lrama/pull/778
+
+### Fix nested parameterized rule calls in subsequent argument positions
+
+Nested parameterized rule calls (e.g. `f_opt(number)`) can now appear in any argument position, not only the first one.
+Previously, using a nested call as the second or later argument caused a parse error.
+
+```yacc
+%%
+program: args_list(f_opt(number), opt_tail(string), number)
+       ;
+```
+
+https://github.com/ruby/lrama/pull/779
 
 ## Lrama 0.7.1 (2025-12-24)
 
