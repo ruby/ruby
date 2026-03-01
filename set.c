@@ -1410,6 +1410,49 @@ set_i_collect(VALUE set)
     return set;
 }
 
+/*
+ *  call-seq:
+ *    compact! -> self or nil
+ *
+ *  Removes +nil+ element from +self+;
+ *  Returns +self+ if an element is removed, +nil+ otherwise:
+ *
+ *    a = Set[1, 2, nil, 3]
+ *    a.compact! # => Set[1, 2, 3]
+ *    a          # => Set[1, 2, 3]
+ *    a.compact! # => nil
+ */
+static VALUE
+set_i_compact_bang(VALUE set)
+{
+    VALUE item = Qnil;
+    rb_check_frozen(set);
+    if (set_table_delete(RSET_TABLE(set), (st_data_t *)&item)) {
+        set_compact_after_delete(set);
+        return set;
+    }
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *    compact -> new_set
+ *
+ *  Returns a new set built by duplicating the set and removing the
+ *  nil object.
+ *
+ *    a = Set[1, 2, nil, 3]
+ *    a.compact # => Set[1, 2, 3]
+ *    a         # => Set[1, 2, nil, 3]
+ */
+static VALUE
+set_i_compact(VALUE set)
+{
+    VALUE new_set = rb_obj_dup(set);
+    set_i_compact_bang(new_set);
+    return new_set;
+}
+
 static int
 set_keep_if_i(st_data_t key, st_data_t into)
 {
@@ -2232,6 +2275,8 @@ Init_Set(void)
     rb_define_method(rb_cSet, "clear", set_i_clear, 0);
     rb_define_method(rb_cSet, "collect!", set_i_collect, 0);
     rb_define_alias(rb_cSet, "map!", "collect!");
+    rb_define_method(rb_cSet, "compact", set_i_compact, 0);
+    rb_define_method(rb_cSet, "compact!", set_i_compact_bang, 0);
     rb_define_method(rb_cSet, "compare_by_identity", set_i_compare_by_identity, 0);
     rb_define_method(rb_cSet, "compare_by_identity?", set_i_compare_by_identity_p, 0);
     rb_define_method(rb_cSet, "delete", set_i_delete, 1);
