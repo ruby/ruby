@@ -6341,6 +6341,66 @@ rb_str_sub(int argc, VALUE *argv, VALUE str)
 }
 
 static VALUE
+str_gsub_one_to_one(VALUE str, VALUE pat, VALUE repl, int bang)
+{
+    /* This optimization is invoked when the byte-length of `pat` is equal to
+     * the byte-length of `repl`.
+     */
+
+    VALUE result;
+    if (bang) {
+        str_modify_keep_cr(str);
+        result = str;
+    }
+    else {
+        result = str_duplicate(rb_cString, str);
+    }
+
+    long pat_len = RSTRING_LEN(pat);
+    long str_len = RSTRING_LEN(str);
+    long last_match_pos = -1;
+    VALUE frozen_str = Qnil;
+
+    long pos = 0;
+    while (pos <= str_len - pat_len) {
+        long match_pos = rb_str_byteindex(result, pat, pos);
+        if (match_pos < 0) break;
+
+        if (NIL_P(frozen_str)) {
+            frozen_str = rb_str_new_frozen(result);
+        }
+
+        memcpy(RSTRING_PTR(result) + match_pos, RSTRING_PTR(repl), pat_len);
+        last_match_pos = match_pos;
+        pos = match_pos + pat_len;
+    }
+
+    if (NIL_P(frozen_str)) {
+        rb_backref_set(Qnil);
+
+        if (bang) {
+            return Qnil;
+        }
+        else {
+            return result;
+        }
+    }
+    else {
+        rb_backref_set_string(frozen_str, last_match_pos, pat_len);
+
+        int repl_enc = rb_enc_get_index(repl);
+        if (repl_enc != rb_enc_get_index(result)) {
+            int repl_cr = rb_enc_str_coderange(repl);
+            if (repl_cr != ENC_CODERANGE_7BIT) {
+                RB_ENCODING_CODERANGE_SET(result, repl_enc, repl_cr);
+            }
+        }
+
+        return result;
+    }
+}
+
+static VALUE
 str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 {
     VALUE pat, val = Qnil, repl, match0 = Qnil, dest, hash = Qnil, match = Qnil;
@@ -6376,6 +6436,17 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     }
 
     pat = get_pat_quoted(argv[0], 1);
+
+    /* Optimization: equal byte-length string replacement */
+    if (mode == STR &&
+        OBJ_BUILTIN_TYPE(pat) == T_STRING &&
+        RSTRING_LEN(pat) == RSTRING_LEN(repl) &&
+        RSTRING_LEN(pat) > 0 &&
+        rb_enc_compatible(str, repl) &&
+        rb_enc_compatible(pat, repl)) {
+        return str_gsub_one_to_one(str, pat, repl, bang);
+    }
+
     beg = rb_pat_search0(pat, str, 0, need_backref_str, &match);
 
     if (beg < 0) {
