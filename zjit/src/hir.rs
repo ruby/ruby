@@ -2699,7 +2699,9 @@ impl Function {
                 let newly_reachable = reachable.insert($target.target);
                 let mut target_changed = newly_reachable;
                 for (idx, arg) in $target.args.iter().enumerate() {
+                    let arg = self.union_find.borrow().find_const(*arg);
                     let param = $self.blocks[$target.target.0].params[idx];
+                    let param = self.union_find.borrow().find_const(param);
                     let new = self.insn_types[param.0].union(self.insn_types[arg.0]);
                     if !self.insn_types[param.0].bit_equal(new) {
                         self.insn_types[param.0] = new;
@@ -2717,37 +2719,38 @@ impl Function {
             in_worklist.remove(block);
             if !reachable.get(block) { continue; }
             for insn_id in &self.blocks[block.0].insns {
-                let insn_type = match self.find(*insn_id) {
-                    Insn::IfTrue { val, target } => {
+                let insn_id = self.union_find.borrow().find_const(*insn_id);
+                let insn_type = match &self.insns[insn_id.0] {
+                    &Insn::IfTrue { val, ref target } => {
                         assert!(!self.type_of(val).bit_equal(types::Empty));
                         if self.type_of(val).could_be(Type::from_cbool(true)) {
                             enqueue!(self, target);
                         }
                         continue;
                     }
-                    Insn::IfFalse { val, target } => {
+                    &Insn::IfFalse { val, ref target } => {
                         assert!(!self.type_of(val).bit_equal(types::Empty));
                         if self.type_of(val).could_be(Type::from_cbool(false)) {
                             enqueue!(self, target);
                         }
                         continue;
                     }
-                    Insn::Jump(target) => {
+                    &Insn::Jump(ref target) => {
                         enqueue!(self, target);
                         continue;
                     }
-                    Insn::Entries { targets } => {
-                        for target in &targets {
+                    &Insn::Entries { ref targets } => {
+                        for target in targets {
                             if reachable.insert(*target) {
                                 worklist_add!(*target);
                             }
                         }
                         continue;
                     }
-                    insn if insn.has_output() => self.infer_type(*insn_id),
+                    insn if insn.has_output() => self.infer_type(insn_id),
                     _ => continue,
                 };
-                if !self.type_of(*insn_id).bit_equal(insn_type) {
+                if !self.type_of(insn_id).bit_equal(insn_type) {
                     self.insn_types[insn_id.0] = insn_type;
                 }
             }
