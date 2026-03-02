@@ -321,7 +321,7 @@ module Spec
         cgi
         compact_index
       ]
-      path = if ruby_core? && Dir.exist?(source_root.join(".bundle"))
+      path = if ruby_core? && deps.all? {|dep| !Dir[source_root.join(".bundle/gems/#{dep}-*")].empty? }
         source_root.join(".bundle")
       else
         scoped_base_system_gem_path
