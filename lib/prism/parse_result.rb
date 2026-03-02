@@ -19,9 +19,17 @@ module Prism
     # be used instead of `new` and it will return either a `Source` or a
     # specialized and more performant `ASCIISource` if no multibyte characters
     # are present in the source code.
+    #
+    # Note that if you are calling this method manually, you will need to supply
+    # the start_line and offsets parameters. start_line is the line number that
+    # the source starts on, which is typically 1 but can be different if this
+    # source is a subset of a larger source or if this is an eval. offsets is an
+    # array of byte offsets for the start of each line in the source code, which
+    # can be calculated by iterating through the source code and recording the
+    # byte offset whenever a newline character is encountered.
     #--
-    #: (String source, ?Integer start_line, ?Array[Integer] offsets) -> Source
-    def self.for(source, start_line = 1, offsets = [])
+    #: (String source, Integer start_line, Array[Integer] offsets) -> Source
+    def self.for(source, start_line, offsets)
       if source.ascii_only?
         ASCIISource.new(source, start_line, offsets)
       elsif source.encoding == Encoding::BINARY
@@ -55,8 +63,8 @@ module Prism
 
     # Create a new source object with the given source code.
     #--
-    #: (String source, ?Integer start_line, ?Array[Integer] offsets) -> void
-    def initialize(source, start_line = 1, offsets = [])
+    #: (String source, Integer start_line, Array[Integer] offsets) -> void
+    def initialize(source, start_line, offsets)
       @source = source
       @start_line = start_line # set after parsing is done
       @offsets = offsets # set after parsing is done
