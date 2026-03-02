@@ -6468,6 +6468,11 @@ pub const SELF_PARAM_IDX: usize = 0;
 
 /// Compile ISEQ into High-level IR
 pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
+    // Insn is stored in a Vec but also frequently passed by value on the stack.
+    // Keep it small to avoid blowing the native stack during JIT compilation on
+    // threads with limited stack space (e.g. Linux CI with --zjit-call-threshold=1).
+    assert_eq!(std::mem::size_of::<Insn>(), 120, "Insn size changed to {}, update this if intentional", std::mem::size_of::<Insn>());
+
     if !ZJITState::can_compile_iseq(iseq) {
         return Err(ParseError::NotAllowed);
     }
