@@ -187,14 +187,18 @@ static RB_THREAD_LOCAL_SPECIFIER int malloc_increase_local;
 #define USE_TICK_T                 (PRINT_ENTER_EXIT_TICK || PRINT_ROOT_TICKS)
 
 #ifndef HEAP_COUNT
-# define HEAP_COUNT 7
+# if SIZEOF_VALUE >= 8
+#  define HEAP_COUNT 7
+# else
+#  define HEAP_COUNT 5
+# endif
 #endif
 
 static const unsigned short heap_slot_size_table[HEAP_COUNT] = {
 #if SIZEOF_VALUE >= 8
     32, 48, 64, 128, 256, 512, 1024
 #else
-    16, 24, 32, 64, 128, 256, 512
+    32, 64, 128, 256, 512
 #endif
 };
 
@@ -208,9 +212,9 @@ static const size_t heap_init_slots_table[HEAP_COUNT] = {
     /* [5] 512B */ GC_HEAP_INIT_SLOTS / 16,
     /* [6] 1024B*/ GC_HEAP_INIT_SLOTS / 32,
 #else
-    2000, GC_HEAP_INIT_SLOTS, GC_HEAP_INIT_SLOTS / 2,
-    GC_HEAP_INIT_SLOTS / 4, GC_HEAP_INIT_SLOTS / 8,
-    GC_HEAP_INIT_SLOTS / 16, GC_HEAP_INIT_SLOTS / 32,
+    GC_HEAP_INIT_SLOTS,
+    GC_HEAP_INIT_SLOTS / 2, GC_HEAP_INIT_SLOTS / 4,
+    GC_HEAP_INIT_SLOTS / 8, GC_HEAP_INIT_SLOTS / 16,
 #endif
 };
 
@@ -230,8 +234,6 @@ static const uint64_t heap_slot_reciprocal_table[HEAP_COUNT] = {
     /* 512 */ (1ULL << 48) / 512,
     /* 1024*/ (1ULL << 48) / 1024,
 #else
-    /* 16  */ (1ULL << 48) / 16,
-    /* 24  */ (1ULL << 48) / 24 + 1,
     /* 32  */ (1ULL << 48) / 32,
     /* 64  */ (1ULL << 48) / 64,
     /* 128 */ (1ULL << 48) / 128,
@@ -736,11 +738,7 @@ size_t rb_gc_impl_obj_slot_size(VALUE obj);
 # endif
 #endif
 
-#if SIZEOF_VALUE >= 8
 #define BASE_SLOT_SIZE_LOG2 5
-#else
-#define BASE_SLOT_SIZE_LOG2 4
-#endif
 #define BASE_SLOT_SIZE (1 << BASE_SLOT_SIZE_LOG2)
 
 #ifndef MAX
@@ -2404,9 +2402,14 @@ heap_idx_for_size(size_t size)
     if (size <= BASE_SLOT_SIZE) return 0;
     if (size <= heap_slot_size_table[1]) return 1;
 
+#if SIZEOF_VALUE >= 8
     /* Pools from index 2 onward are powers of two (64, 128, ...),
      * so the log2 formula still works — add 1 to skip the 48B pool. */
     size_t heap_idx = 64 - nlz_int64(size - 1) - BASE_SLOT_SIZE_LOG2 + 1;
+#else
+    /* All pools are powers of two on 32-bit. */
+    size_t heap_idx = 64 - nlz_int64(size - 1) - BASE_SLOT_SIZE_LOG2;
+#endif
 
     if (heap_idx >= HEAP_COUNT) {
         rb_bug("heap_idx_for_size: allocation size too large "
