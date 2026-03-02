@@ -21606,6 +21606,26 @@ pm_call_node_command_p(const pm_call_node_t *node) {
 }
 
 /**
+ * Determine if a given write node has a command call as its right-hand side. We
+ * need this because command calls as the values of writes cannot be extended by
+ * infix operators.
+ */
+static inline bool
+pm_write_node_command_p(const pm_node_t *node) {
+    pm_node_t *value;
+    switch (PM_NODE_TYPE(node)) {
+        case PM_CLASS_VARIABLE_WRITE_NODE: value = ((pm_class_variable_write_node_t *) node)->value; break;
+        case PM_CONSTANT_PATH_WRITE_NODE: value = ((pm_constant_path_write_node_t *) node)->value; break;
+        case PM_CONSTANT_WRITE_NODE: value = ((pm_constant_write_node_t *) node)->value; break;
+        case PM_GLOBAL_VARIABLE_WRITE_NODE: value = ((pm_global_variable_write_node_t *) node)->value; break;
+        case PM_INSTANCE_VARIABLE_WRITE_NODE: value = ((pm_instance_variable_write_node_t *) node)->value; break;
+        case PM_LOCAL_VARIABLE_WRITE_NODE: value = ((pm_local_variable_write_node_t *) node)->value; break;
+        default: return false;
+    }
+    return PM_NODE_TYPE_P(value, PM_CALL_NODE) && pm_call_node_command_p((pm_call_node_t *) value);
+}
+
+/**
  * Parse an expression at the given point of the parser using the given binding
  * power to parse subsequent chains. If this function finds a syntax error, it
  * will append the error message to the parser's error list.
@@ -21689,9 +21709,13 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
             case PM_INSTANCE_VARIABLE_WRITE_NODE:
             case PM_LOCAL_VARIABLE_WRITE_NODE:
                 // These expressions are statements, by virtue of the right-hand
-                // side of their write being an implicit array.
-                if (PM_NODE_FLAG_P(node, PM_WRITE_NODE_FLAGS_IMPLICIT_ARRAY) && pm_binding_powers[parser->current.type].left > PM_BINDING_POWER_MODIFIER) {
-                    return node;
+                // side of their write being an implicit array or a command call.
+                // This mirrors parse.y's behavior where `lhs = command_call`
+                // reduces to stmt (not expr), preventing and/or from following.
+                if (pm_binding_powers[parser->current.type].left > PM_BINDING_POWER_MODIFIER) {
+                    if (PM_NODE_FLAG_P(node, PM_WRITE_NODE_FLAGS_IMPLICIT_ARRAY) || pm_write_node_command_p(node)) {
+                        return node;
+                    }
                 }
                 break;
             case PM_CALL_NODE:
