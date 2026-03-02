@@ -1,0 +1,4 @@
+case args
+in [event]
+  context.event in ^event
+end
