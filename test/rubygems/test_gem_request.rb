@@ -2,6 +2,7 @@
 
 require_relative "helper"
 require "rubygems/request"
+require "open3"
 
 unless Gem::HAVE_OPENSSL
   warn "Skipping Gem::Request tests.  openssl not found."
@@ -187,6 +188,18 @@ class TestGemRequest < Gem::TestCase
     request = make_request @uri, nil, nil, nil
 
     assert_nil request.proxy_uri
+  end
+
+  def test_get_proxy_from_env_when_requiring_request_directly
+    script = <<~RUBY
+      require "rubygems/request"
+      ENV["HTTP_PROXY"] = "fakeurl:12345"
+      Gem::Request.get_proxy_from_env("http")
+    RUBY
+
+    output, status = Open3.capture2e(*ruby_with_rubygems_in_load_path, "-e", script)
+
+    assert status.success?, output
   end
 
   def test_fetch
