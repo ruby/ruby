@@ -21674,12 +21674,6 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
      ) {
         node = parse_expression_infix(parser, node, binding_power, current_binding_powers.right, accepts_command_call, (uint16_t) (depth + 1));
 
-        if (context_terminator(parser->current_context->context, &parser->current)) {
-            // If this token terminates the current context, then we need to
-            // stop parsing the expression, as it has become a statement.
-            return node;
-        }
-
         switch (PM_NODE_TYPE(node)) {
             case PM_MULTI_WRITE_NODE:
                 // Multi-write nodes are statements, and cannot be followed by
@@ -21790,6 +21784,17 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
                 default:
                     accepts_command_call = false;
                     break;
+            }
+        }
+
+        if (context_terminator(parser->current_context->context, &parser->current)) {
+            pm_binding_powers_t next_binding_powers = pm_binding_powers[parser->current.type];
+            if (
+                !next_binding_powers.binary ||
+                binding_power > next_binding_powers.left ||
+                (PM_NODE_TYPE_P(node, PM_CALL_NODE) && pm_call_node_command_p((pm_call_node_t *) node))
+            ) {
+                return node;
             }
         }
     }
