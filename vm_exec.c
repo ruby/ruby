@@ -48,26 +48,33 @@ vm_exec_core(rb_execution_context_t *ec)
     DECL_SC_REG(const VALUE *, pc, "di");
     DECL_SC_REG(rb_control_frame_t *, cfp, "si");
 #define USE_MACHINE_REGS 1
+#define USE_MACHINE_REG_SP 0
 
 #elif defined(__GNUC__) && defined(__x86_64__)
+    DECL_SC_REG(VALUE *, sp, "13");
     DECL_SC_REG(const VALUE *, pc, "14");
     DECL_SC_REG(rb_control_frame_t *, cfp, "15");
 #define USE_MACHINE_REGS 1
+#define USE_MACHINE_REG_SP 1
 
 #elif defined(__GNUC__) && (defined(__powerpc64__) || defined(__POWERPC__))
     DECL_SC_REG(const VALUE *, pc, "14");
     DECL_SC_REG(rb_control_frame_t *, cfp, "15");
 #define USE_MACHINE_REGS 1
+#define USE_MACHINE_REG_SP 0
 
 #elif defined(__GNUC__) && defined(__aarch64__)
+    DECL_SC_REG(VALUE *, sp, "21");
     DECL_SC_REG(const VALUE *, pc, "19");
     DECL_SC_REG(rb_control_frame_t *, cfp, "20");
 #define USE_MACHINE_REGS 1
+#define USE_MACHINE_REG_SP 1
 
 #else
     register rb_control_frame_t *reg_cfp;
     const VALUE *reg_pc;
 #define USE_MACHINE_REGS 0
+#define USE_MACHINE_REG_SP 0
 
 #endif
 
@@ -78,6 +85,7 @@ vm_exec_core(rb_execution_context_t *ec)
 { \
   VM_REG_CFP = ec->cfp; \
   reg_pc  = reg_cfp->pc; \
+  RESTORE_REG_SP(); \
 }
 
 #undef  VM_REG_PC
@@ -86,7 +94,21 @@ vm_exec_core(rb_execution_context_t *ec)
 #define GET_PC() (reg_pc)
 #undef  SET_PC
 #define SET_PC(x) (reg_cfp->pc = VM_REG_PC = (x))
+
+#if USE_MACHINE_REG_SP
+#undef  RESTORE_REG_SP
+#define RESTORE_REG_SP() (reg_sp  = reg_cfp->sp)
+#undef  VM_REG_SP
+#undef  SET_SP
+#undef  INC_SP
+#undef  DEC_SP
+#define VM_REG_SP reg_sp
+#define SET_SP(x)  (VM_REG_SP  = (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))), reg_cfp->sp = VM_REG_SP)
+#define INC_SP(x)  (VM_REG_SP += (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))), reg_cfp->sp = VM_REG_SP)
+#define DEC_SP(x)  (VM_REG_SP -= (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))), reg_cfp->sp = VM_REG_SP)
 #endif
+
+#endif /* USE_MACHINE_REGS */
 
 #if OPT_TOKEN_THREADED_CODE || OPT_DIRECT_THREADED_CODE
 #include "vmtc.inc"
@@ -96,6 +118,7 @@ vm_exec_core(rb_execution_context_t *ec)
 #endif
     reg_cfp = ec->cfp;
     reg_pc = reg_cfp->pc;
+    RESTORE_REG_SP();
 
   first:
     INSN_DISPATCH();

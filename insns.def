@@ -510,6 +510,7 @@ expandarray
 // attr rb_snum_t sp_inc = (rb_snum_t)num - 1 + (flag & 1 ? 1 : 0);
 {
     vm_expandarray(GET_CFP(), ary, num, (int)flag);
+    RESTORE_REG_SP();
 }
 
 /* concat two arrays, without modifying first array.
@@ -861,6 +862,7 @@ send
         RESTORE_REGS();
         NEXT_INSN();
     }
+    RESTORE_REG_SP();
 }
 
 /* invoke forward method. */
@@ -888,6 +890,7 @@ sendforward
         RESTORE_REGS();
         NEXT_INSN();
     }
+    RESTORE_REG_SP();
 }
 
 /* Invoke method without block */
@@ -909,6 +912,7 @@ opt_send_without_block
         RESTORE_REGS();
         NEXT_INSN();
     }
+    RESTORE_REG_SP();
 }
 
 /* Jump if "new" method has been defined by user */
@@ -1103,6 +1107,7 @@ invokesuper
         RESTORE_REGS();
         NEXT_INSN();
     }
+    RESTORE_REG_SP();
 }
 
 /* super(args) # args.size => num */
@@ -1130,6 +1135,7 @@ invokesuperforward
         RESTORE_REGS();
         NEXT_INSN();
     }
+    RESTORE_REG_SP();
 }
 
 /* yield(args) */
@@ -1151,6 +1157,7 @@ invokeblock
         RESTORE_REGS();
         NEXT_INSN();
     }
+    RESTORE_REG_SP();
 }
 
 /* return from this scope. */
