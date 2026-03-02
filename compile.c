@@ -8653,85 +8653,59 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *n
         ADD_INSNL(ret, line_node, branchif, matched);
         ADD_INSNL(ret, line_node, jump, unmatched);
         break;
-      // case NODE_LASGN: {
-      //   struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
-      //   ID id = RNODE_LASGN(node)->nd_vid;
-      //   int idx = ISEQ_BODY(body->local_iseq)->local_table_size - get_local_var_idx(iseq, id);
+      case RB_LOCAL_VARIABLE_TARGET_NODE: {
+        ID id = RB_NODE_LOCAL_VARIABLE_TARGET(node)->name;
 
-      //   if (in_alt_pattern) {
-      //       const char *name = rb_id2name(id);
-      //       if (name && strlen(name) > 0 && name[0] != '_') {
-      //           COMPILE_ERROR(ERROR_ARGS "illegal variable in alternative pattern (%"PRIsVALUE")",
-      //                         rb_id2str(id));
-      //           return COMPILE_NG;
-      //       }
-      //   }
+        if (in_alt_pattern) {
+            const char *name = rb_id2name(id);
+            if (name && strlen(name) > 0 && name[0] != '_') {
+                COMPILE_ERROR(ERROR_ARGS "illegal variable in alternative pattern (%"PRIsVALUE")",
+                              rb_id2str(id));
+                return COMPILE_NG;
+            }
+        }
 
-      //   ADD_SETLOCAL(ret, line_node, idx, get_lvar_level(iseq));
-      //   ADD_INSNL(ret, line_node, jump, matched);
-      //   break;
-      // }
-      // case NODE_DASGN: {
-      //   int idx, lv, ls;
-      //   ID id = RNODE_DASGN(node)->nd_vid;
+        CHECK(compile_lasgn_lhs(iseq, ret, node, id));
+        ADD_INSNL(ret, line_node, jump, matched);
+        break;
+      }
+      case RB_IF_NODE:
+      case RB_UNLESS_NODE: {
+        LABEL *match_failed;
+        match_failed = unmatched;
+        CHECK(iseq_compile_pattern_match(iseq, ret, (NODE *)RB_NODE_IF(node)->statements, unmatched, in_single_pattern, in_alt_pattern, base_index, use_deconstructed_cache));
+        CHECK(COMPILE(ret, "case in if", RB_NODE_IF(node)->predicate));
+        if (in_single_pattern) {
+            LABEL *match_succeeded;
+            match_succeeded = NEW_LABEL(line);
 
-      //   idx = get_dyna_var_idx(iseq, id, &lv, &ls);
+            ADD_INSN(ret, line_node, dup);
+            if (nd_type_p(node, NODE_IF)) {
+                ADD_INSNL(ret, line_node, branchif, match_succeeded);
+            }
+            else {
+                ADD_INSNL(ret, line_node, branchunless, match_succeeded);
+            }
 
-      //   if (in_alt_pattern) {
-      //       const char *name = rb_id2name(id);
-      //       if (name && strlen(name) > 0 && name[0] != '_') {
-      //           COMPILE_ERROR(ERROR_ARGS "illegal variable in alternative pattern (%"PRIsVALUE")",
-      //                         rb_id2str(id));
-      //           return COMPILE_NG;
-      //       }
-      //   }
+            ADD_INSN1(ret, line_node, putobject, rb_fstring_lit("guard clause does not return true")); // (1)
+            ADD_INSN1(ret, line_node, setn, INT2FIX(base_index + CASE3_BI_OFFSET_ERROR_STRING + 1 /* (1) */)); // (2)
+            ADD_INSN1(ret, line_node, putobject, Qfalse);
+            ADD_INSN1(ret, line_node, setn, INT2FIX(base_index + CASE3_BI_OFFSET_KEY_ERROR_P + 2 /* (1), (2) */));
 
-      //   if (idx < 0) {
-      //       COMPILE_ERROR(ERROR_ARGS "NODE_DASGN: unknown id (%"PRIsVALUE")",
-      //                     rb_id2str(id));
-      //       return COMPILE_NG;
-      //   }
-      //   ADD_SETLOCAL(ret, line_node, ls - idx, lv);
-      //   ADD_INSNL(ret, line_node, jump, matched);
-      //   break;
-      // }
-      // case NODE_IF:
-      // case NODE_UNLESS: {
-      //   LABEL *match_failed;
-      //   match_failed = unmatched;
-      //   CHECK(iseq_compile_pattern_match(iseq, ret, RNODE_IF(node)->nd_body, unmatched, in_single_pattern, in_alt_pattern, base_index, use_deconstructed_cache));
-      //   CHECK(COMPILE(ret, "case in if", RNODE_IF(node)->nd_cond));
-      //   if (in_single_pattern) {
-      //       LABEL *match_succeeded;
-      //       match_succeeded = NEW_LABEL(line);
+            ADD_INSN(ret, line_node, pop);
+            ADD_INSN(ret, line_node, pop);
 
-      //       ADD_INSN(ret, line_node, dup);
-      //       if (nd_type_p(node, NODE_IF)) {
-      //           ADD_INSNL(ret, line_node, branchif, match_succeeded);
-      //       }
-      //       else {
-      //           ADD_INSNL(ret, line_node, branchunless, match_succeeded);
-      //       }
-
-      //       ADD_INSN1(ret, line_node, putobject, rb_fstring_lit("guard clause does not return true")); // (1)
-      //       ADD_INSN1(ret, line_node, setn, INT2FIX(base_index + CASE3_BI_OFFSET_ERROR_STRING + 1 /* (1) */)); // (2)
-      //       ADD_INSN1(ret, line_node, putobject, Qfalse);
-      //       ADD_INSN1(ret, line_node, setn, INT2FIX(base_index + CASE3_BI_OFFSET_KEY_ERROR_P + 2 /* (1), (2) */));
-
-      //       ADD_INSN(ret, line_node, pop);
-      //       ADD_INSN(ret, line_node, pop);
-
-      //       ADD_LABEL(ret, match_succeeded);
-      //   }
-      //   if (nd_type_p(node, NODE_IF)) {
-      //       ADD_INSNL(ret, line_node, branchunless, match_failed);
-      //   }
-      //   else {
-      //       ADD_INSNL(ret, line_node, branchif, match_failed);
-      //   }
-      //   ADD_INSNL(ret, line_node, jump, matched);
-      //   break;
-      // }
+            ADD_LABEL(ret, match_succeeded);
+        }
+        if (nd_type_p(node, RB_IF_NODE)) {
+            ADD_INSNL(ret, line_node, branchunless, match_failed);
+        }
+        else {
+            ADD_INSNL(ret, line_node, branchif, match_failed);
+        }
+        ADD_INSNL(ret, line_node, jump, matched);
+        break;
+      }
       // case NODE_HASH: {
       //   NODE *n;
       //   LABEL *match_failed;

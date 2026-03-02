@@ -6377,7 +6377,7 @@ p_variable	: tIDENTIFIER
                     {
                         error_duplicate_pattern_variable(p, $1, &@1);
                     /*% ripper: var_field!($:1) %*/
-                        $$ = assignable(p, $1, 0, &@$);
+                        $$ = assignable_target(p, $1, &@$);
                     }
                 ;
 
