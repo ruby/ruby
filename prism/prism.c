@@ -18998,6 +18998,20 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
                 pm_node_t *statement = parse_expression(parser, PM_BINDING_POWER_DEFINED + 1, allow_command_call, false, PM_ERR_DEF_ENDLESS, (uint16_t) (depth + 1));
 
+                // In an endless method definition, the body is not allowed to
+                // be a command with a do..end block.
+                if (PM_NODE_TYPE_P(statement, PM_CALL_NODE)) {
+                    pm_call_node_t *call = (pm_call_node_t *) statement;
+
+                    if (call->arguments != NULL && call->block != NULL && PM_NODE_TYPE_P(call->block, PM_BLOCK_NODE)) {
+                        pm_block_node_t *block = (pm_block_node_t *) call->block;
+
+                        if (parser->start[block->opening_loc.start] != '{') {
+                            pm_parser_err_node(parser, call->block, PM_ERR_DEF_ENDLESS_DO_BLOCK);
+                        }
+                    }
+                }
+
                 if (accept1(parser, PM_TOKEN_KEYWORD_RESCUE_MODIFIER)) {
                     context_push(parser, PM_CONTEXT_RESCUE_MODIFIER);
 
