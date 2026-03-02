@@ -2288,10 +2288,10 @@ impl Function {
                         pc,
                         stack: find_vec!(stack),
                         locals: find_vec!(locals),
-                        profile: profile.as_ref().map(|p| Profile {
+                        profile: profile.as_ref().map(|p| Box::new(Profile {
                             types: p.types.iter().map(|(id, summary)| (find!(*id), summary.clone())).collect(),
                             super_method_entry: p.super_method_entry.clone(),
-                        }),
+                        })),
                     }
                 },
             &Return { val } => Return { val: find!(val) },
@@ -6103,7 +6103,7 @@ pub struct FrameState {
     stack: Vec<InsnId>,
     locals: Vec<InsnId>,
 
-    profile: Option<Profile>,
+    profile: Option<Box<Profile>>,
 }
 
 // Profiles are excluded from equality because PartialEq is only used for
@@ -6261,7 +6261,7 @@ impl FrameState {
             let insn = self.stack_topn(idx).expect("Unexpected stack underflow in profiling");
             types.push((insn, TypeDistributionSummary::new(insn_type_distribution)))
         }
-        self.profile = Some(Profile { types, super_method_entry: None });
+        self.profile = Some(Box::new(Profile { types, super_method_entry: None }));
     }
 
     /// Map the interpreter-recorded types of self onto the HIR self
@@ -6271,10 +6271,10 @@ impl FrameState {
            return;
         }
         let self_type_distribution = &operand_types[0];
-        self.profile = Some(Profile {
+        self.profile = Some(Box::new(Profile {
             types: vec![(self_param, TypeDistributionSummary::new(self_type_distribution))],
             super_method_entry: None,
-        });
+        }));
     }
 
     /// Look up the profiled super method entry for this instruction.
@@ -6283,7 +6283,7 @@ impl FrameState {
         if let Some(profile) = &mut self.profile {
             profile.super_method_entry = super_method_entry;
         } else {
-            self.profile = Some(Profile { types: vec![], super_method_entry });
+            self.profile = Some(Box::new(Profile { types: vec![], super_method_entry }));
         }
     }
 

@@ -13547,28 +13547,28 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Object@0x1020)
           PatchPoint MethodRedefined(Object@0x1020, lambda@0x1028, cme:0x1030)
           v119:HeapObject[class_exact*:Object@VALUE(0x1020)] = GuardType v58, HeapObject[class_exact*:Object@VALUE(0x1020)]
-          v120:BasicObject = CCallWithFrame v119, :Kernel#lambda@0x1058, block=0x1010
+          v120:BasicObject = CCallWithFrame v119, :Kernel#lambda@0x1058, block=0x1060
           v75:CPtr = GetEP 0
           v76:BasicObject = LoadField v75, :list@0x1001
-          v78:BasicObject = LoadField v75, :iter_method@0x1060
-          v79:BasicObject = LoadField v75, :kwsplat@0x1061
+          v78:BasicObject = LoadField v75, :iter_method@0x1068
+          v79:BasicObject = LoadField v75, :kwsplat@0x1069
           SetLocal :sep, l0, EP@5, v120
           Jump bb8(v58, v76, v120, v78, v79)
         bb8(v83:BasicObject, v84:BasicObject, v85:BasicObject, v86:BasicObject, v87:BasicObject):
           PatchPoint SingleRactorMode
-          PatchPoint StableConstantNames(0x1068, CONST)
-          v115:HashExact[VALUE(0x1070)] = Const Value(VALUE(0x1070))
+          PatchPoint StableConstantNames(0x1070, CONST)
+          v115:HashExact[VALUE(0x1078)] = Const Value(VALUE(0x1078))
           SetLocal :kwsplat, l0, EP@3, v115
           v96:CPtr = GetEP 0
           v97:BasicObject = LoadField v96, :list@0x1001
           v99:CPtr = GetEP 0
-          v100:BasicObject = LoadField v99, :iter_method@0x1060
-          v102:BasicObject = Send v97, 0x1078, :__send__, v100 # SendFallbackReason: Send: unsupported method type Optimized
+          v100:BasicObject = LoadField v99, :iter_method@0x1068
+          v102:BasicObject = Send v97, 0x1080, :__send__, v100 # SendFallbackReason: Send: unsupported method type Optimized
           v103:CPtr = GetEP 0
           v104:BasicObject = LoadField v103, :list@0x1001
           v105:BasicObject = LoadField v103, :sep@0x1002
-          v106:BasicObject = LoadField v103, :iter_method@0x1060
-          v107:BasicObject = LoadField v103, :kwsplat@0x1061
+          v106:BasicObject = LoadField v103, :iter_method@0x1068
+          v107:BasicObject = LoadField v103, :kwsplat@0x1069
           CheckInterrupts
           Return v102
         ");
