@@ -938,6 +938,78 @@ module Prism
       !success?
     end
 
+    # Returns true if the parsed source is an incomplete expression that could
+    # become valid with additional input. This is useful for REPL contexts (such
+    # as IRB) where the user may be entering a multi-line expression one line at
+    # a time and the implementation needs to determine whether to wait for more
+    # input or to evaluate what has been entered so far.
+    #
+    # Concretely, this returns true when every error present is caused by the
+    # parser reaching the end of the input before a construct was closed (e.g.
+    # an unclosed string, array, block, or keyword), and returns false when any
+    # error is caused by a token that makes the input structurally invalid
+    # regardless of what might follow (e.g. a stray `end`, `]`, or `)` with no
+    # matching opener).
+    #
+    # Examples:
+    #
+    #     Prism.parse("1 + [").continuable?      #=> true  (unclosed array)
+    #     Prism.parse("1 + ]").continuable?      #=> false (stray ])
+    #     Prism.parse("tap do").continuable?     #=> true  (unclosed block)
+    #     Prism.parse("end.tap do").continuable? #=> false (stray end)
+    #
+    #--
+    #: () -> bool
+    def continuable?
+      return false if errors.empty?
+
+      offset = source.source.bytesize
+      errors.all? { |error| CONTINUABLE.include?(error.type) || error.location.start_offset == offset }
+    end
+
+    # The set of error types whose location the parser places at the opening
+    # token of an unclosed construct rather than at the end of the source. These
+    # errors always indicate incomplete input regardless of their byte position,
+    # so they are checked by type rather than by location.
+    #--
+    #: Array[Symbol]
+    CONTINUABLE = %i[
+      begin_term
+      begin_upcase_term
+      block_param_pipe_term
+      block_term_brace
+      block_term_end
+      case_missing_conditions
+      case_term
+      class_term
+      conditional_term
+      conditional_term_else
+      def_term
+      embdoc_term
+      end_upcase_term
+      for_term
+      hash_term
+      heredoc_term
+      lambda_term_brace
+      lambda_term_end
+      list_i_lower_term
+      list_i_upper_term
+      list_w_lower_term
+      list_w_upper_term
+      module_term
+      regexp_term
+      rescue_term
+      string_interpolated_term
+      string_literal_eof
+      symbol_term_dynamic
+      symbol_term_interpolated
+      until_term
+      while_term
+      xstring_term
+    ].freeze
+
+    private_constant :CONTINUABLE
+
     # Create a code units cache for the given encoding.
     #--
     #: (Encoding encoding) -> _CodeUnitsCache

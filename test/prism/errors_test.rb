@@ -109,6 +109,41 @@ module Prism
       assert_nil(statement.parts[0].statements)
     end
 
+    def test_continuable
+      # Valid input is not continuable (nothing to continue).
+      refute_predicate Prism.parse("1 + 1"), :continuable?
+      refute_predicate Prism.parse(""), :continuable?
+
+      # Stray closing tokens make input non-continuable regardless of what
+      # follows (matches the feature-request examples exactly).
+      refute_predicate Prism.parse("1 + ]"), :continuable?
+      refute_predicate Prism.parse("end.tap do"), :continuable?
+
+      # Unclosed constructs are continuable.
+      assert_predicate Prism.parse("1 + ["), :continuable?
+      assert_predicate Prism.parse("tap do"), :continuable?
+
+      # Unclosed keywords.
+      assert_predicate Prism.parse("def foo"), :continuable?
+      assert_predicate Prism.parse("class Foo"), :continuable?
+      assert_predicate Prism.parse("module Foo"), :continuable?
+      assert_predicate Prism.parse("if true"), :continuable?
+      assert_predicate Prism.parse("while true"), :continuable?
+      assert_predicate Prism.parse("begin"), :continuable?
+      assert_predicate Prism.parse("for x in [1]"), :continuable?
+
+      # Unclosed delimiters.
+      assert_predicate Prism.parse("{"), :continuable?
+      assert_predicate Prism.parse("foo("), :continuable?
+      assert_predicate Prism.parse('"hello'), :continuable?
+      assert_predicate Prism.parse("'hello"), :continuable?
+      assert_predicate Prism.parse("<<~HEREDOC\nhello"), :continuable?
+
+      # A mix: stray end plus an unclosed block is not continuable because the
+      # stray end cannot be fixed by appending more input.
+      refute_predicate Prism.parse("end\ntap do"), :continuable?
+    end
+
     private
 
     def assert_errors(filepath, version)
