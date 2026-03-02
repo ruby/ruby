@@ -2280,7 +2280,7 @@ impl Function {
                     | LoadSelf
                     | IncrCounterPtr {..}
                     | IncrCounter(_)) => result.clone(),
-            &Snapshot { state: FrameState { iseq, insn_idx, pc, ref stack, ref locals, ref profiles } } =>
+            &Snapshot { state: FrameState { iseq, insn_idx, pc, ref stack, ref locals, ref profile } } =>
                 Snapshot {
                     state: FrameState {
                         iseq,
@@ -2288,7 +2288,10 @@ impl Function {
                         pc,
                         stack: find_vec!(stack),
                         locals: find_vec!(locals),
-                        profiles: profiles.as_ref().map(|p| p.iter().map(|(id, summary)| (find!(*id), summary.clone())).collect()),
+                        profile: profile.as_ref().map(|p| Profile {
+                            types: p.types.iter().map(|(id, summary)| (find!(*id), summary.clone())).collect(),
+                            super_method_entry: p.super_method_entry.clone(),
+                        }),
                     }
                 },
             &Return { val } => Return { val: find!(val) },
@@ -2946,7 +2949,7 @@ impl Function {
     }
 
     fn polymorphic_summary(&self, recv: InsnId, frame_state: &FrameState) -> Option<TypeDistributionSummary> {
-        let Some(entries) = frame_state.profiles.as_ref() else {
+        let Some(entries) = frame_state.profile.as_ref().map(|p| &p.types) else {
             return None;
         };
         let recv = self.chase_insn(recv);
@@ -2970,7 +2973,7 @@ impl Function {
     ///   (SkewedMegamorphic may be optimized in the future, but for now we don't)
     /// - `NoProfile` if we have no type information
     fn resolve_receiver_type_from_profile(&self, recv: InsnId, frame_state: &FrameState) -> ReceiverTypeResolution {
-        let Some(entries) = frame_state.profiles.as_ref() else {
+        let Some(entries) = frame_state.profile.as_ref().map(|p| &p.types) else {
             return ReceiverTypeResolution::NoProfile;
         };
         let recv = self.chase_insn(recv);
@@ -3596,16 +3599,18 @@ impl Function {
                         }
 
                         // Get the profiled CME from the current method.
-                        let payload = get_or_create_iseq_payload(self.iseq);
-                        let Some(current_cme) = payload.profile.get_super_method_entry(frame_state.insn_idx) else {
+                        let super_cme_summary = frame_state.profile.as_ref().and_then(|p| p.super_method_entry.as_ref());
+                        let Some(summary) = super_cme_summary else {
                             self.push_insn_id(block, insn_id);
-
-                            // The absence of the super CME could be due to a missing profile, but
-                            // if we've made it this far the value would have been deleted, indicating
-                            // that the call is at least polymorphic and possibly megamorphic.
                             self.set_dynamic_send_reason(insn_id, SuperPolymorphic);
                             continue;
                         };
+                        if !summary.is_monomorphic() {
+                            self.push_insn_id(block, insn_id);
+                            self.set_dynamic_send_reason(insn_id, SuperPolymorphic);
+                            continue;
+                        }
+                        let current_cme = summary.bucket(0).class().0 as *const rb_callable_method_entry_t;
 
                         // Get defined_class and method ID from the profiled CME.
                         let current_defined_class = unsafe { (*current_cme).defined_class };
@@ -6077,6 +6082,17 @@ impl<'a> std::fmt::Display for FunctionGraphvizPrinter<'a> {
     }
 }
 
+/// Profiling data attached to a [`FrameState`] during compilation.
+#[derive(Debug, Clone)]
+struct Profile {
+    /// Profiled type information for HIR operands at this instruction.
+    /// Each entry maps an HIR InsnId to its profiled type distribution summary.
+    types: Vec<(InsnId, TypeDistributionSummary)>,
+
+    /// Profiled super method entry distribution for invokesuper instructions.
+    super_method_entry: Option<TypeDistributionSummary>,
+}
+
 #[derive(Debug, Clone)]
 pub struct FrameState {
     iseq: IseqPtr,
@@ -6087,9 +6103,7 @@ pub struct FrameState {
     stack: Vec<InsnId>,
     locals: Vec<InsnId>,
 
-    /// Profiled type information for HIR operands at this instruction.
-    /// Each entry maps an HIR InsnId to its profiled type distribution summary.
-    profiles: Option<Vec<(InsnId, TypeDistributionSummary)>>,
+    profile: Option<Profile>,
 }
 
 // Profiles are excluded from equality because PartialEq is only used for
@@ -6140,8 +6154,8 @@ impl FrameState {
                 *slot = new;
             }
         }
-        if let Some(profiles) = &mut self.profiles {
-            for (insn, _) in profiles {
+        if let Some(profile) = &mut self.profile {
+            for (insn, _) in &mut profile.types {
                 if *insn == old {
                     *insn = new;
                 }
@@ -6184,7 +6198,7 @@ fn ep_offset_to_local_idx(iseq: IseqPtr, ep_offset: u32) -> usize {
 
 impl FrameState {
     fn new(iseq: IseqPtr) -> FrameState {
-        FrameState { iseq, pc: std::ptr::null::<VALUE>(), insn_idx: 0, stack: vec![], locals: vec![], profiles: None }
+        FrameState { iseq, pc: std::ptr::null::<VALUE>(), insn_idx: 0, stack: vec![], locals: vec![], profile: None }
     }
 
     /// Get the number of stack operands
@@ -6242,12 +6256,12 @@ impl FrameState {
     /// Map the interpreter-recorded types of the stack onto the HIR operands on our compile-time virtual stack
     fn profile_stack(&mut self, payload: &IseqPayload) {
         let Some(operand_types) = payload.profile.get_operand_types(self.insn_idx) else { return };
-        let mut profiles = Vec::new();
+        let mut types = Vec::new();
         for (idx, insn_type_distribution) in operand_types.iter().rev().enumerate() {
             let insn = self.stack_topn(idx).expect("Unexpected stack underflow in profiling");
-            profiles.push((insn, TypeDistributionSummary::new(insn_type_distribution)))
+            types.push((insn, TypeDistributionSummary::new(insn_type_distribution)))
         }
-        self.profiles = Some(profiles);
+        self.profile = Some(Profile { types, super_method_entry: None });
     }
 
     /// Map the interpreter-recorded types of self onto the HIR self
@@ -6257,7 +6271,20 @@ impl FrameState {
            return;
         }
         let self_type_distribution = &operand_types[0];
-        self.profiles = Some(vec![(self_param, TypeDistributionSummary::new(self_type_distribution))]);
+        self.profile = Some(Profile {
+            types: vec![(self_param, TypeDistributionSummary::new(self_type_distribution))],
+            super_method_entry: None,
+        });
+    }
+
+    /// Look up the profiled super method entry for this instruction.
+    fn profile_super_method_entry(&mut self, payload: &IseqPayload) {
+        let super_method_entry = payload.profile.get_super_method_entry_summary(self.insn_idx);
+        if let Some(profile) = &mut self.profile {
+            profile.super_method_entry = super_method_entry;
+        } else {
+            self.profile = Some(Profile { types: vec![], super_method_entry });
+        }
     }
 
     fn setlocal(&mut self, ep_offset: u32, opnd: InsnId) {
@@ -6602,6 +6629,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
             }
             else {
                 exit_state.profile_stack(payload);
+                if opcode == YARVINSN_invokesuper || opcode == YARVINSN_invokesuperforward {
+                    exit_state.profile_super_method_entry(payload);
+                }
             }
 
             // Flag a future getlocal/setlocal to add a patch point if this instruction is not leaf.
