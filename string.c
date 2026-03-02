@@ -2621,6 +2621,7 @@ static VALUE
 rb_str_format_m(VALUE str, VALUE arg)
 {
     VALUE tmp = rb_check_array_type(arg);
+    RB_GC_GUARD(tmp);
 
     if (!NIL_P(tmp)) {
         return rb_str_format(RARRAY_LENINT(tmp), RARRAY_CONST_PTR(tmp), str);
