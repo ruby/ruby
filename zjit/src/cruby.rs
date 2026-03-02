@@ -94,6 +94,8 @@ use std::fmt::{Debug, Display, Formatter};
 use std::os::raw::{c_char, c_int, c_uint};
 use std::panic::{catch_unwind, UnwindSafe};
 
+use crate::cast::IntoUsize as _;
+
 // We check that we can do this with the configure script and a couple of
 // static asserts. u64 and not usize to play nice with lowering to x86.
 pub type size_t = u64;
@@ -600,6 +602,16 @@ impl VALUE {
 
     pub fn class_fields_embedded_p(self) -> bool {
         unsafe { rb_jit_class_fields_embedded_p(self) }
+    }
+
+    pub fn typed_data_p(self) -> bool {
+        !self.special_const_p() &&
+            self.builtin_type() == RUBY_T_DATA &&
+            0 != (self.builtin_flags() & RUBY_TYPED_FL_IS_TYPED_DATA.to_usize())
+    }
+
+    pub fn typed_data_fields_embedded_p(self) -> bool {
+        unsafe { rb_jit_typed_data_fields_embedded_p(self) }
     }
 
     pub fn as_fixnum(self) -> i64 {

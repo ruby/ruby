@@ -7809,6 +7809,7 @@ jit.$(OBJEXT): {$(VPATH)}internal/error.h
 jit.$(OBJEXT): {$(VPATH)}internal/eval.h
 jit.$(OBJEXT): {$(VPATH)}internal/event.h
 jit.$(OBJEXT): {$(VPATH)}internal/fl_type.h
+jit.$(OBJEXT): {$(VPATH)}internal/core/rtypeddata.h
 jit.$(OBJEXT): {$(VPATH)}internal/gc.h
 jit.$(OBJEXT): {$(VPATH)}internal/glob.h
 jit.$(OBJEXT): {$(VPATH)}internal/globals.h

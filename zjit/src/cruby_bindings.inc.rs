@@ -341,6 +341,13 @@ pub const RMODULE_IS_REFINEMENT: ruby_rmodule_flags = 8192;
 pub type ruby_rmodule_flags = u32;
 pub const ROBJECT_HEAP: ruby_robject_flags = 65536;
 pub type ruby_robject_flags = u32;
+pub const RUBY_TYPED_FREE_IMMEDIATELY: rbimpl_typeddata_flags = 1;
+pub const RUBY_TYPED_EMBEDDABLE: rbimpl_typeddata_flags = 2;
+pub const RUBY_TYPED_FROZEN_SHAREABLE: rbimpl_typeddata_flags = 256;
+pub const RUBY_TYPED_WB_PROTECTED: rbimpl_typeddata_flags = 32;
+pub const RUBY_TYPED_FL_IS_TYPED_DATA: rbimpl_typeddata_flags = 64;
+pub const RUBY_TYPED_DECL_MARKING: rbimpl_typeddata_flags = 16384;
+pub type rbimpl_typeddata_flags = u32;
 pub type rb_event_flag_t = u32;
 pub type rb_block_call_func = ::std::option::Option<
     unsafe extern "C" fn(
@@ -1876,6 +1883,7 @@ pub type zjit_struct_offsets = u32;
 pub const ROBJECT_OFFSET_AS_HEAP_FIELDS: jit_bindgen_constants = 16;
 pub const ROBJECT_OFFSET_AS_ARY: jit_bindgen_constants = 16;
 pub const RCLASS_OFFSET_PRIME_FIELDS_OBJ: jit_bindgen_constants = 40;
+pub const RTYPEDDATA_OFFSET_FIELDS_OBJ: jit_bindgen_constants = 16;
 pub const RUBY_OFFSET_RSTRING_LEN: jit_bindgen_constants = 16;
 pub const RUBY_OFFSET_EC_CFP: jit_bindgen_constants = 16;
 pub const RUBY_OFFSET_EC_INTERRUPT_FLAG: jit_bindgen_constants = 32;
@@ -2229,6 +2237,7 @@ unsafe extern "C" {
     pub fn rb_jit_shape_too_complex_p(shape_id: shape_id_t) -> bool;
     pub fn rb_jit_multi_ractor_p() -> bool;
     pub fn rb_jit_class_fields_embedded_p(klass: VALUE) -> bool;
+    pub fn rb_jit_typed_data_fields_embedded_p(obj: VALUE) -> bool;
     pub fn rb_jit_vm_lock_then_barrier(
         recursive_lock_level: *mut ::std::os::raw::c_uint,
         file: *const ::std::os::raw::c_char,

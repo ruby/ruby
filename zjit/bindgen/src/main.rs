@@ -81,6 +81,7 @@ fn main() {
         .allowlist_type("RBasic")
 
         .allowlist_type("ruby_rstring_flags")
+        .allowlist_type("rbimpl_typeddata_flags")
 
         // This function prints info about a value and is useful for debugging
         .allowlist_function("rb_raw_obj_info")
@@ -310,6 +311,8 @@ fn main() {
         .allowlist_function("rb_jit_shape_too_complex_p")
         .allowlist_function("rb_jit_multi_ractor_p")
         .allowlist_function("rb_jit_class_fields_embedded_p")
+        .allowlist_function("rb_jit_typed_data_p")
+        .allowlist_function("rb_jit_typed_data_fields_embedded_p")
         .allowlist_function("rb_jit_vm_lock_then_barrier")
         .allowlist_function("rb_jit_vm_unlock")
         .allowlist_function("rb_jit_for_each_iseq")

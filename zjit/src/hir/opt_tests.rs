@@ -7253,7 +7253,8 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_optimize_getivar_on_t_data() {
+    fn test_optimize_getivar_on_t_struct() {
+        // Range is T_STRUCT (not T_DATA): falls back to CCall
         eval("
             class C < Range
               def test = @a
@@ -7282,6 +7283,78 @@ mod hir_opt_tests {
           v21:BasicObject = CCall v17, :rb_ivar_get_at_no_ractor_check@0x1008, v20
           CheckInterrupts
           Return v21
+        ");
+    }
+
+    #[test]
+    fn test_optimize_getivar_on_typed_data() {
+        // Thread is typed T_DATA: uses LoadField chain via RTypedData fields_obj
+        eval("
+            class C < Thread
+              def test = @a
+            end
+            obj = C.new { }
+            obj.join
+            obj.instance_variable_set(:@a, 1)
+            obj.test
+            TEST = C.instance_method(:test)
+        ");
+        assert_snapshot!(hir_string_proc("TEST"), @r"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          v17:HeapBasicObject = GuardType v6, HeapBasicObject
+          v18:CShape = LoadField v17, :_shape_id@0x1000
+          v19:CShape[0x1001] = GuardBitEquals v18, CShape(0x1001)
+          v20:RubyValue = LoadField v17, :_fields_obj@0x1002
+          v21:BasicObject = LoadField v20, :@a@0x1002
+          CheckInterrupts
+          Return v21
+        ");
+    }
+
+    #[test]
+    fn test_optimize_getivar_on_typed_data_heap_fields() {
+        // Typed T_DATA with enough ivars to force heap field storage
+        eval("
+            class C < Thread
+              def test = @var1000
+            end
+            obj = C.new { }
+            obj.join
+            1000.times { |i| obj.instance_variable_set(:\"@var#{i}\", 1) }
+            obj.instance_variable_set(:@var1000, 42)
+            obj.test
+            TEST = C.instance_method(:test)
+        ");
+        assert_snapshot!(hir_string_proc("TEST"), @r"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          v17:HeapBasicObject = GuardType v6, HeapBasicObject
+          v18:CShape = LoadField v17, :_shape_id@0x1000
+          v19:CShape[0x1001] = GuardBitEquals v18, CShape(0x1001)
+          v20:RubyValue = LoadField v17, :_fields_obj@0x1002
+          v21:CPtr = LoadField v20, :_as_heap@0x1002
+          v22:BasicObject = LoadField v21, :@var1000@0x1003
+          CheckInterrupts
+          Return v22
         ");
     }
 
