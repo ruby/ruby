@@ -5141,11 +5141,15 @@ impl Function {
         let mut num_in_edges = vec![0; self.blocks.len()];
         for block in self.rpo() {
             for &insn in &self.blocks[block.0].insns {
-                match self.find(insn) {
-                    Insn::IfTrue { target, .. } | Insn::IfFalse { target, .. } | Insn::Jump(target) => {
-                        num_in_edges[target.target.0] += 1;
+                // Instructions without output, including branch instructions, can't be targets of
+                // make_equal_to, so we don't need find() here.
+                match &self.insns[insn.0] {
+                    Insn::IfTrue { target: BranchEdge { target, .. }, .. }
+                    | Insn::IfFalse { target: BranchEdge { target, .. }, .. }
+                    | Insn::Jump(BranchEdge { target, .. }) => {
+                        num_in_edges[target.0] += 1;
                     }
-                    Insn::Entries { ref targets } => {
+                    Insn::Entries { targets } => {
                         for target in targets {
                             num_in_edges[target.0] += 1;
                         }
