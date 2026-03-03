@@ -1914,10 +1914,11 @@ impl Assembler
         // Emit instructions with labels, expanding branch parameters
         let mut insns = Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY);
 
-        let blocks = self.sorted_blocks();
-        let num_blocks = blocks.len();
+        let block_ids = self.block_order();
+        let num_blocks = block_ids.len();
 
-        for (block_id, block) in blocks.iter().enumerate() {
+        for block_id in block_ids {
+            let block = &self.basic_blocks[block_id.0];
             // Entry blocks shouldn't ever be preceded by something that can
             // stomp on this block.
             if !block.is_entry {
@@ -1930,7 +1931,7 @@ impl Assembler
             }
 
             // Make sure we don't stomp on the next function
-            if block_id == num_blocks - 1 {
+            if block_id.0 == num_blocks - 1 {
                 insns.push(Insn::PadPatchPoint);
             }
         }
@@ -2324,7 +2325,8 @@ impl Assembler
         use crate::backend::parcopy;
         use crate::backend::current::{C_RET_OPND, SCRATCH_REG, ALLOC_REGS};
 
-        for block in self.basic_blocks.iter_mut() {
+        for block_id in self.block_order() {
+            let block = &mut self.basic_blocks[block_id.0];
             let old_insns = take(&mut block.insns);
             let old_ids = take(&mut block.insn_ids);
 
@@ -2432,6 +2434,7 @@ impl Assembler
                 }
             }
 
+            let block = &mut self.basic_blocks[block_id.0];
             block.insns = new_insns;
             block.insn_ids = new_ids;
         }
@@ -2440,8 +2443,8 @@ impl Assembler
     /// Walk every instruction and replace VReg operands with the physical
     /// register (or stack slot) from the allocation assignments.
     fn rewrite_instructions(&mut self, assignments: &[Option<Allocation>]) {
-        for block in self.basic_blocks.iter_mut() {
-            for insn in block.insns.iter_mut() {
+        for block_id in self.block_order() {
+            for insn in self.basic_blocks[block_id.0].insns.iter_mut() {
                 let mut iter = insn.opnd_iter_mut();
                 while let Some(opnd) = iter.next() {
                     Self::rewrite_opnd(opnd, assignments);
@@ -2481,7 +2484,7 @@ impl Assembler
                         }
                     }
                 } else {
-                    panic!("Expected assigment for {opnd}");
+                    panic!("Expected assignment for {opnd}");
                 }
             }
             Opnd::Mem(Mem { base: MemBase::VReg(idx), .. }) => {
@@ -2776,8 +2779,10 @@ impl Assembler
         self.compile_with_regs(cb, alloc_regs).unwrap()
     }
 
-    /// Compile Target::SideExit and convert it into Target::CodePtr for all instructions
-    pub fn compile_exits(&mut self) {
+    /// Compile Target::SideExit and convert it into Target::Label for all instructions.
+    /// Returns the exit code as a list of instructions to be appended after the main
+    /// code is linearized and split.
+    pub fn compile_exits(&mut self) -> Vec<Insn> {
         /// Restore VM state (cfp->pc, cfp->sp, stack, locals) for the side exit.
         fn compile_exit_save_state(asm: &mut Assembler, exit: &SideExit) {
             let SideExit { pc, stack, locals } = exit;
@@ -2829,13 +2834,21 @@ impl Assembler
         // Extract targets first so that we can update instructions while referencing part of them.
         let mut targets = HashMap::new();
 
-        for block in self.sorted_blocks().iter() {
+        for block_id in self.block_order() {
+            let block = &self.basic_blocks[block_id.0];
             for (idx, insn) in block.insns.iter().enumerate() {
                 if let Some(target @ Target::SideExit { .. }) = insn.target() {
-                    targets.insert((block.id.0, idx), target.clone());
+                    targets.insert((block_id.0, idx), target.clone());
                 }
             }
         }
+
+        // Create a dedicated block for exit code. This block is not part of the
+        // CFG (DUMMY_RPO_INDEX), so it won't be included in block_order() or
+        // linearize_instructions(). Its instructions are returned to the caller
+        // for appending after scratch_split.
+        let saved_block = self.current_block_id;
+        let exit_block = self.new_block_without_id("side_exits");
 
         // Map from SideExit to compiled Label. This table is used to deduplicate side exit code.
         let mut compiled_exits: HashMap<SideExit, Label> = HashMap::new();
@@ -2920,6 +2933,11 @@ impl Assembler
             let nanos = side_exit_start.elapsed().as_nanos();
             crate::stats::incr_counter_by(crate::stats::Counter::compile_side_exit_time_ns, nanos as u64);
         }
+
+        // Extract exit instructions and restore the previous current block
+        let exit_insns = take(&mut self.basic_blocks[exit_block.0].insns);
+        self.set_current_block(saved_block);
+        exit_insns
     }
 
     /// Return a traversal of the block graph in reverse post-order.
