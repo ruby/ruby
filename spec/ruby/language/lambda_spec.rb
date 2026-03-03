@@ -286,6 +286,24 @@ describe "A lambda literal -> () { }" do
       end
     end
   end
+
+  evaluate <<-ruby do
+    @a = -> (**nil) { :ok }
+    ruby
+
+    @a.call().should == :ok
+    -> { @a.call(a: 1) }.should raise_error(ArgumentError, 'no keywords accepted')
+    -> { @a.call(**{a: 1}) }.should raise_error(ArgumentError, 'no keywords accepted')
+    -> { @a.call("a" => 1) }.should raise_error(ArgumentError, 'no keywords accepted')
+  end
+
+  evaluate <<-ruby do
+    @a = -> (a, **nil) { a }
+    ruby
+
+    @a.call({a: 1}).should == {a: 1}
+    -> { @a.call(a: 1) }.should raise_error(ArgumentError, 'no keywords accepted')
+  end
 end
 
 describe "A lambda expression 'lambda { ... }'" do
@@ -582,6 +600,24 @@ describe "A lambda expression 'lambda { ... }'" do
 
       result = @a.(1, 2, e: 3, g: 4, h: 5, i: 6, &(l = ->{}))
       result.should == [1, 1, [], 2, 3, 2, 4, { h: 5, i: 6 }, l]
+    end
+
+    evaluate <<-ruby do
+      @a = lambda { |**nil| :ok }
+      ruby
+
+      @a.call().should == :ok
+      -> { @a.call(a: 1) }.should raise_error(ArgumentError, 'no keywords accepted')
+      -> { @a.call(**{a: 1}) }.should raise_error(ArgumentError, 'no keywords accepted')
+      -> { @a.call("a" => 1) }.should raise_error(ArgumentError, 'no keywords accepted')
+    end
+
+    evaluate <<-ruby do
+      @a = lambda { |a, **nil| a }
+      ruby
+
+      @a.call({a: 1}).should == {a: 1}
+      -> { @a.call(a: 1) }.should raise_error(ArgumentError, 'no keywords accepted')
     end
   end
 end

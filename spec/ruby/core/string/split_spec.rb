@@ -119,21 +119,21 @@ describe "String#split with String" do
         $; = old_fs
       end
     end
+  end
 
-    context "when $; is not nil" do
-      before do
-        suppress_warning do
-          @old_value, $; = $;, 'foobar'
-        end
+  context "when $; is not nil" do
+    before do
+      suppress_warning do
+        @old_value, $; = $;, 'foobar'
       end
+    end
 
-      after do
-        $; = @old_value
-      end
+    after do
+      $; = @old_value
+    end
 
-      it "warns" do
-        -> { "".split }.should complain(/warning: \$; is set to non-nil value/)
-      end
+    it "warns" do
+      -> { "".split }.should complain(/warning: \$; is set to non-nil value/)
     end
   end
 

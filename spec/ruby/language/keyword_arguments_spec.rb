@@ -86,6 +86,20 @@ describe "Keyword arguments" do
     m(*[], 42, **{}).should == [42]
   end
 
+  context "marked as ruby2_keywords_hash" do
+    it "is not copied when passed as a positional argument" do
+      h = Hash.ruby2_keywords_hash(a:1)
+
+      def bar(a)
+        a
+      end
+
+      h2 = bar(h)
+      h2.should equal(h)
+      Hash.ruby2_keywords_hash?(h).should == true
+    end
+  end
+
   context "**" do
     it "copies a non-empty Hash for a method taking (*args)" do
       def m(*args)

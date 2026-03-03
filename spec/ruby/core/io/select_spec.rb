@@ -112,7 +112,17 @@ describe "IO.select" do
   end
 
   it "raises an ArgumentError when passed a negative timeout" do
-    -> { IO.select(nil, nil, nil, -5)}.should raise_error(ArgumentError)
+    -> { IO.select(nil, nil, nil, -5)}.should raise_error(ArgumentError, "time interval must not be negative")
+  end
+
+  ruby_version_is "4.0" do
+    it "raises an ArgumentError when passed negative infinity as timeout" do
+      -> { IO.select(nil, nil, nil, -Float::INFINITY)}.should raise_error(ArgumentError, "time interval must not be negative")
+    end
+  end
+
+  it "raises an RangeError when passed NaN as timeout" do
+    -> { IO.select(nil, nil, nil, Float::NAN)}.should raise_error(RangeError, "NaN out of Time range")
   end
 
   describe "returns the available descriptors when the file descriptor" do

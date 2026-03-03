@@ -296,6 +296,26 @@ VALUE string_spec_rb_str_substr(VALUE self, VALUE str, VALUE beg, VALUE len) {
   return rb_str_substr(str, FIX2INT(beg), FIX2INT(len));
 }
 
+VALUE string_spec_rb_str_subpos(VALUE self, VALUE str, VALUE beg) {
+  char* original = RSTRING_PTR(str);
+  char* end = RSTRING_END(str);
+  long len = rb_str_strlen(str);
+  char *p = rb_str_subpos(str, FIX2LONG(beg), &len);
+  if (p == NULL) {
+    return Qnil;
+  }
+
+  if (p >= original && p <= end) {
+    return rb_ary_new_from_args(2, LONG2FIX(p - RSTRING_PTR(str)), LONG2FIX(len));
+  } else {
+    rb_raise(rb_eRuntimeError, "the returned pointer is not inside the original string buffer");
+  }
+}
+
+VALUE string_spec_rb_str_sublen(VALUE self, VALUE str, VALUE pos) {
+  return LONG2FIX(rb_str_sublen(str, FIX2LONG(pos)));
+}
+
 VALUE string_spec_rb_str_to_str(VALUE self, VALUE arg) {
   return rb_str_to_str(arg);
 }
@@ -306,6 +326,11 @@ VALUE string_spec_RSTRING_LEN(VALUE self, VALUE str) {
 
 VALUE string_spec_RSTRING_LENINT(VALUE self, VALUE str) {
   return INT2FIX(RSTRING_LENINT(str));
+}
+
+VALUE string_spec_RSTRING_PTR(VALUE self, VALUE str) {
+  char* ptr = RSTRING_PTR(str);
+  return LONG2FIX((long)ptr);
 }
 
 VALUE string_spec_RSTRING_PTR_iterate(VALUE self, VALUE str) {
@@ -393,6 +418,7 @@ VALUE string_spec_RSTRING_PTR_read(VALUE self, VALUE str, VALUE path) {
   if (read(fd, buffer, 30) < 0) {
     rb_syserr_fail(errno, "read");
   }
+  rb_str_set_len(str, 30);
 
   rb_str_modify_expand(str, 53);
   rb_ary_push(capacities, SIZET2NUM(rb_str_capacity(str)));
@@ -531,7 +557,10 @@ static VALUE string_spec_rb_str_modify(VALUE self, VALUE str) {
 }
 
 static VALUE string_spec_rb_utf8_str_new_static(VALUE self) {
-  return rb_utf8_str_new_static("nokogiri", 8);
+  const char* literal = "nokogiri";
+  return rb_ary_new_from_args(2,
+    rb_utf8_str_new_static("nokogiri", 8),
+    LONG2FIX((long)literal));
 }
 
 static VALUE string_spec_rb_utf8_str_new(VALUE self) {
@@ -645,9 +674,12 @@ void Init_string_spec(void) {
   rb_define_method(cls, "rb_str_split", string_spec_rb_str_split, 1);
   rb_define_method(cls, "rb_str_subseq", string_spec_rb_str_subseq, 3);
   rb_define_method(cls, "rb_str_substr", string_spec_rb_str_substr, 3);
+  rb_define_method(cls, "rb_str_subpos", string_spec_rb_str_subpos, 2);
+  rb_define_method(cls, "rb_str_sublen", string_spec_rb_str_sublen, 2);
   rb_define_method(cls, "rb_str_to_str", string_spec_rb_str_to_str, 1);
   rb_define_method(cls, "RSTRING_LEN", string_spec_RSTRING_LEN, 1);
   rb_define_method(cls, "RSTRING_LENINT", string_spec_RSTRING_LENINT, 1);
+  rb_define_method(cls, "RSTRING_PTR", string_spec_RSTRING_PTR, 1);
   rb_define_method(cls, "RSTRING_PTR_iterate", string_spec_RSTRING_PTR_iterate, 1);
   rb_define_method(cls, "RSTRING_PTR_iterate_uint32", string_spec_RSTRING_PTR_iterate_uint32, 1);
   rb_define_method(cls, "RSTRING_PTR_short_memcpy", string_spec_RSTRING_PTR_short_memcpy, 1);

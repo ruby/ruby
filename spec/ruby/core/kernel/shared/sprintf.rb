@@ -934,10 +934,27 @@ describe :kernel_sprintf, shared: true do
         }.should raise_error(ArgumentError)
       end
 
-      it "raises KeyError when there is no matching key" do
+      it "respects Hash#default when there is no set key" do
+        @method.call("%{foo}", Hash.new(123)).should == "123"
+        @method.call("%{foo}", Hash.new { 123 }).should == "123"
+      end
+
+      it "raises KeyError when Hash#default returns nil" do
         -> {
           @method.call("%{foo}", {})
-        }.should raise_error(KeyError)
+        }.should raise_error(KeyError, 'key{foo} not found')
+
+        -> {
+          @method.call("%{foo}", Hash.new(nil))
+        }.should raise_error(KeyError, 'key{foo} not found')
+
+        -> {
+          @method.call("%{foo}", Hash.new { nil })
+        }.should raise_error(KeyError, 'key{foo} not found')
+      end
+
+      it "accepts a nil value for an existing key" do
+        @method.call("%{foo}", { foo: nil }).should == ""
       end
 
       it "converts value to String with to_s" do

@@ -16,28 +16,34 @@ describe "Kernel#require" do
     Kernel.should have_private_instance_method(:require)
   end
 
-  provided = %w[complex enumerator fiber rational thread ruby2_keywords]
-  ruby_version_is "4.0" do
-    provided << "set"
-    provided << "pathname"
-  end
-  ruby_version_is "4.1" do
-    provided << "monitor"
-  end
+  it "provided features are already required" do
+    provided = %w[complex enumerator fiber rational thread ruby2_keywords]
+    ruby_version_is "4.0" do
+      provided += %w[set pathname]
+    end
+    ruby_version_is "4.1" do
+      provided += %w[monitor]
+    end
 
-  it "#{provided.join(', ')} are already required" do
     out = ruby_exe("puts $LOADED_FEATURES", options: '--disable-gems --disable-did-you-mean')
     features = out.lines.map { |line| File.basename(line.chomp, '.*') }
 
-    # Ignore CRuby internals
-    features -= %w[encdb transdb windows_1252 windows_31]
+    # Ignore engine-specific internals
+    case RUBY_ENGINE
+    when "jruby"
+      features -= %w[java util]
+    else
+      features -= %w[encdb transdb windows_1252 windows_31]
+    end
     features.reject! { |feature| feature.end_with?('-fake') }
 
     features.sort.should == provided.sort
 
     requires = provided
     ruby_version_is "4.0" do
-      requires = requires.map { |f| f == "pathname" ? "pathname.so" : f }
+      if RUBY_ENGINE != "jruby"
+        requires = requires.map { |f| f == "pathname" ? "pathname.so" : f }
+      end
     end
 
     ruby_version_is "4.1" do
