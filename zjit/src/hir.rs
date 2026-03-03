@@ -1583,6 +1583,8 @@ impl Insn {
     /// Note: These are restrictions on the `write` `EffectSet` only. Even instructions with
     /// `read: effects::Any` could potentially be omitted.
     fn is_elidable(&self) -> bool {
+        // TODO: Remove special casing of write barrier once write barrier effects are refined.
+        // Initial work towards this is done in PR #16246
         if let Insn::WriteBarrier { .. } = self {
             return false
         }
