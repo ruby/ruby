@@ -5961,6 +5961,54 @@ env_values_at(int argc, VALUE *argv, VALUE _)
 
 /*
  * call-seq:
+ *   ENV.fetch_values(*names)                  -> array
+ *   ENV.fetch_values(*names) { |name| block } -> array
+ *
+ * Returns an Array containing the environment variable values associated
+ * with the given names:
+ *   ENV['foo'] = '0'
+ *   ENV['bar'] = '1'
+ *   ENV.fetch_values('foo', 'bar') # => ["0", "1"]
+ *
+ * When a block is given, yields each missing name to the block;
+ * the block's return value becomes the value for that name:
+ *   ENV.fetch_values('foo', 'bat', 'bar', 'bam') { |name| name.upcase }
+ *   # => ["0", "BAT", "1", "BAM"]
+ *
+ * Raises KeyError if any name is missing and no block is given:
+ *   ENV.fetch_values('foo', 'unknown') # Raises KeyError (key not found: "unknown")
+ *
+ * Raises an exception if any name is invalid.
+ * See {Invalid Names and Values}[rdoc-ref:ENV@Invalid+Names+and+Values].
+ */
+static VALUE
+env_fetch_values(int argc, VALUE *argv, VALUE _)
+{
+    VALUE result;
+    long block_given = rb_block_given_p();
+    long i;
+
+    result = rb_ary_new2(argc);
+    for (i=0; i<argc; i++) {
+        VALUE key = argv[i];
+        const char *nam = env_name(key);
+        VALUE env = getenv_with_lock(nam);
+
+        if (NIL_P(env)) {
+            if (block_given) {
+                env = rb_yield(key);
+            }
+            else {
+                rb_key_err_raise(rb_sprintf("key not found: \"%"PRIsVALUE"\"", key), envtbl, key);
+            }
+        }
+        rb_ary_push(result, env);
+    }
+    return result;
+}
+
+/*
+ * call-seq:
  *   ENV.select { |name, value| block } -> hash of name/value pairs
  *   ENV.select                         -> an_enumerator
  *   ENV.filter { |name, value| block } -> hash of name/value pairs
@@ -7577,6 +7625,8 @@ Init_Hash(void)
      * - ::clone: Raises an exception.
      * - ::except: Returns a hash of all name/value pairs except those given.
      * - ::fetch: Returns the value for the given name.
+     * - ::fetch_values: Returns an array of the values for the given names,
+     *   with optional default.
      * - ::inspect: Returns the contents of +ENV+ as a string.
      * - ::invert: Returns a hash whose keys are the +ENV+ values,
          and whose values are the corresponding +ENV+ names.
@@ -7647,6 +7697,7 @@ Init_Hash(void)
     rb_define_singleton_method(envtbl, "keys", env_f_keys, 0);
     rb_define_singleton_method(envtbl, "values", env_f_values, 0);
     rb_define_singleton_method(envtbl, "values_at", env_values_at, -1);
+    rb_define_singleton_method(envtbl, "fetch_values", env_fetch_values, -1);
     rb_define_singleton_method(envtbl, "include?", env_has_key, 1);
     rb_define_singleton_method(envtbl, "member?", env_has_key, 1);
     rb_define_singleton_method(envtbl, "has_key?", env_has_key, 1);
