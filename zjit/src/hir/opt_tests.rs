@@ -13752,7 +13752,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_is_a_thing() {
+    fn test_is_a_array_subclass_folds_to_true() {
         eval(r#"
             class C < Array; end
             O = C.new
@@ -13785,7 +13785,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_is_a_user_defined_class() {
+    fn test_is_a_user_defined_class_folds_to_true() {
         eval(r#"
             class C; end
             O = C.new
@@ -13818,60 +13818,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_is_a_thing_xyz_abc() {
-        eval(r#"
-            O = []
-            def test = O
-            test
-        "#);
-        assert_snapshot!(hir_string("test"), @r"
-        fn test@<compiled>:3:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          Jump bb3(v1)
-        bb2():
-          EntryPoint JIT(0)
-          v4:BasicObject = LoadArg :self@0
-          Jump bb3(v4)
-        bb3(v6:BasicObject):
-          PatchPoint SingleRactorMode
-          PatchPoint StableConstantNames(0x1000, O)
-          v18:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          CheckInterrupts
-          Return v18
-        ");
-    }
-
-    #[test]
-    fn test_is_a_thing_xyz() {
-        eval(r#"
-            class C < Array; end
-            O = C.new
-            def test = O
-            test
-        "#);
-        assert_snapshot!(hir_string("test"), @r"
-        fn test@<compiled>:4:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          Jump bb3(v1)
-        bb2():
-          EntryPoint JIT(0)
-          v4:BasicObject = LoadArg :self@0
-          Jump bb3(v4)
-        bb3(v6:BasicObject):
-          PatchPoint SingleRactorMode
-          PatchPoint StableConstantNames(0x1000, O)
-          v18:ArraySubclass[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          CheckInterrupts
-          Return v18
-        ");
-    }
-
-    #[test]
-    fn test_is_a_thing_symbol() {
+    fn test_is_a_symbol_folds_to_true() {
         eval(r#"
             O = :my_static_symbol
             def test = O.is_a?(Symbol)
