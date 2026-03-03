@@ -21740,6 +21740,19 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
                     return node;
                 }
                 break;
+            case PM_RESCUE_MODIFIER_NODE:
+                // A rescue modifier whose handler is a one-liner pattern match
+                // (=> or in) produces a statement. That means it cannot be
+                // extended by operators above the modifier level.
+                if (pm_binding_powers[parser->current.type].left > PM_BINDING_POWER_MODIFIER) {
+                    pm_rescue_modifier_node_t *cast = (pm_rescue_modifier_node_t *) node;
+                    pm_node_t *rescue_expression = cast->rescue_expression;
+
+                    if (PM_NODE_TYPE_P(rescue_expression, PM_MATCH_REQUIRED_NODE) || PM_NODE_TYPE_P(rescue_expression, PM_MATCH_PREDICATE_NODE)) {
+                        return node;
+                    }
+                }
+                break;
             default:
                 break;
         }
