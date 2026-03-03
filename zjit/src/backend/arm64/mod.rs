@@ -690,7 +690,8 @@ impl Assembler {
                     // The spilled value (a pointer) lives at a stack slot. Load it
                     // into a scratch register, then use the register as the base.
                     let stack_mem = stack_state.stack_membase_to_mem(MemBase::Stack { stack_idx, num_bits: 64 });
-                    asm.load_into(scratch_opnd, Opnd::Mem(stack_mem));
+                    let stack_opnd = split_large_disp(asm, Opnd::Mem(stack_mem), scratch_opnd);
+                    asm.load_into(scratch_opnd, stack_opnd);
                     Opnd::Mem(Mem {
                         base: MemBase::Reg(scratch_opnd.unwrap_reg().reg_no),
                         disp: opnd_disp,
@@ -1655,8 +1656,19 @@ impl Assembler {
         // We are moved out of SSA after resolve_ssa
 
         // We put compile_exits after alloc_regs to avoid extending live ranges for VRegs spilled on side exits.
-        asm.compile_exits();
+        // Exit code is compiled into a separate list of instructions that we append
+        // to the last reachable block before scratch_split, so it gets linearized and split.
+        let exit_insns = asm.compile_exits();
         asm_dump!(asm, compile_exits);
+
+        // Append exit instructions to the last reachable block so they are
+        // included in linearize_instructions and processed by scratch_split.
+        if let Some(&last_block) = asm.block_order().last() {
+            for insn in exit_insns {
+                asm.basic_blocks[last_block.0].insns.push(insn);
+                asm.basic_blocks[last_block.0].insn_ids.push(None);
+            }
+        }
 
         if use_scratch_reg {
             asm = asm.arm64_scratch_split();
