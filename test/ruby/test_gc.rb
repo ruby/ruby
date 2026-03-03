@@ -230,7 +230,7 @@ class TestGc < Test::Unit::TestCase
         GC.stat(stat)
       end
 
-      assert_equal (GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] + GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD]) * (2**i), stat_heap[:slot_size]
+      assert_equal GC.stat_heap(0, :slot_size) * (2**i), stat_heap[:slot_size]
       assert_operator stat_heap[:heap_live_slots], :<=, stat[:heap_live_slots]
       assert_operator stat_heap[:heap_free_slots], :<=, stat[:heap_free_slots]
       assert_operator stat_heap[:heap_final_slots], :<=, stat[:heap_final_slots]
@@ -692,7 +692,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_gc_internals
-    assert_not_nil GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]
+    assert_not_nil GC::INTERNAL_CONSTANTS[:HEAP_COUNT]
   end
 
   def test_sweep_in_finalizer
