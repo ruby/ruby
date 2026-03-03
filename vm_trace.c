@@ -1117,15 +1117,18 @@ rb_tracearg_self(rb_trace_arg_t *trace_arg)
     return trace_arg->self;
 }
 
+static void
+check_event_support(rb_trace_arg_t *trace_arg, rb_event_flag_t supported)
+{
+    if (!(trace_arg->event & supported)) {
+        rb_raise(rb_eRuntimeError, "not supported by this event");
+    }
+}
+
 VALUE
 rb_tracearg_return_value(rb_trace_arg_t *trace_arg)
 {
-    if (trace_arg->event & (RUBY_EVENT_RETURN | RUBY_EVENT_C_RETURN | RUBY_EVENT_B_RETURN)) {
-        /* ok */
-    }
-    else {
-        rb_raise(rb_eRuntimeError, "not supported by this event");
-    }
+    check_event_support(trace_arg, RUBY_EVENT_RETURN | RUBY_EVENT_C_RETURN | RUBY_EVENT_B_RETURN);
     if (UNDEF_P(trace_arg->data)) {
         rb_bug("rb_tracearg_return_value: unreachable");
     }
@@ -1135,12 +1138,7 @@ rb_tracearg_return_value(rb_trace_arg_t *trace_arg)
 VALUE
 rb_tracearg_raised_exception(rb_trace_arg_t *trace_arg)
 {
-    if (trace_arg->event & (RUBY_EVENT_RAISE | RUBY_EVENT_RESCUE)) {
-        /* ok */
-    }
-    else {
-        rb_raise(rb_eRuntimeError, "not supported by this event");
-    }
+    check_event_support(trace_arg, RUBY_EVENT_RAISE | RUBY_EVENT_RESCUE);
     if (UNDEF_P(trace_arg->data)) {
         rb_bug("rb_tracearg_raised_exception: unreachable");
     }
@@ -1152,12 +1150,7 @@ rb_tracearg_eval_script(rb_trace_arg_t *trace_arg)
 {
     VALUE data = trace_arg->data;
 
-    if (trace_arg->event & (RUBY_EVENT_SCRIPT_COMPILED)) {
-        /* ok */
-    }
-    else {
-        rb_raise(rb_eRuntimeError, "not supported by this event");
-    }
+    check_event_support(trace_arg, RUBY_EVENT_SCRIPT_COMPILED);
     if (UNDEF_P(data)) {
         rb_bug("rb_tracearg_eval_script: unreachable");
     }
@@ -1176,12 +1169,7 @@ rb_tracearg_instruction_sequence(rb_trace_arg_t *trace_arg)
 {
     VALUE data = trace_arg->data;
 
-    if (trace_arg->event & (RUBY_EVENT_SCRIPT_COMPILED)) {
-        /* ok */
-    }
-    else {
-        rb_raise(rb_eRuntimeError, "not supported by this event");
-    }
+    check_event_support(trace_arg, RUBY_EVENT_SCRIPT_COMPILED);
     if (UNDEF_P(data)) {
         rb_bug("rb_tracearg_instruction_sequence: unreachable");
     }
@@ -1201,12 +1189,7 @@ rb_tracearg_instruction_sequence(rb_trace_arg_t *trace_arg)
 VALUE
 rb_tracearg_object(rb_trace_arg_t *trace_arg)
 {
-    if (trace_arg->event & (RUBY_INTERNAL_EVENT_NEWOBJ | RUBY_INTERNAL_EVENT_FREEOBJ)) {
-        /* ok */
-    }
-    else {
-        rb_raise(rb_eRuntimeError, "not supported by this event");
-    }
+    check_event_support(trace_arg, RUBY_INTERNAL_EVENT_NEWOBJ | RUBY_INTERNAL_EVENT_FREEOBJ);
     if (UNDEF_P(trace_arg->data)) {
         rb_bug("rb_tracearg_object: unreachable");
     }
