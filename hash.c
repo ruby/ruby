@@ -720,7 +720,7 @@ ar_force_convert_table(VALUE hash, const char *file, int line)
         unsigned int bound, size;
 
         // prepare hash values
-        do {
+        while (1) {
             st_data_t keys[RHASH_AR_TABLE_MAX_SIZE];
             bound = RHASH_AR_TABLE_BOUND(hash);
             size = RHASH_AR_TABLE_SIZE(hash);
@@ -735,7 +735,9 @@ ar_force_convert_table(VALUE hash, const char *file, int line)
             if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) return RHASH_ST_TABLE(hash);
             if (UNLIKELY(RHASH_AR_TABLE_BOUND(hash) != bound)) continue;
             if (UNLIKELY(ar_each_key(ar, bound, ar_each_key_cmp, keys, NULL, NULL))) continue;
-        } while (0);
+
+            break;
+        }
 
         // make st
         st_table tab;
