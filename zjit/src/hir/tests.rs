@@ -123,7 +123,7 @@ mod snapshot_tests {
           v23:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v13, v15, v11], locals: [] }
           PatchPoint NoSingletonClass(Object@0x1010)
           PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
-          v26:HeapObject[class_exact*:Object@VALUE(0x1010)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1010)]
+          v26:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)]
           v27:BasicObject = SendDirect v26, 0x1048, :foo (0x1058), v13, v15, v11
           v18:Any = Snapshot FrameState { pc: 0x1060, stack: [v27], locals: [] }
           PatchPoint NoTracePoint
@@ -160,7 +160,7 @@ mod snapshot_tests {
           v14:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13], locals: [] }
           PatchPoint NoSingletonClass(Object@0x1010)
           PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
-          v23:HeapObject[class_exact*:Object@VALUE(0x1010)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1010)]
+          v23:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)]
           v24:BasicObject = SendDirect v23, 0x1048, :foo (0x1058), v11, v13
           v16:Any = Snapshot FrameState { pc: 0x1060, stack: [v24], locals: [] }
           PatchPoint NoTracePoint
@@ -2310,7 +2310,7 @@ pub mod hir_build_tests {
         eval("
             def test(a, ...) = foo(a, ...)
         ");
-        assert_snapshot!(hir_string("test"), @"
+        assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -2339,7 +2339,7 @@ pub mod hir_build_tests {
           v36:CInt64 = GuardNoBitsSet v35, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM=CUInt64(512)
           v37:CInt64 = LoadField v34, :_env_data_index_specval@0x1005
           v38:CInt64 = GuardAnyBitSet v37, CUInt64(1)
-          v39:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
+          v39:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           SideExit SplatKwNotProfiled
         ");
     }
@@ -3232,7 +3232,7 @@ pub mod hir_build_tests {
           v21:CInt64 = GuardNoBitsSet v20, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM=CUInt64(512)
           v22:CInt64 = LoadField v19, :_env_data_index_specval@0x1003
           v23:CInt64 = GuardAnyBitSet v22, CUInt64(1)
-          v24:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
+          v24:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           SideExit SplatKwNotProfiled
         ");
     }
@@ -3311,7 +3311,7 @@ pub mod hir_build_tests {
           v21:CInt64 = GuardNoBitsSet v20, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM=CUInt64(512)
           v22:CInt64 = LoadField v19, :_env_data_index_specval@0x1003
           v23:CInt64 = GuardAnyBitSet v22, CUInt64(1)
-          v24:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
+          v24:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           v26:HashExact = GuardType v12, HashExact
           v28:BasicObject = Send v11, 0x1002, :foo, v26, v24 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
@@ -3348,7 +3348,7 @@ pub mod hir_build_tests {
           v21:CInt64 = GuardNoBitsSet v20, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM=CUInt64(512)
           v22:CInt64 = LoadField v19, :_env_data_index_specval@0x1003
           v23:CInt64 = GuardAnyBitSet v22, CUInt64(1)
-          v24:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
+          v24:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           v26:HashExact = GuardType v12, HashExact
           v28:BasicObject = Send v11, 0x1002, :foo, v26, v24 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
@@ -3431,7 +3431,7 @@ pub mod hir_build_tests {
           v21:CInt64 = GuardNoBitsSet v20, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM=CUInt64(512)
           v22:CInt64 = LoadField v19, :_env_data_index_specval@0x1003
           v23:CInt64 = GuardAnyBitSet v22, CUInt64(1)
-          v24:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
+          v24:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           SideExit SplatKwNotNilOrHash
         ");
     }
@@ -4084,7 +4084,7 @@ pub mod hir_build_tests {
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("Dir", "open"));
         assert!(iseq_contains_opcode(iseq, YARVINSN_opt_invokebuiltin_delegate), "iseq Dir.open does not contain invokebuiltin");
         let function = iseq_to_hir(iseq).unwrap();
-        assert_snapshot!(hir_string_function(&function), @"
+        assert_snapshot!(hir_string_function(&function), @r"
         fn open@<internal:dir>:
         bb1():
           EntryPoint interpreter
@@ -4114,12 +4114,12 @@ pub mod hir_build_tests {
           v35:CInt64 = GuardNoBitsSet v34, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM=CUInt64(512)
           v36:CInt64 = LoadField v33, :_env_data_index_specval@0x1005
           v37:CInt64 = GuardAnyBitSet v36, CUInt64(1)
-          v38:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1008))
+          v38:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           CheckInterrupts
           v41:CBool[true] = Test v38
           v42 = RefineType v38, Falsy
           IfFalse v41, bb4(v18, v19, v20, v21, v22, v27)
-          v44:HeapObject[BlockParamProxy] = RefineType v38, Truthy
+          v44:ObjectSubclass[BlockParamProxy] = RefineType v38, Truthy
           v48:BasicObject = InvokeBlock, v27 # SendFallbackReason: Uncategorized(invokeblock)
           v51:BasicObject = InvokeBuiltin dir_s_close, v18, v27
           CheckInterrupts
