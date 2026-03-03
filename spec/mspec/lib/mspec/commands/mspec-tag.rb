@@ -112,6 +112,7 @@ class MSpecTag < MSpecScript
       MSpec.register_mode :pretend
       MSpec.register_mode :unguarded
       config[:formatter] = false
+      config[:xtags] = []
     else
       raise ArgumentError, "No recognized action given"
     end

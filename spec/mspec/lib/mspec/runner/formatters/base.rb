@@ -46,7 +46,7 @@ class BaseFormatter
       LeakCheckerAction.new.register
     end
 
-    if ENV['CHECK_LEAKS'] || ENV['CHECK_CONSTANT_LEAKS']
+    if (ENV['CHECK_LEAKS'] || ENV['CHECK_CONSTANT_LEAKS']) && ENV['CHECK_CONSTANT_LEAKS'] != 'false'
       save = ENV['CHECK_LEAKS'] == 'save' || ENV['CHECK_CONSTANT_LEAKS'] == 'save'
       ConstantsLeakCheckerAction.new(save).register
     end
