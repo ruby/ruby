@@ -11852,9 +11852,8 @@ mod hir_opt_tests {
         ");
     }
 
-    // TODO(max): Make this fold to false like the test above folds to true
     #[test]
-    fn test_dont_fold_is_a_false() {
+    fn test_fold_is_a_false() {
         eval(r#"
             def test = 5.is_a?(String)
             test
