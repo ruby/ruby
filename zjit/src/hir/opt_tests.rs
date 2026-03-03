@@ -11882,6 +11882,103 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_is_a_array_subclass_folds_to_true() {
+        eval(r#"
+            class C < Array; end
+            O = C.new
+            def test = O.is_a?(Array)
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, O)
+          v22:ArraySubclass[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint StableConstantNames(0x1010, Array)
+          v25:Class[Array@0x1018] = Const Value(VALUE(0x1018))
+          PatchPoint NoSingletonClass(C@0x1020)
+          PatchPoint MethodRedefined(C@0x1020, is_a?@0x1028, cme:0x1030)
+          v31:TrueClass = Const Value(true)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v31
+        ");
+    }
+
+    #[test]
+    fn test_is_a_user_defined_class_folds_to_true() {
+        eval(r#"
+            class C; end
+            O = C.new
+            def test = O.is_a?(C)
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, O)
+          v22:ObjectSubclass[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint StableConstantNames(0x1010, C)
+          v25:Class[C@0x1018] = Const Value(VALUE(0x1018))
+          PatchPoint NoSingletonClass(C@0x1018)
+          PatchPoint MethodRedefined(C@0x1018, is_a?@0x1019, cme:0x1020)
+          v31:TrueClass = Const Value(true)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v31
+        ");
+    }
+
+    #[test]
+    fn test_is_a_symbol_folds_to_true() {
+        eval(r#"
+            O = :my_static_symbol
+            def test = O.is_a?(Symbol)
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, O)
+          v22:StaticSymbol[:my_static_symbol] = Const Value(VALUE(0x1008))
+          PatchPoint StableConstantNames(0x1010, Symbol)
+          v25:Class[Symbol@0x1018] = Const Value(VALUE(0x1018))
+          PatchPoint MethodRedefined(Symbol@0x1018, is_a?@0x1019, cme:0x1020)
+          v30:TrueClass = Const Value(true)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v30
+        ");
+    }
+
+    #[test]
     fn counting_complex_feature_use_for_fallback() {
         eval("
             define_method(:fancy) { |_a, *_b, kw: 100, **kw_rest, &block| }
@@ -13748,103 +13845,6 @@ mod hir_opt_tests {
           IncrCounter inline_cfunc_optimized_send_count
           PatchPoint NoEPEscape(each)
           Jump bb8(v67, v94)
-        ");
-    }
-
-    #[test]
-    fn test_is_a_array_subclass_folds_to_true() {
-        eval(r#"
-            class C < Array; end
-            O = C.new
-            def test = O.is_a?(Array)
-            test
-        "#);
-        assert_snapshot!(hir_string("test"), @r"
-        fn test@<compiled>:4:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          Jump bb3(v1)
-        bb2():
-          EntryPoint JIT(0)
-          v4:BasicObject = LoadArg :self@0
-          Jump bb3(v4)
-        bb3(v6:BasicObject):
-          PatchPoint SingleRactorMode
-          PatchPoint StableConstantNames(0x1000, O)
-          v22:ArraySubclass[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          PatchPoint StableConstantNames(0x1010, Array)
-          v25:Class[Array@0x1018] = Const Value(VALUE(0x1018))
-          PatchPoint NoSingletonClass(C@0x1020)
-          PatchPoint MethodRedefined(C@0x1020, is_a?@0x1028, cme:0x1030)
-          v31:TrueClass = Const Value(true)
-          IncrCounter inline_cfunc_optimized_send_count
-          CheckInterrupts
-          Return v31
-        ");
-    }
-
-    #[test]
-    fn test_is_a_user_defined_class_folds_to_true() {
-        eval(r#"
-            class C; end
-            O = C.new
-            def test = O.is_a?(C)
-            test
-        "#);
-        assert_snapshot!(hir_string("test"), @r"
-        fn test@<compiled>:4:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          Jump bb3(v1)
-        bb2():
-          EntryPoint JIT(0)
-          v4:BasicObject = LoadArg :self@0
-          Jump bb3(v4)
-        bb3(v6:BasicObject):
-          PatchPoint SingleRactorMode
-          PatchPoint StableConstantNames(0x1000, O)
-          v22:ObjectSubclass[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          PatchPoint StableConstantNames(0x1010, C)
-          v25:Class[C@0x1018] = Const Value(VALUE(0x1018))
-          PatchPoint NoSingletonClass(C@0x1018)
-          PatchPoint MethodRedefined(C@0x1018, is_a?@0x1019, cme:0x1020)
-          v31:TrueClass = Const Value(true)
-          IncrCounter inline_cfunc_optimized_send_count
-          CheckInterrupts
-          Return v31
-        ");
-    }
-
-    #[test]
-    fn test_is_a_symbol_folds_to_true() {
-        eval(r#"
-            O = :my_static_symbol
-            def test = O.is_a?(Symbol)
-            test
-        "#);
-        assert_snapshot!(hir_string("test"), @r"
-        fn test@<compiled>:3:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          Jump bb3(v1)
-        bb2():
-          EntryPoint JIT(0)
-          v4:BasicObject = LoadArg :self@0
-          Jump bb3(v4)
-        bb3(v6:BasicObject):
-          PatchPoint SingleRactorMode
-          PatchPoint StableConstantNames(0x1000, O)
-          v22:StaticSymbol[:my_static_symbol] = Const Value(VALUE(0x1008))
-          PatchPoint StableConstantNames(0x1010, Symbol)
-          v25:Class[Symbol@0x1018] = Const Value(VALUE(0x1018))
-          PatchPoint MethodRedefined(Symbol@0x1018, is_a?@0x1019, cme:0x1020)
-          v30:TrueClass = Const Value(true)
-          IncrCounter inline_cfunc_optimized_send_count
-          CheckInterrupts
-          Return v30
         ");
     }
 }
