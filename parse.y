@@ -11708,16 +11708,10 @@ rb_node_match3_new(struct parser_params *p, NODE *nd_recv, NODE *nd_value, const
     return n;
 }
 
-/* TODO: Use union for NODE_LIST2 */
 static rb_node_list_t *
 rb_node_list_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc)
 {
-    rb_node_list_t *n = NODE_NEWNODE(NODE_LIST, rb_node_list_t, loc);
-    n->nd_head = nd_head;
-    n->as.nd_alen = 1;
-    n->nd_next = 0;
-
-    return n;
+    return rb_node_list_new2(p, nd_head, 1, 0, loc);
 }
 
 static rb_node_list_t *
