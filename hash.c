@@ -5332,7 +5332,7 @@ static VALUE
 env_fetch(int argc, VALUE *argv, VALUE _)
 {
     VALUE key;
-    long block_given;
+    int block_given;
     const char *nam;
     VALUE env;
 
