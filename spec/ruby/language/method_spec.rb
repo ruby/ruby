@@ -1101,6 +1101,16 @@ describe "A method" do
     end
 
     evaluate <<-ruby do
+      def m(**nil); :ok; end;
+      ruby
+
+      m().should == :ok
+      -> { m(a: 1) }.should raise_error(ArgumentError, 'no keywords accepted')
+      -> { m(**{a: 1}) }.should raise_error(ArgumentError, 'no keywords accepted')
+      -> { m("a" => 1) }.should raise_error(ArgumentError, 'no keywords accepted')
+    end
+
+    evaluate <<-ruby do
       def m(a, **nil); a end;
       ruby
 

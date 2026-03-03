@@ -948,7 +948,7 @@ describe "Module#autoload" do
 
             begin
               Object.const_get(mod_name).foo
-            rescue NoMethodError
+            rescue NameError, NoMethodError # rubocop:disable Lint/ShadowedException
               barrier.disable!
               break false
             end
@@ -956,7 +956,7 @@ describe "Module#autoload" do
         end
       end
 
-      # check that no thread got a NoMethodError because of partially loaded module
+      # check that no thread got a NameError or NoMethodError because of partially loaded module
       threads.all? {|t| t.value}.should be_true
 
       # check that the autoloaded file was evaled exactly once
@@ -965,6 +965,8 @@ describe "Module#autoload" do
       mod_names.each do |mod_name|
         Object.send(:remove_const, mod_name)
       end
+    ensure
+      threads.each(&:join) if threads
     end
 
     it "raises a NameError in each thread if the constant is not set" do

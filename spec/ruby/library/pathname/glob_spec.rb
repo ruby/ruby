@@ -41,7 +41,7 @@ describe 'Pathname.glob' do
   it "raises an ArgumentError when supplied a keyword argument other than :base" do
     -> {
       Pathname.glob('*i*.rb', foo: @dir + 'lib')
-    }.should raise_error(ArgumentError, /unknown keyword: :?foo/)
+    }.should raise_error(ArgumentError, "unknown keyword: :foo")
   end
 
   it "does not raise an ArgumentError when supplied a flag and :base keyword argument" do

@@ -1,8 +1,15 @@
 module DataSpecs
   if Data.respond_to?(:define)
     Measure = Data.define(:amount, :unit)
+    Single = Data.define(:value)
 
     class MeasureWithOverriddenName < Measure
+      def self.name
+        "A"
+      end
+    end
+
+    class SingleWithOverriddenName < Single
       def self.name
         "A"
       end

@@ -15,7 +15,7 @@ describe "C-API IO function" do
   end
 
   after :each do
-    @io.close unless @io.closed?
+    @io.close
     rm_r @name
   end
 
@@ -118,7 +118,7 @@ describe "C-API IO function" do
   end
 
   after :each do
-    @io.close unless @io.closed?
+    @io.close
     rm_r @name
   end
 
@@ -213,9 +213,9 @@ describe "C-API IO function" do
   end
 
   after :each do
-    @r_io.close unless @r_io.closed?
-    @w_io.close unless @w_io.closed?
-    @rw_io.close unless @rw_io.closed?
+    @r_io.close
+    @w_io.close
+    @rw_io.close
     rm_r @name
   end
 
@@ -678,7 +678,7 @@ describe "rb_fd_fix_cloexec" do
   end
 
   after :each do
-    @io.close unless @io.closed?
+    @io.close
     rm_r @name
   end
 
@@ -699,13 +699,65 @@ describe "rb_cloexec_open" do
   end
 
   after :each do
-    @io.close unless @io.nil? || @io.closed?
+    @io.close if @io
     rm_r @name
   end
 
   it "sets close_on_exec on the newly-opened IO" do
     @io = @o.rb_cloexec_open(@name, 0, 0)
     @io.close_on_exec?.should be_true
+  end
+end
+
+describe "rb_cloexec_dup" do
+  before :each do
+    @o = CApiIOSpecs.new
+    @name = tmp("c_api_rb_io_specs")
+    touch @name
+
+    @io = new_io @name, "r"
+    @dup = nil
+  end
+
+  after :each do
+    @dup.close if @dup
+    @io.close
+    rm_r @name
+  end
+
+  it "duplicates a file descriptor and sets close_on_exec" do
+    @dup = @o.rb_cloexec_dup(@io)
+    @dup.should.close_on_exec?
+    @dup.fileno.should_not == @io.fileno
+  end
+end
+
+describe "rb_cloexec_fcntl_dupfd" do
+  before :each do
+    @o = CApiIOSpecs.new
+    @name = tmp("c_api_rb_io_specs")
+    touch @name
+
+    @io = new_io @name, "r"
+    @dup = nil
+  end
+
+  after :each do
+    @dup.close if @dup
+    @io.close
+    rm_r @name
+  end
+
+  it "duplicates a file descriptor and sets close_on_exec" do
+    @dup = @o.rb_cloexec_fcntl_dupfd(@io, 3)
+    @dup.close_on_exec?.should be_true
+    @dup.fileno.should_not == @io.fileno
+  end
+
+  it "returns a file descriptor greater than or equal to minfd" do
+    @dup = @o.rb_cloexec_fcntl_dupfd(@io, 100)
+    @dup.fileno.should >= 100
+    @dup.close_on_exec?.should be_true
   end
 end
 

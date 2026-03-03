@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
+# Actually these are specs of Hash#initialize, there is no Hash.new it's just Class.new.
 describe "Hash.new" do
   it "creates an empty Hash if passed no arguments" do
     Hash.new.should == {}

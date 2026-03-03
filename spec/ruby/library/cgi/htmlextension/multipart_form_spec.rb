@@ -11,7 +11,7 @@ ruby_version_is ""..."4.0" do
     end
 
     describe "when passed no arguments" do
-      it "returns a 'form'-element with it's enctype set to multipart" do
+      it "returns a 'form'-element with its enctype set to multipart" do
         output = @html.multipart_form
         output.should equal_element("FORM", { "ENCTYPE" => "multipart/form-data", "METHOD" => "post" }, "")
       end
