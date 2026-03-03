@@ -3903,20 +3903,6 @@ gc_sweep_finish(rb_objspace_t *objspace)
             heap->pooled_pages = NULL;
             objspace->rincgc.pooled_slots = 0;
         }
-
-        /* Merge retired pages back into free_pages — retirement served its
-         * purpose during incremental sweep, now release for allocation. */
-        {
-            struct heap_page *retired = heap->retired_list;
-            while (retired) {
-                struct heap_page *next = retired->free_next;
-                retired->flags.retired = 0;
-                heap_add_freepage(heap, retired);
-                retired = next;
-            }
-            heap->retired_list = NULL;
-            heap->retired_pages = 0;
-        }
     }
 
     rb_gc_event_hook(0, RUBY_INTERNAL_EVENT_GC_END_SWEEP);
