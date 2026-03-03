@@ -387,7 +387,7 @@ class TestGCCompact < Test::Unit::TestCase
       GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
       Fiber.new {
-        str = "a" * GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] * 4
+        str = "a" * GC.stat_heap(0, :slot_size) * 4
         $ary = STR_COUNT.times.map { +"" << str }
       }.resume
 
@@ -408,7 +408,7 @@ class TestGCCompact < Test::Unit::TestCase
       GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
       Fiber.new {
-        $ary = STR_COUNT.times.map { ("a" * GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] * 4).squeeze! }
+        $ary = STR_COUNT.times.map { ("a" * GC.stat_heap(0, :slot_size) * 4).squeeze! }
       }.resume
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
