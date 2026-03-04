@@ -2022,12 +2022,18 @@ heap_add_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page)
     heap->total_slots += page->total_slots;
 }
 
+static bool heap_unretire_page(rb_objspace_t *objspace, rb_heap_t *heap);
+
 static int
 heap_page_allocate_and_initialize(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     gc_report(1, objspace, "heap_page_allocate_and_initialize: rb_darray_size(objspace->heap_pages.sorted): %"PRIdSIZE", "
                   "allocatable_slots: %"PRIdSIZE", heap->total_pages: %"PRIdSIZE"\n",
                   rb_darray_size(objspace->heap_pages.sorted), objspace->heap_pages.allocatable_slots, heap->total_pages);
+
+    if (heap->free_pages == NULL && heap_unretire_page(objspace, heap)) {
+        return true;
+    }
 
     bool allocated = false;
     struct heap_page *page = heap_page_resurrect(objspace);
