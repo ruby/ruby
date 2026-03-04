@@ -164,6 +164,50 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2, allowed_iseqs: 'entry@-e:2'
   end
 
+  def test_send_direct_disallowed_callee_uses_fallback
+    script = <<~RUBY
+      def fast_string_to_time(string)
+        return unless string.include?("-")
+        if is_utc?
+          target(string, in: "UTC")
+        else
+          target(string)
+        end
+      end
+
+      def is_utc?
+        default_timezone == :utc
+      end
+
+      def default_timezone
+        :utc
+      end
+
+      def target(year = nil, mon = nil, mday = nil, hour = nil, min = nil, sec = nil, zone = nil, in: nil, precision: 9)
+        [year.class, binding.local_variable_get(:in), precision]
+      end
+
+      20.times { fast_string_to_time("2023-05-08 10:21:10.510629") }
+      puts :ok
+    RUBY
+
+    out, err, status = eval_with_jit(
+      script,
+      call_threshold: 3,
+      allowed_iseqs: <<~LIST,
+        fast_string_to_time@-e:2
+        is_utc?@-e:11
+        default_timezone@-e:15
+      LIST
+      extra_args: ['--zjit-dump-hir']
+    )
+
+    assert_success(out, err, status)
+    assert_includes(out, "ok\n")
+    assert_includes(out, "fn fast_string_to_time@-e:2:")
+    refute_match(/SendDirect .*:target/, out)
+  end
+
   def test_opt_new_with_custom_allocator
     assert_compiles '"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"', %q{
       require "digest"
