@@ -427,6 +427,13 @@ impl Assembler {
                 if let (Opnd::Mem(_), Opnd::Mem(_)) = (dst, src) {
                     asm.mov(scratch_opnd, src);
                     asm.mov(dst, scratch_opnd);
+                } else if let (Opnd::Mem(_), Opnd::Value(value)) = (dst, src) {
+                    if imm_num_bits(value.as_i64()) > 32 {
+                        asm.mov(scratch_opnd, src);
+                        asm.mov(dst, scratch_opnd);
+                    } else {
+                        asm.mov(dst, src);
+                    }
                 } else {
                     asm.mov(dst, src);
                 }
