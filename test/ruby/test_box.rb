@@ -583,6 +583,49 @@ class TestBox < Test::Unit::TestCase
     end;
   end
 
+  def test_lastline_not_cached_in_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      r, w = IO.pipe
+      w.write("first\nsecond\n")
+      w.close
+      STDIN.reopen(r)
+      via_gets = Ruby::Box.new.eval(<<~'CODE')
+        gets
+        _ = $_
+        gets
+        $_
+      CODE
+      assert_equal "second\n", via_gets
+    end;
+  end
+
+  def test_lastline_not_cached_in_nested_boxes
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      r, w = IO.pipe
+      w.write("outer1\ninner1\ninner2\nouter2\n")
+      w.close
+      STDIN.reopen(r)
+      inner_via_gets, outer_via_gets = Ruby::Box.new.eval(<<~'CODE')
+        gets
+        _ = $_
+
+        inner_result = Ruby::Box.new.eval(<<~'INNER')
+          gets
+          _ = $_
+          gets
+          $_
+        INNER
+
+        gets
+        [inner_result, $_]
+      CODE
+      assert_equal "inner2\n", inner_via_gets
+      assert_equal "outer2\n", outer_via_gets
+    end;
+  end
+
   def test_load_path_and_loaded_features
     setup_box
 
