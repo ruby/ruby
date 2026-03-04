@@ -152,23 +152,25 @@ impl Assembler {
             let is_jump = insn.is_jump();
             let mut opnd_iter = insn.opnd_iter_mut();
 
-            while let Some(opnd) = opnd_iter.next() {
-                // Lower Opnd::Value to Opnd::VReg or Opnd::UImm
-                if let Opnd::Value(value) = opnd {
-                    // If the value is a special constant, and it fits in 32 bits,
-                    // then we're going to output this as just an immediate
-                    if value.special_const_p() {
-                        if imm_num_bits(value.as_i64()) > 32 {
+            if !is_jump {
+                while let Some(opnd) = opnd_iter.next() {
+                    // Lower Opnd::Value to Opnd::VReg or Opnd::UImm
+                    if let Opnd::Value(value) = opnd {
+                        // If the value is a special constant, and it fits in 32 bits,
+                        // then we're going to output this as just an immediate
+                        if value.special_const_p() {
+                            if imm_num_bits(value.as_i64()) > 32 {
+                                *opnd = asm.load(*opnd);
+                            } else {
+                                *opnd = Opnd::UImm(value.as_u64());
+                            }
+                            // If we're already loading it, don't load it again
+                            // If it's a jump, then we want to let parallel move
+                            // take care of the block params (otherwise we end up
+                            // with loads between jump instructions)
+                        } else if !is_load {
                             *opnd = asm.load(*opnd);
-                        } else {
-                            *opnd = Opnd::UImm(value.as_u64());
                         }
-                        // If we're already loading it, don't load it again
-                        // If it's a jump, then we want to let parallel move
-                        // take care of the block params (otherwise we end up
-                        // with loads between jump instructions)
-                    } else if !is_load && !is_jump {
-                        *opnd = asm.load(*opnd);
                     }
                 }
             }
@@ -651,11 +653,21 @@ impl Assembler {
                 }
             }
 
+            /// Check if an operand aliases the given register (either as a
+            /// register operand or as a memory base).
+            fn aliases_reg(opnd: &Opnd, reg: Reg) -> bool {
+                match opnd {
+                    Opnd::Reg(r) => r.reg_no == reg.reg_no,
+                    Opnd::Mem(Mem { base: MemBase::Reg(reg_no), .. }) => *reg_no == reg.reg_no,
+                    _ => false,
+                }
+            }
+
             // If the truthy value is a memory operand
             if let Opnd::Mem(_) = truthy {
-                // If out == the base of truthy's memory operand, we must load truthy
-                // into the scratch register first to avoid clobbering it.
-                if mem_uses_reg(&truthy, out_reg) {
+                // If out aliases truthy, we must load truthy into the scratch
+                // register first to avoid clobbering it with the falsy mov.
+                if aliases_reg(&truthy, out_reg) {
                     mov(cb, SCRATCH0_OPND.into(), truthy.into());
                     if out != falsy {
                         mov(cb, out.into(), falsy.into());
@@ -668,9 +680,9 @@ impl Assembler {
                     cmov_fn(cb, out.into(), truthy.into());
                 }
             } else {
-                // If out == the base of falsy's memory operand, we must load falsy
-                // into the scratch register first to avoid clobbering it.
-                if mem_uses_reg(&falsy, out_reg) {
+                // If out aliases falsy, we must load falsy into the scratch
+                // register first to avoid clobbering it with the truthy mov.
+                if aliases_reg(&falsy, out_reg) {
                     mov(cb, SCRATCH0_OPND.into(), falsy.into());
                     if out != truthy {
                         mov(cb, out.into(), truthy.into());
