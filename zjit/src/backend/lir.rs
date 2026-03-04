@@ -2415,7 +2415,7 @@ impl Assembler
                         new_ids.push(None);
                     }
 
-                    // Move result from C_RET to where mov_input was allocated
+                    // Move result from C_RET to where the output was allocated
                     new_insns.push(Insn::Mov { dest: out, src: C_RET_OPND });
                     new_ids.push(None);
 
@@ -3592,6 +3592,14 @@ impl Assembler {
         self.push_insn(Insn::CCall { fptr, opnds, start_marker: None, end_marker: None, out });
         self.clear_stack_canary(canary_opnd);
         out
+    }
+
+    /// Call a C function, discarding the result. Uses C_RET_OPND directly as
+    /// the output to avoid allocating a vreg and the extra mov instruction.
+    pub fn ccall_void(&mut self, fptr: *const u8, opnds: Vec<Opnd>) {
+        use crate::backend::current::C_RET_OPND;
+        let fptr = Opnd::const_ptr(fptr);
+        self.push_insn(Insn::CCall { fptr, opnds, start_marker: None, end_marker: None, out: C_RET_OPND });
     }
 
     /// Call a C function stored in a register
