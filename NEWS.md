@@ -11,6 +11,12 @@ Note that each entry is kept to a minimum, see links for details.
 
 Note: We're only listing outstanding class updates.
 
+* ENV
+
+    * `ENV.fetch_values` is added. It returns an array of values for the
+      given names, raising `KeyError` for missing names unless a block is
+      given. [[Feature #21781]]
+
 * Kernel
 
     * `Kernel#autoload_relative` and `Module#autoload_relative` are added.

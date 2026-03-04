@@ -281,6 +281,26 @@ class TestEnv < Test::Unit::TestCase
     assert_equal(["foo", "foo"], ENV.values_at("test", "test"))
   end
 
+  def test_fetch_values
+    ENV["test"] = "foo"
+    ENV["test2"] = "bar"
+    assert_equal(["foo", "bar"], ENV.fetch_values("test", "test2"))
+    assert_equal(["foo", "foo"], ENV.fetch_values("test", "test"))
+    assert_equal([], ENV.fetch_values)
+
+    ENV.delete("test2")
+    assert_raise(KeyError) { ENV.fetch_values("test", "test2") }
+
+    assert_equal(["foo", "default"], ENV.fetch_values("test", "test2") { "default" })
+    assert_equal(["foo", "TEST2"], ENV.fetch_values("test", "test2") { |k| k.upcase })
+
+    e = assert_raise(KeyError) { ENV.fetch_values("test2") }
+    assert_same(ENV, e.receiver)
+    assert_equal("test2", e.key)
+
+    assert_invalid_env {|v| ENV.fetch_values(v)}
+  end
+
   def test_select
     ENV["test"] = "foo"
     h = ENV.select {|k| IGNORE_CASE ? k.upcase == "TEST" : k == "test" }
