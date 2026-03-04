@@ -203,7 +203,7 @@ pub fn gen_iseq_call(cb: &mut CodeBlock, iseq_call: &IseqCallRef) -> Result<(), 
     let iseq = iseq_call.iseq.get();
     iseq_call.regenerate(cb, |asm| {
         asm_comment!(asm, "call function stub: {}", iseq_get_location(iseq, 0));
-        asm.ccall(stub_addr, vec![]);
+        asm.ccall_void(stub_addr, vec![]);
     });
     Ok(())
 }
@@ -2864,7 +2864,7 @@ fn function_stub_hit_body(cb: &mut CodeBlock, iseq_call: &IseqCallRef) -> Result
     let iseq = iseq_call.iseq.get();
     iseq_call.regenerate(cb, |asm| {
         asm_comment!(asm, "call compiled function: {}", iseq_get_location(iseq, 0));
-        asm.ccall(code_addr, vec![]);
+        asm.ccall_void(code_addr, vec![]);
     });
 
     Ok(jit_entry_ptr)
