@@ -469,6 +469,7 @@ impl Assembler {
                     *left = split_if_both_memory(asm, *left, *right, SCRATCH0_OPND);
                     *right = split_stack_membase(asm, *right, SCRATCH1_OPND, &stack_state);
                     *right = split_64bit_immediate(asm, *right, SCRATCH1_OPND);
+                    *out = split_stack_membase(asm, *out, SCRATCH1_OPND, &stack_state);
 
                     let (out, left) = (*out, *left);
                     asm.push_insn(insn);
