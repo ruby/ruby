@@ -184,6 +184,8 @@ pub enum DumpLIR {
     resolve_parallel_mov,
     /// Dump LIR after {arch}_scratch_split
     scratch_split,
+    /// Dump live intervals grid before alloc_regs
+    live_intervals,
 }
 
 /// All compiler stages for --zjit-dump-lir=all.
@@ -194,6 +196,7 @@ const DUMP_LIR_ALL: &[DumpLIR] = &[
     DumpLIR::compile_exits,
     DumpLIR::resolve_parallel_mov,
     DumpLIR::scratch_split,
+    DumpLIR::live_intervals,
 ];
 
 /// Maximum value for --zjit-mem-size/--zjit-exec-mem-size in MiB.
@@ -399,7 +402,9 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
                     "split" => DumpLIR::split,
                     "alloc_regs" => DumpLIR::alloc_regs,
                     "compile_exits" => DumpLIR::compile_exits,
+                    "resolve_parallel_mov" => DumpLIR::resolve_parallel_mov,
                     "scratch_split" => DumpLIR::scratch_split,
+                    "live_intervals" => DumpLIR::live_intervals,
                     _ => {
                         let valid_options = DUMP_LIR_ALL.iter().map(|opt| format!("{opt:?}")).collect::<Vec<_>>().join(", ");
                         eprintln!("invalid --zjit-dump-lir option: '{filter}'");

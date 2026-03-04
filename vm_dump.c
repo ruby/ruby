@@ -1382,6 +1382,10 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
 {
     const char *box_env = getenv("RUBY_BUGREPORT_BOX_ENV");
     const char *cmd = getenv("RUBY_ON_BUG");
+    const char *skip = getenv("RUBY_YEEHAW");
+    if (skip) {
+        return false;
+    }
     if (cmd) {
         char buf[0x100];
         snprintf(buf, sizeof(buf), "%s %"PRI_PIDT_PREFIX"d", cmd, getpid());
