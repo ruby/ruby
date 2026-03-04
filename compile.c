@@ -1029,36 +1029,12 @@ rb_iseq_original_iseq(const rb_iseq_t *iseq) /* cold path */
 /* definition of data structure for compiler */
 /*********************************************/
 
-/*
- * On 32-bit SPARC, GCC by default generates SPARC V7 code that may require
- * 8-byte word alignment. On the other hand, Oracle Solaris Studio seems to
- * generate SPARCV8PLUS code with unaligned memory access instructions.
- * That is why the STRICT_ALIGNMENT is defined only with GCC.
- */
-#if defined(__sparc) && SIZEOF_VOIDP == 4 && defined(__GNUC__)
-  #define STRICT_ALIGNMENT
-#endif
-
-/*
- * Some OpenBSD platforms (including sparc64) require strict alignment.
- */
-#if defined(__OpenBSD__)
-  #include <sys/endian.h>
-  #ifdef __STRICT_ALIGNMENT
-    #define STRICT_ALIGNMENT
-  #endif
-#endif
-
-#ifdef STRICT_ALIGNMENT
-  #if defined(HAVE_TRUE_LONG_LONG) && SIZEOF_LONG_LONG > SIZEOF_VALUE
-    #define ALIGNMENT_SIZE SIZEOF_LONG_LONG
-  #else
-    #define ALIGNMENT_SIZE SIZEOF_VALUE
-  #endif
-  #define PADDING_SIZE_MAX    ((size_t)((ALIGNMENT_SIZE) - 1))
+#if defined(HAVE_TRUE_LONG_LONG) && SIZEOF_LONG_LONG > SIZEOF_VALUE
+# define ALIGNMENT_SIZE SIZEOF_LONG_LONG
 #else
-  #define PADDING_SIZE_MAX 0
-#endif /* STRICT_ALIGNMENT */
+# define ALIGNMENT_SIZE SIZEOF_VALUE
+#endif
+#define PADDING_SIZE_MAX    ((size_t)((ALIGNMENT_SIZE) - 1))
 
 #define ALIGNMENT_SIZE_OF(type) alignment_size_assert(RUBY_ALIGNOF(type), #type)
 
@@ -1074,7 +1050,6 @@ alignment_size_assert(size_t align, const char *type)
 static inline size_t
 calc_padding(void *ptr, size_t align)
 {
-#ifdef STRICT_ALIGNMENT
     size_t mis;
     size_t padding = 0;
 
@@ -1084,9 +1059,6 @@ calc_padding(void *ptr, size_t align)
     }
 
     return padding;
-#else
-    return 0; /* expected to be optimized by compiler */
-#endif
 }
 
 static void *
