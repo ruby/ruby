@@ -73,6 +73,12 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   when "test-unit"
     test_command = [ruby, *run_opts, "-C", "#{gem_dir}/src/#{gem}", "test/run.rb"]
 
+  when "fiddle"
+    # TODO: Remove this once Fiddle::TestFunction#test_no_memory_leak
+    # is stabilized on Linux in bundled-gems CI.
+    test_command = [ruby, *run_opts, "-C", "#{gem_dir}/src/#{gem}",
+                    "test/run.rb", "--ignore-name=/test_no_memory_leak/"]
+
   when "csv"
     first_timeout = 30
 
