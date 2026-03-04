@@ -2385,6 +2385,347 @@ fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<InsnId>, ci_flags:
     }
 }
 
+/// Instruction emission environment shared by simplification and inlining.
+///
+/// Wraps a `Function` and a temporary block, providing a uniform API for emitting
+/// new instructions. Inspired by Cinder's Simplify `Env`.
+///
+/// For **inlining** (cruby_methods callbacks), use `push_insn()` and helpers like
+/// `coerce_to()`, `guard_not_frozen()`, etc.
+///
+/// For **simplification** (fold_constants), also use:
+/// - `keep()` — append the original instruction unchanged
+/// - `erase()` — forward all uses to an existing value; drop the instruction
+/// - `replace()` — create a new instruction, forward uses, and append it
+pub struct Emitter<'a> {
+    fun: &'a mut Function,
+    block: BlockId,
+    terminated: bool,
+}
+
+impl<'a> Emitter<'a> {
+    fn new(fun: &'a mut Function) -> Self {
+        let block = fun.new_block(u32::MAX);
+        Self { fun, block, terminated: false }
+    }
+
+    /// Take the accumulated instructions and remove the temporary block.
+    fn into_insns(self) -> Vec<InsnId> {
+        let insns = std::mem::take(&mut self.fun.blocks[self.block.0].insns);
+        self.fun.remove_block(self.block);
+        insns
+    }
+
+    // ── Shared emission API (used by both inlining and simplification) ──
+
+    /// Create and append an instruction. This is the primary emission method,
+    /// used by inline callbacks in cruby_methods.
+    pub fn push_insn(&mut self, insn: Insn) -> InsnId {
+        self.fun.push_insn(self.block, insn)
+    }
+
+    // ── Simplification-specific operations ──
+
+    /// Append the original instruction to the block unchanged.
+    fn keep(&mut self, insn_id: InsnId) {
+        self.fun.push_insn_id(self.block, insn_id);
+        if self.fun.insns[insn_id.0].is_terminator() {
+            self.terminated = true;
+        }
+    }
+
+    /// Forward all uses of `old` to `existing` and drop `old` from the block.
+    fn erase(&mut self, old: InsnId, existing: InsnId) {
+        self.fun.make_equal_to(old, existing);
+    }
+
+    /// Create a new instruction, forward uses from `old` to it, and append it to the block.
+    fn replace(&mut self, old: InsnId, insn: Insn) -> InsnId {
+        let new_id = self.push_insn(insn);
+        if self.fun.insns[new_id.0].has_output() {
+            self.fun.make_equal_to(old, new_id);
+            self.fun.insn_types[new_id.0] = self.fun.infer_type(new_id);
+        }
+        if self.fun.insns[new_id.0].is_terminator() {
+            self.terminated = true;
+        }
+        new_id
+    }
+
+    /// Keep replacement_id in the block. If it differs from insn_id, forward uses.
+    fn keep_replacing(&mut self, insn_id: InsnId, replacement_id: InsnId) {
+        if insn_id != replacement_id && self.fun.insns[replacement_id.0].has_output() {
+            self.fun.make_equal_to(insn_id, replacement_id);
+            self.fun.insn_types[replacement_id.0] = self.fun.infer_type(replacement_id);
+        }
+        self.fun.push_insn_id(self.block, replacement_id);
+        if self.fun.insns[replacement_id.0].is_terminator() {
+            self.terminated = true;
+        }
+    }
+
+    // ── Delegates to Function ──
+
+    pub fn find(&self, insn_id: InsnId) -> Insn { self.fun.find(insn_id) }
+    pub fn type_of(&self, insn: InsnId) -> Type { self.fun.type_of(insn) }
+    pub fn is_a(&self, insn: InsnId, ty: Type) -> bool { self.fun.is_a(insn, ty) }
+    pub fn likely_a(&self, val: InsnId, ty: Type, state: InsnId) -> bool { self.fun.likely_a(val, ty, state) }
+    pub fn iseq(&self) -> *const rb_iseq_t { self.fun.iseq() }
+
+    pub fn coerce_to(&mut self, val: InsnId, guard_type: Type, state: InsnId) -> InsnId {
+        self.fun.coerce_to(self.block, val, guard_type, state)
+    }
+
+    pub fn guard_not_frozen(&mut self, recv: InsnId, state: InsnId) {
+        self.fun.guard_not_frozen(self.block, recv, state);
+    }
+
+    pub fn guard_not_shared(&mut self, recv: InsnId, state: InsnId) {
+        self.fun.guard_not_shared(self.block, recv, state);
+    }
+
+    pub fn assume_expected_cfunc(&mut self, recv_class: VALUE, method_id: ID, cfunc: *mut std::ffi::c_void, state: InsnId) -> bool {
+        self.fun.assume_expected_cfunc(self.block, recv_class, method_id, cfunc, state)
+    }
+
+    pub fn assume_no_singleton_classes(&mut self, klass: VALUE, state: InsnId) -> bool {
+        self.fun.assume_no_singleton_classes(self.block, klass, state)
+    }
+
+    /// Fold a binary fixnum operator. Returns the original insn_id if folding isn't possible.
+    fn fold_fixnum_bop(&mut self, insn_id: InsnId, left: InsnId, right: InsnId, f: impl FnOnce(Option<i64>, Option<i64>) -> Option<i64>) -> InsnId {
+        f(self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value())
+            .filter(|&n| n >= (RUBY_FIXNUM_MIN as i64) && n <= RUBY_FIXNUM_MAX as i64)
+            .map(|n| self.fun.new_insn(Insn::Const { val: Const::Value(VALUE::fixnum_from_isize(n as isize)) }))
+            .unwrap_or(insn_id)
+    }
+
+    /// Fold a binary fixnum predicate. Returns the original insn_id if folding isn't possible.
+    fn fold_fixnum_pred(&mut self, insn_id: InsnId, left: InsnId, right: InsnId, f: impl FnOnce(Option<i64>, Option<i64>) -> Option<bool>) -> InsnId {
+        f(self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value())
+            .map(|b| if b { Qtrue } else { Qfalse })
+            .map(|b| self.fun.new_insn(Insn::Const { val: Const::Value(b) }))
+            .unwrap_or(insn_id)
+    }
+
+    /// Main dispatch: simplify one instruction. Calls keep/erase/replace as appropriate.
+    fn simplify(&mut self, insn_id: InsnId) {
+        match self.find(insn_id) {
+            Insn::GuardType { val, guard_type, .. } if self.is_a(val, guard_type) => {
+                self.erase(insn_id, val);
+            }
+            Insn::LoadField { recv, offset, return_type, .. } if return_type.is_subtype(types::BasicObject) &&
+                    u32::try_from(offset).is_ok() => {
+                let offset = (offset as u32).to_usize();
+                let recv_type = self.type_of(recv);
+                match recv_type.ruby_object() {
+                    Some(recv_obj) if recv_obj.is_frozen() => {
+                        let recv_ptr = recv_obj.as_ptr() as *const VALUE;
+                        let val = unsafe { recv_ptr.byte_add(offset).read() };
+                        self.replace(insn_id, Insn::Const { val: Const::Value(val) });
+                    }
+                    _ => self.keep(insn_id),
+                }
+            }
+            Insn::LoadField { recv, offset, return_type, .. } if return_type.is_subtype(types::CShape) &&
+                    u32::try_from(offset).is_ok() => {
+                let offset = (offset as u32).to_usize();
+                let recv_type = self.type_of(recv);
+                match recv_type.ruby_object() {
+                    Some(recv_obj) if recv_obj.is_frozen() => {
+                        let recv_ptr = recv_obj.as_ptr() as *const u32;
+                        let val = unsafe { recv_ptr.byte_add(offset).read() };
+                        self.replace(insn_id, Insn::Const { val: Const::CShape(ShapeId(val)) });
+                    }
+                    _ => self.keep(insn_id),
+                }
+            }
+            Insn::GuardBitEquals { val, expected, .. } => {
+                let recv_type = self.type_of(val);
+                if recv_type.has_value(expected) {
+                    // Guard is always true; drop it
+                } else {
+                    self.keep(insn_id);
+                }
+            }
+            Insn::AnyToString { str, .. } if self.is_a(str, types::String) => {
+                self.erase(insn_id, str);
+            }
+            Insn::IsA { val, class } => {
+                let class_type = self.type_of(class);
+                if !class_type.is_subtype(types::Class) {
+                    self.keep(insn_id); return;
+                }
+                let Some(class_value) = class_type.ruby_object() else {
+                    self.keep(insn_id); return;
+                };
+                let val_type = self.type_of(val);
+                let the_class = Type::from_class_inexact(class_value);
+                if val_type.is_subtype(the_class) {
+                    self.replace(insn_id, Insn::Const { val: Const::Value(Qtrue) });
+                } else if !val_type.could_be(the_class) {
+                    self.replace(insn_id, Insn::Const { val: Const::Value(Qfalse) });
+                } else {
+                    self.keep(insn_id);
+                }
+            }
+            // Fixnum arithmetic: try identity elimination first, then constant folding
+            Insn::FixnumAdd { left, right, .. } => {
+                if self.type_of(right).fixnum_value() == Some(0) {
+                    self.erase(insn_id, left);
+                } else if self.type_of(left).fixnum_value() == Some(0) {
+                    self.erase(insn_id, right);
+                } else {
+                    let r = self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
+                        (Some(l), Some(r)) => l.checked_add(r),
+                        _ => None,
+                    });
+                    self.keep_replacing(insn_id, r);
+                }
+            }
+            Insn::FixnumSub { left, right, .. } => {
+                if self.type_of(right).fixnum_value() == Some(0) {
+                    self.erase(insn_id, left);
+                } else {
+                    let r = self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
+                        (Some(l), Some(r)) => l.checked_sub(r),
+                        _ => None,
+                    });
+                    self.keep_replacing(insn_id, r);
+                }
+            }
+            Insn::FixnumMult { left, right, .. } => {
+                if self.type_of(right).fixnum_value() == Some(1) {
+                    self.erase(insn_id, left);
+                } else if self.type_of(left).fixnum_value() == Some(1) {
+                    self.erase(insn_id, right);
+                } else {
+                    let r = self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
+                        (Some(l), Some(r)) => l.checked_mul(r),
+                        (Some(0), _) | (_, Some(0)) => Some(0),
+                        _ => None,
+                    });
+                    self.keep_replacing(insn_id, r);
+                }
+            }
+            Insn::FixnumMod { left, right, .. } => {
+                let r = self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
+                    (Some(l), Some(r)) if r != 0 => {
+                        let l_obj = VALUE::fixnum_from_isize(l as isize);
+                        let r_obj = VALUE::fixnum_from_isize(r as isize);
+                        Some(unsafe { rb_jit_fix_mod_fix(l_obj, r_obj) }.as_fixnum())
+                    },
+                    _ => None,
+                });
+                self.keep_replacing(insn_id, r);
+            }
+            Insn::FixnumXor { left, right, .. } => {
+                if self.type_of(right).fixnum_value() == Some(0) {
+                    self.erase(insn_id, left);
+                } else if self.type_of(left).fixnum_value() == Some(0) {
+                    self.erase(insn_id, right);
+                } else {
+                    let r = self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
+                        (Some(l), Some(r)) => Some(l ^ r),
+                        _ => None,
+                    });
+                    self.keep_replacing(insn_id, r);
+                }
+            }
+            Insn::FixnumAnd { left, right, .. } => {
+                let r = self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
+                    (Some(l), Some(r)) => Some(l & r),
+                    _ => None,
+                });
+                self.keep_replacing(insn_id, r);
+            }
+            Insn::FixnumOr { left, right, .. } => {
+                if self.type_of(right).fixnum_value() == Some(0) {
+                    self.erase(insn_id, left);
+                } else if self.type_of(left).fixnum_value() == Some(0) {
+                    self.erase(insn_id, right);
+                } else {
+                    let r = self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
+                        (Some(l), Some(r)) => Some(l | r),
+                        _ => None,
+                    });
+                    self.keep_replacing(insn_id, r);
+                }
+            }
+            Insn::FixnumEq { left, right, .. } => {
+                let r = self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
+                    (Some(l), Some(r)) => Some(l == r),
+                    _ => None,
+                });
+                self.keep_replacing(insn_id, r);
+            }
+            Insn::FixnumNeq { left, right, .. } => {
+                let r = self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
+                    (Some(l), Some(r)) => Some(l != r),
+                    _ => None,
+                });
+                self.keep_replacing(insn_id, r);
+            }
+            Insn::FixnumLt { left, right, .. } => {
+                let r = self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
+                    (Some(l), Some(r)) => Some(l < r),
+                    _ => None,
+                });
+                self.keep_replacing(insn_id, r);
+            }
+            Insn::FixnumLe { left, right, .. } => {
+                let r = self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
+                    (Some(l), Some(r)) => Some(l <= r),
+                    _ => None,
+                });
+                self.keep_replacing(insn_id, r);
+            }
+            Insn::FixnumGt { left, right, .. } => {
+                let r = self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
+                    (Some(l), Some(r)) => Some(l > r),
+                    _ => None,
+                });
+                self.keep_replacing(insn_id, r);
+            }
+            Insn::FixnumGe { left, right, .. } => {
+                let r = self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
+                    (Some(l), Some(r)) => Some(l >= r),
+                    _ => None,
+                });
+                self.keep_replacing(insn_id, r);
+            }
+            Insn::ArrayAref { array, index }
+                if self.type_of(array).ruby_object_known()
+                    && self.type_of(index).is_subtype(types::CInt64) => {
+                let array_obj = self.type_of(array).ruby_object().unwrap();
+                match (array_obj.is_frozen(), self.type_of(index).cint64_value()) {
+                    (true, Some(index)) => {
+                        let val = unsafe { rb_yarv_ary_entry_internal(array_obj, index) };
+                        self.replace(insn_id, Insn::Const { val: Const::Value(val) });
+                    }
+                    _ => self.keep(insn_id),
+                }
+            }
+            Insn::Test { val } if self.type_of(val).is_known_falsy() => {
+                self.replace(insn_id, Insn::Const { val: Const::CBool(false) });
+            }
+            Insn::Test { val } if self.type_of(val).is_known_truthy() => {
+                self.replace(insn_id, Insn::Const { val: Const::CBool(true) });
+            }
+            Insn::IfTrue { val, target } if self.is_a(val, Type::from_cbool(true)) => {
+                self.replace(insn_id, Insn::Jump(target));
+            }
+            Insn::IfFalse { val, target } if self.is_a(val, Type::from_cbool(false)) => {
+                self.replace(insn_id, Insn::Jump(target));
+            }
+            // Branch condition is never true/false — drop the dead branch entirely
+            Insn::IfTrue { val, .. } if self.is_a(val, Type::from_cbool(false)) => {}
+            Insn::IfFalse { val, .. } if self.is_a(val, Type::from_cbool(true)) => {}
+            _ => self.keep(insn_id),
+        }
+    }
+}
+
 impl Function {
     fn new(iseq: *const rb_iseq_t) -> Function {
         Function {
@@ -3988,20 +4329,7 @@ impl Function {
 
                                     emit_super_call_guards(self, block, super_cme, current_cme, mid, state);
 
-                                    // Try inlining the cfunc into HIR
-                                    let tmp_block = self.new_block(u32::MAX);
-                                    if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args, state) {
-                                        // Copy contents of tmp_block to block
-                                        assert_ne!(block, tmp_block);
-                                        let insns = std::mem::take(&mut self.blocks[tmp_block.0].insns);
-                                        self.blocks[block.0].insns.extend(insns);
-                                        self.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
-                                        self.make_equal_to(insn_id, replacement);
-                                        if self.type_of(replacement).bit_equal(types::Any) {
-                                            // Not set yet; infer type
-                                            self.insn_types[replacement.0] = self.infer_type(replacement);
-                                        }
-                                        self.remove_block(tmp_block);
+                                    if self.try_inline(block, insn_id, props.inline, recv, &args, state) {
                                         continue;
                                     }
 
@@ -4037,21 +4365,7 @@ impl Function {
                                 -1 => {
                                     emit_super_call_guards(self, block, super_cme, current_cme, mid, state);
 
-                                    // Try inlining the cfunc into HIR
-                                    let tmp_block = self.new_block(u32::MAX);
-                                    if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args, state) {
-                                        // Copy contents of tmp_block to block
-                                        assert_ne!(block, tmp_block);
-                                        emit_super_call_guards(self, block, super_cme, current_cme, mid, state);
-                                        let insns = std::mem::take(&mut self.blocks[tmp_block.0].insns);
-                                        self.blocks[block.0].insns.extend(insns);
-                                        self.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
-                                        self.make_equal_to(insn_id, replacement);
-                                        if self.type_of(replacement).bit_equal(types::Any) {
-                                            // Not set yet; infer type
-                                            self.insn_types[replacement.0] = self.infer_type(replacement);
-                                        }
-                                        self.remove_block(tmp_block);
+                                    if self.try_inline(block, insn_id, props.inline, recv, &args, state) {
                                         continue;
                                     }
 
@@ -4723,19 +5037,7 @@ impl Function {
                     }
 
                     // Try inlining the cfunc into HIR
-                    let tmp_block = fun.new_block(u32::MAX);
-                    if let Some(replacement) = (props.inline)(fun, tmp_block, recv, &args, state) {
-                        // Copy contents of tmp_block to block
-                        assert_ne!(block, tmp_block);
-                        let insns = std::mem::take(&mut fun.blocks[tmp_block.0].insns);
-                        fun.blocks[block.0].insns.extend(insns);
-                        fun.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
-                        fun.make_equal_to(send_insn_id, replacement);
-                        if fun.type_of(replacement).bit_equal(types::Any) {
-                            // Not set yet; infer type
-                            fun.insn_types[replacement.0] = fun.infer_type(replacement);
-                        }
-                        fun.remove_block(tmp_block);
+                    if fun.try_inline(block, send_insn_id, props.inline, recv, &args, state) {
                         return Ok(());
                     }
 
@@ -4805,19 +5107,7 @@ impl Function {
                         let props = props.unwrap_or_default();
 
                         // Try inlining the cfunc into HIR
-                        let tmp_block = fun.new_block(u32::MAX);
-                        if let Some(replacement) = (props.inline)(fun, tmp_block, recv, &args, state) {
-                            // Copy contents of tmp_block to block
-                            assert_ne!(block, tmp_block);
-                            let insns = std::mem::take(&mut fun.blocks[tmp_block.0].insns);
-                            fun.blocks[block.0].insns.extend(insns);
-                            fun.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
-                            fun.make_equal_to(send_insn_id, replacement);
-                            if fun.type_of(replacement).bit_equal(types::Any) {
-                                // Not set yet; infer type
-                                fun.insn_types[replacement.0] = fun.infer_type(replacement);
-                            }
-                            fun.remove_block(tmp_block);
+                        if fun.try_inline(block, send_insn_id, props.inline, recv, &args, state) {
                             return Ok(());
                         }
 
@@ -4878,19 +5168,7 @@ impl Function {
                     Insn::InvokeBuiltin { bf, recv, args, state, .. } => {
                         let props = ZJITState::get_method_annotations().get_builtin_properties(&bf).unwrap_or_default();
                         // Try inlining the cfunc into HIR
-                        let tmp_block = self.new_block(u32::MAX);
-                        if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args, state) {
-                            // Copy contents of tmp_block to block
-                            assert_ne!(block, tmp_block);
-                            let insns = std::mem::take(&mut self.blocks[tmp_block.0].insns);
-                            self.blocks[block.0].insns.extend(insns);
-                            self.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
-                            self.make_equal_to(insn_id, replacement);
-                            if self.type_of(replacement).bit_equal(types::Any) {
-                                // Not set yet; infer type
-                                self.insn_types[replacement.0] = self.infer_type(replacement);
-                            }
-                            self.remove_block(tmp_block);
+                        if self.try_inline(block, insn_id, props.inline, recv, &args, state) {
                             continue;
                         }
                     }
@@ -4902,25 +5180,34 @@ impl Function {
         self.infer_types();
     }
 
-    /// Fold a binary operator on fixnums.
-    fn fold_fixnum_bop(&mut self, insn_id: InsnId, left: InsnId, right: InsnId, f: impl FnOnce(Option<i64>, Option<i64>) -> Option<i64>) -> InsnId {
-        f(self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value())
-            .filter(|&n| n >= (RUBY_FIXNUM_MIN as i64) && n <= RUBY_FIXNUM_MAX as i64)
-            .map(|n| self.new_insn(Insn::Const { val: Const::Value(VALUE::fixnum_from_isize(n as isize)) }))
-            .unwrap_or(insn_id)
+    /// Try to inline a C function call using the given callback. On success,
+    /// splices the emitted instructions into `block`, forwards uses from
+    /// `insn_id` to the replacement, and returns `true`.
+    fn try_inline(
+        &mut self,
+        block: BlockId,
+        insn_id: InsnId,
+        inline_fn: fn(&mut Emitter, InsnId, &[InsnId], InsnId) -> Option<InsnId>,
+        recv: InsnId,
+        args: &[InsnId],
+        state: InsnId,
+    ) -> bool {
+        let mut emitter = Emitter::new(self);
+        let replacement = inline_fn(&mut emitter, recv, args, state);
+        let insns = emitter.into_insns();
+        if let Some(replacement) = replacement {
+            self.blocks[block.0].insns.extend(insns);
+            self.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
+            self.make_equal_to(insn_id, replacement);
+            if self.type_of(replacement).bit_equal(types::Any) {
+                self.insn_types[replacement.0] = self.infer_type(replacement);
+            }
+            true
+        } else {
+            false
+        }
     }
 
-    /// Fold a binary predicate on fixnums.
-    fn fold_fixnum_pred(&mut self, insn_id: InsnId, left: InsnId, right: InsnId, f: impl FnOnce(Option<i64>, Option<i64>) -> Option<bool>) -> InsnId {
-        f(self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value())
-            .map(|b| if b { Qtrue } else { Qfalse })
-            .map(|b| self.new_insn(Insn::Const { val: Const::Value(b) }))
-            .unwrap_or(insn_id)
-    }
-
-    /// Use type information left by `infer_types` to fold away operations that can be evaluated at compile-time.
-    ///
-    /// It can fold fixnum math, truthiness tests, and branches with constant conditionals.
     fn fold_constants(&mut self) {
         // TODO(max): Determine if it's worth it for us to reflow types after each branch
         // simplification. This means that we can have nice cascading optimizations if what used to
@@ -4928,200 +5215,15 @@ impl Function {
         //
         // This would require 1) fixpointing, 2) worklist, or 3) (slightly less powerful) calling a
         // function-level infer_types after each pruned branch.
-        for block in self.rpo() {
+        let rpo = self.rpo();
+        for block in rpo {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
-            let mut new_insns = vec![];
+            let mut ctx = Emitter::new(self);
             for insn_id in old_insns {
-                let replacement_id = match self.find(insn_id) {
-                    Insn::GuardType { val, guard_type, .. } if self.is_a(val, guard_type) => {
-                        self.make_equal_to(insn_id, val);
-                        // Don't bother re-inferring the type of val; we already know it.
-                        continue;
-                    }
-                    Insn::LoadField { recv, offset, return_type, .. } if return_type.is_subtype(types::BasicObject) &&
-                            u32::try_from(offset).is_ok() => {
-                        let offset = (offset as u32).to_usize();
-                        let recv_type = self.type_of(recv);
-                        match recv_type.ruby_object() {
-                            Some(recv_obj) if recv_obj.is_frozen() => {
-                                let recv_ptr = recv_obj.as_ptr() as *const VALUE;
-                                let val = unsafe { recv_ptr.byte_add(offset).read() };
-                                self.new_insn(Insn::Const { val: Const::Value(val) })
-                            }
-                            _ => insn_id,
-                        }
-                    }
-                    Insn::LoadField { recv, offset, return_type, .. } if return_type.is_subtype(types::CShape) &&
-                            u32::try_from(offset).is_ok() => {
-                        let offset = (offset as u32).to_usize();
-                        let recv_type = self.type_of(recv);
-                        match recv_type.ruby_object() {
-                            Some(recv_obj) if recv_obj.is_frozen() => {
-                                let recv_ptr = recv_obj.as_ptr() as *const u32;
-                                let val = unsafe { recv_ptr.byte_add(offset).read() };
-                                self.new_insn(Insn::Const { val: Const::CShape(ShapeId(val)) })
-                            }
-                            _ => insn_id,
-                        }
-                    }
-                    Insn::GuardBitEquals { val, expected, .. } => {
-                        let recv_type = self.type_of(val);
-                        if recv_type.has_value(expected) {
-                            continue;
-                        } else {
-                            insn_id
-                        }
-                    }
-                    Insn::AnyToString { str, .. } if self.is_a(str, types::String) => {
-                        self.make_equal_to(insn_id, str);
-                        // Don't bother re-inferring the type of str; we already know it.
-                        continue;
-                    }
-                    Insn::IsA { val, class } => 'is_a: {
-                        let class_type = self.type_of(class);
-                        if !class_type.is_subtype(types::Class) {
-                            break 'is_a insn_id;
-                        }
-                        let Some(class_value) = class_type.ruby_object() else {
-                            break 'is_a insn_id;
-                        };
-                        let val_type = self.type_of(val);
-                        let the_class = Type::from_class_inexact(class_value);
-                        if val_type.is_subtype(the_class) {
-                            self.new_insn(Insn::Const { val: Const::Value(Qtrue) })
-                        } else if !val_type.could_be(the_class) {
-                            self.new_insn(Insn::Const { val: Const::Value(Qfalse) })
-                        } else {
-                            insn_id
-                        }
-                    }
-                    Insn::FixnumAdd { left, right, .. } => {
-                        self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
-                            (Some(l), Some(r)) => l.checked_add(r),
-                            _ => None,
-                        })
-                    }
-                    Insn::FixnumSub { left, right, .. } => {
-                        self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
-                            (Some(l), Some(r)) => l.checked_sub(r),
-                            _ => None,
-                        })
-                    }
-                    Insn::FixnumMult { left, right, .. } => {
-                        self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
-                            (Some(l), Some(r)) => l.checked_mul(r),
-                            (Some(0), _) | (_, Some(0)) => Some(0),
-                            _ => None,
-                        })
-                    }
-                    Insn::FixnumMod { left, right, .. } => {
-                        self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
-                            (Some(l), Some(r)) if r != 0 => {
-                                let l_obj = VALUE::fixnum_from_isize(l as isize);
-                                let r_obj = VALUE::fixnum_from_isize(r as isize);
-                                Some(unsafe { rb_jit_fix_mod_fix(l_obj, r_obj) }.as_fixnum())
-                            },
-                            _ => None,
-                        })
-                    }
-                    Insn::FixnumXor { left, right, .. } => {
-                        self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
-                            (Some(l), Some(r)) => Some(l ^ r),
-                            _ => None,
-                        })
-                    }
-                    Insn::FixnumAnd { left, right, .. } => {
-                        self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
-                            (Some(l), Some(r)) => Some(l & r),
-                            _ => None,
-                        })
-                    }
-                    Insn::FixnumOr { left, right, .. } => {
-                        self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
-                            (Some(l), Some(r)) => Some(l | r),
-                            _ => None,
-                        })
-                    }
-                    Insn::FixnumEq { left, right, .. } => {
-                        self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
-                            (Some(l), Some(r)) => Some(l == r),
-                            _ => None,
-                        })
-                    }
-                    Insn::FixnumNeq { left, right, .. } => {
-                        self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
-                            (Some(l), Some(r)) => Some(l != r),
-                            _ => None,
-                        })
-                    }
-                    Insn::FixnumLt { left, right, .. } => {
-                        self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
-                            (Some(l), Some(r)) => Some(l < r),
-                            _ => None,
-                        })
-                    }
-                    Insn::FixnumLe { left, right, .. } => {
-                        self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
-                            (Some(l), Some(r)) => Some(l <= r),
-                            _ => None,
-                        })
-                    }
-                    Insn::FixnumGt { left, right, .. } => {
-                        self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
-                            (Some(l), Some(r)) => Some(l > r),
-                            _ => None,
-                        })
-                    }
-                    Insn::FixnumGe { left, right, .. } => {
-                        self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
-                            (Some(l), Some(r)) => Some(l >= r),
-                            _ => None,
-                        })
-                    }
-                    Insn::ArrayAref { array, index }
-                        if self.type_of(array).ruby_object_known()
-                            && self.type_of(index).is_subtype(types::CInt64) => {
-                        let array_obj = self.type_of(array).ruby_object().unwrap();
-                        match (array_obj.is_frozen(), self.type_of(index).cint64_value()) {
-                            (true, Some(index)) => {
-                                let val = unsafe { rb_yarv_ary_entry_internal(array_obj, index) };
-                                self.new_insn(Insn::Const { val: Const::Value(val) })
-                            }
-                            _ => insn_id,
-                        }
-                    }
-                    Insn::Test { val } if self.type_of(val).is_known_falsy() => {
-                        self.new_insn(Insn::Const { val: Const::CBool(false) })
-                    }
-                    Insn::Test { val } if self.type_of(val).is_known_truthy() => {
-                        self.new_insn(Insn::Const { val: Const::CBool(true) })
-                    }
-                    Insn::IfTrue { val, target } if self.is_a(val, Type::from_cbool(true)) => {
-                        self.new_insn(Insn::Jump(target))
-                    }
-                    Insn::IfFalse { val, target } if self.is_a(val, Type::from_cbool(false)) => {
-                        self.new_insn(Insn::Jump(target))
-                    }
-                    // If we know that the branch condition is never going to cause a branch,
-                    // completely drop the branch from the block.
-                    Insn::IfTrue { val, .. } if self.is_a(val, Type::from_cbool(false)) => continue,
-                    Insn::IfFalse { val, .. } if self.is_a(val, Type::from_cbool(true)) => continue,
-                    _ => insn_id,
-                };
-                // If we're adding a new instruction, mark the two equivalent in the union-find and
-                // do an incremental flow typing of the new instruction.
-                if insn_id != replacement_id && self.insns[replacement_id.0].has_output() {
-                    self.make_equal_to(insn_id, replacement_id);
-                    self.insn_types[replacement_id.0] = self.infer_type(replacement_id);
-                }
-                new_insns.push(replacement_id);
-                // If we've just folded an IfTrue into a Jump, for example, don't bother copying
-                // over unreachable instructions afterward.
-                if self.insns[replacement_id.0].is_terminator() {
-                    break;
-                }
+                ctx.simplify(insn_id);
+                if ctx.terminated { break; }
             }
-            self.blocks[block.0].insns = new_insns;
+            self.blocks[block.0].insns = ctx.into_insns();
         }
     }
 
