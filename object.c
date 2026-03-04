@@ -571,9 +571,19 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
 }
 
 static VALUE
+obj_alloc_copy(VALUE obj)
+{
+    VALUE klass = rb_obj_class(obj);
+    if (klass && RCLASS_EXT_PRIME(klass)->copy_allocator) {
+        return RCLASS_COPY_ALLOCATOR(klass)(klass, obj);
+    }
+    return rb_obj_alloc(klass);
+}
+
+static VALUE
 mutable_obj_clone(VALUE obj, VALUE kwfreeze)
 {
-    VALUE clone = rb_obj_alloc(rb_obj_class(obj));
+    VALUE clone = obj_alloc_copy(obj);
     return rb_obj_clone_setup(obj, clone, kwfreeze);
 }
 
@@ -640,7 +650,7 @@ rb_obj_dup(VALUE obj)
     if (special_object_p(obj)) {
         return obj;
     }
-    dup = rb_obj_alloc(rb_obj_class(obj));
+    dup = obj_alloc_copy(obj);
     return rb_obj_dup_setup(obj, dup);
 }
 
@@ -2334,7 +2344,12 @@ class_call_alloc_func(rb_alloc_func_t allocator, VALUE klass)
 
     RUBY_DTRACE_CREATE_HOOK(OBJECT, rb_class2name(klass));
 
-    obj = (*allocator)(klass);
+    if (RCLASS_EXT_PRIME(klass)->copy_allocator) {
+        obj = (*((rb_copy_alloc_func_t)allocator))(klass, Qundef);
+    }
+    else {
+        obj = (*allocator)(klass);
+    }
 
     if (UNLIKELY(RBASIC_CLASS(obj) != klass)) {
         if (rb_obj_class(obj) != rb_class_real(klass)) {
