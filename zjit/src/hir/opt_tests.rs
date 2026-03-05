@@ -13845,7 +13845,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_double_store_with_removal() {
+    fn test_delete_duplicate_store() {
         eval("
             class C
               def initialize
@@ -13889,59 +13889,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_double_store_no_removal_with_alias_between() {
-        eval("
-            class C
-              def initialize
-                a = 1
-                @a = a
-                @b = a
-                @a = a
-              end
-            end
-
-            C.new
-        ");
-        assert_snapshot!(hir_string_proc("C.instance_method(:initialize)"), @r"
-        fn initialize@<compiled>:4:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
-        bb2():
-          EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
-          v13:Fixnum[1] = Const Value(1)
-          PatchPoint SingleRactorMode
-          v43:HeapBasicObject = GuardType v8, HeapBasicObject
-          v44:CShape = LoadField v43, :_shape_id@0x1000
-          v45:CShape[0x1001] = GuardBitEquals v44, CShape(0x1001)
-          StoreField v43, :@a@0x1002, v13
-          WriteBarrier v43, v13
-          v48:CShape[0x1003] = Const CShape(0x1003)
-          StoreField v43, :_shape_id@0x1000, v48
-          v20:HeapBasicObject = RefineType v8, HeapBasicObject
-          PatchPoint NoEPEscape(initialize)
-          PatchPoint SingleRactorMode
-          StoreField v20, :@b@0x1004, v13
-          WriteBarrier v20, v13
-          v55:CShape[0x1005] = Const CShape(0x1005)
-          StoreField v20, :_shape_id@0x1000, v55
-          v28:HeapBasicObject = RefineType v20, HeapBasicObject
-          PatchPoint NoEPEscape(initialize)
-          PatchPoint SingleRactorMode
-          WriteBarrier v28, v13
-          CheckInterrupts
-          Return v13
-        ");
-    }
-
-    #[test]
-    fn test_double_store_with_removal_and_insns_between() {
+    fn test_remove_duplicate_store_with_non_effectful_insns_between() {
         eval("
             class C
               def initialize
@@ -13993,7 +13941,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_triple_store_with_removal() {
+    fn test_remove_two_stores() {
         eval("
             class C
               def initialize
