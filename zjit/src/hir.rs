@@ -2387,8 +2387,8 @@ fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<InsnId>, ci_flags:
 
 /// Instruction emission environment shared by simplification and inlining.
 ///
-/// Wraps a `Function` and a temporary block, providing a uniform API for emitting
-/// new instructions. Inspired by Cinder's Simplify `Env`.
+/// Wraps a `Function` and a block, providing a uniform API for emitting
+/// new instructions.
 ///
 /// For **inlining** (cruby_methods callbacks), use `push_insn()` and helpers like
 /// `coerce_to()`, `guard_not_frozen()`, etc.
