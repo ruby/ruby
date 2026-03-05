@@ -1575,6 +1575,17 @@ static long long_config(VALUE num)
     return RTEST(num) ? FIX2LONG(num) : 0;
 }
 
+// depth must never be negative; reject early with a clear error.
+static long depth_config(VALUE num)
+{
+    if (!RTEST(num)) return 0;
+    long d = NUM2LONG(num);
+    if (RB_UNLIKELY(d < 0)) {
+        rb_raise(rb_eArgError, "depth must be >= 0 (got %ld)", d);
+    }
+    return d;
+}
+
 /*
  * call-seq: max_nesting=(depth)
  *
@@ -1731,7 +1742,7 @@ static VALUE cState_depth_set(VALUE self, VALUE depth)
 {
     rb_check_frozen(self);
     GET_STATE(self);
-    state->depth = long_config(depth);
+    state->depth = depth_config(depth);
     return Qnil;
 }
 
@@ -1796,7 +1807,7 @@ static int configure_state_i(VALUE key, VALUE val, VALUE _arg)
     else if (key == sym_max_nesting)           { state->max_nesting = long_config(val); }
     else if (key == sym_allow_nan)             { state->allow_nan = RTEST(val); }
     else if (key == sym_ascii_only)            { state->ascii_only = RTEST(val); }
-    else if (key == sym_depth)                 { state->depth = long_config(val); }
+    else if (key == sym_depth)                 { state->depth = depth_config(val); }
     else if (key == sym_buffer_initial_length) { buffer_initial_length_set(state, val); }
     else if (key == sym_script_safe)           { state->script_safe = RTEST(val); }
     else if (key == sym_escape_slash)          { state->script_safe = RTEST(val); }

@@ -1045,4 +1045,14 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal 0, state.depth
     assert_equal '{"a":1}', state.generate({ a: 1 })
   end
+
+  def test_negative_depth_raises
+    assert_raise(ArgumentError) do
+      JSON.generate({"a" => 1}, depth: -1)
+    end
+    assert_raise(ArgumentError) do
+      JSON.state.new(depth: -1)
+    end
+  end
+
 end
