@@ -11686,6 +11686,7 @@ prism/prism.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/node.h
+prism/prism.$(OBJEXT): $(top_srcdir)/prism/node_new.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/options.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/parser.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h

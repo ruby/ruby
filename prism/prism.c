@@ -1,4 +1,5 @@
 #include "prism.h"
+#include "prism/node_new.h"
 
 /**
  * The prism version and the serialization format.
@@ -2018,26 +2019,17 @@ pm_integer_arena_move(pm_arena_t *arena, pm_integer_t *integer) {
     }
 }
 
-#define PM_NODE_ALLOC(parser_, type_) (type_ *) pm_arena_zalloc((parser_)->arena, sizeof(type_), PRISM_ALIGNOF(type_))
-#define PM_NODE_INIT(parser_, type_, flags_, location_) (pm_node_t) { \
-    .type = (type_), \
-    .flags = (flags_), \
-    .node_id = ++(parser_)->node_id, \
-    .location = location_ \
-}
-
 /**
  * Allocate a new MissingNode node.
  */
 static pm_missing_node_t *
 pm_missing_node_create(pm_parser_t *parser, uint32_t start, uint32_t length) {
-    pm_missing_node_t *node = PM_NODE_ALLOC(parser, pm_missing_node_t);
-
-    *node = (pm_missing_node_t) {
-        .base = PM_NODE_INIT(parser, PM_MISSING_NODE, 0, ((pm_location_t) { .start = start, .length = length }))
-    };
-
-    return node;
+    return pm_missing_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        ((pm_location_t) { .start = start, .length = length })
+    );
 }
 
 /**
@@ -2046,16 +2038,16 @@ pm_missing_node_create(pm_parser_t *parser, uint32_t start, uint32_t length) {
 static pm_alias_global_variable_node_t *
 pm_alias_global_variable_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_node_t *new_name, pm_node_t *old_name) {
     assert(keyword->type == PM_TOKEN_KEYWORD_ALIAS);
-    pm_alias_global_variable_node_t *node = PM_NODE_ALLOC(parser, pm_alias_global_variable_node_t);
 
-    *node = (pm_alias_global_variable_node_t) {
-        .base = PM_NODE_INIT(parser, PM_ALIAS_GLOBAL_VARIABLE_NODE, 0, PM_LOCATION_INIT_TOKEN_NODE(parser, keyword, old_name)),
-        .new_name = new_name,
-        .old_name = old_name,
-        .keyword_loc = TOK2LOC(parser, keyword)
-    };
-
-    return node;
+    return pm_alias_global_variable_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKEN_NODE(parser, keyword, old_name),
+        new_name,
+        old_name,
+        TOK2LOC(parser, keyword)
+    );
 }
 
 /**
@@ -2064,16 +2056,16 @@ pm_alias_global_variable_node_create(pm_parser_t *parser, const pm_token_t *keyw
 static pm_alias_method_node_t *
 pm_alias_method_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_node_t *new_name, pm_node_t *old_name) {
     assert(keyword->type == PM_TOKEN_KEYWORD_ALIAS);
-    pm_alias_method_node_t *node = PM_NODE_ALLOC(parser, pm_alias_method_node_t);
 
-    *node = (pm_alias_method_node_t) {
-        .base = PM_NODE_INIT(parser, PM_ALIAS_METHOD_NODE, 0, PM_LOCATION_INIT_TOKEN_NODE(parser, keyword, old_name)),
-        .new_name = new_name,
-        .old_name = old_name,
-        .keyword_loc = TOK2LOC(parser, keyword)
-    };
-
-    return node;
+    return pm_alias_method_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKEN_NODE(parser, keyword, old_name),
+        new_name,
+        old_name,
+        TOK2LOC(parser, keyword)
+    );
 }
 
 /**
@@ -2081,16 +2073,15 @@ pm_alias_method_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_n
  */
 static pm_alternation_pattern_node_t *
 pm_alternation_pattern_node_create(pm_parser_t *parser, pm_node_t *left, pm_node_t *right, const pm_token_t *operator) {
-    pm_alternation_pattern_node_t *node = PM_NODE_ALLOC(parser, pm_alternation_pattern_node_t);
-
-    *node = (pm_alternation_pattern_node_t) {
-        .base = PM_NODE_INIT(parser, PM_ALTERNATION_PATTERN_NODE, 0, PM_LOCATION_INIT_NODES(left, right)),
-        .left = left,
-        .right = right,
-        .operator_loc = TOK2LOC(parser, operator)
-    };
-
-    return node;
+    return pm_alternation_pattern_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_NODES(left, right),
+        left,
+        right,
+        TOK2LOC(parser, operator)
+    );
 }
 
 /**
@@ -2100,16 +2091,15 @@ static pm_and_node_t *
 pm_and_node_create(pm_parser_t *parser, pm_node_t *left, const pm_token_t *operator, pm_node_t *right) {
     pm_assert_value_expression(parser, left);
 
-    pm_and_node_t *node = PM_NODE_ALLOC(parser, pm_and_node_t);
-
-    *node = (pm_and_node_t) {
-        .base = PM_NODE_INIT(parser, PM_AND_NODE, 0, PM_LOCATION_INIT_NODES(left, right)),
-        .left = left,
-        .operator_loc = TOK2LOC(parser, operator),
-        .right = right
-    };
-
-    return node;
+    return pm_and_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_NODES(left, right),
+        left,
+        right,
+        TOK2LOC(parser, operator)
+    );
 }
 
 /**
@@ -2117,14 +2107,13 @@ pm_and_node_create(pm_parser_t *parser, pm_node_t *left, const pm_token_t *opera
  */
 static pm_arguments_node_t *
 pm_arguments_node_create(pm_parser_t *parser) {
-    pm_arguments_node_t *node = PM_NODE_ALLOC(parser, pm_arguments_node_t);
-
-    *node = (pm_arguments_node_t) {
-        .base = PM_NODE_INIT(parser, PM_ARGUMENTS_NODE, 0, PM_LOCATION_INIT_UNSET),
-        .arguments = { 0 }
-    };
-
-    return node;
+    return pm_arguments_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_UNSET,
+        ((pm_node_list_t) { 0 })
+    );
 }
 
 /**
@@ -2164,25 +2153,27 @@ pm_arguments_node_arguments_append(pm_arena_t *arena, pm_arguments_node_t *node,
  */
 static pm_array_node_t *
 pm_array_node_create(pm_parser_t *parser, const pm_token_t *opening) {
-    pm_array_node_t *node = PM_NODE_ALLOC(parser, pm_array_node_t);
-
     if (opening == NULL) {
-        *node = (pm_array_node_t) {
-            .base = PM_NODE_INIT(parser, PM_ARRAY_NODE, PM_NODE_FLAG_STATIC_LITERAL, PM_LOCATION_INIT_UNSET),
-            .opening_loc = { 0 },
-            .closing_loc = { 0 },
-            .elements = { 0 }
-        };
+        return pm_array_node_new(
+            parser->arena,
+            ++parser->node_id,
+            PM_NODE_FLAG_STATIC_LITERAL,
+            PM_LOCATION_INIT_UNSET,
+            ((pm_node_list_t) { 0 }),
+            ((pm_location_t) { 0 }),
+            ((pm_location_t) { 0 })
+        );
     } else {
-        *node = (pm_array_node_t) {
-            .base = PM_NODE_INIT(parser, PM_ARRAY_NODE, PM_NODE_FLAG_STATIC_LITERAL, PM_LOCATION_INIT_TOKEN(parser, opening)),
-            .opening_loc = TOK2LOC(parser, opening),
-            .closing_loc = TOK2LOC(parser, opening),
-            .elements = { 0 }
-        };
+        return pm_array_node_new(
+            parser->arena,
+            ++parser->node_id,
+            PM_NODE_FLAG_STATIC_LITERAL,
+            PM_LOCATION_INIT_TOKEN(parser, opening),
+            ((pm_node_list_t) { 0 }),
+            TOK2LOC(parser, opening),
+            TOK2LOC(parser, opening)
+        );
     }
-
-    return node;
 }
 
 /**
@@ -2224,17 +2215,18 @@ pm_array_node_close_set(const pm_parser_t *parser, pm_array_node_t *node, const 
  */
 static pm_array_pattern_node_t *
 pm_array_pattern_node_node_list_create(pm_parser_t *parser, pm_node_list_t *nodes) {
-    pm_array_pattern_node_t *node = PM_NODE_ALLOC(parser, pm_array_pattern_node_t);
-
-    *node = (pm_array_pattern_node_t) {
-        .base = PM_NODE_INIT(parser, PM_ARRAY_PATTERN_NODE, 0, PM_LOCATION_INIT_NODES(nodes->nodes[0], nodes->nodes[nodes->size - 1])),
-        .constant = NULL,
-        .rest = NULL,
-        .requireds = { 0 },
-        .posts = { 0 },
-        .opening_loc = { 0 },
-        .closing_loc = { 0 }
-    };
+    pm_array_pattern_node_t *node = pm_array_pattern_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_NODES(nodes->nodes[0], nodes->nodes[nodes->size - 1]),
+        NULL,
+        ((pm_node_list_t) { 0 }),
+        NULL,
+        ((pm_node_list_t) { 0 }),
+        ((pm_location_t) { 0 }),
+        ((pm_location_t) { 0 })
+    );
 
     // For now we're going to just copy over each pointer manually. This could be
     // much more efficient, as we could instead resize the node list.
@@ -2260,19 +2252,18 @@ pm_array_pattern_node_node_list_create(pm_parser_t *parser, pm_node_list_t *node
  */
 static pm_array_pattern_node_t *
 pm_array_pattern_node_rest_create(pm_parser_t *parser, pm_node_t *rest) {
-    pm_array_pattern_node_t *node = PM_NODE_ALLOC(parser, pm_array_pattern_node_t);
-
-    *node = (pm_array_pattern_node_t) {
-        .base = PM_NODE_INIT(parser, PM_ARRAY_PATTERN_NODE, 0, PM_LOCATION_INIT_NODE(rest)),
-        .constant = NULL,
-        .rest = rest,
-        .requireds = { 0 },
-        .posts = { 0 },
-        .opening_loc = { 0 },
-        .closing_loc = { 0 }
-    };
-
-    return node;
+    return pm_array_pattern_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_NODE(rest),
+        NULL,
+        ((pm_node_list_t) { 0 }),
+        rest,
+        ((pm_node_list_t) { 0 }),
+        ((pm_location_t) { 0 }),
+        ((pm_location_t) { 0 })
+    );
 }
 
 /**
@@ -2281,19 +2272,18 @@ pm_array_pattern_node_rest_create(pm_parser_t *parser, pm_node_t *rest) {
  */
 static pm_array_pattern_node_t *
 pm_array_pattern_node_constant_create(pm_parser_t *parser, pm_node_t *constant, const pm_token_t *opening, const pm_token_t *closing) {
-    pm_array_pattern_node_t *node = PM_NODE_ALLOC(parser, pm_array_pattern_node_t);
-
-    *node = (pm_array_pattern_node_t) {
-        .base = PM_NODE_INIT(parser, PM_ARRAY_PATTERN_NODE, 0, PM_LOCATION_INIT_NODE_TOKEN(parser, constant, closing)),
-        .constant = constant,
-        .rest = NULL,
-        .opening_loc = TOK2LOC(parser, opening),
-        .closing_loc = TOK2LOC(parser, closing),
-        .requireds = { 0 },
-        .posts = { 0 }
-    };
-
-    return node;
+    return pm_array_pattern_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_NODE_TOKEN(parser, constant, closing),
+        constant,
+        ((pm_node_list_t) { 0 }),
+        NULL,
+        ((pm_node_list_t) { 0 }),
+        TOK2LOC(parser, opening),
+        TOK2LOC(parser, closing)
+    );
 }
 
 /**
@@ -2302,19 +2292,18 @@ pm_array_pattern_node_constant_create(pm_parser_t *parser, pm_node_t *constant, 
  */
 static pm_array_pattern_node_t *
 pm_array_pattern_node_empty_create(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *closing) {
-    pm_array_pattern_node_t *node = PM_NODE_ALLOC(parser, pm_array_pattern_node_t);
-
-    *node = (pm_array_pattern_node_t) {
-        .base = PM_NODE_INIT(parser, PM_ARRAY_PATTERN_NODE, 0, PM_LOCATION_INIT_TOKENS(parser, opening, closing)),
-        .constant = NULL,
-        .rest = NULL,
-        .opening_loc = TOK2LOC(parser, opening),
-        .closing_loc = TOK2LOC(parser, closing),
-        .requireds = { 0 },
-        .posts = { 0 }
-    };
-
-    return node;
+    return pm_array_pattern_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKENS(parser, opening, closing),
+        NULL,
+        ((pm_node_list_t) { 0 }),
+        NULL,
+        ((pm_node_list_t) { 0 }),
+        TOK2LOC(parser, opening),
+        TOK2LOC(parser, closing)
+    );
 }
 
 static inline void
@@ -2327,7 +2316,6 @@ pm_array_pattern_node_requireds_append(pm_arena_t *arena, pm_array_pattern_node_
  */
 static pm_assoc_node_t *
 pm_assoc_node_create(pm_parser_t *parser, pm_node_t *key, const pm_token_t *operator, pm_node_t *value) {
-    pm_assoc_node_t *node = PM_NODE_ALLOC(parser, pm_assoc_node_t);
     uint32_t end;
 
     if (value != NULL && PM_NODE_END(value) > PM_NODE_END(key)) {
@@ -2355,14 +2343,15 @@ pm_assoc_node_create(pm_parser_t *parser, pm_node_t *key, const pm_token_t *oper
         flags = key->flags & value->flags & PM_NODE_FLAG_STATIC_LITERAL;
     }
 
-    *node = (pm_assoc_node_t) {
-        .base = PM_NODE_INIT(parser, PM_ASSOC_NODE, flags, ((pm_location_t) { .start = PM_NODE_START(key), .length = U32(end - PM_NODE_START(key)) })),
-        .key = key,
-        .operator_loc = NTOK2LOC(parser, operator),
-        .value = value
-    };
-
-    return node;
+    return pm_assoc_node_new(
+        parser->arena,
+        ++parser->node_id,
+        flags,
+        ((pm_location_t) { .start = PM_NODE_START(key), .length = U32(end - PM_NODE_START(key)) }),
+        key,
+        value,
+        NTOK2LOC(parser, operator)
+    );
 }
 
 /**
@@ -2371,15 +2360,15 @@ pm_assoc_node_create(pm_parser_t *parser, pm_node_t *key, const pm_token_t *oper
 static pm_assoc_splat_node_t *
 pm_assoc_splat_node_create(pm_parser_t *parser, pm_node_t *value, const pm_token_t *operator) {
     assert(operator->type == PM_TOKEN_USTAR_STAR);
-    pm_assoc_splat_node_t *node = PM_NODE_ALLOC(parser, pm_assoc_splat_node_t);
 
-    *node = (pm_assoc_splat_node_t) {
-        .base = PM_NODE_INIT(parser, PM_ASSOC_SPLAT_NODE, 0, (value == NULL) ? PM_LOCATION_INIT_TOKEN(parser, operator) : PM_LOCATION_INIT_TOKEN_NODE(parser, operator, value)),
-        .value = value,
-        .operator_loc = TOK2LOC(parser, operator)
-    };
-
-    return node;
+    return pm_assoc_splat_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        (value == NULL) ? PM_LOCATION_INIT_TOKEN(parser, operator) : PM_LOCATION_INIT_TOKEN_NODE(parser, operator, value),
+        value,
+        TOK2LOC(parser, operator)
+    );
 }
 
 /**
@@ -2388,14 +2377,14 @@ pm_assoc_splat_node_create(pm_parser_t *parser, pm_node_t *value, const pm_token
 static pm_back_reference_read_node_t *
 pm_back_reference_read_node_create(pm_parser_t *parser, const pm_token_t *name) {
     assert(name->type == PM_TOKEN_BACK_REFERENCE);
-    pm_back_reference_read_node_t *node = PM_NODE_ALLOC(parser, pm_back_reference_read_node_t);
 
-    *node = (pm_back_reference_read_node_t) {
-        .base = PM_NODE_INIT(parser, PM_BACK_REFERENCE_READ_NODE, 0, PM_LOCATION_INIT_TOKEN(parser, name)),
-        .name = pm_parser_constant_id_token(parser, name)
-    };
-
-    return node;
+    return pm_back_reference_read_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKEN(parser, name),
+        pm_parser_constant_id_token(parser, name)
+    );
 }
 
 /**
@@ -2403,19 +2392,21 @@ pm_back_reference_read_node_create(pm_parser_t *parser, const pm_token_t *name) 
  */
 static pm_begin_node_t *
 pm_begin_node_create(pm_parser_t *parser, const pm_token_t *begin_keyword, pm_statements_node_t *statements) {
-    pm_begin_node_t *node = PM_NODE_ALLOC(parser, pm_begin_node_t);
-
     uint32_t start = begin_keyword == NULL ? 0 : PM_TOKEN_START(parser, begin_keyword);
     uint32_t end = statements == NULL ? (begin_keyword == NULL ? 0 : PM_TOKEN_END(parser, begin_keyword)) : PM_NODE_END(statements);
 
-    *node = (pm_begin_node_t) {
-        .base = PM_NODE_INIT(parser, PM_BEGIN_NODE, 0, ((pm_location_t) { .start = start, .length = U32(end - start) })),
-        .begin_keyword_loc = NTOK2LOC(parser, begin_keyword),
-        .statements = statements,
-        .end_keyword_loc = { 0 }
-    };
-
-    return node;
+    return pm_begin_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        ((pm_location_t) { .start = start, .length = U32(end - start) }),
+        NTOK2LOC(parser, begin_keyword),
+        statements,
+        NULL,
+        NULL,
+        NULL,
+        ((pm_location_t) { 0 })
+    );
 }
 
 /**
@@ -2470,15 +2461,15 @@ pm_begin_node_end_keyword_set(const pm_parser_t *parser, pm_begin_node_t *node, 
 static pm_block_argument_node_t *
 pm_block_argument_node_create(pm_parser_t *parser, const pm_token_t *operator, pm_node_t *expression) {
     assert(operator->type == PM_TOKEN_UAMPERSAND);
-    pm_block_argument_node_t *node = PM_NODE_ALLOC(parser, pm_block_argument_node_t);
 
-    *node = (pm_block_argument_node_t) {
-        .base = PM_NODE_INIT(parser, PM_BLOCK_ARGUMENT_NODE, 0, (expression == NULL) ? PM_LOCATION_INIT_TOKEN(parser, operator) : PM_LOCATION_INIT_TOKEN_NODE(parser, operator, expression)),
-        .expression = expression,
-        .operator_loc = TOK2LOC(parser, operator)
-    };
-
-    return node;
+    return pm_block_argument_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        (expression == NULL) ? PM_LOCATION_INIT_TOKEN(parser, operator) : PM_LOCATION_INIT_TOKEN_NODE(parser, operator, expression),
+        expression,
+        TOK2LOC(parser, operator)
+    );
 }
 
 /**
@@ -2486,18 +2477,17 @@ pm_block_argument_node_create(pm_parser_t *parser, const pm_token_t *operator, p
  */
 static pm_block_node_t *
 pm_block_node_create(pm_parser_t *parser, pm_constant_id_list_t *locals, const pm_token_t *opening, pm_node_t *parameters, pm_node_t *body, const pm_token_t *closing) {
-    pm_block_node_t *node = PM_NODE_ALLOC(parser, pm_block_node_t);
-
-    *node = (pm_block_node_t) {
-        .base = PM_NODE_INIT(parser, PM_BLOCK_NODE, 0, PM_LOCATION_INIT_TOKENS(parser, opening, closing)),
-        .locals = *locals,
-        .parameters = parameters,
-        .body = body,
-        .opening_loc = TOK2LOC(parser, opening),
-        .closing_loc = TOK2LOC(parser, closing)
-    };
-
-    return node;
+    return pm_block_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKENS(parser, opening, closing),
+        *locals,
+        parameters,
+        body,
+        TOK2LOC(parser, opening),
+        TOK2LOC(parser, closing)
+    );
 }
 
 /**
@@ -2506,16 +2496,16 @@ pm_block_node_create(pm_parser_t *parser, pm_constant_id_list_t *locals, const p
 static pm_block_parameter_node_t *
 pm_block_parameter_node_create(pm_parser_t *parser, const pm_token_t *name, const pm_token_t *operator) {
     assert(operator->type == PM_TOKEN_UAMPERSAND || operator->type == PM_TOKEN_AMPERSAND);
-    pm_block_parameter_node_t *node = PM_NODE_ALLOC(parser, pm_block_parameter_node_t);
 
-    *node = (pm_block_parameter_node_t) {
-        .base = PM_NODE_INIT(parser, PM_BLOCK_PARAMETER_NODE, 0, (name == NULL) ? PM_LOCATION_INIT_TOKEN(parser, operator) : PM_LOCATION_INIT_TOKENS(parser, operator, name)),
-        .name = name == NULL ? 0 : pm_parser_constant_id_token(parser, name),
-        .name_loc = NTOK2LOC(parser, name),
-        .operator_loc = TOK2LOC(parser, operator)
-    };
-
-    return node;
+    return pm_block_parameter_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        (name == NULL) ? PM_LOCATION_INIT_TOKEN(parser, operator) : PM_LOCATION_INIT_TOKENS(parser, operator, name),
+        name == NULL ? 0 : pm_parser_constant_id_token(parser, name),
+        NTOK2LOC(parser, name),
+        TOK2LOC(parser, operator)
+    );
 }
 
 /**
@@ -2523,8 +2513,6 @@ pm_block_parameter_node_create(pm_parser_t *parser, const pm_token_t *name, cons
  */
 static pm_block_parameters_node_t *
 pm_block_parameters_node_create(pm_parser_t *parser, pm_parameters_node_t *parameters, const pm_token_t *opening) {
-    pm_block_parameters_node_t *node = PM_NODE_ALLOC(parser, pm_block_parameters_node_t);
-
     uint32_t start;
     if (opening != NULL) {
         start = PM_TOKEN_START(parser, opening);
@@ -2543,15 +2531,16 @@ pm_block_parameters_node_create(pm_parser_t *parser, pm_parameters_node_t *param
         end = 0;
     }
 
-    *node = (pm_block_parameters_node_t) {
-        .base = PM_NODE_INIT(parser, PM_BLOCK_PARAMETERS_NODE, 0, ((pm_location_t) { .start = start, .length = U32(end - start) })),
-        .parameters = parameters,
-        .opening_loc = NTOK2LOC(parser, opening),
-        .closing_loc = { 0 },
-        .locals = { 0 }
-    };
-
-    return node;
+    return pm_block_parameters_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        ((pm_location_t) { .start = start, .length = U32(end - start) }),
+        parameters,
+        ((pm_node_list_t) { 0 }),
+        NTOK2LOC(parser, opening),
+        ((pm_location_t) { 0 })
+    );
 }
 
 /**
@@ -2569,14 +2558,13 @@ pm_block_parameters_node_closing_set(const pm_parser_t *parser, pm_block_paramet
  */
 static pm_block_local_variable_node_t *
 pm_block_local_variable_node_create(pm_parser_t *parser, const pm_token_t *name) {
-    pm_block_local_variable_node_t *node = PM_NODE_ALLOC(parser, pm_block_local_variable_node_t);
-
-    *node = (pm_block_local_variable_node_t) {
-        .base = PM_NODE_INIT(parser, PM_BLOCK_LOCAL_VARIABLE_NODE, 0, PM_LOCATION_INIT_TOKEN(parser, name)),
-        .name = pm_parser_constant_id_token(parser, name)
-    };
-
-    return node;
+    return pm_block_local_variable_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKEN(parser, name),
+        pm_parser_constant_id_token(parser, name)
+    );
 }
 
 /**
@@ -2599,15 +2587,15 @@ pm_block_parameters_node_append_local(pm_arena_t *arena, pm_block_parameters_nod
 static pm_break_node_t *
 pm_break_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_arguments_node_t *arguments) {
     assert(keyword->type == PM_TOKEN_KEYWORD_BREAK);
-    pm_break_node_t *node = PM_NODE_ALLOC(parser, pm_break_node_t);
 
-    *node = (pm_break_node_t) {
-        .base = PM_NODE_INIT(parser, PM_BREAK_NODE, 0, (arguments == NULL) ? PM_LOCATION_INIT_TOKEN(parser, keyword) : PM_LOCATION_INIT_TOKEN_NODE(parser, keyword, arguments)),
-        .arguments = arguments,
-        .keyword_loc = TOK2LOC(parser, keyword)
-    };
-
-    return node;
+    return pm_break_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        (arguments == NULL) ? PM_LOCATION_INIT_TOKEN(parser, keyword) : PM_LOCATION_INIT_TOKEN_NODE(parser, keyword, arguments),
+        arguments,
+        TOK2LOC(parser, keyword)
+    );
 }
 
 // There are certain flags that we want to use internally but don't want to
@@ -2626,22 +2614,21 @@ static const pm_node_flags_t PM_CALL_NODE_FLAGS_INDEX = ((PM_CALL_NODE_FLAGS_LAS
  */
 static pm_call_node_t *
 pm_call_node_create(pm_parser_t *parser, pm_node_flags_t flags) {
-    pm_call_node_t *node = PM_NODE_ALLOC(parser, pm_call_node_t);
-
-    *node = (pm_call_node_t) {
-        .base = PM_NODE_INIT(parser, PM_CALL_NODE, flags, PM_LOCATION_INIT_UNSET),
-        .receiver = NULL,
-        .call_operator_loc = { 0 },
-        .message_loc = { 0 },
-        .opening_loc = { 0 },
-        .arguments = NULL,
-        .closing_loc = { 0 },
-        .equal_loc = { 0 },
-        .block = NULL,
-        .name = 0
-    };
-
-    return node;
+    return pm_call_node_new(
+        parser->arena,
+        ++parser->node_id,
+        flags,
+        PM_LOCATION_INIT_UNSET,
+        NULL,
+        ((pm_location_t) { 0 }),
+        0,
+        ((pm_location_t) { 0 }),
+        ((pm_location_t) { 0 }),
+        NULL,
+        ((pm_location_t) { 0 }),
+        ((pm_location_t) { 0 }),
+        NULL
+    );
 }
 
 /**
@@ -2938,18 +2925,20 @@ static pm_call_and_write_node_t *
 pm_call_and_write_node_create(pm_parser_t *parser, pm_call_node_t *target, const pm_token_t *operator, pm_node_t *value) {
     assert(target->block == NULL);
     assert(operator->type == PM_TOKEN_AMPERSAND_AMPERSAND_EQUAL);
-    pm_call_and_write_node_t *node = PM_NODE_ALLOC(parser, pm_call_and_write_node_t);
 
-    *node = (pm_call_and_write_node_t) {
-        .base = PM_NODE_INIT(parser, PM_CALL_AND_WRITE_NODE, FL(target), PM_LOCATION_INIT_NODES(target, value)),
-        .receiver = target->receiver,
-        .call_operator_loc = target->call_operator_loc,
-        .message_loc = target->message_loc,
-        .read_name = 0,
-        .write_name = target->name,
-        .operator_loc = TOK2LOC(parser, operator),
-        .value = value
-    };
+    pm_call_and_write_node_t *node = pm_call_and_write_node_new(
+        parser->arena,
+        ++parser->node_id,
+        FL(target),
+        PM_LOCATION_INIT_NODES(target, value),
+        target->receiver,
+        target->call_operator_loc,
+        target->message_loc,
+        0,
+        target->name,
+        TOK2LOC(parser, operator),
+        value
+    );
 
     pm_call_write_read_name_init(parser, &node->read_name, &node->write_name);
 
@@ -2988,22 +2977,25 @@ pm_index_arguments_check(pm_parser_t *parser, const pm_arguments_node_t *argumen
 static pm_index_and_write_node_t *
 pm_index_and_write_node_create(pm_parser_t *parser, pm_call_node_t *target, const pm_token_t *operator, pm_node_t *value) {
     assert(operator->type == PM_TOKEN_AMPERSAND_AMPERSAND_EQUAL);
-    pm_index_and_write_node_t *node = PM_NODE_ALLOC(parser, pm_index_and_write_node_t);
 
     pm_index_arguments_check(parser, target->arguments, target->block);
 
     assert(!target->block || PM_NODE_TYPE_P(target->block, PM_BLOCK_ARGUMENT_NODE));
-    *node = (pm_index_and_write_node_t) {
-        .base = PM_NODE_INIT(parser, PM_INDEX_AND_WRITE_NODE, FL(target), PM_LOCATION_INIT_NODES(target, value)),
-        .receiver = target->receiver,
-        .call_operator_loc = target->call_operator_loc,
-        .opening_loc = target->opening_loc,
-        .arguments = target->arguments,
-        .closing_loc = target->closing_loc,
-        .block = (pm_block_argument_node_t *) target->block,
-        .operator_loc = TOK2LOC(parser, operator),
-        .value = value
-    };
+
+    pm_index_and_write_node_t *node = pm_index_and_write_node_new(
+        parser->arena,
+        ++parser->node_id,
+        FL(target),
+        PM_LOCATION_INIT_NODES(target, value),
+        target->receiver,
+        target->call_operator_loc,
+        target->opening_loc,
+        target->arguments,
+        target->closing_loc,
+        (pm_block_argument_node_t *) target->block,
+        TOK2LOC(parser, operator),
+        value
+    );
 
     // The target is no longer necessary because we've reused its children.
     // It is arena-allocated so no explicit free is needed.
@@ -3017,19 +3009,21 @@ pm_index_and_write_node_create(pm_parser_t *parser, pm_call_node_t *target, cons
 static pm_call_operator_write_node_t *
 pm_call_operator_write_node_create(pm_parser_t *parser, pm_call_node_t *target, const pm_token_t *operator, pm_node_t *value) {
     assert(target->block == NULL);
-    pm_call_operator_write_node_t *node = PM_NODE_ALLOC(parser, pm_call_operator_write_node_t);
 
-    *node = (pm_call_operator_write_node_t) {
-        .base = PM_NODE_INIT(parser, PM_CALL_OPERATOR_WRITE_NODE, FL(target), PM_LOCATION_INIT_NODES(target, value)),
-        .receiver = target->receiver,
-        .call_operator_loc = target->call_operator_loc,
-        .message_loc = target->message_loc,
-        .read_name = 0,
-        .write_name = target->name,
-        .binary_operator = pm_parser_constant_id_raw(parser, operator->start, operator->end - 1),
-        .binary_operator_loc = TOK2LOC(parser, operator),
-        .value = value
-    };
+    pm_call_operator_write_node_t *node = pm_call_operator_write_node_new(
+        parser->arena,
+        ++parser->node_id,
+        FL(target),
+        PM_LOCATION_INIT_NODES(target, value),
+        target->receiver,
+        target->call_operator_loc,
+        target->message_loc,
+        0,
+        target->name,
+        pm_parser_constant_id_raw(parser, operator->start, operator->end - 1),
+        TOK2LOC(parser, operator),
+        value
+    );
 
     pm_call_write_read_name_init(parser, &node->read_name, &node->write_name);
 
@@ -3044,23 +3038,25 @@ pm_call_operator_write_node_create(pm_parser_t *parser, pm_call_node_t *target, 
  */
 static pm_index_operator_write_node_t *
 pm_index_operator_write_node_create(pm_parser_t *parser, pm_call_node_t *target, const pm_token_t *operator, pm_node_t *value) {
-    pm_index_operator_write_node_t *node = PM_NODE_ALLOC(parser, pm_index_operator_write_node_t);
-
     pm_index_arguments_check(parser, target->arguments, target->block);
 
     assert(!target->block || PM_NODE_TYPE_P(target->block, PM_BLOCK_ARGUMENT_NODE));
-    *node = (pm_index_operator_write_node_t) {
-        .base = PM_NODE_INIT(parser, PM_INDEX_OPERATOR_WRITE_NODE, FL(target), PM_LOCATION_INIT_NODES(target, value)),
-        .receiver = target->receiver,
-        .call_operator_loc = target->call_operator_loc,
-        .opening_loc = target->opening_loc,
-        .arguments = target->arguments,
-        .closing_loc = target->closing_loc,
-        .block = (pm_block_argument_node_t *) target->block,
-        .binary_operator = pm_parser_constant_id_raw(parser, operator->start, operator->end - 1),
-        .binary_operator_loc = TOK2LOC(parser, operator),
-        .value = value
-    };
+
+    pm_index_operator_write_node_t *node = pm_index_operator_write_node_new(
+        parser->arena,
+        ++parser->node_id,
+        FL(target),
+        PM_LOCATION_INIT_NODES(target, value),
+        target->receiver,
+        target->call_operator_loc,
+        target->opening_loc,
+        target->arguments,
+        target->closing_loc,
+        (pm_block_argument_node_t *) target->block,
+        pm_parser_constant_id_raw(parser, operator->start, operator->end - 1),
+        TOK2LOC(parser, operator),
+        value
+    );
 
     // The target is no longer necessary because we've reused its children.
     // It is arena-allocated so no explicit free is needed.
@@ -3075,18 +3071,20 @@ static pm_call_or_write_node_t *
 pm_call_or_write_node_create(pm_parser_t *parser, pm_call_node_t *target, const pm_token_t *operator, pm_node_t *value) {
     assert(target->block == NULL);
     assert(operator->type == PM_TOKEN_PIPE_PIPE_EQUAL);
-    pm_call_or_write_node_t *node = PM_NODE_ALLOC(parser, pm_call_or_write_node_t);
 
-    *node = (pm_call_or_write_node_t) {
-        .base = PM_NODE_INIT(parser, PM_CALL_OR_WRITE_NODE, FL(target), PM_LOCATION_INIT_NODES(target, value)),
-        .receiver = target->receiver,
-        .call_operator_loc = target->call_operator_loc,
-        .message_loc = target->message_loc,
-        .read_name = 0,
-        .write_name = target->name,
-        .operator_loc = TOK2LOC(parser, operator),
-        .value = value
-    };
+    pm_call_or_write_node_t *node = pm_call_or_write_node_new(
+        parser->arena,
+        ++parser->node_id,
+        FL(target),
+        PM_LOCATION_INIT_NODES(target, value),
+        target->receiver,
+        target->call_operator_loc,
+        target->message_loc,
+        0,
+        target->name,
+        TOK2LOC(parser, operator),
+        value
+    );
 
     pm_call_write_read_name_init(parser, &node->read_name, &node->write_name);
 
@@ -3102,22 +3100,25 @@ pm_call_or_write_node_create(pm_parser_t *parser, pm_call_node_t *target, const 
 static pm_index_or_write_node_t *
 pm_index_or_write_node_create(pm_parser_t *parser, pm_call_node_t *target, const pm_token_t *operator, pm_node_t *value) {
     assert(operator->type == PM_TOKEN_PIPE_PIPE_EQUAL);
-    pm_index_or_write_node_t *node = PM_NODE_ALLOC(parser, pm_index_or_write_node_t);
 
     pm_index_arguments_check(parser, target->arguments, target->block);
 
     assert(!target->block || PM_NODE_TYPE_P(target->block, PM_BLOCK_ARGUMENT_NODE));
-    *node = (pm_index_or_write_node_t) {
-        .base = PM_NODE_INIT(parser, PM_INDEX_OR_WRITE_NODE, FL(target), PM_LOCATION_INIT_NODES(target, value)),
-        .receiver = target->receiver,
-        .call_operator_loc = target->call_operator_loc,
-        .opening_loc = target->opening_loc,
-        .arguments = target->arguments,
-        .closing_loc = target->closing_loc,
-        .block = (pm_block_argument_node_t *) target->block,
-        .operator_loc = TOK2LOC(parser, operator),
-        .value = value
-    };
+
+    pm_index_or_write_node_t *node = pm_index_or_write_node_new(
+        parser->arena,
+        ++parser->node_id,
+        FL(target),
+        PM_LOCATION_INIT_NODES(target, value),
+        target->receiver,
+        target->call_operator_loc,
+        target->opening_loc,
+        target->arguments,
+        target->closing_loc,
+        (pm_block_argument_node_t *) target->block,
+        TOK2LOC(parser, operator),
+        value
+    );
 
     // The target is no longer necessary because we've reused its children.
     // It is arena-allocated so no explicit free is needed.
@@ -3131,15 +3132,16 @@ pm_index_or_write_node_create(pm_parser_t *parser, pm_call_node_t *target, const
  */
 static pm_call_target_node_t *
 pm_call_target_node_create(pm_parser_t *parser, pm_call_node_t *target) {
-    pm_call_target_node_t *node = PM_NODE_ALLOC(parser, pm_call_target_node_t);
-
-    *node = (pm_call_target_node_t) {
-        .base = PM_NODE_INIT(parser, PM_CALL_TARGET_NODE, FL(target), PM_LOCATION_INIT_NODE(target)),
-        .receiver = target->receiver,
-        .call_operator_loc = target->call_operator_loc,
-        .name = target->name,
-        .message_loc = target->message_loc
-    };
+    pm_call_target_node_t *node = pm_call_target_node_new(
+        parser->arena,
+        ++parser->node_id,
+        FL(target),
+        PM_LOCATION_INIT_NODE(target),
+        target->receiver,
+        target->call_operator_loc,
+        target->name,
+        target->message_loc
+    );
 
     /* It is possible to get here where we have parsed an invalid syntax tree
      * where the call operator was not present. In that case we will have a
@@ -3161,19 +3163,20 @@ pm_call_target_node_create(pm_parser_t *parser, pm_call_node_t *target) {
  */
 static pm_index_target_node_t *
 pm_index_target_node_create(pm_parser_t *parser, pm_call_node_t *target) {
-    pm_index_target_node_t *node = PM_NODE_ALLOC(parser, pm_index_target_node_t);
-
     pm_index_arguments_check(parser, target->arguments, target->block);
     assert(!target->block || PM_NODE_TYPE_P(target->block, PM_BLOCK_ARGUMENT_NODE));
 
-    *node = (pm_index_target_node_t) {
-        .base = PM_NODE_INIT(parser, PM_INDEX_TARGET_NODE, FL(target) | PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE, PM_LOCATION_INIT_NODE(target)),
-        .receiver = target->receiver,
-        .opening_loc = target->opening_loc,
-        .arguments = target->arguments,
-        .closing_loc = target->closing_loc,
-        .block = (pm_block_argument_node_t *) target->block,
-    };
+    pm_index_target_node_t *node = pm_index_target_node_new(
+        parser->arena,
+        ++parser->node_id,
+        FL(target) | PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE,
+        PM_LOCATION_INIT_NODE(target),
+        target->receiver,
+        target->opening_loc,
+        target->arguments,
+        target->closing_loc,
+        (pm_block_argument_node_t *) target->block
+    );
 
     // The target is no longer necessary because we've reused its children.
     // It is arena-allocated so no explicit free is needed.
@@ -3186,16 +3189,15 @@ pm_index_target_node_create(pm_parser_t *parser, pm_call_node_t *target) {
  */
 static pm_capture_pattern_node_t *
 pm_capture_pattern_node_create(pm_parser_t *parser, pm_node_t *value, pm_local_variable_target_node_t *target, const pm_token_t *operator) {
-    pm_capture_pattern_node_t *node = PM_NODE_ALLOC(parser, pm_capture_pattern_node_t);
-
-    *node = (pm_capture_pattern_node_t) {
-        .base = PM_NODE_INIT(parser, PM_CAPTURE_PATTERN_NODE, 0, PM_LOCATION_INIT_NODES(value, target)),
-        .value = value,
-        .target = target,
-        .operator_loc = TOK2LOC(parser, operator)
-    };
-
-    return node;
+    return pm_capture_pattern_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_NODES(value, target),
+        value,
+        target,
+        TOK2LOC(parser, operator)
+    );
 }
 
 /**
@@ -3203,18 +3205,17 @@ pm_capture_pattern_node_create(pm_parser_t *parser, pm_node_t *value, pm_local_v
  */
 static pm_case_node_t *
 pm_case_node_create(pm_parser_t *parser, const pm_token_t *case_keyword, pm_node_t *predicate, const pm_token_t *end_keyword) {
-    pm_case_node_t *node = PM_NODE_ALLOC(parser, pm_case_node_t);
-
-    *node = (pm_case_node_t) {
-        .base = PM_NODE_INIT(parser, PM_CASE_NODE, 0, PM_LOCATION_INIT_TOKENS(parser, case_keyword, end_keyword == NULL ? case_keyword : end_keyword)),
-        .predicate = predicate,
-        .else_clause = NULL,
-        .case_keyword_loc = TOK2LOC(parser, case_keyword),
-        .end_keyword_loc = NTOK2LOC(parser, end_keyword),
-        .conditions = { 0 }
-    };
-
-    return node;
+    return pm_case_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKENS(parser, case_keyword, end_keyword == NULL ? case_keyword : end_keyword),
+        predicate,
+        ((pm_node_list_t) { 0 }),
+        NULL,
+        TOK2LOC(parser, case_keyword),
+        NTOK2LOC(parser, end_keyword)
+    );
 }
 
 /**
@@ -3251,18 +3252,17 @@ pm_case_node_end_keyword_loc_set(const pm_parser_t *parser, pm_case_node_t *node
  */
 static pm_case_match_node_t *
 pm_case_match_node_create(pm_parser_t *parser, const pm_token_t *case_keyword, pm_node_t *predicate) {
-    pm_case_match_node_t *node = PM_NODE_ALLOC(parser, pm_case_match_node_t);
-
-    *node = (pm_case_match_node_t) {
-        .base = PM_NODE_INIT(parser, PM_CASE_MATCH_NODE, 0, PM_LOCATION_INIT_TOKEN(parser, case_keyword)),
-        .predicate = predicate,
-        .else_clause = NULL,
-        .case_keyword_loc = TOK2LOC(parser, case_keyword),
-        .end_keyword_loc = { 0 },
-        .conditions = { 0 }
-    };
-
-    return node;
+    return pm_case_match_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKEN(parser, case_keyword),
+        predicate,
+        ((pm_node_list_t) { 0 }),
+        NULL,
+        TOK2LOC(parser, case_keyword),
+        ((pm_location_t) { 0 })
+    );
 }
 
 /**
@@ -3299,21 +3299,20 @@ pm_case_match_node_end_keyword_loc_set(const pm_parser_t *parser, pm_case_match_
  */
 static pm_class_node_t *
 pm_class_node_create(pm_parser_t *parser, pm_constant_id_list_t *locals, const pm_token_t *class_keyword, pm_node_t *constant_path, const pm_token_t *name, const pm_token_t *inheritance_operator, pm_node_t *superclass, pm_node_t *body, const pm_token_t *end_keyword) {
-    pm_class_node_t *node = PM_NODE_ALLOC(parser, pm_class_node_t);
-
-    *node = (pm_class_node_t) {
-        .base = PM_NODE_INIT(parser, PM_CLASS_NODE, 0, PM_LOCATION_INIT_TOKENS(parser, class_keyword, end_keyword)),
-        .locals = *locals,
-        .class_keyword_loc = TOK2LOC(parser, class_keyword),
-        .constant_path = constant_path,
-        .inheritance_operator_loc = NTOK2LOC(parser, inheritance_operator),
-        .superclass = superclass,
-        .body = body,
-        .end_keyword_loc = TOK2LOC(parser, end_keyword),
-        .name = pm_parser_constant_id_token(parser, name)
-    };
-
-    return node;
+    return pm_class_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKENS(parser, class_keyword, end_keyword),
+        *locals,
+        TOK2LOC(parser, class_keyword),
+        constant_path,
+        NTOK2LOC(parser, inheritance_operator),
+        superclass,
+        body,
+        TOK2LOC(parser, end_keyword),
+        pm_parser_constant_id_token(parser, name)
+    );
 }
 
 /**
@@ -3322,17 +3321,17 @@ pm_class_node_create(pm_parser_t *parser, pm_constant_id_list_t *locals, const p
 static pm_class_variable_and_write_node_t *
 pm_class_variable_and_write_node_create(pm_parser_t *parser, pm_class_variable_read_node_t *target, const pm_token_t *operator, pm_node_t *value) {
     assert(operator->type == PM_TOKEN_AMPERSAND_AMPERSAND_EQUAL);
-    pm_class_variable_and_write_node_t *node = PM_NODE_ALLOC(parser, pm_class_variable_and_write_node_t);
 
-    *node = (pm_class_variable_and_write_node_t) {
-        .base = PM_NODE_INIT(parser, PM_CLASS_VARIABLE_AND_WRITE_NODE, 0, PM_LOCATION_INIT_NODES(target, value)),
-        .name = target->name,
-        .name_loc = target->base.location,
-        .operator_loc = TOK2LOC(parser, operator),
-        .value = value
-    };
-
-    return node;
+    return pm_class_variable_and_write_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_NODES(target, value),
+        target->name,
+        target->base.location,
+        TOK2LOC(parser, operator),
+        value
+    );
 }
 
 /**
@@ -3340,18 +3339,17 @@ pm_class_variable_and_write_node_create(pm_parser_t *parser, pm_class_variable_r
  */
 static pm_class_variable_operator_write_node_t *
 pm_class_variable_operator_write_node_create(pm_parser_t *parser, pm_class_variable_read_node_t *target, const pm_token_t *operator, pm_node_t *value) {
-    pm_class_variable_operator_write_node_t *node = PM_NODE_ALLOC(parser, pm_class_variable_operator_write_node_t);
-
-    *node = (pm_class_variable_operator_write_node_t) {
-        .base = PM_NODE_INIT(parser, PM_CLASS_VARIABLE_OPERATOR_WRITE_NODE, 0, PM_LOCATION_INIT_NODES(target, value)),
-        .name = target->name,
-        .name_loc = target->base.location,
-        .binary_operator_loc = TOK2LOC(parser, operator),
-        .value = value,
-        .binary_operator = pm_parser_constant_id_raw(parser, operator->start, operator->end - 1)
-    };
-
-    return node;
+    return pm_class_variable_operator_write_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_NODES(target, value),
+        target->name,
+        target->base.location,
+        TOK2LOC(parser, operator),
+        value,
+        pm_parser_constant_id_raw(parser, operator->start, operator->end - 1)
+    );
 }
 
 /**
@@ -3360,17 +3358,17 @@ pm_class_variable_operator_write_node_create(pm_parser_t *parser, pm_class_varia
 static pm_class_variable_or_write_node_t *
 pm_class_variable_or_write_node_create(pm_parser_t *parser, pm_class_variable_read_node_t *target, const pm_token_t *operator, pm_node_t *value) {
     assert(operator->type == PM_TOKEN_PIPE_PIPE_EQUAL);
-    pm_class_variable_or_write_node_t *node = PM_NODE_ALLOC(parser, pm_class_variable_or_write_node_t);
 
-    *node = (pm_class_variable_or_write_node_t) {
-        .base = PM_NODE_INIT(parser, PM_CLASS_VARIABLE_OR_WRITE_NODE, 0, PM_LOCATION_INIT_NODES(target, value)),
-        .name = target->name,
-        .name_loc = target->base.location,
-        .operator_loc = TOK2LOC(parser, operator),
-        .value = value
-    };
-
-    return node;
+    return pm_class_variable_or_write_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_NODES(target, value),
+        target->name,
+        target->base.location,
+        TOK2LOC(parser, operator),
+        value
+    );
 }
 
 /**
@@ -3379,14 +3377,14 @@ pm_class_variable_or_write_node_create(pm_parser_t *parser, pm_class_variable_re
 static pm_class_variable_read_node_t *
 pm_class_variable_read_node_create(pm_parser_t *parser, const pm_token_t *token) {
     assert(token->type == PM_TOKEN_CLASS_VARIABLE);
-    pm_class_variable_read_node_t *node = PM_NODE_ALLOC(parser, pm_class_variable_read_node_t);
 
-    *node = (pm_class_variable_read_node_t) {
-        .base = PM_NODE_INIT(parser, PM_CLASS_VARIABLE_READ_NODE, 0, PM_LOCATION_INIT_TOKEN(parser, token)),
-        .name = pm_parser_constant_id_token(parser, token)
-    };
-
-    return node;
+    return pm_class_variable_read_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKEN(parser, token),
+        pm_parser_constant_id_token(parser, token)
+    );
 }
 
 /**
@@ -3408,18 +3406,16 @@ pm_implicit_array_write_flags(const pm_node_t *node, pm_node_flags_t flags) {
  */
 static pm_class_variable_write_node_t *
 pm_class_variable_write_node_create(pm_parser_t *parser, pm_class_variable_read_node_t *read_node, pm_token_t *operator, pm_node_t *value) {
-    pm_class_variable_write_node_t *node = PM_NODE_ALLOC(parser, pm_class_variable_write_node_t);
-    pm_node_flags_t flags = pm_implicit_array_write_flags(value, PM_WRITE_NODE_FLAGS_IMPLICIT_ARRAY);
-
-    *node = (pm_class_variable_write_node_t) {
-        .base = PM_NODE_INIT(parser, PM_CLASS_VARIABLE_WRITE_NODE, flags, PM_LOCATION_INIT_NODES(read_node, value)),
-        .name = read_node->name,
-        .name_loc = read_node->base.location,
-        .operator_loc = TOK2LOC(parser, operator),
-        .value = value
-    };
-
-    return node;
+    return pm_class_variable_write_node_new(
+        parser->arena,
+        ++parser->node_id,
+        pm_implicit_array_write_flags(value, PM_WRITE_NODE_FLAGS_IMPLICIT_ARRAY),
+        PM_LOCATION_INIT_NODES(read_node, value),
+        read_node->name,
+        read_node->base.location,
+        value,
+        TOK2LOC(parser, operator)
+    );
 }
 
 /**
@@ -3428,16 +3424,16 @@ pm_class_variable_write_node_create(pm_parser_t *parser, pm_class_variable_read_
 static pm_constant_path_and_write_node_t *
 pm_constant_path_and_write_node_create(pm_parser_t *parser, pm_constant_path_node_t *target, const pm_token_t *operator, pm_node_t *value) {
     assert(operator->type == PM_TOKEN_AMPERSAND_AMPERSAND_EQUAL);
-    pm_constant_path_and_write_node_t *node = PM_NODE_ALLOC(parser, pm_constant_path_and_write_node_t);
 
-    *node = (pm_constant_path_and_write_node_t) {
-        .base = PM_NODE_INIT(parser, PM_CONSTANT_PATH_AND_WRITE_NODE, 0, PM_LOCATION_INIT_NODES(target, value)),
-        .target = target,
-        .operator_loc = TOK2LOC(parser, operator),
-        .value = value
-    };
-
-    return node;
+    return pm_constant_path_and_write_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_NODES(target, value),
+        target,
+        TOK2LOC(parser, operator),
+        value
+    );
 }
 
 /**
@@ -3445,17 +3441,16 @@ pm_constant_path_and_write_node_create(pm_parser_t *parser, pm_constant_path_nod
  */
 static pm_constant_path_operator_write_node_t *
 pm_constant_path_operator_write_node_create(pm_parser_t *parser, pm_constant_path_node_t *target, const pm_token_t *operator, pm_node_t *value) {
-    pm_constant_path_operator_write_node_t *node = PM_NODE_ALLOC(parser, pm_constant_path_operator_write_node_t);
-
-    *node = (pm_constant_path_operator_write_node_t) {
-        .base = PM_NODE_INIT(parser, PM_CONSTANT_PATH_OPERATOR_WRITE_NODE, 0, PM_LOCATION_INIT_NODES(target, value)),
-        .target = target,
-        .binary_operator_loc = TOK2LOC(parser, operator),
-        .value = value,
-        .binary_operator = pm_parser_constant_id_raw(parser, operator->start, operator->end - 1)
-    };
-
-    return node;
+    return pm_constant_path_operator_write_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_NODES(target, value),
+        target,
+        TOK2LOC(parser, operator),
+        value,
+        pm_parser_constant_id_raw(parser, operator->start, operator->end - 1)
+    );
 }
 
 /**
@@ -3464,16 +3459,16 @@ pm_constant_path_operator_write_node_create(pm_parser_t *parser, pm_constant_pat
 static pm_constant_path_or_write_node_t *
 pm_constant_path_or_write_node_create(pm_parser_t *parser, pm_constant_path_node_t *target, const pm_token_t *operator, pm_node_t *value) {
     assert(operator->type == PM_TOKEN_PIPE_PIPE_EQUAL);
-    pm_constant_path_or_write_node_t *node = PM_NODE_ALLOC(parser, pm_constant_path_or_write_node_t);
 
-    *node = (pm_constant_path_or_write_node_t) {
-        .base = PM_NODE_INIT(parser, PM_CONSTANT_PATH_OR_WRITE_NODE, 0, PM_LOCATION_INIT_NODES(target, value)),
-        .target = target,
-        .operator_loc = TOK2LOC(parser, operator),
-        .value = value
-    };
-
-    return node;
+    return pm_constant_path_or_write_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_NODES(target, value),
+        target,
+        TOK2LOC(parser, operator),
+        value
+    );
 }
 
 /**
@@ -3482,22 +3477,22 @@ pm_constant_path_or_write_node_create(pm_parser_t *parser, pm_constant_path_node
 static pm_constant_path_node_t *
 pm_constant_path_node_create(pm_parser_t *parser, pm_node_t *parent, const pm_token_t *delimiter, const pm_token_t *name_token) {
     pm_assert_value_expression(parser, parent);
-    pm_constant_path_node_t *node = PM_NODE_ALLOC(parser, pm_constant_path_node_t);
 
     pm_constant_id_t name = PM_CONSTANT_ID_UNSET;
     if (name_token->type == PM_TOKEN_CONSTANT) {
         name = pm_parser_constant_id_token(parser, name_token);
     }
 
-    *node = (pm_constant_path_node_t) {
-        .base = PM_NODE_INIT(parser, PM_CONSTANT_PATH_NODE, 0, (parent == NULL) ? PM_LOCATION_INIT_TOKENS(parser, delimiter, name_token) : PM_LOCATION_INIT_NODE_TOKEN(parser, parent, name_token)),
-        .parent = parent,
-        .name = name,
-        .delimiter_loc = TOK2LOC(parser, delimiter),
-        .name_loc = TOK2LOC(parser, name_token)
-    };
-
-    return node;
+    return pm_constant_path_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        (parent == NULL) ? PM_LOCATION_INIT_TOKENS(parser, delimiter, name_token) : PM_LOCATION_INIT_NODE_TOKEN(parser, parent, name_token),
+        parent,
+        name,
+        TOK2LOC(parser, delimiter),
+        TOK2LOC(parser, name_token)
+    );
 }
 
 /**
@@ -3505,17 +3500,15 @@ pm_constant_path_node_create(pm_parser_t *parser, pm_node_t *parent, const pm_to
  */
 static pm_constant_path_write_node_t *
 pm_constant_path_write_node_create(pm_parser_t *parser, pm_constant_path_node_t *target, const pm_token_t *operator, pm_node_t *value) {
-    pm_constant_path_write_node_t *node = PM_NODE_ALLOC(parser, pm_constant_path_write_node_t);
-    pm_node_flags_t flags = pm_implicit_array_write_flags(value, PM_WRITE_NODE_FLAGS_IMPLICIT_ARRAY);
-
-    *node = (pm_constant_path_write_node_t) {
-        .base = PM_NODE_INIT(parser, PM_CONSTANT_PATH_WRITE_NODE, flags, PM_LOCATION_INIT_NODES(target, value)),
-        .target = target,
-        .operator_loc = TOK2LOC(parser, operator),
-        .value = value
-    };
-
-    return node;
+    return pm_constant_path_write_node_new(
+        parser->arena,
+        ++parser->node_id,
+        pm_implicit_array_write_flags(value, PM_WRITE_NODE_FLAGS_IMPLICIT_ARRAY),
+        PM_LOCATION_INIT_NODES(target, value),
+        target,
+        TOK2LOC(parser, operator),
+        value
+    );
 }
 
 /**
@@ -3524,17 +3517,17 @@ pm_constant_path_write_node_create(pm_parser_t *parser, pm_constant_path_node_t 
 static pm_constant_and_write_node_t *
 pm_constant_and_write_node_create(pm_parser_t *parser, pm_constant_read_node_t *target, const pm_token_t *operator, pm_node_t *value) {
     assert(operator->type == PM_TOKEN_AMPERSAND_AMPERSAND_EQUAL);
-    pm_constant_and_write_node_t *node = PM_NODE_ALLOC(parser, pm_constant_and_write_node_t);
 
-    *node = (pm_constant_and_write_node_t) {
-        .base = PM_NODE_INIT(parser, PM_CONSTANT_AND_WRITE_NODE, 0, PM_LOCATION_INIT_NODES(target, value)),
-        .name = target->name,
-        .name_loc = target->base.location,
-        .operator_loc = TOK2LOC(parser, operator),
-        .value = value
-    };
-
-    return node;
+    return pm_constant_and_write_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_NODES(target, value),
+        target->name,
+        target->base.location,
+        TOK2LOC(parser, operator),
+        value
+    );
 }
 
 /**
@@ -3542,18 +3535,17 @@ pm_constant_and_write_node_create(pm_parser_t *parser, pm_constant_read_node_t *
  */
 static pm_constant_operator_write_node_t *
 pm_constant_operator_write_node_create(pm_parser_t *parser, pm_constant_read_node_t *target, const pm_token_t *operator, pm_node_t *value) {
-    pm_constant_operator_write_node_t *node = PM_NODE_ALLOC(parser, pm_constant_operator_write_node_t);
-
-    *node = (pm_constant_operator_write_node_t) {
-        .base = PM_NODE_INIT(parser, PM_CONSTANT_OPERATOR_WRITE_NODE, 0, PM_LOCATION_INIT_NODES(target, value)),
-        .name = target->name,
-        .name_loc = target->base.location,
-        .binary_operator_loc = TOK2LOC(parser, operator),
-        .value = value,
-        .binary_operator = pm_parser_constant_id_raw(parser, operator->start, operator->end - 1)
-    };
-
-    return node;
+    return pm_constant_operator_write_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_NODES(target, value),
+        target->name,
+        target->base.location,
+        TOK2LOC(parser, operator),
+        value,
+        pm_parser_constant_id_raw(parser, operator->start, operator->end - 1)
+    );
 }
 
 /**
@@ -3562,17 +3554,17 @@ pm_constant_operator_write_node_create(pm_parser_t *parser, pm_constant_read_nod
 static pm_constant_or_write_node_t *
 pm_constant_or_write_node_create(pm_parser_t *parser, pm_constant_read_node_t *target, const pm_token_t *operator, pm_node_t *value) {
     assert(operator->type == PM_TOKEN_PIPE_PIPE_EQUAL);
-    pm_constant_or_write_node_t *node = PM_NODE_ALLOC(parser, pm_constant_or_write_node_t);
 
-    *node = (pm_constant_or_write_node_t) {
-        .base = PM_NODE_INIT(parser, PM_CONSTANT_OR_WRITE_NODE, 0, PM_LOCATION_INIT_NODES(target, value)),
-        .name = target->name,
-        .name_loc = target->base.location,
-        .operator_loc = TOK2LOC(parser, operator),
-        .value = value
-    };
-
-    return node;
+    return pm_constant_or_write_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_NODES(target, value),
+        target->name,
+        target->base.location,
+        TOK2LOC(parser, operator),
+        value
+    );
 }
 
 /**
@@ -3581,14 +3573,14 @@ pm_constant_or_write_node_create(pm_parser_t *parser, pm_constant_read_node_t *t
 static pm_constant_read_node_t *
 pm_constant_read_node_create(pm_parser_t *parser, const pm_token_t *name) {
     assert(name->type == PM_TOKEN_CONSTANT || name->type == 0);
-    pm_constant_read_node_t *node = PM_NODE_ALLOC(parser, pm_constant_read_node_t);
 
-    *node = (pm_constant_read_node_t) {
-        .base = PM_NODE_INIT(parser, PM_CONSTANT_READ_NODE, 0, PM_LOCATION_INIT_TOKEN(parser, name)),
-        .name = pm_parser_constant_id_token(parser, name)
-    };
-
-    return node;
+    return pm_constant_read_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKEN(parser, name),
+        pm_parser_constant_id_token(parser, name)
+    );
 }
 
 /**
@@ -3596,18 +3588,16 @@ pm_constant_read_node_create(pm_parser_t *parser, const pm_token_t *name) {
  */
 static pm_constant_write_node_t *
 pm_constant_write_node_create(pm_parser_t *parser, pm_constant_read_node_t *target, const pm_token_t *operator, pm_node_t *value) {
-    pm_constant_write_node_t *node = PM_NODE_ALLOC(parser, pm_constant_write_node_t);
-    pm_node_flags_t flags = pm_implicit_array_write_flags(value, PM_WRITE_NODE_FLAGS_IMPLICIT_ARRAY);
-
-    *node = (pm_constant_write_node_t) {
-        .base = PM_NODE_INIT(parser, PM_CONSTANT_WRITE_NODE, flags, PM_LOCATION_INIT_NODES(target, value)),
-        .name = target->name,
-        .name_loc = target->base.location,
-        .operator_loc = TOK2LOC(parser, operator),
-        .value = value
-    };
-
-    return node;
+    return pm_constant_write_node_new(
+        parser->arena,
+        ++parser->node_id,
+        pm_implicit_array_write_flags(value, PM_WRITE_NODE_FLAGS_IMPLICIT_ARRAY),
+        PM_LOCATION_INIT_NODES(target, value),
+        target->name,
+        target->base.location,
+        value,
+        TOK2LOC(parser, operator)
+    );
 }
 
 /**
@@ -3673,29 +3663,28 @@ pm_def_node_create(
     const pm_token_t *equal,
     const pm_token_t *end_keyword
 ) {
-    pm_def_node_t *node = PM_NODE_ALLOC(parser, pm_def_node_t);
-
     if (receiver != NULL) {
         pm_def_node_receiver_check(parser, receiver);
     }
 
-    *node = (pm_def_node_t) {
-        .base = PM_NODE_INIT(parser, PM_DEF_NODE, 0, (end_keyword == NULL) ? PM_LOCATION_INIT_TOKEN_NODE(parser, def_keyword, body) : PM_LOCATION_INIT_TOKENS(parser, def_keyword, end_keyword)),
-        .name = name,
-        .name_loc = TOK2LOC(parser, name_loc),
-        .receiver = receiver,
-        .parameters = parameters,
-        .body = body,
-        .locals = *locals,
-        .def_keyword_loc = TOK2LOC(parser, def_keyword),
-        .operator_loc = NTOK2LOC(parser, operator),
-        .lparen_loc = NTOK2LOC(parser, lparen),
-        .rparen_loc = NTOK2LOC(parser, rparen),
-        .equal_loc = NTOK2LOC(parser, equal),
-        .end_keyword_loc = NTOK2LOC(parser, end_keyword)
-    };
-
-    return node;
+    return pm_def_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        (end_keyword == NULL) ? PM_LOCATION_INIT_TOKEN_NODE(parser, def_keyword, body) : PM_LOCATION_INIT_TOKENS(parser, def_keyword, end_keyword),
+        name,
+        TOK2LOC(parser, name_loc),
+        receiver,
+        parameters,
+        body,
+        *locals,
+        TOK2LOC(parser, def_keyword),
+        NTOK2LOC(parser, operator),
+        NTOK2LOC(parser, lparen),
+        NTOK2LOC(parser, rparen),
+        NTOK2LOC(parser, equal),
+        NTOK2LOC(parser, end_keyword)
+    );
 }
 
 /**
@@ -3703,17 +3692,16 @@ pm_def_node_create(
  */
 static pm_defined_node_t *
 pm_defined_node_create(pm_parser_t *parser, const pm_token_t *lparen, pm_node_t *value, const pm_token_t *rparen, const pm_token_t *keyword) {
-    pm_defined_node_t *node = PM_NODE_ALLOC(parser, pm_defined_node_t);
-
-    *node = (pm_defined_node_t) {
-        .base = PM_NODE_INIT(parser, PM_DEFINED_NODE, 0, (rparen == NULL) ? PM_LOCATION_INIT_TOKEN_NODE(parser, keyword, value) : PM_LOCATION_INIT_TOKENS(parser, keyword, rparen)),
-        .lparen_loc = NTOK2LOC(parser, lparen),
-        .value = value,
-        .rparen_loc = NTOK2LOC(parser, rparen),
-        .keyword_loc = TOK2LOC(parser, keyword)
-    };
-
-    return node;
+    return pm_defined_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        (rparen == NULL) ? PM_LOCATION_INIT_TOKEN_NODE(parser, keyword, value) : PM_LOCATION_INIT_TOKENS(parser, keyword, rparen),
+        NTOK2LOC(parser, lparen),
+        value,
+        NTOK2LOC(parser, rparen),
+        TOK2LOC(parser, keyword)
+    );
 }
 
 /**
@@ -3721,16 +3709,15 @@ pm_defined_node_create(pm_parser_t *parser, const pm_token_t *lparen, pm_node_t 
  */
 static pm_else_node_t *
 pm_else_node_create(pm_parser_t *parser, const pm_token_t *else_keyword, pm_statements_node_t *statements, const pm_token_t *end_keyword) {
-    pm_else_node_t *node = PM_NODE_ALLOC(parser, pm_else_node_t);
-
-    *node = (pm_else_node_t) {
-        .base = PM_NODE_INIT(parser, PM_ELSE_NODE, 0, ((end_keyword == NULL) && (statements != NULL)) ? PM_LOCATION_INIT_TOKEN_NODE(parser, else_keyword, statements) : PM_LOCATION_INIT_TOKENS(parser, else_keyword, end_keyword)),
-        .else_keyword_loc = TOK2LOC(parser, else_keyword),
-        .statements = statements,
-        .end_keyword_loc = NTOK2LOC(parser, end_keyword)
-    };
-
-    return node;
+    return pm_else_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        ((end_keyword == NULL) && (statements != NULL)) ? PM_LOCATION_INIT_TOKEN_NODE(parser, else_keyword, statements) : PM_LOCATION_INIT_TOKENS(parser, else_keyword, end_keyword),
+        TOK2LOC(parser, else_keyword),
+        statements,
+        NTOK2LOC(parser, end_keyword)
+    );
 }
 
 /**
@@ -3738,16 +3725,15 @@ pm_else_node_create(pm_parser_t *parser, const pm_token_t *else_keyword, pm_stat
  */
 static pm_embedded_statements_node_t *
 pm_embedded_statements_node_create(pm_parser_t *parser, const pm_token_t *opening, pm_statements_node_t *statements, const pm_token_t *closing) {
-    pm_embedded_statements_node_t *node = PM_NODE_ALLOC(parser, pm_embedded_statements_node_t);
-
-    *node = (pm_embedded_statements_node_t) {
-        .base = PM_NODE_INIT(parser, PM_EMBEDDED_STATEMENTS_NODE, 0, PM_LOCATION_INIT_TOKENS(parser, opening, closing)),
-        .opening_loc = TOK2LOC(parser, opening),
-        .statements = statements,
-        .closing_loc = TOK2LOC(parser, closing)
-    };
-
-    return node;
+    return pm_embedded_statements_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKENS(parser, opening, closing),
+        TOK2LOC(parser, opening),
+        statements,
+        TOK2LOC(parser, closing)
+    );
 }
 
 /**
@@ -3755,15 +3741,14 @@ pm_embedded_statements_node_create(pm_parser_t *parser, const pm_token_t *openin
  */
 static pm_embedded_variable_node_t *
 pm_embedded_variable_node_create(pm_parser_t *parser, const pm_token_t *operator, pm_node_t *variable) {
-    pm_embedded_variable_node_t *node = PM_NODE_ALLOC(parser, pm_embedded_variable_node_t);
-
-    *node = (pm_embedded_variable_node_t) {
-        .base = PM_NODE_INIT(parser, PM_EMBEDDED_VARIABLE_NODE, 0, PM_LOCATION_INIT_TOKEN_NODE(parser, operator, variable)),
-        .operator_loc = TOK2LOC(parser, operator),
-        .variable = variable
-    };
-
-    return node;
+    return pm_embedded_variable_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKEN_NODE(parser, operator, variable),
+        TOK2LOC(parser, operator),
+        variable
+    );
 }
 
 /**
@@ -3771,16 +3756,15 @@ pm_embedded_variable_node_create(pm_parser_t *parser, const pm_token_t *operator
  */
 static pm_ensure_node_t *
 pm_ensure_node_create(pm_parser_t *parser, const pm_token_t *ensure_keyword, pm_statements_node_t *statements, const pm_token_t *end_keyword) {
-    pm_ensure_node_t *node = PM_NODE_ALLOC(parser, pm_ensure_node_t);
-
-    *node = (pm_ensure_node_t) {
-        .base = PM_NODE_INIT(parser, PM_ENSURE_NODE, 0, PM_LOCATION_INIT_TOKENS(parser, ensure_keyword, end_keyword)),
-        .ensure_keyword_loc = TOK2LOC(parser, ensure_keyword),
-        .statements = statements,
-        .end_keyword_loc = TOK2LOC(parser, end_keyword)
-    };
-
-    return node;
+    return pm_ensure_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKENS(parser, ensure_keyword, end_keyword),
+        TOK2LOC(parser, ensure_keyword),
+        statements,
+        TOK2LOC(parser, end_keyword)
+    );
 }
 
 /**
@@ -3789,13 +3773,13 @@ pm_ensure_node_create(pm_parser_t *parser, const pm_token_t *ensure_keyword, pm_
 static pm_false_node_t *
 pm_false_node_create(pm_parser_t *parser, const pm_token_t *token) {
     assert(token->type == PM_TOKEN_KEYWORD_FALSE);
-    pm_false_node_t *node = PM_NODE_ALLOC(parser, pm_false_node_t);
 
-    *node = (pm_false_node_t) {
-        .base = PM_NODE_INIT(parser, PM_FALSE_NODE, PM_NODE_FLAG_STATIC_LITERAL, PM_LOCATION_INIT_TOKEN(parser, token))
-    };
-
-    return node;
+    return pm_false_node_new(
+        parser->arena,
+        ++parser->node_id,
+        PM_NODE_FLAG_STATIC_LITERAL,
+        PM_LOCATION_INIT_TOKEN(parser, token)
+    );
 }
 
 /**
@@ -3804,8 +3788,6 @@ pm_false_node_create(pm_parser_t *parser, const pm_token_t *token) {
  */
 static pm_find_pattern_node_t *
 pm_find_pattern_node_create(pm_parser_t *parser, pm_node_list_t *nodes) {
-    pm_find_pattern_node_t *node = PM_NODE_ALLOC(parser, pm_find_pattern_node_t);
-
     pm_node_t *left = nodes->nodes[0];
     assert(PM_NODE_TYPE_P(left, PM_SPLAT_NODE));
     pm_splat_node_t *left_splat_node = (pm_splat_node_t *) left;
@@ -3826,15 +3808,19 @@ pm_find_pattern_node_create(pm_parser_t *parser, pm_node_list_t *nodes) {
 #else
     pm_node_t *right_splat_node = right;
 #endif
-    *node = (pm_find_pattern_node_t) {
-        .base = PM_NODE_INIT(parser, PM_FIND_PATTERN_NODE, 0, PM_LOCATION_INIT_NODES(left, right)),
-        .constant = NULL,
-        .left = left_splat_node,
-        .right = right_splat_node,
-        .requireds = { 0 },
-        .opening_loc = { 0 },
-        .closing_loc = { 0 }
-    };
+
+    pm_find_pattern_node_t *node = pm_find_pattern_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_NODES(left, right),
+        NULL,
+        left_splat_node,
+        ((pm_node_list_t) { 0 }),
+        right_splat_node,
+        ((pm_location_t) { 0 }),
+        ((pm_location_t) { 0 })
+    );
 
     // For now we're going to just copy over each pointer manually. This could be
     // much more efficient, as we could instead resize the node list to only point
@@ -3926,14 +3912,14 @@ pm_double_parse(pm_parser_t *parser, const pm_token_t *token) {
 static pm_float_node_t *
 pm_float_node_create(pm_parser_t *parser, const pm_token_t *token) {
     assert(token->type == PM_TOKEN_FLOAT);
-    pm_float_node_t *node = PM_NODE_ALLOC(parser, pm_float_node_t);
 
-    *node = (pm_float_node_t) {
-        .base = PM_NODE_INIT(parser, PM_FLOAT_NODE, PM_NODE_FLAG_STATIC_LITERAL, PM_LOCATION_INIT_TOKEN(parser, token)),
-        .value = pm_double_parse(parser, token)
-    };
-
-    return node;
+    return pm_float_node_new(
+        parser->arena,
+        ++parser->node_id,
+        PM_NODE_FLAG_STATIC_LITERAL,
+        PM_LOCATION_INIT_TOKEN(parser, token),
+        pm_double_parse(parser, token)
+    );
 }
 
 /**
@@ -3943,17 +3929,17 @@ static pm_imaginary_node_t *
 pm_float_node_imaginary_create(pm_parser_t *parser, const pm_token_t *token) {
     assert(token->type == PM_TOKEN_FLOAT_IMAGINARY);
 
-    pm_imaginary_node_t *node = PM_NODE_ALLOC(parser, pm_imaginary_node_t);
-    *node = (pm_imaginary_node_t) {
-        .base = PM_NODE_INIT(parser, PM_IMAGINARY_NODE, PM_NODE_FLAG_STATIC_LITERAL, PM_LOCATION_INIT_TOKEN(parser, token)),
-        .numeric = UP(pm_float_node_create(parser, &((pm_token_t) {
+    return pm_imaginary_node_new(
+        parser->arena,
+        ++parser->node_id,
+        PM_NODE_FLAG_STATIC_LITERAL,
+        PM_LOCATION_INIT_TOKEN(parser, token),
+        UP(pm_float_node_create(parser, &((pm_token_t) {
             .type = PM_TOKEN_FLOAT,
             .start = token->start,
             .end = token->end - 1
         })))
-    };
-
-    return node;
+    );
 }
 
 /**
@@ -3963,12 +3949,14 @@ static pm_rational_node_t *
 pm_float_node_rational_create(pm_parser_t *parser, const pm_token_t *token) {
     assert(token->type == PM_TOKEN_FLOAT_RATIONAL);
 
-    pm_rational_node_t *node = PM_NODE_ALLOC(parser, pm_rational_node_t);
-    *node = (pm_rational_node_t) {
-        .base = PM_NODE_INIT(parser, PM_RATIONAL_NODE, PM_INTEGER_BASE_FLAGS_DECIMAL | PM_NODE_FLAG_STATIC_LITERAL, PM_LOCATION_INIT_TOKEN(parser, token)),
-        .numerator = { 0 },
-        .denominator = { 0 }
-    };
+    pm_rational_node_t *node = pm_rational_node_new(
+        parser->arena,
+        ++parser->node_id,
+        PM_INTEGER_BASE_FLAGS_DECIMAL | PM_NODE_FLAG_STATIC_LITERAL,
+        PM_LOCATION_INIT_TOKEN(parser, token),
+        ((pm_integer_t) { 0 }),
+        ((pm_integer_t) { 0 })
+    );
 
     const uint8_t *start = token->start;
     const uint8_t *end = token->end - 1; // r
@@ -4018,17 +4006,17 @@ static pm_imaginary_node_t *
 pm_float_node_rational_imaginary_create(pm_parser_t *parser, const pm_token_t *token) {
     assert(token->type == PM_TOKEN_FLOAT_RATIONAL_IMAGINARY);
 
-    pm_imaginary_node_t *node = PM_NODE_ALLOC(parser, pm_imaginary_node_t);
-    *node = (pm_imaginary_node_t) {
-        .base = PM_NODE_INIT(parser, PM_IMAGINARY_NODE, PM_NODE_FLAG_STATIC_LITERAL, PM_LOCATION_INIT_TOKEN(parser, token)),
-        .numeric = UP(pm_float_node_rational_create(parser, &((pm_token_t) {
+    return pm_imaginary_node_new(
+        parser->arena,
+        ++parser->node_id,
+        PM_NODE_FLAG_STATIC_LITERAL,
+        PM_LOCATION_INIT_TOKEN(parser, token),
+        UP(pm_float_node_rational_create(parser, &((pm_token_t) {
             .type = PM_TOKEN_FLOAT_RATIONAL,
             .start = token->start,
             .end = token->end - 1
         })))
-    };
-
-    return node;
+    );
 }
 
 /**
@@ -4045,20 +4033,19 @@ pm_for_node_create(
     const pm_token_t *do_keyword,
     const pm_token_t *end_keyword
 ) {
-    pm_for_node_t *node = PM_NODE_ALLOC(parser, pm_for_node_t);
-
-    *node = (pm_for_node_t) {
-        .base = PM_NODE_INIT(parser, PM_FOR_NODE, 0, PM_LOCATION_INIT_TOKENS(parser, for_keyword, end_keyword)),
-        .index = index,
-        .collection = collection,
-        .statements = statements,
-        .for_keyword_loc = TOK2LOC(parser, for_keyword),
-        .in_keyword_loc = TOK2LOC(parser, in_keyword),
-        .do_keyword_loc = NTOK2LOC(parser, do_keyword),
-        .end_keyword_loc = TOK2LOC(parser, end_keyword)
-    };
-
-    return node;
+    return pm_for_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKENS(parser, for_keyword, end_keyword),
+        index,
+        collection,
+        statements,
+        TOK2LOC(parser, for_keyword),
+        TOK2LOC(parser, in_keyword),
+        NTOK2LOC(parser, do_keyword),
+        TOK2LOC(parser, end_keyword)
+    );
 }
 
 /**
@@ -4067,13 +4054,13 @@ pm_for_node_create(
 static pm_forwarding_arguments_node_t *
 pm_forwarding_arguments_node_create(pm_parser_t *parser, const pm_token_t *token) {
     assert(token->type == PM_TOKEN_UDOT_DOT_DOT);
-    pm_forwarding_arguments_node_t *node = PM_NODE_ALLOC(parser, pm_forwarding_arguments_node_t);
 
-    *node = (pm_forwarding_arguments_node_t) {
-        .base = PM_NODE_INIT(parser, PM_FORWARDING_ARGUMENTS_NODE, 0, PM_LOCATION_INIT_TOKEN(parser, token))
-    };
-
-    return node;
+    return pm_forwarding_arguments_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKEN(parser, token)
+    );
 }
 
 /**
@@ -4082,13 +4069,13 @@ pm_forwarding_arguments_node_create(pm_parser_t *parser, const pm_token_t *token
 static pm_forwarding_parameter_node_t *
 pm_forwarding_parameter_node_create(pm_parser_t *parser, const pm_token_t *token) {
     assert(token->type == PM_TOKEN_UDOT_DOT_DOT);
-    pm_forwarding_parameter_node_t *node = PM_NODE_ALLOC(parser, pm_forwarding_parameter_node_t);
 
-    *node = (pm_forwarding_parameter_node_t) {
-        .base = PM_NODE_INIT(parser, PM_FORWARDING_PARAMETER_NODE, 0, PM_LOCATION_INIT_TOKEN(parser, token))
-    };
-
-    return node;
+    return pm_forwarding_parameter_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKEN(parser, token)
+    );
 }
 
 /**
@@ -4098,19 +4085,19 @@ static pm_forwarding_super_node_t *
 pm_forwarding_super_node_create(pm_parser_t *parser, const pm_token_t *token, pm_arguments_t *arguments) {
     assert(arguments->block == NULL || PM_NODE_TYPE_P(arguments->block, PM_BLOCK_NODE));
     assert(token->type == PM_TOKEN_KEYWORD_SUPER);
-    pm_forwarding_super_node_t *node = PM_NODE_ALLOC(parser, pm_forwarding_super_node_t);
 
     pm_block_node_t *block = NULL;
     if (arguments->block != NULL) {
         block = (pm_block_node_t *) arguments->block;
     }
 
-    *node = (pm_forwarding_super_node_t) {
-        .base = PM_NODE_INIT(parser, PM_FORWARDING_SUPER_NODE, 0, (block == NULL) ? PM_LOCATION_INIT_TOKEN(parser, token) : PM_LOCATION_INIT_TOKEN_NODE(parser, token, block)),
-        .block = block
-    };
-
-    return node;
+    return pm_forwarding_super_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        (block == NULL) ? PM_LOCATION_INIT_TOKEN(parser, token) : PM_LOCATION_INIT_TOKEN_NODE(parser, token, block),
+        block
+    );
 }
 
 /**
@@ -4119,18 +4106,17 @@ pm_forwarding_super_node_create(pm_parser_t *parser, const pm_token_t *token, pm
  */
 static pm_hash_pattern_node_t *
 pm_hash_pattern_node_empty_create(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *closing) {
-    pm_hash_pattern_node_t *node = PM_NODE_ALLOC(parser, pm_hash_pattern_node_t);
-
-    *node = (pm_hash_pattern_node_t) {
-        .base = PM_NODE_INIT(parser, PM_HASH_PATTERN_NODE, 0, PM_LOCATION_INIT_TOKENS(parser, opening, closing)),
-        .constant = NULL,
-        .opening_loc = TOK2LOC(parser, opening),
-        .closing_loc = TOK2LOC(parser, closing),
-        .elements = { 0 },
-        .rest = NULL
-    };
-
-    return node;
+    return pm_hash_pattern_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKENS(parser, opening, closing),
+        NULL,
+        ((pm_node_list_t) { 0 }),
+        NULL,
+        TOK2LOC(parser, opening),
+        TOK2LOC(parser, closing)
+    );
 }
 
 /**
@@ -4138,8 +4124,6 @@ pm_hash_pattern_node_empty_create(pm_parser_t *parser, const pm_token_t *opening
  */
 static pm_hash_pattern_node_t *
 pm_hash_pattern_node_node_list_create(pm_parser_t *parser, pm_node_list_t *elements, pm_node_t *rest) {
-    pm_hash_pattern_node_t *node = PM_NODE_ALLOC(parser, pm_hash_pattern_node_t);
-
     uint32_t start;
     uint32_t end;
 
@@ -4157,14 +4141,17 @@ pm_hash_pattern_node_node_list_create(pm_parser_t *parser, pm_node_list_t *eleme
         end = PM_NODE_END(rest);
     }
 
-    *node = (pm_hash_pattern_node_t) {
-        .base = PM_NODE_INIT(parser, PM_HASH_PATTERN_NODE, 0, ((pm_location_t) { .start = start, .length = U32(end - start) })),
-        .constant = NULL,
-        .elements = { 0 },
-        .rest = rest,
-        .opening_loc = { 0 },
-        .closing_loc = { 0 }
-    };
+    pm_hash_pattern_node_t *node = pm_hash_pattern_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        ((pm_location_t) { .start = start, .length = U32(end - start) }),
+        NULL,
+        ((pm_node_list_t) { 0 }),
+        rest,
+        ((pm_location_t) { 0 }),
+        ((pm_location_t) { 0 })
+    );
 
     pm_node_list_concat(parser->arena, &node->elements, elements);
     return node;
@@ -4196,17 +4183,17 @@ pm_global_variable_write_name(pm_parser_t *parser, const pm_node_t *target) {
 static pm_global_variable_and_write_node_t *
 pm_global_variable_and_write_node_create(pm_parser_t *parser, pm_node_t *target, const pm_token_t *operator, pm_node_t *value) {
     assert(operator->type == PM_TOKEN_AMPERSAND_AMPERSAND_EQUAL);
-    pm_global_variable_and_write_node_t *node = PM_NODE_ALLOC(parser, pm_global_variable_and_write_node_t);
 
-    *node = (pm_global_variable_and_write_node_t) {
-        .base = PM_NODE_INIT(parser, PM_GLOBAL_VARIABLE_AND_WRITE_NODE, 0, PM_LOCATION_INIT_NODES(target, value)),
-        .name = pm_global_variable_write_name(parser, target),
-        .name_loc = target->location,
-        .operator_loc = TOK2LOC(parser, operator),
-        .value = value
-    };
-
-    return node;
+    return pm_global_variable_and_write_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_NODES(target, value),
+        pm_global_variable_write_name(parser, target),
+        target->location,
+        TOK2LOC(parser, operator),
+        value
+    );
 }
 
 /**
@@ -4214,18 +4201,17 @@ pm_global_variable_and_write_node_create(pm_parser_t *parser, pm_node_t *target,
  */
 static pm_global_variable_operator_write_node_t *
 pm_global_variable_operator_write_node_create(pm_parser_t *parser, pm_node_t *target, const pm_token_t *operator, pm_node_t *value) {
-    pm_global_variable_operator_write_node_t *node = PM_NODE_ALLOC(parser, pm_global_variable_operator_write_node_t);
-
-    *node = (pm_global_variable_operator_write_node_t) {
-        .base = PM_NODE_INIT(parser, PM_GLOBAL_VARIABLE_OPERATOR_WRITE_NODE, 0, PM_LOCATION_INIT_NODES(target, value)),
-        .name = pm_global_variable_write_name(parser, target),
-        .name_loc = target->location,
-        .binary_operator_loc = TOK2LOC(parser, operator),
-        .value = value,
-        .binary_operator = pm_parser_constant_id_raw(parser, operator->start, operator->end - 1)
-    };
-
-    return node;
+    return pm_global_variable_operator_write_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_NODES(target, value),
+        pm_global_variable_write_name(parser, target),
+        target->location,
+        TOK2LOC(parser, operator),
+        value,
+        pm_parser_constant_id_raw(parser, operator->start, operator->end - 1)
+    );
 }
 
 /**
@@ -4234,17 +4220,17 @@ pm_global_variable_operator_write_node_create(pm_parser_t *parser, pm_node_t *ta
 static pm_global_variable_or_write_node_t *
 pm_global_variable_or_write_node_create(pm_parser_t *parser, pm_node_t *target, const pm_token_t *operator, pm_node_t *value) {
     assert(operator->type == PM_TOKEN_PIPE_PIPE_EQUAL);
-    pm_global_variable_or_write_node_t *node = PM_NODE_ALLOC(parser, pm_global_variable_or_write_node_t);
 
-    *node = (pm_global_variable_or_write_node_t) {
-        .base = PM_NODE_INIT(parser, PM_GLOBAL_VARIABLE_OR_WRITE_NODE, 0, PM_LOCATION_INIT_NODES(target, value)),
-        .name = pm_global_variable_write_name(parser, target),
-        .name_loc = target->location,
-        .operator_loc = TOK2LOC(parser, operator),
-        .value = value
-    };
-
-    return node;
+    return pm_global_variable_or_write_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_NODES(target, value),
+        pm_global_variable_write_name(parser, target),
+        target->location,
+        TOK2LOC(parser, operator),
+        value
+    );
 }
 
 /**
@@ -4252,14 +4238,13 @@ pm_global_variable_or_write_node_create(pm_parser_t *parser, pm_node_t *target, 
  */
 static pm_global_variable_read_node_t *
 pm_global_variable_read_node_create(pm_parser_t *parser, const pm_token_t *name) {
-    pm_global_variable_read_node_t *node = PM_NODE_ALLOC(parser, pm_global_variable_read_node_t);
-
-    *node = (pm_global_variable_read_node_t) {
-        .base = PM_NODE_INIT(parser, PM_GLOBAL_VARIABLE_READ_NODE, 0, PM_LOCATION_INIT_TOKEN(parser, name)),
-        .name = pm_parser_constant_id_token(parser, name)
-    };
-
-    return node;
+    return pm_global_variable_read_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKEN(parser, name),
+        pm_parser_constant_id_token(parser, name)
+    );
 }
 
 /**
@@ -4267,14 +4252,13 @@ pm_global_variable_read_node_create(pm_parser_t *parser, const pm_token_t *name)
  */
 static pm_global_variable_read_node_t *
 pm_global_variable_read_node_synthesized_create(pm_parser_t *parser, pm_constant_id_t name) {
-    pm_global_variable_read_node_t *node = PM_NODE_ALLOC(parser, pm_global_variable_read_node_t);
-
-    *node = (pm_global_variable_read_node_t) {
-        .base = PM_NODE_INIT(parser, PM_GLOBAL_VARIABLE_READ_NODE, 0, PM_LOCATION_INIT_UNSET),
-        .name = name
-    };
-
-    return node;
+    return pm_global_variable_read_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_UNSET,
+        name
+    );
 }
 
 /**
@@ -4282,18 +4266,16 @@ pm_global_variable_read_node_synthesized_create(pm_parser_t *parser, pm_constant
  */
 static pm_global_variable_write_node_t *
 pm_global_variable_write_node_create(pm_parser_t *parser, pm_node_t *target, const pm_token_t *operator, pm_node_t *value) {
-    pm_global_variable_write_node_t *node = PM_NODE_ALLOC(parser, pm_global_variable_write_node_t);
-    pm_node_flags_t flags = pm_implicit_array_write_flags(value, PM_WRITE_NODE_FLAGS_IMPLICIT_ARRAY);
-
-    *node = (pm_global_variable_write_node_t) {
-        .base = PM_NODE_INIT(parser, PM_GLOBAL_VARIABLE_WRITE_NODE, flags, PM_LOCATION_INIT_NODES(target, value)),
-        .name = pm_global_variable_write_name(parser, target),
-        .name_loc = target->location,
-        .operator_loc = TOK2LOC(parser, operator),
-        .value = value
-    };
-
-    return node;
+    return pm_global_variable_write_node_new(
+        parser->arena,
+        ++parser->node_id,
+        pm_implicit_array_write_flags(value, PM_WRITE_NODE_FLAGS_IMPLICIT_ARRAY),
+        PM_LOCATION_INIT_NODES(target, value),
+        pm_global_variable_write_name(parser, target),
+        target->location,
+        value,
+        TOK2LOC(parser, operator)
+    );
 }
 
 /**
@@ -4301,17 +4283,16 @@ pm_global_variable_write_node_create(pm_parser_t *parser, pm_node_t *target, con
  */
 static pm_global_variable_write_node_t *
 pm_global_variable_write_node_synthesized_create(pm_parser_t *parser, pm_constant_id_t name, pm_node_t *value) {
-    pm_global_variable_write_node_t *node = PM_NODE_ALLOC(parser, pm_global_variable_write_node_t);
-
-    *node = (pm_global_variable_write_node_t) {
-        .base = PM_NODE_INIT(parser, PM_GLOBAL_VARIABLE_WRITE_NODE, 0, PM_LOCATION_INIT_UNSET),
-        .name = name,
-        .name_loc = { 0 },
-        .operator_loc = { 0 },
-        .value = value
-    };
-
-    return node;
+    return pm_global_variable_write_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_UNSET,
+        name,
+        ((pm_location_t) { 0 }),
+        value,
+        ((pm_location_t) { 0 })
+    );
 }
 
 /**
@@ -4320,16 +4301,16 @@ pm_global_variable_write_node_synthesized_create(pm_parser_t *parser, pm_constan
 static pm_hash_node_t *
 pm_hash_node_create(pm_parser_t *parser, const pm_token_t *opening) {
     assert(opening != NULL);
-    pm_hash_node_t *node = PM_NODE_ALLOC(parser, pm_hash_node_t);
 
-    *node = (pm_hash_node_t) {
-        .base = PM_NODE_INIT(parser, PM_HASH_NODE, PM_NODE_FLAG_STATIC_LITERAL, PM_LOCATION_INIT_TOKEN(parser, opening)),
-        .opening_loc = TOK2LOC(parser, opening),
-        .closing_loc = { 0 },
-        .elements = { 0 }
-    };
-
-    return node;
+    return pm_hash_node_new(
+        parser->arena,
+        ++parser->node_id,
+        PM_NODE_FLAG_STATIC_LITERAL,
+        PM_LOCATION_INIT_TOKEN(parser, opening),
+        TOK2LOC(parser, opening),
+        ((pm_node_list_t) { 0 }),
+        ((pm_location_t) { 0 })
+    );
 }
 
 /**
@@ -4371,7 +4352,6 @@ pm_if_node_create(pm_parser_t *parser,
     const pm_token_t *end_keyword
 ) {
     pm_conditional_predicate(parser, predicate, PM_CONDITIONAL_PREDICATE_TYPE_CONDITIONAL);
-    pm_if_node_t *node = PM_NODE_ALLOC(parser, pm_if_node_t);
 
     uint32_t start = PM_TOKEN_START(parser, if_keyword);
     uint32_t end;
@@ -4386,17 +4366,18 @@ pm_if_node_create(pm_parser_t *parser,
         end = PM_NODE_END(predicate);
     }
 
-    *node = (pm_if_node_t) {
-        .base = PM_NODE_INIT(parser, PM_IF_NODE, PM_NODE_FLAG_NEWLINE, ((pm_location_t) { .start = start, .length = U32(end - start) })),
-        .if_keyword_loc = TOK2LOC(parser, if_keyword),
-        .predicate = predicate,
-        .then_keyword_loc = NTOK2LOC(parser, then_keyword),
-        .statements = statements,
-        .subsequent = subsequent,
-        .end_keyword_loc = NTOK2LOC(parser, end_keyword)
-    };
-
-    return node;
+    return pm_if_node_new(
+        parser->arena,
+        ++parser->node_id,
+        PM_NODE_FLAG_NEWLINE,
+        ((pm_location_t) { .start = start, .length = U32(end - start) }),
+        TOK2LOC(parser, if_keyword),
+        predicate,
+        NTOK2LOC(parser, then_keyword),
+        statements,
+        subsequent,
+        NTOK2LOC(parser, end_keyword)
+    );
 }
 
 /**
@@ -4405,22 +4386,22 @@ pm_if_node_create(pm_parser_t *parser,
 static pm_if_node_t *
 pm_if_node_modifier_create(pm_parser_t *parser, pm_node_t *statement, const pm_token_t *if_keyword, pm_node_t *predicate) {
     pm_conditional_predicate(parser, predicate, PM_CONDITIONAL_PREDICATE_TYPE_CONDITIONAL);
-    pm_if_node_t *node = PM_NODE_ALLOC(parser, pm_if_node_t);
 
     pm_statements_node_t *statements = pm_statements_node_create(parser);
     pm_statements_node_body_append(parser, statements, statement, true);
 
-    *node = (pm_if_node_t) {
-        .base = PM_NODE_INIT(parser, PM_IF_NODE, PM_NODE_FLAG_NEWLINE, PM_LOCATION_INIT_NODES(statement, predicate)),
-        .if_keyword_loc = TOK2LOC(parser, if_keyword),
-        .predicate = predicate,
-        .then_keyword_loc = { 0 },
-        .statements = statements,
-        .subsequent = NULL,
-        .end_keyword_loc = { 0 }
-    };
-
-    return node;
+    return pm_if_node_new(
+        parser->arena,
+        ++parser->node_id,
+        PM_NODE_FLAG_NEWLINE,
+        PM_LOCATION_INIT_NODES(statement, predicate),
+        TOK2LOC(parser, if_keyword),
+        predicate,
+        ((pm_location_t) { 0 }),
+        statements,
+        NULL,
+        ((pm_location_t) { 0 })
+    );
 }
 
 /**
@@ -4438,20 +4419,18 @@ pm_if_node_ternary_create(pm_parser_t *parser, pm_node_t *predicate, const pm_to
     pm_statements_node_body_append(parser, else_statements, false_expression, true);
 
     pm_else_node_t *else_node = pm_else_node_create(parser, colon, else_statements, NULL);
-    pm_if_node_t *node = PM_NODE_ALLOC(parser, pm_if_node_t);
-
-    *node = (pm_if_node_t) {
-        .base = PM_NODE_INIT(parser, PM_IF_NODE, PM_NODE_FLAG_NEWLINE, PM_LOCATION_INIT_NODES(predicate, false_expression)),
-        .if_keyword_loc = { 0 },
-        .predicate = predicate,
-        .then_keyword_loc = TOK2LOC(parser, qmark),
-        .statements = if_statements,
-        .subsequent = UP(else_node),
-        .end_keyword_loc = { 0 }
-    };
-
-    return node;
-
+    return pm_if_node_new(
+        parser->arena,
+        ++parser->node_id,
+        PM_NODE_FLAG_NEWLINE,
+        PM_LOCATION_INIT_NODES(predicate, false_expression),
+        ((pm_location_t) { 0 }),
+        predicate,
+        TOK2LOC(parser, qmark),
+        if_statements,
+        UP(else_node),
+        ((pm_location_t) { 0 })
+    );
 }
 
 static inline void
@@ -4471,14 +4450,13 @@ pm_else_node_end_keyword_loc_set(const pm_parser_t *parser, pm_else_node_t *node
  */
 static pm_implicit_node_t *
 pm_implicit_node_create(pm_parser_t *parser, pm_node_t *value) {
-    pm_implicit_node_t *node = PM_NODE_ALLOC(parser, pm_implicit_node_t);
-
-    *node = (pm_implicit_node_t) {
-        .base = PM_NODE_INIT(parser, PM_IMPLICIT_NODE, 0, PM_LOCATION_INIT_NODE(value)),
-        .value = value
-    };
-
-    return node;
+    return pm_implicit_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_NODE(value),
+        value
+    );
 }
 
 /**
@@ -4488,13 +4466,12 @@ static pm_implicit_rest_node_t *
 pm_implicit_rest_node_create(pm_parser_t *parser, const pm_token_t *token) {
     assert(token->type == PM_TOKEN_COMMA);
 
-    pm_implicit_rest_node_t *node = PM_NODE_ALLOC(parser, pm_implicit_rest_node_t);
-
-    *node = (pm_implicit_rest_node_t) {
-        .base = PM_NODE_INIT(parser, PM_IMPLICIT_REST_NODE, 0, PM_LOCATION_INIT_TOKEN(parser, token))
-    };
-
-    return node;
+    return pm_implicit_rest_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKEN(parser, token)
+    );
 }
 
 /**
@@ -4503,12 +4480,14 @@ pm_implicit_rest_node_create(pm_parser_t *parser, const pm_token_t *token) {
 static pm_integer_node_t *
 pm_integer_node_create(pm_parser_t *parser, pm_node_flags_t base, const pm_token_t *token) {
     assert(token->type == PM_TOKEN_INTEGER);
-    pm_integer_node_t *node = PM_NODE_ALLOC(parser, pm_integer_node_t);
 
-    *node = (pm_integer_node_t) {
-        .base = PM_NODE_INIT(parser, PM_INTEGER_NODE, base | PM_NODE_FLAG_STATIC_LITERAL, PM_LOCATION_INIT_TOKEN(parser, token)),
-        .value = { 0 }
-    };
+    pm_integer_node_t *node = pm_integer_node_new(
+        parser->arena,
+        ++parser->node_id,
+        base | PM_NODE_FLAG_STATIC_LITERAL,
+        PM_LOCATION_INIT_TOKEN(parser, token),
+        ((pm_integer_t) { 0 })
+    );
 
     pm_integer_base_t integer_base = PM_INTEGER_BASE_DECIMAL;
     switch (base) {
@@ -4532,17 +4511,17 @@ static pm_imaginary_node_t *
 pm_integer_node_imaginary_create(pm_parser_t *parser, pm_node_flags_t base, const pm_token_t *token) {
     assert(token->type == PM_TOKEN_INTEGER_IMAGINARY);
 
-    pm_imaginary_node_t *node = PM_NODE_ALLOC(parser, pm_imaginary_node_t);
-    *node = (pm_imaginary_node_t) {
-        .base = PM_NODE_INIT(parser, PM_IMAGINARY_NODE, PM_NODE_FLAG_STATIC_LITERAL, PM_LOCATION_INIT_TOKEN(parser, token)),
-        .numeric = UP(pm_integer_node_create(parser, base, &((pm_token_t) {
+    return pm_imaginary_node_new(
+        parser->arena,
+        ++parser->node_id,
+        PM_NODE_FLAG_STATIC_LITERAL,
+        PM_LOCATION_INIT_TOKEN(parser, token),
+        UP(pm_integer_node_create(parser, base, &((pm_token_t) {
             .type = PM_TOKEN_INTEGER,
             .start = token->start,
             .end = token->end - 1
         })))
-    };
-
-    return node;
+    );
 }
 
 /**
@@ -4553,12 +4532,14 @@ static pm_rational_node_t *
 pm_integer_node_rational_create(pm_parser_t *parser, pm_node_flags_t base, const pm_token_t *token) {
     assert(token->type == PM_TOKEN_INTEGER_RATIONAL);
 
-    pm_rational_node_t *node = PM_NODE_ALLOC(parser, pm_rational_node_t);
-    *node = (pm_rational_node_t) {
-        .base = PM_NODE_INIT(parser, PM_RATIONAL_NODE, base | PM_NODE_FLAG_STATIC_LITERAL, PM_LOCATION_INIT_TOKEN(parser, token)),
-        .numerator = { 0 },
-        .denominator = { .value = 1, 0 }
-    };
+    pm_rational_node_t *node = pm_rational_node_new(
+        parser->arena,
+        ++parser->node_id,
+        base | PM_NODE_FLAG_STATIC_LITERAL,
+        PM_LOCATION_INIT_TOKEN(parser, token),
+        ((pm_integer_t) { 0 }),
+        ((pm_integer_t) { .value = 1 })
+    );
 
     pm_integer_base_t integer_base = PM_INTEGER_BASE_DECIMAL;
     switch (base) {
@@ -4583,17 +4564,17 @@ static pm_imaginary_node_t *
 pm_integer_node_rational_imaginary_create(pm_parser_t *parser, pm_node_flags_t base, const pm_token_t *token) {
     assert(token->type == PM_TOKEN_INTEGER_RATIONAL_IMAGINARY);
 
-    pm_imaginary_node_t *node = PM_NODE_ALLOC(parser, pm_imaginary_node_t);
-    *node = (pm_imaginary_node_t) {
-        .base = PM_NODE_INIT(parser, PM_IMAGINARY_NODE, PM_NODE_FLAG_STATIC_LITERAL, PM_LOCATION_INIT_TOKEN(parser, token)),
-        .numeric = UP(pm_integer_node_rational_create(parser, base, &((pm_token_t) {
+    return pm_imaginary_node_new(
+        parser->arena,
+        ++parser->node_id,
+        PM_NODE_FLAG_STATIC_LITERAL,
+        PM_LOCATION_INIT_TOKEN(parser, token),
+        UP(pm_integer_node_rational_create(parser, base, &((pm_token_t) {
             .type = PM_TOKEN_INTEGER_RATIONAL,
             .start = token->start,
             .end = token->end - 1
         })))
-    };
-
-    return node;
+    );
 }
 
 /**
@@ -4601,8 +4582,6 @@ pm_integer_node_rational_imaginary_create(pm_parser_t *parser, pm_node_flags_t b
  */
 static pm_in_node_t *
 pm_in_node_create(pm_parser_t *parser, pm_node_t *pattern, pm_statements_node_t *statements, const pm_token_t *in_keyword, const pm_token_t *then_keyword) {
-    pm_in_node_t *node = PM_NODE_ALLOC(parser, pm_in_node_t);
-
     uint32_t start = PM_TOKEN_START(parser, in_keyword);
     uint32_t end;
 
@@ -4614,15 +4593,16 @@ pm_in_node_create(pm_parser_t *parser, pm_node_t *pattern, pm_statements_node_t 
         end = PM_NODE_END(pattern);
     }
 
-    *node = (pm_in_node_t) {
-        .base = PM_NODE_INIT(parser, PM_IN_NODE, 0, ((pm_location_t) { .start = start, .length = U32(end - start) })),
-        .pattern = pattern,
-        .statements = statements,
-        .in_loc = TOK2LOC(parser, in_keyword),
-        .then_loc = NTOK2LOC(parser, then_keyword)
-    };
-
-    return node;
+    return pm_in_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        ((pm_location_t) { .start = start, .length = U32(end - start) }),
+        pattern,
+        statements,
+        TOK2LOC(parser, in_keyword),
+        NTOK2LOC(parser, then_keyword)
+    );
 }
 
 /**
@@ -4631,17 +4611,17 @@ pm_in_node_create(pm_parser_t *parser, pm_node_t *pattern, pm_statements_node_t 
 static pm_instance_variable_and_write_node_t *
 pm_instance_variable_and_write_node_create(pm_parser_t *parser, pm_instance_variable_read_node_t *target, const pm_token_t *operator, pm_node_t *value) {
     assert(operator->type == PM_TOKEN_AMPERSAND_AMPERSAND_EQUAL);
-    pm_instance_variable_and_write_node_t *node = PM_NODE_ALLOC(parser, pm_instance_variable_and_write_node_t);
 
-    *node = (pm_instance_variable_and_write_node_t) {
-        .base = PM_NODE_INIT(parser, PM_INSTANCE_VARIABLE_AND_WRITE_NODE, 0, PM_LOCATION_INIT_NODES(target, value)),
-        .name = target->name,
-        .name_loc = target->base.location,
-        .operator_loc = TOK2LOC(parser, operator),
-        .value = value
-    };
-
-    return node;
+    return pm_instance_variable_and_write_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_NODES(target, value),
+        target->name,
+        target->base.location,
+        TOK2LOC(parser, operator),
+        value
+    );
 }
 
 /**
@@ -4649,18 +4629,17 @@ pm_instance_variable_and_write_node_create(pm_parser_t *parser, pm_instance_vari
  */
 static pm_instance_variable_operator_write_node_t *
 pm_instance_variable_operator_write_node_create(pm_parser_t *parser, pm_instance_variable_read_node_t *target, const pm_token_t *operator, pm_node_t *value) {
-    pm_instance_variable_operator_write_node_t *node = PM_NODE_ALLOC(parser, pm_instance_variable_operator_write_node_t);
-
-    *node = (pm_instance_variable_operator_write_node_t) {
-        .base = PM_NODE_INIT(parser, PM_INSTANCE_VARIABLE_OPERATOR_WRITE_NODE, 0, PM_LOCATION_INIT_NODES(target, value)),
-        .name = target->name,
-        .name_loc = target->base.location,
-        .binary_operator_loc = TOK2LOC(parser, operator),
-        .value = value,
-        .binary_operator = pm_parser_constant_id_raw(parser, operator->start, operator->end - 1)
-    };
-
-    return node;
+    return pm_instance_variable_operator_write_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_NODES(target, value),
+        target->name,
+        target->base.location,
+        TOK2LOC(parser, operator),
+        value,
+        pm_parser_constant_id_raw(parser, operator->start, operator->end - 1)
+    );
 }
 
 /**
@@ -4669,17 +4648,17 @@ pm_instance_variable_operator_write_node_create(pm_parser_t *parser, pm_instance
 static pm_instance_variable_or_write_node_t *
 pm_instance_variable_or_write_node_create(pm_parser_t *parser, pm_instance_variable_read_node_t *target, const pm_token_t *operator, pm_node_t *value) {
     assert(operator->type == PM_TOKEN_PIPE_PIPE_EQUAL);
-    pm_instance_variable_or_write_node_t *node = PM_NODE_ALLOC(parser, pm_instance_variable_or_write_node_t);
 
-    *node = (pm_instance_variable_or_write_node_t) {
-        .base = PM_NODE_INIT(parser, PM_INSTANCE_VARIABLE_OR_WRITE_NODE, 0, PM_LOCATION_INIT_NODES(target, value)),
-        .name = target->name,
-        .name_loc = target->base.location,
-        .operator_loc = TOK2LOC(parser, operator),
-        .value = value
-    };
-
-    return node;
+    return pm_instance_variable_or_write_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_NODES(target, value),
+        target->name,
+        target->base.location,
+        TOK2LOC(parser, operator),
+        value
+    );
 }
 
 /**
@@ -4688,14 +4667,14 @@ pm_instance_variable_or_write_node_create(pm_parser_t *parser, pm_instance_varia
 static pm_instance_variable_read_node_t *
 pm_instance_variable_read_node_create(pm_parser_t *parser, const pm_token_t *token) {
     assert(token->type == PM_TOKEN_INSTANCE_VARIABLE);
-    pm_instance_variable_read_node_t *node = PM_NODE_ALLOC(parser, pm_instance_variable_read_node_t);
 
-    *node = (pm_instance_variable_read_node_t) {
-        .base = PM_NODE_INIT(parser, PM_INSTANCE_VARIABLE_READ_NODE, 0, PM_LOCATION_INIT_TOKEN(parser, token)),
-        .name = pm_parser_constant_id_token(parser, token)
-    };
-
-    return node;
+    return pm_instance_variable_read_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKEN(parser, token),
+        pm_parser_constant_id_token(parser, token)
+    );
 }
 
 /**
@@ -4704,18 +4683,16 @@ pm_instance_variable_read_node_create(pm_parser_t *parser, const pm_token_t *tok
  */
 static pm_instance_variable_write_node_t *
 pm_instance_variable_write_node_create(pm_parser_t *parser, pm_instance_variable_read_node_t *read_node, pm_token_t *operator, pm_node_t *value) {
-    pm_instance_variable_write_node_t *node = PM_NODE_ALLOC(parser, pm_instance_variable_write_node_t);
-    pm_node_flags_t flags = pm_implicit_array_write_flags(value, PM_WRITE_NODE_FLAGS_IMPLICIT_ARRAY);
-
-    *node = (pm_instance_variable_write_node_t) {
-        .base = PM_NODE_INIT(parser, PM_INSTANCE_VARIABLE_WRITE_NODE, flags, PM_LOCATION_INIT_NODES(read_node, value)),
-        .name = read_node->name,
-        .name_loc = read_node->base.location,
-        .operator_loc = TOK2LOC(parser, operator),
-        .value = value
-    };
-
-    return node;
+    return pm_instance_variable_write_node_new(
+        parser->arena,
+        ++parser->node_id,
+        pm_implicit_array_write_flags(value, PM_WRITE_NODE_FLAGS_IMPLICIT_ARRAY),
+        PM_LOCATION_INIT_NODES(read_node, value),
+        read_node->name,
+        read_node->base.location,
+        value,
+        TOK2LOC(parser, operator)
+    );
 }
 
 /**
@@ -4767,16 +4744,15 @@ pm_interpolated_node_append(pm_arena_t *arena, pm_node_t *node, pm_node_list_t *
  */
 static pm_interpolated_regular_expression_node_t *
 pm_interpolated_regular_expression_node_create(pm_parser_t *parser, const pm_token_t *opening) {
-    pm_interpolated_regular_expression_node_t *node = PM_NODE_ALLOC(parser, pm_interpolated_regular_expression_node_t);
-
-    *node = (pm_interpolated_regular_expression_node_t) {
-        .base = PM_NODE_INIT(parser, PM_INTERPOLATED_REGULAR_EXPRESSION_NODE, PM_NODE_FLAG_STATIC_LITERAL, PM_LOCATION_INIT_TOKEN(parser, opening)),
-        .opening_loc = TOK2LOC(parser, opening),
-        .closing_loc = TOK2LOC(parser, opening),
-        .parts = { 0 }
-    };
-
-    return node;
+    return pm_interpolated_regular_expression_node_new(
+        parser->arena,
+        ++parser->node_id,
+        PM_NODE_FLAG_STATIC_LITERAL,
+        PM_LOCATION_INIT_TOKEN(parser, opening),
+        TOK2LOC(parser, opening),
+        ((pm_node_list_t) { 0 }),
+        TOK2LOC(parser, opening)
+    );
 }
 
 static inline void
@@ -4918,7 +4894,6 @@ pm_interpolated_string_node_append(pm_arena_t *arena, pm_interpolated_string_nod
  */
 static pm_interpolated_string_node_t *
 pm_interpolated_string_node_create(pm_parser_t *parser, const pm_token_t *opening, const pm_node_list_t *parts, const pm_token_t *closing) {
-    pm_interpolated_string_node_t *node = PM_NODE_ALLOC(parser, pm_interpolated_string_node_t);
     pm_node_flags_t flags = PM_NODE_FLAG_STATIC_LITERAL;
 
     switch (parser->frozen_string_literal) {
@@ -4933,12 +4908,15 @@ pm_interpolated_string_node_create(pm_parser_t *parser, const pm_token_t *openin
     uint32_t start = opening == NULL ? 0 : PM_TOKEN_START(parser, opening);
     uint32_t end = closing == NULL ? 0 : PM_TOKEN_END(parser, closing);
 
-    *node = (pm_interpolated_string_node_t) {
-        .base = PM_NODE_INIT(parser, PM_INTERPOLATED_STRING_NODE, flags, ((pm_location_t) { .start = start, .length = U32(end - start) })),
-        .opening_loc = NTOK2LOC(parser, opening),
-        .closing_loc = NTOK2LOC(parser, closing),
-        .parts = { 0 }
-    };
+    pm_interpolated_string_node_t *node = pm_interpolated_string_node_new(
+        parser->arena,
+        ++parser->node_id,
+        flags,
+        ((pm_location_t) { .start = start, .length = U32(end - start) }),
+        NTOK2LOC(parser, opening),
+        ((pm_node_list_t) { 0 }),
+        NTOK2LOC(parser, closing)
+    );
 
     if (parts != NULL) {
         pm_node_t *part;
@@ -4983,17 +4961,18 @@ pm_interpolated_symbol_node_closing_loc_set(const pm_parser_t *parser, pm_interp
  */
 static pm_interpolated_symbol_node_t *
 pm_interpolated_symbol_node_create(pm_parser_t *parser, const pm_token_t *opening, const pm_node_list_t *parts, const pm_token_t *closing) {
-    pm_interpolated_symbol_node_t *node = PM_NODE_ALLOC(parser, pm_interpolated_symbol_node_t);
-
     uint32_t start = opening == NULL ? 0 : PM_TOKEN_START(parser, opening);
     uint32_t end = closing == NULL ? 0 : PM_TOKEN_END(parser, closing);
 
-    *node = (pm_interpolated_symbol_node_t) {
-        .base = PM_NODE_INIT(parser, PM_INTERPOLATED_SYMBOL_NODE, PM_NODE_FLAG_STATIC_LITERAL, ((pm_location_t) { .start = start, .length = U32(end - start) })),
-        .opening_loc = NTOK2LOC(parser, opening),
-        .closing_loc = NTOK2LOC(parser, closing),
-        .parts = { 0 }
-    };
+    pm_interpolated_symbol_node_t *node = pm_interpolated_symbol_node_new(
+        parser->arena,
+        ++parser->node_id,
+        PM_NODE_FLAG_STATIC_LITERAL,
+        ((pm_location_t) { .start = start, .length = U32(end - start) }),
+        NTOK2LOC(parser, opening),
+        ((pm_node_list_t) { 0 }),
+        NTOK2LOC(parser, closing)
+    );
 
     if (parts != NULL) {
         pm_node_t *part;
@@ -5010,16 +4989,15 @@ pm_interpolated_symbol_node_create(pm_parser_t *parser, const pm_token_t *openin
  */
 static pm_interpolated_x_string_node_t *
 pm_interpolated_xstring_node_create(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *closing) {
-    pm_interpolated_x_string_node_t *node = PM_NODE_ALLOC(parser, pm_interpolated_x_string_node_t);
-
-    *node = (pm_interpolated_x_string_node_t) {
-        .base = PM_NODE_INIT(parser, PM_INTERPOLATED_X_STRING_NODE, 0, PM_LOCATION_INIT_TOKENS(parser, opening, closing)),
-        .opening_loc = TOK2LOC(parser, opening),
-        .closing_loc = TOK2LOC(parser, closing),
-        .parts = { 0 }
-    };
-
-    return node;
+    return pm_interpolated_x_string_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKENS(parser, opening, closing),
+        TOK2LOC(parser, opening),
+        ((pm_node_list_t) { 0 }),
+        TOK2LOC(parser, closing)
+    );
 }
 
 static inline void
@@ -5039,13 +5017,12 @@ pm_interpolated_xstring_node_closing_set(const pm_parser_t *parser, pm_interpola
  */
 static pm_it_local_variable_read_node_t *
 pm_it_local_variable_read_node_create(pm_parser_t *parser, const pm_token_t *name) {
-    pm_it_local_variable_read_node_t *node = PM_NODE_ALLOC(parser, pm_it_local_variable_read_node_t);
-
-    *node = (pm_it_local_variable_read_node_t) {
-        .base = PM_NODE_INIT(parser, PM_IT_LOCAL_VARIABLE_READ_NODE, 0, PM_LOCATION_INIT_TOKEN(parser, name)),
-    };
-
-    return node;
+    return pm_it_local_variable_read_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKEN(parser, name)
+    );
 }
 
 /**
@@ -5053,13 +5030,12 @@ pm_it_local_variable_read_node_create(pm_parser_t *parser, const pm_token_t *nam
  */
 static pm_it_parameters_node_t *
 pm_it_parameters_node_create(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *closing) {
-    pm_it_parameters_node_t *node = PM_NODE_ALLOC(parser, pm_it_parameters_node_t);
-
-    *node = (pm_it_parameters_node_t) {
-        .base = PM_NODE_INIT(parser, PM_IT_PARAMETERS_NODE, 0, PM_LOCATION_INIT_TOKENS(parser, opening, closing)),
-    };
-
-    return node;
+    return pm_it_parameters_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKENS(parser, opening, closing)
+    );
 }
 
 /**
@@ -5067,14 +5043,13 @@ pm_it_parameters_node_create(pm_parser_t *parser, const pm_token_t *opening, con
  */
 static pm_keyword_hash_node_t *
 pm_keyword_hash_node_create(pm_parser_t *parser) {
-    pm_keyword_hash_node_t *node = PM_NODE_ALLOC(parser, pm_keyword_hash_node_t);
-
-    *node = (pm_keyword_hash_node_t) {
-        .base = PM_NODE_INIT(parser, PM_KEYWORD_HASH_NODE, PM_KEYWORD_HASH_NODE_FLAGS_SYMBOL_KEYS, PM_LOCATION_INIT_UNSET),
-        .elements = { 0 }
-    };
-
-    return node;
+    return pm_keyword_hash_node_new(
+        parser->arena,
+        ++parser->node_id,
+        PM_KEYWORD_HASH_NODE_FLAGS_SYMBOL_KEYS,
+        PM_LOCATION_INIT_UNSET,
+        ((pm_node_list_t) { 0 })
+    );
 }
 
 /**
@@ -5100,15 +5075,14 @@ pm_keyword_hash_node_elements_append(pm_arena_t *arena, pm_keyword_hash_node_t *
  */
 static pm_required_keyword_parameter_node_t *
 pm_required_keyword_parameter_node_create(pm_parser_t *parser, const pm_token_t *name) {
-    pm_required_keyword_parameter_node_t *node = PM_NODE_ALLOC(parser, pm_required_keyword_parameter_node_t);
-
-    *node = (pm_required_keyword_parameter_node_t) {
-        .base = PM_NODE_INIT(parser, PM_REQUIRED_KEYWORD_PARAMETER_NODE, 0, PM_LOCATION_INIT_TOKEN(parser, name)),
-        .name = pm_parser_constant_id_raw(parser, name->start, name->end - 1),
-        .name_loc = TOK2LOC(parser, name),
-    };
-
-    return node;
+    return pm_required_keyword_parameter_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKEN(parser, name),
+        pm_parser_constant_id_raw(parser, name->start, name->end - 1),
+        TOK2LOC(parser, name)
+    );
 }
 
 /**
@@ -5116,16 +5090,15 @@ pm_required_keyword_parameter_node_create(pm_parser_t *parser, const pm_token_t 
  */
 static pm_optional_keyword_parameter_node_t *
 pm_optional_keyword_parameter_node_create(pm_parser_t *parser, const pm_token_t *name, pm_node_t *value) {
-    pm_optional_keyword_parameter_node_t *node = PM_NODE_ALLOC(parser, pm_optional_keyword_parameter_node_t);
-
-    *node = (pm_optional_keyword_parameter_node_t) {
-        .base = PM_NODE_INIT(parser, PM_OPTIONAL_KEYWORD_PARAMETER_NODE, 0, PM_LOCATION_INIT_TOKEN_NODE(parser, name, value)),
-        .name = pm_parser_constant_id_raw(parser, name->start, name->end - 1),
-        .name_loc = TOK2LOC(parser, name),
-        .value = value
-    };
-
-    return node;
+    return pm_optional_keyword_parameter_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKEN_NODE(parser, name, value),
+        pm_parser_constant_id_raw(parser, name->start, name->end - 1),
+        TOK2LOC(parser, name),
+        value
+    );
 }
 
 /**
@@ -5133,16 +5106,15 @@ pm_optional_keyword_parameter_node_create(pm_parser_t *parser, const pm_token_t 
  */
 static pm_keyword_rest_parameter_node_t *
 pm_keyword_rest_parameter_node_create(pm_parser_t *parser, const pm_token_t *operator, const pm_token_t *name) {
-    pm_keyword_rest_parameter_node_t *node = PM_NODE_ALLOC(parser, pm_keyword_rest_parameter_node_t);
-
-    *node = (pm_keyword_rest_parameter_node_t) {
-        .base = PM_NODE_INIT(parser, PM_KEYWORD_REST_PARAMETER_NODE, 0, (name == NULL) ? PM_LOCATION_INIT_TOKEN(parser, operator) : PM_LOCATION_INIT_TOKENS(parser, operator, name)),
-        .name = name == NULL ? 0 : pm_parser_constant_id_token(parser, name),
-        .name_loc = NTOK2LOC(parser, name),
-        .operator_loc = TOK2LOC(parser, operator)
-    };
-
-    return node;
+    return pm_keyword_rest_parameter_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        (name == NULL) ? PM_LOCATION_INIT_TOKEN(parser, operator) : PM_LOCATION_INIT_TOKENS(parser, operator, name),
+        name == NULL ? 0 : pm_parser_constant_id_token(parser, name),
+        NTOK2LOC(parser, name),
+        TOK2LOC(parser, operator)
+    );
 }
 
 /**
@@ -5158,19 +5130,18 @@ pm_lambda_node_create(
     pm_node_t *parameters,
     pm_node_t *body
 ) {
-    pm_lambda_node_t *node = PM_NODE_ALLOC(parser, pm_lambda_node_t);
-
-    *node = (pm_lambda_node_t) {
-        .base = PM_NODE_INIT(parser, PM_LAMBDA_NODE, 0, PM_LOCATION_INIT_TOKENS(parser, operator, closing)),
-        .locals = *locals,
-        .operator_loc = TOK2LOC(parser, operator),
-        .opening_loc = TOK2LOC(parser, opening),
-        .closing_loc = TOK2LOC(parser, closing),
-        .parameters = parameters,
-        .body = body
-    };
-
-    return node;
+    return pm_lambda_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKENS(parser, operator, closing),
+        *locals,
+        TOK2LOC(parser, operator),
+        TOK2LOC(parser, opening),
+        TOK2LOC(parser, closing),
+        parameters,
+        body
+    );
 }
 
 /**
@@ -5180,18 +5151,18 @@ static pm_local_variable_and_write_node_t *
 pm_local_variable_and_write_node_create(pm_parser_t *parser, pm_node_t *target, const pm_token_t *operator, pm_node_t *value, pm_constant_id_t name, uint32_t depth) {
     assert(PM_NODE_TYPE_P(target, PM_LOCAL_VARIABLE_READ_NODE) || PM_NODE_TYPE_P(target, PM_IT_LOCAL_VARIABLE_READ_NODE) || PM_NODE_TYPE_P(target, PM_CALL_NODE));
     assert(operator->type == PM_TOKEN_AMPERSAND_AMPERSAND_EQUAL);
-    pm_local_variable_and_write_node_t *node = PM_NODE_ALLOC(parser, pm_local_variable_and_write_node_t);
 
-    *node = (pm_local_variable_and_write_node_t) {
-        .base = PM_NODE_INIT(parser, PM_LOCAL_VARIABLE_AND_WRITE_NODE, 0, PM_LOCATION_INIT_NODES(target, value)),
-        .name_loc = target->location,
-        .operator_loc = TOK2LOC(parser, operator),
-        .value = value,
-        .name = name,
-        .depth = depth
-    };
-
-    return node;
+    return pm_local_variable_and_write_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_NODES(target, value),
+        target->location,
+        TOK2LOC(parser, operator),
+        value,
+        name,
+        depth
+    );
 }
 
 /**
@@ -5199,19 +5170,18 @@ pm_local_variable_and_write_node_create(pm_parser_t *parser, pm_node_t *target, 
  */
 static pm_local_variable_operator_write_node_t *
 pm_local_variable_operator_write_node_create(pm_parser_t *parser, pm_node_t *target, const pm_token_t *operator, pm_node_t *value, pm_constant_id_t name, uint32_t depth) {
-    pm_local_variable_operator_write_node_t *node = PM_NODE_ALLOC(parser, pm_local_variable_operator_write_node_t);
-
-    *node = (pm_local_variable_operator_write_node_t) {
-        .base = PM_NODE_INIT(parser, PM_LOCAL_VARIABLE_OPERATOR_WRITE_NODE, 0, PM_LOCATION_INIT_NODES(target, value)),
-        .name_loc = target->location,
-        .binary_operator_loc = TOK2LOC(parser, operator),
-        .value = value,
-        .name = name,
-        .binary_operator = pm_parser_constant_id_raw(parser, operator->start, operator->end - 1),
-        .depth = depth
-    };
-
-    return node;
+    return pm_local_variable_operator_write_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_NODES(target, value),
+        target->location,
+        TOK2LOC(parser, operator),
+        value,
+        name,
+        pm_parser_constant_id_raw(parser, operator->start, operator->end - 1),
+        depth
+    );
 }
 
 /**
@@ -5221,18 +5191,18 @@ static pm_local_variable_or_write_node_t *
 pm_local_variable_or_write_node_create(pm_parser_t *parser, pm_node_t *target, const pm_token_t *operator, pm_node_t *value, pm_constant_id_t name, uint32_t depth) {
     assert(PM_NODE_TYPE_P(target, PM_LOCAL_VARIABLE_READ_NODE) || PM_NODE_TYPE_P(target, PM_IT_LOCAL_VARIABLE_READ_NODE) || PM_NODE_TYPE_P(target, PM_CALL_NODE));
     assert(operator->type == PM_TOKEN_PIPE_PIPE_EQUAL);
-    pm_local_variable_or_write_node_t *node = PM_NODE_ALLOC(parser, pm_local_variable_or_write_node_t);
 
-    *node = (pm_local_variable_or_write_node_t) {
-        .base = PM_NODE_INIT(parser, PM_LOCAL_VARIABLE_OR_WRITE_NODE, 0, PM_LOCATION_INIT_NODES(target, value)),
-        .name_loc = target->location,
-        .operator_loc = TOK2LOC(parser, operator),
-        .value = value,
-        .name = name,
-        .depth = depth
-    };
-
-    return node;
+    return pm_local_variable_or_write_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_NODES(target, value),
+        target->location,
+        TOK2LOC(parser, operator),
+        value,
+        name,
+        depth
+    );
 }
 
 /**
@@ -5242,15 +5212,14 @@ static pm_local_variable_read_node_t *
 pm_local_variable_read_node_create_constant_id(pm_parser_t *parser, const pm_token_t *name, pm_constant_id_t name_id, uint32_t depth, bool missing) {
     if (!missing) pm_locals_read(&pm_parser_scope_find(parser, depth)->locals, name_id);
 
-    pm_local_variable_read_node_t *node = PM_NODE_ALLOC(parser, pm_local_variable_read_node_t);
-
-    *node = (pm_local_variable_read_node_t) {
-        .base = PM_NODE_INIT(parser, PM_LOCAL_VARIABLE_READ_NODE, 0, PM_LOCATION_INIT_TOKEN(parser, name)),
-        .name = name_id,
-        .depth = depth
-    };
-
-    return node;
+    return pm_local_variable_read_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKEN(parser, name),
+        name_id,
+        depth
+    );
 }
 
 /**
@@ -5277,19 +5246,17 @@ pm_local_variable_read_node_missing_create(pm_parser_t *parser, const pm_token_t
  */
 static pm_local_variable_write_node_t *
 pm_local_variable_write_node_create(pm_parser_t *parser, pm_constant_id_t name, uint32_t depth, pm_node_t *value, const pm_location_t *name_loc, const pm_token_t *operator) {
-    pm_local_variable_write_node_t *node = PM_NODE_ALLOC(parser, pm_local_variable_write_node_t);
-    pm_node_flags_t flags = pm_implicit_array_write_flags(value, PM_WRITE_NODE_FLAGS_IMPLICIT_ARRAY);
-
-    *node = (pm_local_variable_write_node_t) {
-        .base = PM_NODE_INIT(parser, PM_LOCAL_VARIABLE_WRITE_NODE, flags, ((pm_location_t) { .start = name_loc->start, .length = PM_NODE_END(value) - name_loc->start })),
-        .name = name,
-        .depth = depth,
-        .value = value,
-        .name_loc = *name_loc,
-        .operator_loc = TOK2LOC(parser, operator)
-    };
-
-    return node;
+    return pm_local_variable_write_node_new(
+        parser->arena,
+        ++parser->node_id,
+        pm_implicit_array_write_flags(value, PM_WRITE_NODE_FLAGS_IMPLICIT_ARRAY),
+        ((pm_location_t) { .start = name_loc->start, .length = PM_NODE_END(value) - name_loc->start }),
+        name,
+        depth,
+        *name_loc,
+        value,
+        TOK2LOC(parser, operator)
+    );
 }
 
 /**
@@ -5332,15 +5299,15 @@ pm_refute_numbered_parameter(pm_parser_t *parser, uint32_t start, uint32_t lengt
 static pm_local_variable_target_node_t *
 pm_local_variable_target_node_create(pm_parser_t *parser, const pm_location_t *location, pm_constant_id_t name, uint32_t depth) {
     pm_refute_numbered_parameter(parser, location->start, location->length);
-    pm_local_variable_target_node_t *node = PM_NODE_ALLOC(parser, pm_local_variable_target_node_t);
 
-    *node = (pm_local_variable_target_node_t) {
-        .base = PM_NODE_INIT(parser, PM_LOCAL_VARIABLE_TARGET_NODE, 0, ((pm_location_t) { .start = location->start, .length = location->length })),
-        .name = name,
-        .depth = depth
-    };
-
-    return node;
+    return pm_local_variable_target_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        ((pm_location_t) { .start = location->start, .length = location->length }),
+        name,
+        depth
+    );
 }
 
 /**
@@ -5350,16 +5317,15 @@ static pm_match_predicate_node_t *
 pm_match_predicate_node_create(pm_parser_t *parser, pm_node_t *value, pm_node_t *pattern, const pm_token_t *operator) {
     pm_assert_value_expression(parser, value);
 
-    pm_match_predicate_node_t *node = PM_NODE_ALLOC(parser, pm_match_predicate_node_t);
-
-    *node = (pm_match_predicate_node_t) {
-        .base = PM_NODE_INIT(parser, PM_MATCH_PREDICATE_NODE, 0, PM_LOCATION_INIT_NODES(value, pattern)),
-        .value = value,
-        .pattern = pattern,
-        .operator_loc = TOK2LOC(parser, operator)
-    };
-
-    return node;
+    return pm_match_predicate_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_NODES(value, pattern),
+        value,
+        pattern,
+        TOK2LOC(parser, operator)
+    );
 }
 
 /**
@@ -5369,16 +5335,15 @@ static pm_match_required_node_t *
 pm_match_required_node_create(pm_parser_t *parser, pm_node_t *value, pm_node_t *pattern, const pm_token_t *operator) {
     pm_assert_value_expression(parser, value);
 
-    pm_match_required_node_t *node = PM_NODE_ALLOC(parser, pm_match_required_node_t);
-
-    *node = (pm_match_required_node_t) {
-        .base = PM_NODE_INIT(parser, PM_MATCH_REQUIRED_NODE, 0, PM_LOCATION_INIT_NODES(value, pattern)),
-        .value = value,
-        .pattern = pattern,
-        .operator_loc = TOK2LOC(parser, operator)
-    };
-
-    return node;
+    return pm_match_required_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_NODES(value, pattern),
+        value,
+        pattern,
+        TOK2LOC(parser, operator)
+    );
 }
 
 /**
@@ -5386,15 +5351,14 @@ pm_match_required_node_create(pm_parser_t *parser, pm_node_t *value, pm_node_t *
  */
 static pm_match_write_node_t *
 pm_match_write_node_create(pm_parser_t *parser, pm_call_node_t *call) {
-    pm_match_write_node_t *node = PM_NODE_ALLOC(parser, pm_match_write_node_t);
-
-    *node = (pm_match_write_node_t) {
-        .base = PM_NODE_INIT(parser, PM_MATCH_WRITE_NODE, 0, PM_LOCATION_INIT_NODE(call)),
-        .call = call,
-        .targets = { 0 }
-    };
-
-    return node;
+    return pm_match_write_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_NODE(call),
+        call,
+        ((pm_node_list_t) { 0 })
+    );
 }
 
 /**
@@ -5402,19 +5366,18 @@ pm_match_write_node_create(pm_parser_t *parser, pm_call_node_t *call) {
  */
 static pm_module_node_t *
 pm_module_node_create(pm_parser_t *parser, pm_constant_id_list_t *locals, const pm_token_t *module_keyword, pm_node_t *constant_path, const pm_token_t *name, pm_node_t *body, const pm_token_t *end_keyword) {
-    pm_module_node_t *node = PM_NODE_ALLOC(parser, pm_module_node_t);
-
-    *node = (pm_module_node_t) {
-        .base = PM_NODE_INIT(parser, PM_MODULE_NODE, 0, PM_LOCATION_INIT_TOKENS(parser, module_keyword, end_keyword)),
-        .locals = (locals == NULL ? ((pm_constant_id_list_t) { .ids = NULL, .size = 0, .capacity = 0 }) : *locals),
-        .module_keyword_loc = TOK2LOC(parser, module_keyword),
-        .constant_path = constant_path,
-        .body = body,
-        .end_keyword_loc = TOK2LOC(parser, end_keyword),
-        .name = pm_parser_constant_id_token(parser, name)
-    };
-
-    return node;
+    return pm_module_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKENS(parser, module_keyword, end_keyword),
+        (locals == NULL ? ((pm_constant_id_list_t) { .ids = NULL, .size = 0, .capacity = 0 }) : *locals),
+        TOK2LOC(parser, module_keyword),
+        constant_path,
+        body,
+        TOK2LOC(parser, end_keyword),
+        pm_parser_constant_id_token(parser, name)
+    );
 }
 
 /**
@@ -5422,18 +5385,17 @@ pm_module_node_create(pm_parser_t *parser, pm_constant_id_list_t *locals, const 
  */
 static pm_multi_target_node_t *
 pm_multi_target_node_create(pm_parser_t *parser) {
-    pm_multi_target_node_t *node = PM_NODE_ALLOC(parser, pm_multi_target_node_t);
-
-    *node = (pm_multi_target_node_t) {
-        .base = PM_NODE_INIT(parser, PM_MULTI_TARGET_NODE, 0, PM_LOCATION_INIT_UNSET),
-        .lefts = { 0 },
-        .rest = NULL,
-        .rights = { 0 },
-        .lparen_loc = { 0 },
-        .rparen_loc = { 0 }
-    };
-
-    return node;
+    return pm_multi_target_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_UNSET,
+        ((pm_node_list_t) { 0 }),
+        NULL,
+        ((pm_node_list_t) { 0 }),
+        ((pm_location_t) { 0 }),
+        ((pm_location_t) { 0 })
+    );
 }
 
 /**
@@ -5494,24 +5456,21 @@ pm_multi_target_node_closing_set(const pm_parser_t *parser, pm_multi_target_node
  */
 static pm_multi_write_node_t *
 pm_multi_write_node_create(pm_parser_t *parser, pm_multi_target_node_t *target, const pm_token_t *operator, pm_node_t *value) {
-    pm_multi_write_node_t *node = PM_NODE_ALLOC(parser, pm_multi_write_node_t);
-    pm_node_flags_t flags = pm_implicit_array_write_flags(value, PM_WRITE_NODE_FLAGS_IMPLICIT_ARRAY);
-
-    *node = (pm_multi_write_node_t) {
-        .base = PM_NODE_INIT(parser, PM_MULTI_WRITE_NODE, flags, PM_LOCATION_INIT_NODES(target, value)),
-        .lefts = target->lefts,
-        .rest = target->rest,
-        .rights = target->rights,
-        .lparen_loc = target->lparen_loc,
-        .rparen_loc = target->rparen_loc,
-        .operator_loc = TOK2LOC(parser, operator),
-        .value = value
-    };
-
-    // The target is no longer necessary because we've reused its children.
-    // It is arena-allocated so no explicit free is needed.
-
-    return node;
+    /* The target is no longer necessary because we have reused its children. It
+     * is arena-allocated so no explicit free is needed. */
+    return pm_multi_write_node_new(
+        parser->arena,
+        ++parser->node_id,
+        pm_implicit_array_write_flags(value, PM_WRITE_NODE_FLAGS_IMPLICIT_ARRAY),
+        PM_LOCATION_INIT_NODES(target, value),
+        target->lefts,
+        target->rest,
+        target->rights,
+        target->lparen_loc,
+        target->rparen_loc,
+        TOK2LOC(parser, operator),
+        value
+    );
 }
 
 /**
@@ -5520,15 +5479,15 @@ pm_multi_write_node_create(pm_parser_t *parser, pm_multi_target_node_t *target, 
 static pm_next_node_t *
 pm_next_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_arguments_node_t *arguments) {
     assert(keyword->type == PM_TOKEN_KEYWORD_NEXT);
-    pm_next_node_t *node = PM_NODE_ALLOC(parser, pm_next_node_t);
 
-    *node = (pm_next_node_t) {
-        .base = PM_NODE_INIT(parser, PM_NEXT_NODE, 0, (arguments == NULL) ? PM_LOCATION_INIT_TOKEN(parser, keyword) : PM_LOCATION_INIT_TOKEN_NODE(parser, keyword, arguments)),
-        .keyword_loc = TOK2LOC(parser, keyword),
-        .arguments = arguments
-    };
-
-    return node;
+    return pm_next_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        (arguments == NULL) ? PM_LOCATION_INIT_TOKEN(parser, keyword) : PM_LOCATION_INIT_TOKEN_NODE(parser, keyword, arguments),
+        arguments,
+        TOK2LOC(parser, keyword)
+    );
 }
 
 /**
@@ -5537,13 +5496,13 @@ pm_next_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_arguments
 static pm_nil_node_t *
 pm_nil_node_create(pm_parser_t *parser, const pm_token_t *token) {
     assert(token->type == PM_TOKEN_KEYWORD_NIL);
-    pm_nil_node_t *node = PM_NODE_ALLOC(parser, pm_nil_node_t);
 
-    *node = (pm_nil_node_t) {
-        .base = PM_NODE_INIT(parser, PM_NIL_NODE, PM_NODE_FLAG_STATIC_LITERAL, PM_LOCATION_INIT_TOKEN(parser, token))
-    };
-
-    return node;
+    return pm_nil_node_new(
+        parser->arena,
+        ++parser->node_id,
+        PM_NODE_FLAG_STATIC_LITERAL,
+        PM_LOCATION_INIT_TOKEN(parser, token)
+    );
 }
 
 /**
@@ -5553,15 +5512,15 @@ static pm_no_block_parameter_node_t *
 pm_no_block_parameter_node_create(pm_parser_t *parser, const pm_token_t *operator, const pm_token_t *keyword) {
     assert(operator->type == PM_TOKEN_AMPERSAND || operator->type == PM_TOKEN_UAMPERSAND);
     assert(keyword->type == PM_TOKEN_KEYWORD_NIL);
-    pm_no_block_parameter_node_t *node = PM_NODE_ALLOC(parser, pm_no_block_parameter_node_t);
 
-    *node = (pm_no_block_parameter_node_t) {
-        .base = PM_NODE_INIT(parser, PM_NO_BLOCK_PARAMETER_NODE, 0, PM_LOCATION_INIT_TOKENS(parser, operator, keyword)),
-        .operator_loc = TOK2LOC(parser, operator),
-        .keyword_loc = TOK2LOC(parser, keyword)
-    };
-
-    return node;
+    return pm_no_block_parameter_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKENS(parser, operator, keyword),
+        TOK2LOC(parser, operator),
+        TOK2LOC(parser, keyword)
+    );
 }
 
 /**
@@ -5571,15 +5530,15 @@ static pm_no_keywords_parameter_node_t *
 pm_no_keywords_parameter_node_create(pm_parser_t *parser, const pm_token_t *operator, const pm_token_t *keyword) {
     assert(operator->type == PM_TOKEN_USTAR_STAR || operator->type == PM_TOKEN_STAR_STAR);
     assert(keyword->type == PM_TOKEN_KEYWORD_NIL);
-    pm_no_keywords_parameter_node_t *node = PM_NODE_ALLOC(parser, pm_no_keywords_parameter_node_t);
 
-    *node = (pm_no_keywords_parameter_node_t) {
-        .base = PM_NODE_INIT(parser, PM_NO_KEYWORDS_PARAMETER_NODE, 0, PM_LOCATION_INIT_TOKENS(parser, operator, keyword)),
-        .operator_loc = TOK2LOC(parser, operator),
-        .keyword_loc = TOK2LOC(parser, keyword)
-    };
-
-    return node;
+    return pm_no_keywords_parameter_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKENS(parser, operator, keyword),
+        TOK2LOC(parser, operator),
+        TOK2LOC(parser, keyword)
+    );
 }
 
 /**
@@ -5587,14 +5546,13 @@ pm_no_keywords_parameter_node_create(pm_parser_t *parser, const pm_token_t *oper
  */
 static pm_numbered_parameters_node_t *
 pm_numbered_parameters_node_create(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *closing, uint8_t maximum) {
-    pm_numbered_parameters_node_t *node = PM_NODE_ALLOC(parser, pm_numbered_parameters_node_t);
-
-    *node = (pm_numbered_parameters_node_t) {
-        .base = PM_NODE_INIT(parser, PM_NUMBERED_PARAMETERS_NODE, 0, PM_LOCATION_INIT_TOKENS(parser, opening, closing)),
-        .maximum = maximum
-    };
-
-    return node;
+    return pm_numbered_parameters_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKENS(parser, opening, closing),
+        maximum
+    );
 }
 
 /**
@@ -5652,14 +5610,14 @@ pm_numbered_reference_read_node_number(pm_parser_t *parser, const pm_token_t *to
 static pm_numbered_reference_read_node_t *
 pm_numbered_reference_read_node_create(pm_parser_t *parser, const pm_token_t *name) {
     assert(name->type == PM_TOKEN_NUMBERED_REFERENCE);
-    pm_numbered_reference_read_node_t *node = PM_NODE_ALLOC(parser, pm_numbered_reference_read_node_t);
 
-    *node = (pm_numbered_reference_read_node_t) {
-        .base = PM_NODE_INIT(parser, PM_NUMBERED_REFERENCE_READ_NODE, 0, PM_LOCATION_INIT_TOKEN(parser, name)),
-        .number = pm_numbered_reference_read_node_number(parser, name)
-    };
-
-    return node;
+    return pm_numbered_reference_read_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKEN(parser, name),
+        pm_numbered_reference_read_node_number(parser, name)
+    );
 }
 
 /**
@@ -5667,17 +5625,16 @@ pm_numbered_reference_read_node_create(pm_parser_t *parser, const pm_token_t *na
  */
 static pm_optional_parameter_node_t *
 pm_optional_parameter_node_create(pm_parser_t *parser, const pm_token_t *name, const pm_token_t *operator, pm_node_t *value) {
-    pm_optional_parameter_node_t *node = PM_NODE_ALLOC(parser, pm_optional_parameter_node_t);
-
-    *node = (pm_optional_parameter_node_t) {
-        .base = PM_NODE_INIT(parser, PM_OPTIONAL_PARAMETER_NODE, 0, PM_LOCATION_INIT_TOKEN_NODE(parser, name, value)),
-        .name = pm_parser_constant_id_token(parser, name),
-        .name_loc = TOK2LOC(parser, name),
-        .operator_loc = TOK2LOC(parser, operator),
-        .value = value
-    };
-
-    return node;
+    return pm_optional_parameter_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKEN_NODE(parser, name, value),
+        pm_parser_constant_id_token(parser, name),
+        TOK2LOC(parser, name),
+        TOK2LOC(parser, operator),
+        value
+    );
 }
 
 /**
@@ -5687,16 +5644,15 @@ static pm_or_node_t *
 pm_or_node_create(pm_parser_t *parser, pm_node_t *left, const pm_token_t *operator, pm_node_t *right) {
     pm_assert_value_expression(parser, left);
 
-    pm_or_node_t *node = PM_NODE_ALLOC(parser, pm_or_node_t);
-
-    *node = (pm_or_node_t) {
-        .base = PM_NODE_INIT(parser, PM_OR_NODE, 0, PM_LOCATION_INIT_NODES(left, right)),
-        .left = left,
-        .right = right,
-        .operator_loc = TOK2LOC(parser, operator)
-    };
-
-    return node;
+    return pm_or_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_NODES(left, right),
+        left,
+        right,
+        TOK2LOC(parser, operator)
+    );
 }
 
 /**
@@ -5704,20 +5660,19 @@ pm_or_node_create(pm_parser_t *parser, pm_node_t *left, const pm_token_t *operat
  */
 static pm_parameters_node_t *
 pm_parameters_node_create(pm_parser_t *parser) {
-    pm_parameters_node_t *node = PM_NODE_ALLOC(parser, pm_parameters_node_t);
-
-    *node = (pm_parameters_node_t) {
-        .base = PM_NODE_INIT(parser, PM_PARAMETERS_NODE, 0, PM_LOCATION_INIT_UNSET),
-        .rest = NULL,
-        .keyword_rest = NULL,
-        .block = NULL,
-        .requireds = { 0 },
-        .optionals = { 0 },
-        .posts = { 0 },
-        .keywords = { 0 }
-    };
-
-    return node;
+    return pm_parameters_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_UNSET,
+        ((pm_node_list_t) { 0 }),
+        ((pm_node_list_t) { 0 }),
+        NULL,
+        ((pm_node_list_t) { 0 }),
+        ((pm_node_list_t) { 0 }),
+        NULL,
+        NULL
+    );
 }
 
 /**
@@ -5804,15 +5759,14 @@ pm_parameters_node_block_set(pm_parameters_node_t *params, pm_node_t *param) {
  */
 static pm_program_node_t *
 pm_program_node_create(pm_parser_t *parser, pm_constant_id_list_t *locals, pm_statements_node_t *statements) {
-    pm_program_node_t *node = PM_NODE_ALLOC(parser, pm_program_node_t);
-
-    *node = (pm_program_node_t) {
-        .base = PM_NODE_INIT(parser, PM_PROGRAM_NODE, 0, PM_LOCATION_INIT_NODE(statements)),
-        .locals = *locals,
-        .statements = statements
-    };
-
-    return node;
+    return pm_program_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_NODE(statements),
+        *locals,
+        statements
+    );
 }
 
 /**
@@ -5820,16 +5774,15 @@ pm_program_node_create(pm_parser_t *parser, pm_constant_id_list_t *locals, pm_st
  */
 static pm_parentheses_node_t *
 pm_parentheses_node_create(pm_parser_t *parser, const pm_token_t *opening, pm_node_t *body, const pm_token_t *closing, pm_node_flags_t flags) {
-    pm_parentheses_node_t *node = PM_NODE_ALLOC(parser, pm_parentheses_node_t);
-
-    *node = (pm_parentheses_node_t) {
-        .base = PM_NODE_INIT(parser, PM_PARENTHESES_NODE, flags, PM_LOCATION_INIT_TOKENS(parser, opening, closing)),
-        .body = body,
-        .opening_loc = TOK2LOC(parser, opening),
-        .closing_loc = TOK2LOC(parser, closing)
-    };
-
-    return node;
+    return pm_parentheses_node_new(
+        parser->arena,
+        ++parser->node_id,
+        flags,
+        PM_LOCATION_INIT_TOKENS(parser, opening, closing),
+        body,
+        TOK2LOC(parser, opening),
+        TOK2LOC(parser, closing)
+    );
 }
 
 /**
@@ -5837,17 +5790,16 @@ pm_parentheses_node_create(pm_parser_t *parser, const pm_token_t *opening, pm_no
  */
 static pm_pinned_expression_node_t *
 pm_pinned_expression_node_create(pm_parser_t *parser, pm_node_t *expression, const pm_token_t *operator, const pm_token_t *lparen, const pm_token_t *rparen) {
-    pm_pinned_expression_node_t *node = PM_NODE_ALLOC(parser, pm_pinned_expression_node_t);
-
-    *node = (pm_pinned_expression_node_t) {
-        .base = PM_NODE_INIT(parser, PM_PINNED_EXPRESSION_NODE, 0, PM_LOCATION_INIT_TOKENS(parser, operator, rparen)),
-        .expression = expression,
-        .operator_loc = TOK2LOC(parser, operator),
-        .lparen_loc = TOK2LOC(parser, lparen),
-        .rparen_loc = TOK2LOC(parser, rparen)
-    };
-
-    return node;
+    return pm_pinned_expression_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKENS(parser, operator, rparen),
+        expression,
+        TOK2LOC(parser, operator),
+        TOK2LOC(parser, lparen),
+        TOK2LOC(parser, rparen)
+    );
 }
 
 /**
@@ -5855,15 +5807,14 @@ pm_pinned_expression_node_create(pm_parser_t *parser, pm_node_t *expression, con
  */
 static pm_pinned_variable_node_t *
 pm_pinned_variable_node_create(pm_parser_t *parser, const pm_token_t *operator, pm_node_t *variable) {
-    pm_pinned_variable_node_t *node = PM_NODE_ALLOC(parser, pm_pinned_variable_node_t);
-
-    *node = (pm_pinned_variable_node_t) {
-        .base = PM_NODE_INIT(parser, PM_PINNED_VARIABLE_NODE, 0, PM_LOCATION_INIT_TOKEN_NODE(parser, operator, variable)),
-        .variable = variable,
-        .operator_loc = TOK2LOC(parser, operator)
-    };
-
-    return node;
+    return pm_pinned_variable_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKEN_NODE(parser, operator, variable),
+        variable,
+        TOK2LOC(parser, operator)
+    );
 }
 
 /**
@@ -5871,17 +5822,16 @@ pm_pinned_variable_node_create(pm_parser_t *parser, const pm_token_t *operator, 
  */
 static pm_post_execution_node_t *
 pm_post_execution_node_create(pm_parser_t *parser, const pm_token_t *keyword, const pm_token_t *opening, pm_statements_node_t *statements, const pm_token_t *closing) {
-    pm_post_execution_node_t *node = PM_NODE_ALLOC(parser, pm_post_execution_node_t);
-
-    *node = (pm_post_execution_node_t) {
-        .base = PM_NODE_INIT(parser, PM_POST_EXECUTION_NODE, 0, PM_LOCATION_INIT_TOKENS(parser, keyword, closing)),
-        .statements = statements,
-        .keyword_loc = TOK2LOC(parser, keyword),
-        .opening_loc = TOK2LOC(parser, opening),
-        .closing_loc = TOK2LOC(parser, closing)
-    };
-
-    return node;
+    return pm_post_execution_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKENS(parser, keyword, closing),
+        statements,
+        TOK2LOC(parser, keyword),
+        TOK2LOC(parser, opening),
+        TOK2LOC(parser, closing)
+    );
 }
 
 /**
@@ -5889,17 +5839,16 @@ pm_post_execution_node_create(pm_parser_t *parser, const pm_token_t *keyword, co
  */
 static pm_pre_execution_node_t *
 pm_pre_execution_node_create(pm_parser_t *parser, const pm_token_t *keyword, const pm_token_t *opening, pm_statements_node_t *statements, const pm_token_t *closing) {
-    pm_pre_execution_node_t *node = PM_NODE_ALLOC(parser, pm_pre_execution_node_t);
-
-    *node = (pm_pre_execution_node_t) {
-        .base = PM_NODE_INIT(parser, PM_PRE_EXECUTION_NODE, 0, PM_LOCATION_INIT_TOKENS(parser, keyword, closing)),
-        .statements = statements,
-        .keyword_loc = TOK2LOC(parser, keyword),
-        .opening_loc = TOK2LOC(parser, opening),
-        .closing_loc = TOK2LOC(parser, closing)
-    };
-
-    return node;
+    return pm_pre_execution_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKENS(parser, keyword, closing),
+        statements,
+        TOK2LOC(parser, keyword),
+        TOK2LOC(parser, opening),
+        TOK2LOC(parser, closing)
+    );
 }
 
 /**
@@ -5909,8 +5858,6 @@ static pm_range_node_t *
 pm_range_node_create(pm_parser_t *parser, pm_node_t *left, const pm_token_t *operator, pm_node_t *right) {
     pm_assert_value_expression(parser, left);
     pm_assert_value_expression(parser, right);
-
-    pm_range_node_t *node = PM_NODE_ALLOC(parser, pm_range_node_t);
     pm_node_flags_t flags = 0;
 
     // Indicate that this node is an exclusive range if the operator is `...`.
@@ -5931,14 +5878,15 @@ pm_range_node_create(pm_parser_t *parser, pm_node_t *left, const pm_token_t *ope
     uint32_t start = left == NULL ? PM_TOKEN_START(parser, operator) : PM_NODE_START(left);
     uint32_t end = right == NULL ? PM_TOKEN_END(parser, operator) : PM_NODE_END(right);
 
-    *node = (pm_range_node_t) {
-        .base = PM_NODE_INIT(parser, PM_RANGE_NODE, flags, ((pm_location_t) { .start = start, .length = U32(end - start) })),
-        .left = left,
-        .right = right,
-        .operator_loc = TOK2LOC(parser, operator)
-    };
-
-    return node;
+    return pm_range_node_new(
+        parser->arena,
+        ++parser->node_id,
+        flags,
+        ((pm_location_t) { .start = start, .length = U32(end - start) }),
+        left,
+        right,
+        TOK2LOC(parser, operator)
+    );
 }
 
 /**
@@ -5947,13 +5895,13 @@ pm_range_node_create(pm_parser_t *parser, pm_node_t *left, const pm_token_t *ope
 static pm_redo_node_t *
 pm_redo_node_create(pm_parser_t *parser, const pm_token_t *token) {
     assert(token->type == PM_TOKEN_KEYWORD_REDO);
-    pm_redo_node_t *node = PM_NODE_ALLOC(parser, pm_redo_node_t);
 
-    *node = (pm_redo_node_t) {
-        .base = PM_NODE_INIT(parser, PM_REDO_NODE, 0, PM_LOCATION_INIT_TOKEN(parser, token))
-    };
-
-    return node;
+    return pm_redo_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKEN(parser, token)
+    );
 }
 
 /**
@@ -5962,18 +5910,16 @@ pm_redo_node_create(pm_parser_t *parser, const pm_token_t *token) {
  */
 static pm_regular_expression_node_t *
 pm_regular_expression_node_create_unescaped(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *content, const pm_token_t *closing, const pm_string_t *unescaped) {
-    pm_regular_expression_node_t *node = PM_NODE_ALLOC(parser, pm_regular_expression_node_t);
-    pm_node_flags_t flags = pm_regular_expression_flags_create(parser, closing) | PM_NODE_FLAG_STATIC_LITERAL;
-
-    *node = (pm_regular_expression_node_t) {
-        .base = PM_NODE_INIT(parser, PM_REGULAR_EXPRESSION_NODE, flags, PM_LOCATION_INIT_TOKENS(parser, opening, closing)),
-        .opening_loc = TOK2LOC(parser, opening),
-        .content_loc = TOK2LOC(parser, content),
-        .closing_loc = TOK2LOC(parser, closing),
-        .unescaped = *unescaped
-    };
-
-    return node;
+    return pm_regular_expression_node_new(
+        parser->arena,
+        ++parser->node_id,
+        pm_regular_expression_flags_create(parser, closing) | PM_NODE_FLAG_STATIC_LITERAL,
+        PM_LOCATION_INIT_TOKENS(parser, opening, closing),
+        TOK2LOC(parser, opening),
+        TOK2LOC(parser, content),
+        TOK2LOC(parser, closing),
+        *unescaped
+    );
 }
 
 /**
@@ -5989,14 +5935,13 @@ pm_regular_expression_node_create(pm_parser_t *parser, const pm_token_t *opening
  */
 static pm_required_parameter_node_t *
 pm_required_parameter_node_create(pm_parser_t *parser, const pm_token_t *token) {
-    pm_required_parameter_node_t *node = PM_NODE_ALLOC(parser, pm_required_parameter_node_t);
-
-    *node = (pm_required_parameter_node_t) {
-        .base = PM_NODE_INIT(parser, PM_REQUIRED_PARAMETER_NODE, 0, PM_LOCATION_INIT_TOKEN(parser, token)),
-        .name = pm_parser_constant_id_token(parser, token)
-    };
-
-    return node;
+    return pm_required_parameter_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKEN(parser, token),
+        pm_parser_constant_id_token(parser, token)
+    );
 }
 
 /**
@@ -6004,16 +5949,15 @@ pm_required_parameter_node_create(pm_parser_t *parser, const pm_token_t *token) 
  */
 static pm_rescue_modifier_node_t *
 pm_rescue_modifier_node_create(pm_parser_t *parser, pm_node_t *expression, const pm_token_t *keyword, pm_node_t *rescue_expression) {
-    pm_rescue_modifier_node_t *node = PM_NODE_ALLOC(parser, pm_rescue_modifier_node_t);
-
-    *node = (pm_rescue_modifier_node_t) {
-        .base = PM_NODE_INIT(parser, PM_RESCUE_MODIFIER_NODE, 0, PM_LOCATION_INIT_NODES(expression, rescue_expression)),
-        .expression = expression,
-        .keyword_loc = TOK2LOC(parser, keyword),
-        .rescue_expression = rescue_expression
-    };
-
-    return node;
+    return pm_rescue_modifier_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_NODES(expression, rescue_expression),
+        expression,
+        TOK2LOC(parser, keyword),
+        rescue_expression
+    );
 }
 
 /**
@@ -6021,20 +5965,19 @@ pm_rescue_modifier_node_create(pm_parser_t *parser, pm_node_t *expression, const
  */
 static pm_rescue_node_t *
 pm_rescue_node_create(pm_parser_t *parser, const pm_token_t *keyword) {
-    pm_rescue_node_t *node = PM_NODE_ALLOC(parser, pm_rescue_node_t);
-
-    *node = (pm_rescue_node_t) {
-        .base = PM_NODE_INIT(parser, PM_RESCUE_NODE, 0, PM_LOCATION_INIT_TOKEN(parser, keyword)),
-        .keyword_loc = TOK2LOC(parser, keyword),
-        .operator_loc = { 0 },
-        .then_keyword_loc = { 0 },
-        .reference = NULL,
-        .statements = NULL,
-        .subsequent = NULL,
-        .exceptions = { 0 }
-    };
-
-    return node;
+    return pm_rescue_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKEN(parser, keyword),
+        TOK2LOC(parser, keyword),
+        ((pm_node_list_t) { 0 }),
+        ((pm_location_t) { 0 }),
+        NULL,
+        ((pm_location_t) { 0 }),
+        NULL,
+        NULL
+    );
 }
 
 static inline void
@@ -6085,16 +6028,15 @@ pm_rescue_node_exceptions_append(pm_arena_t *arena, pm_rescue_node_t *node, pm_n
  */
 static pm_rest_parameter_node_t *
 pm_rest_parameter_node_create(pm_parser_t *parser, const pm_token_t *operator, const pm_token_t *name) {
-    pm_rest_parameter_node_t *node = PM_NODE_ALLOC(parser, pm_rest_parameter_node_t);
-
-    *node = (pm_rest_parameter_node_t) {
-        .base = PM_NODE_INIT(parser, PM_REST_PARAMETER_NODE, 0, (name == NULL) ? PM_LOCATION_INIT_TOKEN(parser, operator) : PM_LOCATION_INIT_TOKENS(parser, operator, name)),
-        .name = name == NULL ? 0 : pm_parser_constant_id_token(parser, name),
-        .name_loc = NTOK2LOC(parser, name),
-        .operator_loc = TOK2LOC(parser, operator)
-    };
-
-    return node;
+    return pm_rest_parameter_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        (name == NULL) ? PM_LOCATION_INIT_TOKEN(parser, operator) : PM_LOCATION_INIT_TOKENS(parser, operator, name),
+        name == NULL ? 0 : pm_parser_constant_id_token(parser, name),
+        NTOK2LOC(parser, name),
+        TOK2LOC(parser, operator)
+    );
 }
 
 /**
@@ -6103,13 +6045,13 @@ pm_rest_parameter_node_create(pm_parser_t *parser, const pm_token_t *operator, c
 static pm_retry_node_t *
 pm_retry_node_create(pm_parser_t *parser, const pm_token_t *token) {
     assert(token->type == PM_TOKEN_KEYWORD_RETRY);
-    pm_retry_node_t *node = PM_NODE_ALLOC(parser, pm_retry_node_t);
 
-    *node = (pm_retry_node_t) {
-        .base = PM_NODE_INIT(parser, PM_RETRY_NODE, 0, PM_LOCATION_INIT_TOKEN(parser, token))
-    };
-
-    return node;
+    return pm_retry_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKEN(parser, token)
+    );
 }
 
 /**
@@ -6117,15 +6059,14 @@ pm_retry_node_create(pm_parser_t *parser, const pm_token_t *token) {
  */
 static pm_return_node_t *
 pm_return_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_arguments_node_t *arguments) {
-    pm_return_node_t *node = PM_NODE_ALLOC(parser, pm_return_node_t);
-
-    *node = (pm_return_node_t) {
-        .base = PM_NODE_INIT(parser, PM_RETURN_NODE, 0, (arguments == NULL) ? PM_LOCATION_INIT_TOKEN(parser, keyword) : PM_LOCATION_INIT_TOKEN_NODE(parser, keyword, arguments)),
-        .keyword_loc = TOK2LOC(parser, keyword),
-        .arguments = arguments
-    };
-
-    return node;
+    return pm_return_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        (arguments == NULL) ? PM_LOCATION_INIT_TOKEN(parser, keyword) : PM_LOCATION_INIT_TOKEN_NODE(parser, keyword, arguments),
+        TOK2LOC(parser, keyword),
+        arguments
+    );
 }
 
 /**
@@ -6134,13 +6075,13 @@ pm_return_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_argumen
 static pm_self_node_t *
 pm_self_node_create(pm_parser_t *parser, const pm_token_t *token) {
     assert(token->type == PM_TOKEN_KEYWORD_SELF);
-    pm_self_node_t *node = PM_NODE_ALLOC(parser, pm_self_node_t);
 
-    *node = (pm_self_node_t) {
-        .base = PM_NODE_INIT(parser, PM_SELF_NODE, 0, PM_LOCATION_INIT_TOKEN(parser, token))
-    };
-
-    return node;
+    return pm_self_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKEN(parser, token)
+    );
 }
 
 /**
@@ -6148,14 +6089,13 @@ pm_self_node_create(pm_parser_t *parser, const pm_token_t *token) {
  */
 static pm_shareable_constant_node_t *
 pm_shareable_constant_node_create(pm_parser_t *parser, pm_node_t *write, pm_shareable_constant_value_t value) {
-    pm_shareable_constant_node_t *node = PM_NODE_ALLOC(parser, pm_shareable_constant_node_t);
-
-    *node = (pm_shareable_constant_node_t) {
-        .base = PM_NODE_INIT(parser, PM_SHAREABLE_CONSTANT_NODE, (pm_node_flags_t) value, PM_LOCATION_INIT_NODE(write)),
-        .write = write
-    };
-
-    return node;
+    return pm_shareable_constant_node_new(
+        parser->arena,
+        ++parser->node_id,
+        (pm_node_flags_t) value,
+        PM_LOCATION_INIT_NODE(write),
+        write
+    );
 }
 
 /**
@@ -6163,19 +6103,18 @@ pm_shareable_constant_node_create(pm_parser_t *parser, pm_node_t *write, pm_shar
  */
 static pm_singleton_class_node_t *
 pm_singleton_class_node_create(pm_parser_t *parser, pm_constant_id_list_t *locals, const pm_token_t *class_keyword, const pm_token_t *operator, pm_node_t *expression, pm_node_t *body, const pm_token_t *end_keyword) {
-    pm_singleton_class_node_t *node = PM_NODE_ALLOC(parser, pm_singleton_class_node_t);
-
-    *node = (pm_singleton_class_node_t) {
-        .base = PM_NODE_INIT(parser, PM_SINGLETON_CLASS_NODE, 0, PM_LOCATION_INIT_TOKENS(parser, class_keyword, end_keyword)),
-        .locals = *locals,
-        .class_keyword_loc = TOK2LOC(parser, class_keyword),
-        .operator_loc = TOK2LOC(parser, operator),
-        .expression = expression,
-        .body = body,
-        .end_keyword_loc = TOK2LOC(parser, end_keyword)
-    };
-
-    return node;
+    return pm_singleton_class_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKENS(parser, class_keyword, end_keyword),
+        *locals,
+        TOK2LOC(parser, class_keyword),
+        TOK2LOC(parser, operator),
+        expression,
+        body,
+        TOK2LOC(parser, end_keyword)
+    );
 }
 
 /**
@@ -6184,13 +6123,13 @@ pm_singleton_class_node_create(pm_parser_t *parser, pm_constant_id_list_t *local
 static pm_source_encoding_node_t *
 pm_source_encoding_node_create(pm_parser_t *parser, const pm_token_t *token) {
     assert(token->type == PM_TOKEN_KEYWORD___ENCODING__);
-    pm_source_encoding_node_t *node = PM_NODE_ALLOC(parser, pm_source_encoding_node_t);
 
-    *node = (pm_source_encoding_node_t) {
-        .base = PM_NODE_INIT(parser, PM_SOURCE_ENCODING_NODE, PM_NODE_FLAG_STATIC_LITERAL, PM_LOCATION_INIT_TOKEN(parser, token))
-    };
-
-    return node;
+    return pm_source_encoding_node_new(
+        parser->arena,
+        ++parser->node_id,
+        PM_NODE_FLAG_STATIC_LITERAL,
+        PM_LOCATION_INIT_TOKEN(parser, token)
+    );
 }
 
 /**
@@ -6198,7 +6137,6 @@ pm_source_encoding_node_create(pm_parser_t *parser, const pm_token_t *token) {
  */
 static pm_source_file_node_t*
 pm_source_file_node_create(pm_parser_t *parser, const pm_token_t *file_keyword) {
-    pm_source_file_node_t *node = PM_NODE_ALLOC(parser, pm_source_file_node_t);
     assert(file_keyword->type == PM_TOKEN_KEYWORD___FILE__);
 
     pm_node_flags_t flags = 0;
@@ -6212,12 +6150,13 @@ pm_source_file_node_create(pm_parser_t *parser, const pm_token_t *file_keyword) 
             break;
     }
 
-    *node = (pm_source_file_node_t) {
-        .base = PM_NODE_INIT(parser, PM_SOURCE_FILE_NODE, flags, PM_LOCATION_INIT_TOKEN(parser, file_keyword)),
-        .filepath = parser->filepath
-    };
-
-    return node;
+    return pm_source_file_node_new(
+        parser->arena,
+        ++parser->node_id,
+        flags,
+        PM_LOCATION_INIT_TOKEN(parser, file_keyword),
+        parser->filepath
+    );
 }
 
 /**
@@ -6226,13 +6165,13 @@ pm_source_file_node_create(pm_parser_t *parser, const pm_token_t *file_keyword) 
 static pm_source_line_node_t *
 pm_source_line_node_create(pm_parser_t *parser, const pm_token_t *token) {
     assert(token->type == PM_TOKEN_KEYWORD___LINE__);
-    pm_source_line_node_t *node = PM_NODE_ALLOC(parser, pm_source_line_node_t);
 
-    *node = (pm_source_line_node_t) {
-        .base = PM_NODE_INIT(parser, PM_SOURCE_LINE_NODE, PM_NODE_FLAG_STATIC_LITERAL, PM_LOCATION_INIT_TOKEN(parser, token))
-    };
-
-    return node;
+    return pm_source_line_node_new(
+        parser->arena,
+        ++parser->node_id,
+        PM_NODE_FLAG_STATIC_LITERAL,
+        PM_LOCATION_INIT_TOKEN(parser, token)
+    );
 }
 
 /**
@@ -6240,15 +6179,14 @@ pm_source_line_node_create(pm_parser_t *parser, const pm_token_t *token) {
  */
 static pm_splat_node_t *
 pm_splat_node_create(pm_parser_t *parser, const pm_token_t *operator, pm_node_t *expression) {
-    pm_splat_node_t *node = PM_NODE_ALLOC(parser, pm_splat_node_t);
-
-    *node = (pm_splat_node_t) {
-        .base = PM_NODE_INIT(parser, PM_SPLAT_NODE, 0, (expression == NULL) ? PM_LOCATION_INIT_TOKEN(parser, operator) : PM_LOCATION_INIT_TOKEN_NODE(parser, operator, expression)),
-        .operator_loc = TOK2LOC(parser, operator),
-        .expression = expression
-    };
-
-    return node;
+    return pm_splat_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        (expression == NULL) ? PM_LOCATION_INIT_TOKEN(parser, operator) : PM_LOCATION_INIT_TOKEN_NODE(parser, operator, expression),
+        TOK2LOC(parser, operator),
+        expression
+    );
 }
 
 /**
@@ -6256,14 +6194,13 @@ pm_splat_node_create(pm_parser_t *parser, const pm_token_t *operator, pm_node_t 
  */
 static pm_statements_node_t *
 pm_statements_node_create(pm_parser_t *parser) {
-    pm_statements_node_t *node = PM_NODE_ALLOC(parser, pm_statements_node_t);
-
-    *node = (pm_statements_node_t) {
-        .base = PM_NODE_INIT(parser, PM_STATEMENTS_NODE, 0, PM_LOCATION_INIT_UNSET),
-        .body = { 0 }
-    };
-
-    return node;
+    return pm_statements_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_UNSET,
+        ((pm_node_list_t) { 0 })
+    );
 }
 
 /**
@@ -6331,7 +6268,6 @@ pm_statements_node_body_prepend(pm_arena_t *arena, pm_statements_node_t *node, p
  */
 static inline pm_string_node_t *
 pm_string_node_create_unescaped(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *content, const pm_token_t *closing, const pm_string_t *string) {
-    pm_string_node_t *node = PM_NODE_ALLOC(parser, pm_string_node_t);
     pm_node_flags_t flags = 0;
 
     switch (parser->frozen_string_literal) {
@@ -6346,15 +6282,16 @@ pm_string_node_create_unescaped(pm_parser_t *parser, const pm_token_t *opening, 
     uint32_t start = PM_TOKEN_START(parser, opening == NULL ? content : opening);
     uint32_t end = PM_TOKEN_END(parser, closing == NULL ? content : closing);
 
-    *node = (pm_string_node_t) {
-        .base = PM_NODE_INIT(parser, PM_STRING_NODE, flags, ((pm_location_t) { .start = start, .length = U32(end - start) })),
-        .opening_loc = NTOK2LOC(parser, opening),
-        .content_loc = TOK2LOC(parser, content),
-        .closing_loc = NTOK2LOC(parser, closing),
-        .unescaped = *string
-    };
-
-    return node;
+    return pm_string_node_new(
+        parser->arena,
+        ++parser->node_id,
+        flags,
+        ((pm_location_t) { .start = start, .length = U32(end - start) }),
+        NTOK2LOC(parser, opening),
+        TOK2LOC(parser, content),
+        NTOK2LOC(parser, closing),
+        *string
+    );
 }
 
 /**
@@ -6382,21 +6319,21 @@ pm_string_node_create_current_string(pm_parser_t *parser, const pm_token_t *open
 static pm_super_node_t *
 pm_super_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_arguments_t *arguments) {
     assert(keyword->type == PM_TOKEN_KEYWORD_SUPER);
-    pm_super_node_t *node = PM_NODE_ALLOC(parser, pm_super_node_t);
 
     const pm_location_t *end = pm_arguments_end(arguments);
     assert(end != NULL && "unreachable");
 
-    *node = (pm_super_node_t) {
-        .base = PM_NODE_INIT(parser, PM_SUPER_NODE, 0, ((pm_location_t) { .start = PM_TOKEN_START(parser, keyword), .length = PM_LOCATION_END(end) - PM_TOKEN_START(parser, keyword) })),
-        .keyword_loc = TOK2LOC(parser, keyword),
-        .lparen_loc = arguments->opening_loc,
-        .arguments = arguments->arguments,
-        .rparen_loc = arguments->closing_loc,
-        .block = arguments->block
-    };
-
-    return node;
+    return pm_super_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        ((pm_location_t) { .start = PM_TOKEN_START(parser, keyword), .length = PM_LOCATION_END(end) - PM_TOKEN_START(parser, keyword) }),
+        TOK2LOC(parser, keyword),
+        arguments->opening_loc,
+        arguments->arguments,
+        arguments->closing_loc,
+        arguments->block
+    );
 }
 
 /**
@@ -6615,20 +6552,19 @@ parse_and_validate_regular_expression_encoding(pm_parser_t *parser, const pm_str
  */
 static pm_symbol_node_t *
 pm_symbol_node_create_unescaped(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *value, const pm_token_t *closing, const pm_string_t *unescaped, pm_node_flags_t flags) {
-    pm_symbol_node_t *node = PM_NODE_ALLOC(parser, pm_symbol_node_t);
-
     uint32_t start = opening == NULL ? PM_TOKEN_START(parser, value) : PM_TOKEN_START(parser, opening);
     uint32_t end = closing == NULL ? PM_TOKEN_END(parser, value) : PM_TOKEN_END(parser, closing);
 
-    *node = (pm_symbol_node_t) {
-        .base = PM_NODE_INIT(parser, PM_SYMBOL_NODE, PM_NODE_FLAG_STATIC_LITERAL | flags, ((pm_location_t) { .start = start, .length = U32(end - start) })),
-        .opening_loc = NTOK2LOC(parser, opening),
-        .value_loc = NTOK2LOC(parser, value),
-        .closing_loc = NTOK2LOC(parser, closing),
-        .unescaped = *unescaped
-    };
-
-    return node;
+    return pm_symbol_node_new(
+        parser->arena,
+        ++parser->node_id,
+        PM_NODE_FLAG_STATIC_LITERAL | flags,
+        ((pm_location_t) { .start = start, .length = U32(end - start) }),
+        NTOK2LOC(parser, opening),
+        NTOK2LOC(parser, value),
+        NTOK2LOC(parser, closing),
+        *unescaped
+    );
 }
 
 /**
@@ -6672,13 +6608,16 @@ pm_symbol_node_label_create(pm_parser_t *parser, const pm_token_t *token) {
  */
 static pm_symbol_node_t *
 pm_symbol_node_synthesized_create(pm_parser_t *parser, const char *content) {
-    pm_symbol_node_t *node = PM_NODE_ALLOC(parser, pm_symbol_node_t);
-
-    *node = (pm_symbol_node_t) {
-        .base = PM_NODE_INIT(parser, PM_SYMBOL_NODE, PM_NODE_FLAG_STATIC_LITERAL | PM_SYMBOL_FLAGS_FORCED_US_ASCII_ENCODING, PM_LOCATION_INIT_UNSET),
-        .value_loc = { 0 },
-        .unescaped = { 0 }
-    };
+    pm_symbol_node_t *node = pm_symbol_node_new(
+        parser->arena,
+        ++parser->node_id,
+        PM_NODE_FLAG_STATIC_LITERAL | PM_SYMBOL_FLAGS_FORCED_US_ASCII_ENCODING,
+        PM_LOCATION_INIT_UNSET,
+        ((pm_location_t) { 0 }),
+        ((pm_location_t) { 0 }),
+        ((pm_location_t) { 0 }),
+        ((pm_string_t) { 0 })
+    );
 
     pm_string_constant_init(&node->unescaped, content, strlen(content));
     return node;
@@ -6718,15 +6657,16 @@ pm_symbol_node_label_p(const pm_parser_t *parser, const pm_node_t *node) {
  */
 static pm_symbol_node_t *
 pm_string_node_to_symbol_node(pm_parser_t *parser, pm_string_node_t *node, const pm_token_t *opening, const pm_token_t *closing) {
-    pm_symbol_node_t *new_node = PM_NODE_ALLOC(parser, pm_symbol_node_t);
-
-    *new_node = (pm_symbol_node_t) {
-        .base = PM_NODE_INIT(parser, PM_SYMBOL_NODE, PM_NODE_FLAG_STATIC_LITERAL, PM_LOCATION_INIT_TOKENS(parser, opening, closing)),
-        .opening_loc = TOK2LOC(parser, opening),
-        .value_loc = node->content_loc,
-        .closing_loc = TOK2LOC(parser, closing),
-        .unescaped = node->unescaped
-    };
+    pm_symbol_node_t *new_node = pm_symbol_node_new(
+        parser->arena,
+        ++parser->node_id,
+        PM_NODE_FLAG_STATIC_LITERAL,
+        PM_LOCATION_INIT_TOKENS(parser, opening, closing),
+        TOK2LOC(parser, opening),
+        node->content_loc,
+        TOK2LOC(parser, closing),
+        node->unescaped
+    );
 
     pm_token_t content = {
         .type = PM_TOKEN_IDENTIFIER,
@@ -6736,8 +6676,7 @@ pm_string_node_to_symbol_node(pm_parser_t *parser, pm_string_node_t *node, const
 
     pm_node_flag_set(UP(new_node), parse_symbol_encoding(parser, &content, &node->unescaped, true));
 
-    // The old node is arena-allocated so no explicit free is needed.
-
+    /* The old node is arena-allocated so no explicit free is needed. */
     return new_node;
 }
 
@@ -6746,7 +6685,6 @@ pm_string_node_to_symbol_node(pm_parser_t *parser, pm_string_node_t *node, const
  */
 static pm_string_node_t *
 pm_symbol_node_to_string_node(pm_parser_t *parser, pm_symbol_node_t *node) {
-    pm_string_node_t *new_node = PM_NODE_ALLOC(parser, pm_string_node_t);
     pm_node_flags_t flags = 0;
 
     switch (parser->frozen_string_literal) {
@@ -6758,16 +6696,18 @@ pm_symbol_node_to_string_node(pm_parser_t *parser, pm_symbol_node_t *node) {
             break;
     }
 
-    *new_node = (pm_string_node_t) {
-        .base = PM_NODE_INIT(parser, PM_STRING_NODE, flags, PM_LOCATION_INIT_NODE(node)),
-        .opening_loc = node->opening_loc,
-        .content_loc = node->value_loc,
-        .closing_loc = node->closing_loc,
-        .unescaped = node->unescaped
-    };
+    pm_string_node_t *new_node = pm_string_node_new(
+        parser->arena,
+        ++parser->node_id,
+        flags,
+        PM_LOCATION_INIT_NODE(node),
+        node->opening_loc,
+        node->value_loc,
+        node->closing_loc,
+        node->unescaped
+    );
 
-    // The old node is arena-allocated so no explicit free is needed.
-
+    /* The old node is arena-allocated so no explicit free is needed. */
     return new_node;
 }
 
@@ -6777,13 +6717,13 @@ pm_symbol_node_to_string_node(pm_parser_t *parser, pm_symbol_node_t *node) {
 static pm_true_node_t *
 pm_true_node_create(pm_parser_t *parser, const pm_token_t *token) {
     assert(token->type == PM_TOKEN_KEYWORD_TRUE);
-    pm_true_node_t *node = PM_NODE_ALLOC(parser, pm_true_node_t);
 
-    *node = (pm_true_node_t) {
-        .base = PM_NODE_INIT(parser, PM_TRUE_NODE, PM_NODE_FLAG_STATIC_LITERAL, PM_LOCATION_INIT_TOKEN(parser, token))
-    };
-
-    return node;
+    return pm_true_node_new(
+        parser->arena,
+        ++parser->node_id,
+        PM_NODE_FLAG_STATIC_LITERAL,
+        PM_LOCATION_INIT_TOKEN(parser, token)
+    );
 }
 
 /**
@@ -6791,13 +6731,12 @@ pm_true_node_create(pm_parser_t *parser, const pm_token_t *token) {
  */
 static pm_true_node_t *
 pm_true_node_synthesized_create(pm_parser_t *parser) {
-    pm_true_node_t *node = PM_NODE_ALLOC(parser, pm_true_node_t);
-
-    *node = (pm_true_node_t) {
-        .base = PM_NODE_INIT(parser, PM_TRUE_NODE, PM_NODE_FLAG_STATIC_LITERAL, PM_LOCATION_INIT_UNSET)
-    };
-
-    return node;
+    return pm_true_node_new(
+        parser->arena,
+        ++parser->node_id,
+        PM_NODE_FLAG_STATIC_LITERAL,
+        PM_LOCATION_INIT_UNSET
+    );
 }
 
 /**
@@ -6806,15 +6745,15 @@ pm_true_node_synthesized_create(pm_parser_t *parser) {
 static pm_undef_node_t *
 pm_undef_node_create(pm_parser_t *parser, const pm_token_t *token) {
     assert(token->type == PM_TOKEN_KEYWORD_UNDEF);
-    pm_undef_node_t *node = PM_NODE_ALLOC(parser, pm_undef_node_t);
 
-    *node = (pm_undef_node_t) {
-        .base = PM_NODE_INIT(parser, PM_UNDEF_NODE, 0, PM_LOCATION_INIT_TOKEN(parser, token)),
-        .keyword_loc = TOK2LOC(parser, token),
-        .names = { 0 }
-    };
-
-    return node;
+    return pm_undef_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKEN(parser, token),
+        ((pm_node_list_t) { 0 }),
+        TOK2LOC(parser, token)
+    );
 }
 
 /**
@@ -6832,21 +6771,20 @@ pm_undef_node_append(pm_arena_t *arena, pm_undef_node_t *node, pm_node_t *name) 
 static pm_unless_node_t *
 pm_unless_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_node_t *predicate, const pm_token_t *then_keyword, pm_statements_node_t *statements) {
     pm_conditional_predicate(parser, predicate, PM_CONDITIONAL_PREDICATE_TYPE_CONDITIONAL);
-
-    pm_unless_node_t *node = PM_NODE_ALLOC(parser, pm_unless_node_t);
     pm_node_t *end = statements == NULL ? predicate : UP(statements);
 
-    *node = (pm_unless_node_t) {
-        .base = PM_NODE_INIT(parser, PM_UNLESS_NODE, PM_NODE_FLAG_NEWLINE, PM_LOCATION_INIT_TOKEN_NODE(parser, keyword, end)),
-        .keyword_loc = TOK2LOC(parser, keyword),
-        .predicate = predicate,
-        .then_keyword_loc = NTOK2LOC(parser, then_keyword),
-        .statements = statements,
-        .else_clause = NULL,
-        .end_keyword_loc = { 0 }
-    };
-
-    return node;
+    return pm_unless_node_new(
+        parser->arena,
+        ++parser->node_id,
+        PM_NODE_FLAG_NEWLINE,
+        PM_LOCATION_INIT_TOKEN_NODE(parser, keyword, end),
+        TOK2LOC(parser, keyword),
+        predicate,
+        NTOK2LOC(parser, then_keyword),
+        statements,
+        NULL,
+        ((pm_location_t) { 0 })
+    );
 }
 
 /**
@@ -6855,22 +6793,22 @@ pm_unless_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_node_t 
 static pm_unless_node_t *
 pm_unless_node_modifier_create(pm_parser_t *parser, pm_node_t *statement, const pm_token_t *unless_keyword, pm_node_t *predicate) {
     pm_conditional_predicate(parser, predicate, PM_CONDITIONAL_PREDICATE_TYPE_CONDITIONAL);
-    pm_unless_node_t *node = PM_NODE_ALLOC(parser, pm_unless_node_t);
 
     pm_statements_node_t *statements = pm_statements_node_create(parser);
     pm_statements_node_body_append(parser, statements, statement, true);
 
-    *node = (pm_unless_node_t) {
-        .base = PM_NODE_INIT(parser, PM_UNLESS_NODE, PM_NODE_FLAG_NEWLINE, PM_LOCATION_INIT_NODES(statement, predicate)),
-        .keyword_loc = TOK2LOC(parser, unless_keyword),
-        .predicate = predicate,
-        .then_keyword_loc = { 0 },
-        .statements = statements,
-        .else_clause = NULL,
-        .end_keyword_loc = { 0 }
-    };
-
-    return node;
+    return pm_unless_node_new(
+        parser->arena,
+        ++parser->node_id,
+        PM_NODE_FLAG_NEWLINE,
+        PM_LOCATION_INIT_NODES(statement, predicate),
+        TOK2LOC(parser, unless_keyword),
+        predicate,
+        ((pm_location_t) { 0 }),
+        statements,
+        NULL,
+        ((pm_location_t) { 0 })
+    );
 }
 
 static inline void
@@ -6907,19 +6845,19 @@ pm_loop_modifier_block_exits(pm_parser_t *parser, pm_statements_node_t *statemen
  */
 static pm_until_node_t *
 pm_until_node_create(pm_parser_t *parser, const pm_token_t *keyword, const pm_token_t *do_keyword, const pm_token_t *closing, pm_node_t *predicate, pm_statements_node_t *statements, pm_node_flags_t flags) {
-    pm_until_node_t *node = PM_NODE_ALLOC(parser, pm_until_node_t);
     pm_conditional_predicate(parser, predicate, PM_CONDITIONAL_PREDICATE_TYPE_CONDITIONAL);
 
-    *node = (pm_until_node_t) {
-        .base = PM_NODE_INIT(parser, PM_UNTIL_NODE, flags, PM_LOCATION_INIT_TOKENS(parser, keyword, closing)),
-        .keyword_loc = TOK2LOC(parser, keyword),
-        .do_keyword_loc = NTOK2LOC(parser, do_keyword),
-        .closing_loc = TOK2LOC(parser, closing),
-        .predicate = predicate,
-        .statements = statements
-    };
-
-    return node;
+    return pm_until_node_new(
+        parser->arena,
+        ++parser->node_id,
+        flags,
+        PM_LOCATION_INIT_TOKENS(parser, keyword, closing),
+        TOK2LOC(parser, keyword),
+        NTOK2LOC(parser, do_keyword),
+        TOK2LOC(parser, closing),
+        predicate,
+        statements
+    );
 }
 
 /**
@@ -6927,20 +6865,20 @@ pm_until_node_create(pm_parser_t *parser, const pm_token_t *keyword, const pm_to
  */
 static pm_until_node_t *
 pm_until_node_modifier_create(pm_parser_t *parser, const pm_token_t *keyword, pm_node_t *predicate, pm_statements_node_t *statements, pm_node_flags_t flags) {
-    pm_until_node_t *node = PM_NODE_ALLOC(parser, pm_until_node_t);
     pm_conditional_predicate(parser, predicate, PM_CONDITIONAL_PREDICATE_TYPE_CONDITIONAL);
     pm_loop_modifier_block_exits(parser, statements);
 
-    *node = (pm_until_node_t) {
-        .base = PM_NODE_INIT(parser, PM_UNTIL_NODE, flags, PM_LOCATION_INIT_NODES(statements, predicate)),
-        .keyword_loc = TOK2LOC(parser, keyword),
-        .do_keyword_loc = { 0 },
-        .closing_loc = { 0 },
-        .predicate = predicate,
-        .statements = statements
-    };
-
-    return node;
+    return pm_until_node_new(
+        parser->arena,
+        ++parser->node_id,
+        flags,
+        PM_LOCATION_INIT_NODES(statements, predicate),
+        TOK2LOC(parser, keyword),
+        ((pm_location_t) { 0 }),
+        ((pm_location_t) { 0 }),
+        predicate,
+        statements
+    );
 }
 
 /**
@@ -6948,17 +6886,16 @@ pm_until_node_modifier_create(pm_parser_t *parser, const pm_token_t *keyword, pm
  */
 static pm_when_node_t *
 pm_when_node_create(pm_parser_t *parser, const pm_token_t *keyword) {
-    pm_when_node_t *node = PM_NODE_ALLOC(parser, pm_when_node_t);
-
-    *node = (pm_when_node_t) {
-        .base = PM_NODE_INIT(parser, PM_WHEN_NODE, 0, PM_LOCATION_INIT_TOKEN(parser, keyword)),
-        .keyword_loc = TOK2LOC(parser, keyword),
-        .statements = NULL,
-        .then_keyword_loc = { 0 },
-        .conditions = { 0 }
-    };
-
-    return node;
+    return pm_when_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_TOKEN(parser, keyword),
+        TOK2LOC(parser, keyword),
+        ((pm_node_list_t) { 0 }),
+        ((pm_location_t) { 0 }),
+        NULL
+    );
 }
 
 /**
@@ -6996,19 +6933,19 @@ pm_when_node_statements_set(pm_when_node_t *node, pm_statements_node_t *statemen
  */
 static pm_while_node_t *
 pm_while_node_create(pm_parser_t *parser, const pm_token_t *keyword, const pm_token_t *do_keyword, const pm_token_t *closing, pm_node_t *predicate, pm_statements_node_t *statements, pm_node_flags_t flags) {
-    pm_while_node_t *node = PM_NODE_ALLOC(parser, pm_while_node_t);
     pm_conditional_predicate(parser, predicate, PM_CONDITIONAL_PREDICATE_TYPE_CONDITIONAL);
 
-    *node = (pm_while_node_t) {
-        .base = PM_NODE_INIT(parser, PM_WHILE_NODE, flags, PM_LOCATION_INIT_TOKENS(parser, keyword, closing)),
-        .keyword_loc = TOK2LOC(parser, keyword),
-        .do_keyword_loc = NTOK2LOC(parser, do_keyword),
-        .closing_loc = TOK2LOC(parser, closing),
-        .predicate = predicate,
-        .statements = statements
-    };
-
-    return node;
+    return pm_while_node_new(
+        parser->arena,
+        ++parser->node_id,
+        flags,
+        PM_LOCATION_INIT_TOKENS(parser, keyword, closing),
+        TOK2LOC(parser, keyword),
+        NTOK2LOC(parser, do_keyword),
+        TOK2LOC(parser, closing),
+        predicate,
+        statements
+    );
 }
 
 /**
@@ -7016,20 +6953,20 @@ pm_while_node_create(pm_parser_t *parser, const pm_token_t *keyword, const pm_to
  */
 static pm_while_node_t *
 pm_while_node_modifier_create(pm_parser_t *parser, const pm_token_t *keyword, pm_node_t *predicate, pm_statements_node_t *statements, pm_node_flags_t flags) {
-    pm_while_node_t *node = PM_NODE_ALLOC(parser, pm_while_node_t);
     pm_conditional_predicate(parser, predicate, PM_CONDITIONAL_PREDICATE_TYPE_CONDITIONAL);
     pm_loop_modifier_block_exits(parser, statements);
 
-    *node = (pm_while_node_t) {
-        .base = PM_NODE_INIT(parser, PM_WHILE_NODE, flags, PM_LOCATION_INIT_NODES(statements, predicate)),
-        .keyword_loc = TOK2LOC(parser, keyword),
-        .do_keyword_loc = { 0 },
-        .closing_loc = { 0 },
-        .predicate = predicate,
-        .statements = statements
-    };
-
-    return node;
+    return pm_while_node_new(
+        parser->arena,
+        ++parser->node_id,
+        flags,
+        PM_LOCATION_INIT_NODES(statements, predicate),
+        TOK2LOC(parser, keyword),
+        ((pm_location_t) { 0 }),
+        ((pm_location_t) { 0 }),
+        predicate,
+        statements
+    );
 }
 
 /**
@@ -7037,18 +6974,17 @@ pm_while_node_modifier_create(pm_parser_t *parser, const pm_token_t *keyword, pm
  */
 static pm_while_node_t *
 pm_while_node_synthesized_create(pm_parser_t *parser, pm_node_t *predicate, pm_statements_node_t *statements) {
-    pm_while_node_t *node = PM_NODE_ALLOC(parser, pm_while_node_t);
-
-    *node = (pm_while_node_t) {
-        .base = PM_NODE_INIT(parser, PM_WHILE_NODE, 0, PM_LOCATION_INIT_UNSET),
-        .keyword_loc = { 0 },
-        .do_keyword_loc = { 0 },
-        .closing_loc = { 0 },
-        .predicate = predicate,
-        .statements = statements
-    };
-
-    return node;
+    return pm_while_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_UNSET,
+        ((pm_location_t) { 0 }),
+        ((pm_location_t) { 0 }),
+        ((pm_location_t) { 0 }),
+        predicate,
+        statements
+    );
 }
 
 /**
@@ -7057,17 +6993,16 @@ pm_while_node_synthesized_create(pm_parser_t *parser, pm_node_t *predicate, pm_s
  */
 static pm_x_string_node_t *
 pm_xstring_node_create_unescaped(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *content, const pm_token_t *closing, const pm_string_t *unescaped) {
-    pm_x_string_node_t *node = PM_NODE_ALLOC(parser, pm_x_string_node_t);
-
-    *node = (pm_x_string_node_t) {
-        .base = PM_NODE_INIT(parser, PM_X_STRING_NODE, PM_STRING_FLAGS_FROZEN, PM_LOCATION_INIT_TOKENS(parser, opening, closing)),
-        .opening_loc = TOK2LOC(parser, opening),
-        .content_loc = TOK2LOC(parser, content),
-        .closing_loc = TOK2LOC(parser, closing),
-        .unescaped = *unescaped
-    };
-
-    return node;
+    return pm_x_string_node_new(
+        parser->arena,
+        ++parser->node_id,
+        PM_STRING_FLAGS_FROZEN,
+        PM_LOCATION_INIT_TOKENS(parser, opening, closing),
+        TOK2LOC(parser, opening),
+        TOK2LOC(parser, content),
+        TOK2LOC(parser, closing),
+        *unescaped
+    );
 }
 
 /**
@@ -7083,8 +7018,6 @@ pm_xstring_node_create(pm_parser_t *parser, const pm_token_t *opening, const pm_
  */
 static pm_yield_node_t *
 pm_yield_node_create(pm_parser_t *parser, const pm_token_t *keyword, const pm_location_t *lparen_loc, pm_arguments_node_t *arguments, const pm_location_t *rparen_loc) {
-    pm_yield_node_t *node = PM_NODE_ALLOC(parser, pm_yield_node_t);
-
     uint32_t start = PM_TOKEN_START(parser, keyword);
     uint32_t end;
 
@@ -7098,15 +7031,16 @@ pm_yield_node_create(pm_parser_t *parser, const pm_token_t *keyword, const pm_lo
         end = PM_TOKEN_END(parser, keyword);
     }
 
-    *node = (pm_yield_node_t) {
-        .base = PM_NODE_INIT(parser, PM_YIELD_NODE, 0, ((pm_location_t) { .start = start, .length = U32(end - start) })),
-        .keyword_loc = TOK2LOC(parser, keyword),
-        .lparen_loc = *lparen_loc,
-        .arguments = arguments,
-        .rparen_loc = *rparen_loc
-    };
-
-    return node;
+    return pm_yield_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        ((pm_location_t) { .start = start, .length = U32(end - start) }),
+        TOK2LOC(parser, keyword),
+        *lparen_loc,
+        arguments,
+        *rparen_loc
+    );
 }
 
 /**

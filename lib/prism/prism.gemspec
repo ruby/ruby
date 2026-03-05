@@ -53,6 +53,7 @@ Gem::Specification.new do |spec|
     "include/prism/diagnostic.h",
     "include/prism/encoding.h",
     "include/prism/node.h",
+    "include/prism/node_new.h",
     "include/prism/options.h",
     "include/prism/parser.h",
     "include/prism/prettyprint.h",

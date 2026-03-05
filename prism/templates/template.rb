@@ -105,6 +105,11 @@ module Prism
     # Some node fields can be specialized if they point to a specific kind of
     # node and not just a generic node.
     class NodeKindField < Field
+      # The C type to use for this field as a function parameter.
+      def c_param
+        "struct #{c_type} *#{name}"
+      end
+
       def initialize(kind:, **options)
         @kind = kind
         super(**options)
@@ -210,6 +215,10 @@ module Prism
     # This represents a field on a node that is a list of nodes. We pass them as
     # references and store them directly on the struct.
     class NodeListField < NodeKindField
+      def c_param
+        "pm_node_list_t #{name}"
+      end
+
       def element_rbs_class
         if specific_kind
           "#{specific_kind}"
@@ -250,6 +259,10 @@ module Prism
     # This represents a field on a node that is the ID of a string interned
     # through the parser's constant pool.
     class ConstantField < Field
+      def c_param
+        "pm_constant_id_t #{name}"
+      end
+
       def rbs_class
         "Symbol"
       end
@@ -266,6 +279,10 @@ module Prism
     # This represents a field on a node that is the ID of a string interned
     # through the parser's constant pool and can be optionally null.
     class OptionalConstantField < Field
+      def c_param
+        "pm_constant_id_t #{name}"
+      end
+
       def rbs_class
         "Symbol?"
       end
@@ -282,6 +299,10 @@ module Prism
     # This represents a field on a node that is a list of IDs that are associated
     # with strings interned through the parser's constant pool.
     class ConstantListField < Field
+      def c_param
+        "pm_constant_id_list_t #{name}"
+      end
+
       def rbs_class
         "Array[Symbol]"
       end
@@ -297,6 +318,10 @@ module Prism
 
     # This represents a field on a node that is a string.
     class StringField < Field
+      def c_param
+        "pm_string_t #{name}"
+      end
+
       def rbs_class
         "String"
       end
@@ -312,6 +337,10 @@ module Prism
 
     # This represents a field on a node that is a location.
     class LocationField < Field
+      def c_param
+        "pm_location_t #{name}"
+      end
+
       def semantic_field?
         false
       end
@@ -331,6 +360,10 @@ module Prism
 
     # This represents a field on a node that is a location that is optional.
     class OptionalLocationField < Field
+      def c_param
+        "pm_location_t #{name}"
+      end
+
       def semantic_field?
         false
       end
@@ -350,6 +383,10 @@ module Prism
 
     # This represents an integer field.
     class UInt8Field < Field
+      def c_param
+        "uint8_t #{name}"
+      end
+
       def rbs_class
         "Integer"
       end
@@ -365,6 +402,10 @@ module Prism
 
     # This represents an integer field.
     class UInt32Field < Field
+      def c_param
+        "uint32_t #{name}"
+      end
+
       def rbs_class
         "Integer"
       end
@@ -381,6 +422,10 @@ module Prism
     # This represents an arbitrarily-sized integer. When it gets to Ruby it will
     # be an Integer.
     class IntegerField < Field
+      def c_param
+        "pm_integer_t #{name}"
+      end
+
       def rbs_class
         "Integer"
       end
@@ -397,6 +442,10 @@ module Prism
     # This represents a double-precision floating point number. When it gets to
     # Ruby it will be a Float.
     class DoubleField < Field
+      def c_param
+        "double #{name}"
+      end
+
       def rbs_class
         "Float"
       end
@@ -636,6 +685,7 @@ module Prism
       "ext/prism/api_node.c",
       "include/prism/ast.h",
       "include/prism/diagnostic.h",
+      "include/prism/node_new.h",
       "javascript/src/deserialize.js",
       "javascript/src/nodes.js",
       "javascript/src/visitor.js",
