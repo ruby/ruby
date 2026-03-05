@@ -76,6 +76,7 @@ releases.
 * strscan 3.1.7.dev
   * 3.1.6 to [v3.1.7][strscan-v3.1.7]
 * syntax_suggest 2.0.3
+* zlib 3.2.3
 
 ### The following bundled gems are updated.
 
