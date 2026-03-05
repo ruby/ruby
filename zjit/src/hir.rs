@@ -2447,6 +2447,12 @@ impl<'a> Emitter<'a> {
         self.fun.make_equal_to(old, existing);
     }
 
+    /// Count a fallback reason and keep the original instruction unchanged.
+    fn fallback(&mut self, insn_id: InsnId, counter: Counter) {
+        self.push_insn(Insn::IncrCounter(counter));
+        self.keep(insn_id);
+    }
+
     /// Drop an instruction from the block entirely. Use for side-effect-free
     /// instructions that are dead (e.g. a branch whose condition is statically
     /// known to never trigger).
@@ -4507,19 +4513,16 @@ impl Function {
                         let frame_state = ctx.frame_state(state);
                         let Some(recv_type) = ctx.profiled_type_of_at(self_val, frame_state.insn_idx) else {
                             // No (monomorphic/skewed polymorphic) profile info
-                            ctx.push_insn(Insn::IncrCounter(Counter::getivar_fallback_not_monomorphic));
-                            ctx.keep(insn_id); continue;
+                            ctx.fallback(insn_id, Counter::getivar_fallback_not_monomorphic); continue;
                         };
                         if recv_type.flags().is_immediate() {
                             // Instance variable lookups on immediate values are always nil
-                            ctx.push_insn(Insn::IncrCounter(Counter::getivar_fallback_immediate));
-                            ctx.keep(insn_id); continue;
+                            ctx.fallback(insn_id, Counter::getivar_fallback_immediate); continue;
                         }
                         assert!(recv_type.shape().is_valid());
                         if recv_type.shape().is_too_complex() {
                             // too-complex shapes can't use index access
-                            ctx.push_insn(Insn::IncrCounter(Counter::getivar_fallback_too_complex));
-                            ctx.keep(insn_id); continue;
+                            ctx.fallback(insn_id, Counter::getivar_fallback_too_complex); continue;
                         }
                         let self_val = ctx.push_insn(Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
                         let shape = ctx.load_shape(self_val);
@@ -4625,24 +4628,20 @@ impl Function {
                         let frame_state = ctx.frame_state(state);
                         let Some(recv_type) = ctx.profiled_type_of_at(self_val, frame_state.insn_idx) else {
                             // No (monomorphic/skewed polymorphic) profile info
-                            ctx.push_insn(Insn::IncrCounter(Counter::definedivar_fallback_not_monomorphic));
-                            ctx.keep(insn_id); continue;
+                            ctx.fallback(insn_id, Counter::definedivar_fallback_not_monomorphic); continue;
                         };
                         if recv_type.flags().is_immediate() {
                             // Instance variable lookups on immediate values are always nil
-                            ctx.push_insn(Insn::IncrCounter(Counter::definedivar_fallback_immediate));
-                            ctx.keep(insn_id); continue;
+                            ctx.fallback(insn_id, Counter::definedivar_fallback_immediate); continue;
                         }
                         assert!(recv_type.shape().is_valid());
                         if !recv_type.flags().is_t_object() {
                             // Check if the receiver is a T_OBJECT
-                            ctx.push_insn(Insn::IncrCounter(Counter::definedivar_fallback_not_t_object));
-                            ctx.keep(insn_id); continue;
+                            ctx.fallback(insn_id, Counter::definedivar_fallback_not_t_object); continue;
                         }
                         if recv_type.shape().is_too_complex() {
                             // too-complex shapes can't use index access
-                            ctx.push_insn(Insn::IncrCounter(Counter::definedivar_fallback_too_complex));
-                            ctx.keep(insn_id); continue;
+                            ctx.fallback(insn_id, Counter::definedivar_fallback_too_complex); continue;
                         }
                         let self_val = ctx.push_insn(Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
                         let shape = ctx.load_shape(self_val);
@@ -4662,29 +4661,24 @@ impl Function {
                         let frame_state = ctx.frame_state(state);
                         let Some(recv_type) = ctx.profiled_type_of_at(self_val, frame_state.insn_idx) else {
                             // No (monomorphic/skewed polymorphic) profile info
-                            ctx.push_insn(Insn::IncrCounter(Counter::setivar_fallback_not_monomorphic));
-                            ctx.keep(insn_id); continue;
+                            ctx.fallback(insn_id, Counter::setivar_fallback_not_monomorphic); continue;
                         };
                         if recv_type.flags().is_immediate() {
                             // Instance variable lookups on immediate values are always nil
-                            ctx.push_insn(Insn::IncrCounter(Counter::setivar_fallback_immediate));
-                            ctx.keep(insn_id); continue;
+                            ctx.fallback(insn_id, Counter::setivar_fallback_immediate); continue;
                         }
                         assert!(recv_type.shape().is_valid());
                         if !recv_type.flags().is_t_object() {
                             // Check if the receiver is a T_OBJECT
-                            ctx.push_insn(Insn::IncrCounter(Counter::setivar_fallback_not_t_object));
-                            ctx.keep(insn_id); continue;
+                            ctx.fallback(insn_id, Counter::setivar_fallback_not_t_object); continue;
                         }
                         if recv_type.shape().is_too_complex() {
                             // too-complex shapes can't use index access
-                            ctx.push_insn(Insn::IncrCounter(Counter::setivar_fallback_too_complex));
-                            ctx.keep(insn_id); continue;
+                            ctx.fallback(insn_id, Counter::setivar_fallback_too_complex); continue;
                         }
                         if recv_type.shape().is_frozen() {
                             // Can't set ivars on frozen objects
-                            ctx.push_insn(Insn::IncrCounter(Counter::setivar_fallback_frozen));
-                            ctx.keep(insn_id); continue;
+                            ctx.fallback(insn_id, Counter::setivar_fallback_frozen); continue;
                         }
                         let mut ivar_index: u16 = 0;
                         let mut next_shape_id = recv_type.shape();
@@ -4700,8 +4694,7 @@ impl Function {
                             let new_shape_too_complex = unsafe { rb_jit_shape_too_complex_p(next_shape_id.0) };
                             // TODO(max): Is it OK to bail out here after making a shape transition?
                             if new_shape_too_complex {
-                                ctx.push_insn(Insn::IncrCounter(Counter::setivar_fallback_new_shape_too_complex));
-                                ctx.keep(insn_id); continue;
+                                ctx.fallback(insn_id, Counter::setivar_fallback_new_shape_too_complex); continue;
                             }
                             let ivar_result = unsafe { rb_shape_get_iv_index(next_shape_id.0, id, &mut ivar_index) };
                             assert!(ivar_result, "New shape must have the ivar index");
@@ -4711,8 +4704,7 @@ impl Function {
                             // reallocate it.
                             let needs_extension = next_capacity != current_capacity;
                             if needs_extension {
-                                ctx.push_insn(Insn::IncrCounter(Counter::setivar_fallback_new_shape_needs_extension));
-                                ctx.keep(insn_id); continue;
+                                ctx.fallback(insn_id, Counter::setivar_fallback_new_shape_needs_extension); continue;
                             }
                             // Fall through to emitting the ivar write
                         }
