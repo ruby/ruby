@@ -2385,6 +2385,222 @@ fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<InsnId>, ci_flags:
     }
 }
 
+/// Instruction emission environment shared by simplification and inlining.
+///
+/// Wraps a `Function` and a block, providing a uniform API for emitting
+/// new instructions.
+///
+/// For **inlining** (cruby_methods callbacks), use `push_insn()` and helpers like
+/// `coerce_to()`, `guard_not_frozen()`, etc.
+///
+/// For **simplification** (fold_constants), also use:
+/// - `keep()` — append the original instruction unchanged
+/// - `erase()` — forward all uses to an existing value; drop the instruction
+/// - `replace()` — create a new instruction, forward uses, and append it
+pub struct Emitter<'a> {
+    fun: &'a mut Function,
+    block: BlockId,
+    terminated: bool,
+    /// In debug builds, tracks old instructions vs what was kept/replaced/dropped,
+    /// so we can catch silently skipped instructions.
+    #[cfg(debug_assertions)]
+    before: HashSet<InsnId>,
+    #[cfg(debug_assertions)]
+    dropped: HashSet<InsnId>,
+}
+
+impl<'a> Emitter<'a> {
+    fn new(fun: &'a mut Function) -> Self {
+        let block = fun.new_block(u32::MAX);
+        Self {
+            fun, block, terminated: false,
+            #[cfg(debug_assertions)]
+            before: HashSet::new(),
+            #[cfg(debug_assertions)]
+            dropped: HashSet::new(),
+        }
+    }
+
+    /// Take the accumulated instructions and remove the temporary block.
+    fn into_insns(self) -> Vec<InsnId> {
+        let insns = std::mem::take(&mut self.fun.blocks[self.block.0].insns);
+        self.fun.remove_block(self.block);
+        insns
+    }
+
+    /// Start editing an existing block in-place. Returns the old instructions
+    /// so the caller can iterate over them and re-emit selectively.
+    /// New instructions are pushed directly into the block.
+    ///
+    /// In debug builds, the emitter tracks that every old instruction is
+    /// explicitly handled (via keep/replace/replace_new/fallback/drop).
+    /// Silently skipping an instruction without calling one of these is
+    /// caught when the `Emitter` is dropped.
+    fn editing(fun: &'a mut Function, block: BlockId) -> (Self, Vec<InsnId>) {
+        let old_insns = std::mem::take(&mut fun.blocks[block.0].insns);
+        let emitter = Self {
+            fun, block, terminated: false,
+            #[cfg(debug_assertions)]
+            before: old_insns.iter().copied().collect(),
+            #[cfg(debug_assertions)]
+            dropped: HashSet::new(),
+        };
+        (emitter, old_insns)
+    }
+
+    // ── Shared emission API (used by both inlining and simplification) ──
+
+    /// Create and append an instruction. This is the primary emission method,
+    /// used by inline callbacks in cruby_methods.
+    pub fn push_insn(&mut self, insn: Insn) -> InsnId {
+        self.fun.push_insn(self.block, insn)
+    }
+
+    // ── Simplification-specific operations ──
+
+    /// Append the original instruction to the block unchanged.
+    fn keep(&mut self, insn_id: InsnId) {
+        self.fun.push_insn_id(self.block, insn_id);
+        if self.fun.insns[insn_id.0].is_terminator() {
+            self.terminate();
+        }
+    }
+
+    /// Forward all uses of `old` to `existing` and drop `old` from the block.
+    fn replace(&mut self, old: InsnId, existing: InsnId) {
+        #[cfg(debug_assertions)]
+        self.dropped.insert(old);
+        self.fun.make_equal_to(old, existing);
+    }
+
+    /// Count a fallback reason and keep the original instruction unchanged.
+    fn fallback(&mut self, insn_id: InsnId, counter: Counter) {
+        self.push_insn(Insn::IncrCounter(counter));
+        self.keep(insn_id);
+    }
+
+    /// Drop an instruction from the block entirely. Use for side-effect-free
+    /// instructions that are dead (e.g. a branch whose condition is statically
+    /// known to never trigger).
+    fn drop(&mut self, insn_id: InsnId) {
+        #[cfg(debug_assertions)]
+        self.dropped.insert(insn_id);
+    }
+
+    /// Mark the block as terminated. Remaining unvisited old instructions
+    /// are implicitly dead and must be passed to `drop_tail()`.
+    fn terminate(&mut self) {
+        self.terminated = true;
+    }
+
+    /// Drop all remaining unvisited instructions after early termination.
+    fn drop_tail(&mut self, remaining: impl Iterator<Item = InsnId>) {
+        #[cfg(debug_assertions)]
+        for insn_id in remaining {
+            self.dropped.insert(insn_id);
+        }
+    }
+
+    /// Create a new instruction, forward uses from `old` to it, and append it to the block.
+    fn replace_new(&mut self, old: InsnId, insn: Insn) -> InsnId {
+        #[cfg(debug_assertions)]
+        self.dropped.insert(old);
+        let new_id = self.push_insn(insn);
+        if self.fun.insns[new_id.0].has_output() {
+            self.fun.make_equal_to(old, new_id);
+            self.fun.insn_types[new_id.0] = self.fun.infer_type(new_id);
+        }
+        if self.fun.insns[new_id.0].is_terminator() {
+            self.terminate();
+        }
+        new_id
+    }
+
+    // ── Delegates to Function ──
+
+    pub fn find(&self, insn_id: InsnId) -> Insn { self.fun.find(insn_id) }
+    pub fn type_of(&self, insn: InsnId) -> Type { self.fun.type_of(insn) }
+    pub fn is_a(&self, insn: InsnId, ty: Type) -> bool { self.fun.is_a(insn, ty) }
+    pub fn likely_a(&self, val: InsnId, ty: Type, state: InsnId) -> bool { self.fun.likely_a(val, ty, state) }
+    pub fn iseq(&self) -> *const rb_iseq_t { self.fun.iseq() }
+
+    pub fn coerce_to(&mut self, val: InsnId, guard_type: Type, state: InsnId) -> InsnId {
+        self.fun.coerce_to(self.block, val, guard_type, state)
+    }
+
+    pub fn guard_not_frozen(&mut self, recv: InsnId, state: InsnId) {
+        self.fun.guard_not_frozen(self.block, recv, state);
+    }
+
+    pub fn guard_not_shared(&mut self, recv: InsnId, state: InsnId) {
+        self.fun.guard_not_shared(self.block, recv, state);
+    }
+
+    pub fn assume_expected_cfunc(&mut self, recv_class: VALUE, method_id: ID, cfunc: *mut std::ffi::c_void, state: InsnId) -> bool {
+        self.fun.assume_expected_cfunc(self.block, recv_class, method_id, cfunc, state)
+    }
+
+    pub fn assume_no_singleton_classes(&mut self, klass: VALUE, state: InsnId) -> bool {
+        self.fun.assume_no_singleton_classes(self.block, klass, state)
+    }
+
+    pub fn assume_root_box(&mut self, state: InsnId) -> bool {
+        self.fun.assume_root_box(self.block, state)
+    }
+
+    pub fn frame_state(&self, insn_id: InsnId) -> FrameState { self.fun.frame_state(insn_id) }
+    pub fn profiled_type_of_at(&self, insn: InsnId, iseq_insn_idx: usize) -> Option<ProfiledType> { self.fun.profiled_type_of_at(insn, iseq_insn_idx) }
+    fn load_shape(&mut self, recv: InsnId) -> InsnId {
+        self.fun.load_shape(self.block, recv)
+    }
+
+    fn guard_shape(&mut self, val: InsnId, expected: ShapeId, state: InsnId) -> InsnId {
+        self.fun.guard_shape(self.block, val, expected, state)
+    }
+
+    /// Try to fold a binary fixnum operator to a constant. Emits the result
+    /// (folded or original) into the block.
+    fn fold_fixnum_bop(&mut self, insn_id: InsnId, left: InsnId, right: InsnId, f: impl FnOnce(Option<i64>, Option<i64>) -> Option<i64>) {
+        match f(self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value())
+            .filter(|&n| n >= (RUBY_FIXNUM_MIN as i64) && n <= RUBY_FIXNUM_MAX as i64)
+        {
+            Some(n) => { self.replace_new(insn_id, Insn::Const { val: Const::Value(VALUE::fixnum_from_isize(n as isize)) }); }
+            None => self.keep(insn_id),
+        }
+    }
+
+    /// Try to fold a binary fixnum predicate to a constant. Emits the result
+    /// (folded or original) into the block.
+    fn fold_fixnum_pred(&mut self, insn_id: InsnId, left: InsnId, right: InsnId, f: impl FnOnce(Option<i64>, Option<i64>) -> Option<bool>) {
+        match f(self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value()) {
+            Some(b) => { self.replace_new(insn_id, Insn::Const { val: Const::Value(if b { Qtrue } else { Qfalse }) }); }
+            None => self.keep(insn_id),
+        }
+    }
+
+}
+
+#[cfg(debug_assertions)]
+impl<'a> std::ops::Drop for Emitter<'a> {
+    fn drop(&mut self) {
+        // Only check when editing (before is non-empty).
+        if self.before.is_empty() { return; }
+        // Check that every instruction from the original block is either
+        // still in the block (kept/fallback) or was explicitly removed
+        // (replace/replace_new/drop). Silently skipping an instruction
+        // without calling one of these is a bug.
+        let after: HashSet<InsnId> = self.fun.blocks[self.block.0].insns.iter().copied().collect();
+        for &insn_id in &self.before {
+            if !after.contains(&insn_id) && !self.dropped.contains(&insn_id) {
+                panic!(
+                    "Emitter: instruction {insn_id} was silently skipped \
+                     (use keep/replace/replace_new/fallback/drop)",
+                );
+            }
+        }
+    }
+}
+
 impl Function {
     fn new(iseq: *const rb_iseq_t) -> Function {
         Function {
@@ -3988,20 +4204,7 @@ impl Function {
 
                                     emit_super_call_guards(self, block, super_cme, current_cme, mid, state);
 
-                                    // Try inlining the cfunc into HIR
-                                    let tmp_block = self.new_block(u32::MAX);
-                                    if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args, state) {
-                                        // Copy contents of tmp_block to block
-                                        assert_ne!(block, tmp_block);
-                                        let insns = std::mem::take(&mut self.blocks[tmp_block.0].insns);
-                                        self.blocks[block.0].insns.extend(insns);
-                                        self.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
-                                        self.make_equal_to(insn_id, replacement);
-                                        if self.type_of(replacement).bit_equal(types::Any) {
-                                            // Not set yet; infer type
-                                            self.insn_types[replacement.0] = self.infer_type(replacement);
-                                        }
-                                        self.remove_block(tmp_block);
+                                    if self.try_inline(block, insn_id, props.inline, recv, &args, state) {
                                         continue;
                                     }
 
@@ -4037,21 +4240,7 @@ impl Function {
                                 -1 => {
                                     emit_super_call_guards(self, block, super_cme, current_cme, mid, state);
 
-                                    // Try inlining the cfunc into HIR
-                                    let tmp_block = self.new_block(u32::MAX);
-                                    if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args, state) {
-                                        // Copy contents of tmp_block to block
-                                        assert_ne!(block, tmp_block);
-                                        emit_super_call_guards(self, block, super_cme, current_cme, mid, state);
-                                        let insns = std::mem::take(&mut self.blocks[tmp_block.0].insns);
-                                        self.blocks[block.0].insns.extend(insns);
-                                        self.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
-                                        self.make_equal_to(insn_id, replacement);
-                                        if self.type_of(replacement).bit_equal(types::Any) {
-                                            // Not set yet; infer type
-                                            self.insn_types[replacement.0] = self.infer_type(replacement);
-                                        }
-                                        self.remove_block(tmp_block);
+                                    if self.try_inline(block, insn_id, props.inline, recv, &args, state) {
                                         continue;
                                     }
 
@@ -4106,10 +4295,9 @@ impl Function {
 
     fn inline(&mut self) {
         for block in self.rpo() {
-            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
-            assert!(self.blocks[block.0].insns.is_empty());
+            let (mut ctx, old_insns) = Emitter::editing(self, block);
             for insn_id in old_insns {
-                match self.find(insn_id) {
+                match ctx.find(insn_id) {
                     // We can inline SendDirect with blockiseq because we are prohibiting `yield`
                     // and `.call`, which would trigger autosplat. We only inline constants and
                     // variables and builtin calls.
@@ -4118,28 +4306,28 @@ impl Function {
                         let ci_flags = unsafe { vm_ci_flag(call_info) };
                         // .send call is not currently supported for builtins
                         if ci_flags & VM_CALL_OPT_SEND != 0 {
-                            self.push_insn_id(block, insn_id); continue;
+                            ctx.keep(insn_id); continue;
                         }
                         let Some(value) = iseq_get_return_value(iseq, None, ci_flags) else {
-                            self.push_insn_id(block, insn_id); continue;
+                            ctx.keep(insn_id); continue;
                         };
                         match value {
                             IseqReturn::LocalVariable(idx) => {
-                                self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
-                                self.make_equal_to(insn_id, args[idx as usize]);
+                                ctx.push_insn(Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
+                                ctx.replace(insn_id, args[idx as usize]);
                             }
                             IseqReturn::Value(value) => {
-                                self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
-                                let replacement = self.push_insn(block, Insn::Const { val: Const::Value(value) });
-                                self.make_equal_to(insn_id, replacement);
+                                ctx.push_insn(Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
+                                let replacement = ctx.push_insn(Insn::Const { val: Const::Value(value) });
+                                ctx.replace(insn_id, replacement);
                             }
                             IseqReturn::Receiver => {
-                                self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
-                                self.make_equal_to(insn_id, recv);
+                                ctx.push_insn(Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
+                                ctx.replace(insn_id, recv);
                             }
                             IseqReturn::InvokeLeafBuiltin(bf, return_type) => {
-                                self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
-                                let replacement = self.push_insn(block, Insn::InvokeBuiltin {
+                                ctx.push_insn(Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
+                                let replacement = ctx.push_insn(Insn::InvokeBuiltin {
                                     bf,
                                     recv,
                                     args: vec![recv],
@@ -4147,11 +4335,11 @@ impl Function {
                                     leaf: true,
                                     return_type,
                                 });
-                                self.make_equal_to(insn_id, replacement);
+                                ctx.replace(insn_id, replacement);
                             }
                         }
                     }
-                    _ => { self.push_insn_id(block, insn_id); }
+                    _ => { ctx.keep(insn_id); }
                 }
             }
         }
@@ -4178,42 +4366,38 @@ impl Function {
 
     fn optimize_getivar(&mut self) {
         for block in self.rpo() {
-            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
-            assert!(self.blocks[block.0].insns.is_empty());
+            let (mut ctx, old_insns) = Emitter::editing(self, block);
             for insn_id in old_insns {
-                match self.find(insn_id) {
+                match ctx.find(insn_id) {
                     Insn::GetIvar { self_val, id, ic: _, state } => {
-                        let frame_state = self.frame_state(state);
-                        let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.insn_idx) else {
+                        let frame_state = ctx.frame_state(state);
+                        let Some(recv_type) = ctx.profiled_type_of_at(self_val, frame_state.insn_idx) else {
                             // No (monomorphic/skewed polymorphic) profile info
-                            self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_not_monomorphic));
-                            self.push_insn_id(block, insn_id); continue;
+                            ctx.fallback(insn_id, Counter::getivar_fallback_not_monomorphic); continue;
                         };
                         if recv_type.flags().is_immediate() {
                             // Instance variable lookups on immediate values are always nil
-                            self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_immediate));
-                            self.push_insn_id(block, insn_id); continue;
+                            ctx.fallback(insn_id, Counter::getivar_fallback_immediate); continue;
                         }
                         assert!(recv_type.shape().is_valid());
                         if recv_type.shape().is_too_complex() {
                             // too-complex shapes can't use index access
-                            self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_too_complex));
-                            self.push_insn_id(block, insn_id); continue;
+                            ctx.fallback(insn_id, Counter::getivar_fallback_too_complex); continue;
                         }
-                        let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
-                        let shape = self.load_shape(block, self_val);
-                        self.guard_shape(block, shape, recv_type.shape(), state);
+                        let self_val = ctx.push_insn(Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
+                        let shape = ctx.load_shape(self_val);
+                        ctx.guard_shape(shape, recv_type.shape(), state);
                         let mut ivar_index: u16 = 0;
                         let replacement = if ! unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
                             // If there is no IVAR index, then the ivar was undefined when we
                             // entered the compiler.  That means we can just return nil for this
                             // shape + iv name
-                            self.push_insn(block, Insn::Const { val: Const::Value(Qnil) })
+                            ctx.push_insn(Insn::Const { val: Const::Value(Qnil) })
                         } else if recv_type.flags().is_t_class_or_module() {
                             // Class/module ivar: load from prime classext's fields_obj
-                            if self.assume_root_box(block, state) {
+                            if ctx.assume_root_box(state) {
                                 // Root box only: load directly from prime classext
-                                let fields_obj = self.push_insn(block, Insn::LoadField {
+                                let fields_obj = ctx.push_insn(Insn::LoadField {
                                     recv: self_val, id: ID!(_fields_obj),
                                     offset: RCLASS_OFFSET_PRIME_FIELDS_OBJ as i32,
                                     return_type: types::RubyValue,
@@ -4221,18 +4405,18 @@ impl Function {
                                 if recv_type.flags().is_fields_embedded() {
                                     let offset = ROBJECT_OFFSET_AS_ARY as i32
                                         + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
-                                    self.push_insn(block, Insn::LoadField {
+                                    ctx.push_insn(Insn::LoadField {
                                         recv: fields_obj, id, offset,
                                         return_type: types::BasicObject,
                                     })
                                 } else {
-                                    let ptr = self.push_insn(block, Insn::LoadField {
+                                    let ptr = ctx.push_insn(Insn::LoadField {
                                         recv: fields_obj, id: ID!(_as_heap),
                                         offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32,
                                         return_type: types::CPtr,
                                     });
                                     let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
-                                    self.push_insn(block, Insn::LoadField {
+                                    ctx.push_insn(Insn::LoadField {
                                         recv: ptr, id, offset,
                                         return_type: types::BasicObject,
                                     })
@@ -4241,8 +4425,8 @@ impl Function {
                                 // Non-root box active: fall back to C call
                                 // NOTE: it's fine to use rb_ivar_get_at_no_ractor_check because
                                 // getinstancevariable does assume_single_ractor_mode()
-                                let ivar_index_insn = self.push_insn(block, Insn::Const { val: Const::CUInt16(ivar_index as u16) });
-                                self.push_insn(block, Insn::CCall {
+                                let ivar_index_insn = ctx.push_insn(Insn::Const { val: Const::CUInt16(ivar_index as u16) });
+                                ctx.push_insn(Insn::CCall {
                                     cfunc: rb_ivar_get_at_no_ractor_check as *const u8,
                                     recv: self_val,
                                     args: vec![ivar_index_insn],
@@ -4252,7 +4436,7 @@ impl Function {
                             }
                         } else if recv_type.flags().is_typed_data() {
                             // Typed T_DATA: load from fields_obj at fixed offset in RTypedData
-                            let fields_obj = self.push_insn(block, Insn::LoadField {
+                            let fields_obj = ctx.push_insn(Insn::LoadField {
                                 recv: self_val, id: ID!(_fields_obj),
                                 offset: RTYPEDDATA_OFFSET_FIELDS_OBJ as i32,
                                 return_type: types::RubyValue,
@@ -4260,18 +4444,18 @@ impl Function {
                             if recv_type.flags().is_fields_embedded() {
                                 let offset = ROBJECT_OFFSET_AS_ARY as i32
                                     + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
-                                self.push_insn(block, Insn::LoadField {
+                                ctx.push_insn(Insn::LoadField {
                                     recv: fields_obj, id, offset,
                                     return_type: types::BasicObject,
                                 })
                             } else {
-                                let ptr = self.push_insn(block, Insn::LoadField {
+                                let ptr = ctx.push_insn(Insn::LoadField {
                                     recv: fields_obj, id: ID!(_as_heap),
                                     offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32,
                                     return_type: types::CPtr,
                                 });
                                 let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
-                                self.push_insn(block, Insn::LoadField {
+                                ctx.push_insn(Insn::LoadField {
                                     recv: ptr, id, offset,
                                     return_type: types::BasicObject,
                                 })
@@ -4280,8 +4464,8 @@ impl Function {
                             // Non-T_OBJECT, non-class/module, non-typed-data: fall back to C call
                             // NOTE: it's fine to use rb_ivar_get_at_no_ractor_check because
                             // getinstancevariable does assume_single_ractor_mode()
-                            let ivar_index_insn = self.push_insn(block, Insn::Const { val: Const::CUInt16(ivar_index as u16) });
-                            self.push_insn(block, Insn::CCall {
+                            let ivar_index_insn = ctx.push_insn(Insn::Const { val: Const::CUInt16(ivar_index as u16) });
+                            ctx.push_insn(Insn::CCall {
                                 cfunc: rb_ivar_get_at_no_ractor_check as *const u8,
                                 recv: self_val,
                                 args: vec![ivar_index_insn],
@@ -4291,79 +4475,70 @@ impl Function {
                         } else if recv_type.flags().is_embedded() {
                             // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
                             let offset = ROBJECT_OFFSET_AS_ARY as i32 + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
-                            self.push_insn(block, Insn::LoadField { recv: self_val, id, offset, return_type: types::BasicObject })
+                            ctx.push_insn(Insn::LoadField { recv: self_val, id, offset, return_type: types::BasicObject })
                         } else {
-                            let as_heap =  self.push_insn(block, Insn::LoadField { recv: self_val, id: ID!(_as_heap), offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32, return_type: types::CPtr });
+                            let as_heap = ctx.push_insn(Insn::LoadField { recv: self_val, id: ID!(_as_heap), offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32, return_type: types::CPtr });
 
                             let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
-                            self.push_insn(block, Insn::LoadField { recv: as_heap, id, offset, return_type: types::BasicObject })
+                            ctx.push_insn(Insn::LoadField { recv: as_heap, id, offset, return_type: types::BasicObject })
                         };
-                        self.make_equal_to(insn_id, replacement);
+                        ctx.replace(insn_id, replacement);
                     }
                     Insn::DefinedIvar { self_val, id, pushval, state } => {
-                        let frame_state = self.frame_state(state);
-                        let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.insn_idx) else {
+                        let frame_state = ctx.frame_state(state);
+                        let Some(recv_type) = ctx.profiled_type_of_at(self_val, frame_state.insn_idx) else {
                             // No (monomorphic/skewed polymorphic) profile info
-                            self.push_insn(block, Insn::IncrCounter(Counter::definedivar_fallback_not_monomorphic));
-                            self.push_insn_id(block, insn_id); continue;
+                            ctx.fallback(insn_id, Counter::definedivar_fallback_not_monomorphic); continue;
                         };
                         if recv_type.flags().is_immediate() {
                             // Instance variable lookups on immediate values are always nil
-                            self.push_insn(block, Insn::IncrCounter(Counter::definedivar_fallback_immediate));
-                            self.push_insn_id(block, insn_id); continue;
+                            ctx.fallback(insn_id, Counter::definedivar_fallback_immediate); continue;
                         }
                         assert!(recv_type.shape().is_valid());
                         if !recv_type.flags().is_t_object() {
                             // Check if the receiver is a T_OBJECT
-                            self.push_insn(block, Insn::IncrCounter(Counter::definedivar_fallback_not_t_object));
-                            self.push_insn_id(block, insn_id); continue;
+                            ctx.fallback(insn_id, Counter::definedivar_fallback_not_t_object); continue;
                         }
                         if recv_type.shape().is_too_complex() {
                             // too-complex shapes can't use index access
-                            self.push_insn(block, Insn::IncrCounter(Counter::definedivar_fallback_too_complex));
-                            self.push_insn_id(block, insn_id); continue;
+                            ctx.fallback(insn_id, Counter::definedivar_fallback_too_complex); continue;
                         }
-                        let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
-                        let shape = self.load_shape(block, self_val);
-                        self.guard_shape(block, shape, recv_type.shape(), state);
+                        let self_val = ctx.push_insn(Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
+                        let shape = ctx.load_shape(self_val);
+                        ctx.guard_shape(shape, recv_type.shape(), state);
                         let mut ivar_index: u16 = 0;
                         let replacement = if unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
-                            self.push_insn(block, Insn::Const { val: Const::Value(pushval) })
+                            ctx.push_insn(Insn::Const { val: Const::Value(pushval) })
                         } else {
                             // If there is no IVAR index, then the ivar was undefined when we
                             // entered the compiler.  That means we can just return nil for this
                             // shape + iv name
-                            self.push_insn(block, Insn::Const { val: Const::Value(Qnil) })
+                            ctx.push_insn(Insn::Const { val: Const::Value(Qnil) })
                         };
-                        self.make_equal_to(insn_id, replacement);
+                        ctx.replace(insn_id, replacement);
                     }
                     Insn::SetIvar { self_val, id, val, state, ic: _ } => {
-                        let frame_state = self.frame_state(state);
-                        let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.insn_idx) else {
+                        let frame_state = ctx.frame_state(state);
+                        let Some(recv_type) = ctx.profiled_type_of_at(self_val, frame_state.insn_idx) else {
                             // No (monomorphic/skewed polymorphic) profile info
-                            self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_not_monomorphic));
-                            self.push_insn_id(block, insn_id); continue;
+                            ctx.fallback(insn_id, Counter::setivar_fallback_not_monomorphic); continue;
                         };
                         if recv_type.flags().is_immediate() {
                             // Instance variable lookups on immediate values are always nil
-                            self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_immediate));
-                            self.push_insn_id(block, insn_id); continue;
+                            ctx.fallback(insn_id, Counter::setivar_fallback_immediate); continue;
                         }
                         assert!(recv_type.shape().is_valid());
                         if !recv_type.flags().is_t_object() {
                             // Check if the receiver is a T_OBJECT
-                            self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_not_t_object));
-                            self.push_insn_id(block, insn_id); continue;
+                            ctx.fallback(insn_id, Counter::setivar_fallback_not_t_object); continue;
                         }
                         if recv_type.shape().is_too_complex() {
                             // too-complex shapes can't use index access
-                            self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_too_complex));
-                            self.push_insn_id(block, insn_id); continue;
+                            ctx.fallback(insn_id, Counter::setivar_fallback_too_complex); continue;
                         }
                         if recv_type.shape().is_frozen() {
                             // Can't set ivars on frozen objects
-                            self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_frozen));
-                            self.push_insn_id(block, insn_id); continue;
+                            ctx.fallback(insn_id, Counter::setivar_fallback_frozen); continue;
                         }
                         let mut ivar_index: u16 = 0;
                         let mut next_shape_id = recv_type.shape();
@@ -4379,8 +4554,7 @@ impl Function {
                             let new_shape_too_complex = unsafe { rb_jit_shape_too_complex_p(next_shape_id.0) };
                             // TODO(max): Is it OK to bail out here after making a shape transition?
                             if new_shape_too_complex {
-                                self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_new_shape_too_complex));
-                                self.push_insn_id(block, insn_id); continue;
+                                ctx.fallback(insn_id, Counter::setivar_fallback_new_shape_too_complex); continue;
                             }
                             let ivar_result = unsafe { rb_shape_get_iv_index(next_shape_id.0, id, &mut ivar_index) };
                             assert!(ivar_result, "New shape must have the ivar index");
@@ -4390,34 +4564,34 @@ impl Function {
                             // reallocate it.
                             let needs_extension = next_capacity != current_capacity;
                             if needs_extension {
-                                self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_new_shape_needs_extension));
-                                self.push_insn_id(block, insn_id); continue;
+                                ctx.fallback(insn_id, Counter::setivar_fallback_new_shape_needs_extension); continue;
                             }
                             // Fall through to emitting the ivar write
                         }
-                        let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
-                        let shape = self.load_shape(block, self_val);
-                        self.guard_shape(block, shape, recv_type.shape(), state);
+                        let self_val = ctx.push_insn(Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
+                        let shape = ctx.load_shape(self_val);
+                        ctx.guard_shape(shape, recv_type.shape(), state);
                         // Current shape contains this ivar
                         let (ivar_storage, offset) = if recv_type.flags().is_embedded() {
                             // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
                             let offset = ROBJECT_OFFSET_AS_ARY as i32 + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
                             (self_val, offset)
                         } else {
-                            let as_heap = self.push_insn(block, Insn::LoadField { recv: self_val, id: ID!(_as_heap), offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32, return_type: types::CPtr });
+                            let as_heap = ctx.push_insn(Insn::LoadField { recv: self_val, id: ID!(_as_heap), offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32, return_type: types::CPtr });
                             let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
                             (as_heap, offset)
                         };
-                        self.push_insn(block, Insn::StoreField { recv: ivar_storage, id, offset, val });
-                        self.push_insn(block, Insn::WriteBarrier { recv: self_val, val });
+                        ctx.push_insn(Insn::StoreField { recv: ivar_storage, id, offset, val });
+                        ctx.push_insn(Insn::WriteBarrier { recv: self_val, val });
                         if next_shape_id != recv_type.shape() {
                             // Write the new shape ID
-                            let shape_id = self.push_insn(block, Insn::Const { val: Const::CShape(next_shape_id) });
+                            let shape_id = ctx.push_insn(Insn::Const { val: Const::CShape(next_shape_id) });
                             let shape_id_offset = unsafe { rb_shape_id_offset() };
-                            self.push_insn(block, Insn::StoreField { recv: self_val, id: ID!(_shape_id), offset: shape_id_offset, val: shape_id });
+                            ctx.push_insn(Insn::StoreField { recv: self_val, id: ID!(_shape_id), offset: shape_id_offset, val: shape_id });
                         }
+                        ctx.drop(insn_id);
                     }
-                    _ => { self.push_insn_id(block, insn_id); }
+                    _ => { ctx.keep(insn_id); }
                 }
             }
         }
@@ -4723,19 +4897,7 @@ impl Function {
                     }
 
                     // Try inlining the cfunc into HIR
-                    let tmp_block = fun.new_block(u32::MAX);
-                    if let Some(replacement) = (props.inline)(fun, tmp_block, recv, &args, state) {
-                        // Copy contents of tmp_block to block
-                        assert_ne!(block, tmp_block);
-                        let insns = std::mem::take(&mut fun.blocks[tmp_block.0].insns);
-                        fun.blocks[block.0].insns.extend(insns);
-                        fun.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
-                        fun.make_equal_to(send_insn_id, replacement);
-                        if fun.type_of(replacement).bit_equal(types::Any) {
-                            // Not set yet; infer type
-                            fun.insn_types[replacement.0] = fun.infer_type(replacement);
-                        }
-                        fun.remove_block(tmp_block);
+                    if fun.try_inline(block, send_insn_id, props.inline, recv, &args, state) {
                         return Ok(());
                     }
 
@@ -4805,19 +4967,7 @@ impl Function {
                         let props = props.unwrap_or_default();
 
                         // Try inlining the cfunc into HIR
-                        let tmp_block = fun.new_block(u32::MAX);
-                        if let Some(replacement) = (props.inline)(fun, tmp_block, recv, &args, state) {
-                            // Copy contents of tmp_block to block
-                            assert_ne!(block, tmp_block);
-                            let insns = std::mem::take(&mut fun.blocks[tmp_block.0].insns);
-                            fun.blocks[block.0].insns.extend(insns);
-                            fun.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
-                            fun.make_equal_to(send_insn_id, replacement);
-                            if fun.type_of(replacement).bit_equal(types::Any) {
-                                // Not set yet; infer type
-                                fun.insn_types[replacement.0] = fun.infer_type(replacement);
-                            }
-                            fun.remove_block(tmp_block);
+                        if fun.try_inline(block, send_insn_id, props.inline, recv, &args, state) {
                             return Ok(());
                         }
 
@@ -4878,19 +5028,7 @@ impl Function {
                     Insn::InvokeBuiltin { bf, recv, args, state, .. } => {
                         let props = ZJITState::get_method_annotations().get_builtin_properties(&bf).unwrap_or_default();
                         // Try inlining the cfunc into HIR
-                        let tmp_block = self.new_block(u32::MAX);
-                        if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args, state) {
-                            // Copy contents of tmp_block to block
-                            assert_ne!(block, tmp_block);
-                            let insns = std::mem::take(&mut self.blocks[tmp_block.0].insns);
-                            self.blocks[block.0].insns.extend(insns);
-                            self.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
-                            self.make_equal_to(insn_id, replacement);
-                            if self.type_of(replacement).bit_equal(types::Any) {
-                                // Not set yet; infer type
-                                self.insn_types[replacement.0] = self.infer_type(replacement);
-                            }
-                            self.remove_block(tmp_block);
+                        if self.try_inline(block, insn_id, props.inline, recv, &args, state) {
                             continue;
                         }
                     }
@@ -4902,25 +5040,34 @@ impl Function {
         self.infer_types();
     }
 
-    /// Fold a binary operator on fixnums.
-    fn fold_fixnum_bop(&mut self, insn_id: InsnId, left: InsnId, right: InsnId, f: impl FnOnce(Option<i64>, Option<i64>) -> Option<i64>) -> InsnId {
-        f(self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value())
-            .filter(|&n| n >= (RUBY_FIXNUM_MIN as i64) && n <= RUBY_FIXNUM_MAX as i64)
-            .map(|n| self.new_insn(Insn::Const { val: Const::Value(VALUE::fixnum_from_isize(n as isize)) }))
-            .unwrap_or(insn_id)
+    /// Try to inline a C function call using the given callback. On success,
+    /// splices the emitted instructions into `block`, forwards uses from
+    /// `insn_id` to the replacement, and returns `true`.
+    fn try_inline(
+        &mut self,
+        block: BlockId,
+        insn_id: InsnId,
+        inline_fn: fn(&mut Emitter, InsnId, &[InsnId], InsnId) -> Option<InsnId>,
+        recv: InsnId,
+        args: &[InsnId],
+        state: InsnId,
+    ) -> bool {
+        let mut emitter = Emitter::new(self);
+        let replacement = inline_fn(&mut emitter, recv, args, state);
+        let insns = emitter.into_insns();
+        if let Some(replacement) = replacement {
+            self.blocks[block.0].insns.extend(insns);
+            self.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
+            self.make_equal_to(insn_id, replacement);
+            if self.type_of(replacement).bit_equal(types::Any) {
+                self.insn_types[replacement.0] = self.infer_type(replacement);
+            }
+            true
+        } else {
+            false
+        }
     }
 
-    /// Fold a binary predicate on fixnums.
-    fn fold_fixnum_pred(&mut self, insn_id: InsnId, left: InsnId, right: InsnId, f: impl FnOnce(Option<i64>, Option<i64>) -> Option<bool>) -> InsnId {
-        f(self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value())
-            .map(|b| if b { Qtrue } else { Qfalse })
-            .map(|b| self.new_insn(Insn::Const { val: Const::Value(b) }))
-            .unwrap_or(insn_id)
-    }
-
-    /// Use type information left by `infer_types` to fold away operations that can be evaluated at compile-time.
-    ///
-    /// It can fold fixnum math, truthiness tests, and branches with constant conditionals.
     fn fold_constants(&mut self) {
         // TODO(max): Determine if it's worth it for us to reflow types after each branch
         // simplification. This means that we can have nice cascading optimizations if what used to
@@ -4928,200 +5075,216 @@ impl Function {
         //
         // This would require 1) fixpointing, 2) worklist, or 3) (slightly less powerful) calling a
         // function-level infer_types after each pruned branch.
-        for block in self.rpo() {
-            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
-            let mut new_insns = vec![];
-            for insn_id in old_insns {
-                let replacement_id = match self.find(insn_id) {
-                    Insn::GuardType { val, guard_type, .. } if self.is_a(val, guard_type) => {
-                        self.make_equal_to(insn_id, val);
-                        // Don't bother re-inferring the type of val; we already know it.
-                        continue;
+        let rpo = self.rpo();
+        for block in rpo {
+            let (mut ctx, old_insns) = Emitter::editing(self, block);
+            let mut iter = old_insns.into_iter();
+            while let Some(insn_id) = iter.next() {
+                match ctx.find(insn_id) {
+                    Insn::GuardType { val, guard_type, .. } if ctx.is_a(val, guard_type) => {
+                        ctx.replace(insn_id, val);
                     }
                     Insn::LoadField { recv, offset, return_type, .. } if return_type.is_subtype(types::BasicObject) &&
                             u32::try_from(offset).is_ok() => {
                         let offset = (offset as u32).to_usize();
-                        let recv_type = self.type_of(recv);
+                        let recv_type = ctx.type_of(recv);
                         match recv_type.ruby_object() {
                             Some(recv_obj) if recv_obj.is_frozen() => {
                                 let recv_ptr = recv_obj.as_ptr() as *const VALUE;
                                 let val = unsafe { recv_ptr.byte_add(offset).read() };
-                                self.new_insn(Insn::Const { val: Const::Value(val) })
+                                ctx.replace_new(insn_id, Insn::Const { val: Const::Value(val) });
                             }
-                            _ => insn_id,
+                            _ => ctx.keep(insn_id),
                         }
                     }
                     Insn::LoadField { recv, offset, return_type, .. } if return_type.is_subtype(types::CShape) &&
                             u32::try_from(offset).is_ok() => {
                         let offset = (offset as u32).to_usize();
-                        let recv_type = self.type_of(recv);
+                        let recv_type = ctx.type_of(recv);
                         match recv_type.ruby_object() {
                             Some(recv_obj) if recv_obj.is_frozen() => {
                                 let recv_ptr = recv_obj.as_ptr() as *const u32;
                                 let val = unsafe { recv_ptr.byte_add(offset).read() };
-                                self.new_insn(Insn::Const { val: Const::CShape(ShapeId(val)) })
+                                ctx.replace_new(insn_id, Insn::Const { val: Const::CShape(ShapeId(val)) });
                             }
-                            _ => insn_id,
+                            _ => ctx.keep(insn_id),
                         }
                     }
                     Insn::GuardBitEquals { val, expected, .. } => {
-                        let recv_type = self.type_of(val);
+                        let recv_type = ctx.type_of(val);
                         if recv_type.has_value(expected) {
-                            continue;
+                            ctx.replace(insn_id, val);
                         } else {
-                            insn_id
+                            ctx.keep(insn_id);
                         }
                     }
-                    Insn::AnyToString { str, .. } if self.is_a(str, types::String) => {
-                        self.make_equal_to(insn_id, str);
-                        // Don't bother re-inferring the type of str; we already know it.
-                        continue;
+                    Insn::AnyToString { str, .. } if ctx.is_a(str, types::String) => {
+                        ctx.replace(insn_id, str);
                     }
-                    Insn::IsA { val, class } => 'is_a: {
-                        let class_type = self.type_of(class);
+                    Insn::IsA { val, class } => {
+                        let class_type = ctx.type_of(class);
                         if !class_type.is_subtype(types::Class) {
-                            break 'is_a insn_id;
+                            ctx.keep(insn_id); continue;
                         }
                         let Some(class_value) = class_type.ruby_object() else {
-                            break 'is_a insn_id;
+                            ctx.keep(insn_id); continue;
                         };
-                        let val_type = self.type_of(val);
+                        let val_type = ctx.type_of(val);
                         let the_class = Type::from_class_inexact(class_value);
                         if val_type.is_subtype(the_class) {
-                            self.new_insn(Insn::Const { val: Const::Value(Qtrue) })
+                            ctx.replace_new(insn_id, Insn::Const { val: Const::Value(Qtrue) });
                         } else if !val_type.could_be(the_class) {
-                            self.new_insn(Insn::Const { val: Const::Value(Qfalse) })
+                            ctx.replace_new(insn_id, Insn::Const { val: Const::Value(Qfalse) });
                         } else {
-                            insn_id
+                            ctx.keep(insn_id);
                         }
                     }
+                    // Fixnum arithmetic: try identity elimination first, then constant folding
                     Insn::FixnumAdd { left, right, .. } => {
-                        self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
-                            (Some(l), Some(r)) => l.checked_add(r),
-                            _ => None,
-                        })
+                        if ctx.type_of(right).fixnum_value() == Some(0) {
+                            ctx.replace(insn_id, left);
+                        } else if ctx.type_of(left).fixnum_value() == Some(0) {
+                            ctx.replace(insn_id, right);
+                        } else {
+                            ctx.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
+                                (Some(l), Some(r)) => l.checked_add(r),
+                                _ => None,
+                            });
+                        }
                     }
                     Insn::FixnumSub { left, right, .. } => {
-                        self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
-                            (Some(l), Some(r)) => l.checked_sub(r),
-                            _ => None,
-                        })
+                        if ctx.type_of(right).fixnum_value() == Some(0) {
+                            ctx.replace(insn_id, left);
+                        } else {
+                            ctx.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
+                                (Some(l), Some(r)) => l.checked_sub(r),
+                                _ => None,
+                            });
+                        }
                     }
                     Insn::FixnumMult { left, right, .. } => {
-                        self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
-                            (Some(l), Some(r)) => l.checked_mul(r),
-                            (Some(0), _) | (_, Some(0)) => Some(0),
-                            _ => None,
-                        })
+                        if ctx.type_of(right).fixnum_value() == Some(1) {
+                            ctx.replace(insn_id, left);
+                        } else if ctx.type_of(left).fixnum_value() == Some(1) {
+                            ctx.replace(insn_id, right);
+                        } else {
+                            ctx.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
+                                (Some(l), Some(r)) => l.checked_mul(r),
+                                (Some(0), _) | (_, Some(0)) => Some(0),
+                                _ => None,
+                            });
+                        }
                     }
                     Insn::FixnumMod { left, right, .. } => {
-                        self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
+                        ctx.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) if r != 0 => {
                                 let l_obj = VALUE::fixnum_from_isize(l as isize);
                                 let r_obj = VALUE::fixnum_from_isize(r as isize);
                                 Some(unsafe { rb_jit_fix_mod_fix(l_obj, r_obj) }.as_fixnum())
                             },
                             _ => None,
-                        })
+                        });
                     }
                     Insn::FixnumXor { left, right, .. } => {
-                        self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
-                            (Some(l), Some(r)) => Some(l ^ r),
-                            _ => None,
-                        })
-                    }
-                    Insn::FixnumAnd { left, right, .. } => {
-                        self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
-                            (Some(l), Some(r)) => Some(l & r),
-                            _ => None,
-                        })
-                    }
-                    Insn::FixnumOr { left, right, .. } => {
-                        self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
-                            (Some(l), Some(r)) => Some(l | r),
-                            _ => None,
-                        })
-                    }
-                    Insn::FixnumEq { left, right, .. } => {
-                        self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
-                            (Some(l), Some(r)) => Some(l == r),
-                            _ => None,
-                        })
-                    }
-                    Insn::FixnumNeq { left, right, .. } => {
-                        self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
-                            (Some(l), Some(r)) => Some(l != r),
-                            _ => None,
-                        })
-                    }
-                    Insn::FixnumLt { left, right, .. } => {
-                        self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
-                            (Some(l), Some(r)) => Some(l < r),
-                            _ => None,
-                        })
-                    }
-                    Insn::FixnumLe { left, right, .. } => {
-                        self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
-                            (Some(l), Some(r)) => Some(l <= r),
-                            _ => None,
-                        })
-                    }
-                    Insn::FixnumGt { left, right, .. } => {
-                        self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
-                            (Some(l), Some(r)) => Some(l > r),
-                            _ => None,
-                        })
-                    }
-                    Insn::FixnumGe { left, right, .. } => {
-                        self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
-                            (Some(l), Some(r)) => Some(l >= r),
-                            _ => None,
-                        })
-                    }
-                    Insn::ArrayAref { array, index }
-                        if self.type_of(array).ruby_object_known()
-                            && self.type_of(index).is_subtype(types::CInt64) => {
-                        let array_obj = self.type_of(array).ruby_object().unwrap();
-                        match (array_obj.is_frozen(), self.type_of(index).cint64_value()) {
-                            (true, Some(index)) => {
-                                let val = unsafe { rb_yarv_ary_entry_internal(array_obj, index) };
-                                self.new_insn(Insn::Const { val: Const::Value(val) })
-                            }
-                            _ => insn_id,
+                        if ctx.type_of(right).fixnum_value() == Some(0) {
+                            ctx.replace(insn_id, left);
+                        } else if ctx.type_of(left).fixnum_value() == Some(0) {
+                            ctx.replace(insn_id, right);
+                        } else {
+                            ctx.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
+                                (Some(l), Some(r)) => Some(l ^ r),
+                                _ => None,
+                            });
                         }
                     }
-                    Insn::Test { val } if self.type_of(val).is_known_falsy() => {
-                        self.new_insn(Insn::Const { val: Const::CBool(false) })
+                    Insn::FixnumAnd { left, right, .. } => {
+                        ctx.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
+                            (Some(l), Some(r)) => Some(l & r),
+                            _ => None,
+                        });
                     }
-                    Insn::Test { val } if self.type_of(val).is_known_truthy() => {
-                        self.new_insn(Insn::Const { val: Const::CBool(true) })
+                    Insn::FixnumOr { left, right, .. } => {
+                        if ctx.type_of(right).fixnum_value() == Some(0) {
+                            ctx.replace(insn_id, left);
+                        } else if ctx.type_of(left).fixnum_value() == Some(0) {
+                            ctx.replace(insn_id, right);
+                        } else {
+                            ctx.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
+                                (Some(l), Some(r)) => Some(l | r),
+                                _ => None,
+                            });
+                        }
                     }
-                    Insn::IfTrue { val, target } if self.is_a(val, Type::from_cbool(true)) => {
-                        self.new_insn(Insn::Jump(target))
+                    Insn::FixnumEq { left, right, .. } => {
+                        ctx.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
+                            (Some(l), Some(r)) => Some(l == r),
+                            _ => None,
+                        });
                     }
-                    Insn::IfFalse { val, target } if self.is_a(val, Type::from_cbool(false)) => {
-                        self.new_insn(Insn::Jump(target))
+                    Insn::FixnumNeq { left, right, .. } => {
+                        ctx.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
+                            (Some(l), Some(r)) => Some(l != r),
+                            _ => None,
+                        });
                     }
-                    // If we know that the branch condition is never going to cause a branch,
-                    // completely drop the branch from the block.
-                    Insn::IfTrue { val, .. } if self.is_a(val, Type::from_cbool(false)) => continue,
-                    Insn::IfFalse { val, .. } if self.is_a(val, Type::from_cbool(true)) => continue,
-                    _ => insn_id,
-                };
-                // If we're adding a new instruction, mark the two equivalent in the union-find and
-                // do an incremental flow typing of the new instruction.
-                if insn_id != replacement_id && self.insns[replacement_id.0].has_output() {
-                    self.make_equal_to(insn_id, replacement_id);
-                    self.insn_types[replacement_id.0] = self.infer_type(replacement_id);
+                    Insn::FixnumLt { left, right, .. } => {
+                        ctx.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
+                            (Some(l), Some(r)) => Some(l < r),
+                            _ => None,
+                        });
+                    }
+                    Insn::FixnumLe { left, right, .. } => {
+                        ctx.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
+                            (Some(l), Some(r)) => Some(l <= r),
+                            _ => None,
+                        });
+                    }
+                    Insn::FixnumGt { left, right, .. } => {
+                        ctx.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
+                            (Some(l), Some(r)) => Some(l > r),
+                            _ => None,
+                        });
+                    }
+                    Insn::FixnumGe { left, right, .. } => {
+                        ctx.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
+                            (Some(l), Some(r)) => Some(l >= r),
+                            _ => None,
+                        });
+                    }
+                    Insn::ArrayAref { array, index }
+                        if ctx.type_of(array).ruby_object_known()
+                            && ctx.type_of(index).is_subtype(types::CInt64) => {
+                        let array_obj = ctx.type_of(array).ruby_object().unwrap();
+                        match (array_obj.is_frozen(), ctx.type_of(index).cint64_value()) {
+                            (true, Some(index)) => {
+                                let val = unsafe { rb_yarv_ary_entry_internal(array_obj, index) };
+                                ctx.replace_new(insn_id, Insn::Const { val: Const::Value(val) });
+                            }
+                            _ => ctx.keep(insn_id),
+                        }
+                    }
+                    Insn::Test { val } if ctx.type_of(val).is_known_falsy() => {
+                        ctx.replace_new(insn_id, Insn::Const { val: Const::CBool(false) });
+                    }
+                    Insn::Test { val } if ctx.type_of(val).is_known_truthy() => {
+                        ctx.replace_new(insn_id, Insn::Const { val: Const::CBool(true) });
+                    }
+                    Insn::IfTrue { val, target } if ctx.is_a(val, Type::from_cbool(true)) => {
+                        ctx.replace_new(insn_id, Insn::Jump(target));
+                    }
+                    Insn::IfFalse { val, target } if ctx.is_a(val, Type::from_cbool(false)) => {
+                        ctx.replace_new(insn_id, Insn::Jump(target));
+                    }
+                    // Branch condition is never true/false — drop the dead branch entirely
+                    Insn::IfTrue { val, .. } if ctx.is_a(val, Type::from_cbool(false)) => ctx.drop(insn_id),
+                    Insn::IfFalse { val, .. } if ctx.is_a(val, Type::from_cbool(true)) => ctx.drop(insn_id),
+                    _ => ctx.keep(insn_id),
                 }
-                new_insns.push(replacement_id);
-                // If we've just folded an IfTrue into a Jump, for example, don't bother copying
-                // over unreachable instructions afterward.
-                if self.insns[replacement_id.0].is_terminator() {
+                if ctx.terminated {
+                    ctx.drop_tail(iter);
                     break;
                 }
             }
-            self.blocks[block.0].insns = new_insns;
         }
     }
 
@@ -5235,20 +5398,19 @@ impl Function {
     fn remove_redundant_patch_points(&mut self) {
         for block_id in self.rpo() {
             let mut seen = HashSet::new();
-            let insns = std::mem::take(&mut self.blocks[block_id.0].insns);
-            let mut new_insns = Vec::with_capacity(insns.len());
-            for insn_id in insns {
-                let insn = self.find(insn_id);
+            let (mut ctx, old_insns) = Emitter::editing(self, block_id);
+            for insn_id in old_insns {
+                let insn = ctx.find(insn_id);
                 if let Insn::PatchPoint { invariant, .. } = insn {
                     if !seen.insert(invariant) {
+                        ctx.drop(insn_id);
                         continue;
                     }
                 } else if insn.effects_of().write_bits().overlaps(abstract_heaps::PatchPoint) {
                     seen.clear();
                 }
-                new_insns.push(insn_id);
+                ctx.keep(insn_id);
             }
-            self.blocks[block_id.0].insns = new_insns;
         }
     }
 

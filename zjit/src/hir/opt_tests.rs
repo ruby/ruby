@@ -216,7 +216,7 @@ mod hir_opt_tests {
             end
             test 1; test 2
         ");
-        assert_snapshot!(hir_string("test"), @"
+        assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -240,13 +240,74 @@ mod hir_opt_tests {
           v48:Fixnum[0] = Const Value(0)
           IncrCounter inline_cfunc_optimized_send_count
           PatchPoint MethodRedefined(Integer@0x1008, +@0x1040, cme:0x1048)
-          v49:Fixnum[0] = Const Value(0)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v49
+          Return v47
         ");
     }
 
+
+    #[test]
+    fn test_simplify_add_identity() {
+        eval("
+            def test(n)
+              n + 0
+            end
+            test 1; test 2
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[0] = Const Value(0)
+          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
+          v26:Fixnum = GuardType v10, Fixnum
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v26
+        ");
+    }
+
+    #[test]
+    fn test_simplify_mult_identity() {
+        eval("
+            def test(n)
+              1 * n
+            end
+            test 1; test 2
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v14:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1008, *@0x1010, cme:0x1018)
+          v26:Fixnum = GuardType v10, Fixnum
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v26
+        ");
+    }
 
     #[test]
     fn test_fold_fixnum_mod_zero_by_zero() {
@@ -9044,11 +9105,6 @@ mod hir_opt_tests {
           v20:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v19, Value(VALUE(0x1040))
           v21:RubyValue = LoadField v18, :_ep_specval@0x1048
           v22:FalseClass = GuardBitEquals v21, Value(false)
-          v28:CPtr = GetEP 0
-          v29:RubyValue = LoadField v28, :_ep_method_entry@0x1038
-          v30:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v29, Value(VALUE(0x1040))
-          v31:RubyValue = LoadField v28, :_ep_specval@0x1048
-          v32:FalseClass = GuardBitEquals v31, Value(false)
           v23:Array = GuardType v6, Array
           v24:CUInt64 = LoadField v23, :_rbasic_flags@0x1049
           v25:CUInt64 = GuardNoBitsSet v24, RUBY_ELTS_SHARED=CUInt64(4096)
@@ -9088,11 +9144,6 @@ mod hir_opt_tests {
           v25:CallableMethodEntry[VALUE(0x1048)] = GuardBitEquals v24, Value(VALUE(0x1048))
           v26:RubyValue = LoadField v23, :_ep_specval@0x1050
           v27:FalseClass = GuardBitEquals v26, Value(false)
-          v37:CPtr = GetEP 0
-          v38:RubyValue = LoadField v37, :_ep_method_entry@0x1040
-          v39:CallableMethodEntry[VALUE(0x1048)] = GuardBitEquals v38, Value(VALUE(0x1048))
-          v40:RubyValue = LoadField v37, :_ep_specval@0x1050
-          v41:FalseClass = GuardBitEquals v40, Value(false)
           v28:Array = GuardType v9, Array
           v29:Fixnum = GuardType v10, Fixnum
           v30:CInt64 = UnboxFixnum v29
