@@ -77,6 +77,7 @@ releases.
   * 3.1.6 to [v3.1.7][strscan-v3.1.7]
 * syntax_suggest 2.0.3
 * zlib 3.2.3
+  * 3.2.2 to [v3.2.3][zlib-v3.2.3]
 
 ### The following bundled gems are updated.
 
@@ -137,6 +138,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [prism-v1.9.0]: https://github.com/ruby/prism/releases/tag/v1.9.0
 [resolv-v0.7.1]: https://github.com/ruby/resolv/releases/tag/v0.7.1
 [strscan-v3.1.7]: https://github.com/ruby/strscan/releases/tag/v3.1.7
+[zlib-v3.2.3]: https://github.com/ruby/zlib/releases/tag/v3.2.3
 [test-unit-3.7.4]: https://github.com/test-unit/test-unit/releases/tag/3.7.4
 [test-unit-3.7.5]: https://github.com/test-unit/test-unit/releases/tag/3.7.5
 [test-unit-3.7.6]: https://github.com/test-unit/test-unit/releases/tag/3.7.6
