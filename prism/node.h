@@ -20,41 +20,29 @@
 /**
  * Append a new node onto the end of the node list.
  *
+ * @param arena The arena to allocate from.
  * @param list The list to append to.
  * @param node The node to append.
  */
-void pm_node_list_append(pm_node_list_t *list, pm_node_t *node);
+void pm_node_list_append(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node);
 
 /**
  * Prepend a new node onto the beginning of the node list.
  *
+ * @param arena The arena to allocate from.
  * @param list The list to prepend to.
  * @param node The node to prepend.
  */
-void pm_node_list_prepend(pm_node_list_t *list, pm_node_t *node);
+void pm_node_list_prepend(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node);
 
 /**
  * Concatenate the given node list onto the end of the other node list.
  *
+ * @param arena The arena to allocate from.
  * @param list The list to concatenate onto.
  * @param other The list to concatenate.
  */
-void pm_node_list_concat(pm_node_list_t *list, pm_node_list_t *other);
-
-/**
- * Free the internal memory associated with the given node list.
- *
- * @param list The list to free.
- */
-void pm_node_list_free(pm_node_list_t *list);
-
-/**
- * Deallocate a node and all of its children.
- *
- * @param parser The parser that owns the node.
- * @param node The node to deallocate.
- */
-PRISM_EXPORTED_FUNCTION void pm_node_destroy(pm_parser_t *parser, struct pm_node *node);
+void pm_node_list_concat(pm_arena_t *arena, pm_node_list_t *list, pm_node_list_t *other);
 
 /**
  * Returns a string representation of the given node type.
@@ -93,9 +81,10 @@ PRISM_EXPORTED_FUNCTION const char * pm_node_type_to_str(pm_node_type_t node_typ
  *     const char *source = "1 + 2; 3 + 4";
  *     size_t size = strlen(source);
  *
+ *     pm_arena_t arena = { 0 };
  *     pm_parser_t parser;
  *     pm_options_t options = { 0 };
- *     pm_parser_init(&parser, (const uint8_t *) source, size, &options);
+ *     pm_parser_init(&arena, &parser, (const uint8_t *) source, size, &options);
  *
  *     size_t indent = 0;
  *     pm_node_t *node = pm_parse(&parser);
@@ -103,8 +92,8 @@ PRISM_EXPORTED_FUNCTION const char * pm_node_type_to_str(pm_node_type_t node_typ
  *     size_t *data = &indent;
  *     pm_visit_node(node, visit, data);
  *
- *     pm_node_destroy(&parser, node);
  *     pm_parser_free(&parser);
+ *     pm_arena_free(&arena);
  *     return EXIT_SUCCESS;
  * }
  * ```

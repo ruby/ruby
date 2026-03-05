@@ -11,6 +11,7 @@
 #include "prism/encoding.h"
 #include "prism/options.h"
 #include "prism/static_literals.h"
+#include "prism/util/pm_arena.h"
 #include "prism/util/pm_constant_pool.h"
 #include "prism/util/pm_list.h"
 #include "prism/util/pm_line_offset_list.h"
@@ -635,6 +636,9 @@ typedef uint32_t pm_state_stack_t;
  * it's considering.
  */
 struct pm_parser {
+    /** The arena used for all AST-lifetime allocations. Caller-owned. */
+    pm_arena_t *arena;
+
     /**
      * The next node identifier that will be assigned. This is a unique
      * identifier used to track nodes such that the syntax tree can be dropped
