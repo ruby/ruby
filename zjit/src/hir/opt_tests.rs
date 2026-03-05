@@ -8759,7 +8759,7 @@ mod hir_opt_tests {
             end
             test([])
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -8802,7 +8802,7 @@ mod hir_opt_tests {
             end
             test([], 0, 1)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -13857,7 +13857,7 @@ mod hir_opt_tests {
 
             C.new
         ");
-        assert_snapshot!(hir_string_proc("C.instance_method(:initialize)"), @r"
+        assert_snapshot!(hir_string_proc("C.instance_method(:initialize)"), @"
         fn initialize@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -13903,7 +13903,7 @@ mod hir_opt_tests {
 
             C.new
         ");
-        assert_snapshot!(hir_string_proc("C.instance_method(:initialize)"), @r"
+        assert_snapshot!(hir_string_proc("C.instance_method(:initialize)"), @"
         fn initialize@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -13954,7 +13954,7 @@ mod hir_opt_tests {
 
             C.new
         ");
-        assert_snapshot!(hir_string_proc("C.instance_method(:initialize)"), @r"
+        assert_snapshot!(hir_string_proc("C.instance_method(:initialize)"), @"
         fn initialize@<compiled>:4:
         bb1():
           EntryPoint interpreter
