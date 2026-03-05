@@ -880,7 +880,7 @@ module JSON
       end
     end
 
-    if opts[:allow_blank] && (source.nil? || source.empty?)
+    if opts[:allow_blank] && (source.nil? || (String === source && source.empty?))
       source = 'null'
     end
 
