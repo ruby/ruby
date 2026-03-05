@@ -1347,7 +1347,7 @@ rb_jit_cont_each_iseq(rb_iseq_callback callback, void *data)
 
         const rb_control_frame_t *cfp = cont->ec->cfp;
         while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(cont->ec, cfp)) {
-            if (cfp->pc && cfp->iseq && imemo_type((VALUE)cfp->iseq) == imemo_iseq) {
+            if ((cfp->pc || cfp->jit_return) && cfp->iseq && imemo_type((VALUE)cfp->iseq) == imemo_iseq) {
                 callback(cfp->iseq, data);
             }
             cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
