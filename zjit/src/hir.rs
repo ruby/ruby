@@ -7,7 +7,7 @@
 #![allow(clippy::match_like_matches_macro)]
 use crate::{
     backend::lir::C_ARG_OPNDS,
-    cast::IntoUsize, codegen::local_idx_to_ep_offset, cruby::*, invariants::{self, has_singleton_class_of}, payload::{get_or_create_iseq_payload, IseqPayload}, options::{debug, get_option, DumpHIR}, state::ZJITState, json::Json
+    cast::IntoUsize, codegen::local_idx_to_ep_offset, cruby::*, invariants::{self}, payload::{get_or_create_iseq_payload, IseqPayload}, options::{debug, get_option, DumpHIR}, state::ZJITState, json::Json
 };
 use std::{
     cell::RefCell, collections::{BTreeSet, HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, c_int, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter
@@ -667,9 +667,6 @@ pub enum SendFallbackReason {
     ComplexArgPass,
     /// Caller has keyword arguments but callee doesn't expect them; need to convert to hash.
     UnexpectedKeywordArgs,
-    /// A singleton class has been seen for the receiver class, so we skip the optimization
-    /// to avoid an invalidation loop.
-    SingletonClassSeen,
     /// The super call is passed a block that the optimizer does not support.
     SuperCallWithBlock,
     /// When the `super` is in a block, finding the running CME for guarding requires a loop. Not
@@ -726,7 +723,6 @@ impl Display for SendFallbackReason {
             ArgcParamMismatch => write!(f, "Argument count does not match parameter count"),
             ComplexArgPass => write!(f, "Complex argument passing"),
             UnexpectedKeywordArgs => write!(f, "Unexpected Keyword Args"),
-            SingletonClassSeen => write!(f, "Singleton class previously created for receiver class"),
             SuperFromBlock => write!(f, "super: call from within a block"),
             SuperCallWithBlock => write!(f, "super: call made with a block"),
             SuperClassNotFound => write!(f, "super: profiled class cannot be found"),
@@ -1034,6 +1030,11 @@ pub enum Insn {
     /// Refine the known type information of with additional type information.
     /// Computes the intersection of the existing type and the new type.
     RefineType { val: InsnId, new_type: Type },
+    /// A type-wise operation that retracts claim about the effective
+    /// runtime Ruby class of a heap object. `RBassic::class` is mutable
+    /// and creating a singleton class for an object for the first time
+    /// writes to it.
+    RecantClassClaim { val: InsnId },
     /// Return CBool[true] if val has type Type and CBool[false] otherwise.
     HasType { val: InsnId, expected: Type },
 
@@ -1156,6 +1157,7 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(state);
             }
             Insn::RefineType { val, .. }
+            | Insn::RecantClassClaim { val }
             | Insn::HasType { val, .. }
             | Insn::Return { val }
             | Insn::Test { val }
@@ -1561,6 +1563,7 @@ impl Insn {
             Insn::CheckInterrupts { .. } => Effect::read_write(abstract_heaps::InterruptFlag, abstract_heaps::Control),
             Insn::InvokeProc { .. } => effects::Any,
             Insn::RefineType { .. } => effects::Empty,
+            Insn::RecantClassClaim { .. } => effects::Empty,
             Insn::HasType { expected, .. }
                 => Effect::read_write(
                     if expected.is_subtype(types::Immediate) { abstract_heaps::Empty } else { abstract_heaps::Memory },
@@ -1900,6 +1903,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::FixnumRShift { left, right, .. } => { write!(f, "FixnumRShift {left}, {right}") },
             Insn::GuardType { val, guard_type, .. } => { write!(f, "GuardType {val}, {}", guard_type.print(self.ptr_map)) },
             Insn::RefineType { val, new_type, .. } => { write!(f, "RefineType {val}, {}", new_type.print(self.ptr_map)) },
+            Insn::RecantClassClaim { val } => write!(f, "RecantClassClaim {val}"),
             Insn::HasType { val, expected, .. } => { write!(f, "HasType {val}, {}", expected.print(self.ptr_map)) },
             Insn::GuardTypeNot { val, guard_type, .. } => { write!(f, "GuardTypeNot {val}, {}", guard_type.print(self.ptr_map)) },
             Insn::GuardBitEquals { val, expected, .. } => { write!(f, "GuardBitEquals {val}, {}", expected.print(self.ptr_map)) },
@@ -2281,8 +2285,11 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
 /// containing instructions.
 #[derive(Debug)]
 pub struct Function {
-    // ISEQ this function refers to
+    /// ISEQ this function refers to
     iseq: *const rb_iseq_t,
+    /// Whether previously, a function for this [Self::iseq] was invalidated due to violation
+    /// of the [Invariant::NoSingletonClass] invariant.
+    was_invalidated_for_singleton_class_creation: bool,
     /// The types for the parameters of this function. They are copied to the type
     /// of entry block params after infer_types() fills Empty to all insn_types.
     param_types: Vec<Type>,
@@ -2398,6 +2405,7 @@ impl Function {
             jit_entry_blocks: vec![],
             param_types: vec![],
             profiles: None,
+            was_invalidated_for_singleton_class_creation: false,
         }
     }
 
@@ -2500,18 +2508,49 @@ impl Function {
         }
     }
 
-    /// Assume that objects of a given class will have no singleton class.
-    /// Returns true if safe to assume so and emits a PatchPoint.
-    /// Returns false if we've already seen a singleton class for this class,
-    /// to avoid an invalidation loop.
-    pub fn assume_no_singleton_classes(&mut self, block: BlockId, klass: VALUE, state: InsnId) -> bool {
+    /// This function attempts to uphold the [`Type::runtime_exact_ruby_class`] claims on
+    /// all values that is-a `klass` using speculation. Return `true` when the type
+    /// claims are upheld and can be trusted. Return `false` when the claims may be
+    /// inaccurate.
+    ///
+    /// Use before any method lookups, or more generally anything that semantically depend on
+    /// knowing the effective class of a ruby value.
+    ///
+    /// [`Type::runtime_exact_ruby_class`] is a claim about the value in `RBasic::klass` and
+    /// it can change due to singleton class creation. As an example, when we have:
+    ///
+    /// ```
+    /// v1: StringExact = ...
+    /// <maximally effectful black box code>
+    /// v2: ? = v1
+    /// ```
+    /// `v2` may no longer have `::String` as its effective class due to singleton class creation.
+    ///
+    /// Since singleton class creation is the only* operation that can change the effective class,
+    /// betting on no singleton class creation upholds the class claim about `v1`:
+    ///
+    /// ```
+    /// v1: StringExact = ...
+    /// <maximally effectful black box code>
+    /// PatchPoint NoSingletonClass, String
+    /// v2: StringExact = v1
+    /// ```
+    ///
+    /// * There is also `IO#reopen` for IO objects.
+    // TODO(alan): Fix this for IO objects
+    #[must_use]
+    pub fn try_to_uphold_class_claims(&mut self, block: BlockId, klass: VALUE, state: InsnId) -> bool {
         if !klass.instance_can_have_singleton_class() {
             // This class can never have a singleton class, so no patchpoint needed.
             return true;
         }
-        if has_singleton_class_of(klass) {
-            // We've seen a singleton class for this klass. Disable the optimization
-            // to avoid an invalidation loop.
+        if klass.is_singleton_class() {
+            // When a value has a singleton class, its effective class can't change anymore.
+            // No patchpoint needed.
+            return true;
+        }
+        if self.was_invalidated_for_singleton_class_creation {
+            // This patch point has been patched before. Don't make the same bad bet again.
             return false;
         }
         self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass }, state });
@@ -2614,6 +2653,7 @@ impl Function {
             &IfTrue { val, ref target } => IfTrue { val: find!(val), target: find_branch_edge!(target) },
             &IfFalse { val, ref target } => IfFalse { val: find!(val), target: find_branch_edge!(target) },
             &RefineType { val, new_type } => RefineType { val: find!(val), new_type },
+            &RecantClassClaim { val } => RecantClassClaim { val: find!(val) },
             &HasType { val, expected } => HasType { val: find!(val), expected },
             &GuardType { val, guard_type, state } => GuardType { val: find!(val), guard_type, state },
             &GuardTypeNot { val, guard_type, state } => GuardTypeNot { val: find!(val), guard_type, state },
@@ -2867,6 +2907,16 @@ impl Function {
             &Insn::CCallVariadic { return_type, .. } => return_type,
             Insn::GuardType { val, guard_type, .. } => self.type_of(*val).intersection(*guard_type),
             Insn::RefineType { val, new_type, .. } => self.type_of(*val).intersection(*new_type),
+            Insn::RecantClassClaim { val  } => {
+                let current = self.type_of(*val);
+                if current.is_subtype(types::HeapBasicObject) {
+                    // We could go further down the lattice here, but usually the output is immediately
+                    // fed into a GuardType that will go as low as sound, so there is no point.
+                    types::HeapBasicObject
+                } else {
+                    current
+                }
+            }
             Insn::HasType { .. } => types::CBool,
             Insn::GuardTypeNot { .. } => types::BasicObject,
             Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_const(*expected)),
@@ -3311,7 +3361,7 @@ impl Function {
             return false;
         }
         self.gen_patch_points_for_optimized_ccall(block, class, method_id, cme, state);
-        if !self.assume_no_singleton_classes(block, class, state) {
+        if !self.try_to_uphold_class_claims(block, class, state) {
             return false;
         }
         true
@@ -3542,19 +3592,10 @@ impl Function {
                                 self.push_insn_id(block, insn_id); continue;
                             };
 
-                            // Check singleton class assumption first, before emitting other patchpoints
-                            if !self.assume_no_singleton_classes(block, klass, state) {
-                                self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
-                                self.push_insn_id(block, insn_id); continue;
-                            }
-
                             // Add PatchPoint for method redefinition
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
 
-                            // Add GuardType for profiled receiver
-                            if let Some(profiled_type) = profiled_type {
-                                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
-                            }
+                            recv = self.speculate_receiver_type(block, recv, state, klass, profiled_type);
 
                             let send_direct = self.push_insn(block, Insn::SendDirect { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state, blockiseq });
                             self.make_equal_to(insn_id, send_direct);
@@ -3587,16 +3628,9 @@ impl Function {
                                 // TODO(alan): Turn this into a ractor belonging guard to work better in multi ractor mode.
                                 self.push_insn_id(block, insn_id); continue;
                             }
-                            // Check singleton class assumption first, before emitting other patchpoints
-                            if !self.assume_no_singleton_classes(block, klass, state) {
-                                self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
-                                self.push_insn_id(block, insn_id); continue;
-                            }
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
 
-                            if let Some(profiled_type) = profiled_type {
-                                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
-                            }
+                            recv = self.speculate_receiver_type(block, recv, state, klass, profiled_type);
 
                             let send_direct = self.push_insn(block, Insn::SendDirect { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state, blockiseq: None });
                             self.make_equal_to(insn_id, send_direct);
@@ -3606,18 +3640,10 @@ impl Function {
                             if klass.is_metaclass() && !self.assume_single_ractor_mode(block, state) {
                                 self.push_insn_id(block, insn_id); continue;
                             }
-                            // Check singleton class assumption first, before emitting other patchpoints
-                            if !self.assume_no_singleton_classes(block, klass, state) {
-                                self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
-                                self.push_insn_id(block, insn_id); continue;
-                            }
-
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
-                            if let Some(profiled_type) = profiled_type {
-                                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
-                            }
-                            let id = unsafe { get_cme_def_body_attr_id(cme) };
+                            recv = self.speculate_receiver_type(block, recv, state, klass, profiled_type);
 
+                            let id = unsafe { get_cme_def_body_attr_id(cme) };
                             let getivar = self.push_insn(block, Insn::GetIvar { self_val: recv, id, ic: std::ptr::null(), state });
                             self.make_equal_to(insn_id, getivar);
                         } else if let (false, VM_METHOD_TYPE_ATTRSET, &[val]) = (has_block, def_type, args.as_slice()) {
@@ -3644,15 +3670,8 @@ impl Function {
                                         self.set_dynamic_send_reason(insn_id, ComplexArgPass);
                                         self.push_insn_id(block, insn_id); continue;
                                     }
-                                    // Check singleton class assumption first, before emitting other patchpoints
-                                    if !self.assume_no_singleton_classes(block, klass, state) {
-                                        self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
-                                        self.push_insn_id(block, insn_id); continue;
-                                    }
                                     self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
-                                    if let Some(profiled_type) = profiled_type {
-                                        recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
-                                    }
+                                    recv = self.speculate_receiver_type(block, recv, state, klass, profiled_type);
                                     let kw_splat = flags & VM_CALL_KW_SPLAT != 0;
                                     let invoke_proc = self.push_insn(block, Insn::InvokeProc { recv, args: args.clone(), state, kw_splat });
                                     self.make_equal_to(insn_id, invoke_proc);
@@ -3679,15 +3698,8 @@ impl Function {
                                         // No (monomorphic/skewed polymorphic) profile info
                                         self.push_insn_id(block, insn_id); continue;
                                     };
-                                    // Check singleton class assumption first, before emitting other patchpoints
-                                    if !self.assume_no_singleton_classes(block, klass, state) {
-                                        self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
-                                        self.push_insn_id(block, insn_id); continue;
-                                    }
                                     self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
-                                    if let Some(profiled_type) = profiled_type {
-                                        recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
-                                    }
+                                    recv = self.speculate_receiver_type(block, recv, state, klass, profiled_type);
                                     // All structs from the same Struct class should have the same
                                     // length. So if our recv is embedded all runtime
                                     // structs of the same class should be as well, and the same is
@@ -4102,6 +4114,26 @@ impl Function {
             }
         }
         self.infer_types();
+    }
+
+    /// Speculate the effective class of a value for method lookup.
+    /// `profiled_type.is_none()` means there is an HIR type claim
+    /// that `recv` has `klass` as its ruby level class.
+    #[must_use]
+    fn speculate_receiver_type(&mut self, block: BlockId, mut recv: InsnId, state: InsnId, klass: VALUE, profiled_type: Option<ProfiledType>) -> InsnId {
+        if self.try_to_uphold_class_claims(block, klass, state) {
+            if let Some(profiled_type) = profiled_type {
+                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+                self.insn_types[recv.0] = self.infer_type(recv);
+            }
+        } else {
+            // Betting didn't work. Re-verify the effective class claim by guarding.
+            let guard_type = profiled_type.map_or_else(|| Type::from_class(klass), |profiled_type| Type::from_profiled_type(profiled_type));
+            recv = self.push_insn(block, Insn::RecantClassClaim { val: recv });
+            recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type, state });
+            self.insn_types[recv.0] = self.infer_type(recv);
+        }
+        recv
     }
 
     fn inline(&mut self) {
@@ -4544,20 +4576,9 @@ impl Function {
                         return Err(());
                     }
 
-                    // Check singleton class assumption first, before emitting other patchpoints
-                    if !fun.assume_no_singleton_classes(block, recv_class, state) {
-                        fun.set_dynamic_send_reason(send_insn_id, SingletonClassSeen);
-                        return Err(());
-                    }
-
                     // Commit to the replacement. Put PatchPoint.
                     fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, cme, state);
-
-                    if let Some(profiled_type) = profiled_type {
-                        // Guard receiver class
-                        recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
-                        fun.insn_types[recv.0] = fun.infer_type(recv);
-                    }
+                    recv = fun.speculate_receiver_type(block, recv, state, recv_class, profiled_type);
 
                     // Emit a call
                     let cfunc = unsafe { get_mct_func(cfunc) }.cast();
@@ -4583,19 +4604,9 @@ impl Function {
                     // The method gets a pointer to the first argument
                     // func(int argc, VALUE *argv, VALUE recv)
 
-                    // Check singleton class assumption first, before emitting other patchpoints
-                    if !fun.assume_no_singleton_classes(block, recv_class, state) {
-                        fun.set_dynamic_send_reason(send_insn_id, SingletonClassSeen);
-                        return Err(());
-                    }
 
                     fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, cme, state);
-
-                    if let Some(profiled_type) = profiled_type {
-                        // Guard receiver class
-                        recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
-                        fun.insn_types[recv.0] = fun.infer_type(recv);
-                    }
+                    recv = fun.speculate_receiver_type(block, recv, state, recv_class, profiled_type);
 
                     if get_option!(stats) {
                         fun.count_not_inlined_cfunc(block, cme);
@@ -4701,26 +4712,15 @@ impl Function {
                         return Err(());
                     }
 
-                    // Check singleton class assumption first, before emitting other patchpoints
-                    if !fun.assume_no_singleton_classes(block, recv_class, state) {
-                        fun.set_dynamic_send_reason(send_insn_id, SingletonClassSeen);
-                        return Err(());
-                    }
-
                     // Commit to the replacement. Put PatchPoint.
                     fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, cme, state);
+                    recv = fun.speculate_receiver_type(block, recv, state, recv_class, profiled_type);
 
                     let props = ZJITState::get_method_annotations().get_cfunc_properties(cme);
                     if props.is_none() && get_option!(stats) {
                         fun.count_not_annotated_cfunc(block, cme);
                     }
                     let props = props.unwrap_or_default();
-
-                    if let Some(profiled_type) = profiled_type {
-                        // Guard receiver class
-                        recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
-                        fun.insn_types[recv.0] = fun.infer_type(recv);
-                    }
 
                     // Try inlining the cfunc into HIR
                     let tmp_block = fun.new_block(u32::MAX);
@@ -4783,19 +4783,8 @@ impl Function {
                         fun.set_dynamic_send_reason(send_insn_id, ComplexArgPass);
                         return Err(());
                     } else {
-                        // Check singleton class assumption first, before emitting other patchpoints
-                        if !fun.assume_no_singleton_classes(block, recv_class, state) {
-                            fun.set_dynamic_send_reason(send_insn_id, SingletonClassSeen);
-                            return Err(());
-                        }
-
                         fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, cme, state);
-
-                        if let Some(profiled_type) = profiled_type {
-                            // Guard receiver class
-                            recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
-                            fun.insn_types[recv.0] = fun.infer_type(recv);
-                        }
+                        recv = fun.speculate_receiver_type(block, recv, state, recv_class, profiled_type);
 
                         let cfunc = unsafe { get_mct_func(cfunc) }.cast();
                         let props = ZJITState::get_method_annotations().get_cfunc_properties(cme);
@@ -5124,7 +5113,6 @@ impl Function {
             self.blocks[block.0].insns = new_insns;
         }
     }
-
 
     /// Remove instructions that do not have side effects and are not referenced by any other
     /// instruction.
@@ -5994,7 +5982,7 @@ impl Function {
                 self.assert_subtype(insn_id, class, types::Class)
             }
             Insn::RefineType { .. } => Ok(()),
-            Insn::HasType { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
+            Insn::HasType { val, .. } | Insn::RecantClassClaim { val } => self.assert_subtype(insn_id, val, types::BasicObject),
         }
     }
 
@@ -6527,6 +6515,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     let payload = get_or_create_iseq_payload(iseq);
     let mut profiles = ProfileOracle::new(payload);
     let mut fun = Function::new(iseq);
+    fun.was_invalidated_for_singleton_class_creation = payload.was_invalidated_for_singleton_class_creation;
 
     // Compute a map of PC->Block by finding jump targets
     let jit_entry_insns = jit_entry_insns(iseq);

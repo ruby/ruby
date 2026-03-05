@@ -11,6 +11,8 @@ pub struct IseqPayload {
     pub profile: IseqProfile,
     /// JIT code versions. Different versions should have different assumptions.
     pub versions: Vec<IseqVersionRef>,
+    /// Whether code for this Iseq containing [`crate::hir::Invariant::NoSingletonClass`] has been invalidated before
+    pub was_invalidated_for_singleton_class_creation: bool,
 }
 
 impl IseqPayload {
@@ -18,6 +20,7 @@ impl IseqPayload {
         Self {
             profile: IseqProfile::new(iseq_size),
             versions: vec![],
+            was_invalidated_for_singleton_class_creation: false,
         }
     }
 }

@@ -894,7 +894,7 @@ fn inline_kernel_respond_to_p(
         (_, _) => return None, // not public and include_all not known, can't compile
     };
     // Check singleton class assumption first, before emitting other patchpoints
-    if !fun.assume_no_singleton_classes(block, recv_class, state) {
+    if !fun.try_to_uphold_class_claims(block, recv_class, state) {
         return None;
     }
     fun.push_insn(block, hir::Insn::PatchPoint { invariant: hir::Invariant::NoTracePoint, state });

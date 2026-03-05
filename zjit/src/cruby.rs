@@ -490,6 +490,11 @@ impl VALUE {
         }
     }
 
+    pub fn is_singleton_class(self) -> bool {
+        // TODO clean up one of double check on T_CLASS
+        unsafe { RB_TYPE_P(self, RUBY_T_CLASS) && rb_zjit_singleton_class_p(self) }
+    }
+
     /// Return true for a static (non-heap) Ruby symbol (RB_STATIC_SYM_P)
     pub fn static_sym_p(self) -> bool {
         let VALUE(cval) = self;
