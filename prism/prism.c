@@ -9979,8 +9979,21 @@ parser_lex(pm_parser_t *parser) {
                                 following && (
                                     (peek_at(parser, following) == '&' && peek_at(parser, following + 1) == '&') ||
                                     (peek_at(parser, following) == '|' && peek_at(parser, following + 1) == '|') ||
-                                    (peek_at(parser, following) == 'a' && peek_at(parser, following + 1) == 'n' && peek_at(parser, following + 2) == 'd' && !char_is_identifier(parser, following + 3, parser->end - (following + 3))) ||
-                                    (peek_at(parser, following) == 'o' && peek_at(parser, following + 1) == 'r' && !char_is_identifier(parser, following + 2, parser->end - (following + 2)))
+                                    (
+                                        peek_at(parser, following) == 'a' &&
+                                        peek_at(parser, following + 1) == 'n' &&
+                                        peek_at(parser, following + 2) == 'd' &&
+                                        peek_at(parser, next_content + 3) != '!' &&
+                                        peek_at(parser, next_content + 3) != '?' &&
+                                        !char_is_identifier(parser, following + 3, parser->end - (following + 3))
+                                    ) ||
+                                    (
+                                        peek_at(parser, following) == 'o' &&
+                                        peek_at(parser, following + 1) == 'r' &&
+                                        peek_at(parser, next_content + 2) != '!' &&
+                                        peek_at(parser, next_content + 2) != '?' &&
+                                        !char_is_identifier(parser, following + 2, parser->end - (following + 2))
+                                    )
                                 )
                             ) {
                                 if (!lexed_comment) parser_lex_ignored_newline(parser);
@@ -10051,6 +10064,8 @@ parser_lex(pm_parser_t *parser) {
                                 peek_at(parser, next_content) == 'a' &&
                                 peek_at(parser, next_content + 1) == 'n' &&
                                 peek_at(parser, next_content + 2) == 'd' &&
+                                peek_at(parser, next_content + 3) != '!' &&
+                                peek_at(parser, next_content + 3) != '?' &&
                                 !char_is_identifier(parser, next_content + 3, parser->end - (next_content + 3))
                             ) {
                                 if (!lexed_comment) parser_lex_ignored_newline(parser);
@@ -10067,6 +10082,8 @@ parser_lex(pm_parser_t *parser) {
                             if (
                                 peek_at(parser, next_content) == 'o' &&
                                 peek_at(parser, next_content + 1) == 'r' &&
+                                peek_at(parser, next_content + 2) != '!' &&
+                                peek_at(parser, next_content + 2) != '?' &&
                                 !char_is_identifier(parser, next_content + 2, parser->end - (next_content + 2))
                             ) {
                                 if (!lexed_comment) parser_lex_ignored_newline(parser);

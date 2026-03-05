@@ -36,6 +36,13 @@ module Prism
       except << "whitequark/ruby_bug_19281.txt"
     end
 
+    if RUBY_VERSION.start_with?("4.")
+      except += [
+        # https://bugs.ruby-lang.org/issues/21945
+        "and_or_with_suffix.txt",
+      ]
+    end
+
     # https://bugs.ruby-lang.org/issues/21168#note-5
     except << "command_method_call_2.txt"
 
