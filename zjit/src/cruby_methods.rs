@@ -292,7 +292,7 @@ fn no_inline(_fun: &mut hir::Emitter, _recv: hir::InsnId, _args: &[hir::InsnId],
     None
 }
 
-fn inline_string_to_s(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_string_to_s(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     if args.is_empty() && fun.likely_a(recv, types::StringExact, state) {
         let recv = fun.coerce_to(recv, types::StringExact, state);
         return Some(recv);
@@ -300,7 +300,7 @@ fn inline_string_to_s(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::Ins
     None
 }
 
-fn inline_thread_current(fun: &mut hir::Emitter,_recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_thread_current(fun: &mut hir::Emitter, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
     let &[] = args else { return None; };
     let ec = fun.push_insn(hir::Insn::LoadEC);
     let thread_ptr = fun.push_insn(hir::Insn::LoadField {
@@ -328,7 +328,7 @@ fn inline_kernel_itself(_fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir:
     None
 }
 
-fn inline_kernel_block_given_p(fun: &mut hir::Emitter,_recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_kernel_block_given_p(fun: &mut hir::Emitter, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
     let &[] = args else { return None; };
 
     let local_iseq = unsafe { rb_get_iseq_body_local_iseq(fun.iseq()) };
@@ -343,7 +343,7 @@ fn inline_kernel_block_given_p(fun: &mut hir::Emitter,_recv: hir::InsnId, args: 
     }
 }
 
-fn inline_array_aref(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_array_aref(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     if let &[index] = args {
         if fun.likely_a(recv, types::Array, state)
             && fun.likely_a(index, types::Fixnum, state)
@@ -363,7 +363,7 @@ fn inline_array_aref(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::Insn
     None
 }
 
-fn inline_array_aset(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_array_aset(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     if let &[index, val] = args {
         if fun.likely_a(recv, types::ArrayExact, state)
             && fun.likely_a(index, types::Fixnum, state)
@@ -389,7 +389,7 @@ fn inline_array_aset(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::Insn
     None
 }
 
-fn inline_array_push(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_array_push(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     // Inline only the case of `<<` or `push` when called with a single argument.
     if let &[val] = args {
         if !fun.likely_a(recv, types::Array, state) { return None; }
@@ -400,7 +400,7 @@ fn inline_array_push(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::Insn
     None
 }
 
-fn inline_array_pop(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_array_pop(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     // Only inline the case of no arguments.
     let &[] = args else { return None; };
     if !fun.likely_a(recv, types::Array, state) { return None; }
@@ -409,7 +409,7 @@ fn inline_array_pop(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnI
     Some(fun.push_insn(hir::Insn::ArrayPop { array: recv, state }))
 }
 
-fn inline_hash_aref(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_hash_aref(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[key] = args else { return None; };
 
     // Only optimize exact Hash, not subclasses
@@ -422,7 +422,7 @@ fn inline_hash_aref(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnI
     }
 }
 
-fn inline_hash_aset(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_hash_aset(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[key, val] = args else { return None; };
 
     // Only optimize exact Hash, not subclasses
@@ -436,7 +436,7 @@ fn inline_hash_aset(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnI
     }
 }
 
-fn inline_string_bytesize(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_string_bytesize(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     if args.is_empty() && fun.likely_a(recv, types::String, state) {
         let recv = fun.coerce_to(recv, types::String, state);
         let len = fun.push_insn(hir::Insn::LoadField {
@@ -456,7 +456,7 @@ fn inline_string_bytesize(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir:
     None
 }
 
-fn inline_string_getbyte(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_string_getbyte(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[index] = args else { return None; };
     if fun.likely_a(index, types::Fixnum, state) {
         // String#getbyte with a Fixnum is leaf and nogc; otherwise it may run arbitrary Ruby code
@@ -483,7 +483,7 @@ fn inline_string_getbyte(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::
     None
 }
 
-fn inline_string_setbyte(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_string_setbyte(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[index, value] = args else { return None; };
     if fun.likely_a(index, types::Fixnum, state) && fun.likely_a(value, types::Fixnum, state) {
         let index = fun.coerce_to(index, types::Fixnum, state);
@@ -510,7 +510,7 @@ fn inline_string_setbyte(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::
     }
 }
 
-fn inline_string_empty_p(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_string_empty_p(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
     let &[] = args else { return None; };
     let len = fun.push_insn(hir::Insn::LoadField {
         recv,
@@ -524,7 +524,7 @@ fn inline_string_empty_p(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::
     Some(result)
 }
 
-fn inline_string_append(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_string_append(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     // Inline only StringExact << String, which matches original type check from
     // `vm_opt_ltlt`, which checks `RB_TYPE_P(obj, T_STRING)`.
@@ -543,7 +543,7 @@ fn inline_string_append(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::I
     None
 }
 
-fn inline_string_eq(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_string_eq(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     if fun.likely_a(recv, types::String, state) && fun.likely_a(other, types::String, state) {
         let recv = fun.coerce_to(recv, types::String, state);
@@ -564,7 +564,7 @@ fn inline_string_eq(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnI
     None
 }
 
-fn inline_module_eqq(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_module_eqq(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     if fun.is_a(recv, types::Class) {
         let result = fun.push_insn(hir::Insn::IsA { val: other, class: recv });
@@ -573,7 +573,7 @@ fn inline_module_eqq(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::Insn
     None
 }
 
-fn inline_array_length(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_array_length(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[] = args else { return None; };
     if fun.likely_a(recv, types::Array, state) {
         let recv = fun.coerce_to(recv, types::Array, state);
@@ -584,7 +584,7 @@ fn inline_array_length(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::In
     None
 }
 
-fn inline_array_empty_p(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_array_empty_p(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[] = args else { return None; };
     if fun.likely_a(recv, types::Array, state) {
         let recv = fun.coerce_to(recv, types::Array, state);
@@ -597,7 +597,7 @@ fn inline_array_empty_p(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::I
     None
 }
 
-fn inline_integer_succ(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_integer_succ(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     if !args.is_empty() { return None; }
     if fun.likely_a(recv, types::Fixnum, state) {
         let left = fun.coerce_to(recv, types::Fixnum, state);
@@ -608,7 +608,7 @@ fn inline_integer_succ(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::In
     None
 }
 
-fn inline_integer_xor(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_integer_xor(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[right] = args else { return None; };
     if fun.likely_a(recv, types::Fixnum, state) && fun.likely_a(right, types::Fixnum, state) {
         let left = fun.coerce_to(recv, types::Fixnum, state);
@@ -619,7 +619,7 @@ fn inline_integer_xor(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::Ins
     None
 }
 
-fn try_inline_fixnum_op(fun: &mut hir::Emitter,f: &dyn Fn(hir::InsnId, hir::InsnId) -> hir::Insn, bop: u32, left: hir::InsnId, right: hir::InsnId, state: hir::InsnId) -> Option<hir::InsnId> {
+fn try_inline_fixnum_op(fun: &mut hir::Emitter, f: &dyn Fn(hir::InsnId, hir::InsnId) -> hir::Insn, bop: u32, left: hir::InsnId, right: hir::InsnId, state: hir::InsnId) -> Option<hir::InsnId> {
     if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, INTEGER_REDEFINED_OP_FLAG) } {
         // If the basic operation is already redefined, we cannot optimize it.
         return None;
@@ -637,86 +637,86 @@ fn try_inline_fixnum_op(fun: &mut hir::Emitter,f: &dyn Fn(hir::InsnId, hir::Insn
     None
 }
 
-fn inline_integer_eq(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_integer_eq(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
-    try_inline_fixnum_op(fun,&|left, right| hir::Insn::FixnumEq { left, right }, BOP_EQ, recv, other, state)
+    try_inline_fixnum_op(fun, &|left, right| hir::Insn::FixnumEq { left, right }, BOP_EQ, recv, other, state)
 }
 
-fn inline_integer_plus(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_integer_plus(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
-    try_inline_fixnum_op(fun,&|left, right| hir::Insn::FixnumAdd { left, right, state }, BOP_PLUS, recv, other, state)
+    try_inline_fixnum_op(fun, &|left, right| hir::Insn::FixnumAdd { left, right, state }, BOP_PLUS, recv, other, state)
 }
 
-fn inline_integer_minus(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_integer_minus(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
-    try_inline_fixnum_op(fun,&|left, right| hir::Insn::FixnumSub { left, right, state }, BOP_MINUS, recv, other, state)
+    try_inline_fixnum_op(fun, &|left, right| hir::Insn::FixnumSub { left, right, state }, BOP_MINUS, recv, other, state)
 }
 
-fn inline_integer_mult(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_integer_mult(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
-    try_inline_fixnum_op(fun,&|left, right| hir::Insn::FixnumMult { left, right, state }, BOP_MULT, recv, other, state)
+    try_inline_fixnum_op(fun, &|left, right| hir::Insn::FixnumMult { left, right, state }, BOP_MULT, recv, other, state)
 }
 
-fn inline_integer_div(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_integer_div(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
-    try_inline_fixnum_op(fun,&|left, right| hir::Insn::FixnumDiv { left, right, state }, BOP_DIV, recv, other, state)
+    try_inline_fixnum_op(fun, &|left, right| hir::Insn::FixnumDiv { left, right, state }, BOP_DIV, recv, other, state)
 }
 
-fn inline_integer_mod(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_integer_mod(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
-    try_inline_fixnum_op(fun,&|left, right| hir::Insn::FixnumMod { left, right, state }, BOP_MOD, recv, other, state)
+    try_inline_fixnum_op(fun, &|left, right| hir::Insn::FixnumMod { left, right, state }, BOP_MOD, recv, other, state)
 }
 
-fn inline_integer_and(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_integer_and(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
-    try_inline_fixnum_op(fun,&|left, right| hir::Insn::FixnumAnd { left, right, }, BOP_AND, recv, other, state)
+    try_inline_fixnum_op(fun, &|left, right| hir::Insn::FixnumAnd { left, right, }, BOP_AND, recv, other, state)
 }
 
-fn inline_integer_or(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_integer_or(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
-    try_inline_fixnum_op(fun,&|left, right| hir::Insn::FixnumOr { left, right, }, BOP_OR, recv, other, state)
+    try_inline_fixnum_op(fun, &|left, right| hir::Insn::FixnumOr { left, right, }, BOP_OR, recv, other, state)
 }
 
-fn inline_integer_gt(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_integer_gt(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
-    try_inline_fixnum_op(fun,&|left, right| hir::Insn::FixnumGt { left, right }, BOP_GT, recv, other, state)
+    try_inline_fixnum_op(fun, &|left, right| hir::Insn::FixnumGt { left, right }, BOP_GT, recv, other, state)
 }
 
-fn inline_integer_ge(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_integer_ge(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
-    try_inline_fixnum_op(fun,&|left, right| hir::Insn::FixnumGe { left, right }, BOP_GE, recv, other, state)
+    try_inline_fixnum_op(fun, &|left, right| hir::Insn::FixnumGe { left, right }, BOP_GE, recv, other, state)
 }
 
-fn inline_integer_lt(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_integer_lt(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
-    try_inline_fixnum_op(fun,&|left, right| hir::Insn::FixnumLt { left, right }, BOP_LT, recv, other, state)
+    try_inline_fixnum_op(fun, &|left, right| hir::Insn::FixnumLt { left, right }, BOP_LT, recv, other, state)
 }
 
-fn inline_integer_le(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_integer_le(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
-    try_inline_fixnum_op(fun,&|left, right| hir::Insn::FixnumLe { left, right }, BOP_LE, recv, other, state)
+    try_inline_fixnum_op(fun, &|left, right| hir::Insn::FixnumLe { left, right }, BOP_LE, recv, other, state)
 }
 
-fn inline_integer_lshift(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_integer_lshift(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     // Only convert to FixnumLShift if we know the shift amount is known at compile-time and could
     // plausibly create a fixnum.
     let Some(other_value) = fun.type_of(other).fixnum_value() else { return None; };
     if other_value < 0 || other_value > 63 { return None; }
-    try_inline_fixnum_op(fun,&|left, right| hir::Insn::FixnumLShift { left, right, state }, BOP_LTLT, recv, other, state)
+    try_inline_fixnum_op(fun, &|left, right| hir::Insn::FixnumLShift { left, right, state }, BOP_LTLT, recv, other, state)
 }
 
-fn inline_integer_rshift(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_integer_rshift(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     // Only convert to FixnumLShift if we know the shift amount is known at compile-time and could
     // plausibly create a fixnum.
     let Some(other_value) = fun.type_of(other).fixnum_value() else { return None; };
     // TODO(max): If other_value > 63, rewrite to constant zero.
     if other_value < 0 || other_value > 63 { return None; }
-    try_inline_fixnum_op(fun,&|left, right| hir::Insn::FixnumRShift { left, right }, BOP_GTGT, recv, other, state)
+    try_inline_fixnum_op(fun, &|left, right| hir::Insn::FixnumRShift { left, right }, BOP_GTGT, recv, other, state)
 }
 
-fn inline_integer_aref(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_integer_aref(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[index] = args else { return None; };
     if fun.likely_a(recv, types::Fixnum, state) && fun.likely_a(index, types::Fixnum, state) {
         let recv = fun.coerce_to(recv, types::Fixnum, state);
@@ -727,14 +727,14 @@ fn inline_integer_aref(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::In
     None
 }
 
-fn inline_basic_object_eq(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_basic_object_eq(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     let c_result = fun.push_insn(hir::Insn::IsBitEqual { left: recv, right: other });
     let result = fun.push_insn(hir::Insn::BoxBool { val: c_result });
     Some(result)
 }
 
-fn inline_basic_object_not(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_basic_object_not(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
     let &[] = args else { return None; };
     if fun.type_of(recv).is_known_truthy() {
         let result = fun.push_insn(hir::Insn::Const { val: hir::Const::Value(Qfalse) });
@@ -747,9 +747,9 @@ fn inline_basic_object_not(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir
     None
 }
 
-fn inline_basic_object_neq(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_basic_object_neq(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
-    let result = try_inline_fixnum_op(fun,&|left, right| hir::Insn::FixnumNeq { left, right }, BOP_NEQ, recv, other, state);
+    let result = try_inline_fixnum_op(fun, &|left, right| hir::Insn::FixnumNeq { left, right }, BOP_NEQ, recv, other, state);
     if result.is_some() {
         return result;
     }
@@ -762,18 +762,18 @@ fn inline_basic_object_neq(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir
     Some(result)
 }
 
-fn inline_basic_object_initialize(fun: &mut hir::Emitter,_recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_basic_object_initialize(fun: &mut hir::Emitter, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
     if !args.is_empty() { return None; }
     let result = fun.push_insn(hir::Insn::Const { val: hir::Const::Value(Qnil) });
     Some(result)
 }
 
-fn inline_nilclass_nil_p(fun: &mut hir::Emitter,_recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_nilclass_nil_p(fun: &mut hir::Emitter, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
     if !args.is_empty() { return None; }
     Some(fun.push_insn(hir::Insn::Const { val: hir::Const::Value(Qtrue) }))
 }
 
-fn inline_eqq(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_eqq(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     let recv_class = fun.type_of(recv).runtime_exact_ruby_class()?;
     if !fun.assume_expected_cfunc(recv_class, ID!(eq), rb_obj_equal as _, state) {
@@ -784,7 +784,7 @@ fn inline_eqq(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], st
     Some(result)
 }
 
-fn inline_kernel_is_a_p(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_kernel_is_a_p(fun: &mut hir::Emitter, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     if fun.is_a(other, types::Class) {
         let result = fun.push_insn(hir::Insn::IsA { val: recv, class: other });
@@ -793,7 +793,7 @@ fn inline_kernel_is_a_p(fun: &mut hir::Emitter,recv: hir::InsnId, args: &[hir::I
     None
 }
 
-fn inline_kernel_nil_p(fun: &mut hir::Emitter,_recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_kernel_nil_p(fun: &mut hir::Emitter, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
     if !args.is_empty() { return None; }
     Some(fun.push_insn(hir::Insn::Const { val: hir::Const::Value(Qfalse) }))
 }
@@ -901,7 +901,7 @@ fn inline_kernel_respond_to_p(
     Some(fun.push_insn(hir::Insn::Const { val: hir::Const::Value(result) }))
 }
 
-fn inline_kernel_class(fun: &mut hir::Emitter,_recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_kernel_class(fun: &mut hir::Emitter, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
     let &[recv] = args else { return None; };
     let recv_class = fun.type_of(recv).runtime_exact_ruby_class()?;
     let real_class = unsafe { rb_class_real(recv_class) };
@@ -910,7 +910,7 @@ fn inline_kernel_class(fun: &mut hir::Emitter,_recv: hir::InsnId, args: &[hir::I
 
 /// Inline `fixnum_inc(ec, self, num)` implies FixnumAdd(num, 1).
 /// num is always a Fixnum (starts at 0 and is incremented by fixnum_inc).
-fn inline_fixnum_inc(fun: &mut hir::Emitter,_recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_fixnum_inc(fun: &mut hir::Emitter, _recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[_self, num] = args else { return None; };
     let one = fun.push_insn(hir::Insn::Const { val: hir::Const::Value(VALUE::fixnum_from_usize(1)) });
     let result = fun.push_insn(hir::Insn::FixnumAdd { left: num, right: one, state });
@@ -919,7 +919,7 @@ fn inline_fixnum_inc(fun: &mut hir::Emitter,_recv: hir::InsnId, args: &[hir::Ins
 
 /// Inline `ary_at(ec, self, index)` implies ArrayAref.
 /// Called from Array#each etc. where self is Array and index is in bounds.
-fn inline_ary_at(fun: &mut hir::Emitter,_recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_ary_at(fun: &mut hir::Emitter, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
     let &[recv, index] = args else { return None; };
     let recv = fun.push_insn(hir::Insn::RefineType { val: recv, new_type: types::Array });
     let index = fun.push_insn(hir::Insn::UnboxFixnum { val: index });
@@ -929,7 +929,7 @@ fn inline_ary_at(fun: &mut hir::Emitter,_recv: hir::InsnId, args: &[hir::InsnId]
 
 /// Inline `ary_at_end(ec, self, index)` implies index >= ArrayLength(self).
 /// Called from Array#each etc. where self is Array and index is Fixnum.
-fn inline_ary_at_end(fun: &mut hir::Emitter,_recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_ary_at_end(fun: &mut hir::Emitter, _recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[recv, index] = args else { return None; };
     let recv = fun.push_insn(hir::Insn::RefineType { val: recv, new_type: types::Array });
     let length_cint = fun.push_insn(hir::Insn::ArrayLength { array: recv });
