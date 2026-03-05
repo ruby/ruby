@@ -1210,12 +1210,14 @@ fn gen_load_self() -> Opnd {
 }
 
 fn gen_load_field(asm: &mut Assembler, recv: Opnd, id: ID, offset: i32, return_type: Type) -> Opnd {
+    gen_incr_counter(asm, Counter::load_field_count);
     asm_comment!(asm, "Load field id={} offset={}", id.contents_lossy(), offset);
     let recv = asm.load(recv);
     asm.load(Opnd::mem(return_type.num_bits(), recv, offset))
 }
 
 fn gen_store_field(asm: &mut Assembler, recv: Opnd, id: ID, offset: i32, val: Opnd, val_type: Type) {
+    gen_incr_counter(asm, Counter::store_field_count);
     asm_comment!(asm, "Store field id={} offset={}", id.contents_lossy(), offset);
     let recv = asm.load(recv);
     asm.store(Opnd::mem(val_type.num_bits(), recv, offset), val);
