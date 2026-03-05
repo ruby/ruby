@@ -14033,7 +14033,6 @@ mod hir_opt_tests {
           PatchPoint SingleRactorMode
           WriteBarrier v20, v13
           v28:HeapBasicObject = RefineType v20, HeapBasicObject
-          StoreField v28, :@a@0x1002, v13
           WriteBarrier v28, v13
           CheckInterrupts
           Return v13

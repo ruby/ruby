@@ -1482,7 +1482,9 @@ impl Insn {
             Insn::LoadSelf { .. } => Effect::read_write(abstract_heaps::Frame, abstract_heaps::Empty),
             Insn::LoadField { .. } => Effect::read_write(abstract_heaps::Memory, abstract_heaps::Empty),
             Insn::StoreField { .. } => effects::Any,
-            Insn::WriteBarrier { .. } => effects::Any,
+            // WriteBarrier can write to object flags and mark bits in Allocator memory.
+            // This is why WriteBarrier writes to the "Memory" effect. We do not yet have a more granular specialization for flags
+            Insn::WriteBarrier { .. } => Effect::read_write(abstract_heaps::Allocator, abstract_heaps::Allocator.union(abstract_heaps::Memory)),
             Insn::SetLocal { .. } => effects::Any,
             Insn::GetSpecialSymbol { .. } => effects::Any,
             Insn::GetSpecialNumber { .. } => effects::Any,
@@ -1583,11 +1585,6 @@ impl Insn {
     /// Note: These are restrictions on the `write` `EffectSet` only. Even instructions with
     /// `read: effects::Any` could potentially be omitted.
     fn is_elidable(&self) -> bool {
-        // TODO: Remove special casing of write barrier once write barrier effects are refined.
-        // Initial work towards this is done in PR #16246
-        if let Insn::WriteBarrier { .. } = self {
-            return false
-        }
         abstract_heaps::Allocator.includes(self.effects_of().write_bits())
     }
 }
@@ -3390,6 +3387,10 @@ impl Function {
     }
 
     pub fn load_rbasic_flags(&mut self, block: BlockId, recv: InsnId) -> InsnId {
+        // Technically this also includes the shape (_shape_id) because the (shape, flags) tuple is
+        // a (u32, u32) inside a u64 at RUBY_OFFSET_RBASIC_FLAGS (offset 0). It's fine to load the
+        // shape alongside the flags, but make sure not to *store* the shape accidentally by
+        // writing a u64.
         self.push_insn(block, Insn::LoadField { recv, id: ID!(_rbasic_flags), offset: RUBY_OFFSET_RBASIC_FLAGS, return_type: types::CUInt64 })
     }
 
@@ -4919,8 +4920,6 @@ impl Function {
                         let heap_entry = compile_time_heap.get(&key).copied();
                         // TODO(Jacob): Switch from actual to partial equality
                         if Some(val) == heap_entry {
-                            // TODO(Jacob): Add TBAA to avoid removing so many entries
-                            compile_time_heap.retain(|(_, off), _| *off != offset);
                             // If the value is already stored, short circuit and don't add an instruction to the block
                             continue
                         }
@@ -4939,9 +4938,20 @@ impl Function {
                                 continue
                             }
                             std::collections::hash_map::Entry::Vacant(_) => {
+                                // If the value has not been accessed, cache a copy to optimize future loads or stores.
                                 compile_time_heap.insert(key, insn_id);
                             }
                         }
+                        insn_id
+                    }
+                    Insn::WriteBarrier { .. } => {
+                        // Currently, WriteBarrier write effects are Allocator and Memory when we'd really like them to be flags.
+                        // We don't use LoadField for mark bits so we can ignore them for now.
+                        // But flags does not exist in our effects abstract heap modeling and we don't want to add special casing to effects.
+                        // This special casing in this pass here should be removed once we refine our effects system to provide greater granularity for WriteBarrier.
+                        // TODO: use TBAA
+                        let offset = RUBY_OFFSET_RBASIC_FLAGS;
+                        compile_time_heap.retain(|(_, off), _| *off != offset);
                         insn_id
                     },
                     insn => {
