@@ -2496,6 +2496,22 @@ impl<'a> Emitter<'a> {
         self.fun.assume_no_singleton_classes(self.block, klass, state)
     }
 
+    pub fn assume_root_box(&mut self, state: InsnId) -> bool {
+        self.fun.assume_root_box(self.block, state)
+    }
+
+    pub fn frame_state(&self, insn_id: InsnId) -> FrameState { self.fun.frame_state(insn_id) }
+    pub fn profiled_type_of_at(&self, insn: InsnId, iseq_insn_idx: usize) -> Option<ProfiledType> { self.fun.profiled_type_of_at(insn, iseq_insn_idx) }
+    pub fn make_equal_to(&mut self, old: InsnId, new: InsnId) { self.fun.make_equal_to(old, new); }
+
+    fn load_shape(&mut self, recv: InsnId) -> InsnId {
+        self.fun.load_shape(self.block, recv)
+    }
+
+    fn guard_shape(&mut self, val: InsnId, expected: ShapeId, state: InsnId) -> InsnId {
+        self.fun.guard_shape(self.block, val, expected, state)
+    }
+
     /// Try to fold a binary fixnum operator to a constant. Emits the result
     /// (folded or original) into the block.
     fn fold_fixnum_bop(&mut self, insn_id: InsnId, left: InsnId, right: InsnId, f: impl FnOnce(Option<i64>, Option<i64>) -> Option<i64>) {
@@ -4415,10 +4431,9 @@ impl Function {
 
     fn inline(&mut self) {
         for block in self.rpo() {
-            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
-            assert!(self.blocks[block.0].insns.is_empty());
+            let (mut ctx, old_insns) = Emitter::editing(self, block);
             for insn_id in old_insns {
-                match self.find(insn_id) {
+                match ctx.find(insn_id) {
                     // We can inline SendDirect with blockiseq because we are prohibiting `yield`
                     // and `.call`, which would trigger autosplat. We only inline constants and
                     // variables and builtin calls.
@@ -4427,28 +4442,28 @@ impl Function {
                         let ci_flags = unsafe { vm_ci_flag(call_info) };
                         // .send call is not currently supported for builtins
                         if ci_flags & VM_CALL_OPT_SEND != 0 {
-                            self.push_insn_id(block, insn_id); continue;
+                            ctx.keep(insn_id); continue;
                         }
                         let Some(value) = iseq_get_return_value(iseq, None, ci_flags) else {
-                            self.push_insn_id(block, insn_id); continue;
+                            ctx.keep(insn_id); continue;
                         };
                         match value {
                             IseqReturn::LocalVariable(idx) => {
-                                self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
-                                self.make_equal_to(insn_id, args[idx as usize]);
+                                ctx.push_insn(Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
+                                ctx.replace(insn_id, args[idx as usize]);
                             }
                             IseqReturn::Value(value) => {
-                                self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
-                                let replacement = self.push_insn(block, Insn::Const { val: Const::Value(value) });
-                                self.make_equal_to(insn_id, replacement);
+                                ctx.push_insn(Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
+                                let replacement = ctx.push_insn(Insn::Const { val: Const::Value(value) });
+                                ctx.replace(insn_id, replacement);
                             }
                             IseqReturn::Receiver => {
-                                self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
-                                self.make_equal_to(insn_id, recv);
+                                ctx.push_insn(Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
+                                ctx.replace(insn_id, recv);
                             }
                             IseqReturn::InvokeLeafBuiltin(bf, return_type) => {
-                                self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
-                                let replacement = self.push_insn(block, Insn::InvokeBuiltin {
+                                ctx.push_insn(Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
+                                let replacement = ctx.push_insn(Insn::InvokeBuiltin {
                                     bf,
                                     recv,
                                     args: vec![recv],
@@ -4456,11 +4471,11 @@ impl Function {
                                     leaf: true,
                                     return_type,
                                 });
-                                self.make_equal_to(insn_id, replacement);
+                                ctx.replace(insn_id, replacement);
                             }
                         }
                     }
-                    _ => { self.push_insn_id(block, insn_id); }
+                    _ => { ctx.keep(insn_id); }
                 }
             }
         }
@@ -4487,42 +4502,41 @@ impl Function {
 
     fn optimize_getivar(&mut self) {
         for block in self.rpo() {
-            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
-            assert!(self.blocks[block.0].insns.is_empty());
+            let (mut ctx, old_insns) = Emitter::editing(self, block);
             for insn_id in old_insns {
-                match self.find(insn_id) {
+                match ctx.find(insn_id) {
                     Insn::GetIvar { self_val, id, ic: _, state } => {
-                        let frame_state = self.frame_state(state);
-                        let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.insn_idx) else {
+                        let frame_state = ctx.frame_state(state);
+                        let Some(recv_type) = ctx.profiled_type_of_at(self_val, frame_state.insn_idx) else {
                             // No (monomorphic/skewed polymorphic) profile info
-                            self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_not_monomorphic));
-                            self.push_insn_id(block, insn_id); continue;
+                            ctx.push_insn(Insn::IncrCounter(Counter::getivar_fallback_not_monomorphic));
+                            ctx.keep(insn_id); continue;
                         };
                         if recv_type.flags().is_immediate() {
                             // Instance variable lookups on immediate values are always nil
-                            self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_immediate));
-                            self.push_insn_id(block, insn_id); continue;
+                            ctx.push_insn(Insn::IncrCounter(Counter::getivar_fallback_immediate));
+                            ctx.keep(insn_id); continue;
                         }
                         assert!(recv_type.shape().is_valid());
                         if recv_type.shape().is_too_complex() {
                             // too-complex shapes can't use index access
-                            self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_too_complex));
-                            self.push_insn_id(block, insn_id); continue;
+                            ctx.push_insn(Insn::IncrCounter(Counter::getivar_fallback_too_complex));
+                            ctx.keep(insn_id); continue;
                         }
-                        let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
-                        let shape = self.load_shape(block, self_val);
-                        self.guard_shape(block, shape, recv_type.shape(), state);
+                        let self_val = ctx.push_insn(Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
+                        let shape = ctx.load_shape(self_val);
+                        ctx.guard_shape(shape, recv_type.shape(), state);
                         let mut ivar_index: u16 = 0;
                         let replacement = if ! unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
                             // If there is no IVAR index, then the ivar was undefined when we
                             // entered the compiler.  That means we can just return nil for this
                             // shape + iv name
-                            self.push_insn(block, Insn::Const { val: Const::Value(Qnil) })
+                            ctx.push_insn(Insn::Const { val: Const::Value(Qnil) })
                         } else if recv_type.flags().is_t_class_or_module() {
                             // Class/module ivar: load from prime classext's fields_obj
-                            if self.assume_root_box(block, state) {
+                            if ctx.assume_root_box(state) {
                                 // Root box only: load directly from prime classext
-                                let fields_obj = self.push_insn(block, Insn::LoadField {
+                                let fields_obj = ctx.push_insn(Insn::LoadField {
                                     recv: self_val, id: ID!(_fields_obj),
                                     offset: RCLASS_OFFSET_PRIME_FIELDS_OBJ as i32,
                                     return_type: types::RubyValue,
@@ -4530,18 +4544,18 @@ impl Function {
                                 if recv_type.flags().is_fields_embedded() {
                                     let offset = ROBJECT_OFFSET_AS_ARY as i32
                                         + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
-                                    self.push_insn(block, Insn::LoadField {
+                                    ctx.push_insn(Insn::LoadField {
                                         recv: fields_obj, id, offset,
                                         return_type: types::BasicObject,
                                     })
                                 } else {
-                                    let ptr = self.push_insn(block, Insn::LoadField {
+                                    let ptr = ctx.push_insn(Insn::LoadField {
                                         recv: fields_obj, id: ID!(_as_heap),
                                         offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32,
                                         return_type: types::CPtr,
                                     });
                                     let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
-                                    self.push_insn(block, Insn::LoadField {
+                                    ctx.push_insn(Insn::LoadField {
                                         recv: ptr, id, offset,
                                         return_type: types::BasicObject,
                                     })
@@ -4550,8 +4564,8 @@ impl Function {
                                 // Non-root box active: fall back to C call
                                 // NOTE: it's fine to use rb_ivar_get_at_no_ractor_check because
                                 // getinstancevariable does assume_single_ractor_mode()
-                                let ivar_index_insn = self.push_insn(block, Insn::Const { val: Const::CUInt16(ivar_index as u16) });
-                                self.push_insn(block, Insn::CCall {
+                                let ivar_index_insn = ctx.push_insn(Insn::Const { val: Const::CUInt16(ivar_index as u16) });
+                                ctx.push_insn(Insn::CCall {
                                     cfunc: rb_ivar_get_at_no_ractor_check as *const u8,
                                     recv: self_val,
                                     args: vec![ivar_index_insn],
@@ -4561,7 +4575,7 @@ impl Function {
                             }
                         } else if recv_type.flags().is_typed_data() {
                             // Typed T_DATA: load from fields_obj at fixed offset in RTypedData
-                            let fields_obj = self.push_insn(block, Insn::LoadField {
+                            let fields_obj = ctx.push_insn(Insn::LoadField {
                                 recv: self_val, id: ID!(_fields_obj),
                                 offset: RTYPEDDATA_OFFSET_FIELDS_OBJ as i32,
                                 return_type: types::RubyValue,
@@ -4569,18 +4583,18 @@ impl Function {
                             if recv_type.flags().is_fields_embedded() {
                                 let offset = ROBJECT_OFFSET_AS_ARY as i32
                                     + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
-                                self.push_insn(block, Insn::LoadField {
+                                ctx.push_insn(Insn::LoadField {
                                     recv: fields_obj, id, offset,
                                     return_type: types::BasicObject,
                                 })
                             } else {
-                                let ptr = self.push_insn(block, Insn::LoadField {
+                                let ptr = ctx.push_insn(Insn::LoadField {
                                     recv: fields_obj, id: ID!(_as_heap),
                                     offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32,
                                     return_type: types::CPtr,
                                 });
                                 let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
-                                self.push_insn(block, Insn::LoadField {
+                                ctx.push_insn(Insn::LoadField {
                                     recv: ptr, id, offset,
                                     return_type: types::BasicObject,
                                 })
@@ -4589,8 +4603,8 @@ impl Function {
                             // Non-T_OBJECT, non-class/module, non-typed-data: fall back to C call
                             // NOTE: it's fine to use rb_ivar_get_at_no_ractor_check because
                             // getinstancevariable does assume_single_ractor_mode()
-                            let ivar_index_insn = self.push_insn(block, Insn::Const { val: Const::CUInt16(ivar_index as u16) });
-                            self.push_insn(block, Insn::CCall {
+                            let ivar_index_insn = ctx.push_insn(Insn::Const { val: Const::CUInt16(ivar_index as u16) });
+                            ctx.push_insn(Insn::CCall {
                                 cfunc: rb_ivar_get_at_no_ractor_check as *const u8,
                                 recv: self_val,
                                 args: vec![ivar_index_insn],
@@ -4600,79 +4614,79 @@ impl Function {
                         } else if recv_type.flags().is_embedded() {
                             // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
                             let offset = ROBJECT_OFFSET_AS_ARY as i32 + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
-                            self.push_insn(block, Insn::LoadField { recv: self_val, id, offset, return_type: types::BasicObject })
+                            ctx.push_insn(Insn::LoadField { recv: self_val, id, offset, return_type: types::BasicObject })
                         } else {
-                            let as_heap =  self.push_insn(block, Insn::LoadField { recv: self_val, id: ID!(_as_heap), offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32, return_type: types::CPtr });
+                            let as_heap = ctx.push_insn(Insn::LoadField { recv: self_val, id: ID!(_as_heap), offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32, return_type: types::CPtr });
 
                             let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
-                            self.push_insn(block, Insn::LoadField { recv: as_heap, id, offset, return_type: types::BasicObject })
+                            ctx.push_insn(Insn::LoadField { recv: as_heap, id, offset, return_type: types::BasicObject })
                         };
-                        self.make_equal_to(insn_id, replacement);
+                        ctx.make_equal_to(insn_id, replacement);
                     }
                     Insn::DefinedIvar { self_val, id, pushval, state } => {
-                        let frame_state = self.frame_state(state);
-                        let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.insn_idx) else {
+                        let frame_state = ctx.frame_state(state);
+                        let Some(recv_type) = ctx.profiled_type_of_at(self_val, frame_state.insn_idx) else {
                             // No (monomorphic/skewed polymorphic) profile info
-                            self.push_insn(block, Insn::IncrCounter(Counter::definedivar_fallback_not_monomorphic));
-                            self.push_insn_id(block, insn_id); continue;
+                            ctx.push_insn(Insn::IncrCounter(Counter::definedivar_fallback_not_monomorphic));
+                            ctx.keep(insn_id); continue;
                         };
                         if recv_type.flags().is_immediate() {
                             // Instance variable lookups on immediate values are always nil
-                            self.push_insn(block, Insn::IncrCounter(Counter::definedivar_fallback_immediate));
-                            self.push_insn_id(block, insn_id); continue;
+                            ctx.push_insn(Insn::IncrCounter(Counter::definedivar_fallback_immediate));
+                            ctx.keep(insn_id); continue;
                         }
                         assert!(recv_type.shape().is_valid());
                         if !recv_type.flags().is_t_object() {
                             // Check if the receiver is a T_OBJECT
-                            self.push_insn(block, Insn::IncrCounter(Counter::definedivar_fallback_not_t_object));
-                            self.push_insn_id(block, insn_id); continue;
+                            ctx.push_insn(Insn::IncrCounter(Counter::definedivar_fallback_not_t_object));
+                            ctx.keep(insn_id); continue;
                         }
                         if recv_type.shape().is_too_complex() {
                             // too-complex shapes can't use index access
-                            self.push_insn(block, Insn::IncrCounter(Counter::definedivar_fallback_too_complex));
-                            self.push_insn_id(block, insn_id); continue;
+                            ctx.push_insn(Insn::IncrCounter(Counter::definedivar_fallback_too_complex));
+                            ctx.keep(insn_id); continue;
                         }
-                        let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
-                        let shape = self.load_shape(block, self_val);
-                        self.guard_shape(block, shape, recv_type.shape(), state);
+                        let self_val = ctx.push_insn(Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
+                        let shape = ctx.load_shape(self_val);
+                        ctx.guard_shape(shape, recv_type.shape(), state);
                         let mut ivar_index: u16 = 0;
                         let replacement = if unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
-                            self.push_insn(block, Insn::Const { val: Const::Value(pushval) })
+                            ctx.push_insn(Insn::Const { val: Const::Value(pushval) })
                         } else {
                             // If there is no IVAR index, then the ivar was undefined when we
                             // entered the compiler.  That means we can just return nil for this
                             // shape + iv name
-                            self.push_insn(block, Insn::Const { val: Const::Value(Qnil) })
+                            ctx.push_insn(Insn::Const { val: Const::Value(Qnil) })
                         };
-                        self.make_equal_to(insn_id, replacement);
+                        ctx.make_equal_to(insn_id, replacement);
                     }
                     Insn::SetIvar { self_val, id, val, state, ic: _ } => {
-                        let frame_state = self.frame_state(state);
-                        let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.insn_idx) else {
+                        let frame_state = ctx.frame_state(state);
+                        let Some(recv_type) = ctx.profiled_type_of_at(self_val, frame_state.insn_idx) else {
                             // No (monomorphic/skewed polymorphic) profile info
-                            self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_not_monomorphic));
-                            self.push_insn_id(block, insn_id); continue;
+                            ctx.push_insn(Insn::IncrCounter(Counter::setivar_fallback_not_monomorphic));
+                            ctx.keep(insn_id); continue;
                         };
                         if recv_type.flags().is_immediate() {
                             // Instance variable lookups on immediate values are always nil
-                            self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_immediate));
-                            self.push_insn_id(block, insn_id); continue;
+                            ctx.push_insn(Insn::IncrCounter(Counter::setivar_fallback_immediate));
+                            ctx.keep(insn_id); continue;
                         }
                         assert!(recv_type.shape().is_valid());
                         if !recv_type.flags().is_t_object() {
                             // Check if the receiver is a T_OBJECT
-                            self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_not_t_object));
-                            self.push_insn_id(block, insn_id); continue;
+                            ctx.push_insn(Insn::IncrCounter(Counter::setivar_fallback_not_t_object));
+                            ctx.keep(insn_id); continue;
                         }
                         if recv_type.shape().is_too_complex() {
                             // too-complex shapes can't use index access
-                            self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_too_complex));
-                            self.push_insn_id(block, insn_id); continue;
+                            ctx.push_insn(Insn::IncrCounter(Counter::setivar_fallback_too_complex));
+                            ctx.keep(insn_id); continue;
                         }
                         if recv_type.shape().is_frozen() {
                             // Can't set ivars on frozen objects
-                            self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_frozen));
-                            self.push_insn_id(block, insn_id); continue;
+                            ctx.push_insn(Insn::IncrCounter(Counter::setivar_fallback_frozen));
+                            ctx.keep(insn_id); continue;
                         }
                         let mut ivar_index: u16 = 0;
                         let mut next_shape_id = recv_type.shape();
@@ -4688,8 +4702,8 @@ impl Function {
                             let new_shape_too_complex = unsafe { rb_jit_shape_too_complex_p(next_shape_id.0) };
                             // TODO(max): Is it OK to bail out here after making a shape transition?
                             if new_shape_too_complex {
-                                self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_new_shape_too_complex));
-                                self.push_insn_id(block, insn_id); continue;
+                                ctx.push_insn(Insn::IncrCounter(Counter::setivar_fallback_new_shape_too_complex));
+                                ctx.keep(insn_id); continue;
                             }
                             let ivar_result = unsafe { rb_shape_get_iv_index(next_shape_id.0, id, &mut ivar_index) };
                             assert!(ivar_result, "New shape must have the ivar index");
@@ -4699,34 +4713,34 @@ impl Function {
                             // reallocate it.
                             let needs_extension = next_capacity != current_capacity;
                             if needs_extension {
-                                self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_new_shape_needs_extension));
-                                self.push_insn_id(block, insn_id); continue;
+                                ctx.push_insn(Insn::IncrCounter(Counter::setivar_fallback_new_shape_needs_extension));
+                                ctx.keep(insn_id); continue;
                             }
                             // Fall through to emitting the ivar write
                         }
-                        let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
-                        let shape = self.load_shape(block, self_val);
-                        self.guard_shape(block, shape, recv_type.shape(), state);
+                        let self_val = ctx.push_insn(Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
+                        let shape = ctx.load_shape(self_val);
+                        ctx.guard_shape(shape, recv_type.shape(), state);
                         // Current shape contains this ivar
                         let (ivar_storage, offset) = if recv_type.flags().is_embedded() {
                             // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
                             let offset = ROBJECT_OFFSET_AS_ARY as i32 + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
                             (self_val, offset)
                         } else {
-                            let as_heap = self.push_insn(block, Insn::LoadField { recv: self_val, id: ID!(_as_heap), offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32, return_type: types::CPtr });
+                            let as_heap = ctx.push_insn(Insn::LoadField { recv: self_val, id: ID!(_as_heap), offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32, return_type: types::CPtr });
                             let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
                             (as_heap, offset)
                         };
-                        self.push_insn(block, Insn::StoreField { recv: ivar_storage, id, offset, val });
-                        self.push_insn(block, Insn::WriteBarrier { recv: self_val, val });
+                        ctx.push_insn(Insn::StoreField { recv: ivar_storage, id, offset, val });
+                        ctx.push_insn(Insn::WriteBarrier { recv: self_val, val });
                         if next_shape_id != recv_type.shape() {
                             // Write the new shape ID
-                            let shape_id = self.push_insn(block, Insn::Const { val: Const::CShape(next_shape_id) });
+                            let shape_id = ctx.push_insn(Insn::Const { val: Const::CShape(next_shape_id) });
                             let shape_id_offset = unsafe { rb_shape_id_offset() };
-                            self.push_insn(block, Insn::StoreField { recv: self_val, id: ID!(_shape_id), offset: shape_id_offset, val: shape_id });
+                            ctx.push_insn(Insn::StoreField { recv: self_val, id: ID!(_shape_id), offset: shape_id_offset, val: shape_id });
                         }
                     }
-                    _ => { self.push_insn_id(block, insn_id); }
+                    _ => { ctx.keep(insn_id); }
                 }
             }
         }
@@ -5330,10 +5344,9 @@ impl Function {
     fn remove_redundant_patch_points(&mut self) {
         for block_id in self.rpo() {
             let mut seen = HashSet::new();
-            let insns = std::mem::take(&mut self.blocks[block_id.0].insns);
-            let mut new_insns = Vec::with_capacity(insns.len());
-            for insn_id in insns {
-                let insn = self.find(insn_id);
+            let (mut ctx, old_insns) = Emitter::editing(self, block_id);
+            for insn_id in old_insns {
+                let insn = ctx.find(insn_id);
                 if let Insn::PatchPoint { invariant, .. } = insn {
                     if !seen.insert(invariant) {
                         continue;
@@ -5341,9 +5354,8 @@ impl Function {
                 } else if insn.effects_of().write_bits().overlaps(abstract_heaps::PatchPoint) {
                     seen.clear();
                 }
-                new_insns.push(insn_id);
+                ctx.keep(insn_id);
             }
-            self.blocks[block_id.0].insns = new_insns;
         }
     }
 
