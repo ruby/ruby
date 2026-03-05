@@ -279,6 +279,18 @@
 #endif
 
 /**
+ * A macro for defining a flexible array member. C99 supports `data[]`, GCC
+ * supports `data[0]` as an extension, and older compilers require `data[1]`.
+ */
+#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
+    #define PM_FLEX_ARY_LEN   /* data[] */
+#elif defined(__GNUC__) && !defined(__STRICT_ANSI__)
+    #define PM_FLEX_ARY_LEN 0 /* data[0] */
+#else
+    #define PM_FLEX_ARY_LEN 1 /* data[1] */
+#endif
+
+/**
  * We need to align nodes in the AST to a pointer boundary so that it can be
  * safely cast to different node types. Use PRISM_ALIGNAS/PRISM_ALIGNOF to
  * specify alignment in a compiler-agnostic way.

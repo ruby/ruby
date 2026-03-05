@@ -1876,7 +1876,7 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
                 st_insert(parent_scope->index_lookup_table, (st_data_t) constant_id, (st_data_t) local_index);
             }
 
-            pm_constant_id_list_append(&parent_scope->locals, constant_id);
+            pm_constant_id_list_append(&result.arena, &parent_scope->locals, constant_id);
         }
 
         node->previous = parent_scope;
@@ -1899,7 +1899,6 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
     pm_scope_node_t *prev = result.node.previous;
     while (prev) {
         pm_scope_node_t *next = prev->previous;
-        pm_constant_id_list_free(&prev->locals);
         pm_scope_node_destroy(prev);
         SIZED_FREE(prev);
         prev = next;

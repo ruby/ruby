@@ -101,6 +101,7 @@ PRISM_FILES = prism/api_node.$(OBJEXT) \
 		prism/serialize.$(OBJEXT) \
 		prism/static_literals.$(OBJEXT) \
 		prism/token_type.$(OBJEXT) \
+		prism/util/pm_arena.$(OBJEXT) \
 		prism/util/pm_buffer.$(OBJEXT) \
 		prism/util/pm_char.$(OBJEXT) \
 		prism/util/pm_constant_pool.$(OBJEXT) \
