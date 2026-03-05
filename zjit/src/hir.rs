@@ -2416,6 +2416,14 @@ impl<'a> Emitter<'a> {
         insns
     }
 
+    /// Start editing an existing block in-place. Returns the old instructions
+    /// so the caller can iterate over them and re-emit selectively.
+    /// New instructions are pushed directly into the block.
+    fn editing(fun: &'a mut Function, block: BlockId) -> (Self, Vec<InsnId>) {
+        let old_insns = std::mem::take(&mut fun.blocks[block.0].insns);
+        (Self { fun, block, terminated: false }, old_insns)
+    }
+
     // ── Shared emission API (used by both inlining and simplification) ──
 
     /// Create and append an instruction. This is the primary emission method,
@@ -5204,13 +5212,11 @@ impl Function {
         // function-level infer_types after each pruned branch.
         let rpo = self.rpo();
         for block in rpo {
-            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
-            let mut ctx = Emitter::new(self);
+            let (mut ctx, old_insns) = Emitter::editing(self, block);
             for insn_id in old_insns {
                 ctx.simplify(insn_id);
                 if ctx.terminated { break; }
             }
-            self.blocks[block.0].insns = ctx.into_insns();
         }
     }
 
