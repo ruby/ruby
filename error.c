@@ -50,6 +50,7 @@
 #include "ruby_assert.h"
 #include "vm_core.h"
 #include "yjit.h"
+#include "zjit.h"
 
 #include "builtin.h"
 
@@ -2367,7 +2368,7 @@ name_err_init_attr(VALUE exc, VALUE recv, VALUE method)
     rb_ivar_set(exc, id_name, method);
     err_init_recv(exc, recv);
     if (cfp && VM_FRAME_TYPE(cfp) != VM_FRAME_MAGIC_DUMMY) {
-        rb_ivar_set(exc, id_iseq, rb_iseqw_new(cfp->iseq));
+        rb_ivar_set(exc, id_iseq, rb_iseqw_new(rb_zjit_cfp_iseq(cfp)));
     }
     return exc;
 }

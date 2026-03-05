@@ -2555,10 +2555,10 @@ fn gen_push_frame(asm: &mut Assembler, argc: usize, state: &FrameState, frame: C
 
     asm_comment!(asm, "push callee control frame");
 
-    if let Some(iseq) = frame.iseq {
+    if let Some(_iseq) = frame.iseq {
         // cfp_opnd(RUBY_OFFSET_CFP_PC): written by the callee frame on side-exits, non-leaf calls, or calls with GC
         // cfp_opnd(RUBY_OFFSET_CFP_SP): written by the callee frame on side-exits, non-leaf calls, or calls with GC
-        asm.mov(cfp_opnd(RUBY_OFFSET_CFP_ISEQ), VALUE::from(iseq).into());
+        //asm.mov(cfp_opnd(RUBY_OFFSET_CFP_ISEQ), VALUE::from(iseq).into());
     } else {
         // C frames don't have a PC and ISEQ in normal operation. ISEQ frames set PC on gen_save_pc_for_gc().
         // When runtime checks are enabled we poison the PC for C frames so accidental reads stand out.
@@ -2657,6 +2657,7 @@ fn build_side_exit(jit: &JITState, state: &FrameState) -> SideExit {
         pc: Opnd::const_ptr(state.pc),
         stack,
         locals,
+        iseq: jit.iseq,
     }
 }
 

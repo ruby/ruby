@@ -519,7 +519,10 @@ void
 rb_set_cfp_pc(struct rb_control_frame_struct *cfp, const VALUE *pc)
 {
     cfp->pc = pc;
-    if (rb_zjit_enabled_p) cfp->jit_return = 0; // TODO: do it in Rust (function_stub_hit)
+    if (rb_zjit_enabled_p && cfp->jit_return) {
+        cfp->iseq = rb_zjit_jit_return_iseq(cfp->jit_return);
+        cfp->jit_return = 0; // TODO: do it in Rust (function_stub_hit)
+    }
 }
 
 void

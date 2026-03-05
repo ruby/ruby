@@ -3,7 +3,7 @@ use crate::cruby::{IseqPtr, VALUE};
 #[derive(Debug)]
 pub struct JITFrame {
     pub pc: *const VALUE,
-    pub iseq: IseqPtr,
+    pub iseq: IseqPtr, // TODO: mark this
 }
 
 #[unsafe(no_mangle)]
@@ -89,4 +89,35 @@ mod tests {
     }
 
     // TODO: write a test with side exit before writing any jit_return (uninitialized jit_return as of side exit)
+
+    #[test]
+    fn test_caller_iseq() {
+        assert_snapshot!(inspect(r#"
+            def callee = call_caller
+            def test = callee
+
+            def callee2 = call_caller
+            def test2 = callee2
+
+            def call_caller = caller
+
+            test
+            test2
+            test.first
+        "#), @r#""<compiled>:2:in 'Object#callee'""#);
+    }
+
+    #[test]
+    fn test_iseq_on_raise() { // TODO: minimize
+        assert_snapshot!(inspect(r#"
+            def jit_entry(v) = make_range_then_exit(v)
+            def make_range_then_exit(v)
+              range = (v..1)
+              super rescue range
+            end
+            jit_entry(0)
+            jit_entry(0)
+            jit_entry(0/1r)
+        "#), @r#""#);
+    }
 }

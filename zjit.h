@@ -61,4 +61,15 @@ rb_zjit_cfp_pc(const rb_control_frame_t *cfp)
     }
 }
 
+static inline const rb_iseq_t*
+rb_zjit_cfp_iseq(const rb_control_frame_t *cfp)
+{
+    if (rb_zjit_enabled_p && cfp->jit_return) {
+        return rb_zjit_jit_return_iseq(cfp->jit_return);
+    }
+    else {
+        return cfp->iseq;
+    }
+}
+
 #endif // #ifndef ZJIT_H

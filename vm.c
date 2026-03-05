@@ -2842,6 +2842,7 @@ zjit_materialize_frames(rb_control_frame_t *cfp)
     while (true) {
         if (cfp->jit_return) {
             cfp->pc = rb_zjit_cfp_pc(cfp);
+            cfp->iseq = rb_zjit_cfp_iseq(cfp);
             cfp->jit_return = 0;
         }
         if (VM_FRAME_FINISHED_P(cfp)) break;

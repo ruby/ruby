@@ -688,16 +688,16 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
     }
 
     for (; cfp != end_cfp && (bt->backtrace_size < num_frames); cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp)) {
-        if (cfp->iseq) {
+        if (cfp->iseq || cfp->jit_return) {
             if (cfp->pc || cfp->jit_return) {
                 if (start_frame > 0) {
                     start_frame--;
                 }
                 else {
-                    bool internal = is_internal_location(cfp->iseq);
+                    bool internal = is_internal_location(rb_zjit_cfp_iseq(cfp));
                     if (skip_internal && internal) continue;
                     if (!skip_next_frame) {
-                        const rb_iseq_t *iseq = cfp->iseq;
+                        const rb_iseq_t *iseq = rb_zjit_cfp_iseq(cfp);
                         const VALUE *pc = rb_zjit_cfp_pc(cfp);
                         if (internal && backpatch_counter > 0) {
                             // To keep only one internal frame, discard the previous backpatch frames
@@ -753,10 +753,10 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
     // is the one of the caller Ruby frame, so if the last entry is a C frame we find the caller Ruby frame here.
     if (backpatch_counter > 0) {
         for (; cfp != end_cfp; cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp)) {
-            if (cfp->iseq && (cfp->pc || cfp->jit_return) && !(skip_internal && is_internal_location(cfp->iseq))) {
+            if ((cfp->iseq || cfp->jit_return) && (cfp->pc || cfp->jit_return) && !(skip_internal && is_internal_location(rb_zjit_cfp_iseq(cfp)))) {
                 VM_ASSERT(!skip_next_frame); // ISEQ_TYPE_RESCUE/ISEQ_TYPE_ENSURE should have a caller Ruby ISEQ, not a cfunc
-                bt_backpatch_loc(backpatch_counter, loc, cfp->iseq, rb_zjit_cfp_pc(cfp));
-                RB_OBJ_WRITTEN(btobj, Qundef, cfp->iseq);
+                bt_backpatch_loc(backpatch_counter, loc, rb_zjit_cfp_iseq(cfp), rb_zjit_cfp_pc(cfp));
+                RB_OBJ_WRITTEN(btobj, Qundef, rb_zjit_cfp_iseq(cfp));
                 if (do_yield) {
                     bt_yield_loc(loc - backpatch_counter, backpatch_counter, btobj);
                 }
