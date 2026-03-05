@@ -278,6 +278,11 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
 
     let reverse_post_order = function.rpo();
 
+    let iseq_name = iseq_get_location(iseq, 0);
+    let access_counter_ptrs = crate::state::ZJITState::get_iseq_access_count_pointers();
+    let access_count_ptr = access_counter_ptrs.entry(iseq_name.to_string()).or_insert_with(|| Box::new(0));
+    let access_count_ptr: &mut u64 = access_count_ptr.as_mut();
+
     // Create all LIR basic blocks corresponding to HIR basic blocks
     for (rpo_idx, &block_id) in reverse_post_order.iter().enumerate() {
         // Skip the entries superblock — it's an internal CFG artifact
@@ -294,6 +299,11 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
         // HIR block.
         let lir_block_id = hir_to_lir[block_id.0].unwrap();
         asm.set_current_block(lir_block_id);
+
+        if function.is_entry_block(block_id) {
+            // Increment the access count for this ISEQ
+            asm.incr_counter(Opnd::const_ptr(access_count_ptr), Opnd::UImm(1));
+        }
 
         // Write a label to jump to the basic block
         let label = jit.get_label(&mut asm, lir_block_id, block_id);
