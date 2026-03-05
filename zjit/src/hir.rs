@@ -2401,12 +2401,24 @@ pub struct Emitter<'a> {
     fun: &'a mut Function,
     block: BlockId,
     terminated: bool,
+    /// In debug builds, tracks old instructions vs what was kept/replaced/dropped,
+    /// so we can catch silently skipped instructions.
+    #[cfg(debug_assertions)]
+    before: HashSet<InsnId>,
+    #[cfg(debug_assertions)]
+    dropped: HashSet<InsnId>,
 }
 
 impl<'a> Emitter<'a> {
     fn new(fun: &'a mut Function) -> Self {
         let block = fun.new_block(u32::MAX);
-        Self { fun, block, terminated: false }
+        Self {
+            fun, block, terminated: false,
+            #[cfg(debug_assertions)]
+            before: HashSet::new(),
+            #[cfg(debug_assertions)]
+            dropped: HashSet::new(),
+        }
     }
 
     /// Take the accumulated instructions and remove the temporary block.
@@ -2419,9 +2431,21 @@ impl<'a> Emitter<'a> {
     /// Start editing an existing block in-place. Returns the old instructions
     /// so the caller can iterate over them and re-emit selectively.
     /// New instructions are pushed directly into the block.
+    ///
+    /// In debug builds, the emitter tracks that every old instruction is
+    /// explicitly handled (via keep/replace/replace_new/fallback/drop).
+    /// Silently skipping an instruction without calling one of these is
+    /// caught when the `Emitter` is dropped.
     fn editing(fun: &'a mut Function, block: BlockId) -> (Self, Vec<InsnId>) {
         let old_insns = std::mem::take(&mut fun.blocks[block.0].insns);
-        (Self { fun, block, terminated: false }, old_insns)
+        let emitter = Self {
+            fun, block, terminated: false,
+            #[cfg(debug_assertions)]
+            before: old_insns.iter().copied().collect(),
+            #[cfg(debug_assertions)]
+            dropped: HashSet::new(),
+        };
+        (emitter, old_insns)
     }
 
     // ── Shared emission API (used by both inlining and simplification) ──
@@ -2438,12 +2462,14 @@ impl<'a> Emitter<'a> {
     fn keep(&mut self, insn_id: InsnId) {
         self.fun.push_insn_id(self.block, insn_id);
         if self.fun.insns[insn_id.0].is_terminator() {
-            self.terminated = true;
+            self.terminate();
         }
     }
 
     /// Forward all uses of `old` to `existing` and drop `old` from the block.
     fn replace(&mut self, old: InsnId, existing: InsnId) {
+        #[cfg(debug_assertions)]
+        self.dropped.insert(old);
         self.fun.make_equal_to(old, existing);
     }
 
@@ -2456,20 +2482,36 @@ impl<'a> Emitter<'a> {
     /// Drop an instruction from the block entirely. Use for side-effect-free
     /// instructions that are dead (e.g. a branch whose condition is statically
     /// known to never trigger).
-    fn drop(&mut self) {
-        // Nothing to do — just don't add the instruction to the block.
-        // This method exists to make the intent explicit at call sites.
+    fn drop(&mut self, insn_id: InsnId) {
+        #[cfg(debug_assertions)]
+        self.dropped.insert(insn_id);
+    }
+
+    /// Mark the block as terminated. Remaining unvisited old instructions
+    /// are implicitly dead and must be passed to `drop_tail()`.
+    fn terminate(&mut self) {
+        self.terminated = true;
+    }
+
+    /// Drop all remaining unvisited instructions after early termination.
+    fn drop_tail(&mut self, remaining: impl Iterator<Item = InsnId>) {
+        #[cfg(debug_assertions)]
+        for insn_id in remaining {
+            self.dropped.insert(insn_id);
+        }
     }
 
     /// Create a new instruction, forward uses from `old` to it, and append it to the block.
     fn replace_new(&mut self, old: InsnId, insn: Insn) -> InsnId {
+        #[cfg(debug_assertions)]
+        self.dropped.insert(old);
         let new_id = self.push_insn(insn);
         if self.fun.insns[new_id.0].has_output() {
             self.fun.make_equal_to(old, new_id);
             self.fun.insn_types[new_id.0] = self.fun.infer_type(new_id);
         }
         if self.fun.insns[new_id.0].is_terminator() {
-            self.terminated = true;
+            self.terminate();
         }
         new_id
     }
@@ -2536,207 +2578,25 @@ impl<'a> Emitter<'a> {
         }
     }
 
-    /// Main dispatch: simplify one instruction. Calls keep/erase/replace as appropriate.
-    fn simplify(&mut self, insn_id: InsnId) {
-        match self.find(insn_id) {
-            Insn::GuardType { val, guard_type, .. } if self.is_a(val, guard_type) => {
-                self.replace(insn_id, val);
+}
+
+#[cfg(debug_assertions)]
+impl<'a> std::ops::Drop for Emitter<'a> {
+    fn drop(&mut self) {
+        // Only check when editing (before is non-empty).
+        if self.before.is_empty() { return; }
+        // Check that every instruction from the original block is either
+        // still in the block (kept/fallback) or was explicitly removed
+        // (replace/replace_new/drop). Silently skipping an instruction
+        // without calling one of these is a bug.
+        let after: HashSet<InsnId> = self.fun.blocks[self.block.0].insns.iter().copied().collect();
+        for &insn_id in &self.before {
+            if !after.contains(&insn_id) && !self.dropped.contains(&insn_id) {
+                panic!(
+                    "Emitter: instruction {insn_id} was silently skipped \
+                     (use keep/replace/replace_new/fallback/drop)",
+                );
             }
-            Insn::LoadField { recv, offset, return_type, .. } if return_type.is_subtype(types::BasicObject) &&
-                    u32::try_from(offset).is_ok() => {
-                let offset = (offset as u32).to_usize();
-                let recv_type = self.type_of(recv);
-                match recv_type.ruby_object() {
-                    Some(recv_obj) if recv_obj.is_frozen() => {
-                        let recv_ptr = recv_obj.as_ptr() as *const VALUE;
-                        let val = unsafe { recv_ptr.byte_add(offset).read() };
-                        self.replace_new(insn_id, Insn::Const { val: Const::Value(val) });
-                    }
-                    _ => self.keep(insn_id),
-                }
-            }
-            Insn::LoadField { recv, offset, return_type, .. } if return_type.is_subtype(types::CShape) &&
-                    u32::try_from(offset).is_ok() => {
-                let offset = (offset as u32).to_usize();
-                let recv_type = self.type_of(recv);
-                match recv_type.ruby_object() {
-                    Some(recv_obj) if recv_obj.is_frozen() => {
-                        let recv_ptr = recv_obj.as_ptr() as *const u32;
-                        let val = unsafe { recv_ptr.byte_add(offset).read() };
-                        self.replace_new(insn_id, Insn::Const { val: Const::CShape(ShapeId(val)) });
-                    }
-                    _ => self.keep(insn_id),
-                }
-            }
-            Insn::GuardBitEquals { val, expected, .. } => {
-                let recv_type = self.type_of(val);
-                if recv_type.has_value(expected) {
-                    self.replace(insn_id, val);
-                } else {
-                    self.keep(insn_id);
-                }
-            }
-            Insn::AnyToString { str, .. } if self.is_a(str, types::String) => {
-                self.replace(insn_id, str);
-            }
-            Insn::IsA { val, class } => {
-                let class_type = self.type_of(class);
-                if !class_type.is_subtype(types::Class) {
-                    return self.keep(insn_id);
-                }
-                let Some(class_value) = class_type.ruby_object() else {
-                    return self.keep(insn_id);
-                };
-                let val_type = self.type_of(val);
-                let the_class = Type::from_class_inexact(class_value);
-                if val_type.is_subtype(the_class) {
-                    self.replace_new(insn_id, Insn::Const { val: Const::Value(Qtrue) });
-                } else if !val_type.could_be(the_class) {
-                    self.replace_new(insn_id, Insn::Const { val: Const::Value(Qfalse) });
-                } else {
-                    self.keep(insn_id);
-                }
-            }
-            // Fixnum arithmetic: try identity elimination first, then constant folding
-            Insn::FixnumAdd { left, right, .. } => {
-                if self.type_of(right).fixnum_value() == Some(0) {
-                    self.replace(insn_id, left);
-                } else if self.type_of(left).fixnum_value() == Some(0) {
-                    self.replace(insn_id, right);
-                } else {
-                    self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
-                        (Some(l), Some(r)) => l.checked_add(r),
-                        _ => None,
-                    });
-                }
-            }
-            Insn::FixnumSub { left, right, .. } => {
-                if self.type_of(right).fixnum_value() == Some(0) {
-                    self.replace(insn_id, left);
-                } else {
-                    self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
-                        (Some(l), Some(r)) => l.checked_sub(r),
-                        _ => None,
-                    });
-                }
-            }
-            Insn::FixnumMult { left, right, .. } => {
-                if self.type_of(right).fixnum_value() == Some(1) {
-                    self.replace(insn_id, left);
-                } else if self.type_of(left).fixnum_value() == Some(1) {
-                    self.replace(insn_id, right);
-                } else {
-                    self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
-                        (Some(l), Some(r)) => l.checked_mul(r),
-                        (Some(0), _) | (_, Some(0)) => Some(0),
-                        _ => None,
-                    });
-                }
-            }
-            Insn::FixnumMod { left, right, .. } => {
-                self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
-                    (Some(l), Some(r)) if r != 0 => {
-                        let l_obj = VALUE::fixnum_from_isize(l as isize);
-                        let r_obj = VALUE::fixnum_from_isize(r as isize);
-                        Some(unsafe { rb_jit_fix_mod_fix(l_obj, r_obj) }.as_fixnum())
-                    },
-                    _ => None,
-                });
-            }
-            Insn::FixnumXor { left, right, .. } => {
-                if self.type_of(right).fixnum_value() == Some(0) {
-                    self.replace(insn_id, left);
-                } else if self.type_of(left).fixnum_value() == Some(0) {
-                    self.replace(insn_id, right);
-                } else {
-                    self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
-                        (Some(l), Some(r)) => Some(l ^ r),
-                        _ => None,
-                    });
-                }
-            }
-            Insn::FixnumAnd { left, right, .. } => {
-                self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
-                    (Some(l), Some(r)) => Some(l & r),
-                    _ => None,
-                });
-            }
-            Insn::FixnumOr { left, right, .. } => {
-                if self.type_of(right).fixnum_value() == Some(0) {
-                    self.replace(insn_id, left);
-                } else if self.type_of(left).fixnum_value() == Some(0) {
-                    self.replace(insn_id, right);
-                } else {
-                    self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
-                        (Some(l), Some(r)) => Some(l | r),
-                        _ => None,
-                    });
-                }
-            }
-            Insn::FixnumEq { left, right, .. } => {
-                self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
-                    (Some(l), Some(r)) => Some(l == r),
-                    _ => None,
-                });
-            }
-            Insn::FixnumNeq { left, right, .. } => {
-                self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
-                    (Some(l), Some(r)) => Some(l != r),
-                    _ => None,
-                });
-            }
-            Insn::FixnumLt { left, right, .. } => {
-                self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
-                    (Some(l), Some(r)) => Some(l < r),
-                    _ => None,
-                });
-            }
-            Insn::FixnumLe { left, right, .. } => {
-                self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
-                    (Some(l), Some(r)) => Some(l <= r),
-                    _ => None,
-                });
-            }
-            Insn::FixnumGt { left, right, .. } => {
-                self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
-                    (Some(l), Some(r)) => Some(l > r),
-                    _ => None,
-                });
-            }
-            Insn::FixnumGe { left, right, .. } => {
-                self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
-                    (Some(l), Some(r)) => Some(l >= r),
-                    _ => None,
-                });
-            }
-            Insn::ArrayAref { array, index }
-                if self.type_of(array).ruby_object_known()
-                    && self.type_of(index).is_subtype(types::CInt64) => {
-                let array_obj = self.type_of(array).ruby_object().unwrap();
-                match (array_obj.is_frozen(), self.type_of(index).cint64_value()) {
-                    (true, Some(index)) => {
-                        let val = unsafe { rb_yarv_ary_entry_internal(array_obj, index) };
-                        self.replace_new(insn_id, Insn::Const { val: Const::Value(val) });
-                    }
-                    _ => self.keep(insn_id),
-                }
-            }
-            Insn::Test { val } if self.type_of(val).is_known_falsy() => {
-                self.replace_new(insn_id, Insn::Const { val: Const::CBool(false) });
-            }
-            Insn::Test { val } if self.type_of(val).is_known_truthy() => {
-                self.replace_new(insn_id, Insn::Const { val: Const::CBool(true) });
-            }
-            Insn::IfTrue { val, target } if self.is_a(val, Type::from_cbool(true)) => {
-                self.replace_new(insn_id, Insn::Jump(target));
-            }
-            Insn::IfFalse { val, target } if self.is_a(val, Type::from_cbool(false)) => {
-                self.replace_new(insn_id, Insn::Jump(target));
-            }
-            // Branch condition is never true/false — drop the dead branch entirely
-            Insn::IfTrue { val, .. } if self.is_a(val, Type::from_cbool(false)) => self.drop(),
-            Insn::IfFalse { val, .. } if self.is_a(val, Type::from_cbool(true)) => self.drop(),
-            _ => self.keep(insn_id),
         }
     }
 }
@@ -4729,6 +4589,7 @@ impl Function {
                             let shape_id_offset = unsafe { rb_shape_id_offset() };
                             ctx.push_insn(Insn::StoreField { recv: self_val, id: ID!(_shape_id), offset: shape_id_offset, val: shape_id });
                         }
+                        ctx.drop(insn_id);
                     }
                     _ => { ctx.keep(insn_id); }
                 }
@@ -5217,9 +5078,212 @@ impl Function {
         let rpo = self.rpo();
         for block in rpo {
             let (mut ctx, old_insns) = Emitter::editing(self, block);
-            for insn_id in old_insns {
-                ctx.simplify(insn_id);
-                if ctx.terminated { break; }
+            let mut iter = old_insns.into_iter();
+            while let Some(insn_id) = iter.next() {
+                match ctx.find(insn_id) {
+                    Insn::GuardType { val, guard_type, .. } if ctx.is_a(val, guard_type) => {
+                        ctx.replace(insn_id, val);
+                    }
+                    Insn::LoadField { recv, offset, return_type, .. } if return_type.is_subtype(types::BasicObject) &&
+                            u32::try_from(offset).is_ok() => {
+                        let offset = (offset as u32).to_usize();
+                        let recv_type = ctx.type_of(recv);
+                        match recv_type.ruby_object() {
+                            Some(recv_obj) if recv_obj.is_frozen() => {
+                                let recv_ptr = recv_obj.as_ptr() as *const VALUE;
+                                let val = unsafe { recv_ptr.byte_add(offset).read() };
+                                ctx.replace_new(insn_id, Insn::Const { val: Const::Value(val) });
+                            }
+                            _ => ctx.keep(insn_id),
+                        }
+                    }
+                    Insn::LoadField { recv, offset, return_type, .. } if return_type.is_subtype(types::CShape) &&
+                            u32::try_from(offset).is_ok() => {
+                        let offset = (offset as u32).to_usize();
+                        let recv_type = ctx.type_of(recv);
+                        match recv_type.ruby_object() {
+                            Some(recv_obj) if recv_obj.is_frozen() => {
+                                let recv_ptr = recv_obj.as_ptr() as *const u32;
+                                let val = unsafe { recv_ptr.byte_add(offset).read() };
+                                ctx.replace_new(insn_id, Insn::Const { val: Const::CShape(ShapeId(val)) });
+                            }
+                            _ => ctx.keep(insn_id),
+                        }
+                    }
+                    Insn::GuardBitEquals { val, expected, .. } => {
+                        let recv_type = ctx.type_of(val);
+                        if recv_type.has_value(expected) {
+                            ctx.replace(insn_id, val);
+                        } else {
+                            ctx.keep(insn_id);
+                        }
+                    }
+                    Insn::AnyToString { str, .. } if ctx.is_a(str, types::String) => {
+                        ctx.replace(insn_id, str);
+                    }
+                    Insn::IsA { val, class } => {
+                        let class_type = ctx.type_of(class);
+                        if !class_type.is_subtype(types::Class) {
+                            ctx.keep(insn_id); continue;
+                        }
+                        let Some(class_value) = class_type.ruby_object() else {
+                            ctx.keep(insn_id); continue;
+                        };
+                        let val_type = ctx.type_of(val);
+                        let the_class = Type::from_class_inexact(class_value);
+                        if val_type.is_subtype(the_class) {
+                            ctx.replace_new(insn_id, Insn::Const { val: Const::Value(Qtrue) });
+                        } else if !val_type.could_be(the_class) {
+                            ctx.replace_new(insn_id, Insn::Const { val: Const::Value(Qfalse) });
+                        } else {
+                            ctx.keep(insn_id);
+                        }
+                    }
+                    // Fixnum arithmetic: try identity elimination first, then constant folding
+                    Insn::FixnumAdd { left, right, .. } => {
+                        if ctx.type_of(right).fixnum_value() == Some(0) {
+                            ctx.replace(insn_id, left);
+                        } else if ctx.type_of(left).fixnum_value() == Some(0) {
+                            ctx.replace(insn_id, right);
+                        } else {
+                            ctx.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
+                                (Some(l), Some(r)) => l.checked_add(r),
+                                _ => None,
+                            });
+                        }
+                    }
+                    Insn::FixnumSub { left, right, .. } => {
+                        if ctx.type_of(right).fixnum_value() == Some(0) {
+                            ctx.replace(insn_id, left);
+                        } else {
+                            ctx.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
+                                (Some(l), Some(r)) => l.checked_sub(r),
+                                _ => None,
+                            });
+                        }
+                    }
+                    Insn::FixnumMult { left, right, .. } => {
+                        if ctx.type_of(right).fixnum_value() == Some(1) {
+                            ctx.replace(insn_id, left);
+                        } else if ctx.type_of(left).fixnum_value() == Some(1) {
+                            ctx.replace(insn_id, right);
+                        } else {
+                            ctx.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
+                                (Some(l), Some(r)) => l.checked_mul(r),
+                                (Some(0), _) | (_, Some(0)) => Some(0),
+                                _ => None,
+                            });
+                        }
+                    }
+                    Insn::FixnumMod { left, right, .. } => {
+                        ctx.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
+                            (Some(l), Some(r)) if r != 0 => {
+                                let l_obj = VALUE::fixnum_from_isize(l as isize);
+                                let r_obj = VALUE::fixnum_from_isize(r as isize);
+                                Some(unsafe { rb_jit_fix_mod_fix(l_obj, r_obj) }.as_fixnum())
+                            },
+                            _ => None,
+                        });
+                    }
+                    Insn::FixnumXor { left, right, .. } => {
+                        if ctx.type_of(right).fixnum_value() == Some(0) {
+                            ctx.replace(insn_id, left);
+                        } else if ctx.type_of(left).fixnum_value() == Some(0) {
+                            ctx.replace(insn_id, right);
+                        } else {
+                            ctx.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
+                                (Some(l), Some(r)) => Some(l ^ r),
+                                _ => None,
+                            });
+                        }
+                    }
+                    Insn::FixnumAnd { left, right, .. } => {
+                        ctx.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
+                            (Some(l), Some(r)) => Some(l & r),
+                            _ => None,
+                        });
+                    }
+                    Insn::FixnumOr { left, right, .. } => {
+                        if ctx.type_of(right).fixnum_value() == Some(0) {
+                            ctx.replace(insn_id, left);
+                        } else if ctx.type_of(left).fixnum_value() == Some(0) {
+                            ctx.replace(insn_id, right);
+                        } else {
+                            ctx.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
+                                (Some(l), Some(r)) => Some(l | r),
+                                _ => None,
+                            });
+                        }
+                    }
+                    Insn::FixnumEq { left, right, .. } => {
+                        ctx.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
+                            (Some(l), Some(r)) => Some(l == r),
+                            _ => None,
+                        });
+                    }
+                    Insn::FixnumNeq { left, right, .. } => {
+                        ctx.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
+                            (Some(l), Some(r)) => Some(l != r),
+                            _ => None,
+                        });
+                    }
+                    Insn::FixnumLt { left, right, .. } => {
+                        ctx.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
+                            (Some(l), Some(r)) => Some(l < r),
+                            _ => None,
+                        });
+                    }
+                    Insn::FixnumLe { left, right, .. } => {
+                        ctx.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
+                            (Some(l), Some(r)) => Some(l <= r),
+                            _ => None,
+                        });
+                    }
+                    Insn::FixnumGt { left, right, .. } => {
+                        ctx.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
+                            (Some(l), Some(r)) => Some(l > r),
+                            _ => None,
+                        });
+                    }
+                    Insn::FixnumGe { left, right, .. } => {
+                        ctx.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
+                            (Some(l), Some(r)) => Some(l >= r),
+                            _ => None,
+                        });
+                    }
+                    Insn::ArrayAref { array, index }
+                        if ctx.type_of(array).ruby_object_known()
+                            && ctx.type_of(index).is_subtype(types::CInt64) => {
+                        let array_obj = ctx.type_of(array).ruby_object().unwrap();
+                        match (array_obj.is_frozen(), ctx.type_of(index).cint64_value()) {
+                            (true, Some(index)) => {
+                                let val = unsafe { rb_yarv_ary_entry_internal(array_obj, index) };
+                                ctx.replace_new(insn_id, Insn::Const { val: Const::Value(val) });
+                            }
+                            _ => ctx.keep(insn_id),
+                        }
+                    }
+                    Insn::Test { val } if ctx.type_of(val).is_known_falsy() => {
+                        ctx.replace_new(insn_id, Insn::Const { val: Const::CBool(false) });
+                    }
+                    Insn::Test { val } if ctx.type_of(val).is_known_truthy() => {
+                        ctx.replace_new(insn_id, Insn::Const { val: Const::CBool(true) });
+                    }
+                    Insn::IfTrue { val, target } if ctx.is_a(val, Type::from_cbool(true)) => {
+                        ctx.replace_new(insn_id, Insn::Jump(target));
+                    }
+                    Insn::IfFalse { val, target } if ctx.is_a(val, Type::from_cbool(false)) => {
+                        ctx.replace_new(insn_id, Insn::Jump(target));
+                    }
+                    // Branch condition is never true/false — drop the dead branch entirely
+                    Insn::IfTrue { val, .. } if ctx.is_a(val, Type::from_cbool(false)) => ctx.drop(insn_id),
+                    Insn::IfFalse { val, .. } if ctx.is_a(val, Type::from_cbool(true)) => ctx.drop(insn_id),
+                    _ => ctx.keep(insn_id),
+                }
+                if ctx.terminated {
+                    ctx.drop_tail(iter);
+                    break;
+                }
             }
         }
     }
@@ -5339,6 +5403,7 @@ impl Function {
                 let insn = ctx.find(insn_id);
                 if let Insn::PatchPoint { invariant, .. } = insn {
                     if !seen.insert(invariant) {
+                        ctx.drop(insn_id);
                         continue;
                     }
                 } else if insn.effects_of().write_bits().overlaps(abstract_heaps::PatchPoint) {
