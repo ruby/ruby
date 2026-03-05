@@ -988,6 +988,8 @@ module Bundler
         end
       end
 
+      sources.metadata_source.checksum_store.merge!(@locked_gems.metadata_source.checksum_store) if @locked_gems
+
       changes
     end
 
