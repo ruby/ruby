@@ -2502,8 +2502,6 @@ impl<'a> Emitter<'a> {
 
     pub fn frame_state(&self, insn_id: InsnId) -> FrameState { self.fun.frame_state(insn_id) }
     pub fn profiled_type_of_at(&self, insn: InsnId, iseq_insn_idx: usize) -> Option<ProfiledType> { self.fun.profiled_type_of_at(insn, iseq_insn_idx) }
-    pub fn make_equal_to(&mut self, old: InsnId, new: InsnId) { self.fun.make_equal_to(old, new); }
-
     fn load_shape(&mut self, recv: InsnId) -> InsnId {
         self.fun.load_shape(self.block, recv)
     }
@@ -4621,7 +4619,7 @@ impl Function {
                             let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
                             ctx.push_insn(Insn::LoadField { recv: as_heap, id, offset, return_type: types::BasicObject })
                         };
-                        ctx.make_equal_to(insn_id, replacement);
+                        ctx.replace(insn_id, replacement);
                     }
                     Insn::DefinedIvar { self_val, id, pushval, state } => {
                         let frame_state = ctx.frame_state(state);
@@ -4658,7 +4656,7 @@ impl Function {
                             // shape + iv name
                             ctx.push_insn(Insn::Const { val: Const::Value(Qnil) })
                         };
-                        ctx.make_equal_to(insn_id, replacement);
+                        ctx.replace(insn_id, replacement);
                     }
                     Insn::SetIvar { self_val, id, val, state, ic: _ } => {
                         let frame_state = ctx.frame_state(state);
