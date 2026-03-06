@@ -71,23 +71,28 @@ module Gem
         skip_blank_and_comments
         return nil if @lines.empty?
 
-        indent = @lines[0][/^ */].size
+        line = @lines[0]
+        stripped = line.lstrip
+        indent = line.size - stripped.size
         return nil if indent < base_indent
 
-        line = @lines[0]
-
-        return parse_alias_ref if line.lstrip.start_with?("*")
+        return parse_alias_ref if stripped.start_with?("*")
 
         anchor = consume_anchor
 
-        if line.lstrip.start_with?("- ") || line.lstrip == "-"
+        if anchor
+          line = @lines[0]
+          stripped = line.lstrip
+        end
+
+        if stripped.start_with?("- ") || stripped == "-"
           parse_sequence(indent, anchor)
-        elsif line.lstrip =~ MAPPING_KEY_RE && !line.lstrip.start_with?("!ruby/object:")
+        elsif stripped =~ MAPPING_KEY_RE && !stripped.start_with?("!ruby/object:")
           parse_mapping(indent, anchor)
-        elsif line.lstrip.start_with?("!ruby/object:")
+        elsif stripped.start_with?("!ruby/object:")
           parse_tagged_node(indent, anchor)
-        elsif line.lstrip.start_with?("|")
-          modifier = line.lstrip[1..].to_s.strip
+        elsif stripped.start_with?("|")
+          modifier = stripped[1..].to_s.strip
           @lines.shift
           register_anchor(anchor, Scalar.new(value: parse_block_scalar(indent, modifier)))
         else
@@ -97,8 +102,11 @@ module Gem
 
       def parse_sequence(indent, anchor)
         items = []
-        while @lines.any? && @lines[0][/^ */].size == indent &&
-              (@lines[0].lstrip.start_with?("- ") || @lines[0].lstrip == "-")
+        while @lines.any?
+          line = @lines[0]
+          stripped = line.lstrip
+          break unless line.size - stripped.size == indent &&
+                       (stripped.start_with?("- ") || stripped == "-")
           content = @lines.shift.lstrip[1..].strip
           item_anchor, content = extract_item_anchor(content)
           item = parse_sequence_item(content, indent)
@@ -111,7 +119,7 @@ module Gem
         if content.start_with?("*")
           parse_inline_alias(content)
         elsif content.empty?
-          @lines.any? && @lines[0][/^ */].size > indent ? parse_node(indent) : nil
+          @lines.any? && current_indent > indent ? parse_node(indent) : nil
         elsif content.start_with?("!ruby/object:")
           parse_tagged_content(content.strip, indent)
         elsif content.start_with?("-")
@@ -129,11 +137,13 @@ module Gem
 
       def parse_mapping(indent, anchor)
         pairs = []
-        while @lines.any? && @lines[0][/^ */].size == indent &&
-              @lines[0].lstrip =~ MAPPING_KEY_RE && !@lines[0].lstrip.start_with?("!ruby/object:")
-          l = @lines.shift
-          l.lstrip =~ MAPPING_KEY_RE
+        while @lines.any?
+          line = @lines[0]
+          stripped = line.lstrip
+          break unless line.size - stripped.size == indent &&
+                       stripped =~ MAPPING_KEY_RE && !stripped.start_with?("!ruby/object:")
           key = $1.strip
+          @lines.shift
           val = strip_comment($2.to_s.strip)
 
           val_anchor, val = consume_value_anchor(val)
@@ -151,9 +161,13 @@ module Gem
         elsif val.start_with?("!ruby/object:")
           parse_tagged_content(val.strip, indent)
         elsif val.empty?
+          if @lines.any?
+            next_stripped = @lines[0].lstrip
+            next_indent = @lines[0].size - next_stripped.size
+          end
           if @lines.any? &&
-             (@lines[0].lstrip.start_with?("- ") || @lines[0].lstrip == "-") &&
-             @lines[0][/^ */].size == indent
+             (next_stripped.start_with?("- ") || next_stripped == "-") &&
+             next_indent == indent
             parse_node(indent)
           else
             parse_node(indent + 1)
@@ -170,7 +184,7 @@ module Gem
       end
 
       def parse_tagged_node(indent, anchor)
-        tag = @lines.shift.lstrip.strip
+        tag = @lines.shift.strip
         nested = parse_node(indent)
         apply_tag(nested, tag, anchor)
       end
@@ -195,11 +209,12 @@ module Gem
         block_indent = nil
 
         while @lines.any?
-          if @lines[0].strip.empty?
+          line = @lines[0]
+          if line.strip.empty?
             parts << "\n"
             @lines.shift
           else
-            line_indent = @lines[0][/^ */].size
+            line_indent = line.size - line.lstrip.size
             break if line_indent <= base_indent
             block_indent ||= line_indent
             parts << @lines.shift[block_indent..].to_s << "\n"
@@ -216,7 +231,7 @@ module Gem
         return register_anchor(anchor, result) if result.is_a?(Mapping) || result.is_a?(Sequence)
 
         while result.is_a?(String) && @lines.any? &&
-              !@lines[0].strip.empty? && @lines[0][/^ */].size > indent
+              !@lines[0].strip.empty? && current_indent > indent
           result << " " << @lines.shift.strip
         end
         register_anchor(anchor, Scalar.new(value: result))
@@ -227,7 +242,7 @@ module Gem
         return result if result.is_a?(Mapping) || result.is_a?(Sequence)
 
         while result.is_a?(String) && @lines.any? &&
-              !@lines[0].strip.empty? && @lines[0][/^ */].size > indent
+              !@lines[0].strip.empty? && current_indent > indent
           result << " " << @lines.shift.strip
         end
         Scalar.new(value: result)
@@ -273,6 +288,11 @@ module Gem
 
       def parse_inline_alias(content)
         AliasRef.new(name: content[1..].strip)
+      end
+
+      def current_indent
+        line = @lines[0]
+        line.size - line.lstrip.size
       end
 
       def consume_anchor
