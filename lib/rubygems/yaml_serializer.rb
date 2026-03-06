@@ -91,63 +91,331 @@ module Gem
       end
     end
 
-    ARRAY_REGEX = /
-      ^
-      (?:[ ]*-[ ]) # '- ' before array items
-      (['"]?) # optional opening quote
-      (.*) # value
-      \1 # matching closing quote
-      $
-    /xo
-
-    HASH_REGEX = /
-      ^
-      ([ ]*) # indentations
-      ([^#]+) # key excludes comment char '#'
-      (?::(?=(?:\s|$))) # :  (without the lookahead the #key includes this when : is present in value)
-      [ ]?
-      (['"]?) # optional opening quote
-      (.*) # value
-      \3 # matching closing quote
-      $
-    /xo
-
-    def load(str)
-      res = {}
-      stack = [res]
-      last_hash = nil
-      last_empty_key = nil
-      str.split(/\r?\n/) do |line|
-        if match = HASH_REGEX.match(line)
-          indent, key, quote, val = match.captures
-          val = strip_comment(val)
-
-          depth = indent.size / 2
-          if quote.empty? && val.empty?
-            new_hash = {}
-            stack[depth][key] = new_hash
-            stack[depth + 1] = new_hash
-            last_empty_key = key
-            last_hash = stack[depth]
-          else
-            val = [] if val == "[]" # empty array
-            stack[depth][key] = val
-          end
-        elsif match = ARRAY_REGEX.match(line)
-          _, val = match.captures
-          val = strip_comment(val)
-
-          last_hash[last_empty_key] = [] unless last_hash[last_empty_key].is_a?(Array)
-
-          last_hash[last_empty_key].push(val)
+    def load(str, permitted_classes: [], permitted_symbols: [], aliases: true)
+      return {} if str.nil? || str.empty?
+      lines = str.split(/\r?\n/)
+      if lines[0]&.start_with?("---")
+        if lines[0].strip == "---"
+          lines.shift
+        else
+          lines[0] = lines[0].sub(/^---\s*/, "")
         end
       end
+
+      permitted_tags = build_permitted_tags(permitted_classes)
+      anchors = {}
+      data = nil
+      while lines.any?
+        before_count = lines.size
+        parsed = parse_any(lines, -1, permitted_tags, aliases, anchors)
+        if lines.size == before_count && lines.any?
+          lines.shift
+        end
+
+        if data.is_a?(Hash) && parsed.is_a?(Hash)
+          data.merge!(parsed)
+        elsif data.nil?
+          data = parsed
+        end
+      end
+
+      return {} if data.nil?
+      data
+    end
+
+    def parse_any(lines, base_indent, permitted_tags, aliases, anchors)
+      while lines.any? && (lines[0].strip.empty? || lines[0].lstrip.start_with?("#"))
+        lines.shift
+      end
+      return nil if lines.empty?
+
+      indent = lines[0][/^ */].size
+      return nil if indent < base_indent
+
+      line = lines[0]
+
+      # Check for alias reference (*anchor)
+      if line.lstrip.start_with?("*")
+        unless aliases
+          raise ArgumentError, "YAML aliases are not allowed"
+        end
+        alias_name = lines.shift.lstrip[1..-1].strip
+        return anchors[alias_name]
+      end
+
+      # Extract anchor if present (&anchor)
+      anchor_name = nil
+      if line.lstrip =~ /^&(\S+)\s+/
+        unless aliases
+          raise ArgumentError, "YAML aliases are not allowed"
+        end
+        anchor_name = $1
+        line = line.sub(/&#{Regexp.escape(anchor_name)}\s+/, "")
+        lines[0] = line
+      end
+
+      if line.lstrip.start_with?("- ") || line.lstrip == "-"
+        res = []
+        while lines.any? && lines[0][/^ */].size == indent && (lines[0].lstrip.start_with?("- ") || lines[0].lstrip == "-")
+          l = lines.shift
+          content = l.lstrip[1..-1].strip
+
+          # Check for anchor in array item
+          item_anchor = nil
+          if content =~ /^&(\S+)/
+            unless aliases
+              raise ArgumentError, "YAML aliases are not allowed"
+            end
+            item_anchor = $1
+            content = content.sub(/^&#{Regexp.escape(item_anchor)}\s*/, "")
+          end
+
+          # Check for alias in array item
+          if content.start_with?("*")
+            unless aliases
+              raise ArgumentError, "YAML aliases are not allowed"
+            end
+            alias_name = content[1..-1].strip
+            res << anchors[alias_name]
+          elsif content.empty?
+            # Empty array item - check if next line is nested content or a new item
+            item_value = if lines.any? && lines[0][/^ */].size > indent
+              parse_any(lines, indent, permitted_tags, aliases, anchors)
+            end
+            anchors[item_anchor] = item_value if item_anchor
+            res << item_value
+          elsif content.start_with?("!ruby/object:")
+            tag = content.strip
+            unless permitted_tags.include?(tag)
+              raise ArgumentError, "Disallowed class: #{tag}"
+            end
+            nested = parse_any(lines, indent, permitted_tags, aliases, anchors)
+            item_value = if nested.is_a?(Hash)
+              nested[:tag] = tag
+              nested
+            else
+              { :tag => tag, "value" => nested }
+            end
+            anchors[item_anchor] = item_value if item_anchor
+            res << item_value
+          elsif content.start_with?("-")
+            lines.unshift(" " * (indent + 2) + content)
+            item_value = parse_any(lines, indent, permitted_tags, aliases, anchors)
+            anchors[item_anchor] = item_value if item_anchor
+            res << item_value
+          elsif content =~ /^((?:[^#:]|:[^ ])+):(?:[ ]+(.*))?$/ && !content.start_with?("!ruby/object:")
+            lines.unshift(" " * (indent + 2) + content)
+            item_value = parse_any(lines, indent, permitted_tags, aliases, anchors)
+            anchors[item_anchor] = item_value if item_anchor
+            res << item_value
+          elsif content.start_with?("|")
+            modifier = content[1..-1].to_s.strip
+            item_value = parse_block_scalar(lines, indent, modifier)
+            anchors[item_anchor] = item_value if item_anchor
+            res << item_value
+          else
+            str = unquote_simple(content)
+            while lines.any? && !lines[0].strip.empty? && lines[0][/^ */].size > indent
+              str << " " << lines.shift.strip
+            end
+            anchors[item_anchor] = str if item_anchor
+            res << str
+          end
+        end
+        result = res
+      elsif line.lstrip =~ /^((?:[^#:]|:[^ ])+):(?:[ ]+(.*))?$/ && !line.lstrip.start_with?("!ruby/object:")
+        res = Hash.new
+        while lines.any? && lines[0][/^ */].size == indent && lines[0].lstrip =~ /^((?:[^#:]|:[^ ])+):(?:[ ]+(.*))?$/ && !lines[0].lstrip.start_with?("!ruby/object:")
+          l = lines.shift
+          l.lstrip =~ /^((?:[^#:]|:[^ ])+):(?:[ ]+(.*))?$/
+          key = $1.strip
+          val = $2.to_s.strip
+          val = strip_comment(val)
+
+          # Check for anchor in value
+          val_anchor = nil
+          if val =~ /^&(\S+)\s+/
+            unless aliases
+              raise ArgumentError, "YAML aliases are not allowed"
+            end
+            val_anchor = $1
+            val = val.sub(/^&#{Regexp.escape(val_anchor)}\s+/, "")
+          end
+
+          # Check for alias in value
+          if val.start_with?("*")
+            unless aliases
+              raise ArgumentError, "YAML aliases are not allowed"
+            end
+            alias_name = val[1..-1].strip
+            res[key] = anchors[alias_name]
+          elsif val.start_with?("!ruby/object:")
+            tag = val.strip
+            unless permitted_tags.include?(tag)
+              raise ArgumentError, "Disallowed class: #{tag}"
+            end
+            nested = parse_any(lines, indent, permitted_tags, aliases, anchors)
+            value = if nested.is_a?(Hash)
+              nested[:tag] = tag
+              nested
+            else
+              { :tag => tag, "value" => nested }
+            end
+            anchors[val_anchor] = value if val_anchor
+            res[key] = value
+          elsif val.empty?
+            value = if lines.any? && (lines[0].lstrip.start_with?("- ") || lines[0].lstrip == "-") && lines[0][/^ */].size == indent
+              parse_any(lines, indent, permitted_tags, aliases, anchors)
+            else
+              parse_any(lines, indent + 1, permitted_tags, aliases, anchors)
+            end
+            anchors[val_anchor] = value if val_anchor
+            res[key] = value
+          elsif val == "[]"
+            value = []
+            anchors[val_anchor] = value if val_anchor
+            res[key] = value
+          elsif val == "{}"
+            value = {}
+            anchors[val_anchor] = value if val_anchor
+            res[key] = value
+          elsif val.start_with?("|")
+            modifier = val[1..-1].to_s.strip
+            value = parse_block_scalar(lines, indent, modifier)
+            anchors[val_anchor] = value if val_anchor
+            res[key] = value
+          else
+            str = unquote_simple(val)
+            while lines.any? && !lines[0].strip.empty? && lines[0][/^ */].size > indent
+              str << " " << lines.shift.strip
+            end
+            anchors[val_anchor] = str if val_anchor
+            res[key] = str
+          end
+        end
+        result = res
+      elsif line.lstrip.start_with?("!ruby/object:")
+        tag = lines.shift.lstrip.strip
+        unless permitted_tags.include?(tag)
+          raise ArgumentError, "Disallowed class: #{tag}"
+        end
+        nested = parse_any(lines, indent, permitted_tags, aliases, anchors)
+        if nested.is_a?(Hash)
+          nested[:tag] = tag
+          result = nested
+        else
+          result = { :tag => tag, "value" => nested }
+        end
+      elsif line.lstrip.start_with?("|")
+        modifier = line.lstrip[1..-1].to_s.strip
+        lines.shift
+        result = parse_block_scalar(lines, indent, modifier)
+      else
+        str = unquote_simple(lines.shift.strip)
+        while lines.any? && !lines[0].strip.empty? && lines[0][/^ */].size > indent
+          str << " " << lines.shift.strip
+        end
+        result = str
+      end
+
+      # Store anchor if present
+      anchors[anchor_name] = result if anchor_name
+      result
+    end
+
+    def parse_block_scalar(lines, base_indent, modifier)
+      parts = []
+      block_indent = nil
+      while lines.any?
+        if lines[0].strip.empty?
+          parts << "\n"
+          lines.shift
+        else
+          line_indent = lines[0][/^ */].size
+          break if line_indent <= base_indent
+          block_indent ||= line_indent
+          l = lines.shift
+          parts << l[block_indent..-1].to_s << "\n"
+        end
+      end
+      res = parts.join
+      res.chomp! if modifier == "-" && res.end_with?("\n")
       res
     end
 
+    def build_permitted_tags(permitted_classes)
+      Array(permitted_classes).map do |klass|
+        name = klass.is_a?(Module) ? klass.name : klass.to_s
+        "!ruby/object:#{name}"
+      end
+    end
+
     def strip_comment(val)
-      if val.include?("#") && !val.start_with?("#")
-        val.split("#", 2).first.strip
+      return val unless val.include?("#")
+      return val if val.lstrip.start_with?("#")
+
+      in_single = false
+      in_double = false
+      escape = false
+
+      val.each_char.with_index do |ch, i|
+        if escape
+          escape = false
+          next
+        end
+
+        if in_single
+          in_single = false if ch == "'"
+        elsif in_double
+          if ch == "\\"
+            escape = true
+          elsif ch == '"'
+            in_double = false
+          end
+        else
+          case ch
+          when "'"
+            in_single = true
+          when '"'
+            in_double = true
+          when "#"
+            return val[0...i].rstrip
+          end
+        end
+      end
+
+      val
+    end
+
+    def unquote_simple(val)
+      # Strip YAML non-specific tag (! prefix), e.g. ! '>=' -> '>='
+      val = val.sub(/^! /, "") if val.start_with?("! ")
+
+      if val =~ /^"(.*)"$/
+        $1.gsub(/\\"/, '"').gsub(/\\n/, "\n").gsub(/\\r/, "\r").gsub(/\\t/, "\t").gsub(/\\\\/, "\\")
+      elsif val =~ /^'(.*)'$/
+        $1.gsub(/''/, "'")
+      elsif val == "true"
+        true
+      elsif val == "false"
+        false
+      elsif val == "nil"
+        nil
+      elsif val == "{}"
+        {}
+      elsif val =~ /^\[(.*)\]$/
+        inner = $1.strip
+        return [] if inner.empty?
+        inner.split(/\s*,\s*/).reject(&:empty?).map {|element| unquote_simple(element) }
+      elsif /^\d{4}-\d{2}-\d{2}/.match?(val)
+        require "time"
+        begin
+          Time.parse(val)
+        rescue ArgumentError
+          val
+        end
+      elsif /^-?\d+$/.match?(val)
+        val.to_i
       else
         val
       end
