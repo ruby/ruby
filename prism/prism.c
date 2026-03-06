@@ -19195,10 +19195,12 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             pm_arguments_t arguments = { 0 };
             pm_node_t *receiver = NULL;
 
-            // If we do not accept a command call, then we also do not accept a
-            // not without parentheses. In this case we need to reject this
-            // syntax.
-            if (!accepts_command_call && !match1(parser, PM_TOKEN_PARENTHESIS_LEFT)) {
+            // The `not` keyword without parentheses is only valid in contexts
+            // where it would be parsed as an expression (i.e., at or below
+            // the `not` binding power level). In other contexts (e.g., method
+            // arguments, array elements, assignment right-hand sides),
+            // parentheses are required: `not(x)`.
+            if (binding_power > PM_BINDING_POWER_NOT && !match1(parser, PM_TOKEN_PARENTHESIS_LEFT)) {
                 if (match1(parser, PM_TOKEN_PARENTHESIS_LEFT_PARENTHESES)) {
                     pm_parser_err(parser, PM_TOKEN_END(parser, &parser->previous), 1, PM_ERR_EXPECT_LPAREN_AFTER_NOT_LPAREN);
                 } else {
