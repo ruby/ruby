@@ -6,13 +6,11 @@ Gem.load_yaml
 
 class TestGemSafeYAML < Gem::TestCase
   def test_aliases_enabled_by_default
-    pend "Psych is not loaded" if defined?(Gem::YAMLSerializer)
     assert_predicate Gem::SafeYAML, :aliases_enabled?
     assert_equal({ "a" => "a", "b" => "a" }, Gem::SafeYAML.safe_load("a: &a a\nb: *a\n"))
   end
 
   def test_aliases_disabled
-    pend "Psych is not loaded" if defined?(Gem::YAMLSerializer)
     aliases_enabled = Gem::SafeYAML.aliases_enabled?
     Gem::SafeYAML.aliases_enabled = false
     refute_predicate Gem::SafeYAML, :aliases_enabled?
@@ -25,7 +23,7 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_specification_version_is_integer
-    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+    pend "Psych mode" if Gem.use_psych?
 
     yaml = <<~YAML
       --- !ruby/object:Gem::Specification
@@ -41,21 +39,21 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_disallowed_class_rejected
-    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+    pend "Psych mode" if Gem.use_psych?
 
     yaml = <<~YAML
       --- !ruby/object:SomeDisallowedClass
       foo: bar
     YAML
 
-    exception = assert_raise(ArgumentError) do
+    exception = assert_raise(Psych::DisallowedClass) do
       Gem::SafeYAML.safe_load(yaml)
     end
     assert_match(/Disallowed class/, exception.message)
   end
 
   def test_disallowed_symbol_rejected
-    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+    pend "Psych mode" if Gem.use_psych?
 
     yaml = <<~YAML
       --- !ruby/object:Gem::Dependency
@@ -74,14 +72,14 @@ class TestGemSafeYAML < Gem::TestCase
             version: 0
     YAML
 
-    exception = assert_raise(ArgumentError) do
+    exception = assert_raise(Psych::DisallowedClass) do
       Gem::SafeYAML.safe_load(yaml)
     end
     assert_match(/Disallowed symbol/, exception.message)
   end
 
   def test_yaml_serializer_aliases_disabled
-    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+    pend "Psych mode" if Gem.use_psych?
 
     aliases_enabled = Gem::SafeYAML.aliases_enabled?
     Gem::SafeYAML.aliases_enabled = false
@@ -89,7 +87,7 @@ class TestGemSafeYAML < Gem::TestCase
 
     yaml = "a: &anchor value\nb: *anchor\n"
 
-    exception = assert_raise(ArgumentError) do
+    exception = assert_raise(Psych::AliasesNotEnabled) do
       Gem::SafeYAML.safe_load(yaml)
     end
     assert_match(/YAML aliases are not allowed/, exception.message)
@@ -98,7 +96,7 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_real_gemspec_fileutils
-    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+    pend "Psych mode" if Gem.use_psych?
 
     yaml = <<~YAML
       --- !ruby/object:Gem::Specification
@@ -160,7 +158,7 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_yaml_anchor_and_alias_enabled
-    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+    pend "Psych mode" if Gem.use_psych?
 
     aliases_enabled = Gem::SafeYAML.aliases_enabled?
     Gem::SafeYAML.aliases_enabled = true
@@ -187,7 +185,7 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_real_gemspec_rubygems_bundler
-    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+    pend "Psych mode" if Gem.use_psych?
 
     yaml = <<~YAML
       --- !ruby/object:Gem::Specification
@@ -272,7 +270,7 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_empty_requirements_array
-    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+    pend "Psych mode" if Gem.use_psych?
 
     yaml = <<~YAML
       --- !ruby/object:Gem::Specification
@@ -303,7 +301,7 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_requirements_hash_converted_to_array
-    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+    pend "Psych mode" if Gem.use_psych?
 
     # Malformed YAML where requirements is a Hash instead of Array
     yaml = <<~YAML
@@ -325,7 +323,7 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_rdoc_options_hash_converted_to_array
-    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+    pend "Psych mode" if Gem.use_psych?
 
     # Some gemspecs incorrectly have rdoc_options: {} instead of rdoc_options: []
     yaml = <<~YAML
@@ -346,7 +344,7 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_load_returns_hash_for_comment_only_yaml
-    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+    pend "Psych mode" if Gem.use_psych?
 
     # Bundler config files may contain only comments after deleting all keys
     result = Gem::YAMLSerializer.load("---\n# BUNDLE_FOO: \"bar\"\n")
@@ -355,7 +353,7 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_load_returns_hash_for_empty_document
-    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+    pend "Psych mode" if Gem.use_psych?
 
     assert_equal({}, Gem::YAMLSerializer.load("---\n"))
     assert_equal({}, Gem::YAMLSerializer.load(""))
@@ -363,7 +361,7 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_load_returns_hash_for_flow_empty_hash
-    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+    pend "Psych mode" if Gem.use_psych?
 
     # Gem::YAMLSerializer.dump({}) produces "--- {}\n"
     result = Gem::YAMLSerializer.load("--- {}\n")
@@ -372,7 +370,7 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_load_parses_flow_empty_hash_as_value
-    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+    pend "Psych mode" if Gem.use_psych?
 
     result = Gem::YAMLSerializer.load("metadata: {}\n")
     assert_kind_of Hash, result
@@ -381,7 +379,7 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_yaml_non_specific_tag_stripped
-    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+    pend "Psych mode" if Gem.use_psych?
 
     # Legacy RubyGems (1.x) generated YAML with ! non-specific tags like:
     #   - ! '>='
@@ -413,7 +411,7 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_legacy_gemspec_with_anchors_and_non_specific_tags
-    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+    pend "Psych mode" if Gem.use_psych?
 
     aliases_enabled = Gem::SafeYAML.aliases_enabled?
     Gem::SafeYAML.aliases_enabled = true
@@ -470,7 +468,7 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_non_specific_tag_on_plain_value
-    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+    pend "Psych mode" if Gem.use_psych?
 
     # ! tag on a bracketed value like rubyforge_project: ! '[none]'
     result = Gem::YAMLSerializer.load("key: ! '[none]'\n")
@@ -478,7 +476,7 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_dump_quotes_dollar_sign_values
-    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+    pend "Psych mode" if Gem.use_psych?
 
     # Values starting with $ should be quoted to preserve them as strings
     yaml = Gem::YAMLSerializer.dump({ "BUNDLE_FOO" => "$BUILD_DIR", "BUNDLE_BAR" => "baz" })
@@ -492,7 +490,7 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_dump_quotes_special_characters
-    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+    pend "Psych mode" if Gem.use_psych?
 
     # Various special characters that should trigger quoting
     special_values = {
@@ -518,7 +516,7 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_load_ambiguous_value_with_colon
-    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+    pend "Psych mode" if Gem.use_psych?
 
     # "invalid: yaml: hah" is ambiguous YAML - our parser treats it as
     # {"invalid" => "yaml: hah"}, but the value looks like a nested mapping.
@@ -529,7 +527,7 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_nested_anchor_in_array_item
-    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+    pend "Psych mode" if Gem.use_psych?
 
     # Ensure aliases are enabled for this test
     aliases_enabled = Gem::SafeYAML.aliases_enabled?
@@ -573,7 +571,7 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_roundtrip_specification
-    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+    pend "Psych mode" if Gem.use_psych?
 
     spec = Gem::Specification.new do |s|
       s.name = "round-trip-test"
@@ -611,7 +609,7 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_roundtrip_version
-    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+    pend "Psych mode" if Gem.use_psych?
 
     ver = Gem::Version.new("1.2.3")
     yaml = Gem::YAMLSerializer.dump(ver)
@@ -622,7 +620,7 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_roundtrip_platform
-    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+    pend "Psych mode" if Gem.use_psych?
 
     plat = Gem::Platform.new("x86_64-linux")
     yaml = Gem::YAMLSerializer.dump(plat)
@@ -635,7 +633,7 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_roundtrip_requirement
-    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+    pend "Psych mode" if Gem.use_psych?
 
     req = Gem::Requirement.new(">= 1.0", "< 2.0")
     yaml = Gem::YAMLSerializer.dump(req)
@@ -646,7 +644,7 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_roundtrip_dependency
-    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+    pend "Psych mode" if Gem.use_psych?
 
     dep = Gem::Dependency.new("foo", ">= 1.0", :development)
     yaml = Gem::YAMLSerializer.dump(dep)
@@ -659,7 +657,7 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_roundtrip_nested_hash
-    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+    pend "Psych mode" if Gem.use_psych?
 
     obj = { "a" => { "b" => "c", "d" => [1, 2, 3] } }
     yaml = Gem::YAMLSerializer.dump(obj)
@@ -669,7 +667,7 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_roundtrip_block_scalar
-    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+    pend "Psych mode" if Gem.use_psych?
 
     obj = { "text" => "line1\nline2\n" }
     yaml = Gem::YAMLSerializer.dump(obj)
@@ -679,7 +677,7 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_roundtrip_special_characters
-    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+    pend "Psych mode" if Gem.use_psych?
 
     obj = {
       "dollar" => "$HOME",
@@ -701,7 +699,7 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_roundtrip_boolean_nil_integer
-    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+    pend "Psych mode" if Gem.use_psych?
 
     obj = { "flag" => true, "count" => 42, "empty" => nil, "off" => false }
     yaml = Gem::YAMLSerializer.dump(obj)
@@ -714,7 +712,7 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_roundtrip_time
-    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+    pend "Psych mode" if Gem.use_psych?
 
     time = Time.utc(2024, 6, 15, 12, 30, 45)
     obj = { "created" => time }
@@ -728,7 +726,7 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_roundtrip_empty_collections
-    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+    pend "Psych mode" if Gem.use_psych?
 
     obj = { "arr" => [], "hash" => {} }
     yaml = Gem::YAMLSerializer.dump(obj)
@@ -736,5 +734,432 @@ class TestGemSafeYAML < Gem::TestCase
 
     assert_equal [], loaded["arr"]
     assert_equal({}, loaded["hash"])
+  end
+
+  def test_load_double_quoted_escape_sequences
+    pend "Psych mode" if Gem.use_psych?
+
+    result = Gem::YAMLSerializer.load("newline: \"hello\\nworld\"")
+    assert_equal "hello\nworld", result["newline"]
+
+    result = Gem::YAMLSerializer.load("tab: \"col1\\tcol2\"")
+    assert_equal "col1\tcol2", result["tab"]
+
+    result = Gem::YAMLSerializer.load("cr: \"line\\rend\"")
+    assert_equal "line\rend", result["cr"]
+
+    result = Gem::YAMLSerializer.load("quote: \"say\\\"hi\\\"\"")
+    assert_equal "say\"hi\"", result["quote"]
+  end
+
+  def test_load_single_quoted_escape
+    pend "Psych mode" if Gem.use_psych?
+
+    result = Gem::YAMLSerializer.load("key: 'it''s'")
+    assert_equal "it's", result["key"]
+
+    result = Gem::YAMLSerializer.load("key: 'no escape \\n here'")
+    assert_equal "no escape \\n here", result["key"]
+  end
+
+  def test_load_quoted_numeric_stays_string
+    pend "Psych mode" if Gem.use_psych?
+
+    result = Gem::YAMLSerializer.load("key: \"42\"")
+    assert_equal "42", result["key"]
+    assert_kind_of String, result["key"]
+
+    result = Gem::YAMLSerializer.load("key: '99'")
+    assert_equal "99", result["key"]
+    assert_kind_of String, result["key"]
+  end
+
+  def test_load_empty_string_value
+    pend "Psych mode" if Gem.use_psych?
+
+    result = Gem::YAMLSerializer.load("key: \"\"")
+    assert_equal "", result["key"]
+  end
+
+  def test_load_unquoted_integer
+    pend "Psych mode" if Gem.use_psych?
+
+    result = Gem::YAMLSerializer.load("key: 42")
+    assert_equal 42, result["key"]
+    assert_kind_of Integer, result["key"]
+
+    result = Gem::YAMLSerializer.load("key: -7")
+    assert_equal(-7, result["key"])
+  end
+
+  def test_load_boolean_values
+    pend "Psych mode" if Gem.use_psych?
+
+    result = Gem::YAMLSerializer.load("a: true\nb: false")
+    assert_equal true, result["a"]
+    assert_equal false, result["b"]
+  end
+
+  def test_load_nil_value
+    pend "Psych mode" if Gem.use_psych?
+
+    result = Gem::YAMLSerializer.load("key: nil")
+    assert_nil result["key"]
+  end
+
+  def test_load_time_value
+    pend "Psych mode" if Gem.use_psych?
+
+    result = Gem::YAMLSerializer.load("date: 2024-06-15 12:30:45.000000000 Z")
+    assert_kind_of Time, result["date"]
+    assert_equal 2024, result["date"].year
+    assert_equal 6, result["date"].month
+    assert_equal 15, result["date"].day
+  end
+
+  def test_load_block_scalar_keep_trailing_newline
+    pend "Psych mode" if Gem.use_psych?
+
+    yaml = "text: |\n  line1\n  line2\n"
+    result = Gem::YAMLSerializer.load(yaml)
+    assert_equal "line1\nline2\n", result["text"]
+  end
+
+  def test_load_block_scalar_strip_trailing_newline
+    pend "Psych mode" if Gem.use_psych?
+
+    yaml = "text: |-\n  no trailing newline\n"
+    result = Gem::YAMLSerializer.load(yaml)
+    assert_equal "no trailing newline", result["text"]
+    refute result["text"].end_with?("\n")
+  end
+
+  def test_load_flow_array
+    pend "Psych mode" if Gem.use_psych?
+
+    result = Gem::YAMLSerializer.load("items: [a, b, c]")
+    assert_equal ["a", "b", "c"], result["items"]
+  end
+
+  def test_load_flow_empty_array
+    pend "Psych mode" if Gem.use_psych?
+
+    result = Gem::YAMLSerializer.load("items: []")
+    assert_equal [], result["items"]
+  end
+
+  def test_load_mapping_key_with_no_value
+    pend "Psych mode" if Gem.use_psych?
+
+    result = Gem::YAMLSerializer.load("key:")
+    assert_kind_of Hash, result
+    assert_nil result["key"]
+  end
+
+  def test_load_sequence_item_as_mapping
+    pend "Psych mode" if Gem.use_psych?
+
+    yaml = "items:\n- name: foo\n  ver: 1\n- name: bar\n  ver: 2"
+    result = Gem::YAMLSerializer.load(yaml)
+    assert_equal [{ "name" => "foo", "ver" => 1 }, { "name" => "bar", "ver" => 2 }], result["items"]
+  end
+
+  def test_load_nested_sequence
+    pend "Psych mode" if Gem.use_psych?
+
+    yaml = "matrix:\n- - a\n  - b\n- - c\n  - d"
+    result = Gem::YAMLSerializer.load(yaml)
+    assert_equal [["a", "b"], ["c", "d"]], result["matrix"]
+  end
+
+  def test_load_comment_stripped_from_value
+    pend "Psych mode" if Gem.use_psych?
+
+    result = Gem::YAMLSerializer.load("key: value # this is a comment")
+    assert_equal "value", result["key"]
+  end
+
+  def test_load_comment_in_quoted_string_preserved
+    pend "Psych mode" if Gem.use_psych?
+
+    result = Gem::YAMLSerializer.load("key: \"value # not a comment\"")
+    assert_equal "value # not a comment", result["key"]
+
+    result = Gem::YAMLSerializer.load("key: 'value # not a comment'")
+    assert_equal "value # not a comment", result["key"]
+  end
+
+  def test_load_crlf_line_endings
+    pend "Psych mode" if Gem.use_psych?
+
+    result = Gem::YAMLSerializer.load("key: value\r\nother: data\r\n")
+    assert_equal "value", result["key"]
+    assert_equal "data", result["other"]
+  end
+
+  def test_load_version_requirement_old_tag
+    pend "Psych mode" if Gem.use_psych?
+
+    yaml = <<~YAML
+      !ruby/object:Gem::Version::Requirement
+      requirements:
+      - - ">="
+        - !ruby/object:Gem::Version
+          version: "1.0"
+    YAML
+
+    req = Gem::YAMLSerializer.load(yaml, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES)
+    assert_kind_of Gem::Requirement, req
+    assert_equal [[">=", Gem::Version.new("1.0")]], req.requirements
+  end
+
+  def test_load_platform_from_value_field
+    pend "Psych mode" if Gem.use_psych?
+
+    yaml = "!ruby/object:Gem::Platform\nvalue: x86-linux\n"
+    plat = Gem::YAMLSerializer.load(yaml, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES)
+    assert_kind_of Gem::Platform, plat
+    assert_equal "x86", plat.cpu
+    assert_equal "linux", plat.os
+  end
+
+  def test_load_platform_from_cpu_os_version_fields
+    pend "Psych mode" if Gem.use_psych?
+
+    yaml = "!ruby/object:Gem::Platform\ncpu: x86_64\nos: darwin\nversion: nil\n"
+    plat = Gem::YAMLSerializer.load(yaml, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES)
+    assert_kind_of Gem::Platform, plat
+    assert_equal "x86_64", plat.cpu
+    assert_equal "darwin", plat.os
+  end
+
+  def test_load_dependency_missing_requirement_uses_default
+    pend "Psych mode" if Gem.use_psych?
+
+    yaml = <<~YAML
+      !ruby/object:Gem::Dependency
+      name: foo
+      type: :runtime
+    YAML
+
+    dep = Gem::YAMLSerializer.load(yaml, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES)
+    assert_kind_of Gem::Dependency, dep
+    assert_equal "foo", dep.name
+    assert_equal :runtime, dep.type
+    assert_kind_of Gem::Requirement, dep.requirement
+  end
+
+  def test_load_dependency_missing_type_defaults_to_runtime
+    pend "Psych mode" if Gem.use_psych?
+
+    yaml = <<~YAML
+      !ruby/object:Gem::Dependency
+      name: bar
+      requirement: !ruby/object:Gem::Requirement
+        requirements:
+        - - ">="
+          - !ruby/object:Gem::Version
+            version: '0'
+    YAML
+
+    dep = Gem::YAMLSerializer.load(yaml, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES)
+    assert_equal :runtime, dep.type
+  end
+
+  def test_specification_version_non_numeric_string_not_converted
+    pend "Psych mode" if Gem.use_psych?
+
+    yaml = <<~YAML
+      --- !ruby/object:Gem::Specification
+      name: test
+      version: !ruby/object:Gem::Version
+        version: 1.0.0
+      specification_version: abc
+    YAML
+
+    spec = Gem::SafeYAML.safe_load(yaml)
+    assert_kind_of Gem::Specification, spec
+    # Non-numeric string should not be converted to Integer
+    assert_equal "abc", spec.specification_version
+  end
+
+  def test_unknown_permitted_tag_returns_hash_with_tag
+    pend "Psych mode" if Gem.use_psych?
+
+    yaml = "!ruby/object:MyCustomClass\nfoo: bar\n"
+    result = Gem::YAMLSerializer.load(yaml, permitted_classes: ["MyCustomClass"])
+    assert_kind_of Hash, result
+    assert_equal "bar", result["foo"]
+    assert_equal "!ruby/object:MyCustomClass", result[:tag]
+  end
+
+  def test_dump_block_scalar_with_trailing_newline
+    pend "Psych mode" if Gem.use_psych?
+
+    yaml = Gem::YAMLSerializer.dump({ "text" => "line1\nline2\n" })
+    assert_include yaml, " |\n"
+    refute_includes yaml, " |-\n"
+  end
+
+  def test_dump_block_scalar_without_trailing_newline
+    pend "Psych mode" if Gem.use_psych?
+
+    yaml = Gem::YAMLSerializer.dump({ "text" => "line1\nline2" })
+    assert_include yaml, " |-\n"
+  end
+
+  def test_dump_nil_value
+    pend "Psych mode" if Gem.use_psych?
+
+    yaml = Gem::YAMLSerializer.dump({ "key" => nil })
+    assert_include yaml, "key: nil\n"
+
+    loaded = Gem::YAMLSerializer.load(yaml)
+    assert_nil loaded["key"]
+  end
+
+  def test_dump_symbol_keys_quoted
+    pend "Psych mode" if Gem.use_psych?
+
+    yaml = Gem::YAMLSerializer.dump({ foo: "bar" })
+    # Symbol keys should use inspect format
+    assert_include yaml, ":foo:"
+
+    # Symbol values in hash with symbol keys should be quoted
+    yaml = Gem::YAMLSerializer.dump({ type: ":runtime" })
+    assert_include yaml, "\":runtime\""
+  end
+
+  def test_regression_flow_empty_hash_as_root
+    pend "Psych mode" if Gem.use_psych?
+
+    # Previously returned Mapping struct instead of Hash
+    result = Gem::YAMLSerializer.load("--- {}")
+    assert_kind_of Hash, result
+    assert_empty result
+  end
+
+  def test_regression_alias_check_in_builder_not_parser
+    pend "Psych mode" if Gem.use_psych?
+
+    # Previously aliases were resolved in Parser, bypassing Builder's policy check.
+    # The Builder must enforce aliases: false.
+    aliases_enabled = Gem::SafeYAML.aliases_enabled?
+    Gem::SafeYAML.aliases_enabled = false
+
+    # Alias in mapping value
+    exception = assert_raise(Psych::AliasesNotEnabled) do
+      Gem::YAMLSerializer.load("a: &x val\nb: *x", aliases: false)
+    end
+    assert_match(/YAML aliases are not allowed/, exception.message)
+
+    # Alias in sequence item
+    exception = assert_raise(Psych::AliasesNotEnabled) do
+      Gem::YAMLSerializer.load("items:\n- &x val\n- *x", aliases: false)
+    end
+    assert_match(/YAML aliases are not allowed/, exception.message)
+  ensure
+    Gem::SafeYAML.aliases_enabled = aliases_enabled
+  end
+
+  def test_regression_anchored_mapping_stored_for_alias_resolution
+    pend "Psych mode" if Gem.use_psych?
+
+    # Previously build_mapping didn't call store_anchor, so anchored
+    # Gem types (Requirement, etc.) couldn't be resolved via aliases.
+    aliases_enabled = Gem::SafeYAML.aliases_enabled?
+    Gem::SafeYAML.aliases_enabled = true
+
+    yaml = <<~YAML
+      a: &req !ruby/object:Gem::Requirement
+        requirements:
+        - - ">="
+          - !ruby/object:Gem::Version
+            version: '0'
+      b: *req
+    YAML
+
+    result = Gem::SafeYAML.safe_load(yaml)
+    assert_kind_of Gem::Requirement, result["a"]
+    assert_kind_of Gem::Requirement, result["b"]
+    assert_equal result["a"].requirements, result["b"].requirements
+  ensure
+    Gem::SafeYAML.aliases_enabled = aliases_enabled
+  end
+
+  def test_regression_register_anchor_sets_node_anchor
+    pend "Psych mode" if Gem.use_psych?
+
+    # Previously register_anchor only stored node in @anchors hash but
+    # didn't set node.anchor, so Builder couldn't track anchored values.
+    aliases_enabled = Gem::SafeYAML.aliases_enabled?
+    Gem::SafeYAML.aliases_enabled = true
+
+    yaml = <<~YAML
+      items:
+      - &item !ruby/object:Gem::Version
+        version: '1.0'
+      - *item
+    YAML
+
+    result = Gem::SafeYAML.safe_load(yaml)
+    assert_kind_of Array, result["items"]
+    assert_equal 2, result["items"].size
+    assert_kind_of Gem::Version, result["items"][0]
+    assert_kind_of Gem::Version, result["items"][1]
+    assert_equal result["items"][0], result["items"][1]
+  ensure
+    Gem::SafeYAML.aliases_enabled = aliases_enabled
+  end
+
+  def test_regression_coerce_empty_hash_not_wrapped_in_scalar
+    pend "Psych mode" if Gem.use_psych?
+
+    # Previously coerce("{}") returned Mapping but parse_plain_scalar
+    # wrapped it in Scalar.new(value: Mapping), causing type mismatch.
+    result = Gem::YAMLSerializer.load("--- {}")
+    assert_kind_of Hash, result
+
+    result = Gem::YAMLSerializer.load("key: {}")
+    assert_kind_of Hash, result["key"]
+  end
+
+  def test_regression_rdoc_options_normalized_to_array
+    pend "Psych mode" if Gem.use_psych?
+
+    # rdoc_options as Hash (malformed gemspec)
+    yaml = <<~YAML
+      --- !ruby/object:Gem::Specification
+      name: test
+      version: !ruby/object:Gem::Version
+        version: 1.0.0
+      rdoc_options:
+        --title: MyGem
+        --main: README
+    YAML
+
+    spec = Gem::SafeYAML.safe_load(yaml)
+    assert_kind_of Array, spec.rdoc_options
+    # Hash rdoc_options: normalize_rdoc_options! extracts values
+    assert_include spec.rdoc_options, "MyGem"
+    assert_include spec.rdoc_options, "README"
+  end
+
+  def test_regression_requirements_field_normalized_to_array
+    pend "Psych mode" if Gem.use_psych?
+
+    # The "requirements" field in a Specification (not Requirement)
+    # should be normalized from Hash to Array if malformed
+    yaml = <<~YAML
+      --- !ruby/object:Gem::Specification
+      name: test
+      version: !ruby/object:Gem::Version
+        version: 1.0.0
+      requirements:
+        foo: bar
+    YAML
+
+    spec = Gem::SafeYAML.safe_load(yaml)
+    assert_kind_of Array, spec.requirements
   end
 end

@@ -59,7 +59,7 @@ module Gem
       end
     end
 
-    def self.safe_load(input)
+    def self.unsafe_load(input)
       if Gem.use_psych?
         if ::Psych.respond_to?(:unsafe_load)
           ::Psych.unsafe_load(input)
