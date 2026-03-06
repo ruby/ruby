@@ -31,7 +31,7 @@ module Gem
       MAPPING_KEY_RE = /^((?:[^#:]|:[^ ])+):(?:[ ]+(.*))?$/
 
       def initialize(source)
-        @lines = source.split(/\r?\n/)
+        @lines = source.split("\n")
         @anchors = {}
         strip_document_prefix
       end
@@ -297,7 +297,8 @@ module Gem
 
       def consume_anchor
         line = @lines[0]
-        return nil unless line.lstrip =~ /^&(\S+)\s+/
+        stripped = line.lstrip
+        return nil unless stripped.start_with?("&") && stripped =~ /^&(\S+)\s+/
 
         anchor = $1
         @lines[0] = line.sub(/&#{Regexp.escape(anchor)}\s+/, "")
@@ -327,8 +328,12 @@ module Gem
       end
 
       def skip_blank_and_comments
-        @lines.shift while @lines.any? &&
-                           (@lines[0].strip.empty? || @lines[0].lstrip.start_with?("#"))
+        while @lines.any?
+          line = @lines[0]
+          stripped = line.lstrip
+          break unless stripped.empty? || stripped.start_with?("#")
+          @lines.shift
+        end
       end
 
       def strip_comment(val)
