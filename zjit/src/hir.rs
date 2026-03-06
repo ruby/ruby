@@ -5318,6 +5318,28 @@ impl Function {
         }
     }
 
+    /// Remove duplicate CheckInterrupts instructions within each basic block.
+    /// Only the first CheckInterrupts in a block is needed unless an intervening
+    /// instruction writes to InterruptFlag (e.g. a call), which resets tracking.
+    fn remove_duplicate_check_interrupts(&mut self) {
+        for block_id in self.rpo() {
+            let mut seen = false;
+            let insns = std::mem::take(&mut self.blocks[block_id.0].insns);
+            let mut new_insns = Vec::with_capacity(insns.len());
+            for insn_id in insns {
+                let insn = &self.insns[insn_id.0];
+                if matches!(insn, Insn::CheckInterrupts { .. }) {
+                    if seen { continue; }
+                    seen = true;
+                } else if insn.effects_of().write_bits().overlaps(abstract_heaps::InterruptFlag) {
+                    seen = false;
+                }
+                new_insns.push(insn_id);
+            }
+            self.blocks[block_id.0].insns = new_insns;
+        }
+    }
+
     /// Return a list that has entry_block and then jit_entry_blocks
     fn entry_blocks(&self) -> Vec<BlockId> {
         let mut entry_blocks = self.jit_entry_blocks.clone();
@@ -5545,6 +5567,8 @@ impl Function {
                     Counter::compile_hir_clean_cfg_time_ns
                 } else if ident_equal!($name, remove_redundant_patch_points) {
                     Counter::compile_hir_remove_redundant_patch_points_time_ns
+                } else if ident_equal!($name, remove_duplicate_check_interrupts) {
+                    Counter::compile_hir_remove_duplicate_check_interrupts_time_ns
                 } else if ident_equal!($name, eliminate_dead_code) {
                     Counter::compile_hir_eliminate_dead_code_time_ns
                 } else {
@@ -5573,6 +5597,7 @@ impl Function {
         run_pass!(fold_constants);
         run_pass!(clean_cfg);
         run_pass!(remove_redundant_patch_points);
+        run_pass!(remove_duplicate_check_interrupts);
         run_pass!(eliminate_dead_code);
 
         if should_dump {
