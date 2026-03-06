@@ -1005,43 +1005,6 @@ load_unlock(const rb_box_t *box, const char *ftptr, int done)
 
 static VALUE rb_require_string_internal(VALUE fname, bool resurrect);
 
-/*
- *  call-seq:
- *     require(name)    -> true or false
- *
- *  Loads the given +name+, returning +true+ if successful and +false+ if the
- *  feature is already loaded.
- *
- *  If the filename neither resolves to an absolute path nor starts with
- *  './' or '../', the file will be searched for in the library
- *  directories listed in <code>$LOAD_PATH</code> (<code>$:</code>).
- *  If the filename starts with './' or '../', resolution is based on Dir.pwd.
- *
- *  If the filename has the extension ".rb", it is loaded as a source file; if
- *  the extension is ".so", ".o", or the default shared library extension on
- *  the current platform, Ruby loads the shared library as a Ruby extension.
- *  Otherwise, Ruby tries adding ".rb", ".so", and so on to the name until
- *  found.  If the file named cannot be found, a LoadError will be raised.
- *
- *  For Ruby extensions the filename given may use ".so" or ".o".  For example,
- *  on macOS the socket extension is "socket.bundle" and
- *  <code>require 'socket.so'</code> will load the socket extension.
- *
- *  The absolute path of the loaded file is added to
- *  <code>$LOADED_FEATURES</code> (<code>$"</code>).  A file will not be
- *  loaded again if its path already appears in <code>$"</code>.  For example,
- *  <code>require 'a'; require './a'</code> will not load <code>a.rb</code>
- *  again.
- *
- *    require "my-library.rb"
- *    require "db-driver"
- *
- *  Any constants or globals within the loaded source file will be available
- *  in the calling program's global namespace. However, local variables will
- *  not be propagated to the loading environment.
- *
- */
-
 VALUE
 rb_f_require(VALUE obj, VALUE fname)
 {
@@ -1761,7 +1724,6 @@ Init_load(void)
     rb_gvar_box_ready("$LOADED_FEATURES");
 
     rb_define_global_function("load", rb_f_load, -1);
-    rb_define_global_function("require", rb_f_require, 1);
     rb_define_global_function("require_relative", rb_f_require_relative, 1);
     rb_define_method(rb_cModule, "autoload", rb_mod_autoload, 2);
     rb_define_method(rb_cModule, "autoload_relative", rb_mod_autoload_relative, 2);
