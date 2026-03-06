@@ -697,7 +697,7 @@ static const size_t pool_slot_sizes[HEAP_COUNT] = {
     RVALUE_SLOT_SIZE * 16,
 };
 
-static uint8_t size_to_heap_idx[RVALUE_SLOT_SIZE * (1 << (HEAP_COUNT - 1)) + 1];
+static uint8_t size_to_heap_idx[RVALUE_SLOT_SIZE * (1 << (HEAP_COUNT - 1)) / 8 + 1];
 
 #ifndef MAX
 # define MAX(a, b) (((a) > (b)) ? (a) : (b))
@@ -2355,23 +2355,22 @@ ractor_cache_set_page(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, 
 static void
 init_size_to_heap_idx(void)
 {
-    GC_ASSERT(pool_slot_sizes[HEAP_COUNT - 1] - RVALUE_OVERHEAD < sizeof(size_to_heap_idx));
-
-    for (size_t size = 0; size < sizeof(size_to_heap_idx); size++) {
-        size_t effective = size + RVALUE_OVERHEAD;
+    for (size_t i = 0; i < sizeof(size_to_heap_idx); i++) {
+        size_t effective = i * 8 + RVALUE_OVERHEAD;
         uint8_t idx;
         for (idx = 0; idx < HEAP_COUNT; idx++) {
             if (effective <= pool_slot_sizes[idx]) break;
         }
-        size_to_heap_idx[size] = idx;
+        size_to_heap_idx[i] = idx;
     }
 }
 
 static inline size_t
 heap_idx_for_size(size_t size)
 {
-    if (size < sizeof(size_to_heap_idx)) {
-        size_t heap_idx = size_to_heap_idx[size];
+    size_t compressed = (size + 7) >> 3;
+    if (compressed < sizeof(size_to_heap_idx)) {
+        size_t heap_idx = size_to_heap_idx[compressed];
         if (RB_LIKELY(heap_idx < HEAP_COUNT)) return heap_idx;
     }
 
