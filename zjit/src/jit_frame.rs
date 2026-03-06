@@ -87,4 +87,6 @@ mod tests {
             test
         "#), @"100");
     }
+
+    // TODO: write a test with side exit before writing any jit_return (uninitialized jit_return as of side exit)
 }
