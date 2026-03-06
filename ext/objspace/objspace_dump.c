@@ -577,6 +577,9 @@ dump_object(VALUE obj, struct dump_config *dc)
             dump_append(dc, ", \"struct\":\"");
             dump_append(dc, RTYPEDDATA_TYPE(obj)->wrap_struct_name);
             dump_append(dc, "\"");
+            if (!(RTYPEDDATA_TYPE(obj)->flags & RUBY_TYPED_FREE_IMMEDIATELY)) {
+                dump_append(dc, ", \"free_immediately\":false");
+            }
         }
         break;
 
