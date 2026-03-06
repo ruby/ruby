@@ -253,6 +253,9 @@ class << RubyVM::ZJIT
       :guard_shape_count,
       :guard_shape_exit_ratio,
 
+      :load_field_count,
+      :store_field_count,
+
       :side_exit_size,
       :code_region_bytes,
       :side_exit_size_ratio,
