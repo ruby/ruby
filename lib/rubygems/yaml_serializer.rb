@@ -2,603 +2,745 @@
 
 module Gem
   module YAMLSerializer
-    module_function
+    Scalar = Struct.new(:value, :tag, :anchor, keyword_init: true)
 
-    def dump(obj)
-      "---#{dump_obj(obj, 0)}"
+    Mapping = Struct.new(:pairs, :tag, :anchor, keyword_init: true) do
+      def initialize(pairs: [], tag: nil, anchor: nil)
+        super
+      end
     end
 
-    def dump_obj(obj, indent, quote: false)
-      case obj
-      when Gem::Specification
+    Sequence = Struct.new(:items, :tag, :anchor, keyword_init: true) do
+      def initialize(items: [], tag: nil, anchor: nil)
+        super
+      end
+    end
+
+    AliasRef = Struct.new(:name, keyword_init: true)
+
+    class Parser
+      MAPPING_KEY_RE = /^((?:[^#:]|:[^ ])+):(?:[ ]+(.*))?$/
+
+      def initialize(source)
+        @lines = source.split(/\r?\n/)
+        @anchors = {}
+        strip_document_prefix
+      end
+
+      def parse
+        return nil if @lines.empty?
+
+        root = nil
+        while @lines.any?
+          before = @lines.size
+          node = parse_node(-1)
+          @lines.shift if @lines.size == before && @lines.any?
+
+          if root.is_a?(Mapping) && node.is_a?(Mapping)
+            root.pairs.concat(node.pairs)
+          elsif root.nil?
+            root = node
+          end
+        end
+        root
+      end
+
+      private
+
+      def strip_document_prefix
+        return if @lines.empty?
+        return unless @lines[0]&.start_with?("---")
+
+        if @lines[0].strip == "---"
+          @lines.shift
+        else
+          @lines[0] = @lines[0].sub(/^---\s*/, "")
+        end
+      end
+
+      def parse_node(base_indent)
+        skip_blank_and_comments
+        return nil if @lines.empty?
+
+        indent = @lines[0][/^ */].size
+        return nil if indent < base_indent
+
+        line = @lines[0]
+
+        return parse_alias_ref if line.lstrip.start_with?("*")
+
+        anchor = consume_anchor
+
+        if line.lstrip.start_with?("- ") || line.lstrip == "-"
+          parse_sequence(indent, anchor)
+        elsif line.lstrip =~ MAPPING_KEY_RE && !line.lstrip.start_with?("!ruby/object:")
+          parse_mapping(indent, anchor)
+        elsif line.lstrip.start_with?("!ruby/object:")
+          parse_tagged_node(indent, anchor)
+        elsif line.lstrip.start_with?("|")
+          modifier = line.lstrip[1..].to_s.strip
+          @lines.shift
+          register_anchor(anchor, Scalar.new(value: parse_block_scalar(indent, modifier)))
+        else
+          parse_plain_scalar(indent, anchor)
+        end
+      end
+
+      def parse_sequence(indent, anchor)
+        items = []
+        while @lines.any? && @lines[0][/^ */].size == indent &&
+              (@lines[0].lstrip.start_with?("- ") || @lines[0].lstrip == "-")
+          content = @lines.shift.lstrip[1..].strip
+          item_anchor, content = extract_item_anchor(content)
+          item = parse_sequence_item(content, indent)
+          items << register_anchor(item_anchor, item)
+        end
+        register_anchor(anchor, Sequence.new(items: items))
+      end
+
+      def parse_sequence_item(content, indent)
+        if content.start_with?("*")
+          parse_inline_alias(content)
+        elsif content.empty?
+          @lines.any? && @lines[0][/^ */].size > indent ? parse_node(indent) : nil
+        elsif content.start_with?("!ruby/object:")
+          parse_tagged_content(content.strip, indent)
+        elsif content.start_with?("-")
+          @lines.unshift("#{" " * (indent + 2)}#{content}")
+          parse_node(indent)
+        elsif content =~ MAPPING_KEY_RE && !content.start_with?("!ruby/object:")
+          @lines.unshift("#{" " * (indent + 2)}#{content}")
+          parse_node(indent)
+        elsif content.start_with?("|")
+          Scalar.new(value: parse_block_scalar(indent, content[1..].to_s.strip))
+        else
+          parse_inline_scalar(content, indent)
+        end
+      end
+
+      def parse_mapping(indent, anchor)
+        pairs = []
+        while @lines.any? && @lines[0][/^ */].size == indent &&
+              @lines[0].lstrip =~ MAPPING_KEY_RE && !@lines[0].lstrip.start_with?("!ruby/object:")
+          l = @lines.shift
+          l.lstrip =~ MAPPING_KEY_RE
+          key = $1.strip
+          val = strip_comment($2.to_s.strip)
+
+          val_anchor, val = consume_value_anchor(val)
+          value = parse_mapping_value(val, indent)
+          value = register_anchor(val_anchor, value) if val_anchor
+
+          pairs << [Scalar.new(value: key), value]
+        end
+        register_anchor(anchor, Mapping.new(pairs: pairs))
+      end
+
+      def parse_mapping_value(val, indent)
+        if val.start_with?("*")
+          parse_inline_alias(val)
+        elsif val.start_with?("!ruby/object:")
+          parse_tagged_content(val.strip, indent)
+        elsif val.empty?
+          if @lines.any? &&
+             (@lines[0].lstrip.start_with?("- ") || @lines[0].lstrip == "-") &&
+             @lines[0][/^ */].size == indent
+            parse_node(indent)
+          else
+            parse_node(indent + 1)
+          end
+        elsif val == "[]"
+          Sequence.new
+        elsif val == "{}"
+          Mapping.new
+        elsif val.start_with?("|")
+          Scalar.new(value: parse_block_scalar(indent, val[1..].to_s.strip))
+        else
+          parse_inline_scalar(val, indent)
+        end
+      end
+
+      def parse_tagged_node(indent, anchor)
+        tag = @lines.shift.lstrip.strip
+        nested = parse_node(indent)
+        apply_tag(nested, tag, anchor)
+      end
+
+      def parse_tagged_content(tag, indent)
+        nested = parse_node(indent)
+        apply_tag(nested, tag, nil)
+      end
+
+      def apply_tag(node, tag, anchor)
+        if node.is_a?(Mapping)
+          node.tag = tag
+          node.anchor = anchor
+          node
+        else
+          Mapping.new(pairs: [[Scalar.new(value: "value"), node]], tag: tag, anchor: anchor)
+        end
+      end
+
+      def parse_block_scalar(base_indent, modifier)
+        parts = []
+        block_indent = nil
+
+        while @lines.any?
+          if @lines[0].strip.empty?
+            parts << "\n"
+            @lines.shift
+          else
+            line_indent = @lines[0][/^ */].size
+            break if line_indent <= base_indent
+            block_indent ||= line_indent
+            parts << @lines.shift[block_indent..].to_s << "\n"
+          end
+        end
+
+        res = parts.join
+        res.chomp! if modifier == "-" && res.end_with?("\n")
+        res
+      end
+
+      def parse_plain_scalar(indent, anchor)
+        result = coerce(@lines.shift.strip)
+        return register_anchor(anchor, result) if result.is_a?(Mapping) || result.is_a?(Sequence)
+
+        while result.is_a?(String) && @lines.any? &&
+              !@lines[0].strip.empty? && @lines[0][/^ */].size > indent
+          result << " " << @lines.shift.strip
+        end
+        register_anchor(anchor, Scalar.new(value: result))
+      end
+
+      def parse_inline_scalar(val, indent)
+        result = coerce(val)
+        return result if result.is_a?(Mapping) || result.is_a?(Sequence)
+
+        while result.is_a?(String) && @lines.any? &&
+              !@lines[0].strip.empty? && @lines[0][/^ */].size > indent
+          result << " " << @lines.shift.strip
+        end
+        Scalar.new(value: result)
+      end
+
+      def coerce(val)
+        val = val.sub(/^! /, "") if val.start_with?("! ")
+
+        if val =~ /^"(.*)"$/
+          $1.gsub(/\\"/, '"').gsub(/\\n/, "\n").gsub(/\\r/, "\r").gsub(/\\t/, "\t").gsub(/\\\\/, "\\")
+        elsif val =~ /^'(.*)'$/
+          $1.gsub(/''/, "'")
+        elsif val == "true"
+          true
+        elsif val == "false"
+          false
+        elsif val == "nil"
+          nil
+        elsif val == "{}"
+          Mapping.new
+        elsif val =~ /^\[(.*)\]$/
+          inner = $1.strip
+          return Sequence.new if inner.empty?
+          items = inner.split(/\s*,\s*/).reject(&:empty?).map {|e| Scalar.new(value: coerce(e)) }
+          Sequence.new(items: items)
+        elsif /^\d{4}-\d{2}-\d{2}/.match?(val)
+          require "time"
+          begin
+            Time.parse(val)
+          rescue ArgumentError
+            val
+          end
+        elsif /^-?\d+$/.match?(val)
+          val.to_i
+        else
+          val
+        end
+      end
+
+      def parse_alias_ref
+        AliasRef.new(name: @lines.shift.lstrip[1..].strip)
+      end
+
+      def parse_inline_alias(content)
+        AliasRef.new(name: content[1..].strip)
+      end
+
+      def consume_anchor
+        line = @lines[0]
+        return nil unless line.lstrip =~ /^&(\S+)\s+/
+
+        anchor = $1
+        @lines[0] = line.sub(/&#{Regexp.escape(anchor)}\s+/, "")
+        anchor
+      end
+
+      def extract_item_anchor(content)
+        return [nil, content] unless content =~ /^&(\S+)/
+
+        anchor = $1
+        [anchor, content.sub(/^&#{Regexp.escape(anchor)}\s*/, "")]
+      end
+
+      def consume_value_anchor(val)
+        return [nil, val] unless val =~ /^&(\S+)\s+/
+
+        anchor = $1
+        [anchor, val.sub(/^&#{Regexp.escape(anchor)}\s+/, "")]
+      end
+
+      def register_anchor(name, node)
+        if name
+          @anchors[name] = node
+          node.anchor = name if node.respond_to?(:anchor=)
+        end
+        node
+      end
+
+      def skip_blank_and_comments
+        @lines.shift while @lines.any? &&
+                           (@lines[0].strip.empty? || @lines[0].lstrip.start_with?("#"))
+      end
+
+      def strip_comment(val)
+        return val unless val.include?("#")
+        return val if val.lstrip.start_with?("#")
+
+        in_single = false
+        in_double = false
+        escape = false
+
+        val.each_char.with_index do |ch, i|
+          if escape
+            escape = false
+            next
+          end
+
+          if in_single
+            in_single = false if ch == "'"
+          elsif in_double
+            if ch == "\\"
+              escape = true
+            elsif ch == '"'
+              in_double = false
+            end
+          else
+            case ch
+            when "'" then in_single = true
+            when '"' then in_double = true
+            when "#" then return val[0...i].rstrip
+            end
+          end
+        end
+
+        val
+      end
+    end
+
+    class Builder
+      VALID_OPS = %w[= != > < >= <= ~>].freeze
+      ARRAY_FIELDS = %w[rdoc_options files test_files executables requirements extra_rdoc_files].freeze
+
+      def initialize(permitted_classes: [], permitted_symbols: [], aliases: true)
+        @permitted_tags = Array(permitted_classes).map do |c|
+          "!ruby/object:#{c.is_a?(Module) ? c.name : c}"
+        end
+        @permitted_symbols = permitted_symbols
+        @aliases = aliases
+        @anchor_values = {}
+      end
+
+      def build(node)
+        return {} if node.nil?
+
+        result = build_node(node)
+
+        if result.is_a?(Hash) &&
+           (result[:tag] == "!ruby/object:Gem::Specification" ||
+            result["tag"] == "!ruby/object:Gem::Specification")
+          build_specification(result)
+        else
+          result
+        end
+      end
+
+      private
+
+      def build_node(node)
+        case node
+        when nil then nil
+        when AliasRef then resolve_alias(node)
+        when Scalar then store_anchor(node.anchor, node.value)
+        when Mapping then build_mapping(node)
+        when Sequence then store_anchor(node.anchor, node.items.map {|item| build_node(item) })
+        else node # already a Ruby object
+        end
+      end
+
+      def resolve_alias(node)
+        raise ArgumentError, "YAML aliases are not allowed" unless @aliases
+        @anchor_values.fetch(node.name, nil)
+      end
+
+      def store_anchor(name, value)
+        @anchor_values[name] = value if name
+        value
+      end
+
+      def build_mapping(node)
+        validate_tag!(node.tag) if node.tag
+        check_anchor!(node)
+
+        result = case node.tag
+                 when "!ruby/object:Gem::Version"
+                   build_version(node)
+                 when "!ruby/object:Gem::Platform"
+                   build_platform(node)
+                 when "!ruby/object:Gem::Requirement", "!ruby/object:Gem::Version::Requirement"
+                   build_requirement(node)
+                 when "!ruby/object:Gem::Dependency"
+                   build_dependency(node)
+                 when nil
+                   build_hash(node)
+                 else
+                   hash = build_hash(node)
+                   hash[:tag] = node.tag
+                   hash
+        end
+
+        store_anchor(node.anchor, result)
+      end
+
+      def build_hash(node)
+        result = {}
+        node.pairs.each do |key_node, value_node|
+          key = key_node.is_a?(Scalar) ? key_node.value.to_s : build_node(key_node).to_s
+          value = build_node(value_node)
+
+          if ARRAY_FIELDS.include?(key)
+            value = normalize_array_field(value)
+          end
+
+          result[key] = value
+        end
+        result
+      end
+
+      def build_version(node)
+        hash = pairs_to_hash(node)
+        Gem::Version.new((hash["version"] || hash["value"]).to_s)
+      end
+
+      def build_platform(node)
+        hash = pairs_to_hash(node)
+        if hash["value"]
+          Gem::Platform.new(hash["value"])
+        else
+          Gem::Platform.new([hash["cpu"], hash["os"], hash["version"]])
+        end
+      end
+
+      def build_requirement(node)
+        r = Gem::Requirement.allocate
+        hash = pairs_to_hash(node)
+        reqs = hash["requirements"] || hash["value"]
+        reqs = [] unless reqs.is_a?(Array)
+
+        if reqs.is_a?(Array) && !reqs.empty?
+          safe_reqs = []
+          reqs.each do |item|
+            if item.is_a?(Array) && item.size == 2
+              op = item[0].to_s
+              ver = item[1]
+              if VALID_OPS.include?(op)
+                version_obj = ver.is_a?(Gem::Version) ? ver : Gem::Version.new(ver.to_s)
+                safe_reqs << [op, version_obj]
+              end
+            elsif item.is_a?(String)
+              parsed = Gem::Requirement.parse(item)
+              safe_reqs << parsed
+            end
+          rescue Gem::Requirement::BadRequirementError, Gem::Version::BadVersionError
+            # Skip malformed items silently
+          end
+          reqs = safe_reqs unless safe_reqs.empty?
+        end
+
+        r.instance_variable_set(:@requirements, reqs)
+        r
+      end
+
+      def build_dependency(node)
+        hash = pairs_to_hash(node)
+        d = Gem::Dependency.allocate
+        d.instance_variable_set(:@name, hash["name"])
+
+        requirement = build_safe_requirement(hash["requirement"])
+        d.instance_variable_set(:@requirement, requirement)
+
+        type = hash["type"]
+        type = type ? type.to_s.sub(/^:/, "").to_sym : :runtime
+        validate_symbol!(type)
+        d.instance_variable_set(:@type, type)
+
+        d.instance_variable_set(:@prerelease, ["true", true].include?(hash["prerelease"]))
+        d.instance_variable_set(:@version_requirements, d.instance_variable_get(:@requirement))
+        d
+      end
+
+      def build_specification(hash)
+        spec = Gem::Specification.allocate
+
+        normalize_specification_version!(hash)
+        normalize_rdoc_options!(hash)
+        normalize_array_fields!(hash)
+
+        spec.yaml_initialize("!ruby/object:Gem::Specification", hash)
+        spec
+      end
+
+      def pairs_to_hash(node)
+        result = {}
+        node.pairs.each do |key_node, value_node|
+          key = key_node.is_a?(Scalar) ? key_node.value.to_s : build_node(key_node).to_s
+          result[key] = build_node(value_node)
+        end
+        result
+      end
+
+      def build_safe_requirement(req_value)
+        return Gem::Requirement.default unless req_value
+
+        converted = req_value
+        return Gem::Requirement.default unless converted.is_a?(Gem::Requirement)
+
+        reqs = converted.instance_variable_get(:@requirements)
+        if reqs&.is_a?(Array)
+          valid = reqs.all? do |item|
+            next true if item == Gem::Requirement::DefaultRequirement
+            item.is_a?(Array) && item.size >= 2 && VALID_OPS.include?(item[0].to_s)
+          end
+          valid ? converted : Gem::Requirement.default
+        else
+          converted
+        end
+      rescue StandardError
+        Gem::Requirement.default
+      end
+
+      def validate_tag!(tag)
+        unless @permitted_tags.include?(tag)
+          raise ArgumentError, "Disallowed class: #{tag}"
+        end
+      end
+
+      def validate_symbol!(sym)
+        if @permitted_symbols.any? && !@permitted_symbols.include?(sym.to_s)
+          raise ArgumentError, "Disallowed symbol: #{sym.inspect}"
+        end
+      end
+
+      def check_anchor!(node)
+        if node.anchor
+          raise ArgumentError, "YAML aliases are not allowed" unless @aliases
+        end
+      end
+
+      def normalize_specification_version!(hash)
+        val = hash["specification_version"]
+        return unless val && !val.is_a?(Integer)
+        hash["specification_version"] = val.to_i if val.is_a?(String) && /\A\d+\z/.match?(val)
+      end
+
+      def normalize_rdoc_options!(hash)
+        opts = hash["rdoc_options"]
+        if opts.is_a?(Hash)
+          hash["rdoc_options"] = opts.values.flatten.compact.map(&:to_s)
+        elsif opts.is_a?(Array)
+          hash["rdoc_options"] = opts.flat_map do |opt|
+            if opt.is_a?(Hash)
+              opt.flat_map {|k, v| [k.to_s, v.to_s] }
+            elsif opt.is_a?(String)
+              opt
+            else
+              opt.to_s
+            end
+          end
+        end
+      end
+
+      def normalize_array_fields!(hash)
+        ARRAY_FIELDS.each do |field|
+          next if field == "rdoc_options" # already handled
+          hash[field] = normalize_array_field(hash[field]) if hash[field]
+        end
+      end
+
+      def normalize_array_field(value)
+        if value.is_a?(Hash)
+          value.values.flatten.compact
+        elsif !value.is_a?(Array) && value
+          [value].flatten.compact
+        else
+          value
+        end
+      end
+    end
+
+    class Emitter
+      def emit(obj)
+        "---#{emit_node(obj, 0)}"
+      end
+
+      private
+
+      def emit_node(obj, indent, quote: false)
+        case obj
+        when Gem::Specification then emit_specification(obj, indent)
+        when Gem::Version       then emit_version(obj, indent)
+        when Gem::Platform      then emit_platform(obj, indent)
+        when Gem::Requirement   then emit_requirement(obj, indent)
+        when Gem::Dependency    then emit_dependency(obj, indent)
+        when Hash               then emit_hash(obj, indent)
+        when Array              then emit_array(obj, indent)
+        when Time               then emit_time(obj)
+        when String             then emit_string(obj, indent, quote: quote)
+        when Numeric, Symbol, TrueClass, FalseClass, nil
+          " #{obj.inspect}\n"
+        else
+          " #{obj.to_s.inspect}\n"
+        end
+      end
+
+      def emit_specification(spec, indent)
         parts = [" !ruby/object:Gem::Specification\n"]
-        parts << "#{" " * indent}name:#{dump_obj(obj.name, indent + 2)}"
-        parts << "#{" " * indent}version:#{dump_obj(obj.version, indent + 2)}"
-        parts << "#{" " * indent}platform: #{obj.platform}\n"
-        if obj.platform.to_s != obj.original_platform.to_s
-          parts << "#{" " * indent}original_platform: #{obj.original_platform}\n"
+        parts << "#{pad(indent)}name:#{emit_node(spec.name, indent + 2)}"
+        parts << "#{pad(indent)}version:#{emit_node(spec.version, indent + 2)}"
+        parts << "#{pad(indent)}platform: #{spec.platform}\n"
+        if spec.platform.to_s != spec.original_platform.to_s
+          parts << "#{pad(indent)}original_platform: #{spec.original_platform}\n"
         end
 
         attributes = Gem::Specification.attribute_names.map(&:to_s).sort - %w[name version platform]
         attributes.each do |name|
-          val = obj.instance_variable_get("@#{name}")
+          val = spec.instance_variable_get("@#{name}")
           next if val.nil?
-          parts << "#{" " * indent}#{name}:#{dump_obj(val, indent + 2)}"
+          parts << "#{pad(indent)}#{name}:#{emit_node(val, indent + 2)}"
+        end
+
+        res = parts.join
+        res << "\n" unless res.end_with?("\n")
+        res
+      end
+
+      def emit_version(ver, indent)
+        " !ruby/object:Gem::Version\n" \
+          "#{pad(indent)}version: #{emit_node(ver.version.to_s, indent + 2).lstrip}"
+      end
+
+      def emit_platform(plat, indent)
+        " !ruby/object:Gem::Platform\n" \
+          "#{pad(indent)}cpu: #{plat.cpu.inspect}\n" \
+          "#{pad(indent)}os: #{plat.os.inspect}\n" \
+          "#{pad(indent)}version: #{plat.version.inspect}\n"
+      end
+
+      def emit_requirement(req, indent)
+        " !ruby/object:Gem::Requirement\n" \
+          "#{pad(indent)}requirements:#{emit_node(req.requirements, indent + 2)}"
+      end
+
+      def emit_dependency(dep, indent)
+        [
+          " !ruby/object:Gem::Dependency\n",
+          "#{pad(indent)}name: #{emit_node(dep.name, indent + 2).lstrip}",
+          "#{pad(indent)}requirement:#{emit_node(dep.requirement, indent + 2)}",
+          "#{pad(indent)}type: #{emit_node(dep.type, indent + 2).lstrip}",
+          "#{pad(indent)}prerelease: #{emit_node(dep.prerelease?, indent + 2).lstrip}",
+          "#{pad(indent)}version_requirements:#{emit_node(dep.requirement, indent + 2)}",
+        ].join
+      end
+
+      def emit_hash(hash, indent)
+        if hash.empty?
+          " {}\n"
+        else
+          parts = ["\n"]
+          hash.each do |k, v|
+            is_symbol = k.is_a?(Symbol) || (k.is_a?(String) && k.start_with?(":"))
+            key_str = k.is_a?(Symbol) ? k.inspect : k.to_s
+            parts << "#{pad(indent)}#{key_str}:#{emit_node(v, indent + 2, quote: is_symbol)}"
+          end
+          parts.join
+        end
+      end
+
+      def emit_array(arr, indent)
+        if arr.empty?
+          " []\n"
+        else
+          parts = ["\n"]
+          arr.each do |v|
+            parts << "#{pad(indent)}-#{emit_node(v, indent + 2)}"
+          end
+          parts.join
+        end
+      end
+
+      def emit_time(time)
+        " #{time.utc.strftime("%Y-%m-%d %H:%M:%S.%N Z")}\n"
+      end
+
+      def emit_string(str, indent, quote: false)
+        if str.include?("\n")
+          emit_block_scalar(str, indent)
+        elsif needs_quoting?(str, quote)
+          " #{str.to_s.inspect}\n"
+        else
+          " #{str}\n"
+        end
+      end
+
+      def emit_block_scalar(str, indent)
+        parts = [str.end_with?("\n") ? " |\n" : " |-\n"]
+        str.each_line do |line|
+          parts << "#{pad(indent + 2)}#{line}"
         end
         res = parts.join
         res << "\n" unless res.end_with?("\n")
         res
-      when Gem::Version
-        " !ruby/object:Gem::Version\n#{" " * indent}version: #{dump_obj(obj.version.to_s, indent + 2).lstrip}"
-      when Gem::Platform
-        " !ruby/object:Gem::Platform\n#{" " * indent}cpu: #{obj.cpu.inspect}\n#{" " * indent}os: #{obj.os.inspect}\n#{" " * indent}version: #{obj.version.inspect}\n"
-      when Gem::Requirement
-        " !ruby/object:Gem::Requirement\n#{" " * indent}requirements:#{dump_obj(obj.requirements, indent + 2)}"
-      when Gem::Dependency
-        [
-          " !ruby/object:Gem::Dependency\n",
-          "#{" " * indent}name: #{dump_obj(obj.name, indent + 2).lstrip}",
-          "#{" " * indent}requirement:#{dump_obj(obj.requirement, indent + 2)}",
-          "#{" " * indent}type: #{dump_obj(obj.type, indent + 2).lstrip}",
-          "#{" " * indent}prerelease: #{dump_obj(obj.prerelease?, indent + 2).lstrip}",
-          "#{" " * indent}version_requirements:#{dump_obj(obj.requirement, indent + 2)}",
-        ].join
-      when Hash
-        if obj.empty?
-          " {}\n"
-        else
-          parts = ["\n"]
-          obj.each do |k, v|
-            is_symbol = k.is_a?(Symbol) || (k.is_a?(String) && k.start_with?(":"))
-            key_str = k.is_a?(Symbol) ? k.inspect : k.to_s
-            parts << "#{" " * indent}#{key_str}:#{dump_obj(v, indent + 2, quote: is_symbol)}"
-          end
-          parts.join
-        end
-      when Array
-        if obj.empty?
-          " []\n"
-        else
-          parts = ["\n"]
-          obj.each do |v|
-            parts << "#{" " * indent}-#{dump_obj(v, indent + 2)}"
-          end
-          parts.join
-        end
-      when Time
-        " #{obj.utc.strftime("%Y-%m-%d %H:%M:%S.%N Z")}\n"
-      when String
-        if obj.include?("\n")
-          parts = [obj.end_with?("\n") ? " |\n" : " |-\n"]
-          obj.each_line do |line|
-            parts << "#{" " * (indent + 2)}#{line}"
-          end
-          res = parts.join
-          res << "\n" unless res.end_with?("\n")
-          res
-        elsif quote || obj.empty? || obj =~ /^[!*&:@%$]/ || obj =~ /^-?\d+(\.\d+)?$/ || obj =~ /^[<>=-]/ ||
-              obj == "true" || obj == "false" || obj == "nil" ||
-              obj.include?(":") || obj.include?("#") || obj.include?("[") || obj.include?("]") ||
-              obj.include?("{") || obj.include?("}") || obj.include?(",")
-          " #{obj.to_s.inspect}\n"
-        else
-          " #{obj}\n"
-        end
-      when Numeric, Symbol, TrueClass, FalseClass, nil
-        " #{obj.inspect}\n"
-      else
-        " #{obj.to_s.inspect}\n"
       end
+
+      def needs_quoting?(str, quote)
+        quote || str.empty? ||
+          str =~ /^[!*&:@%$]/ || str =~ /^-?\d+(\.\d+)?$/ || str =~ /^[<>=-]/ ||
+          str == "true" || str == "false" || str == "nil" ||
+          str.include?(":") || str.include?("#") || str.include?("[") || str.include?("]") ||
+          str.include?("{") || str.include?("}") || str.include?(",")
+      end
+
+      def pad(indent)
+        " " * indent
+      end
+    end
+
+    module_function
+
+    def dump(obj)
+      Emitter.new.emit(obj)
     end
 
     def load(str, permitted_classes: [], permitted_symbols: [], aliases: true)
       return {} if str.nil? || str.empty?
-      lines = str.split(/\r?\n/)
-      if lines[0]&.start_with?("---")
-        if lines[0].strip == "---"
-          lines.shift
-        else
-          lines[0] = lines[0].sub(/^---\s*/, "")
-        end
-      end
 
-      permitted_tags = build_permitted_tags(permitted_classes)
-      anchors = {}
-      data = nil
-      while lines.any?
-        before_count = lines.size
-        parsed = parse_any(lines, -1, permitted_tags, aliases, anchors)
-        if lines.size == before_count && lines.any?
-          lines.shift
-        end
+      ast = Parser.new(str).parse
+      return {} if ast.nil?
 
-        if data.is_a?(Hash) && parsed.is_a?(Hash)
-          data.merge!(parsed)
-        elsif data.nil?
-          data = parsed
-        end
-      end
-
-      return {} if data.nil?
-
-      if data.is_a?(Hash) && (data[:tag] == "!ruby/object:Gem::Specification" || data["tag"] == "!ruby/object:Gem::Specification")
-        convert_to_spec(data, permitted_symbols)
-      else
-        convert_any(data, permitted_symbols)
-      end
-    end
-
-    def parse_any(lines, base_indent, permitted_tags, aliases, anchors)
-      while lines.any? && (lines[0].strip.empty? || lines[0].lstrip.start_with?("#"))
-        lines.shift
-      end
-      return nil if lines.empty?
-
-      indent = lines[0][/^ */].size
-      return nil if indent < base_indent
-
-      line = lines[0]
-
-      # Check for alias reference (*anchor)
-      if line.lstrip.start_with?("*")
-        unless aliases
-          raise ArgumentError, "YAML aliases are not allowed"
-        end
-        alias_name = lines.shift.lstrip[1..-1].strip
-        return anchors[alias_name]
-      end
-
-      # Extract anchor if present (&anchor)
-      anchor_name = nil
-      if line.lstrip =~ /^&(\S+)\s+/
-        unless aliases
-          raise ArgumentError, "YAML aliases are not allowed"
-        end
-        anchor_name = $1
-        line = line.sub(/&#{Regexp.escape(anchor_name)}\s+/, "")
-        lines[0] = line
-      end
-
-      if line.lstrip.start_with?("- ") || line.lstrip == "-"
-        res = []
-        while lines.any? && lines[0][/^ */].size == indent && (lines[0].lstrip.start_with?("- ") || lines[0].lstrip == "-")
-          l = lines.shift
-          content = l.lstrip[1..-1].strip
-
-          # Check for anchor in array item
-          item_anchor = nil
-          if content =~ /^&(\S+)/
-            unless aliases
-              raise ArgumentError, "YAML aliases are not allowed"
-            end
-            item_anchor = $1
-            content = content.sub(/^&#{Regexp.escape(item_anchor)}\s*/, "")
-          end
-
-          # Check for alias in array item
-          if content.start_with?("*")
-            unless aliases
-              raise ArgumentError, "YAML aliases are not allowed"
-            end
-            alias_name = content[1..-1].strip
-            res << anchors[alias_name]
-          elsif content.empty?
-            # Empty array item - check if next line is nested content or a new item
-            item_value = if lines.any? && lines[0][/^ */].size > indent
-              parse_any(lines, indent, permitted_tags, aliases, anchors)
-            end
-            anchors[item_anchor] = item_value if item_anchor
-            res << item_value
-          elsif content.start_with?("!ruby/object:")
-            tag = content.strip
-            unless permitted_tags.include?(tag)
-              raise ArgumentError, "Disallowed class: #{tag}"
-            end
-            nested = parse_any(lines, indent, permitted_tags, aliases, anchors)
-            item_value = if nested.is_a?(Hash)
-              nested[:tag] = tag
-              nested
-            else
-              { :tag => tag, "value" => nested }
-            end
-            anchors[item_anchor] = item_value if item_anchor
-            res << item_value
-          elsif content.start_with?("-")
-            lines.unshift(" " * (indent + 2) + content)
-            item_value = parse_any(lines, indent, permitted_tags, aliases, anchors)
-            anchors[item_anchor] = item_value if item_anchor
-            res << item_value
-          elsif content =~ /^((?:[^#:]|:[^ ])+):(?:[ ]+(.*))?$/ && !content.start_with?("!ruby/object:")
-            lines.unshift(" " * (indent + 2) + content)
-            item_value = parse_any(lines, indent, permitted_tags, aliases, anchors)
-            anchors[item_anchor] = item_value if item_anchor
-            res << item_value
-          elsif content.start_with?("|")
-            modifier = content[1..-1].to_s.strip
-            item_value = parse_block_scalar(lines, indent, modifier)
-            anchors[item_anchor] = item_value if item_anchor
-            res << item_value
-          else
-            str = unquote_simple(content)
-            while lines.any? && !lines[0].strip.empty? && lines[0][/^ */].size > indent
-              str << " " << lines.shift.strip
-            end
-            anchors[item_anchor] = str if item_anchor
-            res << str
-          end
-        end
-        result = res
-      elsif line.lstrip =~ /^((?:[^#:]|:[^ ])+):(?:[ ]+(.*))?$/ && !line.lstrip.start_with?("!ruby/object:")
-        res = Hash.new
-        while lines.any? && lines[0][/^ */].size == indent && lines[0].lstrip =~ /^((?:[^#:]|:[^ ])+):(?:[ ]+(.*))?$/ && !lines[0].lstrip.start_with?("!ruby/object:")
-          l = lines.shift
-          l.lstrip =~ /^((?:[^#:]|:[^ ])+):(?:[ ]+(.*))?$/
-          key = $1.strip
-          val = $2.to_s.strip
-          val = strip_comment(val)
-
-          # Check for anchor in value
-          val_anchor = nil
-          if val =~ /^&(\S+)\s+/
-            unless aliases
-              raise ArgumentError, "YAML aliases are not allowed"
-            end
-            val_anchor = $1
-            val = val.sub(/^&#{Regexp.escape(val_anchor)}\s+/, "")
-          end
-
-          # Check for alias in value
-          if val.start_with?("*")
-            unless aliases
-              raise ArgumentError, "YAML aliases are not allowed"
-            end
-            alias_name = val[1..-1].strip
-            res[key] = anchors[alias_name]
-          elsif val.start_with?("!ruby/object:")
-            tag = val.strip
-            unless permitted_tags.include?(tag)
-              raise ArgumentError, "Disallowed class: #{tag}"
-            end
-            nested = parse_any(lines, indent, permitted_tags, aliases, anchors)
-            value = if nested.is_a?(Hash)
-              nested[:tag] = tag
-              nested
-            else
-              { :tag => tag, "value" => nested }
-            end
-            anchors[val_anchor] = value if val_anchor
-            res[key] = value
-          elsif val.empty?
-            value = if lines.any? && (lines[0].lstrip.start_with?("- ") || lines[0].lstrip == "-") && lines[0][/^ */].size == indent
-              parse_any(lines, indent, permitted_tags, aliases, anchors)
-            else
-              parse_any(lines, indent + 1, permitted_tags, aliases, anchors)
-            end
-            anchors[val_anchor] = value if val_anchor
-            res[key] = value
-          elsif val == "[]"
-            value = []
-            anchors[val_anchor] = value if val_anchor
-            res[key] = value
-          elsif val == "{}"
-            value = {}
-            anchors[val_anchor] = value if val_anchor
-            res[key] = value
-          elsif val.start_with?("|")
-            modifier = val[1..-1].to_s.strip
-            value = parse_block_scalar(lines, indent, modifier)
-            anchors[val_anchor] = value if val_anchor
-            res[key] = value
-          else
-            str = unquote_simple(val)
-            while lines.any? && !lines[0].strip.empty? && lines[0][/^ */].size > indent
-              str << " " << lines.shift.strip
-            end
-            anchors[val_anchor] = str if val_anchor
-            res[key] = str
-          end
-        end
-        result = res
-      elsif line.lstrip.start_with?("!ruby/object:")
-        tag = lines.shift.lstrip.strip
-        unless permitted_tags.include?(tag)
-          raise ArgumentError, "Disallowed class: #{tag}"
-        end
-        nested = parse_any(lines, indent, permitted_tags, aliases, anchors)
-        if nested.is_a?(Hash)
-          nested[:tag] = tag
-          result = nested
-        else
-          result = { :tag => tag, "value" => nested }
-        end
-      elsif line.lstrip.start_with?("|")
-        modifier = line.lstrip[1..-1].to_s.strip
-        lines.shift
-        result = parse_block_scalar(lines, indent, modifier)
-      else
-        str = unquote_simple(lines.shift.strip)
-        while lines.any? && !lines[0].strip.empty? && lines[0][/^ */].size > indent
-          str << " " << lines.shift.strip
-        end
-        result = str
-      end
-
-      # Store anchor if present
-      anchors[anchor_name] = result if anchor_name
-      result
-    end
-
-    def parse_block_scalar(lines, base_indent, modifier)
-      parts = []
-      block_indent = nil
-      while lines.any?
-        if lines[0].strip.empty?
-          parts << "\n"
-          lines.shift
-        else
-          line_indent = lines[0][/^ */].size
-          break if line_indent <= base_indent
-          block_indent ||= line_indent
-          l = lines.shift
-          parts << l[block_indent..-1].to_s << "\n"
-        end
-      end
-      res = parts.join
-      res.chomp! if modifier == "-" && res.end_with?("\n")
-      res
-    end
-
-    def build_permitted_tags(permitted_classes)
-      Array(permitted_classes).map do |klass|
-        name = klass.is_a?(Module) ? klass.name : klass.to_s
-        "!ruby/object:#{name}"
-      end
-    end
-
-    def convert_to_spec(hash, permitted_symbols)
-      spec = Gem::Specification.allocate
-      return spec unless hash.is_a?(Hash)
-
-      converted_hash = {}
-      hash.each {|k, v| converted_hash[k] = convert_any(v, permitted_symbols) }
-
-      # Ensure specification_version is an Integer if it's a valid numeric string
-      if converted_hash["specification_version"] && !converted_hash["specification_version"].is_a?(Integer)
-        val = converted_hash["specification_version"]
-        if val.is_a?(String) && /\A\d+\z/.match?(val)
-          converted_hash["specification_version"] = val.to_i
-        end
-      end
-
-      # Debug: log rdoc_options that contain non-string elements
-      if converted_hash["rdoc_options"] && converted_hash["name"]
-        rdoc_opts = converted_hash["rdoc_options"]
-        has_non_string = case rdoc_opts
-                         when Array then rdoc_opts.any? {|o| !o.is_a?(String) }
-                         when Hash then true
-                         else true
-        end
-        if has_non_string
-          warn "[DEBUG rdoc_options] gem=#{converted_hash["name"]} class=#{rdoc_opts.class} value=#{rdoc_opts.inspect}"
-        end
-      end
-
-      # Ensure rdoc_options is an Array of Strings
-      if converted_hash["rdoc_options"].is_a?(Hash)
-        converted_hash["rdoc_options"] = converted_hash["rdoc_options"].values.flatten.compact.map(&:to_s)
-      elsif converted_hash["rdoc_options"].is_a?(Array)
-        converted_hash["rdoc_options"] = converted_hash["rdoc_options"].flat_map do |opt|
-          if opt.is_a?(Hash)
-            opt.flat_map {|k, v| [k.to_s, v.to_s] }
-          elsif opt.is_a?(String)
-            opt
-          else
-            opt.to_s
-          end
-        end
-      end
-
-      # Ensure other array fields are properly typed
-      ["files", "test_files", "executables", "requirements", "extra_rdoc_files"].each do |field|
-        if converted_hash[field].is_a?(Hash)
-          converted_hash[field] = converted_hash[field].values.flatten.compact
-        elsif !converted_hash[field].is_a?(Array) && converted_hash[field]
-          converted_hash[field] = [converted_hash[field]].flatten.compact
-        end
-      end
-
-      spec.yaml_initialize("!ruby/object:Gem::Specification", converted_hash)
-      spec
-    end
-
-    def convert_any(obj, permitted_symbols)
-      if obj.is_a?(Hash)
-        if obj[:tag] == "!ruby/object:Gem::Version"
-          ver = obj["version"] || obj["value"]
-          Gem::Version.new(ver.to_s)
-        elsif obj[:tag] == "!ruby/object:Gem::Platform"
-          if obj["value"]
-            Gem::Platform.new(obj["value"])
-          else
-            Gem::Platform.new([obj["cpu"], obj["os"], obj["version"]])
-          end
-        elsif ["!ruby/object:Gem::Requirement", "!ruby/object:Gem::Version::Requirement"].include?(obj[:tag])
-          r = Gem::Requirement.allocate
-          raw_reqs = obj["requirements"] || obj["value"]
-          reqs = convert_any(raw_reqs, permitted_symbols)
-          # Ensure reqs is an array (never nil or Hash)
-          reqs = [] unless reqs.is_a?(Array)
-          if reqs.is_a?(Array) && !reqs.empty?
-            safe_reqs = []
-            reqs.each do |item|
-              if item.is_a?(Array) && item.size == 2
-                op = item[0].to_s
-                ver = item[1]
-                # Validate that op is a valid requirement operator
-                if ["=", "!=", ">", "<", ">=", "<=", "~>"].include?(op)
-                  version_obj = if ver.is_a?(Gem::Version)
-                    ver
-                  else
-                    Gem::Version.new(ver.to_s)
-                  end
-                  safe_reqs << [op, version_obj]
-                end
-              elsif item.is_a?(String)
-                # Try to validate the requirement string
-                parsed = Gem::Requirement.parse(item)
-                safe_reqs << parsed
-              end
-            rescue Gem::Requirement::BadRequirementError, Gem::Version::BadVersionError
-              # Skip malformed items silently
-            end
-            reqs = safe_reqs unless safe_reqs.empty?
-          end
-          r.instance_variable_set(:@requirements, reqs)
-          r
-        elsif obj[:tag] == "!ruby/object:Gem::Dependency"
-          d = Gem::Dependency.allocate
-          d.instance_variable_set(:@name, obj["name"])
-
-          # Ensure requirement is properly formed
-          requirement = begin
-            converted_req = convert_any(obj["requirement"], permitted_symbols)
-            # Validate that the requirement has valid requirements
-            if converted_req.is_a?(Gem::Requirement)
-              # Check if the requirement has any invalid items
-              reqs = converted_req.instance_variable_get(:@requirements)
-              if reqs&.is_a?(Array)
-                # Verify all requirements are valid
-                valid = reqs.all? do |item|
-                  next true if item == Gem::Requirement::DefaultRequirement
-                  if item.is_a?(Array) && item.size >= 2
-                    ["=", "!=", ">", "<", ">=", "<=", "~>"].include?(item[0].to_s)
-                  else
-                    false
-                  end
-                end
-                valid ? converted_req : Gem::Requirement.default
-              else
-                converted_req
-              end
-            else
-              converted_req
-            end
-          rescue StandardError
-            Gem::Requirement.default
-          end
-
-          d.instance_variable_set(:@requirement, requirement)
-
-          type = obj["type"]
-          if type
-            type = type.to_s.sub(/^:/, "").to_sym
-          else
-            type = :runtime
-          end
-          if permitted_symbols.any? && !permitted_symbols.include?(type.to_s)
-            raise ArgumentError, "Disallowed symbol: #{type.inspect}"
-          end
-          d.instance_variable_set(:@type, type)
-
-          d.instance_variable_set(:@prerelease, ["true", true].include?(obj["prerelease"]))
-          d.instance_variable_set(:@version_requirements, d.instance_variable_get(:@requirement))
-          d
-        else
-          res = Hash.new
-          obj.each do |k, v|
-            next if k == :tag
-            key_str = k.to_s
-            converted_val = convert_any(v, permitted_symbols)
-
-            # Convert Hash to Array for fields that should be arrays
-            if ["rdoc_options", "files", "test_files", "executables", "requirements", "extra_rdoc_files"].include?(key_str)
-              if converted_val.is_a?(Hash)
-                converted_val = converted_val.values.flatten.compact
-              elsif !converted_val.is_a?(Array) && converted_val
-                converted_val = [converted_val].flatten.compact
-              end
-            end
-
-            res[key_str] = converted_val
-          end
-          res
-        end
-      elsif obj.is_a?(Array)
-        obj.map {|i| convert_any(i, permitted_symbols) }
-      else
-        obj
-      end
-    end
-
-    def strip_comment(val)
-      return val unless val.include?("#")
-      return val if val.lstrip.start_with?("#")
-
-      in_single = false
-      in_double = false
-      escape = false
-
-      val.each_char.with_index do |ch, i|
-        if escape
-          escape = false
-          next
-        end
-
-        if in_single
-          in_single = false if ch == "'"
-        elsif in_double
-          if ch == "\\"
-            escape = true
-          elsif ch == '"'
-            in_double = false
-          end
-        else
-          case ch
-          when "'"
-            in_single = true
-          when '"'
-            in_double = true
-          when "#"
-            return val[0...i].rstrip
-          end
-        end
-      end
-
-      val
-    end
-
-    def unquote_simple(val)
-      # Strip YAML non-specific tag (! prefix), e.g. ! '>=' -> '>='
-      val = val.sub(/^! /, "") if val.start_with?("! ")
-
-      if val =~ /^"(.*)"$/
-        $1.gsub(/\\"/, '"').gsub(/\\n/, "\n").gsub(/\\r/, "\r").gsub(/\\t/, "\t").gsub(/\\\\/, "\\")
-      elsif val =~ /^'(.*)'$/
-        $1.gsub(/''/, "'")
-      elsif val == "true"
-        true
-      elsif val == "false"
-        false
-      elsif val == "nil"
-        nil
-      elsif val == "{}"
-        {}
-      elsif val =~ /^\[(.*)\]$/
-        inner = $1.strip
-        return [] if inner.empty?
-        inner.split(/\s*,\s*/).reject(&:empty?).map {|element| unquote_simple(element) }
-      elsif /^\d{4}-\d{2}-\d{2}/.match?(val)
-        require "time"
-        begin
-          Time.parse(val)
-        rescue ArgumentError
-          val
-        end
-      elsif /^-?\d+$/.match?(val)
-        val.to_i
-      else
-        val
-      end
+      Builder.new(
+        permitted_classes: permitted_classes,
+        permitted_symbols: permitted_symbols,
+        aliases: aliases
+      ).build(ast)
     end
   end
 end
