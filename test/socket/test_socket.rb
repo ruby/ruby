@@ -610,7 +610,7 @@ class TestSocket < Test::Unit::TestCase
     # some platforms may not timeout when the listener queue overflows,
     # but we know Linux does with the default listen backlog of SOMAXCONN for
     # TCPServer.
-    assert_raise(Errno::ETIMEDOUT) do
+    assert_raise(IO::TimeoutError) do
       (Socket::SOMAXCONN*2).times do |i|
         sock = Socket.tcp(host, port, :connect_timeout => 0)
         assert_equal sock, IO.select(nil, [ sock ])[1][0],
