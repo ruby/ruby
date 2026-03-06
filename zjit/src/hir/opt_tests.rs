@@ -243,6 +243,117 @@ mod hir_opt_tests {
         ");
     }
 
+    #[test]
+    fn test_fold_fixnum_div() {
+        eval("
+            def test
+              7 / 3
+            end
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:Fixnum[7] = Const Value(7)
+          v12:Fixnum[3] = Const Value(3)
+          PatchPoint MethodRedefined(Integer@0x1000, /@0x1008, cme:0x1010)
+          v25:Fixnum[2] = Const Value(2)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v25
+        ");
+    }
+
+    #[test]
+    fn test_dont_fold_fixnum_div_zero() {
+        eval("
+            def test
+              7 / 0
+            end
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:Fixnum[7] = Const Value(7)
+          v12:Fixnum[0] = Const Value(0)
+          PatchPoint MethodRedefined(Integer@0x1000, /@0x1008, cme:0x1010)
+          v23:Fixnum = FixnumDiv v10, v12
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
+    fn test_fold_fixnum_div_negative() {
+        eval("
+            def test
+              7 / -3
+            end
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:Fixnum[7] = Const Value(7)
+          v12:Fixnum[-3] = Const Value(-3)
+          PatchPoint MethodRedefined(Integer@0x1000, /@0x1008, cme:0x1010)
+          v25:Fixnum[-3] = Const Value(-3)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v25
+        ");
+    }
+
+    #[test]
+    fn test_dont_fold_fixnum_div_negative_one_overflow() {
+        eval(&format!("
+            def test
+              {RUBY_FIXNUM_MIN} / -1
+            end
+        "));
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:Fixnum[-4611686018427387904] = Const Value(-4611686018427387904)
+          v12:Fixnum[-1] = Const Value(-1)
+          PatchPoint MethodRedefined(Integer@0x1000, /@0x1008, cme:0x1010)
+          v23:Fixnum = FixnumDiv v10, v12
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v23
+        ");
+    }
 
     #[test]
     fn test_fold_fixnum_mod_zero_by_zero() {
