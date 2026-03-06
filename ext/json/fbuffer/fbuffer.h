@@ -11,11 +11,11 @@ enum fbuffer_type {
 
 typedef struct FBufferStruct {
     enum fbuffer_type type;
-    unsigned long initial_length;
-    unsigned long len;
-    unsigned long capa;
+    size_t initial_length;
+    size_t len;
+    size_t capa;
 #if JSON_DEBUG
-    unsigned long requested;
+    size_t requested;
 #endif
     char *ptr;
     VALUE io;
@@ -32,12 +32,12 @@ typedef struct FBufferStruct {
 
 static void fbuffer_free(FBuffer *fb);
 static void fbuffer_clear(FBuffer *fb);
-static void fbuffer_append(FBuffer *fb, const char *newstr, unsigned long len);
+static void fbuffer_append(FBuffer *fb, const char *newstr, size_t len);
 static void fbuffer_append_long(FBuffer *fb, long number);
 static inline void fbuffer_append_char(FBuffer *fb, char newchr);
 static VALUE fbuffer_finalize(FBuffer *fb);
 
-static void fbuffer_stack_init(FBuffer *fb, unsigned long initial_length, char *stack_buffer, long stack_buffer_size)
+static void fbuffer_stack_init(FBuffer *fb, size_t initial_length, char *stack_buffer, size_t stack_buffer_size)
 {
     fb->initial_length = (initial_length > 0) ? initial_length : FBUFFER_INITIAL_LENGTH_DEFAULT;
     if (stack_buffer) {
@@ -50,7 +50,7 @@ static void fbuffer_stack_init(FBuffer *fb, unsigned long initial_length, char *
 #endif
 }
 
-static inline void fbuffer_consumed(FBuffer *fb, unsigned long consumed)
+static inline void fbuffer_consumed(FBuffer *fb, size_t consumed)
 {
 #if JSON_DEBUG
     if (consumed > fb->requested) {
@@ -79,7 +79,7 @@ static void fbuffer_flush(FBuffer *fb)
     fbuffer_clear(fb);
 }
 
-static void fbuffer_realloc(FBuffer *fb, unsigned long required)
+static void fbuffer_realloc(FBuffer *fb, size_t required)
 {
     if (required > fb->capa) {
         if (fb->type == FBUFFER_STACK_ALLOCATED) {
@@ -94,7 +94,7 @@ static void fbuffer_realloc(FBuffer *fb, unsigned long required)
     }
 }
 
-static void fbuffer_do_inc_capa(FBuffer *fb, unsigned long requested)
+static void fbuffer_do_inc_capa(FBuffer *fb, size_t requested)
 {
     if (RB_UNLIKELY(fb->io)) {
         if (fb->capa < FBUFFER_IO_BUFFER_SIZE) {
@@ -108,7 +108,7 @@ static void fbuffer_do_inc_capa(FBuffer *fb, unsigned long requested)
         }
     }
 
-    unsigned long required;
+    size_t required;
 
     if (RB_UNLIKELY(!fb->ptr)) {
         fb->ptr = ALLOC_N(char, fb->initial_length);
@@ -120,7 +120,7 @@ static void fbuffer_do_inc_capa(FBuffer *fb, unsigned long requested)
     fbuffer_realloc(fb, required);
 }
 
-static inline void fbuffer_inc_capa(FBuffer *fb, unsigned long requested)
+static inline void fbuffer_inc_capa(FBuffer *fb, size_t requested)
 {
 #if JSON_DEBUG
     fb->requested = requested;
@@ -131,13 +131,13 @@ static inline void fbuffer_inc_capa(FBuffer *fb, unsigned long requested)
     }
 }
 
-static inline void fbuffer_append_reserved(FBuffer *fb, const char *newstr, unsigned long len)
+static inline void fbuffer_append_reserved(FBuffer *fb, const char *newstr, size_t len)
 {
     MEMCPY(fb->ptr + fb->len, newstr, char, len);
     fbuffer_consumed(fb, len);
 }
 
-static inline void fbuffer_append(FBuffer *fb, const char *newstr, unsigned long len)
+static inline void fbuffer_append(FBuffer *fb, const char *newstr, size_t len)
 {
     if (len > 0) {
         fbuffer_inc_capa(fb, len);
@@ -162,7 +162,7 @@ static inline void fbuffer_append_reserved_char(FBuffer *fb, char chr)
 static void fbuffer_append_str(FBuffer *fb, VALUE str)
 {
     const char *ptr;
-    unsigned long len;
+    size_t len;
     RSTRING_GETMEM(str, ptr, len);
 
     fbuffer_append(fb, ptr, len);
@@ -171,7 +171,7 @@ static void fbuffer_append_str(FBuffer *fb, VALUE str)
 static void fbuffer_append_str_repeat(FBuffer *fb, VALUE str, size_t repeat)
 {
     const char *ptr;
-    unsigned long len;
+    size_t len;
     RSTRING_GETMEM(str, ptr, len);
 
     fbuffer_inc_capa(fb, repeat * len);
