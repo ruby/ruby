@@ -898,25 +898,27 @@ onig_region_clear(OnigRegion* region)
 }
 
 extern int
-onig_region_resize(OnigRegion* region, int n)
+onig_region_resize(OnigRegion* region, int num_regs)
 {
-  region->num_regs = n;
-
+  int n = num_regs;
   if (n < ONIG_NREGION)
     n = ONIG_NREGION;
 
+  /* allocated == 0 with num_regs set indicates stack-allocated buffers */
   if (region->allocated == 0) {
-    region->beg = (OnigPosition* )xmalloc(n * sizeof(OnigPosition));
-    if (region->beg == 0)
-      return ONIGERR_MEMORY;
+    if (region->num_regs < n) {
+      region->beg = (OnigPosition* )xmalloc(n * sizeof(OnigPosition));
+      if (region->beg == 0)
+        return ONIGERR_MEMORY;
 
-    region->end = (OnigPosition* )xmalloc(n * sizeof(OnigPosition));
-    if (region->end == 0) {
-      xfree(region->beg);
-      return ONIGERR_MEMORY;
+      region->end = (OnigPosition* )xmalloc(n * sizeof(OnigPosition));
+      if (region->end == 0) {
+        xfree(region->beg);
+        return ONIGERR_MEMORY;
+      }
+
+      region->allocated = n;
     }
-
-    region->allocated = n;
   }
   else if (region->allocated < n) {
     OnigPosition *tmp;
@@ -939,6 +941,8 @@ onig_region_resize(OnigRegion* region, int n)
 
     region->allocated = n;
   }
+
+  region->num_regs = num_regs;
 
   return 0;
 }
