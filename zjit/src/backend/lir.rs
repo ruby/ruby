@@ -2252,7 +2252,7 @@ impl Assembler
 
             // TODO: can we skip writing this when it's on JIT entry? maybe let materialize_frames handle it?
             asm_comment!(asm, "save cfp->iseq");
-            asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_ISEQ), Opnd::const_ptr(iseq as _));
+            asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_ISEQ), VALUE::from(*iseq).into());
 
             asm_comment!(asm, "save cfp->jit_return");
             asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), 0.into());

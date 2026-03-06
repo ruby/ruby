@@ -118,6 +118,6 @@ mod tests {
             jit_entry(0)
             jit_entry(0)
             jit_entry(0/1r)
-        "#), @r#""#);
+        "#), @"(0/1)..1");
     }
 }
