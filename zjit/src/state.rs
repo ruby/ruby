@@ -63,7 +63,7 @@ pub struct ZJITState {
     ccall_counter_pointers: HashMap<String, Box<u64>>,
 
     /// Counter pointers for access counts of ISEQs accessed by JIT code
-    iseq_access_count_pointers: HashMap<String, Box<u64>>,
+    iseq_calls_count_pointers: HashMap<String, Box<u64>>,
 
     /// Locations of side exists within generated code
     exit_locations: Option<SideExitLocations>,
@@ -142,7 +142,7 @@ impl ZJITState {
             full_frame_cfunc_counter_pointers: HashMap::new(),
             not_annotated_frame_cfunc_counter_pointers: HashMap::new(),
             ccall_counter_pointers: HashMap::new(),
-            iseq_access_count_pointers: HashMap::new(),
+            iseq_calls_count_pointers: HashMap::new(),
             exit_locations,
         };
         unsafe { ZJIT_STATE = Enabled(zjit_state); }
@@ -229,8 +229,8 @@ impl ZJITState {
     }
 
     /// Get a mutable reference to iseq access count pointers
-    pub fn get_iseq_access_count_pointers() -> &'static mut HashMap<String, Box<u64>> {
-        &mut ZJITState::get_instance().iseq_access_count_pointers
+    pub fn get_iseq_calls_count_pointers() -> &'static mut HashMap<String, Box<u64>> {
+        &mut ZJITState::get_instance().iseq_calls_count_pointers
     }
 
     /// Was --zjit-save-compiled-iseqs specified?
