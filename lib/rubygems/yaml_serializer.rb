@@ -161,11 +161,13 @@ module Gem
         elsif val.start_with?("!ruby/object:")
           parse_tagged_content(val.strip, indent)
         elsif val.empty?
+          next_stripped = nil
+          next_indent = nil
           if @lines.any?
             next_stripped = @lines[0].lstrip
             next_indent = @lines[0].size - next_stripped.size
           end
-          if @lines.any? &&
+          if next_stripped &&
              (next_stripped.start_with?("- ") || next_stripped == "-") &&
              next_indent == indent
             parse_node(indent)
