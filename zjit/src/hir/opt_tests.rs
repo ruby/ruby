@@ -53,9 +53,7 @@ mod hir_opt_tests {
         bb3(v8:BasicObject, v9:NilClass):
           v13:TrueClass = Const Value(true)
           CheckInterrupts
-          v22:TrueClass = RefineType v13, Truthy
           v25:Fixnum[3] = Const Value(3)
-          CheckInterrupts
           Return v25
         ");
     }
@@ -87,9 +85,7 @@ mod hir_opt_tests {
         bb3(v8:BasicObject, v9:NilClass):
           v13:FalseClass = Const Value(false)
           CheckInterrupts
-          v20:FalseClass = RefineType v13, Falsy
           v35:Fixnum[4] = Const Value(4)
-          CheckInterrupts
           Return v35
         ");
     }
@@ -681,7 +677,6 @@ mod hir_opt_tests {
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           v24:Fixnum[3] = Const Value(3)
-          CheckInterrupts
           Return v24
         ");
     }
@@ -714,11 +709,8 @@ mod hir_opt_tests {
           v60:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          v62:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
-          CheckInterrupts
           v37:Fixnum[3] = Const Value(3)
-          CheckInterrupts
           Return v37
         ");
     }
@@ -752,7 +744,6 @@ mod hir_opt_tests {
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           v24:Fixnum[3] = Const Value(3)
-          CheckInterrupts
           Return v24
         ");
     }
@@ -785,11 +776,8 @@ mod hir_opt_tests {
           v60:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          v62:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
-          CheckInterrupts
           v37:Fixnum[3] = Const Value(3)
-          CheckInterrupts
           Return v37
         ");
     }
@@ -823,7 +811,6 @@ mod hir_opt_tests {
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           v33:Fixnum[4] = Const Value(4)
-          CheckInterrupts
           Return v33
         ");
     }
@@ -857,7 +844,6 @@ mod hir_opt_tests {
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           v24:Fixnum[3] = Const Value(3)
-          CheckInterrupts
           Return v24
         ");
     }
@@ -892,7 +878,6 @@ mod hir_opt_tests {
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           v24:Fixnum[3] = Const Value(3)
-          CheckInterrupts
           Return v24
         ");
     }
@@ -927,7 +912,6 @@ mod hir_opt_tests {
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           v33:Fixnum[4] = Const Value(4)
-          CheckInterrupts
           Return v33
         ");
     }
@@ -4283,7 +4267,6 @@ mod hir_opt_tests {
           v50:NilClass = Const Value(nil)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          CheckInterrupts
           Return v46
         ");
     }
@@ -4321,7 +4304,6 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(C@0x1008, initialize@0x1038, cme:0x1040)
           v52:BasicObject = SendDirect v49, 0x1068, :initialize (0x1078), v15
           CheckInterrupts
-          CheckInterrupts
           Return v49
         ");
     }
@@ -4353,7 +4335,6 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Object@0x1008, initialize@0x1038, cme:0x1040)
           v50:NilClass = Const Value(nil)
           IncrCounter inline_cfunc_optimized_send_count
-          CheckInterrupts
           CheckInterrupts
           Return v46
         ");
@@ -4387,7 +4368,6 @@ mod hir_opt_tests {
           v50:NilClass = Const Value(nil)
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          CheckInterrupts
           Return v46
         ");
     }
@@ -4417,7 +4397,6 @@ mod hir_opt_tests {
           v46:HashExact = ObjectAllocClass Hash:VALUE(0x1008)
           IncrCounter complex_arg_pass_param_block
           v19:BasicObject = Send v46, :initialize # SendFallbackReason: Complex argument passing
-          CheckInterrupts
           CheckInterrupts
           Return v46
         ");
@@ -4483,7 +4462,6 @@ mod hir_opt_tests {
           v49:SetExact = GuardType v17, SetExact
           v50:BasicObject = CCallVariadic v49, :Set#initialize@0x1068
           CheckInterrupts
-          CheckInterrupts
           Return v17
         ");
     }
@@ -4546,7 +4524,6 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Regexp@0x1008)
           PatchPoint MethodRedefined(Regexp@0x1008, initialize@0x1048, cme:0x1050)
           v54:BasicObject = CCallVariadic v50, :Regexp#initialize@0x1078, v16
-          CheckInterrupts
           CheckInterrupts
           Return v50
         ");
@@ -5914,7 +5891,6 @@ mod hir_opt_tests {
           v13:NilClass = Const Value(nil)
           CheckInterrupts
           v21:NilClass = Const Value(nil)
-          CheckInterrupts
           Return v21
         ");
     }
@@ -5946,7 +5922,6 @@ mod hir_opt_tests {
           v23:Fixnum[1] = RefineType v13, NotNil
           PatchPoint MethodRedefined(Integer@0x1000, itself@0x1008, cme:0x1010)
           IncrCounter inline_cfunc_optimized_send_count
-          CheckInterrupts
           Return v23
         ");
     }
@@ -12110,7 +12085,6 @@ mod hir_opt_tests {
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           v26:StaticSymbol[:CORRECT] = Const Value(VALUE(0x10a8))
-          CheckInterrupts
           Return v26
         ");
     }
@@ -13509,11 +13483,7 @@ mod hir_opt_tests {
           IfFalse v16, bb6(v9, v17)
           v19:Truthy = RefineType v10, Truthy
           CheckInterrupts
-          v27:Truthy = RefineType v19, Truthy
-          CheckInterrupts
-          v35:Truthy = RefineType v27, Truthy
           v38:Fixnum[3] = Const Value(3)
-          CheckInterrupts
           Return v38
         bb6(v43:BasicObject, v44:Falsy):
           v48:Fixnum[6] = Const Value(6)
