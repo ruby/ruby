@@ -882,6 +882,25 @@ if defined? Zlib
       assert_equal(-1, r.pos, "[ruby-core:81488][Bug #13616]")
     end
 
+    def test_ungetc_buffer_underflow
+      initial_bufsize = 1024
+      payload = "A" * initial_bufsize
+      gzip_io = StringIO.new
+      Zlib::GzipWriter.wrap(gzip_io) { |gz| gz.write(payload) }
+      compressed = gzip_io.string
+
+      reader = Zlib::GzipReader.new(StringIO.new(compressed))
+      reader.read(1)
+      overflow_bytes = "B" * (initial_bufsize)
+      reader.ungetc(overflow_bytes)
+      data = reader.read(overflow_bytes.bytesize)
+      assert_equal overflow_bytes.bytesize, data.bytesize, data
+      assert_empty data.delete("B"), data
+      data = reader.read()
+      assert_equal initial_bufsize - 1, data.bytesize, data
+      assert_empty data.delete("A"), data
+    end
+
     def test_open
       Tempfile.create("test_zlib_gzip_reader_open") {|t|
         t.close
@@ -1266,6 +1285,36 @@ if defined? Zlib
         end
       }
     end
+
+    # Test for signal interrupt bug: Z_BUF_ERROR with avail_out > 0
+    # This reproduces the issue where thread wakeup during GzipReader operations
+    # can cause Z_BUF_ERROR to be raised incorrectly
+    def test_thread_wakeup_interrupt
+      pend 'fails' if RUBY_ENGINE == 'truffleruby'
+      content = SecureRandom.base64(5000)
+      gzipped = Zlib.gzip(content)
+
+      1000.times do
+        thr = Thread.new do
+          loop do
+            Zlib::GzipReader.new(StringIO.new(gzipped)).read
+          end
+        end
+
+        # Wakeup the thread multiple times to trigger interrupts
+        10.times do
+          thr.wakeup
+          Thread.pass
+        end
+
+        # Give thread a moment to process
+        sleep 0.001
+
+        # Clean up
+        thr.kill
+        thr.join
+      end
+    end
   end
 
   class TestZlibGzipWriter < Test::Unit::TestCase
@@ -1533,6 +1582,37 @@ if defined? Zlib
       {#
         10_000.times {Zlib.gunzip(d)}
       };
+    end
+
+    # Test for signal interrupt bug: Z_BUF_ERROR with avail_out > 0
+    # This reproduces the issue where thread wakeup during GzipReader operations
+    # can cause Z_BUF_ERROR to be raised incorrectly
+    def test_thread_wakeup_interrupt
+      pend 'fails' if RUBY_ENGINE == 'truffleruby'
+
+      content = SecureRandom.base64(5000)
+      gzipped = Zlib.gzip(content)
+
+      1000.times do
+        thr = Thread.new do
+          loop do
+            Zlib::GzipReader.new(StringIO.new(gzipped)).read
+          end
+        end
+
+        # Wakeup the thread multiple times to trigger interrupts
+        10.times do
+          thr.wakeup
+          Thread.pass
+        end
+
+        # Give thread a moment to process
+        sleep 0.001
+
+        # Clean up
+        thr.kill
+        thr.join
+      end
     end
   end
 end

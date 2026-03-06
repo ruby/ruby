@@ -4,5 +4,5 @@ creating it if it did not already exist:
   'foo'.intern       # => :foo
   'こんにちは'.intern # => :こんにちは
 
-Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
+Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non-String].
 

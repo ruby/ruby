@@ -54,7 +54,6 @@ module Bundler
         when Gem::Net::HTTPRequestedRangeNotSatisfiable
           new_headers = headers.dup
           new_headers.delete("Range")
-          new_headers["Accept-Encoding"] = "gzip"
           fetch(uri, new_headers)
         when Gem::Net::HTTPRequestEntityTooLarge
           raise FallbackError, response.body

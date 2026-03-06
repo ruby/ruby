@@ -194,7 +194,7 @@ nt_alloc_thread_stack_chunk(void)
     mmap_flags |= MAP_STACK;
 #endif
 
-    const char *m = (void *)mmap(NULL, MSTACK_CHUNK_SIZE, PROT_READ | PROT_WRITE, mmap_flags, -1, 0);
+    const char *m = (void *)mmap(NULL, MSTACK_CHUNK_SIZE, PROT_NONE, mmap_flags, -1, 0);
     if (m == MAP_FAILED) {
         return NULL;
     }
@@ -212,6 +212,12 @@ nt_alloc_thread_stack_chunk(void)
     }
 
     VM_ASSERT(stack_count <= UINT16_MAX);
+
+    // Enable read/write for the header pages
+    if (mprotect((void *)m, (size_t)header_page_cnt * MSTACK_PAGE_SIZE, PROT_READ | PROT_WRITE) != 0) {
+        munmap((void *)m, MSTACK_CHUNK_SIZE);
+        return NULL;
+    }
 
     struct nt_stack_chunk_header *ch = (struct nt_stack_chunk_header *)m;
 
@@ -241,7 +247,7 @@ nt_stack_chunk_get_msf(const rb_vm_t *vm, const char *mstack)
     return (struct nt_machine_stack_footer *)&mstack[msz - sizeof(struct nt_machine_stack_footer)];
 }
 
-static void *
+static void
 nt_stack_chunk_get_stack(const rb_vm_t *vm, struct nt_stack_chunk_header *ch, size_t idx, void **vm_stack, void **machine_stack)
 {
     // TODO: only support stack going down
@@ -266,8 +272,6 @@ nt_stack_chunk_get_stack(const rb_vm_t *vm, struct nt_stack_chunk_header *ch, si
 
     *vm_stack = (void *)vstack;
     *machine_stack = (void *)mstack;
-
-    return (void *)guard_page;
 }
 
 RBIMPL_ATTR_MAYBE_UNUSED()
@@ -291,17 +295,6 @@ nt_stack_chunk_dump(void)
 }
 
 static int
-nt_guard_page(const char *p, size_t len)
-{
-    if (mprotect((void *)p, len, PROT_NONE) != -1) {
-        return 0;
-    }
-    else {
-        return errno;
-    }
-}
-
-static int
 nt_alloc_stack(rb_vm_t *vm, void **vm_stack, void **machine_stack)
 {
     int err = 0;
@@ -319,8 +312,20 @@ nt_alloc_stack(rb_vm_t *vm, void **vm_stack, void **machine_stack)
                 RUBY_DEBUG_LOG("uninitialized_stack_count:%d", ch->uninitialized_stack_count);
 
                 size_t idx = ch->stack_count - ch->uninitialized_stack_count--;
-                void *guard_page = nt_stack_chunk_get_stack(vm, ch, idx, vm_stack, machine_stack);
-                err = nt_guard_page(guard_page, MSTACK_PAGE_SIZE);
+
+                // The chunk was mapped PROT_NONE; enable the VM stack and
+                // machine stack pages, leaving the guard page as PROT_NONE.
+                char *stack_start = nt_stack_chunk_get_stack_start(ch, idx);
+                size_t vm_stack_size = vm->default_params.thread_vm_stack_size;
+                size_t mstack_size = nt_thread_stack_size() - vm_stack_size - MSTACK_PAGE_SIZE;
+
+                if (mprotect(stack_start, vm_stack_size, PROT_READ | PROT_WRITE) != 0 ||
+                    mprotect(stack_start + vm_stack_size + MSTACK_PAGE_SIZE, mstack_size, PROT_READ | PROT_WRITE) != 0) {
+                    err = errno;
+                }
+                else {
+                    nt_stack_chunk_get_stack(vm, ch, idx, vm_stack, machine_stack);
+                }
             }
             else {
                 nt_free_stack_chunks = ch->prev_free_chunk;
@@ -522,6 +527,7 @@ native_thread_create_shared(rb_thread_t *th)
     th->ec->machine.stack_start = (void *)((uintptr_t)machine_stack + machine_stack_size);
     th->ec->machine.stack_maxsize = machine_stack_size; // TODO
     th->sched.context_stack = machine_stack;
+    th->sched.context_stack_size = machine_stack_size;
 
     th->sched.context = ruby_xmalloc(sizeof(struct coroutine_context));
     coroutine_initialize(th->sched.context, co_start, machine_stack, machine_stack_size);
@@ -617,9 +623,15 @@ kqueue_wait(rb_vm_t *vm)
     struct timespec *timeout = NULL;
     int timeout_ms = timer_thread_set_timeout(vm);
 
-    if (timeout_ms >= 0) {
+    if (timeout_ms > 0) {
         calculated_timeout.tv_sec = timeout_ms / 1000;
         calculated_timeout.tv_nsec = (timeout_ms % 1000) * 1000000;
+        timeout = &calculated_timeout;
+    }
+    else if (timeout_ms == 0) {
+        // Relying on the absence of other members of struct timespec is not strictly portable,
+        // and kevent needs a 0-valued timespec to mean immediate timeout.
+        memset(&calculated_timeout, 0, sizeof(struct timespec));
         timeout = &calculated_timeout;
     }
 

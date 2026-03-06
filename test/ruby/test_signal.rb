@@ -350,4 +350,18 @@ class TestSignal < Test::Unit::TestCase
       loop { sleep }
     End
   end if Process.respond_to?(:kill) && Process.respond_to?(:daemon)
+
+  def test_signal_during_kwarg_call
+    status = assert_in_out_err([], <<~'RUBY', [], [], success: false)
+      Thread.new do
+        sleep 0.1
+        Process.kill("TERM", $$)
+      end
+
+      loop do
+        File.open(IO::NULL, kwarg: true) {}
+      end
+    RUBY
+    assert_predicate(status, :signaled?) if Signal.list.include?("QUIT")
+  end if Process.respond_to?(:kill)
 end

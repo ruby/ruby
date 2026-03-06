@@ -217,7 +217,7 @@ class TestThreadQueue < Test::Unit::TestCase
 
     bug5343 = '[ruby-core:39634]'
     Dir.mktmpdir {|d|
-      timeout = 60
+      timeout = 120
       total_count = 250
       begin
         assert_normal_exit(<<-"_eom", bug5343, timeout: timeout, chdir: d)

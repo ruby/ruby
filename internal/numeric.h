@@ -10,9 +10,9 @@
  */
 #include "internal/bignum.h"    /* for BIGNUM_POSITIVE_P */
 #include "internal/bits.h"      /* for RUBY_BIT_ROTL */
+#include "internal/compar.h"    /* for rb_cmperr_reason */
 #include "internal/fixnum.h"    /* for FIXNUM_POSITIVE_P */
 #include "internal/vm.h"        /* for rb_method_basic_definition_p */
-#include "ruby/intern.h"        /* for rb_cmperr */
 #include "ruby/ruby.h"          /* for USE_FLONUM */
 
 #define ROUND_TO(mode, even, up, down) \
@@ -78,6 +78,7 @@ VALUE rb_int_gt(VALUE x, VALUE y);
 VALUE rb_float_gt(VALUE x, VALUE y);
 VALUE rb_int_ge(VALUE x, VALUE y);
 enum ruby_num_rounding_mode rb_num_get_rounding_option(VALUE opts);
+VALUE rb_int_fdiv(VALUE x, VALUE y);
 double rb_int_fdiv_double(VALUE x, VALUE y);
 VALUE rb_int_pow(VALUE x, VALUE y);
 VALUE rb_float_pow(VALUE x, VALUE y);
@@ -209,7 +210,7 @@ rb_num_compare_with_zero(VALUE num, ID mid)
     VALUE zero = INT2FIX(0);
     VALUE r = rb_check_funcall(num, mid, 1, &zero);
     if (RB_UNDEF_P(r)) {
-        rb_cmperr(num, zero);
+        rb_cmperr_reason(num, zero, "unable to compare with zero");
     }
     return r;
 }

@@ -21,11 +21,9 @@ describe :io_buffer_null_and_empty, shared: true do
     @buffer.send(@method).should be_false
   end
 
-  ruby_version_is "3.3" do
-    it "is false for a non-empty String-backed buffer created with .string" do
-      IO::Buffer.string(4) do |buffer|
-        buffer.send(@method).should be_false
-      end
+  it "is false for a non-empty String-backed buffer created with .string" do
+    IO::Buffer.string(4) do |buffer|
+      buffer.send(@method).should be_false
     end
   end
 

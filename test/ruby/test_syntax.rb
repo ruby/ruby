@@ -202,6 +202,49 @@ class TestSyntax < Test::Unit::TestCase
     assert_syntax_error("def f(...); g(&); end", /no anonymous block parameter/)
   end
 
+  def test_no_block_argument_in_method
+    assert_valid_syntax("def f(&nil) end")
+    assert_valid_syntax("def f(a, &nil) end")
+    assert_valid_syntax("def f(*rest, &nil) end")
+    assert_valid_syntax("def f(*rest, p, &nil) end")
+    assert_valid_syntax("def f(a, *rest, &nil) end")
+    assert_valid_syntax("def f(a, *rest, p, &nil) end")
+    assert_valid_syntax("def f(a, k: nil, &nil) end")
+    assert_valid_syntax("def f(a, k: nil, **kw, &nil) end")
+    assert_valid_syntax("def f(a, *rest, k: nil, &nil) end")
+    assert_valid_syntax("def f(a, *rest, k: nil, **kw, &nil) end")
+    assert_valid_syntax("def f(a, *rest, p, k: nil, &nil) end")
+    assert_valid_syntax("def f(a, *rest, p, k: nil, **kw, &nil) end")
+
+    obj = Object.new
+    obj.instance_eval "def f(&nil) end"
+    assert_raise_with_message(ArgumentError, /block accepted/) {obj.f {}}
+    assert_raise_with_message(ArgumentError, /block accepted/) {obj.f(&proc {})}
+  end
+
+  def test_no_block_argument_in_block
+    assert_valid_syntax("proc do |&nil| end")
+    assert_valid_syntax("proc do |a, &nil| end")
+    assert_valid_syntax("proc do |*rest, &nil| end")
+    assert_valid_syntax("proc do |*rest, p, &nil| end")
+    assert_valid_syntax("proc do |a, *rest, &nil| end")
+    assert_valid_syntax("proc do |a, *rest, p, &nil| end")
+    assert_valid_syntax("proc do |a, k: nil, &nil| end")
+    assert_valid_syntax("proc do |a, k: nil, **kw, &nil| end")
+    assert_valid_syntax("proc do |a, *rest, k: nil, &nil| end")
+    assert_valid_syntax("proc do |a, *rest, k: nil, **kw, &nil| end")
+    assert_valid_syntax("proc do |a, *rest, p, k: nil, &nil| end")
+    assert_valid_syntax("proc do |a, *rest, p, k: nil, **kw, &nil| end")
+
+    pr = eval "proc {|&nil|}"
+    assert_nil(pr.call)
+    assert_raise_with_message(ArgumentError, /block accepted/) {pr.call {}}
+    pr = eval "proc {|a, &nil| a}"
+    assert_nil(pr.call)
+    assert_equal(1, pr.call(1))
+    assert_raise_with_message(ArgumentError, /block accepted/) {pr.call {}}
+  end
+
   def test_newline_in_block_parameters
     bug = '[ruby-dev:45292]'
     ["", "a", "a, b"].product(["", ";x", [";", "x"]]) do |params|
@@ -1539,10 +1582,10 @@ eom
       begin raise; rescue; return; end
       return false; raise
       return 1; raise
-      "#{return}"
-      raise((return; "should not raise"))
+      "#{return if true}"
+      raise((return if true; "should not raise"))
       begin raise; ensure return; end; self
-      nil&defined?0--begin e=no_method_error(); return; 0;end
+      nil&defined?0--begin e=no_method_error(); return if true; 0;end
       return puts('ignored') #=> ignored
       BEGIN {return}
       END {return if false}
@@ -2013,17 +2056,135 @@ eom
     assert_equal(1, b.new.foo(1), bug21256)
   end
 
+  BUG_21669 = '[Bug #21669]'
+
+  def test_value_expr_in_block
+    assert_syntax_error("#{<<~"{#"}\n#{<<~'};'}", /void value expression/, nil, "#{BUG_21669} 2.1")
+    {#
+      x = begin
+        return
+        "NG"
+      end
+    };
+  end
+
   def test_value_expr_in_condition
     mesg = /void value expression/
     assert_syntax_error("tap {a = (true ? next : break)}", mesg)
     assert_valid_syntax("tap {a = (true ? true : break)}")
     assert_valid_syntax("tap {a = (break if false)}")
     assert_valid_syntax("tap {a = (break unless true)}")
+
+    assert_syntax_error("#{<<~"{#"}\n#{<<~'};'}", /void value expression/, nil, "#{BUG_21669} 1.4")
+    {#
+      x = if rand < 0.5
+        return
+      else
+        return
+      end
+    };
+
+    assert_syntax_error("#{<<~"{#"}\n#{<<~'};'}", /void value expression/, nil, "#{BUG_21669} 2.2")
+    {#
+      x = if rand < 0.5
+        return
+        "NG"
+      else
+        return
+      end
+    };
+
+    assert_valid_syntax("#{<<~"{#"}\n#{<<~'};'}", "#{BUG_21669} 2.3")
+    {#
+      x = begin
+        return if true
+        "OK"
+      end
+    };
+
+    assert_valid_syntax("#{<<~"{#"}\n#{<<~'};'}")
+    {#
+      x = if true
+        return "NG"
+      else
+        "OK"
+      end
+    };
+
+    assert_valid_syntax("#{<<~"{#"}\n#{<<~'};'}")
+    {#
+      x = if false
+        "OK"
+      else
+        return "NG"
+      end
+    };
   end
 
   def test_value_expr_in_singleton
     mesg = /void value expression/
     assert_syntax_error("class << (return); end", mesg)
+  end
+
+  def test_value_expr_in_rescue
+    assert_valid_syntax("#{<<~"{#"}\n#{<<~'};'}", "#{BUG_21669} 1.1")
+    {#
+      x = begin
+        raise
+        return
+      rescue
+        "OK"
+      else
+        return
+      end
+    };
+
+    assert_syntax_error("#{<<~"{#"}\n#{<<~'};'}", /void value expression/, nil, "#{BUG_21669} 1.2")
+    {#
+      x = begin
+        foo
+      rescue
+        return
+      else
+        return
+      end
+    };
+  end
+
+  def test_value_expr_in_case
+    assert_syntax_error("#{<<~"{#"}\n#{<<~'};'}", /void value expression/, nil, "#{BUG_21669} 1.3")
+    {#
+      x =
+        case a
+        when 1; return
+        when 2; return
+        else return
+        end
+    };
+  end
+
+  def test_value_expr_in_case2
+    assert_syntax_error("#{<<~"{#"}\n#{<<~'};'}", /void value expression/, nil, "#{BUG_21669} 1.3")
+    {#
+      x =
+        case
+        when 1; return
+        when 2; return
+        else return
+        end
+    };
+  end
+
+  def test_value_expr_in_case3
+    assert_syntax_error("#{<<~"{#"}\n#{<<~'};'}", /void value expression/, nil, "#{BUG_21669} 1.3")
+    {#
+      x =
+        case a
+        in 1; return
+        in 2; return
+        else return
+        end
+    };
   end
 
   def test_tautological_condition

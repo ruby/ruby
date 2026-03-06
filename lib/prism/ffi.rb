@@ -12,7 +12,7 @@ require "ffi"
 # autoloaded from within a non-main Ractor.
 require "prism/serialize" if defined?(Ractor)
 
-module Prism
+module Prism # :nodoc:
   module LibRubyParser # :nodoc:
     extend FFI::Library
 
@@ -423,11 +423,28 @@ module Prism
 
     # Return the value that should be dumped for the version option.
     def dump_options_version(version)
-      current = version == "current"
-
-      case current ? RUBY_VERSION : version
-      when nil, "latest"
+      case version
+      when "current"
+        version_string_to_number(RUBY_VERSION) || raise(CurrentVersionError, RUBY_VERSION)
+      when "latest", nil
         0 # Handled in pm_parser_init
+      when "nearest"
+        dump = version_string_to_number(RUBY_VERSION)
+        return dump if dump
+        if RUBY_VERSION < "3.3"
+          version_string_to_number("3.3")
+        else
+          0 # Handled in pm_parser_init
+        end
+      else
+        version_string_to_number(version) || raise(ArgumentError, "invalid version: #{version}")
+      end
+    end
+
+    # Converts a version string like "4.0.0" or "4.0" into a number.
+    # Returns nil if the version is unknown.
+    def version_string_to_number(version)
+      case version
       when /\A3\.3(\.\d+)?\z/
         1
       when /\A3\.4(\.\d+)?\z/
@@ -436,12 +453,6 @@ module Prism
         3
       when /\A4\.1(\.\d+)?\z/
         4
-      else
-        if current
-          raise CurrentVersionError, RUBY_VERSION
-        else
-          raise ArgumentError, "invalid version: #{version}"
-        end
       end
     end
 
@@ -543,7 +554,7 @@ module Prism
 
   # Here we are going to patch StringQuery to put in the class-level methods so
   # that it can maintain a consistent interface
-  class StringQuery
+  class StringQuery # :nodoc:
     class << self
       # Mirrors the C extension's StringQuery::local? method.
       def local?(string)

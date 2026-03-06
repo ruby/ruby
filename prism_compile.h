@@ -67,6 +67,9 @@ void pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_
 void pm_scope_node_destroy(pm_scope_node_t *scope_node);
 
 typedef struct {
+    /** The arena allocator for AST-lifetime memory. */
+    pm_arena_t arena;
+
     /** The parser that will do the actual parsing. */
     pm_parser_t parser;
 

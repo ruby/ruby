@@ -5,7 +5,7 @@ With no block given, replaces each invalid sequence
 with the given +default_replacement_string+
 (by default, <tt>"�"</tt> for a Unicode encoding, <tt>'?'</tt> otherwise):
 
-  "foo\x81\x81bar"scrub                             # => "foo��bar"
+  "foo\x81\x81bar".scrub                            # => "foo��bar"
   "foo\x81\x81bar".force_encoding('US-ASCII').scrub # => "foo??bar"
   "foo\x81\x81bar".scrub('xyzzy')                   # => "fooxyzzyxyzzybar"
 

@@ -157,7 +157,7 @@ class TestISeq < Test::Unit::TestCase
 
   def test_ractor_unshareable_outer_variable
     name = "\u{2603 26a1}"
-    assert_raise_with_message(ArgumentError, /\(#{name}\)/) do
+    assert_raise_with_message(Ractor::IsolationError, /\(#{name}\)/) do
       eval("#{name} = nil; Ractor.shareable_proc{#{name} = nil}")
     end
 
@@ -680,6 +680,17 @@ class TestISeq < Test::Unit::TestCase
       o
     RUBY
     assert_equal([[:nokey]], iseq.eval.singleton_method(:foo).parameters)
+  end
+
+  def test_to_binary_dumps_noblock
+    iseq = assert_iseq_to_binary(<<-RUBY)
+      o = Object.new
+      class << o
+        def foo(&nil); end
+      end
+      o
+    RUBY
+    assert_equal([[:noblock]], iseq.eval.singleton_method(:foo).parameters)
   end
 
   def test_to_binary_line_info

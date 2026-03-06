@@ -7,8 +7,9 @@ static VALUE CNaN, CInfinity, CMinusInfinity;
 
 static ID i_new, i_try_convert, i_uminus, i_encode;
 
-static VALUE sym_max_nesting, sym_allow_nan, sym_allow_trailing_comma, sym_allow_control_characters, sym_symbolize_names, sym_freeze,
-             sym_decimal_class, sym_on_load, sym_allow_duplicate_key;
+static VALUE sym_max_nesting, sym_allow_nan, sym_allow_trailing_comma, sym_allow_control_characters,
+             sym_allow_invalid_escape, sym_symbolize_names, sym_freeze, sym_decimal_class, sym_on_load,
+             sym_allow_duplicate_key;
 
 static int binary_encindex;
 static int utf8_encindex;
@@ -336,6 +337,7 @@ typedef struct JSON_ParserStruct {
     bool allow_nan;
     bool allow_trailing_comma;
     bool allow_control_characters;
+    bool allow_invalid_escape;
     bool symbolize_names;
     bool freeze;
 } JSON_ParserConfig;
@@ -400,10 +402,7 @@ static void emit_parse_warning(const char *message, JSON_ParserState *state)
 
 #define PARSE_ERROR_FRAGMENT_LEN 32
 
-#ifdef RBIMPL_ATTR_NORETURN
-RBIMPL_ATTR_NORETURN()
-#endif
-static void raise_parse_error(const char *format, JSON_ParserState *state)
+NORETURN(static) void raise_parse_error(const char *format, JSON_ParserState *state)
 {
     unsigned char buffer[PARSE_ERROR_FRAGMENT_LEN + 3];
     long line, column;
@@ -449,10 +448,7 @@ static void raise_parse_error(const char *format, JSON_ParserState *state)
     rb_exc_raise(exc);
 }
 
-#ifdef RBIMPL_ATTR_NORETURN
-RBIMPL_ATTR_NORETURN()
-#endif
-static void raise_parse_error_at(const char *format, JSON_ParserState *state, const char *at)
+NORETURN(static) void raise_parse_error_at(const char *format, JSON_ParserState *state, const char *at)
 {
     state->cursor = at;
     raise_parse_error(format, state);
@@ -752,6 +748,8 @@ NOINLINE(static) VALUE json_string_unescape(JSON_ParserState *state, JSON_Parser
                         }
                         raise_parse_error_at("invalid ASCII control character in string: %s", state, pe - 1);
                     }
+                } else if (config->allow_invalid_escape) {
+                    APPEND_CHAR(*pe);
                 } else {
                     raise_parse_error_at("invalid escape character in string: %s", state, pe - 1);
                 }
@@ -776,20 +774,39 @@ NOINLINE(static) VALUE json_string_unescape(JSON_ParserState *state, JSON_Parser
 }
 
 #define MAX_FAST_INTEGER_SIZE 18
+#define MAX_NUMBER_STACK_BUFFER 128
 
-static VALUE json_decode_large_integer(const char *start, long len)
+typedef VALUE (*json_number_decode_func_t)(const char *ptr);
+
+static inline VALUE json_decode_large_number(const char *start, long len, json_number_decode_func_t func)
 {
-    VALUE buffer_v;
-    char *buffer = RB_ALLOCV_N(char, buffer_v, len + 1);
-    MEMCPY(buffer, start, char, len);
-    buffer[len] = '\0';
-    VALUE number = rb_cstr2inum(buffer, 10);
-    RB_ALLOCV_END(buffer_v);
-    return number;
+    if (RB_LIKELY(len < MAX_NUMBER_STACK_BUFFER)) {
+        char buffer[MAX_NUMBER_STACK_BUFFER];
+        MEMCPY(buffer, start, char, len);
+        buffer[len] = '\0';
+        return func(buffer);
+    } else {
+        VALUE buffer_v = rb_str_tmp_new(len);
+        char *buffer = RSTRING_PTR(buffer_v);
+        MEMCPY(buffer, start, char, len);
+        buffer[len] = '\0';
+        VALUE number = func(buffer);
+        RB_GC_GUARD(buffer_v);
+        return number;
+    }
 }
 
-static inline VALUE
-json_decode_integer(uint64_t mantissa, int mantissa_digits, bool negative, const char *start, const char *end)
+static VALUE json_decode_inum(const char *buffer)
+{
+    return rb_cstr2inum(buffer, 10);
+}
+
+NOINLINE(static) VALUE json_decode_large_integer(const char *start, long len)
+{
+    return json_decode_large_number(start, len, json_decode_inum);
+}
+
+static inline VALUE json_decode_integer(uint64_t mantissa, int mantissa_digits, bool negative, const char *start, const char *end)
 {
     if (RB_LIKELY(mantissa_digits < MAX_FAST_INTEGER_SIZE)) {
         if (negative) {
@@ -801,22 +818,14 @@ json_decode_integer(uint64_t mantissa, int mantissa_digits, bool negative, const
     return json_decode_large_integer(start, end - start);
 }
 
-static VALUE json_decode_large_float(const char *start, long len)
+static VALUE json_decode_dnum(const char *buffer)
 {
-    if (RB_LIKELY(len < 64)) {
-        char buffer[64];
-        MEMCPY(buffer, start, char, len);
-        buffer[len] = '\0';
-        return DBL2NUM(rb_cstr_to_dbl(buffer, 1));
-    }
+    return DBL2NUM(rb_cstr_to_dbl(buffer, 1));
+}
 
-    VALUE buffer_v;
-    char *buffer = RB_ALLOCV_N(char, buffer_v, len + 1);
-    MEMCPY(buffer, start, char, len);
-    buffer[len] = '\0';
-    VALUE number = DBL2NUM(rb_cstr_to_dbl(buffer, 1));
-    RB_ALLOCV_END(buffer_v);
-    return number;
+NOINLINE(static) VALUE json_decode_large_float(const char *start, long len)
+{
+    return json_decode_large_number(start, len, json_decode_dnum);
 }
 
 /* Ruby JSON optimized float decoder using vendored Ryu algorithm
@@ -868,7 +877,7 @@ static VALUE json_find_duplicated_key(size_t count, const VALUE *pairs)
     return Qfalse;
 }
 
-static void emit_duplicate_key_warning(JSON_ParserState *state, VALUE duplicate_key)
+NOINLINE(static) void emit_duplicate_key_warning(JSON_ParserState *state, VALUE duplicate_key)
 {
     VALUE message = rb_sprintf(
         "detected duplicate key %"PRIsVALUE" in JSON object. This will raise an error in json 3.0 unless enabled via `allow_duplicate_key: true`",
@@ -879,10 +888,7 @@ static void emit_duplicate_key_warning(JSON_ParserState *state, VALUE duplicate_
     RB_GC_GUARD(message);
 }
 
-#ifdef RBIMPL_ATTR_NORETURN
-RBIMPL_ATTR_NORETURN()
-#endif
-static void raise_duplicate_key_error(JSON_ParserState *state, VALUE duplicate_key)
+NORETURN(static) void raise_duplicate_key_error(JSON_ParserState *state, VALUE duplicate_key)
 {
     VALUE message = rb_sprintf(
         "duplicate key %"PRIsVALUE,
@@ -1433,6 +1439,7 @@ static int parser_config_init_i(VALUE key, VALUE val, VALUE data)
     else if (key == sym_allow_nan)                  { config->allow_nan = RTEST(val); }
     else if (key == sym_allow_trailing_comma)       { config->allow_trailing_comma = RTEST(val); }
     else if (key == sym_allow_control_characters)   { config->allow_control_characters = RTEST(val); }
+    else if (key == sym_allow_invalid_escape)       { config->allow_invalid_escape = RTEST(val); }
     else if (key == sym_symbolize_names)            { config->symbolize_names = RTEST(val); }
     else if (key == sym_freeze)                     { config->freeze = RTEST(val); }
     else if (key == sym_on_load)                    { config->on_load_proc = RTEST(val) ? val : Qfalse; }
@@ -1651,6 +1658,7 @@ void Init_parser(void)
     sym_allow_nan = ID2SYM(rb_intern("allow_nan"));
     sym_allow_trailing_comma = ID2SYM(rb_intern("allow_trailing_comma"));
     sym_allow_control_characters = ID2SYM(rb_intern("allow_control_characters"));
+    sym_allow_invalid_escape = ID2SYM(rb_intern("allow_invalid_escape"));
     sym_symbolize_names = ID2SYM(rb_intern("symbolize_names"));
     sym_freeze = ID2SYM(rb_intern("freeze"));
     sym_on_load = ID2SYM(rb_intern("on_load"));

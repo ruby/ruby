@@ -29,6 +29,7 @@ RSpec.configure do |config|
   config.filter_run_excluding jruby_only: RUBY_ENGINE != "jruby"
   config.filter_run_excluding truffleruby_only: RUBY_ENGINE != "truffleruby"
   config.filter_run_excluding man: Gem.win_platform?
+  config.filter_run_excluding mri_only: RUBY_ENGINE != "ruby"
 
   config.filter_run_when_matching :focus unless ENV["CI"]
 

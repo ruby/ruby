@@ -598,10 +598,10 @@ EOS
   def test_frozen_string_literal
     bug12031 = '[ruby-core:73561] [Bug #12031]'
     e = @erb.new("<%#encoding: us-ascii%>a")
-    e.src.sub!(/\A#(?:-\*-)?(.*)(?:-\*-)?/) {
+    src = e.src.sub(/\A#(?:-\*-)?(.*)(?:-\*-)?/) {
       '# -*- \1; frozen-string-literal: true -*-'
     }
-    assert_equal("a", e.result, bug12031)
+    assert_equal("a", eval(src), bug12031)
 
     %w(false true).each do |flag|
       erb = @erb.new("<%#frozen-string-literal: #{flag}%><%=''.frozen?%>")

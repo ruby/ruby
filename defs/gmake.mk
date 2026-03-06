@@ -276,7 +276,7 @@ pull-github: fetch-github
 	$(call pull-github,$(PR))
 
 define pull-github
-	$(eval GITHUB_MERGE_BASE := $(shell $(GIT_LOG_FORMAT)%H -1)
+	$(eval GITHUB_MERGE_BASE := $(shell $(GIT_IN_SRC) rev-parse HEAD)
 	$(eval GITHUB_MERGE_BRANCH := $(shell $(GIT_IN_SRC) symbolic-ref --short HEAD))
 	$(eval GITHUB_MERGE_WORKTREE := $(shell mktemp -d "$(srcdir)/gh-$(1)-XXXXXX"))
 	$(GIT_IN_SRC) worktree prune
@@ -434,7 +434,7 @@ ifneq ($(DOT_WAIT),)
 endif
 
 ifeq ($(HAVE_GIT),yes)
-REVISION_LATEST := $(shell $(GIT_LOG_FORMAT)%H -1 2>/dev/null)
+REVISION_LATEST := $(shell $(GIT_IN_SRC) rev-parse HEAD)
 else
 REVISION_LATEST := update
 endif
@@ -516,7 +516,7 @@ fix-depends check-depends: all hello
 # order-only-prerequisites doesn't work for $(RUBYSPEC_CAPIEXT)
 # because the same named directory exists in the source tree.
 $(RUBYSPEC_CAPIEXT)/%.$(DLEXT): $(srcdir)/$(RUBYSPEC_CAPIEXT)/%.c $(RUBYSPEC_CAPIEXT_DEPS) \
-	| build-ext
+	| build-ext yes-rubyspec-capiext
 	$(no_silence:no=$(ECHO) building $@)
 	$(Q) $(MAKEDIRS) $(@D)
 	$(Q) $(DLDSHARED) -L. $(XDLDFLAGS) $(XLDFLAGS) $(LDFLAGS) $(INCFLAGS) $(CPPFLAGS) $(OUTFLAG)$@ $< $(LIBRUBYARG)
@@ -525,9 +525,8 @@ ifneq ($(POSTLINK),)
 endif
 	$(Q) $(RMALL) $@.*
 
-RUBYSPEC_CAPIEXT_SO := $(patsubst %.c,$(RUBYSPEC_CAPIEXT)/%.$(DLEXT),$(notdir $(wildcard $(srcdir)/$(RUBYSPEC_CAPIEXT)/*.c)))
-rubyspec-capiext: $(RUBYSPEC_CAPIEXT_SO)
-	@ $(NULLCMD)
+RUBYSPEC_CAPIEXT_EXTS := $(patsubst %.c,$(RUBYSPEC_CAPIEXT)/%.$(DLEXT),$(notdir $(wildcard $(srcdir)/$(RUBYSPEC_CAPIEXT)/*.c)))
+rubyspec-capiext: $(RUBYSPEC_CAPIEXT_EXTS)
 
 spec/%/ spec/%_spec.rb: programs exts $(RUBYSPEC_CAPIEXT_BUILD) PHONY
 	+$(RUNRUBY) -r./$(arch)-fake $(srcdir)/spec/mspec/bin/mspec-run -B $(srcdir)/spec/default.mspec $(SPECOPTS) $(patsubst %,$(srcdir)/%,$@)

@@ -409,13 +409,15 @@ strio.pos = 24
 strio.gets   # => "Fourth line\n"
 strio.pos    # => 36
 
-strio = StringIO.new('тест') # Four 2-byte characters.
-strio.pos = 0 # At first byte of first character.
-strio.read    # => "тест"
-strio.pos = 1 # At second byte of first character.
-strio.read    # => "\x82ест"
-strio.pos = 2 # At first of second character.
-strio.read    # => "ест"
+strio = StringIO.new('こんにちは')  # Five 3-byte characters.
+strio.pos = 0  # At first byte of first character.
+strio.read     # => "こんにちは"
+strio.pos = 1  # At second byte of first character.
+strio.read     # => "\x81\x93んにちは"
+strio.pos = 2  # At third byte of first character.
+strio.read     # => "\x93んにちは"
+strio.pos = 3  # At first byte of second character.
+strio.read     # => "んにちは"
 
 strio = StringIO.new(TEXT)
 strio.pos = 15
@@ -690,11 +692,11 @@ Reading:
 
 [basic reading]:         rdoc-ref:StringIO@Basic+Reading
 [basic writing]:         rdoc-ref:StringIO@Basic+Writing
-[bom (byte order mark)]: rdoc-ref:StringIO@BOM+-28Byte+Order+Mark-29
+[bom (byte order mark)]: rdoc-ref:StringIO@BOM+Byte+Order+Mark
 [data mode]:             rdoc-ref:StringIO@Data+Mode
 [encodings]:             rdoc-ref:StringIO@Encodings
 [end-of-stream]:         rdoc-ref:StringIO@End-of-Stream
 [line number]:           rdoc-ref:StringIO@Line+Number
-[open/closed streams]:   rdoc-ref:StringIO@Open-2FClosed+Streams
+[open/closed streams]:   rdoc-ref:StringIO@OpenClosed+Streams
 [position]:              rdoc-ref:StringIO@Position
-[read/write mode]:       rdoc-ref:StringIO@Read-2FWrite+Mode
+[read/write mode]:       rdoc-ref:StringIO@ReadWrite+Mode

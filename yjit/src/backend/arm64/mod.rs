@@ -1777,7 +1777,7 @@ mod tests {
 
         assert_disasm!(cb, "e1ff9fd2e10370b2", {"
             0x0: mov x1, #0xffff
-            0x4: orr x1, xzr, #0x10000
+            0x4: mov x1, #0x10000
         "});
     }
 

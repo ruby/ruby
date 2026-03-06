@@ -34,7 +34,11 @@ ossl_##name##_ary2sk0(VALUE ary)                                \
                        " of class ##type##");                   \
         }                                                       \
         x = dup(val); /* NEED TO DUP */                         \
-        sk_##type##_push(sk, x);                                \
+        if (!sk_##type##_push(sk, x)) {                         \
+            type##_free(x);                                     \
+            sk_##type##_pop_free(sk, type##_free);              \
+            ossl_raise(eOSSLError, NULL);                       \
+        }                                                       \
     }                                                           \
     return (VALUE)sk;                                           \
 }                                                               \

@@ -25,7 +25,7 @@
 # define VALGRIND_MAKE_MEM_UNDEFINED(p, n) 0
 #endif
 
-#define RUBY_ZLIB_VERSION "3.2.2"
+#define RUBY_ZLIB_VERSION "3.2.3"
 
 #ifndef RB_PASS_CALLED_KEYWORDS
 # define rb_class_new_instance_kw(argc, argv, klass, kw_splat) rb_class_new_instance(argc, argv, klass)
@@ -860,9 +860,7 @@ zstream_buffer_ungets(struct zstream *z, const Bytef *b, unsigned long len)
     char *bufptr;
     long filled;
 
-    if (NIL_P(z->buf) || (long)rb_str_capacity(z->buf) <= ZSTREAM_BUF_FILLED(z)) {
-	zstream_expand_buffer_into(z, len);
-    }
+    zstream_expand_buffer_into(z, len);
 
     RSTRING_GETMEM(z->buf, bufptr, filled);
     memmove(bufptr + len, bufptr, filled);
@@ -1094,8 +1092,9 @@ zstream_run_func(struct zstream_run_args *args)
             break;
         }
 
-        if (err != Z_OK && err != Z_BUF_ERROR)
+        if (err != Z_OK && err != Z_BUF_ERROR) {
             break;
+        }
 
         if (z->stream.avail_out > 0) {
             z->flags |= ZSTREAM_FLAG_IN_STREAM;
@@ -1170,12 +1169,17 @@ loop:
     /* retry if no exception is thrown */
     if (err == Z_OK && args->interrupt) {
        args->interrupt = 0;
-       goto loop;
+
+       /* Retry only if both avail_in > 0 (more input to process) and avail_out > 0
+        * (output buffer has space). If avail_out == 0, the buffer is full and should
+        * be consumed by the caller first. If avail_in == 0, there's nothing more to process. */
+       if (z->stream.avail_in > 0 && z->stream.avail_out > 0) {
+          goto loop;
+       }
     }
 
-    if (flush != Z_FINISH && err == Z_BUF_ERROR
-	    && z->stream.avail_out > 0) {
-	z->flags |= ZSTREAM_FLAG_IN_STREAM;
+    if (flush != Z_FINISH && err == Z_BUF_ERROR && z->stream.avail_out > 0) {
+        z->flags |= ZSTREAM_FLAG_IN_STREAM;
     }
 
     zstream_reset_input(z);

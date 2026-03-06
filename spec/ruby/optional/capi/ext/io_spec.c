@@ -287,6 +287,18 @@ VALUE io_spec_rb_cloexec_open(VALUE self, VALUE path, VALUE flags, VALUE mode) {
   return rb_funcall(rb_cIO, rb_intern("for_fd"), 1, INT2FIX(fd));
 }
 
+VALUE io_spec_rb_cloexec_dup(VALUE self, VALUE io) {
+  int fd = io_spec_get_fd(io);
+  int new_fd = rb_cloexec_dup(fd);
+  return rb_funcall(rb_cIO, rb_intern("for_fd"), 1, INT2FIX(new_fd));
+}
+
+VALUE io_spec_rb_cloexec_fcntl_dupfd(VALUE self, VALUE io, VALUE minfd) {
+  int fd = io_spec_get_fd(io);
+  int new_fd = rb_cloexec_fcntl_dupfd(fd, FIX2INT(minfd));
+  return rb_funcall(rb_cIO, rb_intern("for_fd"), 1, INT2FIX(new_fd));
+}
+
 VALUE io_spec_rb_io_close(VALUE self, VALUE io) {
   return rb_io_close(io);
 }
@@ -319,13 +331,7 @@ static VALUE io_spec_errno_set(VALUE self, VALUE val) {
 
 VALUE io_spec_mode_sync_flag(VALUE self, VALUE io) {
   int mode;
-#ifdef RUBY_VERSION_IS_3_3
   mode = rb_io_mode(io);
-#else
-  rb_io_t *fp;
-  GetOpenFile(io, fp);
-  mode = fp->mode;
-#endif
   if (mode & FMODE_SYNC) {
     return Qtrue;
   } else {
@@ -333,7 +339,6 @@ VALUE io_spec_mode_sync_flag(VALUE self, VALUE io) {
   }
 }
 
-#if defined(RUBY_VERSION_IS_3_3) || defined(TRUFFLERUBY)
 static VALUE io_spec_rb_io_mode(VALUE self, VALUE io) {
   return INT2FIX(rb_io_mode(io));
 }
@@ -360,7 +365,6 @@ static VALUE io_spec_rb_io_open_descriptor(VALUE self, VALUE klass, VALUE descri
 static VALUE io_spec_rb_io_open_descriptor_without_encoding(VALUE self, VALUE klass, VALUE descriptor, VALUE mode, VALUE path, VALUE timeout) {
   return rb_io_open_descriptor(klass, FIX2INT(descriptor), FIX2INT(mode), path, timeout, NULL);
 }
-#endif
 
 void Init_io_spec(void) {
   VALUE cls = rb_define_class("CApiIOSpecs", rb_cObject);
@@ -391,9 +395,10 @@ void Init_io_spec(void) {
   rb_define_method(cls, "rb_io_binmode", io_spec_rb_io_binmode, 1);
   rb_define_method(cls, "rb_fd_fix_cloexec", io_spec_rb_fd_fix_cloexec, 1);
   rb_define_method(cls, "rb_cloexec_open", io_spec_rb_cloexec_open, 3);
+  rb_define_method(cls, "rb_cloexec_dup", io_spec_rb_cloexec_dup, 1);
+  rb_define_method(cls, "rb_cloexec_fcntl_dupfd", io_spec_rb_cloexec_fcntl_dupfd, 2);
   rb_define_method(cls, "errno=", io_spec_errno_set, 1);
   rb_define_method(cls, "rb_io_mode_sync_flag", io_spec_mode_sync_flag, 1);
-#if defined(RUBY_VERSION_IS_3_3) || defined(TRUFFLERUBY)
   rb_define_method(cls, "rb_io_mode", io_spec_rb_io_mode, 1);
   rb_define_method(cls, "rb_io_path", io_spec_rb_io_path, 1);
   rb_define_method(cls, "rb_io_closed_p", io_spec_rb_io_closed_p, 1);
@@ -404,7 +409,6 @@ void Init_io_spec(void) {
   rb_define_const(cls, "FMODE_BINMODE", INT2FIX(FMODE_BINMODE));
   rb_define_const(cls, "FMODE_TEXTMODE", INT2FIX(FMODE_TEXTMODE));
   rb_define_const(cls, "ECONV_UNIVERSAL_NEWLINE_DECORATOR", INT2FIX(ECONV_UNIVERSAL_NEWLINE_DECORATOR));
-#endif
 }
 
 #ifdef __cplusplus

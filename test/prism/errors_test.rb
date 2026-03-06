@@ -7,7 +7,7 @@ require_relative "test_helper"
 module Prism
   class ErrorsTest < TestCase
     base = File.expand_path("errors", __dir__)
-    filepaths = Dir["**/*.txt", base: base]
+    filepaths = Dir[ENV.fetch("FOCUS", "**/*.txt"), base: base]
 
     filepaths.each do |filepath|
       ruby_versions_for(filepath).each do |version|
@@ -45,19 +45,19 @@ module Prism
     def test_unterminated_string_closing
       statement = Prism.parse_statement("'hello")
       assert_equal statement.unescaped, "hello"
-      assert_empty statement.closing
+      assert_nil statement.closing
     end
 
     def test_unterminated_interpolated_string_closing
       statement = Prism.parse_statement('"hello')
       assert_equal statement.unescaped, "hello"
-      assert_empty statement.closing
+      assert_nil statement.closing
     end
 
     def test_unterminated_empty_string_closing
       statement = Prism.parse_statement('"')
       assert_empty statement.unescaped
-      assert_empty statement.closing
+      assert_nil statement.closing
     end
 
     def test_invalid_message_name
@@ -84,7 +84,64 @@ module Prism
 
     def test_incomplete_def_closing_loc
       statement = Prism.parse_statement("def f; 123")
-      assert_empty(statement.end_keyword)
+      assert_nil(statement.end_keyword)
+    end
+
+    def test_unclosed_interpolation
+      statement = Prism.parse_statement("\"\#{")
+      assert_equal('"', statement.opening)
+      assert_nil(statement.closing)
+
+      assert_equal(1, statement.parts.count)
+      assert_equal('#{', statement.parts[0].opening)
+      assert_equal("", statement.parts[0].closing)
+      assert_nil(statement.parts[0].statements)
+    end
+
+    def test_unclosed_heredoc_and_interpolation
+      statement = Prism.parse_statement("<<D\n\#{")
+      assert_equal("<<D", statement.opening)
+      assert_nil(statement.closing)
+
+      assert_equal(1, statement.parts.count)
+      assert_equal('#{', statement.parts[0].opening)
+      assert_equal("", statement.parts[0].closing)
+      assert_nil(statement.parts[0].statements)
+    end
+
+    def test_continuable
+      # Valid input is not continuable (nothing to continue).
+      refute_predicate Prism.parse("1 + 1"), :continuable?
+      refute_predicate Prism.parse(""), :continuable?
+
+      # Stray closing tokens make input non-continuable regardless of what
+      # follows (matches the feature-request examples exactly).
+      refute_predicate Prism.parse("1 + ]"), :continuable?
+      refute_predicate Prism.parse("end.tap do"), :continuable?
+
+      # Unclosed constructs are continuable.
+      assert_predicate Prism.parse("1 + ["), :continuable?
+      assert_predicate Prism.parse("tap do"), :continuable?
+
+      # Unclosed keywords.
+      assert_predicate Prism.parse("def foo"), :continuable?
+      assert_predicate Prism.parse("class Foo"), :continuable?
+      assert_predicate Prism.parse("module Foo"), :continuable?
+      assert_predicate Prism.parse("if true"), :continuable?
+      assert_predicate Prism.parse("while true"), :continuable?
+      assert_predicate Prism.parse("begin"), :continuable?
+      assert_predicate Prism.parse("for x in [1]"), :continuable?
+
+      # Unclosed delimiters.
+      assert_predicate Prism.parse("{"), :continuable?
+      assert_predicate Prism.parse("foo("), :continuable?
+      assert_predicate Prism.parse('"hello'), :continuable?
+      assert_predicate Prism.parse("'hello"), :continuable?
+      assert_predicate Prism.parse("<<~HEREDOC\nhello"), :continuable?
+
+      # A mix: stray end plus an unclosed block is not continuable because the
+      # stray end cannot be fixed by appending more input.
+      refute_predicate Prism.parse("end\ntap do"), :continuable?
     end
 
     private
@@ -100,6 +157,10 @@ module Prism
       refute_empty errors, "Expected errors in #{filepath}"
 
       actual = result.errors_format
+      if expected != actual && ENV["UPDATE_SNAPSHOTS"]
+        File.write(filepath, actual)
+      end
+
       assert_equal expected, actual, "Expected errors to match for #{filepath}"
     end
   end

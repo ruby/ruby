@@ -2350,7 +2350,7 @@ r_object(struct load_arg *arg)
 static void
 clear_load_arg(struct load_arg *arg)
 {
-    xfree(arg->buf);
+    ruby_sized_xfree(arg->buf, BUFSIZ);
     arg->buf = NULL;
     arg->buflen = 0;
     arg->offset = 0;
@@ -2590,7 +2590,7 @@ marshal_compat_table_mark_and_move(void *tbl)
 static int
 marshal_compat_table_free_i(st_data_t key, st_data_t value, st_data_t _)
 {
-    xfree((marshal_compat_t *)value);
+    SIZED_FREE((marshal_compat_t *)value);
     return ST_CONTINUE;
 }
 

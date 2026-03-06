@@ -107,22 +107,12 @@ describe "Socket.getaddrinfo" do
       res.each { |a| expected.should include(a) }
     end
 
-    ruby_version_is ""..."3.3" do
-      it "raises SocketError when fails to resolve address" do
-        -> {
-          Socket.getaddrinfo("www.kame.net", 80, "AF_UNIX")
-        }.should raise_error(SocketError)
-      end
-    end
-
-    ruby_version_is "3.3" do
-      it "raises ResolutionError when fails to resolve address" do
-        -> {
-          Socket.getaddrinfo("www.kame.net", 80, "AF_UNIX")
-        }.should raise_error(Socket::ResolutionError) { |e|
-          [Socket::EAI_FAMILY, Socket::EAI_FAIL].should.include?(e.error_code)
-        }
-      end
+    it "raises ResolutionError when fails to resolve address" do
+      -> {
+        Socket.getaddrinfo("www.kame.net", 80, "AF_UNIX")
+      }.should raise_error(Socket::ResolutionError) { |e|
+        [Socket::EAI_FAMILY, Socket::EAI_FAIL].should.include?(e.error_code)
+      }
     end
   end
 end

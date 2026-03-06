@@ -1,0 +1,3 @@
+foo = 123 | '456' or return
+
+foo = 123 | '456' in BAR

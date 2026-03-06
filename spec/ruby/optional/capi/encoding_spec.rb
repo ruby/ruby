@@ -452,7 +452,7 @@ describe "C-API Encoding function" do
   describe "rb_enc_compatible" do
     it "returns 0 if the encodings of the Strings are not compatible" do
       a = [0xff].pack('C').force_encoding "binary"
-      b = "\u3042".encode("utf-8")
+      b = "あ"
       @s.rb_enc_compatible(a, b).should == 0
     end
 
@@ -461,8 +461,22 @@ describe "C-API Encoding function" do
     # Encoding.compatible?
     it "returns the same value as Encoding.compatible? if the Strings have a compatible encoding" do
       a = "abc".force_encoding("us-ascii")
-      b = "\u3042".encode("utf-8")
+      b = "あ"
       @s.rb_enc_compatible(a, b).should == Encoding.compatible?(a, b)
+    end
+  end
+
+  describe "rb_enc_check" do
+    it "returns the compatible encoding of the two Strings" do
+      a = "abc".force_encoding("us-ascii")
+      b = "あ"
+      @s.rb_enc_check(a, b).should == Encoding::UTF_8
+    end
+
+    it "raises Encoding::CompatibilityError if the encodings are not compatible" do
+      a = [0xff].pack('C').b
+      b = "あ"
+      -> { @s.rb_enc_check(a, b) }.should raise_error(Encoding::CompatibilityError)
     end
   end
 
@@ -743,6 +757,36 @@ describe "C-API Encoding function" do
         1_000.times {|i| CApiEncodingSpecs.new.rb_define_dummy_encoding("R_\#{i}") }
       RUBY
       ruby_exe(code, args: "2>&1", exit_status: 1).should.include?('too many encoding (> 256) (EncodingError)')
+    end
+  end
+
+  describe "ONIGENC_IS_UNICODE" do
+    it "is true only for select UTF-related encodings" do
+      unicode = [
+        Encoding::UTF_8,
+        Encoding::UTF8_DOCOMO,
+        Encoding::UTF8_KDDI,
+        Encoding::UTF8_MAC,
+        Encoding::UTF8_SOFTBANK,
+        Encoding::CESU_8,
+        Encoding::UTF_16LE,
+        Encoding::UTF_16BE,
+        Encoding::UTF_32LE,
+        Encoding::UTF_32BE
+      ]
+      unicode.each do |enc|
+        @s.should.ONIGENC_IS_UNICODE(enc)
+      end
+
+      (Encoding.list - unicode).each { |enc|
+        @s.should_not.ONIGENC_IS_UNICODE(enc)
+      }
+    end
+
+    # Redundant with the above but more explicit
+    it "is false for the dummy UTF-16 and UTF-32 encodings" do
+      @s.should_not.ONIGENC_IS_UNICODE(Encoding::UTF_16)
+      @s.should_not.ONIGENC_IS_UNICODE(Encoding::UTF_32)
     end
   end
 end

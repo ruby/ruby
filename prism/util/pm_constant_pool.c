@@ -1,4 +1,5 @@
 #include "prism/util/pm_constant_pool.h"
+#include "prism/util/pm_arena.h"
 
 /**
  * Initialize a list of constant ids.
@@ -14,10 +15,9 @@ pm_constant_id_list_init(pm_constant_id_list_t *list) {
  * Initialize a list of constant ids with a given capacity.
  */
 void
-pm_constant_id_list_init_capacity(pm_constant_id_list_t *list, size_t capacity) {
+pm_constant_id_list_init_capacity(pm_arena_t *arena, pm_constant_id_list_t *list, size_t capacity) {
     if (capacity) {
-        list->ids = xcalloc(capacity, sizeof(pm_constant_id_t));
-        if (list->ids == NULL) abort();
+        list->ids = (pm_constant_id_t *) pm_arena_zalloc(arena, capacity * sizeof(pm_constant_id_t), PRISM_ALIGNOF(pm_constant_id_t));
     } else {
         list->ids = NULL;
     }
@@ -27,19 +27,23 @@ pm_constant_id_list_init_capacity(pm_constant_id_list_t *list, size_t capacity) 
 }
 
 /**
- * Append a constant id to a list of constant ids. Returns false if any
- * potential reallocations fail.
+ * Append a constant id to a list of constant ids.
  */
-bool
-pm_constant_id_list_append(pm_constant_id_list_t *list, pm_constant_id_t id) {
+void
+pm_constant_id_list_append(pm_arena_t *arena, pm_constant_id_list_t *list, pm_constant_id_t id) {
     if (list->size >= list->capacity) {
-        list->capacity = list->capacity == 0 ? 8 : list->capacity * 2;
-        list->ids = (pm_constant_id_t *) xrealloc(list->ids, sizeof(pm_constant_id_t) * list->capacity);
-        if (list->ids == NULL) return false;
+        size_t new_capacity = list->capacity == 0 ? 8 : list->capacity * 2;
+        pm_constant_id_t *new_ids = (pm_constant_id_t *) pm_arena_alloc(arena, sizeof(pm_constant_id_t) * new_capacity, PRISM_ALIGNOF(pm_constant_id_t));
+
+        if (list->size > 0) {
+            memcpy(new_ids, list->ids, list->size * sizeof(pm_constant_id_t));
+        }
+
+        list->ids = new_ids;
+        list->capacity = new_capacity;
     }
 
     list->ids[list->size++] = id;
-    return true;
 }
 
 /**
@@ -63,16 +67,6 @@ pm_constant_id_list_includes(pm_constant_id_list_t *list, pm_constant_id_t id) {
         if (list->ids[index] == id) return true;
     }
     return false;
-}
-
-/**
- * Free the memory associated with a list of constant ids.
- */
-void
-pm_constant_id_list_free(pm_constant_id_list_t *list) {
-    if (list->ids != NULL) {
-        xfree(list->ids);
-    }
 }
 
 /**
@@ -165,7 +159,7 @@ pm_constant_pool_resize(pm_constant_pool_t *pool) {
 
     // pool->constants and pool->buckets are allocated out of the same chunk
     // of memory, with the buckets coming first.
-    xfree(pool->buckets);
+    xfree_sized(pool->buckets, pool->capacity * element_size);
     pool->constants = next_constants;
     pool->buckets = next_buckets;
     pool->capacity = next_capacity;
@@ -257,12 +251,12 @@ pm_constant_pool_insert(pm_constant_pool_t *pool, const uint8_t *start, size_t l
                 // an existing constant, then either way we don't want the given
                 // memory. Either it's duplicated with the existing constant or
                 // it's not necessary because we have a shared version.
-                xfree((void *) start);
+                xfree_sized((void *) start, length);
             } else if (bucket->type == PM_CONSTANT_POOL_BUCKET_OWNED) {
                 // If we're attempting to insert a shared constant and the
                 // existing constant is owned, then we can free the owned
                 // constant and replace it with the shared constant.
-                xfree((void *) constant->start);
+                xfree_sized((void *) constant->start, constant->length);
                 constant->start = start;
                 bucket->type = (unsigned int) (type & 0x3);
             }
@@ -334,9 +328,9 @@ pm_constant_pool_free(pm_constant_pool_t *pool) {
         // If an id is set on this constant, then we know we have content here.
         if (bucket->id != PM_CONSTANT_ID_UNSET && bucket->type == PM_CONSTANT_POOL_BUCKET_OWNED) {
             pm_constant_t *constant = &pool->constants[bucket->id - 1];
-            xfree((void *) constant->start);
+            xfree_sized((void *) constant->start, constant->length);
         }
     }
 
-    xfree(pool->buckets);
+    xfree_sized(pool->buckets, pool->capacity * (sizeof(pm_constant_pool_bucket_t) + sizeof(pm_constant_t)));
 }

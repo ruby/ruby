@@ -19,6 +19,7 @@
 #include "internal.h"
 #include "internal/array.h"
 #include "internal/bits.h"
+#include "internal/numeric.h"
 #include "internal/string.h"
 #include "internal/symbol.h"
 #include "internal/variable.h"
@@ -667,6 +668,54 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
             }
             break;
 
+          case 'r':  /* r for SLEB128 encoding (signed) */
+          case 'R': /* R for ULEB128 encoding (unsigned) */
+            {
+                int pack_flags = INTEGER_PACK_LITTLE_ENDIAN;
+
+                if (type == 'r') {
+                    pack_flags |= INTEGER_PACK_2COMP;
+                }
+
+                while (len-- > 0) {
+                    size_t numbytes, nlz_bits;
+                    int sign, extra = 0;
+                    char *cp;
+                    const long start = RSTRING_LEN(res);
+
+                    from = NEXTFROM;
+                    from = rb_to_int(from);
+                    if (type == 'R' && rb_int_negative_p(from)) {
+                        rb_raise(rb_eArgError, "can't encode negative numbers in ULEB128");
+                    }
+
+                    numbytes = rb_absint_numwords(from, 7, &nlz_bits);
+                    if (numbytes == 0) {
+                        numbytes = 1;
+                    }
+                    else if (nlz_bits == 0 && type == 'r') {
+                        /* No leading zero bits, we need an extra byte for sign extension */
+                        extra = 1;
+                    }
+                    rb_str_modify_expand(res, numbytes + extra);
+
+                    cp = RSTRING_PTR(res) + start;
+                    sign = rb_integer_pack(from, cp, numbytes, 1, 1, pack_flags);
+
+                    if (extra) {
+                        /* Need an extra byte */
+                        cp[numbytes++] = sign < 0 ? 0x7f : 0x00;
+                    }
+                    rb_str_set_len(res, start + numbytes);
+
+                    while (1 < numbytes) {
+                        *cp |= 0x80;
+                        cp++;
+                        numbytes--;
+                    }
+                }
+            }
+            break;
           case 'u':		/* uuencoded string */
           case 'm':		/* base64 encoded string */
             from = NEXTFROM;
@@ -1520,6 +1569,10 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
             s += len;
             break;
 
+          case '^':
+            UNPACK_PUSH(SSIZET2NUM(s - RSTRING_PTR(str)));
+            break;
+
           case 'P':
             if (sizeof(char *) <= (size_t)(send - s)) {
                 VALUE tmp = Qnil;
@@ -1554,6 +1607,39 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
                         tmp = associated_pointer(associates, t);
                     }
                     UNPACK_PUSH(tmp);
+                }
+            }
+            break;
+
+          case 'r':
+          case 'R':
+            {
+                int pack_flags = INTEGER_PACK_LITTLE_ENDIAN;
+
+                if (type == 'r') {
+                    pack_flags |= INTEGER_PACK_2COMP;
+                }
+                char *s0 = s;
+                while (len > 0 && s < send) {
+                    if (*s & 0x80) {
+                        s++;
+                    }
+                    else {
+                        s++;
+                        UNPACK_PUSH(rb_integer_unpack(s0, s-s0, 1, 1, pack_flags));
+                        len--;
+                        s0 = s;
+                    }
+                }
+                /* Handle incomplete value and remaining expected values with nil (only if not using *) */
+                if (!star) {
+                    if (s0 != s && len > 0) {
+                        UNPACK_PUSH(Qnil);
+                        len--;
+                    }
+                    while (len-- > 0) {
+                        UNPACK_PUSH(Qnil);
+                    }
                 }
             }
             break;

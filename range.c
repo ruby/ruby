@@ -200,11 +200,10 @@ range_eq(VALUE range, VALUE obj)
 static int
 r_less(VALUE a, VALUE b)
 {
-    VALUE r = rb_funcall(a, id_cmp, 1, b);
-
-    if (NIL_P(r))
-        return INT_MAX;
-    return rb_cmpint(r, a, b);
+    VALUE r;
+#define rb_cmpint(cmp, a, b) (NIL_P(r = (cmp)) ? INT_MAX : rb_cmpint(r, (a), (b)))
+    return OPTIMIZED_CMP(a, b);
+#undef rb_cmpint
 }
 
 static VALUE
@@ -2611,12 +2610,12 @@ range_overlap(VALUE range, VALUE other)
  *
  * - Method Range.new:
  *
- *   # Ranges that by default include the given end value.
- *   Range.new(1, 4).to_a     # => [1, 2, 3, 4]
- *   Range.new('a', 'd').to_a # => ["a", "b", "c", "d"]
- *   # Ranges that use third argument +exclude_end+ to exclude the given end value.
- *   Range.new(1, 4, true).to_a     # => [1, 2, 3]
- *   Range.new('a', 'd', true).to_a # => ["a", "b", "c"]
+ *     # Ranges that by default include the given end value.
+ *     Range.new(1, 4).to_a     # => [1, 2, 3, 4]
+ *     Range.new('a', 'd').to_a # => ["a", "b", "c", "d"]
+ *     # Ranges that use third argument +exclude_end+ to exclude the given end value.
+ *     Range.new(1, 4, true).to_a     # => [1, 2, 3]
+ *     Range.new('a', 'd', true).to_a # => ["a", "b", "c"]
  *
  * == Beginless Ranges
  *
@@ -2768,8 +2767,8 @@ range_overlap(VALUE range, VALUE other)
  *
  * First, what's elsewhere. Class \Range:
  *
- * - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
- * - Includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],
+ * - Inherits from {class Object}[rdoc-ref:Object@Whats+Here].
+ * - Includes {module Enumerable}[rdoc-ref:Enumerable@Whats+Here],
  *   which provides dozens of additional methods.
  *
  * Here, class \Range provides methods that are useful for:

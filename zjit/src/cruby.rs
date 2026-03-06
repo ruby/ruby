@@ -94,6 +94,8 @@ use std::fmt::{Debug, Display, Formatter};
 use std::os::raw::{c_char, c_int, c_uint};
 use std::panic::{catch_unwind, UnwindSafe};
 
+use crate::cast::IntoUsize as _;
+
 // We check that we can do this with the configure script and a couple of
 // static asserts. u64 and not usize to play nice with lowering to x86.
 pub type size_t = u64;
@@ -475,6 +477,19 @@ impl VALUE {
         true
     }
 
+    /// A metaclass is the singleton class of an object that is a `Module`.
+    /// This is internal terminology from `class.c`.
+    pub fn is_metaclass(self) -> bool {
+        unsafe {
+            if RB_TYPE_P(self, RUBY_T_CLASS) && rb_zjit_singleton_class_p(self) {
+                let attached = rb_class_attached_object(self);
+                RB_TYPE_P(attached, RUBY_T_CLASS) || RB_TYPE_P(attached, RUBY_T_MODULE)
+            } else {
+                false
+            }
+        }
+    }
+
     /// Return true for a static (non-heap) Ruby symbol (RB_STATIC_SYM_P)
     pub fn static_sym_p(self) -> bool {
         let VALUE(cval) = self;
@@ -565,7 +580,11 @@ impl VALUE {
     }
 
     pub fn shape_id_of(self) -> ShapeId {
-        ShapeId(unsafe { rb_obj_shape_id(self) })
+        if self.special_const_p() {
+            INVALID_SHAPE_ID
+        } else {
+            ShapeId(unsafe { rb_obj_shape_id(self) })
+        }
     }
 
     pub fn embedded_p(self) -> bool {
@@ -579,6 +598,20 @@ impl VALUE {
             RB_TYPE_P(self, RUBY_T_STRUCT) &&
             FL_TEST_RAW(self, VALUE(RSTRUCT_EMBED_LEN_MASK)) != VALUE(0)
         }
+    }
+
+    pub fn class_fields_embedded_p(self) -> bool {
+        unsafe { rb_jit_class_fields_embedded_p(self) }
+    }
+
+    pub fn typed_data_p(self) -> bool {
+        !self.special_const_p() &&
+            self.builtin_type() == RUBY_T_DATA &&
+            0 != (self.builtin_flags() & RUBY_TYPED_FL_IS_TYPED_DATA.to_usize())
+    }
+
+    pub fn typed_data_fields_embedded_p(self) -> bool {
+        unsafe { rb_jit_typed_data_fields_embedded_p(self) }
     }
 
     pub fn as_fixnum(self) -> i64 {
@@ -783,6 +816,12 @@ impl ID {
     }
 }
 
+impl Display for ID {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.contents_lossy())
+    }
+}
+
 /// Produce a Ruby string from a Rust string slice
 pub fn rust_str_to_ruby(str: &str) -> VALUE {
     unsafe { rb_utf8_str_new(str.as_ptr() as *const _, str.len() as i64) }
@@ -823,6 +862,18 @@ pub fn iseq_name(iseq: IseqPtr) -> String {
     } else {
         ruby_str_to_rust_string(iseq_label)
     }
+}
+
+// Equivalent of get_lvar_level() in compile.c
+pub fn get_lvar_level(mut iseq: IseqPtr) -> u32 {
+    let local_iseq = unsafe { rb_get_iseq_body_local_iseq(iseq) };
+    let mut level = 0;
+    while iseq != local_iseq {
+        iseq = unsafe { rb_get_iseq_body_parent_iseq(iseq) };
+        level += 1;
+    }
+
+    level
 }
 
 // Location is the file defining the method, colon, method name.
@@ -1127,6 +1178,12 @@ pub mod test_utils {
             crate::cruby::ids::init(); // for ID! usages in tests
         }
 
+        // Call ZJIT hooks to install Ruby implementations of builtins like Array#each
+        unsafe {
+            let zjit = rb_const_get(rb_cRubyVM, rust_str_to_id("ZJIT"));
+            rb_funcallv(zjit, rust_str_to_id("call_jit_hooks"), 0, std::ptr::null());
+        }
+
         // Set up globals for convenience
         let zjit_entry = ZJITState::init();
 
@@ -1181,6 +1238,15 @@ pub mod test_utils {
     pub fn eval(program: &str) -> VALUE {
         with_rubyvm(|| {
             let wrapped_iseq = compile_to_wrapped_iseq(&unindent(program, false));
+            unsafe { rb_funcallv(wrapped_iseq, ID!(eval), 0, null()) }
+        })
+    }
+
+    /// Evaluate a given Ruby program with compile options
+    pub fn eval_with_options(program: &str, options_expr: &str) -> VALUE {
+        with_rubyvm(|| {
+            let options = eval(options_expr);
+            let wrapped_iseq = compile_to_wrapped_iseq_with_options(&unindent(program, false), options);
             unsafe { rb_funcallv(wrapped_iseq, ID!(eval), 0, null()) }
         })
     }
@@ -1240,10 +1306,15 @@ pub mod test_utils {
 
     /// Compile a program into a RubyVM::InstructionSequence object
     fn compile_to_wrapped_iseq(program: &str) -> VALUE {
+        compile_to_wrapped_iseq_with_options(program, Qnil)
+    }
+
+    fn compile_to_wrapped_iseq_with_options(program: &str, options: VALUE) -> VALUE {
         let bytes = program.as_bytes().as_ptr() as *const c_char;
         unsafe {
             let program_str = rb_utf8_str_new(bytes, program.len().try_into().unwrap());
-            rb_funcallv(rb_cISeq, ID!(compile), 1, &program_str)
+            let args = [program_str, Qnil, Qnil, VALUE(1_usize.wrapping_shl(1) | 1), options];
+            rb_funcallv(rb_cISeq, ID!(compile), args.len() as c_int, args.as_ptr())
         }
     }
 
@@ -1308,16 +1379,77 @@ pub mod test_utils {
 #[cfg(test)]
 pub use test_utils::*;
 
-/// Get class name from a class pointer.
+/// Get class name from a class pointer. For anonymous classes, includes the
+/// superclass name for context (e.g. `#<Class(String):0x00007f...>`).
 pub fn get_class_name(class: VALUE) -> String {
     // type checks for rb_class2name()
-    if unsafe { RB_TYPE_P(class, RUBY_T_MODULE) || RB_TYPE_P(class, RUBY_T_CLASS) } {
+    let name = if unsafe { RB_TYPE_P(class, RUBY_T_MODULE) || RB_TYPE_P(class, RUBY_T_CLASS) } {
         Some(class)
     } else {
         None
     }.and_then(|class| unsafe {
         cstr_to_rust_string(rb_class2name(class))
-    }).unwrap_or_else(|| "Unknown".to_string())
+    }).unwrap_or_else(|| "Unknown".to_string());
+
+    // For anonymous classes, include the superclass name for context.
+    // Use rb_class_real to resolve through iclasses (internal include/prepend
+    // wrappers) before checking rb_mod_name, which returns Qnil for anonymous classes.
+    // e.g. "#<Class:0x7f...>" with superclass String => "#<Class(String):0x7f...>"
+    if unsafe { RB_TYPE_P(class, RUBY_T_CLASS) && rb_mod_name(rb_class_real(class)) == Qnil } {
+        let super_class = unsafe { rb_class_get_superclass(class) };
+        if super_class != Qnil {
+            let super_name = get_class_name(super_class);
+            return format!("#<Class({super_name}):{:#x}>", class.0);
+        }
+    }
+
+    name
+}
+
+
+#[cfg(test)]
+mod class_name_tests {
+    use super::*;
+    use test_utils::{eval, with_rubyvm};
+
+    #[test]
+    fn named_class() {
+        with_rubyvm(|| {
+            assert_eq!(get_class_name(eval("String")), "String");
+        });
+    }
+
+    #[test]
+    fn named_module() {
+        with_rubyvm(|| {
+            assert_eq!(get_class_name(eval("Kernel")), "Kernel");
+        });
+    }
+
+    #[test]
+    fn anonymous_class_includes_superclass() {
+        with_rubyvm(|| {
+            let name = get_class_name(eval("Class.new(String)"));
+            assert!(name.starts_with("#<Class(String):0x"), "got: {name}");
+        });
+    }
+
+    #[test]
+    fn anonymous_class_nested_superclass() {
+        with_rubyvm(|| {
+            let name = get_class_name(eval("Class.new(Class.new(String))"));
+            assert!(name.starts_with("#<Class(#<Class(String):0x"), "got: {name}");
+        });
+    }
+
+    #[test]
+    fn anonymous_module_unchanged() {
+        with_rubyvm(|| {
+            let name = get_class_name(eval("Module.new"));
+            assert!(name.starts_with("#<Module:0x"), "got: {name}");
+        });
+    }
+
 }
 
 pub fn class_has_leaf_allocator(class: VALUE) -> bool {
@@ -1392,10 +1524,19 @@ pub(crate) mod ids {
         name: aref               content: b"[]"
         name: len
         name: _as_heap
+        name: _fields_obj
         name: thread_ptr
         name: self_              content: b"self"
         name: rb_ivar_get_at_no_ractor_check
         name: _shape_id
+        name: _env_data_index_flags
+        name: _env_data_index_specval
+        name: _ep_method_entry
+        name: _ep_specval
+        name: _rbasic_flags
+        name: RUBY_FL_FREEZE
+        name: RUBY_ELTS_SHARED
+        name: VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM
     }
 
     /// Get an CRuby `ID` to an interned string, e.g. a particular method name.

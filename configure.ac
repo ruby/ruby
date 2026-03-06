@@ -715,7 +715,7 @@ AS_IF([test "$fdeclspec" = yes], [
     RUBY_APPEND_OPTIONS(cflags, -fdeclspec)
     RUBY_APPEND_OPTIONS(orig_cflags, -fdeclspec)
 ])
-RUBY_TRY_CXXFLAGS(-fdeclspec, [fdeclspec=yes], [fdeclspec=no])
+RUBY_TRY_CXXFLAGS(-fdeclspec, [fdeclspec=yes], [fdeclspec=no], [@%:@include <cstdio>])
 AS_IF([test "$fdeclspec" = yes], [
     RUBY_APPEND_OPTIONS(CXXFLAGS, -fdeclspec)
 ])
@@ -743,6 +743,12 @@ AS_CASE(["$GCC:${warnflags+set}:${extra_warnflags:+set}:"],
     AS_CASE([ $CFLAGS ], [*" -save-temps="*|*" -save-temps "*], [], [
 	extra_warnflags="$extra_warnflags -Werror=misleading-indentation"
     ])
+    AS_CASE([$target_os], [mingw*], [
+	# 64bit Windows is IL32P64; shorten-64-to-32 causes tons of warnigs
+	extra_warnflags="$extra_warnflags -Wno-shorten-64-to-32"
+    ], [
+	extra_warnflags="$extra_warnflags -Werror=shorten-64-to-32"
+    ])
 
     # ICC doesn't support -Werror=
     AS_IF([test $icc_version -gt 0], [
@@ -756,7 +762,6 @@ AS_CASE(["$GCC:${warnflags+set}:${extra_warnflags:+set}:"],
 		 -Werror=implicit-function-declaration \
 		 -Werror=implicit-int \
 		 -Werror=pointer-arith \
-		 -Werror=shorten-64-to-32 \
 		 -Werror=write-strings \
 		 -Werror=old-style-definition \
 		 -Wimplicit-fallthrough=0 \
@@ -4337,8 +4342,7 @@ AS_IF([test -n "${LIBS}"], [
     MAINFLAGS=`echo " $MAINLIBS " | sed "s|$libspat"'||;s/^ *//;s/ *$//'`
 ])
 LIBRUBYARG_STATIC="${LIBRUBYARG_STATIC} \$(MAINLIBS)"
-CPPFLAGS="$CPPFLAGS "'$(DEFS)'
-test -z "$CPPFLAGS" || CPPFLAGS="$CPPFLAGS "; CPPFLAGS="$CPPFLAGS"'${cppflags}'
+CPPFLAGS="$CPPFLAGS "'$(DEFS) ${cppflags}'
 AS_IF([test -n "${cflags+set}"], [
     cflagspat=`eval echo '"'"${cflags}"'"' | sed 's/[[][|.*]]/\\&/g;s/^  */ /;s/^  *$/ /'`
     CFLAGS=`echo " $CFLAGS " | sed "s|$cflagspat"'|${cflags}|;s/^ *//;s/ *$//'`
@@ -4675,6 +4679,9 @@ m4_foreach(parser, [available_parsers],
     parser[,][AC_DEFINE_UNQUOTED(RB_DEFAULT_PARSER, RB_DEFAULT_PARSER_[]AS_TR_CPP(parser)),])
     [AC_MSG_ERROR([Unknown parser: $with_parser])]
 )
+
+# Use the ruby allocator for prism. See prism/defines.h
+RUBY_APPEND_OPTIONS(XCFLAGS, -DPRISM_XALLOCATOR)
 
 arch_hdrdir="${EXTOUT}/include/${arch}/ruby"
 AS_MKDIR_P("${arch_hdrdir}")

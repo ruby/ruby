@@ -8,9 +8,7 @@ module Prism
     class Ripper
       # This class mirrors the ::Ripper::SexpBuilder subclass of ::Ripper that
       # returns the arrays of [type, *children].
-      class SexpBuilder < Ripper
-        # :stopdoc:
-
+      class SexpBuilder < Ripper # :nodoc:
         attr_reader :error
 
         private
@@ -65,16 +63,12 @@ module Prism
         remove_method :on_parse_error
         alias on_parse_error on_error
         alias compile_error on_error
-
-        # :startdoc:
       end
 
       # This class mirrors the ::Ripper::SexpBuilderPP subclass of ::Ripper that
       # returns the same values as ::Ripper::SexpBuilder except with a couple of
       # niceties that flatten linked lists into arrays.
-      class SexpBuilderPP < SexpBuilder
-        # :stopdoc:
-
+      class SexpBuilderPP < SexpBuilder # :nodoc:
         private
 
         def on_heredoc_dedent(val, width)
@@ -118,8 +112,6 @@ module Prism
             alias_method "on_#{event}", :_dispatch_event_push
           end
         end
-
-        # :startdoc:
       end
     end
   end

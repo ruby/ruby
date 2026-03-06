@@ -532,7 +532,7 @@ EOM
   ##
   # Loads a Gem::Specification from the TarEntry +entry+
 
-  def load_spec(entry) # :nodoc:
+  def load_spec_from_metadata(entry) # :nodoc:
     limit = 10 * 1024 * 1024
     case entry.full_name
     when "metadata" then
@@ -678,12 +678,7 @@ EOM
       digest entry
     end
 
-    case file_name
-    when "metadata", "metadata.gz" then
-      load_spec entry
-    when "data.tar.gz" then
-      verify_gz entry
-    end
+    load_spec_from_metadata entry
   rescue StandardError
     warn "Exception while verifying #{@gem.path}"
     raise
@@ -709,18 +704,6 @@ EOM
     if (duplicates = @files.group_by {|f| f }.select {|_k,v| v.size > 1 }.map(&:first)) && duplicates.any?
       raise Gem::Security::Exception, "duplicate files in the package: (#{duplicates.map(&:inspect).join(", ")})"
     end
-  end
-
-  ##
-  # Verifies that +entry+ is a valid gzipped file.
-
-  def verify_gz(entry) # :nodoc:
-    Zlib::GzipReader.wrap entry do |gzio|
-      # TODO: read into a buffer once zlib supports it
-      gzio.read 16_384 until gzio.eof? # gzip checksum verification
-    end
-  rescue Zlib::GzipFile::Error => e
-    raise Gem::Package::FormatError.new(e.message, entry.full_name)
   end
 
   if RUBY_ENGINE == "truffleruby"

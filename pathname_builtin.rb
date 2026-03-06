@@ -647,20 +647,60 @@ class Pathname
     end
   end
 
+  # call-seq:
+  #   self + other -> new_pathname
   #
-  # Appends a pathname fragment to +self+ to produce a new Pathname object.
-  # Since +other+ is considered as a path relative to +self+, if +other+ is
-  # an absolute path, the new Pathname object is created from just +other+.
+  # Returns a new \Pathname object;
+  # argument +other+ may be a string or another pathname.
   #
-  #   p1 = Pathname.new("/usr")      # Pathname:/usr
-  #   p2 = p1 + "bin/ruby"           # Pathname:/usr/bin/ruby
-  #   p3 = p1 + "/etc/passwd"        # Pathname:/etc/passwd
+  # When +other+ specifies a relative path (see #relative?),
+  # it is combined with +self+ to form a new pathname:
   #
-  #   # / is aliased to +.
-  #   p4 = p1 / "bin/ruby"           # Pathname:/usr/bin/ruby
-  #   p5 = p1 / "/etc/passwd"        # Pathname:/etc/passwd
+  #   Pathname.new('/a/b') + 'c' # => #<Pathname:/a/b/c>
   #
-  # This method doesn't access the file system; it is pure string manipulation.
+  # Extra component separators (<tt>'/'</tt>) are removed:
+  #
+  #   Pathname.new('/a/b/') + 'c' # => #<Pathname:/a/b/c>
+  #
+  # Extra current-directory components (<tt>'.'</tt>) are removed:
+  #
+  #   Pathname.new('a') + '.' # => #<Pathname:a>
+  #   Pathname.new('.') + 'a' # => #<Pathname:a>
+  #   Pathname.new('.') + '.' # => #<Pathname:.>
+  #
+  # Parent-directory components (<tt>'..'</tt>) are:
+  #
+  # - Resolved, when possible:
+  #
+  #     Pathname.new('a')      + '..'      # => #<Pathname:.>
+  #     Pathname.new('a/b')    + '..'      # => #<Pathname:a>
+  #     Pathname.new('/')      + '../a'    # => #<Pathname:/a>
+  #     Pathname.new('a')      + '../b'    # => #<Pathname:b>
+  #     Pathname.new('a/b')    + '../c'    # => #<Pathname:a/c>
+  #     Pathname.new('a//b/c') + '../d//e' # => #<Pathname:a//b/d//e>
+  #
+  # - Removed, when not needed:
+  #
+  #     Pathname.new('/') + '..' # => #<Pathname:/>
+  #
+  # - Retained, when needed:
+  #
+  #     Pathname.new('..') + '..'   # => #<Pathname:../..>
+  #     Pathname.new('..') + '../a' # => #<Pathname:../../a>
+  #
+  # When +other+ specifies an absolute path (see #absolute?),
+  # equivalent to <tt>Pathname.new(other.to_s)</tt>:
+  #
+  #   Pathname.new('/a') + '/b/c' # => #<Pathname:/b/c>
+  #
+  # Occurrences of <tt>'/'</tt>, <tt>'.'</tt>, and <tt>'..'</tt> are preserved:
+  #
+  #   Pathname.new('/a') + '//b//c/./../d' # => #<Pathname://b//c/./../d>
+  #
+  # This method does not access the file system, so +other+ need not represent
+  # an existing (or even a valid) file or directory path:
+  #
+  #   Pathname.new('/var') + 'nosuch:ever' # => #<Pathname:/var/nosuch:ever>
   #
   def +(other)
     other = Pathname.new(other) unless Pathname === other
@@ -1116,7 +1156,14 @@ class Pathname    # * Dir *
     end
   end
 
-  # See <tt>Dir.getwd</tt>.  Returns the current working directory as a Pathname.
+  # call-seq:
+  #   Pathname.getwd -> new_pathname
+  #
+  # Returns a new \Pathname object containing the path to the current working directory
+  # (equivalent to <tt>Pathname.new(Dir.getwd)</tt>):
+  #
+  #   Pathname.getwd # => #<Pathname:/home>
+  #
   def Pathname.getwd() self.new(Dir.getwd) end
   class << self
     alias pwd getwd

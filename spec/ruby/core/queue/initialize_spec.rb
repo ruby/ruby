@@ -55,6 +55,6 @@ describe "Queue#initialize" do
     enumerable = MockObject.new('mock-enumerable')
     enumerable.should_receive(:to_a).and_return("string")
 
-    -> { Queue.new(enumerable) }.should raise_error(TypeError, "can't convert MockObject to Array (MockObject#to_a gives String)")
+    -> { Queue.new(enumerable) }.should raise_consistent_error(TypeError, "can't convert MockObject into Array (MockObject#to_a gives String)")
   end
 end

@@ -1568,7 +1568,7 @@ class TestProcess < Test::Unit::TestCase
   def test_wait_exception
     bug11340 = '[ruby-dev:49176] [Bug #11340]'
     t0 = t1 = nil
-    sec = 3
+    sec = EnvUtil.apply_timeout_scale(3)
     code = "puts;STDOUT.flush;Thread.start{gets;exit};sleep(#{sec})"
     IO.popen([RUBY, '-e', code], 'r+') do |f|
       pid = f.pid

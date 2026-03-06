@@ -1004,7 +1004,6 @@ describe "CApiObject" do
 
       it "calls the callback function for each cvar and ivar on a class" do
         exp = [:@@cvar, :foo, :@@cvar2, :bar, :@ivar, :baz]
-        exp.unshift(:__classpath__, 'CApiObjectSpecs::CVars') if RUBY_VERSION < "3.3"
 
         ary = @o.rb_ivar_foreach(CApiObjectSpecs::CVars)
         ary.should == exp
@@ -1012,7 +1011,6 @@ describe "CApiObject" do
 
       it "calls the callback function for each cvar and ivar on a module" do
         exp = [:@@mvar, :foo, :@@mvar2, :bar, :@ivar, :baz]
-        exp.unshift(:__classpath__, 'CApiObjectSpecs::MVars') if RUBY_VERSION < "3.3"
 
         ary = @o.rb_ivar_foreach(CApiObjectSpecs::MVars)
         ary.should == exp

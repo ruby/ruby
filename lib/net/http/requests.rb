@@ -19,9 +19,9 @@
 #
 # - Request body: optional.
 # - Response body: yes.
-# - {Safe}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Safe_methods]: yes.
-# - {Idempotent}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Idempotent_methods]: yes.
-# - {Cacheable}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Cacheable_methods]: yes.
+# - {Safe}[https://en.wikipedia.org/wiki/HTTP#Safe_method]: yes.
+# - {Idempotent}[https://en.wikipedia.org/wiki/HTTP#Idempotent_method]: yes.
+# - {Cacheable}[https://en.wikipedia.org/wiki/HTTP#Cacheable_method]: yes.
 #
 # Related:
 #
@@ -52,9 +52,9 @@ end
 #
 # - Request body: optional.
 # - Response body: no.
-# - {Safe}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Safe_methods]: yes.
-# - {Idempotent}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Idempotent_methods]: yes.
-# - {Cacheable}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Cacheable_methods]: yes.
+# - {Safe}[https://en.wikipedia.org/wiki/HTTP#Safe_method]: yes.
+# - {Idempotent}[https://en.wikipedia.org/wiki/HTTP#Idempotent_method]: yes.
+# - {Cacheable}[https://en.wikipedia.org/wiki/HTTP#Cacheable_method]: yes.
 #
 # Related:
 #
@@ -87,9 +87,9 @@ end
 #
 # - Request body: yes.
 # - Response body: yes.
-# - {Safe}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Safe_methods]: no.
-# - {Idempotent}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Idempotent_methods]: no.
-# - {Cacheable}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Cacheable_methods]: yes.
+# - {Safe}[https://en.wikipedia.org/wiki/HTTP#Safe_method]: no.
+# - {Idempotent}[https://en.wikipedia.org/wiki/HTTP#Idempotent_method]: no.
+# - {Cacheable}[https://en.wikipedia.org/wiki/HTTP#Cacheable_method]: yes.
 #
 # Related:
 #
@@ -123,9 +123,9 @@ end
 #
 # - Request body: yes.
 # - Response body: yes.
-# - {Safe}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Safe_methods]: no.
-# - {Idempotent}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Idempotent_methods]: yes.
-# - {Cacheable}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Cacheable_methods]: no.
+# - {Safe}[https://en.wikipedia.org/wiki/HTTP#Safe_method]: no.
+# - {Idempotent}[https://en.wikipedia.org/wiki/HTTP#Idempotent_method]: yes.
+# - {Cacheable}[https://en.wikipedia.org/wiki/HTTP#Cacheable_method]: no.
 #
 # Related:
 #
@@ -157,9 +157,9 @@ end
 #
 # - Request body: optional.
 # - Response body: yes.
-# - {Safe}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Safe_methods]: no.
-# - {Idempotent}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Idempotent_methods]: yes.
-# - {Cacheable}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Cacheable_methods]: no.
+# - {Safe}[https://en.wikipedia.org/wiki/HTTP#Safe_method]: no.
+# - {Idempotent}[https://en.wikipedia.org/wiki/HTTP#Idempotent_method]: yes.
+# - {Cacheable}[https://en.wikipedia.org/wiki/HTTP#Cacheable_method]: no.
 #
 # Related:
 #
@@ -189,9 +189,9 @@ end
 #
 # - Request body: optional.
 # - Response body: yes.
-# - {Safe}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Safe_methods]: yes.
-# - {Idempotent}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Idempotent_methods]: yes.
-# - {Cacheable}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Cacheable_methods]: no.
+# - {Safe}[https://en.wikipedia.org/wiki/HTTP#Safe_method]: yes.
+# - {Idempotent}[https://en.wikipedia.org/wiki/HTTP#Idempotent_method]: yes.
+# - {Cacheable}[https://en.wikipedia.org/wiki/HTTP#Cacheable_method]: no.
 #
 # Related:
 #
@@ -221,9 +221,9 @@ end
 #
 # - Request body: no.
 # - Response body: yes.
-# - {Safe}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Safe_methods]: yes.
-# - {Idempotent}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Idempotent_methods]: yes.
-# - {Cacheable}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Cacheable_methods]: no.
+# - {Safe}[https://en.wikipedia.org/wiki/HTTP#Safe_method]: yes.
+# - {Idempotent}[https://en.wikipedia.org/wiki/HTTP#Idempotent_method]: yes.
+# - {Cacheable}[https://en.wikipedia.org/wiki/HTTP#Cacheable_method]: no.
 #
 # Related:
 #
@@ -256,9 +256,9 @@ end
 #
 # - Request body: yes.
 # - Response body: yes.
-# - {Safe}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Safe_methods]: no.
-# - {Idempotent}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Idempotent_methods]: no.
-# - {Cacheable}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Cacheable_methods]: no.
+# - {Safe}[https://en.wikipedia.org/wiki/HTTP#Safe_method]: no.
+# - {Idempotent}[https://en.wikipedia.org/wiki/HTTP#Idempotent_method]: no.
+# - {Cacheable}[https://en.wikipedia.org/wiki/HTTP#Cacheable_method]: no.
 #
 # Related:
 #

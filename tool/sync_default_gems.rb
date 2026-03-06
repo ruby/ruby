@@ -107,11 +107,6 @@ module SyncDefaultGems
       ["net-protocol.gemspec", "lib/net/net-protocol.gemspec"],
     ]),
     "open-uri": lib("ruby/open-uri"),
-    "win32-registry": repo("ruby/win32-registry", [
-      ["lib/win32/registry.rb", "ext/win32/lib/win32/registry.rb"],
-      ["test/win32/test_registry.rb", "test/win32/test_registry.rb"],
-      ["win32-registry.gemspec", "ext/win32/win32-registry.gemspec"],
-    ]),
     English: lib("ruby/English"),
     cgi: repo("ruby/cgi", [
       ["ext/cgi", "ext/cgi"],
@@ -397,6 +392,10 @@ module SyncDefaultGems
     puts "Sync #{config.upstream}"
 
     upstream = File.join("..", "..", config.upstream)
+
+    unless File.exist?(upstream)
+      abort %[Expected '#{upstream}' (#{File.expand_path("#{upstream}")}) to be a directory, but it didn't exist.]
+    end
 
     config.mappings.each do |src, dst|
       rm_rf(dst)
@@ -796,26 +795,6 @@ module SyncDefaultGems
       return false
     end
     return true
-  end
-
-  def sync_lib(repo, upstream = nil)
-    unless upstream and File.directory?(upstream) or File.directory?(upstream = "../#{repo}")
-      abort %[Expected '#{upstream}' \(#{File.expand_path("#{upstream}")}\) to be a directory, but it wasn't.]
-    end
-    rm_rf(["lib/#{repo}.rb", "lib/#{repo}/*", "test/test_#{repo}.rb"])
-    cp_r(Dir.glob("#{upstream}/lib/*"), "lib")
-    tests = if File.directory?("test/#{repo}")
-              "test/#{repo}"
-            else
-              "test/test_#{repo}.rb"
-            end
-    cp_r("#{upstream}/#{tests}", "test") if File.exist?("#{upstream}/#{tests}")
-    gemspec = if File.directory?("lib/#{repo}")
-                "lib/#{repo}/#{repo}.gemspec"
-              else
-                "lib/#{repo}.gemspec"
-              end
-    cp_r("#{upstream}/#{repo}.gemspec", "#{gemspec}")
   end
 
   def update_default_gems(gem, release: false)

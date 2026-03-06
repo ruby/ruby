@@ -18,6 +18,7 @@
 #include "ruby/util.h"
 #include "vm_core.h"
 #include "darray.h"
+#include "zjit.h"
 
 #include <stdio.h>
 
@@ -217,7 +218,7 @@ static int
 free_loaded_feature_index_i(st_data_t key, st_data_t value, st_data_t arg)
 {
     if (!FIXNUM_P(value)) {
-        rb_darray_free((void *)value);
+        rb_darray_free_sized((void *)value, long);
     }
     return ST_CONTINUE;
 }
@@ -271,7 +272,7 @@ box_entry_free(void *ptr)
     cleanup_all_local_extensions(box->ruby_dln_libmap);
 
     box_root_free(ptr);
-    xfree(ptr);
+    SIZED_FREE(box);
 }
 
 static size_t
@@ -389,6 +390,9 @@ box_initialize(VALUE box_value)
     RCLASS_SET_CONST_TBL(box_value, RCLASSEXT_CONST_TBL(object_classext), true);
 
     rb_ivar_set(box_value, id_box_entry, entry);
+
+    // Invalidate ZJIT code that assumes only the root box is active
+    rb_zjit_invalidate_root_box();
 
     return box_value;
 }

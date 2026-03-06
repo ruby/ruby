@@ -7,14 +7,16 @@ describe "String#append_bytes" do
       -> { str.append_as_bytes("\xE2\x82") }.should raise_error(FrozenError)
     end
 
-    it "allows creating broken strings" do
+    it "allows creating broken strings in UTF8" do
       str = +"hello"
       str.append_as_bytes("\xE2\x82")
       str.valid_encoding?.should == false
 
       str.append_as_bytes("\xAC")
       str.valid_encoding?.should == true
+    end
 
+    it "allows creating broken strings in UTF_32" do
       str = "abc".encode(Encoding::UTF_32LE)
       str.append_as_bytes("def")
       str.encoding.should == Encoding::UTF_32LE

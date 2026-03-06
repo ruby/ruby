@@ -7,12 +7,14 @@ module Prism
       # A builder that knows how to convert more modern Ruby syntax
       # into whitequark/parser gem's syntax tree.
       class Builder < ::Parser::Builders::Default
-        # It represents the `it` block argument, which is not yet implemented in the Parser gem.
+        # It represents the `it` block argument, which is not yet implemented in
+        # the Parser gem.
         def itarg
           n(:itarg, [:it], nil)
         end
 
-        # The following three lines have been added to support the `it` block parameter syntax in the source code below.
+        # The following three lines have been added to support the `it` block
+        # parameter syntax in the source code below.
         #
         #   if args.type == :itarg
         #     block_type = :itblock
@@ -55,6 +57,12 @@ module Prism
             n(method_call.type, [ block ],
               method_call.loc.with_expression(join_exprs(method_call, block)))
           end
+        end
+
+        # def foo(&nil); end
+        #         ^^^^
+        def blocknilarg(amper_t, nil_t)
+          n0(:blocknilarg, arg_prefix_map(amper_t, nil_t))
         end
       end
     end

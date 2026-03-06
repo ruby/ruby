@@ -15,7 +15,7 @@
 #     a = 1
 #     r = Ractor.new {puts "I am in Ractor! a=#{a}"}
 #     # fails immediately with
-#     # ArgumentError (can not isolate a Proc because it accesses outer variables (a).)
+#     # Ractor::IsolationError (can not isolate a Proc because it accesses outer variables (a).)
 #
 # The object must be explicitly shared:
 #     a = 1
@@ -657,7 +657,7 @@ class Ractor
   #
   #     a = 42
   #     Ractor.shareable_proc{ p a }
-  #     #=> can not isolate a Proc because it accesses outer variables (a). (ArgumentError)
+  #     #=> can not isolate a Proc because it accesses outer variables (a). (Ractor::IsolationError)
   #
   # The value of `self` in the Proc must be a shareable object.
   #

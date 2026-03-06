@@ -21,7 +21,7 @@ require "bundler"
 
 # If we use shared GEM_HOME and install multiple versions, it may cause
 # unexpected test failures.
-gem "diff-lcs"
+gem "diff-lcs", "< 2.0"
 
 require "rspec/core"
 require "rspec/expectations"
@@ -142,7 +142,7 @@ RSpec.configure do |config|
 
   config.before(:context) do |example|
     metadata = example.class.metadata
-    if metadata[:type] != :aruba && metadata.keys.none? {|k| Spec::WindowsTagGroup::EXAMPLE_MAPPINGS.keys.include?(k) }
+    if metadata[:type] != :aruba && !metadata[:realworld] && metadata.keys.none? {|k| Spec::WindowsTagGroup::EXAMPLE_MAPPINGS.keys.include?(k) }
       warn "#{metadata[:file_path]} is not assigned to any Windows runner group. see spec/support/windows_tag_group.rb for details."
     end
   end unless Spec::Path.ruby_core?

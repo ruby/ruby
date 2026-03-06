@@ -71,9 +71,10 @@ pm_string_file_handle_open(pm_string_file_handle_t *handle, const char *filepath
     int length = MultiByteToWideChar(CP_UTF8, 0, filepath, -1, NULL, 0);
     if (length == 0) return PM_STRING_INIT_ERROR_GENERIC;
 
-    handle->path = xmalloc(sizeof(WCHAR) * ((size_t) length));
+    const size_t path_size = sizeof(WCHAR) * ((size_t) length);
+    handle->path = xmalloc(path_size);
     if ((handle->path == NULL) || (MultiByteToWideChar(CP_UTF8, 0, filepath, -1, handle->path, length) == 0)) {
-        xfree(handle->path);
+        xfree_sized(handle->path, path_size);
         return PM_STRING_INIT_ERROR_GENERIC;
     }
 
@@ -88,7 +89,7 @@ pm_string_file_handle_open(pm_string_file_handle_t *handle, const char *filepath
             }
         }
 
-        xfree(handle->path);
+        xfree_sized(handle->path, path_size);
         return result;
     }
 
@@ -215,7 +216,7 @@ pm_string_file_init(pm_string_t *string, const char *filepath) {
     if (result != PM_STRING_INIT_SUCCESS) return result;
 
     // Get the file size.
-    DWORD file_size = GetFileSize(handle.file, NULL);
+    const DWORD file_size = GetFileSize(handle.file, NULL);
     if (file_size == INVALID_FILE_SIZE) {
         pm_string_file_handle_close(&handle);
         return PM_STRING_INIT_ERROR_GENERIC;
@@ -245,7 +246,7 @@ pm_string_file_init(pm_string_t *string, const char *filepath) {
 
     // Check the number of bytes read
     if (bytes_read != file_size) {
-        xfree(source);
+        xfree_sized(source, file_size);
         pm_string_file_handle_close(&handle);
         return PM_STRING_INIT_ERROR_GENERIC;
     }
@@ -281,7 +282,7 @@ pm_string_file_init(pm_string_t *string, const char *filepath) {
         return PM_STRING_INIT_SUCCESS;
     }
 
-    size_t length = (size_t) size;
+    const size_t length = (size_t) size;
     uint8_t *source = xmalloc(length);
     if (source == NULL) {
         close(fd);
@@ -292,7 +293,7 @@ pm_string_file_init(pm_string_t *string, const char *filepath) {
     close(fd);
 
     if (bytes_read == -1) {
-        xfree(source);
+        xfree_sized(source, length);
         return PM_STRING_INIT_ERROR_GENERIC;
     }
 

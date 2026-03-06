@@ -1235,6 +1235,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_equal("foo", File.basename("foo", ".ext"))
     assert_equal("foo", File.basename("foo.ext", ".ext"))
     assert_equal("foo", File.basename("foo.ext", ".*"))
+    assert_raise(ArgumentError) {File.basename("", "\0")}
   end
 
   if NTFS

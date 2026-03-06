@@ -1,0 +1,12 @@
+def foo(&nil, &nil); end
+              ^ unexpected parameter order
+              ^~~~ multiple block parameters; only one block is allowed
+
+def foo(&foo, &nil); end
+              ^ unexpected parameter order
+              ^~~~ multiple block parameters; only one block is allowed
+
+def foo(&nil, &foo); end
+              ^ unexpected parameter order
+              ^~~~ multiple block parameters; only one block is allowed
+

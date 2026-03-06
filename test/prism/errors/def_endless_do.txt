@@ -1,0 +1,3 @@
+def a = a b do 1 end
+            ^~~~~~~~ unexpected `do` for block in an endless method definition
+

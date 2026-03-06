@@ -306,13 +306,13 @@ describe :kernel_sprintf, shared: true do
       it "raises TypeError if argument is not String or Integer and cannot be converted to them" do
         -> {
           @method.call("%c", [])
-        }.should raise_error(TypeError, /no implicit conversion of Array into Integer/)
+        }.should raise_consistent_error(TypeError, /no implicit conversion of Array into Integer/)
       end
 
       it "raises TypeError if argument is nil" do
         -> {
           @method.call("%c", nil)
-        }.should raise_error(TypeError, /no implicit conversion from nil to integer/)
+        }.should raise_consistent_error(TypeError, /no implicit conversion of nil into Integer/)
       end
 
       it "tries to convert argument to String with to_str" do
@@ -341,7 +341,7 @@ describe :kernel_sprintf, shared: true do
 
         -> {
           @method.call("%c", obj)
-        }.should raise_error(TypeError, /can't convert BasicObject to String/)
+        }.should raise_consistent_error(TypeError, /can't convert BasicObject into String/)
       end
 
       it "raises TypeError if converting to Integer with to_int returns non-Integer" do
@@ -352,7 +352,7 @@ describe :kernel_sprintf, shared: true do
 
         -> {
           @method.call("%c", obj)
-        }.should raise_error(TypeError, /can't convert BasicObject to Integer/)
+        }.should raise_consistent_error(TypeError, /can't convert BasicObject into Integer/)
       end
     end
 
@@ -934,10 +934,27 @@ describe :kernel_sprintf, shared: true do
         }.should raise_error(ArgumentError)
       end
 
-      it "raises KeyError when there is no matching key" do
+      it "respects Hash#default when there is no set key" do
+        @method.call("%{foo}", Hash.new(123)).should == "123"
+        @method.call("%{foo}", Hash.new { 123 }).should == "123"
+      end
+
+      it "raises KeyError when Hash#default returns nil" do
         -> {
           @method.call("%{foo}", {})
-        }.should raise_error(KeyError)
+        }.should raise_error(KeyError, 'key{foo} not found')
+
+        -> {
+          @method.call("%{foo}", Hash.new(nil))
+        }.should raise_error(KeyError, 'key{foo} not found')
+
+        -> {
+          @method.call("%{foo}", Hash.new { nil })
+        }.should raise_error(KeyError, 'key{foo} not found')
+      end
+
+      it "accepts a nil value for an existing key" do
+        @method.call("%{foo}", { foo: nil }).should == ""
       end
 
       it "converts value to String with to_s" do

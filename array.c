@@ -387,13 +387,14 @@ rb_ary_make_embedded(VALUE ary)
     if (!ARY_EMBED_P(ary)) {
         const VALUE *buf = ARY_HEAP_PTR(ary);
         long len = ARY_HEAP_LEN(ary);
+        long capa = ARY_HEAP_CAPA(ary);
 
         FL_SET_EMBED(ary);
         ARY_SET_EMBED_LEN(ary, len);
 
         MEMCPY((void *)ARY_EMBED_PTR(ary), (void *)buf, VALUE, len);
 
-        ary_heap_free_ptr(ary, buf, len * sizeof(VALUE));
+        ary_heap_free_ptr(ary, buf, capa * sizeof(VALUE));
     }
 }
 
@@ -428,7 +429,7 @@ ary_resize_capa(VALUE ary, long capacity)
 
             if (len > capacity) len = capacity;
             MEMCPY((VALUE *)RARRAY(ary)->as.ary, ptr, VALUE, len);
-            ary_heap_free_ptr(ary, ptr, old_capa);
+            ary_heap_free_ptr(ary, ptr, old_capa * sizeof(VALUE));
 
             FL_SET_EMBED(ary);
             ARY_SET_LEN(ary, len);
@@ -2693,18 +2694,33 @@ ary_enum_length(VALUE ary, VALUE args, VALUE eobj)
     return rb_ary_length(ary);
 }
 
-// Primitive to avoid a race condition in Array#each.
-// Return `true` and write `value` and `index` if the element exists.
-static VALUE
-ary_fetch_next(VALUE self, VALUE *index, VALUE *value)
+// Return true if the index is at or past the end of the array.
+VALUE
+rb_jit_ary_at_end(rb_execution_context_t *ec, VALUE self, VALUE index)
 {
-    long i = NUM2LONG(*index);
-    if (i >= RARRAY_LEN(self)) {
-        return Qfalse;
-    }
-    *value = RARRAY_AREF(self, i);
-    *index = LONG2NUM(i + 1);
-    return Qtrue;
+    return FIX2LONG(index) >= RARRAY_LEN(self) ? Qtrue : Qfalse;
+}
+
+// Return the element at the given fixnum index.
+VALUE
+rb_jit_ary_at(rb_execution_context_t *ec, VALUE self, VALUE index)
+{
+    return RARRAY_AREF(self, FIX2LONG(index));
+}
+
+// Increment a fixnum by 1.
+VALUE
+rb_jit_fixnum_inc(rb_execution_context_t *ec, VALUE self, VALUE num)
+{
+    return LONG2FIX(FIX2LONG(num) + 1);
+}
+
+// Push a value onto an array and return the value.
+VALUE
+rb_jit_ary_push(rb_execution_context_t *ec, VALUE self, VALUE ary, VALUE val)
+{
+    rb_ary_push(ary, val);
+    return val;
 }
 
 /*
@@ -3162,7 +3178,7 @@ rb_ary_to_a(VALUE ary)
  *  forms each sub-array into a key-value pair in the new hash:
  *
  *    a = [['foo', 'zero'], ['bar', 'one'], ['baz', 'two']]
- *    a.to_h # => {"foo"=>"zero", "bar"=>"one", "baz"=>"two"}
+ *    a.to_h # => {"foo" => "zero", "bar" => "one", "baz" => "two"}
  *    [].to_h # => {}
  *
  *  With a block given, the block must return a 2-element array;
@@ -3171,7 +3187,7 @@ rb_ary_to_a(VALUE ary)
  *
  *    a = ['foo', :bar, 1, [2, 3], {baz: 4}]
  *    a.to_h {|element| [element, element.class] }
- *    # => {"foo"=>String, :bar=>Symbol, 1=>Integer, [2, 3]=>Array, {:baz=>4}=>Hash}
+ *    # => {"foo" => String, bar: Symbol, 1 => Integer, [2, 3] => Array, {baz: 4} => Hash}
  *
  *  Related: see {Methods for Converting}[rdoc-ref:Array@Methods+for+Converting].
  */
@@ -6731,16 +6747,16 @@ flatten(VALUE ary, int level)
  *  With non-negative integer argument +depth+, flattens recursively through +depth+ levels:
  *
  *    a = [ 0, [ 1, [2, 3], 4 ], 5, {foo: 0}, Set.new([6, 7]) ]
- *    a                   # => [0, [1, [2, 3], 4], 5, {:foo=>0}, #<Set: {6, 7}>]
- *    a.dup.flatten!(1)   # => [0, 1, [2, 3], 4, 5, {:foo=>0}, #<Set: {6, 7}>]
- *    a.dup.flatten!(1.1) # => [0, 1, [2, 3], 4, 5, {:foo=>0}, #<Set: {6, 7}>]
- *    a.dup.flatten!(2)   # => [0, 1, 2, 3, 4, 5, {:foo=>0}, #<Set: {6, 7}>]
- *    a.dup.flatten!(3)   # => [0, 1, 2, 3, 4, 5, {:foo=>0}, #<Set: {6, 7}>]
+ *    a                   # => [0, [1, [2, 3], 4], 5, {foo: 0}, #<Set: {6, 7}>]
+ *    a.dup.flatten!(1)   # => [0, 1, [2, 3], 4, 5, {foo: 0}, #<Set: {6, 7}>]
+ *    a.dup.flatten!(1.1) # => [0, 1, [2, 3], 4, 5, {foo: 0}, #<Set: {6, 7}>]
+ *    a.dup.flatten!(2)   # => [0, 1, 2, 3, 4, 5, {foo: 0}, #<Set: {6, 7}>]
+ *    a.dup.flatten!(3)   # => [0, 1, 2, 3, 4, 5, {foo: 0}, #<Set: {6, 7}>]
  *
  *  With +nil+ or negative argument +depth+, flattens all levels:
  *
- *    a.dup.flatten!     # => [0, 1, 2, 3, 4, 5, {:foo=>0}, #<Set: {6, 7}>]
- *    a.dup.flatten!(-1) # => [0, 1, 2, 3, 4, 5, {:foo=>0}, #<Set: {6, 7}>]
+ *    a.dup.flatten!     # => [0, 1, 2, 3, 4, 5, {foo: 0}, #<Set: {6, 7}>]
+ *    a.dup.flatten!(-1) # => [0, 1, 2, 3, 4, 5, {foo: 0}, #<Set: {6, 7}>]
  *
  *  Related: Array#flatten;
  *  see also {Methods for Assigning}[rdoc-ref:Array@Methods+for+Assigning].
@@ -6787,17 +6803,17 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
  *  With non-negative integer argument +depth+, flattens recursively through +depth+ levels:
  *
  *    a = [ 0, [ 1, [2, 3], 4 ], 5, {foo: 0}, Set.new([6, 7]) ]
- *    a              # => [0, [1, [2, 3], 4], 5, {:foo=>0}, #<Set: {6, 7}>]
- *    a.flatten(0)   # => [0, [1, [2, 3], 4], 5, {:foo=>0}, #<Set: {6, 7}>]
- *    a.flatten(1  ) # => [0, 1, [2, 3], 4, 5, {:foo=>0}, #<Set: {6, 7}>]
- *    a.flatten(1.1) # => [0, 1, [2, 3], 4, 5, {:foo=>0}, #<Set: {6, 7}>]
- *    a.flatten(2)   # => [0, 1, 2, 3, 4, 5, {:foo=>0}, #<Set: {6, 7}>]
- *    a.flatten(3)   # => [0, 1, 2, 3, 4, 5, {:foo=>0}, #<Set: {6, 7}>]
+ *    a              # => [0, [1, [2, 3], 4], 5, {foo: 0}, #<Set: {6, 7}>]
+ *    a.flatten(0)   # => [0, [1, [2, 3], 4], 5, {foo: 0}, #<Set: {6, 7}>]
+ *    a.flatten(1  ) # => [0, 1, [2, 3], 4, 5, {foo: 0}, #<Set: {6, 7}>]
+ *    a.flatten(1.1) # => [0, 1, [2, 3], 4, 5, {foo: 0}, #<Set: {6, 7}>]
+ *    a.flatten(2)   # => [0, 1, 2, 3, 4, 5, {foo: 0}, #<Set: {6, 7}>]
+ *    a.flatten(3)   # => [0, 1, 2, 3, 4, 5, {foo: 0}, #<Set: {6, 7}>]
  *
  *  With +nil+ or negative +depth+, flattens all levels.
  *
- *    a.flatten     # => [0, 1, 2, 3, 4, 5, {:foo=>0}, #<Set: {6, 7}>]
- *    a.flatten(-1) # => [0, 1, 2, 3, 4, 5, {:foo=>0}, #<Set: {6, 7}>]
+ *    a.flatten     # => [0, 1, 2, 3, 4, 5, {foo: 0}, #<Set: {6, 7}>]
+ *    a.flatten(-1) # => [0, 1, 2, 3, 4, 5, {foo: 0}, #<Set: {6, 7}>]
  *
  *  Related: Array#flatten!;
  *  see also {Methods for Converting}[rdoc-ref:Array@Methods+for+Converting].
@@ -8423,12 +8439,12 @@ rb_ary_deconstruct(VALUE ary)
  *
  *      [1, 'one', :one, [2, 'two', :two]]
  *
- *  - A {%w or %W string-array Literal}[rdoc-ref:syntax/literals.rdoc@25w+and+-25W-3A+String-Array+Literals]:
+ *  - A {%w or %W string-array Literal}[rdoc-ref:syntax/literals.rdoc@w-and-w-String-Array-Literals]:
  *
  *      %w[foo bar baz] # => ["foo", "bar", "baz"]
  *      %w[1 % *]       # => ["1", "%", "*"]
  *
- *  - A {%i or %I symbol-array Literal}[rdoc-ref:syntax/literals.rdoc@25i+and+-25I-3A+Symbol-Array+Literals]:
+ *  - A {%i or %I symbol-array Literal}[rdoc-ref:syntax/literals.rdoc@i+and-I-Symbol-Array+Literals]:
  *
  *      %i[foo bar baz] # => [:foo, :bar, :baz]
  *      %i[1 % *]       # => [:"1", :%, :*]
@@ -8690,8 +8706,8 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  First, what's elsewhere. Class \Array:
  *
- *  - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
- *  - Includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],
+ *  - Inherits from {class Object}[rdoc-ref:Object@Whats-Here].
+ *  - Includes {module Enumerable}[rdoc-ref:Enumerable@Whats-Here],
  *    which provides dozens of additional methods.
  *
  *  Here, class \Array provides methods that are useful for:

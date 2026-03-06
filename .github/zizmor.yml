@@ -1,0 +1,29 @@
+# Ignore existing findings (baseline)
+# Composite action findings are suppressed inline with # zizmor: ignore
+rules:
+  dangerous-triggers:
+    ignore:
+      - auto_request_review.yml
+      - auto_review_pr.yml
+      - labeler.yml
+      - pr-playground.yml
+  dependabot-cooldown:
+    ignore:
+      - dependabot.yml
+  excessive-permissions:
+    ignore:
+      - post_push.yml
+      - publish.yml
+      - release.yml
+      - wsl.yml
+  misfeature:
+    ignore:
+      - mingw.yml
+      - windows.yml
+  unpinned-images:
+    ignore:
+      - compilers.yml
+  unpinned-uses:
+    ignore:
+      - cygwin.yml
+      - wsl.yml

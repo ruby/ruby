@@ -20,7 +20,7 @@ end
 
 NUMBER = /^\d+\)$/
 ERROR_OR_FAILED = / (ERROR|FAILED)$/
-SPEC_FILE = /^(\/.+_spec\.rb)\:\d+/
+SPEC_FILE = /^((?:\/|[CD]:\/).+_spec\.rb)\:\d+/
 
 output.slice_before(NUMBER).select { |number, *rest|
   number =~ NUMBER and rest.any? { |line| line =~ ERROR_OR_FAILED }

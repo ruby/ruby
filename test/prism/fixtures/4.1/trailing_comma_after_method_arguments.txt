@@ -1,0 +1,15 @@
+def foo(a,b,c,);end
+
+def foo(a,b,*c,);end
+
+def foo(a,b,*,);end
+
+def foo(a,b,**c,);end
+
+def foo(a,b,**,);end
+
+def foo(
+  a,
+  b,
+  c,
+);end

@@ -374,7 +374,7 @@ pm_integer_convert_base(pm_integer_t *destination, const pm_integer_t *source, u
             }
         }
 
-        xfree(bigints);
+        xfree_sized(bigints, bigints_length * sizeof(pm_integer_t));
         bigints = next_bigints;
         bigints_length = next_length;
     }
@@ -383,7 +383,7 @@ pm_integer_convert_base(pm_integer_t *destination, const pm_integer_t *source, u
     destination->negative = source->negative;
     pm_integer_normalize(destination);
 
-    xfree(bigints);
+    xfree_sized(bigints, bigints_length * sizeof(pm_integer_t));
     pm_integer_free(&base);
 }
 
@@ -422,7 +422,7 @@ pm_integer_parse_powof2(pm_integer_t *integer, uint32_t base, const uint8_t *dig
 static void
 pm_integer_parse_decimal(pm_integer_t *integer, const uint8_t *digits, size_t digits_length) {
     const size_t batch = 9;
-    size_t length = (digits_length + batch - 1) / batch;
+    const size_t length = (digits_length + batch - 1) / batch;
 
     uint32_t *values = (uint32_t *) xcalloc(length, sizeof(uint32_t));
     uint32_t value = 0;
@@ -439,7 +439,7 @@ pm_integer_parse_decimal(pm_integer_t *integer, const uint8_t *digits, size_t di
 
     // Convert base from 10**9 to 1<<32.
     pm_integer_convert_base(integer, &((pm_integer_t) { .length = length, .values = values,  .value = 0, .negative = false }), 1000000000, ((uint64_t) 1 << 32));
-    xfree(values);
+    xfree_sized(values, length * sizeof(uint32_t));
 }
 
 /**
@@ -448,7 +448,8 @@ pm_integer_parse_decimal(pm_integer_t *integer, const uint8_t *digits, size_t di
 static void
 pm_integer_parse_big(pm_integer_t *integer, uint32_t multiplier, const uint8_t *start, const uint8_t *end) {
     // Allocate an array to store digits.
-    uint8_t *digits = xmalloc(sizeof(uint8_t) * (size_t) (end - start));
+    const size_t digits_capa = sizeof(uint8_t) * (size_t) (end - start);
+    uint8_t *digits = xmalloc(digits_capa);
     size_t digits_length = 0;
 
     for (; start < end; start++) {
@@ -463,7 +464,7 @@ pm_integer_parse_big(pm_integer_t *integer, uint32_t multiplier, const uint8_t *
         pm_integer_parse_powof2(integer, multiplier, digits, digits_length);
     }
 
-    xfree(digits);
+    xfree_sized(digits, digits_capa);
 }
 
 /**
@@ -635,7 +636,7 @@ pm_integer_string(pm_buffer_t *buffer, const pm_integer_t *integer) {
     }
 
     // Allocate a buffer that we'll copy the decimal digits into.
-    size_t digits_length = converted.length * 9;
+    const size_t digits_length = converted.length * 9;
     char *digits = xcalloc(digits_length, sizeof(char));
     if (digits == NULL) return;
 
@@ -654,7 +655,7 @@ pm_integer_string(pm_buffer_t *buffer, const pm_integer_t *integer) {
 
     // Finally, append the string to the buffer and free the digits.
     pm_buffer_append_string(buffer, digits + start_offset, digits_length - start_offset);
-    xfree(digits);
+    xfree_sized(digits, sizeof(char) * digits_length);
     pm_integer_free(&converted);
 }
 

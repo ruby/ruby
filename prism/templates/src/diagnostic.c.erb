@@ -102,6 +102,8 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
     [PM_ERR_ARGUMENT_FORWARDING_UNBOUND]        = { "unexpected `...` in an non-parenthesized call", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_ARGUMENT_NO_FORWARDING_AMPERSAND]   = { "unexpected `&`; no anonymous block parameter", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES]    = { "unexpected ... when the parent method is not forwarding", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES_LAMBDA] = { "unexpected ... in lambda argument", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES_BLOCK]  = { "unexpected ... in block argument", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_ARGUMENT_NO_FORWARDING_STAR]        = { "unexpected `*`; no anonymous rest parameter", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_ARGUMENT_NO_FORWARDING_STAR_STAR]   = { "unexpected `**`; no anonymous keyword rest parameter", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_ARGUMENT_SPLAT_AFTER_ASSOC_SPLAT]   = { "unexpected `*` splat argument after a `**` keyword splat argument", PM_ERROR_LEVEL_SYNTAX },
@@ -146,6 +148,7 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
     [PM_ERR_DEF_ENDLESS]                        = { "could not parse the endless method body", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_DEF_ENDLESS_PARAMETERS]             = { "could not parse the endless method parameters", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_DEF_ENDLESS_SETTER]                 = { "invalid method name; a setter method cannot be defined in an endless method definition", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_DEF_ENDLESS_DO_BLOCK]               = { "unexpected `do` for block in an endless method definition", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_DEF_NAME]                           = { "unexpected %s; expected a method name", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_DEF_PARAMS_TERM]                    = { "expected a delimiter to close the parameters", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_DEF_PARAMS_TERM_PAREN]              = { "unexpected %s; expected a `)` to close the parameters", PM_ERROR_LEVEL_SYNTAX },
@@ -447,12 +450,12 @@ pm_diagnostic_level(pm_diagnostic_id_t diag_id) {
  * Append an error to the given list of diagnostic.
  */
 bool
-pm_diagnostic_list_append(pm_list_t *list, const uint8_t *start, const uint8_t *end, pm_diagnostic_id_t diag_id) {
+pm_diagnostic_list_append(pm_list_t *list, uint32_t start, uint32_t length, pm_diagnostic_id_t diag_id) {
     pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) xcalloc(1, sizeof(pm_diagnostic_t));
     if (diagnostic == NULL) return false;
 
     *diagnostic = (pm_diagnostic_t) {
-        .location = { start, end },
+        .location = { .start = start, .length = length },
         .diag_id = diag_id,
         .message = pm_diagnostic_message(diag_id),
         .owned = false,
@@ -468,7 +471,7 @@ pm_diagnostic_list_append(pm_list_t *list, const uint8_t *start, const uint8_t *
  * string for its message.
  */
 bool
-pm_diagnostic_list_append_format(pm_list_t *list, const uint8_t *start, const uint8_t *end, pm_diagnostic_id_t diag_id, ...) {
+pm_diagnostic_list_append_format(pm_list_t *list, uint32_t start, uint32_t length, pm_diagnostic_id_t diag_id, ...) {
     va_list arguments;
     va_start(arguments, diag_id);
 
@@ -485,19 +488,19 @@ pm_diagnostic_list_append_format(pm_list_t *list, const uint8_t *start, const ui
         return false;
     }
 
-    size_t length = (size_t) (result + 1);
-    char *message = (char *) xmalloc(length);
+    size_t message_length = (size_t) (result + 1);
+    char *message = (char *) xmalloc(message_length);
     if (message == NULL) {
-        xfree(diagnostic);
+        xfree_sized(diagnostic, sizeof(pm_diagnostic_t));
         return false;
     }
 
     va_start(arguments, diag_id);
-    vsnprintf(message, length, format, arguments);
+    vsnprintf(message, message_length, format, arguments);
     va_end(arguments);
 
     *diagnostic = (pm_diagnostic_t) {
-        .location = { start, end },
+        .location = { .start = start, .length = length },
         .diag_id = diag_id,
         .message = message,
         .owned = true,
@@ -519,7 +522,7 @@ pm_diagnostic_list_free(pm_list_t *list) {
         pm_diagnostic_t *next = (pm_diagnostic_t *) node->node.next;
 
         if (node->owned) xfree((void *) node->message);
-        xfree(node);
+        xfree_sized(node, sizeof(pm_diagnostic_t));
 
         node = next;
     }

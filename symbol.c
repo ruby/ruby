@@ -186,9 +186,7 @@ sym_id_entry_list_mark(void *ptr)
 static void
 sym_id_entry_list_free(void *ptr)
 {
-    rb_darray(struct sym_id_entry) ary = ptr;
-
-    rb_darray_free(ary);
+    rb_darray_free_sized(ptr, struct sym_id_entry);
 }
 
 static size_t

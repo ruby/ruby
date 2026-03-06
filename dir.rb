@@ -31,7 +31,7 @@
 # A \Dir object is in some ways array-like:
 #
 # - It has instance methods #children, #each, and #each_child.
-# - It includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here].
+# - It includes {module Enumerable}[rdoc-ref:Enumerable@Whats+Here].
 #
 # == \Dir As Stream-Like
 #
@@ -85,8 +85,8 @@
 #
 # First, what's elsewhere. Class \Dir:
 #
-# - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
-# - Includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],
+# - Inherits from {class Object}[rdoc-ref:Object@Whats+Here].
+# - Includes {module Enumerable}[rdoc-ref:Enumerable@Whats+Here],
 #   which provides dozens of additional methods.
 #
 # Here, class \Dir provides methods that are useful for:

@@ -219,15 +219,7 @@ describe 'Assignments' do
           end
         end
 
-        ruby_version_is ""..."3.3" do
-          it "supports keyword arguments in index assignments" do
-            a = @klass.new
-            eval "a[1, 2, 3, b: 4] += 5"
-            a.x.should == [[1, 2, 3, {b: 4}, 105], {}]
-          end
-        end
-
-        ruby_version_is "3.3"..."3.4" do
+        ruby_version_is ""..."3.4" do
           it "supports keyword arguments in index assignments" do
             a = @klass.new
             eval "a[1, 2, 3, b: 4] += 5"

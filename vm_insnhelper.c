@@ -2732,7 +2732,8 @@ rb_simple_iseq_p(const rb_iseq_t *iseq)
            ISEQ_BODY(iseq)->param.flags.has_kwrest == FALSE &&
            ISEQ_BODY(iseq)->param.flags.accepts_no_kwarg == FALSE &&
            ISEQ_BODY(iseq)->param.flags.forwardable == FALSE &&
-           ISEQ_BODY(iseq)->param.flags.has_block == FALSE;
+           ISEQ_BODY(iseq)->param.flags.has_block == FALSE &&
+           ISEQ_BODY(iseq)->param.flags.accepts_no_block == FALSE;
 }
 
 bool
@@ -2745,7 +2746,8 @@ rb_iseq_only_optparam_p(const rb_iseq_t *iseq)
            ISEQ_BODY(iseq)->param.flags.has_kwrest == FALSE &&
            ISEQ_BODY(iseq)->param.flags.accepts_no_kwarg == FALSE &&
            ISEQ_BODY(iseq)->param.flags.forwardable == FALSE &&
-           ISEQ_BODY(iseq)->param.flags.has_block == FALSE;
+           ISEQ_BODY(iseq)->param.flags.has_block == FALSE &&
+           ISEQ_BODY(iseq)->param.flags.accepts_no_block == FALSE;
 }
 
 bool
@@ -2757,7 +2759,8 @@ rb_iseq_only_kwparam_p(const rb_iseq_t *iseq)
            ISEQ_BODY(iseq)->param.flags.has_kw == TRUE &&
            ISEQ_BODY(iseq)->param.flags.has_kwrest == FALSE &&
            ISEQ_BODY(iseq)->param.flags.forwardable == FALSE &&
-           ISEQ_BODY(iseq)->param.flags.has_block == FALSE;
+           ISEQ_BODY(iseq)->param.flags.has_block == FALSE &&
+           ISEQ_BODY(iseq)->param.flags.accepts_no_block == FALSE;
 }
 
 #define ALLOW_HEAP_ARGV (-2)
@@ -6050,7 +6053,7 @@ vm_define_method(const rb_execution_context_t *ec, VALUE obj, ID id, VALUE iseqv
 // * If it's VM_BLOCK_HANDLER_NONE, return nil
 // * If it's an ISEQ or an IFUNC, fetch it from its rb_captured_block
 // * If it's a PROC or SYMBOL, return it as is
-static VALUE
+VALUE
 rb_vm_untag_block_handler(VALUE block_handler)
 {
     if (VM_BLOCK_HANDLER_NONE == block_handler) return Qnil;

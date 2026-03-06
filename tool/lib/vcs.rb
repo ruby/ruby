@@ -459,7 +459,8 @@ class VCS
         rev or next
         rev unless rev.empty?
       end
-      unless from&.match?(/./) or (from = branch_beginning(url))&.match?(/./)
+      to ||= url.to_str
+      unless from&.match?(/./) or (from = branch_beginning(to))&.match?(/./)
         warn "no starting commit found", uplevel: 1
         from = nil
       end
@@ -470,7 +471,6 @@ class VCS
       else
         warn "Could not fetch notes/commits tree", uplevel: 1
       end
-      to ||= url.to_str
       if from
         arg = ["#{from}^..#{to}"]
       else
@@ -593,15 +593,6 @@ class VCS
                 end
               end
               s = s.join('')
-            end
-
-            s.gsub!(%r[(?!<\w)([-\w]+/[-\w]+)(?:@(\h{8,40})|#(\d{5,}))\b]) do
-              path = defined?($2) ? "commit/#{$2}" : "pull/#{$3}"
-              "[#$&](https://github.com/#{$1}/#{path})"
-            end
-            if %r[^ +(https://github\.com/[^/]+/[^/]+/)commit/\h+\n(?=(?: +\n(?i: +Co-authored-by: .*\n)+)?(?:\n|\Z))] =~ s
-              issue = "#{$1}pull/"
-              s.gsub!(/\b(?:(?i:fix(?:e[sd])?) +|GH-)\K#(?=\d+\b)|\(\K#(?=\d+\))/) {issue}
             end
 
             s.gsub!(/ +\n/, "\n")

@@ -7,7 +7,7 @@ class Hash
   #
   # Initializes the values of Hash#default and Hash#default_proc,
   # which determine the behavior when a given key is not found;
-  # see {Key Not Found?}[rdoc-ref:Hash@Key+Not+Found-3F].
+  # see {Key Not Found?}[rdoc-ref:Hash@Key+Not+Found].
   #
   # By default, a hash has +nil+ values for both +default+ and +default_proc+:
   #

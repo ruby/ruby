@@ -106,7 +106,7 @@ describe "Data#deconstruct_keys" do
 
     -> {
       d.deconstruct_keys([key])
-    }.should raise_error(TypeError, /can't convert MockObject to Integer/)
+    }.should raise_consistent_error(TypeError, /can't convert MockObject into Integer/)
   end
 
   it "raises TypeError if index is not a String, a Symbol and not convertible to Integer " do

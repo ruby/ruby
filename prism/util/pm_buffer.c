@@ -50,6 +50,7 @@ pm_buffer_length(const pm_buffer_t *buffer) {
 static inline bool
 pm_buffer_append_length(pm_buffer_t *buffer, size_t length) {
     size_t next_length = buffer->length + length;
+    const size_t original_capacity = buffer->capacity;
 
     if (next_length > buffer->capacity) {
         if (buffer->capacity == 0) {
@@ -60,7 +61,7 @@ pm_buffer_append_length(pm_buffer_t *buffer, size_t length) {
             buffer->capacity *= 2;
         }
 
-        buffer->value = xrealloc(buffer->value, buffer->capacity);
+        buffer->value = xrealloc_sized(buffer->value, buffer->capacity, original_capacity);
         if (buffer->value == NULL) return false;
     }
 
@@ -353,5 +354,5 @@ pm_buffer_insert(pm_buffer_t *buffer, size_t index, const char *value, size_t le
  */
 void
 pm_buffer_free(pm_buffer_t *buffer) {
-    xfree(buffer->value);
+    xfree_sized(buffer->value, buffer->capacity);
 }

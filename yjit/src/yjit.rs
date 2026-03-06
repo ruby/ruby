@@ -37,12 +37,17 @@ pub fn yjit_enabled_p() -> bool {
     unsafe { rb_yjit_enabled_p }
 }
 
+/// Register specialized codegen for builtin C method entries.
+/// Must be called at boot before ruby_init_prelude() since the prelude
+/// could redefine core methods (e.g. Kernel.prepend via bundler).
+#[no_mangle]
+pub extern "C" fn rb_yjit_init_builtin_cmes() {
+    yjit_reg_method_codegen_fns();
+}
+
 /// This function is called from C code
 #[no_mangle]
 pub extern "C" fn rb_yjit_init(yjit_enabled: bool) {
-    // Register the method codegen functions. This must be done at boot.
-    yjit_reg_method_codegen_fns();
-
     // If --yjit-disable, yjit_init() will not be called until RubyVM::YJIT.enable.
     if yjit_enabled {
         yjit_init();

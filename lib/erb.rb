@@ -833,6 +833,7 @@ class ERB
     compiler = make_compiler(trim_mode)
     set_eoutvar(compiler, eoutvar)
     @src, @encoding, @frozen_string = *compiler.compile(str)
+    @src.freeze
     @filename = nil
     @lineno = 0
     @_init = self.class.singleton_class

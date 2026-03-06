@@ -2583,6 +2583,7 @@ CODE
   def test_enable_target_thread
     events = []
     TracePoint.new(:line) do |tp|
+      next unless tp.path == __FILE__
       events << Thread.current
     end.enable(target_thread: Thread.current) do
       _a = 1
@@ -2596,6 +2597,7 @@ CODE
 
     events = []
     tp = TracePoint.new(:line) do |tp|
+      next unless tp.path == __FILE__
       events << Thread.current
     end
 

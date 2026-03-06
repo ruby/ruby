@@ -642,7 +642,7 @@ pub extern "C" fn rb_yjit_tracing_invalidate_all() {
                 if on_stack_iseqs.contains(&iseq) {
                     // This ISEQ is running, so we can't free blocks immediately
                     for block in blocks {
-                        delayed_deallocation(block);
+                        payload.delayed_deallocation(block);
                     }
                     payload.dead_blocks.shrink_to_fit();
                 } else {

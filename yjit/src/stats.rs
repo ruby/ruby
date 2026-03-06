@@ -402,6 +402,7 @@ make_counters! {
     invokesuper_megamorphic,
     invokesuper_no_cme,
     invokesuper_no_me,
+    invokesuper_bmethod_zsuper,
     invokesuper_not_iseq_or_cfunc,
     invokesuper_refinement,
     invokesuper_singleton_class,

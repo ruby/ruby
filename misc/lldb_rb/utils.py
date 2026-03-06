@@ -292,7 +292,7 @@ class RbInspector(LLDBInterface):
 
         # if val.GetType() != tRNode: does not work for unknown reason
 
-        if val.GetType().GetPointeeType().name != "NODE":
+        if val.GetType().GetPointeeType().GetCanonicalType().name != "RNode":
             return False
 
         rbNodeTypeMask = self.ruby_globals["RUBY_NODE_TYPEMASK"]

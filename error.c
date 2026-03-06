@@ -2758,6 +2758,68 @@ nometh_err_private_call_p(VALUE self)
     return rb_attr_get(self, id_private_call_p);
 }
 
+static const char *
+type_err_cname(VALUE val)
+{
+    if (NIL_P(val)) {
+        return "nil";
+    }
+    else if (val == Qtrue) {
+        return "true";
+    }
+    else if (val == Qfalse) {
+        return "false";
+    }
+    return NULL;
+}
+
+NORETURN(static void type_err_raise(VALUE val, const char *tname, const char *msg));
+static void
+type_err_raise(VALUE val, const char *tname, const char *msg)
+{
+    const char *cname = type_err_cname(val);
+    rb_encoding *enc = rb_utf8_encoding();
+    if (cname) {
+        rb_enc_raise(enc, rb_eTypeError, "%s %s into %s", msg, cname, tname);
+    }
+    rb_enc_raise(enc, rb_eTypeError, "%s %"PRIsVALUE" into %s", msg, rb_obj_class(val), tname);
+}
+
+NORETURN(void rb_no_implicit_conversion(VALUE val, const char *tname));
+void
+rb_no_implicit_conversion(VALUE val, const char *tname)
+{
+    type_err_raise(val, tname, "no implicit conversion of");
+}
+
+NORETURN(void rb_cant_convert(VALUE val, const char *tname));
+void
+rb_cant_convert(VALUE val, const char *tname)
+{
+    type_err_raise(val, tname, "can't convert");
+}
+
+NORETURN(void rb_cant_convert_invalid_return(VALUE val, const char *tname, const char *method_name, VALUE ret));
+void
+rb_cant_convert_invalid_return(VALUE val, const char *tname, const char *method_name, VALUE ret)
+{
+    const char *cname = type_err_cname(val);
+    rb_encoding *enc = rb_utf8_encoding();
+    if (cname) {
+        rb_enc_raise(
+            enc, rb_eTypeError, "can't convert %s into %s (%s#%s gives %s)",
+            cname, tname, cname, method_name, type_err_cname(ret));
+    }
+    VALUE klass = rb_obj_class(val);
+    const char *retname = type_err_cname(ret);
+    if (!retname) {
+        retname = rb_obj_classname(ret);
+    }
+    rb_enc_raise(
+        enc, rb_eTypeError, "can't convert %"PRIsVALUE" into %s (%"PRIsVALUE"#%s gives %s)",
+        klass, tname, klass, method_name, retname);
+}
+
 void
 rb_invalid_str(const char *str, const char *type)
 {

@@ -10,7 +10,8 @@ use std::slice;
 use crate::backend::current::ALLOC_REGS;
 use crate::invariants::{
     track_bop_assumption, track_cme_assumption, track_no_ep_escape_assumption, track_no_trace_point_assumption,
-    track_single_ractor_assumption, track_stable_constant_names_assumption, track_no_singleton_class_assumption
+    track_single_ractor_assumption, track_stable_constant_names_assumption, track_no_singleton_class_assumption,
+    track_root_box_assumption
 };
 use crate::gc::append_gc_offsets;
 use crate::payload::{get_or_create_iseq_payload, IseqCodePtrs, IseqVersion, IseqVersionRef, IseqStatus};
@@ -133,9 +134,9 @@ fn gen_iseq_entry_point(cb: &mut CodeBlock, iseq: IseqPtr, jit_exception: bool) 
     }
 
     // Compile ISEQ into High-level IR
-    let function = compile_iseq(iseq).inspect_err(|_| {
+    let function = crate::stats::with_time_stat(Counter::compile_hir_time_ns, || compile_iseq(iseq).inspect_err(|_| {
         incr_counter!(failed_iseq_count);
-    })?;
+    }))?;
 
     // Compile the High-level IR
     let IseqCodePtrs { start_ptr, .. } = gen_iseq(cb, iseq, Some(&function)).inspect_err(|err| {
@@ -247,11 +248,12 @@ fn gen_iseq_body(cb: &mut CodeBlock, iseq: IseqPtr, mut version: IseqVersionRef,
     // Convert ISEQ into optimized High-level IR if not given
     let function = match function {
         Some(function) => function,
-        None => &compile_iseq(iseq)?,
+        None => &crate::stats::with_time_stat(Counter::compile_hir_time_ns, || compile_iseq(iseq))?,
     };
 
     // Compile the High-level IR
-    let (iseq_code_ptrs, gc_offsets, iseq_calls) = gen_function(cb, iseq, version, function)?;
+    let (iseq_code_ptrs, gc_offsets, iseq_calls) =
+        crate::stats::with_time_stat(Counter::compile_lir_time_ns, || gen_function(cb, iseq, version, function))?;
 
     // Stub callee ISEQs for JIT-to-JIT calls
     for iseq_call in iseq_calls.iter() {
@@ -279,12 +281,16 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
 
     // Create all LIR basic blocks corresponding to HIR basic blocks
     for (rpo_idx, &block_id) in reverse_post_order.iter().enumerate() {
+        // Skip the entries superblock — it's an internal CFG artifact
+        if block_id == function.entries_block { continue; }
         let lir_block_id = asm.new_block(block_id, function.is_entry_block(block_id), rpo_idx);
         hir_to_lir[block_id.0] = Some(lir_block_id);
     }
 
     // Compile each basic block
     for (rpo_idx, &block_id) in reverse_post_order.iter().enumerate() {
+        // Skip the entries superblock — it's an internal CFG artifact
+        if block_id == function.entries_block { continue; }
         // Set the current block to the LIR block that corresponds to this
         // HIR block.
         let lir_block_id = hir_to_lir[block_id.0].unwrap();
@@ -311,6 +317,16 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
             }
         }
 
+        // In JIT entry blocks, compile LoadArg instructions before other instructions
+        // so that calling convention registers are reserved early, like Param.
+        if function.is_entry_block(block_id) {
+            for &insn_id in block.insns() {
+                if let Insn::LoadArg { idx, .. } = function.find(insn_id) {
+                    jit.opnds[insn_id.0] = Some(gen_param(&mut asm, idx as usize));
+                }
+            }
+        }
+
         // Compile all instructions
         for &insn_id in block.insns() {
             let insn = function.find(insn_id);
@@ -333,6 +349,8 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                     };
 
                     gen_if_false(&mut asm, val_opnd, branch_edge, fall_through_edge);
+                    assert!(asm.current_block().insns.last().unwrap().is_terminator());
+
                     asm.set_current_block(fall_through_target);
 
                     let label = jit.get_label(&mut asm, fall_through_target, block_id);
@@ -356,6 +374,8 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                     };
 
                     gen_if_true(&mut asm, val_opnd, branch_edge, fall_through_edge);
+                    assert!(asm.current_block().insns.last().unwrap().is_terminator());
+
                     asm.set_current_block(fall_through_target);
 
                     let label = jit.get_label(&mut asm, fall_through_target, block_id);
@@ -368,6 +388,8 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                         args: target.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
                     };
                     gen_jump(&mut asm, branch_edge);
+                    assert!(asm.current_block().insns.last().unwrap().is_terminator());
+
                 },
                 _ => {
                     if let Err(last_snapshot) = gen_insn(cb, &mut jit, &mut asm, function, insn_id, &insn) {
@@ -382,8 +404,8 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                 }
             }
         }
-        // Make sure the last patch point has enough space to insert a jump
-        asm.pad_patch_point();
+        // Blocks should always end with control flow
+        assert!(asm.current_block().insns.last().unwrap().is_terminator());
     }
 
     // Generate code if everything can be compiled
@@ -475,12 +497,14 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::StringIntern { val, state } => gen_intern(asm, opnd!(val), &function.frame_state(*state)),
         Insn::ToRegexp { opt, values, state } => gen_toregexp(jit, asm, *opt, opnds!(values), &function.frame_state(*state)),
         Insn::Param => unreachable!("block.insns should not have Insn::Param"),
+        Insn::LoadArg { .. } => return Ok(()), // compiled in the LoadArg pre-pass above
         Insn::Snapshot { .. } => return Ok(()), // we don't need to do anything for this instruction at the moment
-        &Insn::Send { cd, blockiseq, state, reason, .. } => gen_send(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
+        &Insn::Send { cd, blockiseq: None, state, reason, .. } => gen_send_without_block(jit, asm, cd, &function.frame_state(state), reason),
+        &Insn::Send { cd, blockiseq: Some(blockiseq), state, reason, .. } => gen_send(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::SendForward { cd, blockiseq, state, reason, .. } => gen_send_forward(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
-        &Insn::SendWithoutBlock { cd, state, reason, .. } => gen_send_without_block(jit, asm, cd, &function.frame_state(state), reason),
-        Insn::SendWithoutBlockDirect { cme, iseq, recv, args, kw_bits, state, .. } => gen_send_iseq_direct(cb, jit, asm, *cme, *iseq, opnd!(recv), opnds!(args), *kw_bits, &function.frame_state(*state), None),
+        Insn::SendDirect { cme, iseq, recv, args, kw_bits, blockiseq, state, .. } => gen_send_iseq_direct(cb, jit, asm, *cme, *iseq, opnd!(recv), opnds!(args), *kw_bits, &function.frame_state(*state), *blockiseq),
         &Insn::InvokeSuper { cd, blockiseq, state, reason, .. } => gen_invokesuper(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
+        &Insn::InvokeSuperForward { cd, blockiseq, state, reason, .. } => gen_invokesuperforward(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::InvokeBlock { cd, state, reason, .. } => gen_invokeblock(jit, asm, cd, &function.frame_state(state), reason),
         Insn::InvokeProc { recv, args, state, kw_splat } => gen_invokeproc(jit, asm, opnd!(recv), opnds!(args), *kw_splat, &function.frame_state(*state)),
         // Ensure we have enough room fit ec, self, and arguments
@@ -525,16 +549,14 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::UnboxFixnum { val } => gen_unbox_fixnum(asm, opnd!(val)),
         Insn::Test { val } => gen_test(asm, opnd!(val)),
         Insn::RefineType { val, .. } => opnd!(val),
+        Insn::HasType { val, expected } => gen_has_type(asm, opnd!(val), *expected),
         Insn::GuardType { val, guard_type, state } => gen_guard_type(jit, asm, opnd!(val), *guard_type, &function.frame_state(*state)),
         Insn::GuardTypeNot { val, guard_type, state } => gen_guard_type_not(jit, asm, opnd!(val), *guard_type, &function.frame_state(*state)),
         &Insn::GuardBitEquals { val, expected, reason, state } => gen_guard_bit_equals(jit, asm, opnd!(val), expected, reason, &function.frame_state(state)),
-        &Insn::GuardBlockParamProxy { level, state } => no_output!(gen_guard_block_param_proxy(jit, asm, level, &function.frame_state(state))),
-        Insn::GuardNotFrozen { recv, state } => gen_guard_not_frozen(jit, asm, opnd!(recv), &function.frame_state(*state)),
-        Insn::GuardNotShared { recv, state } => gen_guard_not_shared(jit, asm, opnd!(recv), &function.frame_state(*state)),
+        &Insn::GuardAnyBitSet { val, mask, reason, state, .. } => gen_guard_any_bit_set(jit, asm, opnd!(val), mask, reason, &function.frame_state(state)),
+        &Insn::GuardNoBitsSet { val, mask, reason, state, .. } => gen_guard_no_bits_set(jit, asm, opnd!(val), mask, reason, &function.frame_state(state)),
         &Insn::GuardLess { left, right, state } => gen_guard_less(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
-        &Insn::GuardGreaterEq { left, right, state } => gen_guard_greater_eq(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
-        &Insn::GuardSuperMethodEntry { lep, cme, state } => no_output!(gen_guard_super_method_entry(jit, asm, opnd!(lep), cme, &function.frame_state(state))),
-        Insn::GetBlockHandler { lep } => gen_get_block_handler(asm, opnd!(lep)),
+        &Insn::GuardGreaterEq { left, right, state, .. } => gen_guard_greater_eq(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
         Insn::PatchPoint { invariant, state } => no_output!(gen_patch_point(jit, asm, invariant, &function.frame_state(*state))),
         Insn::CCall { cfunc, recv, args, name, return_type: _, elidable: _ } => gen_ccall(asm, *cfunc, *name, opnd!(recv), opnds!(args)),
         // Give up CCallWithFrame for 7+ args since asm.ccall() supports at most 6 args (recv + args).
@@ -549,8 +571,10 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::GetIvar { self_val, id, ic, state: _ } => gen_getivar(jit, asm, opnd!(self_val), *id, *ic),
         Insn::SetGlobal { id, val, state } => no_output!(gen_setglobal(jit, asm, *id, opnd!(val), &function.frame_state(*state))),
         Insn::GetGlobal { id, state } => gen_getglobal(jit, asm, *id, &function.frame_state(*state)),
-        &Insn::GetLocal { ep_offset, level, use_sp, .. } => gen_getlocal(asm, ep_offset, level, use_sp),
+        &Insn::IsBlockParamModified { ep } => gen_is_block_param_modified(asm, opnd!(ep)),
+        &Insn::GetBlockParam { ep_offset, level, state } => gen_getblockparam(jit, asm, ep_offset, level, &function.frame_state(state)),
         &Insn::SetLocal { val, ep_offset, level } => no_output!(gen_setlocal(asm, opnd!(val), function.type_of(val), ep_offset, level)),
+        Insn::GetConstant { klass, id, allow_nil, state } => gen_getconstant(jit, asm, opnd!(klass), *id, opnd!(allow_nil), &function.frame_state(*state)),
         Insn::GetConstantPath { ic, state } => gen_get_constant_path(jit, asm, *ic, &function.frame_state(*state)),
         Insn::GetClassVar { id, ic, state } => gen_getclassvar(jit, asm, *id, *ic, &function.frame_state(*state)),
         Insn::SetClassVar { id, val, ic, state } => no_output!(gen_setclassvar(jit, asm, *id, opnd!(val), *ic, &function.frame_state(*state))),
@@ -574,10 +598,10 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::ToArray { val, state } => { gen_to_array(jit, asm, opnd!(val), &function.frame_state(state)) },
         &Insn::DefinedIvar { self_val, id, pushval, .. } => { gen_defined_ivar(asm, opnd!(self_val), id, pushval) },
         &Insn::ArrayExtend { left, right, state } => { no_output!(gen_array_extend(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state))) },
-        &Insn::GuardShape { val, shape, state } => gen_guard_shape(jit, asm, opnd!(val), shape, &function.frame_state(state)),
         Insn::LoadPC => gen_load_pc(asm),
         Insn::LoadEC => gen_load_ec(),
-        Insn::GetLEP => gen_get_lep(jit, asm),
+        Insn::LoadSP => gen_load_sp(),
+        &Insn::GetEP { level } => gen_get_ep(asm, level),
         Insn::LoadSelf => gen_load_self(),
         &Insn::LoadField { recv, id, offset, return_type } => gen_load_field(asm, opnd!(recv), id, offset, return_type),
         &Insn::StoreField { recv, id, offset, val } => no_output!(gen_store_field(asm, opnd!(recv), id, offset, opnd!(val), function.type_of(val))),
@@ -592,7 +616,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         | &Insn::Throw { state, .. }
         => return Err(state),
         &Insn::IfFalse { .. } | Insn::IfTrue { .. }
-        | &Insn::Jump { .. } => unreachable!(),
+        | &Insn::Jump { .. } | Insn::Entries { .. } => unreachable!(),
     };
 
     assert!(insn.has_output(), "Cannot write LIR output of HIR instruction with no output: {insn}");
@@ -606,18 +630,6 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
 /// Gets the EP of the ISeq of the containing method, or "local level".
 /// Equivalent of GET_LEP() macro.
 fn gen_get_lep(jit: &JITState, asm: &mut Assembler) -> Opnd {
-    // Equivalent of get_lvar_level() in compile.c
-    fn get_lvar_level(mut iseq: IseqPtr) -> u32 {
-        let local_iseq = unsafe { rb_get_iseq_body_local_iseq(iseq) };
-        let mut level = 0;
-        while iseq != local_iseq {
-            iseq = unsafe { rb_get_iseq_body_parent_iseq(iseq) };
-            level += 1;
-        }
-
-        level
-    }
-
     let level = get_lvar_level(jit.iseq);
     gen_get_ep(asm, level)
 }
@@ -665,15 +677,13 @@ fn gen_defined(jit: &JITState, asm: &mut Assembler, op_type: usize, obj: VALUE, 
             //
             // Similar to gen_is_block_given
             let local_iseq = unsafe { rb_get_iseq_body_local_iseq(jit.iseq) };
-            if unsafe { rb_get_iseq_body_type(local_iseq) } == ISEQ_TYPE_METHOD {
-                let lep = gen_get_lep(jit, asm);
-                let block_handler = asm.load(Opnd::mem(64, lep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL));
-                let pushval = asm.load(pushval.into());
-                asm.cmp(block_handler, VM_BLOCK_HANDLER_NONE.into());
-                asm.csel_e(Qnil.into(), pushval)
-            } else {
-                Qnil.into()
-            }
+            assert_eq!(unsafe { rb_get_iseq_body_type(local_iseq) }, ISEQ_TYPE_METHOD,
+                       "defined?(yield) in non-method iseq should be handled by HIR construction");
+            let lep = gen_get_lep(jit, asm);
+            let block_handler = asm.load(Opnd::mem(64, lep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL));
+            let pushval = asm.load(pushval.into());
+            asm.cmp(block_handler, VM_BLOCK_HANDLER_NONE.into());
+            asm.csel_e(Qnil.into(), pushval)
         }
         _ => {
             // Save the PC and SP because the callee may allocate or call #respond_to?
@@ -700,26 +710,6 @@ fn gen_unbox_fixnum(asm: &mut Assembler, val: Opnd) -> Opnd {
     asm.rshift(val, Opnd::UImm(1))
 }
 
-/// Get a local variable from a higher scope or the heap. `local_ep_offset` is in number of VALUEs.
-/// We generate this instruction with level=0 only when the local variable is on the heap, so we
-/// can't optimize the level=0 case using the SP register.
-fn gen_getlocal(asm: &mut Assembler, local_ep_offset: u32, level: u32, use_sp: bool) -> lir::Opnd {
-    let local_ep_offset = i32::try_from(local_ep_offset).unwrap_or_else(|_| panic!("Could not convert local_ep_offset {local_ep_offset} to i32"));
-    if level > 0 {
-        gen_incr_counter(asm, Counter::vm_read_from_parent_iseq_local_count);
-    }
-    let local = if use_sp {
-        assert_eq!(level, 0, "use_sp optimization should be used only for level=0 locals");
-        let offset = -(SIZEOF_VALUE_I32 * (local_ep_offset + 1));
-        Opnd::mem(64, SP, offset)
-    } else {
-        let ep = gen_get_ep(asm, level);
-        let offset = -(SIZEOF_VALUE_I32 * local_ep_offset);
-        Opnd::mem(64, ep, offset)
-    };
-    asm.load(local)
-}
-
 /// Set a local variable from a higher scope or the heap. `local_ep_offset` is in number of VALUEs.
 /// We generate this instruction with level=0 only when the local variable is on the heap, so we
 /// can't optimize the level=0 case using the SP register.
@@ -743,43 +733,43 @@ fn gen_setlocal(asm: &mut Assembler, val: Opnd, val_type: Type, local_ep_offset:
     }
 }
 
-fn gen_guard_block_param_proxy(jit: &JITState, asm: &mut Assembler, level: u32, state: &FrameState) {
-    // Bail out if the `&block` local variable has been modified
-    let ep = gen_get_ep(asm, level);
-    let flags = Opnd::mem(64, ep, SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32));
+/// Returns 1 (as CBool) when VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM is set; returns 0 otherwise.
+fn gen_is_block_param_modified(asm: &mut Assembler, ep: Opnd) -> Opnd {
+    let flags = asm.load(Opnd::mem(VALUE_BITS, ep, SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32)));
     asm.test(flags, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into());
-    asm.jnz(side_exit(jit, state, SideExitReason::BlockParamProxyModified));
-
-    // This handles two cases which are nearly identical
-    // Block handler is a tagged pointer. Look at the tag.
-    //   VM_BH_ISEQ_BLOCK_P(): block_handler & 0x03 == 0x01
-    //   VM_BH_IFUNC_P():      block_handler & 0x03 == 0x03
-    // So to check for either of those cases we can use: val & 0x1 == 0x1
-    const _: () = assert!(RUBY_SYMBOL_FLAG & 1 == 0, "guard below rejects symbol block handlers");
-
-    // Bail ouf if the block handler is neither ISEQ nor ifunc
-    let block_handler = asm.load(Opnd::mem(64, ep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL));
-    asm.test(block_handler, 0x1.into());
-    asm.jz(side_exit(jit, state, SideExitReason::BlockParamProxyNotIseqOrIfunc));
+    asm.csel_nz(Opnd::Imm(1), Opnd::Imm(0))
 }
 
-fn gen_guard_not_frozen(jit: &JITState, asm: &mut Assembler, recv: Opnd, state: &FrameState) -> Opnd {
-    let recv = asm.load(recv);
-    // It's a heap object, so check the frozen flag
-    let flags = asm.load(Opnd::mem(64, recv, RUBY_OFFSET_RBASIC_FLAGS));
-    asm.test(flags, (RUBY_FL_FREEZE as u64).into());
-    // Side-exit if frozen
-    asm.jnz(side_exit(jit, state, GuardNotFrozen));
-    recv
-}
+/// Get the block parameter as a Proc, write it to the environment,
+/// and mark the flag as modified.
+fn gen_getblockparam(jit: &mut JITState, asm: &mut Assembler, ep_offset: u32, level: u32, state: &FrameState) -> Opnd {
+    gen_prepare_leaf_call_with_gc(asm, state);
+    // Bail out if write barrier is required.
+    let ep = gen_get_ep(asm, level);
+    let flags = Opnd::mem(VALUE_BITS, ep, SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32));
+    asm.test(flags, VM_ENV_FLAG_WB_REQUIRED.into());
+    asm.jnz(side_exit(jit, state, SideExitReason::BlockParamWbRequired));
 
-fn gen_guard_not_shared(jit: &JITState, asm: &mut Assembler, recv: Opnd, state: &FrameState) -> Opnd {
-    let recv = asm.load(recv);
-    // It's a heap object, so check the shared flag
-    let flags = asm.load(Opnd::mem(VALUE_BITS, recv, RUBY_OFFSET_RBASIC_FLAGS));
-    asm.test(flags, (RUBY_ELTS_SHARED as u64).into());
-    asm.jnz(side_exit(jit, state, SideExitReason::GuardNotShared));
-    recv
+    // Convert block handler to Proc.
+    let block_handler = asm.load(Opnd::mem(VALUE_BITS, ep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL));
+    let proc = asm_ccall!(asm, rb_vm_bh_to_procval, EC, block_handler);
+
+    // Write Proc to EP and mark modified.
+    let ep = gen_get_ep(asm, level);
+    let local_ep_offset = c_int::try_from(ep_offset).unwrap_or_else(|_| {
+        panic!("Could not convert local_ep_offset {ep_offset} to i32")
+    });
+    let offset = -(SIZEOF_VALUE_I32 * local_ep_offset);
+    asm.mov(Opnd::mem(VALUE_BITS, ep, offset), proc);
+
+    let flags = Opnd::mem(VALUE_BITS, ep, SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32));
+    let flags_val = asm.load(flags);
+    let modified = asm.or(flags_val, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into());
+    asm.store(flags, modified);
+
+    // Read the Proc from EP.
+    let ep = gen_get_ep(asm, level);
+    asm.load(Opnd::mem(VALUE_BITS, ep, offset))
 }
 
 fn gen_guard_less(jit: &JITState, asm: &mut Assembler, left: Opnd, right: Opnd, state: &FrameState) -> Opnd {
@@ -794,28 +784,6 @@ fn gen_guard_greater_eq(jit: &JITState, asm: &mut Assembler, left: Opnd, right: 
     left
 }
 
-/// Guard that the method entry at ep[VM_ENV_DATA_INDEX_ME_CREF] matches the expected CME.
-/// This ensures we're calling super from the expected method context.
-fn gen_guard_super_method_entry(
-    jit: &JITState,
-    asm: &mut Assembler,
-    lep: Opnd,
-    cme: *const rb_callable_method_entry_t,
-    state: &FrameState,
-) {
-    asm_comment!(asm, "guard super method entry");
-    let ep_me_opnd = Opnd::mem(64, lep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_ME_CREF);
-    let ep_me = asm.load(ep_me_opnd);
-    asm.cmp(ep_me, Opnd::UImm(cme as u64));
-    asm.jne(side_exit(jit, state, SideExitReason::GuardSuperMethodEntry));
-}
-
-/// Get the block handler from ep[VM_ENV_DATA_INDEX_SPECVAL] at the local EP (LEP).
-fn gen_get_block_handler(asm: &mut Assembler, lep: Opnd) -> Opnd {
-    asm_comment!(asm, "get block handler from LEP");
-    asm.load(Opnd::mem(64, lep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL))
-}
-
 fn gen_get_constant_path(jit: &JITState, asm: &mut Assembler, ic: *const iseq_inline_constant_cache, state: &FrameState) -> Opnd {
     unsafe extern "C" {
         fn rb_vm_opt_getconstant_path(ec: EcPtr, cfp: CfpPtr, ic: *const iseq_inline_constant_cache) -> VALUE;
@@ -825,6 +793,17 @@ fn gen_get_constant_path(jit: &JITState, asm: &mut Assembler, ic: *const iseq_in
     gen_prepare_non_leaf_call(jit, asm, state);
 
     asm_ccall!(asm, rb_vm_opt_getconstant_path, EC, CFP, Opnd::const_ptr(ic))
+}
+
+fn gen_getconstant(jit: &mut JITState, asm: &mut Assembler, klass: Opnd, id: ID, allow_nil: Opnd, state: &FrameState) -> Opnd {
+    unsafe extern "C" {
+        fn rb_vm_get_ev_const(ec: EcPtr, klass: VALUE, id: ID, allow_nil: VALUE) -> VALUE;
+    }
+
+    // Constant lookup can raise and run arbitrary Ruby code via const_missing.
+    gen_prepare_non_leaf_call(jit, asm, state);
+
+    asm_ccall!(asm, rb_vm_get_ev_const, EC, klass, id.0.into(), allow_nil)
 }
 
 fn gen_fixnum_bit_check(asm: &mut Assembler, val: Opnd, index: u8) -> Opnd {
@@ -895,6 +874,9 @@ pub fn split_patch_point(asm: &mut Assembler, target: &Target, invariant: Invari
             }
             Invariant::NoSingletonClass { klass } => {
                 track_no_singleton_class_assumption(klass, code_ptr, side_exit_ptr, version);
+            }
+            Invariant::RootBoxOnly => {
+                track_root_box_assumption(code_ptr, side_exit_ptr, version);
             }
         }
     });
@@ -981,6 +963,15 @@ fn gen_ccall(asm: &mut Assembler, cfunc: *const u8, name: ID, recv: Opnd, args: 
     asm.ccall(cfunc, cfunc_args)
 }
 
+// Change cfp->block_code in the current frame. See vm_caller_setup_arg_block().
+// VM_CFP_TO_CAPTURED_BLOCK then turns &cfp->self into a block handler.
+// rb_captured_block->code.iseq aliases with cfp->block_code.
+fn gen_block_handler_specval(asm: &mut Assembler, blockiseq: IseqPtr) -> lir::Opnd {
+    asm.store(Opnd::mem(VALUE_BITS, CFP, RUBY_OFFSET_CFP_BLOCK_CODE), VALUE::from(blockiseq).into());
+    let cfp_self_addr = asm.lea(Opnd::mem(VALUE_BITS, CFP, RUBY_OFFSET_CFP_SELF));
+    asm.or(cfp_self_addr, Opnd::Imm(1))
+}
+
 /// Generate code for a variadic C function call
 /// func(int argc, VALUE *argv, VALUE recv)
 fn gen_ccall_variadic(
@@ -1010,13 +1001,8 @@ fn gen_ccall_variadic(
     gen_spill_stack(jit, asm, state);
     gen_spill_locals(jit, asm, state);
 
-    let block_handler_specval = if let Some(block_iseq) = blockiseq {
-        // Change cfp->block_code in the current frame. See vm_caller_setup_arg_block().
-        // VM_CFP_TO_CAPTURED_BLOCK then turns &cfp->self into a block handler.
-        // rb_captured_block->code.iseq aliases with cfp->block_code.
-        asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_BLOCK_CODE), VALUE::from(block_iseq).into());
-        let cfp_self_addr = asm.lea(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF));
-        asm.or(cfp_self_addr, Opnd::Imm(1))
+    let block_handler_specval = if let Some(blockiseq) = blockiseq {
+        gen_block_handler_specval(asm, blockiseq)
     } else {
         VM_BLOCK_HANDLER_NONE.into()
     };
@@ -1207,22 +1193,16 @@ fn gen_array_extend(jit: &mut JITState, asm: &mut Assembler, left: Opnd, right: 
     asm_ccall!(asm, rb_ary_concat, left, right);
 }
 
-fn gen_guard_shape(jit: &mut JITState, asm: &mut Assembler, val: Opnd, shape: ShapeId, state: &FrameState) -> Opnd {
-    gen_incr_counter(asm, Counter::guard_shape_count);
-    let shape_id_offset = unsafe { rb_shape_id_offset() };
-    let val = asm.load(val);
-    let shape_opnd = Opnd::mem(SHAPE_ID_NUM_BITS as u8, val, shape_id_offset);
-    asm.cmp(shape_opnd, Opnd::UImm(shape.0 as u64));
-    asm.jne(side_exit(jit, state, SideExitReason::GuardShape(shape)));
-    val
-}
-
 fn gen_load_pc(asm: &mut Assembler) -> Opnd {
     asm.load(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC))
 }
 
 fn gen_load_ec() -> Opnd {
     EC
+}
+
+fn gen_load_sp() -> Opnd {
+    SP
 }
 
 fn gen_load_self() -> Opnd {
@@ -1403,7 +1383,7 @@ fn gen_send_iseq_direct(
     args: Vec<Opnd>,
     kw_bits: u32,
     state: &FrameState,
-    block_handler: Option<Opnd>,
+    blockiseq: Option<IseqPtr>,
 ) -> lir::Opnd {
     gen_incr_counter(asm, Counter::iseq_optimized_send_count);
 
@@ -1418,6 +1398,12 @@ fn gen_send_iseq_direct(
 
     gen_spill_locals(jit, asm, state);
     gen_spill_stack(jit, asm, state);
+
+    // This mirrors vm_caller_setup_arg_block() in for the `blockiseq != NULL` case.
+    // The HIR specialization guards ensure we will only reach here for literal blocks,
+    // not &block forwarding, &:foo, etc. Thise are rejected in `type_specialize` by
+    // `unspecializable_call_type`.
+    let block_handler = blockiseq.map(|b| gen_block_handler_specval(asm, b));
 
     let (frame_type, specval) = if VM_METHOD_TYPE_BMETHOD == unsafe { get_cme_def_type(cme) } {
         // Extract EP from the Proc instance
@@ -1450,7 +1436,7 @@ fn gen_send_iseq_direct(
     // which optional keyword arguments need their defaults evaluated.
     // We write this to the local table slot at bits_start so that:
     // 1. The interpreter can read it via checkkeyword if we side-exit
-    // 2. The JIT entry can read it via GetLocal
+    // 2. The JIT entry can read it from the callee frame slot
     if unsafe { rb_get_iseq_flags_has_kw(iseq) } {
         let keyword = unsafe { rb_get_iseq_body_param_keyword(iseq) };
         let bits_start = unsafe { (*keyword).bits_start } as usize;
@@ -1470,11 +1456,25 @@ fn gen_send_iseq_direct(
     asm.mov(CFP, new_cfp);
     asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP as i32), CFP);
 
-    // Set up arguments
-    let mut c_args = vec![recv];
-    c_args.extend(&args);
-
     let params = unsafe { iseq.params() };
+
+    // For &block, the JIT entrypoint expects the block_handler as an argument
+    // This HIR param is not actually used, things read from specval from the VM frame today.
+    // TODO: Remove unused param from HIR, or pass specval through c_args.
+    // See https://github.com/ruby/ruby/pull/15911#discussion_r2710544982
+    let needs_block = params.flags.has_block() != 0;
+
+    // Set up arguments
+    let mut c_args = Vec::with_capacity({
+        // This is a heuristic to avoid re-allocation, not necessary for correctness
+        1 /* recv */ + args.len() + if needs_block { 1 } else { 0 }
+    });
+    c_args.push(recv);
+    c_args.extend(&args);
+    if needs_block {
+        c_args.push(specval);
+    }
+
     let num_optionals_passed = if params.flags.has_opt() != 0 {
         // See vm_call_iseq_setup_normal_opt_start in vm_inshelper.c
         let lead_num = params.lead_num as u32;
@@ -1592,6 +1592,29 @@ fn gen_invokesuper(
     asm_ccall!(
         asm,
         rb_vm_invokesuper,
+        EC, CFP, Opnd::const_ptr(cd), VALUE::from(blockiseq).into()
+    )
+}
+
+/// Compile a dynamic dispatch for `super` with `...`
+fn gen_invokesuperforward(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    cd: *const rb_call_data,
+    blockiseq: IseqPtr,
+    state: &FrameState,
+    reason: SendFallbackReason,
+) -> lir::Opnd {
+    gen_incr_send_fallback_counter(asm, reason);
+
+    gen_prepare_non_leaf_call(jit, asm, state);
+    asm_comment!(asm, "call super with dynamic dispatch (forwarding)");
+    unsafe extern "C" {
+        fn rb_vm_invokesuperforward(ec: EcPtr, cfp: CfpPtr, cd: VALUE, blockiseq: IseqPtr) -> VALUE;
+    }
+    asm_ccall!(
+        asm,
+        rb_vm_invokesuperforward,
         EC, CFP, Opnd::const_ptr(cd), VALUE::from(blockiseq).into()
     )
 }
@@ -2115,6 +2138,69 @@ fn gen_test(asm: &mut Assembler, val: lir::Opnd) -> lir::Opnd {
     asm.csel_e(0.into(), 1.into())
 }
 
+fn gen_has_type(asm: &mut Assembler, val: lir::Opnd, ty: Type) -> lir::Opnd {
+    if ty.is_subtype(types::Fixnum) {
+        asm.test(val, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
+        asm.csel_nz(Opnd::Imm(1), Opnd::Imm(0))
+    } else if ty.is_subtype(types::Flonum) {
+        // Flonum: (val & RUBY_FLONUM_MASK) == RUBY_FLONUM_FLAG
+        let masked = asm.and(val, Opnd::UImm(RUBY_FLONUM_MASK as u64));
+        asm.cmp(masked, Opnd::UImm(RUBY_FLONUM_FLAG as u64));
+        asm.csel_e(Opnd::Imm(1), Opnd::Imm(0))
+    } else if ty.is_subtype(types::StaticSymbol) {
+        // Static symbols have (val & 0xff) == RUBY_SYMBOL_FLAG
+        // Use 8-bit comparison like YJIT does. GuardType should not be used
+        // for a known VALUE, which with_num_bits() does not support.
+        asm.cmp(val.with_num_bits(8), Opnd::UImm(RUBY_SYMBOL_FLAG as u64));
+        asm.csel_e(Opnd::Imm(1), Opnd::Imm(0))
+    } else if ty.is_subtype(types::NilClass) {
+        asm.cmp(val, Qnil.into());
+        asm.csel_e(Opnd::Imm(1), Opnd::Imm(0))
+    } else if ty.is_subtype(types::TrueClass) {
+        asm.cmp(val, Qtrue.into());
+        asm.csel_e(Opnd::Imm(1), Opnd::Imm(0))
+    } else if ty.is_subtype(types::FalseClass) {
+        asm.cmp(val, Qfalse.into());
+        asm.csel_e(Opnd::Imm(1), Opnd::Imm(0))
+    } else if ty.is_immediate() {
+        // All immediate types' guard should have been handled above
+        panic!("unexpected immediate guard type: {ty}");
+    } else if let Some(expected_class) = ty.runtime_exact_ruby_class() {
+        // If val isn't in a register, load it to use it as the base of Opnd::mem later.
+        // TODO: Max thinks codegen should not care about the shapes of the operands except to create them. (Shopify/ruby#685)
+        let val = match val {
+            Opnd::Reg(_) | Opnd::VReg { .. } => val,
+            _ => asm.load(val),
+        };
+
+        let ret_label = asm.new_label("true");
+        let false_label = asm.new_label("false");
+
+        // Check if it's a special constant
+        asm.test(val, (RUBY_IMMEDIATE_MASK as u64).into());
+        asm.jnz(false_label.clone());
+
+        // Check if it's false
+        asm.cmp(val, Qfalse.into());
+        asm.je(false_label.clone());
+
+        // Load the class from the object's klass field
+        let klass = asm.load(Opnd::mem(64, val, RUBY_OFFSET_RBASIC_KLASS));
+        asm.cmp(klass, Opnd::Value(expected_class));
+        asm.jmp(ret_label.clone());
+
+        // If we get here then the value was false, unset the Z flag
+        // so that csel_e will select false instead of true
+        asm.write_label(false_label);
+        asm.test(Opnd::UImm(1), Opnd::UImm(1));
+
+        asm.write_label(ret_label);
+        asm.csel_e(Opnd::UImm(1), Opnd::Imm(0))
+    } else {
+        unimplemented!("unsupported type: {ty}");
+    }
+}
+
 /// Compile a type check with a side exit
 fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard_type: Type, state: &FrameState) -> lir::Opnd {
     gen_incr_counter(asm, Counter::guard_type_count);
@@ -2188,6 +2274,26 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
         let tag   = asm.and(flags, Opnd::UImm(RUBY_T_MASK as u64));
         asm.cmp(tag, Opnd::UImm(RUBY_T_STRING as u64));
         asm.jne(side);
+    } else if guard_type.is_subtype(types::Array) {
+        let side = side_exit(jit, state, GuardType(guard_type));
+
+        // Check special constant
+        asm.test(val, Opnd::UImm(RUBY_IMMEDIATE_MASK as u64));
+        asm.jnz(side.clone());
+
+        // Check false
+        asm.cmp(val, Qfalse.into());
+        asm.je(side.clone());
+
+        let val = match val {
+            Opnd::Reg(_) | Opnd::VReg { .. } => val,
+            _ => asm.load(val),
+        };
+
+        let flags = asm.load(Opnd::mem(VALUE_BITS, val, RUBY_OFFSET_RBASIC_FLAGS));
+        let tag   = asm.and(flags, Opnd::UImm(RUBY_T_MASK as u64));
+        asm.cmp(tag, Opnd::UImm(RUBY_T_ARRAY as u64));
+        asm.jne(side);
     } else if guard_type.bit_equal(types::HeapBasicObject) {
         let side_exit = side_exit(jit, state, GuardType(guard_type));
         asm.cmp(val, Opnd::Value(Qfalse));
@@ -2234,6 +2340,9 @@ fn gen_guard_type_not(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, g
 
 /// Compile an identity check with a side exit
 fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, expected: crate::hir::Const, reason: SideExitReason, state: &FrameState) -> lir::Opnd {
+    if matches!(reason, SideExitReason::GuardShape(_) ) {
+        gen_incr_counter(asm, Counter::guard_shape_count);
+    }
     let expected_opnd: Opnd = match expected {
         crate::hir::Const::Value(v) => { Opnd::Value(v) }
         crate::hir::Const::CInt64(v) => { v.into() }
@@ -2241,6 +2350,32 @@ fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd,
         _ => panic!("gen_guard_bit_equals: unexpected hir::Const {expected:?}"),
     };
     asm.cmp(val, expected_opnd);
+    asm.jnz(side_exit(jit, state, reason));
+    val
+}
+
+fn mask_to_opnd(mask: crate::hir::Const) -> Option<Opnd> {
+    match mask {
+        crate::hir::Const::CUInt8(v) => Some(Opnd::UImm(v as u64)),
+        crate::hir::Const::CUInt16(v) => Some(Opnd::UImm(v as u64)),
+        crate::hir::Const::CUInt32(v) => Some(Opnd::UImm(v as u64)),
+        crate::hir::Const::CUInt64(v) => Some(Opnd::UImm(v)),
+        _ => None
+    }
+}
+
+/// Compile a bitmask check with a side exit if none of the masked bits are not set
+fn gen_guard_any_bit_set(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, mask: crate::hir::Const, reason: SideExitReason, state: &FrameState) -> lir::Opnd {
+    let mask_opnd = mask_to_opnd(mask).unwrap_or_else(|| panic!("gen_guard_any_bit_set: unexpected hir::Const {mask:?}"));
+    asm.test(val, mask_opnd);
+    asm.jz(side_exit(jit, state, reason));
+    val
+}
+
+/// Compile a bitmask check with a side exit if any of the masked bits are set
+fn gen_guard_no_bits_set(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, mask: crate::hir::Const, reason: SideExitReason, state: &FrameState) -> lir::Opnd {
+    let mask_opnd = mask_to_opnd(mask).unwrap_or_else(|| panic!("gen_guard_no_bits_set: unexpected hir::Const {mask:?}"));
+    asm.test(val, mask_opnd);
     asm.jnz(side_exit(jit, state, reason));
     val
 }
@@ -2485,7 +2620,8 @@ fn compile_iseq(iseq: IseqPtr) -> Result<Function, CompileError> {
         return Err(CompileError::IseqStackTooLarge);
     }
 
-    let mut function = match iseq_to_hir(iseq) {
+    let hir = crate::stats::with_time_stat(Counter::compile_hir_build_time_ns, || iseq_to_hir(iseq));
+    let mut function = match hir {
         Ok(function) => function,
         Err(err) => {
             debug!("ZJIT: iseq_to_hir: {err:?}: {}", iseq_get_location(iseq, 0));
@@ -2645,7 +2781,7 @@ fn function_stub_hit_body(cb: &mut CodeBlock, iseq_call: &IseqCallRef) -> Result
     Ok(jit_entry_ptr)
 }
 
-/// Compile a stub for an ISEQ called by SendWithoutBlockDirect
+/// Compile a stub for an ISEQ called by SendDirect
 fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodePtr, CompileError> {
     let (mut asm, scratch_reg) = Assembler::new_with_scratch_reg();
     asm.new_block_without_id();
@@ -2654,6 +2790,7 @@ fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodeP
     // Call function_stub_hit using the shared trampoline. See `gen_function_stub_hit_trampoline`.
     // Use load_into instead of mov, which is split on arm64, to avoid clobbering ALLOC_REGS.
     asm.load_into(scratch_reg, Opnd::const_ptr(Rc::into_raw(iseq_call)));
+    asm.cpush(scratch_reg);
     asm.jmp(ZJITState::get_function_stub_hit_trampoline().into());
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {
@@ -2668,6 +2805,8 @@ pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, C
     let (mut asm, scratch_reg) = Assembler::new_with_scratch_reg();
     asm.new_block_without_id();
     asm_comment!(asm, "function_stub_hit trampoline");
+
+    asm.cpop_into(scratch_reg);
 
     // Maintain alignment for x86_64, and set up a frame for arm64 properly
     asm.frame_setup(&[]);
@@ -2689,8 +2828,15 @@ pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, C
         asm.cpush(Opnd::Reg(ALLOC_REGS[0])); // maintain alignment for x86_64
     }
 
+    // We can't directly pass the scratch register in to the ccall because
+    // we're going to have parallel move automatically handle coping registers
+    // in to the C calling convention and the parallel move algorithm needs
+    // a scratch register to break any cycles.  If we use the scratch register
+    // as a C call parameter, then parallel move wouldn't be able to break
+    // cycles without clobbering something
+    asm.mov(C_ARG_OPNDS[0], scratch_reg);
     // Compile the stubbed ISEQ
-    let jump_addr = asm_ccall!(asm, function_stub_hit, scratch_reg, CFP, SP);
+    let jump_addr = asm_ccall!(asm, function_stub_hit, C_ARG_OPNDS[0], CFP, SP);
     asm.mov(scratch_reg, jump_addr);
 
     asm_comment!(asm, "restore argument registers");
@@ -2857,6 +3003,7 @@ fn gen_string_append_codepoint(jit: &mut JITState, asm: &mut Assembler, string: 
 /// Generate a JIT entry that just increments exit_compilation_failure and exits
 fn gen_compile_error_counter(cb: &mut CodeBlock, compile_error: &CompileError) -> Result<CodePtr, CompileError> {
     let mut asm = Assembler::new();
+    asm.new_block_without_id();
     gen_incr_counter(&mut asm, exit_compile_error);
     gen_incr_counter(&mut asm, exit_counter_for_compile_error(compile_error));
     asm.cret(Qundef.into());
@@ -2958,35 +3105,5 @@ impl IseqCall {
 }
 
 #[cfg(test)]
-mod tests {
-    use crate::codegen::MAX_ISEQ_VERSIONS;
-    use crate::cruby::test_utils::*;
-    use crate::payload::*;
-
-    #[test]
-    fn test_max_iseq_versions() {
-        eval(&format!("
-            TEST = -1
-            def test = TEST
-
-            # compile and invalidate MAX+1 times
-            i = 0
-            while i < {MAX_ISEQ_VERSIONS} + 1
-              test; test # compile a version
-
-              Object.send(:remove_const, :TEST)
-              TEST = i
-
-              i += 1
-            end
-        "));
-
-        // It should not exceed MAX_ISEQ_VERSIONS
-        let iseq = get_method_iseq("self", "test");
-        let payload = get_or_create_iseq_payload(iseq);
-        assert_eq!(payload.versions.len(), MAX_ISEQ_VERSIONS);
-
-        // The last call should not discard the JIT code
-        assert!(matches!(unsafe { payload.versions.last().unwrap().as_ref() }.status, IseqStatus::Compiled(_)));
-    }
-}
+#[path = "codegen_tests.rs"]
+mod tests;

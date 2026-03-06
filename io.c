@@ -8079,7 +8079,7 @@ popen_finish(VALUE port, VALUE klass)
             rb_protect(rb_yield, Qnil, NULL);
             rb_io_flush(rb_ractor_stdout());
             rb_io_flush(rb_ractor_stderr());
-            _exit(0);
+            _exit(EXIT_SUCCESS);
         }
         return Qnil;
     }
@@ -14954,9 +14954,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *     ["ARGV", ["-"]]
  *     ["ARGF.read", "Open the pod bay doors, Hal.\n"]
  *
- * When no character <tt>'-'</tt> is given, stream <tt>$stdin</tt> is ignored
- * (exception:
- * see {Specifying $stdin in ARGV}[rdoc-ref:ARGF@Specifying+-24stdin+in+ARGV]):
+ * When no character <tt>'-'</tt> is given, stream <tt>$stdin</tt> is ignored.
  *
  * - Command and output:
  *
@@ -15071,7 +15069,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  Like a File stream, an \IO stream has:
  *
  *  - A read/write mode, which may be read-only, write-only, or read/write;
- *    see {Read/Write Mode}[rdoc-ref:File@Read-2FWrite+Mode].
+ *    see {Read/Write Mode}[rdoc-ref:File@ReadWrite+Mode].
  *  - A data mode, which may be text-only or binary;
  *    see {Data Mode}[rdoc-ref:File@Data+Mode].
  *  - Internal and external encodings;
@@ -15469,8 +15467,8 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  *  First, what's elsewhere. Class \IO:
  *
- *  - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
- *  - Includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],
+ *  - Inherits from {class Object}[rdoc-ref:Object@Whats+Here].
+ *  - Includes {module Enumerable}[rdoc-ref:Enumerable@Whats+Here],
  *    which provides dozens of additional methods.
  *
  *  Here, class \IO provides methods that are useful for:

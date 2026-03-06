@@ -973,6 +973,40 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_super_bmethod
+    # Bmethod defined at class scope
+    assert_compiles(<<~'RUBY', insns: %i[invokesuper], result: true, exits: {})
+      class SuperItself
+        define_method(:itself) { super() }
+      end
+
+      obj = SuperItself.new
+      obj.itself
+      obj.itself == obj
+    RUBY
+
+    # Bmethod defined inside a method (the block's local_iseq is ISEQ_TYPE_METHOD
+    # but the CME is at the bmethod frame, not the enclosing method's frame)
+    assert_compiles(<<~'RUBY', insns: %i[invokesuper], result: "Base#foo via bmethod", exits: {})
+      class Base
+        def foo = "Base#foo"
+      end
+
+      class SetupHelper
+        def add_bmethod_to(klass)
+          klass.define_method(:foo) { super() + " via bmethod" }
+        end
+      end
+
+      class Target < Base; end
+
+      SetupHelper.new.add_bmethod_to(Target)
+      obj = Target.new
+      obj.foo
+      obj.foo
+    RUBY
+  end
+
   # Tests calling a variadic cfunc with many args
   def test_build_large_struct
     assert_compiles(<<~RUBY, insns: %i[opt_send_without_block], call_threshold: 2)
@@ -1814,6 +1848,17 @@ class TestYJIT < Test::Unit::TestCase
     ]
     _out, _err, status = invoke_ruby(args, '', true, true)
     assert_not_predicate(status, :signaled?)
+  end
+
+  def test_yjit_prelude_kernel_prepend
+    # Simulate what bundler/setup can do: prepend a module to Kernel during
+    # the prelude via the BUNDLER_SETUP mechanism in rubygems.rb:
+    #   require ENV["BUNDLER_SETUP"] if ENV["BUNDLER_SETUP"] && !defined?(Bundler)
+    Tempfile.create(["kernel_prepend", ".rb"]) do |f|
+      f.write("Kernel.prepend(Module.new)\n")
+      f.flush
+      assert_separately([{ "BUNDLER_SETUP" => f.path }, "--enable=gems", "--yjit"], "", ignore_stderr: true)
+    end
   end
 
   private

@@ -37,6 +37,16 @@ impl<T: Into<usize> + Copy> BitSet<T> {
         }
     }
 
+    /// Clear a bit. Returns whether the bit was previously set.
+    pub fn remove(&mut self, idx: T) -> bool {
+        debug_assert!(idx.into() < self.num_bits);
+        let entry_idx = idx.into() / ENTRY_NUM_BITS;
+        let bit_idx = idx.into() % ENTRY_NUM_BITS;
+        let was_set = (self.entries[entry_idx] & (1 << bit_idx)) != 0;
+        self.entries[entry_idx] &= !(1 << bit_idx);
+        was_set
+    }
+
     pub fn get(&self, idx: T) -> bool {
         debug_assert!(idx.into() < self.num_bits);
         let entry_idx = idx.into() / ENTRY_NUM_BITS;

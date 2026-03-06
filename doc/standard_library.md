@@ -11,6 +11,7 @@ of each.
 - `MakeMakefile`: A module used to generate a Makefile for C extensions
 - `RbConfig`: Information about your Ruby configuration and build
 - `Gem`: A package management framework for Ruby
+- `Pathname`: Representation of the name of a file or directory on the filesystem. Pathname is a core class, but only methods that depend on other libraries are provided as a library.
 
 ## Extensions
 
@@ -74,7 +75,6 @@ of each.
 - IO#wait ([GitHub][io-wait]): Provides the feature for waiting until IO is readable or writable without blocking.
 - JSON ([GitHub][json]): Implements JavaScript Object Notation for Ruby
 - OpenSSL ([GitHub][openssl]): Provides SSL, TLS, and general-purpose cryptography for Ruby
-- Pathname ([GitHub][pathname]): Representation of the name of a file or directory on the filesystem
 - Psych ([GitHub][psych]): A YAML parser and emitter for Ruby
 - StringIO ([GitHub][stringio]): Pseudo-I/O on String objects
 - StringScanner ([GitHub][strscan]): Provides lexical scanning operations on a String
@@ -95,9 +95,7 @@ of each.
 - [test-unit]: A compatibility layer for MiniTest
 - [rexml][rexml-doc] ([GitHub][rexml]): An XML toolkit for Ruby
 - [rss]: A family of libraries supporting various XML-based "feeds"
-- [net-ftp]: Support for the File Transfer Protocol
 - [net-imap]: Ruby client API for the Internet Message Access Protocol
-- [net-pop]: Ruby client library for POP3
 - [net-smtp]: Simple Mail Transfer Protocol client library for Ruby
 - [matrix]: Represents a mathematical matrix
 - [prime]: Prime numbers and factorization library
@@ -126,6 +124,7 @@ of each.
 - [readline]: Wrapper for the Readline extension and Reline
 - [fiddle]: A libffi wrapper for Ruby
 - [tsort]: Topological sorting using Tarjan's algorithm
+- [win32-registry]: Registry accessor library for the Windows platform.
 
 ## Tools
 
@@ -164,10 +163,8 @@ of each.
 [matrix]: https://github.com/ruby/matrix
 [minitest]: https://github.com/seattlerb/minitest
 [mutex_m]: https://github.com/ruby/mutex_m
-[net-ftp]: https://github.com/ruby/net-ftp
 [net-http]: https://github.com/ruby/net-http
 [net-imap]: https://github.com/ruby/net-imap
-[net-pop]: https://github.com/ruby/net-pop
 [net-smtp]: https://github.com/ruby/net-smtp
 [nkf]: https://github.com/ruby/nkf
 [observer]: https://github.com/ruby/observer
@@ -212,6 +209,7 @@ of each.
 [uri]: https://github.com/ruby/uri
 [weakref]: https://github.com/ruby/weakref
 [win32ole]: https://github.com/ruby/win32ole
+[win32-registry]: https://github.com/ruby/win32-registry
 [yaml]: https://github.com/ruby/yaml
 [zlib]: https://github.com/ruby/zlib
 

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 # :markup: markdown
+#--
+# rbs_inline: enabled
 
 module Prism
   # A pattern is an object that wraps a Ruby pattern matching expression. The
@@ -41,7 +43,9 @@ module Prism
     class CompilationError < StandardError
       # Create a new CompilationError with the given representation of the node
       # that caused the error.
-      def initialize(repr)
+      #--
+      #: (String repr) -> void
+      def initialize(repr) # :nodoc:
         super(<<~ERROR)
           prism was unable to compile the pattern you provided into a usable
           expression. It failed on to understand the node represented by:
@@ -57,10 +61,13 @@ module Prism
     end
 
     # The query that this pattern was initialized with.
-    attr_reader :query
+    attr_reader :query #: String
+    # @rbs @compiled: Proc?
 
     # Create a new pattern with the given query. The query should be a string
     # containing a Ruby pattern matching expression.
+    #--
+    #: (String query) -> void
     def initialize(query)
       @query = query
       @compiled = nil
@@ -68,6 +75,8 @@ module Prism
 
     # Compile the query into a callable object that can be used to match against
     # nodes.
+    #--
+    #: () -> Proc
     def compile
       result = Prism.parse("case nil\nin #{query}\nend")
 
@@ -84,7 +93,10 @@ module Prism
     # pattern. If a block is given, it will be called with each node that
     # matches the pattern. If no block is given, an enumerator will be returned
     # that will yield each node that matches the pattern.
-    def scan(root)
+    #--
+    #: (node root) -> Enumerator[node, void]
+    #: (node root) { (node) -> void } -> void
+    def scan(root, &blk)
       return to_enum(:scan, root) unless block_given?
 
       @compiled ||= compile
@@ -100,23 +112,33 @@ module Prism
 
     # Shortcut for combining two procs into one that returns true if both return
     # true.
-    def combine_and(left, right)
+    #--
+    #: (Proc left, Proc right) -> Proc
+    def combine_and(left, right) # :nodoc:
       ->(other) { left.call(other) && right.call(other) }
     end
 
     # Shortcut for combining two procs into one that returns true if either
     # returns true.
-    def combine_or(left, right)
+    #--
+    #: (Proc left, Proc right) -> Proc
+    def combine_or(left, right) # :nodoc:
       ->(other) { left.call(other) || right.call(other) }
     end
 
-    # Raise an error because the given node is not supported.
-    def compile_error(node)
+    # Raise an error because the given node is not supported. Note purposefully
+    # not typing this method since it is a no return method that Steep does not
+    # understand.
+    #--
+    #: (node node) -> bot
+    def compile_error(node) # :nodoc:
       raise CompilationError, node.inspect
     end
 
     # in [foo, bar, baz]
-    def compile_array_pattern_node(node)
+    #--
+    #: (ArrayPatternNode node) -> Proc
+    def compile_array_pattern_node(node) # :nodoc:
       compile_error(node) if !node.rest.nil? || node.posts.any?
 
       constant = node.constant
@@ -141,12 +163,16 @@ module Prism
     end
 
     # in foo | bar
-    def compile_alternation_pattern_node(node)
+    #--
+    #: (AlternationPatternNode node) -> Proc
+    def compile_alternation_pattern_node(node) # :nodoc:
       combine_or(compile_node(node.left), compile_node(node.right))
     end
 
     # in Prism::ConstantReadNode
-    def compile_constant_path_node(node)
+    #--
+    #: (ConstantPathNode node) -> Proc
+    def compile_constant_path_node(node) # :nodoc:
       parent = node.parent
 
       if parent.is_a?(ConstantReadNode) && parent.slice == "Prism"
@@ -161,12 +187,16 @@ module Prism
 
     # in ConstantReadNode
     # in String
-    def compile_constant_read_node(node)
+    #--
+    #: (ConstantReadNode node) -> Proc
+    def compile_constant_read_node(node) # :nodoc:
       compile_constant_name(node, node.name)
     end
 
     # Compile a name associated with a constant.
-    def compile_constant_name(node, name)
+    #--
+    #: ((ConstantPathNode | ConstantReadNode) node, Symbol name) -> Proc
+    def compile_constant_name(node, name) # :nodoc:
       if Prism.const_defined?(name, false)
         clazz = Prism.const_get(name)
 
@@ -182,9 +212,14 @@ module Prism
 
     # in InstanceVariableReadNode[name: Symbol]
     # in { name: Symbol }
-    def compile_hash_pattern_node(node)
+    #--
+    #: (HashPatternNode node) -> Proc
+    def compile_hash_pattern_node(node) # :nodoc:
       compile_error(node) if node.rest
-      compiled_constant = compile_node(node.constant) if node.constant
+
+      if (constant = node.constant)
+        compiled_constant = compile_node(constant)
+      end
 
       preprocessed =
         node.elements.to_h do |element|
@@ -212,12 +247,16 @@ module Prism
     end
 
     # in nil
-    def compile_nil_node(node)
+    #--
+    #: (NilNode node) -> Proc
+    def compile_nil_node(node) # :nodoc:
       ->(attribute) { attribute.nil? }
     end
 
     # in /foo/
-    def compile_regular_expression_node(node)
+    #--
+    #: (RegularExpressionNode node) -> Proc
+    def compile_regular_expression_node(node) # :nodoc:
       regexp = Regexp.new(node.unescaped, node.closing[1..])
 
       ->(attribute) { regexp === attribute }
@@ -225,7 +264,9 @@ module Prism
 
     # in ""
     # in "foo"
-    def compile_string_node(node)
+    #--
+    #: (StringNode node) -> Proc
+    def compile_string_node(node) # :nodoc:
       string = node.unescaped
 
       ->(attribute) { string === attribute }
@@ -233,7 +274,9 @@ module Prism
 
     # in :+
     # in :foo
-    def compile_symbol_node(node)
+    #--
+    #: (SymbolNode node) -> Proc
+    def compile_symbol_node(node) # :nodoc:
       symbol = node.unescaped.to_sym
 
       ->(attribute) { symbol === attribute }
@@ -241,7 +284,9 @@ module Prism
 
     # Compile any kind of node. Dispatch out to the individual compilation
     # methods based on the type of node.
-    def compile_node(node)
+    #--
+    #: (node node) -> Proc
+    def compile_node(node) # :nodoc:
       case node
       when AlternationPatternNode
         compile_alternation_pattern_node(node)

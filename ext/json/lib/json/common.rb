@@ -156,15 +156,17 @@ module JSON
     def generator=(generator) # :nodoc:
       old, $VERBOSE = $VERBOSE, nil
       @generator = generator
-      generator_methods = generator::GeneratorMethods
-      for const in generator_methods.constants
-        klass = const_get(const)
-        modul = generator_methods.const_get(const)
-        klass.class_eval do
-          instance_methods(false).each do |m|
-            m.to_s == 'to_json' and remove_method m
+      if generator.const_defined?(:GeneratorMethods)
+        generator_methods = generator::GeneratorMethods
+        for const in generator_methods.constants
+          klass = const_get(const)
+          modul = generator_methods.const_get(const)
+          klass.class_eval do
+            instance_methods(false).each do |m|
+              m.to_s == 'to_json' and remove_method m
+            end
+            include modul
           end
-          include modul
         end
       end
       self.state = generator::State
@@ -878,7 +880,7 @@ module JSON
       end
     end
 
-    if opts[:allow_blank] && (source.nil? || source.empty?)
+    if opts[:allow_blank] && (source.nil? || (String === source && source.empty?))
       source = 'null'
     end
 
@@ -1036,7 +1038,8 @@ module JSON
     #   JSON.new(options = nil, &block)
     #
     # Argument +options+, if given, contains a \Hash of options for both parsing and generating.
-    # See {Parsing Options}[#module-JSON-label-Parsing+Options], and {Generating Options}[#module-JSON-label-Generating+Options].
+    # See {Parsing Options}[rdoc-ref:JSON@Parsing+Options],
+    # and {Generating Options}[rdoc-ref:JSON@Generating+Options].
     #
     # For generation, the <tt>strict: true</tt> option is always set. When a Ruby object with no native \JSON counterpart is
     # encountered, the block provided to the initialize method is invoked, and must return a Ruby object that has a native
@@ -1095,6 +1098,30 @@ module JSON
       load(File.read(path, encoding: Encoding::UTF_8))
     end
   end
+
+  module GeneratorMethods
+    # call-seq: to_json(*)
+    #
+    # Converts this object into a JSON string.
+    # If this object doesn't directly maps to a JSON native type,
+    # first convert it to a string (calling #to_s), then converts
+    # it to a JSON string, and returns the result.
+    # This is a fallback, if no special method #to_json was defined for some object.
+    def to_json(state = nil, *)
+      obj = case self
+      when nil, false, true, Integer, Float, Array, Hash
+        self
+      else
+        "#{self}"
+      end
+
+      if state.nil?
+        JSON::State._generate_no_fallback(obj, nil, nil)
+      else
+        JSON::State.from_state(state)._generate_no_fallback(obj)
+      end
+    end
+  end
 end
 
 module ::Kernel
@@ -1139,4 +1166,8 @@ module ::Kernel
   def JSON(object, opts = nil)
     JSON[object, opts]
   end
+end
+
+class Object
+  include JSON::GeneratorMethods
 end

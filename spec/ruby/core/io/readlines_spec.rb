@@ -207,14 +207,12 @@ describe "IO.readlines" do
       end
     end
 
-    ruby_version_is "3.3" do
-      # https://bugs.ruby-lang.org/issues/19630
-      it "warns about deprecation given a path with a pipe" do
-        cmd = "|echo ok"
-        -> {
-          IO.readlines(cmd)
-        }.should complain(/IO process creation with a leading '\|'/)
-      end
+    # https://bugs.ruby-lang.org/issues/19630
+    it "warns about deprecation given a path with a pipe" do
+      cmd = "|echo ok"
+      -> {
+        IO.readlines(cmd)
+      }.should complain(/IO process creation with a leading '\|'/)
     end
   end
 

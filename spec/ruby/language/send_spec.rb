@@ -112,7 +112,7 @@ describe "Invoking a method" do
 
       -> {
         specs.makeproc(&o)
-      }.should raise_error(TypeError, "can't convert LangSendSpecs::RawToProc to Proc (LangSendSpecs::RawToProc#to_proc gives Integer)")
+      }.should raise_consistent_error(TypeError, "can't convert LangSendSpecs::RawToProc into Proc (LangSendSpecs::RawToProc#to_proc gives Integer)")
     end
 
     it "raises TypeError if block object isn't a Proc and doesn't respond to `to_proc`" do

@@ -101,7 +101,7 @@ exec_end_procs_chain(struct end_proc_data *volatile *procs, VALUE *errp)
     while ((link = *procs) != 0) {
         *procs = link->next;
         endproc = *link;
-        xfree(link);
+        SIZED_FREE(link);
         (*endproc.func) (endproc.data);
         *errp = errinfo;
     }

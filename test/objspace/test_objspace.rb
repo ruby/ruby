@@ -54,7 +54,11 @@ class TestObjSpace < Test::Unit::TestCase
     assert_operator(a, :>, b)
     assert_operator(a, :>, 0)
     assert_operator(b, :>, 0)
-    assert_raise(TypeError) {ObjectSpace.memsize_of_all('error')}
+    assert_kind_of(Integer, ObjectSpace.memsize_of_all(Enumerable))
+  end
+
+  def test_memsize_of_all_with_wrong_type
+    assert_raise(TypeError) { ObjectSpace.memsize_of_all(Object.new) }
   end
 
   def test_count_objects_size
@@ -699,8 +703,9 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_dump_includes_slot_size
-    str = "TEST"
-    dump = ObjectSpace.dump(str)
+    klass = Class.new
+    obj = klass.new
+    dump = ObjectSpace.dump(obj)
 
     assert_includes dump, "\"slot_size\":#{GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]}"
   end

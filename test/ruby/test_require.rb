@@ -54,7 +54,7 @@ class TestRequire < Test::Unit::TestCase
     end;
 
     begin
-      assert_in_out_err(["-S", "-w", "foo/" * 1024 + "foo"], "") do |r, e|
+      assert_in_out_err(["-S", "-w", (["foo"] * 1025).join("_")], "") do |r, e|
         assert_equal([], r)
         assert_operator(2, :<=, e.size)
         assert_match(/warning: openpath: pathname too long \(ignored\)/, e.first)

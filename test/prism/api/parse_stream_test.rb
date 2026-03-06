@@ -30,16 +30,28 @@ module Prism
     end
 
     def test___END__
-      io = StringIO.new("1 + 2\n3 + 4\n__END__\n5 + 6")
+      io = StringIO.new(<<~RUBY)
+        1 + 2
+        3 + 4
+        __END__
+        5 + 6
+      RUBY
       result = Prism.parse_stream(io)
 
       assert result.success?
       assert_equal 2, result.value.statements.body.length
-      assert_equal "5 + 6", io.read
+      assert_equal "5 + 6\n", io.read
     end
 
     def test_false___END___in_string
-      io = StringIO.new("1 + 2\n3 + 4\n\"\n__END__\n\"\n5 + 6")
+      io = StringIO.new(<<~RUBY)
+        1 + 2
+        3 + 4
+        "
+        __END__
+        "
+        5 + 6
+      RUBY
       result = Prism.parse_stream(io)
 
       assert result.success?
@@ -47,7 +59,14 @@ module Prism
     end
 
     def test_false___END___in_regexp
-      io = StringIO.new("1 + 2\n3 + 4\n/\n__END__\n/\n5 + 6")
+      io = StringIO.new(<<~RUBY)
+        1 + 2
+        3 + 4
+        /
+        __END__
+        /
+        5 + 6
+      RUBY
       result = Prism.parse_stream(io)
 
       assert result.success?
@@ -55,7 +74,14 @@ module Prism
     end
 
     def test_false___END___in_list
-      io = StringIO.new("1 + 2\n3 + 4\n%w[\n__END__\n]\n5 + 6")
+      io = StringIO.new(<<~RUBY)
+        1 + 2
+        3 + 4
+        %w[
+        __END__
+        ]
+        5 + 6
+      RUBY
       result = Prism.parse_stream(io)
 
       assert result.success?
@@ -63,7 +89,14 @@ module Prism
     end
 
     def test_false___END___in_heredoc
-      io = StringIO.new("1 + 2\n3 + 4\n<<-EOF\n__END__\nEOF\n5 + 6")
+      io = StringIO.new(<<~RUBY)
+        1 + 2
+        3 + 4
+        <<-EOF
+        __END__
+        EOF
+        5 + 6
+      RUBY
       result = Prism.parse_stream(io)
 
       assert result.success?
@@ -71,7 +104,11 @@ module Prism
     end
 
     def test_nul_bytes
-      io = StringIO.new("1 # \0\0\0 \n2 # \0\0\0\n3")
+      io = StringIO.new(<<~RUBY)
+        1 # \0\0\0\t
+        2 # \0\0\0
+        3
+      RUBY
       result = Prism.parse_stream(io)
 
       assert result.success?

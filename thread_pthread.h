@@ -75,6 +75,7 @@ struct rb_thread_sched_item {
     bool finished;
     bool malloc_stack;
     void *context_stack;
+    size_t context_stack_size;
     struct coroutine_context *context;
 };
 

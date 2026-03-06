@@ -913,12 +913,10 @@ RSpec.describe "bundle clean" do
     # Simulate that the locked bundler version is installed in the bundle path
     # by creating the gem directory and gemspec (as would happen after bundle install with that version)
     Pathname(vendored_gems("cache/bundler-#{version}.gem")).tap do |path|
-      path.basename.mkpath
       FileUtils.touch(path)
     end
     FileUtils.touch(vendored_gems("gems/bundler-#{version}"))
     Pathname(vendored_gems("specifications/bundler-#{version}.gemspec")).tap do |path|
-      path.basename.mkpath
       path.write(<<~GEMSPEC)
         Gem::Specification.new do |s|
           s.name = "bundler"

@@ -16,11 +16,20 @@
 #include "vm_sync.h"
 #include "internal/fixnum.h"
 #include "internal/string.h"
+#include "internal/class.h"
+#include "internal/imemo.h"
+#include "ruby/internal/core/rtypeddata.h"
 
 enum jit_bindgen_constants {
     // Field offsets for the RObject struct
     ROBJECT_OFFSET_AS_HEAP_FIELDS = offsetof(struct RObject, as.heap.fields),
     ROBJECT_OFFSET_AS_ARY = offsetof(struct RObject, as.ary),
+
+    // Field offset for prime classext's fields_obj from a class pointer
+    RCLASS_OFFSET_PRIME_FIELDS_OBJ = offsetof(struct RClass_and_rb_classext_t, classext.fields_obj),
+
+    // Field offset for fields_obj in RTypedData
+    RTYPEDDATA_OFFSET_FIELDS_OBJ = offsetof(struct RTypedData, fields_obj),
 
     // Field offsets for the RString struct
     RUBY_OFFSET_RSTRING_LEN = offsetof(struct RString, len),
@@ -192,7 +201,7 @@ rb_jit_get_proc_ptr(VALUE procv)
 }
 
 VALUE
-rb_optimized_call(VALUE *recv, rb_execution_context_t *ec, int argc, VALUE *argv, int kw_splat, VALUE block_handler)
+rb_optimized_call(VALUE recv, rb_execution_context_t *ec, int argc, VALUE *argv, int kw_splat, VALUE block_handler)
 {
     rb_proc_t *proc;
     GetProcPtr(recv, proc);
@@ -527,6 +536,20 @@ bool
 rb_jit_multi_ractor_p(void)
 {
     return rb_multi_ractor_p();
+}
+
+bool
+rb_jit_class_fields_embedded_p(VALUE klass)
+{
+    VALUE fields_obj = RCLASS_EXT_PRIME(klass)->fields_obj;
+    return !fields_obj || !FL_TEST_RAW(fields_obj, OBJ_FIELD_HEAP);
+}
+
+bool
+rb_jit_typed_data_fields_embedded_p(VALUE obj)
+{
+    VALUE fields_obj = RTYPEDDATA(obj)->fields_obj;
+    return !fields_obj || !FL_TEST_RAW(fields_obj, OBJ_FIELD_HEAP);
 }
 
 // Acquire the VM lock and then signal all other Ruby threads (ractors) to

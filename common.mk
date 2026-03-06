@@ -75,6 +75,7 @@ HTMLOUT       = $(EXTOUT)/html
 CAPIOUT       = doc/capi
 INSTALL_DOC_OPTS = --rdoc-output="$(RDOCOUT)" --html-output="$(HTMLOUT)"
 RDOC_GEN_OPTS = --no-force-update \
+	--exclude '^lib/rubygems/core_ext/kernel_require\.rb$$' \
 	$(empty)
 
 INITOBJS      = dmyext.$(OBJEXT) dmyenc.$(OBJEXT)
@@ -90,25 +91,24 @@ MAKE_ENC      = -f $(ENC_MK) V="$(V)" UNICODE_HDR_DIR="$(UNICODE_HDR_DIR)" \
 PRISM_BUILD_DIR = prism
 
 PRISM_FILES = prism/api_node.$(OBJEXT) \
-		prism/api_pack.$(OBJEXT) \
 		prism/diagnostic.$(OBJEXT) \
 		prism/encoding.$(OBJEXT) \
 		prism/extension.$(OBJEXT) \
 		prism/node.$(OBJEXT) \
 		prism/options.$(OBJEXT) \
-		prism/pack.$(OBJEXT) \
 		prism/prettyprint.$(OBJEXT) \
 		prism/regexp.$(OBJEXT) \
 		prism/serialize.$(OBJEXT) \
 		prism/static_literals.$(OBJEXT) \
 		prism/token_type.$(OBJEXT) \
+		prism/util/pm_arena.$(OBJEXT) \
 		prism/util/pm_buffer.$(OBJEXT) \
 		prism/util/pm_char.$(OBJEXT) \
 		prism/util/pm_constant_pool.$(OBJEXT) \
 		prism/util/pm_integer.$(OBJEXT) \
+		prism/util/pm_line_offset_list.$(OBJEXT) \
 		prism/util/pm_list.$(OBJEXT) \
 		prism/util/pm_memchr.$(OBJEXT) \
-		prism/util/pm_newline_list.$(OBJEXT) \
 		prism/util/pm_string.$(OBJEXT) \
 		prism/util/pm_strncasecmp.$(OBJEXT) \
 		prism/util/pm_strpbrk.$(OBJEXT) \
@@ -608,11 +608,12 @@ post-install-dbg::
 
 srcs-doc: prepare-gems
 
-rdoc: PHONY main srcs-doc
+RDOC_DEPENDS = main srcs-doc
+rdoc: PHONY $(RDOC_DEPENDS) $(RBCONFIG)
 	@echo Generating RDoc documentation
 	$(Q) $(RDOC) --ri --op "$(RDOCOUT)" $(RDOC_GEN_OPTS) $(RDOCFLAGS) .
 
-html: PHONY main srcs-doc
+html: PHONY $(RDOC_DEPENDS) $(RBCONFIG)
 	@echo Generating RDoc HTML files
 	$(Q) $(RDOC) --op "$(HTMLOUT)" $(RDOC_GEN_OPTS) $(RDOCFLAGS) .
 
@@ -620,11 +621,11 @@ RDOC_COVERAGE_EXCLUDES = -x ^ext/json -x ^ext/openssl -x ^ext/psych \
 	-x ^lib/bundler -x ^lib/rubygems \
 	-x ^lib/did_you_mean -x ^lib/error_highlight -x ^lib/syntax_suggest
 
-rdoc-coverage: PHONY main srcs-doc
+rdoc-coverage: PHONY $(RDOC_DEPENDS) $(RBCONFIG)
 	@echo Generating RDoc coverage report
 	$(Q) $(RDOC) --quiet -C $(RDOCFLAGS) $(RDOC_COVERAGE_EXCLUDES) .
 
-undocumented: PHONY main srcs-doc
+undocumented: PHONY $(RDOC_DEPENDS) $(RBCONFIG)
 	$(Q) $(RDOC) --quiet -C $(RDOCFLAGS) $(RDOC_COVERAGE_EXCLUDES) . | \
 	sed -n \
 	-e '/^ *# in file /{' -e 's///;N;s/\n/: /p' -e '}' \
@@ -761,7 +762,7 @@ timestamp/distclean:: ext/distclean .bundle/distclean
 timestamp/realclean:: ext/realclean .bundle/realclean
 
 timestamp/clean timestamp/distclean timestamp/realclean::
-	$(Q)$(RM) $(TIMESTAMPDIR)/.*.time $(TIMESTAMPDIR)/$(arch)/.time
+	$(Q)$(RM) $(TIMESTAMPDIR)/*.time $(TIMESTAMPDIR)/.*.time $(TIMESTAMPDIR)/$(arch)/.time
 	$(Q)$(RMDIRS) $(TIMESTAMPDIR)/$(arch) $(TIMESTAMPDIR) 2> $(NULL) || $(NULLCMD)
 
 clean-ext::
@@ -800,7 +801,10 @@ RUBYSPEC_CAPIEXT_SRCDIR = $(srcdir)/$(RUBYSPEC_CAPIEXT)
 RUBYSPEC_CAPIEXT_DEPS = $(RUBYSPEC_CAPIEXT_SRCDIR)/rubyspec.h $(RUBY_H_INCLUDES) {$(VPATH)}internal/abi.h $(LIBRUBY)
 RUBYSPEC_CAPIEXT_BUILD = $(enable_shared:yes=rubyspec-capiext)
 
-rubyspec-capiext: build-ext $(DOT_WAIT)
+yes-rubyspec-capiext: build-ext
+	$(ACTIONS_GROUP)
+rubyspec-capiext: build-ext $(DOT_WAIT) yes-rubyspec-capiext $(DOT_WAIT)
+	$(ACTIONS_ENDGROUP)
 # make-dependent rules should be included after this and built after build-ext.
 
 clean-spec: PHONY
@@ -900,8 +904,8 @@ test: test-short
 
 # Separate to skip updating encs and exts by `make -o test-precheck`
 # for GNU make.
-test-precheck: $(ENCSTATIC:static=lib)encs $(RUBYSPEC_CAPIEXT_BUILD) exts PHONY $(DOT_WAIT)
-yes-test-all-precheck: programs $(DOT_WAIT) test-precheck
+test-precheck: $(ENCSTATIC:static=lib)encs exts PHONY $(DOT_WAIT)
+yes-test-all-precheck: programs $(DOT_WAIT) test-precheck yes-fake
 
 PRECHECK_TEST_ALL = yes-test-all-precheck
 
@@ -938,24 +942,20 @@ rbconfig.rb: $(RBCONFIG)
 
 $(HAVE_BASERUBY:no=)$(RBCONFIG)$(HAVE_BASERUBY:no=): $(PREP)
 $(RBCONFIG): $(tooldir)/mkconfig.rb config.status $(srcdir)/version.h $(srcdir)/common.mk
-	$(Q)$(BOOTSTRAPRUBY) -n \
-	-e 'BEGIN{version=ARGV.shift;mis=ARGV.dup}' \
-	-e 'END{abort "UNICODE version mismatch: #{mis}" unless mis.empty?}' \
-	-e '(mis.delete(ARGF.path); ARGF.close) if /ONIG_UNICODE_VERSION_STRING +"#{Regexp.quote(version)}"/o' \
-	$(UNICODE_VERSION) $(UNICODE_DATA_HEADERS)
+
+$(RBCONFIG):
 	$(Q)$(BOOTSTRAPRUBY) $(tooldir)/mkconfig.rb \
 		-arch=$(arch) -version=$(RUBY_PROGRAM_VERSION) \
 		-install_name=$(RUBY_INSTALL_NAME) \
 		-so_name=$(RUBY_SO_NAME) \
 		-unicode_version=$(UNICODE_VERSION) \
 		-unicode_emoji_version=$(UNICODE_EMOJI_VERSION) \
-	> rbconfig.tmp
-	$(IFCHANGE) "--timestamp=$@" rbconfig.rb rbconfig.tmp
+	| $(IFCHANGE) "--timestamp=$@" rbconfig.rb -
 
 test-rubyspec: test-spec
 yes-test-rubyspec: yes-test-spec
 
-yes-test-spec-precheck: yes-test-all-precheck yes-fake
+yes-test-spec-precheck: yes-test-all-precheck $(RUBYSPEC_CAPIEXT_BUILD)
 
 test-spec: $(TEST_RUNNABLE)-test-spec
 yes-test-spec: yes-test-spec-precheck
@@ -1125,7 +1125,7 @@ $(NEWLINE_C): $(srcdir)/enc/trans/newline.trans $(tooldir)/transcode-tblgen.rb
 	$(Q) $(BASERUBY) "$(tooldir)/transcode-tblgen.rb" -vo $@ $(srcdir)/enc/trans/newline.trans
 enc/trans/newline.$(OBJEXT): $(NEWLINE_C)
 
-verconf.h: $(srcdir)/template/verconf.h.tmpl $(tooldir)/generic_erb.rb $(RBCONFIG)
+verconf.h: $(srcdir)/template/verconf.h.tmpl $(tooldir)/generic_erb.rb rbconfig.rb
 	$(ECHO) creating $@
 	$(Q) $(BOOTSTRAPRUBY) "$(tooldir)/generic_erb.rb" -o $@ $(srcdir)/template/verconf.h.tmpl
 
@@ -1565,8 +1565,11 @@ yes-install-for-test-bundled-gems: yes-update-default-gemspecs
 
 test-bundled-gems-fetch: yes-test-bundled-gems-fetch
 yes-test-bundled-gems-fetch: clone-bundled-gems-src
-clone-bundled-gems-src: PHONY
+clone-bundled-gems-src: PHONY $(TIMESTAMPDIR)/bundled-gems-src.time
+$(TIMESTAMPDIR)/bundled-gems-src.time: $(srcdir)/gems/bundled_gems
+	$(Q) $(MAKEDIRS) $(@D)
 	$(Q) $(BASERUBY) -C $(srcdir) tool/fetch-bundled_gems.rb BUNDLED_GEMS="$(BUNDLED_GEMS)" gems/src gems/bundled_gems
+	$(Q) $(TOUCH) $@
 no-test-bundled-gems-fetch:
 
 test-bundled-gems-prepare: $(TEST_RUNNABLE)-test-bundled-gems-prepare
@@ -1600,7 +1603,7 @@ yes-test-bundled-gems-run: $(PREPARE_BUNDLED_GEMS)
 no-test-bundled-gems-run: $(PREPARE_BUNDLED_GEMS)
 
 test-bundled-gems-spec: $(TEST_RUNNABLE)-test-bundled-gems-spec
-yes-test-bundled-gems-spec: yes-test-spec-precheck $(PREPARE_BUNDLED_GEMS)
+yes-test-bundled-gems-spec: yes-test-all-precheck $(PREPARE_BUNDLED_GEMS)
 	$(ACTIONS_GROUP)
 	$(gnumake_recursive)$(Q) \
 	$(RUNRUBY) -r./$(arch)-fake -r$(tooldir)/lib/_tmpdir \
@@ -1639,7 +1642,10 @@ test-bundler: $(TEST_RUNNABLE)-test-bundler
 yes-test-bundler: $(PREPARE_BUNDLER)
 	$(gnumake_recursive)$(XRUBY) \
 		-r./$(arch)-fake \
-		-C $(srcdir) -Ispec/bundler -Ispec/lib spec/bin/rspec \
+		-r$(tooldir)/lib/_tmpdir \
+		-I$(srcdir)/spec/bundler -I$(srcdir)/spec/lib \
+		-e "Dir.chdir(ARGV.shift); load('spec/bin/rspec')" \
+		-s -- -no-report-tmpdir -- "$(srcdir)" \
 		-r spec_helper $(RSPECOPTS) spec/bundler/$(BUNDLER_SPECS)
 no-test-bundler:
 
@@ -1648,11 +1654,13 @@ test-bundler-parallel: $(TEST_RUNNABLE)-test-bundler-parallel
 yes-test-bundler-parallel: $(PREPARE_BUNDLER)
 	$(gnumake_recursive)$(XRUBY) \
 		-r./$(arch)-fake \
+		-r$(tooldir)/lib/_tmpdir \
 		-I$(srcdir)/spec/bundler \
 		-e "ruby = ENV['RUBY']" \
 		-e "ARGV[-1] = File.expand_path(ARGV[-1])" \
 		-e "ENV['RSPEC_EXECUTABLE'] = ruby + ARGV.shift" \
 		-e "load ARGV.shift" \
+		-s -- -no-report-tmpdir -- \
 		" -C $(srcdir) -Ispec/bundler -Ispec/lib .bundle/bin/rspec -r spec_helper" \
 		$(srcdir)/spec/bin/parallel_rspec $(RSPECOPTS) \
 		$(PARALLELRSPECOPTS) $(srcdir)/spec/bundler/$(BUNDLER_SPECS)
@@ -1890,7 +1898,7 @@ sudo-precheck: PHONY
 	@$(SUDO) echo > $(NULL)
 
 update-man-date: PHONY
-	-$(Q) $(BASERUBY) -I"$(tooldir)/lib" -rvcs -i -p \
+	$(Q) $(BASERUBY) -I"$(tooldir)/lib" -rvcs -i -p \
 	-e 'BEGIN{@vcs=VCS.detect(ARGV.shift)}' \
 	-e '$$_.sub!(/^(\.Dd ).*/){$$1+@vcs.modified(ARGF.path).strftime("%B %d, %Y")}' \
 	"$(srcdir)" "$(srcdir)"/man/*.1

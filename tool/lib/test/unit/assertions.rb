@@ -128,8 +128,16 @@ module Test
 
       def assert_in_delta exp, act, delta = 0.001, msg = nil
         n = (exp - act).abs
+        loadavg = begin
+          if File.readable?("/proc/loadavg")
+            " (/proc/loadavg=#{File.read("/proc/loadavg").strip})"
+          end
+        rescue StandardError
+          nil
+        end
+        loadavg ||= ""
         msg = message(msg) {
-          "Expected |#{exp} - #{act}| (#{n}) to be <= #{delta}"
+          "Expected |#{exp} - #{act}| (#{n}) to be <= #{delta}#{loadavg}"
         }
         assert delta >= n, msg
       end

@@ -12,7 +12,7 @@ You can create multiple Ractors which can run ruby code in parallel with each ot
 * Ruby processes start with one ractor (called the *main ractor*).
 * If the main ractor terminates, all other ractors receive termination requests, similar to how threads behave.
 * Each Ractor contains one or more `Thread`s.
-  * Threads within the same ractor share a ractor-wide global lock (GVL in MRI terminology), so they can't run in parallel wich each other (without releasing the GVL explicitly in C extensions). Threads in different ractors can run in parallel.
+  * Threads within the same ractor share a ractor-wide global lock (GVL in MRI terminology), so they can't run in parallel with each other (without releasing the GVL explicitly in C extensions). Threads in different ractors can run in parallel.
   * The overhead of creating a ractor is slightly above the overhead of creating a thread.
 
 ### Limited sharing between Ractors
@@ -97,10 +97,10 @@ This isolation occurs at Ractor creation time (when `Ractor.new` is called). If 
 begin
   a = true
   r = Ractor.new do
-    a #=> ArgumentError because this block accesses outer variable `a`.
+    a #=> Ractor::IsolationError because this block accesses outer variable `a`.
   end
   r.join # wait for ractor to finish
-rescue ArgumentError
+rescue Ractor::IsolationError
 end
 ```
 

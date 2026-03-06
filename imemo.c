@@ -57,35 +57,33 @@ rb_imemo_tmpbuf_new(void)
     rb_gc_register_pinning_obj((VALUE)obj);
 
     obj->ptr = NULL;
-    obj->cnt = 0;
+    obj->size = 0;
 
     return (VALUE)obj;
 }
 
 void *
-rb_alloc_tmp_buffer_with_count(volatile VALUE *store, size_t size, size_t cnt)
+rb_alloc_tmp_buffer(volatile VALUE *store, long len)
 {
+    if (len < 0) {
+        rb_raise(rb_eArgError, "negative buffer size (or size too big)");
+    }
+
     /* Keep the order; allocate an empty imemo first then xmalloc, to
      * get rid of potential memory leak */
     rb_imemo_tmpbuf_t *tmpbuf = (rb_imemo_tmpbuf_t *)rb_imemo_tmpbuf_new();
     *store = (VALUE)tmpbuf;
-    void *ptr = ruby_xmalloc(size);
+    void *ptr = ruby_xmalloc(len);
     tmpbuf->ptr = ptr;
-    tmpbuf->cnt = cnt;
+    tmpbuf->size = len;
 
     return ptr;
 }
 
 void *
-rb_alloc_tmp_buffer(volatile VALUE *store, long len)
+rb_alloc_tmp_buffer_with_count(volatile VALUE *store, size_t size, size_t cnt)
 {
-    long cnt;
-
-    if (len < 0 || (cnt = (long)roomof(len, sizeof(VALUE))) < 0) {
-        rb_raise(rb_eArgError, "negative buffer size (or size too big)");
-    }
-
-    return rb_alloc_tmp_buffer_with_count(store, len, cnt);
+    return rb_alloc_tmp_buffer(store, (long)size);
 }
 
 void
@@ -94,9 +92,9 @@ rb_free_tmp_buffer(volatile VALUE *store)
     rb_imemo_tmpbuf_t *s = (rb_imemo_tmpbuf_t*)ATOMIC_VALUE_EXCHANGE(*store, 0);
     if (s) {
         void *ptr = ATOMIC_PTR_EXCHANGE(s->ptr, 0);
-        long cnt = s->cnt;
-        s->cnt = 0;
-        ruby_sized_xfree(ptr, sizeof(VALUE) * cnt);
+        long size = s->size;
+        s->size = 0;
+        ruby_sized_xfree(ptr, size);
     }
 }
 
@@ -261,7 +259,7 @@ rb_imemo_memsize(VALUE obj)
       case imemo_throw_data:
         break;
       case imemo_tmpbuf:
-        size += ((rb_imemo_tmpbuf_t *)obj)->cnt * sizeof(VALUE);
+        size += ((rb_imemo_tmpbuf_t *)obj)->size;
 
         break;
       case imemo_fields:
@@ -506,7 +504,7 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
         const rb_imemo_tmpbuf_t *m = (const rb_imemo_tmpbuf_t *)obj;
 
         if (!reference_updating) {
-            rb_gc_mark_locations(m->ptr, m->ptr + m->cnt);
+            rb_gc_mark_locations(m->ptr, m->ptr + (m->size / sizeof(VALUE)));
         }
 
         break;
@@ -550,7 +548,7 @@ static enum rb_id_table_iterator_result
 free_const_entry_i(VALUE value, void *data)
 {
     rb_const_entry_t *ce = (rb_const_entry_t *)value;
-    xfree(ce);
+    SIZED_FREE(ce);
     return ID_TABLE_CONTINUE;
 }
 
@@ -565,11 +563,12 @@ static inline void
 imemo_fields_free(struct rb_fields *fields)
 {
     if (FL_TEST_RAW((VALUE)fields, OBJ_FIELD_HEAP)) {
-        if (rb_shape_obj_too_complex_p((VALUE)fields)) {
+        shape_id_t shape_id = RBASIC_SHAPE_ID((VALUE)fields);
+        if (rb_shape_too_complex_p(shape_id)) {
             st_free_table(fields->as.complex.table);
         }
         else {
-            xfree(fields->as.external.ptr);
+            SIZED_FREE_N(fields->as.external.ptr, RSHAPE_CAPACITY(shape_id));
         }
     }
 }
@@ -587,7 +586,9 @@ rb_imemo_free(VALUE obj)
 
         if (ci->kwarg) {
             ((struct rb_callinfo_kwarg *)ci->kwarg)->references--;
-            if (ci->kwarg->references == 0) xfree((void *)ci->kwarg);
+            if (ci->kwarg->references == 0) {
+                ruby_sized_xfree((void *)ci->kwarg, rb_callinfo_kwarg_bytes(ci->kwarg->keyword_len));
+            }
         }
         RB_DEBUG_COUNTER_INC(obj_imemo_callinfo);
 
@@ -605,7 +606,7 @@ rb_imemo_free(VALUE obj)
         rb_env_t *env = (rb_env_t *)obj;
 
         RUBY_ASSERT(VM_ENV_ESCAPED_P(env->ep));
-        xfree((VALUE *)env->env);
+        SIZED_FREE_N(env->env, env->env_size);
         RB_DEBUG_COUNTER_INC(obj_imemo_env);
 
         break;
@@ -636,7 +637,7 @@ rb_imemo_free(VALUE obj)
 
         break;
       case imemo_tmpbuf:
-        xfree(((rb_imemo_tmpbuf_t *)obj)->ptr);
+        ruby_sized_xfree(((rb_imemo_tmpbuf_t *)obj)->ptr, ((rb_imemo_tmpbuf_t *)obj)->size);
         RB_DEBUG_COUNTER_INC(obj_imemo_tmpbuf);
 
         break;

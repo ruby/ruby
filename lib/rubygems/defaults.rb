@@ -149,6 +149,15 @@ module Gem
   end
 
   ##
+  # The path to the global gem cache directory.
+  # This is used when global_gem_cache is enabled to share .gem files
+  # across all Ruby installations.
+
+  def self.global_gem_cache_path
+    File.join(cache_home, "gem", "gems")
+  end
+
+  ##
   # The path to standard location of the user's data directory.
 
   def self.data_home

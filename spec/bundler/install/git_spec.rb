@@ -290,4 +290,32 @@ RSpec.describe "bundle install" do
       end
     end
   end
+
+  describe "with excluded groups" do
+    it "works if you exclude a group with a git gem", ruby: ">= 3.3" do
+      build_git "production_gem", "1.0"
+      build_git "development_gem", "1.0"
+
+      gemfile <<-G
+        source "https://gem.repo1"
+
+        gem "production_gem", :git => "#{lib_path("production_gem-1.0")}"
+
+        group :development do
+          gem "development_gem", :git => "#{lib_path("development_gem-1.0")}"
+        end
+      G
+
+      # First install all groups to create lockfile
+      bundle :install
+
+      # Set without and reinstall
+      bundle "config set --local without development"
+      bundle :install
+
+      # Verify only production gem is available
+      expect(the_bundle).to include_gems("production_gem 1.0")
+      expect(the_bundle).not_to include_gems("development_gem 1.0")
+    end
+  end
 end

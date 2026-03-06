@@ -1029,75 +1029,44 @@ rb_iseq_original_iseq(const rb_iseq_t *iseq) /* cold path */
 /* definition of data structure for compiler */
 /*********************************************/
 
-/*
- * On 32-bit SPARC, GCC by default generates SPARC V7 code that may require
- * 8-byte word alignment. On the other hand, Oracle Solaris Studio seems to
- * generate SPARCV8PLUS code with unaligned memory access instructions.
- * That is why the STRICT_ALIGNMENT is defined only with GCC.
- */
-#if defined(__sparc) && SIZEOF_VOIDP == 4 && defined(__GNUC__)
-  #define STRICT_ALIGNMENT
-#endif
-
-/*
- * Some OpenBSD platforms (including sparc64) require strict alignment.
- */
-#if defined(__OpenBSD__)
-  #include <sys/endian.h>
-  #ifdef __STRICT_ALIGNMENT
-    #define STRICT_ALIGNMENT
-  #endif
-#endif
-
-#ifdef STRICT_ALIGNMENT
-  #if defined(HAVE_TRUE_LONG_LONG) && SIZEOF_LONG_LONG > SIZEOF_VALUE
-    #define ALIGNMENT_SIZE SIZEOF_LONG_LONG
-  #else
-    #define ALIGNMENT_SIZE SIZEOF_VALUE
-  #endif
-  #define PADDING_SIZE_MAX    ((size_t)((ALIGNMENT_SIZE) - 1))
-  #define ALIGNMENT_SIZE_MASK PADDING_SIZE_MAX
-  /* Note: ALIGNMENT_SIZE == (2 ** N) is expected. */
+#if defined(HAVE_TRUE_LONG_LONG) && SIZEOF_LONG_LONG > SIZEOF_VALUE
+# define ALIGNMENT_SIZE SIZEOF_LONG_LONG
 #else
-  #define PADDING_SIZE_MAX 0
-#endif /* STRICT_ALIGNMENT */
+# define ALIGNMENT_SIZE SIZEOF_VALUE
+#endif
+#define PADDING_SIZE_MAX    ((size_t)((ALIGNMENT_SIZE) - 1))
 
-#ifdef STRICT_ALIGNMENT
+#define ALIGNMENT_SIZE_OF(type) alignment_size_assert(RUBY_ALIGNOF(type), #type)
+
+static inline size_t
+alignment_size_assert(size_t align, const char *type)
+{
+    RUBY_ASSERT((align & (align - 1)) == 0,
+                "ALIGNMENT_SIZE_OF(%s):%zd == (2 ** N) is expected", type, align);
+    return align;
+}
+
 /* calculate padding size for aligned memory access */
-static size_t
-calc_padding(void *ptr, size_t size)
+static inline size_t
+calc_padding(void *ptr, size_t align)
 {
     size_t mis;
     size_t padding = 0;
 
-    mis = (size_t)ptr & ALIGNMENT_SIZE_MASK;
+    mis = (size_t)ptr & (align - 1);
     if (mis > 0) {
-        padding = ALIGNMENT_SIZE - mis;
+        padding = align - mis;
     }
-/*
- * On 32-bit sparc or equivalents, when a single VALUE is requested
- * and padding == sizeof(VALUE), it is clear that no padding is needed.
- */
-#if ALIGNMENT_SIZE > SIZEOF_VALUE
-    if (size == sizeof(VALUE) && padding == sizeof(VALUE)) {
-        padding = 0;
-    }
-#endif
 
     return padding;
 }
-#endif /* STRICT_ALIGNMENT */
 
 static void *
-compile_data_alloc_with_arena(struct iseq_compile_data_storage **arena, size_t size)
+compile_data_alloc_with_arena(struct iseq_compile_data_storage **arena, size_t size, size_t align)
 {
     void *ptr = 0;
     struct iseq_compile_data_storage *storage = *arena;
-#ifdef STRICT_ALIGNMENT
-    size_t padding = calc_padding((void *)&storage->buff[storage->pos], size);
-#else
-    const size_t padding = 0; /* expected to be optimized by compiler */
-#endif /* STRICT_ALIGNMENT */
+    size_t padding = calc_padding((void *)&storage->buff[storage->pos], align);
 
     if (size >= INT_MAX - padding) rb_memerror();
     if (storage->pos + size + padding > storage->size) {
@@ -1113,14 +1082,10 @@ compile_data_alloc_with_arena(struct iseq_compile_data_storage **arena, size_t s
         storage->next = 0;
         storage->pos = 0;
         storage->size = alloc_size;
-#ifdef STRICT_ALIGNMENT
-        padding = calc_padding((void *)&storage->buff[storage->pos], size);
-#endif /* STRICT_ALIGNMENT */
+        padding = calc_padding((void *)&storage->buff[storage->pos], align);
     }
 
-#ifdef STRICT_ALIGNMENT
     storage->pos += (int)padding;
-#endif /* STRICT_ALIGNMENT */
 
     ptr = (void *)&storage->buff[storage->pos];
     storage->pos += (int)size;
@@ -1128,51 +1093,60 @@ compile_data_alloc_with_arena(struct iseq_compile_data_storage **arena, size_t s
 }
 
 static void *
-compile_data_alloc(rb_iseq_t *iseq, size_t size)
+compile_data_alloc(rb_iseq_t *iseq, size_t size, size_t align)
 {
     struct iseq_compile_data_storage ** arena = &ISEQ_COMPILE_DATA(iseq)->node.storage_current;
-    return compile_data_alloc_with_arena(arena, size);
+    return compile_data_alloc_with_arena(arena, size, align);
 }
 
-static inline void *
-compile_data_alloc2(rb_iseq_t *iseq, size_t x, size_t y)
-{
-    size_t size = rb_size_mul_or_raise(x, y, rb_eRuntimeError);
-    return compile_data_alloc(iseq, size);
-}
+#define compile_data_alloc_type(iseq, type) \
+    (type *)compile_data_alloc(iseq, sizeof(type), ALIGNMENT_SIZE_OF(type))
 
 static inline void *
-compile_data_calloc2(rb_iseq_t *iseq, size_t x, size_t y)
+compile_data_alloc2(rb_iseq_t *iseq, size_t elsize, size_t num, size_t align)
 {
-    size_t size = rb_size_mul_or_raise(x, y, rb_eRuntimeError);
-    void *p = compile_data_alloc(iseq, size);
+    size_t size = rb_size_mul_or_raise(elsize, num, rb_eRuntimeError);
+    return compile_data_alloc(iseq, size, align);
+}
+
+#define compile_data_alloc2_type(iseq, type, num) \
+    (type *)compile_data_alloc2(iseq, sizeof(type), num, ALIGNMENT_SIZE_OF(type))
+
+static inline void *
+compile_data_calloc2(rb_iseq_t *iseq, size_t elsize, size_t num, size_t align)
+{
+    size_t size = rb_size_mul_or_raise(elsize, num, rb_eRuntimeError);
+    void *p = compile_data_alloc(iseq, size, align);
     memset(p, 0, size);
     return p;
 }
+
+#define compile_data_calloc2_type(iseq, type, num) \
+    (type *)compile_data_calloc2(iseq, sizeof(type), num, ALIGNMENT_SIZE_OF(type))
 
 static INSN *
 compile_data_alloc_insn(rb_iseq_t *iseq)
 {
     struct iseq_compile_data_storage ** arena = &ISEQ_COMPILE_DATA(iseq)->insn.storage_current;
-    return (INSN *)compile_data_alloc_with_arena(arena, sizeof(INSN));
+    return (INSN *)compile_data_alloc_with_arena(arena, sizeof(INSN), ALIGNMENT_SIZE_OF(INSN));
 }
 
 static LABEL *
 compile_data_alloc_label(rb_iseq_t *iseq)
 {
-    return (LABEL *)compile_data_alloc(iseq, sizeof(LABEL));
+    return compile_data_alloc_type(iseq, LABEL);
 }
 
 static ADJUST *
 compile_data_alloc_adjust(rb_iseq_t *iseq)
 {
-    return (ADJUST *)compile_data_alloc(iseq, sizeof(ADJUST));
+    return compile_data_alloc_type(iseq, ADJUST);
 }
 
 static TRACE *
 compile_data_alloc_trace(rb_iseq_t *iseq)
 {
-    return (TRACE *)compile_data_alloc(iseq, sizeof(TRACE));
+    return compile_data_alloc_type(iseq, TRACE);
 }
 
 /*
@@ -1433,7 +1407,7 @@ new_insn_body(rb_iseq_t *iseq, int line_no, int node_id, enum ruby_vminsn_type i
     if (argc > 0) {
         int i;
         va_start(argv, argc);
-        operands = compile_data_alloc2(iseq, sizeof(VALUE), argc);
+        operands = compile_data_alloc2_type(iseq, VALUE, argc);
         for (i = 0; i < argc; i++) {
             VALUE v = va_arg(argv, VALUE);
             operands[i] = v;
@@ -1451,7 +1425,7 @@ insn_replace_with_operands(rb_iseq_t *iseq, INSN *iobj, enum ruby_vminsn_type in
     if (argc > 0) {
         int i;
         va_start(argv, argc);
-        operands = compile_data_alloc2(iseq, sizeof(VALUE), argc);
+        operands = compile_data_alloc2_type(iseq, VALUE, argc);
         for (i = 0; i < argc; i++) {
             VALUE v = va_arg(argv, VALUE);
             operands[i] = v;
@@ -1491,7 +1465,7 @@ new_callinfo(rb_iseq_t *iseq, ID mid, int argc, unsigned int flag, struct rb_cal
 static INSN *
 new_insn_send(rb_iseq_t *iseq, int line_no, int node_id, ID id, VALUE argc, const rb_iseq_t *blockiseq, VALUE flag, struct rb_callinfo_kwarg *keywords)
 {
-    VALUE *operands = compile_data_calloc2(iseq, sizeof(VALUE), 2);
+    VALUE *operands = compile_data_calloc2_type(iseq, VALUE, 2);
     VALUE ci = (VALUE)new_callinfo(iseq, id, FIX2INT(argc), FIX2INT(flag), keywords, blockiseq != NULL);
     operands[0] = ci;
     operands[1] = (VALUE)blockiseq;
@@ -1692,7 +1666,7 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     debugs("[compile step 6.1 (remove unused catch tables)] \n");
     RUBY_ASSERT(ISEQ_COMPILE_DATA(iseq));
     if (!ISEQ_COMPILE_DATA(iseq)->catch_except_p && ISEQ_BODY(iseq)->catch_table) {
-        xfree(ISEQ_BODY(iseq)->catch_table);
+        ruby_sized_xfree(ISEQ_BODY(iseq)->catch_table, iseq_catch_table_bytes(ISEQ_BODY(iseq)->catch_table->size));
         ISEQ_BODY(iseq)->catch_table = NULL;
     }
 
@@ -2096,7 +2070,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
 
     if (node_args) {
         struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
-        struct rb_args_info *args = &RNODE_ARGS(node_args)->nd_ainfo;
+        const struct rb_args_info *const args = &RNODE_ARGS(node_args)->nd_ainfo;
         ID rest_id = 0;
         int last_comma = 0;
         ID block_id = 0;
@@ -2193,7 +2167,10 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
             body->param.flags.accepts_no_kwarg = TRUE;
         }
 
-        if (block_id) {
+        if (args->no_blockarg) {
+            body->param.flags.accepts_no_block = TRUE;
+        }
+        else if (block_id) {
             body->param.block_start = arg_size++;
             body->param.flags.has_block = TRUE;
             iseq_set_use_block(iseq);
@@ -2398,8 +2375,8 @@ get_cvar_ic_value(rb_iseq_t *iseq,ID id)
     dump_disasm_list_with_cursor(FIRST_ELEMENT(anchor), list, dest)
 
 #define BADINSN_ERROR \
-    (xfree(generated_iseq), \
-     xfree(insns_info), \
+    (SIZED_FREE_N(generated_iseq, generated_iseq_size), \
+     SIZED_FREE_N(insns_info, insns_info_size), \
      BADINSN_DUMP(anchor, list, NULL), \
      COMPILE_ERROR)
 
@@ -2665,8 +2642,13 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     }
 
     /* make instruction sequence */
+    const int generated_iseq_size = code_index;
     generated_iseq = ALLOC_N(VALUE, code_index);
+
+    const int insns_info_size = insn_num;
     insns_info = ALLOC_N(struct iseq_insn_info_entry, insn_num);
+
+    const int positions_size = insn_num;
     positions = ALLOC_N(unsigned int, insn_num);
     if (ISEQ_IS_SIZE(body)) {
         body->is_entries = ZALLOC_N(union iseq_inline_storage_entry, ISEQ_IS_SIZE(body));
@@ -2693,12 +2675,13 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 
     bool needs_bitmap = false;
 
-    if (ISEQ_MBITS_BUFLEN(code_index) == 1) {
+    const size_t mark_offset_bits_size = ISEQ_MBITS_BUFLEN(code_index);
+    if (mark_offset_bits_size == 1) {
         mark_offset_bits = &ISEQ_COMPILE_DATA(iseq)->mark_bits.single;
         ISEQ_COMPILE_DATA(iseq)->is_single_mark_bit = true;
     }
     else {
-        mark_offset_bits = ZALLOC_N(iseq_bits_t, ISEQ_MBITS_BUFLEN(code_index));
+        mark_offset_bits = ZALLOC_N(iseq_bits_t, mark_offset_bits_size);
         ISEQ_COMPILE_DATA(iseq)->mark_bits.list = mark_offset_bits;
         ISEQ_COMPILE_DATA(iseq)->is_single_mark_bit = false;
     }
@@ -2891,11 +2874,11 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                     }
                     else if (diff < 0) {
                         int label_no = adjust->label ? adjust->label->label_no : -1;
-                        xfree(generated_iseq);
-                        xfree(insns_info);
-                        xfree(positions);
+                        SIZED_FREE_N(generated_iseq, generated_iseq_size);
+                        SIZED_FREE_N(insns_info, insns_info_size);
+                        SIZED_FREE_N(positions, positions_size);
                         if (ISEQ_MBITS_BUFLEN(code_size) > 1) {
-                            xfree(mark_offset_bits);
+                            SIZED_FREE_N(mark_offset_bits, ISEQ_MBITS_BUFLEN(code_index));
                         }
                         debug_list(anchor, list);
                         COMPILE_ERROR(iseq, adjust->line_no,
@@ -2927,7 +2910,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
         else {
             body->mark_bits.list = NULL;
             ISEQ_COMPILE_DATA(iseq)->mark_bits.list = NULL;
-            ruby_xfree(mark_offset_bits);
+            SIZED_FREE_N(mark_offset_bits, mark_offset_bits_size);
         }
     }
 
@@ -2935,9 +2918,9 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     body->insns_info.body = insns_info;
     body->insns_info.positions = positions;
 
-    REALLOC_N(insns_info, struct iseq_insn_info_entry, insns_info_index);
+    SIZED_REALLOC_N(insns_info, struct iseq_insn_info_entry, insns_info_index, insns_info_size);
     body->insns_info.body = insns_info;
-    REALLOC_N(positions, unsigned int, insns_info_index);
+    SIZED_REALLOC_N(positions, unsigned int, insns_info_index, positions_size);
     body->insns_info.positions = positions;
     body->insns_info.size = insns_info_index;
 
@@ -4427,6 +4410,7 @@ iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
         ISEQ_COMPILE_DATA(iseq)->option->tailcall_optimization;
     const int do_si = ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction;
     const int do_ou = ISEQ_COMPILE_DATA(iseq)->option->operands_unification;
+    const int do_without_ints = ISEQ_BODY(iseq)->builtin_attrs & BUILTIN_ATTR_WITHOUT_INTERRUPTS;
     int rescue_level = 0;
     int tailcallopt = do_tailcallopt;
 
@@ -4457,6 +4441,22 @@ iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
             }
             if (do_ou) {
                 insn_operands_unification((INSN *)list);
+            }
+
+            if (do_without_ints) {
+                INSN *item = (INSN *)list;
+                if (IS_INSN_ID(item, jump)) {
+                    item->insn_id = BIN(jump_without_ints);
+                }
+                else if (IS_INSN_ID(item, branchif)) {
+                    item->insn_id = BIN(branchif_without_ints);
+                }
+                else if (IS_INSN_ID(item, branchunless)) {
+                    item->insn_id = BIN(branchunless_without_ints);
+                }
+                else if (IS_INSN_ID(item, branchnil)) {
+                    item->insn_id = BIN(branchnil_without_ints);
+                }
             }
 
             if (do_block_optimization) {
@@ -4526,7 +4526,7 @@ new_unified_insn(rb_iseq_t *iseq,
     }
 
     if (argc > 0) {
-        ptr = operands = compile_data_alloc2(iseq, sizeof(VALUE), argc);
+        ptr = operands = compile_data_alloc2_type(iseq, VALUE, argc);
     }
 
     /* copy operands */
@@ -6457,7 +6457,7 @@ add_ensure_range(rb_iseq_t *iseq, struct ensure_range *erange,
                  LABEL *lstart, LABEL *lend)
 {
     struct ensure_range *ne =
-        compile_data_alloc(iseq, sizeof(struct ensure_range));
+        compile_data_alloc_type(iseq, struct ensure_range);
 
     while (erange->next != 0) {
         erange = erange->next;
@@ -9217,6 +9217,9 @@ compile_builtin_attr(rb_iseq_t *iseq, const NODE *node)
             // Let the iseq act like a C method in backtraces
             ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_C_TRACE;
         }
+        else if (strcmp(RSTRING_PTR(string), "without_interrupts") == 0) {
+            ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_WITHOUT_INTERRUPTS;
+        }
         else {
             goto unknown_arg;
         }
@@ -10736,8 +10739,10 @@ compile_shareable_literal_constant(rb_iseq_t *iseq, LINK_ANCHOR *ret, enum rb_pa
             ADD_INSN1(anchor, node, newarray, INT2FIX(RNODE_LIST(node)->as.nd_alen));
         }
         else if (nd_type(node) == NODE_HASH) {
-            int len = (int)RNODE_LIST(RNODE_HASH(node)->nd_head)->as.nd_alen;
-            ADD_INSN1(anchor, node, newhash, INT2FIX(len));
+            long len = RNODE_LIST(RNODE_HASH(node)->nd_head)->as.nd_alen;
+            RBIMPL_ASSERT_OR_ASSUME(len >= 0);
+            RBIMPL_ASSERT_OR_ASSUME(RB_POSFIXABLE(len));
+            ADD_INSN1(anchor, node, newhash, LONG2FIX(len));
         }
         *value_p = Qundef;
         *shareable_literal_p = 0;
@@ -10751,8 +10756,10 @@ compile_shareable_literal_constant(rb_iseq_t *iseq, LINK_ANCHOR *ret, enum rb_pa
             ADD_INSN1(anchor, node, newarray, INT2FIX(RNODE_LIST(node)->as.nd_alen));
         }
         else if (nd_type(node) == NODE_HASH) {
-            int len = (int)RNODE_LIST(RNODE_HASH(node)->nd_head)->as.nd_alen;
-            ADD_INSN1(anchor, node, newhash, INT2FIX(len));
+            long len = RNODE_LIST(RNODE_HASH(node)->nd_head)->as.nd_alen;
+            RBIMPL_ASSERT_OR_ASSUME(len >= 0);
+            RBIMPL_ASSERT_OR_ASSUME(RB_POSFIXABLE(len));
+            ADD_INSN1(anchor, node, newhash, LONG2FIX(len));
         }
         CHECK(compile_make_shareable_node(iseq, ret, anchor, node, false));
         *value_p = Qundef;
@@ -12048,7 +12055,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
             }
 
             if (argc > 0) {
-                argv = compile_data_calloc2(iseq, sizeof(VALUE), argc);
+                argv = compile_data_calloc2_type(iseq, VALUE, argc);
 
                 // add element before operand setup to make GC root
                 ADD_ELEM(anchor,
@@ -12275,23 +12282,18 @@ rb_iseq_mark_and_move_insn_storage(struct iseq_compile_data_storage *storage)
 {
     INSN *iobj = 0;
     size_t size = sizeof(INSN);
+    size_t align = ALIGNMENT_SIZE_OF(INSN);
     unsigned int pos = 0;
 
     while (storage) {
-#ifdef STRICT_ALIGNMENT
-        size_t padding = calc_padding((void *)&storage->buff[pos], size);
-#else
-        const size_t padding = 0; /* expected to be optimized by compiler */
-#endif /* STRICT_ALIGNMENT */
+        size_t padding = calc_padding((void *)&storage->buff[pos], align);
         size_t offset = pos + size + padding;
         if (offset > storage->size || offset > storage->pos) {
             pos = 0;
             storage = storage->next;
         }
         else {
-#ifdef STRICT_ALIGNMENT
             pos += (int)padding;
-#endif /* STRICT_ALIGNMENT */
 
             iobj = (INSN *)&storage->buff[pos];
 
@@ -13127,7 +13129,7 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
         }
         else {
             load_body->mark_bits.list = 0;
-            ruby_xfree(mark_offset_bits);
+            SIZED_FREE_N(mark_offset_bits, ISEQ_MBITS_BUFLEN(iseq_size));
         }
     }
 
@@ -13312,7 +13314,7 @@ ibf_load_local_table(const struct ibf_load *load, ibf_offset_t local_table_offse
         }
 
         if (size == 1 && table[0] == idERROR_INFO) {
-            xfree(table);
+            ruby_sized_xfree(table, sizeof(ID) * size);
             return rb_iseq_shared_exc_local_tbl;
         }
         else {
@@ -13616,7 +13618,7 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
 
     positions = rb_iseq_insns_info_decode_positions(ISEQ_BODY(iseq));
     const ibf_offset_t insns_info_positions_offset = ibf_dump_insns_info_positions(dump, positions, body->insns_info.size);
-    ruby_xfree(positions);
+    SIZED_FREE_N(positions, ISEQ_BODY(iseq)->insns_info.size);
 
     const ibf_offset_t local_table_offset = ibf_dump_local_table(dump, iseq);
     const ibf_offset_t lvar_states_offset = ibf_dump_lvar_states(dump, iseq);
@@ -13652,7 +13654,8 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
         (body->param.flags.anon_rest        << 10) |
         (body->param.flags.anon_kwrest      << 11) |
         (body->param.flags.use_block        << 12) |
-        (body->param.flags.forwardable      << 13) ;
+        (body->param.flags.forwardable      << 13) |
+        (body->param.flags.accepts_no_block << 14);
 
 #if IBF_ISEQ_ENABLE_LOCAL_BUFFER
 #  define IBF_BODY_OFFSET(x) (x)
@@ -13872,6 +13875,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->param.flags.anon_kwrest = (param_flags >> 11) & 1;
     load_body->param.flags.use_block = (param_flags >> 12) & 1;
     load_body->param.flags.forwardable = (param_flags >> 13) & 1;
+    load_body->param.flags.accepts_no_block = (param_flags >> 14) & 1;
     load_body->param.size = param_size;
     load_body->param.lead_num = param_lead_num;
     load_body->param.opt_num = param_opt_num;
@@ -14944,7 +14948,7 @@ static void
 ibf_loader_free(void *ptr)
 {
     struct ibf_load *load = (struct ibf_load *)ptr;
-    ruby_xfree(load);
+    SIZED_FREE(load);
 }
 
 static size_t

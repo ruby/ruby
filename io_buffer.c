@@ -1424,6 +1424,17 @@ rb_io_buffer_try_unlock(VALUE self)
     return 0;
 }
 
+static VALUE
+rb_io_buffer_locked_ensure(VALUE self)
+{
+    struct rb_io_buffer *buffer = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+
+    buffer->flags &= ~RB_IO_BUFFER_LOCKED;
+
+    return Qnil;
+}
+
 /*
  *  call-seq: locked { ... }
  *
@@ -1466,11 +1477,7 @@ rb_io_buffer_locked(VALUE self)
 
     buffer->flags |= RB_IO_BUFFER_LOCKED;
 
-    VALUE result = rb_yield(self);
-
-    buffer->flags &= ~RB_IO_BUFFER_LOCKED;
-
-    return result;
+    return rb_ensure(rb_yield, self, rb_io_buffer_locked_ensure, self);
 }
 
 /*
@@ -1481,7 +1488,7 @@ rb_io_buffer_locked(VALUE self)
  *  * for a buffer created from scratch: free memory.
  *  * for a buffer created from string: undo the association.
  *
- *  After the buffer is freed, no further operations can't be performed on it.
+ *  After the buffer is freed, no further operations can be performed on it.
  *
  *  You can resize a freed buffer to re-allocate it.
  *
@@ -3500,7 +3507,7 @@ memory_not(unsigned char * restrict output, unsigned char * restrict base, size_
  *  call-seq:
  *    ~source -> io_buffer
  *
- *  Generate a new buffer the same size as the source by applying the binary NOT
+ *  Generate a new buffer the same size as the source by applying the unary NOT
  *  operation to the source.
  *
  *    ~IO::Buffer.for("1234567890")
@@ -3690,7 +3697,7 @@ memory_not_inplace(unsigned char * restrict base, size_t size)
  *  call-seq:
  *    source.not! -> io_buffer
  *
- *  Modify the source buffer in place by applying the binary NOT
+ *  Modify the source buffer in place by applying the unary NOT
  *  operation to the source.
  *
  *    source = IO::Buffer.for("1234567890").dup # Make a read/write copy.

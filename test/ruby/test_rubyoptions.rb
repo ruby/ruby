@@ -446,37 +446,28 @@ class TestRubyOptions < Test::Unit::TestCase
   def test_search
     rubypath_orig = ENV['RUBYPATH']
     path_orig = ENV['PATH']
+    libpath = (path_orig if path_orig && RbConfig::CONFIG['LIBPATHENV'] == 'PATH')
 
-    Tempfile.create(["test_ruby_test_rubyoption", ".rb"]) {|t|
-      t.puts "p 1"
-      t.close
+    Dir.mktmpdir("test_ruby_test_rubyoption") do |path|
+      name = "test_rubyoption.rb"
+      parent, dir = File.split(path)
+      File.write("#{path}/#{name}", "p 1")
+      load_error = %r[#{Regexp.quote dir}/#{Regexp.quote name} \(LoadError\)]
 
-      @verbose = $VERBOSE
-      $VERBOSE = nil
-
-      path, name = File.split(t.path)
-
-      ENV['PATH'] = (path_orig && RbConfig::CONFIG['LIBPATHENV'] == 'PATH') ?
-          [path, path_orig].join(File::PATH_SEPARATOR) : path
+      ENV['PATH'] = [path, *libpath].join(File::PATH_SEPARATOR)
       assert_in_out_err(%w(-S) + [name], "", %w(1), [])
+      ENV['PATH'] = [parent, *libpath].join(File::PATH_SEPARATOR)
+      assert_in_out_err(%W(-S) + ["#{dir}/#{name}"], "", [], load_error)
       ENV['PATH'] = path_orig
 
       ENV['RUBYPATH'] = path
       assert_in_out_err(%w(-S) + [name], "", %w(1), [])
-    }
-
-  ensure
-    if rubypath_orig
+      ENV['RUBYPATH'] = parent
+      assert_in_out_err(%w(-S) + ["#{dir}/#{name}"], "", [], load_error)
+    ensure
       ENV['RUBYPATH'] = rubypath_orig
-    else
-      ENV.delete('RUBYPATH')
-    end
-    if path_orig
       ENV['PATH'] = path_orig
-    else
-      ENV.delete('PATH')
     end
-    $VERBOSE = @verbose
   end
 
   def test_shebang

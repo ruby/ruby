@@ -11,9 +11,10 @@
 #include "prism/encoding.h"
 #include "prism/options.h"
 #include "prism/static_literals.h"
+#include "prism/util/pm_arena.h"
 #include "prism/util/pm_constant_pool.h"
 #include "prism/util/pm_list.h"
-#include "prism/util/pm_newline_list.h"
+#include "prism/util/pm_line_offset_list.h"
 #include "prism/util/pm_string.h"
 
 #include <stdbool.h>
@@ -479,17 +480,11 @@ typedef struct {
     /** The embedded base node. */
     pm_list_node_t node;
 
-    /** A pointer to the start of the key in the source. */
-    const uint8_t *key_start;
+    /** The key of the magic comment. */
+    pm_location_t key;
 
-    /** A pointer to the start of the value in the source. */
-    const uint8_t *value_start;
-
-    /** The length of the key in the source. */
-    uint32_t key_length;
-
-    /** The length of the value in the source. */
-    uint32_t value_length;
+    /** The value of the magic comment. */
+    pm_location_t value;
 } pm_magic_comment_t;
 
 /**
@@ -641,6 +636,9 @@ typedef uint32_t pm_state_stack_t;
  * it's considering.
  */
 struct pm_parser {
+    /** The arena used for all AST-lifetime allocations. Caller-owned. */
+    pm_arena_t *arena;
+
     /**
      * The next node identifier that will be assigned. This is a unique
      * identifier used to track nodes such that the syntax tree can be dropped
@@ -788,8 +786,8 @@ struct pm_parser {
      */
     pm_constant_pool_t constant_pool;
 
-    /** This is the list of newline offsets in the source file. */
-    pm_newline_list_t newline_list;
+    /** This is the list of line offsets in the source file. */
+    pm_line_offset_list_t line_offsets;
 
     /**
      * We want to add a flag to integer nodes that indicates their base. We only

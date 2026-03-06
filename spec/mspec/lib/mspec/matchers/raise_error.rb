@@ -90,4 +90,15 @@ module MSpecMatchers
   private def raise_error(exception = Exception, message = nil, &block)
     RaiseErrorMatcher.new(exception, message, &block)
   end
+
+  # CRuby < 4.1 has inconsistent coercion errors:
+  # https://bugs.ruby-lang.org/issues/21864
+  # This matcher ignores the message on CRuby < 4.1
+  # and checks the message for all other cases, including other Rubies
+  private def raise_consistent_error(exception = Exception, message = nil, &block)
+    if RUBY_ENGINE == "ruby" and ruby_version_is ""..."4.1"
+      message = nil
+    end
+    RaiseErrorMatcher.new(exception, message, &block)
+  end
 end

@@ -1,3 +1,23 @@
+Version 4.0.1
+=============
+
+Notable changes
+---------------
+
+* Add `sync_close` keyword argument to `OpenSSL::SSL::SSLSocket.new` as a
+  short-hand for setting `sync_close` attribute on the created `SSLSocket`
+  instance.
+  [[GitHub #955]](https://github.com/ruby/openssl/issues/955)
+  [[GitHub #996]](https://github.com/ruby/openssl/pull/996)
+
+
+Bug fixes
+---------
+
+* Fix uninitialized variables in `OpenSSL::OCSP::BasicResponse#status`.
+  [[GitHub #1004]](https://github.com/ruby/openssl/pull/1004)
+
+
 Version 4.0.0
 =============
 

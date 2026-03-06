@@ -44,6 +44,13 @@ $(srcdir)/prism/diagnostic.h: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATE
 realclean-prism-srcs::
 	$(RM) $(srcdir)/prism/diagnostic.h
 
+main incs: $(srcdir)/prism/node_new.h
+$(srcdir)/prism/node_new.h: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/include/prism/node_new.h.erb
+	$(Q) $(BASERUBY) $(PRISM_TEMPLATE) include/prism/node_new.h $@
+
+realclean-prism-srcs::
+	$(RM) $(srcdir)/prism/node_new.h
+
 main srcs: $(srcdir)/lib/prism/compiler.rb
 $(srcdir)/lib/prism/compiler.rb: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/lib/prism/compiler.rb.erb
 	$(Q) $(BASERUBY) $(PRISM_TEMPLATE) lib/prism/compiler.rb $@

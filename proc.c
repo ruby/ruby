@@ -98,7 +98,7 @@ proc_memsize(const void *ptr)
     return sizeof(rb_proc_t);
 }
 
-static const rb_data_type_t proc_data_type = {
+const rb_data_type_t ruby_proc_data_type = {
     "proc",
     {
         proc_mark_and_move,
@@ -108,6 +108,8 @@ static const rb_data_type_t proc_data_type = {
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
+
+#define proc_data_type ruby_proc_data_type
 
 VALUE
 rb_proc_alloc(VALUE klass)
@@ -256,7 +258,7 @@ static void
 binding_free(void *ptr)
 {
     RUBY_FREE_ENTER("binding");
-    ruby_xfree(ptr);
+    SIZED_FREE((rb_binding_t *)ptr);
     RUBY_FREE_LEAVE("binding");
 }
 
@@ -2004,6 +2006,8 @@ method_eq(VALUE method, VALUE other)
 
     klass1 = method_entry_defined_class(m1->me);
     klass2 = method_entry_defined_class(m2->me);
+    if (RB_TYPE_P(klass1, T_ICLASS)) klass1 = RBASIC_CLASS(klass1);
+    if (RB_TYPE_P(klass2, T_ICLASS)) klass2 = RBASIC_CLASS(klass2);
 
     if (!rb_method_entry_eq(m1->me, m2->me) ||
         klass1 != klass2 ||
@@ -3429,6 +3433,7 @@ method_inspect(VALUE method)
         const VALUE keyrest = ID2SYM(rb_intern("keyrest"));
         const VALUE block = ID2SYM(rb_intern("block"));
         const VALUE nokey = ID2SYM(rb_intern("nokey"));
+        const VALUE noblock = ID2SYM(rb_intern("noblock"));
         int forwarding = 0;
 
         rb_str_buf_cat2(str, "(");
@@ -3461,6 +3466,9 @@ method_inspect(VALUE method)
                     name = rb_str_new2("block");
                 }
                 else if (kind == nokey) {
+                    name = rb_str_new2("nil");
+                }
+                else if (kind == noblock) {
                     name = rb_str_new2("nil");
                 }
                 else {
@@ -3514,6 +3522,9 @@ method_inspect(VALUE method)
             }
             else if (kind == nokey) {
                 rb_str_buf_cat2(str, "**nil");
+            }
+            else if (kind == noblock) {
+                rb_str_buf_cat2(str, "&nil");
             }
 
             if (i < RARRAY_LEN(params) - 1) {

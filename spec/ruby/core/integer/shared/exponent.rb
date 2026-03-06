@@ -57,7 +57,15 @@ describe :integer_exponent, shared: true do
     end
 
     ruby_version_is "3.4" do
-      it "raises an ArgumentError when the number is too big" do
+      it "returns an Integer for results larger than the old 32MB limit" do
+        # 2 ** 40000000 requires 40000001 bits
+        # This exceeds the old 32MB limit but is within the new 16GB limit
+        result = 2.send(@method, 40000000)
+        result.should.is_a?(Integer)
+        result.bit_length.should == 40000001
+      end
+
+      it "raises an ArgumentError when the result size exceeds the limit" do
         -> { 100000000.send(@method, 1000000000) }.should raise_error(ArgumentError)
       end
     end
@@ -128,7 +136,17 @@ describe :integer_exponent, shared: true do
     end
 
     ruby_version_is "3.4" do
-      it "does not switch to a Float when the values is too big" do
+      it "returns an Integer for large Bignum results exceeding the old limit" do
+        # (2 ** 70) ** 500000 requires 35000001 bits
+        # This exceeds the old 32MB limit but is within the new 16GB limit
+        bignum_base = 2 ** 70
+        result = bignum_base.send(@method, 500000)
+        result.should.is_a?(Integer)
+        result.bit_length.should == 35000001
+      end
+
+      it "raises an ArgumentError when Bignum result exceeds the limit" do
+        # @bignum ** @bignum would require enormous memory
         -> {
           @bignum.send(@method, @bignum)
         }.should raise_error(ArgumentError)

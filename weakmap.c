@@ -394,7 +394,7 @@ wmap_aset(VALUE self, VALUE key, VALUE val)
     RB_OBJ_WRITTEN(self, Qundef, key);
     RB_OBJ_WRITTEN(self, Qundef, val);
 
-    return Qnil;
+    return val;
 }
 
 /* Retrieves a weakly referenced object with the given key */

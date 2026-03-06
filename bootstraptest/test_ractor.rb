@@ -507,14 +507,14 @@ assert_equal 'false', %q{
 }
 
 # To copy the object, now Marshal#dump is used
-assert_equal "allocator undefined for Thread", %q{
+assert_match /can not copy unshareable object/, %q{
   obj = Thread.new{}
   begin
     r = Ractor.new obj do |msg|
       msg
     end
-  rescue TypeError => e
-    e.message #=> no _dump_data is defined for class Thread
+  rescue Ractor::Error => e
+    e.message
   else
     'ng'
   end
@@ -803,7 +803,7 @@ assert_equal 'true', %q{
 }
 
 # given block Proc will be isolated, so can not access outer variables.
-assert_equal 'ArgumentError', %q{
+assert_equal 'Ractor::IsolationError', %q{
   begin
     a = true
     r = Ractor.new do

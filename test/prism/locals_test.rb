@@ -28,6 +28,12 @@ module Prism
 
       # https://bugs.ruby-lang.org/issues/21168#note-5
       "command_method_call_2.txt",
+
+      # https://bugs.ruby-lang.org/issues/21669
+      "4.1/void_value.txt",
+
+      # https://bugs.ruby-lang.org/issues/19107
+      "4.1/trailing_comma_after_method_arguments.txt",
     ]
 
     Fixture.each_for_current_ruby(except: except) do |fixture|
@@ -204,7 +210,7 @@ module Prism
               end
             end
 
-            if params.block
+            if params.block.is_a?(BlockParameterNode)
               sorted << (params.block.name || :&)
             end
 

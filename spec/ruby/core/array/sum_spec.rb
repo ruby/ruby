@@ -74,13 +74,11 @@ describe "Array#sum" do
     [b].sum(a).should == 42
   end
 
-  ruby_bug '#19530', ''...'3.3' do
-    it "calls + on the init value" do
-      a = mock("a")
-      b = mock("b")
-      a.should_receive(:+).with(42).and_return(b)
-      [42].sum(a).should == b
-    end
+  it "calls + on the init value" do
+    a = mock("a")
+    b = mock("b")
+    a.should_receive(:+).with(42).and_return(b)
+    [42].sum(a).should == b
   end
 end
 

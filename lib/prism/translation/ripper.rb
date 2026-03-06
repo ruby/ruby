@@ -88,7 +88,7 @@ module Prism
       #      # => ["def", " ", "m", "(", "a", ")", " ", "nil", " ", "end"]
       #
       def self.tokenize(...)
-        lex(...).map(&:value)
+        lex(...).map { |token| token[2] }
       end
 
       # This contains a table of all of the parser events and their
@@ -475,12 +475,22 @@ module Prism
       # The current line number of the parser.
       attr_reader :lineno
 
-      # The current column number of the parser.
+      # The current column in bytes of the parser.
       attr_reader :column
 
       # Create a new Translation::Ripper object with the given source.
       def initialize(source, filename = "(ripper)", lineno = 1)
-        @source = source
+        if source.is_a?(IO)
+          @source = source.read
+        elsif source.respond_to?(:gets)
+          @source = +""
+          while line = source.gets
+            @source << line
+          end
+        else
+          @source = source.to_str
+        end
+
         @filename = filename
         @lineno = lineno
         @column = 0
@@ -583,6 +593,8 @@ module Prism
       ##########################################################################
       # Visitor methods
       ##########################################################################
+
+      # :stopdoc:
 
       # alias foo bar
       # ^^^^^^^^^^^^^
@@ -2611,6 +2623,13 @@ module Prism
         on_var_ref(on_kw("nil"))
       end
 
+      # def foo(&nil); end
+      #         ^^^^
+      def visit_no_block_parameter_node(node)
+        bounds(node.location)
+        on_blockarg(:nil)
+      end
+
       # def foo(**nil); end
       #         ^^^^^
       def visit_no_keywords_parameter_node(node)
@@ -3152,14 +3171,13 @@ module Prism
       # :foo
       # ^^^^
       def visit_symbol_node(node)
-        if (opening = node.opening)&.match?(/^%s|['"]:?$/)
+        if node.value_loc.nil?
+          bounds(node.location)
+          on_dyna_symbol(on_string_content)
+        elsif (opening = node.opening)&.match?(/^%s|['"]:?$/)
           bounds(node.value_loc)
-          content = on_string_content
-
-          if !(value = node.value).empty?
-            content = on_string_add(content, on_tstring_content(value))
-          end
-
+          content = on_string_add(on_string_content, on_tstring_content(node.value))
+          bounds(node.location)
           on_dyna_symbol(content)
         elsif (closing = node.closing) == ":"
           bounds(node.location)
@@ -3448,6 +3466,8 @@ module Prism
         @lineno = location.start_line
         @column = location.start_column
       end
+
+      # :startdoc:
 
       ##########################################################################
       # Ripper interface

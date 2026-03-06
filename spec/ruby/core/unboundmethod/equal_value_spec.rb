@@ -35,6 +35,12 @@ describe "UnboundMethod#==" do
 
     @method_one = UnboundMethodSpecs::Methods.instance_method(:one)
     @method_two = UnboundMethodSpecs::Methods.instance_method(:two)
+
+    @mixin = UnboundMethodSpecs::Mixin.instance_method(:mixin_method)
+    @includer_base = UnboundMethodSpecs::IncluderBase.new.method(:mixin_method).unbind
+    @includer_child = UnboundMethodSpecs::IncluderChild.new.method(:mixin_method).unbind
+    @extender_base = UnboundMethodSpecs::ExtenderBase.method(:mixin_method).unbind
+    @extender_child = UnboundMethodSpecs::ExtenderChild.method(:mixin_method).unbind
   end
 
   it "returns true if objects refer to the same method" do
@@ -91,6 +97,30 @@ describe "UnboundMethod#==" do
     (@includer == @includee).should == true
   end
 
+  ruby_bug "#21873", ""..."4.1" do
+    it "returns true if same method is present in an object through module inclusion" do
+      (@mixin == @includer_base).should == true
+      (@includer_base == @mixin).should == true
+
+      (@mixin == @includer_child).should == true
+      (@includer_child == @mixin).should == true
+
+      (@includer_base == @includer_child).should == true
+      (@includer_child == @includer_base).should == true
+    end
+
+    it "returns true if same method is present in an object through module extension" do
+      (@mixin == @extender_base).should == true
+      (@extender_base == @mixin).should == true
+
+      (@mixin == @extender_child).should == true
+      (@extender_child == @mixin).should == true
+
+      (@extender_base == @extender_child).should == true
+      (@extender_child == @extender_base).should == true
+    end
+  end
+
   it "returns false if both have same Module, same name, identical body but not the same" do
     class UnboundMethodSpecs::Methods
       def discard_1; :discard; end
@@ -110,9 +140,6 @@ describe "UnboundMethod#==" do
     c.method(:n).should == Class.instance_method(:new).bind(c)
   end
 
-  # On CRuby < 3.2, the 2 specs below pass due to method/instance_method skipping zsuper methods.
-  # We are interested in the general pattern working, i.e. the combination of method/instance_method
-  # and #== exposes the wanted behavior.
   it "considers methods through visibility change equal" do
     c = Class.new do
       class << self

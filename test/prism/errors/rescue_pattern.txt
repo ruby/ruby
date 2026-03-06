@@ -1,0 +1,4 @@
+a rescue b => c in d
+                ^~ unexpected 'in', expecting end-of-input
+                ^~ unexpected 'in', ignoring it
+

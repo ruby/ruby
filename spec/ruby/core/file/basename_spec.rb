@@ -162,11 +162,7 @@ describe "File.basename" do
 
   it "rejects strings encoded with non ASCII-compatible encodings" do
     Encoding.list.reject(&:ascii_compatible?).reject(&:dummy?).each do |enc|
-      begin
-        path = "/foo/bar".encode(enc)
-      rescue Encoding::ConverterNotFoundError
-        next
-      end
+      path = "/foo/bar".encode(enc)
 
       -> {
         File.basename(path)

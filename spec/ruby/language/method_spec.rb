@@ -1101,6 +1101,16 @@ describe "A method" do
     end
 
     evaluate <<-ruby do
+      def m(**nil); :ok; end;
+      ruby
+
+      m().should == :ok
+      -> { m(a: 1) }.should raise_error(ArgumentError, 'no keywords accepted')
+      -> { m(**{a: 1}) }.should raise_error(ArgumentError, 'no keywords accepted')
+      -> { m("a" => 1) }.should raise_error(ArgumentError, 'no keywords accepted')
+    end
+
+    evaluate <<-ruby do
       def m(a, **nil); a end;
       ruby
 
@@ -1126,6 +1136,18 @@ describe "A method" do
 
       result = m(1, {foo: :bar})
       result.should == [1, nil, nil, {foo: :bar}, nil, {}]
+    end
+
+    ruby_version_is "4.1" do
+      evaluate <<-ruby do
+        def m(a, &nil); a end;
+        ruby
+
+        m(1).should == 1
+
+        -> { m(1) {} }.should raise_error(ArgumentError, 'no block accepted')
+        -> { m(1, &proc {}) }.should raise_error(ArgumentError, 'no block accepted')
+      end
     end
   end
 
@@ -1234,10 +1256,8 @@ describe "A method call with a space between method name and parentheses" do
       args.should == [true]
     end
 
-    ruby_version_is "3.3" do
-      it "supports multiple statements" do
-        eval("m (1; 2)").should == [2]
-      end
+    it "supports multiple statements" do
+      eval("m (1; 2)").should == [2]
     end
   end
 

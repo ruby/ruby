@@ -344,13 +344,6 @@ class SimpleDelegator < Delegator
   end
 end
 
-def Delegator.delegating_block(mid) # :nodoc:
-  lambda do |*args, &block|
-    target = self.__getobj__
-    target.__send__(mid, *args, &block)
-  end.ruby2_keywords
-end
-
 #
 # The primary interface to this library.  Use to setup delegation when defining
 # your class.
@@ -400,14 +393,29 @@ def DelegateClass(superclass, &block)
   public_instance_methods = superclass.public_instance_methods
   public_instance_methods -= ignores
 
-  normal, special = public_instance_methods.partition { |m| m.match?(/\A[a-zA-Z]\w*[!\?]?\z/) }
+  methods_to_define =
+    public_instance_methods.map { |x| [x, false] } +
+    protected_instance_methods.map { |x| [x, true] }
 
-  source = normal.map do |method|
-    "def #{method}(...); __getobj__.#{method}(...); end"
-  end
+  source = []
 
-  protected_instance_methods.each do |method|
-    source << "def #{method}(...); __getobj__.__send__(#{method.inspect}, ...); end"
+  methods_to_define.each do |target_name, is_protected|
+    unless target_name.match?(/\A[_a-zA-Z]\w*[!\?]?\z/)
+      placeholder_name = :__delegate
+    end
+
+    send_source =
+      if is_protected || placeholder_name
+        "__getobj__.__send__(#{target_name.inspect}, ...)"
+      else
+        "__getobj__.#{target_name}(...)"
+      end
+    source << "def #{placeholder_name || target_name}(...); #{send_source}; end"
+
+    if placeholder_name
+      source << "alias_method #{target_name.inspect}, :#{placeholder_name}"
+      source << "remove_method :#{placeholder_name}"
+    end
   end
 
   klass.module_eval do
@@ -425,10 +433,6 @@ def DelegateClass(superclass, &block)
     end
 
     class_eval(source.join(";"), __FILE__, __LINE__)
-
-    special.each do |method|
-      define_method(method, Delegator.delegating_block(method))
-    end
 
     protected(*protected_instance_methods)
   end

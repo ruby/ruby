@@ -23,15 +23,7 @@ describe "Set#merge" do
     end
   end
 
-  ruby_version_is ""..."3.3" do
-    it "accepts only a single argument" do
-      -> { Set[].merge([], []) }.should raise_error(ArgumentError, "wrong number of arguments (given 2, expected 1)")
-    end
-  end
-
-  ruby_version_is "3.3" do
-    it "accepts multiple arguments" do
-      Set[:a, :b].merge(Set[:b, :c], [:d]).should == Set[:a, :b, :c, :d]
-    end
+  it "accepts multiple arguments" do
+    Set[:a, :b].merge(Set[:b, :c], [:d]).should == Set[:a, :b, :c, :d]
   end
 end

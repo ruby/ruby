@@ -51,7 +51,7 @@
 # See:
 #
 # - https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html
-# - https://github.com/rdp/ruby_tutorials_core/wiki/Ruby-Talk-FAQ#-why-are-rubys-floats-imprecise
+# - https://github.com/rdp/ruby_tutorials_core/wiki/Ruby-Talk-FAQ#user-content--why-are-rubys-floats-imprecise
 # - https://en.wikipedia.org/wiki/Floating_point#Accuracy_problems
 #
 # Note that precise storage and computation of rational numbers
@@ -72,9 +72,9 @@
 # First, what's elsewhere. Class \Float:
 #
 # - Inherits from
-#   {class Numeric}[rdoc-ref:Numeric@What-27s+Here]
-#   and {class Object}[rdoc-ref:Object@What-27s+Here].
-# - Includes {module Comparable}[rdoc-ref:Comparable@What-27s+Here].
+#   {class Numeric}[rdoc-ref:Numeric@Whats+Here]
+#   and {class Object}[rdoc-ref:Object@Whats+Here].
+# - Includes {module Comparable}[rdoc-ref:Comparable@Whats+Here].
 #
 # Here, class \Float provides methods for:
 #

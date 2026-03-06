@@ -341,6 +341,13 @@ pub const RMODULE_IS_REFINEMENT: ruby_rmodule_flags = 8192;
 pub type ruby_rmodule_flags = u32;
 pub const ROBJECT_HEAP: ruby_robject_flags = 65536;
 pub type ruby_robject_flags = u32;
+pub const RUBY_TYPED_FREE_IMMEDIATELY: rbimpl_typeddata_flags = 1;
+pub const RUBY_TYPED_EMBEDDABLE: rbimpl_typeddata_flags = 2;
+pub const RUBY_TYPED_FROZEN_SHAREABLE: rbimpl_typeddata_flags = 256;
+pub const RUBY_TYPED_WB_PROTECTED: rbimpl_typeddata_flags = 32;
+pub const RUBY_TYPED_FL_IS_TYPED_DATA: rbimpl_typeddata_flags = 64;
+pub const RUBY_TYPED_DECL_MARKING: rbimpl_typeddata_flags = 16384;
+pub type rbimpl_typeddata_flags = u32;
 pub type rb_event_flag_t = u32;
 pub type rb_block_call_func = ::std::option::Option<
     unsafe extern "C" fn(
@@ -585,6 +592,7 @@ pub const BUILTIN_ATTR_LEAF: rb_builtin_attr = 1;
 pub const BUILTIN_ATTR_SINGLE_NOARG_LEAF: rb_builtin_attr = 2;
 pub const BUILTIN_ATTR_INLINE_BLOCK: rb_builtin_attr = 4;
 pub const BUILTIN_ATTR_C_TRACE: rb_builtin_attr = 8;
+pub const BUILTIN_ATTR_WITHOUT_INTERRUPTS: rb_builtin_attr = 16;
 pub type rb_builtin_attr = u32;
 pub type rb_jit_func_t = ::std::option::Option<
     unsafe extern "C" fn(
@@ -1078,6 +1086,39 @@ impl rb_iseq_constant_body_rb_iseq_parameters__bindgen_ty_1 {
         }
     }
     #[inline]
+    pub fn accepts_no_block(&self) -> ::std::os::raw::c_uint {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(14usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_accepts_no_block(&mut self, val: ::std::os::raw::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(14usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub unsafe fn accepts_no_block_raw(this: *const Self) -> ::std::os::raw::c_uint {
+        unsafe {
+            ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
+                ::std::ptr::addr_of!((*this)._bitfield_1),
+                14usize,
+                1u8,
+            ) as u32)
+        }
+    }
+    #[inline]
+    pub unsafe fn set_accepts_no_block_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
+                ::std::ptr::addr_of_mut!((*this)._bitfield_1),
+                14usize,
+                1u8,
+                val as u64,
+            )
+        }
+    }
+    #[inline]
     pub fn new_bitfield_1(
         has_lead: ::std::os::raw::c_uint,
         has_opt: ::std::os::raw::c_uint,
@@ -1093,6 +1134,7 @@ impl rb_iseq_constant_body_rb_iseq_parameters__bindgen_ty_1 {
         anon_kwrest: ::std::os::raw::c_uint,
         use_block: ::std::os::raw::c_uint,
         forwardable: ::std::os::raw::c_uint,
+        accepts_no_block: ::std::os::raw::c_uint,
     ) -> __BindgenBitfieldUnit<[u8; 2usize]> {
         let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 2usize]> = Default::default();
         __bindgen_bitfield_unit.set(0usize, 1u8, {
@@ -1150,6 +1192,10 @@ impl rb_iseq_constant_body_rb_iseq_parameters__bindgen_ty_1 {
         __bindgen_bitfield_unit.set(13usize, 1u8, {
             let forwardable: u32 = unsafe { ::std::mem::transmute(forwardable) };
             forwardable as u64
+        });
+        __bindgen_bitfield_unit.set(14usize, 1u8, {
+            let accepts_no_block: u32 = unsafe { ::std::mem::transmute(accepts_no_block) };
+            accepts_no_block as u64
         });
         __bindgen_bitfield_unit
     }
@@ -1418,12 +1464,12 @@ pub const VM_ENV_FLAG_ISOLATED: vm_frame_env_flags = 16;
 pub type vm_frame_env_flags = u32;
 pub type attr_index_t = u16;
 pub type shape_id_t = u32;
-pub const SHAPE_ID_HEAP_INDEX_MASK: shape_id_fl_type = 29360128;
-pub const SHAPE_ID_FL_FROZEN: shape_id_fl_type = 33554432;
-pub const SHAPE_ID_FL_HAS_OBJECT_ID: shape_id_fl_type = 67108864;
-pub const SHAPE_ID_FL_TOO_COMPLEX: shape_id_fl_type = 134217728;
-pub const SHAPE_ID_FL_NON_CANONICAL_MASK: shape_id_fl_type = 100663296;
-pub const SHAPE_ID_FLAGS_MASK: shape_id_fl_type = 264241152;
+pub const SHAPE_ID_HEAP_INDEX_MASK: shape_id_fl_type = 16252928;
+pub const SHAPE_ID_FL_FROZEN: shape_id_fl_type = 16777216;
+pub const SHAPE_ID_FL_HAS_OBJECT_ID: shape_id_fl_type = 33554432;
+pub const SHAPE_ID_FL_TOO_COMPLEX: shape_id_fl_type = 67108864;
+pub const SHAPE_ID_FL_NON_CANONICAL_MASK: shape_id_fl_type = 50331648;
+pub const SHAPE_ID_FLAGS_MASK: shape_id_fl_type = 133693440;
 pub type shape_id_fl_type = u32;
 #[repr(C)]
 pub struct rb_cvar_class_tbl_entry {
@@ -1459,8 +1505,8 @@ pub struct rb_callinfo {
     pub flags: VALUE,
     pub kwarg: *const rb_callinfo_kwarg,
     pub mid: VALUE,
-    pub flag: VALUE,
-    pub argc: VALUE,
+    pub flag: ::std::os::raw::c_uint,
+    pub argc: ::std::os::raw::c_uint,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -1564,180 +1610,190 @@ pub const YARVINSN_jump: ruby_vminsn_type = 72;
 pub const YARVINSN_branchif: ruby_vminsn_type = 73;
 pub const YARVINSN_branchunless: ruby_vminsn_type = 74;
 pub const YARVINSN_branchnil: ruby_vminsn_type = 75;
-pub const YARVINSN_once: ruby_vminsn_type = 76;
-pub const YARVINSN_opt_case_dispatch: ruby_vminsn_type = 77;
-pub const YARVINSN_opt_plus: ruby_vminsn_type = 78;
-pub const YARVINSN_opt_minus: ruby_vminsn_type = 79;
-pub const YARVINSN_opt_mult: ruby_vminsn_type = 80;
-pub const YARVINSN_opt_div: ruby_vminsn_type = 81;
-pub const YARVINSN_opt_mod: ruby_vminsn_type = 82;
-pub const YARVINSN_opt_eq: ruby_vminsn_type = 83;
-pub const YARVINSN_opt_neq: ruby_vminsn_type = 84;
-pub const YARVINSN_opt_lt: ruby_vminsn_type = 85;
-pub const YARVINSN_opt_le: ruby_vminsn_type = 86;
-pub const YARVINSN_opt_gt: ruby_vminsn_type = 87;
-pub const YARVINSN_opt_ge: ruby_vminsn_type = 88;
-pub const YARVINSN_opt_ltlt: ruby_vminsn_type = 89;
-pub const YARVINSN_opt_and: ruby_vminsn_type = 90;
-pub const YARVINSN_opt_or: ruby_vminsn_type = 91;
-pub const YARVINSN_opt_aref: ruby_vminsn_type = 92;
-pub const YARVINSN_opt_aset: ruby_vminsn_type = 93;
-pub const YARVINSN_opt_length: ruby_vminsn_type = 94;
-pub const YARVINSN_opt_size: ruby_vminsn_type = 95;
-pub const YARVINSN_opt_empty_p: ruby_vminsn_type = 96;
-pub const YARVINSN_opt_succ: ruby_vminsn_type = 97;
-pub const YARVINSN_opt_not: ruby_vminsn_type = 98;
-pub const YARVINSN_opt_regexpmatch2: ruby_vminsn_type = 99;
-pub const YARVINSN_invokebuiltin: ruby_vminsn_type = 100;
-pub const YARVINSN_opt_invokebuiltin_delegate: ruby_vminsn_type = 101;
-pub const YARVINSN_opt_invokebuiltin_delegate_leave: ruby_vminsn_type = 102;
-pub const YARVINSN_getlocal_WC_0: ruby_vminsn_type = 103;
-pub const YARVINSN_getlocal_WC_1: ruby_vminsn_type = 104;
-pub const YARVINSN_setlocal_WC_0: ruby_vminsn_type = 105;
-pub const YARVINSN_setlocal_WC_1: ruby_vminsn_type = 106;
-pub const YARVINSN_putobject_INT2FIX_0_: ruby_vminsn_type = 107;
-pub const YARVINSN_putobject_INT2FIX_1_: ruby_vminsn_type = 108;
-pub const YARVINSN_trace_nop: ruby_vminsn_type = 109;
-pub const YARVINSN_trace_getlocal: ruby_vminsn_type = 110;
-pub const YARVINSN_trace_setlocal: ruby_vminsn_type = 111;
-pub const YARVINSN_trace_getblockparam: ruby_vminsn_type = 112;
-pub const YARVINSN_trace_setblockparam: ruby_vminsn_type = 113;
-pub const YARVINSN_trace_getblockparamproxy: ruby_vminsn_type = 114;
-pub const YARVINSN_trace_getspecial: ruby_vminsn_type = 115;
-pub const YARVINSN_trace_setspecial: ruby_vminsn_type = 116;
-pub const YARVINSN_trace_getinstancevariable: ruby_vminsn_type = 117;
-pub const YARVINSN_trace_setinstancevariable: ruby_vminsn_type = 118;
-pub const YARVINSN_trace_getclassvariable: ruby_vminsn_type = 119;
-pub const YARVINSN_trace_setclassvariable: ruby_vminsn_type = 120;
-pub const YARVINSN_trace_opt_getconstant_path: ruby_vminsn_type = 121;
-pub const YARVINSN_trace_getconstant: ruby_vminsn_type = 122;
-pub const YARVINSN_trace_setconstant: ruby_vminsn_type = 123;
-pub const YARVINSN_trace_getglobal: ruby_vminsn_type = 124;
-pub const YARVINSN_trace_setglobal: ruby_vminsn_type = 125;
-pub const YARVINSN_trace_putnil: ruby_vminsn_type = 126;
-pub const YARVINSN_trace_putself: ruby_vminsn_type = 127;
-pub const YARVINSN_trace_putobject: ruby_vminsn_type = 128;
-pub const YARVINSN_trace_putspecialobject: ruby_vminsn_type = 129;
-pub const YARVINSN_trace_putstring: ruby_vminsn_type = 130;
-pub const YARVINSN_trace_putchilledstring: ruby_vminsn_type = 131;
-pub const YARVINSN_trace_concatstrings: ruby_vminsn_type = 132;
-pub const YARVINSN_trace_anytostring: ruby_vminsn_type = 133;
-pub const YARVINSN_trace_toregexp: ruby_vminsn_type = 134;
-pub const YARVINSN_trace_intern: ruby_vminsn_type = 135;
-pub const YARVINSN_trace_newarray: ruby_vminsn_type = 136;
-pub const YARVINSN_trace_pushtoarraykwsplat: ruby_vminsn_type = 137;
-pub const YARVINSN_trace_duparray: ruby_vminsn_type = 138;
-pub const YARVINSN_trace_duphash: ruby_vminsn_type = 139;
-pub const YARVINSN_trace_expandarray: ruby_vminsn_type = 140;
-pub const YARVINSN_trace_concatarray: ruby_vminsn_type = 141;
-pub const YARVINSN_trace_concattoarray: ruby_vminsn_type = 142;
-pub const YARVINSN_trace_pushtoarray: ruby_vminsn_type = 143;
-pub const YARVINSN_trace_splatarray: ruby_vminsn_type = 144;
-pub const YARVINSN_trace_splatkw: ruby_vminsn_type = 145;
-pub const YARVINSN_trace_newhash: ruby_vminsn_type = 146;
-pub const YARVINSN_trace_newrange: ruby_vminsn_type = 147;
-pub const YARVINSN_trace_pop: ruby_vminsn_type = 148;
-pub const YARVINSN_trace_dup: ruby_vminsn_type = 149;
-pub const YARVINSN_trace_dupn: ruby_vminsn_type = 150;
-pub const YARVINSN_trace_swap: ruby_vminsn_type = 151;
-pub const YARVINSN_trace_opt_reverse: ruby_vminsn_type = 152;
-pub const YARVINSN_trace_topn: ruby_vminsn_type = 153;
-pub const YARVINSN_trace_setn: ruby_vminsn_type = 154;
-pub const YARVINSN_trace_adjuststack: ruby_vminsn_type = 155;
-pub const YARVINSN_trace_defined: ruby_vminsn_type = 156;
-pub const YARVINSN_trace_definedivar: ruby_vminsn_type = 157;
-pub const YARVINSN_trace_checkmatch: ruby_vminsn_type = 158;
-pub const YARVINSN_trace_checkkeyword: ruby_vminsn_type = 159;
-pub const YARVINSN_trace_checktype: ruby_vminsn_type = 160;
-pub const YARVINSN_trace_defineclass: ruby_vminsn_type = 161;
-pub const YARVINSN_trace_definemethod: ruby_vminsn_type = 162;
-pub const YARVINSN_trace_definesmethod: ruby_vminsn_type = 163;
-pub const YARVINSN_trace_send: ruby_vminsn_type = 164;
-pub const YARVINSN_trace_sendforward: ruby_vminsn_type = 165;
-pub const YARVINSN_trace_opt_send_without_block: ruby_vminsn_type = 166;
-pub const YARVINSN_trace_opt_new: ruby_vminsn_type = 167;
-pub const YARVINSN_trace_objtostring: ruby_vminsn_type = 168;
-pub const YARVINSN_trace_opt_ary_freeze: ruby_vminsn_type = 169;
-pub const YARVINSN_trace_opt_hash_freeze: ruby_vminsn_type = 170;
-pub const YARVINSN_trace_opt_str_freeze: ruby_vminsn_type = 171;
-pub const YARVINSN_trace_opt_nil_p: ruby_vminsn_type = 172;
-pub const YARVINSN_trace_opt_str_uminus: ruby_vminsn_type = 173;
-pub const YARVINSN_trace_opt_duparray_send: ruby_vminsn_type = 174;
-pub const YARVINSN_trace_opt_newarray_send: ruby_vminsn_type = 175;
-pub const YARVINSN_trace_invokesuper: ruby_vminsn_type = 176;
-pub const YARVINSN_trace_invokesuperforward: ruby_vminsn_type = 177;
-pub const YARVINSN_trace_invokeblock: ruby_vminsn_type = 178;
-pub const YARVINSN_trace_leave: ruby_vminsn_type = 179;
-pub const YARVINSN_trace_throw: ruby_vminsn_type = 180;
-pub const YARVINSN_trace_jump: ruby_vminsn_type = 181;
-pub const YARVINSN_trace_branchif: ruby_vminsn_type = 182;
-pub const YARVINSN_trace_branchunless: ruby_vminsn_type = 183;
-pub const YARVINSN_trace_branchnil: ruby_vminsn_type = 184;
-pub const YARVINSN_trace_once: ruby_vminsn_type = 185;
-pub const YARVINSN_trace_opt_case_dispatch: ruby_vminsn_type = 186;
-pub const YARVINSN_trace_opt_plus: ruby_vminsn_type = 187;
-pub const YARVINSN_trace_opt_minus: ruby_vminsn_type = 188;
-pub const YARVINSN_trace_opt_mult: ruby_vminsn_type = 189;
-pub const YARVINSN_trace_opt_div: ruby_vminsn_type = 190;
-pub const YARVINSN_trace_opt_mod: ruby_vminsn_type = 191;
-pub const YARVINSN_trace_opt_eq: ruby_vminsn_type = 192;
-pub const YARVINSN_trace_opt_neq: ruby_vminsn_type = 193;
-pub const YARVINSN_trace_opt_lt: ruby_vminsn_type = 194;
-pub const YARVINSN_trace_opt_le: ruby_vminsn_type = 195;
-pub const YARVINSN_trace_opt_gt: ruby_vminsn_type = 196;
-pub const YARVINSN_trace_opt_ge: ruby_vminsn_type = 197;
-pub const YARVINSN_trace_opt_ltlt: ruby_vminsn_type = 198;
-pub const YARVINSN_trace_opt_and: ruby_vminsn_type = 199;
-pub const YARVINSN_trace_opt_or: ruby_vminsn_type = 200;
-pub const YARVINSN_trace_opt_aref: ruby_vminsn_type = 201;
-pub const YARVINSN_trace_opt_aset: ruby_vminsn_type = 202;
-pub const YARVINSN_trace_opt_length: ruby_vminsn_type = 203;
-pub const YARVINSN_trace_opt_size: ruby_vminsn_type = 204;
-pub const YARVINSN_trace_opt_empty_p: ruby_vminsn_type = 205;
-pub const YARVINSN_trace_opt_succ: ruby_vminsn_type = 206;
-pub const YARVINSN_trace_opt_not: ruby_vminsn_type = 207;
-pub const YARVINSN_trace_opt_regexpmatch2: ruby_vminsn_type = 208;
-pub const YARVINSN_trace_invokebuiltin: ruby_vminsn_type = 209;
-pub const YARVINSN_trace_opt_invokebuiltin_delegate: ruby_vminsn_type = 210;
-pub const YARVINSN_trace_opt_invokebuiltin_delegate_leave: ruby_vminsn_type = 211;
-pub const YARVINSN_trace_getlocal_WC_0: ruby_vminsn_type = 212;
-pub const YARVINSN_trace_getlocal_WC_1: ruby_vminsn_type = 213;
-pub const YARVINSN_trace_setlocal_WC_0: ruby_vminsn_type = 214;
-pub const YARVINSN_trace_setlocal_WC_1: ruby_vminsn_type = 215;
-pub const YARVINSN_trace_putobject_INT2FIX_0_: ruby_vminsn_type = 216;
-pub const YARVINSN_trace_putobject_INT2FIX_1_: ruby_vminsn_type = 217;
-pub const YARVINSN_zjit_getinstancevariable: ruby_vminsn_type = 218;
-pub const YARVINSN_zjit_setinstancevariable: ruby_vminsn_type = 219;
-pub const YARVINSN_zjit_definedivar: ruby_vminsn_type = 220;
-pub const YARVINSN_zjit_send: ruby_vminsn_type = 221;
-pub const YARVINSN_zjit_opt_send_without_block: ruby_vminsn_type = 222;
-pub const YARVINSN_zjit_objtostring: ruby_vminsn_type = 223;
-pub const YARVINSN_zjit_opt_nil_p: ruby_vminsn_type = 224;
-pub const YARVINSN_zjit_invokesuper: ruby_vminsn_type = 225;
-pub const YARVINSN_zjit_invokeblock: ruby_vminsn_type = 226;
-pub const YARVINSN_zjit_opt_plus: ruby_vminsn_type = 227;
-pub const YARVINSN_zjit_opt_minus: ruby_vminsn_type = 228;
-pub const YARVINSN_zjit_opt_mult: ruby_vminsn_type = 229;
-pub const YARVINSN_zjit_opt_div: ruby_vminsn_type = 230;
-pub const YARVINSN_zjit_opt_mod: ruby_vminsn_type = 231;
-pub const YARVINSN_zjit_opt_eq: ruby_vminsn_type = 232;
-pub const YARVINSN_zjit_opt_neq: ruby_vminsn_type = 233;
-pub const YARVINSN_zjit_opt_lt: ruby_vminsn_type = 234;
-pub const YARVINSN_zjit_opt_le: ruby_vminsn_type = 235;
-pub const YARVINSN_zjit_opt_gt: ruby_vminsn_type = 236;
-pub const YARVINSN_zjit_opt_ge: ruby_vminsn_type = 237;
-pub const YARVINSN_zjit_opt_ltlt: ruby_vminsn_type = 238;
-pub const YARVINSN_zjit_opt_and: ruby_vminsn_type = 239;
-pub const YARVINSN_zjit_opt_or: ruby_vminsn_type = 240;
-pub const YARVINSN_zjit_opt_aref: ruby_vminsn_type = 241;
-pub const YARVINSN_zjit_opt_aset: ruby_vminsn_type = 242;
-pub const YARVINSN_zjit_opt_length: ruby_vminsn_type = 243;
-pub const YARVINSN_zjit_opt_size: ruby_vminsn_type = 244;
-pub const YARVINSN_zjit_opt_empty_p: ruby_vminsn_type = 245;
-pub const YARVINSN_zjit_opt_succ: ruby_vminsn_type = 246;
-pub const YARVINSN_zjit_opt_not: ruby_vminsn_type = 247;
-pub const YARVINSN_zjit_opt_regexpmatch2: ruby_vminsn_type = 248;
-pub const VM_INSTRUCTION_SIZE: ruby_vminsn_type = 249;
+pub const YARVINSN_jump_without_ints: ruby_vminsn_type = 76;
+pub const YARVINSN_branchif_without_ints: ruby_vminsn_type = 77;
+pub const YARVINSN_branchunless_without_ints: ruby_vminsn_type = 78;
+pub const YARVINSN_branchnil_without_ints: ruby_vminsn_type = 79;
+pub const YARVINSN_once: ruby_vminsn_type = 80;
+pub const YARVINSN_opt_case_dispatch: ruby_vminsn_type = 81;
+pub const YARVINSN_opt_plus: ruby_vminsn_type = 82;
+pub const YARVINSN_opt_minus: ruby_vminsn_type = 83;
+pub const YARVINSN_opt_mult: ruby_vminsn_type = 84;
+pub const YARVINSN_opt_div: ruby_vminsn_type = 85;
+pub const YARVINSN_opt_mod: ruby_vminsn_type = 86;
+pub const YARVINSN_opt_eq: ruby_vminsn_type = 87;
+pub const YARVINSN_opt_neq: ruby_vminsn_type = 88;
+pub const YARVINSN_opt_lt: ruby_vminsn_type = 89;
+pub const YARVINSN_opt_le: ruby_vminsn_type = 90;
+pub const YARVINSN_opt_gt: ruby_vminsn_type = 91;
+pub const YARVINSN_opt_ge: ruby_vminsn_type = 92;
+pub const YARVINSN_opt_ltlt: ruby_vminsn_type = 93;
+pub const YARVINSN_opt_and: ruby_vminsn_type = 94;
+pub const YARVINSN_opt_or: ruby_vminsn_type = 95;
+pub const YARVINSN_opt_aref: ruby_vminsn_type = 96;
+pub const YARVINSN_opt_aset: ruby_vminsn_type = 97;
+pub const YARVINSN_opt_length: ruby_vminsn_type = 98;
+pub const YARVINSN_opt_size: ruby_vminsn_type = 99;
+pub const YARVINSN_opt_empty_p: ruby_vminsn_type = 100;
+pub const YARVINSN_opt_succ: ruby_vminsn_type = 101;
+pub const YARVINSN_opt_not: ruby_vminsn_type = 102;
+pub const YARVINSN_opt_regexpmatch2: ruby_vminsn_type = 103;
+pub const YARVINSN_invokebuiltin: ruby_vminsn_type = 104;
+pub const YARVINSN_opt_invokebuiltin_delegate: ruby_vminsn_type = 105;
+pub const YARVINSN_opt_invokebuiltin_delegate_leave: ruby_vminsn_type = 106;
+pub const YARVINSN_getlocal_WC_0: ruby_vminsn_type = 107;
+pub const YARVINSN_getlocal_WC_1: ruby_vminsn_type = 108;
+pub const YARVINSN_setlocal_WC_0: ruby_vminsn_type = 109;
+pub const YARVINSN_setlocal_WC_1: ruby_vminsn_type = 110;
+pub const YARVINSN_putobject_INT2FIX_0_: ruby_vminsn_type = 111;
+pub const YARVINSN_putobject_INT2FIX_1_: ruby_vminsn_type = 112;
+pub const YARVINSN_trace_nop: ruby_vminsn_type = 113;
+pub const YARVINSN_trace_getlocal: ruby_vminsn_type = 114;
+pub const YARVINSN_trace_setlocal: ruby_vminsn_type = 115;
+pub const YARVINSN_trace_getblockparam: ruby_vminsn_type = 116;
+pub const YARVINSN_trace_setblockparam: ruby_vminsn_type = 117;
+pub const YARVINSN_trace_getblockparamproxy: ruby_vminsn_type = 118;
+pub const YARVINSN_trace_getspecial: ruby_vminsn_type = 119;
+pub const YARVINSN_trace_setspecial: ruby_vminsn_type = 120;
+pub const YARVINSN_trace_getinstancevariable: ruby_vminsn_type = 121;
+pub const YARVINSN_trace_setinstancevariable: ruby_vminsn_type = 122;
+pub const YARVINSN_trace_getclassvariable: ruby_vminsn_type = 123;
+pub const YARVINSN_trace_setclassvariable: ruby_vminsn_type = 124;
+pub const YARVINSN_trace_opt_getconstant_path: ruby_vminsn_type = 125;
+pub const YARVINSN_trace_getconstant: ruby_vminsn_type = 126;
+pub const YARVINSN_trace_setconstant: ruby_vminsn_type = 127;
+pub const YARVINSN_trace_getglobal: ruby_vminsn_type = 128;
+pub const YARVINSN_trace_setglobal: ruby_vminsn_type = 129;
+pub const YARVINSN_trace_putnil: ruby_vminsn_type = 130;
+pub const YARVINSN_trace_putself: ruby_vminsn_type = 131;
+pub const YARVINSN_trace_putobject: ruby_vminsn_type = 132;
+pub const YARVINSN_trace_putspecialobject: ruby_vminsn_type = 133;
+pub const YARVINSN_trace_putstring: ruby_vminsn_type = 134;
+pub const YARVINSN_trace_putchilledstring: ruby_vminsn_type = 135;
+pub const YARVINSN_trace_concatstrings: ruby_vminsn_type = 136;
+pub const YARVINSN_trace_anytostring: ruby_vminsn_type = 137;
+pub const YARVINSN_trace_toregexp: ruby_vminsn_type = 138;
+pub const YARVINSN_trace_intern: ruby_vminsn_type = 139;
+pub const YARVINSN_trace_newarray: ruby_vminsn_type = 140;
+pub const YARVINSN_trace_pushtoarraykwsplat: ruby_vminsn_type = 141;
+pub const YARVINSN_trace_duparray: ruby_vminsn_type = 142;
+pub const YARVINSN_trace_duphash: ruby_vminsn_type = 143;
+pub const YARVINSN_trace_expandarray: ruby_vminsn_type = 144;
+pub const YARVINSN_trace_concatarray: ruby_vminsn_type = 145;
+pub const YARVINSN_trace_concattoarray: ruby_vminsn_type = 146;
+pub const YARVINSN_trace_pushtoarray: ruby_vminsn_type = 147;
+pub const YARVINSN_trace_splatarray: ruby_vminsn_type = 148;
+pub const YARVINSN_trace_splatkw: ruby_vminsn_type = 149;
+pub const YARVINSN_trace_newhash: ruby_vminsn_type = 150;
+pub const YARVINSN_trace_newrange: ruby_vminsn_type = 151;
+pub const YARVINSN_trace_pop: ruby_vminsn_type = 152;
+pub const YARVINSN_trace_dup: ruby_vminsn_type = 153;
+pub const YARVINSN_trace_dupn: ruby_vminsn_type = 154;
+pub const YARVINSN_trace_swap: ruby_vminsn_type = 155;
+pub const YARVINSN_trace_opt_reverse: ruby_vminsn_type = 156;
+pub const YARVINSN_trace_topn: ruby_vminsn_type = 157;
+pub const YARVINSN_trace_setn: ruby_vminsn_type = 158;
+pub const YARVINSN_trace_adjuststack: ruby_vminsn_type = 159;
+pub const YARVINSN_trace_defined: ruby_vminsn_type = 160;
+pub const YARVINSN_trace_definedivar: ruby_vminsn_type = 161;
+pub const YARVINSN_trace_checkmatch: ruby_vminsn_type = 162;
+pub const YARVINSN_trace_checkkeyword: ruby_vminsn_type = 163;
+pub const YARVINSN_trace_checktype: ruby_vminsn_type = 164;
+pub const YARVINSN_trace_defineclass: ruby_vminsn_type = 165;
+pub const YARVINSN_trace_definemethod: ruby_vminsn_type = 166;
+pub const YARVINSN_trace_definesmethod: ruby_vminsn_type = 167;
+pub const YARVINSN_trace_send: ruby_vminsn_type = 168;
+pub const YARVINSN_trace_sendforward: ruby_vminsn_type = 169;
+pub const YARVINSN_trace_opt_send_without_block: ruby_vminsn_type = 170;
+pub const YARVINSN_trace_opt_new: ruby_vminsn_type = 171;
+pub const YARVINSN_trace_objtostring: ruby_vminsn_type = 172;
+pub const YARVINSN_trace_opt_ary_freeze: ruby_vminsn_type = 173;
+pub const YARVINSN_trace_opt_hash_freeze: ruby_vminsn_type = 174;
+pub const YARVINSN_trace_opt_str_freeze: ruby_vminsn_type = 175;
+pub const YARVINSN_trace_opt_nil_p: ruby_vminsn_type = 176;
+pub const YARVINSN_trace_opt_str_uminus: ruby_vminsn_type = 177;
+pub const YARVINSN_trace_opt_duparray_send: ruby_vminsn_type = 178;
+pub const YARVINSN_trace_opt_newarray_send: ruby_vminsn_type = 179;
+pub const YARVINSN_trace_invokesuper: ruby_vminsn_type = 180;
+pub const YARVINSN_trace_invokesuperforward: ruby_vminsn_type = 181;
+pub const YARVINSN_trace_invokeblock: ruby_vminsn_type = 182;
+pub const YARVINSN_trace_leave: ruby_vminsn_type = 183;
+pub const YARVINSN_trace_throw: ruby_vminsn_type = 184;
+pub const YARVINSN_trace_jump: ruby_vminsn_type = 185;
+pub const YARVINSN_trace_branchif: ruby_vminsn_type = 186;
+pub const YARVINSN_trace_branchunless: ruby_vminsn_type = 187;
+pub const YARVINSN_trace_branchnil: ruby_vminsn_type = 188;
+pub const YARVINSN_trace_jump_without_ints: ruby_vminsn_type = 189;
+pub const YARVINSN_trace_branchif_without_ints: ruby_vminsn_type = 190;
+pub const YARVINSN_trace_branchunless_without_ints: ruby_vminsn_type = 191;
+pub const YARVINSN_trace_branchnil_without_ints: ruby_vminsn_type = 192;
+pub const YARVINSN_trace_once: ruby_vminsn_type = 193;
+pub const YARVINSN_trace_opt_case_dispatch: ruby_vminsn_type = 194;
+pub const YARVINSN_trace_opt_plus: ruby_vminsn_type = 195;
+pub const YARVINSN_trace_opt_minus: ruby_vminsn_type = 196;
+pub const YARVINSN_trace_opt_mult: ruby_vminsn_type = 197;
+pub const YARVINSN_trace_opt_div: ruby_vminsn_type = 198;
+pub const YARVINSN_trace_opt_mod: ruby_vminsn_type = 199;
+pub const YARVINSN_trace_opt_eq: ruby_vminsn_type = 200;
+pub const YARVINSN_trace_opt_neq: ruby_vminsn_type = 201;
+pub const YARVINSN_trace_opt_lt: ruby_vminsn_type = 202;
+pub const YARVINSN_trace_opt_le: ruby_vminsn_type = 203;
+pub const YARVINSN_trace_opt_gt: ruby_vminsn_type = 204;
+pub const YARVINSN_trace_opt_ge: ruby_vminsn_type = 205;
+pub const YARVINSN_trace_opt_ltlt: ruby_vminsn_type = 206;
+pub const YARVINSN_trace_opt_and: ruby_vminsn_type = 207;
+pub const YARVINSN_trace_opt_or: ruby_vminsn_type = 208;
+pub const YARVINSN_trace_opt_aref: ruby_vminsn_type = 209;
+pub const YARVINSN_trace_opt_aset: ruby_vminsn_type = 210;
+pub const YARVINSN_trace_opt_length: ruby_vminsn_type = 211;
+pub const YARVINSN_trace_opt_size: ruby_vminsn_type = 212;
+pub const YARVINSN_trace_opt_empty_p: ruby_vminsn_type = 213;
+pub const YARVINSN_trace_opt_succ: ruby_vminsn_type = 214;
+pub const YARVINSN_trace_opt_not: ruby_vminsn_type = 215;
+pub const YARVINSN_trace_opt_regexpmatch2: ruby_vminsn_type = 216;
+pub const YARVINSN_trace_invokebuiltin: ruby_vminsn_type = 217;
+pub const YARVINSN_trace_opt_invokebuiltin_delegate: ruby_vminsn_type = 218;
+pub const YARVINSN_trace_opt_invokebuiltin_delegate_leave: ruby_vminsn_type = 219;
+pub const YARVINSN_trace_getlocal_WC_0: ruby_vminsn_type = 220;
+pub const YARVINSN_trace_getlocal_WC_1: ruby_vminsn_type = 221;
+pub const YARVINSN_trace_setlocal_WC_0: ruby_vminsn_type = 222;
+pub const YARVINSN_trace_setlocal_WC_1: ruby_vminsn_type = 223;
+pub const YARVINSN_trace_putobject_INT2FIX_0_: ruby_vminsn_type = 224;
+pub const YARVINSN_trace_putobject_INT2FIX_1_: ruby_vminsn_type = 225;
+pub const YARVINSN_zjit_getblockparamproxy: ruby_vminsn_type = 226;
+pub const YARVINSN_zjit_getinstancevariable: ruby_vminsn_type = 227;
+pub const YARVINSN_zjit_setinstancevariable: ruby_vminsn_type = 228;
+pub const YARVINSN_zjit_splatkw: ruby_vminsn_type = 229;
+pub const YARVINSN_zjit_definedivar: ruby_vminsn_type = 230;
+pub const YARVINSN_zjit_send: ruby_vminsn_type = 231;
+pub const YARVINSN_zjit_opt_send_without_block: ruby_vminsn_type = 232;
+pub const YARVINSN_zjit_objtostring: ruby_vminsn_type = 233;
+pub const YARVINSN_zjit_opt_nil_p: ruby_vminsn_type = 234;
+pub const YARVINSN_zjit_invokesuper: ruby_vminsn_type = 235;
+pub const YARVINSN_zjit_invokeblock: ruby_vminsn_type = 236;
+pub const YARVINSN_zjit_opt_plus: ruby_vminsn_type = 237;
+pub const YARVINSN_zjit_opt_minus: ruby_vminsn_type = 238;
+pub const YARVINSN_zjit_opt_mult: ruby_vminsn_type = 239;
+pub const YARVINSN_zjit_opt_div: ruby_vminsn_type = 240;
+pub const YARVINSN_zjit_opt_mod: ruby_vminsn_type = 241;
+pub const YARVINSN_zjit_opt_eq: ruby_vminsn_type = 242;
+pub const YARVINSN_zjit_opt_neq: ruby_vminsn_type = 243;
+pub const YARVINSN_zjit_opt_lt: ruby_vminsn_type = 244;
+pub const YARVINSN_zjit_opt_le: ruby_vminsn_type = 245;
+pub const YARVINSN_zjit_opt_gt: ruby_vminsn_type = 246;
+pub const YARVINSN_zjit_opt_ge: ruby_vminsn_type = 247;
+pub const YARVINSN_zjit_opt_ltlt: ruby_vminsn_type = 248;
+pub const YARVINSN_zjit_opt_and: ruby_vminsn_type = 249;
+pub const YARVINSN_zjit_opt_or: ruby_vminsn_type = 250;
+pub const YARVINSN_zjit_opt_aref: ruby_vminsn_type = 251;
+pub const YARVINSN_zjit_opt_aset: ruby_vminsn_type = 252;
+pub const YARVINSN_zjit_opt_length: ruby_vminsn_type = 253;
+pub const YARVINSN_zjit_opt_size: ruby_vminsn_type = 254;
+pub const YARVINSN_zjit_opt_empty_p: ruby_vminsn_type = 255;
+pub const YARVINSN_zjit_opt_succ: ruby_vminsn_type = 256;
+pub const YARVINSN_zjit_opt_not: ruby_vminsn_type = 257;
+pub const YARVINSN_zjit_opt_regexpmatch2: ruby_vminsn_type = 258;
+pub const VM_INSTRUCTION_SIZE: ruby_vminsn_type = 259;
 pub type ruby_vminsn_type = u32;
 pub type rb_iseq_callback = ::std::option::Option<
     unsafe extern "C" fn(arg1: *const rb_iseq_t, arg2: *mut ::std::os::raw::c_void),
@@ -1826,6 +1882,8 @@ pub const ISEQ_BODY_OFFSET_PARAM: zjit_struct_offsets = 16;
 pub type zjit_struct_offsets = u32;
 pub const ROBJECT_OFFSET_AS_HEAP_FIELDS: jit_bindgen_constants = 16;
 pub const ROBJECT_OFFSET_AS_ARY: jit_bindgen_constants = 16;
+pub const RCLASS_OFFSET_PRIME_FIELDS_OBJ: jit_bindgen_constants = 40;
+pub const RTYPEDDATA_OFFSET_FIELDS_OBJ: jit_bindgen_constants = 16;
 pub const RUBY_OFFSET_RSTRING_LEN: jit_bindgen_constants = 16;
 pub const RUBY_OFFSET_EC_CFP: jit_bindgen_constants = 16;
 pub const RUBY_OFFSET_EC_INTERRUPT_FLAG: jit_bindgen_constants = 32;
@@ -1950,6 +2008,7 @@ unsafe extern "C" {
     pub fn rb_ivar_set(obj: VALUE, name: ID, val: VALUE) -> VALUE;
     pub fn rb_ivar_defined(obj: VALUE, name: ID) -> VALUE;
     pub fn rb_attr_get(obj: VALUE, name: ID) -> VALUE;
+    pub fn rb_const_get(space: VALUE, name: ID) -> VALUE;
     pub fn rb_class_allocate_instance(klass: VALUE) -> VALUE;
     pub fn rb_obj_equal(obj1: VALUE, obj2: VALUE) -> VALUE;
     pub fn rb_reg_new_ary(ary: VALUE, options: ::std::os::raw::c_int) -> VALUE;
@@ -1972,6 +2031,7 @@ unsafe extern "C" {
         id: ID,
     ) -> *const rb_callable_method_entry_t;
     pub static mut rb_cISeq: VALUE;
+    pub static mut rb_cRubyVM: VALUE;
     pub static mut rb_mRubyVMFrozenCore: VALUE;
     pub static mut rb_block_param_proxy: VALUE;
     pub fn rb_vm_ep_local_ep(ep: *const VALUE) -> *const VALUE;
@@ -2081,6 +2141,7 @@ unsafe extern "C" {
     pub fn rb_zjit_class_initialized_p(klass: VALUE) -> bool;
     pub fn rb_zjit_class_get_alloc_func(klass: VALUE) -> rb_alloc_func_t;
     pub fn rb_zjit_class_has_default_allocator(klass: VALUE) -> bool;
+    pub fn rb_vm_untag_block_handler(block_handler: VALUE) -> VALUE;
     pub fn rb_vm_get_untagged_block_handler(reg_cfp: *mut rb_control_frame_t) -> VALUE;
     pub fn rb_zjit_writebarrier_check_immediate(recv: VALUE, val: VALUE);
     pub fn rb_iseq_encoded_size(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
@@ -2115,7 +2176,7 @@ unsafe extern "C" {
     pub fn rb_get_def_bmethod_proc(def: *mut rb_method_definition_t) -> VALUE;
     pub fn rb_jit_get_proc_ptr(procv: VALUE) -> *mut rb_proc_t;
     pub fn rb_optimized_call(
-        recv: *mut VALUE,
+        recv: VALUE,
         ec: *mut rb_execution_context_t,
         argc: ::std::os::raw::c_int,
         argv: *mut VALUE,
@@ -2175,6 +2236,8 @@ unsafe extern "C" {
     pub fn rb_set_cfp_sp(cfp: *mut rb_control_frame_struct, sp: *mut VALUE);
     pub fn rb_jit_shape_too_complex_p(shape_id: shape_id_t) -> bool;
     pub fn rb_jit_multi_ractor_p() -> bool;
+    pub fn rb_jit_class_fields_embedded_p(klass: VALUE) -> bool;
+    pub fn rb_jit_typed_data_fields_embedded_p(obj: VALUE) -> bool;
     pub fn rb_jit_vm_lock_then_barrier(
         recursive_lock_level: *mut ::std::os::raw::c_uint,
         file: *const ::std::os::raw::c_char,

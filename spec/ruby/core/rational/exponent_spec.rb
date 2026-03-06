@@ -108,37 +108,37 @@ describe "Rational#**" do
       it "raises an ArgumentError when self is > 1" do
         -> {
           (Rational(2) ** bignum_value)
-        }.should raise_error(ArgumentError)
+        }.should raise_error(ArgumentError, "exponent is too large")
         -> {
           (Rational(fixnum_max) ** bignum_value)
-        }.should raise_error(ArgumentError)
+        }.should raise_error(ArgumentError, "exponent is too large")
       end
 
       it "raises an ArgumentError when self is > 1 and the exponent is negative" do
         -> {
           (Rational(2) ** -bignum_value)
-        }.should raise_error(ArgumentError)
+        }.should raise_error(ArgumentError, "exponent is too large")
         -> {
           (Rational(fixnum_max) ** -bignum_value)
-        }.should raise_error(ArgumentError)
+        }.should raise_error(ArgumentError, "exponent is too large")
       end
 
       it "raises an ArgumentError when self is < -1" do
         -> {
           (Rational(-2) ** bignum_value)
-        }.should raise_error(ArgumentError)
+        }.should raise_error(ArgumentError, "exponent is too large")
         -> {
           (Rational(fixnum_min) ** bignum_value)
-        }.should raise_error(ArgumentError)
+        }.should raise_error(ArgumentError, "exponent is too large")
       end
 
       it "raises an ArgumentError when self is < -1 and the exponent is negative" do
         -> {
           (Rational(-2) ** -bignum_value)
-        }.should raise_error(ArgumentError)
+        }.should raise_error(ArgumentError, "exponent is too large")
         -> {
           (Rational(fixnum_min) ** -bignum_value)
-        }.should raise_error(ArgumentError)
+        }.should raise_error(ArgumentError, "exponent is too large")
       end
     end
 

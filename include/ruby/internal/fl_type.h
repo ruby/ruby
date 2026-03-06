@@ -108,8 +108,6 @@
 #define RB_OBJ_FREEZE_RAW    RB_OBJ_FREEZE_RAW
 #define RB_OBJ_FROZEN        RB_OBJ_FROZEN
 #define RB_OBJ_FROZEN_RAW    RB_OBJ_FROZEN_RAW
-#define RB_OBJ_UNTRUST       RB_OBJ_TAINT
-#define RB_OBJ_UNTRUSTED     RB_OBJ_TAINTED
 /** @endcond */
 
 /**
@@ -134,15 +132,6 @@
 #define OBJ_FREEZE_RAW  RB_OBJ_FREEZE_RAW  /**< @old{RB_OBJ_FREEZE_RAW} */
 #define OBJ_FROZEN      RB_OBJ_FROZEN      /**< @old{RB_OBJ_FROZEN} */
 #define OBJ_FROZEN_RAW  RB_OBJ_FROZEN_RAW  /**< @old{RB_OBJ_FROZEN_RAW} */
-#define OBJ_INFECT      RB_OBJ_INFECT      /**< @old{RB_OBJ_INFECT} */
-#define OBJ_INFECT_RAW  RB_OBJ_INFECT_RAW  /**< @old{RB_OBJ_INFECT_RAW} */
-#define OBJ_TAINT       RB_OBJ_TAINT       /**< @old{RB_OBJ_TAINT} */
-#define OBJ_TAINTABLE   RB_OBJ_TAINTABLE   /**< @old{RB_OBJ_TAINT_RAW} */
-#define OBJ_TAINTED     RB_OBJ_TAINTED     /**< @old{RB_OBJ_TAINTED} */
-#define OBJ_TAINTED_RAW RB_OBJ_TAINTED_RAW /**< @old{RB_OBJ_TAINTED_RAW} */
-#define OBJ_TAINT_RAW   RB_OBJ_TAINT_RAW   /**< @old{RB_OBJ_TAINT_RAW} */
-#define OBJ_UNTRUST     RB_OBJ_UNTRUST     /**< @old{RB_OBJ_TAINT} */
-#define OBJ_UNTRUSTED   RB_OBJ_UNTRUSTED   /**< @old{RB_OBJ_TAINTED} */
 /** @} */
 
 /**

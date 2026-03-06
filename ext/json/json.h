@@ -55,7 +55,11 @@ typedef unsigned char _Bool;
 #endif
 
 #ifndef NORETURN
+#if defined(__has_attribute) && __has_attribute(noreturn)
+#define NORETURN(x) __attribute__((noreturn)) x
+#else
 #define NORETURN(x) x
+#endif
 #endif
 
 #ifndef NOINLINE

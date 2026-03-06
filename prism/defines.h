@@ -161,10 +161,12 @@
  * ```
  * #ifndef PRISM_XALLOCATOR_H
  * #define PRISM_XALLOCATOR_H
- * #define xmalloc      my_malloc
- * #define xrealloc     my_realloc
- * #define xcalloc      my_calloc
- * #define xfree        my_free
+ * #define xmalloc          my_malloc
+ * #define xrealloc         my_realloc
+ * #define xcalloc          my_calloc
+ * #define xfree            my_free
+ * #define xrealloc_sized   my_realloc_sized // (optional)
+ * #define xfree_sized      my_free_sized    // (optional)
  * #endif
  * ```
  */
@@ -204,6 +206,28 @@
     #endif
 #endif
 
+#ifndef xfree_sized
+/**
+ * The free_sized function that should be used. This can be overridden with the
+ * PRISM_XALLOCATOR define.
+ * If not defined, defaults to calling xfree.
+ */
+    #define xfree_sized(p, s) xfree(((void)(s), (p)))
+#endif
+
+#ifndef xrealloc_sized
+/**
+ * The xrealloc_sized function that should be used. This can be overridden with the
+ * PRISM_XALLOCATOR define.
+ * If not defined, defaults to calling xrealloc.
+ */
+    #define xrealloc_sized(p, ns, os) xrealloc((p), ((void)(os), (ns)))
+#endif
+
+#ifdef PRISM_BUILD_DEBUG
+    #include "prism/debug_allocator.h"
+#endif
+
 /**
  * If PRISM_BUILD_MINIMAL is defined, then we're going to define every possible
  * switch that will turn off certain features of prism.
@@ -214,9 +238,6 @@
 
     /** Exclude the JSON serialization API. */
     #define PRISM_EXCLUDE_JSON
-
-    /** Exclude the Array#pack parser API. */
-    #define PRISM_EXCLUDE_PACK
 
     /** Exclude the prettyprint API. */
     #define PRISM_EXCLUDE_PRETTYPRINT
@@ -255,6 +276,49 @@
     #define PRISM_FALLTHROUGH __fallthrough;
 #else
     #define PRISM_FALLTHROUGH
+#endif
+
+/**
+ * A macro for defining a flexible array member. C99 supports `data[]`, GCC
+ * supports `data[0]` as an extension, and older compilers require `data[1]`.
+ */
+#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
+    #define PM_FLEX_ARY_LEN   /* data[] */
+#elif defined(__GNUC__) && !defined(__STRICT_ANSI__)
+    #define PM_FLEX_ARY_LEN 0 /* data[0] */
+#else
+    #define PM_FLEX_ARY_LEN 1 /* data[1] */
+#endif
+
+/**
+ * We need to align nodes in the AST to a pointer boundary so that it can be
+ * safely cast to different node types. Use PRISM_ALIGNAS/PRISM_ALIGNOF to
+ * specify alignment in a compiler-agnostic way.
+ */
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L /* C11 or later */
+    /** Specify alignment for a type or variable. */
+    #define PRISM_ALIGNAS _Alignas
+
+    /** Get the alignment requirement of a type. */
+    #define PRISM_ALIGNOF _Alignof
+#elif defined(__GNUC__) || defined(__clang__)
+    /** Specify alignment for a type or variable. */
+    #define PRISM_ALIGNAS(size) __attribute__((aligned(size)))
+
+    /** Get the alignment requirement of a type. */
+    #define PRISM_ALIGNOF(type) __alignof__(type)
+#elif defined(_MSC_VER)
+    /** Specify alignment for a type or variable. */
+    #define PRISM_ALIGNAS(size) __declspec(align(size))
+
+    /** Get the alignment requirement of a type. */
+    #define PRISM_ALIGNOF(type) __alignof(type)
+#else
+    /** Void because this platform does not support specifying alignment. */
+    #define PRISM_ALIGNAS(size)
+
+    /** Fallback to sizeof as alignment requirement of a type. */
+    #define PRISM_ALIGNOF(type) sizeof(type)
 #endif
 
 #endif

@@ -140,7 +140,7 @@ impl Assembler {
     {
         let mut asm_local = Assembler::new_with_asm(&self);
         let asm = &mut asm_local;
-        let live_ranges: Vec<LiveRange> = take(&mut self.live_ranges);
+        let live_ranges = take(&mut self.live_ranges);
         let mut iterator = self.instruction_iterator();
 
         while let Some((index, mut insn)) = iterator.next(asm) {
@@ -166,7 +166,7 @@ impl Assembler {
             // When we split an operand, we can create a new VReg not in `live_ranges`.
             // So when we see a VReg with out-of-range index, it's created from splitting
             // from the loop above and we know it doesn't outlive the current instruction.
-            let vreg_outlives_insn = |vreg_idx| {
+            let vreg_outlives_insn = |vreg_idx: VRegId| {
                 live_ranges
                     .get(vreg_idx)
                     .is_some_and(|live_range: &LiveRange| live_range.end() > index)
@@ -421,7 +421,7 @@ impl Assembler {
             }
         }
 
-        /// If a given operand is Opnd::Mem and it uses MemBase::Stack, lower it to MemBase::Reg using a scratch regsiter.
+        /// If a given operand is Opnd::Mem and it uses MemBase::Stack, lower it to MemBase::Reg using a scratch register.
         fn split_stack_membase(asm: &mut Assembler, opnd: Opnd, scratch_opnd: Opnd, stack_state: &StackState) -> Opnd {
             if let Opnd::Mem(Mem { base: stack_membase @ MemBase::Stack { .. }, disp, num_bits }) = opnd {
                 let base = Opnd::Mem(stack_state.stack_membase_to_mem(stack_membase));
@@ -472,7 +472,7 @@ impl Assembler {
         asm_local.accept_scratch_reg = true;
         asm_local.stack_base_idx = self.stack_base_idx;
         asm_local.label_names = self.label_names.clone();
-        asm_local.live_ranges.resize(self.live_ranges.len(), LiveRange { start: None, end: None });
+        asm_local.live_ranges = LiveRanges::new(self.live_ranges.len());
 
         // Create one giant block to linearize everything into
         asm_local.new_block_without_id();
@@ -1173,7 +1173,7 @@ mod tests {
         asm.cret(val64);
 
         asm.frame_teardown(JIT_PRESERVED_REGS);
-        assert_disasm_snapshot!(lir_string(&mut asm), @r"
+        assert_disasm_snapshot!(lir_string(&mut asm), @"
         bb0:
           # bb0(): foo@/tmp/a.rb:1
           FrameSetup 1, r13, rbx, r12
@@ -1186,6 +1186,7 @@ mod tests {
           Je bb0
           CRet v0
           FrameTeardown r13, rbx, r12
+          PadPatchPoint
         ");
     }
 
@@ -1197,7 +1198,7 @@ mod tests {
         let _ = asm.add(Opnd::Reg(RAX_REG), Opnd::UImm(0xFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: mov rax, rax
         0x3: add rax, 0xff
         ");
@@ -1212,7 +1213,7 @@ mod tests {
         let _ = asm.add(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: mov rax, rax
         0x3: movabs r11, 0xffffffffffff
         0xd: add rax, r11
@@ -1228,7 +1229,7 @@ mod tests {
         let _ = asm.and(Opnd::Reg(RAX_REG), Opnd::UImm(0xFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: mov rax, rax
         0x3: and rax, 0xff
         ");
@@ -1243,7 +1244,7 @@ mod tests {
         let _ = asm.and(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: mov rax, rax
         0x3: movabs r11, 0xffffffffffff
         0xd: and rax, r11
@@ -1269,7 +1270,7 @@ mod tests {
         asm.cmp(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
         asm.compile_with_num_regs(&mut cb, 0);
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: movabs r11, 0xffffffffffff
         0xa: cmp rax, r11
         ");
@@ -1321,7 +1322,7 @@ mod tests {
         let _ = asm.or(Opnd::Reg(RAX_REG), Opnd::UImm(0xFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: mov rax, rax
         0x3: or rax, 0xff
         ");
@@ -1336,7 +1337,7 @@ mod tests {
         let _ = asm.or(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: mov rax, rax
         0x3: movabs r11, 0xffffffffffff
         0xd: or rax, r11
@@ -1352,7 +1353,7 @@ mod tests {
         let _ = asm.sub(Opnd::Reg(RAX_REG), Opnd::UImm(0xFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: mov rax, rax
         0x3: sub rax, 0xff
         ");
@@ -1367,7 +1368,7 @@ mod tests {
         let _ = asm.sub(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: mov rax, rax
         0x3: movabs r11, 0xffffffffffff
         0xd: sub rax, r11
@@ -1393,7 +1394,7 @@ mod tests {
         asm.test(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
         asm.compile_with_num_regs(&mut cb, 0);
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: movabs r11, 0xffffffffffff
         0xa: test rax, r11
         ");
@@ -1408,7 +1409,7 @@ mod tests {
         let _ = asm.xor(Opnd::Reg(RAX_REG), Opnd::UImm(0xFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: mov rax, rax
         0x3: xor rax, 0xff
         ");
@@ -1423,7 +1424,7 @@ mod tests {
         let _ = asm.xor(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: mov rax, rax
         0x3: movabs r11, 0xffffffffffff
         0xd: xor rax, r11
@@ -1452,7 +1453,7 @@ mod tests {
         asm.mov(Opnd::mem(64, SP, 0), sp); // should NOT be merged to lea
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: movabs r11, 0xffffffffffff
         0xa: cmp rax, r11
         ");
@@ -1470,7 +1471,7 @@ mod tests {
         asm.mov(Opnd::Reg(RAX_REG), result);
         asm.compile_with_num_regs(&mut cb, 2);
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: mov rax, qword ptr [rbx + 8]
         0x4: test rax, rax
         0x7: mov eax, 0x14
@@ -1574,7 +1575,7 @@ mod tests {
         ]);
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: mov eax, 0
         0x5: call rax
         ");
@@ -1868,7 +1869,7 @@ mod tests {
         asm.cret(C_RET_OPND);
         asm.compile_with_num_regs(&mut cb, 0);
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: push rbp
         0x1: mov rbp, rsp
         0x4: push r13
@@ -1893,7 +1894,7 @@ mod tests {
         asm.frame_teardown(&[]);
         asm.compile_with_num_regs(&mut cb, 0);
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: push rbp
         0x1: mov rbp, rsp
         0x4: sub rsp, 0x30

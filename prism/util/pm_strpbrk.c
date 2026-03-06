@@ -4,22 +4,22 @@
  * Add an invalid multibyte character error to the parser.
  */
 static inline void
-pm_strpbrk_invalid_multibyte_character(pm_parser_t *parser, const uint8_t *start, const uint8_t *end) {
-    pm_diagnostic_list_append_format(&parser->error_list, start, end, PM_ERR_INVALID_MULTIBYTE_CHARACTER, *start);
+pm_strpbrk_invalid_multibyte_character(pm_parser_t *parser, uint32_t start, uint32_t length) {
+    pm_diagnostic_list_append_format(&parser->error_list, start, length, PM_ERR_INVALID_MULTIBYTE_CHARACTER, parser->start[start]);
 }
 
 /**
  * Set the explicit encoding for the parser to the current encoding.
  */
 static inline void
-pm_strpbrk_explicit_encoding_set(pm_parser_t *parser, const uint8_t *source, size_t width) {
+pm_strpbrk_explicit_encoding_set(pm_parser_t *parser, uint32_t start, uint32_t length) {
     if (parser->explicit_encoding != NULL) {
         if (parser->explicit_encoding == parser->encoding) {
             // Okay, we already locked to this encoding.
         } else if (parser->explicit_encoding == PM_ENCODING_UTF_8_ENTRY) {
             // Not okay, we already found a Unicode escape sequence and this
             // conflicts.
-            pm_diagnostic_list_append_format(&parser->error_list, source, source + width, PM_ERR_MIXED_ENCODING, parser->encoding->name);
+            pm_diagnostic_list_append_format(&parser->error_list, start, length, PM_ERR_MIXED_ENCODING, parser->encoding->name);
         } else {
             // Should not be anything else.
             assert(false && "unreachable");
@@ -61,7 +61,7 @@ pm_strpbrk_utf8(pm_parser_t *parser, const uint8_t *source, const uint8_t *chars
                     index++;
                 } while (index < maximum && pm_encoding_utf_8_char_width(source + index, (ptrdiff_t) (maximum - index)) == 0);
 
-                pm_strpbrk_invalid_multibyte_character(parser, source + start, source + index);
+                pm_strpbrk_invalid_multibyte_character(parser, (uint32_t) ((source + start) - parser->start), (uint32_t) (index - start));
             }
         }
     }
@@ -81,7 +81,7 @@ pm_strpbrk_ascii_8bit(pm_parser_t *parser, const uint8_t *source, const uint8_t 
             return source + index;
         }
 
-        if (validate && source[index] >= 0x80) pm_strpbrk_explicit_encoding_set(parser, source, 1);
+        if (validate && source[index] >= 0x80) pm_strpbrk_explicit_encoding_set(parser, (uint32_t) (source - parser->start), 1);
         index++;
     }
 
@@ -105,7 +105,7 @@ pm_strpbrk_multi_byte(pm_parser_t *parser, const uint8_t *source, const uint8_t 
             index++;
         } else {
             size_t width = encoding->char_width(source + index, (ptrdiff_t) (maximum - index));
-            if (validate) pm_strpbrk_explicit_encoding_set(parser, source, width);
+            if (validate) pm_strpbrk_explicit_encoding_set(parser, (uint32_t) (source - parser->start), (uint32_t) width);
 
             if (width > 0) {
                 index += width;
@@ -122,7 +122,7 @@ pm_strpbrk_multi_byte(pm_parser_t *parser, const uint8_t *source, const uint8_t 
                     index++;
                 } while (index < maximum && encoding->char_width(source + index, (ptrdiff_t) (maximum - index)) == 0);
 
-                pm_strpbrk_invalid_multibyte_character(parser, source + start, source + index);
+                pm_strpbrk_invalid_multibyte_character(parser, (uint32_t) ((source + start) - parser->start), (uint32_t) (index - start));
             }
         }
     }
@@ -148,7 +148,7 @@ pm_strpbrk_single_byte(pm_parser_t *parser, const uint8_t *source, const uint8_t
             index++;
         } else {
             size_t width = encoding->char_width(source + index, (ptrdiff_t) (maximum - index));
-            pm_strpbrk_explicit_encoding_set(parser, source, width);
+            pm_strpbrk_explicit_encoding_set(parser, (uint32_t) (source - parser->start), (uint32_t) width);
 
             if (width > 0) {
                 index += width;
@@ -163,7 +163,7 @@ pm_strpbrk_single_byte(pm_parser_t *parser, const uint8_t *source, const uint8_t
                     index++;
                 } while (index < maximum && encoding->char_width(source + index, (ptrdiff_t) (maximum - index)) == 0);
 
-                pm_strpbrk_invalid_multibyte_character(parser, source + start, source + index);
+                pm_strpbrk_invalid_multibyte_character(parser, (uint32_t) ((source + start) - parser->start), (uint32_t) (index - start));
             }
         }
     }

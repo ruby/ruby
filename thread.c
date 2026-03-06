@@ -2737,11 +2737,18 @@ rb_threadptr_ready(rb_thread_t *th)
 static VALUE
 rb_threadptr_raise(rb_thread_t *target_th, int argc, VALUE *argv)
 {
+    VALUE exc;
+
     if (rb_threadptr_dead(target_th)) {
         return Qnil;
     }
 
-    VALUE exception = rb_exception_setup(argc, argv);
+    if (argc == 0) {
+        exc = rb_exc_new(rb_eRuntimeError, 0, 0);
+    }
+    else {
+        exc = rb_make_exception(argc, argv);
+    }
 
     /* making an exception object can switch thread,
        so we need to check thread deadness again */
@@ -2749,7 +2756,8 @@ rb_threadptr_raise(rb_thread_t *target_th, int argc, VALUE *argv)
         return Qnil;
     }
 
-    rb_threadptr_pending_interrupt_enque(target_th, exception);
+    rb_ec_setup_exception(GET_EC(), exc, Qundef);
+    rb_threadptr_pending_interrupt_enque(target_th, exc);
     rb_threadptr_interrupt(target_th);
 
     return Qnil;
@@ -2933,7 +2941,14 @@ thread_raise_m(int argc, VALUE *argv, VALUE self)
     const rb_thread_t *current_th = GET_THREAD();
 
     threadptr_check_pending_interrupt_queue(target_th);
-    rb_threadptr_raise(target_th, argc, argv);
+
+    if (rb_threadptr_dead(target_th)) {
+        return Qnil;
+    }
+
+    VALUE exception = rb_exception_setup(argc, argv);
+    rb_threadptr_pending_interrupt_enque(target_th, exception);
+    rb_threadptr_interrupt(target_th);
 
     /* To perform Thread.current.raise as Kernel.raise */
     if (current_th == target_th) {
@@ -4251,13 +4266,20 @@ rb_fd_init(rb_fdset_t *fds)
     FD_ZERO(fds->fdset);
 }
 
+static inline size_t
+fdset_memsize(int maxfd)
+{
+    size_t o = howmany(maxfd, NFDBITS) * sizeof(fd_mask);
+    if (o < sizeof(fd_set)) {
+        return sizeof(fd_set);
+    }
+    return o;
+}
+
 void
 rb_fd_init_copy(rb_fdset_t *dst, rb_fdset_t *src)
 {
-    size_t size = howmany(rb_fd_max(src), NFDBITS) * sizeof(fd_mask);
-
-    if (size < sizeof(fd_set))
-        size = sizeof(fd_set);
+    size_t size = fdset_memsize(rb_fd_max(src));
     dst->maxfd = src->maxfd;
     dst->fdset = xmalloc(size);
     memcpy(dst->fdset, src->fdset, size);
@@ -4266,7 +4288,7 @@ rb_fd_init_copy(rb_fdset_t *dst, rb_fdset_t *src)
 void
 rb_fd_term(rb_fdset_t *fds)
 {
-    xfree(fds->fdset);
+    ruby_sized_xfree(fds->fdset, fdset_memsize(fds->maxfd));
     fds->maxfd = 0;
     fds->fdset = 0;
 }
@@ -4281,14 +4303,11 @@ rb_fd_zero(rb_fdset_t *fds)
 static void
 rb_fd_resize(int n, rb_fdset_t *fds)
 {
-    size_t m = howmany(n + 1, NFDBITS) * sizeof(fd_mask);
-    size_t o = howmany(fds->maxfd, NFDBITS) * sizeof(fd_mask);
-
-    if (m < sizeof(fd_set)) m = sizeof(fd_set);
-    if (o < sizeof(fd_set)) o = sizeof(fd_set);
+    size_t m = fdset_memsize(n + 1);
+    size_t o = fdset_memsize(fds->maxfd);
 
     if (m > o) {
-        fds->fdset = xrealloc(fds->fdset, m);
+        fds->fdset = ruby_sized_xrealloc(fds->fdset, m, o);
         memset((char *)fds->fdset + o, 0, m - o);
     }
     if (n >= fds->maxfd) fds->maxfd = n + 1;
@@ -4318,23 +4337,18 @@ rb_fd_isset(int n, const rb_fdset_t *fds)
 void
 rb_fd_copy(rb_fdset_t *dst, const fd_set *src, int max)
 {
-    size_t size = howmany(max, NFDBITS) * sizeof(fd_mask);
-
-    if (size < sizeof(fd_set)) size = sizeof(fd_set);
+    size_t size = fdset_memsize(max);
+    dst->fdset = ruby_sized_xrealloc(dst->fdset, size, fdset_memsize(dst->maxfd));
     dst->maxfd = max;
-    dst->fdset = xrealloc(dst->fdset, size);
     memcpy(dst->fdset, src, size);
 }
 
 void
 rb_fd_dup(rb_fdset_t *dst, const rb_fdset_t *src)
 {
-    size_t size = howmany(rb_fd_max(src), NFDBITS) * sizeof(fd_mask);
-
-    if (size < sizeof(fd_set))
-        size = sizeof(fd_set);
+    size_t size = fdset_memsize(rb_fd_max(src));
+    dst->fdset = ruby_sized_xrealloc(dst->fdset, size, fdset_memsize(dst->maxfd));
     dst->maxfd = src->maxfd;
-    dst->fdset = xrealloc(dst->fdset, size);
     memcpy(dst->fdset, src->fdset, size);
 }
 
@@ -4386,10 +4400,19 @@ rb_fd_init_copy(rb_fdset_t *dst, rb_fdset_t *src)
     rb_fd_dup(dst, src);
 }
 
+static inline size_t
+fdset_memsize(int capa)
+{
+    if (capa == FD_SETSIZE) {
+        return sizeof(fd_set);
+    }
+    return sizeof(unsigned int) + (capa * sizeof(SOCKET));
+}
+
 void
 rb_fd_term(rb_fdset_t *set)
 {
-    xfree(set->fdset);
+    ruby_sized_xfree(set->fdset, fdset_memsize(set->capa));
     set->fdset = NULL;
     set->capa = 0;
 }
@@ -6265,7 +6288,7 @@ threadptr_interrupt_exec_exec(rb_thread_t *th)
             else {
                 (*task->func)(task->data);
             }
-            ruby_xfree(task);
+            SIZED_FREE(task);
         }
         else {
             break;
@@ -6281,7 +6304,7 @@ threadptr_interrupt_exec_cleanup(rb_thread_t *th)
         struct rb_interrupt_exec_task *task;
 
         while ((task = ccan_list_pop(&th->interrupt_exec_tasks, struct rb_interrupt_exec_task, node)) != NULL) {
-            ruby_xfree(task);
+            SIZED_FREE(task);
         }
     }
     rb_native_mutex_unlock(&th->interrupt_lock);

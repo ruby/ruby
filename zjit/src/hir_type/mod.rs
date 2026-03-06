@@ -190,7 +190,7 @@ impl Type {
     }
 
     fn bits_from_subclass(class: VALUE) -> Option<u64> {
-        types::InexactBitsAndClass
+        types::SubclassBitsAndClass
             .iter()
             .find(|&(_, class_object)| class.is_subclass_of(unsafe { **class_object }) == ClassRelationship::Subclass)
             // Can't be an immediate if it's a subclass.
@@ -274,7 +274,8 @@ impl Type {
         else if val.is_nil() { types::NilClass }
         else if val.is_true() { types::TrueClass }
         else if val.is_false() { types::FalseClass }
-        else { Self::from_class(val.class()) }
+        // TODO(max): Revisit and maybe specialize to *not* an immediate
+        else { Self::from_class(val.class()).intersection(types::HeapBasicObject) }
     }
 
     pub fn from_class(class: VALUE) -> Type {
@@ -286,6 +287,14 @@ impl Type {
         }
         unreachable!("Class {} is not a subclass of BasicObject! Don't know what to do.",
                      get_class_name(class))
+    }
+
+    pub fn from_class_inexact(class: VALUE) -> Type {
+        let bits = types::InexactBitsAndClass
+            .iter()
+            .find(|&(_, class_object)| class.is_subclass_of(unsafe { **class_object }) == ClassRelationship::Subclass)
+            .unwrap_or_else(|| panic!("Class {} is not a subclass of BasicObject! Don't know what to do.", get_class_name(class))).0;
+        Type { bits, spec: Specialization::Type(class) }
     }
 
     /// Private. Only for creating type globals.
@@ -451,25 +460,6 @@ impl Type {
         if self.spec_is_subtype_of(other) { return Type { bits, spec: self.spec }; }
         if other.spec_is_subtype_of(*self) { return Type { bits, spec: other.spec }; }
         types::Empty
-    }
-
-    /// Subtract `other` from `self`, preserving specialization if possible.
-    pub fn subtract(&self, other: Type) -> Type {
-        // If self is a subtype of other, the result is empty (no negative types).
-        if self.is_subtype(other) { return types::Empty; }
-        // Self is not a subtype of other. That means either:
-        // * Their type bits do not overlap at all (eg Int vs String)
-        // * Their type bits overlap but self's specialization is not a subtype of other's (eg
-        //   Fixnum[5] vs Fixnum[4])
-        // Check for the latter case, returning self unchanged if so.
-        if !self.spec_is_subtype_of(other) {
-            return *self;
-        }
-        // Now self is either a supertype of other (eg Object vs String or Fixnum vs Fixnum[5]) or
-        // their type bits do not overlap at all (eg Int vs String).
-        // Just subtract the bits and keep self's specialization.
-        let bits = self.bits & !other.bits;
-        Type { bits, spec: self.spec }
     }
 
     pub fn could_be(&self, other: Type) -> bool {
@@ -820,7 +810,7 @@ mod tests {
             assert_bit_equal(Type::from_class(unsafe { rb_cTrueClass }), types::TrueClass);
             assert_bit_equal(Type::from_class(unsafe { rb_cFalseClass }), types::FalseClass);
             let c_class = define_class("C", unsafe { rb_cObject });
-            assert_bit_equal(Type::from_class(c_class), Type { bits: bits::HeapObject, spec: Specialization::TypeExact(c_class) });
+            assert_bit_equal(Type::from_class(c_class), Type { bits: bits::ObjectSubclass, spec: Specialization::TypeExact(c_class) });
         });
     }
 
@@ -1078,46 +1068,5 @@ mod tests {
         assert!(!types::CInt8.has_value(Const::CInt8(42)));
         assert!(!types::CBool.has_value(Const::CBool(true)));
         assert!(!types::CShape.has_value(Const::CShape(crate::cruby::ShapeId(0x1234))));
-    }
-
-    #[test]
-    fn test_subtract_with_superset_returns_empty() {
-        let left = types::NilClass;
-        let right = types::BasicObject;
-        let result = left.subtract(right);
-        assert_bit_equal(result, types::Empty);
-    }
-
-    #[test]
-    fn test_subtract_with_subset_removes_bits() {
-        let left = types::BasicObject;
-        let right = types::NilClass;
-        let result = left.subtract(right);
-        assert_subtype(result, types::BasicObject);
-        assert_not_subtype(types::NilClass, result);
-    }
-
-    #[test]
-    fn test_subtract_with_no_overlap_returns_self() {
-        let left = types::Fixnum;
-        let right = types::StringExact;
-        let result = left.subtract(right);
-        assert_bit_equal(result, left);
-    }
-
-    #[test]
-    fn test_subtract_with_no_specialization_overlap_returns_self() {
-        let left = Type::fixnum(4);
-        let right = Type::fixnum(5);
-        let result = left.subtract(right);
-        assert_bit_equal(result, left);
-    }
-
-    #[test]
-    fn test_subtract_with_specialization_subset_removes_specialization() {
-        let left = types::Fixnum;
-        let right = Type::fixnum(42);
-        let result = left.subtract(right);
-        assert_bit_equal(result, types::Fixnum);
     }
 }

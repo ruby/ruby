@@ -88,7 +88,7 @@ free_arena(struct iseq_compile_data_storage *cur)
 
     while (cur) {
         next = cur->next;
-        ruby_xfree(cur);
+        ruby_sized_xfree(cur, offsetof(struct iseq_compile_data_storage, buff) + cur->size * sizeof(char));
         cur = next;
     }
 }
@@ -102,7 +102,7 @@ compile_data_free(struct iseq_compile_data *compile_data)
         if (compile_data->ivar_cache_table) {
             rb_id_table_free(compile_data->ivar_cache_table);
         }
-        ruby_xfree(compile_data);
+        SIZED_FREE(compile_data);
     }
 }
 
@@ -152,13 +152,14 @@ iseq_clear_ic_references(const rb_iseq_t *iseq)
         if (segments == NULL)
             continue;
 
-        for (int i = 0; segments[i]; i++) {
+        int i;
+        for (i = 0; segments[i]; i++) {
             ID id = segments[i];
             if (id == idNULL) continue;
             remove_from_constant_cache(id, ic);
         }
 
-        ruby_xfree((void *)segments);
+        SIZED_FREE_N(segments, i + 1);
     }
 }
 
@@ -198,38 +199,41 @@ rb_iseq_free(const rb_iseq_t *iseq)
 #if USE_ZJIT
         rb_zjit_iseq_free(iseq);
 #endif
-        ruby_xfree((void *)body->iseq_encoded);
-        ruby_xfree((void *)body->insns_info.body);
-        ruby_xfree((void *)body->insns_info.positions);
+        SIZED_FREE_N(body->iseq_encoded, body->iseq_size);
+        SIZED_FREE_N(body->insns_info.body, body->insns_info.size);
+        SIZED_FREE_N(body->insns_info.positions, body->insns_info.size);
 #if VM_INSN_INFO_TABLE_IMPL == 2
         ruby_xfree(body->insns_info.succ_index_table);
 #endif
-        ruby_xfree((void *)body->is_entries);
-        ruby_xfree(body->call_data);
-        ruby_xfree((void *)body->catch_table);
-        ruby_xfree((void *)body->param.opt_table);
+        SIZED_FREE_N(body->is_entries, ISEQ_IS_SIZE(body));
+        SIZED_FREE_N(body->call_data, body->ci_size);
+        if (body->catch_table) {
+            ruby_sized_xfree(body->catch_table, iseq_catch_table_bytes(body->catch_table->size));
+        }
+        SIZED_FREE_N(body->param.opt_table, body->param.opt_num + 1);
         if (ISEQ_MBITS_BUFLEN(body->iseq_size) > 1 && body->mark_bits.list) {
-            ruby_xfree((void *)body->mark_bits.list);
+            SIZED_FREE_N(body->mark_bits.list, ISEQ_MBITS_BUFLEN(body->iseq_size));
         }
 
-        ruby_xfree(body->variable.original_iseq);
+        ISEQ_ORIGINAL_ISEQ_CLEAR(iseq);
 
-        if (body->param.keyword != NULL) {
-            if (body->param.keyword->table != &body->local_table[body->param.keyword->bits_start - body->param.keyword->num])
-                ruby_xfree((void *)body->param.keyword->table);
-            if (body->param.keyword->default_values) {
-                ruby_xfree((void *)body->param.keyword->default_values);
+        struct rb_iseq_param_keyword *pkw = (struct rb_iseq_param_keyword *)body->param.keyword;
+        if (pkw != NULL) {
+            if (pkw->table != &body->local_table[pkw->bits_start - pkw->num])
+                SIZED_FREE_N(pkw->table, pkw->required_num);
+            if (pkw->default_values) {
+                SIZED_FREE_N(pkw->default_values, pkw->num - pkw->required_num);
             }
-            ruby_xfree((void *)body->param.keyword);
+            SIZED_FREE(pkw);
         }
         if (LIKELY(body->local_table != rb_iseq_shared_exc_local_tbl)) {
-            ruby_xfree((void *)body->local_table);
+            SIZED_FREE_N(body->local_table, body->local_table_size);
         }
-        ruby_xfree((void *)body->lvar_states);
+        SIZED_FREE_N(body->lvar_states, body->local_table_size);
 
         compile_data_free(ISEQ_COMPILE_DATA(iseq));
         if (body->outer_variables) rb_id_table_free(body->outer_variables);
-        ruby_xfree(body);
+        SIZED_FREE(body);
     }
 
     RUBY_FREE_LEAVE("iseq");
@@ -758,7 +762,7 @@ rb_iseq_insns_info_encode_positions(const rb_iseq_t *iseq)
     if (body->insns_info.succ_index_table) ruby_xfree(body->insns_info.succ_index_table);
     body->insns_info.succ_index_table = succ_index_table_create(max_pos, data, size);
 #if VM_CHECK_MODE == 0
-    ruby_xfree(body->insns_info.positions);
+    SIZED_FREE_N(body->insns_info.positions, body->insns_info.size);
     body->insns_info.positions = NULL;
 #endif
 #endif
@@ -978,7 +982,7 @@ rb_iseq_new_top(const VALUE ast_value, VALUE name, VALUE path, VALUE realpath, c
 rb_iseq_t *
 pm_iseq_new_top(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent, int *error_state)
 {
-    iseq_new_setup_coverage(path, (int) (node->parser->newline_list.size - 1));
+    iseq_new_setup_coverage(path, (int) (node->parser->line_offsets.size - 1));
 
     return pm_iseq_new_with_opt(node, name, path, realpath, 0, parent, 0,
                                 ISEQ_TYPE_TOP, &COMPILE_OPTION_DEFAULT, error_state);
@@ -1002,7 +1006,7 @@ rb_iseq_new_main(const VALUE ast_value, VALUE path, VALUE realpath, const rb_ise
 rb_iseq_t *
 pm_iseq_new_main(pm_scope_node_t *node, VALUE path, VALUE realpath, const rb_iseq_t *parent, int opt, int *error_state)
 {
-    iseq_new_setup_coverage(path, (int) (node->parser->newline_list.size - 1));
+    iseq_new_setup_coverage(path, (int) (node->parser->line_offsets.size - 1));
 
     return pm_iseq_new_with_opt(node, rb_fstring_lit("<main>"),
                                 path, realpath, 0,
@@ -1031,7 +1035,7 @@ pm_iseq_new_eval(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath,
     if (rb_get_coverage_mode() & COVERAGE_TARGET_EVAL) {
         VALUE coverages = rb_get_coverages();
         if (RTEST(coverages) && RTEST(path) && !RTEST(rb_hash_has_key(coverages, path))) {
-            iseq_setup_coverage(coverages, path, ((int) (node->parser->newline_list.size - 1)) + first_lineno - 1);
+            iseq_setup_coverage(coverages, path, ((int) (node->parser->line_offsets.size - 1)) + first_lineno - 1);
         }
     }
 
@@ -1141,8 +1145,8 @@ pm_iseq_new_with_opt(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpa
     pm_location_t *location = &node->base.location;
     int32_t start_line = node->parser->start_line;
 
-    pm_line_column_t start = pm_newline_list_line_column(&node->parser->newline_list, location->start, start_line);
-    pm_line_column_t end = pm_newline_list_line_column(&node->parser->newline_list, location->end, start_line);
+    pm_line_column_t start = pm_line_offset_list_line_column(&node->parser->line_offsets, location->start, start_line);
+    pm_line_column_t end = pm_line_offset_list_line_column(&node->parser->line_offsets, location->start + location->length, start_line);
 
     rb_code_location_t code_location = (rb_code_location_t) {
         .beg_pos = { .lineno = (int) start.line, .column = (int) start.column },
@@ -3783,7 +3787,13 @@ rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc)
         }
         rb_ary_push(args, a);
     }
-    if (body->param.flags.has_block) {
+    if (body->param.flags.accepts_no_block) {
+        ID noblock;
+        CONST_ID(noblock, "noblock");
+        PARAM_TYPE(noblock);
+        rb_ary_push(args, a);
+    }
+    else if (body->param.flags.has_block) {
         CONST_ID(block, "block");
         rb_ary_push(args, PARAM(body->param.block_start, block));
     }

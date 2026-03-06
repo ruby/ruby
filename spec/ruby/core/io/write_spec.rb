@@ -102,6 +102,13 @@ describe "IO#write on a file" do
     File.binread(@filename).should == "h\u0000\u0000\u0000i\u0000\u0000\u0000"
   end
 
+  it "ignores the 'bom|' prefix" do
+    File.open(@filename, "w", encoding: 'bom|utf-8') do |file|
+      file.write("hi")
+    end
+    File.binread(@filename).should == "hi"
+  end
+
   it "raises a invalid byte sequence error if invalid bytes are being written" do
     # pack "\xFEhi" to avoid utf-8 conflict
     xFEhi = ([254].pack('C*') + 'hi').force_encoding('utf-8')
@@ -220,7 +227,7 @@ describe "IO.write" do
       end
     end
 
-    ruby_version_is "3.3"..."4.0" do
+    ruby_version_is ""..."4.0" do
       # https://bugs.ruby-lang.org/issues/19630
       it "warns about deprecation given a path with a pipe" do
         -> {

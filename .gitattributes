@@ -7,3 +7,8 @@ tool/update-deps diff=ruby
 tool/make-snapshot diff=ruby
 tool/format-release diff=ruby
 tool/leaked-globals diff=ruby
+
+# To strip CR from the batch files, set the `diff.dos.textconv` filter
+# like as `git config diff.dos.textconv $'sed \'s/\r$//\''`.
+*.bat diff=dos
+*.cmd diff=dos

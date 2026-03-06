@@ -123,11 +123,15 @@ void mmtk_post_alloc(MMTk_Mutator *mutator,
                      size_t bytes,
                      MMTk_AllocationSemantics semantics);
 
-void mmtk_add_obj_free_candidate(MMTk_ObjectReference object, bool can_parallel_free);
+void mmtk_add_obj_free_candidates(const MMTk_ObjectReference *objects,
+                                  size_t count,
+                                  bool can_parallel_free);
 
 void mmtk_declare_weak_references(MMTk_ObjectReference object);
 
 bool mmtk_weak_references_alive_p(MMTk_ObjectReference object);
+
+size_t mmtk_weak_references_count(void);
 
 void mmtk_register_pinning_obj(MMTk_ObjectReference obj);
 

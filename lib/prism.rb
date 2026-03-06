@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 # :markup: markdown
+#--
+# rbs_inline: enabled
 
 # The Prism Ruby parser.
 #
@@ -20,9 +22,7 @@ module Prism
   autoload :DSL, "prism/dsl"
   autoload :InspectVisitor, "prism/inspect_visitor"
   autoload :LexCompat, "prism/lex_compat"
-  autoload :LexRipper, "prism/lex_ripper"
   autoload :MutationCompiler, "prism/mutation_compiler"
-  autoload :Pack, "prism/pack"
   autoload :Pattern, "prism/pattern"
   autoload :Reflection, "prism/reflection"
   autoload :Relocation, "prism/relocation"
@@ -35,19 +35,20 @@ module Prism
   # private here.
 
   private_constant :LexCompat
-  private_constant :LexRipper
 
   # Raised when requested to parse as the currently running Ruby version but Prism has no support for it.
   class CurrentVersionError < ArgumentError
     # Initialize a new exception for the given ruby version string.
+    #--
+    #: (String version) -> void
     def initialize(version)
       message = +"invalid version: Requested to parse as `version: 'current'`; "
-      segments =
+      major, minor, =
         if version.match?(/\A\d+\.\d+.\d+\z/)
           version.split(".").map(&:to_i)
         end
 
-      if segments && ((segments[0] < 3) || (segments[0] == 3 && segments[1] < 3))
+      if major && minor && ((major < 3) || (major == 3 && minor < 3))
         message << " #{version} is below the minimum supported syntax."
       else
         message << " #{version} is unknown. Please update the `prism` gem."
@@ -58,32 +59,53 @@ module Prism
   end
 
   # :call-seq:
-  #   Prism::lex_compat(source, **options) -> LexCompat::Result
+  #   lex_compat(source, **options) -> LexCompat::Result
   #
   # Returns a parse result whose value is an array of tokens that closely
-  # resembles the return value of Ripper::lex.
+  # resembles the return value of Ripper.lex.
   #
-  # For supported options, see Prism::parse.
+  # For supported options, see Prism.parse.
+  #--
+  #: (String source, **untyped options) -> LexCompat::Result
   def self.lex_compat(source, **options)
     LexCompat.new(source, **options).result # steep:ignore
   end
 
   # :call-seq:
-  #   Prism::lex_ripper(source) -> Array
-  #
-  # This wraps the result of Ripper.lex. It produces almost exactly the
-  # same tokens. Raises SyntaxError if the syntax in source is invalid.
-  def self.lex_ripper(source)
-    LexRipper.new(source).result # steep:ignore
-  end
-
-  # :call-seq:
-  #   Prism::load(source, serialized, freeze) -> ParseResult
+  #   load(source, serialized, freeze) -> ParseResult
   #
   # Load the serialized AST using the source as a reference into a tree.
+  #--
+  #: (String source, String serialized, ?bool freeze) -> ParseResult
   def self.load(source, serialized, freeze = false)
     Serialize.load_parse(source, serialized, freeze)
   end
+
+  # @rbs!
+  #    VERSION: String
+  #    BACKEND: :CEXT | :FFI
+  #
+  #    interface _Stream
+  #      def gets: (?Integer integer) -> (String | nil)
+  #    end
+  #
+  #    def self.parse:               (String source,  ?filepath: String, ?command_line: String, ?encoding: Encoding | false, ?freeze: bool, ?frozen_string_literal: bool, ?line: Integer, ?main_script: bool, ?partial_script: bool, ?scopes: Array[Array[Symbol]], ?version: String) -> ParseResult
+  #    def self.profile:             (String source,  ?filepath: String, ?command_line: String, ?encoding: Encoding | false, ?freeze: bool, ?frozen_string_literal: bool, ?line: Integer, ?main_script: bool, ?partial_script: bool, ?scopes: Array[Array[Symbol]], ?version: String) -> void
+  #    def self.lex:                 (String source,  ?filepath: String, ?command_line: String, ?encoding: Encoding | false, ?freeze: bool, ?frozen_string_literal: bool, ?line: Integer, ?main_script: bool, ?partial_script: bool, ?scopes: Array[Array[Symbol]], ?version: String) -> LexResult
+  #    def self.parse_lex:           (String source,  ?filepath: String, ?command_line: String, ?encoding: Encoding | false, ?freeze: bool, ?frozen_string_literal: bool, ?line: Integer, ?main_script: bool, ?partial_script: bool, ?scopes: Array[Array[Symbol]], ?version: String) -> ParseLexResult
+  #    def self.dump:                (String source,  ?filepath: String, ?command_line: String, ?encoding: Encoding | false, ?freeze: bool, ?frozen_string_literal: bool, ?line: Integer, ?main_script: bool, ?partial_script: bool, ?scopes: Array[Array[Symbol]], ?version: String) -> String
+  #    def self.parse_comments:      (String source,  ?filepath: String, ?command_line: String, ?encoding: Encoding | false, ?freeze: bool, ?frozen_string_literal: bool, ?line: Integer, ?main_script: bool, ?partial_script: bool, ?scopes: Array[Array[Symbol]], ?version: String) -> Array[Comment]
+  #    def self.parse_success?:      (String source,  ?filepath: String, ?command_line: String, ?encoding: Encoding | false, ?freeze: bool, ?frozen_string_literal: bool, ?line: Integer, ?main_script: bool, ?partial_script: bool, ?scopes: Array[Array[Symbol]], ?version: String) -> bool
+  #    def self.parse_failure?:      (String source,  ?filepath: String, ?command_line: String, ?encoding: Encoding | false, ?freeze: bool, ?frozen_string_literal: bool, ?line: Integer, ?main_script: bool, ?partial_script: bool, ?scopes: Array[Array[Symbol]], ?version: String) -> bool
+  #    def self.parse_stream:        (_Stream stream, ?filepath: String, ?command_line: String, ?encoding: Encoding | false, ?freeze: bool, ?frozen_string_literal: bool, ?line: Integer, ?main_script: bool, ?partial_script: bool, ?scopes: Array[Array[Symbol]], ?version: String) -> ParseResult
+  #    def self.parse_file:          (String filepath,                   ?command_line: String, ?encoding: Encoding | false, ?freeze: bool, ?frozen_string_literal: bool, ?line: Integer, ?main_script: bool, ?partial_script: bool, ?scopes: Array[Array[Symbol]], ?version: String) -> ParseResult
+  #    def self.profile_file:        (String filepath,                   ?command_line: String, ?encoding: Encoding | false, ?freeze: bool, ?frozen_string_literal: bool, ?line: Integer, ?main_script: bool, ?partial_script: bool, ?scopes: Array[Array[Symbol]], ?version: String) -> void
+  #    def self.lex_file:            (String filepath,                   ?command_line: String, ?encoding: Encoding | false, ?freeze: bool, ?frozen_string_literal: bool, ?line: Integer, ?main_script: bool, ?partial_script: bool, ?scopes: Array[Array[Symbol]], ?version: String) -> LexResult
+  #    def self.parse_lex_file:      (String filepath,                   ?command_line: String, ?encoding: Encoding | false, ?freeze: bool, ?frozen_string_literal: bool, ?line: Integer, ?main_script: bool, ?partial_script: bool, ?scopes: Array[Array[Symbol]], ?version: String) -> ParseLexResult
+  #    def self.dump_file:           (String filepath,                   ?command_line: String, ?encoding: Encoding | false, ?freeze: bool, ?frozen_string_literal: bool, ?line: Integer, ?main_script: bool, ?partial_script: bool, ?scopes: Array[Array[Symbol]], ?version: String) -> String
+  #    def self.parse_file_comments: (String filepath,                   ?command_line: String, ?encoding: Encoding | false, ?freeze: bool, ?frozen_string_literal: bool, ?line: Integer, ?main_script: bool, ?partial_script: bool, ?scopes: Array[Array[Symbol]], ?version: String) -> Array[Comment]
+  #    def self.parse_file_success?: (String filepath,                   ?command_line: String, ?encoding: Encoding | false, ?freeze: bool, ?frozen_string_literal: bool, ?line: Integer, ?main_script: bool, ?partial_script: bool, ?scopes: Array[Array[Symbol]], ?version: String) -> bool
+  #    def self.parse_file_failure?: (String filepath,                   ?command_line: String, ?encoding: Encoding | false, ?freeze: bool, ?frozen_string_literal: bool, ?line: Integer, ?main_script: bool, ?partial_script: bool, ?scopes: Array[Array[Symbol]], ?version: String) -> bool
 end
 
 require_relative "prism/polyfill/byteindex"

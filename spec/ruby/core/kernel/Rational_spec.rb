@@ -131,7 +131,7 @@ describe "Kernel.Rational" do
       obj = Object.new
       def obj.to_r; []; end
 
-      -> { Rational(obj) }.should raise_error(TypeError, "can't convert Object to Rational (Object#to_r gives Array)")
+      -> { Rational(obj) }.should raise_consistent_error(TypeError, "can't convert Object into Rational (Object#to_r gives Array)")
     end
   end
 

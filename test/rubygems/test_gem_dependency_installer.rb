@@ -677,8 +677,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     util_setup_gems
 
     FileUtils.mv @b1_gem, @tempdir
-    si = util_setup_spec_fetcher @b1
-    @fetcher.data["http://gems.example.com/gems/yaml"] = si.to_yaml
+    util_setup_spec_fetcher @b1
     inst = nil
 
     Dir.chdir @tempdir do
@@ -955,9 +954,7 @@ class TestGemDependencyInstaller < Gem::TestCase
       s.platform = Gem::Platform.new %w[cpu other_platform 1]
     end
 
-    si = util_setup_spec_fetcher @a1, a2_o
-
-    @fetcher.data["http://gems.example.com/gems/yaml"] = si.to_yaml
+    util_setup_spec_fetcher @a1, a2_o
 
     a1_data = nil
     a2_o_data = nil

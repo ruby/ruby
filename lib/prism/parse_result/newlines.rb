@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 # :markup: markdown
+#--
+# rbs_inline: enabled
 
 module Prism
   class ParseResult < Result
@@ -24,13 +26,20 @@ module Prism
     # that case. We do that to avoid storing the extra `@newline` instance
     # variable on every node if we don't need it.
     class Newlines < Visitor
+      # The map of lines indices to whether or not they have been marked as
+      # emitting a newline event.
+      # @rbs @lines: Array[bool]
+
       # Create a new Newlines visitor with the given newline offsets.
+      #--
+      #: (Integer lines) -> void
       def initialize(lines)
-        # @type var lines: Integer
         @lines = Array.new(1 + lines, false)
       end
 
-      # Permit block/lambda nodes to mark newlines within themselves.
+      # Permit block nodes to mark newlines within themselves.
+      #--
+      #: (BlockNode node) -> void
       def visit_block_node(node)
         old_lines = @lines
         @lines = Array.new(old_lines.size, false)
@@ -42,17 +51,39 @@ module Prism
         end
       end
 
-      alias_method :visit_lambda_node, :visit_block_node
+      # Permit lambda nodes to mark newlines within themselves.
+      #--
+      #: (LambdaNode node) -> void
+      def visit_lambda_node(node)
+        old_lines = @lines
+        @lines = Array.new(old_lines.size, false)
 
-      # Mark if/unless nodes as newlines.
+        begin
+          super(node)
+        ensure
+          @lines = old_lines
+        end
+      end
+
+      # Mark if nodes as newlines.
+      #--
+      #: (IfNode node) -> void
       def visit_if_node(node)
         node.newline_flag!(@lines)
         super(node)
       end
 
-      alias_method :visit_unless_node, :visit_if_node
+      # Mark unless nodes as newlines.
+      #--
+      #: (UnlessNode node) -> void
+      def visit_unless_node(node)
+        node.newline_flag!(@lines)
+        super(node)
+      end
 
       # Permit statements lists to mark newlines within themselves.
+      #--
+      #: (StatementsNode node) -> void
       def visit_statements_node(node)
         node.body.each do |child|
           child.newline_flag!(@lines)
@@ -63,10 +94,16 @@ module Prism
   end
 
   class Node
+    # Tracks whether or not this node should emit a newline event when the
+    # instructions that it represents are executed.
+    # @rbs @newline_flag: bool
+
+    #: () -> bool
     def newline_flag? # :nodoc:
       !!defined?(@newline_flag)
     end
 
+    #: (Array[bool] lines) -> void
     def newline_flag!(lines) # :nodoc:
       line = location.start_line
       unless lines[line]
@@ -77,48 +114,56 @@ module Prism
   end
 
   class BeginNode < Node
+    #: (Array[bool] lines) -> void
     def newline_flag!(lines) # :nodoc:
       # Never mark BeginNode with a newline flag, mark children instead.
     end
   end
 
   class ParenthesesNode < Node
+    #: (Array[bool] lines) -> void
     def newline_flag!(lines) # :nodoc:
       # Never mark ParenthesesNode with a newline flag, mark children instead.
     end
   end
 
   class IfNode < Node
+    #: (Array[bool] lines) -> void
     def newline_flag!(lines) # :nodoc:
       predicate.newline_flag!(lines)
     end
   end
 
   class UnlessNode < Node
+    #: (Array[bool] lines) -> void
     def newline_flag!(lines) # :nodoc:
       predicate.newline_flag!(lines)
     end
   end
 
   class UntilNode < Node
+    #: (Array[bool] lines) -> void
     def newline_flag!(lines) # :nodoc:
       predicate.newline_flag!(lines)
     end
   end
 
   class WhileNode < Node
+    #: (Array[bool] lines) -> void
     def newline_flag!(lines) # :nodoc:
       predicate.newline_flag!(lines)
     end
   end
 
   class RescueModifierNode < Node
+    #: (Array[bool] lines) -> void
     def newline_flag!(lines) # :nodoc:
       expression.newline_flag!(lines)
     end
   end
 
   class InterpolatedMatchLastLineNode < Node
+    #: (Array[bool] lines) -> void
     def newline_flag!(lines) # :nodoc:
       first = parts.first
       first.newline_flag!(lines) if first
@@ -126,6 +171,7 @@ module Prism
   end
 
   class InterpolatedRegularExpressionNode < Node
+    #: (Array[bool] lines) -> void
     def newline_flag!(lines) # :nodoc:
       first = parts.first
       first.newline_flag!(lines) if first
@@ -133,6 +179,7 @@ module Prism
   end
 
   class InterpolatedStringNode < Node
+    #: (Array[bool] lines) -> void
     def newline_flag!(lines) # :nodoc:
       first = parts.first
       first.newline_flag!(lines) if first
@@ -140,6 +187,7 @@ module Prism
   end
 
   class InterpolatedSymbolNode < Node
+    #: (Array[bool] lines) -> void
     def newline_flag!(lines) # :nodoc:
       first = parts.first
       first.newline_flag!(lines) if first
@@ -147,6 +195,7 @@ module Prism
   end
 
   class InterpolatedXStringNode < Node
+    #: (Array[bool] lines) -> void
     def newline_flag!(lines) # :nodoc:
       first = parts.first
       first.newline_flag!(lines) if first

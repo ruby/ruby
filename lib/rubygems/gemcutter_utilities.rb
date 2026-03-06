@@ -154,10 +154,11 @@ module Gem::GemcutterUtilities
 
   def sign_in(sign_in_host = nil, scope: nil)
     sign_in_host ||= host
-    return if api_key
-
     pretty_host = pretty_host(sign_in_host)
-
+    if api_key
+      say "You are already signed in on #{pretty_host}."
+      return
+    end
     say "Enter your #{pretty_host} credentials."
     say "Don't have an account yet? " \
         "Create one at #{sign_in_host}/sign_up"

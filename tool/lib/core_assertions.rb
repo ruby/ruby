@@ -911,10 +911,11 @@ eom
 
         first = seq.first
         *arg = pre.call(first)
-        times = (0..(rehearsal || (2 * first))).map do
+        raw_times = (0..(rehearsal || (2 * first))).map do
           measure[arg, "rehearsal"].nonzero?
         end
-        times.compact!
+        times = raw_times.compact
+        raise "all measurements are zero: #{raw_times.inspect}" if times.empty?
         tmin, tmax = times.minmax
 
         # safe_factor * tmax * rehearsal_time_variance_factor(equals to 1 when variance is small)

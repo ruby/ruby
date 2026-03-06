@@ -4,4 +4,4 @@ Returns an array of the characters in +self+:
   'こんにちは'.chars # => ["こ", "ん", "に", "ち", "は"]
   ''.chars          # => []
 
-Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
+Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non-String].

@@ -20,6 +20,7 @@
 #include "internal/array.h"
 #include "internal/class.h"
 #include "internal/complex.h"
+#include "internal/error.h"
 #include "internal/math.h"
 #include "internal/numeric.h"
 #include "internal/object.h"
@@ -50,20 +51,6 @@ static ID id_abs, id_arg,
 #define id_to_f idTo_f
 #define id_quo idQuo
 #define id_fdiv idFdiv
-
-#define fun1(n) \
-inline static VALUE \
-f_##n(VALUE x)\
-{\
-    return rb_funcall(x, id_##n, 0);\
-}
-
-#define fun2(n) \
-inline static VALUE \
-f_##n(VALUE x, VALUE y)\
-{\
-    return rb_funcall(x, id_##n, 1, y);\
-}
 
 #define PRESERVE_SIGNEDZERO
 
@@ -275,8 +262,6 @@ f_to_f(VALUE x)
     return rb_funcall(x, id_to_f, 0);
 }
 
-fun1(to_r)
-
 inline static int
 f_eqeq_p(VALUE x, VALUE y)
 {
@@ -287,8 +272,18 @@ f_eqeq_p(VALUE x, VALUE y)
     return (int)rb_equal(x, y);
 }
 
-fun2(expt)
-fun2(fdiv)
+static VALUE
+f_fdiv(VALUE x, VALUE y)
+{
+    if (RB_INTEGER_TYPE_P(x))
+        return rb_int_fdiv(x, y);
+    if (RB_FLOAT_TYPE_P(x))
+        return rb_float_div(x, y);
+    if (RB_TYPE_P(x, T_RATIONAL))
+        return rb_rational_fdiv(x, y);
+
+    return rb_funcallv(x, id_fdiv, 1, &y);
+}
 
 static VALUE
 f_quo(VALUE x, VALUE y)
@@ -316,24 +311,6 @@ f_negative_p(VALUE x)
 }
 
 #define f_positive_p(x) (!f_negative_p(x))
-
-inline static bool
-f_zero_p(VALUE x)
-{
-    if (RB_FLOAT_TYPE_P(x)) {
-        return FLOAT_ZERO_P(x);
-    }
-    else if (RB_INTEGER_TYPE_P(x)) {
-        return FIXNUM_ZERO_P(x);
-    }
-    else if (RB_TYPE_P(x, T_RATIONAL)) {
-        const VALUE num = RRATIONAL(x)->num;
-        return FIXNUM_ZERO_P(num);
-    }
-    return rb_equal(x, ZERO) != 0;
-}
-
-#define f_nonzero_p(x) (!f_zero_p(x))
 
 static inline bool
 always_finite_type_p(VALUE x)
@@ -1215,11 +1192,10 @@ rb_complex_pow(VALUE self, VALUE other)
         if (RB_BIGNUM_TYPE_P(other))
             rb_warn("in a**b, b may be too big");
 
-        r = f_abs(self);
-        theta = f_arg(self);
+        r = rb_num_pow(f_abs(self), other);
+        theta = f_mul(f_arg(self), other);
 
-        return f_complex_polar(CLASS_OF(self), f_expt(r, other),
-                               f_mul(theta, other));
+        return f_complex_polar(CLASS_OF(self), r, theta);
     }
     return rb_num_coerce_bin(self, other, id_expt);
 }
@@ -1872,7 +1848,7 @@ nucomp_to_r(VALUE self)
                      self);
         }
     }
-    return f_to_r(dat->real);
+    return rb_funcallv(dat->real, id_to_r, 0, 0);
 }
 
 /*
@@ -2411,7 +2387,7 @@ nucomp_convert(VALUE klass, VALUE a1, VALUE a2, int raise)
 {
     if (NIL_P(a1) || NIL_P(a2)) {
         if (!raise) return Qnil;
-        rb_raise(rb_eTypeError, "can't convert nil into Complex");
+        rb_cant_convert(Qnil, "Complex");
     }
 
     if (RB_TYPE_P(a1, T_STRING)) {
@@ -2645,9 +2621,9 @@ float_arg(VALUE self)
  * First, what's elsewhere:
  *
  * - Class \Complex inherits (directly or indirectly)
- *   from classes {Numeric}[rdoc-ref:Numeric@What-27s+Here]
- *   and {Object}[rdoc-ref:Object@What-27s+Here].
- * - Includes (indirectly) module {Comparable}[rdoc-ref:Comparable@What-27s+Here].
+ *   from classes {Numeric}[rdoc-ref:Numeric@Whats-Here]
+ *   and {Object}[rdoc-ref:Object@Whats-Here].
+ * - Includes (indirectly) module {Comparable}[rdoc-ref:Comparable@Whats-Here].
  *
  * Here, class \Complex has methods for:
  *

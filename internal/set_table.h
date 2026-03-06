@@ -58,6 +58,8 @@ int rb_set_foreach_check(set_table *, set_foreach_check_callback_func *, st_data
 st_index_t rb_set_keys(set_table *table, st_data_t *keys, st_index_t size);
 #define set_free_table rb_set_free_table
 void rb_set_free_table(set_table *);
+#define set_free_embedded_table rb_set_free_embedded_table
+void set_free_embedded_table(set_table *tab);
 #define set_table_clear rb_set_table_clear
 void rb_set_table_clear(set_table *);
 #define set_copy rb_set_copy

@@ -18,15 +18,29 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           token: ${{ (github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull')) && secrets.MATZBOT_AUTO_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
+          persist-credentials: false
+
+      - uses: ruby/setup-ruby@19a43a6a2428d455dbd1b85344698725179c9d8c # v1.289.0
+        with:
+          ruby-version: head
 
       - uses: ./.github/actions/setup/directories
         with:
           makeup: true
           # Skip overwriting MATZBOT_AUTO_UPDATE_TOKEN
           checkout: '' # false (ref: https://github.com/actions/runner/issues/2238)
+
+      - name: Re-generate Makefiles
+        run: |
+          # config.status needs to run as a shell script
+          { echo ':&&exit'; cat tool/prereq.status; } > config.status
+          : # same as actions/setup/directories/action.yml
+          for mk in Makefile GNUmakefile; do
+            sed -f tool/prereq.status template/$mk.in > $mk
+          done
 
       - name: Check for code styles
         run: |
@@ -57,7 +71,7 @@ jobs:
         run: |
           date +"mon=%-m"%n"day=%-d" >> $GITHUB_OUTPUT
         env:
-          TZ: Tokyo/Asia
+          TZ: Asia/Tokyo
 
       - id: deprecation
         run: |
@@ -74,17 +88,17 @@ jobs:
         run: |
           set -- $(sed 's/#.*//;/^rdoc /!d' gems/bundled_gems)
           { echo version=$2; echo ref=$4; } >> $GITHUB_OUTPUT
-          echo RDOC='ruby -W0 --disable-gems tool/rdoc-srcdir -q' >> $GITHUB_ENV
 
       - name: Checkout rdoc
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           repository: ruby/rdoc
           ref: ${{ steps.rdoc.outputs.ref }}
           path: .bundle/gems/rdoc-${{ steps.rdoc.outputs.version }}
+          persist-credentials: false
         if: ${{ steps.rdoc.outputs.ref != '' }}
 
-      - name: Generate rdoc
+      - name: Generate rdoc scripts
         run: |
           set -x
           gempath=$(ruby -e 'print Gem.user_dir, "/bin"')
@@ -98,12 +112,12 @@ jobs:
 
       - name: Core docs coverage
         run: |
-          $RDOC -C -x ^ext -x ^lib .
+          make XRUBY=ruby RDOC_DEPENDS= RBCONFIG=update-rbconfig rdoc-coverage
 
       - name: Generate docs
         id: docs
         run: |
-          $RDOC --op html .
+          make XRUBY=ruby RDOC_DEPENDS= RBCONFIG=update-rbconfig HTMLOUT=html html
           echo htmlout=ruby-html-${GITHUB_SHA:0:10} >> $GITHUB_OUTPUT
         # Generate only when document commit/PR
         if: >-
@@ -115,7 +129,7 @@ jobs:
           }}
 
       - name: Upload docs
-        uses: actions/upload-artifact@v6.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           path: html
           name: ${{ steps.docs.outputs.htmlout }}

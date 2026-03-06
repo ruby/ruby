@@ -33,7 +33,7 @@ module Prism
       # The parser gem has a list of diagnostics with a hard-coded set of error
       # messages. We create our own diagnostic class in order to set our own
       # error messages.
-      class PrismDiagnostic < Diagnostic
+      class PrismDiagnostic < Diagnostic # :nodoc:
         # This is the cached message coming from prism.
         attr_reader :message
 

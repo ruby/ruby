@@ -436,6 +436,7 @@ or set it to nil if you don't want to specify a license.
     warning "deprecated autorequire specified" if @specification.autorequire
 
     @specification.executables.each do |executable|
+      validate_executable(executable)
       validate_shebang_line_in(executable)
     end
 
@@ -447,6 +448,13 @@ or set it to nil if you don't want to specify a license.
   def validate_attribute_present(attribute)
     value = @specification.send attribute
     warning("no #{attribute} specified") if value.nil? || value.empty?
+  end
+
+  def validate_executable(executable)
+    separators = [File::SEPARATOR, File::ALT_SEPARATOR, File::PATH_SEPARATOR].compact.map {|sep| Regexp.escape(sep) }.join
+    return unless executable.match?(/[\s#{separators}]/)
+
+    error "executable \"#{executable}\" contains invalid characters"
   end
 
   def validate_shebang_line_in(executable)

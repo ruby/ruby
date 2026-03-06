@@ -1913,26 +1913,27 @@ rb_mod_eqq(VALUE mod, VALUE arg)
 
 /*
  * call-seq:
- *   mod <= other   ->  true, false, or nil
+ *   self <= other -> true, false, or nil
  *
- * Returns +true+ if +self+ is a descendant of +other+
- * (+self+ is a subclass of +other+ or +self+ includes +other+) or
- * if +self+ is the same as +other+:
+ * Compares +self+ and +other+ with respect to ancestry and inclusion.
  *
- *   Float <= Numeric    # => true
- *   Array <= Enumerable # => true
- *   Float <= Float      # => true
+ * Returns +nil+ if there is no such relationship between the two:
  *
- * Returns +false+ if +self+ is an ancestor of +other+
- * (+self+ is a superclass of +other+ or +self+ is included in +other+):
+ *   Array <= Hash       # => nil
  *
- *   Numeric <= Float    # => false
+ * Otherwise, returns +true+ if +other+ is an ancestor of +self+,
+ * or if +self+ includes +other+,
+ * or if the two are the same:
+ *
+ *   File  <= IO         # => true  # IO is an ancestor of File.
+ *   Array <= Enumerable # => true  # Array includes Enumerable.
+ *   Array <= Array      # => true
+ *
+ * Otherwise, returns +false+:
+ *
+ *   IO         <= File  # => false
  *   Enumerable <= Array # => false
  *
- * Returns +nil+ if there is no relationship between the two:
- *
- *   Float <= Hash        # => nil
- *   Enumerable <= String # => nil
  */
 
 VALUE
@@ -2011,7 +2012,9 @@ rb_mod_lt(VALUE mod, VALUE arg)
 
 /*
  * call-seq:
- *   mod >= other   ->  true, false, or nil
+ *   self >= other -> true, false, or nil
+ *
+ * Compares +self+ and +other+ with respect to ancestry and inclusion.
  *
  * Returns +true+ if +self+ is an ancestor of +other+
  * (+self+ is a superclass of +other+ or +self+ is included in +other+) or
@@ -2126,28 +2129,52 @@ static VALUE rb_mod_initialize_exec(VALUE module);
 
 /*
  *  call-seq:
- *    Module.new                  -> mod
- *    Module.new {|mod| block }   -> mod
+ *    Module.new -> new_module
+ *    Module.new {|module| ... } -> new_module
  *
- *  Creates a new anonymous module. If a block is given, it is passed
- *  the module object, and the block is evaluated in the context of this
- *  module like #module_eval.
+ *  Returns a new anonymous module.
  *
- *     fred = Module.new do
- *       def meth1
- *         "hello"
- *       end
- *       def meth2
- *         "bye"
- *       end
- *     end
- *     a = "my string"
- *     a.extend(fred)   #=> "my string"
- *     a.meth1          #=> "hello"
- *     a.meth2          #=> "bye"
+ *  The module may be assigned to a name,
+ *  which should be a constant name
+ *  in capitalized {camel case}[https://en.wikipedia.org/wiki/Camel_case]
+ *  (e.g., +MyModule+, not +MY_MODULE+).
  *
- *  Assign the module to a constant (name starting uppercase) if you
- *  want to treat it like a regular module.
+ *  With no block given, returns the new module.
+ *
+ *    MyModule = Module.new
+ *    MyModule.class # => Module
+ *    MyModule.name  # => "MyModule"
+ *
+ *  With a block given, calls the block with the new (not yet named) module:
+ *
+ *    MyModule = Module.new {|m| p [m.class, m.name] }
+ *    # => MyModule
+ *    MyModule.class # => Module
+      MyModule.name  # => "MyModule"
+ *
+ *  Output (from the block):
+ *
+ *    [Module, nil]
+ *
+ *  The block may define methods and constants for the module:
+ *
+ *    MyModule = Module.new do |m|
+ *      MY_CONSTANT = "#{MyModule} constant value"
+ *      def self.method1 = "#{MyModule} first method (singleton)"
+ *      def method2 =      "#{MyModule} Second method (instance)"
+ *    end
+ *    MyModule.method1 # => "MyModule first method (singleton)"
+ *    class Foo
+ *      include MyModule
+ *      def speak
+ *        MY_CONSTANT
+ *      end
+ *    end
+ *    foo = Foo.new
+ *    foo.method2      # => "MyModule Second method (instance)"
+ *    foo.speak
+ *    # => "MyModule constant value"
+ *
  */
 
 static VALUE
@@ -3305,19 +3332,12 @@ convert_type_with_id(VALUE val, const char *tname, ID method, int raise, int ind
     VALUE r = rb_check_funcall(val, method, 0, 0);
     if (UNDEF_P(r)) {
         if (raise) {
-            const char *msg =
-                ((index < 0 ? conv_method_index(rb_id2name(method)) : index)
-                 < IMPLICIT_CONVERSIONS) ?
-                "no implicit conversion of" : "can't convert";
-            const char *cname = NIL_P(val) ? "nil" :
-                val == Qtrue ? "true" :
-                val == Qfalse ? "false" :
-                NULL;
-            if (cname)
-                rb_raise(rb_eTypeError, "%s %s into %s", msg, cname, tname);
-            rb_raise(rb_eTypeError, "%s %"PRIsVALUE" into %s", msg,
-                     rb_obj_class(val),
-                     tname);
+            if ((index < 0 ? conv_method_index(rb_id2name(method)) : index) < IMPLICIT_CONVERSIONS) {
+                rb_no_implicit_conversion(val, tname);
+            }
+            else {
+                rb_cant_convert(val, tname);
+            }
         }
         return Qnil;
     }
@@ -3333,17 +3353,6 @@ convert_type(VALUE val, const char *tname, const char *method, int raise)
     return convert_type_with_id(val, tname, m, raise, i);
 }
 
-/*! \private */
-NORETURN(static void conversion_mismatch(VALUE, const char *, const char *, VALUE));
-static void
-conversion_mismatch(VALUE val, const char *tname, const char *method, VALUE result)
-{
-    VALUE cname = rb_obj_class(val);
-    rb_raise(rb_eTypeError,
-             "can't convert %"PRIsVALUE" to %s (%"PRIsVALUE"#%s gives %"PRIsVALUE")",
-             cname, tname, cname, method, rb_obj_class(result));
-}
-
 VALUE
 rb_convert_type(VALUE val, int type, const char *tname, const char *method)
 {
@@ -3352,7 +3361,7 @@ rb_convert_type(VALUE val, int type, const char *tname, const char *method)
     if (TYPE(val) == type) return val;
     v = convert_type(val, tname, method, TRUE);
     if (TYPE(v) != type) {
-        conversion_mismatch(val, tname, method, v);
+        rb_cant_convert_invalid_return(val, tname, method, v);
     }
     return v;
 }
@@ -3366,7 +3375,7 @@ rb_convert_type_with_id(VALUE val, int type, const char *tname, ID method)
     if (TYPE(val) == type) return val;
     v = convert_type_with_id(val, tname, method, TRUE, -1);
     if (TYPE(v) != type) {
-        conversion_mismatch(val, tname, RSTRING_PTR(rb_id2str(method)), v);
+        rb_cant_convert_invalid_return(val, tname, rb_id2name(method), v);
     }
     return v;
 }
@@ -3381,7 +3390,7 @@ rb_check_convert_type(VALUE val, int type, const char *tname, const char *method
     v = convert_type(val, tname, method, FALSE);
     if (NIL_P(v)) return Qnil;
     if (TYPE(v) != type) {
-        conversion_mismatch(val, tname, method, v);
+        rb_cant_convert_invalid_return(val, tname, method, v);
     }
     return v;
 }
@@ -3397,7 +3406,7 @@ rb_check_convert_type_with_id(VALUE val, int type, const char *tname, ID method)
     v = convert_type_with_id(val, tname, method, FALSE, -1);
     if (NIL_P(v)) return Qnil;
     if (TYPE(v) != type) {
-        conversion_mismatch(val, tname, RSTRING_PTR(rb_id2str(method)), v);
+        rb_cant_convert_invalid_return(val, tname, rb_id2name(method), v);
     }
     return v;
 }
@@ -3423,7 +3432,7 @@ rb_to_integer_with_id_exception(VALUE val, const char *method, ID mid, int raise
         return Qnil;
     }
     if (!RB_INTEGER_TYPE_P(v)) {
-        conversion_mismatch(val, "Integer", method, v);
+        rb_cant_convert_invalid_return(val, "Integer", method, v);
     }
     GET_EC()->cfp = current_cfp;
     return v;
@@ -3500,7 +3509,7 @@ rb_convert_to_integer(VALUE val, int base, int raise_exception)
     }
     else if (NIL_P(val)) {
         if (!raise_exception) return Qnil;
-        rb_raise(rb_eTypeError, "can't convert nil into Integer");
+        rb_cant_convert(val, "Integer");
     }
 
     tmp = rb_protect(rb_check_to_int, val, NULL);
@@ -3794,18 +3803,6 @@ rat2dbl_without_to_f(VALUE x)
     }
 /*! \endcond */
 
-static inline void
-conversion_to_float(VALUE val)
-{
-    special_const_to_float(val, "can't convert ", " into Float");
-}
-
-static inline void
-implicit_conversion_to_float(VALUE val)
-{
-    special_const_to_float(val, "no implicit conversion to float from ", "");
-}
-
 static int
 to_float(VALUE *valp, int raise_exception)
 {
@@ -3819,7 +3816,7 @@ to_float(VALUE *valp, int raise_exception)
             return T_FLOAT;
         }
         else if (raise_exception) {
-            conversion_to_float(val);
+            rb_cant_convert(val, "Float");
         }
     }
     else {
@@ -3899,8 +3896,7 @@ static VALUE
 numeric_to_float(VALUE val)
 {
     if (!rb_obj_is_kind_of(val, rb_cNumeric)) {
-        rb_raise(rb_eTypeError, "can't convert %"PRIsVALUE" into Float",
-                 rb_obj_class(val));
+        rb_cant_convert(val, "Float");
     }
     return rb_convert_type_with_id(val, T_FLOAT, "Float", id_to_f);
 }
@@ -3944,7 +3940,7 @@ rb_num_to_dbl(VALUE val)
             return rb_float_flonum_value(val);
         }
         else {
-            conversion_to_float(val);
+            rb_cant_convert(val, "Float");
         }
     }
     else {
@@ -3978,7 +3974,7 @@ rb_num2dbl(VALUE val)
             return rb_float_flonum_value(val);
         }
         else {
-            implicit_conversion_to_float(val);
+            rb_no_implicit_conversion(val, "Float");
         }
     }
     else {
@@ -3990,7 +3986,7 @@ rb_num2dbl(VALUE val)
           case T_RATIONAL:
             return rat2dbl_without_to_f(val);
           case T_STRING:
-            rb_raise(rb_eTypeError, "no implicit conversion to float from string");
+            rb_no_implicit_conversion(val, "Float");
           default:
             break;
         }
@@ -4084,7 +4080,7 @@ rb_Hash(VALUE val)
     if (NIL_P(tmp)) {
         if (RB_TYPE_P(val, T_ARRAY) && RARRAY_LEN(val) == 0)
             return rb_hash_new();
-        rb_raise(rb_eTypeError, "can't convert %s into Hash", rb_obj_classname(val));
+        rb_cant_convert(val, "Hash");
     }
     return tmp;
 }
@@ -4357,8 +4353,8 @@ rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
  *
  *  First, what's elsewhere. Class \Object:
  *
- *  - Inherits from {class BasicObject}[rdoc-ref:BasicObject@What-27s+Here].
- *  - Includes {module Kernel}[rdoc-ref:Kernel@What-27s+Here].
+ *  - Inherits from {class BasicObject}[rdoc-ref:BasicObject@Whats+Here].
+ *  - Includes {module Kernel}[rdoc-ref:Kernel@Whats+Here].
  *
  *  Here, class \Object provides methods for:
  *

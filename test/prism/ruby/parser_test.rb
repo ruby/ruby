@@ -187,13 +187,7 @@ module Prism
     end
 
     def test_it_block_parameter_syntax
-      it_fixture_path = Pathname(__dir__).join("../../../test/prism/fixtures/3.4/it.txt")
-
-      buffer = Parser::Source::Buffer.new(it_fixture_path)
-      buffer.source = it_fixture_path.read
-      actual_ast = Prism::Translation::Parser34.new.tokenize(buffer)[0]
-
-      it_block_parameter_sexp = parse_sexp {
+      assert_new_syntax("3.4/it.txt", Prism::Translation::Parser34) do
         s(:begin,
         s(:itblock,
           s(:send, nil, :x), :it,
@@ -201,9 +195,20 @@ module Prism
         s(:itblock,
           s(:lambda), :it,
           s(:lvar, :it)))
-      }
+      end
+    end
 
-      assert_equal(it_block_parameter_sexp, actual_ast.to_sexp)
+    def test_nil_block_parameter_syntax
+      assert_new_syntax("4.1/noblock.txt", Prism::Translation::Parser41) do
+        s(:begin,
+        s(:def, :foo,
+          s(:args,
+            s(:blocknilarg)), nil),
+        s(:block,
+          s(:lambda),
+            s(:args,
+              s(:blocknilarg)), nil))
+      end
     end
 
     private
@@ -299,6 +304,16 @@ module Prism
         "expected: #{expected_comments.inspect}\n" \
         "actual: #{actual_comments.inspect}"
       }
+    end
+
+    def assert_new_syntax(path, parser, &sexp)
+      fixture_path = Pathname(__dir__).join("../../../test/prism/fixtures", path)
+
+      buffer = Parser::Source::Buffer.new(fixture_path)
+      buffer.source = fixture_path.read
+      actual_ast = parser.new.tokenize(buffer)[0]
+
+      assert_equal(parse_sexp(&sexp), actual_ast.to_sexp)
     end
 
     def parse_sexp(&block)

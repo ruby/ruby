@@ -905,8 +905,8 @@ ossl_ocspbres_get_status(VALUE self)
     int count = OCSP_resp_count(bs);
     for (int i = 0; i < count; i++) {
         OCSP_SINGLERESP *single = OCSP_resp_get0(bs, i);
-        ASN1_TIME *revtime, *thisupd, *nextupd;
-        int reason;
+        ASN1_TIME *revtime = NULL, *thisupd = NULL, *nextupd = NULL;
+        int reason = -1;
 
         int status = OCSP_single_get0_status(single, &reason, &revtime, &thisupd, &nextupd);
         if (status < 0)

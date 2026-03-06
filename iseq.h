@@ -68,9 +68,11 @@ ISEQ_ORIGINAL_ISEQ(const rb_iseq_t *iseq)
 static inline void
 ISEQ_ORIGINAL_ISEQ_CLEAR(const rb_iseq_t *iseq)
 {
-    void *ptr = ISEQ_BODY(iseq)->variable.original_iseq;
-    ISEQ_BODY(iseq)->variable.original_iseq = NULL;
-    ruby_xfree(ptr);
+    VALUE *ptr = (VALUE *)ISEQ_BODY(iseq)->variable.original_iseq;
+    if (ptr) {
+        ISEQ_BODY(iseq)->variable.original_iseq = NULL;
+        SIZED_FREE_N(ptr, ISEQ_BODY(iseq)->iseq_size);
+    }
 }
 
 static inline VALUE *

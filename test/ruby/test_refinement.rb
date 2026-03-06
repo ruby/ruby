@@ -2255,7 +2255,7 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_refining_module_repeatedly
     bug14070 = '[ruby-core:83617] [Bug #14070]'
-    assert_in_out_err([], <<-INPUT, ["ok"], [], bug14070)
+    assert_in_out_err([], <<-INPUT, ["ok"], [], bug14070, timeout: 30)
       1000.times do
         Class.new do
           include Enumerable

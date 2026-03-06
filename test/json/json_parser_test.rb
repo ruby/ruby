@@ -135,6 +135,11 @@ class JSONParserTest < Test::Unit::TestCase
     bignum = Integer('1234567890' * 10)
     assert_equal(bignum, JSON.parse(bignum.to_s))
     assert_equal(bignum.to_f, JSON.parse(bignum.to_s + ".0"))
+
+    bignum = Integer('1234567890' * 50)
+    assert_equal(bignum, JSON.parse(bignum.to_s))
+    bignum_float = EnvUtil.suppress_warning { bignum.to_f }
+    assert_equal(bignum_float, EnvUtil.suppress_warning { JSON.parse(bignum.to_s + ".0") })
   end
 
   def test_parse_bigdecimals
@@ -176,6 +181,14 @@ class JSONParserTest < Test::Unit::TestCase
     0.upto(31) do |ord|
       assert_equal ord.chr, parse(%("#{ord.chr}"), allow_control_characters: true)
     end
+  end
+
+  def test_parse_invalid_escape
+    assert_raise JSON::ParserError do
+      parse(%("fo\\o"))
+    end
+
+    assert_equal "foo", parse(%("fo\\o"), allow_invalid_escape: true)
   end
 
   def test_parse_arrays

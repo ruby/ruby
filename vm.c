@@ -1521,10 +1521,10 @@ proc_shared_outer_variables(struct rb_id_table *outer_variables, bool isolate, c
         }
         if (*sep == ',') rb_str_cat_cstr(str, ")");
         rb_str_cat_cstr(str, data.yield ? " and uses 'yield'." : ".");
-        rb_exc_raise(rb_exc_new_str(rb_eArgError, str));
+        rb_exc_raise(rb_exc_new_str(rb_eRactorIsolationError, str));
     }
     else if (data.yield) {
-        rb_raise(rb_eArgError, "can not %s because it uses 'yield'.", message);
+        rb_raise(rb_eRactorIsolationError, "can not %s because it uses 'yield'.", message);
     }
 
     return data.read_only;
@@ -3236,6 +3236,7 @@ rb_vm_update_references(void *ptr)
         vm->self = rb_gc_location(vm->self);
         vm->mark_object_ary = rb_gc_location(vm->mark_object_ary);
         vm->orig_progname = rb_gc_location(vm->orig_progname);
+        vm->cc_refinement_set = rb_gc_location(vm->cc_refinement_set);
 
         if (vm->root_box)
             rb_box_gc_update_references(vm->root_box);
@@ -3324,6 +3325,7 @@ rb_vm_mark(void *ptr)
         rb_gc_mark_movable(vm->orig_progname);
         rb_gc_mark_movable(vm->coverages);
         rb_gc_mark_movable(vm->me2counter);
+        rb_gc_mark_movable(vm->cc_refinement_set);
 
         rb_gc_mark_values(RUBY_NSIG, vm->trap_list.cmd);
 
@@ -3392,8 +3394,6 @@ ruby_vm_destruct(rb_vm_t *vm)
 
             st_free_table(vm->static_ext_inits);
 
-            rb_vm_postponed_job_free();
-
             rb_id_table_free(vm->constant_cache);
             set_free_table(vm->unused_block_warning_table);
 
@@ -3416,10 +3416,6 @@ ruby_vm_destruct(rb_vm_t *vm)
             st_free_table(vm->ci_table);
             vm->ci_table = NULL;
         }
-        if (vm->cc_refinement_table) {
-            rb_set_free_table(vm->cc_refinement_table);
-            vm->cc_refinement_table = NULL;
-        }
         RB_ALTSTACK_FREE(vm->main_altstack);
 
         struct global_object_list *next;
@@ -3433,14 +3429,11 @@ ruby_vm_destruct(rb_vm_t *vm)
                 rb_objspace_free_objects(objspace);
                 rb_free_generic_fields_tbl_();
                 rb_free_default_rand_key();
-
-                ruby_mimfree(th);
             }
             rb_objspace_free(objspace);
         }
         rb_native_mutex_destroy(&vm->workqueue_lock);
         /* after freeing objspace, you *can't* use ruby_xfree() */
-        ruby_mimfree(vm);
         ruby_current_vm_ptr = NULL;
 
         if (rb_free_at_exit) {
@@ -3515,7 +3508,6 @@ vm_memsize(const void *ptr)
         vm_memsize_builtin_function_table(vm->builtin_function_table) +
         rb_id_table_memsize(vm->negative_cme_table) +
         rb_st_memsize(vm->overloaded_cme_table) +
-        rb_set_memsize(vm->cc_refinement_table) +
         vm_memsize_constant_cache()
     );
 
@@ -3525,12 +3517,13 @@ vm_memsize(const void *ptr)
     // struct rb_objspace *objspace;
 }
 
-static const rb_data_type_t vm_data_type = {
+const rb_data_type_t ruby_vm_data_type = {
     "VM",
     {0, 0, vm_memsize,},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
+#define vm_data_type ruby_vm_data_type
 
 static VALUE
 vm_default_params(void)
@@ -3784,7 +3777,7 @@ thread_mark(void *ptr)
     rb_gc_mark(th->top_wrapper);
     if (th->root_fiber) rb_fiber_mark_self(th->root_fiber);
 
-    RUBY_ASSERT(th->ec == rb_fiberptr_get_ec(th->ec->fiber_ptr));
+    RUBY_ASSERT(th->ec == NULL || th->ec == rb_fiberptr_get_ec(th->ec->fiber_ptr));
     rb_gc_mark(th->last_status);
     rb_gc_mark(th->locking_mutex);
     rb_gc_mark(th->name);
@@ -3821,7 +3814,9 @@ thread_free(void *ptr)
     else {
         // ruby_xfree(th->nt);
         // TODO: MN system collect nt, but without MN system it should be freed here.
-        ruby_xfree(th);
+        if (!th->main_thread) {
+            ruby_xfree(th);
+        }
     }
 
     RUBY_FREE_LEAVE("thread");
@@ -3929,7 +3924,7 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
         size_t size = vm->default_params.thread_vm_stack_size / sizeof(VALUE);
         VALUE *stack = ALLOC_N(VALUE, size);
         rb_ec_initialize_vm_stack(th->ec, stack, size);
-        rb_thread_malloc_stack_set(th, stack);
+        rb_thread_malloc_stack_set(th, stack, size);
     }
     else {
         VM_ASSERT(th->ec->cfp == NULL);
@@ -4570,12 +4565,15 @@ rb_vm_set_progname(VALUE filename)
 
 extern const struct st_hash_type rb_fstring_hash_type;
 
+static rb_vm_t _vm;
+static rb_thread_t _main_thread = { .main_thread = 1 };
+
 void
 Init_BareVM(void)
 {
     /* VM bootstrap: phase 1 */
-    rb_vm_t *vm = ruby_mimcalloc(1, sizeof(*vm));
-    rb_thread_t *th = ruby_mimcalloc(1, sizeof(*th));
+    rb_vm_t *vm = &_vm;
+    rb_thread_t *th = &_main_thread;
     if (!vm || !th) {
         fputs("[FATAL] failed to allocate memory\n", stderr);
         exit(EXIT_FAILURE);
@@ -4584,7 +4582,6 @@ Init_BareVM(void)
     // setup the VM
     vm_init2(vm);
 
-    rb_vm_postponed_job_queue_init(vm);
     ruby_current_vm_ptr = vm;
     rb_objspace_alloc();
     vm->negative_cme_table = rb_id_table_create(16);
@@ -4736,6 +4733,8 @@ rb_vm_register_global_object(VALUE obj)
     }
 }
 
+VALUE rb_cc_refinement_set_create(void);
+
 void
 Init_vm_objects(void)
 {
@@ -4744,7 +4743,7 @@ Init_vm_objects(void)
     /* initialize mark object array, hash */
     vm->mark_object_ary = pin_array_list_new(Qnil);
     vm->ci_table = st_init_table(&vm_ci_hashtype);
-    vm->cc_refinement_table = rb_set_init_numtable();
+    vm->cc_refinement_set = rb_cc_refinement_set_create();
 }
 
 // Whether JIT is enabled or not, we need to load/undef `#with_jit` for other builtins.

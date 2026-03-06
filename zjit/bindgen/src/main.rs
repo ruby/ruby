@@ -81,6 +81,7 @@ fn main() {
         .allowlist_type("RBasic")
 
         .allowlist_type("ruby_rstring_flags")
+        .allowlist_type("rbimpl_typeddata_flags")
 
         // This function prints info about a value and is useful for debugging
         .allowlist_function("rb_raw_obj_info")
@@ -167,6 +168,8 @@ fn main() {
         .allowlist_var("rb_cClass")
         .allowlist_var("rb_cRegexp")
         .allowlist_var("rb_cISeq")
+        .allowlist_var("rb_cRubyVM")
+        .allowlist_function("rb_const_get")
 
         .allowlist_type("ruby_fl_type")
         .allowlist_type("ruby_fl_ushift")
@@ -307,6 +310,9 @@ fn main() {
         .allowlist_function("rb_assert_holding_vm_lock")
         .allowlist_function("rb_jit_shape_too_complex_p")
         .allowlist_function("rb_jit_multi_ractor_p")
+        .allowlist_function("rb_jit_class_fields_embedded_p")
+        .allowlist_function("rb_jit_typed_data_p")
+        .allowlist_function("rb_jit_typed_data_fields_embedded_p")
         .allowlist_function("rb_jit_vm_lock_then_barrier")
         .allowlist_function("rb_jit_vm_unlock")
         .allowlist_function("rb_jit_for_each_iseq")
@@ -409,6 +415,7 @@ fn main() {
         .allowlist_function("rb_str_neq_internal")
         .allowlist_function("rb_yarv_ary_entry_internal")
         .allowlist_function("rb_vm_get_untagged_block_handler")
+        .allowlist_function("rb_vm_untag_block_handler")
         .allowlist_function("rb_FL_TEST")
         .allowlist_function("rb_FL_TEST_RAW")
         .allowlist_function("rb_RB_TYPE_P")

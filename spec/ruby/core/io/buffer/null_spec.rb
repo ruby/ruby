@@ -14,11 +14,9 @@ describe "IO::Buffer#null?" do
     @buffer.null?.should be_false
   end
 
-  ruby_version_is "3.3" do
-    it "is false for a 0-length String-backed buffer created with .string" do
-      IO::Buffer.string(0) do |buffer|
-        buffer.null?.should be_false
-      end
+  it "is false for a 0-length String-backed buffer created with .string" do
+    IO::Buffer.string(0) do |buffer|
+      buffer.null?.should be_false
     end
   end
 

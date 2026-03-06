@@ -30,6 +30,7 @@
 #include "internal/compilers.h"
 #include "internal/complex.h"
 #include "internal/enumerator.h"
+#include "internal/error.h"
 #include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/numeric.h"
@@ -491,7 +492,7 @@ rb_num_coerce_cmp(VALUE x, VALUE y, ID func)
 static VALUE
 ensure_cmp(VALUE c, VALUE x, VALUE y)
 {
-    if (NIL_P(c)) rb_cmperr(x, y);
+    if (NIL_P(c)) rb_cmperr_reason(x, y, "comparator returned nil");
     return c;
 }
 
@@ -501,7 +502,7 @@ rb_num_coerce_relop(VALUE x, VALUE y, ID func)
     VALUE x0 = x, y0 = y;
 
     if (!do_coerce(&x, &y, FALSE)) {
-        rb_cmperr(x0, y0);
+        rb_cmperr_reason(x0, y0, "coercion was not possible");
         UNREACHABLE_RETURN(Qnil);
     }
     return ensure_cmp(rb_funcall(x, func, 1, y), x0, y0);
@@ -3102,7 +3103,7 @@ rb_num2long(VALUE val)
 {
   again:
     if (NIL_P(val)) {
-        rb_raise(rb_eTypeError, "no implicit conversion from nil to integer");
+        rb_no_implicit_conversion(val, "Integer");
     }
 
     if (FIXNUM_P(val)) return FIX2LONG(val);
@@ -3130,7 +3131,7 @@ rb_num2ulong_internal(VALUE val, int *wrap_p)
 {
   again:
     if (NIL_P(val)) {
-       rb_raise(rb_eTypeError, "no implicit conversion of nil into Integer");
+        rb_no_implicit_conversion(val, "Integer");
     }
 
     if (FIXNUM_P(val)) {
@@ -3373,7 +3374,7 @@ LONG_LONG
 rb_num2ll(VALUE val)
 {
     if (NIL_P(val)) {
-        rb_raise(rb_eTypeError, "no implicit conversion from nil");
+        rb_no_implicit_conversion(val, "Integer");
     }
 
     if (FIXNUM_P(val)) return (LONG_LONG)FIX2LONG(val);
@@ -3390,11 +3391,8 @@ rb_num2ll(VALUE val)
     else if (RB_BIGNUM_TYPE_P(val)) {
         return rb_big2ll(val);
     }
-    else if (RB_TYPE_P(val, T_STRING)) {
-        rb_raise(rb_eTypeError, "no implicit conversion from string");
-    }
-    else if (RB_TYPE_P(val, T_TRUE) || RB_TYPE_P(val, T_FALSE)) {
-        rb_raise(rb_eTypeError, "no implicit conversion from boolean");
+    else if (val == Qfalse || val == Qtrue || RB_TYPE_P(val, T_STRING)) {
+        rb_no_implicit_conversion(val, "Integer");
     }
 
     val = rb_to_int(val);
@@ -3405,7 +3403,7 @@ unsigned LONG_LONG
 rb_num2ull(VALUE val)
 {
     if (NIL_P(val)) {
-        rb_raise(rb_eTypeError, "no implicit conversion of nil into Integer");
+        rb_no_implicit_conversion(val, "Integer");
     }
     else if (FIXNUM_P(val)) {
         return (LONG_LONG)FIX2LONG(val); /* this is FIX2LONG, intended */
@@ -3680,9 +3678,9 @@ rb_int128_to_numeric(rb_int128_t n)
  * First, what's elsewhere. Class \Integer:
  *
  * - Inherits from
- *   {class Numeric}[rdoc-ref:Numeric@What-27s+Here]
- *   and {class Object}[rdoc-ref:Object@What-27s+Here].
- * - Includes {module Comparable}[rdoc-ref:Comparable@What-27s+Here].
+ *   {class Numeric}[rdoc-ref:Numeric@Whats+Here]
+ *   and {class Object}[rdoc-ref:Object@Whats+Here].
+ * - Includes {module Comparable}[rdoc-ref:Comparable@Whats+Here].
  *
  * Here, class \Integer provides methods for:
  *
@@ -4290,16 +4288,24 @@ rb_int_mul(VALUE x, VALUE y)
     return rb_num_coerce_bin(x, y, '*');
 }
 
+static bool
+accurate_in_double(long i)
+{
+#if SIZEOF_LONG * CHAR_BIT > DBL_MANT_DIG
+    return ((i < 0 ? -i : i) < (1L << DBL_MANT_DIG));
+#else
+    return true;
+#endif
+}
+
 static double
 fix_fdiv_double(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
         long iy = FIX2LONG(y);
-#if SIZEOF_LONG * CHAR_BIT > DBL_MANT_DIG
-        if ((iy < 0 ? -iy : iy) >= (1L << DBL_MANT_DIG)) {
+        if (!accurate_in_double(iy)) {
             return rb_big_fdiv_double(rb_int2big(FIX2LONG(x)), rb_int2big(iy));
         }
-#endif
         return double_div_double(FIX2LONG(x), iy);
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
@@ -4313,10 +4319,29 @@ fix_fdiv_double(VALUE x, VALUE y)
     }
 }
 
+static bool
+int_accurate_in_double(VALUE n)
+{
+    if (FIXNUM_P(n)) {
+        return accurate_in_double(FIX2LONG(n));
+    }
+    RUBY_ASSERT(RB_TYPE_P(n, T_BIGNUM));
+#if SIZEOF_LONG * CHAR_BIT <= DBL_MANT_DIG
+    int nlz;
+    size_t size = rb_absint_size(n, &nlz);
+    const size_t mant_size = roomof(DBL_MANT_DIG, CHAR_BIT);
+    if (size < mant_size) return true;
+    if (size > mant_size) return false;
+    if (nlz >= (CHAR_BIT * mant_size - DBL_MANT_DIG)) return true;
+#endif
+    return false;
+}
+
 double
 rb_int_fdiv_double(VALUE x, VALUE y)
 {
-    if (RB_INTEGER_TYPE_P(y) && !FIXNUM_ZERO_P(y)) {
+    if (RB_INTEGER_TYPE_P(y) && !FIXNUM_ZERO_P(y) &&
+        !(int_accurate_in_double(x) && int_accurate_in_double(y))) {
         VALUE gcd = rb_gcd(x, y);
         if (!FIXNUM_ZERO_P(gcd) && gcd != INT2FIX(1)) {
             x = rb_int_idiv(x, gcd);
@@ -5886,7 +5911,7 @@ int_downto(VALUE from, VALUE to)
             rb_yield(i);
             i = rb_funcall(i, '-', 1, INT2FIX(1));
         }
-        if (NIL_P(c)) rb_cmperr(i, to);
+        ensure_cmp(c, i, to);
     }
     return from;
 }
@@ -6365,8 +6390,8 @@ int_s_try_convert(VALUE self, VALUE num)
  *
  * First, what's elsewhere. Class \Numeric:
  *
- * - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
- * - Includes {module Comparable}[rdoc-ref:Comparable@What-27s+Here].
+ * - Inherits from {class Object}[rdoc-ref:Object@Whats+Here].
+ * - Includes {module Comparable}[rdoc-ref:Comparable@Whats+Here].
  *
  * Here, class \Numeric provides methods for:
  *

@@ -145,6 +145,7 @@ getblockparamproxy
 (lindex_t idx, rb_num_t level)
 ()
 (VALUE val)
+// attr bool zjit_profile = true;
 {
     const VALUE *ep = vm_get_ep(GET_EP(), level);
     VM_ASSERT(VM_ENV_LOCAL_P(ep));
@@ -568,6 +569,7 @@ splatkw
 (VALUE hash, VALUE block)
 (VALUE obj, VALUE block)
 // attr bool leaf = false; /* has rb_to_hash_type() */
+// attr bool zjit_profile = true;
 {
     if (NIL_P(hash)) {
         obj = Qnil;
@@ -1260,6 +1262,56 @@ branchnil
 {
     if (NIL_P(val)) {
         RUBY_VM_CHECK_INTS(ec);
+        JUMP(dst);
+    }
+}
+
+/* same as jump, but without interrupt check */
+DEFINE_INSN
+jump_without_ints
+(OFFSET dst)
+()
+()
+// attr bool leaf = true;
+{
+    JUMP(dst);
+}
+
+/* same as branchif, but without interrupt check */
+DEFINE_INSN
+branchif_without_ints
+(OFFSET dst)
+(VALUE val)
+()
+// attr bool leaf = true;
+{
+    if (RTEST(val)) {
+        JUMP(dst);
+    }
+}
+
+/* same as branchunless, but without interrupt check */
+DEFINE_INSN
+branchunless_without_ints
+(OFFSET dst)
+(VALUE val)
+()
+// attr bool leaf = true;
+{
+    if (!RTEST(val)) {
+        JUMP(dst);
+    }
+}
+
+/* same as branchnil, but without interrupt check */
+DEFINE_INSN
+branchnil_without_ints
+(OFFSET dst)
+(VALUE val)
+()
+// attr bool leaf = true;
+{
+    if (NIL_P(val)) {
         JUMP(dst);
     }
 }

@@ -100,7 +100,7 @@ class TestRactor < Test::Unit::TestCase
   end
 
   def test_move_nested_hash_during_gc_with_yjit
-    assert_ractor(<<~'RUBY', args: [{ "RUBY_YJIT_ENABLE" => "1" }])
+    assert_ractor(<<~'RUBY', timeout: 20, args: [{ "RUBY_YJIT_ENABLE" => "1" }])
       GC.stress = true
       hash = { foo: { bar: "hello" }, baz: { qux: "there" } }
       result = Ractor.new { Ractor.receive }.send(hash, move: true).value
@@ -211,6 +211,34 @@ class TestRactor < Test::Unit::TestCase
     h = Hash.new { self }
     pr = h.to_proc
     assert_unshareable(pr, /not supported yet/, exception: RuntimeError)
+  end
+
+  def test_copy_unshareable_object_error_message
+    assert_ractor(<<~'RUBY')
+      pr = proc {}
+      err = assert_raise(Ractor::Error) do
+        Ractor.new(pr) {}.join
+      end
+      assert_match(/can not copy unshareable object/, err.message)
+    RUBY
+  end
+
+  def test_ractor_new_raises_isolation_error_if_outer_variables_are_accessed
+    assert_raise(Ractor::IsolationError) do
+      channel = Ractor::Port.new
+      Ractor.new(channel) do
+        inbound_work = Ractor::Port.new
+        channel << inbound_work
+      end
+    end
+  end
+
+  def test_ractor_new_raises_isolation_error_if_proc_uses_yield
+    assert_raise(Ractor::IsolationError) do
+      Ractor.new do
+        yield
+      end
+    end
   end
 
   def assert_make_shareable(obj)

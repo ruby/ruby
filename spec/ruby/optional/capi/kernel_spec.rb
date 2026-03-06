@@ -703,6 +703,12 @@ describe "C-API Kernel function" do
     end
   end
 
+  describe "ruby_vm_at_exit" do
+    it "runs a C function after the VM is terminated" do
+      ruby_exe("require #{kernel_path.inspect}; CApiKernelSpecs.new.ruby_vm_at_exit").should == "ruby_vm_at_exit hook ran\n"
+    end
+  end
+
   describe "rb_f_sprintf" do
     it "returns a string according to format and arguments" do
       @s.rb_f_sprintf(["%d %f %s", 10, 2.5, "test"]).should == "10 2.500000 test"

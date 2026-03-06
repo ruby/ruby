@@ -160,6 +160,20 @@ make_counters! {
         profile_time_ns,
         gc_time_ns,
         invalidation_time_ns,
+
+        side_exit_size,
+        compile_side_exit_time_ns,
+
+        compile_hir_time_ns,
+        compile_hir_build_time_ns,
+        compile_hir_strength_reduce_time_ns,
+        compile_hir_optimize_load_store_time_ns,
+        compile_hir_fold_constants_time_ns,
+        compile_hir_clean_cfg_time_ns,
+        compile_hir_remove_redundant_patch_points_time_ns,
+        compile_hir_remove_duplicate_check_interrupts_time_ns,
+        compile_hir_eliminate_dead_code_time_ns,
+        compile_lir_time_ns,
     }
 
     // Exit counters that are summed as side_exit_count
@@ -204,13 +218,19 @@ make_counters! {
         exit_patchpoint_no_ep_escape,
         exit_patchpoint_single_ractor_mode,
         exit_patchpoint_no_singleton_class,
+        exit_patchpoint_root_box_only,
         exit_callee_side_exit,
         exit_obj_to_string_fallback,
         exit_interrupt,
         exit_stackoverflow,
         exit_block_param_proxy_modified,
         exit_block_param_proxy_not_iseq_or_ifunc,
+        exit_block_param_proxy_not_nil,
+        exit_block_param_wb_required,
         exit_too_many_keyword_parameters,
+        exit_splatkw_not_nil_or_hash,
+        exit_splatkw_polymorphic,
+        exit_splatkw_not_profiled,
     }
 
     // Send fallback counters that are summed as dynamic_send_count
@@ -227,6 +247,7 @@ make_counters! {
         send_fallback_too_many_args_for_lir,
         send_fallback_send_without_block_bop_redefined,
         send_fallback_send_without_block_operands_not_fixnum,
+        send_fallback_send_without_block_polymorphic_fallback,
         send_fallback_send_without_block_direct_keyword_mismatch,
         send_fallback_send_without_block_direct_keyword_count_mismatch,
         send_fallback_send_without_block_direct_missing_keyword,
@@ -250,6 +271,7 @@ make_counters! {
         send_fallback_send_cfunc_variadic,
         send_fallback_send_cfunc_array_variadic,
         send_fallback_super_call_with_block,
+        send_fallback_super_from_block,
         send_fallback_super_class_not_found,
         send_fallback_super_complex_args_pass,
         send_fallback_super_fallback_no_profile,
@@ -407,7 +429,6 @@ make_counters! {
     vm_write_locals_count,
     vm_write_stack_count,
     vm_write_to_parent_iseq_local_count,
-    vm_read_from_parent_iseq_local_count,
     // TODO(max): Implement
     // vm_reify_stack_count,
 
@@ -421,6 +442,15 @@ make_counters! {
     invokeblock_handler_polymorphic,
     invokeblock_handler_megamorphic,
     invokeblock_handler_no_profiles,
+
+    getblockparamproxy_handler_iseq,
+    getblockparamproxy_handler_ifunc,
+    getblockparamproxy_handler_symbol,
+    getblockparamproxy_handler_proc,
+    getblockparamproxy_handler_nil,
+    getblockparamproxy_handler_polymorphic,
+    getblockparamproxy_handler_megamorphic,
+    getblockparamproxy_handler_no_profiles,
 }
 
 /// Increase a counter by a specified amount
@@ -557,7 +587,12 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         StackOverflow                 => exit_stackoverflow,
         BlockParamProxyModified       => exit_block_param_proxy_modified,
         BlockParamProxyNotIseqOrIfunc => exit_block_param_proxy_not_iseq_or_ifunc,
+        BlockParamProxyNotNil         => exit_block_param_proxy_not_nil,
+        BlockParamWbRequired          => exit_block_param_wb_required,
         TooManyKeywordParameters      => exit_too_many_keyword_parameters,
+        SplatKwNotNilOrHash           => exit_splatkw_not_nil_or_hash,
+        SplatKwPolymorphic            => exit_splatkw_polymorphic,
+        SplatKwNotProfiled            => exit_splatkw_not_profiled,
         PatchPoint(Invariant::BOPRedefined { .. })
                                       => exit_patchpoint_bop_redefined,
         PatchPoint(Invariant::MethodRedefined { .. })
@@ -572,6 +607,8 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
                                       => exit_patchpoint_single_ractor_mode,
         PatchPoint(Invariant::NoSingletonClass { .. })
                                       => exit_patchpoint_no_singleton_class,
+        PatchPoint(Invariant::RootBoxOnly)
+                                      => exit_patchpoint_root_box_only,
     }
 }
 
@@ -597,10 +634,11 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         TooManyArgsForLir                         => send_fallback_too_many_args_for_lir,
         SendWithoutBlockBopRedefined              => send_fallback_send_without_block_bop_redefined,
         SendWithoutBlockOperandsNotFixnum         => send_fallback_send_without_block_operands_not_fixnum,
-        SendWithoutBlockDirectKeywordMismatch     => send_fallback_send_without_block_direct_keyword_mismatch,
-        SendWithoutBlockDirectKeywordCountMismatch=> send_fallback_send_without_block_direct_keyword_count_mismatch,
-        SendWithoutBlockDirectMissingKeyword       => send_fallback_send_without_block_direct_missing_keyword,
-        SendWithoutBlockDirectTooManyKeywords     => send_fallback_send_without_block_direct_too_many_keywords,
+        SendWithoutBlockPolymorphicFallback       => send_fallback_send_without_block_polymorphic_fallback,
+        SendDirectKeywordMismatch                 => send_fallback_send_without_block_direct_keyword_mismatch,
+        SendDirectKeywordCountMismatch            => send_fallback_send_without_block_direct_keyword_count_mismatch,
+        SendDirectMissingKeyword                  => send_fallback_send_without_block_direct_missing_keyword,
+        SendDirectTooManyKeywords                 => send_fallback_send_without_block_direct_too_many_keywords,
         SendPolymorphic                           => send_fallback_send_polymorphic,
         SendMegamorphic                           => send_fallback_send_megamorphic,
         SendNoProfiles                            => send_fallback_send_no_profiles,
@@ -616,6 +654,7 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         CCallWithFrameTooManyArgs                 => send_fallback_ccall_with_frame_too_many_args,
         ObjToStringNotString                      => send_fallback_obj_to_string_not_string,
         SuperCallWithBlock                        => send_fallback_super_call_with_block,
+        SuperFromBlock                            => send_fallback_super_from_block,
         SuperClassNotFound                        => send_fallback_super_class_not_found,
         SuperComplexArgsPass                      => send_fallback_super_complex_args_pass,
         SuperNoProfiles                           => send_fallback_super_fallback_no_profile,
@@ -714,6 +753,21 @@ pub extern "C" fn rb_zjit_reset_stats_bang(_ec: EcPtr, _self: VALUE) -> VALUE {
 
     // Reset exit counters for YARV instructions
     exit_counters.as_mut_slice().fill(0);
+
+    // Reset send fallback counters
+    ZJITState::get_send_fallback_counters().as_mut_slice().fill(0);
+
+    // Reset not-inlined counters
+    ZJITState::get_not_inlined_cfunc_counter_pointers().iter_mut()
+        .for_each(|b| { **(b.1) = 0; });
+
+    // Reset not-annotated counters
+    ZJITState::get_not_annotated_cfunc_counter_pointers().iter_mut()
+        .for_each(|b| { **(b.1) = 0; });
+
+    // Reset ccall counters
+    ZJITState::get_ccall_counter_pointers().iter_mut()
+        .for_each(|b| { **(b.1) = 0; });
 
     Qnil
 }

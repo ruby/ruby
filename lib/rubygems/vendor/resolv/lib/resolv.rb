@@ -4,6 +4,7 @@ require 'socket'
 require_relative '../../../vendored_timeout'
 require 'io/wait'
 require_relative '../../../vendored_securerandom'
+require 'rbconfig'
 
 # Gem::Resolv is a thread-aware DNS resolver library written in Ruby.  Gem::Resolv can
 # handle multiple DNS requests concurrently without blocking the entire Ruby
@@ -33,7 +34,8 @@ require_relative '../../../vendored_securerandom'
 
 class Gem::Resolv
 
-  VERSION = "0.6.2"
+  # The version string
+  VERSION = "0.7.0"
 
   ##
   # Looks up the first IP address for +name+.
@@ -173,21 +175,19 @@ class Gem::Resolv
 
   class ResolvTimeout < Gem::Timeout::Error; end
 
-  WINDOWS = /mswin|cygwin|mingw|bccwin/ =~ RUBY_PLATFORM || ::RbConfig::CONFIG['host_os'] =~ /mswin/
-  private_constant :WINDOWS
-
   ##
   # Gem::Resolv::Hosts is a hostname resolver that uses the system hosts file.
 
   class Hosts
-    if WINDOWS
+    if /mswin|cygwin|mingw|bccwin/ =~ RUBY_PLATFORM || ::RbConfig::CONFIG['host_os'] =~ /mswin/
       begin
         require 'win32/resolv' unless defined?(Win32::Resolv)
-        DefaultFileName = Win32::Resolv.get_hosts_path || IO::NULL
+        hosts = Win32::Resolv.get_hosts_path || IO::NULL
       rescue LoadError
       end
     end
-    DefaultFileName ||= '/etc/hosts'
+    # The default file name for host names
+    DefaultFileName = hosts || '/etc/hosts'
 
     ##
     # Creates a new Gem::Resolv::Hosts, using +filename+ for its data source.
@@ -524,6 +524,8 @@ class Gem::Resolv
         extract_resources(reply, reply_name, typeclass, &proc)
       }
     end
+
+    # :stopdoc:
 
     def fetch_resource(name, typeclass)
       lazy_initialize
@@ -1021,8 +1023,7 @@ class Gem::Resolv
       def Config.default_config_hash(filename="/etc/resolv.conf")
         if File.exist? filename
           Config.parse_resolv_conf(filename)
-        elsif WINDOWS
-          require 'win32/resolv' unless defined?(Win32::Resolv)
+        elsif defined?(Win32::Resolv)
           search, nameserver = Win32::Resolv.get_resolv_info
           config_hash = {}
           config_hash[:nameserver] = nameserver if nameserver
@@ -2926,14 +2927,20 @@ class Gem::Resolv
 
   class IPv4
 
-    ##
-    # Regular expression IPv4 addresses must match.
-
     Regex256 = /0
                |1(?:[0-9][0-9]?)?
                |2(?:[0-4][0-9]?|5[0-5]?|[6-9])?
-               |[3-9][0-9]?/x
+               |[3-9][0-9]?/x # :nodoc:
+
+    ##
+    # Regular expression IPv4 addresses must match.
     Regex = /\A(#{Regex256})\.(#{Regex256})\.(#{Regex256})\.(#{Regex256})\z/
+
+    ##
+    # Creates a new IPv4 address from +arg+ which may be:
+    #
+    # IPv4:: returns +arg+.
+    # String:: +arg+ must match the IPv4::Regex constant
 
     def self.create(arg)
       case arg
@@ -3243,12 +3250,14 @@ class Gem::Resolv
 
   end
 
-  module LOC
+  module LOC # :nodoc:
 
     ##
     # A Gem::Resolv::LOC::Size
 
     class Size
+
+      # Regular expression LOC size must match.
 
       Regex = /^(\d+\.*\d*)[m]$/
 
@@ -3275,6 +3284,7 @@ class Gem::Resolv
         end
       end
 
+      # Internal use; use self.create.
       def initialize(scalar)
         @scalar = scalar
       end
@@ -3312,6 +3322,8 @@ class Gem::Resolv
 
     class Coord
 
+      # Regular expression LOC Coord must match.
+
       Regex = /^(\d+)\s(\d+)\s(\d+\.\d+)\s([NESW])$/
 
       ##
@@ -3341,6 +3353,7 @@ class Gem::Resolv
         end
       end
 
+      # Internal use; use self.create.
       def initialize(coordinates,orientation)
         unless coordinates.kind_of?(String)
           raise ArgumentError.new("Coord must be a 32bit unsigned integer in hex format: #{coordinates.inspect}")
@@ -3403,6 +3416,8 @@ class Gem::Resolv
 
     class Alt
 
+      # Regular expression LOC Alt must match.
+
       Regex = /^([+-]*\d+\.*\d*)[m]$/
 
       ##
@@ -3428,6 +3443,7 @@ class Gem::Resolv
         end
       end
 
+      # Internal use; use self.create.
       def initialize(altitude)
         @altitude = altitude
       end

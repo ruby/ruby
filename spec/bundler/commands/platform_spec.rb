@@ -1143,7 +1143,7 @@ G
       bundle "outdated", raise_on_error: false
 
       expected_output = <<~TABLE.gsub("x", "\\\h").tr(".", "\.").strip
-        Gem            Current      Latest       Requested  Groups
+        Gem            Current      Latest       Requested  Groups   Release Date
         activesupport  2.3.5        3.0          = 2.3.5    default
         foo            1.0 xxxxxxx  1.0 xxxxxxx  >= 0       default
       TABLE
@@ -1169,7 +1169,7 @@ G
       bundle "outdated", raise_on_error: false
 
       expected_output = <<~TABLE.gsub("x", "\\\h").tr(".", "\.").strip
-        Gem            Current      Latest       Requested  Groups
+        Gem            Current      Latest       Requested  Groups   Release Date
         activesupport  2.3.5        3.0          = 2.3.5    default
         foo            1.0 xxxxxxx  1.0 xxxxxxx  >= 0       default
       TABLE

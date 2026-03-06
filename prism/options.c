@@ -226,10 +226,10 @@ pm_options_free(pm_options_t *options) {
             pm_string_free(&scope->locals[local_index]);
         }
 
-        xfree(scope->locals);
+        xfree_sized(scope->locals, scope->locals_count * sizeof(pm_string_t));
     }
 
-    xfree(options->scopes);
+    xfree_sized(options->scopes, options->scopes_count * sizeof(pm_options_scope_t));
 }
 
 /**

@@ -96,6 +96,12 @@ pub struct Invariants {
     /// Map from a class to a set of patch points that assume objects of the class
     /// will have no singleton class.
     no_singleton_class_patch_points: HashMap<VALUE, HashSet<PatchPoint>>,
+
+    /// Set of patch points that assume only the root box is active
+    root_box_patch_points: HashSet<PatchPoint>,
+
+    /// Whether a non-root box has ever been created
+    non_root_box_created: bool,
 }
 
 impl Invariants {
@@ -206,20 +212,22 @@ pub extern "C" fn rb_zjit_invalidate_no_ep_escape(iseq: IseqPtr) {
         return;
     }
 
-    // Remember that this ISEQ may escape EP
-    let invariants = ZJITState::get_invariants();
-    invariants.ep_escape_iseqs.insert(iseq);
+    with_vm_lock(src_loc!(), || {
+        // Remember that this ISEQ may escape EP
+        let invariants = ZJITState::get_invariants();
+        invariants.ep_escape_iseqs.insert(iseq);
 
-    // If the ISEQ has been compiled assuming it doesn't escape EP, invalidate the JIT code.
-    if let Some(patch_points) = invariants.no_ep_escape_iseq_patch_points.get(&iseq) {
-        debug!("EP is escaped: {}", iseq_name(iseq));
+        // If the ISEQ has been compiled assuming it doesn't escape EP, invalidate the JIT code.
+        if let Some(patch_points) = invariants.no_ep_escape_iseq_patch_points.get(&iseq) {
+            debug!("EP is escaped: {}", iseq_name(iseq));
 
-        // Invalidate the patch points for this ISEQ
-        let cb = ZJITState::get_code_block();
-        compile_patch_points!(cb, patch_points, "EP is escaped: {}", iseq_name(iseq));
+            // Invalidate the patch points for this ISEQ
+            let cb = ZJITState::get_code_block();
+            compile_patch_points!(cb, patch_points, "EP is escaped: {}", iseq_name(iseq));
 
-        cb.mark_all_executable();
-    }
+            cb.mark_all_executable();
+        }
+    });
 }
 
 /// Track that JIT code for a ISEQ will assume that base pointer is equal to environment pointer.
@@ -432,6 +440,48 @@ pub extern "C" fn rb_zjit_tracing_invalidate_all() {
         let patch_points = mem::take(&mut ZJITState::get_invariants().no_trace_point_patch_points);
 
         compile_patch_points!(cb, patch_points, "TracePoint is enabled, invalidating no TracePoint assumption");
+
+        cb.mark_all_executable();
+    });
+}
+
+/// Track the JIT code that assumes only the root box is active
+pub fn track_root_box_assumption(
+    patch_point_ptr: CodePtr,
+    side_exit_ptr: CodePtr,
+    version: IseqVersionRef,
+) {
+    let invariants = ZJITState::get_invariants();
+    invariants.root_box_patch_points.insert(PatchPoint::new(
+        patch_point_ptr,
+        side_exit_ptr,
+        version,
+    ));
+}
+
+/// Returns true if a non-root box has ever been created.
+pub fn non_root_box_created() -> bool {
+    ZJITState::get_invariants().non_root_box_created
+}
+
+/// Callback for when a non-root box is created. In that case we need to
+/// invalidate every block that assumes root-box-only mode.
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_invalidate_root_box() {
+    // If ZJIT isn't enabled, do nothing
+    if !zjit_enabled_p() {
+        return;
+    }
+
+    with_vm_lock(src_loc!(), || {
+        let invariants = ZJITState::get_invariants();
+        invariants.non_root_box_created = true;
+
+        let cb = ZJITState::get_code_block();
+        let patch_points = mem::take(&mut invariants.root_box_patch_points);
+
+        // Invalidate all patch points for root box mode
+        compile_patch_points!(cb, patch_points, "Non-root box created, invalidating root box assumption");
 
         cb.mark_all_executable();
     });

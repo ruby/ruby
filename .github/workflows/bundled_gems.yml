@@ -34,9 +34,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2 # zizmor: ignore[artipacked]
         with:
           token: ${{ (github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull')) && secrets.MATZBOT_AUTO_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - uses: ruby/setup-ruby@19a43a6a2428d455dbd1b85344698725179c9d8c # v1.289.0
+        with:
+          ruby-version: 4.0
 
       - uses: ./.github/actions/setup/directories
         with:
@@ -72,6 +76,7 @@ jobs:
       - name: Maintain updated gems list in NEWS
         run: |
           ruby tool/update-NEWS-gemlist.rb bundled
+          ruby tool/update-NEWS-github-release.rb --update
         if: ${{ env.UPDATE_ENABLED == 'true' }}
 
       - name: Check diffs

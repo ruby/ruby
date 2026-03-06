@@ -48,6 +48,12 @@ describe "The yield call" do
       it "passes a single, multi-value Array" do
         @y.s([1, 2, 3]) { |*a| a }.should == [[1, 2, 3]]
       end
+
+      describe "with optional argument" do
+        it "does not destructure a single array argument" do
+          @y.s([1, 2, 3]) { |a = 99| a }.should == [1, 2, 3]
+        end
+      end
     end
 
     describe "yielding to a lambda" do

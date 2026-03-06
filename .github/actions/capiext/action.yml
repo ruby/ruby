@@ -46,7 +46,7 @@ runs:
     - name: Run test-spec with previous CAPI extension binaries
       id: check
       shell: bash
-      run: |
+      run: | # zizmor: ignore[template-injection]
         touch spec/ruby/optional/capi/ext/*.$DLEXT
         [ ! -f spec/ruby/optional/capi/ext/\*.$DLEXT ]
         ${{ inputs.make }} SPECOPTS=optional/capi test-spec

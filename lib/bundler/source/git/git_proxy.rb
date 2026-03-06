@@ -137,7 +137,7 @@ module Bundler
             git "fetch", "--force", "--quiet", *extra_fetch_args(ref), dir: destination
           end
 
-          git "reset", "--hard", @revision, dir: destination
+          git "reset", "--hard", revision, dir: destination
 
           if submodules
             git_retry "submodule", "update", "--init", "--recursive", dir: destination

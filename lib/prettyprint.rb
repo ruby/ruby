@@ -487,8 +487,10 @@ class PrettyPrint
   # It is passed to be similar to a PrettyPrint object itself, by responding to:
   # * #text
   # * #breakable
+  # * #fill_breakable
   # * #nest
   # * #group
+  # * #group_sub
   # * #flush
   # * #first?
   #
@@ -522,6 +524,13 @@ class PrettyPrint
       @output << sep
     end
 
+    # Appends +sep+ to the text to be output. By default +sep+ is ' '
+    #
+    # +width+ argument is here for compatibility. It is a noop argument.
+    def fill_breakable(sep=' ', width=nil)
+      @output << sep
+    end
+
     # Takes +indent+ arg, but does nothing with it.
     #
     # Yields to a block.
@@ -543,6 +552,15 @@ class PrettyPrint
       yield
       @output << close_obj
       @first.pop
+    end
+
+    # Yields to a block for compatibility.
+    def group_sub # :nodoc:
+      yield
+    end
+
+    # Method present for compatibility, but is a noop
+    def break_outmost_groups # :nodoc:
     end
 
     # Method present for compatibility, but is a noop

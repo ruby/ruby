@@ -323,12 +323,18 @@ struct rb_calling_info {
 
 struct rb_execution_context_struct;
 
-#if 1
-#define CoreDataFromValue(obj, type) (type*)DATA_PTR(obj)
-#else
-#define CoreDataFromValue(obj, type) (type*)rb_data_object_get(obj)
+#ifndef RUBY_CORE_DATA_TYPE_CHECK
+# if RUBY_DEBUG
+#   define RUBY_CORE_DATA_TYPE_CHECK 1
+# else
+#   define RUBY_CORE_DATA_TYPE_CHECK 0
+# endif
 #endif
-#define GetCoreDataFromValue(obj, type, ptr) ((ptr) = CoreDataFromValue((obj), type))
+#if !RUBY_CORE_DATA_TYPE_CHECK
+#define GetCoreDataFromValue(obj, type, data_type, ptr) ((ptr) = (type*)RTYPEDDATA_GET_DATA(obj))
+#else
+#define GetCoreDataFromValue(obj, type, data_type, ptr) TypedData_Get_Struct(obj, type, data_type, ptr)
+#endif
 
 typedef struct rb_iseq_location_struct {
     VALUE pathobj;      /* String (path) or Array [path, realpath]. Frozen. */
@@ -397,6 +403,8 @@ enum rb_builtin_attr {
     BUILTIN_ATTR_INLINE_BLOCK = 0x04,
     // The iseq acts like a C method in backtraces.
     BUILTIN_ATTR_C_TRACE = 0x08,
+    // The iseq uses noint branch/jump opcodes that skip interrupt checking.
+    BUILTIN_ATTR_WITHOUT_INTERRUPTS = 0x10,
 };
 
 typedef VALUE (*rb_jit_func_t)(struct rb_execution_context_struct *, struct rb_control_frame_struct *);
@@ -448,6 +456,7 @@ struct rb_iseq_constant_body {
             unsigned int anon_kwrest: 1;
             unsigned int use_block: 1;
             unsigned int forwardable: 1;
+            unsigned int accepts_no_block: 1;
         } flags;
 
         unsigned int size;
@@ -635,8 +644,10 @@ enum ruby_special_exceptions {
     ruby_special_error_count
 };
 
+extern const rb_data_type_t ruby_vm_data_type;
+
 #define GetVMPtr(obj, ptr) \
-  GetCoreDataFromValue((obj), rb_vm_t, (ptr))
+    GetCoreDataFromValue((obj), rb_vm_t, &ruby_vm_data_type, (ptr))
 
 struct rb_vm_struct;
 typedef void rb_vm_at_exit_func(struct rb_vm_struct*);
@@ -779,9 +790,6 @@ typedef struct rb_vm_struct {
     /* hook (for internal events: NEWOBJ, FREEOBJ, GC events, etc.) */
     rb_hook_list_t global_hooks;
 
-    /* postponed_job (async-signal-safe, and thread-safe) */
-    struct rb_postponed_job_queue *postponed_job_queue;
-
     int src_encoding_index;
 
     /* workqueue (thread-safe, NOT async-signal-safe) */
@@ -808,7 +816,7 @@ typedef struct rb_vm_struct {
     struct rb_id_table *negative_cme_table;
     st_table *overloaded_cme_table; // cme -> overloaded_cme
     set_table *unused_block_warning_table;
-    set_table *cc_refinement_table;
+    VALUE cc_refinement_set;
 
     // This id table contains a mapping from ID to ICs. It does this with ID
     // keys and nested st_tables as values. The nested tables have ICs as keys
@@ -1152,6 +1160,7 @@ typedef struct rb_thread_struct {
 
     BITFIELD(enum rb_thread_status, status, 2);
     /* bit flags */
+    unsigned int main_thread : 1;
     unsigned int has_dedicated_nt : 1;
     unsigned int to_kill : 1;
     unsigned int abort_on_exception: 1;
@@ -1281,8 +1290,10 @@ RUBY_EXTERN VALUE rb_mRubyVMFrozenCore;
 RUBY_EXTERN VALUE rb_block_param_proxy;
 RUBY_SYMBOL_EXPORT_END
 
+extern const rb_data_type_t ruby_proc_data_type;
+
 #define GetProcPtr(obj, ptr) \
-  GetCoreDataFromValue((obj), rb_proc_t, (ptr))
+    GetCoreDataFromValue((obj), rb_proc_t, &ruby_proc_data_type, (ptr))
 
 typedef struct {
     const struct rb_block block;
@@ -1308,7 +1319,7 @@ typedef struct {
 extern const rb_data_type_t ruby_binding_data_type;
 
 #define GetBindingPtr(obj, ptr) \
-  GetCoreDataFromValue((obj), rb_binding_t, (ptr))
+    GetCoreDataFromValue((obj), rb_binding_t, &ruby_binding_data_type, (ptr))
 
 typedef struct {
     const struct rb_block block;
@@ -1991,7 +2002,7 @@ VALUE *rb_vm_svar_lep(const rb_execution_context_t *ec, const rb_control_frame_t
 int rb_vm_get_sourceline(const rb_control_frame_t *);
 void rb_vm_stack_to_heap(rb_execution_context_t *ec);
 void ruby_thread_init_stack(rb_thread_t *th, void *local_in_parent_frame);
-void rb_thread_malloc_stack_set(rb_thread_t *th, void *stack);
+void rb_thread_malloc_stack_set(rb_thread_t *th, void *stack, size_t stack_size);
 rb_thread_t * ruby_thread_from_native(void);
 int ruby_thread_set_native(rb_thread_t *th);
 int rb_vm_control_frame_id_and_class(const rb_control_frame_t *cfp, ID *idp, ID *called_idp, VALUE *klassp);
@@ -2376,9 +2387,7 @@ rb_exec_event_hook_script_compiled(rb_execution_context_t *ec, const rb_iseq_t *
 
 void rb_vm_trap_exit(rb_vm_t *vm);
 void rb_vm_postponed_job_atfork(void); /* vm_trace.c */
-void rb_vm_postponed_job_free(void); /* vm_trace.c */
 size_t rb_vm_memsize_postponed_job_queue(void); /* vm_trace.c */
-void rb_vm_postponed_job_queue_init(rb_vm_t *vm); /* vm_trace.c */
 
 RUBY_SYMBOL_EXPORT_BEGIN
 

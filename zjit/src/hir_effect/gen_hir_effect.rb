@@ -24,20 +24,20 @@ class Effect
 end
 
 # Helper to generate graphviz.
-def to_graphviz_rec effect
+def to_graphviz_rec effect, f
   effect.subeffects.each {|subeffect|
-    puts effect.name + "->" + subeffect.name + ";"
+    f.puts effect.name + "->" + subeffect.name + ";"
   }
-  effect.subeffect.each {|subeffect|
-    to_graphviz_rec subeffect
+  effect.subeffects.each {|subeffect|
+    to_graphviz_rec subeffect, f
   }
 end
 
 # Generate graphviz.
-def to_graphviz effect
-  puts "digraph G {"
-  to_graphviz_rec effect
-  puts "}"
+def to_graphviz effect, f
+  f.puts "digraph G {"
+  to_graphviz_rec effect, f
+  f.puts "}"
 end
 
 # ===== Start generating the effect DAG =====
@@ -48,6 +48,8 @@ any = Effect.new 'Any'
 allocator = any.subeffect 'Allocator'
 control = any.subeffect 'Control'
 memory = any.subeffect 'Memory'
+patch_point = any.subeffect 'PatchPoint'
+interrupt_flag = memory.subeffect 'InterruptFlag'
 other = memory.subeffect 'Other'
 frame = memory.subeffect 'Frame'
 pc = frame.subeffect 'PC'
@@ -117,3 +119,8 @@ $bits.keys.sort.map {|effect_name|
     puts "  pub const #{effect_name}: Effect = Effect::promote(abstract_heaps::#{effect_name});"
 }
 puts "}"
+
+File.open("zjit_effects.dot", "w") do |f|
+  to_graphviz(any, f)
+end
+

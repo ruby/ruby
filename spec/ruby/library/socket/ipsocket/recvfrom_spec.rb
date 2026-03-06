@@ -83,43 +83,21 @@ describe "Socket::IPSocket#recvfrom" do
         @client.close unless @client.closed?
       end
 
-      ruby_version_is ""..."3.3" do
-        it "returns an empty String as received data on a closed stream socket" do
-          t = Thread.new do
-            client = @server.accept
-            message = client.recvfrom(10)
-            message
-          ensure
-            client.close if client
-          end
-
-          Thread.pass while t.status and t.status != "sleep"
-          t.status.should_not be_nil
-
-          @client.close
-
-          t.value.should.is_a? Array
-          t.value[0].should == ""
+      it "returns nil on a closed stream socket" do
+        t = Thread.new do
+          client = @server.accept
+          message = client.recvfrom(10)
+          message
+        ensure
+          client.close if client
         end
-      end
 
-      ruby_version_is "3.3" do
-        it "returns nil on a closed stream socket" do
-          t = Thread.new do
-            client = @server.accept
-            message = client.recvfrom(10)
-            message
-          ensure
-            client.close if client
-          end
+        Thread.pass while t.status and t.status != "sleep"
+        t.status.should_not be_nil
 
-          Thread.pass while t.status and t.status != "sleep"
-          t.status.should_not be_nil
+        @client.close
 
-          @client.close
-
-          t.value.should be_nil
-        end
+        t.value.should be_nil
       end
     end
 

@@ -105,11 +105,11 @@ describe :queue_deq, shared: true do
       q = @object.call
       -> {
         q.send(@method, timeout: "1")
-      }.should raise_error(TypeError, "no implicit conversion to float from string")
+      }.should raise_consistent_error(TypeError, "no implicit conversion of String into Float")
 
       -> {
         q.send(@method, timeout: false)
-      }.should raise_error(TypeError, "no implicit conversion to float from false")
+      }.should raise_consistent_error(TypeError, "no implicit conversion of false into Float")
     end
 
     it "raise ArgumentError if non_block = true is passed too" do

@@ -48,10 +48,11 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
+          persist-credentials: false
 
       - name: Install libraries (macOS)
         uses: ./.github/actions/setup/macos
@@ -61,7 +62,7 @@ jobs:
         uses: ./.github/actions/setup/ubuntu
         if: ${{ contains(matrix.os, 'ubuntu') }}
 
-      - uses: ruby/setup-ruby@b90be12699fdfcbee4440c2bba85f6f460446bb0 # v1.279.0
+      - uses: ruby/setup-ruby@19a43a6a2428d455dbd1b85344698725179c9d8c # v1.289.0
         with:
           ruby-version: '3.1'
           bundler: none
@@ -100,18 +101,18 @@ jobs:
       - name: Run configure
         env:
           arch: ${{ matrix.arch }}
-        run: >-
-          $SETARCH ../src/configure -C --disable-install-doc --with-modular-gc=${{ env.MODULAR_GC_DIR }}
+        run: |
+          ${SETARCH} ../src/configure -C --disable-install-doc --with-modular-gc="${MODULAR_GC_DIR}" \
           ${arch:+--target=$arch-$OSTYPE --host=$arch-$OSTYPE}
 
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: actions-rust-lang/setup-rust-toolchain@a0b538fa0b742a6aa35d6e2c169b4bd06d225a98 # v1.15.3
       - name: Set MMTk environment variables
         run: |
           echo 'EXCLUDES=../src/test/.excludes-mmtk' >> $GITHUB_ENV
           echo 'MSPECOPT=-B../src/spec/mmtk.mspec' >> $GITHUB_ENV
         if: ${{ matrix.gc.name == 'mmtk' }}
 
-      - run: $SETARCH make
+      - run: ${SETARCH} make
 
       - name: Build Modular  GC
         run: |
@@ -119,7 +120,7 @@ jobs:
           make install-modular-gc MODULAR_GC=${{ matrix.gc.name }} MMTK_BUILD=${{ matrix.gc.mmtk_build }}
           make distclean-modular-gc MODULAR_GC=${{ matrix.gc.name }}
 
-      - run: $SETARCH make hello
+      - run: ${SETARCH} make hello
 
       - name: Set test options for skipped tests
         run: |
@@ -145,7 +146,7 @@ jobs:
           test -n "${LAUNCHABLE_STDOUT}" && exec 1> >(tee "${LAUNCHABLE_STDOUT}")
           test -n "${LAUNCHABLE_STDERR}" && exec 2> >(tee "${LAUNCHABLE_STDERR}")
 
-          $SETARCH make -s ${{ matrix.test_task }} \
+          ${SETARCH} make -s ${{ matrix.test_task }} \
             ${TESTS:+TESTS="$TESTS"} \
             ${{ !contains(matrix.test_task, 'bundle') && 'RUBYOPT=-w' || '' }}
         timeout-minutes: ${{ matrix.gc.timeout || 40 }}
@@ -158,7 +159,7 @@ jobs:
 
       - name: make skipped tests
         run: |
-          $SETARCH make -s test-all TESTS="${TESTS//-n!\//-n/}"
+          ${SETARCH} make -s test-all TESTS="${TESTS//-n!\//-n/}"
         env:
           GNUMAKEFLAGS: ''
           RUBY_TESTOPTS: '-v --tty=no'

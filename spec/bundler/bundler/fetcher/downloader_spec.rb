@@ -126,6 +126,38 @@ RSpec.describe Bundler::Fetcher::Downloader do
       end
     end
 
+    context "when the request response is a Gem::Net::HTTPRequestedRangeNotSatisfiable" do
+      let(:http_response) { Gem::Net::HTTPRequestedRangeNotSatisfiable.new("1.1", 416, "Range Not Satisfiable") }
+      let(:success_response) { Gem::Net::HTTPSuccess.new("1.1", 200, "Success") }
+      let(:options) { { "Range" => "bytes=1000-", "If-None-Match" => "some-etag" } }
+
+      before do
+        # First request returns 416, retry request returns success
+        allow(subject).to receive(:request).with(uri, options).and_return(http_response)
+        allow(subject).to receive(:request).with(uri, { "If-None-Match" => "some-etag" }).and_return(success_response)
+      end
+
+      # The 416 handler removes the Range header and retries without incrementing the counter.
+      # Importantly, it does NOT add Accept-Encoding header, which would break Ruby's
+      # automatic gzip decompression (see issue #9271 for details on that bug).
+      it "should retry the request without the Range header" do
+        expect(subject).to receive(:request).with(uri, options).ordered
+        expect(subject).to receive(:request).with(uri, hash_excluding("Range", "Accept-Encoding")).ordered
+        subject.fetch(uri, options, counter)
+      end
+
+      it "should preserve other headers on retry" do
+        expect(subject).to receive(:request).with(uri, options).ordered
+        expect(subject).to receive(:request).with(uri, hash_including("If-None-Match" => "some-etag")).ordered
+        subject.fetch(uri, options, counter)
+      end
+
+      it "should return the successful response" do
+        result = subject.fetch(uri, options, counter)
+        expect(result).to eq(success_response)
+      end
+    end
+
     context "when the request response is some other type" do
       let(:http_response) { Gem::Net::HTTPBadGateway.new("1.1", 500, "Fatal Error") }
 

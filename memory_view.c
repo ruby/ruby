@@ -845,7 +845,7 @@ rb_memory_view_release(rb_memory_view_t* view)
         if (rv) {
             unregister_exported_object(view->obj);
             view->obj = Qnil;
-            xfree((void *)view->item_desc.components);
+            SIZED_FREE_N((rb_memory_view_item_component_t *)view->item_desc.components, view->item_desc.length);
         }
         return rv;
     }

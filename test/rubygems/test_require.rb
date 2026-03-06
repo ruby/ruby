@@ -431,6 +431,22 @@ class TestGemRequire < Gem::TestCase
     assert_equal %w[default-2.0.0.0], loaded_spec_names
   end
 
+  def test_multiple_gems_with_the_same_path_the_non_activated_spec_is_chosen
+    a1 = util_spec "a", "1", nil, "lib/ib.rb"
+    a2 = util_spec "a", "2", nil, "lib/foo.rb"
+    b1 = util_spec "b", "1", nil, "lib/ib.rb"
+
+    install_specs a1, a2, b1
+
+    a2.activate
+
+    assert_equal %w[a-2], loaded_spec_names
+    assert_empty unresolved_names
+
+    assert_require "ib"
+    assert_equal %w[a-2 b-1], loaded_spec_names
+  end
+
   def test_default_gem_require_activates_just_once
     default_gem_spec = new_default_spec("default", "2.0.0.0",
                                         nil, "default/gem.rb")

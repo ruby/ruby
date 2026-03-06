@@ -3,7 +3,6 @@ use crate::backend::lir::*;
 use crate::cruby::*;
 use crate::codegen::c_callable;
 use crate::options::rb_zjit_prepare_options;
-use crate::hir;
 
 #[test]
 fn test_add() {

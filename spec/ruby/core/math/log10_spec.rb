@@ -23,6 +23,10 @@ describe "Math.log10" do
     -> { Math.log10("test") }.should raise_error(TypeError)
   end
 
+  it "raises a TypeError if passed a numerical argument as a string" do
+    -> { Math.log10("1.0") }.should raise_error(TypeError)
+  end
+
   it "returns NaN given NaN" do
     Math.log10(nan_value).nan?.should be_true
   end

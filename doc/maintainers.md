@@ -50,6 +50,10 @@ consensus on ruby-core/ruby-dev.
 
 * *No maintainer*
 
+#### lib/pathname.rb
+
+* Tanaka Akira ([akr])
+
 #### lib/rubygems.rb, lib/rubygems/*
 
 * Hiroshi SHIBATA ([hsbt])
@@ -218,6 +222,7 @@ consensus on ruby-core/ruby-dev.
 * Kevin Newton ([kddnewton])
 * Eileen Uchitelle ([eileencodes])
 * Aaron Patterson ([tenderlove])
+* Earlopain ([earlopain])
 * https://github.com/ruby/prism
 * https://rubygems.org/gems/prism
 
@@ -350,12 +355,6 @@ consensus on ruby-core/ruby-dev.
 * https://github.com/ruby/openssl
 * https://rubygems.org/gems/openssl
 
-#### ext/pathname
-
-* Tanaka Akira ([akr])
-* https://github.com/ruby/pathname
-* https://rubygems.org/gems/pathname
-
 #### ext/psych
 
 * Aaron Patterson ([tenderlove])
@@ -425,22 +424,11 @@ It may needs to make consensus on ruby-core/ruby-dev before making major changes
 * https://github.com/ruby/rss
 * https://rubygems.org/gems/rss
 
-### net-ftp
-
-* Shugo Maeda ([shugo])
-* https://github.com/ruby/net-ftp
-* https://rubygems.org/gems/net-ftp
-
 ### net-imap
 
 * Nicholas A. Evans ([nevans])
 * https://github.com/ruby/net-imap
 * https://rubygems.org/gems/net-imap
-
-### net-pop
-
-* https://github.com/ruby/net-pop
-* https://rubygems.org/gems/net-pop
 
 ### net-smtp
 
@@ -628,6 +616,12 @@ It may needs to make consensus on ruby-core/ruby-dev before making major changes
 * https://github.com/ruby/tsort
 * https://rubygems.org/gems/tsort
 
+#### win32-registry
+
+* Nakamura Usaku ([unak])
+* https://github.com/ruby/win32-registry
+* https://rubygems.org/gems/win32-registry
+
 ## Platform Maintainers
 
 ### mswin64 (Microsoft Windows)
@@ -675,6 +669,7 @@ It may needs to make consensus on ruby-core/ruby-dev before making major changes
 [colby-swandale]: https://github.com/colby-swandale
 [drbrain]: https://github.com/drbrain
 [duerst]: https://github.com/duerst
+[earlopain]: https://github.com/earlopain
 [eban]: https://github.com/eban
 [eileencodes]: https://github.com/eileencodes
 [hasumikin]: https://github.com/hasumikin
@@ -711,7 +706,6 @@ It may needs to make consensus on ruby-core/ruby-dev before making major changes
 [k-tsj]: https://github.com/k-tsj
 [nevans]: https://github.com/nevans
 [tmtm]: https://github.com/tmtm
-[shugo]: https://github.com/shugo
 [soutaro]: https://github.com/soutaro
 [yui-knk]: https://github.com/yui-knk
 [hasumikin]: https://github.com/hasumikin

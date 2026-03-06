@@ -193,11 +193,12 @@ module Gem
     begin
       spec.activate
     rescue Gem::LoadError => e # this could fail due to gem dep collisions, go lax
-      spec_by_name = Gem::Specification.find_by_name(spec.name)
-      if spec_by_name.nil?
+      spec = Gem::Specification.find_unloaded_by_path(path)
+      spec ||= Gem::Specification.find_by_name(spec.name)
+      if spec.nil?
         raise e
       else
-        spec_by_name.activate
+        spec.activate
       end
     end
 
@@ -350,6 +351,8 @@ module Gem
   def self.clear_paths
     @paths         = nil
     @user_home     = nil
+    @cache_home    = nil
+    @data_home     = nil
     Gem::Specification.reset
     Gem::Security.reset if defined?(Gem::Security)
   end
@@ -1409,9 +1412,7 @@ require_relative "rubygems/specification"
 
 # REFACTOR: This should be pulled out into some kind of hacks file.
 begin
-  ##
   # Defaults the operating system (or packager) wants to provide for RubyGems.
-
   require "rubygems/defaults/operating_system"
 rescue LoadError
   # Ignored
@@ -1426,9 +1427,7 @@ rescue StandardError => e
 end
 
 begin
-  ##
   # Defaults the Ruby implementation wants to provide for RubyGems
-
   require "rubygems/defaults/#{RUBY_ENGINE}"
 rescue LoadError
 end

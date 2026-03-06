@@ -11,11 +11,13 @@ module Lrama
         #
         # @rbs!
         #   @rule: Rule
+        #   @grammar: Grammar
 
-        # @rbs (type: ::Symbol, token_code: Lexer::Token::UserCode, rule: Rule) -> void
-        def initialize(type:, token_code:, rule:)
+        # @rbs (type: ::Symbol, token_code: Lexer::Token::UserCode, rule: Rule, grammar: Grammar) -> void
+        def initialize(type:, token_code:, rule:, grammar:)
           super(type: type, token_code: token_code)
           @rule = rule
+          @grammar = grammar
         end
 
         private
@@ -53,9 +55,15 @@ module Lrama
           case
           when ref.type == :dollar && ref.name == "$" # $$
             tag = ref.ex_tag || lhs.tag
-            raise_tag_not_found_error(ref) unless tag
-            # @type var tag: Lexer::Token::Tag
-            "(yyval.#{tag.member})"
+            if tag
+              # @type var tag: Lexer::Token::Tag
+              "(yyval.#{tag.member})"
+            elsif union_not_defined?
+              # When %union is not defined, YYSTYPE defaults to int
+              "(yyval)"
+            else
+              raise_tag_not_found_error(ref)
+            end
           when ref.type == :at && ref.name == "$" # @$
             "(yyloc)"
           when ref.type == :index && ref.name == "$" # $:$
@@ -63,9 +71,15 @@ module Lrama
           when ref.type == :dollar # $n
             i = -position_in_rhs + ref.index
             tag = ref.ex_tag || rhs[ref.index - 1].tag
-            raise_tag_not_found_error(ref) unless tag
-            # @type var tag: Lexer::Token::Tag
-            "(yyvsp[#{i}].#{tag.member})"
+            if tag
+              # @type var tag: Lexer::Token::Tag
+              "(yyvsp[#{i}].#{tag.member})"
+            elsif union_not_defined?
+              # When %union is not defined, YYSTYPE defaults to int
+              "(yyvsp[#{i}])"
+            else
+              raise_tag_not_found_error(ref)
+            end
           when ref.type == :at # @n
             i = -position_in_rhs + ref.index
             "(yylsp[#{i}])"
@@ -97,6 +111,11 @@ module Lrama
         # @rbs () -> Grammar::Symbol
         def lhs
           @rule.lhs
+        end
+
+        # @rbs () -> bool
+        def union_not_defined?
+          @grammar.union.nil?
         end
 
         # @rbs (Reference ref) -> bot

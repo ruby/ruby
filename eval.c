@@ -329,17 +329,24 @@ ruby_exec_node(void *n)
 
 /*
  *  call-seq:
- *     Module.nesting    -> array
+ *     Module.nesting -> array
  *
- *  Returns the list of +Modules+ nested at the point of call.
+ *  Returns nested module as an array of Module objects:
  *
- *     module M1
- *       module M2
- *         $a = Module.nesting
- *       end
- *     end
- *     $a           #=> [M1::M2, M1]
- *     $a[0].name   #=> "M1::M2"
+ *    module M0
+ *      def self.speak = Module.nesting
+ *      module M1
+ *        def self.speak = Module.nesting
+ *        module M2
+ *          def self.speak = Module.nesting
+ *        end
+ *      end
+ *    end
+ *    M0.speak             # => [M0]
+ *    M0.speak.first.class # => Module
+ *    M0::M1.speak         # => [M0::M1, M0]
+ *    M0::M1::M2.speak     # => [M0::M1::M2, M0::M1, M0]
+ *
  */
 
 static VALUE
