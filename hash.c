@@ -4879,6 +4879,11 @@ static VALUE
 hash_le(VALUE hash1, VALUE hash2)
 {
     VALUE args[2];
+    if (!RHASH_TABLE_EMPTY_P(hash1) && !RHASH_TABLE_EMPTY_P(hash2)) {
+        if (RHASH_TYPE(hash1) != RHASH_TYPE(hash2)) {
+            return Qfalse;
+        }
+    }
     args[0] = hash2;
     args[1] = Qtrue;
     rb_hash_foreach(hash1, hash_le_i, (VALUE)args);
