@@ -80,7 +80,7 @@ module Gem
               obj == "true" || obj == "false" || obj == "nil" ||
               obj.include?(":") || obj.include?("#") || obj.include?("[") || obj.include?("]") ||
               obj.include?("{") || obj.include?("}") || obj.include?(",")
-            " #{obj.to_s.inspect}\n"
+          " #{obj.to_s.inspect}\n"
         else
           " #{obj}\n"
         end
@@ -120,7 +120,12 @@ module Gem
       end
 
       return {} if data.nil?
-      data
+
+      if data.is_a?(Hash) && (data[:tag] == "!ruby/object:Gem::Specification" || data["tag"] == "!ruby/object:Gem::Specification")
+        convert_to_spec(data, permitted_symbols)
+      else
+        convert_any(data, permitted_symbols)
+      end
     end
 
     def parse_any(lines, base_indent, permitted_tags, aliases, anchors)
@@ -347,6 +352,181 @@ module Gem
       Array(permitted_classes).map do |klass|
         name = klass.is_a?(Module) ? klass.name : klass.to_s
         "!ruby/object:#{name}"
+      end
+    end
+
+    def convert_to_spec(hash, permitted_symbols)
+      spec = Gem::Specification.allocate
+      return spec unless hash.is_a?(Hash)
+
+      converted_hash = {}
+      hash.each {|k, v| converted_hash[k] = convert_any(v, permitted_symbols) }
+
+      # Ensure specification_version is an Integer if it's a valid numeric string
+      if converted_hash["specification_version"] && !converted_hash["specification_version"].is_a?(Integer)
+        val = converted_hash["specification_version"]
+        if val.is_a?(String) && /\A\d+\z/.match?(val)
+          converted_hash["specification_version"] = val.to_i
+        end
+      end
+
+      # Debug: log rdoc_options that contain non-string elements
+      if converted_hash["rdoc_options"] && converted_hash["name"]
+        rdoc_opts = converted_hash["rdoc_options"]
+        has_non_string = case rdoc_opts
+                         when Array then rdoc_opts.any? {|o| !o.is_a?(String) }
+                         when Hash then true
+                         else true
+        end
+        if has_non_string
+          warn "[DEBUG rdoc_options] gem=#{converted_hash["name"]} class=#{rdoc_opts.class} value=#{rdoc_opts.inspect}"
+        end
+      end
+
+      # Ensure rdoc_options is an Array of Strings
+      if converted_hash["rdoc_options"].is_a?(Hash)
+        converted_hash["rdoc_options"] = converted_hash["rdoc_options"].values.flatten.compact.map(&:to_s)
+      elsif converted_hash["rdoc_options"].is_a?(Array)
+        converted_hash["rdoc_options"] = converted_hash["rdoc_options"].flat_map do |opt|
+          if opt.is_a?(Hash)
+            opt.flat_map {|k, v| [k.to_s, v.to_s] }
+          elsif opt.is_a?(String)
+            opt
+          else
+            opt.to_s
+          end
+        end
+      end
+
+      # Ensure other array fields are properly typed
+      ["files", "test_files", "executables", "requirements", "extra_rdoc_files"].each do |field|
+        if converted_hash[field].is_a?(Hash)
+          converted_hash[field] = converted_hash[field].values.flatten.compact
+        elsif !converted_hash[field].is_a?(Array) && converted_hash[field]
+          converted_hash[field] = [converted_hash[field]].flatten.compact
+        end
+      end
+
+      spec.yaml_initialize("!ruby/object:Gem::Specification", converted_hash)
+      spec
+    end
+
+    def convert_any(obj, permitted_symbols)
+      if obj.is_a?(Hash)
+        if obj[:tag] == "!ruby/object:Gem::Version"
+          ver = obj["version"] || obj["value"]
+          Gem::Version.new(ver.to_s)
+        elsif obj[:tag] == "!ruby/object:Gem::Platform"
+          if obj["value"]
+            Gem::Platform.new(obj["value"])
+          else
+            Gem::Platform.new([obj["cpu"], obj["os"], obj["version"]])
+          end
+        elsif ["!ruby/object:Gem::Requirement", "!ruby/object:Gem::Version::Requirement"].include?(obj[:tag])
+          r = Gem::Requirement.allocate
+          raw_reqs = obj["requirements"] || obj["value"]
+          reqs = convert_any(raw_reqs, permitted_symbols)
+          # Ensure reqs is an array (never nil or Hash)
+          reqs = [] unless reqs.is_a?(Array)
+          if reqs.is_a?(Array) && !reqs.empty?
+            safe_reqs = []
+            reqs.each do |item|
+              if item.is_a?(Array) && item.size == 2
+                op = item[0].to_s
+                ver = item[1]
+                # Validate that op is a valid requirement operator
+                if ["=", "!=", ">", "<", ">=", "<=", "~>"].include?(op)
+                  version_obj = if ver.is_a?(Gem::Version)
+                    ver
+                  else
+                    Gem::Version.new(ver.to_s)
+                  end
+                  safe_reqs << [op, version_obj]
+                end
+              elsif item.is_a?(String)
+                # Try to validate the requirement string
+                parsed = Gem::Requirement.parse(item)
+                safe_reqs << parsed
+              end
+            rescue Gem::Requirement::BadRequirementError, Gem::Version::BadVersionError
+              # Skip malformed items silently
+            end
+            reqs = safe_reqs unless safe_reqs.empty?
+          end
+          r.instance_variable_set(:@requirements, reqs)
+          r
+        elsif obj[:tag] == "!ruby/object:Gem::Dependency"
+          d = Gem::Dependency.allocate
+          d.instance_variable_set(:@name, obj["name"])
+
+          # Ensure requirement is properly formed
+          requirement = begin
+            converted_req = convert_any(obj["requirement"], permitted_symbols)
+            # Validate that the requirement has valid requirements
+            if converted_req.is_a?(Gem::Requirement)
+              # Check if the requirement has any invalid items
+              reqs = converted_req.instance_variable_get(:@requirements)
+              if reqs&.is_a?(Array)
+                # Verify all requirements are valid
+                valid = reqs.all? do |item|
+                  next true if item == Gem::Requirement::DefaultRequirement
+                  if item.is_a?(Array) && item.size >= 2
+                    ["=", "!=", ">", "<", ">=", "<=", "~>"].include?(item[0].to_s)
+                  else
+                    false
+                  end
+                end
+                valid ? converted_req : Gem::Requirement.default
+              else
+                converted_req
+              end
+            else
+              converted_req
+            end
+          rescue StandardError
+            Gem::Requirement.default
+          end
+
+          d.instance_variable_set(:@requirement, requirement)
+
+          type = obj["type"]
+          if type
+            type = type.to_s.sub(/^:/, "").to_sym
+          else
+            type = :runtime
+          end
+          if permitted_symbols.any? && !permitted_symbols.include?(type.to_s)
+            raise ArgumentError, "Disallowed symbol: #{type.inspect}"
+          end
+          d.instance_variable_set(:@type, type)
+
+          d.instance_variable_set(:@prerelease, ["true", true].include?(obj["prerelease"]))
+          d.instance_variable_set(:@version_requirements, d.instance_variable_get(:@requirement))
+          d
+        else
+          res = Hash.new
+          obj.each do |k, v|
+            next if k == :tag
+            key_str = k.to_s
+            converted_val = convert_any(v, permitted_symbols)
+
+            # Convert Hash to Array for fields that should be arrays
+            if ["rdoc_options", "files", "test_files", "executables", "requirements", "extra_rdoc_files"].include?(key_str)
+              if converted_val.is_a?(Hash)
+                converted_val = converted_val.values.flatten.compact
+              elsif !converted_val.is_a?(Array) && converted_val
+                converted_val = [converted_val].flatten.compact
+              end
+            end
+
+            res[key_str] = converted_val
+          end
+          res
+        end
+      elsif obj.is_a?(Array)
+        obj.map {|i| convert_any(i, permitted_symbols) }
+      else
+        obj
       end
     end
 
