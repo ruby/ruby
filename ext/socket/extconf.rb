@@ -706,6 +706,9 @@ SRC
   have_func("pthread_detach")
   have_func("pthread_attr_setdetachstate")
 
+  have_header('ruby/fiber/scheduler.h')
+  have_func('rb_fiber_scheduler_current', 'ruby/fiber/scheduler.h')
+
   $VPATH << '$(topdir)' << '$(top_srcdir)'
   create_makefile("socket")
 end

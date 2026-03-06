@@ -9,6 +9,7 @@
 ************************************************/
 
 #include "rubysocket.h"
+#include "ruby/fiber/scheduler.h"
 
 #ifdef _WIN32
 VALUE rb_w32_conv_from_wchar(const WCHAR *wstr, rb_encoding *enc);
@@ -201,6 +202,29 @@ rsock_s_recvfrom(VALUE socket, int argc, VALUE *argv, enum sock_recv_type from)
 
     while (true) {
         rb_io_check_closed(fptr);
+
+        VALUE scheduler = rb_fiber_scheduler_current();
+        if (scheduler != Qnil) {
+            char *ptr = RSTRING_PTR(str);
+            long len = buflen;
+            int recvfrom = (from == RECV_IP) || (from == RECV_SOCKET);
+            VALUE ret = rb_fiber_scheduler_socket_recv_memory(scheduler, socket, ptr, len, 0, arg.flags, recvfrom);
+            if (!UNDEF_P(ret)) {
+                if (TYPE(ret) == T_ARRAY) {
+                    VALUE recv_bytes = rb_ary_entry(ret, 0);
+                    rb_str_set_len(str, NUM2LONG(recv_bytes));
+                    rb_ary_store(ret, 0, str);
+                    return ret;
+                }
+                else {
+                    if (rb_fiber_scheduler_io_result_apply(ret) < 0)
+                        rb_sys_fail("recvfrom(2)");
+
+                    rb_str_set_len(str, NUM2LONG(ret));
+                    return str;
+                }
+            }
+        }
 
 #ifdef RSOCK_WAIT_BEFORE_BLOCKING
         rb_io_wait(fptr->self, RB_INT2NUM(RUBY_IO_READABLE), Qnil);
@@ -591,6 +615,19 @@ rsock_connect(VALUE self, const struct sockaddr *sockaddr, int len, int socks, V
     rb_io_t *fptr;
     RB_IO_POINTER(self, fptr);
 
+    VALUE scheduler = rb_fiber_scheduler_current();
+    if (scheduler != Qnil) {
+        VALUE addr = rb_str_new((char*)sockaddr, len);
+        VALUE ret = rb_fiber_scheduler_socket_connect(scheduler, fptr->self, addr);
+        RB_GC_GUARD(addr);
+        if (!UNDEF_P(ret)) {
+            if (rb_fiber_scheduler_io_result_apply(ret) < 0)
+                rb_sys_fail("connect(2)");
+
+            return 0;
+        }
+    }
+
 #if defined(SOCKS) && !defined(SOCKS5)
     if (socks) func = socks_connect_blocking;
 #endif
@@ -707,6 +744,23 @@ accept_blocking(void *data)
     return (VALUE)cloexec_accept(arg->fd, arg->sockaddr, arg->len);
 }
 
+VALUE rsock_s_accept_fiber_scheduler(VALUE klass, VALUE io, struct sockaddr *sockaddr, socklen_t *len)
+{
+    VALUE scheduler = rb_fiber_scheduler_current();
+    if (scheduler == Qnil) return Qundef;
+
+    VALUE peer = rb_fiber_scheduler_socket_accept(scheduler, io, sockaddr, len);
+    if (UNDEF_P(peer)) return Qundef;
+
+    if (rb_fiber_scheduler_io_result_apply(peer) < 0)
+        rb_sys_fail("accept(2)");
+
+    rb_update_max_fd(NUM2UINT(peer));
+
+    if (!klass) return peer;
+    return rsock_init_sock(rb_obj_alloc(klass), NUM2UINT(peer));
+}
+
 VALUE
 rsock_s_accept(VALUE klass, VALUE io, struct sockaddr *sockaddr, socklen_t *len)
 {
@@ -720,6 +774,10 @@ rsock_s_accept(VALUE klass, VALUE io, struct sockaddr *sockaddr, socklen_t *len)
     };
 
     int retry = 0, peer;
+
+    VALUE ret = rsock_s_accept_fiber_scheduler(klass,  io, sockaddr, len);
+    if (!UNDEF_P(ret))
+        return ret;
 
   retry:
 #ifdef RSOCK_WAIT_BEFORE_BLOCKING
