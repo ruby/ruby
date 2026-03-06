@@ -571,4 +571,170 @@ class TestGemSafeYAML < Gem::TestCase
   ensure
     Gem::SafeYAML.aliases_enabled = aliases_enabled
   end
+
+  def test_roundtrip_specification
+    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+
+    spec = Gem::Specification.new do |s|
+      s.name = "round-trip-test"
+      s.version = "2.3.4"
+      s.platform = "ruby"
+      s.authors = ["Test Author"]
+      s.summary = "A test gem for round-trip"
+      s.description = "Longer description of the test gem"
+      s.files = ["lib/foo.rb", "README.md"]
+      s.require_paths = ["lib"]
+      s.homepage = "https://example.com"
+      s.licenses = ["MIT"]
+      s.metadata = { "source_code_uri" => "https://example.com/src" }
+      s.add_dependency "rake", ">= 1.0"
+    end
+
+    yaml = Gem::YAMLSerializer.dump(spec)
+    loaded = Gem::SafeYAML.safe_load(yaml)
+
+    assert_kind_of Gem::Specification, loaded
+    assert_equal "round-trip-test", loaded.name
+    assert_equal Gem::Version.new("2.3.4"), loaded.version
+    assert_equal ["Test Author"], loaded.authors
+    assert_equal "A test gem for round-trip", loaded.summary
+    assert_equal ["README.md", "lib/foo.rb"], loaded.files
+    assert_equal ["lib"], loaded.require_paths
+    assert_equal "https://example.com", loaded.homepage
+    assert_equal ["MIT"], loaded.licenses
+    assert_equal({ "source_code_uri" => "https://example.com/src" }, loaded.metadata)
+    assert_equal 1, loaded.dependencies.size
+
+    dep = loaded.dependencies.first
+    assert_equal "rake", dep.name
+    assert_equal :runtime, dep.type
+  end
+
+  def test_roundtrip_version
+    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+
+    ver = Gem::Version.new("1.2.3")
+    yaml = Gem::YAMLSerializer.dump(ver)
+    loaded = Gem::YAMLSerializer.load(yaml, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES)
+
+    assert_kind_of Gem::Version, loaded
+    assert_equal ver, loaded
+  end
+
+  def test_roundtrip_platform
+    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+
+    plat = Gem::Platform.new("x86_64-linux")
+    yaml = Gem::YAMLSerializer.dump(plat)
+    loaded = Gem::YAMLSerializer.load(yaml, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES)
+
+    assert_kind_of Gem::Platform, loaded
+    assert_equal plat.cpu, loaded.cpu
+    assert_equal plat.os, loaded.os
+    assert_equal plat.version, loaded.version
+  end
+
+  def test_roundtrip_requirement
+    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+
+    req = Gem::Requirement.new(">= 1.0", "< 2.0")
+    yaml = Gem::YAMLSerializer.dump(req)
+    loaded = Gem::YAMLSerializer.load(yaml, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES)
+
+    assert_kind_of Gem::Requirement, loaded
+    assert_equal req.requirements.sort_by(&:to_s), loaded.requirements.sort_by(&:to_s)
+  end
+
+  def test_roundtrip_dependency
+    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+
+    dep = Gem::Dependency.new("foo", ">= 1.0", :development)
+    yaml = Gem::YAMLSerializer.dump(dep)
+    loaded = Gem::YAMLSerializer.load(yaml, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES)
+
+    assert_kind_of Gem::Dependency, loaded
+    assert_equal "foo", loaded.name
+    assert_equal :development, loaded.type
+    assert_equal dep.requirement.requirements, loaded.requirement.requirements
+  end
+
+  def test_roundtrip_nested_hash
+    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+
+    obj = { "a" => { "b" => "c", "d" => [1, 2, 3] } }
+    yaml = Gem::YAMLSerializer.dump(obj)
+    loaded = Gem::YAMLSerializer.load(yaml)
+
+    assert_equal obj, loaded
+  end
+
+  def test_roundtrip_block_scalar
+    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+
+    obj = { "text" => "line1\nline2\n" }
+    yaml = Gem::YAMLSerializer.dump(obj)
+    loaded = Gem::YAMLSerializer.load(yaml)
+
+    assert_equal "line1\nline2\n", loaded["text"]
+  end
+
+  def test_roundtrip_special_characters
+    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+
+    obj = {
+      "dollar" => "$HOME",
+      "exclamation" => "!important",
+      "ampersand" => "&anchor",
+      "asterisk" => "*ref",
+      "colon_prefix" => ":symbol",
+      "hash_char" => "value#comment",
+      "brackets" => "[item]",
+      "braces" => "{key}",
+      "comma" => "a,b,c",
+    }
+    yaml = Gem::YAMLSerializer.dump(obj)
+    loaded = Gem::YAMLSerializer.load(yaml)
+
+    obj.each do |key, value|
+      assert_equal value, loaded[key], "Round-trip failed for key #{key}"
+    end
+  end
+
+  def test_roundtrip_boolean_nil_integer
+    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+
+    obj = { "flag" => true, "count" => 42, "empty" => nil, "off" => false }
+    yaml = Gem::YAMLSerializer.dump(obj)
+    loaded = Gem::YAMLSerializer.load(yaml)
+
+    assert_equal true, loaded["flag"]
+    assert_equal 42, loaded["count"]
+    assert_nil loaded["empty"]
+    assert_equal false, loaded["off"]
+  end
+
+  def test_roundtrip_time
+    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+
+    time = Time.utc(2024, 6, 15, 12, 30, 45)
+    obj = { "created" => time }
+    yaml = Gem::YAMLSerializer.dump(obj)
+    loaded = Gem::YAMLSerializer.load(yaml)
+
+    assert_kind_of Time, loaded["created"]
+    assert_equal time.year, loaded["created"].year
+    assert_equal time.month, loaded["created"].month
+    assert_equal time.day, loaded["created"].day
+  end
+
+  def test_roundtrip_empty_collections
+    pend "YAMLSerializer is not loaded" unless defined?(Gem::YAMLSerializer)
+
+    obj = { "arr" => [], "hash" => {} }
+    yaml = Gem::YAMLSerializer.dump(obj)
+    loaded = Gem::YAMLSerializer.load(yaml)
+
+    assert_equal [], loaded["arr"]
+    assert_equal({}, loaded["hash"])
+  end
 end
