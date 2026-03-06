@@ -1783,8 +1783,10 @@ st_index_t
 rb_memhash(const void *ptr, long len)
 {
     sip_uint64_t h = sip_hash13(hash_salt.key.sip, ptr, len);
-#ifdef HAVE_UINT64_T
+#if SIZEOF_ST_INDEX_T >= 8
     return (st_index_t)h;
+#elif defined HAVE_UINT64_T
+    return (st_index_t)((h >> 32) ^ h);
 #else
     return (st_index_t)(h.u32[0] ^ h.u32[1]);
 #endif
