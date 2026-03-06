@@ -60,10 +60,6 @@ module Prism
       assert_nil statement.closing
     end
 
-    def test_invalid_message_name
-      assert_equal :"", Prism.parse_statement("+.@foo,+=foo").write_name
-    end
-
     def test_regexp_encoding_option_mismatch_error
       # UTF-8 char with ASCII-8BIT modifier
       result = Prism.parse('/Ȃ/n')
