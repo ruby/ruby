@@ -8330,8 +8330,14 @@ lex_identifier(pm_parser_t *parser, bool previous_command_start) {
         switch (width) {
             case 2:
                 if (lex_keyword(parser, current_start, "do", width, PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_DO, PM_TOKEN_EOF) != PM_TOKEN_EOF) {
+                    if (parser->enclosure_nesting == parser->lambda_enclosure_nesting) {
+                        return PM_TOKEN_KEYWORD_DO;
+                    }
                     if (pm_do_loop_stack_p(parser)) {
                         return PM_TOKEN_KEYWORD_DO_LOOP;
+                    }
+                    if (!pm_accepts_block_stack_p(parser)) {
+                        return PM_TOKEN_KEYWORD_DO_BLOCK;
                     }
                     return PM_TOKEN_KEYWORD_DO;
                 }
@@ -12497,6 +12503,7 @@ token_begins_expression_p(pm_token_type_t type) {
         case PM_TOKEN_EOF:
         case PM_TOKEN_LAMBDA_BEGIN:
         case PM_TOKEN_KEYWORD_DO:
+        case PM_TOKEN_KEYWORD_DO_BLOCK:
         case PM_TOKEN_KEYWORD_DO_LOOP:
         case PM_TOKEN_KEYWORD_END:
         case PM_TOKEN_KEYWORD_ELSE:
@@ -14826,6 +14833,27 @@ parse_block(pm_parser_t *parser, uint16_t depth) {
 }
 
 /**
+ * Attach a do-block (PM_TOKEN_KEYWORD_DO_BLOCK) to a command-style call node.
+ * The current token must be PM_TOKEN_KEYWORD_DO_BLOCK when this is called.
+ */
+static void
+parse_command_do_block(pm_parser_t *parser, pm_call_node_t *call, uint16_t depth) {
+    parser_lex(parser);
+    pm_block_node_t *block = parse_block(parser, (uint16_t) (depth + 1));
+
+    if (call->block != NULL) {
+        pm_parser_err_node(parser, UP(block), PM_ERR_ARGUMENT_BLOCK_MULTI);
+        if (call->arguments == NULL) {
+            call->arguments = pm_arguments_node_create(parser);
+        }
+        pm_arguments_node_arguments_append(parser->arena, call->arguments, call->block);
+    }
+
+    call->block = UP(block);
+    PM_NODE_LENGTH_SET_NODE(call, block);
+}
+
+/**
  * Parse a list of arguments and their surrounding parentheses if they are
  * present. It returns true if it found any pieces of arguments (parentheses,
  * arguments, or blocks).
@@ -14833,6 +14861,7 @@ parse_block(pm_parser_t *parser, uint16_t depth) {
 static bool
 parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_block, bool accepts_command_call, uint16_t depth) {
     bool found = false;
+    bool parsed_command_args = false;
 
     if (accept1(parser, PM_TOKEN_PARENTHESIS_LEFT)) {
         found |= true;
@@ -14855,6 +14884,7 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool accept
         }
     } else if (accepts_command_call && (token_begins_expression_p(parser->current.type) || match3(parser, PM_TOKEN_USTAR, PM_TOKEN_USTAR_STAR, PM_TOKEN_UAMPERSAND)) && !match1(parser, PM_TOKEN_BRACE_LEFT)) {
         found |= true;
+        parsed_command_args = true;
         pm_accepts_block_stack_push(parser, false);
 
         // If we get here, then the subsequent token cannot be used as an infix
@@ -14883,6 +14913,9 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool accept
             block = parse_block(parser, (uint16_t) (depth + 1));
             pm_arguments_validate_block(parser, arguments, block);
         } else if (pm_accepts_block_stack_p(parser) && accept1(parser, PM_TOKEN_KEYWORD_DO)) {
+            found |= true;
+            block = parse_block(parser, (uint16_t) (depth + 1));
+        } else if (parsed_command_args && pm_accepts_block_stack_p(parser) && !parser->in_endless_def_body && accept1(parser, PM_TOKEN_KEYWORD_DO_BLOCK)) {
             found |= true;
             block = parse_block(parser, (uint16_t) (depth + 1));
         }
@@ -15300,7 +15333,7 @@ parse_conditional(pm_parser_t *parser, pm_context_t context, size_t opening_newl
 #define PM_CASE_KEYWORD PM_TOKEN_KEYWORD___ENCODING__: case PM_TOKEN_KEYWORD___FILE__: case PM_TOKEN_KEYWORD___LINE__: \
     case PM_TOKEN_KEYWORD_ALIAS: case PM_TOKEN_KEYWORD_AND: case PM_TOKEN_KEYWORD_BEGIN: case PM_TOKEN_KEYWORD_BEGIN_UPCASE: \
     case PM_TOKEN_KEYWORD_BREAK: case PM_TOKEN_KEYWORD_CASE: case PM_TOKEN_KEYWORD_CLASS: case PM_TOKEN_KEYWORD_DEF: \
-    case PM_TOKEN_KEYWORD_DEFINED: case PM_TOKEN_KEYWORD_DO: case PM_TOKEN_KEYWORD_DO_LOOP: case PM_TOKEN_KEYWORD_ELSE: \
+    case PM_TOKEN_KEYWORD_DEFINED: case PM_TOKEN_KEYWORD_DO: case PM_TOKEN_KEYWORD_DO_BLOCK: case PM_TOKEN_KEYWORD_DO_LOOP: case PM_TOKEN_KEYWORD_ELSE: \
     case PM_TOKEN_KEYWORD_ELSIF: case PM_TOKEN_KEYWORD_END: case PM_TOKEN_KEYWORD_END_UPCASE: case PM_TOKEN_KEYWORD_ENSURE: \
     case PM_TOKEN_KEYWORD_FALSE: case PM_TOKEN_KEYWORD_FOR: case PM_TOKEN_KEYWORD_IF: case PM_TOKEN_KEYWORD_IN: \
     case PM_TOKEN_KEYWORD_MODULE: case PM_TOKEN_KEYWORD_NEXT: case PM_TOKEN_KEYWORD_NIL: case PM_TOKEN_KEYWORD_NOT: \
@@ -17486,7 +17519,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     element = UP(pm_keyword_hash_node_create(parser));
                     pm_static_literals_t hash_keys = { 0 };
 
-                    if (!match8(parser, PM_TOKEN_EOF, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON, PM_TOKEN_EOF, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_KEYWORD_DO, PM_TOKEN_PARENTHESIS_RIGHT)) {
+                    if (!match8(parser, PM_TOKEN_EOF, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON, PM_TOKEN_KEYWORD_DO_BLOCK, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_KEYWORD_DO, PM_TOKEN_PARENTHESIS_RIGHT)) {
                         parse_assocs(parser, &hash_keys, element, (uint16_t) (depth + 1));
                     }
 
@@ -18895,20 +18928,30 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     allow_command_call = binding_power == PM_BINDING_POWER_ASSIGNMENT || binding_power < PM_BINDING_POWER_COMPOSITION;
                 }
 
+                // Inside a def body, we push true onto the
+                // accepts_block_stack so that `do` is lexed as
+                // PM_TOKEN_KEYWORD_DO (which can only start a block for
+                // primary-level constructs, not commands). During command
+                // argument parsing, the stack is pushed to false, causing
+                // `do` to be lexed as PM_TOKEN_KEYWORD_DO_BLOCK, which
+                // is not consumed inside the endless def body and instead
+                // left for the outer context.
+                pm_accepts_block_stack_push(parser, true);
+                bool previous_in_endless_def_body = parser->in_endless_def_body;
+                parser->in_endless_def_body = true;
                 pm_node_t *statement = parse_expression(parser, PM_BINDING_POWER_DEFINED + 1, allow_command_call, false, PM_ERR_DEF_ENDLESS, (uint16_t) (depth + 1));
+                parser->in_endless_def_body = previous_in_endless_def_body;
+                pm_accepts_block_stack_pop(parser);
 
-                // In an endless method definition, the body is not allowed to
-                // be a command with a do..end block.
-                if (PM_NODE_TYPE_P(statement, PM_CALL_NODE)) {
-                    pm_call_node_t *call = (pm_call_node_t *) statement;
-
-                    if (call->arguments != NULL && call->block != NULL && PM_NODE_TYPE_P(call->block, PM_BLOCK_NODE)) {
-                        pm_block_node_t *block = (pm_block_node_t *) call->block;
-
-                        if (parser->start[block->opening_loc.start] != '{') {
-                            pm_parser_err_node(parser, call->block, PM_ERR_DEF_ENDLESS_DO_BLOCK);
-                        }
-                    }
+                // If an unconsumed PM_TOKEN_KEYWORD_DO follows the body,
+                // it is an error (e.g., `def f = 1 do end`).
+                // PM_TOKEN_KEYWORD_DO_BLOCK is intentionally not caught
+                // here — it should bubble up to the outer context (e.g.,
+                // `private def f = puts "Hello" do end` where the block
+                // attaches to `private`).
+                if (accept1(parser, PM_TOKEN_KEYWORD_DO)) {
+                    pm_block_node_t *block = parse_block(parser, (uint16_t) (depth + 1));
+                    pm_parser_err_node(parser, UP(block), PM_ERR_DEF_ENDLESS_DO_BLOCK);
                 }
 
                 if (accept1(parser, PM_TOKEN_KEYWORD_RESCUE_MODIFIER)) {
@@ -20066,9 +20109,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 opening = parser->previous;
 
                 if (!match3(parser, PM_TOKEN_KEYWORD_END, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE)) {
-                    pm_accepts_block_stack_push(parser, true);
                     body = UP(parse_statements(parser, PM_CONTEXT_LAMBDA_DO_END, (uint16_t) (depth + 1)));
-                    pm_accepts_block_stack_pop(parser);
                 }
 
                 if (match2(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE)) {
@@ -21518,6 +21559,14 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
             }
             break;
         case PM_CALL_NODE:
+            // A do-block can attach to a command-style call at the
+            // primary level. Inside an endless def body, DO_BLOCK must
+            // not be consumed so it can bubble up to the outer context
+            // (e.g., `private` in `private def f = bar baz do end`).
+            if (match1(parser, PM_TOKEN_KEYWORD_DO_BLOCK) && !parser->in_endless_def_body && pm_accepts_block_stack_p(parser) && pm_call_node_command_p((pm_call_node_t *) node)) {
+                parse_command_do_block(parser, (pm_call_node_t *) node, depth);
+            }
+
             // If we have a call node, then we need to check if it looks like a
             // method call without parentheses that contains arguments. If it
             // does, then it has different rules for parsing infix operators,
@@ -21573,6 +21622,13 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
                 }
                 break;
             case PM_CALL_NODE:
+                // A do-block can attach to a command-style call
+                // produced by infix operators (e.g., dot-calls like
+                // `obj.method args do end`).
+                if (match1(parser, PM_TOKEN_KEYWORD_DO_BLOCK) && !parser->in_endless_def_body && pm_accepts_block_stack_p(parser) && pm_call_node_command_p((pm_call_node_t *) node)) {
+                    parse_command_do_block(parser, (pm_call_node_t *) node, depth);
+                }
+
                 // These expressions are also statements, by virtue of the
                 // right-hand side of the expression (i.e., the last argument to
                 // the call node) being an implicit array.

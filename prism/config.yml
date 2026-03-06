@@ -494,6 +494,8 @@ tokens:
     comment: "def"
   - name: KEYWORD_DEFINED
     comment: "defined?"
+  - name: KEYWORD_DO_BLOCK
+    comment: "do keyword for a block attached to a command"
   - name: KEYWORD_DO_LOOP
     comment: "do keyword for a predicate in a while, until, or for loop"
   - name: KEYWORD_END_UPCASE
