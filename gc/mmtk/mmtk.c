@@ -644,7 +644,6 @@ void
 rb_gc_impl_init(void)
 {
     VALUE gc_constants = rb_hash_new();
-    rb_hash_aset(gc_constants, ID2SYM(rb_intern("BASE_SLOT_SIZE")), SIZET2NUM(sizeof(VALUE) * 5));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RBASIC_SIZE")), SIZET2NUM(sizeof(struct RBasic)));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OVERHEAD")), INT2NUM(0));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVARGC_MAX_ALLOCATE_SIZE")), LONG2FIX(MMTK_MAX_OBJ_SIZE));
@@ -1536,12 +1535,24 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
 VALUE
 rb_gc_impl_stat_heap(void *objspace_ptr, VALUE heap_name, VALUE hash_or_sym)
 {
+    if (FIXNUM_P(heap_name) && SYMBOL_P(hash_or_sym)) {
+        int heap_idx = FIX2INT(heap_name);
+        if (heap_idx < 0 || heap_idx >= MMTK_HEAP_COUNT) {
+            rb_raise(rb_eArgError, "size pool index out of range");
+        }
+
+        if (hash_or_sym == ID2SYM(rb_intern("slot_size"))) {
+            return SIZET2NUM(heap_sizes[heap_idx]);
+        }
+
+        return Qundef;
+    }
+
     if (RB_TYPE_P(hash_or_sym, T_HASH)) {
         return hash_or_sym;
     }
-    else {
-        return Qundef;
-    }
+
+    return Qundef;
 }
 
 // Miscellaneous

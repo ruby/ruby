@@ -675,7 +675,7 @@ CODE
     omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
 
     require 'objspace'
-    base_slot_size = GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]
+    base_slot_size = GC.stat_heap(0, :slot_size) - GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD]
     small_obj_size = (base_slot_size / 2)
     large_obj_size = base_slot_size * 2
 

@@ -33,7 +33,7 @@ class TestObjSpace < Test::Unit::TestCase
     b = a.dup
     c = nil
     ObjectSpace.each_object(String) {|x| break c = x if a == x and x.frozen?}
-    rv_size = GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]
+    rv_size = Integer(ObjectSpace.dump(a)[/"slot_size":(\d+)/, 1])
     assert_equal([rv_size, rv_size, a.length + 1 + rv_size], [a, b, c].map {|x| ObjectSpace.memsize_of(x)})
   end
 
@@ -648,7 +648,7 @@ class TestObjSpace < Test::Unit::TestCase
         next if obj["type"] == "SHAPE"
 
         assert_not_nil obj["slot_size"]
-        assert_equal 0, obj["slot_size"] % (GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] + GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD])
+        assert_equal 0, obj["slot_size"] % GC.stat_heap(0, :slot_size)
       }
     end
   end
@@ -707,7 +707,7 @@ class TestObjSpace < Test::Unit::TestCase
     obj = klass.new
     dump = ObjectSpace.dump(obj)
 
-    assert_includes dump, "\"slot_size\":#{GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]}"
+    assert_includes dump, "\"slot_size\":#{GC.stat_heap(0, :slot_size) - GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD]}"
   end
 
   def test_dump_reference_addresses_match_dump_all_addresses
