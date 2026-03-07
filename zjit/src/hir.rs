@@ -689,6 +689,8 @@ pub enum SendFallbackReason {
     SuperPolymorphic,
     /// The `super` target call uses a complex argument pattern that the optimizer does not support.
     SuperTargetComplexArgsPass,
+    /// The `--zjit-allowed-iseqs` flag was supplied and this ISeq did not belong to the "allowed" set.
+    FilteredOut,
     /// Initial fallback reason for every instruction, which should be mutated to
     /// a more actionable reason when an attempt to specialize the instruction fails.
     Uncategorized(ruby_vminsn_type),
@@ -736,6 +738,7 @@ impl Display for SendFallbackReason {
             SuperPolymorphic => write!(f, "super: polymorphic call site"),
             SuperTargetNotFound => write!(f, "super: profiled target method cannot be found"),
             SuperTargetComplexArgsPass => write!(f, "super: complex argument passing to `super` target call"),
+            FilteredOut => write!(f, "Send: target ISeq filtered out"),
             Uncategorized(insn) => write!(f, "Uncategorized({})", insn_name(*insn as usize)),
         }
     }
@@ -3538,6 +3541,12 @@ impl Function {
                             // Only specialize positional-positional calls
                             // TODO(max): Handle other kinds of parameter passing
                             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
+
+                            if !ZJITState::can_compile_iseq(iseq) {
+                                self.set_dynamic_send_reason(insn_id, FilteredOut);
+                                self.push_insn_id(block, insn_id); continue;
+                            }
+
                             if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice(), blockiseq) {
                                 self.push_insn_id(block, insn_id); continue;
                             }
@@ -3576,6 +3585,11 @@ impl Function {
                             }
                             let capture = unsafe { proc_block.as_.captured.as_ref() };
                             let iseq = unsafe { *capture.code.iseq.as_ref() };
+
+                            if !ZJITState::can_compile_iseq(iseq) {
+                                self.set_dynamic_send_reason(insn_id, FilteredOut);
+                                self.push_insn_id(block, insn_id); continue;
+                            }
 
                             if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice(), None) {
                                 self.push_insn_id(block, insn_id); continue;
@@ -3943,6 +3957,13 @@ impl Function {
                             // Check if the super method's parameters support direct send.
                             // If not, we can't do direct dispatch.
                             let super_iseq = unsafe { get_def_iseq_ptr((*super_cme).def) };
+
+                            if !ZJITState::can_compile_iseq(super_iseq) {
+                                self.push_insn_id(block, insn_id);
+                                self.set_dynamic_send_reason(insn_id, FilteredOut);
+                                continue;
+                            }
+
                             // TODO: pass Option<blockiseq> to can_direct_send when we start specializing `super { ... }`.
                             if !can_direct_send(self, block, super_iseq, ci, insn_id, args.as_slice(), None) {
                                 self.push_insn_id(block, insn_id);
