@@ -6978,6 +6978,9 @@ peek_word_at(struct parser_params *p, const char *str, size_t len, int at)
     if (lex_eol_ptr_n_p(p, ptr, len-1)) return false;
     if (memcmp(ptr, str, len)) return false;
     if (lex_eol_ptr_n_p(p, ptr, len)) return true;
+    switch (ptr[len]) {
+      case '!': case '?': return false;
+    }
     return !is_identchar(p, ptr+len, p->lex.pend, p->enc);
 }
 
