@@ -765,6 +765,7 @@ pub enum Insn {
     StringSetbyteFixnum { string: InsnId, index: InsnId, value: InsnId },
     StringAppend { recv: InsnId, other: InsnId, state: InsnId },
     StringAppendCodepoint { recv: InsnId, other: InsnId, state: InsnId },
+    StringEqual { left: InsnId, right: InsnId },
 
     /// Combine count stack values into a regexp
     ToRegexp { opt: usize, values: Vec<InsnId>, state: InsnId },
@@ -1151,6 +1152,10 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(other);
                 $visit_one!(state);
             }
+            Insn::StringEqual { left, right } => {
+                $visit_one!(left);
+                $visit_one!(right);
+            }
             Insn::ToRegexp { values, state, .. } => {
                 $visit_many!(values);
                 $visit_one!(state);
@@ -1419,6 +1424,7 @@ impl Insn {
             Insn::StringSetbyteFixnum { .. } => effects::Any,
             Insn::StringAppend { .. } => effects::Any,
             Insn::StringAppendCodepoint { .. } => effects::Any,
+            Insn::StringEqual { .. } => Effect::write(abstract_heaps::Allocator),
             Insn::ToRegexp { .. } => effects::Any,
             Insn::PutSpecialObject { .. } => effects::Any,
             Insn::ToArray { .. } => effects::Any,
@@ -1771,6 +1777,9 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::StringAppendCodepoint { recv, other, .. } => {
                 write!(f, "StringAppendCodepoint {recv}, {other}")
+            }
+            Insn::StringEqual { left, right } => {
+                write!(f, "StringEqual {left}, {right}")
             }
             Insn::ToRegexp { values, opt, .. } => {
                 write!(f, "ToRegexp")?;
@@ -2602,6 +2611,7 @@ impl Function {
             &StringSetbyteFixnum { string, index, value } => StringSetbyteFixnum { string: find!(string), index: find!(index), value: find!(value) },
             &StringAppend { recv, other, state } => StringAppend { recv: find!(recv), other: find!(other), state: find!(state) },
             &StringAppendCodepoint { recv, other, state } => StringAppendCodepoint { recv: find!(recv), other: find!(other), state: find!(state) },
+            &StringEqual { left, right } => StringEqual { left: find!(left), right: find!(right) },
             &ToRegexp { opt, ref values, state } => ToRegexp { opt, values: find_vec!(values), state },
             &Test { val } => Test { val: find!(val) },
             &IsNil { val } => IsNil { val: find!(val) },
@@ -2851,6 +2861,7 @@ impl Function {
             Insn::StringSetbyteFixnum { .. } => types::Fixnum,
             Insn::StringAppend { .. } => types::StringExact,
             Insn::StringAppendCodepoint { .. } => types::StringExact,
+            Insn::StringEqual { .. } => types::BoolExact,
             Insn::ToRegexp { .. } => types::RegexpExact,
             Insn::NewArray { .. } => types::ArrayExact,
             Insn::ArrayDup { .. } => types::ArrayExact,
@@ -5070,6 +5081,28 @@ impl Function {
                             insn_id
                         }
                     }
+                    Insn::StringEqual { left, right } => {
+                        let left = self.chase_insn(left);
+                        let right = self.chase_insn(right);
+                        // If both operands resolve to the same SSA value,
+                        // String#== is guaranteed to be true.
+                        if left == right {
+                            self.new_insn(Insn::Const { val: Const::Value(Qtrue) })
+                        } else {
+                            let left_type = self.type_of(left);
+                            let right_type = self.type_of(right);
+                            match (left_type.ruby_object(), right_type.ruby_object()) {
+                                (Some(left_obj), Some(right_obj))
+                                    if left_obj.is_frozen() && right_obj.is_frozen() =>
+                                {
+                                    // For known frozen objects, evaluate String#== at compile time.
+                                    let val = unsafe { rb_yarv_str_eql_internal(left_obj, right_obj) };
+                                    self.new_insn(Insn::Const { val: Const::Value(val) })
+                                }
+                                _ => insn_id,
+                            }
+                        }
+                    }
                     Insn::FixnumAdd { left, right, .. } => {
                         self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => l.checked_add(r),
@@ -5968,6 +6001,10 @@ impl Function {
             Insn::StringAppendCodepoint { recv, other, .. } => {
                 self.assert_subtype(insn_id, recv, types::StringExact)?;
                 self.assert_subtype(insn_id, other, types::Fixnum)
+            }
+            Insn::StringEqual { left, right } => {
+                self.assert_subtype(insn_id, left, types::String)?;
+                self.assert_subtype(insn_id, right, types::String)
             }
             // Instructions with Array operands
             Insn::ArrayDup { val, .. } => self.assert_subtype(insn_id, val, types::ArrayExact),
