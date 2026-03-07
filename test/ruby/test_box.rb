@@ -532,6 +532,19 @@ class TestBox < Test::Unit::TestCase
     end
   end
 
+  def test_lastline_not_cached_in_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      box = Ruby::Box.new
+      box.eval(<<~'CODE')
+        $_ = "first"
+        _ = $_
+        $_ = "second"
+        raise "expected 'second' but got '#{$_}'" unless $_ == "second"
+      CODE
+    end;
+  end
+
   def test_load_path_and_loaded_features
     setup_box
 
