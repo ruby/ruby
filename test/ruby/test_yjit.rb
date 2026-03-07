@@ -166,6 +166,33 @@ class TestYJIT < Test::Unit::TestCase
     end
   end
 
+  # Regression test: when YJIT.enable is called mid-method and a lambda/proc
+  # was created before YJIT.enable (causing EP to escape to the heap),
+  # local variables must not read as nil through the jit_exception path.
+  def test_yjit_enable_ep_escape_with_jit_exception
+    assert_separately(%w[--yjit-disable], <<~'RUBY')
+      def run
+        _lambda = ->(t) { t }  # causes EP to escape to the heap
+        RubyVM::YJIT.enable
+
+        i = 0
+        begin
+          while i < 100
+            i += 1
+            begin
+              next if i  # `next` inside begin/rescue/ensure compiles to throw via jit_exception
+            rescue Interrupt
+            end
+          end
+        ensure
+        end
+        i
+      end
+
+      assert_equal 100, run
+    RUBY
+  end
+
   if JITSupport.zjit_supported?
     def test_yjit_enable_with_zjit_enabled
       assert_in_out_err(['--zjit'], 'puts RubyVM::YJIT.enable', ['false'], ['Only one JIT can be enabled at the same time.'])
