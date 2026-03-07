@@ -758,7 +758,7 @@ pub extern "C" fn rb_zjit_reset_stats_bang(_ec: EcPtr, _self: VALUE) -> VALUE {
     ZJITState::get_ccall_counter_pointers().iter_mut()
         .for_each(|b| { **(b.1) = 0; });
 
-    // Reset iseq access counters
+    // Reset iseq call counters
     ZJITState::get_iseq_calls_count_pointers().iter_mut()
         .for_each(|b| { **(b.1) = 0; });
 
