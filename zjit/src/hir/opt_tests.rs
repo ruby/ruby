@@ -11573,7 +11573,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_fold_string_equal_distinct_string_literals_true() {
+    fn test_not_fold_string_equal_true_without_pragma() {
         eval(r#"
             def test
               "a" == "a"
@@ -11599,15 +11599,15 @@ mod hir_opt_tests {
           v14:StringExact = StringCopy v13
           PatchPoint NoSingletonClass(String@0x1008)
           PatchPoint MethodRedefined(String@0x1008, ==@0x1010, cme:0x1018)
-          v28:TrueClass = Const Value(true)
+          v26:BoolExact = StringEqual v11, v14
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v28
+          Return v26
         ");
     }
 
     #[test]
-    fn test_fold_string_equal_distinct_string_literals_false() {
+    fn test_not_fold_string_equal_false_without_pragma() {
         eval(r#"
             def test
               "a" == "b"
@@ -11633,10 +11633,124 @@ mod hir_opt_tests {
           v14:StringExact = StringCopy v13
           PatchPoint NoSingletonClass(String@0x1010)
           PatchPoint MethodRedefined(String@0x1010, ==@0x1018, cme:0x1020)
-          v28:FalseClass = Const Value(false)
+          v26:BoolExact = StringEqual v11, v14
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v28
+          Return v26
+        ");
+    }
+
+    #[test]
+    fn test_fold_string_equal_true_with_pragma() {
+        eval(r#"
+            # frozen_string_literal: true
+            def test
+              "a" == "a"
+            end
+
+            test
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v12:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, ==@0x1010, cme:0x1018)
+          v26:TrueClass = Const Value(true)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v26
+        ");
+    }
+
+    #[test]
+    fn test_fold_string_equal_false_with_pragma() {
+        eval(r#"
+            # frozen_string_literal: true
+            def test
+              "a" == "b"
+            end
+
+            test
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v12:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint NoSingletonClass(String@0x1010)
+          PatchPoint MethodRedefined(String@0x1010, ==@0x1018, cme:0x1020)
+          v26:FalseClass = Const Value(false)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v26
+        ");
+    }
+
+    #[test]
+    fn test_not_fold_string_equal_after_string_append_mutation() {
+        eval(r#"
+            def test
+              a = "a"
+              b = "a"
+              a << "a"
+              a == b
+            end
+
+            test
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          v3:NilClass = Const Value(nil)
+          Jump bb3(v1, v2, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:NilClass = Const Value(nil)
+          v8:NilClass = Const Value(nil)
+          Jump bb3(v6, v7, v8)
+        bb3(v10:BasicObject, v11:NilClass, v12:NilClass):
+          v16:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v17:StringExact = StringCopy v16
+          v21:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v22:StringExact = StringCopy v21
+          v27:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v28:StringExact = StringCopy v27
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, <<@0x1010, cme:0x1018)
+          v49:StringExact = StringAppend v17, v28
+          IncrCounter inline_cfunc_optimized_send_count
+          PatchPoint NoEPEscape(test)
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, ==@0x1040, cme:0x1048)
+          v54:BoolExact = StringEqual v17, v22
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v54
         ");
     }
 

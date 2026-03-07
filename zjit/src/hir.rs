@@ -1152,6 +1152,10 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(other);
                 $visit_one!(state);
             }
+            Insn::StringEqual { left, right } => {
+                $visit_one!(left);
+                $visit_one!(right);
+            }
             Insn::ToRegexp { values, state, .. } => {
                 $visit_many!(values);
                 $visit_one!(state);
@@ -5078,17 +5082,8 @@ impl Function {
                         }
                     }
                     Insn::StringEqual { left, right } => {
-                        // Chase operands for String#== constant folding.
-                        // Unlike `chase_insn`, also unwrap StringCopy for String#==-specific reasoning.
-                        fn chase_string_equal_operand(fun: &Function, insn: InsnId) -> InsnId {
-                            let id = fun.chase_insn(insn);
-                            match fun.insns[id.0] {
-                                Insn::StringCopy { val, .. } => chase_string_equal_operand(fun, val),
-                                _ => id,
-                            }
-                        }
-                        let left = chase_string_equal_operand(self, left);
-                        let right = chase_string_equal_operand(self, right);
+                        let left = self.chase_insn(left);
+                        let right = self.chase_insn(right);
                         // If both operands resolve to the same SSA value,
                         // String#== is guaranteed to be true.
                         if left == right {
