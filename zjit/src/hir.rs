@@ -4446,6 +4446,15 @@ impl Function {
         self.push_insn(block, Insn::IncrCounterPtr { counter_ptr });
     }
 
+    fn count_iseq_calls(&mut self, block: BlockId) {
+        let iseq_name = iseq_get_location(self.iseq, 0);
+        let access_counter_ptrs = crate::state::ZJITState::get_iseq_calls_count_pointers();
+        let counter_ptr = access_counter_ptrs.entry(iseq_name.to_string()).or_insert_with(|| Box::new(0));
+        let counter_ptr: &mut u64 = counter_ptr.as_mut();
+
+        self.push_insn(block, Insn::IncrCounterPtr { counter_ptr });
+    }
+
     fn count_not_annotated_cfunc(&mut self, block: BlockId, cme: *const rb_callable_method_entry_t) {
         let owner = unsafe { (*cme).owner };
         let called_id = unsafe { (*cme).called_id };
@@ -8050,6 +8059,9 @@ fn compile_jit_entry_block(fun: &mut Function, jit_entry_idx: usize, target_bloc
     // Prepare entry_state with basic block params
     let (self_param, entry_state) = compile_jit_entry_state(fun, jit_entry_block, jit_entry_idx);
 
+    if get_option!(stats) {
+        fun.count_iseq_calls(jit_entry_block);
+    }
     // Jump to target_block
     fun.push_insn(jit_entry_block, Insn::Jump(BranchEdge { target: target_block, args: entry_state.as_args(self_param) }));
 }

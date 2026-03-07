@@ -772,6 +772,10 @@ pub extern "C" fn rb_zjit_reset_stats_bang(_ec: EcPtr, _self: VALUE) -> VALUE {
     ZJITState::get_ccall_counter_pointers().iter_mut()
         .for_each(|b| { **(b.1) = 0; });
 
+    // Reset iseq call counters
+    ZJITState::get_iseq_calls_count_pointers().iter_mut()
+        .for_each(|b| { **(b.1) = 0; });
+
     Qnil
 }
 
@@ -934,6 +938,13 @@ pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE, target_key: VALUE) -> 
     let ccall = ZJITState::get_ccall_counter_pointers();
     for (signature, counter) in ccall.iter() {
         let key_string = format!("ccall_{signature}");
+        set_stat_usize!(hash, &key_string, **counter);
+    }
+
+    // Set iseq access counters
+    let iseq_access_counts = ZJITState::get_iseq_calls_count_pointers();
+    for (iseq_name, counter) in iseq_access_counts.iter() {
+        let key_string = format!("iseq_calls_count_{iseq_name}");
         set_stat_usize!(hash, &key_string, **counter);
     }
 
