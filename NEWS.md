@@ -65,7 +65,7 @@ releases.
 * RubyGems 4.1.0.dev
 * bundler 4.1.0.dev
 * json 2.19.0
-  * 2.18.0 to [v2.18.1][json-v2.18.1]
+  * 2.18.0 to [v2.18.1][json-v2.18.1], [v2.19.0][json-v2.19.0]
 * openssl 4.0.1
   * 4.0.0 to [v4.0.1][openssl-v4.0.1]
 * prism 1.9.0
@@ -134,6 +134,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #21390]: https://bugs.ruby-lang.org/issues/21390
 [Feature #21785]: https://bugs.ruby-lang.org/issues/21785
 [json-v2.18.1]: https://github.com/ruby/json/releases/tag/v2.18.1
+[json-v2.19.0]: https://github.com/ruby/json/releases/tag/v2.19.0
 [openssl-v4.0.1]: https://github.com/ruby/openssl/releases/tag/v4.0.1
 [prism-v1.9.0]: https://github.com/ruby/prism/releases/tag/v1.9.0
 [resolv-v0.7.1]: https://github.com/ruby/resolv/releases/tag/v0.7.1
