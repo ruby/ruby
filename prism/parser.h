@@ -639,6 +639,9 @@ struct pm_parser {
     /** The arena used for all AST-lifetime allocations. Caller-owned. */
     pm_arena_t *arena;
 
+    /** The arena used for parser metadata (comments, diagnostics, etc.). */
+    pm_arena_t metadata_arena;
+
     /**
      * The next node identifier that will be assigned. This is a unique
      * identifier used to track nodes such that the syntax tree can be dropped

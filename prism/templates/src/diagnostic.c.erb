@@ -1,4 +1,5 @@
 #include "prism/diagnostic.h"
+#include "prism/util/pm_arena.h"
 
 #define PM_DIAGNOSTIC_ID_MAX <%= errors.length + warnings.length %>
 
@@ -451,29 +452,26 @@ pm_diagnostic_level(pm_diagnostic_id_t diag_id) {
 /**
  * Append an error to the given list of diagnostic.
  */
-bool
-pm_diagnostic_list_append(pm_list_t *list, uint32_t start, uint32_t length, pm_diagnostic_id_t diag_id) {
-    pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) xcalloc(1, sizeof(pm_diagnostic_t));
-    if (diagnostic == NULL) return false;
+void
+pm_diagnostic_list_append(pm_arena_t *arena, pm_list_t *list, uint32_t start, uint32_t length, pm_diagnostic_id_t diag_id) {
+    pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) pm_arena_zalloc(arena, sizeof(pm_diagnostic_t), PRISM_ALIGNOF(pm_diagnostic_t));
 
     *diagnostic = (pm_diagnostic_t) {
         .location = { .start = start, .length = length },
         .diag_id = diag_id,
         .message = pm_diagnostic_message(diag_id),
-        .owned = false,
         .level = pm_diagnostic_level(diag_id)
     };
 
     pm_list_append(list, (pm_list_node_t *) diagnostic);
-    return true;
 }
 
 /**
  * Append a diagnostic to the given list of diagnostics that is using a format
  * string for its message.
  */
-bool
-pm_diagnostic_list_append_format(pm_list_t *list, uint32_t start, uint32_t length, pm_diagnostic_id_t diag_id, ...) {
+void
+pm_diagnostic_list_append_format(pm_arena_t *arena, pm_list_t *list, uint32_t start, uint32_t length, pm_diagnostic_id_t diag_id, ...) {
     va_list arguments;
     va_start(arguments, diag_id);
 
@@ -482,20 +480,13 @@ pm_diagnostic_list_append_format(pm_list_t *list, uint32_t start, uint32_t lengt
     va_end(arguments);
 
     if (result < 0) {
-        return false;
+        return;
     }
 
-    pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) xcalloc(1, sizeof(pm_diagnostic_t));
-    if (diagnostic == NULL) {
-        return false;
-    }
+    pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) pm_arena_zalloc(arena, sizeof(pm_diagnostic_t), PRISM_ALIGNOF(pm_diagnostic_t));
 
     size_t message_length = (size_t) (result + 1);
-    char *message = (char *) xmalloc(message_length);
-    if (message == NULL) {
-        xfree_sized(diagnostic, sizeof(pm_diagnostic_t));
-        return false;
-    }
+    char *message = (char *) pm_arena_alloc(arena, message_length, 1);
 
     va_start(arguments, diag_id);
     vsnprintf(message, message_length, format, arguments);
@@ -505,27 +496,9 @@ pm_diagnostic_list_append_format(pm_list_t *list, uint32_t start, uint32_t lengt
         .location = { .start = start, .length = length },
         .diag_id = diag_id,
         .message = message,
-        .owned = true,
         .level = pm_diagnostic_level(diag_id)
     };
 
     pm_list_append(list, (pm_list_node_t *) diagnostic);
-    return true;
 }
 
-/**
- * Deallocate the internal state of the given diagnostic list.
- */
-void
-pm_diagnostic_list_free(pm_list_t *list) {
-    pm_diagnostic_t *node = (pm_diagnostic_t *) list->head;
-
-    while (node != NULL) {
-        pm_diagnostic_t *next = (pm_diagnostic_t *) node->node.next;
-
-        if (node->owned) xfree((void *) node->message);
-        xfree_sized(node, sizeof(pm_diagnostic_t));
-
-        node = next;
-    }
-}

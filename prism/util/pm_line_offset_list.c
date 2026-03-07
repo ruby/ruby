@@ -1,20 +1,16 @@
 #include "prism/util/pm_line_offset_list.h"
 
 /**
- * Initialize a new newline list with the given capacity. Returns true if the
- * allocation of the offsets succeeds, otherwise returns false.
+ * Initialize a new line offset list with the given capacity.
  */
-bool
-pm_line_offset_list_init(pm_line_offset_list_t *list, size_t capacity) {
-    list->offsets = (uint32_t *) xcalloc(capacity, sizeof(uint32_t));
-    if (list->offsets == NULL) return false;
+void
+pm_line_offset_list_init(pm_arena_t *arena, pm_line_offset_list_t *list, size_t capacity) {
+    list->offsets = (uint32_t *) pm_arena_zalloc(arena, capacity * sizeof(uint32_t), PRISM_ALIGNOF(uint32_t));
 
     // This is 1 instead of 0 because we want to include the first line of the
-    // file as having offset 0, which is set because of calloc.
+    // file as having offset 0, which is set because of the zero-initialization.
     list->size = 1;
     list->capacity = capacity;
-
-    return true;
 }
 
 /**
@@ -26,26 +22,22 @@ pm_line_offset_list_clear(pm_line_offset_list_t *list) {
 }
 
 /**
- * Append a new offset to the newline list. Returns true if the reallocation of
- * the offsets succeeds (if one was necessary), otherwise returns false.
+ * Append a new offset to the newline list.
  */
-bool
-pm_line_offset_list_append(pm_line_offset_list_t *list, uint32_t cursor) {
+void
+pm_line_offset_list_append(pm_arena_t *arena, pm_line_offset_list_t *list, uint32_t cursor) {
     if (list->size == list->capacity) {
-        uint32_t *original_offsets = list->offsets;
+        size_t new_capacity = (list->capacity * 3) / 2;
+        uint32_t *new_offsets = (uint32_t *) pm_arena_alloc(arena, new_capacity * sizeof(uint32_t), PRISM_ALIGNOF(uint32_t));
 
-        list->capacity = (list->capacity * 3) / 2;
-        list->offsets = (uint32_t *) xcalloc(list->capacity, sizeof(uint32_t));
-        if (list->offsets == NULL) return false;
+        memcpy(new_offsets, list->offsets, list->size * sizeof(uint32_t));
 
-        memcpy(list->offsets, original_offsets, list->size * sizeof(uint32_t));
-        xfree_sized(original_offsets, list->size * sizeof(uint32_t));
+        list->offsets = new_offsets;
+        list->capacity = new_capacity;
     }
 
     assert(list->size == 0 || cursor > list->offsets[list->size - 1]);
     list->offsets[list->size++] = cursor;
-
-    return true;
 }
 
 /**
@@ -102,12 +94,4 @@ pm_line_offset_list_line_column(const pm_line_offset_list_t *list, uint32_t curs
         .line = ((int32_t) left) + start_line - 1,
         .column = cursor - list->offsets[left - 1]
     });
-}
-
-/**
- * Free the internal memory allocated for the newline list.
- */
-void
-pm_line_offset_list_free(pm_line_offset_list_t *list) {
-    xfree_sized(list->offsets, list->capacity * sizeof(uint32_t));
 }
