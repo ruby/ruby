@@ -146,7 +146,7 @@ typedef struct {
  * @param capacity The initial capacity of the pool.
  * @return Whether the initialization succeeded.
  */
-bool pm_constant_pool_init(pm_constant_pool_t *pool, uint32_t capacity);
+void pm_constant_pool_init(pm_arena_t *arena, pm_constant_pool_t *pool, uint32_t capacity);
 
 /**
  * Return a pointer to the constant indicated by the given constant id.
@@ -177,7 +177,7 @@ pm_constant_id_t pm_constant_pool_find(const pm_constant_pool_t *pool, const uin
  * @param length The length of the constant.
  * @return The id of the constant.
  */
-pm_constant_id_t pm_constant_pool_insert_shared(pm_constant_pool_t *pool, const uint8_t *start, size_t length);
+pm_constant_id_t pm_constant_pool_insert_shared(pm_arena_t *arena, pm_constant_pool_t *pool, const uint8_t *start, size_t length);
 
 /**
  * Insert a constant into a constant pool from memory that is now owned by the
@@ -189,7 +189,7 @@ pm_constant_id_t pm_constant_pool_insert_shared(pm_constant_pool_t *pool, const 
  * @param length The length of the constant.
  * @return The id of the constant.
  */
-pm_constant_id_t pm_constant_pool_insert_owned(pm_constant_pool_t *pool, uint8_t *start, size_t length);
+pm_constant_id_t pm_constant_pool_insert_owned(pm_arena_t *arena, pm_constant_pool_t *pool, uint8_t *start, size_t length);
 
 /**
  * Insert a constant into a constant pool from memory that is constant. Returns
@@ -200,13 +200,6 @@ pm_constant_id_t pm_constant_pool_insert_owned(pm_constant_pool_t *pool, uint8_t
  * @param length The length of the constant.
  * @return The id of the constant.
  */
-pm_constant_id_t pm_constant_pool_insert_constant(pm_constant_pool_t *pool, const uint8_t *start, size_t length);
-
-/**
- * Free the memory associated with a constant pool.
- *
- * @param pool The pool to free.
- */
-void pm_constant_pool_free(pm_constant_pool_t *pool);
+pm_constant_id_t pm_constant_pool_insert_constant(pm_arena_t *arena, pm_constant_pool_t *pool, const uint8_t *start, size_t length);
 
 #endif

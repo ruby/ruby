@@ -115,21 +115,15 @@ is_power_of_two(uint32_t size) {
 /**
  * Resize a constant pool to a given capacity.
  */
-static inline bool
-pm_constant_pool_resize(pm_constant_pool_t *pool) {
+static inline void
+pm_constant_pool_resize(pm_arena_t *arena, pm_constant_pool_t *pool) {
     assert(is_power_of_two(pool->capacity));
 
     uint32_t next_capacity = pool->capacity * 2;
-    if (next_capacity < pool->capacity) return false;
-
     const uint32_t mask = next_capacity - 1;
-    const size_t element_size = sizeof(pm_constant_pool_bucket_t) + sizeof(pm_constant_t);
 
-    void *next = xcalloc(next_capacity, element_size);
-    if (next == NULL) return false;
-
-    pm_constant_pool_bucket_t *next_buckets = next;
-    pm_constant_t *next_constants = (void *)(((char *) next) + next_capacity * sizeof(pm_constant_pool_bucket_t));
+    pm_constant_pool_bucket_t *next_buckets = (pm_constant_pool_bucket_t *) pm_arena_zalloc(arena, next_capacity * sizeof(pm_constant_pool_bucket_t), PRISM_ALIGNOF(pm_constant_pool_bucket_t));
+    pm_constant_t *next_constants = (pm_constant_t *) pm_arena_alloc(arena, next_capacity * sizeof(pm_constant_t), PRISM_ALIGNOF(pm_constant_t));
 
     // For each bucket in the current constant pool, find the index in the
     // next constant pool, and insert it.
@@ -157,33 +151,22 @@ pm_constant_pool_resize(pm_constant_pool_t *pool) {
     // The constants are stable with respect to hash table resizes.
     memcpy(next_constants, pool->constants, pool->size * sizeof(pm_constant_t));
 
-    // pool->constants and pool->buckets are allocated out of the same chunk
-    // of memory, with the buckets coming first.
-    xfree_sized(pool->buckets, pool->capacity * element_size);
     pool->constants = next_constants;
     pool->buckets = next_buckets;
     pool->capacity = next_capacity;
-    return true;
 }
 
 /**
  * Initialize a new constant pool with a given capacity.
  */
-bool
-pm_constant_pool_init(pm_constant_pool_t *pool, uint32_t capacity) {
-    const uint32_t maximum = (~((uint32_t) 0));
-    if (capacity >= ((maximum / 2) + 1)) return false;
-
+void
+pm_constant_pool_init(pm_arena_t *arena, pm_constant_pool_t *pool, uint32_t capacity) {
     capacity = next_power_of_two(capacity);
-    const size_t element_size = sizeof(pm_constant_pool_bucket_t) + sizeof(pm_constant_t);
-    void *memory = xcalloc(capacity, element_size);
-    if (memory == NULL) return false;
 
-    pool->buckets = memory;
-    pool->constants = (void *)(((char *)memory) + capacity * sizeof(pm_constant_pool_bucket_t));
+    pool->buckets = (pm_constant_pool_bucket_t *) pm_arena_zalloc(arena, capacity * sizeof(pm_constant_pool_bucket_t), PRISM_ALIGNOF(pm_constant_pool_bucket_t));
+    pool->constants = (pm_constant_t *) pm_arena_alloc(arena, capacity * sizeof(pm_constant_t), PRISM_ALIGNOF(pm_constant_t));
     pool->size = 0;
     pool->capacity = capacity;
-    return true;
 }
 
 /**
@@ -224,9 +207,9 @@ pm_constant_pool_find(const pm_constant_pool_t *pool, const uint8_t *start, size
  * Insert a constant into a constant pool and return its index in the pool.
  */
 static inline pm_constant_id_t
-pm_constant_pool_insert(pm_constant_pool_t *pool, const uint8_t *start, size_t length, pm_constant_pool_bucket_type_t type) {
+pm_constant_pool_insert(pm_arena_t *arena, pm_constant_pool_t *pool, const uint8_t *start, size_t length, pm_constant_pool_bucket_type_t type) {
     if (pool->size >= (pool->capacity / 4 * 3)) {
-        if (!pm_constant_pool_resize(pool)) return PM_CONSTANT_ID_UNSET;
+        pm_constant_pool_resize(arena, pool);
     }
 
     assert(is_power_of_two(pool->capacity));
@@ -246,17 +229,10 @@ pm_constant_pool_insert(pm_constant_pool_t *pool, const uint8_t *start, size_t l
             // Since we have found a match, we need to check if this is
             // attempting to insert a shared or an owned constant. We want to
             // prefer shared constants since they don't require allocations.
-            if (type == PM_CONSTANT_POOL_BUCKET_OWNED) {
-                // If we're attempting to insert an owned constant and we have
-                // an existing constant, then either way we don't want the given
-                // memory. Either it's duplicated with the existing constant or
-                // it's not necessary because we have a shared version.
-                xfree_sized((void *) start, length);
-            } else if (bucket->type == PM_CONSTANT_POOL_BUCKET_OWNED) {
+            if (type != PM_CONSTANT_POOL_BUCKET_OWNED && bucket->type == PM_CONSTANT_POOL_BUCKET_OWNED) {
                 // If we're attempting to insert a shared constant and the
-                // existing constant is owned, then we can free the owned
-                // constant and replace it with the shared constant.
-                xfree_sized((void *) constant->start, constant->length);
+                // existing constant is owned, then we can replace it with the
+                // shared constant to prefer non-owned references.
                 constant->start = start;
                 bucket->type = (unsigned int) (type & 0x3);
             }
@@ -291,8 +267,8 @@ pm_constant_pool_insert(pm_constant_pool_t *pool, const uint8_t *start, size_t l
  * PM_CONSTANT_ID_UNSET if any potential calls to resize fail.
  */
 pm_constant_id_t
-pm_constant_pool_insert_shared(pm_constant_pool_t *pool, const uint8_t *start, size_t length) {
-    return pm_constant_pool_insert(pool, start, length, PM_CONSTANT_POOL_BUCKET_DEFAULT);
+pm_constant_pool_insert_shared(pm_arena_t *arena, pm_constant_pool_t *pool, const uint8_t *start, size_t length) {
+    return pm_constant_pool_insert(arena, pool, start, length, PM_CONSTANT_POOL_BUCKET_DEFAULT);
 }
 
 /**
@@ -301,8 +277,8 @@ pm_constant_pool_insert_shared(pm_constant_pool_t *pool, const uint8_t *start, s
  * potential calls to resize fail.
  */
 pm_constant_id_t
-pm_constant_pool_insert_owned(pm_constant_pool_t *pool, uint8_t *start, size_t length) {
-    return pm_constant_pool_insert(pool, start, length, PM_CONSTANT_POOL_BUCKET_OWNED);
+pm_constant_pool_insert_owned(pm_arena_t *arena, pm_constant_pool_t *pool, uint8_t *start, size_t length) {
+    return pm_constant_pool_insert(arena, pool, start, length, PM_CONSTANT_POOL_BUCKET_OWNED);
 }
 
 /**
@@ -311,26 +287,7 @@ pm_constant_pool_insert_owned(pm_constant_pool_t *pool, uint8_t *start, size_t l
  * resize fail.
  */
 pm_constant_id_t
-pm_constant_pool_insert_constant(pm_constant_pool_t *pool, const uint8_t *start, size_t length) {
-    return pm_constant_pool_insert(pool, start, length, PM_CONSTANT_POOL_BUCKET_CONSTANT);
+pm_constant_pool_insert_constant(pm_arena_t *arena, pm_constant_pool_t *pool, const uint8_t *start, size_t length) {
+    return pm_constant_pool_insert(arena, pool, start, length, PM_CONSTANT_POOL_BUCKET_CONSTANT);
 }
 
-/**
- * Free the memory associated with a constant pool.
- */
-void
-pm_constant_pool_free(pm_constant_pool_t *pool) {
-    // For each constant in the current constant pool, free the contents if the
-    // contents are owned.
-    for (uint32_t index = 0; index < pool->capacity; index++) {
-        pm_constant_pool_bucket_t *bucket = &pool->buckets[index];
-
-        // If an id is set on this constant, then we know we have content here.
-        if (bucket->id != PM_CONSTANT_ID_UNSET && bucket->type == PM_CONSTANT_POOL_BUCKET_OWNED) {
-            pm_constant_t *constant = &pool->constants[bucket->id - 1];
-            xfree_sized((void *) constant->start, constant->length);
-        }
-    }
-
-    xfree_sized(pool->buckets, pool->capacity * (sizeof(pm_constant_pool_bucket_t) + sizeof(pm_constant_t)));
-}
