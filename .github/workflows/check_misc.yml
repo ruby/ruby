@@ -52,6 +52,16 @@ jobs:
         # Skip 'push' events because post_push.yml fixes them on push
         if: ${{ github.repository == 'ruby/ruby' && startsWith(github.event_name, 'pull') }}
 
+      - name: Check if date in man pages is up-to-date
+        run: |
+          git fetch origin --depth=1 "${GITHUB_OLD_SHA}"
+          git diff --exit-code --name-only "${GITHUB_OLD_SHA}" HEAD -- man ||
+          make V=1 GIT=git BASERUBY=ruby update-man-date
+          git diff --color --no-ext-diff --ignore-submodules --exit-code -- man
+        env:
+          GITHUB_OLD_SHA: ${{ github.event.pull_request.base.sha }}
+        if: ${{ startsWith(github.event_name, 'pull') }}
+
       - name: Check for bash specific substitution in configure.ac
         run: |
           git grep -n '\${[A-Za-z_0-9]*/' -- configure.ac && exit 1 || :
