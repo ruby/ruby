@@ -364,6 +364,11 @@ class VCS
       [last, changed, modified, branch, title]
     end
 
+    def author_date(path, srcdir = @srcdir)
+      log = cmd_read_at(srcdir, [[COMMAND, 'log', '-n1', '--pretty=%at', path]])
+      Time.at(log.to_i, in: @zone)
+    end
+
     def self.revision_name(rev)
       short_revision(rev)
     end
