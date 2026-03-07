@@ -29,6 +29,8 @@ void rb_zjit_before_ractor_spawn(void);
 void rb_zjit_tracing_invalidate_all(void);
 void rb_zjit_invalidate_no_singleton_class(VALUE klass);
 void rb_zjit_invalidate_root_box(void);
+VALUE *rb_zjit_jit_return_pc(void *jit_return);
+rb_iseq_t *rb_zjit_jit_return_iseq(void *jit_return);
 #else
 #define rb_zjit_entry 0
 static inline void rb_zjit_compile_iseq(const rb_iseq_t *iseq, bool jit_exception) {}
@@ -42,8 +44,21 @@ static inline void rb_zjit_before_ractor_spawn(void) {}
 static inline void rb_zjit_tracing_invalidate_all(void) {}
 static inline void rb_zjit_invalidate_no_singleton_class(VALUE klass) {}
 static inline void rb_zjit_invalidate_root_box(void) {}
+static inline VALUE *rb_zjit_jit_return_pc(void *jit_return) { UNREACHABLE_RETURN(0); }
+rb_iseq_t *rb_zjit_jit_return_iseq(void *jit_return) { UNREACHABLE_RETURN(0); }
 #endif // #if USE_ZJIT
 
 #define rb_zjit_enabled_p (rb_zjit_entry != 0)
+
+static inline const VALUE*
+rb_zjit_cfp_pc(const rb_control_frame_t *cfp)
+{
+    if (rb_zjit_enabled_p && cfp->jit_return) {
+        return rb_zjit_jit_return_pc(cfp->jit_return);
+    }
+    else {
+        return cfp->pc;
+    }
+}
 
 #endif // #ifndef ZJIT_H

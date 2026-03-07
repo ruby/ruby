@@ -1791,7 +1791,7 @@ vm_throw_start(const rb_execution_context_t *ec, rb_control_frame_t *const reg_c
             while (escape_cfp < eocfp) {
                 if (escape_cfp->ep == ep) {
                     const rb_iseq_t *const iseq = escape_cfp->iseq;
-                    const VALUE epc = escape_cfp->pc - ISEQ_BODY(iseq)->iseq_encoded;
+                    const VALUE epc = rb_zjit_cfp_pc(escape_cfp) - ISEQ_BODY(iseq)->iseq_encoded;
                     const struct iseq_catch_table *const ct = ISEQ_BODY(iseq)->catch_table;
                     unsigned int i;
 

@@ -37,6 +37,7 @@
 #include "iseq.h"
 #include "vm_core.h"
 #include "ractor_core.h"
+#include "zjit.h"
 
 #define MAX_POSBUF 128
 
@@ -130,9 +131,9 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
             line = -1;
         }
         else {
-            if (cfp->pc) {
+            if (cfp->pc || cfp->jit_return) {
                 iseq = cfp->iseq;
-                pc = cfp->pc - ISEQ_BODY(iseq)->iseq_encoded;
+                pc = rb_zjit_cfp_pc(cfp) - ISEQ_BODY(iseq)->iseq_encoded;
                 iseq_name = RSTRING_PTR(ISEQ_BODY(iseq)->location.label);
                 if (pc >= 0 && (size_t)pc <= ISEQ_BODY(iseq)->iseq_size) {
                     line = rb_vm_get_sourceline(cfp);
@@ -351,9 +352,9 @@ box_env_dump(const rb_execution_context_t *ec, const VALUE *env, const rb_contro
             line = -1;
         }
         else {
-            if (cfp->pc) {
+            if (cfp->pc || cfp->jit_return) {
                 iseq = cfp->iseq;
-                pc = cfp->pc - ISEQ_BODY(iseq)->iseq_encoded;
+                pc = rb_zjit_cfp_pc(cfp) - ISEQ_BODY(iseq)->iseq_encoded;
                 iseq_name = RSTRING_PTR(ISEQ_BODY(iseq)->location.label);
                 if (pc >= 0 && (size_t)pc <= ISEQ_BODY(iseq)->iseq_size) {
                     line = rb_vm_get_sourceline(cfp);

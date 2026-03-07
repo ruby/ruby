@@ -14,7 +14,7 @@ use crate::invariants::{
     track_root_box_assumption
 };
 use crate::gc::append_gc_offsets;
-use crate::payload::{get_or_create_iseq_payload, IseqCodePtrs, IseqVersion, IseqVersionRef, IseqStatus};
+use crate::payload::{IseqCodePtrs, IseqStatus, IseqVersion, IseqVersionRef, JITFrame, get_or_create_iseq_payload};
 use crate::state::ZJITState;
 use crate::stats::{CompileError, exit_counter_for_compile_error, exit_counter_for_unhandled_hir_insn, incr_counter, incr_counter_by, send_fallback_counter, send_fallback_counter_for_method_type, send_fallback_counter_for_super_method_type, send_fallback_counter_ptr_for_opcode, send_without_block_fallback_counter_for_method_type, send_without_block_fallback_counter_for_optimized_method_type};
 use crate::stats::{counter_ptr, with_time_stat, Counter, Counter::{compile_time_ns, exit_compile_error}};
@@ -923,7 +923,6 @@ fn gen_ccall_with_frame(
         iseq: None,
         cme,
         frame_type: VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL,
-        pc: PC_POISON,
         specval: block_handler_specval,
     });
 
@@ -1013,7 +1012,6 @@ fn gen_ccall_variadic(
         cme,
         frame_type: VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL,
         specval: block_handler_specval,
-        pc: PC_POISON,
     });
 
     asm_comment!(asm, "switch to new SP register");
@@ -1429,7 +1427,6 @@ fn gen_send_iseq_direct(
         iseq: Some(iseq),
         cme,
         frame_type,
-        pc: None,
         specval,
     });
 
@@ -2432,7 +2429,11 @@ fn gen_save_pc_for_gc(asm: &mut Assembler, state: &FrameState) {
 
     gen_incr_counter(asm, Counter::vm_write_pc_count);
     asm_comment!(asm, "save PC to CFP");
-    asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::const_ptr(next_pc));
+    if let Some(pc) = PC_POISON {
+        asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::const_ptr(pc));
+    }
+    let jit_frame = JITFrame::new(next_pc, state.iseq);
+    asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), Opnd::const_ptr(jit_frame));
 }
 
 /// Save the current PC on the CFP as a preparation for calling a C function
@@ -2527,7 +2528,6 @@ struct ControlFrame {
     /// The [`VM_ENV_DATA_INDEX_SPECVAL`] slot of the frame.
     /// For the type of frames we push, block handler or the parent EP.
     specval: lir::Opnd,
-    pc: Option<*const VALUE>,
 }
 
 /// Compile an interpreter frame
@@ -2562,10 +2562,10 @@ fn gen_push_frame(asm: &mut Assembler, argc: usize, state: &FrameState, frame: C
         // cfp_opnd(RUBY_OFFSET_CFP_SP): written by the callee frame on side-exits, non-leaf calls, or calls with GC
         asm.mov(cfp_opnd(RUBY_OFFSET_CFP_ISEQ), VALUE::from(iseq).into());
     } else {
-        // C frames don't have a PC and ISEQ in normal operation.
-        // When runtime checks are enabled we poison the PC so accidental reads stand out.
-        if let Some(pc) = frame.pc {
-            asm.mov(cfp_opnd(RUBY_OFFSET_CFP_PC), Opnd::const_ptr(pc));
+        // C frames don't have a PC and ISEQ in normal operation. ISEQ frames set PC on gen_save_pc_for_gc().
+        // When runtime checks are enabled we poison the PC for C frames so accidental reads stand out.
+        if let (None, Some(pc)) = (frame.iseq, PC_POISON) {
+            asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::const_ptr(pc));
         }
         let new_sp = asm.lea(Opnd::mem(64, SP, (ep_offset + 1) * SIZEOF_VALUE_I32));
         asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SP), new_sp);
@@ -2709,6 +2709,11 @@ c_callable! {
             // If we side-exit from function_stub_hit (before JIT code runs), we need to set them here.
             fn prepare_for_exit(iseq: IseqPtr, cfp: CfpPtr, sp: *mut VALUE, compile_error: &CompileError) {
                 unsafe {
+                    unsafe extern "C" {
+                        fn rb_zjit_materialize_frames(cfp: CfpPtr);
+                    }
+                    rb_zjit_materialize_frames(cfp);
+
                     // Set SP which gen_push_frame() doesn't set
                     rb_set_cfp_sp(cfp, sp);
 
