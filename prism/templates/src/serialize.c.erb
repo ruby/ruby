@@ -26,28 +26,10 @@ pm_serialize_location(const pm_location_t *location, pm_buffer_t *buffer) {
 }
 
 static void
-pm_serialize_string(const pm_parser_t *parser, const pm_string_t *string, pm_buffer_t *buffer) {
-    switch (string->type) {
-        case PM_STRING_SHARED: {
-            pm_buffer_append_byte(buffer, 1);
-            pm_buffer_append_varuint(buffer, pm_ptrdifft_to_u32(pm_string_source(string) - parser->start));
-            pm_buffer_append_varuint(buffer, pm_sizet_to_u32(pm_string_length(string)));
-            break;
-        }
-        case PM_STRING_OWNED:
-        case PM_STRING_CONSTANT: {
-            uint32_t length = pm_sizet_to_u32(pm_string_length(string));
-            pm_buffer_append_byte(buffer, 2);
-            pm_buffer_append_varuint(buffer, length);
-            pm_buffer_append_bytes(buffer, pm_string_source(string), length);
-            break;
-        }
-#ifdef PRISM_HAS_MMAP
-        case PM_STRING_MAPPED:
-            assert(false && "Cannot serialize mapped strings.");
-            break;
-#endif
-    }
+pm_serialize_string(const pm_string_t *string, pm_buffer_t *buffer) {
+    uint32_t length = pm_sizet_to_u32(pm_string_length(string));
+    pm_buffer_append_varuint(buffer, length);
+    pm_buffer_append_bytes(buffer, pm_string_source(string), length);
 }
 
 static void
@@ -102,7 +84,7 @@ pm_serialize_node(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
                 pm_serialize_node(parser, (pm_node_t *)((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
             }
             <%- when Prism::Template::StringField -%>
-            pm_serialize_string(parser, &((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
+            pm_serialize_string(&((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
             <%- when Prism::Template::NodeListField -%>
             uint32_t <%= field.name %>_size = pm_sizet_to_u32(((pm_<%= node.human %>_t *)node)-><%= field.name %>.size);
             pm_buffer_append_varuint(buffer, <%= field.name %>_size);
@@ -304,28 +286,12 @@ pm_serialize_content(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) 
             pm_constant_t *constant = &parser->constant_pool.constants[bucket->id - 1];
             size_t buffer_offset = offset + ((((size_t)bucket->id) - 1) * 8);
 
-            if (bucket->type == PM_CONSTANT_POOL_BUCKET_OWNED || bucket->type == PM_CONSTANT_POOL_BUCKET_CONSTANT) {
-                // Since this is an owned or constant constant, we are going to
-                // write its contents into the buffer after the constant pool.
-                // So effectively in place of the source offset, we have a
-                // buffer offset. We will add a leading 1 to indicate that this
-                // is a buffer offset.
-                uint32_t content_offset = pm_sizet_to_u32(buffer->length);
-                uint32_t owned_mask = 1U << 31;
+            // Write the constant contents into the buffer after the constant
+            // pool. In place of the source offset, we store a buffer offset.
+            uint32_t content_offset = pm_sizet_to_u32(buffer->length);
+            memcpy(buffer->value + buffer_offset, &content_offset, 4);
+            pm_buffer_append_bytes(buffer, constant->start, constant->length);
 
-                assert(content_offset < owned_mask);
-                content_offset |= owned_mask;
-
-                memcpy(buffer->value + buffer_offset, &content_offset, 4);
-                pm_buffer_append_bytes(buffer, constant->start, constant->length);
-            } else {
-                // Since this is a shared constant, we are going to write its
-                // source offset directly into the buffer.
-                uint32_t source_offset = pm_ptrdifft_to_u32(constant->start - parser->start);
-                memcpy(buffer->value + buffer_offset, &source_offset, 4);
-            }
-
-            // Now we can write the length of the constant into the buffer.
             uint32_t constant_length = pm_sizet_to_u32(constant->length);
             memcpy(buffer->value + buffer_offset + 4, &constant_length, 4);
         }
