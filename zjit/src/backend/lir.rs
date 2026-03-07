@@ -2352,14 +2352,18 @@ impl Assembler
                         .collect();
 
                     // Push all survivors on the stack
-                    // TODO: Figure out optimal alignment.  Are these pushes
-                    // encoded optimally?
+                    let needs_alignment = cfg!(target_arch = "x86_64") && survivors.len() % 2 == 1;
                     for &s in &survivors {
                         let reg_n = match assignments[s].unwrap() {
                             Allocation::Reg(n) => n,
                             _ => unreachable!(),
                         };
                         new_insns.push(Insn::CPush(Opnd::Reg(ALLOC_REGS[reg_n])));
+                        new_ids.push(None);
+                    }
+                    // Maintain 16-byte stack alignment for x86_64
+                    if needs_alignment {
+                        new_insns.push(Insn::CPush(Opnd::Reg(ALLOC_REGS[0])));
                         new_ids.push(None);
                     }
 
@@ -2420,6 +2424,11 @@ impl Assembler
                     new_ids.push(None);
 
                     // Pop in reverse order
+                    // Remove alignment padding first
+                    if needs_alignment {
+                        new_insns.push(Insn::CPopInto(Opnd::Reg(ALLOC_REGS[0])));
+                        new_ids.push(None);
+                    }
                     for &s in survivors.iter().rev() {
                         let reg_n = match assignments[s].unwrap() {
                             Allocation::Reg(n) => n,
