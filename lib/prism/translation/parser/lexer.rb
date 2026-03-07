@@ -87,6 +87,7 @@ module Prism
           KEYWORD_DEF: :kDEF,
           KEYWORD_DEFINED: :kDEFINED,
           KEYWORD_DO: :kDO,
+          KEYWORD_DO_BLOCK: :kDO_BLOCK,
           KEYWORD_DO_LOOP: :kDO_COND,
           KEYWORD_END: :kEND,
           KEYWORD_END_UPCASE: :klEND,

@@ -31,7 +31,7 @@ mod snapshot_tests {
             test
             test
         ");
-        assert_snapshot!(optimized_hir_string("test"), @r"
+        assert_snapshot!(optimized_hir_string("test"), @"
         fn test@<compiled>:2:
         bb0():
           Entries bb1, bb2
@@ -101,7 +101,7 @@ mod snapshot_tests {
             test
             test
         ");
-        assert_snapshot!(optimized_hir_string("test"), @r"
+        assert_snapshot!(optimized_hir_string("test"), @"
         fn test@<compiled>:3:
         bb0():
           Entries bb1, bb2
@@ -140,7 +140,7 @@ mod snapshot_tests {
             test
             test
         ");
-        assert_snapshot!(optimized_hir_string("test"), @r"
+        assert_snapshot!(optimized_hir_string("test"), @"
         fn test@<compiled>:3:
         bb0():
           Entries bb1, bb2
@@ -177,7 +177,7 @@ mod snapshot_tests {
             test
             test
         ");
-        assert_snapshot!(optimized_hir_string("test"), @r"
+        assert_snapshot!(optimized_hir_string("test"), @"
         fn test@<compiled>:3:
         bb0():
           Entries bb1, bb2
@@ -326,7 +326,7 @@ pub mod hir_build_tests {
     fn test_putobject() {
         eval("def test = 123");
         assert_contains_opcode("test", YARVINSN_putobject);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:1:
         bb1():
           EntryPoint interpreter
@@ -347,7 +347,7 @@ pub mod hir_build_tests {
     fn test_new_array() {
         eval("def test = []");
         assert_contains_opcode("test", YARVINSN_newarray);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:1:
         bb1():
           EntryPoint interpreter
@@ -520,7 +520,7 @@ pub mod hir_build_tests {
     fn test_array_dup() {
         eval("def test = [1, 2, 3]");
         assert_contains_opcode("test", YARVINSN_duparray);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:1:
         bb1():
           EntryPoint interpreter
@@ -542,7 +542,7 @@ pub mod hir_build_tests {
     fn test_hash_dup() {
         eval("def test = {a: 1, b: 2}");
         assert_contains_opcode("test", YARVINSN_duphash);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:1:
         bb1():
           EntryPoint interpreter
@@ -564,7 +564,7 @@ pub mod hir_build_tests {
     fn test_new_hash_empty() {
         eval("def test = {}");
         assert_contains_opcode("test", YARVINSN_newhash);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:1:
         bb1():
           EntryPoint interpreter
@@ -613,7 +613,7 @@ pub mod hir_build_tests {
     fn test_string_copy() {
         eval("def test = \"hello\"");
         assert_contains_opcode("test", YARVINSN_putchilledstring);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:1:
         bb1():
           EntryPoint interpreter
@@ -635,7 +635,7 @@ pub mod hir_build_tests {
     fn test_bignum() {
         eval("def test = 999999999999999999999999999999999999");
         assert_contains_opcode("test", YARVINSN_putobject);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:1:
         bb1():
           EntryPoint interpreter
@@ -656,7 +656,7 @@ pub mod hir_build_tests {
     fn test_flonum() {
         eval("def test = 1.5");
         assert_contains_opcode("test", YARVINSN_putobject);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:1:
         bb1():
           EntryPoint interpreter
@@ -677,7 +677,7 @@ pub mod hir_build_tests {
     fn test_heap_float() {
         eval("def test = 1.7976931348623157e+308");
         assert_contains_opcode("test", YARVINSN_putobject);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:1:
         bb1():
           EntryPoint interpreter
@@ -698,7 +698,7 @@ pub mod hir_build_tests {
     fn test_static_sym() {
         eval("def test = :foo");
         assert_contains_opcode("test", YARVINSN_putobject);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:1:
         bb1():
           EntryPoint interpreter
@@ -719,7 +719,7 @@ pub mod hir_build_tests {
     fn test_opt_plus() {
         eval("def test = 1+2");
         assert_contains_opcode("test", YARVINSN_opt_plus);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:1:
         bb1():
           EntryPoint interpreter
@@ -744,7 +744,7 @@ pub mod hir_build_tests {
             def test = {}.freeze
         ");
         assert_contains_opcode("test", YARVINSN_opt_hash_freeze);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -771,7 +771,7 @@ pub mod hir_build_tests {
             def test = {}.freeze
         ");
         assert_contains_opcode("test", YARVINSN_opt_hash_freeze);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:5:
         bb1():
           EntryPoint interpreter
@@ -792,7 +792,7 @@ pub mod hir_build_tests {
             def test = [].freeze
         ");
         assert_contains_opcode("test", YARVINSN_opt_ary_freeze);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -819,7 +819,7 @@ pub mod hir_build_tests {
             def test = [].freeze
         ");
         assert_contains_opcode("test", YARVINSN_opt_ary_freeze);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:5:
         bb1():
           EntryPoint interpreter
@@ -840,7 +840,7 @@ pub mod hir_build_tests {
             def test = ''.freeze
         ");
         assert_contains_opcode("test", YARVINSN_opt_str_freeze);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -867,7 +867,7 @@ pub mod hir_build_tests {
             def test = ''.freeze
         ");
         assert_contains_opcode("test", YARVINSN_opt_str_freeze);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:5:
         bb1():
           EntryPoint interpreter
@@ -888,7 +888,7 @@ pub mod hir_build_tests {
             def test = -''
         ");
         assert_contains_opcode("test", YARVINSN_opt_str_uminus);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -915,7 +915,7 @@ pub mod hir_build_tests {
             def test = -''
         ");
         assert_contains_opcode("test", YARVINSN_opt_str_uminus);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:5:
         bb1():
           EntryPoint interpreter
@@ -939,7 +939,7 @@ pub mod hir_build_tests {
             end
         ");
         assert_contains_opcodes("test", &[YARVINSN_getlocal_WC_0, YARVINSN_setlocal_WC_0]);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -980,7 +980,7 @@ pub mod hir_build_tests {
             "test",
             &[YARVINSN_getlocal_WC_1, YARVINSN_setlocal_WC_1,
               YARVINSN_getlocal, YARVINSN_setlocal]);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn block (3 levels) in <compiled>@<compiled>:10:
         bb1():
           EntryPoint interpreter
@@ -1164,7 +1164,7 @@ pub mod hir_build_tests {
             def test = defined?(@foo)
         ");
         assert_contains_opcode("test", YARVINSN_definedivar);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -1193,7 +1193,7 @@ pub mod hir_build_tests {
             end
         ");
         assert_contains_opcode("test", YARVINSN_definedivar);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -1226,7 +1226,7 @@ pub mod hir_build_tests {
             def test = return defined?(SeaChange), defined?(favourite), defined?($ruby)
         ");
         assert_contains_opcode("test", YARVINSN_defined);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -1254,7 +1254,7 @@ pub mod hir_build_tests {
             def test = defined?(yield)
         ");
         assert_contains_opcode("test", YARVINSN_defined);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -1278,7 +1278,7 @@ pub mod hir_build_tests {
             define_method(:test) { defined?(yield) }
         ");
         assert_contains_opcode("test", YARVINSN_defined);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn block in <compiled>@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -1686,7 +1686,7 @@ pub mod hir_build_tests {
             end
             test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -1766,7 +1766,7 @@ pub mod hir_build_tests {
               end
             end
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -1806,7 +1806,7 @@ pub mod hir_build_tests {
             end
         ");
         assert_contains_opcode("test", YARVINSN_opt_send_without_block);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:6:
         bb1():
           EntryPoint interpreter
@@ -1866,7 +1866,7 @@ pub mod hir_build_tests {
             end
         "#);
         assert_contains_opcode("test", YARVINSN_intern);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -1893,7 +1893,7 @@ pub mod hir_build_tests {
         eval("def test = unknown_method([0], [1], '2', '2')");
 
         // The 2 string literals have the same address because they're deduped.
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:1:
         bb1():
           EntryPoint interpreter
@@ -2027,7 +2027,7 @@ pub mod hir_build_tests {
         eval("
             def test = super()
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -2049,7 +2049,7 @@ pub mod hir_build_tests {
         eval("
             def test = super
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -2071,7 +2071,7 @@ pub mod hir_build_tests {
         eval("
             def test = super(&nil)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -2310,7 +2310,7 @@ pub mod hir_build_tests {
         eval("
             def test(a, ...) = foo(a, ...)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -2351,7 +2351,7 @@ pub mod hir_build_tests {
             def test = C.new
         ");
         assert_contains_opcode("test", YARVINSN_opt_new);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -2386,7 +2386,7 @@ pub mod hir_build_tests {
         ");
         // TODO(max): Rewrite to nil
         assert_contains_opcode("test", YARVINSN_opt_newarray_send);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -2955,7 +2955,7 @@ pub mod hir_build_tests {
             test
         ");
         assert_contains_opcode("test", YARVINSN_getinstancevariable);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -2980,7 +2980,7 @@ pub mod hir_build_tests {
             test
         ");
         assert_contains_opcode("test", YARVINSN_setinstancevariable);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -3037,7 +3037,7 @@ pub mod hir_build_tests {
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("Foo", "test"));
         assert!(iseq_contains_opcode(iseq, YARVINSN_getclassvariable), "iseq Foo.test does not contain getclassvariable");
         let function = iseq_to_hir(iseq).unwrap();
-        assert_snapshot!(hir_string_function(&function), @r"
+        assert_snapshot!(hir_string_function(&function), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -3064,7 +3064,7 @@ pub mod hir_build_tests {
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("Foo", "test"));
         assert!(iseq_contains_opcode(iseq, YARVINSN_setclassvariable), "iseq Foo.test does not contain setclassvariable");
         let function = iseq_to_hir(iseq).unwrap();
-        assert_snapshot!(hir_string_function(&function), @r"
+        assert_snapshot!(hir_string_function(&function), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -3089,7 +3089,7 @@ pub mod hir_build_tests {
             test
         ");
         assert_contains_opcode("test", YARVINSN_setglobal);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -3114,7 +3114,7 @@ pub mod hir_build_tests {
             test
         ");
         assert_contains_opcode("test", YARVINSN_getglobal);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -3211,7 +3211,7 @@ pub mod hir_build_tests {
             def test(**kw, &b) = foo(**kw, &b)
         ");
         assert_contains_opcode("test", YARVINSN_splatkw);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -3245,7 +3245,7 @@ pub mod hir_build_tests {
             test(1)
         ");
         assert_contains_opcode("test", YARVINSN_splatkw);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -3290,7 +3290,7 @@ pub mod hir_build_tests {
             test(&proc {})
         ");
         assert_contains_opcode("test", YARVINSN_splatkw);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -3327,7 +3327,7 @@ pub mod hir_build_tests {
             test(a: 1, &proc {})
         ");
         assert_contains_opcode("test", YARVINSN_splatkw);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -3366,7 +3366,7 @@ pub mod hir_build_tests {
             test(1, b: 2)
         ");
         assert_contains_opcode("test", YARVINSN_splatkw);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -3410,7 +3410,7 @@ pub mod hir_build_tests {
             test(obj) { 2 }
         ");
         assert_contains_opcode("test", YARVINSN_splatkw);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -3781,7 +3781,7 @@ pub mod hir_build_tests {
             end
         ");
         assert_contains_opcode("test", YARVINSN_putspecialobject);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -3817,7 +3817,7 @@ pub mod hir_build_tests {
         ");
         assert_contains_opcode("reverse_odd", YARVINSN_opt_reverse);
         assert_contains_opcode("reverse_even", YARVINSN_opt_reverse);
-        assert_snapshot!(hir_strings!("reverse_odd", "reverse_even"), @r"
+        assert_snapshot!(hir_strings!("reverse_odd", "reverse_even"), @"
         fn reverse_odd@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -4059,7 +4059,7 @@ pub mod hir_build_tests {
     #[test]
     fn test_invokebuiltin_cexpr_annotated() {
         assert_contains_opcode("class", YARVINSN_opt_invokebuiltin_delegate_leave);
-        assert_snapshot!(hir_string("class"), @r"
+        assert_snapshot!(hir_string("class"), @"
         fn class@<internal:kernel>:
         bb1():
           EntryPoint interpreter
@@ -4084,7 +4084,7 @@ pub mod hir_build_tests {
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("Dir", "open"));
         assert!(iseq_contains_opcode(iseq, YARVINSN_opt_invokebuiltin_delegate), "iseq Dir.open does not contain invokebuiltin");
         let function = iseq_to_hir(iseq).unwrap();
-        assert_snapshot!(hir_string_function(&function), @r"
+        assert_snapshot!(hir_string_function(&function), @"
         fn open@<internal:dir>:
         bb1():
           EntryPoint interpreter
@@ -4135,7 +4135,7 @@ pub mod hir_build_tests {
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("GC", "enable"));
         assert!(iseq_contains_opcode(iseq, YARVINSN_opt_invokebuiltin_delegate_leave), "iseq GC.enable does not contain invokebuiltin");
         let function = iseq_to_hir(iseq).unwrap();
-        assert_snapshot!(hir_string_function(&function), @r"
+        assert_snapshot!(hir_string_function(&function), @"
         fn enable@<internal:gc>:
         bb1():
           EntryPoint interpreter
@@ -4191,7 +4191,7 @@ pub mod hir_build_tests {
     fn test_invoke_leaf_builtin_symbol_name() {
         let iseq = crate::cruby::with_rubyvm(|| get_instance_method_iseq("Symbol", "name"));
         let function = iseq_to_hir(iseq).unwrap();
-        assert_snapshot!(hir_string_function(&function), @r"
+        assert_snapshot!(hir_string_function(&function), @"
         fn name@<internal:symbol>:
         bb1():
           EntryPoint interpreter
@@ -4214,7 +4214,7 @@ pub mod hir_build_tests {
     fn test_invoke_leaf_builtin_symbol_to_s() {
         let iseq = crate::cruby::with_rubyvm(|| get_instance_method_iseq("Symbol", "to_s"));
         let function = iseq_to_hir(iseq).unwrap();
-        assert_snapshot!(hir_string_function(&function), @r"
+        assert_snapshot!(hir_string_function(&function), @"
         fn to_s@<internal:symbol>:
         bb1():
           EntryPoint interpreter
@@ -4278,7 +4278,7 @@ pub mod hir_build_tests {
             def test = \"#{1}\"
         ");
         assert_contains_opcode("test", YARVINSN_objtostring);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -4305,7 +4305,7 @@ pub mod hir_build_tests {
             def test = "#{1}#{2}#{3}"
         "##);
         assert_contains_opcode("test", YARVINSN_concatstrings);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -4337,7 +4337,7 @@ pub mod hir_build_tests {
             def test = "#{}"
         "##);
         assert_contains_opcode("test", YARVINSN_concatstrings);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -4364,7 +4364,7 @@ pub mod hir_build_tests {
             def test = /#{1}#{2}#{3}/
         "##);
         assert_contains_opcode("test", YARVINSN_toregexp);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -4396,7 +4396,7 @@ pub mod hir_build_tests {
             def test = /#{1}#{2}/mixn
         "##);
         assert_contains_opcode("test", YARVINSN_toregexp);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -4427,7 +4427,7 @@ pub mod hir_build_tests {
         ");
         assert_contains_opcode("throw_return", YARVINSN_throw);
         assert_contains_opcode("throw_break", YARVINSN_throw);
-        assert_snapshot!(hir_strings!("throw_return", "throw_break"), @r"
+        assert_snapshot!(hir_strings!("throw_return", "throw_break"), @"
         fn block in <compiled>@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -4463,7 +4463,7 @@ pub mod hir_build_tests {
               yield
             end
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -4749,7 +4749,7 @@ pub mod hir_build_tests {
 
     #[test]
     fn test_array_each() {
-        assert_snapshot!(hir_string_proc("Array.instance_method(:each)"), @r"
+        assert_snapshot!(hir_string_proc("Array.instance_method(:each)"), @"
         fn each@<internal:array>:
         bb1():
           EntryPoint interpreter
@@ -4916,7 +4916,7 @@ pub mod hir_build_tests {
          function.push_insn(bb3, Insn::Return { val: retval });
 
          function.seal_entries();
-         assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @r"
+         assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @"
          fn <manual>:
          bb1():
            Jump bb2()
@@ -4958,7 +4958,7 @@ pub mod hir_build_tests {
         function.push_insn(bb3, Insn::Return { val: retval });
 
         function.seal_entries();
-        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @r"
+        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @"
         fn <manual>:
         bb1():
           v0:Any = Const Value(false)
@@ -5017,7 +5017,7 @@ pub mod hir_build_tests {
         function.push_insn(bb7, Insn::Return { val: retval });
 
         function.seal_entries();
-        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @r"
+        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @"
         fn <manual>:
         bb1():
           Jump bb2()
@@ -5086,7 +5086,7 @@ pub mod hir_build_tests {
         function.push_insn(bb3, Insn::Return { val: retval });
 
         function.seal_entries();
-        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @r"
+        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @"
         fn <manual>:
         bb1():
           v0:Any = Const Value(false)
@@ -5137,7 +5137,7 @@ pub mod hir_build_tests {
         function.push_insn(bb2, Insn::Return { val: retval });
 
         function.seal_entries();
-        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @r"
+        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @"
         fn <manual>:
         bb1():
           Jump bb3()
@@ -5199,7 +5199,7 @@ mod loop_info_tests {
         let dominators = Dominators::new(&function);
         let loop_info = LoopInfo::new(&cfi, &dominators);
 
-        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @r"
+        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @"
         fn <manual>:
         bb1():
           Jump bb3()
@@ -5266,7 +5266,7 @@ mod loop_info_tests {
         let dominators = Dominators::new(&function);
         let loop_info = LoopInfo::new(&cfi, &dominators);
 
-        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @r"
+        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @"
         fn <manual>:
         bb1():
           Jump bb2()
@@ -5354,7 +5354,7 @@ mod loop_info_tests {
         let dominators = Dominators::new(&function);
         let loop_info = LoopInfo::new(&cfi, &dominators);
 
-        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @r"
+        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @"
         fn <manual>:
         bb1():
           v0:Any = Const Value(false)
@@ -5429,7 +5429,7 @@ mod loop_info_tests {
         let dominators = Dominators::new(&function);
         let loop_info = LoopInfo::new(&cfi, &dominators);
 
-        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @r"
+        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @"
         fn <manual>:
         bb1():
           Jump bb2()
@@ -5498,7 +5498,7 @@ mod loop_info_tests {
         let _ = function.push_insn(bb5, Insn::IfTrue {val: cond, target: edge(bb0)});
 
         function.seal_entries();
-        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @r"
+        assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @"
         fn <manual>:
         bb1():
           v0:Any = Const Value(false)

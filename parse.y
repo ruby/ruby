@@ -2773,7 +2773,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <node> if_tail opt_else case_body case_args cases opt_rescue exc_list exc_var opt_ensure
 %type <node> args arg_splat call_args opt_call_args
 %type <node> paren_args opt_paren_args
-%type <node_args> args_tail block_args_tail f_args-opt_tail block_args-opt_tail
+%type <node_args> args_tail block_args_tail block_args-opt_tail
 %type <node> command_args aref_args
 %type <node_block_pass> opt_block_arg block_arg
 %type <node> var_ref var_lhs
@@ -2788,7 +2788,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <id> do bv_decls opt_bv_decl bvar
 %type <node> lambda brace_body do_body
 %type <locations_lambda_body> lambda_body
-%type <node_args> f_larglist
+%type <node_args> f_larglist f_largs largs_tail
 %type <node> brace_block cmd_brace_block do_block lhs none fitem
 %type <node> mlhs_head mlhs_item mlhs_node
 %type <node_masgn> mlhs mlhs_basic mlhs_inner
@@ -5103,19 +5103,19 @@ lambda		: tLAMBDA[lpar]
                     }
                 ;
 
-f_larglist	: '(' f_args opt_bv_decl ')'
+f_larglist	: '(' f_largs[args] opt_bv_decl ')'
                     {
                         p->ctxt.in_argdef = 0;
-                        $$ = $f_args;
+                        $$ = $args;
                         p->max_numparam = ORDINAL_PARAM;
-                    /*% ripper: paren!($:f_args) %*/
+                    /*% ripper: paren!($:args) %*/
                     }
-                | f_args
+                | f_largs[args]
                     {
                         p->ctxt.in_argdef = 0;
-                        if (!args_info_empty_p(&$f_args->nd_ainfo))
+                        if (!args_info_empty_p(&$args->nd_ainfo))
                             p->max_numparam = ORDINAL_PARAM;
-                        $$ = $f_args;
+                        $$ = $args;
                     }
                 ;
 
@@ -6243,16 +6243,18 @@ f_arglist	: f_paren_args
 args_tail	: args_tail_basic(arg_value)
                 | args_forward
                     {
-                        ID fwd = $args_forward;
-                        if (lambda_beginning_p() ||
-                            (p->lex.lpar_beg >= 0 && p->lex.lpar_beg+1 == p->lex.paren_nest)) {
-                            yyerror0("unexpected ... in lambda argument");
-                            fwd = 0;
-                        }
-                        else {
-                            add_forwarding_args(p);
-                        }
-                        $$ = new_args_tail(p, 0, fwd, arg_FWD_BLOCK, &@args_forward);
+                        add_forwarding_args(p);
+                        $$ = new_args_tail(p, 0, $args_forward, arg_FWD_BLOCK, &@args_forward);
+                        $$->nd_ainfo.forwarding = 1;
+                    /*% ripper: [Qnil, $:args_forward, Qnil] %*/
+                    }
+                ;
+
+largs_tail	: args_tail_basic(arg_value)
+                | args_forward
+                    {
+                        yyerror1(&@args_forward, "unexpected ... in lambda argument");
+                        $$ = new_args_tail(p, 0, 0, 0, &@args_forward);
                         $$->nd_ainfo.forwarding = 1;
                     /*% ripper: [Qnil, $:args_forward, Qnil] %*/
                     }
@@ -6329,19 +6331,27 @@ args_tail	: args_tail_basic(arg_value)
                     }
                 ;
 
-f_args-opt_tail	: opt_args_tail(args_tail)
+%rule f_args-opt_tail(tail) <node_args>
+                : opt_args_tail(tail)
                 ;
 
-f_args		: args-list(arg_value, f_args-opt_tail)
-                | f_arg[pre] f_args-opt_tail[tail]
+
+%rule f_args-list(tail) <node_args>
+                : args-list(arg_value, f_args-opt_tail(tail))
+                | f_arg[pre] opt_args_tail(tail)[tail]
                     {
                         $$ = new_args(p, $pre, 0, 0, 0, $tail, &@$);
                     /*% ripper: params!($:pre, Qnil, Qnil, Qnil, *$:tail[0..2]) %*/
                     }
-                | tail-only-args(args_tail)
+                | tail-only-args(tail)
                 | f_empty_arg
                 ;
 
+f_args		: f_args-list(args_tail)
+                ;
+
+f_largs		: f_args-list(largs_tail)
+                ;
 
 args_forward	: tBDOT3
                     {
@@ -6968,6 +6978,9 @@ peek_word_at(struct parser_params *p, const char *str, size_t len, int at)
     if (lex_eol_ptr_n_p(p, ptr, len-1)) return false;
     if (memcmp(ptr, str, len)) return false;
     if (lex_eol_ptr_n_p(p, ptr, len)) return true;
+    switch (ptr[len]) {
+      case '!': case '?': return false;
+    }
     return !is_identchar(p, ptr+len, p->lex.pend, p->enc);
 }
 

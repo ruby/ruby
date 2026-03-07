@@ -11,6 +11,7 @@
 #define PRISM_CONSTANT_POOL_H
 
 #include "prism/defines.h"
+#include "prism/util/pm_arena.h"
 
 #include <assert.h>
 #include <stdbool.h>
@@ -54,20 +55,20 @@ void pm_constant_id_list_init(pm_constant_id_list_t *list);
 /**
  * Initialize a list of constant ids with a given capacity.
  *
+ * @param arena The arena to allocate from.
  * @param list The list to initialize.
  * @param capacity The initial capacity of the list.
  */
-void pm_constant_id_list_init_capacity(pm_constant_id_list_t *list, size_t capacity);
+void pm_constant_id_list_init_capacity(pm_arena_t *arena, pm_constant_id_list_t *list, size_t capacity);
 
 /**
- * Append a constant id to a list of constant ids. Returns false if any
- * potential reallocations fail.
+ * Append a constant id to a list of constant ids.
  *
+ * @param arena The arena to allocate from.
  * @param list The list to append to.
  * @param id The id to append.
- * @return Whether the append succeeded.
  */
-bool pm_constant_id_list_append(pm_constant_id_list_t *list, pm_constant_id_t id);
+void pm_constant_id_list_append(pm_arena_t *arena, pm_constant_id_list_t *list, pm_constant_id_t id);
 
 /**
  * Insert a constant id into a list of constant ids at the specified index.
@@ -86,13 +87,6 @@ void pm_constant_id_list_insert(pm_constant_id_list_t *list, size_t index, pm_co
  * @return Whether the list includes the given id.
  */
 bool pm_constant_id_list_includes(pm_constant_id_list_t *list, pm_constant_id_t id);
-
-/**
- * Free the memory associated with a list of constant ids.
- *
- * @param list The list to free.
- */
-void pm_constant_id_list_free(pm_constant_id_list_t *list);
 
 /**
  * The type of bucket in the constant pool hash map. This determines how the

@@ -169,19 +169,7 @@ class VCS
     )
     last or raise VCS::NotFoundError, "last revision not found"
     changed or raise VCS::NotFoundError, "changed revision not found"
-    if modified
-      /\A(\d+)-(\d+)-(\d+)\D(\d+):(\d+):(\d+(?:\.\d+)?)\s*(?:Z|([-+]\d\d)(\d\d))\z/ =~ modified or
-        raise "unknown time format - #{modified}"
-      match = $~[1..6].map { |x| x.to_i }
-      off = $7 ? "#{$7}:#{$8}" : "+00:00"
-      match << off
-      begin
-        modified = Time.new(*match)
-      rescue ArgumentError
-        modified = Time.utc(*$~[1..6]) + $7.to_i * 3600 + $8.to_i * 60
-      end
-      modified = modified.getlocal(@zone)
-    end
+    modified &&= parse_iso_date(modified)
     return last, changed, modified, *rest
   end
 
@@ -190,9 +178,9 @@ class VCS
     modified
   end
 
-  def relative_to(path)
+  def relative_to(path, srcdir = @srcdir)
     if path
-      srcdir = File.realpath(@srcdir)
+      srcdir = File.realpath(srcdir || @srcdir)
       path = File.realdirpath(path)
       list1 = srcdir.split(%r{/})
       list2 = path.split(%r{/})
@@ -208,6 +196,20 @@ class VCS
     else
       '.'
     end
+  end
+
+  def parse_iso_date(date)
+    /\A(\d+)-(\d+)-(\d+)\D(\d+):(\d+):(\d+(?:\.\d+)?)\s*(?:Z|([-+]\d\d)(\d\d))\z/ =~ date or
+      raise "unknown time format - #{date}"
+    match = $~[1..6].map { |x| x.to_i }
+    off = $7 ? "#{$7}:#{$8}" : "+00:00"
+    match << off
+    begin
+      date = Time.new(*match)
+    rescue ArgumentError
+      date = Time.utc(*$~[1..6]) + $7.to_i * 3600 + $8.to_i * 60
+    end
+    date.getlocal(@zone)
   end
 
   def after_export(dir)
@@ -360,6 +362,11 @@ class VCS
       title = cmd_read_at(srcdir, [gitcmd + %W[log --format=%s -n1 #{upstream}..#{ref}]])
       title = nil if title.empty?
       [last, changed, modified, branch, title]
+    end
+
+    def author_date(path, srcdir = @srcdir)
+      log = cmd_read_at(srcdir, [[COMMAND, 'log', '-n1', '--pretty=%at', path]])
+      Time.at(log.to_i, in: @zone)
     end
 
     def self.revision_name(rev)

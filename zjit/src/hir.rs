@@ -1482,7 +1482,9 @@ impl Insn {
             Insn::LoadSelf { .. } => Effect::read_write(abstract_heaps::Frame, abstract_heaps::Empty),
             Insn::LoadField { .. } => Effect::read_write(abstract_heaps::Memory, abstract_heaps::Empty),
             Insn::StoreField { .. } => effects::Any,
-            Insn::WriteBarrier { .. } => effects::Any,
+            // WriteBarrier can write to object flags and mark bits in Allocator memory.
+            // This is why WriteBarrier writes to the "Memory" effect. We do not yet have a more granular specialization for flags
+            Insn::WriteBarrier { .. } => Effect::read_write(abstract_heaps::Allocator, abstract_heaps::Allocator.union(abstract_heaps::Memory)),
             Insn::SetLocal { .. } => effects::Any,
             Insn::GetSpecialSymbol { .. } => effects::Any,
             Insn::GetSpecialNumber { .. } => effects::Any,
@@ -3385,6 +3387,10 @@ impl Function {
     }
 
     pub fn load_rbasic_flags(&mut self, block: BlockId, recv: InsnId) -> InsnId {
+        // Technically this also includes the shape (_shape_id) because the (shape, flags) tuple is
+        // a (u32, u32) inside a u64 at RUBY_OFFSET_RBASIC_FLAGS (offset 0). It's fine to load the
+        // shape alongside the flags, but make sure not to *store* the shape accidentally by
+        // writing a u64.
         self.push_insn(block, Insn::LoadField { recv, id: ID!(_rbasic_flags), offset: RUBY_OFFSET_RBASIC_FLAGS, return_type: types::CUInt64 })
     }
 
@@ -4440,6 +4446,15 @@ impl Function {
         self.push_insn(block, Insn::IncrCounterPtr { counter_ptr });
     }
 
+    fn count_iseq_calls(&mut self, block: BlockId) {
+        let iseq_name = iseq_get_location(self.iseq, 0);
+        let access_counter_ptrs = crate::state::ZJITState::get_iseq_calls_count_pointers();
+        let counter_ptr = access_counter_ptrs.entry(iseq_name.to_string()).or_insert_with(|| Box::new(0));
+        let counter_ptr: &mut u64 = counter_ptr.as_mut();
+
+        self.push_insn(block, Insn::IncrCounterPtr { counter_ptr });
+    }
+
     fn count_not_annotated_cfunc(&mut self, block: BlockId, cme: *const rb_callable_method_entry_t) {
         let owner = unsafe { (*cme).owner };
         let called_id = unsafe { (*cme).called_id };
@@ -4902,6 +4917,66 @@ impl Function {
         self.infer_types();
     }
 
+    fn optimize_load_store(&mut self) {
+        let mut compile_time_heap: HashMap<(InsnId, i32), InsnId>  = HashMap::new();
+        for block in self.rpo() {
+            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
+            let mut new_insns = vec![];
+            for insn_id in old_insns {
+                let replacement_insn: InsnId = match self.find(insn_id) {
+                    Insn::StoreField { recv, offset, val, .. } => {
+                        let key = (self.chase_insn(recv), offset);
+                        let heap_entry = compile_time_heap.get(&key).copied();
+                        // TODO(Jacob): Switch from actual to partial equality
+                        if Some(val) == heap_entry {
+                            // If the value is already stored, short circuit and don't add an instruction to the block
+                            continue
+                        }
+                        // TODO(Jacob): Add TBAA to avoid removing so many entries
+                        compile_time_heap.retain(|(_, off), _| *off != offset);
+                        compile_time_heap.insert(key, val);
+                        insn_id
+                    },
+                    Insn::LoadField { recv, offset, .. } => {
+                        let key = (self.chase_insn(recv), offset);
+                        match compile_time_heap.entry(key) {
+                            std::collections::hash_map::Entry::Occupied(entry) => {
+                                // If the value is stored already, we should short circuit.
+                                // However, we need to replace insn_id with its representative in the SSA union.
+                                self.make_equal_to(insn_id, *entry.get());
+                                continue
+                            }
+                            std::collections::hash_map::Entry::Vacant(_) => {
+                                // If the value has not been accessed, cache a copy to optimize future loads or stores.
+                                compile_time_heap.insert(key, insn_id);
+                            }
+                        }
+                        insn_id
+                    }
+                    Insn::WriteBarrier { .. } => {
+                        // Currently, WriteBarrier write effects are Allocator and Memory when we'd really like them to be flags.
+                        // We don't use LoadField for mark bits so we can ignore them for now.
+                        // But flags does not exist in our effects abstract heap modeling and we don't want to add special casing to effects.
+                        // This special casing in this pass here should be removed once we refine our effects system to provide greater granularity for WriteBarrier.
+                        // TODO: use TBAA
+                        let offset = RUBY_OFFSET_RBASIC_FLAGS;
+                        compile_time_heap.retain(|(_, off), _| *off != offset);
+                        insn_id
+                    },
+                    insn => {
+                        // If an instruction affects memory and we haven't modeled it, the compile_time_heap is invalidated
+                        if insn.effects_of().includes(Effect::write(abstract_heaps::Memory)) {
+                            compile_time_heap.clear();
+                        }
+                        insn_id
+                    }
+                };
+                new_insns.push(replacement_insn);
+            }
+            self.blocks[block.0].insns = new_insns;
+        }
+    }
+
     /// Fold a binary operator on fixnums.
     fn fold_fixnum_bop(&mut self, insn_id: InsnId, left: InsnId, right: InsnId, f: impl FnOnce(Option<i64>, Option<i64>) -> Option<i64>) -> InsnId {
         f(self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value())
@@ -5011,6 +5086,18 @@ impl Function {
                         self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => l.checked_mul(r),
                             (Some(0), _) | (_, Some(0)) => Some(0),
+                            _ => None,
+                        })
+                    }
+                    Insn::FixnumDiv { left, right, .. } => {
+                        self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
+                            (Some(l), Some(r)) if l == (RUBY_FIXNUM_MIN as i64) && r == -1 => None, // Avoid Fixnum overflow
+                            (Some(_l), Some(r)) if r == 0 => None, // Avoid Divide by zero.
+                            (Some(l), Some(r)) => {
+                                let l_obj = VALUE::fixnum_from_isize(l as isize);
+                                let r_obj = VALUE::fixnum_from_isize(r as isize);
+                                Some(unsafe { rb_jit_fix_div_fix(l_obj, r_obj) }.as_fixnum())
+                            },
                             _ => None,
                         })
                     }
@@ -5252,6 +5339,28 @@ impl Function {
         }
     }
 
+    /// Remove duplicate CheckInterrupts instructions within each basic block.
+    /// Only the first CheckInterrupts in a block is needed unless an intervening
+    /// instruction writes to InterruptFlag (e.g. a call), which resets tracking.
+    fn remove_duplicate_check_interrupts(&mut self) {
+        for block_id in self.rpo() {
+            let mut seen = false;
+            let insns = std::mem::take(&mut self.blocks[block_id.0].insns);
+            let mut new_insns = Vec::with_capacity(insns.len());
+            for insn_id in insns {
+                let insn = &self.insns[insn_id.0];
+                if matches!(insn, Insn::CheckInterrupts { .. }) {
+                    if seen { continue; }
+                    seen = true;
+                } else if insn.effects_of().write_bits().overlaps(abstract_heaps::InterruptFlag) {
+                    seen = false;
+                }
+                new_insns.push(insn_id);
+            }
+            self.blocks[block_id.0].insns = new_insns;
+        }
+    }
+
     /// Return a list that has entry_block and then jit_entry_blocks
     fn entry_blocks(&self) -> Vec<BlockId> {
         let mut entry_blocks = self.jit_entry_blocks.clone();
@@ -5471,12 +5580,16 @@ impl Function {
                               || ident_equal!($name, optimize_getivar)
                               || ident_equal!($name, optimize_c_calls) {
                     Counter::compile_hir_strength_reduce_time_ns
+                } else if ident_equal!($name, optimize_load_store) {
+                    Counter::compile_hir_optimize_load_store_time_ns
                 } else if ident_equal!($name, fold_constants) {
                     Counter::compile_hir_fold_constants_time_ns
                 } else if ident_equal!($name, clean_cfg) {
                     Counter::compile_hir_clean_cfg_time_ns
                 } else if ident_equal!($name, remove_redundant_patch_points) {
                     Counter::compile_hir_remove_redundant_patch_points_time_ns
+                } else if ident_equal!($name, remove_duplicate_check_interrupts) {
+                    Counter::compile_hir_remove_duplicate_check_interrupts_time_ns
                 } else if ident_equal!($name, eliminate_dead_code) {
                     Counter::compile_hir_eliminate_dead_code_time_ns
                 } else {
@@ -5501,9 +5614,11 @@ impl Function {
         run_pass!(inline);
         run_pass!(optimize_getivar);
         run_pass!(optimize_c_calls);
+        run_pass!(optimize_load_store);
         run_pass!(fold_constants);
         run_pass!(clean_cfg);
         run_pass!(remove_redundant_patch_points);
+        run_pass!(remove_duplicate_check_interrupts);
         run_pass!(eliminate_dead_code);
 
         if should_dump {
@@ -7944,6 +8059,9 @@ fn compile_jit_entry_block(fun: &mut Function, jit_entry_idx: usize, target_bloc
     // Prepare entry_state with basic block params
     let (self_param, entry_state) = compile_jit_entry_state(fun, jit_entry_block, jit_entry_idx);
 
+    if get_option!(stats) {
+        fun.count_iseq_calls(jit_entry_block);
+    }
     // Jump to target_block
     fun.push_insn(jit_entry_block, Insn::Jump(BranchEdge { target: target_block, args: entry_state.as_args(self_param) }));
 }

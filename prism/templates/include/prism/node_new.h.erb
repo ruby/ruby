@@ -1,0 +1,42 @@
+/**
+ * @file node_new.h
+ *
+ * Static inline functions for allocating and initializing AST nodes.
+ *
+ * --
+ */
+#ifndef PRISM_NODE_NEW_H
+#define PRISM_NODE_NEW_H
+
+#include "prism/node.h"
+
+<%- nodes.each do |node| -%>
+<%- params = node.fields.map(&:c_param) -%>
+/**
+ * Allocate and initialize a new <%= node.name %> node.
+ *
+ * @param arena The arena to allocate from.
+ * @param node_id The unique identifier for this node.
+ * @param flags The flags for this node.
+ * @param location The location of this node in the source.
+<%- node.fields.each do |field| -%>
+ * @param <%= field.name %> <%= field.comment ? Prism::Template::Doxygen.verbatim(field.comment.lines.first.strip) : "The #{field.name} field." %>
+<%- end -%>
+ * @return The newly allocated and initialized node.
+ */
+static inline pm_<%= node.human %>_t *
+pm_<%= node.human %>_new(pm_arena_t *arena, uint32_t node_id, pm_node_flags_t flags, pm_location_t location<%= params.empty? ? "" : ", #{params.join(", ")}" %>) {
+    pm_<%= node.human %>_t *node = (pm_<%= node.human %>_t *) pm_arena_alloc(arena, sizeof(pm_<%= node.human %>_t), PRISM_ALIGNOF(pm_<%= node.human %>_t));
+
+    *node = (pm_<%= node.human %>_t) {
+        .base = { .type = <%= node.type %>, .flags = flags, .node_id = node_id, .location = location }<%= node.fields.empty? ? "" : "," %>
+<%- node.fields.each_with_index do |field, index| -%>
+        .<%= field.name %> = <%= field.name %><%= index < node.fields.size - 1 ? "," : "" %>
+<%- end -%>
+    };
+
+    return node;
+}
+
+<%- end -%>
+#endif

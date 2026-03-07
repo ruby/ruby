@@ -24,8 +24,8 @@ rb_cmp(VALUE x, VALUE y)
     return rb_funcallv(x, idCmp, 1, &y);
 }
 
-void
-rb_cmperr(VALUE x, VALUE y)
+static VALUE
+cmperr_subject(VALUE y)
 {
     VALUE classname;
 
@@ -35,8 +35,23 @@ rb_cmperr(VALUE x, VALUE y)
     else {
         classname = rb_obj_class(y);
     }
+    return classname;
+}
+
+void
+rb_cmperr(VALUE x, VALUE y)
+{
+    VALUE classname = cmperr_subject(y);
     rb_raise(rb_eArgError, "comparison of %"PRIsVALUE" with %"PRIsVALUE" failed",
              rb_obj_class(x), classname);
+}
+
+void
+rb_cmperr_reason(VALUE x, VALUE y, const char *reason)
+{
+    VALUE classname = cmperr_subject(y);
+    rb_raise(rb_eArgError, "comparison of %"PRIsVALUE" with %"PRIsVALUE" failed: %s",
+             rb_obj_class(x), classname, reason);
 }
 
 static VALUE

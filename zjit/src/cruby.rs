@@ -135,6 +135,7 @@ unsafe extern "C" {
     pub fn rb_str_setbyte(str: VALUE, index: VALUE, value: VALUE) -> VALUE;
     pub fn rb_str_getbyte(str: VALUE, index: VALUE) -> VALUE;
     pub fn rb_vm_splat_array(flag: VALUE, ary: VALUE) -> VALUE;
+    pub fn rb_jit_fix_div_fix(x: VALUE, y: VALUE) -> VALUE;
     pub fn rb_jit_fix_mod_fix(x: VALUE, y: VALUE) -> VALUE;
     pub fn rb_vm_concat_array(ary1: VALUE, ary2st: VALUE) -> VALUE;
     pub fn rb_vm_get_special_object(reg_ep: *const VALUE, value_type: vm_special_object_type) -> VALUE;
@@ -207,6 +208,7 @@ pub use rb_vm_ci_kwarg as vm_ci_kwarg;
 pub use rb_METHOD_ENTRY_VISI as METHOD_ENTRY_VISI;
 pub use rb_RCLASS_ORIGIN as RCLASS_ORIGIN;
 pub use rb_vm_get_special_object as vm_get_special_object;
+pub use rb_jit_fix_div_fix as rb_fix_div_fix;
 pub use rb_jit_fix_mod_fix as rb_fix_mod_fix;
 
 /// Helper so we can get a Rust string for insn_name()

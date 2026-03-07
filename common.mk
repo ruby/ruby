@@ -101,6 +101,7 @@ PRISM_FILES = prism/api_node.$(OBJEXT) \
 		prism/serialize.$(OBJEXT) \
 		prism/static_literals.$(OBJEXT) \
 		prism/token_type.$(OBJEXT) \
+		prism/util/pm_arena.$(OBJEXT) \
 		prism/util/pm_buffer.$(OBJEXT) \
 		prism/util/pm_char.$(OBJEXT) \
 		prism/util/pm_constant_pool.$(OBJEXT) \
@@ -1899,7 +1900,7 @@ sudo-precheck: PHONY
 update-man-date: PHONY
 	$(Q) $(BASERUBY) -I"$(tooldir)/lib" -rvcs -i -p \
 	-e 'BEGIN{@vcs=VCS.detect(ARGV.shift)}' \
-	-e '$$_.sub!(/^(\.Dd ).*/){$$1+@vcs.modified(ARGF.path).strftime("%B %d, %Y")}' \
+	-e '$$_.sub!(/^(\.Dd ).*/){$$1+@vcs.author_date(@vcs.relative_to(ARGF.path)).strftime("%B %d, %Y")}' \
 	"$(srcdir)" "$(srcdir)"/man/*.1
 
 .PHONY: ChangeLog

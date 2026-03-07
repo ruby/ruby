@@ -11,6 +11,7 @@ extern "C" {
 #endif
 
 #include "prism/defines.h"
+#include "prism/util/pm_arena.h"
 #include "prism/util/pm_buffer.h"
 #include "prism/util/pm_char.h"
 #include "prism/util/pm_integer.h"
@@ -52,8 +53,11 @@ PRISM_EXPORTED_FUNCTION const char * pm_version(void);
 /**
  * Initialize a parser with the given start and end pointers.
  *
- * The resulting parser must eventually be freed with `pm_parser_free()`.
+ * The resulting parser must eventually be freed with `pm_parser_free()`. The
+ * arena is caller-owned and must outlive the parser — `pm_parser_free()` does
+ * not free the arena.
  *
+ * @param arena The arena to use for all AST-lifetime allocations.
  * @param parser The parser to initialize.
  * @param source The source to parse.
  * @param size The size of the source.
@@ -62,7 +66,7 @@ PRISM_EXPORTED_FUNCTION const char * pm_version(void);
  *
  * \public \memberof pm_parser
  */
-PRISM_EXPORTED_FUNCTION void pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm_options_t *options);
+PRISM_EXPORTED_FUNCTION void pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, size_t size, const pm_options_t *options);
 
 /**
  * Register a callback that will be called whenever prism changes the encoding
@@ -114,6 +118,7 @@ typedef int (pm_parse_stream_feof_t)(void *stream);
 /**
  * Parse a stream of Ruby source and return the tree.
  *
+ * @param arena The arena to use for all AST-lifetime allocations.
  * @param parser The parser to use.
  * @param buffer The buffer to use.
  * @param stream The stream to parse.
@@ -124,7 +129,7 @@ typedef int (pm_parse_stream_feof_t)(void *stream);
  *
  * \public \memberof pm_parser
  */
-PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse_stream(pm_parser_t *parser, pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, pm_parse_stream_feof_t *stream_feof, const pm_options_t *options);
+PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse_stream(pm_arena_t *arena, pm_parser_t *parser, pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, pm_parse_stream_feof_t *stream_feof, const pm_options_t *options);
 
 // We optionally support serializing to a binary string. For systems that don't
 // want or need this functionality, it can be turned off with the
@@ -333,24 +338,26 @@ PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_method_name(const uint
  * In order to parse Ruby code, the structures and functions that you're going
  * to want to use and be aware of are:
  *
+ * * `pm_arena_t` - the arena allocator for AST-lifetime memory
  * * `pm_parser_t` - the main parser structure
  * * `pm_parser_init()` - initialize a parser
  * * `pm_parse()` - parse and return the root node
- * * `pm_node_destroy()` - deallocate the root node returned by `pm_parse()`
  * * `pm_parser_free()` - free the internal memory of the parser
+ * * `pm_arena_free()` - free all AST-lifetime memory
  *
  * Putting all of this together would look something like:
  *
  * ```c
  * void parse(const uint8_t *source, size_t length) {
+ *     pm_arena_t arena = { 0 };
  *     pm_parser_t parser;
- *     pm_parser_init(&parser, source, length, NULL);
+ *     pm_parser_init(&arena, &parser, source, length, NULL);
  *
  *     pm_node_t *root = pm_parse(&parser);
  *     printf("PARSED!\n");
  *
- *     pm_node_destroy(&parser, root);
  *     pm_parser_free(&parser);
+ *     pm_arena_free(&arena);
  * }
  * ```
  *
@@ -391,8 +398,9 @@ PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_method_name(const uint
  *
  * ```c
  * void prettyprint(const uint8_t *source, size_t length) {
+ *     pm_arena_t arena = { 0 };
  *     pm_parser_t parser;
- *     pm_parser_init(&parser, source, length, NULL);
+ *     pm_parser_init(&arena, &parser, source, length, NULL);
  *
  *     pm_node_t *root = pm_parse(&parser);
  *     pm_buffer_t buffer = { 0 };
@@ -401,8 +409,8 @@ PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_method_name(const uint
  *     printf("%*.s\n", (int) buffer.length, buffer.value);
  *
  *     pm_buffer_free(&buffer);
- *     pm_node_destroy(&parser, root);
  *     pm_parser_free(&parser);
+ *     pm_arena_free(&arena);
  * }
  * ```
  */

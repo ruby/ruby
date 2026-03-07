@@ -10555,16 +10555,13 @@ pm_iseq_compile_node(rb_iseq_t *iseq, pm_scope_node_t *node)
 void
 pm_parse_result_free(pm_parse_result_t *result)
 {
-    if (result->node.ast_node != NULL) {
-        pm_node_destroy(&result->parser, result->node.ast_node);
-    }
-
     if (result->parsed) {
         SIZED_FREE_N(result->node.constants, result->node.parser->constant_pool.size);
         pm_scope_node_destroy(&result->node);
     }
 
     pm_parser_free(&result->parser);
+    pm_arena_free(&result->arena);
     pm_string_free(&result->input);
     pm_options_free(&result->options);
 }
@@ -11440,7 +11437,7 @@ pm_parse_file(pm_parse_result_t *result, VALUE filepath, VALUE *script_lines)
 
     pm_options_version_for_current_ruby_set(&result->options);
 
-    pm_parser_init(&result->parser, pm_string_source(&result->input), pm_string_length(&result->input), &result->options);
+    pm_parser_init(&result->arena, &result->parser, pm_string_source(&result->input), pm_string_length(&result->input), &result->options);
     pm_node_t *node = pm_parse(&result->parser);
 
     VALUE error = pm_parse_process(result, node, script_lines);
@@ -11500,7 +11497,7 @@ pm_parse_string(pm_parse_result_t *result, VALUE source, VALUE filepath, VALUE *
 
     pm_options_version_for_current_ruby_set(&result->options);
 
-    pm_parser_init(&result->parser, pm_string_source(&result->input), pm_string_length(&result->input), &result->options);
+    pm_parser_init(&result->arena, &result->parser, pm_string_source(&result->input), pm_string_length(&result->input), &result->options);
     pm_node_t *node = pm_parse(&result->parser);
 
     return pm_parse_process(result, node, script_lines);
@@ -11570,7 +11567,7 @@ pm_parse_stdin(pm_parse_result_t *result)
     };
 
     pm_buffer_t buffer;
-    pm_node_t *node = pm_parse_stream(&result->parser, &buffer, (void *) &wrapped_stdin, pm_parse_stdin_fgets, pm_parse_stdin_eof, &result->options);
+    pm_node_t *node = pm_parse_stream(&result->arena, &result->parser, &buffer, (void *) &wrapped_stdin, pm_parse_stdin_fgets, pm_parse_stdin_eof, &result->options);
 
     // Copy the allocated buffer contents into the input string so that it gets
     // freed. At this point we've handed over ownership, so we don't need to

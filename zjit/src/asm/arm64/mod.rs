@@ -1447,7 +1447,7 @@ mod tests {
             cbz(cb, X0, offset);
             cbz(cb, W0, offset);
         });
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: cbz x0, #0xfffffffffffffffc
         0x4: cbz w0, #0
         ");
@@ -1461,7 +1461,7 @@ mod tests {
             cbnz(cb, X20, offset);
             cbnz(cb, W20, offset);
         });
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: cbnz x20, #8
         0x4: cbnz w20, #0xc
         ");
@@ -1614,7 +1614,7 @@ mod tests {
             ldurh(cb, W10, A64Opnd::new_mem(64, X1, 0));
             ldurh(cb, W10, A64Opnd::new_mem(64, X1, 123));
         });
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: ldurh w10, [x1]
         0x4: ldurh w10, [x1, #0x7b]
         ");

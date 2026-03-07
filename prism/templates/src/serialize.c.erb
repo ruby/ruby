@@ -350,8 +350,9 @@ pm_serialize_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const 
     pm_options_t options = { 0 };
     pm_options_read(&options, data);
 
+    pm_arena_t arena = { 0 };
     pm_parser_t parser;
-    pm_parser_init(&parser, source, size, &options);
+    pm_parser_init(&arena, &parser, source, size, &options);
 
     pm_lex_callback_t lex_callback = (pm_lex_callback_t) {
         .data = (void *) buffer,
@@ -359,15 +360,15 @@ pm_serialize_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const 
     };
 
     parser.lex_callback = &lex_callback;
-    pm_node_t *node = pm_parse(&parser);
+    pm_parse(&parser);
 
     // Append 0 to mark end of tokens.
     pm_buffer_append_byte(buffer, 0);
 
     pm_serialize_metadata(&parser, buffer);
 
-    pm_node_destroy(&parser, node);
     pm_parser_free(&parser);
+    pm_arena_free(&arena);
     pm_options_free(&options);
 }
 
@@ -380,8 +381,9 @@ pm_serialize_parse_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, 
     pm_options_t options = { 0 };
     pm_options_read(&options, data);
 
+    pm_arena_t arena = { 0 };
     pm_parser_t parser;
-    pm_parser_init(&parser, source, size, &options);
+    pm_parser_init(&arena, &parser, source, size, &options);
 
     pm_lex_callback_t lex_callback = (pm_lex_callback_t) {
         .data = (void *) buffer,
@@ -394,8 +396,8 @@ pm_serialize_parse_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, 
     pm_buffer_append_byte(buffer, 0);
     pm_serialize(&parser, node, buffer);
 
-    pm_node_destroy(&parser, node);
     pm_parser_free(&parser);
+    pm_arena_free(&arena);
     pm_options_free(&options);
 }
 

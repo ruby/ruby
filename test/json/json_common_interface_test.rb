@@ -42,12 +42,6 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
       '"g":"\\"\\u0000\\u001f","h":1000.0,"i":0.001}'
   end
 
-  def test_index
-    assert_equal @json, JSON[@hash]
-    assert_equal @json, JSON[@hash_with_method_missing]
-    assert_equal @hash, JSON[@json]
-  end
-
   def test_parser
     assert_match(/::Parser\z/, JSON.parser.name)
   end
@@ -156,6 +150,8 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
     assert_equal nil, JSON.load(nil, nil, :allow_blank => true)
     assert_raise(TypeError) { JSON.load(nil, nil, :allow_blank => false) }
     assert_raise(JSON::ParserError) { JSON.load('', nil, :allow_blank => false) }
+    assert_raise(TypeError) { JSON.load([], nil, :allow_blank => true) }
+    assert_raise(TypeError) { JSON.load({}, nil, :allow_blank => true) }
   end
 
   def test_unsafe_load
@@ -285,6 +281,12 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
     assert_equal @json, JSON(@hash)
     assert_equal @json, JSON(@hash_with_method_missing)
     assert_equal @hash, JSON(@json)
+  end
+
+  def test_index
+    assert_equal @json, JSON[@hash]
+    assert_equal @json, JSON[@hash_with_method_missing]
+    assert_equal @hash, JSON[@json]
   end
 
   def test_load_file

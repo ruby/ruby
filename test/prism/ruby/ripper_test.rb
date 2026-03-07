@@ -37,6 +37,13 @@ module Prism
       ]
     end
 
+    if RUBY_VERSION.start_with?("4.")
+      incorrect += [
+        # https://bugs.ruby-lang.org/issues/21945
+        "and_or_with_suffix.txt",
+      ]
+    end
+
     # https://bugs.ruby-lang.org/issues/21669
     incorrect << "4.1/void_value.txt"
     # https://bugs.ruby-lang.org/issues/19107

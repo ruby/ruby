@@ -1799,7 +1799,7 @@ mod tests {
         asm.write_label(forward);
 
         asm.compile_with_num_regs(&mut cb, 1);
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: ldur x0, [sp]
         0x4: cmp x0, #0
         0x8: b.gt #0x10
@@ -1882,7 +1882,7 @@ mod tests {
         asm.compile_with_regs(&mut cb, vec![X3_REG]).unwrap();
 
         // Assert that only 2 instructions were written.
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: adds x3, x0, x1
         0x4: stur x3, [x2]
         ");
@@ -1898,7 +1898,7 @@ mod tests {
 
         // Testing that we pad the string to the nearest 4-byte boundary to make
         // it easier to jump over.
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: ldnp d8, d25, [x10, #-0x140]
         0x4: .byte 0x6f, 0x2c, 0x20, 0x77
         0x8: .byte 0x6f, 0x72, 0x6c, 0x64
@@ -1915,7 +1915,7 @@ mod tests {
         asm.frame_teardown(&[]);
         asm.compile_with_num_regs(&mut cb, 0);
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: stp x29, x30, [sp, #-0x10]!
         0x4: mov x29, sp
         0x8: mov sp, x29
@@ -1958,7 +1958,7 @@ mod tests {
             cb
         };
 
-        assert_disasm_snapshot!(disasms_with!("\n", cb1, cb2, cb3), @r"
+        assert_disasm_snapshot!(disasms_with!("\n", cb1, cb2, cb3), @"
         0x0: stp x29, x30, [sp, #-0x10]!
         0x4: mov x29, sp
         0x8: stp x20, x19, [sp, #-0x10]!
@@ -1989,7 +1989,7 @@ mod tests {
         0x1c: mov sp, x29
         0x20: ldp x29, x30, [sp], #0x10
         ");
-        assert_snapshot!(hexdumps!(cb1, cb2, cb3), @r"
+        assert_snapshot!(hexdumps!(cb1, cb2, cb3), @"
         fd7bbfa9fd030091f44fbfa9f5831ff8ff8300d1b44f7fa9b5835ef8bf030091fd7bc1a8
         fd7bbfa9fd030091f44fbfa9f5831ff8ffc300d1b44f7fa9b5835ef8bf030091fd7bc1a8
         fd7bbfa9fd030091f44fbfa9f657bfa9ff8300d1b44f7fa9b6577ea9bf030091fd7bc1a8
@@ -2005,7 +2005,7 @@ mod tests {
         asm.je(Target::CodePtr(target));
         asm.compile_with_num_regs(&mut cb, 0);
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: b.eq #0x50
         0x4: nop
         0x8: nop
@@ -2026,7 +2026,7 @@ mod tests {
         asm.je(Target::CodePtr(target));
         asm.compile_with_num_regs(&mut cb, 0);
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: b.ne #8
         0x4: b #0x200000
         0x8: nop
@@ -2052,7 +2052,7 @@ mod tests {
         }
 
         asm.compile_with_num_regs(&mut cb, 0);
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
             0x0: mov x0, #0x7fffffff
             0x4: add x0, sp, x0
             0x8: mov x0, #8
@@ -2084,7 +2084,7 @@ mod tests {
         asm.store(Opnd::mem(VALUE_BITS, NATIVE_STACK_PTR, 0), result);
 
         asm.compile_with_num_regs(&mut cb, 1);
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: ldur x0, [sp]
         0x4: mov x16, #0x1f40
         0x8: add x0, x0, x16, uxtx
@@ -2106,7 +2106,7 @@ mod tests {
         asm.store(large_mem, large_mem);
 
         asm.compile_with_num_regs(&mut cb, 0);
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: sub x16, sp, #0x305
         0x4: ldur x16, [x16]
         0x8: stur x16, [x0]
@@ -2152,7 +2152,7 @@ mod tests {
         asm.store(Opnd::mem(64, scratch_reg, 0), 0x83902.into());
 
         asm.compile_with_num_regs(&mut cb, 0);
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: mov x16, #0x3902
         0x4: movk x16, #8, lsl #16
         0x8: stur x16, [x15]
@@ -2194,7 +2194,7 @@ mod tests {
         asm.store(Opnd::mem(64, SP, 0), opnd);
 
         asm.compile_with_num_regs(&mut cb, 1);
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: adr x16, #8
         0x4: mov x0, x16
         0x8: ldnp d8, d25, [x10, #-0x140]
@@ -2215,7 +2215,7 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 1);
 
         // Assert that two instructions were written: LDUR and STUR.
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: ldur x0, [x21]
         0x4: stur x0, [x21]
         ");
@@ -2231,7 +2231,7 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 1);
 
         // Assert that three instructions were written: ADD, LDUR, and STUR.
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: add x0, x21, #0x400
         0x4: ldur x0, [x0]
         0x8: stur x0, [x21]
@@ -2248,7 +2248,7 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 1);
 
         // Assert that three instructions were written: MOVZ, ADD, LDUR, and STUR.
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: mov x0, #0x1001
         0x4: add x0, x21, x0, uxtx
         0x8: ldur x0, [x0]
@@ -2267,7 +2267,7 @@ mod tests {
 
         // Assert that only two instructions were written since the value is an
         // immediate.
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: mov x0, #4
         0x4: stur x0, [x21]
         ");
@@ -2284,7 +2284,7 @@ mod tests {
 
         // Assert that five instructions were written since the value is not an
         // immediate and needs to be loaded into a register.
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: ldr x0, #8
         0x4: b #0x10
         0x8: eon x0, x0, x30, ror #0
@@ -2303,7 +2303,7 @@ mod tests {
         // so this needs one register
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: mov x0, #0xffffffff
         0x4: tst w0, w0
         ");
@@ -2329,7 +2329,7 @@ mod tests {
         asm.store(Opnd::mem(64, Opnd::Reg(X2_REG), 0), opnd);
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: orr x0, x0, x1
         0x4: stur x0, [x2]
         ");
@@ -2344,7 +2344,7 @@ mod tests {
         asm.store(Opnd::mem(64, Opnd::Reg(X2_REG), 0), opnd);
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: lsl x0, x0, #5
         0x4: stur x0, [x2]
         ");
@@ -2359,7 +2359,7 @@ mod tests {
         asm.store(Opnd::mem(64, Opnd::Reg(X2_REG), 0), opnd);
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: asr x0, x0, #5
         0x4: stur x0, [x2]
         ");
@@ -2374,7 +2374,7 @@ mod tests {
         asm.store(Opnd::mem(64, Opnd::Reg(X2_REG), 0), opnd);
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: lsr x0, x0, #5
         0x4: stur x0, [x2]
         ");
@@ -2413,7 +2413,7 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 1);
 
         // Assert that a load and a test instruction were written.
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: mov x0, #5
         0x4: tst x0, x0
         ");
@@ -2440,7 +2440,7 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 1);
 
         // Assert that a load and a test instruction were written.
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: mov x0, #5
         0x4: tst x0, x0
         ");
@@ -2467,7 +2467,7 @@ mod tests {
         asm.cmp(shape_opnd, Opnd::UImm(4097));
         asm.compile_with_num_regs(&mut cb, 2);
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: ldur w0, [x0, #6]
         0x4: mov x1, #0x1001
         0x8: cmp w0, w1
@@ -2483,7 +2483,7 @@ mod tests {
         asm.store(shape_opnd, Opnd::UImm(4097));
         asm.compile_with_num_regs(&mut cb, 2);
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: mov x16, #0x1001
         0x4: sturh w16, [x0]
         ");
@@ -2498,7 +2498,7 @@ mod tests {
         asm.store(shape_opnd, Opnd::UImm(4097));
         asm.compile_with_num_regs(&mut cb, 2);
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: mov x16, #0x1001
         0x4: stur w16, [x0, #6]
         ");
@@ -2640,7 +2640,7 @@ mod tests {
         asm.store(Opnd::mem(8, C_RET_OPND, 0), Opnd::mem(8, C_RET_OPND, 8));
         asm.compile_with_num_regs(&mut cb, 0); // spill every VReg
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: ldurb w16, [x0, #8]
         0x4: sturb w16, [x0]
         ");
@@ -2846,7 +2846,7 @@ mod tests {
         asm.mov(C_RET_OPND, out_vreg);
         asm.compile_with_num_regs(&mut cb, 0); // spill every VReg
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: mov x16, #1
         0x4: stur x16, [x29, #-8]
         0x8: ldur x15, [x29, #-8]
@@ -2864,7 +2864,7 @@ mod tests {
         let _ = asm.load(Opnd::mem(16, C_RET_OPND, 0x200));
         asm.compile(&mut cb).unwrap();
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: add x0, x0, #0x200
         0x4: ldurh w0, [x0]
         ");
@@ -2878,7 +2878,7 @@ mod tests {
         let _ = asm.load(Opnd::mem(32, C_RET_OPND, 0x200));
         asm.compile(&mut cb).unwrap();
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: add x0, x0, #0x200
         0x4: ldur w0, [x0]
         ");
@@ -2892,7 +2892,7 @@ mod tests {
         let _ = asm.load(Opnd::mem(64, C_RET_OPND, 0x200));
         asm.compile(&mut cb).unwrap();
 
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: add x0, x0, #0x200
         0x4: ldur x0, [x0]
         ");

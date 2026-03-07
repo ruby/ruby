@@ -52,3 +52,11 @@ foo lambda { |
 }
 
 foo do |bar,| end
+
+foo bar baz, qux do end
+
+foo.bar baz do end
+
+foo.bar baz do end.qux quux do end
+
+foo bar, baz do |x| x end
