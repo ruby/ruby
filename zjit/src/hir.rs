@@ -2214,7 +2214,7 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
     let mut can_send = true;
     let mut count_failure = |counter| {
         can_send = false;
-        function.push_insn(block, Insn::IncrCounter(counter));
+        function.count(block, counter);
     };
     let params = unsafe { iseq.params() };
 
@@ -2518,6 +2518,12 @@ impl Function {
         }
         self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass }, state });
         true
+    }
+
+    pub fn count(&mut self, block: BlockId, counter: Counter) {
+        if get_option!(stats) {
+            self.push_insn(block, Insn::IncrCounter(counter));
+        }
     }
 
     /// Return a copy of the instruction where the instruction and its operands have been read from
@@ -3338,14 +3344,14 @@ impl Function {
 
     fn count_complex_call_features(&mut self, block: BlockId, ci_flags: c_uint) {
         use Counter::*;
-        if 0 != ci_flags & VM_CALL_ARGS_SPLAT     { self.push_insn(block, Insn::IncrCounter(complex_arg_pass_caller_splat));      }
-        if 0 != ci_flags & VM_CALL_ARGS_BLOCKARG  { self.push_insn(block, Insn::IncrCounter(complex_arg_pass_caller_blockarg));   }
-        if 0 != ci_flags & VM_CALL_KWARG          { self.push_insn(block, Insn::IncrCounter(complex_arg_pass_caller_kwarg));      }
-        if 0 != ci_flags & VM_CALL_KW_SPLAT       { self.push_insn(block, Insn::IncrCounter(complex_arg_pass_caller_kw_splat));   }
-        if 0 != ci_flags & VM_CALL_TAILCALL       { self.push_insn(block, Insn::IncrCounter(complex_arg_pass_caller_tailcall));   }
-        if 0 != ci_flags & VM_CALL_SUPER          { self.push_insn(block, Insn::IncrCounter(complex_arg_pass_caller_super));      }
-        if 0 != ci_flags & VM_CALL_ZSUPER         { self.push_insn(block, Insn::IncrCounter(complex_arg_pass_caller_zsuper));     }
-        if 0 != ci_flags & VM_CALL_FORWARDING     { self.push_insn(block, Insn::IncrCounter(complex_arg_pass_caller_forwarding)); }
+        if 0 != ci_flags & VM_CALL_ARGS_SPLAT     { self.count(block, complex_arg_pass_caller_splat);      }
+        if 0 != ci_flags & VM_CALL_ARGS_BLOCKARG  { self.count(block, complex_arg_pass_caller_blockarg);   }
+        if 0 != ci_flags & VM_CALL_KWARG          { self.count(block, complex_arg_pass_caller_kwarg);      }
+        if 0 != ci_flags & VM_CALL_KW_SPLAT       { self.count(block, complex_arg_pass_caller_kw_splat);   }
+        if 0 != ci_flags & VM_CALL_TAILCALL       { self.count(block, complex_arg_pass_caller_tailcall);   }
+        if 0 != ci_flags & VM_CALL_SUPER          { self.count(block, complex_arg_pass_caller_super);      }
+        if 0 != ci_flags & VM_CALL_ZSUPER         { self.count(block, complex_arg_pass_caller_zsuper);     }
+        if 0 != ci_flags & VM_CALL_FORWARDING     { self.count(block, complex_arg_pass_caller_forwarding); }
     }
 
     fn rewrite_if_frozen(&mut self, block: BlockId, orig_insn_id: InsnId, self_val: InsnId, klass: u32, bop: u32, state: InsnId) {
@@ -4001,7 +4007,7 @@ impl Function {
                                         assert_ne!(block, tmp_block);
                                         let insns = std::mem::take(&mut self.blocks[tmp_block.0].insns);
                                         self.blocks[block.0].insns.extend(insns);
-                                        self.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
+                                        self.count(block, Counter::inline_cfunc_optimized_send_count);
                                         self.make_equal_to(insn_id, replacement);
                                         if self.type_of(replacement).bit_equal(types::Any) {
                                             // Not set yet; infer type
@@ -4017,7 +4023,7 @@ impl Function {
                                     let elidable = props.elidable;
                                     // Filter for a leaf and GC free function
                                     let ccall = if props.leaf && props.no_gc {
-                                        self.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
+                                        self.count(block, Counter::inline_cfunc_optimized_send_count);
                                         self.push_insn(block, Insn::CCall { cfunc: cfunc_ptr, recv, args, name, return_type, elidable })
                                     } else {
                                         if get_option!(stats) {
@@ -4051,7 +4057,7 @@ impl Function {
                                         emit_super_call_guards(self, block, super_cme, current_cme, mid, state);
                                         let insns = std::mem::take(&mut self.blocks[tmp_block.0].insns);
                                         self.blocks[block.0].insns.extend(insns);
-                                        self.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
+                                        self.count(block, Counter::inline_cfunc_optimized_send_count);
                                         self.make_equal_to(insn_id, replacement);
                                         if self.type_of(replacement).bit_equal(types::Any) {
                                             // Not set yet; infer type
@@ -4067,7 +4073,7 @@ impl Function {
                                     let elidable = props.elidable;
                                     // Filter for a leaf and GC free function
                                     let ccall = if props.leaf && props.no_gc {
-                                        self.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
+                                        self.count(block, Counter::inline_cfunc_optimized_send_count);
                                         self.push_insn(block, Insn::CCall { cfunc: cfunc_ptr, recv, args, name, return_type, elidable })
                                     } else {
                                         if get_option!(stats) {
@@ -4131,20 +4137,20 @@ impl Function {
                         };
                         match value {
                             IseqReturn::LocalVariable(idx) => {
-                                self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
+                                self.count(block, Counter::inline_iseq_optimized_send_count);
                                 self.make_equal_to(insn_id, args[idx as usize]);
                             }
                             IseqReturn::Value(value) => {
-                                self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
+                                self.count(block, Counter::inline_iseq_optimized_send_count);
                                 let replacement = self.push_insn(block, Insn::Const { val: Const::Value(value) });
                                 self.make_equal_to(insn_id, replacement);
                             }
                             IseqReturn::Receiver => {
-                                self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
+                                self.count(block, Counter::inline_iseq_optimized_send_count);
                                 self.make_equal_to(insn_id, recv);
                             }
                             IseqReturn::InvokeLeafBuiltin(bf, return_type) => {
-                                self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
+                                self.count(block, Counter::inline_iseq_optimized_send_count);
                                 let replacement = self.push_insn(block, Insn::InvokeBuiltin {
                                     bf,
                                     recv,
@@ -4192,18 +4198,18 @@ impl Function {
                         let frame_state = self.frame_state(state);
                         let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.insn_idx) else {
                             // No (monomorphic/skewed polymorphic) profile info
-                            self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_not_monomorphic));
+                            self.count(block, Counter::getivar_fallback_not_monomorphic);
                             self.push_insn_id(block, insn_id); continue;
                         };
                         if recv_type.flags().is_immediate() {
                             // Instance variable lookups on immediate values are always nil
-                            self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_immediate));
+                            self.count(block, Counter::getivar_fallback_immediate);
                             self.push_insn_id(block, insn_id); continue;
                         }
                         assert!(recv_type.shape().is_valid());
                         if recv_type.shape().is_too_complex() {
                             // too-complex shapes can't use index access
-                            self.push_insn(block, Insn::IncrCounter(Counter::getivar_fallback_too_complex));
+                            self.count(block, Counter::getivar_fallback_too_complex);
                             self.push_insn_id(block, insn_id); continue;
                         }
                         let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
@@ -4310,23 +4316,23 @@ impl Function {
                         let frame_state = self.frame_state(state);
                         let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.insn_idx) else {
                             // No (monomorphic/skewed polymorphic) profile info
-                            self.push_insn(block, Insn::IncrCounter(Counter::definedivar_fallback_not_monomorphic));
+                            self.count(block, Counter::definedivar_fallback_not_monomorphic);
                             self.push_insn_id(block, insn_id); continue;
                         };
                         if recv_type.flags().is_immediate() {
                             // Instance variable lookups on immediate values are always nil
-                            self.push_insn(block, Insn::IncrCounter(Counter::definedivar_fallback_immediate));
+                            self.count(block, Counter::definedivar_fallback_immediate);
                             self.push_insn_id(block, insn_id); continue;
                         }
                         assert!(recv_type.shape().is_valid());
                         if !recv_type.flags().is_t_object() {
                             // Check if the receiver is a T_OBJECT
-                            self.push_insn(block, Insn::IncrCounter(Counter::definedivar_fallback_not_t_object));
+                            self.count(block, Counter::definedivar_fallback_not_t_object);
                             self.push_insn_id(block, insn_id); continue;
                         }
                         if recv_type.shape().is_too_complex() {
                             // too-complex shapes can't use index access
-                            self.push_insn(block, Insn::IncrCounter(Counter::definedivar_fallback_too_complex));
+                            self.count(block, Counter::definedivar_fallback_too_complex);
                             self.push_insn_id(block, insn_id); continue;
                         }
                         let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
@@ -4347,28 +4353,28 @@ impl Function {
                         let frame_state = self.frame_state(state);
                         let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.insn_idx) else {
                             // No (monomorphic/skewed polymorphic) profile info
-                            self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_not_monomorphic));
+                            self.count(block, Counter::setivar_fallback_not_monomorphic);
                             self.push_insn_id(block, insn_id); continue;
                         };
                         if recv_type.flags().is_immediate() {
                             // Instance variable lookups on immediate values are always nil
-                            self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_immediate));
+                            self.count(block, Counter::setivar_fallback_immediate);
                             self.push_insn_id(block, insn_id); continue;
                         }
                         assert!(recv_type.shape().is_valid());
                         if !recv_type.flags().is_t_object() {
                             // Check if the receiver is a T_OBJECT
-                            self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_not_t_object));
+                            self.count(block, Counter::setivar_fallback_not_t_object);
                             self.push_insn_id(block, insn_id); continue;
                         }
                         if recv_type.shape().is_too_complex() {
                             // too-complex shapes can't use index access
-                            self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_too_complex));
+                            self.count(block, Counter::setivar_fallback_too_complex);
                             self.push_insn_id(block, insn_id); continue;
                         }
                         if recv_type.shape().is_frozen() {
                             // Can't set ivars on frozen objects
-                            self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_frozen));
+                            self.count(block, Counter::setivar_fallback_frozen);
                             self.push_insn_id(block, insn_id); continue;
                         }
                         let mut ivar_index: u16 = 0;
@@ -4385,7 +4391,7 @@ impl Function {
                             let new_shape_too_complex = unsafe { rb_jit_shape_too_complex_p(next_shape_id.0) };
                             // TODO(max): Is it OK to bail out here after making a shape transition?
                             if new_shape_too_complex {
-                                self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_new_shape_too_complex));
+                                self.count(block, Counter::setivar_fallback_new_shape_too_complex);
                                 self.push_insn_id(block, insn_id); continue;
                             }
                             let ivar_result = unsafe { rb_shape_get_iv_index(next_shape_id.0, id, &mut ivar_index) };
@@ -4396,7 +4402,7 @@ impl Function {
                             // reallocate it.
                             let needs_extension = next_capacity != current_capacity;
                             if needs_extension {
-                                self.push_insn(block, Insn::IncrCounter(Counter::setivar_fallback_new_shape_needs_extension));
+                                self.count(block, Counter::setivar_fallback_new_shape_needs_extension);
                                 self.push_insn_id(block, insn_id); continue;
                             }
                             // Fall through to emitting the ivar write
@@ -4744,7 +4750,7 @@ impl Function {
                         assert_ne!(block, tmp_block);
                         let insns = std::mem::take(&mut fun.blocks[tmp_block.0].insns);
                         fun.blocks[block.0].insns.extend(insns);
-                        fun.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
+                        fun.count(block, Counter::inline_cfunc_optimized_send_count);
                         fun.make_equal_to(send_insn_id, replacement);
                         if fun.type_of(replacement).bit_equal(types::Any) {
                             // Not set yet; infer type
@@ -4761,7 +4767,7 @@ impl Function {
                     let elidable = props.elidable;
                     // Filter for a leaf and GC free function
                     if props.leaf && props.no_gc {
-                        fun.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
+                        fun.count(block, Counter::inline_cfunc_optimized_send_count);
                         let ccall = fun.push_insn(block, Insn::CCall { cfunc, recv, args, name, return_type, elidable });
                         fun.make_equal_to(send_insn_id, ccall);
                     } else {
@@ -4826,7 +4832,7 @@ impl Function {
                             assert_ne!(block, tmp_block);
                             let insns = std::mem::take(&mut fun.blocks[tmp_block.0].insns);
                             fun.blocks[block.0].insns.extend(insns);
-                            fun.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
+                            fun.count(block, Counter::inline_cfunc_optimized_send_count);
                             fun.make_equal_to(send_insn_id, replacement);
                             if fun.type_of(replacement).bit_equal(types::Any) {
                                 // Not set yet; infer type
@@ -4899,7 +4905,7 @@ impl Function {
                             assert_ne!(block, tmp_block);
                             let insns = std::mem::take(&mut self.blocks[tmp_block.0].insns);
                             self.blocks[block.0].insns.extend(insns);
-                            self.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
+                            self.count(block, Counter::inline_cfunc_optimized_send_count);
                             self.make_equal_to(insn_id, replacement);
                             if self.type_of(replacement).bit_equal(types::Any) {
                                 // Not set yet; infer type
@@ -6747,21 +6753,21 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             if summary.is_monomorphic() {
                                 let obj = summary.bucket(0).class();
                                 if unsafe { rb_IMEMO_TYPE_P(obj, imemo_iseq) == 1 } {
-                                    fun.push_insn(block, Insn::IncrCounter(Counter::invokeblock_handler_monomorphic_iseq));
+                                    fun.count(block, Counter::invokeblock_handler_monomorphic_iseq);
                                 } else if unsafe { rb_IMEMO_TYPE_P(obj, imemo_ifunc) == 1 } {
-                                    fun.push_insn(block, Insn::IncrCounter(Counter::invokeblock_handler_monomorphic_ifunc));
+                                    fun.count(block, Counter::invokeblock_handler_monomorphic_ifunc);
                                 } else {
-                                    fun.push_insn(block, Insn::IncrCounter(Counter::invokeblock_handler_monomorphic_other));
+                                    fun.count(block, Counter::invokeblock_handler_monomorphic_other);
                                 }
                             } else if summary.is_skewed_polymorphic() || summary.is_polymorphic() {
-                                fun.push_insn(block, Insn::IncrCounter(Counter::invokeblock_handler_polymorphic));
+                                fun.count(block, Counter::invokeblock_handler_polymorphic);
                             } else if summary.is_skewed_megamorphic() || summary.is_megamorphic() {
-                                fun.push_insn(block, Insn::IncrCounter(Counter::invokeblock_handler_megamorphic));
+                                fun.count(block, Counter::invokeblock_handler_megamorphic);
                             } else {
-                                fun.push_insn(block, Insn::IncrCounter(Counter::invokeblock_handler_no_profiles));
+                                fun.count(block, Counter::invokeblock_handler_no_profiles);
                             }
                         } else {
-                            fun.push_insn(block, Insn::IncrCounter(Counter::invokeblock_handler_no_profiles));
+                            fun.count(block, Counter::invokeblock_handler_no_profiles);
                         }
                     }
                 }
@@ -6774,25 +6780,25 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         if summary.is_monomorphic() {
                             let obj = summary.bucket(0).class();
                             if unsafe { rb_IMEMO_TYPE_P(obj, imemo_iseq) == 1} {
-                                fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_iseq));
+                                fun.count(block, Counter::getblockparamproxy_handler_iseq);
                             } else if unsafe { rb_IMEMO_TYPE_P(obj, imemo_ifunc) == 1} {
-                                fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_ifunc));
+                                fun.count(block, Counter::getblockparamproxy_handler_ifunc);
                             }
                             else if obj.nil_p() {
-                                fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_nil));
+                                fun.count(block, Counter::getblockparamproxy_handler_nil);
                             }
                             else if obj.symbol_p() {
-                                fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_symbol));
+                                fun.count(block, Counter::getblockparamproxy_handler_symbol);
                             } else if unsafe { rb_obj_is_proc(obj).test() } {
-                                fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_proc));
+                                fun.count(block, Counter::getblockparamproxy_handler_proc);
                             }
                         } else if summary.is_polymorphic() || summary.is_skewed_polymorphic() {
-                          fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_polymorphic));
+                          fun.count(block, Counter::getblockparamproxy_handler_polymorphic);
                         } else if summary.is_megamorphic() || summary.is_skewed_megamorphic() {
-                          fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_megamorphic));
+                          fun.count(block, Counter::getblockparamproxy_handler_megamorphic);
                         }
                     } else {
-                        fun.push_insn(block, Insn::IncrCounter(Counter::getblockparamproxy_handler_no_profiles));
+                        fun.count(block, Counter::getblockparamproxy_handler_no_profiles);
                     }
                 }
             }
@@ -8889,7 +8895,6 @@ mod graphviz_tests {
         <TR><TD ALIGN="left" PORT="v28">v28:Fixnum = GuardType v12, Fixnum&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v29">v29:Fixnum = GuardType v13, Fixnum&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v30">v30:Fixnum = FixnumOr v28, v29&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v31">IncrCounter inline_cfunc_optimized_send_count&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v23">CheckInterrupts&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v24">Return v30&nbsp;</TD></TR>
         </TABLE>>];
