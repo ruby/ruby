@@ -11080,7 +11080,6 @@ mod hir_opt_tests {
           v29:StringSubclass[class_exact:C] = GuardType v12, StringSubclass[class_exact:C]
           v30:String = GuardType v13, String
           v31:BoolExact = StringEqual v29, v30
-          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v31
         ");
@@ -11115,7 +11114,6 @@ mod hir_opt_tests {
           v29:StringExact = GuardType v12, StringExact
           v30:String = GuardType v13, String
           v31:BoolExact = StringEqual v29, v30
-          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v31
         ");
@@ -11148,7 +11146,6 @@ mod hir_opt_tests {
           v28:StringExact = GuardType v12, StringExact
           v29:String = GuardType v13, String
           v30:BoolExact = StringEqual v28, v29
-          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v30
         ");
@@ -11183,7 +11180,6 @@ mod hir_opt_tests {
           v28:StringSubclass[class_exact:C] = GuardType v12, StringSubclass[class_exact:C]
           v29:String = GuardType v13, String
           v30:BoolExact = StringEqual v28, v29
-          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v30
         ");
@@ -11218,7 +11214,6 @@ mod hir_opt_tests {
           v28:StringExact = GuardType v12, StringExact
           v29:String = GuardType v13, String
           v30:BoolExact = StringEqual v28, v29
-          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v30
         ");
@@ -11248,10 +11243,9 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(String@0x1008, ==@0x1010, cme:0x1018)
           v26:StringExact = GuardType v10, StringExact
           v27:String = GuardType v10, String
-          v30:TrueClass = Const Value(true)
-          IncrCounter inline_cfunc_optimized_send_count
+          v29:TrueClass = Const Value(true)
           CheckInterrupts
-          Return v30
+          Return v29
         ");
     }
 
@@ -11279,10 +11273,9 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(String@0x1008, ===@0x1010, cme:0x1018)
           v25:StringExact = GuardType v10, StringExact
           v26:String = GuardType v10, String
-          v29:TrueClass = Const Value(true)
-          IncrCounter inline_cfunc_optimized_send_count
+          v28:TrueClass = Const Value(true)
           CheckInterrupts
-          Return v29
+          Return v28
         ");
     }
 
@@ -11314,10 +11307,9 @@ mod hir_opt_tests {
           v14:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           PatchPoint NoSingletonClass(String@0x1008)
           PatchPoint MethodRedefined(String@0x1008, ==@0x1010, cme:0x1018)
-          v32:TrueClass = Const Value(true)
-          IncrCounter inline_cfunc_optimized_send_count
+          v31:TrueClass = Const Value(true)
           CheckInterrupts
-          Return v32
+          Return v31
         ");
     }
 
@@ -11347,15 +11339,14 @@ mod hir_opt_tests {
           v14:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint NoSingletonClass(String@0x1010)
           PatchPoint MethodRedefined(String@0x1010, ==@0x1018, cme:0x1020)
-          v28:FalseClass = Const Value(false)
-          IncrCounter inline_cfunc_optimized_send_count
+          v27:FalseClass = Const Value(false)
           CheckInterrupts
-          Return v28
+          Return v27
         ");
     }
 
     #[test]
-    fn test_fold_string_equal_distinct_string_literals_true() {
+    fn test_not_fold_string_equal_true_without_pragma() {
         eval(r#"
             def test
               "a" == "a"
@@ -11381,15 +11372,14 @@ mod hir_opt_tests {
           v14:StringExact = StringCopy v13
           PatchPoint NoSingletonClass(String@0x1008)
           PatchPoint MethodRedefined(String@0x1008, ==@0x1010, cme:0x1018)
-          v28:TrueClass = Const Value(true)
-          IncrCounter inline_cfunc_optimized_send_count
+          v26:BoolExact = StringEqual v11, v14
           CheckInterrupts
-          Return v28
+          Return v26
         ");
     }
 
     #[test]
-    fn test_fold_string_equal_distinct_string_literals_false() {
+    fn test_not_fold_string_equal_false_without_pragma() {
         eval(r#"
             def test
               "a" == "b"
@@ -11415,10 +11405,119 @@ mod hir_opt_tests {
           v14:StringExact = StringCopy v13
           PatchPoint NoSingletonClass(String@0x1010)
           PatchPoint MethodRedefined(String@0x1010, ==@0x1018, cme:0x1020)
-          v28:FalseClass = Const Value(false)
-          IncrCounter inline_cfunc_optimized_send_count
+          v26:BoolExact = StringEqual v11, v14
           CheckInterrupts
-          Return v28
+          Return v26
+        ");
+    }
+
+    #[test]
+    fn test_fold_string_equal_true_with_pragma() {
+        eval(r#"
+            # frozen_string_literal: true
+            def test
+              "a" == "a"
+            end
+
+            test
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v12:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, ==@0x1010, cme:0x1018)
+          v25:TrueClass = Const Value(true)
+          CheckInterrupts
+          Return v25
+        ");
+    }
+
+    #[test]
+    fn test_fold_string_equal_false_with_pragma() {
+        eval(r#"
+            # frozen_string_literal: true
+            def test
+              "a" == "b"
+            end
+
+            test
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v12:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint NoSingletonClass(String@0x1010)
+          PatchPoint MethodRedefined(String@0x1010, ==@0x1018, cme:0x1020)
+          v25:FalseClass = Const Value(false)
+          CheckInterrupts
+          Return v25
+        ");
+    }
+
+    #[test]
+    fn test_not_fold_string_equal_after_string_append_mutation() {
+        eval(r#"
+            def test
+              a = "a"
+              b = "a"
+              a << "a"
+              a == b
+            end
+
+            test
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          v3:NilClass = Const Value(nil)
+          Jump bb3(v1, v2, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:NilClass = Const Value(nil)
+          v8:NilClass = Const Value(nil)
+          Jump bb3(v6, v7, v8)
+        bb3(v10:BasicObject, v11:NilClass, v12:NilClass):
+          v16:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v17:StringExact = StringCopy v16
+          v21:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v22:StringExact = StringCopy v21
+          v27:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v28:StringExact = StringCopy v27
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, <<@0x1010, cme:0x1018)
+          v49:StringExact = StringAppend v17, v28
+          PatchPoint NoEPEscape(test)
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, ==@0x1040, cme:0x1048)
+          v53:BoolExact = StringEqual v17, v22
+          CheckInterrupts
+          Return v53
         ");
     }
 
@@ -11450,7 +11549,6 @@ mod hir_opt_tests {
           v29:StringExact = GuardType v12, StringExact
           v30:String = GuardType v13, String
           v31:BoolExact = StringEqual v29, v30
-          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v31
         ");
@@ -11483,7 +11581,6 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(String@0x1010, ==@0x1018, cme:0x1020)
           v28:String = GuardType v10, String
           v29:BoolExact = StringEqual v15, v28
-          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v29
         ");
