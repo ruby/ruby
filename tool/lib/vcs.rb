@@ -178,9 +178,9 @@ class VCS
     modified
   end
 
-  def relative_to(path)
+  def relative_to(path, srcdir = @srcdir)
     if path
-      srcdir = File.realpath(@srcdir)
+      srcdir = File.realpath(srcdir || @srcdir)
       path = File.realdirpath(path)
       list1 = srcdir.split(%r{/})
       list2 = path.split(%r{/})
