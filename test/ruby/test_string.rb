@@ -59,6 +59,32 @@ class TestString < Test::Unit::TestCase
     assert_equal(Encoding::EUC_JP, S("", capacity: 1000, encoding: "euc-jp").encoding)
   end
 
+  def test_s_new_with_capacity
+    assert_equal("hello", S("hello", capacity: 100))
+    assert_equal(__ENCODING__, S("hello", capacity: 100).encoding)
+
+    src = "hello".encode("EUC-JP")
+    assert_equal(src, S(src, capacity: 100))
+    assert_equal(Encoding::EUC_JP, S(src, capacity: 100).encoding)
+
+    result = S("hello", capacity: 100, encoding: "UTF-8")
+    assert_equal("hello", result)
+    assert_equal(Encoding::UTF_8, result.encoding)
+
+    assert_equal("", S(capacity: -1))
+    assert_equal(Encoding::ASCII_8BIT, S(capacity: -1).encoding)
+
+    assert_equal("", S(capacity: 0))
+
+    long_str = "x" * 1000
+    assert_equal(long_str, S(long_str, capacity: 1))
+
+    frozen_src = "hello".freeze
+    result = S(frozen_src, capacity: 100)
+    assert_equal("hello", result)
+    assert_not_predicate(result, :frozen?)
+  end
+
   def test_initialize
     str = S("").freeze
     assert_equal("", str.__send__(:initialize))
