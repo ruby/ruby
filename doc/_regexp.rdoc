@@ -983,11 +983,12 @@ The POSIX bracket expressions:
     /[[:space:]]/.match(' ')      # => #<MatchData " ">
     /[[:space:]]/.match("\u2005") # => #<MatchData " ">
 
-- <tt>/[[:blank:]]/</tt>: Matches <tt>/[[:space:]]/</tt> or tab character:
+- <tt>/[[:blank:]]/</tt>: Matches space or tab character (horizontal whitespace):
 
     /[[:blank:]]/.match(' ')      # => #<MatchData " ">
     /[[:blank:]]/.match("\u2005") # => #<MatchData " ">
     /[[:blank:]]/.match("\t")     # => #<MatchData "\t">
+    /[[:blank:]]/.match("\n")     # => nil
 
 - <tt>/[[:cntrl:]]/</tt>: Matches {Unicode control character}[https://www.compart.com/en/unicode/category/Cc]:
 
