@@ -885,13 +885,6 @@ struct pm_parser {
     /** Whether or not we're at the beginning of a command. */
     bool command_start;
 
-    /**
-     * Whether or not we're currently parsing the body of an endless method
-     * definition. In this context, PM_TOKEN_KEYWORD_DO_BLOCK should not be
-     * consumed by commands (it should bubble up to the outer context).
-     */
-    bool in_endless_def_body;
-
     /** Whether or not we're currently recovering from a syntax error. */
     bool recovering;
 
