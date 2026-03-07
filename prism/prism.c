@@ -1028,7 +1028,7 @@ pm_locals_order(PRISM_ATTRIBUTE_UNUSED pm_parser_t *parser, pm_locals_t *locals,
  */
 static inline pm_constant_id_t
 pm_parser_constant_id_raw(pm_parser_t *parser, const uint8_t *start, const uint8_t *end) {
-    return pm_constant_pool_insert_shared(&parser->constant_pool, start, (size_t) (end - start));
+    return pm_constant_pool_insert_shared(&parser->metadata_arena, &parser->constant_pool, start, (size_t) (end - start));
 }
 
 /**
@@ -1036,7 +1036,7 @@ pm_parser_constant_id_raw(pm_parser_t *parser, const uint8_t *start, const uint8
  */
 static inline pm_constant_id_t
 pm_parser_constant_id_owned(pm_parser_t *parser, uint8_t *start, size_t length) {
-    return pm_constant_pool_insert_owned(&parser->constant_pool, start, length);
+    return pm_constant_pool_insert_owned(&parser->metadata_arena, &parser->constant_pool, start, length);
 }
 
 /**
@@ -1044,7 +1044,7 @@ pm_parser_constant_id_owned(pm_parser_t *parser, uint8_t *start, size_t length) 
  */
 static inline pm_constant_id_t
 pm_parser_constant_id_constant(pm_parser_t *parser, const char *start, size_t length) {
-    return pm_constant_pool_insert_constant(&parser->constant_pool, (const uint8_t *) start, length);
+    return pm_constant_pool_insert_constant(&parser->metadata_arena, &parser->constant_pool, (const uint8_t *) start, length);
 }
 
 /**
@@ -2908,10 +2908,10 @@ pm_call_write_read_name_init(pm_parser_t *parser, pm_constant_id_t *read_name, p
     if (write_constant->length > 0) {
         size_t length = write_constant->length - 1;
 
-        void *memory = xmalloc(length);
+        uint8_t *memory = (uint8_t *) pm_arena_alloc(parser->arena, length, 1);
         memcpy(memory, write_constant->start, length);
 
-        *read_name = pm_constant_pool_insert_owned(&parser->constant_pool, (uint8_t *) memory, length);
+        *read_name = pm_constant_pool_insert_owned(&parser->metadata_arena, &parser->constant_pool, memory, length);
     } else {
         // We can get here if the message was missing because of a syntax error.
         *read_name = pm_parser_constant_id_constant(parser, "", 0);
@@ -12543,16 +12543,12 @@ parse_write_name(pm_parser_t *parser, pm_constant_id_t *name_field) {
     // append an =.
     pm_constant_t *constant = pm_constant_pool_id_to_constant(&parser->constant_pool, *name_field);
     size_t length = constant->length;
-    uint8_t *name = xcalloc(length + 1, sizeof(uint8_t));
-    if (name == NULL) return;
+    uint8_t *name = (uint8_t *) pm_arena_alloc(parser->arena, length + 1, 1);
 
     memcpy(name, constant->start, length);
     name[length] = '=';
 
-    // Now switch the name to the new string.
-    // This silences clang analyzer warning about leak of memory pointed by `name`.
-    // NOLINTNEXTLINE(clang-analyzer-*)
-    *name_field = pm_constant_pool_insert_owned(&parser->constant_pool, name, length + 1);
+    *name_field = pm_constant_pool_insert_owned(&parser->metadata_arena, &parser->constant_pool, name, length + 1);
 }
 
 /**
@@ -21950,7 +21946,7 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
     // This ratio will need to change if we add more constants to the constant
     // pool for another node type.
     uint32_t constant_size = ((uint32_t) size) / 95;
-    pm_constant_pool_init(&parser->constant_pool, constant_size < 4 ? 4 : constant_size);
+    pm_constant_pool_init(&parser->metadata_arena, &parser->constant_pool, constant_size < 4 ? 4 : constant_size);
 
     // Initialize the newline list. Similar to the constant pool, we're going to
     // guess at the number of newlines that we'll need based on the size of the
@@ -22150,7 +22146,6 @@ pm_parser_register_encoding_changed_callback(pm_parser_t *parser, pm_encoding_ch
 PRISM_EXPORTED_FUNCTION void
 pm_parser_free(pm_parser_t *parser) {
     pm_string_free(&parser->filepath);
-    pm_constant_pool_free(&parser->constant_pool);
     pm_arena_free(&parser->metadata_arena);
 
     while (parser->current_scope != NULL) {
