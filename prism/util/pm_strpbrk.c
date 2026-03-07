@@ -5,7 +5,7 @@
  */
 static inline void
 pm_strpbrk_invalid_multibyte_character(pm_parser_t *parser, uint32_t start, uint32_t length) {
-    pm_diagnostic_list_append_format(&parser->error_list, start, length, PM_ERR_INVALID_MULTIBYTE_CHARACTER, parser->start[start]);
+    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, start, length, PM_ERR_INVALID_MULTIBYTE_CHARACTER, parser->start[start]);
 }
 
 /**
@@ -19,7 +19,7 @@ pm_strpbrk_explicit_encoding_set(pm_parser_t *parser, uint32_t start, uint32_t l
         } else if (parser->explicit_encoding == PM_ENCODING_UTF_8_ENTRY) {
             // Not okay, we already found a Unicode escape sequence and this
             // conflicts.
-            pm_diagnostic_list_append_format(&parser->error_list, start, length, PM_ERR_MIXED_ENCODING, parser->encoding->name);
+            pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, start, length, PM_ERR_MIXED_ENCODING, parser->encoding->name);
         } else {
             // Should not be anything else.
             assert(false && "unreachable");

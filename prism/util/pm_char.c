@@ -83,7 +83,7 @@ pm_strspn_whitespace(const uint8_t *string, ptrdiff_t length) {
  * searching past the given maximum number of characters.
  */
 size_t
-pm_strspn_whitespace_newlines(const uint8_t *string, ptrdiff_t length, pm_line_offset_list_t *line_offsets, uint32_t start_offset) {
+pm_strspn_whitespace_newlines(const uint8_t *string, ptrdiff_t length, pm_arena_t *arena, pm_line_offset_list_t *line_offsets, uint32_t start_offset) {
     if (length <= 0) return 0;
 
     uint32_t size = 0;
@@ -91,7 +91,7 @@ pm_strspn_whitespace_newlines(const uint8_t *string, ptrdiff_t length, pm_line_o
 
     while (size < maximum && (pm_byte_table[string[size]] & PRISM_CHAR_BIT_WHITESPACE)) {
         if (string[size] == '\n') {
-            pm_line_offset_list_append(line_offsets, start_offset + size + 1);
+            pm_line_offset_list_append(arena, line_offsets, start_offset + size + 1);
         }
 
         size++;
