@@ -400,15 +400,9 @@ impl IseqProfile {
         self.opnd_types.get(insn_idx).map(|v| &**v)
     }
 
-    pub fn get_super_method_entry(&self, insn_idx: usize) -> Option<*const rb_callable_method_entry_t> {
-        let Some(entry) = self.super_cme.get(&insn_idx) else { return None };
-        let summary = TypeDistributionSummary::new(entry);
-
-        if summary.is_monomorphic() {
-            Some(summary.bucket(0).class.0 as *const rb_callable_method_entry_t)
-        } else {
-            None
-        }
+    pub fn get_super_method_entry_summary(&self, insn_idx: usize) -> Option<TypeDistributionSummary> {
+        let entry = self.super_cme.get(&insn_idx)?;
+        Some(TypeDistributionSummary::new(entry))
     }
 
     /// Run a given callback with every object in IseqProfile
