@@ -7316,11 +7316,13 @@ pm_char_is_magic_comment_key_delimiter(const uint8_t b) {
  */
 static inline const uint8_t *
 parser_lex_magic_comment_emacs_marker(pm_parser_t *parser, const uint8_t *cursor, const uint8_t *end) {
-    while ((cursor + 3 <= end) && (cursor = pm_memchr(cursor, '-', (size_t) (end - cursor), parser->encoding_changed, parser->encoding)) != NULL) {
-        if (cursor + 3 <= end && cursor[1] == '*' && cursor[2] == '-') {
-            return cursor;
+    // Scan for '*' as the middle character, since it is rarer than '-' in
+    // typical comments and avoids repeated memchr calls for '-' that hit
+    // dashes in words like "foo-bar".
+    while ((cursor + 3 <= end) && (cursor = pm_memchr(cursor + 1, '*', (size_t) (end - cursor - 1), parser->encoding_changed, parser->encoding)) != NULL) {
+        if (cursor[-1] == '-' && cursor + 1 < end && cursor[1] == '-') {
+            return cursor - 1;
         }
-        cursor++;
     }
     return NULL;
 }
@@ -7355,6 +7357,13 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
         } else {
             // If we have a start marker but not an end marker, then we cannot
             // have a magic comment.
+            return false;
+        }
+    } else {
+        // Non-emacs magic comments must contain a colon for `key: value`.
+        // Reject early if there is no colon to avoid scanning the entire
+        // comment character-by-character.
+        if (pm_memchr(start, ':', (size_t) (end - start), parser->encoding_changed, parser->encoding) == NULL) {
             return false;
         }
     }
