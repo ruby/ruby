@@ -51,7 +51,7 @@ $ git clone https://github.com/ruby/ruby.git
 $ git ls-remote https://github.com/ruby/ruby.git
 ```
 
-Rubyリポジトリの本来のmasterは https://git.ruby-lang.org/ruby.git にあります．
+Rubyリポジトリの本来のmasterは https://github.com/ruby/ruby.git にあります．
 コミッタはこちらを使います．
 
 ## ホームページ
