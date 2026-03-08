@@ -9658,17 +9658,24 @@ parser_lex(pm_parser_t *parser) {
             bool space_seen = false;
 
             // First, we're going to skip past any whitespace at the front of the next
-            // token.
+            // token. Skip runs of inline whitespace in bulk to avoid per-character
+            // stores back to parser->current.end.
             bool chomping = true;
             while (parser->current.end < parser->end && chomping) {
-                switch (*parser->current.end) {
-                    case ' ':
-                    case '\t':
-                    case '\f':
-                    case '\v':
-                        parser->current.end++;
+                {
+                    static const uint8_t inline_whitespace[256] = {
+                        [' '] = 1, ['\t'] = 1, ['\f'] = 1, ['\v'] = 1
+                    };
+                    const uint8_t *scan = parser->current.end;
+                    while (scan < parser->end && inline_whitespace[*scan]) scan++;
+                    if (scan > parser->current.end) {
+                        parser->current.end = scan;
                         space_seen = true;
-                        break;
+                        continue;
+                    }
+                }
+
+                switch (*parser->current.end) {
                     case '\r':
                         if (match_eol_offset(parser, 1)) {
                             chomping = false;
