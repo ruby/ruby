@@ -1778,6 +1778,227 @@ char_is_identifier_utf8(const uint8_t *b, ptrdiff_t n) {
 }
 
 /**
+ * Scan forward through ASCII identifier characters (a-z, A-Z, 0-9, _) using
+ * wide operations. Returns the number of leading ASCII identifier bytes.
+ * Callers must handle any remaining bytes (short tail or non-ASCII/UTF-8)
+ * with a byte-at-a-time loop.
+ *
+ * Up to four optimized implementations are selected at compile time, with a
+ * no-op fallback for unsupported platforms:
+ *   1. NEON — processes 16 bytes per iteration on aarch64.
+ *   2. SSE2 — processes 16 bytes per iteration on x86-64.
+ *   3. WASM SIMD — processes 16 bytes per iteration on WebAssembly.
+ *   4. SWAR — little-endian fallback, processes 8 bytes per iteration.
+ *   5. No-op — returns 0; the caller's byte-at-a-time loop handles everything.
+ */
+
+#if defined(__aarch64__) && defined(__ARM_NEON)
+#include <arm_neon.h>
+
+static inline size_t
+scan_identifier_ascii(const uint8_t *start, const uint8_t *end) {
+    const uint8_t *cursor = start;
+
+    // Nibble-based lookup tables for classifying [a-zA-Z0-9_].
+    // Each high nibble is assigned a unique bit; the low nibble table
+    // contains the OR of bits for all high nibbles that have an
+    // identifier character at that low nibble position. A byte is an
+    // identifier character iff (low_lut[lo] & high_lut[hi]) != 0.
+    const uint8x16_t low_lut = (uint8x16_t) {
+        0x15, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F,
+        0x1F, 0x1F, 0x1E, 0x0A, 0x0A, 0x0A, 0x0A, 0x0E
+    };
+    const uint8x16_t high_lut = (uint8x16_t) {
+        0x00, 0x00, 0x00, 0x01, 0x02, 0x04, 0x08, 0x10,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+    const uint8x16_t mask_0f = vdupq_n_u8(0x0F);
+
+    while (cursor + 16 <= end) {
+        uint8x16_t v = vld1q_u8(cursor);
+
+        uint8x16_t lo_class = vqtbl1q_u8(low_lut, vandq_u8(v, mask_0f));
+        uint8x16_t hi_class = vqtbl1q_u8(high_lut, vshrq_n_u8(v, 4));
+        uint8x16_t ident = vandq_u8(lo_class, hi_class);
+
+        // Fast check: if the per-byte minimum is nonzero, every byte matched.
+        if (vminvq_u8(ident) != 0) {
+            cursor += 16;
+            continue;
+        }
+
+        // Find the first non-identifier byte (zero in ident).
+        uint8x16_t is_zero = vceqq_u8(ident, vdupq_n_u8(0));
+        uint64_t lo = vgetq_lane_u64(vreinterpretq_u64_u8(is_zero), 0);
+
+        if (lo != 0) {
+            cursor += pm_ctzll(lo) / 8;
+        } else {
+            uint64_t hi = vgetq_lane_u64(vreinterpretq_u64_u8(is_zero), 1);
+            cursor += 8 + pm_ctzll(hi) / 8;
+        }
+
+        return (size_t) (cursor - start);
+    }
+
+    return (size_t) (cursor - start);
+}
+
+#elif defined(__x86_64__) && defined(__SSE2__)
+#include <emmintrin.h>
+
+static inline size_t
+scan_identifier_ascii(const uint8_t *start, const uint8_t *end) {
+    const uint8_t *cursor = start;
+
+    while (cursor + 16 <= end) {
+        __m128i v = _mm_loadu_si128((const __m128i *) cursor);
+        __m128i zero = _mm_setzero_si128();
+
+        // Unsigned range check via saturating subtraction:
+        //   byte >= lo  ⟺  saturate(lo - byte) == 0
+        //   byte <= hi  ⟺  saturate(byte - hi) == 0
+
+        // Fold case: OR with 0x20 maps A-Z to a-z.
+        __m128i lowered = _mm_or_si128(v, _mm_set1_epi8(0x20));
+        __m128i letter = _mm_and_si128(
+            _mm_cmpeq_epi8(_mm_subs_epu8(_mm_set1_epi8(0x61), lowered), zero),
+            _mm_cmpeq_epi8(_mm_subs_epu8(lowered, _mm_set1_epi8(0x7A)), zero));
+
+        __m128i digit = _mm_and_si128(
+            _mm_cmpeq_epi8(_mm_subs_epu8(_mm_set1_epi8(0x30), v), zero),
+            _mm_cmpeq_epi8(_mm_subs_epu8(v, _mm_set1_epi8(0x39)), zero));
+
+        __m128i underscore = _mm_cmpeq_epi8(v, _mm_set1_epi8(0x5F));
+
+        __m128i ident = _mm_or_si128(_mm_or_si128(letter, digit), underscore);
+        int mask = _mm_movemask_epi8(ident);
+
+        if (mask == 0xFFFF) {
+            cursor += 16;
+            continue;
+        }
+
+        cursor += pm_ctzll((uint64_t) (~mask & 0xFFFF));
+        return (size_t) (cursor - start);
+    }
+
+    return (size_t) (cursor - start);
+}
+
+#elif defined(__wasm_simd128__)
+#include <wasm_simd128.h>
+
+static inline size_t
+scan_identifier_ascii(const uint8_t *start, const uint8_t *end) {
+    const uint8_t *cursor = start;
+
+    while (cursor + 16 <= end) {
+        v128_t v = wasm_v128_load(cursor);
+
+        // Range checks via subtract-and-unsigned-compare: (v - lo) < count
+        // is true iff v is in [lo, lo + count). One subtract + one compare
+        // per range instead of two comparisons + AND.
+
+        // Fold case: OR with 0x20 maps A-Z to a-z.
+        v128_t lowered = wasm_v128_or(v, wasm_u8x16_splat(0x20));
+        v128_t letter = wasm_u8x16_lt(
+            wasm_i8x16_sub(lowered, wasm_u8x16_splat(0x61)),
+            wasm_u8x16_splat(0x1A));
+
+        v128_t digit = wasm_u8x16_lt(
+            wasm_i8x16_sub(v, wasm_u8x16_splat(0x30)),
+            wasm_u8x16_splat(0x0A));
+
+        v128_t underscore = wasm_i8x16_eq(v, wasm_u8x16_splat(0x5F));
+
+        v128_t ident = wasm_v128_or(wasm_v128_or(letter, digit), underscore);
+
+        // Fast path: if all 16 bytes are identifier chars, advance.
+        if (wasm_i8x16_all_true(ident)) {
+            cursor += 16;
+            continue;
+        }
+
+        // Extract bitmask only on the exit path to find the first non-match.
+        uint32_t mask = wasm_i8x16_bitmask(ident);
+        cursor += pm_ctzll((uint64_t) (~mask & 0xFFFF));
+        return (size_t) (cursor - start);
+    }
+
+    return (size_t) (cursor - start);
+}
+
+// The SWAR path uses pm_ctzll to find the first non-matching byte within a
+// word, which only yields the correct byte index on little-endian targets.
+// We gate on a positive little-endian check so that unknown-endianness
+// platforms safely fall through to the no-op fallback.
+#elif defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+
+/**
+ * Portable SWAR fallback — processes 8 bytes per iteration.
+ *
+ * The byte-wise range checks avoid cross-byte borrows by pre-setting the high
+ * bit of each byte before subtraction: (byte | 0x80) - lo has a minimum value
+ * of 0x80 - 0x7F = 1, so underflow (and thus a borrow into the next byte) is
+ * impossible. The result has bit 7 set if and only if byte >= lo. The same
+ * reasoning applies to the upper-bound direction.
+ */
+static inline size_t
+scan_identifier_ascii(const uint8_t *start, const uint8_t *end) {
+    static const uint64_t ones = 0x0101010101010101ULL;
+    static const uint64_t highs = 0x8080808080808080ULL;
+    const uint8_t *cursor = start;
+
+    while (cursor + 8 <= end) {
+        uint64_t word;
+        memcpy(&word, cursor, 8);
+
+        // Bail on any non-ASCII byte.
+        if (word & highs) break;
+
+        uint64_t digit = ((word | highs) - ones * 0x30) & ((ones * 0x39 | highs) - word) & highs;
+
+        // Fold upper- and lowercase together by forcing bit 5 (OR 0x20),
+        // then check the lowercase range once. A-Z maps to a-z; the
+        // only non-letter byte that could alias into [0x61,0x7A] is one
+        // whose original value was in [0x41,0x5A] — which is exactly
+        // the uppercase letters we want to match.
+        uint64_t lowered = word | (ones * 0x20);
+        uint64_t letter = ((lowered | highs) - ones * 0x61) & ((ones * 0x7A | highs) - lowered) & highs;
+
+        // Standard SWAR "has zero byte" idiom on (word XOR 0x5F) to find
+        // bytes equal to underscore. Safe from cross-byte borrows because
+        // the ASCII guard above ensures all bytes are < 0x80.
+        uint64_t xor_us = word ^ (ones * 0x5F);
+        uint64_t underscore = (xor_us - ones) & ~xor_us & highs;
+
+        uint64_t ident = digit | letter | underscore;
+
+        if (ident == highs) {
+            cursor += 8;
+            continue;
+        }
+
+        // Find the first non-identifier byte. On little-endian the first
+        // byte sits in the least-significant position.
+        uint64_t not_ident = ~ident & highs;
+        cursor += pm_ctzll(not_ident) / 8;
+        return (size_t) (cursor - start);
+    }
+
+    return (size_t) (cursor - start);
+}
+
+#else
+
+// No-op fallback for big-endian or other unsupported platforms.
+// The caller's byte-at-a-time loop handles everything.
+#define scan_identifier_ascii(start, end) ((size_t) 0)
+
+#endif
+
+/**
  * Like the above, this function is also used extremely frequently to lex all of
  * the identifiers in a source file once the first character has been found. So
  * it's important that it be as fast as possible.
@@ -8155,6 +8376,10 @@ lex_identifier(pm_parser_t *parser, bool previous_command_start) {
             current_end += width;
         }
     } else {
+        // Fast path: scan ASCII identifier bytes using wide operations.
+        current_end += scan_identifier_ascii(current_end, end);
+
+        // Byte-at-a-time fallback for the tail and any UTF-8 sequences.
         while ((width = char_is_identifier_utf8(current_end, end - current_end)) > 0) {
             current_end += width;
         }
