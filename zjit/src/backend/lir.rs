@@ -2419,38 +2419,31 @@ impl Assembler
                         new_ids.push(None);
                     }
 
-                    // Rewrite the output VReg to its physical register
-                    let out = Self::rewritten_opnd(out, assignments);
-
-                    // Move result from C_RET to where the output was allocated
-                    new_insns.push(Insn::Mov { dest: out, src: C_RET_OPND });
+                    // Save CCall result to scratch immediately, before pops
+                    // can clobber either C_RET or the output register.
+                    new_insns.push(Insn::Mov { dest: Opnd::Reg(SCRATCH_REG), src: C_RET_OPND });
                     new_ids.push(None);
 
-                    // Pop in reverse order.
-                    // Skip popping into the output register — it was just set from C_RET
-                    // and must not be clobbered by restoring a stale survivor value.
-                    let out_reg_no = if let Opnd::Reg(r) = out { Some(r.reg_no) } else { None };
-                    // Remove alignment padding first.
-                    // Use scratch register to avoid clobbering the output.
+                    // Pop alignment padding (if needed)
                     if needs_alignment {
-                        new_insns.push(Insn::CPopInto(Opnd::Reg(SCRATCH_REG)));
+                        new_insns.push(Insn::CPopInto(Opnd::Reg(ALLOC_REGS[0])));
                         new_ids.push(None);
                     }
+
+                    // Restore all survivors normally
                     for &s in survivors.iter().rev() {
                         let reg_n = match assignments[s].unwrap() {
                             Allocation::Reg(n) => n,
                             _ => unreachable!(),
                         };
-                        let reg = ALLOC_REGS[reg_n];
-                        if Some(reg.reg_no) == out_reg_no {
-                            // The output register was reused for the CCall result.
-                            // Pop into scratch instead of clobbering the result.
-                            new_insns.push(Insn::CPopInto(Opnd::Reg(SCRATCH_REG)));
-                        } else {
-                            new_insns.push(Insn::CPopInto(Opnd::Reg(reg)));
-                        }
+                        new_insns.push(Insn::CPopInto(Opnd::Reg(ALLOC_REGS[reg_n])));
                         new_ids.push(None);
                     }
+
+                    // Move result from scratch to output AFTER all pops
+                    let out = Self::rewritten_opnd(out, assignments);
+                    new_insns.push(Insn::Mov { dest: out, src: Opnd::Reg(SCRATCH_REG) });
+                    new_ids.push(None);
                 } else {
                     new_insns.push(insn);
                     new_ids.push(insn_id);
