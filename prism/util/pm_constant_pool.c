@@ -70,19 +70,55 @@ pm_constant_id_list_includes(pm_constant_id_list_t *list, pm_constant_id_t id) {
 }
 
 /**
- * A relatively simple hash function (djb2) that is used to hash strings. We are
- * optimizing here for simplicity and speed.
+ * A multiply-xorshift hash that processes input a word at a time. This is
+ * significantly faster than the byte-at-a-time djb2 hash for the short strings
+ * typical in Ruby source (~15 bytes average). Each word is mixed into the hash
+ * by XOR followed by multiplication by a large odd constant, which spreads
+ * entropy across all bits. A final xorshift fold produces the 32-bit result.
  */
 static inline uint32_t
 pm_constant_pool_hash(const uint8_t *start, size_t length) {
-    // This is a prime number used as the initial value for the hash function.
-    uint32_t value = 5381;
+    // This constant is borrowed from wyhash. It is a 64-bit odd integer with
+    // roughly equal 0/1 bits, chosen for good avalanche behavior when used in
+    // multiply-xorshift sequences.
+    static const uint64_t secret = 0x517cc1b727220a95ULL;
+    uint64_t hash = (uint64_t) length;
 
-    for (size_t index = 0; index < length; index++) {
-        value = ((value << 5) + value) + start[index];
+    const uint8_t *ptr = start;
+    size_t remaining = length;
+
+    while (remaining >= 8) {
+        uint64_t word;
+        memcpy(&word, ptr, 8);
+        hash ^= word;
+        hash *= secret;
+        ptr += 8;
+        remaining -= 8;
     }
 
-    return value;
+    if (remaining >= 4) {
+        uint32_t word;
+        memcpy(&word, ptr, 4);
+        hash ^= (uint64_t) word;
+        hash *= secret;
+        ptr += 4;
+        remaining -= 4;
+    }
+
+    if (remaining >= 2) {
+        hash ^= (uint64_t) ptr[0] | ((uint64_t) ptr[1] << 8);
+        hash *= secret;
+        ptr += 2;
+        remaining -= 2;
+    }
+
+    if (remaining >= 1) {
+        hash ^= (uint64_t) ptr[0];
+        hash *= secret;
+    }
+
+    hash ^= hash >> 32;
+    return (uint32_t) hash;
 }
 
 /**
