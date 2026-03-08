@@ -189,12 +189,7 @@ nt_thread_stack_size(void)
 static struct nt_stack_chunk_header *
 nt_alloc_thread_stack_chunk(void)
 {
-    int mmap_flags = MAP_ANONYMOUS | MAP_PRIVATE;
-#if defined(MAP_STACK) && !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__)
-    mmap_flags |= MAP_STACK;
-#endif
-
-    const char *m = (void *)mmap(NULL, MSTACK_CHUNK_SIZE, PROT_NONE, mmap_flags, -1, 0);
+    const char *m = (void *)mmap(NULL, MSTACK_CHUNK_SIZE, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
     if (m == MAP_FAILED) {
         return NULL;
     }
@@ -318,9 +313,15 @@ nt_alloc_stack(rb_vm_t *vm, void **vm_stack, void **machine_stack)
                 char *stack_start = nt_stack_chunk_get_stack_start(ch, idx);
                 size_t vm_stack_size = vm->default_params.thread_vm_stack_size;
                 size_t mstack_size = nt_thread_stack_size() - vm_stack_size - MSTACK_PAGE_SIZE;
+                char *mstack_start = stack_start + vm_stack_size + MSTACK_PAGE_SIZE;
+
+                int mstack_flags = MAP_FIXED | MAP_ANONYMOUS | MAP_PRIVATE;
+#if defined(MAP_STACK) && !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__)
+                mstack_flags |= MAP_STACK;
+#endif
 
                 if (mprotect(stack_start, vm_stack_size, PROT_READ | PROT_WRITE) != 0 ||
-                    mprotect(stack_start + vm_stack_size + MSTACK_PAGE_SIZE, mstack_size, PROT_READ | PROT_WRITE) != 0) {
+                    mmap(mstack_start, mstack_size, PROT_READ | PROT_WRITE, mstack_flags, -1, 0) == MAP_FAILED) {
                     err = errno;
                 }
                 else {
