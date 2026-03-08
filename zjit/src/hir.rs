@@ -7582,9 +7582,14 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         let entry_args = state.as_args(self_param);
                         if let Some(summary) = fun.polymorphic_summary(&profiles, recv, exit_state.insn_idx) {
                             let join_block = insn_idx_to_block.get(&insn_idx).copied().unwrap_or_else(|| fun.new_block(insn_idx));
-                            // TODO(max): Only iterate over unique classes, not unique (class, shape) pairs.
+                            let mut seen_classes = Vec::with_capacity(summary.buckets().len());
                             for &profiled_type in summary.buckets() {
                                 if profiled_type.is_empty() { break; }
+                                let class = profiled_type.class();
+                                if seen_classes.contains(&class) {
+                                    continue;
+                                }
+                                seen_classes.push(class);
                                 let expected = Type::from_profiled_type(profiled_type);
                                 let has_type = fun.push_insn(block, Insn::HasType { val: recv, expected });
                                 let iftrue_block =

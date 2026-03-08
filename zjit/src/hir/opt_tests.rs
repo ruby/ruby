@@ -7406,25 +7406,18 @@ mod hir_opt_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           v15:CBool = HasType v10, ObjectSubclass[class_exact:C]
           IfTrue v15, bb5(v9, v10, v10)
-          v24:CBool = HasType v10, ObjectSubclass[class_exact:C]
-          IfTrue v24, bb6(v9, v10, v10)
-          v33:BasicObject = Send v10, :foo # SendFallbackReason: SendWithoutBlock: polymorphic fallback
-          Jump bb4(v9, v10, v33)
+          v24:BasicObject = Send v10, :foo # SendFallbackReason: SendWithoutBlock: polymorphic fallback
+          Jump bb4(v9, v10, v24)
         bb5(v16:BasicObject, v17:BasicObject, v18:BasicObject):
           v20:ObjectSubclass[class_exact:C] = RefineType v18, ObjectSubclass[class_exact:C]
           PatchPoint NoSingletonClass(C@0x1008)
           PatchPoint MethodRedefined(C@0x1008, foo@0x1010, cme:0x1018)
-          v46:BasicObject = GetIvar v20, :@foo
-          Jump bb4(v16, v17, v46)
-        bb6(v25:BasicObject, v26:BasicObject, v27:BasicObject):
-          v29:ObjectSubclass[class_exact:C] = RefineType v27, ObjectSubclass[class_exact:C]
-          PatchPoint NoSingletonClass(C@0x1008)
-          PatchPoint MethodRedefined(C@0x1008, foo@0x1010, cme:0x1018)
-          v49:BasicObject = GetIvar v29, :@foo
-          Jump bb4(v25, v26, v49)
-        bb4(v35:BasicObject, v36:BasicObject, v37:BasicObject):
+          IncrCounter getivar_fallback_not_monomorphic
+          v37:BasicObject = GetIvar v20, :@foo
+          Jump bb4(v16, v17, v37)
+        bb4(v26:BasicObject, v27:BasicObject, v28:BasicObject):
           CheckInterrupts
-          Return v37
+          Return v28
         ");
     }
 
@@ -13433,6 +13426,55 @@ mod hir_opt_tests {
         bb4(v35:BasicObject, v36:BasicObject, v37:BasicObject):
           CheckInterrupts
           Return v37
+        ");
+    }
+
+    #[test]
+    fn specialize_polymorphic_send_iseq_duplicate_class_profiles() {
+        set_call_threshold(4);
+        eval("
+        class C
+          def foo = 3
+        end
+
+        O1 = C.new
+        O1.instance_variable_set(:@foo, 1)
+        O2 = C.new
+        O2.instance_variable_set(:@bar, 2)
+
+        def test o
+          o.foo
+        end
+
+        test O1; test O2; test O1; test O2
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:12:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:CBool = HasType v10, ObjectSubclass[class_exact:C]
+          IfTrue v15, bb5(v9, v10, v10)
+          v24:BasicObject = Send v10, :foo # SendFallbackReason: SendWithoutBlock: polymorphic fallback
+          Jump bb4(v9, v10, v24)
+        bb5(v16:BasicObject, v17:BasicObject, v18:BasicObject):
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, foo@0x1010, cme:0x1018)
+          IncrCounter inline_iseq_optimized_send_count
+          v39:Fixnum[3] = Const Value(3)
+          Jump bb4(v16, v17, v39)
+        bb4(v26:BasicObject, v27:BasicObject, v28:BasicObject):
+          CheckInterrupts
+          Return v28
         ");
     }
 
