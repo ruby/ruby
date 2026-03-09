@@ -12,6 +12,40 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+/** Bit flag for whitespace characters in pm_byte_table. */
+#define PRISM_CHAR_BIT_WHITESPACE (1 << 0)
+
+/** Bit flag for inline whitespace characters in pm_byte_table. */
+#define PRISM_CHAR_BIT_INLINE_WHITESPACE (1 << 1)
+
+/**
+ * A lookup table for classifying bytes. Each entry is a bitfield of
+ * PRISM_CHAR_BIT_* flags. Defined in pm_char.c.
+ */
+extern const uint8_t pm_byte_table[256];
+
+/**
+ * Returns true if the given character is a whitespace character.
+ *
+ * @param b The character to check.
+ * @return True if the given character is a whitespace character.
+ */
+static PRISM_FORCE_INLINE bool
+pm_char_is_whitespace(const uint8_t b) {
+    return (pm_byte_table[b] & PRISM_CHAR_BIT_WHITESPACE) != 0;
+}
+
+/**
+ * Returns true if the given character is an inline whitespace character.
+ *
+ * @param b The character to check.
+ * @return True if the given character is an inline whitespace character.
+ */
+static PRISM_FORCE_INLINE bool
+pm_char_is_inline_whitespace(const uint8_t b) {
+    return (pm_byte_table[b] & PRISM_CHAR_BIT_INLINE_WHITESPACE) != 0;
+}
+
 /**
  * Returns the number of characters at the start of the string that are
  * whitespace. Disallows searching past the given maximum number of characters.
@@ -156,21 +190,6 @@ size_t pm_strspn_regexp_option(const uint8_t *string, ptrdiff_t length);
  */
 size_t pm_strspn_binary_number(const uint8_t *string, ptrdiff_t length, const uint8_t **invalid);
 
-/**
- * Returns true if the given character is a whitespace character.
- *
- * @param b The character to check.
- * @return True if the given character is a whitespace character.
- */
-bool pm_char_is_whitespace(const uint8_t b);
-
-/**
- * Returns true if the given character is an inline whitespace character.
- *
- * @param b The character to check.
- * @return True if the given character is an inline whitespace character.
- */
-bool pm_char_is_inline_whitespace(const uint8_t b);
 
 /**
  * Returns true if the given character is a binary digit.

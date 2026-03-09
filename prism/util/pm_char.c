@@ -1,7 +1,5 @@
 #include "prism/util/pm_char.h"
 
-#define PRISM_CHAR_BIT_WHITESPACE (1 << 0)
-#define PRISM_CHAR_BIT_INLINE_WHITESPACE (1 << 1)
 #define PRISM_CHAR_BIT_REGEXP_OPTION (1 << 2)
 
 #define PRISM_NUMBER_BIT_BINARY_DIGIT (1 << 0)
@@ -13,7 +11,7 @@
 #define PRISM_NUMBER_BIT_HEXADECIMAL_DIGIT (1 << 6)
 #define PRISM_NUMBER_BIT_HEXADECIMAL_NUMBER (1 << 7)
 
-static const uint8_t pm_byte_table[256] = {
+const uint8_t pm_byte_table[256] = {
 //  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
     0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 1, 3, 3, 3, 0, 0, // 0x
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
@@ -126,21 +124,6 @@ pm_char_is_char_kind(const uint8_t b, uint8_t kind) {
     return (pm_byte_table[b] & kind) != 0;
 }
 
-/**
- * Returns true if the given character is a whitespace character.
- */
-bool
-pm_char_is_whitespace(const uint8_t b) {
-    return pm_char_is_char_kind(b, PRISM_CHAR_BIT_WHITESPACE);
-}
-
-/**
- * Returns true if the given character is an inline whitespace character.
- */
-bool
-pm_char_is_inline_whitespace(const uint8_t b) {
-    return pm_char_is_char_kind(b, PRISM_CHAR_BIT_INLINE_WHITESPACE);
-}
 
 /**
  * Scan through the string and return the number of characters at the start of
