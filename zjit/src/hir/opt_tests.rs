@@ -3592,6 +3592,7 @@ mod hir_opt_tests {
 
     #[test]
     fn dont_specialize_call_to_iseq_with_rest() {
+        enable_zjit_stats();
         eval("
             def foo(*args) = 1
             def test = foo 1
@@ -3607,17 +3608,24 @@ mod hir_opt_tests {
         bb2():
           EntryPoint JIT(0)
           v4:BasicObject = LoadArg :self@0
+          IncrCounterPtr
           Jump bb3(v4)
-        bb3(v6:BasicObject):
-          v11:Fixnum[1] = Const Value(1)
-          v13:BasicObject = Send v6, :foo, v11 # SendFallbackReason: Complex argument passing
+        bb3(v7:BasicObject):
+          IncrCounter zjit_insn_count
+          IncrCounter zjit_insn_count
+          v14:Fixnum[1] = Const Value(1)
+          IncrCounter zjit_insn_count
+          IncrCounter complex_arg_pass_param_rest
+          v17:BasicObject = Send v7, :foo, v14 # SendFallbackReason: Complex argument passing
+          IncrCounter zjit_insn_count
           CheckInterrupts
-          Return v13
+          Return v17
         ");
     }
 
     #[test]
     fn dont_specialize_call_to_post_param_iseq() {
+        enable_zjit_stats();
         eval("
             def foo(opt=80, post) = post
             def test = foo(10)
@@ -3632,12 +3640,18 @@ mod hir_opt_tests {
         bb2():
           EntryPoint JIT(0)
           v4:BasicObject = LoadArg :self@0
+          IncrCounterPtr
           Jump bb3(v4)
-        bb3(v6:BasicObject):
-          v11:Fixnum[10] = Const Value(10)
-          v13:BasicObject = Send v6, :foo, v11 # SendFallbackReason: Complex argument passing
+        bb3(v7:BasicObject):
+          IncrCounter zjit_insn_count
+          IncrCounter zjit_insn_count
+          v14:Fixnum[10] = Const Value(10)
+          IncrCounter zjit_insn_count
+          IncrCounter complex_arg_pass_param_post
+          v17:BasicObject = Send v7, :foo, v14 # SendFallbackReason: Complex argument passing
+          IncrCounter zjit_insn_count
           CheckInterrupts
-          Return v13
+          Return v17
         ");
     }
 
@@ -3908,6 +3922,7 @@ mod hir_opt_tests {
 
     #[test]
     fn dont_specialize_call_to_iseq_with_kwrest() {
+        enable_zjit_stats();
         eval("
             def foo(**args) = 1
             def test = foo(a: 1)
@@ -3923,12 +3938,18 @@ mod hir_opt_tests {
         bb2():
           EntryPoint JIT(0)
           v4:BasicObject = LoadArg :self@0
+          IncrCounterPtr
           Jump bb3(v4)
-        bb3(v6:BasicObject):
-          v11:Fixnum[1] = Const Value(1)
-          v13:BasicObject = Send v6, :foo, v11 # SendFallbackReason: Complex argument passing
+        bb3(v7:BasicObject):
+          IncrCounter zjit_insn_count
+          IncrCounter zjit_insn_count
+          v14:Fixnum[1] = Const Value(1)
+          IncrCounter zjit_insn_count
+          IncrCounter complex_arg_pass_param_kwrest
+          v17:BasicObject = Send v7, :foo, v14 # SendFallbackReason: Complex argument passing
+          IncrCounter zjit_insn_count
           CheckInterrupts
-          Return v13
+          Return v17
         ");
     }
 
@@ -4016,6 +4037,7 @@ mod hir_opt_tests {
 
     #[test]
     fn dont_specialize_call_to_iseq_with_call_kwsplat() {
+        enable_zjit_stats();
         eval("
             def foo(a:) = a
             def test = foo(**{a: 1})
@@ -4031,18 +4053,25 @@ mod hir_opt_tests {
         bb2():
           EntryPoint JIT(0)
           v4:BasicObject = LoadArg :self@0
+          IncrCounterPtr
           Jump bb3(v4)
-        bb3(v6:BasicObject):
-          v11:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v12:HashExact = HashDup v11
-          v14:BasicObject = Send v6, :foo, v12 # SendFallbackReason: Complex argument passing
+        bb3(v7:BasicObject):
+          IncrCounter zjit_insn_count
+          IncrCounter zjit_insn_count
+          v14:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v15:HashExact = HashDup v14
+          IncrCounter zjit_insn_count
+          IncrCounter complex_arg_pass_caller_kw_splat
+          v18:BasicObject = Send v7, :foo, v15 # SendFallbackReason: Complex argument passing
+          IncrCounter zjit_insn_count
           CheckInterrupts
-          Return v14
+          Return v18
         ");
     }
 
     #[test]
     fn dont_specialize_call_to_iseq_with_param_kwrest() {
+        enable_zjit_stats();
         eval("
             def foo(**kwargs) = kwargs.keys
             def test = foo
@@ -4058,11 +4087,16 @@ mod hir_opt_tests {
         bb2():
           EntryPoint JIT(0)
           v4:BasicObject = LoadArg :self@0
+          IncrCounterPtr
           Jump bb3(v4)
-        bb3(v6:BasicObject):
-          v11:BasicObject = Send v6, :foo # SendFallbackReason: Complex argument passing
+        bb3(v7:BasicObject):
+          IncrCounter zjit_insn_count
+          IncrCounter zjit_insn_count
+          IncrCounter complex_arg_pass_param_kwrest
+          v14:BasicObject = Send v7, :foo # SendFallbackReason: Complex argument passing
+          IncrCounter zjit_insn_count
           CheckInterrupts
-          Return v11
+          Return v14
         ");
     }
 
