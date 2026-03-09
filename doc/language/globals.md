@@ -133,7 +133,7 @@ These global variables store information about the most recent
 successful match in the current scope.
 
 For details and examples,
-see {Regexp Global Variables}[rdoc-ref:Regexp@Global+Variables].
+see [Regexp Global Variables][Regexp Global Variables].
 
 ### `$~` (\MatchData)
 
@@ -341,7 +341,7 @@ Aliased as `$-d`.
 ### `$VERBOSE`
 
 Initially `true` if [command-line option `-v`] or
-[`-w`][command-line option `-w`] is given, otherwise initially `false`;
+[command-line option `-w`] is given, otherwise initially `false`;
 may be set to either value, or to `nil`, in the running program.
 
 When `true`, enables Ruby warnings.
@@ -597,14 +597,15 @@ Output:
 "Baz\n"
 ```
 
+[command-line option `-0`]: rdoc-ref:language/options.md@-0-set--input-record-separator
+[command-line option `-F`]: rdoc-ref:language/options.md@-f-set-input-field-separator
+[command-line option `-a`]: rdoc-ref:language/options.md@-a-split-input-lines-into-fields
+[command-line option `-d`]: rdoc-ref:language/options.md@-d-set-debug-to-true
+[command-line option `-i`]: rdoc-ref:language/options.md@-i-set-argf-in-place-mode
+[command-line option `-l`]: rdoc-ref:language/options.md@-l-set-output-record-separator-chop-lines
+[command-line option `-p`]: rdoc-ref:language/options.md@-p--n-with-printing
+[command-line option `-v`]: rdoc-ref:language/options.md@-v-print-version-set-verbose
+[command-line option `-w`]: rdoc-ref:language/options.md@-w-synonym-for--w1
 
-[command-line option `-0`]: rdoc-ref:language/options.md@0-3A+Set+-24-2F+-28Input+Record+Separator-29
-[command-line option `-F`]: rdoc-ref:language/options.md@F-3A+Set+Input+Field+Separator
-[command-line option `-a`]: rdoc-ref:language/options.md@a-3A+Split+Input+Lines+into+Fields
-[command-line option `-d`]: rdoc-ref:language/options.md@d-3A+Set+-24DEBUG+to+true
-[command-line option `-i`]: rdoc-ref:language/options.md@i-3A+Set+ARGF+In-Place+Mode
-[command-line option `-l`]: rdoc-ref:language/options.md@l-3A+Set+Output+Record+Separator-3B+Chop+Lines
-[command-line option `-p`]: rdoc-ref:language/options.md@p-3A+-n-2C+with+Printing
-[command-line option `-v`]: rdoc-ref:language/options.md@v-3A+Print+Version-3B+Set+-24VERBOSE
-[command-line option `-w`]: rdoc-ref:language/options.md@w-3A+Synonym+for+-W1
+[Regexp Global Variables]: rdoc-ref:Regexp@Global+Variables
 
