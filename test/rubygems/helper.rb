@@ -738,7 +738,7 @@ class Gem::TestCase < Test::Unit::TestCase
   # Load a YAML string, the psych 3 way
 
   def load_yaml(yaml)
-    Gem::SafeYAML.safe_load(yaml)
+    Gem::SafeYAML.load(yaml)
   end
 
   ##
