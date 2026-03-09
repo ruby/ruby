@@ -464,10 +464,12 @@ class TestTimeout < Test::Unit::TestCase
     # Stubs Fiber.current_scheduler for the duration of the block, then restores it.
     def with_mock_scheduler(mock)
       original = Fiber.method(:current_scheduler)
+      Fiber.singleton_class.remove_method(:current_scheduler)
       Fiber.define_singleton_method(:current_scheduler) { mock }
       begin
         yield
       ensure
+        Fiber.singleton_class.remove_method(:current_scheduler)
         Fiber.define_singleton_method(:current_scheduler, original)
       end
     end
