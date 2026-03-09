@@ -678,8 +678,10 @@ RSpec.describe "bundler/inline#gemfile" do
 
     expect(out).to include("Installing psych 999")
     expect(out).to include("Installing stringio 999")
-    expect(out).to include("The psych gem was resolved to 999")
-    expect(out).to include("The stringio gem was resolved to 999")
+    if Gem.respond_to?(:use_psych?) && Gem.use_psych?
+      expect(out).to include("The psych gem was resolved to 999")
+      expect(out).to include("The stringio gem was resolved to 999")
+    end
   end
 
   it "leaves a lockfile in the same directory as the inline script alone" do
