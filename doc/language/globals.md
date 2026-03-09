@@ -133,7 +133,7 @@ These global variables store information about the most recent
 successful match in the current scope.
 
 For details and examples,
-see [Regexp Global Variables][Regexp Global Variables].
+see [Regexp Global Variables].
 
 ### `$~` (\MatchData)
 
