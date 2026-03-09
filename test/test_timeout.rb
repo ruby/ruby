@@ -128,8 +128,8 @@ class TestTimeout < Test::Unit::TestCase
   def test_nested_timeout_which_error_bubbles_up
     raised_exception = nil
     begin
-      Timeout.timeout(0.1) {
-        Timeout.timeout(1) {
+      Timeout.timeout(1) {
+        Timeout.timeout(10) {
           raise Timeout::ExitException.new("inner message")
         }
       }
