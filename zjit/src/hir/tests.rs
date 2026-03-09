@@ -4791,7 +4791,132 @@ pub mod hir_build_tests {
           Jump bb8(v67, v78)
         ");
     }
- }
+
+    #[test]
+    fn test_induce_side_exit() {
+        eval("
+          class NonTopLexicalScope
+            RubyVM = 0
+            def test
+              RubyVM::ZJIT.induce_side_exit! # lexical scope dependant -- should not recognize
+              ::RubyVM::ZJIT.induce_side_exit!
+            end
+          end
+        ");
+        assert_snapshot!(hir_string_proc("NonTopLexicalScope.instance_method(:test)"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:BasicObject = GetConstantPath 0x1000
+          v12:BasicObject = Send v10, :induce_side_exit! # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v16:BasicObject = GetConstantPath 0x1000
+          SideExit DirectiveInduced
+        ");
+    }
+
+    #[test]
+    fn test_induce_side_exit_sensitive_to_constant_state() {
+        eval("
+          def test = ::RubyVM::ZJIT.induce_side_exit!
+        ");
+        assert!(hir_string("test").contains("SideExit DirectiveInduced"));
+        eval("
+          class RubyVM
+            remove_const(:ZJIT)
+          end
+        ");
+        let hir_after_removal = hir_string("test");
+        assert_eq!(false, hir_string("test").contains("SideExit DirectiveInduced"), "should not work when the constant lookup would fail");
+        assert_snapshot!(hir_after_removal, @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:BasicObject = GetConstantPath 0x1000
+          v12:BasicObject = Send v10, :induce_side_exit! # SendFallbackReason: Uncategorized(opt_send_without_block)
+          CheckInterrupts
+          Return v12
+        ");
+    }
+
+    #[test]
+    fn test_induce_side_exit_doesnt_work_when_method_after_undef() {
+        eval("
+          class << RubyVM::ZJIT
+            undef :induce_side_exit!
+          end
+          def test = ::RubyVM::ZJIT.induce_side_exit!
+        ");
+        assert_eq!(false, hir_string("test").contains("SideExit DirectiveInduced"), "should not work after undef");
+    }
+
+    #[test]
+    fn test_induce_compile_failure_does_not_trigger_autoload() {
+        eval("
+          class RubyVM
+            remove_const(:ZJIT)
+            autoload :ZJIT, 'a-file-that-does-not-exist-as-a-trap'
+          end
+          def test = ::RubyVM::ZJIT.induce_compile_failure!
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:6:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:BasicObject = GetConstantPath 0x1000
+          v12:BasicObject = Send v10, :induce_compile_failure! # SendFallbackReason: Uncategorized(opt_send_without_block)
+          CheckInterrupts
+          Return v12
+        ");
+    }
+
+    #[test]
+    fn test_induce_compile_failure_checks_full_const_path() {
+        eval("def test = ::RubyVM::ZJIT::TooDeep.induce_compile_failure!");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:1:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:BasicObject = GetConstantPath 0x1000
+          v12:BasicObject = Send v10, :induce_compile_failure! # SendFallbackReason: Uncategorized(opt_send_without_block)
+          CheckInterrupts
+          Return v12
+        ");
+    }
+
+    #[test]
+    fn test_induce_compile_failure() {
+        eval("def test = ::RubyVM::ZJIT.induce_compile_failure!");
+        assert_compile_fails("test", ParseError::DirectiveInduced);
+    }
+}
 
  /// Test successor and predecessor set computations.
  #[cfg(test)]

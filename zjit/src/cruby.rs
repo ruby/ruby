@@ -1544,6 +1544,10 @@ pub(crate) mod ids {
         name: RUBY_FL_FREEZE
         name: RUBY_ELTS_SHARED
         name: VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM
+        name: RubyVM
+        name: ZJIT
+        name: induce_side_exit_bang       content: b"induce_side_exit!"
+        name: induce_compile_failure_bang content: b"induce_compile_failure!"
     }
 
     /// Get an CRuby `ID` to an interned string, e.g. a particular method name.
@@ -1551,7 +1555,7 @@ pub(crate) mod ids {
         ($id_name:ident) => {{
             let id = $crate::cruby::ids::$id_name.load(std::sync::atomic::Ordering::Relaxed);
             debug_assert_ne!(0, id, "ids module should be initialized");
-            ID(id)
+            $crate::cruby::ID(id)
         }}
     }
     pub(crate) use ID;

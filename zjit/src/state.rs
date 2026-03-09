@@ -3,11 +3,14 @@
 use crate::codegen::{gen_entry_trampoline, gen_exit_trampoline, gen_exit_trampoline_with_counter, gen_function_stub_hit_trampoline};
 use crate::cruby::{self, rb_bug_panic_hook, rb_vm_insn_count, src_loc, EcPtr, Qnil, Qtrue, rb_vm_insn_addr2opcode, rb_profile_frames, VALUE, VM_INSTRUCTION_SIZE, size_t, rb_gc_mark, with_vm_lock, rust_str_to_id, rb_funcallv, rb_const_get, rb_cRubyVM};
 use crate::cruby_methods;
+use cruby::{ID, rb_callable_method_entry, get_def_method_serial, rb_gc_register_mark_object};
+use std::sync::atomic::Ordering;
 use crate::invariants::Invariants;
 use crate::asm::CodeBlock;
 use crate::options::{get_option, rb_zjit_prepare_options};
 use crate::stats::{Counters, InsnCounters, SideExitLocations};
 use crate::virtualmem::CodePtr;
+use std::sync::atomic::AtomicUsize;
 use std::collections::HashMap;
 use std::ptr::null;
 
@@ -301,6 +304,25 @@ impl ZJITState {
     }
 }
 
+/// The `::RubyVM::ZJIT` module.
+pub static ZJIT_MODULE: AtomicUsize = AtomicUsize::new(!0);
+/// Serial of the canonical version of `` right after VM boot.
+pub static INDUCE_SIDE_EXIT_SERIAL: AtomicUsize = AtomicUsize::new(!0);
+/// Serial of the canonical version of `` right after VM boot.
+pub static INDUCE_COMPILE_FAILURE_SERIAL: AtomicUsize = AtomicUsize::new(!0);
+
+/// Check if a method, `method_id`, currently exists on `ZJIT.singleton_class` and has the `expected_serial`.
+pub fn zjit_module_method_match_serial(method_id: ID, expected_serial: &AtomicUsize) -> bool {
+    let zjit_module_singleton = VALUE(ZJIT_MODULE.load(Ordering::Relaxed)).class_of();
+    let cme = unsafe { rb_callable_method_entry(zjit_module_singleton, method_id) };
+    if cme.is_null() {
+        false
+    } else {
+        let serial = unsafe { get_def_method_serial((*cme).def) };
+        serial == expected_serial.load(std::sync::atomic::Ordering::Relaxed)
+    }
+}
+
 /// Initialize IDs and annotate builtin C method entries.
 /// Must be called at boot before ruby_init_prelude() since the prelude
 /// could redefine core methods (e.g. Kernel.prepend via bundler).
@@ -318,6 +340,25 @@ pub extern "C" fn rb_zjit_init_builtin_cmes() {
     let method_annotations = cruby_methods::init();
 
     unsafe { ZJIT_STATE = Initialized(method_annotations); }
+
+    // Boot time setup for compiler directives
+    unsafe {
+        let zjit_module = rb_const_get(rb_cRubyVM, rust_str_to_id("ZJIT"));
+
+        let cme = rb_callable_method_entry(zjit_module.class_of(), ID!(induce_side_exit_bang));
+        assert!(! cme.is_null(), "RubyVM::ZJIT.induce_side_exit! should exist on boot");
+        let serial = get_def_method_serial((*cme).def) ;
+        INDUCE_SIDE_EXIT_SERIAL.store(serial, Ordering::Relaxed);
+
+        let cme = rb_callable_method_entry(zjit_module.class_of(), ID!(induce_compile_failure_bang));
+        assert!(! cme.is_null(), "RubyVM::ZJIT.induce_compile_failure! should exist on boot");
+        let serial = get_def_method_serial((*cme).def) ;
+        INDUCE_COMPILE_FAILURE_SERIAL.store(serial, Ordering::Relaxed);
+
+        // Root and pin the module since we'll be doing object identity comparisons.
+        ZJIT_MODULE.store(zjit_module.0, Ordering::Relaxed);
+        rb_gc_register_mark_object(zjit_module);
+    }
 }
 
 /// Initialize ZJIT at boot. This is called even if ZJIT is disabled.

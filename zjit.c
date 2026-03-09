@@ -19,6 +19,7 @@
 #include "vm_insnhelper.h"
 #include "probes.h"
 #include "probes_helper.h"
+#include "constant.h"
 #include "iseq.h"
 #include "ruby/debug.h"
 #include "internal/cont.h"
