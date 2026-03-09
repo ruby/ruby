@@ -227,10 +227,9 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
       raise Gem::InstallError, "cargo metadata failed#{exit_reason}"
     end
 
-    # cargo metadata output is specified as json, but with the
-    # --format-version 1 option the output is compatible with YAML, so we can
-    # avoid the json dependency
-    metadata = Gem::SafeYAML.safe_load(output)
+    # cargo metadata output is specified as json
+    require "json"
+    metadata = JSON.parse(output)
     package = metadata["packages"].find {|pkg| normalize_path(pkg["manifest_path"]) == manifest_path }
     unless package
       found = metadata["packages"].map {|md| "#{md["name"]} at #{md["manifest_path"]}" }
