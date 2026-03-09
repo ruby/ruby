@@ -1,11 +1,27 @@
 # frozen_string_literal: true
 
-unless defined?(Psych)
-  module Psych
-    class SyntaxError < ::StandardError; end
-    class DisallowedClass < ::ArgumentError; end
-    class BadAlias < ::ArgumentError; end
-    class AliasesNotEnabled < BadAlias; end
+unless defined?(Psych::Exception)
+  begin
+    require "psych/exception"
+  rescue LoadError
+    module Psych
+      class Exception < ::RuntimeError; end
+      class SyntaxError < Exception; end
+
+      class DisallowedClass < Exception
+        def initialize(action, klass_name)
+          super("Tried to #{action} unspecified class: #{klass_name}")
+        end
+      end
+
+      class BadAlias < Exception; end
+
+      class AliasesNotEnabled < BadAlias
+        def initialize
+          super "Alias parsing was not enabled. To enable it, pass `aliases: true` to `Psych::load` or `Psych::safe_load`."
+        end
+      end
+    end
   end
 end
 
@@ -414,7 +430,7 @@ module Gem
       end
 
       def resolve_alias(node)
-        raise Psych::AliasesNotEnabled, "YAML aliases are not allowed" unless @aliases
+        raise Psych::AliasesNotEnabled unless @aliases
         @anchor_values.fetch(node.name, nil)
       end
 
@@ -566,19 +582,19 @@ module Gem
 
       def validate_tag!(tag)
         unless @permitted_tags.include?(tag)
-          raise Psych::DisallowedClass, "Disallowed class: #{tag}"
+          raise Psych::DisallowedClass.new("load", tag)
         end
       end
 
       def validate_symbol!(sym)
         if @permitted_symbols.any? && !@permitted_symbols.include?(sym.to_s)
-          raise Psych::DisallowedClass, "Disallowed symbol: #{sym.inspect}"
+          raise Psych::DisallowedClass.new("load", sym.inspect)
         end
       end
 
       def check_anchor!(node)
         if node.anchor
-          raise Psych::AliasesNotEnabled, "YAML aliases are not allowed" unless @aliases
+          raise Psych::AliasesNotEnabled unless @aliases
         end
       end
 

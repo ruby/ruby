@@ -37,7 +37,7 @@ module Gem
     def self.safe_load(input)
       if Gem.use_psych?
         ::Psych.safe_load(input, permitted_classes: PERMITTED_CLASSES,
-                          permitted_symbols: PERMITTED_SYMBOLS, aliases: @aliases_enabled)
+                                 permitted_symbols: PERMITTED_SYMBOLS, aliases: @aliases_enabled)
       else
         Gem::YAMLSerializer.load(
           input,

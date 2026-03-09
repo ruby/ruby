@@ -656,14 +656,9 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     return if @yaml_loaded
 
     @use_psych = ENV["RUBYGEMS_USE_PSYCH"] == "true" ||
-      (defined?(@configuration) && @configuration && !!@configuration[:use_psych])
+                 (defined?(@configuration) && @configuration && !@configuration[:use_psych].nil?)
 
     if @use_psych
-      # Remove Psych stubs (defined by yaml_serializer.rb) before loading
-      # real Psych to avoid superclass mismatch errors
-      if defined?(Psych) && !defined?(Psych::VERSION)
-        Object.send(:remove_const, :Psych)
-      end
       require "psych"
       require_relative "rubygems/psych_tree"
     end
