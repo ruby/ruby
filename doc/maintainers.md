@@ -50,10 +50,6 @@ consensus on ruby-core/ruby-dev.
 
 * *No maintainer*
 
-#### lib/pathname.rb
-
-* Tanaka Akira ([akr])
-
 #### lib/rubygems.rb, lib/rubygems/*
 
 * Hiroshi SHIBATA ([hsbt])
