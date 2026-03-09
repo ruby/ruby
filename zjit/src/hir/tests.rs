@@ -121,14 +121,13 @@ mod snapshot_tests {
           v15:Fixnum[2] = Const Value(2)
           v16:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13, v15], locals: [] }
           v23:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v13, v15, v11], locals: [] }
-          PatchPoint NoSingletonClass(Object@0x1010)
           PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
-          v26:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)]
-          v27:BasicObject = SendDirect v26, 0x1048, :foo (0x1058), v13, v15, v11
-          v18:Any = Snapshot FrameState { pc: 0x1060, stack: [v27], locals: [] }
+          v25:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)]
+          v26:BasicObject = SendDirect v25, 0x1048, :foo (0x1058), v13, v15, v11
+          v18:Any = Snapshot FrameState { pc: 0x1060, stack: [v26], locals: [] }
           PatchPoint NoTracePoint
           CheckInterrupts
-          Return v27
+          Return v26
         ");
     }
 
@@ -158,14 +157,13 @@ mod snapshot_tests {
           v11:Fixnum[1] = Const Value(1)
           v13:Fixnum[2] = Const Value(2)
           v14:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13], locals: [] }
-          PatchPoint NoSingletonClass(Object@0x1010)
           PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
-          v23:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)]
-          v24:BasicObject = SendDirect v23, 0x1048, :foo (0x1058), v11, v13
-          v16:Any = Snapshot FrameState { pc: 0x1060, stack: [v24], locals: [] }
+          v22:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)]
+          v23:BasicObject = SendDirect v22, 0x1048, :foo (0x1058), v11, v13
+          v16:Any = Snapshot FrameState { pc: 0x1060, stack: [v23], locals: [] }
           PatchPoint NoTracePoint
           CheckInterrupts
-          Return v24
+          Return v23
         ");
     }
 
