@@ -30,6 +30,7 @@ size_t pm_strspn_whitespace(const uint8_t *string, ptrdiff_t length);
  *
  * @param string The string to search.
  * @param length The maximum number of characters to search.
+ * @param arena The arena to allocate from when appending to line_offsets.
  * @param line_offsets The list of newlines to populate.
  * @param start_offset The offset at which the string occurs in the source, for
  *   the purpose of tracking newlines.

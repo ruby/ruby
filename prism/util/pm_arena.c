@@ -24,7 +24,7 @@ static size_t
 pm_arena_next_block_size(const pm_arena_t *arena, size_t min_size) {
     size_t size = PM_ARENA_INITIAL_SIZE;
 
-    for (size_t i = PM_ARENA_GROWTH_INTERVAL; i <= arena->block_count; i += PM_ARENA_GROWTH_INTERVAL) {
+    for (size_t exp = PM_ARENA_GROWTH_INTERVAL; exp <= arena->block_count; exp += PM_ARENA_GROWTH_INTERVAL) {
         if (size < PM_ARENA_MAX_SIZE) size *= 2;
     }
 
@@ -36,7 +36,7 @@ pm_arena_next_block_size(const pm_arena_t *arena, size_t min_size) {
  * into the arena, and return it. Aborts on allocation failure.
  */
 static pm_arena_block_t *
-pm_arena_new_block(pm_arena_t *arena, size_t data_size, size_t initial_used) {
+pm_arena_block_new(pm_arena_t *arena, size_t data_size, size_t initial_used) {
     assert(initial_used <= data_size);
     pm_arena_block_t *block = (pm_arena_block_t *) xmalloc(PM_ARENA_BLOCK_SIZE(data_size));
 
@@ -63,56 +63,18 @@ void
 pm_arena_reserve(pm_arena_t *arena, size_t capacity) {
     if (capacity <= PM_ARENA_INITIAL_SIZE) return;
     if (arena->current != NULL && (arena->current->capacity - arena->current->used) >= capacity) return;
-
-    pm_arena_new_block(arena, capacity, 0);
+    pm_arena_block_new(arena, capacity, 0);
 }
 
 /**
- * Allocate memory from the arena. The returned memory is NOT zeroed. This
- * function is infallible — it aborts on allocation failure.
+ * Slow path for pm_arena_alloc: allocate a new block and return a pointer to
+ * the first `size` bytes. Called when the current block has insufficient space.
  */
 void *
-pm_arena_alloc(pm_arena_t *arena, size_t size, size_t alignment) {
-    // Try current block.
-    if (arena->current != NULL) {
-        size_t used_aligned = (arena->current->used + alignment - 1) & ~(alignment - 1);
-        size_t needed = used_aligned + size;
-
-        // Guard against overflow in the alignment or size arithmetic.
-        if (used_aligned >= arena->current->used && needed >= used_aligned && needed <= arena->current->capacity) {
-            arena->current->used = needed;
-            return arena->current->data + used_aligned;
-        }
-    }
-
-    // Allocate new block via xmalloc — memory is NOT zeroed.
-    // New blocks from xmalloc are max-aligned, so data[] starts aligned for
-    // any C type. No padding needed at the start.
+pm_arena_alloc_slow(pm_arena_t *arena, size_t size) {
     size_t block_data_size = pm_arena_next_block_size(arena, size);
-    pm_arena_block_t *block = pm_arena_new_block(arena, block_data_size, size);
-
+    pm_arena_block_t *block = pm_arena_block_new(arena, block_data_size, size);
     return block->data;
-}
-
-/**
- * Allocate zero-initialized memory from the arena. This function is infallible
- * — it aborts on allocation failure.
- */
-void *
-pm_arena_zalloc(pm_arena_t *arena, size_t size, size_t alignment) {
-    void *ptr = pm_arena_alloc(arena, size, alignment);
-    memset(ptr, 0, size);
-    return ptr;
-}
-
-/**
- * Allocate memory from the arena and copy the given data into it.
- */
-void *
-pm_arena_memdup(pm_arena_t *arena, const void *src, size_t size, size_t alignment) {
-    void *dst = pm_arena_alloc(arena, size, alignment);
-    memcpy(dst, src, size);
-    return dst;
 }
 
 /**

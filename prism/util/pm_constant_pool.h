@@ -142,9 +142,9 @@ typedef struct {
 /**
  * Initialize a new constant pool with a given capacity.
  *
+ * @param arena The arena to allocate from.
  * @param pool The pool to initialize.
  * @param capacity The initial capacity of the pool.
- * @return Whether the initialization succeeded.
  */
 void pm_constant_pool_init(pm_arena_t *arena, pm_constant_pool_t *pool, uint32_t capacity);
 
@@ -172,6 +172,7 @@ pm_constant_id_t pm_constant_pool_find(const pm_constant_pool_t *pool, const uin
  * Insert a constant into a constant pool that is a slice of a source string.
  * Returns the id of the constant, or 0 if any potential calls to resize fail.
  *
+ * @param arena The arena to allocate from.
  * @param pool The pool to insert the constant into.
  * @param start A pointer to the start of the constant.
  * @param length The length of the constant.
@@ -184,6 +185,7 @@ pm_constant_id_t pm_constant_pool_insert_shared(pm_arena_t *arena, pm_constant_p
  * constant pool. Returns the id of the constant, or 0 if any potential calls to
  * resize fail.
  *
+ * @param arena The arena to allocate from.
  * @param pool The pool to insert the constant into.
  * @param start A pointer to the start of the constant.
  * @param length The length of the constant.
@@ -195,6 +197,7 @@ pm_constant_id_t pm_constant_pool_insert_owned(pm_arena_t *arena, pm_constant_po
  * Insert a constant into a constant pool from memory that is constant. Returns
  * the id of the constant, or 0 if any potential calls to resize fail.
  *
+ * @param arena The arena to allocate from.
  * @param pool The pool to insert the constant into.
  * @param start A pointer to the start of the constant.
  * @param length The length of the constant.

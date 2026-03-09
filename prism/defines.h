@@ -92,6 +92,18 @@
 #endif
 
 /**
+ * Force a function to be inlined at every call site. Use sparingly — only for
+ * small, hot functions where the compiler's heuristics fail to inline.
+ */
+#if defined(_MSC_VER)
+#   define PRISM_FORCE_INLINE __forceinline
+#elif defined(__GNUC__) || defined(__clang__)
+#   define PRISM_FORCE_INLINE inline __attribute__((always_inline))
+#else
+#   define PRISM_FORCE_INLINE inline
+#endif
+
+/**
  * Old Visual Studio versions before 2015 do not implement sprintf, but instead
  * implement _snprintf. We standard that here.
  */
