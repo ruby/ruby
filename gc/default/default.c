@@ -8266,7 +8266,7 @@ rb_gc_impl_free(void *objspace_ptr, void *ptr, size_t old_size)
     }
 
     if (old_size && (old_size + sizeof(struct malloc_obj_info)) != info->size) {
-        rb_bug("buffer %p freed with old_size=%lu, but was allocated with size=%lu", ptr, old_size, info->size - sizeof(struct malloc_obj_info));
+        rb_bug("buffer %p freed with old_size=%zu, but was allocated with size=%zu", ptr, old_size, info->size - sizeof(struct malloc_obj_info));
     }
 #endif
     ptr = info;
@@ -8377,7 +8377,7 @@ rb_gc_impl_realloc(void *objspace_ptr, void *ptr, size_t new_size, size_t old_si
         ptr = info;
 #if VERIFY_FREE_SIZE
         if (old_size && (old_size + sizeof(struct malloc_obj_info)) != info->size) {
-            rb_bug("buffer %p realloced with old_size=%lu, but was allocated with size=%lu", ptr, old_size, info->size - sizeof(struct malloc_obj_info));
+            rb_bug("buffer %p realloced with old_size=%zu, but was allocated with size=%zu", ptr, old_size, info->size - sizeof(struct malloc_obj_info));
         }
 #endif
         old_size = info->size;
