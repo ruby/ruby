@@ -1,5 +1,14 @@
 # frozen_string_literal: true
 
+unless defined?(Psych)
+  module Psych
+    class SyntaxError < ::StandardError; end
+    class DisallowedClass < ::ArgumentError; end
+    class BadAlias < ::ArgumentError; end
+    class AliasesNotEnabled < BadAlias; end
+  end
+end
+
 module Gem
   module YAMLSerializer
     Scalar = Struct.new(:value, :tag, :anchor, keyword_init: true)
@@ -378,7 +387,7 @@ module Gem
       end
 
       def resolve_alias(node)
-        raise ArgumentError, "YAML aliases are not allowed" unless @aliases
+        raise Psych::AliasesNotEnabled, "YAML aliases are not allowed" unless @aliases
         @anchor_values.fetch(node.name, nil)
       end
 
@@ -530,19 +539,19 @@ module Gem
 
       def validate_tag!(tag)
         unless @permitted_tags.include?(tag)
-          raise ArgumentError, "Disallowed class: #{tag}"
+          raise Psych::DisallowedClass, "Disallowed class: #{tag}"
         end
       end
 
       def validate_symbol!(sym)
         if @permitted_symbols.any? && !@permitted_symbols.include?(sym.to_s)
-          raise ArgumentError, "Disallowed symbol: #{sym.inspect}"
+          raise Psych::DisallowedClass, "Disallowed symbol: #{sym.inspect}"
         end
       end
 
       def check_anchor!(node)
         if node.anchor
-          raise ArgumentError, "YAML aliases are not allowed" unless @aliases
+          raise Psych::AliasesNotEnabled, "YAML aliases are not allowed" unless @aliases
         end
       end
 

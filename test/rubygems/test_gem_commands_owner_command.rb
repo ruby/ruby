@@ -55,6 +55,8 @@ EOF
   end
 
   def test_show_owners_dont_load_objects
+    pend "testing a psych-only API" unless defined?(::Psych::DisallowedClass)
+
     response = <<EOF
 ---
 - email: !ruby/object:Object {}
@@ -68,7 +70,7 @@ EOF
 
     @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners.yaml"] = HTTPResponseFactory.create(body: response, code: 200, msg: "OK")
 
-    assert_raise ArgumentError do
+    assert_raise Psych::DisallowedClass do
       use_ui @ui do
         @cmd.show_owners("freewill")
       end
