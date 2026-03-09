@@ -5,10 +5,10 @@
  */
 void
 pm_line_offset_list_init(pm_arena_t *arena, pm_line_offset_list_t *list, size_t capacity) {
-    list->offsets = (uint32_t *) pm_arena_zalloc(arena, capacity * sizeof(uint32_t), PRISM_ALIGNOF(uint32_t));
+    list->offsets = (uint32_t *) pm_arena_alloc(arena, capacity * sizeof(uint32_t), PRISM_ALIGNOF(uint32_t));
 
-    // This is 1 instead of 0 because we want to include the first line of the
-    // file as having offset 0, which is set because of the zero-initialization.
+    // The first line always has offset 0.
+    list->offsets[0] = 0;
     list->size = 1;
     list->capacity = capacity;
 }

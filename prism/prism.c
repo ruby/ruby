@@ -7755,7 +7755,8 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
         pm_string_free(&key);
 
         // Allocate a new magic comment node to append to the parser's list.
-        pm_magic_comment_t *magic_comment = (pm_magic_comment_t *) pm_arena_zalloc(&parser->metadata_arena, sizeof(pm_magic_comment_t), PRISM_ALIGNOF(pm_magic_comment_t));
+        pm_magic_comment_t *magic_comment = (pm_magic_comment_t *) pm_arena_alloc(&parser->metadata_arena, sizeof(pm_magic_comment_t), PRISM_ALIGNOF(pm_magic_comment_t));
+        magic_comment->node.next = NULL;
         magic_comment->key = (pm_location_t) { .start = U32(key_start - parser->start), .length = U32(key_length) };
         magic_comment->value = (pm_location_t) { .start = U32(value_start - parser->start), .length = value_length };
         pm_list_append(&parser->magic_comment_list, (pm_list_node_t *) magic_comment);
@@ -9421,7 +9422,7 @@ parser_lex_callback(pm_parser_t *parser) {
  */
 static inline pm_comment_t *
 parser_comment(pm_parser_t *parser, pm_comment_type_t type) {
-    pm_comment_t *comment = (pm_comment_t *) pm_arena_zalloc(&parser->metadata_arena, sizeof(pm_comment_t), PRISM_ALIGNOF(pm_comment_t));
+    pm_comment_t *comment = (pm_comment_t *) pm_arena_alloc(&parser->metadata_arena, sizeof(pm_comment_t), PRISM_ALIGNOF(pm_comment_t));
 
     *comment = (pm_comment_t) {
         .type = type,
