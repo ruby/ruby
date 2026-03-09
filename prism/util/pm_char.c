@@ -99,15 +99,6 @@ pm_strspn_whitespace_newlines(const uint8_t *string, ptrdiff_t length, pm_arena_
 }
 
 /**
- * Returns the number of characters at the start of the string that are inline
- * whitespace. Disallows searching past the given maximum number of characters.
- */
-size_t
-pm_strspn_inline_whitespace(const uint8_t *string, ptrdiff_t length) {
-    return pm_strspn_char_kind(string, length, PRISM_CHAR_BIT_INLINE_WHITESPACE);
-}
-
-/**
  * Returns the number of characters at the start of the string that are regexp
  * options. Disallows searching past the given maximum number of characters.
  */

@@ -47,6 +47,24 @@ pm_char_is_inline_whitespace(const uint8_t b) {
 }
 
 /**
+ * Returns the number of characters at the start of the string that are inline
+ * whitespace (space/tab). Scans the byte table directly for use in hot paths.
+ *
+ * @param string The string to search.
+ * @param length The maximum number of characters to search.
+ * @return The number of characters at the start of the string that are inline
+ *     whitespace.
+ */
+static PRISM_FORCE_INLINE size_t
+pm_strspn_inline_whitespace(const uint8_t *string, ptrdiff_t length) {
+    if (length <= 0) return 0;
+    size_t size = 0;
+    size_t maximum = (size_t) length;
+    while (size < maximum && (pm_byte_table[string[size]] & PRISM_CHAR_BIT_INLINE_WHITESPACE)) size++;
+    return size;
+}
+
+/**
  * Returns the number of characters at the start of the string that are
  * whitespace. Disallows searching past the given maximum number of characters.
  *
@@ -72,17 +90,6 @@ size_t pm_strspn_whitespace(const uint8_t *string, ptrdiff_t length);
  *     whitespace.
  */
 size_t pm_strspn_whitespace_newlines(const uint8_t *string, ptrdiff_t length, pm_arena_t *arena, pm_line_offset_list_t *line_offsets, uint32_t start_offset);
-
-/**
- * Returns the number of characters at the start of the string that are inline
- * whitespace. Disallows searching past the given maximum number of characters.
- *
- * @param string The string to search.
- * @param length The maximum number of characters to search.
- * @return The number of characters at the start of the string that are inline
- *     whitespace.
- */
-size_t pm_strspn_inline_whitespace(const uint8_t *string, ptrdiff_t length);
 
 /**
  * Returns the number of characters at the start of the string that are decimal
