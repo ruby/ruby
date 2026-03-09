@@ -25,7 +25,7 @@
 # define VALGRIND_MAKE_MEM_UNDEFINED(p, n) 0
 #endif
 
-#define RUBY_ZLIB_VERSION "3.2.2"
+#define RUBY_ZLIB_VERSION "3.2.3"
 
 #ifndef RB_PASS_CALLED_KEYWORDS
 # define rb_class_new_instance_kw(argc, argv, klass, kw_splat) rb_class_new_instance(argc, argv, klass)
@@ -860,9 +860,7 @@ zstream_buffer_ungets(struct zstream *z, const Bytef *b, unsigned long len)
     char *bufptr;
     long filled;
 
-    if (NIL_P(z->buf) || (long)rb_str_capacity(z->buf) <= ZSTREAM_BUF_FILLED(z)) {
-	zstream_expand_buffer_into(z, len);
-    }
+    zstream_expand_buffer_into(z, len);
 
     RSTRING_GETMEM(z->buf, bufptr, filled);
     memmove(bufptr + len, bufptr, filled);
@@ -1456,7 +1454,6 @@ rb_zstream_finish(VALUE obj)
  * call-seq:
  *   flush_next_in -> input
  *
- * Flushes input buffer and returns all data in that buffer.
  */
 static VALUE
 rb_zstream_flush_next_in(VALUE obj)
