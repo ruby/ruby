@@ -271,12 +271,16 @@ module Gem
           return Sequence.new if inner.empty?
           items = inner.split(/\s*,\s*/).reject(&:empty?).map {|e| Scalar.new(value: coerce(e)) }
           Sequence.new(items: items)
-        elsif /^\d{4}-\d{2}-\d{2}/.match?(val)
-          require "time"
+        elsif /\A\d{4}-\d{2}-\d{2}([ T]\d{2}:\d{2}:\d{2})?/.match?(val)
           begin
-            Time.parse(val)
+            Time.new(val)
           rescue ArgumentError
-            val
+            # date-only format like "2024-06-15" is not supported by Time.new
+            if /\A(\d{4})-(\d{2})-(\d{2})\z/.match(val)
+              Time.utc($1.to_i, $2.to_i, $3.to_i)
+            else
+              val
+            end
           end
         elsif /^-?\d+$/.match?(val)
           val.to_i
