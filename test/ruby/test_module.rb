@@ -2969,6 +2969,36 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NameError){ m.instance_eval { remove_const(:__FOO__) } }
   end
 
+  def test_undef_const
+    m = Module.new
+    m.const_set(:X, 1)
+    assert_same(m, m.send(:undef_const, :X))
+    assert_raise(NameError){ m::X }
+    assert_raise(NameError){ m.const_get(:X) }
+
+    c = Class.new
+    c.const_set(:X, 2)
+    sc = Class.new(c)
+    sc.include m
+    assert_raise(NameError){ sc::X }
+    assert_raise(NameError){ sc.const_get(:X) }
+
+    sc.define_singleton_method(:const_missing) do |sym|
+      sym
+    end
+    assert_equal(:X, sc::X)
+
+    assert_equal(false, m.const_defined?(:X))
+    assert_equal(false, sc.const_defined?(:X))
+    assert_equal(nil, defined?(m::X))
+    assert_equal(nil, defined?(sc::X))
+
+    m.send(:remove_const, :X)
+    assert_equal(2, sc::X)
+
+    assert_raise(TypeError){ sc.send(:undef_const, 1) }
+  end
+
   def test_public_methods
     public_methods = %i[
       include
