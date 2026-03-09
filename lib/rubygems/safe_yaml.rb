@@ -35,11 +35,45 @@ module Gem
     end
 
     def self.safe_load(input)
-      ::Psych.safe_load(input, permitted_classes: PERMITTED_CLASSES, permitted_symbols: PERMITTED_SYMBOLS, aliases: @aliases_enabled)
+      if Gem.use_psych?
+        ::Psych.safe_load(input, permitted_classes: PERMITTED_CLASSES,
+                          permitted_symbols: PERMITTED_SYMBOLS, aliases: @aliases_enabled)
+      else
+        Gem::YAMLSerializer.load(
+          input,
+          permitted_classes: PERMITTED_CLASSES,
+          permitted_symbols: PERMITTED_SYMBOLS,
+          aliases: aliases_enabled?
+        )
+      end
     end
 
     def self.load(input)
-      ::Psych.safe_load(input, permitted_classes: [::Symbol])
+      if Gem.use_psych?
+        ::Psych.safe_load(input, permitted_classes: [::Symbol])
+      else
+        Gem::YAMLSerializer.load(
+          input,
+          permitted_classes: [::Symbol]
+        )
+      end
+    end
+
+    def self.safe_load(input)
+      if Gem.use_psych?
+        if ::Psych.respond_to?(:unsafe_load)
+          ::Psych.unsafe_load(input)
+        else
+          ::Psych.load(input)
+        end
+      else
+        Gem::YAMLSerializer.load(
+          input,
+          permitted_classes: PERMITTED_CLASSES,
+          permitted_symbols: PERMITTED_SYMBOLS,
+          aliases: aliases_enabled?
+        )
+      end
     end
   end
 end
