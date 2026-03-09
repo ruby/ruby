@@ -1,27 +1,12 @@
 # frozen_string_literal: true
 
-unless defined?(Psych::Exception)
-  begin
-    require "psych/exception"
-  rescue LoadError
-    module Psych
-      class Exception < ::RuntimeError; end
-      class SyntaxError < Exception; end
-
-      class DisallowedClass < Exception
-        def initialize(action, klass_name)
-          super("Tried to #{action} unspecified class: #{klass_name}")
-        end
-      end
-
-      class BadAlias < Exception; end
-
-      class AliasesNotEnabled < BadAlias
-        def initialize
-          super "Alias parsing was not enabled. To enable it, pass `aliases: true` to `Psych::load` or `Psych::safe_load`."
-        end
-      end
-    end
+unless defined?(Psych::VERSION)
+  module Psych
+    class Exception < ::RuntimeError; end
+    class SyntaxError < Exception; end
+    class DisallowedClass < Exception; end
+    class BadAlias < Exception; end
+    class AliasesNotEnabled < BadAlias; end
   end
 end
 
@@ -582,13 +567,21 @@ module Gem
 
       def validate_tag!(tag)
         unless @permitted_tags.include?(tag)
-          raise Psych::DisallowedClass.new("load", tag)
+          if defined?(Psych::VERSION)
+            raise Psych::DisallowedClass.new("load", tag)
+          else
+            raise Psych::DisallowedClass, "Tried to load unspecified class: #{tag}"
+          end
         end
       end
 
       def validate_symbol!(sym)
         if @permitted_symbols.any? && !@permitted_symbols.include?(sym.to_s)
-          raise Psych::DisallowedClass.new("load", sym.inspect)
+          if defined?(Psych::VERSION)
+            raise Psych::DisallowedClass.new("load", sym.inspect)
+          else
+            raise Psych::DisallowedClass, "Tried to load unspecified class: #{sym.inspect}"
+          end
         end
       end
 
