@@ -1,5 +1,7 @@
 #include "prism/util/pm_arena.h"
 
+#include <assert.h>
+
 /**
  * Compute the block allocation size using offsetof so it is correct regardless
  * of PM_FLEX_ARY_LEN.
@@ -30,6 +32,42 @@ pm_arena_next_block_size(const pm_arena_t *arena, size_t min_size) {
 }
 
 /**
+ * Allocate a new block with the given data capacity and initial usage, link it
+ * into the arena, and return it. Aborts on allocation failure.
+ */
+static pm_arena_block_t *
+pm_arena_new_block(pm_arena_t *arena, size_t data_size, size_t initial_used) {
+    assert(initial_used <= data_size);
+    pm_arena_block_t *block = (pm_arena_block_t *) xmalloc(PM_ARENA_BLOCK_SIZE(data_size));
+
+    if (block == NULL) {
+        fprintf(stderr, "prism: out of memory; aborting\n");
+        abort();
+    }
+
+    block->capacity = data_size;
+    block->used = initial_used;
+    block->prev = arena->current;
+    arena->current = block;
+    arena->block_count++;
+
+    return block;
+}
+
+/**
+ * Ensure the arena has at least `capacity` bytes available in its current
+ * block, allocating a new block if necessary. This allows callers to
+ * pre-size the arena to avoid repeated small block allocations.
+ */
+void
+pm_arena_reserve(pm_arena_t *arena, size_t capacity) {
+    if (capacity <= PM_ARENA_INITIAL_SIZE) return;
+    if (arena->current != NULL && (arena->current->capacity - arena->current->used) >= capacity) return;
+
+    pm_arena_new_block(arena, capacity, 0);
+}
+
+/**
  * Allocate memory from the arena. The returned memory is NOT zeroed. This
  * function is infallible — it aborts on allocation failure.
  */
@@ -51,18 +89,7 @@ pm_arena_alloc(pm_arena_t *arena, size_t size, size_t alignment) {
     // New blocks from xmalloc are max-aligned, so data[] starts aligned for
     // any C type. No padding needed at the start.
     size_t block_data_size = pm_arena_next_block_size(arena, size);
-    pm_arena_block_t *block = (pm_arena_block_t *) xmalloc(PM_ARENA_BLOCK_SIZE(block_data_size));
-
-    if (block == NULL) {
-        fprintf(stderr, "prism: out of memory; aborting\n");
-        abort();
-    }
-
-    block->capacity = block_data_size;
-    block->used = size;
-    block->prev = arena->current;
-    arena->current = block;
-    arena->block_count++;
+    pm_arena_block_t *block = pm_arena_new_block(arena, block_data_size, size);
 
     return block->data;
 }

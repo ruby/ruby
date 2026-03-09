@@ -45,6 +45,16 @@ typedef struct {
 } pm_arena_t;
 
 /**
+ * Ensure the arena has at least `capacity` bytes available in its current
+ * block, allocating a new block if necessary. This allows callers to
+ * pre-size the arena to avoid repeated small block allocations.
+ *
+ * @param arena The arena to pre-size.
+ * @param capacity The minimum number of bytes to ensure are available.
+ */
+void pm_arena_reserve(pm_arena_t *arena, size_t capacity);
+
+/**
  * Allocate memory from the arena. The returned memory is NOT zeroed. This
  * function is infallible — it aborts on allocation failure.
  *
