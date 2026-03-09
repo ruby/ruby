@@ -2511,6 +2511,11 @@ impl Function {
             // This class can never have a singleton class, so no patchpoint needed.
             return true;
         }
+        if klass.is_singleton_class() {
+            // When a value has a singleton class, its effective class can't change anymore.
+            // No patchpoint needed.
+            return true;
+        }
         if has_singleton_class_of(klass) {
             // We've seen a singleton class for this klass. Disable the optimization
             // to avoid an invalidation loop.
