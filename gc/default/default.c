@@ -736,7 +736,7 @@ size_t rb_gc_impl_obj_slot_size(VALUE obj);
 
 #if SIZEOF_VALUE >= 8
 static const size_t pool_slot_sizes[HEAP_COUNT] = {
-    32, 48, 64, 128, 160, 256, 512, 1024,
+    32, 40, 64, 128, 160, 256, 512, 1024,
 };
 static uint8_t size_to_heap_idx[1024 / 8 + 1];
 #else
