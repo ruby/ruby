@@ -898,13 +898,14 @@ module Prism
 
     # Create a new result object with the given values.
     #--
-    #: (Array[Comment] comments, Array[MagicComment] magic_comments, Location? data_loc, Array[ParseError] errors, Array[ParseWarning] warnings, Source source) -> void
-    def initialize(comments, magic_comments, data_loc, errors, warnings, source)
+    #: (Array[Comment] comments, Array[MagicComment] magic_comments, Location? data_loc, Array[ParseError] errors, Array[ParseWarning] warnings, bool continuable, Source source) -> void
+    def initialize(comments, magic_comments, data_loc, errors, warnings, continuable, source)
       @comments = comments
       @magic_comments = magic_comments
       @data_loc = data_loc
       @errors = errors
       @warnings = warnings
+      @continuable = continuable
       @source = source
     end
 
@@ -961,54 +962,8 @@ module Prism
     #--
     #: () -> bool
     def continuable?
-      return false if errors.empty?
-
-      offset = source.source.bytesize
-      errors.all? { |error| CONTINUABLE.include?(error.type) || error.location.start_offset == offset }
+      @continuable
     end
-
-    # The set of error types whose location the parser places at the opening
-    # token of an unclosed construct rather than at the end of the source. These
-    # errors always indicate incomplete input regardless of their byte position,
-    # so they are checked by type rather than by location.
-    #--
-    #: Array[Symbol]
-    CONTINUABLE = %i[
-      begin_term
-      begin_upcase_term
-      block_param_pipe_term
-      block_term_brace
-      block_term_end
-      case_missing_conditions
-      case_term
-      class_term
-      conditional_term
-      conditional_term_else
-      def_term
-      embdoc_term
-      end_upcase_term
-      for_term
-      hash_term
-      heredoc_term
-      lambda_term_brace
-      lambda_term_end
-      list_i_lower_term
-      list_i_upper_term
-      list_w_lower_term
-      list_w_upper_term
-      module_term
-      regexp_term
-      rescue_term
-      string_interpolated_term
-      string_literal_eof
-      symbol_term_dynamic
-      symbol_term_interpolated
-      until_term
-      while_term
-      xstring_term
-    ].freeze
-
-    private_constant :CONTINUABLE
 
     # Create a code units cache for the given encoding.
     #--
@@ -1033,10 +988,10 @@ module Prism
 
     # Create a new parse result object with the given values.
     #--
-    #: (ProgramNode value, Array[Comment] comments, Array[MagicComment] magic_comments, Location? data_loc, Array[ParseError] errors, Array[ParseWarning] warnings, Source source) -> void
-    def initialize(value, comments, magic_comments, data_loc, errors, warnings, source)
+    #: (ProgramNode value, Array[Comment] comments, Array[MagicComment] magic_comments, Location? data_loc, Array[ParseError] errors, Array[ParseWarning] warnings, bool continuable, Source source) -> void
+    def initialize(value, comments, magic_comments, data_loc, errors, warnings, continuable, source)
       @value = value
-      super(comments, magic_comments, data_loc, errors, warnings, source)
+      super(comments, magic_comments, data_loc, errors, warnings, continuable, source)
     end
 
     # Implement the hash pattern matching interface for ParseResult.
@@ -1077,10 +1032,10 @@ module Prism
 
     # Create a new lex result object with the given values.
     #--
-    #: (Array[[Token, Integer]] value, Array[Comment] comments, Array[MagicComment] magic_comments, Location? data_loc, Array[ParseError] errors, Array[ParseWarning] warnings, Source source) -> void
-    def initialize(value, comments, magic_comments, data_loc, errors, warnings, source)
+    #: (Array[[Token, Integer]] value, Array[Comment] comments, Array[MagicComment] magic_comments, Location? data_loc, Array[ParseError] errors, Array[ParseWarning] warnings, bool continuable, Source source) -> void
+    def initialize(value, comments, magic_comments, data_loc, errors, warnings, continuable, source)
       @value = value
-      super(comments, magic_comments, data_loc, errors, warnings, source)
+      super(comments, magic_comments, data_loc, errors, warnings, continuable, source)
     end
 
     # Implement the hash pattern matching interface for LexResult.
@@ -1099,10 +1054,10 @@ module Prism
 
     # Create a new parse lex result object with the given values.
     #--
-    #: ([ProgramNode, Array[[Token, Integer]]] value, Array[Comment] comments, Array[MagicComment] magic_comments, Location? data_loc, Array[ParseError] errors, Array[ParseWarning] warnings, Source source) -> void
-    def initialize(value, comments, magic_comments, data_loc, errors, warnings, source)
+    #: ([ProgramNode, Array[[Token, Integer]]] value, Array[Comment] comments, Array[MagicComment] magic_comments, Location? data_loc, Array[ParseError] errors, Array[ParseWarning] warnings, bool continuable, Source source) -> void
+    def initialize(value, comments, magic_comments, data_loc, errors, warnings, continuable, source)
       @value = value
-      super(comments, magic_comments, data_loc, errors, warnings, source)
+      super(comments, magic_comments, data_loc, errors, warnings, continuable, source)
     end
 
     # Implement the hash pattern matching interface for ParseLexResult.

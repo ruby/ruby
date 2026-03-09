@@ -641,10 +641,11 @@ parse_result_create(VALUE class, const pm_parser_t *parser, VALUE value, rb_enco
         parser_data_loc(parser, source, freeze),
         parser_errors(parser, encoding, source, freeze),
         parser_warnings(parser, encoding, source, freeze),
+        parser->continuable ? Qtrue : Qfalse,
         source
     };
 
-    return rb_class_new_instance_freeze(7, result_argv, class, freeze);
+    return rb_class_new_instance_freeze(8, result_argv, class, freeze);
 }
 
 /******************************************************************************/

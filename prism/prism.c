@@ -22016,6 +22016,7 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
         .partial_script = false,
         .command_start = true,
         .recovering = false,
+        .continuable = true,
         .encoding_locked = false,
         .encoding_changed = false,
         .pattern_matching_newlines = false,
@@ -22293,11 +22294,175 @@ pm_parser_free(pm_parser_t *parser) {
 }
 
 /**
+ * Returns true if the given diagnostic ID represents an error that cannot be
+ * fixed by appending more input. These are errors where the existing source
+ * contains definitively invalid syntax (as opposed to merely incomplete input).
+ */
+static bool
+pm_parse_err_is_fatal(pm_diagnostic_id_t diag_id) {
+    switch (diag_id) {
+        case PM_ERR_ARRAY_EXPRESSION_AFTER_STAR:
+        case PM_ERR_BEGIN_UPCASE_BRACE:
+        case PM_ERR_CLASS_VARIABLE_BARE:
+        case PM_ERR_END_UPCASE_BRACE:
+        case PM_ERR_ESCAPE_INVALID_HEXADECIMAL:
+        case PM_ERR_ESCAPE_INVALID_UNICODE_LIST:
+        case PM_ERR_ESCAPE_INVALID_UNICODE_SHORT:
+        case PM_ERR_EXPRESSION_NOT_WRITABLE:
+        case PM_ERR_EXPRESSION_NOT_WRITABLE_SELF:
+        case PM_ERR_FLOAT_PARSE:
+        case PM_ERR_GLOBAL_VARIABLE_BARE:
+        case PM_ERR_HASH_KEY:
+        case PM_ERR_HEREDOC_IDENTIFIER:
+        case PM_ERR_INSTANCE_VARIABLE_BARE:
+        case PM_ERR_INVALID_BLOCK_EXIT:
+        case PM_ERR_INVALID_ENCODING_MAGIC_COMMENT:
+        case PM_ERR_INVALID_FLOAT_EXPONENT:
+        case PM_ERR_INVALID_NUMBER_BINARY:
+        case PM_ERR_INVALID_NUMBER_DECIMAL:
+        case PM_ERR_INVALID_NUMBER_HEXADECIMAL:
+        case PM_ERR_INVALID_NUMBER_OCTAL:
+        case PM_ERR_INVALID_NUMBER_UNDERSCORE_TRAILING:
+        case PM_ERR_NO_LOCAL_VARIABLE:
+        case PM_ERR_PARAMETER_ORDER:
+        case PM_ERR_STATEMENT_UNDEF:
+        case PM_ERR_VOID_EXPRESSION:
+            return true;
+        default:
+            return false;
+    }
+}
+
+/**
+ * Determine whether the source parsed by the given parser could become valid if
+ * more input were appended. This is used by tools like IRB to decide whether to
+ * prompt for continuation or to display an error.
+ *
+ * The parser starts with continuable=true. This function scans all errors to
+ * detect two categories of non-continuable errors:
+ *
+ * 1. Fatal errors: errors like invalid number literals or bare global variables
+ *    that indicate definitively invalid syntax. These are only considered fatal
+ *    if they occur before EOF (at EOF they could be from truncated input, e.g.
+ *    `"\x` is an incomplete hex escape).
+ *
+ * 2. Stray tokens: unexpected_token_ignore and unexpected_token_close_context
+ *    errors indicate tokens that don't belong. A stray token is a cascade
+ *    effect (and does not prevent continuability) if:
+ *
+ *    a. A non-stray, non-fatal error appeared earlier in the error list at a
+ *       strictly earlier source position (the stray was caused by a preceding
+ *       parse failure, e.g. a truncated heredoc), OR
+ *    b. The stray token is at EOF, starts after position 0 (there is valid
+ *       code before it), and either is a single byte (likely a truncated
+ *       token like `\`) or there are non-stray errors elsewhere.
+ *
+ *    Closing delimiters (`)`, `]`, `}`) at EOF are always genuinely stray —
+ *    they are complete tokens and cannot become part of a longer valid
+ *    construct by appending more input.
+ *
+ *    c. The stray token is `=` at the start of a line, which could be the
+ *       beginning of `=begin` (an embedded document). The remaining bytes
+ *       after `=` may parse as an identifier, so the error is not at EOF,
+ *       but the construct is genuinely incomplete.
+ */
+static void
+pm_parse_continuable(pm_parser_t *parser) {
+    // If there are no errors then there is nothing to continue.
+    if (parser->error_list.size == 0) {
+        parser->continuable = false;
+        return;
+    }
+
+    if (!parser->continuable) return;
+
+    size_t source_length = (size_t) (parser->end - parser->start);
+
+    // First pass: check if there are any non-stray, non-fatal errors.
+    bool has_non_stray_error = false;
+    for (pm_diagnostic_t *error = (pm_diagnostic_t *) parser->error_list.head; error != NULL; error = (pm_diagnostic_t *) error->node.next) {
+        if (error->diag_id != PM_ERR_UNEXPECTED_TOKEN_IGNORE && error->diag_id != PM_ERR_UNEXPECTED_TOKEN_CLOSE_CONTEXT && !pm_parse_err_is_fatal(error->diag_id)) {
+            has_non_stray_error = true;
+            break;
+        }
+    }
+
+    // Second pass: check each error. We track the minimum source position
+    // among non-stray, non-fatal errors seen so far in list order, which
+    // lets us detect cascade stray tokens.
+    size_t non_stray_min_start = SIZE_MAX;
+
+    for (pm_diagnostic_t *error = (pm_diagnostic_t *) parser->error_list.head; error != NULL; error = (pm_diagnostic_t *) error->node.next) {
+        size_t error_start = (size_t) error->location.start;
+        size_t error_end = error_start + (size_t) error->location.length;
+        bool at_eof = error_end >= source_length;
+
+        // Fatal errors are non-continuable unless they occur at EOF.
+        if (pm_parse_err_is_fatal(error->diag_id) && !at_eof) {
+            parser->continuable = false;
+            return;
+        }
+
+        // Track non-stray, non-fatal error positions in list order.
+        if (error->diag_id != PM_ERR_UNEXPECTED_TOKEN_IGNORE &&
+            error->diag_id != PM_ERR_UNEXPECTED_TOKEN_CLOSE_CONTEXT) {
+            if (error_start < non_stray_min_start) non_stray_min_start = error_start;
+            continue;
+        }
+
+        // This is a stray token. Determine if it is a cascade effect
+        // of a preceding error or genuinely stray.
+
+        // Rule (a): a non-stray error was seen earlier in the list at a
+        // strictly earlier position — this stray is a cascade effect.
+        if (non_stray_min_start < error_start) continue;
+
+        // Rule (b): this stray is at EOF with valid code before it.
+        // Single-byte stray tokens at EOF (like `\` for line continuation)
+        // are likely truncated tokens. Multi-byte stray tokens (like the
+        // keyword `end`) need additional evidence that they are cascade
+        // effects (i.e. non-stray errors exist elsewhere).
+        if (at_eof && error_start > 0) {
+            // Exception: closing delimiters at EOF are genuinely stray.
+            if (error->location.length == 1) {
+                const uint8_t *byte = parser->start + error_start;
+                if (*byte == ')' || *byte == ']' || *byte == '}') {
+                    parser->continuable = false;
+                    return;
+                }
+
+                // Single-byte non-delimiter stray at EOF: cascade.
+                continue;
+            }
+
+            // Multi-byte stray at EOF: cascade only if there are
+            // non-stray errors (evidence of a preceding parse failure).
+            if (has_non_stray_error) continue;
+        }
+
+        // Rule (c): a stray `=` at the start of a line could be the
+        // beginning of an embedded document (`=begin`). The remaining
+        // bytes after `=` parse as an identifier, so the error is not
+        // at EOF, but the construct is genuinely incomplete.
+        if (error->location.length == 1) {
+            const uint8_t *byte = parser->start + error_start;
+            if (*byte == '=' && (error_start == 0 || *(byte - 1) == '\n')) continue;
+        }
+
+        // This stray token is genuinely non-continuable.
+        parser->continuable = false;
+        return;
+    }
+}
+
+/**
  * Parse the Ruby source associated with the given parser and return the tree.
  */
 PRISM_EXPORTED_FUNCTION pm_node_t *
 pm_parse(pm_parser_t *parser) {
-    return parse_program(parser);
+    pm_node_t *node = parse_program(parser);
+    pm_parse_continuable(parser);
+    return node;
 }
 
 /**
