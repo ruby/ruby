@@ -633,16 +633,17 @@ void rb_gc_impl_set_params(void *objspace_ptr) { }
 
 static VALUE gc_verify_internal_consistency(VALUE self) { return Qnil; }
 
-#define MMTK_HEAP_COUNT 6
 #if SIZEOF_VALUE >= 8
+#define MMTK_HEAP_COUNT 10
 #define MMTK_MAX_OBJ_SIZE 1024
 static size_t heap_sizes[MMTK_HEAP_COUNT + 1] = {
-    32, 64, 128, 256, 512, MMTK_MAX_OBJ_SIZE, 0
+    32, 40, 64, 80, 96, 128, 160, 256, 512, MMTK_MAX_OBJ_SIZE, 0
 };
 #else
+#define MMTK_HEAP_COUNT 5
 #define MMTK_MAX_OBJ_SIZE 512
 static size_t heap_sizes[MMTK_HEAP_COUNT + 1] = {
-    16, 32, 64, 128, 256, MMTK_MAX_OBJ_SIZE, 0
+    32, 64, 128, 256, MMTK_MAX_OBJ_SIZE, 0
 };
 #endif
 

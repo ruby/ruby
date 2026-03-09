@@ -5197,7 +5197,6 @@ mod hir_opt_tests {
           v14:HeapBasicObject = RefineType v6, HeapBasicObject
           v17:Fixnum[2] = Const Value(2)
           PatchPoint SingleRactorMode
-          IncrCounter setivar_fallback_new_shape_needs_extension
           SetIvar v14, :@bar, v17
           CheckInterrupts
           Return v17
@@ -14062,23 +14061,21 @@ mod hir_opt_tests {
           v14:HeapBasicObject = RefineType v6, HeapBasicObject
           v17:Fixnum[2] = Const Value(2)
           PatchPoint SingleRactorMode
-          IncrCounter setivar_fallback_new_shape_needs_extension
           SetIvar v14, :@b, v17
           v21:HeapBasicObject = RefineType v14, HeapBasicObject
           v24:Fixnum[3] = Const Value(3)
           PatchPoint SingleRactorMode
-          v51:CShape = LoadField v21, :_shape_id@0x1000
-          v52:CShape[0x1004] = GuardBitEquals v51, CShape(0x1004)
-          v53:CPtr = LoadField v21, :_as_heap@0x1002
-          StoreField v53, :@c@0x1002, v24
-          WriteBarrier v21, v24
-          v56:CShape[0x1005] = Const CShape(0x1005)
-          StoreField v21, :_shape_id@0x1000, v56
+          SetIvar v21, :@c, v24
           v28:HeapBasicObject = RefineType v21, HeapBasicObject
           v31:Fixnum[4] = Const Value(4)
           PatchPoint SingleRactorMode
-          IncrCounter setivar_fallback_new_shape_needs_extension
-          SetIvar v28, :@d, v31
+          v50:CShape = LoadField v28, :_shape_id@0x1000
+          v51:CShape[0x1004] = GuardBitEquals v50, CShape(0x1004)
+          v52:CPtr = LoadField v28, :_as_heap@0x1002
+          StoreField v52, :@d@0x1005, v31
+          WriteBarrier v28, v31
+          v55:CShape[0x1006] = Const CShape(0x1006)
+          StoreField v28, :_shape_id@0x1000, v55
           CheckInterrupts
           Return v31
         ");
