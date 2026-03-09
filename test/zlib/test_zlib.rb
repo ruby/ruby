@@ -876,6 +876,25 @@ if defined? Zlib
       assert_equal(-1, r.pos, "[ruby-core:81488][Bug #13616]")
     end
 
+    def test_ungetc_buffer_underflow
+      initial_bufsize = 1024
+      payload = "A" * initial_bufsize
+      gzip_io = StringIO.new
+      Zlib::GzipWriter.wrap(gzip_io) { |gz| gz.write(payload) }
+      compressed = gzip_io.string
+
+      reader = Zlib::GzipReader.new(StringIO.new(compressed))
+      reader.read(1)
+      overflow_bytes = "B" * (initial_bufsize)
+      reader.ungetc(overflow_bytes)
+      data = reader.read(overflow_bytes.bytesize)
+      assert_equal overflow_bytes.bytesize, data.bytesize, data
+      assert_empty data.delete("B"), data
+      data = reader.read()
+      assert_equal initial_bufsize - 1, data.bytesize, data
+      assert_empty data.delete("A"), data
+    end
+
     def test_open
       Tempfile.create("test_zlib_gzip_reader_open") {|t|
         t.close
