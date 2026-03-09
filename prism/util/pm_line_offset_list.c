@@ -22,19 +22,17 @@ pm_line_offset_list_clear(pm_line_offset_list_t *list) {
 }
 
 /**
- * Append a new offset to the newline list.
+ * Append a new offset to the newline list (slow path: resize and store).
  */
 void
-pm_line_offset_list_append(pm_arena_t *arena, pm_line_offset_list_t *list, uint32_t cursor) {
-    if (list->size == list->capacity) {
-        size_t new_capacity = (list->capacity * 3) / 2;
-        uint32_t *new_offsets = (uint32_t *) pm_arena_alloc(arena, new_capacity * sizeof(uint32_t), PRISM_ALIGNOF(uint32_t));
+pm_line_offset_list_append_slow(pm_arena_t *arena, pm_line_offset_list_t *list, uint32_t cursor) {
+    size_t new_capacity = (list->capacity * 3) / 2;
+    uint32_t *new_offsets = (uint32_t *) pm_arena_alloc(arena, new_capacity * sizeof(uint32_t), PRISM_ALIGNOF(uint32_t));
 
-        memcpy(new_offsets, list->offsets, list->size * sizeof(uint32_t));
+    memcpy(new_offsets, list->offsets, list->size * sizeof(uint32_t));
 
-        list->offsets = new_offsets;
-        list->capacity = new_capacity;
-    }
+    list->offsets = new_offsets;
+    list->capacity = new_capacity;
 
     assert(list->size == 0 || cursor > list->offsets[list->size - 1]);
     list->offsets[list->size++] = cursor;

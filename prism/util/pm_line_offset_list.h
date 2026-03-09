@@ -65,13 +65,29 @@ void pm_line_offset_list_init(pm_arena_t *arena, pm_line_offset_list_t *list, si
 void pm_line_offset_list_clear(pm_line_offset_list_t *list);
 
 /**
+ * Append a new offset to the list (slow path with resize).
+ *
+ * @param arena The arena to allocate from.
+ * @param list The list to append to.
+ * @param cursor The offset to append.
+ */
+void pm_line_offset_list_append_slow(pm_arena_t *arena, pm_line_offset_list_t *list, uint32_t cursor);
+
+/**
  * Append a new offset to the list.
  *
  * @param arena The arena to allocate from.
  * @param list The list to append to.
  * @param cursor The offset to append.
  */
-void pm_line_offset_list_append(pm_arena_t *arena, pm_line_offset_list_t *list, uint32_t cursor);
+static PRISM_FORCE_INLINE void
+pm_line_offset_list_append(pm_arena_t *arena, pm_line_offset_list_t *list, uint32_t cursor) {
+    if (list->size < list->capacity) {
+        list->offsets[list->size++] = cursor;
+    } else {
+        pm_line_offset_list_append_slow(arena, list, cursor);
+    }
+}
 
 /**
  * Returns the line of the given offset. If the offset is not in the list, the

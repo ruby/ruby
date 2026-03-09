@@ -773,7 +773,7 @@ pm_parser_scope_shareable_constant_set(pm_parser_t *parser, pm_shareable_constan
 /**
  * The point at which the set of locals switches from being a list to a hash.
  */
-#define PM_LOCALS_HASH_THRESHOLD 9
+#define PM_LOCALS_HASH_THRESHOLD 5
 
 static void
 pm_locals_free(pm_locals_t *locals) {
