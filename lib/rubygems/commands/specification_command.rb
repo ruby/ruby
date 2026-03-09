@@ -147,7 +147,7 @@ Specific fields in the specification can be extracted in YAML format:
       say case options[:format]
           when :ruby then s.to_ruby
           when :marshal then Marshal.dump s
-          else s.to_yaml
+          else Gem.use_psych? ? s.to_yaml : Gem::YAMLSerializer.dump(s)
       end
 
       say "\n"
