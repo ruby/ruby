@@ -44,6 +44,20 @@ class << RubyVM::ZJIT
     Primitive.rb_zjit_trace_exit_locations_enabled_p
   end
 
+  # A directive for the compiler to fail to compile the call to this method.
+  # To show this to ZJIT, say `::RubyVM::ZJIT.induce_compile_failure!` verbatim.
+  # Other forms are too dynamic to detect during compilation.
+  #
+  # Actually running this method does nothing, whether ZJIT sees the call or not.
+  def induce_compile_failure! = nil
+
+  # A directive for the compiler to exit out of compiled code at the call site of this method.
+  # To show this to ZJIT, say `::RubyVM::ZJIT.induce_side_exit!` verbatim.
+  # Other forms are too dynamic to detect during compilation.
+  #
+  # Actually running this method does nothing, whether ZJIT sees the call or not.
+  def induce_side_exit! = nil
+
   # If --zjit-trace-exits is enabled parse the hashes from
   # Primitive.rb_zjit_get_exit_locations into a format readable
   # by Stackprof. This will allow us to find the exact location of a

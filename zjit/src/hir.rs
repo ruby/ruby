@@ -7,10 +7,12 @@
 #![allow(clippy::match_like_matches_macro)]
 use crate::{
     backend::lir::C_ARG_OPNDS,
-    cast::IntoUsize, codegen::local_idx_to_ep_offset, cruby::*, invariants::{self, has_singleton_class_of}, payload::{get_or_create_iseq_payload, IseqPayload}, options::{debug, get_option, DumpHIR}, state::ZJITState, json::Json
+    cast::IntoUsize, codegen::local_idx_to_ep_offset, cruby::*, invariants::{self, has_singleton_class_of}, payload::{get_or_create_iseq_payload, IseqPayload}, options::{debug, get_option, DumpHIR}, state::ZJITState, json::Json,
+    state,
 };
 use std::{
-    cell::RefCell, collections::{BTreeSet, HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, c_int, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter
+    cell::RefCell, collections::{BTreeSet, HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, c_int, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter,
+    sync::atomic::Ordering,
 };
 use crate::hir_type::{Type, types};
 use crate::hir_effect::{Effect, abstract_heaps, effects};
@@ -529,6 +531,7 @@ pub enum SideExitReason {
     SplatKwNotNilOrHash,
     SplatKwPolymorphic,
     SplatKwNotProfiled,
+    DirectiveInduced,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -6547,6 +6550,7 @@ pub enum ParseError {
     MalformedIseq(u32), // insn_idx into iseq_encoded
     Validation(ValidationError),
     NotAllowed,
+    DirectiveInduced,
 }
 
 /// Return the number of locals in the current ISEQ (includes parameters)
@@ -7077,7 +7081,32 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_opt_getconstant_path => {
                     let ic = get_arg(pc, 0).as_ptr();
-                    state.stack_push(fun.push_insn(block, Insn::GetConstantPath { ic, state: exit_id }));
+                    let get_const_path = fun.push_insn(block, Insn::GetConstantPath { ic, state: exit_id });
+                    state.stack_push(get_const_path);
+
+                    // Check for `::RubyVM::ZJIT` for directives
+                    unsafe {
+                        let mut current_segment = (*ic).segments;
+                        let mut segments = [ID(0); 4 /* expected segment length */];
+                        for segment in segments.iter_mut() {
+                            *segment = current_segment.read();
+                            if *segment == ID(0) {
+                                break;
+                            }
+                            current_segment = current_segment.add(1);
+                        }
+                        if [ID!(NULL), ID!(RubyVM), ID!(ZJIT), ID(0)] == segments {
+                            debug_assert_ne!(ID!(NULL), ID(0));
+                            let ruby_vm_mod = rb_const_lookup(rb_cObject, ID!(RubyVM));
+                            if !ruby_vm_mod.is_null() && (*ruby_vm_mod).value == rb_cRubyVM {
+                                let zjit_module = VALUE(state::ZJIT_MODULE.load(Ordering::Relaxed));
+                                let lookedup_module = rb_const_lookup(rb_cRubyVM, ID!(ZJIT));
+                                if !lookedup_module.is_null() && (*lookedup_module).value == zjit_module {
+                                    fun.insn_types[get_const_path.0] = Type::from_value(zjit_module);
+                                }
+                            }
+                        }
+                    }
                 }
                 YARVINSN_branchunless | YARVINSN_branchunless_without_ints => {
                     if opcode == YARVINSN_branchunless {
@@ -7538,6 +7567,28 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         break;  // End the block
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
+                    let mid = unsafe { rb_vm_ci_mid(call_info) };
+
+                    // Check for calls to directives
+                    if argc == 0
+                        && (mid == ID!(induce_side_exit_bang) || mid == ID!(induce_compile_failure_bang))
+                        && fun.type_of(state.stack_top()?)
+                              .ruby_object()
+                              .is_some_and(|obj| obj == VALUE(state::ZJIT_MODULE.load(Ordering::Relaxed)))
+                    {
+
+                        if mid == ID!(induce_side_exit_bang)
+                            && state::zjit_module_method_match_serial(ID!(induce_side_exit_bang), &state::INDUCE_SIDE_EXIT_SERIAL)
+                        {
+                            fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::DirectiveInduced });
+                            break;  // End the block
+                        }
+                        if mid == ID!(induce_compile_failure_bang)
+                            && state::zjit_module_method_match_serial(ID!(induce_compile_failure_bang), &state::INDUCE_COMPILE_FAILURE_SERIAL)
+                        {
+                            return Err(ParseError::DirectiveInduced);
+                        }
+                    }
 
                     {
                         fn new_branch_block(

@@ -145,6 +145,7 @@ fn main() {
         .allowlist_function("rb_gc_location")
         .allowlist_function("rb_gc_writebarrier")
         .allowlist_function("rb_gc_writebarrier_remember")
+        .allowlist_function("rb_gc_register_mark_object")
         .allowlist_function("rb_zjit_writebarrier_check_immediate")
 
         // VALUE variables for Ruby class objects
@@ -432,6 +433,7 @@ fn main() {
         .allowlist_function("rb_vm_base_ptr")
         .allowlist_function("rb_ec_stack_check")
         .allowlist_function("rb_vm_top_self")
+        .allowlist_function("rb_const_lookup")
 
         // We define these manually, don't import them
         .blocklist_type("VALUE")

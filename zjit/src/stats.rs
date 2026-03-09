@@ -231,6 +231,7 @@ make_counters! {
         exit_splatkw_not_nil_or_hash,
         exit_splatkw_polymorphic,
         exit_splatkw_not_profiled,
+        exit_directive_induced,
     }
 
     // Send fallback counters that are summed as dynamic_send_count
@@ -335,6 +336,7 @@ make_counters! {
     compile_error_parse_stack_underflow,
     compile_error_parse_malformed_iseq,
     compile_error_parse_not_allowed,
+    compile_error_parse_directive_induced,
     compile_error_validation_block_has_no_terminator,
     compile_error_validation_terminator_not_at_end,
     compile_error_validation_mismatched_block_arity,
@@ -521,6 +523,7 @@ pub fn exit_counter_for_compile_error(compile_error: &CompileError) -> Counter {
             StackUnderflow(_)       => compile_error_parse_stack_underflow,
             MalformedIseq(_)        => compile_error_parse_malformed_iseq,
             NotAllowed              => compile_error_parse_not_allowed,
+            DirectiveInduced        => compile_error_parse_directive_induced,
             Validation(validation) => match validation {
                 BlockHasNoTerminator(_)       => compile_error_validation_block_has_no_terminator,
                 TerminatorNotAtEnd(_, _, _)   => compile_error_validation_terminator_not_at_end,
@@ -596,6 +599,7 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         SplatKwNotNilOrHash           => exit_splatkw_not_nil_or_hash,
         SplatKwPolymorphic            => exit_splatkw_polymorphic,
         SplatKwNotProfiled            => exit_splatkw_not_profiled,
+        DirectiveInduced              => exit_directive_induced,
         PatchPoint(Invariant::BOPRedefined { .. })
                                       => exit_patchpoint_bop_redefined,
         PatchPoint(Invariant::MethodRedefined { .. })
