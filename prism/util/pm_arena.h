@@ -55,15 +55,41 @@ typedef struct {
 void pm_arena_reserve(pm_arena_t *arena, size_t capacity);
 
 /**
+ * Slow path for pm_arena_alloc: allocate a new block and return a pointer to
+ * the first `size` bytes. Do not call directly — use pm_arena_alloc instead.
+ *
+ * @param arena The arena to allocate from.
+ * @param size The number of bytes to allocate.
+ * @returns A pointer to the allocated memory.
+ */
+void * pm_arena_alloc_slow(pm_arena_t *arena, size_t size);
+
+/**
  * Allocate memory from the arena. The returned memory is NOT zeroed. This
  * function is infallible — it aborts on allocation failure.
+ *
+ * The fast path (bump pointer within the current block) is inlined at each
+ * call site. The slow path (new block allocation) is out-of-line.
  *
  * @param arena The arena to allocate from.
  * @param size The number of bytes to allocate.
  * @param alignment The required alignment (must be a power of 2).
  * @returns A pointer to the allocated memory.
  */
-void * pm_arena_alloc(pm_arena_t *arena, size_t size, size_t alignment);
+static PRISM_FORCE_INLINE void *
+pm_arena_alloc(pm_arena_t *arena, size_t size, size_t alignment) {
+    if (arena->current != NULL) {
+        size_t used_aligned = (arena->current->used + alignment - 1) & ~(alignment - 1);
+        size_t needed = used_aligned + size;
+
+        if (used_aligned >= arena->current->used && needed >= used_aligned && needed <= arena->current->capacity) {
+            arena->current->used = needed;
+            return arena->current->data + used_aligned;
+        }
+    }
+
+    return pm_arena_alloc_slow(arena, size);
+}
 
 /**
  * Allocate zero-initialized memory from the arena. This function is infallible
@@ -74,7 +100,12 @@ void * pm_arena_alloc(pm_arena_t *arena, size_t size, size_t alignment);
  * @param alignment The required alignment (must be a power of 2).
  * @returns A pointer to the allocated, zero-initialized memory.
  */
-void * pm_arena_zalloc(pm_arena_t *arena, size_t size, size_t alignment);
+static inline void *
+pm_arena_zalloc(pm_arena_t *arena, size_t size, size_t alignment) {
+    void *ptr = pm_arena_alloc(arena, size, alignment);
+    memset(ptr, 0, size);
+    return ptr;
+}
 
 /**
  * Allocate memory from the arena and copy the given data into it. This is a
@@ -86,7 +117,12 @@ void * pm_arena_zalloc(pm_arena_t *arena, size_t size, size_t alignment);
  * @param alignment The required alignment (must be a power of 2).
  * @returns A pointer to the allocated copy.
  */
-void * pm_arena_memdup(pm_arena_t *arena, const void *src, size_t size, size_t alignment);
+static inline void *
+pm_arena_memdup(pm_arena_t *arena, const void *src, size_t size, size_t alignment) {
+    void *dst = pm_arena_alloc(arena, size, alignment);
+    memcpy(dst, src, size);
+    return dst;
+}
 
 /**
  * Free all blocks in the arena. After this call, all pointers returned by
