@@ -9894,17 +9894,12 @@ parser_lex(pm_parser_t *parser) {
             // stores back to parser->current.end.
             bool chomping = true;
             while (parser->current.end < parser->end && chomping) {
-                {
-                    static const uint8_t inline_whitespace[256] = {
-                        [' '] = 1, ['\t'] = 1, ['\f'] = 1, ['\v'] = 1
-                    };
-                    const uint8_t *scan = parser->current.end;
-                    while (scan < parser->end && inline_whitespace[*scan]) scan++;
-                    if (scan > parser->current.end) {
-                        parser->current.end = scan;
-                        space_seen = true;
-                        continue;
-                    }
+                if (pm_char_is_inline_whitespace(*parser->current.end)) {
+                    const uint8_t *scan = parser->current.end + 1;
+                    while (scan < parser->end && pm_char_is_inline_whitespace(*scan)) scan++;
+                    parser->current.end = scan;
+                    space_seen = true;
+                    continue;
                 }
 
                 switch (*parser->current.end) {
