@@ -6,8 +6,8 @@ Gem.load_yaml
 
 class TestGemSafeYAML < Gem::TestCase
   def yaml_load(input, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES,
-                permitted_symbols: Gem::SafeYAML::PERMITTED_SYMBOLS,
-                aliases: true)
+    permitted_symbols: Gem::SafeYAML::PERMITTED_SYMBOLS,
+    aliases: true)
     if Gem.use_psych?
       Psych.safe_load(input, permitted_classes: permitted_classes,
                              permitted_symbols: permitted_symbols,
@@ -45,7 +45,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_specification_version_is_integer
-
     yaml = <<~YAML
       --- !ruby/object:Gem::Specification
       name: test
@@ -60,7 +59,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_disallowed_class_rejected
-
     yaml = <<~YAML
       --- !ruby/object:SomeDisallowedClass
       foo: bar
@@ -73,7 +71,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_disallowed_symbol_rejected
-
     yaml = <<~YAML
       --- !ruby/object:Gem::Dependency
       name: test
@@ -98,7 +95,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_yaml_serializer_aliases_disabled
-
     aliases_enabled = Gem::SafeYAML.aliases_enabled?
     Gem::SafeYAML.aliases_enabled = false
     refute_predicate Gem::SafeYAML, :aliases_enabled?
@@ -113,7 +109,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_real_gemspec_fileutils
-
     yaml = <<~YAML
       --- !ruby/object:Gem::Specification
       name: fileutils
@@ -174,7 +169,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_yaml_anchor_and_alias_enabled
-
     aliases_enabled = Gem::SafeYAML.aliases_enabled?
     Gem::SafeYAML.aliases_enabled = true
 
@@ -200,7 +194,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_real_gemspec_rubygems_bundler
-
     yaml = <<~YAML
       --- !ruby/object:Gem::Specification
       name: rubygems-bundler
@@ -284,7 +277,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_empty_requirements_array
-
     yaml = <<~YAML
       --- !ruby/object:Gem::Specification
       name: test
@@ -312,7 +304,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_requirements_hash_converted_to_array
-
     # Malformed YAML where requirements is a Hash instead of Array
     yaml = <<~YAML
       !ruby/object:Gem::Requirement
@@ -328,7 +319,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_rdoc_options_hash_converted_to_array
-
     # Some gemspecs incorrectly have rdoc_options: {} instead of rdoc_options: []
     yaml = <<~YAML
       --- !ruby/object:Gem::Specification
@@ -346,21 +336,18 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_load_returns_nil_for_comment_only_yaml
-
     # Bundler config files may contain only comments after deleting all keys
     result = yaml_load("---\n# BUNDLE_FOO: \"bar\"\n")
     assert_nil result
   end
 
   def test_load_returns_nil_for_empty_document
-
     assert_nil yaml_load("---\n")
     assert_nil yaml_load("")
     assert_raise(TypeError) { yaml_load(nil) }
   end
 
   def test_load_returns_hash_for_flow_empty_hash
-
     # yaml_dump({}) produces "--- {}\n"
     result = yaml_load("--- {}\n")
     assert_kind_of Hash, result
@@ -368,7 +355,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_load_parses_flow_empty_hash_as_value
-
     result = yaml_load("metadata: {}\n")
     assert_kind_of Hash, result
     assert_kind_of Hash, result["metadata"]
@@ -376,7 +362,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_yaml_non_specific_tag_stripped
-
     # Legacy RubyGems (1.x) generated YAML with ! non-specific tags like:
     #   - ! '>='
     # The ! prefix should be ignored.
@@ -407,7 +392,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_legacy_gemspec_with_anchors_and_non_specific_tags
-
     aliases_enabled = Gem::SafeYAML.aliases_enabled?
     Gem::SafeYAML.aliases_enabled = true
 
@@ -463,14 +447,12 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_non_specific_tag_on_plain_value
-
     # ! tag on a bracketed value like rubyforge_project: ! '[none]'
     result = yaml_load("key: ! '[none]'\n")
     assert_equal({ "key" => "[none]" }, result)
   end
 
   def test_dump_quotes_dollar_sign_values
-
     # Values starting with $ should be quoted to preserve them as strings
     yaml = yaml_dump({ "BUNDLE_FOO" => "$BUILD_DIR", "BUNDLE_BAR" => "baz" })
     assert_include yaml, 'BUNDLE_FOO: "$BUILD_DIR"'
@@ -483,7 +465,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_dump_quotes_special_characters
-
     # Various special characters that should trigger quoting
     special_values = {
       "dollar" => "$HOME",
@@ -508,7 +489,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_load_ambiguous_value_with_colon
-
     # "invalid: yaml: hah" is ambiguous YAML - our parser treats it as
     # {"invalid" => "yaml: hah"}, but the value looks like a nested mapping.
     # config_file.rb's load_file should detect this and reject it.
@@ -525,7 +505,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_nested_anchor_in_array_item
-
     # Ensure aliases are enabled for this test
     aliases_enabled = Gem::SafeYAML.aliases_enabled?
     Gem::SafeYAML.aliases_enabled = true
@@ -568,7 +547,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_roundtrip_specification
-
     spec = Gem::Specification.new do |s|
       s.name = "round-trip-test"
       s.version = "2.3.4"
@@ -605,7 +583,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_roundtrip_specification_with_extensions
-
     spec = Gem::Specification.new do |s|
       s.name = "native-ext-test"
       s.version = "1.0.0"
@@ -625,7 +602,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_roundtrip_specification_with_windows_paths
-
     spec = Gem::Specification.new do |s|
       s.name = "win-path-test"
       s.version = "1.0.0"
@@ -646,7 +622,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_roundtrip_specification_with_metadata
-
     spec = Gem::Specification.new do |s|
       s.name = "metadata-test"
       s.version = "1.0.0"
@@ -675,7 +650,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_roundtrip_version
-
     ver = Gem::Version.new("1.2.3")
     yaml = yaml_dump(ver)
     loaded = yaml_load(yaml, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES)
@@ -685,7 +659,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_roundtrip_platform
-
     plat = Gem::Platform.new("x86_64-linux")
     yaml = yaml_dump(plat)
     loaded = yaml_load(yaml, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES)
@@ -697,7 +670,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_roundtrip_requirement
-
     req = Gem::Requirement.new(">= 1.0", "< 2.0")
     yaml = yaml_dump(req)
     loaded = yaml_load(yaml, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES)
@@ -707,7 +679,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_roundtrip_dependency
-
     dep = Gem::Dependency.new("foo", ">= 1.0", :development)
     yaml = yaml_dump(dep)
     loaded = yaml_load(yaml, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES)
@@ -719,7 +690,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_roundtrip_nested_hash
-
     obj = { "a" => { "b" => "c", "d" => [1, 2, 3] } }
     yaml = yaml_dump(obj)
     loaded = yaml_load(yaml)
@@ -728,7 +698,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_roundtrip_block_scalar
-
     obj = { "text" => "line1\nline2\n" }
     yaml = yaml_dump(obj)
     loaded = yaml_load(yaml)
@@ -737,7 +706,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_roundtrip_special_characters
-
     obj = {
       "dollar" => "$HOME",
       "exclamation" => "!important",
@@ -758,7 +726,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_roundtrip_boolean_nil_integer
-
     obj = { "flag" => true, "count" => 42, "empty" => nil, "off" => false }
     yaml = yaml_dump(obj)
     loaded = yaml_load(yaml)
@@ -770,7 +737,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_roundtrip_time
-
     time = Time.utc(2024, 6, 15, 12, 30, 45)
     obj = { "created" => time }
     yaml = yaml_dump(obj)
@@ -783,7 +749,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_roundtrip_empty_collections
-
     obj = { "arr" => [], "hash" => {} }
     yaml = yaml_dump(obj)
     loaded = yaml_load(yaml)
@@ -793,7 +758,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_load_double_quoted_escape_sequences
-
     result = yaml_load("newline: \"hello\\nworld\"")
     assert_equal "hello\nworld", result["newline"]
 
@@ -808,7 +772,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_load_double_quoted_backslash_before_escape_chars
-
     # \\r in YAML should become literal backslash + r, not carriage return
     result = yaml_load('path: "D:\\\\ruby-mswin\\\\lib"')
     assert_equal "D:\\ruby-mswin\\lib", result["path"]
@@ -827,7 +790,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_load_single_quoted_escape
-
     result = yaml_load("key: 'it''s'")
     assert_equal "it's", result["key"]
 
@@ -836,7 +798,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_load_quoted_numeric_stays_string
-
     result = yaml_load("key: \"42\"")
     assert_equal "42", result["key"]
     assert_kind_of String, result["key"]
@@ -847,13 +808,11 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_load_empty_string_value
-
     result = yaml_load("key: \"\"")
     assert_equal "", result["key"]
   end
 
   def test_load_unquoted_integer
-
     result = yaml_load("key: 42")
     assert_equal 42, result["key"]
     assert_kind_of Integer, result["key"]
@@ -863,14 +822,12 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_load_boolean_values
-
     result = yaml_load("a: true\nb: false")
     assert_equal true, result["a"]
     assert_equal false, result["b"]
   end
 
   def test_load_nil_value
-
     # YAML 1.2: "nil" is not a null value, only ~ and null are
     result = yaml_load("key: nil")
     assert_equal "nil", result["key"]
@@ -883,7 +840,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_load_time_value
-
     result = yaml_load("date: 2024-06-15 12:30:45.000000000 Z")
     assert_kind_of Time, result["date"]
     assert_equal 2024, result["date"].year
@@ -892,14 +848,12 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_load_block_scalar_keep_trailing_newline
-
     yaml = "text: |\n  line1\n  line2\n"
     result = yaml_load(yaml)
     assert_equal "line1\nline2\n", result["text"]
   end
 
   def test_load_block_scalar_strip_trailing_newline
-
     yaml = "text: |-\n  no trailing newline\n"
     result = yaml_load(yaml)
     assert_equal "no trailing newline", result["text"]
@@ -907,46 +861,39 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_load_flow_array
-
     result = yaml_load("items: [a, b, c]")
     assert_equal ["a", "b", "c"], result["items"]
   end
 
   def test_load_flow_empty_array
-
     result = yaml_load("items: []")
     assert_equal [], result["items"]
   end
 
   def test_load_mapping_key_with_no_value
-
     result = yaml_load("key:")
     assert_kind_of Hash, result
     assert_nil result["key"]
   end
 
   def test_load_sequence_item_as_mapping
-
     yaml = "items:\n- name: foo\n  ver: 1\n- name: bar\n  ver: 2"
     result = yaml_load(yaml)
     assert_equal [{ "name" => "foo", "ver" => 1 }, { "name" => "bar", "ver" => 2 }], result["items"]
   end
 
   def test_load_nested_sequence
-
     yaml = "matrix:\n- - a\n  - b\n- - c\n  - d"
     result = yaml_load(yaml)
     assert_equal [["a", "b"], ["c", "d"]], result["matrix"]
   end
 
   def test_load_comment_stripped_from_value
-
     result = yaml_load("key: value # this is a comment")
     assert_equal "value", result["key"]
   end
 
   def test_load_comment_in_quoted_string_preserved
-
     result = yaml_load("key: \"value # not a comment\"")
     assert_equal "value # not a comment", result["key"]
 
@@ -955,14 +902,12 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_load_crlf_line_endings
-
     result = yaml_load("key: value\r\nother: data\r\n")
     assert_equal "value", result["key"]
     assert_equal "data", result["other"]
   end
 
   def test_load_version_requirement_old_tag
-
     yaml = <<~YAML
       !ruby/object:Gem::Version::Requirement
       requirements:
@@ -977,7 +922,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_load_platform_from_value_field
-
     yaml = "!ruby/object:Gem::Platform\nvalue: x86-linux\n"
     plat = yaml_load(yaml, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES)
     assert_kind_of Gem::Platform, plat
@@ -985,7 +929,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_load_platform_from_cpu_os_version_fields
-
     yaml = "!ruby/object:Gem::Platform\ncpu: x86_64\nos: darwin\nversion: nil\n"
     plat = yaml_load(yaml, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES)
     assert_kind_of Gem::Platform, plat
@@ -994,7 +937,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_load_platform_malicious_sequence
-
     yaml = "!ruby/object:Gem::Platform\n- \"x86-mswin32\\n system('id')#\"\n"
     result = yaml_load(yaml, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES)
     refute_kind_of Gem::Platform, result
@@ -1002,7 +944,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_load_dependency_missing_requirement_uses_default
-
     yaml = <<~YAML
       !ruby/object:Gem::Dependency
       name: foo
@@ -1017,7 +958,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_load_dependency_missing_type_defaults_to_runtime
-
     yaml = <<~YAML
       !ruby/object:Gem::Dependency
       name: bar
@@ -1033,7 +973,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_specification_version_non_numeric_string_not_converted
-
     yaml = <<~YAML
       --- !ruby/object:Gem::Specification
       name: test
@@ -1049,7 +988,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_unknown_permitted_tag_raises_argument_error
-
     yaml = "!ruby/object:MyCustomClass\nfoo: bar\n"
     assert_raise(ArgumentError) do
       yaml_load(yaml, permitted_classes: ["MyCustomClass"])
@@ -1057,20 +995,17 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_dump_block_scalar_with_trailing_newline
-
     yaml = yaml_dump({ "text" => "line1\nline2\n" })
     assert_include yaml, " |\n"
     refute_includes yaml, " |-\n"
   end
 
   def test_dump_block_scalar_without_trailing_newline
-
     yaml = yaml_dump({ "text" => "line1\nline2" })
     assert_include yaml, " |-\n"
   end
 
   def test_dump_nil_value
-
     yaml = yaml_dump({ "key" => nil })
 
     loaded = yaml_load(yaml)
@@ -1078,7 +1013,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_dump_symbol_keys_quoted
-
     yaml = yaml_dump({ foo: "bar" })
     # Symbol keys should use inspect format
     assert_include yaml, ":foo:"
@@ -1089,7 +1023,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_regression_flow_empty_hash_as_root
-
     # Previously returned Mapping struct instead of Hash
     result = yaml_load("--- {}")
     assert_kind_of Hash, result
@@ -1097,7 +1030,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_regression_alias_check_in_builder_not_parser
-
     # Previously aliases were resolved in Parser, bypassing Builder's policy check.
     # The Builder must enforce aliases: false.
     aliases_enabled = Gem::SafeYAML.aliases_enabled?
@@ -1117,7 +1049,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_regression_anchored_mapping_stored_for_alias_resolution
-
     # Previously build_mapping didn't call store_anchor, so anchored
     # Gem types (Requirement, etc.) couldn't be resolved via aliases.
     aliases_enabled = Gem::SafeYAML.aliases_enabled?
@@ -1141,7 +1072,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_regression_register_anchor_sets_node_anchor
-
     # Previously register_anchor only stored node in @anchors hash but
     # didn't set node.anchor, so Builder couldn't track anchored values.
     aliases_enabled = Gem::SafeYAML.aliases_enabled?
@@ -1165,7 +1095,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_regression_coerce_empty_hash_not_wrapped_in_scalar
-
     # Previously coerce("{}") returned Mapping but parse_plain_scalar
     # wrapped it in Scalar.new(value: Mapping), causing type mismatch.
     result = yaml_load("--- {}")
@@ -1176,7 +1105,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_regression_rdoc_options_normalized_to_array
-
     # rdoc_options as Hash (malformed gemspec)
     yaml = <<~YAML
       --- !ruby/object:Gem::Specification
@@ -1193,7 +1121,6 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_regression_requirements_field_normalized_to_array
-
     # The "requirements" field in a Specification (not Requirement)
     # should be normalized from Hash to Array if malformed
     yaml = <<~YAML

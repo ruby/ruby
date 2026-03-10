@@ -279,7 +279,7 @@ module Gem
           true
         elsif val == "false"
           false
-        elsif val == "~" || val == "null"
+        elsif ["~", "null"].include?(val)
           nil
         elsif val == "{}"
           Mapping.new
