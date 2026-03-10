@@ -10,35 +10,6 @@
 # For documentation, see class Pathname.
 #
 
-class Pathname    # * Find *
-  #
-  # Iterates over the directory tree in a depth first manner, yielding a
-  # Pathname for each file under "this" directory.
-  #
-  # Note that you need to require 'pathname' to use this method.
-  #
-  # Returns an Enumerator if no block is given.
-  #
-  # Since it is implemented by the standard library module Find, Find.prune can
-  # be used to control the traversal.
-  #
-  # If +self+ is +.+, yielded pathnames begin with a filename in the
-  # current directory, not +./+.
-  #
-  # See Find.find
-  #
-  def find(ignore_error: true) # :yield: pathname
-    return to_enum(__method__, ignore_error: ignore_error) unless block_given?
-    require 'find'
-    if @path == '.'
-      Find.find(@path, ignore_error: ignore_error) {|f| yield self.class.new(f.delete_prefix('./')) }
-    else
-      Find.find(@path, ignore_error: ignore_error) {|f| yield self.class.new(f) }
-    end
-  end
-end
-
-
 class Pathname    # * FileUtils *
   # Recursively deletes a directory, including all directories beneath it.
   #
