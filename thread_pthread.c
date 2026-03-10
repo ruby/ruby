@@ -1055,14 +1055,12 @@ ubf_set(rb_thread_t *th, rb_unblock_function_t *func, void *arg)
 static void
 ubf_clear(rb_thread_t *th)
 {
-    if (th->unblock.func) {
-        rb_native_mutex_lock(&th->interrupt_lock);
-        {
-            th->unblock.func = NULL;
-            th->unblock.arg  = NULL;
-        }
-        rb_native_mutex_unlock(&th->interrupt_lock);
+    rb_native_mutex_lock(&th->interrupt_lock);
+    {
+        th->unblock.func = NULL;
+        th->unblock.arg  = NULL;
     }
+    rb_native_mutex_unlock(&th->interrupt_lock);
 }
 
 static void
