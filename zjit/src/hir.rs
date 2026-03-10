@@ -7582,15 +7582,16 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         let entry_args = state.as_args(self_param);
                         if let Some(summary) = fun.polymorphic_summary(&profiles, recv, exit_state.insn_idx) {
                             let join_block = insn_idx_to_block.get(&insn_idx).copied().unwrap_or_else(|| fun.new_block(insn_idx));
-                            let mut seen_classes = Vec::with_capacity(summary.buckets().len());
+                            // Dedup by expected type so immediate/heap variants
+                            // under the same Ruby class can still get separate branches.
+                            let mut seen_types = Vec::with_capacity(summary.buckets().len());
                             for &profiled_type in summary.buckets() {
                                 if profiled_type.is_empty() { break; }
-                                let class = profiled_type.class();
-                                if seen_classes.contains(&class) {
+                                let expected = Type::from_profiled_type(profiled_type);
+                                if seen_types.iter().any(|ty: &Type| ty.bit_equal(expected)) {
                                     continue;
                                 }
-                                seen_classes.push(class);
-                                let expected = Type::from_profiled_type(profiled_type);
+                                seen_types.push(expected);
                                 let has_type = fun.push_insn(block, Insn::HasType { val: recv, expected });
                                 let iftrue_block =
                                     new_branch_block(&mut fun, cd, argc as usize, opcode, expected, branch_insn_idx, &exit_state, locals_count, stack_count, join_block);

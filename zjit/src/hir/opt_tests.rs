@@ -7412,7 +7412,6 @@ mod hir_opt_tests {
           v20:ObjectSubclass[class_exact:C] = RefineType v18, ObjectSubclass[class_exact:C]
           PatchPoint NoSingletonClass(C@0x1008)
           PatchPoint MethodRedefined(C@0x1008, foo@0x1010, cme:0x1018)
-          IncrCounter getivar_fallback_not_monomorphic
           v37:BasicObject = GetIvar v20, :@foo
           Jump bb4(v16, v17, v37)
         bb4(v26:BasicObject, v27:BasicObject, v28:BasicObject):
@@ -13430,6 +13429,111 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn specialize_polymorphic_send_fixnum_and_bignum() {
+        // Fixnum and Bignum both have class Integer, but they should be
+        // treated as different types for polymorphic dispatch because
+        // Fixnum is an immediate and Bignum is a heap object.
+        set_call_threshold(4);
+        eval("
+        def test x
+          x.to_s
+        end
+
+        fixnum = 1
+        bignum = 10**100
+        test(fixnum)
+        test(bignum)
+        test(fixnum)
+        test(bignum)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:CBool = HasType v10, Fixnum
+          IfTrue v15, bb5(v9, v10, v10)
+          v24:CBool = HasType v10, Bignum
+          IfTrue v24, bb6(v9, v10, v10)
+          v33:BasicObject = Send v10, :to_s # SendFallbackReason: SendWithoutBlock: polymorphic fallback
+          Jump bb4(v9, v10, v33)
+        bb5(v16:BasicObject, v17:BasicObject, v18:BasicObject):
+          v20:Fixnum = RefineType v18, Fixnum
+          PatchPoint MethodRedefined(Integer@0x1008, to_s@0x1010, cme:0x1018)
+          v46:StringExact = CCallVariadic v20, :Integer#to_s@0x1040
+          Jump bb4(v16, v17, v46)
+        bb6(v25:BasicObject, v26:BasicObject, v27:BasicObject):
+          v29:Bignum = RefineType v27, Bignum
+          PatchPoint MethodRedefined(Integer@0x1008, to_s@0x1010, cme:0x1018)
+          v49:StringExact = CCallVariadic v29, :Integer#to_s@0x1040
+          Jump bb4(v25, v26, v49)
+        bb4(v35:BasicObject, v36:BasicObject, v37:BasicObject):
+          CheckInterrupts
+          Return v37
+        ");
+    }
+
+    #[test]
+    fn specialize_polymorphic_send_static_and_dynamic_symbol() {
+        set_call_threshold(4);
+        eval("
+        def test x
+          x.to_s
+        end
+
+        static_sym = :foo
+        dynamic_sym = (\"zjit_dynamic_\" + Object.new.object_id.to_s).to_sym
+        test static_sym
+        test dynamic_sym
+        test static_sym
+        test dynamic_sym
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:CBool = HasType v10, StaticSymbol
+          IfTrue v15, bb5(v9, v10, v10)
+          v24:CBool = HasType v10, DynamicSymbol
+          IfTrue v24, bb6(v9, v10, v10)
+          v33:BasicObject = Send v10, :to_s # SendFallbackReason: SendWithoutBlock: polymorphic fallback
+          Jump bb4(v9, v10, v33)
+        bb5(v16:BasicObject, v17:BasicObject, v18:BasicObject):
+          v20:StaticSymbol = RefineType v18, StaticSymbol
+          PatchPoint MethodRedefined(Symbol@0x1008, to_s@0x1010, cme:0x1018)
+          v48:StringExact = InvokeBuiltin leaf <inline_expr>, v20
+          Jump bb4(v16, v17, v48)
+        bb6(v25:BasicObject, v26:BasicObject, v27:BasicObject):
+          v29:DynamicSymbol = RefineType v27, DynamicSymbol
+          PatchPoint MethodRedefined(Symbol@0x1008, to_s@0x1010, cme:0x1018)
+          v49:StringExact = InvokeBuiltin leaf <inline_expr>, v29
+          Jump bb4(v25, v26, v49)
+        bb4(v35:BasicObject, v36:BasicObject, v37:BasicObject):
+          CheckInterrupts
+          Return v37
+        ");
+    }
+
+    #[test]
     fn specialize_polymorphic_send_iseq_duplicate_class_profiles() {
         set_call_threshold(4);
         eval("
@@ -13469,9 +13573,8 @@ mod hir_opt_tests {
         bb5(v16:BasicObject, v17:BasicObject, v18:BasicObject):
           PatchPoint NoSingletonClass(C@0x1008)
           PatchPoint MethodRedefined(C@0x1008, foo@0x1010, cme:0x1018)
-          IncrCounter inline_iseq_optimized_send_count
-          v39:Fixnum[3] = Const Value(3)
-          Jump bb4(v16, v17, v39)
+          v38:Fixnum[3] = Const Value(3)
+          Jump bb4(v16, v17, v38)
         bb4(v26:BasicObject, v27:BasicObject, v28:BasicObject):
           CheckInterrupts
           Return v28
