@@ -451,10 +451,12 @@ module Gem
                    build_dependency(node)
                  when nil
                    build_hash(node)
-                 else
+                 when "!ruby/object:Gem::Specification"
                    hash = build_hash(node)
                    hash[:tag] = node.tag
                    hash
+                 else
+                   raise ArgumentError, "undefined class/module #{node.tag.sub("!ruby/object:", "")}"
         end
 
         store_anchor(node.anchor, result)

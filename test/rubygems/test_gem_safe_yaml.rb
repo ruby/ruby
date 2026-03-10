@@ -1005,20 +1005,11 @@ class TestGemSafeYAML < Gem::TestCase
     assert_equal "abc", spec.specification_version
   end
 
-  def test_unknown_permitted_tag_returns_hash_with_tag
+  def test_unknown_permitted_tag_raises_argument_error
 
     yaml = "!ruby/object:MyCustomClass\nfoo: bar\n"
-    if Gem.use_psych?
-      # Psych raises ArgumentError for undefined classes
-      assert_raise(ArgumentError) do
-        yaml_load(yaml, permitted_classes: ["MyCustomClass"])
-      end
-    else
-      # YAMLSerializer returns a Hash with the tag stored
-      result = yaml_load(yaml, permitted_classes: ["MyCustomClass"])
-      assert_kind_of Hash, result
-      assert_equal "bar", result["foo"]
-      assert_equal "!ruby/object:MyCustomClass", result[:tag]
+    assert_raise(ArgumentError) do
+      yaml_load(yaml, permitted_classes: ["MyCustomClass"])
     end
   end
 
