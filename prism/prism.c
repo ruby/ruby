@@ -1783,16 +1783,14 @@ char_is_identifier_utf8(const uint8_t *b, ptrdiff_t n) {
  * Callers must handle any remaining bytes (short tail or non-ASCII/UTF-8)
  * with a byte-at-a-time loop.
  *
- * Up to four optimized implementations are selected at compile time, with a
+ * Up to three optimized implementations are selected at compile time, with a
  * no-op fallback for unsupported platforms:
  *   1. NEON — processes 16 bytes per iteration on aarch64.
- *   2. SSE2 — processes 16 bytes per iteration on x86-64.
- *   3. WASM SIMD — processes 16 bytes per iteration on WebAssembly.
- *   4. SWAR — little-endian fallback, processes 8 bytes per iteration.
- *   5. No-op — returns 0; the caller's byte-at-a-time loop handles everything.
+ *   2. SSSE3 — processes 16 bytes per iteration on x86-64.
+ *   3. SWAR — little-endian fallback, processes 8 bytes per iteration.
  */
 
-#if defined(__aarch64__) && defined(__ARM_NEON)
+#if defined(PRISM_HAS_NEON)
 #include <arm_neon.h>
 
 static inline size_t
@@ -1844,8 +1842,8 @@ scan_identifier_ascii(const uint8_t *start, const uint8_t *end) {
     return (size_t) (cursor - start);
 }
 
-#elif defined(__x86_64__) && defined(__SSE2__)
-#include <emmintrin.h>
+#elif defined(PRISM_HAS_SSSE3)
+#include <tmmintrin.h>
 
 static inline size_t
 scan_identifier_ascii(const uint8_t *start, const uint8_t *end) {
@@ -1886,54 +1884,11 @@ scan_identifier_ascii(const uint8_t *start, const uint8_t *end) {
     return (size_t) (cursor - start);
 }
 
-#elif defined(__wasm_simd128__)
-#include <wasm_simd128.h>
-
-static inline size_t
-scan_identifier_ascii(const uint8_t *start, const uint8_t *end) {
-    const uint8_t *cursor = start;
-
-    while (cursor + 16 <= end) {
-        v128_t v = wasm_v128_load(cursor);
-
-        // Range checks via subtract-and-unsigned-compare: (v - lo) < count
-        // is true iff v is in [lo, lo + count). One subtract + one compare
-        // per range instead of two comparisons + AND.
-
-        // Fold case: OR with 0x20 maps A-Z to a-z.
-        v128_t lowered = wasm_v128_or(v, wasm_u8x16_splat(0x20));
-        v128_t letter = wasm_u8x16_lt(
-            wasm_i8x16_sub(lowered, wasm_u8x16_splat(0x61)),
-            wasm_u8x16_splat(0x1A));
-
-        v128_t digit = wasm_u8x16_lt(
-            wasm_i8x16_sub(v, wasm_u8x16_splat(0x30)),
-            wasm_u8x16_splat(0x0A));
-
-        v128_t underscore = wasm_i8x16_eq(v, wasm_u8x16_splat(0x5F));
-
-        v128_t ident = wasm_v128_or(wasm_v128_or(letter, digit), underscore);
-
-        // Fast path: if all 16 bytes are identifier chars, advance.
-        if (wasm_i8x16_all_true(ident)) {
-            cursor += 16;
-            continue;
-        }
-
-        // Extract bitmask only on the exit path to find the first non-match.
-        uint32_t mask = wasm_i8x16_bitmask(ident);
-        cursor += pm_ctzll((uint64_t) (~mask & 0xFFFF));
-        return (size_t) (cursor - start);
-    }
-
-    return (size_t) (cursor - start);
-}
-
 // The SWAR path uses pm_ctzll to find the first non-matching byte within a
 // word, which only yields the correct byte index on little-endian targets.
 // We gate on a positive little-endian check so that unknown-endianness
 // platforms safely fall through to the no-op fallback.
-#elif defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#elif defined(PRISM_HAS_SWAR)
 
 /**
  * Portable SWAR fallback — processes 8 bytes per iteration.

@@ -277,6 +277,18 @@
 #endif
 
 /**
+ * Platform detection for SIMD / fast-path implementations. At most one of
+ * these macros is defined, selecting the best available vectorization strategy.
+ */
+#if (defined(__aarch64__) && defined(__ARM_NEON)) || defined(_M_ARM64)
+    #define PRISM_HAS_NEON
+#elif (defined(__x86_64__) && defined(__SSSE3__)) || defined(_M_X64)
+    #define PRISM_HAS_SSSE3
+#elif defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+    #define PRISM_HAS_SWAR
+#endif
+
+/**
  * Count trailing zero bits in a 64-bit value. Used by SWAR identifier scanning
  * to find the first non-matching byte in a word.
  *
