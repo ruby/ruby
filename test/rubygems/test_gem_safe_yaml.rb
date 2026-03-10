@@ -332,7 +332,7 @@ class TestGemSafeYAML < Gem::TestCase
     assert_kind_of Gem::Specification, spec
     assert_equal "test-gem", spec.name
 
-    assert_kind_of Hash, spec.rdoc_options
+    assert_equal [], spec.rdoc_options
   end
 
   def test_load_returns_nil_for_comment_only_yaml
@@ -1117,7 +1117,7 @@ class TestGemSafeYAML < Gem::TestCase
     YAML
 
     spec = Gem::SafeYAML.safe_load(yaml)
-    assert_kind_of Hash, spec.rdoc_options
+    assert_equal ["--title", "MyGem", "--main", "README"], spec.rdoc_options
   end
 
   def test_regression_requirements_field_normalized_to_array
@@ -1133,6 +1133,6 @@ class TestGemSafeYAML < Gem::TestCase
     YAML
 
     spec = Gem::SafeYAML.safe_load(yaml)
-    assert_kind_of Hash, spec.requirements
+    assert_equal [["foo", "bar"]], spec.requirements
   end
 end

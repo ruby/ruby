@@ -2190,10 +2190,13 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # Sets rdoc_options to +value+, ensuring it is an array.
+  # Sets rdoc_options to +value+, ensuring it is a flat array of strings.
+  # Handles malformed gemspecs where rdoc_options may be a Hash or contain Hashes.
 
   def rdoc_options=(options)
-    @rdoc_options = Array options
+    @rdoc_options = Array(options).flat_map do |opt|
+      opt.is_a?(Hash) ? opt.to_a.flatten.map(&:to_s) : opt
+    end
   end
 
   ##
@@ -2553,6 +2556,10 @@ class Gem::Specification < Gem::BasicSpecification
         self.date = val
       when "platform"
         self.platform = val
+      when "rdoc_options"
+        self.rdoc_options = val
+      when "requirements"
+        self.requirements = val
       else
         instance_variable_set "@#{ivar}", val
       end
