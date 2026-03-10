@@ -120,4 +120,42 @@ mod tests {
             jit_entry(0/1r)
         "#), @"(0/1)..1");
     }
+
+    #[test]
+    fn test_iseq_on_raise_on_ensure() { // TODO: minimize
+        assert_snapshot!(inspect(r#"
+            def raise_a = raise "a"
+            def raise_b = raise "b"
+            def raise_c = raise "c"
+
+            def foo(a: raise_a, b: raise_b, c: raise_c)
+              [a, b, c]
+            end
+
+            def test_a
+              foo(b: 2, c: 3)
+            rescue RuntimeError => e
+              e.message
+            end
+
+            def test_b
+              foo(a: 1, c: 3)
+            rescue RuntimeError => e
+              e.message
+            end
+
+            def test_c
+              foo(a: 1, b: 2)
+            rescue RuntimeError => e
+              e.message
+            end
+
+            def test
+              [test_a, test_b, test_c]
+            end
+
+            test
+            test
+        "#), @r#"["a", "b", "c"]"#);
+    }
 }

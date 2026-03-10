@@ -618,7 +618,7 @@ backtrace_size(const rb_execution_context_t *ec)
 static bool
 is_rescue_or_ensure_frame(const rb_control_frame_t *cfp)
 {
-    enum rb_iseq_type type = ISEQ_BODY(cfp->iseq)->type;
+    enum rb_iseq_type type = ISEQ_BODY(rb_zjit_cfp_iseq(cfp))->type;
     return type == ISEQ_TYPE_RESCUE || type == ISEQ_TYPE_ENSURE;
 }
 

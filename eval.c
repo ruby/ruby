@@ -2010,7 +2010,7 @@ errinfo_place(const rb_execution_context_t *ec)
             if (ISEQ_BODY(rb_zjit_cfp_iseq(cfp))->type == ISEQ_TYPE_RESCUE) {
                 return &cfp->ep[VM_ENV_INDEX_LAST_LVAR];
             }
-            else if (ISEQ_BODY(cfp->iseq)->type == ISEQ_TYPE_ENSURE &&
+            else if (ISEQ_BODY(rb_zjit_cfp_iseq(cfp))->type == ISEQ_TYPE_ENSURE &&
                      !THROW_DATA_P(cfp->ep[VM_ENV_INDEX_LAST_LVAR]) &&
                      !FIXNUM_P(cfp->ep[VM_ENV_INDEX_LAST_LVAR])) {
                 return &cfp->ep[VM_ENV_INDEX_LAST_LVAR];
