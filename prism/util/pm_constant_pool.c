@@ -84,37 +84,48 @@ pm_constant_pool_hash(const uint8_t *start, size_t length) {
     static const uint64_t secret = 0x517cc1b727220a95ULL;
     uint64_t hash = (uint64_t) length;
 
-    const uint8_t *ptr = start;
-    size_t remaining = length;
-
-    while (remaining >= 8) {
+    if (length <= 8) {
+        // Short strings: read first and last 4 bytes (overlapping for len < 8).
+        // This covers the majority of Ruby identifiers with a single multiply.
+        if (length >= 4) {
+            uint32_t a, b;
+            memcpy(&a, start, 4);
+            memcpy(&b, start + length - 4, 4);
+            hash ^= (uint64_t) a | ((uint64_t) b << 32);
+        } else if (length > 0) {
+            hash ^= (uint64_t) start[0] | ((uint64_t) start[length >> 1] << 8) | ((uint64_t) start[length - 1] << 16);
+        }
+        hash *= secret;
+    } else if (length <= 16) {
+        // Medium strings: read first and last 8 bytes (overlapping).
+        // Two multiplies instead of the three the loop-based approach needs.
         uint64_t word;
-        memcpy(&word, ptr, 8);
+        memcpy(&word, start, 8);
         hash ^= word;
         hash *= secret;
-        ptr += 8;
-        remaining -= 8;
-    }
-
-    if (remaining >= 4) {
-        uint32_t word;
-        memcpy(&word, ptr, 4);
-        hash ^= (uint64_t) word;
+        memcpy(&word, start + length - 8, 8);
+        hash ^= word;
         hash *= secret;
-        ptr += 4;
-        remaining -= 4;
-    }
+    } else {
+        const uint8_t *ptr = start;
+        size_t remaining = length;
 
-    if (remaining >= 2) {
-        hash ^= (uint64_t) ptr[0] | ((uint64_t) ptr[1] << 8);
-        hash *= secret;
-        ptr += 2;
-        remaining -= 2;
-    }
+        while (remaining >= 8) {
+            uint64_t word;
+            memcpy(&word, ptr, 8);
+            hash ^= word;
+            hash *= secret;
+            ptr += 8;
+            remaining -= 8;
+        }
 
-    if (remaining >= 1) {
-        hash ^= (uint64_t) ptr[0];
-        hash *= secret;
+        if (remaining > 0) {
+            // Read the last 8 bytes (overlapping with already-processed data).
+            uint64_t word;
+            memcpy(&word, start + length - 8, 8);
+            hash ^= word;
+            hash *= secret;
+        }
     }
 
     hash ^= hash >> 32;
