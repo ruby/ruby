@@ -2752,10 +2752,15 @@ fn build_side_exit(jit: &JITState, state: &FrameState) -> SideExit {
 /// Returne the maximum number of arguments for a block in a given function
 fn max_num_params(function: &Function) -> usize {
     let reverse_post_order = function.rpo();
-    reverse_post_order.iter().map(|&block_id| {
-        let block = function.block(block_id);
-        block.params().len()
-    }).max().unwrap_or(0)
+    reverse_post_order
+        .iter()
+        .filter(|&&block_id| function.is_entry_block(block_id))
+        .map(|&block_id| {
+            let block = function.block(block_id);
+            block.params().len()
+        })
+        .max()
+        .unwrap_or(0)
 }
 
 #[cfg(target_arch = "x86_64")]

@@ -1086,6 +1086,20 @@ fn test_invokesuper_to_cfunc_varargs() {
 }
 
 #[test]
+fn test_string_new_preserves_string_arg() {
+    assert_snapshot!(inspect(r#"
+        def test
+          str = "hello"
+          String.new(str)
+          :ok
+        end
+
+        test
+        test
+    "#), @":ok");
+}
+
+#[test]
 fn test_invokesuper_multilevel() {
     assert_snapshot!(inspect(r#"
         class A
