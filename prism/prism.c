@@ -16830,7 +16830,7 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
                     pm_token_t lparen = parser->current;
                     parser_lex(parser);
 
-                    pm_node_t *expression = parse_value_expression(parser, PM_BINDING_POWER_STATEMENT, PM_PARSE_ACCEPTS_DO_BLOCK | PM_PARSE_ACCEPTS_COMMAND_CALL, PM_ERR_PATTERN_EXPRESSION_AFTER_PIN, (uint16_t) (depth + 1));
+                    pm_node_t *expression = parse_value_expression(parser, PM_BINDING_POWER_COMPOSITION, PM_PARSE_ACCEPTS_DO_BLOCK | PM_PARSE_ACCEPTS_COMMAND_CALL, PM_ERR_PATTERN_EXPRESSION_AFTER_PIN, (uint16_t) (depth + 1));
                     parser->pattern_matching_newlines = previous_pattern_matching_newlines;
 
                     accept1(parser, PM_TOKEN_NEWLINE);
