@@ -870,4 +870,22 @@ class TestBox < Test::Unit::TestCase
       end
     end;
   end
+
+  def test_user_box_iclass_with_module_modified_in_another_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      # A user box creates a class that includes a core module.
+      # The ICLASS is allocated in the user box context (non-boxable).
+      box1 = Ruby::Box.new
+      box1.eval("class IMath; include Math; end")
+
+      # A second user box adds an instance method on that module,
+      # triggering classext duplication which iterates the module's
+      # subclass list and encounters box1's non-boxable ICLASS.
+      box2 = Ruby::Box.new
+      box2.eval("module Math; def box2_test = :box2; end")
+
+      assert_equal :box2, box2.eval("Class.new { include Math }.new.box2_test")
+    end;
+  end
 end

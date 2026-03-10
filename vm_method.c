@@ -442,7 +442,11 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
     RB_VM_LOCKING() {
         rb_vm_barrier();
 
-        if (LIKELY(RCLASS_SUBCLASSES_FIRST(klass) == NULL)) {
+        if (LIKELY(RCLASS_SUBCLASSES_FIRST(klass) == NULL) &&
+            // Non-refinement ICLASSes (from module inclusion) previously had
+            // subclasses reparented onto them, so they need the tree path for
+            // broader cme-based invalidation even though they now have no subclasses.
+            !(RB_TYPE_P(klass, T_ICLASS) && NIL_P(RCLASS_REFINED_CLASS(klass)))) {
             // no subclasses
             // check only current class
 
@@ -1280,6 +1284,16 @@ rb_add_refined_method_entry(VALUE refined_class, ID mid)
 static void
 check_override_opt_method_i(VALUE klass, VALUE arg)
 {
+    if (RB_TYPE_P(klass, T_ICLASS)) {
+        // ICLASS from a module's subclass list: check the includer and
+        // recurse into the includer's T_CLASS subclasses.
+        VALUE includer = RCLASS_INCLUDER(klass);
+        if (!UNDEF_P(includer) && includer) {
+            check_override_opt_method_i(includer, arg);
+        }
+        return;
+    }
+
     ID mid = (ID)arg;
     const rb_method_entry_t *me, *newme;
 
