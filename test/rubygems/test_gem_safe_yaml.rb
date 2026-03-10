@@ -645,6 +645,35 @@ class TestGemSafeYAML < Gem::TestCase
     assert_equal "Installed to C:\\Program Files\\Ruby\\lib\\rdoc", loaded.post_install_message
   end
 
+  def test_roundtrip_specification_with_metadata
+
+    spec = Gem::Specification.new do |s|
+      s.name = "metadata-test"
+      s.version = "1.0.0"
+      s.authors = ["Test"]
+      s.summary = "A gem with metadata"
+      s.files = ["lib/foo.rb"]
+      s.require_paths = ["lib"]
+      s.metadata = {
+        "changelog_uri" => "https://example.com/CHANGELOG.md",
+        "source_code_uri" => "https://github.com/example/metadata-test",
+        "bug_tracker_uri" => "https://github.com/example/metadata-test/issues",
+        "allowed_push_host" => "https://rubygems.org",
+      }
+    end
+
+    yaml = yaml_dump(spec)
+    loaded = Gem::SafeYAML.safe_load(yaml)
+
+    assert_kind_of Gem::Specification, loaded
+    assert_kind_of Hash, loaded.metadata
+    assert_equal 4, loaded.metadata.size
+    assert_equal "https://example.com/CHANGELOG.md", loaded.metadata["changelog_uri"]
+    assert_equal "https://github.com/example/metadata-test", loaded.metadata["source_code_uri"]
+    assert_equal "https://github.com/example/metadata-test/issues", loaded.metadata["bug_tracker_uri"]
+    assert_equal "https://rubygems.org", loaded.metadata["allowed_push_host"]
+  end
+
   def test_roundtrip_version
 
     ver = Gem::Version.new("1.2.3")
