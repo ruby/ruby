@@ -170,6 +170,7 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
     else {
         kprintf("b:---- ");
     }
+    kprintf("r:%p ", cfp->jit_return);
     kprintf("%-6s", magic);
     if (line) {
         kprintf(" %s", posbuf);

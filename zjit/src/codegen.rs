@@ -2570,6 +2570,7 @@ fn gen_push_frame(asm: &mut Assembler, argc: usize, state: &FrameState, frame: C
         }
         let new_sp = asm.lea(Opnd::mem(64, SP, (ep_offset + 1) * SIZEOF_VALUE_I32));
         asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SP), new_sp);
+        asm.mov(cfp_opnd(RUBY_OFFSET_CFP_JIT_RETURN), 0.into()); // just clear a leftover on stack. TODO: make JIT frame for it
         asm.mov(cfp_opnd(RUBY_OFFSET_CFP_ISEQ), 0.into());
     }
 
