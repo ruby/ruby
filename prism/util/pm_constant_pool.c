@@ -239,8 +239,7 @@ pm_constant_pool_find(const pm_constant_pool_t *pool, const uint8_t *start, size
     pm_constant_pool_bucket_t *bucket;
 
     while (bucket = &pool->buckets[index], bucket->id != PM_CONSTANT_ID_UNSET) {
-        pm_constant_t *constant = &pool->constants[bucket->id - 1];
-        if ((constant->length == length) && memcmp(constant->start, start, length) == 0) {
+        if ((bucket->length == length) && memcmp(bucket->start, start, length) == 0) {
             return bucket->id;
         }
 
@@ -270,9 +269,7 @@ pm_constant_pool_insert(pm_arena_t *arena, pm_constant_pool_t *pool, const uint8
         // If there is a collision, then we need to check if the content is the
         // same as the content we are trying to insert. If it is, then we can
         // return the id of the existing constant.
-        pm_constant_t *constant = &pool->constants[bucket->id - 1];
-
-        if ((constant->length == length) && memcmp(constant->start, start, length) == 0) {
+        if ((bucket->length == length) && memcmp(bucket->start, start, length) == 0) {
             // Since we have found a match, we need to check if this is
             // attempting to insert a shared or an owned constant. We want to
             // prefer shared constants since they don't require allocations.
@@ -280,8 +277,9 @@ pm_constant_pool_insert(pm_arena_t *arena, pm_constant_pool_t *pool, const uint8
                 // If we're attempting to insert a shared constant and the
                 // existing constant is owned, then we can replace it with the
                 // shared constant to prefer non-owned references.
-                constant->start = start;
+                bucket->start = start;
                 bucket->type = (unsigned int) (type & 0x3);
+                pool->constants[bucket->id - 1].start = start;
             }
 
             return bucket->id;
@@ -298,7 +296,9 @@ pm_constant_pool_insert(pm_arena_t *arena, pm_constant_pool_t *pool, const uint8
     *bucket = (pm_constant_pool_bucket_t) {
         .id = (unsigned int) (id & 0x3fffffff),
         .type = (unsigned int) (type & 0x3),
-        .hash = hash
+        .hash = hash,
+        .start = start,
+        .length = length
     };
 
     pool->constants[id - 1] = (pm_constant_t) {
