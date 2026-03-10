@@ -604,6 +604,47 @@ class TestGemSafeYAML < Gem::TestCase
     assert_equal :runtime, dep.type
   end
 
+  def test_roundtrip_specification_with_extensions
+
+    spec = Gem::Specification.new do |s|
+      s.name = "native-ext-test"
+      s.version = "1.0.0"
+      s.authors = ["Test"]
+      s.summary = "A gem with native extensions"
+      s.files = ["lib/native.rb", "ext/native/extconf.rb", "ext/native/native.c"]
+      s.extensions = ["ext/native/extconf.rb"]
+      s.require_paths = ["lib"]
+    end
+
+    yaml = yaml_dump(spec)
+    loaded = Gem::SafeYAML.safe_load(yaml)
+
+    assert_kind_of Gem::Specification, loaded
+    assert_equal ["ext/native/extconf.rb"], loaded.extensions
+    assert_equal ["ext/native/extconf.rb", "ext/native/native.c", "lib/native.rb"], loaded.files
+  end
+
+  def test_roundtrip_specification_with_windows_paths
+
+    spec = Gem::Specification.new do |s|
+      s.name = "win-path-test"
+      s.version = "1.0.0"
+      s.authors = ["Test"]
+      s.summary = "A gem with Windows-style paths"
+      s.files = ["lib/foo.rb", "lib/foo/bar.rb"]
+      s.require_paths = ["lib"]
+      s.description = 'Installed in D:\ruby\lib\ruby\gems'
+      s.post_install_message = "Installed to C:\\Program Files\\Ruby\\lib\\rdoc"
+    end
+
+    yaml = yaml_dump(spec)
+    loaded = Gem::SafeYAML.safe_load(yaml)
+
+    assert_kind_of Gem::Specification, loaded
+    assert_equal 'Installed in D:\ruby\lib\ruby\gems', loaded.description
+    assert_equal "Installed to C:\\Program Files\\Ruby\\lib\\rdoc", loaded.post_install_message
+  end
+
   def test_roundtrip_version
 
     ver = Gem::Version.new("1.2.3")
