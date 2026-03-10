@@ -440,7 +440,10 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
         rb_vm_barrier();
 
         if (LIKELY(RCLASS_SUBCLASSES_FIRST(klass) == NULL) &&
-            !(RB_TYPE_P(klass, T_ICLASS) && RCLASS_INCLUDER(klass))) {
+            // Non-refinement ICLASSes (from module inclusion) previously had
+            // subclasses reparented onto them, so they need the tree path for
+            // broader cme-based invalidation even though they now have no subclasses.
+            !(RB_TYPE_P(klass, T_ICLASS) && NIL_P(RCLASS_REFINED_CLASS(klass)))) {
             // no subclasses
             // check only current class
 
