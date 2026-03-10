@@ -2419,31 +2419,38 @@ impl Assembler
                         new_ids.push(None);
                     }
 
-                    // Save CCall result to scratch immediately, before pops
-                    // can clobber either C_RET or the output register.
-                    new_insns.push(Insn::Mov { dest: Opnd::Reg(SCRATCH_REG), src: C_RET_OPND });
-                    new_ids.push(None);
+                    if survivors.is_empty() {
+                        // No survivors to restore — move result directly to output
+                        let out = Self::rewritten_opnd(out, assignments);
+                        new_insns.push(Insn::Mov { dest: out, src: C_RET_OPND });
+                        new_ids.push(None);
+                    } else {
+                        // Save CCall result to scratch immediately, before pops
+                        // can clobber either C_RET or the output register.
+                        new_insns.push(Insn::Mov { dest: Opnd::Reg(SCRATCH_REG), src: C_RET_OPND });
+                        new_ids.push(None);
 
-                    // Pop alignment padding (if needed)
-                    if needs_alignment {
-                        new_insns.push(Insn::CPopInto(Opnd::Reg(ALLOC_REGS[0])));
+                        // Pop alignment padding (if needed)
+                        if needs_alignment {
+                            new_insns.push(Insn::CPopInto(Opnd::Reg(ALLOC_REGS[0])));
+                            new_ids.push(None);
+                        }
+
+                        // Restore all survivors
+                        for &s in survivors.iter().rev() {
+                            let reg_n = match assignments[s].unwrap() {
+                                Allocation::Reg(n) => n,
+                                _ => unreachable!(),
+                            };
+                            new_insns.push(Insn::CPopInto(Opnd::Reg(ALLOC_REGS[reg_n])));
+                            new_ids.push(None);
+                        }
+
+                        // Move result from scratch to output AFTER all pops
+                        let out = Self::rewritten_opnd(out, assignments);
+                        new_insns.push(Insn::Mov { dest: out, src: Opnd::Reg(SCRATCH_REG) });
                         new_ids.push(None);
                     }
-
-                    // Restore all survivors normally
-                    for &s in survivors.iter().rev() {
-                        let reg_n = match assignments[s].unwrap() {
-                            Allocation::Reg(n) => n,
-                            _ => unreachable!(),
-                        };
-                        new_insns.push(Insn::CPopInto(Opnd::Reg(ALLOC_REGS[reg_n])));
-                        new_ids.push(None);
-                    }
-
-                    // Move result from scratch to output AFTER all pops
-                    let out = Self::rewritten_opnd(out, assignments);
-                    new_insns.push(Insn::Mov { dest: out, src: Opnd::Reg(SCRATCH_REG) });
-                    new_ids.push(None);
                 } else {
                     new_insns.push(insn);
                     new_ids.push(insn_id);
