@@ -2706,6 +2706,7 @@ c_callable! {
             let entry_insn_idxs = crate::hir::jit_entry_insns(iseq);
             let pc = unsafe { rb_iseq_pc_at_idx(iseq, entry_insn_idxs[iseq_call.jit_entry_idx.to_usize()]) };
             unsafe { rb_set_cfp_pc(cfp, pc) };
+            unsafe { (*cfp).iseq = iseq };
 
             // Successful JIT-to-JIT calls fill nils to non-parameter locals in generated code.
             // If we side-exit from function_stub_hit (before JIT code runs), we need to set them here.
