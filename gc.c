@@ -3764,10 +3764,8 @@ update_const_tbl(void *objspace, struct rb_id_table *tbl)
 static void
 update_subclasses(void *objspace, rb_classext_t *ext)
 {
-    rb_subclass_entry_t *entry;
-    rb_subclass_anchor_t *anchor = RCLASSEXT_SUBCLASSES(ext);
-    if (!anchor) return;
-    entry = anchor->head;
+    rb_subclass_entry_t *entry = RCLASSEXT_SUBCLASSES(ext);
+    if (!entry) return;
     while (entry) {
         if (entry->klass)
             UPDATE_IF_MOVED(objspace, entry->klass);
