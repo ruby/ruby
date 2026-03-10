@@ -8220,11 +8220,20 @@ lex_numeric_prefix(pm_parser_t *parser, bool* seen_e) {
         }
 
         // Afterward, we'll lex as far as we can into an optional float suffix.
-        type = lex_optional_float_suffix(parser, seen_e);
+        // Guard the function call: the vast majority of decimal numbers are
+        // plain integers, so avoid the call when the next byte cannot start a
+        // float suffix.
+        {
+            uint8_t next = peek(parser);
+            if (next == '.' || next == 'e' || next == 'E') {
+                type = lex_optional_float_suffix(parser, seen_e);
 
-        // If it turned out to be a float, the cached integer value is invalid.
-        if (type != PM_TOKEN_INTEGER) {
-            parser->integer.lexed = false;
+                // If it turned out to be a float, the cached integer value is
+                // invalid.
+                if (type != PM_TOKEN_INTEGER) {
+                    parser->integer.lexed = false;
+                }
+            }
         }
     }
 
