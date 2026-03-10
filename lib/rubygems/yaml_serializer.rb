@@ -388,7 +388,7 @@ module Gem
 
     class Builder
       VALID_OPS = %w[= != > < >= <= ~>].freeze
-      ARRAY_FIELDS = %w[rdoc_options files test_files executables requirements extra_rdoc_files].freeze
+      ARRAY_FIELDS = %w[files test_files executables requirements extra_rdoc_files].freeze
 
       def initialize(permitted_classes: [], permitted_symbols: [], aliases: true)
         @permitted_tags = Array(permitted_classes).map do |c|
@@ -538,7 +538,6 @@ module Gem
         spec = Gem::Specification.allocate
 
         normalize_specification_version!(hash)
-        normalize_rdoc_options!(hash)
         normalize_array_fields!(hash)
 
         spec.yaml_initialize("!ruby/object:Gem::Specification", hash)
@@ -586,26 +585,8 @@ module Gem
         hash["specification_version"] = val.to_i if val.is_a?(String) && /\A\d+\z/.match?(val)
       end
 
-      def normalize_rdoc_options!(hash)
-        opts = hash["rdoc_options"]
-        if opts.is_a?(Hash)
-          hash["rdoc_options"] = opts.values.flatten.compact.map(&:to_s)
-        elsif opts.is_a?(Array)
-          hash["rdoc_options"] = opts.flat_map do |opt|
-            if opt.is_a?(Hash)
-              opt.flat_map {|k, v| [k.to_s, v.to_s] }
-            elsif opt.is_a?(String)
-              opt
-            else
-              opt.to_s
-            end
-          end
-        end
-      end
-
       def normalize_array_fields!(hash)
         ARRAY_FIELDS.each do |field|
-          next if field == "rdoc_options" # already handled
           hash[field] = normalize_array_field(hash[field]) if hash[field]
         end
       end

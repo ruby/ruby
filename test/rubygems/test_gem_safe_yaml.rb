@@ -357,14 +357,7 @@ class TestGemSafeYAML < Gem::TestCase
     assert_kind_of Gem::Specification, spec
     assert_equal "test-gem", spec.name
 
-    if Gem.use_psych?
-      # Psych assigns the empty Hash directly
-      assert_kind_of Hash, spec.rdoc_options
-    else
-      # YAMLSerializer normalizes Hash to Array
-      assert_kind_of Array, spec.rdoc_options
-      assert_equal [], spec.rdoc_options
-    end
+    assert_kind_of Hash, spec.rdoc_options
   end
 
   def test_load_returns_nil_for_comment_only_yaml
@@ -1133,15 +1126,7 @@ class TestGemSafeYAML < Gem::TestCase
     YAML
 
     spec = Gem::SafeYAML.safe_load(yaml)
-    if Gem.use_psych?
-      # Psych assigns the Hash directly
-      assert_kind_of Hash, spec.rdoc_options
-    else
-      # YAMLSerializer normalizes Hash rdoc_options to Array
-      assert_kind_of Array, spec.rdoc_options
-      assert_include spec.rdoc_options, "MyGem"
-      assert_include spec.rdoc_options, "README"
-    end
+    assert_kind_of Hash, spec.rdoc_options
   end
 
   def test_regression_requirements_field_normalized_to_array
