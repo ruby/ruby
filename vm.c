@@ -1108,13 +1108,14 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
         }
     }
 
+    const rb_iseq_t *iseq = rb_zjit_cfp_iseq(cfp);
     if (!VM_FRAME_RUBYFRAME_P(cfp)) {
         local_size = VM_ENV_DATA_SIZE;
     }
     else {
-        local_size = ISEQ_BODY(cfp->iseq)->local_table_size;
-        if (ISEQ_BODY(cfp->iseq)->param.flags.forwardable && VM_ENV_LOCAL_P(cfp->ep)) {
-            int ci_offset = local_size - ISEQ_BODY(cfp->iseq)->param.size + VM_ENV_DATA_SIZE;
+        local_size = ISEQ_BODY(iseq)->local_table_size;
+        if (ISEQ_BODY(iseq)->param.flags.forwardable && VM_ENV_LOCAL_P(cfp->ep)) {
+            int ci_offset = local_size - ISEQ_BODY(iseq)->param.size + VM_ENV_DATA_SIZE;
 
             CALL_INFO ci = (CALL_INFO)VM_CF_LEP(cfp)[-ci_offset];
             local_size += vm_ci_argc(ci);
@@ -1126,8 +1127,8 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
     // This is done before creating the imemo_env because VM_STACK_ENV_WRITE
     // below leaves the on-stack ep in a state that is unsafe to GC.
     if (VM_FRAME_RUBYFRAME_P(cfp)) {
-        rb_yjit_invalidate_ep_is_bp(cfp->iseq);
-        rb_zjit_invalidate_no_ep_escape(cfp->iseq);
+        rb_yjit_invalidate_ep_is_bp(iseq);
+        rb_zjit_invalidate_no_ep_escape(iseq);
     }
 
     /*
@@ -1155,7 +1156,7 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
     env_ep = &env_body[local_size - 1 /* specval */];
     env_ep[VM_ENV_DATA_INDEX_ENV] = (VALUE)env;
 
-    env->iseq = (rb_iseq_t *)(VM_FRAME_RUBYFRAME_P(cfp) ? cfp->iseq : NULL);
+    env->iseq = (rb_iseq_t *)(VM_FRAME_RUBYFRAME_P(cfp) ? iseq : NULL);
     env->ep = env_ep;
     env->env = env_body;
     env->env_size = env_size;

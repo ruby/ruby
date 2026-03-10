@@ -102,8 +102,8 @@ calc_node_id(const rb_iseq_t *iseq, const VALUE *pc)
 int
 rb_vm_get_sourceline(const rb_control_frame_t *cfp)
 {
-    if (VM_FRAME_RUBYFRAME_P(cfp) && cfp->iseq) {
-        const rb_iseq_t *iseq = cfp->iseq;
+    if (VM_FRAME_RUBYFRAME_P(cfp) && (cfp->iseq || cfp->jit_return)) {
+        const rb_iseq_t *iseq = rb_zjit_cfp_iseq(cfp);
         int line = calc_lineno(iseq, rb_zjit_cfp_pc(cfp));
         if (line != 0) {
             return line;
