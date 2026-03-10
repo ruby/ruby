@@ -482,9 +482,22 @@ module Gem
         Gem::Version.new((hash["version"] || hash["value"]).to_s)
       end
 
+      PLATFORM_FIELDS = %w[cpu os version].freeze
+
       def build_platform(node)
         hash = pairs_to_hash(node)
-        Gem::Platform.new([hash["cpu"], hash["os"], hash["version"]])
+        if (hash.keys & PLATFORM_FIELDS).any?
+          Gem::Platform.new([hash["cpu"], hash["os"], hash["version"]])
+        elsif hash["value"].is_a?(Array)
+          # Malformed platform (e.g. sequence instead of mapping).
+          # Return the raw value so yaml_initialize handles it like Psych does.
+          hash["value"]
+        else
+          # Unknown fields: set as instance variables like Psych's init_with
+          plat = Gem::Platform.allocate
+          hash.each {|k, v| plat.instance_variable_set(:"@#{k}", v) }
+          plat
+        end
       end
 
       def build_requirement(node)

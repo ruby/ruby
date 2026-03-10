@@ -923,6 +923,14 @@ class TestGemSafeYAML < Gem::TestCase
     assert_equal "darwin", plat.os
   end
 
+  def test_load_platform_malicious_sequence
+
+    yaml = "!ruby/object:Gem::Platform\n- \"x86-mswin32\\n system('id')#\"\n"
+    result = yaml_load(yaml, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES)
+    refute_kind_of Gem::Platform, result
+    assert_kind_of Array, result
+  end
+
   def test_load_dependency_missing_requirement_uses_default
 
     yaml = <<~YAML
