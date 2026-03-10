@@ -793,12 +793,26 @@ struct pm_parser {
     pm_line_offset_list_t line_offsets;
 
     /**
-     * We want to add a flag to integer nodes that indicates their base. We only
-     * want to parse these once, but we don't have space on the token itself to
-     * communicate this information. So we store it here and pass it through
-     * when we find tokens that we need it for.
+     * State communicated from the lexer to the parser for integer tokens.
      */
-    pm_node_flags_t integer_base;
+    struct {
+        /**
+         * A flag indicating the base of the integer (binary, octal, decimal,
+         * hexadecimal). Set during lexing and read during node creation.
+         */
+        pm_node_flags_t base;
+
+        /**
+         * When lexing a decimal integer that fits in a uint32_t, we compute
+         * the value during lexing to avoid re-scanning the digits during
+         * parsing. If lexed is true, this holds the result and
+         * pm_integer_parse can be skipped.
+         */
+        uint32_t value;
+
+        /** Whether value holds a valid pre-computed integer. */
+        bool lexed;
+    } integer;
 
     /**
      * This string is used to pass information from the lexer to the parser. It

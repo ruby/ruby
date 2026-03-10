@@ -4710,17 +4710,24 @@ pm_integer_node_create(pm_parser_t *parser, pm_node_flags_t base, const pm_token
         ((pm_integer_t) { 0 })
     );
 
-    pm_integer_base_t integer_base = PM_INTEGER_BASE_DECIMAL;
-    switch (base) {
-        case PM_INTEGER_BASE_FLAGS_BINARY: integer_base = PM_INTEGER_BASE_BINARY; break;
-        case PM_INTEGER_BASE_FLAGS_OCTAL: integer_base = PM_INTEGER_BASE_OCTAL; break;
-        case PM_INTEGER_BASE_FLAGS_DECIMAL: break;
-        case PM_INTEGER_BASE_FLAGS_HEXADECIMAL: integer_base = PM_INTEGER_BASE_HEXADECIMAL; break;
-        default: assert(false && "unreachable"); break;
+    if (parser->integer.lexed) {
+        // The value was already computed during lexing.
+        node->value.value = parser->integer.value;
+        parser->integer.lexed = false;
+    } else {
+        pm_integer_base_t integer_base = PM_INTEGER_BASE_DECIMAL;
+        switch (base) {
+            case PM_INTEGER_BASE_FLAGS_BINARY: integer_base = PM_INTEGER_BASE_BINARY; break;
+            case PM_INTEGER_BASE_FLAGS_OCTAL: integer_base = PM_INTEGER_BASE_OCTAL; break;
+            case PM_INTEGER_BASE_FLAGS_DECIMAL: break;
+            case PM_INTEGER_BASE_FLAGS_HEXADECIMAL: integer_base = PM_INTEGER_BASE_HEXADECIMAL; break;
+            default: assert(false && "unreachable"); break;
+        }
+
+        pm_integer_parse(&node->value, integer_base, token->start, token->end);
+        pm_integer_arena_move(parser->arena, &node->value);
     }
 
-    pm_integer_parse(&node->value, integer_base, token->start, token->end);
-    pm_integer_arena_move(parser->arena, &node->value);
     return node;
 }
 
@@ -8112,7 +8119,7 @@ lex_numeric_prefix(pm_parser_t *parser, bool* seen_e) {
                     pm_parser_err_current(parser, PM_ERR_INVALID_NUMBER_BINARY);
                 }
 
-                parser->integer_base = PM_INTEGER_BASE_FLAGS_BINARY;
+                parser->integer.base = PM_INTEGER_BASE_FLAGS_BINARY;
                 break;
 
             // 0o1111 is an octal number
@@ -8126,7 +8133,7 @@ lex_numeric_prefix(pm_parser_t *parser, bool* seen_e) {
                     pm_parser_err_current(parser, PM_ERR_INVALID_NUMBER_OCTAL);
                 }
 
-                parser->integer_base = PM_INTEGER_BASE_FLAGS_OCTAL;
+                parser->integer.base = PM_INTEGER_BASE_FLAGS_OCTAL;
                 break;
 
             // 01111 is an octal number
@@ -8140,7 +8147,7 @@ lex_numeric_prefix(pm_parser_t *parser, bool* seen_e) {
             case '6':
             case '7':
                 parser->current.end += pm_strspn_octal_number_validate(parser, parser->current.end);
-                parser->integer_base = PM_INTEGER_BASE_FLAGS_OCTAL;
+                parser->integer.base = PM_INTEGER_BASE_FLAGS_OCTAL;
                 break;
 
             // 0x1111 is a hexadecimal number
@@ -8154,7 +8161,7 @@ lex_numeric_prefix(pm_parser_t *parser, bool* seen_e) {
                     pm_parser_err_current(parser, PM_ERR_INVALID_NUMBER_HEXADECIMAL);
                 }
 
-                parser->integer_base = PM_INTEGER_BASE_FLAGS_HEXADECIMAL;
+                parser->integer.base = PM_INTEGER_BASE_FLAGS_HEXADECIMAL;
                 break;
 
             // 0.xxx is a float
@@ -8172,11 +8179,53 @@ lex_numeric_prefix(pm_parser_t *parser, bool* seen_e) {
         }
     } else {
         // If it didn't start with a 0, then we'll lex as far as we can into a
-        // decimal number.
-        parser->current.end += pm_strspn_decimal_number_validate(parser, parser->current.end);
+        // decimal number. We compute the integer value inline to avoid
+        // re-scanning the digits later in pm_integer_parse.
+        {
+            const uint8_t *cursor = parser->current.end;
+            const uint8_t *end = parser->end;
+            uint64_t value = (uint64_t) (cursor[-1] - '0');
+
+            bool has_underscore = false;
+            bool prev_underscore = false;
+            const uint8_t *invalid = NULL;
+
+            while (cursor < end) {
+                uint8_t c = *cursor;
+                if (c >= '0' && c <= '9') {
+                    if (value <= UINT32_MAX) value = value * 10 + (uint64_t) (c - '0');
+                    prev_underscore = false;
+                    cursor++;
+                } else if (c == '_') {
+                    has_underscore = true;
+                    if (prev_underscore && invalid == NULL) invalid = cursor;
+                    prev_underscore = true;
+                    cursor++;
+                } else {
+                    break;
+                }
+            }
+
+            if (has_underscore) {
+                if (prev_underscore && invalid == NULL) invalid = cursor - 1;
+                pm_strspn_number_validate(parser, parser->current.end, (size_t) (cursor - parser->current.end), invalid);
+            }
+
+            if (value <= UINT32_MAX) {
+                parser->integer.value = (uint32_t) value;
+                parser->integer.lexed = true;
+            }
+
+            parser->current.end = cursor;
+        }
 
         // Afterward, we'll lex as far as we can into an optional float suffix.
         type = lex_optional_float_suffix(parser, seen_e);
+
+        // If it turned out to be a float, the cached integer value is invalid.
+        if (type != PM_TOKEN_INTEGER) {
+            parser->integer.lexed = false;
+        }
     }
 
     // At this point we have a completed number, but we want to provide the user
@@ -8195,7 +8244,8 @@ lex_numeric_prefix(pm_parser_t *parser, bool* seen_e) {
 static pm_token_type_t
 lex_numeric(pm_parser_t *parser) {
     pm_token_type_t type = PM_TOKEN_INTEGER;
-    parser->integer_base = PM_INTEGER_BASE_FLAGS_DECIMAL;
+    parser->integer.base = PM_INTEGER_BASE_FLAGS_DECIMAL;
+    parser->integer.lexed = false;
 
     if (parser->current.end < parser->end) {
         bool seen_e = false;
@@ -18302,22 +18352,22 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
             return node;
         }
         case PM_TOKEN_INTEGER: {
-            pm_node_flags_t base = parser->integer_base;
+            pm_node_flags_t base = parser->integer.base;
             parser_lex(parser);
             return UP(pm_integer_node_create(parser, base, &parser->previous));
         }
         case PM_TOKEN_INTEGER_IMAGINARY: {
-            pm_node_flags_t base = parser->integer_base;
+            pm_node_flags_t base = parser->integer.base;
             parser_lex(parser);
             return UP(pm_integer_node_imaginary_create(parser, base, &parser->previous));
         }
         case PM_TOKEN_INTEGER_RATIONAL: {
-            pm_node_flags_t base = parser->integer_base;
+            pm_node_flags_t base = parser->integer.base;
             parser_lex(parser);
             return UP(pm_integer_node_rational_create(parser, base, &parser->previous));
         }
         case PM_TOKEN_INTEGER_RATIONAL_IMAGINARY: {
-            pm_node_flags_t base = parser->integer_base;
+            pm_node_flags_t base = parser->integer.base;
             parser_lex(parser);
             return UP(pm_integer_node_rational_imaginary_create(parser, base, &parser->previous));
         }
@@ -22154,7 +22204,7 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
         .filepath = { 0 },
         .constant_pool = { 0 },
         .line_offsets = { 0 },
-        .integer_base = 0,
+        .integer = { 0 },
         .current_string = PM_STRING_EMPTY,
         .start_line = 1,
         .explicit_encoding = NULL,
