@@ -9,6 +9,7 @@ module Bundler
 
       # Ask for X gems per API request
       API_REQUEST_SIZE = 100
+      REQUIRE_MUTEX = Mutex.new
 
       attr_accessor :remotes
 
@@ -521,7 +522,7 @@ module Bundler
           path = fetch_gem_if_possible(spec, options[:previous_spec])
           raise GemNotFound, "Could not find #{spec.file_name} for installation" unless path
 
-          require_relative "../rubygems_gem_installer"
+          REQUIRE_MUTEX.synchronize { require_relative "../rubygems_gem_installer" }
 
           installer = Bundler::RubyGemsGemInstaller.at(
             path,
