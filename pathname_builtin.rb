@@ -6,9 +6,6 @@
 #
 # A \Pathname object is immutable (except for method #freeze).
 #
-# The class works well with Unix-based file systems;
-# support for other file systems is experimental and subject to change.
-#
 # A pathname may be relative or absolute:
 #
 #   Pathname.new('lib')            # => #<Pathname:lib>
