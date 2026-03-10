@@ -933,14 +933,7 @@ class TestGemSafeYAML < Gem::TestCase
     yaml = "!ruby/object:Gem::Platform\nvalue: x86-linux\n"
     plat = yaml_load(yaml, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES)
     assert_kind_of Gem::Platform, plat
-    if Gem.use_psych?
-      # Psych doesn't interpret the "value" field specially
-      assert_nil plat.cpu
-    else
-      # YAMLSerializer parses the "value" field as a platform string
-      assert_equal "x86", plat.cpu
-      assert_equal "linux", plat.os
-    end
+    assert_nil plat.cpu
   end
 
   def test_load_platform_from_cpu_os_version_fields

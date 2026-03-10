@@ -484,11 +484,7 @@ module Gem
 
       def build_platform(node)
         hash = pairs_to_hash(node)
-        if hash["value"]
-          Gem::Platform.new(hash["value"])
-        else
-          Gem::Platform.new([hash["cpu"], hash["os"], hash["version"]])
-        end
+        Gem::Platform.new([hash["cpu"], hash["os"], hash["version"]])
       end
 
       def build_requirement(node)
