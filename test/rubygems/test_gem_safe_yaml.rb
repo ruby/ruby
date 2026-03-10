@@ -751,6 +751,26 @@ class TestGemSafeYAML < Gem::TestCase
     assert_equal "say\"hi\"", result["quote"]
   end
 
+  def test_load_double_quoted_backslash_before_escape_chars
+    pend "Psych mode" if Gem.use_psych?
+
+    # \\r in YAML should become literal backslash + r, not carriage return
+    result = Gem::YAMLSerializer.load('path: "D:\\\\ruby-mswin\\\\lib"')
+    assert_equal "D:\\ruby-mswin\\lib", result["path"]
+
+    # \\n should become literal backslash + n, not newline
+    result = Gem::YAMLSerializer.load('path: "C:\\\\new_folder"')
+    assert_equal "C:\\new_folder", result["path"]
+
+    # \\t should become literal backslash + t, not tab
+    result = Gem::YAMLSerializer.load('path: "C:\\\\tmp\\\\test"')
+    assert_equal "C:\\tmp\\test", result["path"]
+
+    # \\\\ should become two literal backslashes
+    result = Gem::YAMLSerializer.load('val: "a\\\\\\\\b"')
+    assert_equal "a\\\\b", result["val"]
+  end
+
   def test_load_single_quoted_escape
     pend "Psych mode" if Gem.use_psych?
 

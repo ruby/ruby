@@ -255,7 +255,15 @@ module Gem
         val = val.sub(/^! /, "") if val.start_with?("! ")
 
         if val =~ /^"(.*)"$/
-          $1.gsub(/\\"/, '"').gsub(/\\n/, "\n").gsub(/\\r/, "\r").gsub(/\\t/, "\t").gsub(/\\\\/, "\\")
+          $1.gsub(/\\["nrt\\]/) do |m|
+            case m
+            when '\\"' then '"'
+            when "\\n" then "\n"
+            when "\\r" then "\r"
+            when "\\t" then "\t"
+            when "\\\\" then "\\"
+            end
+          end
         elsif val =~ /^'(.*)'$/
           $1.gsub(/''/, "'")
         elsif val == "true"
