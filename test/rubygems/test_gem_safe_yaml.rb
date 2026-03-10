@@ -964,13 +964,7 @@ class TestGemSafeYAML < Gem::TestCase
     assert_kind_of Gem::Dependency, dep
     assert_equal "foo", dep.name
     assert_equal :runtime, dep.type
-    if Gem.use_psych?
-      # Psych doesn't set a default requirement
-      assert_nil dep.instance_variable_get(:@requirement)
-    else
-      # YAMLSerializer sets a default Gem::Requirement
-      assert_kind_of Gem::Requirement, dep.requirement
-    end
+    assert_nil dep.instance_variable_get(:@requirement)
   end
 
   def test_load_dependency_missing_type_defaults_to_runtime

@@ -526,8 +526,7 @@ module Gem
         d = Gem::Dependency.allocate
         d.instance_variable_set(:@name, hash["name"])
 
-        requirement = build_safe_requirement(hash["requirement"])
-        d.instance_variable_set(:@requirement, requirement)
+        d.instance_variable_set(:@requirement, hash["requirement"])
 
         type = hash["type"]
         type = type ? type.to_s.sub(/^:/, "").to_sym : :runtime
@@ -557,26 +556,6 @@ module Gem
           result[key] = build_node(value_node)
         end
         result
-      end
-
-      def build_safe_requirement(req_value)
-        return Gem::Requirement.default unless req_value
-
-        converted = req_value
-        return Gem::Requirement.default unless converted.is_a?(Gem::Requirement)
-
-        reqs = converted.instance_variable_get(:@requirements)
-        if reqs&.is_a?(Array)
-          valid = reqs.all? do |item|
-            next true if item == Gem::Requirement::DefaultRequirement
-            item.is_a?(Array) && item.size >= 2 && VALID_OPS.include?(item[0].to_s)
-          end
-          valid ? converted : Gem::Requirement.default
-        else
-          converted
-        end
-      rescue StandardError
-        Gem::Requirement.default
       end
 
       def validate_tag!(tag)
