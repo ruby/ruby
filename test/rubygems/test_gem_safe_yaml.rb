@@ -367,31 +367,18 @@ class TestGemSafeYAML < Gem::TestCase
     end
   end
 
-  def test_load_returns_hash_for_comment_only_yaml
+  def test_load_returns_nil_for_comment_only_yaml
 
     # Bundler config files may contain only comments after deleting all keys
     result = yaml_load("---\n# BUNDLE_FOO: \"bar\"\n")
-    if Gem.use_psych?
-      # Psych returns nil for comment-only documents
-      assert_nil result
-    else
-      assert_kind_of Hash, result
-      assert_empty result
-    end
+    assert_nil result
   end
 
-  def test_load_returns_hash_for_empty_document
+  def test_load_returns_nil_for_empty_document
 
-    if Gem.use_psych?
-      # Psych returns nil for empty documents
-      assert_nil yaml_load("---\n")
-      assert_nil yaml_load("")
-      assert_raise(TypeError) { yaml_load(nil) }
-    else
-      assert_equal({}, yaml_load("---\n"))
-      assert_equal({}, yaml_load(""))
-      assert_equal({}, yaml_load(nil))
-    end
+    assert_nil yaml_load("---\n")
+    assert_nil yaml_load("")
+    assert_raise(TypeError) { yaml_load(nil) }
   end
 
   def test_load_returns_hash_for_flow_empty_hash

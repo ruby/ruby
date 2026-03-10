@@ -400,7 +400,7 @@ module Gem
       end
 
       def build(node)
-        return {} if node.nil?
+        return nil if node.nil?
 
         result = build_node(node)
 
@@ -788,10 +788,11 @@ module Gem
     end
 
     def load(str, permitted_classes: [], permitted_symbols: [], aliases: true)
-      return {} if str.nil? || str.empty?
+      raise TypeError, "no implicit conversion of nil into String" if str.nil?
+      return nil if str.empty?
 
       ast = Parser.new(str).parse
-      return {} if ast.nil?
+      return nil if ast.nil?
 
       Builder.new(
         permitted_classes: permitted_classes,
