@@ -112,6 +112,8 @@ const SCRATCH1_OPND: Opnd = Opnd::Reg(R10_REG);
 pub const SCRATCH_REG: Reg = R11_REG;
 
 impl Assembler {
+    const MAX_FRAME_STACK_SLOTS: usize = 2048;
+
     /// Return an Assembler with scratch registers disabled in the backend, and a scratch register.
     pub fn new_with_scratch_reg() -> (Self, Opnd) {
         (Self::new_with_accept_scratch_reg(true), SCRATCH0_OPND)
@@ -1123,6 +1125,11 @@ impl Assembler {
 
         let (assignments, num_stack_slots) = asm.linear_scan(intervals.clone(), regs.len());
 
+        let total_stack_slots = asm.stack_base_idx + num_stack_slots;
+        if total_stack_slots > Self::MAX_FRAME_STACK_SLOTS {
+            return Err(CompileError::OutOfMemory);
+        }
+
         // Dump vreg-to-physical-register mapping if requested
         if let Some(crate::options::Options { dump_lir: Some(dump_lirs), .. }) = unsafe { crate::options::OPTIONS.as_ref() } {
             if dump_lirs.contains(&crate::options::DumpLIR::alloc_regs) {
@@ -1142,13 +1149,13 @@ impl Assembler {
             }
         }
 
-        // Update FrameSetup slot_count to account for spilled VRegs
-        if num_stack_slots > 0 {
-            for block in asm.basic_blocks.iter_mut() {
-                for insn in block.insns.iter_mut() {
-                    if let Insn::FrameSetup { slot_count, .. } = insn {
-                        *slot_count += num_stack_slots;
-                    }
+        // Update FrameSetup slot_count to account for:
+        // 1) stack slots reserved for block params (stack_base_idx), and
+        // 2) register allocator spills (num_stack_slots).
+        for block in asm.basic_blocks.iter_mut() {
+            for insn in block.insns.iter_mut() {
+                if let Insn::FrameSetup { slot_count, .. } = insn {
+                    *slot_count = total_stack_slots;
                 }
             }
         }

@@ -216,6 +216,8 @@ pub const SCRATCH_REG: Reg = X15_REG;
 const SCRATCH2_OPND: Opnd = Opnd::Reg(X14_REG);
 
 impl Assembler {
+    const MAX_FRAME_STACK_SLOTS: usize = 2048;
+
     /// Special register for intermediate processing in arm64_emit. It should be used only by arm64_emit.
     const EMIT_REG: Reg = X16_REG;
     const EMIT_OPND: A64Opnd = A64Opnd::Reg(Self::EMIT_REG);
@@ -1619,6 +1621,11 @@ impl Assembler {
 
         let (assignments, num_stack_slots) = asm.linear_scan(intervals.clone(), regs.len());
 
+        let total_stack_slots = asm.stack_base_idx + num_stack_slots;
+        if total_stack_slots > Self::MAX_FRAME_STACK_SLOTS {
+            return Err(CompileError::OutOfMemory);
+        }
+
         // Dump vreg-to-physical-register mapping if requested
         if let Some(crate::options::Options { dump_lir: Some(dump_lirs), .. }) = unsafe { crate::options::OPTIONS.as_ref() } {
             if dump_lirs.contains(&crate::options::DumpLIR::alloc_regs) {
@@ -1638,13 +1645,13 @@ impl Assembler {
             }
         }
 
-        // Update FrameSetup slot_count to account for spilled VRegs
-        if num_stack_slots > 0 {
-            for block in asm.basic_blocks.iter_mut() {
-                for insn in block.insns.iter_mut() {
-                    if let Insn::FrameSetup { slot_count, .. } = insn {
-                        *slot_count += num_stack_slots;
-                    }
+        // Update FrameSetup slot_count to account for:
+        // 1) stack slots reserved for block params (stack_base_idx), and
+        // 2) register allocator spills (num_stack_slots).
+        for block in asm.basic_blocks.iter_mut() {
+            for insn in block.insns.iter_mut() {
+                if let Insn::FrameSetup { slot_count, .. } = insn {
+                    *slot_count = total_stack_slots;
                 }
             }
         }
