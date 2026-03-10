@@ -4261,23 +4261,22 @@ impl Function {
         }
         if recv_type.flags().is_t_class_or_module() {
             // Class/module ivar: load from prime classext's fields_obj
-            if self.assume_root_box(block, state) {
-                // Root box only: load directly from prime classext
-                let fields_obj = self.push_insn(block, Insn::LoadField {
-                    recv: self_val, id: ID!(_fields_obj),
-                    offset: RCLASS_OFFSET_PRIME_FIELDS_OBJ as i32,
-                    return_type: types::RubyValue,
-                });
-                if recv_type.flags().is_fields_embedded() {
-                    return self.load_ivar_embedded(block, fields_obj, id, ivar_index);
-                } else {
-                    return self.load_ivar_heap(block, fields_obj, id, ivar_index);
-                }
-            } else {
+            if !self.assume_root_box(block, state) {
                 // Non-root box active: fall back to C call
                 // NOTE: it's fine to use rb_ivar_get_at_no_ractor_check because
                 // getinstancevariable does assume_single_ractor_mode()
                 return self.load_ivar_c_call(block, self_val, ivar_index);
+            }
+            // Root box only: load directly from prime classext
+            let fields_obj = self.push_insn(block, Insn::LoadField {
+                recv: self_val, id: ID!(_fields_obj),
+                offset: RCLASS_OFFSET_PRIME_FIELDS_OBJ as i32,
+                return_type: types::RubyValue,
+            });
+            if recv_type.flags().is_fields_embedded() {
+                return self.load_ivar_embedded(block, fields_obj, id, ivar_index);
+            } else {
+                return self.load_ivar_heap(block, fields_obj, id, ivar_index);
             }
         }
         if recv_type.flags().is_typed_data() {
@@ -4293,19 +4292,17 @@ impl Function {
                 return self.load_ivar_heap(block, fields_obj, id, ivar_index);
             }
         }
-        if !recv_type.flags().is_t_object() {
-            // Non-T_OBJECT, non-class/module, non-typed-data: fall back to C call
-            // NOTE: it's fine to use rb_ivar_get_at_no_ractor_check because
-            // getinstancevariable does assume_single_ractor_mode()
-            return self.load_ivar_c_call(block, self_val, ivar_index);
+        if recv_type.flags().is_t_object() {
+            if recv_type.flags().is_embedded() {
+                return self.load_ivar_embedded(block, self_val, id, ivar_index);
+            } else {
+                return self.load_ivar_heap(block, self_val, id, ivar_index);
+            }
         }
-        // Remaining case: T_OBJECT
-        assert!(recv_type.flags().is_t_object());
-        if recv_type.flags().is_embedded() {
-            return self.load_ivar_embedded(block, self_val, id, ivar_index);
-        } else {
-            return self.load_ivar_heap(block, self_val, id, ivar_index);
-        }
+        // Non-T_OBJECT, non-class/module, non-typed-data: fall back to C call
+        // NOTE: it's fine to use rb_ivar_get_at_no_ractor_check because
+        // getinstancevariable does assume_single_ractor_mode()
+        return self.load_ivar_c_call(block, self_val, ivar_index);
     }
 
     fn optimize_getivar(&mut self) {
