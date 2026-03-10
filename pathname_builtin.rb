@@ -1170,6 +1170,13 @@ class Pathname    # * Dir *
     end
   end
 
+  # Returns or yields Pathname objects.
+  #
+  #  Pathname("ruby-2.4.2").glob("R*.md")
+  #  #=> [#<Pathname:ruby-2.4.2/README.md>, #<Pathname:ruby-2.4.2/README.ja.md>]
+  #
+  # See Dir.glob.
+  # This method uses the +base+ keyword argument of Dir.glob.
   def glob(*args, **kwargs) # :yield: pathname
     if block_given?
       Dir.glob(*args, **kwargs, base: @path) {|f| yield self + f }
