@@ -49,6 +49,7 @@ class Gem::ConfigFile
   DEFAULT_IPV4_FALLBACK_ENABLED = false
   DEFAULT_INSTALL_EXTENSION_IN_LIB = false
   DEFAULT_GLOBAL_GEM_CACHE = false
+  DEFAULT_USE_PSYCH = false
 
   ##
   # For Ruby packagers to set configuration defaults.  Set in
@@ -162,6 +163,11 @@ class Gem::ConfigFile
   attr_accessor :global_gem_cache
 
   ##
+  # Use Psych (C extension YAML parser) instead of the pure Ruby YAMLSerializer.
+
+  attr_accessor :use_psych
+
+  ##
   # Path name of directory or file of openssl client certificate, used for remote https connection with client authentication
 
   attr_reader :ssl_client_cert
@@ -199,6 +205,7 @@ class Gem::ConfigFile
     @install_extension_in_lib = DEFAULT_INSTALL_EXTENSION_IN_LIB
     @ipv4_fallback_enabled = ENV["IPV4_FALLBACK_ENABLED"] == "true" || DEFAULT_IPV4_FALLBACK_ENABLED
     @global_gem_cache = ENV["RUBYGEMS_GLOBAL_GEM_CACHE"] == "true" || DEFAULT_GLOBAL_GEM_CACHE
+    @use_psych = ENV["RUBYGEMS_USE_PSYCH"] == "true" || DEFAULT_USE_PSYCH
 
     operating_system_config = Marshal.load Marshal.dump(OPERATING_SYSTEM_DEFAULTS)
     platform_config = Marshal.load Marshal.dump(PLATFORM_DEFAULTS)
@@ -221,7 +228,7 @@ class Gem::ConfigFile
       # gemhome and gempath are not working with symbol keys
       if %w[backtrace bulk_threshold verbose update_sources cert_expiration_length_days
             concurrent_downloads install_extension_in_lib ipv4_fallback_enabled
-            global_gem_cache sources
+            global_gem_cache use_psych sources
             disable_default_gem_server ssl_verify_mode ssl_ca_cert ssl_client_cert].include?(k)
         k.to_sym
       else
@@ -239,6 +246,7 @@ class Gem::ConfigFile
     @install_extension_in_lib    = @hash[:install_extension_in_lib]    if @hash.key? :install_extension_in_lib
     @ipv4_fallback_enabled       = @hash[:ipv4_fallback_enabled]       if @hash.key? :ipv4_fallback_enabled
     @global_gem_cache            = @hash[:global_gem_cache]            if @hash.key? :global_gem_cache
+    @use_psych                   = @hash[:use_psych]                   if @hash.key? :use_psych
 
     @home                        = @hash[:gemhome]                     if @hash.key? :gemhome
     @path                        = @hash[:gempath]                     if @hash.key? :gempath
@@ -378,7 +386,9 @@ if you believe they were disclosed to a third party.
 
     begin
       config = self.class.load_with_rubygems_config_hash(File.read(filename))
-      if config.keys.any? {|k| k.to_s.gsub(%r{https?:\/\/}, "").include?(": ") }
+      has_invalid_keys = config.keys.any? {|k| k.to_s.gsub(%r{https?:\/\/}, "").include?(": ") }
+      has_invalid_values = config.values.any? {|v| v.is_a?(String) && v.gsub(%r{https?:\/\/}, "").match?(/\A\S+: /) }
+      if has_invalid_keys || has_invalid_values
         warn "Failed to load #{filename} because it doesn't contain valid YAML hash"
         return {}
       else
@@ -563,7 +573,9 @@ if you believe they were disclosed to a third party.
   def self.load_with_rubygems_config_hash(yaml)
     require_relative "yaml_serializer"
 
-    content = Gem::YAMLSerializer.load(yaml)
+    content = Gem::YAMLSerializer.load(yaml, permitted_classes: [])
+    return {} unless content.is_a?(Hash)
+
     deep_transform_config_keys!(content)
   end
 
@@ -597,7 +609,7 @@ if you believe they were disclosed to a third party.
         else
           v
         end
-      elsif v.empty?
+      elsif v.respond_to?(:empty?) && v.empty?
         nil
       elsif v.is_a?(Hash)
         deep_transform_config_keys!(v)

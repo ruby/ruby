@@ -909,7 +909,11 @@ class TestGemPackage < Gem::Package::TarTestCase
       }
       tar.add_file "checksums.yaml.gz", 0o444 do |io|
         Zlib::GzipWriter.wrap io do |gz_io|
-          gz_io.write Psych.dump bogus_checksums
+          if Gem.use_psych?
+            gz_io.write Psych.dump(bogus_checksums)
+          else
+            gz_io.write Gem::YAMLSerializer.dump(bogus_checksums)
+          end
         end
       end
     end
@@ -955,7 +959,11 @@ class TestGemPackage < Gem::Package::TarTestCase
 
       tar.add_file "checksums.yaml.gz", 0o444 do |io|
         Zlib::GzipWriter.wrap io do |gz_io|
-          gz_io.write Psych.dump checksums
+          if Gem.use_psych?
+            gz_io.write Psych.dump(checksums)
+          else
+            gz_io.write Gem::YAMLSerializer.dump(checksums)
+          end
         end
       end
 

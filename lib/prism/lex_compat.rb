@@ -43,10 +43,10 @@ module Prism
 
       # Create a new lex compat result object with the given values.
       #--
-      #: (Array[lex_compat_token] value, Array[Comment] comments, Array[MagicComment] magic_comments, Location? data_loc, Array[ParseError] errors, Array[ParseWarning] warnings, Source source) -> void
-      def initialize(value, comments, magic_comments, data_loc, errors, warnings, source)
+      #: (Array[lex_compat_token] value, Array[Comment] comments, Array[MagicComment] magic_comments, Location? data_loc, Array[ParseError] errors, Array[ParseWarning] warnings, bool continuable, Source source) -> void
+      def initialize(value, comments, magic_comments, data_loc, errors, warnings, continuable, source)
         @value = value
-        super(comments, magic_comments, data_loc, errors, warnings, source)
+        super(comments, magic_comments, data_loc, errors, warnings, continuable, source)
       end
 
       # Implement the hash pattern matching interface for Result.
@@ -825,7 +825,7 @@ module Prism
 
       tokens = post_process_tokens(tokens, source, result.data_loc, bom, eof_token)
 
-      Result.new(tokens, result.comments, result.magic_comments, result.data_loc, result.errors, result.warnings, source)
+      Result.new(tokens, result.comments, result.magic_comments, result.data_loc, result.errors, result.warnings, result.continuable?, source)
     end
 
     private

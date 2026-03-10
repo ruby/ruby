@@ -353,15 +353,23 @@ random_alloc(VALUE klass)
 static VALUE
 rand_init_default(const rb_random_interface_t *rng, rb_random_t *rnd)
 {
-    VALUE seed, buf0 = 0;
+    VALUE seed;
     size_t len = roomof(rng->default_seed_bits, 32);
-    uint32_t *buf = ALLOCV_N(uint32_t, buf0, len+1);
 
-    fill_random_seed(buf, len, true);
-    rng->init(rnd, buf, len);
-    seed = make_seed_value(buf, len);
-    explicit_bzero(buf, len * sizeof(*buf));
-    ALLOCV_END(buf0);
+    if (LIKELY(len)) {
+        VALUE buf0 = 0;
+        uint32_t *buf = ALLOCV_N(uint32_t, buf0, len);
+        fill_random_seed(buf, len, true);
+        rng->init(rnd, buf, len);
+        seed = make_seed_value(buf, len);
+        explicit_bzero(buf, len * sizeof(*buf));
+        ALLOCV_END(buf0);
+    }
+    else {
+        uint32_t minimul[1] = {0};
+        rng->init(rnd, minimul, 0);
+        seed = INT2FIX(0);
+    }
     return seed;
 }
 
@@ -1783,8 +1791,10 @@ st_index_t
 rb_memhash(const void *ptr, long len)
 {
     sip_uint64_t h = sip_hash13(hash_salt.key.sip, ptr, len);
-#ifdef HAVE_UINT64_T
+#if SIZEOF_ST_INDEX_T >= 8
     return (st_index_t)h;
+#elif defined HAVE_UINT64_T
+    return (st_index_t)((h >> 32) ^ h);
 #else
     return (st_index_t)(h.u32[0] ^ h.u32[1]);
 #endif

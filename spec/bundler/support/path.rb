@@ -313,15 +313,17 @@ module Spec
       deps = %w[
         mustermann
         rack
+        rack-protection
+        rack-session
         tilt
         sinatra
-        ruby2_keywords
         base64
         logger
-        cgi
         compact_index
       ]
-      path = if ruby_core? && deps.all? {|dep| !Dir[source_root.join(".bundle/gems/#{dep}-*")].empty? }
+      path = if deps.all? {|dep| !Dir[scoped_base_system_gem_path.join("gems/#{dep}-*")].empty? }
+        scoped_base_system_gem_path
+      elsif ruby_core? && deps.all? {|dep| !Dir[source_root.join(".bundle/gems/#{dep}-*")].empty? }
         source_root.join(".bundle")
       else
         scoped_base_system_gem_path

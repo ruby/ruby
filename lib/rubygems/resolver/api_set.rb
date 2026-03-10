@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
 ##
-# The global rubygems pool, available via the rubygems.org API.
+# The global rubygems pool, available via the Compact Index API.
 # Returns instances of APISpecification.
 
 class Gem::Resolver::APISet < Gem::Resolver::Set
   autoload :GemParser, File.expand_path("api_set/gem_parser", __dir__)
 
   ##
-  # The URI for the dependency API this APISet uses.
+  # The URI for the Compact Index API this APISet uses.
 
   attr_reader :dep_uri # :nodoc:
 
@@ -23,9 +23,9 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
   attr_reader :uri
 
   ##
-  # Creates a new APISet that will retrieve gems from +uri+ using the RubyGems
-  # API URL +dep_uri+ which is described at
-  # https://guides.rubygems.org/rubygems-org-api
+  # Creates a new APISet that will retrieve gems from +uri+ using the Compact
+  # Index API URL +dep_uri+ which is described at
+  # https://guides.rubygems.org/rubygems-org-compact-index-api
 
   def initialize(dep_uri = "https://index.rubygems.org/info/")
     super()

@@ -102,6 +102,7 @@ RSpec.configure do |config|
     ENV["BUNDLE_SILENCE_ROOT_WARNING"] = nil
     ENV["RUBYGEMS_GEMDEPS"] = nil
     ENV["XDG_CONFIG_HOME"] = nil
+    ENV["XDG_CACHE_HOME"] = nil
     ENV["GEMRC"] = nil
 
     # Don't wrap output in tests

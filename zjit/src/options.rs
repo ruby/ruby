@@ -457,6 +457,13 @@ pub fn set_call_threshold(call_threshold: CallThreshold) {
     update_profile_threshold();
 }
 
+/// Enable --zjit-stats for testing
+#[cfg(test)]
+pub fn enable_zjit_stats() {
+    rb_zjit_prepare_options();
+    unsafe { OPTIONS.as_mut() }.unwrap().stats = true;
+}
+
 /// Print YJIT options for `ruby --help`. `width` is width of option parts, and
 /// `columns` is indent width of descriptions.
 #[unsafe(no_mangle)]

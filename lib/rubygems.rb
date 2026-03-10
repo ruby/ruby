@@ -640,6 +640,14 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   @yaml_loaded = false
+  @use_psych = nil
+
+  ##
+  # Returns true if the Psych YAML parser is enabled via configuration.
+
+  def self.use_psych?
+    @use_psych || false
+  end
 
   ##
   # Loads YAML, preferring Psych
@@ -647,9 +655,15 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   def self.load_yaml
     return if @yaml_loaded
 
-    require "psych"
-    require_relative "rubygems/psych_tree"
+    @use_psych = ENV["RUBYGEMS_USE_PSYCH"] == "true" ||
+                 (defined?(@configuration) && @configuration && !@configuration[:use_psych].nil?)
 
+    if @use_psych
+      require "psych"
+      require_relative "rubygems/psych_tree"
+    end
+
+    require_relative "rubygems/yaml_serializer"
     require_relative "rubygems/safe_yaml"
 
     @yaml_loaded = true

@@ -65,7 +65,7 @@ releases.
 * RubyGems 4.1.0.dev
 * bundler 4.1.0.dev
 * json 2.19.1
-  * 2.18.0 to [v2.18.1][json-v2.18.1], [v2.19.0][json-v2.19.0]
+  * 2.18.0 to [v2.18.1][json-v2.18.1], [v2.19.0][json-v2.19.0], [v2.19.1][json-v2.19.1]
 * openssl 4.0.1
   * 4.0.0 to [v4.0.1][openssl-v4.0.1]
 * prism 1.9.0
@@ -76,6 +76,8 @@ releases.
 * strscan 3.1.7.dev
   * 3.1.6 to [v3.1.7][strscan-v3.1.7]
 * syntax_suggest 2.0.3
+* timeout 0.6.1
+  * 0.6.0 to [v0.6.1][timeout-v0.6.1]
 * zlib 3.2.3
   * 3.2.2 to [v3.2.3][zlib-v3.2.3]
 
@@ -135,10 +137,12 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #21785]: https://bugs.ruby-lang.org/issues/21785
 [json-v2.18.1]: https://github.com/ruby/json/releases/tag/v2.18.1
 [json-v2.19.0]: https://github.com/ruby/json/releases/tag/v2.19.0
+[json-v2.19.1]: https://github.com/ruby/json/releases/tag/v2.19.1
 [openssl-v4.0.1]: https://github.com/ruby/openssl/releases/tag/v4.0.1
 [prism-v1.9.0]: https://github.com/ruby/prism/releases/tag/v1.9.0
 [resolv-v0.7.1]: https://github.com/ruby/resolv/releases/tag/v0.7.1
 [strscan-v3.1.7]: https://github.com/ruby/strscan/releases/tag/v3.1.7
+[timeout-v0.6.1]: https://github.com/ruby/timeout/releases/tag/v0.6.1
 [zlib-v3.2.3]: https://github.com/ruby/zlib/releases/tag/v3.2.3
 [test-unit-3.7.4]: https://github.com/test-unit/test-unit/releases/tag/3.7.4
 [test-unit-3.7.5]: https://github.com/test-unit/test-unit/releases/tag/3.7.5

@@ -4332,7 +4332,7 @@ int_accurate_in_double(VALUE n)
     const size_t mant_size = roomof(DBL_MANT_DIG, CHAR_BIT);
     if (size < mant_size) return true;
     if (size > mant_size) return false;
-    if (nlz >= (CHAR_BIT * mant_size - DBL_MANT_DIG)) return true;
+    if ((size_t)nlz >= (CHAR_BIT * mant_size - DBL_MANT_DIG)) return true;
 #endif
     return false;
 }

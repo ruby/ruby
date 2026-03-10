@@ -1275,7 +1275,7 @@ class Gem::Specification < Gem::BasicSpecification
       raise unless message.include?("YAML::")
 
       unless Object.const_defined?(:YAML)
-        Object.const_set "YAML", Psych
+        Object.const_set "YAML", Module.new
         yaml_set = true
       end
 
@@ -1284,7 +1284,7 @@ class Gem::Specification < Gem::BasicSpecification
 
         YAML::Syck.const_set "DefaultKey", Class.new if message.include?("YAML::Syck::DefaultKey") && !YAML::Syck.const_defined?(:DefaultKey)
       elsif message.include?("YAML::PrivateType") && !YAML.const_defined?(:PrivateType)
-        YAML.const_set "PrivateType", Class.new
+        YAML.const_set "PrivateType", Class.new { attr_accessor :type_id, :value }
       end
 
       retry_count += 1
@@ -2190,10 +2190,13 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # Sets rdoc_options to +value+, ensuring it is an array.
+  # Sets rdoc_options to +value+, ensuring it is a flat array of strings.
+  # Handles malformed gemspecs where rdoc_options may be a Hash or contain Hashes.
 
   def rdoc_options=(options)
-    @rdoc_options = Array options
+    @rdoc_options = Array(options).flat_map do |opt|
+      opt.is_a?(Hash) ? opt.to_a.flatten.map(&:to_s) : opt
+    end
   end
 
   ##
@@ -2455,24 +2458,28 @@ class Gem::Specification < Gem::BasicSpecification
   def to_yaml(opts = {}) # :nodoc:
     Gem.load_yaml
 
-    # Because the user can switch the YAML engine behind our
-    # back, we have to check again here to make sure that our
-    # psych code was properly loaded, and load it if not.
-    unless Gem.const_defined?(:NoAliasYAMLTree)
-      require_relative "psych_tree"
+    if Gem.use_psych?
+      # Because the user can switch the YAML engine behind our
+      # back, we have to check again here to make sure that our
+      # psych code was properly loaded, and load it if not.
+      unless Gem.const_defined?(:NoAliasYAMLTree)
+        require_relative "psych_tree"
+      end
+
+      builder = Gem::NoAliasYAMLTree.create
+      builder << self
+      ast = builder.tree
+
+      require "stringio"
+      io = StringIO.new
+      io.set_encoding Encoding::UTF_8
+
+      Psych::Visitors::Emitter.new(io).accept(ast)
+
+      io.string.gsub(/ !!null \n/, " \n")
+    else
+      Gem::YAMLSerializer.dump(self)
     end
-
-    builder = Gem::NoAliasYAMLTree.create
-    builder << self
-    ast = builder.tree
-
-    require "stringio"
-    io = StringIO.new
-    io.set_encoding Encoding::UTF_8
-
-    Psych::Visitors::Emitter.new(io).accept(ast)
-
-    io.string.gsub(/ !!null \n/, " \n")
   end
 
   ##
@@ -2549,6 +2556,10 @@ class Gem::Specification < Gem::BasicSpecification
         self.date = val
       when "platform"
         self.platform = val
+      when "rdoc_options"
+        self.rdoc_options = val
+      when "requirements"
+        self.requirements = val
       else
         instance_variable_set "@#{ivar}", val
       end
