@@ -681,7 +681,6 @@ class_switch_superclass(VALUE super, VALUE klass)
 static VALUE
 class_alloc0(enum ruby_value_type type, VALUE klass, bool boxable)
 {
-    rb_subclass_entry_t *head = NULL;
     const rb_box_t *box = rb_current_box();
 
     if (!ruby_box_init_done) {
@@ -691,12 +690,6 @@ class_alloc0(enum ruby_value_type type, VALUE klass, bool boxable)
     size_t alloc_size = sizeof(struct RClass_and_rb_classext_t);
     if (boxable) {
         alloc_size = sizeof(struct RClass_boxable);
-    }
-
-    // Allocate subclass list dummy head before NEWOBJ_OF to avoid GC.
-    // ICLASSes don't have their own subclasses lists.
-    if (type != T_ICLASS) {
-        head = ZALLOC(rb_subclass_entry_t);
     }
 
     RUBY_ASSERT(type == T_CLASS || type == T_ICLASS || type == T_MODULE);
@@ -729,8 +722,6 @@ class_alloc0(enum ruby_value_type type, VALUE klass, bool boxable)
 
     RCLASS_SET_ORIGIN((VALUE)obj, (VALUE)obj);
     RCLASS_SET_REFINED_CLASS((VALUE)obj, Qnil);
-
-    RCLASS_SET_SUBCLASSES((VALUE)obj, head);
 
     return (VALUE)obj;
 }
