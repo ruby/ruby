@@ -113,6 +113,15 @@ typedef struct {
 
     /** The hash of the bucket. */
     uint32_t hash;
+
+    /**
+     * A pointer to the start of the string, stored directly in the bucket to
+     * avoid a pointer chase to the constants array during probing.
+     */
+    const uint8_t *start;
+
+    /** The length of the string. */
+    size_t length;
 } pm_constant_pool_bucket_t;
 
 /** A constant in the pool which effectively stores a string. */

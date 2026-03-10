@@ -22233,34 +22233,25 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
         .warn_mismatched_indentation = true
     };
 
-    // Pre-size the arenas based on input size to reduce the number of block
-    // allocations (and the kernel page zeroing they trigger). The ratios were
-    // measured empirically: AST arena ~3.3x input, metadata arena ~1.1x input.
-    // The reserve call is a no-op when the capacity is at or below the default
-    // arena block size, so small inputs don't waste an extra allocation.
+    /* Pre-size the arenas based on input size to reduce the number of block
+     * allocations (and the kernel page zeroing they trigger). The ratios were
+     * measured empirically: AST arena ~3.3x input, metadata arena ~1.1x input.
+     * The reserve call is a no-op when the capacity is at or below the default
+     * arena block size, so small inputs don't waste an extra allocation. */
     if (size <= SIZE_MAX / 4) pm_arena_reserve(arena, size * 4);
     if (size <= SIZE_MAX / 5 * 4) pm_arena_reserve(&parser->metadata_arena, size + size / 4);
 
-    // Initialize the constant pool. We're going to completely guess as to the
-    // number of constants that we'll need based on the size of the input. The
-    // ratio we chose here is actually less arbitrary than you might think.
-    //
-    // We took ~50K Ruby files and measured the size of the file versus the
-    // number of constants that were found in those files. Then we found the
-    // average and standard deviation of the ratios of constants/bytesize. Then
-    // we added 1.34 standard deviations to the average to get a ratio that
-    // would fit 75% of the files (for a two-tailed distribution). This works
-    // because there was about a 0.77 correlation and the distribution was
-    // roughly normal.
-    //
-    // This ratio will need to change if we add more constants to the constant
-    // pool for another node type.
-    uint32_t constant_size = ((uint32_t) size) / 95;
+    /* Initialize the constant pool. Measured across 1532 Ruby stdlib files, the
+     * bytes/constant ratio has a median of ~56 and a 90th percentile of ~135.
+     * We use 120 as a balance between over-allocation waste and resize
+     * frequency. Resizes are cheap with arena allocation, so we lean toward
+     * under-estimating. */
+    uint32_t constant_size = ((uint32_t) size) / 120;
     pm_constant_pool_init(&parser->metadata_arena, &parser->constant_pool, constant_size < 4 ? 4 : constant_size);
 
-    // Initialize the newline list. Similar to the constant pool, we're going to
-    // guess at the number of newlines that we'll need based on the size of the
-    // input.
+    /* Initialize the line offset list. Similar to the constant pool, we are
+     * going to estimate the number of newlines that we will need based on the
+     * size of the input. */
     size_t newline_size = size / 22;
     pm_line_offset_list_init(&parser->metadata_arena, &parser->line_offsets, newline_size < 4 ? 4 : newline_size);
 
