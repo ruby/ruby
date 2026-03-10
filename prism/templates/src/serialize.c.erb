@@ -50,8 +50,6 @@ static void
 pm_serialize_node(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
     pm_buffer_append_byte(buffer, (uint8_t) PM_NODE_TYPE(node));
 
-    size_t offset = buffer->length;
-
     <%- if Prism::Template::INCLUDE_NODE_ID -%>
     pm_buffer_append_varuint(buffer, node->node_id);
     <%- end -%>
@@ -126,7 +124,7 @@ pm_serialize_node(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
             <%- end -%>
             <%- if node.needs_serialized_length? -%>
             // serialize length
-            uint32_t length = pm_sizet_to_u32(buffer->length - offset - sizeof(uint32_t));
+            uint32_t length = pm_sizet_to_u32(buffer->length - length_offset);
             memcpy(buffer->value + length_offset, &length, sizeof(uint32_t));
             <%- end -%>
             break;
