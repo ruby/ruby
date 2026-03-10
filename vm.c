@@ -3031,8 +3031,8 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
             const int arg_size = 1;
 
             rb_iseq_check(catch_iseq);
+            zjit_materialize_frames(cfp); // vm_base_ptr looks at cfp->iseq
             cfp->sp = vm_base_ptr(cfp) + cont_sp;
-            zjit_materialize_frames(cfp);
             cfp->pc = ISEQ_BODY(rb_zjit_cfp_iseq(cfp))->iseq_encoded + cont_pc;
 
             /* push block frame */
