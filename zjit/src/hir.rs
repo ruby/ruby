@@ -4251,6 +4251,14 @@ impl Function {
         })
     }
 
+    fn load_ivar_from_fields(&mut self, block: BlockId, recv: InsnId, is_embedded: bool, id: ID, ivar_index: u16) -> InsnId {
+        if is_embedded {
+            return self.load_ivar_embedded(block, recv, id, ivar_index);
+        } else {
+            return self.load_ivar_heap(block, recv, id, ivar_index);
+        }
+    }
+
     fn load_ivar(&mut self, block: BlockId, self_val: InsnId, recv_type: ProfiledType, id: ID, state: InsnId) -> InsnId {
         let mut ivar_index: u16 = 0;
         if ! unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
@@ -4273,11 +4281,7 @@ impl Function {
                 offset: RCLASS_OFFSET_PRIME_FIELDS_OBJ as i32,
                 return_type: types::RubyValue,
             });
-            if recv_type.flags().is_fields_embedded() {
-                return self.load_ivar_embedded(block, fields_obj, id, ivar_index);
-            } else {
-                return self.load_ivar_heap(block, fields_obj, id, ivar_index);
-            }
+            return self.load_ivar_from_fields(block, fields_obj, recv_type.flags().is_fields_embedded(), id, ivar_index);
         }
         if recv_type.flags().is_typed_data() {
             // Typed T_DATA: load from fields_obj at fixed offset in RTypedData
@@ -4286,18 +4290,10 @@ impl Function {
                 offset: RTYPEDDATA_OFFSET_FIELDS_OBJ as i32,
                 return_type: types::RubyValue,
             });
-            if recv_type.flags().is_fields_embedded() {
-                return self.load_ivar_embedded(block, fields_obj, id, ivar_index);
-            } else {
-                return self.load_ivar_heap(block, fields_obj, id, ivar_index);
-            }
+            return self.load_ivar_from_fields(block, fields_obj, recv_type.flags().is_fields_embedded(), id, ivar_index);
         }
         if recv_type.flags().is_t_object() {
-            if recv_type.flags().is_embedded() {
-                return self.load_ivar_embedded(block, self_val, id, ivar_index);
-            } else {
-                return self.load_ivar_heap(block, self_val, id, ivar_index);
-            }
+            return self.load_ivar_from_fields(block, self_val, recv_type.flags().is_embedded(), id, ivar_index);
         }
         // Non-T_OBJECT, non-class/module, non-typed-data: fall back to C call
         // NOTE: it's fine to use rb_ivar_get_at_no_ractor_check because
