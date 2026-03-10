@@ -30,10 +30,12 @@ module Gem
 
     class Parser
       MAPPING_KEY_RE = /^((?:[^#:]|:[^ ])+):(?:[ ]+(.*))?$/
+      MAX_NESTING_DEPTH = 1_000
 
       def initialize(source)
         @lines = source.split("\n")
         @anchors = {}
+        @depth = 0
         strip_document_prefix
       end
 
@@ -69,6 +71,11 @@ module Gem
       end
 
       def parse_node(base_indent)
+        @depth += 1
+        if @depth > MAX_NESTING_DEPTH
+          raise Psych::SyntaxError, "exceeded maximum nesting depth (#{MAX_NESTING_DEPTH})"
+        end
+
         skip_blank_and_comments
         return nil if @lines.empty?
 
@@ -99,6 +106,8 @@ module Gem
         else
           parse_plain_scalar(indent, anchor)
         end
+      ensure
+        @depth -= 1
       end
 
       def parse_sequence(indent, anchor)
@@ -389,6 +398,7 @@ module Gem
     class Builder
       VALID_OPS = %w[= != > < >= <= ~>].freeze
       ARRAY_FIELDS = %w[files test_files executables extra_rdoc_files].freeze
+      MAX_ALIAS_RESOLUTIONS = 1_000
 
       def initialize(permitted_classes: [], permitted_symbols: [], aliases: true)
         @permitted_tags = Array(permitted_classes).map do |c|
@@ -397,6 +407,7 @@ module Gem
         @permitted_symbols = permitted_symbols
         @aliases = aliases
         @anchor_values = {}
+        @alias_count = 0
       end
 
       def build(node)
@@ -428,6 +439,10 @@ module Gem
 
       def resolve_alias(node)
         raise Psych::AliasesNotEnabled unless @aliases
+        @alias_count += 1
+        if @alias_count > MAX_ALIAS_RESOLUTIONS
+          raise Psych::BadAlias, "exceeded maximum alias resolutions (#{MAX_ALIAS_RESOLUTIONS})"
+        end
         @anchor_values.fetch(node.name, nil)
       end
 
