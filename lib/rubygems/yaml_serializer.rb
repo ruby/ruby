@@ -270,7 +270,7 @@ module Gem
           true
         elsif val == "false"
           false
-        elsif val == "nil"
+        elsif val == "~" || val == "null"
           nil
         elsif val == "{}"
           Mapping.new
@@ -662,7 +662,9 @@ module Gem
         when Array              then emit_array(obj, indent)
         when Time               then emit_time(obj)
         when String             then emit_string(obj, indent, quote: quote)
-        when Numeric, Symbol, TrueClass, FalseClass, nil
+        when NilClass
+          "\n"
+        when Numeric, Symbol, TrueClass, FalseClass
           " #{obj.inspect}\n"
         else
           " #{obj.to_s.inspect}\n"
@@ -697,9 +699,9 @@ module Gem
 
       def emit_platform(plat, indent)
         " !ruby/object:Gem::Platform\n" \
-          "#{pad(indent)}cpu: #{plat.cpu.inspect}\n" \
-          "#{pad(indent)}os: #{plat.os.inspect}\n" \
-          "#{pad(indent)}version: #{plat.version.inspect}\n"
+          "#{pad(indent)}cpu:#{emit_node(plat.cpu, indent + 2)}" \
+          "#{pad(indent)}os:#{emit_node(plat.os, indent + 2)}" \
+          "#{pad(indent)}version:#{emit_node(plat.version, indent + 2)}"
       end
 
       def emit_requirement(req, indent)

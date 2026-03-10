@@ -823,13 +823,15 @@ class TestGemSafeYAML < Gem::TestCase
 
   def test_load_nil_value
 
+    # YAML 1.2: "nil" is not a null value, only ~ and null are
     result = yaml_load("key: nil")
-    if Gem.use_psych?
-      # Psych treats "nil" as a string (not a YAML 1.1 null)
-      assert_equal "nil", result["key"]
-    else
-      assert_nil result["key"]
-    end
+    assert_equal "nil", result["key"]
+
+    result = yaml_load("key: ~")
+    assert_nil result["key"]
+
+    result = yaml_load("key: null")
+    assert_nil result["key"]
   end
 
   def test_load_time_value
