@@ -483,6 +483,7 @@ module Gem
       end
 
       PLATFORM_FIELDS = %w[cpu os version].freeze
+      PLATFORM_ALLOWED_IVARS = %w[cpu os version value].freeze
 
       def build_platform(node)
         hash = pairs_to_hash(node)
@@ -493,9 +494,10 @@ module Gem
           # Return the raw value so yaml_initialize handles it like Psych does.
           hash["value"]
         else
-          # Unknown fields: set as instance variables like Psych's init_with
           plat = Gem::Platform.allocate
-          hash.each {|k, v| plat.instance_variable_set(:"@#{k}", v) }
+          hash.each do |k, v|
+            plat.instance_variable_set(:"@#{k}", v) if PLATFORM_ALLOWED_IVARS.include?(k)
+          end
           plat
         end
       end
