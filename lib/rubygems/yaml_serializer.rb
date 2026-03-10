@@ -30,10 +30,12 @@ module Gem
 
     class Parser
       MAPPING_KEY_RE = /^((?:[^#:]|:[^ ])+):(?:[ ]+(.*))?$/
+      MAX_NESTING_DEPTH = 1_000
 
       def initialize(source)
         @lines = source.split("\n")
         @anchors = {}
+        @depth = 0
         strip_document_prefix
       end
 
@@ -69,6 +71,11 @@ module Gem
       end
 
       def parse_node(base_indent)
+        @depth += 1
+        if @depth > MAX_NESTING_DEPTH
+          raise Psych::SyntaxError, "exceeded maximum nesting depth (#{MAX_NESTING_DEPTH})"
+        end
+
         skip_blank_and_comments
         return nil if @lines.empty?
 
@@ -99,6 +106,8 @@ module Gem
         else
           parse_plain_scalar(indent, anchor)
         end
+      ensure
+        @depth -= 1
       end
 
       def parse_sequence(indent, anchor)
@@ -255,14 +264,22 @@ module Gem
         val = val.sub(/^! /, "") if val.start_with?("! ")
 
         if val =~ /^"(.*)"$/
-          $1.gsub(/\\"/, '"').gsub(/\\n/, "\n").gsub(/\\r/, "\r").gsub(/\\t/, "\t").gsub(/\\\\/, "\\")
+          $1.gsub(/\\["nrt\\]/) do |m|
+            case m
+            when '\\"' then '"'
+            when "\\n" then "\n"
+            when "\\r" then "\r"
+            when "\\t" then "\t"
+            when "\\\\" then "\\"
+            end
+          end
         elsif val =~ /^'(.*)'$/
           $1.gsub(/''/, "'")
         elsif val == "true"
           true
         elsif val == "false"
           false
-        elsif val == "nil"
+        elsif ["~", "null"].include?(val)
           nil
         elsif val == "{}"
           Mapping.new
@@ -380,7 +397,8 @@ module Gem
 
     class Builder
       VALID_OPS = %w[= != > < >= <= ~>].freeze
-      ARRAY_FIELDS = %w[rdoc_options files test_files executables requirements extra_rdoc_files].freeze
+      ARRAY_FIELDS = %w[files test_files executables extra_rdoc_files].freeze
+      MAX_ALIAS_RESOLUTIONS = 1_000
 
       def initialize(permitted_classes: [], permitted_symbols: [], aliases: true)
         @permitted_tags = Array(permitted_classes).map do |c|
@@ -389,10 +407,11 @@ module Gem
         @permitted_symbols = permitted_symbols
         @aliases = aliases
         @anchor_values = {}
+        @alias_count = 0
       end
 
       def build(node)
-        return {} if node.nil?
+        return nil if node.nil?
 
         result = build_node(node)
 
@@ -420,6 +439,10 @@ module Gem
 
       def resolve_alias(node)
         raise Psych::AliasesNotEnabled unless @aliases
+        @alias_count += 1
+        if @alias_count > MAX_ALIAS_RESOLUTIONS
+          raise Psych::BadAlias, "exceeded maximum alias resolutions (#{MAX_ALIAS_RESOLUTIONS})"
+        end
         @anchor_values.fetch(node.name, nil)
       end
 
@@ -443,10 +466,12 @@ module Gem
                    build_dependency(node)
                  when nil
                    build_hash(node)
-                 else
+                 when "!ruby/object:Gem::Specification"
                    hash = build_hash(node)
                    hash[:tag] = node.tag
                    hash
+                 else
+                   raise ArgumentError, "undefined class/module #{node.tag.sub("!ruby/object:", "")}"
         end
 
         store_anchor(node.anchor, result)
@@ -472,12 +497,23 @@ module Gem
         Gem::Version.new((hash["version"] || hash["value"]).to_s)
       end
 
+      PLATFORM_FIELDS = %w[cpu os version].freeze
+      PLATFORM_ALLOWED_IVARS = %w[cpu os version value].freeze
+
       def build_platform(node)
         hash = pairs_to_hash(node)
-        if hash["value"]
-          Gem::Platform.new(hash["value"])
-        else
+        if (hash.keys & PLATFORM_FIELDS).any?
           Gem::Platform.new([hash["cpu"], hash["os"], hash["version"]])
+        elsif hash["value"].is_a?(Array)
+          # Malformed platform (e.g. sequence instead of mapping).
+          # Return the raw value so yaml_initialize handles it like Psych does.
+          hash["value"]
+        else
+          plat = Gem::Platform.allocate
+          hash.each do |k, v|
+            plat.instance_variable_set(:"@#{k}", v) if PLATFORM_ALLOWED_IVARS.include?(k)
+          end
+          plat
         end
       end
 
@@ -485,7 +521,6 @@ module Gem
         r = Gem::Requirement.allocate
         hash = pairs_to_hash(node)
         reqs = hash["requirements"] || hash["value"]
-        reqs = [] unless reqs.is_a?(Array)
 
         if reqs.is_a?(Array) && !reqs.empty?
           safe_reqs = []
@@ -516,8 +551,7 @@ module Gem
         d = Gem::Dependency.allocate
         d.instance_variable_set(:@name, hash["name"])
 
-        requirement = build_safe_requirement(hash["requirement"])
-        d.instance_variable_set(:@requirement, requirement)
+        d.instance_variable_set(:@requirement, hash["requirement"])
 
         type = hash["type"]
         type = type ? type.to_s.sub(/^:/, "").to_sym : :runtime
@@ -533,7 +567,6 @@ module Gem
         spec = Gem::Specification.allocate
 
         normalize_specification_version!(hash)
-        normalize_rdoc_options!(hash)
         normalize_array_fields!(hash)
 
         spec.yaml_initialize("!ruby/object:Gem::Specification", hash)
@@ -547,26 +580,6 @@ module Gem
           result[key] = build_node(value_node)
         end
         result
-      end
-
-      def build_safe_requirement(req_value)
-        return Gem::Requirement.default unless req_value
-
-        converted = req_value
-        return Gem::Requirement.default unless converted.is_a?(Gem::Requirement)
-
-        reqs = converted.instance_variable_get(:@requirements)
-        if reqs&.is_a?(Array)
-          valid = reqs.all? do |item|
-            next true if item == Gem::Requirement::DefaultRequirement
-            item.is_a?(Array) && item.size >= 2 && VALID_OPS.include?(item[0].to_s)
-          end
-          valid ? converted : Gem::Requirement.default
-        else
-          converted
-        end
-      rescue StandardError
-        Gem::Requirement.default
       end
 
       def validate_tag!(tag)
@@ -601,26 +614,8 @@ module Gem
         hash["specification_version"] = val.to_i if val.is_a?(String) && /\A\d+\z/.match?(val)
       end
 
-      def normalize_rdoc_options!(hash)
-        opts = hash["rdoc_options"]
-        if opts.is_a?(Hash)
-          hash["rdoc_options"] = opts.values.flatten.compact.map(&:to_s)
-        elsif opts.is_a?(Array)
-          hash["rdoc_options"] = opts.flat_map do |opt|
-            if opt.is_a?(Hash)
-              opt.flat_map {|k, v| [k.to_s, v.to_s] }
-            elsif opt.is_a?(String)
-              opt
-            else
-              opt.to_s
-            end
-          end
-        end
-      end
-
       def normalize_array_fields!(hash)
         ARRAY_FIELDS.each do |field|
-          next if field == "rdoc_options" # already handled
           hash[field] = normalize_array_field(hash[field]) if hash[field]
         end
       end
@@ -654,7 +649,9 @@ module Gem
         when Array              then emit_array(obj, indent)
         when Time               then emit_time(obj)
         when String             then emit_string(obj, indent, quote: quote)
-        when Numeric, Symbol, TrueClass, FalseClass, nil
+        when NilClass
+          "\n"
+        when Numeric, Symbol, TrueClass, FalseClass
           " #{obj.inspect}\n"
         else
           " #{obj.to_s.inspect}\n"
@@ -689,9 +686,9 @@ module Gem
 
       def emit_platform(plat, indent)
         " !ruby/object:Gem::Platform\n" \
-          "#{pad(indent)}cpu: #{plat.cpu.inspect}\n" \
-          "#{pad(indent)}os: #{plat.os.inspect}\n" \
-          "#{pad(indent)}version: #{plat.version.inspect}\n"
+          "#{pad(indent)}cpu:#{emit_node(plat.cpu, indent + 2)}" \
+          "#{pad(indent)}os:#{emit_node(plat.os, indent + 2)}" \
+          "#{pad(indent)}version:#{emit_node(plat.version, indent + 2)}"
       end
 
       def emit_requirement(req, indent)
@@ -780,10 +777,11 @@ module Gem
     end
 
     def load(str, permitted_classes: [], permitted_symbols: [], aliases: true)
-      return {} if str.nil? || str.empty?
+      raise TypeError, "no implicit conversion of nil into String" if str.nil?
+      return nil if str.empty?
 
       ast = Parser.new(str).parse
-      return {} if ast.nil?
+      return nil if ast.nil?
 
       Builder.new(
         permitted_classes: permitted_classes,

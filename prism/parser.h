@@ -896,6 +896,14 @@ struct pm_parser {
     bool recovering;
 
     /**
+     * Whether or not the source being parsed could become valid if more input
+     * were appended. This is set to false when the parser encounters a token
+     * that is definitively wrong (e.g., a stray `end` or `]`) as opposed to
+     * merely incomplete.
+     */
+    bool continuable;
+
+    /**
      * This is very specialized behavior for when you want to parse in a context
      * that does not respect encoding comments. Its main use case is translating
      * into the whitequark/parser AST which re-encodes source files in UTF-8
