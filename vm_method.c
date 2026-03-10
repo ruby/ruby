@@ -439,7 +439,8 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
     RB_VM_LOCKING() {
         rb_vm_barrier();
 
-        if (LIKELY(RCLASS_SUBCLASSES_FIRST(klass) == NULL) && !RB_TYPE_P(klass, T_ICLASS)) {
+        if (LIKELY(RCLASS_SUBCLASSES_FIRST(klass) == NULL) &&
+            !(RB_TYPE_P(klass, T_ICLASS) && RCLASS_INCLUDER(klass))) {
             // no subclasses
             // check only current class
 
