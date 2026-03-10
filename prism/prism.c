@@ -19317,7 +19317,22 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
                     }
                 }
             } else {
-                receiver = parse_expression(parser, PM_BINDING_POWER_NOT, (flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL, PM_ERR_NOT_EXPRESSION, (uint16_t) (depth + 1));
+                /* `not` in a single line method is allowed to be followed by
+                 * an expression without pattern matching, that optionally is
+                 * followed by a `rescue` modifier. */
+                if (flags & PM_PARSE_IN_ENDLESS_DEF) {
+                    receiver = parse_expression(parser, PM_BINDING_POWER_MATCH + 1, (flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL, PM_ERR_NOT_EXPRESSION, (uint16_t) (depth + 1));
+
+                    if (accept1(parser, PM_TOKEN_KEYWORD_RESCUE_MODIFIER)) {
+                        context_push(parser, PM_CONTEXT_RESCUE_MODIFIER);
+                        pm_token_t rescue_keyword = parser->previous;
+                        pm_node_t *value = parse_expression(parser, PM_BINDING_POWER_MATCH + 1, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
+                        context_pop(parser);
+                        receiver = UP(pm_rescue_modifier_node_create(parser, receiver, &rescue_keyword, value));
+                    }
+                } else {
+                    receiver = parse_expression(parser, PM_BINDING_POWER_NOT, (flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL, PM_ERR_NOT_EXPRESSION, (uint16_t) (depth + 1));
+                }
             }
 
             return UP(pm_call_node_not_create(parser, receiver, &message, &arguments));
@@ -20303,7 +20318,7 @@ parse_assignment_value(pm_parser_t *parser, pm_binding_power_t previous_binding_
         pm_token_t rescue = parser->current;
         parser_lex(parser);
 
-        pm_node_t *right = parse_expression(parser, pm_binding_powers[PM_TOKEN_KEYWORD_RESCUE_MODIFIER].right, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
+        pm_node_t *right = parse_expression(parser, PM_BINDING_POWER_MATCH + 1, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
         context_pop(parser);
 
         return UP(pm_rescue_modifier_node_create(parser, value, &rescue, right));
@@ -20420,7 +20435,7 @@ parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding
             }
         }
 
-        pm_node_t *right = parse_expression(parser, pm_binding_powers[PM_TOKEN_KEYWORD_RESCUE_MODIFIER].right, (flags & PM_PARSE_ACCEPTS_DO_BLOCK) | (accepts_command_call_inner ? PM_PARSE_ACCEPTS_COMMAND_CALL : 0), PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
+        pm_node_t *right = parse_expression(parser, PM_BINDING_POWER_MATCH + 1, (flags & PM_PARSE_ACCEPTS_DO_BLOCK) | (accepts_command_call_inner ? PM_PARSE_ACCEPTS_COMMAND_CALL : 0), PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
         context_pop(parser);
 
         return UP(pm_rescue_modifier_node_create(parser, value, &rescue, right));
