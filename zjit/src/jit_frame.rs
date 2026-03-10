@@ -158,4 +158,8 @@ mod tests {
             test
         "#), @r#"["a", "b", "c"]"#);
     }
+
+    // TODO: write a test case for GET_ISEQ references in send fallbacks
+
+    // TODO: write a test case for GET_ISEQ references in throw from send fallbacks
 }

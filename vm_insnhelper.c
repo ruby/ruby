@@ -1767,16 +1767,16 @@ vm_throw_start(const rb_execution_context_t *ec, rb_control_frame_t *const reg_c
         escape_cfp = reg_cfp;
 
         while (ISEQ_BODY(base_iseq)->type != ISEQ_TYPE_BLOCK) {
-            if (ISEQ_BODY(escape_cfp->iseq)->type == ISEQ_TYPE_CLASS) {
+            if (ISEQ_BODY(rb_zjit_cfp_iseq(escape_cfp))->type == ISEQ_TYPE_CLASS) {
                 escape_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(escape_cfp);
                 ep = escape_cfp->ep;
-                base_iseq = escape_cfp->iseq;
+                base_iseq = rb_zjit_cfp_iseq(escape_cfp);
             }
             else {
                 ep = VM_ENV_PREV_EP(ep);
                 base_iseq = ISEQ_BODY(base_iseq)->parent_iseq;
                 escape_cfp = rb_vm_search_cf_from_ep(ec, escape_cfp, ep);
-                VM_ASSERT(escape_cfp->iseq == base_iseq);
+                VM_ASSERT(rb_zjit_cfp_iseq(escape_cfp) == base_iseq);
             }
         }
 
@@ -1790,7 +1790,7 @@ vm_throw_start(const rb_execution_context_t *ec, rb_control_frame_t *const reg_c
 
             while (escape_cfp < eocfp) {
                 if (escape_cfp->ep == ep) {
-                    const rb_iseq_t *const iseq = escape_cfp->iseq;
+                    const rb_iseq_t *const iseq = rb_zjit_cfp_iseq(escape_cfp);
                     const VALUE epc = rb_zjit_cfp_pc(escape_cfp) - ISEQ_BODY(iseq)->iseq_encoded;
                     const struct iseq_catch_table *const ct = ISEQ_BODY(iseq)->catch_table;
                     unsigned int i;
@@ -1850,7 +1850,7 @@ vm_throw_start(const rb_execution_context_t *ec, rb_control_frame_t *const reg_c
 
             if (lep == target_lep &&
                 VM_FRAME_RUBYFRAME_P(escape_cfp) &&
-                ISEQ_BODY(escape_cfp->iseq)->type == ISEQ_TYPE_CLASS) {
+                ISEQ_BODY(rb_zjit_cfp_iseq(escape_cfp))->type == ISEQ_TYPE_CLASS) {
                 in_class_frame = 1;
                 target_lep = 0;
             }
@@ -1880,7 +1880,7 @@ vm_throw_start(const rb_execution_context_t *ec, rb_control_frame_t *const reg_c
                     }
                 }
                 else if (VM_FRAME_RUBYFRAME_P(escape_cfp)) {
-                    switch (ISEQ_BODY(escape_cfp->iseq)->type) {
+                    switch (ISEQ_BODY(rb_zjit_cfp_iseq(escape_cfp))->type) {
                       case ISEQ_TYPE_TOP:
                       case ISEQ_TYPE_MAIN:
                         if (toplevel) {
@@ -1894,7 +1894,7 @@ vm_throw_start(const rb_execution_context_t *ec, rb_control_frame_t *const reg_c
                         }
                         break;
                       case ISEQ_TYPE_EVAL: {
-                        const rb_iseq_t *is = escape_cfp->iseq;
+                        const rb_iseq_t *is = rb_zjit_cfp_iseq(escape_cfp);
                         enum rb_iseq_type t = ISEQ_BODY(is)->type;
                         while (t == ISEQ_TYPE_RESCUE || t == ISEQ_TYPE_ENSURE || t == ISEQ_TYPE_EVAL) {
                             if (!(is = ISEQ_BODY(is)->parent_iseq)) break;
@@ -1912,7 +1912,7 @@ vm_throw_start(const rb_execution_context_t *ec, rb_control_frame_t *const reg_c
                 }
             }
 
-            if (escape_cfp->ep == target_lep && ISEQ_BODY(escape_cfp->iseq)->type == ISEQ_TYPE_METHOD) {
+            if (escape_cfp->ep == target_lep && ISEQ_BODY(rb_zjit_cfp_iseq(escape_cfp))->type == ISEQ_TYPE_METHOD) {
                 if (target_ep == NULL) {
                     goto valid_return;
                 }
