@@ -388,7 +388,7 @@ module Gem
 
     class Builder
       VALID_OPS = %w[= != > < >= <= ~>].freeze
-      ARRAY_FIELDS = %w[files test_files executables requirements extra_rdoc_files].freeze
+      ARRAY_FIELDS = %w[files test_files executables extra_rdoc_files].freeze
 
       def initialize(permitted_classes: [], permitted_symbols: [], aliases: true)
         @permitted_tags = Array(permitted_classes).map do |c|
@@ -491,7 +491,6 @@ module Gem
         r = Gem::Requirement.allocate
         hash = pairs_to_hash(node)
         reqs = hash["requirements"] || hash["value"]
-        reqs = [] unless reqs.is_a?(Array)
 
         if reqs.is_a?(Array) && !reqs.empty?
           safe_reqs = []

@@ -308,14 +308,7 @@ class TestGemSafeYAML < Gem::TestCase
     assert_kind_of Gem::Requirement, dep.requirement
 
     reqs = dep.requirement.instance_variable_get(:@requirements)
-    if Gem.use_psych?
-      # Psych sets nil for empty value
-      assert_nil reqs
-    else
-      # YAMLSerializer normalizes empty requirements to []
-      assert_kind_of Array, reqs
-      assert_equal [], reqs
-    end
+    assert_nil reqs
   end
 
   def test_requirements_hash_converted_to_array
@@ -331,15 +324,7 @@ class TestGemSafeYAML < Gem::TestCase
     assert_kind_of Gem::Requirement, req
 
     reqs = req.instance_variable_get(:@requirements)
-    if Gem.use_psych?
-      # Psych assigns the Hash directly
-      assert_kind_of Hash, reqs
-    else
-      # YAMLSerializer normalizes Hash to empty Array
-      assert_kind_of Array, reqs
-      assert_equal [], reqs
-      assert req.satisfied_by?(Gem::Version.new("1.0"))
-    end
+    assert_kind_of Hash, reqs
   end
 
   def test_rdoc_options_hash_converted_to_array
@@ -1143,12 +1128,6 @@ class TestGemSafeYAML < Gem::TestCase
     YAML
 
     spec = Gem::SafeYAML.safe_load(yaml)
-    if Gem.use_psych?
-      # Psych assigns the Hash directly
-      assert_kind_of Hash, spec.requirements
-    else
-      # YAMLSerializer normalizes Hash to Array
-      assert_kind_of Array, spec.requirements
-    end
+    assert_kind_of Hash, spec.requirements
   end
 end
