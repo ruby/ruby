@@ -50,7 +50,7 @@ consensus on ruby-core/ruby-dev.
 
 * *No maintainer*
 
-#### lib/pathname.rb
+#### pathname_builtin.rb, lib/pathname.rb
 
 * Tanaka Akira ([akr])
 
@@ -64,6 +64,10 @@ consensus on ruby-core/ruby-dev.
 * Martin J. Dürst ([duerst])
 
 ### Standard Library(Extensions) Maintainers
+
+#### set.c
+
+* Akinori MUSHA ([knu])
 
 #### ext/continuation
 
@@ -84,6 +88,10 @@ consensus on ruby-core/ruby-dev.
 #### ext/objspace
 
 * *No maintainer*
+
+#### ext/pathname
+
+* Tanaka Akira ([akr])
 
 #### ext/pty
 
