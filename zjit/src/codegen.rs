@@ -591,6 +591,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::IncrCounterPtr { counter_ptr } => no_output!(gen_incr_counter_ptr(asm, *counter_ptr)),
         Insn::ObjToString { val, cd, state, .. } => gen_objtostring(jit, asm, opnd!(val), *cd, &function.frame_state(*state)),
         &Insn::CheckInterrupts { state } => no_output!(gen_check_interrupts(jit, asm, &function.frame_state(state))),
+        Insn::Profile { iseq, insn_idx, operands, state } => no_output!(gen_profile(jit, asm, *iseq, *insn_idx, opnds!(operands), &function.frame_state(*state))),
         &Insn::HashDup { val, state } => { gen_hash_dup(asm, opnd!(val), &function.frame_state(state)) },
         &Insn::HashAref { hash, key, state } => { gen_hash_aref(jit, asm, opnd!(hash), opnd!(key), &function.frame_state(state)) },
         &Insn::HashAset { hash, key, val, state } => { no_output!(gen_hash_aset(jit, asm, opnd!(hash), opnd!(key), opnd!(val), &function.frame_state(state))) },
@@ -1153,6 +1154,24 @@ fn gen_check_interrupts(jit: &mut JITState, asm: &mut Assembler, state: &FrameSt
     let interrupt_flag = asm.load(Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_FLAG as i32));
     asm.test(interrupt_flag, interrupt_flag);
     asm.jnz(side_exit(jit, state, SideExitReason::Interrupt));
+}
+
+/// Generate code to profile operand types from JIT code.
+/// Calls rb_zjit_profile_jit_operand for each operand, which writes type info
+/// into the IseqProfile and triggers recompilation after enough profiles.
+fn gen_profile(jit: &mut JITState, asm: &mut Assembler, iseq: IseqPtr, insn_idx: u32, operands: Vec<lir::Opnd>, state: &FrameState) {
+    use crate::profile::rb_zjit_profile_jit_operand;
+    let total = operands.len() as u32;
+    for (i, opnd) in operands.into_iter().enumerate() {
+        gen_prepare_non_leaf_call(jit, asm, state);
+        asm_ccall!(asm, rb_zjit_profile_jit_operand,
+            Opnd::const_ptr(iseq as *const u8),
+            (insn_idx as u64).into(),
+            (i as u64).into(),
+            (total as u64).into(),
+            opnd
+        );
+    }
 }
 
 fn gen_hash_dup(asm: &mut Assembler, val: Opnd, state: &FrameState) -> lir::Opnd {

@@ -1071,6 +1071,12 @@ pub enum Insn {
     /// Equivalent of RUBY_VM_CHECK_INTS. Automatically inserted by the compiler before jumps and
     /// return instructions.
     CheckInterrupts { state: InsnId },
+
+    /// Profile operand types from JIT code. When enough profiles are gathered,
+    /// clears the JIT entry point to trigger recompilation with the new profile data.
+    /// `iseq` and `insn_idx` identify the call site in the ISEQ profile.
+    /// `operands` are the values to profile (receiver + args, receiver first).
+    Profile { iseq: IseqPtr, insn_idx: u32, operands: Vec<InsnId>, state: InsnId },
 }
 
 /// Macro that enumerates all operands of an Insn, dispatching to caller-provided
@@ -1113,6 +1119,10 @@ macro_rules! for_each_operand_impl {
             | Insn::NewHash { elements, state, .. }
             | Insn::NewArray { elements, state, .. } => {
                 $visit_many!(elements);
+                $visit_one!(state);
+            }
+            Insn::Profile { operands, state, .. } => {
+                $visit_many!(operands);
                 $visit_one!(state);
             }
             Insn::ArrayInclude { elements, target, state, .. } => {
@@ -1364,6 +1374,7 @@ impl Insn {
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. }
             | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
             | Insn::CheckInterrupts { .. }
+            | Insn::Profile { .. }
             | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. }
             | Insn::ArrayAset { .. } => false,
             _ => true,
@@ -1570,6 +1581,7 @@ impl Insn {
             Insn::IncrCounter(_) => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Other),
             Insn::IncrCounterPtr { .. } => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Other),
             Insn::CheckInterrupts { .. } => Effect::read_write(abstract_heaps::InterruptFlag, abstract_heaps::Control),
+            Insn::Profile { .. } => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Other),
             Insn::InvokeProc { .. } => effects::Any,
             Insn::RefineType { .. } => effects::Empty,
             Insn::HasType { expected, .. }
@@ -2038,6 +2050,13 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::IncrCounter(counter) => write!(f, "IncrCounter {counter:?}"),
             Insn::CheckInterrupts { .. } => write!(f, "CheckInterrupts"),
+            Insn::Profile { insn_idx, operands, .. } => {
+                write!(f, "Profile insn_idx:{insn_idx}")?;
+                for opnd in operands {
+                    write!(f, ", {opnd}")?;
+                }
+                Ok(())
+            }
             Insn::IsA { val, class } => write!(f, "IsA {val}, {class}"),
         }
     }
@@ -2786,6 +2805,7 @@ impl Function {
             &ArrayExtend { left, right, state } => ArrayExtend { left: find!(left), right: find!(right), state },
             &ArrayPush { array, val, state } => ArrayPush { array: find!(array), val: find!(val), state },
             &CheckInterrupts { state } => CheckInterrupts { state },
+            &Profile { iseq, insn_idx, ref operands, state } => Profile { iseq, insn_idx, operands: find_vec!(operands), state },
             &IsA { val, class } => IsA { val: find!(val), class: find!(class) },
         }
     }
@@ -2837,6 +2857,7 @@ impl Function {
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. }
             | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
             | Insn::CheckInterrupts { .. }
+            | Insn::Profile { .. }
             | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. } | Insn::ArrayAset { .. } =>
                 panic!("Cannot infer type of instruction with no output: {}. See Insn::has_output().", self.insns[insn.0]),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
@@ -5912,6 +5933,7 @@ impl Function {
             | Insn::IncrCounter { .. }
             | Insn::IncrCounterPtr { .. }
             | Insn::CheckInterrupts { .. }
+            | Insn::Profile { .. }
             | Insn::GetClassVar { .. }
             | Insn::GetSpecialNumber { .. }
             | Insn::GetSpecialSymbol { .. }
@@ -7700,6 +7722,22 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     let args = state.stack_pop_n(argc as usize)?;
                     let recv = state.stack_pop()?;
+
+                    // If there's no profile data for this send, inject a Profile instruction
+                    // to gather type information from JIT code. After enough profiles,
+                    // the JIT entry will be cleared to trigger recompilation with the new data.
+                    if profiles.payload.profile.get_operand_types(exit_state.insn_idx).is_none() {
+                        // Build operands list: receiver first, then args (matching interpreter order)
+                        let mut operands = vec![recv];
+                        operands.extend_from_slice(&args);
+                        fun.push_insn(block, Insn::Profile {
+                            iseq,
+                            insn_idx: exit_state.insn_idx as u32,
+                            operands,
+                            state: exit_id,
+                        });
+                    }
+
                     let send = fun.push_insn(block, Insn::Send { recv, cd, blockiseq: None, args, state: exit_id, reason: Uncategorized(opcode) });
                     state.stack_push(send);
                 }
