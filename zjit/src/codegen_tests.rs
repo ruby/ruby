@@ -1856,6 +1856,56 @@ fn test_opt_neq_fixnum() {
 }
 
 #[test]
+fn test_opt_eq_string_same_operand() {
+    assert_snapshot!(inspect(r#"
+        def test(s) = s == s
+        test("x") # profile opt_eq
+        [test("x"), test("y")]
+    "#), @"[true, true]");
+    assert_contains_opcode("test", YARVINSN_opt_eq);
+}
+
+#[test]
+fn test_opt_eq_string_distinct_literals() {
+    assert_snapshot!(inspect(r#"
+        def test = "a" == "b"
+        test # profile opt_eq
+        [test, test]
+    "#), @"[false, false]");
+    assert_contains_opcode("test", YARVINSN_opt_eq);
+}
+
+#[test]
+fn test_opt_eq_string_one_side_known_literal() {
+    assert_snapshot!(inspect(r#"
+        def test(s) = "a" == s
+        test("a") # profile opt_eq
+        [test("a"), test("b")]
+    "#), @"[true, false]");
+    assert_contains_opcode("test", YARVINSN_opt_eq);
+}
+
+#[test]
+fn test_opt_eq_string_distinct_objects() {
+    assert_snapshot!(inspect(r#"
+        def test(s, t) = s == t
+        test("x", "x") # profile opt_eq
+        [test("x", "x"), test("x", "y")]
+    "#), @"[true, false]");
+    assert_contains_opcode("test", YARVINSN_opt_eq);
+}
+
+#[test]
+fn test_opt_eqq_string_same_operand() {
+    assert_snapshot!(inspect(r#"
+        def test(s) = s === s
+        test("x") # profile opt_send_without_block
+        [test("x"), test("y")]
+    "#), @"[true, true]");
+    assert_contains_opcode("test", YARVINSN_opt_send_without_block);
+}
+
+#[test]
 fn test_opt_lt() {
     eval("
         def test(a, b) = a < b
