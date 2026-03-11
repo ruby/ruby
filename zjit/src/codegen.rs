@@ -1165,7 +1165,7 @@ fn gen_profile(jit: &mut JITState, asm: &mut Assembler, iseq: IseqPtr, insn_idx:
     for (i, opnd) in operands.into_iter().enumerate() {
         gen_prepare_non_leaf_call(jit, asm, state);
         asm_ccall!(asm, rb_zjit_profile_jit_operand,
-            Opnd::const_ptr(iseq as *const u8),
+            Opnd::Value(VALUE::from(iseq)),
             (insn_idx as u64).into(),
             (i as u64).into(),
             (total as u64).into(),
