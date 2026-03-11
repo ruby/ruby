@@ -556,6 +556,13 @@ typedef struct pm_locals {
     /** The capacity of the local variables set. */
     uint32_t capacity;
 
+    /**
+     * A bloom filter over constant IDs stored in this set. Used to quickly
+     * reject lookups for names that are definitely not present, avoiding the
+     * cost of a linear scan or hash probe.
+     */
+    uint32_t bloom;
+
     /** The nullable allocated memory for the local variables in the set. */
     pm_local_t *locals;
 } pm_locals_t;
