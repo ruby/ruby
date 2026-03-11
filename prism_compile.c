@@ -262,24 +262,21 @@ parse_integer_value(const pm_integer_t *integer)
         result = UINT2NUM(integer->value);
     }
     else {
-        VALUE string = rb_str_new(NULL, integer->length * 8);
-        unsigned char *bytes = (unsigned char *) RSTRING_PTR(string);
-
-        size_t offset = integer->length * 8;
-        for (size_t value_index = 0; value_index < integer->length; value_index++) {
-            uint32_t value = integer->values[value_index];
-
-            for (int index = 0; index < 8; index++) {
-                int byte = (value >> (4 * index)) & 0xf;
-                bytes[--offset] = byte < 10 ? byte + '0' : byte - 10 + 'a';
-            }
-        }
-
-        result = rb_funcall(string, rb_intern("to_i"), 1, UINT2NUM(16));
+        // The pm_integer_t stores values as an array of uint32_t in
+        // least-significant-word-first order (base 2^32). We can convert
+        // directly to a Ruby Integer using rb_integer_unpack, avoiding the
+        // overhead of constructing a hex string and calling rb_funcall.
+        result = rb_integer_unpack(
+            integer->values,
+            integer->length,
+            sizeof(uint32_t),
+            0,
+            INTEGER_PACK_LSWORD_FIRST | INTEGER_PACK_NATIVE_BYTE_ORDER
+        );
     }
 
     if (integer->negative) {
-        result = rb_funcall(result, rb_intern("-@"), 0);
+        result = rb_int_uminus(result);
     }
 
     if (!SPECIAL_CONST_P(result)) {
