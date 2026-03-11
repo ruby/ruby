@@ -2352,9 +2352,9 @@ vm_search_method_slowpath0(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
     return cc;
 }
 
-ALWAYS_INLINE(static const struct rb_callcache *vm_search_method_fastpath(struct rb_control_frame_struct *reg_cfp, struct rb_call_data *cd, VALUE klass));
+ALWAYS_INLINE(static const struct rb_callcache *vm_search_method_fastpath(const struct rb_control_frame_struct *reg_cfp, struct rb_call_data *cd, VALUE klass));
 static const struct rb_callcache *
-vm_search_method_fastpath(struct rb_control_frame_struct *reg_cfp, struct rb_call_data *cd, VALUE klass)
+vm_search_method_fastpath(const struct rb_control_frame_struct *reg_cfp, struct rb_call_data *cd, VALUE klass)
 {
     const struct rb_callcache *cc = cd->cc;
 
@@ -2376,7 +2376,7 @@ vm_search_method_fastpath(struct rb_control_frame_struct *reg_cfp, struct rb_cal
     }
 #endif
 
-    return vm_search_method_slowpath0((VALUE)reg_cfp->iseq, cd, klass);
+    return vm_search_method_slowpath0((VALUE)rb_zjit_cfp_iseq(reg_cfp), cd, klass);
 }
 
 static const struct rb_callable_method_entry_struct *
@@ -2397,7 +2397,8 @@ rb_zjit_vm_search_method(VALUE cd_owner, struct rb_call_data *cd, VALUE recv)
     // we need to query iseq differently during ZJIT compilation
     // (ZJIT doesn't necessarily compile the iseq running on CFP)
     VALUE klass = CLASS_OF(recv);
-    return vm_search_method_slowpath0(cd_owner, cd, klass);
+    const struct rb_callcache *cc = vm_search_method_slowpath0(cd_owner, cd, klass);
+    return vm_cc_cme(cc);
 }
 
 #if __has_attribute(transparent_union)
