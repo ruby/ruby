@@ -11749,6 +11749,7 @@ prism/prism.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 prism/prism.$(OBJEXT): {$(VPATH)}prism_xallocator.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/ast.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/defines.h
+prism/regexp.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/options.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/parser.h
