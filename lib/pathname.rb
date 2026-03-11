@@ -79,8 +79,9 @@ class Pathname    # * tmpdir *
   # on block exit, automatically deletes the created directory and all its contents;
   # returns the block's exit value:
   #
-  #   pathname = Pathname.mktmpdir do |pathname|
+  #   pathname = Pathname.mktmpdir do |p|
   #     # Do something with the directory.
+  #     p
   #   end
   #   Dir.exist?(pathname.to_s) # => false
   def self.mktmpdir
