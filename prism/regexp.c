@@ -431,15 +431,6 @@ typedef enum {
 } pm_regexp_property_type_t;
 
 /**
- * Check if a property name matches a NUL-terminated target string
- * (case-insensitive, exact length match).
- */
-static inline bool
-pm_regexp_property_name_matches(const uint8_t *name, size_t length, const char *target) {
-    return strlen(target) == length && pm_strncasecmp(name, (const uint8_t *) target, length) == 0;
-}
-
-/**
  * Classify a property name. The name may start with '^' for negation, which
  * is skipped before matching.
  */
@@ -451,30 +442,63 @@ pm_regexp_classify_property(const uint8_t *name, size_t length) {
         length--;
     }
 
-    // POSIX properties — valid in all encodings.
-    static const char *const posix_properties[] = {
-        "Alnum", "Alpha", "ASCII", "Blank", "Cntrl", "Digit", "Graph",
-        "Lower", "Print", "Punct", "Space", "Upper", "XDigit", "Word",
-        NULL
-    };
+#define PM_REGEXP_CASECMP(str_) (pm_strncasecmp(name, (const uint8_t *) (str_), length) == 0)
 
-    for (const char *const *property = posix_properties; *property != NULL; property++) {
-        if (pm_regexp_property_name_matches(name, length, *property)) {
-            return PM_REGEXP_PROPERTY_POSIX;
-        }
+    switch (length) {
+        case 3:
+            if (PM_REGEXP_CASECMP("Han")) return PM_REGEXP_PROPERTY_SCRIPT;
+            break;
+        case 4:
+            if (PM_REGEXP_CASECMP("Word")) return PM_REGEXP_PROPERTY_POSIX;
+            break;
+        case 5:
+            /* Most properties are length 5, so dispatch on first character. */
+            switch (name[0] | 0x20) {
+                case 'a':
+                    if (PM_REGEXP_CASECMP("Alnum")) return PM_REGEXP_PROPERTY_POSIX;
+                    if (PM_REGEXP_CASECMP("Alpha")) return PM_REGEXP_PROPERTY_POSIX;
+                    if (PM_REGEXP_CASECMP("ASCII")) return PM_REGEXP_PROPERTY_POSIX;
+                    break;
+                case 'b':
+                    if (PM_REGEXP_CASECMP("Blank")) return PM_REGEXP_PROPERTY_POSIX;
+                    break;
+                case 'c':
+                    if (PM_REGEXP_CASECMP("Cntrl")) return PM_REGEXP_PROPERTY_POSIX;
+                    break;
+                case 'd':
+                    if (PM_REGEXP_CASECMP("Digit")) return PM_REGEXP_PROPERTY_POSIX;
+                    break;
+                case 'g':
+                    if (PM_REGEXP_CASECMP("Graph")) return PM_REGEXP_PROPERTY_POSIX;
+                    if (PM_REGEXP_CASECMP("Greek")) return PM_REGEXP_PROPERTY_SCRIPT;
+                    break;
+                case 'l':
+                    if (PM_REGEXP_CASECMP("Lower")) return PM_REGEXP_PROPERTY_POSIX;
+                    if (PM_REGEXP_CASECMP("Latin")) return PM_REGEXP_PROPERTY_SCRIPT;
+                    break;
+                case 'p':
+                    if (PM_REGEXP_CASECMP("Print")) return PM_REGEXP_PROPERTY_POSIX;
+                    if (PM_REGEXP_CASECMP("Punct")) return PM_REGEXP_PROPERTY_POSIX;
+                    break;
+                case 's':
+                    if (PM_REGEXP_CASECMP("Space")) return PM_REGEXP_PROPERTY_POSIX;
+                    break;
+                case 'u':
+                    if (PM_REGEXP_CASECMP("Upper")) return PM_REGEXP_PROPERTY_POSIX;
+                    break;
+            }
+            break;
+        case 6:
+            if (PM_REGEXP_CASECMP("XDigit")) return PM_REGEXP_PROPERTY_POSIX;
+            break;
+        case 8:
+            if (PM_REGEXP_CASECMP("Hiragana")) return PM_REGEXP_PROPERTY_SCRIPT;
+            if (PM_REGEXP_CASECMP("Katakana")) return PM_REGEXP_PROPERTY_SCRIPT;
+            if (PM_REGEXP_CASECMP("Cyrillic")) return PM_REGEXP_PROPERTY_SCRIPT;
+            break;
     }
 
-    // Script properties — valid in /e, /s, /u but not /n.
-    static const char *const script_properties[] = {
-        "Hiragana", "Katakana", "Han", "Latin", "Greek", "Cyrillic",
-        NULL
-    };
-
-    for (const char *const *property = script_properties; *property != NULL; property++) {
-        if (pm_regexp_property_name_matches(name, length, *property)) {
-            return PM_REGEXP_PROPERTY_SCRIPT;
-        }
-    }
+#undef PM_REGEXP_CASECMP
 
     // Everything else is Unicode-only (general categories, other scripts, etc.).
     return PM_REGEXP_PROPERTY_UNICODE;
