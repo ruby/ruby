@@ -1162,6 +1162,16 @@ class Pathname    # * Dir *
   #   a.take(3)
   #   # => [#<Pathname:object.c>, #<Pathname:aclocal.m4>, #<Pathname:addr2line.c>]
   #
+  # Optional keyword argument +base+ is of particular interest.
+  # When it is given, its value specifies the base directory for the pathnames;
+  # each pattern string specifies entries relative to the base directory:
+  #
+  #   Pathname.glob('*', base: 'lib').take(2)
+  #   # => [#<Pathname:English.gemspec>, #<Pathname:English.rb>]
+  #   Pathname.glob('*', base: 'lib/bundler').take(2)
+  #   # => [#<Pathname:build_metadata.rb>, #<Pathname:bundler.gemspec>]
+  #
+  # Note that the base directory is not prepended to the entry names in the result.
   def Pathname.glob(*args, **kwargs) # :yield: pathname
     if block_given?
       Dir.glob(*args, **kwargs) {|f| yield self.new(f) }
