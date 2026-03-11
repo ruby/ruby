@@ -962,6 +962,27 @@ struct pm_parser {
      * toggled with a magic comment.
      */
     bool warn_mismatched_indentation;
+
+#if defined(PRISM_HAS_NEON) || defined(PRISM_HAS_SSSE3) || defined(PRISM_HAS_SWAR)
+    /**
+     * Cached lookup tables for pm_strpbrk's SIMD fast path. Avoids rebuilding
+     * the nibble-based tables on every call when the charset hasn't changed
+     * (which is the common case during string/regex/list lexing).
+     */
+    struct {
+        /** The cached charset (null-terminated, max 11 chars + NUL). */
+        uint8_t charset[12];
+
+        /** Nibble-based low lookup table for SIMD matching. */
+        uint8_t low_lut[16];
+
+        /** Nibble-based high lookup table for SIMD matching. */
+        uint8_t high_lut[16];
+
+        /** Scalar fallback table (4 x 64-bit bitmasks covering all ASCII). */
+        uint64_t table[4];
+    } strpbrk_cache;
+#endif
 };
 
 #endif
