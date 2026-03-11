@@ -1581,7 +1581,7 @@ impl Insn {
             Insn::IncrCounter(_) => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Other),
             Insn::IncrCounterPtr { .. } => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Other),
             Insn::CheckInterrupts { .. } => Effect::read_write(abstract_heaps::InterruptFlag, abstract_heaps::Control),
-            Insn::Profile { .. } => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Other),
+            Insn::Profile { .. } => effects::Memory,
             Insn::InvokeProc { .. } => effects::Any,
             Insn::RefineType { .. } => effects::Empty,
             Insn::HasType { expected, .. }
