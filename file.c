@@ -5269,10 +5269,10 @@ rb_file_s_extname(VALUE klass, VALUE fname)
 }
 
 /*
- *  call-seq:
+ * call-seq:
  *     File.path(path)  ->  string
  *
- *  Returns the string representation of the path
+ * Returns the string representation of the path
  *
  *     File.path(File::NULL)           #=> "/dev/null"
  *     File.path(Pathname.new("/tmp")) #=> "/tmp"
