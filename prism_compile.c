@@ -863,6 +863,7 @@ pm_static_literal_value(rb_iseq_t *iseq, const pm_node_t *node, pm_scope_node_t 
 
         VALUE value = rb_hash_new_with_size(elements->size);
         rb_hash_bulk_insert(RARRAY_LEN(array), RARRAY_CONST_PTR(array), value);
+        RB_GC_GUARD(array);
 
         value = rb_obj_hide(value);
         RB_OBJ_SET_FROZEN_SHAREABLE(value);
@@ -1533,6 +1534,7 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
 
                     VALUE hash = rb_hash_new_with_size(RARRAY_LEN(ary) / 2);
                     rb_hash_bulk_insert(RARRAY_LEN(ary), RARRAY_CONST_PTR(ary), hash);
+                    RB_GC_GUARD(ary);
                     hash = rb_obj_hide(hash);
                     RB_OBJ_SET_FROZEN_SHAREABLE(hash);
 
