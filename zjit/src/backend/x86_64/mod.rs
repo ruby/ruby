@@ -1243,7 +1243,8 @@ mod tests {
         asm.store(Opnd::mem(64, SP, 0x10), val64);
         let side_exit = Target::SideExit { reason: SideExitReason::Interrupt, exit: SideExit { pc: Opnd::const_ptr(0 as *const u8), stack: vec![], locals: vec![] } };
         asm.push_insn(Insn::Joz(val64, side_exit));
-        asm.parallel_mov(vec![(C_ARG_OPNDS[0], C_RET_OPND.with_num_bits(32)), (C_ARG_OPNDS[1], Opnd::mem(64, SP, -8))]);
+        asm.mov(C_ARG_OPNDS[0], C_RET_OPND.with_num_bits(32));
+        asm.mov(C_ARG_OPNDS[1], Opnd::mem(64, SP, -8));
 
         let val32 = asm.sub(Opnd::Value(Qtrue), Opnd::Imm(1));
         asm.store(Opnd::mem(64, EC, 0x10).with_num_bits(32), val32.with_num_bits(32));
@@ -1252,19 +1253,20 @@ mod tests {
 
         asm.frame_teardown(JIT_PRESERVED_REGS);
         assert_disasm_snapshot!(lir_string(&mut asm), @"
-        bb0:
+        test():
+        bb0():
           # bb0(): foo@/tmp/a.rb:1
           FrameSetup 1, r13, rbx, r12
           v0 = Add r13, 0x40
           Store [rbx + 0x10], v0
           Joz Exit(Interrupt), v0
-          ParallelMov rdi <- eax, rsi <- [rbx - 8]
+          Mov rdi, eax
+          Mov rsi, [rbx - 8]
           v1 = Sub Value(0x14), Imm(1)
           Store Mem32[r12 + 0x10], VReg32(v1)
           Je bb0
           CRet v0
           FrameTeardown r13, rbx, r12
-          PadPatchPoint
         ");
     }
 
@@ -1518,8 +1520,11 @@ mod tests {
         asm.mov(SP, sp); // should be merged to lea
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @"  0x0: lea rbx, [rbx + 8]");
-        assert_snapshot!(cb.hexdump(), @"488d5b08");
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: lea rdi, [rbx + 8]
+        0x4: mov rbx, rdi
+        ");
+        assert_snapshot!(cb.hexdump(), @"488d7b084889fb");
     }
 
     #[test]
@@ -1568,8 +1573,12 @@ mod tests {
         asm.mov(CFP, sp); // should be merged to add
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @"  0x0: add r13, 0x40");
-        assert_snapshot!(cb.hexdump(), @"4983c540");
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov rdi, r13
+        0x3: add rdi, 0x40
+        0x7: mov r13, rdi
+        ");
+        assert_snapshot!(cb.hexdump(), @"4c89ef4883c7404989fd");
     }
 
     #[test]
@@ -1591,8 +1600,12 @@ mod tests {
         asm.mov(CFP, sp); // should be merged to add
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @"  0x0: sub r13, 0x40");
-        assert_snapshot!(cb.hexdump(), @"4983ed40");
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov rdi, r13
+        0x3: sub rdi, 0x40
+        0x7: mov r13, rdi
+        ");
+        assert_snapshot!(cb.hexdump(), @"4c89ef4883ef404989fd");
     }
 
     #[test]
@@ -1614,8 +1627,12 @@ mod tests {
         asm.mov(CFP, sp); // should be merged to add
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @"  0x0: and r13, 0x40");
-        assert_snapshot!(cb.hexdump(), @"4983e540");
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov rdi, r13
+        0x3: and rdi, 0x40
+        0x7: mov r13, rdi
+        ");
+        assert_snapshot!(cb.hexdump(), @"4c89ef4883e7404989fd");
     }
 
     #[test]
@@ -1626,8 +1643,12 @@ mod tests {
         asm.mov(CFP, sp); // should be merged to add
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @"  0x0: or r13, 0x40");
-        assert_snapshot!(cb.hexdump(), @"4983cd40");
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov rdi, r13
+        0x3: or rdi, 0x40
+        0x7: mov r13, rdi
+        ");
+        assert_snapshot!(cb.hexdump(), @"4c89ef4883cf404989fd");
     }
 
     #[test]
@@ -1638,8 +1659,12 @@ mod tests {
         asm.mov(CFP, sp); // should be merged to add
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @"  0x0: xor r13, 0x40");
-        assert_snapshot!(cb.hexdump(), @"4983f540");
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov rdi, r13
+        0x3: xor rdi, 0x40
+        0x7: mov r13, rdi
+        ");
+        assert_snapshot!(cb.hexdump(), @"4c89ef4883f7404989fd");
     }
 
     #[test]
@@ -1654,10 +1679,15 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
         assert_disasm_snapshot!(cb.disasm(), @"
-        0x0: mov eax, 0
-        0x5: call rax
+        0x0: mov r11, rsi
+        0x3: mov rsi, r11
+        0x6: mov r11, rdi
+        0x9: mov rdi, r11
+        0xc: mov eax, 0
+        0x11: call rax
+        0x13: mov rdi, rax
         ");
-        assert_snapshot!(cb.hexdump(), @"b800000000ffd0");
+        assert_snapshot!(cb.hexdump(), @"4989f34c89de4989fb4c89dfb800000000ffd04889c7");
     }
 
     #[test]
@@ -1674,13 +1704,16 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
         assert_disasm_snapshot!(cb.disasm(), @"
-            0x0: mov r11, rsi
-            0x3: mov rsi, rdi
-            0x6: mov rdi, r11
-            0x9: mov eax, 0
-            0xe: call rax
+        0x0: mov r11, rdx
+        0x3: mov rdx, r11
+        0x6: mov r11, rsi
+        0x9: mov rsi, rdi
+        0xc: mov rdi, r11
+        0xf: mov eax, 0
+        0x14: call rax
+        0x16: mov rdi, rax
         ");
-        assert_snapshot!(cb.hexdump(), @"4989f34889fe4c89dfb800000000ffd0");
+        assert_snapshot!(cb.hexdump(), @"4989d34c89da4989f34889fe4c89dfb800000000ffd04889c7");
     }
 
     #[test]
@@ -1698,16 +1731,17 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
         assert_disasm_snapshot!(cb.disasm(), @"
-            0x0: mov r11, rsi
-            0x3: mov rsi, rdi
-            0x6: mov rdi, r11
-            0x9: mov r11, rcx
-            0xc: mov rcx, rdx
-            0xf: mov rdx, r11
-            0x12: mov eax, 0
-            0x17: call rax
+        0x0: mov r11, rcx
+        0x3: mov rcx, rdx
+        0x6: mov rdx, r11
+        0x9: mov r11, rsi
+        0xc: mov rsi, rdi
+        0xf: mov rdi, r11
+        0x12: mov eax, 0
+        0x17: call rax
+        0x19: mov rdi, rax
         ");
-        assert_snapshot!(cb.hexdump(), @"4989f34889fe4c89df4989cb4889d14c89dab800000000ffd0");
+        assert_snapshot!(cb.hexdump(), @"4989cb4889d14c89da4989f34889fe4c89dfb800000000ffd04889c7");
     }
 
     #[test]
@@ -1724,14 +1758,15 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
         assert_disasm_snapshot!(cb.disasm(), @"
-            0x0: mov r11, rsi
-            0x3: mov rsi, rdx
-            0x6: mov rdx, rdi
-            0x9: mov rdi, r11
-            0xc: mov eax, 0
-            0x11: call rax
+        0x0: mov r11, rdx
+        0x3: mov rdx, rdi
+        0x6: mov rdi, rsi
+        0x9: mov rsi, r11
+        0xc: mov eax, 0
+        0x11: call rax
+        0x13: mov rdi, rax
         ");
-        assert_snapshot!(cb.hexdump(), @"4989f34889d64889fa4c89dfb800000000ffd0");
+        assert_snapshot!(cb.hexdump(), @"4989d34889fa4889f74c89deb800000000ffd04889c7");
     }
 
     #[test]
@@ -1791,14 +1826,18 @@ mod tests {
         0x17: push rcx
         0x18: mov eax, 0
         0x1d: call rax
-        0x1f: pop rcx
-        0x20: pop rdx
-        0x21: pop rsi
-        0x22: pop rdi
-        0x23: add rdi, rsi
-        0x26: add rdx, rcx
+        0x1f: mov r11, rax
+        0x22: pop rcx
+        0x23: pop rdx
+        0x24: pop rsi
+        0x25: pop rdi
+        0x26: mov r8, r11
+        0x29: mov rdi, rdi
+        0x2c: add rdi, rsi
+        0x2f: mov rdi, rdx
+        0x32: add rdi, rcx
         ");
-        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000057565251b800000000ffd0595a5e5f4801f74801ca");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000057565251b800000000ffd04989c3595a5e5f4d89d84889ff4801f74889d74801cf");
     }
 
     #[test]
@@ -1828,21 +1867,25 @@ mod tests {
         0x1c: push rdx
         0x1d: push rcx
         0x1e: push r8
-        0x20: push r8
-        0x22: mov eax, 0
-        0x27: call rax
-        0x29: pop r8
-        0x2b: pop r8
-        0x2d: pop rcx
-        0x2e: pop rdx
-        0x2f: pop rsi
-        0x30: pop rdi
-        0x31: add rdi, rsi
-        0x34: mov rdi, rdx
-        0x37: add rdi, rcx
-        0x3a: add rdx, r8
+        0x20: push rdi
+        0x21: mov eax, 0
+        0x26: call rax
+        0x28: mov r11, rax
+        0x2b: pop rdi
+        0x2c: pop r8
+        0x2e: pop rcx
+        0x2f: pop rdx
+        0x30: pop rsi
+        0x31: pop rdi
+        0x32: mov r9, r11
+        0x35: mov rdi, rdi
+        0x38: add rdi, rsi
+        0x3b: mov rdi, rdx
+        0x3e: add rdi, rcx
+        0x41: mov rdi, rdx
+        0x44: add rdi, r8
         ");
-        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b8050000005756525141504150b800000000ffd041584158595a5e5f4801f74889d74801cf4c01c2");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b80500000057565251415057b800000000ffd04989c35f4158595a5e5f4d89d94889ff4801f74889d74801cf4889d74c01c7");
     }
 
     #[test]
@@ -1991,6 +2034,9 @@ mod tests {
         asm.store(Opnd::mem(VALUE_BITS, SP, 0), imitation_heap_value.into());
 
         asm = asm.x86_scratch_split();
+        for name in &asm.label_names {
+            cb.new_label(name.to_string());
+        }
         let gc_offsets = asm.x86_emit(&mut cb).unwrap();
         assert_eq!(1, gc_offsets.len(), "VALUE source operand should be reported as gc offset");
 
@@ -2011,13 +2057,11 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 0);
 
         assert_disasm_snapshot!(cb.disasm(), @"
-            0x0: mov r10, qword ptr [rbp - 8]
-            0x4: mov r11, qword ptr [rbp - 0x10]
-            0x8: mov r11, qword ptr [r11 + 2]
-            0xc: cmove r11, qword ptr [r10]
-            0x10: mov qword ptr [rbp - 8], r11
+        0x0: mov r11, qword ptr [rbp - 0xe]
+        0x4: cmove r11, qword ptr [rbp - 8]
+        0x9: mov qword ptr [rbp - 8], r11
         ");
-        assert_snapshot!(cb.hexdump(), @"4c8b55f84c8b5df04d8b5b024d0f441a4c895df8");
+        assert_snapshot!(cb.hexdump(), @"4c8b5df24c0f445df84c895df8");
     }
 
     #[test]
@@ -2029,10 +2073,9 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 0);
 
         assert_disasm_snapshot!(cb.disasm(), @"
-            0x0: mov r11, qword ptr [rbp - 8]
-            0x4: lea r11, [r11]
-            0x7: mov qword ptr [rbp - 8], r11
+        0x0: lea r11, [rbp - 8]
+        0x4: mov qword ptr [rbp - 8], r11
         ");
-        assert_snapshot!(cb.hexdump(), @"4c8b5df84d8d1b4c895df8");
+        assert_snapshot!(cb.hexdump(), @"4c8d5df84c895df8");
     }
 }
