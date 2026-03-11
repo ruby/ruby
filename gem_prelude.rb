@@ -36,14 +36,31 @@ if defined?(ErrorHighlight) || defined?(DidYouMean) || defined?(SyntaxSuggest)
         warn "`syntax_suggest' was not loaded."
       end if defined?(SyntaxSuggest)
     end
-
-    def detailed_message(...)
-      return super if Ruby::DetailedError.loaded?
-      Ruby::DetailedError.load
-      # Re-dispatch to pick up the newly prepended methods from the gems
-      detailed_message(...)
-    end
   end
 
-  Exception.prepend(Ruby::DetailedError)
+  module Exception::DetailedMessage # :nodoc:
+    def detailed_message(...)
+      # Check if any gem has already prepended detailed_message
+      # above us in the MRO (e.g. loaded via -r flag).
+      gem_already_above = self.class.ancestors.take_while { |mod|
+        mod != Exception::DetailedMessage
+      }.any? { |mod| mod.method_defined?(:detailed_message, false) }
+
+      if defined?(Ruby::DetailedError)
+        Ruby::DetailedError.load
+      end
+      Exception::DetailedMessage.remove_method(:detailed_message)
+
+      if gem_already_above
+        # Gems already ran their detailed_message (they called
+        # super to reach us). Just forward to Exception.
+        super
+      else
+        # Gems were just loaded. Re-dispatch so their
+        # newly-prepended methods run.
+        detailed_message(...)
+      end
+    end
+  end
+  Exception.prepend(Exception::DetailedMessage)
 end
