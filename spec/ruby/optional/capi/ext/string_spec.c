@@ -12,6 +12,13 @@
 extern "C" {
 #endif
 
+#ifdef PTR2NUM
+#elif SIZEOF_VOIDP <= SIZEOF_LONG
+# define PTR2NUM(x) (LONG2NUM((long)(x)))
+#elif SIZEOF_VOIDP <= SIZEOF_LONG_LONG
+# define PTR2NUM(x) (LL2NUM((LONG_LONG)(x)))
+#endif
+
 /* Make sure the RSTRING_PTR and the bytes are in native memory.
  * On TruffleRuby RSTRING_PTR and the bytes remain in managed memory
  * until they must be written to native memory.
@@ -330,7 +337,7 @@ VALUE string_spec_RSTRING_LENINT(VALUE self, VALUE str) {
 
 VALUE string_spec_RSTRING_PTR(VALUE self, VALUE str) {
   char* ptr = RSTRING_PTR(str);
-  return LONG2FIX((long)ptr);
+  return PTR2NUM(ptr);
 }
 
 VALUE string_spec_RSTRING_PTR_iterate(VALUE self, VALUE str) {
@@ -560,7 +567,7 @@ static VALUE string_spec_rb_utf8_str_new_static(VALUE self) {
   const char* literal = "nokogiri";
   return rb_ary_new_from_args(2,
     rb_utf8_str_new_static("nokogiri", 8),
-    LONG2FIX((long)literal));
+    PTR2NUM(literal));
 }
 
 static VALUE string_spec_rb_utf8_str_new(VALUE self) {
