@@ -855,6 +855,8 @@ pm_locals_write(pm_locals_t *locals, pm_constant_id_t name, uint32_t start, uint
         pm_locals_resize(locals);
     }
 
+    locals->bloom |= (1u << (name & 31));
+
     if (locals->capacity < PM_LOCALS_HASH_THRESHOLD) {
         for (uint32_t index = 0; index < locals->capacity; index++) {
             pm_local_t *local = &locals->locals[index];
@@ -907,6 +909,8 @@ pm_locals_write(pm_locals_t *locals, pm_constant_id_t name, uint32_t start, uint
  */
 static uint32_t
 pm_locals_find(pm_locals_t *locals, pm_constant_id_t name) {
+    if (!(locals->bloom & (1u << (name & 31)))) return UINT32_MAX;
+
     if (locals->capacity < PM_LOCALS_HASH_THRESHOLD) {
         for (uint32_t index = 0; index < locals->size; index++) {
             pm_local_t *local = &locals->locals[index];
