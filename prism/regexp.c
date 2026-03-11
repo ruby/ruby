@@ -436,7 +436,7 @@ typedef enum {
  */
 static inline bool
 pm_regexp_property_name_matches(const uint8_t *name, size_t length, const char *target) {
-    return target[length] == '\0' && pm_strncasecmp(name, (const uint8_t *) target, length) == 0;
+    return strlen(target) == length && pm_strncasecmp(name, (const uint8_t *) target, length) == 0;
 }
 
 /**
