@@ -656,8 +656,8 @@ fn gen_get_ep(asm: &mut Assembler, level: u32) -> Opnd {
 fn gen_objtostring(jit: &mut JITState, asm: &mut Assembler, val: Opnd, cd: *const rb_call_data, state: &FrameState) -> Opnd {
     gen_prepare_non_leaf_call(jit, asm, state);
     // TODO: Specialize for immediate types
-    // Call rb_vm_objtostring(iseq, recv, cd)
-    let ret = asm_ccall!(asm, rb_vm_objtostring, VALUE::from(jit.iseq).into(), val, Opnd::const_ptr(cd));
+    // Call rb_vm_objtostring(cfp, recv, cd)
+    let ret = asm_ccall!(asm, rb_vm_objtostring, CFP, val, Opnd::const_ptr(cd));
 
     // TODO: Call `to_s` on the receiver if rb_vm_objtostring returns Qundef
     // Need to replicate what CALL_SIMPLE_METHOD does

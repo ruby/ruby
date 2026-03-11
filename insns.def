@@ -926,7 +926,7 @@ opt_new
     // The bookkeeping slot should be empty.
     RUBY_ASSERT(TOPN(argc + 1) == Qnil);
 
-    if (vm_method_cfunc_is(GET_ISEQ(), cd, val, rb_class_new_instance_pass_kw)) {
+    if (vm_method_cfunc_is(GET_CFP(), cd, val, rb_class_new_instance_pass_kw)) {
         RB_DEBUG_COUNTER_INC(opt_new_hit);
         val = rb_obj_alloc(val);
         TOPN(argc) = val;
@@ -947,7 +947,7 @@ objtostring
 // attr bool leaf = false;
 // attr bool zjit_profile = true;
 {
-    val = vm_objtostring(GET_ISEQ(), recv, cd);
+    val = vm_objtostring(GET_CFP(), recv, cd);
 
     if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
@@ -1006,7 +1006,7 @@ opt_nil_p
 (VALUE val)
 // attr bool zjit_profile = true;
 {
-    val = vm_opt_nil_p(GET_ISEQ(), cd, recv);
+    val = vm_opt_nil_p(GET_CFP(), cd, recv);
 
     if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
@@ -1435,7 +1435,7 @@ opt_eq
 (VALUE val)
 // attr bool zjit_profile = true;
 {
-    val = opt_equality(GET_ISEQ(), recv, obj, cd);
+    val = opt_equality(GET_CFP(), recv, obj, cd);
 
     if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
@@ -1450,7 +1450,7 @@ opt_neq
 (VALUE val)
 // attr bool zjit_profile = true;
 {
-    val = vm_opt_neq(GET_ISEQ(), cd, cd_eq, recv, obj);
+    val = vm_opt_neq(GET_CFP(), cd, cd_eq, recv, obj);
 
     if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
@@ -1672,7 +1672,7 @@ opt_not
 (VALUE val)
 // attr bool zjit_profile = true;
 {
-    val = vm_opt_not(GET_ISEQ(), cd, recv);
+    val = vm_opt_not(GET_CFP(), cd, recv);
 
     if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
