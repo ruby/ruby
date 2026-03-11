@@ -1744,7 +1744,8 @@ mod tests {
         asm.store(Opnd::mem(64, SP, 0x10), val64);
         let side_exit = Target::SideExit { reason: SideExitReason::Interrupt, exit: SideExit { pc: Opnd::const_ptr(0 as *const u8), stack: vec![], locals: vec![] } };
         asm.push_insn(Insn::Joz(val64, side_exit));
-        asm.parallel_mov(vec![(C_ARG_OPNDS[0], C_RET_OPND.with_num_bits(32)), (C_ARG_OPNDS[1], Opnd::mem(64, SP, -8))]);
+        asm.mov(C_ARG_OPNDS[0], C_RET_OPND.with_num_bits(32));
+        asm.mov(C_ARG_OPNDS[1], Opnd::mem(64, SP, -8));
 
         let val32 = asm.sub(Opnd::Value(Qtrue), Opnd::Imm(1));
         asm.store(Opnd::mem(64, EC, 0x10).with_num_bits(32), val32.with_num_bits(32));
@@ -1760,7 +1761,8 @@ mod tests {
           v0 = Add x19, 0x40
           Store [x21 + 0x10], v0
           Joz Exit(Interrupt), v0
-          ParallelMov x0 <- w0, x1 <- [x21 - 8]
+          Mov x0, w0
+          Mov x1, [x21 - 8]
           v1 = Sub Value(0x14), Imm(1)
           Store Mem32[x20 + 0x10], VReg32(v1)
           Je bb0
