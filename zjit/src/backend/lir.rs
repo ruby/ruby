@@ -1944,7 +1944,7 @@ impl Assembler
     /// 3. Push the converted instruction
     fn expand_branch_insn(&self, insn: &Insn, insns: &mut Vec<Insn>) {
         // Helper to process branch arguments and return the label target
-        let mut process_edge = |edge: &BranchEdge| -> Label {
+        let process_edge = |edge: &BranchEdge| -> Label {
             self.block_label(edge.target)
         };
 
