@@ -207,9 +207,15 @@ class Pathname
 
   # :startdoc:
 
+  # call-seq:
+  #   Pathname.new(s) -> new_pathname
   #
-  # Create a Pathname object from the given String (or String-like object).
-  # If +path+ contains a NUL character (<tt>\0</tt>), an ArgumentError is raised.
+  # Returns a new \Pathname object based on the given string +s+,
+  # via <tt>File.path(s).dup</tt>;
+  # see File.path:
+  #
+  #   Pathname.new('.')        # => #<Pathname:.>
+  #   Pathname.new('/usr/bin') # => #<Pathname:/usr/bin>
   #
   def initialize(path)
     @path = File.path(path).dup
