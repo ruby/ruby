@@ -13483,6 +13483,57 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn specialize_polymorphic_send_flonum_and_heap_float() {
+        set_call_threshold(4);
+        eval("
+        def test x
+          x.to_s
+        end
+
+        flonum = 1.5
+        heap_float = 1.7976931348623157e+308
+        test(flonum)
+        test(heap_float)
+        test(flonum)
+        test(heap_float)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:CBool = HasType v10, Flonum
+          IfTrue v15, bb5(v9, v10, v10)
+          v24:CBool = HasType v10, HeapFloat
+          IfTrue v24, bb6(v9, v10, v10)
+          v33:BasicObject = Send v10, :to_s # SendFallbackReason: SendWithoutBlock: polymorphic fallback
+          Jump bb4(v9, v10, v33)
+        bb5(v16:BasicObject, v17:BasicObject, v18:BasicObject):
+          v20:Flonum = RefineType v18, Flonum
+          PatchPoint MethodRedefined(Float@0x1008, to_s@0x1010, cme:0x1018)
+          v46:BasicObject = CCallWithFrame v20, :Float#to_s@0x1040
+          Jump bb4(v16, v17, v46)
+        bb6(v25:BasicObject, v26:BasicObject, v27:BasicObject):
+          v29:HeapFloat = RefineType v27, HeapFloat
+          PatchPoint MethodRedefined(Float@0x1008, to_s@0x1010, cme:0x1018)
+          v49:BasicObject = CCallWithFrame v29, :Float#to_s@0x1040
+          Jump bb4(v25, v26, v49)
+        bb4(v35:BasicObject, v36:BasicObject, v37:BasicObject):
+          CheckInterrupts
+          Return v37
+        ");
+    }
+
+    #[test]
     fn specialize_polymorphic_send_static_and_dynamic_symbol() {
         set_call_threshold(4);
         eval("
