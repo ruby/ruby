@@ -149,7 +149,7 @@ impl Assembler {
         let asm = &mut asm_local;
         let mut iterator = self.instruction_iterator();
 
-        while let Some((index, mut insn)) = iterator.next(asm) {
+        while let Some((_index, mut insn)) = iterator.next(asm) {
             let is_load = matches!(insn, Insn::Load { .. } | Insn::LoadInto { .. });
             let is_jump = insn.is_jump();
             let mut opnd_iter = insn.opnd_iter_mut();
@@ -196,7 +196,7 @@ impl Assembler {
                             *left = asm.load(*left);
                         },
                         // Instruction output whose live range spans beyond this instruction
-                        (Opnd::VReg { idx, .. }, _) => {
+                        (Opnd::VReg { idx: _, .. }, _) => {
                             *left = asm.load(*left);
                         },
                         // We have to load memory operands to avoid corrupting them
@@ -275,7 +275,7 @@ impl Assembler {
                     match *truthy {
                         // If we have an instruction output whose live range
                         // spans beyond this instruction, we have to load it.
-                        Opnd::VReg { idx, .. } => {
+                        Opnd::VReg { idx: _, .. } => {
                             if true /* conservatively assume vreg outlives insn */ {
                                 *truthy = asm.load(*truthy);
                             }
@@ -310,7 +310,7 @@ impl Assembler {
                     match *opnd {
                         // If we have an instruction output whose live range
                         // spans beyond this instruction, we have to load it.
-                        Opnd::VReg { idx, .. } => {
+                        Opnd::VReg { idx: _, .. } => {
                             if true /* conservatively assume vreg outlives insn */ {
                                 *opnd = asm.load(*opnd);
                             }
