@@ -1155,7 +1155,7 @@ class Pathname    # * Dir *
   #
   # With a block given, calls the block with each pathname
   # <tt>Pathname.new(entry_name)</tt>,
-  # where each +entry_name+ is an entry name yielded by Dir.glob.
+  # where each +entry_name+ is a \Pathname object created by the value yielded by Dir.glob.
   #
   #   a = []
   #   Pathname.glob(['o*', 'a*']) {|pathname| a << pathname }
