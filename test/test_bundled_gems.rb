@@ -61,11 +61,12 @@ class TestBundlerGem < Gem::TestCase
     Dir.mktmpdir do |dir|
       FileUtils.mkdir_p(File.join(dir, "benchmark"))
       File.write(File.join(dir, "benchmark", "ips.rb"), "")
+      original_load_path = $LOAD_PATH.dup
       $LOAD_PATH.unshift(dir)
       begin
         assert_nil Gem::BUNDLED_GEMS.warning?("benchmark/ips", specs: {})
       ensure
-        $LOAD_PATH.shift
+        $LOAD_PATH.replace(original_load_path)
       end
     end
   end
