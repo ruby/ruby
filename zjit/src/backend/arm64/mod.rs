@@ -2133,6 +2133,9 @@ mod tests {
 
         // Side exit code are compiled without the split pass, so we directly call emit here to
         // emulate that scenario.
+        for name in &asm.label_names {
+            cb.new_label(name.to_string());
+        }
         let gc_offsets = asm.arm64_emit(&mut cb).unwrap();
         assert_eq!(1, gc_offsets.len(), "VALUE source operand should be reported as gc offset");
 
