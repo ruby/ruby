@@ -133,6 +133,13 @@ module Gem::BUNDLED_GEMS # :nodoc:
     if subfeature
       prefix = feature.split("/").first + "-"
       return if specs.any? { |spec, _| spec.start_with?(prefix) }
+
+      # Don't warn if the feature is found outside the standard library
+      # (e.g., benchmark-ips's lib dir is on $LOAD_PATH but not in specs)
+      resolved = $LOAD_PATH.resolve_feature_path(feature) rescue nil
+      if resolved
+        return unless resolved[1].start_with?(LIBDIR) || resolved[1].start_with?(ARCHDIR)
+      end
     end
 
     return if WARNED[name]
