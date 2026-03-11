@@ -61,6 +61,13 @@ typedef struct pm_scope_node {
      * the instructions pertaining to BEGIN{} nodes.
      */
     struct iseq_link_anchor *pre_execution_anchor;
+
+    /**
+     * Cached line hint for line offset list lookups. Since the compiler walks
+     * the AST roughly in source order, consecutive lookups tend to be for
+     * nearby byte offsets. This avoids repeated binary searches.
+     */
+    size_t last_line;
 } pm_scope_node_t;
 
 void pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_t *previous);
