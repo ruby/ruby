@@ -4264,9 +4264,13 @@ pm_float_node_rational_create(pm_parser_t *parser, const pm_token_t *token) {
     memcpy(digits + (point - start), point + 1, (unsigned long) (end - point - 1));
     pm_integer_parse(&node->numerator, PM_INTEGER_BASE_DEFAULT, digits, digits + length - 1);
 
+    size_t fract_length = 0;
+    for (const uint8_t *fract = point; fract < end; ++fract) {
+        if (*fract != '_') ++fract_length;
+    }
     digits[0] = '1';
-    if (end - point > 1) memset(digits + 1, '0', (size_t) (end - point - 1));
-    pm_integer_parse(&node->denominator, PM_INTEGER_BASE_DEFAULT, digits, digits + (end - point));
+    if (fract_length > 1) memset(digits + 1, '0', fract_length - 1);
+    pm_integer_parse(&node->denominator, PM_INTEGER_BASE_DEFAULT, digits, digits + fract_length);
     xfree(digits);
 
     pm_integers_reduce(&node->numerator, &node->denominator);
@@ -14636,6 +14640,7 @@ parse_parameters(
     bool allows_forwarding_parameters,
     bool accepts_blocks_in_defaults,
     bool in_block,
+    pm_diagnostic_id_t diag_id_forwarding,
     uint16_t depth
 ) {
     pm_do_loop_stack_push(parser, false);
@@ -14695,7 +14700,7 @@ parse_parameters(
             }
             case PM_TOKEN_UDOT_DOT_DOT: {
                 if (!allows_forwarding_parameters) {
-                    pm_parser_err_current(parser, PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES);
+                    pm_parser_err_current(parser, diag_id_forwarding);
                 }
 
                 bool succeeded = update_parameter_state(parser, &parser->current, &order);
@@ -15388,6 +15393,7 @@ parse_block_parameters(
             false,
             accepts_blocks_in_defaults,
             true,
+            is_lambda_literal ? PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES_LAMBDA : PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES_BLOCK,
             (uint16_t) (depth + 1)
         );
     }
@@ -19585,7 +19591,17 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     if (match1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
                         params = NULL;
                     } else {
-                        params = parse_parameters(parser, PM_BINDING_POWER_DEFINED, true, false, true, true, false, (uint16_t) (depth + 1));
+                        params = parse_parameters(
+                            parser,
+                            PM_BINDING_POWER_DEFINED,
+                            true,
+                            false,
+                            true,
+                            true,
+                            false,
+                            PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES,
+                            (uint16_t) (depth + 1)
+                        );
                     }
 
                     lex_state_set(parser, PM_LEX_STATE_BEG);
@@ -19610,7 +19626,17 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
                     lparen = not_provided(parser);
                     rparen = not_provided(parser);
-                    params = parse_parameters(parser, PM_BINDING_POWER_DEFINED, false, false, true, true, false, (uint16_t) (depth + 1));
+                    params = parse_parameters(
+                        parser,
+                        PM_BINDING_POWER_DEFINED,
+                        false,
+                        false,
+                        true,
+                        true,
+                        false,
+                        PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES,
+                        (uint16_t) (depth + 1)
+                    );
 
                     context_pop(parser);
                     break;
@@ -22317,12 +22343,6 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
      ) {
         node = parse_expression_infix(parser, node, binding_power, current_binding_powers.right, accepts_command_call, (uint16_t) (depth + 1));
 
-        if (context_terminator(parser->current_context->context, &parser->current)) {
-            // If this token terminates the current context, then we need to
-            // stop parsing the expression, as it has become a statement.
-            return node;
-        }
-
         switch (PM_NODE_TYPE(node)) {
             case PM_MULTI_WRITE_NODE:
                 // Multi-write nodes are statements, and cannot be followed by
@@ -22433,6 +22453,17 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
                 default:
                     accepts_command_call = false;
                     break;
+            }
+        }
+
+        if (context_terminator(parser->current_context->context, &parser->current)) {
+            pm_binding_powers_t next_binding_powers = pm_binding_powers[parser->current.type];
+            if (
+                !next_binding_powers.binary ||
+                binding_power > next_binding_powers.left ||
+                (PM_NODE_TYPE_P(node, PM_CALL_NODE) && pm_call_node_command_p((pm_call_node_t *) node))
+            ) {
+                return node;
             }
         }
     }
