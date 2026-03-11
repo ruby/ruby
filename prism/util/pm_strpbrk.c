@@ -45,29 +45,52 @@ pm_strpbrk_explicit_encoding_set(pm_parser_t *parser, uint32_t start, uint32_t l
  *   3. SWAR — little-endian fallback, processes 8 bytes per iteration.
  */
 
+#if defined(PRISM_HAS_NEON) || defined(PRISM_HAS_SSSE3) || defined(PRISM_HAS_SWAR)
+
+/**
+ * Update the cached strpbrk lookup tables if the charset has changed. The
+ * parser caches the last charset's precomputed tables so that repeated calls
+ * with the same breakpoints (the common case during string/regex/list lexing)
+ * skip table construction entirely.
+ *
+ * Builds three structures:
+ *   - low_lut/high_lut: nibble-based lookup tables for SIMD matching (NEON/SSSE3)
+ *   - table: 256-bit bitmap for scalar fallback matching (all platforms)
+ */
+static inline void
+pm_strpbrk_cache_update(pm_parser_t *parser, const uint8_t *charset) {
+    // The cache key is the full 12-byte charset buffer. Since it is always
+    // NUL-padded, a fixed-size comparison covers both content and length.
+    if (memcmp(parser->strpbrk_cache.charset, charset, sizeof(parser->strpbrk_cache.charset)) == 0) return;
+
+    memset(parser->strpbrk_cache.low_lut, 0, sizeof(parser->strpbrk_cache.low_lut));
+    memset(parser->strpbrk_cache.high_lut, 0, sizeof(parser->strpbrk_cache.high_lut));
+    memset(parser->strpbrk_cache.table, 0, sizeof(parser->strpbrk_cache.table));
+
+    size_t charset_len = 0;
+    for (const uint8_t *c = charset; *c != '\0'; c++) {
+        parser->strpbrk_cache.low_lut[*c & 0x0F] |= (uint8_t) (1 << (*c >> 4));
+        parser->strpbrk_cache.high_lut[*c >> 4] = (uint8_t) (1 << (*c >> 4));
+        parser->strpbrk_cache.table[*c >> 6] |= (uint64_t) 1 << (*c & 0x3F);
+        charset_len++;
+    }
+
+    // Store the new charset key, NUL-padded to the full buffer size.
+    memcpy(parser->strpbrk_cache.charset, charset, charset_len + 1);
+    memset(parser->strpbrk_cache.charset + charset_len + 1, 0, sizeof(parser->strpbrk_cache.charset) - charset_len - 1);
+}
+
+#endif
+
 #if defined(PRISM_HAS_NEON)
 #include <arm_neon.h>
 
 static inline bool
-scan_strpbrk_ascii(const uint8_t *source, size_t maximum, const uint8_t *charset, size_t *index) {
-    // Build nibble-based lookup tables from the charset. All breakpoint
-    // characters are ASCII (< 0x80), so they fit within high nibbles 0-7.
-    //
-    // For each charset byte c, we set bit (1 << (c >> 4)) in low_lut[c & 0xF].
-    // high_lut[h] = (1 << h) for each high nibble h present in the charset.
-    // A source byte s matches iff (low_lut[s & 0xF] & high_lut[s >> 4]) != 0.
-    uint8_t low_arr[16] = { 0 };
-    uint8_t high_arr[16] = { 0 };
-    uint64_t table[4] = { 0 };
+scan_strpbrk_ascii(pm_parser_t *parser, const uint8_t *source, size_t maximum, const uint8_t *charset, size_t *index) {
+    pm_strpbrk_cache_update(parser, charset);
 
-    for (const uint8_t *c = charset; *c != '\0'; c++) {
-        low_arr[*c & 0x0F] |= (uint8_t) (1 << (*c >> 4));
-        high_arr[*c >> 4] = (uint8_t) (1 << (*c >> 4));
-        table[*c >> 6] |= (uint64_t) 1 << (*c & 0x3F);
-    }
-
-    uint8x16_t low_lut = vld1q_u8(low_arr);
-    uint8x16_t high_lut = vld1q_u8(high_arr);
+    uint8x16_t low_lut = vld1q_u8(parser->strpbrk_cache.low_lut);
+    uint8x16_t high_lut = vld1q_u8(parser->strpbrk_cache.high_lut);
     uint8x16_t mask_0f = vdupq_n_u8(0x0F);
     uint8x16_t mask_80 = vdupq_n_u8(0x80);
 
@@ -103,7 +126,7 @@ scan_strpbrk_ascii(const uint8_t *source, size_t maximum, const uint8_t *charset
     // Scalar tail for remaining < 16 ASCII bytes.
     while (idx < maximum && source[idx] < 0x80) {
         uint8_t byte = source[idx];
-        if (table[byte >> 6] & ((uint64_t) 1 << (byte & 0x3F))) {
+        if (parser->strpbrk_cache.table[byte >> 6] & ((uint64_t) 1 << (byte & 0x3F))) {
             *index = idx;
             return true;
         }
@@ -118,20 +141,11 @@ scan_strpbrk_ascii(const uint8_t *source, size_t maximum, const uint8_t *charset
 #include <tmmintrin.h>
 
 static inline bool
-scan_strpbrk_ascii(const uint8_t *source, size_t maximum, const uint8_t *charset, size_t *index) {
-    // Build nibble-based lookup tables and bitmap table in a single pass.
-    uint8_t low_arr[16] = { 0 };
-    uint8_t high_arr[16] = { 0 };
-    uint64_t table[4] = { 0 };
+scan_strpbrk_ascii(pm_parser_t *parser, const uint8_t *source, size_t maximum, const uint8_t *charset, size_t *index) {
+    pm_strpbrk_cache_update(parser, charset);
 
-    for (const uint8_t *c = charset; *c != '\0'; c++) {
-        low_arr[*c & 0x0F] |= (uint8_t) (1 << (*c >> 4));
-        high_arr[*c >> 4] = (uint8_t) (1 << (*c >> 4));
-        table[*c >> 6] |= (uint64_t) 1 << (*c & 0x3F);
-    }
-
-    __m128i low_lut = _mm_loadu_si128((const __m128i *) low_arr);
-    __m128i high_lut = _mm_loadu_si128((const __m128i *) high_arr);
+    __m128i low_lut = _mm_loadu_si128((const __m128i *) parser->strpbrk_cache.low_lut);
+    __m128i high_lut = _mm_loadu_si128((const __m128i *) parser->strpbrk_cache.high_lut);
     __m128i mask_0f = _mm_set1_epi8(0x0F);
 
     size_t idx = 0;
@@ -165,7 +179,7 @@ scan_strpbrk_ascii(const uint8_t *source, size_t maximum, const uint8_t *charset
     // Scalar tail.
     while (idx < maximum && source[idx] < 0x80) {
         uint8_t byte = source[idx];
-        if (table[byte >> 6] & ((uint64_t) 1 << (byte & 0x3F))) {
+        if (parser->strpbrk_cache.table[byte >> 6] & ((uint64_t) 1 << (byte & 0x3F))) {
             *index = idx;
             return true;
         }
@@ -179,12 +193,8 @@ scan_strpbrk_ascii(const uint8_t *source, size_t maximum, const uint8_t *charset
 #elif defined(PRISM_HAS_SWAR)
 
 static inline bool
-scan_strpbrk_ascii(const uint8_t *source, size_t maximum, const uint8_t *charset, size_t *index) {
-    // Build a 256-bit lookup table (one bit per ASCII value).
-    uint64_t table[4] = { 0 };
-    for (const uint8_t *c = charset; *c != '\0'; c++) {
-        table[*c >> 6] |= (uint64_t) 1 << (*c & 0x3F);
-    }
+scan_strpbrk_ascii(pm_parser_t *parser, const uint8_t *source, size_t maximum, const uint8_t *charset, size_t *index) {
+    pm_strpbrk_cache_update(parser, charset);
 
     static const uint64_t highs = 0x8080808080808080ULL;
     size_t idx = 0;
@@ -199,7 +209,7 @@ scan_strpbrk_ascii(const uint8_t *source, size_t maximum, const uint8_t *charset
         // Check each byte against the charset table.
         for (size_t j = 0; j < 8; j++) {
             uint8_t byte = source[idx + j];
-            if (table[byte >> 6] & ((uint64_t) 1 << (byte & 0x3F))) {
+            if (parser->strpbrk_cache.table[byte >> 6] & ((uint64_t) 1 << (byte & 0x3F))) {
                 *index = idx + j;
                 return true;
             }
@@ -211,7 +221,7 @@ scan_strpbrk_ascii(const uint8_t *source, size_t maximum, const uint8_t *charset
     // Scalar tail.
     while (idx < maximum && source[idx] < 0x80) {
         uint8_t byte = source[idx];
-        if (table[byte >> 6] & ((uint64_t) 1 << (byte & 0x3F))) {
+        if (parser->strpbrk_cache.table[byte >> 6] & ((uint64_t) 1 << (byte & 0x3F))) {
             *index = idx;
             return true;
         }
@@ -225,7 +235,7 @@ scan_strpbrk_ascii(const uint8_t *source, size_t maximum, const uint8_t *charset
 #else
 
 static inline bool
-scan_strpbrk_ascii(PRISM_ATTRIBUTE_UNUSED const uint8_t *source, PRISM_ATTRIBUTE_UNUSED size_t maximum, PRISM_ATTRIBUTE_UNUSED const uint8_t *charset, size_t *index) {
+scan_strpbrk_ascii(PRISM_ATTRIBUTE_UNUSED pm_parser_t *parser, PRISM_ATTRIBUTE_UNUSED const uint8_t *source, PRISM_ATTRIBUTE_UNUSED size_t maximum, PRISM_ATTRIBUTE_UNUSED const uint8_t *charset, size_t *index) {
     *index = 0;
     return false;
 }
@@ -393,7 +403,7 @@ pm_strpbrk(pm_parser_t *parser, const uint8_t *source, const uint8_t *charset, p
 
     size_t maximum = (size_t) length;
     size_t index = 0;
-    if (scan_strpbrk_ascii(source, maximum, charset, &index)) return source + index;
+    if (scan_strpbrk_ascii(parser, source, maximum, charset, &index)) return source + index;
 
     if (!parser->encoding_changed) {
         return pm_strpbrk_utf8(parser, source, charset, index, maximum, validate);
