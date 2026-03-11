@@ -6423,129 +6423,6 @@ parse_symbol_encoding(pm_parser_t *parser, const pm_token_t *location, const pm_
     return 0;
 }
 
-static pm_node_flags_t
-parse_and_validate_regular_expression_encoding_modifier(pm_parser_t *parser, const pm_string_t *source, bool ascii_only, pm_node_flags_t flags, char modifier, const pm_encoding_t *modifier_encoding) {
-    assert ((modifier == 'n' && modifier_encoding == PM_ENCODING_ASCII_8BIT_ENTRY) ||
-            (modifier == 'u' && modifier_encoding == PM_ENCODING_UTF_8_ENTRY) ||
-            (modifier == 'e' && modifier_encoding == PM_ENCODING_EUC_JP_ENTRY) ||
-            (modifier == 's' && modifier_encoding == PM_ENCODING_WINDOWS_31J_ENTRY));
-
-    // There's special validation logic used if a string does not contain any character escape sequences.
-    if (parser->explicit_encoding == NULL) {
-        // If an ASCII-only string without character escapes is used with an encoding modifier, then resulting Regexp
-        // has the modifier encoding, unless the ASCII-8BIT modifier is used, in which case the Regexp "downgrades" to
-        // the US-ASCII encoding.
-        if (ascii_only) {
-            return modifier == 'n' ? PM_REGULAR_EXPRESSION_FLAGS_FORCED_US_ASCII_ENCODING : flags;
-        }
-
-        if (parser->encoding == PM_ENCODING_US_ASCII_ENTRY) {
-            if (!ascii_only) {
-                PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_INVALID_MULTIBYTE_CHAR, parser->encoding->name);
-            }
-        } else if (parser->encoding != modifier_encoding) {
-            PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_REGEXP_ENCODING_OPTION_MISMATCH, modifier, parser->encoding->name);
-
-            if (modifier == 'n' && !ascii_only) {
-                PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_REGEXP_NON_ESCAPED_MBC, (int) pm_string_length(source), (const char *) pm_string_source(source));
-            }
-        }
-
-        return flags;
-    }
-
-    // TODO (nirvdrum 21-Feb-2024): To validate regexp sources with character escape sequences we need to know whether hex or Unicode escape sequences were used and Prism doesn't currently provide that data. We handle a subset of unambiguous cases in the meanwhile.
-    bool mixed_encoding = false;
-
-    if (mixed_encoding) {
-        PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_INVALID_MULTIBYTE_ESCAPE, (int) pm_string_length(source), (const char *) pm_string_source(source));
-    } else if (modifier != 'n' && parser->explicit_encoding == PM_ENCODING_ASCII_8BIT_ENTRY) {
-        // TODO (nirvdrum 21-Feb-2024): Validate the content is valid in the modifier encoding. Do this on-demand so we don't pay the cost of computation unnecessarily.
-        bool valid_string_in_modifier_encoding = true;
-
-        if (!valid_string_in_modifier_encoding) {
-            PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_INVALID_MULTIBYTE_ESCAPE, (int) pm_string_length(source), (const char *) pm_string_source(source));
-        }
-    } else if (modifier != 'u' && parser->explicit_encoding == PM_ENCODING_UTF_8_ENTRY) {
-        // TODO (nirvdrum 21-Feb-2024): There's currently no way to tell if the source used hex or Unicode character escapes from `explicit_encoding` alone. If the source encoding was already UTF-8, both character escape types would set `explicit_encoding` to UTF-8, but need to be processed differently. Skip for now.
-        if (parser->encoding != PM_ENCODING_UTF_8_ENTRY) {
-            PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_REGEXP_INCOMPAT_CHAR_ENCODING, (int) pm_string_length(source), (const char *) pm_string_source(source));
-        }
-    }
-
-    // We've determined the encoding would naturally be EUC-JP and there is no need to force the encoding to anything else.
-    return flags;
-}
-
-/**
- * Ruby "downgrades" the encoding of Regexps to US-ASCII if the associated encoding is ASCII-compatible and
- * the unescaped representation of a Regexp source consists only of US-ASCII code points. This is true even
- * when the Regexp is explicitly given an ASCII-8BIT encoding via the (/n) modifier. Otherwise, the encoding
- * may be explicitly set with an escape sequence.
- */
-static pm_node_flags_t
-parse_and_validate_regular_expression_encoding(pm_parser_t *parser, const pm_string_t *source, bool ascii_only, pm_node_flags_t flags) {
-    // TODO (nirvdrum 22-Feb-2024): CRuby reports a special Regexp-specific error for invalid Unicode ranges. We either need to scan again or modify the "invalid Unicode escape sequence" message we already report.
-    bool valid_unicode_range = true;
-    if (parser->explicit_encoding == PM_ENCODING_UTF_8_ENTRY && !valid_unicode_range) {
-        PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_REGEXP_INVALID_UNICODE_RANGE, (int) pm_string_length(source), (const char *) pm_string_source(source));
-        return flags;
-    }
-
-    // US-ASCII strings do not admit multi-byte character literals. However, character escape sequences corresponding
-    // to multi-byte characters are allowed.
-    if (parser->encoding == PM_ENCODING_US_ASCII_ENTRY && parser->explicit_encoding == NULL && !ascii_only) {
-        // CRuby will continue processing even though a SyntaxError has already been detected. It may result in the
-        // following error message appearing twice. We do the same for compatibility.
-        PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_INVALID_MULTIBYTE_CHAR, parser->encoding->name);
-    }
-
-    /**
-     * Start checking modifier flags. We need to process these before considering any explicit encodings that may have
-     * been set by character literals. The order in which the encoding modifiers is checked does not matter. In the
-     * event that both an encoding modifier and an explicit encoding would result in the same encoding we do not set
-     * the corresponding "forced_<encoding>" flag. Instead, the caller should check the encoding modifier flag and
-     * determine the encoding that way.
-     */
-
-    if (flags & PM_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT) {
-        return parse_and_validate_regular_expression_encoding_modifier(parser, source, ascii_only, flags, 'n', PM_ENCODING_ASCII_8BIT_ENTRY);
-    }
-
-    if (flags & PM_REGULAR_EXPRESSION_FLAGS_UTF_8) {
-        return parse_and_validate_regular_expression_encoding_modifier(parser, source, ascii_only, flags, 'u', PM_ENCODING_UTF_8_ENTRY);
-    }
-
-    if (flags & PM_REGULAR_EXPRESSION_FLAGS_EUC_JP) {
-        return parse_and_validate_regular_expression_encoding_modifier(parser, source, ascii_only, flags, 'e', PM_ENCODING_EUC_JP_ENTRY);
-    }
-
-    if (flags & PM_REGULAR_EXPRESSION_FLAGS_WINDOWS_31J) {
-        return parse_and_validate_regular_expression_encoding_modifier(parser, source, ascii_only, flags, 's', PM_ENCODING_WINDOWS_31J_ENTRY);
-    }
-
-    // At this point no encoding modifiers will be present on the regular expression as they would have already
-    // been processed. Ruby stipulates that all source files must use an ASCII-compatible encoding. Thus, all
-    // regular expressions without an encoding modifier appearing in source are eligible for "downgrading" to US-ASCII.
-    if (ascii_only) {
-        return PM_REGULAR_EXPRESSION_FLAGS_FORCED_US_ASCII_ENCODING;
-    }
-
-    // A Regexp may optionally have its encoding explicitly set via a character escape sequence in the source string
-    // or by specifying a modifier.
-    //
-    // NB: an explicitly set encoding is ignored by Ruby if the Regexp consists of only US ASCII code points.
-    if (parser->explicit_encoding != NULL) {
-        if (parser->explicit_encoding == PM_ENCODING_UTF_8_ENTRY) {
-            return PM_REGULAR_EXPRESSION_FLAGS_FORCED_UTF8_ENCODING;
-        } else if (parser->encoding == PM_ENCODING_US_ASCII_ENTRY) {
-            return PM_REGULAR_EXPRESSION_FLAGS_FORCED_BINARY_ENCODING;
-        }
-    }
-
-    return 0;
-}
-
 /**
  * Allocate and initialize a new SymbolNode node with the given unescaped
  * string.
@@ -8589,7 +8466,7 @@ escape_hexadecimal_digit(const uint8_t value) {
  * validated.
  */
 static inline uint32_t
-escape_unicode(pm_parser_t *parser, const uint8_t *string, size_t length, const pm_location_t *error_location) {
+escape_unicode(pm_parser_t *parser, const uint8_t *string, size_t length, const pm_location_t *error_location, const uint8_t flags) {
     uint32_t value = 0;
     for (size_t index = 0; index < length; index++) {
         if (index != 0) value <<= 4;
@@ -8599,7 +8476,10 @@ escape_unicode(pm_parser_t *parser, const uint8_t *string, size_t length, const 
     // Here we're going to verify that the value is actually a valid Unicode
     // codepoint and not a surrogate pair.
     if (value >= 0xD800 && value <= 0xDFFF) {
-        if (error_location != NULL) {
+        if (flags & PM_ESCAPE_FLAG_REGEXP) {
+            // In regexp context, defer the error to regexp encoding
+            // validation where we can produce a regexp-specific message.
+        } else if (error_location != NULL) {
             pm_parser_err(parser, error_location->start, error_location->length, PM_ERR_ESCAPE_INVALID_UNICODE);
         } else {
             pm_parser_err(parser, U32(string - parser->start), U32(length), PM_ERR_ESCAPE_INVALID_UNICODE);
@@ -8630,14 +8510,25 @@ escape_write_unicode(pm_parser_t *parser, pm_buffer_t *buffer, const uint8_t fla
     // literal.
     if (value >= 0x80 || flags & PM_ESCAPE_FLAG_SINGLE) {
         if (parser->explicit_encoding != NULL && parser->explicit_encoding != PM_ENCODING_UTF_8_ENTRY) {
-            PM_PARSER_ERR_FORMAT(parser, U32(start - parser->start), U32(end - start), PM_ERR_MIXED_ENCODING, parser->explicit_encoding->name);
+            if (flags & PM_ESCAPE_FLAG_REGEXP) {
+                // In regexp context, suppress this error — the regexp encoding
+                // validation will produce a more specific error message.
+            } else {
+                PM_PARSER_ERR_FORMAT(parser, U32(start - parser->start), U32(end - start), PM_ERR_MIXED_ENCODING, parser->explicit_encoding->name);
+            }
         }
 
         parser->explicit_encoding = PM_ENCODING_UTF_8_ENTRY;
     }
 
     if (!pm_buffer_append_unicode_codepoint(buffer, value)) {
-        pm_parser_err(parser, U32(start - parser->start), U32(end - start), PM_ERR_ESCAPE_INVALID_UNICODE);
+        if (flags & PM_ESCAPE_FLAG_REGEXP) {
+            // In regexp context, defer the error to the regexp encoding
+            // validation which produces a regexp-specific message.
+        } else {
+            pm_parser_err(parser, U32(start - parser->start), U32(end - start), PM_ERR_ESCAPE_INVALID_UNICODE);
+        }
+
         pm_buffer_append_byte(buffer, 0xEF);
         pm_buffer_append_byte(buffer, 0xBF);
         pm_buffer_append_byte(buffer, 0xBD);
@@ -8649,10 +8540,15 @@ escape_write_unicode(pm_parser_t *parser, pm_buffer_t *buffer, const uint8_t fla
  * (i.e., the top bit is set) then it locks in the encoding.
  */
 static inline void
-escape_write_byte_encoded(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t byte) {
+escape_write_byte_encoded(pm_parser_t *parser, pm_buffer_t *buffer, const uint8_t flags, uint8_t byte) {
     if (byte >= 0x80) {
         if (parser->explicit_encoding != NULL && parser->explicit_encoding == PM_ENCODING_UTF_8_ENTRY && parser->encoding != PM_ENCODING_UTF_8_ENTRY) {
-            PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_MIXED_ENCODING, parser->encoding->name);
+            if (flags & PM_ESCAPE_FLAG_REGEXP) {
+                // In regexp context, suppress this error — the regexp encoding
+                // validation will produce a more specific error message.
+            } else {
+                PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_MIXED_ENCODING, parser->encoding->name);
+            }
         }
 
         parser->explicit_encoding = parser->encoding;
@@ -8682,7 +8578,7 @@ escape_write_byte(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular
         pm_buffer_append_format(regular_expression_buffer, "\\x%02X", byte);
     }
 
-    escape_write_byte_encoded(parser, buffer, byte);
+    escape_write_byte_encoded(parser, buffer, flags, byte);
 }
 
 /**
@@ -8838,7 +8734,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                     }
                 }
 
-                escape_write_byte_encoded(parser, buffer, value);
+                escape_write_byte_encoded(parser, buffer, flags, value);
             } else {
                 pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_HEXADECIMAL);
             }
@@ -8887,7 +8783,8 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                         if (flags & PM_ESCAPE_FLAG_REGEXP) {
                             // If this is a regular expression, we are going to
                             // let the regular expression engine handle this
-                            // error instead of us.
+                            // error instead of us because we don't know at this
+                            // point if we're inside a comment in /x mode.
                             pm_buffer_append_bytes(regular_expression_buffer, start, (size_t) (parser->current.end - start));
                         } else {
                             pm_parser_err(parser, PM_TOKEN_END(parser, &parser->current), 0, PM_ERR_ESCAPE_INVALID_UNICODE);
@@ -8903,7 +8800,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                         extra_codepoints_start = unicode_start;
                     }
 
-                    uint32_t value = escape_unicode(parser, unicode_start, hexadecimal_length, NULL);
+                    uint32_t value = escape_unicode(parser, unicode_start, hexadecimal_length, NULL, flags);
                     escape_write_unicode(parser, buffer, flags, unicode_start, parser->current.end, value);
 
                     parser->current.end += pm_strspn_inline_whitespace(parser->current.end, parser->end - parser->current.end);
@@ -8923,7 +8820,8 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                     if (flags & PM_ESCAPE_FLAG_REGEXP) {
                         // If this is a regular expression, we are going to let
                         // the regular expression engine handle this error
-                        // instead of us.
+                        // instead of us because we don't know at this point if
+                        // we're inside a comment in /x mode.
                         pm_buffer_append_bytes(regular_expression_buffer, start, (size_t) (parser->current.end - start));
                     } else {
                         pm_parser_err(parser, U32(unicode_codepoints_start - parser->start), U32(parser->current.end - unicode_codepoints_start), PM_ERR_ESCAPE_INVALID_UNICODE_TERM);
@@ -8944,7 +8842,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                         PM_PARSER_ERR_FORMAT(parser, U32(start - parser->start), U32(parser->current.end - start), PM_ERR_ESCAPE_INVALID_UNICODE_SHORT, 2, start);
                     }
                 } else if (length == 4) {
-                    uint32_t value = escape_unicode(parser, parser->current.end, 4, NULL);
+                    uint32_t value = escape_unicode(parser, parser->current.end, 4, NULL, flags);
 
                     if (flags & PM_ESCAPE_FLAG_REGEXP) {
                         pm_buffer_append_bytes(regular_expression_buffer, start, (size_t) (parser->current.end + 4 - start));
@@ -9131,7 +9029,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
         case '\r': {
             if (peek_offset(parser, 1) == '\n') {
                 parser->current.end += 2;
-                escape_write_byte_encoded(parser, buffer, escape_byte('\n', flags));
+                escape_write_byte_encoded(parser, buffer, flags, escape_byte('\n', flags));
                 return;
             }
             PRISM_FALLTHROUGH
@@ -9516,18 +9414,10 @@ pm_token_buffer_push_escaped(pm_token_buffer_t *token_buffer, pm_parser_t *parse
 static void
 pm_regexp_token_buffer_push_escaped(pm_regexp_token_buffer_t *token_buffer, pm_parser_t *parser) {
     size_t width = parser_char_width(parser);
-    pm_buffer_append_bytes(&token_buffer->base.buffer, parser->current.end, width);
-    pm_buffer_append_bytes(&token_buffer->regexp_buffer, parser->current.end, width);
+    const uint8_t *start = parser->current.end;
+    pm_buffer_append_bytes(&token_buffer->base.buffer, start, width);
+    pm_buffer_append_bytes(&token_buffer->regexp_buffer, start, width);
     parser->current.end += width;
-}
-
-static bool
-pm_slice_ascii_only_p(const uint8_t *value, size_t length) {
-    for (size_t index = 0; index < length; index++) {
-        if (value[index] & 0x80) return false;
-    }
-
-    return true;
 }
 
 /**
@@ -9548,7 +9438,6 @@ pm_token_buffer_copy(pm_parser_t *parser, pm_token_buffer_t *token_buffer) {
 static inline void
 pm_regexp_token_buffer_copy(pm_parser_t *parser, pm_regexp_token_buffer_t *token_buffer) {
     pm_token_buffer_copy(parser, &token_buffer->base);
-    parser->current_regular_expression_ascii_only = pm_slice_ascii_only_p((const uint8_t *) pm_buffer_value(&token_buffer->regexp_buffer), pm_buffer_length(&token_buffer->regexp_buffer));
     pm_buffer_free(&token_buffer->regexp_buffer);
 }
 
@@ -9575,10 +9464,11 @@ static void
 pm_regexp_token_buffer_flush(pm_parser_t *parser, pm_regexp_token_buffer_t *token_buffer) {
     if (token_buffer->base.cursor == NULL) {
         pm_string_shared_init(&parser->current_string, parser->current.start, parser->current.end);
-        parser->current_regular_expression_ascii_only = pm_slice_ascii_only_p(parser->current.start, (size_t) (parser->current.end - parser->current.start));
     } else {
-        pm_buffer_append_bytes(&token_buffer->base.buffer, token_buffer->base.cursor, (size_t) (parser->current.end - token_buffer->base.cursor));
-        pm_buffer_append_bytes(&token_buffer->regexp_buffer, token_buffer->base.cursor, (size_t) (parser->current.end - token_buffer->base.cursor));
+        const uint8_t *cursor = token_buffer->base.cursor;
+        size_t length = (size_t) (parser->current.end - cursor);
+        pm_buffer_append_bytes(&token_buffer->base.buffer, cursor, length);
+        pm_buffer_append_bytes(&token_buffer->regexp_buffer, cursor, length);
         pm_regexp_token_buffer_copy(parser, token_buffer);
     }
 }
@@ -17384,63 +17274,6 @@ parse_yield(pm_parser_t *parser, const pm_node_t *node) {
 }
 
 /**
- * This struct is used to pass information between the regular expression parser
- * and the error callback.
- */
-typedef struct {
-    /** The parser that we are parsing the regular expression for. */
-    pm_parser_t *parser;
-
-    /** The start of the regular expression. */
-    const uint8_t *start;
-
-    /** The end of the regular expression. */
-    const uint8_t *end;
-
-    /**
-     * Whether or not the source of the regular expression is shared. This
-     * impacts the location of error messages, because if it is shared then we
-     * can use the location directly and if it is not, then we use the bounds of
-     * the regular expression itself.
-     */
-    bool shared;
-} parse_regular_expression_error_data_t;
-
-/**
- * This callback is called when the regular expression parser encounters a
- * syntax error.
- */
-static void
-parse_regular_expression_error(const uint8_t *start, const uint8_t *end, const char *message, void *data) {
-    parse_regular_expression_error_data_t *callback_data = (parse_regular_expression_error_data_t *) data;
-    pm_token_t location;
-
-    if (callback_data->shared) {
-        location = (pm_token_t) { .type = 0, .start = start, .end = end };
-    } else {
-        location = (pm_token_t) { .type = 0, .start = callback_data->start, .end = callback_data->end };
-    }
-
-    PM_PARSER_ERR_FORMAT(callback_data->parser, PM_TOKEN_START(callback_data->parser, &location), PM_TOKEN_LENGTH(&location), PM_ERR_REGEXP_PARSE_ERROR, message);
-}
-
-/**
- * Parse the errors for the regular expression and add them to the parser.
- */
-static void
-parse_regular_expression_errors(pm_parser_t *parser, pm_regular_expression_node_t *node) {
-    const pm_string_t *unescaped = &node->unescaped;
-    parse_regular_expression_error_data_t error_data = {
-        .parser = parser,
-        .start = parser->start + PM_NODE_START(node),
-        .end = parser->start + PM_NODE_END(node),
-        .shared = unescaped->type == PM_STRING_SHARED
-    };
-
-    pm_regexp_parse(parser, pm_string_source(unescaped), pm_string_length(unescaped), PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_EXTENDED), NULL, NULL, parse_regular_expression_error, &error_data);
-}
-
-/**
  * Determine if a given call node looks like a "command", which means it has
  * arguments but does not have parentheses.
  */
@@ -19317,22 +19150,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
                     }
                 }
             } else {
-                /* `not` in a single line method is allowed to be followed by
-                 * an expression without pattern matching, that optionally is
-                 * followed by a `rescue` modifier. */
-                if (flags & PM_PARSE_IN_ENDLESS_DEF) {
-                    receiver = parse_expression(parser, PM_BINDING_POWER_MATCH + 1, (flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL, PM_ERR_NOT_EXPRESSION, (uint16_t) (depth + 1));
-
-                    if (accept1(parser, PM_TOKEN_KEYWORD_RESCUE_MODIFIER)) {
-                        context_push(parser, PM_CONTEXT_RESCUE_MODIFIER);
-                        pm_token_t rescue_keyword = parser->previous;
-                        pm_node_t *value = parse_expression(parser, PM_BINDING_POWER_MATCH + 1, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
-                        context_pop(parser);
-                        receiver = UP(pm_rescue_modifier_node_create(parser, receiver, &rescue_keyword, value));
-                    }
-                } else {
-                    receiver = parse_expression(parser, PM_BINDING_POWER_NOT, (flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL, PM_ERR_NOT_EXPRESSION, (uint16_t) (depth + 1));
-                }
+                receiver = parse_expression(parser, PM_BINDING_POWER_NOT, (flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL, PM_ERR_NOT_EXPRESSION, (uint16_t) (depth + 1));
             }
 
             return UP(pm_call_node_not_create(parser, receiver, &message, &arguments));
@@ -19913,10 +19731,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
 
                 parser_lex(parser);
 
-                pm_node_t *node = UP(pm_regular_expression_node_create(parser, &opening, &content, &parser->previous));
-                pm_node_flag_set(node, PM_REGULAR_EXPRESSION_FLAGS_FORCED_US_ASCII_ENCODING);
-
-                return node;
+                pm_regular_expression_node_t *node = pm_regular_expression_node_create(parser, &opening, &content, &parser->previous);
+                pm_node_flag_set(UP(node), pm_regexp_parse(parser, node, NULL, NULL));
+                return UP(node);
             }
 
             pm_interpolated_regular_expression_node_t *interpolated;
@@ -19928,7 +19745,6 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
                 // regular expression) or if it's not then it has interpolation.
                 pm_string_t unescaped = parser->current_string;
                 pm_token_t content = parser->current;
-                bool ascii_only = parser->current_regular_expression_ascii_only;
                 parser_lex(parser);
 
                 // If we hit an end, then we can create a regular expression
@@ -19937,15 +19753,14 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
                 if (accept1(parser, PM_TOKEN_REGEXP_END)) {
                     pm_regular_expression_node_t *node = (pm_regular_expression_node_t *) pm_regular_expression_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped);
 
-                    // If we're not immediately followed by a =~, then we want
-                    // to parse all of the errors at this point. If it is
-                    // followed by a =~, then it will get parsed higher up while
-                    // parsing the named captures as well.
+                    // If we're not immediately followed by a =~, then we
+                    // parse and validate now. If it is followed by a =~,
+                    // then it will get parsed in the =~ handler where
+                    // named captures can also be extracted.
                     if (!match1(parser, PM_TOKEN_EQUAL_TILDE)) {
-                        parse_regular_expression_errors(parser, node);
+                        pm_node_flag_set(UP(node), pm_regexp_parse(parser, node, NULL, NULL));
                     }
 
-                    pm_node_flag_set(UP(node), parse_and_validate_regular_expression_encoding(parser, &unescaped, ascii_only, FL(node)));
                     return UP(node);
                 }
 
@@ -20318,7 +20133,7 @@ parse_assignment_value(pm_parser_t *parser, pm_binding_power_t previous_binding_
         pm_token_t rescue = parser->current;
         parser_lex(parser);
 
-        pm_node_t *right = parse_expression(parser, PM_BINDING_POWER_MATCH + 1, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
+        pm_node_t *right = parse_expression(parser, pm_binding_powers[PM_TOKEN_KEYWORD_RESCUE_MODIFIER].right, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
         context_pop(parser);
 
         return UP(pm_rescue_modifier_node_create(parser, value, &rescue, right));
@@ -20435,7 +20250,7 @@ parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding
             }
         }
 
-        pm_node_t *right = parse_expression(parser, PM_BINDING_POWER_MATCH + 1, (flags & PM_PARSE_ACCEPTS_DO_BLOCK) | (accepts_command_call_inner ? PM_PARSE_ACCEPTS_COMMAND_CALL : 0), PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
+        pm_node_t *right = parse_expression(parser, pm_binding_powers[PM_TOKEN_KEYWORD_RESCUE_MODIFIER].right, (flags & PM_PARSE_ACCEPTS_DO_BLOCK) | (accepts_command_call_inner ? PM_PARSE_ACCEPTS_COMMAND_CALL : 0), PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
         context_pop(parser);
 
         return UP(pm_rescue_modifier_node_create(parser, value, &rescue, right));
@@ -20465,31 +20280,6 @@ parse_call_operator_write(pm_parser_t *parser, pm_call_node_t *call_node, const 
         call_node->block = NULL;
     }
 }
-
-/**
- * This struct is used to pass information between the regular expression parser
- * and the named capture callback.
- */
-typedef struct {
-    /** The parser that is parsing the regular expression. */
-    pm_parser_t *parser;
-
-    /** The call node wrapping the regular expression node. */
-    pm_call_node_t *call;
-
-    /** The match write node that is being created. */
-    pm_match_write_node_t *match;
-
-    /** The list of names that have been parsed. */
-    pm_constant_id_list_t names;
-
-    /**
-     * Whether the content of the regular expression is shared. This impacts
-     * whether or not we used owned constants or shared constants in the
-     * constant pool for the names of the captures.
-     */
-    bool shared;
-} parse_regular_expression_named_capture_data_t;
 
 static inline const uint8_t *
 pm_named_capture_escape_hex(pm_buffer_t *unescaped, const uint8_t *cursor, const uint8_t *end) {
@@ -20543,7 +20333,7 @@ pm_named_capture_escape_unicode(pm_parser_t *parser, pm_buffer_t *unescaped, con
 
     if (*cursor != '{') {
         size_t length = pm_strspn_hexadecimal_digit(cursor, MIN(end - cursor, 4));
-        uint32_t value = escape_unicode(parser, cursor, length, error_location);
+        uint32_t value = escape_unicode(parser, cursor, length, error_location, 0);
 
         if (!pm_buffer_append_unicode_codepoint(unescaped, value)) {
             pm_buffer_append_string(unescaped, (const char *) start, (size_t) ((cursor + length) - start));
@@ -20566,7 +20356,7 @@ pm_named_capture_escape_unicode(pm_parser_t *parser, pm_buffer_t *unescaped, con
         if (length == 0) {
             break;
         }
-        uint32_t value = escape_unicode(parser, cursor, length, error_location);
+        uint32_t value = escape_unicode(parser, cursor, length, error_location, 0);
 
         (void) pm_buffer_append_unicode_codepoint(unescaped, value);
         cursor += length;
@@ -20616,10 +20406,7 @@ pm_named_capture_escape(pm_parser_t *parser, pm_buffer_t *unescaped, const uint8
  * capture group.
  */
 static void
-parse_regular_expression_named_capture(const pm_string_t *capture, void *data) {
-    parse_regular_expression_named_capture_data_t *callback_data = (parse_regular_expression_named_capture_data_t *) data;
-
-    pm_parser_t *parser = callback_data->parser;
+parse_regular_expression_named_capture(pm_parser_t *parser, const pm_string_t *capture, bool shared, pm_regexp_name_data_t *callback_data) {
     pm_call_node_t *call = callback_data->call;
     pm_constant_id_list_t *names = &callback_data->names;
 
@@ -20637,7 +20424,7 @@ parse_regular_expression_named_capture(const pm_string_t *capture, void *data) {
     // unescaped, which is what we need.
     const uint8_t *cursor = pm_memchr(source, '\\', length, parser->encoding_changed, parser->encoding);
     if (PRISM_UNLIKELY(cursor != NULL)) {
-        pm_named_capture_escape(parser, &unescaped, source, length, cursor, callback_data->shared ? NULL : &call->receiver->location);
+        pm_named_capture_escape(parser, &unescaped, source, length, cursor, shared ? NULL : &call->receiver->location);
         source = (const uint8_t *) pm_buffer_value(&unescaped);
         length = pm_buffer_length(&unescaped);
     }
@@ -20653,7 +20440,7 @@ parse_regular_expression_named_capture(const pm_string_t *capture, void *data) {
         return;
     }
 
-    if (callback_data->shared) {
+    if (shared) {
         // If the unescaped string is a slice of the source, then we can
         // copy the names directly. The pointers will line up.
         start = source;
@@ -20707,26 +20494,19 @@ parse_regular_expression_named_capture(const pm_string_t *capture, void *data) {
 }
 
 /**
- * Potentially change a =~ with a regular expression with named captures into a
- * match write node.
+ * Potentially change a =~ with an interpolated regular expression with named
+ * captures into a match write node. This is for the interpolated case where
+ * we have concatenated content rather than a regular expression node.
  */
 static pm_node_t *
-parse_regular_expression_named_captures(pm_parser_t *parser, const pm_string_t *content, pm_call_node_t *call, bool extended_mode) {
-    parse_regular_expression_named_capture_data_t callback_data = {
-        .parser = parser,
+parse_interpolated_regular_expression_named_captures(pm_parser_t *parser, const pm_string_t *content, pm_call_node_t *call, bool extended_mode) {
+    pm_regexp_name_data_t callback_data = {
         .call = call,
+        .match = NULL,
         .names = { 0 },
-        .shared = content->type == PM_STRING_SHARED
     };
 
-    parse_regular_expression_error_data_t error_data = {
-        .parser = parser,
-        .start = parser->start + PM_NODE_START(call->receiver),
-        .end = parser->start + PM_NODE_END(call->receiver),
-        .shared = content->type == PM_STRING_SHARED
-    };
-
-    pm_regexp_parse(parser, pm_string_source(content), pm_string_length(content), extended_mode, parse_regular_expression_named_capture, &callback_data, parse_regular_expression_error, &error_data);
+    pm_regexp_parse_named_captures(parser, pm_string_source(content), pm_string_length(content), false, extended_mode, parse_regular_expression_named_capture, &callback_data);
 
     if (callback_data.match != NULL) {
         return UP(callback_data.match);
@@ -21248,14 +21028,25 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     pm_string_t owned;
                     pm_string_owned_init(&owned, (uint8_t *) memory, total_length);
 
-                    result = parse_regular_expression_named_captures(parser, &owned, call, PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_EXTENDED));
+                    result = parse_interpolated_regular_expression_named_captures(parser, &owned, call, PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_EXTENDED));
                     pm_string_free(&owned);
                 }
             } else if (PM_NODE_TYPE_P(node, PM_REGULAR_EXPRESSION_NODE)) {
-                // If we have a regular expression node, then we can just parse
-                // the named captures directly off the unescaped string.
-                const pm_string_t *content = &((pm_regular_expression_node_t *) node)->unescaped;
-                result = parse_regular_expression_named_captures(parser, content, call, PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_EXTENDED));
+                // If we have a regular expression node, then we can parse
+                // the named captures and validate encoding in one pass.
+                pm_regular_expression_node_t *regexp = (pm_regular_expression_node_t *) node;
+
+                pm_regexp_name_data_t name_data = {
+                    .call = call,
+                    .match = NULL,
+                    .names = { 0 },
+                };
+
+                pm_node_flag_set(UP(regexp), pm_regexp_parse(parser, regexp, parse_regular_expression_named_capture, &name_data));
+
+                if (name_data.match != NULL) {
+                    result = UP(name_data.match);
+                }
             }
 
             return result;
@@ -22137,7 +21928,6 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
         .current_block_exits = NULL,
         .semantic_token_seen = false,
         .frozen_string_literal = PM_OPTIONS_FROZEN_STRING_LITERAL_UNSET,
-        .current_regular_expression_ascii_only = false,
         .warn_mismatched_indentation = true
     };
 
