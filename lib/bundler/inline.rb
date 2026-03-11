@@ -80,12 +80,20 @@ def gemfile(force_latest_compatible = false, options = {}, &gemfile)
 
           # If the install succeeded, we need to refresh gem info
           Bundler.reset!
+          Gem::Specification.reset
+          Bundler.instance_variable_set(:@bundle_path, Pathname.new(Gem.dir))
 
           builder = Bundler::Dsl.new
           builder.instance_eval(&gemfile)
           builder.check_primary_source_safety
 
           definition = builder.to_definition(nil, true)
+          definition.sources.rubygems_sources.each(&:remote!)
+          definition.sources.git_sources.each do |source|
+            source.cached!
+            source.instance_variable_set(:@copied, true)
+          end
+
           def definition.lock(*); end
           definition.validate_runtime!
         else

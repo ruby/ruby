@@ -684,6 +684,50 @@ RSpec.describe "bundler/inline#gemfile" do
     end
   end
 
+  it "installs a conflicting default gem and non-default gems together" do
+    build_repo4 do
+      build_gem "securerandom", "999"
+      build_gem "myrack", "1.0.0"
+    end
+
+    script <<-RUBY, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      gemfile(true) do
+        source "https://gem.repo4"
+        gem "securerandom"
+        gem "myrack"
+      end
+
+      puts MYRACK
+    RUBY
+
+    expect(out).to include("Installing securerandom 999")
+    expect(out).to include("Installing myrack 1.0.0")
+    expect(out).to include("1.0.0")
+    expect(err).to be_empty
+  end
+
+  it "installs a conflicting default gem alongside git sources" do
+    build_repo4 do
+      build_gem "securerandom", "999"
+    end
+
+    build_git "foo", "1.0.0"
+
+    script <<-RUBY, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      gemfile(true) do
+        source "https://gem.repo4"
+        gem "securerandom"
+        gem "foo", :git => #{lib_path("foo-1.0.0").to_s.dump}
+      end
+
+      puts FOO
+    RUBY
+
+    expect(out).to include("Installing securerandom 999")
+    expect(out).to include("1.0.0")
+    expect(err).to be_empty
+  end
+
   it "leaves a lockfile in the same directory as the inline script alone" do
     install_gemfile <<~G
       source "https://gem.repo1"
