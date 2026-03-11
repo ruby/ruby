@@ -3044,7 +3044,7 @@ impl Assembler
     }
 
     /// Iterate over all instructions mutably with their block ID, instruction ID, and instruction index within the block.
-    /// Returns an iterator of (BlockId, Option<InsnId>, usize, &mut Insn).
+    /// Returns an iterator of (BlockId, `Option<InsnId>`, usize, &mut Insn).
     pub fn iter_insns_mut(&mut self) -> impl Iterator<Item = (BlockId, Option<InsnId>, usize, &mut Insn)> {
         self.basic_blocks.iter_mut().flat_map(|block| {
             let block_id = block.id;
