@@ -166,4 +166,6 @@ mod tests {
     // TODO: write a test case for escaping proc from invokeblock fallback
 
     // TODO: write a test case for rb_vm_get_sourceline from rb_f_binding
+
+    // TODO: write a test case for svar (iseq reference on rb_vm_svar_lep)
 }
