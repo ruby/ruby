@@ -50,11 +50,7 @@ module Gem
 
     def self.load(input)
       if Gem.use_psych?
-        if ::Psych.respond_to?(:unsafe_load)
-          ::Psych.unsafe_load(input)
-        else
-          ::Psych.load(input)
-        end
+        ::Psych.safe_load(input, permitted_classes: [::Symbol])
       else
         Gem::YAMLSerializer.load(
           input,
