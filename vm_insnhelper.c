@@ -4707,7 +4707,7 @@ vm_call_refined(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_c
     if (ref_cme) {
         if (calling->cd->cc) {
             const struct rb_callcache *cc = calling->cc = vm_cc_new(vm_cc_cme(calling->cc)->defined_class, ref_cme, vm_call_general, cc_type_refinement);
-            RB_OBJ_WRITE(cfp->iseq, &calling->cd->cc, cc);
+            RB_OBJ_WRITE(rb_zjit_cfp_iseq(cfp), &calling->cd->cc, cc);
             return vm_call_method(ec, cfp, calling);
         }
         else {

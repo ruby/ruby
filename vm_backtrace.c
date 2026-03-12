@@ -1755,7 +1755,7 @@ thread_profile_frames(rb_execution_context_t *ec, int start, int limit, VALUE *b
 
             /* record frame info */
             cme = rb_vm_frame_method_entry_unchecked(cfp);
-            const rb_iseq_t *iseq = rb_zjit_cfp_iseq(cfp)
+            const rb_iseq_t *iseq = rb_zjit_cfp_iseq(cfp);
             if (cme && cme->def->type == VM_METHOD_TYPE_ISEQ) {
                 buff[i] = (VALUE)cme;
             }
