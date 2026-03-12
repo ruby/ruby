@@ -20,6 +20,14 @@ impl IseqPayload {
             versions: vec![],
         }
     }
+
+    fn num_versions(&self) -> usize {
+        self.versions.len()
+    }
+
+    pub fn should_gather_profiles(&self) -> bool {
+        self.num_versions() < crate::codegen::MAX_ISEQ_VERSIONS
+    }
 }
 
 /// JIT code version. When the same ISEQ is compiled with a different assumption, a new version is created.

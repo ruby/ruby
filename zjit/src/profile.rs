@@ -466,6 +466,7 @@ pub extern "C" fn rb_zjit_profile_jit_operand(iseq: IseqPtr, insn_idx: u32, oper
 }
 
 fn profile_jit_operand(iseq: IseqPtr, insn_idx: u32, operand_idx: u32, total_operands: u32, obj: VALUE) {
+    debug_assert!(get_or_create_iseq_payload(iseq).should_gather_profiles(), "Should not collect profiles that we can't use");
     let profile = &mut get_or_create_iseq_payload(iseq).profile;
     let idx = insn_idx as usize;
     let opnd_idx = operand_idx as usize;

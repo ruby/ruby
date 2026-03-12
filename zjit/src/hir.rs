@@ -7736,15 +7736,18 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     // to gather type information from JIT code. After enough profiles,
                     // the JIT entry will be cleared to trigger recompilation with the new data.
                     if profiles.payload.profile.get_operand_types(exit_state.insn_idx).map_or(0, |d| d.len()) == 0 {
-                        // Build operands list: receiver first, then args (matching interpreter order)
-                        let mut operands = vec![recv];
-                        operands.extend_from_slice(&args);
-                        fun.push_insn(block, Insn::Profile {
-                            iseq,
-                            insn_idx: exit_state.insn_idx as u32,
-                            operands,
-                            state: exit_id,
-                        });
+                        // Don't gather profiles we can't use
+                        if profiles.payload.should_gather_profiles() {
+                            // Build operands list: receiver first, then args (matching interpreter order)
+                            let mut operands = vec![recv];
+                            operands.extend_from_slice(&args);
+                            fun.push_insn(block, Insn::Profile {
+                                iseq,
+                                insn_idx: exit_state.insn_idx as u32,
+                                operands,
+                                state: exit_id,
+                            });
+                        }
                     }
 
                     let send = fun.push_insn(block, Insn::Send { recv, cd, blockiseq: None, args, state: exit_id, reason: Uncategorized(opcode) });
