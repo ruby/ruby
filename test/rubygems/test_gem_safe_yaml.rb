@@ -1186,4 +1186,14 @@ class TestGemSafeYAML < Gem::TestCase
     assert_equal "9f8a39cc19773791f379564ff5ec9cb65040ab02", result["SHA1"]["metadata.gz"]
     assert_equal "e4fdda6751c96b0c4a81db2499d267f461cd0c5d", result["SHA1"]["data.tar.gz"]
   end
+
+  def test_binary_tag_decoded_in_sequence_item_inline
+    yaml = <<~YAML
+      ---
+      - !binary "U0hBMQ=="
+    YAML
+
+    result = yaml_load(yaml)
+    assert_equal ["SHA1"], result
+  end
 end
