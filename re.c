@@ -106,7 +106,7 @@ rb_memcicmp(const void *x, const void *y, long len)
     return 0;
 }
 
-#ifdef HAVE_MEMMEM
+#if defined(HAVE_MEMMEM) && !defined(__APPLE__)
 static inline long
 rb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long n)
 {
