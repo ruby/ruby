@@ -2202,10 +2202,9 @@ impl Assembler
         });
 
         #[cfg(feature = "disasm")]
-        if get_option!(dump_disasm) && ret.is_ok() {
+        if let Some(dump_disasm) = crate::options::get_option_ref!(dump_disasm).filter(|_| ret.is_ok()) {
             let end_addr = cb.get_write_ptr();
-            let disasm = crate::disasm::disasm_addr_range(cb, start_addr.raw_ptr(cb) as usize, end_addr.raw_ptr(cb) as usize);
-            println!("{}", disasm);
+            crate::disasm::dump_disasm_addr_range(cb, start_addr, end_addr, dump_disasm);
         }
         ret
     }
@@ -2985,7 +2984,7 @@ macro_rules! asm_comment {
     ($asm:expr, $($fmt:tt)*) => {
         // If --zjit-dump-disasm or --zjit-dump-lir is given, enrich them with comments.
         // Also allow --zjit-debug on dev builds to enable comments since dev builds dump LIR on panic.
-        let enable_comment = $crate::options::get_option!(dump_disasm) ||
+        let enable_comment = $crate::options::get_option_ref!(dump_disasm).is_some() ||
             $crate::options::get_option!(dump_lir).is_some() ||
             (cfg!(debug_assertions) && $crate::options::get_option!(debug));
         if enable_comment {
