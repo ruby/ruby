@@ -4,7 +4,7 @@
 #![allow(non_upper_case_globals)]
 
 use std::collections::HashMap;
-use crate::{cruby::*, payload::get_or_create_iseq_payload, options::{get_option, NumProfiles}};
+use crate::{cruby::*, payload::{get_or_create_iseq_payload, IseqStatus}, options::{get_option, NumProfiles}};
 use crate::distribution::{Distribution, DistributionSummary};
 use crate::stats::Counter::profile_time_ns;
 use crate::stats::with_time_stat;
@@ -487,10 +487,15 @@ fn profile_jit_operands(iseq: IseqPtr, insn_idx: u32, values: *const VALUE, num_
     // Increment the profile count for this call site
     profile.num_profiles[idx] = profile.num_profiles[idx].saturating_add(1);
 
-    // Once we've gathered enough profiles, clear the JIT entry to trigger recompilation
+    // Once we've gathered enough profiles, invalidate the current version and clear
+    // the JIT entry to trigger recompilation with the new profile data.
     // TODO(max): Call a more generic "Iseq::change_state" method that handles the full
     // lifecycle of a method.
     if profile.num_profiles[idx] >= JIT_PROFILE_THRESHOLD {
+        let payload = get_or_create_iseq_payload(iseq);
+        if let Some(version) = payload.versions.last_mut() {
+            unsafe { version.as_mut() }.status = IseqStatus::Invalidated;
+        }
         unsafe { rb_iseq_clear_jit_func(iseq) };
     }
 }
