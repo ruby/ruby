@@ -2741,17 +2741,16 @@ mod tests {
         0x4: mov x1, #2
         0x8: mov x2, #3
         0xc: mov x3, #4
-        0x10: mov x4, x0
-        0x14: stp x2, x1, [sp, #-0x10]!
-        0x18: stp x4, x3, [sp, #-0x10]!
-        0x1c: mov x16, #0
-        0x20: blr x16
-        0x24: ldp x4, x3, [sp], #0x10
-        0x28: ldp x2, x1, [sp], #0x10
-        0x2c: adds x4, x4, x1
-        0x30: adds x2, x2, x3
+        0x10: stp x1, x0, [sp, #-0x10]!
+        0x14: stp x3, x2, [sp, #-0x10]!
+        0x18: mov x16, #0
+        0x1c: blr x16
+        0x20: ldp x3, x2, [sp], #0x10
+        0x24: ldp x1, x0, [sp], #0x10
+        0x28: adds x0, x0, x1
+        0x2c: adds x0, x2, x3
         ");
-        assert_snapshot!(cb.hexdump(), @"200080d2410080d2620080d2830080d2e40300aae207bfa9e40fbfa9100080d200023fd6e40fc1a8e207c1a8840001ab420003ab");
+        assert_snapshot!(cb.hexdump(), @"200080d2410080d2620080d2830080d2e103bfa9e30bbfa9100080d200023fd6e30bc1a8e103c1a8000001ab400003ab");
     }
 
     #[test]
@@ -2776,20 +2775,19 @@ mod tests {
         0x8: mov x2, #3
         0xc: mov x3, #4
         0x10: mov x4, #5
-        0x14: mov x5, x0
-        0x18: stp x2, x1, [sp, #-0x10]!
-        0x1c: stp x4, x3, [sp, #-0x10]!
-        0x20: str x5, [sp, #-0x10]!
-        0x24: mov x16, #0
-        0x28: blr x16
-        0x2c: ldr x5, [sp], #0x10
-        0x30: ldp x4, x3, [sp], #0x10
-        0x34: ldp x2, x1, [sp], #0x10
-        0x38: adds x5, x5, x1
-        0x3c: adds x0, x2, x3
-        0x40: adds x2, x2, x4
+        0x14: stp x1, x0, [sp, #-0x10]!
+        0x18: stp x3, x2, [sp, #-0x10]!
+        0x1c: str x4, [sp, #-0x10]!
+        0x20: mov x16, #0
+        0x24: blr x16
+        0x28: ldr x4, [sp], #0x10
+        0x2c: ldp x3, x2, [sp], #0x10
+        0x30: ldp x1, x0, [sp], #0x10
+        0x34: adds x0, x0, x1
+        0x38: adds x0, x2, x3
+        0x3c: adds x0, x2, x4
         ");
-        assert_snapshot!(cb.hexdump(), @"200080d2410080d2620080d2830080d2a40080d2e50300aae207bfa9e40fbfa9e50f1ff8100080d200023fd6e50741f8e40fc1a8e207c1a8a50001ab400003ab420004ab");
+        assert_snapshot!(cb.hexdump(), @"200080d2410080d2620080d2830080d2a40080d2e103bfa9e30bbfa9e40f1ff8100080d200023fd6e40741f8e30bc1a8e103c1a8000001ab400003ab400004ab");
     }
 
     #[test]
