@@ -3883,8 +3883,8 @@ gc_sweep_finish_heap(rb_objspace_t *objspace, rb_heap_t *heap)
                     heap_allocatable_slots_expand(objspace, heap, swept_slots, heap->total_slots);
                 }
             }
-            else if (swept_slots < min_free_slots / 2 &&
-                     objspace->heap_pages.allocatable_slots < (min_free_slots / 2 - swept_slots)) {
+            else if (swept_slots < min_free_slots * 7 / 8 &&
+                     objspace->heap_pages.allocatable_slots < (min_free_slots * 7 / 8 - swept_slots)) {
                 gc_needs_major_flags |= GPR_FLAG_MAJOR_BY_NOFREE;
                 heap->force_major_gc_count++;
             }
@@ -5511,7 +5511,7 @@ gc_marks_finish(rb_objspace_t *objspace)
         }
 
         if (objspace->heap_pages.allocatable_slots == 0 && sweep_slots < min_free_slots) {
-            if (!full_marking) {
+            if (!full_marking && sweep_slots < min_free_slots * 7 / 8) {
                 if (objspace->profile.count - objspace->rgengc.last_major_gc < RVALUE_OLD_AGE) {
                     full_marking = TRUE;
                 }
