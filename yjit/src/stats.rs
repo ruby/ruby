@@ -248,6 +248,7 @@ pub const DEFAULT_COUNTERS: &'static [Counter] = &[
     Counter::compiled_blockid_count,
     Counter::compiled_block_count,
     Counter::deleted_defer_block_count,
+    Counter::exceptional_entry_escaped_env,
     Counter::compiled_branch_count,
     Counter::compile_time_ns,
     Counter::compilation_failure,
@@ -598,6 +599,8 @@ make_counters! {
 
     iseq_stack_too_large,
     iseq_too_long,
+
+    exceptional_entry_escaped_env,
 
     temp_reg_opnd,
     temp_mem_opnd,

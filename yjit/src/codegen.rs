@@ -234,20 +234,36 @@ impl<'a> JITState<'a> {
         result
     }
 
-    /// Return true if the current ISEQ could escape an environment.
+    /// Return true if the JIT code can use [`Self::assume_no_ep_escape`]
+    /// and will run with an on-stack (`!VM_ENV_ESCAPED_P`) environment.
     ///
-    /// As of vm_push_frame(), EP is always equal to BP. However, after pushing
-    /// a frame, some ISEQ setups call vm_bind_update_env(), which redirects EP.
-    /// Also, some method calls escape the environment to the heap.
-    fn escapes_ep(&self) -> bool {
+    /// ## Reasoning about ISEQs that are not currently running
+    ///
+    /// As of vm_push_frame() and its JIT code equivalent, EP is always equal to BP (the
+    /// environment is on-stack and has not escaped). We can usually assume this is the starting
+    /// condition upon entry into JIT code. However, after pushing a frame and before entry into
+    /// JIT code, some ISEQ setups call vm_bind_update_env(), which redirects EP.
+    ///
+    /// ## After making the assumption
+    ///
+    /// After JIT code entry, many ruby operations can have the environment escape to heap. These
+    /// are handled by [`crate::invariants`].
+    ///
+    /// Exceptional entry through jit_exec_exception() is an extreme case of the environment state
+    /// changing between vm_push_frame() and entry into JIT code. The frame could have been pushed
+    /// before YJIT is enabled. The exception entry point refuses entry with an escaped environment.
+    fn can_assume_on_stack_env(&self) -> bool {
         match unsafe { get_iseq_body_type(self.iseq) } {
             // <main> frame is always associated to TOPLEVEL_BINDING.
             ISEQ_TYPE_MAIN |
             // Kernel#eval uses a heap EP when a Binding argument is not nil.
-            ISEQ_TYPE_EVAL => true,
-            // If this ISEQ has previously escaped EP, give up the optimization.
-            _ if iseq_escapes_ep(self.iseq) => true,
-            _ => false,
+            ISEQ_TYPE_EVAL => false,
+            // Check the running environment if compiling for it
+            _ if unsafe { self.iseq == get_cfp_iseq(self.get_cfp()) && cfp_env_has_escaped(self.get_cfp()) } => false,
+            // If we've seen this ISEQ run with an escaped environment, give up the optimization
+            // to avoid excessive invalidations (even though it may be fine for soundness).
+            _ if seen_escaped_env(self.iseq) => false,
+            _ => true,
         }
     }
 
@@ -376,8 +392,8 @@ impl<'a> JITState<'a> {
         if jit_ensure_block_entry_exit(self, asm).is_none() {
             return false; // out of space, give up
         }
-        if self.escapes_ep() {
-            return false; // EP has been escaped in this ISEQ. disable the optimization to avoid an invalidation loop.
+        if !self.can_assume_on_stack_env() {
+            return false; // Unsound or unprofitable to make the assumption
         }
         self.no_ep_escape = true;
         true
@@ -2448,7 +2464,7 @@ fn gen_getlocal_generic(
     level: u32,
 ) -> Option<CodegenStatus> {
     // Split the block if we need to invalidate this instruction when EP escapes
-    if level == 0 && !jit.escapes_ep() && !jit.at_compile_target() {
+    if level == 0 && jit.can_assume_on_stack_env() && !jit.at_compile_target() {
         return jit.defer_compilation(asm);
     }
 
@@ -2549,7 +2565,7 @@ fn gen_setlocal_generic(
     }
 
     // Split the block if we need to invalidate this instruction when EP escapes
-    if level == 0 && !jit.escapes_ep() && !jit.at_compile_target() {
+    if level == 0 && jit.can_assume_on_stack_env() && !jit.at_compile_target() {
         return jit.defer_compilation(asm);
     }
 
