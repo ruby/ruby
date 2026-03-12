@@ -142,7 +142,7 @@ class RubyWorktree
       end
     else
       LOG.info("Creating worktree for ref '#{@ref.ref}' at #{@path}")
-      @runner.cmd('git', 'worktree', 'add', '--force', '--detach', @path, @ref.commit_hash)
+      @runner.cmd('git', 'worktree', 'add', '--detach', @path, @ref.commit_hash)
     end
   end
 end
