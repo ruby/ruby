@@ -2938,7 +2938,7 @@ impl Assembler
         });
 
         #[cfg(feature = "disasm")]
-        if let Some(dump_disasm) = get_option_ref!(dump_disasm).filter(|_| ret.is_ok()) {
+        if let Some(dump_disasm) = crate::options::get_option_ref!(dump_disasm).filter(|_| ret.is_ok()) {
             let end_addr = cb.get_write_ptr();
             crate::disasm::dump_disasm_addr_range(cb, start_addr, end_addr, dump_disasm);
         }

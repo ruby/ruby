@@ -1,4 +1,4 @@
-use crate::{asm::{CodeBlock, CodePtr}, options::DumpDisasm};
+use crate::{asm::CodeBlock, options::DumpDisasm, virtualmem::CodePtr};
 
 /// Dump disassembly for a range in a [CodeBlock].
 pub fn dump_disasm_addr_range(cb: &CodeBlock, start_addr: CodePtr, end_addr: CodePtr, dump_disasm: &DumpDisasm) {
