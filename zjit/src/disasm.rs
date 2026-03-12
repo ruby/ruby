@@ -1,4 +1,24 @@
-use crate::asm::CodeBlock;
+use crate::{asm::{CodeBlock, CodePtr}, options::DumpDisasm};
+
+/// Dump disassembly for a range in a [CodeBlock].
+pub fn dump_disasm_addr_range(cb: &CodeBlock, start_addr: CodePtr, end_addr: CodePtr, dump_disasm: &DumpDisasm) {
+    let disasm = disasm_addr_range(cb, start_addr.raw_ptr(cb) as usize, end_addr.raw_ptr(cb) as usize);
+    if disasm.is_empty() {
+        return;
+    }
+
+    match dump_disasm {
+        DumpDisasm::Stdout => println!("{disasm}"),
+        DumpDisasm::File(fd) => {
+            use std::io::Write;
+            use std::os::unix::io::{FromRawFd, IntoRawFd};
+
+            let mut file = unsafe { std::fs::File::from_raw_fd(*fd) };
+            file.write_all(disasm.as_bytes()).unwrap();
+            let _ = file.into_raw_fd();
+        }
+    }
+}
 
 pub fn disasm_addr_range(cb: &CodeBlock, start_addr: usize, end_addr: usize) -> String {
     use std::fmt::Write;
