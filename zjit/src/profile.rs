@@ -487,6 +487,8 @@ fn profile_jit_operand(iseq: IseqPtr, insn_idx: u32, operand_idx: u32, total_ope
         profile.num_profiles[idx] = profile.num_profiles[idx].saturating_add(1);
 
         // Once we've gathered enough profiles, clear the JIT entry to trigger recompilation
+        // TODO(max): Call a more generic "Iseq::change_state" method that handles the full
+        // lifecycle of a method.
         if profile.num_profiles[idx] >= JIT_PROFILE_THRESHOLD {
             unsafe { rb_iseq_reset_jit_func(iseq) };
         }
