@@ -491,7 +491,7 @@ fn profile_jit_operands(iseq: IseqPtr, insn_idx: u32, values: *const VALUE, num_
     // TODO(max): Call a more generic "Iseq::change_state" method that handles the full
     // lifecycle of a method.
     if profile.num_profiles[idx] >= JIT_PROFILE_THRESHOLD {
-        unsafe { rb_iseq_reset_jit_func(iseq) };
+        unsafe { rb_iseq_clear_jit_func(iseq) };
     }
 }
 

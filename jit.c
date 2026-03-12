@@ -583,6 +583,16 @@ rb_iseq_reset_jit_func(const rb_iseq_t *iseq)
     iseq->body->jit_exception_calls = 0;
 }
 
+// Clear the JIT entry point without resetting the call counters.
+// Used by the profiler to trigger recompilation on the next call.
+void
+rb_iseq_clear_jit_func(const rb_iseq_t *iseq)
+{
+    RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
+    iseq->body->jit_entry = NULL;
+    iseq->body->jit_exception = NULL;
+}
+
 // Callback data for rb_jit_for_each_iseq
 struct iseq_callback_data {
     rb_iseq_callback callback;

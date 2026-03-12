@@ -318,6 +318,7 @@ fn main() {
         .allowlist_function("rb_jit_vm_unlock")
         .allowlist_function("rb_jit_for_each_iseq")
         .allowlist_function("rb_iseq_reset_jit_func")
+        .allowlist_function("rb_iseq_clear_jit_func")
         .allowlist_function("rb_vm_barrier")
 
         // Not sure why it's picking these up, but don't.
