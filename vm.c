@@ -930,7 +930,7 @@ rb_control_frame_t *
 rb_vm_get_binding_creatable_next_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
 {
     while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(ec, cfp)) {
-        if (cfp->iseq) {
+        if (cfp->iseq || cfp->jit_return) {
             return (rb_control_frame_t *)cfp;
         }
         cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
@@ -1678,8 +1678,8 @@ rb_vm_make_binding(const rb_execution_context_t *ec, const rb_control_frame_t *s
     GetBindingPtr(bindval, bind);
     vm_bind_update_env(bindval, bind, envval);
     RB_OBJ_WRITE(bindval, &bind->block.as.captured.self, cfp->self);
-    RB_OBJ_WRITE(bindval, &bind->block.as.captured.code.iseq, cfp->iseq);
-    RB_OBJ_WRITE(bindval, &bind->pathobj, ISEQ_BODY(ruby_level_cfp->iseq)->location.pathobj);
+    RB_OBJ_WRITE(bindval, &bind->block.as.captured.code.iseq, rb_zjit_cfp_iseq(cfp));
+    RB_OBJ_WRITE(bindval, &bind->pathobj, ISEQ_BODY(rb_zjit_cfp_iseq(ruby_level_cfp))->location.pathobj);
     bind->first_lineno = rb_vm_get_sourceline(ruby_level_cfp);
 
     return bindval;
