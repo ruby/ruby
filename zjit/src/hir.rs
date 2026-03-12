@@ -2050,10 +2050,12 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::IncrCounter(counter) => write!(f, "IncrCounter {counter:?}"),
             Insn::CheckInterrupts { .. } => write!(f, "CheckInterrupts"),
-            Insn::Profile { insn_idx, operands, .. } => {
-                write!(f, "Profile insn_idx:{insn_idx}")?;
+            Insn::Profile { operands, .. } => {
+                write!(f, "Profile")?;
+                let mut sep = " ";
                 for opnd in operands {
-                    write!(f, ", {opnd}")?;
+                    write!(f, "{sep}{opnd}")?;
+                    sep = ", ";
                 }
                 Ok(())
             }
@@ -5261,6 +5263,8 @@ impl Function {
                     // completely drop the branch from the block.
                     Insn::IfTrue { val, .. } if self.is_a(val, Type::from_cbool(false)) => continue,
                     Insn::IfFalse { val, .. } if self.is_a(val, Type::from_cbool(true)) => continue,
+                    // TODO(max): Fold Profile instructions away if we have more type information
+                    // about them statically than BasicObject
                     _ => insn_id,
                 };
                 // If we're adding a new instruction, mark the two equivalent in the union-find and
@@ -7726,7 +7730,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     // If there's no profile data for this send, inject a Profile instruction
                     // to gather type information from JIT code. After enough profiles,
                     // the JIT entry will be cleared to trigger recompilation with the new data.
-                    if profiles.payload.profile.get_operand_types(exit_state.insn_idx).is_none() {
+                    if profiles.payload.profile.get_operand_types(exit_state.insn_idx).map_or(0, |d| d.len()) == 0 {
                         // Build operands list: receiver first, then args (matching interpreter order)
                         let mut operands = vec![recv];
                         operands.extend_from_slice(&args);
