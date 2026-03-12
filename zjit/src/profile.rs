@@ -459,21 +459,25 @@ const JIT_PROFILE_THRESHOLD: u32 = 5;
 /// After enough profiles are gathered, clears the JIT entry point to trigger recompilation
 /// with the newly gathered profile data.
 #[unsafe(no_mangle)]
-pub extern "C" fn rb_zjit_profile_jit_operands(iseq: IseqPtr, insn_idx: u32, values: *const VALUE, num_operands: u32) {
+pub extern "C" fn rb_zjit_profile_jit_operands(iseq: IseqPtr, insn_idx: u32, values: *const VALUE, num_operands: u32, version_num: u32) {
     with_vm_lock(src_loc!(), || {
-        profile_jit_operands(iseq, insn_idx, values, num_operands);
+        profile_jit_operands(iseq, insn_idx, values, num_operands, version_num);
     });
 }
 
-fn profile_jit_operands(iseq: IseqPtr, insn_idx: u32, values: *const VALUE, num_operands: u32) {
-    let profile = &mut get_or_create_iseq_payload(iseq).profile;
-    let idx = insn_idx as usize;
-    let n = num_operands as usize;
+fn profile_jit_operands(iseq: IseqPtr, insn_idx: u32, values: *const VALUE, num_operands: u32, version_num: u32) {
+    let payload = get_or_create_iseq_payload(iseq);
 
-    // Stop profiling if we've already gathered enough data for this call site
-    if profile.num_profiles[idx] >= JIT_PROFILE_THRESHOLD {
+    // Only invalidate if this Profile instruction belongs to the current version.
+    // Old on-stack JIT code from a previous version may still execute Profile
+    // instructions after a newer version has been compiled.
+    if payload.versions.len() != version_num as usize + 1 {
         return;
     }
+
+    let profile = &mut payload.profile;
+    let idx = insn_idx as usize;
+    let n = num_operands as usize;
 
     // Ensure the type distribution array is sized for all operands
     let types = &mut profile.opnd_types[idx];
@@ -497,7 +501,6 @@ fn profile_jit_operands(iseq: IseqPtr, insn_idx: u32, values: *const VALUE, num_
     // TODO(max): Call a more generic "Iseq::change_state" method that handles the full
     // lifecycle of a method.
     if profile.num_profiles[idx] >= JIT_PROFILE_THRESHOLD {
-        let payload = get_or_create_iseq_payload(iseq);
         if let Some(version) = payload.versions.last_mut() {
             unsafe { version.as_mut() }.status = IseqStatus::Invalidated;
         }

@@ -26,7 +26,7 @@ impl IseqPayload {
     }
 
     pub fn should_gather_profiles(&self) -> bool {
-        self.num_versions() == 0
+        self.num_versions() < crate::codegen::MAX_ISEQ_VERSIONS
     }
 }
 

@@ -1167,12 +1167,14 @@ fn gen_check_interrupts(jit: &mut JITState, asm: &mut Assembler, state: &FrameSt
 /// rb_zjit_profile_jit_operands which profiles all operands and triggers recompilation.
 fn gen_profile(asm: &mut Assembler, iseq: IseqPtr, insn_idx: u32, operands: Vec<lir::Opnd>) {
     use crate::profile::rb_zjit_profile_jit_operands;
+    let version_num = get_or_create_iseq_payload(iseq).versions.len() as u32;
     let values_ptr = gen_push_opnds(asm, &operands);
     asm_ccall!(asm, rb_zjit_profile_jit_operands,
         Opnd::Value(VALUE::from(iseq)),
         (insn_idx as u64).into(),
         values_ptr,
-        (operands.len() as u64).into()
+        (operands.len() as u64).into(),
+        (version_num as u64).into()
     );
     gen_pop_opnds(asm, &operands);
 }
