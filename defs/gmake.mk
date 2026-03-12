@@ -453,8 +453,10 @@ include $(top_srcdir)/defs/jit.mk
 # Query on the generated rdoc
 #
 #   $ make rdoc:Integer#+
-rdoc\:%: PHONY
-	$(Q)$(RUNRUBY) $(srcdir)/libexec/ri --no-standard-docs --doc-dir=$(RDOCOUT) $(patsubst rdoc:%,%,$@)
+rdoc\:%: PHONY programs $(RDOCOUT) update-default-gemspecs
+	$(Q)$(RUNRUBY) $(RUNOPT0) -I$(tooldir)/lib -rbundled_gem \
+	    -e "load BundledGem.command('rdoc', 'ri')" -- \
+	    --no-standard-docs --doc-dir=$(RDOCOUT) $(patsubst rdoc:%,%,$@)
 
 test_%.rb test/%: programs PHONY
 	$(Q)$(exec) $(RUNRUBY) "$(TESTSDIR)/runner.rb" --ruby="$(RUNRUBY)" $(TEST_EXCLUDES) $(TESTOPTS) -- $(patsubst test/%,%,$@)
