@@ -1760,7 +1760,8 @@ mod tests {
 
         asm.frame_teardown(JIT_PRESERVED_REGS);
         assert_disasm_snapshot!(lir_string(&mut asm), @"
-        bb0:
+        test():
+        bb0():
           # bb0(): foo@/tmp/a.rb:1
           FrameSetup 1, x19, x21, x20
           v0 = Add x19, 0x40
@@ -1772,7 +1773,8 @@ mod tests {
           Store Mem32[x20 + 0x10], VReg32(v1)
           Je bb0
           FrameTeardown x19, x21, x20
-          PadPatchPoint
+          CRet v0
+          FrameTeardown x19, x21, x20
         ");
     }
 
@@ -1785,9 +1787,8 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 2);
 
         assert_disasm_snapshot!(cb.disasm(), @"
-            0x0: mov x0, #3
-            0x4: mul x0, x9, x0
-            0x8: mov x1, x0
+        0x0: mov x0, #3
+        0x4: mul x1, x9, x0
         ");
         assert_snapshot!(cb.hexdump(), @"600080d2207d009be10300aa");
     }
@@ -1890,8 +1891,8 @@ mod tests {
 
         // Assert that only 2 instructions were written.
         assert_disasm_snapshot!(cb.disasm(), @"
-        0x0: adds x3, x0, x1
-        0x4: stur x3, [x2]
+        0x0: adds x0, x0, x1
+        0x4: stur x0, [x2]
         ");
         assert_snapshot!(cb.hexdump(), @"030001ab430000f8");
     }
@@ -2114,18 +2115,18 @@ mod tests {
 
         asm.compile_with_num_regs(&mut cb, 0);
         assert_disasm_snapshot!(cb.disasm(), @"
-        0x0: sub x16, sp, #0x305
-        0x4: ldur x16, [x16]
+        0x0: sub x17, sp, #0x305
+        0x4: ldur x16, [x17]
         0x8: stur x16, [x0]
         0xc: sub x15, sp, #0x305
         0x10: ldur x16, [x0]
         0x14: stur x16, [x15]
         0x18: sub x15, sp, #0x305
-        0x1c: sub x16, sp, #0x305
-        0x20: ldur x16, [x16]
+        0x1c: sub x17, sp, #0x305
+        0x20: ldur x16, [x17]
         0x24: stur x16, [x15]
         ");
-        assert_snapshot!(cb.hexdump(), @"f0170cd1100240f8100000f8ef170cd1100040f8f00100f8ef170cd1f0170cd1100240f8f00100f8");
+        assert_snapshot!(cb.hexdump(), @"f1170cd1300240f8100000f8ef170cd1100040f8f00100f8ef170cd1f1170cd1300240f8f00100f8");
     }
 
     #[test]
@@ -2710,14 +2711,14 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
         assert_disasm_snapshot!(cb.disasm(), @"
-            0x0: mov x15, x2
-            0x4: mov x2, x3
-            0x8: mov x3, x15
-            0xc: mov x15, x0
-            0x10: mov x0, x1
-            0x14: mov x1, x15
-            0x18: mov x16, #0
-            0x1c: blr x16
+        0x0: mov x15, x0
+        0x4: mov x0, x1
+        0x8: mov x1, x15
+        0xc: mov x15, x2
+        0x10: mov x2, x3
+        0x14: mov x3, x15
+        0x18: mov x16, #0
+        0x1c: blr x16
         ");
         assert_snapshot!(cb.hexdump(), @"ef0302aae20303aae3030faaef0300aae00301aae1030faa100080d200023fd6");
     }
@@ -2858,9 +2859,7 @@ mod tests {
         0x0: mov x16, #1
         0x4: stur x16, [x29, #-8]
         0x8: ldur x15, [x29, #-8]
-        0xc: lsl x15, x15, #1
-        0x10: stur x15, [x29, #-8]
-        0x14: ldur x0, [x29, #-8]
+        0xc: lsl x0, x15, #1
         ");
         assert_snapshot!(cb.hexdump(), @"300080d2b0831ff8af835ff8eff97fd3af831ff8a0835ff8");
     }

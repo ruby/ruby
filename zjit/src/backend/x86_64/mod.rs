@@ -1522,10 +1522,7 @@ mod tests {
         asm.mov(SP, sp); // should be merged to lea
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @"
-        0x0: lea rdi, [rbx + 8]
-        0x4: mov rbx, rdi
-        ");
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: lea rbx, [rbx + 8]");
         assert_snapshot!(cb.hexdump(), @"488d7b084889fb");
     }
 
@@ -1681,13 +1678,8 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
         assert_disasm_snapshot!(cb.disasm(), @"
-        0x0: mov r11, rsi
-        0x3: mov rsi, r11
-        0x6: mov r11, rdi
-        0x9: mov rdi, r11
-        0xc: mov eax, 0
-        0x11: call rax
-        0x13: mov rdi, rax
+        0x0: mov eax, 0
+        0x5: call rax
         ");
         assert_snapshot!(cb.hexdump(), @"4989f34c89de4989fb4c89dfb800000000ffd04889c7");
     }
@@ -1706,14 +1698,11 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
         assert_disasm_snapshot!(cb.disasm(), @"
-        0x0: mov r11, rdx
-        0x3: mov rdx, r11
-        0x6: mov r11, rsi
-        0x9: mov rsi, rdi
-        0xc: mov rdi, r11
-        0xf: mov eax, 0
-        0x14: call rax
-        0x16: mov rdi, rax
+        0x0: mov r11, rsi
+        0x3: mov rsi, rdi
+        0x6: mov rdi, r11
+        0x9: mov eax, 0
+        0xe: call rax
         ");
         assert_snapshot!(cb.hexdump(), @"4989d34c89da4989f34889fe4c89dfb800000000ffd04889c7");
     }
@@ -1741,7 +1730,6 @@ mod tests {
         0xf: mov rdi, r11
         0x12: mov eax, 0
         0x17: call rax
-        0x19: mov rdi, rax
         ");
         assert_snapshot!(cb.hexdump(), @"4989cb4889d14c89da4989f34889fe4c89dfb800000000ffd04889c7");
     }
@@ -1766,7 +1754,6 @@ mod tests {
         0x9: mov rsi, r11
         0xc: mov eax, 0
         0x11: call rax
-        0x13: mov rdi, rax
         ");
         assert_snapshot!(cb.hexdump(), @"4989d34889fa4889f74c89deb800000000ffd04889c7");
     }
@@ -1828,16 +1815,14 @@ mod tests {
         0x17: push rcx
         0x18: mov eax, 0
         0x1d: call rax
-        0x1f: mov r11, rax
-        0x22: pop rcx
-        0x23: pop rdx
-        0x24: pop rsi
-        0x25: pop rdi
-        0x26: mov r8, r11
-        0x29: mov rdi, rdi
-        0x2c: add rdi, rsi
-        0x2f: mov rdi, rdx
-        0x32: add rdi, rcx
+        0x1f: pop rcx
+        0x20: pop rdx
+        0x21: pop rsi
+        0x22: pop rdi
+        0x23: mov rdi, rdi
+        0x26: add rdi, rsi
+        0x29: mov rdi, rdx
+        0x2c: add rdi, rcx
         ");
         assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000057565251b800000000ffd04989c3595a5e5f4d89d84889ff4801f74889d74801cf");
     }
@@ -1872,20 +1857,18 @@ mod tests {
         0x20: push rdi
         0x21: mov eax, 0
         0x26: call rax
-        0x28: mov r11, rax
-        0x2b: pop rdi
-        0x2c: pop r8
-        0x2e: pop rcx
-        0x2f: pop rdx
-        0x30: pop rsi
-        0x31: pop rdi
-        0x32: mov r9, r11
-        0x35: mov rdi, rdi
-        0x38: add rdi, rsi
+        0x28: pop rdi
+        0x29: pop r8
+        0x2b: pop rcx
+        0x2c: pop rdx
+        0x2d: pop rsi
+        0x2e: pop rdi
+        0x2f: mov rdi, rdi
+        0x32: add rdi, rsi
+        0x35: mov rdi, rdx
+        0x38: add rdi, rcx
         0x3b: mov rdi, rdx
-        0x3e: add rdi, rcx
-        0x41: mov rdi, rdx
-        0x44: add rdi, r8
+        0x3e: add rdi, r8
         ");
         assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b80500000057565251415057b800000000ffd04989c35f4158595a5e5f4d89d94889ff4801f74889d74801cf4889d74c01c7");
     }
