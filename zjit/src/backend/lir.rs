@@ -4767,6 +4767,7 @@ mod tests {
         let sp = NATIVE_STACK_PTR;
         let new_sp = asm.add(sp, 0x20.into());
         asm.mov(sp, new_sp);
+        asm.cret(sp);
 
         asm.number_instructions(0);
         let live_in = asm.analyze_liveness();
