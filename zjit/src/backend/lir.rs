@@ -2500,6 +2500,7 @@ impl Assembler
                             destination: Opnd::Reg(*param),
                             source: Self::rewritten_opnd(*arg, assignments),
                         })
+                        .filter(|copy| copy.source != copy.destination)
                         .collect();
 
                     debug_assert!(reg_copies.iter().all(|c| !c.source.is_vreg() && !c.destination.is_vreg()),
