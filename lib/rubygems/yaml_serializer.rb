@@ -132,6 +132,8 @@ module Gem
           @lines.any? && current_indent > indent ? parse_node(indent) : nil
         elsif content.start_with?("!ruby/object:")
           parse_tagged_content(content.strip, indent)
+        elsif content.start_with?("!binary ")
+          parse_binary_value(content, indent)
         elsif content.start_with?("-")
           @lines.unshift("#{" " * (indent + 2)}#{content}")
           parse_node(indent)
@@ -156,6 +158,8 @@ module Gem
           @lines.shift
           val = strip_comment($2.to_s.strip)
 
+          key = decode_binary_tag(key) if key.start_with?("!binary ")
+
           val_anchor, val = consume_value_anchor(val)
           value = parse_mapping_value(val, indent)
           value = register_anchor(val_anchor, value) if val_anchor
@@ -170,6 +174,8 @@ module Gem
           parse_inline_alias(val)
         elsif val.start_with?("!ruby/object:")
           parse_tagged_content(val.strip, indent)
+        elsif val.start_with?("!binary ")
+          parse_binary_value(val, indent)
         elsif val.empty?
           next_stripped = nil
           next_indent = nil
@@ -303,6 +309,22 @@ module Gem
           val.to_i
         else
           val
+        end
+      end
+
+      def decode_binary_tag(str)
+        content = str.sub(/\A!binary\s+/, "")
+        content = $1 if content =~ /\A"(.*)"\z/ || content =~ /\A'(.*)'\z/
+        content.unpack1("m")
+      end
+
+      def parse_binary_value(val, indent)
+        rest = val.sub(/\A!binary\s+/, "")
+        if rest.start_with?("|")
+          content = parse_block_scalar(indent, rest[1..].to_s.strip)
+          Scalar.new(value: content.unpack1("m"))
+        else
+          Scalar.new(value: decode_binary_tag(val))
         end
       end
 
