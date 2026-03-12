@@ -101,6 +101,12 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, jit_exception: boo
     // Take a lock to avoid writing to ISEQ in parallel with Ractors.
     // with_vm_lock() does nothing if the program doesn't use Ractors.
     with_vm_lock(src_loc!(), || {
+        // Don't compile new code while TracePoint is active, since newly compiled code
+        // won't have its NoTracePoint PatchPoints patched and would skip trace events.
+        if ZJITState::get_invariants().tracing_enabled() {
+            return std::ptr::null();
+        }
+
         let cb = ZJITState::get_code_block();
         let mut code_ptr = with_time_stat(compile_time_ns, || gen_iseq_entry_point(cb, iseq, jit_exception));
 
