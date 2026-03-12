@@ -558,6 +558,8 @@ ACTIONS_ENDGROUP = @::
 
 ABI_VERSION_HDR = $(hdrdir)/ruby/internal/abi.h
 
+DUMP_AST = dump_ast$(EXEEXT)
+
 !include $(srcdir)/common.mk
 
 !ifdef SCRIPTPROGRAMS

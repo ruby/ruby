@@ -413,6 +413,10 @@ ifneq ($(DOT_WAIT),)
 up:: $(DOT_WAIT) after-update
 endif
 
+ifneq ($(CC),false)
+$(BUILTIN_RB_INCS): $(DUMP_AST)
+endif
+
 ifneq ($(filter update-bundled_gems refresh-gems,$(MAKECMDGOALS)),)
 update-gems: update-bundled_gems
 endif

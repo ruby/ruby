@@ -124,6 +124,7 @@ jobs:
           ../src/configure \
             --host wasm32-unknown-wasi \
             --with-baseruby=$PWD/../baseruby/install/bin/ruby \
+            --with-dump-ast=$PWD/../baseruby/dump_ast \
             --with-static-linked-ext \
             --with-ext=cgi/escape,continuation,coverage,date,digest/bubblebabble,digest,digest/md5,digest/rmd160,digest/sha1,digest/sha2,etc,fcntl,json,json/generator,json/parser,objspace,pathname,rbconfig/sizeof,ripper,stringio,strscan,monitor \
             LDFLAGS=" \
