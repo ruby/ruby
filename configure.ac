@@ -111,6 +111,12 @@ AS_IF([test "$HAVE_BASERUBY" = no], [
 AC_SUBST(BASERUBY)
 AC_SUBST(HAVE_BASERUBY)
 
+AC_ARG_WITH(dump-ast,
+	AS_HELP_STRING([--with-dump-ast=DUMP_AST], [use DUMP_AST as dump_ast; for cross-compiling with a host-built dump_ast]),
+	[DUMP_AST=$withval],
+	[DUMP_AST='./dump_ast$(EXEEXT)'])
+AC_SUBST(DUMP_AST)
+
 : ${GIT=git}
 HAVE_GIT=yes
 AC_ARG_WITH(git,

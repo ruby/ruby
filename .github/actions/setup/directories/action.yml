@@ -145,6 +145,7 @@ runs:
       run: |
         rm -f config.status .rbconfig.time \
           Makefile GNUmakefile uncommon.mk enc.mk noarch-fake.rb
+        rm -f prism/.time prism/util/.time
 
     - if: steps.which.outputs.sudo
       shell: bash
