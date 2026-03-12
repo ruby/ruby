@@ -5263,8 +5263,13 @@ impl Function {
                     // completely drop the branch from the block.
                     Insn::IfTrue { val, .. } if self.is_a(val, Type::from_cbool(false)) => continue,
                     Insn::IfFalse { val, .. } if self.is_a(val, Type::from_cbool(true)) => continue,
-                    // TODO(max): Fold Profile instructions away if we have more type information
-                    // about them statically than BasicObject
+                    // TODO(max): Make this check "is strict subset of" instead of "is not equal to"
+                    Insn::Profile { ref operands, .. } if operands.iter().any(|&o| !self.type_of(o).bit_equal(types::BasicObject)) => {
+                        // If we have learned some profile information about the operands
+                        // statically (they are constants, or return types from known C methods, or
+                        // ...), don't profile them at run-time.
+                        continue
+                    }
                     _ => insn_id,
                 };
                 // If we're adding a new instruction, mark the two equivalent in the union-find and

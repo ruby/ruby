@@ -110,11 +110,7 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
           v12:Fixnum[2] = Const Value(2)
-          Profile v10, v12
           PatchPoint MethodRedefined(Integer@0x1000, +@0x1008, cme:0x1010)
-          v34:Fixnum[3] = Const Value(3)
-          v18:Fixnum[3] = Const Value(3)
-          Profile v34, v18
           v35:Fixnum[6] = Const Value(6)
           CheckInterrupts
           Return v35
@@ -141,11 +137,7 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:Fixnum[5] = Const Value(5)
           v12:Fixnum[3] = Const Value(3)
-          Profile v10, v12
           PatchPoint MethodRedefined(Integer@0x1000, -@0x1008, cme:0x1010)
-          v34:Fixnum[2] = Const Value(2)
-          v18:Fixnum[1] = Const Value(1)
-          Profile v34, v18
           v35:Fixnum[1] = Const Value(1)
           CheckInterrupts
           Return v35
@@ -172,7 +164,6 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:Fixnum[0] = Const Value(0)
           v12:Fixnum[1073741825] = Const Value(1073741825)
-          Profile v10, v12
           PatchPoint MethodRedefined(Integer@0x1000, -@0x1008, cme:0x1010)
           v25:Fixnum[-1073741825] = Const Value(-1073741825)
           CheckInterrupts
@@ -200,7 +191,6 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:Fixnum[6] = Const Value(6)
           v12:Fixnum[7] = Const Value(7)
-          Profile v10, v12
           PatchPoint MethodRedefined(Integer@0x1000, *@0x1008, cme:0x1010)
           v25:Fixnum[42] = Const Value(42)
           CheckInterrupts
@@ -264,7 +254,6 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:Fixnum[7] = Const Value(7)
           v12:Fixnum[3] = Const Value(3)
-          Profile v10, v12
           PatchPoint MethodRedefined(Integer@0x1000, /@0x1008, cme:0x1010)
           v25:Fixnum[2] = Const Value(2)
           CheckInterrupts
@@ -292,7 +281,6 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:Fixnum[7] = Const Value(7)
           v12:Fixnum[0] = Const Value(0)
-          Profile v10, v12
           PatchPoint MethodRedefined(Integer@0x1000, /@0x1008, cme:0x1010)
           v24:Fixnum = FixnumDiv v10, v12
           CheckInterrupts
@@ -320,7 +308,6 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:Fixnum[7] = Const Value(7)
           v12:Fixnum[-3] = Const Value(-3)
-          Profile v10, v12
           PatchPoint MethodRedefined(Integer@0x1000, /@0x1008, cme:0x1010)
           v25:Fixnum[-3] = Const Value(-3)
           CheckInterrupts
@@ -348,7 +335,6 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:Fixnum[-4611686018427387904] = Const Value(-4611686018427387904)
           v12:Fixnum[-1] = Const Value(-1)
-          Profile v10, v12
           PatchPoint MethodRedefined(Integer@0x1000, /@0x1008, cme:0x1010)
           v24:Fixnum = FixnumDiv v10, v12
           CheckInterrupts
@@ -376,7 +362,6 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:Fixnum[0] = Const Value(0)
           v12:Fixnum[0] = Const Value(0)
-          Profile v10, v12
           PatchPoint MethodRedefined(Integer@0x1000, %@0x1008, cme:0x1010)
           v24:Fixnum = FixnumMod v10, v12
           CheckInterrupts
@@ -404,7 +389,6 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:Fixnum[11] = Const Value(11)
           v12:Fixnum[0] = Const Value(0)
-          Profile v10, v12
           PatchPoint MethodRedefined(Integer@0x1000, %@0x1008, cme:0x1010)
           v24:Fixnum = FixnumMod v10, v12
           CheckInterrupts
@@ -432,7 +416,6 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:Fixnum[0] = Const Value(0)
           v12:Fixnum[11] = Const Value(11)
-          Profile v10, v12
           PatchPoint MethodRedefined(Integer@0x1000, %@0x1008, cme:0x1010)
           v25:Fixnum[0] = Const Value(0)
           CheckInterrupts
@@ -460,7 +443,6 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:Fixnum[11] = Const Value(11)
           v12:Fixnum[3] = Const Value(3)
-          Profile v10, v12
           PatchPoint MethodRedefined(Integer@0x1000, %@0x1008, cme:0x1010)
           v25:Fixnum[2] = Const Value(2)
           CheckInterrupts
@@ -488,7 +470,6 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:Fixnum[-7] = Const Value(-7)
           v12:Fixnum[3] = Const Value(3)
-          Profile v10, v12
           PatchPoint MethodRedefined(Integer@0x1000, %@0x1008, cme:0x1010)
           v25:Fixnum[2] = Const Value(2)
           CheckInterrupts
@@ -516,7 +497,6 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:Fixnum[7] = Const Value(7)
           v12:Fixnum[-3] = Const Value(-3)
-          Profile v10, v12
           PatchPoint MethodRedefined(Integer@0x1000, %@0x1008, cme:0x1010)
           v25:Fixnum[-2] = Const Value(-2)
           CheckInterrupts
@@ -544,7 +524,6 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:Fixnum[-7] = Const Value(-7)
           v12:Fixnum[-3] = Const Value(-3)
-          Profile v10, v12
           PatchPoint MethodRedefined(Integer@0x1000, %@0x1008, cme:0x1010)
           v25:Fixnum[-1] = Const Value(-1)
           CheckInterrupts
@@ -573,7 +552,6 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:Fixnum[2] = Const Value(2)
           v12:Fixnum[5] = Const Value(5)
-          Profile v10, v12
           PatchPoint MethodRedefined(Integer@0x1000, ^@0x1008, cme:0x1010)
           v24:Fixnum[7] = Const Value(7)
           CheckInterrupts
@@ -602,7 +580,6 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:Fixnum[123] = Const Value(123)
           v12:Fixnum[-123] = Const Value(-123)
-          Profile v10, v12
           PatchPoint MethodRedefined(Integer@0x1000, ^@0x1008, cme:0x1010)
           v24:Fixnum[-2] = Const Value(-2)
           CheckInterrupts
@@ -779,7 +756,6 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
           v12:Fixnum[2] = Const Value(2)
-          Profile v10, v12
           PatchPoint MethodRedefined(Integer@0x1000, <@0x1008, cme:0x1010)
           v43:TrueClass = Const Value(true)
           CheckInterrupts
@@ -812,14 +788,8 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
           v12:Fixnum[2] = Const Value(2)
-          Profile v10, v12
           PatchPoint MethodRedefined(Integer@0x1000, <=@0x1008, cme:0x1010)
           v60:TrueClass = Const Value(true)
-          CheckInterrupts
-          v24:Fixnum[2] = Const Value(2)
-          v26:Fixnum[2] = Const Value(2)
-          Profile v24, v26
-          v62:TrueClass = Const Value(true)
           CheckInterrupts
           v39:Fixnum[3] = Const Value(3)
           Return v39
@@ -850,7 +820,6 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:Fixnum[2] = Const Value(2)
           v12:Fixnum[1] = Const Value(1)
-          Profile v10, v12
           PatchPoint MethodRedefined(Integer@0x1000, >@0x1008, cme:0x1010)
           v43:TrueClass = Const Value(true)
           CheckInterrupts
@@ -883,14 +852,8 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:Fixnum[2] = Const Value(2)
           v12:Fixnum[1] = Const Value(1)
-          Profile v10, v12
           PatchPoint MethodRedefined(Integer@0x1000, >=@0x1008, cme:0x1010)
           v60:TrueClass = Const Value(true)
-          CheckInterrupts
-          v24:Fixnum[2] = Const Value(2)
-          v26:Fixnum[2] = Const Value(2)
-          Profile v24, v26
-          v62:TrueClass = Const Value(true)
           CheckInterrupts
           v39:Fixnum[3] = Const Value(3)
           Return v39
@@ -921,7 +884,6 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
           v12:Fixnum[2] = Const Value(2)
-          Profile v10, v12
           PatchPoint MethodRedefined(Integer@0x1000, ==@0x1008, cme:0x1010)
           v43:FalseClass = Const Value(false)
           CheckInterrupts
@@ -954,7 +916,6 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:Fixnum[2] = Const Value(2)
           v12:Fixnum[2] = Const Value(2)
-          Profile v10, v12
           PatchPoint MethodRedefined(Integer@0x1000, ==@0x1008, cme:0x1010)
           v43:TrueClass = Const Value(true)
           CheckInterrupts
@@ -1905,7 +1866,6 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
           v12:Fixnum[2] = Const Value(2)
-          Profile v10, v12
           PatchPoint MethodRedefined(Integer@0x1000, []@0x1008, cme:0x1010)
           v20:Fixnum[5] = Const Value(5)
           CheckInterrupts
@@ -1932,7 +1892,6 @@ mod hir_opt_tests {
           v10:Fixnum[1] = Const Value(1)
           v12:Fixnum[2] = Const Value(2)
           v14:Fixnum[3] = Const Value(3)
-          Profile v10, v12, v14
           PatchPoint MethodRedefined(Integer@0x1000, []@0x1008, cme:0x1010)
           v25:BasicObject = CCallVariadic v10, :Integer#[]@0x1038, v12, v14
           CheckInterrupts
@@ -1959,7 +1918,6 @@ mod hir_opt_tests {
           v10:Fixnum[1] = Const Value(1)
           v12:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v13:StringExact = StringCopy v12
-          Profile v10, v13
           PatchPoint MethodRedefined(Integer@0x1008, []@0x1010, cme:0x1018)
           v25:BasicObject = CCallVariadic v10, :Integer#[]@0x1040, v13
           CheckInterrupts
@@ -3090,7 +3048,6 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v10:ArrayExact = NewArray
-          Profile v10
           PatchPoint NoSingletonClass(Array@0x1000)
           PatchPoint MethodRedefined(Array@0x1000, itself@0x1008, cme:0x1010)
           CheckInterrupts
@@ -3120,7 +3077,6 @@ mod hir_opt_tests {
           Jump bb3(v5, v6)
         bb3(v8:BasicObject, v9:NilClass):
           v13:ArrayExact = NewArray
-          Profile v13
           PatchPoint NoSingletonClass(Array@0x1000)
           PatchPoint MethodRedefined(Array@0x1000, itself@0x1008, cme:0x1010)
           PatchPoint NoEPEscape(test)
@@ -3186,7 +3142,6 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v10:ArrayExact = NewArray
-          Profile v10
           PatchPoint NoSingletonClass(Array@0x1000)
           PatchPoint MethodRedefined(Array@0x1000, length@0x1008, cme:0x1010)
           v18:Fixnum[5] = Const Value(5)
@@ -3328,7 +3283,6 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v10:ArrayExact = NewArray
-          Profile v10
           PatchPoint NoSingletonClass(Array@0x1000)
           PatchPoint MethodRedefined(Array@0x1000, size@0x1008, cme:0x1010)
           v18:Fixnum[5] = Const Value(5)
@@ -3463,7 +3417,6 @@ mod hir_opt_tests {
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
           v14:Fixnum[1] = Const Value(1)
-          Profile v14
           PatchPoint MethodRedefined(Integer@0x1008, zero?@0x1010, cme:0x1018)
           v25:BasicObject = InvokeBuiltin leaf <inline_expr>, v14
           CheckInterrupts
@@ -3497,7 +3450,6 @@ mod hir_opt_tests {
         bb3(v11:BasicObject, v12:BasicObject, v13:NilClass):
           v17:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           v18:ArrayExact = ArrayDup v17
-          Profile v18
           PatchPoint NoSingletonClass(Array@0x1010)
           PatchPoint MethodRedefined(Array@0x1010, first@0x1018, cme:0x1020)
           v33:BasicObject = InvokeBuiltin leaf <inline_expr>, v18
@@ -4623,7 +4575,6 @@ mod hir_opt_tests {
           Jump bb3(v7, v8, v9)
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           v19:ArrayExact = NewArray v12, v13
-          Profile v19
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, length@0x1010, cme:0x1018)
           v32:CInt64 = ArrayLength v19
@@ -4655,7 +4606,6 @@ mod hir_opt_tests {
           Jump bb3(v7, v8, v9)
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           v19:ArrayExact = NewArray v12, v13
-          Profile v19
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, size@0x1010, cme:0x1018)
           v32:CInt64 = ArrayLength v19
@@ -5451,7 +5401,6 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           PatchPoint BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_FREEZE)
           v11:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          Profile v11
           CheckInterrupts
           Return v11
         ");
@@ -5474,7 +5423,6 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v10:HashExact = NewHash
-          Profile v10
           PatchPoint NoSingletonClass(Hash@0x1000)
           PatchPoint MethodRedefined(Hash@0x1000, dup@0x1008, cme:0x1010)
           v25:BasicObject = CCallWithFrame v10, :Kernel#dup@0x1038
@@ -5503,7 +5451,6 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:HashExact = NewHash
           v12:NilClass = Const Value(nil)
-          Profile v10, v12
           v15:BasicObject = Send v10, :freeze, v12 # SendFallbackReason: SendWithoutBlock: unsupported method type Cfunc
           CheckInterrupts
           Return v15
@@ -5551,7 +5498,6 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
           v11:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          Profile v11
           CheckInterrupts
           Return v11
         ");
@@ -5574,7 +5520,6 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v10:ArrayExact = NewArray
-          Profile v10
           PatchPoint NoSingletonClass(Array@0x1000)
           PatchPoint MethodRedefined(Array@0x1000, dup@0x1008, cme:0x1010)
           v25:BasicObject = CCallWithFrame v10, :Kernel#dup@0x1038
@@ -5603,7 +5548,6 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:ArrayExact = NewArray
           v12:NilClass = Const Value(nil)
-          Profile v10, v12
           v15:BasicObject = Send v10, :freeze, v12 # SendFallbackReason: SendWithoutBlock: unsupported method type Cfunc
           CheckInterrupts
           Return v15
@@ -5651,7 +5595,6 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE)
           v11:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          Profile v11
           CheckInterrupts
           Return v11
         ");
@@ -5675,7 +5618,6 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v11:StringExact = StringCopy v10
-          Profile v11
           PatchPoint NoSingletonClass(String@0x1008)
           PatchPoint MethodRedefined(String@0x1008, dup@0x1010, cme:0x1018)
           v26:BasicObject = CCallWithFrame v11, :String#dup@0x1040
@@ -5705,7 +5647,6 @@ mod hir_opt_tests {
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v11:StringExact = StringCopy v10
           v13:NilClass = Const Value(nil)
-          Profile v11, v13
           v16:BasicObject = Send v11, :freeze, v13 # SendFallbackReason: SendWithoutBlock: unsupported method type Cfunc
           CheckInterrupts
           Return v16
@@ -5753,7 +5694,6 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE)
           v11:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          Profile v11
           PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_UMINUS)
           CheckInterrupts
           Return v11
@@ -5778,7 +5718,6 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v11:StringExact = StringCopy v10
-          Profile v11
           PatchPoint NoSingletonClass(String@0x1008)
           PatchPoint MethodRedefined(String@0x1008, dup@0x1010, cme:0x1018)
           v26:BasicObject = CCallWithFrame v11, :String#dup@0x1040
@@ -5996,9 +5935,7 @@ mod hir_opt_tests {
           v13:Fixnum[1] = Const Value(1)
           CheckInterrupts
           v23:Fixnum[1] = RefineType v13, NotNil
-          Profile v23
           PatchPoint MethodRedefined(Integer@0x1000, itself@0x1008, cme:0x1010)
-          CheckInterrupts
           Return v23
         ");
     }
@@ -6059,7 +5996,6 @@ mod hir_opt_tests {
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
           v11:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v13:Fixnum[1] = Const Value(1)
-          Profile v11, v13
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
           v26:CInt64[1] = UnboxFixnum v13
@@ -6092,7 +6028,6 @@ mod hir_opt_tests {
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
           v11:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v13:Fixnum[-3] = Const Value(-3)
-          Profile v11, v13
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
           v26:CInt64[-3] = UnboxFixnum v13
@@ -6125,7 +6060,6 @@ mod hir_opt_tests {
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
           v11:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v13:Fixnum[-10] = Const Value(-10)
-          Profile v11, v13
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
           v26:CInt64[-10] = UnboxFixnum v13
@@ -6158,7 +6092,6 @@ mod hir_opt_tests {
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
           v11:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v13:Fixnum[10] = Const Value(10)
-          Profile v11, v13
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
           v26:CInt64[10] = UnboxFixnum v13
@@ -6194,7 +6127,6 @@ mod hir_opt_tests {
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
           v11:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v13:Fixnum[10] = Const Value(10)
-          Profile v11, v13
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
           v25:BasicObject = SendDirect v11, 0x1040, :[] (0x1050), v13
@@ -6230,7 +6162,6 @@ mod hir_opt_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           v17:Fixnum[1] = Const Value(1)
           v19:Fixnum[10] = Const Value(10)
-          Profile v10, v17, v19
           v24:BasicObject = Send v10, :[]=, v17, v19 # SendFallbackReason: Uncategorized(opt_aset)
           CheckInterrupts
           Return v19
@@ -6258,7 +6189,6 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v11:ArrayExact = ArrayDup v10
-          Profile v11
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, max@0x1010, cme:0x1018)
           v22:BasicObject = SendDirect v11, 0x1040, :max (0x1050)
@@ -6447,7 +6377,6 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v10:NilClass = Const Value(nil)
-          Profile v10
           PatchPoint MethodRedefined(NilClass@0x1000, nil?@0x1008, cme:0x1010)
           v22:TrueClass = Const Value(true)
           CheckInterrupts
@@ -6475,7 +6404,6 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v10:NilClass = Const Value(nil)
-          Profile v10
           PatchPoint MethodRedefined(NilClass@0x1000, nil?@0x1008, cme:0x1010)
           v18:Fixnum[1] = Const Value(1)
           CheckInterrupts
@@ -6500,7 +6428,6 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
-          Profile v10
           PatchPoint MethodRedefined(Integer@0x1000, nil?@0x1008, cme:0x1010)
           v22:FalseClass = Const Value(false)
           CheckInterrupts
@@ -6528,7 +6455,6 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
-          Profile v10
           PatchPoint MethodRedefined(Integer@0x1000, nil?@0x1008, cme:0x1010)
           v18:Fixnum[2] = Const Value(2)
           CheckInterrupts
@@ -8157,7 +8083,6 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v10:ArrayExact = NewArray
-          Profile v10
           PatchPoint NoSingletonClass(Array@0x1000)
           PatchPoint MethodRedefined(Array@0x1000, reverse@0x1008, cme:0x1010)
           v22:ArrayExact = CCallWithFrame v10, :Array#reverse@0x1038
@@ -8186,7 +8111,6 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v10:ArrayExact = NewArray
-          Profile v10
           PatchPoint NoSingletonClass(Array@0x1000)
           PatchPoint MethodRedefined(Array@0x1000, reverse@0x1008, cme:0x1010)
           v17:Fixnum[5] = Const Value(5)
@@ -8214,7 +8138,6 @@ mod hir_opt_tests {
           v10:ArrayExact = NewArray
           v12:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v13:StringExact = StringCopy v12
-          Profile v10, v13
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, join@0x1010, cme:0x1018)
           v25:StringExact = CCallVariadic v10, :Array#join@0x1040, v13
@@ -8241,7 +8164,6 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v11:StringExact = StringCopy v10
-          Profile v11
           PatchPoint NoSingletonClass(String@0x1008)
           PatchPoint MethodRedefined(String@0x1008, to_s@0x1010, cme:0x1018)
           CheckInterrupts
@@ -8267,7 +8189,6 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v11:StringExact = StringCopy v10
-          Profile v11
           PatchPoint NoSingletonClass(String@0x1008)
           PatchPoint MethodRedefined(String@0x1008, to_s@0x1010, cme:0x1018)
           CheckInterrupts
@@ -8413,7 +8334,6 @@ mod hir_opt_tests {
           v13:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v14:ArrayExact = ArrayDup v13
           v19:Fixnum[0] = Const Value(0)
-          Profile v14, v19
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
           v32:CInt64[0] = UnboxFixnum v19
@@ -8530,7 +8450,6 @@ mod hir_opt_tests {
           v13:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v14:HashExact = HashDup v13
           v19:Fixnum[1] = Const Value(1)
-          Profile v14, v19
           PatchPoint NoSingletonClass(Hash@0x1008)
           PatchPoint MethodRedefined(Hash@0x1008, []@0x1010, cme:0x1018)
           v32:BasicObject = HashAref v14, v19
@@ -8661,7 +8580,6 @@ mod hir_opt_tests {
           PatchPoint NoEPEscape(test)
           v22:Fixnum[1] = Const Value(1)
           v24:Fixnum[3] = Const Value(3)
-          Profile v13, v22, v24
           PatchPoint NoSingletonClass(Hash@0x1000)
           PatchPoint MethodRedefined(Hash@0x1000, []=@0x1008, cme:0x1010)
           HashAset v13, v22, v24
@@ -9958,7 +9876,6 @@ mod hir_opt_tests {
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v11:StringExact = StringCopy v10
           v13:StaticSymbol[:a] = Const Value(VALUE(0x1008))
-          Profile v11, v13
           PatchPoint NoSingletonClass(String@0x1010)
           PatchPoint MethodRedefined(String@0x1010, <<@0x1018, cme:0x1020)
           v26:BasicObject = CCallWithFrame v11, :String#<<@0x1048, v13
@@ -9988,7 +9905,6 @@ mod hir_opt_tests {
           v12:Fixnum[3] = Const Value(3)
           v14:Fixnum[3] = Const Value(3)
           v16:Fixnum[3] = Const Value(3)
-          Profile v10, v12, v14, v16
           v19:BasicObject = Send v10, :foo, v12, v14, v16 # SendFallbackReason: Argument count does not match parameter count
           CheckInterrupts
           Return v19
@@ -10042,7 +9958,6 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v10:Fixnum[0] = Const Value(0)
-          Profile v10
           v13:BasicObject = Send v10, :foo # SendFallbackReason: Argument count does not match parameter count
           CheckInterrupts
           Return v13
@@ -10067,7 +9982,6 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:Fixnum[4] = Const Value(4)
           v12:Fixnum[1] = Const Value(1)
-          Profile v10, v12
           v15:BasicObject = Send v10, :succ, v12 # SendFallbackReason: SendWithoutBlock: unsupported method type Cfunc
           CheckInterrupts
           Return v15
