@@ -1157,22 +1157,18 @@ fn gen_check_interrupts(jit: &mut JITState, asm: &mut Assembler, state: &FrameSt
 }
 
 /// Generate code to profile operand types from JIT code.
-/// Calls rb_zjit_profile_jit_operand for each operand, which writes type info
-/// into the IseqProfile and triggers recompilation after enough profiles.
+/// Stack-allocates a VALUE array for the operands, then makes a single call to
+/// rb_zjit_profile_jit_operands which profiles all operands and triggers recompilation.
 fn gen_profile(jit: &mut JITState, asm: &mut Assembler, iseq: IseqPtr, insn_idx: u32, operands: Vec<lir::Opnd>, state: &FrameState) {
-    use crate::profile::rb_zjit_profile_jit_operand;
-    let total = operands.len() as u32;
-    // TODO(max): Maybe we can profile a VALUE* instead of one call per operand
-    for (i, opnd) in operands.into_iter().enumerate() {
-        gen_prepare_non_leaf_call(jit, asm, state);
-        asm_ccall!(asm, rb_zjit_profile_jit_operand,
-            Opnd::Value(VALUE::from(iseq)),
-            (insn_idx as u64).into(),
-            (i as u64).into(),
-            (total as u64).into(),
-            opnd
-        );
-    }
+    use crate::profile::rb_zjit_profile_jit_operands;
+    let values_ptr = gen_push_opnds(asm, &operands);
+    asm_ccall!(asm, rb_zjit_profile_jit_operands,
+        Opnd::Value(VALUE::from(iseq)),
+        (insn_idx as u64).into(),
+        values_ptr,
+        (operands.len() as u64).into()
+    );
+    gen_pop_opnds(asm, &operands);
 }
 
 fn gen_hash_dup(asm: &mut Assembler, val: Opnd, state: &FrameState) -> lir::Opnd {

@@ -452,24 +452,23 @@ impl IseqProfile {
 /// Default number of JIT profiles to gather before triggering recompilation
 const JIT_PROFILE_THRESHOLD: u32 = 5;
 
-/// Profile a single operand type from JIT code. Called by the Profile HIR instruction
-/// once per operand at the call site. The operand_idx identifies which position in the
-/// type distribution array this operand corresponds to (0 = receiver for sends).
+/// Profile operand types from JIT code. Called by the Profile HIR instruction with a
+/// stack-allocated array of VALUEs. Each element corresponds to a position in the type
+/// distribution array (0 = receiver for sends).
 ///
 /// After enough profiles are gathered, clears the JIT entry point to trigger recompilation
 /// with the newly gathered profile data.
 #[unsafe(no_mangle)]
-pub extern "C" fn rb_zjit_profile_jit_operand(iseq: IseqPtr, insn_idx: u32, operand_idx: u32, total_operands: u32, obj: VALUE) {
+pub extern "C" fn rb_zjit_profile_jit_operands(iseq: IseqPtr, insn_idx: u32, values: *const VALUE, num_operands: u32) {
     with_vm_lock(src_loc!(), || {
-        profile_jit_operand(iseq, insn_idx, operand_idx, total_operands, obj);
+        profile_jit_operands(iseq, insn_idx, values, num_operands);
     });
 }
 
-fn profile_jit_operand(iseq: IseqPtr, insn_idx: u32, operand_idx: u32, total_operands: u32, obj: VALUE) {
+fn profile_jit_operands(iseq: IseqPtr, insn_idx: u32, values: *const VALUE, num_operands: u32) {
     let profile = &mut get_or_create_iseq_payload(iseq).profile;
     let idx = insn_idx as usize;
-    let opnd_idx = operand_idx as usize;
-    let n = total_operands as usize;
+    let n = num_operands as usize;
 
     // Ensure the type distribution array is sized for all operands
     let types = &mut profile.opnd_types[idx];
@@ -477,21 +476,22 @@ fn profile_jit_operand(iseq: IseqPtr, insn_idx: u32, operand_idx: u32, total_ope
         types.resize(n, TypeDistribution::new());
     }
 
-    // Profile this operand
-    let ty = ProfiledType::new(obj);
-    VALUE::from(iseq).write_barrier(ty.class());
-    types[opnd_idx].observe(ty);
+    // Profile each operand
+    for i in 0..n {
+        let obj = unsafe { *values.add(i) };
+        let ty = ProfiledType::new(obj);
+        VALUE::from(iseq).write_barrier(ty.class());
+        types[i].observe(ty);
+    }
 
-    // Only increment the profile count once per call site execution (when processing the last operand)
-    if operand_idx == total_operands - 1 {
-        profile.num_profiles[idx] = profile.num_profiles[idx].saturating_add(1);
+    // Increment the profile count for this call site
+    profile.num_profiles[idx] = profile.num_profiles[idx].saturating_add(1);
 
-        // Once we've gathered enough profiles, clear the JIT entry to trigger recompilation
-        // TODO(max): Call a more generic "Iseq::change_state" method that handles the full
-        // lifecycle of a method.
-        if profile.num_profiles[idx] >= JIT_PROFILE_THRESHOLD {
-            unsafe { rb_iseq_reset_jit_func(iseq) };
-        }
+    // Once we've gathered enough profiles, clear the JIT entry to trigger recompilation
+    // TODO(max): Call a more generic "Iseq::change_state" method that handles the full
+    // lifecycle of a method.
+    if profile.num_profiles[idx] >= JIT_PROFILE_THRESHOLD {
+        unsafe { rb_iseq_reset_jit_func(iseq) };
     }
 }
 
