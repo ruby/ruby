@@ -119,20 +119,20 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
         selfstr = "";
     }
 
-    if (cfp->iseq != 0) {
+    if (cfp->iseq || cfp->jit_return) {
+        iseq = rb_zjit_cfp_iseq(cfp);
 #define RUBY_VM_IFUNC_P(ptr) IMEMO_TYPE_P(ptr, imemo_ifunc)
-        if (RUBY_VM_IFUNC_P(cfp->iseq)) {
+        if (RUBY_VM_IFUNC_P(iseq)) {
             iseq_name = "<ifunc>";
         }
-        else if (SYMBOL_P((VALUE)cfp->iseq)) {
-            tmp = rb_sym2str((VALUE)cfp->iseq);
+        else if (SYMBOL_P((VALUE)iseq)) {
+            tmp = rb_sym2str((VALUE)iseq);
             iseq_name = RSTRING_PTR(tmp);
             snprintf(posbuf, MAX_POSBUF, ":%s", iseq_name);
             line = -1;
         }
         else {
             if (cfp->pc || cfp->jit_return) {
-                iseq = cfp->iseq;
                 pc = rb_zjit_cfp_pc(cfp) - ISEQ_BODY(iseq)->iseq_encoded;
                 iseq_name = RSTRING_PTR(ISEQ_BODY(iseq)->location.label);
                 if (pc >= 0 && (size_t)pc <= ISEQ_BODY(iseq)->iseq_size) {
