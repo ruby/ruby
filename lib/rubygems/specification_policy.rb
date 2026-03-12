@@ -476,6 +476,7 @@ or set it to nil if you don't want to specify a license.
 
     validate_rake_extensions(builder)
     validate_rust_extensions(builder)
+    validate_extension_require_relative
   end
 
   def validate_rust_extensions(builder) # :nodoc:
@@ -494,6 +495,33 @@ You have specified rust based extension, but Cargo.lock is not part of the gem f
     warning <<-WARNING if rake_extension && !rake_dependency
 You have specified rake based extension, but rake is not added as runtime dependency. It is recommended to add rake as a runtime dependency in gemspec since there's no guarantee rake will be already installed.
     WARNING
+  end
+
+  def validate_extension_require_relative # :nodoc:
+    return unless @specification.extensions.any?
+
+    require_paths = @specification.require_paths
+
+    @specification.files.each do |rb_file|
+      next unless rb_file.end_with?(".rb")
+      next unless require_paths.any? {|rp| rb_file.start_with?("#{rp}/") }
+      next unless File.file?(rb_file)
+
+      File.foreach(rb_file).with_index(1) do |line, lineno|
+        next unless line =~ /^\s*require_relative\s+["']([^"']+)["']/
+
+        required_path = Regexp.last_match(1)
+        resolved = File.join(File.dirname(rb_file), required_path)
+
+        next if @specification.files.any? {|f| f == "#{resolved}.rb" || f == resolved }
+
+        warning <<~WARNING
+          #{rb_file}:#{lineno} uses `require_relative "#{required_path}"` to load a compiled extension.
+          This will break in RubyGems 4.2, which will stop copying compiled extensions into the gem's lib directory.
+          Use `require` instead of `require_relative` to load compiled extensions.
+        WARNING
+      end
+    end
   end
 
   def validate_unique_links
