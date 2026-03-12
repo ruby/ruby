@@ -2812,14 +2812,13 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
     Dir.chdir @tempdir do
       @a1.add_dependency @a1.name, "1"
 
-      use_ui @ui do
+      e = assert_raise Gem::InvalidSpecificationException do
         @a1.validate
       end
 
-      assert_equal <<-EXPECTED, @ui.error
-#{w}:  Self referencing dependency is unnecessary and strongly discouraged.
-#{w}:  See https://guides.rubygems.org/specification-reference/ for help
-      EXPECTED
+      expected = "Dependencies of this gem include a self-reference."
+
+      assert_equal expected, e.message
     end
   end
 

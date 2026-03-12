@@ -192,15 +192,14 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
   # Checks that the gem does not depend on itself.
 
   def validate_dependencies # :nodoc:
-    warning_messages = []
+    error_messages = []
     @specification.dependencies.each do |dep|
-      if dep.name == @specification.name # warn on self reference
-        warning_messages << "Self referencing dependency is unnecessary and strongly discouraged."
+      if dep.name == @specification.name # error on self reference
+        error_messages << "Dependencies of this gem include a self-reference."
       end
     end
-    if warning_messages.any?
-      warning_messages.each {|warning_message| warning warning_message }
-    end
+
+    error error_messages.join if error_messages.any?
   end
 
   def validate_required_ruby_version
