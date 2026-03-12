@@ -157,6 +157,13 @@ pub extern "C" fn rb_yjit_iseq_gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exc
         return std::ptr::null();
     }
 
+    // In case of exceptional entry, reject escaped environment.
+    // This allows us to use the fact that new frames generally start with an on-stack environment.
+    if jit_exception && unsafe { cfp_env_has_escaped(get_ec_cfp(ec)) } {
+        incr_counter!(exceptional_entry_escaped_env);
+        return std::ptr::null();
+    }
+
     // If a custom call threshold was not specified on the command-line and
     // this is a large application (has very many ISEQs), switch to
     // using the call threshold for large applications after this entry point
