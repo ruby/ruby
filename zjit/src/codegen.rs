@@ -1162,6 +1162,7 @@ fn gen_check_interrupts(jit: &mut JITState, asm: &mut Assembler, state: &FrameSt
 fn gen_profile(jit: &mut JITState, asm: &mut Assembler, iseq: IseqPtr, insn_idx: u32, operands: Vec<lir::Opnd>, state: &FrameState) {
     use crate::profile::rb_zjit_profile_jit_operand;
     let total = operands.len() as u32;
+    // TODO(max): Maybe we can profile a VALUE* instead of one call per operand
     for (i, opnd) in operands.into_iter().enumerate() {
         gen_prepare_non_leaf_call(jit, asm, state);
         asm_ccall!(asm, rb_zjit_profile_jit_operand,
