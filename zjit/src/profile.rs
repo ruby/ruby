@@ -470,6 +470,11 @@ fn profile_jit_operands(iseq: IseqPtr, insn_idx: u32, values: *const VALUE, num_
     let idx = insn_idx as usize;
     let n = num_operands as usize;
 
+    // Stop profiling if we've already gathered enough data for this call site
+    if profile.num_profiles[idx] >= JIT_PROFILE_THRESHOLD {
+        return;
+    }
+
     // Ensure the type distribution array is sized for all operands
     let types = &mut profile.opnd_types[idx];
     if types.is_empty() {

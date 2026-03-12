@@ -19,6 +19,7 @@
 #include "internal/class.h"
 #include "internal/imemo.h"
 #include "ruby/internal/core/rtypeddata.h"
+#include "zjit.h"
 
 enum jit_bindgen_constants {
     // Field offsets for the RObject struct
@@ -583,14 +584,16 @@ rb_iseq_reset_jit_func(const rb_iseq_t *iseq)
     iseq->body->jit_exception_calls = 0;
 }
 
-// Clear the JIT entry point without resetting the call counters.
-// Used by the profiler to trigger recompilation on the next call.
+// Clear the JIT entry point and set the call counter so recompilation
+// triggers on the next call. Used by the profiler after gathering types.
 void
 rb_iseq_clear_jit_func(const rb_iseq_t *iseq)
 {
     RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
     iseq->body->jit_entry = NULL;
     iseq->body->jit_exception = NULL;
+    iseq->body->jit_entry_calls = rb_zjit_call_threshold - 1;
+    iseq->body->jit_exception_calls = rb_zjit_call_threshold - 1;
 }
 
 // Callback data for rb_jit_for_each_iseq
