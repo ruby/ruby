@@ -1020,7 +1020,7 @@ backtrace_each(const rb_execution_context_t *ec,
     /* SDR(); */
     for (i=0, cfp = start_cfp; i<size; i++, cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
         /* fprintf(stderr, "cfp: %d\n", (rb_control_frame_t *)(ec->vm_stack + ec->vm_stack_size) - cfp); */
-        if (cfp->iseq) {
+        if (cfp->iseq || cfp->jit_return) {
             if (cfp->pc || cfp->jit_return) {
                 iter_iseq(arg, cfp);
             }
@@ -1053,7 +1053,7 @@ oldbt_init(void *ptr, size_t dmy)
 static void
 oldbt_iter_iseq(void *ptr, const rb_control_frame_t *cfp)
 {
-    const rb_iseq_t *iseq = cfp->iseq;
+    const rb_iseq_t *iseq = rb_zjit_cfp_iseq(cfp);
     const VALUE *pc = rb_zjit_cfp_pc(cfp);
     struct oldbt_arg *arg = (struct oldbt_arg *)ptr;
     VALUE file = arg->filename = rb_iseq_path(iseq);
@@ -1551,16 +1551,17 @@ collect_caller_bindings_iseq(void *arg, const rb_control_frame_t *cfp)
 {
     struct collect_caller_bindings_data *data = (struct collect_caller_bindings_data *)arg;
     VALUE frame = rb_ary_new2(6);
+    const rb_iseq_t *iseq = rb_zjit_cfp_iseq(cfp);
 
     rb_ary_store(frame, CALLER_BINDING_SELF, cfp->self);
     rb_ary_store(frame, CALLER_BINDING_CLASS, get_klass(cfp));
     rb_ary_store(frame, CALLER_BINDING_BINDING, GC_GUARDED_PTR(cfp)); /* create later */
-    rb_ary_store(frame, CALLER_BINDING_ISEQ, cfp->iseq ? (VALUE)cfp->iseq : Qnil);
+    rb_ary_store(frame, CALLER_BINDING_ISEQ, iseq ? (VALUE)iseq : Qnil);
     rb_ary_store(frame, CALLER_BINDING_CFP, GC_GUARDED_PTR(cfp));
 
     rb_backtrace_location_t *loc = &data->bt->backtrace[data->bt->backtrace_size++];
     RB_OBJ_WRITE(data->btobj, &loc->cme, rb_vm_frame_method_entry(cfp));
-    RB_OBJ_WRITE(data->btobj, &loc->iseq, cfp->iseq);
+    RB_OBJ_WRITE(data->btobj, &loc->iseq, iseq);
     loc->pc = rb_zjit_cfp_pc(cfp);
     VALUE vloc = location_create(loc, (void *)data->btobj);
     rb_ary_store(frame, CALLER_BINDING_LOC, vloc);
@@ -1754,17 +1755,18 @@ thread_profile_frames(rb_execution_context_t *ec, int start, int limit, VALUE *b
 
             /* record frame info */
             cme = rb_vm_frame_method_entry_unchecked(cfp);
+            const rb_iseq_t *iseq = rb_zjit_cfp_iseq(cfp)
             if (cme && cme->def->type == VM_METHOD_TYPE_ISEQ) {
                 buff[i] = (VALUE)cme;
             }
             else {
-                buff[i] = (VALUE)cfp->iseq;
+                buff[i] = (VALUE)iseq;
             }
 
             if (lines) {
                 const VALUE *pc = rb_zjit_cfp_pc(cfp);
-                VALUE *iseq_encoded = ISEQ_BODY(cfp->iseq)->iseq_encoded;
-                VALUE *pc_end = iseq_encoded + ISEQ_BODY(cfp->iseq)->iseq_size;
+                VALUE *iseq_encoded = ISEQ_BODY(iseq)->iseq_encoded;
+                VALUE *pc_end = iseq_encoded + ISEQ_BODY(iseq)->iseq_size;
 
                 // The topmost frame may have an invalid PC because the JIT
                 // may leave it uninitialized for speed. JIT code must update the PC
@@ -1779,7 +1781,7 @@ thread_profile_frames(rb_execution_context_t *ec, int start, int limit, VALUE *b
                     lines[i] = 0;
                 }
                 else {
-                    lines[i] = calc_lineno(cfp->iseq, pc);
+                    lines[i] = calc_lineno(iseq, pc);
                 }
             }
 
