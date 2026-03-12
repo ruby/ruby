@@ -136,7 +136,30 @@ if RUBY_ENGINE == "ruby" and !ENV["PRISM_FFI_BACKEND"]
   # The C extension is the default backend on CRuby.
   Prism::BACKEND = :CEXT
 
-  require "prism/prism"
+  begin
+    # The precompiled native libraries are in <gem_dir>/lib/prism/<ruby_version>
+    require_relative "prism/#{RUBY_VERSION[/\d+\.\d+/]}/prism"
+  rescue LoadError => e
+    if e.message.include?("GLIBC")
+      warn(<<~EOM)
+
+        ERROR: It looks like you're trying to use Prism as a precompiled native gem on a system
+               with an unsupported version of glibc.
+
+          #{e.message}
+
+          If that's the case, then please install Prism via the `ruby` platform gem:
+              gem install prism --platform=ruby
+          or, in your Gemfile:
+              gem "prism", force_ruby_platform: true
+
+      EOM
+      raise e
+    end
+
+    # Precompiled library isn't available, fall back to the library compiled at installation time.
+    require "prism/prism"
+  end
 else
   # The FFI backend is used on other Ruby implementations.
   Prism::BACKEND = :FFI
