@@ -2139,7 +2139,10 @@ impl Assembler
                     ) = (prev_insn, insn)
                     {
                         if let Some(Opnd::VReg { idx: out_idx, .. }) = prev.out_opnd() {
-                            if out_idx == idx && intervals[idx.0].born_at(prev_id.0) {
+                            if out_idx == idx
+                                && intervals[idx.0].born_at(prev_id.0)
+                                && intervals[idx.0].dies_at(insn_id.0)
+                            {
                                 preferred[idx.0].get_or_insert(*dest_reg);
                             }
                         }
