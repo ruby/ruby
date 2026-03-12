@@ -1123,7 +1123,8 @@ impl Assembler {
             }
         }
 
-        let (assignments, num_stack_slots) = asm.linear_scan(intervals.clone(), regs.len());
+        let preferred_registers = asm.preferred_register_assignments(&intervals);
+        let (assignments, num_stack_slots) = asm.linear_scan(intervals.clone(), regs.len(), &preferred_registers);
 
         let total_stack_slots = asm.stack_base_idx + num_stack_slots;
         if total_stack_slots > Self::MAX_FRAME_STACK_SLOTS {
@@ -1141,6 +1142,7 @@ impl Assembler {
                         let range = &intervals[i].range;
                         let alloc_str = match alloc {
                             Allocation::Reg(n) => format!("{}", regs[*n]),
+                            Allocation::Fixed(reg) => format!("{}", reg),
                             Allocation::Stack(n) => format!("Stack[{}]", n),
                         };
                         println!("  v{} => {} (range: {:?}..{:?})", i, alloc_str, range.start, range.end);
