@@ -591,7 +591,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::IncrCounterPtr { counter_ptr } => no_output!(gen_incr_counter_ptr(asm, *counter_ptr)),
         Insn::ObjToString { val, cd, state, .. } => gen_objtostring(jit, asm, opnd!(val), *cd, &function.frame_state(*state)),
         &Insn::CheckInterrupts { state } => no_output!(gen_check_interrupts(jit, asm, &function.frame_state(state))),
-        Insn::Profile { iseq, insn_idx, operands, state } => no_output!(gen_profile(jit, asm, *iseq, *insn_idx, opnds!(operands), &function.frame_state(*state))),
+        Insn::Profile { iseq, insn_idx, operands, .. } => no_output!(gen_profile(asm, *iseq, *insn_idx, opnds!(operands))),
         &Insn::HashDup { val, state } => { gen_hash_dup(asm, opnd!(val), &function.frame_state(state)) },
         &Insn::HashAref { hash, key, state } => { gen_hash_aref(jit, asm, opnd!(hash), opnd!(key), &function.frame_state(state)) },
         &Insn::HashAset { hash, key, val, state } => { no_output!(gen_hash_aset(jit, asm, opnd!(hash), opnd!(key), opnd!(val), &function.frame_state(state))) },
@@ -1159,7 +1159,7 @@ fn gen_check_interrupts(jit: &mut JITState, asm: &mut Assembler, state: &FrameSt
 /// Generate code to profile operand types from JIT code.
 /// Stack-allocates a VALUE array for the operands, then makes a single call to
 /// rb_zjit_profile_jit_operands which profiles all operands and triggers recompilation.
-fn gen_profile(jit: &mut JITState, asm: &mut Assembler, iseq: IseqPtr, insn_idx: u32, operands: Vec<lir::Opnd>, state: &FrameState) {
+fn gen_profile(asm: &mut Assembler, iseq: IseqPtr, insn_idx: u32, operands: Vec<lir::Opnd>) {
     use crate::profile::rb_zjit_profile_jit_operands;
     let values_ptr = gen_push_opnds(asm, &operands);
     asm_ccall!(asm, rb_zjit_profile_jit_operands,
