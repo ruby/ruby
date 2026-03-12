@@ -2452,6 +2452,11 @@ impl Assembler
             for (insn, insn_id) in old_insns.into_iter().zip(old_ids.into_iter()) {
                 if let Insn::CCall { opnds, out, start_marker, end_marker, fptr } = insn {
                     let insn_number = insn_id.map(|id| id.0).unwrap_or(0);
+                    let call_result_live = out.is_vreg()
+                        && intervals[out.vreg_idx().0]
+                            .range
+                            .end
+                            .is_some_and(|end| end > insn_number);
 
                     // Find survivors: intervals that survive this Call instruction
                     // We need to preserve the "surviving" registers past the ccall,
@@ -2467,19 +2472,26 @@ impl Assembler
                         .map(|interval| interval.id)
                         .collect();
 
-                    // Push all survivors on the stack
-                    let needs_alignment = cfg!(target_arch = "x86_64") && survivors.len() % 2 == 1;
-                    for &s in &survivors {
-                        let reg_n = match assignments[s].unwrap() {
-                            Allocation::Reg(n) => n,
-                            Allocation::Fixed(reg) => {
-                                new_insns.push(Insn::CPush(Opnd::Reg(reg)));
-                                new_ids.push(None);
-                                continue;
-                            }
+                    let survivor_regs: Vec<Opnd> = survivors.iter()
+                        .map(|&s| match assignments[s].unwrap() {
+                            Allocation::Reg(n) => Opnd::Reg(ALLOC_REGS[n]),
+                            Allocation::Fixed(reg) => Opnd::Reg(reg),
                             _ => unreachable!(),
-                        };
-                        new_insns.push(Insn::CPush(Opnd::Reg(ALLOC_REGS[reg_n])));
+                        })
+                        .collect();
+                    let survivor_push_groups: Vec<Vec<Opnd>> = survivor_regs
+                        .chunks(2)
+                        .map(|group| group.to_vec())
+                        .collect();
+
+                    // Push all survivors on the stack, pairing adjacent pushes when possible.
+                    let needs_alignment = cfg!(target_arch = "x86_64") && survivors.len() % 2 == 1;
+                    for group in &survivor_push_groups {
+                        match group.as_slice() {
+                            [left, right] => new_insns.push(Insn::CPushPair(*left, *right)),
+                            [reg] => new_insns.push(Insn::CPush(*reg)),
+                            _ => unreachable!(),
+                        }
                         new_ids.push(None);
                     }
                     // Maintain 16-byte stack alignment for x86_64
@@ -2542,15 +2554,19 @@ impl Assembler
                     }
 
                     if survivors.is_empty() {
-                        // No survivors to restore — move result directly to output
-                        let out = Self::rewritten_opnd(out, assignments);
-                        new_insns.push(Insn::Mov { dest: out, src: C_RET_OPND });
-                        new_ids.push(None);
+                        if call_result_live {
+                            // No survivors to restore — move result directly to output.
+                            let out = Self::rewritten_opnd(out, assignments);
+                            new_insns.push(Insn::Mov { dest: out, src: C_RET_OPND });
+                            new_ids.push(None);
+                        }
                     } else {
-                        // Save CCall result to scratch immediately, before pops
-                        // can clobber either C_RET or the output register.
-                        new_insns.push(Insn::Mov { dest: Opnd::Reg(SCRATCH_REG), src: C_RET_OPND });
-                        new_ids.push(None);
+                        if call_result_live {
+                            // Save CCall result to scratch immediately, before pops
+                            // can clobber either C_RET or the output register.
+                            new_insns.push(Insn::Mov { dest: Opnd::Reg(SCRATCH_REG), src: C_RET_OPND });
+                            new_ids.push(None);
+                        }
 
                         // Pop alignment padding (if needed)
                         if needs_alignment {
@@ -2558,25 +2574,22 @@ impl Assembler
                             new_ids.push(None);
                         }
 
-                        // Restore all survivors
-                        for &s in survivors.iter().rev() {
-                            let reg_n = match assignments[s].unwrap() {
-                                Allocation::Reg(n) => n,
-                                Allocation::Fixed(reg) => {
-                                    new_insns.push(Insn::CPopInto(Opnd::Reg(reg)));
-                                    new_ids.push(None);
-                                    continue;
-                                }
+                        // Restore all survivors in reverse stack order, pairing adjacent pops when possible.
+                        for group in survivor_push_groups.iter().rev() {
+                            match group.as_slice() {
+                                [left, right] => new_insns.push(Insn::CPopPairInto(*right, *left)),
+                                [reg] => new_insns.push(Insn::CPopInto(*reg)),
                                 _ => unreachable!(),
-                            };
-                            new_insns.push(Insn::CPopInto(Opnd::Reg(ALLOC_REGS[reg_n])));
+                            }
                             new_ids.push(None);
                         }
 
-                        // Move result from scratch to output AFTER all pops
-                        let out = Self::rewritten_opnd(out, assignments);
-                        new_insns.push(Insn::Mov { dest: out, src: Opnd::Reg(SCRATCH_REG) });
-                        new_ids.push(None);
+                        if call_result_live {
+                            // Move result from scratch to output AFTER all pops.
+                            let out = Self::rewritten_opnd(out, assignments);
+                            new_insns.push(Insn::Mov { dest: out, src: Opnd::Reg(SCRATCH_REG) });
+                            new_ids.push(None);
+                        }
                     }
                 } else {
                     new_insns.push(insn);
