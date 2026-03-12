@@ -3,7 +3,7 @@ use crate::cruby::{IseqPtr, VALUE};
 #[derive(Debug)]
 pub struct JITFrame {
     pub pc: *const VALUE,
-    pub iseq: IseqPtr, // TODO: mark this
+    pub iseq: IseqPtr, // marked in rb_zjit_root_mark
 }
 
 #[unsafe(no_mangle)]

@@ -196,6 +196,10 @@ impl ZJITState {
         &mut ZJITState::get_instance().invariants
     }
 
+    pub fn get_jit_frames() -> &'static mut Vec<Box<JITFrame>> {
+        &mut ZJITState::get_instance().jit_frames
+    }
+
     pub fn get_method_annotations() -> &'static cruby_methods::Annotations {
         &ZJITState::get_instance().method_annotations
     }
