@@ -1516,6 +1516,10 @@ impl Interval {
         end == x
     }
 
+    pub fn has_bounds(&self) -> bool {
+        self.range.start.is_some() && self.range.end.is_some()
+    }
+
     /// Add a range to the interval, extending it if necessary
     pub fn add_range(&mut self, from: usize, to: usize) {
         if to <= from {
@@ -2452,6 +2456,8 @@ impl Assembler
             for (insn, insn_id) in old_insns.into_iter().zip(old_ids.into_iter()) {
                 if let Insn::CCall { opnds, out, start_marker, end_marker, fptr } = insn {
                     let insn_number = insn_id.map(|id| id.0).unwrap_or(0);
+                    // Do we have a case where a ccall is emitted, but nobody
+                    // uses the result?
                     let call_result_live = out.is_vreg()
                         && intervals[out.vreg_idx().0]
                             .range
@@ -2464,8 +2470,7 @@ impl Assembler
                     // after we make the ccall
                     let survivors: Vec<usize> = intervals.iter()
                         .filter(|interval| {
-                            interval.range.start.is_some()
-                                && interval.range.end.is_some()
+                            interval.has_bounds()
                                 && interval.survives(insn_number)
                                 && assignments[interval.id].and_then(|alloc| alloc.alloc_pool_index(ALLOC_REGS.len())).is_some()
                         })
@@ -2518,13 +2523,9 @@ impl Assembler
                     debug_assert!(reg_copies.iter().all(|c| !c.source.is_vreg() && !c.destination.is_vreg()),
                         "parcopy must operate on physical registers, not VRegs");
                     let sequentialized = parcopy::sequentialize_register(&reg_copies, Opnd::Reg(SCRATCH_REG));
-                    let moves: Vec<Insn> = sequentialized
-                        .iter()
-                        .map(|copy| Insn::Mov { dest: copy.destination, src: copy.source })
-                        .collect();
 
-                    for mov in moves {
-                        new_insns.push(mov);
+                    for copy in sequentialized {
+                        new_insns.push(Insn::Mov { dest: copy.destination, src: copy.source });
                         new_ids.push(None);
                     }
 
