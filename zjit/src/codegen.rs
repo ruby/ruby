@@ -27,7 +27,7 @@ use crate::options::get_option;
 use crate::cast::IntoUsize;
 
 /// At the moment, we support recompiling each ISEQ only once.
-pub const MAX_ISEQ_VERSIONS: usize = 2;
+pub const MAX_ISEQ_VERSIONS: usize = 5;
 
 /// Sentinel program counter stored in C frames when runtime checks are enabled.
 const PC_POISON: Option<*const VALUE> = if cfg!(feature = "runtime_checks") {

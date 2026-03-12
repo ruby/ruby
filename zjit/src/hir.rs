@@ -5263,13 +5263,7 @@ impl Function {
                     // completely drop the branch from the block.
                     Insn::IfTrue { val, .. } if self.is_a(val, Type::from_cbool(false)) => continue,
                     Insn::IfFalse { val, .. } if self.is_a(val, Type::from_cbool(true)) => continue,
-                    // TODO(max): Make this check "is strict subset of" instead of "is not equal to"
-                    Insn::Profile { ref operands, .. } if operands.iter().any(|&o| !self.type_of(o).bit_equal(types::BasicObject)) => {
-                        // If we have learned some profile information about the operands
-                        // statically (they are constants, or return types from known C methods, or
-                        // ...), don't profile them at run-time.
-                        continue
-                    }
+                    // TODO(max): Elide Profile instructions when all operand types are known
                     _ => insn_id,
                 };
                 // If we're adding a new instruction, mark the two equivalent in the union-find and
