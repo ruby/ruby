@@ -1,5 +1,7 @@
 //! Type frequency distribution tracker.
 
+use crate::options::NumProfiles;
+
 /// This implementation was inspired by the type feedback module from Google's S6, which was
 /// written in C++ for use with Python. This is a new implementation in Rust created for use with
 /// Ruby instead of Python.
@@ -8,9 +10,9 @@ pub struct Distribution<T: Copy + PartialEq + Default, const N: usize> {
     /// buckets and counts have the same length
     /// `buckets[0]` is always the most common item
     buckets: [T; N],
-    counts: [usize; N],
+    counts: [NumProfiles; N],
     /// if there is no more room, increment the fallback
-    other: usize,
+    other: NumProfiles,
     // TODO(max): Add count disparity, which can help determine when to reset the distribution
 }
 
@@ -23,13 +25,13 @@ impl<T: Copy + PartialEq + Default, const N: usize> Distribution<T, N> {
         for (bucket, count) in self.buckets.iter_mut().zip(self.counts.iter_mut()) {
             if *bucket == item || *count == 0 {
                 *bucket = item;
-                *count += 1;
+                *count = count.saturating_add(1);
                 // Keep the most frequent item at the front
                 self.bubble_up();
                 return;
             }
         }
-        self.other += 1;
+        self.other = self.other.saturating_add(1);
     }
 
     /// Keep the highest counted bucket at index 0
@@ -87,7 +89,7 @@ impl<T: Copy + PartialEq + Default + std::fmt::Debug, const N: usize> Distributi
                 assert!(first_count >= count, "First count should be the largest");
             }
         }
-        let num_seen = dist.counts.iter().sum::<usize>() + dist.other;
+        let num_seen = dist.counts.iter().map(|&c| c as usize).sum::<usize>() + dist.other as usize;
         let kind = if dist.other == 0 {
             // Seen <= N types total
             if dist.counts[0] == 0 {

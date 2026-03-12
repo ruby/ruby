@@ -14,9 +14,9 @@ pub struct IseqPayload {
 }
 
 impl IseqPayload {
-    fn new(iseq_size: u32) -> Self {
+    fn new() -> Self {
         Self {
-            profile: IseqProfile::new(iseq_size),
+            profile: IseqProfile::new(),
             versions: vec![],
         }
     }
@@ -87,8 +87,7 @@ pub fn get_or_create_iseq_payload_ptr(iseq: IseqPtr) -> *mut IseqPayload {
             // We drop the payload with Box::from_raw when the GC frees the ISEQ and calls us.
             // NOTE(alan): Sometimes we read from an ISEQ without ever writing to it.
             // We allocate in those cases anyways.
-            let iseq_size = get_iseq_encoded_size(iseq);
-            let new_payload = IseqPayload::new(iseq_size);
+            let new_payload = IseqPayload::new();
             let new_payload = Box::into_raw(Box::new(new_payload));
             rb_iseq_set_zjit_payload(iseq, new_payload as VoidPtr);
 
