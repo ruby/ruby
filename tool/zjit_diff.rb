@@ -172,7 +172,7 @@ def parse_ref(ref)
   out = `git rev-parse --verify #{ref}`
   return nil unless $?.success?
 
-  GitRef.new(ref: ref, commit_hash: out.strip)
+  GitRef.new(ref, out.strip)
 end
 
 DEFAULT_BENCHMARKS = %w[lobsters railsbench].freeze
