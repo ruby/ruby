@@ -9,6 +9,7 @@
 ************************************************/
 
 #include "rubysocket.h"
+#include "ruby/fiber/scheduler.h"
 
 #ifdef _WIN32
 #define is_socket(fd) rb_w32_is_socket(fd)
@@ -585,6 +586,18 @@ rsock_bsock_send(int argc, VALUE *argv, VALUE socket)
     else {
         func = rsock_send_blocking;
         funcname = "send(2)";
+    }
+
+    VALUE scheduler = rb_fiber_scheduler_current();
+    if (scheduler != Qnil) {
+        char *ptr = RSTRING_PTR(arg.mesg);
+        long len = RSTRING_LEN(arg.mesg);
+        VALUE ret = rb_fiber_scheduler_socket_send_memory(scheduler, socket, to, ptr, len, 0, NUM2INT(flags));
+        if (!UNDEF_P(ret)) {
+            if (rb_fiber_scheduler_io_result_apply(ret) < 0)
+                rb_sys_fail(funcname);
+            return ret;
+        }
     }
 
     RB_IO_POINTER(socket, fptr);
