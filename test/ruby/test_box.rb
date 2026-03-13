@@ -532,6 +532,40 @@ class TestBox < Test::Unit::TestCase
     end
   end
 
+  def test_lastline_not_cached_in_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      box = Ruby::Box.new
+      box.eval(<<~'CODE')
+        $_ = "first"
+        _ = $_
+        $_ = "second"
+        raise "expected 'second' but got '#{$_}'" unless $_ == "second"
+      CODE
+    end;
+  end
+
+  def test_lastline_not_cached_in_multiple_boxes
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      outer_box = Ruby::Box.new
+      outer_box.eval(<<~'CODE')
+        $_ = "outer"
+        _ = $_
+
+        inner_box = Ruby::Box.new
+        inner_box.eval(<<~'INNER')
+          $_ = "inner"
+          _ = $_
+          $_ = "inner_updated"
+          raise "inner: expected 'inner_updated' but got '#{$_}'" unless $_ == "inner_updated"
+        INNER
+
+        raise "outer: expected 'outer' but got '#{$_}'" unless $_ == "outer"
+      CODE
+    end;
+  end
+
   def test_load_path_and_loaded_features
     setup_box
 

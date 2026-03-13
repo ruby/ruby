@@ -15746,6 +15746,7 @@ Init_IO(void)
 
     rb_define_virtual_variable("$_", get_LAST_READ_LINE, set_LAST_READ_LINE);
     rb_gvar_ractor_local("$_");
+    rb_gvar_box_ready("$_");
 
     rb_define_method(rb_cIO, "initialize_copy", rb_io_init_copy, 1);
     rb_define_method(rb_cIO, "reopen", rb_io_reopen, -1);
