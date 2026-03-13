@@ -71,13 +71,12 @@
 
 /* MRI debug support */
 
+RUBY_SYMBOL_EXPORT_BEGIN
 /* gc.c */
 void rb_obj_info_dump(VALUE obj);
 void rb_obj_info_dump_loc(VALUE obj, const char *file, int line, const char *func);
 
 /* debug.c */
-
-RUBY_SYMBOL_EXPORT_BEGIN
 void ruby_debug_breakpoint(void);
 PRINTF_ARGS(void ruby_debug_printf(const char*, ...), 1, 2);
 RUBY_SYMBOL_EXPORT_END
