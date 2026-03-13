@@ -1132,7 +1132,46 @@ end
 
 
 class Pathname    # * Dir *
-  # See <tt>Dir.glob</tt>.  Returns or yields Pathname objects.
+  # call-seq:
+  #   glob(patterns, **kwargs) → array_of_pathnames
+  #   glob(patterns, **kwargs) {|pathname| ... } → nil
+  #
+  # Calls <tt>Dir.glob(patterns, **kwargs)</tt>, which yields or returns entry names;
+  # see Dir.glob.
+  #
+  # Required argument +patterns+ is a string pattern or an array of string patterns;
+  # note that these patterns are not regexps.
+  #
+  # Keyword arguments <tt>**kwargs</tt> are passed through to Dir.glob;
+  # see the documentation there.
+  #
+  # With no block given, returns an array of \Pathname objects;
+  # each is <tt>Pathname.new(entry_name)</tt> for an entry name returned by Dir.glob.
+  #
+  #   Pathname.glob('*').take(3)
+  #   # => [#<Pathname:BSDL>, #<Pathname:CONTRIBUTING.md>, #<Pathname:COPYING>]
+  #   Pathname.glob(['o*', 'a*']).take(3)
+  #   # => [#<Pathname:object.c>, #<Pathname:aclocal.m4>, #<Pathname:addr2line.c>]
+  #
+  # With a block given, calls the block with each pathname
+  # <tt>Pathname.new(entry_name)</tt>,
+  # where each +entry_name+ is a \Pathname object created by the value yielded by Dir.glob.
+  #
+  #   a = []
+  #   Pathname.glob(['o*', 'a*']) {|pathname| a << pathname }
+  #   a.take(3)
+  #   # => [#<Pathname:object.c>, #<Pathname:aclocal.m4>, #<Pathname:addr2line.c>]
+  #
+  # Optional keyword argument +base+ is of particular interest.
+  # When it is given, its value specifies the base directory for the pathnames;
+  # each pattern string specifies entries relative to the base directory:
+  #
+  #   Pathname.glob('*', base: 'lib').take(2)
+  #   # => [#<Pathname:English.gemspec>, #<Pathname:English.rb>]
+  #   Pathname.glob('*', base: 'lib/bundler').take(2)
+  #   # => [#<Pathname:build_metadata.rb>, #<Pathname:bundler.gemspec>]
+  #
+  # Note that the base directory is not prepended to the entry names in the result.
   def Pathname.glob(*args, **kwargs) # :yield: pathname
     if block_given?
       Dir.glob(*args, **kwargs) {|f| yield self.new(f) }
