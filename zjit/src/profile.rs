@@ -461,7 +461,7 @@ const JIT_PROFILE_THRESHOLD: u32 = 5;
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_profile_jit_operands(iseq: IseqPtr, insn_idx: u32, values: *const VALUE, num_operands: u32, version_num: u32) {
     with_vm_lock(src_loc!(), || {
-        profile_jit_operands(iseq, insn_idx, values, num_operands, version_num);
+        with_time_stat(profile_time_ns, || profile_jit_operands(iseq, insn_idx, values, num_operands, version_num));
     });
 }
 
