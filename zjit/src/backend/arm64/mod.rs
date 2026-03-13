@@ -1790,7 +1790,7 @@ mod tests {
         0x0: mov x0, #3
         0x4: mul x1, x9, x0
         ");
-        assert_snapshot!(cb.hexdump(), @"600080d2207d009be10300aa");
+        assert_snapshot!(cb.hexdump(), @"600080d2217d009b");
     }
 
     #[test]
@@ -1894,7 +1894,7 @@ mod tests {
         0x0: adds x0, x0, x1
         0x4: stur x0, [x2]
         ");
-        assert_snapshot!(cb.hexdump(), @"030001ab430000f8");
+        assert_snapshot!(cb.hexdump(), @"000001ab400000f8");
     }
 
     #[test]
@@ -2720,7 +2720,7 @@ mod tests {
         0x18: mov x16, #0
         0x1c: blr x16
         ");
-        assert_snapshot!(cb.hexdump(), @"ef0302aae20303aae3030faaef0300aae00301aae1030faa100080d200023fd6");
+        assert_snapshot!(cb.hexdump(), @"ef0300aae00301aae1030faaef0302aae20303aae3030faa100080d200023fd6");
     }
 
     #[test]
@@ -2861,7 +2861,7 @@ mod tests {
         0x8: ldur x15, [x29, #-8]
         0xc: lsl x0, x15, #1
         ");
-        assert_snapshot!(cb.hexdump(), @"300080d2b0831ff8af835ff8eff97fd3af831ff8a0835ff8");
+        assert_snapshot!(cb.hexdump(), @"300080d2b0831ff8af835ff8e0f97fd3");
     }
 
     #[test]
