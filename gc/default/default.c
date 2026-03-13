@@ -188,7 +188,7 @@ static RB_THREAD_LOCAL_SPECIFIER int malloc_increase_local;
 
 #ifndef HEAP_COUNT
 # if SIZEOF_VALUE >= 8
-#  define HEAP_COUNT 10
+#  define HEAP_COUNT 12
 # else
 #  define HEAP_COUNT 5
 # endif
@@ -198,14 +198,16 @@ static const size_t heap_init_slots_table[HEAP_COUNT] = {
 #if SIZEOF_VALUE >= 8
     /* [0]  32B   */ 2000,
     /* [1]  40B   */ GC_HEAP_INIT_SLOTS,
-    /* [2]  64B   */ GC_HEAP_INIT_SLOTS,
-    /* [3]  80B   */ GC_HEAP_INIT_SLOTS,
-    /* [4]  96B   */ GC_HEAP_INIT_SLOTS / 2,
+    /* [2]  64B   */ GC_HEAP_INIT_SLOTS / 2,
+    /* [3]  80B   */ GC_HEAP_INIT_SLOTS / 3,
+    /* [4]  96B   */ GC_HEAP_INIT_SLOTS / 3,
     /* [5]  128B  */ GC_HEAP_INIT_SLOTS / 4,
     /* [6]  160B  */ GC_HEAP_INIT_SLOTS / 5,
     /* [7]  256B  */ GC_HEAP_INIT_SLOTS / 8,
     /* [8]  512B  */ GC_HEAP_INIT_SLOTS / 16,
-    /* [9]  1024B */ GC_HEAP_INIT_SLOTS / 32,
+    /* [9]  640B  */ GC_HEAP_INIT_SLOTS / 20,
+    /* [10] 768B  */ GC_HEAP_INIT_SLOTS / 24,
+    /* [11] 1024B */ GC_HEAP_INIT_SLOTS / 32,
 #else
     GC_HEAP_INIT_SLOTS,
     GC_HEAP_INIT_SLOTS / 2, GC_HEAP_INIT_SLOTS / 4,
@@ -230,6 +232,8 @@ static const uint64_t heap_slot_reciprocal_table[HEAP_COUNT] = {
     /* 160  */ (1ULL << 48) / 160 + 1,
     /* 256  */ (1ULL << 48) / 256,
     /* 512  */ (1ULL << 48) / 512,
+    /* 640  */ (1ULL << 48) / 640 + 1,
+    /* 768  */ (1ULL << 48) / 768 + 1,
     /* 1024 */ (1ULL << 48) / 1024,
 #else
     /* 32  */ (1ULL << 48) / 32,
@@ -740,7 +744,7 @@ size_t rb_gc_impl_obj_slot_size(VALUE obj);
 
 #if SIZEOF_VALUE >= 8
 static const size_t pool_slot_sizes[HEAP_COUNT] = {
-    32, 40, 64, 80, 96, 128, 160, 256, 512, 1024,
+    32, 40, 64, 80, 96, 128, 160, 256, 512, 640, 768, 1024,
 };
 static uint8_t size_to_heap_idx[1024 / 8 + 1];
 #else
