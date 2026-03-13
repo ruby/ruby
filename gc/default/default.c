@@ -198,9 +198,9 @@ static const size_t heap_init_slots_table[HEAP_COUNT] = {
 #if SIZEOF_VALUE >= 8
     /* [0]  32B   */ 2000,
     /* [1]  40B   */ GC_HEAP_INIT_SLOTS,
-    /* [2]  64B   */ GC_HEAP_INIT_SLOTS / 2,
-    /* [3]  80B   */ GC_HEAP_INIT_SLOTS / 3,
-    /* [4]  96B   */ GC_HEAP_INIT_SLOTS / 3,
+    /* [2]  64B   */ GC_HEAP_INIT_SLOTS,
+    /* [3]  80B   */ GC_HEAP_INIT_SLOTS,
+    /* [4]  96B   */ GC_HEAP_INIT_SLOTS / 2,
     /* [5]  128B  */ GC_HEAP_INIT_SLOTS / 4,
     /* [6]  160B  */ GC_HEAP_INIT_SLOTS / 5,
     /* [7]  256B  */ GC_HEAP_INIT_SLOTS / 8,
