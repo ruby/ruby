@@ -119,7 +119,7 @@ jobs:
           ruby-version: '3.1'
           bundler: none
 
-      - uses: taiki-e/install-action@64c5c20c872907b6f7cd50994ac189e7274160f2 # v2.68.26
+      - uses: taiki-e/install-action@5ab5d1729c22acd8f798b267eadcfe5e5be6f5c2 # v2.68.27
         with:
           tool: nextest@0.9
         if: ${{ matrix.test_task == 'zjit-check' }}
