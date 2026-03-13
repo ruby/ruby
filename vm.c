@@ -3659,7 +3659,12 @@ rb_execution_context_update(rb_execution_context_t *ec)
         while (cfp != limit_cfp) {
             const VALUE *ep = cfp->ep;
             cfp->self = rb_gc_location(cfp->self);
-            cfp->iseq = (rb_iseq_t *)rb_gc_location((VALUE)cfp->iseq);
+            if (rb_zjit_enabled_p && cfp->jit_return) {
+                rb_zjit_jit_return_set_iseq(cfp->jit_return, (rb_iseq_t *)rb_gc_location((VALUE)rb_zjit_cfp_iseq(cfp)));
+            }
+            else {
+                cfp->iseq = (rb_iseq_t *)rb_gc_location((VALUE)cfp->iseq);
+            }
             cfp->block_code = (void *)rb_gc_location((VALUE)cfp->block_code);
 
             if (!VM_ENV_LOCAL_P(ep)) {
@@ -3711,7 +3716,7 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
             VM_ASSERT(!!VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED) == vm_ep_in_heap_p_(ec, ep));
 
             rb_gc_mark_movable(cfp->self);
-            rb_gc_mark_movable((VALUE)cfp->iseq);
+            rb_gc_mark_movable((VALUE)rb_zjit_cfp_iseq(cfp));
             rb_gc_mark_movable((VALUE)cfp->block_code);
 
             if (VM_ENV_LOCAL_P(ep) && VM_ENV_BOXED_P(ep)) {

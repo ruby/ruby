@@ -91,13 +91,6 @@ pub extern "C" fn rb_zjit_root_update_references() {
     let invariants = ZJITState::get_invariants();
     invariants.update_references();
 
-    // Update iseq references in JITFrames after GC compaction
-    // TODO: we can probably mark only JIT frames referenced by on-stack CFP
-    for jit_frame in ZJITState::get_jit_frames().iter_mut() {
-        if !jit_frame.iseq.is_null() {
-            jit_frame.iseq = unsafe { rb_gc_location(VALUE::from(jit_frame.iseq)) }.as_iseq();
-        }
-    }
 }
 
 fn iseq_mark(payload: &IseqPayload) {
@@ -216,13 +209,4 @@ fn ranges_overlap<T>(left: &Range<T>, right: &Range<T>) -> bool where T: Partial
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_root_mark() {
     gc_mark_raw_samples();
-
-    // Mark iseq references held by JITFrames so they don't get collected
-    if ZJITState::has_instance() {
-        for jit_frame in ZJITState::get_jit_frames().iter() {
-            if !jit_frame.iseq.is_null() {
-                unsafe { rb_gc_mark(VALUE::from(jit_frame.iseq)); }
-            }
-        }
-    }
 }
