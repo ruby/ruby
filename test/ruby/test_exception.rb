@@ -1552,4 +1552,12 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
       x(&a)
     end
   end
+
+  def test_deconstruct
+    begin
+      raise Exception, "something bad happened"
+    rescue Exception => e
+      assert_equal(e.deconstruct, ["something bad happened"])
+    end
+  end
 end
