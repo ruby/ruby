@@ -2330,7 +2330,10 @@ impl Assembler
                 let sequentialized = parcopy::sequentialize_register(&reg_copies, Opnd::Reg(SCRATCH_REG));
                 let moves: Vec<Insn> = sequentialized
                     .iter()
-                    .map(|copy| Insn::Mov { dest: copy.destination, src: copy.source })
+                    .map(|copy| match copy.source {
+                        Opnd::Value(_) => Insn::LoadInto { dest: copy.destination, opnd: copy.source },
+                        _ => Insn::Mov { dest: copy.destination, src: copy.source },
+                    })
                     .collect();
 
                 if moves.is_empty() {
@@ -2404,9 +2407,15 @@ impl Assembler
             let sequentialized = parcopy::sequentialize_register(&reg_copies, Opnd::Reg(SCRATCH_REG));
             let moves: Vec<Insn> = sequentialized
                 .iter()
-                .map(|copy| Insn::Mov {
-                    dest: copy.destination,
-                    src: copy.source,
+                .map(|copy| match copy.source {
+                    Opnd::Value(_) => Insn::LoadInto {
+                        dest: copy.destination,
+                        opnd: copy.source,
+                    },
+                    _ => Insn::Mov {
+                        dest: copy.destination,
+                        src: copy.source,
+                    },
                 })
                 .collect();
 
@@ -2528,7 +2537,10 @@ impl Assembler
                     let sequentialized = parcopy::sequentialize_register(&reg_copies, Opnd::Reg(SCRATCH_REG));
 
                     for copy in sequentialized {
-                        new_insns.push(Insn::Mov { dest: copy.destination, src: copy.source });
+                        new_insns.push(match copy.source {
+                            Opnd::Value(_) => Insn::LoadInto { dest: copy.destination, opnd: copy.source },
+                            _ => Insn::Mov { dest: copy.destination, src: copy.source },
+                        });
                         new_ids.push(None);
                     }
 
