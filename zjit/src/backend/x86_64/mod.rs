@@ -831,7 +831,15 @@ impl Assembler {
 
                 Insn::ParallelMov { .. } => unreachable!("{insn:?} should have been lowered at alloc_regs()"),
 
-                Insn::Store { dest, src } |
+                Insn::Store { dest, src } => {
+                    match src {
+                        Opnd::Value(val) if val.heap_object_p() => {
+                            emit_load_gc_value(cb, &mut gc_offsets, dest.into(), *val);
+                        }
+                        _ => mov(cb, dest.into(), src.into())
+                    }
+                },
+
                 Insn::Mov { dest, src } => {
                     mov(cb, dest.into(), src.into());
                 },
