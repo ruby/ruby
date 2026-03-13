@@ -8,6 +8,7 @@
 #include "internal/object.h"
 #include "internal/array.h"
 
+#include "ruby/thread.h"
 #include "gc/gc.h"
 #include "gc/gc_impl.h"
 
@@ -943,17 +944,31 @@ maybe_gc(void *objspace_ptr)
 
 }
 
-static void
-lock_and_maybe_gc(void *objspace_ptr)
-{
-    if (!ruby_native_thread_p()) return;
+int ruby_thread_has_gvl_p(void);
 
+static void *
+lock_and_maybe_gc_gvl(void *objspace_ptr)
+{
     unsigned int lev = RB_GC_VM_LOCK();
     rb_gc_vm_barrier();
 
     maybe_gc(objspace_ptr);
 
     RB_GC_VM_UNLOCK(lev);
+    return NULL;
+}
+
+static void
+lock_and_maybe_gc(void *objspace_ptr)
+{
+    if (!ruby_native_thread_p()) return;
+
+    if (!ruby_thread_has_gvl_p()) {
+        rb_thread_call_with_gvl(lock_and_maybe_gc_gvl, objspace_ptr);
+    }
+    else {
+        lock_and_maybe_gc_gvl(objspace_ptr);
+    }
 }
 
 VALUE
