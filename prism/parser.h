@@ -934,12 +934,6 @@ struct pm_parser {
     bool semantic_token_seen;
 
     /**
-     * True if the current regular expression being lexed contains only ASCII
-     * characters.
-     */
-    bool current_regular_expression_ascii_only;
-
-    /**
      * By default, Ruby always warns about mismatched indentation. This can be
      * toggled with a magic comment.
      */

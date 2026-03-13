@@ -25,6 +25,20 @@ module Bundler
       [false, specific_failure_message(e)]
     end
 
+    def download
+      spec.source.download(
+        spec,
+        force: force,
+        local: local,
+        build_args: Array(spec_settings),
+        previous_spec: previous_spec,
+      )
+
+      [true, nil]
+    rescue Bundler::BundlerError => e
+      [false, specific_failure_message(e)]
+    end
+
     private
 
     def specific_failure_message(e)

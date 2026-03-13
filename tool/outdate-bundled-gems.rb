@@ -60,6 +60,7 @@ class Removal
   def initialize(base = nil)
     @base = (File.join(base, "/") if base)
     @remove = {}
+    @defaults = nil
   end
 
   def prefixed(name)
@@ -92,10 +93,22 @@ class Removal
     @remove[slash(stripped(name))] = :rm_rf
   end
 
-  def glob(pattern, *rest)
-    Dir.glob(prefixed(pattern), *rest) {|n|
-      yield stripped(n)
-    }
+  def glob(pattern, *rest, &block)
+    Dir.glob(pattern, *rest, base: @base, &block)
+  end
+
+  def default_gem?(spec)
+    (@defaults ||= {}).fetch(spec) do
+      File.open(prefixed(spec)) do |f|
+        if /^# default: (\S+) (\d+\.\d+)/ =~ f.gets("")
+          File.mtime(prefixed($1)) <= Time.at(Rational($2))
+        else
+          false
+        end
+      rescue
+        false
+      end
+    end
   end
 
   def sorted
@@ -133,12 +146,14 @@ end
 
 srcdir.glob(".bundle/specifications/*.gemspec") do |spec|
   unless srcdir.directory?(".bundle/gems/#{File.basename(spec, '.gemspec')}/")
+    next if srcdir.default_gem?(srcdir.prefixed(spec))
     srcdir.unlink(spec)
   end
 end
 
 curdir.glob(".bundle/specifications/*.gemspec") do |spec|
   unless srcdir.directory?(".bundle/gems/#{File.basename(spec, '.gemspec')}")
+    next if srcdir.default_gem?(curdir.prefixed(spec))
     curdir.unlink(spec)
   end
 end

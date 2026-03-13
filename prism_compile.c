@@ -140,33 +140,114 @@ pm_iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line, int node
 #define PM_COMPILE_NOT_POPPED(node) \
     pm_compile_node(iseq, (node), ret, false, scope_node)
 
+/**
+ * Cached line lookup that avoids repeated binary searches. Since the compiler
+ * walks the AST roughly in source order, consecutive lookups tend to be for
+ * nearby byte offsets. We cache the last result index in the scope node and
+ * try a short linear probe from there before falling back to binary search.
+ */
+static inline pm_line_column_t
+pm_line_offset_list_line_column_cached(const pm_line_offset_list_t *list, uint32_t cursor, int32_t start_line, size_t *last_line)
+{
+    size_t hint = *last_line;
+    size_t size = list->size;
+    const uint32_t *offsets = list->offsets;
+
+    RUBY_ASSERT(hint < size);
+
+    /* Check if the cursor is on the same line as the hint. */
+    if (offsets[hint] <= cursor) {
+        if (hint + 1 >= size || offsets[hint + 1] > cursor) {
+            *last_line = hint;
+            return ((pm_line_column_t) {
+                .line = ((int32_t) hint) + start_line,
+                .column = cursor - offsets[hint]
+            });
+        }
+
+        /* Linear scan forward (up to 8 lines before giving up). */
+        size_t limit = hint + 9;
+        if (limit > size) limit = size;
+        for (size_t idx = hint + 1; idx < limit; idx++) {
+            if (offsets[idx] > cursor) {
+                *last_line = idx - 1;
+                return ((pm_line_column_t) {
+                    .line = ((int32_t) (idx - 1)) + start_line,
+                    .column = cursor - offsets[idx - 1]
+                });
+            }
+            if (offsets[idx] == cursor) {
+                *last_line = idx;
+                return ((pm_line_column_t) { ((int32_t) idx) + start_line, 0 });
+            }
+        }
+    }
+    else {
+        /* Linear scan backward (up to 8 lines before giving up). */
+        size_t limit = hint > 8 ? hint - 8 : 0;
+        for (size_t idx = hint; idx > limit; idx--) {
+            if (offsets[idx - 1] <= cursor) {
+                *last_line = idx - 1;
+                return ((pm_line_column_t) {
+                    .line = ((int32_t) (idx - 1)) + start_line,
+                    .column = cursor - offsets[idx - 1]
+                });
+            }
+        }
+    }
+
+    /* Fall back to binary search. */
+    pm_line_column_t result = pm_line_offset_list_line_column(list, cursor, start_line);
+    *last_line = (size_t) (result.line - start_line);
+    return result;
+}
+
+/**
+ * The same as pm_line_offset_list_line_column_cached, but returning only the
+ * line number.
+ */
+static inline int32_t
+pm_line_offset_list_line_cached(const pm_line_offset_list_t *list, uint32_t cursor, int32_t start_line, size_t *last_line)
+{
+    return pm_line_offset_list_line_column_cached(list, cursor, start_line, last_line).line;
+}
+
 #define PM_NODE_START_LOCATION(parser, node) \
-    ((pm_node_location_t) { .line = pm_line_offset_list_line(&(parser)->line_offsets, ((const pm_node_t *) (node))->location.start, (parser)->start_line), .node_id = ((const pm_node_t *) (node))->node_id })
+    ((pm_node_location_t) { .line = pm_line_offset_list_line_cached(&(parser)->line_offsets, ((const pm_node_t *) (node))->location.start, (parser)->start_line, &scope_node->last_line), .node_id = ((const pm_node_t *) (node))->node_id })
 
 #define PM_NODE_END_LOCATION(parser, node) \
-    ((pm_node_location_t) { .line = pm_line_offset_list_line(&(parser)->line_offsets, ((const pm_node_t *) (node))->location.start + ((const pm_node_t *) (node))->location.length, (parser)->start_line), .node_id = ((const pm_node_t *) (node))->node_id })
+    ((pm_node_location_t) { .line = pm_line_offset_list_line_cached(&(parser)->line_offsets, ((const pm_node_t *) (node))->location.start + ((const pm_node_t *) (node))->location.length, (parser)->start_line, &scope_node->last_line), .node_id = ((const pm_node_t *) (node))->node_id })
 
 #define PM_LOCATION_START_LOCATION(parser, location, id) \
-    ((pm_node_location_t) { .line = pm_line_offset_list_line(&(parser)->line_offsets, (location)->start, (parser)->start_line), .node_id = id })
+    ((pm_node_location_t) { .line = pm_line_offset_list_line_cached(&(parser)->line_offsets, (location)->start, (parser)->start_line, &scope_node->last_line), .node_id = id })
 
 #define PM_NODE_START_LINE_COLUMN(parser, node) \
-    pm_line_offset_list_line_column(&(parser)->line_offsets, ((const pm_node_t *) (node))->location.start, (parser)->start_line)
+    pm_line_offset_list_line_column_cached(&(parser)->line_offsets, ((const pm_node_t *) (node))->location.start, (parser)->start_line, &scope_node->last_line)
 
 #define PM_NODE_END_LINE_COLUMN(parser, node) \
-    pm_line_offset_list_line_column(&(parser)->line_offsets, ((const pm_node_t *) (node))->location.start + ((const pm_node_t *) (node))->location.length, (parser)->start_line)
+    pm_line_offset_list_line_column_cached(&(parser)->line_offsets, ((const pm_node_t *) (node))->location.start + ((const pm_node_t *) (node))->location.length, (parser)->start_line, &scope_node->last_line)
 
 #define PM_LOCATION_START_LINE_COLUMN(parser, location) \
-    pm_line_offset_list_line_column(&(parser)->line_offsets, (location)->start, (parser)->start_line)
-
-static int
-pm_node_line_number(const pm_parser_t *parser, const pm_node_t *node)
-{
-    return (int) pm_line_offset_list_line(&parser->line_offsets, node->location.start, parser->start_line);
-}
+    pm_line_offset_list_line_column_cached(&(parser)->line_offsets, (location)->start, (parser)->start_line, &scope_node->last_line)
 
 static int
 pm_location_line_number(const pm_parser_t *parser, const pm_location_t *location) {
     return (int) pm_line_offset_list_line(&parser->line_offsets, location->start, parser->start_line);
+}
+
+/**
+ * Cached variants that use the scope node's hint for fast lookups during
+ * compilation (where access patterns are roughly sequential).
+ */
+static inline int
+pm_node_line_number_cached(const pm_parser_t *parser, const pm_node_t *node, pm_scope_node_t *scope_node)
+{
+    return (int) pm_line_offset_list_line_cached(&parser->line_offsets, node->location.start, parser->start_line, &scope_node->last_line);
+}
+
+static inline int
+pm_location_line_number_cached(const pm_parser_t *parser, const pm_location_t *location, pm_scope_node_t *scope_node) {
+    return (int) pm_line_offset_list_line_cached(&parser->line_offsets, location->start, parser->start_line, &scope_node->last_line);
 }
 
 /**
@@ -181,24 +262,21 @@ parse_integer_value(const pm_integer_t *integer)
         result = UINT2NUM(integer->value);
     }
     else {
-        VALUE string = rb_str_new(NULL, integer->length * 8);
-        unsigned char *bytes = (unsigned char *) RSTRING_PTR(string);
-
-        size_t offset = integer->length * 8;
-        for (size_t value_index = 0; value_index < integer->length; value_index++) {
-            uint32_t value = integer->values[value_index];
-
-            for (int index = 0; index < 8; index++) {
-                int byte = (value >> (4 * index)) & 0xf;
-                bytes[--offset] = byte < 10 ? byte + '0' : byte - 10 + 'a';
-            }
-        }
-
-        result = rb_funcall(string, rb_intern("to_i"), 1, UINT2NUM(16));
+        // The pm_integer_t stores values as an array of uint32_t in
+        // least-significant-word-first order (base 2^32). We can convert
+        // directly to a Ruby Integer using rb_integer_unpack, avoiding the
+        // overhead of constructing a hex string and calling rb_funcall.
+        result = rb_integer_unpack(
+            integer->values,
+            integer->length,
+            sizeof(uint32_t),
+            0,
+            INTEGER_PACK_LSWORD_FIRST | INTEGER_PACK_NATIVE_BYTE_ORDER
+        );
     }
 
     if (integer->negative) {
-        result = rb_funcall(result, rb_intern("-@"), 0);
+        result = rb_int_uminus(result);
     }
 
     if (!SPECIAL_CONST_P(result)) {
@@ -305,7 +383,7 @@ parse_string_encoded(const pm_node_t *node, const pm_string_t *string, rb_encodi
 }
 
 static inline VALUE
-parse_static_literal_string(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, const pm_node_t *node, const pm_string_t *string)
+parse_static_literal_string(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t *node, const pm_string_t *string)
 {
     rb_encoding *encoding;
 
@@ -323,7 +401,7 @@ parse_static_literal_string(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, 
     rb_enc_str_coderange(value);
 
     if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
-        int line_number = pm_node_line_number(scope_node->parser, node);
+        int line_number = pm_node_line_number_cached(scope_node->parser, node, scope_node);
         value = rb_ractor_make_shareable(rb_str_with_debug_created_info(value, rb_iseq_path(iseq), line_number));
     }
 
@@ -368,7 +446,7 @@ parse_regexp_error(rb_iseq_t *iseq, int32_t line_number, const char *fmt, ...)
 }
 
 static VALUE
-parse_regexp_string_part(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, const pm_node_t *node, const pm_string_t *unescaped, rb_encoding *implicit_regexp_encoding, rb_encoding *explicit_regexp_encoding)
+parse_regexp_string_part(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t *node, const pm_string_t *unescaped, rb_encoding *implicit_regexp_encoding, rb_encoding *explicit_regexp_encoding)
 {
     // If we were passed an explicit regexp encoding, then we need to double
     // check that it's okay here for this fragment of the string.
@@ -390,12 +468,12 @@ parse_regexp_string_part(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, con
     VALUE string = rb_enc_str_new((const char *) pm_string_source(unescaped), pm_string_length(unescaped), encoding);
     VALUE error = rb_reg_check_preprocess(string);
 
-    if (error != Qnil) parse_regexp_error(iseq, pm_node_line_number(scope_node->parser, node), "%" PRIsVALUE, rb_obj_as_string(error));
+    if (error != Qnil) parse_regexp_error(iseq, pm_node_line_number_cached(scope_node->parser, node, scope_node), "%" PRIsVALUE, rb_obj_as_string(error));
     return string;
 }
 
 static VALUE
-pm_static_literal_concat(rb_iseq_t *iseq, const pm_node_list_t *nodes, const pm_scope_node_t *scope_node, rb_encoding *implicit_regexp_encoding, rb_encoding *explicit_regexp_encoding, bool top)
+pm_static_literal_concat(rb_iseq_t *iseq, const pm_node_list_t *nodes, pm_scope_node_t *scope_node, rb_encoding *implicit_regexp_encoding, rb_encoding *explicit_regexp_encoding, bool top)
 {
     VALUE current = Qnil;
 
@@ -412,7 +490,7 @@ pm_static_literal_concat(rb_iseq_t *iseq, const pm_node_list_t *nodes, const pm_
                 else {
                     string = parse_string_encoded(part, &((const pm_string_node_t *) part)->unescaped, scope_node->encoding);
                     VALUE error = rb_reg_check_preprocess(string);
-                    if (error != Qnil) parse_regexp_error(iseq, pm_node_line_number(scope_node->parser, part), "%" PRIsVALUE, rb_obj_as_string(error));
+                    if (error != Qnil) parse_regexp_error(iseq, pm_node_line_number_cached(scope_node->parser, part, scope_node), "%" PRIsVALUE, rb_obj_as_string(error));
                 }
             }
             else {
@@ -525,11 +603,11 @@ parse_regexp_encoding(const pm_scope_node_t *scope_node, const pm_node_t *node)
 }
 
 static VALUE
-parse_regexp(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, const pm_node_t *node, VALUE string)
+parse_regexp(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t *node, VALUE string)
 {
     VALUE errinfo = rb_errinfo();
 
-    int32_t line_number = pm_node_line_number(scope_node->parser, node);
+    int32_t line_number = pm_node_line_number_cached(scope_node->parser, node, scope_node);
     VALUE regexp = rb_reg_compile(string, parse_regexp_flags(node), (const char *) pm_string_source(&scope_node->parser->filepath), line_number);
 
     if (NIL_P(regexp)) {
@@ -544,7 +622,7 @@ parse_regexp(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, const pm_node_t
 }
 
 static inline VALUE
-parse_regexp_literal(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, const pm_node_t *node, const pm_string_t *unescaped)
+parse_regexp_literal(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t *node, const pm_string_t *unescaped)
 {
     rb_encoding *regexp_encoding = parse_regexp_encoding(scope_node, node);
     if (regexp_encoding == NULL) regexp_encoding = scope_node->encoding;
@@ -555,7 +633,7 @@ parse_regexp_literal(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, const p
 }
 
 static inline VALUE
-parse_regexp_concat(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, const pm_node_t *node, const pm_node_list_t *parts)
+parse_regexp_concat(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t *node, const pm_node_list_t *parts)
 {
     rb_encoding *explicit_regexp_encoding = parse_regexp_encoding(scope_node, node);
     rb_encoding *implicit_regexp_encoding = explicit_regexp_encoding != NULL ? explicit_regexp_encoding : scope_node->encoding;
@@ -748,7 +826,7 @@ pm_static_literal_string(rb_iseq_t *iseq, VALUE string, int line_number)
  * literal values can be compiled into a literal array.
  */
 static VALUE
-pm_static_literal_value(rb_iseq_t *iseq, const pm_node_t *node, const pm_scope_node_t *scope_node)
+pm_static_literal_value(rb_iseq_t *iseq, const pm_node_t *node, pm_scope_node_t *scope_node)
 {
     // Every node that comes into this function should already be marked as
     // static literal. If it's not, then we have a bug somewhere.
@@ -804,7 +882,7 @@ pm_static_literal_value(rb_iseq_t *iseq, const pm_node_t *node, const pm_scope_n
       }
       case PM_INTERPOLATED_STRING_NODE: {
         VALUE string = pm_static_literal_concat(iseq, &((const pm_interpolated_string_node_t *) node)->parts, scope_node, NULL, NULL, false);
-        int line_number = pm_node_line_number(scope_node->parser, node);
+        int line_number = pm_node_line_number_cached(scope_node->parser, node, scope_node);
         return pm_static_literal_string(iseq, string, line_number);
       }
       case PM_INTERPOLATED_SYMBOL_NODE: {
@@ -832,7 +910,7 @@ pm_static_literal_value(rb_iseq_t *iseq, const pm_node_t *node, const pm_scope_n
         return pm_source_file_value(cast, scope_node);
       }
       case PM_SOURCE_LINE_NODE:
-        return INT2FIX(pm_node_line_number(scope_node->parser, node));
+        return INT2FIX(pm_node_line_number_cached(scope_node->parser, node, scope_node));
       case PM_STRING_NODE: {
         const pm_string_node_t *cast = (const pm_string_node_t *) node;
         return parse_static_literal_string(iseq, scope_node, node, &cast->unescaped);
@@ -851,7 +929,7 @@ pm_static_literal_value(rb_iseq_t *iseq, const pm_node_t *node, const pm_scope_n
  * A helper for converting a pm_location_t into a rb_code_location_t.
  */
 static rb_code_location_t
-pm_code_location(const pm_scope_node_t *scope_node, const pm_node_t *node)
+pm_code_location(pm_scope_node_t *scope_node, const pm_node_t *node)
 {
     const pm_line_column_t start_location = PM_NODE_START_LINE_COLUMN(scope_node->parser, node);
     const pm_line_column_t end_location = PM_NODE_END_LINE_COLUMN(scope_node->parser, node);
@@ -2404,7 +2482,7 @@ pm_compile_pattern_eqq_error(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const
 static int
 pm_compile_pattern_match(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t *node, LINK_ANCHOR *const ret, LABEL *unmatched_label, bool in_single_pattern, bool use_deconstructed_cache, unsigned int base_index)
 {
-    LABEL *matched_label = NEW_LABEL(pm_node_line_number(scope_node->parser, node));
+    LABEL *matched_label = NEW_LABEL(pm_node_line_number_cached(scope_node->parser, node, scope_node));
     CHECK(pm_compile_pattern(iseq, scope_node, node, ret, matched_label, unmatched_label, in_single_pattern, use_deconstructed_cache, base_index));
     PUSH_LABEL(ret, matched_label);
     return COMPILE_OK;
@@ -2493,7 +2571,7 @@ pm_compile_pattern_constant(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const 
  * responsible for compiling in those error raising instructions.
  */
 static void
-pm_compile_pattern_error_handler(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, const pm_node_t *node, LINK_ANCHOR *const ret, LABEL *done_label, bool popped)
+pm_compile_pattern_error_handler(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t *node, LINK_ANCHOR *const ret, LABEL *done_label, bool popped)
 {
     const pm_node_location_t location = PM_NODE_START_LOCATION(scope_node->parser, node);
     LABEL *key_error_label = NEW_LABEL(location.line);
@@ -3243,6 +3321,7 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
         scope->constants = previous->constants;
         scope->coverage_enabled = previous->coverage_enabled;
         scope->script_lines = previous->script_lines;
+        scope->last_line = previous->last_line;
     }
 
     switch (PM_NODE_TYPE(node)) {
@@ -3411,7 +3490,7 @@ pm_iseq_builtin_function_name(const pm_scope_node_t *scope_node, const pm_node_t
 
 // Compile Primitive.attr! :leaf, ...
 static int
-pm_compile_builtin_attr(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, const pm_arguments_node_t *arguments, const pm_node_location_t *node_location)
+pm_compile_builtin_attr(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_arguments_node_t *arguments, const pm_node_location_t *node_location)
 {
     if (arguments == NULL) {
         COMPILE_ERROR(iseq, node_location->line, "attr!: no argument");
@@ -3699,7 +3778,7 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
             }
 
             const pm_line_column_t start_location = PM_NODE_START_LINE_COLUMN(scope_node->parser, call_node);
-            const pm_line_column_t end_location = pm_line_offset_list_line_column(&scope_node->parser->line_offsets, end_cursor, scope_node->parser->start_line);
+            const pm_line_column_t end_location = pm_line_offset_list_line_column_cached(&scope_node->parser->line_offsets, end_cursor, scope_node->parser->start_line, &scope_node->last_line);
 
             code_location = (rb_code_location_t) {
                 .beg_pos = { .lineno = start_location.line, .column = start_location.column },
@@ -3729,7 +3808,7 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
         pm_scope_node_t next_scope_node;
         pm_scope_node_init(call_node->block, &next_scope_node, scope_node);
 
-        block_iseq = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, pm_node_line_number(scope_node->parser, call_node->block));
+        block_iseq = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, pm_node_line_number_cached(scope_node->parser, call_node->block, scope_node));
         pm_scope_node_destroy(&next_scope_node);
         ISEQ_COMPILE_DATA(iseq)->current_block = block_iseq;
     }
@@ -4783,7 +4862,7 @@ pm_compile_destructured_param_locals(const pm_multi_target_node_t *node, st_tabl
  * as a positional parameter in a method, block, or lambda definition.
  */
 static inline void
-pm_compile_destructured_param_write(rb_iseq_t *iseq, const pm_required_parameter_node_t *node, LINK_ANCHOR *const ret, const pm_scope_node_t *scope_node)
+pm_compile_destructured_param_write(rb_iseq_t *iseq, const pm_required_parameter_node_t *node, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node)
 {
     const pm_node_location_t location = PM_NODE_START_LOCATION(scope_node->parser, node);
     pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, node->name, 0);
@@ -4799,7 +4878,7 @@ pm_compile_destructured_param_write(rb_iseq_t *iseq, const pm_required_parameter
  * for this simplified case.
  */
 static void
-pm_compile_destructured_param_writes(rb_iseq_t *iseq, const pm_multi_target_node_t *node, LINK_ANCHOR *const ret, const pm_scope_node_t *scope_node)
+pm_compile_destructured_param_writes(rb_iseq_t *iseq, const pm_multi_target_node_t *node, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node)
 {
     const pm_node_location_t location = PM_NODE_START_LOCATION(scope_node->parser, node);
     bool has_rest = (node->rest && PM_NODE_TYPE_P(node->rest, PM_SPLAT_NODE) && (((const pm_splat_node_t *) node->rest)->expression) != NULL);
@@ -5435,7 +5514,7 @@ pm_compile_rescue(rb_iseq_t *iseq, const pm_begin_node_t *cast, const pm_node_lo
         &rescue_scope_node,
         rb_str_concat(rb_str_new2("rescue in "), ISEQ_BODY(iseq)->location.label),
         ISEQ_TYPE_RESCUE,
-        pm_node_line_number(parser, (const pm_node_t *) cast->rescue_clause)
+        pm_node_line_number_cached(parser, (const pm_node_t *) cast->rescue_clause, scope_node)
     );
 
     pm_scope_node_destroy(&rescue_scope_node);
@@ -5567,7 +5646,7 @@ pm_opt_str_freeze_p(const rb_iseq_t *iseq, const pm_call_node_t *node)
  * of the current iseq.
  */
 static void
-pm_compile_constant_read(rb_iseq_t *iseq, VALUE name, const pm_location_t *name_loc, uint32_t node_id, LINK_ANCHOR *const ret, const pm_scope_node_t *scope_node)
+pm_compile_constant_read(rb_iseq_t *iseq, VALUE name, const pm_location_t *name_loc, uint32_t node_id, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node)
 {
     const pm_node_location_t location = PM_LOCATION_START_LOCATION(scope_node->parser, name_loc, node_id);
 
@@ -5667,7 +5746,7 @@ pm_compile_constant_path(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *co
  * Return the object that will be pushed onto the stack for the given node.
  */
 static VALUE
-pm_compile_shareable_constant_literal(rb_iseq_t *iseq, const pm_node_t *node, const pm_scope_node_t *scope_node)
+pm_compile_shareable_constant_literal(rb_iseq_t *iseq, const pm_node_t *node, pm_scope_node_t *scope_node)
 {
     switch (PM_NODE_TYPE(node)) {
       case PM_TRUE_NODE:
@@ -7507,7 +7586,7 @@ pm_compile_call_operator_write_node(rb_iseq_t *iseq, const pm_call_operator_writ
  * optimization entirely.
  */
 static VALUE
-pm_compile_case_node_dispatch(rb_iseq_t *iseq, VALUE dispatch, const pm_node_t *node, LABEL *label, const pm_scope_node_t *scope_node)
+pm_compile_case_node_dispatch(rb_iseq_t *iseq, VALUE dispatch, const pm_node_t *node, LABEL *label, pm_scope_node_t *scope_node)
 {
     VALUE key = Qundef;
     switch (PM_NODE_TYPE(node)) {
@@ -7590,7 +7669,7 @@ pm_compile_case_node(rb_iseq_t *iseq, const pm_case_node_t *cast, const pm_node_
             const pm_when_node_t *clause = (const pm_when_node_t *) conditions->nodes[clause_index];
             const pm_node_list_t *conditions = &clause->conditions;
 
-            int clause_lineno = pm_node_line_number(parser, (const pm_node_t *) clause);
+            int clause_lineno = pm_node_line_number_cached(parser, (const pm_node_t *) clause, scope_node);
             LABEL *label = NEW_LABEL(clause_lineno);
             PUSH_LABEL(body_seq, label);
 
@@ -7623,7 +7702,7 @@ pm_compile_case_node(rb_iseq_t *iseq, const pm_case_node_t *cast, const pm_node_
                     PUSH_INSNL(cond_seq, cond_location, branchif, label);
                 }
                 else {
-                    LABEL *next_label = NEW_LABEL(pm_node_line_number(parser, condition));
+                    LABEL *next_label = NEW_LABEL(pm_node_line_number_cached(parser, condition, scope_node));
                     pm_compile_branch_condition(iseq, cond_seq, condition, label, next_label, false, scope_node);
                     PUSH_LABEL(cond_seq, next_label);
                 }
@@ -9705,7 +9784,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_scope_node_t next_scope_node;
         pm_scope_node_init(node, &next_scope_node, scope_node);
 
-        int opening_lineno = pm_location_line_number(parser, &cast->opening_loc);
+        int opening_lineno = pm_location_line_number_cached(parser, &cast->opening_loc, scope_node);
         const rb_iseq_t *block = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, opening_lineno);
         pm_scope_node_destroy(&next_scope_node);
 
@@ -10183,7 +10262,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             &rescue_scope_node,
             rb_str_concat(rb_str_new2("rescue in "), ISEQ_BODY(iseq)->location.label),
             ISEQ_TYPE_RESCUE,
-            pm_node_line_number(parser, cast->rescue_expression)
+            pm_node_line_number_cached(parser, cast->rescue_expression, scope_node)
         );
 
         pm_scope_node_destroy(&rescue_scope_node);

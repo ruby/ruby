@@ -1135,4 +1135,65 @@ class TestGemSafeYAML < Gem::TestCase
     spec = Gem::SafeYAML.safe_load(yaml)
     assert_equal [["foo", "bar"]], spec.requirements
   end
+
+  def test_binary_tag_decoded_in_mapping_key
+    yaml = <<~YAML
+      ---
+      !binary "U0hBMQ==":
+        metadata.gz: abc123
+    YAML
+
+    result = yaml_load(yaml)
+    assert_equal "SHA1", result.keys.first
+    assert_equal "abc123", result["SHA1"]["metadata.gz"]
+  end
+
+  def test_binary_tag_decoded_in_block_scalar_value
+    yaml = <<~YAML
+      ---
+      SHA256:
+        metadata.gz: !binary |-
+          OWY4YTM5Y2MxOTc3Mzc5MWYzNzk1NjRmZjVlYzljYjY1MDQwYWIwMg==
+    YAML
+
+    result = yaml_load(yaml)
+    assert_equal "9f8a39cc19773791f379564ff5ec9cb65040ab02", result["SHA256"]["metadata.gz"]
+  end
+
+  def test_binary_tag_decoded_in_inline_value
+    yaml = <<~YAML
+      ---
+      key: !binary "U0hBMQ=="
+    YAML
+
+    result = yaml_load(yaml)
+    assert_equal "SHA1", result["key"]
+  end
+
+  def test_binary_tag_checksums_yaml_roundtrip
+    # Simulates the checksums.yaml.gz format from older gems
+    yaml = <<~YAML
+      ---
+      !binary "U0hBMQ==":
+        metadata.gz: !binary |-
+          OWY4YTM5Y2MxOTc3Mzc5MWYzNzk1NjRmZjVlYzljYjY1MDQwYWIwMg==
+        data.tar.gz: !binary |-
+          ZTRmZGRhNjc1MWM5NmIwYzRhODFkYjI0OTlkMjY3ZjQ2MWNkMGM1ZA==
+    YAML
+
+    result = yaml_load(yaml)
+    assert_equal ["SHA1"], result.keys
+    assert_equal "9f8a39cc19773791f379564ff5ec9cb65040ab02", result["SHA1"]["metadata.gz"]
+    assert_equal "e4fdda6751c96b0c4a81db2499d267f461cd0c5d", result["SHA1"]["data.tar.gz"]
+  end
+
+  def test_binary_tag_decoded_in_sequence_item_inline
+    yaml = <<~YAML
+      ---
+      - !binary "U0hBMQ=="
+    YAML
+
+    result = yaml_load(yaml)
+    assert_equal ["SHA1"], result
+  end
 end

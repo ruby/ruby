@@ -31,6 +31,8 @@ module Bundler
       message
     end
 
+    def download(*); end
+
     def can_lock?(spec)
       spec.source == self
     end

@@ -1471,6 +1471,20 @@ pub const SHAPE_ID_FL_TOO_COMPLEX: shape_id_fl_type = 67108864;
 pub const SHAPE_ID_FL_NON_CANONICAL_MASK: shape_id_fl_type = 50331648;
 pub const SHAPE_ID_FLAGS_MASK: shape_id_fl_type = 133693440;
 pub type shape_id_fl_type = u32;
+pub const CONST_DEPRECATED: rb_const_flag_t = 256;
+pub const CONST_VISIBILITY_MASK: rb_const_flag_t = 255;
+pub const CONST_PUBLIC: rb_const_flag_t = 0;
+pub const CONST_PRIVATE: rb_const_flag_t = 1;
+pub const CONST_VISIBILITY_MAX: rb_const_flag_t = 2;
+pub type rb_const_flag_t = u32;
+#[repr(C)]
+pub struct rb_const_entry_struct {
+    pub flag: rb_const_flag_t,
+    pub line: ::std::os::raw::c_int,
+    pub value: VALUE,
+    pub file: VALUE,
+}
+pub type rb_const_entry_t = rb_const_entry_struct;
 #[repr(C)]
 pub struct rb_cvar_class_tbl_entry {
     pub index: u32,
@@ -1912,6 +1926,7 @@ unsafe extern "C" {
     pub fn rb_gc_location(obj: VALUE) -> VALUE;
     pub fn rb_gc_enable() -> VALUE;
     pub fn rb_gc_disable() -> VALUE;
+    pub fn rb_gc_register_mark_object(object: VALUE);
     pub fn rb_gc_writebarrier(old: VALUE, young: VALUE);
     pub fn rb_class_get_superclass(klass: VALUE) -> VALUE;
     pub fn rb_funcallv(
@@ -2057,6 +2072,7 @@ unsafe extern "C" {
         original_shape_id: shape_id_t,
         id: ID,
     ) -> shape_id_t;
+    pub fn rb_const_lookup(klass: VALUE, id: ID) -> *mut rb_const_entry_t;
     pub fn rb_ivar_get_at_no_ractor_check(obj: VALUE, index: attr_index_t) -> VALUE;
     pub fn rb_gvar_get(arg1: ID) -> VALUE;
     pub fn rb_gvar_set(arg1: ID, arg2: VALUE) -> VALUE;

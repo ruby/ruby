@@ -1550,7 +1550,11 @@ yes-update-default-gemspecs: $(PRECHECK_BUNDLED_GEMS:yes=main)
 	    -e     "end" \
 	    -e     "spec.files.clear" \
 	    -e     "spec.extensions.clear" \
-	    -e     "File.binwrite(File.join(destdir, spec.full_name+'.gemspec'), spec.to_ruby)" \
+	    -e     "src = spec.to_ruby" \
+	    -e     "src.sub!(/^$$/) {" \
+	    -e       "%[# default: #{g} #{File.mtime(g).strftime(%[%s.%N])}\n]" \
+	    -e     "}" \
+	    -e     "File.binwrite(File.join(destdir, spec.full_name+'.gemspec'), src)" \
 	    -e   "end" \
 	    -e "end" \
 	    -- .bundle/specifications lib ext

@@ -16,6 +16,13 @@ module BundledGem
     "psych" # rdoc
   ]
 
+  def self.command(gem, cmd)
+    if stub = Gem::Specification.latest_spec_for(gem)
+      spec = stub.spec
+      File.join(spec.gem_dir, spec.bindir, cmd)
+    end
+  end
+
   module_function
 
   def unpack(file, *rest)

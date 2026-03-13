@@ -7,10 +7,12 @@
 #![allow(clippy::match_like_matches_macro)]
 use crate::{
     backend::lir::C_ARG_OPNDS,
-    cast::IntoUsize, codegen::local_idx_to_ep_offset, cruby::*, invariants::{self, has_singleton_class_of}, payload::{get_or_create_iseq_payload, IseqPayload}, options::{debug, get_option, DumpHIR}, state::ZJITState, json::Json
+    cast::IntoUsize, codegen::local_idx_to_ep_offset, cruby::*, invariants::{self, has_singleton_class_of}, payload::{get_or_create_iseq_payload, IseqPayload}, options::{debug, get_option, DumpHIR}, state::ZJITState, json::Json,
+    state,
 };
 use std::{
-    cell::RefCell, collections::{BTreeSet, HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, c_int, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter
+    cell::RefCell, collections::{BTreeSet, HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, c_int, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter,
+    sync::atomic::Ordering,
 };
 use crate::hir_type::{Type, types};
 use crate::hir_effect::{Effect, abstract_heaps, effects};
@@ -529,6 +531,7 @@ pub enum SideExitReason {
     SplatKwNotNilOrHash,
     SplatKwPolymorphic,
     SplatKwNotProfiled,
+    DirectiveInduced,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -765,6 +768,7 @@ pub enum Insn {
     StringSetbyteFixnum { string: InsnId, index: InsnId, value: InsnId },
     StringAppend { recv: InsnId, other: InsnId, state: InsnId },
     StringAppendCodepoint { recv: InsnId, other: InsnId, state: InsnId },
+    StringEqual { left: InsnId, right: InsnId },
 
     /// Combine count stack values into a regexp
     ToRegexp { opt: usize, values: Vec<InsnId>, state: InsnId },
@@ -1151,6 +1155,10 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(other);
                 $visit_one!(state);
             }
+            Insn::StringEqual { left, right } => {
+                $visit_one!(left);
+                $visit_one!(right);
+            }
             Insn::ToRegexp { values, state, .. } => {
                 $visit_many!(values);
                 $visit_one!(state);
@@ -1419,6 +1427,7 @@ impl Insn {
             Insn::StringSetbyteFixnum { .. } => effects::Any,
             Insn::StringAppend { .. } => effects::Any,
             Insn::StringAppendCodepoint { .. } => effects::Any,
+            Insn::StringEqual { .. } => Effect::write(abstract_heaps::Allocator),
             Insn::ToRegexp { .. } => effects::Any,
             Insn::PutSpecialObject { .. } => effects::Any,
             Insn::ToArray { .. } => effects::Any,
@@ -1771,6 +1780,9 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::StringAppendCodepoint { recv, other, .. } => {
                 write!(f, "StringAppendCodepoint {recv}, {other}")
+            }
+            Insn::StringEqual { left, right } => {
+                write!(f, "StringEqual {left}, {right}")
             }
             Insn::ToRegexp { values, opt, .. } => {
                 write!(f, "ToRegexp")?;
@@ -2613,6 +2625,7 @@ impl Function {
             &StringSetbyteFixnum { string, index, value } => StringSetbyteFixnum { string: find!(string), index: find!(index), value: find!(value) },
             &StringAppend { recv, other, state } => StringAppend { recv: find!(recv), other: find!(other), state: find!(state) },
             &StringAppendCodepoint { recv, other, state } => StringAppendCodepoint { recv: find!(recv), other: find!(other), state: find!(state) },
+            &StringEqual { left, right } => StringEqual { left: find!(left), right: find!(right) },
             &ToRegexp { opt, ref values, state } => ToRegexp { opt, values: find_vec!(values), state },
             &Test { val } => Test { val: find!(val) },
             &IsNil { val } => IsNil { val: find!(val) },
@@ -2862,6 +2875,7 @@ impl Function {
             Insn::StringSetbyteFixnum { .. } => types::Fixnum,
             Insn::StringAppend { .. } => types::StringExact,
             Insn::StringAppendCodepoint { .. } => types::StringExact,
+            Insn::StringEqual { .. } => types::BoolExact,
             Insn::ToRegexp { .. } => types::RegexpExact,
             Insn::NewArray { .. } => types::ArrayExact,
             Insn::ArrayDup { .. } => types::ArrayExact,
@@ -5081,6 +5095,28 @@ impl Function {
                             insn_id
                         }
                     }
+                    Insn::StringEqual { left, right } => {
+                        let left = self.chase_insn(left);
+                        let right = self.chase_insn(right);
+                        // If both operands resolve to the same SSA value,
+                        // String#== is guaranteed to be true.
+                        if left == right {
+                            self.new_insn(Insn::Const { val: Const::Value(Qtrue) })
+                        } else {
+                            let left_type = self.type_of(left);
+                            let right_type = self.type_of(right);
+                            match (left_type.ruby_object(), right_type.ruby_object()) {
+                                (Some(left_obj), Some(right_obj))
+                                    if left_obj.is_frozen() && right_obj.is_frozen() =>
+                                {
+                                    // For known frozen objects, evaluate String#== at compile time.
+                                    let val = unsafe { rb_yarv_str_eql_internal(left_obj, right_obj) };
+                                    self.new_insn(Insn::Const { val: Const::Value(val) })
+                                }
+                                _ => insn_id,
+                            }
+                        }
+                    }
                     Insn::FixnumAdd { left, right, .. } => {
                         self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => l.checked_add(r),
@@ -5980,6 +6016,10 @@ impl Function {
                 self.assert_subtype(insn_id, recv, types::StringExact)?;
                 self.assert_subtype(insn_id, other, types::Fixnum)
             }
+            Insn::StringEqual { left, right } => {
+                self.assert_subtype(insn_id, left, types::String)?;
+                self.assert_subtype(insn_id, right, types::String)
+            }
             // Instructions with Array operands
             Insn::ArrayDup { val, .. } => self.assert_subtype(insn_id, val, types::ArrayExact),
             Insn::ArrayExtend { left, right, .. } => {
@@ -6553,6 +6593,7 @@ pub enum ParseError {
     MalformedIseq(u32), // insn_idx into iseq_encoded
     Validation(ValidationError),
     NotAllowed,
+    DirectiveInduced,
 }
 
 /// Return the number of locals in the current ISEQ (includes parameters)
@@ -7083,7 +7124,32 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_opt_getconstant_path => {
                     let ic = get_arg(pc, 0).as_ptr();
-                    state.stack_push(fun.push_insn(block, Insn::GetConstantPath { ic, state: exit_id }));
+                    let get_const_path = fun.push_insn(block, Insn::GetConstantPath { ic, state: exit_id });
+                    state.stack_push(get_const_path);
+
+                    // Check for `::RubyVM::ZJIT` for directives
+                    unsafe {
+                        let mut current_segment = (*ic).segments;
+                        let mut segments = [ID(0); 4 /* expected segment length */];
+                        for segment in segments.iter_mut() {
+                            *segment = current_segment.read();
+                            if *segment == ID(0) {
+                                break;
+                            }
+                            current_segment = current_segment.add(1);
+                        }
+                        if [ID!(NULL), ID!(RubyVM), ID!(ZJIT), ID(0)] == segments {
+                            debug_assert_ne!(ID!(NULL), ID(0));
+                            let ruby_vm_mod = rb_const_lookup(rb_cObject, ID!(RubyVM));
+                            if !ruby_vm_mod.is_null() && (*ruby_vm_mod).value == rb_cRubyVM {
+                                let zjit_module = VALUE(state::ZJIT_MODULE.load(Ordering::Relaxed));
+                                let lookedup_module = rb_const_lookup(rb_cRubyVM, ID!(ZJIT));
+                                if !lookedup_module.is_null() && (*lookedup_module).value == zjit_module {
+                                    fun.insn_types[get_const_path.0] = Type::from_value(zjit_module);
+                                }
+                            }
+                        }
+                    }
                 }
                 YARVINSN_branchunless | YARVINSN_branchunless_without_ints => {
                     if opcode == YARVINSN_branchunless {
@@ -7544,6 +7610,28 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         break;  // End the block
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
+                    let mid = unsafe { rb_vm_ci_mid(call_info) };
+
+                    // Check for calls to directives
+                    if argc == 0
+                        && (mid == ID!(induce_side_exit_bang) || mid == ID!(induce_compile_failure_bang))
+                        && fun.type_of(state.stack_top()?)
+                              .ruby_object()
+                              .is_some_and(|obj| obj == VALUE(state::ZJIT_MODULE.load(Ordering::Relaxed)))
+                    {
+
+                        if mid == ID!(induce_side_exit_bang)
+                            && state::zjit_module_method_match_serial(ID!(induce_side_exit_bang), &state::INDUCE_SIDE_EXIT_SERIAL)
+                        {
+                            fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::DirectiveInduced });
+                            break;  // End the block
+                        }
+                        if mid == ID!(induce_compile_failure_bang)
+                            && state::zjit_module_method_match_serial(ID!(induce_compile_failure_bang), &state::INDUCE_COMPILE_FAILURE_SERIAL)
+                        {
+                            return Err(ParseError::DirectiveInduced);
+                        }
+                    }
 
                     {
                         fn new_branch_block(
@@ -7582,10 +7670,16 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         let entry_args = state.as_args(self_param);
                         if let Some(summary) = fun.polymorphic_summary(&profiles, recv, exit_state.insn_idx) {
                             let join_block = insn_idx_to_block.get(&insn_idx).copied().unwrap_or_else(|| fun.new_block(insn_idx));
-                            // TODO(max): Only iterate over unique classes, not unique (class, shape) pairs.
+                            // Dedup by expected type so immediate/heap variants
+                            // under the same Ruby class can still get separate branches.
+                            let mut seen_types = Vec::with_capacity(summary.buckets().len());
                             for &profiled_type in summary.buckets() {
                                 if profiled_type.is_empty() { break; }
                                 let expected = Type::from_profiled_type(profiled_type);
+                                if seen_types.iter().any(|ty: &Type| ty.bit_equal(expected)) {
+                                    continue;
+                                }
+                                seen_types.push(expected);
                                 let has_type = fun.push_insn(block, Insn::HasType { val: recv, expected });
                                 let iftrue_block =
                                     new_branch_block(&mut fun, cd, argc as usize, opcode, expected, branch_insn_idx, &exit_state, locals_count, stack_count, join_block);

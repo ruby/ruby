@@ -62,13 +62,52 @@ def gemfile(force_latest_compatible = false, options = {}, &gemfile)
       definition.validate_runtime!
 
       if force_latest_compatible || definition.missing_specs?
-        Bundler.settings.temporary(inline: true, no_install: false) do
-          installer = Bundler::Installer.install(Bundler.root, definition, system: true)
-          installer.post_install_messages.each do |name, message|
-            Bundler.ui.info "Post-install message from #{name}:\n#{message}"
+        do_install = -> do
+          Bundler.settings.temporary(inline: true, no_install: false) do
+            installer = Bundler::Installer.install(Bundler.root, definition, system: true)
+            installer.post_install_messages.each do |name, message|
+              Bundler.ui.info "Post-install message from #{name}:\n#{message}"
+            end
           end
         end
+
+        # When possible we do the install in a subprocess because to install
+        # gems we need to require some default gems like `securerandom` etc
+        # which may later conflict with the Gemfile requirements.
+        installed_in_fork = false
+        if Process.respond_to?(:fork)
+          Gem.load_yaml # Avoid NameError on Ruby 3.2's safe_yaml.rb after Gem::Specification.reset
+          _, status = Process.waitpid2(Process.fork do
+                                         $VERBOSE = nil
+                                         do_install.call end)
+          exit(status.exitstatus || status.to_i) unless status.success?
+
+          installed_in_fork = true
+
+          Bundler.reset!
+          Gem::Specification.reset
+          Bundler.instance_variable_set(:@bundle_path, Pathname.new(Gem.dir))
+
+          builder = Bundler::Dsl.new
+          builder.instance_eval(&gemfile)
+          builder.check_primary_source_safety
+
+          definition = builder.to_definition(nil, true)
+          definition.validate_runtime!
+        else
+          do_install.call
+        end
       end
+
+      configure_forked_definition = ->(d) do
+        d.sources.rubygems_sources.each(&:remote!)
+        d.sources.git_sources.each do |source|
+          source.cached!
+          source.instance_variable_set(:@copied, true)
+        end
+        def d.lock(*); end
+      end
+      configure_forked_definition.call(definition) if installed_in_fork
 
       begin
         runtime = Bundler::Runtime.new(nil, definition).setup
@@ -84,6 +123,7 @@ def gemfile(force_latest_compatible = false, options = {}, &gemfile)
         builder.dependencies.delete_if {|d| d.name == name }
         builder.instance_eval { gem name, activated_version }
         definition = builder.to_definition(nil, true)
+        configure_forked_definition.call(definition) if installed_in_fork
 
         retry
       end

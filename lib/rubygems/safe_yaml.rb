@@ -48,21 +48,8 @@ module Gem
       end
     end
 
-    def self.load(input)
-      if Gem.use_psych?
-        if ::Psych.respond_to?(:unsafe_load)
-          ::Psych.unsafe_load(input)
-        else
-          ::Psych.load(input)
-        end
-      else
-        Gem::YAMLSerializer.load(
-          input,
-          permitted_classes: PERMITTED_CLASSES,
-          permitted_symbols: PERMITTED_SYMBOLS,
-          aliases: aliases_enabled?
-        )
-      end
+    class << self
+      alias_method :load, :safe_load
     end
   end
 end

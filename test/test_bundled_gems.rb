@@ -53,4 +53,21 @@ class TestBundlerGem < Gem::TestCase
     assert warning
     assert_match(/benchmark/, warning)
   end
+
+  def test_no_warning_for_subfeature_found_outside_stdlib
+    # When a subfeature like "benchmark/ips" is found on $LOAD_PATH
+    # from a non-standard-library location (e.g., benchmark-ips gem's lib dir),
+    # don't warn even if the gem is not in specs (Bug #21828)
+    Dir.mktmpdir do |dir|
+      FileUtils.mkdir_p(File.join(dir, "benchmark"))
+      File.write(File.join(dir, "benchmark", "ips.rb"), "")
+      original_load_path = $LOAD_PATH.dup
+      $LOAD_PATH.unshift(dir)
+      begin
+        assert_nil Gem::BUNDLED_GEMS.warning?("benchmark/ips", specs: {})
+      ensure
+        $LOAD_PATH.replace(original_load_path)
+      end
+    end
+  end
 end

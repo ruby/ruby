@@ -735,10 +735,10 @@ class Gem::TestCase < Test::Unit::TestCase
   end
 
   ##
-  # Load a YAML string, the psych 3 way
+  # Load a YAML string using the safe loader with gem-spec permitted classes.
 
   def load_yaml(yaml)
-    Gem::SafeYAML.load(yaml)
+    Gem::SafeYAML.safe_load(yaml)
   end
 
   ##
