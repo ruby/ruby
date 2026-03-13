@@ -283,19 +283,9 @@ rb_ec_vm_lock_rec_release(const rb_execution_context_t *ec,
                           unsigned int recorded_lock_rec,
                           unsigned int current_lock_rec)
 {
-    VM_ASSERT(recorded_lock_rec != current_lock_rec);
-
-    if (UNLIKELY(recorded_lock_rec > current_lock_rec)) {
-        rb_bug("unexpected situation - recordd:%u current:%u",
-               recorded_lock_rec, current_lock_rec);
+    while (recorded_lock_rec < current_lock_rec) {
+        RB_VM_LOCK_LEAVE_LEV(&current_lock_rec);
     }
-    else {
-        while (recorded_lock_rec < current_lock_rec) {
-            RB_VM_LOCK_LEAVE_LEV(&current_lock_rec);
-        }
-    }
-
-    VM_ASSERT(recorded_lock_rec == rb_ec_vm_lock_rec(ec));
 }
 
 VALUE

@@ -1047,6 +1047,30 @@ class TestObjSpace < Test::Unit::TestCase
     assert_equal 2, ObjectSpace.dump_shapes(output: :string, since: RubyVM.stat(:next_shape_id) - 2).lines.size
   end
 
+  def each_object_yields_unshareables_if_one_ractor_in_multi_ractor_mode
+    assert_ractor <<-RUBY
+      obj = [1,2,3] # unshareable
+      found = false
+      Ractor.new { }.join
+      ObjectSpace.each_object(Array) do |o|
+        found = true if o == obj
+      end
+      assert found, "should have been found among arrays"
+      found = false
+      begin
+        ObjectSpace.each_object do |o|
+          found = true if o == obj
+          if found
+            raise "raised without vm lock"
+          end
+        end
+      rescue => e # tag_release should allow VM lock to be unlocked before yield
+        assert_equal "raised without vm lock", e.message
+      end
+      assert found, "should have been found among all objects"
+    RUBY
+  end
+
   private
 
   def utf8_❨╯°□°❩╯︵┻━┻
