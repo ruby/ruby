@@ -1,5 +1,4 @@
 exclude(:test_dump_all_full, "testing behaviour specific to default GC")
 exclude(:test_dump_flag_age, "testing behaviour specific to default GC")
 exclude(:test_dump_flags, "testing behaviour specific to default GC")
-exclude(:test_dump_includes_slot_size, "can be removed when pool 0 slot size is 32 bytes")
 exclude(:test_dump_objects_dumps_page_slot_sizes, "testing behaviour specific to default GC")

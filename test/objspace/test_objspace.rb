@@ -473,12 +473,12 @@ class TestObjSpace < Test::Unit::TestCase
     assert_include(info, '"embedded":true')
     assert_include(info, '"ivars":0')
 
-    # Non-embed object
+    # Non-embed object (needs > 6 ivars to exceed pool 0 embed capacity)
     obj = klass.new
-    5.times { |i| obj.instance_variable_set("@ivar#{i}", 0) }
+    7.times { |i| obj.instance_variable_set("@ivar#{i}", 0) }
     info = ObjectSpace.dump(obj)
     assert_not_include(info, '"embedded":true')
-    assert_include(info, '"ivars":5')
+    assert_include(info, '"ivars":7')
   end
 
   def test_dump_control_char
@@ -648,7 +648,8 @@ class TestObjSpace < Test::Unit::TestCase
         next if obj["type"] == "SHAPE"
 
         assert_not_nil obj["slot_size"]
-        assert_equal 0, obj["slot_size"] % GC.stat_heap(0, :slot_size)
+        slot_sizes = GC::INTERNAL_CONSTANTS[:HEAP_COUNT].times.map { |i| GC.stat_heap(i, :slot_size) }
+        assert_include slot_sizes, obj["slot_size"]
       }
     end
   end
