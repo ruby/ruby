@@ -1141,13 +1141,17 @@ impl Assembler {
                 println!("VReg assignments:");
                 for (i, alloc) in assignments.iter().enumerate() {
                     if let Some(alloc) = alloc {
-                        let range = &intervals[i].range;
                         let alloc_str = match alloc {
                             Allocation::Reg(n) => format!("{}", regs[*n]),
                             Allocation::Fixed(reg) => format!("{}", reg),
                             Allocation::Stack(n) => format!("Stack[{}]", n),
                         };
-                        println!("  v{} => {} (range: {:?}..{:?})", i, alloc_str, range.start, range.end);
+                        println!(
+                            "  v{} => {} (ranges: {})",
+                            i,
+                            alloc_str,
+                            crate::backend::lir::format_interval_ranges(&intervals[i]),
+                        );
                     }
                 }
             }

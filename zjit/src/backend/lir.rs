@@ -1,4 +1,4 @@
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::mem::take;
 use std::panic;
@@ -1456,7 +1456,6 @@ impl fmt::Debug for Insn {
 }
 
 /// Live range of a VReg
-/// TODO: Consider supporting lifetime holes
 #[derive(Clone, Debug, PartialEq)]
 pub struct LiveRange {
     /// Index of the first instruction that used the VReg
@@ -1481,6 +1480,7 @@ impl LiveRange {
 #[derive(Clone)]
 pub struct Interval {
     pub range: LiveRange,
+    pub ranges: Vec<LiveRange>,
     pub id: usize,
 }
 
@@ -1492,31 +1492,68 @@ impl Interval {
                 start: None,
                 end: None,
             },
+            ranges: vec![],
             id: i,
         }
+    }
+
+    fn update_bounds(&mut self) {
+        if let Some(first) = self.ranges.first() {
+            self.range.start = first.start;
+            self.range.end = Some(self.ranges.last().unwrap().end());
+        } else {
+            self.range.start = None;
+            self.range.end = None;
+        }
+    }
+
+    pub fn start(&self) -> usize {
+        self.range.start()
+    }
+
+    pub fn end(&self) -> usize {
+        self.range.end()
     }
 
     /// Check if the interval is alive at position x
     /// Panics if the range is not set
     pub fn survives(&self, x: usize) -> bool {
         assert!(self.range.start.is_some() && self.range.end.is_some(), "survives called on interval with no range");
-        let start = self.range.start.unwrap();
-        let end = self.range.end.unwrap();
-        start < x && end > x
+        self.ranges.iter().any(|range| range.start() < x && range.end() > x)
     }
 
     pub fn born_at(&self, x:usize) -> bool {
-        let start = self.range.start.unwrap();
-        start == x
+        self.ranges.iter().any(|range| range.start() == x)
     }
 
     pub fn dies_at(&self, x:usize) -> bool {
-        let end = self.range.end.unwrap();
-        end == x
+        self.ranges.iter().any(|range| range.end() == x)
     }
 
     pub fn has_bounds(&self) -> bool {
         self.range.start.is_some() && self.range.end.is_some()
+    }
+
+    pub fn overlaps(&self, other: &Interval) -> bool {
+        let mut left = 0;
+        let mut right = 0;
+
+        while left < self.ranges.len() && right < other.ranges.len() {
+            let left_range = &self.ranges[left];
+            let right_range = &other.ranges[right];
+
+            if left_range.start() < right_range.end() && right_range.start() < left_range.end() {
+                return true;
+            }
+
+            if left_range.end() <= right_range.start() {
+                left += 1;
+            } else {
+                right += 1;
+            }
+        }
+
+        false
     }
 
     /// Add a range to the interval, extending it if necessary
@@ -1525,22 +1562,48 @@ impl Interval {
             panic!("Invalid range: {} to {}", from, to);
         }
 
-        if self.range.start.is_none() {
-            self.range.start = Some(from);
-            self.range.end = Some(to);
-            return;
+        let mut new_start = from;
+        let mut new_end = to;
+        let mut insert_at = 0;
+
+        while insert_at < self.ranges.len() {
+            let range = &self.ranges[insert_at];
+
+            if new_end < range.start() {
+                break;
+            }
+
+            if new_start > range.end() {
+                insert_at += 1;
+                continue;
+            }
+
+            new_start = new_start.min(range.start());
+            new_end = new_end.max(range.end());
+            self.ranges.remove(insert_at);
         }
 
-        // Extend the range to cover both the existing range and the new range
-        self.range.start = Some(self.range.start.unwrap().min(from));
-        self.range.end = Some(self.range.end.unwrap().max(to));
+        self.ranges.insert(insert_at, LiveRange {
+            start: Some(new_start),
+            end: Some(new_end),
+        });
+        self.update_bounds();
     }
 
     /// Set the start of the range
     pub fn set_from(&mut self, from: usize) {
-        let end = self.range.end.unwrap_or(from);
-        self.range.start = Some(from);
-        self.range.end = Some(end);
+        if let Some(first_range) = self.ranges.first_mut() {
+            let end = first_range.end();
+            first_range.start = Some(from);
+            first_range.end = Some(end.max(from));
+        } else {
+            self.ranges.push(LiveRange {
+                start: Some(from),
+                end: Some(from),
+            });
+        }
+
+        self.update_bounds();
     }
 }
 
@@ -2032,8 +2095,6 @@ impl Assembler
     ) -> (Vec<Option<Allocation>>, usize) {
         assert_eq!(preferred_registers.len(), intervals.len());
 
-        let mut free_registers: BTreeSet<usize> = (0..num_registers).collect();
-        let mut active: Vec<&Interval> = Vec::new(); // vreg indices sorted by increasing end point
         let mut assignment: Vec<Option<Allocation>> = vec![None; intervals.len()];
         let mut num_stack_slots: usize = 0;
 
@@ -2045,92 +2106,63 @@ impl Assembler
         sorted_intervals.sort_by_key(|i| i.range.start.unwrap());
 
         for interval in &sorted_intervals {
-            // Expire old intervals
-            active.retain(|&active_interval| {
-                if active_interval.range.end.unwrap() > interval.range.start.unwrap() {
-                    true
-                } else {
-                    if let Some(allocation) = assignment[active_interval.id] {
-                        if let Some(reg) = allocation.alloc_pool_index(num_registers) {
-                            assert!(
-                                free_registers.insert(reg),
-                                "attempted to return allocator register {:?} to the free pool more than once",
-                                allocation.assigned_reg().unwrap(),
-                            );
-                        } else {
-                            assert!(
-                                allocation.assigned_reg().is_none_or(|reg| {
-                                    crate::backend::current::ALLOC_REGS
-                                        .iter()
-                                        .take(num_registers)
-                                        .all(|candidate| candidate.reg_no != reg.reg_no)
-                                }),
-                                "attempted to return non-allocatable register {:?} to the allocator pool",
-                                allocation.assigned_reg().unwrap(),
-                            );
-                        }
-                    }
-                    false
-                }
-            });
-
             let preferred_reg = preferred_registers[interval.id];
             let preferred_taken = preferred_reg.is_some_and(|reg| {
-                active.iter().any(|active_interval| {
-                    assignment[active_interval.id]
+                assignment.iter().enumerate().any(|(other_id, other_alloc)| {
+                    (*other_alloc)
                         .and_then(|alloc| alloc.assigned_reg())
-                        .is_some_and(|active_reg| active_reg.reg_no == reg.reg_no)
+                        .is_some_and(|other_reg| {
+                            other_reg.reg_no == reg.reg_no && intervals[other_id].overlaps(interval)
+                        })
                 })
             });
 
             if let Some(preferred_reg) = preferred_reg.filter(|_| !preferred_taken) {
-                if let Some(reg_idx) = Allocation::Fixed(preferred_reg).alloc_pool_index(num_registers) {
-                    if free_registers.remove(&reg_idx) {
-                        assignment[interval.id] = Some(Allocation::Fixed(preferred_reg));
-                        let insert_idx = active.partition_point(|&i| i.range.end.unwrap() < interval.range.end.unwrap());
-                        active.insert(insert_idx, &interval);
-                        continue;
+                assignment[interval.id] = Some(Allocation::Fixed(preferred_reg));
+                continue;
+            }
+
+            let mut free_register: Option<usize> = None;
+            let mut spill_candidate: Option<(usize, usize, usize)> = None;
+
+            for reg_idx in 0..num_registers {
+                let conflicts: Vec<usize> = assignment.iter().enumerate()
+                    .filter_map(|(other_id, other_alloc)| {
+                        other_alloc
+                            .and_then(|alloc| alloc.alloc_pool_index(num_registers))
+                            .filter(|&assigned_reg_idx| assigned_reg_idx == reg_idx)
+                            .filter(|_| intervals[other_id].overlaps(interval))
+                            .map(|_| other_id)
+                    })
+                    .collect();
+
+                if conflicts.is_empty() {
+                    free_register = Some(reg_idx);
+                    break;
+                }
+
+                if conflicts.len() == 1 {
+                    let conflict_id = conflicts[0];
+                    if matches!(assignment[conflict_id], Some(Allocation::Reg(_))) && intervals[conflict_id].end() > interval.end() {
+                        let candidate = (intervals[conflict_id].end(), reg_idx, conflict_id);
+                        if spill_candidate.is_none_or(|best| candidate.0 > best.0) {
+                            spill_candidate = Some(candidate);
+                        }
                     }
-                } else {
-                    assignment[interval.id] = Some(Allocation::Fixed(preferred_reg));
-                    let insert_idx = active.partition_point(|&i| i.range.end.unwrap() < interval.range.end.unwrap());
-                    active.insert(insert_idx, &interval);
-                    continue;
                 }
             }
 
-            if free_registers.is_empty() {
-                // Spill: pick the longest-lived active interval (last in sorted active)
-                // but only from the allocatable register pool. Fixed register
-                // assignments represent preferred/pinned physical registers
-                // (for example SP) and should not be selected as spill victims.
-                let spill = active.iter().rev().copied().find(|active_interval| {
-                    matches!(assignment[active_interval.id], Some(Allocation::Reg(_)))
-                });
+            if let Some(reg_idx) = free_register {
+                assignment[interval.id] = Some(Allocation::Reg(reg_idx));
+            } else if let Some((_, reg_idx, conflict_id)) = spill_candidate {
                 let slot = Allocation::Stack(num_stack_slots);
                 num_stack_slots += 1;
-
-                if let Some(spill) = spill.filter(|spill| spill.range.end.unwrap() > interval.range.end.unwrap()) {
-                    // Spill the last active interval; give its register to current
-                    assignment[interval.id] = assignment[spill.id];
-                    assignment[spill.id] = Some(slot);
-                    let spill_idx = active.iter().position(|active_interval| active_interval.id == spill.id).unwrap();
-                    active.remove(spill_idx);
-                    // Insert current into sorted active
-                    let insert_idx = active.partition_point(|&i| i.range.end.unwrap() < interval.range.end.unwrap());
-                    active.insert(insert_idx, &interval);
-                } else {
-                    // Spill the current interval
-                    assignment[interval.id] = Some(slot);
-                }
+                assignment[interval.id] = Some(Allocation::Reg(reg_idx));
+                assignment[conflict_id] = Some(slot);
             } else {
-                // Allocate lowest free register
-                let reg = *free_registers.iter().min().unwrap();
-                free_registers.remove(&reg);
-                assignment[interval.id] = Some(Allocation::Reg(reg));
-                // Insert into sorted active
-                let insert_idx = active.partition_point(|&i| i.range.end.unwrap() < interval.range.end.unwrap());
-                active.insert(insert_idx, &interval);
+                let slot = Allocation::Stack(num_stack_slots);
+                num_stack_slots += 1;
+                assignment[interval.id] = Some(slot);
             }
         }
 
@@ -2992,10 +3024,29 @@ pub fn lir_string(asm: &Assembler) -> String {
     format!("{asm}").replace(TTY_TERMINAL_COLOR.bold_begin, "").replace(TTY_TERMINAL_COLOR.bold_end, "")
 }
 
+pub fn format_interval_ranges(interval: &Interval) -> String {
+    if interval.ranges.is_empty() {
+        return "<none>".to_string();
+    }
+
+    interval.ranges.iter()
+        .map(|range| format!("[{}, {})", range.start(), range.end()))
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
 /// Format live intervals as a grid showing which VRegs are alive at each instruction
 pub fn lir_intervals_string(asm: &Assembler, intervals: &[Interval]) -> String {
     let mut output = String::new();
     let num_vregs = intervals.len();
+
+    output.push_str("Intervals:\n");
+    for (vreg_idx, interval) in intervals.iter().enumerate() {
+        if interval.has_bounds() {
+            output.push_str(&format!("  v{vreg_idx}: {}\n", format_interval_ranges(interval)));
+        }
+    }
+    output.push('\n');
 
     let vreg_header = |output: &mut String| {
         output.push_str("         ");
@@ -4077,6 +4128,45 @@ mod tests {
         TestFunc { asm, r10, r11, r12, r13, r14, r15, b1, b2, b3, b4 }
     }
 
+    struct HoleFunc {
+        asm: Assembler,
+        outer: Opnd,
+        hole: Opnd,
+        b0: BlockId,
+        b1: BlockId,
+        b2: BlockId,
+    }
+
+    fn build_hole_func() -> HoleFunc {
+        let mut asm = Assembler::new();
+
+        let b0 = asm.new_block(hir::BlockId(0), true, 0);
+        let b1 = asm.new_block(hir::BlockId(1), false, 1);
+        let b2 = asm.new_block(hir::BlockId(2), false, 2);
+
+        asm.set_current_block(b0);
+        let label_b0 = asm.new_label("bb0");
+        asm.write_label(label_b0);
+        let outer = asm.add(Opnd::UImm(40), Opnd::UImm(2));
+        asm.cmp(Opnd::UImm(0), Opnd::UImm(1));
+        asm.basic_blocks[b0.0].push_insn(Insn::Jl(Target::Block(BranchEdge { target: b2, args: vec![] })));
+        asm.basic_blocks[b0.0].push_insn(Insn::Jmp(Target::Block(BranchEdge { target: b1, args: vec![] })));
+
+        asm.set_current_block(b1);
+        let label_b1 = asm.new_label("bb1");
+        asm.write_label(label_b1);
+        let hole = asm.add(Opnd::UImm(10), Opnd::UImm(5));
+        asm.cret(hole);
+
+        asm.set_current_block(b2);
+        let label_b2 = asm.new_label("bb2");
+        asm.write_label(label_b2);
+        let out = asm.add(outer, Opnd::UImm(1));
+        asm.cret(out);
+
+        HoleFunc { asm, outer, hole, b0, b1, b2 }
+    }
+
     #[test]
     fn test_live_in() {
         let TestFunc { asm, r10, r12, r13, b1, b2, b3, b4, .. } = build_func();
@@ -4190,6 +4280,26 @@ mod tests {
         interval.add_range(8, 15);
         assert_eq!(interval.range.start, Some(3));
         assert_eq!(interval.range.end, Some(15));
+        assert_eq!(interval.ranges.len(), 1);
+    }
+
+    #[test]
+    fn test_interval_add_range_lifetime_hole() {
+        let mut interval = Interval::new(1);
+
+        interval.add_range(2, 6);
+        interval.add_range(10, 14);
+
+        assert_eq!(interval.range.start, Some(2));
+        assert_eq!(interval.range.end, Some(14));
+        assert_eq!(interval.ranges, vec![
+            LiveRange { start: Some(2), end: Some(6) },
+            LiveRange { start: Some(10), end: Some(14) },
+        ]);
+
+        assert!(interval.survives(4));
+        assert!(!interval.survives(8));
+        assert!(interval.survives(12));
     }
 
     #[test]
@@ -4274,6 +4384,27 @@ mod tests {
 
         assert_eq!(intervals[r15_idx.0].range.start, Some(32));
         assert_eq!(intervals[r15_idx.0].range.end, Some(36));
+    }
+
+    #[test]
+    fn test_build_intervals_lifetime_hole() {
+        let HoleFunc { mut asm, outer, hole, b0, b1, b2 } = build_hole_func();
+
+        assert_eq!(asm.block_order(), vec![b0, b1, b2]);
+
+        let live_in = asm.analyze_liveness();
+        asm.number_instructions(16);
+        let intervals = asm.build_intervals(live_in);
+
+        let outer_idx = outer.vreg_idx();
+        let hole_idx = hole.vreg_idx();
+
+        assert_eq!(intervals[outer_idx.0].ranges.len(), 2);
+        assert_eq!(intervals[outer_idx.0].ranges[0], LiveRange { start: Some(18), end: Some(26) });
+        assert_eq!(intervals[outer_idx.0].ranges[1], LiveRange { start: Some(32), end: Some(34) });
+        assert!(!intervals[outer_idx.0].survives(30));
+
+        assert_eq!(intervals[hole_idx.0].ranges, vec![LiveRange { start: Some(28), end: Some(30) }]);
     }
 
     #[test]
@@ -4377,6 +4508,21 @@ mod tests {
     }
 
     #[test]
+    fn test_linear_scan_reuses_register_across_lifetime_hole() {
+        let HoleFunc { mut asm, outer, hole, .. } = build_hole_func();
+
+        let live_in = asm.analyze_liveness();
+        asm.number_instructions(16);
+        let intervals = asm.build_intervals(live_in);
+        let preferred_registers = asm.preferred_register_assignments(&intervals);
+        let (assignments, num_stack_slots) = asm.linear_scan(intervals, 1, &preferred_registers);
+
+        assert_eq!(num_stack_slots, 0);
+        assert_eq!(assignments[outer.vreg_idx().0], Some(Allocation::Reg(0)));
+        assert_eq!(assignments[hole.vreg_idx().0], Some(Allocation::Reg(0)));
+    }
+
+    #[test]
     fn test_preferred_register_assignment_for_newborn_mov_source() {
         let mut asm = Assembler::new();
         let block = asm.new_block(hir::BlockId(0), true, 0);
@@ -4415,10 +4561,23 @@ mod tests {
         let output = debug_intervals(&asm, &intervals);
 
         // Verify it contains the grid structure
+        assert!(output.contains("Intervals:"));
         assert!(output.contains("v0"));  // Header with vreg names
         assert!(output.contains("---"));  // Separator
         assert!(output.contains("█"));    // Live marker
         assert!(output.contains("."));    // Dead marker
+    }
+
+    #[test]
+    fn test_debug_intervals_prints_lifetime_holes() {
+        let HoleFunc { mut asm, outer, .. } = build_hole_func();
+
+        asm.number_instructions(16);
+        let live_in = asm.analyze_liveness();
+        let intervals = asm.build_intervals(live_in);
+        let output = debug_intervals(&asm, &intervals);
+
+        assert!(output.contains(&format!("v{}: [18, 26) [32, 34)", outer.vreg_idx().0)));
     }
 
     #[test]
