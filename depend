@@ -13790,6 +13790,7 @@ re.$(OBJEXT): $(hdrdir)/ruby.h
 re.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 re.$(OBJEXT): $(top_srcdir)/internal/array.h
 re.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
+re.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 re.$(OBJEXT): $(top_srcdir)/internal/bits.h
 re.$(OBJEXT): $(top_srcdir)/internal/box.h
 re.$(OBJEXT): $(top_srcdir)/internal/class.h
