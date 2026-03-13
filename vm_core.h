@@ -2409,6 +2409,7 @@ void rb_postponed_job_flush(rb_vm_t *vm);
 // ractor.c
 RUBY_EXTERN VALUE rb_eRactorUnsafeError;
 RUBY_EXTERN VALUE rb_eRactorIsolationError;
+NORETURN(void rb_raise_isolation_error(VALUE message, VALUE outer_variables, VALUE yield_called));
 
 RUBY_SYMBOL_EXPORT_END
 
