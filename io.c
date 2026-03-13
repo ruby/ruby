@@ -595,6 +595,8 @@ rb_sys_fail_on_write(rb_io_t *fptr)
  * conversion IO process and universal newline decorator by default.
  */
 #define NEED_READCONV(fptr) ((fptr)->encs.enc2 != NULL || (fptr)->encs.ecflags & ~ECONV_CRLF_NEWLINE_DECORATOR)
+#define USE_UNIVERSAL_NEWLINE_FASTPATH_ON_READ(fptr) ((fptr)->encs.enc2 == NULL && \
+    ((fptr)->encs.ecflags & (ECONV_NEWLINE_DECORATOR_READ_MASK | ECONV_CRLF_NEWLINE_DECORATOR)) == ECONV_UNIVERSAL_NEWLINE_DECORATOR)
 #define WRITECONV_MASK ( \
     (ECONV_DECORATOR_MASK & ~ECONV_CRLF_NEWLINE_DECORATOR)|\
     ECONV_STATEFUL_DECORATOR_MASK|\
@@ -638,6 +640,27 @@ io_unread(rb_io_t *fptr, bool discard_rbuf)
     char *buf;
 
     rb_io_check_closed(fptr);
+    if (USE_UNIVERSAL_NEWLINE_FASTPATH_ON_READ(fptr)) {
+        rb_off_t to_unread = fptr->rbuf.len + fptr->cbuf.len;
+        if (to_unread == 0 || fptr->mode & FMODE_DUPLEX) {
+            return;
+        }
+        if (fptr->cbuf.off < fptr->cbuf.off_unget) {
+            to_unread -= fptr->cbuf.off_unget - fptr->cbuf.off;
+        }
+        if (fptr->rbuf.off >= 2 && fptr->cbuf.len > 0) {
+            char *p = fptr->rbuf.ptr + fptr->rbuf.off;
+            if (p[-2] == '\r' && p[-1] == '\n') to_unread++;
+        }
+        errno = 0;
+        r = lseek(fptr->fd, -to_unread, SEEK_CUR);
+        if (r < 0 && errno) {
+            if (errno == ESPIPE) fptr->mode |= FMODE_DUPLEX;
+            if (!discard_rbuf) return;
+        }
+        goto end;
+    }
+
     if (fptr->rbuf.len == 0 || fptr->mode & FMODE_DUPLEX) {
         return;
     }
@@ -730,6 +753,8 @@ set_binary_mode_with_seek_cur(rb_io_t *fptr)
 /* Unix */
 # define DEFAULT_TEXTMODE 0
 #define NEED_READCONV(fptr) ((fptr)->encs.enc2 != NULL || NEED_NEWLINE_DECORATOR_ON_READ(fptr))
+#define USE_UNIVERSAL_NEWLINE_FASTPATH_ON_READ(fptr) ((fptr)->encs.enc2 == NULL && \
+    ((fptr)->encs.ecflags & ECONV_NEWLINE_DECORATOR_READ_MASK) == ECONV_UNIVERSAL_NEWLINE_DECORATOR)
 #define NEED_WRITECONV(fptr) ( \
   ((fptr)->encs.enc != NULL && (fptr)->encs.enc != rb_ascii8bit_encoding()) || \
   NEED_NEWLINE_DECORATOR_ON_WRITE(fptr) ||                        \
@@ -919,13 +944,26 @@ rb_io_s_try_convert(VALUE dummy, VALUE io)
 static void
 io_unread(rb_io_t *fptr, bool discard_rbuf)
 {
-    rb_off_t r;
+    rb_off_t r, to_unread;
     rb_io_check_closed(fptr);
-    if (fptr->rbuf.len == 0 || fptr->mode & FMODE_DUPLEX)
+
+    if (USE_UNIVERSAL_NEWLINE_FASTPATH_ON_READ(fptr)) {
+        to_unread = fptr->rbuf.len + fptr->cbuf.len;
+        if (fptr->cbuf.off < fptr->cbuf.off_unget)
+            to_unread -= fptr->cbuf.off_unget - fptr->cbuf.off;
+        if (fptr->rbuf.off >= 2 && fptr->cbuf.len > 0) {
+            char *p = fptr->rbuf.ptr + fptr->rbuf.off;
+            if (p[-2] == '\r' && p[-1] == '\n') to_unread++;
+        }
+    }
+    else {
+        to_unread = fptr->rbuf.len;
+    }
+    if (to_unread == 0 || fptr->mode & FMODE_DUPLEX)
         return;
     /* xxx: target position may be negative if buffer is filled by ungetc */
     errno = 0;
-    r = lseek(fptr->fd, -fptr->rbuf.len, SEEK_CUR);
+    r = lseek(fptr->fd, -to_unread, SEEK_CUR);
     if (r < 0 && errno) {
         if (errno == ESPIPE)
             fptr->mode |= FMODE_DUPLEX;
@@ -937,6 +975,26 @@ io_unread(rb_io_t *fptr, bool discard_rbuf)
     return;
 }
 #endif
+
+/* Send cbuf content back to rbuf except that pushed with ungetc.
+ * In the other words: invalidate cache */
+static void
+io_unread_cbuf(rb_io_t *fptr)
+{
+    rb_off_t to_unread = fptr->cbuf.len;
+    if (fptr->cbuf.off < fptr->cbuf.off_unget)
+        to_unread -= fptr->cbuf.off_unget - fptr->cbuf.off;
+    fptr->cbuf.len -= to_unread;
+
+    if (fptr->rbuf.off >= 2 && fptr->cbuf.len > 0) {
+        char *p = fptr->rbuf.ptr + fptr->rbuf.off;
+        if (p[-2] == '\r' && p[-1] == '\n') to_unread++;
+    }
+    if (fptr->rbuf.off < to_unread)
+        rb_bug("rbuf cleared before io_unread_cbuf");
+    fptr->rbuf.len += to_unread;
+    fptr->rbuf.off -= to_unread;
+}
 
 static rb_encoding *io_input_encoding(rb_io_t *fptr);
 
@@ -1016,6 +1074,10 @@ rb_io_check_byte_readable(rb_io_t *fptr)
 {
     rb_io_check_char_readable(fptr);
     if (READ_CHAR_PENDING(fptr)) {
+        if (USE_UNIVERSAL_NEWLINE_FASTPATH_ON_READ(fptr)) {
+            io_unread_cbuf(fptr);
+            if (!READ_CHAR_PENDING(fptr)) return;
+        }
         rb_raise(rb_eIOError, "byte oriented read for character buffered IO");
     }
 }
@@ -2596,6 +2658,10 @@ rb_io_set_pos(VALUE io, VALUE offset)
 
 static void clear_readconv(rb_io_t *fptr);
 
+#define READCONV_UNIVERSAL_NEWLINE_ONLY (rb_econv_t *)Qnil
+#define READCONV_IS_REAL_ECONV(econv) ((econv) != NULL &&\
+            (econv) != READCONV_UNIVERSAL_NEWLINE_ONLY)
+
 /*
  *  call-seq:
  *    rewind -> 0
@@ -3193,17 +3259,23 @@ make_readconv(rb_io_t *fptr, int size)
         const char *sname, *dname;
         ecflags = fptr->encs.ecflags & ~ECONV_NEWLINE_DECORATOR_WRITE_MASK;
         ecopts = fptr->encs.ecopts;
-        if (fptr->encs.enc2) {
-            sname = rb_enc_name(fptr->encs.enc2);
-            dname = rb_enc_name(io_read_encoding(fptr));
+        if (!USE_UNIVERSAL_NEWLINE_FASTPATH_ON_READ(fptr)) {
+            if (fptr->encs.enc2) {
+                sname = rb_enc_name(fptr->encs.enc2);
+                dname = rb_enc_name(io_read_encoding(fptr));
+            }
+            else {
+                sname = dname = "";
+            }
+            fptr->readconv = rb_econv_open_opts(sname, dname, ecflags, ecopts);
+            if (!fptr->readconv)
+                rb_exc_raise(rb_econv_open_exc(sname, dname, ecflags));
         }
         else {
-            sname = dname = "";
+            fptr->readconv = READCONV_UNIVERSAL_NEWLINE_ONLY;
         }
-        fptr->readconv = rb_econv_open_opts(sname, dname, ecflags, ecopts);
-        if (!fptr->readconv)
-            rb_exc_raise(rb_econv_open_exc(sname, dname, ecflags));
         fptr->cbuf.off = 0;
+        fptr->cbuf.off_unget = 0;
         fptr->cbuf.len = 0;
         if (size < IO_CBUF_CAPA_MIN) size = IO_CBUF_CAPA_MIN;
         fptr->cbuf.capa = size;
@@ -3213,6 +3285,86 @@ make_readconv(rb_io_t *fptr, int size)
 
 #define MORE_CHAR_SUSPENDED Qtrue
 #define MORE_CHAR_FINISHED Qnil
+
+static inline VALUE
+fill_cbuf_with_universal_newline(rb_io_t *fptr, int ec_flags)
+{
+    const unsigned char *ss, *sp, *se;
+    unsigned char *ds, *dp, *de;
+    int pending = -1;
+
+    ds = dp = (unsigned char *)fptr->cbuf.ptr + fptr->cbuf.off + fptr->cbuf.len;
+    de = (unsigned char *)fptr->cbuf.ptr + fptr->cbuf.capa;
+
+  reread:
+    if (fptr->rbuf.len == 1) {
+        pending = (unsigned char)(fptr->rbuf.ptr[fptr->rbuf.off]);
+        fptr->rbuf.off++;
+        fptr->rbuf.len--;
+    }
+    if (fptr->rbuf.len == 0) {
+        READ_CHECK(fptr);
+        if (io_fillbuf(fptr) < 0) {
+            if (pending >= 0) {
+                if (pending == '\r')
+                    *dp = '\n';
+                else
+                    *dp = (unsigned char)pending;
+                fptr->cbuf.len++;
+                return MORE_CHAR_SUSPENDED;
+            }
+            return MORE_CHAR_FINISHED;
+        }
+    }
+    ss = sp = (const unsigned char *)fptr->rbuf.ptr + fptr->rbuf.off;
+    se = sp + fptr->rbuf.len;
+    if (pending >= 0) {
+        if (pending == '\r') {
+            *dp++ = '\n';
+            if (*sp == '\n')
+                sp++;
+        }
+        else {
+            *dp++ = (unsigned char)pending;
+        }
+    }
+    else {
+        if (*sp == '\r') {
+            if (fptr->rbuf.len == 1) goto reread;
+            *dp++ = '\n';
+            sp++;
+            if (*sp == '\n')
+                sp++;
+        }
+        else {
+            *dp++ = *sp++;
+        }
+    }
+
+    while (sp + 1 < se && dp < de) {
+        if (*sp == '\r') {
+            *dp++ = '\n';
+            sp++;
+            if (*sp == '\n') {
+                sp++;
+                if (ec_flags & ECONV_AFTER_OUTPUT) goto end;
+            }
+        }
+        else {
+            *dp++ = *sp++;
+        }
+    }
+    if (sp < se && dp < de && *sp != '\r') {
+        *dp++ = *sp++;
+    }
+
+  end:
+    fptr->rbuf.off += (int)(sp - ss);
+    fptr->rbuf.len -= (int)(sp - ss);
+    fptr->cbuf.len += (int)(dp - ds);
+    return MORE_CHAR_SUSPENDED;
+}
+
 static VALUE
 fill_cbuf(rb_io_t *fptr, int ec_flags)
 {
@@ -3227,12 +3379,21 @@ fill_cbuf(rb_io_t *fptr, int ec_flags)
 
     if (fptr->cbuf.len == fptr->cbuf.capa)
         return MORE_CHAR_SUSPENDED; /* cbuf full */
-    if (fptr->cbuf.len == 0)
+    if (fptr->cbuf.len == 0) {
         fptr->cbuf.off = 0;
+        fptr->cbuf.off_unget = 0;
+    }
     else if (fptr->cbuf.off + fptr->cbuf.len == fptr->cbuf.capa) {
         memmove(fptr->cbuf.ptr, fptr->cbuf.ptr+fptr->cbuf.off, fptr->cbuf.len);
+        if (fptr->cbuf.off < fptr->cbuf.off_unget)
+            fptr->cbuf.off_unget -= fptr->cbuf.off;
+        else
+            fptr->cbuf.off_unget = 0;
         fptr->cbuf.off = 0;
     }
+
+    if (fptr->readconv == READCONV_UNIVERSAL_NEWLINE_ONLY)
+        return fill_cbuf_with_universal_newline(fptr, ec_flags);
 
     cbuf_len0 = fptr->cbuf.len;
 
@@ -3314,10 +3475,16 @@ io_shift_cbuf(rb_io_t *fptr, int len, VALUE *strp)
     fptr->cbuf.off += len;
     fptr->cbuf.len -= len;
     /* xxx: set coderange */
-    if (fptr->cbuf.len == 0)
+    if (fptr->cbuf.len == 0) {
         fptr->cbuf.off = 0;
+        fptr->cbuf.off_unget = 0;
+    }
     else if (fptr->cbuf.capa/2 < fptr->cbuf.off) {
         memmove(fptr->cbuf.ptr, fptr->cbuf.ptr+fptr->cbuf.off, fptr->cbuf.len);
+        if (fptr->cbuf.off < fptr->cbuf.off_unget)
+            fptr->cbuf.off_unget -= fptr->cbuf.off;
+        else
+            fptr->cbuf.off_unget = 0;
         fptr->cbuf.off = 0;
     }
     return str;
@@ -5289,8 +5456,11 @@ rb_io_ungetc(VALUE io, VALUE c)
             MEMMOVE(fptr->cbuf.ptr+fptr->cbuf.capa-fptr->cbuf.len,
                     fptr->cbuf.ptr+fptr->cbuf.off,
                     char, fptr->cbuf.len);
+            fptr->cbuf.off_unget += fptr->cbuf.capa-fptr->cbuf.len-fptr->cbuf.off;
             fptr->cbuf.off = fptr->cbuf.capa-fptr->cbuf.len;
         }
+        if (fptr->cbuf.off_unget < fptr->cbuf.off)
+            fptr->cbuf.off_unget = fptr->cbuf.off;
         fptr->cbuf.off -= (int)len;
         fptr->cbuf.len += (int)len;
         MEMMOVE(fptr->cbuf.ptr+fptr->cbuf.off, RSTRING_PTR(c), char, len);
@@ -5661,7 +5831,8 @@ static void
 clear_readconv(rb_io_t *fptr)
 {
     if (fptr->readconv) {
-        rb_econv_close(fptr->readconv);
+        if (READCONV_IS_REAL_ECONV(fptr->readconv))
+            rb_econv_close(fptr->readconv);
         fptr->readconv = NULL;
     }
     free_io_buffer(&fptr->cbuf);
@@ -5713,7 +5884,7 @@ rb_io_memsize(const rb_io_t *io)
     size += io->rbuf.capa;
     size += io->wbuf.capa;
     size += io->cbuf.capa;
-    if (io->readconv) size += rb_econv_memsize(io->readconv);
+    if (READCONV_IS_REAL_ECONV(io->readconv)) size += rb_econv_memsize(io->readconv);
     if (io->writeconv) size += rb_econv_memsize(io->writeconv);
 
     struct rb_io_blocking_operation *blocking_operation = 0;
@@ -6369,7 +6540,7 @@ rb_io_binmode(VALUE io)
     rb_io_t *fptr;
 
     GetOpenFile(io, fptr);
-    if (fptr->readconv)
+    if (READCONV_IS_REAL_ECONV(fptr->readconv))
         rb_econv_binmode(fptr->readconv);
     if (fptr->writeconv)
         rb_econv_binmode(fptr->writeconv);
@@ -6391,7 +6562,8 @@ static void
 io_ascii8bit_binmode(rb_io_t *fptr)
 {
     if (fptr->readconv) {
-        rb_econv_close(fptr->readconv);
+        if (READCONV_IS_REAL_ECONV(fptr->readconv))
+            rb_econv_close(fptr->readconv);
         fptr->readconv = NULL;
     }
     if (fptr->writeconv) {
@@ -9424,6 +9596,7 @@ rb_io_buffer_init(struct rb_io_internal_buffer *buf)
     buf->off = 0;
     buf->len = 0;
     buf->capa = 0;
+    buf->off_unget = 0;
 }
 
 static inline rb_io_t *
