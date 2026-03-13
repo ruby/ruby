@@ -899,7 +899,7 @@ def load_gemspec(file, base = nil, files: nil)
 end
 
 def install_default_gem(dir, srcdir, bindir)
-  gem_dir = Gem.default_dir
+  gem_dir = Gem.default_gems_dir
   install_dir = with_destdir(gem_dir)
   prepare "default gems from #{dir}", gem_dir
   RbInstall.no_write do
@@ -1193,7 +1193,7 @@ install?(:ext, :arch, :gem, :'default-gems', :'default-gems-arch') do
 end
 
 install?(:ext, :comm, :gem, :'bundled-gems') do
-  gem_dir = Gem.default_dir
+  gem_dir = Gem.bundled_gems_dir
   install_dir = with_destdir(gem_dir)
   prepare "bundled gems", gem_dir
   RbInstall.no_write do
