@@ -26,7 +26,9 @@ impl IseqPayload {
     }
 
     pub fn should_gather_profiles(&self) -> bool {
-        self.num_versions() < crate::codegen::MAX_ISEQ_VERSIONS
+        // Need room for the current version plus one more for recompilation
+        // with the gathered profile data.
+        self.num_versions() + 1 < crate::codegen::MAX_ISEQ_VERSIONS
     }
 }
 
