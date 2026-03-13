@@ -40,7 +40,7 @@ static void vm_analysis_insn(int insn);
 #endif
 /* #define DECL_SC_REG(r, reg) VALUE reg_##r */
 
-#if !OPT_CALL_THREADED_CODE
+#if !OPT_CALL_THREADED_CODE && !OPT_TAILCALL_THREADED_CODE
 static VALUE
 vm_exec_core(rb_execution_context_t *ec)
 {
@@ -115,7 +115,40 @@ rb_vm_get_insns_address_table(void)
     return (const void **)vm_exec_core(0);
 }
 
-#else /* OPT_CALL_THREADED_CODE */
+#elif OPT_TAILCALL_THREADED_CODE
+
+#undef  RESTORE_REGS
+#define RESTORE_REGS() \
+{ \
+  VM_REG_CFP = ec->cfp; \
+  reg_pc  = reg_cfp->pc; \
+}
+
+#undef  VM_REG_PC
+#define VM_REG_PC reg_pc
+#undef  GET_PC
+#define GET_PC() (reg_pc)
+#undef  SET_PC
+#define SET_PC(x) (reg_cfp->pc = VM_REG_PC = (x))
+
+#include "vm.inc"
+#include "vmtc.inc"
+
+const void **
+rb_vm_get_insns_address_table(void)
+{
+    return (const void **)insns_address_table;
+}
+
+static VALUE
+vm_exec_core(rb_execution_context_t *ec)
+{
+    register rb_control_frame_t *reg_cfp = ec->cfp;
+    const VALUE *reg_pc = reg_cfp->pc;
+    return ((rb_insn_tailcall_func_t *) (*GET_PC()))(INSN_FUNC_ARGS);
+}
+
+#elif OPT_CALL_THREADED_CODE
 
 #include "vm.inc"
 #include "vmtc.inc"

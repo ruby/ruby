@@ -3951,7 +3951,7 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
     th->ec->storage = Qnil;
     th->ec->ractor_id = rb_ractor_id(th->ractor);
 
-#if OPT_CALL_THREADED_CODE
+#if OPT_CALL_THREADED_CODE || OPT_TAILCALL_THREADED_CODE
     th->retval = Qundef;
 #endif
     th->name = Qnil;
@@ -4459,7 +4459,7 @@ Init_VM(void)
     rb_ary_push(opts, rb_str_new2("direct threaded code"));
 #elif OPT_TOKEN_THREADED_CODE
     rb_ary_push(opts, rb_str_new2("token threaded code"));
-#elif OPT_CALL_THREADED_CODE
+#elif OPT_CALL_THREADED_CODE || OPT_TAILCALL_THREADED_CODE
     rb_ary_push(opts, rb_str_new2("call threaded code"));
 #endif
 
