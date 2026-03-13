@@ -3612,12 +3612,6 @@ command		: fcall command_args       %prec tLOWEST
                         $$ = new_command_qcall(p, idCOLON2, $1, $3, $4, $5, &@3, &@$);
                     /*% ripper: method_add_block!(command_call!($:1, $:2, $:3, $:4), $:5) %*/
                    }
-                | primary_value tCOLON2 tCONSTANT '{' brace_body '}'
-                    {
-                        set_embraced_location($5, &@4, &@6);
-                        $$ = new_command_qcall(p, idCOLON2, $1, $3, 0, $5, &@3, &@$);
-                    /*% ripper: method_add_block!(command_call!($:1, $:2, $:3, Qnil), $:5) %*/
-                   }
                 | keyword_super command_args
                     {
                         $$ = NEW_SUPER($2, &@$, &@1, &NULL_LOC, &NULL_LOC);
@@ -4467,6 +4461,11 @@ primary		: inline_primary
                     $$ = method_add_block(p, $call, $block, &@$);
                 /*% ripper: method_add_block!($:call, $:block) %*/
                 }
+            | primary_value tCOLON2 tCONSTANT brace_block
+                {
+                    $$ = new_command_qcall(p, idCOLON2, $1, $3, 0, $4, &@3, &@$);
+                /*% ripper: method_add_block!(command_call!($:1, $:2, $:3, Qnil), $:4) %*/
+               }
             | lambda
             | k_if[kw] expr_value[cond] then[then]
               compstmt(stmts)[body]
