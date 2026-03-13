@@ -74,4 +74,29 @@ rb_zjit_cfp_iseq(const rb_control_frame_t *cfp)
     }
 }
 
+static inline const void*
+rb_zjit_cfp_block_code(const rb_control_frame_t *cfp)
+{
+    if (rb_zjit_enabled_p && cfp->jit_return) {
+        return NULL;
+    }
+    else {
+        return cfp->block_code;
+    }
+}
+
+// Read block_code from a captured block that may live inside a cfp.
+// In that case, jit_return is located one word after rb_captured_block.
+static inline const void*
+rb_zjit_captured_block_code(const struct rb_captured_block *captured)
+{
+    if (rb_zjit_enabled_p) {
+        void *jit_return = *(void **)((VALUE *)captured + 3);
+        if (jit_return) {
+            return NULL;
+        }
+    }
+    return (const void *)captured->code.val;
+}
+
 #endif // #ifndef ZJIT_H

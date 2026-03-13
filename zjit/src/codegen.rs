@@ -2571,13 +2571,13 @@ fn gen_push_frame(asm: &mut Assembler, argc: usize, state: &FrameState, frame: C
         let new_sp = asm.lea(Opnd::mem(64, SP, (ep_offset + 1) * SIZEOF_VALUE_I32));
         asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SP), new_sp);
         asm.mov(cfp_opnd(RUBY_OFFSET_CFP_JIT_RETURN), 0.into()); // just clear a leftover on stack. TODO: make JIT frame for it
-        asm.mov(cfp_opnd(RUBY_OFFSET_CFP_ISEQ), 0.into());
+        asm.mov(cfp_opnd(RUBY_OFFSET_CFP_ISEQ), 0.into()); // TODO: optimize this with JITFrame
+        asm.mov(cfp_opnd(RUBY_OFFSET_CFP_BLOCK_CODE), 0.into()); // TODO: optimize this with JITFrame
     }
 
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SELF), frame.recv);
     let ep = asm.lea(Opnd::mem(64, SP, ep_offset * SIZEOF_VALUE_I32));
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_EP), ep);
-    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_BLOCK_CODE), 0.into());
 }
 
 /// Stack overflow check: fails if CFP<=SP at any point in the callee.

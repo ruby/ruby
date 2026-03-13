@@ -2844,6 +2844,7 @@ zjit_materialize_frames(rb_control_frame_t *cfp)
         if (cfp->jit_return) {
             cfp->pc = rb_zjit_cfp_pc(cfp);
             cfp->iseq = rb_zjit_cfp_iseq(cfp);
+            cfp->block_code = NULL;
             cfp->jit_return = 0;
         }
         if (VM_FRAME_FINISHED_P(cfp)) break;
@@ -3661,11 +3662,12 @@ rb_execution_context_update(rb_execution_context_t *ec)
             cfp->self = rb_gc_location(cfp->self);
             if (rb_zjit_enabled_p && cfp->jit_return) {
                 rb_zjit_jit_return_set_iseq(cfp->jit_return, (rb_iseq_t *)rb_gc_location((VALUE)rb_zjit_cfp_iseq(cfp)));
+                // block_code is not written for ZJIT frames; skip relocation
             }
             else {
                 cfp->iseq = (rb_iseq_t *)rb_gc_location((VALUE)cfp->iseq);
+                cfp->block_code = (void *)rb_gc_location((VALUE)cfp->block_code);
             }
-            cfp->block_code = (void *)rb_gc_location((VALUE)cfp->block_code);
 
             if (!VM_ENV_LOCAL_P(ep)) {
                 const VALUE *prev_ep = VM_ENV_PREV_EP(ep);
@@ -3716,8 +3718,9 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
             VM_ASSERT(!!VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED) == vm_ep_in_heap_p_(ec, ep));
 
             rb_gc_mark_movable(cfp->self);
+            // TODO: use a broader `if` for rb_zjit_cfp_iseq instead of calling rb_zjit_cfp_* every time
             rb_gc_mark_movable((VALUE)rb_zjit_cfp_iseq(cfp));
-            rb_gc_mark_movable((VALUE)cfp->block_code);
+            rb_gc_mark_movable((VALUE)rb_zjit_cfp_block_code(cfp));
 
             if (VM_ENV_LOCAL_P(ep) && VM_ENV_BOXED_P(ep)) {
                 const rb_box_t *box = VM_ENV_BOX(ep);

@@ -1,5 +1,7 @@
 use crate::cruby::{IseqPtr, VALUE};
 
+// TODO: consider making it C ABI compatible and let C function read it directly
+// instead of calling a Rust function
 #[derive(Debug)]
 pub struct JITFrame {
     pub pc: *const VALUE,
