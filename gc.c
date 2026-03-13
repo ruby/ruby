@@ -1307,9 +1307,6 @@ rb_gc_obj_needs_cleanup_p(VALUE obj)
         return true;
     }
 
-    shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
-    if (id2ref_tbl && rb_shape_has_object_id(shape_id)) return true;
-
     switch (flags & RUBY_T_MASK) {
       case T_OBJECT:
         if (flags & ROBJECT_HEAP) return true;
@@ -1329,29 +1326,28 @@ rb_gc_obj_needs_cleanup_p(VALUE obj)
 
       case T_STRING:
         if (flags & (RSTRING_NOEMBED | RSTRING_FSTR)) return true;
-        return rb_shape_has_fields(shape_id);
+        return false;
 
       case T_ARRAY:
         if (!(flags & RARRAY_EMBED_FLAG)) return true;
-        return rb_shape_has_fields(shape_id);
+        return false;
 
       case T_HASH:
         if (flags & RHASH_ST_TABLE_FLAG) return true;
-        return rb_shape_has_fields(shape_id);
+        return false;
 
       case T_BIGNUM:
         if (!(flags & BIGNUM_EMBED_FLAG)) return true;
-        return rb_shape_has_fields(shape_id);
+        return false;
 
       case T_STRUCT:
         if (!(flags & RSTRUCT_EMBED_LEN_MASK)) return true;
-        if (flags & RSTRUCT_GEN_FIELDS) return rb_shape_has_fields(shape_id);
         return false;
 
       case T_FLOAT:
       case T_RATIONAL:
       case T_COMPLEX:
-        return rb_shape_has_fields(shape_id);
+        return false;
 
       default:
         UNREACHABLE_RETURN(true);
@@ -2254,11 +2250,6 @@ void
 rb_gc_obj_free_vm_weak_references(VALUE obj)
 {
     ASSUME(!RB_SPECIAL_CONST_P(obj));
-    obj_free_object_id(obj);
-
-    if (rb_obj_gen_fields_p(obj)) {
-        rb_free_generic_ivar(obj);
-    }
 
     switch (BUILTIN_TYPE(obj)) {
       case T_STRING:
@@ -4175,6 +4166,21 @@ vm_weak_table_frozen_strings_foreach(VALUE *str, void *data)
 }
 
 void rb_fstring_foreach_with_replace(int (*callback)(VALUE *str, void *data), void *data);
+
+// Whether this table must be cleaned every GC after marking.
+// Other tables may be skipped cleaned up per-object via rb_gc_obj_free_vm_weak_references.
+bool
+rb_gc_vm_weak_table_essential_p(enum rb_gc_vm_weak_tables table)
+{
+    switch (table) {
+      case RB_GC_VM_ID2REF_TABLE:
+      case RB_GC_VM_GENERIC_FIELDS_TABLE:
+        return true;
+      default:
+        return false;
+    }
+}
+
 void
 rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback,
                             vm_table_update_callback_func update_callback,
