@@ -80,10 +80,7 @@ VM_EP_LEP(const VALUE *ep)
 static inline const rb_control_frame_t *
 rb_vm_search_cf_from_ep(const rb_execution_context_t *ec, const rb_control_frame_t *cfp, const VALUE * const ep)
 {
-    if (!ep) {
-        return NULL;
-    }
-    else {
+    if (ep) {
         const rb_control_frame_t * const eocfp = RUBY_VM_END_CONTROL_FRAME(ec); /* end of control frame pointer */
 
         while (cfp < eocfp) {
@@ -92,9 +89,8 @@ rb_vm_search_cf_from_ep(const rb_execution_context_t *ec, const rb_control_frame
             }
             cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
         }
-
-        return NULL;
     }
+    return NULL;
 }
 
 #if VM_CHECK_MODE > 0
