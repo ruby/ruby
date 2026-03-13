@@ -851,6 +851,16 @@ class TestStringIO < Test::Unit::TestCase
     assert_nothing_raised { f.length }
   end
 
+  def test_empty_with_some_content
+    f = StringIO.new("1234")
+    assert !f.empty?
+  end
+
+  def test_empty_with_no_content
+    f = StringIO.new("")
+    assert f.empty?
+  end
+
   # This test is should in ruby/test_method.rb
   # However this test depends on stringio library,
   # we write it here.
