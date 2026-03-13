@@ -40,6 +40,27 @@ require_relative "support/permissions"
 require_relative "support/platforms"
 require_relative "support/windows_tag_group"
 
+begin
+  gem "simplecov_json_formatter"
+  require "simplecov"
+
+  SimpleCov.start do
+    command_name "bundler"
+    root File.expand_path("../..", __dir__)
+    coverage_dir File.expand_path("../../coverage", __dir__)
+
+    add_filter "/spec/"
+    add_filter "/test/"
+    add_filter "/lib/rubygems/"
+    add_filter "/lib/bundler/vendor/"
+    add_filter "/tool/"
+    add_filter "/bundler/tmp/"
+    add_filter ".gemspec"
+  end
+rescue LoadError
+  # SimpleCov is not installed
+end
+
 $debug = false
 
 module Gem
