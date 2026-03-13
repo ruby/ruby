@@ -2819,4 +2819,18 @@ EOT
       end
     end
   end
+
+  def test_pos_after_eof
+    bug21687 = '[ruby-core:123806]'
+    with_tmpdir {
+      str = "0123456789"
+      generate_file("tmp", str + "\x1A" + "x"*(1024_0 - str.bytesize - 1))
+      open("tmp", "r") do |f|
+        result = f.readline
+        assert_equal(str, result, bug21687)
+        assert_equal(str.bytesize, f.pos, bug21687)
+        assert_equal(result.bytesize, f.pos, bug21687)
+      end
+    }
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
 end
