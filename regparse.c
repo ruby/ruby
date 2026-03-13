@@ -1854,9 +1854,6 @@ add_code_range_to_buf0(BBuf** pbuf, ScanEnv* env, OnigCodePoint from, OnigCodePo
     return ONIGERR_TOO_MANY_MULTI_BYTE_RANGES;
 
   if (inc_n != 1) {
-    if (checkdup && from <= data[low*2+1]
-        && (data[low*2] <= from || data[low*2+1] <= to))
-      CC_DUP_WARN(env, from, to);
     if (from > data[low*2])
       from = data[low*2];
     if (to < data[(high - 1)*2 + 1])
