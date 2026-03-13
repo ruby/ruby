@@ -3487,6 +3487,9 @@ vm_call_iseq_setup_normal(rb_execution_context_t *ec, rb_control_frame_t *cfp, s
                           int opt_pc, int param_size, int local_size)
 {
     const rb_iseq_t *iseq = def_iseq_ptr(me->def);
+
+    RUBY_DTRACE_METHOD_ENTRY_HOOK(ec, me->owner, me->def->original_id);
+
     VALUE *argv = cfp->sp - calling->argc;
     VALUE *sp = argv + param_size;
     cfp->sp = argv - 1 /* recv */;
@@ -3523,6 +3526,10 @@ vm_call_iseq_setup_tailcall(rb_execution_context_t *ec, rb_control_frame_t *cfp,
         }
     }
 
+    if (VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_METHOD) {
+        RUBY_DTRACE_METHOD_RETURN_HOOK(ec, 0, 0);
+    }
+
     vm_pop_frame(ec, cfp, cfp->ep);
     cfp = ec->cfp;
 
@@ -3536,6 +3543,8 @@ vm_call_iseq_setup_tailcall(rb_execution_context_t *ec, rb_control_frame_t *cfp,
     for (i=0; i < ISEQ_BODY(iseq)->param.size; i++) {
         *sp++ = src_argv[i];
     }
+
+    RUBY_DTRACE_METHOD_ENTRY_HOOK(ec, me->owner, me->def->original_id);
 
     vm_push_frame(ec, iseq, VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL | finish_flag,
                   calling->recv, calling->block_handler, (VALUE)me,
@@ -5808,30 +5817,6 @@ vm_check_keyword(lindex_t bits, lindex_t idx, const VALUE *ep)
     return Qtrue;
 }
 
-static void
-vm_dtrace(rb_event_flag_t flag, rb_execution_context_t *ec)
-{
-    if (RUBY_DTRACE_METHOD_ENTRY_ENABLED() ||
-        RUBY_DTRACE_METHOD_RETURN_ENABLED() ||
-        RUBY_DTRACE_CMETHOD_ENTRY_ENABLED() ||
-        RUBY_DTRACE_CMETHOD_RETURN_ENABLED()) {
-
-        switch (flag) {
-          case RUBY_EVENT_CALL:
-            RUBY_DTRACE_METHOD_ENTRY_HOOK(ec, 0, 0);
-            return;
-          case RUBY_EVENT_C_CALL:
-            RUBY_DTRACE_CMETHOD_ENTRY_HOOK(ec, 0, 0);
-            return;
-          case RUBY_EVENT_RETURN:
-            RUBY_DTRACE_METHOD_RETURN_HOOK(ec, 0, 0);
-            return;
-          case RUBY_EVENT_C_RETURN:
-            RUBY_DTRACE_CMETHOD_RETURN_HOOK(ec, 0, 0);
-            return;
-        }
-    }
-}
 
 static VALUE
 vm_const_get_under(ID id, rb_num_t flags, VALUE cbase)
@@ -7207,7 +7192,6 @@ vm_trace_hook(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VAL
     if (event & global_hooks->events) {
         /* increment PC because source line is calculated with PC-1 */
         reg_cfp->pc++;
-        vm_dtrace(event, ec);
         rb_exec_event_hook_orig(ec, global_hooks, event, self, 0, 0, 0 , val, 0);
         reg_cfp->pc--;
     }
