@@ -45,7 +45,7 @@ begin
   require "simplecov"
 
   SimpleCov.start do
-    command_name "bundler"
+    command_name "bundler:#{Process.pid}"
     root File.expand_path("../..", __dir__)
     coverage_dir File.expand_path("../../coverage", __dir__)
 
