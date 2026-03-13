@@ -6326,7 +6326,7 @@ impl<'a> std::fmt::Display for FunctionGraphvizPrinter<'a> {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct FrameState {
-    iseq: IseqPtr,
+    pub iseq: IseqPtr,
     insn_idx: usize,
     // Ruby bytecode instruction pointer
     pub pc: *const VALUE,

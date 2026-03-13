@@ -90,6 +90,7 @@ pub extern "C" fn rb_zjit_root_update_references() {
     }
     let invariants = ZJITState::get_invariants();
     invariants.update_references();
+
 }
 
 fn iseq_mark(payload: &IseqPayload) {
