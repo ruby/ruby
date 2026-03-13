@@ -9,6 +9,30 @@ end
 
 require "test/unit"
 
+begin
+  gem "simplecov_json_formatter"
+  require "simplecov"
+
+  unless ENV["SIMPLECOV_SUBPROCESS"]
+    SimpleCov.start do
+      command_name "rubygems"
+      root File.expand_path("../..", __dir__)
+      coverage_dir File.expand_path("../../coverage", __dir__)
+
+      add_filter "/test/"
+      add_filter "/bundler/"
+      add_filter "/tool/"
+      add_filter "/lib/rubygems/vendor/"
+      add_filter ".gemspec"
+    end
+
+    # Prevent SimpleCov from running in subprocesses spawned by assert_separately
+    ENV["SIMPLECOV_SUBPROCESS"] = "1"
+  end
+rescue LoadError
+  # SimpleCov is not installed
+end
+
 require "fileutils"
 require "pathname"
 require "pp"
