@@ -117,7 +117,7 @@ impl ZJITState {
             let mem_block = VirtualMem::alloc(get_option!(exec_mem_bytes), Some(get_option!(mem_bytes)));
             let mem_block = Rc::new(RefCell::new(mem_block));
 
-            CodeBlock::new(mem_block.clone(), get_option!(dump_disasm))
+            CodeBlock::new(mem_block.clone(), get_option_ref!(dump_disasm).is_some())
         };
 
         let entry_trampoline = gen_entry_trampoline(&mut cb).unwrap().raw_ptr(&cb);

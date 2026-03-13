@@ -13,6 +13,8 @@ jit = { version = "0.1.0", path = "../jit" }
 
 [dev-dependencies]
 insta = "1.43.1"
+rand = "0.9"
+assert_matches = "1.5"
 
 # NOTE: Development builds select a set of these via configure.ac
 # For debugging, `make V=1` shows exact cargo invocation.
