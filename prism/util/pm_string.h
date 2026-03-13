@@ -94,7 +94,7 @@ void pm_string_owned_init(pm_string_t *string, uint8_t *source, size_t length);
  * @param source The source of the string.
  * @param length The length of the string.
  */
-void pm_string_constant_init(pm_string_t *string, const char *source, size_t length);
+PRISM_EXPORTED_FUNCTION void pm_string_constant_init(pm_string_t *string, const char *source, size_t length);
 
 /**
  * Represents the result of calling pm_string_mapped_init or
