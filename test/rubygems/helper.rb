@@ -10,6 +10,8 @@ end
 require "test/unit"
 
 begin
+  raise LoadError if ENV["GEM_COMMAND"]
+
   gem "simplecov_json_formatter"
   require "simplecov"
 
