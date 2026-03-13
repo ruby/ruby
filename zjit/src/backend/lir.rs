@@ -9,7 +9,7 @@ use crate::codegen::local_size_and_idx_to_ep_offset;
 use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, vm_stack_canary};
 use crate::hir::{Invariant, SideExitReason};
 use crate::hir;
-use crate::options::{TraceExits, debug, get_option};
+use crate::options::{TraceExits, get_option};
 use crate::cruby::VALUE;
 use crate::payload::IseqVersionRef;
 use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, side_exit_counter, CompileError};
@@ -209,7 +209,7 @@ pub use crate::backend::current::{
     Reg,
     EC, CFP, SP,
     NATIVE_STACK_PTR, NATIVE_BASE_PTR,
-    C_ARG_OPNDS, C_RET_REG, C_RET_OPND,
+    C_ARG_OPNDS, C_RET_OPND,
 };
 
 pub static JIT_PRESERVED_REGS: &[Opnd] = &[CFP, SP, EC];
@@ -220,7 +220,7 @@ pub enum MemBase
 {
     /// Register: Every Opnd::Mem should have MemBase::Reg as of emit.
     Reg(u8),
-    /// Virtual register: Lowered to MemBase::Reg or MemBase::Stack in alloc_regs.
+    /// Virtual register: Lowered to MemBase::Reg or MemBase::Stack during register assignment.
     VReg(VRegId),
     /// Stack slot: Lowered to MemBase::Reg in scratch_split.
     Stack { stack_idx: usize, num_bits: u8 },
@@ -292,7 +292,7 @@ pub enum Opnd
     // Immediate Ruby value, may be GC'd, movable
     Value(VALUE),
 
-    /// Virtual register. Lowered to Reg or Mem in Assembler::alloc_regs().
+    /// Virtual register. Lowered to Reg or Mem during register assignment.
     VReg{ idx: VRegId, num_bits: u8 },
 
     // Low-level operands, for lowering
@@ -674,11 +674,11 @@ pub enum Insn {
         fptr: Opnd,
         /// Optional PosMarker to remember the start address of the C call.
         /// It's embedded here to insert the PosMarker after push instructions
-        /// that are split from this CCall on alloc_regs().
+        /// that are split from this CCall during register assignment.
         start_marker: Option<PosMarkerFn>,
         /// Optional PosMarker to remember the end address of the C call.
         /// It's embedded here to insert the PosMarker before pop instructions
-        /// that are split from this CCall on alloc_regs().
+        /// that are split from this CCall during register assignment.
         end_marker: Option<PosMarkerFn>,
         out: Opnd,
     },
@@ -1579,12 +1579,8 @@ impl Allocation {
     }
 }
 
-/// StackState manages which stack slots are used by which VReg
+/// StackState converts abstract stack slots into concrete stack addresses.
 pub struct StackState {
-    /// The maximum number of spilled VRegs at a time
-    stack_size: usize,
-    /// Map from index at the C stack for spilled VRegs to Some(vreg_idx) if allocated
-    stack_slots: Vec<Option<VRegId>>,
     /// Copy of Assembler::stack_base_idx. Used for calculating stack slot offsets.
     stack_base_idx: usize,
 }
@@ -1592,56 +1588,13 @@ pub struct StackState {
 impl StackState {
     /// Initialize a stack allocator
     pub(super) fn new(stack_base_idx: usize) -> Self {
-        StackState {
-            stack_size: 0,
-            stack_slots: vec![],
-            stack_base_idx,
-        }
-    }
-
-    /// Allocate a stack slot for a given vreg_idx
-    fn alloc_stack(&mut self, vreg_idx: VRegId) -> Opnd {
-        for stack_idx in 0..self.stack_size {
-            if self.stack_slots[stack_idx].is_none() {
-                self.stack_slots[stack_idx] = Some(vreg_idx);
-                return Opnd::mem(64, NATIVE_BASE_PTR, self.stack_idx_to_disp(stack_idx));
-            }
-        }
-        // Every stack slot is in use. Allocate a new stack slot.
-        self.stack_size += 1;
-        self.stack_slots.push(Some(vreg_idx));
-        Opnd::mem(64, NATIVE_BASE_PTR, self.stack_idx_to_disp(self.stack_slots.len() - 1))
-    }
-
-    /// Deallocate a stack slot for a given disp
-    fn dealloc_stack(&mut self, disp: i32) {
-        let stack_idx = self.disp_to_stack_idx(disp);
-        if self.stack_slots[stack_idx].is_some() {
-            self.stack_slots[stack_idx] = None;
-        }
-    }
-
-    /// Convert the `disp` of a stack slot operand to the stack index
-    fn disp_to_stack_idx(&self, disp: i32) -> usize {
-        (-disp / SIZEOF_VALUE_I32) as usize - self.stack_base_idx - 1
+        StackState { stack_base_idx }
     }
 
     /// Convert a stack index to the `disp` of the stack slot
     fn stack_idx_to_disp(&self, stack_idx: usize) -> i32 {
         (self.stack_base_idx + stack_idx + 1) as i32 * -SIZEOF_VALUE_I32
     }
-
-    /// Convert Mem to MemBase::Stack
-    fn mem_to_stack_membase(&self, mem: Mem) -> MemBase {
-        match mem {
-            Mem { base: MemBase::Reg(reg_no), disp, num_bits } if NATIVE_BASE_PTR.unwrap_reg().reg_no == reg_no => {
-                let stack_idx = self.disp_to_stack_idx(disp);
-                MemBase::Stack { stack_idx, num_bits }
-            }
-            _ => unreachable!(),
-        }
-    }
-
     /// Convert MemBase::Stack to Mem
     pub(super) fn stack_membase_to_mem(&self, membase: MemBase) -> Mem {
         match membase {
@@ -1651,97 +1604,6 @@ impl StackState {
             }
             _ => unreachable!(),
         }
-    }
-}
-
-/// RegisterPool manages which registers are used by which VReg
-struct RegisterPool {
-    /// List of registers that can be allocated
-    regs: Vec<Reg>,
-
-    /// Some(vreg_idx) if the register at the index in `pool` is used by the VReg.
-    /// None if the register is not in use.
-    pool: Vec<Option<VRegId>>,
-
-    /// The number of live registers.
-    /// Provides a quick way to query `pool.filter(|r| r.is_some()).count()`
-    live_regs: usize,
-
-    /// Fallback to let StackState allocate stack slots when RegisterPool runs out of registers.
-    stack_state: StackState,
-}
-
-impl RegisterPool {
-    /// Initialize a register pool
-    fn new(regs: Vec<Reg>, stack_base_idx: usize) -> Self {
-        let pool = vec![None; regs.len()];
-        RegisterPool {
-            regs,
-            pool,
-            live_regs: 0,
-            stack_state: StackState::new(stack_base_idx),
-        }
-    }
-
-    /// Mutate the pool to indicate that the register at the index
-    /// has been allocated and is live.
-    fn alloc_opnd(&mut self, vreg_idx: VRegId) -> Opnd {
-        for (reg_idx, reg) in self.regs.iter().enumerate() {
-            if self.pool[reg_idx].is_none() {
-                self.pool[reg_idx] = Some(vreg_idx);
-                self.live_regs += 1;
-                return Opnd::Reg(*reg);
-            }
-        }
-        self.stack_state.alloc_stack(vreg_idx)
-    }
-
-    /// Allocate a specific register
-    fn take_reg(&mut self, reg: &Reg, vreg_idx: VRegId) -> Opnd {
-        let reg_idx = self.regs.iter().position(|elem| elem.reg_no == reg.reg_no)
-            .unwrap_or_else(|| panic!("Unable to find register: {}", reg.reg_no));
-        assert_eq!(self.pool[reg_idx], None, "register already allocated for VReg({:?})", self.pool[reg_idx]);
-        self.pool[reg_idx] = Some(vreg_idx);
-        self.live_regs += 1;
-        Opnd::Reg(*reg)
-    }
-
-    // Mutate the pool to indicate that the given register is being returned
-    // as it is no longer used by the instruction that previously held it.
-    fn dealloc_opnd(&mut self, opnd: &Opnd) {
-        if let Opnd::Mem(Mem { disp, .. }) = *opnd {
-            return self.stack_state.dealloc_stack(disp);
-        }
-
-        let reg = opnd.unwrap_reg();
-        let reg_idx = self.regs.iter().position(|elem| elem.reg_no == reg.reg_no)
-            .unwrap_or_else(|| panic!("Unable to find register: {}", reg.reg_no));
-        if self.pool[reg_idx].is_some() {
-            self.pool[reg_idx] = None;
-            self.live_regs -= 1;
-        }
-    }
-
-    /// Return a list of (Reg, vreg_idx) tuples for all live registers
-    fn live_regs(&self) -> Vec<(Reg, VRegId)> {
-        let mut live_regs = Vec::with_capacity(self.live_regs);
-        for (reg_idx, &reg) in self.regs.iter().enumerate() {
-            if let Some(vreg_idx) = self.pool[reg_idx] {
-                live_regs.push((reg, vreg_idx));
-            }
-        }
-        live_regs
-    }
-
-    /// Return vreg_idx if a given register is already in use
-    fn vreg_for(&self, reg: &Reg) -> Option<VRegId> {
-        let reg_idx = self.regs.iter().position(|elem| elem.reg_no == reg.reg_no).unwrap();
-        self.pool[reg_idx]
-    }
-
-    /// Return true if no register is in use
-    fn is_empty(&self) -> bool {
-        self.live_regs == 0
     }
 }
 
@@ -2696,243 +2558,6 @@ impl Assembler
         }
     }
 
-    /// Sets the out field on the various instructions that require allocated
-    /// registers because their output is used as the operand on a subsequent
-    /// instruction. This is our implementation of the linear scan algorithm.
-    pub(super) fn alloc_regs(mut self, regs: Vec<Reg>) -> Result<Assembler, CompileError> {
-        // First, create the pool of registers.
-        let mut pool = RegisterPool::new(regs.clone(), self.stack_base_idx);
-
-        // Mapping between VReg and register or stack slot for each VReg index.
-        // None if no register or stack slot has been allocated for the VReg.
-        let mut vreg_opnd: Vec<Option<Opnd>> = vec![None; self.num_vregs];
-
-        // List of registers saved before a C call, paired with the VReg index.
-        let mut saved_regs: Vec<(Reg, VRegId)> = vec![];
-
-        // Remember the indexes of Insn::FrameSetup to update the stack size later
-        let mut frame_setup_idxs: Vec<(BlockId, usize)> = vec![];
-
-        let mut asm_local = Assembler::new_with_asm(&self);
-
-        let iterator = &mut self.instruction_iterator();
-
-        let asm = &mut asm_local;
-
-        while let Some((index, mut insn)) = iterator.next(asm) {
-            // Remember the index of FrameSetup to bump slot_count when we know the max number of spilled VRegs.
-            if let Insn::FrameSetup { .. } = insn {
-                assert!(asm.current_block().is_entry);
-                frame_setup_idxs.push((asm.current_block().id, asm.current_block().insns.len()));
-            }
-
-            let before_ccall = match (&insn, iterator.peek().map(|(_, insn)| insn)) {
-                (Insn::CCall { .. }, _) if !pool.is_empty() => {
-                    // If C_RET_REG is in use, move it to another register.
-                    // This must happen before last-use registers are deallocated.
-                    if let Some(vreg_idx) = pool.vreg_for(&C_RET_REG) {
-                        let new_opnd = pool.alloc_opnd(vreg_idx);
-                        asm.mov(new_opnd, C_RET_OPND);
-                        pool.dealloc_opnd(&Opnd::Reg(C_RET_REG));
-                        vreg_opnd[vreg_idx.0] = Some(new_opnd);
-                    }
-
-                    true
-                },
-                _ => false,
-            };
-
-            // Check if this is the last instruction that uses an operand that
-            // spans more than one instruction. In that case, return the
-            // allocated register to the pool.
-            for opnd in insn.opnd_iter() {
-                match *opnd {
-                    Opnd::VReg { idx, .. } |
-                    Opnd::Mem(Mem { base: MemBase::VReg(idx), .. }) => {
-                        // We're going to check if this is the last instruction that
-                        // uses this operand. If it is, we can return the allocated
-                        // register to the pool.
-                        if false /* live_ranges removed */ {
-                            if let Some(opnd) = vreg_opnd[idx.0] {
-                                pool.dealloc_opnd(&opnd);
-                            } else {
-                                unreachable!("no register allocated for insn {:?}", insn);
-                            }
-                        }
-                    }
-                    _ => {}
-                }
-            }
-
-            // Save caller-saved registers on a C call.
-            if before_ccall {
-                // Find all live registers
-                saved_regs = pool.live_regs();
-
-                // Save live registers
-                for pair in saved_regs.chunks(2) {
-                    match *pair {
-                        [(reg0, _), (reg1, _)] => {
-                            asm.cpush_pair(Opnd::Reg(reg0), Opnd::Reg(reg1));
-                            pool.dealloc_opnd(&Opnd::Reg(reg0));
-                            pool.dealloc_opnd(&Opnd::Reg(reg1));
-                        }
-                        [(reg, _)] => {
-                            asm.cpush(Opnd::Reg(reg));
-                            pool.dealloc_opnd(&Opnd::Reg(reg));
-                        }
-                        _ => unreachable!("chunks(2)")
-                    }
-                }
-                // On x86_64, maintain 16-byte stack alignment
-                if cfg!(target_arch = "x86_64") && saved_regs.len() % 2 == 1 {
-                    asm.cpush(Opnd::Reg(saved_regs.last().unwrap().0));
-                }
-            }
-
-            // Allocate a register for the output operand if it exists
-            let vreg_idx = match insn.out_opnd() {
-                Some(Opnd::VReg { idx, .. }) => Some(*idx),
-                _ => None,
-            };
-            if let Some(vreg_idx) = vreg_idx {
-                if false /* live_ranges removed */ {
-                    debug!("Allocating a register for {vreg_idx} at instruction index {index} even though it does not live past this index");
-                }
-                // This is going to be the output operand that we will set on the
-                // instruction. CCall and LiveReg need to use a specific register.
-                let mut out_reg = match insn {
-                    Insn::CCall { .. } => {
-                        Some(pool.take_reg(&C_RET_REG, vreg_idx))
-                    }
-                    Insn::LiveReg { opnd, .. } => {
-                        let reg = opnd.unwrap_reg();
-                        Some(pool.take_reg(&reg, vreg_idx))
-                    }
-                    _ => None
-                };
-
-                // If this instruction's first operand maps to a register and
-                // this is the last use of the register, reuse the register
-                // We do this to improve register allocation on x86
-                // e.g. out  = add(reg0, reg1)
-                //      reg0 = add(reg0, reg1)
-                if out_reg.is_none() {
-                    let mut opnd_iter = insn.opnd_iter();
-
-                    if let Some(Opnd::VReg{ idx, .. }) = opnd_iter.next() {
-                        if false /* live_ranges removed */ {
-                            if let Some(Opnd::Reg(reg)) = vreg_opnd[idx.0] {
-                                out_reg = Some(pool.take_reg(&reg, vreg_idx));
-                            }
-                        }
-                    }
-                }
-
-                // Allocate a new register for this instruction if one is not
-                // already allocated.
-                let out_opnd = out_reg.unwrap_or_else(|| pool.alloc_opnd(vreg_idx));
-
-                // Set the output operand on the instruction
-                let out_num_bits = Opnd::match_num_bits_iter(insn.opnd_iter());
-
-                // If we have gotten to this point, then we're sure we have an
-                // output operand on this instruction because the live range
-                // extends beyond the index of the instruction.
-                let out = insn.out_opnd_mut().unwrap();
-                let out_opnd = out_opnd.with_num_bits(out_num_bits);
-                vreg_opnd[out.vreg_idx().0] = Some(out_opnd);
-                *out = out_opnd;
-            }
-
-            // Replace VReg and Param operands by their corresponding register
-            let mut opnd_iter = insn.opnd_iter_mut();
-            while let Some(opnd) = opnd_iter.next() {
-                match *opnd {
-                    Opnd::VReg { idx, num_bits } => {
-                        *opnd = vreg_opnd[idx.0].unwrap().with_num_bits(num_bits);
-                    },
-                    Opnd::Mem(Mem { base: MemBase::VReg(idx), disp, num_bits }) => {
-                        *opnd = match vreg_opnd[idx.0].unwrap() {
-                            Opnd::Reg(reg) => Opnd::Mem(Mem { base: MemBase::Reg(reg.reg_no), disp, num_bits }),
-                            // If the base is spilled, lower it to MemBase::Stack, which scratch_split will lower to MemBase::Reg.
-                            Opnd::Mem(mem) => Opnd::Mem(Mem { base: pool.stack_state.mem_to_stack_membase(mem), disp, num_bits }),
-                            _ => unreachable!(),
-                        }
-                    }
-                    _ => {},
-                }
-            }
-
-            // If we have an output that dies at its definition (it is unused), free up the
-            // register
-            if let Some(idx) = vreg_idx {
-                if false /* live_ranges removed */ {
-                    if let Some(opnd) = vreg_opnd[idx.0] {
-                        pool.dealloc_opnd(&opnd);
-                    } else {
-                        unreachable!("no register allocated for insn {:?}", insn);
-                    }
-                }
-            }
-
-            // Push instruction(s)
-            let is_ccall = matches!(insn, Insn::CCall { .. });
-            match insn {
-                Insn::CCall { opnds, fptr, start_marker, end_marker, out } => {
-                    // Split start_marker and end_marker here to avoid inserting push/pop between them.
-                    if let Some(start_marker) = start_marker {
-                        asm.push_insn(Insn::PosMarker(start_marker));
-                    }
-                    asm.push_insn(Insn::CCall { opnds, fptr, start_marker: None, end_marker: None, out });
-                    if let Some(end_marker) = end_marker {
-                        asm.push_insn(Insn::PosMarker(end_marker));
-                    }
-                }
-                Insn::Mov { src, dest } | Insn::LoadInto { dest, opnd: src } if src == dest => {
-                    // Remove no-op move now that VReg are resolved to physical Reg
-                }
-                _ => asm.push_insn(insn),
-            }
-
-            // After a C call, restore caller-saved registers
-            if is_ccall {
-                // On x86_64, maintain 16-byte stack alignment
-                if cfg!(target_arch = "x86_64") && saved_regs.len() % 2 == 1 {
-                    asm.cpop_into(Opnd::Reg(saved_regs.last().unwrap().0));
-                }
-                // Restore saved registers
-                for pair in saved_regs.chunks(2).rev() {
-                    match *pair {
-                        [(reg, vreg_idx)] => {
-                            asm.cpop_into(Opnd::Reg(reg));
-                            pool.take_reg(&reg, vreg_idx);
-                        }
-                        [(reg0, vreg_idx0), (reg1, vreg_idx1)] => {
-                            asm.cpop_pair_into(Opnd::Reg(reg1), Opnd::Reg(reg0));
-                            pool.take_reg(&reg1, vreg_idx1);
-                            pool.take_reg(&reg0, vreg_idx0);
-                        }
-                        _ => unreachable!("chunks(2)")
-                    }
-                }
-                saved_regs.clear();
-            }
-        }
-
-        // Extend the stack space for spilled operands
-        for (block_id, frame_setup_idx) in frame_setup_idxs {
-            match &mut asm.basic_blocks[block_id.0].insns[frame_setup_idx] {
-                Insn::FrameSetup { slot_count, .. } => {
-                    *slot_count += pool.stack_state.stack_size;
-                }
-                _ => unreachable!(),
-            }
-        }
-
-        Ok(asm_local)
-    }
-
     /// Compile the instructions down to machine code.
     /// Can fail due to lack of code memory and inopportune code placement, among other reasons.
     pub fn compile(self, cb: &mut CodeBlock) -> Result<(CodePtr, Vec<CodePtr>), CompileError> {
@@ -3052,7 +2677,7 @@ impl Assembler
         let side_exit_start = std::time::Instant::now();
 
         for ((block_id, idx), target) in targets {
-            // Compile a side exit. Note that this is past the split pass and alloc_regs(),
+            // Compile a side exit. Note that this is past register assignment,
             // so you can't use an instruction that returns a VReg.
             if let Target::SideExit { exit: exit @ SideExit { pc, .. }, reason } = target {
                 // Only record the exit if `trace_side_exits` is defined and the counter is either the one specified
