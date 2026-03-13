@@ -1368,7 +1368,7 @@ class TestIO < Test::Unit::TestCase
           f.write "abcd\n"
           f.rewind
           assert_equal("abc", f.read(3))
-          f.ungetc "c"
+          f.ungetbyte "c"
           IO.copy_stream(r, f)
         }
         assert_equal("abxyz", File.read("fom"))
@@ -1424,6 +1424,20 @@ class TestIO < Test::Unit::TestCase
       f = true
       assert_equal("0" * 10000 + "1" * 10000, r.read)
     end)
+  end
+
+  def test_ungetc_leaves_pos
+    # see also: test_copy_stream_dst_rbuf
+    mkcdtmpdir {
+      File.open("ungetc", "w+b") {|f|
+        f.write "abcd\n"
+        f.rewind
+        f.read(3)
+        f.ungetc "1"
+        f.write("xyz")
+      }
+      assert_equal("abcxyz", File.read("ungetc"))
+    }
   end
 
   def test_write_with_multiple_arguments
