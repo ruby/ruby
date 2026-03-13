@@ -1071,6 +1071,8 @@ pub enum Insn {
     /// Equivalent of RUBY_VM_CHECK_INTS. Automatically inserted by the compiler before jumps and
     /// return instructions.
     CheckInterrupts { state: InsnId },
+
+    BreakPoint,
 }
 
 /// Macro that enumerates all operands of an Insn, dispatching to caller-provided
@@ -1089,6 +1091,7 @@ macro_rules! for_each_operand_impl {
             | Insn::LoadEC
             | Insn::GetEP { .. }
             | Insn::LoadSelf
+            | Insn::BreakPoint
             | Insn::PutSpecialObject { .. }
             | Insn::IncrCounter(_)
             | Insn::IncrCounterPtr { .. } => {}
@@ -1363,7 +1366,7 @@ impl Insn {
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. }
             | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
-            | Insn::CheckInterrupts { .. }
+            | Insn::CheckInterrupts { .. } | Insn::BreakPoint
             | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. }
             | Insn::ArrayAset { .. } => false,
             _ => true,
@@ -1578,6 +1581,7 @@ impl Insn {
                     abstract_heaps::Control
                 ),
             Insn::Entries { .. } => effects::Any,
+            Insn::BreakPoint => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Control),
         }
     }
 
@@ -2039,6 +2043,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::IncrCounter(counter) => write!(f, "IncrCounter {counter:?}"),
             Insn::CheckInterrupts { .. } => write!(f, "CheckInterrupts"),
             Insn::IsA { val, class } => write!(f, "IsA {val}, {class}"),
+            Insn::BreakPoint => write!(f, "BreakPoint"),
         }
     }
 }
@@ -2603,6 +2608,7 @@ impl Function {
                     | LoadEC
                     | GetEP {..}
                     | LoadSelf
+                    | BreakPoint
                     | IncrCounterPtr {..}
                     | IncrCounter(_)) => result.clone(),
             &Snapshot { state: FrameState { iseq, insn_idx, pc, ref stack, ref locals } } =>
@@ -2836,7 +2842,7 @@ impl Function {
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. }
             | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
-            | Insn::CheckInterrupts { .. }
+            | Insn::CheckInterrupts { .. } | Insn::BreakPoint
             | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. } | Insn::ArrayAset { .. } =>
                 panic!("Cannot infer type of instruction with no output: {}. See Insn::has_output().", self.insns[insn.0]),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
@@ -5259,7 +5265,6 @@ impl Function {
         }
     }
 
-
     /// Remove instructions that do not have side effects and are not referenced by any other
     /// instruction.
     fn eliminate_dead_code(&mut self) {
@@ -5902,6 +5907,7 @@ impl Function {
             | Insn::LoadSP
             | Insn::LoadEC
             | Insn::GetEP { .. }
+            | Insn::BreakPoint
             | Insn::LoadSelf
             | Insn::Snapshot { .. }
             | Insn::Jump { .. }
