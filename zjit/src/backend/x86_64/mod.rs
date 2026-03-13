@@ -1523,7 +1523,7 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 1);
 
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: lea rbx, [rbx + 8]");
-        assert_snapshot!(cb.hexdump(), @"488d7b084889fb");
+        assert_snapshot!(cb.hexdump(), @"488d5b08");
     }
 
     #[test]
@@ -1681,7 +1681,7 @@ mod tests {
         0x0: mov eax, 0
         0x5: call rax
         ");
-        assert_snapshot!(cb.hexdump(), @"4989f34c89de4989fb4c89dfb800000000ffd04889c7");
+        assert_snapshot!(cb.hexdump(), @"b800000000ffd0");
     }
 
     #[test]
@@ -1704,7 +1704,7 @@ mod tests {
         0x9: mov eax, 0
         0xe: call rax
         ");
-        assert_snapshot!(cb.hexdump(), @"4989d34c89da4989f34889fe4c89dfb800000000ffd04889c7");
+        assert_snapshot!(cb.hexdump(), @"4989f34889fe4c89dfb800000000ffd0");
     }
 
     #[test]
@@ -1731,7 +1731,7 @@ mod tests {
         0x12: mov eax, 0
         0x17: call rax
         ");
-        assert_snapshot!(cb.hexdump(), @"4989cb4889d14c89da4989f34889fe4c89dfb800000000ffd04889c7");
+        assert_snapshot!(cb.hexdump(), @"4989cb4889d14c89da4989f34889fe4c89dfb800000000ffd0");
     }
 
     #[test]
@@ -1755,7 +1755,7 @@ mod tests {
         0xc: mov eax, 0
         0x11: call rax
         ");
-        assert_snapshot!(cb.hexdump(), @"4989d34889fa4889f74c89deb800000000ffd04889c7");
+        assert_snapshot!(cb.hexdump(), @"4989d34889fa4889f74c89deb800000000ffd0");
     }
 
     #[test]
@@ -1824,7 +1824,7 @@ mod tests {
         0x29: mov rdi, rdx
         0x2c: add rdi, rcx
         ");
-        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000057565251b800000000ffd04989c3595a5e5f4d89d84889ff4801f74889d74801cf");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000057565251b800000000ffd0595a5e5f4889ff4801f74889d74801cf");
     }
 
     #[test]
@@ -1870,7 +1870,7 @@ mod tests {
         0x3b: mov rdi, rdx
         0x3e: add rdi, r8
         ");
-        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b80500000057565251415057b800000000ffd04989c35f4158595a5e5f4d89d94889ff4801f74889d74801cf4889d74c01c7");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b80500000057565251415057b800000000ffd05f4158595a5e5f4889ff4801f74889d74801cf4889d74c01c7");
     }
 
     #[test]
