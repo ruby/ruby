@@ -162,10 +162,6 @@ class MSpecScript
       config[:formatter] = config[:formatter].new(config[:output])
     end
 
-    if config[:launchable]
-      config[:formatter].extend config[:launchable]
-    end
-
     config[:formatter]
   end
 
