@@ -98,7 +98,8 @@ module Bundler
       alternate_names = alternatives.map {|a| a.respond_to?(:name) ? a.name : a }
       if alternate_names.include?(missing_gem_name.downcase)
         message += "\nDid you mean '#{missing_gem_name.downcase}'?"
-      elsif defined?(DidYouMean::SpellChecker)
+      else
+        require "did_you_mean"
         suggestions = DidYouMean::SpellChecker.new(dictionary: alternate_names).correct(missing_gem_name)
         message += "\nDid you mean #{word_list(suggestions)}?" unless suggestions.empty?
       end
