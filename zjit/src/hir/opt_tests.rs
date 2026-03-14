@@ -11234,10 +11234,9 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(String@0x1008)
           PatchPoint MethodRedefined(String@0x1008, ==@0x1010, cme:0x1018)
           v26:StringExact = GuardType v10, StringExact
-          v27:String = GuardType v10, String
-          v29:TrueClass = Const Value(true)
+          v27:TrueClass = Const Value(true)
           CheckInterrupts
-          Return v29
+          Return v27
         ");
     }
 
@@ -11264,10 +11263,9 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(String@0x1008)
           PatchPoint MethodRedefined(String@0x1008, ===@0x1010, cme:0x1018)
           v25:StringExact = GuardType v10, StringExact
-          v26:String = GuardType v10, String
-          v28:TrueClass = Const Value(true)
+          v26:TrueClass = Const Value(true)
           CheckInterrupts
-          Return v28
+          Return v26
         ");
     }
 
@@ -11299,9 +11297,9 @@ mod hir_opt_tests {
           v14:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           PatchPoint NoSingletonClass(String@0x1008)
           PatchPoint MethodRedefined(String@0x1008, ==@0x1010, cme:0x1018)
-          v31:TrueClass = Const Value(true)
+          v30:TrueClass = Const Value(true)
           CheckInterrupts
-          Return v31
+          Return v30
         ");
     }
 
@@ -11579,7 +11577,79 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_not_fold_string_not_equal_same_operand_false() {
+    fn opt_neq_string_nil_falls_back_to_basic_object_neq() {
+        eval(r#"
+            def test(str)
+              str != nil
+            end
+
+            test("x")
+            test("x")
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :str@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :str@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:NilClass = Const Value(nil)
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, !=@0x1010, cme:0x1018)
+          v27:StringExact = GuardType v10, StringExact
+          v28:BoolExact = CCallWithFrame v27, :BasicObject#!=@0x1040, v15
+          CheckInterrupts
+          Return v28
+        ");
+    }
+
+    #[test]
+    fn test_inline_string_not_equal_distinct_objects() {
+        eval(r#"
+            def test(s, t) = s != t
+            test("x", "x")
+            test("x", "x")
+        "#);
+        assert_contains_opcode("test", YARVINSN_opt_neq);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :s@0x1000
+          v4:BasicObject = LoadField v2, :t@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :s@1
+          v9:BasicObject = LoadArg :t@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, !=@0x1010, cme:0x1018)
+          v29:StringExact = GuardType v12, StringExact
+          PatchPoint MethodRedefined(String@0x1008, ==@0x1040, cme:0x1048)
+          v31:String = GuardType v13, String
+          v32:BoolExact = StringEqual v29, v31
+          v33:FalseClass = Const Value(false)
+          v34:CBool = IsBitEqual v32, v33
+          v35:BoolExact = BoxBool v34
+          CheckInterrupts
+          Return v35
+        ");
+    }
+
+    #[test]
+    fn test_fold_string_not_equal_same_operand_false() {
         eval(r#"
             def test(s) = s != s
             test("x")
@@ -11603,9 +11673,13 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(String@0x1008)
           PatchPoint MethodRedefined(String@0x1008, !=@0x1010, cme:0x1018)
           v26:StringExact = GuardType v10, StringExact
-          v27:BoolExact = CCallWithFrame v26, :BasicObject#!=@0x1040, v10
+          PatchPoint MethodRedefined(String@0x1008, ==@0x1040, cme:0x1048)
+          v28:TrueClass = Const Value(true)
+          v29:FalseClass = Const Value(false)
+          v30:CBool = IsBitEqual v28, v29
+          v31:BoolExact = BoxBool v30
           CheckInterrupts
-          Return v27
+          Return v31
         ");
     }
 
