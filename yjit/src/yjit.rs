@@ -20,6 +20,11 @@ pub static mut rb_yjit_enabled_p: bool = false;
 // Time when YJIT was yjit was initialized (see yjit_init)
 pub static mut YJIT_INIT_TIME: Option<Instant> = None;
 
+/// Whether YJIT was enabled at boot (--yjit) vs lazily (RubyVM::YJIT.enable).
+/// When false, EP escape notifications before YJIT init were dropped, so
+/// iseq_escapes_ep() must be conservative for untracked ISEQs.
+static mut YJIT_ENABLED_AT_BOOT: bool = false;
+
 /// Parse one command-line option.
 /// This is called from ruby.c
 #[no_mangle]
@@ -37,6 +42,12 @@ pub fn yjit_enabled_p() -> bool {
     unsafe { rb_yjit_enabled_p }
 }
 
+/// Whether YJIT was enabled at boot time. When false, EP escape events
+/// may have been missed before YJIT was initialized.
+pub fn yjit_enabled_at_boot_p() -> bool {
+    unsafe { YJIT_ENABLED_AT_BOOT }
+}
+
 /// Register specialized codegen for builtin C method entries.
 /// Must be called at boot before ruby_init_prelude() since the prelude
 /// could redefine core methods (e.g. Kernel.prepend via bundler).
@@ -50,6 +61,7 @@ pub extern "C" fn rb_yjit_init_builtin_cmes() {
 pub extern "C" fn rb_yjit_init(yjit_enabled: bool) {
     // If --yjit-disable, yjit_init() will not be called until RubyVM::YJIT.enable.
     if yjit_enabled {
+        unsafe { YJIT_ENABLED_AT_BOOT = true; }
         yjit_init();
     }
 }

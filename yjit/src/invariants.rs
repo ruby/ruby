@@ -7,7 +7,7 @@ use crate::core::*;
 use crate::cruby::*;
 use crate::stats::*;
 use crate::utils::IntoUsize;
-use crate::yjit::yjit_enabled_p;
+use crate::yjit::{yjit_enabled_p, yjit_enabled_at_boot_p};
 
 use std::collections::{HashMap, HashSet};
 use std::os::raw::c_void;
@@ -169,11 +169,16 @@ pub fn track_no_ep_escape_assumption(uninit_block: BlockRef, iseq: IseqPtr) {
 }
 
 /// Returns true if a given ISEQ has previously escaped an environment.
+/// When YJIT is enabled lazily (RubyVM::YJIT.enable), EP escape events
+/// that occurred before initialization were missed. In that case, if
+/// an ISEQ has no tracking entry, we conservatively report that EP may
+/// have escaped rather than assuming it never did.
 pub fn iseq_escapes_ep(iseq: IseqPtr) -> bool {
+    let dominated = !yjit_enabled_at_boot_p();
     Invariants::get_instance()
         .no_ep_escape_iseqs
         .get(&iseq)
-        .map_or(false, |blocks| blocks.is_empty())
+        .map_or(dominated, |blocks| blocks.is_empty())
 }
 
 /// Forget an ISEQ remembered in invariants
