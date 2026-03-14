@@ -3082,7 +3082,7 @@ impl Function {
         }
     }
 
-    fn chase_insn(&self, insn: InsnId) -> InsnId {
+    pub(crate) fn chase_insn(&self, insn: InsnId) -> InsnId {
         let id = self.union_find.borrow().find_const(insn);
         match self.insns[id.0] {
             Insn::GuardType { val, .. }
