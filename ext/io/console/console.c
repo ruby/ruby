@@ -1709,7 +1709,7 @@ console_dev(int argc, VALUE *argv, VALUE klass)
         Check_Type(sym = argv[0], T_SYMBOL);
     }
 
-    // Force the class to be File.
+    /* Force the class to be File. */
     if (klass == rb_cIO) klass = rb_cFile;
 
     if (console_dev_get(klass, &con)) {
