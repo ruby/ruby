@@ -208,14 +208,18 @@ class Pathname
   # :startdoc:
 
   # call-seq:
-  #   Pathname.new(s) -> new_pathname
+  #   Pathname.new(path) -> new_pathname
   #
-  # Returns a new \Pathname object based on the given string +s+,
-  # via <tt>File.path(s).dup</tt>;
+  # Returns a new \Pathname object based on the given +path+,
+  # via <tt>File.path(path).dup</tt>.
+  # the +path+ may be a String, a File, a Dir, or another \Pathname;
   # see File.path:
   #
-  #   Pathname.new('.')        # => #<Pathname:.>
-  #   Pathname.new('/usr/bin') # => #<Pathname:/usr/bin>
+  #   Pathname.new('.')               # => #<Pathname:.>
+  #   Pathname.new('/usr/bin')        # => #<Pathname:/usr/bin>
+  #   Pathname.new(File.new('LEGAL')) # => #<Pathname:LEGAL>
+  #   Pathname.new(Dir.new('.'))      # => #<Pathname:.>
+  #   Pathname.new(Pathname.new('.')) # => #<Pathname:.>
   #
   def initialize(path)
     @path = File.path(path).dup
