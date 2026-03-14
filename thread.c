@@ -1494,7 +1494,7 @@ rb_thread_sleep(int sec)
 static void
 rb_thread_schedule_limits(uint32_t limits_us)
 {
-    if (!rb_thread_alone()) {
+    if (!rb_thread_alone() || rb_multi_ractor_p()) {
         rb_thread_t *th = GET_THREAD();
         RUBY_DEBUG_LOG("us:%u", (unsigned int)limits_us);
 
