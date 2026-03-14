@@ -4,7 +4,7 @@
 #![allow(non_upper_case_globals)]
 
 use std::collections::HashMap;
-use crate::{cruby::*, payload::get_or_create_iseq_payload, options::{get_option, NumProfiles}};
+use crate::{cruby::*, payload::{get_or_create_iseq_payload, IseqStatus}, options::{get_option, NumProfiles}};
 use crate::distribution::{Distribution, DistributionSummary};
 use crate::stats::Counter::profile_time_ns;
 use crate::stats::with_time_stat;
@@ -446,6 +446,65 @@ impl IseqProfile {
                 callback(&mut profiled_type.class)
             }
         }
+    }
+}
+
+/// Default number of JIT profiles to gather before triggering recompilation
+const JIT_PROFILE_THRESHOLD: u32 = 5;
+
+/// Profile operand types from JIT code. Called by the Profile HIR instruction with a
+/// stack-allocated array of VALUEs. Each element corresponds to a position in the type
+/// distribution array (0 = receiver for sends).
+///
+/// After enough profiles are gathered, clears the JIT entry point to trigger recompilation
+/// with the newly gathered profile data.
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_profile_jit_operands(iseq: IseqPtr, insn_idx: u32, values: *const VALUE, num_operands: u32, version_num: u32) {
+    with_vm_lock(src_loc!(), || {
+        with_time_stat(profile_time_ns, || profile_jit_operands(iseq, insn_idx, values, num_operands, version_num));
+    });
+}
+
+fn profile_jit_operands(iseq: IseqPtr, insn_idx: u32, values: *const VALUE, num_operands: u32, version_num: u32) {
+    let payload = get_or_create_iseq_payload(iseq);
+
+    // Only invalidate if this Profile instruction belongs to the current version.
+    // Old on-stack JIT code from a previous version may still execute Profile
+    // instructions after a newer version has been compiled.
+    if payload.versions.len() != version_num as usize + 1 {
+        return;
+    }
+
+    let profile = &mut payload.profile;
+    let idx = insn_idx as usize;
+    let n = num_operands as usize;
+
+    // Ensure the type distribution array is sized for all operands
+    let types = &mut profile.opnd_types[idx];
+    if types.is_empty() {
+        types.resize(n, TypeDistribution::new());
+    }
+
+    // Profile each operand
+    for i in 0..n {
+        let obj = unsafe { *values.add(i) };
+        let ty = ProfiledType::new(obj);
+        VALUE::from(iseq).write_barrier(ty.class());
+        types[i].observe(ty);
+    }
+
+    // Increment the profile count for this call site
+    profile.num_profiles[idx] = profile.num_profiles[idx].saturating_add(1);
+
+    // Once we've gathered enough profiles, invalidate the current version and clear
+    // the JIT entry to trigger recompilation with the new profile data.
+    // TODO(max): Call a more generic "Iseq::change_state" method that handles the full
+    // lifecycle of a method.
+    if profile.num_profiles[idx] >= JIT_PROFILE_THRESHOLD {
+        if let Some(version) = payload.versions.last_mut() {
+            unsafe { version.as_mut() }.status = IseqStatus::Invalidated;
+        }
+        unsafe { rb_iseq_clear_jit_func(iseq) };
     }
 }
 

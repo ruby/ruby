@@ -2265,6 +2265,7 @@ unsafe extern "C" {
         line: ::std::os::raw::c_int,
     );
     pub fn rb_iseq_reset_jit_func(iseq: *const rb_iseq_t);
+    pub fn rb_iseq_clear_jit_func(iseq: *const rb_iseq_t);
     pub fn rb_jit_get_page_size() -> u32;
     pub fn rb_jit_reserve_addr_space(mem_size: u32) -> *mut u8;
     pub fn rb_jit_for_each_iseq(callback: rb_iseq_callback, data: *mut ::std::os::raw::c_void);
