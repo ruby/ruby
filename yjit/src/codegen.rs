@@ -4930,7 +4930,16 @@ fn gen_opt_new(
         // Fast path
         // call rb_class_alloc to actually allocate
         jit_prepare_non_leaf_call(jit, asm);
-        let obj = asm.ccall(rb_obj_alloc as _, vec![comptime_recv.into()]);
+
+        let allocator =
+            if unsafe { FL_TEST(comptime_recv, VALUE(RUBY_FL_SINGLETON as usize)) } != VALUE(0) {
+                None
+            } else {
+                unsafe { rb_get_alloc_func(comptime_recv) }
+            };
+
+        let allocator = allocator.unwrap_or(rb_obj_alloc);
+        let obj = asm.ccall(allocator as _, vec![comptime_recv.into()]);
 
         // Get a reference to the stack location where we need to save the
         // return instance.
