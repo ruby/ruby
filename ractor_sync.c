@@ -16,7 +16,12 @@ static VALUE rb_cRactorPort;
 static VALUE ractor_receive(rb_execution_context_t *ec, const struct ractor_port *rp);
 static VALUE ractor_send(rb_execution_context_t *ec, const struct ractor_port *rp, VALUE obj, VALUE move);
 static VALUE ractor_try_send(rb_execution_context_t *ec, const struct ractor_port *rp, VALUE obj, VALUE move);
+static const struct ractor_port *ractor_default_port(rb_ractor_t *r);
 static void ractor_add_port(rb_ractor_t *r, st_data_t id);
+static bool ractor_queue_empty_p(rb_ractor_t *r, const struct ractor_queue *rq);
+static bool ractor_queue_is_empty(rb_ractor_t *r, st_data_t id);
+static VALUE ractor_port_empty_p(rb_execution_context_t *ec, VALUE self);
+static VALUE ractor_empty_p(rb_execution_context_t *ec, VALUE self);
 
 static void
 ractor_port_mark(void *ptr)
@@ -151,6 +156,40 @@ ractor_port_closed_p(rb_execution_context_t *ec, VALUE self)
     else {
         return Qfalse;
     }
+}
+
+static bool
+ractor_queue_is_empty(rb_ractor_t *r, st_data_t id)
+{
+    const struct ractor_queue *rq;
+
+    if (r->sync.ports && st_lookup(r->sync.ports, id, (st_data_t *)&rq)) {
+        return ractor_queue_empty_p(r, rq);
+    }
+    else {
+        return true;
+    }
+}
+
+static VALUE
+ractor_port_empty_p(rb_execution_context_t *ec, VALUE self)
+{
+    const struct ractor_port *rp = RACTOR_PORT_PTR(self);
+
+    VM_ASSERT(rb_ec_ractor_ptr(ec) == rp->r ? 1 : (ASSERT_ractor_locking(rp->r), 1));
+
+    return ractor_queue_is_empty(rp->r, ractor_port_id(rp)) ? Qtrue : Qfalse;
+}
+
+static VALUE
+ractor_empty_p(rb_execution_context_t *ec, VALUE self)
+{
+    rb_ractor_t *r = RACTOR_PTR(self);
+    const struct ractor_port *rp = ractor_default_port(r);
+
+    VM_ASSERT(rb_ec_ractor_ptr(ec) == r ? 1 : (ASSERT_ractor_locking(r), 1));
+
+    return ractor_queue_is_empty(r, ractor_port_id(rp)) ? Qtrue : Qfalse;
 }
 
 static VALUE
