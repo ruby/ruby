@@ -667,13 +667,22 @@ rb_obj_size(VALUE self, VALUE args, VALUE obj)
     return LONG2FIX(1);
 }
 
-/**
- * :nodoc:
- *--
- * Default implementation of `#initialize_copy`
- * @param[in,out] obj the receiver being initialized
- * @param[in] orig    the object to be copied from.
- *++
+/*
+ *  call-seq:
+ *    initialize_copy(source) -> obj
+ *
+ *  Replaces the content of <i>obj</i> with the content of
+ *  <i>source</i>.  It is called by the default implementations
+ *  of both #initialize_dup and #initialize_clone.
+ *
+ *  Raises TypeError if <i>obj</i> and <i>source</i> are
+ *  not the same type.  Raises FrozenError if <i>obj</i>
+ *  is frozen.
+ *
+ *  Subclasses may override this method to provide custom
+ *  copying semantics. Any such override should call +super+.
+ *
+ *  Related: #clone, #dup.
  */
 VALUE
 rb_obj_init_copy(VALUE obj, VALUE orig)
@@ -686,15 +695,29 @@ rb_obj_init_copy(VALUE obj, VALUE orig)
     return obj;
 }
 
-/**
- * :nodoc:
- *--
- * Default implementation of `#initialize_dup`
+/*
+ *  call-seq:
+ *    initialize_dup(source) -> obj
  *
- * @param[in,out] obj the receiver being initialized
- * @param[in] orig    the object to be dup from.
- *++
- **/
+ *  Initializes <i>obj</i> as a copy of <i>source</i>
+ *  when called by #dup.
+ *
+ *  The default implementation calls #initialize_copy.
+ *  Override this method to provide custom behavior for #dup:
+ *
+ *    class MyClass
+ *      attr_accessor :data
+ *      def initialize_dup(source)
+ *        @data = source.data.dup
+ *        super
+ *      end
+ *    end
+ *
+ *  Any override should call +super+ to ensure that instance
+ *  variables are copied.
+ *
+ *  Related: #dup, #initialize_clone.
+ */
 VALUE
 rb_obj_init_dup_clone(VALUE obj, VALUE orig)
 {
@@ -702,16 +725,33 @@ rb_obj_init_dup_clone(VALUE obj, VALUE orig)
     return obj;
 }
 
-/**
- * :nodoc:
- *--
- * Default implementation of `#initialize_clone`
+/*
+ *  call-seq:
+ *    initialize_clone(source, freeze: nil) -> obj
  *
- * @param[in] The number of arguments
- * @param[in] The array of arguments
- * @param[in] obj the receiver being initialized
- *++
- **/
+ *  Initializes <i>obj</i> as a copy of <i>source</i>
+ *  when called by #clone.
+ *
+ *  The default implementation calls #initialize_copy.
+ *  Override this method to provide custom behavior for #clone:
+ *
+ *    class MyClass
+ *      attr_accessor :data
+ *      def initialize_clone(source, **kwargs)
+ *        @data = source.data.clone(**kwargs)
+ *        super
+ *      end
+ *    end
+ *
+ *  The optional keyword argument +freeze+ indicates whether
+ *  the clone should be frozen, matching the argument
+ *  passed to #clone.
+ *
+ *  Any override should call +super+ to ensure that instance
+ *  variables are copied.
+ *
+ *  Related: #clone, #initialize_dup.
+ */
 static VALUE
 rb_obj_init_clone(int argc, VALUE *argv, VALUE obj)
 {
