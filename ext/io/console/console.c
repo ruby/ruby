@@ -861,7 +861,6 @@ console_set_winsize(VALUE io, VALUE size)
     int newrow, newcol;
     COORD oldsize;
     SMALL_RECT oldwindow;
-    BOOL ret;
 #endif
     VALUE row, col, xpixel, ypixel;
     const VALUE *sz;
