@@ -426,6 +426,50 @@ class_duplicate_iclass_classext(VALUE iclass, rb_classext_t *mod_ext, const rb_b
     }
 }
 
+struct cvc_table_copy_ctx {
+    VALUE clone;
+    struct rb_id_table *new_table;
+};
+
+static enum rb_id_table_iterator_result
+duplicate_classext_cvc_tbl_i(ID id, VALUE val, void *data)
+{
+    struct cvc_table_copy_ctx *ctx = (struct cvc_table_copy_ctx *)data;
+    struct rb_cvar_class_tbl_entry *orig_entry = (struct rb_cvar_class_tbl_entry *)val;
+    struct rb_cvar_class_tbl_entry *ent = ALLOC(struct rb_cvar_class_tbl_entry);
+
+    ent->class_value = ctx->clone;
+    ent->cref = orig_entry->cref;
+    ent->global_cvar_state = orig_entry->global_cvar_state;
+    ent->index = orig_entry->index;
+
+    rb_id_table_insert(ctx->new_table, id, (VALUE)ent);
+    RB_OBJ_WRITTEN(ctx->clone, Qundef, ent->cref);
+
+    return ID_TABLE_CONTINUE;
+}
+
+static struct rb_id_table *
+duplicate_classext_cvc_tbl(struct rb_id_table *orig, VALUE klass, bool init_missing)
+{
+    struct rb_id_table *tbl;
+
+    if (!orig) {
+        if (init_missing) return rb_id_table_create(0);
+        return NULL;
+    }
+
+    tbl = rb_id_table_create(rb_id_table_size(orig));
+
+    struct cvc_table_copy_ctx ctx = {
+        .clone = klass,
+        .new_table = tbl,
+    };
+
+    rb_id_table_foreach(orig, duplicate_classext_cvc_tbl_i, &ctx);
+    return tbl;
+}
+
 rb_classext_t *
 rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_box_t *box)
 {
@@ -464,7 +508,7 @@ rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_box_t *bo
      * RCLASSEXT_CC_TBL(copy) = NULL
      */
 
-    RCLASSEXT_CVC_TBL(ext) = duplicate_classext_id_table(RCLASSEXT_CVC_TBL(orig), dup_iclass);
+    RCLASSEXT_CVC_TBL(ext) = duplicate_classext_cvc_tbl(RCLASSEXT_CVC_TBL(orig), klass, dup_iclass);
 
     // subclasses, subclasses_index
     duplicate_classext_subclasses(orig, ext);
