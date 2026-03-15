@@ -415,10 +415,14 @@ class Pathname
   #
   #   Pathname.new('foo///bar').cleanpath # => #<Pathname:foo/bar>
   #
-  # Multiple leading separators are reduced to two separators:
+  # Multiple leading separators are reduced:
   #
+  #   # On Windows, where File.dirname('//') == '//'.
   #   Pathname.new('/////foo').cleanpath # => #<Pathname://foo>
   #   Pathname.new('/////').cleanpath    # => #<Pathname://>
+  #   # Otherwise, where File.dirname('//') == '/'.
+  #   Pathname.new('/////foo').cleanpath # => #<Pathname:/foo>
+  #   Pathname.new('/////').cleanpath    # => #<Pathname:/>
   #
   # <b>Single-Dot Entries</b>
   #
