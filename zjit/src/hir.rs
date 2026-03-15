@@ -6726,22 +6726,38 @@ fn insn_idx_at_offset(idx: u32, offset: i64) -> u32 {
     ((idx as isize) + (offset as isize)) as u32
 }
 
-/// List of insn_idx that starts a JIT entry block
-pub fn jit_entry_insns(iseq: IseqPtr) -> Vec<u32> {
-    // TODO(alan): Make an iterator type for this instead of copying all of the opt_table each call
-    let params = unsafe { iseq.params() };
-    let opt_num = params.opt_num;
-    if opt_num > 0 {
-        let mut result = vec![];
+// List of insn_idx that starts a JIT entry block
+pub struct JITEntryInsnIdxs<'a> {
+    pub params: &'a IseqParameters,
+}
 
-        let opt_table = params.opt_table; // `opt_num + 1` entries
-        for opt_idx in 0..=opt_num as isize {
-            let insn_idx = unsafe { opt_table.offset(opt_idx).read().as_u32() };
-            result.push(insn_idx);
+impl<'a> JITEntryInsnIdxs<'a> {
+    fn len(&self) -> usize {
+        self.params.opt_num as usize + 1
+    }
+
+    pub fn index(&self, i: usize) -> u32 {
+        assert!(i < self.len(), "index out of range");
+
+        // If there are no optional parameters (opt_num == 0) then the only JIT entry point is at
+        // index 0.
+        if i == 0 && self.len() == 1 {
+            0
+        } else {
+            unsafe { self.params.opt_table.offset(isize::try_from(i).unwrap()).read().as_u32() }
         }
-        result
-    } else {
-        vec![0]
+    }
+
+    fn last(&self) -> u32 {
+        self.index(self.len() - 1)
+    }
+
+    fn iter(&self) -> impl Iterator<Item = u32> {
+        (0..self.len()).map(|i| self.index(i))
+    }
+
+    fn contains(&self, value: u32) -> bool {
+        self.iter().any(|v| v == value)
     }
 }
 
@@ -6749,10 +6765,10 @@ struct BytecodeInfo {
     jump_targets: Vec<u32>,
 }
 
-fn compute_bytecode_info(iseq: *const rb_iseq_t, opt_table: &[u32]) -> BytecodeInfo {
+fn compute_bytecode_info(iseq: *const rb_iseq_t, opt_table: &JITEntryInsnIdxs) -> BytecodeInfo {
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
     let mut insn_idx = 0;
-    let mut jump_targets: HashSet<u32> = opt_table.iter().copied().collect();
+    let mut jump_targets: HashSet<u32> = opt_table.iter().collect();
     while insn_idx < iseq_size {
         // Get the current pc and opcode
         let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
@@ -6904,14 +6920,14 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     fun.was_invalidated_for_singleton_class_creation = payload.was_invalidated_for_singleton_class_creation;
 
     // Compute a map of PC->Block by finding jump targets
-    let jit_entry_insns = jit_entry_insns(iseq);
+    let jit_entry_insns = JITEntryInsnIdxs { params: unsafe { iseq.params() } };
     let BytecodeInfo { jump_targets } = compute_bytecode_info(iseq, &jit_entry_insns);
 
     // Make all empty basic blocks. The ordering of the BBs matters for getting fallthrough jumps
     // in good places, but it's not necessary for correctness. TODO: Higher quality scheduling during lowering.
     let mut insn_idx_to_block = HashMap::new();
     // Make blocks for optionals first, and put them right next to their JIT entrypoint
-    for insn_idx in jit_entry_insns.iter().copied() {
+    for insn_idx in jit_entry_insns.iter() {
         let jit_entry_block = fun.new_block(insn_idx);
         fun.jit_entry_blocks.push(jit_entry_block);
         insn_idx_to_block.entry(insn_idx).or_insert_with(|| fun.new_block(insn_idx));
@@ -6924,11 +6940,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     let insn_idx_to_block = insn_idx_to_block;
 
     // Compile an entry_block for the interpreter
-    compile_entry_block(&mut fun, jit_entry_insns.as_slice(), &insn_idx_to_block);
+    compile_entry_block(&mut fun, &jit_entry_insns, &insn_idx_to_block);
 
-    // Compile all JIT-to-JIT entry blocks
     for (jit_entry_idx, insn_idx) in jit_entry_insns.iter().enumerate() {
-        let target_block = insn_idx_to_block.get(insn_idx)
+        let target_block = insn_idx_to_block.get(&insn_idx)
             .copied()
             .expect("we make a block for each jump target and \
                      each entry in the ISEQ opt_table is a jump target");
@@ -6946,7 +6961,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     // Iteratively fill out basic blocks using a queue.
     // TODO(max): Basic block arguments at edges
     let mut queue = VecDeque::new();
-    for &insn_idx in jit_entry_insns.iter() {
+    for insn_idx in jit_entry_insns.iter() {
         queue.push_back((FrameState::new(iseq), insn_idx_to_block[&insn_idx], /*insn_idx=*/insn_idx, /*local_inval=*/false));
     }
 
@@ -6962,7 +6977,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
         let mut self_param = fun.push_insn(block, Insn::Param);
         let mut state = {
             let mut result = FrameState::new(iseq);
-            let local_size = if jit_entry_insns.contains(&insn_idx) { num_locals(iseq) } else { incoming_state.locals.len() };
+            let local_size = if jit_entry_insns.contains(insn_idx) { num_locals(iseq) } else { incoming_state.locals.len() };
             for _ in 0..local_size {
                 result.locals.push(fun.push_insn(block, Insn::Param));
             }
@@ -8463,14 +8478,14 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 }
 
 /// Compile an entry_block for the interpreter
-fn compile_entry_block(fun: &mut Function, jit_entry_insns: &[u32], insn_idx_to_block: &HashMap<u32, BlockId>) {
+fn compile_entry_block(fun: &mut Function, jit_entry_insns: &JITEntryInsnIdxs, insn_idx_to_block: &HashMap<u32, BlockId>) {
     let entry_block = fun.entry_block;
     let (self_param, entry_state) = compile_entry_state(fun);
     let mut pc: Option<InsnId> = None;
-    let &all_opts_passed_insn_idx = jit_entry_insns.last().unwrap();
+    let all_opts_passed_insn_idx = jit_entry_insns.last();
 
     // Check-and-jump for each missing optional PC
-    for &jit_entry_insn in jit_entry_insns.iter() {
+    for jit_entry_insn in jit_entry_insns.iter() {
         if jit_entry_insn == all_opts_passed_insn_idx {
             continue;
         }

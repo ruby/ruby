@@ -3069,11 +3069,11 @@ c_callable! {
             unsafe { Rc::increment_strong_count(iseq_call_ptr as *const IseqCall); }
             let iseq_call = unsafe { Rc::from_raw(iseq_call_ptr as *const IseqCall) };
             let iseq = iseq_call.iseq.get();
-            let entry_insn_idxs = crate::hir::jit_entry_insns(iseq);
+            let entry_insn_idxs = crate::hir::JITEntryInsnIdxs { params: unsafe { iseq.params() } };
             // gen_push_frame() doesn't set PC or ISEQ, so we need to set them before exit.
             // function_stub_hit_body() may allocate and call gc_validate_pc(), so we always set PC and ISEQ.
             // Clear jit_return so the interpreter reads cfp->pc and cfp->iseq directly.
-            let pc = unsafe { rb_iseq_pc_at_idx(iseq, entry_insn_idxs[iseq_call.jit_entry_idx.to_usize()]) };
+            let pc = unsafe { rb_iseq_pc_at_idx(iseq, entry_insn_idxs.index(iseq_call.jit_entry_idx.to_usize())) };
             unsafe { rb_set_cfp_pc(cfp, pc) };
             unsafe { (*cfp)._iseq = iseq };
             unsafe { (*cfp).jit_return = std::ptr::null_mut() };
@@ -3494,7 +3494,7 @@ impl Assembler {
 
 /// Store info about a JIT entry point
 pub struct JITEntry {
-    /// Index that corresponds to [crate::hir::jit_entry_insns]
+    /// Index that corresponds to [crate::hir::JITEntryInsnIdxs]
     jit_entry_idx: usize,
     /// Position where the entry point starts
     start_addr: Cell<Option<CodePtr>>,
@@ -3517,7 +3517,7 @@ pub struct IseqCall {
     /// Callee ISEQ that start_addr jumps to
     pub iseq: Cell<IseqPtr>,
 
-    /// Index that corresponds to [crate::hir::jit_entry_insns]
+    /// Index that corresponds to [crate::hir::JITEntryInsnIdxs]
     jit_entry_idx: u16,
 
     /// Argument count passing to the HIR function
