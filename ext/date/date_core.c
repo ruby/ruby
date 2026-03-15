@@ -27,7 +27,7 @@ static VALUE eDateError;
 static VALUE half_days_in_day, day_in_nanoseconds;
 static double positive_inf, negative_inf;
 
-// used by deconstruct_keys
+/* used by deconstruct_keys */
 static VALUE sym_year, sym_month, sym_day, sym_yday, sym_wday;
 static VALUE sym_hour, sym_min, sym_sec, sym_sec_fraction, sym_zone;
 
