@@ -197,13 +197,13 @@ rb_class_set_box_classext(VALUE obj, const rb_box_t *box, rb_classext_t *ext)
     VM_ASSERT(BOX_USER_P(box));
 
     st_update(RCLASS_CLASSEXT_TBL(obj), (st_data_t)box->box_object, set_box_classext_update, (st_data_t)&args);
-    st_insert(box->classext_cow_classes, (st_data_t)rb_obj_id(obj), obj);
 
-    // FIXME: This is done here because this is the first time the objects in
-    // the classext are exposed via this class. It's likely that if GC
-    // compaction occurred between the VALUEs being copied in and this
-    // writebarrier trigger the values will be stale.
+    // The classext references are now visible via the classext table,
+    // so we must issue the write barrier before any further allocations
+    // (e.g. st_insert below) that could trigger GC.
     rb_gc_writebarrier_remember(obj);
+
+    st_insert(box->classext_cow_classes, (st_data_t)rb_obj_id(obj), obj);
 }
 
 RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
