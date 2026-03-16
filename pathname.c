@@ -15,18 +15,33 @@ get_strpath(VALUE obj)
 }
 
 /*
- *  Provides a case-sensitive comparison operator for pathnames.
+ * call-seq:
+ *   self <=> other -> -1, 0, 1, or nil
  *
- *	Pathname.new('/usr') <=> Pathname.new('/usr/bin')
- *	    #=> -1
- *	Pathname.new('/usr/bin') <=> Pathname.new('/usr/bin')
- *	    #=> 0
- *	Pathname.new('/usr/bin') <=> Pathname.new('/USR/BIN')
- *	    #=> 1
+ * Compares the contents of +self+ and +other+ as strings
+ * (first performing necessary conversions);
+ * see String#<=>.
  *
- *  It will return +-1+, +0+ or +1+ depending on the value of the left argument
- *  relative to the right argument. Or it will return +nil+ if the arguments
- *  are not comparable.
+ * Returns:
+ *
+ * - <tt>-1</tt> if +self+'s string is smaller than +other+'s string.
+ * - <tt>0</tt> if the two are equal.
+ * - <tt>1</tt> if +self+'s string is larger than +other+'s string.
+ * - <tt>nil</tt> if +other+ is not a \Pathname.
+ *
+ * Examples:
+ *
+ *   Pathname.new('a')  <=> Pathname.new('b')      # => -1
+ *   Pathname.new('a')  <=> Pathname.new('ab')     # => -1
+ *   Pathname.new('a')  <=> Pathname.new('a')      # => 0
+ *   Pathname.new('b')  <=> Pathname.new('a')      # => 1
+ *   Pathname.new('ab') <=> Pathname.new('a')      # => 1
+ *   Pathname.new('ab') <=> 'a'                    # => nil
+ *
+ * Two pathnames that are different may refer to the same entry in the filesystem:
+ *
+ *   Pathname.new('lib') <=> Pathname.new('./lib') # => 1
+ *
  */
 static VALUE
 path_cmp(VALUE self, VALUE other)
