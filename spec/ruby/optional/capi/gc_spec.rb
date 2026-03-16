@@ -21,7 +21,22 @@ describe "CApiGCSpecs" do
     end
 
     it "can be called outside Init_" do
-      @f.rb_gc_register_address.should == "rb_gc_register_address() outside Init_"
+      @f.rb_gc_register_address
+      @f.set_registered_outside_init
+      GC.start
+      @f.get_registered_outside_init.should == "rb_gc_register_address() outside Init_"
+      @f.rb_gc_unregister_address
+    end
+
+    it "can register one address multiple times (for reference counting)" do
+      @f.rb_gc_register_address
+      @f.set_registered_outside_init
+      @f.get_registered_outside_init.should == "rb_gc_register_address() outside Init_"
+      @f.rb_gc_register_address
+      @f.get_registered_outside_init.should == "rb_gc_register_address() outside Init_"
+      @f.rb_gc_unregister_address
+      GC.start
+      @f.get_registered_outside_init.should == "rb_gc_register_address() outside Init_"
       @f.rb_gc_unregister_address
     end
   end
