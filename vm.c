@@ -26,6 +26,7 @@
 #include "internal/proc.h"
 #include "internal/re.h"
 #include "internal/ruby_parser.h"
+#include "internal/st.h"
 #include "internal/symbol.h"
 #include "internal/thread.h"
 #include "internal/transcode.h"
@@ -3332,7 +3333,7 @@ rb_vm_mark(void *ptr)
         rb_hook_list_mark(&vm->global_hooks);
 
         rb_id_table_foreach_values(&vm->negative_cme_table, vm_mark_negative_cme, NULL);
-        rb_mark_tbl_no_pin(vm->overloaded_cme_table);
+        rb_mark_tbl_no_pin(&vm->overloaded_cme_table);
         for (i=0; i<VM_GLOBAL_CC_CACHE_TABLE_SIZE; i++) {
             const struct rb_callcache *cc = vm->global_cc_cache_table[i];
 
@@ -3387,7 +3388,7 @@ ruby_vm_destruct(rb_vm_t *vm)
             rb_free_rb_global_tbl();
 
             rb_id_table_free_items(&vm->negative_cme_table);
-            st_free_table(vm->overloaded_cme_table);
+            st_free_embedded_table(&vm->overloaded_cme_table);
 
             // TODO: Is this ignorable for classext->m_tbl ?
             // rb_id_table_free(RCLASS(rb_mRubyVMFrozenCore)->m_tbl);
@@ -3507,7 +3508,7 @@ vm_memsize(const void *ptr)
         rb_st_memsize(vm->ci_table) +
         vm_memsize_builtin_function_table(vm->builtin_function_table) +
         (rb_id_table_memsize(&vm->negative_cme_table) - sizeof(struct rb_id_table)) +
-        rb_st_memsize(vm->overloaded_cme_table) +
+        (rb_st_memsize(&vm->overloaded_cme_table) - sizeof(struct st_table)) +
         vm_memsize_constant_cache()
     );
 
@@ -4584,7 +4585,7 @@ Init_BareVM(void)
     ruby_current_vm_ptr = vm;
     rb_objspace_alloc();
     rb_id_table_init(&vm->negative_cme_table, 16);
-    vm->overloaded_cme_table = st_init_numtable();
+    st_init_existing_numtable_with_size(&vm->overloaded_cme_table, 0);
     vm->unused_block_warning_table = set_init_numtable();
     vm->global_hooks.type = hook_list_type_global;
 

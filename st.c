@@ -577,6 +577,12 @@ st_init_existing_table_with_size(st_table *tab, const struct st_hash_type *type,
     return tab;
 }
 
+st_table *
+st_init_existing_numtable_with_size(st_table *tab, st_index_t size)
+{
+    return st_init_existing_table_with_size(tab, &type_numhash, size);
+}
+
 /* Create and return table with TYPE which can hold at least SIZE
    entries.  The real number of entries which the table can hold is
    the nearest power of two for SIZE.  */

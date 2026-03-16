@@ -814,7 +814,7 @@ typedef struct rb_vm_struct {
 
     st_table *ci_table;
     struct rb_id_table negative_cme_table;
-    st_table *overloaded_cme_table; // cme -> overloaded_cme
+    st_table overloaded_cme_table; // cme -> overloaded_cme
     set_table *unused_block_warning_table;
     VALUE cc_refinement_set;
 

@@ -1506,8 +1506,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 static st_table *
 overloaded_cme_table(void)
 {
-    VM_ASSERT(GET_VM()->overloaded_cme_table != NULL);
-    return GET_VM()->overloaded_cme_table;
+    return &GET_VM()->overloaded_cme_table;
 }
 
 #if VM_CHECK_MODE > 0
