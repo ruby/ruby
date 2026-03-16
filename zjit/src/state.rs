@@ -306,11 +306,11 @@ impl ZJITState {
 
 /// The `::RubyVM::ZJIT` module.
 pub static ZJIT_MODULE: AtomicUsize = AtomicUsize::new(!0);
-/// Serial of the canonical version of `` right after VM boot.
+/// Serial of the canonical version of `induce_side_exit!` right after VM boot.
 pub static INDUCE_SIDE_EXIT_SERIAL: AtomicUsize = AtomicUsize::new(!0);
-/// Serial of the canonical version of `` right after VM boot.
+/// Serial of the canonical version of `induce_compile_failure!` right after VM boot.
 pub static INDUCE_COMPILE_FAILURE_SERIAL: AtomicUsize = AtomicUsize::new(!0);
-/// Serial of the canonical version of `` right after VM boot.
+/// Serial of the canonical version of `induce_breakpoint!` right after VM boot.
 pub static INDUCE_BREAKPOINT_SERIAL: AtomicUsize = AtomicUsize::new(!0);
 
 /// Check if a method, `method_id`, currently exists on `ZJIT.singleton_class` and has the `expected_serial`.
