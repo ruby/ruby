@@ -342,7 +342,8 @@ RACTOR_PTR(VALUE self)
     return r;
 }
 
-static rb_atomic_t ractor_last_id;
+#define MAIN_RACTOR_ID 1
+static rb_atomic_t ractor_last_id = MAIN_RACTOR_ID;
 
 #if RACTOR_CHECK_MODE > 0
 uint32_t
@@ -466,23 +467,20 @@ ractor_alloc(VALUE klass)
     return rv;
 }
 
-static rb_ractor_t _main_ractor;
+static rb_ractor_t _main_ractor = {
+    .loc = Qnil,
+    .name = Qnil,
+    .pub.id = MAIN_RACTOR_ID,
+    .pub.self = Qnil,
+    .next_ec_serial = 1,
+    .main_ractor = true,
+};
 
 rb_ractor_t *
 rb_ractor_main_alloc(void)
 {
     rb_ractor_t *r = &_main_ractor;
-    if (r == NULL) {
-        fprintf(stderr, "[FATAL] failed to allocate memory for main ractor\n");
-        exit(EXIT_FAILURE);
-    }
-    r->pub.id = ++ractor_last_id;
-    r->loc = Qnil;
-    r->name = Qnil;
-    r->pub.self = Qnil;
     r->newobj_cache = rb_gc_ractor_cache_alloc(r);
-    r->next_ec_serial = 1;
-    r->main_ractor = true;
     ruby_single_main_ractor = r;
 
     return r;

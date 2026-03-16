@@ -4566,7 +4566,10 @@ rb_vm_set_progname(VALUE filename)
 extern const struct st_hash_type rb_fstring_hash_type;
 
 static rb_vm_t _vm;
-static rb_thread_t _main_thread = { .main_thread = 1 };
+static rb_thread_t _main_thread = {
+    .vm = &_vm,
+    .main_thread = 1,
+};
 
 void
 Init_BareVM(void)
@@ -4574,10 +4577,6 @@ Init_BareVM(void)
     /* VM bootstrap: phase 1 */
     rb_vm_t *vm = &_vm;
     rb_thread_t *th = &_main_thread;
-    if (!vm || !th) {
-        fputs("[FATAL] failed to allocate memory\n", stderr);
-        exit(EXIT_FAILURE);
-    }
 
     // setup the VM
     vm_init2(vm);
@@ -4592,7 +4591,6 @@ Init_BareVM(void)
 
     // setup main thread
     th->nt = ZALLOC(struct rb_native_thread);
-    th->vm = vm;
     th->ractor = vm->ractor.main_ractor = rb_ractor_main_alloc();
     Init_native_thread(th);
     rb_jit_cont_init();
