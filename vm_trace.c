@@ -1357,7 +1357,7 @@ rb_method_def_local_hooks(rb_method_definition_t *def, rb_ractor_t *cr, bool cre
     else if (create) {
         hook_list = ZALLOC(rb_hook_list_t);
         hook_list->type = hook_list_type_targeted_def;
-        st_insert(cr->pub.targeted_hooks, (st_data_t)def, (st_data_t)hook_list);
+        st_insert(&cr->pub.targeted_hooks, (st_data_t)def, (st_data_t)hook_list);
     }
     return hook_list;
 }

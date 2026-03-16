@@ -2341,7 +2341,7 @@ struct rb_ractor_pub {
     VALUE self;
     uint32_t id;
     rb_hook_list_t hooks;
-    st_table *targeted_hooks; // also called "local hooks". {ISEQ => hook_list, def => hook_list...}
+    st_table targeted_hooks; // also called "local hooks". {ISEQ => hook_list, def => hook_list...}
     unsigned int targeted_hooks_cnt; // ex: tp.enabled(target: method(:puts))
 };
 
