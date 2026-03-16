@@ -7620,7 +7620,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     // Check for calls to directives
                     if argc == 0
-                        && (mid == ID!(induce_side_exit_bang) || mid == ID!(induce_compile_failure_bang))
+                        && (mid == ID!(induce_side_exit_bang) || mid == ID!(induce_compile_failure_bang) || mid == ID!(induce_breakpoint_bang))
                         && fun.type_of(state.stack_top()?)
                               .ruby_object()
                               .is_some_and(|obj| obj == VALUE(state::ZJIT_MODULE.load(Ordering::Relaxed)))
@@ -7636,6 +7636,13 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             && state::zjit_module_method_match_serial(ID!(induce_compile_failure_bang), &state::INDUCE_COMPILE_FAILURE_SERIAL)
                         {
                             return Err(ParseError::DirectiveInduced);
+                        }
+                        if mid == ID!(induce_breakpoint_bang)
+                            && state::zjit_module_method_match_serial(ID!(induce_breakpoint_bang), &state::INDUCE_BREAKPOINT_SERIAL)
+                        {
+                            fun.push_insn(block, Insn::BreakPoint);
+                            state.stack_pop()?; // pop the receiver (::RubyVM::ZJIT)
+                            state.stack_push(fun.push_insn(block, Insn::Const { val: Const::Value(Qnil) }));
                         }
                     }
 
