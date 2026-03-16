@@ -16,6 +16,7 @@
 #include "internal/ractor.h"
 #include "internal/rational.h"
 #include "internal/struct.h"
+#include "internal/st.h"
 #include "internal/thread.h"
 #include "variable.h"
 #include "yjit.h"
@@ -246,8 +247,8 @@ ractor_mark(void *ptr)
         ractor_sync_mark(r);
 
         rb_hook_list_mark(&r->pub.hooks);
-        if (r->pub.targeted_hooks) {
-            st_foreach(r->pub.targeted_hooks, mark_targeted_hook_list, 0);
+        if (r->pub.targeted_hooks.num_entries) {
+            st_foreach(&r->pub.targeted_hooks, mark_targeted_hook_list, 0);
         }
 
         if (r->threads.cnt > 0) {
@@ -281,14 +282,14 @@ ractor_free(void *ptr)
 {
     rb_ractor_t *r = (rb_ractor_t *)ptr;
     RUBY_DEBUG_LOG("free r:%d", rb_ractor_id(r));
-    free_targeted_hooks(r->pub.targeted_hooks);
+    free_targeted_hooks(&r->pub.targeted_hooks);
     rb_native_mutex_destroy(&r->sync.lock);
 #ifdef RUBY_THREAD_WIN32_H
     rb_native_cond_destroy(&r->sync.wakeup_cond);
 #endif
     ractor_local_storage_free(r);
     rb_hook_list_free(&r->pub.hooks);
-    st_free_table(r->pub.targeted_hooks);
+    rb_st_free_embedded_table(&r->pub.targeted_hooks);
 
     if (r->newobj_cache) {
         RUBY_ASSERT(r == ruby_single_main_ractor);
@@ -529,7 +530,7 @@ static void
 ractor_init(rb_ractor_t *r, VALUE name, VALUE loc)
 {
     ractor_sync_init(r);
-    r->pub.targeted_hooks = st_init_numtable();
+    st_init_existing_numtable_with_size(&r->pub.targeted_hooks, 0);
     r->pub.hooks.type = hook_list_type_ractor_local;
 
     // thread management
@@ -1161,7 +1162,7 @@ rb_ractor_hooks(rb_ractor_t *cr)
 st_table *
 rb_ractor_targeted_hooks(rb_ractor_t *cr)
 {
-    return cr->pub.targeted_hooks;
+    return &cr->pub.targeted_hooks;
 }
 
 static void
