@@ -1099,22 +1099,20 @@ thread_sched_to_waiting_until_wakeup(struct rb_thread_sched *sched, rb_thread_t 
 
     RB_VM_SAVE_MACHINE_CONTEXT(th);
 
-    if (ubf_set(th, ubf_waiting, (void *)th)) {
-        return;
-    }
 
     RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
 
     thread_sched_lock(sched, th);
     {
-        if (!RUBY_VM_INTERRUPTED(th->ec)) {
+        // NOTE: there's a lock ordering inversion here with the ubf call, but it's benign.
+        if (ubf_set(th, ubf_waiting, (void *)th)) {
+            RUBY_DEBUG_LOG("th:%u interrupted", rb_th_serial(th));
+        }
+        else {
             bool can_direct_transfer = !th_has_dedicated_nt(th);
             // NOTE: th->status is set before and after this sleep outside of this function in `sleep_forever`
             thread_sched_wakeup_next_thread(sched, th, can_direct_transfer);
             thread_sched_wait_running_turn(sched, th, can_direct_transfer);
-        }
-        else {
-            RUBY_DEBUG_LOG("th:%u interrupted", rb_th_serial(th));
         }
     }
     thread_sched_unlock(sched, th);

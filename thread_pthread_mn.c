@@ -67,12 +67,15 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
 
     uint32_t event_serial = ++th->sched.event_serial; // overflow is okay
 
-    if (ubf_set(th, ubf_event_waiting, (void *)th)) {
-        return false;
-    }
 
     thread_sched_lock(sched, th);
     {
+        // NOTE: there's a lock ordering inversion here with the ubf call, but it's benign.
+        if (ubf_set(th, ubf_event_waiting, (void *)th)) {
+            thread_sched_unlock(sched, th);
+            return false;
+        }
+
         if (timer_thread_register_waiting(th, fd, events, rel, event_serial)) {
             RUBY_DEBUG_LOG("wait fd:%d", fd);
 
