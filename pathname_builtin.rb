@@ -650,8 +650,14 @@ class Pathname
   # call-seq:
   #   self + other -> new_pathname
   #
-  # Returns a new \Pathname object;
-  # argument +other+ may be a string or another pathname.
+  # Returns a new \Pathname object based on the content of +self+ and +other+;
+  # argument +other+ may be a String, a File, a Dir, or another \Pathname:
+  #
+  #   pn = Pathname.new('foo') # => #<Pathname:foo>
+  #   pn + 'bar'               # => #<Pathname:foo/bar>
+  #   pn + File.new('LEGAL')   # => #<Pathname:foo/LEGAL>
+  #   pn + Dir.new('lib')      # => #<Pathname:foo/lib>
+  #   pn + Pathname.new('bar') # => #<Pathname:foo/bar>
   #
   # When +other+ specifies a relative path (see #relative?),
   # it is combined with +self+ to form a new pathname:
