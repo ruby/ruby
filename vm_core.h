@@ -780,7 +780,7 @@ typedef struct rb_vm_struct {
     /* load */
     // For running the init function of statically linked
     // extensions when they are loaded
-    struct st_table *static_ext_inits;
+    struct st_table static_ext_inits;
 
     /* signal */
     struct {

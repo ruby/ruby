@@ -3393,7 +3393,7 @@ ruby_vm_destruct(rb_vm_t *vm)
             // TODO: Is this ignorable for classext->m_tbl ?
             // rb_id_table_free(RCLASS(rb_mRubyVMFrozenCore)->m_tbl);
 
-            st_free_table(vm->static_ext_inits);
+            st_free_embedded_table(&vm->static_ext_inits);
 
             rb_id_table_free_items(&vm->constant_cache);
             set_free_embedded_table(&vm->unused_block_warning_table);
@@ -4586,6 +4586,7 @@ Init_BareVM(void)
     rb_objspace_alloc();
     rb_id_table_init(&vm->negative_cme_table, 16);
     st_init_existing_numtable_with_size(&vm->overloaded_cme_table, 0);
+    st_init_existing_strtable_with_size(&vm->static_ext_inits, 0);
     set_init_embedded_numtable_with_size(&vm->unused_block_warning_table, 0);
     vm->global_hooks.type = hook_list_type_global;
 
