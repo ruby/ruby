@@ -29,7 +29,7 @@ fn test_breakpoint_hir_codegen() {
         function.num_blocks(),
     );
     let mut asm = Assembler::new();
-    asm.new_block_without_id();
+    asm.new_block_without_id("test");
     let mut cb = CodeBlock::new_dummy();
 
     gen_insn(&mut cb, &mut jit, &mut asm, &function, breakpoint, &function.find(breakpoint)).unwrap();
