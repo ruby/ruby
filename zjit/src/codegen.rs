@@ -607,7 +607,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::LoadSelf => gen_load_self(),
         &Insn::LoadField { recv, id, offset, return_type } => gen_load_field(asm, opnd!(recv), id, offset, return_type),
         &Insn::StoreField { recv, id, offset, val } => no_output!(gen_store_field(asm, opnd!(recv), id, offset, opnd!(val), function.type_of(val))),
-        &Insn::WriteBarrier { recv, val } => no_output!(gen_write_barrier(asm, opnd!(recv), opnd!(val), function.type_of(val))),
+        &Insn::WriteBarrier { recv, val, store: _ } => no_output!(gen_write_barrier(asm, opnd!(recv), opnd!(val), function.type_of(val))),
         &Insn::IsBlockGiven { lep } => gen_is_block_given(asm, opnd!(lep)),
         Insn::ArrayInclude { elements, target, state } => gen_array_include(jit, asm, opnds!(elements), opnd!(target), &function.frame_state(*state)),
         Insn::ArrayPackBuffer { elements, fmt, buffer, state } => gen_array_pack_buffer(jit, asm, opnds!(elements), opnd!(fmt), opnd!(buffer), &function.frame_state(*state)),
