@@ -131,6 +131,14 @@ RSpec.configure do |config|
     ENV["XDG_CACHE_HOME"] = nil
     ENV["GEMRC"] = nil
 
+    # Prevent tests from modifying the user's global git config.
+    # GIT_CONFIG_GLOBAL and GIT_CONFIG_NOSYSTEM are available since Git 2.32.
+    git_version = `git --version`[/(\d+\.\d+\.\d+)/, 1]
+    if Gem::Version.new(git_version) >= Gem::Version.new("2.32")
+      ENV["GIT_CONFIG_GLOBAL"] = File.join(ENV["HOME"], ".gitconfig")
+      ENV["GIT_CONFIG_NOSYSTEM"] = "1"
+    end
+
     # Don't wrap output in tests
     ENV["THOR_COLUMNS"] = "10000"
 
