@@ -331,13 +331,9 @@ class TestGem < Gem::TestCase
 
     install_specs c1, b1, b2, a1
 
-    # c2 is missing, and b2 which has it as a dependency will be activated, so we should get an error about the orphaned dependency
-
-    e = assert_raise Gem::UnsatisfiableDependencyError do
-      load Gem.activate_bin_path("a", "exec", ">= 0")
-    end
-
-    assert_equal "Unable to resolve dependency: 'b (>= 0)' requires 'c (= 2)'", e.message
+    # c2 is missing, but the resolver backtracks from b2 to b1 which
+    # works with c1, finding a valid solution despite partial installation
+    load Gem.activate_bin_path("a", "exec", ">= 0")
   end
 
   def test_activate_bin_path_in_debug_mode

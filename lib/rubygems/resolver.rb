@@ -171,10 +171,12 @@ class Gem::Resolver
     result = solver.solve
 
     # Convert to Array<ActivationRequest>
+    needed_by_name = @needed.group_by(&:name)
     result.filter_map do |package, version|
       next if Gem::PubGrub::Package.root?(package)
       spec = spec_for(package.to_s, version)
-      dep_request = DependencyRequest.new(Gem::Dependency.new(package.to_s), nil)
+      dep = needed_by_name[package.to_s]&.first || Gem::Dependency.new(package.to_s)
+      dep_request = DependencyRequest.new(dep, nil)
       ActivationRequest.new(spec, dep_request)
     end
   rescue Gem::PubGrub::SolveFailure => e
