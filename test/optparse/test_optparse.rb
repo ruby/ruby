@@ -178,6 +178,12 @@ class TestOptionParser < Test::Unit::TestCase
     assert_equal(["-t"], e.args)
   end
 
+  def test_parse_error_set_backtrace
+    e = assert_raise(OptionParser::InvalidOption) {@opt.parse(%w(-t))}
+    assert_nothing_raised {e.set_backtrace(e.backtrace)}
+    assert_nothing_raised {e.set_backtrace(e.backtrace_locations)}
+  end
+
   def test_help_pager
     require 'tmpdir'
     Dir.mktmpdir do |dir|

@@ -2271,7 +2271,7 @@ XXX
     DIR = File.join(__dir__, '')
     def self.filter_backtrace(array)
       unless $DEBUG
-        array.delete_if {|bt| bt.start_with?(DIR)}
+        array.delete_if {|bt| (bt.respond_to?(:path) ? bt.path : bt).start_with?(DIR)}
       end
       array
     end
