@@ -19128,6 +19128,7 @@ vm.$(OBJEXT): $(top_srcdir)/internal/ruby_parser.h
 vm.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 vm.$(OBJEXT): $(top_srcdir)/internal/serial.h
 vm.$(OBJEXT): $(top_srcdir)/internal/set_table.h
+vm.$(OBJEXT): $(top_srcdir)/internal/st.h
 vm.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 vm.$(OBJEXT): $(top_srcdir)/internal/string.h
 vm.$(OBJEXT): $(top_srcdir)/internal/struct.h

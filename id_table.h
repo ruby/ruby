@@ -4,7 +4,14 @@
 #include <stddef.h>
 #include "ruby/ruby.h"
 
-struct rb_id_table;
+struct rb_id_item;
+
+struct rb_id_table {
+    int capa;
+    int num;
+    int used;
+    struct rb_id_item *items;
+};
 
 /* compatible with ST_* */
 enum rb_id_table_iterator_result {
