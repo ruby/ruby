@@ -53,7 +53,7 @@ module Bundler
           true
         end.map(&:name)
 
-        jobs = installer.send(:installation_parallelization)
+        jobs = Bundler.settings.installation_parallelization
         pristine_count = definition.specs.count - installed_specs.count
         # allow a pristining a single gem to skip the parallel worker
         jobs = [jobs, pristine_count].min

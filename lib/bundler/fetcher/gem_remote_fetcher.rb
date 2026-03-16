@@ -8,7 +8,7 @@ module Bundler
       def initialize(*)
         super
 
-        @pool_size = 5
+        @pool_size = Bundler.settings.installation_parallelization
       end
 
       def request(*args)
