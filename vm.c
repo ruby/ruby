@@ -3413,10 +3413,7 @@ ruby_vm_destruct(rb_vm_t *vm)
 
         rb_vm_living_threads_init(vm);
         ruby_vm_run_at_exit_hooks(vm);
-        if (vm->ci_table) {
-            st_free_table(vm->ci_table);
-            vm->ci_table = NULL;
-        }
+        st_free_embedded_table(&vm->ci_table);
         RB_ALTSTACK_FREE(vm->main_altstack);
 
         struct global_object_list *next;
@@ -3505,7 +3502,7 @@ vm_memsize(const void *ptr)
         rb_vm_memsize_postponed_job_queue() +
         rb_vm_memsize_workqueue(&vm->workqueue) +
         vm_memsize_at_exit_list(vm->at_exit) +
-        rb_st_memsize(vm->ci_table) +
+        (rb_st_memsize(&vm->ci_table) - sizeof(struct st_table)) +
         vm_memsize_builtin_function_table(vm->builtin_function_table) +
         (rb_id_table_memsize(&vm->negative_cme_table) - sizeof(struct rb_id_table)) +
         (rb_st_memsize(&vm->overloaded_cme_table) - sizeof(struct st_table)) +
@@ -4741,7 +4738,7 @@ Init_vm_objects(void)
 
     /* initialize mark object array, hash */
     vm->mark_object_ary = pin_array_list_new(Qnil);
-    vm->ci_table = st_init_table(&vm_ci_hashtype);
+    st_init_existing_table_with_size(&vm->ci_table, &vm_ci_hashtype, 0);
     vm->cc_refinement_set = rb_cc_refinement_set_create();
 }
 
