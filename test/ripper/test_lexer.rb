@@ -586,6 +586,58 @@ world"
     assert_lexer(expected, code)
   end
 
+  def test_fluent_and
+    code = "foo\n" "and"
+    expected = [
+      [[1, 0], :on_ident, "foo", state(:EXPR_CMDARG)],
+      [[1, 3], :on_ignored_nl, "\n", state(:EXPR_CMDARG)],
+      [[2, 0], :on_kw, "and", state(:EXPR_BEG)],
+    ]
+    assert_lexer(expected, code)
+
+    code = "foo\n" "and?"
+    expected = [
+      [[1, 0], :on_ident, "foo", state(:EXPR_CMDARG)],
+      [[1, 3], :on_nl, "\n", state(:EXPR_BEG)],
+      [[2, 0], :on_ident, "and?", state(:EXPR_CMDARG)],
+    ]
+    assert_lexer(expected, code)
+
+    code = "foo\n" "and!"
+    expected = [
+      [[1, 0], :on_ident, "foo", state(:EXPR_CMDARG)],
+      [[1, 3], :on_nl, "\n", state(:EXPR_BEG)],
+      [[2, 0], :on_ident, "and!", state(:EXPR_CMDARG)],
+    ]
+    assert_lexer(expected, code)
+  end
+
+  def test_fluent_or
+    code = "foo\n" "or"
+    expected = [
+      [[1, 0], :on_ident, "foo", state(:EXPR_CMDARG)],
+      [[1, 3], :on_ignored_nl, "\n", state(:EXPR_CMDARG)],
+      [[2, 0], :on_kw, "or", state(:EXPR_BEG)],
+    ]
+    assert_lexer(expected, code)
+
+    code = "foo\n" "or?"
+    expected = [
+      [[1, 0], :on_ident, "foo", state(:EXPR_CMDARG)],
+      [[1, 3], :on_nl, "\n", state(:EXPR_BEG)],
+      [[2, 0], :on_ident, "or?", state(:EXPR_CMDARG)],
+    ]
+    assert_lexer(expected, code)
+
+    code = "foo\n" "or!"
+    expected = [
+      [[1, 0], :on_ident, "foo", state(:EXPR_CMDARG)],
+      [[1, 3], :on_nl, "\n", state(:EXPR_BEG)],
+      [[2, 0], :on_ident, "or!", state(:EXPR_CMDARG)],
+    ]
+    assert_lexer(expected, code)
+  end
+
   def assert_lexer(expected, code)
     assert_equal(code, Ripper.tokenize(code).join(""))
     assert_equal(expected, result = Ripper.lex(code),
