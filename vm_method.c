@@ -347,8 +347,8 @@ invalidate_negative_cache(ID mid)
     VALUE cme;
     rb_vm_t *vm = GET_VM();
 
-    if (rb_id_table_lookup(vm->negative_cme_table, mid, &cme)) {
-        rb_id_table_delete(vm->negative_cme_table, mid);
+    if (rb_id_table_lookup(&vm->negative_cme_table, mid, &cme)) {
+        rb_id_table_delete(&vm->negative_cme_table, mid);
         vm_cme_invalidate((rb_callable_method_entry_t *)cme);
         RB_DEBUG_COUNTER_INC(cc_invalidate_negative);
     }
@@ -1915,12 +1915,12 @@ negative_cme(ID mid)
     const rb_callable_method_entry_t *cme;
     VALUE cme_data;
 
-    if (rb_id_table_lookup(vm->negative_cme_table, mid, &cme_data)) {
+    if (rb_id_table_lookup(&vm->negative_cme_table, mid, &cme_data)) {
         cme = (rb_callable_method_entry_t *)cme_data;
     }
     else {
         cme = (rb_callable_method_entry_t *)rb_method_entry_alloc(mid, Qnil, Qnil, NULL, false);
-        rb_id_table_insert(vm->negative_cme_table, mid, (VALUE)cme);
+        rb_id_table_insert(&vm->negative_cme_table, mid, (VALUE)cme);
     }
 
     VM_ASSERT(cme != NULL);
