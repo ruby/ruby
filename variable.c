@@ -3232,7 +3232,7 @@ autoload_feature_require(VALUE _arguments)
      * For example, the assertion below may fail in gccct_method_search();
      * VM_ASSERT(vm_cc_check_cme(cc, rb_callable_method_entry(klass, mid)))
      */
-    rb_gccct_clear_table(Qnil);
+    rb_gccct_clear_table();
 
     VALUE result = rb_funcall(receiver, rb_intern("require"), 1, arguments->autoload_data->feature);
 
