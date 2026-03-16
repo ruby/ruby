@@ -10,7 +10,7 @@ require_relative "exceptions"
 # all the requirements.
 
 class Gem::Resolver
-  require_relative "vendored_molinillo"
+  require_relative "vendored_pub_grub"
 
   ##
   # If the DEBUG_RESOLVER environment variable is set then debugging mode is
@@ -33,11 +33,6 @@ class Gem::Resolver
   # When true, no dependencies are looked up for requested gems.
 
   attr_accessor :ignore_dependencies
-
-  ##
-  # List of dependencies that could not be found in the configured sources.
-
-  attr_reader :stats
 
   ##
   # Hash of gems to skip resolution.  Keyed by gem name, with arrays of
@@ -104,7 +99,15 @@ class Gem::Resolver
     @ignore_dependencies = false
     @skip_gems           = {}
     @soft_missing        = false
-    @stats               = Gem::Resolver::Stats.new
+
+    @root_package = Gem::PubGrub::Package.root
+    @root_version = Gem::PubGrub::Package.root_version
+
+    @packages = {}
+
+    @all_specs = Hash.new {|h, name| h[name] = find_all_specs_for(name) }
+    @sorted_versions = Hash.new {|h, pkg| h[pkg] = @all_specs[pkg.to_s].map(&:version).uniq.sort }
+    @cached_dependencies = Hash.new {|h, pkg| h[pkg] = Hash.new {|v, ver| v[ver] = compute_dependencies(pkg, ver) } }
   end
 
   def explain(stage, *data) # :nodoc:
@@ -126,68 +129,154 @@ class Gem::Resolver
   end
 
   ##
-  # Creates an ActivationRequest for the given +dep+ and the last +possible+
-  # specification.
-  #
-  # Returns the Specification and the ActivationRequest
-
-  def activation_request(dep, possible) # :nodoc:
-    spec = possible.pop
-
-    explain :activate, [spec.full_name, possible.size]
-    explain :possible, possible
-
-    activation_request =
-      Gem::Resolver::ActivationRequest.new spec, dep, possible
-
-    [spec, activation_request]
-  end
-
-  def requests(s, act, reqs = []) # :nodoc:
-    return reqs if @ignore_dependencies
-
-    s.fetch_development_dependencies if @development
-
-    s.dependencies.reverse_each do |d|
-      next if d.type == :development && !@development
-      next if d.type == :development && @development_shallow &&
-              act.development?
-      next if d.type == :development && @development_shallow &&
-              act.parent
-
-      reqs << Gem::Resolver::DependencyRequest.new(d, act)
-      @stats.requirement!
-    end
-
-    @set.prefetch reqs
-
-    @stats.record_requirements reqs
-
-    reqs
-  end
-
-  include Gem::Molinillo::UI
-
-  def output
-    @output ||= debug? ? $stdout : File.open(IO::NULL, "w")
-  end
-
-  def debug?
-    DEBUG_RESOLVER
-  end
-
-  include Gem::Molinillo::SpecificationProvider
-
-  ##
   # Proceed with resolution! Returns an array of ActivationRequest objects.
 
   def resolve
-    Gem::Molinillo::Resolver.new(self, self).resolve(@needed.map {|d| DependencyRequest.new d, nil }).tsort.filter_map(&:payload)
-  rescue Gem::Molinillo::VersionConflict => e
-    conflict = e.conflicts.values.first
-    raise Gem::DependencyResolutionError, Conflict.new(conflict.requirement_trees.first.first, conflict.existing, conflict.requirement)
-  ensure
-    @output.close if defined?(@output) && !debug?
+    # Pre-check: raise UnsatisfiableDependencyError for root deps with no matches
+    @needed.each do |dep|
+      next if @soft_missing
+      dep_request = DependencyRequest.new(dep, nil)
+      all = @set.find_all(dep_request)
+      matching = select_local_platforms(all)
+
+      if matching.empty?
+        exc = Gem::UnsatisfiableDependencyError.new(dep_request, all)
+        exc.errors = @set.errors
+        raise exc
+      end
+
+      specs_matching_requirement = matching.select {|s| dep.requirement.satisfied_by?(s.version) }
+      next unless specs_matching_requirement.empty?
+      exc = Gem::UnsatisfiableDependencyError.new(dep_request, all)
+      exc.errors = @set.errors
+      raise exc
+    end
+
+    # Build root deps from @needed
+    root_deps = {}
+    @needed.each do |dep|
+      range = Gem::PubGrub::RubyGems.requirement_to_range(dep.requirement)
+      constraint = Gem::PubGrub::VersionConstraint.new(package_for(dep.name), range: range)
+      root_deps[dep.name] = root_deps.key?(dep.name) ? root_deps[dep.name].intersect(constraint) : constraint
+    end
+
+    @sorted_versions[@root_package] = [@root_version]
+    @cached_dependencies[@root_package] = { @root_version => root_deps }
+
+    solver = Gem::PubGrub::VersionSolver.new(
+      source: self,
+      root: @root_package,
+      logger: make_logger
+    )
+    result = solver.solve
+
+    # Convert to Array<ActivationRequest>
+    result.filter_map do |package, version|
+      next if Gem::PubGrub::Package.root?(package)
+      spec = spec_for(package.to_s, version)
+      dep_request = DependencyRequest.new(Gem::Dependency.new(package.to_s), nil)
+      ActivationRequest.new(spec, dep_request)
+    end
+  rescue Gem::PubGrub::SolveFailure => e
+    failure = Gem::Resolver::PubGrubFailure.new(e)
+    raise Gem::DependencyResolutionError, failure
+  end
+
+  # PubGrub source interface methods
+
+  def all_versions_for(package)
+    return [@root_version] if package == @root_package
+
+    all_versions = @sorted_versions[package]
+
+    # Exclude prerelease versions unless the set has prerelease enabled.
+    # Prereleases are still available via versions_for when a range
+    # specifically includes them (e.g., "= 2.a"), with low priority
+    # in the Strategy.
+    if @set.respond_to?(:prerelease) && @set.prerelease
+      versions = all_versions
+    else
+      stable = all_versions.reject(&:prerelease?)
+      versions = stable.empty? ? all_versions : stable
+    end
+
+    versions = versions.reverse # highest first
+    name = package.to_s
+
+    if (skip_dep_gems = skip_gems[name]) && !skip_dep_gems.empty?
+      skip_versions = skip_dep_gems.map(&:version)
+      preferred, rest = versions.partition {|v| skip_versions.include?(v) }
+      preferred + rest
+    else
+      # Prefer already-installed versions to avoid unnecessary upgrades
+      installed_versions = @all_specs[name].
+        select {|s| s.is_a?(Gem::Resolver::InstalledSpecification) }.
+        map(&:version)
+      if installed_versions.any?
+        preferred, rest = versions.partition {|v| installed_versions.include?(v) }
+        preferred + rest
+      else
+        versions
+      end
+    end
+  end
+
+  def versions_for(package, range = Gem::PubGrub::VersionRange.any)
+    range.select_versions(@sorted_versions[package])
+  end
+
+  def no_versions_incompatibility_for(_package, unsatisfied_term)
+    cause = Gem::PubGrub::Incompatibility::NoVersions.new(unsatisfied_term)
+    Gem::PubGrub::Incompatibility.new([unsatisfied_term], cause: cause)
+  end
+
+  def incompatibilities_for(package, version)
+    package_deps = @cached_dependencies[package]
+    sorted_versions = @sorted_versions[package]
+    package_deps[version].filter_map do |dep_package_name, dep_constraint|
+      dep_package = dep_constraint.package
+      low = high = sorted_versions.index(version)
+
+      # find version low such that all >= low share the same dep
+      while low > 0 &&
+            package_deps[sorted_versions[low - 1]][dep_package_name] == dep_constraint
+        low -= 1
+      end
+      low =
+        if low == 0
+          nil
+        else
+          sorted_versions[low]
+        end
+
+      # find version high such that all < high share the same dep
+      while high < sorted_versions.length &&
+            package_deps[sorted_versions[high]][dep_package_name] == dep_constraint
+        high += 1
+      end
+      high =
+        if high == sorted_versions.length
+          nil
+        else
+          sorted_versions[high]
+        end
+
+      range = Gem::PubGrub::VersionRange.new(min: low, max: high, include_min: !low.nil?)
+      self_constraint = Gem::PubGrub::VersionConstraint.new(package, range: range)
+
+      if dep_constraint.range.empty?
+        cause = Gem::PubGrub::Incompatibility::InvalidDependency.new(dep_package, dep_constraint)
+        next Gem::PubGrub::Incompatibility.new(
+          [Gem::PubGrub::Term.new(self_constraint, true)],
+          cause: cause
+        )
+      end
+
+      Gem::PubGrub::Incompatibility.new(
+        [Gem::PubGrub::Term.new(self_constraint, true), Gem::PubGrub::Term.new(dep_constraint, false)],
+        cause: :dependency
+      )
+    end
   end
 
   ##
@@ -219,103 +308,89 @@ class Gem::Resolver
     end
   end
 
-  def search_for(dependency)
-    possibles, all = find_possible(dependency)
-    if !@soft_missing && possibles.empty?
-      exc = Gem::UnsatisfiableDependencyError.new dependency, all
-      exc.errors = @set.errors
-      raise exc
-    end
+  private
 
-    groups = Hash.new {|hash, key| hash[key] = [] }
-
-    # create groups & sources in the same loop
-    sources = possibles.map do |spec|
-      source = spec.source
-      groups[source] << spec
-      source
-    end.uniq.reverse
-
-    activation_requests = []
-
-    sources.each do |source|
-      groups[source].
-        sort_by {|spec| [spec.version, -Gem::Platform.platform_specificity_match(spec.platform, Gem::Platform.local)] }.
-        map {|spec| ActivationRequest.new spec, dependency }.
-        each {|activation_request| activation_requests << activation_request }
-    end
-
-    activation_requests
+  def package_for(name)
+    @packages[name] ||= Gem::PubGrub::Package.new(name)
   end
 
-  def dependencies_for(specification)
-    return [] if @ignore_dependencies
-    spec = specification.spec
-    requests(spec, specification)
-  end
+  def find_all_specs_for(name)
+    dep = Gem::Dependency.new(name, ">= 0.a")
+    dep_request = DependencyRequest.new(dep, nil)
+    all = @set.find_all(dep_request)
 
-  def requirement_satisfied_by?(requirement, activated, spec)
-    matches_spec = requirement.matches_spec? spec
-    return matches_spec if @soft_missing
+    specs = select_local_platforms(all)
 
-    matches_spec &&
-      spec.spec.required_ruby_version.satisfied_by?(Gem.ruby_version) &&
-      spec.spec.required_rubygems_version.satisfied_by?(Gem.rubygems_version)
-  end
-
-  def name_for(dependency)
-    dependency.name
-  end
-
-  def allow_missing?(dependency)
-    @soft_missing
-  end
-
-  def sort_dependencies(dependencies, activated, conflicts)
-    dependencies.sort_by.with_index do |dependency, i|
-      name = name_for(dependency)
-      [
-        activated.vertex_named(name).payload ? 0 : 1,
-        amount_constrained(dependency),
-        conflicts[name] ? 0 : 1,
-        activated.vertex_named(name).payload ? 0 : search_for(dependency).count,
-        i, # for stable sort
-      ]
-    end
-  end
-
-  SINGLE_POSSIBILITY_CONSTRAINT_PENALTY = 1_000_000
-  private_constant :SINGLE_POSSIBILITY_CONSTRAINT_PENALTY if defined?(private_constant)
-
-  # returns an integer \in (-\infty, 0]
-  # a number closer to 0 means the dependency is less constraining
-  #
-  # dependencies w/ 0 or 1 possibilities (ignoring version requirements)
-  # are given very negative values, so they _always_ sort first,
-  # before dependencies that are unconstrained
-  def amount_constrained(dependency)
-    @amount_constrained ||= {}
-    @amount_constrained[dependency.name] ||= begin
-      name_dependency = Gem::Dependency.new(dependency.name)
-      dependency_request_for_name = Gem::Resolver::DependencyRequest.new(name_dependency, dependency.requester)
-      all = @set.find_all(dependency_request_for_name).size
-
-      if all <= 1
-        all - SINGLE_POSSIBILITY_CONSTRAINT_PENALTY
-      else
-        search = search_for(dependency).size
-        search - all
+    unless @soft_missing
+      specs = specs.select do |s|
+        actual = s.respond_to?(:spec) ? s.spec : s
+        actual.required_ruby_version.satisfied_by?(Gem.ruby_version) &&
+          actual.required_rubygems_version.satisfied_by?(Gem.rubygems_version)
+      rescue StandardError
+        true
       end
     end
+
+    specs
   end
-  private :amount_constrained
+
+  def spec_for(name, version)
+    candidates = @all_specs[name].select {|s| s.version == version }
+    candidates = @all_specs[name].select {|s| s.version.to_s == version.to_s } if candidates.empty?
+
+    if candidates.length > 1
+      # Prefer already-installed specs to avoid unnecessary downloads
+      installed = candidates.select {|s| s.is_a?(Gem::Resolver::InstalledSpecification) }
+      return installed.first if installed.length == 1
+      candidates = installed if installed.any?
+
+      # Among remaining candidates, prefer the most specific platform
+      candidates.min_by {|s| Gem::Platform.platform_specificity_match(s.platform, Gem::Platform.local) }
+    else
+      candidates.first
+    end
+  end
+
+  def compute_dependencies(package, version)
+    return {} if package == @root_package
+
+    spec = spec_for(package.to_s, version)
+    return {} unless spec
+    return {} if @ignore_dependencies
+
+    deps = {}
+    root_names = @needed.map(&:name)
+
+    actual_spec = spec.respond_to?(:spec) ? spec.spec : spec
+    actual_spec.dependencies.each do |d|
+      next if d.type == :development && !@development
+      next if d.type == :development && @development_shallow && !root_names.include?(package.to_s)
+
+      dep_package = package_for(d.name)
+
+      # Check if the dependency has any available versions
+      dep_specs = @all_specs[d.name]
+      if dep_specs.empty? && @soft_missing
+        next
+      end
+
+      range = Gem::PubGrub::RubyGems.requirement_to_range(d.requirement)
+      deps[d.name] = Gem::PubGrub::VersionConstraint.new(dep_package, range: range)
+    end
+
+    deps
+  end
+
+  def make_logger
+    DEBUG_RESOLVER ? Gem::PubGrub::StderrLogger.new : Gem::PubGrub::NullLogger.new
+  end
 end
 
 require_relative "resolver/activation_request"
 require_relative "resolver/conflict"
 require_relative "resolver/dependency_request"
 require_relative "resolver/requirement_list"
-require_relative "resolver/stats"
+require_relative "resolver/pub_grub_failure"
 
 require_relative "resolver/set"
 require_relative "resolver/api_set"

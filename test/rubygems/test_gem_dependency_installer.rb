@@ -793,13 +793,13 @@ class TestGemDependencyInstaller < Gem::TestCase
     inst = nil
 
     Dir.chdir @tempdir do
-      e = assert_raise Gem::UnsatisfiableDependencyError do
+      e = assert_raise Gem::DependencyResolutionError do
         inst = Gem::DependencyInstaller.new domain: :local
         inst.install "b"
       end
 
-      expected = "Unable to resolve dependency: 'b (>= 0)' requires 'a (>= 0)'"
-      assert_equal expected, e.message
+      assert_match(/depends on a/, e.message)
+      assert_match(/no versions satisfy a/, e.message)
     end
 
     assert_equal [], inst.installed_gems.map(&:full_name)

@@ -86,63 +86,6 @@ class TestGemResolver < Gem::TestCase
     assert_same index_set, composed
   end
 
-  def test_requests
-    a1 = util_spec "a", 1, "b" => 2
-
-    r1 = Gem::Resolver::DependencyRequest.new dep("a", "= 1"), nil
-
-    act = Gem::Resolver::ActivationRequest.new a1, r1
-
-    res = Gem::Resolver.new [a1]
-
-    reqs = []
-
-    res.requests a1, act, reqs
-
-    assert_equal ["b (= 2)"], reqs.map(&:to_s)
-  end
-
-  def test_requests_development
-    a1 = util_spec "a", 1, "b" => 2
-
-    spec = Gem::Resolver::SpecSpecification.new nil, a1
-    def spec.fetch_development_dependencies
-      @called = true
-    end
-
-    r1 = Gem::Resolver::DependencyRequest.new dep("a", "= 1"), nil
-
-    act = Gem::Resolver::ActivationRequest.new spec, r1
-
-    res = Gem::Resolver.new [act]
-    res.development = true
-
-    reqs = []
-
-    res.requests spec, act, reqs
-
-    assert_equal ["b (= 2)"], reqs.map(&:to_s)
-
-    assert spec.instance_variable_defined? :@called
-  end
-
-  def test_requests_ignore_dependencies
-    a1 = util_spec "a", 1, "b" => 2
-
-    r1 = Gem::Resolver::DependencyRequest.new dep("a", "= 1"), nil
-
-    act = Gem::Resolver::ActivationRequest.new a1, r1
-
-    res = Gem::Resolver.new [a1]
-    res.ignore_dependencies = true
-
-    reqs = []
-
-    res.requests a1, act, reqs
-
-    assert_empty reqs
-  end
-
   def test_resolve_conservative
     a1_spec = util_spec "a", 1
 
@@ -511,19 +454,9 @@ class TestGemResolver < Gem::TestCase
       r.resolve
     end
 
-    deps = [make_dep("c", "= 2"), make_dep("c", "= 1")]
-    assert_equal deps, e.conflicting_dependencies
-
-    con = e.conflict
-
-    act = con.activated
-    assert_equal "c-1", act.spec.full_name
-
-    parent = act.parent
-    assert_equal "a-1", parent.spec.full_name
-
-    act = con.requester
-    assert_equal "b-1", act.spec.full_name
+    assert_kind_of Gem::Resolver::PubGrubFailure, e.conflict
+    assert_match(/a depends on c/, e.message)
+    assert_match(/b depends on c/, e.message)
   end
 
   def test_raises_when_a_gem_is_missing
@@ -578,12 +511,12 @@ class TestGemResolver < Gem::TestCase
 
     r = Gem::Resolver.new([ad], set(a1))
 
-    e = assert_raise Gem::UnsatisfiableDependencyError do
+    e = assert_raise Gem::DependencyResolutionError do
       r.resolve
     end
 
-    assert_equal "Unable to resolve dependency: 'a (= 1)' requires 'b (= 2)'",
-                 e.message
+    assert_match(/depends on b/, e.message)
+    assert_match(/no versions satisfy b/, e.message)
   end
 
   def test_raises_when_possibles_are_exhausted
@@ -605,18 +538,9 @@ class TestGemResolver < Gem::TestCase
       r.resolve
     end
 
-    dependency = e.conflict.dependency
-
-    assert_includes %w[a b], dependency.name
-    assert_equal req(">= 0"), dependency.requirement
-
-    activated = e.conflict.activated
-    assert_equal "c-1", activated.full_name
-
-    assert_equal dep("c", "= 1"), activated.request.dependency
-
-    assert_equal [dep("c", ">= 2"), dep("c", "= 1")],
-                 e.conflict.conflicting_dependencies
+    assert_kind_of Gem::Resolver::PubGrubFailure, e.conflict
+    assert_match(/a depends on c/, e.message)
+    assert_match(/b depends on c/, e.message)
   end
 
   def test_keeps_resolving_after_seeing_satisfied_dep
@@ -772,7 +696,7 @@ class TestGemResolver < Gem::TestCase
     assert_resolves_to [b1, c1, d2], r
   end
 
-  def test_sorts_by_source_then_version
+  def test_picks_highest_version_across_sources
     source_a = Gem::Source.new "http://example.com/a"
     source_b = Gem::Source.new "http://example.com/b"
     source_c = Gem::Source.new "http://example.com/c"
@@ -795,7 +719,7 @@ class TestGemResolver < Gem::TestCase
 
     resolver = Gem::Resolver.new [dependency], set
 
-    assert_resolves_to [spec_b_2], resolver
+    assert_resolves_to [spec_a_2], resolver
   end
 
   def test_select_local_platforms
