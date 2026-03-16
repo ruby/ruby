@@ -8,6 +8,7 @@ end
 
 class Exports
   PrivateNames = /(?:Init_|InitVM_|ruby_static_id_|threadptr|_ec_|DllMain\b)/
+  UcrtNames = %w(access close dup2 fclose fstat get_osfhandle getpid isatty lseek mkdir pipe read rename rmdir strerror unlink utime write)
 
   def self.create(*args, &block)
     platform = RUBY_PLATFORM
@@ -53,7 +54,7 @@ class Exports
       if /^#define (\w+)\((.*?)\)\s+(?:\(void\))?(rb_w32_\w+)\((.*?)\)\s*$/ =~ line and
           $2.delete(" ") == $4.delete(" ")
         export, internal = $1, $3
-        if syms[internal] or internal = winapis[internal]
+        if !UcrtNames.include?(export) and (syms[internal] or internal = winapis[internal])
           syms[forwarding(internal, export)] = internal
         end
       end
