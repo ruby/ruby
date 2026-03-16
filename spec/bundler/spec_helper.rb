@@ -41,7 +41,7 @@ require_relative "support/platforms"
 require_relative "support/windows_tag_group"
 
 begin
-  raise LoadError if File.exist?(File.expand_path("../../../lib/bundler/bundler.gemspec", __dir__))
+  raise LoadError if File.exist?(File.expand_path("../../lib/bundler/bundler.gemspec", __dir__))
 
   gem "simplecov_json_formatter"
   require "simplecov"
