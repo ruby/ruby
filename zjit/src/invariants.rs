@@ -102,9 +102,17 @@ pub struct Invariants {
 
     /// Whether a non-root box has ever been created
     non_root_box_created: bool,
+
+    /// Whether TracePoint is currently enabled (set by rb_zjit_tracing_invalidate_all)
+    tracing_enabled: bool,
 }
 
 impl Invariants {
+    /// Whether TracePoint has been enabled (prevents new compilations)
+    pub fn tracing_enabled(&self) -> bool {
+        self.tracing_enabled
+    }
+
     /// Update object references in Invariants
     pub fn update_references(&mut self) {
         self.update_ep_escape_iseqs();
@@ -426,6 +434,7 @@ pub extern "C" fn rb_zjit_tracing_invalidate_all() {
     // Stop other ractors since we are going to patch machine code.
     with_vm_lock(src_loc!(), || {
         debug!("Invalidating all ZJIT compiled code due to TracePoint");
+        ZJITState::get_invariants().tracing_enabled = true;
 
         for_each_iseq(|iseq| {
             let payload = get_or_create_iseq_payload(iseq);

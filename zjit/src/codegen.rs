@@ -27,7 +27,7 @@ use crate::options::get_option;
 use crate::cast::IntoUsize;
 
 /// At the moment, we support recompiling each ISEQ only once.
-pub const MAX_ISEQ_VERSIONS: usize = 2;
+pub const MAX_ISEQ_VERSIONS: usize = 5;
 
 /// Sentinel program counter stored in C frames when runtime checks are enabled.
 const PC_POISON: Option<*const VALUE> = if cfg!(feature = "runtime_checks") {
@@ -101,6 +101,12 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, jit_exception: boo
     // Take a lock to avoid writing to ISEQ in parallel with Ractors.
     // with_vm_lock() does nothing if the program doesn't use Ractors.
     with_vm_lock(src_loc!(), || {
+        // Don't compile new code while TracePoint is active, since newly compiled code
+        // won't have its NoTracePoint PatchPoints patched and would skip trace events.
+        if ZJITState::get_invariants().tracing_enabled() {
+            return std::ptr::null();
+        }
+
         let cb = ZJITState::get_code_block();
         let mut code_ptr = with_time_stat(compile_time_ns, || gen_iseq_entry_point(cb, iseq, jit_exception));
 
@@ -591,6 +597,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::IncrCounterPtr { counter_ptr } => no_output!(gen_incr_counter_ptr(asm, *counter_ptr)),
         Insn::ObjToString { val, cd, state, .. } => gen_objtostring(jit, asm, opnd!(val), *cd, &function.frame_state(*state)),
         &Insn::CheckInterrupts { state } => no_output!(gen_check_interrupts(jit, asm, &function.frame_state(state))),
+        Insn::Profile { iseq, insn_idx, operands, .. } => no_output!(gen_profile(asm, *iseq, *insn_idx, opnds!(operands))),
         &Insn::HashDup { val, state } => { gen_hash_dup(asm, opnd!(val), &function.frame_state(state)) },
         &Insn::HashAref { hash, key, state } => { gen_hash_aref(jit, asm, opnd!(hash), opnd!(key), &function.frame_state(state)) },
         &Insn::HashAset { hash, key, val, state } => { no_output!(gen_hash_aset(jit, asm, opnd!(hash), opnd!(key), opnd!(val), &function.frame_state(state))) },
@@ -1153,6 +1160,23 @@ fn gen_check_interrupts(jit: &mut JITState, asm: &mut Assembler, state: &FrameSt
     let interrupt_flag = asm.load(Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_FLAG as i32));
     asm.test(interrupt_flag, interrupt_flag);
     asm.jnz(side_exit(jit, state, SideExitReason::Interrupt));
+}
+
+/// Generate code to profile operand types from JIT code.
+/// Stack-allocates a VALUE array for the operands, then makes a single call to
+/// rb_zjit_profile_jit_operands which profiles all operands and triggers recompilation.
+fn gen_profile(asm: &mut Assembler, iseq: IseqPtr, insn_idx: u32, operands: Vec<lir::Opnd>) {
+    use crate::profile::rb_zjit_profile_jit_operands;
+    let version_num = get_or_create_iseq_payload(iseq).versions.len() as u32;
+    let values_ptr = gen_push_opnds(asm, &operands);
+    asm_ccall!(asm, rb_zjit_profile_jit_operands,
+        Opnd::Value(VALUE::from(iseq)),
+        (insn_idx as u64).into(),
+        values_ptr,
+        (operands.len() as u64).into(),
+        (version_num as u64).into()
+    );
+    gen_pop_opnds(asm, &operands);
 }
 
 fn gen_hash_dup(asm: &mut Assembler, val: Opnd, state: &FrameState) -> lir::Opnd {
