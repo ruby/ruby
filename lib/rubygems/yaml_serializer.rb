@@ -573,7 +573,7 @@ module Gem
         d = Gem::Dependency.allocate
         d.instance_variable_set(:@name, hash["name"])
 
-        d.instance_variable_set(:@requirement, hash["requirement"])
+        d.instance_variable_set(:@requirement, hash["requirement"] || hash["version_requirements"])
 
         type = hash["type"]
         type = type ? type.to_s.sub(/^:/, "").to_sym : :runtime

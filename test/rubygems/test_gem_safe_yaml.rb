@@ -921,6 +921,26 @@ class TestGemSafeYAML < Gem::TestCase
     assert_equal [[">=", Gem::Version.new("1.0")]], req.requirements
   end
 
+  def test_load_dependency_version_version_requirement_old_tag
+    yaml = <<~YAML
+      - !ruby/object:Gem::Dependency
+        name: test-unit
+        type: :development
+        version_requirement:
+        version_requirements: !ruby/object:Gem::Requirement
+          requirements:
+          - - ">="
+            - !ruby/object:Gem::Version
+              version: 2.0.2
+          version:
+    YAML
+
+    deps = yaml_load(yaml, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES)
+    assert_not_nil(deps.first)
+
+    assert_equal [[">=", Gem::Version.new("2.0.2")]], deps.first.requirement.requirements
+  end
+
   def test_load_platform_from_value_field
     yaml = "!ruby/object:Gem::Platform\nvalue: x86-linux\n"
     plat = yaml_load(yaml, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES)
