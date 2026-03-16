@@ -2559,6 +2559,12 @@ set_init_numtable_with_size(st_index_t size)
     return set_init_table_with_size(NULL, &type_numhash, size);
 }
 
+set_table *
+set_init_embedded_numtable_with_size(set_table *tab, st_index_t size)
+{
+    return set_init_existing_table_with_size(tab, &type_numhash, size);
+}
+
 size_t
 set_table_size(const struct set_table *tbl)
 {
