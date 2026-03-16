@@ -5,7 +5,7 @@ module Prism
   # The DSL module provides a set of methods that can be used to create prism
   # nodes in a more concise manner. For example, instead of writing:
   #
-  #     source = Prism::Source.for("[1]", 1, [])
+  #     source = Prism::Source.for("[1]", 1, [0])
   #
   #     Prism::ArrayNode.new(
   #       source,
@@ -62,7 +62,7 @@ module Prism
     #--
     #: (String string) -> Source
     def source(string)
-      Source.for(string, 1, [])
+      Source.for(string, 1, build_offsets(string))
     end
 
     # Create a new Location object.
@@ -136,7 +136,7 @@ module Prism
     #--
     #: () -> Source
     def default_source
-      Source.for("", 1, [])
+      Source.for("", 1, [0])
     end
 
     # The default location object that gets attached to nodes if no location is
@@ -153,6 +153,20 @@ module Prism
     #: (Source source, Location location) -> node
     def default_node(source, location)
       MissingNode.new(source, -1, location, 0)
+    end
+
+    private
+
+    # Build the newline byte offset array for the given source string.
+    #--
+    #: (String source) -> Array[Integer]
+    def build_offsets(source)
+      offsets = [0]
+      start = 0
+      while (index = source.byteindex("\n", start))
+        offsets << (start = index + 1)
+      end
+      offsets
     end
   end
 end
