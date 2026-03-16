@@ -417,6 +417,9 @@ gccct_method_search_slowpath(rb_vm_t *vm, VALUE klass, unsigned int index, const
 
     vm_search_method_slowpath0(vm->self, &cd, klass);
 
+    if (UNLIKELY(!vm->global_cc_cache_table_used)) {
+        vm->global_cc_cache_table_used = true;
+    }
     return vm->global_cc_cache_table[index] = cd.cc;
 }
 
@@ -491,12 +494,12 @@ gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, const struct
 }
 
 VALUE
-rb_gccct_clear_table(VALUE _self)
+rb_gccct_clear_table(void)
 {
-    int i;
     rb_vm_t *vm = GET_VM();
-    for (i=0; i<VM_GLOBAL_CC_CACHE_TABLE_SIZE; i++) {
-        vm->global_cc_cache_table[i] = NULL;
+    if (vm->global_cc_cache_table_used) {
+        MEMZERO(vm->global_cc_cache_table, struct rb_callcache *, VM_GLOBAL_CC_CACHE_TABLE_SIZE);
+        vm->global_cc_cache_table_used = false;
     }
     return Qnil;
 }
