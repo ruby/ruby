@@ -6498,7 +6498,7 @@ static void
 vm_track_constant_cache(ID id, void *ic)
 {
     rb_vm_t *vm = GET_VM();
-    struct rb_id_table *const_cache = vm->constant_cache;
+    struct rb_id_table *const_cache = &vm->constant_cache;
     VALUE lookup_result;
     set_table *ics;
 

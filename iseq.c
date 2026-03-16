@@ -113,14 +113,14 @@ remove_from_constant_cache(ID id, IC ic)
     VALUE lookup_result;
     st_data_t ic_data = (st_data_t)ic;
 
-    if (rb_id_table_lookup(vm->constant_cache, id, &lookup_result)) {
+    if (rb_id_table_lookup(&vm->constant_cache, id, &lookup_result)) {
         set_table *ics = (set_table *)lookup_result;
         set_table_delete(ics, &ic_data);
 
         if (ics->num_entries == 0 &&
                 // See comment in vm_track_constant_cache on why we need this check
                 id != vm->inserting_constant_cache_id) {
-            rb_id_table_delete(vm->constant_cache, id);
+            rb_id_table_delete(&vm->constant_cache, id);
             set_free_table(ics);
         }
     }

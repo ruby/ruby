@@ -3394,7 +3394,7 @@ ruby_vm_destruct(rb_vm_t *vm)
 
             st_free_table(vm->static_ext_inits);
 
-            rb_id_table_free(vm->constant_cache);
+            rb_id_table_free_items(&vm->constant_cache);
             set_free_table(vm->unused_block_warning_table);
 
             rb_thread_free_native_thread(th);
@@ -3465,9 +3465,9 @@ static size_t
 vm_memsize_constant_cache(void)
 {
     rb_vm_t *vm = GET_VM();
-    size_t size = rb_id_table_memsize(vm->constant_cache);
+    size_t size = rb_id_table_memsize(&vm->constant_cache) - sizeof(struct rb_id_table);
 
-    rb_id_table_foreach(vm->constant_cache, vm_memsize_constant_cache_i, &size);
+    rb_id_table_foreach(&vm->constant_cache, vm_memsize_constant_cache_i, &size);
     return size;
 }
 
@@ -4585,7 +4585,6 @@ Init_BareVM(void)
     rb_objspace_alloc();
     vm->negative_cme_table = rb_id_table_create(16);
     vm->overloaded_cme_table = st_init_numtable();
-    vm->constant_cache = rb_id_table_create(0);
     vm->unused_block_warning_table = set_init_numtable();
     vm->global_hooks.type = hook_list_type_global;
 
