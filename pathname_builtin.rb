@@ -6,14 +6,6 @@
 #
 # A \Pathname object is immutable (except for method #freeze).
 #
-# Many of the methods here create \Pathname objects.
-# In each case, the stored string is different from (in fact, a +dup+ of)
-# the string used to create the object:
-#
-#   s = '/usr/bin'
-#   pn = Pathname.new(s)
-#   s.__id__ == pn.to_s.__id__ # => false
-#
 # A pathname may be relative or absolute:
 #
 #   Pathname.new('lib')            # => #<Pathname:lib>
