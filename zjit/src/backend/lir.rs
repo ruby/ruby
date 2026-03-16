@@ -177,26 +177,23 @@ impl BasicBlock {
     }
 
     /// Get the output VRegs for this block.
-    /// These are VRegs passed to successor blocks via block edges.
+    /// These are VRegs referenced by operands passed to successor blocks via block edges.
     /// This function is used for live range calculations and should _not_
     /// be used for parallel moves between blocks
-    pub fn out_vregs(&self) -> Vec<Opnd> {
-        // TODO: Do we need to consider memory opnds for block args?
-        // TODO: Yes, we do need to care about memory base vregs
-        // FIXME: Aaron
+    pub fn out_vregs(&self) -> Vec<VRegId> {
         let EdgePair(edge1, edge2) = self.edges();
         let mut out_vregs = Vec::new();
         if let Some(edge) = edge1 {
             for arg in &edge.args {
-                if matches!(arg, Opnd::VReg { .. }) {
-                    out_vregs.push(*arg);
+                for idx in arg.vreg_ids() {
+                    out_vregs.push(idx);
                 }
             }
         }
         if let Some(edge) = edge2 {
             for arg in &edge.args {
-                if matches!(arg, Opnd::VReg { .. }) {
-                    out_vregs.push(*arg);
+                for idx in arg.vreg_ids() {
+                    out_vregs.push(idx);
                 }
             }
         }
@@ -2899,10 +2896,8 @@ impl Assembler
             }
 
             // Add out_vregs to live set
-            for vreg in block.out_vregs() {
-                if let Opnd::VReg { idx, .. } = vreg {
-                    live.insert(idx.0);
-                }
+            for idx in block.out_vregs() {
+                live.insert(idx.0);
             }
 
             // For each live vreg, add entire block range
@@ -4175,7 +4170,7 @@ mod tests {
         // Only r11 is a VReg, so we should only get that
         let out_b1 = asm.basic_blocks[b1.0].out_vregs();
         assert_eq!(out_b1.len(), 1);
-        assert_eq!(out_b1[0], r11);
+        assert_eq!(out_b1[0], r11.vreg_idx());
 
         // b2 has two edges: one to b4 (no args) and one to b3 (no args)
         let out_b2 = asm.basic_blocks[b2.0].out_vregs();
@@ -4184,12 +4179,32 @@ mod tests {
         // b3 has one edge to b2 with args [r14, r15]
         let out_b3 = asm.basic_blocks[b3.0].out_vregs();
         assert_eq!(out_b3.len(), 2);
-        assert_eq!(out_b3[0], r14);
-        assert_eq!(out_b3[1], r15);
+        assert_eq!(out_b3[0], r14.vreg_idx());
+        assert_eq!(out_b3[1], r15.vreg_idx());
 
         // b4 has no edges (terminates with CRet)
         let out_b4 = asm.basic_blocks[b4.0].out_vregs();
         assert_eq!(out_b4.len(), 0);
+    }
+
+    #[test]
+    fn test_out_vregs_includes_memory_base_vregs() {
+        let mut asm = Assembler::new();
+
+        let base = asm.new_vreg(64);
+        let b1 = asm.new_block(hir::BlockId(0), true, 0);
+        let b2 = asm.new_block(hir::BlockId(1), false, 1);
+
+        asm.set_current_block(b1);
+        let label_b1 = asm.new_label("bb0");
+        asm.write_label(label_b1);
+        asm.basic_blocks[b1.0].push_insn(Insn::Jmp(Target::Block(BranchEdge {
+            target: b2,
+            args: vec![Opnd::mem(64, base, 8)],
+        })));
+
+        let out_vregs = asm.basic_blocks[b1.0].out_vregs();
+        assert_eq!(out_vregs, vec![base.vreg_idx()]);
     }
 
     #[test]
