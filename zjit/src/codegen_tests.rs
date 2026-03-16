@@ -1,10 +1,46 @@
 #![cfg(test)]
 
+use super::{gen_insn, JITState};
+use crate::asm::CodeBlock;
+use crate::backend::lir::Assembler;
 use crate::codegen::MAX_ISEQ_VERSIONS;
 use crate::cruby::*;
+use crate::hir::{Insn, iseq_to_hir};
+use crate::options::rb_zjit_prepare_options;
+use crate::payload::IseqVersion;
 use crate::hir::tests::hir_build_tests::assert_contains_opcode;
 use crate::payload::*;
 use insta::assert_snapshot;
+
+#[test]
+fn test_breakpoint_hir_codegen() {
+    rb_zjit_prepare_options();
+
+    eval("def test_breakpoint_hir_codegen = nil");
+    let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", "test_breakpoint_hir_codegen"));
+    unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
+    let mut function = iseq_to_hir(iseq).unwrap();
+    let breakpoint = function.push_insn(function.entries_block, Insn::BreakPoint);
+
+    let mut jit = JITState::new(
+        iseq,
+        IseqVersion::new(iseq),
+        function.num_insns(),
+        function.num_blocks(),
+    );
+    let mut asm = Assembler::new();
+    asm.new_block_without_id();
+    let mut cb = CodeBlock::new_dummy();
+
+    gen_insn(&mut cb, &mut jit, &mut asm, &function, breakpoint, &function.find(breakpoint)).unwrap();
+    asm.compile_with_num_regs(&mut cb, 0);
+
+    #[cfg(target_arch = "x86_64")]
+    assert_eq!(cb.hexdump(), "cc");
+
+    #[cfg(target_arch = "aarch64")]
+    assert_eq!(cb.hexdump(), "00003ed4");
+}
 
 #[test]
 fn test_call_itself() {
