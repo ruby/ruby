@@ -453,4 +453,77 @@ class TestTimeout < Test::Unit::TestCase
       trap(signal, original_handler)
     end
   end
+
+  if Fiber.respond_to?(:current_scheduler)
+    # Stubs Fiber.current_scheduler for the duration of the block, then restores it.
+    def with_mock_scheduler(mock)
+      original = Fiber.method(:current_scheduler)
+      Fiber.define_singleton_method(:current_scheduler) { mock }
+      begin
+        yield
+      ensure
+        Fiber.define_singleton_method(:current_scheduler, original)
+      end
+    end
+
+    def test_fiber_scheduler_delegates_to_timeout_after
+      received = nil
+      mock = Object.new
+      mock.define_singleton_method(:timeout_after) do |sec, exc, msg, &blk|
+        received = [sec, exc, msg]
+        blk.call(sec)
+      end
+
+      with_mock_scheduler(mock) do
+        assert_equal :ok, Timeout.timeout(5) { :ok }
+      end
+
+      assert_equal 5, received[0]
+      assert_instance_of Timeout::ExitException, received[1], "scheduler should receive an ExitException instance when no klass given"
+      assert_equal "execution expired", received[2]
+    end
+
+    def test_fiber_scheduler_delegates_to_timeout_after_with_custom_exception
+      custom_error = Class.new(StandardError)
+      received = nil
+      mock = Object.new
+      mock.define_singleton_method(:timeout_after) do |sec, exc, msg, &blk|
+        received = [sec, exc, msg]
+        blk.call(sec)
+      end
+
+      with_mock_scheduler(mock) do
+        assert_equal :ok, Timeout.timeout(5, custom_error, "custom message") { :ok }
+      end
+
+      assert_equal [5, custom_error, "custom message"], received
+    end
+
+    def test_fiber_scheduler_timeout_raises_timeout_error
+      mock = Object.new
+      mock.define_singleton_method(:timeout_after) do |sec, exc, msg, &blk|
+        raise exc  # simulate timeout firing
+      end
+
+      with_mock_scheduler(mock) do
+        assert_raise(Timeout::Error) do
+          Timeout.timeout(5) { :should_not_reach }
+        end
+      end
+    end
+
+    def test_fiber_scheduler_timeout_raises_custom_error
+      custom_error = Class.new(StandardError)
+      mock = Object.new
+      mock.define_singleton_method(:timeout_after) do |sec, exc, msg, &blk|
+        raise exc, msg
+      end
+
+      with_mock_scheduler(mock) do
+        assert_raise_with_message(custom_error, "custom message") do
+          Timeout.timeout(5, custom_error, "custom message") { :should_not_reach }
+        end
+      end
+    end
+  end
 end
