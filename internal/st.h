@@ -11,6 +11,9 @@ st_table *rb_st_init_existing_table_with_size(st_table *tab, const struct st_has
 st_table *rb_st_init_existing_numtable_with_size(st_table *tab, st_index_t size);
 #define st_init_existing_numtable_with_size rb_st_init_existing_numtable_with_size
 
+st_table *rb_st_init_existing_strtable_with_size(st_table *tab, st_index_t size);
+#define st_init_existing_strtable_with_size rb_st_init_existing_strtable_with_size
+
 void rb_st_free_embedded_table(st_table *tab);
 #define st_free_embedded_table rb_st_free_embedded_table
 

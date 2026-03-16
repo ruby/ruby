@@ -651,6 +651,13 @@ st_init_strtable_with_size(st_index_t size)
     return st_init_table_with_size(&type_strhash, size);
 }
 
+st_table *
+st_init_existing_strtable_with_size(st_table *tab, st_index_t size)
+{
+    return st_init_existing_table_with_size(tab, &type_strhash, size);
+}
+
+
 /* Create and return table which can hold a minimal number of strings
    whose character case is ignored.  */
 st_table *
