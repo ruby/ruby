@@ -3143,7 +3143,7 @@ static void
 warn_unused_block(const rb_callable_method_entry_t *cme, const rb_iseq_t *iseq, void *pc)
 {
     rb_vm_t *vm = GET_VM();
-    set_table *dup_check_table = vm->unused_block_warning_table;
+    set_table *dup_check_table = &vm->unused_block_warning_table;
     st_data_t key;
     bool strict_unused_block = rb_warning_category_enabled_p(RB_WARN_CATEGORY_STRICT_UNUSED_BLOCK);
 
