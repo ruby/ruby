@@ -1216,4 +1216,24 @@ class TestGemSafeYAML < Gem::TestCase
     result = yaml_load(yaml)
     assert_equal ["SHA1"], result
   end
+
+  def test_version_requirement_tag_always_permitted
+    yaml = <<~YAML
+      --- !ruby/object:Gem::Specification
+      name: escape
+      version: !ruby/object:Gem::Version
+        version: 0.0.4
+      required_ruby_version: !ruby/object:Gem::Version::Requirement
+        requirements:
+        - - ">"
+          - !ruby/object:Gem::Version
+            version: 0.0.0
+        version:
+    YAML
+
+    result = yaml_load(yaml)
+    assert_kind_of Gem::Specification, result
+    assert_equal "escape", result.name
+    assert_kind_of Gem::Requirement, result.required_ruby_version
+  end
 end
