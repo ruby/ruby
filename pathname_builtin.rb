@@ -400,15 +400,105 @@ class Pathname
   end
   private :prepend_prefix
 
-  # Returns clean pathname of +self+ with consecutive slashes and useless dots
-  # removed.  The filesystem is not accessed.
+  # call-seq:
+  #   cleanpath(symlinks = false) -> new_pathname
   #
-  # If +consider_symlink+ is +true+, then a more conservative algorithm is used
-  # to avoid breaking symbolic linkages.  This may retain more +..+
-  # entries than absolutely necessary, but without accessing the filesystem,
-  # this can't be avoided.
+  # Returns a new \Pathname object, "cleaned" of unnecessary separators,
+  # single-dot entries, and double-dot entries.
   #
-  # See Pathname#realpath.
+  # When +self+ is empty, returns pathname with a single-dot entry:
+  #
+  #   Pathname.new('').cleanpath # => #<Pathname:.>
+  #
+  # <b>Separators</b>
+  #
+  # A lone separator is preserved:
+  #
+  #   Pathname.new('/').cleanpath # => #<Pathname:/>
+  #
+  # Non-lone trailing separators are removed:
+  #
+  #   Pathname.new('foo/////').cleanpath # => #<Pathname:foo>
+  #   Pathname.new('foo/').cleanpath     # => #<Pathname:foo>
+  #
+  # Multiple embedded separators are reduced to a single separator:
+  #
+  #   Pathname.new('foo///bar').cleanpath # => #<Pathname:foo/bar>
+  #
+  # Multiple leading separators are reduced:
+  #
+  #   # On Windows, where File.dirname('//') == '//'.
+  #   Pathname.new('/////foo').cleanpath # => #<Pathname://foo>
+  #   Pathname.new('/////').cleanpath    # => #<Pathname://>
+  #   # Otherwise, where File.dirname('//') == '/'.
+  #   Pathname.new('/////foo').cleanpath # => #<Pathname:/foo>
+  #   Pathname.new('/////').cleanpath    # => #<Pathname:/>
+  #
+  # <b>Single-Dot Entries</b>
+  #
+  # A lone single-dot entry is preserved:
+  #
+  #   Pathname.new('.').cleanpath  # => #<Pathname:.>
+  #
+  # A non-lone single-dot entry, regardless of its location, is removed:
+  #
+  #   Pathname.new('foo/././././bar').cleanpath  # => #<Pathname:foo/bar>
+  #   Pathname.new('./foo/./././bar').cleanpath  # => #<Pathname:foo/bar>
+  #   Pathname.new('foo/./././bar/./').cleanpath # => #<Pathname:foo/bar>
+  #
+  # <b>Double-Dot Entries</b>
+  #
+  # A lone double-dot entry is preserved:
+  #
+  #   Pathname.new('..').cleanpath # => #<Pathname:..>
+  #
+  # When a non-lone double-dot entry is preceded by a named entry, both are removed:
+  #
+  #   Pathname.new('foo/..').cleanpath          # => #<Pathname:.>
+  #   Pathname.new('foo/../bar').cleanpath      # => #<Pathname:bar>
+  #   Pathname.new('foo/../bar/..').cleanpath   # => #<Pathname:.>
+  #   Pathname.new('foo/bar/./../..').cleanpath # => #<Pathname:.>
+  #
+  # When a non-lone double-dot entry is _not_ preceded by a named entry,
+  # it is preserved:
+  #
+  #   Pathname.new('../..').cleanpath # => #<Pathname:../..>
+  #
+  # A non-lone meaningless double-dot entry is removed:
+  #
+  #   Pathname.new('/..').cleanpath    # => #<Pathname:/>
+  #   Pathname.new('/../..').cleanpath # => #<Pathname:/>
+  #
+  # <b> Symbolic Links</b>
+  #
+  # If the path may contain {symbolic links}[https://en.wikipedia.org/wiki/Symbolic_link],
+  # consider give optional argument `symlinks` as `true`;
+  # the method then uses a more conservative algorithm
+  # that avoids breaking symbolic links.
+  # This may preserve more double-dot entries than are absolutely necessary,
+  # but without accessing the filesystem, this can't be avoided.
+  #
+  # Examples:
+  #
+  #   Pathname.new('a/').cleanpath           # => #<Pathname:a>
+  #   Pathname.new('a/').cleanpath(true)     # => #<Pathname:a/>
+  #
+  #   Pathname.new('a/.').cleanpath          # => #<Pathname:a>
+  #   Pathname.new('a/.').cleanpath(true)    # => #<Pathname:a/.>
+  #
+  #   Pathname.new('a/./').cleanpath         # => #<Pathname:a>
+  #   Pathname.new('a/./').cleanpath(true)   # => #<Pathname:a/.>
+  #
+  #   Pathname.new('a/b/.').cleanpath        # => #<Pathname:a/b>
+  #   Pathname.new('a/b/.').cleanpath(true)  # => #<Pathname:a/b/.>
+  #
+  #   Pathname.new('a/../.').cleanpath       # => #<Pathname:.>
+  #   Pathname.new('a/../.').cleanpath(true) # => #<Pathname:a/..>
+  #
+  #   Pathname.new('a/b/../../../../c/../d').cleanpath
+  #   # => #<Pathname:../../d>
+  #   Pathname.new('a/b/../../../../c/../d').cleanpath(true)
+  #   # => #<Pathname:a/b/../../../../c/../d>
   #
   def cleanpath(consider_symlink=false)
     if consider_symlink
