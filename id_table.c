@@ -38,13 +38,6 @@ typedef struct rb_id_item {
     VALUE    val;
 } item_t;
 
-struct rb_id_table {
-    int capa;
-    int num;
-    int used;
-    item_t *items;
-};
-
 #if SIZEOF_VALUE == 8
 #define ITEM_GET_KEY(tbl, i) ((tbl)->items[i].key)
 #define ITEM_KEY_ISSET(tbl, i) ((tbl)->items && (tbl)->items[i].key)
