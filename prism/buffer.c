@@ -1,8 +1,9 @@
 #include "prism/internal/buffer.h"
+#include "prism/allocator.h"
+#include "prism/util/pm_char.h"
 
-#include <assert.h>
-#include <stdbool.h>
-#include <stdint.h>
+#include <stdarg.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
