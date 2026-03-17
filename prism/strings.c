@@ -1,4 +1,22 @@
-#include "prism/strings.h"
+#include "prism/internal/strings.h"
+
+#include "prism/allocator.h"
+
+#include <assert.h>
+#include <stdlib.h>
+#include <string.h>
+
+/* The following headers are necessary to read files using demand paging. */
+#ifdef _WIN32
+#include <windows.h>
+#elif defined(_POSIX_MAPPED_FILES)
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#elif defined(PRISM_HAS_FILESYSTEM)
+#include <fcntl.h>
+#include <sys/stat.h>
+#endif
 
 static const uint8_t empty_source[] = "";
 

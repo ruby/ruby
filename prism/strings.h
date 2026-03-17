@@ -6,26 +6,11 @@
 #ifndef PRISM_STRINGS_H
 #define PRISM_STRINGS_H
 
-#include "prism/defines.h"
+#include "prism/attribute/exported.h"
+#include "prism/files.h"
 
-#include <assert.h>
-#include <errno.h>
-#include <stdbool.h>
 #include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-
-// The following headers are necessary to read files using demand paging.
-#ifdef _WIN32
-#include <windows.h>
-#elif defined(_POSIX_MAPPED_FILES)
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#elif defined(PRISM_HAS_FILESYSTEM)
-#include <fcntl.h>
-#include <sys/stat.h>
-#endif
+#include <stdint.h>
 
 /**
  * A generic string type that can have various ownership semantics.
@@ -64,30 +49,6 @@ typedef struct {
 PRISM_EXPORTED_FUNCTION size_t pm_string_sizeof(void);
 
 /**
- * Defines an empty string. This is useful for initializing a string that will
- * be filled in later.
- */
-#define PM_STRING_EMPTY ((pm_string_t) { .type = PM_STRING_CONSTANT, .source = NULL, .length = 0 })
-
-/**
- * Initialize a shared string that is based on initial input.
- *
- * @param string The string to initialize.
- * @param start The start of the string.
- * @param end The end of the string.
- */
-void pm_string_shared_init(pm_string_t *string, const uint8_t *start, const uint8_t *end);
-
-/**
- * Initialize an owned string that is responsible for freeing allocated memory.
- *
- * @param string The string to initialize.
- * @param source The source of the string.
- * @param length The length of the string.
- */
-void pm_string_owned_init(pm_string_t *string, uint8_t *source, size_t length);
-
-/**
  * Initialize a constant string that doesn't own its memory source.
  *
  * @param string The string to initialize.
@@ -105,11 +66,13 @@ PRISM_EXPORTED_FUNCTION void pm_string_constant_init(pm_string_t *string, const 
 typedef enum {
     /** Indicates that the string was successfully initialized. */
     PM_STRING_INIT_SUCCESS = 0,
+
     /**
      * Indicates a generic error from a string_*_init function, where the type
      * of error should be read from `errno` or `GetLastError()`.
      */
     PM_STRING_INIT_ERROR_GENERIC = 1,
+
     /**
      * Indicates that the file that was attempted to be opened was a directory.
      */
@@ -147,26 +110,6 @@ PRISM_EXPORTED_FUNCTION pm_string_init_result_t pm_string_mapped_init(pm_string_
  * \public \memberof pm_string_t
  */
 PRISM_EXPORTED_FUNCTION pm_string_init_result_t pm_string_file_init(pm_string_t *string, const char *filepath);
-
-/**
- * Ensure the string is owned. If it is not, then reinitialize it as owned and
- * copy over the previous source.
- *
- * @param string The string to ensure is owned.
- */
-void pm_string_ensure_owned(pm_string_t *string);
-
-/**
- * Compare the underlying lengths and bytes of two strings. Returns 0 if the
- * strings are equal, a negative number if the left string is less than the
- * right string, and a positive number if the left string is greater than the
- * right string.
- *
- * @param left The left string to compare.
- * @param right The right string to compare.
- * @return The comparison result.
- */
-int pm_string_compare(const pm_string_t *left, const pm_string_t *right);
 
 /**
  * Returns the length associated with the string.

@@ -3,6 +3,7 @@
 #include "prism/internal/buffer.h"
 #include "prism/internal/char.h"
 #include "prism/internal/diagnostic.h"
+#include "prism/internal/strings.h"
 #include "prism/internal/strncasecmp.h"
 
 /** The maximum depth of nested groups allowed in a regular expression. */

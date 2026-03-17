@@ -16,10 +16,11 @@
 #include "prism/attribute/format.h"
 #include "prism/attribute/unused.h"
 
-#include "prism/allocator.h"
 #include "prism/internal/accel.h"
 #include "prism/internal/bit.h"
-#include "prism/internal/files.h"
+
+#include "prism/allocator.h"
+#include "prism/files.h"
 
 #include <ctype.h>
 #include <limits.h>
