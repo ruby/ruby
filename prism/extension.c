@@ -288,14 +288,14 @@ extract_options(pm_options_t *options, VALUE filepath, VALUE keywords) {
         rb_protect(build_options, (VALUE) argument, &state);
 
         if (state != 0) {
-            pm_options_free(options);
+            pm_options_cleanup(options);
             rb_jump_tag(state);
         }
     }
 
     if (!NIL_P(filepath)) {
         if (!RB_TYPE_P(filepath, T_STRING)) {
-            pm_options_free(options);
+            pm_options_cleanup(options);
             rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected String)", rb_obj_class(filepath));
         }
 
@@ -336,7 +336,7 @@ file_options(int argc, VALUE *argv, pm_string_t *input, pm_options_t *options, V
         case PM_STRING_INIT_SUCCESS:
             break;
         case PM_STRING_INIT_ERROR_GENERIC: {
-            pm_options_free(options);
+            pm_options_cleanup(options);
 
 #ifdef _WIN32
             int e = rb_w32_map_errno(GetLastError());
@@ -348,11 +348,11 @@ file_options(int argc, VALUE *argv, pm_string_t *input, pm_options_t *options, V
             break;
         }
         case PM_STRING_INIT_ERROR_DIRECTORY:
-            pm_options_free(options);
+            pm_options_cleanup(options);
             rb_syserr_fail(EISDIR, source);
             break;
         default:
-            pm_options_free(options);
+            pm_options_cleanup(options);
             rb_raise(rb_eRuntimeError, "Unknown error (%d) initializing file: %s", result, source);
             break;
     }
@@ -418,7 +418,7 @@ dump(int argc, VALUE *argv, VALUE self) {
 #endif
 
     pm_string_cleanup(&input);
-    pm_options_free(&options);
+    pm_options_cleanup(&options);
 
     return value;
 }
@@ -441,7 +441,7 @@ dump_file(int argc, VALUE *argv, VALUE self) {
 
     VALUE value = dump_input(&input, &options);
     pm_string_cleanup(&input);
-    pm_options_free(&options);
+    pm_options_cleanup(&options);
 
     return value;
 }
@@ -814,7 +814,7 @@ lex(int argc, VALUE *argv, VALUE self) {
 
     VALUE result = parse_lex_input(&input, &options, false);
     pm_string_cleanup(&input);
-    pm_options_free(&options);
+    pm_options_cleanup(&options);
 
     return result;
 }
@@ -837,7 +837,7 @@ lex_file(int argc, VALUE *argv, VALUE self) {
 
     VALUE value = parse_lex_input(&input, &options, false);
     pm_string_cleanup(&input);
-    pm_options_free(&options);
+    pm_options_cleanup(&options);
 
     return value;
 }
@@ -937,7 +937,7 @@ parse(int argc, VALUE *argv, VALUE self) {
 #endif
 
     pm_string_cleanup(&input);
-    pm_options_free(&options);
+    pm_options_cleanup(&options);
     return value;
 }
 
@@ -959,7 +959,7 @@ parse_file(int argc, VALUE *argv, VALUE self) {
 
     VALUE value = parse_input(&input, &options);
     pm_string_cleanup(&input);
-    pm_options_free(&options);
+    pm_options_cleanup(&options);
 
     return value;
 }
@@ -995,7 +995,7 @@ profile(int argc, VALUE *argv, VALUE self) {
     string_options(argc, argv, &input, &options);
     profile_input(&input, &options);
     pm_string_cleanup(&input);
-    pm_options_free(&options);
+    pm_options_cleanup(&options);
 
     return Qnil;
 }
@@ -1019,7 +1019,7 @@ profile_file(int argc, VALUE *argv, VALUE self) {
 
     profile_input(&input, &options);
     pm_string_cleanup(&input);
-    pm_options_free(&options);
+    pm_options_cleanup(&options);
 
     return Qnil;
 }
@@ -1125,7 +1125,7 @@ parse_comments(int argc, VALUE *argv, VALUE self) {
 
     VALUE result = parse_input_comments(&input, &options);
     pm_string_cleanup(&input);
-    pm_options_free(&options);
+    pm_options_cleanup(&options);
 
     return result;
 }
@@ -1148,7 +1148,7 @@ parse_file_comments(int argc, VALUE *argv, VALUE self) {
 
     VALUE value = parse_input_comments(&input, &options);
     pm_string_cleanup(&input);
-    pm_options_free(&options);
+    pm_options_cleanup(&options);
 
     return value;
 }
@@ -1176,7 +1176,7 @@ parse_lex(int argc, VALUE *argv, VALUE self) {
 
     VALUE value = parse_lex_input(&input, &options, true);
     pm_string_cleanup(&input);
-    pm_options_free(&options);
+    pm_options_cleanup(&options);
 
     return value;
 }
@@ -1206,7 +1206,7 @@ parse_lex_file(int argc, VALUE *argv, VALUE self) {
 
     VALUE value = parse_lex_input(&input, &options, true);
     pm_string_cleanup(&input);
-    pm_options_free(&options);
+    pm_options_cleanup(&options);
 
     return value;
 }
@@ -1245,7 +1245,7 @@ parse_success_p(int argc, VALUE *argv, VALUE self) {
 
     VALUE result = parse_input_success_p(&input, &options);
     pm_string_cleanup(&input);
-    pm_options_free(&options);
+    pm_options_cleanup(&options);
 
     return result;
 }
@@ -1281,7 +1281,7 @@ parse_file_success_p(int argc, VALUE *argv, VALUE self) {
 
     VALUE result = parse_input_success_p(&input, &options);
     pm_string_cleanup(&input);
-    pm_options_free(&options);
+    pm_options_cleanup(&options);
 
     return result;
 }
