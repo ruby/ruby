@@ -9595,8 +9595,8 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
             25000,  /* heap 0 (40B): ~15 pages */
             4000,   /* heap 1 (80B): ~5 pages */
             1500,   /* heap 2 (160B): ~4 pages */
-            300,    /* heap 3 (320B): ~2 pages */
-            100,    /* heap 4 (640B): ~1 page */
+            2000,   /* heap 3 (320B): ~10 pages */
+            700,    /* heap 4 (640B): ~7 pages */
         };
         for (int i = 0; i < HEAP_COUNT; i++) {
             gc_params.heap_init_slots[i] = default_init_slots[i];
