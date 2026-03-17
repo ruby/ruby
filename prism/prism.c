@@ -7562,7 +7562,7 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
     cursor = start;
     while (cursor < end) {
         if (indicator) {
-            cursor += pm_strspn_whitespace(cursor, end - cursor);
+            while (cursor < end && (pm_char_is_magic_comment_key_delimiter(*cursor) || pm_char_is_whitespace(*cursor))) cursor++;
         }
 
         const uint8_t *key_start = cursor;
