@@ -236,7 +236,7 @@ class Pathname
   #   pn == Pathname.new('./lib') # => false
   #
   # Returns +false+ if +other+ is not a pathname:
-  # 
+  #
   #   pn == 'lib'                 # => false
   #
   def ==(other)
