@@ -25,6 +25,7 @@ module Spec
       FileUtils.mkdir_p(home)
       FileUtils.mkdir_p(tmpdir)
       Bundler.reset!
+      Bundler::Source::Git::GitProxy.reset
       Gem.clear_paths
     end
 
