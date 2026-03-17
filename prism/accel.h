@@ -1,5 +1,5 @@
 /**
- * @file internal/accel.h
+ * @file accel.h
  *
  * Platform detection for acceleration implementations.
  */
