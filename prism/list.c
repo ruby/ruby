@@ -1,4 +1,4 @@
-#include "prism/list.h"
+#include "prism/internal/list.h"
 
 /**
  * Returns the size of the list.
