@@ -193,8 +193,9 @@ module Gem
     begin
       spec.activate
     rescue Gem::LoadError => e # this could fail due to gem dep collisions, go lax
+      name = spec.name
       spec = Gem::Specification.find_unloaded_by_path(path)
-      spec ||= Gem::Specification.find_by_name(spec.name)
+      spec ||= Gem::Specification.find_by_name(name)
       if spec.nil?
         raise e
       else
