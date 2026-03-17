@@ -7,7 +7,7 @@
 #define PRISM_OPTIONS_H
 
 #include "prism/defines.h"
-#include "prism/util/pm_string.h"
+#include "prism/strings.h"
 
 #include <stdbool.h>
 #include <stddef.h>

@@ -14,8 +14,8 @@
 #include "prism/line_offset_list.h"
 #include "prism/options.h"
 #include "prism/static_literals.h"
+#include "prism/strings.h"
 #include "prism/util/pm_list.h"
-#include "prism/util/pm_string.h"
 
 #include <stdbool.h>
 

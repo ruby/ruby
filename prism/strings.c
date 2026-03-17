@@ -1,4 +1,4 @@
-#include "prism/util/pm_string.h"
+#include "prism/strings.h"
 
 static const uint8_t empty_source[] = "";
 
