@@ -1308,7 +1308,7 @@ fn gen_write_barrier(jit: &mut JITState, asm: &mut Assembler, recv: Opnd, val: O
         asm.je(jit, result_edge.clone());
 
         // Heap object; fire the write barrier
-        asm_ccall!(asm, rb_zjit_writebarrier_check_immediate, recv, val);
+        asm_ccall!(asm, rb_gc_writebarrier, recv, val);
         asm.jmp(result_edge);
 
         // Join block
