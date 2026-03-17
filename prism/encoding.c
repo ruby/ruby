@@ -1,4 +1,9 @@
-#include "prism/encoding.h"
+#include "prism/internal/encoding.h"
+
+#include "prism/attribute/unused.h"
+#include "prism/internal/strncasecmp.h"
+
+#include <assert.h>
 
 typedef uint32_t pm_unicode_codepoint_t;
 

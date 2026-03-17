@@ -6,7 +6,7 @@
 #ifndef PRISM_INTERNAL_MEMCHR_H
 #define PRISM_INTERNAL_MEMCHR_H
 
-#include "prism/encoding.h"
+#include "prism/internal/encoding.h"
 
 #include <stddef.h>
 
