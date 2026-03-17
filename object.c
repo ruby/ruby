@@ -4710,6 +4710,8 @@ InitVM_Object(void)
     rb_define_method(rb_cModule, "const_set", rb_mod_const_set, 2);
     rb_define_method(rb_cModule, "const_defined?", rb_mod_const_defined, -1);
     rb_define_method(rb_cModule, "const_source_location", rb_mod_const_source_location, -1);
+    rb_define_private_method(rb_cModule, "undef_const",
+                             rb_mod_undef_const, 1); /* in variable.c */
     rb_define_private_method(rb_cModule, "remove_const",
                              rb_mod_remove_const, 1); /* in variable.c */
     rb_define_method(rb_cModule, "const_missing",
