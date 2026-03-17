@@ -11762,7 +11762,7 @@ insn_data_to_s_detail(INSN *iobj)
                 {
                     const struct rb_callinfo *ci = (struct rb_callinfo *)OPERAND_AT(iobj, j);
                     rb_str_cat2(str, "<calldata:");
-                    if (vm_ci_mid(ci)) rb_str_catf(str, "%"PRIsVALUE, rb_id2str(vm_ci_mid(ci)));
+                    if (vm_ci_mid(ci)) rb_str_append(str, rb_id2str(vm_ci_mid(ci)));
                     rb_str_catf(str, ", %d>", vm_ci_argc(ci));
                     break;
                 }

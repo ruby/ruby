@@ -3319,6 +3319,18 @@ rb_method_parameters(VALUE method)
     return method_def_parameters(rb_method_def(method));
 }
 
+static inline VALUE
+append_param_name(VALUE str, VALUE name, const char *unnamed)
+{
+    if (!NIL_P(name)) {
+        rb_str_append(str, rb_sym2str(name));
+    }
+    else if (unnamed) {
+        rb_str_cat_cstr(str, unnamed);
+    }
+    return str;
+}
+
 /*
  *  call-seq:
  *   meth.to_s      ->  string
@@ -3467,50 +3479,30 @@ method_inspect(VALUE method)
                 name = RARRAY_AREF(pair, 1);
             }
             else {
-                // FIXME: can it be reduced to switch/case?
-                if (kind == req || kind == opt) {
-                    name = rb_str_new2("_");
-                }
-                else if (kind == rest || kind == keyrest) {
-                    name = rb_str_new2("");
-                }
-                else if (kind == block) {
-                    name = rb_str_new2("block");
-                }
-                else if (kind == nokey) {
-                    name = rb_str_new2("nil");
-                }
-                else if (kind == noblock) {
-                    name = rb_str_new2("nil");
-                }
-                else {
-                    name = Qnil;
-                }
+                name = Qnil;
             }
 
             if (kind == req) {
-                rb_str_catf(str, "%"PRIsVALUE, name);
+                append_param_name(str, name, "_");
             }
             else if (kind == opt) {
-                rb_str_catf(str, "%"PRIsVALUE"=...", name);
+                rb_str_cat_cstr(append_param_name(str, name, "_"), "=...");
             }
             else if (kind == keyreq) {
-                rb_str_catf(str, "%"PRIsVALUE":", name);
+                rb_str_cat_cstr(append_param_name(str, name, NULL), ":");
             }
             else if (kind == key) {
-                rb_str_catf(str, "%"PRIsVALUE": ...", name);
+                rb_str_cat_cstr(append_param_name(str, name, NULL), ": ...");
             }
             else if (kind == rest) {
-                if (name == ID2SYM('*')) {
-                    rb_str_cat_cstr(str, forwarding ? "..." : "*");
-                }
-                else {
-                    rb_str_catf(str, "*%"PRIsVALUE, name);
+                rb_str_cat_cstr(str, forwarding ? "..." : "*");
+                if (name != ID2SYM('*')) {
+                    append_param_name(str, name, NULL);
                 }
             }
             else if (kind == keyrest) {
                 if (name != ID2SYM(idPow)) {
-                    rb_str_catf(str, "**%"PRIsVALUE, name);
+                    append_param_name(rb_str_cat_cstr(str, "**"), name, NULL);
                 }
                 else if (i > 0) {
                     rb_str_set_len(str, RSTRING_LEN(str) - 2);
@@ -3529,7 +3521,7 @@ method_inspect(VALUE method)
                     }
                 }
                 else {
-                    rb_str_catf(str, "&%"PRIsVALUE, name);
+                    append_param_name(rb_str_cat_cstr(str, "&"), name, NULL);
                 }
             }
             else if (kind == nokey) {
