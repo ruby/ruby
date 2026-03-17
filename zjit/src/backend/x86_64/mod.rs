@@ -382,13 +382,14 @@ impl Assembler {
         fn split_stack_membase(asm: &mut Assembler, opnd: Opnd, scratch_opnd: Opnd, stack_state: &StackState) -> Opnd {
             match opnd {
                 Opnd::Mem(Mem { base: stack_membase @ MemBase::Stack { .. }, disp: opnd_disp, num_bits: opnd_num_bits }) => {
-                    let base = Opnd::Mem(stack_state.stack_membase_to_mem(stack_membase));
-                    let base = split_large_disp(asm, base, scratch_opnd);
-                    asm.load_into(scratch_opnd, base);
-                    Opnd::Mem(Mem { base: MemBase::Reg(scratch_opnd.unwrap_reg().reg_no), disp: opnd_disp, num_bits: opnd_num_bits })
+                    // Convert MemBase::Stack to MemBase::Reg(NATIVE_BASE_PTR) with the
+                    // correct stack displacement. The stack slot value lives directly at
+                    // [NATIVE_BASE_PTR + stack_disp], so we just adjust the base and
+                    // combine displacements — no indirection needed.
+                    let Mem { base, disp: stack_disp, .. } = stack_state.stack_membase_to_mem(stack_membase);
+                    Opnd::Mem(Mem { base, disp: stack_disp + opnd_disp, num_bits: opnd_num_bits })
                 }
                 Opnd::Mem(Mem { base: MemBase::StackIndirect { stack_idx }, disp: opnd_disp, num_bits: opnd_num_bits }) => {
-                    unimplemented!("Mem[StackIndirect]");
                     // The spilled value (a pointer) lives at a stack slot. Load it
                     // into a scratch register, then use the register as the base.
                     let stack_mem = stack_state.stack_membase_to_mem(MemBase::Stack { stack_idx, num_bits: 64 });
@@ -472,10 +473,12 @@ impl Assembler {
                     *left = split_if_both_memory(asm, *left, *right, SCRATCH0_OPND);
                     *right = split_stack_membase(asm, *right, SCRATCH1_OPND, &stack_state);
                     *right = split_64bit_immediate(asm, *right, SCRATCH1_OPND);
-                    *out = split_stack_membase(asm, *out, SCRATCH1_OPND, &stack_state);
 
                     let (out, left) = (*out, *left);
                     asm.push_insn(insn);
+                    // We can only use SCRATCH1_OPND because we're after the instruction but
+                    // SCRATCH0_OPND is used inside `left`.
+                    let out = split_stack_membase(asm, out, SCRATCH1_OPND, &stack_state);
                     asm_mov(asm, out, left, SCRATCH0_OPND);
                 }
                 Insn::Mul { left, right, out } => {
@@ -491,6 +494,8 @@ impl Assembler {
 
                     let (out, left) = (*out, *left);
                     asm.push_insn(insn);
+                    // TODO(max): split_stack_membase of `out`, taking care to swap which scratch
+                    // operand we use depending on if we swapped the `left`/`right`
                     asm_mov(asm, out, left, SCRATCH0_OPND);
                 }
                 &mut Insn::Not { opnd, out } |
