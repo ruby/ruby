@@ -22773,7 +22773,7 @@ pm_parse_success_p(const uint8_t *source, size_t size, const char *data) {
     bool result = parser.error_list.size == 0;
     pm_parser_cleanup(&parser);
     pm_arena_free(&arena);
-    pm_options_free(&options);
+    pm_options_cleanup(&options);
 
     return result;
 }
@@ -22828,7 +22828,7 @@ pm_serialize_parse(pm_buffer_t *buffer, const uint8_t *source, size_t size, cons
 
     pm_parser_cleanup(&parser);
     pm_arena_free(&arena);
-    pm_options_free(&options);
+    pm_options_cleanup(&options);
 }
 
 /**
@@ -22851,7 +22851,7 @@ pm_serialize_parse_stream(pm_buffer_t *buffer, void *stream, pm_parse_stream_fge
     pm_buffer_free(parser_buffer);
     pm_parser_cleanup(&parser);
     pm_arena_free(&arena);
-    pm_options_free(&options);
+    pm_options_cleanup(&options);
 }
 
 /**
@@ -22874,7 +22874,7 @@ pm_serialize_parse_comments(pm_buffer_t *buffer, const uint8_t *source, size_t s
 
     pm_parser_cleanup(&parser);
     pm_arena_free(&arena);
-    pm_options_free(&options);
+    pm_options_cleanup(&options);
 }
 
 #endif

@@ -223,7 +223,7 @@ pm_options_scope_forwarding_set(pm_options_scope_t *scope, uint8_t forwarding) {
  * Free the internal memory associated with the options.
  */
 void
-pm_options_free(pm_options_t *options) {
+pm_options_cleanup(pm_options_t *options) {
     pm_string_cleanup(&options->filepath);
     pm_string_cleanup(&options->encoding);
 
@@ -323,7 +323,7 @@ pm_options_read(pm_options_t *options, const char *data) {
 
             pm_options_scope_t *scope = &options->scopes[scope_index];
             if (!pm_options_scope_init(scope, locals_count)) {
-                pm_options_free(options);
+                pm_options_cleanup(options);
                 return;
             }
 

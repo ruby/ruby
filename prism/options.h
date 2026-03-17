@@ -414,6 +414,6 @@ PRISM_EXPORTED_FUNCTION void pm_options_scope_forwarding_set(pm_options_scope_t 
  *
  * \public \memberof pm_options
  */
-PRISM_EXPORTED_FUNCTION void pm_options_free(pm_options_t *options);
+PRISM_EXPORTED_FUNCTION void pm_options_cleanup(pm_options_t *options);
 
 #endif
