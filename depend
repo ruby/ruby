@@ -11654,6 +11654,7 @@ prism/node.$(OBJEXT): {$(VPATH)}prism_xallocator.h
 prism/options.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/options.$(OBJEXT): $(top_srcdir)/prism/options.c
 prism/options.$(OBJEXT): $(top_srcdir)/prism/options.h
+prism/options.$(OBJEXT): $(top_srcdir)/prism/util/pm_arena.h
 prism/options.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 prism/options.$(OBJEXT): $(top_srcdir)/prism/util/pm_line_offset_list.h
 prism/options.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
@@ -11965,6 +11966,7 @@ prism/util/pm_arena.$(OBJEXT): {$(VPATH)}internal/has/warning.h
 prism/util/pm_arena.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 prism/util/pm_arena.$(OBJEXT): {$(VPATH)}prism_xallocator.h
 prism/util/pm_buffer.$(OBJEXT): $(top_srcdir)/prism/defines.h
+prism/util/pm_buffer.$(OBJEXT): $(top_srcdir)/prism/util/pm_arena.h
 prism/util/pm_buffer.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.c
 prism/util/pm_buffer.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 prism/util/pm_buffer.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
@@ -11994,6 +11996,7 @@ prism/util/pm_buffer.$(OBJEXT): {$(VPATH)}internal/has/warning.h
 prism/util/pm_buffer.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 prism/util/pm_buffer.$(OBJEXT): {$(VPATH)}prism_xallocator.h
 prism/util/pm_char.$(OBJEXT): $(top_srcdir)/prism/defines.h
+prism/util/pm_char.$(OBJEXT): $(top_srcdir)/prism/util/pm_arena.h
 prism/util/pm_char.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.c
 prism/util/pm_char.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 prism/util/pm_char.$(OBJEXT): $(top_srcdir)/prism/util/pm_line_offset_list.h
@@ -12050,6 +12053,7 @@ prism/util/pm_constant_pool.$(OBJEXT): {$(VPATH)}internal/has/warning.h
 prism/util/pm_constant_pool.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 prism/util/pm_constant_pool.$(OBJEXT): {$(VPATH)}prism_xallocator.h
 prism/util/pm_integer.$(OBJEXT): $(top_srcdir)/prism/defines.h
+prism/util/pm_integer.$(OBJEXT): $(top_srcdir)/prism/util/pm_arena.h
 prism/util/pm_integer.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
 prism/util/pm_integer.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 prism/util/pm_integer.$(OBJEXT): $(top_srcdir)/prism/util/pm_integer.c
@@ -12080,6 +12084,7 @@ prism/util/pm_integer.$(OBJEXT): {$(VPATH)}internal/has/warning.h
 prism/util/pm_integer.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 prism/util/pm_integer.$(OBJEXT): {$(VPATH)}prism_xallocator.h
 prism/util/pm_line_offset_list.$(OBJEXT): $(top_srcdir)/prism/defines.h
+prism/util/pm_line_offset_list.$(OBJEXT): $(top_srcdir)/prism/util/pm_arena.h
 prism/util/pm_line_offset_list.$(OBJEXT): $(top_srcdir)/prism/util/pm_line_offset_list.c
 prism/util/pm_line_offset_list.$(OBJEXT): $(top_srcdir)/prism/util/pm_line_offset_list.h
 prism/util/pm_line_offset_list.$(OBJEXT): {$(VPATH)}config.h
