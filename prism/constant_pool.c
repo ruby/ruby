@@ -1,4 +1,5 @@
-#include "prism/util/pm_constant_pool.h"
+#include "prism/constant_pool.h"
+
 #include "prism/internal/arena.h"
 
 /**

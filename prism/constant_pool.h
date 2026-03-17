@@ -1,5 +1,5 @@
 /**
- * @file pm_constant_pool.h
+ * @file constant_pool.h
  *
  * A data structure that stores a set of strings.
  *
