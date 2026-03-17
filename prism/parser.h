@@ -107,6 +107,13 @@ typedef struct {
  * that the lexer is now in the PM_LEX_STRING mode, and will return tokens that
  * are found as part of a string.
  */
+/**
+ * The size of the breakpoints and strpbrk cache charset buffers. All
+ * breakpoint arrays and the strpbrk cache charset must share this size so
+ * that memcmp can safely compare the full buffer without overreading.
+ */
+#define PM_STRPBRK_CACHE_SIZE 16
+
 typedef struct pm_lex_mode {
     /** The type of this lex mode. */
     enum {
@@ -169,7 +176,7 @@ typedef struct pm_lex_mode {
              * This is the character set that should be used to delimit the
              * tokens within the list.
              */
-            uint8_t breakpoints[11];
+            uint8_t breakpoints[PM_STRPBRK_CACHE_SIZE];
         } list;
 
         struct {
@@ -191,7 +198,7 @@ typedef struct pm_lex_mode {
              * This is the character set that should be used to delimit the
              * tokens within the regular expression.
              */
-            uint8_t breakpoints[7];
+            uint8_t breakpoints[PM_STRPBRK_CACHE_SIZE];
         } regexp;
 
         struct {
@@ -224,7 +231,7 @@ typedef struct pm_lex_mode {
              * This is the character set that should be used to delimit the
              * tokens within the string.
              */
-            uint8_t breakpoints[7];
+            uint8_t breakpoints[PM_STRPBRK_CACHE_SIZE];
         } string;
 
         struct {
@@ -970,8 +977,8 @@ struct pm_parser {
      * (which is the common case during string/regex/list lexing).
      */
     struct {
-        /** The cached charset (null-terminated, max 11 chars + NUL). */
-        uint8_t charset[12];
+        /** The cached charset (null-terminated, NUL-padded). */
+        uint8_t charset[PM_STRPBRK_CACHE_SIZE];
 
         /** Nibble-based low lookup table for SIMD matching. */
         uint8_t low_lut[16];

@@ -59,8 +59,9 @@ pm_strpbrk_explicit_encoding_set(pm_parser_t *parser, uint32_t start, uint32_t l
  */
 static inline void
 pm_strpbrk_cache_update(pm_parser_t *parser, const uint8_t *charset) {
-    // The cache key is the full 12-byte charset buffer. Since it is always
-    // NUL-padded, a fixed-size comparison covers both content and length.
+    // The cache key is the full charset buffer (PM_STRPBRK_CACHE_SIZE bytes).
+    // Since it is always NUL-padded, a fixed-size comparison covers both
+    // content and length.
     if (memcmp(parser->strpbrk_cache.charset, charset, sizeof(parser->strpbrk_cache.charset)) == 0) return;
 
     memset(parser->strpbrk_cache.low_lut, 0, sizeof(parser->strpbrk_cache.low_lut));
