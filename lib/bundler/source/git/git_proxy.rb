@@ -166,7 +166,7 @@ module Bundler
             if err.include?("couldn't find remote ref") || err.include?("not our ref")
               raise MissingGitRevisionError.new(command_with_no_credentials, path, commit || explicit_ref, credential_filtered_uri)
             else
-              if args.include?("--depth")
+              if shallow?
                 args -= depth_args
                 command = fetch_command(args)
                 command_with_no_credentials = check_allowed(command)
@@ -195,7 +195,7 @@ module Bundler
                err.include?("Remote branch #{branch_option} not found") # git 2.49 or higher
               raise MissingGitRevisionError.new(command_with_no_credentials, nil, explicit_ref, credential_filtered_uri)
             else
-              unless full_clone?
+              if shallow?
                 clone_args -= depth_args
                 command = clone_command(clone_args)
                 command_with_no_credentials = check_allowed(command)
@@ -207,14 +207,14 @@ module Bundler
 
         def clone_needs_unshallow?
           return false unless path.join("shallow").exist?
-          return true if full_clone?
+          return true unless shallow?
 
           @revision && @revision != head_revision
         end
 
         def extra_ref
           return false if not_pinned?
-          return true unless full_clone?
+          return true if shallow?
 
           ref.start_with?("refs/")
         end
@@ -439,7 +439,7 @@ module Bundler
         end
 
         def depth_args
-          return [] if full_clone?
+          return [] unless shallow?
 
           ["--depth", depth.to_s]
         end
@@ -454,8 +454,8 @@ module Bundler
           branch || tag
         end
 
-        def full_clone?
-          depth.nil?
+        def shallow?
+          !depth.nil?
         end
 
         def needs_allow_any_sha1_in_want?
