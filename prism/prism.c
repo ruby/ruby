@@ -149,7 +149,8 @@ lex_mode_push_list(pm_parser_t *parser, bool interpolation, uint8_t delimiter) {
     // These are the places where we need to split up the content of the list.
     // We'll use strpbrk to find the first of these characters.
     uint8_t *breakpoints = lex_mode.as.list.breakpoints;
-    memcpy(breakpoints, "\\ \t\f\r\v\n\0\0\0", sizeof(lex_mode.as.list.breakpoints));
+    memset(breakpoints, 0, PM_STRPBRK_CACHE_SIZE);
+    memcpy(breakpoints, "\\ \t\f\r\v\n", sizeof("\\ \t\f\r\v\n") - 1);
     size_t index = 7;
 
     // Now we'll add the terminator to the list of breakpoints. If the
@@ -201,7 +202,8 @@ lex_mode_push_regexp(pm_parser_t *parser, uint8_t incrementor, uint8_t terminato
     // regular expression. We'll use strpbrk to find the first of these
     // characters.
     uint8_t *breakpoints = lex_mode.as.regexp.breakpoints;
-    memcpy(breakpoints, "\r\n\\#\0\0", sizeof(lex_mode.as.regexp.breakpoints));
+    memset(breakpoints, 0, PM_STRPBRK_CACHE_SIZE);
+    memcpy(breakpoints, "\r\n\\#", sizeof("\r\n\\#") - 1);
     size_t index = 4;
 
     // First we'll add the terminator.
@@ -237,7 +239,8 @@ lex_mode_push_string(pm_parser_t *parser, bool interpolation, bool label_allowed
     // These are the places where we need to split up the content of the
     // string. We'll use strpbrk to find the first of these characters.
     uint8_t *breakpoints = lex_mode.as.string.breakpoints;
-    memcpy(breakpoints, "\r\n\\\0\0\0", sizeof(lex_mode.as.string.breakpoints));
+    memset(breakpoints, 0, PM_STRPBRK_CACHE_SIZE);
+    memcpy(breakpoints, "\r\n\\", sizeof("\r\n\\") - 1);
     size_t index = 3;
 
     // Now add in the terminator. If the terminator is not already a NULL byte,
@@ -12054,7 +12057,7 @@ parser_lex(pm_parser_t *parser) {
             // Otherwise we'll be parsing string content. These are the places
             // where we need to split up the content of the heredoc. We'll use
             // strpbrk to find the first of these characters.
-            uint8_t breakpoints[] = "\r\n\\#";
+            uint8_t breakpoints[PM_STRPBRK_CACHE_SIZE] = "\r\n\\#";
 
             pm_heredoc_quote_t quote = heredoc_lex_mode->quote;
             if (quote == PM_HEREDOC_QUOTE_SINGLE) {
