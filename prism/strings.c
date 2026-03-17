@@ -127,7 +127,7 @@ pm_string_file_handle_close(pm_string_file_handle_t *handle) {
 /**
  * Read the file indicated by the filepath parameter into source and load its
  * contents and size into the given `pm_string_t`. The given `pm_string_t`
- * should be freed using `pm_string_free` when it is no longer used.
+ * should be freed using `pm_string_cleanup` when it is no longer used.
  *
  * We want to use demand paging as much as possible in order to avoid having to
  * read the entire file into memory (which could be detrimental to performance
@@ -223,7 +223,7 @@ pm_string_mapped_init(pm_string_t *string, const char *filepath) {
 /**
  * Read the file indicated by the filepath parameter into source and load its
  * contents and size into the given `pm_string_t`. The given `pm_string_t`
- * should be freed using `pm_string_free` when it is no longer used.
+ * should be freed using `pm_string_cleanup` when it is no longer used.
  */
 pm_string_init_result_t
 pm_string_file_init(pm_string_t *string, const char *filepath) {
@@ -383,7 +383,7 @@ pm_string_source(const pm_string_t *string) {
  * Free the associated memory of the given string.
  */
 void
-pm_string_free(pm_string_t *string) {
+pm_string_cleanup(pm_string_t *string) {
     void *memory = (void *) string->source;
 
     if (string->type == PM_STRING_OWNED) {

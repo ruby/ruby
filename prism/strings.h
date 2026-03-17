@@ -30,11 +30,11 @@ typedef struct {
         /** This is a slice of another string, and should not be freed. */
         PM_STRING_SHARED,
 
-        /** This string owns its memory, and should be freed using `pm_string_free()`. */
+        /** This string owns its memory, and should be freed using `pm_string_cleanup()`. */
         PM_STRING_OWNED,
 
 #ifdef PRISM_HAS_MMAP
-        /** This string is a memory-mapped file, and should be freed using `pm_string_free()`. */
+        /** This string is a memory-mapped file, and should be freed using `pm_string_cleanup()`. */
         PM_STRING_MAPPED
 #endif
     } type;
@@ -82,7 +82,7 @@ typedef enum {
 /**
  * Read the file indicated by the filepath parameter into source and load its
  * contents and size into the given `pm_string_t`. The given `pm_string_t`
- * should be freed using `pm_string_free` when it is no longer used.
+ * should be freed using `pm_string_cleanup` when it is no longer used.
  *
  * We want to use demand paging as much as possible in order to avoid having to
  * read the entire file into memory (which could be detrimental to performance
@@ -101,7 +101,7 @@ PRISM_EXPORTED_FUNCTION pm_string_init_result_t pm_string_mapped_init(pm_string_
 /**
  * Read the file indicated by the filepath parameter into source and load its
  * contents and size into the given `pm_string_t`. The given `pm_string_t`
- * should be freed using `pm_string_free` when it is no longer used.
+ * should be freed using `pm_string_cleanup` when it is no longer used.
  *
  * @param string The string to initialize.
  * @param filepath The filepath to read.
@@ -138,6 +138,6 @@ PRISM_EXPORTED_FUNCTION const uint8_t * pm_string_source(const pm_string_t *stri
  *
  * \public \memberof pm_string_t
  */
-PRISM_EXPORTED_FUNCTION void pm_string_free(pm_string_t *string);
+PRISM_EXPORTED_FUNCTION void pm_string_cleanup(pm_string_t *string);
 
 #endif

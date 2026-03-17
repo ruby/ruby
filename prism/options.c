@@ -224,14 +224,14 @@ pm_options_scope_forwarding_set(pm_options_scope_t *scope, uint8_t forwarding) {
  */
 void
 pm_options_free(pm_options_t *options) {
-    pm_string_free(&options->filepath);
-    pm_string_free(&options->encoding);
+    pm_string_cleanup(&options->filepath);
+    pm_string_cleanup(&options->encoding);
 
     for (size_t scope_index = 0; scope_index < options->scopes_count; scope_index++) {
         pm_options_scope_t *scope = &options->scopes[scope_index];
 
         for (size_t local_index = 0; local_index < scope->locals_count; local_index++) {
-            pm_string_free(&scope->locals[local_index]);
+            pm_string_cleanup(&scope->locals[local_index]);
         }
 
         xfree_sized(scope->locals, scope->locals_count * sizeof(pm_string_t));

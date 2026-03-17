@@ -168,7 +168,7 @@ pm_regexp_parser_named_capture(pm_regexp_parser_t *parser, const uint8_t *start,
     pm_string_t string;
     pm_string_shared_init(&string, start, end);
     parser->name_callback(parser->parser, &string, parser->shared, parser->name_data);
-    pm_string_free(&string);
+    pm_string_cleanup(&string);
 }
 
 /**
