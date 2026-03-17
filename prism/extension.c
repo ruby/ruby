@@ -692,7 +692,7 @@ parse_lex_token(void *data, pm_parser_t *parser, pm_token_t *token) {
 static void
 parse_lex_encoding_changed_callback(pm_parser_t *parser) {
     parse_lex_data_t *parse_lex_data = (parse_lex_data_t *) parser->lex_callback->data;
-    parse_lex_data->encoding = rb_enc_find(parser->encoding->name);
+    parse_lex_data->encoding = rb_enc_find(pm_parser_encoding_name(parser));
 
     // Since the encoding changed, we need to go back and change the encoding of
     // the tokens that were already lexed. This is only going to end up being
@@ -767,7 +767,7 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
     // encoding for the source string and the correct newline offsets.
     // We do it here because we've already created the Source object and given
     // it over to all of the tokens, and both of these are only set after pm_parse().
-    rb_encoding *encoding = rb_enc_find(parser.encoding->name);
+    rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(&parser));
     rb_enc_associate(source_string, encoding);
 
     for (size_t index = 0; index < parser.line_offsets.size; index++) {
@@ -856,7 +856,7 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
     pm_parser_init(&arena, &parser, pm_string_source(input), pm_string_length(input), options);
 
     pm_node_t *node = pm_parse(&parser);
-    rb_encoding *encoding = rb_enc_find(parser.encoding->name);
+    rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(&parser));
 
     VALUE source = pm_source_new(&parser, encoding, options->freeze);
     VALUE value = pm_ast_new(&parser, node, encoding, source, options->freeze);
@@ -1075,7 +1075,7 @@ parse_stream(int argc, VALUE *argv, VALUE self) {
     pm_buffer_t buffer;
 
     pm_node_t *node = pm_parse_stream(&arena, &parser, &buffer, (void *) stream, parse_stream_fgets, parse_stream_eof, &options);
-    rb_encoding *encoding = rb_enc_find(parser.encoding->name);
+    rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(&parser));
 
     VALUE source = pm_source_new(&parser, encoding, options.freeze);
     VALUE value = pm_ast_new(&parser, node, encoding, source, options.freeze);
@@ -1098,7 +1098,7 @@ parse_input_comments(pm_string_t *input, const pm_options_t *options) {
     pm_parser_init(&arena, &parser, pm_string_source(input), pm_string_length(input), options);
 
     pm_parse(&parser);
-    rb_encoding *encoding = rb_enc_find(parser.encoding->name);
+    rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(&parser));
 
     VALUE source = pm_source_new(&parser, encoding, options->freeze);
     VALUE comments = parser_comments(&parser, source, options->freeze);

@@ -1,20 +1,13 @@
 /**
- * @file regexp.h
+ * @file internal/regexp.h
  *
  * A regular expression parser.
  */
-#ifndef PRISM_REGEXP_H
-#define PRISM_REGEXP_H
+#ifndef PRISM_INTERNAL_REGEXP_H
+#define PRISM_INTERNAL_REGEXP_H
 
-#include "prism/defines.h"
+#include "prism/ast.h"
 #include "prism/parser.h"
-#include "prism/internal/encoding.h"
-#include "prism/internal/memchr.h"
-#include "prism/strings.h"
-
-#include <stdbool.h>
-#include <stddef.h>
-#include <string.h>
 
 /**
  * Accumulation state for named capture groups found during regexp parsing.
