@@ -6,19 +6,17 @@
 #ifndef PRISM_PARSER_H
 #define PRISM_PARSER_H
 
-#include "prism/defines.h"
-
 #include "prism/arena.h"
 #include "prism/ast.h"
-#include "prism/constant_pool.h"
 #include "prism/encoding.h"
 #include "prism/line_offset_list.h"
 #include "prism/list.h"
 #include "prism/options.h"
 #include "prism/static_literals.h"
-#include "prism/strings.h"
 
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
 /**
  * This enum provides various bits that represent different kinds of states that
