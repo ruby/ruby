@@ -1804,7 +1804,14 @@ rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_back
         .pos = pos,
         .range = reverse ? 0 : len,
     };
-    struct re_registers regs = {0};
+
+    OnigPosition stack_beg[ONIG_NREGION], stack_end[ONIG_NREGION];
+    struct re_registers regs = {
+        .allocated = 0, // avoids realloc/free in onig_region_resize/free
+        .num_regs = ONIG_NREGION,
+        .beg = stack_beg,
+        .end = stack_end,
+    };
 
     OnigPosition result = rb_reg_onig_match(re, str, reg_onig_search, &args, &regs);
 
@@ -1829,12 +1836,21 @@ rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_back
     if (NIL_P(match)) {
         match = match_alloc(rb_cMatch);
     }
-    else {
-        onig_region_free(&RMATCH_EXT(match)->regs, false);
-    }
 
     rb_matchext_t *rm = RMATCH_EXT(match);
-    rm->regs = regs;
+    if (regs.allocated > 0) {
+        RUBY_ASSERT(regs.beg != stack_beg);
+        RUBY_ASSERT(regs.end != stack_end);
+        onig_region_free(&rm->regs, false);
+        rm->regs = regs;
+    }
+    else {
+        RUBY_ASSERT(regs.beg == stack_beg);
+        RUBY_ASSERT(regs.end == stack_end);
+        onig_region_resize(&rm->regs, regs.num_regs);
+        memcpy(rm->regs.beg, regs.beg, regs.num_regs * sizeof(OnigPosition));
+        memcpy(rm->regs.end, regs.end, regs.num_regs * sizeof(OnigPosition));
+    }
 
     if (set_backref_str) {
         RB_OBJ_WRITE(match, &RMATCH(match)->str, rb_str_new4(str));
