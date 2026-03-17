@@ -1,4 +1,4 @@
-#include "prism/options.h"
+#include "prism/internal/options.h"
 
 #include "prism/compiler/inline.h"
 
@@ -9,12 +9,63 @@
 #include <string.h>
 
 /**
+ * Allocate a new options struct. If the options struct cannot be allocated,
+ * this function aborts the process.
+ */
+pm_options_t *
+pm_options_new(void) {
+    pm_options_t *options = xcalloc(1, sizeof(pm_options_t));
+    if (options == NULL) abort();
+    return options;
+}
+
+/**
+ * Free the internal memory associated with the options.
+ */
+void
+pm_options_cleanup(pm_options_t *options) {
+    pm_string_cleanup(&options->filepath);
+    pm_string_cleanup(&options->encoding);
+
+    for (size_t scope_index = 0; scope_index < options->scopes_count; scope_index++) {
+        pm_options_scope_t *scope = &options->scopes[scope_index];
+
+        for (size_t local_index = 0; local_index < scope->locals_count; local_index++) {
+            pm_string_cleanup(&scope->locals[local_index]);
+        }
+
+        xfree_sized(scope->locals, scope->locals_count * sizeof(pm_string_t));
+    }
+
+    xfree_sized(options->scopes, options->scopes_count * sizeof(pm_options_scope_t));
+}
+
+/**
+ * Free both the held memory of the given options struct and the struct itself.
+ *
+ * @param options The options struct to free.
+ */
+void
+pm_options_free(pm_options_t *options) {
+    pm_options_cleanup(options);
+    xfree(options);
+}
+
+/**
  * Set the shebang callback option on the given options struct.
  */
 void
 pm_options_shebang_callback_set(pm_options_t *options, pm_options_shebang_callback_t shebang_callback, void *shebang_callback_data) {
     options->shebang_callback = shebang_callback;
     options->shebang_callback_data = shebang_callback_data;
+}
+
+/**
+ * Get the filepath option on the given options struct.
+ */
+pm_string_t *
+pm_options_filepath_get(pm_options_t *options) {
+    return &options->filepath;
 }
 
 /**
@@ -142,6 +193,24 @@ pm_options_version_set(pm_options_t *options, const char *version, size_t length
 }
 
 /**
+ * Set the version option on the given options struct to the lowest version of
+ * Ruby that prism supports.
+ */
+void
+pm_options_version_set_lowest(pm_options_t *options) {
+    options->version = PM_OPTIONS_VERSION_CRUBY_3_3;
+}
+
+/**
+ * Set the version option on the given options struct to the highest version of
+ * Ruby that prism supports.
+ */
+void
+pm_options_version_set_highest(pm_options_t *options) {
+    options->version = PM_OPTIONS_VERSION_LATEST;
+}
+
+/**
  * Set the main script option on the given options struct.
  */
 void
@@ -155,6 +224,14 @@ pm_options_main_script_set(pm_options_t *options, bool main_script) {
 void
 pm_options_partial_script_set(pm_options_t *options, bool partial_script) {
     options->partial_script = partial_script;
+}
+
+/**
+ * Get the freeze option on the given options struct.
+ */
+bool
+pm_options_freeze_get(const pm_options_t *options) {
+    return options->freeze;
 }
 
 /**
@@ -184,10 +261,20 @@ pm_options_scopes_init(pm_options_t *options, size_t scopes_count) {
 }
 
 /**
- * Return a pointer to the scope at the given index within the given options.
+ * Return a constant pointer to the scope at the given index within the given
+ * options.
  */
 const pm_options_scope_t *
 pm_options_scope_get(const pm_options_t *options, size_t index) {
+    return &options->scopes[index];
+}
+
+/**
+ * Return a mutable pointer to the scope at the given index within the given
+ * options.
+ */
+pm_options_scope_t *
+pm_options_scope_get_mut(pm_options_t *options, size_t index) {
     return &options->scopes[index];
 }
 
@@ -204,10 +291,20 @@ pm_options_scope_init(pm_options_scope_t *scope, size_t locals_count) {
 }
 
 /**
- * Return a pointer to the local at the given index within the given scope.
+ * Return a constant pointer to the local at the given index within the given
+ * scope.
  */
 const pm_string_t *
 pm_options_scope_local_get(const pm_options_scope_t *scope, size_t index) {
+    return &scope->locals[index];
+}
+
+/**
+ * Return a mutable pointer to the local at the given index within the given
+ * scope.
+ */
+pm_string_t *
+pm_options_scope_local_get_mut(pm_options_scope_t *scope, size_t index) {
     return &scope->locals[index];
 }
 
@@ -217,27 +314,6 @@ pm_options_scope_local_get(const pm_options_scope_t *scope, size_t index) {
 void
 pm_options_scope_forwarding_set(pm_options_scope_t *scope, uint8_t forwarding) {
     scope->forwarding = forwarding;
-}
-
-/**
- * Free the internal memory associated with the options.
- */
-void
-pm_options_cleanup(pm_options_t *options) {
-    pm_string_cleanup(&options->filepath);
-    pm_string_cleanup(&options->encoding);
-
-    for (size_t scope_index = 0; scope_index < options->scopes_count; scope_index++) {
-        pm_options_scope_t *scope = &options->scopes[scope_index];
-
-        for (size_t local_index = 0; local_index < scope->locals_count; local_index++) {
-            pm_string_cleanup(&scope->locals[local_index]);
-        }
-
-        xfree_sized(scope->locals, scope->locals_count * sizeof(pm_string_t));
-    }
-
-    xfree_sized(options->scopes, options->scopes_count * sizeof(pm_options_scope_t));
 }
 
 /**

@@ -148,7 +148,7 @@ build_options_scopes(pm_options_t *options, VALUE scopes) {
 
         // Initialize the scope array.
         size_t locals_count = RARRAY_LEN(locals);
-        pm_options_scope_t *options_scope = &options->scopes[scope_index];
+        pm_options_scope_t *options_scope = pm_options_scope_get_mut(options, scope_index);
         pm_options_scope_init(options_scope, locals_count);
 
         // Iterate over the locals and add them to the scope.
@@ -162,7 +162,7 @@ build_options_scopes(pm_options_t *options, VALUE scopes) {
             }
 
             // Add the local to the scope.
-            pm_string_t *scope_local = &options_scope->locals[local_index];
+            pm_string_t *scope_local = pm_options_scope_local_get_mut(options_scope, local_index);
             const char *name = rb_id2name(SYM2ID(local));
             pm_string_constant_init(scope_local, name, strlen(name));
         }
@@ -206,10 +206,10 @@ build_options_i(VALUE key, VALUE value, VALUE argument) {
                 if (!pm_options_version_set(options, ruby_version, 3)) {
                     // Prism doesn't know this specific version. Is it lower?
                     if (ruby_version[0] < '3' || (ruby_version[0] == '3' && ruby_version[2] < '3')) {
-                        options->version = PM_OPTIONS_VERSION_CRUBY_3_3;
+                        pm_options_version_set_lowest(options);
                     } else {
                         // Must be higher.
-                        options->version = PM_OPTIONS_VERSION_LATEST;
+                        pm_options_version_set_highest(options);
                     }
                 }
             } else if (!pm_options_version_set(options, version, RSTRING_LEN(value))) {
@@ -276,7 +276,7 @@ build_options(VALUE argument) {
  */
 static void
 extract_options(pm_options_t *options, VALUE filepath, VALUE keywords) {
-    options->line = 1; // default
+    pm_options_line_set(options, 1); /* default */
 
     if (!NIL_P(keywords)) {
         struct build_options_data data = { .options = options, .keywords = keywords };
@@ -286,14 +286,14 @@ extract_options(pm_options_t *options, VALUE filepath, VALUE keywords) {
         rb_protect(build_options, (VALUE) argument, &state);
 
         if (state != 0) {
-            pm_options_cleanup(options);
+            pm_options_free(options);
             rb_jump_tag(state);
         }
     }
 
     if (!NIL_P(filepath)) {
         if (!RB_TYPE_P(filepath, T_STRING)) {
-            pm_options_cleanup(options);
+            pm_options_free(options);
             rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected String)", rb_obj_class(filepath));
         }
 
@@ -327,14 +327,14 @@ file_options(int argc, VALUE *argv, pm_string_t *input, pm_options_t *options, V
     *encoded_filepath = rb_str_encode_ospath(filepath);
     extract_options(options, *encoded_filepath, keywords);
 
-    const char *source = (const char *) pm_string_source(&options->filepath);
+    const char *source = (const char *) pm_string_source(pm_options_filepath_get(options));
     pm_string_init_result_t result;
 
     switch (result = pm_string_file_init(input, source)) {
         case PM_STRING_INIT_SUCCESS:
             break;
         case PM_STRING_INIT_ERROR_GENERIC: {
-            pm_options_cleanup(options);
+            pm_options_free(options);
 
 #ifdef _WIN32
             int e = rb_w32_map_errno(GetLastError());
@@ -346,11 +346,11 @@ file_options(int argc, VALUE *argv, pm_string_t *input, pm_options_t *options, V
             break;
         }
         case PM_STRING_INIT_ERROR_DIRECTORY:
-            pm_options_cleanup(options);
+            pm_options_free(options);
             rb_syserr_fail(EISDIR, source);
             break;
         default:
-            pm_options_cleanup(options);
+            pm_options_free(options);
             rb_raise(rb_eRuntimeError, "Unknown error (%d) initializing file: %s", result, source);
             break;
     }
@@ -398,8 +398,8 @@ dump_input(pm_string_t *input, const pm_options_t *options) {
 static VALUE
 dump(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
-    pm_options_t options = { 0 };
-    string_options(argc, argv, &input, &options);
+    pm_options_t *options = pm_options_new();
+    string_options(argc, argv, &input, options);
 
 #ifdef PRISM_BUILD_DEBUG
     size_t length = pm_string_length(&input);
@@ -408,15 +408,15 @@ dump(int argc, VALUE *argv, VALUE self) {
     pm_string_constant_init(&input, dup, length);
 #endif
 
-    VALUE value = dump_input(&input, &options);
-    if (options.freeze) rb_obj_freeze(value);
+    VALUE value = dump_input(&input, options);
+    if (pm_options_freeze_get(options)) rb_obj_freeze(value);
 
 #ifdef PRISM_BUILD_DEBUG
     xfree_sized(dup, length);
 #endif
 
     pm_string_cleanup(&input);
-    pm_options_cleanup(&options);
+    pm_options_free(options);
 
     return value;
 }
@@ -432,14 +432,14 @@ dump(int argc, VALUE *argv, VALUE self) {
 static VALUE
 dump_file(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
-    pm_options_t options = { 0 };
+    pm_options_t *options = pm_options_new();
 
     VALUE encoded_filepath;
-    file_options(argc, argv, &input, &options, &encoded_filepath);
+    file_options(argc, argv, &input, options, &encoded_filepath);
 
-    VALUE value = dump_input(&input, &options);
+    VALUE value = dump_input(&input, options);
     pm_string_cleanup(&input);
-    pm_options_cleanup(&options);
+    pm_options_free(options);
 
     return value;
 }
@@ -749,7 +749,7 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
         .source = source,
         .tokens = rb_ary_new(),
         .encoding = rb_utf8_encoding(),
-        .freeze = options->freeze,
+        .freeze = pm_options_freeze_get(options),
     };
 
     parse_lex_data_t *data = &parse_lex_data;
@@ -772,7 +772,7 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
         rb_ary_push(offsets, ULONG2NUM(parser.line_offsets.offsets[index]));
     }
 
-    if (options->freeze) {
+    if (pm_options_freeze_get(options)) {
         rb_obj_freeze(source_string);
         rb_obj_freeze(offsets);
         rb_obj_freeze(source);
@@ -782,12 +782,12 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
     VALUE result;
     if (return_nodes) {
         VALUE value = rb_ary_new_capa(2);
-        rb_ary_push(value, pm_ast_new(&parser, node, parse_lex_data.encoding, source, options->freeze));
+        rb_ary_push(value, pm_ast_new(&parser, node, parse_lex_data.encoding, source, pm_options_freeze_get(options)));
         rb_ary_push(value, parse_lex_data.tokens);
-        if (options->freeze) rb_obj_freeze(value);
-        result = parse_result_create(rb_cPrismParseLexResult, &parser, value, parse_lex_data.encoding, source, options->freeze);
+        if (pm_options_freeze_get(options)) rb_obj_freeze(value);
+        result = parse_result_create(rb_cPrismParseLexResult, &parser, value, parse_lex_data.encoding, source, pm_options_freeze_get(options));
     } else {
-        result = parse_result_create(rb_cPrismLexResult, &parser, parse_lex_data.tokens, parse_lex_data.encoding, source, options->freeze);
+        result = parse_result_create(rb_cPrismLexResult, &parser, parse_lex_data.tokens, parse_lex_data.encoding, source, pm_options_freeze_get(options));
     }
 
     pm_parser_cleanup(&parser);
@@ -807,12 +807,12 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
 static VALUE
 lex(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
-    pm_options_t options = { 0 };
-    string_options(argc, argv, &input, &options);
+    pm_options_t *options = pm_options_new();
+    string_options(argc, argv, &input, options);
 
-    VALUE result = parse_lex_input(&input, &options, false);
+    VALUE result = parse_lex_input(&input, options, false);
     pm_string_cleanup(&input);
-    pm_options_cleanup(&options);
+    pm_options_free(options);
 
     return result;
 }
@@ -828,14 +828,14 @@ lex(int argc, VALUE *argv, VALUE self) {
 static VALUE
 lex_file(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
-    pm_options_t options = { 0 };
+    pm_options_t *options = pm_options_new();
 
     VALUE encoded_filepath;
-    file_options(argc, argv, &input, &options, &encoded_filepath);
+    file_options(argc, argv, &input, options, &encoded_filepath);
 
-    VALUE value = parse_lex_input(&input, &options, false);
+    VALUE value = parse_lex_input(&input, options, false);
     pm_string_cleanup(&input);
-    pm_options_cleanup(&options);
+    pm_options_free(options);
 
     return value;
 }
@@ -856,11 +856,12 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
     pm_node_t *node = pm_parse(&parser);
     rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(&parser));
 
-    VALUE source = pm_source_new(&parser, encoding, options->freeze);
-    VALUE value = pm_ast_new(&parser, node, encoding, source, options->freeze);
-    VALUE result = parse_result_create(rb_cPrismParseResult, &parser, value, encoding, source, options->freeze);
+    bool freeze = pm_options_freeze_get(options);
+    VALUE source = pm_source_new(&parser, encoding, freeze);
+    VALUE value = pm_ast_new(&parser, node, encoding, source, freeze);
+    VALUE result = parse_result_create(rb_cPrismParseResult, &parser, value, encoding, source, freeze);
 
-    if (options->freeze) {
+    if (freeze) {
         rb_obj_freeze(source);
     }
 
@@ -918,8 +919,8 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
 static VALUE
 parse(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
-    pm_options_t options = { 0 };
-    string_options(argc, argv, &input, &options);
+    pm_options_t *options = pm_options_new();
+    string_options(argc, argv, &input, options);
 
 #ifdef PRISM_BUILD_DEBUG
     size_t length = pm_string_length(&input);
@@ -928,14 +929,14 @@ parse(int argc, VALUE *argv, VALUE self) {
     pm_string_constant_init(&input, dup, length);
 #endif
 
-    VALUE value = parse_input(&input, &options);
+    VALUE value = parse_input(&input, options);
 
 #ifdef PRISM_BUILD_DEBUG
     xfree_sized(dup, length);
 #endif
 
     pm_string_cleanup(&input);
-    pm_options_cleanup(&options);
+    pm_options_free(options);
     return value;
 }
 
@@ -950,14 +951,14 @@ parse(int argc, VALUE *argv, VALUE self) {
 static VALUE
 parse_file(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
-    pm_options_t options = { 0 };
+    pm_options_t *options = pm_options_new();
 
     VALUE encoded_filepath;
-    file_options(argc, argv, &input, &options, &encoded_filepath);
+    file_options(argc, argv, &input, options, &encoded_filepath);
 
-    VALUE value = parse_input(&input, &options);
+    VALUE value = parse_input(&input, options);
     pm_string_cleanup(&input);
-    pm_options_cleanup(&options);
+    pm_options_free(options);
 
     return value;
 }
@@ -988,12 +989,12 @@ profile_input(pm_string_t *input, const pm_options_t *options) {
 static VALUE
 profile(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
-    pm_options_t options = { 0 };
+    pm_options_t *options = pm_options_new();
 
-    string_options(argc, argv, &input, &options);
-    profile_input(&input, &options);
+    string_options(argc, argv, &input, options);
+    profile_input(&input, options);
     pm_string_cleanup(&input);
-    pm_options_cleanup(&options);
+    pm_options_free(options);
 
     return Qnil;
 }
@@ -1010,14 +1011,14 @@ profile(int argc, VALUE *argv, VALUE self) {
 static VALUE
 profile_file(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
-    pm_options_t options = { 0 };
+    pm_options_t *options = pm_options_new();
 
     VALUE encoded_filepath;
-    file_options(argc, argv, &input, &options, &encoded_filepath);
+    file_options(argc, argv, &input, options, &encoded_filepath);
 
-    profile_input(&input, &options);
+    profile_input(&input, options);
     pm_string_cleanup(&input);
-    pm_options_cleanup(&options);
+    pm_options_free(options);
 
     return Qnil;
 }
@@ -1065,23 +1066,24 @@ parse_stream(int argc, VALUE *argv, VALUE self) {
     VALUE keywords;
     rb_scan_args(argc, argv, "1:", &stream, &keywords);
 
-    pm_options_t options = { 0 };
-    extract_options(&options, Qnil, keywords);
+    pm_options_t *options = pm_options_new();
+    extract_options(options, Qnil, keywords);
 
     pm_arena_t arena = { 0 };
     pm_parser_t parser;
 
     pm_buffer_t *buffer = pm_buffer_new();
-    pm_node_t *node = pm_parse_stream(&arena, &parser, buffer, (void *) stream, parse_stream_fgets, parse_stream_eof, &options);
+    pm_node_t *node = pm_parse_stream(&arena, &parser, buffer, (void *) stream, parse_stream_fgets, parse_stream_eof, options);
     rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(&parser));
 
-    VALUE source = pm_source_new(&parser, encoding, options.freeze);
-    VALUE value = pm_ast_new(&parser, node, encoding, source, options.freeze);
-    VALUE result = parse_result_create(rb_cPrismParseResult, &parser, value, encoding, source, options.freeze);
+    VALUE source = pm_source_new(&parser, encoding, pm_options_freeze_get(options));
+    VALUE value = pm_ast_new(&parser, node, encoding, source, pm_options_freeze_get(options));
+    VALUE result = parse_result_create(rb_cPrismParseResult, &parser, value, encoding, source, pm_options_freeze_get(options));
 
     pm_buffer_free(buffer);
     pm_parser_cleanup(&parser);
     pm_arena_free(&arena);
+    pm_options_free(options);
 
     return result;
 }
@@ -1098,8 +1100,8 @@ parse_input_comments(pm_string_t *input, const pm_options_t *options) {
     pm_parse(&parser);
     rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(&parser));
 
-    VALUE source = pm_source_new(&parser, encoding, options->freeze);
-    VALUE comments = parser_comments(&parser, source, options->freeze);
+    VALUE source = pm_source_new(&parser, encoding, pm_options_freeze_get(options));
+    VALUE comments = parser_comments(&parser, source, pm_options_freeze_get(options));
 
     pm_parser_cleanup(&parser);
     pm_arena_free(&arena);
@@ -1118,12 +1120,12 @@ parse_input_comments(pm_string_t *input, const pm_options_t *options) {
 static VALUE
 parse_comments(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
-    pm_options_t options = { 0 };
-    string_options(argc, argv, &input, &options);
+    pm_options_t *options = pm_options_new();
+    string_options(argc, argv, &input, options);
 
-    VALUE result = parse_input_comments(&input, &options);
+    VALUE result = parse_input_comments(&input, options);
     pm_string_cleanup(&input);
-    pm_options_cleanup(&options);
+    pm_options_free(options);
 
     return result;
 }
@@ -1139,14 +1141,14 @@ parse_comments(int argc, VALUE *argv, VALUE self) {
 static VALUE
 parse_file_comments(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
-    pm_options_t options = { 0 };
+    pm_options_t *options = pm_options_new();
 
     VALUE encoded_filepath;
-    file_options(argc, argv, &input, &options, &encoded_filepath);
+    file_options(argc, argv, &input, options, &encoded_filepath);
 
-    VALUE value = parse_input_comments(&input, &options);
+    VALUE value = parse_input_comments(&input, options);
     pm_string_cleanup(&input);
-    pm_options_cleanup(&options);
+    pm_options_free(options);
 
     return value;
 }
@@ -1169,12 +1171,12 @@ parse_file_comments(int argc, VALUE *argv, VALUE self) {
 static VALUE
 parse_lex(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
-    pm_options_t options = { 0 };
-    string_options(argc, argv, &input, &options);
+    pm_options_t *options = pm_options_new();
+    string_options(argc, argv, &input, options);
 
-    VALUE value = parse_lex_input(&input, &options, true);
+    VALUE value = parse_lex_input(&input, options, true);
     pm_string_cleanup(&input);
-    pm_options_cleanup(&options);
+    pm_options_free(options);
 
     return value;
 }
@@ -1197,14 +1199,14 @@ parse_lex(int argc, VALUE *argv, VALUE self) {
 static VALUE
 parse_lex_file(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
-    pm_options_t options = { 0 };
+    pm_options_t *options = pm_options_new();
 
     VALUE encoded_filepath;
-    file_options(argc, argv, &input, &options, &encoded_filepath);
+    file_options(argc, argv, &input, options, &encoded_filepath);
 
-    VALUE value = parse_lex_input(&input, &options, true);
+    VALUE value = parse_lex_input(&input, options, true);
     pm_string_cleanup(&input);
-    pm_options_cleanup(&options);
+    pm_options_free(options);
 
     return value;
 }
@@ -1238,12 +1240,12 @@ parse_input_success_p(pm_string_t *input, const pm_options_t *options) {
 static VALUE
 parse_success_p(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
-    pm_options_t options = { 0 };
-    string_options(argc, argv, &input, &options);
+    pm_options_t *options = pm_options_new();
+    string_options(argc, argv, &input, options);
 
-    VALUE result = parse_input_success_p(&input, &options);
+    VALUE result = parse_input_success_p(&input, options);
     pm_string_cleanup(&input);
-    pm_options_cleanup(&options);
+    pm_options_free(options);
 
     return result;
 }
@@ -1272,14 +1274,14 @@ parse_failure_p(int argc, VALUE *argv, VALUE self) {
 static VALUE
 parse_file_success_p(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
-    pm_options_t options = { 0 };
+    pm_options_t *options = pm_options_new();
 
     VALUE encoded_filepath;
-    file_options(argc, argv, &input, &options, &encoded_filepath);
+    file_options(argc, argv, &input, options, &encoded_filepath);
 
-    VALUE result = parse_input_success_p(&input, &options);
+    VALUE result = parse_input_success_p(&input, options);
     pm_string_cleanup(&input);
-    pm_options_cleanup(&options);
+    pm_options_free(options);
 
     return result;
 }
