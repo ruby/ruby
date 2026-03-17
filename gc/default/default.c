@@ -7901,43 +7901,40 @@ get_envparam_double(const char *name, double *default_value, double lower_bound,
 }
 
 /*
- * GC tuning environment variables
+ * GC tuning environment variables.
  *
+ * Heap tuning is now per-heap for VWA:
+ *   RUBY_GC_HEAP_<i>_INIT_SLOTS for i in [0, HEAP_COUNT).
+ *
+ * The remaining heap tuning knobs are global overrides. If set, each one is
+ * applied uniformly to all heaps after per-heap init slots are loaded.
+ *
+ * Heap knobs:
  * * RUBY_GC_HEAP_FREE_SLOTS
- *   - Prepare at least this amount of slots after GC.
- *   - Allocate slots if there are not enough slots.
- * * RUBY_GC_HEAP_GROWTH_FACTOR (new from 2.1)
- *   - Allocate slots by this factor.
- *   - (next slots number) = (current slots number) * (this factor)
- * * RUBY_GC_HEAP_GROWTH_MAX_SLOTS (new from 2.1)
- *   - Allocation rate is limited to this number of slots.
- * * RUBY_GC_HEAP_FREE_SLOTS_MIN_RATIO (new from 2.4)
- *   - Allocate additional pages when the number of free slots is
- *     lower than the value (total_slots * (this ratio)).
- * * RUBY_GC_HEAP_FREE_SLOTS_GOAL_RATIO (new from 2.4)
- *   - Allocate slots to satisfy this formula:
- *       free_slots = total_slots * goal_ratio
- *   - In other words, prepare (total_slots * goal_ratio) free slots.
- *   - if this value is 0.0, then use RUBY_GC_HEAP_GROWTH_FACTOR directly.
- * * RUBY_GC_HEAP_FREE_SLOTS_MAX_RATIO (new from 2.4)
- *   - Allow to free pages when the number of free slots is
- *     greater than the value (total_slots * (this ratio)).
- * * RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR (new from 2.1.1)
- *   - Do full GC when the number of old objects is more than R * N
- *     where R is this factor and
- *           N is the number of old objects just after last full GC.
+ *   - Keep at least this many free slots available after GC.
+ * * RUBY_GC_HEAP_GROWTH_FACTOR
+ *   - Growth multiplier used when expanding allocatable slots.
+ * * RUBY_GC_HEAP_GROWTH_MAX_SLOTS
+ *   - Per-growth cap on additional slots.
+ * * RUBY_GC_HEAP_FREE_SLOTS_MIN_RATIO
+ *   - Expand when free_slots drops below total_slots * min_ratio.
+ * * RUBY_GC_HEAP_FREE_SLOTS_GOAL_RATIO
+ *   - Expansion target: free_slots ~= total_slots * goal_ratio.
+ *   - If 0.0, growth uses RUBY_GC_HEAP_GROWTH_FACTOR directly.
+ * * RUBY_GC_HEAP_FREE_SLOTS_MAX_RATIO
+ *   - Free pages when free_slots exceeds total_slots * max_ratio.
+ * * RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR
+ *   - Trigger major GC when old_objects exceeds factor * baseline.
+ * * RUBY_GC_HEAP_REMEMBERED_WB_UNPROTECTED_OBJECTS_LIMIT_RATIO
+ *   - Controls WB-unprotected remembered set limit.
  *
- *  * obsolete
- *    * RUBY_FREE_MIN       -> RUBY_GC_HEAP_FREE_SLOTS (from 2.1)
- *    * RUBY_HEAP_MIN_SLOTS -> RUBY_GC_HEAP_INIT_SLOTS (from 2.1)
- *
+ * Malloc pressure knobs:
  * * RUBY_GC_MALLOC_LIMIT
- * * RUBY_GC_MALLOC_LIMIT_MAX (new from 2.1)
- * * RUBY_GC_MALLOC_LIMIT_GROWTH_FACTOR (new from 2.1)
- *
- * * RUBY_GC_OLDMALLOC_LIMIT (new from 2.1)
- * * RUBY_GC_OLDMALLOC_LIMIT_MAX (new from 2.1)
- * * RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR (new from 2.1)
+ * * RUBY_GC_MALLOC_LIMIT_MAX
+ * * RUBY_GC_MALLOC_LIMIT_GROWTH_FACTOR
+ * * RUBY_GC_OLDMALLOC_LIMIT
+ * * RUBY_GC_OLDMALLOC_LIMIT_MAX
+ * * RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR
  */
 
 void
@@ -7949,6 +7946,7 @@ rb_gc_impl_set_params(void *objspace_ptr)
         /* ok */
     }
 
+    /* Load per-heap init slot overrides first. */
     for (int i = 0; i < HEAP_COUNT; i++) {
         char env_key[sizeof("RUBY_GC_HEAP_" "_INIT_SLOTS") + DECIMAL_SIZE_OF_BITS(sizeof(int) * CHAR_BIT)];
         snprintf(env_key, sizeof(env_key), "RUBY_GC_HEAP_%d_INIT_SLOTS", i);
@@ -7956,7 +7954,7 @@ rb_gc_impl_set_params(void *objspace_ptr)
         get_envparam_size(env_key, &gc_params.heap_init_slots[i], 0);
     }
 
-    /* Global env vars set all heaps at once. */
+    /* Global env vars then override all heaps uniformly. */
     {
         double gf_tmp = gc_params.growth_factor[0];
         if (get_envparam_double("RUBY_GC_HEAP_GROWTH_FACTOR", &gf_tmp, 1.0, 0.0, FALSE)) {
