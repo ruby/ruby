@@ -10,16 +10,37 @@
 
 #include "prism/buffer.h"
 
+#include <stdbool.h>
 #include <stdint.h>
+
+/**
+ * A simple memory buffer that stores data in a contiguous block of memory.
+ */
+struct pm_buffer_t {
+    /** The length of the buffer in bytes. */
+    size_t length;
+
+    /** The capacity of the buffer in bytes that has been allocated. */
+    size_t capacity;
+
+    /** A pointer to the start of the buffer. */
+    char *value;
+};
 
 /**
  * Initialize a pm_buffer_t with the given capacity.
  *
  * @param buffer The buffer to initialize.
  * @param capacity The capacity of the buffer.
- * @returns True if the buffer was initialized successfully, false otherwise.
  */
-bool pm_buffer_init_capacity(pm_buffer_t *buffer, size_t capacity);
+void pm_buffer_init(pm_buffer_t *buffer, size_t capacity);
+
+/**
+ * Free the memory held by the buffer.
+ *
+ * @param buffer The buffer whose held memory should be freed.
+ */
+void pm_buffer_cleanup(pm_buffer_t *buffer);
 
 /**
  * Append the given amount of space as zeroes to the buffer.

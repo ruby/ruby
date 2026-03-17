@@ -364,8 +364,9 @@ PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_method_name(const uint
  * parse Ruby code. The structures and functions that you're going to want to
  * use and be aware of are:
  *
- * * `pm_buffer_t` - a small buffer object that will hold the serialized AST
- * * `pm_buffer_cleanup()` - free the memory associated with the buffer
+ * * `pm_buffer_t` - an opaque buffer object that will hold the serialized AST
+ * * `pm_buffer_new()` - create a new buffer
+ * * `pm_buffer_free()` - free the buffer and its internal memory
  * * `pm_serialize()` - serialize the AST into a buffer
  * * `pm_serialize_parse()` - parse and serialize the AST into a buffer
  *
@@ -373,12 +374,12 @@ PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_method_name(const uint
  *
  * ```c
  * void serialize(const uint8_t *source, size_t length) {
- *     pm_buffer_t buffer = { 0 };
+ *     pm_buffer_t *buffer = pm_buffer_new();
  *
- *     pm_serialize_parse(&buffer, source, length, NULL);
+ *     pm_serialize_parse(buffer, source, length, NULL);
  *     printf("SERIALIZED!\n");
  *
- *     pm_buffer_cleanup(&buffer);
+ *     pm_buffer_free(buffer);
  * }
  * ```
  *
@@ -394,12 +395,12 @@ PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_method_name(const uint
  *     pm_parser_init(&arena, &parser, source, length, NULL);
  *
  *     pm_node_t *root = pm_parse(&parser);
- *     pm_buffer_t buffer = { 0 };
+ *     pm_buffer_t *buffer = pm_buffer_new();
  *
- *     pm_prettyprint(&buffer, &parser, root);
- *     printf("%*.s\n", (int) buffer.length, buffer.value);
+ *     pm_prettyprint(buffer, &parser, root);
+ *     printf("%*.s\n", (int) pm_buffer_length(buffer), pm_buffer_value(buffer));
  *
- *     pm_buffer_cleanup(&buffer);
+ *     pm_buffer_free(buffer);
  *     pm_parser_free(&parser);
  *     pm_arena_free(&arena);
  * }

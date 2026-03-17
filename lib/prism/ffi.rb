@@ -107,11 +107,10 @@ module Prism # :nodoc:
 
     load_exported_functions_from(
       "prism/buffer.h",
-      "pm_buffer_sizeof",
-      "pm_buffer_init",
+      "pm_buffer_new",
       "pm_buffer_value",
       "pm_buffer_length",
-      "pm_buffer_cleanup",
+      "pm_buffer_free",
       []
     )
 
@@ -128,8 +127,6 @@ module Prism # :nodoc:
     # This object represents a pm_buffer_t. We only use it as an opaque pointer,
     # so it doesn't need to know the fields of pm_buffer_t.
     class PrismBuffer # :nodoc:
-      SIZEOF = LibRubyParser.pm_buffer_sizeof
-
       attr_reader :pointer
 
       def initialize(pointer)
@@ -151,11 +148,13 @@ module Prism # :nodoc:
       # Initialize a new buffer and yield it to the block. The buffer will be
       # automatically freed when the block returns.
       def self.with
-        FFI::MemoryPointer.new(SIZEOF) do |pointer|
-          raise unless LibRubyParser.pm_buffer_init(pointer)
-          return yield new(pointer)
+        buffer = LibRubyParser.pm_buffer_new
+        raise unless buffer
+
+        begin
+          yield new(buffer)
         ensure
-          LibRubyParser.pm_buffer_cleanup(pointer)
+          LibRubyParser.pm_buffer_free(buffer)
         end
       end
     end
