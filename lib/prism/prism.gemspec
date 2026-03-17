@@ -56,6 +56,7 @@ Gem::Specification.new do |spec|
     "include/prism/exported.h",
     "include/prism/format.h",
     "include/prism/integer.h",
+    "include/prism/line_offset_list.h",
     "include/prism/node.h",
     "include/prism/node_new.h",
     "include/prism/options.h",
@@ -71,7 +72,6 @@ Gem::Specification.new do |spec|
     "include/prism/util/pm_char.h",
     "include/prism/util/pm_constant_pool.h",
     "include/prism/util/pm_list.h",
-    "include/prism/util/pm_line_offset_list.h",
     "include/prism/util/pm_string.h",
     "include/prism/util/pm_strpbrk.h",
     "include/prism/version.h",
@@ -167,6 +167,7 @@ Gem::Specification.new do |spec|
     "src/diagnostic.c",
     "src/encoding.c",
     "src/integer.c",
+    "src/line_offset_list.c",
     "src/memchr.c",
     "src/node.c",
     "src/options.c",
@@ -181,7 +182,6 @@ Gem::Specification.new do |spec|
     "src/util/pm_char.c",
     "src/util/pm_constant_pool.c",
     "src/util/pm_list.c",
-    "src/util/pm_line_offset_list.c",
     "src/util/pm_string.c",
     "src/util/pm_strpbrk.c"
   ]

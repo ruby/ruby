@@ -1,5 +1,5 @@
 /**
- * @file pm_line_offset_list.h
+ * @file line_offset_list.h
  *
  * A list of byte offsets of newlines in a string.
  *

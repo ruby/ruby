@@ -1,4 +1,4 @@
-#include "prism/util/pm_line_offset_list.h"
+#include "prism/line_offset_list.h"
 
 /**
  * Initialize a new line offset list with the given capacity.

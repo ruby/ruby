@@ -7,7 +7,7 @@
 #define PRISM_CHAR_H
 
 #include "prism/defines.h"
-#include "prism/util/pm_line_offset_list.h"
+#include "prism/line_offset_list.h"
 
 #include <stdbool.h>
 #include <stddef.h>
