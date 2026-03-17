@@ -2548,7 +2548,9 @@ impl Assembler
                         // Mark it as StackIndirect so arm64_scratch_split can load
                         // the pointer from the stack into a scratch register.
                         if let Opnd::Mem(mem) = opnd {
-                            mem.base = MemBase::StackIndirect { stack_idx: n };
+                            // TODO(max): Pull this off the vreg size instead of hard-coding 64
+                            let num_bits = 64;
+                            mem.base = MemBase::Stack { stack_idx: n, num_bits };
                         }
                     }
                 }
