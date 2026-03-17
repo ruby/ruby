@@ -284,6 +284,10 @@ subcommands = {
   end
 }
 
+if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('3.4')
+  abort "Error: zjit_diff.rb requires Ruby 3.4 or later (running #{RUBY_VERSION})"
+end
+
 top_level.order!
 command = ARGV.shift
 subcommands[command].order!
