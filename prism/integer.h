@@ -1,10 +1,10 @@
 /**
- * @file pm_integer.h
+ * @file integer.h
  *
  * This module provides functions for working with arbitrary-sized integers.
  */
-#ifndef PRISM_NUMBER_H
-#define PRISM_NUMBER_H
+#ifndef PRISM_INTEGER_H
+#define PRISM_INTEGER_H
 
 #include "prism/defines.h"
 #include "prism/internal/buffer.h"

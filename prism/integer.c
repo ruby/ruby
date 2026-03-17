@@ -1,4 +1,4 @@
-#include "prism/util/pm_integer.h"
+#include "prism/integer.h"
 
 /**
  * Pull out the length and values from the integer, regardless of the form in
