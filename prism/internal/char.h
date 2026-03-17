@@ -6,16 +6,9 @@
 #ifndef PRISM_INTERNAL_CHAR_H
 #define PRISM_INTERNAL_CHAR_H
 
-// #include "prism/defines.h"
-// #include "prism/util/pm_arena.h"
-// #include "prism/line_offset_list.h"
-
-// #include <stdbool.h>
-// #include <stddef.h>
-
+#include "prism/arena.h"
 #include "prism/force_inline.h"
 #include "prism/line_offset_list.h"
-#include "prism/util/pm_arena.h"
 
 #include <stdbool.h>
 #include <stddef.h>

@@ -1,5 +1,5 @@
 /**
- * @file pm_arena.h
+ * @file arena.h
  *
  * A bump allocator for the prism parser.
  */

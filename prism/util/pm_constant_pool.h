@@ -11,7 +11,7 @@
 #define PRISM_CONSTANT_POOL_H
 
 #include "prism/defines.h"
-#include "prism/util/pm_arena.h"
+#include "prism/arena.h"
 
 #include <assert.h>
 #include <stdbool.h>
