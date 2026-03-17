@@ -4,6 +4,7 @@
 #include "prism/internal/arena.h"
 #include "prism/internal/bit.h"
 #include "prism/internal/char.h"
+#include "prism/internal/diagnostic.h"
 #include "prism/internal/integer.h"
 #include "prism/internal/line_offset_list.h"
 #include "prism/internal/strpbrk.h"

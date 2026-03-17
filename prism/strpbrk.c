@@ -3,7 +3,7 @@
 #include "prism/attribute/unused.h"
 #include "prism/internal/accel.h"
 #include "prism/internal/bit.h"
-#include "prism/diagnostic.h"
+#include "prism/internal/diagnostic.h"
 
 #include <assert.h>
 #include <stdbool.h>
