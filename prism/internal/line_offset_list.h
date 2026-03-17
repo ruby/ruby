@@ -15,8 +15,8 @@
 #define PRISM_INTERNAL_LINE_OFFSET_LIST_H
 
 #include "prism/line_offset_list.h"
+#include "prism/attribute/force_inline.h"
 #include "prism/arena.h"
-#include "prism/force_inline.h"
 
 /**
  * Initialize a new line offset list with the given capacity.

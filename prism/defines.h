@@ -9,12 +9,12 @@
 #ifndef PRISM_DEFINES_H
 #define PRISM_DEFINES_H
 
-#include "prism/align.h"
+#include "prism/attribute/align.h"
+#include "prism/attribute/exported.h"
+#include "prism/attribute/flex_array.h"
+#include "prism/attribute/force_inline.h"
+#include "prism/attribute/format.h"
 #include "prism/allocator.h"
-#include "prism/exported.h"
-#include "prism/flex_array.h"
-#include "prism/force_inline.h"
-#include "prism/format.h"
 
 #include <ctype.h>
 #include <limits.h>

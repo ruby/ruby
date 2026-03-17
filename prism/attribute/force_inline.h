@@ -1,5 +1,5 @@
 /**
- * @file force_inline.h
+ * @file attribute/force_inline.h
  *
  * Macro definitions for forcing a function to be inlined at every call site.
  */

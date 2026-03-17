@@ -6,8 +6,8 @@
 #ifndef PRISM_INTERNAL_ARENA_H
 #define PRISM_INTERNAL_ARENA_H
 
+#include "prism/attribute/exported.h"
 #include "prism/arena.h"
-#include "prism/exported.h"
 
 #include <stddef.h>
 #include <string.h>
