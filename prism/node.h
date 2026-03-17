@@ -6,9 +6,9 @@
 #ifndef PRISM_NODE_H
 #define PRISM_NODE_H
 
-#include "prism/defines.h"
-#include "prism/internal/buffer.h"
-#include "prism/parser.h"
+#include "prism/attribute/exported.h"
+#include "prism/arena.h"
+#include "prism/ast.h"
 
 /**
  * Loop through each node in the node list, writing each node to the given
