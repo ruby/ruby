@@ -1,5 +1,5 @@
 #include "prism/util/pm_constant_pool.h"
-#include "prism/util/pm_arena.h"
+#include "prism/arena.h"
 
 /**
  * Initialize a list of constant ids.
