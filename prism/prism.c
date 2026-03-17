@@ -1806,14 +1806,16 @@ scan_identifier_ascii(const uint8_t *start, const uint8_t *end) {
     // contains the OR of bits for all high nibbles that have an
     // identifier character at that low nibble position. A byte is an
     // identifier character iff (low_lut[lo] & high_lut[hi]) != 0.
-    const uint8x16_t low_lut = (uint8x16_t) {
+    static const uint8_t low_lut_data[16] = {
         0x15, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F,
         0x1F, 0x1F, 0x1E, 0x0A, 0x0A, 0x0A, 0x0A, 0x0E
     };
-    const uint8x16_t high_lut = (uint8x16_t) {
+    static const uint8_t high_lut_data[16] = {
         0x00, 0x00, 0x00, 0x01, 0x02, 0x04, 0x08, 0x10,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
     };
+    const uint8x16_t low_lut = vld1q_u8(low_lut_data);
+    const uint8x16_t high_lut = vld1q_u8(high_lut_data);
     const uint8x16_t mask_0f = vdupq_n_u8(0x0F);
 
     while (cursor + 16 <= end) {
