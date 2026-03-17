@@ -2553,6 +2553,8 @@ impl Assembler
                             mem.base = MemBase::Stack { stack_idx: n, num_bits };
                         }
                     }
+                    // reg <- mem[v0, disp=3] where v0 is at Stack[5]
+                    // reg <- mem[[SP+5], disp=3]
                 }
             }
             _ => {}

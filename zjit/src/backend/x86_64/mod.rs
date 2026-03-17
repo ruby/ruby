@@ -382,12 +382,10 @@ impl Assembler {
         fn split_stack_membase(asm: &mut Assembler, opnd: Opnd, scratch_opnd: Opnd, stack_state: &StackState) -> Opnd {
             match opnd {
                 Opnd::Mem(Mem { base: stack_membase @ MemBase::Stack { .. }, disp: opnd_disp, num_bits: opnd_num_bits }) => {
-                    // Convert MemBase::Stack to MemBase::Reg(NATIVE_BASE_PTR) with the
-                    // correct stack displacement. The stack slot value lives directly at
-                    // [NATIVE_BASE_PTR + stack_disp], so we just adjust the base and
-                    // combine displacements — no indirection needed.
-                    let Mem { base, disp: stack_disp, .. } = stack_state.stack_membase_to_mem(stack_membase);
-                    Opnd::Mem(Mem { base, disp: stack_disp + opnd_disp, num_bits: opnd_num_bits })
+                    let base = Opnd::Mem(stack_state.stack_membase_to_mem(stack_membase));
+                    let base = split_large_disp(asm, base, scratch_opnd);
+                    asm.load_into(scratch_opnd, base);
+                    Opnd::Mem(Mem { base: MemBase::Reg(scratch_opnd.unwrap_reg().reg_no), disp: opnd_disp, num_bits: opnd_num_bits })
                 }
                 Opnd::Mem(Mem { base: MemBase::StackIndirect { stack_idx }, disp: opnd_disp, num_bits: opnd_num_bits }) => {
                     unimplemented!("Mem[StackIndirect]");

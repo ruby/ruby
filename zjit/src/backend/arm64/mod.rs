@@ -682,15 +682,13 @@ impl Assembler {
         fn split_only_stack_membase(asm: &mut Assembler, opnd: Opnd, scratch_opnd: Opnd, stack_state: &StackState) -> Opnd {
             match opnd {
                 Opnd::Mem(Mem { base: stack_membase @ MemBase::Stack { .. }, disp: opnd_disp, num_bits: opnd_num_bits }) => {
-                    // Convert MemBase::Stack to MemBase::Reg(NATIVE_BASE_PTR) with the
-                    // correct stack displacement. The stack slot value lives directly at
-                    // [NATIVE_BASE_PTR + stack_disp], so we just adjust the base and
-                    // combine displacements — no indirection needed. Large
-                    // displacements are handled by split_stack_membase().
-                    let Mem { base, disp: stack_disp, .. } = stack_state.stack_membase_to_mem(stack_membase);
-                    Opnd::Mem(Mem { base, disp: stack_disp + opnd_disp, num_bits: opnd_num_bits })
+                    let base = Opnd::Mem(stack_state.stack_membase_to_mem(stack_membase));
+                    let base = split_large_disp(asm, base, scratch_opnd);
+                    asm.load_into(scratch_opnd, base);
+                    Opnd::Mem(Mem { base: MemBase::Reg(scratch_opnd.unwrap_reg().reg_no), disp: opnd_disp, num_bits: opnd_num_bits })
                 }
                 Opnd::Mem(Mem { base: MemBase::StackIndirect { stack_idx }, disp: opnd_disp, num_bits: opnd_num_bits }) => {
+                    unimplemented!("Mem[StackIndirect]");
                     // The spilled value (a pointer) lives at a stack slot. Load it
                     // into a scratch register, then use the register as the base.
                     let stack_mem = stack_state.stack_membase_to_mem(MemBase::Stack { stack_idx, num_bits: 64 });
