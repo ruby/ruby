@@ -9,6 +9,7 @@
 #include "prism/internal/integer.h"
 #include "prism/internal/line_offset_list.h"
 #include "prism/internal/list.h"
+#include "prism/internal/options.h"
 #include "prism/internal/static_literals.h"
 #include "prism/internal/strings.h"
 #include "prism/internal/strncasecmp.h"
