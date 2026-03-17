@@ -219,12 +219,14 @@ pub enum MemBase
     Reg(u8),
     /// Virtual register: Lowered to MemBase::Reg or MemBase::Stack during register assignment.
     VReg(VRegId),
-    /// Stack slot: Lowered to MemBase::Reg in scratch_split.
+    /// Stack slot: a direct stack access. `stack_membase_to_mem()` turns this
+    /// into `[NATIVE_BASE_PTR + disp]`, so scratch splitting can use it as a
+    /// normal memory operand without first loading a pointer from the stack.
     Stack { stack_idx: usize, num_bits: u8 },
     /// A pointer stored in a stack slot, used as a memory base.
-    /// Unlike Stack (which accesses the stack value directly), this loads the
-    /// pointer from the stack slot into a scratch register, then uses it as the
-    /// base for the memory access with the Mem's displacement.
+    /// Unlike Stack, this first loads the pointer value from the stack slot
+    /// into a scratch register, then uses that register as the base for the
+    /// memory access with the Mem's displacement.
     /// Created when a VReg used as MemBase is spilled to the stack.
     StackIndirect { stack_idx: usize },
 }

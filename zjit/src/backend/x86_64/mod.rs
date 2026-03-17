@@ -112,6 +112,8 @@ const SCRATCH1_OPND: Opnd = Opnd::Reg(R10_REG);
 pub const SCRATCH_REG: Reg = R11_REG;
 
 impl Assembler {
+    // This keeps frame growth below the ±4096-byte displacement range we rely
+    // on for common stack-slot accesses on x86_64.
     const MAX_FRAME_STACK_SLOTS: usize = 2048;
 
     /// Return an Assembler with scratch registers disabled in the backend, and a scratch register.
@@ -1111,7 +1113,7 @@ impl Assembler {
 
         asm_dump!(asm, split);
 
-        asm.number_instructions(16);
+        asm.number_instructions(0);
 
         let live_in = asm.analyze_liveness();
         let intervals = asm.build_intervals(live_in);
