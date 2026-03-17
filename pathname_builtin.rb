@@ -236,10 +236,18 @@ class Pathname
     self
   end
 
+  # call-seq:
+  #   self == other -> true or false
   #
-  # Compare this pathname with +other+.  The comparison is string-based.
-  # Be aware that two different paths (<tt>foo.txt</tt> and <tt>./foo.txt</tt>)
-  # can refer to the same file.
+  # Returns whether the stored paths in +self+ and +other+ are equal:
+  #
+  #   pn = Pathname.new('lib')
+  #   pn == Pathname.new('lib')   # => true
+  #   pn == Pathname.new('./lib') # => false
+  #
+  # Returns +false+ if +other+ is not a pathname:
+  # 
+  #   pn == 'lib'                 # => false
   #
   def ==(other)
     return false unless Pathname === other
