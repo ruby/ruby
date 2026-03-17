@@ -1,3 +1,5 @@
+#include "prism/internal/integer.h"
+
 #include "prism.h"
 #include "prism/node_new.h"
 
