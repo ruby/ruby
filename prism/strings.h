@@ -6,7 +6,7 @@
 #ifndef PRISM_STRINGS_H
 #define PRISM_STRINGS_H
 
-#include "prism/attribute/exported.h"
+#include "prism/compiler/exported.h"
 #include "prism/files.h"
 
 #include <stddef.h>

@@ -1,7 +1,8 @@
 #include "prism.h"
 
-#include "prism/attribute/fallthrough.h"
-#include "prism/attribute/unused.h"
+#include "prism/compiler/accel.h"
+#include "prism/compiler/fallthrough.h"
+#include "prism/compiler/unused.h"
 
 #include "prism/internal/arena.h"
 #include "prism/internal/bit.h"
@@ -23,7 +24,6 @@
 #include "prism/internal/strpbrk.h"
 #include "prism/allocator.h"
 
-#include "prism/accel.h"
 #include "prism/node_new.h"
 
 #include <limits.h>

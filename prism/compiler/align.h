@@ -1,10 +1,8 @@
 /**
- * @file attribute/align.h
- *
- * Alignment macros used throughout the prism library.
+ * @file compiler/align.h
  */
-#ifndef PRISM_ALIGN_H
-#define PRISM_ALIGN_H
+#ifndef PRISM_COMPILER_ALIGN_H
+#define PRISM_COMPILER_ALIGN_H
 
 /**
  * Compiler-agnostic macros for specifying alignment of types and variables.

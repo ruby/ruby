@@ -1,11 +1,8 @@
 /**
- * @file attribute/unused.h
- *
- * Macro definitions for marking functions and parameters as unused to suppress
- * compiler warnings.
+ * @file compiler/unused.h
  */
-#ifndef PRISM_ATTRIBUTE_UNUSED_H
-#define PRISM_ATTRIBUTE_UNUSED_H
+#ifndef PRISM_COMPILER_UNUSED_H
+#define PRISM_COMPILER_UNUSED_H
 
 /**
  * GCC will warn if you specify a function or parameter that is unused at

@@ -1,7 +1,7 @@
 #include "prism/constant_pool.h"
 
-#include "prism/attribute/align.h"
-#include "prism/attribute/inline.h"
+#include "prism/compiler/align.h"
+#include "prism/compiler/inline.h"
 #include "prism/internal/arena.h"
 
 #include <assert.h>

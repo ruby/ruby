@@ -10,7 +10,7 @@
 
 #include "prism/node.h"
 
-#include "prism/attribute/inline.h"
+#include "prism/compiler/inline.h"
 
 <%- nodes.each do |node| -%>
 <%- params = node.fields.map(&:c_param) -%>

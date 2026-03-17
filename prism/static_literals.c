@@ -1,7 +1,7 @@
 #include "prism/internal/static_literals.h"
 
-#include "prism/attribute/inline.h"
-#include "prism/attribute/unused.h"
+#include "prism/compiler/inline.h"
+#include "prism/compiler/unused.h"
 #include "prism/internal/buffer.h"
 #include "prism/internal/integer.h"
 #include "prism/internal/isinf.h"

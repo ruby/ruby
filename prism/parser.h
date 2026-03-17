@@ -6,7 +6,7 @@
 #ifndef PRISM_PARSER_H
 #define PRISM_PARSER_H
 
-#include "prism/accel.h"
+#include "prism/compiler/accel.h"
 #include "prism/arena.h"
 #include "prism/ast.h"
 #include "prism/encoding.h"

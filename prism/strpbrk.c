@@ -1,11 +1,12 @@
 #include "prism/internal/strpbrk.h"
 
-#include "prism/attribute/inline.h"
-#include "prism/attribute/unused.h"
+#include "prism/compiler/accel.h"
+#include "prism/compiler/inline.h"
+#include "prism/compiler/unused.h"
+
 #include "prism/internal/bit.h"
 #include "prism/internal/diagnostic.h"
 #include "prism/internal/encoding.h"
-#include "prism/accel.h"
 
 #include <assert.h>
 #include <stdbool.h>

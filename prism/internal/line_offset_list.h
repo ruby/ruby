@@ -16,7 +16,7 @@
 
 #include "prism/line_offset_list.h"
 
-#include "prism/attribute/force_inline.h"
+#include "prism/compiler/force_inline.h"
 #include "prism/arena.h"
 
 /**

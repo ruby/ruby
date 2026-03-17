@@ -1,6 +1,6 @@
 #include "prism/internal/strncasecmp.h"
 
-#include "prism/attribute/inline.h"
+#include "prism/compiler/inline.h"
 
 /**
  * A locale-insensitive version of `tolower(3)`
