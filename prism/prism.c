@@ -22140,7 +22140,7 @@ pm_parser_init_shebang(pm_parser_t *parser, const pm_options_t *options, const c
 /**
  * Initialize a parser with the given start and end pointers.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, size_t size, const pm_options_t *options) {
     assert(arena != NULL);
     assert(source != NULL);
@@ -22401,7 +22401,7 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
  * Register a callback that will be called whenever prism changes the encoding
  * it is using to parse based on the magic comment.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_parser_register_encoding_changed_callback(pm_parser_t *parser, pm_encoding_changed_callback_t callback) {
     parser->encoding_changed_callback = callback;
 }
@@ -22409,7 +22409,7 @@ pm_parser_register_encoding_changed_callback(pm_parser_t *parser, pm_encoding_ch
 /**
  * Free any memory associated with the given parser.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_parser_free(pm_parser_t *parser) {
     pm_string_free(&parser->filepath);
     pm_arena_free(&parser->metadata_arena);
@@ -22592,7 +22592,7 @@ pm_parse_continuable(pm_parser_t *parser) {
 /**
  * Parse the Ruby source associated with the given parser and return the tree.
  */
-PRISM_EXPORTED_FUNCTION pm_node_t *
+pm_node_t *
 pm_parse(pm_parser_t *parser) {
     pm_node_t *node = parse_program(parser);
     pm_parse_continuable(parser);
@@ -22659,7 +22659,7 @@ pm_parse_stream_read(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t 
  * Prism is designed around having the entire source in memory at once, but you
  * can stream stdin in to Ruby so we need to support a streaming API.
  */
-PRISM_EXPORTED_FUNCTION pm_node_t *
+pm_node_t *
 pm_parse_stream(pm_arena_t *arena, pm_parser_t *parser, pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, pm_parse_stream_feof_t *stream_feof, const pm_options_t *options) {
     pm_buffer_init(buffer);
 
@@ -22683,7 +22683,7 @@ pm_parse_stream(pm_arena_t *arena, pm_parser_t *parser, pm_buffer_t *buffer, voi
 /**
  * Parse the source and return true if it parses without errors or warnings.
  */
-PRISM_EXPORTED_FUNCTION bool
+bool
 pm_parse_success_p(const uint8_t *source, size_t size, const char *data) {
     pm_options_t options = { 0 };
     pm_options_read(&options, data);
@@ -22724,7 +22724,7 @@ pm_serialize_header(pm_buffer_t *buffer) {
 /**
  * Serialize the AST represented by the given node to the given buffer.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_serialize(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
     pm_serialize_header(buffer);
     pm_serialize_content(parser, node, buffer);
@@ -22735,7 +22735,7 @@ pm_serialize(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
  * Parse and serialize the AST represented by the given source to the given
  * buffer.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_serialize_parse(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data) {
     pm_options_t options = { 0 };
     pm_options_read(&options, data);
@@ -22759,7 +22759,7 @@ pm_serialize_parse(pm_buffer_t *buffer, const uint8_t *source, size_t size, cons
  * Parse and serialize the AST represented by the source that is read out of the
  * given stream into to the given buffer.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_serialize_parse_stream(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, pm_parse_stream_feof_t *stream_feof, const char *data) {
     pm_arena_t arena = { 0 };
     pm_parser_t parser;
@@ -22781,7 +22781,7 @@ pm_serialize_parse_stream(pm_buffer_t *buffer, void *stream, pm_parse_stream_fge
 /**
  * Parse and serialize the comments in the given source to the given buffer.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_serialize_parse_comments(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data) {
     pm_options_t options = { 0 };
     pm_options_read(&options, data);
@@ -22887,7 +22887,7 @@ pm_slice_type(const uint8_t *source, size_t length, const char *encoding_name) {
 /**
  * Check that the slice is a valid local variable name.
  */
-PRISM_EXPORTED_FUNCTION pm_string_query_t
+pm_string_query_t
 pm_string_query_local(const uint8_t *source, size_t length, const char *encoding_name) {
     switch (pm_slice_type(source, length, encoding_name)) {
         case PM_SLICE_TYPE_ERROR:
@@ -22907,7 +22907,7 @@ pm_string_query_local(const uint8_t *source, size_t length, const char *encoding
 /**
  * Check that the slice is a valid constant name.
  */
-PRISM_EXPORTED_FUNCTION pm_string_query_t
+pm_string_query_t
 pm_string_query_constant(const uint8_t *source, size_t length, const char *encoding_name) {
     switch (pm_slice_type(source, length, encoding_name)) {
         case PM_SLICE_TYPE_ERROR:
@@ -22927,7 +22927,7 @@ pm_string_query_constant(const uint8_t *source, size_t length, const char *encod
 /**
  * Check that the slice is a valid method name.
  */
-PRISM_EXPORTED_FUNCTION pm_string_query_t
+pm_string_query_t
 pm_string_query_method_name(const uint8_t *source, size_t length, const char *encoding_name) {
 #define B(p) ((p) ? PM_STRING_QUERY_TRUE : PM_STRING_QUERY_FALSE)
 #define C1(c) (*source == c)

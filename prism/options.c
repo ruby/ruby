@@ -3,7 +3,7 @@
 /**
  * Set the shebang callback option on the given options struct.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_options_shebang_callback_set(pm_options_t *options, pm_options_shebang_callback_t shebang_callback, void *shebang_callback_data) {
     options->shebang_callback = shebang_callback;
     options->shebang_callback_data = shebang_callback_data;
@@ -12,7 +12,7 @@ pm_options_shebang_callback_set(pm_options_t *options, pm_options_shebang_callba
 /**
  * Set the filepath option on the given options struct.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_options_filepath_set(pm_options_t *options, const char *filepath) {
     pm_string_constant_init(&options->filepath, filepath, strlen(filepath));
 }
@@ -20,7 +20,7 @@ pm_options_filepath_set(pm_options_t *options, const char *filepath) {
 /**
  * Set the encoding option on the given options struct.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_options_encoding_set(pm_options_t *options, const char *encoding) {
     pm_string_constant_init(&options->encoding, encoding, strlen(encoding));
 }
@@ -28,7 +28,7 @@ pm_options_encoding_set(pm_options_t *options, const char *encoding) {
 /**
  * Set the encoding_locked option on the given options struct.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_options_encoding_locked_set(pm_options_t *options, bool encoding_locked) {
     options->encoding_locked = encoding_locked;
 }
@@ -36,7 +36,7 @@ pm_options_encoding_locked_set(pm_options_t *options, bool encoding_locked) {
 /**
  * Set the line option on the given options struct.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_options_line_set(pm_options_t *options, int32_t line) {
     options->line = line;
 }
@@ -44,7 +44,7 @@ pm_options_line_set(pm_options_t *options, int32_t line) {
 /**
  * Set the frozen string literal option on the given options struct.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_options_frozen_string_literal_set(pm_options_t *options, bool frozen_string_literal) {
     options->frozen_string_literal = frozen_string_literal ? PM_OPTIONS_FROZEN_STRING_LITERAL_ENABLED : PM_OPTIONS_FROZEN_STRING_LITERAL_DISABLED;
 }
@@ -52,7 +52,7 @@ pm_options_frozen_string_literal_set(pm_options_t *options, bool frozen_string_l
 /**
  * Sets the command line option on the given options struct.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_options_command_line_set(pm_options_t *options, uint8_t command_line) {
     options->command_line = command_line;
 }
@@ -70,7 +70,7 @@ is_number(const char *string, size_t length) {
  * string. If the string contains an invalid option, this returns false.
  * Otherwise, it returns true.
  */
-PRISM_EXPORTED_FUNCTION bool
+bool
 pm_options_version_set(pm_options_t *options, const char *version, size_t length) {
     if (version == NULL) {
         options->version = PM_OPTIONS_VERSION_LATEST;
@@ -136,7 +136,7 @@ pm_options_version_set(pm_options_t *options, const char *version, size_t length
 /**
  * Set the main script option on the given options struct.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_options_main_script_set(pm_options_t *options, bool main_script) {
     options->main_script = main_script;
 }
@@ -144,7 +144,7 @@ pm_options_main_script_set(pm_options_t *options, bool main_script) {
 /**
  * Set the partial script option on the given options struct.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_options_partial_script_set(pm_options_t *options, bool partial_script) {
     options->partial_script = partial_script;
 }
@@ -152,7 +152,7 @@ pm_options_partial_script_set(pm_options_t *options, bool partial_script) {
 /**
  * Set the freeze option on the given options struct.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_options_freeze_set(pm_options_t *options, bool freeze) {
     options->freeze = freeze;
 }
@@ -168,7 +168,7 @@ pm_options_freeze_set(pm_options_t *options, bool freeze) {
 /**
  * Allocate and zero out the scopes array on the given options struct.
  */
-PRISM_EXPORTED_FUNCTION bool
+bool
 pm_options_scopes_init(pm_options_t *options, size_t scopes_count) {
     options->scopes_count = scopes_count;
     options->scopes = xcalloc(scopes_count, sizeof(pm_options_scope_t));
@@ -178,7 +178,7 @@ pm_options_scopes_init(pm_options_t *options, size_t scopes_count) {
 /**
  * Return a pointer to the scope at the given index within the given options.
  */
-PRISM_EXPORTED_FUNCTION const pm_options_scope_t *
+const pm_options_scope_t *
 pm_options_scope_get(const pm_options_t *options, size_t index) {
     return &options->scopes[index];
 }
@@ -187,7 +187,7 @@ pm_options_scope_get(const pm_options_t *options, size_t index) {
  * Create a new options scope struct. This will hold a set of locals that are in
  * scope surrounding the code that is being parsed.
  */
-PRISM_EXPORTED_FUNCTION bool
+bool
 pm_options_scope_init(pm_options_scope_t *scope, size_t locals_count) {
     scope->locals_count = locals_count;
     scope->locals = xcalloc(locals_count, sizeof(pm_string_t));
@@ -198,7 +198,7 @@ pm_options_scope_init(pm_options_scope_t *scope, size_t locals_count) {
 /**
  * Return a pointer to the local at the given index within the given scope.
  */
-PRISM_EXPORTED_FUNCTION const pm_string_t *
+const pm_string_t *
 pm_options_scope_local_get(const pm_options_scope_t *scope, size_t index) {
     return &scope->locals[index];
 }
@@ -206,7 +206,7 @@ pm_options_scope_local_get(const pm_options_scope_t *scope, size_t index) {
 /**
  * Set the forwarding option on the given scope struct.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_options_scope_forwarding_set(pm_options_scope_t *scope, uint8_t forwarding) {
     scope->forwarding = forwarding;
 }
@@ -214,7 +214,7 @@ pm_options_scope_forwarding_set(pm_options_scope_t *scope, uint8_t forwarding) {
 /**
  * Free the internal memory associated with the options.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_options_free(pm_options_t *options) {
     pm_string_free(&options->filepath);
     pm_string_free(&options->encoding);

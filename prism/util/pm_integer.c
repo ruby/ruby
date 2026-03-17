@@ -604,7 +604,7 @@ void pm_integers_reduce(pm_integer_t *numerator, pm_integer_t *denominator) {
 /**
  * Convert an integer to a decimal string.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_integer_string(pm_buffer_t *buffer, const pm_integer_t *integer) {
     if (integer->negative) {
         pm_buffer_append_byte(buffer, '-');
@@ -663,7 +663,7 @@ pm_integer_string(pm_buffer_t *buffer, const pm_integer_t *integer) {
  * Free the internal memory of an integer. This memory will only be allocated if
  * the integer exceeds the size of a single uint32_t.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_integer_free(pm_integer_t *integer) {
     if (integer->values) {
         xfree(integer->values);

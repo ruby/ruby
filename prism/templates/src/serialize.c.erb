@@ -310,7 +310,7 @@ serialize_token(void *data, pm_parser_t *parser, pm_token_t *token) {
 /**
  * Lex the given source and serialize to the given buffer.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_serialize_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data) {
     pm_options_t options = { 0 };
     pm_options_read(&options, data);
@@ -341,7 +341,7 @@ pm_serialize_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const 
  * Parse and serialize both the AST and the tokens represented by the given
  * source to the given buffer.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_serialize_parse_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data) {
     pm_options_t options = { 0 };
     pm_options_read(&options, data);

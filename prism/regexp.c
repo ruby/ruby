@@ -1595,7 +1595,7 @@ pm_regexp_validate_encoding(pm_regexp_parser_t *parser, bool ascii_only, pm_node
  * extraction walks the unescaped content since escape sequences in group names
  * (e.g., line continuations) have already been processed by the lexer.
  */
-PRISM_EXPORTED_FUNCTION pm_node_flags_t
+pm_node_flags_t
 pm_regexp_parse(pm_parser_t *parser, pm_regular_expression_node_t *node, pm_regexp_name_callback_t name_callback, pm_regexp_name_data_t *name_data) {
     const uint8_t *source = parser->start + node->content_loc.start;
     size_t size = node->content_loc.length;
