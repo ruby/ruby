@@ -1,4 +1,4 @@
-#include "prism/util/pm_char.h"
+#include "prism/internal/char.h"
 #include "prism/internal/line_offset_list.h"
 
 #define PRISM_CHAR_BIT_REGEXP_OPTION (1 << 2)
@@ -270,16 +270,3 @@ bool
 pm_char_is_hexadecimal_digit(const uint8_t b) {
     return pm_char_is_number_kind(b, PRISM_NUMBER_BIT_HEXADECIMAL_DIGIT);
 }
-
-#undef PRISM_CHAR_BIT_WHITESPACE
-#undef PRISM_CHAR_BIT_INLINE_WHITESPACE
-#undef PRISM_CHAR_BIT_REGEXP_OPTION
-
-#undef PRISM_NUMBER_BIT_BINARY_DIGIT
-#undef PRISM_NUMBER_BIT_BINARY_NUMBER
-#undef PRISM_NUMBER_BIT_OCTAL_DIGIT
-#undef PRISM_NUMBER_BIT_OCTAL_NUMBER
-#undef PRISM_NUMBER_BIT_DECIMAL_DIGIT
-#undef PRISM_NUMBER_BIT_DECIMAL_NUMBER
-#undef PRISM_NUMBER_BIT_HEXADECIMAL_NUMBER
-#undef PRISM_NUMBER_BIT_HEXADECIMAL_DIGIT

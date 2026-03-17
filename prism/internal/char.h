@@ -1,17 +1,25 @@
 /**
- * @file pm_char.h
+ * @file internal/char.h
  *
  * Functions for working with characters and strings.
  */
-#ifndef PRISM_CHAR_H
-#define PRISM_CHAR_H
+#ifndef PRISM_INTERNAL_CHAR_H
+#define PRISM_INTERNAL_CHAR_H
 
-#include "prism/defines.h"
-#include "prism/util/pm_arena.h"
+// #include "prism/defines.h"
+// #include "prism/util/pm_arena.h"
+// #include "prism/line_offset_list.h"
+
+// #include <stdbool.h>
+// #include <stddef.h>
+
+#include "prism/force_inline.h"
 #include "prism/line_offset_list.h"
+#include "prism/util/pm_arena.h"
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 /** Bit flag for whitespace characters in pm_byte_table. */
 #define PRISM_CHAR_BIT_WHITESPACE (1 << 0)
@@ -21,7 +29,7 @@
 
 /**
  * A lookup table for classifying bytes. Each entry is a bitfield of
- * PRISM_CHAR_BIT_* flags. Defined in pm_char.c.
+ * PRISM_CHAR_BIT_* flags. Defined in char.c.
  */
 extern const uint8_t pm_byte_table[256];
 

@@ -1,4 +1,5 @@
 #include "prism/options.h"
+#include "prism/internal/char.h"
 
 /**
  * Set the shebang callback option on the given options struct.
