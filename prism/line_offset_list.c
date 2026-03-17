@@ -1,4 +1,8 @@
-#include "prism/line_offset_list.h"
+#include "prism/internal/line_offset_list.h"
+#include "prism/align.h"
+
+#include <assert.h>
+#include <string.h>
 
 /**
  * Initialize a new line offset list with the given capacity.

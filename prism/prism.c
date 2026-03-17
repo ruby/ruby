@@ -1,4 +1,5 @@
 #include "prism/internal/integer.h"
+#include "prism/internal/line_offset_list.h"
 
 #include "prism.h"
 #include "prism/node_new.h"

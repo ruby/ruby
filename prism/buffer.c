@@ -2,6 +2,7 @@
 #include "prism/allocator.h"
 #include "prism/util/pm_char.h"
 
+#include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>

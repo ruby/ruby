@@ -7,6 +7,7 @@
 #define PRISM_CHAR_H
 
 #include "prism/defines.h"
+#include "prism/util/pm_arena.h"
 #include "prism/line_offset_list.h"
 
 #include <stdbool.h>

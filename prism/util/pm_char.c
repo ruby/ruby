@@ -1,4 +1,5 @@
 #include "prism/util/pm_char.h"
+#include "prism/internal/line_offset_list.h"
 
 #define PRISM_CHAR_BIT_REGEXP_OPTION (1 << 2)
 
