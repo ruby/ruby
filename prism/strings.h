@@ -7,7 +7,7 @@
 #define PRISM_STRINGS_H
 
 #include "prism/compiler/exported.h"
-#include "prism/files.h"
+#include "prism/compiler/filesystem.h"
 
 #include <stddef.h>
 #include <stdint.h>

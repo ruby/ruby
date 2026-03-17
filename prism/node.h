@@ -7,6 +7,7 @@
 #define PRISM_NODE_H
 
 #include "prism/compiler/exported.h"
+
 #include "prism/arena.h"
 #include "prism/ast.h"
 

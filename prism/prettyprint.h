@@ -14,6 +14,8 @@
 
 #else
 
+#include "prism/compiler/exported.h"
+
 #include "prism/ast.h"
 #include "prism/buffer.h"
 #include "prism/parser.h"
