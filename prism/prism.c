@@ -17,6 +17,7 @@
 #include "prism/internal/line_offset_list.h"
 #include "prism/internal/list.h"
 #include "prism/internal/memchr.h"
+#include "prism/internal/node.h"
 #include "prism/internal/options.h"
 #include "prism/internal/regexp.h"
 #include "prism/internal/static_literals.h"
