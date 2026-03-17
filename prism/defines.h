@@ -11,14 +11,16 @@
 
 #include "prism/attribute/align.h"
 #include "prism/attribute/exported.h"
+#include "prism/attribute/fallthrough.h"
 #include "prism/attribute/flex_array.h"
 #include "prism/attribute/format.h"
 #include "prism/attribute/inline.h"
 #include "prism/attribute/unused.h"
 
-#include "prism/internal/accel.h"
 #include "prism/internal/bit.h"
+#include "prism/internal/isinf.h"
 
+#include "prism/accel.h"
 #include "prism/allocator.h"
 #include "prism/excludes.h"
 #include "prism/files.h"
@@ -96,20 +98,6 @@
 
     /** Void because this platform does not support branch prediction hints. */
     #define PRISM_UNLIKELY(x) (x)
-#endif
-
-/**
- * We use -Wimplicit-fallthrough to guard potentially unintended fall-through between cases of a switch.
- * Use PRISM_FALLTHROUGH to explicitly annotate cases where the fallthrough is intentional.
- */
-#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L // C23 or later
-    #define PRISM_FALLTHROUGH [[fallthrough]];
-#elif defined(__GNUC__) || defined(__clang__)
-    #define PRISM_FALLTHROUGH __attribute__((fallthrough));
-#elif defined(_MSC_VER)
-    #define PRISM_FALLTHROUGH __fallthrough;
-#else
-    #define PRISM_FALLTHROUGH
 #endif
 
 #endif

@@ -4,6 +4,11 @@
 #include "prism/internal/arena.h"
 #include "prism/internal/list.h"
 
+#include <assert.h>
+#include <inttypes.h>
+#include <stdarg.h>
+#include <stdio.h>
+
 #define PM_DIAGNOSTIC_ID_MAX <%= errors.length + warnings.length %>
 
 /** This struct holds the data for each diagnostic. */

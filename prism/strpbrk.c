@@ -2,10 +2,10 @@
 
 #include "prism/attribute/inline.h"
 #include "prism/attribute/unused.h"
-#include "prism/internal/accel.h"
 #include "prism/internal/bit.h"
 #include "prism/internal/diagnostic.h"
 #include "prism/internal/encoding.h"
+#include "prism/accel.h"
 
 #include <assert.h>
 #include <stdbool.h>

@@ -1,6 +1,7 @@
 #include "prism/internal/regexp.h"
 
 #include "prism/attribute/inline.h"
+#include "prism/attribute/fallthrough.h"
 #include "prism/internal/buffer.h"
 #include "prism/internal/char.h"
 #include "prism/internal/diagnostic.h"
@@ -8,6 +9,9 @@
 #include "prism/internal/memchr.h"
 #include "prism/internal/strings.h"
 #include "prism/internal/strncasecmp.h"
+
+#include <assert.h>
+#include <string.h>
 
 /** The maximum depth of nested groups allowed in a regular expression. */
 #define PM_REGEXP_PARSE_DEPTH_MAX 4096

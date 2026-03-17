@@ -1,6 +1,5 @@
 #include "prism.h"
 
-#include "prism/internal/accel.h"
 #include "prism/internal/arena.h"
 #include "prism/internal/bit.h"
 #include "prism/internal/buffer.h"
@@ -19,6 +18,7 @@
 #include "prism/internal/strncasecmp.h"
 #include "prism/internal/strpbrk.h"
 
+#include "prism/accel.h"
 #include "prism/node_new.h"
 
 /**

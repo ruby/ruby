@@ -1,12 +1,17 @@
 #include "prism/internal/static_literals.h"
 
 #include "prism/attribute/inline.h"
+#include "prism/attribute/unused.h"
 #include "prism/internal/buffer.h"
 #include "prism/internal/integer.h"
+#include "prism/internal/isinf.h"
 #include "prism/internal/strings.h"
 #include "prism/allocator.h"
 
+#include <assert.h>
+#include <math.h>
 #include <stdlib.h>
+#include <string.h>
 
 /**
  * A small struct used for passing around a subset of the information that is
