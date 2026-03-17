@@ -528,17 +528,19 @@ class Pathname
     chop_basename(@path) == nil && SEPARATOR_PAT.match?(@path)
   end
 
-  # Predicate method for testing whether a path is absolute.
+  # call-seq:
+  #   absolute? -> true or false
   #
-  # It returns +true+ if the pathname begins with a slash.
+  # Returns whether +self+ contains an absolute path:
   #
-  #   p = Pathname.new('/im/sure')
-  #   p.absolute?
-  #       #=> true
+  #   Pathname.new('/home').absolute? # => true
+  #   Pathname.new('lib').absolute?   # => false
   #
-  #   p = Pathname.new('not/so/sure')
-  #   p.absolute?
-  #       #=> false
+  # OS-dependent for some paths:
+  #
+  #   Pathname.new('C:/').absolute?   # => true   # On Windows.
+  #   Pathname.new('C:/').absolute?   # => false  # Elsewhere.
+  #
   def absolute?
     ABSOLUTE_PATH.match? @path
   end
