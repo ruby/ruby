@@ -8,6 +8,7 @@
 #include "prism/internal/diagnostic.h"
 #include "prism/internal/integer.h"
 #include "prism/internal/line_offset_list.h"
+#include "prism/internal/strings.h"
 #include "prism/internal/strpbrk.h"
 
 #include "prism/node_new.h"

@@ -1,5 +1,9 @@
 #include "prism/options.h"
+
 #include "prism/internal/char.h"
+#include "prism/allocator.h"
+
+#include <stdlib.h>
 
 /**
  * Set the shebang callback option on the given options struct.
