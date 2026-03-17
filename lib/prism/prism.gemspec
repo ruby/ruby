@@ -75,6 +75,7 @@ Gem::Specification.new do |spec|
     "include/prism/internal/bit.h",
     "include/prism/internal/buffer.h",
     "include/prism/internal/char.h",
+    "include/prism/internal/constant_pool.h",
     "include/prism/internal/diagnostic.h",
     "include/prism/internal/integer.h",
     "include/prism/internal/line_offset_list.h",

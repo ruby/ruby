@@ -1,6 +1,10 @@
 #include "prism/constant_pool.h"
 
+#include "prism/attribute/align.h"
 #include "prism/internal/arena.h"
+
+#include <assert.h>
+#include <stdbool.h>
 
 /**
  * Initialize a list of constant ids.
