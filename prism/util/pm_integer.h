@@ -7,7 +7,7 @@
 #define PRISM_NUMBER_H
 
 #include "prism/defines.h"
-#include "prism/buffer.h"
+#include "prism/internal/buffer.h"
 
 #include <assert.h>
 #include <stdbool.h>
