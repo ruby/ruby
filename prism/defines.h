@@ -12,6 +12,7 @@
 #include "prism/align.h"
 #include "prism/allocator.h"
 #include "prism/exported.h"
+#include "prism/flex_array.h"
 #include "prism/force_inline.h"
 #include "prism/format.h"
 
@@ -290,18 +291,6 @@
     #define PRISM_FALLTHROUGH __fallthrough;
 #else
     #define PRISM_FALLTHROUGH
-#endif
-
-/**
- * A macro for defining a flexible array member. C99 supports `data[]`, GCC
- * supports `data[0]` as an extension, and older compilers require `data[1]`.
- */
-#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
-    #define PM_FLEX_ARY_LEN   /* data[] */
-#elif defined(__GNUC__) && !defined(__STRICT_ANSI__)
-    #define PM_FLEX_ARY_LEN 0 /* data[0] */
-#else
-    #define PM_FLEX_ARY_LEN 1 /* data[1] */
 #endif
 
 #endif

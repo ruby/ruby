@@ -1,10 +1,13 @@
 #include "prism/arena.h"
+#include "prism/allocator.h"
 
 #include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 /**
  * Compute the block allocation size using offsetof so it is correct regardless
- * of PM_FLEX_ARY_LEN.
+ * of PM_FLEX_ARRAY_LENGTH.
  */
 #define PM_ARENA_BLOCK_SIZE(data_size) (offsetof(pm_arena_block_t, data) + (data_size))
 
