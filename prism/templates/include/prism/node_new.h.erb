@@ -8,9 +8,9 @@
 #ifndef PRISM_NODE_NEW_H
 #define PRISM_NODE_NEW_H
 
-#include "prism/node.h"
-
 #include "prism/compiler/inline.h"
+
+#include "prism/node.h"
 
 <%- nodes.each do |node| -%>
 <%- params = node.fields.map(&:c_param) -%>

@@ -1,10 +1,10 @@
 /**
- * @file files.h
+ * @file compiler/filesystem.h
  *
  * Platform detection for mmap and filesystem support.
  */
-#ifndef PRISM_FILES_H
-#define PRISM_FILES_H
+#ifndef PRISM_COMPILER_FILESYSTEM_H
+#define PRISM_COMPILER_FILESYSTEM_H
 
 /**
  * In general, libc for embedded systems does not support memory-mapped files.
