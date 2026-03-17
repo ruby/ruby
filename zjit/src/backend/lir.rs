@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::fmt;
 use std::mem::take;
 use std::panic;
@@ -1522,6 +1522,12 @@ impl Interval {
         self.ranges.iter().any(|range| range.start() < x && range.end() > x)
     }
 
+    /// Returns true if any range in this interval covers position x.
+    pub fn covers(&self, x: usize) -> bool {
+        assert!(self.range.start.is_some() && self.range.end.is_some(), "covers called on interval with no range");
+        self.ranges.iter().any(|range| range.start() <= x && x < range.end())
+    }
+
     pub fn born_at(&self, x:usize) -> bool {
         self.ranges.iter().any(|range| range.start() == x)
     }
@@ -2097,6 +2103,9 @@ impl Assembler
 
         let mut assignment: Vec<Option<Allocation>> = vec![None; intervals.len()];
         let mut num_stack_slots: usize = 0;
+        let mut free_registers: BTreeSet<usize> = (0..num_registers).collect();
+        let mut active: Vec<usize> = vec![];
+        let mut inactive: Vec<usize> = vec![];
 
         // Collect vreg indices that have valid ranges, sorted by start point
         let mut sorted_intervals: Vec<Interval> = intervals.iter()
@@ -2106,10 +2115,63 @@ impl Assembler
         sorted_intervals.sort_by_key(|i| i.range.start.unwrap());
 
         for interval in &sorted_intervals {
+            let cur_id = interval.id;
+            let cur_start = interval.start();
+
+            let mut idx = 0;
+            while idx < active.len() {
+                let other_id = active[idx];
+                let other = &intervals[other_id];
+                let other_alloc = assignment[other_id].unwrap();
+
+                if other.end() <= cur_start {
+                    if let Some(reg_idx) = other_alloc.alloc_pool_index(num_registers) {
+                        free_registers.insert(reg_idx);
+                    }
+                    active.swap_remove(idx);
+                    continue;
+                }
+
+                if !other.covers(cur_start) {
+                    if let Some(reg_idx) = other_alloc.alloc_pool_index(num_registers) {
+                        free_registers.insert(reg_idx);
+                    }
+                    inactive.push(other_id);
+                    active.swap_remove(idx);
+                    continue;
+                }
+
+                idx += 1;
+            }
+
+            let mut idx = 0;
+            while idx < inactive.len() {
+                let other_id = inactive[idx];
+                let other = &intervals[other_id];
+
+                if other.end() <= cur_start {
+                    inactive.swap_remove(idx);
+                    continue;
+                }
+
+                if other.covers(cur_start) {
+                    if let Some(reg_idx) = assignment[other_id]
+                        .and_then(|alloc| alloc.alloc_pool_index(num_registers))
+                    {
+                        free_registers.remove(&reg_idx);
+                    }
+                    active.push(other_id);
+                    inactive.swap_remove(idx);
+                    continue;
+                }
+
+                idx += 1;
+            }
+
             let preferred_reg = preferred_registers[interval.id];
             let preferred_taken = preferred_reg.is_some_and(|reg| {
-                assignment.iter().enumerate().any(|(other_id, other_alloc)| {
-                    (*other_alloc)
+                active.iter().chain(inactive.iter()).any(|&other_id| {
+                    assignment[other_id]
                         .and_then(|alloc| alloc.assigned_reg())
                         .is_some_and(|other_reg| {
                             other_reg.reg_no == reg.reg_no && intervals[other_id].overlaps(interval)
@@ -2118,51 +2180,90 @@ impl Assembler
             });
 
             if let Some(preferred_reg) = preferred_reg.filter(|_| !preferred_taken) {
-                assignment[interval.id] = Some(Allocation::Fixed(preferred_reg));
+                if let Some(reg_idx) = Allocation::Fixed(preferred_reg).alloc_pool_index(num_registers) {
+                    free_registers.remove(&reg_idx);
+                }
+                assignment[cur_id] = Some(Allocation::Fixed(preferred_reg));
+                active.push(cur_id);
                 continue;
             }
 
-            let mut free_register: Option<usize> = None;
-            let mut spill_candidate: Option<(usize, usize, usize)> = None;
-
-            for reg_idx in 0..num_registers {
-                let conflicts: Vec<usize> = assignment.iter().enumerate()
-                    .filter_map(|(other_id, other_alloc)| {
-                        other_alloc
-                            .and_then(|alloc| alloc.alloc_pool_index(num_registers))
-                            .filter(|&assigned_reg_idx| assigned_reg_idx == reg_idx)
-                            .filter(|_| intervals[other_id].overlaps(interval))
-                            .map(|_| other_id)
-                    })
-                    .collect();
-
-                if conflicts.is_empty() {
-                    free_register = Some(reg_idx);
-                    break;
+            let mut available = free_registers.clone();
+            for &other_id in &inactive {
+                if !intervals[other_id].overlaps(interval) {
+                    continue;
                 }
 
-                if conflicts.len() == 1 {
-                    let conflict_id = conflicts[0];
-                    if matches!(assignment[conflict_id], Some(Allocation::Reg(_))) && intervals[conflict_id].end() > interval.end() {
-                        let candidate = (intervals[conflict_id].end(), reg_idx, conflict_id);
-                        if spill_candidate.is_none_or(|best| candidate.0 > best.0) {
-                            spill_candidate = Some(candidate);
-                        }
-                    }
+                if let Some(reg_idx) = assignment[other_id]
+                    .and_then(|alloc| alloc.alloc_pool_index(num_registers))
+                {
+                    available.remove(&reg_idx);
                 }
             }
 
-            if let Some(reg_idx) = free_register {
-                assignment[interval.id] = Some(Allocation::Reg(reg_idx));
-            } else if let Some((_, reg_idx, conflict_id)) = spill_candidate {
-                let slot = Allocation::Stack(num_stack_slots);
-                num_stack_slots += 1;
-                assignment[interval.id] = Some(Allocation::Reg(reg_idx));
-                assignment[conflict_id] = Some(slot);
+            if let Some(reg_idx) = available.iter().next().copied() {
+                free_registers.remove(&reg_idx);
+                assignment[cur_id] = Some(Allocation::Reg(reg_idx));
+                active.push(cur_id);
             } else {
-                let slot = Allocation::Stack(num_stack_slots);
-                num_stack_slots += 1;
-                assignment[interval.id] = Some(slot);
+                let mut spill_candidate: Option<(usize, usize, Vec<usize>)> = None;
+
+                for reg_idx in 0..num_registers {
+                    let mut conflicts = vec![];
+                    let mut blocked = false;
+
+                    for &other_id in active.iter().chain(inactive.iter()) {
+                        if !intervals[other_id].overlaps(interval) {
+                            continue;
+                        }
+
+                        let Some(other_alloc) = assignment[other_id] else { continue; };
+                        if other_alloc.alloc_pool_index(num_registers) != Some(reg_idx) {
+                            continue;
+                        }
+
+                        if !matches!(other_alloc, Allocation::Reg(_)) {
+                            blocked = true;
+                            break;
+                        }
+
+                        conflicts.push(other_id);
+                    }
+
+                    if blocked || conflicts.is_empty() {
+                        continue;
+                    }
+
+                    let latest_end = conflicts.iter()
+                        .map(|&other_id| intervals[other_id].end())
+                        .max()
+                        .unwrap();
+                    let candidate = (latest_end, reg_idx, conflicts);
+
+                    if spill_candidate.as_ref().is_none_or(|best| candidate.0 > best.0) {
+                        spill_candidate = Some(candidate);
+                    }
+                }
+
+                if let Some((_, reg_idx, conflicts)) =
+                    spill_candidate.filter(|(latest_end, _, _)| *latest_end > interval.end())
+                {
+                    for conflict_id in &conflicts {
+                        assignment[*conflict_id] = Some(Allocation::Stack(num_stack_slots));
+                        num_stack_slots += 1;
+                    }
+
+                    active.retain(|other_id| !conflicts.contains(other_id));
+                    inactive.retain(|other_id| !conflicts.contains(other_id));
+
+                    free_registers.remove(&reg_idx);
+                    assignment[cur_id] = Some(Allocation::Reg(reg_idx));
+                    active.push(cur_id);
+                } else {
+                    let slot = Allocation::Stack(num_stack_slots);
+                    num_stack_slots += 1;
+                    assignment[cur_id] = Some(slot);
+                }
             }
         }
 
@@ -4520,6 +4621,26 @@ mod tests {
         assert_eq!(num_stack_slots, 0);
         assert_eq!(assignments[outer.vreg_idx().0], Some(Allocation::Reg(0)));
         assert_eq!(assignments[hole.vreg_idx().0], Some(Allocation::Reg(0)));
+    }
+
+    #[test]
+    fn test_linear_scan_blocks_inactive_reg_with_overlapping_future_range() {
+        let asm = Assembler::new();
+
+        let mut outer = Interval::new(0);
+        outer.add_range(0, 4);
+        outer.add_range(8, 9);
+
+        let mut current = Interval::new(1);
+        current.add_range(4, 10);
+
+        let intervals = vec![outer, current];
+        let preferred_registers = vec![None; intervals.len()];
+        let (assignments, num_stack_slots) = asm.linear_scan(intervals, 1, &preferred_registers);
+
+        assert_eq!(num_stack_slots, 1);
+        assert_eq!(assignments[0], Some(Allocation::Reg(0)));
+        assert_eq!(assignments[1], Some(Allocation::Stack(0)));
     }
 
     #[test]
