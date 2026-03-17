@@ -1918,7 +1918,7 @@ fn gen_is_a(jit: &mut JITState, asm: &mut Assembler, obj: Opnd, class: Opnd) -> 
         asm.set_current_block(result_block);
         let label = jit.get_label(asm, result_block, hir_block_id);
         asm.write_label(label);
-        let param = asm.new_block_param(64);
+        let param = asm.new_block_param(VALUE_BITS);
         asm.current_block().add_parameter(param);
         param
     } else {
