@@ -94,6 +94,9 @@ RSpec.describe Bundler::Retry do
     end
 
     it "is enabled by default with 1 second base delay" do
+      original_base_delay = Bundler::Retry.default_base_delay
+      Bundler::Retry.default_base_delay = 1.0
+
       attempts = 0
       sleep_times = []
 
@@ -114,6 +117,8 @@ RSpec.describe Bundler::Retry do
       expect(sleep_times[0]).to eq(1.0)
       # Second retry: 1.0 * 2^1 = 2.0
       expect(sleep_times[1]).to eq(2.0)
+    ensure
+      Bundler::Retry.default_base_delay = original_base_delay
     end
 
     it "sleeps with exponential backoff when base_delay is set" do
