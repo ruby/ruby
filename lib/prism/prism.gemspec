@@ -56,6 +56,7 @@ Gem::Specification.new do |spec|
     "include/prism/arena.h",
     "include/prism/ast.h",
     "include/prism/buffer.h",
+    "include/prism/constant_pool.h",
     "include/prism/debug_allocator.h",
     "include/prism/defines.h",
     "include/prism/diagnostic.h",
@@ -80,7 +81,6 @@ Gem::Specification.new do |spec|
     "include/prism/internal/memchr.h",
     "include/prism/internal/strncasecmp.h",
     "include/prism/internal/strpbrk.h",
-    "include/prism/util/pm_constant_pool.h",
     "include/prism/util/pm_list.h",
     "include/prism/util/pm_string.h",
     "include/prism/version.h",
@@ -175,6 +175,7 @@ Gem::Specification.new do |spec|
     "src/arena.c",
     "src/buffer.c",
     "src/char.c",
+    "src/constant_pool.c",
     "src/diagnostic.c",
     "src/encoding.c",
     "src/integer.c",
@@ -190,7 +191,6 @@ Gem::Specification.new do |spec|
     "src/strncasecmp.c",
     "src/strpbrk.c",
     "src/token_type.c",
-    "src/util/pm_constant_pool.c",
     "src/util/pm_list.c",
     "src/util/pm_string.c"
   ]
