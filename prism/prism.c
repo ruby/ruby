@@ -4,6 +4,7 @@
 #include "prism/compiler/fallthrough.h"
 #include "prism/compiler/unused.h"
 
+#include "prism/internal/allocator.h"
 #include "prism/internal/arena.h"
 #include "prism/internal/bit.h"
 #include "prism/internal/buffer.h"
@@ -22,7 +23,6 @@
 #include "prism/internal/strings.h"
 #include "prism/internal/strncasecmp.h"
 #include "prism/internal/strpbrk.h"
-#include "prism/allocator.h"
 
 #include "prism/node_new.h"
 

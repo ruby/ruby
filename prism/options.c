@@ -1,8 +1,9 @@
 #include "prism/options.h"
 
 #include "prism/compiler/inline.h"
+
+#include "prism/internal/allocator.h"
 #include "prism/internal/char.h"
-#include "prism/allocator.h"
 
 #include <stdlib.h>
 #include <string.h>

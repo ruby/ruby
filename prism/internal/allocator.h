@@ -1,10 +1,10 @@
 /**
- * @file allocator.h
+ * @file internal/allocator.h
  *
  * Macro definitions for defining the main and a custom allocator for Prism.
  */
-#ifndef PRISM_ALLOCATOR_H
-#define PRISM_ALLOCATOR_H
+#ifndef PRISM_INTERNAL_ALLOCATOR_H
+#define PRISM_INTERNAL_ALLOCATOR_H
 
 /**
  * If you build Prism with a custom allocator, configure it with
@@ -79,7 +79,7 @@
 #endif
 
 #ifdef PRISM_BUILD_DEBUG
-    #include "prism/debug_allocator.h"
+    #include "prism/internal/allocator_debug.h"
 #endif
 
 #endif

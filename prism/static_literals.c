@@ -2,11 +2,12 @@
 
 #include "prism/compiler/inline.h"
 #include "prism/compiler/unused.h"
+
+#include "prism/internal/allocator.h"
 #include "prism/internal/buffer.h"
 #include "prism/internal/integer.h"
 #include "prism/internal/isinf.h"
 #include "prism/internal/strings.h"
-#include "prism/allocator.h"
 
 #include <assert.h>
 #include <math.h>

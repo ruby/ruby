@@ -1,6 +1,7 @@
-#include "prism/allocator.h"
-#include "prism/internal/buffer.h"
 #include "prism/internal/integer.h"
+
+#include "prism/internal/allocator.h"
+#include "prism/internal/buffer.h"
 
 #include <assert.h>
 #include <inttypes.h>
