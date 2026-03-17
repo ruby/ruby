@@ -39,10 +39,11 @@ pm_node_list_grow(pm_arena_t *arena, pm_node_list_t *list, size_t size) {
 }
 
 /**
- * Append a new node onto the end of the node list.
+ * Slow path for pm_node_list_append: grow the list and append the node.
+ * Do not call directly - use pm_node_list_append instead.
  */
 void
-pm_node_list_append(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node) {
+pm_node_list_append_slow(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node) {
     pm_node_list_grow(arena, list, 1);
     list->nodes[list->size++] = node;
 }

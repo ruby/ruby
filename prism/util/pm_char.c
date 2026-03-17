@@ -107,14 +107,6 @@ pm_strspn_regexp_option(const uint8_t *string, ptrdiff_t length) {
     return pm_strspn_char_kind(string, length, PRISM_CHAR_BIT_REGEXP_OPTION);
 }
 
-/**
- * Returns true if the given character matches the given kind.
- */
-static inline bool
-pm_char_is_char_kind(const uint8_t b, uint8_t kind) {
-    return (pm_byte_table[b] & kind) != 0;
-}
-
 
 /**
  * Scan through the string and return the number of characters at the start of

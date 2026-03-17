@@ -67,6 +67,14 @@ pm_strpbrk_cache_update(pm_parser_t *parser, const uint8_t *charset) {
     memset(parser->strpbrk_cache.high_lut, 0, sizeof(parser->strpbrk_cache.high_lut));
     memset(parser->strpbrk_cache.table, 0, sizeof(parser->strpbrk_cache.table));
 
+    // Always include NUL in the tables. The slow path uses strchr, which
+    // always matches NUL (it finds the C string terminator), so NUL is
+    // effectively always a breakpoint. Replicating that here lets the fast
+    // scanner handle NUL at full speed instead of bailing to the slow path.
+    parser->strpbrk_cache.low_lut[0x00] |= (uint8_t) (1 << 0);
+    parser->strpbrk_cache.high_lut[0x00] = (uint8_t) (1 << 0);
+    parser->strpbrk_cache.table[0] |= (uint64_t) 1;
+
     size_t charset_len = 0;
     for (const uint8_t *c = charset; *c != '\0'; c++) {
         parser->strpbrk_cache.low_lut[*c & 0x0F] |= (uint8_t) (1 << (*c >> 4));

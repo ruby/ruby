@@ -128,7 +128,7 @@ pm_regexp_parse_error(pm_regexp_parser_t *parser, const uint8_t *start, const ui
         loc_length = (uint32_t) (parser->node_end - parser->node_start);
     }
 
-    pm_diagnostic_list_append_format(&pm->error_list, loc_start, loc_length, PM_ERR_REGEXP_PARSE_ERROR, message);
+    pm_diagnostic_list_append_format(&pm->metadata_arena, &pm->error_list, loc_start, loc_length, PM_ERR_REGEXP_PARSE_ERROR, message);
 }
 
 /**
@@ -146,7 +146,7 @@ pm_regexp_parse_error(pm_regexp_parser_t *parser, const uint8_t *start, const ui
             loc_start__ = (uint32_t) ((parser_)->node_start - pm__->start); \
             loc_length__ = (uint32_t) ((parser_)->node_end - (parser_)->node_start); \
         } \
-        pm_diagnostic_list_append_format(&pm__->error_list, loc_start__, loc_length__, diag_id, __VA_ARGS__); \
+        pm_diagnostic_list_append_format(&pm__->metadata_arena, &pm__->error_list, loc_start__, loc_length__, diag_id, __VA_ARGS__); \
     } while (0)
 
 /**
@@ -1397,6 +1397,7 @@ pm_regexp_format_for_error(pm_buffer_t *buffer, const pm_encoding_t *encoding, c
  */
 #define PM_REGEXP_ENCODING_ERROR(parser, diag_id, ...) \
     pm_diagnostic_list_append_format( \
+        &(parser)->parser->metadata_arena, \
         &(parser)->parser->error_list, \
         (uint32_t) ((parser)->node_start - (parser)->parser->start), \
         (uint32_t) ((parser)->node_end - (parser)->node_start), \
