@@ -3400,12 +3400,11 @@ impl Assembler {
         out
     }
 
-    /// Call a C function, discarding the result. Uses C_RET_OPND directly as
-    /// the output to avoid allocating a vreg and the extra mov instruction.
-    pub fn ccall_void(&mut self, fptr: *const u8, opnds: Vec<Opnd>) {
-        use crate::backend::current::C_RET_OPND;
+    /// Call a C function into an explicit output operand without allocating a
+    /// new vreg for the result.
+    pub fn ccall_into(&mut self, out: Opnd, fptr: *const u8, opnds: Vec<Opnd>) {
         let fptr = Opnd::const_ptr(fptr);
-        self.push_insn(Insn::CCall { fptr, opnds, start_marker: None, end_marker: None, out: C_RET_OPND });
+        self.push_insn(Insn::CCall { fptr, opnds, start_marker: None, end_marker: None, out });
     }
 
     /// Call a C function stored in a register
@@ -3556,30 +3555,13 @@ impl Assembler {
         self.push_insn(Insn::IncrCounter { mem, value });
     }
 
-    pub fn jbe(&mut self, target: Target) {
-        self.push_insn(Insn::Jbe(target));
-    }
-
     pub fn jb(&mut self, target: Target) {
         self.push_insn(Insn::Jb(target));
-    }
-
-    pub fn je(&mut self, target: Target) {
-        self.push_insn(Insn::Je(target));
-    }
-
-    pub fn jl(&mut self, target: Target) {
-        self.push_insn(Insn::Jl(target));
     }
 
     #[allow(dead_code)]
     pub fn jg(&mut self, target: Target) {
         self.push_insn(Insn::Jg(target));
-    }
-
-    #[allow(dead_code)]
-    pub fn jge(&mut self, target: Target) {
-        self.push_insn(Insn::Jge(target));
     }
 
     pub fn jmp(&mut self, target: Target) {
@@ -3590,25 +3572,6 @@ impl Assembler {
         self.push_insn(Insn::JmpOpnd(opnd));
     }
 
-    pub fn jne(&mut self, target: Target) {
-        self.push_insn(Insn::Jne(target));
-    }
-
-    pub fn jnz(&mut self, target: Target) {
-        self.push_insn(Insn::Jnz(target));
-    }
-
-    pub fn jo(&mut self, target: Target) {
-        self.push_insn(Insn::Jo(target));
-    }
-
-    pub fn jo_mul(&mut self, target: Target) {
-        self.push_insn(Insn::JoMul(target));
-    }
-
-    pub fn jz(&mut self, target: Target) {
-        self.push_insn(Insn::Jz(target));
-    }
 
     #[must_use]
     pub fn lea(&mut self, opnd: Opnd) -> Opnd {

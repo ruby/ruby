@@ -32,7 +32,7 @@ pub struct RegisterCopy<T> {
     pub destination: T,
 }
 
-// Algorithm 13: Parallel copy sequentialization
+// Algorithm 13 in Boissin's thesis: parallel copy sequentialization
 //
 // Takes a list of parallel copies, return a list of sequential copy operations
 // such that each output register contains the same value as if the copies were
@@ -121,7 +121,6 @@ mod tests {
     use std::collections::HashMap;
 
     use super::*;
-    use assert_matches::assert_matches;
 
     // Assumes that each register initially contains the value matching its id.
     fn execute_sequential(copies: &[RegisterCopy<Register>]) -> HashMap<Register, u32> {
@@ -273,7 +272,7 @@ mod tests {
         let spare = Register(4);
         let result = sequentialize_register(&copies, spare);
         let mut sequential_result = execute_sequential(&result);
-        assert_matches!(sequential_result.remove(&spare), Some(_));
+        assert!(matches!(sequential_result.remove(&spare), Some(_)));
         assert_eq!(
             sequential_result,
             Vec::from_iter([(Register(2), 1), (Register(3), 2), (Register(1), 3),])

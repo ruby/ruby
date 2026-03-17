@@ -170,7 +170,7 @@ fn test_jcc_label()
 
     let label = asm.new_label("foo");
     asm.cmp(EC, EC);
-    asm.je(label.clone());
+    asm.push_insn(Insn::Je(label.clone()));
     asm.write_label(label);
 
     asm.compile_with_num_regs(&mut cb, 1);
@@ -187,7 +187,7 @@ fn test_jcc_ptr()
         Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_FLAG as i32),
         not_mask,
     );
-    asm.jnz(side_exit);
+    asm.push_insn(Insn::Jnz(side_exit));
 
     asm.compile_with_num_regs(&mut cb, 2);
 }
@@ -216,7 +216,7 @@ fn test_jo()
 
     let arg0_untag = asm.sub(arg0, Opnd::Imm(1));
     let out_val = asm.add(arg0_untag, arg1);
-    asm.jo(side_exit);
+    asm.push_insn(Insn::Jo(side_exit));
 
     asm.mov(Opnd::mem(64, SP, 0), out_val);
 

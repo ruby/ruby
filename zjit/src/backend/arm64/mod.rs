@@ -870,7 +870,7 @@ impl Assembler {
                     asm.write_label(label.clone());
                     asm.incr_counter(SCRATCH0_OPND, value);
                     asm.cmp(SCRATCH1_OPND, 0.into());
-                    asm.jne(label);
+                    asm.push_insn(Insn::Jne(label));
                 }
                 Insn::Store { dest, src } => {
                     *dest = split_stack_membase(asm, *dest, SCRATCH0_OPND, &stack_state);
@@ -1754,7 +1754,7 @@ mod tests {
 
         let val32 = asm.sub(Opnd::Value(Qtrue), Opnd::Imm(1));
         asm.store(Opnd::mem(64, EC, 0x10).with_num_bits(32), val32.with_num_bits(32));
-        asm.je(label);
+        asm.push_insn(Insn::Je(label));
         asm.frame_teardown(JIT_PRESERVED_REGS);
         asm.cret(val64);
 
@@ -1803,7 +1803,7 @@ mod tests {
         asm.write_label(start.clone());
         asm.cmp(value, 0.into());
         asm.jg(forward.clone());
-        asm.jl(start.clone());
+        asm.push_insn(Insn::Jl(start.clone()));
         asm.write_label(forward);
 
         asm.compile_with_num_regs(&mut cb, 1);
@@ -2010,7 +2010,7 @@ mod tests {
 
         let target: CodePtr = cb.get_write_ptr().add_bytes(80);
 
-        asm.je(Target::CodePtr(target));
+        asm.push_insn(Insn::Je(Target::CodePtr(target)));
         asm.compile_with_num_regs(&mut cb, 0);
 
         assert_disasm_snapshot!(cb.disasm(), @"
@@ -2031,7 +2031,7 @@ mod tests {
         let offset = 1 << 21;
         let target: CodePtr = cb.get_write_ptr().add_bytes(offset);
 
-        asm.je(Target::CodePtr(target));
+        asm.push_insn(Insn::Je(Target::CodePtr(target)));
         asm.compile_with_num_regs(&mut cb, 0);
 
         assert_disasm_snapshot!(cb.disasm(), @"
@@ -2618,7 +2618,7 @@ mod tests {
         let far_label = asm.new_label("far");
 
         asm.cmp(Opnd::Reg(X0_REG), Opnd::UImm(1));
-        asm.je(far_label.clone());
+        asm.push_insn(Insn::Je(far_label.clone()));
 
         (0..IMMEDIATE_MAX_VALUE).for_each(|_| {
             asm.mov(Opnd::Reg(TEMP_REGS[0]), Opnd::Reg(TEMP_REGS[2]));

@@ -1250,7 +1250,7 @@ mod tests {
 
         let val32 = asm.sub(Opnd::Value(Qtrue), Opnd::Imm(1));
         asm.store(Opnd::mem(64, EC, 0x10).with_num_bits(32), val32.with_num_bits(32));
-        asm.je(label);
+        asm.push_insn(Insn::Je(label));
         asm.cret(val64);
 
         asm.frame_teardown(JIT_PRESERVED_REGS);

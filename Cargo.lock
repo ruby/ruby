@@ -3,12 +3,6 @@
 version = 3
 
 [[package]]
-name = "assert_matches"
-version = "1.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9b34d609dfbaf33d6889b2b7106d3ca345eacad44200913df5ba02bfd31d2ba9"
-
-[[package]]
 name = "capstone"
 version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -272,7 +266,6 @@ dependencies = [
 name = "zjit"
 version = "0.0.1"
 dependencies = [
- "assert_matches",
  "capstone",
  "insta",
  "jit",
