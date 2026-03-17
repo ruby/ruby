@@ -61,7 +61,6 @@ Gem::Specification.new do |spec|
     "include/prism/buffer.h",
     "include/prism/constant_pool.h",
     "include/prism/debug_allocator.h",
-    "include/prism/defines.h",
     "include/prism/diagnostic.h",
     "include/prism/encoding.h",
     "include/prism/excludes.h",

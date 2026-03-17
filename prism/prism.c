@@ -1,5 +1,8 @@
 #include "prism.h"
 
+#include "prism/attribute/fallthrough.h"
+#include "prism/attribute/unused.h"
+
 #include "prism/internal/arena.h"
 #include "prism/internal/bit.h"
 #include "prism/internal/buffer.h"
@@ -8,6 +11,7 @@
 #include "prism/internal/diagnostic.h"
 #include "prism/internal/encoding.h"
 #include "prism/internal/integer.h"
+#include "prism/internal/isinf.h"
 #include "prism/internal/line_offset_list.h"
 #include "prism/internal/list.h"
 #include "prism/internal/memchr.h"
@@ -17,9 +21,57 @@
 #include "prism/internal/strings.h"
 #include "prism/internal/strncasecmp.h"
 #include "prism/internal/strpbrk.h"
+#include "prism/allocator.h"
 
 #include "prism/accel.h"
 #include "prism/node_new.h"
+
+#include <limits.h>
+#include <stdlib.h>
+
+/**
+ * When we are parsing using recursive descent, we want to protect against
+ * malicious payloads that could attempt to crash our parser. We do this by
+ * specifying a maximum depth to which we are allowed to recurse.
+ */
+#ifndef PRISM_DEPTH_MAXIMUM
+    #define PRISM_DEPTH_MAXIMUM 10000
+#endif
+
+/**
+ * A simple utility macro to concatenate two tokens together, necessary when one
+ * of the tokens is itself a macro.
+ */
+#define PM_CONCATENATE(left, right) left ## right
+
+/**
+ * We want to be able to use static assertions, but they weren't standardized
+ * until C11. As such, we polyfill it here by making a hacky typedef that will
+ * fail to compile due to a negative array size if the condition is false.
+ */
+#if defined(_Static_assert)
+#   define PM_STATIC_ASSERT(line, condition, message) _Static_assert(condition, message)
+#else
+#   define PM_STATIC_ASSERT(line, condition, message) typedef char PM_CONCATENATE(static_assert_, line)[(condition) ? 1 : -1]
+#endif
+
+/**
+ * Support PRISM_LIKELY and PRISM_UNLIKELY to help the compiler optimize its
+ * branch predication.
+ */
+#if defined(__GNUC__) || defined(__clang__)
+    /** The compiler should predicate that this branch will be taken. */
+    #define PRISM_LIKELY(x) __builtin_expect(!!(x), 1)
+
+    /** The compiler should predicate that this branch will not be taken. */
+    #define PRISM_UNLIKELY(x) __builtin_expect(!!(x), 0)
+#else
+    /** Void because this platform does not support branch prediction hints. */
+    #define PRISM_LIKELY(x)   (x)
+
+    /** Void because this platform does not support branch prediction hints. */
+    #define PRISM_UNLIKELY(x) (x)
+#endif
 
 /**
  * The prism version and the serialization format.

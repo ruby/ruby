@@ -10,8 +10,6 @@
 extern "C" {
 #endif
 
-#include "prism/defines.h"
-
 #include "prism/arena.h"
 #include "prism/ast.h"
 #include "prism/diagnostic.h"
