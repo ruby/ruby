@@ -7,7 +7,7 @@
 #define PRISM_ENCODING_H
 
 #include "prism/defines.h"
-#include "prism/util/pm_strncasecmp.h"
+#include "prism/internal/strncasecmp.h"
 
 #include <assert.h>
 #include <stdbool.h>

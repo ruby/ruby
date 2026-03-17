@@ -60,6 +60,7 @@ Gem::Specification.new do |spec|
     "include/prism/regexp.h",
     "include/prism/static_literals.h",
     "include/prism/internal/buffer.h",
+    "include/prism/internal/strncasecmp.h",
     "include/prism/util/pm_arena.h",
     "include/prism/util/pm_char.h",
     "include/prism/util/pm_constant_pool.h",
@@ -67,7 +68,6 @@ Gem::Specification.new do |spec|
     "include/prism/util/pm_list.h",
     "include/prism/util/pm_memchr.h",
     "include/prism/util/pm_line_offset_list.h",
-    "include/prism/util/pm_strncasecmp.h",
     "include/prism/util/pm_string.h",
     "include/prism/util/pm_strpbrk.h",
     "include/prism/version.h",
@@ -169,6 +169,7 @@ Gem::Specification.new do |spec|
     "src/regexp.c",
     "src/serialize.c",
     "src/static_literals.c",
+    "src/strncasecmp.c",
     "src/token_type.c",
     "src/util/pm_arena.c",
     "src/util/pm_char.c",
@@ -178,7 +179,6 @@ Gem::Specification.new do |spec|
     "src/util/pm_memchr.c",
     "src/util/pm_line_offset_list.c",
     "src/util/pm_string.c",
-    "src/util/pm_strncasecmp.c",
     "src/util/pm_strpbrk.c"
   ]
 
