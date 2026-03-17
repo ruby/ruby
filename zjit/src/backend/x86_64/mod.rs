@@ -1587,12 +1587,8 @@ mod tests {
         asm.mov(CFP, sp); // should be merged to add
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @"
-        0x0: mov rdi, r13
-        0x3: add rdi, 0x40
-        0x7: mov r13, rdi
-        ");
-        assert_snapshot!(cb.hexdump(), @"4c89ef4883c7404989fd");
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: add r13, 0x40");
+        assert_snapshot!(cb.hexdump(), @"4983c540");
     }
 
     #[test]
@@ -1614,12 +1610,8 @@ mod tests {
         asm.mov(CFP, sp); // should be merged to add
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @"
-        0x0: mov rdi, r13
-        0x3: sub rdi, 0x40
-        0x7: mov r13, rdi
-        ");
-        assert_snapshot!(cb.hexdump(), @"4c89ef4883ef404989fd");
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: sub r13, 0x40");
+        assert_snapshot!(cb.hexdump(), @"4983ed40");
     }
 
     #[test]
@@ -1641,12 +1633,8 @@ mod tests {
         asm.mov(CFP, sp); // should be merged to add
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @"
-        0x0: mov rdi, r13
-        0x3: and rdi, 0x40
-        0x7: mov r13, rdi
-        ");
-        assert_snapshot!(cb.hexdump(), @"4c89ef4883e7404989fd");
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: and r13, 0x40");
+        assert_snapshot!(cb.hexdump(), @"4983e540");
     }
 
     #[test]
@@ -1657,12 +1645,8 @@ mod tests {
         asm.mov(CFP, sp); // should be merged to add
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @"
-        0x0: mov rdi, r13
-        0x3: or rdi, 0x40
-        0x7: mov r13, rdi
-        ");
-        assert_snapshot!(cb.hexdump(), @"4c89ef4883cf404989fd");
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: or r13, 0x40");
+        assert_snapshot!(cb.hexdump(), @"4983cd40");
     }
 
     #[test]
@@ -1673,12 +1657,8 @@ mod tests {
         asm.mov(CFP, sp); // should be merged to add
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @"
-        0x0: mov rdi, r13
-        0x3: xor rdi, 0x40
-        0x7: mov r13, rdi
-        ");
-        assert_snapshot!(cb.hexdump(), @"4c89ef4883f7404989fd");
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: xor r13, 0x40");
+        assert_snapshot!(cb.hexdump(), @"4983f540");
     }
 
     #[test]
@@ -1834,12 +1814,11 @@ mod tests {
         0x20: pop rdx
         0x21: pop rsi
         0x22: pop rdi
-        0x23: mov rdi, rdi
-        0x26: add rdi, rsi
-        0x29: mov rdi, rdx
-        0x2c: add rdi, rcx
+        0x23: add rdi, rsi
+        0x26: mov rdi, rdx
+        0x29: add rdi, rcx
         ");
-        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000057565251b800000000ffd0595a5e5f4889ff4801f74889d74801cf");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000057565251b800000000ffd0595a5e5f4801f74889d74801cf");
     }
 
     #[test]
@@ -1878,14 +1857,13 @@ mod tests {
         0x2c: pop rdx
         0x2d: pop rsi
         0x2e: pop rdi
-        0x2f: mov rdi, rdi
-        0x32: add rdi, rsi
-        0x35: mov rdi, rdx
-        0x38: add rdi, rcx
-        0x3b: mov rdi, rdx
-        0x3e: add rdi, r8
+        0x2f: add rdi, rsi
+        0x32: mov rdi, rdx
+        0x35: add rdi, rcx
+        0x38: mov rdi, rdx
+        0x3b: add rdi, r8
         ");
-        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b80500000057565251415057b800000000ffd05f4158595a5e5f4889ff4801f74889d74801cf4889d74c01c7");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b80500000057565251415057b800000000ffd05f4158595a5e5f4801f74889d74801cf4889d74c01c7");
     }
 
     #[test]
