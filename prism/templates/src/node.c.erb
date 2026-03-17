@@ -74,7 +74,7 @@ pm_node_list_concat(pm_arena_t *arena, pm_node_list_t *list, pm_node_list_t *oth
 /**
  * Returns a string representation of the given node type.
  */
-PRISM_EXPORTED_FUNCTION const char *
+const char *
 pm_node_type_to_str(pm_node_type_t node_type)
 {
     switch (node_type) {
@@ -94,7 +94,7 @@ pm_node_type_to_str(pm_node_type_t node_type)
  * pointer and is passed to the visitor callback for consumers to use as they
  * see fit.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_visit_node(const pm_node_t *node, bool (*visitor)(const pm_node_t *node, void *data), void *data) {
     if (visitor(node, data)) pm_visit_child_nodes(node, visitor, data);
 }
@@ -104,7 +104,7 @@ pm_visit_node(const pm_node_t *node, bool (*visitor)(const pm_node_t *node, void
  * default behavior for walking the tree that is called from pm_visit_node if
  * the callback returns true.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_visit_child_nodes(const pm_node_t *node, bool (*visitor)(const pm_node_t *node, void *data), void *data) {
     switch (PM_NODE_TYPE(node)) {
         <%- nodes.each do |node| -%>
@@ -161,7 +161,7 @@ pm_dump_json_location(pm_buffer_t *buffer, const pm_location_t *location) {
 /**
  * Dump JSON to the given buffer.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_dump_json(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *node) {
     switch (PM_NODE_TYPE(node)) {
         <%- nodes.each do |node| -%>

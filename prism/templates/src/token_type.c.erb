@@ -5,7 +5,7 @@
 /**
  * Returns a string representation of the given token type.
  */
-PRISM_EXPORTED_FUNCTION const char *
+const char *
 pm_token_type_name(pm_token_type_t token_type) {
     switch (token_type) {
 <%- tokens.each do |token| -%>

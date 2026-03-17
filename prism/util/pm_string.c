@@ -6,7 +6,7 @@ static const uint8_t empty_source[] = "";
  * Returns the size of the pm_string_t struct. This is necessary to allocate the
  * correct amount of memory in the FFI backend.
  */
-PRISM_EXPORTED_FUNCTION size_t
+size_t
 pm_string_sizeof(void) {
     return sizeof(pm_string_t);
 }
@@ -117,7 +117,7 @@ pm_string_file_handle_close(pm_string_file_handle_t *handle) {
  * `MapViewOfFile`, on POSIX systems that have access to `mmap` we'll use
  * `mmap`, and on other POSIX systems we'll use `read`.
  */
-PRISM_EXPORTED_FUNCTION pm_string_init_result_t
+pm_string_init_result_t
 pm_string_mapped_init(pm_string_t *string, const char *filepath) {
 #ifdef _WIN32
     // Open the file for reading.
@@ -207,7 +207,7 @@ pm_string_mapped_init(pm_string_t *string, const char *filepath) {
  * contents and size into the given `pm_string_t`. The given `pm_string_t`
  * should be freed using `pm_string_free` when it is no longer used.
  */
-PRISM_EXPORTED_FUNCTION pm_string_init_result_t
+pm_string_init_result_t
 pm_string_file_init(pm_string_t *string, const char *filepath) {
 #ifdef _WIN32
     // Open the file for reading.
@@ -348,7 +348,7 @@ pm_string_compare(const pm_string_t *left, const pm_string_t *right) {
 /**
  * Returns the length associated with the string.
  */
-PRISM_EXPORTED_FUNCTION size_t
+size_t
 pm_string_length(const pm_string_t *string) {
     return string->length;
 }
@@ -356,7 +356,7 @@ pm_string_length(const pm_string_t *string) {
 /**
  * Returns the start pointer associated with the string.
  */
-PRISM_EXPORTED_FUNCTION const uint8_t *
+const uint8_t *
 pm_string_source(const pm_string_t *string) {
     return string->source;
 }
@@ -364,7 +364,7 @@ pm_string_source(const pm_string_t *string) {
 /**
  * Free the associated memory of the given string.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_string_free(pm_string_t *string) {
     void *memory = (void *) string->source;
 
