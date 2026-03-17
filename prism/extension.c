@@ -382,7 +382,7 @@ dump_input(pm_string_t *input, const pm_options_t *options) {
     pm_serialize(&parser, node, &buffer);
 
     VALUE result = rb_str_new(pm_buffer_value(&buffer), pm_buffer_length(&buffer));
-    pm_buffer_free(&buffer);
+    pm_buffer_cleanup(&buffer);
     pm_parser_free(&parser);
     pm_arena_free(&arena);
 
@@ -1081,7 +1081,7 @@ parse_stream(int argc, VALUE *argv, VALUE self) {
     VALUE value = pm_ast_new(&parser, node, encoding, source, options.freeze);
     VALUE result = parse_result_create(rb_cPrismParseResult, &parser, value, encoding, source, options.freeze);
 
-    pm_buffer_free(&buffer);
+    pm_buffer_cleanup(&buffer);
     pm_parser_free(&parser);
     pm_arena_free(&arena);
 

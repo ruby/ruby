@@ -1464,7 +1464,7 @@ pm_regexp_validate_encoding_modifier(pm_regexp_parser_t *parser, bool ascii_only
                 pm_buffer_t formatted = { 0 };
                 pm_regexp_format_for_error(&formatted, parser->encoding, (const uint8_t *) source_start, (size_t) source_length);
                 PM_REGEXP_ENCODING_ERROR(parser, PM_ERR_REGEXP_NON_ESCAPED_MBC, (int) formatted.length, (const char *) formatted.value);
-                pm_buffer_free(&formatted);
+                pm_buffer_cleanup(&formatted);
             }
         }
 
@@ -1658,7 +1658,7 @@ pm_regexp_parse(pm_parser_t *parser, pm_regular_expression_node_t *node, pm_rege
     const char *error_source = (const char *) pm_string_source(&node->unescaped);
     int error_source_length = (int) pm_string_length(&node->unescaped);
     pm_node_flags_t encoding_flags = pm_regexp_validate_encoding(&regexp_parser, ascii_only, flags, error_source, error_source_length);
-    pm_buffer_free(&regexp_parser.hex_escape_buffer);
+    pm_buffer_cleanup(&regexp_parser.hex_escape_buffer);
 
     // Second pass: walk unescaped content for named capture extraction.
     if (name_callback != NULL) {
@@ -1712,5 +1712,5 @@ pm_regexp_parse_named_captures(pm_parser_t *parser, const uint8_t *source, size_
     };
 
     pm_regexp_parse_pattern(&regexp_parser);
-    pm_buffer_free(&regexp_parser.hex_escape_buffer);
+    pm_buffer_cleanup(&regexp_parser.hex_escape_buffer);
 }

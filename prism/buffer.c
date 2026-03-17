@@ -361,9 +361,9 @@ pm_buffer_insert(pm_buffer_t *buffer, size_t index, const char *value, size_t le
 }
 
 /**
- * Free the memory associated with the buffer.
+ * Free the memory held by the buffer.
  */
 void
-pm_buffer_free(pm_buffer_t *buffer) {
+pm_buffer_cleanup(pm_buffer_t *buffer) {
     xfree_sized(buffer->value, buffer->capacity);
 }

@@ -365,7 +365,7 @@ PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_method_name(const uint
  * use and be aware of are:
  *
  * * `pm_buffer_t` - a small buffer object that will hold the serialized AST
- * * `pm_buffer_free()` - free the memory associated with the buffer
+ * * `pm_buffer_cleanup()` - free the memory associated with the buffer
  * * `pm_serialize()` - serialize the AST into a buffer
  * * `pm_serialize_parse()` - parse and serialize the AST into a buffer
  *
@@ -378,7 +378,7 @@ PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_method_name(const uint
  *     pm_serialize_parse(&buffer, source, length, NULL);
  *     printf("SERIALIZED!\n");
  *
- *     pm_buffer_free(&buffer);
+ *     pm_buffer_cleanup(&buffer);
  * }
  * ```
  *
@@ -399,7 +399,7 @@ PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_method_name(const uint
  *     pm_prettyprint(&buffer, &parser, root);
  *     printf("%*.s\n", (int) buffer.length, buffer.value);
  *
- *     pm_buffer_free(&buffer);
+ *     pm_buffer_cleanup(&buffer);
  *     pm_parser_free(&parser);
  *     pm_arena_free(&arena);
  * }
