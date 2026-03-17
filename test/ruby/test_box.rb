@@ -871,4 +871,43 @@ class TestBox < Test::Unit::TestCase
       end
     end;
   end
+
+  def test_fiddle_import_in_multiple_boxes_does_not_crash_on_exit
+    assert_in_out_err([ENV_ENABLE_BOX, "--enable=gems"], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 60) do |output, error, status|
+    begin;
+      require "rubygems"
+      begin
+        Gem::Specification.find_by_name("fiddle")
+      rescue Gem::MissingSpecError
+        puts :skipped
+        exit
+      end
+
+      require "tmpdir"
+
+      source = <<~'RUBY'
+        require "rubygems"
+        $LOAD_PATH.unshift(*Gem::Specification.find_by_name("fiddle").full_require_paths)
+        require "fiddle/import"
+      RUBY
+
+      Dir.mktmpdir do |dir|
+        path = File.join(dir, "fiddle_require.rb")
+        File.write(path, source)
+
+        Ruby::Box.new.require(path)
+        Ruby::Box.new.require(path)
+      end
+
+      puts :ok
+    end;
+      pend "fiddle gem unavailable" if output == ["skipped"]
+
+      assert_equal ["ok"], output
+      assert_predicate status, :success?
+      assert_equal 2, error.size
+      assert_match EXPERIMENTAL_WARNING_LINE_PATTERNS[0], error[0]
+      assert_match EXPERIMENTAL_WARNING_LINE_PATTERNS[1], error[1]
+    end
+  end
 end
