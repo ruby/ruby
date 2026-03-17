@@ -1868,12 +1868,12 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
                         constant_id = PM_CONSTANT_DOT3;
                         break;
                       default:
-                        constant_id = pm_constant_pool_insert_constant(&result.parser.constant_pool, source, length);
+                        constant_id = pm_constant_pool_insert_constant(&result.parser.metadata_arena, &result.parser.constant_pool, source, length);
                         break;
                     }
                 }
                 else {
-                    constant_id = pm_constant_pool_insert_constant(&result.parser.constant_pool, source, length);
+                    constant_id = pm_constant_pool_insert_constant(&result.parser.metadata_arena, &result.parser.constant_pool, source, length);
                 }
 
                 st_insert(parent_scope->index_lookup_table, (st_data_t) constant_id, (st_data_t) local_index);
