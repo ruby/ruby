@@ -12,10 +12,10 @@
 #include "prism/constant_pool.h"
 #include "prism/encoding.h"
 #include "prism/line_offset_list.h"
+#include "prism/list.h"
 #include "prism/options.h"
 #include "prism/static_literals.h"
 #include "prism/strings.h"
-#include "prism/util/pm_list.h"
 
 #include <stdbool.h>
 

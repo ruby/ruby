@@ -1,17 +1,12 @@
 /**
- * @file pm_list.h
+ * @file list.h
  *
  * An abstract linked list.
  */
 #ifndef PRISM_LIST_H
 #define PRISM_LIST_H
 
-#include "prism/defines.h"
-
-#include <stdbool.h>
 #include <stddef.h>
-#include <stdint.h>
-#include <stdlib.h>
 
 /**
  * This struct represents an abstract linked list that provides common
@@ -64,24 +59,12 @@ typedef struct {
 } pm_list_t;
 
 /**
- * Returns true if the given list is empty.
- *
- * @param list The list to check.
- * @return True if the given list is empty, otherwise false.
- *
- * \public \memberof pm_list_t
- */
-PRISM_EXPORTED_FUNCTION bool pm_list_empty_p(pm_list_t *list);
-
-/**
  * Returns the size of the list.
  *
  * @param list The list to check.
  * @return The size of the list.
- *
- * \public \memberof pm_list_t
  */
-PRISM_EXPORTED_FUNCTION size_t pm_list_size(pm_list_t *list);
+size_t pm_list_size(pm_list_t *list);
 
 /**
  * Append a node to the given list.
@@ -90,14 +73,5 @@ PRISM_EXPORTED_FUNCTION size_t pm_list_size(pm_list_t *list);
  * @param node The node to append.
  */
 void pm_list_append(pm_list_t *list, pm_list_node_t *node);
-
-/**
- * Deallocate the internal state of the given list.
- *
- * @param list The list to free.
- *
- * \public \memberof pm_list_t
- */
-PRISM_EXPORTED_FUNCTION void pm_list_free(pm_list_t *list);
 
 #endif
