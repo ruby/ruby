@@ -156,7 +156,7 @@ module Bundler
         private
 
         def git_remote_fetch(args)
-          command = ["fetch", "--force", "--quiet", "--no-tags", *args, "--", configured_uri, refspec].compact
+          command = fetch_command(args)
           command_with_no_credentials = check_allowed(command)
 
           Bundler::Retry.new("`#{command_with_no_credentials}` at #{path}", [MissingGitRevisionError]).attempts do
@@ -166,6 +166,11 @@ module Bundler
             if err.include?("couldn't find remote ref") || err.include?("not our ref")
               raise MissingGitRevisionError.new(command_with_no_credentials, path, commit || explicit_ref, credential_filtered_uri)
             else
+              if args.include?("--depth")
+                args -= depth_args
+                command = fetch_command(args)
+                command_with_no_credentials = check_allowed(command)
+              end
               raise GitCommandError.new(command_with_no_credentials, path, err)
             end
           end
@@ -178,7 +183,8 @@ module Bundler
             FileUtils.mkdir_p(p)
           end
 
-          command = ["clone", "--bare", "--no-hardlinks", "--quiet", *extra_clone_args, "--", configured_uri, path.to_s]
+          clone_args = extra_clone_args
+          command = clone_command(clone_args)
           command_with_no_credentials = check_allowed(command)
 
           Bundler::Retry.new("`#{command_with_no_credentials}`", [MissingGitRevisionError]).attempts do
@@ -189,13 +195,10 @@ module Bundler
                err.include?("Remote branch #{branch_option} not found") # git 2.49 or higher
               raise MissingGitRevisionError.new(command_with_no_credentials, nil, explicit_ref, credential_filtered_uri)
             else
-              idx = command.index("--depth")
-              if idx
-                command.delete_at(idx)
-                command.delete_at(idx)
+              unless full_clone?
+                clone_args -= depth_args
+                command = clone_command(clone_args)
                 command_with_no_credentials = check_allowed(command)
-
-                err += "Retrying without --depth argument."
               end
               raise GitCommandError.new(command_with_no_credentials, path, err)
             end
@@ -425,6 +428,14 @@ module Bundler
 
           args += ["--branch", branch_option] if branch_option
           args
+        end
+
+        def fetch_command(args)
+          ["fetch", "--force", "--quiet", "--no-tags", *args, "--", configured_uri, refspec].compact
+        end
+
+        def clone_command(args)
+          ["clone", "--bare", "--no-hardlinks", "--quiet", *args, "--", configured_uri, path.to_s]
         end
 
         def depth_args

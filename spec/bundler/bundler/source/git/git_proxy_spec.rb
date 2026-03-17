@@ -10,7 +10,9 @@ RSpec.describe Bundler::Source::Git::GitProxy do
   let(:revision) { nil }
   let(:git_source) { nil }
   let(:clone_result) { double(Process::Status, success?: true) }
+  let(:fail_result) { double(Process::Status, success?: false) }
   let(:base_clone_args) { ["clone", "--bare", "--no-hardlinks", "--quiet", "--no-tags", "--depth", "1", "--single-branch"] }
+  let(:base_fetch_args) { ["fetch", "--force", "--quiet", "--no-tags", "--depth", "1"] }
   subject(:git_proxy) { described_class.new(path, uri, options, revision, git_source) }
 
   context "with explicit ref" do
@@ -200,13 +202,12 @@ RSpec.describe Bundler::Source::Git::GitProxy do
 
   context "URI is HTTP" do
     let(:uri) { "http://github.com/ruby/rubygems.git" }
-    let(:without_depth_arguments) { ["clone", "--bare", "--no-hardlinks", "--quiet", "--no-tags", "--single-branch"] }
-    let(:fail_clone_result) { double(Process::Status, success?: false) }
+    let(:clone_args_without_depth) { ["clone", "--bare", "--no-hardlinks", "--quiet", "--no-tags", "--single-branch"] }
 
-    it "retries without --depth when git url is http and fails" do
+    it "retries clone without --depth when dumb http transport fails" do
       allow(git_proxy).to receive(:git_local).with("--version").and_return("git version 2.14.0")
-      allow(git_proxy).to receive(:capture).with([*base_clone_args, "--", uri, path.to_s], nil).and_return(["", "dumb http transport does not support shallow capabilities", fail_clone_result])
-      expect(git_proxy).to receive(:capture).with([*without_depth_arguments, "--", uri, path.to_s], nil).and_return(["", "", clone_result])
+      expect(git_proxy).to receive(:capture).with([*base_clone_args, "--", uri, path.to_s], nil).and_return(["", "dumb http transport does not support shallow capabilities", fail_result])
+      expect(git_proxy).to receive(:capture).with([*clone_args_without_depth, "--", uri, path.to_s], nil).and_return(["", "", clone_result])
 
       subject.checkout
     end
@@ -329,6 +330,19 @@ RSpec.describe Bundler::Source::Git::GitProxy do
         it "fetches all revisions" do
           allow(git_proxy).to receive(:git_local).with("--version").and_return("git version 2.14.0")
           expect(git_proxy).to receive(:capture).with(["fetch", "--force", "--quiet", "--no-tags", "--", uri, "refs/*:refs/*"], path).and_return(["", "", clone_result])
+          subject.checkout
+        end
+      end
+
+      context "URI is HTTP" do
+        let(:uri) { "http://github.com/ruby/rubygems.git" }
+
+        it "retries fetch without --depth when dumb http transport fails" do
+          parsed_revision = Digest::SHA1.hexdigest("ruby")
+          allow(git_proxy).to receive(:git_local).with("rev-parse", "--abbrev-ref", "HEAD", dir: path).and_return(parsed_revision)
+          allow(git_proxy).to receive(:git_local).with("--version").and_return("git version 2.14.0")
+          expect(git_proxy).to receive(:capture).with([*base_fetch_args, "--", uri, "refs/heads/#{parsed_revision}:refs/heads/#{parsed_revision}"], path).and_return(["", "dumb http transport does not support shallow capabilities", fail_result])
+          expect(git_proxy).to receive(:capture).with(["fetch", "--force", "--quiet", "--no-tags", "--", uri, "refs/heads/#{parsed_revision}:refs/heads/#{parsed_revision}"], path).and_return(["", "", clone_result])
           subject.checkout
         end
       end
