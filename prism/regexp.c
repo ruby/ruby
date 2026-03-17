@@ -1,6 +1,6 @@
+#include "prism/buffer.h"
 #include "prism/regexp.h"
 #include "prism/diagnostic.h"
-#include "prism/util/pm_buffer.h"
 #include "prism/util/pm_strncasecmp.h"
 
 /** The maximum depth of nested groups allowed in a regular expression. */

@@ -17,8 +17,8 @@ void pm_prettyprint(void);
 #include <stdio.h>
 
 #include "prism/ast.h"
+#include "prism/buffer.h"
 #include "prism/parser.h"
-#include "prism/util/pm_buffer.h"
 
 /**
  * Pretty-prints the AST represented by the given node to the given buffer.

@@ -7,8 +7,8 @@
 #define PRISM_NODE_H
 
 #include "prism/defines.h"
+#include "prism/buffer.h"
 #include "prism/parser.h"
-#include "prism/util/pm_buffer.h"
 
 /**
  * Loop through each node in the node list, writing each node to the given

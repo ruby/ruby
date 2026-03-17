@@ -1,5 +1,5 @@
 /**
- * @file pm_buffer.h
+ * @file buffer.h
  *
  * A wrapper around a contiguous block of allocated memory.
  */
@@ -8,12 +8,6 @@
 
 #include "prism/defines.h"
 #include "prism/util/pm_char.h"
-
-#include <assert.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
 
 /**
  * A pm_buffer_t is a simple memory buffer that stores data in a contiguous

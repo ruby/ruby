@@ -1,4 +1,10 @@
-#include "prism/util/pm_buffer.h"
+#include "prism/buffer.h"
+
+#include <assert.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 
 /**
  * Return the size of the pm_buffer_t struct.
