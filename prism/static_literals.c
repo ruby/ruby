@@ -1,4 +1,4 @@
-#include "prism/static_literals.h"
+#include "prism/internal/static_literals.h"
 
 #include "prism/internal/buffer.h"
 #include "prism/internal/integer.h"

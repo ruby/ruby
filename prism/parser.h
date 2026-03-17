@@ -7,6 +7,7 @@
 #define PRISM_PARSER_H
 
 #include "prism/defines.h"
+
 #include "prism/arena.h"
 #include "prism/ast.h"
 #include "prism/constant_pool.h"

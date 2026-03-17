@@ -11,9 +11,7 @@ extern "C" {
 #endif
 
 #include "prism/defines.h"
-#include "prism/internal/buffer.h"
-#include "prism/internal/memchr.h"
-#include "prism/internal/strncasecmp.h"
+
 #include "prism/arena.h"
 #include "prism/ast.h"
 #include "prism/diagnostic.h"
@@ -22,7 +20,6 @@ extern "C" {
 #include "prism/parser.h"
 #include "prism/prettyprint.h"
 #include "prism/regexp.h"
-#include "prism/static_literals.h"
 #include "prism/version.h"
 
 #include <assert.h>
