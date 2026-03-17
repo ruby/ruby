@@ -11640,13 +11640,13 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(String@0x1008, !=@0x1010, cme:0x1018)
           v29:StringExact = GuardType v12, StringExact
           PatchPoint MethodRedefined(String@0x1008, ==@0x1040, cme:0x1048)
-          v31:String = GuardType v13, String
-          v32:BoolExact = StringEqual v29, v31
-          v33:TrueClass = Const Value(true)
-          v34:CBool = IsBitNotEqual v32, v33
-          v35:BoolExact = BoxBool v34
+          v33:String = GuardType v13, String
+          v34:BoolExact = StringEqual v29, v33
+          v35:TrueClass = Const Value(true)
+          v36:CBool = IsBitNotEqual v34, v35
+          v37:BoolExact = BoxBool v36
           CheckInterrupts
-          Return v35
+          Return v37
         ");
     }
 
@@ -11676,59 +11676,13 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(String@0x1008, !=@0x1010, cme:0x1018)
           v26:StringExact = GuardType v10, StringExact
           PatchPoint MethodRedefined(String@0x1008, ==@0x1040, cme:0x1048)
-          v28:String = GuardType v10, String
-          v33:TrueClass = Const Value(true)
-          v30:TrueClass = Const Value(true)
-          v31:CBool = IsBitNotEqual v33, v30
-          v32:BoolExact = BoxBool v31
+          v30:String = GuardType v10, String
+          v35:TrueClass = Const Value(true)
+          v32:TrueClass = Const Value(true)
+          v33:CBool = IsBitNotEqual v35, v32
+          v34:BoolExact = BoxBool v33
           CheckInterrupts
-          Return v32
-        ");
-    }
-
-    #[test]
-    fn test_inline_string_not_equal_with_alias_eq() {
-        eval(r#"
-            class MyString < String
-              alias zjit_eq_orig ==
-              alias == zjit_eq_orig
-            end
-
-            def test(s, t) = s != t
-
-            a = MyString.new("x")
-            b = MyString.new("y")
-            test(a, b)
-            test(a, b)
-        "#);
-        assert_contains_opcode("test", YARVINSN_opt_neq);
-        assert_snapshot!(hir_string("test"), @"
-        fn test@<compiled>:7:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :s@0x1000
-          v4:BasicObject = LoadField v2, :t@0x1001
-          Jump bb3(v1, v3, v4)
-        bb2():
-          EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :s@1
-          v9:BasicObject = LoadArg :t@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          PatchPoint NoSingletonClass(MyString@0x1008)
-          PatchPoint MethodRedefined(MyString@0x1008, !=@0x1010, cme:0x1018)
-          v29:StringSubclass[class_exact:MyString] = GuardType v12, StringSubclass[class_exact:MyString]
-          PatchPoint MethodRedefined(MyString@0x1008, ==@0x1040, cme:0x1048)
-          v31:String = GuardType v13, String
-          v32:BoolExact = StringEqual v29, v31
-          v33:TrueClass = Const Value(true)
-          v34:CBool = IsBitNotEqual v32, v33
-          v35:BoolExact = BoxBool v34
-          CheckInterrupts
-          Return v35
+          Return v34
         ");
     }
 

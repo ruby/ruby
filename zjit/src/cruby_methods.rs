@@ -544,13 +544,7 @@ fn inline_string_append(fun: &mut hir::Function, block: hir::BlockId, recv: hir:
     None
 }
 
-fn try_inline_string_equal(
-    fun: &mut hir::Function,
-    block: hir::BlockId,
-    recv: hir::InsnId,
-    other: hir::InsnId,
-    state: hir::InsnId,
-) -> Option<hir::InsnId> {
+fn try_inline_string_equal(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, other: hir::InsnId, state: hir::InsnId) -> Option<hir::InsnId> {
     if fun.likely_a(recv, types::String, state) && fun.likely_a(other, types::String, state) {
         let recv = fun.coerce_to(block, recv, types::String, state);
         let other = fun.coerce_to(block, other, types::String, state);
@@ -748,44 +742,17 @@ fn inline_basic_object_not(fun: &mut hir::Function, block: hir::BlockId, recv: h
     None
 }
 
-fn try_inline_string_not_equal(
-    fun: &mut hir::Function,
-    block: hir::BlockId,
-    recv: hir::InsnId,
-    other: hir::InsnId,
-    state: hir::InsnId,
-) -> Option<hir::InsnId> {
+fn try_inline_string_not_equal(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, other: hir::InsnId, state: hir::InsnId) -> Option<hir::InsnId> {
     if !fun.likely_a(recv, types::String, state) || !fun.likely_a(other, types::String, state) {
         return None;
     }
     let recv_class = fun.type_of(recv).runtime_exact_ruby_class()?;
 
-    // String#!= is lowered to #==, so guard that the receiver class still resolves == to rb_str_equal.
-    let mut cme = unsafe { rb_callable_method_entry(recv_class, ID!(eq)) };
-    if cme.is_null() {
+    // String#!= is lowered to #==. Keep this specialization only while #==
+    // still resolves to rb_str_equal.
+    if !fun.assume_expected_cfunc(block, recv_class, ID!(eq), rb_str_equal as _, state) {
         return None;
     }
-    let mut def_type = unsafe { get_cme_def_type(cme) };
-    while def_type == VM_METHOD_TYPE_ALIAS {
-        cme = unsafe { rb_aliased_callable_method_entry(cme) };
-        def_type = unsafe { get_cme_def_type(cme) };
-    }
-    if def_type != VM_METHOD_TYPE_CFUNC {
-        return None;
-    }
-    let cfunc = unsafe { get_mct_func(get_cme_def_body_cfunc(cme)) };
-    if cfunc != rb_str_equal as *mut c_void {
-        return None;
-    }
-    // Invalidate this specialization if the receiver class's #== is redefined after compilation.
-    fun.push_insn(block, hir::Insn::PatchPoint {
-        invariant: hir::Invariant::MethodRedefined {
-            klass: recv_class,
-            method: ID!(eq),
-            cme,
-        },
-        state,
-    });
 
     let eq_result = try_inline_string_equal(fun, block, recv, other, state)?;
     // StringEqual always returns a Ruby boolean (Qtrue/Qfalse),
