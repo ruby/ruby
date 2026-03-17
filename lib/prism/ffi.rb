@@ -111,7 +111,7 @@ module Prism # :nodoc:
       "pm_buffer_init",
       "pm_buffer_value",
       "pm_buffer_length",
-      "pm_buffer_free",
+      "pm_buffer_cleanup",
       []
     )
 
@@ -155,7 +155,7 @@ module Prism # :nodoc:
           raise unless LibRubyParser.pm_buffer_init(pointer)
           return yield new(pointer)
         ensure
-          LibRubyParser.pm_buffer_free(pointer)
+          LibRubyParser.pm_buffer_cleanup(pointer)
         end
       end
     end

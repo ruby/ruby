@@ -167,7 +167,7 @@ void
 pm_prettyprint(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm_node_t *node) {
     pm_buffer_t prefix_buffer = { 0 };
     prettyprint_node(output_buffer, parser, node, &prefix_buffer);
-    pm_buffer_free(&prefix_buffer);
+    pm_buffer_cleanup(&prefix_buffer);
 }
 
 #endif

@@ -2246,7 +2246,7 @@ pm_regular_expression_flags_create(pm_parser_t *parser, const pm_token_t *closin
             const char *word = unknown_flags_length >= 2 ? "options" : "option";
             PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->previous, PM_ERR_REGEXP_UNKNOWN_OPTIONS, word, unknown_flags_length, pm_buffer_value(&unknown_flags));
         }
-        pm_buffer_free(&unknown_flags);
+        pm_buffer_cleanup(&unknown_flags);
     }
 
     return flags;
@@ -9446,7 +9446,7 @@ lex_question_mark(pm_parser_t *parser) {
         // Copy buffer data into the arena and free the heap buffer.
         void *arena_data = pm_arena_memdup(parser->arena, buffer.value, buffer.length, PRISM_ALIGNOF(uint8_t));
         pm_string_constant_init(&parser->current_string, (const char *) arena_data, buffer.length);
-        pm_buffer_free(&buffer);
+        pm_buffer_cleanup(&buffer);
 
         return PM_TOKEN_CHARACTER_LITERAL;
     } else {
@@ -9770,13 +9770,13 @@ pm_token_buffer_copy(pm_parser_t *parser, pm_token_buffer_t *token_buffer) {
     size_t len = pm_buffer_length(&token_buffer->buffer);
     void *arena_data = pm_arena_memdup(parser->arena, pm_buffer_value(&token_buffer->buffer), len, PRISM_ALIGNOF(uint8_t));
     pm_string_constant_init(&parser->current_string, (const char *) arena_data, len);
-    pm_buffer_free(&token_buffer->buffer);
+    pm_buffer_cleanup(&token_buffer->buffer);
 }
 
 static PRISM_INLINE void
 pm_regexp_token_buffer_copy(pm_parser_t *parser, pm_regexp_token_buffer_t *token_buffer) {
     pm_token_buffer_copy(parser, &token_buffer->base);
-    pm_buffer_free(&token_buffer->regexp_buffer);
+    pm_buffer_cleanup(&token_buffer->regexp_buffer);
 }
 
 /**
@@ -13523,7 +13523,7 @@ pm_hash_key_static_literals_add(pm_parser_t *parser, pm_static_literals_t *liter
             pm_line_offset_list_line_column(&parser->line_offsets, PM_NODE_START(node), parser->start_line).line
         );
 
-        pm_buffer_free(&buffer);
+        pm_buffer_cleanup(&buffer);
     }
 }
 
@@ -20779,7 +20779,7 @@ parse_regular_expression_named_capture(pm_parser_t *parser, const pm_string_t *c
     // If the name of the capture group isn't a valid identifier, we do
     // not add it to the local table.
     if (!pm_slice_is_valid_local(parser, source, source + length)) {
-        pm_buffer_free(&unescaped);
+        pm_buffer_cleanup(&unescaped);
         return;
     }
 
@@ -20810,7 +20810,7 @@ parse_regular_expression_named_capture(pm_parser_t *parser, const pm_string_t *c
             // If the local is not already a local but it is a keyword, then we
             // do not want to add a capture for this.
             if (pm_local_is_keyword((const char *) source, length)) {
-                pm_buffer_free(&unescaped);
+                pm_buffer_cleanup(&unescaped);
                 return;
             }
 
@@ -20831,7 +20831,7 @@ parse_regular_expression_named_capture(pm_parser_t *parser, const pm_string_t *c
         pm_node_list_append(parser->arena, &callback_data->match->targets, target);
     }
 
-    pm_buffer_free(&unescaped);
+    pm_buffer_cleanup(&unescaped);
 }
 
 /**
@@ -22845,7 +22845,7 @@ pm_serialize_parse_stream(pm_buffer_t *buffer, void *stream, pm_parse_stream_fge
     pm_serialize_content(&parser, node, buffer);
     pm_buffer_append_byte(buffer, '\0');
 
-    pm_buffer_free(&parser_buffer);
+    pm_buffer_cleanup(&parser_buffer);
     pm_parser_free(&parser);
     pm_arena_free(&arena);
     pm_options_free(&options);

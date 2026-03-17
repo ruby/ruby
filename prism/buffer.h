@@ -64,12 +64,12 @@ PRISM_EXPORTED_FUNCTION char * pm_buffer_value(const pm_buffer_t *buffer);
 PRISM_EXPORTED_FUNCTION size_t pm_buffer_length(const pm_buffer_t *buffer);
 
 /**
- * Free the memory associated with the buffer.
+ * Free the memory held by the buffer.
  *
- * @param buffer The buffer to free.
+ * @param buffer The buffer whose held memory should be freed.
  *
  * \public \memberof pm_buffer_t
  */
-PRISM_EXPORTED_FUNCTION void pm_buffer_free(pm_buffer_t *buffer);
+PRISM_EXPORTED_FUNCTION void pm_buffer_cleanup(pm_buffer_t *buffer);
 
 #endif
