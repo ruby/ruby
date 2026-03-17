@@ -20717,11 +20717,9 @@ parse_regular_expression_named_capture(pm_parser_t *parser, const pm_string_t *c
         start = parser->start + PM_NODE_START(call->receiver);
         end = parser->start + PM_NODE_END(call->receiver);
 
-        void *memory = xmalloc(length);
-        if (memory == NULL) abort();
-
+        uint8_t *memory = (uint8_t *) pm_arena_alloc(parser->arena, length, 1);
         memcpy(memory, source, length);
-        name = pm_parser_constant_id_owned(parser, (uint8_t *) memory, length);
+        name = pm_parser_constant_id_owned(parser, memory, length);
     }
 
     // Add this name to the list of constants if it is valid, not duplicated,
@@ -22267,11 +22265,9 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
                 const uint8_t *source = pm_string_source(local);
                 size_t length = pm_string_length(local);
 
-                void *allocated = xmalloc(length);
-                if (allocated == NULL) continue;
-
+                uint8_t *allocated = (uint8_t *) pm_arena_alloc(&parser->metadata_arena, length, 1);
                 memcpy(allocated, source, length);
-                pm_parser_local_add_owned(parser, (uint8_t *) allocated, length);
+                pm_parser_local_add_owned(parser, allocated, length);
             }
         }
     }
