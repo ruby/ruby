@@ -9,12 +9,12 @@
 #include "prism/defines.h"
 #include "prism/ast.h"
 #include "prism/encoding.h"
+#include "prism/line_offset_list.h"
 #include "prism/options.h"
 #include "prism/static_literals.h"
 #include "prism/util/pm_arena.h"
 #include "prism/util/pm_constant_pool.h"
 #include "prism/util/pm_list.h"
-#include "prism/util/pm_line_offset_list.h"
 #include "prism/util/pm_string.h"
 
 #include <stdbool.h>
