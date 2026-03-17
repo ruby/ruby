@@ -1,6 +1,10 @@
-#include "prism/util/pm_memchr.h"
+#include "prism/internal/memchr.h"
 
-#define PRISM_MEMCHR_TRAILING_BYTE_MINIMUM 0x40
+#include <stdbool.h>
+#include <stdint.h>
+#include <string.h>
+
+#define TRAILING_BYTE_MINIMUM 0x40
 
 /**
  * We need to roll our own memchr to handle cases where the encoding changes and
@@ -9,7 +13,7 @@
  */
 void *
 pm_memchr(const void *memory, int character, size_t number, bool encoding_changed, const pm_encoding_t *encoding) {
-    if (encoding_changed && encoding->multibyte && character >= PRISM_MEMCHR_TRAILING_BYTE_MINIMUM) {
+    if (encoding_changed && encoding->multibyte && character >= TRAILING_BYTE_MINIMUM) {
         const uint8_t *source = (const uint8_t *) memory;
         size_t index = 0;
 
@@ -31,5 +35,3 @@ pm_memchr(const void *memory, int character, size_t number, bool encoding_change
         return memchr(memory, character, number);
     }
 }
-
-#undef PRISM_MEMCHR_TRAILING_BYTE_MINIMUM
