@@ -1,4 +1,13 @@
-#include "prism/util/pm_strpbrk.h"
+#include "prism/internal/strpbrk.h"
+
+#include "prism/attribute/unused.h"
+#include "prism/internal/accel.h"
+#include "prism/internal/bit.h"
+#include "prism/diagnostic.h"
+
+#include <assert.h>
+#include <stdbool.h>
+#include <string.h>
 
 /**
  * Add an invalid multibyte character error to the parser.

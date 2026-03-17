@@ -51,6 +51,7 @@ Gem::Specification.new do |spec|
     "include/prism/attribute/flex_array.h",
     "include/prism/attribute/force_inline.h",
     "include/prism/attribute/format.h",
+    "include/prism/attribute/unused.h",
     "include/prism/allocator.h",
     "include/prism/arena.h",
     "include/prism/ast.h",
@@ -68,17 +69,19 @@ Gem::Specification.new do |spec|
     "include/prism/prettyprint.h",
     "include/prism/regexp.h",
     "include/prism/static_literals.h",
+    "include/prism/internal/accel.h",
     "include/prism/internal/arena.h",
+    "include/prism/internal/bit.h",
     "include/prism/internal/buffer.h",
     "include/prism/internal/char.h",
     "include/prism/internal/integer.h",
     "include/prism/internal/line_offset_list.h",
     "include/prism/internal/memchr.h",
     "include/prism/internal/strncasecmp.h",
+    "include/prism/internal/strpbrk.h",
     "include/prism/util/pm_constant_pool.h",
     "include/prism/util/pm_list.h",
     "include/prism/util/pm_string.h",
-    "include/prism/util/pm_strpbrk.h",
     "include/prism/version.h",
     "lib/prism.rb",
     "lib/prism/compiler.rb",
@@ -184,11 +187,11 @@ Gem::Specification.new do |spec|
     "src/serialize.c",
     "src/static_literals.c",
     "src/strncasecmp.c",
+    "src/strpbrk.c",
     "src/token_type.c",
     "src/util/pm_constant_pool.c",
     "src/util/pm_list.c",
-    "src/util/pm_string.c",
-    "src/util/pm_strpbrk.c"
+    "src/util/pm_string.c"
   ]
 
   spec.extensions = ["ext/prism/extconf.rb"]

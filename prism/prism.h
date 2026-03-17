@@ -11,7 +11,6 @@ extern "C" {
 #endif
 
 #include "prism/defines.h"
-#include "prism/util/pm_strpbrk.h"
 #include "prism/internal/buffer.h"
 #include "prism/internal/memchr.h"
 #include "prism/internal/strncasecmp.h"
