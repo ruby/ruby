@@ -8,7 +8,6 @@
 
 #include "prism/diagnostic.h"
 #include "prism/arena.h"
-#include "prism/util/pm_list.h"
 
 /**
  * Append a diagnostic to the given list of diagnostics that is using shared

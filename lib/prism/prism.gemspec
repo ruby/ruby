@@ -64,6 +64,7 @@ Gem::Specification.new do |spec|
     "include/prism/files.h",
     "include/prism/integer.h",
     "include/prism/line_offset_list.h",
+    "include/prism/list.h",
     "include/prism/node.h",
     "include/prism/node_new.h",
     "include/prism/options.h",
@@ -85,7 +86,6 @@ Gem::Specification.new do |spec|
     "include/prism/internal/strncasecmp.h",
     "include/prism/internal/strings.h",
     "include/prism/internal/strpbrk.h",
-    "include/prism/util/pm_list.h",
     "include/prism/version.h",
     "lib/prism.rb",
     "lib/prism/compiler.rb",
@@ -183,6 +183,7 @@ Gem::Specification.new do |spec|
     "src/encoding.c",
     "src/integer.c",
     "src/line_offset_list.c",
+    "src/list.c",
     "src/memchr.c",
     "src/node.c",
     "src/options.c",
@@ -194,8 +195,7 @@ Gem::Specification.new do |spec|
     "src/strings.c",
     "src/strncasecmp.c",
     "src/strpbrk.c",
-    "src/token_type.c",
-    "src/util/pm_list.c"
+    "src/token_type.c"
   ]
 
   spec.extensions = ["ext/prism/extconf.rb"]
