@@ -10,6 +10,8 @@
 
 #include "prism/node.h"
 
+#include "prism/attribute/inline.h"
+
 <%- nodes.each do |node| -%>
 <%- params = node.fields.map(&:c_param) -%>
 /**
@@ -24,7 +26,7 @@
 <%- end -%>
  * @return The newly allocated and initialized node.
  */
-static inline pm_<%= node.human %>_t *
+static PRISM_INLINE pm_<%= node.human %>_t *
 pm_<%= node.human %>_new(pm_arena_t *arena, uint32_t node_id, pm_node_flags_t flags, pm_location_t location<%= params.empty? ? "" : ", #{params.join(", ")}" %>) {
     pm_<%= node.human %>_t *node = (pm_<%= node.human %>_t *) pm_arena_alloc(arena, sizeof(pm_<%= node.human %>_t), PRISM_ALIGNOF(pm_<%= node.human %>_t));
 

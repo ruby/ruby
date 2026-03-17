@@ -12,8 +12,8 @@
 #include "prism/attribute/align.h"
 #include "prism/attribute/exported.h"
 #include "prism/attribute/flex_array.h"
-#include "prism/attribute/force_inline.h"
 #include "prism/attribute/format.h"
+#include "prism/attribute/inline.h"
 #include "prism/attribute/unused.h"
 
 #include "prism/internal/accel.h"
@@ -48,22 +48,6 @@
  */
 #ifndef PRISM_DEPTH_MAXIMUM
     #define PRISM_DEPTH_MAXIMUM 10000
-#endif
-
-/**
- * Old Visual Studio versions do not support the inline keyword, so we need to
- * define it to be __inline.
- */
-#if defined(_MSC_VER) && !defined(inline)
-#   define inline __inline
-#endif
-
-/**
- * Old Visual Studio versions before 2015 do not implement sprintf, but instead
- * implement _snprintf. We standard that here.
- */
-#if !defined(snprintf) && defined(_MSC_VER) && (_MSC_VER < 1900)
-#   define snprintf _snprintf
 #endif
 
 /**

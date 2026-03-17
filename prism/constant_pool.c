@@ -1,6 +1,7 @@
 #include "prism/constant_pool.h"
 
 #include "prism/attribute/align.h"
+#include "prism/attribute/inline.h"
 #include "prism/internal/arena.h"
 
 #include <assert.h>
@@ -81,7 +82,7 @@ pm_constant_id_list_includes(pm_constant_id_list_t *list, pm_constant_id_t id) {
  * by XOR followed by multiplication by a large odd constant, which spreads
  * entropy across all bits. A final xorshift fold produces the 32-bit result.
  */
-static inline uint32_t
+static PRISM_INLINE uint32_t
 pm_constant_pool_hash(const uint8_t *start, size_t length) {
     // This constant is borrowed from wyhash. It is a 64-bit odd integer with
     // roughly equal 0/1 bits, chosen for good avalanche behavior when used in
@@ -167,7 +168,7 @@ is_power_of_two(uint32_t size) {
 /**
  * Resize a constant pool to a given capacity.
  */
-static inline void
+static PRISM_INLINE void
 pm_constant_pool_resize(pm_arena_t *arena, pm_constant_pool_t *pool) {
     assert(is_power_of_two(pool->capacity));
 
@@ -257,7 +258,7 @@ pm_constant_pool_find(const pm_constant_pool_t *pool, const uint8_t *start, size
 /**
  * Insert a constant into a constant pool and return its index in the pool.
  */
-static inline pm_constant_id_t
+static PRISM_INLINE pm_constant_id_t
 pm_constant_pool_insert(pm_arena_t *arena, pm_constant_pool_t *pool, const uint8_t *start, size_t length, pm_constant_pool_bucket_type_t type) {
     if (pool->size >= (pool->capacity / 4 * 3)) {
         pm_constant_pool_resize(arena, pool);

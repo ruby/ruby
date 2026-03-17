@@ -1,5 +1,6 @@
 #include "prism/internal/strpbrk.h"
 
+#include "prism/attribute/inline.h"
 #include "prism/attribute/unused.h"
 #include "prism/internal/accel.h"
 #include "prism/internal/bit.h"
@@ -13,7 +14,7 @@
 /**
  * Add an invalid multibyte character error to the parser.
  */
-static inline void
+static PRISM_INLINE void
 pm_strpbrk_invalid_multibyte_character(pm_parser_t *parser, uint32_t start, uint32_t length) {
     pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, start, length, PM_ERR_INVALID_MULTIBYTE_CHARACTER, parser->start[start]);
 }
@@ -21,7 +22,7 @@ pm_strpbrk_invalid_multibyte_character(pm_parser_t *parser, uint32_t start, uint
 /**
  * Set the explicit encoding for the parser to the current encoding.
  */
-static inline void
+static PRISM_INLINE void
 pm_strpbrk_explicit_encoding_set(pm_parser_t *parser, uint32_t start, uint32_t length) {
     if (parser->explicit_encoding != NULL) {
         if (parser->explicit_encoding == parser->encoding) {
@@ -67,7 +68,7 @@ pm_strpbrk_explicit_encoding_set(pm_parser_t *parser, uint32_t start, uint32_t l
  *   - low_lut/high_lut: nibble-based lookup tables for SIMD matching (NEON/SSSE3)
  *   - table: 256-bit bitmap for scalar fallback matching (all platforms)
  */
-static inline void
+static PRISM_INLINE void
 pm_strpbrk_cache_update(pm_parser_t *parser, const uint8_t *charset) {
     // The cache key is the full charset buffer (PM_STRPBRK_CACHE_SIZE bytes).
     // Since it is always NUL-padded, a fixed-size comparison covers both
@@ -104,7 +105,7 @@ pm_strpbrk_cache_update(pm_parser_t *parser, const uint8_t *charset) {
 #if defined(PRISM_HAS_NEON)
 #include <arm_neon.h>
 
-static inline bool
+static PRISM_INLINE bool
 scan_strpbrk_ascii(pm_parser_t *parser, const uint8_t *source, size_t maximum, const uint8_t *charset, size_t *index) {
     pm_strpbrk_cache_update(parser, charset);
 
@@ -159,7 +160,7 @@ scan_strpbrk_ascii(pm_parser_t *parser, const uint8_t *source, size_t maximum, c
 #elif defined(PRISM_HAS_SSSE3)
 #include <tmmintrin.h>
 
-static inline bool
+static PRISM_INLINE bool
 scan_strpbrk_ascii(pm_parser_t *parser, const uint8_t *source, size_t maximum, const uint8_t *charset, size_t *index) {
     pm_strpbrk_cache_update(parser, charset);
 
@@ -211,7 +212,7 @@ scan_strpbrk_ascii(pm_parser_t *parser, const uint8_t *source, size_t maximum, c
 
 #elif defined(PRISM_HAS_SWAR)
 
-static inline bool
+static PRISM_INLINE bool
 scan_strpbrk_ascii(pm_parser_t *parser, const uint8_t *source, size_t maximum, const uint8_t *charset, size_t *index) {
     pm_strpbrk_cache_update(parser, charset);
 
@@ -253,7 +254,7 @@ scan_strpbrk_ascii(pm_parser_t *parser, const uint8_t *source, size_t maximum, c
 
 #else
 
-static inline bool
+static PRISM_INLINE bool
 scan_strpbrk_ascii(PRISM_ATTRIBUTE_UNUSED pm_parser_t *parser, PRISM_ATTRIBUTE_UNUSED const uint8_t *source, PRISM_ATTRIBUTE_UNUSED size_t maximum, PRISM_ATTRIBUTE_UNUSED const uint8_t *charset, size_t *index) {
     *index = 0;
     return false;
@@ -264,7 +265,7 @@ scan_strpbrk_ascii(PRISM_ATTRIBUTE_UNUSED pm_parser_t *parser, PRISM_ATTRIBUTE_U
 /**
  * This is the default path.
  */
-static inline const uint8_t *
+static PRISM_INLINE const uint8_t *
 pm_strpbrk_utf8(pm_parser_t *parser, const uint8_t *source, const uint8_t *charset, size_t index, size_t maximum, bool validate) {
     while (index < maximum) {
         if (strchr((const char *) charset, source[index]) != NULL) {
@@ -302,7 +303,7 @@ pm_strpbrk_utf8(pm_parser_t *parser, const uint8_t *source, const uint8_t *chars
 /**
  * This is the path when the encoding is ASCII-8BIT.
  */
-static inline const uint8_t *
+static PRISM_INLINE const uint8_t *
 pm_strpbrk_ascii_8bit(pm_parser_t *parser, const uint8_t *source, const uint8_t *charset, size_t index, size_t maximum, bool validate) {
     while (index < maximum) {
         if (strchr((const char *) charset, source[index]) != NULL) {
@@ -319,7 +320,7 @@ pm_strpbrk_ascii_8bit(pm_parser_t *parser, const uint8_t *source, const uint8_t 
 /**
  * This is the slow path that does care about the encoding.
  */
-static inline const uint8_t *
+static PRISM_INLINE const uint8_t *
 pm_strpbrk_multi_byte(pm_parser_t *parser, const uint8_t *source, const uint8_t *charset, size_t index, size_t maximum, bool validate) {
     const pm_encoding_t *encoding = parser->encoding;
 
@@ -361,7 +362,7 @@ pm_strpbrk_multi_byte(pm_parser_t *parser, const uint8_t *source, const uint8_t 
  * This is the fast path that does not care about the encoding because we know
  * the encoding only supports single-byte characters.
  */
-static inline const uint8_t *
+static PRISM_INLINE const uint8_t *
 pm_strpbrk_single_byte(pm_parser_t *parser, const uint8_t *source, const uint8_t *charset, size_t index, size_t maximum, bool validate) {
     const pm_encoding_t *encoding = parser->encoding;
 

@@ -1,4 +1,6 @@
 #include "prism/internal/buffer.h"
+
+#include "prism/attribute/inline.h"
 #include "prism/internal/char.h"
 #include "prism/allocator.h"
 
@@ -55,7 +57,7 @@ pm_buffer_length(const pm_buffer_t *buffer) {
 /**
  * Append the given amount of space to the buffer.
  */
-static inline bool
+static PRISM_INLINE bool
 pm_buffer_append_length(pm_buffer_t *buffer, size_t length) {
     size_t next_length = buffer->length + length;
     const size_t original_capacity = buffer->capacity;
@@ -80,7 +82,7 @@ pm_buffer_append_length(pm_buffer_t *buffer, size_t length) {
 /**
  * Append a generic pointer to memory to the buffer.
  */
-static inline void
+static PRISM_INLINE void
 pm_buffer_append(pm_buffer_t *buffer, const void *source, size_t length) {
     size_t cursor = buffer->length;
     if (pm_buffer_append_length(buffer, length)) {

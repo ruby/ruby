@@ -1,5 +1,6 @@
 #include "prism.h"
 
+#include "prism/attribute/inline.h"
 #include "prism/internal/list.h"
 #include "prism/internal/options.h"
 
@@ -10,13 +11,13 @@
 
 #include <stdio.h>
 
-static inline uint32_t
+static PRISM_INLINE uint32_t
 pm_ptrdifft_to_u32(ptrdiff_t value) {
     assert(value >= 0 && ((unsigned long) value) < UINT32_MAX);
     return (uint32_t) value;
 }
 
-static inline uint32_t
+static PRISM_INLINE uint32_t
 pm_sizet_to_u32(size_t value) {
     assert(value < UINT32_MAX);
     return (uint32_t) value;

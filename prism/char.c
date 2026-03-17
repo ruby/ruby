@@ -1,4 +1,6 @@
 #include "prism/internal/char.h"
+
+#include "prism/attribute/inline.h"
 #include "prism/internal/line_offset_list.h"
 
 #define PRISM_CHAR_BIT_REGEXP_OPTION (1 << 2)
@@ -56,7 +58,7 @@ static const uint8_t pm_number_table[256] = {
  * Returns the number of characters at the start of the string that match the
  * given kind. Disallows searching past the given maximum number of characters.
  */
-static inline size_t
+static PRISM_INLINE size_t
 pm_strspn_char_kind(const uint8_t *string, ptrdiff_t length, uint8_t kind) {
     if (length <= 0) return 0;
 
@@ -114,7 +116,7 @@ pm_strspn_regexp_option(const uint8_t *string, ptrdiff_t length) {
  * the string that match the given kind. Disallows searching past the given
  * maximum number of characters.
  */
-static inline size_t
+static PRISM_INLINE size_t
 pm_strspn_number_kind(const uint8_t *string, ptrdiff_t length, uint8_t kind) {
     if (length <= 0) return 0;
 
@@ -133,7 +135,7 @@ pm_strspn_number_kind(const uint8_t *string, ptrdiff_t length, uint8_t kind) {
  * Additionally, report the location of the last invalid underscore character
  * found in the string through the out invalid parameter.
  */
-static inline size_t
+static PRISM_INLINE size_t
 pm_strspn_number_kind_underscores(const uint8_t *string, ptrdiff_t length, const uint8_t **invalid, uint8_t kind) {
     if (length <= 0) return 0;
 
@@ -234,7 +236,7 @@ pm_strspn_hexadecimal_number(const uint8_t *string, ptrdiff_t length, const uint
 /**
  * Returns true if the given character matches the given kind.
  */
-static inline bool
+static PRISM_INLINE bool
 pm_char_is_number_kind(const uint8_t b, uint8_t kind) {
     return (pm_number_table[b] & kind) != 0;
 }

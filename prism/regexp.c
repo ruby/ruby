@@ -1,5 +1,6 @@
 #include "prism/regexp.h"
 
+#include "prism/attribute/inline.h"
 #include "prism/internal/buffer.h"
 #include "prism/internal/char.h"
 #include "prism/internal/diagnostic.h"
@@ -118,7 +119,7 @@ typedef struct {
  * (points into the original source), we can point to the exact error location.
  * Otherwise, we point to the whole regexp node.
  */
-static inline void
+static PRISM_INLINE void
 pm_regexp_parse_error(pm_regexp_parser_t *parser, const uint8_t *start, const uint8_t *end, const char *message) {
     pm_parser_t *pm = parser->parser;
     uint32_t loc_start, loc_length;
@@ -167,7 +168,7 @@ pm_regexp_parser_named_capture(pm_regexp_parser_t *parser, const uint8_t *start,
 /**
  * Returns true if the next character is the end of the source.
  */
-static inline bool
+static PRISM_INLINE bool
 pm_regexp_char_is_eof(pm_regexp_parser_t *parser) {
     return parser->cursor >= parser->end;
 }
@@ -175,7 +176,7 @@ pm_regexp_char_is_eof(pm_regexp_parser_t *parser) {
 /**
  * Optionally accept a char and consume it if it exists.
  */
-static inline bool
+static PRISM_INLINE bool
 pm_regexp_char_accept(pm_regexp_parser_t *parser, uint8_t value) {
     if (!pm_regexp_char_is_eof(parser) && *parser->cursor == value) {
         parser->cursor++;
@@ -187,7 +188,7 @@ pm_regexp_char_accept(pm_regexp_parser_t *parser, uint8_t value) {
 /**
  * Expect a character to be present and consume it.
  */
-static inline bool
+static PRISM_INLINE bool
 pm_regexp_char_expect(pm_regexp_parser_t *parser, uint8_t value) {
     if (!pm_regexp_char_is_eof(parser) && *parser->cursor == value) {
         parser->cursor++;
@@ -219,7 +220,7 @@ pm_regexp_char_find(pm_regexp_parser_t *parser, uint8_t value) {
  * escape bytes >= 0x80 are followed by a non-hex-escape, this appends a 0x00
  * sentinel to separate the groups for later multibyte validation.
  */
-static inline void
+static PRISM_INLINE void
 pm_regexp_hex_group_boundary(pm_regexp_parser_t *parser) {
     if (parser->hex_group_active) {
         pm_buffer_append_byte(&parser->hex_escape_buffer, 0x00);
@@ -230,7 +231,7 @@ pm_regexp_hex_group_boundary(pm_regexp_parser_t *parser) {
 /**
  * Track a hex escape byte value >= 0x80 for multibyte validation.
  */
-static inline void
+static PRISM_INLINE void
 pm_regexp_track_hex_escape(pm_regexp_parser_t *parser, uint8_t byte) {
     if (byte >= 0x80) {
         pm_buffer_append_byte(&parser->hex_escape_buffer, byte);
@@ -247,7 +248,7 @@ pm_regexp_track_hex_escape(pm_regexp_parser_t *parser, uint8_t byte) {
 /**
  * Parse a hex digit character and return its value, or -1 if not a hex digit.
  */
-static inline int
+static PRISM_INLINE int
 pm_regexp_hex_digit_value(uint8_t byte) {
     if (byte >= '0' && byte <= '9') return byte - '0';
     if (byte >= 'a' && byte <= 'f') return byte - 'a' + 10;
