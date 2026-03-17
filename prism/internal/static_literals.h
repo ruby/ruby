@@ -6,11 +6,10 @@
 #ifndef PRISM_INTERNAL_STATIC_LITERALS_H
 #define PRISM_INTERNAL_STATIC_LITERALS_H
 
-#include "prism/static_literals.h"
-
 #include "prism/ast.h"
 #include "prism/buffer.h"
 #include "prism/line_offset_list.h"
+#include "prism/static_literals.h"
 
 /**
  * An internal hash table for a set of nodes.

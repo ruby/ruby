@@ -14,10 +14,10 @@
 #ifndef PRISM_INTERNAL_LINE_OFFSET_LIST_H
 #define PRISM_INTERNAL_LINE_OFFSET_LIST_H
 
-#include "prism/line_offset_list.h"
-
 #include "prism/compiler/force_inline.h"
+
 #include "prism/arena.h"
+#include "prism/line_offset_list.h"
 
 /**
  * Initialize a new line offset list with the given capacity.

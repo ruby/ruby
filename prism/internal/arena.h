@@ -8,6 +8,7 @@
 
 #include "prism/compiler/exported.h"
 #include "prism/compiler/inline.h"
+
 #include "prism/arena.h"
 
 #include <stddef.h>
