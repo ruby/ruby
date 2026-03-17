@@ -19,7 +19,6 @@ extern "C" {
 #include "prism/options.h"
 #include "prism/parser.h"
 #include "prism/prettyprint.h"
-#include "prism/regexp.h"
 #include "prism/version.h"
 
 #include <assert.h>

@@ -1,9 +1,11 @@
-#include "prism/regexp.h"
+#include "prism/internal/regexp.h"
 
 #include "prism/attribute/inline.h"
 #include "prism/internal/buffer.h"
 #include "prism/internal/char.h"
 #include "prism/internal/diagnostic.h"
+#include "prism/internal/encoding.h"
+#include "prism/internal/memchr.h"
 #include "prism/internal/strings.h"
 #include "prism/internal/strncasecmp.h"
 

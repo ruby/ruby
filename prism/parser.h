@@ -993,4 +993,12 @@ struct pm_parser {
 #endif
 };
 
+/**
+ * Returns the name of the encoding that is being used to parse the source.
+ *
+ * @param parser the parser whose encoding name we want to get
+ * @return the name of the encoding that is being used to parse the source
+ */
+PRISM_EXPORTED_FUNCTION const char * pm_parser_encoding_name(const pm_parser_t *parser);
+
 #endif
