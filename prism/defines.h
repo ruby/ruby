@@ -9,8 +9,10 @@
 #ifndef PRISM_DEFINES_H
 #define PRISM_DEFINES_H
 
+#include "prism/align.h"
 #include "prism/allocator.h"
 #include "prism/exported.h"
+#include "prism/force_inline.h"
 #include "prism/format.h"
 
 #include <ctype.h>
@@ -58,18 +60,6 @@
  */
 #if defined(_MSC_VER) && !defined(inline)
 #   define inline __inline
-#endif
-
-/**
- * Force a function to be inlined at every call site. Use sparingly — only for
- * small, hot functions where the compiler's heuristics fail to inline.
- */
-#if defined(_MSC_VER)
-#   define PRISM_FORCE_INLINE __forceinline
-#elif defined(__GNUC__) || defined(__clang__)
-#   define PRISM_FORCE_INLINE inline __attribute__((always_inline))
-#else
-#   define PRISM_FORCE_INLINE inline
 #endif
 
 /**
@@ -312,37 +302,6 @@
     #define PM_FLEX_ARY_LEN 0 /* data[0] */
 #else
     #define PM_FLEX_ARY_LEN 1 /* data[1] */
-#endif
-
-/**
- * We need to align nodes in the AST to a pointer boundary so that it can be
- * safely cast to different node types. Use PRISM_ALIGNAS/PRISM_ALIGNOF to
- * specify alignment in a compiler-agnostic way.
- */
-#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L /* C11 or later */
-    /** Specify alignment for a type or variable. */
-    #define PRISM_ALIGNAS _Alignas
-
-    /** Get the alignment requirement of a type. */
-    #define PRISM_ALIGNOF _Alignof
-#elif defined(__GNUC__) || defined(__clang__)
-    /** Specify alignment for a type or variable. */
-    #define PRISM_ALIGNAS(size) __attribute__((aligned(size)))
-
-    /** Get the alignment requirement of a type. */
-    #define PRISM_ALIGNOF(type) __alignof__(type)
-#elif defined(_MSC_VER)
-    /** Specify alignment for a type or variable. */
-    #define PRISM_ALIGNAS(size) __declspec(align(size))
-
-    /** Get the alignment requirement of a type. */
-    #define PRISM_ALIGNOF(type) __alignof(type)
-#else
-    /** Void because this platform does not support specifying alignment. */
-    #define PRISM_ALIGNAS(size)
-
-    /** Fallback to sizeof as alignment requirement of a type. */
-    #define PRISM_ALIGNOF(type) sizeof(type)
 #endif
 
 #endif
