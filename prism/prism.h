@@ -17,6 +17,7 @@ extern "C" {
 #include "prism/options.h"
 #include "prism/parser.h"
 #include "prism/prettyprint.h"
+#include "prism/string_query.h"
 #include "prism/version.h"
 
 #include <assert.h>
@@ -256,53 +257,6 @@ const char * pm_token_type_human(pm_token_type_t token_type);
 PRISM_EXPORTED_FUNCTION void pm_dump_json(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *node);
 
 #endif
-
-/**
- * Represents the results of a slice query.
- */
-typedef enum {
-    /** Returned if the encoding given to a slice query was invalid. */
-    PM_STRING_QUERY_ERROR = -1,
-
-    /** Returned if the result of the slice query is false. */
-    PM_STRING_QUERY_FALSE,
-
-    /** Returned if the result of the slice query is true. */
-    PM_STRING_QUERY_TRUE
-} pm_string_query_t;
-
-/**
- * Check that the slice is a valid local variable name.
- *
- * @param source The source to check.
- * @param length The length of the source.
- * @param encoding_name The name of the encoding of the source.
- * @return PM_STRING_QUERY_TRUE if the query is true, PM_STRING_QUERY_FALSE if
- *   the query is false, and PM_STRING_QUERY_ERROR if the encoding was invalid.
- */
-PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_local(const uint8_t *source, size_t length, const char *encoding_name);
-
-/**
- * Check that the slice is a valid constant name.
- *
- * @param source The source to check.
- * @param length The length of the source.
- * @param encoding_name The name of the encoding of the source.
- * @return PM_STRING_QUERY_TRUE if the query is true, PM_STRING_QUERY_FALSE if
- *   the query is false, and PM_STRING_QUERY_ERROR if the encoding was invalid.
- */
-PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_constant(const uint8_t *source, size_t length, const char *encoding_name);
-
-/**
- * Check that the slice is a valid method name.
- *
- * @param source The source to check.
- * @param length The length of the source.
- * @param encoding_name The name of the encoding of the source.
- * @return PM_STRING_QUERY_TRUE if the query is true, PM_STRING_QUERY_FALSE if
- *   the query is false, and PM_STRING_QUERY_ERROR if the encoding was invalid.
- */
-PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_method_name(const uint8_t *source, size_t length, const char *encoding_name);
 
 /**
  * @mainpage
