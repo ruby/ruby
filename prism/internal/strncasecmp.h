@@ -1,14 +1,11 @@
 /**
- * @file pm_strncasecmp.h
+ * @file internal/strncasecmp.h
  *
  * A custom strncasecmp implementation.
  */
-#ifndef PRISM_STRNCASECMP_H
-#define PRISM_STRNCASECMP_H
+#ifndef PRISM_INTERNAL_STRNCASECMP_H
+#define PRISM_INTERNAL_STRNCASECMP_H
 
-#include "prism/defines.h"
-
-#include <ctype.h>
 #include <stddef.h>
 #include <stdint.h>
 

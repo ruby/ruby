@@ -1,11 +1,10 @@
-#include "prism/util/pm_strncasecmp.h"
+#include "prism/internal/strncasecmp.h"
 
 /**
  * A locale-insensitive version of `tolower(3)`
  */
 static inline int
-pm_tolower(int c)
-{
+pm_tolower(int c) {
     if ('A' <= c && c <= 'Z') {
         return c | 0x20;
     }
