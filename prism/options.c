@@ -4,6 +4,7 @@
 #include "prism/allocator.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 /**
  * Set the shebang callback option on the given options struct.
