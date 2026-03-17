@@ -44,8 +44,8 @@ PRISM_EXPORTED_FUNCTION const char * pm_version(void);
 /**
  * Initialize a parser with the given start and end pointers.
  *
- * The resulting parser must eventually be freed with `pm_parser_free()`. The
- * arena is caller-owned and must outlive the parser — `pm_parser_free()` does
+ * The resulting parser must eventually be freed with `pm_parser_cleanup()`. The
+ * arena is caller-owned and must outlive the parser — `pm_parser_cleanup()` does
  * not free the arena.
  *
  * @param arena The arena to use for all AST-lifetime allocations.
@@ -80,7 +80,7 @@ PRISM_EXPORTED_FUNCTION void pm_parser_register_encoding_changed_callback(pm_par
  *
  * \public \memberof pm_parser
  */
-PRISM_EXPORTED_FUNCTION void pm_parser_free(pm_parser_t *parser);
+PRISM_EXPORTED_FUNCTION void pm_parser_cleanup(pm_parser_t *parser);
 
 /**
  * Initiate the parser with the given parser.
@@ -333,7 +333,7 @@ PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_method_name(const uint
  * * `pm_parser_t` - the main parser structure
  * * `pm_parser_init()` - initialize a parser
  * * `pm_parse()` - parse and return the root node
- * * `pm_parser_free()` - free the internal memory of the parser
+ * * `pm_parser_cleanup()` - free the internal memory of the parser
  * * `pm_arena_free()` - free all AST-lifetime memory
  *
  * Putting all of this together would look something like:
@@ -347,7 +347,7 @@ PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_method_name(const uint
  *     pm_node_t *root = pm_parse(&parser);
  *     printf("PARSED!\n");
  *
- *     pm_parser_free(&parser);
+ *     pm_parser_cleanup(&parser);
  *     pm_arena_free(&arena);
  * }
  * ```
@@ -401,7 +401,7 @@ PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_method_name(const uint
  *     printf("%*.s\n", (int) pm_buffer_length(buffer), pm_buffer_value(buffer));
  *
  *     pm_buffer_free(buffer);
- *     pm_parser_free(&parser);
+ *     pm_parser_cleanup(&parser);
  *     pm_arena_free(&arena);
  * }
  * ```

@@ -338,7 +338,7 @@ pm_serialize_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const 
 
     pm_serialize_metadata(&parser, buffer);
 
-    pm_parser_free(&parser);
+    pm_parser_cleanup(&parser);
     pm_arena_free(&arena);
     pm_options_free(&options);
 }
@@ -367,7 +367,7 @@ pm_serialize_parse_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, 
     pm_buffer_append_byte(buffer, 0);
     pm_serialize(&parser, node, buffer);
 
-    pm_parser_free(&parser);
+    pm_parser_cleanup(&parser);
     pm_arena_free(&arena);
     pm_options_free(&options);
 }

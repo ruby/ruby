@@ -383,7 +383,7 @@ dump_input(pm_string_t *input, const pm_options_t *options) {
 
     VALUE result = rb_str_new(pm_buffer_value(buffer), pm_buffer_length(buffer));
     pm_buffer_free(buffer);
-    pm_parser_free(&parser);
+    pm_parser_cleanup(&parser);
     pm_arena_free(&arena);
 
     return result;
@@ -792,7 +792,7 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
         result = parse_result_create(rb_cPrismLexResult, &parser, parse_lex_data.tokens, parse_lex_data.encoding, source, options->freeze);
     }
 
-    pm_parser_free(&parser);
+    pm_parser_cleanup(&parser);
     pm_arena_free(&arena);
 
     return result;
@@ -866,7 +866,7 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
         rb_obj_freeze(source);
     }
 
-    pm_parser_free(&parser);
+    pm_parser_cleanup(&parser);
     pm_arena_free(&arena);
 
     return result;
@@ -974,7 +974,7 @@ profile_input(pm_string_t *input, const pm_options_t *options) {
     pm_parser_init(&arena, &parser, pm_string_source(input), pm_string_length(input), options);
 
     pm_parse(&parser);
-    pm_parser_free(&parser);
+    pm_parser_cleanup(&parser);
     pm_arena_free(&arena);
 }
 
@@ -1082,7 +1082,7 @@ parse_stream(int argc, VALUE *argv, VALUE self) {
     VALUE result = parse_result_create(rb_cPrismParseResult, &parser, value, encoding, source, options.freeze);
 
     pm_buffer_free(buffer);
-    pm_parser_free(&parser);
+    pm_parser_cleanup(&parser);
     pm_arena_free(&arena);
 
     return result;
@@ -1103,7 +1103,7 @@ parse_input_comments(pm_string_t *input, const pm_options_t *options) {
     VALUE source = pm_source_new(&parser, encoding, options->freeze);
     VALUE comments = parser_comments(&parser, source, options->freeze);
 
-    pm_parser_free(&parser);
+    pm_parser_cleanup(&parser);
     pm_arena_free(&arena);
 
     return comments;
@@ -1223,7 +1223,7 @@ parse_input_success_p(pm_string_t *input, const pm_options_t *options) {
     pm_parse(&parser);
 
     VALUE result = parser.error_list.size == 0 ? Qtrue : Qfalse;
-    pm_parser_free(&parser);
+    pm_parser_cleanup(&parser);
     pm_arena_free(&arena);
 
     return result;

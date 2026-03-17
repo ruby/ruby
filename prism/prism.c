@@ -22483,7 +22483,7 @@ pm_parser_register_encoding_changed_callback(pm_parser_t *parser, pm_encoding_ch
  * Free any memory associated with the given parser.
  */
 void
-pm_parser_free(pm_parser_t *parser) {
+pm_parser_cleanup(pm_parser_t *parser) {
     pm_string_free(&parser->filepath);
     pm_arena_free(&parser->metadata_arena);
 
@@ -22742,7 +22742,7 @@ pm_parse_stream(pm_arena_t *arena, pm_parser_t *parser, pm_buffer_t *buffer, voi
     while (!eof && parser->error_list.size > 0) {
         eof = pm_parse_stream_read(buffer, stream, stream_fgets, stream_feof);
 
-        pm_parser_free(parser);
+        pm_parser_cleanup(parser);
         pm_arena_free(arena);
         pm_parser_init(arena, parser, (const uint8_t *) pm_buffer_value(buffer), pm_buffer_length(buffer), options);
         node = pm_parse(parser);
@@ -22766,7 +22766,7 @@ pm_parse_success_p(const uint8_t *source, size_t size, const char *data) {
     pm_parse(&parser);
 
     bool result = parser.error_list.size == 0;
-    pm_parser_free(&parser);
+    pm_parser_cleanup(&parser);
     pm_arena_free(&arena);
     pm_options_free(&options);
 
@@ -22821,7 +22821,7 @@ pm_serialize_parse(pm_buffer_t *buffer, const uint8_t *source, size_t size, cons
     pm_serialize_content(&parser, node, buffer);
     pm_buffer_append_byte(buffer, '\0');
 
-    pm_parser_free(&parser);
+    pm_parser_cleanup(&parser);
     pm_arena_free(&arena);
     pm_options_free(&options);
 }
@@ -22844,7 +22844,7 @@ pm_serialize_parse_stream(pm_buffer_t *buffer, void *stream, pm_parse_stream_fge
     pm_buffer_append_byte(buffer, '\0');
 
     pm_buffer_free(parser_buffer);
-    pm_parser_free(&parser);
+    pm_parser_cleanup(&parser);
     pm_arena_free(&arena);
     pm_options_free(&options);
 }
@@ -22867,7 +22867,7 @@ pm_serialize_parse_comments(pm_buffer_t *buffer, const uint8_t *source, size_t s
     pm_buffer_append_varsint(buffer, parser.start_line);
     pm_serialize_comment_list(&parser.comment_list, buffer);
 
-    pm_parser_free(&parser);
+    pm_parser_cleanup(&parser);
     pm_arena_free(&arena);
     pm_options_free(&options);
 }
