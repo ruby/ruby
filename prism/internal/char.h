@@ -7,6 +7,7 @@
 #define PRISM_INTERNAL_CHAR_H
 
 #include "prism/compiler/force_inline.h"
+
 #include "prism/arena.h"
 #include "prism/line_offset_list.h"
 

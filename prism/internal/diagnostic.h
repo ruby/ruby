@@ -6,8 +6,8 @@
 #ifndef PRISM_INTERNAL_DIAGNOSTIC_H
 #define PRISM_INTERNAL_DIAGNOSTIC_H
 
-#include "prism/diagnostic.h"
 #include "prism/arena.h"
+#include "prism/diagnostic.h"
 
 /**
  * Append a diagnostic to the given list of diagnostics that is using shared

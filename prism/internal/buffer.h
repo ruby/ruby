@@ -6,8 +6,9 @@
 #ifndef PRISM_INTERNAL_BUFFER_H
 #define PRISM_INTERNAL_BUFFER_H
 
-#include "prism/buffer.h"
 #include "prism/compiler/format.h"
+
+#include "prism/buffer.h"
 
 #include <stdint.h>
 
