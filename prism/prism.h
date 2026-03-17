@@ -13,27 +13,13 @@ extern "C" {
 #include "prism/arena.h"
 #include "prism/ast.h"
 #include "prism/diagnostic.h"
+#include "prism/excludes.h"
 #include "prism/node.h"
 #include "prism/options.h"
 #include "prism/parser.h"
 #include "prism/prettyprint.h"
 #include "prism/string_query.h"
 #include "prism/version.h"
-
-#include <assert.h>
-#include <errno.h>
-#include <locale.h>
-#include <math.h>
-#include <stdarg.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#ifndef _WIN32
-#include <strings.h>
-#endif
 
 /**
  * The prism version and the serialization format.
