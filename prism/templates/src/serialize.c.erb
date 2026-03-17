@@ -1,17 +1,25 @@
-#include "prism.h"
-
-#include "prism/compiler/inline.h"
-#include "prism/internal/buffer.h"
-#include "prism/internal/encoding.h"
-#include "prism/internal/list.h"
-#include "prism/internal/options.h"
+#include "prism/excludes.h"
 
 // We optionally support serializing to a binary string. For systems that don't
 // want or need this functionality, it can be turned off with the
 // PRISM_EXCLUDE_SERIALIZATION define.
 #ifndef PRISM_EXCLUDE_SERIALIZATION
 
+#include "prism/compiler/inline.h"
+
+#include "prism/internal/buffer.h"
+#include "prism/internal/encoding.h"
+#include "prism/internal/list.h"
+#include "prism/internal/options.h"
+
+#include "prism.h"
+#include "prism/ast.h"
+#include "prism/diagnostic.h"
+#include "prism/parser.h"
+
+#include <assert.h>
 #include <stdio.h>
+#include <string.h>
 
 static PRISM_INLINE uint32_t
 pm_ptrdifft_to_u32(ptrdiff_t value) {
