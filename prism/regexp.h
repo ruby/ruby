@@ -9,7 +9,7 @@
 #include "prism/defines.h"
 #include "prism/parser.h"
 #include "prism/encoding.h"
-#include "prism/util/pm_memchr.h"
+#include "prism/internal/memchr.h"
 #include "prism/util/pm_string.h"
 
 #include <stdbool.h>

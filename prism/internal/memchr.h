@@ -1,12 +1,11 @@
 /**
- * @file pm_memchr.h
+ * @file internal/memchr.h
  *
  * A custom memchr implementation.
  */
-#ifndef PRISM_MEMCHR_H
-#define PRISM_MEMCHR_H
+#ifndef PRISM_INTERNAL_MEMCHR_H
+#define PRISM_INTERNAL_MEMCHR_H
 
-#include "prism/defines.h"
 #include "prism/encoding.h"
 
 #include <stddef.h>
