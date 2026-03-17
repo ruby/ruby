@@ -1,7 +1,7 @@
 #include "prism/internal/regexp.h"
 
-#include "prism/attribute/inline.h"
-#include "prism/attribute/fallthrough.h"
+#include "prism/compiler/inline.h"
+#include "prism/compiler/fallthrough.h"
 #include "prism/internal/buffer.h"
 #include "prism/internal/char.h"
 #include "prism/internal/diagnostic.h"

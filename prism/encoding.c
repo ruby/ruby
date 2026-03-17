@@ -1,6 +1,6 @@
 #include "prism/internal/encoding.h"
 
-#include "prism/attribute/unused.h"
+#include "prism/compiler/unused.h"
 #include "prism/internal/strncasecmp.h"
 
 #include <assert.h>

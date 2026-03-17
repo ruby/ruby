@@ -6,9 +6,9 @@
 #ifndef PRISM_ARENA_H
 #define PRISM_ARENA_H
 
-#include "prism/attribute/exported.h"
-#include "prism/attribute/flex_array.h"
-#include "prism/attribute/force_inline.h"
+#include "prism/compiler/exported.h"
+#include "prism/compiler/flex_array.h"
+#include "prism/compiler/force_inline.h"
 
 #include <stddef.h>
 

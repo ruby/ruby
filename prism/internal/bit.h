@@ -6,7 +6,7 @@
 #ifndef PRISM_INTERNAL_BIT_H
 #define PRISM_INTERNAL_BIT_H
 
-#include "prism/attribute/inline.h"
+#include "prism/compiler/inline.h"
 
 /**
  * Count trailing zero bits in a 64-bit value. Used by SWAR identifier scanning

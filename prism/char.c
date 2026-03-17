@@ -1,6 +1,6 @@
 #include "prism/internal/char.h"
 
-#include "prism/attribute/inline.h"
+#include "prism/compiler/inline.h"
 #include "prism/internal/line_offset_list.h"
 
 #define PRISM_CHAR_BIT_REGEXP_OPTION (1 << 2)

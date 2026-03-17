@@ -1,13 +1,11 @@
 /**
- * @file attribute/flex_array.h
- *
- * Macro definitions for working with flexible array members.
+ * @file compiler/flex_array.h
  */
-#ifndef PRISM_FLEX_ARRAY_H
-#define PRISM_FLEX_ARRAY_H
+#ifndef PRISM_COMPILER_FLEX_ARRAY_H
+#define PRISM_COMPILER_FLEX_ARRAY_H
 
 /**
- * A macro for defining a flexible array member. C99 supports `data[]`, GCC
+ * A macro for helper define a flexible array member. C99 supports `data[]`, GCC
  * supports `data[0]` as an extension, and older compilers require `data[1]`.
  */
 #if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)

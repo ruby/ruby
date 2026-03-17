@@ -6,7 +6,7 @@
 #ifndef PRISM_NODE_H
 #define PRISM_NODE_H
 
-#include "prism/attribute/exported.h"
+#include "prism/compiler/exported.h"
 #include "prism/arena.h"
 #include "prism/ast.h"
 

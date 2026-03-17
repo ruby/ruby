@@ -1,6 +1,6 @@
 #include "prism/internal/buffer.h"
 
-#include "prism/attribute/inline.h"
+#include "prism/compiler/inline.h"
 #include "prism/internal/char.h"
 #include "prism/allocator.h"
 

@@ -1,10 +1,8 @@
 /**
- * @file attribute/exported.h
- *
- * Macro definitions for make functions publically visible.
+ * @file compiler/exported.h
  */
-#ifndef PRISM_EXPORTED_H
-#define PRISM_EXPORTED_H
+#ifndef PRISM_COMPILER_EXPORTED_H
+#define PRISM_COMPILER_EXPORTED_H
 
 /**
  * By default, we compile with -fvisibility=hidden. When this is enabled, we

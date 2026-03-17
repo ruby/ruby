@@ -1,11 +1,8 @@
 /**
- * @file attribute/fallthrough.h
- *
- * Define the PRISM_FALLTHROUGH macro, which is used to annotate intentional
- * fallthroughs in switch statements.
+ * @file compiler/fallthrough.h
  */
-#ifndef PRISM_FALLTHROUGH_H
-#define PRISM_FALLTHROUGH_H
+#ifndef PRISM_COMPILER_FALLTHROUGH_H
+#define PRISM_COMPILER_FALLTHROUGH_H
 
 /**
  * We use -Wimplicit-fallthrough to guard potentially unintended fall-through

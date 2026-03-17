@@ -7,7 +7,7 @@
 #define PRISM_INTERNAL_BUFFER_H
 
 #include "prism/buffer.h"
-#include "prism/attribute/format.h"
+#include "prism/compiler/format.h"
 
 #include <stdint.h>
 
