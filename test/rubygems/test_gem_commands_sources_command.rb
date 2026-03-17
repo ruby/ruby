@@ -61,7 +61,7 @@ class TestGemCommandsSourcesCommand < Gem::TestCase
   end
 
   def test_execute_add_without_trailing_slash
-    setup_fake_source('https://rubygems.pkg.github.com/my-org')
+    setup_fake_source("https://rubygems.pkg.github.com/my-org")
 
     @cmd.handle_options %W[--add https://rubygems.pkg.github.com/my-org]
 
@@ -69,7 +69,7 @@ class TestGemCommandsSourcesCommand < Gem::TestCase
       @cmd.execute
     end
 
-    assert_equal [@gem_repo, 'https://rubygems.pkg.github.com/my-org/'], Gem.sources
+    assert_equal [@gem_repo, "https://rubygems.pkg.github.com/my-org/"], Gem.sources
 
     expected = <<-EOF
 https://rubygems.pkg.github.com/my-org/ added to sources
@@ -78,8 +78,9 @@ https://rubygems.pkg.github.com/my-org/ added to sources
     assert_equal expected, @ui.output
     assert_equal "", @ui.error
   end
+
   def test_execute_add_multiple_trailing_slash
-    setup_fake_source('https://rubygems.pkg.github.com/my-org/')
+    setup_fake_source("https://rubygems.pkg.github.com/my-org/")
 
     @cmd.handle_options %W[--add https://rubygems.pkg.github.com/my-org///]
 
@@ -87,7 +88,7 @@ https://rubygems.pkg.github.com/my-org/ added to sources
       @cmd.execute
     end
 
-    assert_equal [@gem_repo, 'https://rubygems.pkg.github.com/my-org/'], Gem.sources
+    assert_equal [@gem_repo, "https://rubygems.pkg.github.com/my-org/"], Gem.sources
 
     expected = <<-EOF
 https://rubygems.pkg.github.com/my-org/ added to sources
@@ -98,7 +99,7 @@ https://rubygems.pkg.github.com/my-org/ added to sources
   end
 
   def test_execute_append_without_trailing_slash
-    setup_fake_source('https://rubygems.pkg.github.com/my-org')
+    setup_fake_source("https://rubygems.pkg.github.com/my-org")
 
     @cmd.handle_options %W[--append https://rubygems.pkg.github.com/my-org]
 
@@ -106,7 +107,7 @@ https://rubygems.pkg.github.com/my-org/ added to sources
       @cmd.execute
     end
 
-    assert_equal [@gem_repo, 'https://rubygems.pkg.github.com/my-org/'], Gem.sources
+    assert_equal [@gem_repo, "https://rubygems.pkg.github.com/my-org/"], Gem.sources
 
     expected = <<-EOF
 https://rubygems.pkg.github.com/my-org/ added to sources
@@ -117,7 +118,7 @@ https://rubygems.pkg.github.com/my-org/ added to sources
   end
 
   def test_execute_prepend_without_trailing_slash
-    setup_fake_source('https://rubygems.pkg.github.com/my-org')
+    setup_fake_source("https://rubygems.pkg.github.com/my-org")
 
     @cmd.handle_options %W[--prepend https://rubygems.pkg.github.com/my-org]
 
@@ -125,7 +126,7 @@ https://rubygems.pkg.github.com/my-org/ added to sources
       @cmd.execute
     end
 
-    assert_equal [@gem_repo, 'https://rubygems.pkg.github.com/my-org/'], Gem.sources
+    assert_equal ["https://rubygems.pkg.github.com/my-org/", @gem_repo], Gem.sources
 
     expected = <<-EOF
 https://rubygems.pkg.github.com/my-org/ added to sources
@@ -605,17 +606,14 @@ source #{repo_with_slash} already present in the cache
 
     @cmd.handle_options %W[--add #{https_rubygems_org}]
 
-    ui = Gem::MockGemUi.new "n"
-
-    use_ui ui do
-      assert_raise Gem::MockGemUi::TermError do
-        @cmd.execute
-      end
+    use_ui @ui do
+      @cmd.execute
     end
 
-    assert_equal [@gem_repo], Gem.sources
+    assert_equal [@gem_repo, https_rubygems_org], Gem.sources
 
     expected = <<-EXPECTED
+#{https_rubygems_org} added to sources
     EXPECTED
 
     assert_equal expected, @ui.output
@@ -629,17 +627,14 @@ source #{repo_with_slash} already present in the cache
 
     @cmd.handle_options %W[--append #{https_rubygems_org}]
 
-    ui = Gem::MockGemUi.new "n"
-
-    use_ui ui do
-      assert_raise Gem::MockGemUi::TermError do
-        @cmd.execute
-      end
+    use_ui @ui do
+      @cmd.execute
     end
 
-    assert_equal [@gem_repo], Gem.sources
+    assert_equal [@gem_repo, https_rubygems_org], Gem.sources
 
     expected = <<-EXPECTED
+#{https_rubygems_org} added to sources
     EXPECTED
 
     assert_equal expected, @ui.output
@@ -872,6 +867,31 @@ beta-gems.example.com/ is not a URI
     Gem.configuration.sources = nil
   end
 
+  def test_execute_remove_without_trailing_slash
+    source_uri = "https://rubygems.pkg.github.com/my-org/"
+
+    Gem.configuration.sources = [source_uri]
+
+    setup_fake_source(source_uri)
+
+    @cmd.handle_options %W[--remove https://rubygems.pkg.github.com/my-org]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert_equal [], Gem.sources
+
+    expected = <<-EOF
+#{source_uri} removed from sources
+    EOF
+
+    assert_equal expected, @ui.output
+    assert_equal "", @ui.error
+  ensure
+    Gem.configuration.sources = nil
+  end
+
   def test_execute_update
     @cmd.handle_options %w[--update]
 
@@ -982,6 +1002,6 @@ beta-gems.example.com/ is not a URI
       Marshal.dump specs, io
     end
 
-    @fetcher.data["#{uri}/specs.#{@marshal_version}.gz"] = specs_dump_gz.string
+    @fetcher.data["#{uri.chomp("/")}/specs.#{@marshal_version}.gz"] = specs_dump_gz.string
   end
 end
