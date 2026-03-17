@@ -1,5 +1,5 @@
 /**
- * @file format.h
+ * @file attribute/format.h
  *
  * Macro definition for specifying that a function accepts variadic parameters
  * that look like printf format strings.

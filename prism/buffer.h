@@ -6,7 +6,7 @@
 #ifndef PRISM_BUFFER_H
 #define PRISM_BUFFER_H
 
-#include "prism/exported.h"
+#include "prism/attribute/exported.h"
 
 #include <stdbool.h>
 #include <stddef.h>

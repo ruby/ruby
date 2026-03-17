@@ -1,5 +1,5 @@
 /**
- * @file exported.h
+ * @file attribute/exported.h
  *
  * Macro definitions for make functions publically visible.
  */

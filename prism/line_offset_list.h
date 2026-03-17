@@ -14,7 +14,7 @@
 #ifndef PRISM_LINE_OFFSET_LIST_H
 #define PRISM_LINE_OFFSET_LIST_H
 
-#include "prism/exported.h"
+#include "prism/attribute/exported.h"
 
 #include <stddef.h>
 #include <stdint.h>

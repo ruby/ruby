@@ -1,6 +1,6 @@
+#include "prism/attribute/align.h"
 #include "prism/internal/line_offset_list.h"
 #include "prism/internal/arena.h"
-#include "prism/align.h"
 
 #include <assert.h>
 #include <string.h>

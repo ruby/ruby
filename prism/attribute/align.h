@@ -1,5 +1,5 @@
 /**
- * @file align.h
+ * @file attribute/align.h
  *
  * Alignment macros used throughout the prism library.
  */

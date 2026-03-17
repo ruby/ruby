@@ -1,5 +1,5 @@
 /**
- * @file flex_array.h
+ * @file attribute/flex_array.h
  *
  * Macro definitions for working with flexible array members.
  */
