@@ -92,7 +92,7 @@ PRISM_EXPORTED_FUNCTION const char * pm_node_type_to_str(pm_node_type_t node_typ
  *     size_t *data = &indent;
  *     pm_visit_node(node, visit, data);
  *
- *     pm_parser_free(&parser);
+ *     pm_parser_cleanup(&parser);
  *     pm_arena_free(&arena);
  *     return EXIT_SUCCESS;
  * }
