@@ -29,7 +29,7 @@ fn test_breakpoint_hir_codegen() {
         function.num_blocks(),
     );
     let mut asm = Assembler::new();
-    asm.new_block_without_id();
+    asm.new_block_without_id("test");
     let mut cb = CodeBlock::new_dummy();
 
     gen_insn(&mut cb, &mut jit, &mut asm, &function, breakpoint, &function.find(breakpoint)).unwrap();
@@ -1119,6 +1119,20 @@ fn test_invokesuper_to_cfunc_varargs() {
         test  # profile invokesuper
         test  # compile + run compiled code
     "#), @r#"["MyString", true]"#);
+}
+
+#[test]
+fn test_string_new_preserves_string_arg() {
+    assert_snapshot!(inspect(r#"
+        def test
+          str = "hello"
+          String.new(str)
+          :ok
+        end
+
+        test
+        test
+    "#), @":ok");
 }
 
 #[test]

@@ -6068,7 +6068,7 @@ impl Function {
                 } else if self.is_a(left, types::RubyValue) && self.is_a(right, types::RubyValue) {
                     Ok(())
                 } else {
-                    return Err(ValidationError::MiscValidationError(insn_id, "IsBitEqual can only compare CInt/CInt or RubyValue/RubyValue".to_string()));
+                    Err(ValidationError::MiscValidationError(insn_id, "IsBitEqual can only compare CInt/CInt or RubyValue/RubyValue".to_string()))
                 }
             }
             Insn::BoxBool { val }
