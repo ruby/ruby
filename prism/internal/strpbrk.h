@@ -1,17 +1,15 @@
 /**
- * @file pm_strpbrk.h
+ * @file internal/strpbrk.h
  *
  * A custom strpbrk implementation.
  */
-#ifndef PRISM_STRPBRK_H
-#define PRISM_STRPBRK_H
+#ifndef PRISM_INTERNAL_STRPBRK_H
+#define PRISM_INTERNAL_STRPBRK_H
 
-#include "prism/defines.h"
-#include "prism/diagnostic.h"
 #include "prism/parser.h"
 
 #include <stddef.h>
-#include <string.h>
+#include <stdint.h>
 
 /**
  * Here we have rolled our own version of strpbrk. The standard library strpbrk

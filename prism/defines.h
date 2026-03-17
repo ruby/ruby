@@ -14,7 +14,11 @@
 #include "prism/attribute/flex_array.h"
 #include "prism/attribute/force_inline.h"
 #include "prism/attribute/format.h"
+#include "prism/attribute/unused.h"
+
 #include "prism/allocator.h"
+#include "prism/internal/accel.h"
+#include "prism/internal/bit.h"
 
 #include <ctype.h>
 #include <limits.h>
@@ -42,17 +46,6 @@
  */
 #ifndef PRISM_DEPTH_MAXIMUM
     #define PRISM_DEPTH_MAXIMUM 10000
-#endif
-
-/**
- * GCC will warn if you specify a function or parameter that is unused at
- * runtime. This macro allows you to mark a function or parameter as unused in a
- * compiler-agnostic way.
- */
-#if defined(__GNUC__)
-#   define PRISM_ATTRIBUTE_UNUSED __attribute__((unused))
-#else
-#   define PRISM_ATTRIBUTE_UNUSED
 #endif
 
 /**
@@ -124,83 +117,6 @@
 #endif
 
 /**
- * If you build prism with a custom allocator, configure it with
- * "-D PRISM_XALLOCATOR" to use your own allocator that defines xmalloc,
- * xrealloc, xcalloc, and xfree.
- *
- * For example, your `prism_xallocator.h` file could look like this:
- *
- * ```
- * #ifndef PRISM_XALLOCATOR_H
- * #define PRISM_XALLOCATOR_H
- * #define xmalloc          my_malloc
- * #define xrealloc         my_realloc
- * #define xcalloc          my_calloc
- * #define xfree            my_free
- * #define xrealloc_sized   my_realloc_sized // (optional)
- * #define xfree_sized      my_free_sized    // (optional)
- * #endif
- * ```
- */
-#ifdef PRISM_XALLOCATOR
-    #include "prism_xallocator.h"
-#else
-    #ifndef xmalloc
-        /**
-         * The malloc function that should be used. This can be overridden with
-         * the PRISM_XALLOCATOR define.
-         */
-        #define xmalloc malloc
-    #endif
-
-    #ifndef xrealloc
-        /**
-         * The realloc function that should be used. This can be overridden with
-         * the PRISM_XALLOCATOR define.
-         */
-        #define xrealloc realloc
-    #endif
-
-    #ifndef xcalloc
-        /**
-         * The calloc function that should be used. This can be overridden with
-         * the PRISM_XALLOCATOR define.
-         */
-        #define xcalloc calloc
-    #endif
-
-    #ifndef xfree
-        /**
-         * The free function that should be used. This can be overridden with the
-         * PRISM_XALLOCATOR define.
-         */
-        #define xfree free
-    #endif
-#endif
-
-#ifndef xfree_sized
-/**
- * The free_sized function that should be used. This can be overridden with the
- * PRISM_XALLOCATOR define.
- * If not defined, defaults to calling xfree.
- */
-    #define xfree_sized(p, s) xfree(((void)(s), (p)))
-#endif
-
-#ifndef xrealloc_sized
-/**
- * The xrealloc_sized function that should be used. This can be overridden with the
- * PRISM_XALLOCATOR define.
- * If not defined, defaults to calling xrealloc.
- */
-    #define xrealloc_sized(p, ns, os) xrealloc((p), ((void)(os), (ns)))
-#endif
-
-#ifdef PRISM_BUILD_DEBUG
-    #include "prism/debug_allocator.h"
-#endif
-
-/**
  * If PRISM_BUILD_MINIMAL is defined, then we're going to define every possible
  * switch that will turn off certain features of prism.
  */
@@ -234,49 +150,6 @@
 
     /** Void because this platform does not support branch prediction hints. */
     #define PRISM_UNLIKELY(x) (x)
-#endif
-
-/**
- * Platform detection for SIMD / fast-path implementations. At most one of
- * these macros is defined, selecting the best available vectorization strategy.
- */
-#if (defined(__aarch64__) && defined(__ARM_NEON)) || (defined(_MSC_VER) && defined(_M_ARM64))
-    #define PRISM_HAS_NEON
-#elif (defined(__x86_64__) && defined(__SSSE3__)) || (defined(_MSC_VER) && defined(_M_X64))
-    #define PRISM_HAS_SSSE3
-#elif defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-    #define PRISM_HAS_SWAR
-#endif
-
-/**
- * Count trailing zero bits in a 64-bit value. Used by SWAR identifier scanning
- * to find the first non-matching byte in a word.
- *
- * Precondition: v must be nonzero. The result is undefined when v == 0
- * (matching the behavior of __builtin_ctzll and _BitScanForward64).
- */
-#if defined(__GNUC__) || defined(__clang__)
-    #define pm_ctzll(v) ((unsigned) __builtin_ctzll(v))
-#elif defined(_MSC_VER)
-    #include <intrin.h>
-    static inline unsigned pm_ctzll(uint64_t v) {
-        unsigned long index;
-        _BitScanForward64(&index, v);
-        return (unsigned) index;
-    }
-#else
-    static inline unsigned
-    pm_ctzll(uint64_t v) {
-        unsigned c = 0;
-        v &= (uint64_t) (-(int64_t) v);
-        if (v & 0x00000000FFFFFFFFULL) c += 0;  else c += 32;
-        if (v & 0x0000FFFF0000FFFFULL) c += 0;  else c += 16;
-        if (v & 0x00FF00FF00FF00FFULL) c += 0;  else c += 8;
-        if (v & 0x0F0F0F0F0F0F0F0FULL) c += 0;  else c += 4;
-        if (v & 0x3333333333333333ULL) c += 0;  else c += 2;
-        if (v & 0x5555555555555555ULL) c += 0;  else c += 1;
-        return c;
-    }
 #endif
 
 /**
