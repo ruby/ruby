@@ -1,6 +1,6 @@
 #include "prism/internal/strings.h"
 
-#include "prism/allocator.h"
+#include "prism/internal/allocator.h"
 
 #include <assert.h>
 #include <stdlib.h>

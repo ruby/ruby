@@ -1,5 +1,6 @@
 #include "prism/arena.h"
-#include "prism/allocator.h"
+
+#include "prism/internal/allocator.h"
 
 #include <assert.h>
 #include <stdio.h>
