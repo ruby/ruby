@@ -1346,6 +1346,52 @@ class Pathname    # * mixed *
 end
 
 class Pathname
+  # Iterates over the directory tree in a depth first manner, yielding a
+  # Pathname for each file under "this" directory.
+  #
+  # Returns an Enumerator if no block is given.
+  #
+  # If +self+ is +.+, yielded pathnames begin with a filename in the
+  # current directory, not +./+.
+  #
+  # If +ignore_error+ is true (the default), errors during traversal
+  # are silently ignored. If false, errors are raised.
+  #
+  #   Pathname("/usr/local").find {|f| p f }
+  #   #=> #<Pathname:/usr/local>
+  #   #=> #<Pathname:/usr/local/bin>
+  #   #=> ...
+  #
+  def find(ignore_error: true) # :yield: pathname
+    return to_enum(__method__, ignore_error: ignore_error) unless block_given?
+    raise Errno::ENOENT, @path unless File.exist?(@path)
+    fs_encoding = Encoding.find("filesystem")
+    enc = @path.encoding == Encoding::US_ASCII ? fs_encoding : @path.encoding
+    ps = [@path]
+    while file = ps.shift
+      catch(:prune) do
+        if @path == '.'
+          yield self.class.new(file == '.' ? file : file.delete_prefix('./'))
+        else
+          yield self.class.new(file)
+        end
+        begin
+          s = File.lstat(file)
+          if s.directory?
+            fs = Dir.children(file, encoding: enc)
+            fs.sort!
+            fs.reverse_each {|f|
+              ps.unshift File.join(file, f)
+            }
+          end
+        rescue Errno::ENOENT, Errno::EACCES, Errno::ENOTDIR, Errno::ELOOP, Errno::ENAMETOOLONG, Errno::EINVAL
+          raise unless ignore_error
+        end
+      end
+    end
+    nil
+  end
+
   undef =~ if Kernel.method_defined?(:=~)
 end
 
