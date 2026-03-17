@@ -106,7 +106,7 @@ module Prism # :nodoc:
     )
 
     load_exported_functions_from(
-      "prism/util/pm_buffer.h",
+      "prism/buffer.h",
       "pm_buffer_sizeof",
       "pm_buffer_init",
       "pm_buffer_value",
