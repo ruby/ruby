@@ -417,7 +417,7 @@ dump(int argc, VALUE *argv, VALUE self) {
     xfree_sized(dup, length);
 #endif
 
-    pm_string_free(&input);
+    pm_string_cleanup(&input);
     pm_options_free(&options);
 
     return value;
@@ -440,7 +440,7 @@ dump_file(int argc, VALUE *argv, VALUE self) {
     file_options(argc, argv, &input, &options, &encoded_filepath);
 
     VALUE value = dump_input(&input, &options);
-    pm_string_free(&input);
+    pm_string_cleanup(&input);
     pm_options_free(&options);
 
     return value;
@@ -813,7 +813,7 @@ lex(int argc, VALUE *argv, VALUE self) {
     string_options(argc, argv, &input, &options);
 
     VALUE result = parse_lex_input(&input, &options, false);
-    pm_string_free(&input);
+    pm_string_cleanup(&input);
     pm_options_free(&options);
 
     return result;
@@ -836,7 +836,7 @@ lex_file(int argc, VALUE *argv, VALUE self) {
     file_options(argc, argv, &input, &options, &encoded_filepath);
 
     VALUE value = parse_lex_input(&input, &options, false);
-    pm_string_free(&input);
+    pm_string_cleanup(&input);
     pm_options_free(&options);
 
     return value;
@@ -936,7 +936,7 @@ parse(int argc, VALUE *argv, VALUE self) {
     xfree_sized(dup, length);
 #endif
 
-    pm_string_free(&input);
+    pm_string_cleanup(&input);
     pm_options_free(&options);
     return value;
 }
@@ -958,7 +958,7 @@ parse_file(int argc, VALUE *argv, VALUE self) {
     file_options(argc, argv, &input, &options, &encoded_filepath);
 
     VALUE value = parse_input(&input, &options);
-    pm_string_free(&input);
+    pm_string_cleanup(&input);
     pm_options_free(&options);
 
     return value;
@@ -994,7 +994,7 @@ profile(int argc, VALUE *argv, VALUE self) {
 
     string_options(argc, argv, &input, &options);
     profile_input(&input, &options);
-    pm_string_free(&input);
+    pm_string_cleanup(&input);
     pm_options_free(&options);
 
     return Qnil;
@@ -1018,7 +1018,7 @@ profile_file(int argc, VALUE *argv, VALUE self) {
     file_options(argc, argv, &input, &options, &encoded_filepath);
 
     profile_input(&input, &options);
-    pm_string_free(&input);
+    pm_string_cleanup(&input);
     pm_options_free(&options);
 
     return Qnil;
@@ -1124,7 +1124,7 @@ parse_comments(int argc, VALUE *argv, VALUE self) {
     string_options(argc, argv, &input, &options);
 
     VALUE result = parse_input_comments(&input, &options);
-    pm_string_free(&input);
+    pm_string_cleanup(&input);
     pm_options_free(&options);
 
     return result;
@@ -1147,7 +1147,7 @@ parse_file_comments(int argc, VALUE *argv, VALUE self) {
     file_options(argc, argv, &input, &options, &encoded_filepath);
 
     VALUE value = parse_input_comments(&input, &options);
-    pm_string_free(&input);
+    pm_string_cleanup(&input);
     pm_options_free(&options);
 
     return value;
@@ -1175,7 +1175,7 @@ parse_lex(int argc, VALUE *argv, VALUE self) {
     string_options(argc, argv, &input, &options);
 
     VALUE value = parse_lex_input(&input, &options, true);
-    pm_string_free(&input);
+    pm_string_cleanup(&input);
     pm_options_free(&options);
 
     return value;
@@ -1205,7 +1205,7 @@ parse_lex_file(int argc, VALUE *argv, VALUE self) {
     file_options(argc, argv, &input, &options, &encoded_filepath);
 
     VALUE value = parse_lex_input(&input, &options, true);
-    pm_string_free(&input);
+    pm_string_cleanup(&input);
     pm_options_free(&options);
 
     return value;
@@ -1244,7 +1244,7 @@ parse_success_p(int argc, VALUE *argv, VALUE self) {
     string_options(argc, argv, &input, &options);
 
     VALUE result = parse_input_success_p(&input, &options);
-    pm_string_free(&input);
+    pm_string_cleanup(&input);
     pm_options_free(&options);
 
     return result;
@@ -1280,7 +1280,7 @@ parse_file_success_p(int argc, VALUE *argv, VALUE self) {
     file_options(argc, argv, &input, &options, &encoded_filepath);
 
     VALUE result = parse_input_success_p(&input, &options);
-    pm_string_free(&input);
+    pm_string_cleanup(&input);
     pm_options_free(&options);
 
     return result;

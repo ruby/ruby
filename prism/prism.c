@@ -7807,7 +7807,7 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
 
         // When we're done, we want to free the string in case we had to
         // allocate memory for it.
-        pm_string_free(&key);
+        pm_string_cleanup(&key);
 
         // Allocate a new magic comment node to append to the parser's list.
         pm_magic_comment_t *magic_comment = (pm_magic_comment_t *) pm_arena_alloc(&parser->metadata_arena, sizeof(pm_magic_comment_t), PRISM_ALIGNOF(pm_magic_comment_t));
@@ -21375,7 +21375,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     pm_string_owned_init(&owned, (uint8_t *) memory, total_length);
 
                     result = parse_interpolated_regular_expression_named_captures(parser, &owned, call, PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_EXTENDED));
-                    pm_string_free(&owned);
+                    pm_string_cleanup(&owned);
                 }
             } else if (PM_NODE_TYPE_P(node, PM_REGULAR_EXPRESSION_NODE)) {
                 // If we have a regular expression node, then we can parse
@@ -22489,7 +22489,7 @@ pm_parser_register_encoding_changed_callback(pm_parser_t *parser, pm_encoding_ch
  */
 void
 pm_parser_cleanup(pm_parser_t *parser) {
-    pm_string_free(&parser->filepath);
+    pm_string_cleanup(&parser->filepath);
     pm_arena_free(&parser->metadata_arena);
 
     while (parser->current_scope != NULL) {

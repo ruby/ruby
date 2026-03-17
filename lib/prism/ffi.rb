@@ -117,7 +117,7 @@ module Prism # :nodoc:
     load_exported_functions_from(
       "prism/strings.h",
       "pm_string_mapped_init",
-      "pm_string_free",
+      "pm_string_cleanup",
       "pm_string_source",
       "pm_string_length",
       "pm_string_sizeof",
@@ -219,7 +219,7 @@ module Prism # :nodoc:
             raise "Unknown error initializing pm_string_t: #{result.inspect}"
           end
         ensure
-          LibRubyParser.pm_string_free(pm_string)
+          LibRubyParser.pm_string_cleanup(pm_string)
         end
       end
     end
