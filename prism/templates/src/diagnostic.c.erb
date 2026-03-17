@@ -1,5 +1,6 @@
 #include "prism/diagnostic.h"
 
+#include "prism/attribute/inline.h"
 #include "prism/internal/arena.h"
 #include "prism/internal/list.h"
 
@@ -434,7 +435,7 @@ pm_diagnostic_id_human(pm_diagnostic_id_t diag_id) {
     return "";
 }
 
-static inline const char *
+static PRISM_INLINE const char *
 pm_diagnostic_message(pm_diagnostic_id_t diag_id) {
     assert(diag_id < PM_DIAGNOSTIC_ID_MAX);
 
@@ -444,7 +445,7 @@ pm_diagnostic_message(pm_diagnostic_id_t diag_id) {
     return message;
 }
 
-static inline uint8_t
+static PRISM_INLINE uint8_t
 pm_diagnostic_level(pm_diagnostic_id_t diag_id) {
     assert(diag_id < PM_DIAGNOSTIC_ID_MAX);
 

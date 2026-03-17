@@ -7,6 +7,7 @@
 #define PRISM_INTERNAL_ARENA_H
 
 #include "prism/attribute/exported.h"
+#include "prism/attribute/inline.h"
 #include "prism/arena.h"
 
 #include <stddef.h>
@@ -31,7 +32,7 @@ void pm_arena_reserve(pm_arena_t *arena, size_t capacity);
  * @param alignment The required alignment (must be a power of 2).
  * @returns A pointer to the allocated, zero-initialized memory.
  */
-static inline void *
+static PRISM_INLINE void *
 pm_arena_zalloc(pm_arena_t *arena, size_t size, size_t alignment) {
     void *ptr = pm_arena_alloc(arena, size, alignment);
     memset(ptr, 0, size);
@@ -48,7 +49,7 @@ pm_arena_zalloc(pm_arena_t *arena, size_t size, size_t alignment) {
  * @param alignment The required alignment (must be a power of 2).
  * @returns A pointer to the allocated copy.
  */
-static inline void *
+static PRISM_INLINE void *
 pm_arena_memdup(pm_arena_t *arena, const void *src, size_t size, size_t alignment) {
     void *dst = pm_arena_alloc(arena, size, alignment);
     memcpy(dst, src, size);

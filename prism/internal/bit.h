@@ -6,6 +6,8 @@
 #ifndef PRISM_INTERNAL_BIT_H
 #define PRISM_INTERNAL_BIT_H
 
+#include "prism/attribute/inline.h"
+
 /**
  * Count trailing zero bits in a 64-bit value. Used by SWAR identifier scanning
  * to find the first non-matching byte in a word.
@@ -17,13 +19,13 @@
     #define pm_ctzll(v) ((unsigned) __builtin_ctzll(v))
 #elif defined(_MSC_VER)
     #include <intrin.h>
-    static inline unsigned pm_ctzll(uint64_t v) {
+    static PRISM_INLINE unsigned pm_ctzll(uint64_t v) {
         unsigned long index;
         _BitScanForward64(&index, v);
         return (unsigned) index;
     }
 #else
-    static inline unsigned
+    static PRISM_INLINE unsigned
     pm_ctzll(uint64_t v) {
         unsigned c = 0;
         v &= (uint64_t) (-(int64_t) v);

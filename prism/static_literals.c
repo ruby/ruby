@@ -1,5 +1,6 @@
 #include "prism/internal/static_literals.h"
 
+#include "prism/attribute/inline.h"
 #include "prism/internal/buffer.h"
 #include "prism/internal/integer.h"
 #include "prism/internal/strings.h"
@@ -26,7 +27,7 @@ typedef struct {
     const char *encoding_name;
 } pm_static_literals_metadata_t;
 
-static inline uint32_t
+static PRISM_INLINE uint32_t
 murmur_scramble(uint32_t value) {
     value *= 0xcc9e2d51;
     value = (value << 15) | (value >> 17);
@@ -508,7 +509,7 @@ pm_static_literal_positive_p(const pm_node_t *node) {
 /**
  * Create a string-based representation of the given static literal.
  */
-static inline void
+static PRISM_INLINE void
 pm_static_literal_inspect_node(pm_buffer_t *buffer, const pm_static_literals_metadata_t *metadata, const pm_node_t *node) {
     switch (PM_NODE_TYPE(node)) {
         case PM_FALSE_NODE:

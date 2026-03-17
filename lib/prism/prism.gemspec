@@ -51,6 +51,7 @@ Gem::Specification.new do |spec|
     "include/prism/attribute/flex_array.h",
     "include/prism/attribute/force_inline.h",
     "include/prism/attribute/format.h",
+    "include/prism/attribute/inline.h",
     "include/prism/attribute/unused.h",
     "include/prism/allocator.h",
     "include/prism/arena.h",

@@ -1,5 +1,6 @@
 #include "prism/options.h"
 
+#include "prism/attribute/inline.h"
 #include "prism/internal/char.h"
 #include "prism/allocator.h"
 
@@ -66,7 +67,7 @@ pm_options_command_line_set(pm_options_t *options, uint8_t command_line) {
 /**
  * Checks if the given slice represents a number.
  */
-static inline bool
+static PRISM_INLINE bool
 is_number(const char *string, size_t length) {
     return pm_strspn_decimal_digit((const uint8_t *) string, (ptrdiff_t) length) == length;
 }

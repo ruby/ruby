@@ -1,6 +1,7 @@
 <%# encoding: ASCII -%>
 #include "prism/prettyprint.h"
 
+#include "prism/attribute/inline.h"
 #include "prism/internal/buffer.h"
 #include "prism/internal/constant_pool.h"
 #include "prism/internal/integer.h"
@@ -14,14 +15,14 @@ void pm_prettyprint(void) {}
 
 #else
 
-static inline void
+static PRISM_INLINE void
 prettyprint_location(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm_location_t *location) {
     pm_line_column_t start = pm_line_offset_list_line_column(&parser->line_offsets, location->start, parser->start_line);
     pm_line_column_t end = pm_line_offset_list_line_column(&parser->line_offsets, location->start + location->length, parser->start_line);
     pm_buffer_append_format(output_buffer, "(%" PRIi32 ",%" PRIu32 ")-(%" PRIi32 ",%" PRIu32 ")", start.line, start.column, end.line, end.column);
 }
 
-static inline void
+static PRISM_INLINE void
 prettyprint_constant(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm_constant_id_t constant_id) {
     pm_constant_t *constant = pm_constant_pool_id_to_constant(&parser->constant_pool, constant_id);
     pm_buffer_append_format(output_buffer, ":%.*s", (int) constant->length, constant->start);
