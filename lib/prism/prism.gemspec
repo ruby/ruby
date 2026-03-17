@@ -70,6 +70,7 @@ Gem::Specification.new do |spec|
     "include/prism/prettyprint.h",
     "include/prism/regexp.h",
     "include/prism/static_literals.h",
+    "include/prism/strings.h",
     "include/prism/internal/accel.h",
     "include/prism/internal/arena.h",
     "include/prism/internal/bit.h",
@@ -83,7 +84,6 @@ Gem::Specification.new do |spec|
     "include/prism/internal/strncasecmp.h",
     "include/prism/internal/strpbrk.h",
     "include/prism/util/pm_list.h",
-    "include/prism/util/pm_string.h",
     "include/prism/version.h",
     "lib/prism.rb",
     "lib/prism/compiler.rb",
@@ -189,11 +189,11 @@ Gem::Specification.new do |spec|
     "src/regexp.c",
     "src/serialize.c",
     "src/static_literals.c",
+    "src/strings.c",
     "src/strncasecmp.c",
     "src/strpbrk.c",
     "src/token_type.c",
-    "src/util/pm_list.c",
-    "src/util/pm_string.c"
+    "src/util/pm_list.c"
   ]
 
   spec.extensions = ["ext/prism/extconf.rb"]

@@ -1,10 +1,10 @@
 /**
- * @file pm_string.h
+ * @file strings.h
  *
  * A generic string type that can have various ownership semantics.
  */
-#ifndef PRISM_STRING_H
-#define PRISM_STRING_H
+#ifndef PRISM_STRINGS_H
+#define PRISM_STRINGS_H
 
 #include "prism/defines.h"
 

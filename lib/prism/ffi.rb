@@ -116,7 +116,7 @@ module Prism # :nodoc:
     )
 
     load_exported_functions_from(
-      "prism/util/pm_string.h",
+      "prism/strings.h",
       "pm_string_mapped_init",
       "pm_string_free",
       "pm_string_source",
