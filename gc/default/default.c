@@ -3688,10 +3688,6 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
 #endif
 
                 if (!rb_gc_obj_needs_cleanup_p(vp)) {
-                    if (RB_UNLIKELY(objspace->hook_events & RUBY_INTERNAL_EVENT_FREEOBJ)) {
-                        rb_gc_event_hook(vp, RUBY_INTERNAL_EVENT_FREEOBJ);
-                    }
-
                     (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, slot_size);
                     heap_page_add_freeobj(objspace, sweep_page, vp);
                     gc_report(3, objspace, "page_sweep: %s (fast path) added to freelist\n", rb_obj_info(vp));
@@ -3699,8 +3695,6 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
                 }
                 else {
                     gc_report(2, objspace, "page_sweep: free %p\n", (void *)p);
-
-                    rb_gc_event_hook(vp, RUBY_INTERNAL_EVENT_FREEOBJ);
 
                     rb_gc_obj_free_vm_weak_references(vp);
                     if (rb_gc_obj_free(objspace, vp)) {
@@ -3921,10 +3915,70 @@ gc_ractor_newobj_cache_clear(void *c, void *data)
 }
 
 static void
+gc_sweep_freeobj_hooks_page(rb_objspace_t *objspace, struct heap_page *page)
+{
+    bits_t *bits = page->mark_bits;
+    uintptr_t p = (uintptr_t)page->start;
+    short slot_size = page->slot_size;
+    int total_slots = page->total_slots;
+    int bitmap_plane_count = CEILDIV(total_slots, BITS_BITLENGTH);
+
+    int out_of_range_bits = total_slots % BITS_BITLENGTH;
+    bits_t last_plane_mask = (out_of_range_bits != 0)
+        ? ~(((bits_t)1 << out_of_range_bits) - 1)
+        : 0;
+
+    for (int j = 0; j < bitmap_plane_count; j++) {
+        bits_t bitset = ~bits[j];
+        if (j == bitmap_plane_count - 1) {
+            bitset &= ~last_plane_mask;
+        }
+
+        uintptr_t pp = p;
+        while (bitset) {
+            if (bitset & 1) {
+                VALUE vp = (VALUE)pp;
+                asan_unpoisoning_object(vp) {
+                    switch (BUILTIN_TYPE(vp)) {
+                      case T_NONE:
+                      case T_ZOMBIE:
+                      case T_MOVED:
+                        break;
+                      default:
+                        rb_gc_event_hook(vp, RUBY_INTERNAL_EVENT_FREEOBJ);
+                        break;
+                    }
+                }
+            }
+            pp += slot_size;
+            bitset >>= 1;
+        }
+        p += BITS_BITLENGTH * slot_size;
+    }
+}
+
+static void
+gc_sweep_freeobj_hooks(rb_objspace_t *objspace)
+{
+    for (int i = 0; i < HEAP_COUNT; i++) {
+        rb_heap_t *heap = &heaps[i];
+        struct heap_page *page = NULL;
+
+        ccan_list_for_each(&heap->pages, page, page_node) {
+            gc_sweep_freeobj_hooks_page(objspace, page);
+        }
+    }
+}
+
+static void
 gc_sweep_start(rb_objspace_t *objspace)
 {
     gc_mode_transition(objspace, gc_mode_sweeping);
     objspace->rincgc.pooled_slots = 0;
+
+    if (RB_UNLIKELY(objspace->hook_events & RUBY_INTERNAL_EVENT_FREEOBJ)) {
+        gc_sweep_freeobj_hooks(objspace);
+    }
 
 #if GC_CAN_COMPILE_COMPACTION
     if (objspace->flags.during_compacting) {
