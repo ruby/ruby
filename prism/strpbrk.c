@@ -4,6 +4,7 @@
 #include "prism/internal/accel.h"
 #include "prism/internal/bit.h"
 #include "prism/internal/diagnostic.h"
+#include "prism/internal/encoding.h"
 
 #include <assert.h>
 #include <stdbool.h>

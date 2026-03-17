@@ -8,7 +8,7 @@
 
 #include "prism/defines.h"
 #include "prism/parser.h"
-#include "prism/encoding.h"
+#include "prism/internal/encoding.h"
 #include "prism/internal/memchr.h"
 #include "prism/strings.h"
 
