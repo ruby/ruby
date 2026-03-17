@@ -9439,7 +9439,7 @@ lex_question_mark(pm_parser_t *parser) {
         lex_state_set(parser, PM_LEX_STATE_END);
 
         pm_buffer_t buffer;
-        pm_buffer_init_capacity(&buffer, 3);
+        pm_buffer_init(&buffer, 3);
 
         escape_read(parser, &buffer, NULL, PM_ESCAPE_FLAG_SINGLE);
 
@@ -9825,7 +9825,7 @@ static void
 pm_token_buffer_escape(pm_parser_t *parser, pm_token_buffer_t *token_buffer) {
     const uint8_t *start;
     if (token_buffer->cursor == NULL) {
-        pm_buffer_init_capacity(&token_buffer->buffer, PM_TOKEN_BUFFER_DEFAULT_SIZE);
+        pm_buffer_init(&token_buffer->buffer, PM_TOKEN_BUFFER_DEFAULT_SIZE);
         start = parser->current.start;
     } else {
         start = token_buffer->cursor;
@@ -9842,8 +9842,8 @@ static void
 pm_regexp_token_buffer_escape(pm_parser_t *parser, pm_regexp_token_buffer_t *token_buffer) {
     const uint8_t *start;
     if (token_buffer->base.cursor == NULL) {
-        pm_buffer_init_capacity(&token_buffer->base.buffer, PM_TOKEN_BUFFER_DEFAULT_SIZE);
-        pm_buffer_init_capacity(&token_buffer->regexp_buffer, PM_TOKEN_BUFFER_DEFAULT_SIZE);
+        pm_buffer_init(&token_buffer->base.buffer, PM_TOKEN_BUFFER_DEFAULT_SIZE);
+        pm_buffer_init(&token_buffer->regexp_buffer, PM_TOKEN_BUFFER_DEFAULT_SIZE);
         start = parser->current.start;
     } else {
         start = token_buffer->base.cursor;
@@ -22734,8 +22734,6 @@ pm_parse_stream_read(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t 
  */
 pm_node_t *
 pm_parse_stream(pm_arena_t *arena, pm_parser_t *parser, pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, pm_parse_stream_feof_t *stream_feof, const pm_options_t *options) {
-    pm_buffer_init(buffer);
-
     bool eof = pm_parse_stream_read(buffer, stream, stream_fgets, stream_feof);
 
     pm_parser_init(arena, parser, (const uint8_t *) pm_buffer_value(buffer), pm_buffer_length(buffer), options);
@@ -22839,13 +22837,13 @@ pm_serialize_parse_stream(pm_buffer_t *buffer, void *stream, pm_parse_stream_fge
     pm_options_t options = { 0 };
     pm_options_read(&options, data);
 
-    pm_buffer_t parser_buffer;
-    pm_node_t *node = pm_parse_stream(&arena, &parser, &parser_buffer, stream, stream_fgets, stream_feof, &options);
+    pm_buffer_t *parser_buffer = pm_buffer_new();
+    pm_node_t *node = pm_parse_stream(&arena, &parser, parser_buffer, stream, stream_fgets, stream_feof, &options);
     pm_serialize_header(buffer);
     pm_serialize_content(&parser, node, buffer);
     pm_buffer_append_byte(buffer, '\0');
 
-    pm_buffer_cleanup(&parser_buffer);
+    pm_buffer_free(parser_buffer);
     pm_parser_free(&parser);
     pm_arena_free(&arena);
     pm_options_free(&options);

@@ -369,8 +369,8 @@ file_options(int argc, VALUE *argv, pm_string_t *input, pm_options_t *options, V
  */
 static VALUE
 dump_input(pm_string_t *input, const pm_options_t *options) {
-    pm_buffer_t buffer;
-    if (!pm_buffer_init(&buffer)) {
+    pm_buffer_t *buffer = pm_buffer_new();
+    if (!buffer) {
         rb_raise(rb_eNoMemError, "failed to allocate memory");
     }
 
@@ -379,10 +379,10 @@ dump_input(pm_string_t *input, const pm_options_t *options) {
     pm_parser_init(&arena, &parser, pm_string_source(input), pm_string_length(input), options);
 
     pm_node_t *node = pm_parse(&parser);
-    pm_serialize(&parser, node, &buffer);
+    pm_serialize(&parser, node, buffer);
 
-    VALUE result = rb_str_new(pm_buffer_value(&buffer), pm_buffer_length(&buffer));
-    pm_buffer_cleanup(&buffer);
+    VALUE result = rb_str_new(pm_buffer_value(buffer), pm_buffer_length(buffer));
+    pm_buffer_free(buffer);
     pm_parser_free(&parser);
     pm_arena_free(&arena);
 
@@ -1072,16 +1072,16 @@ parse_stream(int argc, VALUE *argv, VALUE self) {
 
     pm_arena_t arena = { 0 };
     pm_parser_t parser;
-    pm_buffer_t buffer;
 
-    pm_node_t *node = pm_parse_stream(&arena, &parser, &buffer, (void *) stream, parse_stream_fgets, parse_stream_eof, &options);
+    pm_buffer_t *buffer = pm_buffer_new();
+    pm_node_t *node = pm_parse_stream(&arena, &parser, buffer, (void *) stream, parse_stream_fgets, parse_stream_eof, &options);
     rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(&parser));
 
     VALUE source = pm_source_new(&parser, encoding, options.freeze);
     VALUE value = pm_ast_new(&parser, node, encoding, source, options.freeze);
     VALUE result = parse_result_create(rb_cPrismParseResult, &parser, value, encoding, source, options.freeze);
 
-    pm_buffer_cleanup(&buffer);
+    pm_buffer_free(buffer);
     pm_parser_free(&parser);
     pm_arena_free(&arena);
 

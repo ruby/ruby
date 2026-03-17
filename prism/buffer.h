@@ -8,40 +8,32 @@
 
 #include "prism/compiler/exported.h"
 
-#include <stdbool.h>
 #include <stddef.h>
 
 /**
- * A pm_buffer_t is a simple memory buffer that stores data in a contiguous
- * block of memory.
+ * A wrapper around a contiguous block of allocated memory.
  */
-typedef struct {
-    /** The length of the buffer in bytes. */
-    size_t length;
-
-    /** The capacity of the buffer in bytes that has been allocated. */
-    size_t capacity;
-
-    /** A pointer to the start of the buffer. */
-    char *value;
-} pm_buffer_t;
+typedef struct pm_buffer_t pm_buffer_t;
 
 /**
- * Return the size of the pm_buffer_t struct.
+ * Allocate and initialize a new buffer. If the buffer cannot be allocated, this
+ * function will abort the process.
  *
- * @returns The size of the pm_buffer_t struct.
- */
-PRISM_EXPORTED_FUNCTION size_t pm_buffer_sizeof(void);
-
-/**
- * Initialize a pm_buffer_t with its default values.
- *
- * @param buffer The buffer to initialize.
- * @returns True if the buffer was initialized successfully, false otherwise.
+ * @returns A pointer to the initialized buffer. The caller is responsible for
+ *     freeing the buffer with pm_buffer_free.
  *
  * \public \memberof pm_buffer_t
  */
-PRISM_EXPORTED_FUNCTION bool pm_buffer_init(pm_buffer_t *buffer);
+PRISM_EXPORTED_FUNCTION pm_buffer_t * pm_buffer_new(void);
+
+/**
+ * Free both the memory held by the buffer and the buffer itself.
+ *
+ * @param buffer The buffer to free.
+ *
+ * \public \memberof pm_buffer_t
+ */
+PRISM_EXPORTED_FUNCTION void pm_buffer_free(pm_buffer_t *buffer);
 
 /**
  * Return the value of the buffer.
@@ -62,14 +54,5 @@ PRISM_EXPORTED_FUNCTION char * pm_buffer_value(const pm_buffer_t *buffer);
  * \public \memberof pm_buffer_t
  */
 PRISM_EXPORTED_FUNCTION size_t pm_buffer_length(const pm_buffer_t *buffer);
-
-/**
- * Free the memory held by the buffer.
- *
- * @param buffer The buffer whose held memory should be freed.
- *
- * \public \memberof pm_buffer_t
- */
-PRISM_EXPORTED_FUNCTION void pm_buffer_cleanup(pm_buffer_t *buffer);
 
 #endif

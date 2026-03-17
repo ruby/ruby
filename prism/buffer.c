@@ -12,31 +12,27 @@
 #include <string.h>
 
 /**
- * Return the size of the pm_buffer_t struct.
- */
-size_t
-pm_buffer_sizeof(void) {
-    return sizeof(pm_buffer_t);
-}
-
-/**
  * Initialize a pm_buffer_t with the given capacity.
  */
-bool
-pm_buffer_init_capacity(pm_buffer_t *buffer, size_t capacity) {
+void
+pm_buffer_init(pm_buffer_t *buffer, size_t capacity) {
     buffer->length = 0;
     buffer->capacity = capacity;
 
     buffer->value = (char *) xmalloc(capacity);
-    return buffer->value != NULL;
+    if (buffer->value == NULL) abort();
 }
 
 /**
- * Initialize a pm_buffer_t with its default values.
+ * Allocate and initialize a new buffer.
  */
-bool
-pm_buffer_init(pm_buffer_t *buffer) {
-    return pm_buffer_init_capacity(buffer, 1024);
+pm_buffer_t *
+pm_buffer_new(void) {
+    pm_buffer_t *buffer = (pm_buffer_t *) xmalloc(sizeof(pm_buffer_t));
+    if (buffer == NULL) abort();
+
+    pm_buffer_init(buffer, 1024);
+    return buffer;
 }
 
 /**
@@ -366,4 +362,13 @@ pm_buffer_insert(pm_buffer_t *buffer, size_t index, const char *value, size_t le
 void
 pm_buffer_cleanup(pm_buffer_t *buffer) {
     xfree_sized(buffer->value, buffer->capacity);
+}
+
+/**
+ * Free both the memory held by the buffer and the buffer itself.
+ */
+void
+pm_buffer_free(pm_buffer_t *buffer) {
+    pm_buffer_cleanup(buffer);
+    xfree_sized(buffer, sizeof(pm_buffer_t));
 }
