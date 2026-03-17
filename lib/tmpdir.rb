@@ -23,6 +23,7 @@ class Dir
   #   Dir.tmpdir # => "/tmp"
 
   def self.tmpdir
+    allow_world_writable = /\A(1|true|yes)\z/i.match?(ENV["RUBY_TMPDIR_ALLOW_WORLD_WRITABLE"] || "")
     Tmpname::TMPDIR_CANDIDATES.find do |name, dir|
       unless dir
         next if !(dir = ENV[name] rescue next) or dir.empty?
@@ -35,8 +36,25 @@ class Dir
       when !File.writable?(dir)
         # We call File.writable?, not stat.writable?, because you can't tell if a dir is actually
         # writable just from stat; OS mechanisms other than user/group/world bits can affect this.
+        #
+        # However, in some container environments (e.g. Kubernetes with read-only root filesystem
+        # and emptyDir volumes), File.writable? may return false even though the directory is
+        # actually writable via mounted volumes. Fall back to stat.writable? in that case.
+        if stat.writable?
+          warn "#{name}: File.writable? reports not writable but file mode bits suggest writable, using anyway: #{dir}"
+          break dir
+        end
         warn "#{name} is not writable: #{dir}"
       when stat.world_writable? && !stat.sticky?
+        # The sticky bit check prevents symlink attacks in shared temporary directories.
+        # However, it can be safely skipped when:
+        # - The process runs as root (root is not restricted by the sticky bit)
+        # - The user explicitly opts out via RUBY_TMPDIR_ALLOW_WORLD_WRITABLE=1
+        #   (e.g. in container environments like Kubernetes where emptyDir volumes
+        #   are mounted with mode 0777 without the sticky bit)
+        if allow_world_writable || Process.uid == 0
+          break dir
+        end
         warn "#{name} is world-writable: #{dir}"
       else
         break dir
@@ -108,7 +126,10 @@ class Dir
           base = File.dirname(path)
           stat = File.stat(base)
           if stat.world_writable? and !stat.sticky?
-            raise ArgumentError, "parent directory is world writable but not sticky: #{base}"
+            allow = /\A(1|true|yes)\z/i.match?(ENV["RUBY_TMPDIR_ALLOW_WORLD_WRITABLE"] || "")
+            unless allow || Process.uid == 0
+              raise ArgumentError, "parent directory is world writable but not sticky: #{base}"
+            end
           end
         end
         FileUtils.remove_entry path

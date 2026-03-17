@@ -47,6 +47,32 @@ class TestTmpdir < Test::Unit::TestCase
     end
   end
 
+  def test_world_writable_allowed_by_env
+    omit "no meaning on this platform" if /mswin|mingw/ =~ RUBY_PLATFORM
+    omit "cannot test as root" if Process.uid == 0
+    Dir.mktmpdir do |tmpdir|
+      envs = %w[TMPDIR TMP TEMP]
+      oldenv = envs.each_with_object({}) {|v, h| h[v] = ENV.delete(v)}
+      old_allow = ENV["RUBY_TMPDIR_ALLOW_WORLD_WRITABLE"]
+      begin
+        ENV["RUBY_TMPDIR_ALLOW_WORLD_WRITABLE"] = "1"
+        ENV[envs[0]] = tmpdir
+        File.chmod(0777, tmpdir)
+        # With the env var set, world-writable without sticky should be accepted
+        assert_equal(tmpdir, Dir.tmpdir)
+        # mktmpdir should also work
+        newdir = Dir.mktmpdir("d", tmpdir) do |dir|
+          assert_file.directory? dir
+          dir
+        end
+        assert_file.not_exist?(newdir)
+      ensure
+        ENV["RUBY_TMPDIR_ALLOW_WORLD_WRITABLE"] = old_allow
+        ENV.update(oldenv)
+      end
+    end
+  end
+
   def test_tmpdir_not_empty_parent
     Dir.mktmpdir do |tmpdir|
       envs = %w[TMPDIR TMP TEMP]
