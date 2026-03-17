@@ -376,15 +376,15 @@ PRISM_EXPORTED_FUNCTION const pm_options_scope_t * pm_options_scope_get(const pm
 
 /**
  * Create a new options scope struct. This will hold a set of locals that are in
- * scope surrounding the code that is being parsed.
+ * scope surrounding the code that is being parsed. If the scope was unable to
+ * allocate its locals, this function will abort the process.
  *
  * @param scope The scope struct to initialize.
  * @param locals_count The number of locals to allocate.
- * @return Whether or not the scope was initialized successfully.
  *
  * \public \memberof pm_options
  */
-PRISM_EXPORTED_FUNCTION bool pm_options_scope_init(pm_options_scope_t *scope, size_t locals_count);
+PRISM_EXPORTED_FUNCTION void pm_options_scope_init(pm_options_scope_t *scope, size_t locals_count);
 
 /**
  * Return a pointer to the local at the given index within the given scope.
