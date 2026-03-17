@@ -3,6 +3,7 @@
 #include "prism/internal/accel.h"
 #include "prism/internal/arena.h"
 #include "prism/internal/bit.h"
+#include "prism/internal/buffer.h"
 #include "prism/internal/char.h"
 #include "prism/internal/constant_pool.h"
 #include "prism/internal/diagnostic.h"
