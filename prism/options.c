@@ -195,12 +195,12 @@ pm_options_scope_get(const pm_options_t *options, size_t index) {
  * Create a new options scope struct. This will hold a set of locals that are in
  * scope surrounding the code that is being parsed.
  */
-bool
+void
 pm_options_scope_init(pm_options_scope_t *scope, size_t locals_count) {
     scope->locals_count = locals_count;
     scope->locals = xcalloc(locals_count, sizeof(pm_string_t));
     scope->forwarding = PM_OPTIONS_SCOPE_FORWARDING_NONE;
-    return scope->locals != NULL;
+    if (scope->locals == NULL) abort();
 }
 
 /**
@@ -322,10 +322,7 @@ pm_options_read(pm_options_t *options, const char *data) {
             data += 4;
 
             pm_options_scope_t *scope = &options->scopes[scope_index];
-            if (!pm_options_scope_init(scope, locals_count)) {
-                pm_options_cleanup(options);
-                return;
-            }
+            pm_options_scope_init(scope, locals_count);
 
             uint8_t forwarding = (uint8_t) *data++;
             pm_options_scope_forwarding_set(&options->scopes[scope_index], forwarding);
