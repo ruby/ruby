@@ -9,6 +9,10 @@
 #ifndef PRISM_DEFINES_H
 #define PRISM_DEFINES_H
 
+#include "prism/allocator.h"
+#include "prism/exported.h"
+#include "prism/format.h"
+
 #include <ctype.h>
 #include <limits.h>
 #include <math.h>
@@ -35,41 +39,6 @@
  */
 #ifndef PRISM_DEPTH_MAXIMUM
     #define PRISM_DEPTH_MAXIMUM 10000
-#endif
-
-/**
- * By default, we compile with -fvisibility=hidden. When this is enabled, we
- * need to mark certain functions as being publically-visible. This macro does
- * that in a compiler-agnostic way.
- */
-#ifndef PRISM_EXPORTED_FUNCTION
-#   ifdef PRISM_EXPORT_SYMBOLS
-#       ifdef _WIN32
-#          define PRISM_EXPORTED_FUNCTION __declspec(dllexport) extern
-#       else
-#          define PRISM_EXPORTED_FUNCTION __attribute__((__visibility__("default"))) extern
-#       endif
-#   else
-#       define PRISM_EXPORTED_FUNCTION
-#   endif
-#endif
-
-/**
- * Certain compilers support specifying that a function accepts variadic
- * parameters that look like printf format strings to provide a better developer
- * experience when someone is using the function. This macro does that in a
- * compiler-agnostic way.
- */
-#if defined(__GNUC__)
-#   if defined(__MINGW_PRINTF_FORMAT)
-#       define PRISM_ATTRIBUTE_FORMAT(string_index, argument_index) __attribute__((format(__MINGW_PRINTF_FORMAT, string_index, argument_index)))
-#   else
-#       define PRISM_ATTRIBUTE_FORMAT(string_index, argument_index) __attribute__((format(printf, string_index, argument_index)))
-#   endif
-#elif defined(__clang__)
-#   define PRISM_ATTRIBUTE_FORMAT(string_index, argument_index) __attribute__((__format__(__printf__, string_index, argument_index)))
-#else
-#   define PRISM_ATTRIBUTE_FORMAT(string_index, argument_index)
 #endif
 
 /**

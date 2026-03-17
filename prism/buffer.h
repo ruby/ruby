@@ -6,8 +6,10 @@
 #ifndef PRISM_BUFFER_H
 #define PRISM_BUFFER_H
 
-#include "prism/defines.h"
-#include "prism/util/pm_char.h"
+#include "prism/exported.h"
+
+#include <stdbool.h>
+#include <stddef.h>
 
 /**
  * A pm_buffer_t is a simple memory buffer that stores data in a contiguous

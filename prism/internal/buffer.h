@@ -6,8 +6,10 @@
 #ifndef PRISM_INTERNAL_BUFFER_H
 #define PRISM_INTERNAL_BUFFER_H
 
-#include "prism/defines.h"
 #include "prism/buffer.h"
+#include "prism/format.h"
+
+#include <stdint.h>
 
 /**
  * Initialize a pm_buffer_t with the given capacity.
