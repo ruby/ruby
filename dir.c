@@ -518,6 +518,15 @@ static VALUE sym_fifo;
 #if defined(DT_SOCK) || defined(S_IFSOCK)
 static VALUE sym_socket;
 #endif
+#if defined(DT_DOOR) || defined(S_IFDOOR)
+static VALUE sym_door;
+#endif
+#if defined(DT_PORT) || defined(S_IFPORT)
+static VALUE sym_port;
+#endif
+#if defined(DT_WHT) || defined(S_IFWHT)
+static VALUE sym_wht;
+#endif
 
 struct dir_data {
     DIR *dir;
@@ -968,6 +977,21 @@ dir_yield_with_type(VALUE arg, VALUE path, struct dir_entry_args *dir_entry)
         type = sym_socket;
         break;
 #endif
+#ifdef DT_DOOR
+      case DT_DOOR:
+        type = sym_door;
+        break;
+#endif
+#ifdef DT_PORT
+      case DT_PORT:
+        type = sym_port;
+        break;
+#endif
+#ifdef DT_WHT
+      case DT_WHT:
+        type = sym_wht;
+        break;
+#endif
       default:
         type = sym_unknown;
         break;
@@ -1005,6 +1029,21 @@ dir_yield_with_type(VALUE arg, VALUE path, struct dir_entry_args *dir_entry)
 #ifdef S_IFCHR
               case S_IFCHR:
                 type = sym_character_device;
+                break;
+#endif
+#ifdef S_IFDOOR
+              case S_IFDOOR:
+                type = sym_door;
+                break;
+#endif
+#ifdef S_IFPORT
+              case S_IFPORT:
+                type = sym_port;
+                break;
+#endif
+#ifdef S_IFWHT
+              case S_IFWHT:
+                type = sym_wht;
                 break;
 #endif
               default:
@@ -4004,6 +4043,15 @@ Init_Dir(void)
 #endif
 #if defined(DT_SOCK) || defined(S_IFSOCK)
     sym_socket = ID2SYM(rb_intern("socket"));
+#endif
+#if defined(DT_DOOR) || defined(S_IFDOOR)
+    sym_door = ID2SYM(rb_intern("door"));
+#endif
+#if defined(DT_PORT) || defined(S_IFPORT)
+    sym_port = ID2SYM(rb_intern("port"));
+#endif
+#if defined(DT_WHT) || defined(S_IFWHT)
+    sym_wht = ID2SYM(rb_intern("wht"));
 #endif
 
     rb_gc_register_address(&chdir_lock.path);
