@@ -19,7 +19,6 @@ extern "C" {
 #include "prism/internal/strncasecmp.h"
 #include "prism/ast.h"
 #include "prism/diagnostic.h"
-#include "prism/integer.h"
 #include "prism/node.h"
 #include "prism/options.h"
 #include "prism/parser.h"

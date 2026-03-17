@@ -1,4 +1,24 @@
-#include "prism/integer.h"
+#include "prism/allocator.h"
+#include "prism/internal/buffer.h"
+#include "prism/internal/integer.h"
+
+#include <assert.h>
+#include <inttypes.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+
+/**
+ * Free the internal memory of an integer. This memory will only be allocated if
+ * the integer exceeds the size of a single uint32_t.
+ */
+static void
+pm_integer_free(pm_integer_t *integer) {
+    if (integer->values) {
+        xfree(integer->values);
+    }
+}
 
 /**
  * Pull out the length and values from the integer, regardless of the form in
@@ -657,15 +677,4 @@ pm_integer_string(pm_buffer_t *buffer, const pm_integer_t *integer) {
     pm_buffer_append_string(buffer, digits + start_offset, digits_length - start_offset);
     xfree_sized(digits, sizeof(char) * digits_length);
     pm_integer_free(&converted);
-}
-
-/**
- * Free the internal memory of an integer. This memory will only be allocated if
- * the integer exceeds the size of a single uint32_t.
- */
-void
-pm_integer_free(pm_integer_t *integer) {
-    if (integer->values) {
-        xfree(integer->values);
-    }
 }

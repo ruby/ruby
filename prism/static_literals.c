@@ -1,3 +1,5 @@
+#include "prism/internal/buffer.h"
+#include "prism/internal/integer.h"
 #include "prism/static_literals.h"
 
 /**
