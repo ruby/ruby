@@ -7,7 +7,7 @@
 #define PRISM_NODE_H
 
 #include "prism/defines.h"
-#include "prism/buffer.h"
+#include "prism/internal/buffer.h"
 #include "prism/parser.h"
 
 /**

@@ -1,4 +1,4 @@
-#include "prism/buffer.h"
+#include "prism/internal/buffer.h"
 
 #include <assert.h>
 #include <stdbool.h>
