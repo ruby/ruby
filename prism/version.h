@@ -6,6 +6,8 @@
 #ifndef PRISM_VERSION_H
 #define PRISM_VERSION_H
 
+#include "prism/compiler/exported.h"
+
 /**
  * The major version of the Prism library as an int.
  */

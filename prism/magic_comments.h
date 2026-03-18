@@ -1,5 +1,7 @@
 /**
  * @file magic_comments.h
+ *
+ * Types and functions related to magic comments found during parsing.
  */
 #ifndef PRISM_MAGIC_COMMENTS_H
 #define PRISM_MAGIC_COMMENTS_H

@@ -1,5 +1,7 @@
 /**
  * @file comments.h
+ *
+ * Types and functions related to comments found during parsing.
  */
 #ifndef PRISM_COMMENTS_H
 #define PRISM_COMMENTS_H
