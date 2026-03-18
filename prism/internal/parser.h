@@ -8,6 +8,8 @@
 
 #include "prism/compiler/accel.h"
 
+#include "prism/internal/static_literals.h"
+
 #include "prism/arena.h"
 #include "prism/ast.h"
 #include "prism/encoding.h"
@@ -15,7 +17,6 @@
 #include "prism/list.h"
 #include "prism/options.h"
 #include "prism/parser.h"
-#include "prism/static_literals.h"
 
 #include <stdbool.h>
 #include <stddef.h>
