@@ -480,8 +480,8 @@ parser_location(VALUE source, bool freeze, uint32_t start, uint32_t length) {
  */
 static inline VALUE
 parser_comment(VALUE source, bool freeze, const pm_comment_t *comment) {
-    VALUE argv[] = { PARSER_LOCATION(source, freeze, comment->location) };
-    VALUE type = (comment->type == PM_COMMENT_EMBDOC) ? rb_cPrismEmbDocComment : rb_cPrismInlineComment;
+    VALUE argv[] = { PARSER_LOCATION(source, freeze, pm_comment_location(comment)) };
+    VALUE type = (pm_comment_type(comment) == PM_COMMENT_EMBDOC) ? rb_cPrismEmbDocComment : rb_cPrismInlineComment;
     return rb_class_new_instance_freeze(1, argv, type, freeze);
 }
 
@@ -490,19 +490,21 @@ parser_comment(VALUE source, bool freeze, const pm_comment_t *comment) {
  */
 static VALUE
 parser_comments(const pm_parser_t *parser, VALUE source, bool freeze) {
-    const pm_list_t *comments_list = pm_parser_comments(parser);
-    VALUE comments = rb_ary_new_capa(comments_list->size);
+    pm_comments_iter_t *comments_iter = pm_comments_iter(parser);
+    VALUE comments = rb_ary_new_capa(pm_comments_iter_size(comments_iter));
 
     for (
-        const pm_comment_t *comment = (const pm_comment_t *) comments_list->head;
+        const pm_comment_t *comment = pm_comments_iter_next(comments_iter);
         comment != NULL;
-        comment = (const pm_comment_t *) comment->node.next
+        comment = pm_comments_iter_next(comments_iter)
     ) {
         VALUE value = parser_comment(source, freeze, comment);
         rb_ary_push(comments, value);
     }
 
+    pm_comments_iter_free(comments_iter);
     if (freeze) rb_obj_freeze(comments);
+
     return comments;
 }
 
