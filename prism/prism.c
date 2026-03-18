@@ -21,6 +21,7 @@
 #include "prism/internal/options.h"
 #include "prism/internal/parser.h"
 #include "prism/internal/regexp.h"
+#include "prism/internal/serialize.h"
 #include "prism/internal/static_literals.h"
 #include "prism/internal/strings.h"
 #include "prism/internal/strncasecmp.h"

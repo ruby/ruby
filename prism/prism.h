@@ -139,31 +139,6 @@ PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse_stream(pm_parser_t **parser, pm_are
 PRISM_EXPORTED_FUNCTION void pm_serialize_parse_stream(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, pm_parse_stream_feof_t *stream_feof, const char *data);
 
 /**
- * Serialize the given list of comments to the given buffer.
- *
- * @param list The list of comments to serialize.
- * @param buffer The buffer to serialize to.
- */
-void pm_serialize_comment_list(pm_list_t *list, pm_buffer_t *buffer);
-
-/**
- * Serialize the name of the encoding to the buffer.
- *
- * @param encoding The encoding to serialize.
- * @param buffer The buffer to serialize to.
- */
-void pm_serialize_encoding(const pm_encoding_t *encoding, pm_buffer_t *buffer);
-
-/**
- * Serialize the encoding, metadata, nodes, and constant pool.
- *
- * @param parser The parser to serialize.
- * @param node The node to serialize.
- * @param buffer The buffer to serialize to.
- */
-void pm_serialize_content(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer);
-
-/**
  * Serialize the AST represented by the given node to the given buffer.
  *
  * @param parser The parser to serialize.
