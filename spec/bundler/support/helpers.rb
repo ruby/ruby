@@ -322,6 +322,7 @@ module Spec
           document: [],
           ignore_dependencies: true,
           wrappers: true,
+          env_shebang: true,
           force: true
         )
         installer.install
