@@ -303,6 +303,10 @@ module Bundler
       @app_cache_path ||= self[:cache_path] || "vendor/cache"
     end
 
+    def installation_parallelization
+      self[:jobs] || processor_count
+    end
+
     def validate!
       all.each do |raw_key|
         [@local_config, @env_config, @global_config].each do |settings|

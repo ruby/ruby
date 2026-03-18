@@ -101,19 +101,19 @@ typedef struct {
 } pm_heredoc_lex_mode_t;
 
 /**
- * When lexing Ruby source, the lexer has a small amount of state to tell which
- * kind of token it is currently lexing. For example, when we find the start of
- * a string, the first token that we return is a TOKEN_STRING_BEGIN token. After
- * that the lexer is now in the PM_LEX_STRING mode, and will return tokens that
- * are found as part of a string.
- */
-/**
  * The size of the breakpoints and strpbrk cache charset buffers. All
  * breakpoint arrays and the strpbrk cache charset must share this size so
  * that memcmp can safely compare the full buffer without overreading.
  */
 #define PM_STRPBRK_CACHE_SIZE 16
 
+/**
+ * When lexing Ruby source, the lexer has a small amount of state to tell which
+ * kind of token it is currently lexing. For example, when we find the start of
+ * a string, the first token that we return is a TOKEN_STRING_BEGIN token. After
+ * that the lexer is now in the PM_LEX_STRING mode, and will return tokens that
+ * are found as part of a string.
+ */
 typedef struct pm_lex_mode {
     /** The type of this lex mode. */
     enum {
