@@ -560,20 +560,22 @@ parser_data_loc(const pm_parser_t *parser, VALUE source, bool freeze) {
  */
 static VALUE
 parser_errors(const pm_parser_t *parser, rb_encoding *encoding, VALUE source, bool freeze) {
-    const pm_list_t *error_list = pm_parser_errors(parser);
-    VALUE errors = rb_ary_new_capa(error_list->size);
+    pm_diagnostics_iter_t *iter = pm_parser_errors(parser);
+    VALUE errors = rb_ary_new_capa(pm_diagnostics_iter_size(iter));
 
     for (
-        const pm_diagnostic_t *error = (const pm_diagnostic_t *) error_list->head;
+        const pm_diagnostic_t *error = pm_diagnostics_iter_next(iter);
         error != NULL;
-        error = (const pm_diagnostic_t *) error->node.next
+        error = pm_diagnostics_iter_next(iter)
     ) {
-        VALUE type = ID2SYM(rb_intern(pm_diagnostic_id_str(error->diag_id)));
-        VALUE message = rb_obj_freeze(rb_enc_str_new_cstr(error->message, encoding));
-        VALUE location = PARSER_LOCATION(source, freeze, error->location);
+        VALUE type = ID2SYM(rb_intern(pm_diagnostic_type(error)));
+        VALUE message = rb_obj_freeze(rb_enc_str_new_cstr(pm_diagnostic_message(error), encoding));
+        VALUE location = PARSER_LOCATION(source, freeze, pm_diagnostic_location(error));
 
+        pm_error_level_t error_level = pm_diagnostic_error_level(error);
         VALUE level = Qnil;
-        switch (error->level) {
+
+        switch (error_level) {
             case PM_ERROR_LEVEL_SYNTAX:
                 level = ID2SYM(rb_intern("syntax"));
                 break;
@@ -584,7 +586,7 @@ parser_errors(const pm_parser_t *parser, rb_encoding *encoding, VALUE source, bo
                 level = ID2SYM(rb_intern("load"));
                 break;
             default:
-                rb_raise(rb_eRuntimeError, "Unknown level: %" PRIu8, error->level);
+                rb_raise(rb_eRuntimeError, "Unknown level: %" PRIu8, error_level);
         }
 
         VALUE argv[] = { type, message, location, level };
@@ -592,7 +594,9 @@ parser_errors(const pm_parser_t *parser, rb_encoding *encoding, VALUE source, bo
         rb_ary_push(errors, value);
     }
 
+    pm_diagnostics_iter_free(iter);
     if (freeze) rb_obj_freeze(errors);
+
     return errors;
 }
 
@@ -601,20 +605,22 @@ parser_errors(const pm_parser_t *parser, rb_encoding *encoding, VALUE source, bo
  */
 static VALUE
 parser_warnings(const pm_parser_t *parser, rb_encoding *encoding, VALUE source, bool freeze) {
-    const pm_list_t *warning_list = pm_parser_warnings(parser);
-    VALUE warnings = rb_ary_new_capa(warning_list->size);
+    pm_diagnostics_iter_t *iter = pm_parser_warnings(parser);
+    VALUE warnings = rb_ary_new_capa(pm_diagnostics_iter_size(iter));
 
     for (
-        const pm_diagnostic_t *warning = (const pm_diagnostic_t *) warning_list->head;
+        const pm_diagnostic_t *warning = pm_diagnostics_iter_next(iter);
         warning != NULL;
-        warning = (const pm_diagnostic_t *) warning->node.next
+        warning = pm_diagnostics_iter_next(iter)
     ) {
-        VALUE type = ID2SYM(rb_intern(pm_diagnostic_id_str(warning->diag_id)));
-        VALUE message = rb_obj_freeze(rb_enc_str_new_cstr(warning->message, encoding));
-        VALUE location = PARSER_LOCATION(source, freeze, warning->location);
+        VALUE type = ID2SYM(rb_intern(pm_diagnostic_type(warning)));
+        VALUE message = rb_obj_freeze(rb_enc_str_new_cstr(pm_diagnostic_message(warning), encoding));
+        VALUE location = PARSER_LOCATION(source, freeze, pm_diagnostic_location(warning));
 
+        pm_warning_level_t warning_level = pm_diagnostic_warning_level(warning);
         VALUE level = Qnil;
-        switch (warning->level) {
+
+        switch (warning_level) {
             case PM_WARNING_LEVEL_DEFAULT:
                 level = ID2SYM(rb_intern("default"));
                 break;
@@ -622,7 +628,7 @@ parser_warnings(const pm_parser_t *parser, rb_encoding *encoding, VALUE source, 
                 level = ID2SYM(rb_intern("verbose"));
                 break;
             default:
-                rb_raise(rb_eRuntimeError, "Unknown level: %" PRIu8, warning->level);
+                rb_raise(rb_eRuntimeError, "Unknown level: %" PRIu8, warning_level);
         }
 
         VALUE argv[] = { type, message, location, level };
@@ -630,7 +636,9 @@ parser_warnings(const pm_parser_t *parser, rb_encoding *encoding, VALUE source, 
         rb_ary_push(warnings, value);
     }
 
+    pm_diagnostics_iter_free(iter);
     if (freeze) rb_obj_freeze(warnings);
+
     return warnings;
 }
 
@@ -1221,7 +1229,7 @@ parse_input_success_p(pm_string_t *input, const pm_options_t *options) {
 
     pm_parse(parser);
 
-    VALUE result = pm_parser_errors(parser)->size == 0 ? Qtrue : Qfalse;
+    VALUE result = pm_diagnostics_iter_size(pm_parser_errors(parser)) == 0 ? Qtrue : Qfalse;
     pm_parser_free(parser);
     pm_arena_free(&arena);
 
