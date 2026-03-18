@@ -706,7 +706,7 @@ module Prism
       "src/node.c",
       "src/prettyprint.c",
       "src/serialize.c",
-      "src/token_type.c"
+      "src/tokens.c"
     ]
   end
 end

@@ -208,7 +208,7 @@ Gem::Specification.new do |spec|
     "src/strings.c",
     "src/strncasecmp.c",
     "src/strpbrk.c",
-    "src/token_type.c"
+    "src/tokens.c"
   ]
 
   spec.extensions = ["ext/prism/extconf.rb"]

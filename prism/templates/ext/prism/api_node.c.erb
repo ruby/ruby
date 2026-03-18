@@ -25,7 +25,7 @@ pm_location_new(const uint32_t start, const uint32_t length, VALUE source, bool 
 
 VALUE
 pm_token_new(const pm_parser_t *parser, const pm_token_t *token, rb_encoding *encoding, VALUE source, bool freeze) {
-    ID type = rb_intern(pm_token_type_name(token->type));
+    ID type = rb_intern(pm_token_type(token->type));
     VALUE location = pm_location_new((uint32_t) (token->start - pm_parser_start(parser)), (uint32_t) (token->end - token->start), source, freeze);
 
     VALUE slice = rb_enc_str_new((const char *) token->start, token->end - token->start, encoding);
