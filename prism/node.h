@@ -67,7 +67,7 @@ PRISM_EXPORTED_FUNCTION const char * pm_node_type_to_str(pm_node_type_t node_typ
  *
  *     pm_parser_free(parser);
  *     pm_options_free(options);
- *     pm_arena_free(&arena);
+ *     pm_arena_cleanup(&arena);
  *
  *     return EXIT_SUCCESS;
  * }

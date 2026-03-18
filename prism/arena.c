@@ -85,7 +85,7 @@ pm_arena_alloc_slow(pm_arena_t *arena, size_t size) {
  * Free all blocks in the arena.
  */
 void
-pm_arena_free(pm_arena_t *arena) {
+pm_arena_cleanup(pm_arena_t *arena) {
     pm_arena_block_t *block = arena->current;
 
     while (block != NULL) {

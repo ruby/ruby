@@ -22501,7 +22501,7 @@ pm_parser_new(pm_arena_t *arena, const uint8_t *source, size_t size, const pm_op
 void
 pm_parser_cleanup(pm_parser_t *parser) {
     pm_string_cleanup(&parser->filepath);
-    pm_arena_free(&parser->metadata_arena);
+    pm_arena_cleanup(&parser->metadata_arena);
 
     while (parser->current_scope != NULL) {
         // Normally, popping the scope doesn't free the locals since it is
@@ -22768,7 +22768,7 @@ pm_parse_stream(pm_parser_t **parser, pm_arena_t *arena, pm_buffer_t *buffer, vo
         eof = pm_parse_stream_read(buffer, stream, stream_fgets, stream_feof);
 
         pm_parser_free(tmp);
-        pm_arena_free(arena);
+        pm_arena_cleanup(arena);
 
         tmp = pm_parser_new(arena, (const uint8_t *) pm_buffer_value(buffer), pm_buffer_length(buffer), options);
         node = pm_parse(tmp);
@@ -22794,7 +22794,7 @@ pm_parse_success_p(const uint8_t *source, size_t size, const char *data) {
 
     bool result = parser.error_list.size == 0;
     pm_parser_cleanup(&parser);
-    pm_arena_free(&arena);
+    pm_arena_cleanup(&arena);
     pm_options_cleanup(&options);
 
     return result;
@@ -22849,7 +22849,7 @@ pm_serialize_parse(pm_buffer_t *buffer, const uint8_t *source, size_t size, cons
     pm_buffer_append_byte(buffer, '\0');
 
     pm_parser_cleanup(&parser);
-    pm_arena_free(&arena);
+    pm_arena_cleanup(&arena);
     pm_options_cleanup(&options);
 }
 
@@ -22872,7 +22872,7 @@ pm_serialize_parse_stream(pm_buffer_t *buffer, void *stream, pm_parse_stream_fge
 
     pm_buffer_free(parser_buffer);
     pm_parser_free(parser);
-    pm_arena_free(&arena);
+    pm_arena_cleanup(&arena);
     pm_options_cleanup(&options);
 }
 
@@ -22895,7 +22895,7 @@ pm_serialize_parse_comments(pm_buffer_t *buffer, const uint8_t *source, size_t s
     pm_serialize_comment_list(&parser.comment_list, buffer);
 
     pm_parser_cleanup(&parser);
-    pm_arena_free(&arena);
+    pm_arena_cleanup(&arena);
     pm_options_cleanup(&options);
 }
 

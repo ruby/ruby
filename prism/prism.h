@@ -260,7 +260,7 @@ PRISM_EXPORTED_FUNCTION void pm_dump_json(pm_buffer_t *buffer, const pm_parser_t
  * * `pm_parser_new()` - allocate and initialize a new parser
  * * `pm_parse()` - parse and return the root node
  * * `pm_parser_free()` - free the parser and its internal memory
- * * `pm_arena_free()` - free all AST-lifetime memory
+ * * `pm_arena_cleanup()` - free all AST-lifetime memory
  *
  * Putting all of this together would look something like:
  *
@@ -273,7 +273,7 @@ PRISM_EXPORTED_FUNCTION void pm_dump_json(pm_buffer_t *buffer, const pm_parser_t
  *     printf("PARSED!\n");
  *
  *     pm_parser_free(parser);
- *     pm_arena_free(&arena);
+ *     pm_arena_cleanup(&arena);
  * }
  * ```
  *
@@ -326,7 +326,7 @@ PRISM_EXPORTED_FUNCTION void pm_dump_json(pm_buffer_t *buffer, const pm_parser_t
  *
  *     pm_buffer_free(buffer);
  *     pm_parser_free(parser);
- *     pm_arena_free(&arena);
+ *     pm_arena_cleanup(&arena);
  * }
  * ```
  */
