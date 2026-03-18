@@ -118,8 +118,8 @@ typedef int (pm_parse_stream_feof_t)(void *stream);
 /**
  * Parse a stream of Ruby source and return the tree.
  *
+ * @param parser The out parameter to write the parser to.
  * @param arena The arena to use for all AST-lifetime allocations.
- * @param parser The parser to use.
  * @param buffer The buffer to use.
  * @param stream The stream to parse.
  * @param stream_fgets The function to use to read from the stream.
@@ -129,7 +129,7 @@ typedef int (pm_parse_stream_feof_t)(void *stream);
  *
  * \public \memberof pm_parser
  */
-PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse_stream(pm_arena_t *arena, pm_parser_t *parser, pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, pm_parse_stream_feof_t *stream_feof, const pm_options_t *options);
+PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse_stream(pm_parser_t **parser, pm_arena_t *arena, pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, pm_parse_stream_feof_t *stream_feof, const pm_options_t *options);
 
 // We optionally support serializing to a binary string. For systems that don't
 // want or need this functionality, it can be turned off with the
