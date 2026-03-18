@@ -22339,7 +22339,7 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
         if (parser->parsing_eval) parser->warn_mismatched_indentation = false;
 
         for (size_t scope_index = 0; scope_index < options->scopes_count; scope_index++) {
-            const pm_options_scope_t *scope = pm_options_scope_get(options, scope_index);
+            const pm_options_scope_t *scope = pm_options_scope(options, scope_index);
             pm_parser_scope_push(parser, scope_index == 0);
 
             // Scopes given from the outside are not allowed to have numbered
@@ -22347,7 +22347,7 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
             parser->current_scope->parameters = ((pm_scope_parameters_t) scope->forwarding) | PM_SCOPE_PARAMETERS_IMPLICIT_DISALLOWED;
 
             for (size_t local_index = 0; local_index < scope->locals_count; local_index++) {
-                const pm_string_t *local = pm_options_scope_local_get(scope, local_index);
+                const pm_string_t *local = pm_options_scope_local(scope, local_index);
 
                 const uint8_t *source = pm_string_source(local);
                 size_t length = pm_string_length(local);
