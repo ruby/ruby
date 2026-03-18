@@ -11,11 +11,12 @@
 #include "prism/internal/encoding.h"
 #include "prism/internal/list.h"
 #include "prism/internal/options.h"
+#include "prism/internal/parser.h"
 
 #include "prism.h"
 #include "prism/ast.h"
 #include "prism/diagnostic.h"
-#include "prism/parser.h"
+#include "prism/line_offset_list.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -312,7 +313,7 @@ pm_serialize_content(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) 
 }
 
 static void
-serialize_token(void *data, pm_parser_t *parser, pm_token_t *token) {
+serialize_token(pm_parser_t *parser, pm_token_t *token, void *data) {
     pm_buffer_t *buffer = (pm_buffer_t *) data;
 
     pm_buffer_append_varuint(buffer, token->type);
@@ -333,12 +334,7 @@ pm_serialize_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const 
     pm_parser_t parser;
     pm_parser_init(&arena, &parser, source, size, &options);
 
-    pm_lex_callback_t lex_callback = (pm_lex_callback_t) {
-        .data = (void *) buffer,
-        .callback = serialize_token,
-    };
-
-    parser.lex_callback = &lex_callback;
+    pm_parser_lex_callback_set(&parser, serialize_token, buffer);
     pm_parse(&parser);
 
     // Append 0 to mark end of tokens.
@@ -364,12 +360,7 @@ pm_serialize_parse_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, 
     pm_parser_t parser;
     pm_parser_init(&arena, &parser, source, size, &options);
 
-    pm_lex_callback_t lex_callback = (pm_lex_callback_t) {
-        .data = (void *) buffer,
-        .callback = serialize_token,
-    };
-
-    parser.lex_callback = &lex_callback;
+    pm_parser_lex_callback_set(&parser, serialize_token, buffer);
     pm_node_t *node = pm_parse(&parser);
 
     pm_buffer_append_byte(buffer, 0);
