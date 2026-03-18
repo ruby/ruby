@@ -3,6 +3,12 @@ on:
   pull_request_target:
     types: [opened, ready_for_review, reopened]
     branches: [master]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to review'
+        required: true
+        type: number
 
 permissions:
   contents: read
@@ -11,7 +17,7 @@ jobs:
   auto-review-pr:
     name: Auto Review PR
     runs-on: ubuntu-latest
-    if: ${{ github.repository == 'ruby/ruby' && github.base_ref == 'master' }}
+    if: ${{ github.repository == 'ruby/ruby' && (github.base_ref == 'master' || github.event_name == 'workflow_dispatch') }}
 
     permissions:
       pull-requests: write
@@ -32,4 +38,4 @@ jobs:
         run: ruby tool/auto_review_pr.rb "$GITHUB_PR_NUMBER"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_PR_NUMBER: ${{ github.event.pull_request.number || github.event.inputs.pr_number }}
