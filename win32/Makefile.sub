@@ -559,7 +559,7 @@ ACTIONS_ENDGROUP = @::
 ABI_VERSION_HDR = $(hdrdir)/ruby/internal/abi.h
 
 !if defined(DUMP_AST)
-DUMP_AST_TARGET = no
+DUMP_AST_TARGET = $(empty)
 !else
 DUMP_AST = dump_ast$(EXEEXT)
 DUMP_AST_TARGET = $(DUMP_AST)
