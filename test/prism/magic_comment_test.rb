@@ -69,6 +69,10 @@ module Prism
       assert_magic_encoding(Encoding::US_ASCII, "# -*- foo: bar; encoding: ascii -*-")
     end
 
+    def test_emacs_missing_delimiter
+      assert_magic_encoding(Encoding::US_ASCII, '# -*- \1; encoding: ascii -*-')
+    end
+
     def test_coding_whitespace
       assert_magic_encoding(Encoding::ASCII_8BIT, "# coding \t \r  \v   :     \t \v    \r   ascii-8bit")
     end
