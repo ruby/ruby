@@ -381,7 +381,7 @@ dump_input(pm_string_t *input, const pm_options_t *options) {
     VALUE result = rb_str_new(pm_buffer_value(buffer), pm_buffer_length(buffer));
     pm_buffer_free(buffer);
     pm_parser_free(parser);
-    pm_arena_free(&arena);
+    pm_arena_cleanup(&arena);
 
     return result;
 }
@@ -828,7 +828,7 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
     }
 
     pm_parser_free(parser);
-    pm_arena_free(&arena);
+    pm_arena_cleanup(&arena);
 
     return result;
 }
@@ -902,7 +902,7 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
     }
 
     pm_parser_free(parser);
-    pm_arena_free(&arena);
+    pm_arena_cleanup(&arena);
 
     return result;
 }
@@ -1009,7 +1009,7 @@ profile_input(pm_string_t *input, const pm_options_t *options) {
 
     pm_parse(parser);
     pm_parser_free(parser);
-    pm_arena_free(&arena);
+    pm_arena_cleanup(&arena);
 }
 
 /**
@@ -1117,7 +1117,7 @@ parse_stream(int argc, VALUE *argv, VALUE self) {
 
     pm_buffer_free(buffer);
     pm_parser_free(parser);
-    pm_arena_free(&arena);
+    pm_arena_cleanup(&arena);
     pm_options_free(options);
 
     return result;
@@ -1138,7 +1138,7 @@ parse_input_comments(pm_string_t *input, const pm_options_t *options) {
     VALUE comments = parser_comments(parser, source, pm_options_freeze_get(options));
 
     pm_parser_free(parser);
-    pm_arena_free(&arena);
+    pm_arena_cleanup(&arena);
 
     return comments;
 }
@@ -1257,7 +1257,7 @@ parse_input_success_p(pm_string_t *input, const pm_options_t *options) {
 
     VALUE result = pm_parser_errors_size(parser) == 0 ? Qtrue : Qfalse;
     pm_parser_free(parser);
-    pm_arena_free(&arena);
+    pm_arena_cleanup(&arena);
 
     return result;
 }
