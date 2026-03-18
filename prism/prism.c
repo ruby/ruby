@@ -454,7 +454,7 @@ lex_state_set(pm_parser_t *parser, pm_lex_state_t state) {
 #endif
 
 #if PM_DEBUG_LOGGING
-PRISM_ATTRIBUTE_UNUSED static void
+PRISM_UNUSED static void
 debug_state(pm_parser_t *parser) {
     fprintf(stderr, "STATE: ");
     bool first = true;
@@ -1073,7 +1073,7 @@ pm_locals_reads(pm_locals_t *locals, pm_constant_id_t name) {
  * written but not read in certain contexts.
  */
 static void
-pm_locals_order(PRISM_ATTRIBUTE_UNUSED pm_parser_t *parser, pm_locals_t *locals, pm_constant_id_list_t *list, bool toplevel) {
+pm_locals_order(pm_parser_t *parser, pm_locals_t *locals, pm_constant_id_list_t *list, bool toplevel) {
     pm_constant_id_list_init_capacity(parser->arena, list, locals->size);
 
     // If we're still below the threshold for switching to a hash, then we only

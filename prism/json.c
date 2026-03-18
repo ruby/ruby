@@ -11,7 +11,14 @@
 /* We optionally support dumping to JSON. For systems that don not want or need
  * this functionality, it can be turned off with the PRISM_EXCLUDE_JSON define.
  */
-#ifndef PRISM_EXCLUDE_JSON
+#ifdef PRISM_EXCLUDE_JSON
+
+#include "prism/compiler/unused.h"
+
+void
+pm_dump_json(PRISM_UNUSED pm_buffer_t *buffer, PRISM_UNUSED const pm_parser_t *parser, PRISM_UNUSED const pm_node_t *node) {}
+
+#else
 
 #include "prism/internal/buffer.h"
 #include "prism/internal/constant_pool.h"

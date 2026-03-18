@@ -4,7 +4,14 @@
 /* We optionally support pretty printing nodes. For systems that don't want or
  * need this functionality, it can be turned off with the
  * PRISM_EXCLUDE_PRETTYPRINT define. */
-#ifndef PRISM_EXCLUDE_PRETTYPRINT
+#ifdef PRISM_EXCLUDE_PRETTYPRINT
+
+#include "prism/compiler/unused.h"
+
+void
+pm_prettyprint(PRISM_UNUSED pm_buffer_t *buffer, PRISM_UNUSED const pm_parser_t *parser, PRISM_UNUSED const pm_node_t *node) {}
+
+#else
 
 #include "prism/compiler/inline.h"
 #include "prism/internal/buffer.h"
