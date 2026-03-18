@@ -148,7 +148,7 @@ build_options_scopes(pm_options_t *options, VALUE scopes) {
 
         // Initialize the scope array.
         size_t locals_count = RARRAY_LEN(locals);
-        pm_options_scope_t *options_scope = pm_options_scope_get_mut(options, scope_index);
+        pm_options_scope_t *options_scope = pm_options_scope_mut(options, scope_index);
         pm_options_scope_init(options_scope, locals_count);
 
         // Iterate over the locals and add them to the scope.
@@ -162,7 +162,7 @@ build_options_scopes(pm_options_t *options, VALUE scopes) {
             }
 
             // Add the local to the scope.
-            pm_string_t *scope_local = pm_options_scope_local_get_mut(options_scope, local_index);
+            pm_string_t *scope_local = pm_options_scope_local_mut(options_scope, local_index);
             const char *name = rb_id2name(SYM2ID(local));
             pm_string_constant_init(scope_local, name, strlen(name));
         }
@@ -327,7 +327,7 @@ file_options(int argc, VALUE *argv, pm_string_t *input, pm_options_t *options, V
     *encoded_filepath = rb_str_encode_ospath(filepath);
     extract_options(options, *encoded_filepath, keywords);
 
-    const char *source = (const char *) pm_string_source(pm_options_filepath_get(options));
+    const char *source = (const char *) pm_string_source(pm_options_filepath(options));
     pm_string_init_result_t result;
 
     switch (result = pm_string_file_init(input, source)) {
@@ -408,7 +408,7 @@ dump(int argc, VALUE *argv, VALUE self) {
 #endif
 
     VALUE value = dump_input(&input, options);
-    if (pm_options_freeze_get(options)) rb_obj_freeze(value);
+    if (pm_options_freeze(options)) rb_obj_freeze(value);
 
 #ifdef PRISM_BUILD_DEBUG
     xfree_sized(dup, length);
@@ -789,7 +789,7 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
         .source = source,
         .tokens = rb_ary_new(),
         .encoding = rb_utf8_encoding(),
-        .freeze = pm_options_freeze_get(options),
+        .freeze = pm_options_freeze(options),
     };
 
     parse_lex_data_t *data = &parse_lex_data;
@@ -809,7 +809,7 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
         rb_ary_push(offsets, ULONG2NUM(line_offsets->offsets[index]));
     }
 
-    if (pm_options_freeze_get(options)) {
+    if (pm_options_freeze(options)) {
         rb_obj_freeze(source_string);
         rb_obj_freeze(offsets);
         rb_obj_freeze(source);
@@ -819,12 +819,12 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
     VALUE result;
     if (return_nodes) {
         VALUE value = rb_ary_new_capa(2);
-        rb_ary_push(value, pm_ast_new(parser, node, parse_lex_data.encoding, source, pm_options_freeze_get(options)));
+        rb_ary_push(value, pm_ast_new(parser, node, parse_lex_data.encoding, source, pm_options_freeze(options)));
         rb_ary_push(value, parse_lex_data.tokens);
-        if (pm_options_freeze_get(options)) rb_obj_freeze(value);
-        result = parse_result_create(rb_cPrismParseLexResult, parser, value, parse_lex_data.encoding, source, pm_options_freeze_get(options));
+        if (pm_options_freeze(options)) rb_obj_freeze(value);
+        result = parse_result_create(rb_cPrismParseLexResult, parser, value, parse_lex_data.encoding, source, pm_options_freeze(options));
     } else {
-        result = parse_result_create(rb_cPrismLexResult, parser, parse_lex_data.tokens, parse_lex_data.encoding, source, pm_options_freeze_get(options));
+        result = parse_result_create(rb_cPrismLexResult, parser, parse_lex_data.tokens, parse_lex_data.encoding, source, pm_options_freeze(options));
     }
 
     pm_parser_free(parser);
@@ -892,7 +892,7 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
     pm_node_t *node = pm_parse(parser);
     rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(parser));
 
-    bool freeze = pm_options_freeze_get(options);
+    bool freeze = pm_options_freeze(options);
     VALUE source = pm_source_new(parser, encoding, freeze);
     VALUE value = pm_ast_new(parser, node, encoding, source, freeze);
     VALUE result = parse_result_create(rb_cPrismParseResult, parser, value, encoding, source, freeze);
@@ -1111,9 +1111,9 @@ parse_stream(int argc, VALUE *argv, VALUE self) {
     pm_node_t *node = pm_parse_stream(&parser, arena, buffer, (void *) stream, parse_stream_fgets, parse_stream_eof, options);
     rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(parser));
 
-    VALUE source = pm_source_new(parser, encoding, pm_options_freeze_get(options));
-    VALUE value = pm_ast_new(parser, node, encoding, source, pm_options_freeze_get(options));
-    VALUE result = parse_result_create(rb_cPrismParseResult, parser, value, encoding, source, pm_options_freeze_get(options));
+    VALUE source = pm_source_new(parser, encoding, pm_options_freeze(options));
+    VALUE value = pm_ast_new(parser, node, encoding, source, pm_options_freeze(options));
+    VALUE result = parse_result_create(rb_cPrismParseResult, parser, value, encoding, source, pm_options_freeze(options));
 
     pm_buffer_free(buffer);
     pm_parser_free(parser);
@@ -1134,8 +1134,8 @@ parse_input_comments(pm_string_t *input, const pm_options_t *options) {
     pm_parse(parser);
     rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(parser));
 
-    VALUE source = pm_source_new(parser, encoding, pm_options_freeze_get(options));
-    VALUE comments = parser_comments(parser, source, pm_options_freeze_get(options));
+    VALUE source = pm_source_new(parser, encoding, pm_options_freeze(options));
+    VALUE comments = parser_comments(parser, source, pm_options_freeze(options));
 
     pm_parser_free(parser);
     pm_arena_free(arena);

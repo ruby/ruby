@@ -64,7 +64,7 @@ pm_options_shebang_callback_set(pm_options_t *options, pm_options_shebang_callba
  * Get the filepath option on the given options struct.
  */
 const pm_string_t *
-pm_options_filepath_get(const pm_options_t *options) {
+pm_options_filepath(const pm_options_t *options) {
     return &options->filepath;
 }
 
@@ -230,7 +230,7 @@ pm_options_partial_script_set(pm_options_t *options, bool partial_script) {
  * Get the freeze option on the given options struct.
  */
 bool
-pm_options_freeze_get(const pm_options_t *options) {
+pm_options_freeze(const pm_options_t *options) {
     return options->freeze;
 }
 
@@ -265,7 +265,7 @@ pm_options_scopes_init(pm_options_t *options, size_t scopes_count) {
  * options.
  */
 const pm_options_scope_t *
-pm_options_scope_get(const pm_options_t *options, size_t index) {
+pm_options_scope(const pm_options_t *options, size_t index) {
     return &options->scopes[index];
 }
 
@@ -274,7 +274,7 @@ pm_options_scope_get(const pm_options_t *options, size_t index) {
  * options.
  */
 pm_options_scope_t *
-pm_options_scope_get_mut(pm_options_t *options, size_t index) {
+pm_options_scope_mut(pm_options_t *options, size_t index) {
     return &options->scopes[index];
 }
 
@@ -295,7 +295,7 @@ pm_options_scope_init(pm_options_scope_t *scope, size_t locals_count) {
  * scope.
  */
 const pm_string_t *
-pm_options_scope_local_get(const pm_options_scope_t *scope, size_t index) {
+pm_options_scope_local(const pm_options_scope_t *scope, size_t index) {
     return &scope->locals[index];
 }
 
@@ -304,7 +304,7 @@ pm_options_scope_local_get(const pm_options_scope_t *scope, size_t index) {
  * scope.
  */
 pm_string_t *
-pm_options_scope_local_get_mut(pm_options_scope_t *scope, size_t index) {
+pm_options_scope_local_mut(pm_options_scope_t *scope, size_t index) {
     return &scope->locals[index];
 }
 
