@@ -257,7 +257,7 @@ scan_strpbrk_ascii(pm_parser_t *parser, const uint8_t *source, size_t maximum, c
 #else
 
 static PRISM_INLINE bool
-scan_strpbrk_ascii(PRISM_ATTRIBUTE_UNUSED pm_parser_t *parser, PRISM_ATTRIBUTE_UNUSED const uint8_t *source, PRISM_ATTRIBUTE_UNUSED size_t maximum, PRISM_ATTRIBUTE_UNUSED const uint8_t *charset, size_t *index) {
+scan_strpbrk_ascii(PRISM_UNUSED pm_parser_t *parser, PRISM_UNUSED const uint8_t *source, PRISM_UNUSED size_t maximum, PRISM_UNUSED const uint8_t *charset, size_t *index) {
     *index = 0;
     return false;
 }

@@ -285,7 +285,7 @@ pm_compare_integer_nodes(const pm_static_literals_metadata_t *metadata, const pm
  * A comparison function for comparing two FloatNode instances.
  */
 static int
-pm_compare_float_nodes(PRISM_ATTRIBUTE_UNUSED const pm_static_literals_metadata_t *metadata, const pm_node_t *left, const pm_node_t *right) {
+pm_compare_float_nodes(PRISM_UNUSED const pm_static_literals_metadata_t *metadata, const pm_node_t *left, const pm_node_t *right) {
     const double left_value = ((const pm_float_node_t *) left)->value;
     const double right_value = ((const pm_float_node_t *) right)->value;
     return PM_NUMERIC_COMPARISON(left_value, right_value);
@@ -344,7 +344,7 @@ pm_string_value(const pm_node_t *node) {
  * A comparison function for comparing two nodes that have attached strings.
  */
 static int
-pm_compare_string_nodes(PRISM_ATTRIBUTE_UNUSED const pm_static_literals_metadata_t *metadata, const pm_node_t *left, const pm_node_t *right) {
+pm_compare_string_nodes(PRISM_UNUSED const pm_static_literals_metadata_t *metadata, const pm_node_t *left, const pm_node_t *right) {
     const pm_string_t *left_string = pm_string_value(left);
     const pm_string_t *right_string = pm_string_value(right);
     return pm_string_compare(left_string, right_string);
@@ -354,7 +354,7 @@ pm_compare_string_nodes(PRISM_ATTRIBUTE_UNUSED const pm_static_literals_metadata
  * A comparison function for comparing two RegularExpressionNode instances.
  */
 static int
-pm_compare_regular_expression_nodes(PRISM_ATTRIBUTE_UNUSED const pm_static_literals_metadata_t *metadata, const pm_node_t *left, const pm_node_t *right) {
+pm_compare_regular_expression_nodes(PRISM_UNUSED const pm_static_literals_metadata_t *metadata, const pm_node_t *left, const pm_node_t *right) {
     const pm_regular_expression_node_t *left_regexp = (const pm_regular_expression_node_t *) left;
     const pm_regular_expression_node_t *right_regexp = (const pm_regular_expression_node_t *) right;
 

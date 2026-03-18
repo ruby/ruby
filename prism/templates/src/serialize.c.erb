@@ -3,7 +3,14 @@
 /* We optionally support serializing to a binary string. For systems that do not
  * want or need this functionality, it can be turned off with the
  * PRISM_EXCLUDE_SERIALIZATION define. */
-#ifndef PRISM_EXCLUDE_SERIALIZATION
+#ifdef PRISM_EXCLUDE_SERIALIZATION
+
+#include "prism/compiler/unused.h"
+
+void
+pm_serialize_lex(PRISM_UNUSED pm_buffer_t *buffer, PRISM_UNUSED const uint8_t *source, PRISM_UNUSED size_t size, PRISM_UNUSED const char *data) {}
+
+#else
 
 #include "prism/compiler/inline.h"
 

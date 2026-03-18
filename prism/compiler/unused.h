@@ -10,9 +10,9 @@
  * compiler-agnostic way.
  */
 #if defined(__GNUC__)
-#   define PRISM_ATTRIBUTE_UNUSED __attribute__((unused))
+#   define PRISM_UNUSED __attribute__((unused))
 #else
-#   define PRISM_ATTRIBUTE_UNUSED
+#   define PRISM_UNUSED
 #endif
 
 #endif
