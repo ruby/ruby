@@ -82,7 +82,6 @@ Gem::Specification.new do |spec|
     "include/prism/buffer.h",
     "include/prism/constant_pool.h",
     "include/prism/diagnostic.h",
-    "include/prism/encoding.h",
     "include/prism/excludes.h",
     "include/prism/integer.h",
     "include/prism/line_offset_list.h",

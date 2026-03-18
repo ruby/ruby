@@ -6,8 +6,6 @@
 #ifndef PRISM_INTERNAL_ENCODING_H
 #define PRISM_INTERNAL_ENCODING_H
 
-#include "prism/encoding.h"
-
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -18,7 +16,7 @@
  * Each callback should return the number of bytes, or 0 if the next bytes are
  * invalid for the encoding and type.
  */
-struct pm_encoding_t {
+typedef struct {
     /**
      * Return the number of bytes that the next character takes if it is valid
      * in the encoding. Does not read more than n bytes. It is assumed that n is
@@ -57,7 +55,7 @@ struct pm_encoding_t {
      * Return true if the encoding is a multibyte encoding.
      */
     bool multibyte;
-};
+} pm_encoding_t;
 
 /**
  * All of the lookup tables use the first bit of each embedded byte to indicate
