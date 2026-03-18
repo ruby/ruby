@@ -30,7 +30,7 @@ pm_parser_lex_callback_set(pm_parser_t *parser, pm_lex_callback_t callback, void
  * Returns the opaque data that is passed to the lex callback when it is called.
  */
 void *
-pm_parser_lex_callback_data(pm_parser_t *parser) {
+pm_parser_lex_callback_data(const pm_parser_t *parser) {
     return parser->lex_callback.data;
 }
 

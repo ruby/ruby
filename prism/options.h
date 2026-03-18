@@ -143,7 +143,7 @@ PRISM_EXPORTED_FUNCTION void pm_options_shebang_callback_set(pm_options_t *optio
  *
  * \public \memberof pm_options
  */
-PRISM_EXPORTED_FUNCTION pm_string_t * pm_options_filepath_get(pm_options_t *options);
+PRISM_EXPORTED_FUNCTION const pm_string_t * pm_options_filepath_get(const pm_options_t *options);
 
 /**
  * Set the filepath option on the given options struct.
