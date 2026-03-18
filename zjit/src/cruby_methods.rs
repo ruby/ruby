@@ -382,8 +382,8 @@ fn inline_array_aset(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
             use crate::hir::SideExitReason;
             let index = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: index, right: zero, reason: SideExitReason::GuardGreaterEq, state });
 
-            let _ = fun.push_insn(block, hir::Insn::ArrayAset { array: recv, index, val });
-            fun.push_insn(block, hir::Insn::WriteBarrier { recv, val });
+            let store = fun.push_insn(block, hir::Insn::ArrayAset { array: recv, index, val });
+            fun.push_insn(block, hir::Insn::WriteBarrier { recv, val, store });
             return Some(val);
         }
     }

@@ -872,7 +872,9 @@ pub enum Insn {
     /// Write `val` at an offset of `recv`.
     /// When writing a Ruby object to a Ruby object, one must use GuardNotFrozen (or equivalent) before and WriteBarrier after.
     StoreField { recv: InsnId, id: ID, offset: i32, val: InsnId },
-    WriteBarrier { recv: InsnId, val: InsnId },
+    /// Fire a GC write barrier for writing `val` into `recv`. Hold onto a reference to the
+    /// corresponding `StoreField` instruction to make eliding write barriers easier.
+    WriteBarrier { recv: InsnId, val: InsnId, store: InsnId },
 
     /// Check whether VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM is set in the environment flags.
     /// Returns CBool (0/1).
@@ -1329,10 +1331,14 @@ macro_rules! for_each_operand_impl {
             Insn::LoadField { recv, .. } => {
                 $visit_one!(recv);
             }
-            Insn::StoreField { recv, val, .. }
-            | Insn::WriteBarrier { recv, val } => {
+            Insn::StoreField { recv, val, .. } => {
                 $visit_one!(recv);
                 $visit_one!(val);
+            }
+            Insn::WriteBarrier { recv, val, store } => {
+                $visit_one!(recv);
+                $visit_one!(val);
+                $visit_one!(store);
             }
             Insn::GetGlobal { state, .. }
             | Insn::GetSpecialSymbol { state, .. }
@@ -1997,7 +2003,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 write!(f, "LoadField {recv}, :{}@{:#x}", field_name, self.ptr_map.map_offset(offset))
             }
             &Insn::StoreField { recv, id, offset, val } => write!(f, "StoreField {recv}, :{}@{:#x}, {val}", id.contents_lossy(), self.ptr_map.map_offset(offset)),
-            &Insn::WriteBarrier { recv, val } => write!(f, "WriteBarrier {recv}, {val}"),
+            &Insn::WriteBarrier { recv, val, .. } => write!(f, "WriteBarrier {recv}, {val}"),
             Insn::SetIvar { self_val, id, val, .. } => write!(f, "SetIvar {self_val}, :{}, {val}", id.contents_lossy()),
             Insn::GetGlobal { id, .. } => write!(f, "GetGlobal :{}", id.contents_lossy()),
             Insn::SetGlobal { id, val, .. } => write!(f, "SetGlobal :{}, {val}", id.contents_lossy()),
@@ -2780,7 +2786,8 @@ impl Function {
             &GetIvar { self_val, id, ic, state } => GetIvar { self_val: find!(self_val), id, ic, state },
             &LoadField { recv, id, offset, return_type } => LoadField { recv: find!(recv), id, offset, return_type },
             &StoreField { recv, id, offset, val } => StoreField { recv: find!(recv), id, offset, val: find!(val) },
-            &WriteBarrier { recv, val } => WriteBarrier { recv: find!(recv), val: find!(val) },
+            // NB: no find!() for store because it doesn't have an output so it wouldn't be in the union-find.
+            &WriteBarrier { recv, val, store } => WriteBarrier { recv: find!(recv), val: find!(val), store },
             &SetIvar { self_val, id, ic, val, state } => SetIvar { self_val: find!(self_val), id, ic, val: find!(val), state },
             &GetClassVar { id, ic, state } => GetClassVar { id, ic, state },
             &SetClassVar { id, val, ic, state } => SetClassVar { id, val: find!(val), ic, state },
@@ -3745,8 +3752,8 @@ impl Function {
                                     };
 
                                     let replacement = if let (OptimizedMethodType::StructAset, &[val]) = (opt_type, args.as_slice()) {
-                                        self.push_insn(block, Insn::StoreField { recv: target, id: mid, offset, val });
-                                        self.push_insn(block, Insn::WriteBarrier { recv, val });
+                                        let store = self.push_insn(block, Insn::StoreField { recv: target, id: mid, offset, val });
+                                        self.push_insn(block, Insn::WriteBarrier { recv, val, store });
                                         val
                                     } else { // StructAref
                                         self.push_insn(block, Insn::LoadField { recv: target, id: mid, offset, return_type: types::BasicObject })
@@ -4445,8 +4452,8 @@ impl Function {
                             let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
                             (as_heap, offset)
                         };
-                        self.push_insn(block, Insn::StoreField { recv: ivar_storage, id, offset, val });
-                        self.push_insn(block, Insn::WriteBarrier { recv: self_val, val });
+                        let store = self.push_insn(block, Insn::StoreField { recv: ivar_storage, id, offset, val });
+                        self.push_insn(block, Insn::WriteBarrier { recv: self_val, val, store });
                         if next_shape_id != recv_type.shape() {
                             // Write the new shape ID
                             let shape_id = self.push_insn(block, Insn::Const { val: Const::CShape(next_shape_id) });
@@ -4953,6 +4960,7 @@ impl Function {
         for block in self.rpo() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             let mut new_insns = vec![];
+            let mut deleted_stores = vec![];
             for insn_id in old_insns {
                 let replacement_insn: InsnId = match self.find(insn_id) {
                     Insn::StoreField { recv, offset, val, .. } => {
@@ -4961,6 +4969,7 @@ impl Function {
                         // TODO(Jacob): Switch from actual to partial equality
                         if Some(val) == heap_entry {
                             // If the value is already stored, short circuit and don't add an instruction to the block
+                            deleted_stores.push(insn_id);
                             continue
                         }
                         // TODO(Jacob): Add TBAA to avoid removing so many entries
@@ -4984,7 +4993,12 @@ impl Function {
                         }
                         insn_id
                     }
-                    Insn::WriteBarrier { .. } => {
+                    Insn::WriteBarrier { store, .. } => {
+                        if deleted_stores.contains(&store) {
+                            // We dropped the corresponding store instruction; don't fire the write
+                            // barrier for no reason.
+                            continue;
+                        }
                         // Currently, WriteBarrier write effects are Allocator and Memory when we'd really like them to be flags.
                         // We don't use LoadField for mark bits so we can ignore them for now.
                         // But flags does not exist in our effects abstract heap modeling and we don't want to add special casing to effects.
@@ -5810,6 +5824,9 @@ impl Function {
                             }
                         }
                     }
+                    insn if matches!(insn, Insn::StoreField { .. } | Insn::ArrayAset { .. }) => {
+                        assigned.insert(insn_id);
+                    }
                     insn if insn.has_output() => {
                         assigned.insert(insn_id);
                     }
@@ -5832,6 +5849,9 @@ impl Function {
                     }
                     Ok(())
                 })?;
+                if matches!(self.insns[insn_id.0], Insn::StoreField { .. } | Insn::ArrayAset { .. }) {
+                    assigned.insert(insn_id);
+                }
                 if self.insns[insn_id.0].has_output() {
                     assigned.insert(insn_id);
                 }
@@ -5859,6 +5879,9 @@ impl Function {
                     }
                     Ok(())
                 })?;
+                if matches!(self.insns[insn_id.0], Insn::StoreField { .. } | Insn::ArrayAset { .. }) {
+                    assigned.insert(insn_id);
+                }
                 if self.insns[insn_id.0].has_output() {
                     assigned.insert(insn_id);
                 }
@@ -5952,7 +5975,7 @@ impl Function {
             Insn::SetIvar { self_val: left, val: right, .. }
             | Insn::NewRange { low: left, high: right, .. }
             | Insn::AnyToString { val: left, str: right, .. }
-            | Insn::WriteBarrier { recv: left, val: right } => {
+            | Insn::WriteBarrier { recv: left, val: right, store: _ } => {
                 self.assert_subtype(insn_id, left, types::BasicObject)?;
                 self.assert_subtype(insn_id, right, types::BasicObject)
             }
