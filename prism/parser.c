@@ -110,6 +110,22 @@ pm_parser_lex_state(const pm_parser_t *parser) {
 }
 
 /**
+ * Returns the location associated with the given comment.
+ */
+pm_location_t
+pm_comment_location(const pm_comment_t *comment) {
+    return comment->location;
+}
+
+/**
+ * Returns the type associated with the given comment.
+ */
+pm_comment_type_t
+pm_comment_type(const pm_comment_t *comment) {
+    return comment->type;
+}
+
+/**
  * Returns the number of comments associated with the given parser.
  */
 size_t
@@ -129,6 +145,22 @@ pm_parser_comments_each(const pm_parser_t *parser, pm_comment_callback_t callbac
         callback(comment, data);
         current = current->next;
     }
+}
+
+/**
+ * Returns the location associated with the given magic comment key.
+ */
+pm_location_t
+pm_magic_comment_key(const pm_magic_comment_t *magic_comment) {
+    return magic_comment->key;
+}
+
+/**
+ * Returns the location associated with the given magic comment value.
+ */
+pm_location_t
+pm_magic_comment_value(const pm_magic_comment_t *magic_comment) {
+    return magic_comment->value;
 }
 
 /**
