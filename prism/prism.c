@@ -1,5 +1,3 @@
-#include "prism.h"
-
 #include "prism/compiler/accel.h"
 #include "prism/compiler/fallthrough.h"
 #include "prism/compiler/unused.h"
@@ -30,6 +28,8 @@
 #include "prism/internal/strpbrk.h"
 
 #include "prism/excludes.h"
+#include "prism/serialize.h"
+#include "prism/version.h"
 
 #include <assert.h>
 #include <errno.h>

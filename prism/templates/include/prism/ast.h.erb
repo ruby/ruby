@@ -48,6 +48,22 @@ typedef struct {
 } pm_token_t;
 
 /**
+ * Returns a string representation of the given token type.
+ *
+ * @param token_type The token type to convert to a string.
+ * @return A string representation of the given token type.
+ */
+PRISM_EXPORTED_FUNCTION const char * pm_token_type_name(pm_token_type_t token_type);
+
+/**
+ * Returns the human name of the given token type.
+ *
+ * @param token_type The token type to convert to a human name.
+ * @return The human name of the given token type.
+ */
+const char * pm_token_type_human(pm_token_type_t token_type);
+
+/**
  * This struct represents a slice in the source code, defined by an offset and
  * a length. Note that we have confirmation that we can represent all locations
  * within Ruby source files using 32-bit integers per:

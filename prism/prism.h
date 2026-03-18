@@ -14,10 +14,13 @@ extern "C" {
 #include "prism/ast.h"
 #include "prism/diagnostic.h"
 #include "prism/excludes.h"
+#include "prism/json.h"
 #include "prism/node.h"
 #include "prism/options.h"
 #include "prism/parser.h"
 #include "prism/prettyprint.h"
+#include "prism/serialize.h"
+#include "prism/stream.h"
 #include "prism/string_query.h"
 #include "prism/version.h"
 
@@ -27,31 +30,6 @@ extern "C" {
  * @returns The prism version as a constant string.
  */
 PRISM_EXPORTED_FUNCTION const char * pm_version(void);
-
-/**
- * Allocate and initialize a parser with the given start and end pointers.
- *
- * @param arena The arena to use for all AST-lifetime allocations. It is caller-
- *     owned and must outlive the parser.
- * @param source The source to parse.
- * @param size The size of the source.
- * @param options The optional options to use when parsing. These options must
- *     live for the whole lifetime of this parser.
- * @return The initialized parser. It is the responsibility of the caller to
- *     free the parser with `pm_parser_free()`.
- *
- * \public \memberof pm_parser
- */
-PRISM_EXPORTED_FUNCTION pm_parser_t * pm_parser_new(pm_arena_t *arena, const uint8_t *source, size_t size, const pm_options_t *options);
-
-/**
- * Free both the memory held by the given parser and the parser itself.
- *
- * @param parser The parser to free.
- *
- * \public \memberof pm_parser
- */
-PRISM_EXPORTED_FUNCTION void pm_parser_free(pm_parser_t *parser);
 
 /**
  * Initiate the parser with the given parser.
@@ -64,105 +42,6 @@ PRISM_EXPORTED_FUNCTION void pm_parser_free(pm_parser_t *parser);
 PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse(pm_parser_t *parser);
 
 /**
- * This function is used in pm_parse_stream() to retrieve a line of input from a
- * stream. It closely mirrors that of fgets so that fgets can be used as the
- * default implementation.
- */
-typedef char * (pm_parse_stream_fgets_t)(char *string, int size, void *stream);
-
-/**
- * This function is used in pm_parse_stream to check whether a stream is EOF.
- * It closely mirrors that of feof so that feof can be used as the
- * default implementation.
- */
-typedef int (pm_parse_stream_feof_t)(void *stream);
-
-/**
- * Parse a stream of Ruby source and return the tree.
- *
- * @param parser The out parameter to write the parser to.
- * @param arena The arena to use for all AST-lifetime allocations.
- * @param buffer The buffer to use.
- * @param stream The stream to parse.
- * @param stream_fgets The function to use to read from the stream.
- * @param stream_feof The function to use to determine if the stream has hit eof.
- * @param options The optional options to use when parsing.
- * @return The AST representing the source.
- *
- * \public \memberof pm_parser
- */
-PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse_stream(pm_parser_t **parser, pm_arena_t *arena, pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, pm_parse_stream_feof_t *stream_feof, const pm_options_t *options);
-
-/* We optionally support serializing to a binary string. For systems that do not
- * want or need this functionality, it can be turned off with the
- * PRISM_EXCLUDE_SERIALIZATION define. */
-#ifndef PRISM_EXCLUDE_SERIALIZATION
-
-/**
- * Parse and serialize the AST represented by the source that is read out of the
- * given stream into to the given buffer.
- *
- * @param buffer The buffer to serialize to.
- * @param stream The stream to parse.
- * @param stream_fgets The function to use to read from the stream.
- * @param stream_feof The function to use to tell if the stream has hit eof.
- * @param data The optional data to pass to the parser.
- */
-PRISM_EXPORTED_FUNCTION void pm_serialize_parse_stream(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, pm_parse_stream_feof_t *stream_feof, const char *data);
-
-/**
- * Serialize the AST represented by the given node to the given buffer.
- *
- * @param parser The parser to serialize.
- * @param node The node to serialize.
- * @param buffer The buffer to serialize to.
- */
-PRISM_EXPORTED_FUNCTION void pm_serialize(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer);
-
-/**
- * Parse the given source to the AST and dump the AST to the given buffer.
- *
- * @param buffer The buffer to serialize to.
- * @param source The source to parse.
- * @param size The size of the source.
- * @param data The optional data to pass to the parser.
- */
-PRISM_EXPORTED_FUNCTION void pm_serialize_parse(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data);
-
-/**
- * Parse and serialize the comments in the given source to the given buffer.
- *
- * @param buffer The buffer to serialize to.
- * @param source The source to parse.
- * @param size The size of the source.
- * @param data The optional data to pass to the parser.
- */
-PRISM_EXPORTED_FUNCTION void pm_serialize_parse_comments(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data);
-
-/**
- * Lex the given source and serialize to the given buffer.
- *
- * @param source The source to lex.
- * @param size The size of the source.
- * @param buffer The buffer to serialize to.
- * @param data The optional data to pass to the lexer.
- */
-PRISM_EXPORTED_FUNCTION void pm_serialize_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data);
-
-/**
- * Parse and serialize both the AST and the tokens represented by the given
- * source to the given buffer.
- *
- * @param buffer The buffer to serialize to.
- * @param source The source to parse.
- * @param size The size of the source.
- * @param data The optional data to pass to the parser.
- */
-PRISM_EXPORTED_FUNCTION void pm_serialize_parse_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data);
-
-#endif
-
-/**
  * Parse the source and return true if it parses without errors or warnings.
  *
  * @param source The source to parse.
@@ -171,38 +50,6 @@ PRISM_EXPORTED_FUNCTION void pm_serialize_parse_lex(pm_buffer_t *buffer, const u
  * @return True if the source parses without errors or warnings.
  */
 PRISM_EXPORTED_FUNCTION bool pm_parse_success_p(const uint8_t *source, size_t size, const char *data);
-
-/**
- * Returns a string representation of the given token type.
- *
- * @param token_type The token type to convert to a string.
- * @return A string representation of the given token type.
- */
-PRISM_EXPORTED_FUNCTION const char * pm_token_type_name(pm_token_type_t token_type);
-
-/**
- * Returns the human name of the given token type.
- *
- * @param token_type The token type to convert to a human name.
- * @return The human name of the given token type.
- */
-const char * pm_token_type_human(pm_token_type_t token_type);
-
-/* We optionally support dumping to JSON. For systems that don't want or need
- * this functionality, it can be turned off with the PRISM_EXCLUDE_JSON define.
- */
-#ifndef PRISM_EXCLUDE_JSON
-
-/**
- * Dump JSON to the given buffer.
- *
- * @param buffer The buffer to serialize to.
- * @param parser The parser that parsed the node.
- * @param node The node to serialize.
- */
-PRISM_EXPORTED_FUNCTION void pm_dump_json(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *node);
-
-#endif
 
 /**
  * @mainpage
@@ -226,11 +73,10 @@ PRISM_EXPORTED_FUNCTION void pm_dump_json(pm_buffer_t *buffer, const pm_parser_t
  *
  * @section parsing Parsing
  *
- * In order to parse Ruby code, the structures and functions that you're going
- * to want to use and be aware of are:
+ * In order to parse Ruby code, the functions that you are going to want to use
+ * and be aware of are:
  *
- * * `pm_arena_t` - the arena allocator for AST-lifetime memory
- * * `pm_parser_t` - the main parser structure
+ * * `pm_arena_new()` - create a new arena to hold all AST-lifetime allocations
  * * `pm_parser_new()` - allocate and initialize a new parser
  * * `pm_parse()` - parse and return the root node
  * * `pm_parser_free()` - free the parser and its internal memory
@@ -260,13 +106,11 @@ PRISM_EXPORTED_FUNCTION void pm_dump_json(pm_buffer_t *buffer, const pm_parser_t
  * Prism provides the ability to serialize the AST and its related metadata into
  * a binary format. This format is designed to be portable to different
  * languages and runtimes so that you only need to make one FFI call in order to
- * parse Ruby code. The structures and functions that you're going to want to
- * use and be aware of are:
+ * parse Ruby code. The functions that you are going to want to use and be
+ * aware of are:
  *
- * * `pm_buffer_t` - an opaque buffer object that will hold the serialized AST
  * * `pm_buffer_new()` - create a new buffer
  * * `pm_buffer_free()` - free the buffer and its internal memory
- * * `pm_serialize()` - serialize the AST into a buffer
  * * `pm_serialize_parse()` - parse and serialize the AST into a buffer
  *
  * Putting all of this together would look something like:
