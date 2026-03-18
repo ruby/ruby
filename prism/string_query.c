@@ -27,7 +27,7 @@ typedef enum {
 /**
  * Check that the slice is a valid local variable name or constant.
  */
-pm_slice_type_t
+static pm_slice_type_t
 pm_slice_type(const uint8_t *source, size_t length, const char *encoding_name) {
     // first, get the right encoding object
     const pm_encoding_t *encoding = pm_encoding_find((const uint8_t *) encoding_name, (const uint8_t *) (encoding_name + strlen(encoding_name)));

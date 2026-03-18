@@ -63,8 +63,8 @@ pm_options_shebang_callback_set(pm_options_t *options, pm_options_shebang_callba
 /**
  * Get the filepath option on the given options struct.
  */
-pm_string_t *
-pm_options_filepath_get(pm_options_t *options) {
+const pm_string_t *
+pm_options_filepath_get(const pm_options_t *options) {
     return &options->filepath;
 }
 
@@ -182,8 +182,8 @@ pm_options_version_set(pm_options_t *options, const char *version, size_t length
         }
     }
 
-    if (length >= 6) {
-        if (strncmp(version, "latest", 7) == 0) { // 7 to compare the \0 as well
+    if (length == 6) {
+        if (strncmp(version, "latest", 6) == 0) {
             options->version = PM_OPTIONS_VERSION_LATEST;
             return true;
         }

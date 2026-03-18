@@ -57,7 +57,7 @@ PRISM_EXPORTED_FUNCTION void pm_parser_lex_callback_set(pm_parser_t *parser, pm_
  * @param parser The parser whose lex callback data we want to get.
  * @return The opaque data that is passed to the lex callback when it is called.
  */
-PRISM_EXPORTED_FUNCTION void * pm_parser_lex_callback_data(pm_parser_t *parser);
+PRISM_EXPORTED_FUNCTION void * pm_parser_lex_callback_data(const pm_parser_t *parser);
 
 /**
  * Returns the raw pointer to the start of the source that is being parsed.
