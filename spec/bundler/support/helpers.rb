@@ -315,15 +315,17 @@ module Spec
 
       require "rubygems/installer"
 
-      installer = Gem::Installer.at(
-        path.to_s,
-        install_dir: install_dir.to_s,
-        document: [],
-        ignore_dependencies: true,
-        wrappers: true,
-        force: true
-      )
-      installer.install
+      with_simulated_platform do
+        installer = Gem::Installer.at(
+          path.to_s,
+          install_dir: install_dir.to_s,
+          document: [],
+          ignore_dependencies: true,
+          wrappers: true,
+          force: true
+        )
+        installer.install
+      end
 
       if default
         gem = Pathname.new(path).basename.to_s.match(/(.*)\.gem/)[1]
@@ -413,6 +415,36 @@ module Spec
       yield
     ensure
       ENV.replace(backup)
+    end
+
+    # Simulate the platform set by BUNDLER_SPEC_PLATFORM for in-process
+    # operations, mirroring what hax.rb does for subprocesses.
+    def with_simulated_platform
+      spec_platform = ENV["BUNDLER_SPEC_PLATFORM"]
+      unless spec_platform
+        return yield
+      end
+
+      old_arch = RbConfig::CONFIG["arch"]
+      old_host_os = RbConfig::CONFIG["host_os"]
+
+      if /mingw|mswin/.match?(spec_platform)
+        Gem.class_variable_set(:@@win_platform, nil) # rubocop:disable Style/ClassVars
+        RbConfig::CONFIG["host_os"] = spec_platform.gsub(/^[^-]+-/, "").tr("-", "_")
+      end
+
+      RbConfig::CONFIG["arch"] = spec_platform
+      Gem::Platform.instance_variable_set(:@local, nil)
+      Gem.instance_variable_set(:@platforms, [])
+
+      yield
+    ensure
+      if spec_platform
+        RbConfig::CONFIG["arch"] = old_arch
+        RbConfig::CONFIG["host_os"] = old_host_os
+        Gem::Platform.instance_variable_set(:@local, nil)
+        Gem.instance_variable_set(:@platforms, [])
+      end
     end
 
     def with_path_added(path)
