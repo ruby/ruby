@@ -566,7 +566,7 @@ parser_errors(const pm_parser_t *parser, rb_encoding *encoding, VALUE source, bo
         error != NULL;
         error = (const pm_diagnostic_t *) error->node.next
     ) {
-        VALUE type = ID2SYM(rb_intern(pm_diagnostic_id_human(error->diag_id)));
+        VALUE type = ID2SYM(rb_intern(pm_diagnostic_id_str(error->diag_id)));
         VALUE message = rb_obj_freeze(rb_enc_str_new_cstr(error->message, encoding));
         VALUE location = PARSER_LOCATION(source, freeze, error->location);
 
@@ -607,7 +607,7 @@ parser_warnings(const pm_parser_t *parser, rb_encoding *encoding, VALUE source, 
         warning != NULL;
         warning = (const pm_diagnostic_t *) warning->node.next
     ) {
-        VALUE type = ID2SYM(rb_intern(pm_diagnostic_id_human(warning->diag_id)));
+        VALUE type = ID2SYM(rb_intern(pm_diagnostic_id_str(warning->diag_id)));
         VALUE message = rb_obj_freeze(rb_enc_str_new_cstr(warning->message, encoding));
         VALUE location = PARSER_LOCATION(source, freeze, warning->location);
 
