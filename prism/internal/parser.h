@@ -934,4 +934,27 @@ struct pm_parser_t {
 #endif
 };
 
+/**
+ * Initialize a parser with the given start and end pointers.
+ *
+ * @param arena The arena to use for all AST-lifetime allocations. It is caller-
+ *     owned and must outlive the parser.
+ * @param parser The parser to initialize.
+ * @param source The source to parse.
+ * @param size The size of the source.
+ * @param options The optional options to use when parsing. These options must
+ *     live for the whole lifetime of this parser.
+ */
+void pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, size_t size, const pm_options_t *options);
+
+/**
+ * Free the memory held by the given parser.
+ *
+ * This does not free the `pm_options_t` object that was used to initialize the
+ * parser.
+ *
+ * @param parser The parser whose held memory should be freed.
+ */
+void pm_parser_cleanup(pm_parser_t *parser);
+
 #endif

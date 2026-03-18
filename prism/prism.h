@@ -29,21 +29,6 @@ extern "C" {
 PRISM_EXPORTED_FUNCTION const char * pm_version(void);
 
 /**
- * Initialize a parser with the given start and end pointers.
- *
- * @param arena The arena to use for all AST-lifetime allocations. It is caller-
- *     owned and must outlive the parser.
- * @param parser The parser to initialize.
- * @param source The source to parse.
- * @param size The size of the source.
- * @param options The optional options to use when parsing. These options must
- *     live for the whole lifetime of this parser.
- *
- * \public \memberof pm_parser
- */
-PRISM_EXPORTED_FUNCTION void pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, size_t size, const pm_options_t *options);
-
-/**
  * Allocate and initialize a parser with the given start and end pointers.
  *
  * @param arena The arena to use for all AST-lifetime allocations. It is caller-
@@ -58,18 +43,6 @@ PRISM_EXPORTED_FUNCTION void pm_parser_init(pm_arena_t *arena, pm_parser_t *pars
  * \public \memberof pm_parser
  */
 PRISM_EXPORTED_FUNCTION pm_parser_t * pm_parser_new(pm_arena_t *arena, const uint8_t *source, size_t size, const pm_options_t *options);
-
-/**
- * Free the memory held by the given parser.
- *
- * This does not free the `pm_options_t` object that was used to initialize the
- * parser.
- *
- * @param parser The parser whose held memory should be freed.
- *
- * \public \memberof pm_parser
- */
-PRISM_EXPORTED_FUNCTION void pm_parser_cleanup(pm_parser_t *parser);
 
 /**
  * Free both the memory held by the given parser and the parser itself.
@@ -120,9 +93,9 @@ typedef int (pm_parse_stream_feof_t)(void *stream);
  */
 PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse_stream(pm_parser_t **parser, pm_arena_t *arena, pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, pm_parse_stream_feof_t *stream_feof, const pm_options_t *options);
 
-// We optionally support serializing to a binary string. For systems that don't
-// want or need this functionality, it can be turned off with the
-// PRISM_EXCLUDE_SERIALIZATION define.
+/* We optionally support serializing to a binary string. For systems that do not
+ * want or need this functionality, it can be turned off with the
+ * PRISM_EXCLUDE_SERIALIZATION define. */
 #ifndef PRISM_EXCLUDE_SERIALIZATION
 
 /**
@@ -215,8 +188,9 @@ PRISM_EXPORTED_FUNCTION const char * pm_token_type_name(pm_token_type_t token_ty
  */
 const char * pm_token_type_human(pm_token_type_t token_type);
 
-// We optionally support dumping to JSON. For systems that don't want or need
-// this functionality, it can be turned off with the PRISM_EXCLUDE_JSON define.
+/* We optionally support dumping to JSON. For systems that don't want or need
+ * this functionality, it can be turned off with the PRISM_EXCLUDE_JSON define.
+ */
 #ifndef PRISM_EXCLUDE_JSON
 
 /**
