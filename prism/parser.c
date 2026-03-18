@@ -4,6 +4,7 @@
 #include "prism/internal/comments.h"
 #include "prism/internal/diagnostic.h"
 #include "prism/internal/encoding.h"
+#include "prism/internal/magic_comments.h"
 
 #include <stdlib.h>
 
@@ -69,14 +70,6 @@ pm_parser_encoding_name(const pm_parser_t *parser) {
 }
 
 /**
- * Returns the magic comments that are associated with the given parser.
- */
-const pm_list_t *
-pm_parser_magic_comments(const pm_parser_t *parser) {
-    return &parser->magic_comment_list;
-}
-
-/**
  * Returns the line offsets that are associated with the given parser.
  *
  * @param parser the parser whose line offsets we want to get
@@ -133,6 +126,18 @@ pm_parser_comments(const pm_parser_t *parser) {
     pm_comments_iter_t *iter = (pm_comments_iter_t *) xmalloc(sizeof(pm_comments_iter_t));
     iter->size = parser->comment_list.size;
     iter->current = parser->comment_list.head;
+    return iter;
+}
+
+/**
+ * Returns an iterator that knows how to iterate over the magic comments that
+ * are associated with the given parser.
+ */
+pm_magic_comments_iter_t *
+pm_parser_magic_comments(const pm_parser_t *parser) {
+    pm_magic_comments_iter_t *iter = (pm_magic_comments_iter_t *) xmalloc(sizeof(pm_magic_comments_iter_t));
+    iter->size = parser->magic_comment_list.size;
+    iter->current = parser->magic_comment_list.head;
     return iter;
 }
 

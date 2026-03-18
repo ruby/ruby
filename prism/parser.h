@@ -11,28 +11,12 @@
 #include "prism/diagnostic.h"
 #include "prism/line_offset_list.h"
 #include "prism/list.h"
+#include "prism/magic_comments.h"
 
 /**
  * The parser used to parse Ruby source.
  */
 typedef struct pm_parser_t pm_parser_t;
-
-/**
- * This is a node in the linked list of magic comments that we've found while
- * parsing.
- *
- * @extends pm_list_node_t
- */
-typedef struct {
-    /** The embedded base node. */
-    pm_list_node_t node;
-
-    /** The key of the magic comment. */
-    pm_location_t key;
-
-    /** The value of the magic comment. */
-    pm_location_t value;
-} pm_magic_comment_t;
 
 /**
  * When the encoding that is being used to parse the source is changed by prism,
@@ -109,14 +93,6 @@ PRISM_EXPORTED_FUNCTION int32_t pm_parser_start_line(const pm_parser_t *parser);
 PRISM_EXPORTED_FUNCTION const char * pm_parser_encoding_name(const pm_parser_t *parser);
 
 /**
- * Returns the magic comments that are associated with the given parser.
- *
- * @param parser the parser whose magic comments we want to get
- * @return the magic comments that are associated with the given parser
- */
-PRISM_EXPORTED_FUNCTION const pm_list_t * pm_parser_magic_comments(const pm_parser_t *parser);
-
-/**
  * Returns the line offsets that are associated with the given parser.
  *
  * @param parser the parser whose line offsets we want to get
@@ -175,6 +151,20 @@ PRISM_EXPORTED_FUNCTION int pm_parser_lex_state(const pm_parser_t *parser);
  * \public \memberof pm_parser
  */
 PRISM_EXPORTED_FUNCTION pm_comments_iter_t * pm_parser_comments(const pm_parser_t *parser);
+
+/**
+ * Returns an iterator that knows how to iterate over the magic comments that
+ * are associated with the given parser.
+ *
+ * @param parser the parser whose magic comments we want to get
+ * @return the iterator that knows how to iterate over the magic comments that are
+ *     associated with the given parser. It is the responsibility of the caller
+ *     to free the memory associated with the iterator through
+ *     pm_magic_comments_iter_free.
+ *
+ * \public \memberof pm_parser
+ */
+PRISM_EXPORTED_FUNCTION pm_magic_comments_iter_t * pm_parser_magic_comments(const pm_parser_t *parser);
 
 /**
  * Returns an iterator that knows how to iterate over the errors that are

@@ -513,8 +513,12 @@ parser_comments(const pm_parser_t *parser, VALUE source, bool freeze) {
  */
 static inline VALUE
 parser_magic_comment(VALUE source, bool freeze, const pm_magic_comment_t *magic_comment) {
-    VALUE key_loc = parser_location(source, freeze, magic_comment->key.start, magic_comment->key.length);
-    VALUE value_loc = parser_location(source, freeze, magic_comment->value.start, magic_comment->value.length);
+    pm_location_t key = pm_magic_comment_key(magic_comment);
+    pm_location_t value = pm_magic_comment_value(magic_comment);
+
+    VALUE key_loc = parser_location(source, freeze, key.start, key.length);
+    VALUE value_loc = parser_location(source, freeze, value.start, value.length);
+
     VALUE argv[] = { key_loc, value_loc };
     return rb_class_new_instance_freeze(2, argv, rb_cPrismMagicComment, freeze);
 }
@@ -524,18 +528,19 @@ parser_magic_comment(VALUE source, bool freeze, const pm_magic_comment_t *magic_
  */
 static VALUE
 parser_magic_comments(const pm_parser_t *parser, VALUE source, bool freeze) {
-    const pm_list_t *magic_comments_list = pm_parser_magic_comments(parser);
-    VALUE magic_comments = rb_ary_new_capa(magic_comments_list->size);
+    pm_magic_comments_iter_t *iter = pm_parser_magic_comments(parser);
+    VALUE magic_comments = rb_ary_new_capa(pm_magic_comments_iter_size(iter));
 
     for (
-        const pm_magic_comment_t *magic_comment = (const pm_magic_comment_t *) magic_comments_list->head;
+        const pm_magic_comment_t *magic_comment = pm_magic_comments_iter_next(iter);
         magic_comment != NULL;
-        magic_comment = (const pm_magic_comment_t *) magic_comment->node.next
+        magic_comment = pm_magic_comments_iter_next(iter)
     ) {
         VALUE value = parser_magic_comment(source, freeze, magic_comment);
         rb_ary_push(magic_comments, value);
     }
 
+    pm_magic_comments_iter_free(iter);
     if (freeze) rb_obj_freeze(magic_comments);
     return magic_comments;
 }
