@@ -426,7 +426,7 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
  * Get the human-readable name of the given diagnostic ID.
  */
 const char *
-pm_diagnostic_id_human(pm_diagnostic_id_t diag_id) {
+pm_diagnostic_id_str(pm_diagnostic_id_t diag_id) {
     switch (diag_id) {
         <%- errors.each do |error| -%>
         case PM_ERR_<%= error.name %>: return "<%= error.name.downcase %>";
