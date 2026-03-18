@@ -260,20 +260,20 @@ PRISM_EXPORTED_FUNCTION void pm_dump_json(pm_buffer_t *buffer, const pm_parser_t
  * * `pm_parser_new()` - allocate and initialize a new parser
  * * `pm_parse()` - parse and return the root node
  * * `pm_parser_free()` - free the parser and its internal memory
- * * `pm_arena_cleanup()` - free all AST-lifetime memory
+ * * `pm_arena_free()` - free all AST-lifetime memory
  *
  * Putting all of this together would look something like:
  *
  * ```c
  * void parse(const uint8_t *source, size_t length) {
- *     pm_arena_t arena = { 0 };
- *     pm_parser_t *parser = pm_parser_new(&arena, source, length, NULL);
+ *     pm_arena_t *arena = pm_arena_new();
+ *     pm_parser_t *parser = pm_parser_new(arena, source, length, NULL);
  *
  *     pm_node_t *root = pm_parse(parser);
  *     printf("PARSED!\n");
  *
  *     pm_parser_free(parser);
- *     pm_arena_cleanup(&arena);
+ *     pm_arena_free(arena);
  * }
  * ```
  *
@@ -315,8 +315,8 @@ PRISM_EXPORTED_FUNCTION void pm_dump_json(pm_buffer_t *buffer, const pm_parser_t
  *
  * ```c
  * void prettyprint(const uint8_t *source, size_t length) {
- *     pm_arena_t arena = { 0 };
- *     pm_parser_t *parser = pm_parser_new(&arena, source, length, NULL);
+ *     pm_arena_t *arena = pm_arena_new();
+ *     pm_parser_t *parser = pm_parser_new(arena, source, length, NULL);
  *
  *     pm_node_t *root = pm_parse(parser);
  *     pm_buffer_t *buffer = pm_buffer_new();
@@ -326,7 +326,7 @@ PRISM_EXPORTED_FUNCTION void pm_dump_json(pm_buffer_t *buffer, const pm_parser_t
  *
  *     pm_buffer_free(buffer);
  *     pm_parser_free(parser);
- *     pm_arena_cleanup(&arena);
+ *     pm_arena_free(arena);
  * }
  * ```
  */
