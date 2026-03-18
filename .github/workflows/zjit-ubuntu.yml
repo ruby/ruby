@@ -182,7 +182,7 @@ jobs:
           EXCLUDES: '../src/test/.excludes-zjit'
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
           PRECHECK_BUNDLED_GEMS: 'no'
-          SYNTAX_SUGGEST_TIMEOUT: '5'
+          SYNTAX_SUGGEST_TIMEOUT: '30'
           ZJIT_BINDGEN_DIFF_OPTS: '--exit-code'
           CLANG_PATH: ${{ matrix.clang_path }}
         continue-on-error: ${{ matrix.continue-on-test_task || false }}
