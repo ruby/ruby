@@ -490,10 +490,11 @@ parser_comment(VALUE source, bool freeze, const pm_comment_t *comment) {
  */
 static VALUE
 parser_comments(const pm_parser_t *parser, VALUE source, bool freeze) {
-    VALUE comments = rb_ary_new_capa(parser->comment_list.size);
+    const pm_list_t *comments_list = pm_parser_comments(parser);
+    VALUE comments = rb_ary_new_capa(comments_list->size);
 
     for (
-        const pm_comment_t *comment = (const pm_comment_t *) parser->comment_list.head;
+        const pm_comment_t *comment = (const pm_comment_t *) comments_list->head;
         comment != NULL;
         comment = (const pm_comment_t *) comment->node.next
     ) {
@@ -521,10 +522,11 @@ parser_magic_comment(VALUE source, bool freeze, const pm_magic_comment_t *magic_
  */
 static VALUE
 parser_magic_comments(const pm_parser_t *parser, VALUE source, bool freeze) {
-    VALUE magic_comments = rb_ary_new_capa(parser->magic_comment_list.size);
+    const pm_list_t *magic_comments_list = pm_parser_magic_comments(parser);
+    VALUE magic_comments = rb_ary_new_capa(magic_comments_list->size);
 
     for (
-        const pm_magic_comment_t *magic_comment = (const pm_magic_comment_t *) parser->magic_comment_list.head;
+        const pm_magic_comment_t *magic_comment = (const pm_magic_comment_t *) magic_comments_list->head;
         magic_comment != NULL;
         magic_comment = (const pm_magic_comment_t *) magic_comment->node.next
     ) {
@@ -542,10 +544,12 @@ parser_magic_comments(const pm_parser_t *parser, VALUE source, bool freeze) {
  */
 static VALUE
 parser_data_loc(const pm_parser_t *parser, VALUE source, bool freeze) {
-    if (parser->data_loc.length == 0) {
+    const pm_location_t *data_loc = pm_parser_data_loc(parser);
+
+    if (data_loc->length == 0) {
         return Qnil;
     } else {
-        return parser_location(source, freeze, parser->data_loc.start, parser->data_loc.length);
+        return parser_location(source, freeze, data_loc->start, data_loc->length);
     }
 }
 
@@ -554,10 +558,11 @@ parser_data_loc(const pm_parser_t *parser, VALUE source, bool freeze) {
  */
 static VALUE
 parser_errors(const pm_parser_t *parser, rb_encoding *encoding, VALUE source, bool freeze) {
-    VALUE errors = rb_ary_new_capa(parser->error_list.size);
+    const pm_list_t *error_list = pm_parser_errors(parser);
+    VALUE errors = rb_ary_new_capa(error_list->size);
 
     for (
-        const pm_diagnostic_t *error = (const pm_diagnostic_t *) parser->error_list.head;
+        const pm_diagnostic_t *error = (const pm_diagnostic_t *) error_list->head;
         error != NULL;
         error = (const pm_diagnostic_t *) error->node.next
     ) {
@@ -594,10 +599,11 @@ parser_errors(const pm_parser_t *parser, rb_encoding *encoding, VALUE source, bo
  */
 static VALUE
 parser_warnings(const pm_parser_t *parser, rb_encoding *encoding, VALUE source, bool freeze) {
-    VALUE warnings = rb_ary_new_capa(parser->warning_list.size);
+    const pm_list_t *warning_list = pm_parser_warnings(parser);
+    VALUE warnings = rb_ary_new_capa(warning_list->size);
 
     for (
-        const pm_diagnostic_t *warning = (const pm_diagnostic_t *) parser->warning_list.head;
+        const pm_diagnostic_t *warning = (const pm_diagnostic_t *) warning_list->head;
         warning != NULL;
         warning = (const pm_diagnostic_t *) warning->node.next
     ) {
@@ -638,7 +644,7 @@ parse_result_create(VALUE class, const pm_parser_t *parser, VALUE value, rb_enco
         parser_data_loc(parser, source, freeze),
         parser_errors(parser, encoding, source, freeze),
         parser_warnings(parser, encoding, source, freeze),
-        parser->continuable ? Qtrue : Qfalse,
+        pm_parser_continuable(parser) ? Qtrue : Qfalse,
         source
     };
 
@@ -667,11 +673,11 @@ typedef struct {
  * onto the tokens array.
  */
 static void
-parse_lex_token(void *data, pm_parser_t *parser, pm_token_t *token) {
-    parse_lex_data_t *parse_lex_data = (parse_lex_data_t *) parser->lex_callback->data;
+parse_lex_token(pm_parser_t *parser, pm_token_t *token, void *data) {
+    parse_lex_data_t *parse_lex_data = (parse_lex_data_t *) data;
 
     VALUE value = pm_token_new(parser, token, parse_lex_data->encoding, parse_lex_data->source, parse_lex_data->freeze);
-    VALUE yields = rb_assoc_new(value, INT2FIX(parser->lex_state));
+    VALUE yields = rb_assoc_new(value, INT2FIX(pm_parser_lex_state(parser)));
 
     if (parse_lex_data->freeze) {
         rb_obj_freeze(value);
@@ -688,7 +694,7 @@ parse_lex_token(void *data, pm_parser_t *parser, pm_token_t *token) {
  */
 static void
 parse_lex_encoding_changed_callback(pm_parser_t *parser) {
-    parse_lex_data_t *parse_lex_data = (parse_lex_data_t *) parser->lex_callback->data;
+    parse_lex_data_t *parse_lex_data = (parse_lex_data_t *) pm_parser_lex_callback_data(parser);
     parse_lex_data->encoding = rb_enc_find(pm_parser_encoding_name(parser));
 
     // Since the encoding changed, we need to go back and change the encoding of
@@ -737,11 +743,11 @@ static VALUE
 parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nodes) {
     pm_arena_t arena = { 0 };
     pm_parser_t *parser = pm_parser_new(&arena, pm_string_source(input), pm_string_length(input), options);
-    pm_parser_register_encoding_changed_callback(parser, parse_lex_encoding_changed_callback);
+    pm_parser_encoding_changed_callback_set(parser, parse_lex_encoding_changed_callback);
 
     VALUE source_string = rb_str_new((const char *) pm_string_source(input), pm_string_length(input));
-    VALUE offsets = rb_ary_new_capa(parser->line_offsets.size);
-    VALUE source = rb_funcall(rb_cPrismSource, rb_id_source_for, 3, source_string, LONG2NUM(parser->start_line), offsets);
+    VALUE offsets = rb_ary_new_capa(pm_parser_line_offsets(parser)->size);
+    VALUE source = rb_funcall(rb_cPrismSource, rb_id_source_for, 3, source_string, LONG2NUM(pm_parser_start_line(parser)), offsets);
 
     parse_lex_data_t parse_lex_data = {
         .source = source,
@@ -751,12 +757,8 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
     };
 
     parse_lex_data_t *data = &parse_lex_data;
-    pm_lex_callback_t lex_callback = (pm_lex_callback_t) {
-        .data = (void *) data,
-        .callback = parse_lex_token,
-    };
+    pm_parser_lex_callback_set(parser, parse_lex_token, data);
 
-    parser->lex_callback = &lex_callback;
     pm_node_t *node = pm_parse(parser);
 
     // Here we need to update the Source object to have the correct
@@ -766,8 +768,9 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
     rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(parser));
     rb_enc_associate(source_string, encoding);
 
-    for (size_t index = 0; index < parser->line_offsets.size; index++) {
-        rb_ary_push(offsets, ULONG2NUM(parser->line_offsets.offsets[index]));
+    const pm_line_offset_list_t *line_offsets = pm_parser_line_offsets(parser);
+    for (size_t index = 0; index < line_offsets->size; index++) {
+        rb_ary_push(offsets, ULONG2NUM(line_offsets->offsets[index]));
     }
 
     if (pm_options_freeze_get(options)) {
@@ -1216,7 +1219,7 @@ parse_input_success_p(pm_string_t *input, const pm_options_t *options) {
 
     pm_parse(parser);
 
-    VALUE result = parser->error_list.size == 0 ? Qtrue : Qfalse;
+    VALUE result = pm_parser_errors(parser)->size == 0 ? Qtrue : Qfalse;
     pm_parser_free(parser);
     pm_arena_free(&arena);
 

@@ -7,6 +7,7 @@
 #include "prism/internal/bit.h"
 #include "prism/internal/diagnostic.h"
 #include "prism/internal/encoding.h"
+#include "prism/internal/parser.h"
 
 #include <assert.h>
 #include <stdbool.h>

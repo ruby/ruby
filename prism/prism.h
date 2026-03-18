@@ -13,6 +13,7 @@ extern "C" {
 #include "prism/arena.h"
 #include "prism/ast.h"
 #include "prism/diagnostic.h"
+#include "prism/encoding.h"
 #include "prism/excludes.h"
 #include "prism/node.h"
 #include "prism/options.h"
@@ -58,17 +59,6 @@ PRISM_EXPORTED_FUNCTION void pm_parser_init(pm_arena_t *arena, pm_parser_t *pars
  * \public \memberof pm_parser
  */
 PRISM_EXPORTED_FUNCTION pm_parser_t * pm_parser_new(pm_arena_t *arena, const uint8_t *source, size_t size, const pm_options_t *options);
-
-/**
- * Register a callback that will be called whenever prism changes the encoding
- * it is using to parse based on the magic comment.
- *
- * @param parser The parser to register the callback with.
- * @param callback The callback to register.
- *
- * \public \memberof pm_parser
- */
-PRISM_EXPORTED_FUNCTION void pm_parser_register_encoding_changed_callback(pm_parser_t *parser, pm_encoding_changed_callback_t callback);
 
 /**
  * Free the memory held by the given parser.

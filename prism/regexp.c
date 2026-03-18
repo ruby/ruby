@@ -7,6 +7,7 @@
 #include "prism/internal/diagnostic.h"
 #include "prism/internal/encoding.h"
 #include "prism/internal/memchr.h"
+#include "prism/internal/parser.h"
 #include "prism/internal/strings.h"
 #include "prism/internal/strncasecmp.h"
 

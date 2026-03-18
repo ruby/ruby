@@ -19,6 +19,7 @@
 #include "prism/internal/memchr.h"
 #include "prism/internal/node.h"
 #include "prism/internal/options.h"
+#include "prism/internal/parser.h"
 #include "prism/internal/regexp.h"
 #include "prism/internal/static_literals.h"
 #include "prism/internal/strings.h"
@@ -9519,8 +9520,8 @@ lex_at_variable(pm_parser_t *parser) {
  */
 static PRISM_INLINE void
 parser_lex_callback(pm_parser_t *parser) {
-    if (parser->lex_callback) {
-        parser->lex_callback->callback(parser->lex_callback->data, parser, &parser->current);
+    if (parser->lex_callback.callback) {
+        parser->lex_callback.callback(parser, &parser->current, parser->lex_callback.data);
     }
 }
 
@@ -22489,15 +22490,6 @@ pm_parser_new(pm_arena_t *arena, const uint8_t *source, size_t size, const pm_op
 
     pm_parser_init(arena, parser, source, size, options);
     return parser;
-}
-
-/**
- * Register a callback that will be called whenever prism changes the encoding
- * it is using to parse based on the magic comment.
- */
-void
-pm_parser_register_encoding_changed_callback(pm_parser_t *parser, pm_encoding_changed_callback_t callback) {
-    parser->encoding_changed_callback = callback;
 }
 
 /**
