@@ -8,12 +8,12 @@
 
 #include "prism/compiler/accel.h"
 
+#include "prism/internal/arena.h"
 #include "prism/internal/encoding.h"
 #include "prism/internal/list.h"
 #include "prism/internal/options.h"
 #include "prism/internal/static_literals.h"
 
-#include "prism/arena.h"
 #include "prism/ast.h"
 #include "prism/line_offset_list.h"
 #include "prism/parser.h"

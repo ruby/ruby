@@ -7,48 +7,29 @@
 #define PRISM_ARENA_H
 
 #include "prism/compiler/exported.h"
-#include "prism/compiler/flex_array.h"
-#include "prism/compiler/force_inline.h"
 
 #include <stddef.h>
 
 /**
- * A single block of memory in the arena. Blocks are linked via prev pointers so
- * they can be freed by walking the chain.
+ * An opaque pointer to an arena that is used for allocations.
  */
-typedef struct pm_arena_block {
-    /** The previous block in the chain (for freeing). */
-    struct pm_arena_block *prev;
-
-    /** The total usable bytes in data[]. */
-    size_t capacity;
-
-    /** The number of bytes consumed so far. */
-    size_t used;
-
-    /** The block's data. */
-    char data[PM_FLEX_ARRAY_LENGTH];
-} pm_arena_block_t;
+typedef struct pm_arena_t pm_arena_t;
 
 /**
- * A bump allocator. Allocations are made by bumping a pointer within the
- * current block. When a block is full, a new block is allocated and linked to
- * the previous one. All blocks are freed at once by walking the chain.
- */
-typedef struct {
-    /** The active block (allocate from here). */
-    pm_arena_block_t *current;
-
-    /** The number of blocks allocated. */
-    size_t block_count;
-} pm_arena_t;
-
-/**
- * Free all blocks in the arena. After this call, all pointers returned by
- * pm_arena_alloc and pm_arena_zalloc are invalid.
+ * Returns a newly allocated and initialized arena. If the arena cannot be
+ * allocated, this function aborts the process.
  *
- * @param arena The arena whose held memory should be freed.
+ * @return A pointer to the newly allocated arena. It is the responsibility of
+ *     the caller to free the arena using pm_arena_free when it is no longer
+ *     needed.
  */
-PRISM_EXPORTED_FUNCTION void pm_arena_cleanup(pm_arena_t *arena);
+PRISM_EXPORTED_FUNCTION pm_arena_t * pm_arena_new(void);
+
+/**
+ * Frees both the held memory and the arena itself.
+ *
+ * @param arena The arena to free.
+ */
+PRISM_EXPORTED_FUNCTION void pm_arena_free(pm_arena_t *arena);
 
 #endif

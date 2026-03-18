@@ -1,4 +1,4 @@
-#include "prism/arena.h"
+#include "prism/internal/arena.h"
 
 #include "prism/internal/allocator.h"
 
@@ -82,6 +82,16 @@ pm_arena_alloc_slow(pm_arena_t *arena, size_t size) {
 }
 
 /**
+ * Returns a newly allocated and initialized arena.
+ */
+pm_arena_t *
+pm_arena_new(void) {
+    pm_arena_t *arena = (pm_arena_t *) xcalloc(1, sizeof(pm_arena_t));
+    if (arena == NULL) abort();
+    return arena;
+}
+
+/**
  * Free all blocks in the arena.
  */
 void
@@ -95,4 +105,13 @@ pm_arena_cleanup(pm_arena_t *arena) {
     }
 
     *arena = (pm_arena_t) { 0 };
+}
+
+/**
+ * Frees both the held memory and the arena itself.
+ */
+void
+pm_arena_free(pm_arena_t *arena) {
+    pm_arena_cleanup(arena);
+    xfree(arena);   
 }
