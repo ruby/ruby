@@ -8,6 +8,7 @@
 
 #include "prism/ast.h"
 #include "prism/comments.h"
+#include "prism/diagnostic.h"
 #include "prism/line_offset_list.h"
 #include "prism/list.h"
 
@@ -108,22 +109,6 @@ PRISM_EXPORTED_FUNCTION int32_t pm_parser_start_line(const pm_parser_t *parser);
 PRISM_EXPORTED_FUNCTION const char * pm_parser_encoding_name(const pm_parser_t *parser);
 
 /**
- * Returns the errors that are associated with the given parser.
- *
- * @param parser the parser whose errors we want to get
- * @return the errors that are associated with the given parser
- */
-PRISM_EXPORTED_FUNCTION const pm_list_t * pm_parser_errors(const pm_parser_t *parser);
-
-/**
- * Returns the warnings that are associated with the given parser.
- *
- * @param parser the parser whose warnings we want to get
- * @return the warnings that are associated with the given parser
- */
-PRISM_EXPORTED_FUNCTION const pm_list_t * pm_parser_warnings(const pm_parser_t *parser);
-
-/**
  * Returns the magic comments that are associated with the given parser.
  *
  * @param parser the parser whose magic comments we want to get
@@ -190,5 +175,33 @@ PRISM_EXPORTED_FUNCTION int pm_parser_lex_state(const pm_parser_t *parser);
  * \public \memberof pm_parser
  */
 PRISM_EXPORTED_FUNCTION pm_comments_iter_t * pm_parser_comments(const pm_parser_t *parser);
+
+/**
+ * Returns an iterator that knows how to iterate over the errors that are
+ * associated with the given parser.
+ *
+ * @param parser the parser whose errors we want to get
+ * @return the iterator that knows how to iterate over the errors that are
+ *     associated with the given parser. It is the responsibility of the caller
+ *     to free the memory associated with the iterator through
+ *     pm_diagnostics_iter_free.
+ *
+ * \public \memberof pm_parser
+ */
+PRISM_EXPORTED_FUNCTION pm_diagnostics_iter_t * pm_parser_errors(const pm_parser_t *parser);
+
+/**
+ * Returns an iterator that knows how to iterate over the warnings that are
+ * associated with the given parser.
+ *
+ * @param parser the parser whose warnings we want to get
+ * @return the iterator that knows how to iterate over the warnings that are
+ *     associated with the given parser. It is the responsibility of the caller
+ *     to free the memory associated with the iterator through
+ *     pm_diagnostics_iter_free.
+ *
+ * \public \memberof pm_parser
+ */
+PRISM_EXPORTED_FUNCTION pm_diagnostics_iter_t * pm_parser_warnings(const pm_parser_t *parser);
 
 #endif

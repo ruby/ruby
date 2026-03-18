@@ -1,6 +1,8 @@
-#include "prism/diagnostic.h"
+#include "prism/internal/diagnostic.h"
 
 #include "prism/compiler/inline.h"
+
+#include "prism/internal/allocator.h"
 #include "prism/internal/arena.h"
 #include "prism/internal/list.h"
 
@@ -8,6 +10,7 @@
 #include <inttypes.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #define PM_DIAGNOSTIC_ID_MAX <%= errors.length + warnings.length %>
 
@@ -425,8 +428,8 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
 /**
  * Get the human-readable name of the given diagnostic ID.
  */
-const char *
-pm_diagnostic_id_str(pm_diagnostic_id_t diag_id) {
+static const char *
+pm_diagnostic_id_name(pm_diagnostic_id_t diag_id) {
     switch (diag_id) {
         <%- errors.each do |error| -%>
         case PM_ERR_<%= error.name %>: return "<%= error.name.downcase %>";
@@ -441,7 +444,7 @@ pm_diagnostic_id_str(pm_diagnostic_id_t diag_id) {
 }
 
 static PRISM_INLINE const char *
-pm_diagnostic_message(pm_diagnostic_id_t diag_id) {
+pm_diagnostic_id_message(pm_diagnostic_id_t diag_id) {
     assert(diag_id < PM_DIAGNOSTIC_ID_MAX);
 
     const char *message = diagnostic_messages[diag_id].message;
@@ -451,10 +454,50 @@ pm_diagnostic_message(pm_diagnostic_id_t diag_id) {
 }
 
 static PRISM_INLINE uint8_t
-pm_diagnostic_level(pm_diagnostic_id_t diag_id) {
+pm_diagnostic_id_level(pm_diagnostic_id_t diag_id) {
     assert(diag_id < PM_DIAGNOSTIC_ID_MAX);
 
     return (uint8_t) diagnostic_messages[diag_id].level;
+}
+
+/**
+ * Get the type of the given diagnostic.
+ */
+const char *
+pm_diagnostic_type(const pm_diagnostic_t *diagnostic) {
+    return pm_diagnostic_id_name(diagnostic->diag_id);
+}
+
+/**
+ * Get the location of the given diagnostic.
+ */
+pm_location_t
+pm_diagnostic_location(const pm_diagnostic_t *diagnostic) {
+    return diagnostic->location;
+}
+
+/**
+ * Get the message of the given diagnostic.
+ */
+const char *
+pm_diagnostic_message(const pm_diagnostic_t *diagnostic) {
+    return diagnostic->message;
+}
+
+/**
+ * Get the error level associated with the given diagnostic.
+ */
+pm_error_level_t
+pm_diagnostic_error_level(const pm_diagnostic_t *diagnostic) {
+    return (pm_error_level_t) pm_diagnostic_id_level(diagnostic->diag_id);
+}
+
+/**
+ * Get the warning level associated with the given diagnostic.
+ */
+pm_warning_level_t
+pm_diagnostic_warning_level(const pm_diagnostic_t *diagnostic) {
+    return (pm_warning_level_t) pm_diagnostic_id_level(diagnostic->diag_id);
 }
 
 /**
@@ -467,8 +510,8 @@ pm_diagnostic_list_append(pm_arena_t *arena, pm_list_t *list, uint32_t start, ui
     *diagnostic = (pm_diagnostic_t) {
         .location = { .start = start, .length = length },
         .diag_id = diag_id,
-        .message = pm_diagnostic_message(diag_id),
-        .level = pm_diagnostic_level(diag_id)
+        .message = pm_diagnostic_id_message(diag_id),
+        .level = pm_diagnostic_id_level(diag_id)
     };
 
     pm_list_append(list, (pm_list_node_t *) diagnostic);
@@ -483,7 +526,7 @@ pm_diagnostic_list_append_format(pm_arena_t *arena, pm_list_t *list, uint32_t st
     va_list arguments;
     va_start(arguments, diag_id);
 
-    const char *format = pm_diagnostic_message(diag_id);
+    const char *format = pm_diagnostic_id_message(diag_id);
     int result = vsnprintf(NULL, 0, format, arguments);
     va_end(arguments);
 
@@ -504,9 +547,36 @@ pm_diagnostic_list_append_format(pm_arena_t *arena, pm_list_t *list, uint32_t st
         .location = { .start = start, .length = length },
         .diag_id = diag_id,
         .message = message,
-        .level = pm_diagnostic_level(diag_id)
+        .level = pm_diagnostic_id_level(diag_id)
     };
 
     pm_list_append(list, (pm_list_node_t *) diagnostic);
 }
 
+/**
+ * Returns the number of diagnostics associated with the diagnostics iterator.
+ */
+size_t
+pm_diagnostics_iter_size(const pm_diagnostics_iter_t *iter) {
+    return iter->size;
+}
+
+/**
+ * Returns the next diagnostic in the iteration, or NULL if there are no more
+ * diagnostics.
+ */
+const pm_diagnostic_t *
+pm_diagnostics_iter_next(pm_diagnostics_iter_t *iter) {
+    if (iter->current == NULL) return NULL;
+    const pm_diagnostic_t *diagnostic = (const pm_diagnostic_t *) iter->current;
+    iter->current = iter->current->next;
+    return diagnostic;
+}
+
+/**
+ * Frees the memory associated with the given diagnostics iterator.
+ */
+void
+pm_diagnostics_iter_free(pm_diagnostics_iter_t *iter) {
+    xfree(iter);
+}

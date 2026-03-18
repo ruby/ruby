@@ -684,8 +684,8 @@ module Prism
     TEMPLATES = [
       "ext/prism/api_node.c",
       "include/prism/ast.h",
-      "include/prism/diagnostic.h",
       "include/prism/node_new.h",
+      "include/prism/internal/diagnostic.h",
       "javascript/src/deserialize.js",
       "javascript/src/nodes.js",
       "javascript/src/visitor.js",

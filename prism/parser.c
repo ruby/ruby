@@ -2,6 +2,7 @@
 
 #include "prism/internal/allocator.h"
 #include "prism/internal/comments.h"
+#include "prism/internal/diagnostic.h"
 #include "prism/internal/encoding.h"
 
 #include <stdlib.h>
@@ -65,22 +66,6 @@ pm_parser_start_line(const pm_parser_t *parser) {
 const char *
 pm_parser_encoding_name(const pm_parser_t *parser) {
     return parser->encoding->name;
-}
-
-/**
- * Returns the errors that are associated with the given parser.
- */
-const pm_list_t *
-pm_parser_errors(const pm_parser_t *parser) {
-    return &parser->error_list;
-}
-
-/**
- * Returns the warnings that are associated with the given parser.
- */
-const pm_list_t *
-pm_parser_warnings(const pm_parser_t *parser) {
-    return &parser->warning_list;
 }
 
 /**
@@ -148,5 +133,29 @@ pm_parser_comments(const pm_parser_t *parser) {
     pm_comments_iter_t *iter = (pm_comments_iter_t *) xmalloc(sizeof(pm_comments_iter_t));
     iter->size = parser->comment_list.size;
     iter->current = parser->comment_list.head;
+    return iter;
+}
+
+/**
+ * Returns an iterator that knows how to iterate over the errors that are
+ * associated with the given parser.
+ */
+pm_diagnostics_iter_t *
+pm_parser_errors(const pm_parser_t *parser) {
+    pm_diagnostics_iter_t *iter = (pm_diagnostics_iter_t *) xmalloc(sizeof(pm_diagnostics_iter_t));
+    iter->size = parser->error_list.size;
+    iter->current = parser->error_list.head;
+    return iter;
+}
+
+/**
+ * Returns an iterator that knows how to iterate over the warnings that are
+ * associated with the given parser.
+ */
+pm_diagnostics_iter_t *
+pm_parser_warnings(const pm_parser_t *parser) {
+    pm_diagnostics_iter_t *iter = (pm_diagnostics_iter_t *) xmalloc(sizeof(pm_diagnostics_iter_t));
+    iter->size = parser->warning_list.size;
+    iter->current = parser->warning_list.head;
     return iter;
 }
