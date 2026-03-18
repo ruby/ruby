@@ -344,3 +344,17 @@ pm_constant_pool_insert_constant(pm_arena_t *arena, pm_constant_pool_t *pool, co
     return pm_constant_pool_insert(arena, pool, start, length, PM_CONSTANT_POOL_BUCKET_CONSTANT);
 }
 
+/**
+ * Return a raw pointer to the start of a constant.
+ */
+const uint8_t *
+pm_constant_start(const pm_constant_t *constant) {
+    return constant->start;
+}
+
+/**
+ * Return the length of a constant.
+ */
+size_t pm_constant_length(const pm_constant_t *constant) {
+    return constant->length;
+}

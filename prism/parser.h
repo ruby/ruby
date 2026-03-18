@@ -100,14 +100,6 @@ PRISM_EXPORTED_FUNCTION const char * pm_parser_encoding_name(const pm_parser_t *
 PRISM_EXPORTED_FUNCTION const pm_line_offset_list_t * pm_parser_line_offsets(const pm_parser_t *parser);
 
 /**
- * Returns the constant pool associated with the given parser.
- *
- * @param parser the parser whose constant pool we want to get
- * @return the constant pool associated with the given parser
- */
-PRISM_EXPORTED_FUNCTION const pm_constant_pool_t * pm_parser_constant_pool(const pm_parser_t *parser);
-
-/**
  * Returns the location of the __DATA__ section that is associated with the
  * given parser.
  *
@@ -236,5 +228,35 @@ PRISM_EXPORTED_FUNCTION void pm_parser_errors_each(const pm_parser_t *parser, pm
  *     can be NULL if no data needs to be passed to the callback function.
  */
 PRISM_EXPORTED_FUNCTION void pm_parser_warnings_each(const pm_parser_t *parser, pm_diagnostic_callback_t callback, void *data);
+
+/**
+ * Returns the number of constants in the constant pool associated with the
+ * given parser.
+ *
+ * @param parser the parser whose constant pool constants we want to get the
+ *     size of
+ * @return the number of constants in the constant pool associated with the
+ *     given parser
+ */
+PRISM_EXPORTED_FUNCTION size_t pm_parser_constants_size(const pm_parser_t *parser);
+
+/**
+ * A callback function that can be used to process constants found while
+ * parsing.
+ */
+typedef void (*pm_constant_callback_t)(const pm_constant_t *constant, void *data);
+
+/**
+ * Iterates over the constants in the constant pool associated with the given
+ * parser and calls the given callback for each constant.
+ *
+ * @param parser the parser whose constants we want to iterate over
+ * @param callback the callback function to call for each constant. This function
+ *     will be passed a pointer to the constant and the data parameter passed to
+ *     this function.
+ * @param data the data to pass to the callback function for each constant. This
+ *     can be NULL if no data needs to be passed to the callback function.
+ */
+PRISM_EXPORTED_FUNCTION void pm_parser_constants_each(const pm_parser_t *parser, pm_constant_callback_t callback, void *data);
 
 #endif

@@ -122,25 +122,32 @@ pm_node_stack_pop(pm_node_stack_node_t **stack) {
     return visit;
 }
 
+typedef struct {
+    VALUE constants;
+    rb_encoding *encoding;
+} pm_ast_constants_each_data_t;
+
+static void
+pm_ast_constants_each(const pm_constant_t *constant, void *data) {
+    pm_ast_constants_each_data_t *constants_data = (pm_ast_constants_each_data_t *) data;
+    int state = 0;
+
+    VALUE string = rb_enc_str_new((const char *) pm_constant_start(constant), pm_constant_length(constant), constants_data->encoding);
+    VALUE value = rb_protect(rb_str_intern, string, &state);
+
+    if (state != 0) {
+        value = ID2SYM(rb_intern_const("?"));
+        rb_set_errinfo(Qnil);
+    }
+
+    rb_ary_push(constants_data->constants, value);
+}
+
 VALUE
 pm_ast_new(const pm_parser_t *parser, const pm_node_t *node, rb_encoding *encoding, VALUE source, bool freeze) {
-    const pm_constant_pool_t *constant_pool = pm_parser_constant_pool(parser);
-    VALUE constants = rb_ary_new_capa(constant_pool->size);
-
-    for (uint32_t index = 0; index < constant_pool->size; index++) {
-        pm_constant_t *constant = &constant_pool->constants[index];
-        int state = 0;
-
-        VALUE string = rb_enc_str_new((const char *) constant->start, constant->length, encoding);
-        VALUE value = rb_protect(rb_str_intern, string, &state);
-
-        if (state != 0) {
-            value = ID2SYM(rb_intern_const("?"));
-            rb_set_errinfo(Qnil);
-        }
-
-        rb_ary_push(constants, value);
-    }
+    VALUE constants = rb_ary_new_capa(pm_parser_constants_size(parser));
+    pm_ast_constants_each_data_t constants_data = { .constants = constants, .encoding = encoding };
+    pm_parser_constants_each(parser, pm_ast_constants_each, &constants_data);
 
     pm_node_stack_node_t *node_stack = NULL;
     pm_node_stack_push(&node_stack, node);
