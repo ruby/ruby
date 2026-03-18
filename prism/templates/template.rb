@@ -53,7 +53,7 @@ module Prism
     module Doxygen
       # Similar to /verbatim ... /endverbatim but doesn't wrap the result in a code block.
       def self.verbatim(value)
-        value.gsub(/[\.*%!`#<>_+-]/, '\\\\\0')
+        value.gsub(/[*%!`#<>_+@-]/, '\\\\\0')
       end
     end
 

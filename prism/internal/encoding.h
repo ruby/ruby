@@ -1,8 +1,3 @@
-/**
- * @file internal/encoding.h
- *
- * The encoding interface and implementations used by the parser.
- */
 #ifndef PRISM_INTERNAL_ENCODING_H
 #define PRISM_INTERNAL_ENCODING_H
 
@@ -10,115 +5,91 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/**
+/*
  * This struct defines the functions necessary to implement the encoding
  * interface so we can determine how many bytes the subsequent character takes.
  * Each callback should return the number of bytes, or 0 if the next bytes are
  * invalid for the encoding and type.
  */
 typedef struct {
-    /**
+    /*
      * Return the number of bytes that the next character takes if it is valid
      * in the encoding. Does not read more than n bytes. It is assumed that n is
      * at least 1.
      */
     size_t (*char_width)(const uint8_t *b, ptrdiff_t n);
 
-    /**
+    /*
      * Return the number of bytes that the next character takes if it is valid
      * in the encoding and is alphabetical. Does not read more than n bytes. It
      * is assumed that n is at least 1.
      */
     size_t (*alpha_char)(const uint8_t *b, ptrdiff_t n);
 
-    /**
+    /*
      * Return the number of bytes that the next character takes if it is valid
      * in the encoding and is alphanumeric. Does not read more than n bytes. It
      * is assumed that n is at least 1.
      */
     size_t (*alnum_char)(const uint8_t *b, ptrdiff_t n);
 
-    /**
+    /*
      * Return true if the next character is valid in the encoding and is an
      * uppercase character. Does not read more than n bytes. It is assumed that
      * n is at least 1.
      */
     bool (*isupper_char)(const uint8_t *b, ptrdiff_t n);
 
-    /**
+    /*
      * The name of the encoding. This should correspond to a value that can be
      * passed to Encoding.find in Ruby.
      */
     const char *name;
 
-    /**
-     * Return true if the encoding is a multibyte encoding.
-     */
+    /* Return true if the encoding is a multibyte encoding. */
     bool multibyte;
 } pm_encoding_t;
 
-/**
+/*
  * All of the lookup tables use the first bit of each embedded byte to indicate
  * whether the codepoint is alphabetical.
  */
 #define PRISM_ENCODING_ALPHABETIC_BIT 1 << 0
 
-/**
+/*
  * All of the lookup tables use the second bit of each embedded byte to indicate
  * whether the codepoint is alphanumeric.
  */
 #define PRISM_ENCODING_ALPHANUMERIC_BIT 1 << 1
 
-/**
+/*
  * All of the lookup tables use the third bit of each embedded byte to indicate
  * whether the codepoint is uppercase.
  */
 #define PRISM_ENCODING_UPPERCASE_BIT 1 << 2
 
-/**
- * Return the size of the next character in the UTF-8 encoding.
- *
- * @param b The bytes to read.
- * @param n The number of bytes that can be read.
- * @returns The number of bytes that the next character takes if it is valid in
- *     the encoding, or 0 if it is not.
- */
+/* Return the size of the next character in the UTF-8 encoding. */
 size_t pm_encoding_utf_8_char_width(const uint8_t *b, ptrdiff_t n);
 
-/**
+/*
  * Return the size of the next character in the UTF-8 encoding if it is an
  * alphabetical character.
- *
- * @param b The bytes to read.
- * @param n The number of bytes that can be read.
- * @returns The number of bytes that the next character takes if it is valid in
- *     the encoding, or 0 if it is not.
  */
 size_t pm_encoding_utf_8_alpha_char(const uint8_t *b, ptrdiff_t n);
 
-/**
+/*
  * Return the size of the next character in the UTF-8 encoding if it is an
  * alphanumeric character.
- *
- * @param b The bytes to read.
- * @param n The number of bytes that can be read.
- * @returns The number of bytes that the next character takes if it is valid in
- *     the encoding, or 0 if it is not.
  */
 size_t pm_encoding_utf_8_alnum_char(const uint8_t *b, ptrdiff_t n);
 
-/**
+/*
  * Return true if the next character in the UTF-8 encoding if it is an uppercase
  * character.
- *
- * @param b The bytes to read.
- * @param n The number of bytes that can be read.
- * @returns True if the next character is valid in the encoding and is an
- *     uppercase character, or false if it is not.
  */
 bool pm_encoding_utf_8_isupper_char(const uint8_t *b, ptrdiff_t n);
 
-/**
+/*
  * This lookup table is referenced in both the UTF-8 encoding file and the
  * parser directly in order to speed up the default encoding processing. It is
  * used to indicate whether a character is alphabetical, alphanumeric, or
@@ -126,9 +97,7 @@ bool pm_encoding_utf_8_isupper_char(const uint8_t *b, ptrdiff_t n);
  */
 extern const uint8_t pm_encoding_unicode_table[256];
 
-/**
- * These are all of the encodings that prism supports.
- */
+/* These are all of the encodings that prism supports. */
 typedef enum {
     PM_ENCODING_UTF_8 = 0,
     PM_ENCODING_US_ASCII,
@@ -229,50 +198,44 @@ typedef enum {
     PM_ENCODING_MAXIMUM
 } pm_encoding_type_t;
 
-/**
- * This is the table of all of the encodings that prism supports.
- */
+/* This is the table of all of the encodings that prism supports. */
 extern const pm_encoding_t pm_encodings[PM_ENCODING_MAXIMUM];
 
-/**
+/*
  * This is the default UTF-8 encoding. We need a reference to it to quickly
  * create parsers.
  */
 #define PM_ENCODING_UTF_8_ENTRY (&pm_encodings[PM_ENCODING_UTF_8])
 
-/**
+/*
  * This is the US-ASCII encoding. We need a reference to it to be able to
  * compare against it when a string is being created because it could possibly
  * need to fall back to ASCII-8BIT.
  */
 #define PM_ENCODING_US_ASCII_ENTRY (&pm_encodings[PM_ENCODING_US_ASCII])
 
-/**
+/*
  * This is the ASCII-8BIT encoding. We need a reference to it so that pm_strpbrk
  * can compare against it because invalid multibyte characters are not a thing
  * in this encoding. It is also needed for handling Regexp encoding flags.
  */
 #define PM_ENCODING_ASCII_8BIT_ENTRY (&pm_encodings[PM_ENCODING_ASCII_8BIT])
 
-/**
+/*
  * This is the EUC-JP encoding. We need a reference to it to quickly process
  * regular expression modifiers.
  */
 #define PM_ENCODING_EUC_JP_ENTRY (&pm_encodings[PM_ENCODING_EUC_JP])
 
-/**
+/*
  * This is the Windows-31J encoding. We need a reference to it to quickly
  * process regular expression modifiers.
  */
 #define PM_ENCODING_WINDOWS_31J_ENTRY (&pm_encodings[PM_ENCODING_WINDOWS_31J])
 
-/**
+/*
  * Parse the given name of an encoding and return a pointer to the corresponding
  * encoding struct if one can be found, otherwise return NULL.
- *
- * @param start A pointer to the first byte of the name.
- * @param end A pointer to the last byte of the name.
- * @returns A pointer to the encoding struct if one is found, otherwise NULL.
  */
 const pm_encoding_t * pm_encoding_find(const uint8_t *start, const uint8_t *end);
 

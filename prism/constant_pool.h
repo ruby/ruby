@@ -39,14 +39,16 @@ typedef struct {
 /** A constant in the pool which effectively stores a string. */
 typedef struct pm_constant_t pm_constant_t;
 
-/** The overall constant pool, which stores constants found while parsing. */
+/**
+ * The overall constant pool, which stores constants found while parsing.
+ */
 typedef struct pm_constant_pool_t pm_constant_pool_t;
 
 /**
  * Return a raw pointer to the start of a constant.
  *
  * @param constant The constant to get the start of.
- * @return A raw pointer to the start of the constant.
+ * @returns A raw pointer to the start of the constant.
  */
 PRISM_EXPORTED_FUNCTION const uint8_t * pm_constant_start(const pm_constant_t *constant) PRISM_NONNULL(1);
 
@@ -54,7 +56,7 @@ PRISM_EXPORTED_FUNCTION const uint8_t * pm_constant_start(const pm_constant_t *c
  * Return the length of a constant.
  *
  * @param constant The constant to get the length of.
- * @return The length of the constant.
+ * @returns The length of the constant.
  */
 PRISM_EXPORTED_FUNCTION size_t pm_constant_length(const pm_constant_t *constant) PRISM_NONNULL(1);
 

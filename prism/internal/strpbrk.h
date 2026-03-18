@@ -1,8 +1,3 @@
-/**
- * @file internal/strpbrk.h
- *
- * A custom strpbrk implementation.
- */
 #ifndef PRISM_INTERNAL_STRPBRK_H
 #define PRISM_INTERNAL_STRPBRK_H
 
@@ -14,7 +9,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/**
+/*
  * Here we have rolled our own version of strpbrk. The standard library strpbrk
  * has undefined behavior when the source string is not null-terminated. We want
  * to support strings that are not null-terminated because pm_parse does not
@@ -32,15 +27,6 @@
  * characters that are trailing bytes of multi-byte characters. For example, in
  * Shift-JIS, the backslash character can be a trailing byte. In that case we
  * need to take a slower path and iterate one multi-byte character at a time.
- *
- * @param parser The parser.
- * @param source The source to search.
- * @param charset The charset to search for.
- * @param length The maximum number of bytes to search.
- * @param validate Whether to validate that the source string is valid in the
- *     current encoding of the parser.
- * @return A pointer to the first character in the source string that is in the
- *     charset, or NULL if no such character exists.
  */
 const uint8_t * pm_strpbrk(pm_parser_t *parser, const uint8_t *source, const uint8_t *charset, ptrdiff_t length, bool validate);
 
