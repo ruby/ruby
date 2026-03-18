@@ -490,7 +490,7 @@ parser_comment(VALUE source, bool freeze, const pm_comment_t *comment) {
  */
 static VALUE
 parser_comments(const pm_parser_t *parser, VALUE source, bool freeze) {
-    pm_comments_iter_t *comments_iter = pm_comments_iter(parser);
+    pm_comments_iter_t *comments_iter = pm_parser_comments(parser);
     VALUE comments = rb_ary_new_capa(pm_comments_iter_size(comments_iter));
 
     for (

@@ -1,4 +1,4 @@
-#include "prism/internal/comment.h"
+#include "prism/internal/comments.h"
 
 #include "prism/internal/allocator.h"
 #include "prism/internal/parser.h"
@@ -19,18 +19,6 @@ pm_comment_location(const pm_comment_t *comment) {
 pm_comment_type_t
 pm_comment_type(const pm_comment_t *comment) {
     return comment->type;
-}
-
-/**
- * Returns an iterator that knows how to iterate over the comments that are
- * associated with the given parser.
- */
-pm_comments_iter_t *
-pm_comments_iter(const pm_parser_t *parser) {
-    pm_comments_iter_t *iter = (pm_comments_iter_t *) xmalloc(sizeof(pm_comments_iter_t));
-    iter->size = parser->comment_list.size;
-    iter->current = parser->comment_list.head;
-    return iter;
 }
 
 /**

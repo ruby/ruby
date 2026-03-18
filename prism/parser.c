@@ -1,6 +1,7 @@
 #include "prism/internal/parser.h"
 
 #include "prism/internal/allocator.h"
+#include "prism/internal/comments.h"
 #include "prism/internal/encoding.h"
 
 #include <stdlib.h>
@@ -136,4 +137,16 @@ pm_parser_continuable(const pm_parser_t *parser) {
 int
 pm_parser_lex_state(const pm_parser_t *parser) {
     return (int) parser->lex_state;
+}
+
+/**
+ * Returns an iterator that knows how to iterate over the comments that are
+ * associated with the given parser.
+ */
+pm_comments_iter_t *
+pm_parser_comments(const pm_parser_t *parser) {
+    pm_comments_iter_t *iter = (pm_comments_iter_t *) xmalloc(sizeof(pm_comments_iter_t));
+    iter->size = parser->comment_list.size;
+    iter->current = parser->comment_list.head;
+    return iter;
 }

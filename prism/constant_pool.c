@@ -1,4 +1,4 @@
-#include "prism/constant_pool.h"
+#include "prism/internal/constant_pool.h"
 
 #include "prism/compiler/align.h"
 #include "prism/compiler/inline.h"

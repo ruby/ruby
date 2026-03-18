@@ -1,15 +1,12 @@
 /**
- * @file comment.h
- *
- * The comment module used to handle comments in Ruby source.
+ * @file comments.h
  */
-#ifndef PRISM_COMMENT_H
-#define PRISM_COMMENT_H
+#ifndef PRISM_COMMENTS_H
+#define PRISM_COMMENTS_H
 
 #include "prism/compiler/exported.h"
 
 #include "prism/ast.h"
-#include "prism/parser.h"
 
 #include <stddef.h>
 
@@ -42,20 +39,6 @@ PRISM_EXPORTED_FUNCTION pm_comment_type_t pm_comment_type(const pm_comment_t *co
 /* An opaque pointer to an iterator that can be used to iterate over the
  * comments associated with a parser. */
 typedef struct pm_comments_iter_t pm_comments_iter_t;
-
-/**
- * Returns an iterator that knows how to iterate over the comments that are
- * associated with the given parser.
- *
- * @param parser the parser whose comments we want to get
- * @return the iterator that knows how to iterate over the comments that are
- *     associated with the given parser. It is the responsibility of the caller
- *     to free the memory associated with the iterator through
- *     pm_comments_iter_free.
- *
- * \public \memberof pm_parser
- */
-PRISM_EXPORTED_FUNCTION pm_comments_iter_t * pm_comments_iter(const pm_parser_t *parser);
 
 /**
  * Returns the number of comments associated with the comment iterator.

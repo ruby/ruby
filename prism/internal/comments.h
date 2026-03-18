@@ -1,10 +1,12 @@
 /**
- * @file internal/comment.h
+ * @file internal/comments.h
  */
-#ifndef PRISM_INTERNAL_COMMENT_H
-#define PRISM_INTERNAL_COMMENT_H
+#ifndef PRISM_INTERNAL_COMMENTS_H
+#define PRISM_INTERNAL_COMMENTS_H
 
-#include "prism/comment.h"
+#include "prism/comments.h"
+
+#include "prism/list.h"
 
 /**
  * A comment found while parsing.
