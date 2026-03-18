@@ -25,33 +25,6 @@ extern "C" {
 #include "prism/version.h"
 
 /**
- * The prism version and the serialization format.
- *
- * @returns The prism version as a constant string.
- */
-PRISM_EXPORTED_FUNCTION const char * pm_version(void);
-
-/**
- * Initiate the parser with the given parser.
- *
- * @param parser The parser to use.
- * @return The AST representing the source.
- *
- * \public \memberof pm_parser
- */
-PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse(pm_parser_t *parser);
-
-/**
- * Parse the source and return true if it parses without errors or warnings.
- *
- * @param source The source to parse.
- * @param size The size of the source.
- * @param data The optional data to pass to the parser.
- * @return True if the source parses without errors or warnings.
- */
-PRISM_EXPORTED_FUNCTION bool pm_parse_success_p(const uint8_t *source, size_t size, const char *data);
-
-/**
  * @mainpage
  *
  * Prism is a parser for the Ruby programming language. It is designed to be

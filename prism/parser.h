@@ -285,4 +285,14 @@ typedef void (*pm_constant_callback_t)(const pm_constant_t *constant, void *data
  */
 PRISM_EXPORTED_FUNCTION void pm_parser_constants_each(const pm_parser_t *parser, pm_constant_callback_t callback, void *data);
 
+/**
+ * Initiate the parser with the given parser.
+ *
+ * @param parser The parser to use.
+ * @return The AST representing the source.
+ *
+ * \public \memberof pm_parser
+ */
+PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse(pm_parser_t *parser);
+
 #endif
