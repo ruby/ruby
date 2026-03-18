@@ -23,7 +23,7 @@ class TestIOWait < Test::Unit::TestCase
     omit 'unstable on MinGW' if /mingw/ =~ RUBY_PLATFORM
     assert_nil @r.wait(0)
     @w.syswrite "."
-    sleep 0.1
+    IO.select([@r])
     assert_equal @r, @r.wait(0)
   end
 
