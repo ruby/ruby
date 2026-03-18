@@ -11,11 +11,37 @@
 #include "prism/diagnostic.h"
 #include "prism/line_offset_list.h"
 #include "prism/magic_comments.h"
+#include "prism/options.h"
 
 /**
  * The parser used to parse Ruby source.
  */
 typedef struct pm_parser_t pm_parser_t;
+
+/**
+ * Allocate and initialize a parser with the given start and end pointers.
+ *
+ * @param arena The arena to use for all AST-lifetime allocations. It is caller-
+ *     owned and must outlive the parser.
+ * @param source The source to parse.
+ * @param size The size of the source.
+ * @param options The optional options to use when parsing. These options must
+ *     live for the whole lifetime of this parser.
+ * @return The initialized parser. It is the responsibility of the caller to
+ *     free the parser with `pm_parser_free()`.
+ *
+ * \public \memberof pm_parser
+ */
+PRISM_EXPORTED_FUNCTION pm_parser_t * pm_parser_new(pm_arena_t *arena, const uint8_t *source, size_t size, const pm_options_t *options);
+
+/**
+ * Free both the memory held by the given parser and the parser itself.
+ *
+ * @param parser The parser to free.
+ *
+ * \public \memberof pm_parser
+ */
+PRISM_EXPORTED_FUNCTION void pm_parser_free(pm_parser_t *parser);
 
 /**
  * When the encoding that is being used to parse the source is changed by prism,
