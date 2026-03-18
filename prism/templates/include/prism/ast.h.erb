@@ -9,7 +9,9 @@
 #define PRISM_AST_H
 
 #include "prism/compiler/align.h"
+#include "prism/compiler/exported.h"
 
+#include "prism/arena.h"
 #include "prism/constant_pool.h"
 #include "prism/integer.h"
 #include "prism/strings.h"
@@ -237,6 +239,23 @@ typedef enum pm_<%= flag.human %> {
 
     PM_<%= flag.human.upcase %>_LAST,
 } pm_<%= flag.human %>_t;
+<%- end -%>
+<%- nodes.each do |node| -%>
+
+<%- params = node.fields.map(&:c_param) -%>
+/**
+ * Allocate and initialize a new <%= node.name %> node.
+ *
+ * @param arena The arena to allocate from.
+ * @param node_id The unique identifier for this node.
+ * @param flags The flags for this node.
+ * @param location The location of this node in the source.
+<%- node.fields.each do |field| -%>
+ * @param <%= field.name %> <%= field.comment ? Prism::Template::Doxygen.verbatim(field.comment.lines.first.strip) : "The #{field.name} field." %>
+<%- end -%>
+ * @return The newly allocated and initialized node.
+ */
+PRISM_EXPORTED_FUNCTION pm_<%= node.human %>_t * pm_<%= node.human %>_new(pm_arena_t *arena, uint32_t node_id, pm_node_flags_t flags, pm_location_t location<%= params.empty? ? "" : ", #{params.join(", ")}" %>);
 <%- end -%>
 
 /**

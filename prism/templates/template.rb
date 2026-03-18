@@ -684,7 +684,6 @@ module Prism
     TEMPLATES = [
       "ext/prism/api_node.c",
       "include/prism/ast.h",
-      "include/prism/node_new.h",
       "include/prism/internal/diagnostic.h",
       "javascript/src/deserialize.js",
       "javascript/src/nodes.js",
@@ -704,7 +703,6 @@ module Prism
       "lib/prism/visitor.rb",
       "src/diagnostic.c",
       "src/node.c",
-      "src/node_new.c",
       "src/prettyprint.c",
       "src/serialize.c",
       "src/token_type.c"

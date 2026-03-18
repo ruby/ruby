@@ -92,7 +92,6 @@ Gem::Specification.new do |spec|
     "include/prism/line_offset_list.h",
     "include/prism/magic_comments.h",
     "include/prism/node.h",
-    "include/prism/node_new.h",
     "include/prism/options.h",
     "include/prism/parser.h",
     "include/prism/prettyprint.h",

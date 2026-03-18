@@ -30,7 +30,6 @@
 #include "prism/internal/strpbrk.h"
 
 #include "prism/excludes.h"
-#include "prism/node_new.h"
 
 #include <assert.h>
 #include <errno.h>
