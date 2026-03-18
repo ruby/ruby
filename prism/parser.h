@@ -7,6 +7,7 @@
 #define PRISM_PARSER_H
 
 #include "prism/ast.h"
+#include "prism/comments.h"
 #include "prism/line_offset_list.h"
 #include "prism/list.h"
 
@@ -175,5 +176,19 @@ PRISM_EXPORTED_FUNCTION bool pm_parser_continuable(const pm_parser_t *parser);
  * @return the lex state of the parser
  */
 PRISM_EXPORTED_FUNCTION int pm_parser_lex_state(const pm_parser_t *parser);
+
+/**
+ * Returns an iterator that knows how to iterate over the comments that are
+ * associated with the given parser.
+ *
+ * @param parser the parser whose comments we want to get
+ * @return the iterator that knows how to iterate over the comments that are
+ *     associated with the given parser. It is the responsibility of the caller
+ *     to free the memory associated with the iterator through
+ *     pm_comments_iter_free.
+ *
+ * \public \memberof pm_parser
+ */
+PRISM_EXPORTED_FUNCTION pm_comments_iter_t * pm_parser_comments(const pm_parser_t *parser);
 
 #endif
