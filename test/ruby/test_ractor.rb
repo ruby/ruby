@@ -201,6 +201,26 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  # [Feature #21930]
+  def test_port_and_ractor_empty_nonblocking
+    assert_ractor(<<~'RUBY')
+      port = Ractor::Port.new
+      assert_equal true, port.empty?
+
+      r = Ractor.new(port) do |p|
+        p.send 1
+        p.send 2
+      end
+
+      sleep 0.1
+      port.receive
+      assert_equal false, port.empty?
+      port.receive
+      assert_equal true, port.empty?
+      r.join
+    RUBY
+  end
+
   def test_symbol_proc_is_shareable
     pr = :symbol.to_proc
     assert_make_shareable(pr)
