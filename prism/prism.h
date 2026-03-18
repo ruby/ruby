@@ -13,7 +13,6 @@ extern "C" {
 #include "prism/arena.h"
 #include "prism/ast.h"
 #include "prism/diagnostic.h"
-#include "prism/encoding.h"
 #include "prism/excludes.h"
 #include "prism/node.h"
 #include "prism/options.h"
