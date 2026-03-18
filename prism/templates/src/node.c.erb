@@ -1,6 +1,7 @@
 #line <%= __LINE__ + 1 %> "prism/templates/src/<%= File.basename(__FILE__) %>"
 #include "prism/internal/node.h"
 
+#include "prism/internal/arena.h"
 #include "prism/internal/buffer.h"
 #include "prism/internal/constant_pool.h"
 #include "prism/internal/integer.h"
@@ -270,3 +271,23 @@ pm_dump_json(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *no
 }
 
 #endif
+<%- nodes.each do |node| -%>
+
+<%- params = node.fields.map(&:c_param) -%>
+/**
+ * Allocate and initialize a new <%= node.name %> node.
+ */
+pm_<%= node.human %>_t *
+pm_<%= node.human %>_new(pm_arena_t *arena, uint32_t node_id, pm_node_flags_t flags, pm_location_t location<%= params.empty? ? "" : ", #{params.join(", ")}" %>) {
+    pm_<%= node.human %>_t *node = (pm_<%= node.human %>_t *) pm_arena_alloc(arena, sizeof(pm_<%= node.human %>_t), PRISM_ALIGNOF(pm_<%= node.human %>_t));
+
+    *node = (pm_<%= node.human %>_t) {
+        .base = { .type = <%= node.type %>, .flags = flags, .node_id = node_id, .location = location }<%= node.fields.empty? ? "" : "," %>
+<%- node.fields.each_with_index do |field, index| -%>
+        .<%= field.name %> = <%= field.name %><%= index < node.fields.size - 1 ? "," : "" %>
+<%- end -%>
+    };
+
+    return node;
+}
+<%- end -%>
