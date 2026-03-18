@@ -5,7 +5,9 @@
  * PRISM_EXCLUDE_SERIALIZATION define. */
 #ifdef PRISM_EXCLUDE_SERIALIZATION
 
-void pm_serialize_lex(void) {}
+/* Ensure this translation unit is never empty, even when serialization is
+ * excluded. */
+typedef int pm_serialize_unused_t;
 
 #else
 

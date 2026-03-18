@@ -30,6 +30,7 @@
 
 #include "prism/excludes.h"
 #include "prism/serialize.h"
+#include "prism/stream.h"
 #include "prism/version.h"
 
 #include <assert.h>
