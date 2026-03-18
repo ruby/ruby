@@ -96,39 +96,4 @@ PRISM_EXPORTED_FUNCTION pm_error_level_t pm_diagnostic_error_level(const pm_diag
  */
 PRISM_EXPORTED_FUNCTION pm_warning_level_t pm_diagnostic_warning_level(const pm_diagnostic_t *diagnostic);
 
-/* An opaque pointer to an iterator that can be used to iterate over a set of
- * diagnostics associated with a parser. */
-typedef struct pm_diagnostics_iter_t pm_diagnostics_iter_t;
-
-/**
- * Returns the number of diagnostics associated with the diagnostics iterator.
- *
- * @param iter the iterator to get the number of diagnostics from
- * @return the number of diagnostics associated with the diagnostics iterator
- *
- * \public \memberof pm_diagnostics_iter_t
- */
-PRISM_EXPORTED_FUNCTION size_t pm_diagnostics_iter_size(const pm_diagnostics_iter_t *iter);
-
-/**
- * Returns the next diagnostic in the iteration, or NULL if there are no more
- * diagnostics.
- *
- * @param iter the iterator to get the next diagnostic from
- * @return the next diagnostic in the iteration, or NULL if there are no more
- *     diagnostics.
- *
- * \public \memberof pm_diagnostics_iter_t
- */
-PRISM_EXPORTED_FUNCTION const pm_diagnostic_t * pm_diagnostics_iter_next(pm_diagnostics_iter_t *iter);
-
-/**
- * Frees the memory associated with the given diagnostics iterator.
- *
- * @param iter the iterator to free
- *
- * \public \memberof pm_diagnostics_iter_t
- */
-PRISM_EXPORTED_FUNCTION void pm_diagnostics_iter_free(pm_diagnostics_iter_t *iter);
-
 #endif
