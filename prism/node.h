@@ -84,16 +84,15 @@ PRISM_EXPORTED_FUNCTION const char * pm_node_type_to_str(pm_node_type_t node_typ
  *     pm_arena_t arena = { 0 };
  *     pm_options_t *options = pm_options_new();
  *
- *     pm_parser_t parser;
- *     pm_parser_init(&arena, &parser, (const uint8_t *) source, size, options);
+ *     pm_parser_t *parser = pm_parser_new(&arena, (const uint8_t *) source, size, options);
  *
  *     size_t indent = 0;
- *     pm_node_t *node = pm_parse(&parser);
+ *     pm_node_t *node = pm_parse(parser);
  *
  *     size_t *data = &indent;
  *     pm_visit_node(node, visit, data);
  *
- *     pm_parser_cleanup(&parser);
+ *     pm_parser_free(parser);
  *     pm_options_free(options);
  *     pm_arena_free(&arena);
  *

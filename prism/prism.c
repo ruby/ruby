@@ -22476,6 +22476,22 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
 }
 
 /**
+ * Allocate and initialize a parser with the given start and end pointers.
+ *
+ * The resulting parser must eventually be freed with `pm_parser_free()`. The
+ * arena is caller-owned and must outlive the parser — `pm_parser_cleanup()`
+ * does not free the arena.
+ */
+pm_parser_t *
+pm_parser_new(pm_arena_t *arena, const uint8_t *source, size_t size, const pm_options_t *options) {
+    pm_parser_t *parser = (pm_parser_t *) xmalloc(sizeof(pm_parser_t));
+    if (parser == NULL) abort();
+
+    pm_parser_init(arena, parser, source, size, options);
+    return parser;
+}
+
+/**
  * Register a callback that will be called whenever prism changes the encoding
  * it is using to parse based on the magic comment.
  */
@@ -22503,6 +22519,15 @@ pm_parser_cleanup(pm_parser_t *parser) {
     while (parser->lex_modes.index >= PM_LEX_STACK_SIZE) {
         lex_mode_pop(parser);
     }
+}
+
+/**
+ * Free both the memory held by the given parser and the parser itself.
+ */
+void
+pm_parser_free(pm_parser_t *parser) {
+    pm_parser_cleanup(parser);
+    xfree(parser);
 }
 
 /**
