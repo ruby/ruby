@@ -6,7 +6,9 @@
  * PRISM_EXCLUDE_PRETTYPRINT define. */
 #ifdef PRISM_EXCLUDE_PRETTYPRINT
 
-void pm_prettyprint(void) {}
+/* Ensure this translation unit is never empty, even when prettyprint is
+ * excluded. */
+typedef int pm_prettyprint_unused_t;
 
 #else
 

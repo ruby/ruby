@@ -59,6 +59,9 @@ module Prism # :nodoc:
         # We only want to load the functions that we are interested in.
         next unless functions.any? { |function| line.include?(function) }
 
+        # Strip trailing attributes (PRISM_NODISCARD, PRISM_NONNULL(...), etc.)
+        line = line.sub(/\)(\s+PRISM_\w+(?:\([^)]*\))?)+\s*;/, ");")
+
         # Parse the function declaration.
         unless /^PRISM_EXPORTED_FUNCTION (?<return_type>.+) (?<name>\w+)\((?<arg_types>.+)\);$/ =~ line
           raise "Could not parse #{line}"

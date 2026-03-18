@@ -113,5 +113,5 @@ pm_arena_cleanup(pm_arena_t *arena) {
 void
 pm_arena_free(pm_arena_t *arena) {
     pm_arena_cleanup(arena);
-    xfree(arena);   
+    xfree(arena);
 }

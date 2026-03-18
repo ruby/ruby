@@ -4,6 +4,8 @@
 #include <ruby/win32.h>
 #endif
 
+#include <errno.h>
+
 // NOTE: this file should contain only bindings. All non-trivial logic should be
 // in libprism so it can be shared its the various callers.
 
@@ -411,7 +413,11 @@ dump(int argc, VALUE *argv, VALUE self) {
     if (pm_options_freeze(options)) rb_obj_freeze(value);
 
 #ifdef PRISM_BUILD_DEBUG
+#ifdef xfree_sized
     xfree_sized(dup, length);
+#else
+    xfree(dup);
+#endif
 #endif
 
     pm_string_cleanup(&input);
@@ -968,7 +974,11 @@ parse(int argc, VALUE *argv, VALUE self) {
     VALUE value = parse_input(&input, options);
 
 #ifdef PRISM_BUILD_DEBUG
+#ifdef xfree_sized
     xfree_sized(dup, length);
+#else
+    xfree(dup);
+#endif
 #endif
 
     pm_string_cleanup(&input);

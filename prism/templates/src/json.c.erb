@@ -1,8 +1,8 @@
 #include "prism/json.h"
 
-/* We optionally support dumping to JSON. For systems that don not want or need
- * this functionality, it can be turned off with the PRISM_EXCLUDE_JSON define.
- */
+// Ensure this translation unit is never empty, even when JSON is excluded.
+typedef int pm_json_unused_t;
+
 #ifndef PRISM_EXCLUDE_JSON
 
 #include "prism/internal/buffer.h"
