@@ -8,6 +8,9 @@
 
 #include "prism/parser.h"
 
+/* The maximum number of bytes in a strpbrk charset. */
+#define PM_STRPBRK_CACHE_SIZE 16
+
 #include <stddef.h>
 #include <stdint.h>
 
