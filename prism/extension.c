@@ -373,15 +373,14 @@ dump_input(pm_string_t *input, const pm_options_t *options) {
     }
 
     pm_arena_t arena = { 0 };
-    pm_parser_t parser;
-    pm_parser_init(&arena, &parser, pm_string_source(input), pm_string_length(input), options);
+    pm_parser_t *parser = pm_parser_new(&arena, pm_string_source(input), pm_string_length(input), options);
 
-    pm_node_t *node = pm_parse(&parser);
-    pm_serialize(&parser, node, buffer);
+    pm_node_t *node = pm_parse(parser);
+    pm_serialize(parser, node, buffer);
 
     VALUE result = rb_str_new(pm_buffer_value(buffer), pm_buffer_length(buffer));
     pm_buffer_free(buffer);
-    pm_parser_cleanup(&parser);
+    pm_parser_free(parser);
     pm_arena_free(&arena);
 
     return result;
@@ -737,13 +736,12 @@ parse_lex_encoding_changed_callback(pm_parser_t *parser) {
 static VALUE
 parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nodes) {
     pm_arena_t arena = { 0 };
-    pm_parser_t parser;
-    pm_parser_init(&arena, &parser, pm_string_source(input), pm_string_length(input), options);
-    pm_parser_register_encoding_changed_callback(&parser, parse_lex_encoding_changed_callback);
+    pm_parser_t *parser = pm_parser_new(&arena, pm_string_source(input), pm_string_length(input), options);
+    pm_parser_register_encoding_changed_callback(parser, parse_lex_encoding_changed_callback);
 
     VALUE source_string = rb_str_new((const char *) pm_string_source(input), pm_string_length(input));
-    VALUE offsets = rb_ary_new_capa(parser.line_offsets.size);
-    VALUE source = rb_funcall(rb_cPrismSource, rb_id_source_for, 3, source_string, LONG2NUM(parser.start_line), offsets);
+    VALUE offsets = rb_ary_new_capa(parser->line_offsets.size);
+    VALUE source = rb_funcall(rb_cPrismSource, rb_id_source_for, 3, source_string, LONG2NUM(parser->start_line), offsets);
 
     parse_lex_data_t parse_lex_data = {
         .source = source,
@@ -758,18 +756,18 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
         .callback = parse_lex_token,
     };
 
-    parser.lex_callback = &lex_callback;
-    pm_node_t *node = pm_parse(&parser);
+    parser->lex_callback = &lex_callback;
+    pm_node_t *node = pm_parse(parser);
 
     // Here we need to update the Source object to have the correct
     // encoding for the source string and the correct newline offsets.
     // We do it here because we've already created the Source object and given
     // it over to all of the tokens, and both of these are only set after pm_parse().
-    rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(&parser));
+    rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(parser));
     rb_enc_associate(source_string, encoding);
 
-    for (size_t index = 0; index < parser.line_offsets.size; index++) {
-        rb_ary_push(offsets, ULONG2NUM(parser.line_offsets.offsets[index]));
+    for (size_t index = 0; index < parser->line_offsets.size; index++) {
+        rb_ary_push(offsets, ULONG2NUM(parser->line_offsets.offsets[index]));
     }
 
     if (pm_options_freeze_get(options)) {
@@ -782,15 +780,15 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
     VALUE result;
     if (return_nodes) {
         VALUE value = rb_ary_new_capa(2);
-        rb_ary_push(value, pm_ast_new(&parser, node, parse_lex_data.encoding, source, pm_options_freeze_get(options)));
+        rb_ary_push(value, pm_ast_new(parser, node, parse_lex_data.encoding, source, pm_options_freeze_get(options)));
         rb_ary_push(value, parse_lex_data.tokens);
         if (pm_options_freeze_get(options)) rb_obj_freeze(value);
-        result = parse_result_create(rb_cPrismParseLexResult, &parser, value, parse_lex_data.encoding, source, pm_options_freeze_get(options));
+        result = parse_result_create(rb_cPrismParseLexResult, parser, value, parse_lex_data.encoding, source, pm_options_freeze_get(options));
     } else {
-        result = parse_result_create(rb_cPrismLexResult, &parser, parse_lex_data.tokens, parse_lex_data.encoding, source, pm_options_freeze_get(options));
+        result = parse_result_create(rb_cPrismLexResult, parser, parse_lex_data.tokens, parse_lex_data.encoding, source, pm_options_freeze_get(options));
     }
 
-    pm_parser_cleanup(&parser);
+    pm_parser_free(parser);
     pm_arena_free(&arena);
 
     return result;
@@ -850,22 +848,21 @@ lex_file(int argc, VALUE *argv, VALUE self) {
 static VALUE
 parse_input(pm_string_t *input, const pm_options_t *options) {
     pm_arena_t arena = { 0 };
-    pm_parser_t parser;
-    pm_parser_init(&arena, &parser, pm_string_source(input), pm_string_length(input), options);
+    pm_parser_t *parser = pm_parser_new(&arena, pm_string_source(input), pm_string_length(input), options);
 
-    pm_node_t *node = pm_parse(&parser);
-    rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(&parser));
+    pm_node_t *node = pm_parse(parser);
+    rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(parser));
 
     bool freeze = pm_options_freeze_get(options);
-    VALUE source = pm_source_new(&parser, encoding, freeze);
-    VALUE value = pm_ast_new(&parser, node, encoding, source, freeze);
-    VALUE result = parse_result_create(rb_cPrismParseResult, &parser, value, encoding, source, freeze);
+    VALUE source = pm_source_new(parser, encoding, freeze);
+    VALUE value = pm_ast_new(parser, node, encoding, source, freeze);
+    VALUE result = parse_result_create(rb_cPrismParseResult, parser, value, encoding, source, freeze);
 
     if (freeze) {
         rb_obj_freeze(source);
     }
 
-    pm_parser_cleanup(&parser);
+    pm_parser_free(parser);
     pm_arena_free(&arena);
 
     return result;
@@ -969,11 +966,10 @@ parse_file(int argc, VALUE *argv, VALUE self) {
 static void
 profile_input(pm_string_t *input, const pm_options_t *options) {
     pm_arena_t arena = { 0 };
-    pm_parser_t parser;
-    pm_parser_init(&arena, &parser, pm_string_source(input), pm_string_length(input), options);
+    pm_parser_t *parser = pm_parser_new(&arena, pm_string_source(input), pm_string_length(input), options);
 
-    pm_parse(&parser);
-    pm_parser_cleanup(&parser);
+    pm_parse(parser);
+    pm_parser_free(parser);
     pm_arena_free(&arena);
 }
 
@@ -1094,16 +1090,15 @@ parse_stream(int argc, VALUE *argv, VALUE self) {
 static VALUE
 parse_input_comments(pm_string_t *input, const pm_options_t *options) {
     pm_arena_t arena = { 0 };
-    pm_parser_t parser;
-    pm_parser_init(&arena, &parser, pm_string_source(input), pm_string_length(input), options);
+    pm_parser_t *parser = pm_parser_new(&arena, pm_string_source(input), pm_string_length(input), options);
 
-    pm_parse(&parser);
-    rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(&parser));
+    pm_parse(parser);
+    rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(parser));
 
-    VALUE source = pm_source_new(&parser, encoding, pm_options_freeze_get(options));
-    VALUE comments = parser_comments(&parser, source, pm_options_freeze_get(options));
+    VALUE source = pm_source_new(parser, encoding, pm_options_freeze_get(options));
+    VALUE comments = parser_comments(parser, source, pm_options_freeze_get(options));
 
-    pm_parser_cleanup(&parser);
+    pm_parser_free(parser);
     pm_arena_free(&arena);
 
     return comments;
@@ -1217,13 +1212,12 @@ parse_lex_file(int argc, VALUE *argv, VALUE self) {
 static VALUE
 parse_input_success_p(pm_string_t *input, const pm_options_t *options) {
     pm_arena_t arena = { 0 };
-    pm_parser_t parser;
-    pm_parser_init(&arena, &parser, pm_string_source(input), pm_string_length(input), options);
+    pm_parser_t *parser = pm_parser_new(&arena, pm_string_source(input), pm_string_length(input), options);
 
-    pm_parse(&parser);
+    pm_parse(parser);
 
-    VALUE result = parser.error_list.size == 0 ? Qtrue : Qfalse;
-    pm_parser_cleanup(&parser);
+    VALUE result = parser->error_list.size == 0 ? Qtrue : Qfalse;
+    pm_parser_free(parser);
     pm_arena_free(&arena);
 
     return result;

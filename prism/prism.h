@@ -31,20 +31,33 @@ PRISM_EXPORTED_FUNCTION const char * pm_version(void);
 /**
  * Initialize a parser with the given start and end pointers.
  *
- * The resulting parser must eventually be freed with `pm_parser_cleanup()`. The
- * arena is caller-owned and must outlive the parser — `pm_parser_cleanup()` does
- * not free the arena.
- *
- * @param arena The arena to use for all AST-lifetime allocations.
+ * @param arena The arena to use for all AST-lifetime allocations. It is caller-
+ *     owned and must outlive the parser.
  * @param parser The parser to initialize.
  * @param source The source to parse.
  * @param size The size of the source.
  * @param options The optional options to use when parsing. These options must
- *   live for the whole lifetime of this parser.
+ *     live for the whole lifetime of this parser.
  *
  * \public \memberof pm_parser
  */
 PRISM_EXPORTED_FUNCTION void pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, size_t size, const pm_options_t *options);
+
+/**
+ * Allocate and initialize a parser with the given start and end pointers.
+ *
+ * @param arena The arena to use for all AST-lifetime allocations. It is caller-
+ *     owned and must outlive the parser.
+ * @param source The source to parse.
+ * @param size The size of the source.
+ * @param options The optional options to use when parsing. These options must
+ *     live for the whole lifetime of this parser.
+ * @return The initialized parser. It is the responsibility of the caller to
+ *     free the parser with `pm_parser_free()`.
+ *
+ * \public \memberof pm_parser
+ */
+PRISM_EXPORTED_FUNCTION pm_parser_t * pm_parser_new(pm_arena_t *arena, const uint8_t *source, size_t size, const pm_options_t *options);
 
 /**
  * Register a callback that will be called whenever prism changes the encoding
@@ -58,16 +71,25 @@ PRISM_EXPORTED_FUNCTION void pm_parser_init(pm_arena_t *arena, pm_parser_t *pars
 PRISM_EXPORTED_FUNCTION void pm_parser_register_encoding_changed_callback(pm_parser_t *parser, pm_encoding_changed_callback_t callback);
 
 /**
- * Free any memory associated with the given parser.
+ * Free the memory held by the given parser.
  *
  * This does not free the `pm_options_t` object that was used to initialize the
  * parser.
+ *
+ * @param parser The parser whose held memory should be freed.
+ *
+ * \public \memberof pm_parser
+ */
+PRISM_EXPORTED_FUNCTION void pm_parser_cleanup(pm_parser_t *parser);
+
+/**
+ * Free both the memory held by the given parser and the parser itself.
  *
  * @param parser The parser to free.
  *
  * \public \memberof pm_parser
  */
-PRISM_EXPORTED_FUNCTION void pm_parser_cleanup(pm_parser_t *parser);
+PRISM_EXPORTED_FUNCTION void pm_parser_free(pm_parser_t *parser);
 
 /**
  * Initiate the parser with the given parser.
@@ -271,9 +293,9 @@ PRISM_EXPORTED_FUNCTION void pm_dump_json(pm_buffer_t *buffer, const pm_parser_t
  *
  * * `pm_arena_t` - the arena allocator for AST-lifetime memory
  * * `pm_parser_t` - the main parser structure
- * * `pm_parser_init()` - initialize a parser
+ * * `pm_parser_new()` - allocate and initialize a new parser
  * * `pm_parse()` - parse and return the root node
- * * `pm_parser_cleanup()` - free the internal memory of the parser
+ * * `pm_parser_free()` - free the parser and its internal memory
  * * `pm_arena_free()` - free all AST-lifetime memory
  *
  * Putting all of this together would look something like:
@@ -281,13 +303,12 @@ PRISM_EXPORTED_FUNCTION void pm_dump_json(pm_buffer_t *buffer, const pm_parser_t
  * ```c
  * void parse(const uint8_t *source, size_t length) {
  *     pm_arena_t arena = { 0 };
- *     pm_parser_t parser;
- *     pm_parser_init(&arena, &parser, source, length, NULL);
+ *     pm_parser_t *parser = pm_parser_new(&arena, source, length, NULL);
  *
- *     pm_node_t *root = pm_parse(&parser);
+ *     pm_node_t *root = pm_parse(parser);
  *     printf("PARSED!\n");
  *
- *     pm_parser_cleanup(&parser);
+ *     pm_parser_free(parser);
  *     pm_arena_free(&arena);
  * }
  * ```
@@ -331,17 +352,16 @@ PRISM_EXPORTED_FUNCTION void pm_dump_json(pm_buffer_t *buffer, const pm_parser_t
  * ```c
  * void prettyprint(const uint8_t *source, size_t length) {
  *     pm_arena_t arena = { 0 };
- *     pm_parser_t parser;
- *     pm_parser_init(&arena, &parser, source, length, NULL);
+ *     pm_parser_t *parser = pm_parser_new(&arena, source, length, NULL);
  *
- *     pm_node_t *root = pm_parse(&parser);
+ *     pm_node_t *root = pm_parse(parser);
  *     pm_buffer_t *buffer = pm_buffer_new();
  *
- *     pm_prettyprint(buffer, &parser, root);
+ *     pm_prettyprint(buffer, parser, root);
  *     printf("%*.s\n", (int) pm_buffer_length(buffer), pm_buffer_value(buffer));
  *
  *     pm_buffer_free(buffer);
- *     pm_parser_cleanup(&parser);
+ *     pm_parser_free(parser);
  *     pm_arena_free(&arena);
  * }
  * ```
