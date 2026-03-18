@@ -6,6 +6,7 @@
 #ifndef PRISM_OPTIONS_H
 #define PRISM_OPTIONS_H
 
+#include "prism/compiler/exported.h"
 #include "prism/compiler/nodiscard.h"
 #include "prism/compiler/nonnull.h"
 
@@ -25,7 +26,7 @@ typedef struct pm_options_scope_t pm_options_scope_t;
 typedef struct pm_options_t pm_options_t;
 
 /**
- * String literals should be made frozen.
+ * String literals should not be frozen.
  */
 #define PM_OPTIONS_FROZEN_STRING_LITERAL_DISABLED   ((int8_t) -1)
 
@@ -36,23 +37,23 @@ typedef struct pm_options_t pm_options_t;
 #define PM_OPTIONS_FROZEN_STRING_LITERAL_UNSET      ((int8_t)  0)
 
 /**
- * String literals should be made mutable.
+ * String literals should be made frozen.
  */
 #define PM_OPTIONS_FROZEN_STRING_LITERAL_ENABLED    ((int8_t)  1)
 
 /** The default value for parameters. */
 static const uint8_t PM_OPTIONS_SCOPE_FORWARDING_NONE = 0x0;
 
-/** When the scope is fowarding with the * parameter. */
+/** When the scope is forwarding with the * parameter. */
 static const uint8_t PM_OPTIONS_SCOPE_FORWARDING_POSITIONALS = 0x1;
 
-/** When the scope is fowarding with the ** parameter. */
+/** When the scope is forwarding with the ** parameter. */
 static const uint8_t PM_OPTIONS_SCOPE_FORWARDING_KEYWORDS = 0x2;
 
-/** When the scope is fowarding with the & parameter. */
+/** When the scope is forwarding with the & parameter. */
 static const uint8_t PM_OPTIONS_SCOPE_FORWARDING_BLOCK = 0x4;
 
-/** When the scope is fowarding with the ... parameter. */
+/** When the scope is forwarding with the ... parameter. */
 static const uint8_t PM_OPTIONS_SCOPE_FORWARDING_ALL = 0x8;
 
 /**
