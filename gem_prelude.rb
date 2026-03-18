@@ -31,18 +31,10 @@ if defined?(ErrorHighlight) || defined?(DidYouMean) || defined?(SyntaxSuggest)
     def detailed_message(...)
       gem_above = self.class.instance_method(:detailed_message).owner != Exception::DetailedMessage
 
-      # Temporarily restore the original require to bypass any user
-      # monkeypatching during gem loading (including nested requires).
-      orig = Exception::DetailedMessage.instance_variable_get(:@require)
-      patched = Kernel.instance_method(:require)
-      Kernel.define_method(:require, orig)
-      begin
-        require 'error_highlight' rescue LoadError
-        require 'did_you_mean' rescue LoadError
-        require 'syntax_suggest' rescue LoadError
-      ensure
-        Kernel.define_method(:require, patched)
-      end
+      req = Exception::DetailedMessage.instance_variable_get(:@require)
+      begin; req.bind_call(self, 'error_highlight'); rescue LoadError; end
+      begin; req.bind_call(self, 'did_you_mean'); rescue LoadError; end
+      begin; req.bind_call(self, 'syntax_suggest'); rescue LoadError; end
 
       Exception::DetailedMessage.remove_method(:detailed_message)
       gem_above ? super : detailed_message(...)
