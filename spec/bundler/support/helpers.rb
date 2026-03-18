@@ -346,14 +346,19 @@ module Spec
 
       gem_home = options.dig(:env, "GEM_HOME") || system_gem_path.to_s
 
-      uninstaller = Gem::Uninstaller.new(
-        name,
-        install_dir: gem_home,
-        ignore: true,
-        executables: true,
-        all: true
-      )
-      uninstaller.uninstall
+      with_env_vars("GEM_HOME" => gem_home) do
+        Gem.clear_paths
+
+        uninstaller = Gem::Uninstaller.new(
+          name,
+          ignore: true,
+          executables: true,
+          all: true
+        )
+        uninstaller.uninstall
+      ensure
+        Gem.clear_paths
+      end
     end
 
     def installed_gems_list(options = {})
