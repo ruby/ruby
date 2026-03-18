@@ -22255,7 +22255,7 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
         .encoding = PM_ENCODING_UTF_8_ENTRY,
         .encoding_changed_callback = NULL,
         .encoding_comment_start = source,
-        .lex_callback = NULL,
+        .lex_callback = { 0 },
         .filepath = { 0 },
         .constant_pool = { 0 },
         .line_offsets = { 0 },

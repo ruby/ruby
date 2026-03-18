@@ -92,7 +92,6 @@ Gem::Specification.new do |spec|
     "include/prism/options.h",
     "include/prism/parser.h",
     "include/prism/prettyprint.h",
-    "include/prism/static_literals.h",
     "include/prism/string_query.h",
     "include/prism/strings.h",
     "include/prism/version.h",

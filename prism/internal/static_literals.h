@@ -9,7 +9,6 @@
 #include "prism/ast.h"
 #include "prism/buffer.h"
 #include "prism/line_offset_list.h"
-#include "prism/static_literals.h"
 
 /**
  * An internal hash table for a set of nodes.
@@ -33,7 +32,7 @@ typedef struct {
  * We bucket the nodes based on their type to minimize the number of comparisons
  * that need to be performed.
  */
-struct pm_static_literals_t {
+typedef struct {
     /**
      * This is the set of IntegerNode and SourceLineNode instances.
      */
@@ -84,7 +83,7 @@ struct pm_static_literals_t {
      * NULL.
      */
     pm_node_t *source_encoding_node;
-};
+} pm_static_literals_t;
 
 /**
  * Add a node to the set of static literals.
