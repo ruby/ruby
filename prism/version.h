@@ -26,4 +26,11 @@
  */
 #define PRISM_VERSION "1.9.0"
 
+/**
+ * The prism version and the serialization format.
+ *
+ * @returns The prism version as a constant string.
+ */
+PRISM_EXPORTED_FUNCTION const char * pm_version(void);
+
 #endif

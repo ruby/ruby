@@ -22778,28 +22778,6 @@ pm_parse_stream(pm_parser_t **parser, pm_arena_t *arena, pm_buffer_t *buffer, vo
     return node;
 }
 
-/**
- * Parse the source and return true if it parses without errors or warnings.
- */
-bool
-pm_parse_success_p(const uint8_t *source, size_t size, const char *data) {
-    pm_options_t options = { 0 };
-    pm_options_read(&options, data);
-
-    pm_arena_t arena = { 0 };
-    pm_parser_t parser;
-    pm_parser_init(&arena, &parser, source, size, &options);
-
-    pm_parse(&parser);
-
-    bool result = parser.error_list.size == 0;
-    pm_parser_cleanup(&parser);
-    pm_arena_cleanup(&arena);
-    pm_options_cleanup(&options);
-
-    return result;
-}
-
 #undef PM_CASE_KEYWORD
 #undef PM_CASE_OPERATOR
 #undef PM_CASE_WRITABLE

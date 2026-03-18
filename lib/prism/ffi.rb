@@ -91,14 +91,19 @@ module Prism # :nodoc:
     enum :pm_string_query_t, [:PM_STRING_QUERY_ERROR, -1, :PM_STRING_QUERY_FALSE, :PM_STRING_QUERY_TRUE]
 
     load_exported_functions_from(
-      "prism.h",
+      "prism/version.h",
       "pm_version",
+      []
+    )
+
+    load_exported_functions_from(
+      "prism/serialize.h",
       "pm_serialize_parse",
       "pm_serialize_parse_stream",
       "pm_serialize_parse_comments",
       "pm_serialize_lex",
       "pm_serialize_parse_lex",
-      "pm_parse_success_p",
+      "pm_serialize_parse_success_p",
       [:pm_parse_stream_fgets_t, :pm_parse_stream_feof_t]
     )
 
@@ -404,7 +409,7 @@ module Prism # :nodoc:
     end
 
     def parse_file_success_common(string, options) # :nodoc:
-      LibRubyParser.pm_parse_success_p(string.pointer, string.length, dump_options(options))
+      LibRubyParser.pm_serialize_parse_success_p(string.pointer, string.length, dump_options(options))
     end
 
     # Return the value that should be dumped for the command_line option.
