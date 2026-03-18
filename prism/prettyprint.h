@@ -8,11 +8,7 @@
 
 #include "prism/excludes.h"
 
-#ifdef PRISM_EXCLUDE_PRETTYPRINT
-
-#define pm_prettyprint(output_buffer_, parser_, node_)
-
-#else
+#ifndef PRISM_EXCLUDE_PRETTYPRINT
 
 #include "prism/compiler/exported.h"
 
