@@ -29,6 +29,7 @@
 #include "prism/internal/strncasecmp.h"
 #include "prism/internal/strpbrk.h"
 
+#include "prism/excludes.h"
 #include "prism/node_new.h"
 
 #include <assert.h>

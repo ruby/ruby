@@ -10,7 +10,6 @@
 #include "prism/comments.h"
 #include "prism/diagnostic.h"
 #include "prism/line_offset_list.h"
-#include "prism/list.h"
 #include "prism/magic_comments.h"
 
 /**

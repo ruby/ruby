@@ -6,7 +6,7 @@
 
 #include "prism/comments.h"
 
-#include "prism/list.h"
+#include "prism/internal/list.h"
 
 /**
  * A comment found while parsing.
