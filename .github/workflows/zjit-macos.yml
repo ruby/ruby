@@ -113,8 +113,24 @@ jobs:
         run: |
           echo "RUBY_CRASH_REPORT=$(pwd)/rb_crash_%p.txt" >> $GITHUB_ENV
 
+      - name: Set up Launchable
+        id: launchable
+        uses: ./.github/actions/launchable/setup
+        with:
+          os: macos-14
+          test-opts: ${{ matrix.configure }}
+          launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
+          builddir: build
+          srcdir: src
+          is-zjit: true
+        continue-on-error: true
+        timeout-minutes: 3
+
       - name: make ${{ matrix.test_task }}
         run: |
+          test -n "${LAUNCHABLE_STDOUT}" && exec 1> >(tee "${LAUNCHABLE_STDOUT}")
+          test -n "${LAUNCHABLE_STDERR}" && exec 2> >(tee "${LAUNCHABLE_STDERR}")
+
           set -x
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"} \
             RUN_OPTS="$RUN_OPTS" \
@@ -127,6 +143,8 @@ jobs:
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
           SYNTAX_SUGGEST_TIMEOUT: '5'
           PRECHECK_BUNDLED_GEMS: 'no'
+          LAUNCHABLE_STDOUT: ${{ steps.launchable.outputs.stdout_report_path }}
+          LAUNCHABLE_STDERR: ${{ steps.launchable.outputs.stderr_report_path }}
         continue-on-error: ${{ matrix.continue-on-test_task || false }}
 
       - name: Dump crash logs
