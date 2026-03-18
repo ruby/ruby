@@ -13,10 +13,7 @@
  */
 #ifdef PRISM_EXCLUDE_JSON
 
-#include "prism/compiler/unused.h"
-
-void
-pm_dump_json(PRISM_UNUSED pm_buffer_t *buffer, PRISM_UNUSED const pm_parser_t *parser, PRISM_UNUSED const pm_node_t *node) {}
+void pm_dump_json(void) {}
 
 #else
 
