@@ -16,6 +16,66 @@
 
 #include <stdbool.h>
 
+/** A constant in the pool which effectively stores a string. */
+struct pm_constant_t {
+    /** A pointer to the start of the string. */
+    const uint8_t *start;
+
+    /** The length of the string. */
+    size_t length;
+};
+
+/**
+ * The type of bucket in the constant pool hash map. This determines how the
+ * bucket should be freed.
+ */
+typedef unsigned int pm_constant_pool_bucket_type_t;
+
+/** By default, each constant is a slice of the source. */
+static const pm_constant_pool_bucket_type_t PM_CONSTANT_POOL_BUCKET_DEFAULT = 0;
+
+/** An owned constant is one for which memory has been allocated. */
+static const pm_constant_pool_bucket_type_t PM_CONSTANT_POOL_BUCKET_OWNED = 1;
+
+/** A constant constant is known at compile time. */
+static const pm_constant_pool_bucket_type_t PM_CONSTANT_POOL_BUCKET_CONSTANT = 2;
+
+/** A bucket in the hash map. */
+typedef struct {
+    /** The incremental ID used for indexing back into the pool. */
+    unsigned int id: 30;
+
+    /** The type of the bucket, which determines how to free it. */
+    pm_constant_pool_bucket_type_t type: 2;
+
+    /** The hash of the bucket. */
+    uint32_t hash;
+
+    /**
+     * A pointer to the start of the string, stored directly in the bucket to
+     * avoid a pointer chase to the constants array during probing.
+     */
+    const uint8_t *start;
+
+    /** The length of the string. */
+    size_t length;
+} pm_constant_pool_bucket_t;
+
+/** The overall constant pool, which stores constants found while parsing. */
+struct pm_constant_pool_t {
+    /** The buckets in the hash map. */
+    pm_constant_pool_bucket_t *buckets;
+
+    /** The constants that are stored in the buckets. */
+    pm_constant_t *constants;
+
+    /** The number of buckets in the hash map. */
+    uint32_t size;
+
+    /** The number of buckets that have been allocated in the hash map. */
+    uint32_t capacity;
+};
+
 /**
  * When we allocate constants into the pool, we reserve 0 to mean that the slot
  * is not yet filled. This constant is reused in other places to indicate the

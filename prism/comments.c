@@ -1,9 +1,6 @@
 #include "prism/internal/comments.h"
 
-#include "prism/internal/allocator.h"
 #include "prism/internal/parser.h"
-
-#include <stdlib.h>
 
 /**
  * Returns the location associated with the given comment.

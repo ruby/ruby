@@ -81,14 +81,6 @@ pm_parser_line_offsets(const pm_parser_t *parser) {
 }
 
 /**
- * Returns the constant pool associated with the given parser.
- */
-const pm_constant_pool_t *
-pm_parser_constant_pool(const pm_parser_t *parser) {
-    return &parser->constant_pool;
-}
-
-/**
  * Returns the location of the __DATA__ section that is associated with the
  * given parser, if it exists.
  */
@@ -203,4 +195,25 @@ pm_parser_errors_each(const pm_parser_t *parser, pm_diagnostic_callback_t callba
 void
 pm_parser_warnings_each(const pm_parser_t *parser, pm_diagnostic_callback_t callback, void *data) {
     pm_parser_diagnostics_each(&parser->warning_list, callback, data);
+}
+
+/**
+ * Returns the number of constants in the constant pool associated with the
+ * given parser.
+ */
+size_t
+pm_parser_constants_size(const pm_parser_t *parser) {
+    return parser->constant_pool.size;
+}
+
+/**
+ * Iterates over the constants in the constant pool associated with the given
+ * parser and calls the given callback for each constant.
+ */
+void
+pm_parser_constants_each(const pm_parser_t *parser, pm_constant_callback_t callback, void *data) {
+    for (uint32_t index = 0; index < parser->constant_pool.size; index++) {
+        const pm_constant_t *constant = &parser->constant_pool.constants[index];
+        callback(constant, data);
+    }
 }

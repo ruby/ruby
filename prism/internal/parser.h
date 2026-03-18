@@ -9,6 +9,7 @@
 #include "prism/compiler/accel.h"
 
 #include "prism/internal/arena.h"
+#include "prism/internal/constant_pool.h"
 #include "prism/internal/encoding.h"
 #include "prism/internal/list.h"
 #include "prism/internal/options.h"
