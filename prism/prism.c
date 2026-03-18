@@ -9,6 +9,7 @@
 #include "prism/internal/bit.h"
 #include "prism/internal/buffer.h"
 #include "prism/internal/char.h"
+#include "prism/internal/comment.h"
 #include "prism/internal/constant_pool.h"
 #include "prism/internal/diagnostic.h"
 #include "prism/internal/encoding.h"
