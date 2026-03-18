@@ -648,6 +648,7 @@ static void
 ractor_sync_mark(rb_ractor_t *r)
 {
     rb_gc_mark(r->sync.default_port_value);
+    rb_gc_mark(r->sync.legacy);
 
     if (r->sync.ports) {
         ractor_queue_mark(r->sync.recv_queue);
