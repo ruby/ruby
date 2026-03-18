@@ -389,6 +389,9 @@ impl Assembler {
                     let Mem { base, disp: stack_disp, .. } = stack_state.stack_membase_to_mem(stack_membase);
                     Opnd::Mem(Mem { base, disp: stack_disp + opnd_disp, num_bits: opnd_num_bits })
                 }
+                Opnd::Mem(Mem { base: MemBase::StackIndirect { .. }, .. }) => {
+                    unreachable!("lower_stack_membase expects {opnd:?} to not have MemBase::StackIndirect")
+                }
                 _ => opnd,
             }
         }
