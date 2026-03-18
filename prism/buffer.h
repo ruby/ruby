@@ -7,6 +7,8 @@
 #define PRISM_BUFFER_H
 
 #include "prism/compiler/exported.h"
+#include "prism/compiler/nodiscard.h"
+#include "prism/compiler/nonnull.h"
 
 #include <stddef.h>
 
@@ -24,7 +26,7 @@ typedef struct pm_buffer_t pm_buffer_t;
  *
  * \public \memberof pm_buffer_t
  */
-PRISM_EXPORTED_FUNCTION pm_buffer_t * pm_buffer_new(void);
+PRISM_EXPORTED_FUNCTION pm_buffer_t * pm_buffer_new(void) PRISM_NODISCARD;
 
 /**
  * Free both the memory held by the buffer and the buffer itself.
@@ -33,7 +35,7 @@ PRISM_EXPORTED_FUNCTION pm_buffer_t * pm_buffer_new(void);
  *
  * \public \memberof pm_buffer_t
  */
-PRISM_EXPORTED_FUNCTION void pm_buffer_free(pm_buffer_t *buffer);
+PRISM_EXPORTED_FUNCTION void pm_buffer_free(pm_buffer_t *buffer) PRISM_NONNULL(1);
 
 /**
  * Return the value of the buffer.
@@ -43,7 +45,7 @@ PRISM_EXPORTED_FUNCTION void pm_buffer_free(pm_buffer_t *buffer);
  *
  * \public \memberof pm_buffer_t
  */
-PRISM_EXPORTED_FUNCTION char * pm_buffer_value(const pm_buffer_t *buffer);
+PRISM_EXPORTED_FUNCTION char * pm_buffer_value(const pm_buffer_t *buffer) PRISM_NONNULL(1);
 
 /**
  * Return the length of the buffer.
@@ -53,6 +55,6 @@ PRISM_EXPORTED_FUNCTION char * pm_buffer_value(const pm_buffer_t *buffer);
  *
  * \public \memberof pm_buffer_t
  */
-PRISM_EXPORTED_FUNCTION size_t pm_buffer_length(const pm_buffer_t *buffer);
+PRISM_EXPORTED_FUNCTION size_t pm_buffer_length(const pm_buffer_t *buffer) PRISM_NONNULL(1);
 
 #endif

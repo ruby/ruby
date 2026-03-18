@@ -79,7 +79,7 @@ pm_node_list_concat(pm_arena_t *arena, pm_node_list_t *list, pm_node_list_t *oth
  * Returns a string representation of the given node type.
  */
 const char *
-pm_node_type_to_str(pm_node_type_t node_type)
+pm_node_type(pm_node_type_t node_type)
 {
     switch (node_type) {
 <%- nodes.each do |node| -%>

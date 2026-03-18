@@ -6,6 +6,9 @@
 #ifndef PRISM_OPTIONS_H
 #define PRISM_OPTIONS_H
 
+#include "prism/compiler/nodiscard.h"
+#include "prism/compiler/nonnull.h"
+
 #include "prism/strings.h"
 
 #include <stdbool.h>
@@ -112,7 +115,7 @@ static const uint8_t PM_OPTIONS_COMMAND_LINE_X = 0x20;
  *
  * \public \memberof pm_options
  */
-PRISM_EXPORTED_FUNCTION pm_options_t * pm_options_new(void);
+PRISM_EXPORTED_FUNCTION pm_options_t * pm_options_new(void) PRISM_NODISCARD;
 
 /**
  * Free both the held memory of the given options struct and the struct itself.
@@ -121,7 +124,7 @@ PRISM_EXPORTED_FUNCTION pm_options_t * pm_options_new(void);
  *
  * \public \memberof pm_options
  */
-PRISM_EXPORTED_FUNCTION void pm_options_free(pm_options_t *options);
+PRISM_EXPORTED_FUNCTION void pm_options_free(pm_options_t *options) PRISM_NONNULL(1);
 
 /**
  * Set the shebang callback option on the given options struct.
@@ -133,7 +136,7 @@ PRISM_EXPORTED_FUNCTION void pm_options_free(pm_options_t *options);
  *
  * \public \memberof pm_options
  */
-PRISM_EXPORTED_FUNCTION void pm_options_shebang_callback_set(pm_options_t *options, pm_options_shebang_callback_t shebang_callback, void *shebang_callback_data);
+PRISM_EXPORTED_FUNCTION void pm_options_shebang_callback_set(pm_options_t *options, pm_options_shebang_callback_t shebang_callback, void *shebang_callback_data) PRISM_NONNULL(1);
 
 /**
  * Get the filepath option on the given options struct.
@@ -143,7 +146,7 @@ PRISM_EXPORTED_FUNCTION void pm_options_shebang_callback_set(pm_options_t *optio
  *
  * \public \memberof pm_options
  */
-PRISM_EXPORTED_FUNCTION const pm_string_t * pm_options_filepath(const pm_options_t *options);
+PRISM_EXPORTED_FUNCTION const pm_string_t * pm_options_filepath(const pm_options_t *options) PRISM_NONNULL(1);
 
 /**
  * Set the filepath option on the given options struct.
@@ -153,7 +156,7 @@ PRISM_EXPORTED_FUNCTION const pm_string_t * pm_options_filepath(const pm_options
  *
  * \public \memberof pm_options
  */
-PRISM_EXPORTED_FUNCTION void pm_options_filepath_set(pm_options_t *options, const char *filepath);
+PRISM_EXPORTED_FUNCTION void pm_options_filepath_set(pm_options_t *options, const char *filepath) PRISM_NONNULL(1);
 
 /**
  * Set the line option on the given options struct.
@@ -163,7 +166,7 @@ PRISM_EXPORTED_FUNCTION void pm_options_filepath_set(pm_options_t *options, cons
  *
  * \public \memberof pm_options
  */
-PRISM_EXPORTED_FUNCTION void pm_options_line_set(pm_options_t *options, int32_t line);
+PRISM_EXPORTED_FUNCTION void pm_options_line_set(pm_options_t *options, int32_t line) PRISM_NONNULL(1);
 
 /**
  * Set the encoding option on the given options struct.
@@ -173,7 +176,7 @@ PRISM_EXPORTED_FUNCTION void pm_options_line_set(pm_options_t *options, int32_t 
  *
  * \public \memberof pm_options
  */
-PRISM_EXPORTED_FUNCTION void pm_options_encoding_set(pm_options_t *options, const char *encoding);
+PRISM_EXPORTED_FUNCTION void pm_options_encoding_set(pm_options_t *options, const char *encoding) PRISM_NONNULL(1);
 
 /**
  * Set the encoding_locked option on the given options struct.
@@ -183,7 +186,7 @@ PRISM_EXPORTED_FUNCTION void pm_options_encoding_set(pm_options_t *options, cons
  *
  * \public \memberof pm_options
  */
-PRISM_EXPORTED_FUNCTION void pm_options_encoding_locked_set(pm_options_t *options, bool encoding_locked);
+PRISM_EXPORTED_FUNCTION void pm_options_encoding_locked_set(pm_options_t *options, bool encoding_locked) PRISM_NONNULL(1);
 
 /**
  * Set the frozen string literal option on the given options struct.
@@ -193,7 +196,7 @@ PRISM_EXPORTED_FUNCTION void pm_options_encoding_locked_set(pm_options_t *option
  *
  * \public \memberof pm_options
  */
-PRISM_EXPORTED_FUNCTION void pm_options_frozen_string_literal_set(pm_options_t *options, bool frozen_string_literal);
+PRISM_EXPORTED_FUNCTION void pm_options_frozen_string_literal_set(pm_options_t *options, bool frozen_string_literal) PRISM_NONNULL(1);
 
 /**
  * Sets the command line option on the given options struct.
@@ -203,7 +206,7 @@ PRISM_EXPORTED_FUNCTION void pm_options_frozen_string_literal_set(pm_options_t *
  *
  * \public \memberof pm_options
  */
-PRISM_EXPORTED_FUNCTION void pm_options_command_line_set(pm_options_t *options, uint8_t command_line);
+PRISM_EXPORTED_FUNCTION void pm_options_command_line_set(pm_options_t *options, uint8_t command_line) PRISM_NONNULL(1);
 
 /**
  * Set the version option on the given options struct by parsing the given
@@ -217,7 +220,7 @@ PRISM_EXPORTED_FUNCTION void pm_options_command_line_set(pm_options_t *options, 
  *
  * \public \memberof pm_options
  */
-PRISM_EXPORTED_FUNCTION bool pm_options_version_set(pm_options_t *options, const char *version, size_t length);
+PRISM_EXPORTED_FUNCTION bool pm_options_version_set(pm_options_t *options, const char *version, size_t length) PRISM_NONNULL(1);
 
 /**
  * Set the version option on the given options struct to the lowest version of
@@ -227,7 +230,7 @@ PRISM_EXPORTED_FUNCTION bool pm_options_version_set(pm_options_t *options, const
  *
  * \public \memberof pm_options
  */
-PRISM_EXPORTED_FUNCTION void pm_options_version_set_lowest(pm_options_t *options);
+PRISM_EXPORTED_FUNCTION void pm_options_version_set_lowest(pm_options_t *options) PRISM_NONNULL(1);
 
 /**
  * Set the version option on the given options struct to the highest version of
@@ -237,7 +240,7 @@ PRISM_EXPORTED_FUNCTION void pm_options_version_set_lowest(pm_options_t *options
  *
  * \public \memberof pm_options
  */
-PRISM_EXPORTED_FUNCTION void pm_options_version_set_highest(pm_options_t *options);
+PRISM_EXPORTED_FUNCTION void pm_options_version_set_highest(pm_options_t *options) PRISM_NONNULL(1);
 
 /**
  * Set the main script option on the given options struct.
@@ -247,7 +250,7 @@ PRISM_EXPORTED_FUNCTION void pm_options_version_set_highest(pm_options_t *option
  *
  * \public \memberof pm_options
  */
-PRISM_EXPORTED_FUNCTION void pm_options_main_script_set(pm_options_t *options, bool main_script);
+PRISM_EXPORTED_FUNCTION void pm_options_main_script_set(pm_options_t *options, bool main_script) PRISM_NONNULL(1);
 
 /**
  * Set the partial script option on the given options struct.
@@ -257,7 +260,7 @@ PRISM_EXPORTED_FUNCTION void pm_options_main_script_set(pm_options_t *options, b
  *
  * \public \memberof pm_options
  */
-PRISM_EXPORTED_FUNCTION void pm_options_partial_script_set(pm_options_t *options, bool partial_script);
+PRISM_EXPORTED_FUNCTION void pm_options_partial_script_set(pm_options_t *options, bool partial_script) PRISM_NONNULL(1);
 
 /**
  * Get the freeze option on the given options struct.
@@ -266,7 +269,7 @@ PRISM_EXPORTED_FUNCTION void pm_options_partial_script_set(pm_options_t *options
  *
  * \public \memberof pm_options
  */
-PRISM_EXPORTED_FUNCTION bool pm_options_freeze(const pm_options_t *options);
+PRISM_EXPORTED_FUNCTION bool pm_options_freeze(const pm_options_t *options) PRISM_NONNULL(1);
 
 /**
  * Set the freeze option on the given options struct.
@@ -276,7 +279,7 @@ PRISM_EXPORTED_FUNCTION bool pm_options_freeze(const pm_options_t *options);
  *
  * \public \memberof pm_options
  */
-PRISM_EXPORTED_FUNCTION void pm_options_freeze_set(pm_options_t *options, bool freeze);
+PRISM_EXPORTED_FUNCTION void pm_options_freeze_set(pm_options_t *options, bool freeze) PRISM_NONNULL(1);
 
 /**
  * Allocate and zero out the scopes array on the given options struct.
@@ -287,7 +290,7 @@ PRISM_EXPORTED_FUNCTION void pm_options_freeze_set(pm_options_t *options, bool f
  *
  * \public \memberof pm_options
  */
-PRISM_EXPORTED_FUNCTION bool pm_options_scopes_init(pm_options_t *options, size_t scopes_count);
+PRISM_EXPORTED_FUNCTION bool pm_options_scopes_init(pm_options_t *options, size_t scopes_count) PRISM_NONNULL(1);
 
 /**
  * Return a constant pointer to the scope at the given index within the given
@@ -299,7 +302,7 @@ PRISM_EXPORTED_FUNCTION bool pm_options_scopes_init(pm_options_t *options, size_
  *
  * \public \memberof pm_options
  */
-PRISM_EXPORTED_FUNCTION const pm_options_scope_t * pm_options_scope(const pm_options_t *options, size_t index);
+PRISM_EXPORTED_FUNCTION const pm_options_scope_t * pm_options_scope(const pm_options_t *options, size_t index) PRISM_NONNULL(1);
 
 /**
  * Return a mutable pointer to the scope at the given index within the given
@@ -311,7 +314,7 @@ PRISM_EXPORTED_FUNCTION const pm_options_scope_t * pm_options_scope(const pm_opt
  *
  * \public \memberof pm_options
  */
-PRISM_EXPORTED_FUNCTION pm_options_scope_t * pm_options_scope_mut(pm_options_t *options, size_t index);
+PRISM_EXPORTED_FUNCTION pm_options_scope_t * pm_options_scope_mut(pm_options_t *options, size_t index) PRISM_NONNULL(1);
 
 /**
  * Create a new options scope struct. This will hold a set of locals that are in
@@ -323,7 +326,7 @@ PRISM_EXPORTED_FUNCTION pm_options_scope_t * pm_options_scope_mut(pm_options_t *
  *
  * \public \memberof pm_options
  */
-PRISM_EXPORTED_FUNCTION void pm_options_scope_init(pm_options_scope_t *scope, size_t locals_count);
+PRISM_EXPORTED_FUNCTION void pm_options_scope_init(pm_options_scope_t *scope, size_t locals_count) PRISM_NONNULL(1);
 
 /**
  * Return a constant pointer to the local at the given index within the given
@@ -335,7 +338,7 @@ PRISM_EXPORTED_FUNCTION void pm_options_scope_init(pm_options_scope_t *scope, si
  *
  * \public \memberof pm_options
  */
-PRISM_EXPORTED_FUNCTION const pm_string_t * pm_options_scope_local(const pm_options_scope_t *scope, size_t index);
+PRISM_EXPORTED_FUNCTION const pm_string_t * pm_options_scope_local(const pm_options_scope_t *scope, size_t index) PRISM_NONNULL(1);
 
 /**
  * Return a mutable pointer to the local at the given index within the given
@@ -347,7 +350,7 @@ PRISM_EXPORTED_FUNCTION const pm_string_t * pm_options_scope_local(const pm_opti
  *
  * \public \memberof pm_options
  */
-PRISM_EXPORTED_FUNCTION pm_string_t * pm_options_scope_local_mut(pm_options_scope_t *scope, size_t index);
+PRISM_EXPORTED_FUNCTION pm_string_t * pm_options_scope_local_mut(pm_options_scope_t *scope, size_t index) PRISM_NONNULL(1);
 
 /**
  * Set the forwarding option on the given scope struct.
@@ -357,6 +360,6 @@ PRISM_EXPORTED_FUNCTION pm_string_t * pm_options_scope_local_mut(pm_options_scop
  *
  * \public \memberof pm_options
  */
-PRISM_EXPORTED_FUNCTION void pm_options_scope_forwarding_set(pm_options_scope_t *scope, uint8_t forwarding);
+PRISM_EXPORTED_FUNCTION void pm_options_scope_forwarding_set(pm_options_scope_t *scope, uint8_t forwarding) PRISM_NONNULL(1);
 
 #endif

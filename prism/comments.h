@@ -5,6 +5,8 @@
 #define PRISM_COMMENTS_H
 
 #include "prism/compiler/exported.h"
+#include "prism/compiler/nodiscard.h"
+#include "prism/compiler/nonnull.h"
 
 #include "prism/ast.h"
 
@@ -25,7 +27,7 @@ typedef struct pm_comment_t pm_comment_t;
  * @param comment the comment whose location we want to get
  * @return the location associated with the given comment
  */
-PRISM_EXPORTED_FUNCTION pm_location_t pm_comment_location(const pm_comment_t *comment);
+PRISM_EXPORTED_FUNCTION pm_location_t pm_comment_location(const pm_comment_t *comment) PRISM_NONNULL(1);
 
 /**
  * Returns the type associated with the given comment.
@@ -34,6 +36,6 @@ PRISM_EXPORTED_FUNCTION pm_location_t pm_comment_location(const pm_comment_t *co
  * @return the type associated with the given comment. This can either be
  *     PM_COMMENT_INLINE or PM_COMMENT_EMBDOC.
  */
-PRISM_EXPORTED_FUNCTION pm_comment_type_t pm_comment_type(const pm_comment_t *comment);
+PRISM_EXPORTED_FUNCTION pm_comment_type_t pm_comment_type(const pm_comment_t *comment) PRISM_NONNULL(1);
 
 #endif
