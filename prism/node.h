@@ -8,7 +8,6 @@
 
 #include "prism/compiler/exported.h"
 
-#include "prism/arena.h"
 #include "prism/ast.h"
 
 /**
@@ -17,32 +16,6 @@
  */
 #define PM_NODE_LIST_FOREACH(list, index, node) \
     for (size_t index = 0; index < (list)->size && ((node) = (list)->nodes[index]); index++)
-
-/**
- * Slow path for pm_node_list_append: grow the list and append the node.
- * Do not call directly — use pm_node_list_append instead.
- *
- * @param arena The arena to allocate from.
- * @param list The list to append to.
- * @param node The node to append.
- */
-void pm_node_list_append_slow(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node);
-
-/**
- * Append a new node onto the end of the node list.
- *
- * @param arena The arena to allocate from.
- * @param list The list to append to.
- * @param node The node to append.
- */
-static PRISM_FORCE_INLINE void
-pm_node_list_append(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node) {
-    if (list->size < list->capacity) {
-        list->nodes[list->size++] = node;
-    } else {
-        pm_node_list_append_slow(arena, list, node);
-    }
-}
 
 /**
  * Returns a string representation of the given node type.
