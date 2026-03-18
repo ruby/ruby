@@ -6,7 +6,7 @@
 
 #include "prism/magic_comments.h"
 
-#include "prism/list.h"
+#include "prism/internal/list.h"
 
 /**
  * This is a node in the linked list of magic comments that we've found while

@@ -5,11 +5,11 @@
 #define PRISM_INTERNAL_SERIALIZE_H
 
 #include "prism/internal/encoding.h"
+#include "prism/internal/list.h"
 
 #include "prism/ast.h"
 #include "prism/buffer.h"
 #include "prism/excludes.h"
-#include "prism/list.h"
 #include "prism/parser.h"
 
 /* We optionally support serializing to a binary string. For systems that do not
