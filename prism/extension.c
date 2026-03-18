@@ -372,8 +372,8 @@ dump_input(pm_string_t *input, const pm_options_t *options) {
         rb_raise(rb_eNoMemError, "failed to allocate memory");
     }
 
-    pm_arena_t arena = { 0 };
-    pm_parser_t *parser = pm_parser_new(&arena, pm_string_source(input), pm_string_length(input), options);
+    pm_arena_t *arena = pm_arena_new();
+    pm_parser_t *parser = pm_parser_new(arena, pm_string_source(input), pm_string_length(input), options);
 
     pm_node_t *node = pm_parse(parser);
     pm_serialize(parser, node, buffer);
@@ -381,7 +381,7 @@ dump_input(pm_string_t *input, const pm_options_t *options) {
     VALUE result = rb_str_new(pm_buffer_value(buffer), pm_buffer_length(buffer));
     pm_buffer_free(buffer);
     pm_parser_free(parser);
-    pm_arena_cleanup(&arena);
+    pm_arena_free(arena);
 
     return result;
 }
@@ -777,8 +777,8 @@ parse_lex_encoding_changed_callback(pm_parser_t *parser) {
  */
 static VALUE
 parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nodes) {
-    pm_arena_t arena = { 0 };
-    pm_parser_t *parser = pm_parser_new(&arena, pm_string_source(input), pm_string_length(input), options);
+    pm_arena_t *arena = pm_arena_new();
+    pm_parser_t *parser = pm_parser_new(arena, pm_string_source(input), pm_string_length(input), options);
     pm_parser_encoding_changed_callback_set(parser, parse_lex_encoding_changed_callback);
 
     VALUE source_string = rb_str_new((const char *) pm_string_source(input), pm_string_length(input));
@@ -828,7 +828,7 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
     }
 
     pm_parser_free(parser);
-    pm_arena_cleanup(&arena);
+    pm_arena_free(arena);
 
     return result;
 }
@@ -886,8 +886,8 @@ lex_file(int argc, VALUE *argv, VALUE self) {
  */
 static VALUE
 parse_input(pm_string_t *input, const pm_options_t *options) {
-    pm_arena_t arena = { 0 };
-    pm_parser_t *parser = pm_parser_new(&arena, pm_string_source(input), pm_string_length(input), options);
+    pm_arena_t *arena = pm_arena_new();
+    pm_parser_t *parser = pm_parser_new(arena, pm_string_source(input), pm_string_length(input), options);
 
     pm_node_t *node = pm_parse(parser);
     rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(parser));
@@ -902,7 +902,7 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
     }
 
     pm_parser_free(parser);
-    pm_arena_cleanup(&arena);
+    pm_arena_free(arena);
 
     return result;
 }
@@ -1004,12 +1004,12 @@ parse_file(int argc, VALUE *argv, VALUE self) {
  */
 static void
 profile_input(pm_string_t *input, const pm_options_t *options) {
-    pm_arena_t arena = { 0 };
-    pm_parser_t *parser = pm_parser_new(&arena, pm_string_source(input), pm_string_length(input), options);
+    pm_arena_t *arena = pm_arena_new();
+    pm_parser_t *parser = pm_parser_new(arena, pm_string_source(input), pm_string_length(input), options);
 
     pm_parse(parser);
     pm_parser_free(parser);
-    pm_arena_cleanup(&arena);
+    pm_arena_free(arena);
 }
 
 /**
@@ -1104,11 +1104,11 @@ parse_stream(int argc, VALUE *argv, VALUE self) {
     pm_options_t *options = pm_options_new();
     extract_options(options, Qnil, keywords);
 
-    pm_arena_t arena = { 0 };
+    pm_arena_t *arena = pm_arena_new();
     pm_parser_t *parser;
 
     pm_buffer_t *buffer = pm_buffer_new();
-    pm_node_t *node = pm_parse_stream(&parser, &arena, buffer, (void *) stream, parse_stream_fgets, parse_stream_eof, options);
+    pm_node_t *node = pm_parse_stream(&parser, arena, buffer, (void *) stream, parse_stream_fgets, parse_stream_eof, options);
     rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(parser));
 
     VALUE source = pm_source_new(parser, encoding, pm_options_freeze_get(options));
@@ -1117,7 +1117,7 @@ parse_stream(int argc, VALUE *argv, VALUE self) {
 
     pm_buffer_free(buffer);
     pm_parser_free(parser);
-    pm_arena_cleanup(&arena);
+    pm_arena_free(arena);
     pm_options_free(options);
 
     return result;
@@ -1128,8 +1128,8 @@ parse_stream(int argc, VALUE *argv, VALUE self) {
  */
 static VALUE
 parse_input_comments(pm_string_t *input, const pm_options_t *options) {
-    pm_arena_t arena = { 0 };
-    pm_parser_t *parser = pm_parser_new(&arena, pm_string_source(input), pm_string_length(input), options);
+    pm_arena_t *arena = pm_arena_new();
+    pm_parser_t *parser = pm_parser_new(arena, pm_string_source(input), pm_string_length(input), options);
 
     pm_parse(parser);
     rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(parser));
@@ -1138,7 +1138,7 @@ parse_input_comments(pm_string_t *input, const pm_options_t *options) {
     VALUE comments = parser_comments(parser, source, pm_options_freeze_get(options));
 
     pm_parser_free(parser);
-    pm_arena_cleanup(&arena);
+    pm_arena_free(arena);
 
     return comments;
 }
@@ -1250,14 +1250,14 @@ parse_lex_file(int argc, VALUE *argv, VALUE self) {
  */
 static VALUE
 parse_input_success_p(pm_string_t *input, const pm_options_t *options) {
-    pm_arena_t arena = { 0 };
-    pm_parser_t *parser = pm_parser_new(&arena, pm_string_source(input), pm_string_length(input), options);
+    pm_arena_t *arena = pm_arena_new();
+    pm_parser_t *parser = pm_parser_new(arena, pm_string_source(input), pm_string_length(input), options);
 
     pm_parse(parser);
 
     VALUE result = pm_parser_errors_size(parser) == 0 ? Qtrue : Qfalse;
     pm_parser_free(parser);
-    pm_arena_cleanup(&arena);
+    pm_arena_free(arena);
 
     return result;
 }
