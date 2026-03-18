@@ -702,6 +702,7 @@ module Prism
       "lib/prism/serialize.rb",
       "lib/prism/visitor.rb",
       "src/diagnostic.c",
+      "src/json.c",
       "src/node.c",
       "src/prettyprint.c",
       "src/serialize.c",
