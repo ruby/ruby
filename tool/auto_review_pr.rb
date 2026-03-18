@@ -91,6 +91,12 @@ class AutoReviewPR
       return
     end
 
+    author = pr.dig(:user, :login)
+    if author == 'dependabot[bot]'
+      puts "Skipped: The PR ##{pr_number} is from dependabot."
+      return
+    end
+
     post_comment(pr_number, FORK_COMMENT_BODY)
   end
 
