@@ -5107,3 +5107,27 @@ fn test_local_tracepoint() {
         called
     "), @"true");
 }
+
+// Regression test: TracePoint return value for methods with rescue that use `return`.
+// ZJIT's send fallback uses rb_vm_opt_send_without_block which calls VM_EXEC,
+// setting FLAG_FINISH on the callee frame. This changes how throw TAG_RETURN is
+// handled, causing the return value to be nil instead of the actual value.
+#[test]
+fn test_tracepoint_return_value_with_rescue() {
+    assert_snapshot!(inspect("
+        def f_raise
+          raise
+        rescue
+          return :f_raise_return
+        end
+
+        ary = []
+        TracePoint.new(:return, :b_return){|tp|
+          ary << [tp.event, tp.method_id, tp.return_value]
+        }.enable{
+          send :f_raise
+        }
+        ary.pop # last b_return event is not required
+        ary
+    "), @"[[:return, :f_raise, :f_raise_return]]");
+}
