@@ -704,6 +704,7 @@ module Prism
       "lib/prism/visitor.rb",
       "src/diagnostic.c",
       "src/node.c",
+      "src/node_new.c",
       "src/prettyprint.c",
       "src/serialize.c",
       "src/token_type.c"
