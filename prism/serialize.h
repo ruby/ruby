@@ -88,7 +88,7 @@ PRISM_EXPORTED_FUNCTION void pm_serialize_parse_lex(pm_buffer_t *buffer, const u
  * @param source The source to parse.
  * @param size The size of the source.
  * @param data The optional data to pass to the parser.
- * @return True if the source parses without errors or warnings.
+ * @returns True if the source parses without errors or warnings.
  */
 PRISM_EXPORTED_FUNCTION bool pm_serialize_parse_success_p(const uint8_t *source, size_t size, const char *data) PRISM_NONNULL(1);
 

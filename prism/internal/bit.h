@@ -1,14 +1,9 @@
-/**
- * @file internal/bit.h
- *
- * Bit manipulation utilities used throughout the prism library.
- */
 #ifndef PRISM_INTERNAL_BIT_H
 #define PRISM_INTERNAL_BIT_H
 
 #include "prism/compiler/inline.h"
 
-/**
+/*
  * Count trailing zero bits in a 64-bit value. Used by SWAR identifier scanning
  * to find the first non-matching byte in a word.
  *

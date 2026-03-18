@@ -1,8 +1,3 @@
-/**
- * @file internal/buffer.h
- *
- * A wrapper around a contiguous block of allocated memory.
- */
 #ifndef PRISM_INTERNAL_BUFFER_H
 #define PRISM_INTERNAL_BUFFER_H
 
@@ -13,113 +8,54 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-/**
+/*
  * A simple memory buffer that stores data in a contiguous block of memory.
  */
 struct pm_buffer_t {
-    /** The length of the buffer in bytes. */
+    /* The length of the buffer in bytes. */
     size_t length;
 
-    /** The capacity of the buffer in bytes that has been allocated. */
+    /* The capacity of the buffer in bytes that has been allocated. */
     size_t capacity;
 
-    /** A pointer to the start of the buffer. */
+    /* A pointer to the start of the buffer. */
     char *value;
 };
 
-/**
- * Initialize a pm_buffer_t with the given capacity.
- *
- * @param buffer The buffer to initialize.
- * @param capacity The capacity of the buffer.
- */
+/* Initialize a pm_buffer_t with the given capacity. */
 void pm_buffer_init(pm_buffer_t *buffer, size_t capacity);
 
-/**
- * Free the memory held by the buffer.
- *
- * @param buffer The buffer whose held memory should be freed.
- */
+/* Free the memory held by the buffer. */
 void pm_buffer_cleanup(pm_buffer_t *buffer);
 
-/**
- * Append the given amount of space as zeroes to the buffer.
- *
- * @param buffer The buffer to append to.
- * @param length The amount of space to append and zero.
- */
+/* Append the given amount of space as zeroes to the buffer. */
 void pm_buffer_append_zeroes(pm_buffer_t *buffer, size_t length);
 
-/**
- * Append a formatted string to the buffer.
- *
- * @param buffer The buffer to append to.
- * @param format The format string to append.
- * @param ... The arguments to the format string.
- */
+/* Append a formatted string to the buffer. */
 void pm_buffer_append_format(pm_buffer_t *buffer, const char *format, ...) PRISM_ATTRIBUTE_FORMAT(2, 3);
 
-/**
- * Append a string to the buffer.
- *
- * @param buffer The buffer to append to.
- * @param value The string to append.
- * @param length The length of the string to append.
- */
+/* Append a string to the buffer. */
 void pm_buffer_append_string(pm_buffer_t *buffer, const char *value, size_t length);
 
-/**
- * Append a list of bytes to the buffer.
- *
- * @param buffer The buffer to append to.
- * @param value The bytes to append.
- * @param length The length of the bytes to append.
- */
+/* Append a list of bytes to the buffer. */
 void pm_buffer_append_bytes(pm_buffer_t *buffer, const uint8_t *value, size_t length);
 
-/**
- * Append a single byte to the buffer.
- *
- * @param buffer The buffer to append to.
- * @param value The byte to append.
- */
+/* Append a single byte to the buffer. */
 void pm_buffer_append_byte(pm_buffer_t *buffer, uint8_t value);
 
-/**
- * Append a 32-bit unsigned integer to the buffer as a variable-length integer.
- *
- * @param buffer The buffer to append to.
- * @param value The integer to append.
- */
+/* Append a 32-bit unsigned integer to the buffer as a variable-length integer. */
 void pm_buffer_append_varuint(pm_buffer_t *buffer, uint32_t value);
 
-/**
- * Append a 32-bit signed integer to the buffer as a variable-length integer.
- *
- * @param buffer The buffer to append to.
- * @param value The integer to append.
- */
+/* Append a 32-bit signed integer to the buffer as a variable-length integer. */
 void pm_buffer_append_varsint(pm_buffer_t *buffer, int32_t value);
 
-/**
- * Append a double to the buffer.
- *
- * @param buffer The buffer to append to.
- * @param value The double to append.
- */
+/* Append a double to the buffer. */
 void pm_buffer_append_double(pm_buffer_t *buffer, double value);
 
-/**
- * Append a unicode codepoint to the buffer.
- *
- * @param buffer The buffer to append to.
- * @param value The character to append.
- * @returns True if the codepoint was valid and appended successfully, false
- *   otherwise.
- */
+/* Append a unicode codepoint to the buffer. */
 bool pm_buffer_append_unicode_codepoint(pm_buffer_t *buffer, uint32_t value);
 
-/**
+/*
  * The different types of escaping that can be performed by the buffer when
  * appending a slice of Ruby source code.
  */
@@ -128,66 +64,28 @@ typedef enum {
     PM_BUFFER_ESCAPING_JSON
 } pm_buffer_escaping_t;
 
-/**
- * Append a slice of source code to the buffer.
- *
- * @param buffer The buffer to append to.
- * @param source The source code to append.
- * @param length The length of the source code to append.
- * @param escaping The type of escaping to perform.
- */
+/* Append a slice of source code to the buffer. */
 void pm_buffer_append_source(pm_buffer_t *buffer, const uint8_t *source, size_t length, pm_buffer_escaping_t escaping);
 
-/**
- * Prepend the given string to the buffer.
- *
- * @param buffer The buffer to prepend to.
- * @param value The string to prepend.
- * @param length The length of the string to prepend.
- */
+/* Prepend the given string to the buffer. */
 void pm_buffer_prepend_string(pm_buffer_t *buffer, const char *value, size_t length);
 
-/**
- * Concatenate one buffer onto another.
- *
- * @param destination The buffer to concatenate onto.
- * @param source The buffer to concatenate.
- */
+/* Concatenate one buffer onto another. */
 void pm_buffer_concat(pm_buffer_t *destination, const pm_buffer_t *source);
 
-/**
+/*
  * Clear the buffer by reducing its size to 0. This does not free the allocated
  * memory, but it does allow the buffer to be reused.
- *
- * @param buffer The buffer to clear.
  */
 void pm_buffer_clear(pm_buffer_t *buffer);
 
-/**
- * Strip the whitespace from the end of the buffer.
- *
- * @param buffer The buffer to strip.
- */
+/* Strip the whitespace from the end of the buffer. */
 void pm_buffer_rstrip(pm_buffer_t *buffer);
 
-/**
- * Checks if the buffer includes the given value.
- *
- * @param buffer The buffer to check.
- * @param value The value to check for.
- * @returns The index of the first occurrence of the value in the buffer, or
- *   SIZE_MAX if the value is not found.
- */
+/* Checks if the buffer includes the given value. */
 size_t pm_buffer_index(const pm_buffer_t *buffer, char value);
 
-/**
- * Insert the given string into the buffer at the given index.
- *
- * @param buffer The buffer to insert into.
- * @param index The index to insert at.
- * @param value The string to insert.
- * @param length The length of the string to insert.
- */
+/* Insert the given string into the buffer at the given index. */
 void pm_buffer_insert(pm_buffer_t *buffer, size_t index, const char *value, size_t length);
 
 #endif

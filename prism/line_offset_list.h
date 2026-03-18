@@ -54,7 +54,7 @@ typedef struct {
  * @param list The list to search.
  * @param cursor The offset to search for.
  * @param start_line The line to start counting from.
- * @return The line and column of the given offset.
+ * @returns The line and column of the given offset.
  */
 PRISM_EXPORTED_FUNCTION pm_line_column_t pm_line_offset_list_line_column(const pm_line_offset_list_t *list, uint32_t cursor, int32_t start_line) PRISM_NONNULL(1);
 

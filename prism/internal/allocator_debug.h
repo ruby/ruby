@@ -1,8 +1,3 @@
-/**
- * @file internal/allocator_debug.h
- *
- * Decorate allocation function to ensure sizes are correct.
- */
 #ifndef PRISM_INTERNAL_ALLOCATOR_DEBUG_H
 #define PRISM_INTERNAL_ALLOCATOR_DEBUG_H
 

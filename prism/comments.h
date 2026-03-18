@@ -27,7 +27,7 @@ typedef struct pm_comment_t pm_comment_t;
  * Returns the location associated with the given comment.
  *
  * @param comment the comment whose location we want to get
- * @return the location associated with the given comment
+ * @returns the location associated with the given comment
  */
 PRISM_EXPORTED_FUNCTION pm_location_t pm_comment_location(const pm_comment_t *comment) PRISM_NONNULL(1);
 
@@ -35,7 +35,7 @@ PRISM_EXPORTED_FUNCTION pm_location_t pm_comment_location(const pm_comment_t *co
  * Returns the type associated with the given comment.
  *
  * @param comment the comment whose type we want to get
- * @return the type associated with the given comment. This can either be
+ * @returns the type associated with the given comment. This can either be
  *     PM_COMMENT_INLINE or PM_COMMENT_EMBDOC.
  */
 PRISM_EXPORTED_FUNCTION pm_comment_type_t pm_comment_type(const pm_comment_t *comment) PRISM_NONNULL(1);

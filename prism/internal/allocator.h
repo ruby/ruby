@@ -1,13 +1,7 @@
-/**
- * @file internal/allocator.h
- *
- * Macro definitions for defining the main and a custom allocator for Prism.
- */
 #ifndef PRISM_INTERNAL_ALLOCATOR_H
 #define PRISM_INTERNAL_ALLOCATOR_H
 
-/**
- * If you build Prism with a custom allocator, configure it with
+/* If you build Prism with a custom allocator, configure it with
  * "-D PRISM_XALLOCATOR" to use your own allocator that defines xmalloc,
  * xrealloc, xcalloc, and xfree.
  *
@@ -29,52 +23,41 @@
     #include "prism_xallocator.h"
 #else
     #ifndef xmalloc
-        /**
-         * The malloc function that should be used. This can be overridden with
-         * the PRISM_XALLOCATOR define.
-         */
+        /* The malloc function that should be used. This can be overridden with
+         * the PRISM_XALLOCATOR define. */
         #define xmalloc malloc
     #endif
 
     #ifndef xrealloc
-        /**
-         * The realloc function that should be used. This can be overridden with
-         * the PRISM_XALLOCATOR define.
-         */
+        /* The realloc function that should be used. This can be overridden with
+         * the PRISM_XALLOCATOR define. */
         #define xrealloc realloc
     #endif
 
     #ifndef xcalloc
-        /**
-         * The calloc function that should be used. This can be overridden with
-         * the PRISM_XALLOCATOR define.
-         */
+        /* The calloc function that should be used. This can be overridden with
+         * the PRISM_XALLOCATOR define. */
         #define xcalloc calloc
     #endif
 
     #ifndef xfree
-        /**
-         * The free function that should be used. This can be overridden with
-         * the PRISM_XALLOCATOR define.
-         */
+        /* The free function that should be used. This can be overridden with
+         * the PRISM_XALLOCATOR define. */
         #define xfree free
     #endif
 #endif
 
 #ifndef xfree_sized
-    /**
-     * The free_sized function that should be used. This can be overridden with
+    /* The free_sized function that should be used. This can be overridden with
      * the PRISM_XALLOCATOR define. If not defined, defaults to calling xfree.
      */
     #define xfree_sized(p, s) xfree(((void)(s), (p)))
 #endif
 
 #ifndef xrealloc_sized
-    /**
-     * The xrealloc_sized function that should be used. This can be overridden
+    /* The xrealloc_sized function that should be used. This can be overridden
      * with the PRISM_XALLOCATOR define. If not defined, defaults to calling
-     * xrealloc.
-     */
+     * xrealloc. */
     #define xrealloc_sized(p, ns, os) xrealloc((p), ((void)(os), (ns)))
 #endif
 

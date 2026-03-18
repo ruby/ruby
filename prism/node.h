@@ -22,7 +22,7 @@
  * Returns a string representation of the given node type.
  *
  * @param node_type The node type to convert to a string.
- * @return A string representation of the given node type.
+ * @returns A string representation of the given node type.
  */
 PRISM_EXPORTED_FUNCTION const char * pm_node_type(pm_node_type_t node_type);
 

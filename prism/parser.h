@@ -30,10 +30,8 @@ typedef struct pm_parser_t pm_parser_t;
  * @param size The size of the source.
  * @param options The optional options to use when parsing. These options must
  *     live for the whole lifetime of this parser.
- * @return The initialized parser. It is the responsibility of the caller to
+ * @returns The initialized parser. It is the responsibility of the caller to
  *     free the parser with `pm_parser_free()`.
- *
- * \public \memberof pm_parser
  */
 PRISM_EXPORTED_FUNCTION pm_parser_t * pm_parser_new(pm_arena_t *arena, const uint8_t *source, size_t size, const pm_options_t *options) PRISM_NODISCARD PRISM_NONNULL(1);
 
@@ -41,8 +39,6 @@ PRISM_EXPORTED_FUNCTION pm_parser_t * pm_parser_new(pm_arena_t *arena, const uin
  * Free both the memory held by the given parser and the parser itself.
  *
  * @param parser The parser to free.
- *
- * \public \memberof pm_parser
  */
 PRISM_EXPORTED_FUNCTION void pm_parser_free(pm_parser_t *parser) PRISM_NONNULL(1);
 
@@ -64,8 +60,6 @@ typedef void (*pm_lex_callback_t)(pm_parser_t *parser, pm_token_t *token, void *
  *
  * @param parser The parser to register the callback with.
  * @param callback The callback to register.
- *
- * \public \memberof pm_parser
  */
 PRISM_EXPORTED_FUNCTION void pm_parser_encoding_changed_callback_set(pm_parser_t *parser, pm_encoding_changed_callback_t callback) PRISM_NONNULL(1);
 
@@ -75,8 +69,6 @@ PRISM_EXPORTED_FUNCTION void pm_parser_encoding_changed_callback_set(pm_parser_t
  * @param parser The parser to register the callback with.
  * @param data The opaque data to pass to the callback when it is called.
  * @param callback The callback to register.
- *
- * \public \memberof pm_parser
  */
 PRISM_EXPORTED_FUNCTION void pm_parser_lex_callback_set(pm_parser_t *parser, pm_lex_callback_t callback, void *data) PRISM_NONNULL(1);
 
@@ -84,7 +76,7 @@ PRISM_EXPORTED_FUNCTION void pm_parser_lex_callback_set(pm_parser_t *parser, pm_
  * Returns the opaque data that is passed to the lex callback when it is called.
  *
  * @param parser The parser whose lex callback data we want to get.
- * @return The opaque data that is passed to the lex callback when it is called.
+ * @returns The opaque data that is passed to the lex callback when it is called.
  */
 PRISM_EXPORTED_FUNCTION void * pm_parser_lex_callback_data(const pm_parser_t *parser) PRISM_NONNULL(1);
 
@@ -92,7 +84,7 @@ PRISM_EXPORTED_FUNCTION void * pm_parser_lex_callback_data(const pm_parser_t *pa
  * Returns the raw pointer to the start of the source that is being parsed.
  *
  * @param parser the parser whose start pointer we want to get
- * @return the raw pointer to the start of the source that is being parsed
+ * @returns the raw pointer to the start of the source that is being parsed
  */
 PRISM_EXPORTED_FUNCTION const uint8_t * pm_parser_start(const pm_parser_t *parser) PRISM_NONNULL(1);
 
@@ -100,7 +92,7 @@ PRISM_EXPORTED_FUNCTION const uint8_t * pm_parser_start(const pm_parser_t *parse
  * Returns the raw pointer to the end of the source that is being parsed.
  *
  * @param parser the parser whose end pointer we want to get
- * @return the raw pointer to the end of the source that is being parsed
+ * @returns the raw pointer to the end of the source that is being parsed
  */
 PRISM_EXPORTED_FUNCTION const uint8_t * pm_parser_end(const pm_parser_t *parser) PRISM_NONNULL(1);
 
@@ -108,7 +100,7 @@ PRISM_EXPORTED_FUNCTION const uint8_t * pm_parser_end(const pm_parser_t *parser)
  * Returns the line that the parser was considered to have started on.
  *
  * @param parser the parser whose start line we want to get
- * @return the line that the parser was considered to have started on
+ * @returns the line that the parser was considered to have started on
  */
 PRISM_EXPORTED_FUNCTION int32_t pm_parser_start_line(const pm_parser_t *parser) PRISM_NONNULL(1);
 
@@ -116,7 +108,7 @@ PRISM_EXPORTED_FUNCTION int32_t pm_parser_start_line(const pm_parser_t *parser) 
  * Returns the name of the encoding that is being used to parse the source.
  *
  * @param parser the parser whose encoding name we want to get
- * @return the name of the encoding that is being used to parse the source
+ * @returns the name of the encoding that is being used to parse the source
  */
 PRISM_EXPORTED_FUNCTION const char * pm_parser_encoding_name(const pm_parser_t *parser) PRISM_NONNULL(1);
 
@@ -133,7 +125,7 @@ PRISM_EXPORTED_FUNCTION int8_t pm_parser_frozen_string_literal(const pm_parser_t
  * Returns the line offsets that are associated with the given parser.
  *
  * @param parser the parser whose line offsets we want to get
- * @return the line offsets that are associated with the given parser
+ * @returns the line offsets that are associated with the given parser
  */
 PRISM_EXPORTED_FUNCTION const pm_line_offset_list_t * pm_parser_line_offsets(const pm_parser_t *parser) PRISM_NONNULL(1);
 
@@ -142,7 +134,7 @@ PRISM_EXPORTED_FUNCTION const pm_line_offset_list_t * pm_parser_line_offsets(con
  * given parser.
  *
  * @param parser the parser whose data location we want to get
- * @return the location of the __DATA__ section that is associated with the
+ * @returns the location of the __DATA__ section that is associated with the
  *     given parser. If it is unset, then the length will be set to 0.
  */
 PRISM_EXPORTED_FUNCTION const pm_location_t * pm_parser_data_loc(const pm_parser_t *parser) PRISM_NONNULL(1);
@@ -152,7 +144,7 @@ PRISM_EXPORTED_FUNCTION const pm_location_t * pm_parser_data_loc(const pm_parser
  * valid if more input were appended, as opposed to being definitively invalid.
  *
  * @param parser the parser whose continuable status we want to get
- * @return whether the given parser is continuable
+ * @returns whether the given parser is continuable
  */
 PRISM_EXPORTED_FUNCTION bool pm_parser_continuable(const pm_parser_t *parser) PRISM_NONNULL(1);
 
@@ -163,7 +155,7 @@ PRISM_EXPORTED_FUNCTION bool pm_parser_continuable(const pm_parser_t *parser) PR
  * niche use cases. Most consumers should avoid this function.
  *
  * @param parser the parser whose lex state we want to get
- * @return the lex state of the parser
+ * @returns the lex state of the parser
  */
 PRISM_EXPORTED_FUNCTION int pm_parser_lex_state(const pm_parser_t *parser) PRISM_NONNULL(1);
 
@@ -171,7 +163,7 @@ PRISM_EXPORTED_FUNCTION int pm_parser_lex_state(const pm_parser_t *parser) PRISM
  * Returns the number of comments associated with the given parser.
  *
  * @param parser the parser whose comments we want to get the size of
- * @return the number of comments associated with the given parser
+ * @returns the number of comments associated with the given parser
  */
 PRISM_EXPORTED_FUNCTION size_t pm_parser_comments_size(const pm_parser_t *parser) PRISM_NONNULL(1);
 
@@ -197,7 +189,7 @@ PRISM_EXPORTED_FUNCTION void pm_parser_comments_each(const pm_parser_t *parser, 
  * Returns the number of magic comments associated with the given parser.
  *
  * @param parser the parser whose magic comments we want to get the size of
- * @return the number of magic comments associated with the given parser
+ * @returns the number of magic comments associated with the given parser
  */
 PRISM_EXPORTED_FUNCTION size_t pm_parser_magic_comments_size(const pm_parser_t *parser) PRISM_NONNULL(1);
 
@@ -223,7 +215,7 @@ PRISM_EXPORTED_FUNCTION void pm_parser_magic_comments_each(const pm_parser_t *pa
  * Returns the number of errors associated with the given parser.
  *
  * @param parser the parser whose errors we want to get the size of
- * @return the number of errors associated with the given parser
+ * @returns the number of errors associated with the given parser
  */
 PRISM_EXPORTED_FUNCTION size_t pm_parser_errors_size(const pm_parser_t *parser) PRISM_NONNULL(1);
 
@@ -231,7 +223,7 @@ PRISM_EXPORTED_FUNCTION size_t pm_parser_errors_size(const pm_parser_t *parser) 
  * Returns the number of warnings associated with the given parser.
  *
  * @param parser the parser whose warnings we want to get the size of
- * @return the number of warnings associated with the given parser
+ * @returns the number of warnings associated with the given parser
  */
 PRISM_EXPORTED_FUNCTION size_t pm_parser_warnings_size(const pm_parser_t *parser) PRISM_NONNULL(1);
 
@@ -273,7 +265,7 @@ PRISM_EXPORTED_FUNCTION void pm_parser_warnings_each(const pm_parser_t *parser, 
  *
  * @param parser the parser whose constant pool constants we want to get the
  *     size of
- * @return the number of constants in the constant pool associated with the
+ * @returns the number of constants in the constant pool associated with the
  *     given parser
  */
 PRISM_EXPORTED_FUNCTION size_t pm_parser_constants_size(const pm_parser_t *parser) PRISM_NONNULL(1);
@@ -311,9 +303,7 @@ PRISM_EXPORTED_FUNCTION const pm_constant_t * pm_parser_constant(const pm_parser
  * Initiate the parser with the given parser.
  *
  * @param parser The parser to use.
- * @return The AST representing the source.
- *
- * \public \memberof pm_parser
+ * @returns The AST representing the source.
  */
 PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse(pm_parser_t *parser) PRISM_NONNULL(1);
 

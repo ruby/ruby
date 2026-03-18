@@ -1,14 +1,9 @@
-/**
- * @file internal/list.h
- *
- * An abstract linked list.
- */
 #ifndef PRISM_INTERNAL_LIST_H
 #define PRISM_INTERNAL_LIST_H
 
 #include <stddef.h>
 
-/**
+/*
  * This struct represents an abstract linked list that provides common
  * functionality. It is meant to be used any time a linked list is necessary to
  * store data.
@@ -39,39 +34,29 @@
  * iteration and appending of new nodes.
  */
 typedef struct pm_list_node {
-    /** A pointer to the next node in the list. */
+    /* A pointer to the next node in the list. */
     struct pm_list_node *next;
 } pm_list_node_t;
 
-/**
+/*
  * This represents the overall linked list. It keeps a pointer to the head and
  * tail so that iteration is easy and pushing new nodes is easy.
  */
 typedef struct {
-    /** The size of the list. */
+    /* The size of the list. */
     size_t size;
 
-    /** A pointer to the head of the list. */
+    /* A pointer to the head of the list. */
     pm_list_node_t *head;
 
-    /** A pointer to the tail of the list. */
+    /* A pointer to the tail of the list. */
     pm_list_node_t *tail;
 } pm_list_t;
 
-/**
- * Returns the size of the list.
- *
- * @param list The list to check.
- * @return The size of the list.
- */
+/* Returns the size of the list. */
 size_t pm_list_size(pm_list_t *list);
 
-/**
- * Append a node to the given list.
- *
- * @param list The list to append to.
- * @param node The node to append.
- */
+/* Append a node to the given list. */
 void pm_list_append(pm_list_t *list, pm_list_node_t *node);
 
 #endif
