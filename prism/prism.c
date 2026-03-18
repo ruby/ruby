@@ -26,6 +26,7 @@
 #include "prism/internal/strings.h"
 #include "prism/internal/strncasecmp.h"
 #include "prism/internal/strpbrk.h"
+#include "prism/internal/tokens.h"
 
 #include "prism/excludes.h"
 #include "prism/serialize.h"
@@ -10348,7 +10349,7 @@ parser_lex(pm_parser_t *parser) {
                 // ,
                 case ',':
                     if ((parser->previous.type == PM_TOKEN_COMMA) && (parser->enclosure_nesting > 0)) {
-                        PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_ARRAY_TERM, pm_token_type_human(parser->current.type));
+                        PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_ARRAY_TERM, pm_token_str(parser->current.type));
                     }
 
                     lex_state_set(parser, PM_LEX_STATE_BEG | PM_LEX_STATE_LABEL);
@@ -13487,7 +13488,7 @@ parse_statements(pm_parser_t *parser, pm_context_t context, uint16_t depth) {
             // This is an inlined version of accept1 because the error that we
             // want to add has varargs. If this happens again, we should
             // probably extract a helper function.
-            PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_type_human(parser->current.type));
+            PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_str(parser->current.type));
             parser->previous.start = parser->previous.end;
             parser->previous.type = 0;
         }
@@ -15102,7 +15103,7 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool accept
             parse_arguments(parser, arguments, accepts_block, PM_TOKEN_PARENTHESIS_RIGHT, (uint8_t) (flags & ~PM_PARSE_ACCEPTS_DO_BLOCK), (uint16_t) (depth + 1));
 
             if (!accept1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
-                PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_ARGUMENT_TERM_PAREN, pm_token_type_human(parser->current.type));
+                PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_ARGUMENT_TERM_PAREN, pm_token_str(parser->current.type));
                 parser->previous.start = parser->previous.end;
                 parser->previous.type = 0;
             }
@@ -15124,7 +15125,7 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool accept
         // then we have a trailing comma where we need to check whether it is
         // allowed or not.
         if (parser->previous.type == PM_TOKEN_COMMA && !match1(parser, PM_TOKEN_SEMICOLON)) {
-            PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->previous, PM_ERR_EXPECT_ARGUMENT, pm_token_type_human(parser->current.type));
+            PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->previous, PM_ERR_EXPECT_ARGUMENT, pm_token_str(parser->current.type));
         }
 
         pm_accepts_block_stack_pop(parser);
@@ -16101,7 +16102,7 @@ parse_method_definition_name(pm_parser_t *parser) {
             parser_lex(parser);
             return parser->previous;
         default:
-            PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_DEF_NAME, pm_token_type_human(parser->current.type));
+            PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_DEF_NAME, pm_token_str(parser->current.type));
             return (pm_token_t) { .type = 0, .start = parser->current.start, .end = parser->current.end };
     }
 }
@@ -16303,7 +16304,7 @@ parse_strings(pm_parser_t *parser, pm_node_t *current, bool accepts_label, uint1
             } else if (accept1(parser, PM_TOKEN_STRING_END)) {
                 node = UP(pm_string_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped));
             } else {
-                PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->previous, PM_ERR_STRING_LITERAL_TERM, pm_token_type_human(parser->previous.type));
+                PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->previous, PM_ERR_STRING_LITERAL_TERM, pm_token_str(parser->previous.type));
                 parser->previous.start = parser->previous.end;
                 parser->previous.type = 0;
                 node = UP(pm_string_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped));
@@ -16940,7 +16941,7 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
                         first_node = parse_expression(parser, PM_BINDING_POWER_MAX, PM_PARSE_ACCEPTS_DO_BLOCK | PM_PARSE_ACCEPTS_LABEL, PM_ERR_PATTERN_HASH_KEY_LABEL, (uint16_t) (depth + 1));
                         break;
                     default: {
-                        PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_PATTERN_HASH_KEY, pm_token_type_human(parser->current.type));
+                        PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_PATTERN_HASH_KEY, pm_token_str(parser->current.type));
                         parser_lex(parser);
 
                         first_node = UP(pm_missing_node_create(parser, PM_TOKEN_START(parser, &parser->previous), PM_TOKEN_LENGTH(&parser->previous)));
@@ -17413,22 +17414,22 @@ static void
 pm_parser_err_prefix(pm_parser_t *parser, pm_diagnostic_id_t diag_id) {
     switch (diag_id) {
         case PM_ERR_HASH_KEY: {
-            PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->previous, diag_id, pm_token_type_human(parser->previous.type));
+            PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->previous, diag_id, pm_token_str(parser->previous.type));
             break;
         }
         case PM_ERR_HASH_VALUE:
         case PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR: {
-            PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, diag_id, pm_token_type_human(parser->current.type));
+            PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, diag_id, pm_token_str(parser->current.type));
             break;
         }
         case PM_ERR_UNARY_RECEIVER: {
-            const char *human = (parser->current.type == PM_TOKEN_EOF ? "end-of-input" : pm_token_type_human(parser->current.type));
+            const char *human = (parser->current.type == PM_TOKEN_EOF ? "end-of-input" : pm_token_str(parser->current.type));
             PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->previous, diag_id, human, parser->previous.start[0]);
             break;
         }
         case PM_ERR_UNARY_DISALLOWED:
         case PM_ERR_EXPECT_ARGUMENT: {
-            PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, diag_id, pm_token_type_human(parser->current.type));
+            PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, diag_id, pm_token_str(parser->current.type));
             break;
         }
         default:
@@ -17751,7 +17752,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
                     } else {
                         // If there was no comma, then we need to add a syntax
                         // error.
-                        PM_PARSER_ERR_FORMAT(parser, PM_TOKEN_END(parser, &parser->previous), 0, PM_ERR_ARRAY_SEPARATOR, pm_token_type_human(parser->current.type));
+                        PM_PARSER_ERR_FORMAT(parser, PM_TOKEN_END(parser, &parser->previous), 0, PM_ERR_ARRAY_SEPARATOR, pm_token_str(parser->current.type));
                         parser->previous.start = parser->previous.end;
                         parser->previous.type = 0;
                     }
@@ -17827,7 +17828,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
             accept1(parser, PM_TOKEN_NEWLINE);
 
             if (!accept1(parser, PM_TOKEN_BRACKET_RIGHT)) {
-                PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_ARRAY_TERM, pm_token_type_human(parser->current.type));
+                PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_ARRAY_TERM, pm_token_str(parser->current.type));
                 parser->previous.start = parser->previous.end;
                 parser->previous.type = 0;
             }
@@ -17970,7 +17971,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
             // If we didn't find a terminator and we didn't find a right
             // parenthesis, then this is a syntax error.
             if (!terminator_found && !match1(parser, PM_TOKEN_EOF)) {
-                PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_type_human(parser->current.type));
+                PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_str(parser->current.type));
             }
 
             // Parse each statement within the parentheses.
@@ -18001,7 +18002,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
                 } else if (!match1(parser, PM_TOKEN_EOF)) {
                     // If we're at the end of the file, then we're going to add
                     // an error after this for the ) anyway.
-                    PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_type_human(parser->current.type));
+                    PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_str(parser->current.type));
                 }
             }
 
@@ -18760,7 +18761,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
 
                     // Reject `foo && return bar`.
                     if (!(flags & PM_PARSE_ACCEPTS_COMMAND_CALL) && arguments.arguments != NULL) {
-                        PM_PARSER_ERR_TOKEN_FORMAT(parser, &next, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_type_human(next.type));
+                        PM_PARSER_ERR_TOKEN_FORMAT(parser, &next, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_str(next.type));
                     }
                 }
             }
@@ -18841,7 +18842,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
 
                 pm_parser_scope_push(parser, true);
                 if (!match2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON)) {
-                    PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_EXPECT_SINGLETON_CLASS_DELIMITER, pm_token_type_human(parser->current.type));
+                    PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_EXPECT_SINGLETON_CLASS_DELIMITER, pm_token_str(parser->current.type));
                 }
 
                 pm_node_t *statements = NULL;
@@ -19046,7 +19047,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
                         name = parse_method_definition_name(parser);
                     } else {
                         if (!valid_name) {
-                            PM_PARSER_ERR_TOKEN_FORMAT(parser, &identifier, PM_ERR_DEF_NAME, pm_token_type_human(identifier.type));
+                            PM_PARSER_ERR_TOKEN_FORMAT(parser, &identifier, PM_ERR_DEF_NAME, pm_token_str(identifier.type));
                         }
 
                         name = identifier;
@@ -19120,7 +19121,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
 
                     context_pop(parser);
                     if (!accept1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
-                        PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_DEF_PARAMS_TERM_PAREN, pm_token_type_human(parser->current.type));
+                        PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_DEF_PARAMS_TERM_PAREN, pm_token_str(parser->current.type));
                         parser->previous.start = parser->previous.end;
                         parser->previous.type = 0;
                     }
@@ -19232,7 +19233,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
                 // `def f = def g = foo bar`) is a command assignment and
                 // cannot appear as a def body.
                 if (PM_NODE_TYPE_P(statement, PM_DEF_NODE) && pm_command_call_value_p(statement)) {
-                    PM_PARSER_ERR_NODE_FORMAT(parser, statement, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_type_human(parser->current.type));
+                    PM_PARSER_ERR_NODE_FORMAT(parser, statement, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_str(parser->current.type));
                 }
 
                 pm_statements_node_body_append(parser, (pm_statements_node_t *) statements, statement, false);
@@ -19407,7 +19408,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
                 do_keyword = parser->previous;
             } else {
                 if (!match2(parser, PM_TOKEN_SEMICOLON, PM_TOKEN_NEWLINE)) {
-                    PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_EXPECT_FOR_DELIMITER, pm_token_type_human(parser->current.type));
+                    PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_EXPECT_FOR_DELIMITER, pm_token_str(parser->current.type));
                 }
             }
 
@@ -20439,12 +20440,12 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
                 // If we get here, then we are assuming this token is closing a
                 // parent context, so we'll indicate that to the user so that
                 // they know how we behaved.
-                PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_UNEXPECTED_TOKEN_CLOSE_CONTEXT, pm_token_type_human(parser->current.type), context_human(recoverable));
+                PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_UNEXPECTED_TOKEN_CLOSE_CONTEXT, pm_token_str(parser->current.type), context_human(recoverable));
             } else if (diag_id == PM_ERR_CANNOT_PARSE_EXPRESSION) {
                 // We're going to make a special case here, because "cannot
                 // parse expression" is pretty generic, and we know here that we
                 // have an unexpected token.
-                PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_UNEXPECTED_TOKEN_IGNORE, pm_token_type_human(parser->current.type));
+                PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_UNEXPECTED_TOKEN_IGNORE, pm_token_str(parser->current.type));
             } else {
                 pm_parser_err_prefix(parser, diag_id);
             }
@@ -20472,7 +20473,7 @@ parse_assignment_value(pm_parser_t *parser, pm_binding_power_t previous_binding_
     // operators with higher binding power. If we find one, emit an error
     // and skip the operator and its right-hand side.
     if (pm_binding_powers[parser->current.type].left > PM_BINDING_POWER_MODIFIER && (pm_command_call_value_p(value) || pm_block_call_p(value))) {
-        PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_type_human(parser->current.type));
+        PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_str(parser->current.type));
         parser_lex(parser);
         parse_expression(parser, pm_binding_powers[parser->previous.type].right, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1));
     }
@@ -20578,7 +20579,7 @@ parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding
     // operators with higher binding power. If we find one, emit an error
     // and skip the operator and its right-hand side.
     if (single_value && pm_binding_powers[parser->current.type].left > PM_BINDING_POWER_MODIFIER && (pm_command_call_value_p(value) || pm_block_call_p(value))) {
-        PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_type_human(parser->current.type));
+        PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_str(parser->current.type));
         parser_lex(parser);
         parse_expression(parser, pm_binding_powers[parser->previous.type].right, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1));
     }
@@ -21306,7 +21307,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     // In this case we have an operator but we don't know what it's for.
                     // We need to treat it as an error. For now, we'll mark it as an error
                     // and just skip right past it.
-                    PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->previous, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, pm_token_type_human(parser->current.type));
+                    PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->previous, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, pm_token_str(parser->current.type));
                     return node;
             }
         }
@@ -21428,21 +21429,21 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                 case PM_RESCUE_MODIFIER_NODE: {
                     pm_rescue_modifier_node_t *cast = (pm_rescue_modifier_node_t *) node;
                     if (PM_NODE_TYPE_P(cast->rescue_expression, PM_MATCH_PREDICATE_NODE) || PM_NODE_TYPE_P(cast->rescue_expression, PM_MATCH_REQUIRED_NODE)) {
-                        PM_PARSER_ERR_TOKEN_FORMAT(parser, &operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_type_human(operator.type));
+                        PM_PARSER_ERR_TOKEN_FORMAT(parser, &operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_str(operator.type));
                     }
                     break;
                 }
                 case PM_AND_NODE: {
                     pm_and_node_t *cast = (pm_and_node_t *) node;
                     if (PM_NODE_TYPE_P(cast->right, PM_MATCH_PREDICATE_NODE) || PM_NODE_TYPE_P(cast->right, PM_MATCH_REQUIRED_NODE)) {
-                        PM_PARSER_ERR_TOKEN_FORMAT(parser, &operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_type_human(operator.type));
+                        PM_PARSER_ERR_TOKEN_FORMAT(parser, &operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_str(operator.type));
                     }
                     break;
                 }
                 case PM_OR_NODE: {
                     pm_or_node_t *cast = (pm_or_node_t *) node;
                     if (PM_NODE_TYPE_P(cast->right, PM_MATCH_PREDICATE_NODE) || PM_NODE_TYPE_P(cast->right, PM_MATCH_REQUIRED_NODE)) {
-                        PM_PARSER_ERR_TOKEN_FORMAT(parser, &operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_type_human(operator.type));
+                        PM_PARSER_ERR_TOKEN_FORMAT(parser, &operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_str(operator.type));
                     }
                     break;
                 }
@@ -21481,21 +21482,21 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                 case PM_RESCUE_MODIFIER_NODE: {
                     pm_rescue_modifier_node_t *cast = (pm_rescue_modifier_node_t *) node;
                     if (PM_NODE_TYPE_P(cast->rescue_expression, PM_MATCH_PREDICATE_NODE) || PM_NODE_TYPE_P(cast->rescue_expression, PM_MATCH_REQUIRED_NODE)) {
-                        PM_PARSER_ERR_TOKEN_FORMAT(parser, &operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_type_human(operator.type));
+                        PM_PARSER_ERR_TOKEN_FORMAT(parser, &operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_str(operator.type));
                     }
                     break;
                 }
                 case PM_AND_NODE: {
                     pm_and_node_t *cast = (pm_and_node_t *) node;
                     if (PM_NODE_TYPE_P(cast->right, PM_MATCH_PREDICATE_NODE) || PM_NODE_TYPE_P(cast->right, PM_MATCH_REQUIRED_NODE)) {
-                        PM_PARSER_ERR_TOKEN_FORMAT(parser, &operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_type_human(operator.type));
+                        PM_PARSER_ERR_TOKEN_FORMAT(parser, &operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_str(operator.type));
                     }
                     break;
                 }
                 case PM_OR_NODE: {
                     pm_or_node_t *cast = (pm_or_node_t *) node;
                     if (PM_NODE_TYPE_P(cast->right, PM_MATCH_PREDICATE_NODE) || PM_NODE_TYPE_P(cast->right, PM_MATCH_REQUIRED_NODE)) {
-                        PM_PARSER_ERR_TOKEN_FORMAT(parser, &operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_type_human(operator.type));
+                        PM_PARSER_ERR_TOKEN_FORMAT(parser, &operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_str(operator.type));
                     }
                     break;
                 }
@@ -21516,7 +21517,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     break;
                 }
                 default: {
-                    PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_EXPECT_MESSAGE, pm_token_type_human(parser->current.type));
+                    PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_EXPECT_MESSAGE, pm_token_str(parser->current.type));
                     message = (pm_token_t) { .type = 0, .start = parser->previous.end, .end = parser->previous.end };
                 }
             }
@@ -21930,7 +21931,7 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t 
             // If this is a non-assoc operator and we are about to parse the
             // exact same operator, then we need to add an error.
             if (match1(parser, current_token_type)) {
-                PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_NON_ASSOCIATIVE_OPERATOR, pm_token_type_human(parser->current.type), pm_token_type_human(current_token_type));
+                PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_NON_ASSOCIATIVE_OPERATOR, pm_token_str(parser->current.type), pm_token_str(current_token_type));
                 break;
             }
 
@@ -21943,7 +21944,7 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t 
             //
             if (PM_NODE_TYPE_P(node, PM_RANGE_NODE) && ((pm_range_node_t *) node)->right == NULL) {
                 if (match4(parser, PM_TOKEN_UAMPERSAND, PM_TOKEN_USTAR, PM_TOKEN_DOT, PM_TOKEN_AMPERSAND_DOT)) {
-                    PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_NON_ASSOCIATIVE_OPERATOR, pm_token_type_human(parser->current.type), pm_token_type_human(current_token_type));
+                    PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_NON_ASSOCIATIVE_OPERATOR, pm_token_str(parser->current.type), pm_token_str(current_token_type));
                     break;
                 }
 
