@@ -25,16 +25,4 @@ struct pm_magic_comment_t {
     pm_location_t value;
 };
 
-/**
- * A struct used as an opaque pointer for the client to iterate through the
- * magic comments found while parsing.
- */
-struct pm_magic_comments_iter_t {
-    /** The number of magic comments in the list. */
-    size_t size;
-
-    /** The current node in the list. */
-    const pm_list_node_t *current;
-};
-
 #endif
