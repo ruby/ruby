@@ -121,6 +121,15 @@ PRISM_EXPORTED_FUNCTION int32_t pm_parser_start_line(const pm_parser_t *parser) 
 PRISM_EXPORTED_FUNCTION const char * pm_parser_encoding_name(const pm_parser_t *parser) PRISM_NONNULL(1);
 
 /**
+ * Returns the frozen string literal value of the parser, as determined by the
+ * frozen_string_literal magic comment or the option set on the parser.
+ *
+ * @param parser the parser whose frozen string literal value we want to get
+ * @returns -1 if disabled, 0 if unset, 1 if enabled
+ */
+PRISM_EXPORTED_FUNCTION int8_t pm_parser_frozen_string_literal(const pm_parser_t *parser) PRISM_NONNULL(1);
+
+/**
  * Returns the line offsets that are associated with the given parser.
  *
  * @param parser the parser whose line offsets we want to get
@@ -287,6 +296,16 @@ typedef void (*pm_constant_callback_t)(const pm_constant_t *constant, void *data
  *     can be NULL if no data needs to be passed to the callback function.
  */
 PRISM_EXPORTED_FUNCTION void pm_parser_constants_each(const pm_parser_t *parser, pm_constant_callback_t callback, void *data) PRISM_NONNULL(1);
+
+/**
+ * Returns a pointer to the constant at the given id in the constant pool
+ * associated with the given parser.
+ *
+ * @param parser the parser whose constant pool we want to look up from
+ * @param constant_id the id of the constant to look up (1-based)
+ * @returns a pointer to the constant at the given id
+ */
+PRISM_EXPORTED_FUNCTION const pm_constant_t * pm_parser_constant(const pm_parser_t *parser, pm_constant_id_t constant_id) PRISM_NONNULL(1);
 
 /**
  * Initiate the parser with the given parser.

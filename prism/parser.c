@@ -70,6 +70,14 @@ pm_parser_encoding_name(const pm_parser_t *parser) {
 }
 
 /**
+ * Returns the frozen string literal value of the parser.
+ */
+int8_t
+pm_parser_frozen_string_literal(const pm_parser_t *parser) {
+    return parser->frozen_string_literal;
+}
+
+/**
  * Returns the line offsets that are associated with the given parser.
  *
  * @param parser the parser whose line offsets we want to get
@@ -248,4 +256,13 @@ pm_parser_constants_each(const pm_parser_t *parser, pm_constant_callback_t callb
         const pm_constant_t *constant = &parser->constant_pool.constants[index];
         callback(constant, data);
     }
+}
+
+/**
+ * Returns a pointer to the constant at the given id in the constant pool
+ * associated with the given parser.
+ */
+const pm_constant_t *
+pm_parser_constant(const pm_parser_t *parser, pm_constant_id_t constant_id) {
+    return pm_constant_pool_id_to_constant(&parser->constant_pool, constant_id);
 }
