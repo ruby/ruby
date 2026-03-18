@@ -7,7 +7,7 @@
 #![allow(clippy::match_like_matches_macro)]
 use crate::{
     backend::lir::C_ARG_OPNDS,
-    cast::IntoUsize, codegen::local_idx_to_ep_offset, cruby::*, invariants::{self, has_singleton_class_of}, payload::{get_or_create_iseq_payload, IseqPayload}, options::{debug, get_option, DumpHIR}, state::ZJITState, json::Json,
+    cast::IntoUsize, codegen::local_idx_to_ep_offset, cruby::*, invariants::{self}, payload::{get_or_create_iseq_payload, IseqPayload}, options::{debug, get_option, DumpHIR}, state::ZJITState, json::Json,
     state,
 };
 use std::{
@@ -2302,6 +2302,9 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
 pub struct Function {
     // ISEQ this function refers to
     iseq: *const rb_iseq_t,
+    /// Whether previously, a function for this ISEQ was invalidated due to
+    /// singleton class creation (violation of NoSingletonClass invariant).
+    was_invalidated_for_singleton_class_creation: bool,
     /// The types for the parameters of this function. They are copied to the type
     /// of entry block params after infer_types() fills Empty to all insn_types.
     param_types: Vec<Type>,
@@ -2408,6 +2411,7 @@ impl Function {
     fn new(iseq: *const rb_iseq_t) -> Function {
         Function {
             iseq,
+            was_invalidated_for_singleton_class_creation: false,
             insns: vec![],
             insn_types: vec![],
             union_find: UnionFind::new().into(),
@@ -2533,9 +2537,9 @@ impl Function {
             // No patchpoint needed.
             return true;
         }
-        if has_singleton_class_of(klass) {
-            // We've seen a singleton class for this klass. Disable the optimization
-            // to avoid an invalidation loop.
+        if self.was_invalidated_for_singleton_class_creation {
+            // A previous compilation of this ISEQ was invalidated for singleton class
+            // creation. Avoid a repeating the invalidation.
             return false;
         }
         self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass }, state });
@@ -6700,6 +6704,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     let payload = get_or_create_iseq_payload(iseq);
     let mut profiles = ProfileOracle::new(payload);
     let mut fun = Function::new(iseq);
+    fun.was_invalidated_for_singleton_class_creation = payload.was_invalidated_for_singleton_class_creation;
 
     // Compute a map of PC->Block by finding jump targets
     let jit_entry_insns = jit_entry_insns(iseq);
