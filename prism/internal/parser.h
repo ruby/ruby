@@ -9,13 +9,13 @@
 #include "prism/compiler/accel.h"
 
 #include "prism/internal/encoding.h"
+#include "prism/internal/options.h"
 #include "prism/internal/static_literals.h"
 
 #include "prism/arena.h"
 #include "prism/ast.h"
 #include "prism/line_offset_list.h"
 #include "prism/list.h"
-#include "prism/options.h"
 #include "prism/parser.h"
 
 #include <stdbool.h>

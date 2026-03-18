@@ -23,6 +23,37 @@ struct pm_options_scope_t {
 };
 
 /**
+ * The version of Ruby syntax that we should be parsing with. This is used to
+ * allow consumers to specify which behavior they want in case they need to
+ * parse in the same way as a specific version of CRuby would have.
+ */
+typedef enum {
+    /**
+     * If an explicit version is not provided, the current version of prism will
+     * be used.
+     */
+    PM_OPTIONS_VERSION_UNSET = 0,
+
+    /** The vendored version of prism in CRuby 3.3.x. */
+    PM_OPTIONS_VERSION_CRUBY_3_3 = 1,
+
+    /** The vendored version of prism in CRuby 3.4.x. */
+    PM_OPTIONS_VERSION_CRUBY_3_4 = 2,
+
+    /** The vendored version of prism in CRuby 4.0.x. */
+    PM_OPTIONS_VERSION_CRUBY_3_5 = 3,
+
+    /** The vendored version of prism in CRuby 4.0.x. */
+    PM_OPTIONS_VERSION_CRUBY_4_0 = 3,
+
+    /** The vendored version of prism in CRuby 4.1.x. */
+    PM_OPTIONS_VERSION_CRUBY_4_1 = 4,
+
+    /** The current version of prism. */
+    PM_OPTIONS_VERSION_LATEST = PM_OPTIONS_VERSION_CRUBY_4_1
+} pm_options_version_t;
+
+/**
  * The options that can be passed to the parser.
  */
 struct pm_options_t {

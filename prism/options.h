@@ -67,37 +67,6 @@ static const uint8_t PM_OPTIONS_SCOPE_FORWARDING_ALL = 0x8;
 typedef void (*pm_options_shebang_callback_t)(pm_options_t *options, const uint8_t *source, size_t length, void *shebang_callback_data);
 
 /**
- * The version of Ruby syntax that we should be parsing with. This is used to
- * allow consumers to specify which behavior they want in case they need to
- * parse in the same way as a specific version of CRuby would have.
- */
-typedef enum {
-    /**
-     * If an explicit version is not provided, the current version of prism will
-     * be used.
-     */
-    PM_OPTIONS_VERSION_UNSET = 0,
-
-    /** The vendored version of prism in CRuby 3.3.x. */
-    PM_OPTIONS_VERSION_CRUBY_3_3 = 1,
-
-    /** The vendored version of prism in CRuby 3.4.x. */
-    PM_OPTIONS_VERSION_CRUBY_3_4 = 2,
-
-    /** The vendored version of prism in CRuby 4.0.x. */
-    PM_OPTIONS_VERSION_CRUBY_3_5 = 3,
-
-    /** The vendored version of prism in CRuby 4.0.x. */
-    PM_OPTIONS_VERSION_CRUBY_4_0 = 3,
-
-    /** The vendored version of prism in CRuby 4.1.x. */
-    PM_OPTIONS_VERSION_CRUBY_4_1 = 4,
-
-    /** The current version of prism. */
-    PM_OPTIONS_VERSION_LATEST = PM_OPTIONS_VERSION_CRUBY_4_1
-} pm_options_version_t;
-
-/**
  * A bit representing whether or not the command line -a option was set. -a
  * splits the input line $_ into $F.
  */
