@@ -47,7 +47,7 @@ class Addrinfo
   # If _local_addrinfo_ is nil, the address of the socket is not bound.
   #
   # The _timeout_ specify the seconds for timeout.
-  # Errno::ETIMEDOUT is raised when timeout occur.
+  # IO::TimeoutError is raised when timeout expires.
   #
   # If a block is given the created socket is yielded for each address.
   #
@@ -62,7 +62,7 @@ class Addrinfo
           break
         when :wait_writable
           sock.wait_writable(timeout) or
-            raise Errno::ETIMEDOUT, "user specified timeout for #{self.ip_address}:#{self.ip_port}"
+            raise IO::TimeoutError, "user specified timeout for #{self.ip_address}:#{self.ip_port}"
         end while true
       else
         sock.connect(self)
