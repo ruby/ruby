@@ -99,10 +99,15 @@ module Prism # :nodoc:
       "pm_serialize_lex",
       "pm_serialize_parse_lex",
       "pm_parse_success_p",
+      [:pm_parse_stream_fgets_t, :pm_parse_stream_feof_t]
+    )
+
+    load_exported_functions_from(
+      "prism/string_query.h",
       "pm_string_query_local",
       "pm_string_query_constant",
       "pm_string_query_method_name",
-      [:pm_parse_stream_fgets_t, :pm_parse_stream_feof_t]
+      []
     )
 
     load_exported_functions_from(

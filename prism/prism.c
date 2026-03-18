@@ -22763,21 +22763,23 @@ pm_parse_stream_read(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t 
  * can stream stdin in to Ruby so we need to support a streaming API.
  */
 pm_node_t *
-pm_parse_stream(pm_arena_t *arena, pm_parser_t *parser, pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, pm_parse_stream_feof_t *stream_feof, const pm_options_t *options) {
+pm_parse_stream(pm_parser_t **parser, pm_arena_t *arena, pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, pm_parse_stream_feof_t *stream_feof, const pm_options_t *options) {
     bool eof = pm_parse_stream_read(buffer, stream, stream_fgets, stream_feof);
 
-    pm_parser_init(arena, parser, (const uint8_t *) pm_buffer_value(buffer), pm_buffer_length(buffer), options);
-    pm_node_t *node = pm_parse(parser);
+    pm_parser_t *tmp = pm_parser_new(arena, (const uint8_t *) pm_buffer_value(buffer), pm_buffer_length(buffer), options);
+    pm_node_t *node = pm_parse(tmp);
 
-    while (!eof && parser->error_list.size > 0) {
+    while (!eof && tmp->error_list.size > 0) {
         eof = pm_parse_stream_read(buffer, stream, stream_fgets, stream_feof);
 
-        pm_parser_cleanup(parser);
+        pm_parser_free(tmp);
         pm_arena_free(arena);
-        pm_parser_init(arena, parser, (const uint8_t *) pm_buffer_value(buffer), pm_buffer_length(buffer), options);
-        node = pm_parse(parser);
+
+        tmp = pm_parser_new(arena, (const uint8_t *) pm_buffer_value(buffer), pm_buffer_length(buffer), options);
+        node = pm_parse(tmp);
     }
 
+    *parser = tmp;
     return node;
 }
 
@@ -22863,18 +22865,18 @@ pm_serialize_parse(pm_buffer_t *buffer, const uint8_t *source, size_t size, cons
 void
 pm_serialize_parse_stream(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, pm_parse_stream_feof_t *stream_feof, const char *data) {
     pm_arena_t arena = { 0 };
-    pm_parser_t parser;
+    pm_parser_t *parser;
     pm_options_t options = { 0 };
     pm_options_read(&options, data);
 
     pm_buffer_t *parser_buffer = pm_buffer_new();
-    pm_node_t *node = pm_parse_stream(&arena, &parser, parser_buffer, stream, stream_fgets, stream_feof, &options);
+    pm_node_t *node = pm_parse_stream(&parser, &arena, parser_buffer, stream, stream_fgets, stream_feof, &options);
     pm_serialize_header(buffer);
-    pm_serialize_content(&parser, node, buffer);
+    pm_serialize_content(parser, node, buffer);
     pm_buffer_append_byte(buffer, '\0');
 
     pm_buffer_free(parser_buffer);
-    pm_parser_cleanup(&parser);
+    pm_parser_free(parser);
     pm_arena_free(&arena);
     pm_options_cleanup(&options);
 }

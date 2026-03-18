@@ -1066,18 +1066,18 @@ parse_stream(int argc, VALUE *argv, VALUE self) {
     extract_options(options, Qnil, keywords);
 
     pm_arena_t arena = { 0 };
-    pm_parser_t parser;
+    pm_parser_t *parser;
 
     pm_buffer_t *buffer = pm_buffer_new();
-    pm_node_t *node = pm_parse_stream(&arena, &parser, buffer, (void *) stream, parse_stream_fgets, parse_stream_eof, options);
-    rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(&parser));
+    pm_node_t *node = pm_parse_stream(&parser, &arena, buffer, (void *) stream, parse_stream_fgets, parse_stream_eof, options);
+    rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(parser));
 
-    VALUE source = pm_source_new(&parser, encoding, pm_options_freeze_get(options));
-    VALUE value = pm_ast_new(&parser, node, encoding, source, pm_options_freeze_get(options));
-    VALUE result = parse_result_create(rb_cPrismParseResult, &parser, value, encoding, source, pm_options_freeze_get(options));
+    VALUE source = pm_source_new(parser, encoding, pm_options_freeze_get(options));
+    VALUE value = pm_ast_new(parser, node, encoding, source, pm_options_freeze_get(options));
+    VALUE result = parse_result_create(rb_cPrismParseResult, parser, value, encoding, source, pm_options_freeze_get(options));
 
     pm_buffer_free(buffer);
-    pm_parser_cleanup(&parser);
+    pm_parser_free(parser);
     pm_arena_free(&arena);
     pm_options_free(options);
 
