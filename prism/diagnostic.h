@@ -15,6 +15,8 @@
 #define PRISM_DIAGNOSTIC_H
 
 #include "prism/compiler/exported.h"
+#include "prism/compiler/nodiscard.h"
+#include "prism/compiler/nonnull.h"
 
 #include "prism/ast.h"
 
@@ -58,7 +60,7 @@ typedef enum {
  *     not change in the future. This is meant to be used for debugging and
  *     error reporting purposes, and not for programmatic checks.
  */
-PRISM_EXPORTED_FUNCTION const char * pm_diagnostic_type(const pm_diagnostic_t *diagnostic);
+PRISM_EXPORTED_FUNCTION const char * pm_diagnostic_type(const pm_diagnostic_t *diagnostic) PRISM_NONNULL(1);
 
 /**
  * Get the location of the given diagnostic.
@@ -66,7 +68,7 @@ PRISM_EXPORTED_FUNCTION const char * pm_diagnostic_type(const pm_diagnostic_t *d
  * @param diagnostic The diagnostic to get the location of.
  * @returns The location of the given diagnostic.
  */
-PRISM_EXPORTED_FUNCTION pm_location_t pm_diagnostic_location(const pm_diagnostic_t *diagnostic);
+PRISM_EXPORTED_FUNCTION pm_location_t pm_diagnostic_location(const pm_diagnostic_t *diagnostic) PRISM_NONNULL(1);
 
 /**
  * Get the message of the given diagnostic.
@@ -74,7 +76,7 @@ PRISM_EXPORTED_FUNCTION pm_location_t pm_diagnostic_location(const pm_diagnostic
  * @param diagnostic The diagnostic to get the message of.
  * @returns The message of the given diagnostic.
  */
-PRISM_EXPORTED_FUNCTION const char * pm_diagnostic_message(const pm_diagnostic_t *diagnostic);
+PRISM_EXPORTED_FUNCTION const char * pm_diagnostic_message(const pm_diagnostic_t *diagnostic) PRISM_NONNULL(1);
 
 /**
  * Get the error level associated with the given diagnostic.
@@ -84,7 +86,7 @@ PRISM_EXPORTED_FUNCTION const char * pm_diagnostic_message(const pm_diagnostic_t
  *     warning, or is in any way not an error, then the return value is
  *     undefined and should not be relied upon.
  */
-PRISM_EXPORTED_FUNCTION pm_error_level_t pm_diagnostic_error_level(const pm_diagnostic_t *diagnostic);
+PRISM_EXPORTED_FUNCTION pm_error_level_t pm_diagnostic_error_level(const pm_diagnostic_t *diagnostic) PRISM_NONNULL(1);
 
 /**
  * Get the warning level associated with the given diagnostic.
@@ -94,6 +96,6 @@ PRISM_EXPORTED_FUNCTION pm_error_level_t pm_diagnostic_error_level(const pm_diag
  *     error, or is in any way not a warning, then the return value is
  *     undefined and should not be relied upon.
  */
-PRISM_EXPORTED_FUNCTION pm_warning_level_t pm_diagnostic_warning_level(const pm_diagnostic_t *diagnostic);
+PRISM_EXPORTED_FUNCTION pm_warning_level_t pm_diagnostic_warning_level(const pm_diagnostic_t *diagnostic) PRISM_NONNULL(1);
 
 #endif

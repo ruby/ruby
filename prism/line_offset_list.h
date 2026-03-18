@@ -15,6 +15,7 @@
 #define PRISM_LINE_OFFSET_LIST_H
 
 #include "prism/compiler/exported.h"
+#include "prism/compiler/nonnull.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -55,6 +56,6 @@ typedef struct {
  * @param start_line The line to start counting from.
  * @return The line and column of the given offset.
  */
-PRISM_EXPORTED_FUNCTION pm_line_column_t pm_line_offset_list_line_column(const pm_line_offset_list_t *list, uint32_t cursor, int32_t start_line);
+PRISM_EXPORTED_FUNCTION pm_line_column_t pm_line_offset_list_line_column(const pm_line_offset_list_t *list, uint32_t cursor, int32_t start_line) PRISM_NONNULL(1);
 
 #endif

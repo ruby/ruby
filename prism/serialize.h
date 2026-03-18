@@ -14,6 +14,7 @@
 #ifndef PRISM_EXCLUDE_SERIALIZATION
 
 #include "prism/compiler/exported.h"
+#include "prism/compiler/nonnull.h"
 
 #include "prism/buffer.h"
 #include "prism/parser.h"
@@ -26,7 +27,7 @@
  * @param node The node to serialize.
  * @param buffer The buffer to serialize to.
  */
-PRISM_EXPORTED_FUNCTION void pm_serialize(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer);
+PRISM_EXPORTED_FUNCTION void pm_serialize(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) PRISM_NONNULL(1, 2, 3);
 
 /**
  * Parse the given source to the AST and dump the AST to the given buffer.
@@ -36,7 +37,7 @@ PRISM_EXPORTED_FUNCTION void pm_serialize(pm_parser_t *parser, pm_node_t *node, 
  * @param size The size of the source.
  * @param data The optional data to pass to the parser.
  */
-PRISM_EXPORTED_FUNCTION void pm_serialize_parse(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data);
+PRISM_EXPORTED_FUNCTION void pm_serialize_parse(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data) PRISM_NONNULL(1, 2);
 
 /**
  * Parse and serialize the AST represented by the source that is read out of the
@@ -48,7 +49,7 @@ PRISM_EXPORTED_FUNCTION void pm_serialize_parse(pm_buffer_t *buffer, const uint8
  * @param stream_feof The function to use to tell if the stream has hit eof.
  * @param data The optional data to pass to the parser.
  */
-PRISM_EXPORTED_FUNCTION void pm_serialize_parse_stream(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, pm_parse_stream_feof_t *stream_feof, const char *data);
+PRISM_EXPORTED_FUNCTION void pm_serialize_parse_stream(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, pm_parse_stream_feof_t *stream_feof, const char *data) PRISM_NONNULL(1, 2);
 
 /**
  * Parse and serialize the comments in the given source to the given buffer.
@@ -58,7 +59,7 @@ PRISM_EXPORTED_FUNCTION void pm_serialize_parse_stream(pm_buffer_t *buffer, void
  * @param size The size of the source.
  * @param data The optional data to pass to the parser.
  */
-PRISM_EXPORTED_FUNCTION void pm_serialize_parse_comments(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data);
+PRISM_EXPORTED_FUNCTION void pm_serialize_parse_comments(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data) PRISM_NONNULL(1, 2);
 
 /**
  * Lex the given source and serialize to the given buffer.
@@ -68,7 +69,7 @@ PRISM_EXPORTED_FUNCTION void pm_serialize_parse_comments(pm_buffer_t *buffer, co
  * @param buffer The buffer to serialize to.
  * @param data The optional data to pass to the lexer.
  */
-PRISM_EXPORTED_FUNCTION void pm_serialize_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data);
+PRISM_EXPORTED_FUNCTION void pm_serialize_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data) PRISM_NONNULL(1, 2);
 
 /**
  * Parse and serialize both the AST and the tokens represented by the given
@@ -79,7 +80,7 @@ PRISM_EXPORTED_FUNCTION void pm_serialize_lex(pm_buffer_t *buffer, const uint8_t
  * @param size The size of the source.
  * @param data The optional data to pass to the parser.
  */
-PRISM_EXPORTED_FUNCTION void pm_serialize_parse_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data);
+PRISM_EXPORTED_FUNCTION void pm_serialize_parse_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data) PRISM_NONNULL(1, 2);
 
 /**
  * Parse the source and return true if it parses without errors or warnings.
@@ -89,7 +90,7 @@ PRISM_EXPORTED_FUNCTION void pm_serialize_parse_lex(pm_buffer_t *buffer, const u
  * @param data The optional data to pass to the parser.
  * @return True if the source parses without errors or warnings.
  */
-PRISM_EXPORTED_FUNCTION bool pm_serialize_parse_success_p(const uint8_t *source, size_t size, const char *data);
+PRISM_EXPORTED_FUNCTION bool pm_serialize_parse_success_p(const uint8_t *source, size_t size, const char *data) PRISM_NONNULL(1);
 
 #endif
 

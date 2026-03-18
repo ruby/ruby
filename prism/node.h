@@ -7,6 +7,7 @@
 #define PRISM_NODE_H
 
 #include "prism/compiler/exported.h"
+#include "prism/compiler/nonnull.h"
 
 #include "prism/ast.h"
 
@@ -23,7 +24,7 @@
  * @param node_type The node type to convert to a string.
  * @return A string representation of the given node type.
  */
-PRISM_EXPORTED_FUNCTION const char * pm_node_type_to_str(pm_node_type_t node_type);
+PRISM_EXPORTED_FUNCTION const char * pm_node_type(pm_node_type_t node_type);
 
 /**
  * Visit each of the nodes in this subtree using the given visitor callback. The
@@ -41,7 +42,7 @@ PRISM_EXPORTED_FUNCTION const char * pm_node_type_to_str(pm_node_type_t node_typ
  * bool visit(const pm_node_t *node, void *data) {
  *     size_t *indent = (size_t *) data;
  *     for (size_t i = 0; i < *indent * 2; i++) putc(' ', stdout);
- *     printf("%s\n", pm_node_type_to_str(node->type));
+ *     printf("%s\n", pm_node_type(node->type));
  *
  *     size_t next_indent = *indent + 1;
  *     size_t *next_data = &next_indent;
@@ -77,7 +78,7 @@ PRISM_EXPORTED_FUNCTION const char * pm_node_type_to_str(pm_node_type_t node_typ
  * @param visitor The callback to call for each node in the subtree.
  * @param data An opaque pointer that is passed to the visitor callback.
  */
-PRISM_EXPORTED_FUNCTION void pm_visit_node(const pm_node_t *node, bool (*visitor)(const pm_node_t *node, void *data), void *data);
+PRISM_EXPORTED_FUNCTION void pm_visit_node(const pm_node_t *node, bool (*visitor)(const pm_node_t *node, void *data), void *data) PRISM_NONNULL(1);
 
 /**
  * Visit the children of the given node with the given callback. This is the
@@ -88,6 +89,6 @@ PRISM_EXPORTED_FUNCTION void pm_visit_node(const pm_node_t *node, bool (*visitor
  * @param visitor The callback to call for each child node.
  * @param data An opaque pointer that is passed to the visitor callback.
  */
-PRISM_EXPORTED_FUNCTION void pm_visit_child_nodes(const pm_node_t *node, bool (*visitor)(const pm_node_t *node, void *data), void *data);
+PRISM_EXPORTED_FUNCTION void pm_visit_child_nodes(const pm_node_t *node, bool (*visitor)(const pm_node_t *node, void *data), void *data) PRISM_NONNULL(1);
 
 #endif

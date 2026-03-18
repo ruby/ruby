@@ -7,6 +7,7 @@
 #define PRISM_STREAM_H
 
 #include "prism/compiler/exported.h"
+#include "prism/compiler/nonnull.h"
 
 #include "prism/arena.h"
 #include "prism/buffer.h"
@@ -39,6 +40,6 @@ typedef int (pm_parse_stream_feof_t)(void *stream);
  * @param options The optional options to use when parsing.
  * @return The AST representing the source.
  */
-PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse_stream(pm_parser_t **parser, pm_arena_t *arena, pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, pm_parse_stream_feof_t *stream_feof, const pm_options_t *options);
+PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse_stream(pm_parser_t **parser, pm_arena_t *arena, pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, pm_parse_stream_feof_t *stream_feof, const pm_options_t *options) PRISM_NONNULL(1, 2, 3);
 
 #endif

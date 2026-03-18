@@ -12,6 +12,7 @@
 #ifndef PRISM_EXCLUDE_JSON
 
 #include "prism/compiler/exported.h"
+#include "prism/compiler/nonnull.h"
 
 #include "prism/ast.h"
 #include "prism/buffer.h"
@@ -24,7 +25,7 @@
  * @param parser The parser that parsed the node.
  * @param node The node to serialize.
  */
-PRISM_EXPORTED_FUNCTION void pm_dump_json(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *node);
+PRISM_EXPORTED_FUNCTION void pm_dump_json(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *node) PRISM_NONNULL(1, 2, 3);
 
 #endif
 

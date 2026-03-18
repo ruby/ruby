@@ -7,6 +7,8 @@
 #define PRISM_ARENA_H
 
 #include "prism/compiler/exported.h"
+#include "prism/compiler/nodiscard.h"
+#include "prism/compiler/nonnull.h"
 
 #include <stddef.h>
 
@@ -23,13 +25,13 @@ typedef struct pm_arena_t pm_arena_t;
  *     the caller to free the arena using pm_arena_free when it is no longer
  *     needed.
  */
-PRISM_EXPORTED_FUNCTION pm_arena_t * pm_arena_new(void);
+PRISM_EXPORTED_FUNCTION pm_arena_t * pm_arena_new(void) PRISM_NODISCARD;
 
 /**
  * Frees both the held memory and the arena itself.
  *
  * @param arena The arena to free.
  */
-PRISM_EXPORTED_FUNCTION void pm_arena_free(pm_arena_t *arena);
+PRISM_EXPORTED_FUNCTION void pm_arena_free(pm_arena_t *arena) PRISM_NONNULL(1);
 
 #endif

@@ -8,6 +8,7 @@
 
 #include "prism/compiler/exported.h"
 #include "prism/compiler/filesystem.h"
+#include "prism/compiler/nonnull.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -55,7 +56,7 @@ PRISM_EXPORTED_FUNCTION size_t pm_string_sizeof(void);
  * @param source The source of the string.
  * @param length The length of the string.
  */
-PRISM_EXPORTED_FUNCTION void pm_string_constant_init(pm_string_t *string, const char *source, size_t length);
+PRISM_EXPORTED_FUNCTION void pm_string_constant_init(pm_string_t *string, const char *source, size_t length) PRISM_NONNULL(1);
 
 /**
  * Represents the result of calling pm_string_mapped_init or
@@ -96,7 +97,7 @@ typedef enum {
  *
  * \public \memberof pm_string_t
  */
-PRISM_EXPORTED_FUNCTION pm_string_init_result_t pm_string_mapped_init(pm_string_t *string, const char *filepath);
+PRISM_EXPORTED_FUNCTION pm_string_init_result_t pm_string_mapped_init(pm_string_t *string, const char *filepath) PRISM_NONNULL(1, 2);
 
 /**
  * Read the file indicated by the filepath parameter into source and load its
@@ -109,7 +110,7 @@ PRISM_EXPORTED_FUNCTION pm_string_init_result_t pm_string_mapped_init(pm_string_
  *
  * \public \memberof pm_string_t
  */
-PRISM_EXPORTED_FUNCTION pm_string_init_result_t pm_string_file_init(pm_string_t *string, const char *filepath);
+PRISM_EXPORTED_FUNCTION pm_string_init_result_t pm_string_file_init(pm_string_t *string, const char *filepath) PRISM_NONNULL(1, 2);
 
 /**
  * Returns the length associated with the string.
@@ -119,7 +120,7 @@ PRISM_EXPORTED_FUNCTION pm_string_init_result_t pm_string_file_init(pm_string_t 
  *
  * \public \memberof pm_string_t
  */
-PRISM_EXPORTED_FUNCTION size_t pm_string_length(const pm_string_t *string);
+PRISM_EXPORTED_FUNCTION size_t pm_string_length(const pm_string_t *string) PRISM_NONNULL(1);
 
 /**
  * Returns the start pointer associated with the string.
@@ -129,7 +130,7 @@ PRISM_EXPORTED_FUNCTION size_t pm_string_length(const pm_string_t *string);
  *
  * \public \memberof pm_string_t
  */
-PRISM_EXPORTED_FUNCTION const uint8_t * pm_string_source(const pm_string_t *string);
+PRISM_EXPORTED_FUNCTION const uint8_t * pm_string_source(const pm_string_t *string) PRISM_NONNULL(1);
 
 /**
  * Free the associated memory of the given string.
@@ -138,6 +139,6 @@ PRISM_EXPORTED_FUNCTION const uint8_t * pm_string_source(const pm_string_t *stri
  *
  * \public \memberof pm_string_t
  */
-PRISM_EXPORTED_FUNCTION void pm_string_cleanup(pm_string_t *string);
+PRISM_EXPORTED_FUNCTION void pm_string_cleanup(pm_string_t *string) PRISM_NONNULL(1);
 
 #endif

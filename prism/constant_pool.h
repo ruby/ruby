@@ -11,6 +11,8 @@
 #define PRISM_CONSTANT_POOL_H
 
 #include "prism/compiler/exported.h"
+#include "prism/compiler/nodiscard.h"
+#include "prism/compiler/nonnull.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -46,7 +48,7 @@ typedef struct pm_constant_pool_t pm_constant_pool_t;
  * @param constant The constant to get the start of.
  * @return A raw pointer to the start of the constant.
  */
-PRISM_EXPORTED_FUNCTION const uint8_t * pm_constant_start(const pm_constant_t *constant);
+PRISM_EXPORTED_FUNCTION const uint8_t * pm_constant_start(const pm_constant_t *constant) PRISM_NONNULL(1);
 
 /**
  * Return the length of a constant.
@@ -54,6 +56,6 @@ PRISM_EXPORTED_FUNCTION const uint8_t * pm_constant_start(const pm_constant_t *c
  * @param constant The constant to get the length of.
  * @return The length of the constant.
  */
-PRISM_EXPORTED_FUNCTION size_t pm_constant_length(const pm_constant_t *constant);
+PRISM_EXPORTED_FUNCTION size_t pm_constant_length(const pm_constant_t *constant) PRISM_NONNULL(1);
 
 #endif
