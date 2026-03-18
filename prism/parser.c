@@ -118,49 +118,89 @@ pm_parser_lex_state(const pm_parser_t *parser) {
 }
 
 /**
- * Returns an iterator that knows how to iterate over the comments that are
- * associated with the given parser.
+ * Returns the number of comments associated with the given parser.
  */
-pm_comments_iter_t *
-pm_parser_comments(const pm_parser_t *parser) {
-    pm_comments_iter_t *iter = (pm_comments_iter_t *) xmalloc(sizeof(pm_comments_iter_t));
-    iter->size = parser->comment_list.size;
-    iter->current = parser->comment_list.head;
-    return iter;
+size_t
+pm_parser_comments_size(const pm_parser_t *parser) {
+    return parser->comment_list.size;
 }
 
 /**
- * Returns an iterator that knows how to iterate over the magic comments that
- * are associated with the given parser.
+ * Iterates over the comments associated with the given parser and calls the
+ * given callback for each comment.
  */
-pm_magic_comments_iter_t *
-pm_parser_magic_comments(const pm_parser_t *parser) {
-    pm_magic_comments_iter_t *iter = (pm_magic_comments_iter_t *) xmalloc(sizeof(pm_magic_comments_iter_t));
-    iter->size = parser->magic_comment_list.size;
-    iter->current = parser->magic_comment_list.head;
-    return iter;
+void
+pm_parser_comments_each(const pm_parser_t *parser, pm_comment_callback_t callback, void *data) {
+    const pm_list_node_t *current = parser->comment_list.head;
+    while (current != NULL) {
+        const pm_comment_t *comment = (const pm_comment_t *) current;
+        callback(comment, data);
+        current = current->next;
+    }
 }
 
 /**
- * Returns an iterator that knows how to iterate over the errors that are
- * associated with the given parser.
+ * Returns the number of magic comments associated with the given parser.
  */
-pm_diagnostics_iter_t *
-pm_parser_errors(const pm_parser_t *parser) {
-    pm_diagnostics_iter_t *iter = (pm_diagnostics_iter_t *) xmalloc(sizeof(pm_diagnostics_iter_t));
-    iter->size = parser->error_list.size;
-    iter->current = parser->error_list.head;
-    return iter;
+size_t
+pm_parser_magic_comments_size(const pm_parser_t *parser) {
+    return parser->magic_comment_list.size;
 }
 
 /**
- * Returns an iterator that knows how to iterate over the warnings that are
- * associated with the given parser.
+ * Iterates over the magic comments associated with the given parser and calls
+ * the given callback for each magic comment.
  */
-pm_diagnostics_iter_t *
-pm_parser_warnings(const pm_parser_t *parser) {
-    pm_diagnostics_iter_t *iter = (pm_diagnostics_iter_t *) xmalloc(sizeof(pm_diagnostics_iter_t));
-    iter->size = parser->warning_list.size;
-    iter->current = parser->warning_list.head;
-    return iter;
+void
+pm_parser_magic_comments_each(const pm_parser_t *parser, pm_magic_comment_callback_t callback, void *data) {
+    const pm_list_node_t *current = parser->magic_comment_list.head;
+    while (current != NULL) {
+        const pm_magic_comment_t *magic_comment = (const pm_magic_comment_t *) current;
+        callback(magic_comment, data);
+        current = current->next;
+    }
+}
+
+/**
+ * Returns the number of errors associated with the given parser.
+ */
+size_t
+pm_parser_errors_size(const pm_parser_t *parser) {
+    return parser->error_list.size;
+}
+
+/**
+ * Returns the number of warnings associated with the given parser.
+ */
+size_t
+pm_parser_warnings_size(const pm_parser_t *parser) {
+    return parser->warning_list.size;
+}
+
+static inline void
+pm_parser_diagnostics_each(const pm_list_t *list, pm_diagnostic_callback_t callback, void *data) {
+    const pm_list_node_t *current = list->head;
+    while (current != NULL) {
+        const pm_diagnostic_t *diagnostic = (const pm_diagnostic_t *) current;
+        callback(diagnostic, data);
+        current = current->next;
+    }
+}
+
+/**
+ * Iterates over the errors associated with the given parser and calls the
+ * given callback for each error.
+ */
+void
+pm_parser_errors_each(const pm_parser_t *parser, pm_diagnostic_callback_t callback, void *data) {
+    pm_parser_diagnostics_each(&parser->error_list, callback, data);
+}
+
+/**
+ * Iterates over the warnings associated with the given parser and calls the
+ * given callback for each warning.
+ */
+void
+pm_parser_warnings_each(const pm_parser_t *parser, pm_diagnostic_callback_t callback, void *data) {
+    pm_parser_diagnostics_each(&parser->warning_list, callback, data);
 }

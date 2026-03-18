@@ -75,16 +75,4 @@ void pm_diagnostic_list_append(pm_arena_t *arena, pm_list_t *list, uint32_t star
  */
 void pm_diagnostic_list_append_format(pm_arena_t *arena, pm_list_t *list, uint32_t start, uint32_t length, pm_diagnostic_id_t diag_id, ...);
 
-/**
- * A struct used as an opaque pointer for the client to iterate through the
- * diagnostics found while parsing.
- */
-struct pm_diagnostics_iter_t {
-    /** The number of diagnostics in the list. */
-    size_t size;
-
-    /** The current node in the list. */
-    const pm_list_node_t *current;
-};
-
 #endif

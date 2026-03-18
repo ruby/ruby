@@ -138,59 +138,103 @@ PRISM_EXPORTED_FUNCTION bool pm_parser_continuable(const pm_parser_t *parser);
 PRISM_EXPORTED_FUNCTION int pm_parser_lex_state(const pm_parser_t *parser);
 
 /**
- * Returns an iterator that knows how to iterate over the comments that are
- * associated with the given parser.
+ * Returns the number of comments associated with the given parser.
  *
- * @param parser the parser whose comments we want to get
- * @return the iterator that knows how to iterate over the comments that are
- *     associated with the given parser. It is the responsibility of the caller
- *     to free the memory associated with the iterator through
- *     pm_comments_iter_free.
- *
- * \public \memberof pm_parser
+ * @param parser the parser whose comments we want to get the size of
+ * @return the number of comments associated with the given parser
  */
-PRISM_EXPORTED_FUNCTION pm_comments_iter_t * pm_parser_comments(const pm_parser_t *parser);
+PRISM_EXPORTED_FUNCTION size_t pm_parser_comments_size(const pm_parser_t *parser);
 
 /**
- * Returns an iterator that knows how to iterate over the magic comments that
- * are associated with the given parser.
- *
- * @param parser the parser whose magic comments we want to get
- * @return the iterator that knows how to iterate over the magic comments that are
- *     associated with the given parser. It is the responsibility of the caller
- *     to free the memory associated with the iterator through
- *     pm_magic_comments_iter_free.
- *
- * \public \memberof pm_parser
+ * A callback function that can be used to process comments found while parsing.
  */
-PRISM_EXPORTED_FUNCTION pm_magic_comments_iter_t * pm_parser_magic_comments(const pm_parser_t *parser);
+typedef void (*pm_comment_callback_t)(const pm_comment_t *comment, void *data);
 
 /**
- * Returns an iterator that knows how to iterate over the errors that are
- * associated with the given parser.
+ * Iterates over the comments associated with the given parser and calls the
+ * given callback for each comment.
  *
- * @param parser the parser whose errors we want to get
- * @return the iterator that knows how to iterate over the errors that are
- *     associated with the given parser. It is the responsibility of the caller
- *     to free the memory associated with the iterator through
- *     pm_diagnostics_iter_free.
- *
- * \public \memberof pm_parser
+ * @param parser the parser whose comments we want to iterate over
+ * @param callback the callback function to call for each comment. This function
+ *     will be passed a pointer to the comment and the data parameter passed to
+ *     this function.
+ * @param data the data to pass to the callback function for each comment. This
+ *     can be NULL if no data needs to be passed to the callback function.
  */
-PRISM_EXPORTED_FUNCTION pm_diagnostics_iter_t * pm_parser_errors(const pm_parser_t *parser);
+PRISM_EXPORTED_FUNCTION void pm_parser_comments_each(const pm_parser_t *parser, pm_comment_callback_t callback, void *data);
 
 /**
- * Returns an iterator that knows how to iterate over the warnings that are
- * associated with the given parser.
+ * Returns the number of magic comments associated with the given parser.
  *
- * @param parser the parser whose warnings we want to get
- * @return the iterator that knows how to iterate over the warnings that are
- *     associated with the given parser. It is the responsibility of the caller
- *     to free the memory associated with the iterator through
- *     pm_diagnostics_iter_free.
- *
- * \public \memberof pm_parser
+ * @param parser the parser whose magic comments we want to get the size of
+ * @return the number of magic comments associated with the given parser
  */
-PRISM_EXPORTED_FUNCTION pm_diagnostics_iter_t * pm_parser_warnings(const pm_parser_t *parser);
+PRISM_EXPORTED_FUNCTION size_t pm_parser_magic_comments_size(const pm_parser_t *parser);
+
+/**
+ * A callback function that can be used to process magic comments found while parsing.
+ */
+typedef void (*pm_magic_comment_callback_t)(const pm_magic_comment_t *magic_comment, void *data);
+
+/**
+ * Iterates over the magic comments associated with the given parser and calls the
+ * given callback for each magic comment.
+ *
+ * @param parser the parser whose magic comments we want to iterate over
+ * @param callback the callback function to call for each magic comment. This
+ *     function will be passed a pointer to the magic comment and the data
+ *     parameter passed to this function.
+ * @param data the data to pass to the callback function for each magic comment.
+ *     This can be NULL if no data needs to be passed to the callback function.
+ */
+PRISM_EXPORTED_FUNCTION void pm_parser_magic_comments_each(const pm_parser_t *parser, pm_magic_comment_callback_t callback, void *data);
+
+/**
+ * Returns the number of errors associated with the given parser.
+ *
+ * @param parser the parser whose errors we want to get the size of
+ * @return the number of errors associated with the given parser
+ */
+PRISM_EXPORTED_FUNCTION size_t pm_parser_errors_size(const pm_parser_t *parser);
+
+/**
+ * Returns the number of warnings associated with the given parser.
+ *
+ * @param parser the parser whose warnings we want to get the size of
+ * @return the number of warnings associated with the given parser
+ */
+PRISM_EXPORTED_FUNCTION size_t pm_parser_warnings_size(const pm_parser_t *parser);
+
+/**
+ * A callback function that can be used to process diagnostics found while
+ * parsing.
+ */
+typedef void (*pm_diagnostic_callback_t)(const pm_diagnostic_t *diagnostic, void *data);
+
+/**
+ * Iterates over the errors associated with the given parser and calls the
+ * given callback for each error.
+ *
+ * @param parser the parser whose errors we want to iterate over
+ * @param callback the callback function to call for each error. This function
+ *     will be passed a pointer to the error and the data parameter passed to
+ *     this function.
+ * @param data the data to pass to the callback function for each error. This
+ *     can be NULL if no data needs to be passed to the callback function.
+ */
+PRISM_EXPORTED_FUNCTION void pm_parser_errors_each(const pm_parser_t *parser, pm_diagnostic_callback_t callback, void *data);
+
+/**
+ * Iterates over the warnings associated with the given parser and calls the
+ * given callback for each warning.
+ *
+ * @param parser the parser whose warnings we want to iterate over
+ * @param callback the callback function to call for each warning. This function
+ *     will be passed a pointer to the warning and the data parameter passed to
+ *     this function.
+ * @param data the data to pass to the callback function for each warning. This
+ *     can be NULL if no data needs to be passed to the callback function.
+ */
+PRISM_EXPORTED_FUNCTION void pm_parser_warnings_each(const pm_parser_t *parser, pm_diagnostic_callback_t callback, void *data);
 
 #endif
