@@ -1,7 +1,5 @@
 #include "prism/util/pm_char.h"
 
-#define PRISM_CHAR_BIT_WHITESPACE (1 << 0)
-#define PRISM_CHAR_BIT_INLINE_WHITESPACE (1 << 1)
 #define PRISM_CHAR_BIT_REGEXP_OPTION (1 << 2)
 
 #define PRISM_NUMBER_BIT_BINARY_DIGIT (1 << 0)
@@ -13,7 +11,7 @@
 #define PRISM_NUMBER_BIT_HEXADECIMAL_DIGIT (1 << 6)
 #define PRISM_NUMBER_BIT_HEXADECIMAL_NUMBER (1 << 7)
 
-static const uint8_t pm_byte_table[256] = {
+const uint8_t pm_byte_table[256] = {
 //  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
     0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 1, 3, 3, 3, 0, 0, // 0x
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
@@ -83,7 +81,7 @@ pm_strspn_whitespace(const uint8_t *string, ptrdiff_t length) {
  * searching past the given maximum number of characters.
  */
 size_t
-pm_strspn_whitespace_newlines(const uint8_t *string, ptrdiff_t length, pm_line_offset_list_t *line_offsets, uint32_t start_offset) {
+pm_strspn_whitespace_newlines(const uint8_t *string, ptrdiff_t length, pm_arena_t *arena, pm_line_offset_list_t *line_offsets, uint32_t start_offset) {
     if (length <= 0) return 0;
 
     uint32_t size = 0;
@@ -91,22 +89,13 @@ pm_strspn_whitespace_newlines(const uint8_t *string, ptrdiff_t length, pm_line_o
 
     while (size < maximum && (pm_byte_table[string[size]] & PRISM_CHAR_BIT_WHITESPACE)) {
         if (string[size] == '\n') {
-            pm_line_offset_list_append(line_offsets, start_offset + size + 1);
+            pm_line_offset_list_append(arena, line_offsets, start_offset + size + 1);
         }
 
         size++;
     }
 
     return size;
-}
-
-/**
- * Returns the number of characters at the start of the string that are inline
- * whitespace. Disallows searching past the given maximum number of characters.
- */
-size_t
-pm_strspn_inline_whitespace(const uint8_t *string, ptrdiff_t length) {
-    return pm_strspn_char_kind(string, length, PRISM_CHAR_BIT_INLINE_WHITESPACE);
 }
 
 /**
@@ -118,29 +107,6 @@ pm_strspn_regexp_option(const uint8_t *string, ptrdiff_t length) {
     return pm_strspn_char_kind(string, length, PRISM_CHAR_BIT_REGEXP_OPTION);
 }
 
-/**
- * Returns true if the given character matches the given kind.
- */
-static inline bool
-pm_char_is_char_kind(const uint8_t b, uint8_t kind) {
-    return (pm_byte_table[b] & kind) != 0;
-}
-
-/**
- * Returns true if the given character is a whitespace character.
- */
-bool
-pm_char_is_whitespace(const uint8_t b) {
-    return pm_char_is_char_kind(b, PRISM_CHAR_BIT_WHITESPACE);
-}
-
-/**
- * Returns true if the given character is an inline whitespace character.
- */
-bool
-pm_char_is_inline_whitespace(const uint8_t b) {
-    return pm_char_is_char_kind(b, PRISM_CHAR_BIT_INLINE_WHITESPACE);
-}
 
 /**
  * Scan through the string and return the number of characters at the start of

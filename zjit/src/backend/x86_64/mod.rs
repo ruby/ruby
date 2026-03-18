@@ -1,4 +1,4 @@
-use std::mem::{self, take};
+use std::mem;
 
 use crate::asm::*;
 use crate::asm::x86_64::*;
@@ -32,6 +32,7 @@ pub const C_ARG_OPNDS: [Opnd; 6] = [
     Opnd::Reg(R8_REG),
     Opnd::Reg(R9_REG)
 ];
+pub const C_ARG_REGREGS: [Reg; 6] = [RDI_REG, RSI_REG, RDX_REG, RCX_REG, R8_REG, R9_REG];
 
 // C return value register on this platform
 pub const C_RET_REG: Reg = RAX_REG;
@@ -106,7 +107,15 @@ pub const ALLOC_REGS: &[Reg] = &[
 const SCRATCH0_OPND: Opnd = Opnd::Reg(R11_REG);
 const SCRATCH1_OPND: Opnd = Opnd::Reg(R10_REG);
 
+/// A scratch register available for use by resolve_ssa to break register copy cycles.
+/// Must not overlap with ALLOC_REGS or other preserved registers.
+pub const SCRATCH_REG: Reg = R11_REG;
+
 impl Assembler {
+    // This keeps frame growth below the ±4096-byte displacement range we rely
+    // on for common stack-slot accesses on x86_64.
+    const MAX_FRAME_STACK_SLOTS: usize = 2048;
+
     /// Return an Assembler with scratch registers disabled in the backend, and a scratch register.
     pub fn new_with_scratch_reg() -> (Self, Opnd) {
         (Self::new_with_accept_scratch_reg(true), SCRATCH0_OPND)
@@ -140,37 +149,35 @@ impl Assembler {
     {
         let mut asm_local = Assembler::new_with_asm(&self);
         let asm = &mut asm_local;
-        let live_ranges = take(&mut self.live_ranges);
         let mut iterator = self.instruction_iterator();
 
-        while let Some((index, mut insn)) = iterator.next(asm) {
+        while let Some((_index, mut insn)) = iterator.next(asm) {
             let is_load = matches!(insn, Insn::Load { .. } | Insn::LoadInto { .. });
+            let is_jump = insn.is_jump();
             let mut opnd_iter = insn.opnd_iter_mut();
 
-            while let Some(opnd) = opnd_iter.next() {
-                // Lower Opnd::Value to Opnd::VReg or Opnd::UImm
-                match opnd {
-                    Opnd::Value(value) if !is_load => {
-                        // Since mov(mem64, imm32) sign extends, as_i64() makes sure
-                        // we split when the extended value is different.
-                        *opnd = if !value.special_const_p() || imm_num_bits(value.as_i64()) > 32 {
-                            asm.load(*opnd)
-                        } else {
-                            Opnd::UImm(value.as_u64())
+            if !is_jump {
+                while let Some(opnd) = opnd_iter.next() {
+                    // Lower Opnd::Value to Opnd::VReg or Opnd::UImm
+                    if let Opnd::Value(value) = opnd {
+                        // If the value is a special constant, and it fits in 32 bits,
+                        // then we're going to output this as just an immediate
+                        if value.special_const_p() {
+                            if imm_num_bits(value.as_i64()) > 32 {
+                                *opnd = asm.load(*opnd);
+                            } else {
+                                *opnd = Opnd::UImm(value.as_u64());
+                            }
+                            // If we're already loading it, don't load it again
+                            // If it's a jump, then we want to let parallel move
+                            // take care of the block params (otherwise we end up
+                            // with loads between jump instructions)
+                        } else if !is_load {
+                            *opnd = asm.load(*opnd);
                         }
                     }
-                    _ => {},
-                };
+                }
             }
-
-            // When we split an operand, we can create a new VReg not in `live_ranges`.
-            // So when we see a VReg with out-of-range index, it's created from splitting
-            // from the loop above and we know it doesn't outlive the current instruction.
-            let vreg_outlives_insn = |vreg_idx: VRegId| {
-                live_ranges
-                    .get(vreg_idx)
-                    .is_some_and(|live_range: &LiveRange| live_range.end() > index)
-            };
 
             // We are replacing instructions here so we know they are already
             // being used. It is okay not to use their output here.
@@ -182,54 +189,35 @@ impl Assembler {
                 Insn::And { left, right, out } |
                 Insn::Or { left, right, out } |
                 Insn::Xor { left, right, out } => {
-                    match (&left, &right, iterator.peek().map(|(_, insn)| insn)) {
-                        // Merge this insn, e.g. `add REG, right -> out`, and `mov REG, out` if possible
-                        (Opnd::Reg(_), Opnd::UImm(value), Some(Insn::Mov { dest, src }))
-                        if out == src && left == dest && live_ranges[out.vreg_idx()].end() == index + 1 && uimm_num_bits(*value) <= 32 => {
-                            *out = *dest;
-                            asm.push_insn(insn);
-                            iterator.next(asm); // Pop merged Insn::Mov
-                        }
-                        (Opnd::Reg(_), Opnd::Reg(_), Some(Insn::Mov { dest, src }))
-                        if out == src && live_ranges[out.vreg_idx()].end() == index + 1 && *dest == *left => {
-                            *out = *dest;
-                            asm.push_insn(insn);
-                            iterator.next(asm); // Pop merged Insn::Mov
-                        }
-                        _ => {
-                            match (*left, *right) {
-                                (Opnd::Mem(_), Opnd::Mem(_)) => {
-                                    *left = asm.load(*left);
-                                    *right = asm.load(*right);
-                                },
-                                (Opnd::Mem(_), Opnd::UImm(_) | Opnd::Imm(_)) => {
-                                    *left = asm.load(*left);
-                                },
-                                // Instruction output whose live range spans beyond this instruction
-                                (Opnd::VReg { idx, .. }, _) => {
-                                    if vreg_outlives_insn(idx) {
-                                        *left = asm.load(*left);
-                                    }
-                                },
-                                // We have to load memory operands to avoid corrupting them
-                                (Opnd::Mem(_), _) => {
-                                    *left = asm.load(*left);
-                                },
-                                // We have to load register operands to avoid corrupting them
-                                (Opnd::Reg(_), _) => {
-                                    if *left != *out {
-                                        *left = asm.load(*left);
-                                    }
-                                },
-                                // The first operand can't be an immediate value
-                                (Opnd::UImm(_), _) => {
-                                    *left = asm.load(*left);
-                                }
-                                _ => {}
+                    match (*left, *right) {
+                        (Opnd::Mem(_), Opnd::Mem(_)) => {
+                            *left = asm.load(*left);
+                            *right = asm.load(*right);
+                        },
+                        (Opnd::Mem(_), Opnd::UImm(_) | Opnd::Imm(_)) => {
+                            *left = asm.load(*left);
+                        },
+                        // Instruction output whose live range spans beyond this instruction
+                        (Opnd::VReg { idx: _, .. }, _) => {
+                            *left = asm.load(*left);
+                        },
+                        // We have to load memory operands to avoid corrupting them
+                        (Opnd::Mem(_), _) => {
+                            *left = asm.load(*left);
+                        },
+                        // We have to load register operands to avoid corrupting them
+                        (Opnd::Reg(_), _) => {
+                            if *left != *out {
+                                *left = asm.load(*left);
                             }
-                            asm.push_insn(insn);
+                        },
+                        // The first operand can't be an immediate value
+                        (Opnd::UImm(_), _) => {
+                            *left = asm.load(*left);
                         }
+                        _ => {}
                     }
+                    asm.push_insn(insn);
                 },
                 Insn::Cmp { left, right } => {
                     // Replace `cmp REG, 0` (4 bytes) with `test REG, REG` (3 bytes)
@@ -271,23 +259,11 @@ impl Assembler {
                     asm.push_insn(insn);
                 },
                 // These instructions modify their input operand in-place, so we
-                // may need to load the input value to preserve it
+                // need to load the input value to preserve it
                 Insn::LShift { opnd, .. } |
                 Insn::RShift { opnd, .. } |
                 Insn::URShift { opnd, .. } => {
-                    match opnd {
-                        // Instruction output whose live range spans beyond this instruction
-                        Opnd::VReg { idx, .. } => {
-                            if vreg_outlives_insn(*idx) {
-                                *opnd = asm.load(*opnd);
-                            }
-                        },
-                        // We have to load non-reg operands to avoid corrupting them
-                        Opnd::Mem(_) | Opnd::Reg(_) | Opnd::UImm(_) | Opnd::Imm(_) => {
-                            *opnd = asm.load(*opnd);
-                        },
-                        _ => {}
-                    }
+                    *opnd = asm.load(*opnd);
                     asm.push_insn(insn);
                 },
                 Insn::CSelZ { truthy, falsy, .. } |
@@ -301,8 +277,8 @@ impl Assembler {
                     match *truthy {
                         // If we have an instruction output whose live range
                         // spans beyond this instruction, we have to load it.
-                        Opnd::VReg { idx, .. } => {
-                            if vreg_outlives_insn(idx) {
+                        Opnd::VReg { idx: _, .. } => {
+                            if true /* conservatively assume vreg outlives insn */ {
                                 *truthy = asm.load(*truthy);
                             }
                         },
@@ -336,8 +312,8 @@ impl Assembler {
                     match *opnd {
                         // If we have an instruction output whose live range
                         // spans beyond this instruction, we have to load it.
-                        Opnd::VReg { idx, .. } => {
-                            if vreg_outlives_insn(idx) {
+                        Opnd::VReg { idx: _, .. } => {
+                            if true /* conservatively assume vreg outlives insn */ {
                                 *opnd = asm.load(*opnd);
                             }
                         },
@@ -353,31 +329,11 @@ impl Assembler {
                 },
                 Insn::CCall { opnds, .. } => {
                     assert!(opnds.len() <= C_ARG_OPNDS.len());
-
-                    // Load each operand into the corresponding argument register.
-                    if !opnds.is_empty() {
-                        let mut args: Vec<(Opnd, Opnd)> = vec![];
-                        for (idx, opnd) in opnds.iter_mut().enumerate() {
-                            args.push((C_ARG_OPNDS[idx], *opnd));
-                        }
-                        asm.parallel_mov(args);
-                    }
-
-                    // Now we push the CCall without any arguments so that it
-                    // just performs the call.
-                    *opnds = vec![];
+                    // CCall argument setup is handled by handle_caller_saved_regs.
                     asm.push_insn(insn);
                 },
                 Insn::Lea { .. } => {
-                    // Merge `lea` and `mov` into a single `lea` when possible
-                    match (&insn, iterator.peek().map(|(_, insn)| insn)) {
-                        (Insn::Lea { opnd, out }, Some(Insn::Mov { dest: Opnd::Reg(reg), src }))
-                        if matches!(out, Opnd::VReg { .. }) && out == src && live_ranges[out.vreg_idx()].end() == index + 1 => {
-                            asm.push_insn(Insn::Lea { opnd: *opnd, out: Opnd::Reg(*reg) });
-                            iterator.next(asm); // Pop merged Insn::Mov
-                        }
-                        _ => asm.push_insn(insn),
-                    }
+                    asm.push_insn(insn);
                 },
                 _ => {
                     asm.push_insn(insn);
@@ -421,14 +377,42 @@ impl Assembler {
             }
         }
 
-        /// If a given operand is Opnd::Mem and it uses MemBase::Stack, lower it to MemBase::Reg using a scratch register.
+        /// If a given operand is Opnd::Mem and it uses MemBase::Stack, lower it to MemBase::Reg(NATIVE_BASE_PTR).
+        /// In general, `out` operand is a `VReg`, so it may use MemBase::Stack, but not MemBase::StackIndirect.
+        fn lower_stack_membase(opnd: Opnd, stack_state: &StackState) -> Opnd {
+            match opnd {
+                Opnd::Mem(Mem { base: stack_membase @ MemBase::Stack { .. }, disp: opnd_disp, num_bits: opnd_num_bits }) => {
+                    // Convert MemBase::Stack to MemBase::Reg(NATIVE_BASE_PTR) with the
+                    // correct stack displacement. The stack slot value lives directly at
+                    // [NATIVE_BASE_PTR + stack_disp], so we just adjust the base and
+                    // combine displacements — no indirection needed.
+                    let Mem { base, disp: stack_disp, .. } = stack_state.stack_membase_to_mem(stack_membase);
+                    Opnd::Mem(Mem { base, disp: stack_disp + opnd_disp, num_bits: opnd_num_bits })
+                }
+                Opnd::Mem(Mem { base: MemBase::StackIndirect { .. }, .. }) => {
+                    unreachable!("lower_stack_membase expects {opnd:?} to not have MemBase::StackIndirect")
+                }
+                _ => opnd,
+            }
+        }
+
+        /// If a given operand is Opnd::Mem and it uses MemBase::Stack, lower it to MemBase::Reg(NATIVE_BASE_PTR).
+        /// For MemBase::StackIndirect, load the pointer from the stack slot into a scratch register.
         fn split_stack_membase(asm: &mut Assembler, opnd: Opnd, scratch_opnd: Opnd, stack_state: &StackState) -> Opnd {
-            if let Opnd::Mem(Mem { base: stack_membase @ MemBase::Stack { .. }, disp, num_bits }) = opnd {
-                let base = Opnd::Mem(stack_state.stack_membase_to_mem(stack_membase));
-                asm.load_into(scratch_opnd, base);
-                Opnd::Mem(Mem { base: MemBase::Reg(scratch_opnd.unwrap_reg().reg_no), disp, num_bits })
-            } else {
-                opnd
+            match opnd {
+                Opnd::Mem(Mem { base: MemBase::Stack { .. }, .. }) => lower_stack_membase(opnd, stack_state),
+                Opnd::Mem(Mem { base: MemBase::StackIndirect { stack_idx }, disp: opnd_disp, num_bits: opnd_num_bits }) => {
+                    // The spilled value (a pointer) lives at a stack slot. Load it
+                    // into a scratch register, then use the register as the base.
+                    let stack_mem = stack_state.stack_membase_to_mem(MemBase::Stack { stack_idx, num_bits: 64 });
+                    asm.load_into(scratch_opnd, Opnd::Mem(stack_mem));
+                    Opnd::Mem(Mem {
+                        base: MemBase::Reg(scratch_opnd.unwrap_reg().reg_no),
+                        disp: opnd_disp,
+                        num_bits: opnd_num_bits,
+                    })
+                }
+                _ => opnd,
             }
         }
 
@@ -459,6 +443,13 @@ impl Assembler {
                 if let (Opnd::Mem(_), Opnd::Mem(_)) = (dst, src) {
                     asm.mov(scratch_opnd, src);
                     asm.mov(dst, scratch_opnd);
+                } else if let (Opnd::Mem(_), Opnd::Value(value)) = (dst, src) {
+                    if imm_num_bits(value.as_i64()) > 32 {
+                        asm.mov(scratch_opnd, src);
+                        asm.mov(dst, scratch_opnd);
+                    } else {
+                        asm.mov(dst, src);
+                    }
                 } else {
                     asm.mov(dst, src);
                 }
@@ -472,10 +463,10 @@ impl Assembler {
         asm_local.accept_scratch_reg = true;
         asm_local.stack_base_idx = self.stack_base_idx;
         asm_local.label_names = self.label_names.clone();
-        asm_local.live_ranges = LiveRanges::new(self.live_ranges.len());
+        asm_local.num_vregs = self.num_vregs;
 
         // Create one giant block to linearize everything into
-        asm_local.new_block_without_id();
+        asm_local.new_block_without_id("linearized");
 
         let asm = &mut asm_local;
 
@@ -494,6 +485,7 @@ impl Assembler {
                     *left = split_if_both_memory(asm, *left, *right, SCRATCH0_OPND);
                     *right = split_stack_membase(asm, *right, SCRATCH1_OPND, &stack_state);
                     *right = split_64bit_immediate(asm, *right, SCRATCH1_OPND);
+                    *out = lower_stack_membase(*out, &stack_state);
 
                     let (out, left) = (*out, *left);
                     asm.push_insn(insn);
@@ -504,6 +496,7 @@ impl Assembler {
                     *left = split_if_both_memory(asm, *left, *right, SCRATCH0_OPND);
                     *right = split_stack_membase(asm, *right, SCRATCH1_OPND, &stack_state);
                     *right = split_64bit_immediate(asm, *right, SCRATCH1_OPND);
+                    *out = lower_stack_membase(*out, &stack_state);
 
                     // imul doesn't have (Mem, Reg) encoding. Swap left and right in that case.
                     if let (Opnd::Mem(_), Opnd::Reg(_)) = (&left, &right) {
@@ -564,6 +557,7 @@ impl Assembler {
                     *left = split_stack_membase(asm, *left, SCRATCH1_OPND, &stack_state);
                     *right = split_stack_membase(asm, *right, SCRATCH0_OPND, &stack_state);
                     *right = split_if_both_memory(asm, *right, *left, SCRATCH0_OPND);
+                    *out = lower_stack_membase(*out, &stack_state);
                     let mem_out = split_memory_write(out, SCRATCH0_OPND);
                     asm.push_insn(insn);
                     if let Some(mem_out) = mem_out {
@@ -572,6 +566,7 @@ impl Assembler {
                 }
                 Insn::Lea { opnd, out } => {
                     *opnd = split_stack_membase(asm, *opnd, SCRATCH0_OPND, &stack_state);
+                    *out = lower_stack_membase(*out, &stack_state);
                     let mem_out = split_memory_write(out, SCRATCH0_OPND);
                     asm.push_insn(insn);
                     if let Some(mem_out) = mem_out {
@@ -587,6 +582,8 @@ impl Assembler {
                 Insn::Load { out, opnd } |
                 Insn::LoadInto { dest: out, opnd } => {
                     *opnd = split_stack_membase(asm, *opnd, SCRATCH0_OPND, &stack_state);
+                    // Split stack membase on out before checking for memory write
+                    *out = lower_stack_membase(*out, &stack_state);
                     let mem_out = split_memory_write(out, SCRATCH0_OPND);
                     asm.push_insn(insn);
                     if let Some(mem_out) = mem_out {
@@ -601,17 +598,14 @@ impl Assembler {
                     asm.incr_counter(Opnd::mem(64, SCRATCH0_OPND, 0), value);
                 }
                 &mut Insn::Mov { dest, src } => {
+                    let dest = split_stack_membase(asm, dest, SCRATCH1_OPND, &stack_state);
+                    let src = split_stack_membase(asm, src, SCRATCH0_OPND, &stack_state);
                     asm_mov(asm, dest, src, SCRATCH0_OPND);
-                }
-                // Resolve ParallelMov that couldn't be handled without a scratch register.
-                Insn::ParallelMov { moves } => {
-                    for (dst, src) in Self::resolve_parallel_moves(&moves, Some(SCRATCH0_OPND)).unwrap() {
-                        asm_mov(asm, dst, src, SCRATCH0_OPND);
-                    }
                 }
                 // Handle various operand combinations for spills on compile_exits.
                 &mut Insn::Store { dest, src } => {
                     let num_bits = dest.rm_num_bits();
+                    let src = split_stack_membase(asm, src, SCRATCH0_OPND, &stack_state);
                     let dest = split_stack_membase(asm, dest, SCRATCH1_OPND, &stack_state);
 
                     let src = match src {
@@ -673,21 +667,58 @@ impl Assembler {
             cmov_neg: fn(&mut CodeBlock, X86Opnd, X86Opnd)){
 
             // Assert that output is a register
-            out.unwrap_reg();
+            let out_reg = out.unwrap_reg();
+
+            /// Check if a memory operand uses the given register as its base
+            fn mem_uses_reg(opnd: &Opnd, reg: Reg) -> bool {
+                if let Opnd::Mem(Mem { base: MemBase::Reg(reg_no), .. }) = opnd {
+                    *reg_no == reg.reg_no
+                } else {
+                    false
+                }
+            }
+
+            /// Check if an operand aliases the given register (either as a
+            /// register operand or as a memory base).
+            fn aliases_reg(opnd: &Opnd, reg: Reg) -> bool {
+                match opnd {
+                    Opnd::Reg(r) => r.reg_no == reg.reg_no,
+                    Opnd::Mem(Mem { base: MemBase::Reg(reg_no), .. }) => *reg_no == reg.reg_no,
+                    _ => false,
+                }
+            }
 
             // If the truthy value is a memory operand
             if let Opnd::Mem(_) = truthy {
-                if out != falsy {
-                    mov(cb, out.into(), falsy.into());
+                // If out aliases truthy, we must load truthy into the scratch
+                // register first to avoid clobbering it with the falsy mov.
+                if aliases_reg(&truthy, out_reg) {
+                    mov(cb, SCRATCH0_OPND.into(), truthy.into());
+                    if out != falsy {
+                        mov(cb, out.into(), falsy.into());
+                    }
+                    cmov_fn(cb, out.into(), SCRATCH0_OPND.into());
+                } else {
+                    if out != falsy {
+                        mov(cb, out.into(), falsy.into());
+                    }
+                    cmov_fn(cb, out.into(), truthy.into());
                 }
-
-                cmov_fn(cb, out.into(), truthy.into());
             } else {
-                if out != truthy {
-                    mov(cb, out.into(), truthy.into());
+                // If out aliases falsy, we must load falsy into the scratch
+                // register first to avoid clobbering it with the truthy mov.
+                if aliases_reg(&falsy, out_reg) {
+                    mov(cb, SCRATCH0_OPND.into(), falsy.into());
+                    if out != truthy {
+                        mov(cb, out.into(), truthy.into());
+                    }
+                    cmov_neg(cb, out.into(), SCRATCH0_OPND.into());
+                } else {
+                    if out != truthy {
+                        mov(cb, out.into(), truthy.into());
+                    }
+                    cmov_neg(cb, out.into(), falsy.into());
                 }
-
-                cmov_neg(cb, out.into(), falsy.into());
             }
         }
 
@@ -828,8 +859,6 @@ impl Assembler {
                 Insn::LoadSExt { opnd, out } => {
                     movsx(cb, out.into(), opnd.into());
                 },
-
-                Insn::ParallelMov { .. } => unreachable!("{insn:?} should have been lowered at alloc_regs()"),
 
                 Insn::Store { dest, src } |
                 Insn::Mov { dest, src } => {
@@ -1093,15 +1122,81 @@ impl Assembler {
         let use_scratch_regs = !self.accept_scratch_reg;
         asm_dump!(self, init);
 
-        let asm = self.x86_split();
+        let mut asm = self.x86_split();
+
         asm_dump!(asm, split);
 
-        let mut asm = asm.alloc_regs(regs)?;
+        asm.number_instructions(0);
+
+        let live_in = asm.analyze_liveness();
+        let intervals = asm.build_intervals(live_in);
+
+        // Dump live intervals if requested
+        if let Some(crate::options::Options { dump_lir: Some(dump_lirs), .. }) = unsafe { crate::options::OPTIONS.as_ref() } {
+            if dump_lirs.contains(&crate::options::DumpLIR::live_intervals) {
+                println!("LIR live_intervals:\n{}", crate::backend::lir::debug_intervals(&asm, &intervals));
+            }
+        }
+
+        let preferred_registers = asm.preferred_register_assignments(&intervals);
+        let (assignments, num_stack_slots) = asm.linear_scan(intervals.clone(), regs.len(), &preferred_registers);
+
+        let total_stack_slots = asm.stack_base_idx + num_stack_slots;
+        if total_stack_slots > Self::MAX_FRAME_STACK_SLOTS {
+            return Err(CompileError::OutOfMemory);
+        }
+
+        // Dump vreg-to-physical-register mapping if requested
+        if let Some(crate::options::Options { dump_lir: Some(dump_lirs), .. }) = unsafe { crate::options::OPTIONS.as_ref() } {
+            if dump_lirs.contains(&crate::options::DumpLIR::alloc_regs) {
+                println!("LIR live_intervals:\n{}", crate::backend::lir::debug_intervals(&asm, &intervals));
+
+                println!("VReg assignments:");
+                for (i, alloc) in assignments.iter().enumerate() {
+                    if let Some(alloc) = alloc {
+                        let range = &intervals[i].range;
+                        let alloc_str = match alloc {
+                            Allocation::Reg(n) => format!("{}", regs[*n]),
+                            Allocation::Fixed(reg) => format!("{}", reg),
+                            Allocation::Stack(n) => format!("Stack[{}]", n),
+                        };
+                        println!("  v{} => {} (range: {:?}..{:?})", i, alloc_str, range.start, range.end);
+                    }
+                }
+            }
+        }
+
+        // Update FrameSetup slot_count to account for:
+        // 1) stack slots reserved for block params (stack_base_idx), and
+        // 2) register allocator spills (num_stack_slots).
+        for block in asm.basic_blocks.iter_mut() {
+            for insn in block.insns.iter_mut() {
+                if let Insn::FrameSetup { slot_count, .. } = insn {
+                    *slot_count = total_stack_slots;
+                }
+            }
+        }
+
+        asm.handle_caller_saved_regs(&intervals, &assignments, &C_ARG_REGREGS);
+        asm.resolve_ssa(&intervals, &assignments);
         asm_dump!(asm, alloc_regs);
 
+        // We are moved out of SSA after resolve_ssa
+
         // We put compile_exits after alloc_regs to avoid extending live ranges for VRegs spilled on side exits.
-        asm.compile_exits();
+        // Exit code is compiled into a separate list of instructions that we append
+        // to the last reachable block before scratch_split, so it gets linearized and split.
+        let exit_insns = asm.compile_exits();
         asm_dump!(asm, compile_exits);
+
+        // Append exit instructions to the last reachable block so they are
+        // included in linearize_instructions and processed by scratch_split.
+        if let Some(&last_block) = asm.block_order().last() {
+            for insn in exit_insns {
+                asm.basic_blocks[last_block.0].insns.push(insn);
+                asm.basic_blocks[last_block.0].insn_ids.push(None);
+            }
+        }
 
         if use_scratch_regs {
             asm = asm.x86_scratch_split();
@@ -1144,7 +1239,7 @@ mod tests {
     fn setup_asm() -> (Assembler, CodeBlock) {
         rb_zjit_prepare_options(); // for get_option! on asm.compile
         let mut asm = Assembler::new();
-        asm.new_block_without_id();
+        asm.new_block_without_id("test");
         (asm, CodeBlock::new_dummy())
     }
 
@@ -1153,7 +1248,7 @@ mod tests {
         use crate::hir::SideExitReason;
 
         let mut asm = Assembler::new();
-        asm.new_block_without_id();
+        asm.new_block_without_id("test");
         asm.stack_base_idx = 1;
 
         let label = asm.new_label("bb0");
@@ -1165,28 +1260,30 @@ mod tests {
         asm.store(Opnd::mem(64, SP, 0x10), val64);
         let side_exit = Target::SideExit { reason: SideExitReason::Interrupt, exit: SideExit { pc: Opnd::const_ptr(0 as *const u8), stack: vec![], locals: vec![] } };
         asm.push_insn(Insn::Joz(val64, side_exit));
-        asm.parallel_mov(vec![(C_ARG_OPNDS[0], C_RET_OPND.with_num_bits(32)), (C_ARG_OPNDS[1], Opnd::mem(64, SP, -8))]);
+        asm.mov(C_ARG_OPNDS[0], C_RET_OPND.with_num_bits(32));
+        asm.mov(C_ARG_OPNDS[1], Opnd::mem(64, SP, -8));
 
         let val32 = asm.sub(Opnd::Value(Qtrue), Opnd::Imm(1));
         asm.store(Opnd::mem(64, EC, 0x10).with_num_bits(32), val32.with_num_bits(32));
-        asm.je(label);
+        asm.push_insn(Insn::Je(label));
         asm.cret(val64);
 
         asm.frame_teardown(JIT_PRESERVED_REGS);
         assert_disasm_snapshot!(lir_string(&mut asm), @"
-        bb0:
+        test():
+        bb0():
           # bb0(): foo@/tmp/a.rb:1
           FrameSetup 1, r13, rbx, r12
           v0 = Add r13, 0x40
           Store [rbx + 0x10], v0
           Joz Exit(Interrupt), v0
-          ParallelMov rdi <- eax, rsi <- [rbx - 8]
+          Mov rdi, eax
+          Mov rsi, [rbx - 8]
           v1 = Sub Value(0x14), Imm(1)
           Store Mem32[r12 + 0x10], VReg32(v1)
           Je bb0
           CRet v0
           FrameTeardown r13, rbx, r12
-          PadPatchPoint
         ");
     }
 
@@ -1490,8 +1587,12 @@ mod tests {
         asm.mov(CFP, sp); // should be merged to add
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @"  0x0: add r13, 0x40");
-        assert_snapshot!(cb.hexdump(), @"4983c540");
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov rdi, r13
+        0x3: add rdi, 0x40
+        0x7: mov r13, rdi
+        ");
+        assert_snapshot!(cb.hexdump(), @"4c89ef4883c7404989fd");
     }
 
     #[test]
@@ -1513,8 +1614,12 @@ mod tests {
         asm.mov(CFP, sp); // should be merged to add
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @"  0x0: sub r13, 0x40");
-        assert_snapshot!(cb.hexdump(), @"4983ed40");
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov rdi, r13
+        0x3: sub rdi, 0x40
+        0x7: mov r13, rdi
+        ");
+        assert_snapshot!(cb.hexdump(), @"4c89ef4883ef404989fd");
     }
 
     #[test]
@@ -1536,8 +1641,12 @@ mod tests {
         asm.mov(CFP, sp); // should be merged to add
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @"  0x0: and r13, 0x40");
-        assert_snapshot!(cb.hexdump(), @"4983e540");
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov rdi, r13
+        0x3: and rdi, 0x40
+        0x7: mov r13, rdi
+        ");
+        assert_snapshot!(cb.hexdump(), @"4c89ef4883e7404989fd");
     }
 
     #[test]
@@ -1548,8 +1657,12 @@ mod tests {
         asm.mov(CFP, sp); // should be merged to add
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @"  0x0: or r13, 0x40");
-        assert_snapshot!(cb.hexdump(), @"4983cd40");
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov rdi, r13
+        0x3: or rdi, 0x40
+        0x7: mov r13, rdi
+        ");
+        assert_snapshot!(cb.hexdump(), @"4c89ef4883cf404989fd");
     }
 
     #[test]
@@ -1560,8 +1673,12 @@ mod tests {
         asm.mov(CFP, sp); // should be merged to add
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @"  0x0: xor r13, 0x40");
-        assert_snapshot!(cb.hexdump(), @"4983f540");
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov rdi, r13
+        0x3: xor rdi, 0x40
+        0x7: mov r13, rdi
+        ");
+        assert_snapshot!(cb.hexdump(), @"4c89ef4883f7404989fd");
     }
 
     #[test]
@@ -1596,11 +1713,11 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
         assert_disasm_snapshot!(cb.disasm(), @"
-            0x0: mov r11, rsi
-            0x3: mov rsi, rdi
-            0x6: mov rdi, r11
-            0x9: mov eax, 0
-            0xe: call rax
+        0x0: mov r11, rsi
+        0x3: mov rsi, rdi
+        0x6: mov rdi, r11
+        0x9: mov eax, 0
+        0xe: call rax
         ");
         assert_snapshot!(cb.hexdump(), @"4989f34889fe4c89dfb800000000ffd0");
     }
@@ -1620,16 +1737,16 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
         assert_disasm_snapshot!(cb.disasm(), @"
-            0x0: mov r11, rsi
-            0x3: mov rsi, rdi
-            0x6: mov rdi, r11
-            0x9: mov r11, rcx
-            0xc: mov rcx, rdx
-            0xf: mov rdx, r11
-            0x12: mov eax, 0
-            0x17: call rax
+        0x0: mov r11, rcx
+        0x3: mov rcx, rdx
+        0x6: mov rdx, r11
+        0x9: mov r11, rsi
+        0xc: mov rsi, rdi
+        0xf: mov rdi, r11
+        0x12: mov eax, 0
+        0x17: call rax
         ");
-        assert_snapshot!(cb.hexdump(), @"4989f34889fe4c89df4989cb4889d14c89dab800000000ffd0");
+        assert_snapshot!(cb.hexdump(), @"4989cb4889d14c89da4989f34889fe4c89dfb800000000ffd0");
     }
 
     #[test]
@@ -1646,14 +1763,14 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
         assert_disasm_snapshot!(cb.disasm(), @"
-            0x0: mov r11, rsi
-            0x3: mov rsi, rdx
-            0x6: mov rdx, rdi
-            0x9: mov rdi, r11
-            0xc: mov eax, 0
-            0x11: call rax
+        0x0: mov r11, rdx
+        0x3: mov rdx, rdi
+        0x6: mov rdi, rsi
+        0x9: mov rsi, r11
+        0xc: mov eax, 0
+        0x11: call rax
         ");
-        assert_snapshot!(cb.hexdump(), @"4989f34889d64889fa4c89dfb800000000ffd0");
+        assert_snapshot!(cb.hexdump(), @"4989d34889fa4889f74c89deb800000000ffd0");
     }
 
     #[test]
@@ -1717,10 +1834,12 @@ mod tests {
         0x20: pop rdx
         0x21: pop rsi
         0x22: pop rdi
-        0x23: add rdi, rsi
-        0x26: add rdx, rcx
+        0x23: mov rdi, rdi
+        0x26: add rdi, rsi
+        0x29: mov rdi, rdx
+        0x2c: add rdi, rcx
         ");
-        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000057565251b800000000ffd0595a5e5f4801f74801ca");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000057565251b800000000ffd0595a5e5f4889ff4801f74889d74801cf");
     }
 
     #[test]
@@ -1750,21 +1869,23 @@ mod tests {
         0x1c: push rdx
         0x1d: push rcx
         0x1e: push r8
-        0x20: push r8
-        0x22: mov eax, 0
-        0x27: call rax
+        0x20: push rdi
+        0x21: mov eax, 0
+        0x26: call rax
+        0x28: pop rdi
         0x29: pop r8
-        0x2b: pop r8
-        0x2d: pop rcx
-        0x2e: pop rdx
-        0x2f: pop rsi
-        0x30: pop rdi
-        0x31: add rdi, rsi
-        0x34: mov rdi, rdx
-        0x37: add rdi, rcx
-        0x3a: add rdx, r8
+        0x2b: pop rcx
+        0x2c: pop rdx
+        0x2d: pop rsi
+        0x2e: pop rdi
+        0x2f: mov rdi, rdi
+        0x32: add rdi, rsi
+        0x35: mov rdi, rdx
+        0x38: add rdi, rcx
+        0x3b: mov rdi, rdx
+        0x3e: add rdi, r8
         ");
-        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b8050000005756525141504150b800000000ffd041584158595a5e5f4801f74889d74801cf4c01c2");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b80500000057565251415057b800000000ffd05f4158595a5e5f4889ff4801f74889d74801cf4889d74c01c7");
     }
 
     #[test]
@@ -1913,6 +2034,9 @@ mod tests {
         asm.store(Opnd::mem(VALUE_BITS, SP, 0), imitation_heap_value.into());
 
         asm = asm.x86_scratch_split();
+        for name in &asm.label_names {
+            cb.new_label(name.to_string());
+        }
         let gc_offsets = asm.x86_emit(&mut cb).unwrap();
         assert_eq!(1, gc_offsets.len(), "VALUE source operand should be reported as gc offset");
 
@@ -1933,13 +2057,11 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 0);
 
         assert_disasm_snapshot!(cb.disasm(), @"
-            0x0: mov r10, qword ptr [rbp - 8]
-            0x4: mov r11, qword ptr [rbp - 0x10]
-            0x8: mov r11, qword ptr [r11 + 2]
-            0xc: cmove r11, qword ptr [r10]
-            0x10: mov qword ptr [rbp - 8], r11
+        0x0: mov r11, qword ptr [rbp - 0xe]
+        0x4: cmove r11, qword ptr [rbp - 8]
+        0x9: mov qword ptr [rbp - 8], r11
         ");
-        assert_snapshot!(cb.hexdump(), @"4c8b55f84c8b5df04d8b5b024d0f441a4c895df8");
+        assert_snapshot!(cb.hexdump(), @"4c8b5df24c0f445df84c895df8");
     }
 
     #[test]
@@ -1951,10 +2073,9 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 0);
 
         assert_disasm_snapshot!(cb.disasm(), @"
-            0x0: mov r11, qword ptr [rbp - 8]
-            0x4: lea r11, [r11]
-            0x7: mov qword ptr [rbp - 8], r11
+        0x0: lea r11, [rbp - 8]
+        0x4: mov qword ptr [rbp - 8], r11
         ");
-        assert_snapshot!(cb.hexdump(), @"4c8b5df84d8d1b4c895df8");
+        assert_snapshot!(cb.hexdump(), @"4c8d5df84c895df8");
     }
 }

@@ -107,6 +107,13 @@ typedef struct {
  * that the lexer is now in the PM_LEX_STRING mode, and will return tokens that
  * are found as part of a string.
  */
+/**
+ * The size of the breakpoints and strpbrk cache charset buffers. All
+ * breakpoint arrays and the strpbrk cache charset must share this size so
+ * that memcmp can safely compare the full buffer without overreading.
+ */
+#define PM_STRPBRK_CACHE_SIZE 16
+
 typedef struct pm_lex_mode {
     /** The type of this lex mode. */
     enum {
@@ -169,7 +176,7 @@ typedef struct pm_lex_mode {
              * This is the character set that should be used to delimit the
              * tokens within the list.
              */
-            uint8_t breakpoints[11];
+            uint8_t breakpoints[PM_STRPBRK_CACHE_SIZE];
         } list;
 
         struct {
@@ -191,7 +198,7 @@ typedef struct pm_lex_mode {
              * This is the character set that should be used to delimit the
              * tokens within the regular expression.
              */
-            uint8_t breakpoints[7];
+            uint8_t breakpoints[PM_STRPBRK_CACHE_SIZE];
         } regexp;
 
         struct {
@@ -224,7 +231,7 @@ typedef struct pm_lex_mode {
              * This is the character set that should be used to delimit the
              * tokens within the string.
              */
-            uint8_t breakpoints[7];
+            uint8_t breakpoints[PM_STRPBRK_CACHE_SIZE];
         } string;
 
         struct {
@@ -556,6 +563,13 @@ typedef struct pm_locals {
     /** The capacity of the local variables set. */
     uint32_t capacity;
 
+    /**
+     * A bloom filter over constant IDs stored in this set. Used to quickly
+     * reject lookups for names that are definitely not present, avoiding the
+     * cost of a linear scan or hash probe.
+     */
+    uint32_t bloom;
+
     /** The nullable allocated memory for the local variables in the set. */
     pm_local_t *locals;
 } pm_locals_t;
@@ -638,6 +652,9 @@ typedef uint32_t pm_state_stack_t;
 struct pm_parser {
     /** The arena used for all AST-lifetime allocations. Caller-owned. */
     pm_arena_t *arena;
+
+    /** The arena used for parser metadata (comments, diagnostics, etc.). */
+    pm_arena_t metadata_arena;
 
     /**
      * The next node identifier that will be assigned. This is a unique
@@ -790,12 +807,26 @@ struct pm_parser {
     pm_line_offset_list_t line_offsets;
 
     /**
-     * We want to add a flag to integer nodes that indicates their base. We only
-     * want to parse these once, but we don't have space on the token itself to
-     * communicate this information. So we store it here and pass it through
-     * when we find tokens that we need it for.
+     * State communicated from the lexer to the parser for integer tokens.
      */
-    pm_node_flags_t integer_base;
+    struct {
+        /**
+         * A flag indicating the base of the integer (binary, octal, decimal,
+         * hexadecimal). Set during lexing and read during node creation.
+         */
+        pm_node_flags_t base;
+
+        /**
+         * When lexing a decimal integer that fits in a uint32_t, we compute
+         * the value during lexing to avoid re-scanning the digits during
+         * parsing. If lexed is true, this holds the result and
+         * pm_integer_parse can be skipped.
+         */
+        uint32_t value;
+
+        /** Whether value holds a valid pre-computed integer. */
+        bool lexed;
+    } integer;
 
     /**
      * This string is used to pass information from the lexer to the parser. It
@@ -938,6 +969,27 @@ struct pm_parser {
      * toggled with a magic comment.
      */
     bool warn_mismatched_indentation;
+
+#if defined(PRISM_HAS_NEON) || defined(PRISM_HAS_SSSE3) || defined(PRISM_HAS_SWAR)
+    /**
+     * Cached lookup tables for pm_strpbrk's SIMD fast path. Avoids rebuilding
+     * the nibble-based tables on every call when the charset hasn't changed
+     * (which is the common case during string/regex/list lexing).
+     */
+    struct {
+        /** The cached charset (null-terminated, NUL-padded). */
+        uint8_t charset[PM_STRPBRK_CACHE_SIZE];
+
+        /** Nibble-based low lookup table for SIMD matching. */
+        uint8_t low_lut[16];
+
+        /** Nibble-based high lookup table for SIMD matching. */
+        uint8_t high_lut[16];
+
+        /** Scalar fallback table (4 x 64-bit bitmasks covering all ASCII). */
+        uint64_t table[4];
+    } strpbrk_cache;
+#endif
 };
 
 #endif

@@ -18,13 +18,30 @@
     for (size_t index = 0; index < (list)->size && ((node) = (list)->nodes[index]); index++)
 
 /**
+ * Slow path for pm_node_list_append: grow the list and append the node.
+ * Do not call directly — use pm_node_list_append instead.
+ *
+ * @param arena The arena to allocate from.
+ * @param list The list to append to.
+ * @param node The node to append.
+ */
+void pm_node_list_append_slow(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node);
+
+/**
  * Append a new node onto the end of the node list.
  *
  * @param arena The arena to allocate from.
  * @param list The list to append to.
  * @param node The node to append.
  */
-void pm_node_list_append(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node);
+static PRISM_FORCE_INLINE void
+pm_node_list_append(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node) {
+    if (list->size < list->capacity) {
+        list->nodes[list->size++] = node;
+    } else {
+        pm_node_list_append_slow(arena, list, node);
+    }
+}
 
 /**
  * Prepend a new node onto the beginning of the node list.

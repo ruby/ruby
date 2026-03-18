@@ -137,6 +137,7 @@ module Spec
         "spec/bundler/build_metadata_spec.rb",
         "spec/bundler/current_ruby_spec.rb",
         "spec/bundler/installer/gem_installer_spec.rb",
+        "spec/bundler/installer/parallel_installer_spec.rb",
         "spec/bundler/cli_common_spec.rb",
         "spec/bundler/ci_detector_spec.rb",
       ],

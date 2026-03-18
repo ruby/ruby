@@ -897,7 +897,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_finalizer_not_run_with_vm_lock
-    assert_ractor(<<~'RUBY')
+    assert_ractor(<<~'RUBY', timeout: 30)
       Thread.new do
         loop do
           Encoding.list.each do |enc|

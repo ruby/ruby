@@ -92,6 +92,18 @@
 #endif
 
 /**
+ * Force a function to be inlined at every call site. Use sparingly — only for
+ * small, hot functions where the compiler's heuristics fail to inline.
+ */
+#if defined(_MSC_VER)
+#   define PRISM_FORCE_INLINE __forceinline
+#elif defined(__GNUC__) || defined(__clang__)
+#   define PRISM_FORCE_INLINE inline __attribute__((always_inline))
+#else
+#   define PRISM_FORCE_INLINE inline
+#endif
+
+/**
  * Old Visual Studio versions before 2015 do not implement sprintf, but instead
  * implement _snprintf. We standard that here.
  */
@@ -262,6 +274,49 @@
 
     /** Void because this platform does not support branch prediction hints. */
     #define PRISM_UNLIKELY(x) (x)
+#endif
+
+/**
+ * Platform detection for SIMD / fast-path implementations. At most one of
+ * these macros is defined, selecting the best available vectorization strategy.
+ */
+#if (defined(__aarch64__) && defined(__ARM_NEON)) || (defined(_MSC_VER) && defined(_M_ARM64))
+    #define PRISM_HAS_NEON
+#elif (defined(__x86_64__) && defined(__SSSE3__)) || (defined(_MSC_VER) && defined(_M_X64))
+    #define PRISM_HAS_SSSE3
+#elif defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+    #define PRISM_HAS_SWAR
+#endif
+
+/**
+ * Count trailing zero bits in a 64-bit value. Used by SWAR identifier scanning
+ * to find the first non-matching byte in a word.
+ *
+ * Precondition: v must be nonzero. The result is undefined when v == 0
+ * (matching the behavior of __builtin_ctzll and _BitScanForward64).
+ */
+#if defined(__GNUC__) || defined(__clang__)
+    #define pm_ctzll(v) ((unsigned) __builtin_ctzll(v))
+#elif defined(_MSC_VER)
+    #include <intrin.h>
+    static inline unsigned pm_ctzll(uint64_t v) {
+        unsigned long index;
+        _BitScanForward64(&index, v);
+        return (unsigned) index;
+    }
+#else
+    static inline unsigned
+    pm_ctzll(uint64_t v) {
+        unsigned c = 0;
+        v &= (uint64_t) (-(int64_t) v);
+        if (v & 0x00000000FFFFFFFFULL) c += 0;  else c += 32;
+        if (v & 0x0000FFFF0000FFFFULL) c += 0;  else c += 16;
+        if (v & 0x00FF00FF00FF00FFULL) c += 0;  else c += 8;
+        if (v & 0x0F0F0F0F0F0F0F0FULL) c += 0;  else c += 4;
+        if (v & 0x3333333333333333ULL) c += 0;  else c += 2;
+        if (v & 0x5555555555555555ULL) c += 0;  else c += 1;
+        return c;
+    }
 #endif
 
 /**

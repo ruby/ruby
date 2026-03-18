@@ -149,7 +149,8 @@ lex_mode_push_list(pm_parser_t *parser, bool interpolation, uint8_t delimiter) {
     // These are the places where we need to split up the content of the list.
     // We'll use strpbrk to find the first of these characters.
     uint8_t *breakpoints = lex_mode.as.list.breakpoints;
-    memcpy(breakpoints, "\\ \t\f\r\v\n\0\0\0", sizeof(lex_mode.as.list.breakpoints));
+    memset(breakpoints, 0, PM_STRPBRK_CACHE_SIZE);
+    memcpy(breakpoints, "\\ \t\f\r\v\n", sizeof("\\ \t\f\r\v\n") - 1);
     size_t index = 7;
 
     // Now we'll add the terminator to the list of breakpoints. If the
@@ -201,7 +202,8 @@ lex_mode_push_regexp(pm_parser_t *parser, uint8_t incrementor, uint8_t terminato
     // regular expression. We'll use strpbrk to find the first of these
     // characters.
     uint8_t *breakpoints = lex_mode.as.regexp.breakpoints;
-    memcpy(breakpoints, "\r\n\\#\0\0", sizeof(lex_mode.as.regexp.breakpoints));
+    memset(breakpoints, 0, PM_STRPBRK_CACHE_SIZE);
+    memcpy(breakpoints, "\r\n\\#", sizeof("\r\n\\#") - 1);
     size_t index = 4;
 
     // First we'll add the terminator.
@@ -237,7 +239,8 @@ lex_mode_push_string(pm_parser_t *parser, bool interpolation, bool label_allowed
     // These are the places where we need to split up the content of the
     // string. We'll use strpbrk to find the first of these characters.
     uint8_t *breakpoints = lex_mode.as.string.breakpoints;
-    memcpy(breakpoints, "\r\n\\\0\0\0", sizeof(lex_mode.as.string.breakpoints));
+    memset(breakpoints, 0, PM_STRPBRK_CACHE_SIZE);
+    memcpy(breakpoints, "\r\n\\", sizeof("\r\n\\") - 1);
     size_t index = 3;
 
     // Now add in the terminator. If the terminator is not already a NULL byte,
@@ -451,7 +454,7 @@ debug_lex_state_set(pm_parser_t *parser, pm_lex_state_t state, char const * call
  */
 static inline void
 pm_parser_err(pm_parser_t *parser, uint32_t start, uint32_t length, pm_diagnostic_id_t diag_id) {
-    pm_diagnostic_list_append(&parser->error_list, start, length, diag_id);
+    pm_diagnostic_list_append(&parser->metadata_arena, &parser->error_list, start, length, diag_id);
 }
 
 /**
@@ -494,7 +497,7 @@ pm_parser_err_node(pm_parser_t *parser, const pm_node_t *node, pm_diagnostic_id_
  * Append an error to the list of errors on the parser using a format string.
  */
 #define PM_PARSER_ERR_FORMAT(parser_, start_, length_, diag_id_, ...) \
-    pm_diagnostic_list_append_format(&(parser_)->error_list, start_, length_, diag_id_, __VA_ARGS__)
+    pm_diagnostic_list_append_format(&(parser_)->metadata_arena, &(parser_)->error_list, start_, length_, diag_id_, __VA_ARGS__)
 
 /**
  * Append an error to the list of errors on the parser using the location of the
@@ -529,7 +532,7 @@ pm_parser_err_node(pm_parser_t *parser, const pm_node_t *node, pm_diagnostic_id_
  */
 static inline void
 pm_parser_warn(pm_parser_t *parser, uint32_t start, uint32_t length, pm_diagnostic_id_t diag_id) {
-    pm_diagnostic_list_append(&parser->warning_list, start, length, diag_id);
+    pm_diagnostic_list_append(&parser->metadata_arena, &parser->warning_list, start, length, diag_id);
 }
 
 /**
@@ -555,7 +558,7 @@ pm_parser_warn_node(pm_parser_t *parser, const pm_node_t *node, pm_diagnostic_id
  * and the given location.
  */
 #define PM_PARSER_WARN_FORMAT(parser_, start_, length_, diag_id_, ...) \
-    pm_diagnostic_list_append_format(&(parser_)->warning_list, start_, length_, diag_id_, __VA_ARGS__)
+    pm_diagnostic_list_append_format(&(parser_)->metadata_arena, &(parser_)->warning_list, start_, length_, diag_id_, __VA_ARGS__)
 
 /**
  * Append a warning to the list of warnings on the parser using the location of
@@ -773,7 +776,7 @@ pm_parser_scope_shareable_constant_set(pm_parser_t *parser, pm_shareable_constan
 /**
  * The point at which the set of locals switches from being a list to a hash.
  */
-#define PM_LOCALS_HASH_THRESHOLD 9
+#define PM_LOCALS_HASH_THRESHOLD 5
 
 static void
 pm_locals_free(pm_locals_t *locals) {
@@ -855,6 +858,8 @@ pm_locals_write(pm_locals_t *locals, pm_constant_id_t name, uint32_t start, uint
         pm_locals_resize(locals);
     }
 
+    locals->bloom |= (1u << (name & 31));
+
     if (locals->capacity < PM_LOCALS_HASH_THRESHOLD) {
         for (uint32_t index = 0; index < locals->capacity; index++) {
             pm_local_t *local = &locals->locals[index];
@@ -907,6 +912,8 @@ pm_locals_write(pm_locals_t *locals, pm_constant_id_t name, uint32_t start, uint
  */
 static uint32_t
 pm_locals_find(pm_locals_t *locals, pm_constant_id_t name) {
+    if (!(locals->bloom & (1u << (name & 31)))) return UINT32_MAX;
+
     if (locals->capacity < PM_LOCALS_HASH_THRESHOLD) {
         for (uint32_t index = 0; index < locals->size; index++) {
             pm_local_t *local = &locals->locals[index];
@@ -1028,7 +1035,7 @@ pm_locals_order(PRISM_ATTRIBUTE_UNUSED pm_parser_t *parser, pm_locals_t *locals,
  */
 static inline pm_constant_id_t
 pm_parser_constant_id_raw(pm_parser_t *parser, const uint8_t *start, const uint8_t *end) {
-    return pm_constant_pool_insert_shared(&parser->constant_pool, start, (size_t) (end - start));
+    return pm_constant_pool_insert_shared(&parser->metadata_arena, &parser->constant_pool, start, (size_t) (end - start));
 }
 
 /**
@@ -1036,7 +1043,7 @@ pm_parser_constant_id_raw(pm_parser_t *parser, const uint8_t *start, const uint8
  */
 static inline pm_constant_id_t
 pm_parser_constant_id_owned(pm_parser_t *parser, uint8_t *start, size_t length) {
-    return pm_constant_pool_insert_owned(&parser->constant_pool, start, length);
+    return pm_constant_pool_insert_owned(&parser->metadata_arena, &parser->constant_pool, start, length);
 }
 
 /**
@@ -1044,7 +1051,7 @@ pm_parser_constant_id_owned(pm_parser_t *parser, uint8_t *start, size_t length) 
  */
 static inline pm_constant_id_t
 pm_parser_constant_id_constant(pm_parser_t *parser, const char *start, size_t length) {
-    return pm_constant_pool_insert_constant(&parser->constant_pool, (const uint8_t *) start, length);
+    return pm_constant_pool_insert_constant(&parser->metadata_arena, &parser->constant_pool, (const uint8_t *) start, length);
 }
 
 /**
@@ -1776,6 +1783,184 @@ char_is_identifier_utf8(const uint8_t *b, ptrdiff_t n) {
         return pm_encoding_utf_8_char_width(b, n);
     }
 }
+
+/**
+ * Scan forward through ASCII identifier characters (a-z, A-Z, 0-9, _) using
+ * wide operations. Returns the number of leading ASCII identifier bytes.
+ * Callers must handle any remaining bytes (short tail or non-ASCII/UTF-8)
+ * with a byte-at-a-time loop.
+ *
+ * Up to three optimized implementations are selected at compile time, with a
+ * no-op fallback for unsupported platforms:
+ *   1. NEON — processes 16 bytes per iteration on aarch64.
+ *   2. SSSE3 — processes 16 bytes per iteration on x86-64.
+ *   3. SWAR — little-endian fallback, processes 8 bytes per iteration.
+ */
+
+#if defined(PRISM_HAS_NEON)
+#include <arm_neon.h>
+
+static inline size_t
+scan_identifier_ascii(const uint8_t *start, const uint8_t *end) {
+    const uint8_t *cursor = start;
+
+    // Nibble-based lookup tables for classifying [a-zA-Z0-9_].
+    // Each high nibble is assigned a unique bit; the low nibble table
+    // contains the OR of bits for all high nibbles that have an
+    // identifier character at that low nibble position. A byte is an
+    // identifier character iff (low_lut[lo] & high_lut[hi]) != 0.
+    static const uint8_t low_lut_data[16] = {
+        0x15, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F,
+        0x1F, 0x1F, 0x1E, 0x0A, 0x0A, 0x0A, 0x0A, 0x0E
+    };
+    static const uint8_t high_lut_data[16] = {
+        0x00, 0x00, 0x00, 0x01, 0x02, 0x04, 0x08, 0x10,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+    const uint8x16_t low_lut = vld1q_u8(low_lut_data);
+    const uint8x16_t high_lut = vld1q_u8(high_lut_data);
+    const uint8x16_t mask_0f = vdupq_n_u8(0x0F);
+
+    while (cursor + 16 <= end) {
+        uint8x16_t v = vld1q_u8(cursor);
+
+        uint8x16_t lo_class = vqtbl1q_u8(low_lut, vandq_u8(v, mask_0f));
+        uint8x16_t hi_class = vqtbl1q_u8(high_lut, vshrq_n_u8(v, 4));
+        uint8x16_t ident = vandq_u8(lo_class, hi_class);
+
+        // Fast check: if the per-byte minimum is nonzero, every byte matched.
+        if (vminvq_u8(ident) != 0) {
+            cursor += 16;
+            continue;
+        }
+
+        // Find the first non-identifier byte (zero in ident).
+        uint8x16_t is_zero = vceqq_u8(ident, vdupq_n_u8(0));
+        uint64_t lo = vgetq_lane_u64(vreinterpretq_u64_u8(is_zero), 0);
+
+        if (lo != 0) {
+            cursor += pm_ctzll(lo) / 8;
+        } else {
+            uint64_t hi = vgetq_lane_u64(vreinterpretq_u64_u8(is_zero), 1);
+            cursor += 8 + pm_ctzll(hi) / 8;
+        }
+
+        return (size_t) (cursor - start);
+    }
+
+    return (size_t) (cursor - start);
+}
+
+#elif defined(PRISM_HAS_SSSE3)
+#include <tmmintrin.h>
+
+static inline size_t
+scan_identifier_ascii(const uint8_t *start, const uint8_t *end) {
+    const uint8_t *cursor = start;
+
+    while (cursor + 16 <= end) {
+        __m128i v = _mm_loadu_si128((const __m128i *) cursor);
+        __m128i zero = _mm_setzero_si128();
+
+        // Unsigned range check via saturating subtraction:
+        //   byte >= lo  ⟺  saturate(lo - byte) == 0
+        //   byte <= hi  ⟺  saturate(byte - hi) == 0
+
+        // Fold case: OR with 0x20 maps A-Z to a-z.
+        __m128i lowered = _mm_or_si128(v, _mm_set1_epi8(0x20));
+        __m128i letter = _mm_and_si128(
+            _mm_cmpeq_epi8(_mm_subs_epu8(_mm_set1_epi8(0x61), lowered), zero),
+            _mm_cmpeq_epi8(_mm_subs_epu8(lowered, _mm_set1_epi8(0x7A)), zero));
+
+        __m128i digit = _mm_and_si128(
+            _mm_cmpeq_epi8(_mm_subs_epu8(_mm_set1_epi8(0x30), v), zero),
+            _mm_cmpeq_epi8(_mm_subs_epu8(v, _mm_set1_epi8(0x39)), zero));
+
+        __m128i underscore = _mm_cmpeq_epi8(v, _mm_set1_epi8(0x5F));
+
+        __m128i ident = _mm_or_si128(_mm_or_si128(letter, digit), underscore);
+        int mask = _mm_movemask_epi8(ident);
+
+        if (mask == 0xFFFF) {
+            cursor += 16;
+            continue;
+        }
+
+        cursor += pm_ctzll((uint64_t) (~mask & 0xFFFF));
+        return (size_t) (cursor - start);
+    }
+
+    return (size_t) (cursor - start);
+}
+
+// The SWAR path uses pm_ctzll to find the first non-matching byte within a
+// word, which only yields the correct byte index on little-endian targets.
+// We gate on a positive little-endian check so that unknown-endianness
+// platforms safely fall through to the no-op fallback.
+#elif defined(PRISM_HAS_SWAR)
+
+/**
+ * Portable SWAR fallback — processes 8 bytes per iteration.
+ *
+ * The byte-wise range checks avoid cross-byte borrows by pre-setting the high
+ * bit of each byte before subtraction: (byte | 0x80) - lo has a minimum value
+ * of 0x80 - 0x7F = 1, so underflow (and thus a borrow into the next byte) is
+ * impossible. The result has bit 7 set if and only if byte >= lo. The same
+ * reasoning applies to the upper-bound direction.
+ */
+static inline size_t
+scan_identifier_ascii(const uint8_t *start, const uint8_t *end) {
+    static const uint64_t ones = 0x0101010101010101ULL;
+    static const uint64_t highs = 0x8080808080808080ULL;
+    const uint8_t *cursor = start;
+
+    while (cursor + 8 <= end) {
+        uint64_t word;
+        memcpy(&word, cursor, 8);
+
+        // Bail on any non-ASCII byte.
+        if (word & highs) break;
+
+        uint64_t digit = ((word | highs) - ones * 0x30) & ((ones * 0x39 | highs) - word) & highs;
+
+        // Fold upper- and lowercase together by forcing bit 5 (OR 0x20),
+        // then check the lowercase range once. A-Z maps to a-z; the
+        // only non-letter byte that could alias into [0x61,0x7A] is one
+        // whose original value was in [0x41,0x5A] — which is exactly
+        // the uppercase letters we want to match.
+        uint64_t lowered = word | (ones * 0x20);
+        uint64_t letter = ((lowered | highs) - ones * 0x61) & ((ones * 0x7A | highs) - lowered) & highs;
+
+        // Standard SWAR "has zero byte" idiom on (word XOR 0x5F) to find
+        // bytes equal to underscore. Safe from cross-byte borrows because
+        // the ASCII guard above ensures all bytes are < 0x80.
+        uint64_t xor_us = word ^ (ones * 0x5F);
+        uint64_t underscore = (xor_us - ones) & ~xor_us & highs;
+
+        uint64_t ident = digit | letter | underscore;
+
+        if (ident == highs) {
+            cursor += 8;
+            continue;
+        }
+
+        // Find the first non-identifier byte. On little-endian the first
+        // byte sits in the least-significant position.
+        uint64_t not_ident = ~ident & highs;
+        cursor += pm_ctzll(not_ident) / 8;
+        return (size_t) (cursor - start);
+    }
+
+    return (size_t) (cursor - start);
+}
+
+#else
+
+// No-op fallback for big-endian or other unsupported platforms.
+// The caller's byte-at-a-time loop handles everything.
+#define scan_identifier_ascii(start, end) ((size_t) 0)
+
+#endif
 
 /**
  * Like the above, this function is also used extremely frequently to lex all of
@@ -2908,10 +3093,10 @@ pm_call_write_read_name_init(pm_parser_t *parser, pm_constant_id_t *read_name, p
     if (write_constant->length > 0) {
         size_t length = write_constant->length - 1;
 
-        void *memory = xmalloc(length);
+        uint8_t *memory = (uint8_t *) pm_arena_alloc(parser->arena, length, 1);
         memcpy(memory, write_constant->start, length);
 
-        *read_name = pm_constant_pool_insert_owned(&parser->constant_pool, (uint8_t *) memory, length);
+        *read_name = pm_constant_pool_insert_owned(&parser->metadata_arena, &parser->constant_pool, memory, length);
     } else {
         // We can get here if the message was missing because of a syntax error.
         *read_name = pm_parser_constant_id_constant(parser, "", 0);
@@ -3897,7 +4082,7 @@ pm_double_parse(pm_parser_t *parser, const pm_token_t *token) {
             ellipsis = "";
         }
 
-        pm_diagnostic_list_append_format(&parser->warning_list, PM_TOKEN_START(parser, token), PM_TOKEN_LENGTH(token), PM_WARN_FLOAT_OUT_OF_RANGE, warn_width, (const char *) token->start, ellipsis);
+        pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->warning_list, PM_TOKEN_START(parser, token), PM_TOKEN_LENGTH(token), PM_WARN_FLOAT_OUT_OF_RANGE, warn_width, (const char *) token->start, ellipsis);
         value = (value < 0.0) ? -HUGE_VAL : HUGE_VAL;
     }
 
@@ -4489,17 +4674,24 @@ pm_integer_node_create(pm_parser_t *parser, pm_node_flags_t base, const pm_token
         ((pm_integer_t) { 0 })
     );
 
-    pm_integer_base_t integer_base = PM_INTEGER_BASE_DECIMAL;
-    switch (base) {
-        case PM_INTEGER_BASE_FLAGS_BINARY: integer_base = PM_INTEGER_BASE_BINARY; break;
-        case PM_INTEGER_BASE_FLAGS_OCTAL: integer_base = PM_INTEGER_BASE_OCTAL; break;
-        case PM_INTEGER_BASE_FLAGS_DECIMAL: break;
-        case PM_INTEGER_BASE_FLAGS_HEXADECIMAL: integer_base = PM_INTEGER_BASE_HEXADECIMAL; break;
-        default: assert(false && "unreachable"); break;
+    if (parser->integer.lexed) {
+        // The value was already computed during lexing.
+        node->value.value = parser->integer.value;
+        parser->integer.lexed = false;
+    } else {
+        pm_integer_base_t integer_base = PM_INTEGER_BASE_DECIMAL;
+        switch (base) {
+            case PM_INTEGER_BASE_FLAGS_BINARY: integer_base = PM_INTEGER_BASE_BINARY; break;
+            case PM_INTEGER_BASE_FLAGS_OCTAL: integer_base = PM_INTEGER_BASE_OCTAL; break;
+            case PM_INTEGER_BASE_FLAGS_DECIMAL: break;
+            case PM_INTEGER_BASE_FLAGS_HEXADECIMAL: integer_base = PM_INTEGER_BASE_HEXADECIMAL; break;
+            default: assert(false && "unreachable"); break;
+        }
+
+        pm_integer_parse(&node->value, integer_base, token->start, token->end);
+        pm_integer_arena_move(parser->arena, &node->value);
     }
 
-    pm_integer_parse(&node->value, integer_base, token->start, token->end);
-    pm_integer_arena_move(parser->arena, &node->value);
     return node;
 }
 
@@ -7316,11 +7508,13 @@ pm_char_is_magic_comment_key_delimiter(const uint8_t b) {
  */
 static inline const uint8_t *
 parser_lex_magic_comment_emacs_marker(pm_parser_t *parser, const uint8_t *cursor, const uint8_t *end) {
-    while ((cursor + 3 <= end) && (cursor = pm_memchr(cursor, '-', (size_t) (end - cursor), parser->encoding_changed, parser->encoding)) != NULL) {
-        if (cursor + 3 <= end && cursor[1] == '*' && cursor[2] == '-') {
-            return cursor;
+    // Scan for '*' as the middle character, since it is rarer than '-' in
+    // typical comments and avoids repeated memchr calls for '-' that hit
+    // dashes in words like "foo-bar".
+    while ((cursor + 3 <= end) && (cursor = pm_memchr(cursor + 1, '*', (size_t) (end - cursor - 1), parser->encoding_changed, parser->encoding)) != NULL) {
+        if (cursor[-1] == '-' && cursor + 1 < end && cursor[1] == '-') {
+            return cursor - 1;
         }
-        cursor++;
     }
     return NULL;
 }
@@ -7357,11 +7551,24 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
             // have a magic comment.
             return false;
         }
+    } else {
+        // Non-emacs magic comments must contain a colon for `key: value`.
+        // Reject early if there is no colon to avoid scanning the entire
+        // comment character-by-character.
+        if (pm_memchr(start, ':', (size_t) (end - start), parser->encoding_changed, parser->encoding) == NULL) {
+            return false;
+        }
+
+        // Advance start past leading whitespace so the main loop begins
+        // directly at the key, avoiding a redundant whitespace scan.
+        start += pm_strspn_whitespace(start, end - start);
     }
 
     cursor = start;
     while (cursor < end) {
-        while (cursor < end && (pm_char_is_magic_comment_key_delimiter(*cursor) || pm_char_is_whitespace(*cursor))) cursor++;
+        if (indicator) {
+            while (cursor < end && (pm_char_is_magic_comment_key_delimiter(*cursor) || pm_char_is_whitespace(*cursor))) cursor++;
+        }
 
         const uint8_t *key_start = cursor;
         while (cursor < end && (!pm_char_is_magic_comment_key_delimiter(*cursor) && !pm_char_is_whitespace(*cursor))) cursor++;
@@ -7525,12 +7732,11 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
         pm_string_free(&key);
 
         // Allocate a new magic comment node to append to the parser's list.
-        pm_magic_comment_t *magic_comment;
-        if ((magic_comment = (pm_magic_comment_t *) xcalloc(1, sizeof(pm_magic_comment_t))) != NULL) {
-            magic_comment->key = (pm_location_t) { .start = U32(key_start - parser->start), .length = U32(key_length) };
-            magic_comment->value = (pm_location_t) { .start = U32(value_start - parser->start), .length = value_length };
-            pm_list_append(&parser->magic_comment_list, (pm_list_node_t *) magic_comment);
-        }
+        pm_magic_comment_t *magic_comment = (pm_magic_comment_t *) pm_arena_alloc(&parser->metadata_arena, sizeof(pm_magic_comment_t), PRISM_ALIGNOF(pm_magic_comment_t));
+        magic_comment->node.next = NULL;
+        magic_comment->key = (pm_location_t) { .start = U32(key_start - parser->start), .length = U32(key_length) };
+        magic_comment->value = (pm_location_t) { .start = U32(value_start - parser->start), .length = value_length };
+        pm_list_append(&parser->magic_comment_list, (pm_list_node_t *) magic_comment);
     }
 
     return result;
@@ -7877,7 +8083,7 @@ lex_numeric_prefix(pm_parser_t *parser, bool* seen_e) {
                     pm_parser_err_current(parser, PM_ERR_INVALID_NUMBER_BINARY);
                 }
 
-                parser->integer_base = PM_INTEGER_BASE_FLAGS_BINARY;
+                parser->integer.base = PM_INTEGER_BASE_FLAGS_BINARY;
                 break;
 
             // 0o1111 is an octal number
@@ -7891,7 +8097,7 @@ lex_numeric_prefix(pm_parser_t *parser, bool* seen_e) {
                     pm_parser_err_current(parser, PM_ERR_INVALID_NUMBER_OCTAL);
                 }
 
-                parser->integer_base = PM_INTEGER_BASE_FLAGS_OCTAL;
+                parser->integer.base = PM_INTEGER_BASE_FLAGS_OCTAL;
                 break;
 
             // 01111 is an octal number
@@ -7905,7 +8111,7 @@ lex_numeric_prefix(pm_parser_t *parser, bool* seen_e) {
             case '6':
             case '7':
                 parser->current.end += pm_strspn_octal_number_validate(parser, parser->current.end);
-                parser->integer_base = PM_INTEGER_BASE_FLAGS_OCTAL;
+                parser->integer.base = PM_INTEGER_BASE_FLAGS_OCTAL;
                 break;
 
             // 0x1111 is a hexadecimal number
@@ -7919,7 +8125,7 @@ lex_numeric_prefix(pm_parser_t *parser, bool* seen_e) {
                     pm_parser_err_current(parser, PM_ERR_INVALID_NUMBER_HEXADECIMAL);
                 }
 
-                parser->integer_base = PM_INTEGER_BASE_FLAGS_HEXADECIMAL;
+                parser->integer.base = PM_INTEGER_BASE_FLAGS_HEXADECIMAL;
                 break;
 
             // 0.xxx is a float
@@ -7937,11 +8143,62 @@ lex_numeric_prefix(pm_parser_t *parser, bool* seen_e) {
         }
     } else {
         // If it didn't start with a 0, then we'll lex as far as we can into a
-        // decimal number.
-        parser->current.end += pm_strspn_decimal_number_validate(parser, parser->current.end);
+        // decimal number. We compute the integer value inline to avoid
+        // re-scanning the digits later in pm_integer_parse.
+        {
+            const uint8_t *cursor = parser->current.end;
+            const uint8_t *end = parser->end;
+            uint64_t value = (uint64_t) (cursor[-1] - '0');
+
+            bool has_underscore = false;
+            bool prev_underscore = false;
+            const uint8_t *invalid = NULL;
+
+            while (cursor < end) {
+                uint8_t c = *cursor;
+                if (c >= '0' && c <= '9') {
+                    if (value <= UINT32_MAX) value = value * 10 + (uint64_t) (c - '0');
+                    prev_underscore = false;
+                    cursor++;
+                } else if (c == '_') {
+                    has_underscore = true;
+                    if (prev_underscore && invalid == NULL) invalid = cursor;
+                    prev_underscore = true;
+                    cursor++;
+                } else {
+                    break;
+                }
+            }
+
+            if (has_underscore) {
+                if (prev_underscore && invalid == NULL) invalid = cursor - 1;
+                pm_strspn_number_validate(parser, parser->current.end, (size_t) (cursor - parser->current.end), invalid);
+            }
+
+            if (value <= UINT32_MAX) {
+                parser->integer.value = (uint32_t) value;
+                parser->integer.lexed = true;
+            }
+
+            parser->current.end = cursor;
+        }
 
         // Afterward, we'll lex as far as we can into an optional float suffix.
-        type = lex_optional_float_suffix(parser, seen_e);
+        // Guard the function call: the vast majority of decimal numbers are
+        // plain integers, so avoid the call when the next byte cannot start a
+        // float suffix.
+        {
+            uint8_t next = peek(parser);
+            if (next == '.' || next == 'e' || next == 'E') {
+                type = lex_optional_float_suffix(parser, seen_e);
+
+                // If it turned out to be a float, the cached integer value is
+                // invalid.
+                if (type != PM_TOKEN_INTEGER) {
+                    parser->integer.lexed = false;
+                }
+            }
+        }
     }
 
     // At this point we have a completed number, but we want to provide the user
@@ -7960,7 +8217,8 @@ lex_numeric_prefix(pm_parser_t *parser, bool* seen_e) {
 static pm_token_type_t
 lex_numeric(pm_parser_t *parser) {
     pm_token_type_t type = PM_TOKEN_INTEGER;
-    parser->integer_base = PM_INTEGER_BASE_FLAGS_DECIMAL;
+    parser->integer.base = PM_INTEGER_BASE_FLAGS_DECIMAL;
+    parser->integer.lexed = false;
 
     if (parser->current.end < parser->end) {
         bool seen_e = false;
@@ -8148,6 +8406,10 @@ lex_identifier(pm_parser_t *parser, bool previous_command_start) {
             current_end += width;
         }
     } else {
+        // Fast path: scan ASCII identifier bytes using wide operations.
+        current_end += scan_identifier_ascii(current_end, end);
+
+        // Byte-at-a-time fallback for the tail and any UTF-8 sequences.
         while ((width = char_is_identifier_utf8(current_end, end - current_end)) > 0) {
             current_end += width;
         }
@@ -8594,7 +8856,7 @@ escape_write_escape_encoded(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_
     }
 
     if (width == 1) {
-        if (*parser->current.end == '\n') pm_line_offset_list_append(&parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 1);
+        if (*parser->current.end == '\n') pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 1);
         escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(*parser->current.end++, flags));
     } else if (width > 1) {
         // Valid multibyte character.  Just ignore escape.
@@ -8911,7 +9173,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                         return;
                     }
 
-                    if (peeked == '\n') pm_line_offset_list_append(&parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 1);
+                    if (peeked == '\n') pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 1);
                     parser->current.end++;
                     escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
                     return;
@@ -8970,7 +9232,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                         return;
                     }
 
-                    if (peeked == '\n') pm_line_offset_list_append(&parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 1);
+                    if (peeked == '\n') pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 1);
                     parser->current.end++;
                     escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
                     return;
@@ -9024,7 +9286,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                         return;
                     }
 
-                    if (peeked == '\n') pm_line_offset_list_append(&parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 1);
+                    if (peeked == '\n') pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 1);
                     parser->current.end++;
                     escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_META));
                     return;
@@ -9032,7 +9294,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
         }
         case '\r': {
             if (peek_offset(parser, 1) == '\n') {
-                pm_line_offset_list_append(&parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 2);
+                pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 2);
                 parser->current.end += 2;
                 escape_write_byte_encoded(parser, buffer, flags, escape_byte('\n', flags));
                 return;
@@ -9189,8 +9451,7 @@ parser_lex_callback(pm_parser_t *parser) {
  */
 static inline pm_comment_t *
 parser_comment(pm_parser_t *parser, pm_comment_type_t type) {
-    pm_comment_t *comment = (pm_comment_t *) xcalloc(1, sizeof(pm_comment_t));
-    if (comment == NULL) return NULL;
+    pm_comment_t *comment = (pm_comment_t *) pm_arena_alloc(&parser->metadata_arena, sizeof(pm_comment_t), PRISM_ALIGNOF(pm_comment_t));
 
     *comment = (pm_comment_t) {
         .type = type,
@@ -9213,7 +9474,7 @@ lex_embdoc(pm_parser_t *parser) {
     if (newline == NULL) {
         parser->current.end = parser->end;
     } else {
-        pm_line_offset_list_append(&parser->line_offsets, U32(newline - parser->start + 1));
+        pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, U32(newline - parser->start + 1));
         parser->current.end = newline + 1;
     }
 
@@ -9223,7 +9484,6 @@ lex_embdoc(pm_parser_t *parser) {
     // Now, create a comment that is going to be attached to the parser.
     const uint8_t *comment_start = parser->current.start;
     pm_comment_t *comment = parser_comment(parser, PM_COMMENT_EMBDOC);
-    if (comment == NULL) return PM_TOKEN_EOF;
 
     // Now, loop until we find the end of the embedded documentation or the end
     // of the file.
@@ -9247,7 +9507,7 @@ lex_embdoc(pm_parser_t *parser) {
             if (newline == NULL) {
                 parser->current.end = parser->end;
             } else {
-                pm_line_offset_list_append(&parser->line_offsets, U32(newline - parser->start + 1));
+                pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, U32(newline - parser->start + 1));
                 parser->current.end = newline + 1;
             }
 
@@ -9267,7 +9527,7 @@ lex_embdoc(pm_parser_t *parser) {
         if (newline == NULL) {
             parser->current.end = parser->end;
         } else {
-            pm_line_offset_list_append(&parser->line_offsets, U32(newline - parser->start + 1));
+            pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, U32(newline - parser->start + 1));
             parser->current.end = newline + 1;
         }
 
@@ -9577,7 +9837,7 @@ pm_lex_percent_delimiter(pm_parser_t *parser) {
             parser_flush_heredoc_end(parser);
         } else {
             // Otherwise, we'll add the newline to the list of newlines.
-            pm_line_offset_list_append(&parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + U32(eol_length));
+            pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + U32(eol_length));
         }
 
         uint8_t delimiter = *parser->current.end;
@@ -9653,17 +9913,24 @@ parser_lex(pm_parser_t *parser) {
             bool space_seen = false;
 
             // First, we're going to skip past any whitespace at the front of the next
-            // token.
+            // token. Skip runs of inline whitespace in bulk to avoid per-character
+            // stores back to parser->current.end.
             bool chomping = true;
             while (parser->current.end < parser->end && chomping) {
-                switch (*parser->current.end) {
-                    case ' ':
-                    case '\t':
-                    case '\f':
-                    case '\v':
-                        parser->current.end++;
+                {
+                    static const uint8_t inline_whitespace[256] = {
+                        [' '] = 1, ['\t'] = 1, ['\f'] = 1, ['\v'] = 1
+                    };
+                    const uint8_t *scan = parser->current.end;
+                    while (scan < parser->end && inline_whitespace[*scan]) scan++;
+                    if (scan > parser->current.end) {
+                        parser->current.end = scan;
                         space_seen = true;
-                        break;
+                        continue;
+                    }
+                }
+
+                switch (*parser->current.end) {
                     case '\r':
                         if (match_eol_offset(parser, 1)) {
                             chomping = false;
@@ -9681,7 +9948,7 @@ parser_lex(pm_parser_t *parser) {
                                 parser->heredoc_end = NULL;
                             } else {
                                 parser->current.end += eol_length + 1;
-                                pm_line_offset_list_append(&parser->line_offsets, PM_TOKEN_END(parser, &parser->current));
+                                pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current));
                                 space_seen = true;
                             }
                         } else if (pm_char_is_inline_whitespace(*parser->current.end)) {
@@ -9783,7 +10050,7 @@ parser_lex(pm_parser_t *parser) {
                         }
 
                         if (parser->heredoc_end == NULL) {
-                            pm_line_offset_list_append(&parser->line_offsets, PM_TOKEN_END(parser, &parser->current));
+                            pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current));
                         }
                     }
 
@@ -10309,7 +10576,7 @@ parser_lex(pm_parser_t *parser) {
                                     } else {
                                         // Otherwise, we want to indicate that the body of the
                                         // heredoc starts on the character after the next newline.
-                                        pm_line_offset_list_append(&parser->line_offsets, U32(body_start - parser->start + 1));
+                                        pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, U32(body_start - parser->start + 1));
                                         body_start++;
                                     }
 
@@ -10950,7 +11217,7 @@ parser_lex(pm_parser_t *parser) {
                         // correct column information for it.
                         const uint8_t *cursor = parser->current.end;
                         while ((cursor = next_newline(cursor, parser->end - cursor)) != NULL) {
-                            pm_line_offset_list_append(&parser->line_offsets, U32(++cursor - parser->start));
+                            pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, U32(++cursor - parser->start));
                         }
 
                         parser->current.end = parser->end;
@@ -11011,7 +11278,7 @@ parser_lex(pm_parser_t *parser) {
                     whitespace += 1;
                 }
             } else {
-                whitespace = pm_strspn_whitespace_newlines(parser->current.end, parser->end - parser->current.end, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current));
+                whitespace = pm_strspn_whitespace_newlines(parser->current.end, parser->end - parser->current.end, &parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current));
             }
 
             if (whitespace > 0) {
@@ -11126,7 +11393,7 @@ parser_lex(pm_parser_t *parser) {
                                 LEX(PM_TOKEN_STRING_CONTENT);
                             } else {
                                 // ... else track the newline.
-                                pm_line_offset_list_append(&parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 1);
+                                pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 1);
                             }
 
                             parser->current.end++;
@@ -11264,7 +11531,7 @@ parser_lex(pm_parser_t *parser) {
                         // would have already have added the newline to the
                         // list.
                         if (parser->heredoc_end == NULL) {
-                            pm_line_offset_list_append(&parser->line_offsets, PM_TOKEN_END(parser, &parser->current));
+                            pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current));
                         }
                     } else {
                         parser->current.end = breakpoint + 1;
@@ -11311,7 +11578,7 @@ parser_lex(pm_parser_t *parser) {
                         // If we've hit a newline, then we need to track that in
                         // the list of newlines.
                         if (parser->heredoc_end == NULL) {
-                            pm_line_offset_list_append(&parser->line_offsets, U32(breakpoint - parser->start + 1));
+                            pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, U32(breakpoint - parser->start + 1));
                             parser->current.end = breakpoint + 1;
                             breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, false);
                             break;
@@ -11359,7 +11626,7 @@ parser_lex(pm_parser_t *parser) {
                                     LEX(PM_TOKEN_STRING_CONTENT);
                                 } else {
                                     // ... else track the newline.
-                                    pm_line_offset_list_append(&parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 1);
+                                    pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 1);
                                 }
 
                                 parser->current.end++;
@@ -11524,7 +11791,7 @@ parser_lex(pm_parser_t *parser) {
                         // would have already have added the newline to the
                         // list.
                         if (parser->heredoc_end == NULL) {
-                            pm_line_offset_list_append(&parser->line_offsets, PM_TOKEN_END(parser, &parser->current));
+                            pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current));
                         }
                     } else {
                         parser->current.end = breakpoint + 1;
@@ -11576,7 +11843,7 @@ parser_lex(pm_parser_t *parser) {
                         // for the terminator in case the terminator is a
                         // newline character.
                         if (parser->heredoc_end == NULL) {
-                            pm_line_offset_list_append(&parser->line_offsets, U32(breakpoint - parser->start + 1));
+                            pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, U32(breakpoint - parser->start + 1));
                             parser->current.end = breakpoint + 1;
                             breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
                             break;
@@ -11630,7 +11897,7 @@ parser_lex(pm_parser_t *parser) {
                                     LEX(PM_TOKEN_STRING_CONTENT);
                                 } else {
                                     // ... else track the newline.
-                                    pm_line_offset_list_append(&parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 1);
+                                    pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 1);
                                 }
 
                                 parser->current.end++;
@@ -11759,7 +12026,7 @@ parser_lex(pm_parser_t *parser) {
                         (memcmp(terminator_start, ident_start, ident_length) == 0)
                     ) {
                         if (newline != NULL) {
-                            pm_line_offset_list_append(&parser->line_offsets, U32(newline - parser->start + 1));
+                            pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, U32(newline - parser->start + 1));
                         }
 
                         parser->current.end = terminator_end;
@@ -11790,7 +12057,7 @@ parser_lex(pm_parser_t *parser) {
             // Otherwise we'll be parsing string content. These are the places
             // where we need to split up the content of the heredoc. We'll use
             // strpbrk to find the first of these characters.
-            uint8_t breakpoints[] = "\r\n\\#";
+            uint8_t breakpoints[PM_STRPBRK_CACHE_SIZE] = "\r\n\\#";
 
             pm_heredoc_quote_t quote = heredoc_lex_mode->quote;
             if (quote == PM_HEREDOC_QUOTE_SINGLE) {
@@ -11831,7 +12098,7 @@ parser_lex(pm_parser_t *parser) {
                             LEX(PM_TOKEN_STRING_CONTENT);
                         }
 
-                        pm_line_offset_list_append(&parser->line_offsets, U32(breakpoint - parser->start + 1));
+                        pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, U32(breakpoint - parser->start + 1));
 
                         // If we have a - or ~ heredoc, then we can match after
                         // some leading whitespace.
@@ -11951,7 +12218,7 @@ parser_lex(pm_parser_t *parser) {
                                         const uint8_t *end = parser->current.end;
 
                                         if (parser->heredoc_end == NULL) {
-                                            pm_line_offset_list_append(&parser->line_offsets, U32(end - parser->start + 1));
+                                            pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, U32(end - parser->start + 1));
                                         }
 
                                         // Here we want the buffer to only
@@ -12547,16 +12814,12 @@ parse_write_name(pm_parser_t *parser, pm_constant_id_t *name_field) {
     // append an =.
     pm_constant_t *constant = pm_constant_pool_id_to_constant(&parser->constant_pool, *name_field);
     size_t length = constant->length;
-    uint8_t *name = xcalloc(length + 1, sizeof(uint8_t));
-    if (name == NULL) return;
+    uint8_t *name = (uint8_t *) pm_arena_alloc(parser->arena, length + 1, 1);
 
     memcpy(name, constant->start, length);
     name[length] = '=';
 
-    // Now switch the name to the new string.
-    // This silences clang analyzer warning about leak of memory pointed by `name`.
-    // NOLINTNEXTLINE(clang-analyzer-*)
-    *name_field = pm_constant_pool_insert_owned(&parser->constant_pool, name, length + 1);
+    *name_field = pm_constant_pool_insert_owned(&parser->metadata_arena, &parser->constant_pool, name, length + 1);
 }
 
 /**
@@ -13177,6 +13440,7 @@ pm_hash_key_static_literals_add(pm_parser_t *parser, pm_static_literals_t *liter
         pm_static_literal_inspect(&buffer, &parser->line_offsets, parser->start, parser->start_line, parser->encoding->name, duplicated);
 
         pm_diagnostic_list_append_format(
+            &parser->metadata_arena,
             &parser->warning_list,
             duplicated->location.start,
             duplicated->location.length,
@@ -13200,6 +13464,7 @@ pm_when_clause_static_literals_add(pm_parser_t *parser, pm_static_literals_t *li
 
     if ((previous = pm_static_literals_add(&parser->line_offsets, parser->start, parser->start_line, literals, node, false)) != NULL) {
         pm_diagnostic_list_append_format(
+            &parser->metadata_arena,
             &parser->warning_list,
             PM_NODE_START(node),
             PM_NODE_LENGTH(node),
@@ -18065,22 +18330,22 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
             return node;
         }
         case PM_TOKEN_INTEGER: {
-            pm_node_flags_t base = parser->integer_base;
+            pm_node_flags_t base = parser->integer.base;
             parser_lex(parser);
             return UP(pm_integer_node_create(parser, base, &parser->previous));
         }
         case PM_TOKEN_INTEGER_IMAGINARY: {
-            pm_node_flags_t base = parser->integer_base;
+            pm_node_flags_t base = parser->integer.base;
             parser_lex(parser);
             return UP(pm_integer_node_imaginary_create(parser, base, &parser->previous));
         }
         case PM_TOKEN_INTEGER_RATIONAL: {
-            pm_node_flags_t base = parser->integer_base;
+            pm_node_flags_t base = parser->integer.base;
             parser_lex(parser);
             return UP(pm_integer_node_rational_create(parser, base, &parser->previous));
         }
         case PM_TOKEN_INTEGER_RATIONAL_IMAGINARY: {
-            pm_node_flags_t base = parser->integer_base;
+            pm_node_flags_t base = parser->integer.base;
             parser_lex(parser);
             return UP(pm_integer_node_rational_imaginary_create(parser, base, &parser->previous));
         }
@@ -20457,11 +20722,9 @@ parse_regular_expression_named_capture(pm_parser_t *parser, const pm_string_t *c
         start = parser->start + PM_NODE_START(call->receiver);
         end = parser->start + PM_NODE_END(call->receiver);
 
-        void *memory = xmalloc(length);
-        if (memory == NULL) abort();
-
+        uint8_t *memory = (uint8_t *) pm_arena_alloc(parser->arena, length, 1);
         memcpy(memory, source, length);
-        name = pm_parser_constant_id_owned(parser, (uint8_t *) memory, length);
+        name = pm_parser_constant_id_owned(parser, memory, length);
     }
 
     // Add this name to the list of constants if it is valid, not duplicated,
@@ -21884,6 +22147,7 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
 
     *parser = (pm_parser_t) {
         .arena = arena,
+        .metadata_arena = { 0 },
         .node_id = 0,
         .lex_state = PM_LEX_STATE_BEG,
         .enclosure_nesting = 0,
@@ -21916,7 +22180,7 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
         .filepath = { 0 },
         .constant_pool = { 0 },
         .line_offsets = { 0 },
-        .integer_base = 0,
+        .integer = { 0 },
         .current_string = PM_STRING_EMPTY,
         .start_line = 1,
         .explicit_encoding = NULL,
@@ -21936,28 +22200,27 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
         .warn_mismatched_indentation = true
     };
 
-    // Initialize the constant pool. We're going to completely guess as to the
-    // number of constants that we'll need based on the size of the input. The
-    // ratio we chose here is actually less arbitrary than you might think.
-    //
-    // We took ~50K Ruby files and measured the size of the file versus the
-    // number of constants that were found in those files. Then we found the
-    // average and standard deviation of the ratios of constants/bytesize. Then
-    // we added 1.34 standard deviations to the average to get a ratio that
-    // would fit 75% of the files (for a two-tailed distribution). This works
-    // because there was about a 0.77 correlation and the distribution was
-    // roughly normal.
-    //
-    // This ratio will need to change if we add more constants to the constant
-    // pool for another node type.
-    uint32_t constant_size = ((uint32_t) size) / 95;
-    pm_constant_pool_init(&parser->constant_pool, constant_size < 4 ? 4 : constant_size);
+    /* Pre-size the arenas based on input size to reduce the number of block
+     * allocations (and the kernel page zeroing they trigger). The ratios were
+     * measured empirically: AST arena ~3.3x input, metadata arena ~1.1x input.
+     * The reserve call is a no-op when the capacity is at or below the default
+     * arena block size, so small inputs don't waste an extra allocation. */
+    if (size <= SIZE_MAX / 4) pm_arena_reserve(arena, size * 4);
+    if (size <= SIZE_MAX / 5 * 4) pm_arena_reserve(&parser->metadata_arena, size + size / 4);
 
-    // Initialize the newline list. Similar to the constant pool, we're going to
-    // guess at the number of newlines that we'll need based on the size of the
-    // input.
+    /* Initialize the constant pool. Measured across 1532 Ruby stdlib files, the
+     * bytes/constant ratio has a median of ~56 and a 90th percentile of ~135.
+     * We use 120 as a balance between over-allocation waste and resize
+     * frequency. Resizes are cheap with arena allocation, so we lean toward
+     * under-estimating. */
+    uint32_t constant_size = ((uint32_t) size) / 120;
+    pm_constant_pool_init(&parser->metadata_arena, &parser->constant_pool, constant_size < 4 ? 4 : constant_size);
+
+    /* Initialize the line offset list. Similar to the constant pool, we are
+     * going to estimate the number of newlines that we will need based on the
+     * size of the input. */
     size_t newline_size = size / 22;
-    pm_line_offset_list_init(&parser->line_offsets, newline_size < 4 ? 4 : newline_size);
+    pm_line_offset_list_init(&parser->metadata_arena, &parser->line_offsets, newline_size < 4 ? 4 : newline_size);
 
     // If options were provided to this parse, establish them here.
     if (options != NULL) {
@@ -22007,11 +22270,9 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
                 const uint8_t *source = pm_string_source(local);
                 size_t length = pm_string_length(local);
 
-                void *allocated = xmalloc(length);
-                if (allocated == NULL) continue;
-
+                uint8_t *allocated = (uint8_t *) pm_arena_alloc(&parser->metadata_arena, length, 1);
                 memcpy(allocated, source, length);
-                pm_parser_local_add_owned(parser, (uint8_t *) allocated, length);
+                pm_parser_local_add_owned(parser, allocated, length);
             }
         }
     }
@@ -22096,7 +22357,7 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
         const uint8_t *newline = next_newline(cursor, parser->end - cursor);
 
         while (newline != NULL) {
-            pm_line_offset_list_append(&parser->line_offsets, U32(newline - parser->start + 1));
+            pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, U32(newline - parser->start + 1));
 
             cursor = newline + 1;
             newline = next_newline(cursor, parser->end - cursor);
@@ -22146,47 +22407,12 @@ pm_parser_register_encoding_changed_callback(pm_parser_t *parser, pm_encoding_ch
 }
 
 /**
- * Free all of the memory associated with the comment list.
- */
-static inline void
-pm_comment_list_free(pm_list_t *list) {
-    pm_list_node_t *node, *next;
-
-    for (node = list->head; node != NULL; node = next) {
-        next = node->next;
-
-        pm_comment_t *comment = (pm_comment_t *) node;
-        xfree_sized(comment, sizeof(pm_comment_t));
-    }
-}
-
-/**
- * Free all of the memory associated with the magic comment list.
- */
-static inline void
-pm_magic_comment_list_free(pm_list_t *list) {
-    pm_list_node_t *node, *next;
-
-    for (node = list->head; node != NULL; node = next) {
-        next = node->next;
-
-        pm_magic_comment_t *magic_comment = (pm_magic_comment_t *) node;
-        xfree_sized(magic_comment, sizeof(pm_magic_comment_t));
-    }
-}
-
-/**
  * Free any memory associated with the given parser.
  */
 PRISM_EXPORTED_FUNCTION void
 pm_parser_free(pm_parser_t *parser) {
     pm_string_free(&parser->filepath);
-    pm_diagnostic_list_free(&parser->error_list);
-    pm_diagnostic_list_free(&parser->warning_list);
-    pm_comment_list_free(&parser->comment_list);
-    pm_magic_comment_list_free(&parser->magic_comment_list);
-    pm_constant_pool_free(&parser->constant_pool);
-    pm_line_offset_list_free(&parser->line_offsets);
+    pm_arena_free(&parser->metadata_arena);
 
     while (parser->current_scope != NULL) {
         // Normally, popping the scope doesn't free the locals since it is

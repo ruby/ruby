@@ -182,19 +182,6 @@ module Spec
       sys_exec(cmd.to_s, options)
     end
 
-    def gem_command(command, options = {})
-      env = options[:env] || {}
-      env["RUBYOPT"] = opt_add(opt_add("-r#{hax}", env["RUBYOPT"]), ENV["RUBYOPT"])
-      options[:env] = env
-
-      # Sometimes `gem install` commands hang at dns resolution, which has a
-      # default timeout of 60 seconds. When that happens, the timeout for a
-      # command is expired too. So give `gem install` commands a bit more time.
-      options[:timeout] = 120
-
-      sys_exec("#{Path.gem_bin} #{command}", options)
-    end
-
     def sys_exec(cmd, options = {}, &block)
       env = options[:env] || {}
       env["RUBYOPT"] = opt_add(opt_add("-r#{spec_dir}/support/switch_rubygems.rb", env["RUBYOPT"]), ENV["RUBYOPT"])
@@ -326,9 +313,20 @@ module Spec
     def install_gem(path, install_dir, default = false)
       raise ArgumentError, "`#{path}` does not exist!" unless File.exist?(path)
 
-      args = "--no-document --ignore-dependencies --verbose --local --install-dir #{install_dir}"
+      require "rubygems/installer"
 
-      gem_command "install #{args} '#{path}'"
+      with_simulated_platform do
+        installer = Gem::Installer.at(
+          path.to_s,
+          install_dir: install_dir.to_s,
+          document: [],
+          ignore_dependencies: true,
+          wrappers: true,
+          env_shebang: true,
+          force: true
+        )
+        installer.install
+      end
 
       if default
         gem = Pathname.new(path).basename.to_s.match(/(.*)\.gem/)[1]
@@ -341,6 +339,57 @@ module Spec
         # Revert Gem::Installer#write_cache_file
         File.delete File.join(install_dir, "cache", gem + ".gem")
       end
+    end
+
+    def uninstall_gem(name, options = {})
+      require "rubygems/uninstaller"
+
+      gem_home = options.dig(:env, "GEM_HOME") || system_gem_path.to_s
+
+      with_env_vars("GEM_HOME" => gem_home) do
+        Gem.clear_paths
+
+        uninstaller = Gem::Uninstaller.new(
+          name,
+          ignore: true,
+          executables: true,
+          all: true
+        )
+        uninstaller.uninstall
+      ensure
+        Gem.clear_paths
+      end
+    end
+
+    def installed_gems_list(options = {})
+      gem_home = options.dig(:env, "GEM_HOME") || system_gem_path.to_s
+
+      # Temporarily set GEM_HOME for the command
+      old_gem_home = ENV["GEM_HOME"]
+      ENV["GEM_HOME"] = gem_home
+      Gem.clear_paths
+
+      begin
+        require "rubygems/commands/list_command"
+
+        # Capture output from the list command
+        output_io = StringIO.new
+        cmd = Gem::Commands::ListCommand.new
+        cmd.ui = Gem::StreamUI.new(StringIO.new, output_io, StringIO.new, false)
+        cmd.invoke
+        output = output_io.string.strip
+      ensure
+        ENV["GEM_HOME"] = old_gem_home
+        Gem.clear_paths
+      end
+
+      # Create a fake command execution so `out` helper works
+      command_execution = Spec::CommandExecution.new("gem list", timeout: 60)
+      command_execution.original_stdout << output
+      command_execution.exitstatus = 0
+      command_executions << command_execution
+
+      output
     end
 
     def with_built_bundler(version = nil, opts = {}, &block)
@@ -372,6 +421,36 @@ module Spec
       yield
     ensure
       ENV.replace(backup)
+    end
+
+    # Simulate the platform set by BUNDLER_SPEC_PLATFORM for in-process
+    # operations, mirroring what hax.rb does for subprocesses.
+    def with_simulated_platform
+      spec_platform = ENV["BUNDLER_SPEC_PLATFORM"]
+      unless spec_platform
+        return yield
+      end
+
+      old_arch = RbConfig::CONFIG["arch"]
+      old_host_os = RbConfig::CONFIG["host_os"]
+
+      if /mingw|mswin/.match?(spec_platform)
+        Gem.class_variable_set(:@@win_platform, nil) # rubocop:disable Style/ClassVars
+        RbConfig::CONFIG["host_os"] = spec_platform.gsub(/^[^-]+-/, "").tr("-", "_")
+      end
+
+      RbConfig::CONFIG["arch"] = spec_platform
+      Gem::Platform.instance_variable_set(:@local, nil)
+      Gem.instance_variable_set(:@platforms, [])
+
+      yield
+    ensure
+      if spec_platform
+        RbConfig::CONFIG["arch"] = old_arch
+        RbConfig::CONFIG["host_os"] = old_host_os
+        Gem::Platform.instance_variable_set(:@local, nil)
+        Gem.instance_variable_set(:@platforms, [])
+      end
     end
 
     def with_path_added(path)

@@ -2058,7 +2058,7 @@ iseq_set_use_block(rb_iseq_t *iseq)
 
         if (!rb_warning_category_enabled_p(RB_WARN_CATEGORY_STRICT_UNUSED_BLOCK)) {
             st_data_t key = (st_data_t)rb_intern_str(body->location.label); // String -> ID
-            set_insert(vm->unused_block_warning_table, key);
+            set_insert(&vm->unused_block_warning_table, key);
         }
     }
 }
@@ -5375,6 +5375,7 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int meth
                 }
                 VALUE hash = rb_hash_new_with_size(RARRAY_LEN(ary) / 2);
                 rb_hash_bulk_insert(RARRAY_LEN(ary), RARRAY_CONST_PTR(ary), hash);
+                RB_GC_GUARD(ary);
                 hash = RB_OBJ_SET_FROZEN_SHAREABLE(rb_obj_hide(hash));
 
                 /* Emit optimized code */

@@ -418,8 +418,16 @@ pub type ruby_basic_operators = u32;
 pub type rb_serial_t = ::std::os::raw::c_ulonglong;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct rb_id_table {
+pub struct rb_id_item {
     _unused: [u8; 0],
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct rb_id_table {
+    pub capa: ::std::os::raw::c_int,
+    pub num: ::std::os::raw::c_int,
+    pub used: ::std::os::raw::c_int,
+    pub items: *mut rb_id_item,
 }
 pub const imemo_env: imemo_type = 0;
 pub const imemo_cref: imemo_type = 1;

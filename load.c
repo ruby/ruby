@@ -1139,7 +1139,7 @@ search_required(const rb_box_t *box, VALUE fname, volatile VALUE *path, feature_
     // not already a feature and not found as a dynamic library.
     if (!ft && type != loadable_ext_rb) {
         rb_vm_t *vm = GET_VM();
-        if (vm->static_ext_inits) {
+        if (vm->static_ext_inits.num_entries) {
             VALUE lookup_name = tmp;
             // Append ".so" if not already present so for example "etc" can find "etc.so".
             // We always register statically linked extensions with a ".so" extension.
@@ -1149,7 +1149,7 @@ search_required(const rb_box_t *box, VALUE fname, volatile VALUE *path, feature_
                 rb_str_cat_cstr(lookup_name, ".so");
             }
             ftptr = RSTRING_PTR(lookup_name);
-            if (st_lookup(vm->static_ext_inits, (st_data_t)ftptr, NULL)) {
+            if (st_lookup(&vm->static_ext_inits, (st_data_t)ftptr, NULL)) {
                 *path = rb_filesystem_str_new_cstr(ftptr);
                 RB_GC_GUARD(lookup_name);
                 return 's';
@@ -1215,7 +1215,7 @@ run_static_ext_init(VALUE vm_ptr, VALUE feature_value)
     st_data_t key = (st_data_t)feature;
     st_data_t init_func;
 
-    if (vm->static_ext_inits && st_delete(vm->static_ext_inits, &key, &init_func)) {
+    if (st_delete(&vm->static_ext_inits, &key, &init_func)) {
         ((void (*)(void))init_func)();
         return Qtrue;
     }
@@ -1490,19 +1490,13 @@ register_init_ext(st_data_t *key, st_data_t *value, st_data_t init, int existing
 void
 ruby_init_ext(const char *name, void (*init)(void))
 {
-    st_table *inits_table;
     rb_vm_t *vm = GET_VM();
     const rb_box_t *box = rb_loading_box();
 
     if (feature_provided((rb_box_t *)box, name, 0))
         return;
 
-    inits_table = vm->static_ext_inits;
-    if (!inits_table) {
-        inits_table = st_init_strtable();
-        vm->static_ext_inits = inits_table;
-    }
-    st_update(inits_table, (st_data_t)name, register_init_ext, (st_data_t)init);
+    st_update(&vm->static_ext_inits, (st_data_t)name, register_init_ext, (st_data_t)init);
 }
 
 /*

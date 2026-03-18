@@ -780,7 +780,7 @@ typedef struct rb_vm_struct {
     /* load */
     // For running the init function of statically linked
     // extensions when they are loaded
-    struct st_table *static_ext_inits;
+    struct st_table static_ext_inits;
 
     /* signal */
     struct {
@@ -812,23 +812,24 @@ typedef struct rb_vm_struct {
 
     const struct rb_builtin_function *builtin_function_table;
 
-    st_table *ci_table;
-    struct rb_id_table *negative_cme_table;
-    st_table *overloaded_cme_table; // cme -> overloaded_cme
-    set_table *unused_block_warning_table;
+    st_table ci_table;
+    struct rb_id_table negative_cme_table;
+    st_table overloaded_cme_table; // cme -> overloaded_cme
+    set_table unused_block_warning_table;
     VALUE cc_refinement_set;
 
     // This id table contains a mapping from ID to ICs. It does this with ID
     // keys and nested st_tables as values. The nested tables have ICs as keys
     // and Qtrue as values. It is used when inline constant caches need to be
     // invalidated or ISEQs are being freed.
-    struct rb_id_table *constant_cache;
+    struct rb_id_table constant_cache;
     ID inserting_constant_cache_id;
 
 #ifndef VM_GLOBAL_CC_CACHE_TABLE_SIZE
 #define VM_GLOBAL_CC_CACHE_TABLE_SIZE 1023
 #endif
     const struct rb_callcache *global_cc_cache_table[VM_GLOBAL_CC_CACHE_TABLE_SIZE]; // vm_eval.c
+    bool global_cc_cache_table_used; // vm_eval.c
 
 #if defined(USE_VM_CLOCK) && USE_VM_CLOCK
     uint32_t clock;
@@ -2340,7 +2341,7 @@ struct rb_ractor_pub {
     VALUE self;
     uint32_t id;
     rb_hook_list_t hooks;
-    st_table *targeted_hooks; // also called "local hooks". {ISEQ => hook_list, def => hook_list...}
+    st_table targeted_hooks; // also called "local hooks". {ISEQ => hook_list, def => hook_list...}
     unsigned int targeted_hooks_cnt; // ex: tp.enabled(target: method(:puts))
 };
 

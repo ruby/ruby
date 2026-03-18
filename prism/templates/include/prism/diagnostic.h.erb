@@ -8,6 +8,7 @@
 
 #include "prism/ast.h"
 #include "prism/defines.h"
+#include "prism/util/pm_arena.h"
 #include "prism/util/pm_list.h"
 
 #include <stdbool.h>
@@ -47,13 +48,6 @@ typedef struct {
 
     /** The message associated with the diagnostic. */
     const char *message;
-
-    /**
-     * Whether or not the memory related to the message of this diagnostic is
-     * owned by this diagnostic. If it is, it needs to be freed when the
-     * diagnostic is freed.
-     */
-    bool owned;
 
     /**
      * The level of the diagnostic, see `pm_error_level_t` and
@@ -99,32 +93,25 @@ const char * pm_diagnostic_id_human(pm_diagnostic_id_t diag_id);
  * Append a diagnostic to the given list of diagnostics that is using shared
  * memory for its message.
  *
+ * @param arena The arena to allocate from.
  * @param list The list to append to.
  * @param start The source offset of the start of the diagnostic.
  * @param length The length of the diagnostic.
  * @param diag_id The diagnostic ID.
- * @return Whether the diagnostic was successfully appended.
  */
-bool pm_diagnostic_list_append(pm_list_t *list, uint32_t start, uint32_t length, pm_diagnostic_id_t diag_id);
+void pm_diagnostic_list_append(pm_arena_t *arena, pm_list_t *list, uint32_t start, uint32_t length, pm_diagnostic_id_t diag_id);
 
 /**
  * Append a diagnostic to the given list of diagnostics that is using a format
  * string for its message.
  *
+ * @param arena The arena to allocate from.
  * @param list The list to append to.
  * @param start The source offset of the start of the diagnostic.
  * @param length The length of the diagnostic.
  * @param diag_id The diagnostic ID.
  * @param ... The arguments to the format string for the message.
- * @return Whether the diagnostic was successfully appended.
  */
-bool pm_diagnostic_list_append_format(pm_list_t *list, uint32_t start, uint32_t length, pm_diagnostic_id_t diag_id, ...);
-
-/**
- * Deallocate the internal state of the given diagnostic list.
- *
- * @param list The list to deallocate.
- */
-void pm_diagnostic_list_free(pm_list_t *list);
+void pm_diagnostic_list_append_format(pm_arena_t *arena, pm_list_t *list, uint32_t start, uint32_t length, pm_diagnostic_id_t diag_id, ...);
 
 #endif

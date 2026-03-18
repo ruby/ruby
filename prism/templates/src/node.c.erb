@@ -39,10 +39,11 @@ pm_node_list_grow(pm_arena_t *arena, pm_node_list_t *list, size_t size) {
 }
 
 /**
- * Append a new node onto the end of the node list.
+ * Slow path for pm_node_list_append: grow the list and append the node.
+ * Do not call directly - use pm_node_list_append instead.
  */
 void
-pm_node_list_append(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node) {
+pm_node_list_append_slow(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node) {
     pm_node_list_grow(arena, list, 1);
     list->nodes[list->size++] = node;
 }
@@ -173,7 +174,11 @@ pm_dump_json(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *no
 
             // Dump the <%= field.name %> field
             pm_buffer_append_byte(buffer, ',');
+            <%- if field.is_a?(Prism::Template::Flags) -%>
+            pm_buffer_append_string(buffer, "\"flags\":", 8);
+            <%- else -%>
             pm_buffer_append_string(buffer, "\"<%= field.name %>\":", <%= field.name.bytesize + 3 %>);
+            <%- end -%>
             <%- case field -%>
             <%- when Prism::Template::NodeField -%>
             pm_dump_json(buffer, parser, (const pm_node_t *) cast-><%= field.name %>);

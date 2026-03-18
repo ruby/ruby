@@ -5283,7 +5283,7 @@ rb_file_s_extname(VALUE klass, VALUE fname)
  *    coerce to a String.
  *
  * 2. Otherwise, or if the coerced result is not a String too, the
- *    standard coersion using +to_str+ method will take place on that
+ *    standard coercion using +to_str+ method will take place on that
  *    object. (See also String.try_convert)
  *
  * The coerced string must satisfy the following conditions:

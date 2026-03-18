@@ -207,9 +207,19 @@ class Pathname
 
   # :startdoc:
 
+  # call-seq:
+  #   Pathname.new(path) -> new_pathname
   #
-  # Create a Pathname object from the given String (or String-like object).
-  # If +path+ contains a NUL character (<tt>\0</tt>), an ArgumentError is raised.
+  # Returns a new \Pathname object based on the given +path+,
+  # via <tt>File.path(path).dup</tt>.
+  # the +path+ may be a String, a File, a Dir, or another \Pathname;
+  # see File.path:
+  #
+  #   Pathname.new('.')               # => #<Pathname:.>
+  #   Pathname.new('/usr/bin')        # => #<Pathname:/usr/bin>
+  #   Pathname.new(File.new('LEGAL')) # => #<Pathname:LEGAL>
+  #   Pathname.new(Dir.new('.'))      # => #<Pathname:.>
+  #   Pathname.new(Pathname.new('.')) # => #<Pathname:.>
   #
   def initialize(path)
     @path = File.path(path).dup
@@ -390,15 +400,105 @@ class Pathname
   end
   private :prepend_prefix
 
-  # Returns clean pathname of +self+ with consecutive slashes and useless dots
-  # removed.  The filesystem is not accessed.
+  # call-seq:
+  #   cleanpath(symlinks = false) -> new_pathname
   #
-  # If +consider_symlink+ is +true+, then a more conservative algorithm is used
-  # to avoid breaking symbolic linkages.  This may retain more +..+
-  # entries than absolutely necessary, but without accessing the filesystem,
-  # this can't be avoided.
+  # Returns a new \Pathname object, "cleaned" of unnecessary separators,
+  # single-dot entries, and double-dot entries.
   #
-  # See Pathname#realpath.
+  # When +self+ is empty, returns pathname with a single-dot entry:
+  #
+  #   Pathname.new('').cleanpath # => #<Pathname:.>
+  #
+  # <b>Separators</b>
+  #
+  # A lone separator is preserved:
+  #
+  #   Pathname.new('/').cleanpath # => #<Pathname:/>
+  #
+  # Non-lone trailing separators are removed:
+  #
+  #   Pathname.new('foo/////').cleanpath # => #<Pathname:foo>
+  #   Pathname.new('foo/').cleanpath     # => #<Pathname:foo>
+  #
+  # Multiple embedded separators are reduced to a single separator:
+  #
+  #   Pathname.new('foo///bar').cleanpath # => #<Pathname:foo/bar>
+  #
+  # Multiple leading separators are reduced:
+  #
+  #   # On Windows, where File.dirname('//') == '//'.
+  #   Pathname.new('/////foo').cleanpath # => #<Pathname://foo>
+  #   Pathname.new('/////').cleanpath    # => #<Pathname://>
+  #   # Otherwise, where File.dirname('//') == '/'.
+  #   Pathname.new('/////foo').cleanpath # => #<Pathname:/foo>
+  #   Pathname.new('/////').cleanpath    # => #<Pathname:/>
+  #
+  # <b>Single-Dot Entries</b>
+  #
+  # A lone single-dot entry is preserved:
+  #
+  #   Pathname.new('.').cleanpath  # => #<Pathname:.>
+  #
+  # A non-lone single-dot entry, regardless of its location, is removed:
+  #
+  #   Pathname.new('foo/././././bar').cleanpath  # => #<Pathname:foo/bar>
+  #   Pathname.new('./foo/./././bar').cleanpath  # => #<Pathname:foo/bar>
+  #   Pathname.new('foo/./././bar/./').cleanpath # => #<Pathname:foo/bar>
+  #
+  # <b>Double-Dot Entries</b>
+  #
+  # A lone double-dot entry is preserved:
+  #
+  #   Pathname.new('..').cleanpath # => #<Pathname:..>
+  #
+  # When a non-lone double-dot entry is preceded by a named entry, both are removed:
+  #
+  #   Pathname.new('foo/..').cleanpath          # => #<Pathname:.>
+  #   Pathname.new('foo/../bar').cleanpath      # => #<Pathname:bar>
+  #   Pathname.new('foo/../bar/..').cleanpath   # => #<Pathname:.>
+  #   Pathname.new('foo/bar/./../..').cleanpath # => #<Pathname:.>
+  #
+  # When a non-lone double-dot entry is _not_ preceded by a named entry,
+  # it is preserved:
+  #
+  #   Pathname.new('../..').cleanpath # => #<Pathname:../..>
+  #
+  # A non-lone meaningless double-dot entry is removed:
+  #
+  #   Pathname.new('/..').cleanpath    # => #<Pathname:/>
+  #   Pathname.new('/../..').cleanpath # => #<Pathname:/>
+  #
+  # <b> Symbolic Links</b>
+  #
+  # If the path may contain {symbolic links}[https://en.wikipedia.org/wiki/Symbolic_link],
+  # consider give optional argument `symlinks` as `true`;
+  # the method then uses a more conservative algorithm
+  # that avoids breaking symbolic links.
+  # This may preserve more double-dot entries than are absolutely necessary,
+  # but without accessing the filesystem, this can't be avoided.
+  #
+  # Examples:
+  #
+  #   Pathname.new('a/').cleanpath           # => #<Pathname:a>
+  #   Pathname.new('a/').cleanpath(true)     # => #<Pathname:a/>
+  #
+  #   Pathname.new('a/.').cleanpath          # => #<Pathname:a>
+  #   Pathname.new('a/.').cleanpath(true)    # => #<Pathname:a/.>
+  #
+  #   Pathname.new('a/./').cleanpath         # => #<Pathname:a>
+  #   Pathname.new('a/./').cleanpath(true)   # => #<Pathname:a/.>
+  #
+  #   Pathname.new('a/b/.').cleanpath        # => #<Pathname:a/b>
+  #   Pathname.new('a/b/.').cleanpath(true)  # => #<Pathname:a/b/.>
+  #
+  #   Pathname.new('a/../.').cleanpath       # => #<Pathname:.>
+  #   Pathname.new('a/../.').cleanpath(true) # => #<Pathname:a/..>
+  #
+  #   Pathname.new('a/b/../../../../c/../d').cleanpath
+  #   # => #<Pathname:../../d>
+  #   Pathname.new('a/b/../../../../c/../d').cleanpath(true)
+  #   # => #<Pathname:a/b/../../../../c/../d>
   #
   def cleanpath(consider_symlink=false)
     if consider_symlink
@@ -708,7 +808,8 @@ class Pathname
   end
   alias / +
 
-  def plus(path1, path2) # -> path # :nodoc:
+  # (path1, path2) -> path
+  def plus(path1, path2) # :nodoc:
     prefix2 = path2
     index_list2 = []
     basename_list2 = []
@@ -1132,7 +1233,46 @@ end
 
 
 class Pathname    # * Dir *
-  # See <tt>Dir.glob</tt>.  Returns or yields Pathname objects.
+  # call-seq:
+  #   glob(patterns, **kwargs) → array_of_pathnames
+  #   glob(patterns, **kwargs) {|pathname| ... } → nil
+  #
+  # Calls <tt>Dir.glob(patterns, **kwargs)</tt>, which yields or returns entry names;
+  # see Dir.glob.
+  #
+  # Required argument +patterns+ is a string pattern or an array of string patterns;
+  # note that these patterns are not regexps.
+  #
+  # Keyword arguments <tt>**kwargs</tt> are passed through to Dir.glob;
+  # see the documentation there.
+  #
+  # With no block given, returns an array of \Pathname objects;
+  # each is <tt>Pathname.new(entry_name)</tt> for an entry name returned by Dir.glob.
+  #
+  #   Pathname.glob('*').take(3)
+  #   # => [#<Pathname:BSDL>, #<Pathname:CONTRIBUTING.md>, #<Pathname:COPYING>]
+  #   Pathname.glob(['o*', 'a*']).take(3)
+  #   # => [#<Pathname:object.c>, #<Pathname:aclocal.m4>, #<Pathname:addr2line.c>]
+  #
+  # With a block given, calls the block with each pathname
+  # <tt>Pathname.new(entry_name)</tt>,
+  # where each +entry_name+ is a \Pathname object created by the value yielded by Dir.glob.
+  #
+  #   a = []
+  #   Pathname.glob(['o*', 'a*']) {|pathname| a << pathname }
+  #   a.take(3)
+  #   # => [#<Pathname:object.c>, #<Pathname:aclocal.m4>, #<Pathname:addr2line.c>]
+  #
+  # Optional keyword argument +base+ is of particular interest.
+  # When it is given, its value specifies the base directory for the pathnames;
+  # each pattern string specifies entries relative to the base directory:
+  #
+  #   Pathname.glob('*', base: 'lib').take(2)
+  #   # => [#<Pathname:English.gemspec>, #<Pathname:English.rb>]
+  #   Pathname.glob('*', base: 'lib/bundler').take(2)
+  #   # => [#<Pathname:build_metadata.rb>, #<Pathname:bundler.gemspec>]
+  #
+  # Note that the base directory is not prepended to the entry names in the result.
   def Pathname.glob(*args, **kwargs) # :yield: pathname
     if block_given?
       Dir.glob(*args, **kwargs) {|f| yield self.new(f) }

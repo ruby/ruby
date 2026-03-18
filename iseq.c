@@ -113,14 +113,14 @@ remove_from_constant_cache(ID id, IC ic)
     VALUE lookup_result;
     st_data_t ic_data = (st_data_t)ic;
 
-    if (rb_id_table_lookup(vm->constant_cache, id, &lookup_result)) {
+    if (rb_id_table_lookup(&vm->constant_cache, id, &lookup_result)) {
         set_table *ics = (set_table *)lookup_result;
         set_table_delete(ics, &ic_data);
 
         if (ics->num_entries == 0 &&
                 // See comment in vm_track_constant_cache on why we need this check
                 id != vm->inserting_constant_cache_id) {
-            rb_id_table_delete(vm->constant_cache, id);
+            rb_id_table_delete(&vm->constant_cache, id);
             set_free_table(ics);
         }
     }
@@ -2987,22 +2987,23 @@ rb_iseq_disasm(const rb_iseq_t *iseq)
 attr_index_t
 rb_estimate_iv_count(VALUE klass, const rb_iseq_t * initialize_iseq)
 {
-    struct rb_id_table * iv_names = rb_id_table_create(0);
+    set_table iv_names = { 0 };
+    set_init_embedded_numtable_with_size(&iv_names, 0);
 
     for (unsigned int i = 0; i < ISEQ_BODY(initialize_iseq)->ivc_size; i++) {
         IVC cache = (IVC)&ISEQ_BODY(initialize_iseq)->is_entries[i];
 
         if (cache->iv_set_name) {
-            rb_id_table_insert(iv_names, cache->iv_set_name, Qtrue);
+            set_insert(&iv_names, cache->iv_set_name);
         }
     }
 
-    attr_index_t count = (attr_index_t)rb_id_table_size(iv_names);
+    attr_index_t count = (attr_index_t)iv_names.num_entries;
 
     VALUE superclass = rb_class_superclass(klass);
     count += RCLASS_MAX_IV_COUNT(superclass);
 
-    rb_id_table_free(iv_names);
+    set_free_embedded_table(&iv_names);
 
     return count;
 }

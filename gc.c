@@ -3941,10 +3941,8 @@ update_const_tbl(void *objspace, struct rb_id_table *tbl)
 static void
 update_subclasses(void *objspace, rb_classext_t *ext)
 {
-    rb_subclass_entry_t *entry;
-    rb_subclass_anchor_t *anchor = RCLASSEXT_SUBCLASSES(ext);
-    if (!anchor) return;
-    entry = anchor->head;
+    rb_subclass_entry_t *entry = RCLASSEXT_SUBCLASSES(ext);
+    if (!entry) return;
     while (entry) {
         if (entry->klass)
             UPDATE_IF_MOVED(objspace, entry->klass);
@@ -4193,25 +4191,21 @@ rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback,
 
     switch (table) {
       case RB_GC_VM_CI_TABLE: {
-        if (vm->ci_table) {
-            st_foreach_with_replace(
-                vm->ci_table,
-                vm_weak_table_foreach_weak_key,
-                vm_weak_table_foreach_update_weak_key,
-                (st_data_t)&foreach_data
-            );
-        }
+        st_foreach_with_replace(
+            &vm->ci_table,
+            vm_weak_table_foreach_weak_key,
+            vm_weak_table_foreach_update_weak_key,
+            (st_data_t)&foreach_data
+        );
         break;
       }
       case RB_GC_VM_OVERLOADED_CME_TABLE: {
-        if (vm->overloaded_cme_table) {
-            st_foreach_with_replace(
-                vm->overloaded_cme_table,
-                vm_weak_table_foreach_weak_key,
-                vm_weak_table_foreach_update_weak_key,
-                (st_data_t)&foreach_data
-            );
-        }
+        st_foreach_with_replace(
+            &vm->overloaded_cme_table,
+            vm_weak_table_foreach_weak_key,
+            vm_weak_table_foreach_update_weak_key,
+            (st_data_t)&foreach_data
+        );
         break;
       }
       case RB_GC_VM_GLOBAL_SYMBOLS_TABLE: {

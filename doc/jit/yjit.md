@@ -321,8 +321,8 @@ Some of the counters include:
 * `:code_gc_count` - number of garbage collections of compiled code since process start
 * `:vm_insns_count` - number of instructions executed by the Ruby interpreter
 * `:compiled_iseq_count` - number of bytecode sequences compiled
-* `:inline_code_size` - size in bytes of compiled YJIT blocks
-* `:outline_code_size` - size in bytes of YJIT error-handling compiled code
+* `:inline_code_size` - size in bytes of main-line machine code
+* `:outlined_code_size` - size in bytes of relatively uncommonly executed machine code
 * `:side_exit_count` - number of side exits taken at runtime
 * `:total_exit_count` - number of exits, including side exits, taken at runtime
 * `:avg_len_in_yjit` - avg. number of instructions in compiled blocks before exiting to interpreter

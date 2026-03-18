@@ -1,6 +1,6 @@
 //! Configurable options for ZJIT.
 
-use std::{ffi::{CStr, CString}, ptr::null};
+use std::{ffi::{CStr, CString}, fs::File, ptr::null};
 use std::os::raw::{c_char, c_int, c_uint};
 use crate::cruby::*;
 use crate::stats::Counter;
@@ -80,7 +80,7 @@ pub struct Options {
     pub dump_lir: Option<HashSet<DumpLIR>>,
 
     /// Dump all compiled machine code.
-    pub dump_disasm: bool,
+    pub dump_disasm: Option<DumpDisasm>,
 
     /// Trace and write side exit source maps to /tmp for stackprof.
     pub trace_side_exits: Option<TraceExits>,
@@ -115,7 +115,7 @@ impl Default for Options {
             dump_hir_graphviz: None,
             dump_hir_iongraph: false,
             dump_lir: None,
-            dump_disasm: false,
+            dump_disasm: None,
             trace_side_exits: None,
             trace_side_exits_sample_interval: 0,
             perf: false,
@@ -184,6 +184,14 @@ pub enum DumpLIR {
     resolve_parallel_mov,
     /// Dump LIR after {arch}_scratch_split
     scratch_split,
+    /// Dump live intervals grid before alloc_regs
+    live_intervals,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum DumpDisasm {
+    Stdout,
+    File(std::os::unix::io::RawFd),
 }
 
 /// All compiler stages for --zjit-dump-lir=all.
@@ -194,6 +202,7 @@ const DUMP_LIR_ALL: &[DumpLIR] = &[
     DumpLIR::compile_exits,
     DumpLIR::resolve_parallel_mov,
     DumpLIR::scratch_split,
+    DumpLIR::live_intervals,
 ];
 
 /// Maximum value for --zjit-mem-size/--zjit-exec-mem-size in MiB.
@@ -221,6 +230,14 @@ macro_rules! get_option {
     };
 }
 pub(crate) use get_option;
+
+/// Macro to reference an option value by name.
+macro_rules! get_option_ref {
+    ($option_name:ident) => {
+        unsafe { crate::options::OPTIONS.as_ref() }.unwrap().$option_name.as_ref()
+    };
+}
+pub(crate) use get_option_ref;
 
 /// Set default values to ZJIT options. Setting Some to OPTIONS will make `#with_jit`
 /// enable the JIT hook while not enabling compilation yet.
@@ -399,7 +416,9 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
                     "split" => DumpLIR::split,
                     "alloc_regs" => DumpLIR::alloc_regs,
                     "compile_exits" => DumpLIR::compile_exits,
+                    "resolve_parallel_mov" => DumpLIR::resolve_parallel_mov,
                     "scratch_split" => DumpLIR::scratch_split,
+                    "live_intervals" => DumpLIR::live_intervals,
                     _ => {
                         let valid_options = DUMP_LIR_ALL.iter().map(|opt| format!("{opt:?}")).collect::<Vec<_>>().join(", ");
                         eprintln!("invalid --zjit-dump-lir option: '{filter}'");
@@ -412,7 +431,26 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             options.dump_lir = Some(dump_lirs);
         }
 
-        ("dump-disasm", "") => options.dump_disasm = true,
+        ("dump-disasm", _) => {
+            if !cfg!(feature = "disasm") {
+                eprintln!("WARNING: the {opt_name} option works best when ZJIT is built in dev mode, i.e. ./configure --enable-zjit=dev");
+            }
+
+            match opt_val {
+                "" => options.dump_disasm = Some(DumpDisasm::Stdout),
+                directory => {
+                    let path = format!("{directory}/zjit_{}.log", std::process::id());
+                    match File::options().create(true).append(true).open(&path) {
+                        Ok(file) => {
+                            use std::os::unix::io::IntoRawFd;
+                            eprintln!("ZJIT disasm dump: {path}");
+                            options.dump_disasm = Some(DumpDisasm::File(file.into_raw_fd()));
+                        }
+                        Err(err) => eprintln!("Failed to create {path}: {err}"),
+                    }
+                }
+            }
+        }
 
         ("perf", "") => options.perf = true,
 
@@ -530,4 +568,29 @@ pub extern "C" fn rb_zjit_get_stats_file_path_p(_ec: EcPtr, _self: VALUE) -> VAL
         }
     }
     Qnil
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_dump_disasm_path() {
+        unsafe { OPTIONS = Some(Options::default()); }
+
+        let dir = std::env::temp_dir();
+        let expected_path = dir.join(format!("zjit_{}.log", std::process::id()));
+        let option = CString::new(format!("dump-disasm={}", dir.display())).unwrap();
+
+        assert!(parse_option(option.as_ptr()).is_some());
+
+        let options = unsafe { OPTIONS.as_ref() }.unwrap();
+        match options.dump_disasm {
+            Some(DumpDisasm::File(fd)) => assert!(fd >= 0),
+            _ => panic!("expected dump-disasm file output"),
+        }
+        assert!(expected_path.exists());
+
+        let _ = std::fs::remove_file(expected_path);
+    }
 }

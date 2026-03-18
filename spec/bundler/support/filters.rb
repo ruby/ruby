@@ -18,10 +18,13 @@ class RequirementChecker < Proc
   end
 end
 
+git_version = Gem::Version.new(`git --version`[/(\d+\.\d+\.\d+)/, 1])
+
 RSpec.configure do |config|
   config.filter_run_excluding realworld: true
 
   config.filter_run_excluding rubygems: RequirementChecker.against(Gem.rubygems_version)
+  config.filter_run_excluding git: RequirementChecker.against(git_version)
   config.filter_run_excluding ruby_repo: !ENV["GEM_COMMAND"].nil?
   config.filter_run_excluding no_color_tty: Gem.win_platform? || !ENV["GITHUB_ACTION"].nil?
   config.filter_run_excluding permissions: Gem.win_platform?

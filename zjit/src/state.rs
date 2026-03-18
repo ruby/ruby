@@ -117,7 +117,7 @@ impl ZJITState {
             let mem_block = VirtualMem::alloc(get_option!(exec_mem_bytes), Some(get_option!(mem_bytes)));
             let mem_block = Rc::new(RefCell::new(mem_block));
 
-            CodeBlock::new(mem_block.clone(), get_option!(dump_disasm))
+            CodeBlock::new(mem_block.clone(), get_option_ref!(dump_disasm).is_some())
         };
 
         let entry_trampoline = gen_entry_trampoline(&mut cb).unwrap().raw_ptr(&cb);
@@ -306,10 +306,12 @@ impl ZJITState {
 
 /// The `::RubyVM::ZJIT` module.
 pub static ZJIT_MODULE: AtomicUsize = AtomicUsize::new(!0);
-/// Serial of the canonical version of `` right after VM boot.
+/// Serial of the canonical version of `induce_side_exit!` right after VM boot.
 pub static INDUCE_SIDE_EXIT_SERIAL: AtomicUsize = AtomicUsize::new(!0);
-/// Serial of the canonical version of `` right after VM boot.
+/// Serial of the canonical version of `induce_compile_failure!` right after VM boot.
 pub static INDUCE_COMPILE_FAILURE_SERIAL: AtomicUsize = AtomicUsize::new(!0);
+/// Serial of the canonical version of `induce_breakpoint!` right after VM boot.
+pub static INDUCE_BREAKPOINT_SERIAL: AtomicUsize = AtomicUsize::new(!0);
 
 /// Check if a method, `method_id`, currently exists on `ZJIT.singleton_class` and has the `expected_serial`.
 pub fn zjit_module_method_match_serial(method_id: ID, expected_serial: &AtomicUsize) -> bool {
@@ -354,6 +356,11 @@ pub extern "C" fn rb_zjit_init_builtin_cmes() {
         assert!(! cme.is_null(), "RubyVM::ZJIT.induce_compile_failure! should exist on boot");
         let serial = get_def_method_serial((*cme).def) ;
         INDUCE_COMPILE_FAILURE_SERIAL.store(serial, Ordering::Relaxed);
+
+        let cme = rb_callable_method_entry(zjit_module.class_of(), ID!(induce_breakpoint_bang));
+        assert!(! cme.is_null(), "RubyVM::ZJIT.induce_breakpoint! should exist on boot");
+        let serial = get_def_method_serial((*cme).def) ;
+        INDUCE_BREAKPOINT_SERIAL.store(serial, Ordering::Relaxed);
 
         // Root and pin the module since we'll be doing object identity comparisons.
         ZJIT_MODULE.store(zjit_module.0, Ordering::Relaxed);

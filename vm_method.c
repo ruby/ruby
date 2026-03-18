@@ -331,7 +331,7 @@ rb_clear_constant_cache_for_id(ID id)
     VALUE lookup_result;
     rb_vm_t *vm = GET_VM();
 
-    if (rb_id_table_lookup(vm->constant_cache, id, &lookup_result)) {
+    if (rb_id_table_lookup(&vm->constant_cache, id, &lookup_result)) {
         set_table *ics = (set_table *)lookup_result;
         set_table_foreach(ics, rb_clear_constant_cache_for_id_i, (st_data_t) NULL);
         ruby_vm_constant_cache_invalidations += ics->num_entries;
@@ -347,8 +347,8 @@ invalidate_negative_cache(ID mid)
     VALUE cme;
     rb_vm_t *vm = GET_VM();
 
-    if (rb_id_table_lookup(vm->negative_cme_table, mid, &cme)) {
-        rb_id_table_delete(vm->negative_cme_table, mid);
+    if (rb_id_table_lookup(&vm->negative_cme_table, mid, &cme)) {
+        rb_id_table_delete(&vm->negative_cme_table, mid);
         vm_cme_invalidate((rb_callable_method_entry_t *)cme);
         RB_DEBUG_COUNTER_INC(cc_invalidate_negative);
     }
@@ -439,7 +439,11 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
     RB_VM_LOCKING() {
         rb_vm_barrier();
 
-        if (LIKELY(RCLASS_SUBCLASSES_FIRST(klass) == NULL)) {
+        if (LIKELY(RCLASS_SUBCLASSES_FIRST(klass) == NULL) &&
+            // Non-refinement ICLASSes (from module inclusion) previously had
+            // subclasses reparented onto them, so they need the tree path for
+            // broader cme-based invalidation even though they now have no subclasses.
+            !(RB_TYPE_P(klass, T_ICLASS) && NIL_P(RCLASS_REFINED_CLASS(klass)))) {
             // no subclasses
             // check only current class
 
@@ -520,7 +524,7 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
             }
         }
 
-        rb_gccct_clear_table(Qnil);
+        rb_gccct_clear_table();
     }
 }
 
@@ -672,8 +676,7 @@ rb_vm_ci_lookup(ID mid, unsigned int flag, unsigned int argc, const struct rb_ca
     new_ci->argc = argc;
 
     RB_VM_LOCKING() {
-        st_table *ci_table = vm->ci_table;
-        VM_ASSERT(ci_table);
+        st_table *ci_table = &vm->ci_table;
 
         do {
             st_update(ci_table, (st_data_t)new_ci, ci_lookup_i, (st_data_t)&ci);
@@ -693,7 +696,7 @@ rb_vm_ci_free(const struct rb_callinfo *ci)
     rb_vm_t *vm = GET_VM();
 
     st_data_t key = (st_data_t)ci;
-    st_delete(vm->ci_table, &key, NULL);
+    st_delete(&vm->ci_table, &key, NULL);
 }
 
 struct cc_refinement_entries {
@@ -1335,6 +1338,16 @@ rb_add_refined_method_entry(VALUE refined_class, ID mid)
 static void
 check_override_opt_method_i(VALUE klass, VALUE arg)
 {
+    if (RB_TYPE_P(klass, T_ICLASS)) {
+        // ICLASS from a module's subclass list: check the includer and
+        // recurse into the includer's T_CLASS subclasses.
+        VALUE includer = RCLASS_INCLUDER(klass);
+        if (!UNDEF_P(includer) && includer) {
+            check_override_opt_method_i(includer, arg);
+        }
+        return;
+    }
+
     ID mid = (ID)arg;
     const rb_method_entry_t *me, *newme;
 
@@ -1506,8 +1519,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 static st_table *
 overloaded_cme_table(void)
 {
-    VM_ASSERT(GET_VM()->overloaded_cme_table != NULL);
-    return GET_VM()->overloaded_cme_table;
+    return &GET_VM()->overloaded_cme_table;
 }
 
 #if VM_CHECK_MODE > 0
@@ -1915,12 +1927,12 @@ negative_cme(ID mid)
     const rb_callable_method_entry_t *cme;
     VALUE cme_data;
 
-    if (rb_id_table_lookup(vm->negative_cme_table, mid, &cme_data)) {
+    if (rb_id_table_lookup(&vm->negative_cme_table, mid, &cme_data)) {
         cme = (rb_callable_method_entry_t *)cme_data;
     }
     else {
         cme = (rb_callable_method_entry_t *)rb_method_entry_alloc(mid, Qnil, Qnil, NULL, false);
-        rb_id_table_insert(vm->negative_cme_table, mid, (VALUE)cme);
+        rb_id_table_insert(&vm->negative_cme_table, mid, (VALUE)cme);
     }
 
     VM_ASSERT(cme != NULL);

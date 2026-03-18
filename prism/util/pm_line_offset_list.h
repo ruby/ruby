@@ -15,6 +15,7 @@
 #define PRISM_LINE_OFFSET_LIST_H
 
 #include "prism/defines.h"
+#include "prism/util/pm_arena.h"
 
 #include <assert.h>
 #include <stdbool.h>
@@ -48,14 +49,13 @@ typedef struct {
 } pm_line_column_t;
 
 /**
- * Initialize a new line offset list with the given capacity. Returns true if
- * the allocation of the offsets succeeds, otherwise returns false.
+ * Initialize a new line offset list with the given capacity.
  *
+ * @param arena The arena to allocate from.
  * @param list The list to initialize.
  * @param capacity The initial capacity of the list.
- * @return True if the allocation of the offsets succeeds, otherwise false.
  */
-bool pm_line_offset_list_init(pm_line_offset_list_t *list, size_t capacity);
+void pm_line_offset_list_init(pm_arena_t *arena, pm_line_offset_list_t *list, size_t capacity);
 
 /**
  * Clear out the offsets that have been appended to the list.
@@ -65,15 +65,29 @@ bool pm_line_offset_list_init(pm_line_offset_list_t *list, size_t capacity);
 void pm_line_offset_list_clear(pm_line_offset_list_t *list);
 
 /**
- * Append a new offset to the list. Returns true if the reallocation of the
- * offsets succeeds (if one was necessary), otherwise returns false.
+ * Append a new offset to the list (slow path with resize).
  *
+ * @param arena The arena to allocate from.
  * @param list The list to append to.
  * @param cursor The offset to append.
- * @return True if the reallocation of the offsets succeeds (if one was
- *     necessary), otherwise false.
  */
-bool pm_line_offset_list_append(pm_line_offset_list_t *list, uint32_t cursor);
+void pm_line_offset_list_append_slow(pm_arena_t *arena, pm_line_offset_list_t *list, uint32_t cursor);
+
+/**
+ * Append a new offset to the list.
+ *
+ * @param arena The arena to allocate from.
+ * @param list The list to append to.
+ * @param cursor The offset to append.
+ */
+static PRISM_FORCE_INLINE void
+pm_line_offset_list_append(pm_arena_t *arena, pm_line_offset_list_t *list, uint32_t cursor) {
+    if (list->size < list->capacity) {
+        list->offsets[list->size++] = cursor;
+    } else {
+        pm_line_offset_list_append_slow(arena, list, cursor);
+    }
+}
 
 /**
  * Returns the line of the given offset. If the offset is not in the list, the
@@ -96,13 +110,6 @@ int32_t pm_line_offset_list_line(const pm_line_offset_list_t *list, uint32_t cur
  * @param start_line The line to start counting from.
  * @return The line and column of the given offset.
  */
-pm_line_column_t pm_line_offset_list_line_column(const pm_line_offset_list_t *list, uint32_t cursor, int32_t start_line);
-
-/**
- * Free the internal memory allocated for the list.
- *
- * @param list The list to free.
- */
-void pm_line_offset_list_free(pm_line_offset_list_t *list);
+PRISM_EXPORTED_FUNCTION pm_line_column_t pm_line_offset_list_line_column(const pm_line_offset_list_t *list, uint32_t cursor, int32_t start_line);
 
 #endif

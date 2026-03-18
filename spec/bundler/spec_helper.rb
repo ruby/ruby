@@ -40,6 +40,29 @@ require_relative "support/permissions"
 require_relative "support/platforms"
 require_relative "support/windows_tag_group"
 
+begin
+  raise LoadError if File.exist?(File.expand_path("../../lib/bundler/bundler.gemspec", __dir__))
+
+  gem "simplecov_json_formatter"
+  require "simplecov"
+
+  SimpleCov.start do
+    command_name "bundler:#{Process.pid}"
+    root File.expand_path("../..", __dir__)
+    coverage_dir File.expand_path("../../coverage", __dir__)
+
+    add_filter "/spec/"
+    add_filter "/test/"
+    add_filter "/lib/rubygems/"
+    add_filter "/lib/bundler/vendor/"
+    add_filter "/tool/"
+    add_filter "/bundler/tmp/"
+    add_filter ".gemspec"
+  end
+rescue LoadError
+  # SimpleCov is not installed
+end
+
 $debug = false
 
 module Gem
@@ -93,6 +116,9 @@ RSpec.configure do |config|
     require_relative "support/rubygems_ext"
     Spec::Rubygems.test_setup
 
+    # Disable retry delays in tests to speed them up
+    Bundler::Retry.default_base_delay = 0
+
     # Simulate bundler has not yet been loaded
     ENV.replace(ENV.to_hash.delete_if {|k, _v| k.start_with?(Bundler::EnvironmentPreserver::BUNDLER_PREFIX) })
 
@@ -104,6 +130,14 @@ RSpec.configure do |config|
     ENV["XDG_CONFIG_HOME"] = nil
     ENV["XDG_CACHE_HOME"] = nil
     ENV["GEMRC"] = nil
+
+    # Prevent tests from modifying the user's global git config.
+    # GIT_CONFIG_GLOBAL and GIT_CONFIG_NOSYSTEM are available since Git 2.32.
+    git_version = `git --version`[/(\d+\.\d+\.\d+)/, 1]
+    if Gem::Version.new(git_version) >= Gem::Version.new("2.32")
+      ENV["GIT_CONFIG_GLOBAL"] = File.join(ENV["HOME"], ".gitconfig")
+      ENV["GIT_CONFIG_NOSYSTEM"] = "1"
+    end
 
     # Don't wrap output in tests
     ENV["THOR_COLUMNS"] = "10000"

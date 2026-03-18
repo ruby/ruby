@@ -4916,6 +4916,25 @@ pub mod hir_build_tests {
         eval("def test = ::RubyVM::ZJIT.induce_compile_failure!");
         assert_compile_fails("test", ParseError::DirectiveInduced);
     }
+
+    #[test]
+    fn test_induce_breakpoint() {
+        eval("def test = ::RubyVM::ZJIT.induce_breakpoint!");
+        assert!(hir_string("test").contains("BreakPoint"));
+    }
+
+    #[test]
+    fn test_induce_breakpoint_returns_nil() {
+        eval("
+          def test
+            x = ::RubyVM::ZJIT.induce_breakpoint!
+            x
+          end
+        ");
+        let hir = hir_string("test");
+        assert!(hir.contains("BreakPoint"));
+        assert!(hir.contains("Return v"));
+    }
 }
 
  /// Test successor and predecessor set computations.

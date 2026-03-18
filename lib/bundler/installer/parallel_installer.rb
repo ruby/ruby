@@ -24,6 +24,10 @@ module Bundler
         state == :enqueued
       end
 
+      def enqueue_with_priority?
+        state == :installable && spec.extensions.any?
+      end
+
       def failed?
         state == :failed
       end
@@ -194,7 +198,7 @@ module Bundler
         spec.state = :installable
       end
 
-      worker_pool.enq(spec)
+      worker_pool.enq(spec, priority: spec.enqueue_with_priority?)
     end
 
     def finished_installing?

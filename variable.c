@@ -3232,7 +3232,7 @@ autoload_feature_require(VALUE _arguments)
      * For example, the assertion below may fail in gccct_method_search();
      * VM_ASSERT(vm_cc_check_cme(cc, rb_callable_method_entry(klass, mid)))
      */
-    rb_gccct_clear_table(Qnil);
+    rb_gccct_clear_table();
 
     VALUE result = rb_funcall(receiver, rb_intern("require"), 1, arguments->autoload_data->feature);
 
@@ -4240,8 +4240,9 @@ find_cvar(VALUE klass, VALUE * front, VALUE * target, ID id)
 static void
 check_for_cvar_table(VALUE subclass, VALUE key)
 {
-    // Must not check ivar on ICLASS
-    if (!RB_TYPE_P(subclass, T_ICLASS) && RTEST(rb_ivar_defined(subclass, key))) {
+    if (RB_TYPE_P(subclass, T_ICLASS)) return; // skip refinement ICLASSes
+
+    if (RTEST(rb_ivar_defined(subclass, key))) {
         RB_DEBUG_COUNTER_INC(cvar_class_invalidate);
         ruby_vm_global_cvar_state++;
         return;
