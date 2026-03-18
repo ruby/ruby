@@ -136,8 +136,8 @@ typedef enum {
     PM_ENCODING_EUC_JP,
     PM_ENCODING_WINDOWS_31J,
 
-// We optionally support excluding the full set of encodings to only support the
-// minimum necessary to process Ruby code without encoding comments.
+/* We optionally support excluding the full set of encodings to only support the
+ * minimum necessary to process Ruby code without encoding comments. */
 #ifndef PRISM_ENCODING_EXCLUDE_FULL
     PM_ENCODING_BIG5,
     PM_ENCODING_BIG5_HKSCS,

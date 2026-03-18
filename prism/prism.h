@@ -12,8 +12,8 @@ extern "C" {
 
 #include "prism/arena.h"
 #include "prism/ast.h"
+#include "prism/buffer.h"
 #include "prism/diagnostic.h"
-#include "prism/excludes.h"
 #include "prism/json.h"
 #include "prism/node.h"
 #include "prism/options.h"

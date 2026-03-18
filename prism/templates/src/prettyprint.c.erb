@@ -1,6 +1,11 @@
 <%# encoding: ASCII -%>
 #include "prism/prettyprint.h"
 
+/* We optionally support pretty printing nodes. For systems that don't want or
+ * need this functionality, it can be turned off with the
+ * PRISM_EXCLUDE_PRETTYPRINT define. */
+#ifndef PRISM_EXCLUDE_PRETTYPRINT
+
 #include "prism/compiler/inline.h"
 #include "prism/internal/buffer.h"
 #include "prism/internal/constant_pool.h"
@@ -9,15 +14,6 @@
 #include "prism/line_offset_list.h"
 
 #include <inttypes.h>
-
-// We optionally support pretty printing nodes. For systems that don't want or
-// need this functionality, it can be turned off with the
-// PRISM_EXCLUDE_PRETTYPRINT define.
-#ifdef PRISM_EXCLUDE_PRETTYPRINT
-
-void pm_prettyprint(void) {}
-
-#else
 
 static PRISM_INLINE void
 prettyprint_location(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm_location_t *location) {
