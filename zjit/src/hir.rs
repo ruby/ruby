@@ -5626,7 +5626,7 @@ impl Function {
             (inline) => { Counter::compile_hir_strength_reduce_time_ns };
             (optimize_getivar) => { Counter::compile_hir_strength_reduce_time_ns };
             (optimize_c_calls) => { Counter::compile_hir_strength_reduce_time_ns };
-            // End strength reduction bucket };
+            // End strength reduction bucket
             (optimize_load_store) => { Counter::compile_hir_optimize_load_store_time_ns };
             (fold_constants) => { Counter::compile_hir_fold_constants_time_ns };
             (clean_cfg) => { Counter::compile_hir_clean_cfg_time_ns };
