@@ -208,10 +208,10 @@ build_options_i(VALUE key, VALUE value, VALUE argument) {
                 if (!pm_options_version_set(options, ruby_version, 3)) {
                     // Prism doesn't know this specific version. Is it lower?
                     if (ruby_version[0] < '3' || (ruby_version[0] == '3' && ruby_version[2] < '3')) {
-                        options->version == PM_OPTIONS_VERSION_CRUBY_3_3;
+                        options->version = PM_OPTIONS_VERSION_CRUBY_3_3;
                     } else {
                         // Must be higher.
-                        options->version == PM_OPTIONS_VERSION_LATEST;
+                        options->version = PM_OPTIONS_VERSION_LATEST;
                     }
                 }
             } else if (!pm_options_version_set(options, version, RSTRING_LEN(value))) {

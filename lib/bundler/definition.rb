@@ -988,6 +988,8 @@ module Bundler
         end
       end
 
+      sources.metadata_source.checksum_store.merge!(@locked_gems.metadata_source.checksum_store) if @locked_gems
+
       changes
     end
 
@@ -1122,7 +1124,9 @@ module Bundler
     end
 
     def preload_git_source_worker
-      @preload_git_source_worker ||= Bundler::Worker.new(5, "Git source preloading", ->(source, _) { source.specs })
+      workers = Bundler.settings.installation_parallelization
+
+      @preload_git_source_worker ||= Bundler::Worker.new(workers, "Git source preloading", ->(source, _) { source.specs })
     end
 
     def preload_git_sources

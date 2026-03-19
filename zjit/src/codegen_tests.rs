@@ -1906,6 +1906,55 @@ fn test_opt_neq_fixnum() {
 }
 
 #[test]
+fn test_opt_neq_string_nil() {
+    assert_snapshot!(inspect(r#"
+        def test(str) = str != nil
+        test("x") # profile opt_neq
+        [test("x"), test(nil)]
+    "#), @"[true, false]");
+}
+
+#[test]
+fn test_opt_neq_string_same_operand() {
+    assert_snapshot!(inspect(r#"
+        def test(s) = s != s
+        test("x") # profile opt_neq
+        [test("x"), test("y")]
+    "#), @"[false, false]");
+    assert_contains_opcode("test", YARVINSN_opt_neq);
+}
+
+#[test]
+fn test_opt_neq_string_distinct_literals() {
+    assert_snapshot!(inspect(r#"
+        def test = "a" != "b"
+        test # profile opt_neq
+        [test, test]
+    "#), @"[true, true]");
+    assert_contains_opcode("test", YARVINSN_opt_neq);
+}
+
+#[test]
+fn test_opt_neq_string_one_side_known_literal() {
+    assert_snapshot!(inspect(r#"
+        def test(s) = "a" != s
+        test("a") # profile opt_neq
+        [test("a"), test("b")]
+    "#), @"[false, true]");
+    assert_contains_opcode("test", YARVINSN_opt_neq);
+}
+
+#[test]
+fn test_opt_neq_string_distinct_objects() {
+    assert_snapshot!(inspect(r#"
+        def test(s, t) = s != t
+        test("x", "x") # profile opt_neq
+        [test("x", "x"), test("x", "y")]
+    "#), @"[false, true]");
+    assert_contains_opcode("test", YARVINSN_opt_neq);
+}
+
+#[test]
 fn test_opt_eq_string_same_operand() {
     assert_snapshot!(inspect(r#"
         def test(s) = s == s

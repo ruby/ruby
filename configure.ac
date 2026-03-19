@@ -113,7 +113,7 @@ AC_SUBST(HAVE_BASERUBY)
 
 AC_ARG_WITH(dump-ast,
 	AS_HELP_STRING([--with-dump-ast=DUMP_AST], [use DUMP_AST as dump_ast; for cross-compiling with a host-built dump_ast]),
-	[DUMP_AST=$withval DUMP_AST_TARGET=no],
+	[DUMP_AST=$withval DUMP_AST_TARGET='$(empty)'],
 	[DUMP_AST='./dump_ast$(EXEEXT)' DUMP_AST_TARGET='$(DUMP_AST)'])
 AC_SUBST(X_DUMP_AST, "${DUMP_AST}")
 AC_SUBST(X_DUMP_AST_TARGET, "${DUMP_AST_TARGET}")

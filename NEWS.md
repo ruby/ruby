@@ -64,12 +64,12 @@ releases.
 
 * RubyGems 4.1.0.dev
 * bundler 4.1.0.dev
-* json 2.19.1
+* json 2.19.2
   * 2.18.0 to [v2.18.1][json-v2.18.1], [v2.19.0][json-v2.19.0], [v2.19.1][json-v2.19.1]
 * openssl 4.0.1
   * 4.0.0 to [v4.0.1][openssl-v4.0.1]
 * prism 1.9.0
-  * 1.8.0 to [v1.9.0][prism-v1.9.0]
+  * 1.8.0 to [v1.8.1][prism-v1.8.1], [v1.9.0][prism-v1.9.0]
 * resolv 0.7.1
   * 0.7.0 to [v0.7.1][resolv-v0.7.1]
 * stringio 3.2.1.dev
@@ -85,16 +85,11 @@ releases.
 
 * minitest 6.0.2
 * test-unit 3.7.7
-  * 3.7.3 to [3.7.4][test-unit-3.7.4], [3.7.5][test-unit-3.7.5], [3.7.6][test-unit-3.7.6], [3.7.7][test-unit-3.7.7]
-* rss 0.3.2
-  * 0.3.1 to [0.3.2][rss-0.3.2]
+  * 3.7.5 to [3.7.6][test-unit-3.7.6], [3.7.7][test-unit-3.7.7]
 * net-imap 0.6.3
-  * 0.6.1 to [v0.6.2][net-imap-v0.6.2], [v0.6.3][net-imap-v0.6.3]
-* rbs 3.10.3
-  * 3.10.0 to [v3.10.1][rbs-v3.10.1], [v3.10.2][rbs-v3.10.2], [v3.10.3][rbs-v3.10.3]
-* typeprof 0.31.1
-* debug 1.11.1
-  * 1.11.0 to [v1.11.1][debug-v1.11.1]
+  * 0.6.2 to [v0.6.3][net-imap-v0.6.3]
+* rbs 4.0.0
+  * 3.10.0 to [v3.10.1][rbs-v3.10.1], [v3.10.2][rbs-v3.10.2], [v3.10.3][rbs-v3.10.3], [v4.0.0.dev.5][rbs-v4.0.0.dev.5], [v4.0.0][rbs-v4.0.0]
 * mutex_m 0.3.0
 * resolv-replace 0.2.0
   * 0.1.1 to [v0.2.0][resolv-replace-v0.2.0]
@@ -105,7 +100,7 @@ releases.
 * pstore 0.2.1
   * 0.2.0 to [v0.2.1][pstore-v0.2.1]
 * rdoc 7.2.0
-  * 6.17.0 to [v7.0.0][rdoc-v7.0.0], [v7.0.1][rdoc-v7.0.1], [v7.0.2][rdoc-v7.0.2], [v7.0.3][rdoc-v7.0.3], [v7.1.0][rdoc-v7.1.0], [v7.2.0][rdoc-v7.2.0]
+  * 7.0.3 to [v7.1.0][rdoc-v7.1.0], [v7.2.0][rdoc-v7.2.0]
 * win32ole 1.9.3
   * 1.9.2 to [v1.9.3][win32ole-v1.9.3]
 * irb 1.17.0
@@ -135,34 +130,37 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #15330]: https://bugs.ruby-lang.org/issues/15330
 [Feature #21390]: https://bugs.ruby-lang.org/issues/21390
 [Feature #21785]: https://bugs.ruby-lang.org/issues/21785
+[test-unit-3.7.4]: https://github.com/test-unit/test-unit/releases/tag/3.7.4
+[test-unit-3.7.5]: https://github.com/test-unit/test-unit/releases/tag/3.7.5
+[rss-0.3.2]: https://github.com/ruby/rss/releases/tag/0.3.2
+[net-imap-v0.6.2]: https://github.com/ruby/net-imap/releases/tag/v0.6.2
+[debug-v1.11.1]: https://github.com/ruby/debug/releases/tag/v1.11.1
+[rdoc-v7.0.0]: https://github.com/ruby/rdoc/releases/tag/v7.0.0
+[rdoc-v7.0.1]: https://github.com/ruby/rdoc/releases/tag/v7.0.1
+[rdoc-v7.0.2]: https://github.com/ruby/rdoc/releases/tag/v7.0.2
+[rdoc-v7.0.3]: https://github.com/ruby/rdoc/releases/tag/v7.0.3
 [json-v2.18.1]: https://github.com/ruby/json/releases/tag/v2.18.1
 [json-v2.19.0]: https://github.com/ruby/json/releases/tag/v2.19.0
 [json-v2.19.1]: https://github.com/ruby/json/releases/tag/v2.19.1
 [openssl-v4.0.1]: https://github.com/ruby/openssl/releases/tag/v4.0.1
+[prism-v1.8.1]: https://github.com/ruby/prism/releases/tag/v1.8.1
 [prism-v1.9.0]: https://github.com/ruby/prism/releases/tag/v1.9.0
 [resolv-v0.7.1]: https://github.com/ruby/resolv/releases/tag/v0.7.1
 [strscan-v3.1.7]: https://github.com/ruby/strscan/releases/tag/v3.1.7
 [timeout-v0.6.1]: https://github.com/ruby/timeout/releases/tag/v0.6.1
 [zlib-v3.2.3]: https://github.com/ruby/zlib/releases/tag/v3.2.3
-[test-unit-3.7.4]: https://github.com/test-unit/test-unit/releases/tag/3.7.4
-[test-unit-3.7.5]: https://github.com/test-unit/test-unit/releases/tag/3.7.5
 [test-unit-3.7.6]: https://github.com/test-unit/test-unit/releases/tag/3.7.6
 [test-unit-3.7.7]: https://github.com/test-unit/test-unit/releases/tag/3.7.7
-[rss-0.3.2]: https://github.com/ruby/rss/releases/tag/0.3.2
-[net-imap-v0.6.2]: https://github.com/ruby/net-imap/releases/tag/v0.6.2
 [net-imap-v0.6.3]: https://github.com/ruby/net-imap/releases/tag/v0.6.3
 [rbs-v3.10.1]: https://github.com/ruby/rbs/releases/tag/v3.10.1
 [rbs-v3.10.2]: https://github.com/ruby/rbs/releases/tag/v3.10.2
 [rbs-v3.10.3]: https://github.com/ruby/rbs/releases/tag/v3.10.3
-[debug-v1.11.1]: https://github.com/ruby/debug/releases/tag/v1.11.1
+[rbs-v4.0.0.dev.5]: https://github.com/ruby/rbs/releases/tag/v4.0.0.dev.5
+[rbs-v4.0.0]: https://github.com/ruby/rbs/releases/tag/v4.0.0
 [resolv-replace-v0.2.0]: https://github.com/ruby/resolv-replace/releases/tag/v0.2.0
 [syslog-v0.4.0]: https://github.com/ruby/syslog/releases/tag/v0.4.0
 [repl_type_completor-v0.1.13]: https://github.com/ruby/repl_type_completor/releases/tag/v0.1.13
 [pstore-v0.2.1]: https://github.com/ruby/pstore/releases/tag/v0.2.1
-[rdoc-v7.0.0]: https://github.com/ruby/rdoc/releases/tag/v7.0.0
-[rdoc-v7.0.1]: https://github.com/ruby/rdoc/releases/tag/v7.0.1
-[rdoc-v7.0.2]: https://github.com/ruby/rdoc/releases/tag/v7.0.2
-[rdoc-v7.0.3]: https://github.com/ruby/rdoc/releases/tag/v7.0.3
 [rdoc-v7.1.0]: https://github.com/ruby/rdoc/releases/tag/v7.1.0
 [rdoc-v7.2.0]: https://github.com/ruby/rdoc/releases/tag/v7.2.0
 [win32ole-v1.9.3]: https://github.com/ruby/win32ole/releases/tag/v1.9.3

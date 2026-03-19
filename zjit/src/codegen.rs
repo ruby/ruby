@@ -668,7 +668,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::LoadSelf => gen_load_self(),
         &Insn::LoadField { recv, id, offset, return_type } => gen_load_field(asm, opnd!(recv), id, offset, return_type),
         &Insn::StoreField { recv, id, offset, val } => no_output!(gen_store_field(asm, opnd!(recv), id, offset, opnd!(val), function.type_of(val))),
-        &Insn::WriteBarrier { recv, val } => no_output!(gen_write_barrier(asm, opnd!(recv), opnd!(val), function.type_of(val))),
+        &Insn::WriteBarrier { recv, val } => no_output!(gen_write_barrier(jit, asm, opnd!(recv), opnd!(val), function.type_of(val))),
         &Insn::IsBlockGiven { lep } => gen_is_block_given(asm, opnd!(lep)),
         Insn::ArrayInclude { elements, target, state } => gen_array_include(jit, asm, opnds!(elements), opnd!(target), &function.frame_state(*state)),
         Insn::ArrayPackBuffer { elements, fmt, buffer, state } => gen_array_pack_buffer(jit, asm, opnds!(elements), opnd!(fmt), opnd!(buffer), &function.frame_state(*state)),
@@ -1286,13 +1286,35 @@ fn gen_store_field(asm: &mut Assembler, recv: Opnd, id: ID, offset: i32, val: Op
     asm.store(Opnd::mem(val_type.num_bits(), recv, offset), val);
 }
 
-fn gen_write_barrier(asm: &mut Assembler, recv: Opnd, val: Opnd, val_type: Type) {
+fn gen_write_barrier(jit: &mut JITState, asm: &mut Assembler, recv: Opnd, val: Opnd, val_type: Type) {
     // See RB_OBJ_WRITE/rb_obj_write: it's just assignment and rb_obj_written().
     // rb_obj_written() does: if (!RB_SPECIAL_CONST_P(val)) { rb_gc_writebarrier(recv, val); }
     if !val_type.is_immediate() {
         asm_comment!(asm, "Write barrier");
         let recv = asm.load(recv);
-        asm_ccall!(asm, rb_zjit_writebarrier_check_immediate, recv, val);
+
+        // Create a result block that all paths converge to
+        let hir_block_id = asm.current_block().hir_block_id;
+        let rpo_idx = asm.current_block().rpo_index;
+        let result_block = asm.new_block(hir_block_id, false, rpo_idx);
+        let result_edge = Target::Block(lir::BranchEdge { target: result_block, args: vec![] });
+
+        // If non-false immediate, don't fire write barrier
+        asm.test(val, Opnd::UImm(RUBY_IMMEDIATE_MASK as u64));
+        asm.jnz(jit, result_edge.clone());
+
+        // If false, don't fire write barrier
+        asm.cmp(val, Qfalse.into());
+        asm.je(jit, result_edge.clone());
+
+        // Heap object; fire the write barrier
+        asm_ccall!(asm, rb_gc_writebarrier, recv, val);
+        asm.jmp(result_edge);
+
+        // Join block
+        asm.set_current_block(result_block);
+        let label = jit.get_label(asm, result_block, hir_block_id);
+        asm.write_label(label);
     }
 }
 
