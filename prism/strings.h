@@ -59,6 +59,15 @@ PRISM_EXPORTED_FUNCTION size_t pm_string_sizeof(void);
 PRISM_EXPORTED_FUNCTION void pm_string_constant_init(pm_string_t *string, const char *source, size_t length) PRISM_NONNULL(1);
 
 /**
+ * Initialize an owned string that is responsible for freeing allocated memory.
+ *
+ * @param string The string to initialize.
+ * @param source The source of the string.
+ * @param length The length of the string.
+ */
+PRISM_EXPORTED_FUNCTION void pm_string_owned_init(pm_string_t *string, uint8_t *source, size_t length) PRISM_NONNULL(1, 2);
+
+/**
  * Represents the result of calling pm_string_mapped_init or
  * pm_string_file_init. We need this additional information because there is
  * not a platform-agnostic way to indicate that the file that was attempted to

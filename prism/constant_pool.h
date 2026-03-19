@@ -14,6 +14,8 @@
 #include "prism/compiler/nodiscard.h"
 #include "prism/compiler/nonnull.h"
 
+#include "prism/arena.h"
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -59,5 +61,21 @@ PRISM_EXPORTED_FUNCTION const uint8_t * pm_constant_start(const pm_constant_t *c
  * @returns The length of the constant.
  */
 PRISM_EXPORTED_FUNCTION size_t pm_constant_length(const pm_constant_t *constant) PRISM_NONNULL(1);
+
+/**
+ * Initialize a list of constant ids.
+ *
+ * @param list The list to initialize.
+ */
+PRISM_EXPORTED_FUNCTION void pm_constant_id_list_init(pm_constant_id_list_t *list) PRISM_NONNULL(1);
+
+/**
+ * Append a constant id to a list of constant ids.
+ *
+ * @param arena The arena to use for allocations.
+ * @param list The list to append to.
+ * @param id The constant id to append.
+ */
+PRISM_EXPORTED_FUNCTION void pm_constant_id_list_append(pm_arena_t *arena, pm_constant_id_list_t *list, pm_constant_id_t id) PRISM_NONNULL(1, 2);
 
 #endif
