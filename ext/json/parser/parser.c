@@ -909,9 +909,6 @@ NORETURN(static) void raise_duplicate_key_error(JSON_ParserState *state, VALUE d
     cursor_position(state, &line, &column);
     rb_str_concat(message, build_parse_error_message("", state, line, column)) ;
     rb_exc_raise(parse_error_new(message, line, column));
-
-    raise_parse_error(RSTRING_PTR(message), state);
-    RB_GC_GUARD(message);
 }
 
 static inline VALUE json_decode_object(JSON_ParserState *state, JSON_ParserConfig *config, size_t count)
