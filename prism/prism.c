@@ -2285,7 +2285,7 @@ pm_integer_arena_move(pm_arena_t *arena, pm_integer_t *integer) {
         size_t byte_size = integer->length * sizeof(uint32_t);
         uint32_t *old_values = integer->values;
         integer->values = (uint32_t *) pm_arena_memdup(arena, old_values, byte_size, PRISM_ALIGNOF(uint32_t));
-        xfree_sized(old_values, byte_size);
+        xfree(old_values);
     }
 }
 

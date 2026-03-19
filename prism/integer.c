@@ -17,7 +17,7 @@
 static void
 pm_integer_free(pm_integer_t *integer) {
     if (integer->values) {
-        xfree_sized(integer->values, integer->length * sizeof(uint32_t));
+        xfree(integer->values);
     }
 }
 
