@@ -4949,8 +4949,8 @@ impl Function {
     }
 
     fn optimize_load_store(&mut self) {
-        let mut compile_time_heap: HashMap<(InsnId, i32), InsnId>  = HashMap::new();
         for block in self.rpo() {
+            let mut compile_time_heap: HashMap<(InsnId, i32), InsnId>  = HashMap::new();
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             let mut new_insns = vec![];
             for insn_id in old_insns {
