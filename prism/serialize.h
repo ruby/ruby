@@ -18,6 +18,7 @@
 
 #include "prism/buffer.h"
 #include "prism/parser.h"
+#include "prism/source.h"
 #include "prism/stream.h"
 
 /**
@@ -40,16 +41,14 @@ PRISM_EXPORTED_FUNCTION void pm_serialize(pm_parser_t *parser, pm_node_t *node, 
 PRISM_EXPORTED_FUNCTION void pm_serialize_parse(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data) PRISM_NONNULL(1, 2);
 
 /**
- * Parse and serialize the AST represented by the source that is read out of the
- * given stream into to the given buffer.
+ * Parse and serialize the AST represented by the given source into the given
+ * buffer.
  *
  * @param buffer The buffer to serialize to.
- * @param stream The stream to parse.
- * @param stream_fgets The function to use to read from the stream.
- * @param stream_feof The function to use to tell if the stream has hit eof.
+ * @param source The source to parse.
  * @param data The optional data to pass to the parser.
  */
-PRISM_EXPORTED_FUNCTION void pm_serialize_parse_stream(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, pm_parse_stream_feof_t *stream_feof, const char *data) PRISM_NONNULL(1, 2);
+PRISM_EXPORTED_FUNCTION void pm_serialize_parse_stream(pm_buffer_t *buffer, pm_source_t *source, const char *data) PRISM_NONNULL(1, 2);
 
 /**
  * Parse and serialize the comments in the given source to the given buffer.
