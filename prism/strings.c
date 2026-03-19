@@ -86,6 +86,6 @@ pm_string_source(const pm_string_t *string) {
 void
 pm_string_cleanup(pm_string_t *string) {
     if (string->type == PM_STRING_OWNED) {
-        xfree((void *) string->source);
+        xfree_sized((void *) string->source, string->length);
     }
 }
