@@ -1317,13 +1317,13 @@ $(BUILTIN_BINARY:no=builtin)_binary.rbbin:
 
 $(BUILTIN_RB_INCS): $(tooldir)/mk_builtin_loader.rb $(DUMP_AST_TARGET)
 
-$(CROSS_COMPILING:no=)dump_ast$(EXEEXT): $(tooldir)/dump_ast.c $(LIBPRISM_OBJS)
+$(CROSS_COMPILING:no=)dump_ast$(BUILD_EXEEXT): $(tooldir)/dump_ast.c $(LIBPRISM_OBJS)
 	$(ECHO) compiling $@
 	$(Q) $(CC) $(CFLAGS) $(OUTFLAG)$@ $(INCFLAGS) $(tooldir)/dump_ast.c $(LIBPRISM_OBJS)
 
 build-tool/Makefile: $(tooldir)/dump_ast.mkmf.rb
 	+$(BASERUBY) -s $(tooldir)/dump_ast.mkmf.rb -make="$(MAKE)" build-tool $(tooldir)/dump_ast.c $(LIBPRISM_OBJS)
-$(CROSS_COMPILING:yes=)dump_ast: build-tool/Makefile
+$(CROSS_COMPILING:yes=)dump_ast$(BUILD_EXEEXT): build-tool/Makefile
 	cd build-tool && $(MAKE)
 
 $(srcdir)/revision.h$(no_baseruby:no=~disabled~): $(REVISION_H)
