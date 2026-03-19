@@ -25,5 +25,9 @@ Dir.chdir(workdir) {
 
     .c.#{$OBJEXT}:
     \t#{MakeMakefile::COMPILE_C}
+
+    clean:
+    \t$(RM) $(target) $(objs) Makefile
+    \t$(RMDIRS) #{dirs.join(' ')}
   MAKEFILE
 }

@@ -1326,6 +1326,11 @@ build-tool/Makefile: $(tooldir)/dump_ast.mkmf.rb
 $(CROSS_COMPILING:yes=)dump_ast$(BUILD_EXEEXT): build-tool/Makefile
 	cd build-tool && $(MAKE)
 
+clean-local:: clean-build-tool
+clean-build-tool:
+	- cd build-tool && $(MAKE) clean 2> $(NULL) || $(NULLCMD)
+	- $(RMDIR) build-tool
+
 $(srcdir)/revision.h$(no_baseruby:no=~disabled~): $(REVISION_H)
 
 $(REVISION_H)$(no_baseruby:no=~disabled~):
