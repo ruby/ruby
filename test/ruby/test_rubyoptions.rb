@@ -805,6 +805,16 @@ class TestRubyOptions < Test::Unit::TestCase
         #{ Regexp.quote(RUBY_DESCRIPTION) }\n\n
       )x,
       %r(
+        (?:--\sMachine(?:.+\n)*\n)?
+      )x,
+      %r(
+        (?:
+          --\sC\slevel\sbacktrace\sinformation\s-------------------------------------------\n
+          (?:Un(?:expected|supported|known)\s.*\n)*
+          (?:(?:.*\s)?\[0x\h+\].*\n|.*:\d+\n)*\n
+        )?
+      )x,
+      %r(
         (?:--\s(?:.+\n)*\n)?
         --\sControl\sframe\sinformation\s-+\n
         (?:(?:c:.*\n)|(?:^\s+.+\n))*
@@ -820,16 +830,6 @@ class TestRubyOptions < Test::Unit::TestCase
       )x,
       %r(
         (?:--\sThreading(?:.+\n)*\n)?
-      )x,
-      %r(
-        (?:--\sMachine(?:.+\n)*\n)?
-      )x,
-      %r(
-        (?:
-          --\sC\slevel\sbacktrace\sinformation\s-------------------------------------------\n
-          (?:Un(?:expected|supported|known)\s.*\n)*
-          (?:(?:.*\s)?\[0x\h+\].*\n|.*:\d+\n)*\n
-        )?
       )x,
       %r(
         (?:--\sOther\sruntime\sinformation\s-+\n
