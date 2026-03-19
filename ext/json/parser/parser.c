@@ -402,11 +402,9 @@ static void emit_parse_warning(const char *message, JSON_ParserState *state)
 
 #define PARSE_ERROR_FRAGMENT_LEN 32
 
-NORETURN(static) void raise_parse_error(const char *format, JSON_ParserState *state)
+static VALUE build_parse_error_message(const char *format, JSON_ParserState *state, long line, long column)
 {
     unsigned char buffer[PARSE_ERROR_FRAGMENT_LEN + 3];
-    long line, column;
-    cursor_position(state, &line, &column);
 
     const char *ptr = "EOF";
     if (state->cursor && state->cursor < state->end) {
@@ -441,11 +439,23 @@ NORETURN(static) void raise_parse_error(const char *format, JSON_ParserState *st
     VALUE msg = rb_sprintf(format, ptr);
     VALUE message = rb_enc_sprintf(enc_utf8, "%s at line %ld column %ld", RSTRING_PTR(msg), line, column);
     RB_GC_GUARD(msg);
+    return message;
+}
 
+static VALUE parse_error_new(VALUE message, long line, long column)
+{
     VALUE exc = rb_exc_new_str(rb_path2class("JSON::ParserError"), message);
     rb_ivar_set(exc, rb_intern("@line"), LONG2NUM(line));
     rb_ivar_set(exc, rb_intern("@column"), LONG2NUM(column));
-    rb_exc_raise(exc);
+    return exc;
+}
+
+NORETURN(static) void raise_parse_error(const char *format, JSON_ParserState *state)
+{
+    long line, column;
+    cursor_position(state, &line, &column);
+    VALUE message = build_parse_error_message(format, state, line, column);
+    rb_exc_raise(parse_error_new(message, line, column));
 }
 
 NORETURN(static) void raise_parse_error_at(const char *format, JSON_ParserState *state, const char *at)
@@ -894,6 +904,11 @@ NORETURN(static) void raise_duplicate_key_error(JSON_ParserState *state, VALUE d
         "duplicate key %"PRIsVALUE,
         rb_inspect(duplicate_key)
     );
+
+    long line, column;
+    cursor_position(state, &line, &column);
+    rb_str_concat(message, build_parse_error_message("", state, line, column)) ;
+    rb_exc_raise(parse_error_new(message, line, column));
 
     raise_parse_error(RSTRING_PTR(message), state);
     RB_GC_GUARD(message);
