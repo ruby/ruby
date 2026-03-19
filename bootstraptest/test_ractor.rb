@@ -286,7 +286,7 @@ assert_equal '["r1", "r2"]', %q{
 }
 
 # Ractor.select from multiple ractors.
-assert_equal 30.times.map { 'ok' }.to_s, %q{
+assert_equal (30.times.map { 'ok' } * 3).to_s, %q{
   def test n
     rs = (1..n).map do |i|
       Ractor.new(i) do |i|
@@ -310,8 +310,11 @@ assert_equal 30.times.map { 'ok' }.to_s, %q{
     end
   end
 
-  30.times.map{|i|
-    test i
+  # Run 3 rounds to increase the chance of hitting JIT code generation issues
+  3.times.flat_map {
+    30.times.map{|i|
+      test i
+    }
   }
 } unless (ENV.key?('TRAVIS') && ENV['TRAVIS_CPU_ARCH'] == 'arm64') # https://bugs.ruby-lang.org/issues/17878
 

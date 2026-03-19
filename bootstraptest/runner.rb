@@ -606,12 +606,41 @@ class Assertion < Struct.new(:src, :path, :lineno, :proc)
       filename = make_srcfile(**argh)
       begin
         kw = self.err ? {err: self.err} : {}
+        # Capture stderr to display on crash (e.g. JIT diagnostic output)
+        err_r, err_w = IO.pipe
+        kw[:err] = err_w unless self.err
         out = IO.popen("#{BT.ruby} -W0 #{opt} #{filename}", **kw)
+        err_w.close unless self.err
         pid = out.pid
+        err_th = self.err ? nil : Thread.new { err_r.read }
         th = Thread.new {out.read.tap {Process.waitpid(pid); out.close}}
         if th.join(timeout)
-          th.value
+          result = th.value
+          # If the result is empty (crash), show stderr for diagnostics
+          if result.empty? && err_th
+            stderr_output = err_th.value
+            err_r.close
+            status = $?
+            if status&.signaled?
+              $stderr.puts "  subprocess killed by signal #{status.termsig} (#{Signal.signame(status.termsig) rescue '?'})"
+            elsif status
+              $stderr.puts "  subprocess exited with status #{status.exitstatus}"
+            end
+            unless stderr_output.empty?
+              $stderr.puts "  stderr from crashed subprocess:"
+              # Show last 20 lines to avoid flooding
+              lines = stderr_output.lines
+              lines = lines.last(20) if lines.size > 20
+              lines.each { |l| $stderr.puts "    #{l}" }
+            end
+          else
+            err_th&.kill
+            err_r.close rescue nil
+          end
+          result
         else
+          err_th&.kill
+          err_r.close rescue nil
           Timeout.new("timed out after #{timeout} seconds")
         end
       ensure
