@@ -13238,7 +13238,7 @@ mod hir_opt_tests {
             test("hi", -> {})
         "#);
         let hir = hir_string("test");
-        assert!(hir.contains("NoSingletonClass(String"));
+        assert!(hir.contains("NoSingletonClass(String"), "{hir}");
 
         // Now we break the assumption by defining a singleton method on a string.
         eval(r#"
@@ -13293,18 +13293,21 @@ mod hir_opt_tests {
             will_bust("hi", -> {})
             will_bust("hi", -> {})
         "#);
-        assert!(hir_string("will_bust").contains("NoSingletonClass(String"));
+        let hir = hir_string("will_bust");
+        assert!(hir.contains("NoSingletonClass(String"), "{hir}");
 
         // Now we break the assumption by defining a singleton method on a string.
         eval(r#"
             special_string = +""
             will_bust(special_string, -> { def special_string.length = -1 })
         "#);
-        assert!(! hir_string("will_bust").contains("NoSingletonClas(String"));
+        let hir = hir_string("will_bust");
+        assert!(! hir.contains("NoSingletonClas(String"), "{hir}");
 
         // But, the unrelated call_length() should still use NoSingletonClass
         eval("call_length('profile')");
-        assert!(hir_string("call_length").contains("NoSingletonClass"));
+        let hir = hir_string("call_length");
+        assert!(hir.contains("NoSingletonClass"), "{hir}");
     }
 
     #[test]
