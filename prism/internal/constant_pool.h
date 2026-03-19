@@ -74,14 +74,8 @@ struct pm_constant_pool_t {
  */
 #define PM_CONSTANT_ID_UNSET 0
 
-/* Initialize a list of constant ids. */
-void pm_constant_id_list_init(pm_constant_id_list_t *list);
-
 /* Initialize a list of constant ids with a given capacity. */
 void pm_constant_id_list_init_capacity(pm_arena_t *arena, pm_constant_id_list_t *list, size_t capacity);
-
-/* Append a constant id to a list of constant ids. */
-void pm_constant_id_list_append(pm_arena_t *arena, pm_constant_id_list_t *list, pm_constant_id_t id);
 
 /* Insert a constant id into a list of constant ids at the specified index. */
 void pm_constant_id_list_insert(pm_constant_id_list_t *list, size_t index, pm_constant_id_t id);

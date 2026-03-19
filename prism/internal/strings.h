@@ -15,11 +15,6 @@
 void pm_string_shared_init(pm_string_t *string, const uint8_t *start, const uint8_t *end);
 
 /*
- * Initialize an owned string that is responsible for freeing allocated memory.
- */
-void pm_string_owned_init(pm_string_t *string, uint8_t *source, size_t length);
-
-/*
  * Ensure the string is owned. If it is not, then reinitialize it as owned and
  * copy over the previous source.
  */
