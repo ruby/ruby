@@ -37,19 +37,12 @@ $(srcdir)/prism/ast.h: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/
 realclean-prism-srcs::
 	$(RM) $(srcdir)/prism/ast.h
 
-main incs: $(srcdir)/prism/diagnostic.h
-$(srcdir)/prism/diagnostic.h: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/include/prism/diagnostic.h.erb
-	$(Q) $(BASERUBY) $(PRISM_TEMPLATE) include/prism/diagnostic.h $@
+main incs: $(srcdir)/prism/internal/diagnostic.h
+$(srcdir)/prism/internal/diagnostic.h: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/include/prism/internal/diagnostic.h.erb
+	$(Q) $(BASERUBY) $(PRISM_TEMPLATE) include/prism/internal/diagnostic.h $@
 
 realclean-prism-srcs::
-	$(RM) $(srcdir)/prism/diagnostic.h
-
-main incs: $(srcdir)/prism/node_new.h
-$(srcdir)/prism/node_new.h: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/include/prism/node_new.h.erb
-	$(Q) $(BASERUBY) $(PRISM_TEMPLATE) include/prism/node_new.h $@
-
-realclean-prism-srcs::
-	$(RM) $(srcdir)/prism/node_new.h
+	$(RM) $(srcdir)/prism/internal/diagnostic.h
 
 main srcs: $(srcdir)/lib/prism/compiler.rb
 $(srcdir)/lib/prism/compiler.rb: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/lib/prism/compiler.rb.erb
@@ -128,6 +121,13 @@ $(srcdir)/prism/diagnostic.c: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATE
 realclean-prism-srcs::
 	$(RM) $(srcdir)/prism/diagnostic.c
 
+main srcs: $(srcdir)/prism/json.c
+$(srcdir)/prism/json.c: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/src/json.c.erb
+	$(Q) $(BASERUBY) $(PRISM_TEMPLATE) src/json.c $@
+
+realclean-prism-srcs::
+	$(RM) $(srcdir)/prism/json.c
+
 main srcs: $(srcdir)/prism/node.c
 $(srcdir)/prism/node.c: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/src/node.c.erb
 	$(Q) $(BASERUBY) $(PRISM_TEMPLATE) src/node.c $@
@@ -149,9 +149,9 @@ $(srcdir)/prism/serialize.c: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES
 realclean-prism-srcs::
 	$(RM) $(srcdir)/prism/serialize.c
 
-main srcs: $(srcdir)/prism/token_type.c
-$(srcdir)/prism/token_type.c: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/src/token_type.c.erb
-	$(Q) $(BASERUBY) $(PRISM_TEMPLATE) src/token_type.c $@
+main srcs: $(srcdir)/prism/tokens.c
+$(srcdir)/prism/tokens.c: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/src/tokens.c.erb
+	$(Q) $(BASERUBY) $(PRISM_TEMPLATE) src/tokens.c $@
 
 realclean-prism-srcs::
-	$(RM) $(srcdir)/prism/token_type.c
+	$(RM) $(srcdir)/prism/tokens.c
