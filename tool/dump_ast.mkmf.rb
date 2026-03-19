@@ -18,7 +18,7 @@ Dir.chdir(workdir) {
   $INCFLAGS << " -I#{prismdir}"
   File.write('Makefile', [MakeMakefile.configuration(srcdir.to_s), <<~MAKEFILE].join(""))
     target = #{target}#{$EXEEXT}
-    objs = #{File.basename(target, '.*')}.#{$OBJEXT} #{objs.join(' ')}
+    objs = #{objs.join(' ')}
 
     $(target): $(objs)
     \t#{MakeMakefile::TRY_LINK.sub(MakeMakefile::CONFTEST, '$(@)')} $(objs)

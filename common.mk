@@ -1321,8 +1321,8 @@ $(CROSS_COMPILING:no=)dump_ast$(BUILD_EXEEXT): $(tooldir)/dump_ast.c $(LIBPRISM_
 	$(ECHO) compiling $@
 	$(Q) $(CC) $(CFLAGS) $(OUTFLAG)$@ $(INCFLAGS) $(tooldir)/dump_ast.c $(LIBPRISM_OBJS)
 
-build-tool/Makefile: $(tooldir)/dump_ast.mkmf.rb
-	+$(BASERUBY) -s $(tooldir)/dump_ast.mkmf.rb -make="$(MAKE)" build-tool $(tooldir)/dump_ast.c $(LIBPRISM_OBJS)
+build-tool/Makefile: $(tooldir)/dump_ast.mkmf.rb prism-srcs prism-incs
+	+$(BASERUBY) -s $(tooldir)/dump_ast.mkmf.rb -make="$(MAKE)" build-tool $(tooldir)/dump_ast.c dump_ast.$(OBJEXT) $(LIBPRISM_OBJS)
 $(CROSS_COMPILING:yes=)dump_ast$(BUILD_EXEEXT): build-tool/Makefile
 	cd build-tool && $(MAKE)
 
