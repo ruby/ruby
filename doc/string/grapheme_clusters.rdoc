@@ -1,5 +1,5 @@
 Returns an array of the grapheme clusters in +self+
-(see {Unicode Grapheme Cluster Boundaries}[https://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundaries]):
+(see {Unicode Grapheme Cluster Boundaries}[https://www.unicode.org/reports/tr29#Grapheme_Cluster_Boundaries]):
 
   s = "ä-pqr-b̈-xyz-c̈"
   s.size                   # => 16
