@@ -95,6 +95,15 @@ pm_parser_filepath(const pm_parser_t *parser) {
 }
 
 /**
+ * Find a constant in the parser's constant pool. Returns the id of the
+ * constant, or 0 if the constant is not found.
+ */
+pm_constant_id_t
+pm_parser_constant_find(const pm_parser_t *parser, const uint8_t *start, size_t length) {
+    return pm_constant_pool_find(&parser->constant_pool, start, length);
+}
+
+/**
  * Returns the frozen string literal value of the parser.
  */
 int8_t
