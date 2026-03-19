@@ -113,6 +113,33 @@ PRISM_EXPORTED_FUNCTION int32_t pm_parser_start_line(const pm_parser_t *parser) 
 PRISM_EXPORTED_FUNCTION const char * pm_parser_encoding_name(const pm_parser_t *parser) PRISM_NONNULL(1);
 
 /**
+ * Returns the width of the character at the given pointer in the encoding that
+ * is being used to parse the source.
+ *
+ * @param parser the parser whose encoding we want to use
+ * @param start a pointer to the start of the character
+ * @param remaining the number of bytes remaining in the source
+ * @returns the width of the character in bytes
+ */
+PRISM_EXPORTED_FUNCTION size_t pm_parser_encoding_char_width(const pm_parser_t *parser, const uint8_t *start, ptrdiff_t remaining) PRISM_NONNULL(1, 2);
+
+/**
+ * Returns whether or not the parser is using the US-ASCII encoding.
+ *
+ * @param parser the parser to check
+ * @returns true if the parser is using US-ASCII encoding, false otherwise
+ */
+PRISM_EXPORTED_FUNCTION bool pm_parser_encoding_us_ascii(const pm_parser_t *parser) PRISM_NONNULL(1);
+
+/**
+ * Returns the filepath that is being used to parse the source.
+ *
+ * @param parser the parser whose filepath we want to get
+ * @returns a pointer to the filepath string
+ */
+PRISM_EXPORTED_FUNCTION const pm_string_t * pm_parser_filepath(const pm_parser_t *parser) PRISM_NONNULL(1);
+
+/**
  * Returns the frozen string literal value of the parser, as determined by the
  * frozen_string_literal magic comment or the option set on the parser.
  *

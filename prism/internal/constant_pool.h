@@ -96,12 +96,6 @@ void pm_constant_pool_init(pm_arena_t *arena, pm_constant_pool_t *pool, uint32_t
 pm_constant_t * pm_constant_pool_id_to_constant(const pm_constant_pool_t *pool, pm_constant_id_t constant_id);
 
 /*
- * Find a constant in a constant pool. Returns the id of the constant, or 0 if
- * the constant is not found.
- */
-pm_constant_id_t pm_constant_pool_find(const pm_constant_pool_t *pool, const uint8_t *start, size_t length);
-
-/*
  * Insert a constant into a constant pool that is a slice of a source string.
  * Returns the id of the constant, or 0 if any potential calls to resize fail.
  */

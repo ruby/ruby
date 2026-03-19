@@ -70,6 +70,31 @@ pm_parser_encoding_name(const pm_parser_t *parser) {
 }
 
 /**
+ * Returns the width of the character at the given pointer in the encoding that
+ * is being used to parse the source.
+ */
+size_t
+pm_parser_encoding_char_width(const pm_parser_t *parser, const uint8_t *start, ptrdiff_t remaining) {
+    return parser->encoding->char_width(start, remaining);
+}
+
+/**
+ * Returns whether or not the parser is using the US-ASCII encoding.
+ */
+bool
+pm_parser_encoding_us_ascii(const pm_parser_t *parser) {
+    return parser->encoding == PM_ENCODING_US_ASCII_ENTRY;
+}
+
+/**
+ * Returns the filepath that is being used to parse the source.
+ */
+const pm_string_t *
+pm_parser_filepath(const pm_parser_t *parser) {
+    return &parser->filepath;
+}
+
+/**
  * Returns the frozen string literal value of the parser.
  */
 int8_t
