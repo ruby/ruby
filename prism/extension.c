@@ -312,6 +312,11 @@ string_options(int argc, VALUE *argv, pm_string_t *input, pm_options_t *options)
     VALUE keywords;
     rb_scan_args(argc, argv, "1:", &string, &keywords);
 
+    if (!RB_TYPE_P(string, T_STRING)) {
+        pm_options_free(options);
+        rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected String)", rb_obj_class(string));
+    }
+
     extract_options(options, Qnil, keywords);
     input_load_string(input, string);
 }
@@ -325,7 +330,11 @@ file_options(int argc, VALUE *argv, pm_string_t *input, pm_options_t *options, V
     VALUE keywords;
     rb_scan_args(argc, argv, "1:", &filepath, &keywords);
 
-    Check_Type(filepath, T_STRING);
+    if (!RB_TYPE_P(filepath, T_STRING)) {
+        pm_options_free(options);
+        rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected String)", rb_obj_class(filepath));
+    }
+
     *encoded_filepath = rb_str_encode_ospath(filepath);
     extract_options(options, *encoded_filepath, keywords);
 
