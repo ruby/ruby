@@ -162,7 +162,7 @@ RSpec.describe Bundler::Dsl do
 
   describe "#method_missing" do
     it "raises an error for unknown DSL methods" do
-      expect(Bundler).to receive(:read_file).with(source_root.join("Gemfile").to_s).
+      expect(Bundler).to receive(:read_file).with(git_root.join("Gemfile").to_s).
         and_return("unknown")
 
       error_msg = "There was an error parsing `Gemfile`: Undefined local variable or method `unknown' for Gemfile. Bundler cannot continue."
@@ -173,13 +173,13 @@ RSpec.describe Bundler::Dsl do
 
   describe "#eval_gemfile" do
     it "handles syntax errors with a useful message" do
-      expect(Bundler).to receive(:read_file).with(source_root.join("Gemfile").to_s).and_return("}")
+      expect(Bundler).to receive(:read_file).with(git_root.join("Gemfile").to_s).and_return("}")
       expect { subject.eval_gemfile("Gemfile") }.
         to raise_error(Bundler::GemfileError, /There was an error parsing `Gemfile`: (syntax error, unexpected tSTRING_DEND|(compile error - )?syntax error, unexpected '\}'|.+?unexpected '}', ignoring it\n). Bundler cannot continue./m)
     end
 
     it "distinguishes syntax errors from evaluation errors" do
-      expect(Bundler).to receive(:read_file).with(source_root.join("Gemfile").to_s).and_return(
+      expect(Bundler).to receive(:read_file).with(git_root.join("Gemfile").to_s).and_return(
         "ruby '2.1.5', :engine => 'ruby', :engine_version => '1.2.4'"
       )
       expect { subject.eval_gemfile("Gemfile") }.
@@ -187,13 +187,13 @@ RSpec.describe Bundler::Dsl do
     end
 
     it "populates __dir__ and __FILE__ correctly" do
-      abs_path = source_root.join("../fragment.rb").to_s
+      abs_path = git_root.join("../fragment.rb").to_s
       expect(Bundler).to receive(:read_file).with(abs_path).and_return(<<~RUBY)
         @fragment_dir = __dir__
         @fragment_file = __FILE__
       RUBY
       subject.eval_gemfile("../fragment.rb")
-      expect(subject.instance_variable_get(:@fragment_dir)).to eq(source_root.dirname.to_s)
+      expect(subject.instance_variable_get(:@fragment_dir)).to eq(git_root.dirname.to_s)
       expect(subject.instance_variable_get(:@fragment_file)).to eq(abs_path)
     end
   end
