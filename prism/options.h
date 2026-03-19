@@ -10,7 +10,7 @@
 #include "prism/compiler/nodiscard.h"
 #include "prism/compiler/nonnull.h"
 
-#include "prism/strings.h"
+#include "prism/stringy.h"
 
 #include <stdbool.h>
 #include <stddef.h>

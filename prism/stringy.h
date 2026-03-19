@@ -1,10 +1,10 @@
 /**
- * @file strings.h
+ * @file stringy.h
  *
  * A generic string type that can have various ownership semantics.
  */
-#ifndef PRISM_STRINGS_H
-#define PRISM_STRINGS_H
+#ifndef PRISM_STRINGY_H
+#define PRISM_STRINGY_H
 
 #include "prism/compiler/exported.h"
 #include "prism/compiler/nonnull.h"

@@ -8,7 +8,7 @@
 #include "prism/internal/encoding.h"
 #include "prism/internal/memchr.h"
 #include "prism/internal/parser.h"
-#include "prism/internal/strings.h"
+#include "prism/internal/stringy.h"
 #include "prism/internal/strncasecmp.h"
 
 #include <assert.h>

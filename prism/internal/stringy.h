@@ -1,7 +1,7 @@
-#ifndef PRISM_INTERNAL_STRINGS_H
-#define PRISM_INTERNAL_STRINGS_H
+#ifndef PRISM_INTERNAL_STRINGY_H
+#define PRISM_INTERNAL_STRINGY_H
 
-#include "prism/strings.h"
+#include "prism/stringy.h"
 
 /*
  * Defines an empty string. This is useful for initializing a string that will

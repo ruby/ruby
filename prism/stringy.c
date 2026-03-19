@@ -1,4 +1,4 @@
-#include "prism/internal/strings.h"
+#include "prism/internal/stringy.h"
 
 #include "prism/internal/allocator.h"
 

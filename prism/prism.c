@@ -24,7 +24,7 @@
 #include "prism/internal/serialize.h"
 #include "prism/internal/source.h"
 #include "prism/internal/static_literals.h"
-#include "prism/internal/strings.h"
+#include "prism/internal/stringy.h"
 #include "prism/internal/strncasecmp.h"
 #include "prism/internal/strpbrk.h"
 #include "prism/internal/tokens.h"

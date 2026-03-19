@@ -7,7 +7,7 @@
 #include "prism/internal/buffer.h"
 #include "prism/internal/integer.h"
 #include "prism/internal/isinf.h"
-#include "prism/internal/strings.h"
+#include "prism/internal/stringy.h"
 
 #include <assert.h>
 #include <math.h>
