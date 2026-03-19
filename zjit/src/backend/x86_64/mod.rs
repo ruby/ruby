@@ -1243,6 +1243,91 @@ mod tests {
         (asm, CodeBlock::new_dummy())
     }
 
+    fn stack_mem(stack_idx: usize) -> Opnd {
+        Opnd::Mem(Mem {
+            base: MemBase::Stack { stack_idx, num_bits: 64 },
+            disp: 0,
+            num_bits: 64,
+        })
+    }
+
+    fn stack_indirect_mem(stack_idx: usize) -> Opnd {
+        Opnd::Mem(Mem {
+            base: MemBase::StackIndirect { stack_idx },
+            disp: 0,
+            num_bits: 64,
+        })
+    }
+
+    #[derive(Clone, Copy, Debug)]
+    enum BinOpKind {
+        Add,
+        Sub,
+        And,
+        Or,
+        Xor,
+    }
+
+    fn split_binop(kind: BinOpKind, left: Opnd, right: Opnd, out: Opnd) -> Assembler {
+        let (mut asm, _) = setup_asm();
+        match kind {
+            BinOpKind::Add => asm.push_insn(Insn::Add { left, right, out }),
+            BinOpKind::Sub => asm.push_insn(Insn::Sub { left, right, out }),
+            BinOpKind::And => asm.push_insn(Insn::And { left, right, out }),
+            BinOpKind::Or => asm.push_insn(Insn::Or { left, right, out }),
+            BinOpKind::Xor => asm.push_insn(Insn::Xor { left, right, out }),
+        }
+        asm.x86_scratch_split()
+    }
+
+    fn binop_mnemonic(kind: BinOpKind) -> &'static str {
+        match kind {
+            BinOpKind::Add => "add",
+            BinOpKind::Sub => "sub",
+            BinOpKind::And => "and",
+            BinOpKind::Or => "or",
+            BinOpKind::Xor => "xor",
+        }
+    }
+
+    fn split_binop_disasm_lines(kind: BinOpKind, left: Opnd, right: Opnd, out: Opnd) -> Vec<String> {
+        let mut asm = split_binop(kind, left, right, out);
+        let mut cb = CodeBlock::new_dummy();
+        for name in &asm.label_names {
+            cb.new_label(name.to_string());
+        }
+        assert!(asm.x86_emit(&mut cb).is_some(), "{kind:?}: x86_emit failed");
+
+        cb.disasm()
+            .lines()
+            .map(str::trim)
+            .filter(|line| !line.is_empty())
+            .map(|line| {
+                line.split_once(": ")
+                    .map(|(_, rest)| rest.to_string())
+                    .unwrap_or_else(|| line.to_string())
+            })
+            .collect()
+    }
+
+    fn assert_split_binop_case(kind: BinOpKind, left: Opnd, right: Opnd, out: Opnd, case: &str) {
+        let lines = split_binop_disasm_lines(kind, left, right, out);
+        let mnemonic = binop_mnemonic(kind);
+        let matching: Vec<&String> = lines.iter().filter(|line| line.starts_with(&format!("{mnemonic} "))).collect();
+
+        assert_eq!(matching.len(), 1, "{kind:?} {case}: expected exactly one `{mnemonic}` in disasm, got {lines:?}");
+        assert!(
+            !matching[0].contains("], qword ptr ["),
+            "{kind:?} {case}: emitted mem/mem `{mnemonic}` in disasm {lines:?}"
+        );
+
+        if matches!(right, Opnd::Imm(value) if imm_num_bits(value) > 32)
+            || matches!(right, Opnd::UImm(value) if imm_num_bits(value as i64) > 32)
+        {
+            assert!(lines.iter().any(|line| line.starts_with("movabs ")), "{kind:?} {case}: expected movabs materialization for 64-bit immediate, got {lines:?}");
+        }
+    }
+
     #[test]
     fn test_lir_string() {
         use crate::hir::SideExitReason;
@@ -2055,5 +2140,259 @@ mod tests {
         0x4: mov qword ptr [rbp - 8], r11
         ");
         assert_snapshot!(cb.hexdump(), @"4c8d5df84c895df8");
+    }
+
+    #[test]
+    fn test_add_split_direct_mem_inputs_use_one_scratch() {
+        // c_ret <- add stack[0], stack[1]
+        let lines = split_binop_disasm_lines(BinOpKind::Add, stack_mem(0), stack_mem(1), C_RET_OPND);
+
+        // load scratch0, [stack[0]]
+        // add  scratch0, [stack[1]]
+        // mov  c_ret, scratch0
+        assert_eq!(lines, vec![
+            "mov r11, qword ptr [rbp - 8]".to_string(),
+            "add r11, qword ptr [rbp - 0x10]".to_string(),
+            "mov rax, r11".to_string(),
+        ]);
+    }
+
+    #[test]
+    fn test_add_split_stack_indirect_left_uses_scratch0_for_base_and_result() {
+        // stack[1] <- add stack[mem[0]], cfp
+        let lines = split_binop_disasm_lines(BinOpKind::Add, stack_indirect_mem(0), CFP, stack_mem(1));
+
+        // load scratch0, [stack[left_base]]
+        // load scratch0, [scratch0]
+        // add  scratch0, right
+        // mov  [stack[out]], scratch0
+        assert_eq!(lines, vec![
+            "mov r11, qword ptr [rbp - 8]".to_string(),
+            "mov r11, qword ptr [r11]".to_string(),
+            "add r11, r13".to_string(),
+            "mov qword ptr [rbp - 0x10], r11".to_string(),
+        ]);
+    }
+
+    #[test]
+    fn test_add_split_stack_indirect_right_uses_separate_base_scratch() {
+        // mem[1] <- add cfp, mem[stack[0]]
+        let lines = split_binop_disasm_lines(BinOpKind::Add, CFP, stack_indirect_mem(0), stack_mem(1));
+
+        // load scratch1, [stack[right_base]]
+        // add  left, [scratch1]
+        // mov  scratch0, left
+        // mov  [stack[out]], scratch0
+        assert_eq!(lines, vec![
+            "mov r10, qword ptr [rbp - 8]".to_string(),
+            "add r13, qword ptr [r10]".to_string(),
+            "mov r11, r13".to_string(),
+            "mov qword ptr [rbp - 0x10], r11".to_string(),
+        ]);
+    }
+
+    #[test]
+    fn test_add_split_two_stack_indirect_inputs_need_two_scratch_regs() {
+        // stack[2] <- add mem[stack[0]], mem[stack[1]]
+        let lines = split_binop_disasm_lines(BinOpKind::Add, stack_indirect_mem(0), stack_indirect_mem(1), stack_mem(2));
+
+        // load scratch0, [stack[left_base]]
+        // load scratch0, [scratch0]
+        // load scratch1, [stack[right_base]]
+        // add  scratch0, [scratch1]
+        // mov  [stack[out]], scratch0
+        assert_eq!(lines, vec![
+            "mov r11, qword ptr [rbp - 8]".to_string(),
+            "mov r11, qword ptr [r11]".to_string(),
+            "mov r10, qword ptr [rbp - 0x10]".to_string(),
+            "add r11, qword ptr [r10]".to_string(),
+            "mov qword ptr [rbp - 0x18], r11".to_string(),
+        ]);
+    }
+
+    #[test]
+    fn test_add_split_memory_output_is_post_move() {
+        // stack[1] <- add cfp, stack[0]
+        let lines = split_binop_disasm_lines(BinOpKind::Add, CFP, stack_mem(0), stack_mem(1));
+
+        // add  left, [stack[right]]
+        // mov  scratch0, left
+        // mov  [stack[out]], scratch0
+        assert_eq!(lines, vec![
+            "add r13, qword ptr [rbp - 8]".to_string(),
+            "mov r11, r13".to_string(),
+            "mov qword ptr [rbp - 0x10], r11".to_string(),
+        ]);
+    }
+
+    #[test]
+    #[should_panic(expected = "x86_scratch_split expects out to be a physical register or stack memory")]
+    fn test_binop_split_rejects_non_stack_memory_output() {
+        let _ = split_binop(BinOpKind::Add, CFP, C_RET_OPND, Opnd::mem(64, CFP, 8));
+    }
+
+    #[test]
+    fn test_add_split_mem_mem_mem_when_right_equals_out() {
+        // stack[1] <- add stack[0], stack[1]
+        //
+        // Preserve the original RHS/output value first, then reload the LHS and
+        // write the result back to the output stack slot.
+        let mut asm = split_binop(BinOpKind::Add, stack_mem(0), stack_mem(1), stack_mem(1));
+        let mut cb = CodeBlock::new_dummy();
+        for name in &asm.label_names {
+            cb.new_label(name.to_string());
+        }
+        assert!(asm.x86_emit(&mut cb).is_some());
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+            0x0: mov r11, qword ptr [rbp - 0x10]
+            0x4: mov r10, qword ptr [rbp - 8]
+            0x8: add r10, r11
+            0xb: mov qword ptr [rbp - 0x10], r10
+        ");
+    }
+
+    #[test]
+    fn test_add_split_output_reg_reused_as_input_memory_base() {
+        // cfp <- add [cfp + 8], [cfp + 16]
+        //
+        // Preserve the RHS first because reusing `out` for the LHS would otherwise
+        // clobber the base register needed to address the RHS memory operand.
+        let mut asm = split_binop(
+            BinOpKind::Add,
+            Opnd::mem(64, CFP, 8),
+            Opnd::mem(64, CFP, 16),
+            CFP,
+        );
+        let mut cb = CodeBlock::new_dummy();
+        for name in &asm.label_names {
+            cb.new_label(name.to_string());
+        }
+        assert!(asm.x86_emit(&mut cb).is_some());
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+            0x0: mov r11, qword ptr [r13 + 0x10]
+            0x4: mov r13, qword ptr [r13 + 8]
+            0x8: add r13, r11
+        ");
+        assert_snapshot!(cb.hexdump(), @"4d8b5d104d8b6d084d01dd");
+    }
+
+    #[test]
+    fn test_add_split_output_reg_reused_as_stack_indirect_memory_base() {
+        // cfp <- add mem[stack[0]], mem[stack[1]]
+        //
+        // The LHS lowering reuses `out` as the temporary base register for the
+        // stack-indirect address, then the RHS uses the normal scratch register.
+        let mut asm = split_binop(
+            BinOpKind::Add,
+            stack_indirect_mem(0),
+            stack_indirect_mem(1),
+            CFP,
+        );
+        let mut cb = CodeBlock::new_dummy();
+        for name in &asm.label_names {
+            cb.new_label(name.to_string());
+        }
+        assert!(asm.x86_emit(&mut cb).is_some());
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+            0x0: mov r13, qword ptr [rbp - 8]
+            0x4: mov r13, qword ptr [r13]
+            0x8: mov r11, qword ptr [rbp - 0x10]
+            0xc: add r13, qword ptr [r11]
+        ");
+    }
+
+    #[test]
+    fn test_add_split_output_reg_reused_as_input_memory_base_with_imm() {
+        // cfp <- add 7, [cfp + 16]
+        //
+        // Preserve the RHS first because reusing `out` for the immediate
+        // materialization would otherwise clobber the base register needed for
+        // the memory operand.
+        let lines = split_binop_disasm_lines(
+            BinOpKind::Add,
+            Opnd::Imm(7),
+            Opnd::mem(64, CFP, 16),
+            CFP,
+        );
+
+        assert_snapshot!(lines.join("\n"), @"
+            mov r11, qword ptr [r13 + 0x10]
+            mov r13d, 7
+            add r13, r11
+        ");
+    }
+
+    #[test]
+    fn test_binop_split_matrix() {
+        let left_cases = [
+            ("reg", CFP),
+            ("mem_reg", Opnd::mem(64, C_RET_OPND, 8)),
+            ("mem_stack", stack_mem(0)),
+            ("mem_stack_indirect", stack_indirect_mem(0)),
+            ("imm32", Opnd::Imm(7)),
+            ("imm64", Opnd::UImm(0x1_0000_0000)),
+        ];
+        let right_cases = [
+            ("reg", C_RET_OPND),
+            ("mem_reg", Opnd::mem(64, CFP, 16)),
+            ("mem_stack", stack_mem(1)),
+            ("mem_stack_indirect", stack_indirect_mem(1)),
+            ("imm32", Opnd::Imm(9)),
+            ("imm64", Opnd::UImm(0x2_0000_0000)),
+        ];
+        let out_cases = [
+            ("out_reg", C_ARG_OPNDS[0]),
+            ("out_mem_stack", stack_mem(2)),
+        ];
+        let alias_out_cases = [
+            ("alias_out_cfp", CFP),
+            ("alias_out_reg", C_RET_OPND),
+            ("alias_out_mem_stack", stack_mem(1)),
+        ];
+        let alias_mem_base_cases = [
+            (
+                "out_reused_as_left_mem_base",
+                Opnd::mem(64, CFP, 8),
+                C_RET_OPND,
+                CFP,
+            ),
+            (
+                "out_reused_as_right_mem_base",
+                C_RET_OPND,
+                Opnd::mem(64, CFP, 16),
+                CFP,
+            ),
+            (
+                "out_reused_as_both_mem_bases",
+                Opnd::mem(64, CFP, 8),
+                Opnd::mem(64, CFP, 16),
+                CFP,
+            ),
+        ];
+
+        for kind in [BinOpKind::Add, BinOpKind::Sub, BinOpKind::And, BinOpKind::Or, BinOpKind::Xor] {
+            for (left_name, left) in left_cases {
+                for (right_name, right) in right_cases {
+                    for (out_name, out) in out_cases {
+                        let case = format!("{left_name}/{right_name}/{out_name}");
+                        assert_split_binop_case(kind, left, right, out, &case);
+                    }
+                }
+            }
+
+            for (left_name, left) in left_cases {
+                for (alias_name, out) in alias_out_cases {
+                    let case = format!("{left_name}/right_eq_out/{alias_name}");
+                    assert_split_binop_case(kind, left, out, out, &case);
+                }
+            }
+
+            for (case, left, right, out) in alias_mem_base_cases {
+                assert_split_binop_case(kind, left, right, out, case);
+            }
+        }
     }
 }
