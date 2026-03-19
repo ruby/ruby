@@ -1,3 +1,4 @@
+#!ruby -s
 require 'mkmf'
 require 'pathname'
 require 'fileutils'
@@ -23,6 +24,7 @@ Dir.chdir(workdir) {
     $(target): $(objs)
     \t#{MakeMakefile::TRY_LINK.sub(MakeMakefile::CONFTEST, '$(@)')} $(objs)
 
+    objs: $(objs)
     .c.#{$OBJEXT}:
     \t#{MakeMakefile::COMPILE_C}
 

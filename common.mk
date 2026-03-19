@@ -1322,9 +1322,9 @@ $(CROSS_COMPILING:no=)dump_ast$(BUILD_EXEEXT): $(tooldir)/dump_ast.c $(LIBPRISM_
 	$(Q) $(CC) $(CFLAGS) $(OUTFLAG)$@ $(INCFLAGS) $(tooldir)/dump_ast.c $(LIBPRISM_OBJS)
 
 build-tool/Makefile: $(tooldir)/dump_ast.mkmf.rb prism-srcs prism-incs
-	+$(BASERUBY) -s $(tooldir)/dump_ast.mkmf.rb -make="$(MAKE)" build-tool $(tooldir)/dump_ast.c dump_ast.$(OBJEXT) $(LIBPRISM_OBJS)
+	+$(BASERUBY) -s $(tooldir)/dump_ast.mkmf.rb "-INCFLAGS=$(INCFLAGS)" "-make=$(MAKE)" build-tool $(tooldir)/dump_ast.c dump_ast.$(OBJEXT) $(LIBPRISM_OBJS)
 $(CROSS_COMPILING:yes=)dump_ast$(BUILD_EXEEXT): build-tool/Makefile
-	cd build-tool && $(MAKE)
+	cd build-tool && MAKEFLAGS= MFLAGS= && unset MAKEFLAGS MFLAGS && $(MAKE)
 
 clean-local:: clean-build-tool
 clean-build-tool:
