@@ -2539,7 +2539,7 @@ impl Function {
         }
         if self.was_invalidated_for_singleton_class_creation {
             // A previous compilation of this ISEQ was invalidated for singleton class
-            // creation. Avoid a repeating the invalidation.
+            // creation. Avoid repeating the invalidation.
             return false;
         }
         self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass }, state });
