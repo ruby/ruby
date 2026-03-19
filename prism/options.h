@@ -114,7 +114,7 @@ static const uint8_t PM_OPTIONS_COMMAND_LINE_X = 0x20;
  * @returns A new options struct with default values. It is the responsibility
  *     of the caller to free this struct using pm_options_free().
  */
-PRISM_EXPORTED_FUNCTION pm_options_t * pm_options_new(void) PRISM_NODISCARD;
+PRISM_EXPORTED_FUNCTION PRISM_NODISCARD pm_options_t * pm_options_new(void);
 
 /**
  * Free both the held memory of the given options struct and the struct itself.

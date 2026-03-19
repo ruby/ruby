@@ -24,7 +24,7 @@ typedef struct pm_buffer_t pm_buffer_t;
  * @returns A pointer to the initialized buffer. The caller is responsible for
  *     freeing the buffer with pm_buffer_free.
  */
-PRISM_EXPORTED_FUNCTION pm_buffer_t * pm_buffer_new(void) PRISM_NODISCARD;
+PRISM_EXPORTED_FUNCTION PRISM_NODISCARD pm_buffer_t * pm_buffer_new(void);
 
 /**
  * Free both the memory held by the buffer and the buffer itself.
