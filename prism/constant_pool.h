@@ -60,15 +60,4 @@ PRISM_EXPORTED_FUNCTION const uint8_t * pm_constant_start(const pm_constant_t *c
  */
 PRISM_EXPORTED_FUNCTION size_t pm_constant_length(const pm_constant_t *constant) PRISM_NONNULL(1);
 
-/**
- * Find a constant in a constant pool. Returns the id of the constant, or 0 if
- * the constant is not found.
- *
- * @param pool The constant pool to search.
- * @param start A pointer to the start of the string to search for.
- * @param length The length of the string to search for.
- * @returns The id of the constant, or 0 if the constant is not found.
- */
-PRISM_EXPORTED_FUNCTION pm_constant_id_t pm_constant_pool_find(const pm_constant_pool_t *pool, const uint8_t *start, size_t length) PRISM_NONNULL(1, 2);
-
 #endif

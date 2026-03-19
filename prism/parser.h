@@ -140,6 +140,17 @@ PRISM_EXPORTED_FUNCTION bool pm_parser_encoding_us_ascii(const pm_parser_t *pars
 PRISM_EXPORTED_FUNCTION const pm_string_t * pm_parser_filepath(const pm_parser_t *parser) PRISM_NONNULL(1);
 
 /**
+ * Find a constant in the parser's constant pool. Returns the id of the
+ * constant, or 0 if the constant is not found.
+ *
+ * @param parser the parser whose constant pool we want to search
+ * @param start a pointer to the start of the string to search for
+ * @param length the length of the string to search for
+ * @returns the id of the constant, or 0 if the constant is not found
+ */
+PRISM_EXPORTED_FUNCTION pm_constant_id_t pm_parser_constant_find(const pm_parser_t *parser, const uint8_t *start, size_t length) PRISM_NONNULL(1, 2);
+
+/**
  * Returns the frozen string literal value of the parser, as determined by the
  * frozen_string_literal magic comment or the option set on the parser.
  *
