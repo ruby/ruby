@@ -1783,6 +1783,8 @@ iseqw_s_compile_prism(int argc, VALUE *argv, VALUE self)
     return iseqw_s_compile_parser(argc, argv, self, true);
 }
 
+static VALUE iseqw_s_compile_file_prism(int argc, VALUE *argv, VALUE self);
+
 /*
  *  call-seq:
  *      InstructionSequence.compile_file(file[, options]) -> iseq
@@ -1806,6 +1808,10 @@ iseqw_s_compile_prism(int argc, VALUE *argv, VALUE self)
 static VALUE
 iseqw_s_compile_file(int argc, VALUE *argv, VALUE self)
 {
+    if (rb_ruby_prism_p()) {
+        return iseqw_s_compile_file_prism(argc, argv, self);
+    }
+
     VALUE file, opt = Qnil;
     VALUE parser, f, exc = Qnil, ret;
     rb_ast_t *ast;
