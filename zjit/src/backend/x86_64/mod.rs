@@ -183,40 +183,12 @@ impl Assembler {
             // being used. It is okay not to use their output here.
             #[allow(unused_must_use)]
             match &mut insn {
-                Insn::Add { left, right, out } |
-                Insn::Sub { left, right, out } |
-                Insn::Mul { left, right, out } |
-                Insn::And { left, right, out } |
-                Insn::Or { left, right, out } |
-                Insn::Xor { left, right, out } => {
-                    match (*left, *right) {
-                        (Opnd::Mem(_), Opnd::Mem(_)) => {
-                            *left = asm.load(*left);
-                            *right = asm.load(*right);
-                        },
-                        (Opnd::Mem(_), Opnd::UImm(_) | Opnd::Imm(_)) => {
-                            *left = asm.load(*left);
-                        },
-                        // Instruction output whose live range spans beyond this instruction
-                        (Opnd::VReg { idx: _, .. }, _) => {
-                            *left = asm.load(*left);
-                        },
-                        // We have to load memory operands to avoid corrupting them
-                        (Opnd::Mem(_), _) => {
-                            *left = asm.load(*left);
-                        },
-                        // We have to load register operands to avoid corrupting them
-                        (Opnd::Reg(_), _) => {
-                            if *left != *out {
-                                *left = asm.load(*left);
-                            }
-                        },
-                        // The first operand can't be an immediate value
-                        (Opnd::UImm(_), _) => {
-                            *left = asm.load(*left);
-                        }
-                        _ => {}
-                    }
+                Insn::Add { .. } |
+                Insn::Sub { .. } |
+                Insn::Mul { .. } |
+                Insn::And { .. } |
+                Insn::Or { .. } |
+                Insn::Xor { .. } => {
                     asm.push_insn(insn);
                 },
                 Insn::Cmp { left, right } => {
