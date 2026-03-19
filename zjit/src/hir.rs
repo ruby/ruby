@@ -2537,7 +2537,7 @@ impl Function {
             // No patchpoint needed.
             return true;
         }
-        if self.was_invalidated_for_singleton_class_creation {
+        if self.was_invalidated_for_singleton_class_creation && invariants::has_singleton_class_of(klass) {
             // A previous compilation of this ISEQ was invalidated for singleton class
             // creation. Avoid repeating the invalidation.
             return false;

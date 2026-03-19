@@ -13237,7 +13237,8 @@ mod hir_opt_tests {
             test("hi", -> {})
             test("hi", -> {})
         "#);
-        assert!(hir_string("test").contains("NoSingletonClass"));
+        let hir = hir_string("test");
+        assert!(hir.contains("NoSingletonClass(String"));
 
         // Now we break the assumption by defining a singleton method on a string.
         eval(r#"
@@ -13248,7 +13249,7 @@ mod hir_opt_tests {
         // The output should NOT have NoSingletonClass patchpoint for String, and should
         // fall back to SendWithoutBlock instead of the optimized CCall path.
         let hir = hir_string("test");
-        assert!(! hir.contains("NoSingletonClass"));
+        assert!(! hir.contains("NoSingletonClass(String"), "{hir}");
         assert_snapshot!(hir, @"
         fn test@<compiled>:3:
         bb1():
@@ -13266,7 +13267,10 @@ mod hir_opt_tests {
           Jump bb3(v7, v8, v9)
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           v19:BasicObject = Send v12, :length # SendFallbackReason: Singleton class previously created for receiver class
-          v24:BasicObject = Send v13, :call # SendFallbackReason: Singleton class previously created for receiver class
+          PatchPoint NoSingletonClass(Proc@0x1008)
+          PatchPoint MethodRedefined(Proc@0x1008, call@0x1010, cme:0x1018)
+          v40:ObjectSubclass[class_exact:Proc] = GuardType v13, ObjectSubclass[class_exact:Proc]
+          v41:BasicObject = InvokeProc v40
           PatchPoint NoEPEscape(test)
           v32:BasicObject = Send v12, :length # SendFallbackReason: Singleton class previously created for receiver class
           CheckInterrupts
@@ -13289,14 +13293,14 @@ mod hir_opt_tests {
             will_bust("hi", -> {})
             will_bust("hi", -> {})
         "#);
-        assert!(hir_string("will_bust").contains("NoSingletonClass"));
+        assert!(hir_string("will_bust").contains("NoSingletonClass(String"));
 
         // Now we break the assumption by defining a singleton method on a string.
         eval(r#"
             special_string = +""
             will_bust(special_string, -> { def special_string.length = -1 })
         "#);
-        assert!(! hir_string("will_bust").contains("NoSingletonClass"));
+        assert!(! hir_string("will_bust").contains("NoSingletonClas(String"));
 
         // But, the unrelated call_length() should still use NoSingletonClass
         eval("call_length('profile')");
