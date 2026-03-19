@@ -90,8 +90,13 @@ module Prism # :nodoc:
 
     callback :pm_source_stream_fgets_t, [:pointer, :int, :pointer], :pointer
     callback :pm_source_stream_feof_t, [:pointer], :int
-    enum :pm_source_init_result_t, %i[PM_SOURCE_INIT_SUCCESS PM_SOURCE_INIT_ERROR_GENERIC PM_SOURCE_INIT_ERROR_DIRECTORY PM_SOURCE_INIT_ERROR_NON_REGULAR]
+    pm_source_init_result_values = %i[PM_SOURCE_INIT_SUCCESS PM_SOURCE_INIT_ERROR_GENERIC PM_SOURCE_INIT_ERROR_DIRECTORY PM_SOURCE_INIT_ERROR_NON_REGULAR]
+    enum :pm_source_init_result_t, pm_source_init_result_values
     enum :pm_string_query_t, [:PM_STRING_QUERY_ERROR, -1, :PM_STRING_QUERY_FALSE, :PM_STRING_QUERY_TRUE]
+
+    # Ractor-safe lookup table for pm_source_init_result_t, since FFI's
+    # enum_type accesses module instance variables that are not shareable.
+    SOURCE_INIT_RESULT = pm_source_init_result_values.freeze
 
     load_exported_functions_from(
       "prism/version.h",
@@ -219,9 +224,8 @@ module Prism # :nodoc:
 
         FFI::MemoryPointer.new(:int) do |result_ptr|
           pm_source = LibRubyParser.pm_source_mapped_new(filepath, 0, result_ptr)
-          result = LibRubyParser.enum_type(:pm_source_init_result_t)[result_ptr.read_int]
 
-          case result
+          case SOURCE_INIT_RESULT[result_ptr.read_int]
           when :PM_SOURCE_INIT_SUCCESS
             pointer = LibRubyParser.pm_source_source(pm_source)
             length = LibRubyParser.pm_source_length(pm_source)
@@ -235,7 +239,7 @@ module Prism # :nodoc:
             # files (pipes, character devices, etc.)
             return with_string(File.read(filepath)) { |string| yield string }
           else
-            raise "Unknown error initializing pm_source_t: #{result.inspect}"
+            raise "Unknown error initializing pm_source_t: #{result_ptr.read_int}"
           end
         ensure
           LibRubyParser.pm_source_free(pm_source) if pm_source && !pm_source.null?
