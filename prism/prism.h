@@ -20,6 +20,7 @@ extern "C" {
 #include "prism/parser.h"
 #include "prism/prettyprint.h"
 #include "prism/serialize.h"
+#include "prism/source.h"
 #include "prism/stream.h"
 #include "prism/string_query.h"
 #include "prism/version.h"

@@ -22,6 +22,7 @@
 #include "prism/internal/parser.h"
 #include "prism/internal/regexp.h"
 #include "prism/internal/serialize.h"
+#include "prism/internal/source.h"
 #include "prism/internal/static_literals.h"
 #include "prism/internal/strings.h"
 #include "prism/internal/strncasecmp.h"
@@ -22700,79 +22701,25 @@ pm_parse(pm_parser_t *parser) {
 }
 
 /**
- * Read into the stream until the gets callback returns false. If the last read
- * line from the stream matches an __END__ marker, then halt and return false,
- * otherwise return true.
- */
-static bool
-pm_parse_stream_read(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, pm_parse_stream_feof_t *stream_feof) {
-#define LINE_SIZE 4096
-    char line[LINE_SIZE];
-
-    while (memset(line, '\n', LINE_SIZE), stream_fgets(line, LINE_SIZE, stream) != NULL) {
-        size_t length = LINE_SIZE;
-        while (length > 0 && line[length - 1] == '\n') length--;
-
-        if (length == LINE_SIZE) {
-            // If we read a line that is the maximum size and it doesn't end
-            // with a newline, then we'll just append it to the buffer and
-            // continue reading.
-            length--;
-            pm_buffer_append_string(buffer, line, length);
-            continue;
-        }
-
-        // Append the line to the buffer.
-        length--;
-        pm_buffer_append_string(buffer, line, length);
-
-        // Check if the line matches the __END__ marker. If it does, then stop
-        // reading and return false. In most circumstances, this means we should
-        // stop reading from the stream so that the DATA constant can pick it
-        // up.
-        switch (length) {
-            case 7:
-                if (strncmp(line, "__END__", 7) == 0) return false;
-                break;
-            case 8:
-                if (strncmp(line, "__END__\n", 8) == 0) return false;
-                break;
-            case 9:
-                if (strncmp(line, "__END__\r\n", 9) == 0) return false;
-                break;
-        }
-
-        // All data should be read via gets.  If the string returned by gets
-        // _doesn't_ end with a newline, then we assume we hit EOF condition.
-        if (stream_feof(stream)) {
-            break;
-        }
-    }
-
-    return true;
-#undef LINE_SIZE
-}
-
-/**
  * Parse a stream of Ruby source and return the tree.
  *
  * Prism is designed around having the entire source in memory at once, but you
  * can stream stdin in to Ruby so we need to support a streaming API.
  */
 pm_node_t *
-pm_parse_stream(pm_parser_t **parser, pm_arena_t *arena, pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, pm_parse_stream_feof_t *stream_feof, const pm_options_t *options) {
-    bool eof = pm_parse_stream_read(buffer, stream, stream_fgets, stream_feof);
+pm_parse_stream(pm_parser_t **parser, pm_arena_t *arena, pm_source_t *source, const pm_options_t *options) {
+    bool eof = pm_source_stream_read(source);
 
-    pm_parser_t *tmp = pm_parser_new(arena, (const uint8_t *) pm_buffer_value(buffer), pm_buffer_length(buffer), options);
+    pm_parser_t *tmp = pm_parser_new(arena, pm_source_source(source), pm_source_length(source), options);
     pm_node_t *node = pm_parse(tmp);
 
     while (!eof && tmp->error_list.size > 0) {
-        eof = pm_parse_stream_read(buffer, stream, stream_fgets, stream_feof);
+        eof = pm_source_stream_read(source);
 
         pm_parser_free(tmp);
         pm_arena_cleanup(arena);
 
-        tmp = pm_parser_new(arena, (const uint8_t *) pm_buffer_value(buffer), pm_buffer_length(buffer), options);
+        tmp = pm_parser_new(arena, pm_source_source(source), pm_source_length(source), options);
         node = pm_parse(tmp);
     }
 
@@ -22838,19 +22785,17 @@ pm_serialize_parse(pm_buffer_t *buffer, const uint8_t *source, size_t size, cons
  * given stream into to the given buffer.
  */
 void
-pm_serialize_parse_stream(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, pm_parse_stream_feof_t *stream_feof, const char *data) {
+pm_serialize_parse_stream(pm_buffer_t *buffer, pm_source_t *source, const char *data) {
     pm_arena_t arena = { 0 };
     pm_parser_t *parser;
     pm_options_t options = { 0 };
     pm_options_read(&options, data);
 
-    pm_buffer_t *parser_buffer = pm_buffer_new();
-    pm_node_t *node = pm_parse_stream(&parser, &arena, parser_buffer, stream, stream_fgets, stream_feof, &options);
+    pm_node_t *node = pm_parse_stream(&parser, &arena, source, &options);
     pm_serialize_header(buffer);
     pm_serialize_content(parser, node, buffer);
     pm_buffer_append_byte(buffer, '\0');
 
-    pm_buffer_free(parser_buffer);
     pm_parser_free(parser);
     pm_arena_cleanup(&arena);
     pm_options_cleanup(&options);

@@ -4,6 +4,7 @@
 
 #include "prism/internal/allocator.h"
 #include "prism/internal/char.h"
+#include "prism/internal/strings.h"
 
 #include <stdlib.h>
 #include <string.h>

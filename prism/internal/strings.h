@@ -15,17 +15,16 @@
 void pm_string_shared_init(pm_string_t *string, const uint8_t *start, const uint8_t *end);
 
 /*
- * Ensure the string is owned. If it is not, then reinitialize it as owned and
- * copy over the previous source.
- */
-void pm_string_ensure_owned(pm_string_t *string);
-
-/*
  * Compare the underlying lengths and bytes of two strings. Returns 0 if the
  * strings are equal, a negative number if the left string is less than the
  * right string, and a positive number if the left string is greater than the
  * right string.
  */
 int pm_string_compare(const pm_string_t *left, const pm_string_t *right);
+
+/*
+ * Free the associated memory of the given string.
+ */
+void pm_string_cleanup(pm_string_t *string);
 
 #endif
