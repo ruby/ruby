@@ -293,6 +293,8 @@ static inline void RCLASS_WRITE_CLASSPATH(VALUE klass, VALUE classpath, bool per
 #define RCLASS_PRIME_CLASSEXT_WRITABLE FL_USER2
 #define RCLASS_IS_INITIALIZED FL_USER3
 // 3 is RMODULE_IS_REFINEMENT for RMODULE
+// 3 is also RICLASS_IS_SINGLETON_ANCESTOR for T_ICLASS (not T_CLASS/T_MODULE)
+#define RICLASS_IS_SINGLETON_ANCESTOR FL_USER3
 #define RCLASS_BOXABLE FL_USER4
 
 static inline st_table *
@@ -706,6 +708,12 @@ RICLASS_OWNS_M_TBL_P(VALUE iclass)
 {
     rb_classext_t *ext = RCLASS_EXT_READABLE(iclass);
     return RCLASSEXT_ICLASS_IS_ORIGIN(ext) && !RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(ext);
+}
+
+static inline bool
+RICLASS_SINGLETON_ANCESTOR_P(VALUE iclass)
+{
+    return FL_TEST_RAW(iclass, RICLASS_IS_SINGLETON_ANCESTOR);
 }
 
 static inline void

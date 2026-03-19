@@ -1355,6 +1355,17 @@ check_override_opt_method(VALUE klass, VALUE mid)
     }
 }
 
+static void
+check_singleton_override_by_method_i(VALUE subclass, VALUE arg)
+{
+    ID mid = arg;
+    VM_ASSERT_TYPE(subclass, T_ICLASS);
+    if (RICLASS_SINGLETON_ANCESTOR_P(subclass) && rb_method_entry(subclass, mid)) {
+        // TODO fuse real and search above
+        rb_zjit_invalidate_no_singleton_class(rb_class_real(subclass));
+    }
+}
+
 static inline rb_method_entry_t* search_method0(VALUE klass, ID id, VALUE *defined_class_ptr, bool skip_refined);
 /*
  * klass->method_table[mid] = method_entry(defined_class, visi, def)
@@ -1483,6 +1494,16 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     if (mid == object_id || mid == id__id__ || mid == id__send__) {
         if (type != VM_METHOD_TYPE_CFUNC && search_method(klass, mid, 0)) {
             rb_warn("redefining '%s' may cause serious problems", rb_id2name(mid));
+        }
+    }
+    // Check ZJIT NoSingletonClassOverride invariant
+    if (rb_zjit_enabled_p) {
+        // Invalidate ZJIT code that assumes no singleton class override
+        if (RCLASS_SINGLETON_P(klass) && rb_method_entry(klass, mid)) {
+            rb_zjit_invalidate_no_singleton_class(rb_class_real(klass));
+        }
+        else if (RB_TYPE_P(klass, T_MODULE)) {
+            rb_class_foreach_subclass(klass, check_singleton_override_by_method_i, (VALUE)mid);
         }
     }
 

@@ -13146,48 +13146,6 @@ mod hir_opt_tests {
         ");
     }
 
-    // Test that when a singleton class has been seen for a class, we skip the
-    // NoSingletonClass optimization to avoid an invalidation loop.
-    #[test]
-    fn test_skip_optimization_after_singleton_class_seen() {
-        // First, trigger the singleton class callback for String by creating a singleton class.
-        // This should mark String as having had a singleton class seen.
-        eval(r#"
-            "hello".singleton_class
-        "#);
-
-        // Now define and compile a method that would normally be optimized with NoSingletonClass.
-        // Since String has had a singleton class, the optimization should be skipped and we
-        // should fall back to SendWithoutBlock.
-        eval(r#"
-            def test(s)
-              s.length
-            end
-            test("asdf")
-        "#);
-
-        // The output should NOT have NoSingletonClass patchpoint for String, and should
-        // fall back to SendWithoutBlock instead of the optimized CCall path.
-        assert_snapshot!(hir_string("test"), @"
-        fn test@<compiled>:3:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :s@0x1000
-          Jump bb3(v1, v3)
-        bb2():
-          EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :s@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v16:BasicObject = Send v10, :length # SendFallbackReason: Singleton class previously created for receiver class
-          CheckInterrupts
-          Return v16
-        ");
-    }
-
     #[test]
     fn test_invokesuper_to_iseq_optimizes_to_direct() {
         eval("
@@ -14376,6 +14334,296 @@ mod hir_opt_tests {
           WriteBarrier v28, v13
           CheckInterrupts
           Return v13
+        ");
+    }
+
+    #[test]
+    fn test_singleton_prepend_overrides_kernel_itself() {
+        _ = eval(r#"
+            module OverrideItself
+              def itself = 42
+            end
+
+            def test(do_override)
+              obj = Object.new
+              obj.itself
+              obj.singleton_class.prepend(OverrideItself) if do_override
+              obj.itself
+            end
+            test(false)
+            test(false)
+        "#);
+        // Snapshot HIR before the singeton class override
+        let pre_override_hir = hir_string("test");
+        let result = eval("test(true)");
+        assert_eq!(VALUE::fixnum_from_usize(42), result);
+
+        assert!(
+            pre_override_hir.split("\n").any(|line| line.starts_with("bb") && line.contains(":ObjectExact")),
+            "Need the optimizer to keep ObjectExact across the prepend call for the NoSingletonClassOverride patchpoint to be relevant"
+        );
+
+        assert_snapshot!(pre_override_hir, @"
+        fn test@<compiled>:7:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :do_override@0x1000
+          v4:NilClass = Const Value(nil)
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :do_override@1
+          v9:NilClass = Const Value(nil)
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:NilClass):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1008, Object)
+          v89:Class[Object@0x1010] = Const Value(VALUE(0x1010))
+          v19:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(Object@0x1010, new@0x1011, cme:0x1018)
+          v92:ObjectExact = ObjectAllocClass Object:VALUE(0x1010)
+          PatchPoint NoSingletonClass(Object@0x1010)
+          PatchPoint MethodRedefined(Object@0x1010, initialize@0x1040, cme:0x1048)
+          v96:NilClass = Const Value(nil)
+          CheckInterrupts
+          PatchPoint NoEPEscape(test)
+          PatchPoint MethodRedefined(Object@0x1010, itself@0x1070, cme:0x1078)
+          v61:CBool = Test v12
+          v62:Falsy = RefineType v12, Falsy
+          IfFalse v61, bb6(v11, v62, v92)
+          v64:Truthy = RefineType v12, Truthy
+          PatchPoint NoSingletonClass(Object@0x1010)
+          PatchPoint MethodRedefined(Object@0x1010, singleton_class@0x10a0, cme:0x10a8)
+          v103:BasicObject = CCallWithFrame v92, :Kernel#singleton_class@0x10d0
+          v69:BasicObject = GetConstantPath 0x10d8
+          v71:BasicObject = Send v103, :prepend, v69 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          Jump bb6(v11, v64, v92)
+        bb6(v74:BasicObject, v75:BasicObject, v76:ObjectExact):
+          PatchPoint NoSingletonClass(Object@0x1010)
+          PatchPoint MethodRedefined(Object@0x1010, itself@0x1070, cme:0x1078)
+          CheckInterrupts
+          Return v76
+        ");
+    }
+
+    #[test]
+    fn test_singleton_define_overrides_kernel_itself() {
+        eval(r#"
+            class Subject
+              def override
+                # Ancestry once overridden: [<Singleton>, .., Subject]
+                #                            ^ itself here
+                (def self.itself = 43) if defined?(::DoOverride)
+              end
+            end
+
+            def test(obj)
+              obj.itself
+              obj.override
+              obj.itself
+            end
+            raise if test(Subject.new) == 43
+            raise if test(Subject.new) == 43
+        "#);
+        // Snapshot HIR before the singeton class override
+        let pre_override_hir = hir_string("test");
+        let result = eval("DoOverride = 1; test(Subject.new)");
+        assert_eq!(VALUE::fixnum_from_usize(43), result);
+        assert_snapshot!(pre_override_hir, @"
+        fn test@<compiled>:11:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :obj@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :obj@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(Subject@0x1008)
+          PatchPoint MethodRedefined(Subject@0x1008, itself@0x1010, cme:0x1018)
+          v42:ObjectSubclass[class_exact:Subject] = GuardType v10, ObjectSubclass[class_exact:Subject]
+          PatchPoint NoEPEscape(test)
+          PatchPoint MethodRedefined(Subject@0x1008, override@0x1040, cme:0x1048)
+          v37:ObjectSubclass[class_exact:Subject] = GuardType v10, ObjectSubclass[class_exact:Subject]
+          v38:BasicObject = SendDirect v37, 0x1070, :override (0x1080)
+          PatchPoint NoEPEscape(test)
+          PatchPoint NoSingletonClass(Subject@0x1008)
+          PatchPoint MethodRedefined(Subject@0x1008, itself@0x1010, cme:0x1018)
+          v46:ObjectSubclass[class_exact:Subject] = GuardType v10, ObjectSubclass[class_exact:Subject]
+          CheckInterrupts
+          Return v46
+        ");
+    }
+
+    #[test]
+    fn test_singleton_extend_overrides_kernel_itself() {
+        eval(r#"
+            module ExtendItself
+              def itself = 44
+            end
+
+            class Subject
+              def override
+                # Once overridden, ancestors for is [<Singleton>, ExtendItself, Subject]
+                #                                                ^ itself here
+                self.extend(ExtendItself) if defined?(::DoOverride)
+              end
+            end
+
+            def test(obj)
+              obj.itself
+              obj.override
+              obj.itself
+            end
+            raise if test(Subject.new) == 44
+            raise if test(Subject.new) == 44
+        "#);
+        // Snapshot HIR before the singeton class override
+        let pre_override_hir = hir_string("test");
+        let result = eval("DoOverride = 1; test(Subject.new)");
+        assert_eq!(VALUE::fixnum_from_usize(44), result);
+        assert_snapshot!(pre_override_hir, @"
+        fn test@<compiled>:15:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :obj@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :obj@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(Subject@0x1008)
+          PatchPoint MethodRedefined(Subject@0x1008, itself@0x1010, cme:0x1018)
+          v42:ObjectSubclass[class_exact:Subject] = GuardType v10, ObjectSubclass[class_exact:Subject]
+          PatchPoint NoEPEscape(test)
+          PatchPoint MethodRedefined(Subject@0x1008, override@0x1040, cme:0x1048)
+          v37:ObjectSubclass[class_exact:Subject] = GuardType v10, ObjectSubclass[class_exact:Subject]
+          v38:BasicObject = SendDirect v37, 0x1070, :override (0x1080)
+          PatchPoint NoEPEscape(test)
+          PatchPoint NoSingletonClass(Subject@0x1008)
+          PatchPoint MethodRedefined(Subject@0x1008, itself@0x1010, cme:0x1018)
+          v46:ObjectSubclass[class_exact:Subject] = GuardType v10, ObjectSubclass[class_exact:Subject]
+          CheckInterrupts
+          Return v46
+        ");
+    }
+
+    #[test]
+    fn test_still_specializes_when_not_shadowed() {
+        eval(r#"
+            def test(obj)
+              [
+                obj.itself,
+                # We define a singleton method, creating a
+                # singleton class, but that doesn't interfere
+                # with the lookup of `itself`.
+                obj.define_singleton_method(:some_non_kernel_method) { 43 },
+                obj.itself
+              ]
+            end
+            test(Object.new)
+            test(Object.new)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :obj@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :obj@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(Object@0x1008)
+          PatchPoint MethodRedefined(Object@0x1008, itself@0x1010, cme:0x1018)
+          v40:ObjectExact = GuardType v10, ObjectExact
+          v17:CPtr = GetEP 0
+          v18:BasicObject = LoadField v17, :obj@0x1040
+          v20:StaticSymbol[:some_non_kernel_method] = Const Value(VALUE(0x1048))
+          PatchPoint MethodRedefined(Object@0x1008, define_singleton_method@0x1050, cme:0x1058)
+          v44:ObjectExact = GuardType v18, ObjectExact
+          v45:BasicObject = CCallVariadic v44, :define_singleton_method@0x1080, v20
+          v26:CPtr = GetEP 0
+          v27:BasicObject = LoadField v26, :obj@0x1040
+          PatchPoint MethodRedefined(Object@0x1088, itself@0x1010, cme:0x1018)
+          v48:ObjectSubclass[class_exact*:Object@VALUE(0x1088)] = GuardType v27, ObjectSubclass[class_exact*:Object@VALUE(0x1088)]
+          v31:ArrayExact = NewArray v40, v45, v48
+          CheckInterrupts
+          Return v31
+        ");
+    }
+
+    #[test]
+    fn test_dont_specialize_after_no_singleton_override_triggers() {
+        // Test that after the NoSingletonClassOverride patchpoint busts,
+        // we don't emit it again so we avoid an invalidation loop.
+        eval(r#"
+            def test
+              obj = Object.new
+              [
+                obj.itself,
+                obj.define_singleton_method(:itself) { 43 },
+                obj.itself
+              ]
+            end
+            raise unless test in [Object, :itself, 43]
+            raise unless test in [Object, :itself, 43]
+        "#);
+        let hir = hir_string("test");
+        assert!(!hir.contains("SendDirect"));
+        assert_snapshot!(hir, @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          Jump bb3(v1, v2)
+        bb2():
+          EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:NilClass = Const Value(nil)
+          Jump bb3(v5, v6)
+        bb3(v8:BasicObject, v9:NilClass):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, Object)
+          v72:Class[Object@0x1008] = Const Value(VALUE(0x1008))
+          v15:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(Object@0x1008, new@0x1009, cme:0x1010)
+          v75:ObjectExact = ObjectAllocClass Object:VALUE(0x1008)
+          v22:BasicObject = Send v75, :initialize # SendFallbackReason: Singleton class previously created for receiver class
+          CheckInterrupts
+          SetLocal :obj, l0, EP@3, v75
+          v45:CPtr = GetEP 0
+          v46:BasicObject = LoadField v45, :obj@0x1038
+          v48:BasicObject = Send v46, :itself # SendFallbackReason: Singleton class previously created for receiver class
+          v50:CPtr = GetEP 0
+          v51:BasicObject = LoadField v50, :obj@0x1038
+          v53:StaticSymbol[:itself] = Const Value(VALUE(0x1040))
+          v55:BasicObject = Send v51, 0x1048, :define_singleton_method, v53 # SendFallbackReason: Singleton class previously created for receiver class
+          v59:CPtr = GetEP 0
+          v60:BasicObject = LoadField v59, :obj@0x1038
+          PatchPoint SingleRactorMode
+          PatchPoint MethodRedefined(Object@0x1070, itself@0x1078, cme:0x1080)
+          v78:ObjectSubclass[class_exact*:Object@VALUE(0x1070)] = GuardType v60, ObjectSubclass[class_exact*:Object@VALUE(0x1070)]
+          v80:Fixnum[43] = Const Value(43)
+          v64:ArrayExact = NewArray v48, v55, v80
+          CheckInterrupts
+          Return v64
         ");
     }
 }

@@ -153,6 +153,12 @@ pub enum Invariant {
     NoSingletonClass {
         klass: VALUE,
     },
+    /// No method override has occurred in the singleton portion of this class's ancestry.
+    /// Invalidated when a method is added to a singleton class or a module is
+    /// included/prepended into the singleton chain that introduces methods.
+    NoSingletonClassOverride {
+        klass: VALUE,
+    },
     /// Only the root box is active, so we can safely read from the prime classext.
     /// Invalidated if a non-root box duplicates any classext.
     RootBoxOnly,
@@ -292,6 +298,12 @@ impl<'a> std::fmt::Display for InvariantPrinter<'a> {
             Invariant::NoSingletonClass { klass } => {
                 let class_name = get_class_name(klass);
                 write!(f, "NoSingletonClass({}@{:p})",
+                    class_name,
+                    self.ptr_map.map_ptr(klass.as_ptr::<VALUE>()))
+            }
+            Invariant::NoSingletonClassOverride { klass } => {
+                let class_name = get_class_name(klass);
+                write!(f, "NoSingletonClassOverride({}@{:p})",
                     class_name,
                     self.ptr_map.map_ptr(klass.as_ptr::<VALUE>()))
             }
