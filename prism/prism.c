@@ -2285,7 +2285,7 @@ pm_integer_arena_move(pm_arena_t *arena, pm_integer_t *integer) {
         size_t byte_size = integer->length * sizeof(uint32_t);
         uint32_t *old_values = integer->values;
         integer->values = (uint32_t *) pm_arena_memdup(arena, old_values, byte_size, PRISM_ALIGNOF(uint32_t));
-        xfree(old_values);
+        xfree_sized(old_values, byte_size);
     }
 }
 
@@ -22525,7 +22525,7 @@ pm_parser_cleanup(pm_parser_t *parser) {
 void
 pm_parser_free(pm_parser_t *parser) {
     pm_parser_cleanup(parser);
-    xfree(parser);
+    xfree_sized(parser, sizeof(pm_parser_t));
 }
 
 /**

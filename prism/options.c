@@ -49,7 +49,7 @@ pm_options_cleanup(pm_options_t *options) {
 void
 pm_options_free(pm_options_t *options) {
     pm_options_cleanup(options);
-    xfree(options);
+    xfree_sized(options, sizeof(pm_options_t));
 }
 
 /**
