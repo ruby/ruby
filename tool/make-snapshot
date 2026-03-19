@@ -501,6 +501,14 @@ touch-unicode-files:
       # prevents make from compiling it, so we build it directly)
       dump_ast = vars["DUMP_AST"]
       if dump_ast && !dump_ast.empty? && !File.exist?(dump_ast) && File.exist?("tool/dump_ast.c")
+        # Generate prism headers needed for compilation
+        prism_template = "prism/templates/template.rb"
+        if File.exist?(prism_template)
+          %w[include/prism/ast.h include/prism/diagnostic.h].each do |hdr|
+            target = hdr.sub("include/", "")
+            system(baseruby, prism_template, hdr, target) unless File.exist?(target)
+          end
+        end
         prism_srcs = Dir.glob("prism/**/*.c").reject {|f| f.include?("api_node") || f.include?("extension") || f.include?("prism_init")}
         print "building dump_ast..."
         if system("cc", "-o", dump_ast, "-Iprism", "-I.", "tool/dump_ast.c", *prism_srcs)
