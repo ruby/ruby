@@ -497,6 +497,19 @@ touch-unicode-files:
       clean.create("Makefile", mk)
       clean.create("revision.tmp")
       clean.create(".revision.time")
+      # Build dump_ast for mk_builtin_loader.rb (CC=false in prereq.status
+      # prevents make from compiling it, so we build it directly)
+      dump_ast = vars["DUMP_AST"]
+      if dump_ast && !dump_ast.empty? && !File.exist?(dump_ast) && File.exist?("tool/dump_ast.c")
+        prism_srcs = Dir.glob("prism/**/*.c").reject {|f| f.include?("api_node") || f.include?("extension") || f.include?("prism_init")}
+        print "building dump_ast..."
+        if system("cc", "-o", dump_ast, "-Iprism", "-I.", "tool/dump_ast.c", *prism_srcs)
+          clean.add(dump_ast)
+          puts $colorize.pass(" done")
+        else
+          puts $colorize.fail(" failed")
+        end
+      end
       ENV["CACHE_SAVE"] = "no"
       make = MAKE.new(args)
       return unless make.run("update-download")

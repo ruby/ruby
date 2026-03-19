@@ -5,10 +5,8 @@ s,@ARCH_FLAG@,,g
 s,@ASMEXT@,S,g
 s,@BASERUBY@,ruby,g
 s,@BOOTSTRAPRUBY@,$(BASERUBY),g
-s,@CC@,cc,g
+s,@CC@,false,g
 s,@CFLAGS@,,g
-s,@COUTFLAG@,-o ,g
-s,@OUTFLAG@,-o ,g
 s,@CHDIR@,cd,g
 s,@CONFIGURE@,configure,g
 s,@CP@,cp,g
@@ -17,7 +15,6 @@ s,@CXXFLAGS@,,g
 s,@DLDFLAGS@,,g
 s,@DTRACE_EXT@,dmyh,g
 s,@DUMP_AST@,./dump_ast,g
-s,@X_DUMP_AST_TARGET@,$(DUMP_AST),g
 s,@EXEEXT@,,g
 s,@HAVE_BASERUBY@,yes,g
 s,@IFCHANGE@,tool/ifchange,g
