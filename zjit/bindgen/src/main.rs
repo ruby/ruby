@@ -293,6 +293,7 @@ fn main() {
         .allowlist_function("rb_set_cfp_(pc|sp)")
         .allowlist_function("rb_c_method_tracing_currently_enabled")
         .allowlist_function("rb_zjit_method_tracing_currently_enabled")
+        .allowlist_function("rb_zjit_iseq_tracing_currently_enabled")
         .allowlist_function("rb_full_cfunc_return")
         .allowlist_function("rb_assert_(iseq|cme)_handle")
         .allowlist_function("rb_IMEMO_TYPE_P")

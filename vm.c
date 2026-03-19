@@ -533,22 +533,11 @@ yjit_compile(rb_execution_context_t *ec)
 #endif
 
 #if USE_ZJIT
-bool rb_zjit_iseq_tracing_currently_enabled(void);
-
 static inline rb_jit_func_t
 zjit_compile(rb_execution_context_t *ec)
 {
     const rb_iseq_t *iseq = ec->cfp->iseq;
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
-
-    // Don't compile while tracing is active. ZJIT's send fallback uses
-    // rb_vm_opt_send_without_block which calls VM_EXEC, setting FLAG_FINISH
-    // on the callee frame. This changes exception handling semantics for
-    // throw TAG_RETURN (e.g. return from rescue), causing TracePoint to
-    // report nil instead of the actual return value. [Bug #21389]
-    if (rb_zjit_iseq_tracing_currently_enabled()) {
-        return NULL;
-    }
 
     if (body->jit_entry == NULL) {
         body->jit_entry_calls++;
