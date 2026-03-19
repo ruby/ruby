@@ -561,7 +561,7 @@ impl Assembler {
                         (Opnd::Reg(_), Opnd::UImm(_), Opnd::Imm(_)) |
                         (Opnd::Reg(_), Opnd::Imm(_), Opnd::UImm(_)) |
                         (Opnd::Reg(_), Opnd::UImm(_), Opnd::UImm(_)) => {
-                            *left = split_64bit_immediate(asm, *left, *out);
+                            asm.mov(*out, *left);
                             *left = *out;
                             *right = split_64bit_immediate(asm, *right, SCRATCH0_OPND);
                             asm.push_insn(insn);
