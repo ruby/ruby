@@ -436,9 +436,8 @@ static VALUE build_parse_error_message(const char *format, JSON_ParserState *sta
         }
     }
 
-    VALUE msg = rb_sprintf(format, ptr);
-    VALUE message = rb_enc_sprintf(enc_utf8, "%s at line %ld column %ld", RSTRING_PTR(msg), line, column);
-    RB_GC_GUARD(msg);
+    VALUE message = rb_enc_sprintf(enc_utf8, format, ptr);
+    rb_str_catf(message, " at line %ld column %ld", line, column);
     return message;
 }
 
