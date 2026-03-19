@@ -1508,15 +1508,40 @@ mod tests {
     }
 
     fn assert_split_binop_case(kind: BinOpKind, left: Opnd, right: Opnd, out: Opnd, case: &str) {
+        fn reg_names(reg: Reg) -> (&'static str, &'static str) {
+            match reg.reg_no {
+                0 => ("rax", "eax"),
+                7 => ("rdi", "edi"),
+                13 => ("r13", "r13d"),
+                _ => panic!("unexpected register in test helper: {reg:?}"),
+            }
+        }
+
         let lines = split_binop_disasm_lines(kind, left, right, out);
         let mnemonic = binop_mnemonic(kind);
-        let matching: Vec<&String> = lines.iter().filter(|line| line.starts_with(&format!("{mnemonic} "))).collect();
+        let matching: Vec<(usize, &String)> = lines.iter()
+            .enumerate()
+            .filter(|(_, line)| line.starts_with(&format!("{mnemonic} ")))
+            .collect();
 
         assert_eq!(matching.len(), 1, "{kind:?} {case}: expected exactly one `{mnemonic}` in disasm, got {lines:?}");
         assert!(
-            !matching[0].contains("], qword ptr ["),
+            !matching[0].1.contains("], qword ptr ["),
             "{kind:?} {case}: emitted mem/mem `{mnemonic}` in disasm {lines:?}"
         );
+
+        if let (Opnd::Reg(out_reg), Opnd::Imm(_) | Opnd::UImm(_)) = (out, left) {
+            let (out64, out32) = reg_names(out_reg);
+            let prelude = &lines[..matching[0].0];
+            assert!(
+                prelude.iter().any(|line|
+                    line.starts_with(&format!("mov {out64}, ")) ||
+                    line.starts_with(&format!("mov {out32}, ")) ||
+                    line.starts_with(&format!("movabs {out64}, "))
+                ),
+                "{kind:?} {case}: expected left immediate to be materialized into output register before `{mnemonic}`, got {lines:?}"
+            );
+        }
 
         if matches!(right, Opnd::Imm(value) if imm_num_bits(value) > 32)
             || matches!(right, Opnd::UImm(value) if imm_num_bits(value as i64) > 32)
