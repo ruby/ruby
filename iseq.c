@@ -982,7 +982,7 @@ rb_iseq_new_top(const VALUE ast_value, VALUE name, VALUE path, VALUE realpath, c
 rb_iseq_t *
 pm_iseq_new_top(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent, int *error_state)
 {
-    iseq_new_setup_coverage(path, (int) (node->parser->line_offsets.size - 1));
+    iseq_new_setup_coverage(path, (int) (pm_parser_line_offsets(node->parser)->size - 1));
 
     return pm_iseq_new_with_opt(node, name, path, realpath, 0, parent, 0,
                                 ISEQ_TYPE_TOP, &COMPILE_OPTION_DEFAULT, error_state);
@@ -1006,7 +1006,7 @@ rb_iseq_new_main(const VALUE ast_value, VALUE path, VALUE realpath, const rb_ise
 rb_iseq_t *
 pm_iseq_new_main(pm_scope_node_t *node, VALUE path, VALUE realpath, const rb_iseq_t *parent, int opt, int *error_state)
 {
-    iseq_new_setup_coverage(path, (int) (node->parser->line_offsets.size - 1));
+    iseq_new_setup_coverage(path, (int) (pm_parser_line_offsets(node->parser)->size - 1));
 
     return pm_iseq_new_with_opt(node, rb_fstring_lit("<main>"),
                                 path, realpath, 0,
@@ -1035,7 +1035,7 @@ pm_iseq_new_eval(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath,
     if (rb_get_coverage_mode() & COVERAGE_TARGET_EVAL) {
         VALUE coverages = rb_get_coverages();
         if (RTEST(coverages) && RTEST(path) && !RTEST(rb_hash_has_key(coverages, path))) {
-            iseq_setup_coverage(coverages, path, ((int) (node->parser->line_offsets.size - 1)) + first_lineno - 1);
+            iseq_setup_coverage(coverages, path, ((int) (pm_parser_line_offsets(node->parser)->size - 1)) + first_lineno - 1);
         }
     }
 
@@ -1143,10 +1143,11 @@ pm_iseq_new_with_opt(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpa
     option = &next_option;
 
     pm_location_t *location = &node->base.location;
-    int32_t start_line = node->parser->start_line;
+    int32_t start_line = pm_parser_start_line(node->parser);
+    const pm_line_offset_list_t *line_offsets = pm_parser_line_offsets(node->parser);
 
-    pm_line_column_t start = pm_line_offset_list_line_column(&node->parser->line_offsets, location->start, start_line);
-    pm_line_column_t end = pm_line_offset_list_line_column(&node->parser->line_offsets, location->start + location->length, start_line);
+    pm_line_column_t start = pm_line_offset_list_line_column(line_offsets, location->start, start_line);
+    pm_line_column_t end = pm_line_offset_list_line_column(line_offsets, location->start + location->length, start_line);
 
     rb_code_location_t code_location = (rb_code_location_t) {
         .beg_pos = { .lineno = (int) start.line, .column = (int) start.column },
@@ -1411,19 +1412,20 @@ pm_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
         src = StringValue(src);
     }
 
-    pm_parse_result_t result = { 0 };
-    pm_options_line_set(&result.options, NUM2INT(line));
-    pm_options_scopes_init(&result.options, 1);
+    pm_parse_result_t result;
+    pm_parse_result_init(&result);
+    pm_options_line_set(result.options, NUM2INT(line));
+    pm_options_scopes_init(result.options, 1);
     result.node.coverage_enabled = 1;
 
     switch (option.frozen_string_literal) {
       case ISEQ_FROZEN_STRING_LITERAL_UNSET:
         break;
       case ISEQ_FROZEN_STRING_LITERAL_DISABLED:
-        pm_options_frozen_string_literal_set(&result.options, false);
+        pm_options_frozen_string_literal_set(result.options, false);
         break;
       case ISEQ_FROZEN_STRING_LITERAL_ENABLED:
-        pm_options_frozen_string_literal_set(&result.options, true);
+        pm_options_frozen_string_literal_set(result.options, true);
         break;
       default:
         rb_bug("pm_iseq_compile_with_option: invalid frozen_string_literal=%d", option.frozen_string_literal);
@@ -1898,8 +1900,8 @@ iseqw_s_compile_file_prism(int argc, VALUE *argv, VALUE self)
     rb_execution_context_t *ec = GET_EC();
     VALUE v = rb_vm_push_frame_fname(ec, file);
 
-    pm_parse_result_t result = { 0 };
-    result.options.line = 1;
+    pm_parse_result_t result;
+    pm_parse_result_init(&result);
     result.node.coverage_enabled = 1;
 
     VALUE script_lines;
