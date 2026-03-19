@@ -108,7 +108,7 @@ if __name__ == "__main__" and len(sys.argv) == 2:
             row = line.split(maxsplit=6)
 
             period = row[3] # "1212775"
-            symbol, dso = row[6].split(" (") # "[JIT] getlocal_WC_0+0x0", "/tmp/perf-78207.map)\n"
+            symbol, dso = row[6].rsplit(" (", 1) # "[JIT] getlocal_WC_0+0x0", "/tmp/perf-78207.map)\n"
             symbol = symbol.split("+")[0] # "[JIT] getlocal_WC_0"
             dso = dso.split(")")[0] # "/tmp/perf-78207.map"
 
