@@ -532,6 +532,7 @@ pub enum SideExitReason {
     SplatKwPolymorphic,
     SplatKwNotProfiled,
     DirectiveInduced,
+    SendWhileTracing,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -7509,6 +7510,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
 
+                    // Side-exit send fallbacks while tracing to avoid FLAG_FINISH breaking throw TAG_RETURN semantics
+                    if unsafe { rb_zjit_iseq_tracing_currently_enabled() } {
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::SendWhileTracing });
+                        break;
+                    }
                     let args = state.stack_pop_n(argc as usize)?;
                     let recv = state.stack_pop()?;
                     let send = fun.push_insn(block, Insn::Send { recv, cd, blockiseq: None, args, state: exit_id, reason: Uncategorized(opcode) });
@@ -7638,6 +7644,12 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         }
                     }
 
+                    // Side-exit send fallbacks while tracing to avoid FLAG_FINISH breaking throw TAG_RETURN semantics
+                    if unsafe { rb_zjit_iseq_tracing_currently_enabled() } {
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::SendWhileTracing });
+                        break;
+                    }
+
                     {
                         fn new_branch_block(
                             fun: &mut Function,
@@ -7724,6 +7736,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
                         break;  // End the block
                     }
+                    // Side-exit send fallbacks while tracing to avoid FLAG_FINISH breaking throw TAG_RETURN semantics
+                    if unsafe { rb_zjit_iseq_tracing_currently_enabled() } {
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::SendWhileTracing });
+                        break;
+                    }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
                     let block_arg = (flags & VM_CALL_ARGS_BLOCKARG) != 0;
 
@@ -7758,6 +7775,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
                         break;  // End the block
                     }
+                    // Side-exit send fallbacks while tracing to avoid FLAG_FINISH breaking throw TAG_RETURN semantics
+                    if unsafe { rb_zjit_iseq_tracing_currently_enabled() } {
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::SendWhileTracing });
+                        break;
+                    }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
 
                     let args = state.stack_pop_n(argc as usize + usize::from(forwarding))?;
@@ -7786,6 +7808,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         // Can't handle tailcall; side-exit into the interpreter
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
                         break;  // End the block
+                    }
+                    // Side-exit send fallbacks while tracing to avoid FLAG_FINISH breaking throw TAG_RETURN semantics
+                    if unsafe { rb_zjit_iseq_tracing_currently_enabled() } {
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::SendWhileTracing });
+                        break;
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
                     let block_arg = (flags & VM_CALL_ARGS_BLOCKARG) != 0;
@@ -7821,6 +7848,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
                         break;  // End the block
                     }
+                    // Side-exit send fallbacks while tracing to avoid FLAG_FINISH breaking throw TAG_RETURN semantics
+                    if unsafe { rb_zjit_iseq_tracing_currently_enabled() } {
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::SendWhileTracing });
+                        break;
+                    }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
                     let args = state.stack_pop_n(argc as usize + usize::from(forwarding))?;
                     let recv = state.stack_pop()?;
@@ -7850,6 +7882,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         // Can't handle tailcall; side-exit into the interpreter
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
                         break;  // End the block
+                    }
+                    // Side-exit send fallbacks while tracing to avoid FLAG_FINISH breaking throw TAG_RETURN semantics
+                    if unsafe { rb_zjit_iseq_tracing_currently_enabled() } {
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::SendWhileTracing });
+                        break;
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
                     let block_arg = (flags & VM_CALL_ARGS_BLOCKARG) != 0;
