@@ -12590,6 +12590,14 @@ match4(const pm_parser_t *parser, pm_token_type_t type1, pm_token_type_t type2, 
 }
 
 /**
+ * Returns true if the current token is any of the six given types.
+ */
+static PRISM_INLINE bool
+match6(const pm_parser_t *parser, pm_token_type_t type1, pm_token_type_t type2, pm_token_type_t type3, pm_token_type_t type4, pm_token_type_t type5, pm_token_type_t type6) {
+    return match1(parser, type1) || match1(parser, type2) || match1(parser, type3) || match1(parser, type4) || match1(parser, type5) || match1(parser, type6);
+}
+
+/**
  * Returns true if the current token is any of the seven given types.
  */
 static PRISM_INLINE bool
@@ -15091,6 +15099,16 @@ parse_block(pm_parser_t *parser, uint16_t depth) {
  */
 static bool
 parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_block, uint8_t flags, uint16_t depth) {
+    /* Fast path: if the current token can't begin an expression and isn't
+     * a parenthesis, block opener, or splat/block-pass operator, there are
+     * no arguments to parse. */
+    if (
+        !token_begins_expression_p(parser->current.type) &&
+        !match6(parser, PM_TOKEN_PARENTHESIS_LEFT, PM_TOKEN_KEYWORD_DO, PM_TOKEN_KEYWORD_DO_BLOCK, PM_TOKEN_USTAR, PM_TOKEN_USTAR_STAR, PM_TOKEN_UAMPERSAND)
+    ) {
+        return false;
+    }
+
     bool found = false;
     bool parsed_command_args = false;
 
