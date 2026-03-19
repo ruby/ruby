@@ -969,60 +969,180 @@ pub fn zjit_alloc_bytes() -> usize {
     jit::GLOBAL_ALLOCATOR.alloc_size.load(Ordering::SeqCst)
 }
 
-/// Perfetto JSON trace writer for --zjit-trace-exits.
+/// Fuchsia Trace Format (FXT) binary writer for --zjit-trace-exits.
+/// Produces .fxt files that can be opened directly in Perfetto UI.
+/// Uses the string table for deduplication of repeated reason/frame strings.
+/// See: https://fuchsia.dev/fuchsia-src/reference/tracing/trace-format
 pub struct PerfettoTracer {
     writer: std::io::BufWriter<std::fs::File>,
     start_time: std::time::Instant,
     event_count: usize,
     pub skipped_samples: usize,
+    /// String table: string content -> interned index (1..32767)
+    string_table: std::collections::HashMap<String, u16>,
+    next_string_index: u16,
+    pid: u32,
 }
 
 impl PerfettoTracer {
-    pub fn new() -> Self {
+    /// Write a single 64-bit little-endian word.
+    fn write_word(&mut self, val: u64) {
         use std::io::Write;
-        let path = format!("/tmp/perfetto-{}.json", std::process::id());
-        let file = std::fs::File::create(&path)
-            .unwrap_or_else(|e| panic!("ZJIT: failed to create {}: {}", path, e));
-        let mut writer = std::io::BufWriter::new(file);
-        let _ = writer.write_all(b"[\n");
-        eprintln!("ZJIT: writing trace exits to {path}");
-        PerfettoTracer {
-            writer,
-            start_time: std::time::Instant::now(),
-            event_count: 0,
-            skipped_samples: 0,
+        let _ = self.writer.write_all(&val.to_le_bytes());
+    }
+
+    /// Write bytes padded to 8-byte alignment.
+    fn write_padded_bytes(&mut self, bytes: &[u8]) {
+        use std::io::Write;
+        let _ = self.writer.write_all(bytes);
+        let remainder = bytes.len() % 8;
+        if remainder != 0 {
+            let _ = self.writer.write_all(&[0u8; 7][..8 - remainder]);
         }
     }
 
-    pub fn write_event(&mut self, reason: &str, frames: &[String]) {
-        use std::io::Write;
-        let ts = self.start_time.elapsed().as_micros();
-        let pid = std::process::id();
+    /// Number of 8-byte words needed for `len` bytes (rounded up).
+    fn word_count(len: usize) -> u64 {
+        ((len + 7) / 8) as u64
+    }
 
-        // Write comma separator between events
-        if self.event_count > 0 {
-            let _ = self.writer.write_all(b",\n");
+    pub fn new() -> Self {
+        let pid = std::process::id();
+        let path = format!("/tmp/perfetto-{pid}.fxt");
+        let file = std::fs::File::create(&path)
+            .unwrap_or_else(|e| panic!("ZJIT: failed to create {path}: {e}"));
+        let mut tracer = PerfettoTracer {
+            writer: std::io::BufWriter::new(file),
+            start_time: std::time::Instant::now(),
+            event_count: 0,
+            skipped_samples: 0,
+            string_table: std::collections::HashMap::new(),
+            next_string_index: 1, // index 0 = empty string
+            pid,
+        };
+
+        // Magic number record: metadata type=4 (trace info), trace info type=0,
+        // magic=0x16547846 at bits [24..55]
+        tracer.write_word((1u64 << 4) | (4u64 << 16) | (0x16547846u64 << 24));
+
+        // Initialization record: 1 tick = 1 nanosecond
+        tracer.write_word(1u64 | (2u64 << 4));
+        tracer.write_word(1_000_000_000u64);
+
+        // Register thread at index 1: (process_koid=pid, thread_koid=1)
+        tracer.write_word(3u64 | (3u64 << 4) | (1u64 << 16));
+        tracer.write_word(pid as u64);
+        tracer.write_word(1u64);
+
+        // Pre-intern common strings
+        tracer.intern_string("side_exit");
+        tracer.intern_string("stack");
+
+        // Flush header immediately so something is written even if process exits abruptly
+        {
+            use std::io::Write;
+            let _ = tracer.writer.flush();
         }
 
-        // Build frames JSON array
-        let frames_json: Vec<String> = frames.iter()
-            .map(|f| format!("\"{}\"", f.replace('\\', "\\\\").replace('"', "\\\"")))
-            .collect();
+        eprintln!("ZJIT: writing trace exits to {path}");
+        tracer
+    }
 
-        let _ = write!(
-            self.writer,
-            "{{\"ph\":\"i\",\"pid\":{pid},\"tid\":1,\"ts\":{ts},\"name\":\"{reason}\",\"cat\":\"side_exit\",\"s\":\"t\",\"args\":{{\"frames\":[{}]}}}}",
-            frames_json.join(",")
-        );
+    /// Intern a string into the string table, writing a string record if new.
+    /// Returns the string table index (1..32767). Returns 0 for empty strings
+    /// or if the table is full.
+    fn intern_string(&mut self, s: &str) -> u16 {
+        if s.is_empty() {
+            return 0;
+        }
+        if let Some(&idx) = self.string_table.get(s) {
+            return idx;
+        }
+        if self.next_string_index >= 0x8000 {
+            return 0; // table full
+        }
+
+        let idx = self.next_string_index;
+        let bytes = s.as_bytes();
+        let len = bytes.len().min(0x7FFF); // 15-bit max length
+        let record_words = 1 + Self::word_count(len);
+
+        // String record: type=2, index in [16..30], length in [32..46]
+        let header: u64 = 2u64
+            | (record_words << 4)
+            | ((idx as u64) << 16)
+            | ((len as u64) << 32);
+        self.write_word(header);
+        self.write_padded_bytes(&bytes[..len]);
+
+        self.string_table.insert(s.to_string(), idx);
+        self.next_string_index += 1;
+        idx
+    }
+
+    pub fn write_event(&mut self, reason: &str, frames: &[String]) {
+        let ts_nanos = self.start_time.elapsed().as_nanos() as u64;
+
+        // Intern event metadata strings (may emit string records first)
+        let category_ref = self.intern_string("side_exit");
+        let name_ref = self.intern_string(reason);
+
+        if frames.is_empty() {
+            // Instant event with no arguments: 2 words
+            let header: u64 = 4u64
+                | (2u64 << 4)                          // size = 2 words
+                | (1u64 << 24)                          // thread_ref = 1
+                | ((category_ref as u64) << 32)
+                | ((name_ref as u64) << 48);
+            self.write_word(header);
+            self.write_word(ts_nanos);
+        } else {
+            // Build newline-joined stack string
+            let stack_str = frames.join("\n");
+            let stack_bytes = stack_str.as_bytes();
+            // Cap at 30000 bytes to stay within the 12-bit record size limit
+            let stack_len = stack_bytes.len().min(30000);
+            let stack_value_words = Self::word_count(stack_len);
+
+            let stack_name_ref = self.intern_string("stack");
+
+            // String argument: type=6, indexed name, inline value
+            // Inline string ref: MSB=1, lower 15 bits = length
+            let stack_value_ref: u16 = 0x8000 | (stack_len as u16);
+            let arg_words = 1 + stack_value_words; // header + inline value
+
+            // Instant event: header + timestamp + argument
+            let event_words = 2 + arg_words;
+            let header: u64 = 4u64
+                | (event_words << 4)                    // size
+                | (1u64 << 20)                          // n_args = 1
+                | (1u64 << 24)                          // thread_ref = 1
+                | ((category_ref as u64) << 32)
+                | ((name_ref as u64) << 48);
+            self.write_word(header);
+            self.write_word(ts_nanos);
+
+            // Argument record: string type=6, name_ref, value_ref
+            let arg_header: u64 = 6u64
+                | (arg_words << 4)
+                | ((stack_name_ref as u64) << 16)
+                | ((stack_value_ref as u64) << 32);
+            self.write_word(arg_header);
+            self.write_padded_bytes(&stack_bytes[..stack_len]);
+        }
 
         self.event_count += 1;
+
+        // Flush to ensure data reaches disk. Static globals may not be
+        // dropped on process exit, so we can't rely on Drop for flushing.
+        use std::io::Write;
+        let _ = self.writer.flush();
     }
 }
 
 impl Drop for PerfettoTracer {
     fn drop(&mut self) {
         use std::io::Write;
-        let _ = self.writer.write_all(b"\n]\n");
         let _ = self.writer.flush();
     }
 }
