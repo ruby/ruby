@@ -53,6 +53,14 @@ pm_source_shared_new(const uint8_t *data, size_t length) {
     return pm_source_alloc(data, length, PM_SOURCE_SHARED);
 }
 
+/**
+ * Create a new source that owns its memory.
+ */
+pm_source_t *
+pm_source_owned_new(uint8_t *data, size_t length) {
+    return pm_source_alloc(data, length, PM_SOURCE_OWNED);
+}
+
 #ifdef _WIN32
 /**
  * Represents a file handle on Windows, where the path will need to be freed

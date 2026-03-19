@@ -64,7 +64,7 @@ typedef enum {
  *
  * @param data The pointer to the source data.
  * @param length The length of the source data in bytes.
- * @returns A new source, or NULL on allocation failure.
+ * @returns A new source. Aborts on allocation failure.
  */
 PRISM_EXPORTED_FUNCTION pm_source_t * pm_source_constant_new(const uint8_t *data, size_t length) PRISM_NODISCARD;
 
@@ -74,9 +74,19 @@ PRISM_EXPORTED_FUNCTION pm_source_t * pm_source_constant_new(const uint8_t *data
  *
  * @param data The pointer to the source data.
  * @param length The length of the source data in bytes.
- * @returns A new source, or NULL on allocation failure.
+ * @returns A new source. Aborts on allocation failure.
  */
 PRISM_EXPORTED_FUNCTION pm_source_t * pm_source_shared_new(const uint8_t *data, size_t length) PRISM_NODISCARD;
+
+/**
+ * Create a new source that owns its memory. The memory will be freed with
+ * xfree when the source is freed.
+ *
+ * @param data The pointer to the heap-allocated source data.
+ * @param length The length of the source data in bytes.
+ * @returns A new source. Aborts on allocation failure.
+ */
+PRISM_EXPORTED_FUNCTION pm_source_t * pm_source_owned_new(uint8_t *data, size_t length) PRISM_NODISCARD;
 
 /**
  * Create a new source by reading a file into a heap-allocated buffer.
@@ -108,7 +118,7 @@ PRISM_EXPORTED_FUNCTION pm_source_t * pm_source_mapped_new(const char *filepath,
  * @param stream The stream to read from.
  * @param fgets The function to use to read from the stream.
  * @param feof The function to use to check if the stream is at EOF.
- * @returns A new source, or NULL on allocation failure.
+ * @returns A new source. Aborts on allocation failure.
  */
 PRISM_EXPORTED_FUNCTION pm_source_t * pm_source_stream_new(void *stream, pm_source_stream_fgets_t *fgets, pm_source_stream_feof_t *feof) PRISM_NODISCARD;
 
