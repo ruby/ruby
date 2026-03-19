@@ -4328,7 +4328,7 @@ fn test_float_nil_opt_with_guard_side_exit() {
         test(2.0)
     ");
     assert_contains_opcode("test", YARVINSN_opt_nil_p);
-    assert_snapshot!(inspect("test(nil)"), @"false");
+    assert_snapshot!(inspect("test(nil)"), @"true");
 }
 
 #[test]
