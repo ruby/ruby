@@ -1515,4 +1515,35 @@ class TestTime < Test::Unit::TestCase
       assert_equal("-10000-01-01T00:00:00Z", Time.utc(-10000).__send__(method))
     end
   end
+
+  def test_utc_month_mday_normalization
+    bug21301 = "[ruby-core:121801] [Bug #21301]"
+
+    # 30-day months: April 31 -> May 1
+    assert_equal(Time.utc(2025, 5, 1), Time.new(2025, 4, 31, 0, 0, 0, "UTC"), bug21301)
+    assert_equal(5, Time.new(2025, 4, 31, 0, 0, 0, "UTC").mon, bug21301)
+    assert_equal(1, Time.new(2025, 4, 31, 0, 0, 0, "UTC").mday, bug21301)
+
+    # June, September, November (other 30-day months)
+    assert_equal(Time.utc(2025, 7, 1), Time.new(2025, 6, 31, 0, 0, 0, "UTC"), bug21301)
+    assert_equal(Time.utc(2025, 10, 1), Time.new(2025, 9, 31, 0, 0, 0, "UTC"), bug21301)
+    assert_equal(Time.utc(2025, 12, 1), Time.new(2025, 11, 31, 0, 0, 0, "UTC"), bug21301)
+
+    # February in non-leap year: Feb 29 -> Mar 1
+    assert_equal(Time.utc(2025, 3, 1), Time.new(2025, 2, 29, 0, 0, 0, "UTC"), bug21301)
+
+    # February in leap year: Feb 29 is valid
+    assert_equal(Time.utc(2024, 2, 29), Time.new(2024, 2, 29, 0, 0, 0, "UTC"), bug21301)
+    assert_equal(2, Time.new(2024, 2, 29, 0, 0, 0, "UTC").mon, bug21301)
+
+    # Combined with hour=24 wraparound: April 31 24:00 -> May 2
+    assert_equal(Time.utc(2025, 5, 2), Time.new(2025, 4, 31, 24, 0, 0, "UTC"), bug21301)
+
+    # String parsing path
+    assert_equal(Time.utc(2025, 5, 1), Time.new("2025-04-31T00:00:00Z"), bug21301)
+
+    # Consistency with +00:00
+    assert_equal(Time.new(2025, 4, 31, 0, 0, 0, "+00:00").to_i,
+                 Time.new(2025, 4, 31, 0, 0, 0, "UTC").to_i, bug21301)
+  end
 end
