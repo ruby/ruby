@@ -1422,6 +1422,17 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
         loaded_features = rb_root_box()->loaded_features;
     }
 
+    rb_dump_machine_register(errout, ctx);
+
+#if USE_BACKTRACE || defined(_WIN32)
+    // Print the C backtrace first since it doesn't depend on Ruby VM state
+    // and is more resilient to corruption (e.g. from JIT code crashes).
+    kprintf("-- C level backtrace information "
+            "-------------------------------------------\n");
+    rb_print_backtrace(errout);
+    kprintf("\n");
+#endif /* USE_BACKTRACE */
+
     if (vm && ec) {
         rb_vmdebug_stack_dump_raw(ec, ec->cfp, errout);
         if (box_env) {
@@ -1441,17 +1452,6 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
         }
         kputs("\n");
     }
-
-    rb_dump_machine_register(errout, ctx);
-
-#if USE_BACKTRACE || defined(_WIN32)
-    kprintf("-- C level backtrace information "
-            "-------------------------------------------\n");
-    rb_print_backtrace(errout);
-
-
-    kprintf("\n");
-#endif /* USE_BACKTRACE */
 
     if (other_runtime_info || vm) {
         kprintf("-- Other runtime information "
