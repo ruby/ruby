@@ -25,7 +25,7 @@ typedef struct pm_arena_t pm_arena_t;
  *     the caller to free the arena using pm_arena_free when it is no longer
  *     needed.
  */
-PRISM_EXPORTED_FUNCTION pm_arena_t * pm_arena_new(void) PRISM_NODISCARD;
+PRISM_EXPORTED_FUNCTION PRISM_NODISCARD pm_arena_t * pm_arena_new(void);
 
 /**
  * Frees both the held memory and the arena itself.

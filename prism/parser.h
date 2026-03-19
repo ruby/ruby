@@ -33,7 +33,7 @@ typedef struct pm_parser_t pm_parser_t;
  * @returns The initialized parser. It is the responsibility of the caller to
  *     free the parser with `pm_parser_free()`.
  */
-PRISM_EXPORTED_FUNCTION pm_parser_t * pm_parser_new(pm_arena_t *arena, const uint8_t *source, size_t size, const pm_options_t *options) PRISM_NODISCARD PRISM_NONNULL(1);
+PRISM_EXPORTED_FUNCTION PRISM_NODISCARD pm_parser_t * pm_parser_new(pm_arena_t *arena, const uint8_t *source, size_t size, const pm_options_t *options) PRISM_NONNULL(1);
 
 /**
  * Free both the memory held by the given parser and the parser itself.
