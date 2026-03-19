@@ -969,15 +969,62 @@ pub fn zjit_alloc_bytes() -> usize {
     jit::GLOBAL_ALLOCATOR.alloc_size.load(Ordering::SeqCst)
 }
 
-/// Struct of arrays for --zjit-trace-exits.
-#[derive(Default)]
-pub struct SideExitLocations {
-    /// Control frames of method entries.
-    pub raw_samples: Vec<VALUE>,
-    /// Line numbers of the iseq caller.
-    pub line_samples: Vec<i32>,
-    /// Skipped samples
-    pub skipped_samples: usize
+/// Perfetto JSON trace writer for --zjit-trace-exits.
+pub struct PerfettoTracer {
+    writer: std::io::BufWriter<std::fs::File>,
+    start_time: std::time::Instant,
+    event_count: usize,
+    pub skipped_samples: usize,
+}
+
+impl PerfettoTracer {
+    pub fn new() -> Self {
+        use std::io::Write;
+        let path = format!("/tmp/perfetto-{}.json", std::process::id());
+        let file = std::fs::File::create(&path)
+            .unwrap_or_else(|e| panic!("ZJIT: failed to create {}: {}", path, e));
+        let mut writer = std::io::BufWriter::new(file);
+        let _ = writer.write_all(b"[\n");
+        eprintln!("ZJIT: writing trace exits to {path}");
+        PerfettoTracer {
+            writer,
+            start_time: std::time::Instant::now(),
+            event_count: 0,
+            skipped_samples: 0,
+        }
+    }
+
+    pub fn write_event(&mut self, reason: &str, frames: &[String]) {
+        use std::io::Write;
+        let ts = self.start_time.elapsed().as_micros();
+        let pid = std::process::id();
+
+        // Write comma separator between events
+        if self.event_count > 0 {
+            let _ = self.writer.write_all(b",\n");
+        }
+
+        // Build frames JSON array
+        let frames_json: Vec<String> = frames.iter()
+            .map(|f| format!("\"{}\"", f.replace('\\', "\\\\").replace('"', "\\\"")))
+            .collect();
+
+        let _ = write!(
+            self.writer,
+            "{{\"ph\":\"i\",\"pid\":{pid},\"tid\":1,\"ts\":{ts},\"name\":\"{reason}\",\"cat\":\"side_exit\",\"s\":\"t\",\"args\":{{\"frames\":[{}]}}}}",
+            frames_json.join(",")
+        );
+
+        self.event_count += 1;
+    }
+}
+
+impl Drop for PerfettoTracer {
+    fn drop(&mut self) {
+        use std::io::Write;
+        let _ = self.writer.write_all(b"\n]\n");
+        let _ = self.writer.flush();
+    }
 }
 
 /// Primitive called in zjit.rb
@@ -993,29 +1040,3 @@ pub extern "C" fn rb_zjit_trace_exit_locations_enabled_p(_ec: EcPtr, _ruby_self:
     }
 }
 
-/// Call the C function to parse the raw_samples and line_samples
-/// into raw, lines, and frames hash for RubyVM::YJIT.exit_locations.
-#[unsafe(no_mangle)]
-pub extern "C" fn rb_zjit_get_exit_locations(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
-    if !zjit_enabled_p() || get_option!(trace_side_exits).is_none() {
-        return Qnil;
-    }
-
-    // Can safely unwrap since `trace_side_exits` must be true at this point
-    let zjit_raw_samples = ZJITState::get_raw_samples().unwrap();
-    let zjit_line_samples = ZJITState::get_line_samples().unwrap();
-
-    assert_eq!(zjit_raw_samples.len(), zjit_line_samples.len());
-
-    // zjit_raw_samples and zjit_line_samples are the same length so
-    // pass only one of the lengths in the C function.
-    let samples_len = zjit_raw_samples.len() as i32;
-
-    unsafe {
-        rb_zjit_exit_locations_dict(
-            zjit_raw_samples.as_mut_ptr(),
-            zjit_line_samples.as_mut_ptr(),
-            samples_len
-        )
-    }
-}

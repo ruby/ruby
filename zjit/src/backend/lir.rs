@@ -2708,7 +2708,11 @@ impl Assembler
                         // ccall doesn't clobber caller-saved registers
                         // holding stack/local operands.
                         compile_exit_save_state(self, &exit);
-                        asm_ccall!(self, rb_zjit_record_exit_stack, pc);
+                        // Leak a CString with the reason so it's available at runtime
+                        let reason_cstr = std::ffi::CString::new(reason.to_string())
+                            .unwrap_or_else(|_| std::ffi::CString::new("unknown").unwrap());
+                        let reason_ptr = reason_cstr.into_raw() as *const u8;
+                        asm_ccall!(self, rb_zjit_record_exit_stack, pc, Opnd::const_ptr(reason_ptr));
                         compile_exit_return(self);
                     } else {
                         // If the side exit has already been compiled, jump to it.
