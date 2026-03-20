@@ -53,7 +53,7 @@ module Prism
     module Doxygen
       # Similar to /verbatim ... /endverbatim but doesn't wrap the result in a code block.
       def self.verbatim(value)
-        value.gsub(/[\.*%!`#<>_+-]/, '\\\\\0')
+        value.gsub(/[*%!`#<>_+@-]/, '\\\\\0')
       end
     end
 
@@ -684,8 +684,7 @@ module Prism
     TEMPLATES = [
       "ext/prism/api_node.c",
       "include/prism/ast.h",
-      "include/prism/diagnostic.h",
-      "include/prism/node_new.h",
+      "include/prism/internal/diagnostic.h",
       "javascript/src/deserialize.js",
       "javascript/src/nodes.js",
       "javascript/src/visitor.js",
@@ -703,10 +702,11 @@ module Prism
       "lib/prism/serialize.rb",
       "lib/prism/visitor.rb",
       "src/diagnostic.c",
+      "src/json.c",
       "src/node.c",
       "src/prettyprint.c",
       "src/serialize.c",
-      "src/token_type.c"
+      "src/tokens.c"
     ]
   end
 end

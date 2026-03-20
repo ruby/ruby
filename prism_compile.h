@@ -27,6 +27,9 @@ typedef struct pm_scope_node {
     pm_constant_id_list_t locals;
 
     const pm_parser_t *parser;
+    const pm_options_t *options;
+    const pm_line_offset_list_t *line_offsets;
+    int32_t start_line;
     rb_encoding *encoding;
 
     /**
@@ -75,16 +78,16 @@ void pm_scope_node_destroy(pm_scope_node_t *scope_node);
 
 typedef struct {
     /** The arena allocator for AST-lifetime memory. */
-    pm_arena_t arena;
+    pm_arena_t *arena;
 
     /** The parser that will do the actual parsing. */
-    pm_parser_t parser;
+    pm_parser_t *parser;
 
     /** The options that will be passed to the parser. */
-    pm_options_t options;
+    pm_options_t *options;
 
-    /** The input that represents the source to be parsed. */
-    pm_string_t input;
+    /** The source backing the parse (file, string, or stream). */
+    pm_source_t *source;
 
     /** The resulting scope node that will hold the generated AST. */
     pm_scope_node_t node;
@@ -99,6 +102,7 @@ typedef struct {
 #define PM_CONSTANT_MULT ((pm_constant_id_t)(idMULT | PM_SPECIAL_CONSTANT_FLAG))
 #define PM_CONSTANT_POW ((pm_constant_id_t)(idPow | PM_SPECIAL_CONSTANT_FLAG))
 
+void pm_parse_result_init(pm_parse_result_t *result);
 VALUE pm_load_file(pm_parse_result_t *result, VALUE filepath, bool load_error);
 VALUE pm_parse_file(pm_parse_result_t *result, VALUE filepath, VALUE *script_lines);
 VALUE pm_load_parse_file(pm_parse_result_t *result, VALUE filepath, VALUE *script_lines);

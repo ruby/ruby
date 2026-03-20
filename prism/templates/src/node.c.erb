@@ -1,5 +1,9 @@
 #line <%= __LINE__ + 1 %> "prism/templates/src/<%= File.basename(__FILE__) %>"
-#include "prism/node.h"
+#include "prism/internal/node.h"
+
+#include "prism/internal/arena.h"
+
+#include <stdlib.h>
 
 /**
  * Attempts to grow the node list to the next size. If there is already
@@ -74,8 +78,8 @@ pm_node_list_concat(pm_arena_t *arena, pm_node_list_t *list, pm_node_list_t *oth
 /**
  * Returns a string representation of the given node type.
  */
-PRISM_EXPORTED_FUNCTION const char *
-pm_node_type_to_str(pm_node_type_t node_type)
+const char *
+pm_node_type(pm_node_type_t node_type)
 {
     switch (node_type) {
 <%- nodes.each do |node| -%>
@@ -94,7 +98,7 @@ pm_node_type_to_str(pm_node_type_t node_type)
  * pointer and is passed to the visitor callback for consumers to use as they
  * see fit.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_visit_node(const pm_node_t *node, bool (*visitor)(const pm_node_t *node, void *data), void *data) {
     if (visitor(node, data)) pm_visit_child_nodes(node, visitor, data);
 }
@@ -104,7 +108,7 @@ pm_visit_node(const pm_node_t *node, bool (*visitor)(const pm_node_t *node, void
  * default behavior for walking the tree that is called from pm_visit_node if
  * the callback returns true.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_visit_child_nodes(const pm_node_t *node, bool (*visitor)(const pm_node_t *node, void *data), void *data) {
     switch (PM_NODE_TYPE(node)) {
         <%- nodes.each do |node| -%>
@@ -140,124 +144,23 @@ pm_visit_child_nodes(const pm_node_t *node, bool (*visitor)(const pm_node_t *nod
             break;
     }
 }
+<%- nodes.each do |node| -%>
 
-// We optionally support dumping to JSON. For systems that don't want or need
-// this functionality, it can be turned off with the PRISM_EXCLUDE_JSON define.
-#ifndef PRISM_EXCLUDE_JSON
-
-static void
-pm_dump_json_constant(pm_buffer_t *buffer, const pm_parser_t *parser, pm_constant_id_t constant_id) {
-    const pm_constant_t *constant = pm_constant_pool_id_to_constant(&parser->constant_pool, constant_id);
-    pm_buffer_append_byte(buffer, '"');
-    pm_buffer_append_source(buffer, constant->start, constant->length, PM_BUFFER_ESCAPING_JSON);
-    pm_buffer_append_byte(buffer, '"');
-}
-
-static void
-pm_dump_json_location(pm_buffer_t *buffer, const pm_location_t *location) {
-    pm_buffer_append_format(buffer, "{\"start\":%" PRIu32 ",\"length\":%" PRIu32 "}", location->start, location->length);
-}
-
+<%- params = node.fields.map(&:c_param) -%>
 /**
- * Dump JSON to the given buffer.
+ * Allocate and initialize a new <%= node.name %> node.
  */
-PRISM_EXPORTED_FUNCTION void
-pm_dump_json(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *node) {
-    switch (PM_NODE_TYPE(node)) {
-        <%- nodes.each do |node| -%>
-        case <%= node.type %>: {
-            pm_buffer_append_string(buffer, "{\"type\":\"<%= node.name %>\",\"location\":", <%= node.name.bytesize + 22 %>);
+pm_<%= node.human %>_t *
+pm_<%= node.human %>_new(pm_arena_t *arena, uint32_t node_id, pm_node_flags_t flags, pm_location_t location<%= params.empty? ? "" : ", #{params.join(", ")}" %>) {
+    pm_<%= node.human %>_t *node = (pm_<%= node.human %>_t *) pm_arena_alloc(arena, sizeof(pm_<%= node.human %>_t), PRISM_ALIGNOF(pm_<%= node.human %>_t));
 
-            const pm_<%= node.human %>_t *cast = (const pm_<%= node.human %>_t *) node;
-            pm_dump_json_location(buffer, &cast->base.location);
-            <%- [*node.flags, *node.fields].each_with_index do |field, index| -%>
+    *node = (pm_<%= node.human %>_t) {
+        .base = { .type = <%= node.type %>, .flags = flags, .node_id = node_id, .location = location }<%= node.fields.empty? ? "" : "," %>
+<%- node.fields.each_with_index do |field, index| -%>
+        .<%= field.name %> = <%= field.name %><%= index < node.fields.size - 1 ? "," : "" %>
+<%- end -%>
+    };
 
-            // Dump the <%= field.name %> field
-            pm_buffer_append_byte(buffer, ',');
-            <%- if field.is_a?(Prism::Template::Flags) -%>
-            pm_buffer_append_string(buffer, "\"flags\":", 8);
-            <%- else -%>
-            pm_buffer_append_string(buffer, "\"<%= field.name %>\":", <%= field.name.bytesize + 3 %>);
-            <%- end -%>
-            <%- case field -%>
-            <%- when Prism::Template::NodeField -%>
-            pm_dump_json(buffer, parser, (const pm_node_t *) cast-><%= field.name %>);
-            <%- when Prism::Template::OptionalNodeField -%>
-            if (cast-><%= field.name %> != NULL) {
-                pm_dump_json(buffer, parser, (const pm_node_t *) cast-><%= field.name %>);
-            } else {
-                pm_buffer_append_string(buffer, "null", 4);
-            }
-            <%- when Prism::Template::NodeListField -%>
-            const pm_node_list_t *<%= field.name %> = &cast-><%= field.name %>;
-            pm_buffer_append_byte(buffer, '[');
-
-            for (size_t index = 0; index < <%= field.name %>->size; index++) {
-                if (index != 0) pm_buffer_append_byte(buffer, ',');
-                pm_dump_json(buffer, parser, <%= field.name %>->nodes[index]);
-            }
-            pm_buffer_append_byte(buffer, ']');
-            <%- when Prism::Template::StringField -%>
-            const pm_string_t *<%= field.name %> = &cast-><%= field.name %>;
-            pm_buffer_append_byte(buffer, '"');
-            pm_buffer_append_source(buffer, pm_string_source(<%= field.name %>), pm_string_length(<%= field.name %>), PM_BUFFER_ESCAPING_JSON);
-            pm_buffer_append_byte(buffer, '"');
-            <%- when Prism::Template::ConstantField -%>
-            pm_dump_json_constant(buffer, parser, cast-><%= field.name %>);
-            <%- when Prism::Template::OptionalConstantField -%>
-            if (cast-><%= field.name %> != PM_CONSTANT_ID_UNSET) {
-                pm_dump_json_constant(buffer, parser, cast-><%= field.name %>);
-            } else {
-                pm_buffer_append_string(buffer, "null", 4);
-            }
-            <%- when Prism::Template::ConstantListField -%>
-            const pm_constant_id_list_t *<%= field.name %> = &cast-><%= field.name %>;
-            pm_buffer_append_byte(buffer, '[');
-
-            for (size_t index = 0; index < <%= field.name %>->size; index++) {
-                if (index != 0) pm_buffer_append_byte(buffer, ',');
-                pm_dump_json_constant(buffer, parser, <%= field.name %>->ids[index]);
-            }
-            pm_buffer_append_byte(buffer, ']');
-            <%- when Prism::Template::LocationField -%>
-            pm_dump_json_location(buffer, &cast-><%= field.name %>);
-            <%- when Prism::Template::OptionalLocationField -%>
-            if (cast-><%= field.name %>.length != 0) {
-                pm_dump_json_location(buffer, &cast-><%= field.name %>);
-            } else {
-                pm_buffer_append_string(buffer, "null", 4);
-            }
-            <%- when Prism::Template::UInt8Field -%>
-            pm_buffer_append_format(buffer, "%" PRIu8, cast-><%= field.name %>);
-            <%- when Prism::Template::UInt32Field -%>
-            pm_buffer_append_format(buffer, "%" PRIu32, cast-><%= field.name %>);
-            <%- when Prism::Template::Flags -%>
-            size_t flags = 0;
-            pm_buffer_append_byte(buffer, '[');
-            <%- node.flags.values.each_with_index do |value, index| -%>
-            if (PM_NODE_FLAG_P(cast, PM_<%= node.flags.human.upcase %>_<%= value.name %>)) {
-                if (flags != 0) pm_buffer_append_byte(buffer, ',');
-                pm_buffer_append_string(buffer, "\"<%= value.name %>\"", <%= value.name.bytesize + 2 %>);
-                flags++;
-            }
-            <%- end -%>
-            pm_buffer_append_byte(buffer, ']');
-            <%- when Prism::Template::IntegerField -%>
-            pm_integer_string(buffer, &cast-><%= field.name %>);
-            <%- when Prism::Template::DoubleField -%>
-            pm_buffer_append_format(buffer, "%f", cast-><%= field.name %>);
-            <%- else -%>
-            <%- raise %>
-            <%- end -%>
-            <%- end -%>
-
-            pm_buffer_append_byte(buffer, '}');
-            break;
-        }
-        <%- end -%>
-        case PM_SCOPE_NODE:
-            break;
-    }
+    return node;
 }
-
-#endif
+<%- end -%>

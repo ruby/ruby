@@ -1,0 +1,60 @@
+#ifndef PRISM_INTERNAL_DIAGNOSTIC_H
+#define PRISM_INTERNAL_DIAGNOSTIC_H
+
+#include "prism/internal/list.h"
+
+#include "prism/arena.h"
+#include "prism/diagnostic.h"
+
+/*
+ * The diagnostic IDs of all of the diagnostics, used to communicate the types
+ * of errors between the parser and the user.
+ */
+typedef enum {
+    /* These are the error diagnostics. */
+    <%- errors.each do |error| -%>
+    PM_ERR_<%= error.name %>,
+    <%- end -%>
+
+    /* These are the warning diagnostics. */
+    <%- warnings.each do |warning| -%>
+    PM_WARN_<%= warning.name %>,
+    <%- end -%>
+} pm_diagnostic_id_t;
+
+/*
+ * This struct represents a diagnostic generated during parsing.
+ */
+struct pm_diagnostic_t {
+    /* The embedded base node. */
+    pm_list_node_t node;
+
+    /* The location of the diagnostic in the source. */
+    pm_location_t location;
+
+    /* The ID of the diagnostic. */
+    pm_diagnostic_id_t diag_id;
+
+    /* The message associated with the diagnostic. */
+    const char *message;
+
+    /*
+     * The level of the diagnostic, see `pm_error_level_t` and
+     * `pm_warning_level_t` for possible values.
+     */
+    uint8_t level;
+};
+
+/*
+ * Append a diagnostic to the given list of diagnostics that is using shared
+ * memory for its message.
+ */
+void pm_diagnostic_list_append(pm_arena_t *arena, pm_list_t *list, uint32_t start, uint32_t length, pm_diagnostic_id_t diag_id);
+
+/*
+ * Append a diagnostic to the given list of diagnostics that is using a format
+ * string for its message.
+ */
+void pm_diagnostic_list_append_format(pm_arena_t *arena, pm_list_t *list, uint32_t start, uint32_t length, pm_diagnostic_id_t diag_id, ...);
+
+#endif

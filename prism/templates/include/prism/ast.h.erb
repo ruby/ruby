@@ -8,12 +8,14 @@
 #ifndef PRISM_AST_H
 #define PRISM_AST_H
 
-#include "prism/defines.h"
-#include "prism/util/pm_constant_pool.h"
-#include "prism/util/pm_integer.h"
-#include "prism/util/pm_string.h"
+#include "prism/compiler/align.h"
+#include "prism/compiler/exported.h"
 
-#include <assert.h>
+#include "prism/arena.h"
+#include "prism/constant_pool.h"
+#include "prism/integer.h"
+#include "prism/stringy.h"
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -44,6 +46,15 @@ typedef struct {
     /** A pointer to the end location of the token in the source. */
     const uint8_t *end;
 } pm_token_t;
+
+/**
+ * Returns a string representation of the given token type.
+ *
+ * @param token_type The type of the token to get the string representation of.
+ * @returns A string representation of the given token type. This is meant for
+ *     debugging purposes and is not guaranteed to be stable across versions.
+ */
+PRISM_EXPORTED_FUNCTION const char * pm_token_type(pm_token_type_t token_type);
 
 /**
  * This struct represents a slice in the source code, defined by an offset and
@@ -237,6 +248,23 @@ typedef enum pm_<%= flag.human %> {
 
     PM_<%= flag.human.upcase %>_LAST,
 } pm_<%= flag.human %>_t;
+<%- end -%>
+<%- nodes.each do |node| -%>
+
+<%- params = node.fields.map(&:c_param) -%>
+/**
+ * Allocate and initialize a new <%= node.name %> node.
+ *
+ * @param arena The arena to allocate from.
+ * @param node_id The unique identifier for this node.
+ * @param flags The flags for this node.
+ * @param location The location of this node in the source.
+<%- node.fields.each do |field| -%>
+ * @param <%= field.name %> <%= field.comment ? Prism::Template::Doxygen.verbatim(field.comment.lines.first.strip) : "The #{field.name} field." %>
+<%- end -%>
+ * @returns The newly allocated and initialized node.
+ */
+PRISM_EXPORTED_FUNCTION pm_<%= node.human %>_t * pm_<%= node.human %>_new(pm_arena_t *arena, uint32_t node_id, pm_node_flags_t flags, pm_location_t location<%= params.empty? ? "" : ", #{params.join(", ")}" %>);
 <%- end -%>
 
 /**
