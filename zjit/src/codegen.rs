@@ -1275,14 +1275,14 @@ fn gen_load_self() -> Opnd {
 fn gen_load_field(asm: &mut Assembler, recv: Opnd, id: ID, offset: i32, return_type: Type) -> Opnd {
     gen_incr_counter(asm, Counter::load_field_count);
     asm_comment!(asm, "Load field id={} offset={}", id.contents_lossy(), offset);
-    let recv = asm.load(recv);
+    let recv = asm.load_mem(recv);
     asm.load(Opnd::mem(return_type.num_bits(), recv, offset))
 }
 
 fn gen_store_field(asm: &mut Assembler, recv: Opnd, id: ID, offset: i32, val: Opnd, val_type: Type) {
     gen_incr_counter(asm, Counter::store_field_count);
     asm_comment!(asm, "Store field id={} offset={}", id.contents_lossy(), offset);
-    let recv = asm.load(recv);
+    let recv = asm.load_mem(recv);
     asm.store(Opnd::mem(val_type.num_bits(), recv, offset), val);
 }
 
@@ -1291,7 +1291,7 @@ fn gen_write_barrier(jit: &mut JITState, asm: &mut Assembler, recv: Opnd, val: O
     // rb_obj_written() does: if (!RB_SPECIAL_CONST_P(val)) { rb_gc_writebarrier(recv, val); }
     if !val_type.is_immediate() {
         asm_comment!(asm, "Write barrier");
-        let recv = asm.load(recv);
+        let recv = asm.load_mem(recv);
 
         // Create a result block that all paths converge to
         let hir_block_id = asm.current_block().hir_block_id;
@@ -1751,8 +1751,8 @@ fn gen_array_aref(
     array: Opnd,
     index: Opnd,
 ) -> lir::Opnd {
-    let unboxed_idx = asm.load(index);
-    let array = asm.load(array);
+    let unboxed_idx = asm.load_mem(index);
+    let array = asm.load_mem(array);
     let array_ptr = gen_array_ptr(asm, array);
     let elem_offset = asm.lshift(unboxed_idx, Opnd::UImm(SIZEOF_VALUE.trailing_zeros() as u64));
     let elem_ptr = asm.add(array_ptr, elem_offset);
@@ -1765,8 +1765,8 @@ fn gen_array_aset(
     index: Opnd,
     val: Opnd,
 ) {
-    let unboxed_idx = asm.load(index);
-    let array = asm.load(array);
+    let unboxed_idx = asm.load_mem(index);
+    let array = asm.load_mem(array);
     let array_ptr = gen_array_ptr(asm, array);
     let elem_offset = asm.lshift(unboxed_idx, Opnd::UImm(SIZEOF_VALUE.trailing_zeros() as u64));
     let elem_ptr = asm.add(array_ptr, elem_offset);
@@ -1779,7 +1779,7 @@ fn gen_array_pop(asm: &mut Assembler, array: Opnd, state: &FrameState) -> lir::O
 }
 
 fn gen_array_length(asm: &mut Assembler, array: Opnd) -> lir::Opnd {
-    let array = asm.load(array);
+    let array = asm.load_mem(array);
     let flags = Opnd::mem(VALUE_BITS, array, RUBY_OFFSET_RBASIC_FLAGS);
     let embedded_len = asm.and(flags, (RARRAY_EMBED_LEN_MASK as u64).into());
     let embedded_len = asm.rshift(embedded_len, (RARRAY_EMBED_LEN_SHIFT as u64).into());
@@ -1918,10 +1918,7 @@ fn gen_is_a(jit: &mut JITState, asm: &mut Assembler, obj: Opnd, class: Opnd) -> 
             args: vec![v],
         });
 
-        let val = match obj {
-            Opnd::Reg(_) | Opnd::VReg { .. } => obj,
-            _ => asm.load(obj),
-        };
+        let val = asm.load_mem(obj);
 
         // Immediate → definitely not String/Array/Hash
         asm.test(val, Opnd::UImm(RUBY_IMMEDIATE_MASK as u64));
@@ -2211,7 +2208,7 @@ fn gen_box_bool(asm: &mut Assembler, val: lir::Opnd) -> lir::Opnd {
 
 fn gen_box_fixnum(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, state: &FrameState) -> lir::Opnd {
     // Load the value, then test for overflow and tag it
-    let val = asm.load(val);
+    let val = asm.load_mem(val);
     let shifted = asm.lshift(val, Opnd::UImm(1));
     asm.jo(jit, side_exit(jit, state, BoxFixnumOverflow));
     asm.or(shifted, Opnd::UImm(RUBY_FIXNUM_FLAG as u64))
@@ -2274,10 +2271,7 @@ fn gen_has_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, ty: Typ
 
         // If val isn't in a register, load it to use it as the base of Opnd::mem later.
         // TODO: Max thinks codegen should not care about the shapes of the operands except to create them. (Shopify/ruby#685)
-        let val = match val {
-            Opnd::Reg(_) | Opnd::VReg { .. } => val,
-            _ => asm.load(val),
-        };
+        let val = asm.load_mem(val);
 
         // Immediate → definitely not the class
         asm.test(val, (RUBY_IMMEDIATE_MASK as u64).into());
@@ -2339,10 +2333,7 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
 
         // If val isn't in a register, load it to use it as the base of Opnd::mem later.
         // TODO: Max thinks codegen should not care about the shapes of the operands except to create them. (Shopify/ruby#685)
-        let val = match val {
-            Opnd::Reg(_) | Opnd::VReg { .. } => val,
-            _ => asm.load(val),
-        };
+        let val = asm.load_mem(val);
 
         // Check if it's a special constant
         let side_exit = side_exit(jit, state, GuardType(guard_type));
@@ -2369,10 +2360,7 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
         asm.cmp(val, Qfalse.into());
         asm.je(jit, side.clone());
 
-        let val = match val {
-            Opnd::Reg(_) | Opnd::VReg { .. } => val,
-            _ => asm.load(val),
-        };
+        let val = asm.load_mem(val);
 
         let flags = asm.load(Opnd::mem(VALUE_BITS, val, RUBY_OFFSET_RBASIC_FLAGS));
         let tag   = asm.and(flags, Opnd::UImm(RUBY_T_MASK as u64));
@@ -2389,10 +2377,7 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
         asm.cmp(val, Qfalse.into());
         asm.je(jit, side.clone());
 
-        let val = match val {
-            Opnd::Reg(_) | Opnd::VReg { .. } => val,
-            _ => asm.load(val),
-        };
+        let val = asm.load_mem(val);
 
         let flags = asm.load(Opnd::mem(VALUE_BITS, val, RUBY_OFFSET_RBASIC_FLAGS));
         let tag   = asm.and(flags, Opnd::UImm(RUBY_T_MASK as u64));
@@ -2430,10 +2415,7 @@ fn gen_guard_type_not(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, g
         asm.cmp(val, Qfalse.into());
         asm.je(jit, cont_edge());
 
-        let val = match val {
-            Opnd::Reg(_) | Opnd::VReg { .. } => val,
-            _ => asm.load(val),
-        };
+        let val = asm.load_mem(val);
 
         let flags = asm.load(Opnd::mem(VALUE_BITS, val, RUBY_OFFSET_RBASIC_FLAGS));
         let tag   = asm.and(flags, Opnd::UImm(RUBY_T_MASK as u64));
@@ -3077,7 +3059,7 @@ fn gen_string_concat(jit: &mut JITState, asm: &mut Assembler, strings: Vec<Opnd>
 // Generate RSTRING_PTR
 fn get_string_ptr(asm: &mut Assembler, string: Opnd) -> Opnd {
     asm_comment!(asm, "get string pointer for embedded or heap");
-    let string = asm.load(string);
+    let string = asm.load_mem(string);
     let flags = Opnd::mem(VALUE_BITS, string, RUBY_OFFSET_RBASIC_FLAGS);
     asm.test(flags, (RSTRING_NOEMBED as u64).into());
     let heap_ptr = asm.load(Opnd::mem(
@@ -3143,6 +3125,15 @@ fn aligned_stack_bytes(num_slots: usize) -> usize {
 }
 
 impl Assembler {
+    /// Emits a load for memory based operands and returns a vreg,
+    /// otherwise returns recv.
+    fn load_mem(&mut self, recv: Opnd) -> Opnd {
+        match recv {
+            Opnd::VReg { .. } | Opnd::Reg(_) => recv,
+            _ => self.load(recv),
+        }
+    }
+
     /// Make a C call while marking the start and end positions for IseqCall
     fn ccall_with_iseq_call(&mut self, fptr: *const u8, opnds: Vec<Opnd>, iseq_call: &IseqCallRef) -> Opnd {
         // We need to create our own branch rc objects so that we can move the closure below
