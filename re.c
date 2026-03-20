@@ -4824,6 +4824,8 @@ Init_Regexp(void)
     rb_gvar_ractor_local("$'");
     rb_gvar_ractor_local("$+");
 
+    rb_gvar_box_ready("$~");
+
     rb_define_virtual_variable("$=", ignorecase_getter, ignorecase_setter);
 
     rb_cRegexp = rb_define_class("Regexp", rb_cObject);

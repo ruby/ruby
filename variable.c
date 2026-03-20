@@ -1002,7 +1002,7 @@ rb_gvar_set_entry(struct rb_global_entry *entry, VALUE val)
 
 #define USE_BOX_GVAR_TBL(ns,entry) \
     (BOX_USER_P(ns) && \
-     (!entry || !entry->var->box_ready || entry->var->setter != rb_gvar_readonly_setter))
+     (!entry || (!entry->var->box_ready && entry->var->setter != rb_gvar_readonly_setter)))
 
 VALUE
 rb_gvar_set(ID id, VALUE val)
