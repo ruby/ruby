@@ -6766,6 +6766,7 @@ none		: /* none */
 
 static int regx_options(struct parser_params*);
 static int tokadd_string(struct parser_params*,int,int,int,long*,rb_encoding**,rb_encoding**);
+static enum yytokentype parser_peek_variable_name(struct parser_params *p);
 static void tokaddmbc(struct parser_params *p, int c, rb_encoding *enc);
 static enum yytokentype parse_string(struct parser_params*,rb_strterm_literal_t*);
 static enum yytokentype here_document(struct parser_params*,rb_strterm_heredoc_t*);
@@ -8391,7 +8392,11 @@ tokadd_string(struct parser_params *p,
         }
         else if ((func & STR_FUNC_EXPAND) && c == '#' && !lex_eol_p(p)) {
             unsigned char c2 = *p->lex.pcur;
-            if (c2 == '$' || c2 == '@' || c2 == '{') {
+            if (c2 == '{') {
+                pushback(p, c);
+                break;
+            }
+            if ((c2 == '$' || c2 == '@') && parser_peek_variable_name(p)) {
                 pushback(p, c);
                 break;
             }
