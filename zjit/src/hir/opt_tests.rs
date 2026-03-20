@@ -7367,7 +7367,7 @@ mod hir_opt_tests {
     #[test]
     fn test_optimize_getivar_polymorphic() {
         set_call_threshold(3);
-        eval("
+        eval(r#"
             class C
               def foo_then_bar
                 @foo = 1
@@ -7375,6 +7375,7 @@ mod hir_opt_tests {
               end
 
               def bar_then_foo
+                1000.times { |i| instance_variable_set(:"@v#{i}", i) }
                 @bar = 3
                 @foo = 4
               end
@@ -7388,9 +7389,9 @@ mod hir_opt_tests {
             O2.bar_then_foo
             O1.foo
             O2.foo
-        ");
+        "#);
         assert_snapshot!(hir_string_proc("C.instance_method(:foo)"), @"
-        fn foo@<compiled>:13:
+        fn foo@<compiled>:14:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
@@ -7406,17 +7407,18 @@ mod hir_opt_tests {
           v14:CShape[0x1001] = Const CShape(0x1001)
           v15:CBool = IsBitEqual v12, v14
           IfTrue v15, bb5()
-          v19:CShape[0x1002] = Const CShape(0x1002)
-          v20:CBool = IsBitEqual v12, v19
-          IfTrue v20, bb6()
-          v24:BasicObject = GetIvar v11, :@foo
-          Jump bb4(v24)
+          v20:CShape[0x1002] = Const CShape(0x1002)
+          v21:CBool = IsBitEqual v12, v20
+          IfTrue v21, bb6()
+          v25:BasicObject = GetIvar v11, :@foo
+          Jump bb4(v25)
         bb5():
-          v17:BasicObject = LoadField v11, :@foo@0x1003
-          Jump bb4(v17)
+          v17:CPtr = LoadField v11, :_as_heap@0x1003
+          v18:BasicObject = LoadField v17, :@foo@0x1004
+          Jump bb4(v18)
         bb6():
-          v22:BasicObject = LoadField v11, :@foo@0x1004
-          Jump bb4(v22)
+          v23:BasicObject = LoadField v11, :@foo@0x1003
+          Jump bb4(v23)
         bb4(v13:BasicObject):
           CheckInterrupts
           Return v13
