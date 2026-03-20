@@ -1120,7 +1120,19 @@ pm_locals_order(pm_parser_t *parser, pm_locals_t *locals, pm_constant_id_list_t 
  */
 static PRISM_INLINE pm_constant_id_t
 pm_parser_constant_id_raw(pm_parser_t *parser, const uint8_t *start, const uint8_t *end) {
-    return pm_constant_pool_insert_shared(&parser->metadata_arena, &parser->constant_pool, start, (size_t) (end - start));
+    /* Fast path: if this is the same token as the last lookup (same pointer
+     * range), return the cached result. */
+    if (start == parser->constant_cache.start && end == parser->constant_cache.end) {
+        return parser->constant_cache.id;
+    }
+
+    pm_constant_id_t id = pm_constant_pool_insert_shared(&parser->metadata_arena, &parser->constant_pool, start, (size_t) (end - start));
+
+    parser->constant_cache.start = start;
+    parser->constant_cache.end = end;
+    parser->constant_cache.id = id;
+
+    return id;
 }
 
 /**
