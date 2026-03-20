@@ -7,7 +7,7 @@ workdir, src, *objs = ARGV
 src = Pathname(src)
 tooldir = src.parent.relative_path_from(workdir)
 srcdir = tooldir.parent
-target = Pathname('.').relative_path_from(workdir) + src.basename.sub_ext('')
+target = src.basename.sub_ext('')
 dirs = objs.map {|obj| File.dirname(obj)}.uniq - %w[.]
 
 include FileUtils::Verbose

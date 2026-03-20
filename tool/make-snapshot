@@ -467,7 +467,7 @@ def package(vcs, rev, destdir, tmp = nil)
         "VPATH"=>(ENV["VPATH"] || "include/ruby"),
         "PROGRAM"=>(ENV["PROGRAM"] || "ruby"),
         "BUILTIN_TRANSOBJS"=>(ENV["BUILTIN_TRANSOBJS"] || "newline.o"),
-        "CROSS_COMPILING"=>"yes",
+        "DUMP_AST"=>"build-tool/dump_ast#{RbConfig::CONFIG['EXEEXT']} ",
       }
       status.scan(/^s([%,])@([A-Za-z_][A-Za-z_0-9]*)@\1(.*?)\1g$/) do
         vars[$2] ||= $3
