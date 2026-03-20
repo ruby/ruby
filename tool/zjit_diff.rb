@@ -2,7 +2,6 @@
 # frozen_string_literal: true
 
 require 'fileutils'
-require 'json'
 require 'optparse'
 require 'tmpdir'
 require 'logger'
@@ -12,7 +11,6 @@ require 'shellwords'
 GitRef = Struct.new(:ref, :commit_hash)
 
 RUBIES_DIR = File.join(Dir.home, '.zjit-diff')
-RESULTS_CACHE_DIR = File.join(Dir.home, '.zjit-diff', 'results')
 BEFORE_NAME = 'ruby-zjit-before'
 AFTER_NAME = 'ruby-zjit-after'
 
@@ -53,52 +51,17 @@ class ZJITDiff
 
   private
 
-  def results_cache_key(rev_hash)
-    key_parts = [rev_hash, @options[:bench_args], @options[:name_filters]].inspect
-    Digest::MD5.hexdigest(key_parts)
-  end
-
-  def run_rev(ruby_bench_path, name, rev_hash)
-    cache_file = File.join(RESULTS_CACHE_DIR, "#{results_cache_key(rev_hash)}.json")
-
-    if File.exist?(cache_file) && !@options[:force_rerun]
-      LOG.info("Using cached results for #{name} from #{cache_file}")
-      return JSON.parse(File.read(cache_file))
-    end
-
-    out_name = File.join('data', "zjit_diff_#{name}")
+  def run_benchmarks(ruby_bench_path)
     Dir.chdir(ruby_bench_path) do
       @runner.cmd({ 'RUBIES_DIR' => RUBIES_DIR },
                   './run_benchmarks.rb',
                   '--chruby',
-                  "#{name}::#{rev_hash} --zjit-stats",
+                  "before::#{@before_hash} --zjit-stats;after::#{@after_hash} --zjit-stats",
                   '--out-name',
-                  out_name,
+                  DATA_FILENAME,
                   *@options[:bench_args],
                   *@options[:name_filters])
-    end
 
-    result = JSON.parse(File.read(File.join(ruby_bench_path, "#{out_name}.json")))
-    FileUtils.mkdir_p(RESULTS_CACHE_DIR)
-    File.write(cache_file, JSON.generate(result))
-    LOG.info("Cached results for #{name} to #{cache_file}")
-    result
-  end
-
-  def run_benchmarks(ruby_bench_path)
-    before_data = run_rev(ruby_bench_path, 'before', @before_hash)
-    after_data = run_rev(ruby_bench_path, 'after', @after_hash)
-
-    merged = {
-      'metadata' => before_data['metadata'].merge(after_data['metadata']),
-      'raw_data' => before_data['raw_data'].merge(after_data['raw_data']),
-    }
-
-    merged_path = File.join(ruby_bench_path, "#{DATA_FILENAME}.json")
-    FileUtils.mkdir_p(File.dirname(merged_path))
-    File.write(merged_path, JSON.generate(merged))
-
-    Dir.chdir(ruby_bench_path) do
       @runner.cmd('./misc/zjit_diff.rb', "#{DATA_FILENAME}.json", out: $stdout)
     end
   end
@@ -135,7 +98,7 @@ class RubyWorktree
 
   def build!
     Dir.chdir(@path) do
-      configure_cmd_args = ['--enable-zjit=stats', '--disable-install-doc']
+      configure_cmd_args = ['--enable-zjit=dev', '--disable-install-doc']
       if macos?
         brew_prefixes = BREW_REQUIRED_PACKAGES.map do |pkg|
           `brew --prefix #{pkg}`.strip
@@ -194,7 +157,7 @@ def clean!
   end
 
   if Dir.exist?(RUBIES_DIR)
-    LOG.info("Removing ruby installations and cached results from #{RUBIES_DIR}")
+    LOG.info("Removing ruby installations from #{RUBIES_DIR}")
     FileUtils.rm_rf(RUBIES_DIR)
   end
 
@@ -266,10 +229,6 @@ subcommands = {
     opts.on('--force-rebuild',
             'Force building ruby again instead of using even if existing builds exist in the cache at ~/.diffs') do
       options[:force_rebuild] = true
-    end
-
-    opts.on('--force-rerun', 'Force re-running benchmarks even if cached results exist') do
-      options[:force_rerun] = true
     end
 
     opts.on('--quiet', 'Silence output of commands except for benchmark result') do
