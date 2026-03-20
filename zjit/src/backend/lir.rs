@@ -1810,7 +1810,7 @@ impl Assembler
         let block_ids = self.block_order();
         let num_blocks = block_ids.len();
 
-        for block_id in block_ids {
+        for (i, block_id) in block_ids.iter().enumerate() {
             let block = &self.basic_blocks[block_id.0];
             // Entry blocks shouldn't ever be preceded by something that can
             // stomp on this block.
@@ -1821,6 +1821,18 @@ impl Assembler
             // Process each instruction, expanding branch params if needed
             for insn in &block.insns {
                 self.expand_branch_insn(insn, &mut insns);
+            }
+
+            // Eliminate redundant jumps: if the last instruction is an
+            // unconditional jump to the next block in the linear order,
+            // remove it and let execution fall through.
+            if let Some(next_block_id) = block_ids.get(i + 1) {
+                let next_label = self.block_label(*next_block_id);
+                if let Some(Insn::Jmp(Target::Label(label))) = insns.last() {
+                    if *label == next_label {
+                        insns.pop();
+                    }
+                }
             }
 
             // Make sure we don't stomp on the next function
