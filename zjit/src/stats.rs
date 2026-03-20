@@ -1040,7 +1040,10 @@ impl PerfettoTracer {
 
         // Pre-intern common strings
         tracer.intern_string("side_exit");
-        tracer.intern_string("stack");
+        // Pre-intern argument names "0".."14" for per-frame arguments
+        for i in 0..15u32 {
+            tracer.intern_string(&i.to_string());
+        }
 
         // Flush header immediately so something is written even if process exits abruptly
         {
@@ -1091,48 +1094,33 @@ impl PerfettoTracer {
         let category_ref = self.intern_string("side_exit");
         let name_ref = self.intern_string(reason);
 
-        if frames.is_empty() {
-            // Instant event with no arguments: 2 words
-            let header: u64 = 4u64
-                | (2u64 << 4)                          // size = 2 words
-                | (1u64 << 24)                          // thread_ref = 1
-                | ((category_ref as u64) << 32)
-                | ((name_ref as u64) << 48);
-            self.write_word(header);
-            self.write_word(ts_nanos);
-        } else {
-            // Build newline-joined stack string
-            let stack_str = frames.join("\n");
-            let stack_bytes = stack_str.as_bytes();
-            // Cap at 30000 bytes to stay within the 12-bit record size limit
-            let stack_len = stack_bytes.len().min(30000);
-            let stack_value_words = Self::word_count(stack_len);
+        // Intern each frame label and collect refs (max 15 due to 4-bit n_args)
+        let n_args = frames.len().min(15) as u64;
+        let mut frame_refs: Vec<(u16, u16)> = Vec::with_capacity(n_args as usize);
+        for (i, frame) in frames.iter().take(15).enumerate() {
+            let name_ref = self.intern_string(&i.to_string());
+            let value_ref = self.intern_string(frame);
+            frame_refs.push((name_ref, value_ref));
+        }
 
-            let stack_name_ref = self.intern_string("stack");
+        // Each fully-interned string argument is exactly 1 word
+        let event_words = 2 + n_args;
+        let header: u64 = 4u64
+            | (event_words << 4)
+            | (n_args << 20)                        // argument count
+            | (1u64 << 24)                          // thread_ref = 1
+            | ((category_ref as u64) << 32)
+            | ((name_ref as u64) << 48);
+        self.write_word(header);
+        self.write_word(ts_nanos);
 
-            // String argument: type=6, indexed name, inline value
-            // Inline string ref: MSB=1, lower 15 bits = length
-            let stack_value_ref: u16 = 0x8000 | (stack_len as u16);
-            let arg_words = 1 + stack_value_words; // header + inline value
-
-            // Instant event: header + timestamp + argument
-            let event_words = 2 + arg_words;
-            let header: u64 = 4u64
-                | (event_words << 4)                    // size
-                | (1u64 << 20)                          // n_args = 1
-                | (1u64 << 24)                          // thread_ref = 1
-                | ((category_ref as u64) << 32)
-                | ((name_ref as u64) << 48);
-            self.write_word(header);
-            self.write_word(ts_nanos);
-
-            // Argument record: string type=6, name_ref, value_ref
+        // One 1-word string argument per frame: type=6, size=1, indexed name, indexed value
+        for (name_ref, value_ref) in frame_refs {
             let arg_header: u64 = 6u64
-                | (arg_words << 4)
-                | ((stack_name_ref as u64) << 16)
-                | ((stack_value_ref as u64) << 32);
+                | (1u64 << 4)
+                | ((name_ref as u64) << 16)
+                | ((value_ref as u64) << 32);
             self.write_word(arg_header);
-            self.write_padded_bytes(&stack_bytes[..stack_len]);
         }
 
         self.event_count += 1;
