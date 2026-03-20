@@ -802,16 +802,14 @@ parse_lex_input(const uint8_t *input, size_t input_length, const pm_options_t *o
 
     pm_node_t *node = pm_parse(parser);
 
-    // Here we need to update the Source object to have the correct
-    // encoding for the source string and the correct newline offsets.
-    // We do it here because we've already created the Source object and given
-    // it over to all of the tokens, and both of these are only set after pm_parse().
+    /* Update the Source object with the correct encoding and line offsets,
+     * which are only available after pm_parse() completes. */
     rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(parser));
     rb_enc_associate(source_string, encoding);
 
     const pm_line_offset_list_t *line_offsets = pm_parser_line_offsets(parser);
     for (size_t index = 0; index < line_offsets->size; index++) {
-        rb_ary_push(offsets, ULONG2NUM(line_offsets->offsets[index]));
+        rb_ary_store(offsets, (long) index, ULONG2NUM(line_offsets->offsets[index]));
     }
 
     if (pm_options_freeze(options)) {

@@ -582,6 +582,18 @@ struct pm_parser_t {
      */
     uint32_t node_id;
 
+    /*
+     * A single-entry cache for pm_parser_constant_id_raw. Avoids redundant
+     * constant pool lookups when the same token is resolved multiple times
+     * (e.g., once during lexing for local variable detection, and again
+     * during parsing for node creation).
+     */
+    struct {
+        const uint8_t *start;
+        const uint8_t *end;
+        pm_constant_id_t id;
+    } constant_cache;
+
     /* The current state of the lexer. */
     pm_lex_state_t lex_state;
 

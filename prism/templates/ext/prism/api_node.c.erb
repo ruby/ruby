@@ -1,6 +1,7 @@
 #line <%= __LINE__ + 1 %> "prism/templates/ext/prism/<%= File.basename(__FILE__) %>"
 #include "prism/extension.h"
 #include "prism/internal/allocator.h"
+#include "prism/internal/arena.h"
 
 #include <assert.h>
 
@@ -81,11 +82,7 @@ pm_source_new(const pm_parser_t *parser, rb_encoding *encoding, bool freeze) {
     VALUE source_string = rb_enc_str_new((const char *) start, pm_parser_end(parser) - start, encoding);
 
     const pm_line_offset_list_t *line_offsets = pm_parser_line_offsets(parser);
-    VALUE offsets = rb_ary_new_capa(line_offsets->size);
-
-    for (size_t index = 0; index < line_offsets->size; index++) {
-        rb_ary_push(offsets, ULONG2NUM(line_offsets->offsets[index]));
-    }
+    VALUE offsets = rb_str_new((const char *) line_offsets->offsets, line_offsets->size * sizeof(uint32_t));
 
     if (freeze) {
         rb_obj_freeze(source_string);
@@ -105,8 +102,8 @@ typedef struct pm_node_stack_node {
 } pm_node_stack_node_t;
 
 static void
-pm_node_stack_push(pm_node_stack_node_t **stack, const pm_node_t *visit) {
-    pm_node_stack_node_t *node = xmalloc(sizeof(pm_node_stack_node_t));
+pm_node_stack_push(pm_arena_t *arena, pm_node_stack_node_t **stack, const pm_node_t *visit) {
+    pm_node_stack_node_t *node = (pm_node_stack_node_t *) pm_arena_alloc(arena, sizeof(pm_node_stack_node_t), PRISM_ALIGNOF(pm_node_stack_node_t));
     node->prev = *stack;
     node->visit = visit;
     node->visited = false;
@@ -119,7 +116,6 @@ pm_node_stack_pop(pm_node_stack_node_t **stack) {
     const pm_node_t *visit = current->visit;
 
     *stack = current->prev;
-    xfree_sized(current, sizeof(pm_node_stack_node_t));
 
     return visit;
 }
@@ -151,8 +147,9 @@ pm_ast_new(const pm_parser_t *parser, const pm_node_t *node, rb_encoding *encodi
     pm_ast_constants_each_data_t constants_data = { .constants = constants, .encoding = encoding };
     pm_parser_constants_each(parser, pm_ast_constants_each, &constants_data);
 
+    pm_arena_t *node_arena = pm_arena_new();
     pm_node_stack_node_t *node_stack = NULL;
-    pm_node_stack_push(&node_stack, node);
+    pm_node_stack_push(node_arena, &node_stack, node);
     VALUE value_stack = rb_ary_new();
 
     while (node_stack != NULL) {
@@ -175,10 +172,10 @@ pm_ast_new(const pm_parser_t *parser, const pm_node_t *node, rb_encoding *encodi
                     <%- node.fields.each do |field| -%>
                     <%- case field -%>
                     <%- when Prism::Template::NodeField, Prism::Template::OptionalNodeField -%>
-                    pm_node_stack_push(&node_stack, (pm_node_t *) cast-><%= field.name %>);
+                    pm_node_stack_push(node_arena, &node_stack, (pm_node_t *) cast-><%= field.name %>);
                     <%- when Prism::Template::NodeListField -%>
                     for (size_t index = 0; index < cast-><%= field.name %>.size; index++) {
-                        pm_node_stack_push(&node_stack, (pm_node_t *) cast-><%= field.name %>.nodes[index]);
+                        pm_node_stack_push(node_arena, &node_stack, (pm_node_t *) cast-><%= field.name %>.nodes[index]);
                     }
                     <%- end -%>
                     <%- end -%>
@@ -280,6 +277,7 @@ pm_ast_new(const pm_parser_t *parser, const pm_node_t *node, rb_encoding *encodi
         }
     }
 
+    pm_arena_free(node_arena);
     return rb_ary_pop(value_stack);
 }
 

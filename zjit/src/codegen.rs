@@ -630,7 +630,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::CCallVariadic { cfunc, recv, name, args, cme, state, blockiseq, return_type: _, elidable: _ } => {
             gen_ccall_variadic(jit, asm, *cfunc, *name, opnd!(recv), opnds!(args), *cme, *blockiseq, &function.frame_state(*state))
         }
-        Insn::GetIvar { self_val, id, ic, state } => gen_getivar(jit, asm, opnd!(self_val), *id, *ic, &function.frame_state(*state)),
+        Insn::GetIvar { self_val, id, ic, state: _ } => gen_getivar(jit, asm, opnd!(self_val), *id, *ic),
         Insn::SetGlobal { id, val, state } => no_output!(gen_setglobal(jit, asm, *id, opnd!(val), &function.frame_state(*state))),
         Insn::GetGlobal { id, state } => gen_getglobal(jit, asm, *id, &function.frame_state(*state)),
         &Insn::IsBlockParamModified { ep } => gen_is_block_param_modified(asm, opnd!(ep)),
@@ -675,9 +675,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::DupArrayInclude { ary, target, state } => gen_dup_array_include(jit, asm, ary, opnd!(target), &function.frame_state(state)),
         Insn::ArrayHash { elements, state } => gen_opt_newarray_hash(jit, asm, opnds!(elements), &function.frame_state(*state)),
         &Insn::IsA { val, class } => gen_is_a(jit, asm, opnd!(val), opnd!(class)),
-        &Insn::ArrayMax { state, .. }
-        | &Insn::Throw { state, .. }
-        => return Err(state),
+        &Insn::ArrayMax { ref elements, state } => gen_array_max(jit, asm, opnds!(elements), &function.frame_state(state)),
+        &Insn::Throw { state, .. } => return Err(state),
         &Insn::IfFalse { .. } | Insn::IfTrue { .. }
         | &Insn::Jump { .. } | Insn::Entries { .. } => unreachable!(),
     };
@@ -1107,9 +1106,7 @@ fn gen_ccall_variadic(
 }
 
 /// Emit an uncached instance variable lookup
-fn gen_getivar(jit: &mut JITState, asm: &mut Assembler, recv: Opnd, id: ID, ic: *const iseq_inline_iv_cache_entry, state: &FrameState) -> Opnd {
-    // rb_ivar_get can raise Ractor::IsolationError for class/module ivars from non-main Ractors
-    gen_prepare_non_leaf_call(jit, asm, state);
+fn gen_getivar(jit: &mut JITState, asm: &mut Assembler, recv: Opnd, id: ID, ic: *const iseq_inline_iv_cache_entry) -> Opnd {
     if ic.is_null() {
         asm_ccall!(asm, rb_ivar_get, recv, id.0.into())
     } else {
@@ -1823,6 +1820,32 @@ fn gen_opt_newarray_hash(
     asm.ccall(
         rb_vm_opt_newarray_hash as *const u8,
         vec![EC, (array_len as u32).into(), elements_ptr],
+    )
+}
+
+/// Compile ArrayMax - find the maximum element among array elements
+fn gen_array_max(
+    jit: &JITState,
+    asm: &mut Assembler,
+    elements: Vec<Opnd>,
+    state: &FrameState,
+) -> lir::Opnd {
+    gen_prepare_non_leaf_call(jit, asm, state);
+
+    let array_len: u32 = elements.len().try_into().expect("Unable to fit length of elements into u32");
+
+    // After gen_prepare_non_leaf_call, the elements are spilled to the Ruby stack.
+    // Get a pointer to the first element on the Ruby stack.
+    let stack_bottom = state.stack().len() - elements.len();
+    let elements_ptr = asm.lea(Opnd::mem(VALUE_BITS, SP, stack_bottom as i32 * SIZEOF_VALUE_I32));
+
+    unsafe extern "C" {
+        fn rb_vm_opt_newarray_max(ec: EcPtr, num: u32, elts: *const VALUE) -> VALUE;
+    }
+
+    asm.ccall(
+        rb_vm_opt_newarray_max as *const u8,
+        vec![EC, array_len.into(), elements_ptr],
     )
 }
 
