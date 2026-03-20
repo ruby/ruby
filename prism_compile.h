@@ -16,6 +16,82 @@ typedef struct pm_local_index_struct {
 // A declaration for the struct that lives in compile.c.
 struct iseq_link_anchor;
 
+/**
+ * A direct-indexed lookup table mapping constant IDs to local variable indices.
+ * Regular constant IDs (1..constants_size) index directly. Special forwarding
+ * parameter IDs (idMULT|FLAG, etc.) are mapped to 4 extra slots at the end.
+ *
+ * All lookups are O(1) — a single array dereference.
+ * The table is arena-allocated for child scopes (no explicit free needed).
+ */
+typedef struct {
+    /** Array of local indices, indexed by constant_id. -1 means not present. */
+    int *values;
+
+    /** Total number of slots (constants_size + PM_INDEX_LOOKUP_SPECIALS). */
+    int capacity;
+
+    /** Whether the values array is heap-allocated and needs explicit free. */
+    bool owned;
+} pm_index_lookup_table_t;
+
+/** Number of extra slots for special forwarding parameter IDs. */
+#define PM_INDEX_LOOKUP_SPECIALS 4
+
+/** Slot offsets for special forwarding parameters (relative to constants_size). */
+#define PM_SPECIAL_CONSTANT_FLAG ((pm_constant_id_t) (1 << 31))
+#define PM_INDEX_LOOKUP_SPECIAL_MULT 0
+#define PM_INDEX_LOOKUP_SPECIAL_POW 1
+#define PM_INDEX_LOOKUP_SPECIAL_AND 2
+#define PM_INDEX_LOOKUP_SPECIAL_DOT3 3
+
+/**
+ * Special constant IDs for forwarding parameters. These use bit 31 to
+ * distinguish them from regular prism constant pool IDs. The lower bits
+ * encode which special slot (0-3) they map to in the lookup table.
+ */
+#define PM_CONSTANT_MULT ((pm_constant_id_t) (PM_SPECIAL_CONSTANT_FLAG | PM_INDEX_LOOKUP_SPECIAL_MULT))
+#define PM_CONSTANT_POW  ((pm_constant_id_t) (PM_SPECIAL_CONSTANT_FLAG | PM_INDEX_LOOKUP_SPECIAL_POW))
+#define PM_CONSTANT_AND  ((pm_constant_id_t) (PM_SPECIAL_CONSTANT_FLAG | PM_INDEX_LOOKUP_SPECIAL_AND))
+#define PM_CONSTANT_DOT3 ((pm_constant_id_t) (PM_SPECIAL_CONSTANT_FLAG | PM_INDEX_LOOKUP_SPECIAL_DOT3))
+
+static inline int
+pm_index_lookup_table_index(const pm_index_lookup_table_t *table, pm_constant_id_t key)
+{
+    if (LIKELY(!(key & PM_SPECIAL_CONSTANT_FLAG))) {
+        return (int) key - 1;
+    }
+    return table->capacity - PM_INDEX_LOOKUP_SPECIALS + (int)(key & ~PM_SPECIAL_CONSTANT_FLAG);
+}
+
+static inline void
+pm_index_lookup_table_insert(pm_index_lookup_table_t *table, pm_constant_id_t key, int value)
+{
+    int idx = pm_index_lookup_table_index(table, key);
+    RUBY_ASSERT(idx >= 0 && idx < table->capacity);
+    table->values[idx] = value;
+}
+
+static inline int
+pm_index_lookup_table_lookup(const pm_index_lookup_table_t *table, pm_constant_id_t key, int *value)
+{
+    int idx = pm_index_lookup_table_index(table, key);
+    RUBY_ASSERT(idx >= 0 && idx < table->capacity);
+    if (table->values[idx] == -1) return 0;
+    *value = table->values[idx];
+    return 1;
+}
+
+static inline void
+pm_index_lookup_table_init_heap(pm_index_lookup_table_t *table, int constants_size)
+{
+    int cap = constants_size + PM_INDEX_LOOKUP_SPECIALS;
+    table->values = (int *) ruby_xmalloc(cap * sizeof(int));
+    memset(table->values, -1, cap * sizeof(int));
+    table->capacity = cap;
+    table->owned = true;
+}
+
 // ScopeNodes are helper nodes, and will never be part of the AST. We manually
 // declare them here to avoid generating them.
 typedef struct pm_scope_node {
@@ -54,7 +130,14 @@ typedef struct pm_scope_node {
     int local_table_for_iseq_size;
 
     ID *constants;
-    st_table *index_lookup_table;
+
+    /**
+     * A flat lookup table mapping constant IDs (or special IDs) to local
+     * variable indices. When allocated from the compile data arena (child
+     * scopes), no explicit free is needed. When heap-allocated (top-level
+     * scope in pm_parse_process), owned is set to true so destroy can free it.
+     */
+    pm_index_lookup_table_t index_lookup_table;
 
     // The current coverage setting, passed down through the various scopes.
     int coverage_enabled;
@@ -96,12 +179,6 @@ typedef struct {
     bool parsed;
 } pm_parse_result_t;
 
-#define PM_SPECIAL_CONSTANT_FLAG ((pm_constant_id_t)(1 << 31))
-#define PM_CONSTANT_AND ((pm_constant_id_t)(idAnd | PM_SPECIAL_CONSTANT_FLAG))
-#define PM_CONSTANT_DOT3 ((pm_constant_id_t)(idDot3 | PM_SPECIAL_CONSTANT_FLAG))
-#define PM_CONSTANT_MULT ((pm_constant_id_t)(idMULT | PM_SPECIAL_CONSTANT_FLAG))
-#define PM_CONSTANT_POW ((pm_constant_id_t)(idPow | PM_SPECIAL_CONSTANT_FLAG))
-
 void pm_parse_result_init(pm_parse_result_t *result);
 VALUE pm_load_file(pm_parse_result_t *result, VALUE filepath, bool load_error);
 VALUE pm_parse_file(pm_parse_result_t *result, VALUE filepath, VALUE *script_lines);
@@ -116,5 +193,6 @@ rb_iseq_t *pm_iseq_new_top(pm_scope_node_t *node, VALUE name, VALUE path, VALUE 
 rb_iseq_t *pm_iseq_new_main(pm_scope_node_t *node, VALUE path, VALUE realpath, const rb_iseq_t *parent, int opt, int *error_state);
 rb_iseq_t *pm_iseq_new_eval(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath, int first_lineno, const rb_iseq_t *parent, int isolated_depth, int *error_state);
 rb_iseq_t *pm_iseq_new_with_opt(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath, int first_lineno, const rb_iseq_t *parent, int isolated_depth, enum rb_iseq_type, const rb_compile_option_t *option, int *error_state);
+rb_iseq_t *pm_iseq_build(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath, int first_lineno, const rb_iseq_t *parent, int isolated_depth, enum rb_iseq_type, const rb_compile_option_t *option);
 
 VALUE pm_iseq_compile_node(rb_iseq_t *iseq, pm_scope_node_t *node);

@@ -1840,9 +1840,8 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
         const pm_options_scope_t *options_scope = pm_options_scope(result.options, scopes_count - scopes_index - 1);
         parent_scope->coverage_enabled = coverage_enabled;
         parent_scope->parser = result.parser;
-        parent_scope->index_lookup_table = st_init_numtable();
-
         int locals_count = ISEQ_BODY(iseq)->local_table_size;
+        pm_index_lookup_table_init_heap(&parent_scope->index_lookup_table, (int) pm_parser_constants_size(result.parser));
         parent_scope->local_table_for_iseq_size = locals_count;
         pm_constant_id_list_init(&parent_scope->locals);
 
@@ -1877,7 +1876,7 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
                     constant_id = pm_parser_constant_find(result.parser, source, length);
                 }
 
-                st_insert(parent_scope->index_lookup_table, (st_data_t) constant_id, (st_data_t) local_index);
+                pm_index_lookup_table_insert(&parent_scope->index_lookup_table, constant_id, local_index);
             }
 
             pm_constant_id_list_append(result.arena, &parent_scope->locals, constant_id);

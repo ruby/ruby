@@ -142,6 +142,19 @@ pm_iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line, int node
 #define PM_COMPILE_NOT_POPPED(node) \
     pm_compile_node(iseq, (node), ret, false, scope_node)
 
+// Direct-indexed lookup table. -1 means "not present".
+#define PM_INDEX_LOOKUP_TABLE_INIT { .values = NULL, .capacity = 0, .owned = false }
+
+static inline void
+pm_index_lookup_table_init(pm_index_lookup_table_t *table, int constants_size, rb_iseq_t *iseq)
+{
+    int capacity = constants_size + PM_INDEX_LOOKUP_SPECIALS;
+    table->values = compile_data_alloc2_type(iseq, int, capacity);
+    memset(table->values, -1, capacity * sizeof(int));
+    table->capacity = capacity;
+    table->owned = false;
+}
+
 /**
  * Cached line lookup that avoids repeated binary searches. Since the compiler
  * walks the AST roughly in source order, consecutive lookups tend to be for
@@ -1311,14 +1324,15 @@ static pm_local_index_t
 pm_lookup_local_index(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, pm_constant_id_t constant_id, int start_depth)
 {
     pm_local_index_t lindex = { 0 };
-    st_data_t local_index;
+    int local_index;
 
     int level;
     for (level = 0; level < start_depth; level++) {
         scope_node = scope_node->previous;
     }
 
-    while (!st_lookup(scope_node->index_lookup_table, constant_id, &local_index)) {
+    while (!pm_index_lookup_table_lookup(&scope_node->index_lookup_table, constant_id, &local_index))
+    {
         level++;
 
         if (scope_node->previous) {
@@ -1342,12 +1356,10 @@ pm_lookup_local_index(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, pm_con
 // We add a constants mapping on the scope_node which is a mapping from
 // these constant_id indexes to the CRuby IDs that they represent.
 // This helper method allows easy access to those IDs
-static ID
+static inline ID
 pm_constant_id_lookup(const pm_scope_node_t *scope_node, pm_constant_id_t constant_id)
 {
-    if (constant_id < 1 || constant_id > pm_parser_constants_size(scope_node->parser)) {
-        rb_bug("constant_id out of range: %u", (unsigned int)constant_id);
-    }
+    RUBY_ASSERT(constant_id >= 1 && constant_id <= pm_parser_constants_size(scope_node->parser));
     return scope_node->constants[constant_id - 1];
 }
 
@@ -1356,18 +1368,11 @@ pm_new_child_iseq(rb_iseq_t *iseq, pm_scope_node_t *node, VALUE name, const rb_i
 {
     debugs("[new_child_iseq]> ---------------------------------------\n");
     int isolated_depth = ISEQ_COMPILE_DATA(iseq)->isolated_depth;
-    int error_state;
-    rb_iseq_t *ret_iseq = pm_iseq_new_with_opt(node, name,
+    rb_iseq_t *ret_iseq = pm_iseq_build(node, name,
             rb_iseq_path(iseq), rb_iseq_realpath(iseq),
             line_no, parent,
             isolated_depth ? isolated_depth + 1 : 0,
-            type, ISEQ_COMPILE_DATA(iseq)->option, &error_state);
-
-    if (error_state) {
-        pm_scope_node_destroy(node);
-        RUBY_ASSERT(ret_iseq == NULL);
-        rb_jump_tag(error_state);
-    }
+            type, ISEQ_COMPILE_DATA(iseq)->option);
     debugs("[new_child_iseq]< ---------------------------------------\n");
     return ret_iseq;
 }
@@ -3307,29 +3312,26 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
 void
 pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_t *previous)
 {
-    // This is very important, otherwise the scope node could be seen as having
-    // certain flags set that _should not_ be set.
-    memset(scope, 0, sizeof(pm_scope_node_t));
+    if (previous) {
+        // Copy inherited fields from the parent scope in one shot, then
+        // zero out the fields that are scope-specific.
+        *scope = *previous;
+        scope->locals = (pm_constant_id_list_t) { 0 };
+        scope->parameters = NULL;
+        scope->body = NULL;
+        scope->local_table_for_iseq_size = 0;
+        scope->index_lookup_table = (pm_index_lookup_table_t) PM_INDEX_LOOKUP_TABLE_INIT;
+        scope->pre_execution_anchor = NULL;
+    }
+    else {
+        memset(scope, 0, sizeof(pm_scope_node_t));
+    }
 
     scope->base.type = PM_SCOPE_NODE;
     scope->base.location.start = node->location.start;
     scope->base.location.length = node->location.length;
-
     scope->previous = previous;
     scope->ast_node = (pm_node_t *) node;
-
-    if (previous) {
-        scope->parser = previous->parser;
-        scope->options = previous->options;
-        scope->line_offsets = previous->line_offsets;
-        scope->start_line = previous->start_line;
-        scope->encoding = previous->encoding;
-        scope->filepath_encoding = previous->filepath_encoding;
-        scope->constants = previous->constants;
-        scope->coverage_enabled = previous->coverage_enabled;
-        scope->script_lines = previous->script_lines;
-        scope->last_line = previous->last_line;
-    }
 
     switch (PM_NODE_TYPE(node)) {
       case PM_BLOCK_NODE: {
@@ -3427,8 +3429,8 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
 void
 pm_scope_node_destroy(pm_scope_node_t *scope_node)
 {
-    if (scope_node->index_lookup_table) {
-        st_free_table(scope_node->index_lookup_table);
+    if (scope_node->index_lookup_table.owned) {
+        xfree(scope_node->index_lookup_table.values);
     }
 }
 
@@ -3618,8 +3620,7 @@ pm_compile_builtin_mandatory_only_method(rb_iseq_t *iseq, pm_scope_node_t *scope
     pm_scope_node_t next_scope_node;
     pm_scope_node_init(&def.base, &next_scope_node, scope_node);
 
-    int error_state;
-    const rb_iseq_t *mandatory_only_iseq = pm_iseq_new_with_opt(
+    const rb_iseq_t *mandatory_only_iseq = pm_iseq_build(
         &next_scope_node,
         rb_iseq_base_label(iseq),
         rb_iseq_path(iseq),
@@ -3628,15 +3629,9 @@ pm_compile_builtin_mandatory_only_method(rb_iseq_t *iseq, pm_scope_node_t *scope
         NULL,
         0,
         ISEQ_TYPE_METHOD,
-        ISEQ_COMPILE_DATA(iseq)->option,
-        &error_state
+        ISEQ_COMPILE_DATA(iseq)->option
     );
     RB_OBJ_WRITE(iseq, &ISEQ_BODY(iseq)->mandatory_only_iseq, (VALUE)mandatory_only_iseq);
-
-    if (error_state) {
-        RUBY_ASSERT(ISEQ_BODY(iseq)->mandatory_only_iseq == NULL);
-        rb_jump_tag(error_state);
-    }
 
     pm_scope_node_destroy(&next_scope_node);
     return COMPILE_OK;
@@ -4755,33 +4750,7 @@ pm_add_ensure_iseq(LINK_ANCHOR *const ret, rb_iseq_t *iseq, int is_return, pm_sc
     PUSH_SEQ(ret, ensure);
 }
 
-struct pm_local_table_insert_ctx {
-    pm_scope_node_t *scope_node;
-    rb_ast_id_table_t *local_table_for_iseq;
-    int local_index;
-};
 
-static int
-pm_local_table_insert_func(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
-{
-    if (!existing) {
-        pm_constant_id_t constant_id = (pm_constant_id_t) *key;
-        struct pm_local_table_insert_ctx * ctx = (struct pm_local_table_insert_ctx *) arg;
-
-        pm_scope_node_t *scope_node = ctx->scope_node;
-        rb_ast_id_table_t *local_table_for_iseq = ctx->local_table_for_iseq;
-        int local_index = ctx->local_index;
-
-        ID local = pm_constant_id_lookup(scope_node, constant_id);
-        local_table_for_iseq->ids[local_index] = local;
-
-        *value = (st_data_t)local_index;
-
-        ctx->local_index++;
-    }
-
-    return ST_CONTINUE;
-}
 
 /**
  * Insert a local into the local table for the iseq. This is used to create the
@@ -4789,24 +4758,23 @@ pm_local_table_insert_func(st_data_t *key, st_data_t *value, st_data_t arg, int 
  * inserted are regular named locals, as opposed to special forwarding locals.
  */
 static void
-pm_insert_local_index(pm_constant_id_t constant_id, int local_index, st_table *index_lookup_table, rb_ast_id_table_t *local_table_for_iseq, pm_scope_node_t *scope_node)
+pm_insert_local_index(pm_constant_id_t constant_id, int local_index, pm_index_lookup_table_t *index_lookup_table, rb_ast_id_table_t *local_table_for_iseq, pm_scope_node_t *scope_node)
 {
     RUBY_ASSERT((constant_id & PM_SPECIAL_CONSTANT_FLAG) == 0);
 
     ID local = pm_constant_id_lookup(scope_node, constant_id);
     local_table_for_iseq->ids[local_index] = local;
-    st_insert(index_lookup_table, (st_data_t) constant_id, (st_data_t) local_index);
+    pm_index_lookup_table_insert(index_lookup_table, constant_id, local_index);
 }
 
 /**
- * Insert a local into the local table for the iseq that is a special forwarding
- * local variable.
+ * Insert a special forwarding local (*, **, &, ...) into the local table.
  */
 static void
-pm_insert_local_special(ID local_name, int local_index, st_table *index_lookup_table, rb_ast_id_table_t *local_table_for_iseq)
+pm_insert_local_special(pm_constant_id_t special_id, ID local_name, int local_index, pm_index_lookup_table_t *index_lookup_table, rb_ast_id_table_t *local_table_for_iseq)
 {
     local_table_for_iseq->ids[local_index] = local_name;
-    st_insert(index_lookup_table, (st_data_t) (local_name | PM_SPECIAL_CONSTANT_FLAG), (st_data_t) local_index);
+    pm_index_lookup_table_insert(index_lookup_table, special_id, local_index);
 }
 
 /**
@@ -4816,7 +4784,7 @@ pm_insert_local_special(ID local_name, int local_index, st_table *index_lookup_t
  * local and index lookup tables and increments the local index as necessary.
  */
 static int
-pm_compile_destructured_param_locals(const pm_multi_target_node_t *node, st_table *index_lookup_table, rb_ast_id_table_t *local_table_for_iseq, pm_scope_node_t *scope_node, int local_index)
+pm_compile_destructured_param_locals(const pm_multi_target_node_t *node, pm_index_lookup_table_t *index_lookup_table, rb_ast_id_table_t *local_table_for_iseq, pm_scope_node_t *scope_node, int local_index)
 {
     for (size_t index = 0; index < node->lefts.size; index++) {
         const pm_node_t *left = node->lefts.nodes[index];
@@ -6312,8 +6280,9 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
     // hidden variables and multi target nodes
     size_t locals_size = locals->size;
 
-    // Index lookup table buffer size is only the number of the locals
-    st_table *index_lookup_table = st_init_numtable();
+    // Index lookup table buffer size is only the number of the locals.
+    // We'll initialize it after computing table_size below.
+    pm_index_lookup_table_t index_lookup_table = PM_INDEX_LOOKUP_TABLE_INIT;
 
     int table_size = (int) locals_size;
 
@@ -6437,6 +6406,10 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
     rb_ast_id_table_t *local_table_for_iseq = ALLOCV(idtmp, sizeof(rb_ast_id_table_t) + table_size * sizeof(ID));
     local_table_for_iseq->size = table_size;
 
+    // Init the direct-indexed lookup table. The capacity is based on the
+    // parser's constant pool size (for regular locals) plus special slots.
+    pm_index_lookup_table_init(&index_lookup_table, (int) pm_parser_constants_size(scope_node->parser), iseq);
+
     //********END OF STEP 1**********
 
     //********STEP 2**********
@@ -6489,7 +6462,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
                     local_table_for_iseq->ids[local_index] = local;
                 }
                 else {
-                    pm_insert_local_index(param->name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+                    pm_insert_local_index(param->name, local_index, &index_lookup_table, local_table_for_iseq, scope_node);
                 }
 
                 break;
@@ -6522,7 +6495,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
                 local_table_for_iseq->ids[local_index] = local;
             }
             else {
-                pm_insert_local_index(name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+                pm_insert_local_index(name, local_index, &index_lookup_table, local_table_for_iseq, scope_node);
             }
         }
     }
@@ -6548,14 +6521,14 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
                     local_table_for_iseq->ids[local_index] = local;
                 }
                 else {
-                    pm_insert_local_index(name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+                    pm_insert_local_index(name, local_index, &index_lookup_table, local_table_for_iseq, scope_node);
                 }
             }
             else {
                 // def foo(a, (b, *c, d), e = 1, *, g, (h, *i, j), k:, l: 1, **m, &n)
                 //                               ^
                 body->param.flags.anon_rest = true;
-                pm_insert_local_special(idMULT, local_index, index_lookup_table, local_table_for_iseq);
+                pm_insert_local_special(PM_CONSTANT_MULT, idMULT, local_index, &index_lookup_table, local_table_for_iseq);
             }
 
             local_index++;
@@ -6595,7 +6568,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
                     local_table_for_iseq->ids[local_index] = local;
                 }
                 else {
-                    pm_insert_local_index(param->name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+                    pm_insert_local_index(param->name, local_index, &index_lookup_table, local_table_for_iseq, scope_node);
                 }
                 break;
               }
@@ -6630,7 +6603,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
                     local_table_for_iseq->ids[local_index] = local;
                 }
                 else {
-                    pm_insert_local_index(name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+                    pm_insert_local_index(name, local_index, &index_lookup_table, local_table_for_iseq, scope_node);
                 }
                 local_index++;
             }
@@ -6660,7 +6633,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
                     local_table_for_iseq->ids[local_index] = local;
                 }
                 else {
-                    pm_insert_local_index(name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+                    pm_insert_local_index(name, local_index, &index_lookup_table, local_table_for_iseq, scope_node);
                 }
                 local_index++;
             }
@@ -6722,12 +6695,12 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
                         local_table_for_iseq->ids[local_index] = local;
                     }
                     else {
-                        pm_insert_local_index(constant_id, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+                        pm_insert_local_index(constant_id, local_index, &index_lookup_table, local_table_for_iseq, scope_node);
                     }
                 }
                 else {
                     body->param.flags.anon_kwrest = true;
-                    pm_insert_local_special(idPow, local_index, index_lookup_table, local_table_for_iseq);
+                    pm_insert_local_special(PM_CONSTANT_POW, idPow, local_index, &index_lookup_table, local_table_for_iseq);
                 }
 
                 local_index++;
@@ -6741,7 +6714,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
                     body->param.rest_start = local_index;
                     body->param.flags.has_rest = true;
                     body->param.flags.anon_rest = true;
-                    pm_insert_local_special(idMULT, local_index++, index_lookup_table, local_table_for_iseq);
+                    pm_insert_local_special(PM_CONSTANT_MULT, idMULT, local_index++, &index_lookup_table, local_table_for_iseq);
 
                     // Add the anonymous **
                     RUBY_ASSERT(!body->param.flags.has_kw);
@@ -6750,16 +6723,16 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
                     body->param.flags.anon_kwrest = true;
                     body->param.keyword = keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
                     keyword->rest_start = local_index;
-                    pm_insert_local_special(idPow, local_index++, index_lookup_table, local_table_for_iseq);
+                    pm_insert_local_special(PM_CONSTANT_POW, idPow, local_index++, &index_lookup_table, local_table_for_iseq);
 
                     // Add the anonymous &
                     body->param.block_start = local_index;
                     body->param.flags.has_block = true;
-                    pm_insert_local_special(idAnd, local_index++, index_lookup_table, local_table_for_iseq);
+                    pm_insert_local_special(PM_CONSTANT_AND, idAnd, local_index++, &index_lookup_table, local_table_for_iseq);
                 }
 
                 // Add the ...
-                pm_insert_local_special(idDot3, local_index++, index_lookup_table, local_table_for_iseq);
+                pm_insert_local_special(PM_CONSTANT_DOT3, idDot3, local_index++, &index_lookup_table, local_table_for_iseq);
                 break;
               }
               default:
@@ -6785,11 +6758,11 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
                         local_table_for_iseq->ids[local_index] = local;
                     }
                     else {
-                        pm_insert_local_index(name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+                        pm_insert_local_index(name, local_index, &index_lookup_table, local_table_for_iseq, scope_node);
                     }
                 }
                 else {
-                    pm_insert_local_special(idAnd, local_index, index_lookup_table, local_table_for_iseq);
+                    pm_insert_local_special(PM_CONSTANT_AND, idAnd, local_index, &index_lookup_table, local_table_for_iseq);
                 }
 
                 local_index++;
@@ -6825,7 +6798,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
             const pm_node_t *required = requireds_list->nodes[i];
 
             if (PM_NODE_TYPE_P(required, PM_MULTI_TARGET_NODE)) {
-                local_index = pm_compile_destructured_param_locals((const pm_multi_target_node_t *) required, index_lookup_table, local_table_for_iseq, scope_node, local_index);
+                local_index = pm_compile_destructured_param_locals((const pm_multi_target_node_t *) required, &index_lookup_table, local_table_for_iseq, scope_node, local_index);
             }
         }
     }
@@ -6839,7 +6812,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
             const pm_node_t *post = posts_list->nodes[i];
 
             if (PM_NODE_TYPE_P(post, PM_MULTI_TARGET_NODE)) {
-                local_index = pm_compile_destructured_param_locals((const pm_multi_target_node_t *) post, index_lookup_table, local_table_for_iseq, scope_node, local_index);
+                local_index = pm_compile_destructured_param_locals((const pm_multi_target_node_t *) post, &index_lookup_table, local_table_for_iseq, scope_node, local_index);
             }
         }
     }
@@ -6867,7 +6840,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
             const uint8_t param_name[] = { '_', '1' + i };
             pm_constant_id_t constant_id = pm_parser_constant_find(scope_node->parser, param_name, 2);
             RUBY_ASSERT(constant_id && "parser should fill in any gaps in numbered parameters");
-            pm_insert_local_index(constant_id, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+            pm_insert_local_index(constant_id, local_index, &index_lookup_table, local_table_for_iseq, scope_node);
         }
         body->param.lead_num = maximum;
         body->param.flags.has_lead = true;
@@ -6890,7 +6863,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
     if (block_locals && block_locals->size) {
         for (size_t i = 0; i < block_locals->size; i++, local_index++) {
             pm_constant_id_t constant_id = ((const pm_block_local_variable_node_t *) block_locals->nodes[i])->name;
-            pm_insert_local_index(constant_id, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+            pm_insert_local_index(constant_id, local_index, &index_lookup_table, local_table_for_iseq, scope_node);
         }
     }
 
@@ -6899,14 +6872,13 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
         for (size_t i = 0; i < scope_node->locals.size; i++) {
             pm_constant_id_t constant_id = locals->ids[i];
             if (constant_id) {
-                struct pm_local_table_insert_ctx ctx;
-                ctx.scope_node = scope_node;
-                ctx.local_table_for_iseq = local_table_for_iseq;
-                ctx.local_index = local_index;
-
-                st_update(index_lookup_table, (st_data_t)constant_id, pm_local_table_insert_func, (st_data_t)&ctx);
-
-                local_index = ctx.local_index;
+                int existing;
+                if (!pm_index_lookup_table_lookup(&index_lookup_table, constant_id, &existing)) {
+                    ID local = pm_constant_id_lookup(scope_node, constant_id);
+                    local_table_for_iseq->ids[local_index] = local;
+                    pm_index_lookup_table_insert(&index_lookup_table, constant_id, local_index);
+                    local_index++;
+                }
             }
         }
     }
@@ -6914,10 +6886,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
     //********END OF STEP 4**********
 
     // We set the index_lookup_table on the scope node so we can
-    // refer to the parameters correctly
-    if (scope_node->index_lookup_table) {
-        st_free_table(scope_node->index_lookup_table);
-    }
+    // refer to the parameters correctly.
     scope_node->index_lookup_table = index_lookup_table;
     iseq_calc_param_size(iseq);
 
@@ -11389,15 +11358,15 @@ pm_parse_process(pm_parse_result_t *result, pm_node_t *node, VALUE *script_lines
     scope_node->line_offsets = pm_parser_line_offsets(parser);
     scope_node->start_line = pm_parser_start_line(parser);
     size_t constants_size = pm_parser_constants_size(parser);
-    scope_node->constants = constants_size ? xcalloc(constants_size, sizeof(ID)) : NULL;
+    scope_node->constants = constants_size ? xmalloc(constants_size * sizeof(ID)) : NULL;
 
     pm_intern_constants_ctx_t intern_ctx = { .constants = scope_node->constants, .encoding = scope_node->encoding, .index = 0 };
     pm_parser_constants_each(parser, pm_intern_constants_callback, &intern_ctx);
 
-    scope_node->index_lookup_table = st_init_numtable();
     pm_constant_id_list_t *locals = &scope_node->locals;
+    pm_index_lookup_table_init_heap(&scope_node->index_lookup_table, (int) constants_size);
     for (size_t index = 0; index < locals->size; index++) {
-        st_insert(scope_node->index_lookup_table, locals->ids[index], index);
+        pm_index_lookup_table_insert(&scope_node->index_lookup_table, locals->ids[index], (int) index);
     }
 
     // If we got here, this is a success and we can return Qnil to indicate that
