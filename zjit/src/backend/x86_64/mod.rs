@@ -498,14 +498,12 @@ impl Assembler {
                     // so if left != out, alad right != out, then we can go
                     // ahead and clobber out.
                     match (&*out, &*left, &*right) {
+                        (Opnd::Reg(_), Opnd::Imm(_), Opnd::Imm(_)) |
+                        (Opnd::Reg(_), Opnd::UImm(_), Opnd::Imm(_)) |
+                        (Opnd::Reg(_), Opnd::Imm(_), Opnd::UImm(_)) |
+                        (Opnd::Reg(_), Opnd::UImm(_), Opnd::UImm(_)) |
                         (Opnd::Mem(_), Opnd::UImm(_), Opnd::Reg(_)) |
-                        (Opnd::Mem(_), Opnd::Imm(_), Opnd::Reg(_)) => {
-                            *left = split_64bit_immediate(asm, *left, SCRATCH0_OPND);
-                            asm.mov(*out, *left);
-                            *left = *out;
-                            asm.push_insn(insn);
-                        },
-
+                        (Opnd::Mem(_), Opnd::Imm(_), Opnd::Reg(_)) |
                         (Opnd::Mem(_), Opnd::Imm(_), Opnd::UImm(_)) |
                         (Opnd::Mem(_), Opnd::UImm(_), Opnd::Imm(_)) |
                         (Opnd::Mem(_), Opnd::UImm(_), Opnd::UImm(_)) |
@@ -555,15 +553,6 @@ impl Assembler {
                             }
                             asm.mov(*out, *left);
                             *left = *out;
-                            asm.push_insn(insn);
-                        },
-                        (Opnd::Reg(_), Opnd::Imm(_), Opnd::Imm(_)) |
-                        (Opnd::Reg(_), Opnd::UImm(_), Opnd::Imm(_)) |
-                        (Opnd::Reg(_), Opnd::Imm(_), Opnd::UImm(_)) |
-                        (Opnd::Reg(_), Opnd::UImm(_), Opnd::UImm(_)) => {
-                            asm.mov(*out, *left);
-                            *left = *out;
-                            *right = split_64bit_immediate(asm, *right, SCRATCH0_OPND);
                             asm.push_insn(insn);
                         },
                         (Opnd::Reg(_), Opnd::UImm(_), Opnd::Reg(_)) |
@@ -640,7 +629,6 @@ impl Assembler {
                         (Opnd::Mem(_), Opnd::Reg(_), Opnd::Reg(_)) |
                         (Opnd::Mem(_), Opnd::Reg(_), Opnd::Imm(_)) |
                         (Opnd::Mem(_), Opnd::Reg(_), Opnd::UImm(_)) => {
-
                             *right = split_64bit_immediate(asm, *right, SCRATCH0_OPND);
                             asm.mov(*out, *left);
                             *left = *out;
@@ -650,10 +638,6 @@ impl Assembler {
                         (Opnd::Mem(_), Opnd::Mem(_), Opnd::UImm(_)) |
                         (Opnd::Mem(_), Opnd::Mem(_), Opnd::Reg(_)) => {
                             *left = split_stack_membase(asm, *left, SCRATCH0_OPND, &stack_state);
-                            assert!(
-                                matches!(out, Opnd::Mem(Mem { base: MemBase::Stack { .. }, .. }) |
-                                    Opnd::Mem(Mem { base: MemBase::Reg { .. }, .. })),
-                                "left should be a memory opnd");
                             asm.mov(SCRATCH0_OPND, *left);
                             asm.mov(*out, SCRATCH0_OPND);
                             *left = *out;
@@ -681,8 +665,6 @@ impl Assembler {
                         }
                         _ => {
                             unreachable!("We shouldn't have vregs anymore")
-                            // If both sides are memory, load left in to scratch
-                            //*left = split_if_both_memory(asm, *left, *right, SCRATCH0_OPND);
                         }
                     }
                 }
