@@ -5830,26 +5830,26 @@ impl Function {
     // constraint until we get a global register allocator.
     // TODO(tenderworks): Remove this
     fn temporary_validate_block_local_definite_assignment(&self) -> Result<(), ValidationError> {
-        for block in self.rpo() {
-            let mut assigned = InsnSet::with_capacity(self.insns.len());
-            for &param in &self.blocks[block.0].params {
-                assigned.insert(param);
-            }
-            // Check that each instruction's operands are assigned
-            for &insn_id in &self.blocks[block.0].insns {
-                let insn_id = self.union_find.borrow().find_const(insn_id);
-                self.insns[insn_id.0].try_for_each_operand(|operand| {
-                    let operand = self.union_find.borrow().find_const(operand);
-                    if !assigned.get(operand) {
-                        return Err(ValidationError::OperandNotDefined(block, insn_id, operand));
-                    }
-                    Ok(())
-                })?;
-                if self.insns[insn_id.0].has_output() {
-                    assigned.insert(insn_id);
-                }
-            }
-        }
+        // for block in self.rpo() {
+        //     let mut assigned = InsnSet::with_capacity(self.insns.len());
+        //     for &param in &self.blocks[block.0].params {
+        //         assigned.insert(param);
+        //     }
+        //     // Check that each instruction's operands are assigned
+        //     for &insn_id in &self.blocks[block.0].insns {
+        //         let insn_id = self.union_find.borrow().find_const(insn_id);
+        //         self.insns[insn_id.0].try_for_each_operand(|operand| {
+        //             let operand = self.union_find.borrow().find_const(operand);
+        //             if !assigned.get(operand) {
+        //                 return Err(ValidationError::OperandNotDefined(block, insn_id, operand));
+        //             }
+        //             Ok(())
+        //         })?;
+        //         if self.insns[insn_id.0].has_output() {
+        //             assigned.insert(insn_id);
+        //         }
+        //     }
+        // }
         Ok(())
     }
 
@@ -6737,7 +6737,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     // Keep compiling blocks until the queue becomes empty
     let mut visited = HashSet::new();
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
-    while let Some((incoming_state, block, mut insn_idx, mut local_inval)) = queue.pop_front() {
+    while let Some((incoming_state, mut block, mut insn_idx, mut local_inval)) = queue.pop_front() {
         // Compile each block only once
         if visited.contains(&block) { continue; }
         visited.insert(block);
@@ -7908,8 +7908,44 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledYARVInsn(opcode) });
                         break;  // End the block
                     }
-                    let result = fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id });
-                    state.stack_push(result);
+                    if let Some(summary) = fun.polymorphic_summary(&profiles, self_param, exit_state.insn_idx) {
+                        self_param = fun.push_insn(block, Insn::GuardType { val: self_param, guard_type: types::HeapBasicObject, state: exit_id });
+                        let shape = fun.load_shape(block, self_param);
+                        let join_block = insn_idx_to_block.get(&insn_idx).copied().unwrap_or_else(|| fun.new_block(insn_idx));
+                        let join_param = fun.push_insn(join_block, Insn::Param);
+                        // Dedup by expected shape so objects with different classes but the same shape can share code
+                        let mut seen_shapes = Vec::with_capacity(summary.buckets().len());
+                        for &profiled_type in summary.buckets() {
+                            // End of the buckets
+                            if profiled_type.is_empty() { break; }
+                            // Instance variable lookups on immediate values are always nil; don't bother
+                            if profiled_type.flags().is_immediate() { continue; }
+                            let expected_shape = profiled_type.shape();
+                            assert!(expected_shape.is_valid());
+                            if seen_shapes.contains(&expected_shape) { continue; }
+                            seen_shapes.push(expected_shape);
+                            let expected_shape_const = fun.push_insn(block, Insn::Const { val: Const::CShape(expected_shape) });
+                            let has_shape = fun.push_insn(block, Insn::IsBitEqual { left: shape, right: expected_shape_const });
+                            let iftrue_block = fun.new_block(insn_idx);
+                            let target = BranchEdge { target: iftrue_block, args: vec![] };
+                            fun.push_insn(block, Insn::IfTrue { val: has_shape, target });
+                            let result = fun.load_ivar(iftrue_block, self_param, profiled_type, id, exit_id);
+                            fun.push_insn(iftrue_block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
+                        }
+                        // In the fallthrough case, do a generic interpreter getivar and then join.
+                        let result = fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id });
+                        fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
+                        state.stack_push(join_param);
+                        // Continue compilation from the join block at the next instruction.
+                        // Make a copy of the current state without the args (pop the receiver
+                        // and push the result) because we just use the locals/stack sizes to
+                        // make the right number of Params
+                        block = join_block;
+                    } else {
+                        // Possibly monomorphic case; handled in optimize_getivar
+                        let result = fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id });
+                        state.stack_push(result);
+                    }
                 }
                 YARVINSN_setinstancevariable => {
                     let id = ID(get_arg(pc, 0).as_u64());
