@@ -630,7 +630,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::CCallVariadic { cfunc, recv, name, args, cme, state, blockiseq, return_type: _, elidable: _ } => {
             gen_ccall_variadic(jit, asm, *cfunc, *name, opnd!(recv), opnds!(args), *cme, *blockiseq, &function.frame_state(*state))
         }
-        Insn::GetIvar { self_val, id, ic, state: _ } => gen_getivar(jit, asm, opnd!(self_val), *id, *ic),
+        Insn::GetIvar { self_val, id, ic, state } => gen_getivar(jit, asm, opnd!(self_val), *id, *ic, &function.frame_state(*state)),
         Insn::SetGlobal { id, val, state } => no_output!(gen_setglobal(jit, asm, *id, opnd!(val), &function.frame_state(*state))),
         Insn::GetGlobal { id, state } => gen_getglobal(jit, asm, *id, &function.frame_state(*state)),
         &Insn::IsBlockParamModified { ep } => gen_is_block_param_modified(asm, opnd!(ep)),
@@ -1107,7 +1107,9 @@ fn gen_ccall_variadic(
 }
 
 /// Emit an uncached instance variable lookup
-fn gen_getivar(jit: &mut JITState, asm: &mut Assembler, recv: Opnd, id: ID, ic: *const iseq_inline_iv_cache_entry) -> Opnd {
+fn gen_getivar(jit: &mut JITState, asm: &mut Assembler, recv: Opnd, id: ID, ic: *const iseq_inline_iv_cache_entry, state: &FrameState) -> Opnd {
+    // rb_ivar_get can raise Ractor::IsolationError for class/module ivars from non-main Ractors
+    gen_prepare_non_leaf_call(jit, asm, state);
     if ic.is_null() {
         asm_ccall!(asm, rb_ivar_get, recv, id.0.into())
     } else {
