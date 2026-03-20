@@ -97,6 +97,9 @@ pub struct Options {
     /// Frequency of tracing side exits.
     pub trace_side_exits_sample_interval: usize,
 
+    /// Trace compilation phases as Perfetto duration events.
+    pub trace_compiles: bool,
+
     /// Dump code map to /tmp for performance profilers.
     pub perf: Option<PerfMap>,
 
@@ -127,6 +130,7 @@ impl Default for Options {
             dump_disasm: None,
             trace_side_exits: None,
             trace_side_exits_sample_interval: 0,
+            trace_compiles: false,
             perf: None,
             allowed_iseqs: None,
             log_compiled_iseqs: None,
@@ -157,7 +161,9 @@ pub const ZJIT_OPTIONS: &[(&str, &str)] = &[
     ("--zjit-trace-exits[=counter]",
                      "Record source on side-exit. `Counter` picks specific counter."),
     ("--zjit-trace-exits-sample-rate=num",
-                     "Frequency at which to record side exits. Must be `usize`.")
+                     "Frequency at which to record side exits. Must be `usize`."),
+    ("--zjit-trace-compiles",
+                     "Record compilation phases as Perfetto trace events.")
 ];
 
 #[derive(Copy, Clone, Debug)]
@@ -379,6 +385,8 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             // `sample_interval ` must provide a string that can be validly parsed to a `usize`.
             options.trace_side_exits_sample_interval = sample_interval.parse::<usize>().ok()?;
         }
+
+        ("trace-compiles", "") => options.trace_compiles = true,
 
         ("debug", "") => options.debug = true,
 
