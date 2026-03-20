@@ -65,7 +65,7 @@ releases.
 * RubyGems 4.1.0.dev
 * bundler 4.1.0.dev
 * json 2.19.2
-  * 2.18.0 to [v2.18.1][json-v2.18.1], [v2.19.0][json-v2.19.0], [v2.19.1][json-v2.19.1]
+  * 2.18.0 to [v2.18.1][json-v2.18.1], [v2.19.0][json-v2.19.0], [v2.19.1][json-v2.19.1], [v2.19.2][json-v2.19.2]
 * openssl 4.0.1
   * 4.0.0 to [v4.0.1][openssl-v4.0.1]
 * prism 1.9.0
@@ -95,8 +95,8 @@ releases.
   * 0.1.1 to [v0.2.0][resolv-replace-v0.2.0]
 * syslog 0.4.0
   * 0.3.0 to [v0.4.0][syslog-v0.4.0]
-* repl_type_completor 0.1.13
-  * 0.1.12 to [v0.1.13][repl_type_completor-v0.1.13]
+* repl_type_completor 0.1.14
+  * 0.1.12 to [v0.1.13][repl_type_completor-v0.1.13], [v0.1.14][repl_type_completor-v0.1.14]
 * pstore 0.2.1
   * 0.2.0 to [v0.2.1][pstore-v0.2.1]
 * rdoc 7.2.0
@@ -142,6 +142,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [json-v2.18.1]: https://github.com/ruby/json/releases/tag/v2.18.1
 [json-v2.19.0]: https://github.com/ruby/json/releases/tag/v2.19.0
 [json-v2.19.1]: https://github.com/ruby/json/releases/tag/v2.19.1
+[json-v2.19.2]: https://github.com/ruby/json/releases/tag/v2.19.2
 [openssl-v4.0.1]: https://github.com/ruby/openssl/releases/tag/v4.0.1
 [prism-v1.8.1]: https://github.com/ruby/prism/releases/tag/v1.8.1
 [prism-v1.9.0]: https://github.com/ruby/prism/releases/tag/v1.9.0
@@ -160,6 +161,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [resolv-replace-v0.2.0]: https://github.com/ruby/resolv-replace/releases/tag/v0.2.0
 [syslog-v0.4.0]: https://github.com/ruby/syslog/releases/tag/v0.4.0
 [repl_type_completor-v0.1.13]: https://github.com/ruby/repl_type_completor/releases/tag/v0.1.13
+[repl_type_completor-v0.1.14]: https://github.com/ruby/repl_type_completor/releases/tag/v0.1.14
 [pstore-v0.2.1]: https://github.com/ruby/pstore/releases/tag/v0.2.1
 [rdoc-v7.1.0]: https://github.com/ruby/rdoc/releases/tag/v7.1.0
 [rdoc-v7.2.0]: https://github.com/ruby/rdoc/releases/tag/v7.2.0
