@@ -282,6 +282,7 @@ make_counters! {
         send_fallback_super_target_not_found,
         send_fallback_super_target_complex_args_pass,
         send_fallback_cannot_send_direct,
+        send_fallback_filtered_out,
         send_fallback_uncategorized,
     }
 
@@ -671,6 +672,7 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SuperPolymorphic                          => send_fallback_super_polymorphic,
         SuperTargetNotFound                       => send_fallback_super_target_not_found,
         SuperTargetComplexArgsPass                => send_fallback_super_target_complex_args_pass,
+        FilteredOut                               => send_fallback_filtered_out,
         Uncategorized(_)                          => send_fallback_uncategorized,
     }
 }
