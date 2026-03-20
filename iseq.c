@@ -1096,41 +1096,15 @@ rb_iseq_new_with_opt(VALUE ast_value, VALUE name, VALUE path, VALUE realpath,
     return iseq_translate(iseq);
 }
 
-struct pm_iseq_new_with_opt_data {
-    rb_iseq_t *iseq;
-    pm_scope_node_t *node;
-};
-
-VALUE
-pm_iseq_new_with_opt_try(VALUE d)
-{
-    struct pm_iseq_new_with_opt_data *data = (struct pm_iseq_new_with_opt_data *)d;
-
-    // This can compile child iseqs, which can raise syntax errors
-    pm_iseq_compile_node(data->iseq, data->node);
-
-    // This raises an exception if there is a syntax error
-    finish_iseq_build(data->iseq);
-
-    return Qundef;
-}
-
 /**
- * This is a step in the prism compiler that is called once all of the various
- * options have been established. It is called from one of the pm_iseq_new_*
- * functions or from the RubyVM::InstructionSequence APIs. It is responsible for
- * allocating the instruction sequence, calling into the compiler, and returning
- * the built instruction sequence.
- *
- * Importantly, this is also the function where the compiler is re-entered to
- * compile child instruction sequences. A child instruction sequence is always
- * compiled using a scope node, which is why we cast it explicitly to that here
- * in the parameters (as opposed to accepting a generic pm_node_t *).
+ * Core implementation for building a prism iseq. This does not use rb_protect,
+ * so any exceptions (e.g. from finish_iseq_build) propagate normally up the
+ * call stack — matching the parse.y compiler's behavior.
  */
 rb_iseq_t *
-pm_iseq_new_with_opt(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath,
-                     int first_lineno, const rb_iseq_t *parent, int isolated_depth,
-                     enum rb_iseq_type type, const rb_compile_option_t *option, int *error_state)
+pm_iseq_build(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath,
+              int first_lineno, const rb_iseq_t *parent, int isolated_depth,
+              enum rb_iseq_type type, const rb_compile_option_t *option)
 {
     rb_iseq_t *iseq = iseq_alloc();
     ISEQ_BODY(iseq)->prism = true;
@@ -1157,15 +1131,59 @@ pm_iseq_new_with_opt(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpa
     prepare_iseq_build(iseq, name, path, realpath, first_lineno, &code_location, node->ast_node->node_id,
                        parent, isolated_depth, type, node->script_lines == NULL ? Qnil : *node->script_lines, option);
 
+    pm_iseq_compile_node(iseq, node);
+    finish_iseq_build(iseq);
+
+    return iseq_translate(iseq);
+}
+
+struct pm_iseq_new_with_opt_data {
+    rb_iseq_t *iseq;
+    pm_scope_node_t *node;
+    VALUE name, path, realpath;
+    int first_lineno, isolated_depth;
+    const rb_iseq_t *parent;
+    enum rb_iseq_type type;
+    const rb_compile_option_t *option;
+};
+
+static VALUE
+pm_iseq_new_with_opt_try(VALUE d)
+{
+    struct pm_iseq_new_with_opt_data *data = (struct pm_iseq_new_with_opt_data *)d;
+    data->iseq = pm_iseq_build(data->node, data->name, data->path, data->realpath,
+                               data->first_lineno, data->parent, data->isolated_depth,
+                               data->type, data->option);
+    return Qundef;
+}
+
+/**
+ * This is a step in the prism compiler that is called once all of the various
+ * options have been established. It is called from one of the pm_iseq_new_*
+ * functions or from the RubyVM::InstructionSequence APIs.
+ *
+ * This function uses rb_protect to catch exceptions, storing the error state
+ * in the provided out parameter. This is only needed at top-level entry points
+ * where the caller wants to handle errors gracefully. Child iseqs compiled
+ * during the compilation process do NOT go through this function — they use
+ * pm_iseq_build directly, letting exceptions propagate naturally (matching
+ * the parse.y compiler's behavior).
+ */
+rb_iseq_t *
+pm_iseq_new_with_opt(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath,
+                     int first_lineno, const rb_iseq_t *parent, int isolated_depth,
+                     enum rb_iseq_type type, const rb_compile_option_t *option, int *error_state)
+{
     struct pm_iseq_new_with_opt_data data = {
-        .iseq = iseq,
-        .node = node
+        .node = node, .name = name, .path = path, .realpath = realpath,
+        .first_lineno = first_lineno, .parent = parent,
+        .isolated_depth = isolated_depth, .type = type, .option = option
     };
     rb_protect(pm_iseq_new_with_opt_try, (VALUE)&data, error_state);
 
     if (*error_state) return NULL;
 
-    return iseq_translate(iseq);
+    return data.iseq;
 }
 
 rb_iseq_t *
