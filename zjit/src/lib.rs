@@ -32,5 +32,3 @@ mod gc;
 mod payload;
 mod json;
 mod ttycolors;
-#[cfg(test)]
-mod yjit_stubs;
