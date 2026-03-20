@@ -11,8 +11,8 @@ module Prism
     REMOVE_ON_ERROR_TYPES = SERIALIZE_ONLY_SEMANTICS_FIELDS
     CHECK_FIELD_KIND = ENV.fetch("CHECK_FIELD_KIND", false)
 
-    JAVA_BACKEND = ENV["PRISM_JAVA_BACKEND"] || "default"
-    JAVA_IDENTIFIER_TYPE = JAVA_BACKEND == "truffleruby" ? "String" : "byte[]"
+    JAVA_BACKEND = ENV["PRISM_JAVA_BACKEND"] || "truffleruby"
+    JAVA_STRING_TYPE = JAVA_BACKEND == "jruby" ? "org.jruby.RubySymbol" : "String"
     INCLUDE_NODE_ID = !SERIALIZE_ONLY_SEMANTICS_FIELDS || JAVA_BACKEND == "jruby"
 
     COMMON_FLAGS_COUNT = 2
@@ -272,7 +272,7 @@ module Prism
       end
 
       def java_type
-        JAVA_IDENTIFIER_TYPE
+        JAVA_STRING_TYPE
       end
     end
 
@@ -292,7 +292,7 @@ module Prism
       end
 
       def java_type
-        JAVA_IDENTIFIER_TYPE
+        JAVA_STRING_TYPE
       end
     end
 
@@ -312,7 +312,7 @@ module Prism
       end
 
       def java_type
-        "#{JAVA_IDENTIFIER_TYPE}[]"
+        "#{JAVA_STRING_TYPE}[]"
       end
     end
 
