@@ -11314,6 +11314,9 @@ prism/api_node.$(OBJEXT): $(top_srcdir)/prism/comments.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/compiler/align.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/compiler/exported.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/compiler/filesystem.h
+prism/api_node.$(OBJEXT): $(top_srcdir)/prism/compiler/flex_array.h
+prism/api_node.$(OBJEXT): $(top_srcdir)/prism/compiler/force_inline.h
+prism/api_node.$(OBJEXT): $(top_srcdir)/prism/compiler/inline.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/compiler/nodiscard.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/compiler/nonnull.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/constant_pool.h
@@ -11322,6 +11325,7 @@ prism/api_node.$(OBJEXT): $(top_srcdir)/prism/excludes.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/extension.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/integer.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/internal/allocator.h
+prism/api_node.$(OBJEXT): $(top_srcdir)/prism/internal/arena.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/internal/char.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/internal/encoding.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/internal/list.h

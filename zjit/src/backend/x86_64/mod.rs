@@ -183,40 +183,12 @@ impl Assembler {
             // being used. It is okay not to use their output here.
             #[allow(unused_must_use)]
             match &mut insn {
-                Insn::Add { left, right, out } |
-                Insn::Sub { left, right, out } |
-                Insn::Mul { left, right, out } |
-                Insn::And { left, right, out } |
-                Insn::Or { left, right, out } |
-                Insn::Xor { left, right, out } => {
-                    match (*left, *right) {
-                        (Opnd::Mem(_), Opnd::Mem(_)) => {
-                            *left = asm.load(*left);
-                            *right = asm.load(*right);
-                        },
-                        (Opnd::Mem(_), Opnd::UImm(_) | Opnd::Imm(_)) => {
-                            *left = asm.load(*left);
-                        },
-                        // Instruction output whose live range spans beyond this instruction
-                        (Opnd::VReg { idx: _, .. }, _) => {
-                            *left = asm.load(*left);
-                        },
-                        // We have to load memory operands to avoid corrupting them
-                        (Opnd::Mem(_), _) => {
-                            *left = asm.load(*left);
-                        },
-                        // We have to load register operands to avoid corrupting them
-                        (Opnd::Reg(_), _) => {
-                            if *left != *out {
-                                *left = asm.load(*left);
-                            }
-                        },
-                        // The first operand can't be an immediate value
-                        (Opnd::UImm(_), _) => {
-                            *left = asm.load(*left);
-                        }
-                        _ => {}
-                    }
+                Insn::Add { .. } |
+                Insn::Sub { .. } |
+                Insn::Mul { .. } |
+                Insn::And { .. } |
+                Insn::Or { .. } |
+                Insn::Xor { .. } => {
                     asm.push_insn(insn);
                 },
                 Insn::Cmp { left, right } => {
@@ -427,6 +399,13 @@ impl Assembler {
             }
         }
 
+        fn assert_out_is_phys_reg_or_stack_mem(out: Opnd) {
+            assert!(
+                matches!(out, Opnd::Reg(_) | Opnd::Mem(Mem { base: MemBase::Stack { .. }, .. })),
+                "x86_scratch_split expects out to be a physical register or stack memory, got {out:?}"
+            );
+        }
+
         /// If both opnd and other are Opnd::Mem, split opnd with scratch_opnd.
         fn split_if_both_memory(asm: &mut Assembler, opnd: Opnd, other: Opnd, scratch_opnd: Opnd) -> Opnd {
             if let (Opnd::Mem(_), Opnd::Mem(_)) = (opnd, other) {
@@ -481,17 +460,59 @@ impl Assembler {
                 Insn::And { left, right, out } |
                 Insn::Or  { left, right, out } |
                 Insn::Xor { left, right, out } => {
-                    *left = split_stack_membase(asm, *left, SCRATCH0_OPND, &stack_state);
-                    *left = split_if_both_memory(asm, *left, *right, SCRATCH0_OPND);
-                    *right = split_stack_membase(asm, *right, SCRATCH1_OPND, &stack_state);
-                    *right = split_64bit_immediate(asm, *right, SCRATCH1_OPND);
-                    *out = lower_stack_membase(*out, &stack_state);
+                    assert_out_is_phys_reg_or_stack_mem(*out);
 
-                    let (out, left) = (*out, *left);
+                    // Sequential pipeline to lower binops into x86 two-operand form.
+                    // Uses SCRATCH0 for left, SCRATCH1 for right to avoid conflicts.
+
+                    // Phase 1: Protect right if it occupies the same location as out,
+                    // since we'll overwrite out when moving left into it.
+                    // Compare before lowering (Stack membases change during lowering).
+                    let right_eq_out = out == right;
+                    *out = lower_stack_membase(*out, &stack_state);
+                    if right_eq_out {
+                        asm.mov(SCRATCH1_OPND, *out);
+                        *right = SCRATCH1_OPND;
+                    }
+
+                    // Phase 2: Lower stack memory bases
+                    *left = split_stack_membase(asm, *left, SCRATCH0_OPND, &stack_state);
+                    if !right_eq_out {
+                        *right = split_stack_membase(asm, *right, SCRATCH1_OPND, &stack_state);
+                    }
+
+                    // Phase 3: If right is a Mem whose base register equals the out
+                    // register, materialize it before we clobber out.
+                    if let (Opnd::Reg(out_reg), Opnd::Mem(Mem { base: MemBase::Reg(base_reg_no), .. })) = (*out, *right) {
+                        if out_reg.reg_no == base_reg_no {
+                            asm.mov(SCRATCH1_OPND, *right);
+                            *right = SCRATCH1_OPND;
+                        }
+                    }
+
+                    // Phase 4: x86 can't encode two memory operands.
+                    if let (Opnd::Mem(_), Opnd::Mem(_)) = (*out, *right) {
+                        asm.mov(SCRATCH1_OPND, *right);
+                        *right = SCRATCH1_OPND;
+                    }
+
+                    // Phase 5: Move left into out (x86 two-operand form: OP clobbers dst).
+                    // For Mem out, split large left immediates first (mov [mem], imm64 is invalid).
+                    if let Opnd::Mem(_) = *out {
+                        *left = split_64bit_immediate(asm, *left, SCRATCH0_OPND);
+                    }
+                    asm_mov(asm, *out, *left, SCRATCH0_OPND);
+                    *left = *out;
+
+                    // Phase 6: Split large right immediates (>32-bit) into a register.
+                    *right = split_64bit_immediate(asm, *right, SCRATCH1_OPND);
+
+                    // Phase 7: Emit the instruction.
                     asm.push_insn(insn);
-                    asm_mov(asm, out, left, SCRATCH0_OPND);
                 }
                 Insn::Mul { left, right, out } => {
+                    assert_out_is_phys_reg_or_stack_mem(*out);
+
                     *left = split_stack_membase(asm, *left, SCRATCH0_OPND, &stack_state);
                     *left = split_if_both_memory(asm, *left, *right, SCRATCH0_OPND);
                     *right = split_stack_membase(asm, *right, SCRATCH1_OPND, &stack_state);
@@ -1243,6 +1264,119 @@ mod tests {
         (asm, CodeBlock::new_dummy())
     }
 
+    fn stack_mem(stack_idx: usize) -> Opnd {
+        Opnd::Mem(Mem {
+            base: MemBase::Stack { stack_idx, num_bits: 64 },
+            disp: 0,
+            num_bits: 64,
+        })
+    }
+
+    fn stack_indirect_mem(stack_idx: usize) -> Opnd {
+        Opnd::Mem(Mem {
+            base: MemBase::StackIndirect { stack_idx },
+            disp: 0,
+            num_bits: 64,
+        })
+    }
+
+    #[derive(Clone, Copy, Debug)]
+    enum BinOpKind {
+        Add,
+        Sub,
+        And,
+        Or,
+        Xor,
+    }
+
+    fn split_binop(kind: BinOpKind, left: Opnd, right: Opnd, out: Opnd) -> Assembler {
+        let (mut asm, _) = setup_asm();
+        match kind {
+            BinOpKind::Add => asm.push_insn(Insn::Add { left, right, out }),
+            BinOpKind::Sub => asm.push_insn(Insn::Sub { left, right, out }),
+            BinOpKind::And => asm.push_insn(Insn::And { left, right, out }),
+            BinOpKind::Or => asm.push_insn(Insn::Or { left, right, out }),
+            BinOpKind::Xor => asm.push_insn(Insn::Xor { left, right, out }),
+        }
+        asm.x86_scratch_split()
+    }
+
+    fn binop_mnemonic(kind: BinOpKind) -> &'static str {
+        match kind {
+            BinOpKind::Add => "add",
+            BinOpKind::Sub => "sub",
+            BinOpKind::And => "and",
+            BinOpKind::Or => "or",
+            BinOpKind::Xor => "xor",
+        }
+    }
+
+    fn split_binop_disasm_lines(kind: BinOpKind, left: Opnd, right: Opnd, out: Opnd) -> Vec<String> {
+        let mut asm = split_binop(kind, left, right, out);
+        let mut cb = CodeBlock::new_dummy();
+        for name in &asm.label_names {
+            cb.new_label(name.to_string());
+        }
+        assert!(asm.x86_emit(&mut cb).is_some(), "{kind:?}: x86_emit failed");
+
+        cb.disasm()
+            .lines()
+            .map(str::trim)
+            .filter(|line| !line.is_empty())
+            .map(|line| {
+                line.split_once(": ")
+                    .map(|(_, rest)| rest.to_string())
+                    .unwrap_or_else(|| line.to_string())
+            })
+            .collect()
+    }
+
+    fn assert_split_binop_case(kind: BinOpKind, left: Opnd, right: Opnd, out: Opnd, case: &str) {
+        fn reg_names(reg: Reg) -> (&'static str, &'static str) {
+            const RAX_NO: u8 = RAX_REG.reg_no;
+            const RDI_NO: u8 = RDI_REG.reg_no;
+            const R13_NO: u8 = R13_REG.reg_no;
+            match reg.reg_no {
+                RAX_NO => ("rax", "eax"),
+                RDI_NO => ("rdi", "edi"),
+                R13_NO => ("r13", "r13d"),
+                _ => panic!("unexpected register in test helper: {reg:?}"),
+            }
+        }
+
+        let lines = split_binop_disasm_lines(kind, left, right, out);
+        let mnemonic = binop_mnemonic(kind);
+        let matching: Vec<(usize, &String)> = lines.iter()
+            .enumerate()
+            .filter(|(_, line)| line.starts_with(&format!("{mnemonic} ")))
+            .collect();
+
+        assert_eq!(matching.len(), 1, "{kind:?} {case}: expected exactly one `{mnemonic}` in disasm, got {lines:?}");
+        assert!(
+            !matching[0].1.contains("], qword ptr ["),
+            "{kind:?} {case}: emitted mem/mem `{mnemonic}` in disasm {lines:?}"
+        );
+
+        if let (Opnd::Reg(out_reg), Opnd::Imm(_) | Opnd::UImm(_)) = (out, left) {
+            let (out64, out32) = reg_names(out_reg);
+            let prelude = &lines[..matching[0].0];
+            assert!(
+                prelude.iter().any(|line|
+                    line.starts_with(&format!("mov {out64}, ")) ||
+                    line.starts_with(&format!("mov {out32}, ")) ||
+                    line.starts_with(&format!("movabs {out64}, "))
+                ),
+                "{kind:?} {case}: expected left immediate to be materialized into output register before `{mnemonic}`, got {lines:?}"
+            );
+        }
+
+        if matches!(right, Opnd::Imm(value) if imm_num_bits(value) > 32)
+            || matches!(right, Opnd::UImm(value) if imm_num_bits(value as i64) > 32)
+        {
+            assert!(lines.iter().any(|line| line.starts_with("movabs ")), "{kind:?} {case}: expected movabs materialization for 64-bit immediate, got {lines:?}");
+        }
+    }
+
     #[test]
     fn test_lir_string() {
         use crate::hir::SideExitReason;
@@ -1587,12 +1721,8 @@ mod tests {
         asm.mov(CFP, sp); // should be merged to add
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @"
-        0x0: mov rdi, r13
-        0x3: add rdi, 0x40
-        0x7: mov r13, rdi
-        ");
-        assert_snapshot!(cb.hexdump(), @"4c89ef4883c7404989fd");
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: add r13, 0x40");
+        assert_snapshot!(cb.hexdump(), @"4983c540");
     }
 
     #[test]
@@ -1614,12 +1744,8 @@ mod tests {
         asm.mov(CFP, sp); // should be merged to add
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @"
-        0x0: mov rdi, r13
-        0x3: sub rdi, 0x40
-        0x7: mov r13, rdi
-        ");
-        assert_snapshot!(cb.hexdump(), @"4c89ef4883ef404989fd");
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: sub r13, 0x40");
+        assert_snapshot!(cb.hexdump(), @"4983ed40");
     }
 
     #[test]
@@ -1641,12 +1767,8 @@ mod tests {
         asm.mov(CFP, sp); // should be merged to add
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @"
-        0x0: mov rdi, r13
-        0x3: and rdi, 0x40
-        0x7: mov r13, rdi
-        ");
-        assert_snapshot!(cb.hexdump(), @"4c89ef4883e7404989fd");
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: and r13, 0x40");
+        assert_snapshot!(cb.hexdump(), @"4983e540");
     }
 
     #[test]
@@ -1657,12 +1779,8 @@ mod tests {
         asm.mov(CFP, sp); // should be merged to add
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @"
-        0x0: mov rdi, r13
-        0x3: or rdi, 0x40
-        0x7: mov r13, rdi
-        ");
-        assert_snapshot!(cb.hexdump(), @"4c89ef4883cf404989fd");
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: or r13, 0x40");
+        assert_snapshot!(cb.hexdump(), @"4983cd40");
     }
 
     #[test]
@@ -1673,12 +1791,8 @@ mod tests {
         asm.mov(CFP, sp); // should be merged to add
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm_snapshot!(cb.disasm(), @"
-        0x0: mov rdi, r13
-        0x3: xor rdi, 0x40
-        0x7: mov r13, rdi
-        ");
-        assert_snapshot!(cb.hexdump(), @"4c89ef4883f7404989fd");
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: xor r13, 0x40");
+        assert_snapshot!(cb.hexdump(), @"4983f540");
     }
 
     #[test]
@@ -1834,12 +1948,11 @@ mod tests {
         0x20: pop rdx
         0x21: pop rsi
         0x22: pop rdi
-        0x23: mov rdi, rdi
-        0x26: add rdi, rsi
-        0x29: mov rdi, rdx
-        0x2c: add rdi, rcx
+        0x23: add rdi, rsi
+        0x26: mov rdi, rdx
+        0x29: add rdi, rcx
         ");
-        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000057565251b800000000ffd0595a5e5f4889ff4801f74889d74801cf");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000057565251b800000000ffd0595a5e5f4801f74889d74801cf");
     }
 
     #[test]
@@ -1878,14 +1991,13 @@ mod tests {
         0x2c: pop rdx
         0x2d: pop rsi
         0x2e: pop rdi
-        0x2f: mov rdi, rdi
-        0x32: add rdi, rsi
-        0x35: mov rdi, rdx
-        0x38: add rdi, rcx
-        0x3b: mov rdi, rdx
-        0x3e: add rdi, r8
+        0x2f: add rdi, rsi
+        0x32: mov rdi, rdx
+        0x35: add rdi, rcx
+        0x38: mov rdi, rdx
+        0x3b: add rdi, r8
         ");
-        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b80500000057565251415057b800000000ffd05f4158595a5e5f4889ff4801f74889d74801cf4889d74c01c7");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b80500000057565251415057b800000000ffd05f4158595a5e5f4801f74889d74801cf4889d74c01c7");
     }
 
     #[test]
@@ -2077,5 +2189,272 @@ mod tests {
         0x4: mov qword ptr [rbp - 8], r11
         ");
         assert_snapshot!(cb.hexdump(), @"4c8d5df84c895df8");
+    }
+
+    #[test]
+    fn test_add_split_direct_mem() {
+        // RAX is safe to be clobbered because it's an output
+        // c_ret <- add stack[0], stack[1]
+        let lines = split_binop_disasm_lines(BinOpKind::Add, stack_mem(0), stack_mem(1), C_RET_OPND);
+
+        // load scratch0, [stack[0]]
+        // add  scratch0, [stack[1]]
+        // mov  c_ret, scratch0
+        assert_snapshot!(lines.join("\n"), @"
+        mov rax, qword ptr [rbp - 8]
+        add rax, qword ptr [rbp - 0x10]
+        ");
+    }
+
+    #[test]
+    fn test_add_split_stack_indirect_left_uses_scratch0_for_base_and_result() {
+        // stack[1] <- add stack[mem[0]], cfp
+        let lines = split_binop_disasm_lines(BinOpKind::Add, stack_indirect_mem(0), CFP, stack_mem(1));
+
+        // load scratch0, [stack[left_base]]
+        // load scratch0, [scratch0]
+        // seed [stack[out]] from scratch0, then add right in place
+        assert_snapshot!(lines.join("\n"), @"
+            mov r11, qword ptr [rbp - 8]
+            mov r11, qword ptr [r11]
+            mov qword ptr [rbp - 0x10], r11
+            add qword ptr [rbp - 0x10], r13
+        ");
+    }
+
+    #[test]
+    fn test_add_split_stack_indirect_right_uses_separate_base_scratch() {
+        // mem[1] <- add cfp, mem[stack[0]]
+        let lines = split_binop_disasm_lines(BinOpKind::Add, CFP, stack_indirect_mem(0), stack_mem(1));
+
+        // load scratch1, [stack[right_base]]
+        // load scratch1, [scratch1]
+        // seed [stack[out]] from left, then add scratch1 in place
+        assert_snapshot!(lines.join("\n"), @"
+            mov r10, qword ptr [rbp - 8]
+            mov r10, qword ptr [r10]
+            mov qword ptr [rbp - 0x10], r13
+            add qword ptr [rbp - 0x10], r10
+        ");
+    }
+
+    #[test]
+    fn test_add_split_two_stack_indirect_inputs_need_two_scratch_regs() {
+        // stack[2] <- add [stack[0]], [stack[1]]
+        let lines = split_binop_disasm_lines(BinOpKind::Add,
+            stack_indirect_mem(0), stack_indirect_mem(1), stack_mem(2));
+
+        // load scratch0, [stack[left_base]]
+        // load scratch0, [scratch0]
+        // load scratch1, [stack[right_base]]
+        // load scratch1, [scratch1]
+        // mov  [stack[out]], scratch0; add [stack[out]], scratch1
+        assert_snapshot!(lines.join("\n"), @"
+        mov r11, qword ptr [rbp - 8]
+        mov r10, qword ptr [rbp - 0x10]
+        mov r10, qword ptr [r10]
+        mov r11, qword ptr [r11]
+        mov qword ptr [rbp - 0x18], r11
+        add qword ptr [rbp - 0x18], r10
+        ");
+    }
+
+    #[test]
+    fn test_add_split_memory_output_can_compute_in_place() {
+        // stack[1] <- add cfp, stack[0]
+        let lines = split_binop_disasm_lines(BinOpKind::Add, CFP, stack_mem(0), stack_mem(1));
+
+        // Seed the output slot with the left register, then perform the add in place.
+        assert_snapshot!(lines.join("\n"), @"
+            mov r10, qword ptr [rbp - 8]
+            mov qword ptr [rbp - 0x10], r13
+            add qword ptr [rbp - 0x10], r10
+        ");
+    }
+
+    #[test]
+    fn test_add_split_reg_mem_mem_when_right_equals_out() {
+        // stack[1] <- add cfp, stack[1]
+        //
+        // Preserve the original RHS/output value first, then seed the output
+        // slot with the left register and finish the add in place.
+        let lines = split_binop_disasm_lines(BinOpKind::Add, CFP, stack_mem(1), stack_mem(1));
+
+        assert_snapshot!(lines.join("\n"), @"
+            mov r10, qword ptr [rbp - 0x10]
+            mov qword ptr [rbp - 0x10], r13
+            add qword ptr [rbp - 0x10], r10
+        ");
+    }
+
+    #[test]
+    #[should_panic(expected = "x86_scratch_split expects out to be a physical register or stack memory")]
+    fn test_binop_split_rejects_non_stack_memory_output() {
+        let _ = split_binop(BinOpKind::Add, CFP, C_RET_OPND, Opnd::mem(64, CFP, 8));
+    }
+
+    #[test]
+    fn test_add_split_mem_mem_mem_when_right_equals_out() {
+        // stack[1] <- add stack[0], stack[1]
+        //
+        // Preserve the original RHS/output value first, then reload the LHS and
+        // write the result back to the output stack slot.
+        let mut asm = split_binop(BinOpKind::Add, stack_mem(0), stack_mem(1), stack_mem(1));
+        let mut cb = CodeBlock::new_dummy();
+        for name in &asm.label_names {
+            cb.new_label(name.to_string());
+        }
+        assert!(asm.x86_emit(&mut cb).is_some());
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov r10, qword ptr [rbp - 0x10]
+        0x4: mov r11, qword ptr [rbp - 8]
+        0x8: mov qword ptr [rbp - 0x10], r11
+        0xc: add qword ptr [rbp - 0x10], r10
+        ");
+    }
+
+    #[test]
+    fn test_add_split_output_reg_reused_as_input_memory_base() {
+        // cfp <- add [cfp + 8], [cfp + 16]
+        //
+        // Preserve the RHS first because reusing `out` for the LHS would otherwise
+        // clobber the base register needed to address the RHS memory operand.
+        let mut asm = split_binop(
+            BinOpKind::Add,
+            Opnd::mem(64, CFP, 8),
+            Opnd::mem(64, CFP, 16),
+            CFP,
+        );
+        let mut cb = CodeBlock::new_dummy();
+        for name in &asm.label_names {
+            cb.new_label(name.to_string());
+        }
+        assert!(asm.x86_emit(&mut cb).is_some());
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+            0x0: mov r10, qword ptr [r13 + 0x10]
+            0x4: mov r13, qword ptr [r13 + 8]
+            0x8: add r13, r10
+        ");
+        assert_snapshot!(cb.hexdump(), @"4d8b55104d8b6d084d01d5");
+    }
+
+    #[test]
+    fn test_add_split_output_reg_reused_as_stack_indirect_memory_base() {
+        // cfp <- add mem[stack[0]], mem[stack[1]]
+        //
+        // The LHS lowering reuses `out` as the temporary base register for the
+        // stack-indirect address, then the RHS uses the normal scratch register.
+        let mut asm = split_binop(
+            BinOpKind::Add,
+            stack_indirect_mem(0),
+            stack_indirect_mem(1),
+            CFP,
+        );
+        let mut cb = CodeBlock::new_dummy();
+        for name in &asm.label_names {
+            cb.new_label(name.to_string());
+        }
+        assert!(asm.x86_emit(&mut cb).is_some());
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov r11, qword ptr [rbp - 8]
+        0x4: mov r10, qword ptr [rbp - 0x10]
+        0x8: mov r13, qword ptr [r11]
+        0xb: add r13, qword ptr [r10]
+        ");
+    }
+
+    #[test]
+    fn test_add_split_output_reg_reused_as_input_memory_base_with_imm() {
+        // cfp <- add 7, [cfp + 16]
+        //
+        // Preserve the RHS first because reusing `out` for the immediate
+        // materialization would otherwise clobber the base register needed for
+        // the memory operand.
+        let lines = split_binop_disasm_lines(
+            BinOpKind::Add,
+            Opnd::Imm(7),
+            Opnd::mem(64, CFP, 16),
+            CFP,
+        );
+
+        assert_snapshot!(lines.join("\n"), @"
+            mov r10, qword ptr [r13 + 0x10]
+            mov r13d, 7
+            add r13, r10
+        ");
+    }
+
+    #[test]
+    fn test_binop_split_matrix() {
+        let left_cases = [
+            ("reg", CFP),
+            ("mem_reg", Opnd::mem(64, C_RET_OPND, 8)),
+            ("mem_stack", stack_mem(0)),
+            ("mem_stack_indirect", stack_indirect_mem(0)),
+            ("imm32", Opnd::Imm(7)),
+            ("imm64", Opnd::UImm(0x1_0000_0000)),
+        ];
+        let right_cases = [
+            ("reg", C_RET_OPND),
+            ("mem_reg", Opnd::mem(64, CFP, 16)),
+            ("mem_stack", stack_mem(1)),
+            ("mem_stack_indirect", stack_indirect_mem(1)),
+            ("imm32", Opnd::Imm(9)),
+            ("imm64", Opnd::UImm(0x2_0000_0000)),
+        ];
+        let out_cases = [
+            ("out_reg", C_ARG_OPNDS[0]),
+            ("out_mem_stack", stack_mem(2)),
+        ];
+        let alias_out_cases = [
+            ("alias_out_cfp", CFP),
+            ("alias_out_reg", C_RET_OPND),
+            ("alias_out_mem_stack", stack_mem(1)),
+        ];
+        let alias_mem_base_cases = [
+            (
+                "out_reused_as_left_mem_base",
+                Opnd::mem(64, CFP, 8),
+                C_RET_OPND,
+                CFP,
+            ),
+            (
+                "out_reused_as_right_mem_base",
+                C_RET_OPND,
+                Opnd::mem(64, CFP, 16),
+                CFP,
+            ),
+            (
+                "out_reused_as_both_mem_bases",
+                Opnd::mem(64, CFP, 8),
+                Opnd::mem(64, CFP, 16),
+                CFP,
+            ),
+        ];
+
+        for kind in [BinOpKind::Add, BinOpKind::Sub, BinOpKind::And, BinOpKind::Or, BinOpKind::Xor] {
+            for (left_name, left) in left_cases {
+                for (right_name, right) in right_cases {
+                    for (out_name, out) in out_cases {
+                        let case = format!("{left_name}/{right_name}/{out_name}");
+                        assert_split_binop_case(kind, left, right, out, &case);
+                    }
+                }
+            }
+
+            for (left_name, left) in left_cases {
+                for (alias_name, out) in alias_out_cases {
+                    let case = format!("{left_name}/right_eq_out/{alias_name}");
+                    assert_split_binop_case(kind, left, out, out, &case);
+                }
+            }
+
+            for (case, left, right, out) in alias_mem_base_cases {
+                assert_split_binop_case(kind, left, right, out, case);
+            }
+        }
     }
 }
