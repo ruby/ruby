@@ -5,10 +5,23 @@ fn main() {
 
     // option_env! automatically registers a rerun-if-env-changed
     if let Some(ruby_build_dir) = option_env!("RUBY_BUILD_DIR") {
-        // Link against libminiruby.a
-        println!("cargo:rustc-link-search=native={ruby_build_dir}");
+        let out_dir = env::var("OUT_DIR").unwrap();
+
+        // Copy libminiruby.a and strip libruby.o to avoid duplicate
+        // ZJIT symbols. The partial-linked libruby.o contains a full copy
+        // of ZJIT code (hidden symbols + globals) alongside YJIT code.
+        // Without removal, the test binary gets two ZJIT runtimes with
+        // independent global state. YJIT stubs in yjit_stubs.rs satisfy
+        // the C code's YJIT symbol references instead.
+        let cleaned = format!("{out_dir}/libminiruby.a");
+        std::fs::copy(format!("{ruby_build_dir}/libminiruby.a"), &cleaned).unwrap();
+        std::process::Command::new("ar")
+            .args(["d", &cleaned, "libruby.o"])
+            .status()
+            .expect("failed to strip libruby.o from archive");
+
+        println!("cargo:rustc-link-search=native={out_dir}");
         println!("cargo:rustc-link-lib=static:-bundle=miniruby");
-        // Re-link when libminiruby.a changes
         println!("cargo:rerun-if-changed={ruby_build_dir}/libminiruby.a");
 
         // System libraries that libminiruby needs. Has to be
@@ -24,14 +37,6 @@ fn main() {
             } else if let Some(lib_name) = token.strip_prefix("-l") {
                 println!("cargo:rustc-link-lib={lib_name}");
             }
-        }
-
-        // When doing a combo build, there is a copy of ZJIT symbols in libruby.a
-        // and Cargo builds another copy for the test binary. Tell the linker to
-        // not complaint about duplicate symbols. For some reason, darwin doesn't
-        // suffer the same issue.
-        if env::var("TARGET").unwrap().contains("linux") {
-            println!("cargo:rustc-link-arg=-Wl,--allow-multiple-definition");
         }
     }
 }
