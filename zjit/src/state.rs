@@ -484,9 +484,8 @@ pub extern "C" fn rb_zjit_record_exit_stack(_exit_pc: *const VALUE, reason: *con
         )
     };
 
-    // Resolve each frame to a human-readable string
+    // Resolve each frame to a human-readable string (top frame first)
     let frames: Vec<String> = (0..stack_length as usize)
-        .rev()
         .map(|i| resolve_frame_label(frames_buffer[i]))
         .collect();
 
