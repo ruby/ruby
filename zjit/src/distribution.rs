@@ -89,7 +89,7 @@ impl<T: Copy + PartialEq + Default + std::fmt::Debug, const N: usize> Distributi
                 assert!(first_count >= count, "First count should be the largest");
             }
         }
-        let num_seen = dist.counts.iter().map(|&c| c as usize).sum::<usize>() + dist.other as usize;
+        let num_seen = dist.counts.iter().map(|&c| usize::from(c)).sum::<usize>() + usize::from(dist.other);
         let kind = if dist.other == 0 {
             // Seen <= N types total
             if dist.counts[0] == 0 {
