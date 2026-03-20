@@ -14182,7 +14182,7 @@ mod hir_opt_tests {
                 test_ep_escape([1], lambda { }) { |x| }
             }
         ");
-        assert_snapshot!(hir_string("test_ep_escape"), @"
+        assert_snapshot!(hir_string("test_ep_escape"), @r"
         fn test_ep_escape@<compiled>:3:
         bb1():
           EntryPoint interpreter
