@@ -476,197 +476,53 @@ impl Assembler {
                 Insn::Xor { left, right, out } => {
                     assert_out_is_phys_reg_or_stack_mem(*out);
 
-                    // out <- preg or stack?
-                    //
+                    // Sequential pipeline to lower binops into x86 two-operand form.
+                    // Uses SCRATCH0 for left, SCRATCH1 for right to avoid conflicts.
 
-                    // Change base of memory operands to the native base pointer
-                    // stack[5] => [bp + 5]
-                    // mem[stack[5]] => mem[[bp + 5]]
-
+                    // Phase 1: Protect right if it occupies the same location as out,
+                    // since we'll overwrite out when moving left into it.
+                    // Compare before lowering (Stack membases change during lowering).
                     let right_eq_out = out == right;
-
                     *out = lower_stack_membase(*out, &stack_state);
+                    if right_eq_out {
+                        asm.mov(SCRATCH1_OPND, *out);
+                        *right = SCRATCH1_OPND;
+                    }
 
-                    // If left and out or right and out have been assigned the
-                    // same physical register, it means that the life of
-                    // left or right has ended, otherwise it wouldn't be OK
-                    // to write to that physical register (as they would
-                    // interfere and the register allocator would not assign
-                    // them the same physical register).
-                    //
-                    // x86 always clobbers the LHS register for these operations
-                    // so if left != out, alad right != out, then we can go
-                    // ahead and clobber out.
-                    match (&*out, &*left, &*right) {
-                        (Opnd::Reg(_), Opnd::Imm(_), Opnd::Imm(_)) |
-                        (Opnd::Reg(_), Opnd::UImm(_), Opnd::Imm(_)) |
-                        (Opnd::Reg(_), Opnd::Imm(_), Opnd::UImm(_)) |
-                        (Opnd::Reg(_), Opnd::UImm(_), Opnd::UImm(_)) |
-                        (Opnd::Mem(_), Opnd::UImm(_), Opnd::Reg(_)) |
-                        (Opnd::Mem(_), Opnd::Imm(_), Opnd::Reg(_)) |
-                        (Opnd::Mem(_), Opnd::Imm(_), Opnd::UImm(_)) |
-                        (Opnd::Mem(_), Opnd::UImm(_), Opnd::Imm(_)) |
-                        (Opnd::Mem(_), Opnd::UImm(_), Opnd::UImm(_)) |
-                        (Opnd::Mem(_), Opnd::Imm(_), Opnd::Imm(_)) => {
-                            *left = split_64bit_immediate(asm, *left, SCRATCH0_OPND);
-                            asm.mov(*out, *left);
-                            *left = *out;
-                            *right = split_64bit_immediate(asm, *right, SCRATCH0_OPND);
-                            asm.push_insn(insn);
-                        },
+                    // Phase 2: Lower stack memory bases
+                    *left = split_stack_membase(asm, *left, SCRATCH0_OPND, &stack_state);
+                    if !right_eq_out {
+                        *right = split_stack_membase(asm, *right, SCRATCH1_OPND, &stack_state);
+                    }
 
-                        (Opnd::Reg(_), Opnd::Reg(_), Opnd::Mem(_)) => {
-                            *right = split_stack_membase(asm, *right, SCRATCH0_OPND, &stack_state);
-
-                            // Ensure right is preserved so we can clobber out
-                            if let Opnd::Mem(Mem { base: MemBase::Reg(base_reg_no), .. }) = right {
-                                if out.unwrap_reg().reg_no == *base_reg_no {
-                                    asm.mov(SCRATCH0_OPND, *right);
-                                    *right = SCRATCH0_OPND;
-                                }
-                            }
-
-                            asm.mov(*out, *left);
-                            *left = *out;
-                            asm.push_insn(insn);
-                        },
-
-                        (Opnd::Reg(_), Opnd::Reg(_), Opnd::Imm(_)) |
-                        (Opnd::Reg(_), Opnd::Reg(_), Opnd::UImm(_)) => {
-                            *right = split_64bit_immediate(asm, *right, SCRATCH0_OPND);
-                            if left != out {
-                                asm.mov(*out, *left);
-                                *left = *out;
-                            }
-                            asm.push_insn(insn);
-                        },
-
-                        (Opnd::Reg(_), Opnd::UImm(_), Opnd::Mem(_)) |
-                        (Opnd::Reg(_), Opnd::Imm(_), Opnd::Mem(_)) => {
-                            *right = split_stack_membase(asm, *right, SCRATCH0_OPND, &stack_state);
-                            // Ensure right is preserved so we can clobber out
-                            if let Opnd::Mem(Mem { base: MemBase::Reg(base_reg_no), .. }) = right {
-                                if out.unwrap_reg().reg_no == *base_reg_no {
-                                    asm.mov(SCRATCH0_OPND, *right);
-                                    *right = SCRATCH0_OPND;
-                                }
-                            }
-                            asm.mov(*out, *left);
-                            *left = *out;
-                            asm.push_insn(insn);
-                        },
-                        (Opnd::Reg(_), Opnd::UImm(_), Opnd::Reg(_)) |
-                        (Opnd::Reg(_), Opnd::Imm(_), Opnd::Reg(_)) |
-                        (Opnd::Reg(_), Opnd::Reg(_), Opnd::Reg(_)) => {
-                            // rax <- rcx, rax
-                            if right == out  {
-                                asm.load_into(SCRATCH0_OPND, *right);
-                                *right = SCRATCH0_OPND;
-                            }
-                            if left != out {
-                                asm.mov(*out, *left);
-                                *left = *out;
-                            }
-                            asm.push_insn(insn);
-                        },
-                        (Opnd::Reg(_), Opnd::Mem(_), Opnd::Imm(_)) |
-                        (Opnd::Reg(_), Opnd::Mem(_), Opnd::UImm(_)) => {
-                            *left = split_stack_membase(asm, *left, *out, &stack_state);
-                            asm.mov(*out, *left);
-                            *left = *out;
-                            *right = split_64bit_immediate(asm, *right, SCRATCH0_OPND);
-                            asm.push_insn(insn);
-                        },
-                        (Opnd::Reg(_), Opnd::Mem(_), Opnd::Mem(_)) => {
-                            *right = split_stack_membase(asm, *right, SCRATCH0_OPND, &stack_state);
-
-                            // Ensure right is preserved so we can clobber out
-                            if let Opnd::Mem(Mem { base: MemBase::Reg(base_reg_no), .. }) = right {
-                                if out.unwrap_reg().reg_no == *base_reg_no {
-                                    asm.mov(SCRATCH0_OPND, *right);
-                                    *right = SCRATCH0_OPND;
-                                }
-                            }
-
-                            *left = split_stack_membase(asm, *left, *out, &stack_state);
-                            asm.mov(*out, *left);
-                            *left = *out;
-                            asm.push_insn(insn);
-                        },
-                        (Opnd::Mem(_), Opnd::Mem(_), Opnd::Mem(_)) => {
-                            let left_reg = SCRATCH0_OPND;
-                            let right_reg = SCRATCH1_OPND;
-
-                            if right_eq_out {
-                                // Preserve the original RHS before rewriting the output slot.
-                                asm.mov(right_reg, *out);
-                                *right = right_reg;
-                            } else {
-                                *right = split_stack_membase(asm, *right, SCRATCH1_OPND, &stack_state);
-                                asm.mov(right_reg, *right);
-                                *right = right_reg;
-                            }
-
-                            *left = split_stack_membase(asm, *left, SCRATCH0_OPND, &stack_state);
-                            asm.mov(left_reg, *left);
-                            *left = left_reg;
-
-                            let (out, left) = (*out, *left);
-                            asm.push_insn(insn);
-                            asm.mov(out, left);
-                        },
-                        (Opnd::Reg(_), Opnd::Mem(_), Opnd::Reg(_)) => {
-                            // Preserve out so we can clobber it
-                            if right == out  {
-                                asm.load_into(SCRATCH0_OPND, *right);
-                                *right = SCRATCH0_OPND;
-                            }
-                            *left = split_stack_membase(asm, *left, *out, &stack_state);
-                            asm.mov(*out, *left);
-                            *left = *out;
-                            asm.push_insn(insn);
-                        },
-                        (Opnd::Mem(_), Opnd::Reg(_), Opnd::Reg(_)) |
-                        (Opnd::Mem(_), Opnd::Reg(_), Opnd::Imm(_)) |
-                        (Opnd::Mem(_), Opnd::Reg(_), Opnd::UImm(_)) => {
-                            *right = split_64bit_immediate(asm, *right, SCRATCH0_OPND);
-                            asm.mov(*out, *left);
-                            *left = *out;
-                            asm.push_insn(insn);
-                        },
-                        (Opnd::Mem(_), Opnd::Mem(_), Opnd::Imm(_)) |
-                        (Opnd::Mem(_), Opnd::Mem(_), Opnd::UImm(_)) |
-                        (Opnd::Mem(_), Opnd::Mem(_), Opnd::Reg(_)) => {
-                            *left = split_stack_membase(asm, *left, SCRATCH0_OPND, &stack_state);
-                            asm.mov(SCRATCH0_OPND, *left);
-                            asm.mov(*out, SCRATCH0_OPND);
-                            *left = *out;
-                            *right = split_64bit_immediate(asm, *right, SCRATCH0_OPND);
-
-                            asm.push_insn(insn);
-                        },
-                        (Opnd::Mem(_), Opnd::UImm(_), Opnd::Mem(_)) |
-                        (Opnd::Mem(_), Opnd::Imm(_), Opnd::Mem(_)) |
-                        (Opnd::Mem(_), Opnd::Reg(_), Opnd::Mem(_)) => {
-                            if right_eq_out {
-                                // Preserve the original RHS before rewriting the output slot.
-                                asm.mov(SCRATCH1_OPND, *out);
-                                *right = SCRATCH1_OPND;
-                            } else {
-                                *right = split_stack_membase(asm, *right, SCRATCH0_OPND, &stack_state);
-                                asm.mov(SCRATCH0_OPND, *right);
-                                *right = SCRATCH0_OPND;
-                            }
-                            *left = split_64bit_immediate(asm, *left, SCRATCH0_OPND);
-                            asm.mov(*out, *left);
-                            *left = *out;
-
-                            asm.push_insn(insn);
-                        }
-                        _ => {
-                            unreachable!("We shouldn't have vregs anymore")
+                    // Phase 3: If right is a Mem whose base register equals the out
+                    // register, materialize it before we clobber out.
+                    if let (Opnd::Reg(out_reg), Opnd::Mem(Mem { base: MemBase::Reg(base_reg_no), .. })) = (*out, *right) {
+                        if out_reg.reg_no == base_reg_no {
+                            asm.mov(SCRATCH1_OPND, *right);
+                            *right = SCRATCH1_OPND;
                         }
                     }
+
+                    // Phase 4: x86 can't encode two memory operands.
+                    if let (Opnd::Mem(_), Opnd::Mem(_)) = (*out, *right) {
+                        asm.mov(SCRATCH1_OPND, *right);
+                        *right = SCRATCH1_OPND;
+                    }
+
+                    // Phase 5: Move left into out (x86 two-operand form: OP clobbers dst).
+                    // For Mem out, split large left immediates first (mov [mem], imm64 is invalid).
+                    if let Opnd::Mem(_) = *out {
+                        *left = split_64bit_immediate(asm, *left, SCRATCH0_OPND);
+                    }
+                    asm_mov(asm, *out, *left, SCRATCH0_OPND);
+                    *left = *out;
+
+                    // Phase 6: Split large right immediates (>32-bit) into a register.
+                    *right = split_64bit_immediate(asm, *right, SCRATCH1_OPND);
+
+                    // Phase 7: Emit the instruction.
+                    asm.push_insn(insn);
                 }
                 Insn::Mul { left, right, out } => {
                     assert_out_is_phys_reg_or_stack_mem(*out);
@@ -2382,14 +2238,14 @@ mod tests {
         // mem[1] <- add cfp, mem[stack[0]]
         let lines = split_binop_disasm_lines(BinOpKind::Add, CFP, stack_indirect_mem(0), stack_mem(1));
 
-        // load scratch0, [stack[right_base]]
-        // load scratch0, [scratch0]
-        // seed [stack[out]] from left, then add scratch0 in place
+        // load scratch1, [stack[right_base]]
+        // load scratch1, [scratch1]
+        // seed [stack[out]] from left, then add scratch1 in place
         assert_snapshot!(lines.join("\n"), @"
-            mov r11, qword ptr [rbp - 8]
-            mov r11, qword ptr [r11]
+            mov r10, qword ptr [rbp - 8]
+            mov r10, qword ptr [r10]
             mov qword ptr [rbp - 0x10], r13
-            add qword ptr [rbp - 0x10], r11
+            add qword ptr [rbp - 0x10], r10
         ");
     }
 
@@ -2402,15 +2258,15 @@ mod tests {
         // load scratch0, [stack[left_base]]
         // load scratch0, [scratch0]
         // load scratch1, [stack[right_base]]
-        // add  scratch0, [scratch1]
-        // mov  [stack[out]], scratch0
+        // load scratch1, [scratch1]
+        // mov  [stack[out]], scratch0; add [stack[out]], scratch1
         assert_snapshot!(lines.join("\n"), @"
+        mov r11, qword ptr [rbp - 8]
         mov r10, qword ptr [rbp - 0x10]
         mov r10, qword ptr [r10]
-        mov r11, qword ptr [rbp - 8]
         mov r11, qword ptr [r11]
-        add r11, r10
         mov qword ptr [rbp - 0x18], r11
+        add qword ptr [rbp - 0x18], r10
         ");
     }
 
@@ -2421,9 +2277,9 @@ mod tests {
 
         // Seed the output slot with the left register, then perform the add in place.
         assert_snapshot!(lines.join("\n"), @"
-            mov r11, qword ptr [rbp - 8]
+            mov r10, qword ptr [rbp - 8]
             mov qword ptr [rbp - 0x10], r13
-            add qword ptr [rbp - 0x10], r11
+            add qword ptr [rbp - 0x10], r10
         ");
     }
 
@@ -2464,8 +2320,8 @@ mod tests {
         assert_disasm_snapshot!(cb.disasm(), @"
         0x0: mov r10, qword ptr [rbp - 0x10]
         0x4: mov r11, qword ptr [rbp - 8]
-        0x8: add r11, r10
-        0xb: mov qword ptr [rbp - 0x10], r11
+        0x8: mov qword ptr [rbp - 0x10], r11
+        0xc: add qword ptr [rbp - 0x10], r10
         ");
     }
 
@@ -2488,11 +2344,11 @@ mod tests {
         assert!(asm.x86_emit(&mut cb).is_some());
 
         assert_disasm_snapshot!(cb.disasm(), @"
-            0x0: mov r11, qword ptr [r13 + 0x10]
+            0x0: mov r10, qword ptr [r13 + 0x10]
             0x4: mov r13, qword ptr [r13 + 8]
-            0x8: add r13, r11
+            0x8: add r13, r10
         ");
-        assert_snapshot!(cb.hexdump(), @"4d8b5d104d8b6d084d01dd");
+        assert_snapshot!(cb.hexdump(), @"4d8b55104d8b6d084d01d5");
     }
 
     #[test]
@@ -2514,10 +2370,10 @@ mod tests {
         assert!(asm.x86_emit(&mut cb).is_some());
 
         assert_disasm_snapshot!(cb.disasm(), @"
-        0x0: mov r11, qword ptr [rbp - 0x10]
-        0x4: mov r13, qword ptr [rbp - 8]
-        0x8: mov r13, qword ptr [r13]
-        0xc: add r13, qword ptr [r11]
+        0x0: mov r11, qword ptr [rbp - 8]
+        0x4: mov r10, qword ptr [rbp - 0x10]
+        0x8: mov r13, qword ptr [r11]
+        0xb: add r13, qword ptr [r10]
         ");
     }
 
@@ -2536,9 +2392,9 @@ mod tests {
         );
 
         assert_snapshot!(lines.join("\n"), @"
-            mov r11, qword ptr [r13 + 0x10]
+            mov r10, qword ptr [r13 + 0x10]
             mov r13d, 7
-            add r13, r11
+            add r13, r10
         ");
     }
 
