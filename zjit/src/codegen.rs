@@ -675,7 +675,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::DupArrayInclude { ary, target, state } => gen_dup_array_include(jit, asm, ary, opnd!(target), &function.frame_state(state)),
         Insn::ArrayHash { elements, state } => gen_opt_newarray_hash(jit, asm, opnds!(elements), &function.frame_state(*state)),
         &Insn::IsA { val, class } => gen_is_a(jit, asm, opnd!(val), opnd!(class)),
-        Insn::ArrayMax { elements, state } => gen_array_max(jit, asm, opnds!(elements), &function.frame_state(*state)),
+        &Insn::ArrayMax { ref elements, state } => gen_array_max(jit, asm, opnds!(elements), &function.frame_state(state)),
         &Insn::Throw { state, .. } => return Err(state),
         &Insn::IfFalse { .. } | Insn::IfTrue { .. }
         | &Insn::Jump { .. } | Insn::Entries { .. } => unreachable!(),
