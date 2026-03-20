@@ -976,7 +976,7 @@ pub fn zjit_alloc_bytes() -> usize {
 /// Fuchsia Trace Format (FXT) binary writer for --zjit-trace-exits.
 /// Produces .fxt files that can be opened directly in Perfetto UI.
 /// Uses the string table for deduplication of repeated reason/frame strings.
-/// See: https://fuchsia.dev/fuchsia-src/reference/tracing/trace-format
+/// See: <https://fuchsia.dev/fuchsia-src/reference/tracing/trace-format>
 pub struct PerfettoTracer {
     writer: std::io::BufWriter<std::fs::File>,
     start_time: std::time::Instant,

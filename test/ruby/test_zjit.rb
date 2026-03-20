@@ -383,25 +383,20 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_exit_tracing
-    # This is a very basic smoke test. The StackProf format
-    # this option generates is external to us.
-    Dir.mktmpdir("zjit_test_exit_tracing") do |tmp_dir|
-      assert_compiles('true', <<~RUBY, extra_args: ['-C', tmp_dir, '--zjit-trace-exits'])
-        def test(object) = object.itself
+    # Smoke test: --zjit-trace-exits writes a Fuchsia trace (.fxt) file to /tmp
+    assert_compiles('true', <<~RUBY, extra_args: ['--zjit-trace-exits'])
+      def test(object) = object.itself
 
-        # induce an exit just for good measure
-        array = []
-        test(array)
-        test(array)
-        def array.itself = :not_itself
-        test(array)
+      # induce an exit just for good measure
+      array = []
+      test(array)
+      test(array)
+      def array.itself = :not_itself
+      test(array)
 
-        RubyVM::ZJIT.exit_locations.is_a?(Hash)
-      RUBY
-      dump_files = Dir.glob('zjit_exits_*.dump', base: tmp_dir)
-      assert_equal(1, dump_files.length)
-      refute(File.empty?(File.join(tmp_dir, dump_files.first)))
-    end
+      fxt_files = Dir.glob("/tmp/perfetto-\#{Process.pid}.fxt")
+      fxt_files.length == 1 && !File.empty?(fxt_files.first)
+    RUBY
   end
 
   private
