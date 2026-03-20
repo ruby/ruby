@@ -5071,6 +5071,13 @@ impl Function {
                             _ => insn_id,
                         }
                     }
+                    Insn::UnboxFixnum { val } => {
+                        let recv_type = self.type_of(val);
+                        match recv_type.fixnum_value() {
+                            Some(val) => self.new_insn(Insn::Const { val: Const::CInt64(val) }),
+                            _ => insn_id,
+                        }
+                    },
                     Insn::GuardBitEquals { val, expected, .. } => {
                         let recv_type = self.type_of(val);
                         if recv_type.has_value(expected) {
