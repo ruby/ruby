@@ -1334,9 +1334,9 @@ mod tests {
     fn assert_split_binop_case(kind: BinOpKind, left: Opnd, right: Opnd, out: Opnd, case: &str) {
         fn reg_names(reg: Reg) -> (&'static str, &'static str) {
             match reg.reg_no {
-                0 => ("rax", "eax"),
-                7 => ("rdi", "edi"),
-                13 => ("r13", "r13d"),
+                RAX.reg_no => ("rax", "eax"),
+                RDI.reg_no => ("rdi", "edi"),
+                R13.reg_no => ("r13", "r13d"),
                 _ => panic!("unexpected register in test helper: {reg:?}"),
             }
         }
