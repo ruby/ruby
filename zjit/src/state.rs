@@ -498,5 +498,48 @@ pub extern "C" fn rb_zjit_record_exit_stack(reason: *const std::ffi::c_char) {
         unsafe { std::ffi::CStr::from_ptr(reason).to_str().unwrap_or("unknown") }
     };
 
-    tracer.write_event(reason_str, &frames);
+    tracer.write_event("side_exit", reason_str, &frames);
+}
+
+/// Wrap a closure in a Perfetto duration event with category "invalidation"
+/// and a Ruby backtrace captured on the begin event.
+pub fn trace_invalidation<F, R>(reason: &str, func: F) -> R where F: FnOnce() -> R {
+    if !get_option!(trace_compiles) {
+        return func();
+    }
+
+    // Capture backtrace and emit begin event before patching
+    let frames = capture_ruby_frames();
+    if let Some(tracer) = ZJITState::get_tracer() {
+        let ts = tracer.elapsed_ns();
+        tracer.write_duration_begin("invalidation", reason, ts, &frames);
+    }
+
+    let result = func();
+
+    if let Some(tracer) = ZJITState::get_tracer() {
+        let ts = tracer.elapsed_ns();
+        tracer.write_duration_end("invalidation", reason, ts);
+    }
+    result
+}
+
+/// Capture the current Ruby call stack as human-readable frame labels.
+fn capture_ruby_frames() -> Vec<String> {
+    const BUFF_LEN: usize = 2048;
+    let mut frames_buffer = vec![VALUE(0_usize); BUFF_LEN];
+    let mut lines_buffer = vec![0i32; BUFF_LEN];
+
+    let stack_length = unsafe {
+        rb_profile_frames(
+            0,
+            BUFF_LEN as i32,
+            frames_buffer.as_mut_ptr(),
+            lines_buffer.as_mut_ptr(),
+        )
+    };
+
+    (0..stack_length as usize)
+        .map(|i| resolve_frame_label(frames_buffer[i]))
+        .collect()
 }

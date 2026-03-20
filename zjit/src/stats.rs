@@ -993,19 +993,20 @@ pub fn zjit_alloc_bytes() -> usize {
     jit::GLOBAL_ALLOCATOR.alloc_size.load(Ordering::SeqCst)
 }
 
-/// Record a Perfetto duration-complete event spanning the execution of `func`.
-/// Nested calls produce nested events on the same thread in the trace viewer.
+/// Record a Perfetto duration event spanning the execution of `func`.
+/// Uses Begin/End pairs so nested calls produce properly nested slices.
 pub fn trace_compile_phase<F, R>(name: &str, func: F) -> R where F: FnOnce() -> R {
     if !get_option!(trace_compiles) {
         return func();
     }
-    let start_ns = ZJITState::get_tracer().map(|t| t.elapsed_ns());
+    if let Some(tracer) = ZJITState::get_tracer() {
+        let ts = tracer.elapsed_ns();
+        tracer.write_duration_begin("compile", name, ts, &[]);
+    }
     let result = func();
-    if let Some(start_ns) = start_ns {
-        if let Some(tracer) = ZJITState::get_tracer() {
-            let end_ns = tracer.elapsed_ns();
-            tracer.write_duration_complete("compile", name, start_ns, end_ns);
-        }
+    if let Some(tracer) = ZJITState::get_tracer() {
+        let ts = tracer.elapsed_ns();
+        tracer.write_duration_end("compile", name, ts);
     }
     result
 }
@@ -1078,6 +1079,7 @@ impl PerfettoTracer {
         // Pre-intern common strings
         tracer.intern_string("side_exit");
         tracer.intern_string("compile");
+        tracer.intern_string("invalidation");
         // Pre-intern argument names "0".."14" for per-frame arguments
         for i in 0..15u32 {
             tracer.intern_string(&i.to_string());
@@ -1130,24 +1132,47 @@ impl PerfettoTracer {
         self.start_time.elapsed().as_nanos() as u64
     }
 
-    /// Write a Duration Complete event (FXT event type 4).
-    /// Records an event spanning from `start_ns` to `end_ns` (both in ticks
-    /// relative to `self.start_time`).
-    pub fn write_duration_complete(&mut self, category: &str, name: &str, start_ns: u64, end_ns: u64) {
+    /// Write a Duration Begin event (FXT event type 2) with optional frame arguments.
+    pub fn write_duration_begin(&mut self, category: &str, name: &str, ts_ns: u64, frames: &[String]) {
+        self.write_duration_event(2, category, name, ts_ns, frames);
+    }
+
+    /// Write a Duration End event (FXT event type 3).
+    pub fn write_duration_end(&mut self, category: &str, name: &str, ts_ns: u64) {
+        self.write_duration_event(3, category, name, ts_ns, &[]);
+    }
+
+    /// Write a Duration Begin or End event with optional frame arguments.
+    fn write_duration_event(&mut self, event_type: u64, category: &str, name: &str, ts_ns: u64, frames: &[String]) {
         let category_ref = self.intern_string(category);
         let name_ref = self.intern_string(name);
 
-        // Duration Complete: header + start_ts + end_ts = 3 words, no args
-        let event_words: u64 = 3;
+        let n_args = frames.len().min(15) as u64;
+        let mut frame_refs: Vec<(u16, u16)> = Vec::with_capacity(n_args as usize);
+        for (i, frame) in frames.iter().take(15).enumerate() {
+            let fname_ref = self.intern_string(&i.to_string());
+            let value_ref = self.intern_string(frame);
+            frame_refs.push((fname_ref, value_ref));
+        }
+
+        let event_words: u64 = 2 + n_args;
         let header: u64 = 4u64                           // record type = event
             | (event_words << 4)                          // record size
-            | (4u64 << 16)                                // event type = duration complete
+            | (event_type << 16)                          // event type = begin or end
+            | (n_args << 20)                              // argument count
             | (1u64 << 24)                                // thread_ref = 1
             | ((category_ref as u64) << 32)
             | ((name_ref as u64) << 48);
         self.write_word(header);
-        self.write_word(start_ns);
-        self.write_word(end_ns);
+        self.write_word(ts_ns);
+
+        for (fname_ref, value_ref) in frame_refs {
+            let arg_header: u64 = 6u64
+                | (1u64 << 4)
+                | ((fname_ref as u64) << 16)
+                | ((value_ref as u64) << 32);
+            self.write_word(arg_header);
+        }
 
         self.event_count += 1;
 
@@ -1155,11 +1180,11 @@ impl PerfettoTracer {
         let _ = self.writer.flush();
     }
 
-    pub fn write_event(&mut self, reason: &str, frames: &[String]) {
+    pub fn write_event(&mut self, category: &str, reason: &str, frames: &[String]) {
         let ts_nanos = self.start_time.elapsed().as_nanos() as u64;
 
         // Intern event metadata strings (may emit string records first)
-        let category_ref = self.intern_string("side_exit");
+        let category_ref = self.intern_string(category);
         let name_ref = self.intern_string(reason);
 
         // Intern each frame label and collect refs (max 15 due to 4-bit n_args)
