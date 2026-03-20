@@ -1837,7 +1837,7 @@ fn gen_array_max(
     // After gen_prepare_non_leaf_call, the elements are spilled to the Ruby stack.
     // Get a pointer to the first element on the Ruby stack.
     let stack_bottom = state.stack().len() - elements.len();
-    let elements_ptr = asm.lea(Opnd::mem(64, SP, stack_bottom as i32 * SIZEOF_VALUE_I32));
+    let elements_ptr = asm.lea(Opnd::mem(VALUE_BITS, SP, stack_bottom as i32 * SIZEOF_VALUE_I32));
 
     unsafe extern "C" {
         fn rb_vm_opt_newarray_max(ec: EcPtr, num: u32, elts: *const VALUE) -> VALUE;
