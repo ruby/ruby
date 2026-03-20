@@ -17,7 +17,7 @@ use crate::gc::append_gc_offsets;
 use crate::payload::{IseqCodePtrs, IseqStatus, IseqVersion, IseqVersionRef, JITFrame, get_or_create_iseq_payload};
 use crate::state::ZJITState;
 use crate::stats::{CompileError, exit_counter_for_compile_error, exit_counter_for_unhandled_hir_insn, incr_counter, incr_counter_by, send_fallback_counter, send_fallback_counter_for_method_type, send_fallback_counter_for_super_method_type, send_fallback_counter_ptr_for_opcode, send_without_block_fallback_counter_for_method_type, send_without_block_fallback_counter_for_optimized_method_type};
-use crate::stats::{counter_ptr, with_time_stat, Counter, Counter::{compile_time_ns, exit_compile_error}};
+use crate::stats::{counter_ptr, with_time_stat, trace_compile_phase, Counter, Counter::{compile_time_ns, exit_compile_error}};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, Assembler, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_STACK_PTR, Opnd, SP, SideExit, SideExitRecompile, Target, asm_ccall, asm_comment};
 use crate::hir::{iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
@@ -200,17 +200,20 @@ fn gen_iseq_entry_point(cb: &mut CodeBlock, iseq: IseqPtr, jit_exception: bool) 
         return Err(CompileError::ExceptionHandler);
     }
 
-    // Compile ISEQ into High-level IR
-    let function = crate::stats::with_time_stat(Counter::compile_hir_time_ns, || compile_iseq(iseq).inspect_err(|_| {
-        incr_counter!(failed_iseq_count);
-    }))?;
+    let iseq_name = iseq_get_location(iseq, 0);
+    trace_compile_phase(&iseq_name, || {
+        // Compile ISEQ into High-level IR
+        let function = crate::stats::with_time_stat(Counter::compile_hir_time_ns, || compile_iseq(iseq).inspect_err(|_| {
+            incr_counter!(failed_iseq_count);
+        }))?;
 
-    // Compile the High-level IR
-    let IseqCodePtrs { start_ptr, .. } = gen_iseq(cb, iseq, Some(&function)).inspect_err(|err| {
-        debug!("{err:?}: gen_iseq failed: {}", iseq_get_location(iseq, 0));
-    })?;
+        // Compile the High-level IR
+        let IseqCodePtrs { start_ptr, .. } = gen_iseq(cb, iseq, Some(&function)).inspect_err(|err| {
+            debug!("{err:?}: gen_iseq failed: {}", iseq_get_location(iseq, 0));
+        })?;
 
-    Ok(start_ptr)
+        Ok(start_ptr)
+    })
 }
 
 /// Invalidate an ISEQ version and allow it to be recompiled on the next call.
@@ -312,9 +315,14 @@ fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr, function: Option<&Function>) -> R
         return Err(CompileError::IseqVersionLimitReached);
     }
 
-    // Compile the ISEQ
+    // Compile the ISEQ. When function is None, this is a lazy compile
+    // from a stub hit — wrap in a trace event covering the full compile.
     let mut version = IseqVersion::new(iseq);
-    let code_ptrs = gen_iseq_body(cb, iseq, version, function);
+    let code_ptrs = if function.is_none() {
+        trace_compile_phase(&iseq_get_location(iseq, 0), || gen_iseq_body(cb, iseq, version, function))
+    } else {
+        gen_iseq_body(cb, iseq, version, function)
+    };
     match &code_ptrs {
         Ok(code_ptrs) => {
             unsafe { version.as_mut() }.status = IseqStatus::Compiled(code_ptrs.clone());
@@ -344,7 +352,9 @@ fn gen_iseq_body(cb: &mut CodeBlock, iseq: IseqPtr, mut version: IseqVersionRef,
 
     // Compile the High-level IR
     let (iseq_code_ptrs, gc_offsets, iseq_calls) =
-        crate::stats::with_time_stat(Counter::compile_lir_time_ns, || gen_function(cb, iseq, version, function))?;
+        trace_compile_phase("codegen", ||
+            crate::stats::with_time_stat(Counter::compile_lir_time_ns, || gen_function(cb, iseq, version, function))
+        )?;
 
     // Stub callee ISEQs for JIT-to-JIT calls
     for iseq_call in iseq_calls.iter() {
@@ -2955,7 +2965,9 @@ fn compile_iseq(iseq: IseqPtr) -> Result<Function, CompileError> {
         return Err(CompileError::IseqStackTooLarge);
     }
 
-    let hir = crate::stats::with_time_stat(Counter::compile_hir_build_time_ns, || iseq_to_hir(iseq));
+    let hir = trace_compile_phase("build_hir", ||
+        crate::stats::with_time_stat(Counter::compile_hir_build_time_ns, || iseq_to_hir(iseq))
+    );
     let mut function = match hir {
         Ok(function) => function,
         Err(err) => {
@@ -2964,7 +2976,7 @@ fn compile_iseq(iseq: IseqPtr) -> Result<Function, CompileError> {
         }
     };
     if !get_option!(disable_hir_opt) {
-        function.optimize();
+        trace_compile_phase("optimize", || function.optimize());
     }
     function.dump_hir();
     Ok(function)

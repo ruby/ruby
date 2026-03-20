@@ -5930,7 +5930,9 @@ impl Function {
         macro_rules! run_pass {
             ($name:ident) => {
                 let counter = counter_for!($name);
-                crate::stats::with_time_stat(counter, || self.$name());
+                crate::stats::trace_compile_phase(stringify!($name), ||
+                    crate::stats::with_time_stat(counter, || self.$name())
+                );
                 #[cfg(debug_assertions)] self.assert_validates();
                 if should_dump {
                     passes.push(

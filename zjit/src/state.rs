@@ -128,7 +128,7 @@ impl ZJITState {
         let exit_trampoline = gen_exit_trampoline(&mut cb).unwrap();
         let function_stub_hit_trampoline = gen_function_stub_hit_trampoline(&mut cb).unwrap();
 
-        let perfetto_tracer = if get_option!(trace_side_exits).is_some() {
+        let perfetto_tracer = if get_option!(trace_side_exits).is_some() || get_option!(trace_compiles) {
             Some(PerfettoTracer::new())
         } else {
             None
