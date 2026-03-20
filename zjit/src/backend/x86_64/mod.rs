@@ -406,20 +406,6 @@ impl Assembler {
             );
         }
 
-        fn assert_reg_not_mem_base(reg_opnd: Opnd, mem_opnd: Opnd) {
-            if let (
-                Opnd::Reg(reg),
-                Opnd::Mem(Mem { base: MemBase::Reg(base_reg_no), .. }),
-            ) = (reg_opnd, mem_opnd)
-            {
-                assert_ne!(
-                    reg.reg_no,
-                    base_reg_no,
-                    "x86_scratch_split expects a physical register operand to differ from the memory base register: reg={reg_opnd:?}, mem={mem_opnd:?}"
-                );
-            }
-        }
-
         /// If both opnd and other are Opnd::Mem, split opnd with scratch_opnd.
         fn split_if_both_memory(asm: &mut Assembler, opnd: Opnd, other: Opnd, scratch_opnd: Opnd) -> Opnd {
             if let (Opnd::Mem(_), Opnd::Mem(_)) = (opnd, other) {
