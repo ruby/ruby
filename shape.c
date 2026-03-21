@@ -487,7 +487,12 @@ shape_grow_capa(attr_index_t current_capa)
         capacities++;
     }
 
-    return (attr_index_t)rb_malloc_grow_capa(current_capa, sizeof(VALUE));
+    size_t grown_capa = rb_malloc_grow_capa(current_capa, sizeof(VALUE));
+    if (UNLIKELY(grown_capa > SHAPE_MAX_FIELDS)) {
+        rb_raise(rb_eArgError, "too many instance variables");
+    }
+
+    return (attr_index_t)grown_capa;
 }
 
 static rb_shape_t *
