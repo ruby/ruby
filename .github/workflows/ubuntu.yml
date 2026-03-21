@@ -106,6 +106,7 @@ jobs:
       - name: runirb
         run: |
           echo IRB::VERSION | $SETARCH make runirb RUNOPT="-- -f"
+        if: ${{ matrix.test_task == 'test-bundled-gems' }}
 
       - name: Set test options for skipped tests
         run: |

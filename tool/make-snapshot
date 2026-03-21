@@ -467,6 +467,7 @@ def package(vcs, rev, destdir, tmp = nil)
         "VPATH"=>(ENV["VPATH"] || "include/ruby"),
         "PROGRAM"=>(ENV["PROGRAM"] || "ruby"),
         "BUILTIN_TRANSOBJS"=>(ENV["BUILTIN_TRANSOBJS"] || "newline.o"),
+        "DUMP_AST"=>"build-tool/dump_ast#{RbConfig::CONFIG['EXEEXT']} ",
       }
       status.scan(/^s([%,])@([A-Za-z_][A-Za-z_0-9]*)@\1(.*?)\1g$/) do
         vars[$2] ||= $3
@@ -540,6 +541,7 @@ touch-unicode-files:
       File.utime(modified, modified, *Dir.glob(["tool/config.{guess,sub}", "gems/*.gem", "tool"]))
       return unless make.run("prepare-package")
       return unless make.run("clean-cache")
+      return unless make.run("clean")
       if modified
         new_time = modified + 2
         touch_all(new_time, "**/*", File::FNM_DOTMATCH) do |name, stat|

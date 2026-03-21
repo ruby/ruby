@@ -1317,9 +1317,20 @@ $(BUILTIN_BINARY:no=builtin)_binary.rbbin:
 
 $(BUILTIN_RB_INCS): $(tooldir)/mk_builtin_loader.rb $(DUMP_AST_TARGET)
 
-dump_ast$(EXEEXT): $(tooldir)/dump_ast.c $(LIBPRISM_OBJS)
+dump_ast$(BUILD_EXEEXT): $(tooldir)/dump_ast.c $(LIBPRISM_OBJS)
 	$(ECHO) compiling $@
 	$(Q) $(CC) $(CFLAGS) $(OUTFLAG)$@ $(INCFLAGS) $(tooldir)/dump_ast.c $(LIBPRISM_OBJS)
+
+build-tool/Makefile: $(tooldir)/dump_ast.mkmf.rb prism-srcs prism-incs
+	+$(BASERUBY) -s $(tooldir)/dump_ast.mkmf.rb "-INCFLAGS=$(INCFLAGS)" "-make=$(MAKE)" build-tool $(tooldir)/dump_ast.c dump_ast.$(OBJEXT) $(LIBPRISM_OBJS)
+
+build-tool/dump_ast$(BUILD_EXEEXT): build-tool/Makefile
+	cd build-tool && MAKEFLAGS= MFLAGS= && unset MAKEFLAGS MFLAGS && $(MAKE)
+
+clean-local:: clean-build-tool
+clean-build-tool:
+	- cd build-tool && $(MAKE) clean 2> $(NULL) || $(NULLCMD)
+	- $(RMDIR) build-tool
 
 $(srcdir)/revision.h$(no_baseruby:no=~disabled~): $(REVISION_H)
 
