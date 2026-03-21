@@ -761,6 +761,42 @@ RUBY_TYPED_FROZEN_SHAREABLE ::
   If this flag is not set, the object can not become a shareable
   object by Ractor.make_shareable() method.
 
+RUBY_TYPED_EMBEDDABLE ::
+
+  This flag indicates that Ruby may store the C struct inside the object
+  slot, rather than allocate it separately with +malloc+.
+  However, it is not a guarantee. Ruby may decide not to embed the object.
+  For instance if it's too large to fit into one of the available slot sizes.
+
+  Embedding the C struct inside the object slot reduces pointer chasing,
+  malloc overhead, and improves sweep performance.
+  In some cases, it can also reduce the memory footprint of the object.
+
+  To be embeddable, types must abide by some restrictions:
+
+  * Pointers into the C struct MUST NOT be stored, as they become invalid
+    when GC compaction occurs.
+    It is however valid to pass and use such pointers for as long as the
+    Ruby object remains on the stack. Use of the +GC_GUARD+ macro may be
+    necessary to ensure the reference isn't optimized by the compiler.
+
+  * The +DATA_PTR+ macro can't be used. Only +RTYPEDDATA_GET_DATA+` or
+    +TypedData_Get_Struct+ macros can be used with embeddable objects.
+
+  * The +dfree+ function MUST NOT free the C struct itself.
+    Setting +dfree+ to +RUBY_DEFAULT_FREE+ is fine.
+    To support older Ruby versions without this feature, you can
+    conditionally free the C struct if +RUBY_TYPED_EMBEDDABLE+ isn't defined.
+
+  * The type must have the +RUBY_TYPED_FREE_IMMEDIATELY+ flag set.
+
+  If the embedded C struct is of variable size, +rb_data_typed_object_zalloc+
+  can be used instead of +TypedData_Make_Struct+.
+
+  See {Embedded TypedData}[rdoc-ref:@Appendix+G.+Embedded+TypedData] for a
+  commented example of how to use +RUBY_TYPED_EMBEDDABLE+.
+
+
 Note that this macro can raise an exception.  If sval to be wrapped
 holds a resource needs to be released (e.g., allocated memory, handle
 from an external library, and etc), you will have to use rb_protect.
@@ -2284,6 +2320,60 @@ To make a "Ractor-safe" C extension, we need to check the following points:
    There are possibly other points or requirements which must be considered in the
    making of a Ractor-safe extension.  This document will be extended as they are
    discovered.
+
+== Appendix G. Embedded TypedData
+
+Here is an example of how to use +RUBY_TYPED_EMBEDDABLE+::
+
+  struct my_data {
+      struct timespec created_at;
+      size_t buffer_capa;
+      char *buffer;
+  };
+
+  static void
+  my_data_free(void *ptr)
+  {
+      struct my_data *data = (struct my_data *)ptr;
+
+      // Deliberately don't free `ptr` if it is embeddable.
+      // Only auxiliary memory need to be freed.
+      ruby_xfree(data->buffer);
+  }
+
+  static size_t
+  my_data_size(const void *ptr)
+  {
+    const struct my_data *data = (const struct my_data *)ptr;
+    // We don't need to account for `sizeof(struct my_struct)` because it is embedded inside the Ruby object.
+    // Only auxiliary memory need to be reported.
+    return data->buffer_capa;
+  }
+
+  static const rb_data_type_t my_type = {
+      .wrap_struct_name = "my_type",
+      .function = {
+        .dfree = my_data_free,
+        .dsize = my_data_size,
+      }
+      .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE,
+  };
+
+  static VALUE
+  my_data_alloc(VALUE klass)
+  {
+      struct my_data *data;
+      VALUE obj = TypedData_Make_Struct(klass, struct my_data, &my_type, data);
+
+      // Is it fine to pass pointers into the embedded struct, for as long as
+      // the called function won't use it after the Ruby object have left the stack.
+      clock_gettime(CLOCK_REALTIME, &data->created_at);
+      data->buffer_capa = 1024;
+      data->buffer = ZALLOC_N(char, data->buffer_capa);
+
+      return obj
+  }
+
 
 --
 Local variables:

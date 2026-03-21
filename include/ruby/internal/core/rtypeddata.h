@@ -119,6 +119,7 @@
 #define RUBY_TYPED_FREE_IMMEDIATELY  RUBY_TYPED_FREE_IMMEDIATELY
 #define RUBY_TYPED_FROZEN_SHAREABLE  RUBY_TYPED_FROZEN_SHAREABLE
 #define RUBY_TYPED_WB_PROTECTED      RUBY_TYPED_WB_PROTECTED
+#define RUBY_TYPED_EMBEDDABLE        RUBY_TYPED_EMBEDDABLE
 #define RUBY_TYPED_PROMOTED1         RUBY_TYPED_PROMOTED1
 
 /**
@@ -144,6 +145,20 @@ rbimpl_typeddata_flags {
      */
     RUBY_TYPED_FREE_IMMEDIATELY = 1,
 
+    /**
+     * This flag indicate to Ruby that the associated C struct may be embedded
+     * inside the object slot, instead of being externally allocated
+     * with +malloc+.
+     *
+     * Embeddable types MUST NOT be accessed using the +DATA_PTR+ macro, only
+     * with +TypedData_Get_Struct+ or +RTYPEDDATA_GET_DATA+.
+     *
+     * Embeddable types MUST NOT free the associated C struct.
+     *
+     * Pointers into the associated C struct MUST NOT be used after the ruby
+     * object is not longer on the stack, as they become invalid when GC
+     * compaction occurs
+     */
     RUBY_TYPED_EMBEDDABLE = 2,
 
     /**
@@ -408,8 +423,7 @@ RBIMPL_ATTR_NONNULL((3))
 /**
  * Identical  to rb_data_typed_object_wrap(),  except it  allocates a  new data
  * region internally instead of taking an existing one.  The allocation is done
- * using ruby_calloc().  Hence it makes  no sense for `type->function.dfree` to
- * be anything other than ::RUBY_TYPED_DEFAULT_FREE.
+ * using ruby_calloc().
  *
  * @param[in]  klass          Ruby level class of the returning object.
  * @param[in]  size           Requested size of memory to allocate.
