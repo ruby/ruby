@@ -619,9 +619,7 @@ static inline rb_alloc_func_t
 RCLASS_ALLOCATOR(VALUE klass)
 {
     RBIMPL_ASSERT_TYPE(klass, T_CLASS);
-    if (RCLASS_SINGLETON_P(klass)) {
-        return 0;
-    }
+    RUBY_ASSERT(!RCLASS_SINGLETON_P(klass));
     return RCLASS_EXT_PRIME(klass)->as.class.allocator;
 }
 
