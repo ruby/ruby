@@ -22,6 +22,7 @@
 #include "internal/numeric.h"
 #include "internal/object.h"
 #include "internal/proc.h"
+#include "internal/decimal.h"
 #include "internal/rational.h"
 #include "internal/vm.h"
 #include "probes.h"
@@ -8259,7 +8260,7 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
     n = 0;
     r = Qundef;
 
-    if (!FIXNUM_P(v) && !RB_BIGNUM_TYPE_P(v) && !RB_TYPE_P(v, T_RATIONAL)) {
+    if (!FIXNUM_P(v) && !RB_BIGNUM_TYPE_P(v) && !RB_TYPE_P(v, T_RATIONAL) && !decimal_p(v)) {
         i = 0;
         goto init_is_a_value;
     }
@@ -8282,6 +8283,20 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
                 r = e;
             else
                 r = rb_rational_plus(r, e);
+        }
+        else if (decimal_p(e)) {
+            if (n != 0) {
+                v = rb_fix_plus(LONG2FIX(n), v);
+                n = 0;
+            }
+            if (!decimal_p(v))
+                v = rb_Decimal(v);
+            VALUE sum = rb_decimal_sum_ary(ary, v, i);
+            if (!UNDEF_P(sum)) {
+                v = sum;
+                break;
+            }
+            v = rb_decimal_plus(v, e);
         }
         else
             goto not_exact;
@@ -8316,6 +8331,8 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
                 x = rb_big2dbl(e);
             else if (RB_TYPE_P(e, T_RATIONAL))
                 x = rb_num2dbl(e);
+            else if (decimal_p(e))
+                x = rb_decimal_to_f_value(e);
             else
                 goto not_float;
 

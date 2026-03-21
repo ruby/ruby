@@ -82,5 +82,6 @@ VALUE rb_decimal_abs(VALUE self);
 VALUE rb_decimal_to_f(VALUE self);
 VALUE rb_decimal_from_integer(VALUE val);
 double rb_decimal_to_f_value(VALUE self);
+VALUE rb_decimal_sum_ary(VALUE ary, VALUE init, long start);
 
 #endif /* INTERNAL_DECIMAL_H */

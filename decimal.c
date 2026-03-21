@@ -2025,6 +2025,87 @@ decimal_to_dec(VALUE self)
     return self;
 }
 
+VALUE
+rb_decimal_sum_ary(VALUE ary, VALUE init, long start)
+{
+    long len = RARRAY_LEN(ary);
+    if (len <= start) return init;
+
+    if (RB_DECIMAL_IMM_P(init)) {
+        VALUE first = RARRAY_AREF(ary, start);
+        if (RB_DECIMAL_IMM_P(first)) {
+            int common_scale = dec_bid_scale(init);
+            if (dec_bid_scale(first) == common_scale) {
+                dec_u128 pos_acc = 0, neg_acc = 0;
+                dec_u128 acc_limit = (dec_u128)DEC_MAX / POW10[18 - common_scale];
+                if (dec_bid_neg(init))
+                    neg_acc = dec_bid_sig(init);
+                else
+                    pos_acc = dec_bid_sig(init);
+
+                long i = start;
+                for (; i < len; i++) {
+                    VALUE e = RARRAY_AREF(ary, i);
+                    if (!RB_DECIMAL_IMM_P(e) || dec_bid_scale(e) != common_scale)
+                        break;
+                    if (dec_bid_neg(e))
+                        neg_acc += dec_bid_sig(e);
+                    else
+                        pos_acc += dec_bid_sig(e);
+                    if (pos_acc > acc_limit || neg_acc > acc_limit) {
+                        i++;
+                        break;
+                    }
+                }
+
+                if (i == len) {
+                    int neg = neg_acc > pos_acc;
+                    dec_u128 abs_acc = neg ? neg_acc - pos_acc : pos_acc - neg_acc;
+                    if (abs_acc == 0) return decimal_zero;
+                    if (abs_acc <= DEC_BID_SIG_MAX)
+                        return dec_bid_encode((uint64_t)abs_acc, common_scale, neg);
+                    dec_i128 val;
+                    if (__builtin_mul_overflow((dec_i128)abs_acc,
+                                              (dec_i128)POW10[18 - common_scale], &val))
+                        rb_raise(rb_eRangeError, "Decimal overflow");
+                    if (neg) val = -val;
+                    return dec_from_i128(val);
+                }
+
+                int neg = neg_acc > pos_acc;
+                dec_u128 abs_acc = neg ? neg_acc - pos_acc : pos_acc - neg_acc;
+                dec_i128 acc;
+                if (__builtin_mul_overflow((dec_i128)abs_acc,
+                                          (dec_i128)POW10[18 - common_scale], &acc))
+                    rb_raise(rb_eRangeError, "Decimal overflow");
+                if (neg) acc = -acc;
+                for (; i < len; i++) {
+                    VALUE e = RARRAY_AREF(ary, i);
+                    if (!decimal_p(e))
+                        return Qundef;
+                    dec_i128 r;
+                    if (__builtin_add_overflow(acc, dec_to_i128(e), &r))
+                        rb_raise(rb_eRangeError, "Decimal overflow");
+                    acc = r;
+                }
+                return dec_from_i128(acc);
+            }
+        }
+    }
+
+    dec_i128 acc = dec_to_i128(init);
+    for (long i = start; i < len; i++) {
+        VALUE e = RARRAY_AREF(ary, i);
+        if (!decimal_p(e))
+            return Qundef;
+        dec_i128 r;
+        if (__builtin_add_overflow(acc, dec_to_i128(e), &r))
+            rb_raise(rb_eRangeError, "Decimal overflow");
+        acc = r;
+    }
+    return dec_from_i128(acc);
+}
+
 /*
  *  call-seq:
  *    decimal.coerce(other)  ->  array

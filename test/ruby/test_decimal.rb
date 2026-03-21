@@ -786,6 +786,29 @@ class TestDecimal < Test::Unit::TestCase
     assert_equal(2, Decimal("1.5").clamp(2, 3))
   end
 
+  def test_sum
+    result = Array.new(100, Decimal("1.5")).sum(Decimal(0))
+    assert_equal(Decimal("150"), result)
+  end
+
+  def test_sum_empty
+    assert_equal(Decimal(0), [].sum(Decimal(0)))
+  end
+
+  def test_sum_integer_init
+    result = [Decimal("1.5"), Decimal("2.5")].sum(0)
+    assert_equal(Decimal("4"), result)
+  end
+
+  def test_sum_mixed_integer_decimal
+    result = [1, 2, Decimal("3.5")].sum(Decimal(0))
+    assert_equal(Decimal("6.5"), result)
+  end
+
+  def test_sum_mixed_float_decimal
+    assert_in_delta(3.0, [Decimal(1), 2.0].sum(Decimal(0)))
+  end
+
   def test_parse_precision_loss_raises
     assert_raise(ArgumentError) { Decimal("1.1234567890123456789") }
     assert_nil(Decimal("1.1234567890123456789", exception: false))
