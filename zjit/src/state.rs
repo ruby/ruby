@@ -1,13 +1,14 @@
 //! Runtime state of ZJIT.
 
 use crate::codegen::{gen_entry_trampoline, gen_exit_trampoline, gen_exit_trampoline_with_counter, gen_function_stub_hit_trampoline};
-use crate::cruby::{self, rb_bug_panic_hook, rb_vm_insn_count, src_loc, EcPtr, Qnil, Qtrue, rb_vm_insn_addr2opcode, rb_profile_frames, VALUE, VM_INSTRUCTION_SIZE, size_t, rb_gc_mark, with_vm_lock, rust_str_to_id, rb_funcallv, rb_const_get, rb_cRubyVM};
+use crate::cruby::{self, EcPtr, IseqPtr, Qnil, Qtrue, VALUE, VM_INSTRUCTION_SIZE, rb_bug_panic_hook, rb_cRubyVM, rb_const_get, rb_funcallv, rb_gc_mark, rb_profile_frames, rb_vm_insn_addr2opcode, rb_vm_insn_count, rust_str_to_id, size_t, src_loc, with_vm_lock};
 use crate::cruby_methods;
 use cruby::{ID, rb_callable_method_entry, get_def_method_serial, rb_gc_register_mark_object};
 use std::sync::atomic::Ordering;
 use crate::invariants::Invariants;
 use crate::asm::CodeBlock;
 use crate::options::{get_option, rb_zjit_prepare_options};
+use crate::payload::JITFrame;
 use crate::stats::{Counters, InsnCounters, SideExitLocations};
 use crate::virtualmem::CodePtr;
 use std::sync::atomic::AtomicUsize;
@@ -70,6 +71,21 @@ pub struct ZJITState {
 
     /// Locations of side exists within generated code
     exit_locations: Option<SideExitLocations>,
+
+    // TODO: consider using raw pointer of JITFrame?
+    jit_frames: Vec<Box<JITFrame>>,
+}
+
+impl JITFrame {
+    pub fn new(pc: *const VALUE, iseq: IseqPtr, materialize_block_code: bool) -> *const Self { // TODO: move this to jit_frame.rs?
+        let jit_frame = Box::new(JITFrame { pc, iseq, materialize_block_code });
+        let instance = ZJITState::get_instance();
+        // FIXME(alan): really, everyone should work with &JITFrame in safe code because &mut exclusivity may not hold
+        // think about this more
+        let raw_ptr = jit_frame.as_ref() as *const _;
+        instance.jit_frames.push(jit_frame);
+        raw_ptr
+    }
 }
 
 /// Tracks the initialization progress
@@ -147,6 +163,7 @@ impl ZJITState {
             ccall_counter_pointers: HashMap::new(),
             iseq_calls_count_pointers: HashMap::new(),
             exit_locations,
+            jit_frames: vec![],
         };
         unsafe { ZJIT_STATE = Enabled(zjit_state); }
 
@@ -184,6 +201,10 @@ impl ZJITState {
     /// Get a mutable reference to the invariants
     pub fn get_invariants() -> &'static mut Invariants {
         &mut ZJITState::get_instance().invariants
+    }
+
+    pub fn get_jit_frames() -> &'static mut Vec<Box<JITFrame>> {
+        &mut ZJITState::get_instance().jit_frames
     }
 
     pub fn get_method_annotations() -> &'static cruby_methods::Annotations {

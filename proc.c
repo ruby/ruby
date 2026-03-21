@@ -1285,6 +1285,9 @@ rb_proc_arity(VALUE self)
 static void
 block_setup(struct rb_block *block, VALUE block_handler)
 {
+    // TODO: do we need to do something about this for ZJIT?
+    // we copy captured block but not jit_return.
+    // do we need to query block_code for specialized C method calls?
     switch (vm_block_handler_type(block_handler)) {
       case block_handler_type_iseq:
         block->type = block_type_iseq;
