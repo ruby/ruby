@@ -1717,16 +1717,17 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
         coverage_enabled = 0;
     }
 
-    pm_parse_result_t result = { 0 };
-    pm_options_line_set(&result.options, line);
+    pm_parse_result_t result;
+    pm_parse_result_init(&result);
+    pm_options_line_set(result.options, line);
     result.node.coverage_enabled = coverage_enabled;
 
-    // Cout scopes, one for each parent iseq, plus one for our local scope
+    // Count scopes, one for each parent iseq, plus one for our local scope
     int scopes_count = 0;
     do {
         scopes_count++;
     } while ((iseq = ISEQ_BODY(iseq)->parent_iseq));
-    pm_options_scopes_init(&result.options, scopes_count + 1);
+    pm_options_scopes_init(result.options, scopes_count + 1);
 
     // Walk over the scope tree, adding known locals at the correct depths. The
     // scope array should be deepest -> shallowest. so lower indexes in the
@@ -1748,13 +1749,13 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
         VALUE iseq_value = (VALUE)iseq;
         int locals_count = ISEQ_BODY(iseq)->local_table_size;
 
-        pm_options_scope_t *options_scope = &result.options.scopes[scopes_count - scopes_index - 1];
+        pm_options_scope_t *options_scope = pm_options_scope_mut(result.options, scopes_count - scopes_index - 1);
         pm_options_scope_init(options_scope, locals_count);
 
         uint8_t forwarding = PM_OPTIONS_SCOPE_FORWARDING_NONE;
 
         for (int local_index = 0; local_index < locals_count; local_index++) {
-            pm_string_t *scope_local = &options_scope->locals[local_index];
+            pm_string_t *scope_local = pm_options_scope_local_mut(options_scope, local_index);
             ID local = ISEQ_BODY(iseq)->local_table[local_index];
 
             if (rb_is_local_id(local)) {
@@ -1815,7 +1816,7 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
 
     // Add our empty local scope at the very end of the array for our eval
     // scope's locals.
-    pm_options_scope_init(&result.options.scopes[scopes_count], 0);
+    pm_options_scope_init(pm_options_scope_mut(result.options, scopes_count), 0);
 
     VALUE script_lines;
     VALUE error = pm_parse_string(&result, src, fname, ruby_vm_keep_script_lines ? &script_lines : NULL);
@@ -1836,17 +1837,16 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
         pm_scope_node_t *parent_scope = ruby_xcalloc(1, sizeof(pm_scope_node_t));
         RUBY_ASSERT(parent_scope != NULL);
 
-        pm_options_scope_t *options_scope = &result.options.scopes[scopes_count - scopes_index - 1];
+        const pm_options_scope_t *options_scope = pm_options_scope(result.options, scopes_count - scopes_index - 1);
         parent_scope->coverage_enabled = coverage_enabled;
-        parent_scope->parser = &result.parser;
-        parent_scope->index_lookup_table = st_init_numtable();
-
+        parent_scope->parser = result.parser;
         int locals_count = ISEQ_BODY(iseq)->local_table_size;
+        pm_index_lookup_table_init_heap(&parent_scope->index_lookup_table, (int) pm_parser_constants_size(result.parser));
         parent_scope->local_table_for_iseq_size = locals_count;
         pm_constant_id_list_init(&parent_scope->locals);
 
         for (int local_index = 0; local_index < locals_count; local_index++) {
-            const pm_string_t *scope_local = &options_scope->locals[local_index];
+            const pm_string_t *scope_local = pm_options_scope_local(options_scope, local_index);
             pm_constant_id_t constant_id = 0;
 
             const uint8_t *source = pm_string_source(scope_local);
@@ -1868,18 +1868,18 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
                         constant_id = PM_CONSTANT_DOT3;
                         break;
                       default:
-                        constant_id = pm_constant_pool_insert_constant(&result.parser.metadata_arena, &result.parser.constant_pool, source, length);
+                        constant_id = pm_parser_constant_find(result.parser, source, length);
                         break;
                     }
                 }
                 else {
-                    constant_id = pm_constant_pool_insert_constant(&result.parser.metadata_arena, &result.parser.constant_pool, source, length);
+                    constant_id = pm_parser_constant_find(result.parser, source, length);
                 }
 
-                st_insert(parent_scope->index_lookup_table, (st_data_t) constant_id, (st_data_t) local_index);
+                pm_index_lookup_table_insert(&parent_scope->index_lookup_table, constant_id, local_index);
             }
 
-            pm_constant_id_list_append(&result.arena, &parent_scope->locals, constant_id);
+            pm_constant_id_list_append(result.arena, &parent_scope->locals, constant_id);
         }
 
         node->previous = parent_scope;

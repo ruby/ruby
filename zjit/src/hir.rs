@@ -532,6 +532,7 @@ pub enum SideExitReason {
     SplatKwPolymorphic,
     SplatKwNotProfiled,
     DirectiveInduced,
+    SendWhileTracing,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -4213,6 +4214,93 @@ impl Function {
         })
     }
 
+    fn load_ivar_c_call(&mut self, block: BlockId, recv: InsnId, ivar_index: u16) -> InsnId {
+        // NOTE: it's fine to use rb_ivar_get_at_no_ractor_check because
+        // getinstancevariable does assume_single_ractor_mode()
+        let ivar_index_insn = self.push_insn(block, Insn::Const { val: Const::CUInt16(ivar_index) });
+        self.push_insn(block, Insn::CCall {
+            cfunc: rb_ivar_get_at_no_ractor_check as *const u8,
+            recv,
+            args: vec![ivar_index_insn],
+            name: ID!(rb_ivar_get_at_no_ractor_check),
+            return_type: types::BasicObject,
+            elidable: true })
+    }
+
+    fn load_ivar_heap(&mut self, block: BlockId,  recv: InsnId, id: ID, ivar_index: u16) -> InsnId {
+        // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
+        let ptr = self.push_insn(block, Insn::LoadField {
+            recv, id: ID!(_as_heap),
+            offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32,
+            return_type: types::CPtr,
+        });
+        let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
+        self.push_insn(block, Insn::LoadField {
+            recv: ptr, id, offset,
+            return_type: types::BasicObject,
+        })
+    }
+
+    fn load_ivar_embedded(&mut self, block: BlockId, recv: InsnId, id: ID, ivar_index: u16) -> InsnId {
+        // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
+        let offset = ROBJECT_OFFSET_AS_ARY as i32
+            + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
+        self.push_insn(block, Insn::LoadField {
+            recv, id, offset,
+            return_type: types::BasicObject,
+        })
+    }
+
+    fn load_ivar_from_fields(&mut self, block: BlockId, recv: InsnId, is_embedded: bool, id: ID, ivar_index: u16) -> InsnId {
+        if is_embedded {
+            return self.load_ivar_embedded(block, recv, id, ivar_index);
+        } else {
+            return self.load_ivar_heap(block, recv, id, ivar_index);
+        }
+    }
+
+    fn load_ivar(&mut self, block: BlockId, self_val: InsnId, recv_type: ProfiledType, id: ID, state: InsnId) -> InsnId {
+        let mut ivar_index: u16 = 0;
+        if ! unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
+            // If there is no IVAR index, then the ivar was undefined when we
+            // entered the compiler.  That means we can just return nil for this
+            // shape + iv name
+            return self.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
+        }
+        if recv_type.flags().is_t_class_or_module() {
+            // Class/module ivar: load from prime classext's fields_obj
+            if !self.assume_root_box(block, state) {
+                // Non-root box active: fall back to C call
+                // NOTE: it's fine to use rb_ivar_get_at_no_ractor_check because
+                // getinstancevariable does assume_single_ractor_mode()
+                return self.load_ivar_c_call(block, self_val, ivar_index);
+            }
+            // Root box only: load directly from prime classext
+            let fields_obj = self.push_insn(block, Insn::LoadField {
+                recv: self_val, id: ID!(_fields_obj),
+                offset: RCLASS_OFFSET_PRIME_FIELDS_OBJ as i32,
+                return_type: types::RubyValue,
+            });
+            return self.load_ivar_from_fields(block, fields_obj, recv_type.flags().is_fields_embedded(), id, ivar_index);
+        }
+        if recv_type.flags().is_typed_data() {
+            // Typed T_DATA: load from fields_obj at fixed offset in RTypedData
+            let fields_obj = self.push_insn(block, Insn::LoadField {
+                recv: self_val, id: ID!(_fields_obj),
+                offset: RTYPEDDATA_OFFSET_FIELDS_OBJ as i32,
+                return_type: types::RubyValue,
+            });
+            return self.load_ivar_from_fields(block, fields_obj, recv_type.flags().is_fields_embedded(), id, ivar_index);
+        }
+        if recv_type.flags().is_t_object() {
+            return self.load_ivar_from_fields(block, self_val, recv_type.flags().is_embedded(), id, ivar_index);
+        }
+        // Non-T_OBJECT, non-class/module, non-typed-data: fall back to C call
+        // NOTE: it's fine to use rb_ivar_get_at_no_ractor_check because
+        // getinstancevariable does assume_single_ractor_mode()
+        return self.load_ivar_c_call(block, self_val, ivar_index);
+    }
+
     fn optimize_getivar(&mut self) {
         for block in self.rpo() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
@@ -4240,101 +4328,7 @@ impl Function {
                         let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
                         let shape = self.load_shape(block, self_val);
                         self.guard_shape(block, shape, recv_type.shape(), state);
-                        let mut ivar_index: u16 = 0;
-                        let replacement = if ! unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
-                            // If there is no IVAR index, then the ivar was undefined when we
-                            // entered the compiler.  That means we can just return nil for this
-                            // shape + iv name
-                            self.push_insn(block, Insn::Const { val: Const::Value(Qnil) })
-                        } else if recv_type.flags().is_t_class_or_module() {
-                            // Class/module ivar: load from prime classext's fields_obj
-                            if self.assume_root_box(block, state) {
-                                // Root box only: load directly from prime classext
-                                let fields_obj = self.push_insn(block, Insn::LoadField {
-                                    recv: self_val, id: ID!(_fields_obj),
-                                    offset: RCLASS_OFFSET_PRIME_FIELDS_OBJ as i32,
-                                    return_type: types::RubyValue,
-                                });
-                                if recv_type.flags().is_fields_embedded() {
-                                    let offset = ROBJECT_OFFSET_AS_ARY as i32
-                                        + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
-                                    self.push_insn(block, Insn::LoadField {
-                                        recv: fields_obj, id, offset,
-                                        return_type: types::BasicObject,
-                                    })
-                                } else {
-                                    let ptr = self.push_insn(block, Insn::LoadField {
-                                        recv: fields_obj, id: ID!(_as_heap),
-                                        offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32,
-                                        return_type: types::CPtr,
-                                    });
-                                    let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
-                                    self.push_insn(block, Insn::LoadField {
-                                        recv: ptr, id, offset,
-                                        return_type: types::BasicObject,
-                                    })
-                                }
-                            } else {
-                                // Non-root box active: fall back to C call
-                                // NOTE: it's fine to use rb_ivar_get_at_no_ractor_check because
-                                // getinstancevariable does assume_single_ractor_mode()
-                                let ivar_index_insn = self.push_insn(block, Insn::Const { val: Const::CUInt16(ivar_index as u16) });
-                                self.push_insn(block, Insn::CCall {
-                                    cfunc: rb_ivar_get_at_no_ractor_check as *const u8,
-                                    recv: self_val,
-                                    args: vec![ivar_index_insn],
-                                    name: ID!(rb_ivar_get_at_no_ractor_check),
-                                    return_type: types::BasicObject,
-                                    elidable: true })
-                            }
-                        } else if recv_type.flags().is_typed_data() {
-                            // Typed T_DATA: load from fields_obj at fixed offset in RTypedData
-                            let fields_obj = self.push_insn(block, Insn::LoadField {
-                                recv: self_val, id: ID!(_fields_obj),
-                                offset: RTYPEDDATA_OFFSET_FIELDS_OBJ as i32,
-                                return_type: types::RubyValue,
-                            });
-                            if recv_type.flags().is_fields_embedded() {
-                                let offset = ROBJECT_OFFSET_AS_ARY as i32
-                                    + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
-                                self.push_insn(block, Insn::LoadField {
-                                    recv: fields_obj, id, offset,
-                                    return_type: types::BasicObject,
-                                })
-                            } else {
-                                let ptr = self.push_insn(block, Insn::LoadField {
-                                    recv: fields_obj, id: ID!(_as_heap),
-                                    offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32,
-                                    return_type: types::CPtr,
-                                });
-                                let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
-                                self.push_insn(block, Insn::LoadField {
-                                    recv: ptr, id, offset,
-                                    return_type: types::BasicObject,
-                                })
-                            }
-                        } else if !recv_type.flags().is_t_object() {
-                            // Non-T_OBJECT, non-class/module, non-typed-data: fall back to C call
-                            // NOTE: it's fine to use rb_ivar_get_at_no_ractor_check because
-                            // getinstancevariable does assume_single_ractor_mode()
-                            let ivar_index_insn = self.push_insn(block, Insn::Const { val: Const::CUInt16(ivar_index as u16) });
-                            self.push_insn(block, Insn::CCall {
-                                cfunc: rb_ivar_get_at_no_ractor_check as *const u8,
-                                recv: self_val,
-                                args: vec![ivar_index_insn],
-                                name: ID!(rb_ivar_get_at_no_ractor_check),
-                                return_type: types::BasicObject,
-                                elidable: true })
-                        } else if recv_type.flags().is_embedded() {
-                            // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
-                            let offset = ROBJECT_OFFSET_AS_ARY as i32 + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
-                            self.push_insn(block, Insn::LoadField { recv: self_val, id, offset, return_type: types::BasicObject })
-                        } else {
-                            let as_heap =  self.push_insn(block, Insn::LoadField { recv: self_val, id: ID!(_as_heap), offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32, return_type: types::CPtr });
-
-                            let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
-                            self.push_insn(block, Insn::LoadField { recv: as_heap, id, offset, return_type: types::BasicObject })
-                        };
+                        let replacement = self.load_ivar(block, self_val, recv_type, id, state);
                         self.make_equal_to(insn_id, replacement);
                     }
                     Insn::DefinedIvar { self_val, id, pushval, state } => {
@@ -4949,8 +4943,8 @@ impl Function {
     }
 
     fn optimize_load_store(&mut self) {
-        let mut compile_time_heap: HashMap<(InsnId, i32), InsnId>  = HashMap::new();
         for block in self.rpo() {
+            let mut compile_time_heap: HashMap<(InsnId, i32), InsnId>  = HashMap::new();
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             let mut new_insns = vec![];
             for insn_id in old_insns {
@@ -5070,6 +5064,13 @@ impl Function {
                             _ => insn_id,
                         }
                     }
+                    Insn::UnboxFixnum { val } => {
+                        let recv_type = self.type_of(val);
+                        match recv_type.fixnum_value() {
+                            Some(val) => self.new_insn(Insn::Const { val: Const::CInt64(val) }),
+                            _ => insn_id,
+                        }
+                    },
                     Insn::GuardBitEquals { val, expected, .. } => {
                         let recv_type = self.type_of(val);
                         if recv_type.has_value(expected) {
@@ -5620,33 +5621,25 @@ impl Function {
         let mut passes: Vec<Json> = Vec::new();
         let should_dump = get_option!(dump_hir_iongraph);
 
-        macro_rules! ident_equal {
-            ($a:ident, $b:ident) => { stringify!($a) == stringify!($b) };
+        macro_rules! counter_for {
+            // Bucket all strength reduction together
+            (type_specialize) => { Counter::compile_hir_strength_reduce_time_ns };
+            (inline) => { Counter::compile_hir_strength_reduce_time_ns };
+            (optimize_getivar) => { Counter::compile_hir_strength_reduce_time_ns };
+            (optimize_c_calls) => { Counter::compile_hir_strength_reduce_time_ns };
+            // End strength reduction bucket
+            (optimize_load_store) => { Counter::compile_hir_optimize_load_store_time_ns };
+            (fold_constants) => { Counter::compile_hir_fold_constants_time_ns };
+            (clean_cfg) => { Counter::compile_hir_clean_cfg_time_ns };
+            (remove_redundant_patch_points) => { Counter::compile_hir_remove_redundant_patch_points_time_ns };
+            (remove_duplicate_check_interrupts) => { Counter::compile_hir_remove_duplicate_check_interrupts_time_ns };
+            (eliminate_dead_code) => { Counter::compile_hir_eliminate_dead_code_time_ns };
+            ($name:ident) => { unimplemented!("Counter for pass {}", stringify!($name)) };
         }
 
         macro_rules! run_pass {
             ($name:ident) => {
-                // Bucket all strength reduction together
-                let counter = if ident_equal!($name, type_specialize)
-                              || ident_equal!($name, inline)
-                              || ident_equal!($name, optimize_getivar)
-                              || ident_equal!($name, optimize_c_calls) {
-                    Counter::compile_hir_strength_reduce_time_ns
-                } else if ident_equal!($name, optimize_load_store) {
-                    Counter::compile_hir_optimize_load_store_time_ns
-                } else if ident_equal!($name, fold_constants) {
-                    Counter::compile_hir_fold_constants_time_ns
-                } else if ident_equal!($name, clean_cfg) {
-                    Counter::compile_hir_clean_cfg_time_ns
-                } else if ident_equal!($name, remove_redundant_patch_points) {
-                    Counter::compile_hir_remove_redundant_patch_points_time_ns
-                } else if ident_equal!($name, remove_duplicate_check_interrupts) {
-                    Counter::compile_hir_remove_duplicate_check_interrupts_time_ns
-                } else if ident_equal!($name, eliminate_dead_code) {
-                    Counter::compile_hir_eliminate_dead_code_time_ns
-                } else {
-                    unimplemented!("Counter for pass {}", stringify!($name));
-                };
+                let counter = counter_for!($name);
                 crate::stats::with_time_stat(counter, || self.$name());
                 #[cfg(debug_assertions)] self.assert_validates();
                 if should_dump {
@@ -7517,6 +7510,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
 
+                    // Side-exit send fallbacks while tracing to avoid FLAG_FINISH breaking throw TAG_RETURN semantics
+                    if unsafe { rb_zjit_iseq_tracing_currently_enabled() } {
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::SendWhileTracing });
+                        break;
+                    }
                     let args = state.stack_pop_n(argc as usize)?;
                     let recv = state.stack_pop()?;
                     let send = fun.push_insn(block, Insn::Send { recv, cd, blockiseq: None, args, state: exit_id, reason: Uncategorized(opcode) });
@@ -7646,6 +7644,12 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         }
                     }
 
+                    // Side-exit send fallbacks while tracing to avoid FLAG_FINISH breaking throw TAG_RETURN semantics
+                    if unsafe { rb_zjit_iseq_tracing_currently_enabled() } {
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::SendWhileTracing });
+                        break;
+                    }
+
                     {
                         fn new_branch_block(
                             fun: &mut Function,
@@ -7732,6 +7736,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
                         break;  // End the block
                     }
+                    // Side-exit send fallbacks while tracing to avoid FLAG_FINISH breaking throw TAG_RETURN semantics
+                    if unsafe { rb_zjit_iseq_tracing_currently_enabled() } {
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::SendWhileTracing });
+                        break;
+                    }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
                     let block_arg = (flags & VM_CALL_ARGS_BLOCKARG) != 0;
 
@@ -7766,6 +7775,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
                         break;  // End the block
                     }
+                    // Side-exit send fallbacks while tracing to avoid FLAG_FINISH breaking throw TAG_RETURN semantics
+                    if unsafe { rb_zjit_iseq_tracing_currently_enabled() } {
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::SendWhileTracing });
+                        break;
+                    }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
 
                     let args = state.stack_pop_n(argc as usize + usize::from(forwarding))?;
@@ -7794,6 +7808,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         // Can't handle tailcall; side-exit into the interpreter
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
                         break;  // End the block
+                    }
+                    // Side-exit send fallbacks while tracing to avoid FLAG_FINISH breaking throw TAG_RETURN semantics
+                    if unsafe { rb_zjit_iseq_tracing_currently_enabled() } {
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::SendWhileTracing });
+                        break;
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
                     let block_arg = (flags & VM_CALL_ARGS_BLOCKARG) != 0;
@@ -7829,6 +7848,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
                         break;  // End the block
                     }
+                    // Side-exit send fallbacks while tracing to avoid FLAG_FINISH breaking throw TAG_RETURN semantics
+                    if unsafe { rb_zjit_iseq_tracing_currently_enabled() } {
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::SendWhileTracing });
+                        break;
+                    }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
                     let args = state.stack_pop_n(argc as usize + usize::from(forwarding))?;
                     let recv = state.stack_pop()?;
@@ -7858,6 +7882,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         // Can't handle tailcall; side-exit into the interpreter
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
                         break;  // End the block
+                    }
+                    // Side-exit send fallbacks while tracing to avoid FLAG_FINISH breaking throw TAG_RETURN semantics
+                    if unsafe { rb_zjit_iseq_tracing_currently_enabled() } {
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::SendWhileTracing });
+                        break;
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
                     let block_arg = (flags & VM_CALL_ARGS_BLOCKARG) != 0;

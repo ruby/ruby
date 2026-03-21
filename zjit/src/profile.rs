@@ -104,8 +104,9 @@ fn profile_insn(bare_opcode: ruby_vminsn_type, ec: EcPtr) {
     }
 
     // Once we profile the instruction num_profiles times, we stop profiling it.
-    profile.num_profiles[profiler.insn_idx] = profile.num_profiles[profiler.insn_idx].saturating_add(1);
-    if profile.num_profiles[profiler.insn_idx] == get_option!(num_profiles) {
+    let entry = profile.entry_mut(profiler.insn_idx);
+    entry.num_profiles = entry.num_profiles.saturating_add(1);
+    if entry.num_profiles == get_option!(num_profiles) {
         unsafe { rb_zjit_iseq_insn_set(profiler.iseq, profiler.insn_idx as u32, bare_opcode); }
     }
 }
@@ -118,12 +119,12 @@ pub type TypeDistributionSummary = DistributionSummary<ProfiledType, DISTRIBUTIO
 
 /// Profile the Type of top-`n` stack operands
 fn profile_operands(profiler: &mut Profiler, profile: &mut IseqProfile, n: usize) {
-    let types = &mut profile.opnd_types[profiler.insn_idx];
-    if types.is_empty() {
-        types.resize(n, TypeDistribution::new());
+    let entry = profile.entry_mut(profiler.insn_idx);
+    if entry.opnd_types.is_empty() {
+        entry.opnd_types.resize(n, TypeDistribution::new());
     }
 
-    for (i, profile_type) in types.iter_mut().enumerate() {
+    for (i, profile_type) in entry.opnd_types.iter_mut().enumerate() {
         let obj = profiler.peek_at_stack((n - i - 1) as isize);
         // TODO(max): Handle GC-hidden classes like Array, Hash, etc and make them look normal or
         // drop them or something
@@ -134,33 +135,33 @@ fn profile_operands(profiler: &mut Profiler, profile: &mut IseqProfile, n: usize
 }
 
 fn profile_self(profiler: &mut Profiler, profile: &mut IseqProfile) {
-    let types = &mut profile.opnd_types[profiler.insn_idx];
-    if types.is_empty() {
-        types.resize(1, TypeDistribution::new());
+    let entry = profile.entry_mut(profiler.insn_idx);
+    if entry.opnd_types.is_empty() {
+        entry.opnd_types.resize(1, TypeDistribution::new());
     }
     let obj = profiler.peek_at_self();
     // TODO(max): Handle GC-hidden classes like Array, Hash, etc and make them look normal or
     // drop them or something
     let ty = ProfiledType::new(obj);
     VALUE::from(profiler.iseq).write_barrier(ty.class());
-    types[0].observe(ty);
+    entry.opnd_types[0].observe(ty);
 }
 
 fn profile_block_handler(profiler: &mut Profiler, profile: &mut IseqProfile) {
-    let types = &mut profile.opnd_types[profiler.insn_idx];
-    if types.is_empty() {
-        types.resize(1, TypeDistribution::new());
+    let entry = profile.entry_mut(profiler.insn_idx);
+    if entry.opnd_types.is_empty() {
+        entry.opnd_types.resize(1, TypeDistribution::new());
     }
     let obj = profiler.peek_at_block_handler();
     let ty = ProfiledType::object(obj);
     VALUE::from(profiler.iseq).write_barrier(ty.class());
-    types[0].observe(ty);
+    entry.opnd_types[0].observe(ty);
 }
 
 fn profile_getblockparamproxy(profiler: &mut Profiler, profile: &mut IseqProfile) {
-    let types = &mut profile.opnd_types[profiler.insn_idx];
-    if types.is_empty() {
-        types.resize(1, TypeDistribution::new());
+    let entry = profile.entry_mut(profiler.insn_idx);
+    if entry.opnd_types.is_empty() {
+        entry.opnd_types.resize(1, TypeDistribution::new());
     }
 
     let level = profiler.insn_opnd(1).as_u32();
@@ -170,7 +171,7 @@ fn profile_getblockparamproxy(profiler: &mut Profiler, profile: &mut IseqProfile
 
     let ty = ProfiledType::object(untagged);
     VALUE::from(profiler.iseq).write_barrier(ty.class());
-    types[0].observe(ty);
+    entry.opnd_types[0].observe(ty);
 }
 
 fn profile_invokesuper(profiler: &mut Profiler, profile: &mut IseqProfile) {
@@ -374,30 +375,61 @@ impl ProfiledType {
     }
 }
 
+/// Per-instruction profile entry, stored sparsely in a sorted Vec.
+#[derive(Debug)]
+struct ProfileEntry {
+    /// YARV instruction index
+    insn_idx: u32,
+    /// Type information of YARV instruction operands
+    opnd_types: Vec<TypeDistribution>,
+    /// Number of profiled executions for this YARV instruction
+    num_profiles: NumProfiles,
+}
+
 #[derive(Debug)]
 pub struct IseqProfile {
-    /// Type information of YARV instruction operands, indexed by the instruction index
-    opnd_types: Vec<Vec<TypeDistribution>>,
-
-    /// Number of profiled executions for each YARV instruction, indexed by the instruction index
-    num_profiles: Vec<NumProfiles>,
+    /// Sparse storage of per-instruction profile data, sorted by instruction index.
+    /// Only instructions that have actually been profiled have entries here.
+    entries: Vec<ProfileEntry>,
 
     /// Method entries for `super` calls (stored as VALUE to be GC-safe)
     super_cme: HashMap<usize, TypeDistribution>
 }
 
 impl IseqProfile {
-    pub fn new(iseq_size: u32) -> Self {
+    pub fn new() -> Self {
         Self {
-            opnd_types: vec![vec![]; iseq_size as usize],
-            num_profiles: vec![0; iseq_size as usize],
+            entries: Vec::new(),
             super_cme: HashMap::new(),
         }
     }
 
+    /// Get or create a mutable profile entry for the given instruction index.
+    fn entry_mut(&mut self, insn_idx: usize) -> &mut ProfileEntry {
+        let idx = insn_idx as u32;
+        match self.entries.binary_search_by_key(&idx, |e| e.insn_idx) {
+            Ok(i) => &mut self.entries[i],
+            Err(i) => {
+                self.entries.insert(i, ProfileEntry {
+                    insn_idx: idx,
+                    opnd_types: Vec::new(),
+                    num_profiles: 0,
+                });
+                &mut self.entries[i]
+            }
+        }
+    }
+
+    /// Get a profile entry for the given instruction index (read-only).
+    fn entry(&self, insn_idx: usize) -> Option<&ProfileEntry> {
+        let idx = insn_idx as u32;
+        self.entries.binary_search_by_key(&idx, |e| e.insn_idx)
+            .ok().map(|i| &self.entries[i])
+    }
+
     /// Get profiled operand types for a given instruction index
     pub fn get_operand_types(&self, insn_idx: usize) -> Option<&[TypeDistribution]> {
-        self.opnd_types.get(insn_idx).map(|v| &**v)
+        self.entry(insn_idx).map(|e| e.opnd_types.as_slice()).filter(|s| !s.is_empty())
     }
 
     pub fn get_super_method_entry(&self, insn_idx: usize) -> Option<*const rb_callable_method_entry_t> {
@@ -413,8 +445,8 @@ impl IseqProfile {
 
     /// Run a given callback with every object in IseqProfile
     pub fn each_object(&self, callback: impl Fn(VALUE)) {
-        for operands in &self.opnd_types {
-            for distribution in operands {
+        for entry in &self.entries {
+            for distribution in &entry.opnd_types {
                 for profiled_type in distribution.each_item() {
                     // If the type is a GC object, call the callback
                     callback(profiled_type.class);
@@ -431,8 +463,8 @@ impl IseqProfile {
 
     /// Run a given callback with a mutable reference to every object in IseqProfile.
     pub fn each_object_mut(&mut self, callback: impl Fn(&mut VALUE)) {
-        for operands in &mut self.opnd_types {
-            for distribution in operands {
+        for entry in &mut self.entries {
+            for distribution in &mut entry.opnd_types {
                 for ref mut profiled_type in distribution.each_item_mut() {
                     // If the type is a GC object, call the callback
                     callback(&mut profiled_type.class);

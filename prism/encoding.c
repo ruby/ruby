@@ -1,4 +1,9 @@
-#include "prism/encoding.h"
+#include "prism/internal/encoding.h"
+
+#include "prism/compiler/unused.h"
+#include "prism/internal/strncasecmp.h"
+
+#include <assert.h>
 
 typedef uint32_t pm_unicode_codepoint_t;
 
@@ -4089,7 +4094,7 @@ pm_encoding_ascii_isupper_char(const uint8_t *b, ptrdiff_t n) {
  * matter what the codepoint, so this function is shared between them.
  */
 static size_t
-pm_encoding_single_char_width(PRISM_ATTRIBUTE_UNUSED const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t n) {
+pm_encoding_single_char_width(PRISM_UNUSED const uint8_t *b, PRISM_UNUSED ptrdiff_t n) {
     return 1;
 }
 

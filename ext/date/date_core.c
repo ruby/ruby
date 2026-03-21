@@ -7478,7 +7478,7 @@ strftimev(const char *fmt, VALUE self,
  *
  *   Date.new(2001, 2, 3).asctime # => "Sat Feb  3 00:00:00 2001"
  *
- * See {asctime}[https://linux.die.net/man/3/asctime].
+ * See {asctime}[https://man7.org/linux/man-pages/man3/asctime.3p.html].
  *
  */
 static VALUE

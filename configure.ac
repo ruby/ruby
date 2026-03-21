@@ -115,6 +115,9 @@ AC_ARG_WITH(dump-ast,
 	AS_HELP_STRING([--with-dump-ast=DUMP_AST], [use DUMP_AST as dump_ast; for cross-compiling with a host-built dump_ast]),
 	[DUMP_AST=$withval DUMP_AST_TARGET='$(empty)'],
 	[DUMP_AST='./dump_ast$(EXEEXT)' DUMP_AST_TARGET='$(DUMP_AST)'])
+dnl Without baseruby, .rbinc files cannot be regenerated, so clear the
+dnl dependency on dump_ast to avoid rebuilding pre-generated .rbinc files.
+AS_IF([test "$HAVE_BASERUBY" = no], [DUMP_AST_TARGET='$(empty)'])
 AC_SUBST(X_DUMP_AST, "${DUMP_AST}")
 AC_SUBST(X_DUMP_AST_TARGET, "${DUMP_AST_TARGET}")
 

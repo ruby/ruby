@@ -436,9 +436,8 @@ static VALUE build_parse_error_message(const char *format, JSON_ParserState *sta
         }
     }
 
-    VALUE msg = rb_sprintf(format, ptr);
-    VALUE message = rb_enc_sprintf(enc_utf8, "%s at line %ld column %ld", RSTRING_PTR(msg), line, column);
-    RB_GC_GUARD(msg);
+    VALUE message = rb_enc_sprintf(enc_utf8, format, ptr);
+    rb_str_catf(message, " at line %ld column %ld", line, column);
     return message;
 }
 
@@ -909,9 +908,6 @@ NORETURN(static) void raise_duplicate_key_error(JSON_ParserState *state, VALUE d
     cursor_position(state, &line, &column);
     rb_str_concat(message, build_parse_error_message("", state, line, column)) ;
     rb_exc_raise(parse_error_new(message, line, column));
-
-    raise_parse_error(RSTRING_PTR(message), state);
-    RB_GC_GUARD(message);
 }
 
 static inline VALUE json_decode_object(JSON_ParserState *state, JSON_ParserConfig *config, size_t count)

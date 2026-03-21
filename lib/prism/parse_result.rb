@@ -26,7 +26,8 @@ module Prism
     # source is a subset of a larger source or if this is an eval. offsets is an
     # array of byte offsets for the start of each line in the source code, which
     # can be calculated by iterating through the source code and recording the
-    # byte offset whenever a newline character is encountered.
+    # byte offset whenever a newline character is encountered.  The first
+    # element is always 0 to mark the first line.
     #--
     #: (String source, Integer start_line, Array[Integer] offsets) -> Source
     def self.for(source, start_line, offsets)
@@ -58,16 +59,26 @@ module Prism
     # The line number where this source starts.
     attr_reader :start_line #: Integer
 
-    # The list of newline byte offsets in the source code.
-    attr_reader :offsets #: Array[Integer]
-
-    # Create a new source object with the given source code.
+    # The list of newline byte offsets in the source code. When initialized from
+    # the C extension, this may be a packed binary string of uint32_t values
+    # that is lazily unpacked on first access.
     #--
-    #: (String source, Integer start_line, Array[Integer] offsets) -> void
+    #: () -> Array[Integer]
+    def offsets
+      offsets = @offsets
+      return offsets if offsets.is_a?(Array)
+      @offsets = offsets.unpack("L*")
+    end
+
+    # Create a new source object with the given source code. The offsets
+    # parameter can be either an Array of Integer byte offsets or a packed
+    # binary string of uint32_t values (from the C extension).
+    #--
+    #: (String source, Integer start_line, Array[Integer] | String offsets) -> void
     def initialize(source, start_line, offsets)
       @source = source
-      @start_line = start_line # set after parsing is done
-      @offsets = offsets # set after parsing is done
+      @start_line = start_line
+      @offsets = offsets
     end
 
     # Replace the value of start_line with the given value.
@@ -81,7 +92,7 @@ module Prism
     #--
     #: (Array[Integer] offsets) -> void
     def replace_offsets(offsets)
-      @offsets.replace(offsets)
+      @offsets = offsets
     end
 
     # Returns the encoding of the source code, which is set by parameters to the

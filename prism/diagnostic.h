@@ -1,0 +1,93 @@
+/**
+ * @file diagnostic.h
+ *
+ * A list of diagnostics generated during parsing.
+ */
+#ifndef PRISM_DIAGNOSTIC_H
+#define PRISM_DIAGNOSTIC_H
+
+#include "prism/compiler/exported.h"
+#include "prism/compiler/nodiscard.h"
+#include "prism/compiler/nonnull.h"
+
+#include "prism/ast.h"
+
+/**
+ * An opaque pointer to a diagnostic generated during parsing.
+ */
+typedef struct pm_diagnostic_t pm_diagnostic_t;
+
+/**
+ * The levels of errors generated during parsing.
+ */
+typedef enum {
+    /** For errors that should raise a syntax error. */
+    PM_ERROR_LEVEL_SYNTAX = 0,
+
+    /** For errors that should raise an argument error. */
+    PM_ERROR_LEVEL_ARGUMENT = 1,
+
+    /** For errors that should raise a load error. */
+    PM_ERROR_LEVEL_LOAD = 2
+} pm_error_level_t;
+
+/**
+ * The levels of warnings generated during parsing.
+ */
+typedef enum {
+    /** For warnings which should be emitted if $VERBOSE != nil. */
+    PM_WARNING_LEVEL_DEFAULT = 0,
+
+    /** For warnings which should be emitted if $VERBOSE == true. */
+    PM_WARNING_LEVEL_VERBOSE = 1
+} pm_warning_level_t;
+
+/**
+ * Get the type of the given diagnostic.
+ *
+ * @param diagnostic The diagnostic to get the type of.
+ * @returns The type of the given diagnostic. Note that this is a string
+ *     representation of an internal ID, and is not meant to be relied upon as a
+ *     stable identifier for the diagnostic. We do not guarantee that these will
+ *     not change in the future. This is meant to be used for debugging and
+ *     error reporting purposes, and not for programmatic checks.
+ */
+PRISM_EXPORTED_FUNCTION const char * pm_diagnostic_type(const pm_diagnostic_t *diagnostic) PRISM_NONNULL(1);
+
+/**
+ * Get the location of the given diagnostic.
+ *
+ * @param diagnostic The diagnostic to get the location of.
+ * @returns The location of the given diagnostic.
+ */
+PRISM_EXPORTED_FUNCTION pm_location_t pm_diagnostic_location(const pm_diagnostic_t *diagnostic) PRISM_NONNULL(1);
+
+/**
+ * Get the message of the given diagnostic.
+ *
+ * @param diagnostic The diagnostic to get the message of.
+ * @returns The message of the given diagnostic.
+ */
+PRISM_EXPORTED_FUNCTION const char * pm_diagnostic_message(const pm_diagnostic_t *diagnostic) PRISM_NONNULL(1);
+
+/**
+ * Get the error level associated with the given diagnostic.
+ *
+ * @param diagnostic The diagnostic to get the error level of.
+ * @returns The error level of the given diagnostic. If the diagnostic was a
+ *     warning, or is in any way not an error, then the return value is
+ *     undefined and should not be relied upon.
+ */
+PRISM_EXPORTED_FUNCTION pm_error_level_t pm_diagnostic_error_level(const pm_diagnostic_t *diagnostic) PRISM_NONNULL(1);
+
+/**
+ * Get the warning level associated with the given diagnostic.
+ *
+ * @param diagnostic The diagnostic to get the warning level of.
+ * @returns The warning level of the given diagnostic. If the diagnostic was an
+ *     error, or is in any way not a warning, then the return value is
+ *     undefined and should not be relied upon.
+ */
+PRISM_EXPORTED_FUNCTION pm_warning_level_t pm_diagnostic_warning_level(const pm_diagnostic_t *diagnostic) PRISM_NONNULL(1);
+
+#endif
