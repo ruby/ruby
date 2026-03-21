@@ -2330,6 +2330,7 @@ vm_redefinition_check_flag(VALUE klass)
     if (klass == rb_cTrueClass) return TRUE_REDEFINED_OP_FLAG;
     if (klass == rb_cFalseClass) return FALSE_REDEFINED_OP_FLAG;
     if (klass == rb_cProc) return PROC_REDEFINED_OP_FLAG;
+    if (klass == rb_cDecimal) return DECIMAL_REDEFINED_OP_FLAG;
     return 0;
 }
 
@@ -2414,8 +2415,8 @@ add_opt_method_entry_bop(const rb_method_entry_t *me, ID mid, enum ruby_basic_op
     st_insert(vm_opt_mid_table, (st_data_t)mid, (st_data_t)Qtrue);
 }
 
-static void
-add_opt_method(VALUE klass, ID mid, enum ruby_basic_operators bop)
+void
+rb_add_opt_method(VALUE klass, ID mid, enum ruby_basic_operators bop)
 {
     const rb_method_entry_t *me = rb_method_entry_at(klass, mid);
 
@@ -2448,7 +2449,7 @@ vm_init_redefined_flag(void)
     enum ruby_basic_operators bop;
 
 #define OP(mid_, bop_) (mid = id##mid_, bop = BOP_##bop_, ruby_vm_redefined_flag[bop] = 0)
-#define C(k) add_opt_method(rb_c##k, mid, bop)
+#define C(k) rb_add_opt_method(rb_c##k, mid, bop)
     OP(PLUS, PLUS), (C(Integer), C(Float), C(String), C(Array));
     OP(MINUS, MINUS), (C(Integer), C(Float));
     OP(MULT, MULT), (C(Integer), C(Float));

@@ -2606,6 +2606,19 @@ Init_Decimal(void)
     rb_define_const(rb_cDecimal, "MAX", dec_from_i128(DEC_MAX));
     rb_define_const(rb_cDecimal, "MIN", dec_from_i128(DEC_MIN));
 
+    rb_add_opt_method(rb_cDecimal, idPLUS, BOP_PLUS);
+    rb_add_opt_method(rb_cDecimal, idMINUS, BOP_MINUS);
+    rb_add_opt_method(rb_cDecimal, idMULT, BOP_MULT);
+    rb_add_opt_method(rb_cDecimal, idDIV, BOP_DIV);
+    rb_add_opt_method(rb_cDecimal, idMOD, BOP_MOD);
+    rb_add_opt_method(rb_cDecimal, idUMinus, BOP_UMINUS);
+    rb_add_opt_method(rb_cDecimal, idCmp, BOP_CMP);
+    rb_add_opt_method(rb_cDecimal, idEq, BOP_EQ);
+    rb_add_opt_method(rb_cDecimal, idEqq, BOP_EQQ);
+    rb_add_opt_method(rb_cDecimal, idLT, BOP_LT);
+    rb_add_opt_method(rb_cDecimal, idLE, BOP_LE);
+    rb_add_opt_method(rb_cDecimal, idGT, BOP_GT);
+    rb_add_opt_method(rb_cDecimal, idGE, BOP_GE);
 }
 
 #include "decimal.rbinc"

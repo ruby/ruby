@@ -23,6 +23,7 @@
 #include "internal/compar.h"
 #include "internal/hash.h"
 #include "internal/numeric.h"
+#include "internal/decimal.h"
 #include "internal/proc.h"
 #include "internal/random.h"
 #include "internal/variable.h"
@@ -2526,6 +2527,10 @@ opt_equality_specialized(VALUE recv, VALUE obj)
     }
     else if (STATIC_SYM_P(recv) && STATIC_SYM_P(obj) && EQ_UNREDEFINED_P(SYMBOL)) {
         goto compare_by_identity;
+    }
+    else if (decimal_p(recv) && decimal_p(obj) && EQ_UNREDEFINED_P(DECIMAL)) {
+        if (recv == obj) return Qtrue;
+        return RBOOL(rb_decimal_cmp_dd(recv, obj) == INT2FIX(0));
     }
     else if (SPECIAL_CONST_P(recv)) {
         //
@@ -6734,6 +6739,10 @@ vm_opt_plus(VALUE recv, VALUE obj)
              BASIC_OP_UNREDEFINED_P(BOP_PLUS, FLOAT_REDEFINED_OP_FLAG)) {
         return DBL2NUM(RFLOAT_VALUE(recv) + RFLOAT_VALUE(obj));
     }
+    else if (decimal_p(recv) && decimal_p(obj) &&
+             BASIC_OP_UNREDEFINED_P(BOP_PLUS, DECIMAL_REDEFINED_OP_FLAG)) {
+        return rb_decimal_plus_dd(recv, obj);
+    }
     else if (SPECIAL_CONST_P(recv) || SPECIAL_CONST_P(obj)) {
         return Qundef;
     }
@@ -6768,6 +6777,10 @@ vm_opt_minus(VALUE recv, VALUE obj)
              BASIC_OP_UNREDEFINED_P(BOP_MINUS, FLOAT_REDEFINED_OP_FLAG)) {
         return DBL2NUM(RFLOAT_VALUE(recv) - RFLOAT_VALUE(obj));
     }
+    else if (decimal_p(recv) && decimal_p(obj) &&
+             BASIC_OP_UNREDEFINED_P(BOP_MINUS, DECIMAL_REDEFINED_OP_FLAG)) {
+        return rb_decimal_minus_dd(recv, obj);
+    }
     else if (SPECIAL_CONST_P(recv) || SPECIAL_CONST_P(obj)) {
         return Qundef;
     }
@@ -6791,6 +6804,10 @@ vm_opt_mult(VALUE recv, VALUE obj)
     else if (FLONUM_2_P(recv, obj) &&
              BASIC_OP_UNREDEFINED_P(BOP_MULT, FLOAT_REDEFINED_OP_FLAG)) {
         return DBL2NUM(RFLOAT_VALUE(recv) * RFLOAT_VALUE(obj));
+    }
+    else if (decimal_p(recv) && decimal_p(obj) &&
+             BASIC_OP_UNREDEFINED_P(BOP_MULT, DECIMAL_REDEFINED_OP_FLAG)) {
+        return rb_decimal_mul_dd(recv, obj);
     }
     else if (SPECIAL_CONST_P(recv) || SPECIAL_CONST_P(obj)) {
         return Qundef;
@@ -6816,6 +6833,10 @@ vm_opt_div(VALUE recv, VALUE obj)
              BASIC_OP_UNREDEFINED_P(BOP_DIV, FLOAT_REDEFINED_OP_FLAG)) {
         return rb_flo_div_flo(recv, obj);
     }
+    else if (decimal_p(recv) && decimal_p(obj) &&
+             BASIC_OP_UNREDEFINED_P(BOP_DIV, DECIMAL_REDEFINED_OP_FLAG)) {
+        return rb_decimal_div_dd(recv, obj);
+    }
     else if (SPECIAL_CONST_P(recv) || SPECIAL_CONST_P(obj)) {
         return Qundef;
     }
@@ -6839,6 +6860,10 @@ vm_opt_mod(VALUE recv, VALUE obj)
     else if (FLONUM_2_P(recv, obj) &&
              BASIC_OP_UNREDEFINED_P(BOP_MOD, FLOAT_REDEFINED_OP_FLAG)) {
         return DBL2NUM(ruby_float_mod(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj)));
+    }
+    else if (decimal_p(recv) && decimal_p(obj) &&
+             BASIC_OP_UNREDEFINED_P(BOP_MOD, DECIMAL_REDEFINED_OP_FLAG)) {
+        return rb_decimal_mod_dd(recv, obj);
     }
     else if (SPECIAL_CONST_P(recv) || SPECIAL_CONST_P(obj)) {
         return Qundef;
@@ -6878,6 +6903,10 @@ vm_opt_lt(VALUE recv, VALUE obj)
              BASIC_OP_UNREDEFINED_P(BOP_LT, FLOAT_REDEFINED_OP_FLAG)) {
         return RBOOL(RFLOAT_VALUE(recv) < RFLOAT_VALUE(obj));
     }
+    else if (decimal_p(recv) && decimal_p(obj) &&
+             BASIC_OP_UNREDEFINED_P(BOP_LT, DECIMAL_REDEFINED_OP_FLAG)) {
+        return RBOOL(rb_decimal_cmp_dd(recv, obj) == INT2FIX(-1));
+    }
     else if (SPECIAL_CONST_P(recv) || SPECIAL_CONST_P(obj)) {
         return Qundef;
     }
@@ -6901,6 +6930,10 @@ vm_opt_le(VALUE recv, VALUE obj)
     else if (FLONUM_2_P(recv, obj) &&
              BASIC_OP_UNREDEFINED_P(BOP_LE, FLOAT_REDEFINED_OP_FLAG)) {
         return RBOOL(RFLOAT_VALUE(recv) <= RFLOAT_VALUE(obj));
+    }
+    else if (decimal_p(recv) && decimal_p(obj) &&
+             BASIC_OP_UNREDEFINED_P(BOP_LE, DECIMAL_REDEFINED_OP_FLAG)) {
+        return RBOOL(rb_decimal_cmp_dd(recv, obj) != INT2FIX(1));
     }
     else if (SPECIAL_CONST_P(recv) || SPECIAL_CONST_P(obj)) {
         return Qundef;
@@ -6926,6 +6959,10 @@ vm_opt_gt(VALUE recv, VALUE obj)
              BASIC_OP_UNREDEFINED_P(BOP_GT, FLOAT_REDEFINED_OP_FLAG)) {
         return RBOOL(RFLOAT_VALUE(recv) > RFLOAT_VALUE(obj));
     }
+    else if (decimal_p(recv) && decimal_p(obj) &&
+             BASIC_OP_UNREDEFINED_P(BOP_GT, DECIMAL_REDEFINED_OP_FLAG)) {
+        return RBOOL(rb_decimal_cmp_dd(recv, obj) == INT2FIX(1));
+    }
     else if (SPECIAL_CONST_P(recv) || SPECIAL_CONST_P(obj)) {
         return Qundef;
     }
@@ -6949,6 +6986,10 @@ vm_opt_ge(VALUE recv, VALUE obj)
     else if (FLONUM_2_P(recv, obj) &&
              BASIC_OP_UNREDEFINED_P(BOP_GE, FLOAT_REDEFINED_OP_FLAG)) {
         return RBOOL(RFLOAT_VALUE(recv) >= RFLOAT_VALUE(obj));
+    }
+    else if (decimal_p(recv) && decimal_p(obj) &&
+             BASIC_OP_UNREDEFINED_P(BOP_GE, DECIMAL_REDEFINED_OP_FLAG)) {
+        return RBOOL(rb_decimal_cmp_dd(recv, obj) != INT2FIX(-1));
     }
     else if (SPECIAL_CONST_P(recv) || SPECIAL_CONST_P(obj)) {
         return Qundef;

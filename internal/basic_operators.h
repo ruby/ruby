@@ -60,6 +60,7 @@ RUBY_EXTERN short ruby_vm_redefined_flag[BOP_LAST_];
 #define TRUE_REDEFINED_OP_FLAG   (1 << 10)
 #define FALSE_REDEFINED_OP_FLAG  (1 << 11)
 #define PROC_REDEFINED_OP_FLAG   (1 << 12)
+#define DECIMAL_REDEFINED_OP_FLAG (1 << 13)
 
 #define BASIC_OP_UNREDEFINED_P(op, klass) (LIKELY((ruby_vm_redefined_flag[(op)]&(klass)) == 0))
 

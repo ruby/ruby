@@ -54,6 +54,7 @@ const char *rb_source_location_cstr(int *pline);
 void rb_vm_pop_cfunc_frame(void);
 void rb_vm_check_redefinition_by_prepend(VALUE klass);
 int rb_vm_check_optimizable_mid(VALUE mid);
+void rb_add_opt_method(VALUE klass, ID mid, enum ruby_basic_operators bop);
 VALUE rb_yield_refine_block(VALUE refinement, VALUE refinements);
 VALUE ruby_vm_special_exception_copy(VALUE);
 
