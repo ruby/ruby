@@ -124,73 +124,126 @@ impl<T: Into<usize> + Copy> BitSet<T> {
 mod tests {
     use super::BitSet;
 
+    fn set_with_capacity(num_bits: usize) -> BitSet<usize> {
+        BitSet::with_capacity(num_bits)
+    }
+
     #[test]
     #[should_panic]
     fn get_over_capacity_panics() {
-        let set = BitSet::with_capacity(0);
-        assert!(!set.get(0usize));
+        let set = set_with_capacity(0);
+        assert!(!set.get(0));
     }
 
     #[test]
     fn with_capacity_defaults_to_zero() {
-        let set = BitSet::with_capacity(4);
-        assert!(!set.get(0usize));
-        assert!(!set.get(1usize));
-        assert!(!set.get(2usize));
-        assert!(!set.get(3usize));
+        let set = set_with_capacity(4);
+        assert!(!set.get(0));
+        assert!(!set.get(1));
+        assert!(!set.get(2));
+        assert!(!set.get(3));
     }
 
     #[test]
     fn insert_sets_bit() {
-        let mut set = BitSet::with_capacity(4);
-        assert!(set.insert(1usize));
-        assert!(set.get(1usize));
+        let mut set = set_with_capacity(4);
+        assert!(set.insert(1));
+        assert!(set.get(1));
     }
 
     #[test]
     fn insert_with_set_bit_returns_false() {
-        let mut set = BitSet::with_capacity(4);
-        assert!(set.insert(1usize));
-        assert!(!set.insert(1usize));
+        let mut set = set_with_capacity(4);
+        assert!(set.insert(1));
+        assert!(!set.insert(1));
     }
 
     #[test]
     fn insert_all_sets_all_bits() {
-        let mut set = BitSet::with_capacity(4);
+        let mut set = set_with_capacity(4);
         set.insert_all();
-        assert!(set.get(0usize));
-        assert!(set.get(1usize));
-        assert!(set.get(2usize));
-        assert!(set.get(3usize));
+        assert!(set.get(0));
+        assert!(set.get(1));
+        assert!(set.get(2));
+        assert!(set.get(3));
+    }
+
+    #[test]
+    fn remove_clears_bit() {
+        let mut set = set_with_capacity(4);
+        set.insert(1);
+
+        assert!(set.remove(1));
+        assert!(!set.get(1));
+        assert!(!set.remove(1));
     }
 
     #[test]
     #[should_panic]
     fn intersect_with_panics_with_different_num_bits() {
-        let mut left: BitSet<usize> = BitSet::with_capacity(3);
-        let right = BitSet::with_capacity(4);
+        let mut left = set_with_capacity(3);
+        let right = set_with_capacity(4);
         left.intersect_with(&right);
     }
     #[test]
     fn intersect_with_keeps_only_common_bits() {
-        let mut left = BitSet::with_capacity(3);
-        let mut right = BitSet::with_capacity(3);
-        left.insert(0usize);
-        left.insert(1usize);
-        right.insert(1usize);
-        right.insert(2usize);
+        let mut left = set_with_capacity(3);
+        let mut right = set_with_capacity(3);
+        left.insert(0);
+        left.insert(1);
+        right.insert(1);
+        right.insert(2);
         left.intersect_with(&right);
-        assert!(!left.get(0usize));
-        assert!(left.get(1usize));
-        assert!(!left.get(2usize));
+        assert!(!left.get(0));
+        assert!(left.get(1));
+        assert!(!left.get(2));
+    }
+
+    #[test]
+    fn union_with_sets_bits_from_both_inputs() {
+        let mut left = set_with_capacity(4);
+        let mut right = set_with_capacity(4);
+        left.insert(0);
+        right.insert(2);
+
+        assert!(left.union_with(&right));
+        assert!(left.get(0));
+        assert!(left.get(2));
+        assert!(!left.union_with(&right));
+    }
+
+    #[test]
+    fn difference_with_removes_overlapping_bits() {
+        let mut left = set_with_capacity(4);
+        let mut right = set_with_capacity(4);
+        left.insert(0);
+        left.insert(1);
+        right.insert(1);
+
+        assert!(left.difference_with(&right));
+        assert!(left.get(0));
+        assert!(!left.get(1));
+        assert!(!left.difference_with(&right));
+    }
+
+    #[test]
+    fn equals_compares_entries() {
+        let mut left = set_with_capacity(4);
+        let mut right = set_with_capacity(4);
+        left.insert(1);
+        right.insert(1);
+        assert!(left.equals(&right));
+
+        right.insert(2);
+        assert!(!left.equals(&right));
     }
 
     #[test]
     fn test_iter_set_bits() {
-        let mut set: BitSet<usize> = BitSet::with_capacity(10);
-        set.insert(1usize);
-        set.insert(5usize);
-        set.insert(9usize);
+        let mut set = set_with_capacity(10);
+        set.insert(1);
+        set.insert(5);
+        set.insert(9);
 
         let set_bits: Vec<usize> = set.iter_set_bits().collect();
         assert_eq!(set_bits, vec![1, 5, 9]);
@@ -198,14 +251,14 @@ mod tests {
 
     #[test]
     fn test_iter_set_bits_empty() {
-        let set: BitSet<usize> = BitSet::with_capacity(10);
+        let set = set_with_capacity(10);
         let set_bits: Vec<usize> = set.iter_set_bits().collect();
         assert_eq!(set_bits, vec![]);
     }
 
     #[test]
     fn test_iter_set_bits_all() {
-        let mut set: BitSet<usize> = BitSet::with_capacity(5);
+        let mut set = set_with_capacity(5);
         set.insert_all();
         let set_bits: Vec<usize> = set.iter_set_bits().collect();
         assert_eq!(set_bits, vec![0, 1, 2, 3, 4]);
@@ -213,11 +266,11 @@ mod tests {
 
     #[test]
     fn test_iter_set_bits_large() {
-        let mut set: BitSet<usize> = BitSet::with_capacity(200);
-        set.insert(0usize);
-        set.insert(127usize);
-        set.insert(128usize);
-        set.insert(199usize);
+        let mut set = set_with_capacity(200);
+        set.insert(0);
+        set.insert(127);
+        set.insert(128);
+        set.insert(199);
 
         let set_bits: Vec<usize> = set.iter_set_bits().collect();
         assert_eq!(set_bits, vec![0, 127, 128, 199]);

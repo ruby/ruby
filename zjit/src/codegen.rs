@@ -328,7 +328,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
 
     // Create all LIR basic blocks corresponding to HIR basic blocks
     for (rpo_idx, &block_id) in reverse_post_order.iter().enumerate() {
-        // Skip the entries superblock — it's an internal CFG artifact
+        // Skip the entries superblock; it's an internal CFG artifact
         if block_id == function.entries_block { continue; }
         let lir_block_id = asm.new_block(block_id, function.is_entry_block(block_id), rpo_idx);
         hir_to_lir[block_id.0] = Some(lir_block_id);
@@ -336,7 +336,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
 
     // Compile each basic block
     for (rpo_idx, &block_id) in reverse_post_order.iter().enumerate() {
-        // Skip the entries superblock — it's an internal CFG artifact
+        // Skip the entries superblock; it's an internal CFG artifact
         if block_id == function.entries_block { continue; }
         // Set the current block to the LIR block that corresponds to this
         // HIR block.
@@ -1948,22 +1948,22 @@ fn gen_is_a(jit: &mut JITState, asm: &mut Assembler, obj: Opnd, class: Opnd) -> 
             _ => asm.load(obj),
         };
 
-        // Immediate → definitely not String/Array/Hash
+        // Immediate: definitely not String/Array/Hash
         asm.test(val, Opnd::UImm(RUBY_IMMEDIATE_MASK as u64));
         asm.jnz(jit, result_edge(Qfalse.into()));
 
-        // Qfalse → definitely not String/Array/Hash
+        // Qfalse: definitely not String/Array/Hash
         asm.cmp(val, Qfalse.into());
         asm.je(jit, result_edge(Qfalse.into()));
 
-        // Heap object → check builtin type
+        // Heap object: check builtin type
         let flags = asm.load(Opnd::mem(VALUE_BITS, val, RUBY_OFFSET_RBASIC_FLAGS));
         let obj_builtin_type = asm.and(flags, Opnd::UImm(RUBY_T_MASK as u64));
         asm.cmp(obj_builtin_type, Opnd::UImm(builtin_type as u64));
         let result = asm.csel_e(Qtrue.into(), Qfalse.into());
         asm.jmp(result_edge(result));
 
-        // Result block — receives the value via block parameter (phi node)
+        // Result block: receives the value via block parameter (phi node)
         asm.set_current_block(result_block);
         let label = jit.get_label(asm, result_block, hir_block_id);
         asm.write_label(label);
@@ -2304,21 +2304,21 @@ fn gen_has_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, ty: Typ
             _ => asm.load(val),
         };
 
-        // Immediate → definitely not the class
+        // Immediate: definitely not the class
         asm.test(val, (RUBY_IMMEDIATE_MASK as u64).into());
         asm.jnz(jit, result_edge(Opnd::Imm(0)));
 
-        // Qfalse → definitely not the class
+        // Qfalse: definitely not the class
         asm.cmp(val, Qfalse.into());
         asm.je(jit, result_edge(Opnd::Imm(0)));
 
-        // Heap object → check klass field
+        // Heap object: check klass field
         let klass = asm.load(Opnd::mem(64, val, RUBY_OFFSET_RBASIC_KLASS));
         asm.cmp(klass, Opnd::Value(expected_class));
         let result = asm.csel_e(Opnd::UImm(1), Opnd::Imm(0));
         asm.jmp(result_edge(result));
 
-        // Result block — receives the value via block parameter (phi node)
+        // Result block: receives the value via block parameter (phi node)
         asm.set_current_block(result_block);
         let label = jit.get_label(asm, result_block, hir_block_id);
         asm.write_label(label);

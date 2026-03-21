@@ -1071,6 +1071,14 @@ impl Insn {
             _ => false
         }
     }
+
+    /// Returns true if this instruction copies a value to the same location.
+    fn is_redundant_mov(&self) -> bool {
+        matches!(
+            self,
+            Insn::Mov { dest, src } | Insn::LoadInto { dest, opnd: src } if src == dest
+        )
+    }
 }
 
 /// An iterator that will yield a non-mutable reference to each operand in turn
@@ -1872,8 +1880,9 @@ impl Assembler
             _ => insn.clone()
         };
 
-        // Push the stripped instruction
-        insns.push(stripped_insn);
+        if !stripped_insn.is_redundant_mov() {
+            insns.push(stripped_insn);
+        }
     }
 
     // Get the label for a given block by extracting it from the first instruction.
@@ -2374,8 +2383,11 @@ impl Assembler
                         .map(|group| group.to_vec())
                         .collect();
 
-                    // Push all survivors on the stack, pairing adjacent pushes when possible.
-                    let needs_alignment = cfg!(target_arch = "x86_64") && survivors.len() % 2 == 1;
+                    // FrameSetup keeps the function body 16-byte aligned on x86_64.
+                    // Saving an odd number of 8-byte registers here needs one extra
+                    // padding push so the nested C call still sees aligned SP.
+                    let needs_alignment_padding =
+                        cfg!(target_arch = "x86_64") && survivor_regs.len() % 2 == 1;
                     for group in &survivor_push_groups {
                         match group.as_slice() {
                             [left, right] => new_insns.push(Insn::CPushPair(*left, *right)),
@@ -2384,8 +2396,7 @@ impl Assembler
                         }
                         new_ids.push(None);
                     }
-                    // Maintain 16-byte stack alignment for x86_64
-                    if needs_alignment {
+                    if needs_alignment_padding {
                         new_insns.push(Insn::CPush(Opnd::Reg(ALLOC_REGS[0])));
                         new_ids.push(None);
                     }
@@ -2444,7 +2455,7 @@ impl Assembler
 
                     if survivors.is_empty() {
                         if call_result_live {
-                            // No survivors to restore — move result directly to output.
+                            // No survivors to restore; move result directly to output.
                             let out = Self::rewritten_opnd(out, assignments);
                             new_insns.push(Insn::Mov { dest: out, src: C_RET_OPND });
                             new_ids.push(None);
@@ -2457,8 +2468,8 @@ impl Assembler
                             new_ids.push(None);
                         }
 
-                        // Pop alignment padding (if needed)
-                        if needs_alignment {
+                        // Pop alignment padding, if any, before restoring saved registers.
+                        if needs_alignment_padding {
                             new_insns.push(Insn::CPopInto(Opnd::Reg(ALLOC_REGS[0])));
                             new_ids.push(None);
                         }
@@ -3742,21 +3753,8 @@ impl Assembler {
         asm_local.new_block_without_id("linearized");
 
         // Get linearized instructions with branch parameters expanded into ParallelMov
-        let linearized_insns = self.linearize_instructions();
-
-        // TODO: Aaron, this could be better. We don't need to do this, FIXME
-        // Process each linearized instruction
-        for insn in linearized_insns {
-            match insn {
-                Insn::Mov { dest, src } => {
-                    if src != dest {
-                        asm_local.push_insn(insn);
-                    }
-                },
-                _ => {
-                    asm_local.push_insn(insn);
-                }
-            }
+        for insn in self.linearize_instructions() {
+            asm_local.push_insn(insn);
         }
 
         asm_local
