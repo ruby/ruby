@@ -991,6 +991,41 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_fold_unbox_fixnum() {
+        eval("
+            def test(arr) = arr[0]
+            test([1,2,3])
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :arr@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :arr@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[0] = Const Value(0)
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
+          v27:ArrayExact = GuardType v10, ArrayExact
+          v34:CInt64[0] = Const CInt64(0)
+          v29:CInt64 = ArrayLength v27
+          v30:CInt64[0] = GuardLess v34, v29
+          v31:CInt64[0] = Const CInt64(0)
+          v32:CInt64[0] = GuardGreaterEq v30, v31
+          v33:BasicObject = ArrayAref v27, v32
+          CheckInterrupts
+          Return v33
+        ");
+    }
+
+    #[test]
     fn neq_with_side_effect_not_elided () {
         let result = eval("
             class CustomEq
@@ -2249,9 +2284,9 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
           v27:ArrayExact = GuardType v10, ArrayExact
-          v28:CInt64[0] = UnboxFixnum v15
+          v34:CInt64[0] = Const CInt64(0)
           v29:CInt64 = ArrayLength v27
-          v30:CInt64[0] = GuardLess v28, v29
+          v30:CInt64[0] = GuardLess v34, v29
           v31:CInt64[0] = Const CInt64(0)
           v32:CInt64[0] = GuardGreaterEq v30, v31
           v33:BasicObject = ArrayAref v27, v32
@@ -5960,9 +5995,9 @@ mod hir_opt_tests {
           v12:Fixnum[0] = Const Value(0)
           PatchPoint NoSingletonClass(Array@0x1010)
           PatchPoint MethodRedefined(Array@0x1010, []@0x1018, cme:0x1020)
-          v27:CInt64[0] = UnboxFixnum v12
+          v33:CInt64[0] = Const CInt64(0)
           v28:CInt64 = ArrayLength v23
-          v29:CInt64[0] = GuardLess v27, v28
+          v29:CInt64[0] = GuardLess v33, v28
           v30:CInt64[0] = Const CInt64(0)
           v31:CInt64[0] = GuardGreaterEq v29, v30
           v32:BasicObject = ArrayAref v23, v31
@@ -5994,14 +6029,14 @@ mod hir_opt_tests {
           v13:Fixnum[1] = Const Value(1)
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
-          v25:CInt64[1] = UnboxFixnum v13
+          v31:CInt64[1] = Const CInt64(1)
           v26:CInt64 = ArrayLength v11
-          v27:CInt64[1] = GuardLess v25, v26
+          v27:CInt64[1] = GuardLess v31, v26
           v28:CInt64[0] = Const CInt64(0)
           v29:CInt64[1] = GuardGreaterEq v27, v28
-          v31:Fixnum[5] = Const Value(5)
+          v32:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v31
+          Return v32
         ");
     }
 
@@ -6026,14 +6061,14 @@ mod hir_opt_tests {
           v13:Fixnum[-3] = Const Value(-3)
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
-          v25:CInt64[-3] = UnboxFixnum v13
+          v31:CInt64[-3] = Const CInt64(-3)
           v26:CInt64 = ArrayLength v11
-          v27:CInt64[-3] = GuardLess v25, v26
+          v27:CInt64[-3] = GuardLess v31, v26
           v28:CInt64[0] = Const CInt64(0)
           v29:CInt64[-3] = GuardGreaterEq v27, v28
-          v31:Fixnum[4] = Const Value(4)
+          v32:Fixnum[4] = Const Value(4)
           CheckInterrupts
-          Return v31
+          Return v32
         ");
     }
 
@@ -6058,14 +6093,14 @@ mod hir_opt_tests {
           v13:Fixnum[-10] = Const Value(-10)
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
-          v25:CInt64[-10] = UnboxFixnum v13
+          v31:CInt64[-10] = Const CInt64(-10)
           v26:CInt64 = ArrayLength v11
-          v27:CInt64[-10] = GuardLess v25, v26
+          v27:CInt64[-10] = GuardLess v31, v26
           v28:CInt64[0] = Const CInt64(0)
           v29:CInt64[-10] = GuardGreaterEq v27, v28
-          v31:NilClass = Const Value(nil)
+          v32:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v31
+          Return v32
         ");
     }
 
@@ -6090,14 +6125,14 @@ mod hir_opt_tests {
           v13:Fixnum[10] = Const Value(10)
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
-          v25:CInt64[10] = UnboxFixnum v13
+          v31:CInt64[10] = Const CInt64(10)
           v26:CInt64 = ArrayLength v11
-          v27:CInt64[10] = GuardLess v25, v26
+          v27:CInt64[10] = GuardLess v31, v26
           v28:CInt64[0] = Const CInt64(0)
           v29:CInt64[10] = GuardGreaterEq v27, v28
-          v31:NilClass = Const Value(nil)
+          v32:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v31
+          Return v32
         ");
     }
 
@@ -8324,9 +8359,9 @@ mod hir_opt_tests {
           v19:Fixnum[0] = Const Value(0)
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
-          v31:CInt64[0] = UnboxFixnum v19
+          v37:CInt64[0] = Const CInt64(0)
           v32:CInt64 = ArrayLength v14
-          v33:CInt64[0] = GuardLess v31, v32
+          v33:CInt64[0] = GuardLess v37, v32
           v34:CInt64[0] = Const CInt64(0)
           v35:CInt64[0] = GuardGreaterEq v33, v34
           v36:BasicObject = ArrayAref v14, v35
@@ -8706,9 +8741,9 @@ mod hir_opt_tests {
           v34:CUInt64 = LoadField v33, :_rbasic_flags@0x1040
           v35:CUInt64 = GuardNoBitsSet v34, RUBY_FL_FREEZE=CUInt64(2048)
           v37:CUInt64 = GuardNoBitsSet v34, RUBY_ELTS_SHARED=CUInt64(4096)
-          v38:CInt64[1] = UnboxFixnum v17
+          v45:CInt64[1] = Const CInt64(1)
           v39:CInt64 = ArrayLength v33
-          v40:CInt64[1] = GuardLess v38, v39
+          v40:CInt64[1] = GuardLess v45, v39
           v41:CInt64[0] = Const CInt64(0)
           v42:CInt64[1] = GuardGreaterEq v40, v41
           ArrayAset v33, v42, v19
