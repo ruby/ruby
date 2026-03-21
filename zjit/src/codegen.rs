@@ -700,7 +700,7 @@ fn gen_get_lep(jit: &JITState, asm: &mut Assembler) -> Opnd {
 fn gen_get_ep(asm: &mut Assembler, level: u32) -> Opnd {
     // Load environment pointer EP from CFP into a register
     let ep_opnd = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_EP);
-    let mut ep_opnd = asm.load(ep_opnd);
+    let mut ep_opnd = load_me_maybe(asm, ep_opnd);
 
     for _ in 0..level {
         // Get the previous EP from the current EP
@@ -743,7 +743,7 @@ fn gen_defined(jit: &JITState, asm: &mut Assembler, op_type: usize, obj: VALUE, 
                        "defined?(yield) in non-method iseq should be handled by HIR construction");
             let lep = gen_get_lep(jit, asm);
             let block_handler = asm.load(Opnd::mem(64, lep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL));
-            let pushval = asm.load(pushval.into());
+            let pushval = load_me_maybe(asm, pushval.into());
             asm.cmp(block_handler, VM_BLOCK_HANDLER_NONE.into());
             asm.csel_e(Qnil.into(), pushval)
         }
@@ -825,7 +825,7 @@ fn gen_getblockparam(jit: &mut JITState, asm: &mut Assembler, ep_offset: u32, le
     asm.mov(Opnd::mem(VALUE_BITS, ep, offset), proc);
 
     let flags = Opnd::mem(VALUE_BITS, ep, SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32));
-    let flags_val = asm.load(flags);
+    let flags_val = load_me_maybe(asm, flags);
     let modified = asm.or(flags_val, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into());
     asm.store(flags, modified);
 
@@ -1169,7 +1169,7 @@ fn gen_side_exit(jit: &mut JITState, asm: &mut Assembler, reason: &SideExitReaso
 fn gen_putspecialobject(asm: &mut Assembler, value_type: SpecialObjectType) -> Opnd {
     // Get the EP of the current CFP and load it into a register
     let ep_opnd = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_EP);
-    let ep_reg = asm.load(ep_opnd);
+    let ep_reg = load_me_maybe(asm, ep_opnd);
 
     asm_ccall!(asm, rb_vm_get_special_object, ep_reg, Opnd::UImm(u64::from(value_type)))
 }
@@ -1271,17 +1271,24 @@ fn gen_load_self() -> Opnd {
     Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF)
 }
 
+fn load_me_maybe(asm: &mut Assembler, recv: Opnd) -> Opnd {
+    match recv {
+        Opnd::VReg { .. } => recv,
+        _ => asm.load(recv),
+    }
+}
+
 fn gen_load_field(asm: &mut Assembler, recv: Opnd, id: ID, offset: i32, return_type: Type) -> Opnd {
     gen_incr_counter(asm, Counter::load_field_count);
     asm_comment!(asm, "Load field id={} offset={}", id.contents_lossy(), offset);
-    let recv = asm.load(recv);
+    let recv = load_me_maybe(asm, recv);
     asm.load(Opnd::mem(return_type.num_bits(), recv, offset))
 }
 
 fn gen_store_field(asm: &mut Assembler, recv: Opnd, id: ID, offset: i32, val: Opnd, val_type: Type) {
     gen_incr_counter(asm, Counter::store_field_count);
     asm_comment!(asm, "Store field id={} offset={}", id.contents_lossy(), offset);
-    let recv = asm.load(recv);
+    let recv = load_me_maybe(asm, recv);
     asm.store(Opnd::mem(val_type.num_bits(), recv, offset), val);
 }
 
@@ -1290,7 +1297,7 @@ fn gen_write_barrier(jit: &mut JITState, asm: &mut Assembler, recv: Opnd, val: O
     // rb_obj_written() does: if (!RB_SPECIAL_CONST_P(val)) { rb_gc_writebarrier(recv, val); }
     if !val_type.is_immediate() {
         asm_comment!(asm, "Write barrier");
-        let recv = asm.load(recv);
+        let recv = load_me_maybe(asm, recv);
 
         // Create a result block that all paths converge to
         let hir_block_id = asm.current_block().hir_block_id;
@@ -1750,8 +1757,8 @@ fn gen_array_aref(
     array: Opnd,
     index: Opnd,
 ) -> lir::Opnd {
-    let unboxed_idx = asm.load(index);
-    let array = asm.load(array);
+    let unboxed_idx = load_me_maybe(asm, index);
+    let array = load_me_maybe(asm, array);
     let array_ptr = gen_array_ptr(asm, array);
     let elem_offset = asm.lshift(unboxed_idx, Opnd::UImm(SIZEOF_VALUE.trailing_zeros() as u64));
     let elem_ptr = asm.add(array_ptr, elem_offset);
@@ -1764,8 +1771,8 @@ fn gen_array_aset(
     index: Opnd,
     val: Opnd,
 ) {
-    let unboxed_idx = asm.load(index);
-    let array = asm.load(array);
+    let unboxed_idx = load_me_maybe(asm, index);
+    let array = load_me_maybe(asm, array);
     let array_ptr = gen_array_ptr(asm, array);
     let elem_offset = asm.lshift(unboxed_idx, Opnd::UImm(SIZEOF_VALUE.trailing_zeros() as u64));
     let elem_ptr = asm.add(array_ptr, elem_offset);
@@ -1778,7 +1785,7 @@ fn gen_array_pop(asm: &mut Assembler, array: Opnd, state: &FrameState) -> lir::O
 }
 
 fn gen_array_length(asm: &mut Assembler, array: Opnd) -> lir::Opnd {
-    let array = asm.load(array);
+    let array = load_me_maybe(asm, array);
     let flags = Opnd::mem(VALUE_BITS, array, RUBY_OFFSET_RBASIC_FLAGS);
     let embedded_len = asm.and(flags, (RARRAY_EMBED_LEN_MASK as u64).into());
     let embedded_len = asm.rshift(embedded_len, (RARRAY_EMBED_LEN_SHIFT as u64).into());
@@ -2236,7 +2243,7 @@ fn gen_box_bool(asm: &mut Assembler, val: lir::Opnd) -> lir::Opnd {
 
 fn gen_box_fixnum(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, state: &FrameState) -> lir::Opnd {
     // Load the value, then test for overflow and tag it
-    let val = asm.load(val);
+    let val = load_me_maybe(asm, val);
     let shifted = asm.lshift(val, Opnd::UImm(1));
     asm.jo(jit, side_exit(jit, state, BoxFixnumOverflow));
     asm.or(shifted, Opnd::UImm(RUBY_FIXNUM_FLAG as u64))
@@ -3102,7 +3109,7 @@ fn gen_string_concat(jit: &mut JITState, asm: &mut Assembler, strings: Vec<Opnd>
 // Generate RSTRING_PTR
 fn get_string_ptr(asm: &mut Assembler, string: Opnd) -> Opnd {
     asm_comment!(asm, "get string pointer for embedded or heap");
-    let string = asm.load(string);
+    let string = load_me_maybe(asm, string);
     let flags = Opnd::mem(VALUE_BITS, string, RUBY_OFFSET_RBASIC_FLAGS);
     asm.test(flags, (RSTRING_NOEMBED as u64).into());
     let heap_ptr = asm.load(Opnd::mem(
