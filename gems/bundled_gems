@@ -32,7 +32,7 @@ drb                 2.2.3   https://github.com/ruby/drb
 nkf                 0.2.0   https://github.com/ruby/nkf
 syslog              0.4.0   https://github.com/ruby/syslog
 csv                 3.3.5   https://github.com/ruby/csv
-repl_type_completor 0.1.14  https://github.com/ruby/repl_type_completor
+repl_type_completor 0.1.14  https://github.com/ruby/repl_type_completor c8123646a2419e2b83d989b3474442a0e2f37c96
 ostruct             0.6.3   https://github.com/ruby/ostruct
 pstore              0.2.1   https://github.com/ruby/pstore
 benchmark           0.5.0   https://github.com/ruby/benchmark
