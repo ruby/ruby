@@ -2842,8 +2842,7 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
                 CHECK(pm_compile_pattern_match(iseq, scope_node, left->expression, ret, find_failed_label, in_single_pattern, false, base_index + 4));
             }
 
-            RUBY_ASSERT(PM_NODE_TYPE_P(cast->right, PM_SPLAT_NODE));
-            const pm_splat_node_t *right = (const pm_splat_node_t *) cast->right;
+            const pm_splat_node_t *right = cast->right;
 
             if (right->expression != NULL) {
                 PUSH_INSN1(ret, location, topn, INT2FIX(3));
@@ -4640,7 +4639,7 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
       case PM_BLOCK_NODE:
       case PM_EMBEDDED_STATEMENTS_NODE:
       case PM_EMBEDDED_VARIABLE_NODE:
-      case PM_MISSING_NODE:
+      case PM_ERROR_RECOVERY_NODE:
       case PM_PRE_EXECUTION_NODE:
       case PM_PROGRAM_NODE:
       case PM_SCOPE_NODE:
@@ -9932,8 +9931,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // when the call is executed.
         pm_compile_match_write_node(iseq, (const pm_match_write_node_t *) node, &location, ret, popped, scope_node);
         return;
-      case PM_MISSING_NODE:
-        rb_bug("A pm_missing_node_t should not exist in prism's AST.");
+      case PM_ERROR_RECOVERY_NODE:
+        rb_bug("A pm_error_recovery_node_t should not exist in prism's AST.");
         return;
       case PM_MODULE_NODE: {
         // module Foo; end

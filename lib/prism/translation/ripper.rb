@@ -2507,8 +2507,8 @@ module Prism
 
       # A node that is missing from the syntax tree. This is only used in the
       # case of a syntax error.
-      def visit_missing_node(node)
-        raise "Cannot visit missing nodes directly."
+      def visit_error_recovery_node(node)
+        raise "Cannot visit error recovery nodes directly."
       end
 
       # module Foo; end

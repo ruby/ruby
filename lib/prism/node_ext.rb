@@ -221,10 +221,10 @@ module Prism
     # local variable
     class DynamicPartsInConstantPathError < StandardError; end
 
-    # An error class raised when missing nodes are found while computing a
+    # An error class raised when error recovery nodes are found while computing a
     # constant path's full name. For example:
     # Foo:: -> raises because the constant path is missing the last part
-    class MissingNodesInConstantPathError < StandardError; end
+    class ErrorRecoveryNodesInConstantPathError < StandardError; end
 
     # Returns the list of parts for the full name of this constant path.
     # For example: [:Foo, :Bar]
@@ -237,7 +237,7 @@ module Prism
       while current.is_a?(ConstantPathNode)
         name = current.name
         if name.nil?
-          raise MissingNodesInConstantPathError, "Constant path contains missing nodes. Cannot compute full name"
+          raise ErrorRecoveryNodesInConstantPathError, "Constant path contains error recovery nodes. Cannot compute full name"
         end
 
         parts.unshift(name)
@@ -277,7 +277,7 @@ module Prism
         end
 
       if (name = self.name).nil?
-        raise ConstantPathNode::MissingNodesInConstantPathError, "Constant target path contains missing nodes. Cannot compute full name"
+        raise ConstantPathNode::ErrorRecoveryNodesInConstantPathError, "Constant target path contains error recovery nodes. Cannot compute full name"
       end
 
       parts.push(name)
