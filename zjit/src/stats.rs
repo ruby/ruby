@@ -569,7 +569,11 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         UnhandledCallType(Splat)      => exit_unhandled_splat,
         UnhandledCallType(Kwarg)      => exit_unhandled_kwarg,
         UnknownSpecialVariable(_)     => exit_unknown_special_variable,
-        UnhandledHIRInsn(_)           => exit_unhandled_hir_insn,
+        UnhandledHIRArrayMax          => exit_unhandled_hir_insn,
+        UnhandledHIRFixnumDiv         => exit_unhandled_hir_insn,
+        UnhandledHIRThrow             => exit_unhandled_hir_insn,
+        UnhandledHIRInvokeBuiltin     => exit_unhandled_hir_insn,
+        UnhandledHIRUnknown(_)        => exit_unhandled_hir_insn,
         UnhandledYARVInsn(_)          => exit_unhandled_yarv_insn,
         UnhandledBlockArg             => exit_unhandled_block_arg,
         FixnumAddOverflow             => exit_fixnum_add_overflow,
@@ -971,15 +975,170 @@ pub fn zjit_alloc_bytes() -> usize {
     jit::GLOBAL_ALLOCATOR.alloc_size.load(Ordering::SeqCst)
 }
 
-/// Struct of arrays for --zjit-trace-exits.
-#[derive(Default)]
-pub struct SideExitLocations {
-    /// Control frames of method entries.
-    pub raw_samples: Vec<VALUE>,
-    /// Line numbers of the iseq caller.
-    pub line_samples: Vec<i32>,
-    /// Skipped samples
-    pub skipped_samples: usize
+/// Fuchsia Trace Format (FXT) binary writer for --zjit-trace-exits.
+/// Produces .fxt files that can be opened directly in Perfetto UI.
+/// Uses the string table for deduplication of repeated reason/frame strings.
+/// See: <https://fuchsia.dev/fuchsia-src/reference/tracing/trace-format>
+pub struct PerfettoTracer {
+    writer: std::io::BufWriter<std::fs::File>,
+    start_time: std::time::Instant,
+    event_count: usize,
+    pub skipped_samples: usize,
+    /// String table: string content -> interned index (1..32767)
+    string_table: std::collections::HashMap<String, u16>,
+    next_string_index: u16,
+    pid: u32,
+}
+
+impl PerfettoTracer {
+    /// Write a single 64-bit little-endian word.
+    fn write_word(&mut self, val: u64) {
+        use std::io::Write;
+        let _ = self.writer.write_all(&val.to_le_bytes());
+    }
+
+    /// Write bytes padded to 8-byte alignment.
+    fn write_padded_bytes(&mut self, bytes: &[u8]) {
+        use std::io::Write;
+        let _ = self.writer.write_all(bytes);
+        let remainder = bytes.len() % 8;
+        if remainder != 0 {
+            let _ = self.writer.write_all(&[0u8; 7][..8 - remainder]);
+        }
+    }
+
+    /// Number of 8-byte words needed for `len` bytes (rounded up).
+    fn word_count(len: usize) -> u64 {
+        ((len + 7) / 8) as u64
+    }
+
+    pub fn new() -> Self {
+        let pid = std::process::id();
+        let path = format!("/tmp/perfetto-{pid}.fxt");
+        let file = std::fs::File::create(&path)
+            .unwrap_or_else(|e| panic!("ZJIT: failed to create {path}: {e}"));
+        let mut tracer = PerfettoTracer {
+            writer: std::io::BufWriter::new(file),
+            start_time: std::time::Instant::now(),
+            event_count: 0,
+            skipped_samples: 0,
+            string_table: std::collections::HashMap::new(),
+            next_string_index: 1, // index 0 = empty string
+            pid,
+        };
+
+        // Magic number record: metadata type=4 (trace info), trace info type=0,
+        // magic=0x16547846 at bits [24..55]
+        tracer.write_word((1u64 << 4) | (4u64 << 16) | (0x16547846u64 << 24));
+
+        // Initialization record: 1 tick = 1 nanosecond
+        tracer.write_word(1u64 | (2u64 << 4));
+        tracer.write_word(1_000_000_000u64);
+
+        // Register thread at index 1: (process_koid=pid, thread_koid=1)
+        tracer.write_word(3u64 | (3u64 << 4) | (1u64 << 16));
+        tracer.write_word(pid as u64);
+        tracer.write_word(1u64);
+
+        // Pre-intern common strings
+        tracer.intern_string("side_exit");
+        // Pre-intern argument names "0".."14" for per-frame arguments
+        for i in 0..15u32 {
+            tracer.intern_string(&i.to_string());
+        }
+
+        // Flush header immediately so something is written even if process exits abruptly
+        {
+            use std::io::Write;
+            let _ = tracer.writer.flush();
+        }
+
+        eprintln!("ZJIT: writing trace exits to {path}");
+        tracer
+    }
+
+    /// Intern a string into the string table, writing a string record if new.
+    /// Returns the string table index (1..32767). Returns 0 for empty strings
+    /// or if the table is full.
+    fn intern_string(&mut self, s: &str) -> u16 {
+        if s.is_empty() {
+            return 0;
+        }
+        if let Some(&idx) = self.string_table.get(s) {
+            return idx;
+        }
+        if self.next_string_index >= 0x8000 {
+            return 0; // table full
+        }
+
+        let idx = self.next_string_index;
+        let bytes = s.as_bytes();
+        let len = bytes.len().min(0x7FFF); // 15-bit max length
+        let record_words = 1 + Self::word_count(len);
+
+        // String record: type=2, index in [16..30], length in [32..46]
+        let header: u64 = 2u64
+            | (record_words << 4)
+            | ((idx as u64) << 16)
+            | ((len as u64) << 32);
+        self.write_word(header);
+        self.write_padded_bytes(&bytes[..len]);
+
+        self.string_table.insert(s.to_string(), idx);
+        self.next_string_index += 1;
+        idx
+    }
+
+    pub fn write_event(&mut self, reason: &str, frames: &[String]) {
+        let ts_nanos = self.start_time.elapsed().as_nanos() as u64;
+
+        // Intern event metadata strings (may emit string records first)
+        let category_ref = self.intern_string("side_exit");
+        let name_ref = self.intern_string(reason);
+
+        // Intern each frame label and collect refs (max 15 due to 4-bit n_args)
+        let n_args = frames.len().min(15) as u64;
+        let mut frame_refs: Vec<(u16, u16)> = Vec::with_capacity(n_args as usize);
+        for (i, frame) in frames.iter().take(15).enumerate() {
+            let name_ref = self.intern_string(&i.to_string());
+            let value_ref = self.intern_string(frame);
+            frame_refs.push((name_ref, value_ref));
+        }
+
+        // Each fully-interned string argument is exactly 1 word
+        let event_words = 2 + n_args;
+        let header: u64 = 4u64
+            | (event_words << 4)
+            | (n_args << 20)                        // argument count
+            | (1u64 << 24)                          // thread_ref = 1
+            | ((category_ref as u64) << 32)
+            | ((name_ref as u64) << 48);
+        self.write_word(header);
+        self.write_word(ts_nanos);
+
+        // One 1-word string argument per frame: type=6, size=1, indexed name, indexed value
+        for (name_ref, value_ref) in frame_refs {
+            let arg_header: u64 = 6u64
+                | (1u64 << 4)
+                | ((name_ref as u64) << 16)
+                | ((value_ref as u64) << 32);
+            self.write_word(arg_header);
+        }
+
+        self.event_count += 1;
+
+        // Flush to ensure data reaches disk. Static globals may not be
+        // dropped on process exit, so we can't rely on Drop for flushing.
+        use std::io::Write;
+        let _ = self.writer.flush();
+    }
+}
+
+impl Drop for PerfettoTracer {
+    fn drop(&mut self) {
+        use std::io::Write;
+        let _ = self.writer.flush();
+    }
 }
 
 /// Primitive called in zjit.rb
@@ -995,29 +1154,3 @@ pub extern "C" fn rb_zjit_trace_exit_locations_enabled_p(_ec: EcPtr, _ruby_self:
     }
 }
 
-/// Call the C function to parse the raw_samples and line_samples
-/// into raw, lines, and frames hash for RubyVM::YJIT.exit_locations.
-#[unsafe(no_mangle)]
-pub extern "C" fn rb_zjit_get_exit_locations(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
-    if !zjit_enabled_p() || get_option!(trace_side_exits).is_none() {
-        return Qnil;
-    }
-
-    // Can safely unwrap since `trace_side_exits` must be true at this point
-    let zjit_raw_samples = ZJITState::get_raw_samples().unwrap();
-    let zjit_line_samples = ZJITState::get_line_samples().unwrap();
-
-    assert_eq!(zjit_raw_samples.len(), zjit_line_samples.len());
-
-    // zjit_raw_samples and zjit_line_samples are the same length so
-    // pass only one of the lengths in the C function.
-    let samples_len = zjit_raw_samples.len() as i32;
-
-    unsafe {
-        rb_zjit_exit_locations_dict(
-            zjit_raw_samples.as_mut_ptr(),
-            zjit_line_samples.as_mut_ptr(),
-            samples_len
-        )
-    }
-}

@@ -1,14 +1,14 @@
 //! Runtime state of ZJIT.
 
 use crate::codegen::{gen_entry_trampoline, gen_exit_trampoline, gen_exit_trampoline_with_counter, gen_function_stub_hit_trampoline};
-use crate::cruby::{self, rb_bug_panic_hook, rb_vm_insn_count, src_loc, EcPtr, Qnil, Qtrue, rb_vm_insn_addr2opcode, rb_profile_frames, VALUE, VM_INSTRUCTION_SIZE, size_t, rb_gc_mark, with_vm_lock, rust_str_to_id, rb_funcallv, rb_const_get, rb_cRubyVM};
+use crate::cruby::{self, rb_bug_panic_hook, rb_vm_insn_count, src_loc, EcPtr, Qnil, Qtrue, rb_profile_frames, rb_profile_frame_full_label, rb_profile_frame_absolute_path, rb_profile_frame_path, VALUE, VM_INSTRUCTION_SIZE, with_vm_lock, rust_str_to_id, rb_funcallv, rb_const_get, rb_cRubyVM};
 use crate::cruby_methods;
 use cruby::{ID, rb_callable_method_entry, get_def_method_serial, rb_gc_register_mark_object};
 use std::sync::atomic::Ordering;
 use crate::invariants::Invariants;
 use crate::asm::CodeBlock;
 use crate::options::{get_option, rb_zjit_prepare_options};
-use crate::stats::{Counters, InsnCounters, SideExitLocations};
+use crate::stats::{Counters, InsnCounters, PerfettoTracer};
 use crate::virtualmem::CodePtr;
 use std::sync::atomic::AtomicUsize;
 use std::collections::HashMap;
@@ -68,8 +68,8 @@ pub struct ZJITState {
     /// Counter pointers for access counts of ISEQs accessed by JIT code
     iseq_calls_count_pointers: HashMap<String, Box<u64>>,
 
-    /// Locations of side exists within generated code
-    exit_locations: Option<SideExitLocations>,
+    /// Perfetto tracer for --zjit-trace-exits
+    perfetto_tracer: Option<PerfettoTracer>,
 }
 
 /// Tracks the initialization progress
@@ -124,8 +124,8 @@ impl ZJITState {
         let exit_trampoline = gen_exit_trampoline(&mut cb).unwrap();
         let function_stub_hit_trampoline = gen_function_stub_hit_trampoline(&mut cb).unwrap();
 
-        let exit_locations = if get_option!(trace_side_exits).is_some() {
-            Some(SideExitLocations::default())
+        let perfetto_tracer = if get_option!(trace_side_exits).is_some() {
+            Some(PerfettoTracer::new())
         } else {
             None
         };
@@ -146,7 +146,7 @@ impl ZJITState {
             not_annotated_frame_cfunc_counter_pointers: HashMap::new(),
             ccall_counter_pointers: HashMap::new(),
             iseq_calls_count_pointers: HashMap::new(),
-            exit_locations,
+            perfetto_tracer,
         };
         unsafe { ZJIT_STATE = Enabled(zjit_state); }
 
@@ -283,24 +283,9 @@ impl ZJITState {
         ZJITState::get_instance().function_stub_hit_trampoline
     }
 
-    /// Get a mutable reference to the ZJIT raw samples Vec
-    pub fn get_raw_samples() -> Option<&'static mut Vec<VALUE>> {
-        ZJITState::get_instance().exit_locations.as_mut().map(|el| &mut el.raw_samples)
-    }
-
-    /// Get a mutable reference to the ZJIT line samples Vec.
-    pub fn get_line_samples() -> Option<&'static mut Vec<i32>> {
-        ZJITState::get_instance().exit_locations.as_mut().map(|el| &mut el.line_samples)
-    }
-
-    /// Get number of skipped samples.
-    pub fn get_skipped_samples() -> Option<&'static mut usize> {
-        ZJITState::get_instance().exit_locations.as_mut().map(|el| &mut el.skipped_samples)
-    }
-
-    /// Get number of skipped samples.
-    pub fn set_skipped_samples(n: usize) -> Option<()> {
-        ZJITState::get_instance().exit_locations.as_mut().map(|el| el.skipped_samples = n)
+    /// Get a mutable reference to the Perfetto tracer
+    pub fn get_tracer() -> Option<&'static mut PerfettoTracer> {
+        ZJITState::get_instance().perfetto_tracer.as_mut()
     }
 }
 
@@ -437,16 +422,58 @@ pub extern "C" fn rb_zjit_assert_compiles(_ec: EcPtr, _self: VALUE) -> VALUE {
     Qnil
 }
 
-/// Call `rb_profile_frames` and write the result into buffers to be consumed by `rb_zjit_record_exit_stack`.
-fn record_profiling_frames() -> (i32, Vec<VALUE>, Vec<i32>) {
-    // Stackprof uses a buffer of length 2048 when collating the frames into statistics.
-    // Since eventually the collected information will be used by Stackprof, collect only
-    // 2048 frames at a time.
-    // https://github.com/tmm1/stackprof/blob/5d832832e4afcb88521292d6dfad4a9af760ef7c/ext/stackprof/stackprof.c#L21
-    const BUFF_LEN: usize = 2048;
+/// Convert a Ruby string VALUE to a Rust String, or return a fallback.
+fn ruby_str_to_string(v: VALUE, fallback: &str) -> String {
+    if v.nil_p() {
+        return fallback.to_string();
+    }
+    unsafe {
+        let ptr = cruby::rb_RSTRING_PTR(v) as *const u8;
+        let len: usize = cruby::rb_RSTRING_LEN(v).try_into().unwrap_or(0);
+        let slice = std::slice::from_raw_parts(ptr, len);
+        String::from_utf8_lossy(slice).into_owned()
+    }
+}
 
+/// Resolve a profile frame VALUE to a human-readable "label (path)" string.
+fn resolve_frame_label(frame: VALUE) -> String {
+    unsafe {
+        let label_str = ruby_str_to_string(rb_profile_frame_full_label(frame), "<unknown>");
+
+        let path = rb_profile_frame_absolute_path(frame);
+        let path = if path.nil_p() { rb_profile_frame_path(frame) } else { path };
+        let path_str = ruby_str_to_string(path, "<unknown>");
+
+        format!("{label_str} ({path_str})")
+    }
+}
+
+/// Record a backtrace with ZJIT side exits as a Perfetto trace event
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_record_exit_stack(_exit_pc: *const VALUE, reason: *const std::ffi::c_char) {
+    if !zjit_enabled_p() || get_option!(trace_side_exits).is_none() {
+        return;
+    }
+
+    let tracer = match ZJITState::get_tracer() {
+        Some(t) => t,
+        None => return,
+    };
+
+    // When `trace_side_exits_sample_interval` is non-zero, apply sampling.
+    if get_option!(trace_side_exits_sample_interval) != 0 {
+        if tracer.skipped_samples < get_option!(trace_side_exits_sample_interval) {
+            tracer.skipped_samples += 1;
+            return;
+        } else {
+            tracer.skipped_samples = 0;
+        }
+    }
+
+    // Collect profile frames
+    const BUFF_LEN: usize = 2048;
     let mut frames_buffer = vec![VALUE(0_usize); BUFF_LEN];
-    let mut lines_buffer = vec![0; BUFF_LEN];
+    let mut lines_buffer = vec![0i32; BUFF_LEN];
 
     let stack_length = unsafe {
         rb_profile_frames(
@@ -457,157 +484,17 @@ fn record_profiling_frames() -> (i32, Vec<VALUE>, Vec<i32>) {
         )
     };
 
-    // Trim at `stack_length` since anything past it is redundant
-    frames_buffer.truncate(stack_length as usize);
-    lines_buffer.truncate(stack_length as usize);
+    // Resolve each frame to a human-readable string (top frame first)
+    let frames: Vec<String> = (0..stack_length as usize)
+        .map(|i| resolve_frame_label(frames_buffer[i]))
+        .collect();
 
-    (stack_length, frames_buffer, lines_buffer)
-}
+    // Get the reason string
+    let reason_str = if reason.is_null() {
+        "unknown"
+    } else {
+        unsafe { std::ffi::CStr::from_ptr(reason).to_str().unwrap_or("unknown") }
+    };
 
-/// Write samples in `frames_buffer` and `lines_buffer` from profiling into
-/// `raw_samples` and `line_samples`. Also write opcode, number of frames,
-/// and stack size to be consumed by Stackprof.
-fn write_exit_stack_samples(
-    raw_samples: &'static mut Vec<VALUE>,
-    line_samples: &'static mut Vec<i32>,
-    frames_buffer: &[VALUE],
-    lines_buffer: &[i32],
-    stack_length: i32,
-    exit_pc: *const VALUE,
-) {
-    raw_samples.push(VALUE(stack_length as usize));
-    line_samples.push(stack_length);
-
-    // Push frames and their lines in reverse order.
-    for i in (0..stack_length as usize).rev() {
-        raw_samples.push(frames_buffer[i]);
-        line_samples.push(lines_buffer[i]);
-    }
-
-    // Get the opcode from instruction handler at exit PC.
-    let exit_opcode = unsafe { rb_vm_insn_addr2opcode((*exit_pc).as_ptr()) };
-    raw_samples.push(VALUE(exit_opcode as usize));
-    // Push a dummy line number since we don't know where this insn is from.
-    line_samples.push(0);
-
-    // Push number of times seen onto the stack.
-    raw_samples.push(VALUE(1usize));
-    line_samples.push(1);
-}
-
-fn try_increment_existing_stack(
-    raw_samples: &mut [VALUE],
-    line_samples: &mut [i32],
-    frames_buffer: &[VALUE],
-    stack_length: i32,
-    samples_length: usize,
-) -> bool {
-    let prev_stack_len_index = raw_samples.len() - samples_length;
-    let prev_stack_len = i64::from(raw_samples[prev_stack_len_index]);
-
-    if prev_stack_len == stack_length as i64 {
-        // Check if all stack lengths match and all frames are identical
-        let frames_match = (0..stack_length).all(|i| {
-            let current_frame = frames_buffer[stack_length as usize - 1 - i as usize];
-            let prev_frame = raw_samples[prev_stack_len_index + i as usize + 1];
-            current_frame == prev_frame
-        });
-
-        if frames_match {
-            let counter_idx = raw_samples.len() - 1;
-            let new_count = i64::from(raw_samples[counter_idx]) + 1;
-
-            raw_samples[counter_idx] = VALUE(new_count as usize);
-            line_samples[counter_idx] = new_count as i32;
-            return true;
-        }
-    }
-    false
-}
-
-/// Record a backtrace with ZJIT side exits
-#[unsafe(no_mangle)]
-pub extern "C" fn rb_zjit_record_exit_stack(exit_pc: *const VALUE) {
-    if !zjit_enabled_p() || get_option!(trace_side_exits).is_none() {
-        return;
-    }
-
-    // When `trace_side_exits_sample_interval` is zero, then the feature is disabled.
-    if get_option!(trace_side_exits_sample_interval) != 0 {
-        // If `trace_side_exits_sample_interval` is set, then can safely unwrap
-        // both `get_skipped_samples` and `set_skipped_samples`.
-        let skipped_samples = *ZJITState::get_skipped_samples().unwrap();
-        if skipped_samples < get_option!(trace_side_exits_sample_interval) {
-            // Skip sample and increment counter.
-            ZJITState::set_skipped_samples(skipped_samples + 1).unwrap();
-            return;
-        } else {
-            ZJITState::set_skipped_samples(0).unwrap();
-        }
-    }
-
-    let (stack_length, frames_buffer, lines_buffer) = record_profiling_frames();
-
-    // Can safely unwrap since `trace_side_exits` must be true at this point
-    let zjit_raw_samples = ZJITState::get_raw_samples().unwrap();
-    let zjit_line_samples = ZJITState::get_line_samples().unwrap();
-    assert_eq!(zjit_raw_samples.len(), zjit_line_samples.len());
-
-    // Represents pushing the stack length, the instruction opcode, and the sample count.
-    const SAMPLE_METADATA_SIZE: usize = 3;
-    let samples_length = (stack_length as usize) + SAMPLE_METADATA_SIZE;
-
-    // If zjit_raw_samples is greater than or equal to the current length of the samples
-    // we might have seen this stack trace previously.
-    if zjit_raw_samples.len() >= samples_length
-        && try_increment_existing_stack(
-            zjit_raw_samples,
-            zjit_line_samples,
-            &frames_buffer,
-            stack_length,
-            samples_length,
-        )
-    {
-        return;
-    }
-
-    write_exit_stack_samples(
-        zjit_raw_samples,
-        zjit_line_samples,
-        &frames_buffer,
-        &lines_buffer,
-        stack_length,
-        exit_pc,
-    );
-}
-
-/// Mark `raw_samples` so they can be used by rb_zjit_add_frame.
-pub fn gc_mark_raw_samples() {
-    // Return if ZJIT is not enabled
-    if !zjit_enabled_p() || get_option!(trace_side_exits).is_none() {
-        return;
-    }
-
-    let mut idx: size_t = 0;
-    let zjit_raw_samples = ZJITState::get_raw_samples().unwrap();
-
-    while idx < zjit_raw_samples.len() as size_t {
-        let num = zjit_raw_samples[idx as usize];
-        let mut i = 0;
-        idx += 1;
-
-        // Mark the zjit_raw_samples at the given index. These represent
-        // the data that needs to be GC'd which are the current frames.
-        while i < i32::from(num) {
-            unsafe { rb_gc_mark(zjit_raw_samples[idx as usize]); }
-            i += 1;
-            idx += 1;
-        }
-
-        // Increase index for exit instruction.
-        idx += 1;
-        // Increase index for bookeeping value (number of times we've seen this
-        // row in a stack).
-        idx += 1;
-    }
+    tracer.write_event(reason_str, &frames);
 }
