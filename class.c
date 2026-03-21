@@ -24,6 +24,7 @@
 #include "internal/box.h"
 #include "internal/class.h"
 #include "internal/eval.h"
+#include "internal/error.h"
 #include "internal/hash.h"
 #include "internal/object.h"
 #include "internal/string.h"
@@ -55,6 +56,9 @@
  * 2:    RCLASS_PRIME_CLASSEXT_WRITABLE
  *           This module's prime classext is the only classext and writable from any boxes.
  *           If unset, the prime classext is writable only from the root box.
+ * 3:    RICLASS_IS_SINGLETON_ANCESTOR
+ *           This iclass is in the singleton class portion of an ancestry chain.
+ *           Set when a module is included/prepended into a singleton class.
  * 4:    RCLASS_BOXABLE
  *           Is a builtin class that may be boxed. It larger than a normal class.
  */
@@ -1333,7 +1337,6 @@ make_singleton_class(VALUE obj)
     RBASIC_SET_CLASS(obj, klass);
     rb_singleton_class_attached(klass, obj);
     rb_yjit_invalidate_no_singleton_class(orig_class);
-    rb_zjit_invalidate_no_singleton_class(orig_class);
 
     SET_METACLASS_OF(klass, METACLASS_OF(rb_class_real(orig_class)));
     return klass;
@@ -1766,6 +1769,18 @@ clear_module_cache_i(ID id, VALUE val, void *data)
     return ID_TABLE_CONTINUE;
 }
 
+static enum rb_id_table_iterator_result
+zjit_invalid_no_singleton_override_i(ID method_id, VALUE val, void *data)
+{
+    VALUE insertion_point = (VALUE)data;
+    // If this method is an override, bust invariant and stop iterating
+    if (rb_method_entry(insertion_point, method_id)) {
+        rb_zjit_invalidate_no_singleton_class(rb_class_real(insertion_point));
+        return ID_TABLE_STOP;
+    }
+    return ID_TABLE_CONTINUE;
+}
+
 static bool
 module_in_super_chain(const VALUE klass, VALUE module)
 {
@@ -1855,6 +1870,15 @@ do_include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super
 
         // setup T_ICLASS for the include/prepend module
         iclass = rb_include_class_new(module, super_class);
+        // Mark the iclass as being in the singleton portion of the chain.
+        // c is the insertion point; if it's a singleton class or already in
+        // the singleton portion, the new iclass is too.
+        if (rb_zjit_enabled_p && (RCLASS_SINGLETON_P(c) || (RB_TYPE_P(c, T_ICLASS) && RICLASS_SINGLETON_ANCESTOR_P(c)))) {
+            FL_SET(iclass, RICLASS_IS_SINGLETON_ANCESTOR);
+            if (method_changed && tbl && rb_id_table_size(tbl)) {
+                rb_id_table_foreach(tbl, zjit_invalid_no_singleton_override_i, (void *)c);
+            }
+        }
         c = rb_class_set_super(c, iclass);
         RCLASS_SET_INCLUDER(iclass, klass);
         if (module != RCLASS_ORIGIN(module)) {
@@ -1993,6 +2017,10 @@ rb_prepend_module(VALUE klass, VALUE module)
                     rb_id_table_foreach(RCLASS_M_TBL(subclass), clear_module_cache_i, (void *)subclass);
                     RCLASS_WRITE_M_TBL(subclass, klass_m_tbl);
                     VALUE origin = rb_include_class_new(klass_origin, RCLASS_SUPER(subclass));
+                    if (rb_zjit_enabled_p && RICLASS_SINGLETON_ANCESTOR_P(subclass)) {
+                        RUBY_ASSERT_BUILTIN_TYPE(subclass, T_ICLASS);
+                        FL_SET(origin, RICLASS_IS_SINGLETON_ANCESTOR);
+                    }
                     rb_class_set_super(subclass, origin);
                     RCLASS_SET_INCLUDER(origin, RCLASS_INCLUDER(subclass));
                     RCLASS_WRITE_ORIGIN(subclass, origin);

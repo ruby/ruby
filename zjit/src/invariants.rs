@@ -97,6 +97,10 @@ pub struct Invariants {
     /// will have no singleton class.
     no_singleton_class_patch_points: HashMap<VALUE, HashSet<PatchPoint>>,
 
+    /// Map from a class to a set of patch points that assume no method override
+    /// has occurred in the singleton portion of that class's ancestry chain.
+    no_singleton_override_patch_points: HashMap<VALUE, HashSet<PatchPoint>>,
+
     /// Set of patch points that assume only the root box is active
     root_box_patch_points: HashSet<PatchPoint>,
 
@@ -111,6 +115,7 @@ impl Invariants {
         self.update_no_ep_escape_iseq_patch_points();
         self.update_cme_patch_points();
         self.update_no_singleton_class_patch_points();
+        self.update_no_singleton_override_patch_points();
     }
 
     /// Forget an ISEQ when freeing it. We need to because a) if the address is reused, we'd be
@@ -132,6 +137,7 @@ impl Invariants {
     /// Forget a class when freeing it. See [Self::forget_iseq] for reasoning.
     pub fn forget_klass(&mut self, klass: VALUE) {
         self.no_singleton_class_patch_points.remove(&klass);
+        self.no_singleton_override_patch_points.remove(&klass);
     }
 
     /// Update ISEQ references in Invariants::ep_escape_iseqs
@@ -175,6 +181,17 @@ impl Invariants {
             })
             .collect();
         self.no_singleton_class_patch_points = updated_no_singleton_class_patch_points;
+    }
+
+    fn update_no_singleton_override_patch_points(&mut self) {
+        let updated = std::mem::take(&mut self.no_singleton_override_patch_points)
+            .into_iter()
+            .map(|(klass, patch_points)| {
+                let new_klass = unsafe { rb_gc_location(klass) };
+                (new_klass, patch_points)
+            })
+            .collect();
+        self.no_singleton_override_patch_points = updated;
     }
 }
 
@@ -316,6 +333,21 @@ pub fn track_no_singleton_class_assumption(
 ) {
     let invariants = ZJITState::get_invariants();
     invariants.no_singleton_class_patch_points.entry(klass).or_default().insert(PatchPoint::new(
+        patch_point_ptr,
+        side_exit_ptr,
+        version,
+    ));
+}
+
+/// Track a patch point for objects of a given class assuming no singleton class override.
+pub fn track_no_singleton_override_assumption(
+    klass: VALUE,
+    patch_point_ptr: CodePtr,
+    side_exit_ptr: CodePtr,
+    version: IseqVersionRef,
+) {
+    let invariants = ZJITState::get_invariants();
+    invariants.no_singleton_override_patch_points.entry(klass).or_default().insert(PatchPoint::new(
         patch_point_ptr,
         side_exit_ptr,
         version,
