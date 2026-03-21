@@ -1,5 +1,16 @@
-#include "prism/diagnostic.h"
-#include "prism/util/pm_arena.h"
+#include "prism/internal/diagnostic.h"
+
+#include "prism/compiler/inline.h"
+
+#include "prism/internal/allocator.h"
+#include "prism/internal/arena.h"
+#include "prism/internal/list.h"
+
+#include <assert.h>
+#include <inttypes.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #define PM_DIAGNOSTIC_ID_MAX <%= errors.length + warnings.length %>
 
@@ -76,16 +87,16 @@ typedef struct {
  * * `PM_WARNING_LEVEL_VERBOSE` - Warnings that appear with `-w`, as in `ruby -w -c -e 'code'`.
  */
 static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
-    // Special error that can be replaced
+    /* Special error that can be replaced */
     [PM_ERR_CANNOT_PARSE_EXPRESSION]            = { "cannot parse the expression", PM_ERROR_LEVEL_SYNTAX },
 
-    // Errors that should raise argument errors
+    /* Errors that should raise argument errors */
     [PM_ERR_INVALID_ENCODING_MAGIC_COMMENT]     = { "unknown or invalid encoding in the magic comment", PM_ERROR_LEVEL_ARGUMENT },
 
-    // Errors that should raise load errors
+    /* Errors that should raise load errors */
     [PM_ERR_SCRIPT_NOT_FOUND]                   = { "no Ruby script found in input", PM_ERROR_LEVEL_LOAD },
 
-    // Errors that should raise syntax errors
+    /* Errors that should raise syntax errors */
     [PM_ERR_ALIAS_ARGUMENT]                     = { "invalid argument being passed to `alias`; expected a bare word, symbol, constant, or global variable", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_ALIAS_ARGUMENT_NUMBERED_REFERENCE]  = { "invalid argument being passed to `alias`; can't make alias for the number variables", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_AMPAMPEQ_MULTI_ASSIGN]              = { "unexpected `&&=` in a multiple assignment", PM_ERROR_LEVEL_SYNTAX },
@@ -354,7 +365,7 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
     [PM_ERR_STRING_INTERPOLATED_TERM]           = { "unterminated string; expected a closing delimiter for the interpolated string", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_STRING_LITERAL_EOF]                 = { "unterminated string meets end of file", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_STRING_LITERAL_TERM]                = { "unexpected %s, expected a string literal terminator", PM_ERROR_LEVEL_SYNTAX },
-    [PM_ERR_SYMBOL_INVALID]                     = { "invalid symbol", PM_ERROR_LEVEL_SYNTAX }, // TODO expected symbol? prism.c ~9719
+    [PM_ERR_SYMBOL_INVALID]                     = { "invalid symbol", PM_ERROR_LEVEL_SYNTAX }, /* TODO expected symbol? prism.c ~9719 */
     [PM_ERR_SYMBOL_TERM_DYNAMIC]                = { "unterminated quoted string; expected a closing delimiter for the dynamic symbol", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_SYMBOL_TERM_INTERPOLATED]           = { "unterminated symbol; expected a closing delimiter for the interpolated symbol", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_TERNARY_COLON]                      = { "expected a `:` after the true expression of a ternary operator", PM_ERROR_LEVEL_SYNTAX },
@@ -381,7 +392,7 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
     [PM_ERR_WRITE_TARGET_UNEXPECTED]            = { "unexpected write target", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_XSTRING_TERM]                       = { "expected a closing delimiter for the `%x` or backtick string", PM_ERROR_LEVEL_SYNTAX },
 
-    // Warnings
+    /* Warnings */
     [PM_WARN_AMBIGUOUS_BINARY_OPERATOR]         = { "'%s' after local variable or literal is interpreted as binary operator even though it seems like %s", PM_WARNING_LEVEL_VERBOSE },
     [PM_WARN_AMBIGUOUS_FIRST_ARGUMENT_MINUS]    = { "ambiguous first argument; put parentheses or a space even after `-` operator", PM_WARNING_LEVEL_VERBOSE },
     [PM_WARN_AMBIGUOUS_FIRST_ARGUMENT_PLUS]     = { "ambiguous first argument; put parentheses or a space even after `+` operator", PM_WARNING_LEVEL_VERBOSE },
@@ -417,8 +428,8 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
 /**
  * Get the human-readable name of the given diagnostic ID.
  */
-const char *
-pm_diagnostic_id_human(pm_diagnostic_id_t diag_id) {
+static const char *
+pm_diagnostic_id_name(pm_diagnostic_id_t diag_id) {
     switch (diag_id) {
         <%- errors.each do |error| -%>
         case PM_ERR_<%= error.name %>: return "<%= error.name.downcase %>";
@@ -432,8 +443,8 @@ pm_diagnostic_id_human(pm_diagnostic_id_t diag_id) {
     return "";
 }
 
-static inline const char *
-pm_diagnostic_message(pm_diagnostic_id_t diag_id) {
+static PRISM_INLINE const char *
+pm_diagnostic_id_message(pm_diagnostic_id_t diag_id) {
     assert(diag_id < PM_DIAGNOSTIC_ID_MAX);
 
     const char *message = diagnostic_messages[diag_id].message;
@@ -442,11 +453,51 @@ pm_diagnostic_message(pm_diagnostic_id_t diag_id) {
     return message;
 }
 
-static inline uint8_t
-pm_diagnostic_level(pm_diagnostic_id_t diag_id) {
+static PRISM_INLINE uint8_t
+pm_diagnostic_id_level(pm_diagnostic_id_t diag_id) {
     assert(diag_id < PM_DIAGNOSTIC_ID_MAX);
 
     return (uint8_t) diagnostic_messages[diag_id].level;
+}
+
+/**
+ * Get the type of the given diagnostic.
+ */
+const char *
+pm_diagnostic_type(const pm_diagnostic_t *diagnostic) {
+    return pm_diagnostic_id_name(diagnostic->diag_id);
+}
+
+/**
+ * Get the location of the given diagnostic.
+ */
+pm_location_t
+pm_diagnostic_location(const pm_diagnostic_t *diagnostic) {
+    return diagnostic->location;
+}
+
+/**
+ * Get the message of the given diagnostic.
+ */
+const char *
+pm_diagnostic_message(const pm_diagnostic_t *diagnostic) {
+    return diagnostic->message;
+}
+
+/**
+ * Get the error level associated with the given diagnostic.
+ */
+pm_error_level_t
+pm_diagnostic_error_level(const pm_diagnostic_t *diagnostic) {
+    return (pm_error_level_t) pm_diagnostic_id_level(diagnostic->diag_id);
+}
+
+/**
+ * Get the warning level associated with the given diagnostic.
+ */
+pm_warning_level_t
+pm_diagnostic_warning_level(const pm_diagnostic_t *diagnostic) {
+    return (pm_warning_level_t) pm_diagnostic_id_level(diagnostic->diag_id);
 }
 
 /**
@@ -459,8 +510,8 @@ pm_diagnostic_list_append(pm_arena_t *arena, pm_list_t *list, uint32_t start, ui
     *diagnostic = (pm_diagnostic_t) {
         .location = { .start = start, .length = length },
         .diag_id = diag_id,
-        .message = pm_diagnostic_message(diag_id),
-        .level = pm_diagnostic_level(diag_id)
+        .message = pm_diagnostic_id_message(diag_id),
+        .level = pm_diagnostic_id_level(diag_id)
     };
 
     pm_list_append(list, (pm_list_node_t *) diagnostic);
@@ -475,7 +526,7 @@ pm_diagnostic_list_append_format(pm_arena_t *arena, pm_list_t *list, uint32_t st
     va_list arguments;
     va_start(arguments, diag_id);
 
-    const char *format = pm_diagnostic_message(diag_id);
+    const char *format = pm_diagnostic_id_message(diag_id);
     int result = vsnprintf(NULL, 0, format, arguments);
     va_end(arguments);
 
@@ -496,9 +547,8 @@ pm_diagnostic_list_append_format(pm_arena_t *arena, pm_list_t *list, uint32_t st
         .location = { .start = start, .length = length },
         .diag_id = diag_id,
         .message = message,
-        .level = pm_diagnostic_level(diag_id)
+        .level = pm_diagnostic_id_level(diag_id)
     };
 
     pm_list_append(list, (pm_list_node_t *) diagnostic);
 }
-

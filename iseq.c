@@ -982,7 +982,7 @@ rb_iseq_new_top(const VALUE ast_value, VALUE name, VALUE path, VALUE realpath, c
 rb_iseq_t *
 pm_iseq_new_top(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent, int *error_state)
 {
-    iseq_new_setup_coverage(path, (int) (node->parser->line_offsets.size - 1));
+    iseq_new_setup_coverage(path, (int) (pm_parser_line_offsets(node->parser)->size - 1));
 
     return pm_iseq_new_with_opt(node, name, path, realpath, 0, parent, 0,
                                 ISEQ_TYPE_TOP, &COMPILE_OPTION_DEFAULT, error_state);
@@ -1006,7 +1006,7 @@ rb_iseq_new_main(const VALUE ast_value, VALUE path, VALUE realpath, const rb_ise
 rb_iseq_t *
 pm_iseq_new_main(pm_scope_node_t *node, VALUE path, VALUE realpath, const rb_iseq_t *parent, int opt, int *error_state)
 {
-    iseq_new_setup_coverage(path, (int) (node->parser->line_offsets.size - 1));
+    iseq_new_setup_coverage(path, (int) (pm_parser_line_offsets(node->parser)->size - 1));
 
     return pm_iseq_new_with_opt(node, rb_fstring_lit("<main>"),
                                 path, realpath, 0,
@@ -1035,7 +1035,7 @@ pm_iseq_new_eval(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath,
     if (rb_get_coverage_mode() & COVERAGE_TARGET_EVAL) {
         VALUE coverages = rb_get_coverages();
         if (RTEST(coverages) && RTEST(path) && !RTEST(rb_hash_has_key(coverages, path))) {
-            iseq_setup_coverage(coverages, path, ((int) (node->parser->line_offsets.size - 1)) + first_lineno - 1);
+            iseq_setup_coverage(coverages, path, ((int) (pm_parser_line_offsets(node->parser)->size - 1)) + first_lineno - 1);
         }
     }
 
@@ -1096,41 +1096,15 @@ rb_iseq_new_with_opt(VALUE ast_value, VALUE name, VALUE path, VALUE realpath,
     return iseq_translate(iseq);
 }
 
-struct pm_iseq_new_with_opt_data {
-    rb_iseq_t *iseq;
-    pm_scope_node_t *node;
-};
-
-VALUE
-pm_iseq_new_with_opt_try(VALUE d)
-{
-    struct pm_iseq_new_with_opt_data *data = (struct pm_iseq_new_with_opt_data *)d;
-
-    // This can compile child iseqs, which can raise syntax errors
-    pm_iseq_compile_node(data->iseq, data->node);
-
-    // This raises an exception if there is a syntax error
-    finish_iseq_build(data->iseq);
-
-    return Qundef;
-}
-
 /**
- * This is a step in the prism compiler that is called once all of the various
- * options have been established. It is called from one of the pm_iseq_new_*
- * functions or from the RubyVM::InstructionSequence APIs. It is responsible for
- * allocating the instruction sequence, calling into the compiler, and returning
- * the built instruction sequence.
- *
- * Importantly, this is also the function where the compiler is re-entered to
- * compile child instruction sequences. A child instruction sequence is always
- * compiled using a scope node, which is why we cast it explicitly to that here
- * in the parameters (as opposed to accepting a generic pm_node_t *).
+ * Core implementation for building a prism iseq. This does not use rb_protect,
+ * so any exceptions (e.g. from finish_iseq_build) propagate normally up the
+ * call stack — matching the parse.y compiler's behavior.
  */
 rb_iseq_t *
-pm_iseq_new_with_opt(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath,
-                     int first_lineno, const rb_iseq_t *parent, int isolated_depth,
-                     enum rb_iseq_type type, const rb_compile_option_t *option, int *error_state)
+pm_iseq_build(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath,
+              int first_lineno, const rb_iseq_t *parent, int isolated_depth,
+              enum rb_iseq_type type, const rb_compile_option_t *option)
 {
     rb_iseq_t *iseq = iseq_alloc();
     ISEQ_BODY(iseq)->prism = true;
@@ -1143,10 +1117,11 @@ pm_iseq_new_with_opt(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpa
     option = &next_option;
 
     pm_location_t *location = &node->base.location;
-    int32_t start_line = node->parser->start_line;
+    int32_t start_line = pm_parser_start_line(node->parser);
+    const pm_line_offset_list_t *line_offsets = pm_parser_line_offsets(node->parser);
 
-    pm_line_column_t start = pm_line_offset_list_line_column(&node->parser->line_offsets, location->start, start_line);
-    pm_line_column_t end = pm_line_offset_list_line_column(&node->parser->line_offsets, location->start + location->length, start_line);
+    pm_line_column_t start = pm_line_offset_list_line_column(line_offsets, location->start, start_line);
+    pm_line_column_t end = pm_line_offset_list_line_column(line_offsets, location->start + location->length, start_line);
 
     rb_code_location_t code_location = (rb_code_location_t) {
         .beg_pos = { .lineno = (int) start.line, .column = (int) start.column },
@@ -1156,15 +1131,59 @@ pm_iseq_new_with_opt(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpa
     prepare_iseq_build(iseq, name, path, realpath, first_lineno, &code_location, node->ast_node->node_id,
                        parent, isolated_depth, type, node->script_lines == NULL ? Qnil : *node->script_lines, option);
 
+    pm_iseq_compile_node(iseq, node);
+    finish_iseq_build(iseq);
+
+    return iseq_translate(iseq);
+}
+
+struct pm_iseq_new_with_opt_data {
+    rb_iseq_t *iseq;
+    pm_scope_node_t *node;
+    VALUE name, path, realpath;
+    int first_lineno, isolated_depth;
+    const rb_iseq_t *parent;
+    enum rb_iseq_type type;
+    const rb_compile_option_t *option;
+};
+
+static VALUE
+pm_iseq_new_with_opt_try(VALUE d)
+{
+    struct pm_iseq_new_with_opt_data *data = (struct pm_iseq_new_with_opt_data *)d;
+    data->iseq = pm_iseq_build(data->node, data->name, data->path, data->realpath,
+                               data->first_lineno, data->parent, data->isolated_depth,
+                               data->type, data->option);
+    return Qundef;
+}
+
+/**
+ * This is a step in the prism compiler that is called once all of the various
+ * options have been established. It is called from one of the pm_iseq_new_*
+ * functions or from the RubyVM::InstructionSequence APIs.
+ *
+ * This function uses rb_protect to catch exceptions, storing the error state
+ * in the provided out parameter. This is only needed at top-level entry points
+ * where the caller wants to handle errors gracefully. Child iseqs compiled
+ * during the compilation process do NOT go through this function — they use
+ * pm_iseq_build directly, letting exceptions propagate naturally (matching
+ * the parse.y compiler's behavior).
+ */
+rb_iseq_t *
+pm_iseq_new_with_opt(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath,
+                     int first_lineno, const rb_iseq_t *parent, int isolated_depth,
+                     enum rb_iseq_type type, const rb_compile_option_t *option, int *error_state)
+{
     struct pm_iseq_new_with_opt_data data = {
-        .iseq = iseq,
-        .node = node
+        .node = node, .name = name, .path = path, .realpath = realpath,
+        .first_lineno = first_lineno, .parent = parent,
+        .isolated_depth = isolated_depth, .type = type, .option = option
     };
     rb_protect(pm_iseq_new_with_opt_try, (VALUE)&data, error_state);
 
     if (*error_state) return NULL;
 
-    return iseq_translate(iseq);
+    return data.iseq;
 }
 
 rb_iseq_t *
@@ -1411,19 +1430,20 @@ pm_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
         src = StringValue(src);
     }
 
-    pm_parse_result_t result = { 0 };
-    pm_options_line_set(&result.options, NUM2INT(line));
-    pm_options_scopes_init(&result.options, 1);
+    pm_parse_result_t result;
+    pm_parse_result_init(&result);
+    pm_options_line_set(result.options, NUM2INT(line));
+    pm_options_scopes_init(result.options, 1);
     result.node.coverage_enabled = 1;
 
     switch (option.frozen_string_literal) {
       case ISEQ_FROZEN_STRING_LITERAL_UNSET:
         break;
       case ISEQ_FROZEN_STRING_LITERAL_DISABLED:
-        pm_options_frozen_string_literal_set(&result.options, false);
+        pm_options_frozen_string_literal_set(result.options, false);
         break;
       case ISEQ_FROZEN_STRING_LITERAL_ENABLED:
-        pm_options_frozen_string_literal_set(&result.options, true);
+        pm_options_frozen_string_literal_set(result.options, true);
         break;
       default:
         rb_bug("pm_iseq_compile_with_option: invalid frozen_string_literal=%d", option.frozen_string_literal);
@@ -1783,6 +1803,8 @@ iseqw_s_compile_prism(int argc, VALUE *argv, VALUE self)
     return iseqw_s_compile_parser(argc, argv, self, true);
 }
 
+static VALUE iseqw_s_compile_file_prism(int argc, VALUE *argv, VALUE self);
+
 /*
  *  call-seq:
  *      InstructionSequence.compile_file(file[, options]) -> iseq
@@ -1806,6 +1828,10 @@ iseqw_s_compile_prism(int argc, VALUE *argv, VALUE self)
 static VALUE
 iseqw_s_compile_file(int argc, VALUE *argv, VALUE self)
 {
+    if (rb_ruby_prism_p()) {
+        return iseqw_s_compile_file_prism(argc, argv, self);
+    }
+
     VALUE file, opt = Qnil;
     VALUE parser, f, exc = Qnil, ret;
     rb_ast_t *ast;
@@ -1892,8 +1918,8 @@ iseqw_s_compile_file_prism(int argc, VALUE *argv, VALUE self)
     rb_execution_context_t *ec = GET_EC();
     VALUE v = rb_vm_push_frame_fname(ec, file);
 
-    pm_parse_result_t result = { 0 };
-    result.options.line = 1;
+    pm_parse_result_t result;
+    pm_parse_result_init(&result);
     result.node.coverage_enabled = 1;
 
     VALUE script_lines;

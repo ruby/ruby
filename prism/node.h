@@ -6,9 +6,10 @@
 #ifndef PRISM_NODE_H
 #define PRISM_NODE_H
 
-#include "prism/defines.h"
-#include "prism/parser.h"
-#include "prism/util/pm_buffer.h"
+#include "prism/compiler/exported.h"
+#include "prism/compiler/nonnull.h"
+
+#include "prism/ast.h"
 
 /**
  * Loop through each node in the node list, writing each node to the given
@@ -18,56 +19,12 @@
     for (size_t index = 0; index < (list)->size && ((node) = (list)->nodes[index]); index++)
 
 /**
- * Slow path for pm_node_list_append: grow the list and append the node.
- * Do not call directly — use pm_node_list_append instead.
- *
- * @param arena The arena to allocate from.
- * @param list The list to append to.
- * @param node The node to append.
- */
-void pm_node_list_append_slow(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node);
-
-/**
- * Append a new node onto the end of the node list.
- *
- * @param arena The arena to allocate from.
- * @param list The list to append to.
- * @param node The node to append.
- */
-static PRISM_FORCE_INLINE void
-pm_node_list_append(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node) {
-    if (list->size < list->capacity) {
-        list->nodes[list->size++] = node;
-    } else {
-        pm_node_list_append_slow(arena, list, node);
-    }
-}
-
-/**
- * Prepend a new node onto the beginning of the node list.
- *
- * @param arena The arena to allocate from.
- * @param list The list to prepend to.
- * @param node The node to prepend.
- */
-void pm_node_list_prepend(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node);
-
-/**
- * Concatenate the given node list onto the end of the other node list.
- *
- * @param arena The arena to allocate from.
- * @param list The list to concatenate onto.
- * @param other The list to concatenate.
- */
-void pm_node_list_concat(pm_arena_t *arena, pm_node_list_t *list, pm_node_list_t *other);
-
-/**
  * Returns a string representation of the given node type.
  *
  * @param node_type The node type to convert to a string.
- * @return A string representation of the given node type.
+ * @returns A string representation of the given node type.
  */
-PRISM_EXPORTED_FUNCTION const char * pm_node_type_to_str(pm_node_type_t node_type);
+PRISM_EXPORTED_FUNCTION const char * pm_node_type(pm_node_type_t node_type);
 
 /**
  * Visit each of the nodes in this subtree using the given visitor callback. The
@@ -85,7 +42,7 @@ PRISM_EXPORTED_FUNCTION const char * pm_node_type_to_str(pm_node_type_t node_typ
  * bool visit(const pm_node_t *node, void *data) {
  *     size_t *indent = (size_t *) data;
  *     for (size_t i = 0; i < *indent * 2; i++) putc(' ', stdout);
- *     printf("%s\n", pm_node_type_to_str(node->type));
+ *     printf("%s\n", pm_node_type(node->type));
  *
  *     size_t next_indent = *indent + 1;
  *     size_t *next_data = &next_indent;
@@ -98,19 +55,21 @@ PRISM_EXPORTED_FUNCTION const char * pm_node_type_to_str(pm_node_type_t node_typ
  *     const char *source = "1 + 2; 3 + 4";
  *     size_t size = strlen(source);
  *
- *     pm_arena_t arena = { 0 };
- *     pm_parser_t parser;
- *     pm_options_t options = { 0 };
- *     pm_parser_init(&arena, &parser, (const uint8_t *) source, size, &options);
+ *     pm_arena_t *arena = pm_arena_new();
+ *     pm_options_t *options = pm_options_new();
+ *
+ *     pm_parser_t *parser = pm_parser_new(arena, (const uint8_t *) source, size, options);
  *
  *     size_t indent = 0;
- *     pm_node_t *node = pm_parse(&parser);
+ *     pm_node_t *node = pm_parse(parser);
  *
  *     size_t *data = &indent;
  *     pm_visit_node(node, visit, data);
  *
- *     pm_parser_free(&parser);
- *     pm_arena_free(&arena);
+ *     pm_parser_free(parser);
+ *     pm_options_free(options);
+ *     pm_arena_free(arena);
+ *
  *     return EXIT_SUCCESS;
  * }
  * ```
@@ -119,7 +78,7 @@ PRISM_EXPORTED_FUNCTION const char * pm_node_type_to_str(pm_node_type_t node_typ
  * @param visitor The callback to call for each node in the subtree.
  * @param data An opaque pointer that is passed to the visitor callback.
  */
-PRISM_EXPORTED_FUNCTION void pm_visit_node(const pm_node_t *node, bool (*visitor)(const pm_node_t *node, void *data), void *data);
+PRISM_EXPORTED_FUNCTION void pm_visit_node(const pm_node_t *node, bool (*visitor)(const pm_node_t *node, void *data), void *data) PRISM_NONNULL(1);
 
 /**
  * Visit the children of the given node with the given callback. This is the
@@ -130,6 +89,6 @@ PRISM_EXPORTED_FUNCTION void pm_visit_node(const pm_node_t *node, bool (*visitor
  * @param visitor The callback to call for each child node.
  * @param data An opaque pointer that is passed to the visitor callback.
  */
-PRISM_EXPORTED_FUNCTION void pm_visit_child_nodes(const pm_node_t *node, bool (*visitor)(const pm_node_t *node, void *data), void *data);
+PRISM_EXPORTED_FUNCTION void pm_visit_child_nodes(const pm_node_t *node, bool (*visitor)(const pm_node_t *node, void *data), void *data) PRISM_NONNULL(1);
 
 #endif

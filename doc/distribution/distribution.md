@@ -31,7 +31,7 @@ This will create several tarball in the `tmp` directory. The tarball will be nam
 
 ## Building the Tarball
 
-See [Building Ruby](contributing/building_ruby.md).
+See [Building Ruby](../contributing/building_ruby.md).
 
 ## Updating the Ruby Standard Library
 

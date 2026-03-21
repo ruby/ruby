@@ -3425,7 +3425,7 @@ unlink_internal(const char *path, void *arg)
  *  Since the underlying implementation relies on the
  *  <code>unlink(2)</code> system call, the type of
  *  exception raised depends on its error type (see
- *  https://linux.die.net/man/2/unlink) and has the form of
+ *  https://man7.org/linux/man-pages/man2/unlink.2.html) and has the form of
  *  e.g. Errno::ENOENT.
  *
  *  See also Dir::rmdir.

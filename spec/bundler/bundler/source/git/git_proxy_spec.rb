@@ -101,7 +101,7 @@ RSpec.describe Bundler::Source::Git::GitProxy do
   describe "#version" do
     context "with a normal version number" do
       before do
-        expect(git_proxy).to receive(:git_local).with("--version").
+        expect(described_class).to receive(:full_version).
           and_return("git version 1.2.3")
       end
 
@@ -116,7 +116,7 @@ RSpec.describe Bundler::Source::Git::GitProxy do
 
     context "with a OSX version number" do
       before do
-        expect(git_proxy).to receive(:git_local).with("--version").
+        expect(described_class).to receive(:full_version).
           and_return("git version 1.2.3 (Apple Git-BS)")
       end
 
@@ -131,7 +131,7 @@ RSpec.describe Bundler::Source::Git::GitProxy do
 
     context "with a msysgit version number" do
       before do
-        expect(git_proxy).to receive(:git_local).with("--version").
+        expect(described_class).to receive(:full_version).
           and_return("git version 1.2.3.msysgit.0")
       end
 
@@ -148,8 +148,9 @@ RSpec.describe Bundler::Source::Git::GitProxy do
   describe "#full_version" do
     context "with a normal version number" do
       before do
-        expect(git_proxy).to receive(:git_local).with("--version").
-          and_return("git version 1.2.3")
+        status = double("success?" => true)
+        expect(Open3).to receive(:capture3).with("git", "--version").
+          and_return(["git version 1.2.3", "", status])
       end
 
       it "returns the git version number" do
@@ -159,8 +160,9 @@ RSpec.describe Bundler::Source::Git::GitProxy do
 
     context "with a OSX version number" do
       before do
-        expect(git_proxy).to receive(:git_local).with("--version").
-          and_return("git version 1.2.3 (Apple Git-BS)")
+        status = double("success?" => true)
+        expect(Open3).to receive(:capture3).with("git", "--version").
+          and_return(["git version 1.2.3 (Apple Git-BS)", "", status])
       end
 
       it "does not strip out OSX specific additions in the version string" do
@@ -170,8 +172,9 @@ RSpec.describe Bundler::Source::Git::GitProxy do
 
     context "with a msysgit version number" do
       before do
-        expect(git_proxy).to receive(:git_local).with("--version").
-          and_return("git version 1.2.3.msysgit.0")
+        status = double("success?" => true)
+        expect(Open3).to receive(:capture3).with("git", "--version").
+          and_return(["git version 1.2.3.msysgit.0", "", status])
       end
 
       it "does not strip out msysgit specific additions in the version string" do

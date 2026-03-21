@@ -59,6 +59,14 @@ begin
     add_filter "/bundler/tmp/"
     add_filter ".gemspec"
   end
+
+  SimpleCov.print_error_status = false
+  SimpleCov.at_exit do
+    $stdout = File.open(File::NULL, "w")
+    SimpleCov.result.format!
+  ensure
+    $stdout = STDOUT
+  end
 rescue LoadError
   # SimpleCov is not installed
 end

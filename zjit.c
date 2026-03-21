@@ -264,6 +264,25 @@ rb_zjit_method_tracing_currently_enabled(void)
     return tracing_events & (RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN);
 }
 
+// Check if any ISEQ trace events are currently enabled.
+// Used to prevent ZJIT from compiling while tracing is active, since ZJIT's
+// send fallback (rb_vm_opt_send_without_block) uses VM_EXEC which sets
+// VM_FRAME_FLAG_FINISH on the callee frame, changing exception handling
+// semantics for throw TAG_RETURN (e.g. return from rescue).
+bool
+rb_zjit_iseq_tracing_currently_enabled(void)
+{
+    rb_event_flag_t tracing_events;
+    if (rb_multi_ractor_p()) {
+        tracing_events = ruby_vm_event_enabled_global_flags;
+    }
+    else {
+        tracing_events = rb_ec_ractor_hooks(GET_EC())->events;
+    }
+
+    return tracing_events & ISEQ_TRACE_EVENTS;
+}
+
 bool
 rb_zjit_insn_leaf(int insn, const VALUE *opes)
 {
@@ -303,14 +322,6 @@ rb_zjit_class_has_default_allocator(VALUE klass)
 
 VALUE rb_vm_untag_block_handler(VALUE block_handler);
 VALUE rb_vm_get_untagged_block_handler(rb_control_frame_t *reg_cfp);
-
-void
-rb_zjit_writebarrier_check_immediate(VALUE recv, VALUE val)
-{
-    if (!RB_SPECIAL_CONST_P(val)) {
-        rb_gc_writebarrier(recv, val);
-    }
-}
 
 // Primitives used by zjit.rb. Don't put other functions below, which wouldn't use them.
 VALUE rb_zjit_enable(rb_execution_context_t *ec, VALUE self);

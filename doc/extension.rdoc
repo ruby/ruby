@@ -317,11 +317,11 @@ rb_ary_aref(int argc, const VALUE *argv, VALUE ary) ::
 
 rb_ary_entry(VALUE ary, long offset) ::
 
-  \ary[offset]
+  ary\[offset]
 
 rb_ary_store(VALUE ary, long offset, VALUE obj) ::
 
-  \ary[offset] = obj
+  ary\[offset] = obj
 
 rb_ary_subseq(VALUE ary, long beg, long len) ::
 

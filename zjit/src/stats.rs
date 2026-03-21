@@ -232,6 +232,7 @@ make_counters! {
         exit_splatkw_polymorphic,
         exit_splatkw_not_profiled,
         exit_directive_induced,
+        exit_send_while_tracing,
     }
 
     // Send fallback counters that are summed as dynamic_send_count
@@ -616,6 +617,7 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
                                       => exit_patchpoint_no_singleton_class,
         PatchPoint(Invariant::RootBoxOnly)
                                       => exit_patchpoint_root_box_only,
+        SendWhileTracing              => exit_send_while_tracing,
     }
 }
 

@@ -8,7 +8,7 @@ use std::collections::HashSet;
 
 /// Default --zjit-num-profiles
 const DEFAULT_NUM_PROFILES: NumProfiles = 5;
-pub type NumProfiles = u32;
+pub type NumProfiles = u16;
 
 /// Default --zjit-call-threshold. This should be large enough to avoid compiling
 /// warmup code, but small enough to perform well on micro-benchmarks.

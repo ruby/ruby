@@ -236,10 +236,18 @@ class Pathname
     self
   end
 
+  # call-seq:
+  #   self == other -> true or false
   #
-  # Compare this pathname with +other+.  The comparison is string-based.
-  # Be aware that two different paths (<tt>foo.txt</tt> and <tt>./foo.txt</tt>)
-  # can refer to the same file.
+  # Returns whether the stored paths in +self+ and +other+ are equal:
+  #
+  #   pn = Pathname.new('lib')
+  #   pn == Pathname.new('lib')   # => true
+  #   pn == Pathname.new('./lib') # => false
+  #
+  # Returns +false+ if +other+ is not a pathname:
+  #
+  #   pn == 'lib'                 # => false
   #
   def ==(other)
     return false unless Pathname === other
@@ -628,17 +636,19 @@ class Pathname
     chop_basename(@path) == nil && SEPARATOR_PAT.match?(@path)
   end
 
-  # Predicate method for testing whether a path is absolute.
+  # call-seq:
+  #   absolute? -> true or false
   #
-  # It returns +true+ if the pathname begins with a slash.
+  # Returns whether +self+ contains an absolute path:
   #
-  #   p = Pathname.new('/im/sure')
-  #   p.absolute?
-  #       #=> true
+  #   Pathname.new('/home').absolute? # => true
+  #   Pathname.new('lib').absolute?   # => false
   #
-  #   p = Pathname.new('not/so/sure')
-  #   p.absolute?
-  #       #=> false
+  # OS-dependent for some paths:
+  #
+  #   Pathname.new('C:/').absolute?   # => true   # On Windows.
+  #   Pathname.new('C:/').absolute?   # => false  # Elsewhere.
+  #
   def absolute?
     ABSOLUTE_PATH.match? @path
   end
@@ -750,8 +760,14 @@ class Pathname
   # call-seq:
   #   self + other -> new_pathname
   #
-  # Returns a new \Pathname object;
-  # argument +other+ may be a string or another pathname.
+  # Returns a new \Pathname object based on the content of +self+ and +other+;
+  # argument +other+ may be a String, a File, a Dir, or another \Pathname:
+  #
+  #   pn = Pathname.new('foo') # => #<Pathname:foo>
+  #   pn + 'bar'               # => #<Pathname:foo/bar>
+  #   pn + File.new('LEGAL')   # => #<Pathname:foo/LEGAL>
+  #   pn + Dir.new('lib')      # => #<Pathname:foo/lib>
+  #   pn + Pathname.new('bar') # => #<Pathname:foo/bar>
   #
   # When +other+ specifies a relative path (see #relative?),
   # it is combined with +self+ to form a new pathname:

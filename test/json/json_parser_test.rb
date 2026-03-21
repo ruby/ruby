@@ -425,6 +425,13 @@ class JSONParserTest < Test::Unit::TestCase
     end
   end
 
+  def test_parse_duplicate_key_escape
+    error = assert_raise(ParserError) do
+      JSON.parse('{"%s%s%s%s":1,"%s%s%s%s":2}', allow_duplicate_key: false)
+    end
+    assert_match "%s%s%s%s", error.message
+  end
+
   def test_some_wrong_inputs
     assert_raise(ParserError) { parse('[] bla') }
     assert_raise(ParserError) { parse('[] 1') }

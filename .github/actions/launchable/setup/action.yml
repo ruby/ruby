@@ -55,6 +55,12 @@ inputs:
     description: >-
       Whether this workflow is executed on YJIT.
 
+  is-zjit:
+    required: false
+    default: 'false'
+    description: >-
+      Whether this workflow is executed on ZJIT.
+
 outputs:
   stdout_report_path:
     value: ${{ steps.global.outputs.stdout_report_path }}
@@ -204,6 +210,11 @@ runs:
           btest_test_suite="yjit-${btest_test_suite}"
           test_spec_test_suite="yjit-${test_spec_test_suite}"
         fi
+        if [ "${INPUT_IS_ZJIT}" = "true" ]; then
+          test_all_test_suite="zjit-${test_all_test_suite}"
+          btest_test_suite="zjit-${btest_test_suite}"
+          test_spec_test_suite="zjit-${test_spec_test_suite}"
+        fi
         # launchable_setup target var -- refers ${target} prefixed variables
         launchable_setup() {
           local target=$1 session
@@ -239,6 +250,7 @@ runs:
         INPUT_GITHUB_REF: ${{ github.ref }}
         INPUT_TEST_OPTS: ${{ inputs.test-opts }}
         INPUT_IS_YJIT: ${{ inputs.is-yjit }}
+        INPUT_IS_ZJIT: ${{ inputs.is-zjit }}
         INPUT_OS: ${{ inputs.os }}
         INPUT_TEST_TASK: ${{ inputs.test-task }}
         INPUT_WORKFLOW: ${{ github.workflow }}

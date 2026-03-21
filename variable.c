@@ -1199,7 +1199,17 @@ static void
 CVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(VALUE klass, ID id)
 {
     if (UNLIKELY(!rb_ractor_main_p())) {
-        rb_raise(rb_eRactorIsolationError, "can not access class variables from non-main Ractors (%"PRIsVALUE" from %"PRIsVALUE")", rb_id2str(id), klass);
+        rb_raise(rb_eRactorIsolationError, "can not set class variables from non-main Ractors (%"PRIsVALUE" from %"PRIsVALUE")", rb_id2str(id), klass);
+    }
+}
+
+static void
+cvar_read_ractor_check(VALUE klass, ID id, VALUE val)
+{
+    if (UNLIKELY(!rb_ractor_main_p()) && !rb_ractor_shareable_p(val)) {
+        rb_raise(rb_eRactorIsolationError,
+                 "can not read non-shareable class variable %"PRIsVALUE" from non-main Ractors (%"PRIsVALUE")",
+                 rb_id2str(id), klass);
     }
 }
 
@@ -4218,7 +4228,6 @@ cvar_overtaken(VALUE front, VALUE target, ID id)
     }
 
 #define CVAR_LOOKUP(v,r) do {\
-    CVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(klass, id); \
     if (cvar_lookup_at(klass, id, (v))) {r;}\
     CVAR_FOREACH_ANCESTORS(klass, v, r);\
 } while(0)
@@ -4254,6 +4263,8 @@ check_for_cvar_table(VALUE subclass, VALUE key)
 void
 rb_cvar_set(VALUE klass, ID id, VALUE val)
 {
+    CVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(klass, id);
+
     VALUE tmp, front = 0, target = 0;
 
     tmp = klass;
@@ -4319,6 +4330,7 @@ rb_cvar_find(VALUE klass, ID id, VALUE *front)
                           klass, ID2SYM(id));
     }
     cvar_overtaken(*front, target, id);
+    cvar_read_ractor_check(klass, id, value);
     return (VALUE)value;
 }
 

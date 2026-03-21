@@ -729,8 +729,8 @@ load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
         VALUE realpath_map = box->loaded_features_realpath_map;
 
         if (rb_ruby_prism_p()) {
-            pm_parse_result_t result = { 0 };
-            result.options.line = 1;
+            pm_parse_result_t result;
+            pm_parse_result_init(&result);
             result.node.coverage_enabled = 1;
 
             VALUE error = pm_load_parse_file(&result, fname, NULL);

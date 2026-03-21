@@ -57,6 +57,29 @@ module Bundler
         attr_accessor :path, :uri, :branch, :tag, :ref, :explicit_ref
         attr_writer :revision
 
+        def self.version
+          @version ||= full_version[/((\.?\d+)+).*/, 1]
+        end
+
+        def self.full_version
+          @full_version ||= begin
+            raise GitNotInstalledError.new unless Bundler.git_present?
+
+            require "open3"
+            out, err, status = Open3.capture3("git", "--version")
+
+            raise GitCommandError.new("--version", SharedHelpers.pwd, err) unless status.success?
+            Bundler.ui.warn err unless err.empty?
+
+            out.sub(/git version\s*/, "").strip
+          end
+        end
+
+        def self.reset
+          @version = nil
+          @full_version = nil
+        end
+
         def initialize(path, uri, options = {}, revision = nil, git = nil)
           @path     = path
           @uri      = uri
@@ -92,11 +115,11 @@ module Bundler
         end
 
         def version
-          @version ||= full_version.match(/((\.?\d+)+).*/)[1]
+          self.class.version
         end
 
         def full_version
-          @full_version ||= git_local("--version").sub(/git version\s*/, "").strip
+          self.class.full_version
         end
 
         def checkout
