@@ -7400,7 +7400,68 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_dont_optimize_getivar_polymorphic() {
+    fn test_optimize_getivar_polymorphic() {
+        set_call_threshold(3);
+        eval(r#"
+            class C
+              def foo_then_bar
+                @foo = 1
+                @bar = 2
+              end
+
+              def bar_then_foo
+                1000.times { |i| instance_variable_set(:"@v#{i}", i) }
+                @bar = 3
+                @foo = 4
+              end
+
+              def foo = @foo
+            end
+
+            O1 = C.new
+            O1.foo_then_bar
+            O2 = C.new
+            O2.bar_then_foo
+            O1.foo
+            O2.foo
+        "#);
+        assert_snapshot!(hir_string_proc("C.instance_method(:foo)"), @"
+        fn foo@<compiled>:14:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          v11:HeapBasicObject = GuardType v6, HeapBasicObject
+          v12:CShape = LoadField v11, :_shape_id@0x1000
+          v14:CShape[0x1001] = Const CShape(0x1001)
+          v15:CBool = IsBitEqual v12, v14
+          IfTrue v15, bb5()
+          v20:CShape[0x1002] = Const CShape(0x1002)
+          v21:CBool = IsBitEqual v12, v20
+          IfTrue v21, bb6()
+          v25:BasicObject = GetIvar v11, :@foo
+          Jump bb4(v25)
+        bb5():
+          v17:CPtr = LoadField v11, :_as_heap@0x1003
+          v18:BasicObject = LoadField v17, :@foo@0x1004
+          Jump bb4(v18)
+        bb6():
+          v23:BasicObject = LoadField v11, :@foo@0x1003
+          Jump bb4(v23)
+        bb4(v13:BasicObject):
+          CheckInterrupts
+          Return v13
+        ");
+    }
+
+    #[test]
+    fn test_dont_optimize_attr_accessor_polymorphic() {
         set_call_threshold(3);
         eval("
             class C
