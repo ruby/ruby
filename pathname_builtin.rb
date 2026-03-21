@@ -721,31 +721,25 @@ class Pathname
     nil
   end
 
-  # Iterates over and yields a new Pathname object
-  # for each element in the given path in ascending order.
+  # call-seq:
+  #   ascend {|entry| ... } -> nil
+  #   ascend -> new_enumerator
   #
-  #  Pathname.new('/path/to/some/file.rb').ascend {|v| p v}
-  #     #<Pathname:/path/to/some/file.rb>
-  #     #<Pathname:/path/to/some>
-  #     #<Pathname:/path/to>
-  #     #<Pathname:/path>
-  #     #<Pathname:/>
+  # With a block given,
+  # yields +self+, then a new pathname for each successive dirname in the stored path;
+  # see File.dirname:
   #
-  #  Pathname.new('path/to/some/file.rb').ascend {|v| p v}
-  #     #<Pathname:path/to/some/file.rb>
-  #     #<Pathname:path/to/some>
-  #     #<Pathname:path/to>
-  #     #<Pathname:path>
+  #   a = []
+  #   Pathname.new('/path/to/some/file.rb').ascend {|dirname| a << dirname}
+  #   a
+  #   # =>
+  #   [#<Pathname:/path/to/some/file.rb>,
+  #    #<Pathname:/path/to/some>,
+  #    #<Pathname:/path/to>,
+  #    #<Pathname:/path>,
+  #    #<Pathname:/>]
   #
-  # Returns an Enumerator if no block was given.
-  #
-  #   enum = Pathname.new("/usr/bin/ruby").ascend
-  #     # ... do stuff ...
-  #   enum.each { |e| ... }
-  #     # yields Pathnames /usr/bin/ruby, /usr/bin, /usr, and /.
-  #
-  # It doesn't access the filesystem.
-  #
+  # With no block given, returns a new Enumerator.
   def ascend
     return to_enum(__method__) unless block_given?
     path = @path
