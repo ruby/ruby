@@ -14,7 +14,7 @@ VALUE registered_before_rb_global_variable_float;
 VALUE registered_after_rb_global_variable_string;
 VALUE registered_after_rb_global_variable_bignum;
 VALUE registered_after_rb_global_variable_float;
-VALUE rb_gc_register_address_outside_init;
+VALUE registered_outside_init;
 
 VALUE rb_gc_register_mark_object_not_referenced_float;
 
@@ -55,14 +55,22 @@ static VALUE get_registered_after_rb_global_variable_float(VALUE self) {
 }
 
 static VALUE gc_spec_rb_gc_register_address(VALUE self) {
-  rb_gc_register_address(&rb_gc_register_address_outside_init);
-  rb_gc_register_address_outside_init = rb_str_new_cstr("rb_gc_register_address() outside Init_");
-  return rb_gc_register_address_outside_init;
+  rb_gc_register_address(&registered_outside_init);
+  return Qnil;
 }
 
 static VALUE gc_spec_rb_gc_unregister_address(VALUE self) {
-  rb_gc_unregister_address(&rb_gc_register_address_outside_init);
+  rb_gc_unregister_address(&registered_outside_init);
   return Qnil;
+}
+
+static VALUE set_registered_outside_init(VALUE self) {
+  registered_outside_init = rb_str_new_cstr("rb_gc_register_address() outside Init_");
+  return Qnil;
+}
+
+static VALUE get_registered_outside_init(VALUE self) {
+  return registered_outside_init;
 }
 
 static VALUE gc_spec_rb_gc_enable(VALUE self) {
@@ -135,6 +143,8 @@ void Init_gc_spec(void) {
   rb_define_method(cls, "registered_after_rb_global_variable_float", get_registered_after_rb_global_variable_float, 0);
   rb_define_method(cls, "rb_gc_register_address", gc_spec_rb_gc_register_address, 0);
   rb_define_method(cls, "rb_gc_unregister_address", gc_spec_rb_gc_unregister_address, 0);
+  rb_define_method(cls, "set_registered_outside_init", set_registered_outside_init, 0);
+  rb_define_method(cls, "get_registered_outside_init", get_registered_outside_init, 0);
   rb_define_method(cls, "rb_gc_enable", gc_spec_rb_gc_enable, 0);
   rb_define_method(cls, "rb_gc_disable", gc_spec_rb_gc_disable, 0);
   rb_define_method(cls, "rb_gc", gc_spec_rb_gc, 0);
