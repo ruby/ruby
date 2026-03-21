@@ -9,7 +9,6 @@
 #
 # For documentation, see class Pathname.
 #
-
 class Pathname    # * Find *
   #
   # Iterates over the directory tree in a depth first manner, yielding a
