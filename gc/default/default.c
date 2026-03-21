@@ -187,9 +187,62 @@ static RB_THREAD_LOCAL_SPECIFIER int malloc_increase_local;
 #define USE_TICK_T                 (PRINT_ENTER_EXIT_TICK || PRINT_ROOT_TICKS)
 
 #ifndef HEAP_COUNT
-# define HEAP_COUNT 5
+# if SIZEOF_VALUE >= 8
+#  define HEAP_COUNT 12
+# else
+#  define HEAP_COUNT 5
+# endif
 #endif
 
+static const size_t heap_init_slots_table[HEAP_COUNT] = {
+#if SIZEOF_VALUE >= 8
+    /* [0]  32B   */ 2000,
+    /* [1]  40B   */ GC_HEAP_INIT_SLOTS,
+    /* [2]  64B   */ GC_HEAP_INIT_SLOTS / 2,
+    /* [3]  80B   */ GC_HEAP_INIT_SLOTS / 3,
+    /* [4]  96B   */ GC_HEAP_INIT_SLOTS / 3,
+    /* [5]  128B  */ GC_HEAP_INIT_SLOTS / 4,
+    /* [6]  160B  */ GC_HEAP_INIT_SLOTS / 5,
+    /* [7]  256B  */ GC_HEAP_INIT_SLOTS / 8,
+    /* [8]  512B  */ GC_HEAP_INIT_SLOTS / 16,
+    /* [9]  640B  */ GC_HEAP_INIT_SLOTS / 20,
+    /* [10] 768B  */ GC_HEAP_INIT_SLOTS / 24,
+    /* [11] 1024B */ GC_HEAP_INIT_SLOTS / 32,
+#else
+    GC_HEAP_INIT_SLOTS,
+    GC_HEAP_INIT_SLOTS / 2, GC_HEAP_INIT_SLOTS / 4,
+    GC_HEAP_INIT_SLOTS / 8, GC_HEAP_INIT_SLOTS / 16,
+#endif
+};
+
+/* Precomputed reciprocals for fast slot index calculation.
+ * For slot size d: reciprocal = ceil(2^48 / d).
+ * Then offset / d == (uint32_t)((offset * reciprocal) >> 48)
+ * for all offset < HEAP_PAGE_SIZE. */
+#define SLOT_RECIPROCAL_SHIFT 48
+
+static const uint64_t heap_slot_reciprocal_table[HEAP_COUNT] = {
+#if SIZEOF_VALUE >= 8
+    /* 32   */ (1ULL << 48) / 32,
+    /* 40   */ (1ULL << 48) / 40 + 1,
+    /* 64   */ (1ULL << 48) / 64,
+    /* 80   */ (1ULL << 48) / 80 + 1,
+    /* 96   */ (1ULL << 48) / 96 + 1,
+    /* 128  */ (1ULL << 48) / 128,
+    /* 160  */ (1ULL << 48) / 160 + 1,
+    /* 256  */ (1ULL << 48) / 256,
+    /* 512  */ (1ULL << 48) / 512,
+    /* 640  */ (1ULL << 48) / 640 + 1,
+    /* 768  */ (1ULL << 48) / 768 + 1,
+    /* 1024 */ (1ULL << 48) / 1024,
+#else
+    /* 32  */ (1ULL << 48) / 32,
+    /* 64  */ (1ULL << 48) / 64,
+    /* 128 */ (1ULL << 48) / 128,
+    /* 256 */ (1ULL << 48) / 256,
+    /* 512 */ (1ULL << 48) / 512,
+#endif
+};
 typedef struct ractor_newobj_heap_cache {
     struct free_slot *freelist;
     struct heap_page *using_page;
@@ -653,6 +706,8 @@ typedef struct rb_objspace {
 
     unsigned long live_ractor_cache_count;
 
+    unsigned int sweeping_heaps; /* bitfield: bit i set while heap i is sweeping */
+
     int fork_vm_lock_lev;
 } rb_objspace_t;
 
@@ -689,15 +744,17 @@ size_t rb_gc_impl_obj_slot_size(VALUE obj);
 
 #define RVALUE_SLOT_SIZE (sizeof(struct RBasic) + sizeof(VALUE[RBIMPL_RVALUE_EMBED_LEN_MAX]) + RVALUE_OVERHEAD)
 
+#if SIZEOF_VALUE >= 8
 static const size_t pool_slot_sizes[HEAP_COUNT] = {
-    RVALUE_SLOT_SIZE,
-    RVALUE_SLOT_SIZE * 2,
-    RVALUE_SLOT_SIZE * 4,
-    RVALUE_SLOT_SIZE * 8,
-    RVALUE_SLOT_SIZE * 16,
+    32, 40, 64, 80, 96, 128, 160, 256, 512, 640, 768, 1024,
 };
-
-static uint8_t size_to_heap_idx[RVALUE_SLOT_SIZE * (1 << (HEAP_COUNT - 1)) / 8 + 1];
+static uint8_t size_to_heap_idx[1024 / 8 + 1];
+#else
+static const size_t pool_slot_sizes[HEAP_COUNT] = {
+    32, 64, 128, 256, 512,
+};
+static uint8_t size_to_heap_idx[512 / 8 + 1];
+#endif
 
 #ifndef MAX
 # define MAX(a, b) (((a) > (b)) ? (a) : (b))
@@ -707,11 +764,12 @@ static uint8_t size_to_heap_idx[RVALUE_SLOT_SIZE * (1 << (HEAP_COUNT - 1)) / 8 +
 #endif
 #define roomof(x, y) (((x) + (y) - 1) / (y))
 #define CEILDIV(i, mod) roomof(i, mod)
+#define MIN_POOL_SLOT_SIZE 32
 enum {
     HEAP_PAGE_ALIGN = (1UL << HEAP_PAGE_ALIGN_LOG),
     HEAP_PAGE_ALIGN_MASK = (~(~0UL << HEAP_PAGE_ALIGN_LOG)),
     HEAP_PAGE_SIZE = HEAP_PAGE_ALIGN,
-    HEAP_PAGE_BITMAP_LIMIT = CEILDIV(CEILDIV(HEAP_PAGE_SIZE, RVALUE_SLOT_SIZE), BITS_BITLENGTH),
+    HEAP_PAGE_BITMAP_LIMIT = CEILDIV(CEILDIV(HEAP_PAGE_SIZE, MIN_POOL_SLOT_SIZE), BITS_BITLENGTH),
     HEAP_PAGE_BITMAP_SIZE = (BITS_SIZE * HEAP_PAGE_BITMAP_LIMIT),
 };
 #define HEAP_PAGE_ALIGN (1 << HEAP_PAGE_ALIGN_LOG)
@@ -773,8 +831,11 @@ struct free_slot {
 };
 
 struct heap_page {
+    /* Cache line 0: allocation fast path + SLOT_INDEX */
+    struct free_slot *freelist;
+    uintptr_t start;
+    uint64_t slot_size_reciprocal;
     unsigned short slot_size;
-    uint32_t slot_div_magic;
     unsigned short total_slots;
     unsigned short free_slots;
     unsigned short final_slots;
@@ -789,8 +850,6 @@ struct heap_page {
 
     struct heap_page *free_next;
     struct heap_page_body *body;
-    uintptr_t start;
-    struct free_slot *freelist;
     struct ccan_list_node page_node;
 
     bits_t wb_unprotected_bits[HEAP_PAGE_BITMAP_LIMIT];
@@ -851,15 +910,13 @@ heap_page_in_global_empty_pages_pool(rb_objspace_t *objspace, struct heap_page *
 #define GET_PAGE_HEADER(x) (&GET_PAGE_BODY(x)->header)
 #define GET_HEAP_PAGE(x)   (GET_PAGE_HEADER(x)->page)
 
-static uint32_t slot_div_magics[HEAP_COUNT];
-
 static inline size_t
-slot_index_for_offset(size_t offset, uint32_t div_magic)
+slot_index_for_offset(size_t offset, uint64_t reciprocal)
 {
-    return (size_t)(((uint64_t)offset * div_magic) >> 32);
+    return (uint32_t)(((uint64_t)offset * reciprocal) >> SLOT_RECIPROCAL_SHIFT);
 }
 
-#define SLOT_INDEX(page, p)          slot_index_for_offset((uintptr_t)(p) - (page)->start, (page)->slot_div_magic)
+#define SLOT_INDEX(page, p)          slot_index_for_offset((uintptr_t)(p) - (page)->start, (page)->slot_size_reciprocal)
 #define SLOT_BITMAP_INDEX(page, p)   (SLOT_INDEX(page, p) / BITS_BITLENGTH)
 #define SLOT_BITMAP_OFFSET(page, p)  (SLOT_INDEX(page, p) & (BITS_BITLENGTH - 1))
 #define SLOT_BITMAP_BIT(page, p)     ((bits_t)1 << SLOT_BITMAP_OFFSET(page, p))
@@ -986,12 +1043,7 @@ gc_mode_verify(enum gc_mode mode)
 static inline bool
 has_sweeping_pages(rb_objspace_t *objspace)
 {
-    for (int i = 0; i < HEAP_COUNT; i++) {
-        if ((&heaps[i])->sweeping_page) {
-            return TRUE;
-        }
-    }
-    return FALSE;
+    return objspace->sweeping_heaps != 0;
 }
 
 static inline size_t
@@ -1646,7 +1698,7 @@ heap_page_add_freeobj(rb_objspace_t *objspace, struct heap_page *page, VALUE obj
         /* obj should belong to page */
         !(page->start <= (uintptr_t)obj &&
           (uintptr_t)obj   <  ((uintptr_t)page->start + (page->total_slots * page->slot_size)) &&
-          obj % pool_slot_sizes[0] == 0)) {
+          obj % sizeof(VALUE) == 0)) {
         rb_bug("heap_page_add_freeobj: %p is not rvalue.", (void *)obj);
     }
 
@@ -1987,19 +2039,17 @@ heap_add_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page)
     GC_ASSERT(!heap->sweeping_page);
     GC_ASSERT(heap_page_in_global_empty_pages_pool(objspace, page));
 
-    /* Align start to the first slot_size boundary after the page header */
+    /* Align start to slot_size boundary */
     uintptr_t start = (uintptr_t)page->body + sizeof(struct heap_page_header);
-    size_t remainder = start % heap->slot_size;
-    if (remainder != 0) {
-        start += heap->slot_size - remainder;
-    }
+    uintptr_t rem = start % heap->slot_size;
+    if (rem) start += heap->slot_size - rem;
 
     int slot_count = (int)((HEAP_PAGE_SIZE - (start - (uintptr_t)page->body))/heap->slot_size);
 
     page->start = start;
     page->total_slots = slot_count;
     page->slot_size = heap->slot_size;
-    page->slot_div_magic = slot_div_magics[heap - heaps];
+    page->slot_size_reciprocal = heap_slot_reciprocal_table[heap - heaps];
     page->heap = heap;
 
     memset(&page->wb_unprotected_bits[0], 0, HEAP_PAGE_BITMAP_SIZE);
@@ -2592,7 +2642,7 @@ is_pointer_to_heap(rb_objspace_t *objspace, const void *ptr)
     if (p < heap_pages_lomem || p > heap_pages_himem) return FALSE;
     RB_DEBUG_COUNTER_INC(gc_isptr_range);
 
-    if (p % pool_slot_sizes[0] != 0) return FALSE;
+    if (p % sizeof(VALUE) != 0) return FALSE;
     RB_DEBUG_COUNTER_INC(gc_isptr_align);
 
     page = heap_page_for_ptr(objspace, (uintptr_t)ptr);
@@ -2989,6 +3039,7 @@ gc_abort(void *objspace_ptr)
     }
 
     if (is_lazy_sweeping(objspace)) {
+        objspace->sweeping_heaps = 0;
         for (int i = 0; i < HEAP_COUNT; i++) {
             rb_heap_t *heap = &heaps[i];
 
@@ -3498,7 +3549,7 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
 
     do {
         VALUE vp = (VALUE)p;
-        GC_ASSERT(vp % pool_slot_sizes[0] == 0);
+        GC_ASSERT(vp % sizeof(VALUE) == 0);
 
         rb_asan_unpoison_object(vp, false);
         if (bitset & 1) {
@@ -3723,6 +3774,9 @@ static void
 gc_sweep_start_heap(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     heap->sweeping_page = ccan_list_top(&heap->pages, struct heap_page, page_node);
+    if (heap->sweeping_page) {
+        objspace->sweeping_heaps |= (1u << (heap - heaps));
+    }
     heap->free_pages = NULL;
     heap->pooled_pages = NULL;
     if (!objspace->flags.immediate_sweep) {
@@ -3834,7 +3888,8 @@ gc_sweep_finish_heap(rb_objspace_t *objspace, rb_heap_t *heap)
                     heap_allocatable_slots_expand(objspace, heap, swept_slots, heap->total_slots);
                 }
             }
-            else if (objspace->heap_pages.allocatable_slots < (min_free_slots - swept_slots)) {
+            else if (swept_slots < min_free_slots * 7 / 8 &&
+                     objspace->heap_pages.allocatable_slots < (min_free_slots * 7 / 8 - swept_slots)) {
                 gc_needs_major_flags |= GPR_FLAG_MAJOR_BY_NOFREE;
                 heap->force_major_gc_count++;
             }
@@ -3947,6 +4002,7 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
     } while ((sweep_page = heap->sweeping_page));
 
     if (!heap->sweeping_page) {
+        objspace->sweeping_heaps &= ~(1u << (heap - heaps));
         gc_sweep_finish_heap(objspace, heap);
 
         if (!has_sweeping_pages(objspace)) {
@@ -5461,7 +5517,7 @@ gc_marks_finish(rb_objspace_t *objspace)
         }
 
         if (objspace->heap_pages.allocatable_slots == 0 && sweep_slots < min_free_slots) {
-            if (!full_marking) {
+            if (!full_marking && sweep_slots < min_free_slots * 7 / 8) {
                 if (objspace->profile.count - objspace->rgengc.last_major_gc < RVALUE_OLD_AGE) {
                     full_marking = TRUE;
                 }
@@ -5597,7 +5653,7 @@ gc_compact_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t b
 
     do {
         VALUE vp = (VALUE)p;
-        GC_ASSERT(vp % pool_slot_sizes[0] == 0);
+        GC_ASSERT(vp % sizeof(VALUE) == 0);
 
         if (bitset & 1) {
             objspace->rcompactor.considered_count_table[BUILTIN_TYPE(vp)]++;
@@ -9518,11 +9574,15 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
         rb_bug("Could not preregister postponed job for GC");
     }
 
+    /* A standard RVALUE (RBasic + embedded VALUEs + debug overhead) must fit
+     * in at least one pool.  In debug builds RVALUE_OVERHEAD can push this
+     * beyond the 48-byte pool into the 64-byte pool, which is fine. */
+    GC_ASSERT(rb_gc_impl_size_allocatable_p(sizeof(struct RBasic) + sizeof(VALUE[RBIMPL_RVALUE_EMBED_LEN_MAX])));
+
     for (int i = 0; i < HEAP_COUNT; i++) {
         rb_heap_t *heap = &heaps[i];
 
         heap->slot_size = pool_slot_sizes[i];
-        slot_div_magics[i] = (uint32_t)((uint64_t)UINT32_MAX / heap->slot_size + 1);
 
         ccan_list_head_init(&heap->pages);
     }
@@ -9546,8 +9606,10 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
 #endif
     /* Set size pools allocatable pages. */
     for (int i = 0; i < HEAP_COUNT; i++) {
-        /* Set the default value of heap_init_slots. */
-        gc_params.heap_init_slots[i] = GC_HEAP_INIT_SLOTS;
+        /* Set the default value of heap_init_slots using a pre-computed
+         * table. Pool 1 (48B on 64-bit) gets the most slots since it holds
+         * the busiest objects; larger pools scale down proportionally. */
+        gc_params.heap_init_slots[i] = heap_init_slots_table[i];
     }
 
     init_mark_stack(&objspace->mark_stack);
@@ -9561,6 +9623,12 @@ rb_gc_impl_init(void)
 {
     VALUE gc_constants = rb_hash_new();
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("DEBUG")), GC_DEBUG ? Qtrue : Qfalse);
+    /* Minimum slot size that fits a standard RVALUE */
+    size_t rvalue_pool = 0;
+    for (size_t i = 0; i < HEAP_COUNT; i++) {
+        if (pool_slot_sizes[i] >= RVALUE_SLOT_SIZE) { rvalue_pool = pool_slot_sizes[i]; break; }
+    }
+    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_SIZE")), SIZET2NUM(rvalue_pool - RVALUE_OVERHEAD));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RBASIC_SIZE")), SIZET2NUM(sizeof(struct RBasic)));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OVERHEAD")), SIZET2NUM(RVALUE_OVERHEAD));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_PAGE_BITMAP_SIZE")), SIZET2NUM(HEAP_PAGE_BITMAP_SIZE));

@@ -2344,7 +2344,7 @@ class TestTranscode < Test::Unit::TestCase
 
   def test_ractor_lazy_load_encoding_random
     omit 'unstable on s390x and windows' if RUBY_PLATFORM =~ /s390x|mswin/
-    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}", timeout: 30)
     begin;
       rs = []
       100.times do

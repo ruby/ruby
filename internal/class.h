@@ -111,9 +111,9 @@ struct RClass_and_rb_classext_t {
 };
 
 #if SIZEOF_VALUE >= SIZEOF_LONG_LONG
-// Assert that classes can be embedded in heaps[2] (which has 160B slot size)
+// Assert that classes can be embedded in heaps[3] (256B slot size on 64-bit).
 // On 32bit platforms there is no variable width allocation so it doesn't matter.
-STATIC_ASSERT(sizeof_rb_classext_t, sizeof(struct RClass_and_rb_classext_t) <= 4 * RVALUE_SIZE);
+STATIC_ASSERT(sizeof_rb_classext_t, sizeof(struct RClass_and_rb_classext_t) <= 256);
 #endif
 
 struct RClass_boxable {
