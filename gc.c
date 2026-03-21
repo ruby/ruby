@@ -1239,7 +1239,9 @@ rb_gc_handle_weak_references(VALUE obj)
         GC_ASSERT(imemo_type(obj) == imemo_callcache);
 
         struct rb_callcache *cc = (struct rb_callcache *)obj;
-        if (!rb_gc_handle_weak_references_alive_p(cc->klass)) {
+        if (cc->klass != Qundef &&
+            (!rb_gc_handle_weak_references_alive_p(cc->klass) ||
+             !rb_gc_handle_weak_references_alive_p((VALUE)cc->cme_))) {
             vm_cc_invalidate(cc);
         }
 
