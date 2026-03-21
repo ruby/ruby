@@ -761,6 +761,24 @@ RUBY_TYPED_FROZEN_SHAREABLE ::
   If this flag is not set, the object can not become a shareable
   object by Ractor.make_shareable() method.
 
+RUBY_TYPED_EMBEDDABLE ::
+
+  This flag indicates that the object's data is embedded into the ruby object.
+  This can speed up object creation and lower memory fragmentation since
+  ruby-3.3, but it has some constraints:
+
+  * objects must be created with +TypedData_Make_Struct+ and the stored data
+    must have a fixed size
+  * object's data must be accessed by +TypedData_Get_Struct+ or by
+    +RTYPEDDATA_GET_DATA+
+  * a +dfree+ function can be registered, but it must not free the object's
+    data
+  * the flag +RUBY_TYPED_FREE_IMMEDIATELY+ is needed in addition
+  * pointers to the object's data may not be stored elsewhere, because memory
+    compaction can move it
+
+  Availability of the feature can be checked by <tt>#ifdef TYPED_DATA_EMBEDDED</tt>
+
 Note that this macro can raise an exception.  If sval to be wrapped
 holds a resource needs to be released (e.g., allocated memory, handle
 from an external library, and etc), you will have to use rb_protect.
