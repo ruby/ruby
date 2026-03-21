@@ -1026,7 +1026,7 @@ thread_sched_to_waiting(struct rb_thread_sched *sched, rb_thread_t *th)
 // mini utility func
 // return true if any there are any interrupts
 static bool
-ubf_set(rb_thread_t *th, rb_unblock_function_t *func, void *arg)
+ubf_set(rb_thread_t *th, rb_unblock_function_t *func, void *arg, rb_atomic_t *event_serial)
 {
     VM_ASSERT(func != NULL);
 
@@ -1046,6 +1046,10 @@ ubf_set(rb_thread_t *th, rb_unblock_function_t *func, void *arg)
         VM_ASSERT(th->unblock.func == NULL);
         th->unblock.func = func;
         th->unblock.arg  = arg;
+        if (event_serial) {
+            rb_atomic_t prev_serial = RUBY_ATOMIC_FETCH_ADD(th->unblock.event_serial, 1);
+            *event_serial = prev_serial+1;
+        }
     }
     rb_native_mutex_unlock(&th->interrupt_lock);
 
@@ -1053,12 +1057,15 @@ ubf_set(rb_thread_t *th, rb_unblock_function_t *func, void *arg)
 }
 
 static void
-ubf_clear(rb_thread_t *th)
+ubf_clear(rb_thread_t *th, bool clear_serial)
 {
     rb_native_mutex_lock(&th->interrupt_lock);
     {
         th->unblock.func = NULL;
         th->unblock.arg  = NULL;
+        if (clear_serial) {
+            RUBY_ATOMIC_ADD(th->unblock.event_serial, 1);
+        }
     }
     rb_native_mutex_unlock(&th->interrupt_lock);
 }
@@ -1103,7 +1110,7 @@ thread_sched_to_waiting_until_wakeup(struct rb_thread_sched *sched, rb_thread_t 
     thread_sched_lock(sched, th);
     {
         // NOTE: there's a lock ordering inversion here with the ubf call, but it's benign.
-        if (ubf_set(th, ubf_waiting, (void *)th)) {
+        if (ubf_set(th, ubf_waiting, (void *)th, NULL)) {
             RUBY_DEBUG_LOG("th:%u interrupted", rb_th_serial(th));
         }
         else {
@@ -1115,7 +1122,7 @@ thread_sched_to_waiting_until_wakeup(struct rb_thread_sched *sched, rb_thread_t 
     }
     thread_sched_unlock(sched, th);
 
-    ubf_clear(th);
+    ubf_clear(th, false);
 }
 
 // run another thread in the ready queue.
@@ -1333,8 +1340,9 @@ rb_ractor_sched_wait(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_fun
 
     rb_thread_t * volatile th = rb_ec_thread_ptr(ec);
     struct rb_thread_sched *sched = TH_SCHED(th);
+    struct ractor_waiter *waiter = (struct ractor_waiter*)ubf_arg;
 
-    if (ubf_set(th, ubf, ubf_arg)) {
+    if (ubf_set(th, ubf, ubf_arg, &waiter->event_serial)) {
         // interrupted
         return;
     }
@@ -1355,7 +1363,7 @@ rb_ractor_sched_wait(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_fun
     thread_sched_unlock(sched, th);
     rb_ractor_lock_self(cr);
 
-    ubf_clear(th);
+    ubf_clear(th, true);
 
     RUBY_DEBUG_LOG("end%s", "");
 }
@@ -1363,7 +1371,7 @@ rb_ractor_sched_wait(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_fun
 void
 rb_ractor_sched_wakeup(rb_ractor_t *r, rb_thread_t *r_th)
 {
-    // ractor lock of r is NOT acquired
+    // ractor lock of r acquired
     struct rb_thread_sched *sched = TH_SCHED(r_th);
 
     RUBY_DEBUG_LOG("r:%u th:%d", (unsigned int)rb_ractor_id(r), r_th->serial);
@@ -1371,6 +1379,7 @@ rb_ractor_sched_wakeup(rb_ractor_t *r, rb_thread_t *r_th)
     thread_sched_lock(sched, r_th);
     {
         if (r_th->status == THREAD_STOPPED_FOREVER) {
+            RUBY_ATOMIC_ADD(r_th->unblock.event_serial, 1);
             thread_sched_to_ready_common(sched, r_th, true, false);
         }
     }
