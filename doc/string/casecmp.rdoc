@@ -1,0 +1,25 @@
+Like String#<=>, but case-insensitive;
+equivalent to <tt>self.downcase.<=>(other_string.downcase)</tt>:
+
+  'foo'.casecmp('foo')  # => 0
+  'foo'.casecmp('FOO')  # => 0
+  'FOO'.casecmp('foo')  # => 0
+  'foo'.casecmp('food') # => -1
+  'food'.casecmp('foo') # => 1
+  'foo'.casecmp('goo')  # => -1
+  'goo'.casecmp('foo')  # => 1
+
+Returns nil if +self+ and +other_string+ have incompatible encodings,
+or if +other_string+ is not a string:
+
+  str = 'äöü'.encode("ISO-8859-1")
+  other_str = 'ÄÖÜ'
+  str.casecmp(other_str) # => nil
+  'foo'.casecmp(1)       # => nil
+
+Unlike String#casecmp?,
+case-insensitivity does not work for characters outside of 'A'..'Z' and 'a'..'z':
+
+  'äöü'.casecmp('ÄÖÜ') # => -1
+
+Related: String#casecmp?, Symbol#casecmp.

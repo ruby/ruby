@@ -1,0 +1,22 @@
+Returns +true+ if +self+ and +other_string+ are equal after Unicode case folding,
+otherwise +false+:
+
+  'foo'.casecmp?('foo')  # => true
+  'foo'.casecmp?('FOO')  # => true
+  'FOO'.casecmp?('foo')  # => true
+  'foo'.casecmp?('food') # => false
+  'food'.casecmp?('foo') # => false
+
+Returns nil if +self+ and +other_string+ have incompatible encodings,
+or if +other_string+ is not a string:
+
+  str = 'äöü'.encode("ISO-8859-1")
+  other_str = 'ÄÖÜ'
+  str.casecmp?(other_str) # => nil
+  'foo'.casecmp?(1)       # => nil
+
+Unlike String#casecmp, works for characters outside of 'A'..'Z' and 'a'..'z':
+
+  'äöü'.casecmp?('ÄÖÜ') # => true
+
+Related: String#casecmp, Symbol#casecmp?.
