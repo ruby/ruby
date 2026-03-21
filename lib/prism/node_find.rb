@@ -15,7 +15,6 @@ module Prism
     # Find the node for the given callable or backtrace location.
     #--
     #: (Method | UnboundMethod | Proc | Thread::Backtrace::Location callable, bool rubyvm) -> Node?
-    #++
     def self.find(callable, rubyvm)
       case callable
       when Proc
@@ -50,7 +49,6 @@ module Prism
       # Parse the given file path, returning a ParseResult or nil.
       #--
       #: (String? file) -> ParseResult?
-
       def parse_file(file)
         return unless file && File.readable?(file)
         result = Prism.parse_file(file)
@@ -64,7 +62,6 @@ module Prism
       # Find the node for the given callable using the ISeq node_id.
       #--
       #: (Method | UnboundMethod | Proc callable) -> Node?
-
       def find(callable)
         return unless (source_location = callable.source_location)
         return unless (result = parse_file(source_location[0]))
@@ -83,7 +80,6 @@ module Prism
       # Find the node for the given backtrace location using node_id.
       #--
       #: (Thread::Backtrace::Location location) -> Node?
-
       def find(location)
         file = location.absolute_path || location.path
         return unless (result = parse_file(file))
@@ -101,7 +97,6 @@ module Prism
       # Find the node for the given method by matching on name and line.
       #--
       #: (Method | UnboundMethod callable) -> Node?
-
       def find(callable)
         return unless (source_location = callable.source_location)
         return unless (result = parse_file(source_location[0]))
@@ -128,7 +123,6 @@ module Prism
       # Find the node for the given lambda by matching on line.
       #--
       #: (Proc callable) -> Node?
-
       def find(callable)
         return unless (source_location = callable.source_location)
         return unless (result = parse_file(source_location[0]))
@@ -154,7 +148,6 @@ module Prism
       # Find the node for the given proc by matching on line.
       #--
       #: (Proc callable) -> Node?
-
       def find(callable)
         return unless (source_location = callable.source_location)
         return unless (result = parse_file(source_location[0]))
@@ -180,7 +173,6 @@ module Prism
       # Find the node for the given backtrace location by matching on line.
       #--
       #: (Thread::Backtrace::Location location) -> Node?
-
       def find(location)
         file = location.absolute_path || location.path
         return unless (result = parse_file(file))
