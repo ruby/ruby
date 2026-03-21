@@ -1373,6 +1373,8 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
         if (obj_traverse_i(RCOMPLEX(obj)->real, data)) return 1;
         if (obj_traverse_i(RCOMPLEX(obj)->imag, data)) return 1;
         break;
+      case T_DECIMAL:
+        break;
 
       case T_DATA:
       case T_IMEMO:
@@ -1934,6 +1936,8 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
         CHECK_AND_REPLACE(obj, RCOMPLEX(obj)->real);
         CHECK_AND_REPLACE(obj, RCOMPLEX(obj)->imag);
         break;
+      case T_DECIMAL:
+        break;
 
       case T_DATA:
         if (!data->move && obj_refer_only_shareables_p(obj)) {
@@ -2002,6 +2006,7 @@ static const bool wb_protected_types[RUBY_T_MASK] = {
     [T_MATCH] = RGENGC_WB_PROTECTED_MATCH,
     [T_FLOAT] = RGENGC_WB_PROTECTED_FLOAT,
     [T_RATIONAL] = RGENGC_WB_PROTECTED_RATIONAL,
+    [T_DECIMAL] = RGENGC_WB_PROTECTED_DECIMAL,
 };
 
 static enum obj_traverse_iterator_result

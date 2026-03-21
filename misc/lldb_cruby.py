@@ -373,6 +373,11 @@ def lldb_inspect(debugger, target, result, val):
             result.Clear()
             result.write("(Rational) " + output.rstrip() + " / ")
             lldb_inspect(debugger, target, result, val.GetValueForExpressionPath("->den"))
+        elif flType == RUBY_T_DECIMAL:  # T_DECIMAL
+            tRDecimal = target.FindFirstType("struct RDecimal").GetPointerType()
+            val = val.Cast(tRDecimal)
+            print("(Decimal) ", file=result)
+            print(val.Dereference(), file=result)
         elif flType == RUBY_T_COMPLEX:
             tRComplex = target.FindFirstType("struct RComplex").GetPointerType()
             val = val.Cast(tRComplex)

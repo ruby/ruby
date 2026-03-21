@@ -45,6 +45,7 @@ T_BIGNUM   :: 多倍長整数
 T_FIXNUM   :: Fixnum(31bitまたは63bit長整数)
 T_COMPLEX  :: 複素数
 T_RATIONAL :: 有理数
+T_DECIMAL  :: 十進数
 T_FILE     :: 入出力
 T_TRUE     :: 真
 T_FALSE    :: 偽

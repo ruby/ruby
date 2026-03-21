@@ -28,6 +28,7 @@
 #include "internal/imemo.h"
 #include "internal/numeric.h"
 #include "internal/range.h"
+#include "internal/decimal.h"
 #include "internal/rational.h"
 #include "ruby/ruby.h"
 
@@ -4189,6 +4190,9 @@ num_plus(VALUE a, VALUE b)
     else if (RB_TYPE_P(a, T_RATIONAL)) {
         return rb_rational_plus(a, b);
     }
+    else if (decimal_p(a)) {
+        return rb_decimal_plus(a, b);
+    }
     else {
         return rb_funcallv(a, '+', 1, &b);
     }
@@ -4206,6 +4210,9 @@ num_minus(VALUE a, VALUE b)
     else if (RB_TYPE_P(a, T_RATIONAL)) {
         return rb_rational_minus(a, b);
     }
+    else if (decimal_p(a)) {
+        return rb_decimal_minus(a, b);
+    }
     else {
         return rb_funcallv(a, '-', 1, &b);
     }
@@ -4222,6 +4229,9 @@ num_mul(VALUE a, VALUE b)
     }
     else if (RB_TYPE_P(a, T_RATIONAL)) {
         return rb_rational_mul(a, b);
+    }
+    else if (decimal_p(a)) {
+        return rb_decimal_mul(a, b);
     }
     else {
         return rb_funcallv(a, '*', 1, &b);

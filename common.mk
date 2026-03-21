@@ -142,6 +142,7 @@ COMMONOBJS    = \
 		cont.$(OBJEXT) \
 		debug.$(OBJEXT) \
 		debug_counter.$(OBJEXT) \
+		decimal.$(OBJEXT) \
 		dir.$(OBJEXT) \
 		dln_find.$(OBJEXT) \
 		encoding.$(OBJEXT) \
@@ -1204,6 +1205,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/jit_undef.rb \
 		$(srcdir)/yjit.rb \
 		$(srcdir)/zjit.rb \
+		$(srcdir)/decimal.rb \
 		$(empty)
 BUILTIN_RB_INCS = $(BUILTIN_RB_SRCS:.rb=.rbinc)
 

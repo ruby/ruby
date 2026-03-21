@@ -202,6 +202,7 @@ type2sym(enum ruby_value_type i)
         CASE_TYPE(T_MATCH);
         CASE_TYPE(T_COMPLEX);
         CASE_TYPE(T_RATIONAL);
+        CASE_TYPE(T_DECIMAL);
         CASE_TYPE(T_NIL);
         CASE_TYPE(T_TRUE);
         CASE_TYPE(T_FALSE);

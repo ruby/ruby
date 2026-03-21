@@ -20,6 +20,7 @@
 #include "internal/array.h"
 #include "internal/class.h"
 #include "internal/complex.h"
+#include "internal/decimal.h"
 #include "internal/error.h"
 #include "internal/math.h"
 #include "internal/numeric.h"
@@ -240,6 +241,9 @@ f_real_p(VALUE x)
     else if (RB_TYPE_P(x, T_RATIONAL)) {
         return true;
     }
+    else if (decimal_p(x)) {
+        return true;
+    }
     else if (RB_TYPE_P(x, T_COMPLEX)) {
         return nucomp_real_p(x);
     }
@@ -317,7 +321,7 @@ always_finite_type_p(VALUE x)
 {
     if (FIXNUM_P(x)) return true;
     if (FLONUM_P(x)) return true; /* Infinity can't be a flonum */
-    return (RB_INTEGER_TYPE_P(x) || RB_TYPE_P(x, T_RATIONAL));
+    return (RB_INTEGER_TYPE_P(x) || RB_TYPE_P(x, T_RATIONAL) || decimal_p(x));
 }
 
 inline static int
@@ -1647,7 +1651,7 @@ nucomp_inspect(VALUE self)
     return s;
 }
 
-#define FINITE_TYPE_P(v) (RB_INTEGER_TYPE_P(v) || RB_TYPE_P(v, T_RATIONAL))
+#define FINITE_TYPE_P(v) (RB_INTEGER_TYPE_P(v) || RB_TYPE_P(v, T_RATIONAL) || decimal_p(v))
 
 /*
  * call-seq:
@@ -2453,7 +2457,7 @@ nucomp_convert(VALUE klass, VALUE a1, VALUE a2, int raise)
             argc = 1;
         }
         else {
-            if (!raise && !RB_INTEGER_TYPE_P(a2) && !RB_FLOAT_TYPE_P(a2) && !RB_TYPE_P(a2, T_RATIONAL))
+            if (!raise && !RB_INTEGER_TYPE_P(a2) && !RB_FLOAT_TYPE_P(a2) && !RB_TYPE_P(a2, T_RATIONAL) && !decimal_p(a2))
                 return Qnil;
             argv2[1] = a2;
             argc = 2;
@@ -2533,6 +2537,10 @@ numeric_polar(VALUE self)
     }
     else if (RB_TYPE_P(self, T_RATIONAL)) {
         abs = rb_rational_abs(self);
+        arg = numeric_arg(self);
+    }
+    else if (decimal_p(self)) {
+        abs = rb_decimal_abs(self);
         arg = numeric_arg(self);
     }
     else {

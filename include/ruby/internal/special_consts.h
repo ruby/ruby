@@ -78,6 +78,7 @@
 #define RB_TEST            RB_TEST
 #define RB_UNDEF_P         RB_UNDEF_P
 #define RB_NIL_OR_UNDEF_P  RB_NIL_OR_UNDEF_P
+#define RB_DECIMAL_IMM_P   RB_DECIMAL_IMM_P
 /** @endcond */
 
 /** special constants - i.e. non-zero and non-fixnum constants */
@@ -317,6 +318,22 @@ RBIMPL_ATTR_CONST()
 RBIMPL_ATTR_CONSTEXPR(CXX11)
 RBIMPL_ATTR_ARTIFICIAL()
 /**
+ * Checks if the given object is a BID-encoded Decimal immediate.
+ *
+ * @param[in]  obj    An arbitrary ruby object.
+ * @retval     true   `obj` is a BID Decimal immediate.
+ * @retval     false  Anything else.
+ */
+static inline bool
+RB_DECIMAL_IMM_P(VALUE obj)
+{
+    return (obj & 0xFF) == 0x84;
+}
+
+RBIMPL_ATTR_CONST()
+RBIMPL_ATTR_CONSTEXPR(CXX11)
+RBIMPL_ATTR_ARTIFICIAL()
+/**
  * Checks if the given object is of enum ::ruby_special_consts.
  *
  * @param[in]  obj    An arbitrary ruby object.
@@ -326,7 +343,7 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 RB_SPECIAL_CONST_P(VALUE obj)
 {
-    return (obj == RUBY_Qfalse) || RB_IMMEDIATE_P(obj);
+    return (obj == RUBY_Qfalse) || RB_IMMEDIATE_P(obj) || RB_DECIMAL_IMM_P(obj);
 }
 
 RBIMPL_ATTR_CONST()

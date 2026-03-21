@@ -35,6 +35,7 @@
 #include "internal/hash.h"
 #include "internal/numeric.h"
 #include "internal/object.h"
+#include "internal/decimal.h"
 #include "internal/rational.h"
 #include "internal/string.h"
 #include "internal/util.h"
@@ -1081,6 +1082,9 @@ rb_float_plus(VALUE x, VALUE y)
     else if (RB_FLOAT_TYPE_P(y)) {
         return DBL2NUM(RFLOAT_VALUE(x) + RFLOAT_VALUE(y));
     }
+    else if (decimal_p(y)) {
+        return DBL2NUM(RFLOAT_VALUE(x) + rb_decimal_to_f_value(y));
+    }
     else {
         return rb_num_coerce_bin(x, y, '+');
     }
@@ -1112,6 +1116,9 @@ rb_float_minus(VALUE x, VALUE y)
     else if (RB_FLOAT_TYPE_P(y)) {
         return DBL2NUM(RFLOAT_VALUE(x) - RFLOAT_VALUE(y));
     }
+    else if (decimal_p(y)) {
+        return DBL2NUM(RFLOAT_VALUE(x) - rb_decimal_to_f_value(y));
+    }
     else {
         return rb_num_coerce_bin(x, y, '-');
     }
@@ -1142,6 +1149,9 @@ rb_float_mul(VALUE x, VALUE y)
     }
     else if (RB_FLOAT_TYPE_P(y)) {
         return DBL2NUM(RFLOAT_VALUE(x) * RFLOAT_VALUE(y));
+    }
+    else if (decimal_p(y)) {
+        return DBL2NUM(RFLOAT_VALUE(x) * rb_decimal_to_f_value(y));
     }
     else {
         return rb_num_coerce_bin(x, y, '*');
@@ -1201,6 +1211,9 @@ rb_float_div(VALUE x, VALUE y)
     }
     else if (RB_FLOAT_TYPE_P(y)) {
         den = RFLOAT_VALUE(y);
+    }
+    else if (decimal_p(y)) {
+        den = rb_decimal_to_f_value(y);
     }
     else {
         return rb_num_coerce_bin(x, y, '/');
@@ -4146,6 +4159,9 @@ fix_plus(VALUE x, VALUE y)
     else if (RB_TYPE_P(y, T_COMPLEX)) {
         return rb_complex_plus(y, x);
     }
+    else if (decimal_p(y)) {
+        return rb_decimal_plus(rb_decimal_from_integer(x), y);
+    }
     else {
         return rb_num_coerce_bin(x, y, '+');
     }
@@ -4199,6 +4215,9 @@ fix_minus(VALUE x, VALUE y)
     }
     else if (RB_FLOAT_TYPE_P(y)) {
         return DBL2NUM((double)FIX2LONG(x) - RFLOAT_VALUE(y));
+    }
+    else if (decimal_p(y)) {
+        return rb_decimal_minus(rb_decimal_from_integer(x), y);
     }
     else {
         return rb_num_coerce_bin(x, y, '-');
@@ -4255,6 +4274,9 @@ fix_mul(VALUE x, VALUE y)
     }
     else if (RB_TYPE_P(y, T_COMPLEX)) {
         return rb_complex_mul(y, x);
+    }
+    else if (decimal_p(y)) {
+        return rb_decimal_mul(rb_decimal_from_integer(x), y);
     }
     else {
         return rb_num_coerce_bin(x, y, '*');
@@ -4406,6 +4428,11 @@ fix_divide(VALUE x, VALUE y, ID op)
                 v = fix_divide(x, y, '/');
                 return flo_floor(0, 0, v);
             }
+    }
+    else if (decimal_p(y)) {
+        if (op == '/')
+            return rb_decimal_div(rb_decimal_from_integer(x), y);
+        return rb_num_coerce_bin(x, y, op);
     }
     else {
         if (RB_TYPE_P(y, T_RATIONAL) &&

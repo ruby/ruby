@@ -1073,6 +1073,7 @@ rb_wb_protected_newobj_of(rb_execution_context_t *ec, VALUE klass, VALUE flags, 
     return newobj_of(rb_ec_ractor_ptr(ec), klass, flags, shape_id, TRUE, size);
 }
 
+
 VALUE
 rb_class_allocate_instance(VALUE klass)
 {
@@ -1336,6 +1337,7 @@ rb_gc_obj_needs_cleanup_p(VALUE obj)
       case T_FLOAT:
       case T_RATIONAL:
       case T_COMPLEX:
+      case T_DECIMAL:
         break;
 
       case T_FILE:
@@ -1392,6 +1394,7 @@ rb_gc_obj_needs_cleanup_p(VALUE obj)
       case T_FLOAT:
       case T_RATIONAL:
       case T_COMPLEX:
+      case T_DECIMAL:
         return rb_shape_has_fields(shape_id);
 
       default:
@@ -1613,6 +1616,9 @@ rb_gc_obj_free(void *objspace, VALUE obj)
         break;
       case T_RATIONAL:
         RB_DEBUG_COUNTER_INC(obj_rational);
+        break;
+      case T_DECIMAL:
+        RB_DEBUG_COUNTER_INC(obj_decimal);
         break;
       case T_COMPLEX:
         RB_DEBUG_COUNTER_INC(obj_complex);
@@ -2599,6 +2605,7 @@ rb_obj_memsize_of(VALUE obj)
         break;
       case T_RATIONAL:
       case T_COMPLEX:
+      case T_DECIMAL:
         break;
       case T_IMEMO:
         size += rb_imemo_memsize(obj);
@@ -3511,6 +3518,9 @@ rb_gc_mark_children(void *objspace, VALUE obj)
       case T_RATIONAL:
         gc_mark_internal(RRATIONAL(obj)->num);
         gc_mark_internal(RRATIONAL(obj)->den);
+        break;
+
+      case T_DECIMAL:
         break;
 
       case T_COMPLEX:
@@ -4453,6 +4463,9 @@ rb_gc_update_object_references(void *objspace, VALUE obj)
         UPDATE_IF_MOVED(objspace, RRATIONAL(obj)->den);
         break;
 
+      case T_DECIMAL:
+        break;
+
       case T_COMPLEX:
         UPDATE_IF_MOVED(objspace, RCOMPLEX(obj)->real);
         UPDATE_IF_MOVED(objspace, RCOMPLEX(obj)->imag);
@@ -4801,6 +4814,7 @@ type_name(int type, VALUE obj)
             TYPE_NAME(T_MATCH);
             TYPE_NAME(T_COMPLEX);
             TYPE_NAME(T_RATIONAL);
+            TYPE_NAME(T_DECIMAL);
             TYPE_NAME(T_NIL);
             TYPE_NAME(T_TRUE);
             TYPE_NAME(T_FALSE);

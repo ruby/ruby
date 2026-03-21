@@ -30,6 +30,7 @@
 #include "ruby/internal/intern/compar.h"
 #include "ruby/internal/intern/complex.h"
 #include "ruby/internal/intern/cont.h"
+#include "ruby/internal/intern/decimal.h"
 #include "ruby/internal/intern/dir.h"
 #include "ruby/internal/intern/enum.h"
 #include "ruby/internal/intern/enumerator.h"

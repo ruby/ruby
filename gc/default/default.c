@@ -4298,6 +4298,7 @@ push_mark_stack(mark_stack_t *stack, VALUE obj)
       case T_MATCH:
       case T_COMPLEX:
       case T_RATIONAL:
+      case T_DECIMAL:
       case T_TRUE:
       case T_FALSE:
       case T_SYMBOL:
@@ -6901,6 +6902,7 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
       case T_FILE:
       case T_COMPLEX:
       case T_RATIONAL:
+      case T_DECIMAL:
       case T_NODE:
       case T_CLASS:
         if (FL_TEST_RAW(obj, FL_FINALIZE)) {
@@ -7267,6 +7269,7 @@ type_name(int type, VALUE obj)
       case RUBY_T_MATCH:    return "T_MATCH";
       case RUBY_T_COMPLEX:  return "T_COMPLEX";
       case RUBY_T_RATIONAL: return "T_RATIONAL";
+      case RUBY_T_DECIMAL:  return "T_DECIMAL";
       case RUBY_T_NIL:      return "T_NIL";
       case RUBY_T_TRUE:     return "T_TRUE";
       case RUBY_T_FALSE:    return "T_FALSE";

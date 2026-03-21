@@ -31,6 +31,7 @@
 #include "internal/gc.h"
 #include "internal/numeric.h"
 #include "internal/object.h"
+#include "internal/decimal.h"
 #include "internal/rational.h"
 #include "ruby_assert.h"
 
@@ -750,6 +751,9 @@ rb_rational_plus(VALUE self, VALUE other)
                             bdat->num, bdat->den, '+');
         }
     }
+    else if (decimal_p(other)) {
+        return rb_decimal_plus(rb_Decimal(self), other);
+    }
     else {
         return rb_num_coerce_bin(self, other, '+');
     }
@@ -790,6 +794,9 @@ rb_rational_minus(VALUE self, VALUE other)
                             adat->num, adat->den,
                             bdat->num, bdat->den, '-');
         }
+    }
+    else if (decimal_p(other)) {
+        return rb_decimal_minus(rb_Decimal(self), other);
     }
     else {
         return rb_num_coerce_bin(self, other, '-');
@@ -889,6 +896,9 @@ rb_rational_mul(VALUE self, VALUE other)
                             bdat->num, bdat->den, '*');
         }
     }
+    else if (decimal_p(other)) {
+        return rb_decimal_mul(rb_Decimal(self), other);
+    }
     else {
         return rb_num_coerce_bin(self, other, '*');
     }
@@ -938,6 +948,9 @@ rb_rational_div(VALUE self, VALUE other)
                             adat->num, adat->den,
                             bdat->num, bdat->den, '/');
         }
+    }
+    else if (decimal_p(other)) {
+        return rb_decimal_div(rb_Decimal(self), other);
     }
     else {
         return rb_num_coerce_bin(self, other, '/');
@@ -2731,6 +2744,20 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
  *    Rational(-8) ** Rational(1, 3)
  *                       #=> (1.0000000000000002+1.7320508075688772i)
  */
+/*
+ *  call-seq:
+ *    to_dec -> decimal
+ *
+ *  Returns the value as a Decimal.
+ *
+ *    Rational(1, 2).to_dec   #=> 0.5d
+ */
+static VALUE
+rational_to_dec(VALUE self)
+{
+    return rb_Decimal(self);
+}
+
 void
 Init_Rational(void)
 {
@@ -2778,6 +2805,7 @@ Init_Rational(void)
     rb_define_method(rb_cRational, "to_i", nurat_truncate, 0);
     rb_define_method(rb_cRational, "to_f", nurat_to_f, 0);
     rb_define_method(rb_cRational, "to_r", nurat_to_r, 0);
+    rb_define_method(rb_cRational, "to_dec", rational_to_dec, 0);
     rb_define_method(rb_cRational, "rationalize", nurat_rationalize, -1);
 
     rb_define_method(rb_cRational, "hash", nurat_hash, 0);

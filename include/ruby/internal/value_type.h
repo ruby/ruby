@@ -58,6 +58,7 @@
 #define T_CLASS    RUBY_T_CLASS    /**< @old{RUBY_T_CLASS} */
 #define T_COMPLEX  RUBY_T_COMPLEX  /**< @old{RUBY_T_COMPLEX} */
 #define T_DATA     RUBY_T_DATA     /**< @old{RUBY_T_DATA} */
+#define T_DECIMAL  RUBY_T_DECIMAL  /**< @old{RUBY_T_DECIMAL} */
 #define T_FALSE    RUBY_T_FALSE    /**< @old{RUBY_T_FALSE} */
 #define T_FILE     RUBY_T_FILE     /**< @old{RUBY_T_FILE} */
 #define T_FIXNUM   RUBY_T_FIXNUM   /**< @old{RUBY_T_FIXNUM} */
@@ -128,6 +129,7 @@ ruby_value_type {
     RUBY_T_MATCH    = 0x0d, /**< @see struct ::RMatch */
     RUBY_T_COMPLEX  = 0x0e, /**< @see struct ::RComplex */
     RUBY_T_RATIONAL = 0x0f, /**< @see struct ::RRational */
+    RUBY_T_DECIMAL  = 0x10, /**< @see struct ::RDecimal */
 
     RUBY_T_NIL      = 0x11, /**< @see ::RUBY_Qnil */
     RUBY_T_TRUE     = 0x12, /**< @see ::RUBY_Qtrue */
@@ -244,6 +246,9 @@ rb_type(VALUE obj)
     }
     else if (RB_STATIC_SYM_P(obj)) {
         return RUBY_T_SYMBOL;
+    }
+    else if (RB_DECIMAL_IMM_P(obj)) {
+        return RUBY_T_DECIMAL;
     }
     else {
         RBIMPL_ASSUME(RB_FLONUM_P(obj));

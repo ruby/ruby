@@ -40,6 +40,7 @@ T_BIGNUM    :: multi precision integer
 T_FIXNUM    :: Fixnum(31bit or 63bit integer)
 T_COMPLEX   :: complex number
 T_RATIONAL  :: rational number
+T_DECIMAL   :: decimal number
 T_FILE      :: IO
 T_TRUE      :: true
 T_FALSE     :: false

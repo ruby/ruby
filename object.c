@@ -29,6 +29,7 @@
 #include "internal/inits.h"
 #include "internal/numeric.h"
 #include "internal/object.h"
+#include "internal/decimal.h"
 #include "internal/struct.h"
 #include "internal/string.h"
 #include "internal/st.h"
@@ -405,6 +406,7 @@ special_object_p(VALUE obj)
       case T_SYMBOL:
       case T_RATIONAL:
       case T_COMPLEX:
+      case T_DECIMAL:
         /* not a comprehensive list */
         return TRUE;
       default:
@@ -3777,6 +3779,10 @@ to_float(VALUE *valp, int raise_exception)
         else if (FLONUM_P(val)) {
             return T_FLOAT;
         }
+        else if (RB_DECIMAL_IMM_P(val)) {
+            *valp = DBL2NUM(rb_decimal_to_f_value(val));
+            return T_FLOAT;
+        }
         else if (raise_exception) {
             rb_cant_convert(val, "Float");
         }
@@ -3794,6 +3800,9 @@ to_float(VALUE *valp, int raise_exception)
             return T_FLOAT;
           case T_STRING:
             return T_STRING;
+          case T_DECIMAL:
+            *valp = DBL2NUM(rb_decimal_to_f_value(val));
+            return T_FLOAT;
         }
     }
     return T_NONE;
@@ -3935,6 +3944,9 @@ rb_num2dbl(VALUE val)
         else if (FLONUM_P(val)) {
             return rb_float_flonum_value(val);
         }
+        else if (RB_DECIMAL_IMM_P(val)) {
+            return rb_decimal_to_f_value(val);
+        }
         else {
             rb_no_implicit_conversion(val, "Float");
         }
@@ -3947,6 +3959,8 @@ rb_num2dbl(VALUE val)
             return big2dbl_without_to_f(val);
           case T_RATIONAL:
             return rat2dbl_without_to_f(val);
+          case T_DECIMAL:
+            return rb_decimal_to_f_value(val);
           case T_STRING:
             rb_no_implicit_conversion(val, "Float");
           default:

@@ -70,6 +70,7 @@ rb_call_inits(void)
     CALL(process);
     CALL(Rational);
     CALL(Complex);
+    CALL(Decimal);
     CALL(MemoryView);
     CALL(pathname);
     CALL(version);
@@ -111,6 +112,7 @@ rb_call_builtin_inits(void)
     BUILTIN(nilclass);
     BUILTIN(marshal);
     BUILTIN(jit_undef);
+    BUILTIN(decimal);
     Init_builtin_prelude();
 }
 #undef CALL

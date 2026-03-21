@@ -166,6 +166,10 @@ define rp
     printf "%sT_RATIONAL%s: ", $color_type, $color_end
     print (struct RRational *)($arg0)
   else
+  if ($flags & RUBY_T_MASK) == RUBY_T_DECIMAL
+    printf "%sT_DECIMAL%s: ", $color_type, $color_end
+    print (struct RDecimal *)($arg0)
+  else
   if ($flags & RUBY_T_MASK) == RUBY_T_COMPLEX
     printf "%sT_COMPLEX%s: ", $color_type, $color_end
     print (struct RComplex *)($arg0)
@@ -1240,7 +1244,7 @@ define rb_count_objects
   printf "T_MATCH: %d\n", $counts_0d
   printf "T_COMPLEX: %d\n", $counts_0e
   printf "T_RATIONAL: %d\n", $counts_0f
-  #printf "UNKNOWN_10: %d\n", $counts_10
+  printf "T_DECIMAL: %d\n", $counts_10
   printf "T_NIL: %d\n", $counts_11
   printf "T_TRUE: %d\n", $counts_12
   printf "T_FALSE: %d\n", $counts_13

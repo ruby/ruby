@@ -11,6 +11,11 @@ Note that each entry is kept to a minimum, see links for details.
 
 Note: We're only listing outstanding class updates.
 
+### Decimal
+
+* `Decimal` is a new core class for exact decimal arithmetic.
+  `0.1d + 0.2d == 0.3d` is `true`.
+
 * Array
 
     * `Array#pack` accepts a new format `R` and `r` for unpacking unsigned

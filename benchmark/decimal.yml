@@ -1,0 +1,53 @@
+prelude: |
+  require "bigdecimal"
+
+  d_principal = Decimal("10000.00")
+  d_rate = Decimal("0.005")
+  d_one = Decimal("1")
+  f_principal = 10000.0
+  f_rate = 0.005
+  r_principal = Rational("10000")
+  r_rate = Rational(1, 200)
+  bd_principal = BigDecimal("10000.00")
+  bd_rate = BigDecimal("0.005")
+
+  d1 = Decimal("29.99")
+  d2 = Decimal("1.50")
+  dr = Decimal("29.985")
+  dd = Decimal("29.85")
+  f1 = 29.99
+  f2 = 1.50
+  fr = 29.985
+
+  dec_vals = Array.new(1000, d1)
+  flt_vals = Array.new(1000, f1)
+
+benchmark:
+  decimal_compound: |
+    b = d_principal
+    360.times { b = (b * (d_one + d_rate)).round(2) }
+  float_compound: |
+    b = f_principal
+    360.times { b = (b * (1.0 + f_rate)).round(2) }
+  rational_compound: |
+    b = r_principal
+    360.times { b = (b * (1 + r_rate)).round(2) }
+  bigdecimal_compound: |
+    b = bd_principal
+    360.times { b = (b * (1 + bd_rate)).round(2) }
+
+  decimal_add: d1 + d2
+  decimal_mul: d1 * d2
+  decimal_div: d1 / d2
+  decimal_round: dr.round(2)
+  decimal_parse: Decimal("29.99")
+  decimal_to_s: d1.to_s
+  decimal_sum_1000: dec_vals.sum(Decimal(0))
+
+  float_add: f1 + f2
+  float_mul: f1 * f2
+  float_div: f1 / f2
+  float_round: fr.round(2)
+  float_parse: Float("29.99")
+  float_to_s: f1.to_s
+  float_sum_1000: flt_vals.sum

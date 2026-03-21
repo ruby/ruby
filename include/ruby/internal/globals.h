@@ -70,6 +70,7 @@ RUBY_EXTERN VALUE rb_cArray;                  /**< `Array` class. */
 RUBY_EXTERN VALUE rb_cBinding;                /**< `Binding` class. */
 RUBY_EXTERN VALUE rb_cBox;                    /**< `Ruby::Box` class. */
 RUBY_EXTERN VALUE rb_cClass;                  /**< `Class` class. */
+RUBY_EXTERN VALUE rb_cDecimal;                /**< `Decimal` class. */
 RUBY_EXTERN VALUE rb_cDir;                    /**< `Dir` class. */
 RUBY_EXTERN VALUE rb_cEncoding;               /**< `Encoding` class. */
 RUBY_EXTERN VALUE rb_cEnumerator;             /**< `Enumerator` class. */
@@ -193,6 +194,9 @@ rb_class_of(VALUE obj)
     }
     else if (RB_FLONUM_P(obj)) {
         return rb_cFloat;
+    }
+    else if (RB_DECIMAL_IMM_P(obj)) {
+        return rb_cDecimal;
     }
 
 #if !RUBY_DEBUG

@@ -296,6 +296,7 @@ RB_DEBUG_COUNTER(obj_bignum_embed)
 RB_DEBUG_COUNTER(obj_float)
 RB_DEBUG_COUNTER(obj_complex)
 RB_DEBUG_COUNTER(obj_rational)
+RB_DEBUG_COUNTER(obj_decimal)
 
 RB_DEBUG_COUNTER(obj_regexp_ptr)
 RB_DEBUG_COUNTER(obj_file_ptr)

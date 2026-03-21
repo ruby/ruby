@@ -30,6 +30,7 @@
 #include "internal/hash.h"
 #include "internal/numeric.h"
 #include "internal/object.h"
+#include "internal/decimal.h"
 #include "internal/re.h"
 #include "internal/struct.h"
 #include "internal/symbol.h"
@@ -888,6 +889,16 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
             w_remember(obj, arg);
             w_byte(TYPE_FLOAT, arg);
             w_float(RFLOAT_VALUE(obj), arg);
+            return;
+        }
+
+        if (RB_DECIMAL_IMM_P(obj)) {
+            /* BID Decimal immediate: write as TYPE_USRMARSHAL with the
+             * scaled integer, matching the heap Decimal marshal format. */
+            w_remember(obj, arg);
+            VALUE v = rb_funcall(obj, s_mdump, 0);
+            w_class(TYPE_USRMARSHAL, obj, arg, FALSE);
+            w_object(v, arg, limit);
             return;
         }
 

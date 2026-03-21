@@ -27,6 +27,7 @@
 #include "internal/numeric.h"
 #include "internal/object.h"
 #include "internal/sanitizers.h"
+#include "internal/decimal.h"
 #include "internal/symbol.h"
 #include "ruby/encoding.h"
 #include "ruby/re.h"
@@ -801,6 +802,10 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
                 else if (RB_TYPE_P(val, T_RATIONAL)) {
                     den = rb_rational_den(val);
                     num = rb_rational_num(val);
+                }
+                else if (decimal_p(val)) {
+                    nextvalue = rb_decimal_to_f(val);
+                    goto float_value;
                 }
                 else {
                     nextvalue = val;
