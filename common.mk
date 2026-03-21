@@ -77,6 +77,7 @@ INSTALL_DOC_OPTS = --rdoc-output="$(RDOCOUT)" --html-output="$(HTMLOUT)"
 RDOC_GEN_OPTS = --no-force-update \
 	--exclude '^lib/rubygems/core_ext/kernel_require\.rb$$' \
 	$(empty)
+RDOC_SERVER_PORT = 4000
 
 INITOBJS      = dmyext.$(OBJEXT) dmyenc.$(OBJEXT)
 NORMALMAINOBJ = main.$(OBJEXT)
@@ -629,6 +630,10 @@ rdoc: PHONY $(RDOC_DEPENDS) $(RBCONFIG)
 html: PHONY $(RDOC_DEPENDS) $(RBCONFIG)
 	@echo Generating RDoc HTML files
 	$(Q) $(RDOC) --op "$(HTMLOUT)" $(RDOC_GEN_OPTS) $(RDOCFLAGS) .
+
+html-server: PHONY $(RDOC_DEPENDS) $(RBCONFIG)
+	@echo Starting RDoc server with live reload
+	$(Q) $(RDOC) --server=$(RDOC_SERVER_PORT) $(RDOC_GEN_OPTS) $(RDOCFLAGS) .
 
 RDOC_COVERAGE_EXCLUDES = -x ^ext/json -x ^ext/openssl -x ^ext/psych \
 	-x ^lib/bundler -x ^lib/rubygems \
