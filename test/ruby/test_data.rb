@@ -121,7 +121,7 @@ class TestData < Test::Unit::TestCase
     assert_equal({foo: 1, bar: 2}, test.deconstruct_keys(nil))
     assert_equal({foo: 1}, test.deconstruct_keys(%i[foo]))
     assert_equal({foo: 1}, test.deconstruct_keys(%i[foo baz]))
-    assert_equal({}, test.deconstruct_keys(%i[foo bar baz]))
+    assert_equal({foo: 1, bar: 2}, test.deconstruct_keys(%i[foo bar baz]))
     assert_raise(TypeError) { test.deconstruct_keys(0) }
 
     assert_kind_of(Integer, test.hash)
