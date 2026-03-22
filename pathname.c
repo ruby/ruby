@@ -18,8 +18,7 @@ get_strpath(VALUE obj)
  * call-seq:
  *   self <=> other -> -1, 0, 1, or nil
  *
- * Compares the contents of +self+ and +other+ as strings
- * (first performing necessary conversions);
+ * Compares the contents of +self+ and +other+ as strings;
  * see String#<=>.
  *
  * Returns:
