@@ -619,15 +619,12 @@ class Pathname
   # yields +self+, then a new pathname for each successive dirname in the stored path;
   # see File.dirname:
   #
-  #   a = []
-  #   Pathname.new('/path/to/some/file.rb').ascend {|dirname| a << dirname}
-  #   a
-  #   # =>
-  #   [#<Pathname:/path/to/some/file.rb>,
-  #    #<Pathname:/path/to/some>,
-  #    #<Pathname:/path/to>,
-  #    #<Pathname:/path>,
-  #    #<Pathname:/>]
+  #   Pathname.new('/path/to/some/file.rb').ascend {|dirname| p dirname}
+  #   #<Pathname:/path/to/some/file.rb>
+  #   #<Pathname:/path/to/some>
+  #   #<Pathname:/path/to>
+  #   #<Pathname:/path>
+  #   #<Pathname:/>
   #
   # With no block given, returns a new Enumerator.
   def ascend
