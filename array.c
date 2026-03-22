@@ -2167,12 +2167,12 @@ rb_ary_rfind(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *    find_index(object) -> integer or nil
+ *    find_index(object, offset: 0) -> integer or nil
  *    find_index {|element| ... } -> integer or nil
- *    find_index -> new_enumerator
- *    index(object) -> integer or nil
+ *    find_index(offset: 0) -> new_enumerator
+ *    index(object, offset: 0) -> integer or nil
  *    index {|element| ... } -> integer or nil
- *    index -> new_enumerator
+ *    index(offset: 0) -> new_enumerator
  *
  *  Returns the zero-based integer index of a specified element, or +nil+.
  *
@@ -2194,6 +2194,20 @@ rb_ary_rfind(int argc, VALUE *argv, VALUE ary)
  *
  *  Returns +nil+ if the block never returns a truthy value.
  *
+ *  When +offset+ is non-negative, begins the search at position +offset+;
+ *  the returned index is relative to the beginning of +self+:
+ *
+ *    a = [:foo, 'bar', 2, 'bar']
+ *    a.index('bar', offset: 1) # => 1
+ *    a.index('bar', offset: 2) # => 3
+ *    a.index('bar', offset: 4) # => nil
+ *
+ *  With negative integer argument +offset+, selects the search position by counting backward
+ *  from the end of +self+:
+ *
+ *    a = [:foo, 'bar', 2, 'bar']
+ *    a.index('bar', offset: -2) # => 3
+ *
  *  With neither an argument nor a block given, returns a new Enumerator.
  *
  *  Related: see {Methods for Querying}[rdoc-ref:Array@Methods+for+Querying].
@@ -2202,7 +2216,8 @@ rb_ary_rfind(int argc, VALUE *argv, VALUE ary)
 static VALUE
 rb_ary_index(int argc, VALUE *argv, VALUE ary)
 {
-    VALUE val;
+    VALUE val, opts = Qnil, initpos = Qnil;
+    long pos = 0;
     long i;
 
     if (argc == 0) {
@@ -2214,11 +2229,24 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
         }
         return Qnil;
     }
-    rb_check_arity(argc, 0, 1);
-    val = argv[0];
+    rb_check_arity(argc, 0, 2);
+    rb_scan_args(argc, argv, "1:", &val, &opts);
+    if (!NIL_P(opts)) {
+        static ID keywords[1];
+        if (!keywords[0]) {
+            keywords[0] = rb_intern_const("offset");
+        }
+        rb_get_kwargs(opts, keywords, 0, 1, &initpos);
+        if (!UNDEF_P(initpos))
+            pos = NUM2LONG(initpos);
+    }
     if (rb_block_given_p())
         rb_warn("given block not used");
-    for (i=0; i<RARRAY_LEN(ary); i++) {
+    if (pos < 0)
+        pos += RARRAY_LEN(ary);
+    if (pos < 0)
+        return Qnil;
+    for (i=pos; i<RARRAY_LEN(ary); i++) {
         VALUE e = RARRAY_AREF(ary, i);
         if (rb_equal(e, val)) {
             return LONG2NUM(i);
@@ -2229,9 +2257,9 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *    rindex(object) -> integer or nil
+ *    rindex(object, offset: nil) -> integer or nil
  *    rindex {|element| ... } -> integer or nil
- *    rindex -> new_enumerator
+ *    rindex(offset: nil) -> new_enumerator
  *
  *  Returns the index of the last element for which <tt>object == element</tt>.
  *
@@ -2250,6 +2278,23 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
  *
  *  Returns +nil+ if the block never returns a truthy value.
  *
+ *  When +offset+ is non-negative, it specifies the maximum starting position in the
+ *  array to end the search:
+ *
+ *    a = [:foo, 'bar', 2, 'bar']
+ *    a.rindex('bar', offset: 0) # => 3
+ *    a.rindex(2, offset: 1) # => 2
+ *    a.rindex(2, offset: 3) # => nil
+ *
+ *  With negative integer argument +offset+,
+ *  selects the search position by counting backward from the end of +self+:
+ *
+ *    a = [:foo, 'bar', 2, 'bar']
+ *    a.rindex('bar', -1) # => 3
+ *    a.rindex('bar', -2) # => 1
+ *    a.rindex('bar', -3) # => 1
+ *    a.rindex('bar', -4) # => nil
+ *
  *  When neither an argument nor a block is given, returns a new Enumerator.
  *
  *  Related: see {Methods for Querying}[rdoc-ref:Array@Methods+for+Querying].
@@ -2258,25 +2303,44 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
 static VALUE
 rb_ary_rindex(int argc, VALUE *argv, VALUE ary)
 {
-    VALUE val;
-    long i = RARRAY_LEN(ary), len;
+    VALUE val, opts = Qnil, offset_arg = Qnil;
+    long i = RARRAY_LEN(ary) - 1, len, end_pos = 0, offset;
 
     if (argc == 0) {
         RETURN_ENUMERATOR(ary, 0, 0);
-        while (i--) {
+        while (i >= 0) {
             if (RTEST(rb_yield(RARRAY_AREF(ary, i))))
                 return LONG2NUM(i);
             if (i > (len = RARRAY_LEN(ary))) {
                 i = len;
             }
+            i--;
         }
         return Qnil;
     }
-    rb_check_arity(argc, 0, 1);
-    val = argv[0];
+    rb_check_arity(argc, 0, 2);
+    rb_scan_args(argc, argv, "1:", &val, &opts);
+    if (!NIL_P(opts)) {
+        static ID keywords[1];
+        if (!keywords[0]) {
+            keywords[0] = rb_intern_const("offset");
+        }
+        rb_get_kwargs(opts, keywords, 0, 1, &offset_arg);
+        if (!UNDEF_P(offset_arg)){
+            offset = NUM2LONG(offset_arg);
+            if (offset < 0) {
+                i += offset + 1;
+            }
+            else {
+                end_pos = offset;
+            }
+        }
+    }
     if (rb_block_given_p())
         rb_warn("given block not used");
-    while (i--) {
+    if (i < 0 || end_pos >= RARRAY_LEN(ary))
+        return Qnil;
+    for (; i >= end_pos; i--) {
         VALUE e = RARRAY_AREF(ary, i);
         if (rb_equal(e, val)) {
             return LONG2NUM(i);
