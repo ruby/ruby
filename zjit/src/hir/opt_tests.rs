@@ -4514,7 +4514,10 @@ mod hir_opt_tests {
           v12:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(Hash@0x1008, new@0x1009, cme:0x1010)
           v46:HashExact = ObjectAllocClass Hash:VALUE(0x1008)
-          v19:BasicObject = Send v46, :initialize # SendFallbackReason: Complex argument passing
+          v47:Fixnum[0] = Const Value(0)
+          PatchPoint NoSingletonClass(Hash@0x1008)
+          PatchPoint MethodRedefined(Hash@0x1008, initialize@0x1038, cme:0x1040)
+          v51:BasicObject = SendDirect v46, 0x1068, :initialize (0x1078), v47
           CheckInterrupts
           Return v46
         ");
@@ -7736,6 +7739,32 @@ mod hir_opt_tests {
           CheckInterrupts
           Return v20
         ");
+    }
+
+    #[test]
+    fn test_send_iseq_with_block_param_no_block() {
+        let result = eval("
+            def foo(&blk)
+              blk ? blk.call : 42
+            end
+            def test = foo
+            test
+            test
+        ");
+        assert_eq!(VALUE::fixnum_from_usize(42), result);
+    }
+
+    #[test]
+    fn test_send_bmethod_with_block_param_no_block() {
+        let result = eval("
+            define_method(:foo) { |&blk|
+              blk ? blk.call : 42
+            }
+            def test = foo
+            test
+            test
+        ");
+        assert_eq!(VALUE::fixnum_from_usize(42), result);
     }
 
     #[test]

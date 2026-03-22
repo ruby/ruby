@@ -2228,7 +2228,7 @@ pub enum ValidationError {
 }
 
 /// Check if we can do a direct send to the given iseq with the given args.
-fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq_t, ci: *const rb_callinfo, send_insn: InsnId, args: &[InsnId], blockiseq: Option<IseqPtr>) -> bool {
+fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq_t, ci: *const rb_callinfo, send_insn: InsnId, args: &[InsnId]) -> bool {
     let mut can_send = true;
     let mut count_failure = |counter| {
         can_send = false;
@@ -2236,14 +2236,9 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
     };
     let params = unsafe { iseq.params() };
 
-    let caller_has_literal_block: bool = blockiseq.is_some();
-    let callee_has_block_param = 0 != params.flags.has_block();
-
     use Counter::*;
     if 0 != params.flags.has_rest()    { count_failure(complex_arg_pass_param_rest) }
     if 0 != params.flags.has_post()    { count_failure(complex_arg_pass_param_post) }
-    if callee_has_block_param && !caller_has_literal_block
-                                       { count_failure(complex_arg_pass_param_block) }
     if 0 != params.flags.forwardable() { count_failure(complex_arg_pass_param_forwardable) }
 
     if 0 != params.flags.has_kwrest()  { count_failure(complex_arg_pass_param_kwrest) }
@@ -3570,7 +3565,7 @@ impl Function {
                             // Only specialize positional-positional calls
                             // TODO(max): Handle other kinds of parameter passing
                             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
-                            if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice(), blockiseq) {
+                            if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice()) {
                                 self.push_insn_id(block, insn_id); continue;
                             }
 
@@ -3609,7 +3604,7 @@ impl Function {
                             let capture = unsafe { proc_block.as_.captured.as_ref() };
                             let iseq = unsafe { *capture.code.iseq.as_ref() };
 
-                            if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice(), None) {
+                            if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice()) {
                                 self.push_insn_id(block, insn_id); continue;
                             }
 
@@ -3976,7 +3971,7 @@ impl Function {
                             // If not, we can't do direct dispatch.
                             let super_iseq = unsafe { get_def_iseq_ptr((*super_cme).def) };
                             // TODO: pass Option<blockiseq> to can_direct_send when we start specializing `super { ... }`.
-                            if !can_direct_send(self, block, super_iseq, ci, insn_id, args.as_slice(), None) {
+                            if !can_direct_send(self, block, super_iseq, ci, insn_id, args.as_slice()) {
                                 self.push_insn_id(block, insn_id);
                                 self.set_dynamic_send_reason(insn_id, SuperTargetComplexArgsPass);
                                 continue;

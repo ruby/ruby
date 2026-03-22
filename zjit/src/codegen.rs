@@ -1487,7 +1487,9 @@ fn gen_send_iseq_direct(
     // `unspecializable_call_type`.
     let block_handler = blockiseq.map(|b| gen_block_handler_specval(asm, b));
 
-    let (frame_type, specval) = if VM_METHOD_TYPE_BMETHOD == unsafe { get_cme_def_type(cme) } {
+    let callee_is_bmethod = VM_METHOD_TYPE_BMETHOD == unsafe { get_cme_def_type(cme) };
+
+    let (frame_type, specval) = if callee_is_bmethod {
         // Extract EP from the Proc instance
         let procv = unsafe { rb_get_def_bmethod_proc((*cme).def) };
         let proc = unsafe { rb_jit_get_proc_ptr(procv) };
@@ -1554,7 +1556,13 @@ fn gen_send_iseq_direct(
     c_args.push(recv);
     c_args.extend(&args);
     if needs_block {
-        c_args.push(specval);
+        if callee_is_bmethod {
+            // For bmethods, specval is the captured EP, not the block handler.
+            // The block param needs nil (no block) or a Proc value.
+            c_args.push(block_handler.unwrap_or_else(|| Qnil.into()));
+        } else {
+            c_args.push(specval);
+        }
     }
 
     let num_optionals_passed = if params.flags.has_opt() != 0 {
