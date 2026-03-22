@@ -1009,6 +1009,29 @@ gc_validate_pc(VALUE obj)
 #endif
 }
 
+NOINLINE(static void gc_newobj_hook(VALUE obj));
+static void
+gc_newobj_hook(VALUE obj)
+{
+    int lev = RB_GC_VM_LOCK_NO_BARRIER();
+    {
+        size_t slot_size = rb_gc_obj_slot_size(obj);
+        memset((char *)obj + sizeof(struct RBasic), 0, slot_size - sizeof(struct RBasic));
+
+        /* We must disable GC here because the callback could call xmalloc
+         * which could potentially trigger a GC, and a lot of code is unsafe
+         * to trigger a GC right after an object has been allocated because
+         * they perform initialization for the object and assume that the
+         * GC does not trigger before then. */
+        bool gc_disabled = RTEST(rb_gc_disable_no_rest());
+        {
+            rb_gc_event_hook(obj, RUBY_INTERNAL_EVENT_NEWOBJ);
+        }
+        if (!gc_disabled) rb_gc_enable();
+    }
+    RB_GC_VM_UNLOCK_NO_BARRIER(lev);
+}
+
 static inline VALUE
 newobj_of(rb_ractor_t *cr, VALUE klass, VALUE flags, shape_id_t shape_id, bool wb_protected, size_t size)
 {
@@ -1018,23 +1041,7 @@ newobj_of(rb_ractor_t *cr, VALUE klass, VALUE flags, shape_id_t shape_id, bool w
     gc_validate_pc(obj);
 
     if (UNLIKELY(rb_gc_event_hook_required_p(RUBY_INTERNAL_EVENT_NEWOBJ))) {
-        int lev = RB_GC_VM_LOCK_NO_BARRIER();
-        {
-            size_t slot_size = rb_gc_obj_slot_size(obj);
-            memset((char *)obj + sizeof(struct RBasic), 0, slot_size - sizeof(struct RBasic));
-
-            /* We must disable GC here because the callback could call xmalloc
-             * which could potentially trigger a GC, and a lot of code is unsafe
-             * to trigger a GC right after an object has been allocated because
-             * they perform initialization for the object and assume that the
-             * GC does not trigger before then. */
-            bool gc_disabled = RTEST(rb_gc_disable_no_rest());
-            {
-                rb_gc_event_hook(obj, RUBY_INTERNAL_EVENT_NEWOBJ);
-            }
-            if (!gc_disabled) rb_gc_enable();
-        }
-        RB_GC_VM_UNLOCK_NO_BARRIER(lev);
+        gc_newobj_hook(obj);
     }
 
 #if RGENGC_CHECK_MODE
