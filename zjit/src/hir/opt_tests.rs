@@ -14965,23 +14965,32 @@ mod hir_opt_tests {
           CheckInterrupts
           Return v28
         bb8(v48:BasicObject, v49:Fixnum):
-          v84:Array = RefineType v48, Array
-          v85:CInt64 = ArrayLength v84
-          v86:Fixnum = BoxFixnum v85
-          v87:BoolExact = FixnumGe v49, v86
-          v54:CBool = Test v87
+          v94:Array = RefineType v48, Array
+          v95:CInt64 = ArrayLength v94
+          v96:Fixnum = BoxFixnum v95
+          v97:BoolExact = FixnumGe v49, v96
+          v54:CBool = Test v97
           IfFalse v54, bb7(v48, v49)
           CheckInterrupts
           Return v48
         bb7(v67:BasicObject, v68:Fixnum):
-          v88:Array = RefineType v67, Array
-          v89:CInt64 = UnboxFixnum v68
-          v90:BasicObject = ArrayAref v88, v89
-          v74:BasicObject = InvokeBlock, v90 # SendFallbackReason: InvokeBlock: not yet specialized
-          v91:Fixnum[1] = Const Value(1)
-          v92:Fixnum = FixnumAdd v68, v91
+          v98:Array = RefineType v67, Array
+          v99:CInt64 = UnboxFixnum v68
+          v100:BasicObject = ArrayAref v98, v99
+          v75:CPtr = GetEP 0
+          v76:CInt64 = LoadField v75, :_env_data_index_specval@0x1000
+          v77:CInt64[3] = Const CInt64(3)
+          v78:CInt64 = IntAnd v76, v77
+          v79:CInt64[1] = GuardBitEquals v78, CInt64(1)
+          v80:CInt64[-4] = Const CInt64(-4)
+          v81:CInt64 = IntAnd v76, v80
+          v82:CPtr = LoadField v81, :_captured_code_iseq@0x1001
+          v83:CPtr[CPtr(0x1008)] = GuardBitEquals v82, CPtr(0x1010)
+          v84:BasicObject = InvokeBlockDirect 0x1018, (0x1020), v100
+          v101:Fixnum[1] = Const Value(1)
+          v102:Fixnum = FixnumAdd v68, v101
           PatchPoint NoEPEscape(each)
-          Jump bb8(v67, v92)
+          Jump bb8(v67, v102)
         ");
     }
 
@@ -15316,31 +15325,31 @@ mod hir_opt_tests {
           v13:CInt64 = LoadField v12, :_env_data_index_specval@0x1000
           v14:CInt64[3] = Const CInt64(3)
           v15:CInt64 = IntAnd v13, v14
-          v16:CInt64[3] = Const CInt64(3)
-          v17:CBool = IsBitEqual v15, v16
-          IfTrue v17, bb5()
+          v17:CInt64[3] = Const CInt64(3)
+          v18:CBool = IsBitEqual v15, v17
+          IfTrue v18, bb5()
           v22:BasicObject = InvokeBlock, v10 # SendFallbackReason: InvokeBlock: not yet specialized
           Jump bb4(v22)
         bb5():
           v20:BasicObject = InvokeBlockIfunc v13, v10
           Jump bb4(v20)
-        bb4(v18:BasicObject):
+        bb4(v16:BasicObject):
           v27:Fixnum[2] = Const Value(2)
           v29:CPtr = GetEP 0
           v30:CInt64 = LoadField v29, :_env_data_index_specval@0x1000
           v31:CInt64[3] = Const CInt64(3)
           v32:CInt64 = IntAnd v30, v31
-          v33:CInt64[3] = Const CInt64(3)
-          v34:CBool = IsBitEqual v32, v33
-          IfTrue v34, bb7()
+          v34:CInt64[3] = Const CInt64(3)
+          v35:CBool = IsBitEqual v32, v34
+          IfTrue v35, bb7()
           v39:BasicObject = InvokeBlock, v27 # SendFallbackReason: InvokeBlock: not yet specialized
           Jump bb6(v39)
         bb7():
           v37:BasicObject = InvokeBlockIfunc v30, v27
           Jump bb6(v37)
-        bb6(v35:BasicObject):
+        bb6(v33:BasicObject):
           CheckInterrupts
-          Return v35
+          Return v33
         ");
     }
 

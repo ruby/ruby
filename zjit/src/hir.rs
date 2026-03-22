@@ -538,6 +538,8 @@ pub enum SideExitReason {
     SendWhileTracing,
     NoProfileSend,
     InvokeBlockNotIfunc,
+    InvokeBlockNotIseq,
+    InvokeBlockIseqChanged,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -1019,6 +1021,15 @@ pub enum Insn {
         args: Vec<InsnId>,
         state: InsnId,
     },
+    /// Optimized invokeblock for ISEQ block handlers.
+    /// At codegen time, loads the block handler from LEP, guards the tag bits
+    /// and iseq identity, then does a direct JIT-to-JIT call.
+    InvokeBlockDirect {
+        cd: *const rb_call_data,
+        iseq: IseqPtr,
+        args: Vec<InsnId>,
+        state: InsnId,
+    },
     /// Call Proc#call optimized method type.
     InvokeProc {
         recv: InsnId,
@@ -1345,7 +1356,8 @@ macro_rules! for_each_operand_impl {
                 $visit_many!(args);
                 $visit_one!(state);
             }
-            Insn::InvokeBlock { args, state, .. } => {
+            Insn::InvokeBlock { args, state, .. }
+            | Insn::InvokeBlockDirect { args, state, .. } => {
                 $visit_many!(args);
                 $visit_one!(state);
             }
@@ -1603,6 +1615,7 @@ impl Insn {
             Insn::InvokeSuperForward { .. } => effects::Any,
             Insn::InvokeBlock { .. } => effects::Any,
             Insn::InvokeBlockIfunc { .. } => effects::Any,
+            Insn::InvokeBlockDirect { .. } => effects::Any,
             Insn::SendDirect { .. } => effects::Any,
             Insn::InvokeBuiltin { .. } => effects::Any,
             Insn::EntryPoint { .. } => effects::Any,
@@ -1973,6 +1986,13 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::InvokeBlockIfunc { block_handler, args, .. } => {
                 write!(f, "InvokeBlockIfunc {block_handler}")?;
+                for arg in args {
+                    write!(f, ", {arg}")?;
+                }
+                Ok(())
+            }
+            Insn::InvokeBlockDirect { cd, iseq, args, .. } => {
+                write!(f, "InvokeBlockDirect {:p}, ({:?})", self.ptr_map.map_ptr(cd), self.ptr_map.map_ptr(iseq))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
@@ -2903,6 +2923,12 @@ impl Function {
                 args: find_vec!(args),
                 state: find!(state),
             },
+            &InvokeBlockDirect { cd, iseq, ref args, state } => InvokeBlockDirect {
+                cd,
+                iseq,
+                args: find_vec!(args),
+                state,
+            },
             &InvokeProc { recv, ref args, state, kw_splat } => InvokeProc {
                 recv: find!(recv),
                 args: find_vec!(args),
@@ -3110,6 +3136,7 @@ impl Function {
             Insn::InvokeSuperForward { .. } => types::BasicObject,
             Insn::InvokeBlock { .. } => types::BasicObject,
             Insn::InvokeBlockIfunc { .. } => types::BasicObject,
+            Insn::InvokeBlockDirect { .. } => types::BasicObject,
             Insn::InvokeProc { .. } => types::BasicObject,
             Insn::InvokeBuiltin { return_type, .. } => return_type.unwrap_or(types::BasicObject),
             Insn::Defined { pushval, .. } => Type::from_value(*pushval).union(types::NilClass),
@@ -4375,6 +4402,10 @@ impl Function {
                                 self.make_equal_to(insn_id, replacement);
                             }
                         }
+                    }
+                    Insn::InvokeBlock { .. } => {
+                        // InvokeBlock specialization to InvokeBlockDirect is done at build time.
+                        self.push_insn_id(block, insn_id);
                     }
                     _ => { self.push_insn_id(block, insn_id); }
                 }
@@ -6241,6 +6272,7 @@ impl Function {
             // Instructions with a Vec of Ruby objects
             Insn::InvokeBlock { ref args, .. }
             | Insn::InvokeBlockIfunc { ref args, .. }
+            | Insn::InvokeBlockDirect { ref args, .. }
             | Insn::NewArray { elements: ref args, .. }
             | Insn::ArrayHash { elements: ref args, .. }
             | Insn::ArrayMin { elements: ref args, .. }
@@ -8101,16 +8133,44 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let block_arg = (flags & VM_CALL_ARGS_BLOCKARG) != 0;
                     let args = state.stack_pop_n(argc as usize + usize::from(block_arg))?;
 
-                    // Check if this is a monomorphic IFUNC block handler we can specialize
+                    // Analyze the block handler distribution for specialization
                     let block_handler_types = profiles.payload.profile.get_operand_types(exit_state.insn_idx);
-                    let is_ifunc = (flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT)) == 0
-                        && block_handler_types.is_some_and(|types| types.len() == 1 && {
-                            let summary = TypeDistributionSummary::new(&types[0]);
-                            summary.is_monomorphic() && unsafe { rb_IMEMO_TYPE_P(summary.bucket(0).class(), imemo_ifunc) == 1 }
+                    let summary = if (flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT)) != 0 {
+                        None
+                    } else {
+                        block_handler_types
+                            .and_then(|types| if types.len() == 1 { Some(TypeDistributionSummary::new(&types[0])) } else { None })
+                    };
+
+                    // Determine the dominant block handler type from profiling
+                    let dominant_type = summary.as_ref().and_then(|s| {
+                        if s.is_monomorphic() || s.is_skewed_polymorphic() {
+                            Some(s.bucket(0).class())
+                        } else {
+                            None
+                        }
+                    });
+
+                    let is_ifunc = dominant_type.is_some_and(|obj| unsafe { rb_IMEMO_TYPE_P(obj, imemo_ifunc) == 1 });
+                    let is_iseq = dominant_type.is_some_and(|obj| unsafe { rb_IMEMO_TYPE_P(obj, imemo_iseq) == 1 });
+
+                    // For ISEQ specialization, check argument compatibility first
+                    let can_specialize_iseq = is_iseq && {
+                        let profiled_iseq = dominant_type.unwrap().as_iseq();
+                        let ci = unsafe { get_call_data_ci(cd) };
+                        // Save the block's instruction count so we can undo any side effects
+                        let saved_insn_count = fun.blocks[block.0].insns.len();
+                        let fallback_insn = fun.push_insn(block, Insn::InvokeBlock {
+                            cd, args: args.clone(), state: exit_id, reason: InvokeBlockNotSpecialized,
                         });
+                        let ok = can_direct_send(&mut fun, block, profiled_iseq, ci, fallback_insn, args.as_slice(), false);
+                        // Remove the temporary InvokeBlock and any counter instructions added by can_direct_send
+                        fun.blocks[block.0].insns.truncate(saved_insn_count);
+                        ok
+                    };
 
                     let result = if is_ifunc {
-                        // Load the block handler from LEP
+                        // Load block handler from LEP
                         let level = get_lvar_level(fun.iseq);
                         let lep = fun.push_insn(block, Insn::GetEP { level });
                         let block_handler = fun.push_insn(block, Insn::LoadField {
@@ -8119,18 +8179,19 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             offset: SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL,
                             return_type: types::CInt64,
                         });
-
-                        // Check IFUNC tag: (block_handler & 0x3) == 0x3
                         let tag_mask = fun.push_insn(block, Insn::Const { val: Const::CInt64(0x3) });
                         let tag_bits = fun.push_insn(block, Insn::IntAnd { left: block_handler, right: tag_mask });
-                        let ifunc_tag = fun.push_insn(block, Insn::Const { val: Const::CInt64(0x3) });
-                        let is_ifunc_match = fun.push_insn(block, Insn::IsBitEqual { left: tag_bits, right: ifunc_tag });
 
-                        // Branch: on match, call InvokeBlockIfunc directly
+                        // Create join block where IFUNC and fallback paths converge
                         let join_block = fun.new_block(insn_idx);
                         let join_param = fun.push_insn(join_block, Insn::Param);
+
+                        // Check IFUNC tag: (block_handler & 0x3) == 0x3
+                        let ifunc_tag = fun.push_insn(block, Insn::Const { val: Const::CInt64(0x3) });
+                        let is_ifunc_match = fun.push_insn(block, Insn::IsBitEqual { left: tag_bits, right: ifunc_tag });
                         let ifunc_block = fun.new_block(insn_idx);
                         fun.push_insn(block, Insn::IfTrue { val: is_ifunc_match, target: BranchEdge { target: ifunc_block, args: vec![] } });
+
                         let ifunc_result = fun.push_insn(ifunc_block, Insn::InvokeBlockIfunc {
                             cd,
                             block_handler,
@@ -8139,15 +8200,61 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         });
                         fun.push_insn(ifunc_block, Insn::Jump(BranchEdge { target: join_block, args: vec![ifunc_result] }));
 
-                        // In the fallthrough case, use generic rb_vm_invokeblock and join
+                        // Fallthrough from tag check: generic InvokeBlock
                         let fallback_result = fun.push_insn(block, Insn::InvokeBlock {
                             cd, args, state: exit_id, reason: InvokeBlockNotSpecialized,
                         });
                         fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: vec![fallback_result] }));
 
-                        // Continue compilation from the join block
                         block = join_block;
                         join_param
+                    } else if can_specialize_iseq {
+                        // Load block handler from LEP
+                        let level = get_lvar_level(fun.iseq);
+                        let lep = fun.push_insn(block, Insn::GetEP { level });
+                        let block_handler = fun.push_insn(block, Insn::LoadField {
+                            recv: lep,
+                            id: ID!(_env_data_index_specval),
+                            offset: SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL,
+                            return_type: types::CInt64,
+                        });
+                        let tag_mask = fun.push_insn(block, Insn::Const { val: Const::CInt64(0x3) });
+                        let tag_bits = fun.push_insn(block, Insn::IntAnd { left: block_handler, right: tag_mask });
+
+                        // Guard ISEQ tag: (block_handler & 0x3) == 0x1, side-exit if not
+                        fun.push_insn(block, Insn::GuardBitEquals {
+                            val: tag_bits,
+                            expected: Const::CInt64(0x1),
+                            reason: SideExitReason::InvokeBlockNotIseq,
+                            state: exit_id,
+                            recompile: None,
+                        });
+
+                        // Guard captured iseq identity
+                        let profiled_iseq = dominant_type.unwrap().as_iseq();
+                        let untag_mask = fun.push_insn(block, Insn::Const { val: Const::CInt64(!0x3i64) });
+                        let captured = fun.push_insn(block, Insn::IntAnd { left: block_handler, right: untag_mask });
+                        let captured_iseq = fun.push_insn(block, Insn::LoadField {
+                            recv: captured,
+                            id: ID!(_captured_code_iseq),
+                            offset: SIZEOF_VALUE_I32 * 2,
+                            return_type: types::CPtr,
+                        });
+                        fun.push_insn(block, Insn::GuardBitEquals {
+                            val: captured_iseq,
+                            expected: Const::CPtr(profiled_iseq as *const u8),
+                            reason: SideExitReason::InvokeBlockNotIseq,
+                            state: exit_id,
+                            recompile: None,
+                        });
+
+                        // Direct call: InvokeBlockDirect (no branching, guards side-exit)
+                        fun.push_insn(block, Insn::InvokeBlockDirect {
+                            cd,
+                            iseq: profiled_iseq,
+                            args,
+                            state: exit_id,
+                        })
                     } else {
                         fun.push_insn(block, Insn::InvokeBlock { cd, args, state: exit_id, reason: InvokeBlockNotSpecialized })
                     };

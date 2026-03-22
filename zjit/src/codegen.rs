@@ -641,6 +641,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::InvokeSuperForward { cd, blockiseq, state, reason, .. } => gen_invokesuperforward(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::InvokeBlock { cd, state, reason, .. } => gen_invokeblock(jit, asm, cd, &function.frame_state(state), reason),
         Insn::InvokeBlockIfunc { cd, block_handler, args, state, .. } => gen_invokeblock_ifunc(jit, asm, *cd, opnd!(block_handler), opnds!(args), &function.frame_state(*state)),
+        Insn::InvokeBlockDirect { cd, iseq, args, state } => gen_invokeblock_iseq(cb, jit, asm, *cd, *iseq, opnds!(args), &function.frame_state(*state)),
         Insn::InvokeProc { recv, args, state, kw_splat } => gen_invokeproc(jit, asm, opnd!(recv), opnds!(args), *kw_splat, &function.frame_state(*state)),
         // Ensure we have enough room fit ec, self, and arguments
         // TODO remove this check when we have stack args (we can use Time.new to test it)
@@ -1752,6 +1753,132 @@ fn gen_invokeblock_ifunc(
     result
 }
 
+/// Compile invokeblock for ISEQ block handlers with JIT-to-JIT call
+fn gen_invokeblock_iseq(
+    cb: &mut CodeBlock,
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    _cd: *const rb_call_data,
+    iseq: IseqPtr,
+    args: Vec<Opnd>,
+    state: &FrameState,
+) -> lir::Opnd {
+    gen_incr_counter(asm, Counter::iseq_optimized_send_count);
+
+    // Block handler tag and ISEQ identity checks are done at HIR level.
+    // Here we just load the block handler and extract the captured block.
+
+    // Get LEP to find the block handler
+    asm_comment!(asm, "get local EP");
+    let lep = gen_get_lep(jit, asm);
+
+    asm_comment!(asm, "load block handler from LEP");
+    let block_handler = asm.load(
+        Opnd::mem(64, lep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL)
+    );
+
+    // Extract the captured block pointer: captured = block_handler & ~0x3
+    asm_comment!(asm, "extract captured block pointer");
+    let captured = asm.and(block_handler, Opnd::Imm(!0x3));
+
+    // Load self from captured block (offset 0)
+    asm_comment!(asm, "load self from captured block");
+    let recv = asm.load(Opnd::mem(64, captured, 0));
+
+    // Load EP from captured block (offset SIZEOF_VALUE)
+    asm_comment!(asm, "load EP from captured block");
+    let captured_ep = asm.load(Opnd::mem(64, captured, SIZEOF_VALUE_I32));
+
+    // Tag the captured EP like VM_GUARDED_PREV_EP: ep | 0x1
+    let specval = asm.or(captured_ep, Opnd::Imm(1));
+
+    let local_size = unsafe { get_iseq_body_local_table_size(iseq) }.to_usize();
+    let stack_growth = state.stack_size() + local_size + unsafe { get_iseq_body_stack_max(iseq) }.to_usize();
+    gen_stack_overflow_check(jit, asm, state, stack_growth);
+
+    // Save cfp->pc and cfp->sp for the caller frame
+    gen_save_pc_for_gc(asm, state);
+    gen_save_sp(asm, state.stack().len() - args.len()); // no receiver on stack for invokeblock
+
+    gen_spill_locals(jit, asm, state);
+    gen_spill_stack(jit, asm, state);
+
+    // Set up the new frame with VM_FRAME_MAGIC_BLOCK
+    let frame_type = VM_FRAME_MAGIC_BLOCK;
+    gen_push_frame(asm, args.len(), state, ControlFrame {
+        recv,
+        iseq: Some(iseq),
+        cme: std::ptr::null(), // no CME for block calls
+        frame_type,
+        specval,
+        write_block_code: iseq_may_write_block_code(iseq),
+    });
+
+    // Switch SP
+    asm_comment!(asm, "switch to new SP register");
+    let sp_offset = (state.stack().len() + local_size - args.len() + VM_ENV_DATA_SIZE.to_usize()) * SIZEOF_VALUE;
+    let new_sp = asm.add(SP, sp_offset.into());
+    asm.mov(SP, new_sp);
+
+    // Switch CFP
+    asm_comment!(asm, "switch to new CFP");
+    let new_cfp = asm.sub(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
+    asm.mov(CFP, new_cfp);
+    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP as i32), CFP);
+
+    let params = unsafe { iseq.params() };
+
+    // For &block, the JIT entrypoint expects the block_handler as an argument
+    let needs_block = params.flags.has_block() != 0;
+
+    // Set up arguments
+    let mut c_args = Vec::with_capacity(1 + args.len() + if needs_block { 1 } else { 0 });
+    c_args.push(recv);
+    c_args.extend(&args);
+    if needs_block {
+        c_args.push(VM_BLOCK_HANDLER_NONE.into());
+    }
+
+    let num_optionals_passed = if params.flags.has_opt() != 0 {
+        let lead_num = params.lead_num as u32;
+        let opt_num = params.opt_num as u32;
+        let keyword = params.keyword;
+        let kw_total_num = if keyword.is_null() { 0 } else { unsafe { (*keyword).num } } as u32;
+        assert!(args.len() as u32 <= lead_num + opt_num + kw_total_num);
+        let positional_argc = args.len() as u32 - kw_total_num;
+        positional_argc.saturating_sub(lead_num)
+    } else {
+        0
+    };
+
+    // Fill non-parameter locals with nil
+    let num_params = params.size.to_usize();
+    if local_size > num_params {
+        asm_comment!(asm, "initialize non-parameter locals to nil");
+        for local_idx in num_params..local_size {
+            let offset = local_size_and_idx_to_bp_offset(local_size, local_idx);
+            asm.store(Opnd::mem(64, SP, -offset * SIZEOF_VALUE_I32), Qnil.into());
+        }
+    }
+
+    // Make the call. The target address will be rewritten once compiled.
+    let iseq_call = IseqCall::new(iseq, num_optionals_passed.try_into().expect("checked in HIR"), args.len().try_into().expect("checked in HIR"));
+    let dummy_ptr = cb.get_write_ptr().raw_ptr(cb);
+    jit.iseq_calls.push(iseq_call.clone());
+    let ret = asm.ccall_with_iseq_call(dummy_ptr, c_args, &iseq_call);
+
+    // If a callee side-exits, propagate the return value to the caller.
+    asm_comment!(asm, "side-exit if callee side-exits");
+    asm.cmp(ret, Qundef.into());
+    asm.je(jit, ZJITState::get_exit_trampoline().into());
+
+    asm_comment!(asm, "restore SP register for the caller");
+    let new_sp = asm.sub(SP, sp_offset.into());
+    asm.mov(SP, new_sp);
+
+    ret
+}
+
 fn gen_invokeproc(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -2639,6 +2766,7 @@ fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd,
         crate::hir::Const::Value(v) => { Opnd::Value(v) }
         crate::hir::Const::CInt64(v) => { v.into() }
         crate::hir::Const::CShape(v) => { Opnd::UImm(v.0 as u64) }
+        crate::hir::Const::CPtr(v) => { Opnd::UImm(v as u64) }
         _ => panic!("gen_guard_bit_equals: unexpected hir::Const {expected:?}"),
     };
     asm.cmp(val, expected_opnd);

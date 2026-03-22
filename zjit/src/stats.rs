@@ -237,6 +237,8 @@ make_counters! {
         exit_directive_induced,
         exit_send_while_tracing,
         exit_invokeblock_not_ifunc,
+        exit_invokeblock_not_iseq,
+        exit_invokeblock_iseq_changed,
     }
 
     // Send fallback counters that are summed as dynamic_send_count
@@ -636,6 +638,8 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         SendWhileTracing              => exit_send_while_tracing,
         NoProfileSend                 => exit_no_profile_send,
         InvokeBlockNotIfunc           => exit_invokeblock_not_ifunc,
+        InvokeBlockNotIseq            => exit_invokeblock_not_iseq,
+        InvokeBlockIseqChanged        => exit_invokeblock_iseq_changed,
     }
 }
 
