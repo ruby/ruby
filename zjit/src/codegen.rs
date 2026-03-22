@@ -623,6 +623,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::InvokeSuper { cd, blockiseq, state, reason, .. } => gen_invokesuper(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::InvokeSuperForward { cd, blockiseq, state, reason, .. } => gen_invokesuperforward(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::InvokeBlock { cd, state, reason, .. } => gen_invokeblock(jit, asm, cd, &function.frame_state(state), reason),
+        Insn::InvokeBlockIfunc { cd, block_handler, args, state, .. } => gen_invokeblock_ifunc(jit, asm, *cd, opnd!(block_handler), opnds!(args), &function.frame_state(*state)),
         Insn::InvokeProc { recv, args, state, kw_splat } => gen_invokeproc(jit, asm, opnd!(recv), opnds!(args), *kw_splat, &function.frame_state(*state)),
         // Ensure we have enough room fit ec, self, and arguments
         // TODO remove this check when we have stack args (we can use Time.new to test it)
@@ -1701,6 +1702,42 @@ fn gen_invokeblock(
         rb_vm_invokeblock,
         EC, CFP, Opnd::const_ptr(cd)
     )
+}
+
+/// Compile invokeblock for IFUNC block handlers.
+/// Calls rb_vm_yield_with_cfunc directly.
+fn gen_invokeblock_ifunc(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    cd: *const rb_call_data,
+    block_handler: Opnd,
+    args: Vec<Opnd>,
+    state: &FrameState,
+) -> lir::Opnd {
+    let _ = cd; // cd is not needed for the direct call
+
+    gen_prepare_non_leaf_call(jit, asm, state);
+
+    // Push args to memory so we can pass argv pointer
+    let argv_ptr = gen_push_opnds(asm, &args);
+
+    // Untag the block handler to get the captured block pointer
+    // captured = block_handler & ~0x3
+    asm_comment!(asm, "untag block handler to get captured block");
+    let captured = asm.and(block_handler, Opnd::Imm(!0x3i64));
+
+    asm_comment!(asm, "call rb_vm_yield_with_cfunc");
+    unsafe extern "C" {
+        fn rb_vm_yield_with_cfunc(
+            ec: EcPtr,
+            captured: VALUE,
+            argc: i32,
+            argv: *const VALUE,
+        ) -> VALUE;
+    }
+    let result = asm_ccall!(asm, rb_vm_yield_with_cfunc, EC, captured, (args.len() as i64).into(), argv_ptr);
+    gen_pop_opnds(asm, &args);
+    result
 }
 
 fn gen_invokeproc(

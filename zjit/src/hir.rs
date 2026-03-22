@@ -538,6 +538,7 @@ pub enum SideExitReason {
     DirectiveInduced,
     SendWhileTracing,
     NoProfileSend,
+    InvokeBlockNotIfunc,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -1011,6 +1012,14 @@ pub enum Insn {
         state: InsnId,
         reason: SendFallbackReason,
     },
+    /// Optimized invokeblock for IFUNC block handlers.
+    /// Calls rb_vm_yield_with_cfunc directly instead of going through rb_vm_invokeblock.
+    InvokeBlockIfunc {
+        cd: *const rb_call_data,
+        block_handler: InsnId,
+        args: Vec<InsnId>,
+        state: InsnId,
+    },
     /// Call Proc#call optimized method type.
     InvokeProc {
         recv: InsnId,
@@ -1335,6 +1344,11 @@ macro_rules! for_each_operand_impl {
                 $visit_many!(args);
                 $visit_one!(state);
             }
+            Insn::InvokeBlockIfunc { block_handler, args, state, .. } => {
+                $visit_one!(block_handler);
+                $visit_many!(args);
+                $visit_one!(state);
+            }
             Insn::CCall { recv, args, .. } => {
                 $visit_one!(recv);
                 $visit_many!(args);
@@ -1583,6 +1597,7 @@ impl Insn {
             Insn::InvokeSuper { .. } => effects::Any,
             Insn::InvokeSuperForward { .. } => effects::Any,
             Insn::InvokeBlock { .. } => effects::Any,
+            Insn::InvokeBlockIfunc { .. } => effects::Any,
             Insn::SendDirect { .. } => effects::Any,
             Insn::InvokeBuiltin { .. } => effects::Any,
             Insn::EntryPoint { .. } => effects::Any,
@@ -1944,6 +1959,13 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                     write!(f, ", {arg}")?;
                 }
                 write!(f, " # SendFallbackReason: {reason}")?;
+                Ok(())
+            }
+            Insn::InvokeBlockIfunc { block_handler, args, .. } => {
+                write!(f, "InvokeBlockIfunc {block_handler}")?;
+                for arg in args {
+                    write!(f, ", {arg}")?;
+                }
                 Ok(())
             }
             Insn::InvokeProc { recv, args, kw_splat, .. } => {
@@ -2834,6 +2856,12 @@ impl Function {
                 state,
                 reason,
             },
+            &InvokeBlockIfunc { cd, block_handler, ref args, state } => InvokeBlockIfunc {
+                cd,
+                block_handler: find!(block_handler),
+                args: find_vec!(args),
+                state: find!(state),
+            },
             &InvokeProc { recv, ref args, state, kw_splat } => InvokeProc {
                 recv: find!(recv),
                 args: find_vec!(args),
@@ -3039,6 +3067,7 @@ impl Function {
             Insn::InvokeSuper { .. } => types::BasicObject,
             Insn::InvokeSuperForward { .. } => types::BasicObject,
             Insn::InvokeBlock { .. } => types::BasicObject,
+            Insn::InvokeBlockIfunc { .. } => types::BasicObject,
             Insn::InvokeProc { .. } => types::BasicObject,
             Insn::InvokeBuiltin { return_type, .. } => return_type.unwrap_or(types::BasicObject),
             Insn::Defined { pushval, .. } => Type::from_value(*pushval).union(types::NilClass),
@@ -6129,6 +6158,7 @@ impl Function {
             }
             // Instructions with a Vec of Ruby objects
             Insn::InvokeBlock { ref args, .. }
+            | Insn::InvokeBlockIfunc { ref args, .. }
             | Insn::NewArray { elements: ref args, .. }
             | Insn::ArrayHash { elements: ref args, .. }
             | Insn::ArrayMin { elements: ref args, .. }
@@ -8111,7 +8141,53 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
                     let block_arg = (flags & VM_CALL_ARGS_BLOCKARG) != 0;
                     let args = state.stack_pop_n(argc as usize + usize::from(block_arg))?;
-                    let result = fun.push_insn(block, Insn::InvokeBlock { cd, args, state: exit_id, reason: InvokeBlockNotSpecialized });
+
+                    // Check if this is a monomorphic IFUNC block handler we can specialize
+                    let block_handler_types = profiles.payload.profile.get_operand_types(exit_state.insn_idx);
+                    let is_ifunc = (flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT)) == 0
+                        && block_handler_types.is_some_and(|types| types.len() == 1 && {
+                            let summary = TypeDistributionSummary::new(&types[0]);
+                            summary.is_monomorphic() && unsafe { rb_IMEMO_TYPE_P(summary.bucket(0).class(), imemo_ifunc) == 1 }
+                        });
+
+                    let result = if is_ifunc {
+                        // Get the local EP to load the block handler
+                        let level = get_lvar_level(fun.iseq);
+                        let lep = fun.push_insn(block, Insn::GetEP { level });
+                        let block_handler = fun.push_insn(block, Insn::LoadField {
+                            recv: lep,
+                            id: ID!(_env_data_index_specval),
+                            offset: SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL,
+                            return_type: types::CInt64,
+                        });
+
+                        // Guard that the block handler is an IFUNC (tag bits & 0x3 == 0x3)
+                        // bit 0x1 must be set (iseq or ifunc)
+                        fun.push_insn(block, Insn::GuardAnyBitSet {
+                            val: block_handler,
+                            mask: Const::CUInt64(0x1),
+                            mask_name: None,
+                            reason: SideExitReason::InvokeBlockNotIfunc,
+                            state: exit_id,
+                        });
+                        // bit 0x2 must be set (ifunc specifically, not iseq)
+                        fun.push_insn(block, Insn::GuardAnyBitSet {
+                            val: block_handler,
+                            mask: Const::CUInt64(0x2),
+                            mask_name: None,
+                            reason: SideExitReason::InvokeBlockNotIfunc,
+                            state: exit_id,
+                        });
+
+                        fun.push_insn(block, Insn::InvokeBlockIfunc {
+                            cd,
+                            block_handler,
+                            args,
+                            state: exit_id,
+                        })
+                    } else {
+                        fun.push_insn(block, Insn::InvokeBlock { cd, args, state: exit_id, reason: InvokeBlockNotSpecialized })
+                    };
                     state.stack_push(result);
                 }
                 YARVINSN_getglobal => {
