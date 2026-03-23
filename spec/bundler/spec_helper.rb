@@ -48,8 +48,8 @@ begin
 
   SimpleCov.start do
     command_name "bundler:#{Process.pid}"
-    root File.expand_path("../..", __dir__)
-    coverage_dir File.expand_path("../../coverage", __dir__)
+    root File.expand_path("../bundler", __dir__)
+    coverage_dir File.expand_path("../coverage", __dir__)
 
     add_filter "/spec/"
     add_filter "/test/"
