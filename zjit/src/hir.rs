@@ -5071,6 +5071,18 @@ impl Function {
                             _ => insn_id,
                         }
                     },
+                    Insn::GuardGreaterEq { left, right, state, reason } => {
+                        let left_num = self.type_of(left).cint64_value();
+                        let right_num = self.type_of(right).cint64_value();
+                        match (left_num, right_num) {
+                            (Some(l), Some(r)) if l >= r => {
+                                self.make_equal_to(insn_id, left);
+                                continue
+                            },
+                            (Some(_), Some(_)) => self.new_insn(Insn::SideExit { state, reason }),
+                            _ => insn_id,
+                        }
+                    },
                     Insn::GuardBitEquals { val, expected, .. } => {
                         let recv_type = self.type_of(val);
                         if recv_type.has_value(expected) {

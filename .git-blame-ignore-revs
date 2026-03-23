@@ -49,3 +49,9 @@ b839989fd22fef85e2af19de1bc83aa72a5b22bd
 
 # ZJIT cargo-insta snapshot raw string literals
 b78e0a6ddf7df8a7568ea71284f593423c739551
+
+# Remove and restore bundler directory restructuring
+e98ed19ab0c72f548fa4e3914c9f289ae70dcf66
+d1b8503e59dc5171580efba9f33f256b79008bc4
+cb5336fb1a0da228ff1915d7e6db388d0c0a9c59
+021d9c59b1e78e72856fa569bd3642b25df3d385

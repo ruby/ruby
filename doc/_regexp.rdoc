@@ -930,7 +930,7 @@ Punctuation:
 - +C+, +Other+: +Cc+, +Cf+, +Cn+, +Co+, or +Cs+.
 - {Cc, Control}[https://www.compart.com/en/unicode/category/Cc].
 - {Cf, Format}[https://www.compart.com/en/unicode/category/Cf].
-- {Cn, Unassigned}[https://www.compart.com/en/unicode/category/Cn].
+- {Cn, Unassigned}[http://zuga.net/articles/unicode/category/unassigned/].
 - {Co, Private_Use}[https://www.compart.com/en/unicode/category/Co].
 - {Cs, Surrogate}[https://www.compart.com/en/unicode/category/Cs].
 
