@@ -1734,6 +1734,13 @@ mod tests {
         (asm, CodeBlock::new_dummy())
     }
 
+    fn setup_asm_with_scratch_reg() -> (Assembler, CodeBlock, Opnd) {
+        crate::options::rb_zjit_prepare_options(); // Allow `get_option!` in Assembler
+        let (mut asm, scratch_reg) = Assembler::new_with_scratch_reg();
+        asm.new_block_without_id("test");
+        (asm, CodeBlock::new_dummy(), scratch_reg)
+    }
+
     #[test]
     fn test_lir_string() {
         use crate::hir::SideExitReason;
@@ -2159,9 +2166,7 @@ mod tests {
 
     #[test]
     fn test_store_with_valid_scratch_reg() {
-        let (mut asm, scratch_reg) = Assembler::new_with_scratch_reg();
-        asm.new_block_without_id("test");
-        let mut cb = CodeBlock::new_dummy();
+        let (mut asm, mut cb, scratch_reg) = setup_asm_with_scratch_reg();
         asm.store(Opnd::mem(64, scratch_reg, 0), 0x83902.into());
 
         asm.compile_with_num_regs(&mut cb, 0);

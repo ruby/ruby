@@ -5,11 +5,11 @@ use std::panic;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use crate::bitset::BitSet;
-use crate::codegen::local_size_and_idx_to_ep_offset;
+use crate::codegen::{local_size_and_idx_to_ep_offset, perf_symbol_range_start, perf_symbol_range_end};
 use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, vm_stack_canary};
 use crate::hir::{Invariant, SideExitReason};
 use crate::hir;
-use crate::options::{TraceExits, get_option};
+use crate::options::{TraceExits, PerfMap, get_option};
 use crate::cruby::VALUE;
 use crate::payload::IseqVersionRef;
 use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, side_exit_counter, CompileError};
@@ -2675,6 +2675,13 @@ impl Assembler
         // Map from SideExit to compiled Label. This table is used to deduplicate side exit code.
         let mut compiled_exits: HashMap<SideExit, Label> = HashMap::new();
 
+        // Start a new perf range for side exits
+        let perf_symbol = if get_option!(perf) == Some(PerfMap::HIR) {
+            Some(perf_symbol_range_start(self, "side exit"))
+        } else {
+            None
+        };
+
         // Mark the start of side-exit code so we can measure its size
         if !targets.is_empty() {
             self.pos_marker(move |start_pos, cb| {
@@ -2754,6 +2761,11 @@ impl Assembler
         if !compiled_exits.is_empty() {
             let nanos = side_exit_start.elapsed().as_nanos();
             crate::stats::incr_counter_by(crate::stats::Counter::compile_side_exit_time_ns, nanos as u64);
+        }
+
+        // Close the current perf range for side exits
+        if let Some(perf_symbol) = &perf_symbol {
+            perf_symbol_range_end(self, perf_symbol);
         }
 
         // Extract exit instructions and restore the previous current block
