@@ -5023,6 +5023,13 @@ impl Function {
                         // We found a second store while one was tracked.
                         // We can elide one.
                         // TODO(Jacob): Figure out if it matters which store we eliminate
+                        // TODO: BUG FIX: We obviously need to keep the final store, not the first!
+                        // This is because load_store_optimization ensures each store is different.
+                        // We need to keep the last one to preserve correctness. That changes the logic around for this block below
+                        //
+                        // TODO: Refine the key of active_stores
+                        // Additionally, we can't just do offset. We need to consider the object and address the same aliasing issues
+                        // we have in load store optimization.
                         if let Some(store_id) = active_stores.get(&offset) {
                             dead_stores.insert(*store_id);
                         }
