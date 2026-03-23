@@ -774,14 +774,22 @@ RUBY_TYPED_EMBEDDABLE ::
 
   To be embeddable, types must abide by some restrictions:
 
-  * Pointers into the C struct MUST NOT be stored, as they become invalid
-    when GC compaction occurs.
-    It is however valid to pass and use such pointers for as long as the
-    Ruby object remains on the stack. Use of the +GC_GUARD+ macro may be
-    necessary to ensure the reference isn't optimized by the compiler.
+  * Pointers to the C struct, or into the C struct, MUST NOT be stored,
+    as they become invalid when GC compaction occurs.
+    It is however valid to pass and use such pointers for as long as the Ruby
+    object remains on the stack.
 
-  * The +DATA_PTR+ macro can't be used. Only +RTYPEDDATA_GET_DATA+` or
-    +TypedData_Get_Struct+ macros can be used with embeddable objects.
+    In a sense, this is similar to the restrictions of a stack allocated struct.
+
+    The +RB_GC_GUARD+ macro must be used to ensure the object is not moved by
+    compaction and not freed, unless the object is passed directly as an
+    argument from Ruby to C, i.e. as a parameter of a function used with
+    +rb_define_method+ and similar.
+
+  * The +DATA_PTR+ and +RTYPEDDATA_DATA+ macro can't be used.
+    Only +RTYPEDDATA_GET_DATA+` or +TypedData_Get_Struct+ macros can be used
+    with embeddable objects.
+    Accessing `RDATA(obj)->data` or `RTYPEDDATA(obj)->data` is invalid too.
 
   * The +dfree+ function MUST NOT free the C struct itself.
     Setting +dfree+ to +RUBY_DEFAULT_FREE+ is fine.
@@ -2374,6 +2382,35 @@ Here is an example of how to use +RUBY_TYPED_EMBEDDABLE+::
       return obj
   }
 
+  static VALUE
+  my_data_m_parse(VALUE klass)
+  {
+      struct my_data *data;
+      VALUE my_data_obj = my_data_alloc(klass);
+      TypedData_Get_Struct(obj, struct my_data, &my_type, data);
+
+      // `my_data_obj` was allocated from C, `RB_GC_GUARD` must be used to
+      // ensure the compiler will keep its reference on the stack.
+      RB_GC_GUARD(my_data_obj)
+  }
+
+  static VALUE
+  my_data_read(VALUE self)
+  {
+      struct my_data *data;
+      TypedData_Get_Struct(obj, struct my_data, &my_type, data);
+
+      // `self` is received from `rb_define_method` so `RB_GC_GUARD` isn't necessary.
+      return rb_str_new(data->buffer, data->buffer_capa)
+  }
+
+  void
+  Init_my_data(void)
+  {
+      VALUE cMyData = rb_define_class("MyData");
+      rb_define_method(cMyData, "read", my_data_read, 0);
+      rb_define_singleton_method(cMyData, "parse", my_data_m_parse, 0);
+  }
 
 --
 Local variables:
