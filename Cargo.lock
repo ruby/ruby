@@ -270,4 +270,5 @@ dependencies = [
  "insta",
  "jit",
  "rand",
+ "yjit",
 ]

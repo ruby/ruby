@@ -4,7 +4,8 @@ use std::time::Instant;
 use std::sync::atomic::Ordering;
 use crate::options::OPTIONS;
 
-#[cfg(feature = "stats_allocator")]
+// test binaries always bring it in as a cargo dependency
+#[cfg(all(feature = "stats_allocator", not(test)))]
 #[path = "../../jit/src/lib.rs"]
 mod jit;
 
