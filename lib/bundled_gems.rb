@@ -1,9 +1,9 @@
 # -*- frozen-string-literal: true -*-
 
-# :stopdoc:
-module Gem
+module Gem # :nodoc:
+  # TODO: the nodoc above is a workaround for RDoc's Prism parser handling stopdoc differently, we may want to use
+  # stopdoc/startdoc pair like before
 end
-# :startdoc:
 
 module Gem::BUNDLED_GEMS # :nodoc:
   SINCE = {
