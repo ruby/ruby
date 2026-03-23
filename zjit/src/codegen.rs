@@ -1559,7 +1559,8 @@ fn gen_send_iseq_direct(
         if callee_is_bmethod {
             // For bmethods, specval is the captured EP, not the block handler.
             // The block param needs nil (no block) or a Proc value.
-            c_args.push(block_handler.unwrap_or_else(|| Qnil.into()));
+            assert!(block_handler.is_none(), "at the moment, HIR builder never emits a direct send for a to-bmethod send-with-literal-block");
+            c_args.push(Qnil.into());
         } else {
             c_args.push(specval);
         }
