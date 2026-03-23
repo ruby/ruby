@@ -4990,6 +4990,76 @@ impl Function {
         }
     }
 
+    // This pass assumes that load_store_optimization has already run
+    // This means that we will never have cases where loads and stores are
+    // repeated with the same offset and value.
+    // However, we still may have unnecessary stores. For the purposes of this
+    // pass, unnecessary means that a store to an offset is not utilized by
+    // other HIR instructions before a second store to the same offset occurs.
+    // Removing one of these two stores does not alter program behavior.
+    fn eliminate_dead_stores(&mut self) {
+        // #[derive(PartialEq, Eq, Hash)]
+        // struct StoreHeap {
+        //     offset: i32,
+        // }
+
+        for block in self.rpo() {
+            let mut dead_stores: HashSet<InsnId> = HashSet::new();
+            let mut active_stores: HashMap<i32, InsnId> = HashMap::new();
+            let mut insns = std::mem::take(&mut self.blocks[block.0].insns);
+            // Iterate over the instructions backwards
+            // If we find a store
+            //   If it's not in current_stores, add it with StoreStatus::Used
+            //   If it is, check if we can eliminate it and add it to dead_stores based on current_stores. also update current_stores
+            //   cases:
+            //     - it's used. Reset the current_stores entry with the new store.
+            //     - it's not used. Add the new store to dead_stores and leave current_stores the same.
+            // If we find an effectful instruction, mark any stores in the heap as used
+            // If we find a load, mark the relevant store in the heap as used
+            for i in (0..insns.len()).rev() {
+                let insn_id = insns[i];
+                match self.find(insn_id) {
+                    Insn::StoreField { offset, .. } => {
+                        // We found a second store while one was tracked.
+                        // We can elide one.
+                        // TODO(Jacob): Figure out if it matters which store we eliminate
+                        if let Some(store_id) = active_stores.get(&offset) {
+                            dead_stores.insert(*store_id);
+                        }
+                        // We always track the most recent store, though we
+                        // could use the original store if we elide the most
+                        // recent one instead.
+                        // This works because the basic blocks do not have
+                        // control flow, making lifetime tracking simple. More
+                        // complex algorithms are required for dead store on a
+                        // CFG.
+                        active_stores.insert(offset, insn_id);
+                    }
+                    Insn::LoadField { offset, .. } => {
+                        // If a load is found, then any earlier store was
+                        // necessary. We know this because redundant loads and
+                        // stores were already eliminated, implying the
+                        // hypothetical StoreField we haven't found yet has a
+                        // different value than the one in active_stores.
+                        active_stores.remove(&offset);
+                    }
+                    insn => {
+                        // If the instruction has memory effects, we cannot
+                        // assume our active_stores are not loaded nor stored.
+                        if insn.effects_of().includes(effects::Memory) {
+                            active_stores.clear();
+                        }
+                    }
+
+                }
+            }
+            // TODO: Figure out if we need to handle a write barrier special case. Do these also need to be removed after removing stores?
+            // Prune away any dead stores
+            insns.retain(|i| dead_stores.contains(i));
+            self.blocks[block.0].insns = insns;
+        }
+    }
+
     /// Fold a binary operator on fixnums.
     fn fold_fixnum_bop(&mut self, insn_id: InsnId, left: InsnId, right: InsnId, f: impl FnOnce(Option<i64>, Option<i64>) -> Option<i64>) -> InsnId {
         f(self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value())
@@ -5715,6 +5785,7 @@ impl Function {
         run_pass!(convert_no_profile_sends);
         run_pass!(optimize_load_store);
         run_pass!(canonicalize);
+        run_pass!(eliminate_dead_stores);
         run_pass!(fold_constants);
         run_pass!(clean_cfg);
         run_pass!(remove_redundant_patch_points);

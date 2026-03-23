@@ -15838,6 +15838,24 @@ mod hir_opt_tests {
         ");
         assert_snapshot!(hir_string_proc("IFuncTestList.instance_method(:each)"), @"
         fn each@<compiled>:5:
+        ");
+    }
+
+    #[test]
+    fn test_eliminate_dead_store_in_initialize() {
+        eval("
+            class C
+              def initialize
+                @a = 1
+                @b = 2
+                @c = 3
+              end
+            end
+
+            C.new
+        ");
+        assert_snapshot!(hir_string_proc("C.instance_method(:initialize)"), @r"
+        fn initialize@<compiled>:4:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
@@ -15877,9 +15895,117 @@ mod hir_opt_tests {
           v39:BasicObject = InvokeBlock, v27 # SendFallbackReason: InvokeBlock: not yet specialized
           Jump bb7(v39)
         bb7(v35:BasicObject):
+          Jump bb6(v37)
+          StoreField v14, :@b@0x1004, v17
+          WriteBarrier v14, v17
+          v47:CShape[0x1005] = Const CShape(0x1005)
+          StoreField v14, :_shape_id@0x1000, v47
+          v21:HeapBasicObject = RefineType v14, HeapBasicObject
+          v24:Fixnum[3] = Const Value(3)
+          PatchPoint SingleRactorMode
+          StoreField v21, :@c@0x1006, v24
+          WriteBarrier v21, v24
+          v54:CShape[0x1007] = Const CShape(0x1007)
+          StoreField v21, :_shape_id@0x1000, v54
           CheckInterrupts
-          Return v35
+          Return v24
         ");
+    }
+
+    #[test]
+    fn test_preserve_necessary_store_in_initialize() {
+        eval("
+            class C
+              def initialize
+                @a = 1
+                @a
+              end
+            end
+
+            C.new
+        ");
+        assert_snapshot!(hir_string_proc("C.instance_method(:initialize)"), @r"
+        fn initialize@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:Fixnum[1] = Const Value(1)
+          PatchPoint SingleRactorMode
+          v24:HeapBasicObject = GuardType v6, HeapBasicObject
+          v25:CShape = LoadField v24, :_shape_id@0x1000
+          v26:CShape[0x1001] = GuardBitEquals v25, CShape(0x1001)
+          StoreField v24, :@a@0x1002, v10
+          WriteBarrier v24, v10
+          v29:CShape[0x1003] = Const CShape(0x1003)
+          StoreField v24, :_shape_id@0x1000, v29
+          PatchPoint SingleRactorMode
+          CheckInterrupts
+          Return v10
+        ");
+    }
+
+    #[test]
+    fn test_eliminate_many_dead_stores_in_initialize() {
+        eval("
+            class C
+              def initialize
+                @a = 1
+                @a = 2
+                @a = 3
+                @a = 4
+                @a = 5
+              end
+            end
+
+            C.new
+        ");
+        assert_snapshot!(hir_string_proc("C.instance_method(:initialize)"), @r"
+        fn initialize@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:Fixnum[1] = Const Value(1)
+          PatchPoint SingleRactorMode
+          v49:HeapBasicObject = GuardType v6, HeapBasicObject
+          v50:CShape = LoadField v49, :_shape_id@0x1000
+          v51:CShape[0x1001] = GuardBitEquals v50, CShape(0x1001)
+          StoreField v49, :@a@0x1002, v10
+          WriteBarrier v49, v10
+          v54:CShape[0x1003] = Const CShape(0x1003)
+          StoreField v49, :_shape_id@0x1000, v54
+          v14:HeapBasicObject = RefineType v6, HeapBasicObject
+          v17:Fixnum[2] = Const Value(2)
+          PatchPoint SingleRactorMode
+          StoreField v14, :@a@0x1002, v17
+          WriteBarrier v14, v17
+          v21:HeapBasicObject = RefineType v14, HeapBasicObject
+          v24:Fixnum[3] = Const Value(3)
+          PatchPoint SingleRactorMode
+          StoreField v21, :@a@0x1002, v24
+          WriteBarrier v21, v24
+          v28:HeapBasicObject = RefineType v21, HeapBasicObject
+          v31:Fixnum[4] = Const Value(4)
+          PatchPoint SingleRactorMode
+          StoreField v28, :@a@0x1002, v31
+          WriteBarrier v28, v31
+          v35:HeapBasicObject = RefineType v28, HeapBasicObject
+          v38:Fixnum[5] = Const Value(5)
+          PatchPoint SingleRactorMode
+          StoreField v35, :@a@0x1002, v38
+          WriteBarrier v35, v38
+    ");
     }
 
     #[test]
