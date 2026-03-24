@@ -2066,6 +2066,31 @@ ractor_move(VALUE obj)
     }
 }
 
+static VALUE
+ractor_call_clone_try(VALUE obj)
+{
+    return rb_funcall(obj, idClone, 0);
+}
+
+static VALUE
+ractor_call_clone_rescue(VALUE obj, VALUE exc)
+{
+    rb_raise(rb_eRactorError, "can't clone unshareable instance of %"PRIsVALUE, rb_class_of(obj));
+    UNREACHABLE_RETURN(Qnil);
+}
+
+static VALUE
+ractor_obj_clone(VALUE obj)
+{
+    VALUE clone = rb_rescue(ractor_call_clone_try, obj, ractor_call_clone_rescue, obj);
+
+    if (obj == clone) {
+        rb_raise(rb_eRactorError, "#clone returned self");
+    }
+
+    return clone;
+}
+
 static enum obj_traverse_iterator_result
 copy_enter(VALUE obj, struct obj_traverse_replace_data *data)
 {
@@ -2074,10 +2099,7 @@ copy_enter(VALUE obj, struct obj_traverse_replace_data *data)
         return traverse_skip;
     }
     else {
-        if (!rb_get_alloc_func(rb_obj_class(obj))) {
-            rb_raise(rb_eRactorError, "can not copy unshareable object %+"PRIsVALUE, obj);
-        }
-        data->replacement = rb_obj_clone(obj);
+        data->replacement = ractor_obj_clone(obj);
         return traverse_cont;
     }
 }
