@@ -299,8 +299,14 @@ static inline VALUE
 class_real(VALUE cl)
 {
     RUBY_ASSERT(cl);
+
+    // TODO: In the future we should only call this with T_CLASS
+    RUBY_ASSERT(RB_TYPE_P(cl, T_CLASS) || RB_TYPE_P(cl, T_ICLASS) || RB_TYPE_P(cl, T_MODULE));
+
     while (RB_UNLIKELY(fake_class_p(cl))) {
-        cl = RCLASS_SUPER(cl);
+        // All paths through super in any box will eventually result in the
+        // same class.
+        cl = RCLASSEXT_SUPER(RCLASS_EXT_PRIME(cl));
     }
     return cl;
 }
