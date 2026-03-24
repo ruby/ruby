@@ -2307,6 +2307,15 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
         return false
     }
 
+    // When the callee has both optional positional params and keywords, and the caller
+    // doesn't provide all optional positionals, the stack frame layout would have a gap
+    // between positional and keyword args, placing keywords at wrong EP offsets.
+    // Reject this case to avoid miscompilation when the callee falls back to interpreter.
+    if opt_num > 0 && kw_total_num > 0 && caller_positional < (lead_num + opt_num) as usize {
+        function.set_dynamic_send_reason(send_insn, ArgcParamMismatch);
+        return false;
+    }
+
     // asm.ccall() doesn't support 6+ args. Compute the final argc after keyword setup:
     // final_argc = caller's positional args + callee's total keywords (all kw slots are filled).
     // Right now, the JIT entrypoint accepts the block as an param
@@ -7950,6 +7959,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             if profiled_type.flags().is_immediate() { continue; }
                             let expected_shape = profiled_type.shape();
                             assert!(expected_shape.is_valid());
+                            // Too-complex shapes use hash tables for ivars;
+                            // rb_shape_get_iv_index doesn't work for them.
+                            // Let the fallthrough GetIvar handle these.
+                            if expected_shape.is_too_complex() { continue; }
                             if seen_shapes.contains(&expected_shape) { continue; }
                             seen_shapes.push(expected_shape);
                             let expected_shape_const = fun.push_insn(block, Insn::Const { val: Const::CShape(expected_shape) });

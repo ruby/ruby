@@ -1535,7 +1535,7 @@ fn gen_send_iseq_direct(
         (VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL, specval)
     };
 
-    // Set up the new frame
+    // Set up the new frame using args.len() to get correct EP offsets
     // TODO: Lazily materialize caller frames on side exits or when needed
     gen_push_frame(asm, args.len(), state, ControlFrame {
         recv,
@@ -1604,7 +1604,7 @@ fn gen_send_iseq_direct(
         let keyword = params.keyword;
         let kw_total_num = if keyword.is_null() { 0 } else { unsafe { (*keyword).num } } as u32;
         assert!(args.len() as u32 <= lead_num + opt_num + kw_total_num);
-        // For computing optional positional entry point, only count positional args
+        // For computing optional positional entry point, only count positional args.
         let positional_argc = args.len() as u32 - kw_total_num;
         let num_optionals_passed = positional_argc.saturating_sub(lead_num);
         num_optionals_passed
