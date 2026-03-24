@@ -5075,7 +5075,7 @@ impl Function {
             }
             // TODO: Figure out if we need to handle a write barrier special case. Do these also need to be removed after removing stores?
             // Prune away any dead stores
-            insns.retain(|i| dead_stores.contains(i));
+            insns.retain(|i| !dead_stores.contains(i));
             self.blocks[block.0].insns = insns;
         }
     }
