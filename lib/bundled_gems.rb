@@ -137,7 +137,7 @@ module Gem::BUNDLED_GEMS # :nodoc:
       # Don't warn if the feature is found outside the standard library
       # (e.g., benchmark-ips's lib dir is on $LOAD_PATH but not in specs)
       resolved = $LOAD_PATH.resolve_feature_path(feature) rescue nil
-      if resolved and not resolved[1].start_with?(LIBDIR, ARCHDIR)
+      if resolved && !resolved[1].start_with?(LIBDIR, ARCHDIR)
         return
       end
     end
