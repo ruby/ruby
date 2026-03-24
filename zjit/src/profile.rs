@@ -427,6 +427,31 @@ impl IseqProfile {
             .ok().map(|i| &self.entries[i])
     }
 
+    /// Profile send operands from the stack at runtime.
+    /// `sp` is the current stack pointer (after the args and receiver).
+    /// `argc` is the number of arguments (not counting receiver).
+    /// Returns true if enough profiles have been gathered and the ISEQ should be recompiled.
+    /// Check if enough profiles have been gathered for this instruction.
+    pub fn done_profiling_at(&self, insn_idx: usize) -> bool {
+        self.entry(insn_idx).map_or(false, |e| e.num_profiles >= get_option!(num_profiles))
+    }
+
+    pub fn profile_send_at(&mut self, iseq: IseqPtr, insn_idx: usize, sp: *const VALUE, argc: usize) -> bool {
+        let n = argc + 1; // args + receiver
+        let entry = self.entry_mut(insn_idx);
+        if entry.opnd_types.is_empty() {
+            entry.opnd_types.resize(n, TypeDistribution::new());
+        }
+        for i in 0..n {
+            let obj = unsafe { *sp.offset(-1 - (n - i - 1) as isize) };
+            let ty = ProfiledType::new(obj);
+            VALUE::from(iseq).write_barrier(ty.class());
+            entry.opnd_types[i].observe(ty);
+        }
+        entry.num_profiles = entry.num_profiles.saturating_add(1);
+        entry.num_profiles == get_option!(num_profiles)
+    }
+
     /// Get profiled operand types for a given instruction index
     pub fn get_operand_types(&self, insn_idx: usize) -> Option<&[TypeDistribution]> {
         self.entry(insn_idx).map(|e| e.opnd_types.as_slice()).filter(|s| !s.is_empty())
