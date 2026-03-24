@@ -26,6 +26,7 @@
 # include <stddef.h>
 #endif
 
+#include "ruby/assert.h"
 #include "ruby/internal/assume.h"
 #include "ruby/internal/attr/artificial.h"
 #include "ruby/internal/attr/flag_enum.h"
@@ -94,13 +95,15 @@
  */
 #define RTYPEDDATA(obj)              RBIMPL_CAST((struct RTypedData *)(obj))
 
+static inline VALUE rbimpl_check_external_typeddata(VALUE obj);
+
 /**
  * Convenient getter macro.
  *
  * @param   v  An object, which is in fact an ::RTypedData.
  * @return  The passed object's ::RTypedData::data field.
  */
-#define RTYPEDDATA_DATA(v)           (RTYPEDDATA(v)->data)
+#define RTYPEDDATA_DATA(v)           (RTYPEDDATA(rbimpl_check_external_typeddata(v))->data)
 
 /** @old{rb_check_typeddata} */
 #define Check_TypedStruct(v, t)      \
@@ -600,7 +603,7 @@ rbimpl_typeddata_get_data(VALUE obj)
 {
     /* We reuse the data pointer in embedded TypedData. */
     return rbimpl_typeddata_embedded_p(obj) ?
-        RBIMPL_CAST((void *)&RTYPEDDATA_DATA(obj)) :
+        RBIMPL_CAST((void *)&RTYPEDDATA(obj)->data) :
         RTYPEDDATA_DATA(obj);
 }
 
@@ -736,6 +739,22 @@ rbimpl_check_typeddata(VALUE obj, const rb_data_type_t *expected_type)
     return RTYPEDDATA_GET_DATA(obj);
 }
 
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
+RBIMPL_ATTR_ARTIFICIAL()
+/**
+ * @private
+ *
+ * This  is an  implementation detail  of  RTYPEDDATA_DATA().  Don't use  it
+ * directly.
+ */
+static inline VALUE
+rbimpl_check_external_typeddata(VALUE obj)
+{
+    RBIMPL_TYPEDDATA_PRECONDITION(obj, RBIMPL_UNREACHABLE_RETURN(false));
+    RUBY_ASSERT(rbimpl_obj_typeddata_p(obj));
+    RUBY_ASSERT(!rbimpl_typeddata_embedded_p(obj));
+    return obj;
+}
 
 /**
  * Obtains a C struct from inside of a wrapper Ruby object.
