@@ -2307,6 +2307,15 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
         return false
     }
 
+    // When the callee has both optional positional params and keywords, and the caller
+    // doesn't provide all optional positionals, the stack frame layout would have a gap
+    // between positional and keyword args, placing keywords at wrong EP offsets.
+    // Reject this case to avoid miscompilation when the callee falls back to interpreter.
+    if opt_num > 0 && kw_total_num > 0 && caller_positional < (lead_num + opt_num) as usize {
+        function.set_dynamic_send_reason(send_insn, ArgcParamMismatch);
+        return false;
+    }
+
     // asm.ccall() doesn't support 6+ args. Compute the final argc after keyword setup:
     // final_argc = caller's positional args + callee's total keywords (all kw slots are filled).
     // Right now, the JIT entrypoint accepts the block as an param
