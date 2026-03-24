@@ -4997,6 +4997,7 @@ impl Function {
     // pass, unnecessary means that a store to an offset is not utilized by
     // other HIR instructions before a second store to the same offset occurs.
     // Removing one of these two stores does not alter program behavior.
+    // TODO: Improve comments and clean up algorithm sketch
     fn eliminate_dead_stores(&mut self) {
         #[derive(PartialEq, Eq, Hash)]
         struct StoreHeap {
@@ -5016,15 +5017,8 @@ impl Function {
             let mut dead_stores: HashSet<InsnId> = HashSet::new();
             let mut active_stores: HashMap<StoreHeap, InsnId> = HashMap::new();
             let mut insns = std::mem::take(&mut self.blocks[block.0].insns);
-            // Iterate over the instructions backwards
-            // If we find a store
-            //   If it's not in current_stores, add it with StoreStatus::Used
-            //   If it is, check if we can eliminate it and add it to dead_stores based on current_stores. also update current_stores
-            //   cases:
-            //     - it's used. Reset the current_stores entry with the new store.
-            //     - it's not used. Add the new store to dead_stores and leave current_stores the same.
-            // If we find an effectful instruction, mark any stores in the heap as used
-            // If we find a load, mark the relevant store in the heap as used
+            // TODO: Figure out if we should make the pass run backwards and do it all in one sweep
+            // Or if we should do it from top to bottom for readability, but require a second pass
             for i in (0..insns.len()).rev() {
                 let insn_id = insns[i];
                 match self.find(insn_id) {
