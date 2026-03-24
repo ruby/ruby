@@ -329,6 +329,7 @@ make_counters! {
     // compile_error_: Compile error reasons
     compile_error_iseq_version_limit_reached,
     compile_error_iseq_stack_too_large,
+    compile_error_native_stack_too_large,
     compile_error_exception_handler,
     compile_error_out_of_memory,
     compile_error_label_linking_failure,
@@ -500,6 +501,7 @@ pub fn send_fallback_counter_ptr_for_opcode(opcode: u32) -> *mut u64 {
 pub enum CompileError {
     IseqVersionLimitReached,
     IseqStackTooLarge,
+    NativeStackTooLarge,
     ExceptionHandler,
     OutOfMemory,
     ParseError(ParseError),
@@ -518,6 +520,7 @@ pub fn exit_counter_for_compile_error(compile_error: &CompileError) -> Counter {
     match compile_error {
         IseqVersionLimitReached => compile_error_iseq_version_limit_reached,
         IseqStackTooLarge       => compile_error_iseq_stack_too_large,
+        NativeStackTooLarge     => compile_error_native_stack_too_large,
         ExceptionHandler        => compile_error_exception_handler,
         OutOfMemory             => compile_error_out_of_memory,
         LabelLinkingFailure     => compile_error_label_linking_failure,

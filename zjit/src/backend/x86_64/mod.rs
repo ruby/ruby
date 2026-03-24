@@ -1164,7 +1164,7 @@ impl Assembler {
 
         let total_stack_slots = asm.stack_base_idx + num_stack_slots;
         if total_stack_slots > Self::MAX_FRAME_STACK_SLOTS {
-            return Err(CompileError::OutOfMemory);
+            return Err(CompileError::NativeStackTooLarge);
         }
 
         // Dump vreg-to-physical-register mapping if requested
