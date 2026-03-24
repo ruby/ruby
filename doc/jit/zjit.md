@@ -313,8 +313,10 @@ end
 ZJIT: writing trace exits to /tmp/perfetto-123456.fxt
 ```
 
-To find the hottest side-exit locations, download `trace_processor_shell` and
-run an SQL query on the trace:
+To find the hottest side-exit locations, open the `.fxt` file in
+[Perfetto UI](https://ui.perfetto.dev/) and run an SQL query via the
+"Query (SQL)" tab in the bottom panel. Alternatively, download
+`trace_processor_shell` to query from the command line:
 
 ```bash
 curl -Lo /tmp/trace_processor_shell https://get.perfetto.dev/trace_processor
