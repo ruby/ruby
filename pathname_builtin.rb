@@ -13,10 +13,6 @@
 #
 # == Convenience Methods
 #
-# \Class \Pathname provides many convenience methods
-# that are easier to write (and read!) than Ruby alternatives;
-# see examples below.
-#
 # The class provides *all* functionality from class File and module FileTest,
 # along with some functionality from class Dir and module FileUtils.
 #
@@ -49,26 +45,34 @@
 #   pn.split            # => [#<Pathname:lib>, #<Pathname:fileutils.rb>]
 #   File.split(path)    # => ["lib", "fileutils.rb"]
 #
-# Eash of these methods takes a block:
+# Each of these methods takes a block:
 #
 #   pn.open do |file|
 #     p file
 #   end
-#   #<File:lib/fileutils.rb (closed)>
 #   File.open(path) do |file|
 #     p file
 #   end
+#
+# The outputs for each:
+#
 #   #<File:lib/fileutils.rb (closed)>
+#   #<File:lib/fileutils.rb (closed)>
+#
+# Each of these methods takes a block:
 #
 #   pn.each_line do |line|
 #     p line
 #     break
 #   end
-#   "# frozen_string_literal: true\n"
 #   File.foreach(path) do |line|
 #     p line
 #     break
 #   end
+#
+# The outputs for each:
+#
+#   "# frozen_string_literal: true\n"
 #   "# frozen_string_literal: true\n"
 #
 # == More Methods
