@@ -626,7 +626,10 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::Send { cd, block: Some(BlockHandler::BlockIseq(blockiseq)), state, reason, .. } => gen_send(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::Send { cd, block: Some(BlockHandler::BlockArg), state, reason, .. } => gen_send(jit, asm, cd, std::ptr::null(), &function.frame_state(state), reason),
         &Insn::SendForward { cd, blockiseq, state, reason, .. } => gen_send_forward(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
-        Insn::SendDirect { cme, iseq, recv, args, kw_bits, block, state, .. } => gen_send_iseq_direct(cb, jit, asm, *cme, *iseq, opnd!(recv), opnds!(args), *kw_bits, &function.frame_state(*state), *block),
+        &Insn::SendDirect { cme, iseq, recv, ref args, kw_bits, block, state, .. } => gen_send_iseq_direct(
+                cb, jit, asm, cme, iseq, opnd!(recv), opnds!(args),
+                kw_bits, &function.frame_state(state), block,
+            ),
         &Insn::InvokeSuper { cd, blockiseq, state, reason, .. } => gen_invokesuper(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::InvokeSuperForward { cd, blockiseq, state, reason, .. } => gen_invokesuperforward(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::InvokeBlock { cd, state, reason, .. } => gen_invokeblock(jit, asm, cd, &function.frame_state(state), reason),
@@ -1669,7 +1672,7 @@ fn gen_send_iseq_direct(
     };
 
     // Make a method call. The target address will be rewritten once compiled.
-    let iseq_call = IseqCall::new(iseq, num_optionals_passed);
+    let iseq_call = IseqCall::new(iseq, num_optionals_passed.try_into().expect("checked in HIR"), args.len().try_into().expect("checked in HIR"));
     let dummy_ptr = cb.get_write_ptr().raw_ptr(cb);
     jit.iseq_calls.push(iseq_call.clone());
     let ret = asm.ccall_with_iseq_call(dummy_ptr, c_args, &iseq_call);
@@ -3081,10 +3084,12 @@ c_callable! {
             // mutability (Cell<IseqPtr>) requires exclusive access.
             let iseq_call = unsafe { Rc::from_raw(iseq_call_ptr as *const IseqCall) };
             let iseq = iseq_call.iseq.get();
+            let argc = iseq_call.argc;
+            let num_opts_filled = iseq_call.jit_entry_idx;
 
             // JIT-to-JIT calls don't eagerly fill nils to non-parameter locals.
             // If we side-exit from function_stub_hit (before JIT code runs), we need to set them here.
-            fn prepare_for_exit(iseq: IseqPtr, cfp: CfpPtr, sp: *mut VALUE, compile_error: &CompileError) {
+            fn prepare_for_exit(iseq: IseqPtr, cfp: CfpPtr, sp: *mut VALUE, argc: u16, num_opts_filled: u16, compile_error: &CompileError) {
                 unsafe {
                     // Caller frames are materialized by jit_exec() after the entry trampoline returns.
                     // The current frame's pc and iseq are already set by function_stub_hit before this point.
@@ -3092,11 +3097,58 @@ c_callable! {
                     // Set SP which gen_push_frame() doesn't set
                     rb_set_cfp_sp(cfp, sp);
 
-                    // Fill nils to uninitialized (non-argument) locals
                     let local_size = get_iseq_body_local_table_size(iseq).to_usize();
-                    let num_params = iseq.params().size.to_usize();
-                    let base = sp.offset(-local_size_and_idx_to_bp_offset(local_size, num_params) as isize);
-                    slice::from_raw_parts_mut(base, local_size - num_params).fill(Qnil);
+                    let params = iseq.params();
+                    let params_size = params.size.to_usize();
+                    let frame_base = sp.offset(-local_size_and_idx_to_bp_offset(local_size, 0) as isize);
+                    let locals = slice::from_raw_parts_mut(frame_base, local_size);
+                    // Fill nils to uninitialized (non-parameter) locals
+                    locals.get_mut(params_size..).unwrap_or_default().fill(Qnil);
+
+                    // SendDirect packs args without gaps for unfilled optionals.
+                    // When we exit to the interpreter, we need to shift args right
+                    // to create the gap and nil-fill the unfilled optional slots.
+                    //
+                    // Example: def target(req, a = a, b = b, kw:); target(1, kw: 2)
+                    //   lead_num=1, opt_num=2, opts_filled=0, argc=2
+                    //
+                    //   locals[] as placed by SendDirect (argc=2, no gaps):
+                    //     [req, kw_val, ?, ?, ?, ...]
+                    //      0    1
+                    //      ^----caller's args----^
+                    //
+                    //   locals[] expected by interpreter (params_size=4):
+                    //     [req,  a,   b,  kw_val, ?, ...]
+                    //      0     1    2   3
+                    //            ^nil ^nil^--moved--^
+                    //
+                    //   gap_start = lead_num + opts_filled = 1
+                    //   gap_end   = lead_num + opt_num     = 3
+                    //   We move locals[gap_start..argc] to locals[gap_end..], then
+                    //   nil-fill locals[gap_start..gap_end].
+                    let opt_num: usize = params.opt_num.try_into().expect("ISEQ opt_num should be non-negative");
+                    let opts_filled = num_opts_filled.to_usize();
+                    let opts_unfilled = opt_num.saturating_sub(opts_filled);
+                    if opts_unfilled > 0 {
+                        let argc = argc.to_usize();
+                        let lead_num: usize = params.lead_num.try_into().expect("ISEQ lead_num should be non-negative");
+                        let param_locals = &mut locals[..params_size];
+                        // Gap of unspecified optional parameters
+                        let gap_start = lead_num + opts_filled;
+                        let gap_end = lead_num + opt_num;
+                        // When there are arguments in the gap, shift them past the gap
+                        let args_overlapping_gap = gap_start..argc;
+                        if !args_overlapping_gap.is_empty() {
+                            assert!(
+                                gap_end.checked_add(args_overlapping_gap.len())
+                                    .is_some_and(|new_end| new_end <= param_locals.len()) ,
+                                "shift past gap out-of-bounds. params={params:#?} args_overlapping_gap={args_overlapping_gap:?}"
+                            );
+                            param_locals.copy_within(args_overlapping_gap, gap_end);
+                        }
+                        // Nil-fill the now-vacant optional parameter slots
+                        param_locals[gap_start..gap_end].fill(Qnil);
+                    }
                 }
 
                 // Increment a compile error counter for --zjit-stats
@@ -3126,7 +3178,7 @@ c_callable! {
                 // We'll use this Rc again, so increment the ref count decremented by from_raw.
                 unsafe { Rc::increment_strong_count(iseq_call_ptr as *const IseqCall); }
 
-                prepare_for_exit(iseq, cfp, sp, compile_error);
+                prepare_for_exit(iseq, cfp, sp, argc, num_opts_filled, compile_error);
                 return ZJITState::get_exit_trampoline_with_counter().raw_ptr(cb);
             }
 
@@ -3141,7 +3193,7 @@ c_callable! {
                 // We'll use this Rc again, so increment the ref count decremented by from_raw.
                 unsafe { Rc::increment_strong_count(iseq_call_ptr as *const IseqCall); }
 
-                prepare_for_exit(iseq, cfp, sp, &compile_error);
+                prepare_for_exit(iseq, cfp, sp, argc, num_opts_filled, &compile_error);
                 ZJITState::get_exit_trampoline_with_counter()
             });
             cb.mark_all_executable();
@@ -3466,7 +3518,10 @@ pub struct IseqCall {
     pub iseq: Cell<IseqPtr>,
 
     /// Index that corresponds to [crate::hir::jit_entry_insns]
-    jit_entry_idx: u32,
+    jit_entry_idx: u16,
+
+    /// Argument count passing to the HIR function
+    argc: u16,
 
     /// Position where the call instruction starts
     start_addr: Cell<Option<CodePtr>>,
@@ -3479,12 +3534,13 @@ pub type IseqCallRef = Rc<IseqCall>;
 
 impl IseqCall {
     /// Allocate a new IseqCall
-    fn new(iseq: IseqPtr, jit_entry_idx: u32) -> IseqCallRef {
+    fn new(iseq: IseqPtr, jit_entry_idx: u16, argc: u16) -> IseqCallRef {
         let iseq_call = IseqCall {
             iseq: Cell::new(iseq),
             start_addr: Cell::new(None),
             end_addr: Cell::new(None),
             jit_entry_idx,
+            argc,
         };
         Rc::new(iseq_call)
     }

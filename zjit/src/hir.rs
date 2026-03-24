@@ -2417,6 +2417,12 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
         return false;
     }
 
+    // IseqCall stores num_optionals_passed and argc as u16
+    if u16::try_from(args.len()).is_err() {
+        function.set_dynamic_send_reason(send_insn, TooManyArgsForLir);
+        return false;
+    }
+
     can_send
 }
 
