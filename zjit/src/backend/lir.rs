@@ -139,7 +139,6 @@ impl BasicBlock {
         if self.rpo_index == DUMMY_RPO_INDEX {
             return EdgePair(None, None);
         }
-        assert!(self.insns.last().unwrap().is_terminator());
         let extract_edge = |insn: &Insn| -> Option<BranchEdge> {
             if let Some(Target::Block(edge)) = insn.target() {
                 Some(edge.clone())
@@ -148,14 +147,31 @@ impl BasicBlock {
             }
         };
 
-        match self.insns.as_slice() {
-            [] => panic!("empty block"),
-            [.., second_last, last] => {
+        // Find the last two terminator instructions, skipping non-terminators
+        // (e.g. PosMarker) that may appear after them.
+        let mut terminators: Vec<&Insn> = Vec::new();
+        for insn in self.insns.iter().rev() {
+            if insn.is_terminator() {
+                terminators.push(insn);
+                if terminators.len() == 2 {
+                    break;
+                }
+            } else if !terminators.is_empty() {
+                // Non-terminator between terminators and regular instructions - stop
+                break;
+            }
+        }
+        assert!(!terminators.is_empty(), "block {:?} has no terminator", self.id);
+        terminators.reverse();
+
+        match terminators.as_slice() {
+            [second_last, last] => {
                 EdgePair(extract_edge(second_last), extract_edge(last))
             },
-            [.., last] => {
+            [last] => {
                 EdgePair(extract_edge(last), None)
             }
+            _ => unreachable!()
         }
     }
 
@@ -1744,16 +1760,22 @@ impl Assembler
     pub fn validate_jump_positions(&self) {
         for block in &self.basic_blocks {
             let insns = &block.insns;
-            let len = insns.len();
 
-            // Check all instructions except the last two
-            for (i, insn) in insns.iter().enumerate() {
-                debug_assert!(
-                    !insn.is_terminator() || i >= len.saturating_sub(2),
-                    "Invalid jump position in block {:?}: {:?} at position {} (block has {} instructions). \
-                     Jumps must only appear in the last two positions.",
-                    block.id, insn.op(), i, len
-                );
+            // Find the position of the first terminator instruction.
+            // All terminators must be contiguous (possibly followed by non-terminators like PosMarker).
+            let first_term = insns.iter().position(|insn| insn.is_terminator());
+            if let Some(first_term) = first_term {
+                // No terminator should appear before the contiguous terminator group
+                for (i, insn) in insns.iter().enumerate() {
+                    if insn.is_terminator() {
+                        debug_assert!(
+                            i >= first_term,
+                            "Invalid jump position in block {:?}: {:?} at position {} \
+                             (first terminator at {}). Jumps must be contiguous near the end of the block.",
+                            block.id, insn.op(), i, first_term
+                        );
+                    }
+                }
             }
         }
     }

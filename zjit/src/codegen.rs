@@ -448,9 +448,8 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                     assert!(insn_idx == block.insns().len() - 1, "Jump must be the last instruction in HIR block");
                 },
                 _ => {
-                    // Start a new perf range for the HIR instruction. For now, we do this only for
-                    // non-terminator instructions because LIR blocks must end with a terminator instruction.
-                    let perf_symbol = if get_option!(perf) == Some(PerfMap::HIR) && !insn.is_terminator() {
+                    // Start a new perf range for the HIR instruction.
+                    let perf_symbol = if get_option!(perf) == Some(PerfMap::HIR) {
                         let insn_name = format!("{insn}").split_whitespace().next().unwrap().to_string();
                         Some(perf_symbol_range_start(&mut asm, &insn_name))
                     } else {
@@ -476,8 +475,8 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                 }
             }
         }
-        // Blocks should always end with control flow
-        assert!(asm.current_block().insns.last().unwrap().is_terminator());
+        // Blocks should always contain control flow (but may have trailing non-terminators like PosMarker)
+        assert!(asm.current_block().insns.iter().any(|insn| insn.is_terminator()));
     }
 
     assert!(!asm.rpo().is_empty());
