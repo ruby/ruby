@@ -5029,7 +5029,7 @@ impl Function {
                 let insn_id = insns[i];
                 match self.find(insn_id) {
                     Insn::StoreField { recv, offset, .. } => {
-                        let key = StoreHeap { object: recv, offset };
+                        let key = StoreHeap { object: self.chase_insn(recv), offset };
                         // If an older store is being tracked, then there have
                         // been no usees between stores and the first store is
                         // dead.
@@ -5054,7 +5054,7 @@ impl Function {
                     // based alias analysis and the following call to prune
                     // stores is no longer used.
                     // Insn::LoadField { recv, offset, .. } => {
-                    //     let key = StoreHeap { object: recv, offset };
+                    //     let key = StoreHeap { object: self.chase_insn(recv), offset };
                     //     active_stores.remove(&key);
                     Insn::LoadField{ offset, .. } => {
                         // Because we don't have type based alias analysis, we
@@ -5063,6 +5063,15 @@ impl Function {
                         // such keys that could alias.
                         prune_stores(&mut active_stores, offset);
                     }
+                    Insn::WriteBarrier { .. } => {
+                        // Currently, WriteBarrier write effects are Allocator and Memory when we'd really like them to be flags.
+                        // We don't use LoadField for mark bits so we can ignore them for now.
+                        // But flags does not exist in our effects abstract heap modeling and we don't want to add special casing to effects.
+                        // This special casing in this pass here should be removed once we refine our effects system to provide greater granularity for WriteBarrier.
+                        // TODO: use TBAA
+                        let offset = RUBY_OFFSET_RBASIC_FLAGS;
+                        prune_stores(&mut active_stores, offset);
+                    },
                     insn => {
                         // If the instruction can read memory, we cannot assume
                         // entries of active_stores are not loaded.
@@ -5073,7 +5082,7 @@ impl Function {
 
                 }
             }
-            // TODO: Figure out if we need to handle a write barrier special case. Do these also need to be removed after removing stores?
+            // TODO: Figure out how to remove extraneous write barriers
             // Prune away any dead stores
             insns.retain(|i| !dead_stores.contains(i));
             self.blocks[block.0].insns = insns;
