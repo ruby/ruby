@@ -4998,14 +4998,23 @@ impl Function {
     // other HIR instructions before a second store to the same offset occurs.
     // Removing one of these two stores does not alter program behavior.
     fn eliminate_dead_stores(&mut self) {
-        // #[derive(PartialEq, Eq, Hash)]
-        // struct StoreHeap {
-        //     offset: i32,
-        // }
+        #[derive(PartialEq, Eq, Hash)]
+        struct StoreHeap {
+            // TODO: Is object a good name here? If not, what should it be instead?
+            object: InsnId,
+            offset: i32,
+        }
+
+        // This helper function is used while we don't have type based alias
+        // analysis. Matching offsets could result in aliased objects that need
+        // to be clear.
+        fn prune_stores(map: &mut HashMap<StoreHeap, InsnId>, offset: i32) {
+            map.retain(|StoreHeap { object: _, offset: off }, _| *off != offset);
+        }
 
         for block in self.rpo() {
             let mut dead_stores: HashSet<InsnId> = HashSet::new();
-            let mut active_stores: HashMap<i32, InsnId> = HashMap::new();
+            let mut active_stores: HashMap<StoreHeap, InsnId> = HashMap::new();
             let mut insns = std::mem::take(&mut self.blocks[block.0].insns);
             // Iterate over the instructions backwards
             // If we find a store
@@ -5019,41 +5028,45 @@ impl Function {
             for i in (0..insns.len()).rev() {
                 let insn_id = insns[i];
                 match self.find(insn_id) {
-                    Insn::StoreField { offset, .. } => {
-                        // We found a second store while one was tracked.
-                        // We can elide one.
-                        // TODO(Jacob): Figure out if it matters which store we eliminate
-                        // TODO: BUG FIX: We obviously need to keep the final store, not the first!
-                        // This is because load_store_optimization ensures each store is different.
-                        // We need to keep the last one to preserve correctness. That changes the logic around for this block below
-                        //
-                        // TODO: Refine the key of active_stores
-                        // Additionally, we can't just do offset. We need to consider the object and address the same aliasing issues
-                        // we have in load store optimization.
-                        if let Some(store_id) = active_stores.get(&offset) {
-                            dead_stores.insert(*store_id);
+                    Insn::StoreField { recv, offset, .. } => {
+                        let key = StoreHeap { object: recv, offset };
+                        // If an older store is being tracked, then there have
+                        // been no usees between stores and the first store is
+                        // dead.
+                        if active_stores.contains_key(&key) {
+                            dead_stores.insert(insn_id);
                         }
-                        // We always track the most recent store, though we
-                        // could use the original store if we elide the most
-                        // recent one instead.
-                        // This works because the basic blocks do not have
-                        // control flow, making lifetime tracking simple. More
-                        // complex algorithms are required for dead store on a
-                        // CFG.
-                        active_stores.insert(offset, insn_id);
+                        // Otherwise, we have a new store to begin tracking.
+                        // Because we don't have type based alias analysis, we
+                        // need to remove all other stores with the same offset
+                        // before adding our own.
+                        else {
+                            prune_stores(&mut active_stores, offset);
+                            active_stores.insert(key, insn_id);
+                        }
                     }
-                    Insn::LoadField { offset, .. } => {
-                        // If a load is found, then any earlier store was
-                        // necessary. We know this because redundant loads and
-                        // stores were already eliminated, implying the
-                        // hypothetical StoreField we haven't found yet has a
-                        // different value than the one in active_stores.
-                        active_stores.remove(&offset);
+                    // If a load is found, then any earlier store was
+                    // necessary. We know this because redundant loads and
+                    // stores were already eliminated, implying the
+                    // hypothetical StoreField we haven't found yet has a
+                    // different value than the one in active_stores.
+                    // The following lines are required when we have type
+                    // based alias analysis and the following call to prune
+                    // stores is no longer used.
+                    // Insn::LoadField { recv, offset, .. } => {
+                    //     let key = StoreHeap { object: recv, offset };
+                    //     active_stores.remove(&key);
+                    Insn::LoadField{ offset, .. } => {
+                        // Because we don't have type based alias analysis, we
+                        // can't just remove the (up to) one entry of the
+                        // StoreHeap key in active_stores. We need to remove all
+                        // such keys that could alias.
+                        prune_stores(&mut active_stores, offset);
                     }
                     insn => {
-                        // If the instruction has memory effects, we cannot
-                        // assume our active_stores are not loaded nor stored.
-                        if insn.effects_of().includes(effects::Memory) {
+                        // If the instruction can read memory, we cannot assume
+                        // entries of active_stores are not loaded.
+                        if insn.effects_of().includes(Effect::write(abstract_heaps::Memory)) {
                             active_stores.clear();
                         }
                     }
