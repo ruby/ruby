@@ -64,9 +64,6 @@ jobs:
       || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
 
-    env:
-      enable_install_doc: no
-
     strategy:
       fail-fast: false
       matrix:
@@ -80,29 +77,11 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Install libraries
-        if: ${{ contains(matrix.os, 'macos') }}
-        uses: ./.github/actions/setup/macos
-
-      - name: Install libraries
-        if : ${{ matrix.os == 'ubuntu-latest' }}
-        uses: ./.github/actions/setup/ubuntu
-
-      - uses: ./.github/actions/setup/directories
-
-      - name: Remove an obsolete rubygems vendored file
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: sudo rm /usr/lib/ruby/vendor_ruby/rubygems/defaults/operating_system.rb
-
       - name: Initialize CodeQL
         uses: github/codeql-action/init@38697555549f1db7851b81482ff19f1fa5c4fedc # v4.34.1
         with:
           languages: ${{ matrix.language }}
-          trap-caching: false
-          debug: true
-
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@38697555549f1db7851b81482ff19f1fa5c4fedc # v4.34.1
+          build-mode: none
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@38697555549f1db7851b81482ff19f1fa5c4fedc # v4.34.1
