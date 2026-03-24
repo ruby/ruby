@@ -354,14 +354,6 @@ rb_char_to_option_kcode(int c, int *option, int *kcode)
 }
 
 static void
-rb_reg_check(VALUE re)
-{
-    if (!RREGEXP_PTR(re) || !RREGEXP_SRC(re) || !RREGEXP_SRC_PTR(re)) {
-        rb_raise(rb_eTypeError, "uninitialized Regexp");
-    }
-}
-
-static void
 rb_reg_expr_str(VALUE str, const char *s, long len,
                 rb_encoding *enc, rb_encoding *resenc, int term)
 {
@@ -472,8 +464,7 @@ rb_reg_desc(VALUE re)
     rb_str_buf_cat2(str, "/");
     if (re) {
         char opts[OPTBUF_SIZE];
-        rb_reg_check(re);
-        if (*option_to_str(opts, RREGEXP_PTR(re)->options))
+            if (*option_to_str(opts, RREGEXP_PTR(re)->options))
             rb_str_buf_cat2(str, opts);
         if (RBASIC(re)->flags & REG_ENCODING_NONE)
             rb_str_buf_cat2(str, "n");
@@ -505,7 +496,6 @@ rb_reg_source(VALUE re)
 {
     VALUE str;
 
-    rb_reg_check(re);
     str = rb_str_dup(RREGEXP_SRC(re));
     return str;
 }
@@ -524,9 +514,6 @@ rb_reg_source(VALUE re)
 static VALUE
 rb_reg_inspect(VALUE re)
 {
-    if (!RREGEXP_PTR(re) || !RREGEXP_SRC(re) || !RREGEXP_SRC_PTR(re)) {
-        return rb_any_to_s(re);
-    }
     return rb_reg_desc(re);
 }
 
@@ -574,7 +561,6 @@ rb_reg_str_with_term(VALUE re, int term)
     char optbuf[OPTBUF_SIZE + 1]; /* for '-' */
     rb_encoding *enc = rb_enc_get(re);
 
-    rb_reg_check(re);
 
     rb_enc_copy(str, re);
     options = RREGEXP_PTR(re)->options;
@@ -742,7 +728,6 @@ rb_reg_raise_str(VALUE str, int options, const char *err)
 static VALUE
 rb_reg_casefold_p(VALUE re)
 {
-    rb_reg_check(re);
     return RBOOL(RREGEXP_PTR(re)->options & ONIG_OPTION_IGNORECASE);
 }
 
@@ -817,7 +802,6 @@ static VALUE
 rb_reg_names(VALUE re)
 {
     VALUE ary;
-    rb_reg_check(re);
     ary = rb_ary_new_capa(onig_number_of_names(RREGEXP_PTR(re)));
     onig_foreach_name(RREGEXP_PTR(re), reg_names_iter, (void*)ary);
     return ary;
@@ -860,7 +844,7 @@ reg_named_captures_iter(const OnigUChar *name, const OnigUChar *name_end,
 static VALUE
 rb_reg_named_captures(VALUE re)
 {
-    regex_t *reg = (rb_reg_check(re), RREGEXP_PTR(re));
+    regex_t *reg = RREGEXP_PTR(re);
     VALUE hash = rb_hash_new_with_size(onig_number_of_names(reg));
     onig_foreach_name(reg, reg_named_captures_iter, (void*)hash);
     return hash;
@@ -1586,7 +1570,6 @@ rb_reg_prepare_enc(VALUE re, VALUE str, int warn)
             rb_enc_name(rb_enc_get(str)));
     }
 
-    rb_reg_check(re);
     enc = rb_enc_get(str);
     if (RREGEXP_PTR(re)->enc == enc) {
     }
@@ -1625,7 +1608,6 @@ rb_reg_prepare_re(VALUE re, VALUE str)
     regex_t *reg = RREGEXP_PTR(re);
     if (reg->enc == enc) return reg;
 
-    rb_reg_check(re);
 
     VALUE src_str = RREGEXP_SRC(re);
     const char *pattern = RSTRING_PTR(src_str);
@@ -3510,7 +3492,6 @@ reg_hash(VALUE re)
 {
     st_index_t hashval;
 
-    rb_reg_check(re);
     hashval = RREGEXP_PTR(re)->options;
     hashval = rb_hash_uint(hashval, rb_memhash(RREGEXP_SRC_PTR(re), RREGEXP_SRC_LEN(re)));
     return rb_hash_end(hashval);
@@ -3536,7 +3517,6 @@ rb_reg_equal(VALUE re1, VALUE re2)
 {
     if (re1 == re2) return Qtrue;
     if (!RB_TYPE_P(re2, T_REGEXP)) return Qfalse;
-    rb_reg_check(re1); rb_reg_check(re2);
     if (FL_TEST(re1, KCODE_FIXED) != FL_TEST(re2, KCODE_FIXED)) return Qfalse;
     if (RREGEXP_PTR(re1)->options != RREGEXP_PTR(re2)->options) return Qfalse;
     if (RREGEXP_SRC_LEN(re1) != RREGEXP_SRC_LEN(re2)) return Qfalse;
@@ -4118,8 +4098,7 @@ reg_extract_args(int argc, VALUE *argv, struct reg_init_args *args)
         if (!NIL_P(opts)) {
             rb_warn("flags ignored");
         }
-        rb_reg_check(re);
-        flags = rb_reg_options(re);
+            flags = rb_reg_options(re);
         str = RREGEXP_SRC(re);
     }
     else {
@@ -4273,7 +4252,6 @@ rb_reg_options(VALUE re)
 {
     int options;
 
-    rb_reg_check(re);
     options = RREGEXP_PTR(re)->options & ARG_REG_OPTION_MASK;
     if (RBASIC(re)->flags & KCODE_FIXED) options |= ARG_ENCODING_FIXED;
     if (RBASIC(re)->flags & REG_ENCODING_NONE) options |= ARG_ENCODING_NONE;
@@ -4508,7 +4486,6 @@ static VALUE
 rb_reg_init_copy(VALUE copy, VALUE re)
 {
     if (!OBJ_INIT_COPY(copy, re)) return copy;
-    rb_reg_check(re);
     return reg_copy(copy, re);
 }
 
@@ -4824,7 +4801,6 @@ rb_reg_s_timeout_set(VALUE dummy, VALUE timeout)
 static VALUE
 rb_reg_timeout_get(VALUE re)
 {
-    rb_reg_check(re);
     double d = hrtime2double(RREGEXP_PTR(re)->timelimit);
     if (d == 0.0) return Qnil;
     return DBL2NUM(d);
@@ -4873,6 +4849,7 @@ Init_Regexp(void)
 
     rb_cRegexp = rb_define_class("Regexp", rb_cObject);
     rb_define_alloc_func(rb_cRegexp, rb_reg_s_alloc);
+    rb_class_safe_initialization(rb_cRegexp);
     rb_define_singleton_method(rb_cRegexp, "compile", rb_class_new_instance_pass_kw, -1);
     rb_define_singleton_method(rb_cRegexp, "quote", rb_reg_s_quote, 1);
     rb_define_singleton_method(rb_cRegexp, "escape", rb_reg_s_quote, 1);
