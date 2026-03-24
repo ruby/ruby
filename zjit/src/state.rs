@@ -3,7 +3,7 @@
 use crate::codegen::{gen_entry_trampoline, gen_exit_trampoline, gen_exit_trampoline_with_counter, gen_function_stub_hit_trampoline};
 use crate::cruby::{self, rb_bug_panic_hook, rb_vm_insn_count, src_loc, EcPtr, Qnil, Qtrue, rb_profile_frames, rb_profile_frame_full_label, rb_profile_frame_absolute_path, rb_profile_frame_path, VALUE, VM_INSTRUCTION_SIZE, with_vm_lock, rust_str_to_id, rb_funcallv, rb_const_get, rb_cRubyVM};
 use crate::cruby_methods;
-use cruby::{ID, rb_callable_method_entry, get_def_method_serial, rb_gc_register_mark_object};
+use cruby::{ID, rb_callable_method_entry, get_def_method_serial, rb_gc_register_mark_object, ruby_str_to_rust_string_result};
 use std::sync::atomic::Ordering;
 use crate::invariants::Invariants;
 use crate::asm::CodeBlock;
@@ -422,27 +422,14 @@ pub extern "C" fn rb_zjit_assert_compiles(_ec: EcPtr, _self: VALUE) -> VALUE {
     Qnil
 }
 
-/// Convert a Ruby string VALUE to a Rust String, or return a fallback.
-fn ruby_str_to_string(v: VALUE, fallback: &str) -> String {
-    if v.nil_p() {
-        return fallback.to_string();
-    }
-    unsafe {
-        let ptr = cruby::rb_RSTRING_PTR(v) as *const u8;
-        let len: usize = cruby::rb_RSTRING_LEN(v).try_into().unwrap_or(0);
-        let slice = std::slice::from_raw_parts(ptr, len);
-        String::from_utf8_lossy(slice).into_owned()
-    }
-}
-
 /// Resolve a profile frame VALUE to a human-readable "label (path)" string.
 fn resolve_frame_label(frame: VALUE) -> String {
     unsafe {
-        let label_str = ruby_str_to_string(rb_profile_frame_full_label(frame), "<unknown>");
+        let label_str = ruby_str_to_rust_string_result(rb_profile_frame_full_label(frame)).unwrap_or("<unknown>".into());
 
         let path = rb_profile_frame_absolute_path(frame);
         let path = if path.nil_p() { rb_profile_frame_path(frame) } else { path };
-        let path_str = ruby_str_to_string(path, "<unknown>");
+        let path_str = ruby_str_to_rust_string_result(path).unwrap_or("<unknown>".into());
 
         format!("{label_str} ({path_str})")
     }
