@@ -437,7 +437,7 @@ fn resolve_frame_label(frame: VALUE) -> String {
 
 /// Record a backtrace with ZJIT side exits as a Perfetto trace event
 #[unsafe(no_mangle)]
-pub extern "C" fn rb_zjit_record_exit_stack(_exit_pc: *const VALUE, reason: *const std::ffi::c_char) {
+pub extern "C" fn rb_zjit_record_exit_stack(reason: *const std::ffi::c_char) {
     if !zjit_enabled_p() || get_option!(trace_side_exits).is_none() {
         return;
     }
