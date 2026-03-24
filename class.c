@@ -739,6 +739,8 @@ static VALUE
 class_associate_super(VALUE klass, VALUE super, bool init)
 {
     if (super && !UNDEF_P(super)) {
+        RCLASS_EXT_PRIME(klass)->allocator_is_internal = RCLASS_EXT_PRIME(super)->allocator_is_internal;
+
         // Only maintain subclass lists for T_CLASS→T_CLASS relationships.
         // Include/prepend inserts ICLASSes into the super chain, but T_CLASS
         // subclass lists should track only the immutable T_CLASS→T_CLASS link.
@@ -1078,7 +1080,7 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
         rb_singleton_class_attached(METACLASS_OF(clone), (VALUE)clone);
     }
     if (BUILTIN_TYPE(clone) == T_CLASS) {
-        RCLASS_SET_ALLOCATOR(clone, RCLASS_ALLOCATOR(orig));
+        RCLASS_COPY_ALLOCATOR(clone, orig);
     }
     copy_tables(clone, orig);
     if (RCLASS_M_TBL(orig)) {

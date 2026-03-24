@@ -233,11 +233,21 @@ void rb_define_alloc_func(VALUE klass, rb_alloc_func_t func);
  * sense for  a DB adaptor class  to allow programmers creating  DB row objects
  * without querying  the DB  itself.  You  can kill  sporadic creation  of such
  * objects then,  by nullifying  the allocator function  using this  API.
+ * This however breaks Class#new, Kernel#dup, Kernel#clone and Marshal.
  *
  * @param[out]  klass  The class to modify.
  * @pre         `klass` must be an instance of Class.
  */
 void rb_undef_alloc_func(VALUE klass);
+
+/**
+ * Mark a class as wanting safe initialization, that is avoid completely
+ * allocated-but-uninitialized objects.
+ * Similar to rb_undef_alloc_func() as it nullifies the public allocator function
+ * but keeps the internal allocator function for safe usages
+ * by Class#new, Kernel#dup, Kernel#clone and Marshal.
+ */
+void rb_class_safe_initialization(VALUE klass);
 
 /**
  * Queries the allocator function of a class.

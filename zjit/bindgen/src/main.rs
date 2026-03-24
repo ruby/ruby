@@ -348,7 +348,7 @@ fn main() {
         .allowlist_function("rb_class_allocate_instance")
         .allowlist_function("rb_obj_equal")
         .allowlist_function("rb_class_new_instance_pass_kw")
-        .allowlist_function("rb_obj_alloc")
+        .allowlist_function("rb_obj_internal_alloc")
         .allowlist_function("rb_obj_info")
         .allowlist_function("rb_obj_frozen_p")
         // From include/ruby/debug.h

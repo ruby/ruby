@@ -90,6 +90,7 @@ struct rb_classext_struct {
     bool iclass_is_origin : 1;
     bool iclass_origin_shared_mtbl : 1;
     bool superclasses_with_self : 1;
+    bool allocator_is_internal : 1;
     VALUE classpath;
 };
 typedef struct rb_classext_struct rb_classext_t;
@@ -239,7 +240,7 @@ static inline void RICLASS_WRITE_ORIGIN_SHARED_MTBL(VALUE iclass);
 static inline bool RICLASS_OWNS_M_TBL_P(VALUE iclass);
 
 static inline void RCLASS_SET_REFINED_CLASS(VALUE klass, VALUE refined);
-static inline rb_alloc_func_t RCLASS_ALLOCATOR(VALUE klass);
+static inline rb_alloc_func_t RCLASS_PUBLIC_ALLOCATOR(VALUE klass);
 static inline void RCLASS_SET_ALLOCATOR(VALUE klass, rb_alloc_func_t allocator);
 static inline VALUE RCLASS_SET_ATTACHED_OBJECT(VALUE klass, VALUE attached_object);
 
@@ -477,6 +478,10 @@ rb_classext_t *rb_class_unlink_classext(VALUE klass, const rb_box_t *box);
 void rb_class_classext_free(VALUE klass, rb_classext_t *ext, bool is_prime);
 void rb_iclass_classext_free(VALUE klass, rb_classext_t *ext, bool is_prime);
 
+/* vm_method.c */
+rb_alloc_func_t rb_get_internal_alloc_func(VALUE klass);
+rb_alloc_func_t rb_get_public_alloc_func(VALUE klass);
+
 RUBY_SYMBOL_EXPORT_BEGIN
 
 /* for objspace */
@@ -615,12 +620,17 @@ RCLASS_SET_REFINED_CLASS(VALUE klass, VALUE refined)
     RB_OBJ_WRITE(klass, &RCLASSEXT_REFINED_CLASS(RCLASS_EXT_PRIME(klass)), refined);
 }
 
+#define UNDEF_ALLOC_FUNC ((rb_alloc_func_t)-1)
+
 static inline rb_alloc_func_t
-RCLASS_ALLOCATOR(VALUE klass)
+RCLASS_PUBLIC_ALLOCATOR(VALUE klass)
 {
     RBIMPL_ASSERT_TYPE(klass, T_CLASS);
     if (RCLASS_SINGLETON_P(klass)) {
         return 0;
+    }
+    if (RCLASS_EXT_PRIME(klass)->allocator_is_internal) {
+        return UNDEF_ALLOC_FUNC;
     }
     return RCLASS_EXT_PRIME(klass)->as.class.allocator;
 }
@@ -631,6 +641,35 @@ RCLASS_SET_ALLOCATOR(VALUE klass, rb_alloc_func_t allocator)
     RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS));
     RUBY_ASSERT(!RCLASS_SINGLETON_P(klass));
     RCLASS_EXT_PRIME(klass)->as.class.allocator = allocator; // Allocator is set only on the initial definition
+}
+
+static inline void
+RCLASS_COPY_ALLOCATOR(VALUE klass, VALUE orig)
+{
+    RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS));
+    RUBY_ASSERT(!RCLASS_SINGLETON_P(klass));
+    RUBY_ASSERT(RB_TYPE_P(orig, T_CLASS));
+    RUBY_ASSERT(!RCLASS_SINGLETON_P(orig));
+    RCLASS_EXT_PRIME(klass)->as.class.allocator = RCLASS_EXT_PRIME(orig)->as.class.allocator;
+    RCLASS_EXT_PRIME(klass)->allocator_is_internal = RCLASS_EXT_PRIME(orig)->allocator_is_internal;
+}
+
+static inline rb_alloc_func_t
+RCLASS_INTERNAL_ALLOCATOR(VALUE klass)
+{
+    RBIMPL_ASSERT_TYPE(klass, T_CLASS);
+    if (RCLASS_SINGLETON_P(klass)) {
+        return 0;
+    }
+    return RCLASS_EXT_PRIME(klass)->as.class.allocator;
+}
+
+static inline void
+RCLASS_SET_ALLOCATOR_IS_INTERNAL(VALUE klass)
+{
+    RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS));
+    RUBY_ASSERT(!RCLASS_SINGLETON_P(klass));
+    RCLASS_EXT_PRIME(klass)->allocator_is_internal = 1;
 }
 
 static inline void
