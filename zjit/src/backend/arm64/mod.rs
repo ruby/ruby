@@ -902,7 +902,7 @@ impl Assembler {
 
     /// Emit platform-specific machine code
     /// Returns a list of GC offsets. Can return failure to signal caller to retry.
-    fn arm64_emit(&mut self, cb: &mut CodeBlock) -> Option<Vec<CodePtr>> {
+    fn arm64_emit(&mut self, cb: &mut CodeBlock) -> Result<Vec<CodePtr>, CompileError> {
         /// Determine how many instructions it will take to represent moving
         /// this value into a register. Note that the return value of this
         /// function must correspond to how many instructions are used to
@@ -1165,7 +1165,9 @@ impl Assembler {
                     if slot_count > 0 {
                         let slot_offset = (slot_count * SIZEOF_VALUE) as u64;
                         // Bail when asked to reserve too many slots in one instruction.
-                        ShiftedImmediate::try_from(slot_offset).ok()?;
+                        if ShiftedImmediate::try_from(slot_offset).is_err() {
+                            return Err(CompileError::NativeStackTooLarge);
+                        }
                         sub(cb, C_SP_REG, C_SP_REG, A64Opnd::new_uimm(slot_offset));
                     }
                 }
@@ -1587,7 +1589,7 @@ impl Assembler {
 
         // Error if we couldn't write out everything
         if cb.has_dropped_bytes() {
-            None
+            Err(CompileError::OutOfMemory)
         } else {
             // No bytes dropped, so the pos markers point to valid code
             for (insn_idx, pos) in pos_markers {
@@ -1598,7 +1600,7 @@ impl Assembler {
                 }
             }
 
-            Some(gc_offsets)
+            Ok(gc_offsets)
         }
     }
 
@@ -1700,19 +1702,15 @@ impl Assembler {
         }
 
         let start_ptr = cb.get_write_ptr();
-        let gc_offsets = asm.arm64_emit(cb);
+        let gc_offsets = asm.arm64_emit(cb).inspect_err(|_| cb.clear_labels())?;
+        assert!(!cb.has_dropped_bytes(), "emit should not drop bytes without error");
 
-        if let (Some(gc_offsets), false) = (gc_offsets, cb.has_dropped_bytes()) {
-            cb.link_labels().or(Err(CompileError::LabelLinkingFailure))?;
+        cb.link_labels().or(Err(CompileError::LabelLinkingFailure))?;
 
-            // Invalidate icache for newly written out region so we don't run stale code.
-            unsafe { rb_jit_icache_invalidate(start_ptr.raw_ptr(cb) as _, cb.get_write_ptr().raw_ptr(cb) as _) };
+        // Invalidate icache for newly written out region so we don't run stale code.
+        unsafe { rb_jit_icache_invalidate(start_ptr.raw_ptr(cb) as _, cb.get_write_ptr().raw_ptr(cb) as _) };
 
-            Ok((start_ptr, gc_offsets))
-        } else {
-            cb.clear_labels();
-            Err(CompileError::OutOfMemory)
-        }
+        Ok((start_ptr, gc_offsets))
     }
 }
 
