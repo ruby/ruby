@@ -18,10 +18,20 @@ pub fn mem_base_reg(reg_no: u8) -> Reg {
     Reg { num_bits: 64, reg_type: RegType::GP, reg_no }
 }
 
-// Callee-saved registers
+// Callee-saved registers used for VM state
 pub const CFP: Opnd = Opnd::Reg(R13_REG);
 pub const EC: Opnd = Opnd::Reg(R12_REG);
 pub const SP: Opnd = Opnd::Reg(RBX_REG);
+
+/// Registers preserved across JIT entry/exit. Saved by the entry trampoline.
+/// Includes VM state registers (CFP, SP, EC) and callee-saved registers
+/// used for allocation (R14, R15).
+pub static JIT_PRESERVED_REGS: &[Opnd] = &[CFP, SP, EC, Opnd::Reg(R14_REG), Opnd::Reg(R15_REG)];
+
+/// Callee-saved registers from ALLOC_REGS that must be saved/restored in each
+/// JIT function frame. Needed because JIT→JIT direct calls bypass the entry
+/// trampoline.
+pub static JIT_CALLEE_SAVED_REGS: &[Opnd] = &[Opnd::Reg(R14_REG), Opnd::Reg(R15_REG)];
 
 // C argument registers on this platform
 pub const C_ARG_OPNDS: [Opnd; 6] = [
@@ -90,8 +100,8 @@ impl From<&Opnd> for X86Opnd {
 }
 
 /// List of registers that can be used for register allocation.
-/// This has the same number of registers for x86_64 and arm64.
-/// SCRATCH0_OPND is excluded.
+/// SCRATCH0_OPND is excluded. Caller-saved registers come first,
+/// followed by callee-saved registers (R14, R15).
 pub const ALLOC_REGS: &[Reg] = &[
     RDI_REG,
     RSI_REG,
@@ -100,7 +110,14 @@ pub const ALLOC_REGS: &[Reg] = &[
     R8_REG,
     R9_REG,
     RAX_REG,
+    R14_REG,
+    R15_REG,
 ];
+
+/// The number of caller-saved registers at the start of ALLOC_REGS.
+/// ALLOC_REGS[0..NUM_CALLER_SAVED_ALLOC_REGS] are caller-saved,
+/// ALLOC_REGS[NUM_CALLER_SAVED_ALLOC_REGS..] are callee-saved.
+pub const NUM_CALLER_SAVED_ALLOC_REGS: usize = 7;
 
 /// Special scratch register for intermediate processing. It should be used only by
 /// [`Assembler::x86_scratch_split`] or [`Assembler::new_with_scratch_reg`].
@@ -800,7 +817,8 @@ impl Assembler {
                 // Set up RBP as frame pointer work with unwinding
                 // (e.g. with Linux `perf record --call-graph fp`)
                 // and to allow push and pops in the function.
-                &Insn::FrameSetup { preserved, mut slot_count } => {
+                Insn::FrameSetup { preserved, slot_count } => {
+                    let mut slot_count = *slot_count;
                     // Bump slot_count for alignment if necessary
                     const { assert!(SIZEOF_VALUE == 8, "alignment logic relies on SIZEOF_VALUE == 8"); }
                     let total_slots = 2 /* rbp and return address*/ + slot_count + preserved.len();
@@ -810,16 +828,16 @@ impl Assembler {
                     push(cb, RBP);
                     mov(cb, RBP, RSP);
                     for reg in preserved {
-                        push(cb, reg.into());
+                        push(cb, (*reg).into());
                     }
                     if slot_count > 0 {
                         sub(cb, RSP, uimm_opnd((slot_count * SIZEOF_VALUE) as u64));
                     }
                 }
-                &Insn::FrameTeardown { preserved } => {
+                Insn::FrameTeardown { preserved } => {
                     let mut preserved_offset = -8;
                     for reg in preserved {
-                        mov(cb, reg.into(), mem_opnd(64, RBP, preserved_offset));
+                        mov(cb, (*reg).into(), mem_opnd(64, RBP, preserved_offset));
                         preserved_offset -= 8;
                     }
                     mov(cb, RSP, RBP);
@@ -1187,6 +1205,19 @@ impl Assembler {
             }
         }
 
+        // Record stats for callee-saved register usage
+        {
+            use crate::stats::incr_counter;
+            for reg_idx in NUM_CALLER_SAVED_ALLOC_REGS..ALLOC_REGS.len() {
+                let reg_used = assignments.iter().any(|alloc| {
+                    matches!(alloc, Some(Allocation::Reg(n)) if *n == reg_idx)
+                });
+                if reg_used {
+                    incr_counter!(num_callee_saved_regs_used);
+                }
+            }
+        }
+
         // Update FrameSetup slot_count to account for:
         // 1) stack slots reserved for block params (stack_base_idx), and
         // 2) register allocator spills (num_stack_slots).
@@ -1403,7 +1434,7 @@ mod tests {
         test():
         bb0():
           # bb0(): foo@/tmp/a.rb:1
-          FrameSetup 1, r13, rbx, r12
+          FrameSetup 1, r13, rbx, r12, r14, r15
           v0 = Add r13, 0x40
           Store [rbx + 0x10], v0
           Joz Exit(Interrupt), v0
@@ -1413,7 +1444,7 @@ mod tests {
           Store Mem32[r12 + 0x10], VReg32(v1)
           Je bb0
           CRet v0
-          FrameTeardown r13, rbx, r12
+          FrameTeardown r13, rbx, r12, r14, r15
         ");
     }
 
@@ -2104,15 +2135,19 @@ mod tests {
         0x4: push r13
         0x6: push rbx
         0x7: push r12
-        0x9: sub rsp, 8
-        0xd: mov r13, qword ptr [rbp - 8]
-        0x11: mov rbx, qword ptr [rbp - 0x10]
-        0x15: mov r12, qword ptr [rbp - 0x18]
-        0x19: mov rsp, rbp
-        0x1c: pop rbp
-        0x1d: ret
+        0x9: push r14
+        0xb: push r15
+        0xd: sub rsp, 8
+        0x11: mov r13, qword ptr [rbp - 8]
+        0x15: mov rbx, qword ptr [rbp - 0x10]
+        0x19: mov r12, qword ptr [rbp - 0x18]
+        0x1d: mov r14, qword ptr [rbp - 0x20]
+        0x21: mov r15, qword ptr [rbp - 0x28]
+        0x25: mov rsp, rbp
+        0x28: pop rbp
+        0x29: ret
         ");
-        assert_snapshot!(cb.hexdump(), @"554889e541555341544883ec084c8b6df8488b5df04c8b65e84889ec5dc3");
+        assert_snapshot!(cb.hexdump(), @"554889e54155534154415641574883ec084c8b6df8488b5df04c8b65e84c8b75e04c8b7dd84889ec5dc3");
     }
 
     #[test]
@@ -2165,11 +2200,11 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 0);
 
         assert_disasm_snapshot!(cb.disasm(), @"
-        0x0: mov r11, qword ptr [rbp - 0xe]
-        0x4: cmove r11, qword ptr [rbp - 8]
-        0x9: mov qword ptr [rbp - 8], r11
+        0x0: mov r11, qword ptr [rbp - 0x1e]
+        0x4: cmove r11, qword ptr [rbp - 0x18]
+        0x9: mov qword ptr [rbp - 0x18], r11
         ");
-        assert_snapshot!(cb.hexdump(), @"4c8b5df24c0f445df84c895df8");
+        assert_snapshot!(cb.hexdump(), @"4c8b5de24c0f445de84c895de8");
     }
 
     #[test]
@@ -2181,10 +2216,10 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 0);
 
         assert_disasm_snapshot!(cb.disasm(), @"
-        0x0: lea r11, [rbp - 8]
-        0x4: mov qword ptr [rbp - 8], r11
+        0x0: lea r11, [rbp - 0x18]
+        0x4: mov qword ptr [rbp - 0x18], r11
         ");
-        assert_snapshot!(cb.hexdump(), @"4c8d5df84c895df8");
+        assert_snapshot!(cb.hexdump(), @"4c8d5de84c895de8");
     }
 
     #[test]
@@ -2197,8 +2232,8 @@ mod tests {
         // add  scratch0, [stack[1]]
         // mov  c_ret, scratch0
         assert_snapshot!(lines.join("\n"), @"
-        mov rax, qword ptr [rbp - 8]
-        add rax, qword ptr [rbp - 0x10]
+        mov rax, qword ptr [rbp - 0x18]
+        add rax, qword ptr [rbp - 0x20]
         ");
     }
 
@@ -2211,10 +2246,10 @@ mod tests {
         // load scratch0, [scratch0]
         // seed [stack[out]] from scratch0, then add right in place
         assert_snapshot!(lines.join("\n"), @"
-            mov r11, qword ptr [rbp - 8]
+            mov r11, qword ptr [rbp - 0x18]
             mov r11, qword ptr [r11]
-            mov qword ptr [rbp - 0x10], r11
-            add qword ptr [rbp - 0x10], r13
+            mov qword ptr [rbp - 0x20], r11
+            add qword ptr [rbp - 0x20], r13
         ");
     }
 
@@ -2227,10 +2262,10 @@ mod tests {
         // load scratch1, [scratch1]
         // seed [stack[out]] from left, then add scratch1 in place
         assert_snapshot!(lines.join("\n"), @"
-            mov r10, qword ptr [rbp - 8]
+            mov r10, qword ptr [rbp - 0x18]
             mov r10, qword ptr [r10]
-            mov qword ptr [rbp - 0x10], r13
-            add qword ptr [rbp - 0x10], r10
+            mov qword ptr [rbp - 0x20], r13
+            add qword ptr [rbp - 0x20], r10
         ");
     }
 
@@ -2246,12 +2281,12 @@ mod tests {
         // load scratch1, [scratch1]
         // mov  [stack[out]], scratch0; add [stack[out]], scratch1
         assert_snapshot!(lines.join("\n"), @"
-        mov r11, qword ptr [rbp - 8]
-        mov r10, qword ptr [rbp - 0x10]
+        mov r11, qword ptr [rbp - 0x18]
+        mov r10, qword ptr [rbp - 0x20]
         mov r10, qword ptr [r10]
         mov r11, qword ptr [r11]
-        mov qword ptr [rbp - 0x18], r11
-        add qword ptr [rbp - 0x18], r10
+        mov qword ptr [rbp - 0x28], r11
+        add qword ptr [rbp - 0x28], r10
         ");
     }
 
@@ -2262,9 +2297,9 @@ mod tests {
 
         // Seed the output slot with the left register, then perform the add in place.
         assert_snapshot!(lines.join("\n"), @"
-            mov r10, qword ptr [rbp - 8]
-            mov qword ptr [rbp - 0x10], r13
-            add qword ptr [rbp - 0x10], r10
+            mov r10, qword ptr [rbp - 0x18]
+            mov qword ptr [rbp - 0x20], r13
+            add qword ptr [rbp - 0x20], r10
         ");
     }
 
@@ -2277,9 +2312,9 @@ mod tests {
         let lines = split_binop_disasm_lines(BinOpKind::Add, CFP, stack_mem(1), stack_mem(1));
 
         assert_snapshot!(lines.join("\n"), @"
-            mov r10, qword ptr [rbp - 0x10]
-            mov qword ptr [rbp - 0x10], r13
-            add qword ptr [rbp - 0x10], r10
+            mov r10, qword ptr [rbp - 0x20]
+            mov qword ptr [rbp - 0x20], r13
+            add qword ptr [rbp - 0x20], r10
         ");
     }
 
@@ -2303,10 +2338,10 @@ mod tests {
         assert!(asm.x86_emit(&mut cb).is_ok());
 
         assert_disasm_snapshot!(cb.disasm(), @"
-        0x0: mov r10, qword ptr [rbp - 0x10]
-        0x4: mov r11, qword ptr [rbp - 8]
-        0x8: mov qword ptr [rbp - 0x10], r11
-        0xc: add qword ptr [rbp - 0x10], r10
+        0x0: mov r10, qword ptr [rbp - 0x20]
+        0x4: mov r11, qword ptr [rbp - 0x18]
+        0x8: mov qword ptr [rbp - 0x20], r11
+        0xc: add qword ptr [rbp - 0x20], r10
         ");
     }
 
@@ -2355,8 +2390,8 @@ mod tests {
         assert!(asm.x86_emit(&mut cb).is_ok());
 
         assert_disasm_snapshot!(cb.disasm(), @"
-        0x0: mov r11, qword ptr [rbp - 8]
-        0x4: mov r10, qword ptr [rbp - 0x10]
+        0x0: mov r11, qword ptr [rbp - 0x18]
+        0x4: mov r10, qword ptr [rbp - 0x20]
         0x8: mov r13, qword ptr [r11]
         0xb: add r13, qword ptr [r10]
         ");

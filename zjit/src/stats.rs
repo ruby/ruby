@@ -459,6 +459,9 @@ make_counters! {
     getblockparamproxy_handler_polymorphic,
     getblockparamproxy_handler_megamorphic,
     getblockparamproxy_handler_no_profiles,
+
+    // Register allocator stats
+    num_callee_saved_regs_used,
 }
 
 /// Increase a counter by a specified amount

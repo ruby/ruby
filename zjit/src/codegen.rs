@@ -2100,7 +2100,7 @@ fn gen_entry_point(jit: &mut JITState, asm: &mut Assembler, jit_entry_idx: Optio
             jit_entry.borrow_mut().start_addr.set(Some(code_ptr));
         });
     }
-    asm.frame_setup(&[]);
+    asm.frame_setup(lir::JIT_CALLEE_SAVED_REGS);
 }
 
 /// Compile code that exits from JIT code with a return value
@@ -2117,7 +2117,7 @@ fn gen_return(asm: &mut Assembler, val: lir::Opnd) {
     asm.load_into(C_RET_OPND, val);
 
     // Return from the function
-    asm.frame_teardown(&[]); // matching the setup in gen_entry_point()
+    asm.frame_teardown(lir::JIT_CALLEE_SAVED_REGS); // matching the setup in gen_entry_point()
     asm.cret(C_RET_OPND);
 }
 
@@ -3047,7 +3047,7 @@ pub fn gen_exit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> 
     asm.new_block_without_id("exit_trampoline");
 
     asm_comment!(asm, "side-exit trampoline");
-    asm.frame_teardown(&[]); // matching the setup in gen_entry_point()
+    asm.frame_teardown(lir::JIT_CALLEE_SAVED_REGS); // matching the setup in gen_entry_point()
     asm.cret(Qundef.into());
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {

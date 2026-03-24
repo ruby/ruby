@@ -16,10 +16,20 @@ pub fn mem_base_reg(reg_no: u8) -> Reg {
     Reg { num_bits: 64, reg_no }
 }
 
-// Callee-saved registers
+// Callee-saved registers used for VM state
 pub const CFP: Opnd = Opnd::Reg(X19_REG);
 pub const EC: Opnd = Opnd::Reg(X20_REG);
 pub const SP: Opnd = Opnd::Reg(X21_REG);
+
+/// Registers preserved across JIT entry/exit. Saved by the entry trampoline.
+/// Includes VM state registers (CFP, SP, EC) and callee-saved registers
+/// used for allocation (X22, X23).
+pub static JIT_PRESERVED_REGS: &[Opnd] = &[CFP, SP, EC, Opnd::Reg(X22_REG), Opnd::Reg(X23_REG)];
+
+/// Callee-saved registers from ALLOC_REGS that must be saved/restored in each
+/// JIT function frame. Needed because JIT→JIT direct calls bypass the entry
+/// trampoline.
+pub static JIT_CALLEE_SAVED_REGS: &[Opnd] = &[Opnd::Reg(X22_REG), Opnd::Reg(X23_REG)];
 
 // C argument registers on this platform
 pub const C_ARG_OPNDS: [Opnd; 6] = [
@@ -192,8 +202,8 @@ fn emit_load_value(cb: &mut CodeBlock, rd: A64Opnd, value: u64) -> usize {
 }
 
 /// List of registers that can be used for register allocation.
-/// This has the same number of registers for x86_64 and arm64.
 /// SCRATCH_OPND, SCRATCH1_OPND, and EMIT_OPND are excluded.
+/// Caller-saved registers come first, followed by callee-saved registers (X22, X23).
 pub const ALLOC_REGS: &[Reg] = &[
     X0_REG,
     X1_REG,
@@ -203,7 +213,14 @@ pub const ALLOC_REGS: &[Reg] = &[
     X5_REG,
     X11_REG,
     X12_REG,
+    X22_REG,
+    X23_REG,
 ];
+
+/// The number of caller-saved registers at the start of ALLOC_REGS.
+/// ALLOC_REGS[0..NUM_CALLER_SAVED_ALLOC_REGS] are caller-saved,
+/// ALLOC_REGS[NUM_CALLER_SAVED_ALLOC_REGS..] are callee-saved.
+pub const NUM_CALLER_SAVED_ALLOC_REGS: usize = 8;
 
 /// Special scratch registers for intermediate processing. They should be used only by
 /// [`Assembler::arm64_scratch_split`] or [`Assembler::new_with_scratch_reg`].
@@ -1139,7 +1156,8 @@ impl Assembler {
                         cb.write_byte(0);
                     }
                 },
-                &Insn::FrameSetup { preserved, mut slot_count } => {
+                Insn::FrameSetup { preserved, slot_count } => {
+                    let mut slot_count = *slot_count;
                     const { assert!(SIZEOF_VALUE == 8, "alignment logic relies on SIZEOF_VALUE == 8"); }
                     // Preserve X29 and set up frame record
                     stp_pre(cb, X29, X30, A64Opnd::new_mem(128, C_SP_REG, -16));
@@ -1148,11 +1166,11 @@ impl Assembler {
                     for regs in preserved.chunks(2) {
                         // For the body, store pairs and move SP
                         if let [reg0, reg1] = regs {
-                            stp_pre(cb, reg1.into(), reg0.into(), A64Opnd::new_mem(128, C_SP_REG, -16));
+                            stp_pre(cb, (*reg1).into(), (*reg0).into(), A64Opnd::new_mem(128, C_SP_REG, -16));
                         } else if let [reg] = regs {
                             // For overhang, store but don't move SP. Combine movement with
                             // movement for slots below.
-                            stur(cb, reg.into(), A64Opnd::new_mem(64, C_SP_REG, -8));
+                            stur(cb, (*reg).into(), A64Opnd::new_mem(64, C_SP_REG, -8));
                             slot_count += 1;
                         } else {
                             unreachable!("chunks(2)");
@@ -1177,9 +1195,9 @@ impl Assembler {
                     for regs in preserved.chunks(2) {
                         if let [reg0, reg1] = regs {
                             base_offset -= 16;
-                            ldp(cb, reg1.into(), reg0.into(), A64Opnd::new_mem(128, X29, base_offset));
+                            ldp(cb, (*reg1).into(), (*reg0).into(), A64Opnd::new_mem(128, X29, base_offset));
                         } else if let [reg] = regs {
-                            ldur(cb, reg.into(), A64Opnd::new_mem(64, X29, base_offset - 8));
+                            ldur(cb, (*reg).into(), A64Opnd::new_mem(64, X29, base_offset - 8));
                         } else {
                             unreachable!("chunks(2)");
                         }
@@ -1654,6 +1672,19 @@ impl Assembler {
             }
         }
 
+        // Record stats for callee-saved register usage
+        {
+            use crate::stats::incr_counter;
+            for reg_idx in NUM_CALLER_SAVED_ALLOC_REGS..ALLOC_REGS.len() {
+                let reg_used = assignments.iter().any(|alloc| {
+                    matches!(alloc, Some(Allocation::Reg(n)) if *n == reg_idx)
+                });
+                if reg_used {
+                    incr_counter!(num_callee_saved_regs_used);
+                }
+            }
+        }
+
         // Update FrameSetup slot_count to account for:
         // 1) stack slots reserved for block params (stack_base_idx), and
         // 2) register allocator spills (num_stack_slots).
@@ -1770,7 +1801,7 @@ mod tests {
         test():
         bb0():
           # bb0(): foo@/tmp/a.rb:1
-          FrameSetup 1, x19, x21, x20
+          FrameSetup 1, x19, x21, x20, x22, x23
           v0 = Add x19, 0x40
           Store [x21 + 0x10], v0
           Joz Exit(Interrupt), v0
@@ -1779,9 +1810,9 @@ mod tests {
           v1 = Sub Value(0x14), Imm(1)
           Store Mem32[x20 + 0x10], VReg32(v1)
           Je bb0
-          FrameTeardown x19, x21, x20
+          FrameTeardown x19, x21, x20, x22, x23
           CRet v0
-          FrameTeardown x19, x21, x20
+          FrameTeardown x19, x21, x20, x22, x23
         ");
     }
 
@@ -2862,11 +2893,11 @@ mod tests {
 
         assert_disasm_snapshot!(cb.disasm(), @"
         0x0: mov x16, #1
-        0x4: stur x16, [x29, #-8]
-        0x8: ldur x15, [x29, #-8]
+        0x4: stur x16, [x29, #-0x18]
+        0x8: ldur x15, [x29, #-0x18]
         0xc: lsl x0, x15, #1
         ");
-        assert_snapshot!(cb.hexdump(), @"300080d2b0831ff8af835ff8e0f97fd3");
+        assert_snapshot!(cb.hexdump(), @"300080d2b0831ef8af835ef8e0f97fd3");
     }
 
     #[test]

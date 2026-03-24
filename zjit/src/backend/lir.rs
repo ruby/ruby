@@ -207,9 +207,9 @@ pub use crate::backend::current::{
     EC, CFP, SP,
     NATIVE_STACK_PTR, NATIVE_BASE_PTR,
     C_ARG_OPNDS, C_RET_OPND,
+    JIT_PRESERVED_REGS,
+    JIT_CALLEE_SAVED_REGS,
 };
-
-pub static JIT_PRESERVED_REGS: &[Opnd] = &[CFP, SP, EC];
 
 // Memory operand base
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Ord, PartialOrd)]
@@ -710,10 +710,10 @@ pub enum Insn {
     CSelZ { truthy: Opnd, falsy: Opnd, out: Opnd },
 
     /// Set up the frame stack as necessary per the architecture.
-    FrameSetup { preserved: &'static [Opnd], slot_count: usize },
+    FrameSetup { preserved: Vec<Opnd>, slot_count: usize },
 
     /// Tear down the frame stack as necessary per the architecture.
-    FrameTeardown { preserved: &'static [Opnd], },
+    FrameTeardown { preserved: Vec<Opnd>, },
 
     // Atomically increment a counter
     // Input: memory operand, increment value
@@ -1590,9 +1590,11 @@ impl StackState {
         StackState { stack_base_idx }
     }
 
-    /// Convert a stack index to the `disp` of the stack slot
+    /// Convert a stack index to the `disp` of the stack slot.
+    /// The offset accounts for: +1 to skip old RBP, plus JIT_CALLEE_SAVED_REGS
+    /// that are pushed in the JIT function's frame_setup.
     fn stack_idx_to_disp(&self, stack_idx: usize) -> i32 {
-        (self.stack_base_idx + stack_idx + 1) as i32 * -SIZEOF_VALUE_I32
+        (self.stack_base_idx + stack_idx + 1 + JIT_CALLEE_SAVED_REGS.len()) as i32 * -SIZEOF_VALUE_I32
     }
     /// Convert MemBase::Stack to Mem
     pub(super) fn stack_membase_to_mem(&self, membase: MemBase) -> Mem {
@@ -1797,9 +1799,9 @@ impl Assembler
         if idx < ALLOC_REGS.len() {
             Opnd::Reg(ALLOC_REGS[idx])
         } else {
-            // With FrameSetup, the address that NATIVE_BASE_PTR points to stores an old value in the register.
-            // To avoid clobbering it, we need to start from the next slot, hence `+ 1` for the index.
-            Opnd::mem(64, NATIVE_BASE_PTR, (idx - ALLOC_REGS.len() + 1) as i32 * -SIZEOF_VALUE_I32)
+            // Skip past: old RBP (+1) and JIT_CALLEE_SAVED_REGS pushed in frame_setup.
+            let offset = idx - ALLOC_REGS.len() + 1 + JIT_CALLEE_SAVED_REGS.len();
+            Opnd::mem(64, NATIVE_BASE_PTR, offset as i32 * -SIZEOF_VALUE_I32)
         }
     }
 
@@ -2328,7 +2330,7 @@ impl Assembler
         regs: &[Reg],
     ) {
         use crate::backend::parcopy;
-        use crate::backend::current::{C_RET_OPND, SCRATCH_REG, ALLOC_REGS};
+        use crate::backend::current::{C_RET_OPND, SCRATCH_REG, ALLOC_REGS, NUM_CALLER_SAVED_ALLOC_REGS};
 
         for block_id in self.block_order() {
             let block = &mut self.basic_blocks[block_id.0];
@@ -2349,15 +2351,18 @@ impl Assembler
                             .end
                             .is_some_and(|end| end > insn_number);
 
-                    // Find survivors: intervals that survive this Call instruction
-                    // We need to preserve the "surviving" registers past the ccall,
-                    // so we're going to push them all on the stack, then pop
-                    // after we make the ccall
+                    // Find survivors: intervals that survive this Call instruction.
+                    // We need to preserve the "surviving" caller-saved registers past
+                    // the ccall by pushing them on the stack and popping after.
+                    // Callee-saved registers don't need saving since the callee preserves them.
                     let survivors: Vec<usize> = intervals.iter()
                         .filter(|interval| {
                             interval.has_bounds()
                                 && interval.survives(insn_number)
-                                && assignments[interval.id].and_then(|alloc| alloc.alloc_pool_index(ALLOC_REGS.len())).is_some()
+                                && assignments[interval.id].and_then(|alloc| {
+                                    alloc.alloc_pool_index(ALLOC_REGS.len())
+                                        .filter(|&idx| idx < NUM_CALLER_SAVED_ALLOC_REGS)
+                                }).is_some()
                         })
                         .map(|interval| interval.id)
                         .collect();
@@ -3570,15 +3575,15 @@ impl Assembler {
         out
     }
 
-    pub fn frame_setup(&mut self, preserved_regs: &'static [Opnd]) {
+    pub fn frame_setup(&mut self, preserved_regs: &[Opnd]) {
         let slot_count = self.stack_base_idx;
-        self.push_insn(Insn::FrameSetup { preserved: preserved_regs, slot_count });
+        self.push_insn(Insn::FrameSetup { preserved: preserved_regs.to_vec(), slot_count });
     }
 
     /// The inverse of [Self::frame_setup] used before return. `reserve_bytes`
     /// not necessary since we use a base pointer register.
-    pub fn frame_teardown(&mut self, preserved_regs: &'static [Opnd]) {
-        self.push_insn(Insn::FrameTeardown { preserved: preserved_regs });
+    pub fn frame_teardown(&mut self, preserved_regs: &[Opnd]) {
+        self.push_insn(Insn::FrameTeardown { preserved: preserved_regs.to_vec() });
     }
 
     pub fn incr_counter(&mut self, mem: Opnd, value: Opnd) {

@@ -115,6 +115,7 @@ pub const X19_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 19 };
 pub const X20_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 20 };
 pub const X21_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 21 };
 pub const X22_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 22 };
+pub const X23_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 23 };
 
 // frame pointer (base pointer)
 pub const X29_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 29 };

@@ -171,6 +171,8 @@ class << RubyVM::ZJIT
       :load_field_count,
       :store_field_count,
 
+      :num_callee_saved_regs_used,
+
       :side_exit_size,
       :code_region_bytes,
       :side_exit_size_ratio,
