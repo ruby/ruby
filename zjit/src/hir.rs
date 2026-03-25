@@ -5014,21 +5014,21 @@ impl Function {
         }
 
         for block in self.rpo() {
-            let mut dead_stores: HashSet<InsnId> = HashSet::new();
+            // TODO: Probably convert this to a vec of tuples? Time complexity is worse but constant factors are better
             let mut active_stores: HashMap<StoreHeap, InsnId> = HashMap::new();
-            let mut insns = std::mem::take(&mut self.blocks[block.0].insns);
-            // TODO: Figure out if we should make the pass run backwards and do it all in one sweep
-            // Or if we should do it from top to bottom for readability, but require a second pass
-            for i in (0..insns.len()).rev() {
-                let insn_id = insns[i];
+            let insns = std::mem::take(&mut self.blocks[block.0].insns);
+            let mut new_insns = vec![];
+            for insn_id_ref in insns.iter().rev() {
+                // TODO: This is ugly, clean this up
+                let insn_id = *insn_id_ref;
                 match self.find(insn_id) {
                     Insn::StoreField { recv, offset, .. } => {
                         let key = StoreHeap { object: self.chase_insn(recv), offset };
                         // If an older store is being tracked, then there have
                         // been no usees between stores and the first store is
-                        // dead.
+                        // dead and should not be emitted.
                         if active_stores.contains_key(&key) {
-                            dead_stores.insert(insn_id);
+                            continue
                         }
                         // Otherwise, we have a new store to begin tracking.
                         // Because we don't have type based alias analysis, we
@@ -5068,18 +5068,21 @@ impl Function {
                     },
                     insn => {
                         // If the instruction can read memory, we cannot assume
-                        // entries of active_stores are not loaded.
-                        if insn.effects_of().includes(Effect::write(abstract_heaps::Memory)) {
+                        // entries of active_stores are not loaded. This is because we use
+                        // extended basic blocks and we should probably change this to be
+                        // standard basic blocks.
+                        if insn.effects_of().includes(Effect::read(abstract_heaps::Memory)) {
+                            active_stores.clear();
+                        }
+                        else if insn.effects_of().includes(effects::Control) {
                             active_stores.clear();
                         }
                     }
-
                 }
+                new_insns.push(insn_id);
             }
-            // TODO: Figure out how to remove extraneous write barriers
-            // Prune away any dead stores
-            insns.retain(|i| !dead_stores.contains(i));
-            self.blocks[block.0].insns = insns;
+            new_insns.reverse();
+            self.blocks[block.0].insns = new_insns;
         }
     }
 
