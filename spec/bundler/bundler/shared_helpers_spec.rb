@@ -159,7 +159,7 @@ RSpec.describe Bundler::SharedHelpers do
     let(:pwd_stub) { nil }
 
     it "returns the current absolute path" do
-      expect(subject.pwd).to eq(source_root.to_s)
+      expect(subject.pwd).to eq(git_root.to_s)
     end
   end
 

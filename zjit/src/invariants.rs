@@ -11,7 +11,7 @@ use crate::stats::Counter::invalidation_time_ns;
 use crate::gc::remove_gc_offsets;
 
 macro_rules! compile_patch_points {
-    ($cb:expr, $patch_points:expr, $($comment_args:tt)*) => {
+    ($cb:expr, $patch_points:expr, $cause:ident, $($comment_args:tt)*) => {
         with_time_stat(invalidation_time_ns, || {
             for patch_point in $patch_points {
                 let written_range = $cb.with_write_ptr(patch_point.patch_point_ptr, |cb| {
@@ -24,11 +24,11 @@ macro_rules! compile_patch_points {
                 // Stop marking GC offsets corrupted by the jump instruction
                 remove_gc_offsets(patch_point.version, &written_range);
 
-                // If the ISEQ doesn't have max versions, invalidate this version.
                 let mut version = patch_point.version;
                 let iseq = unsafe { version.as_ref() }.iseq;
                 if !iseq.is_null() {
                     let payload = get_or_create_iseq_payload(iseq);
+                    // If the ISEQ doesn't have max versions, invalidate this version.
                     if unsafe { version.as_ref() }.status != IseqStatus::Invalidated && payload.versions.len() < MAX_ISEQ_VERSIONS {
                         unsafe { version.as_mut() }.status = IseqStatus::Invalidated;
                         unsafe { rb_iseq_reset_jit_func(version.as_ref().iseq) };
@@ -40,10 +40,19 @@ macro_rules! compile_patch_points {
                             }
                         }
                     }
+                    // Remember NoSingletonClass busts on the payload
+                    if is_no_singleton_class!($cause) {
+                        payload.was_invalidated_for_singleton_class_creation = true;
+                    }
                 }
             }
         });
     };
+}
+
+macro_rules! is_no_singleton_class {
+    (NoSingletonClass) => { true };
+    ($_:ident) => { false };
 }
 
 /// When a PatchPoint is invalidated, it generates a jump instruction from `from` to `to`.
@@ -196,7 +205,7 @@ pub extern "C" fn rb_zjit_bop_redefined(klass: RedefinitionFlag, bop: ruby_basic
             debug!("BOP is redefined: {}", bop);
 
             // Invalidate all patch points for this BOP
-            compile_patch_points!(cb, patch_points, "BOP is redefined: {}", bop);
+            compile_patch_points!(cb, patch_points, BOP, "BOP is redefined: {}", bop);
 
             cb.mark_all_executable();
         }
@@ -223,7 +232,7 @@ pub extern "C" fn rb_zjit_invalidate_no_ep_escape(iseq: IseqPtr) {
 
             // Invalidate the patch points for this ISEQ
             let cb = ZJITState::get_code_block();
-            compile_patch_points!(cb, patch_points, "EP is escaped: {}", iseq_name(iseq));
+            compile_patch_points!(cb, patch_points, EP, "EP is escaped: {}", iseq_name(iseq));
 
             cb.mark_all_executable();
         }
@@ -338,7 +347,7 @@ pub extern "C" fn rb_zjit_cme_invalidate(cme: *const rb_callable_method_entry_t)
             debug!("CME is invalidated: {:?}", cme);
 
             // Invalidate all patch points for this CME
-            compile_patch_points!(cb, patch_points, "CME is invalidated: {:?}", cme);
+            compile_patch_points!(cb, patch_points, CME, "CME is invalidated: {:?}", cme);
 
             cb.mark_all_executable();
         }
@@ -360,7 +369,7 @@ pub extern "C" fn rb_zjit_constant_state_changed(id: ID) {
             debug!("Constant state changed: {:?}", id);
 
             // Invalidate all patch points for this constant ID
-            compile_patch_points!(cb, patch_points, "Constant state changed: {:?}", id);
+            compile_patch_points!(cb, patch_points, Const, "Constant state changed: {:?}", id);
 
             cb.mark_all_executable();
         }
@@ -395,7 +404,7 @@ pub extern "C" fn rb_zjit_before_ractor_spawn() {
         let patch_points = mem::take(&mut ZJITState::get_invariants().single_ractor_patch_points);
 
         // Invalidate all patch points for single ractor mode
-        compile_patch_points!(cb, patch_points, "Another ractor spawned, invalidating single ractor mode assumption");
+        compile_patch_points!(cb, patch_points, Ractor, "Another ractor spawned, invalidating single ractor mode assumption");
 
         cb.mark_all_executable();
     });
@@ -439,7 +448,7 @@ pub extern "C" fn rb_zjit_tracing_invalidate_all() {
         let cb = ZJITState::get_code_block();
         let patch_points = mem::take(&mut ZJITState::get_invariants().no_trace_point_patch_points);
 
-        compile_patch_points!(cb, patch_points, "TracePoint is enabled, invalidating no TracePoint assumption");
+        compile_patch_points!(cb, patch_points, TracePoint, "TracePoint is enabled, invalidating no TracePoint assumption");
 
         cb.mark_all_executable();
     });
@@ -481,7 +490,7 @@ pub extern "C" fn rb_zjit_invalidate_root_box() {
         let patch_points = mem::take(&mut invariants.root_box_patch_points);
 
         // Invalidate all patch points for root box mode
-        compile_patch_points!(cb, patch_points, "Non-root box created, invalidating root box assumption");
+        compile_patch_points!(cb, patch_points, Box, "Non-root box created, invalidating root box assumption");
 
         cb.mark_all_executable();
     });
@@ -513,7 +522,7 @@ pub extern "C" fn rb_zjit_invalidate_no_singleton_class(klass: VALUE) {
                 if !patch_points.is_empty() {
                     let cb = ZJITState::get_code_block();
                     debug!("Singleton class created for {:?}", klass);
-                    compile_patch_points!(cb, patch_points, "Singleton class created for {:?}", klass);
+                    compile_patch_points!(cb, patch_points, NoSingletonClass, "Singleton class created for {:?}", klass);
                     cb.mark_all_executable();
                 }
             }

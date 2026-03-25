@@ -82,6 +82,41 @@ module Prism
       "whitequark/procarg0.txt",
     ]
 
+    omitted_scan = [
+      "dos_endings.txt",
+      "heredocs_with_fake_newlines.txt",
+      "rescue_modifier.txt",
+      "seattlerb/block_call_dot_op2_brace_block.txt",
+      "seattlerb/block_command_operation_colon.txt",
+      "seattlerb/block_command_operation_dot.txt",
+      "seattlerb/case_in.txt",
+      "seattlerb/heredoc__backslash_dos_format.txt",
+      "seattlerb/heredoc_backslash_nl.txt",
+      "seattlerb/heredoc_nested.txt",
+      "seattlerb/heredoc_squiggly_blank_line_plus_interpolation.txt",
+      "seattlerb/heredoc_squiggly_empty.txt",
+      "seattlerb/masgn_command_call.txt",
+      "seattlerb/messy_op_asgn_lineno.txt",
+      "seattlerb/op_asgn_primary_colon_const_command_call.txt",
+      "seattlerb/parse_pattern_076.txt",
+      "tilde_heredocs.txt",
+      "unparser/corpus/literal/assignment.txt",
+      "unparser/corpus/literal/pattern.txt",
+      "unparser/corpus/semantic/dstr.txt",
+      "variables.txt",
+      "whitequark/dedenting_heredoc.txt",
+      "whitequark/masgn_nested.txt",
+      "whitequark/numparam_ruby_bug_19025.txt",
+      "whitequark/op_asgn_cmd.txt",
+      "whitequark/parser_drops_truncated_parts_of_squiggly_heredoc.txt",
+      "whitequark/parser_slash_slash_n_escaping_in_literals.txt",
+      "whitequark/pattern_matching_nil_pattern.txt",
+      "whitequark/ruby_bug_12402.txt",
+      "whitequark/ruby_bug_18878.txt",
+      "whitequark/send_block_chain_cmd.txt",
+      "whitequark/slash_newline_in_heredocs.txt",
+    ]
+
     Fixture.each_for_current_ruby(except: incorrect | omitted_sexp_raw) do |fixture|
       define_method("#{fixture.test_name}_sexp_raw") { assert_ripper_sexp_raw(fixture.read) }
     end
@@ -100,6 +135,9 @@ module Prism
       end
     end
 
+    UNSUPPORTED_EVENTS = %i[backtick comma heredoc_beg heredoc_end ignored_nl kw label_end lbrace lbracket lparen nl op rbrace rbracket rparen semicolon sp symbeg tstring_beg tstring_end words_sep ignored_sp]
+    SUPPORTED_EVENTS = Translation::Ripper::EVENTS - UNSUPPORTED_EVENTS
+
     module Events
       attr_reader :events
 
@@ -108,9 +146,9 @@ module Prism
         @events = []
       end
 
-      Prism::Translation::Ripper::PARSER_EVENTS.each do |event|
+      SUPPORTED_EVENTS.each do |event|
         define_method(:"on_#{event}") do |*args|
-          @events << [event, *args]
+          @events << [event, *args.map(&:to_s)]
           super(*args)
         end
       end
@@ -126,28 +164,25 @@ module Prism
 
     class ObjectEvents < Translation::Ripper
       OBJECT = BasicObject.new
-      Prism::Translation::Ripper::PARSER_EVENTS.each do |event|
+      SUPPORTED_EVENTS.each do |event|
         define_method(:"on_#{event}") { |*args| OBJECT }
       end
     end
 
-    Fixture.each_for_current_ruby(except: incorrect) do |fixture|
+    Fixture.each_for_current_ruby(except: incorrect | omitted_scan) do |fixture|
       define_method("#{fixture.test_name}_events") do
         source = fixture.read
         # Similar to test/ripper/assert_parse_files.rb in CRuby
         object_events = ObjectEvents.new(source)
         assert_nothing_raised { object_events.parse }
-      end
-    end
 
-    def test_events
-      source = "1 rescue 2"
-      ripper = RipperEvents.new(source)
-      prism = PrismEvents.new(source)
-      ripper.parse
-      prism.parse
-      # This makes sure that the content is the same. Ordering is not correct for now.
-      assert_equal(ripper.events.sort, prism.events.sort)
+        ripper = RipperEvents.new(source)
+        prism = PrismEvents.new(source)
+        ripper.parse
+        prism.parse
+        # This makes sure that the content is the same. Ordering is not correct for now.
+        assert_equal(ripper.events.sort, prism.events.sort)
+      end
     end
 
     def test_lexer

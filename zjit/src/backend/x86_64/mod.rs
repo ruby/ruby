@@ -678,7 +678,7 @@ impl Assembler {
     }
 
     /// Emit platform-specific machine code
-    pub fn x86_emit(&mut self, cb: &mut CodeBlock) -> Option<Vec<CodePtr>> {
+    pub fn x86_emit(&mut self, cb: &mut CodeBlock) -> Result<Vec<CodePtr>, CompileError> {
         fn emit_csel(
             cb: &mut CodeBlock,
             truthy: Opnd,
@@ -1122,7 +1122,7 @@ impl Assembler {
 
         // Error if we couldn't write out everything
         if cb.has_dropped_bytes() {
-            None
+            Err(CompileError::OutOfMemory)
         } else {
             // No bytes dropped, so the pos markers point to valid code
             for (insn_idx, pos) in pos_markers {
@@ -1133,7 +1133,7 @@ impl Assembler {
                 }
             }
 
-            Some(gc_offsets)
+            Ok(gc_offsets)
         }
     }
 
@@ -1164,7 +1164,7 @@ impl Assembler {
 
         let total_stack_slots = asm.stack_base_idx + num_stack_slots;
         if total_stack_slots > Self::MAX_FRAME_STACK_SLOTS {
-            return Err(CompileError::OutOfMemory);
+            return Err(CompileError::NativeStackTooLarge);
         }
 
         // Dump vreg-to-physical-register mapping if requested
@@ -1235,15 +1235,11 @@ impl Assembler {
         }
 
         let start_ptr = cb.get_write_ptr();
-        let gc_offsets = asm.x86_emit(cb);
+        let gc_offsets = asm.x86_emit(cb).inspect_err(|_| cb.clear_labels())?;
+        assert!(!cb.has_dropped_bytes(), "emit should not drop bytes without error");
 
-        if let (Some(gc_offsets), false) = (gc_offsets, cb.has_dropped_bytes()) {
-            cb.link_labels().or(Err(CompileError::LabelLinkingFailure))?;
-            Ok((start_ptr, gc_offsets))
-        } else {
-            cb.clear_labels();
-            Err(CompileError::OutOfMemory)
-        }
+        cb.link_labels().or(Err(CompileError::LabelLinkingFailure))?;
+        Ok((start_ptr, gc_offsets))
     }
 }
 
@@ -1317,7 +1313,7 @@ mod tests {
         for name in &asm.label_names {
             cb.new_label(name.to_string());
         }
-        assert!(asm.x86_emit(&mut cb).is_some(), "{kind:?}: x86_emit failed");
+        assert!(asm.x86_emit(&mut cb).is_ok(), "{kind:?}: x86_emit failed");
 
         cb.disasm()
             .lines()
@@ -2304,7 +2300,7 @@ mod tests {
         for name in &asm.label_names {
             cb.new_label(name.to_string());
         }
-        assert!(asm.x86_emit(&mut cb).is_some());
+        assert!(asm.x86_emit(&mut cb).is_ok());
 
         assert_disasm_snapshot!(cb.disasm(), @"
         0x0: mov r10, qword ptr [rbp - 0x10]
@@ -2330,7 +2326,7 @@ mod tests {
         for name in &asm.label_names {
             cb.new_label(name.to_string());
         }
-        assert!(asm.x86_emit(&mut cb).is_some());
+        assert!(asm.x86_emit(&mut cb).is_ok());
 
         assert_disasm_snapshot!(cb.disasm(), @"
             0x0: mov r10, qword ptr [r13 + 0x10]
@@ -2356,7 +2352,7 @@ mod tests {
         for name in &asm.label_names {
             cb.new_label(name.to_string());
         }
-        assert!(asm.x86_emit(&mut cb).is_some());
+        assert!(asm.x86_emit(&mut cb).is_ok());
 
         assert_disasm_snapshot!(cb.disasm(), @"
         0x0: mov r11, qword ptr [rbp - 8]

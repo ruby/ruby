@@ -513,7 +513,12 @@ module Prism
           bounds(location)
 
           if comment.is_a?(InlineComment)
-            on_comment(comment.slice)
+            # Inline comments always contain a newline if the line itself contains it
+            if result.source.source.bytesize > comment.location.end_offset
+              on_comment("#{comment.slice}\n")
+            else
+              on_comment(comment.slice)
+            end
           else
             offset = location.start_offset
             lines = comment.slice.lines
@@ -1577,7 +1582,6 @@ module Prism
       # ^^^^^^^^^^^^^^^
       def visit_constant_path_operator_write_node(node)
         target = visit_constant_path_write_node_target(node.target)
-        value = visit(node.value)
 
         bounds(node.binary_operator_loc)
         operator = on_op("#{node.binary_operator}=")
@@ -1591,7 +1595,6 @@ module Prism
       # ^^^^^^^^^^^^^^^^
       def visit_constant_path_and_write_node(node)
         target = visit_constant_path_write_node_target(node.target)
-        value = visit(node.value)
 
         bounds(node.operator_loc)
         operator = on_op("&&=")
@@ -1605,7 +1608,6 @@ module Prism
       # ^^^^^^^^^^^^^^^^
       def visit_constant_path_or_write_node(node)
         target = visit_constant_path_write_node_target(node.target)
-        value = visit(node.value)
 
         bounds(node.operator_loc)
         operator = on_op("||=")
@@ -2357,6 +2359,8 @@ module Prism
                 visit(node.parameters.parameters)
               end
 
+            visit_all(node.parameters.locals)
+
             if node.parameters.opening_loc.nil?
               params
             else
@@ -2507,8 +2511,8 @@ module Prism
 
       # A node that is missing from the syntax tree. This is only used in the
       # case of a syntax error.
-      def visit_missing_node(node)
-        raise "Cannot visit missing nodes directly."
+      def visit_error_recovery_node(node)
+        raise "Cannot visit error recovery nodes directly."
       end
 
       # module Foo; end

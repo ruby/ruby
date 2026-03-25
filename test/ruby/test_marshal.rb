@@ -1002,5 +1002,19 @@ class TestMarshal < Test::Unit::TestCase
       refute_predicate Object, :frozen?
       refute_predicate Kernel, :frozen?
     end
+
+    def test_linked_strings_are_frozen
+      str = "test"
+      str.instance_variable_set(:@self, str)
+      source = [str, str]
+
+      objects = Marshal.load(encode(source), freeze: true)
+      assert_predicate objects[0], :frozen?
+      assert_predicate objects[1], :frozen?
+      assert_same objects[0], objects[1]
+      assert_same objects[0], objects[0].instance_variable_get(:@self)
+      assert_same objects[1], objects[1].instance_variable_get(:@self)
+      assert_same objects[0].instance_variable_get(:@self), objects[1].instance_variable_get(:@self)
+    end
   end
 end

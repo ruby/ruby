@@ -26,6 +26,11 @@ Note: We're only listing outstanding class updates.
       directory without hardcoding absolute paths or manipulating `$LOAD_PATH`.
       [[Feature #15330]]
 
+* MatchData
+
+    * `MatchData#integer_at` is added.  It converts the matched substring to
+      integer and return the result.  [[Feature #21932]]
+
 * Method
 
     * `Method#source_location`, `Proc#source_location`, and
@@ -118,6 +123,14 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
 
 ## C API updates
 
+### Embedded TypedData
+
+* The `RUBY_TYPED_EMBEDDABLE` flag is now public and documented and can be used by C extensions.
+  It allows allocating C structs directly into Ruby object slots, which reduces pointer chasing,
+  and in some case memory usage.
+  See the C extension documentation for details. [[Feature #21853]]
+
+
 ## Implementation improvements
 
 ### Ractor
@@ -130,6 +143,8 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #15330]: https://bugs.ruby-lang.org/issues/15330
 [Feature #21390]: https://bugs.ruby-lang.org/issues/21390
 [Feature #21785]: https://bugs.ruby-lang.org/issues/21785
+[Feature #21853]: https://bugs.ruby-lang.org/issues/21853
+[Feature #21932]: https://bugs.ruby-lang.org/issues/21932
 [test-unit-3.7.4]: https://github.com/test-unit/test-unit/releases/tag/3.7.4
 [test-unit-3.7.5]: https://github.com/test-unit/test-unit/releases/tag/3.7.5
 [rss-0.3.2]: https://github.com/ruby/rss/releases/tag/0.3.2

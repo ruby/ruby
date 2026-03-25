@@ -2131,12 +2131,10 @@ unsafe extern "C" {
         buff: *mut VALUE,
         lines: *mut ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
+    pub fn rb_profile_frame_path(frame: VALUE) -> VALUE;
+    pub fn rb_profile_frame_absolute_path(frame: VALUE) -> VALUE;
+    pub fn rb_profile_frame_full_label(frame: VALUE) -> VALUE;
     pub fn rb_jit_cont_each_iseq(callback: rb_iseq_callback, data: *mut ::std::os::raw::c_void);
-    pub fn rb_zjit_exit_locations_dict(
-        zjit_raw_samples: *mut VALUE,
-        zjit_line_samples: *mut ::std::os::raw::c_int,
-        samples_len: ::std::os::raw::c_int,
-    ) -> VALUE;
     pub fn rb_zjit_profile_disable(iseq: *const rb_iseq_t);
     pub fn rb_vm_base_ptr(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
     pub fn rb_zjit_constcache_shareable(ice: *const iseq_inline_constant_cache_entry) -> bool;

@@ -16,6 +16,7 @@
 #include "encindex.h"
 #include "hrtime.h"
 #include "internal.h"
+#include "internal/bignum.h"
 #include "internal/encoding.h"
 #include "internal/error.h"
 #include "internal/hash.h"
@@ -1187,7 +1188,7 @@ match_size(VALUE match)
     return INT2FIX(RMATCH_REGS(match)->num_regs);
 }
 
-static int name_to_backref_number(struct re_registers *, VALUE, const char*, const char*);
+static int name_to_backref_number(const struct re_registers *, VALUE, const char*, const char*);
 NORETURN(static void name_to_backref_error(VALUE name));
 
 static void
@@ -2147,7 +2148,7 @@ match_captures(VALUE match)
 }
 
 static int
-name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name, const char* name_end)
+name_to_backref_number(const struct re_registers *regs, VALUE regexp, const char* name, const char* name_end)
 {
     if (NIL_P(regexp)) return -1;
     return onig_name_to_backref_number(RREGEXP_PTR(regexp),
@@ -2160,7 +2161,7 @@ name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name
      name_to_backref_number((regs), (re), (name_ptr), (name_end)))
 
 static int
-namev_to_backref_number(struct re_registers *regs, VALUE re, VALUE name)
+namev_to_backref_number(const struct re_registers *regs, VALUE re, VALUE name)
 {
     int num;
 
@@ -3629,6 +3630,76 @@ match_equal(VALUE match1, VALUE match2)
     return Qtrue;
 }
 
+/*
+ *  call-seq:
+ *    integer_at(index, base = 10) -> integer or nil
+ *    integer_at(name, base = 10) -> integer or nil
+ *
+ *  Converts the matched substring to integer and return the result.
+ *  +$~.integer_at(N)+ is equivalent to +$N&.to_i+.
+ *
+ *    m = /(\d+{4})(\d+{2})(\d+{2})/.match("20260308")
+ *    # => #<MatchData "20260308" 1:"2026" 2:"03" 3:"08">
+ *    m.integer_at(0)     # => 20260308
+ *    m.integer_at(1)     # => 2026
+ *    m.integer_at(2)     # => 3
+ *    m.integer_at(3)     # => 8
+ *
+ *    m = /(?<y>\d+{4})(?<m>\d+{2})(?<d>\d+{2})/.match("20260308")
+ *    m.integer_at("y")   # => 2026
+ *    m.integer_at("m")   # => 3
+ *    m.integer_at("d")   # => 8
+ *
+ *  If the substring does not match, returns +nil+.
+ *
+ *    re = /(\d+)?/
+ *    re.match("123").integer_at(1) #=> 123
+ *    re.match("abc").integer_at(1) #=> nil
+ *
+ *  The string is converted in decimal by default.
+ *
+ *    /\d+/.match("011").integer_at(0)     #=> 10
+ *    /\d+/.match("011").integer_at(0, 12) #=> 13
+ *    /\d+/.match("011").integer_at(0, 0)  #=> 9
+ *
+ *  See also MatchData#[], String#to_i.
+ */
+static VALUE
+match_integer_at(int argc, VALUE *argv, VALUE match)
+{
+    const struct re_registers *regs = RMATCH_REGS(match_check(match));
+
+    int base = 10;
+    VALUE idx;
+    long nth;
+
+    argc = rb_check_arity(argc, 1, 2);
+    if (FIXNUM_P(idx = argv[0])) {
+        nth = NUM2INT(idx);
+    }
+    else if ((nth = namev_to_backref_number(regs, RMATCH(match)->regexp, idx)) < 0) {
+        name_to_backref_error(idx);
+    }
+
+    if (argc > 1 && (base = NUM2INT(argv[1])) < 0) {
+        rb_raise(rb_eArgError, "invalid radix %d", base);
+    }
+
+    if (nth >= regs->num_regs) return Qnil;
+    if (nth < 0 && (nth += regs->num_regs) <= 0) return Qnil;
+
+    long start = BEG(nth), end = END(nth);
+    if (start < 0) return Qnil;
+    RUBY_ASSERT(start <= end, "%ld > %ld", start, end);
+
+    VALUE str = RMATCH(match)->str;
+    RUBY_ASSERT(end <= RSTRING_LEN(str), "%ld > %ld", end, RSTRING_LEN(str));
+
+    char *endp;
+    return rb_int_parse_cstr(RSTRING_PTR(str) + start, end - start, &endp, NULL,
+                             base, RB_INT_PARSE_DEFAULT);
+}
+
 static VALUE
 reg_operand(VALUE s, int check)
 {
@@ -4908,4 +4979,5 @@ Init_Regexp(void)
     rb_define_method(rb_cMatch, "hash", match_hash, 0);
     rb_define_method(rb_cMatch, "eql?", match_equal, 1);
     rb_define_method(rb_cMatch, "==", match_equal, 1);
+    rb_define_method(rb_cMatch, "integer_at", match_integer_at, -1);
 }

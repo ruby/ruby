@@ -23,7 +23,7 @@ use crate::backend::lir::{self, Assembler, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NAT
 use crate::hir::{iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
 use crate::hir::{Const, FrameState, Function, Insn, InsnId, SendFallbackReason};
 use crate::hir_type::{types, Type};
-use crate::options::get_option;
+use crate::options::{get_option, PerfMap};
 use crate::cast::IntoUsize;
 
 /// At the moment, we support recompiling each ISEQ only once.
@@ -211,7 +211,7 @@ pub fn gen_iseq_call(cb: &mut CodeBlock, iseq_call: &IseqCallRef) -> Result<(), 
 }
 
 /// Write an entry to the perf map in /tmp
-fn register_with_perf(iseq_name: String, start_ptr: usize, code_size: usize) {
+fn register_with_perf(symbol_name: String, start_ptr: usize, code_size: usize) {
     use std::io::Write;
     let perf_map = format!("/tmp/perf-{}.map", std::process::id());
     let Ok(file) = std::fs::OpenOptions::new().create(true).append(true).open(&perf_map) else {
@@ -219,8 +219,8 @@ fn register_with_perf(iseq_name: String, start_ptr: usize, code_size: usize) {
         return;
     };
     let mut file = std::io::BufWriter::new(file);
-    let Ok(_) = writeln!(file, "{start_ptr:#x} {code_size:#x} zjit::{iseq_name}") else {
-        debug!("Failed to write {iseq_name} to perf map file: {perf_map}");
+    let Ok(_) = writeln!(file, "{start_ptr:#x} {code_size:#x} ZJIT: {symbol_name}") else {
+        debug!("Failed to write {symbol_name} to perf map file: {perf_map}");
         return;
     };
 }
@@ -244,11 +244,11 @@ pub fn gen_entry_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError>
 
     let (code_ptr, gc_offsets) = asm.compile(cb)?;
     assert!(gc_offsets.is_empty());
-    if get_option!(perf) {
+    if get_option!(perf).is_some() {
         let start_ptr = code_ptr.raw_addr(cb);
         let end_ptr = cb.get_write_ptr().raw_addr(cb);
         let code_size = end_ptr - start_ptr;
-        register_with_perf("ZJIT entry trampoline".into(), start_ptr, code_size);
+        register_with_perf("entry trampoline".into(), start_ptr, code_size);
     }
     Ok(code_ptr)
 }
@@ -448,10 +448,33 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                     assert!(insn_idx == block.insns().len() - 1, "Jump must be the last instruction in HIR block");
                 },
                 _ => {
-                    if let Err(last_snapshot) = gen_insn(cb, &mut jit, &mut asm, function, insn_id, &insn) {
+                    // Start a new perf range for the HIR instruction. For now, we do this only for
+                    // non-terminator instructions because LIR blocks must end with a terminator instruction.
+                    let perf_symbol = if get_option!(perf) == Some(PerfMap::HIR) && !insn.is_terminator() {
+                        let insn_name = format!("{insn}").split_whitespace().next().unwrap().to_string();
+                        Some(perf_symbol_range_start(&mut asm, &insn_name))
+                    } else {
+                        None
+                    };
+
+                    let result = gen_insn(cb, &mut jit, &mut asm, function, insn_id, &insn);
+
+                    // Close the current perf range for the HIR instruction.
+                    if let Some(perf_symbol) = &perf_symbol {
+                        perf_symbol_range_end(&mut asm, perf_symbol);
+                    }
+
+                    if let Err(last_snapshot) = result {
                         debug!("ZJIT: gen_function: Failed to compile insn: {insn_id} {insn}. Generating side-exit.");
                         gen_incr_counter(&mut asm, exit_counter_for_unhandled_hir_insn(&insn));
-                        gen_side_exit(&mut jit, &mut asm, &SideExitReason::UnhandledHIRInsn(insn_id), &function.frame_state(last_snapshot));
+                        let reason = match insn {
+                            Insn::ArrayMax { .. }      => SideExitReason::UnhandledHIRArrayMax,
+                            Insn::FixnumDiv { .. }     => SideExitReason::UnhandledHIRFixnumDiv,
+                            Insn::Throw { .. }         => SideExitReason::UnhandledHIRThrow,
+                            Insn::InvokeBuiltin { .. } => SideExitReason::UnhandledHIRInvokeBuiltin,
+                            _                          => SideExitReason::UnhandledHIRUnknown(insn_id),
+                        };
+                        gen_side_exit(&mut jit, &mut asm, &reason, &function.frame_state(last_snapshot));
                         // Don't bother generating code after a side-exit. We won't run it.
                         // TODO(max): Generate ud2 or equivalent.
                         break;
@@ -472,7 +495,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
     // Generate code if everything can be compiled
     let result = asm.compile(cb);
     if let Ok((start_ptr, _)) = result {
-        if get_option!(perf) {
+        if get_option!(perf) == Some(PerfMap::ISEQ) {
             let start_usize = start_ptr.raw_addr(cb);
             let end_usize = cb.get_write_ptr().raw_addr(cb);
             let code_size = end_usize - start_usize;
@@ -646,6 +669,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::PutSpecialObject { value_type } => gen_putspecialobject(asm, *value_type),
         Insn::AnyToString { val, str, state } => gen_anytostring(asm, opnd!(val), opnd!(str), &function.frame_state(*state)),
         Insn::Defined { op_type, obj, pushval, v, state } => gen_defined(jit, asm, *op_type, *obj, *pushval, opnd!(v), &function.frame_state(*state)),
+        Insn::CheckMatch { target, pattern, flag, state } => gen_checkmatch(jit, asm, opnd!(target), opnd!(pattern), *flag, &function.frame_state(*state)),
         Insn::GetSpecialSymbol { symbol_type, state: _ } => gen_getspecial_symbol(asm, *symbol_type),
         Insn::GetSpecialNumber { nth, state } => gen_getspecial_number(asm, *nth, &function.frame_state(*state)),
         &Insn::IncrCounter(counter) => no_output!(gen_incr_counter(asm, counter)),
@@ -1250,6 +1274,20 @@ fn gen_defined_ivar(asm: &mut Assembler, self_val: Opnd, id: ID, pushval: VALUE)
     asm_ccall!(asm, rb_zjit_defined_ivar, self_val, id.0.into(), Opnd::Value(pushval))
 }
 
+fn gen_checkmatch(jit: &JITState, asm: &mut Assembler, target: Opnd, pattern: Opnd, flag: u32, state: &FrameState) -> lir::Opnd {
+    // rb_vm_check_match is not leaf unless flag is VM_CHECKMATCH_TYPE_WHEN.
+    // See also: leafness_of_checkmatch() and check_match()
+    if flag != VM_CHECKMATCH_TYPE_WHEN {
+        gen_prepare_non_leaf_call(jit, asm, state);
+    }
+
+    unsafe extern "C" {
+        fn rb_vm_check_match(ec: EcPtr, target: VALUE, pattern: VALUE, flag: u32) -> VALUE;
+    }
+
+    asm_ccall!(asm, rb_vm_check_match, EC, target, pattern, flag.into())
+}
+
 fn gen_array_extend(jit: &mut JITState, asm: &mut Assembler, left: Opnd, right: Opnd, state: &FrameState) {
     gen_prepare_non_leaf_call(jit, asm, state);
     asm_ccall!(asm, rb_ary_concat, left, right);
@@ -1274,14 +1312,14 @@ fn gen_load_self() -> Opnd {
 fn gen_load_field(asm: &mut Assembler, recv: Opnd, id: ID, offset: i32, return_type: Type) -> Opnd {
     gen_incr_counter(asm, Counter::load_field_count);
     asm_comment!(asm, "Load field id={} offset={}", id.contents_lossy(), offset);
-    let recv = asm.load(recv);
+    let recv = asm.load_mem(recv);
     asm.load(Opnd::mem(return_type.num_bits(), recv, offset))
 }
 
 fn gen_store_field(asm: &mut Assembler, recv: Opnd, id: ID, offset: i32, val: Opnd, val_type: Type) {
     gen_incr_counter(asm, Counter::store_field_count);
     asm_comment!(asm, "Store field id={} offset={}", id.contents_lossy(), offset);
-    let recv = asm.load(recv);
+    let recv = asm.load_mem(recv);
     asm.store(Opnd::mem(val_type.num_bits(), recv, offset), val);
 }
 
@@ -1290,7 +1328,7 @@ fn gen_write_barrier(jit: &mut JITState, asm: &mut Assembler, recv: Opnd, val: O
     // rb_obj_written() does: if (!RB_SPECIAL_CONST_P(val)) { rb_gc_writebarrier(recv, val); }
     if !val_type.is_immediate() {
         asm_comment!(asm, "Write barrier");
-        let recv = asm.load(recv);
+        let recv = asm.load_mem(recv);
 
         // Create a result block that all paths converge to
         let hir_block_id = asm.current_block().hir_block_id;
@@ -1487,7 +1525,9 @@ fn gen_send_iseq_direct(
     // `unspecializable_call_type`.
     let block_handler = blockiseq.map(|b| gen_block_handler_specval(asm, b));
 
-    let (frame_type, specval) = if VM_METHOD_TYPE_BMETHOD == unsafe { get_cme_def_type(cme) } {
+    let callee_is_bmethod = VM_METHOD_TYPE_BMETHOD == unsafe { get_cme_def_type(cme) };
+
+    let (frame_type, specval) = if callee_is_bmethod {
         // Extract EP from the Proc instance
         let procv = unsafe { rb_get_def_bmethod_proc((*cme).def) };
         let proc = unsafe { rb_jit_get_proc_ptr(procv) };
@@ -1554,7 +1594,14 @@ fn gen_send_iseq_direct(
     c_args.push(recv);
     c_args.extend(&args);
     if needs_block {
-        c_args.push(specval);
+        if callee_is_bmethod {
+            // For bmethods, specval is the captured EP, not the block handler.
+            // The block param needs nil (no block) or a Proc value.
+            assert!(block_handler.is_none(), "at the moment, HIR builder never emits a direct send for a to-bmethod send-with-literal-block");
+            c_args.push(Qnil.into());
+        } else {
+            c_args.push(specval);
+        }
     }
 
     let num_optionals_passed = if params.flags.has_opt() != 0 {
@@ -1750,8 +1797,8 @@ fn gen_array_aref(
     array: Opnd,
     index: Opnd,
 ) -> lir::Opnd {
-    let unboxed_idx = asm.load(index);
-    let array = asm.load(array);
+    let unboxed_idx = asm.load_mem(index);
+    let array = asm.load_mem(array);
     let array_ptr = gen_array_ptr(asm, array);
     let elem_offset = asm.lshift(unboxed_idx, Opnd::UImm(SIZEOF_VALUE.trailing_zeros() as u64));
     let elem_ptr = asm.add(array_ptr, elem_offset);
@@ -1764,8 +1811,8 @@ fn gen_array_aset(
     index: Opnd,
     val: Opnd,
 ) {
-    let unboxed_idx = asm.load(index);
-    let array = asm.load(array);
+    let unboxed_idx = asm.load_mem(index);
+    let array = asm.load_mem(array);
     let array_ptr = gen_array_ptr(asm, array);
     let elem_offset = asm.lshift(unboxed_idx, Opnd::UImm(SIZEOF_VALUE.trailing_zeros() as u64));
     let elem_ptr = asm.add(array_ptr, elem_offset);
@@ -1778,7 +1825,7 @@ fn gen_array_pop(asm: &mut Assembler, array: Opnd, state: &FrameState) -> lir::O
 }
 
 fn gen_array_length(asm: &mut Assembler, array: Opnd) -> lir::Opnd {
-    let array = asm.load(array);
+    let array = asm.load_mem(array);
     let flags = Opnd::mem(VALUE_BITS, array, RUBY_OFFSET_RBASIC_FLAGS);
     let embedded_len = asm.and(flags, (RARRAY_EMBED_LEN_MASK as u64).into());
     let embedded_len = asm.rshift(embedded_len, (RARRAY_EMBED_LEN_SHIFT as u64).into());
@@ -1943,10 +1990,7 @@ fn gen_is_a(jit: &mut JITState, asm: &mut Assembler, obj: Opnd, class: Opnd) -> 
             args: vec![v],
         });
 
-        let val = match obj {
-            Opnd::Reg(_) | Opnd::VReg { .. } => obj,
-            _ => asm.load(obj),
-        };
+        let val = asm.load_mem(obj);
 
         // Immediate → definitely not String/Array/Hash
         asm.test(val, Opnd::UImm(RUBY_IMMEDIATE_MASK as u64));
@@ -2236,7 +2280,7 @@ fn gen_box_bool(asm: &mut Assembler, val: lir::Opnd) -> lir::Opnd {
 
 fn gen_box_fixnum(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, state: &FrameState) -> lir::Opnd {
     // Load the value, then test for overflow and tag it
-    let val = asm.load(val);
+    let val = asm.load_mem(val);
     let shifted = asm.lshift(val, Opnd::UImm(1));
     asm.jo(jit, side_exit(jit, state, BoxFixnumOverflow));
     asm.or(shifted, Opnd::UImm(RUBY_FIXNUM_FLAG as u64))
@@ -2299,10 +2343,7 @@ fn gen_has_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, ty: Typ
 
         // If val isn't in a register, load it to use it as the base of Opnd::mem later.
         // TODO: Max thinks codegen should not care about the shapes of the operands except to create them. (Shopify/ruby#685)
-        let val = match val {
-            Opnd::Reg(_) | Opnd::VReg { .. } => val,
-            _ => asm.load(val),
-        };
+        let val = asm.load_mem(val);
 
         // Immediate → definitely not the class
         asm.test(val, (RUBY_IMMEDIATE_MASK as u64).into());
@@ -2364,10 +2405,7 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
 
         // If val isn't in a register, load it to use it as the base of Opnd::mem later.
         // TODO: Max thinks codegen should not care about the shapes of the operands except to create them. (Shopify/ruby#685)
-        let val = match val {
-            Opnd::Reg(_) | Opnd::VReg { .. } => val,
-            _ => asm.load(val),
-        };
+        let val = asm.load_mem(val);
 
         // Check if it's a special constant
         let side_exit = side_exit(jit, state, GuardType(guard_type));
@@ -2394,10 +2432,7 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
         asm.cmp(val, Qfalse.into());
         asm.je(jit, side.clone());
 
-        let val = match val {
-            Opnd::Reg(_) | Opnd::VReg { .. } => val,
-            _ => asm.load(val),
-        };
+        let val = asm.load_mem(val);
 
         let flags = asm.load(Opnd::mem(VALUE_BITS, val, RUBY_OFFSET_RBASIC_FLAGS));
         let tag   = asm.and(flags, Opnd::UImm(RUBY_T_MASK as u64));
@@ -2414,10 +2449,7 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
         asm.cmp(val, Qfalse.into());
         asm.je(jit, side.clone());
 
-        let val = match val {
-            Opnd::Reg(_) | Opnd::VReg { .. } => val,
-            _ => asm.load(val),
-        };
+        let val = asm.load_mem(val);
 
         let flags = asm.load(Opnd::mem(VALUE_BITS, val, RUBY_OFFSET_RBASIC_FLAGS));
         let tag   = asm.and(flags, Opnd::UImm(RUBY_T_MASK as u64));
@@ -2455,10 +2487,7 @@ fn gen_guard_type_not(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, g
         asm.cmp(val, Qfalse.into());
         asm.je(jit, cont_edge());
 
-        let val = match val {
-            Opnd::Reg(_) | Opnd::VReg { .. } => val,
-            _ => asm.load(val),
-        };
+        let val = asm.load_mem(val);
 
         let flags = asm.load(Opnd::mem(VALUE_BITS, val, RUBY_OFFSET_RBASIC_FLAGS));
         let tag   = asm.and(flags, Opnd::UImm(RUBY_T_MASK as u64));
@@ -3102,7 +3131,7 @@ fn gen_string_concat(jit: &mut JITState, asm: &mut Assembler, strings: Vec<Opnd>
 // Generate RSTRING_PTR
 fn get_string_ptr(asm: &mut Assembler, string: Opnd) -> Opnd {
     asm_comment!(asm, "get string pointer for embedded or heap");
-    let string = asm.load(string);
+    let string = asm.load_mem(string);
     let flags = Opnd::mem(VALUE_BITS, string, RUBY_OFFSET_RBASIC_FLAGS);
     asm.test(flags, (RSTRING_NOEMBED as u64).into());
     let heap_ptr = asm.load(Opnd::mem(
@@ -3168,6 +3197,15 @@ fn aligned_stack_bytes(num_slots: usize) -> usize {
 }
 
 impl Assembler {
+    /// Emits a load for memory based operands and returns a vreg,
+    /// otherwise returns recv.
+    fn load_mem(&mut self, recv: Opnd) -> Opnd {
+        match recv {
+            Opnd::VReg { .. } | Opnd::Reg(_) => recv,
+            _ => self.load(recv),
+        }
+    }
+
     /// Make a C call while marking the start and end positions for IseqCall
     fn ccall_with_iseq_call(&mut self, fptr: *const u8, opnds: Vec<Opnd>, iseq_call: &IseqCallRef) -> Opnd {
         // We need to create our own branch rc objects so that we can move the closure below
@@ -3246,6 +3284,34 @@ impl IseqCall {
             assert_eq!(self.end_addr.get().unwrap(), cb.get_write_ptr());
         });
     }
+}
+
+type PerfSymbol = Rc<RefCell<Option<(CodePtr, String)>>>;
+
+/// Mark the start of a perf symbol range via pos_marker.
+/// Returns a handle to pass to perf_symbol_range_end.
+pub fn perf_symbol_range_start(asm: &mut Assembler, symbol_name: &str) -> PerfSymbol {
+    let symbol_name = symbol_name.to_string();
+    let perf_symbol: PerfSymbol = Rc::new(RefCell::new(None));
+    let current = perf_symbol.clone();
+    asm.pos_marker(move |start, _| {
+        let mut current = current.borrow_mut();
+        assert!(current.is_none(), "perf symbol range already open");
+        *current = Some((start, symbol_name.clone()));
+    });
+    perf_symbol
+}
+
+/// Mark the end of a perf symbol range via pos_marker.
+pub fn perf_symbol_range_end(asm: &mut Assembler, perf_symbol: &PerfSymbol) {
+    let current = perf_symbol.clone();
+    asm.pos_marker(move |end, cb| {
+        if let Some((start, name)) = current.borrow_mut().take() {
+            let start_addr = start.raw_addr(cb);
+            let code_size = end.raw_addr(cb) - start_addr;
+            register_with_perf(name, start_addr, code_size);
+        }
+    });
 }
 
 #[cfg(test)]

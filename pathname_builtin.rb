@@ -1042,7 +1042,20 @@ class Pathname    # * File *
   # See File.binwrite.
   def binwrite(...) File.binwrite(@path, ...) end
 
-  # See <tt>File.atime</tt>.  Returns last access time.
+  # call-seq:
+  #   atime -> new_time
+  #
+  # Returns a new Time object containing the time of the most recent
+  # access (read or write) to the entry;
+  # via File.atime:
+  #
+  #   pn = Pathname.new('t.tmp')
+  #   pn.write('foo')
+  #   pn.atime # => 2026-03-22 13:49:44.5165608 -0500
+  #   pn.read  # => "foo"
+  #   pn.atime # => 2026-03-22 13:49:57.5359349 -0500
+  #   pn.delete
+  #
   def atime() File.atime(@path) end
 
   # Returns the birth time for the file.

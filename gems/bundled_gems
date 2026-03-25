@@ -32,12 +32,12 @@ drb                 2.2.3   https://github.com/ruby/drb
 nkf                 0.2.0   https://github.com/ruby/nkf
 syslog              0.4.0   https://github.com/ruby/syslog
 csv                 3.3.5   https://github.com/ruby/csv
-repl_type_completor 0.1.14  https://github.com/ruby/repl_type_completor
+repl_type_completor 0.1.15  https://github.com/ruby/repl_type_completor
 ostruct             0.6.3   https://github.com/ruby/ostruct
 pstore              0.2.1   https://github.com/ruby/pstore
 benchmark           0.5.0   https://github.com/ruby/benchmark
 logger              1.7.0   https://github.com/ruby/logger
-rdoc                7.2.0   https://github.com/ruby/rdoc
+rdoc                7.2.0   https://github.com/ruby/rdoc 911b122a587e24f05434dbeb2c3e39cea607e21f
 win32ole            1.9.3   https://github.com/ruby/win32ole
 irb                 1.17.0  https://github.com/ruby/irb
 reline              0.6.3   https://github.com/ruby/reline

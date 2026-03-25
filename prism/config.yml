@@ -814,8 +814,6 @@ nodes:
           - GlobalVariableReadNode
           - BackReferenceReadNode
           - NumberedReferenceReadNode
-          - on error: SymbolNode # alias $a b
-          - on error: MissingNode # alias $a 42
         comment: |
           Represents the old name of the global variable that can be used before aliasing.
 
@@ -856,8 +854,6 @@ nodes:
         kind:
           - SymbolNode
           - InterpolatedSymbolNode
-          - on error: GlobalVariableReadNode # alias a $b
-          - on error: MissingNode # alias a 42
         comment: |
           Represents the old name of the method that will be aliased.
 
@@ -1871,7 +1867,6 @@ nodes:
         kind:
           - ConstantReadNode
           - ConstantPathNode
-          - on error: CallNode # class 0.X end
       - name: inheritance_operator_loc
         type: location?
         comment: |
@@ -2425,6 +2420,15 @@ nodes:
           ^^^^^^
             bar
           end
+  - name: ErrorRecoveryNode
+    fields:
+      - name: unexpected
+        type: node?
+        kind: Node
+        comment: |
+          The unexpected node that was found in the tree, if there was one.
+    comment: |
+      Represents a node that is either missing or unexpected and results in a syntax error.
   - name: FalseNode
     comment: |
       Represents the use of the literal `false` keyword.
@@ -2467,9 +2471,7 @@ nodes:
                                ^^^^^^
       - name: right
         type: node
-        kind:
-          - SplatNode
-          - on error: MissingNode
+        kind: SplatNode
         comment: |
           Represents the second wildcard node in the pattern.
 
@@ -2552,9 +2554,6 @@ nodes:
           - CallTargetNode
           - IndexTargetNode
           - MultiTargetNode
-          - on error: BackReferenceReadNode # for $& in a end
-          - on error: NumberedReferenceReadNode # for $1 in a end
-          - on error: MissingNode # for in 1..10; end
         comment: |
           The index expression for `for` loops.
 
@@ -3308,10 +3307,6 @@ nodes:
           - EmbeddedStatementsNode
           - EmbeddedVariableNode
           - InterpolatedStringNode # `"a" "#{b}"`
-          - on error: XStringNode # `<<`FOO` "bar"
-          - on error: InterpolatedXStringNode
-          - on error: SymbolNode
-          - on error: InterpolatedSymbolNode
       - name: closing_loc
         type: location?
     newline: parts
@@ -3689,9 +3684,6 @@ nodes:
 
           /(?<foo>bar)/ =~ baz
           ^^^^^^^^^^^^^^^^^^^^
-  - name: MissingNode
-    comment: |
-      Represents a node that is missing from the source and results in a syntax error.
   - name: ModuleNode
     fields:
       - name: locals
@@ -3703,7 +3695,6 @@ nodes:
         kind:
           - ConstantReadNode
           - ConstantPathNode
-          - on error: MissingNode # module Parent module end
       - name: body
         type: node?
         kind:
@@ -3733,8 +3724,6 @@ nodes:
           - IndexTargetNode
           - MultiTargetNode
           - RequiredParameterNode # def m((a,b)); end
-          - on error: BackReferenceReadNode # a, (b, $&) = z
-          - on error: NumberedReferenceReadNode # a, (b, $1) = z
         comment: |
           Represents the targets expressions before a splat node.
 
@@ -3778,8 +3767,6 @@ nodes:
           - IndexTargetNode
           - MultiTargetNode
           - RequiredParameterNode # def m((*,b)); end
-          - on error: BackReferenceReadNode # a, (*, $&) = z
-          - on error: NumberedReferenceReadNode # a, (*, $1) = z
         comment: |
           Represents the targets expressions after a splat node.
 
@@ -3823,8 +3810,6 @@ nodes:
           - CallTargetNode
           - IndexTargetNode
           - MultiTargetNode
-          - on error: BackReferenceReadNode # $&, = z
-          - on error: NumberedReferenceReadNode # $1, = z
         comment: |
           Represents the targets expressions before a splat node.
 
@@ -3867,8 +3852,6 @@ nodes:
           - CallTargetNode
           - IndexTargetNode
           - MultiTargetNode
-          - on error: BackReferenceReadNode # *, $& = z
-          - on error: NumberedReferenceReadNode # *, $1 = z
         comment: |
           Represents the targets expressions after a splat node.
 
@@ -4066,14 +4049,6 @@ nodes:
         kind:
           - RequiredParameterNode
           - MultiTargetNode
-          # On parsing error of `f(**kwargs, ...)` or `f(**nil, ...)`, the keyword_rest value is moved here:
-          - on error: KeywordRestParameterNode
-          - on error: NoKeywordsParameterNode
-          # On parsing error of `f(..., ...)`, the first forwarding parameter is moved here:
-          - on error: ForwardingParameterNode
-          # On parsing error of `f(&nil, &foo)`/`f(&foo, &nil)`, the first forwarding parameter is moved here:
-          - on error: BlockParameterNode
-          - on error: NoBlockParameterNode
       - name: keywords
         type: node[]
         kind:
@@ -4160,7 +4135,6 @@ nodes:
           - BackReferenceReadNode # foo in ^$&
           - NumberedReferenceReadNode # foo in ^$1
           - ItLocalVariableReadNode # proc { 1 in ^it }
-          - on error: MissingNode # foo in ^Bar
         comment: |
           The variable used in the pinned expression
 
@@ -4243,7 +4217,7 @@ nodes:
 
               1...foo
                   ^^^
-          If neither right-hand or left-hand side was included, this will be a MissingNode.
+          If neither right-hand or left-hand side was included, this will be an ErrorRecoveryNode.
       - name: operator_loc
         type: location
         comment: |
@@ -4358,9 +4332,6 @@ nodes:
           - ConstantPathTargetNode
           - CallTargetNode
           - IndexTargetNode
-          - on error: BackReferenceReadNode # => begin; rescue => $&; end
-          - on error: NumberedReferenceReadNode # => begin; rescue => $1; end
-          - on error: MissingNode # begin; rescue =>; end
       - name: then_keyword_loc
         type: location?
       - name: statements

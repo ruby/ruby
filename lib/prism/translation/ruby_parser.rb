@@ -1071,8 +1071,8 @@ module Prism
         # A node that is missing from the syntax tree. This is only used in the
         # case of a syntax error. The parser gem doesn't have such a concept, so
         # we invent our own here.
-        def visit_missing_node(node)
-          raise "Cannot visit missing node directly"
+        def visit_error_recovery_node(node)
+          raise "Cannot visit error recovery node directly"
         end
 
         # module Foo; end

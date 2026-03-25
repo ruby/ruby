@@ -6,7 +6,7 @@ use crate::backend::lir::Assembler;
 use crate::codegen::MAX_ISEQ_VERSIONS;
 use crate::cruby::*;
 use crate::hir::{Insn, iseq_to_hir};
-use crate::options::rb_zjit_prepare_options;
+use crate::options::{rb_zjit_prepare_options, set_call_threshold};
 use crate::payload::IseqVersion;
 use crate::hir::tests::hir_build_tests::assert_contains_opcode;
 use crate::payload::*;
@@ -4508,6 +4508,84 @@ fn test_opt_case_dispatch() {
 }
 
 #[test]
+fn test_checkmatch_case() {
+    eval(r#"
+        def test(o)
+          case o
+          in Integer
+            1
+          else
+            2
+          end
+        end
+    "#);
+    assert_contains_opcode("test", YARVINSN_checkmatch);
+    assert_snapshot!(inspect(r#"[test(1), test(2), test("3")]"#), @"[1, 1, 2]");
+}
+
+#[test]
+fn test_checkmatch_case_splat_array() {
+    eval(r#"
+        def test(o)
+          case o
+          when *[1, 2]
+            1
+          else
+            2
+          end
+        end
+    "#);
+    assert_contains_opcode("test", YARVINSN_checkmatch);
+    assert_snapshot!(inspect("[test(1), test(2), test(3)]"), @"[1, 1, 2]");
+}
+
+#[test]
+fn test_checkmatch_when_splat_array() {
+    eval(r#"
+        def test
+          case
+          when *[1, 2]
+            1
+          else
+            2
+          end
+        end
+    "#);
+    assert_contains_opcode("test", YARVINSN_checkmatch);
+    assert_snapshot!(inspect("[test, test]"), @"[1, 1]");
+}
+
+#[test]
+fn test_checkmatch_rescue() {
+    // Rescue behavior is tested functionally here. It still side-exits because
+    // JIT exception handling is not supported yet.
+    eval(r#"
+        def test
+          begin
+            raise TypeError
+          rescue TypeError
+            1
+          end
+        end
+    "#);
+    assert_snapshot!(inspect("[test, test]"), @"[1, 1]");
+}
+
+#[test]
+fn test_checkmatch_rescue_splat_array() {
+    eval(r#"
+        def test
+          begin
+            raise TypeError
+          rescue *[TypeError, ArgumentError]
+            1
+          end
+        end
+    "#);
+    assert_snapshot!(inspect("[test, test]"), @"[1, 1]");
+}
+
+#[test]
 fn test_stack_overflow() {
     assert_snapshot!(inspect("
         def recurse(n)
@@ -5179,4 +5257,34 @@ fn test_tracepoint_return_value_with_rescue() {
         ary.pop # last b_return event is not required
         ary
     "), @"[[:return, :f_raise, :f_raise_return]]");
+}
+
+// Regression test: polymorphic getivar must not return nil for too-complex shapes.
+// Too-complex shapes use hash tables for ivar storage, and rb_shape_get_iv_index()
+// doesn't work for them. The polymorphic path must fall through to GetIvar instead.
+#[test]
+fn test_polymorphic_getivar_too_complex_shape() {
+    // Need threshold >= 3 so both shapes get profiled before compilation
+    set_call_threshold(3);
+    assert_snapshot!(inspect(r#"
+        class C
+          def initialize(foo)
+            @foo = foo
+          end
+          def foo = @foo
+        end
+
+        # Create a normal object and a too-complex object of the same class
+        normal = C.new(:normal)
+        complex = C.new(:complex)
+        1001.times { |i| complex.instance_variable_set(:"@v#{i}", i) }
+        1001.times { |i| complex.remove_instance_variable(:"@v#{i}") }
+
+        # Profile with both shapes before compilation triggers at call 3
+        normal.foo  # call 1: profile normal shape
+        complex.foo # call 2: profile too-complex shape
+
+        # The too-complex object should still return :complex, not nil
+        [normal.foo, complex.foo]
+    "#), @"[:normal, :complex]");
 }

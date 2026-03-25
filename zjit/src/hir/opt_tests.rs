@@ -4514,7 +4514,10 @@ mod hir_opt_tests {
           v12:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(Hash@0x1008, new@0x1009, cme:0x1010)
           v46:HashExact = ObjectAllocClass Hash:VALUE(0x1008)
-          v19:BasicObject = Send v46, :initialize # SendFallbackReason: Complex argument passing
+          v47:Fixnum[0] = Const Value(0)
+          PatchPoint NoSingletonClass(Hash@0x1008)
+          PatchPoint MethodRedefined(Hash@0x1008, initialize@0x1038, cme:0x1040)
+          v51:BasicObject = SendDirect v46, 0x1068, :initialize (0x1078), v47
           CheckInterrupts
           Return v46
         ");
@@ -7443,7 +7446,206 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_dont_optimize_getivar_polymorphic() {
+    fn test_optimize_getivar_polymorphic() {
+        set_call_threshold(3);
+        eval(r#"
+            class C
+              def foo_then_bar
+                @foo = 1
+                @bar = 2
+              end
+
+              def bar_then_foo
+                1000.times { |i| instance_variable_set(:"@v#{i}", i) }
+                @bar = 3
+                @foo = 4
+              end
+
+              def foo = @foo + 1
+            end
+
+            O1 = C.new
+            O1.foo_then_bar
+            O2 = C.new
+            O2.bar_then_foo
+            O1.foo
+            O2.foo
+        "#);
+        assert_snapshot!(hir_string_proc("C.instance_method(:foo)"), @"
+        fn foo@<compiled>:14:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          v11:HeapBasicObject = GuardType v6, HeapBasicObject
+          v12:CShape = LoadField v11, :_shape_id@0x1000
+          v14:CShape[0x1001] = Const CShape(0x1001)
+          v15:CBool = IsBitEqual v12, v14
+          IfTrue v15, bb5()
+          v20:CShape[0x1002] = Const CShape(0x1002)
+          v21:CBool = IsBitEqual v12, v20
+          IfTrue v21, bb6()
+          v25:BasicObject = GetIvar v11, :@foo
+          Jump bb4(v25)
+        bb5():
+          v17:CPtr = LoadField v11, :_as_heap@0x1003
+          v18:BasicObject = LoadField v17, :@foo@0x1004
+          Jump bb4(v18)
+        bb6():
+          v23:BasicObject = LoadField v11, :@foo@0x1003
+          Jump bb4(v23)
+        bb4(v13:BasicObject):
+          v28:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
+          v39:Fixnum = GuardType v13, Fixnum
+          v40:Fixnum = FixnumAdd v39, v28
+          CheckInterrupts
+          Return v40
+        ");
+    }
+
+    #[test]
+    fn test_optimize_getivar_skewed_polymorphic() {
+        // Use threshold=6 so we get 5 profile samples.
+        // 4 calls with shape A, 1 with shape B = 80% skew (>= 75% threshold).
+        set_call_threshold(6);
+        eval(r#"
+            class C
+              def foo_then_bar
+                @foo = 1
+                @bar = 2
+              end
+
+              def bar_then_foo
+                1000.times { |i| instance_variable_set(:"@v#{i}", i) }
+                @bar = 3
+                @foo = 4
+              end
+
+              def foo = @foo + 1
+            end
+
+            O1 = C.new
+            O1.foo_then_bar
+            O2 = C.new
+            O2.bar_then_foo
+            O1.foo
+            O1.foo
+            O1.foo
+            O1.foo
+            O2.foo
+        "#);
+        assert_snapshot!(hir_string_proc("C.instance_method(:foo)"), @"
+        fn foo@<compiled>:14:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          v11:HeapBasicObject = GuardType v6, HeapBasicObject
+          v12:CShape = LoadField v11, :_shape_id@0x1000
+          v14:CShape[0x1001] = Const CShape(0x1001)
+          v15:CBool = IsBitEqual v12, v14
+          IfTrue v15, bb5()
+          v19:CShape[0x1002] = Const CShape(0x1002)
+          v20:CBool = IsBitEqual v12, v19
+          IfTrue v20, bb6()
+          v38:CShape = LoadField v11, :_shape_id@0x1000
+          v39:CShape[0x1001] = GuardBitEquals v38, CShape(0x1001)
+          v40:BasicObject = LoadField v11, :@foo@0x1003
+          Jump bb4(v40)
+        bb5():
+          v17:BasicObject = LoadField v11, :@foo@0x1003
+          Jump bb4(v17)
+        bb6():
+          v22:CPtr = LoadField v11, :_as_heap@0x1003
+          v23:BasicObject = LoadField v22, :@foo@0x1004
+          Jump bb4(v23)
+        bb4(v13:BasicObject):
+          v28:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
+          v43:Fixnum = GuardType v13, Fixnum
+          v44:Fixnum = FixnumAdd v43, v28
+          CheckInterrupts
+          Return v44
+        ");
+    }
+
+    #[test]
+    fn test_optimize_getivar_polymorphic_with_subclass() {
+        set_call_threshold(3);
+        eval(r#"
+            class C
+              def initialize
+                @foo = 3
+              end
+
+              def foo = @foo + 1
+            end
+
+            class D < C
+              def initialize
+                super
+                @bar = 4
+              end
+            end
+
+            O1 = C.new
+            O2 = D.new
+            O1.foo
+            O2.foo
+        "#);
+        assert_snapshot!(hir_string_proc("C.instance_method(:foo)"), @"
+        fn foo@<compiled>:7:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          v11:HeapBasicObject = GuardType v6, HeapBasicObject
+          v12:CShape = LoadField v11, :_shape_id@0x1000
+          v14:CShape[0x1001] = Const CShape(0x1001)
+          v15:CBool = IsBitEqual v12, v14
+          IfTrue v15, bb5()
+          v19:CShape[0x1002] = Const CShape(0x1002)
+          v20:CBool = IsBitEqual v12, v19
+          IfTrue v20, bb6()
+          v24:BasicObject = GetIvar v11, :@foo
+          Jump bb4(v24)
+        bb5():
+          v17:BasicObject = LoadField v11, :@foo@0x1003
+          Jump bb4(v17)
+        bb6():
+          v22:BasicObject = LoadField v11, :@foo@0x1003
+          Jump bb4(v22)
+        bb4(v13:BasicObject):
+          v27:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
+          v38:Fixnum = GuardType v13, Fixnum
+          v39:Fixnum = FixnumAdd v38, v27
+          CheckInterrupts
+          Return v39
+        ");
+    }
+
+    #[test]
+    fn test_dont_optimize_attr_accessor_polymorphic() {
         set_call_threshold(3);
         eval("
             class C
@@ -7730,6 +7932,67 @@ mod hir_opt_tests {
           v4:BasicObject = LoadArg :self@0
           Jump bb3(v4)
         bb3(v6:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v19:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)]
+          v20:BasicObject = SendDirect v19, 0x1038, :foo (0x1048)
+          CheckInterrupts
+          Return v20
+        ");
+    }
+
+    #[test]
+    fn test_send_iseq_with_block_param_no_block() {
+        let result = eval("
+            def foo(&blk)
+              blk ? blk.call : 42
+            end
+            def test = foo
+            test
+            test
+        ");
+        assert_eq!(VALUE::fixnum_from_usize(42), result);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v18:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)]
+          v19:BasicObject = SendDirect v18, 0x1038, :foo (0x1048)
+          CheckInterrupts
+          Return v19
+        ");
+    }
+
+    #[test]
+    fn test_send_bmethod_with_block_param_no_block() {
+        let result = eval("
+            define_method(:foo) { |&blk|
+              blk ? blk.call : 42
+            }
+            def test = foo
+            test
+            test
+        ");
+        assert_eq!(VALUE::fixnum_from_usize(42), result);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
           v19:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)]
           v20:BasicObject = SendDirect v19, 0x1038, :foo (0x1048)
@@ -13301,42 +13564,87 @@ mod hir_opt_tests {
     // NoSingletonClass optimization to avoid an invalidation loop.
     #[test]
     fn test_skip_optimization_after_singleton_class_seen() {
-        // First, trigger the singleton class callback for String by creating a singleton class.
-        // This should mark String as having had a singleton class seen.
+        // First, compile a function that uses the NoSingletonClass assumption
         eval(r#"
-            "hello".singleton_class
-        "#);
-
-        // Now define and compile a method that would normally be optimized with NoSingletonClass.
-        // Since String has had a singleton class, the optimization should be skipped and we
-        // should fall back to SendWithoutBlock.
-        eval(r#"
-            def test(s)
+            def test(s, proc)
+              s.length
+              proc.call
               s.length
             end
-            test("asdf")
+            test("hi", -> {})
+            test("hi", -> {})
+        "#);
+        let hir = hir_string("test");
+        assert!(hir.contains("NoSingletonClass(String"), "{hir}");
+
+        // Now we break the assumption by defining a singleton method on a string.
+        eval(r#"
+            special_string = +""
+            test(special_string, -> { def special_string.length = -1 })
         "#);
 
         // The output should NOT have NoSingletonClass patchpoint for String, and should
         // fall back to SendWithoutBlock instead of the optimized CCall path.
-        assert_snapshot!(hir_string("test"), @"
+        let hir = hir_string("test");
+        assert!(! hir.contains("NoSingletonClass(String"), "{hir}");
+        assert_snapshot!(hir, @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           v2:CPtr = LoadSP
           v3:BasicObject = LoadField v2, :s@0x1000
-          Jump bb3(v1, v3)
+          v4:BasicObject = LoadField v2, :proc@0x1001
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :s@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v16:BasicObject = Send v10, :length # SendFallbackReason: Singleton class previously created for receiver class
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :s@1
+          v9:BasicObject = LoadArg :proc@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          v19:BasicObject = Send v12, :length # SendFallbackReason: Singleton class previously created for receiver class
+          PatchPoint NoSingletonClass(Proc@0x1008)
+          PatchPoint MethodRedefined(Proc@0x1008, call@0x1010, cme:0x1018)
+          v40:ObjectSubclass[class_exact:Proc] = GuardType v13, ObjectSubclass[class_exact:Proc]
+          v41:BasicObject = InvokeProc v40
+          PatchPoint NoEPEscape(test)
+          v32:BasicObject = Send v12, :length # SendFallbackReason: Singleton class previously created for receiver class
           CheckInterrupts
-          Return v16
+          Return v32
         ");
+    }
+
+    #[test]
+    fn test_no_singleton_class_busts_isolated_per_iseq() {
+        // First, compile a function that uses the NoSingletonClass assumption
+        eval(r#"
+            def will_bust(s, proc)
+              s.length
+              proc.call
+              s.length
+            end
+
+            def call_length(s) = s.length
+
+            will_bust("hi", -> {})
+            will_bust("hi", -> {})
+        "#);
+        let hir = hir_string("will_bust");
+        assert!(hir.contains("NoSingletonClass(String"), "{hir}");
+
+        // Now we break the assumption by defining a singleton method on a string.
+        eval(r#"
+            special_string = +""
+            will_bust(special_string, -> { def special_string.length = -1 })
+        "#);
+        let hir = hir_string("will_bust");
+        assert!(! hir.contains("NoSingletonClas(String"), "{hir}");
+
+        // But, the unrelated call_length() should still use NoSingletonClass
+        eval("call_length('profile')");
+        let hir = hir_string("call_length");
+        assert!(hir.contains("NoSingletonClass"), "{hir}");
     }
 
     #[test]
