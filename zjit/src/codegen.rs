@@ -196,6 +196,10 @@ fn gen_iseq_entry_point(cb: &mut CodeBlock, iseq: IseqPtr, jit_exception: bool) 
 /// Invalidate an ISEQ version and allow it to be recompiled on the next call.
 /// Both PatchPoint invalidation and exit-profiling recompilation go through this
 /// function, serving as the central point for all invalidation/recompile decisions.
+///
+/// TODO: evolve this into a general `handle_event(iseq, event)` state machine that
+/// handles all compile lifecycle events (interpreter profiles, JIT profiles, invalidation,
+/// GC) so that all compile/recompile tuning decisions live in one place.
 pub fn invalidate_iseq_version(cb: &mut CodeBlock, iseq: IseqPtr, version: &mut IseqVersionRef) {
     let payload = get_or_create_iseq_payload(iseq);
     if unsafe { version.as_ref() }.status != IseqStatus::Invalidated
