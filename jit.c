@@ -20,6 +20,10 @@
 #include "internal/imemo.h"
 #include "ruby/internal/core/rtypeddata.h"
 
+#ifndef _WIN32
+#include <sys/mman.h>
+#endif
+
 enum jit_bindgen_constants {
     // Field offsets for the RObject struct
     ROBJECT_OFFSET_AS_HEAP_FIELDS = offsetof(struct RObject, as.heap.fields),

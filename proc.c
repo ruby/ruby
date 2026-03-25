@@ -2626,7 +2626,7 @@ method_clone(VALUE self)
     struct METHOD *orig, *data;
 
     TypedData_Get_Struct(self, struct METHOD, &method_data_type, orig);
-    clone = TypedData_Make_Struct(CLASS_OF(self), struct METHOD, &method_data_type, data);
+    clone = TypedData_Make_Struct(rb_obj_class(self), struct METHOD, &method_data_type, data);
     rb_obj_clone_setup(self, clone, Qnil);
     RB_OBJ_WRITE(clone, &data->recv, orig->recv);
     RB_OBJ_WRITE(clone, &data->klass, orig->klass);
@@ -2644,7 +2644,7 @@ method_dup(VALUE self)
     struct METHOD *orig, *data;
 
     TypedData_Get_Struct(self, struct METHOD, &method_data_type, orig);
-    clone = TypedData_Make_Struct(CLASS_OF(self), struct METHOD, &method_data_type, data);
+    clone = TypedData_Make_Struct(rb_obj_class(self), struct METHOD, &method_data_type, data);
     rb_obj_dup_setup(self, clone);
     RB_OBJ_WRITE(clone, &data->recv, orig->recv);
     RB_OBJ_WRITE(clone, &data->klass, orig->klass);

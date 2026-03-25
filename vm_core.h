@@ -1027,6 +1027,7 @@ STATIC_ASSERT(rb_vm_tag_buf_end,
 struct rb_unblock_callback {
     rb_unblock_function_t *func;
     void *arg;
+    rb_atomic_t event_serial;
 };
 
 struct rb_mutex_struct;

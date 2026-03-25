@@ -314,7 +314,7 @@ class TestMarshal < Test::Unit::TestCase
   def test_regexp2
     assert_equal(/\\u/, Marshal.load("\004\b/\b\\\\u\000"))
     assert_equal(/u/, Marshal.load("\004\b/\a\\u\000"))
-    assert_equal(/u/, Marshal.load("\004\bI/\a\\u\000\006:\016@encoding\"\vEUC-JP"))
+    assert_raise(FrozenError) { Marshal.load("\x04\bI/\x06u\x00\a:\x06EF:\t@fooi/") }
 
     bug2109 = '[ruby-core:25625]'
     a = "\x82\xa0".force_encoding(Encoding::Windows_31J)
@@ -988,7 +988,7 @@ class TestMarshal < Test::Unit::TestCase
     end
 
     def test_proc_returned_object_are_not_frozen
-      source = ["foo", {}, /foo/, 1..2]
+      source = ["foo", {}, 1..2]
       objects = Marshal.load(encode(source), ->(o) { o.dup }, freeze: true)
       assert_equal source, objects
       refute_predicate objects, :frozen?
@@ -1001,6 +1001,20 @@ class TestMarshal < Test::Unit::TestCase
       _objects = Marshal.load(encode([Object, Kernel]), freeze: true)
       refute_predicate Object, :frozen?
       refute_predicate Kernel, :frozen?
+    end
+
+    def test_linked_strings_are_frozen
+      str = "test"
+      str.instance_variable_set(:@self, str)
+      source = [str, str]
+
+      objects = Marshal.load(encode(source), freeze: true)
+      assert_predicate objects[0], :frozen?
+      assert_predicate objects[1], :frozen?
+      assert_same objects[0], objects[1]
+      assert_same objects[0], objects[0].instance_variable_get(:@self)
+      assert_same objects[1], objects[1].instance_variable_get(:@self)
+      assert_same objects[0].instance_variable_get(:@self), objects[1].instance_variable_get(:@self)
     end
   end
 end

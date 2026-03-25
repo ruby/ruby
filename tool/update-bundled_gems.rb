@@ -4,12 +4,15 @@ BEGIN {
   date = nil
   # STDOUT is not usable in inplace edit mode
   output = $-i ? STDOUT : STDERR
+  # Gems to skip auto-updating (e.g. when a new major version breaks CI)
+  pinned = %w[rbs]
 }
 output = STDERR if ARGF.file == STDIN
 END {
   output.print date.strftime("latest_date=%F") if date
 }
 if gem = $F[0]
+  next if pinned.include?(gem)
   ver = Gem::Version.new($F[1])
   (gem, src), = Gem::SpecFetcher.fetcher.detect(:latest) {|s|
     s.platform == "ruby" && s.name == gem

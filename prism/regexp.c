@@ -1,7 +1,18 @@
-#include "prism/regexp.h"
-#include "prism/diagnostic.h"
-#include "prism/util/pm_buffer.h"
-#include "prism/util/pm_strncasecmp.h"
+#include "prism/internal/regexp.h"
+
+#include "prism/compiler/inline.h"
+#include "prism/compiler/fallthrough.h"
+#include "prism/internal/buffer.h"
+#include "prism/internal/char.h"
+#include "prism/internal/diagnostic.h"
+#include "prism/internal/encoding.h"
+#include "prism/internal/memchr.h"
+#include "prism/internal/parser.h"
+#include "prism/internal/stringy.h"
+#include "prism/internal/strncasecmp.h"
+
+#include <assert.h>
+#include <string.h>
 
 /** The maximum depth of nested groups allowed in a regular expression. */
 #define PM_REGEXP_PARSE_DEPTH_MAX 4096
@@ -115,7 +126,7 @@ typedef struct {
  * (points into the original source), we can point to the exact error location.
  * Otherwise, we point to the whole regexp node.
  */
-static inline void
+static PRISM_INLINE void
 pm_regexp_parse_error(pm_regexp_parser_t *parser, const uint8_t *start, const uint8_t *end, const char *message) {
     pm_parser_t *pm = parser->parser;
     uint32_t loc_start, loc_length;
@@ -158,13 +169,13 @@ pm_regexp_parser_named_capture(pm_regexp_parser_t *parser, const uint8_t *start,
     pm_string_t string;
     pm_string_shared_init(&string, start, end);
     parser->name_callback(parser->parser, &string, parser->shared, parser->name_data);
-    pm_string_free(&string);
+    pm_string_cleanup(&string);
 }
 
 /**
  * Returns true if the next character is the end of the source.
  */
-static inline bool
+static PRISM_INLINE bool
 pm_regexp_char_is_eof(pm_regexp_parser_t *parser) {
     return parser->cursor >= parser->end;
 }
@@ -172,7 +183,7 @@ pm_regexp_char_is_eof(pm_regexp_parser_t *parser) {
 /**
  * Optionally accept a char and consume it if it exists.
  */
-static inline bool
+static PRISM_INLINE bool
 pm_regexp_char_accept(pm_regexp_parser_t *parser, uint8_t value) {
     if (!pm_regexp_char_is_eof(parser) && *parser->cursor == value) {
         parser->cursor++;
@@ -184,7 +195,7 @@ pm_regexp_char_accept(pm_regexp_parser_t *parser, uint8_t value) {
 /**
  * Expect a character to be present and consume it.
  */
-static inline bool
+static PRISM_INLINE bool
 pm_regexp_char_expect(pm_regexp_parser_t *parser, uint8_t value) {
     if (!pm_regexp_char_is_eof(parser) && *parser->cursor == value) {
         parser->cursor++;
@@ -216,7 +227,7 @@ pm_regexp_char_find(pm_regexp_parser_t *parser, uint8_t value) {
  * escape bytes >= 0x80 are followed by a non-hex-escape, this appends a 0x00
  * sentinel to separate the groups for later multibyte validation.
  */
-static inline void
+static PRISM_INLINE void
 pm_regexp_hex_group_boundary(pm_regexp_parser_t *parser) {
     if (parser->hex_group_active) {
         pm_buffer_append_byte(&parser->hex_escape_buffer, 0x00);
@@ -227,7 +238,7 @@ pm_regexp_hex_group_boundary(pm_regexp_parser_t *parser) {
 /**
  * Track a hex escape byte value >= 0x80 for multibyte validation.
  */
-static inline void
+static PRISM_INLINE void
 pm_regexp_track_hex_escape(pm_regexp_parser_t *parser, uint8_t byte) {
     if (byte >= 0x80) {
         pm_buffer_append_byte(&parser->hex_escape_buffer, byte);
@@ -244,7 +255,7 @@ pm_regexp_track_hex_escape(pm_regexp_parser_t *parser, uint8_t byte) {
 /**
  * Parse a hex digit character and return its value, or -1 if not a hex digit.
  */
-static inline int
+static PRISM_INLINE int
 pm_regexp_hex_digit_value(uint8_t byte) {
     if (byte >= '0' && byte <= '9') return byte - '0';
     if (byte >= 'a' && byte <= 'f') return byte - 'a' + 10;
@@ -1454,7 +1465,7 @@ pm_regexp_validate_encoding_modifier(pm_regexp_parser_t *parser, bool ascii_only
                 pm_buffer_t formatted = { 0 };
                 pm_regexp_format_for_error(&formatted, parser->encoding, (const uint8_t *) source_start, (size_t) source_length);
                 PM_REGEXP_ENCODING_ERROR(parser, PM_ERR_REGEXP_NON_ESCAPED_MBC, (int) formatted.length, (const char *) formatted.value);
-                pm_buffer_free(&formatted);
+                pm_buffer_cleanup(&formatted);
             }
         }
 
@@ -1595,7 +1606,7 @@ pm_regexp_validate_encoding(pm_regexp_parser_t *parser, bool ascii_only, pm_node
  * extraction walks the unescaped content since escape sequences in group names
  * (e.g., line continuations) have already been processed by the lexer.
  */
-PRISM_EXPORTED_FUNCTION pm_node_flags_t
+pm_node_flags_t
 pm_regexp_parse(pm_parser_t *parser, pm_regular_expression_node_t *node, pm_regexp_name_callback_t name_callback, pm_regexp_name_data_t *name_data) {
     const uint8_t *source = parser->start + node->content_loc.start;
     size_t size = node->content_loc.length;
@@ -1648,7 +1659,7 @@ pm_regexp_parse(pm_parser_t *parser, pm_regular_expression_node_t *node, pm_rege
     const char *error_source = (const char *) pm_string_source(&node->unescaped);
     int error_source_length = (int) pm_string_length(&node->unescaped);
     pm_node_flags_t encoding_flags = pm_regexp_validate_encoding(&regexp_parser, ascii_only, flags, error_source, error_source_length);
-    pm_buffer_free(&regexp_parser.hex_escape_buffer);
+    pm_buffer_cleanup(&regexp_parser.hex_escape_buffer);
 
     // Second pass: walk unescaped content for named capture extraction.
     if (name_callback != NULL) {
@@ -1702,5 +1713,5 @@ pm_regexp_parse_named_captures(pm_parser_t *parser, const uint8_t *source, size_
     };
 
     pm_regexp_parse_pattern(&regexp_parser);
-    pm_buffer_free(&regexp_parser.hex_escape_buffer);
+    pm_buffer_cleanup(&regexp_parser.hex_escape_buffer);
 }

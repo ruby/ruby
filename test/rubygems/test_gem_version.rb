@@ -200,6 +200,37 @@ class TestGemVersion < Gem::TestCase
     assert_less_than "1.0.0-1", "1"
   end
 
+  def test_sort_key_is_computed_on_regular_release
+    refute_nil v("9.8.7").send(:sort_key)
+  end
+
+  def test_sort_key_is_computed_on_security_release
+    refute_nil v("9.8.7.1").send(:sort_key)
+  end
+
+  def test_sort_key_is_not_computed_on_prerelease
+    assert_nil v("9.8.7.pre1").send(:sort_key)
+  end
+
+  def test_sort_key_is_not_computed_on_version_with_more_segments
+    assert_nil v("1.1.1.1.1.1.1").send(:sort_key)
+  end
+
+  def test_sort_key_is_not_computed_on_huge_numbers
+    assert_nil v("2.30.1.250000").send(:sort_key)
+  end
+
+  def test_sort_key_is_used_for_comparison
+    a = v("18.0.1")
+    b = v("18.0.2")
+
+    # Ensure the slow path isn't getting hit
+    a.instance_variable_set(:@version, nil)
+    a.instance_variable_set(:@canonical_segments, nil)
+
+    assert_operator(a, :<, b)
+  end
+
   # modifying the segments of a version should not affect the segments of the cached version object
   def test_segments
     v("9.8.7").segments[2] += 1

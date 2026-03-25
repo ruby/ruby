@@ -786,6 +786,7 @@ class_boot_boxable(VALUE super, bool boxable)
 
     class_associate_super(klass, super, true);
     if (super && !UNDEF_P(super)) {
+        RCLASS_SET_ALLOCATOR(klass, RCLASS_ALLOCATOR(super));
         rb_class_set_initialized(klass);
     }
 
@@ -1428,6 +1429,8 @@ void
 Init_class_hierarchy(void)
 {
     rb_cBasicObject = boot_defclass("BasicObject", 0);
+    RCLASS_SET_ALLOCATOR(rb_cBasicObject, rb_class_allocate_instance);
+    FL_SET_RAW(rb_cBasicObject, RCLASS_ALLOCATOR_DEFINED);
     rb_cObject = boot_defclass("Object", rb_cBasicObject);
     rb_vm_register_global_object(rb_cObject);
 

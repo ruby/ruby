@@ -71,7 +71,7 @@ struct rmatch_offset {
 struct rb_matchext_struct {
     /**
      * "Registers"  of a  match.   This  is a  quasi-opaque  struct that  holds
-     * execution result of a match.  Roughly resembles `&~`.
+     * execution result of a match.  Roughly resembles `$~`.
      */
     struct re_registers regs;
 

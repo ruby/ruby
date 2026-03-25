@@ -1,5 +1,7 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 /*
  * When prism is compiled as part of CRuby, the xmalloc/xfree/etc. macros are
@@ -14,6 +16,15 @@ void ruby_xfree(void *ptr) { free(ptr); }
 
 #include "prism.h"
 
+static void
+print_error(const pm_diagnostic_t *diagnostic, void *data)
+{
+    const pm_parser_t *parser = (const pm_parser_t *) data;
+    pm_location_t loc = pm_diagnostic_location(diagnostic);
+    const pm_line_column_t line_column = pm_line_offset_list_line_column(pm_parser_line_offsets(parser), loc.start, pm_parser_start_line(parser));
+    fprintf(stderr, "%" PRIi32 ":%" PRIu32 ":%s\n", line_column.line, line_column.column, pm_diagnostic_message(diagnostic));
+}
+
 int
 main(int argc, const char *argv[]) {
     if (argc != 2) {
@@ -22,43 +33,43 @@ main(int argc, const char *argv[]) {
     }
 
     const char *filepath = argv[1];
-    pm_string_t input;
+    pm_source_init_result_t init_result;
+    pm_source_t *source = pm_source_mapped_new(filepath, 0, &init_result);
 
-    if (pm_string_mapped_init(&input, filepath) != PM_STRING_INIT_SUCCESS) {
+    if (init_result != PM_SOURCE_INIT_SUCCESS)
+    {
         fprintf(stderr, "unable to map file: %s\n", filepath);
         return EXIT_FAILURE;
     }
 
-    pm_options_t options = { 0 };
-    pm_options_line_set(&options, 1);
-    pm_options_filepath_set(&options, filepath);
+    pm_options_t *options = pm_options_new();
+    pm_options_line_set(options, 1);
+    pm_options_filepath_set(options, filepath);
 
-    pm_arena_t arena = { 0 };
-    pm_parser_t parser;
-    pm_parser_init(&arena, &parser, pm_string_source(&input), pm_string_length(&input), &options);
+    pm_arena_t *arena = pm_arena_new();
+    pm_parser_t *parser = pm_parser_new(arena, pm_source_source(source), pm_source_length(source), options);
 
-    pm_node_t *node = pm_parse(&parser);
+    pm_node_t *node = pm_parse(parser);
     int exit_status;
 
-    if (parser.error_list.size > 0) {
+    if (pm_parser_errors_size(parser) > 0)
+    {
         fprintf(stderr, "error parsing %s\n", filepath);
-        for (const pm_diagnostic_t *diagnostic = (const pm_diagnostic_t *) parser.error_list.head; diagnostic != NULL; diagnostic = (const pm_diagnostic_t *) diagnostic->node.next) {
-            const pm_line_column_t line_column = pm_line_offset_list_line_column(&parser.line_offsets, diagnostic->location.start, parser.start_line);
-            fprintf(stderr, "%" PRIi32 ":%" PRIu32 ":%s\n", line_column.line, line_column.column, diagnostic->message);
-        }
+        pm_parser_errors_each(parser, print_error, parser);
         exit_status = EXIT_FAILURE;
-    } else {
-        pm_buffer_t json = { 0 };
-        pm_dump_json(&json, &parser, node);
-        printf("%.*s\n", (int) pm_buffer_length(&json), pm_buffer_value(&json));
-        pm_buffer_free(&json);
+    }
+    else {
+        pm_buffer_t *json = pm_buffer_new();
+        pm_dump_json(json, parser, node);
+        printf("%.*s\n", (int) pm_buffer_length(json), pm_buffer_value(json));
+        pm_buffer_free(json);
         exit_status = EXIT_SUCCESS;
     }
 
-    pm_parser_free(&parser);
-    pm_arena_free(&arena);
-    pm_string_free(&input);
-    pm_options_free(&options);
+    pm_parser_free(parser);
+    pm_arena_free(arena);
+    pm_source_free(source);
+    pm_options_free(options);
 
     return exit_status;
 }

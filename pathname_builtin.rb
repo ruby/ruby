@@ -236,10 +236,18 @@ class Pathname
     self
   end
 
+  # call-seq:
+  #   self == other -> true or false
   #
-  # Compare this pathname with +other+.  The comparison is string-based.
-  # Be aware that two different paths (<tt>foo.txt</tt> and <tt>./foo.txt</tt>)
-  # can refer to the same file.
+  # Returns whether the stored paths in +self+ and +other+ are equal:
+  #
+  #   pn = Pathname.new('lib')
+  #   pn == Pathname.new('lib')   # => true
+  #   pn == Pathname.new('./lib') # => false
+  #
+  # Returns +false+ if +other+ is not a pathname:
+  #
+  #   pn == 'lib'                 # => false
   #
   def ==(other)
     return false unless Pathname === other
@@ -628,17 +636,19 @@ class Pathname
     chop_basename(@path) == nil && SEPARATOR_PAT.match?(@path)
   end
 
-  # Predicate method for testing whether a path is absolute.
+  # call-seq:
+  #   absolute? -> true or false
   #
-  # It returns +true+ if the pathname begins with a slash.
+  # Returns whether +self+ contains an absolute path:
   #
-  #   p = Pathname.new('/im/sure')
-  #   p.absolute?
-  #       #=> true
+  #   Pathname.new('/home').absolute? # => true
+  #   Pathname.new('lib').absolute?   # => false
   #
-  #   p = Pathname.new('not/so/sure')
-  #   p.absolute?
-  #       #=> false
+  # OS-dependent for some paths:
+  #
+  #   Pathname.new('C:/').absolute?   # => true   # On Windows.
+  #   Pathname.new('C:/').absolute?   # => false  # Elsewhere.
+  #
   def absolute?
     ABSOLUTE_PATH.match? @path
   end
@@ -711,31 +721,22 @@ class Pathname
     nil
   end
 
-  # Iterates over and yields a new Pathname object
-  # for each element in the given path in ascending order.
+  # call-seq:
+  #   ascend {|entry| ... } -> nil
+  #   ascend -> new_enumerator
   #
-  #  Pathname.new('/path/to/some/file.rb').ascend {|v| p v}
-  #     #<Pathname:/path/to/some/file.rb>
-  #     #<Pathname:/path/to/some>
-  #     #<Pathname:/path/to>
-  #     #<Pathname:/path>
-  #     #<Pathname:/>
+  # With a block given,
+  # yields +self+, then a new pathname for each successive dirname in the stored path;
+  # see File.dirname:
   #
-  #  Pathname.new('path/to/some/file.rb').ascend {|v| p v}
-  #     #<Pathname:path/to/some/file.rb>
-  #     #<Pathname:path/to/some>
-  #     #<Pathname:path/to>
-  #     #<Pathname:path>
+  #   Pathname.new('/path/to/some/file.rb').ascend {|dirname| p dirname}
+  #   #<Pathname:/path/to/some/file.rb>
+  #   #<Pathname:/path/to/some>
+  #   #<Pathname:/path/to>
+  #   #<Pathname:/path>
+  #   #<Pathname:/>
   #
-  # Returns an Enumerator if no block was given.
-  #
-  #   enum = Pathname.new("/usr/bin/ruby").ascend
-  #     # ... do stuff ...
-  #   enum.each { |e| ... }
-  #     # yields Pathnames /usr/bin/ruby, /usr/bin, /usr, and /.
-  #
-  # It doesn't access the filesystem.
-  #
+  # With no block given, returns a new Enumerator.
   def ascend
     return to_enum(__method__) unless block_given?
     path = @path
@@ -750,8 +751,14 @@ class Pathname
   # call-seq:
   #   self + other -> new_pathname
   #
-  # Returns a new \Pathname object;
-  # argument +other+ may be a string or another pathname.
+  # Returns a new \Pathname object based on the content of +self+ and +other+;
+  # argument +other+ may be a String, a File, a Dir, or another \Pathname:
+  #
+  #   pn = Pathname.new('foo') # => #<Pathname:foo>
+  #   pn + 'bar'               # => #<Pathname:foo/bar>
+  #   pn + File.new('LEGAL')   # => #<Pathname:foo/LEGAL>
+  #   pn + Dir.new('lib')      # => #<Pathname:foo/lib>
+  #   pn + Pathname.new('bar') # => #<Pathname:foo/bar>
   #
   # When +other+ specifies a relative path (see #relative?),
   # it is combined with +self+ to form a new pathname:
@@ -1035,7 +1042,20 @@ class Pathname    # * File *
   # See File.binwrite.
   def binwrite(...) File.binwrite(@path, ...) end
 
-  # See <tt>File.atime</tt>.  Returns last access time.
+  # call-seq:
+  #   atime -> new_time
+  #
+  # Returns a new Time object containing the time of the most recent
+  # access (read or write) to the entry;
+  # via File.atime:
+  #
+  #   pn = Pathname.new('t.tmp')
+  #   pn.write('foo')
+  #   pn.atime # => 2026-03-22 13:49:44.5165608 -0500
+  #   pn.read  # => "foo"
+  #   pn.atime # => 2026-03-22 13:49:57.5359349 -0500
+  #   pn.delete
+  #
   def atime() File.atime(@path) end
 
   # Returns the birth time for the file.

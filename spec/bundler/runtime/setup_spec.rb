@@ -303,6 +303,32 @@ RSpec.describe "Bundler.setup" do
         expect(out).to eq("WIN")
       end
     end
+
+    context "user sets it via `config set --local gemfile`" do
+      it "uses the value in the config" do
+        gemfile <<-G
+          source "https://gem.repo1"
+          gem "myrack"
+        G
+
+        gemfile bundled_app("CustomGemfile"), <<-G
+          source "https://gem.repo1"
+          gem "activesupport", "2.3.5"
+        G
+
+        bundle "config set --local gemfile #{bundled_app("CustomGemfile")}"
+        bundle "install"
+
+        ruby <<-R
+          require 'bundler'
+          Bundler.setup
+          require 'activesupport'
+          puts ACTIVESUPPORT
+        R
+
+        expect(out).to eq("2.3.5")
+      end
+    end
   end
 
   it "prioritizes gems in BUNDLE_PATH over gems in GEM_HOME" do
