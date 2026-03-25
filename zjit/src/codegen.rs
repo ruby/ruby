@@ -561,6 +561,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::NewRange { low, high, flag, state } => gen_new_range(jit, asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::NewRangeFixnum { low, high, flag, state } => gen_new_range_fixnum(asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::ArrayDup { val, state } => gen_array_dup(asm, opnd!(val), &function.frame_state(*state)),
+        Insn::AdjustBounds { index, length } => gen_adjust_bounds(asm, opnd!(index), opnd!(length)),
         Insn::ArrayAref { array, index, .. } => gen_array_aref(asm, opnd!(array), opnd!(index)),
         Insn::ArrayAset { array, index, val } => {
             no_output!(gen_array_aset(asm, opnd!(array), opnd!(index), opnd!(val)))
@@ -1789,6 +1790,14 @@ fn gen_new_array(
         gen_pop_opnds(asm, &elements);
         new_array
     }
+}
+
+/// Adjust potentially-negative index by the given length, returning the adjusted index. If still negative,
+/// return a negative number, which indicates the index is still out-of-bounds.
+fn gen_adjust_bounds(asm: &mut Assembler, index: Opnd, length: Opnd) -> lir::Opnd {
+    let adjusted = asm.add(index, length);
+    asm.test(index, index);
+    asm.csel_l(adjusted, index)
 }
 
 /// Compile array access (`array[index]`)

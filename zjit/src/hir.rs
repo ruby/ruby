@@ -806,6 +806,9 @@ pub enum Insn {
     ArrayPop { array: InsnId, state: InsnId },
     /// Return the length of the array as a C `long` ([`types::CInt64`])
     ArrayLength { array: InsnId },
+    /// Adjust potentially-negative index by the given length, returning the adjusted index. If
+    /// still negative, return a negative number, which indicates the index is still out-of-bounds.
+    AdjustBounds { index: InsnId, length: InsnId },
 
     HashAref { hash: InsnId, key: InsnId, state: InsnId },
     HashAset { hash: InsnId, key: InsnId, val: InsnId, state: InsnId },
@@ -1270,6 +1273,10 @@ macro_rules! for_each_operand_impl {
             Insn::ArrayLength { array } => {
                 $visit_one!(array);
             }
+            Insn::AdjustBounds { index, length } => {
+                $visit_one!(index);
+                $visit_one!(length);
+            }
             Insn::HashAref { hash, key, state } => {
                 $visit_one!(hash);
                 $visit_one!(key);
@@ -1472,6 +1479,7 @@ impl Insn {
             Insn::ArrayAset { .. } => effects::Any,
             Insn::ArrayPop { ..  } => effects::Any,
             Insn::ArrayLength { .. } => Effect::write(abstract_heaps::Empty),
+            Insn::AdjustBounds { .. } => effects::Empty,
             Insn::HashAref { .. } => effects::Any,
             Insn::HashAset { .. } => effects::Any,
             Insn::HashDup { .. } => allocates,
@@ -1712,6 +1720,9 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::ArrayLength { array } => {
                 write!(f, "ArrayLength {array}")
+            }
+            Insn::AdjustBounds { index, length } => {
+                write!(f, "AdjustBounds {index}, {length}")
             }
             Insn::NewHash { elements, .. } => {
                 write!(f, "NewHash")?;
@@ -2806,6 +2817,7 @@ impl Function {
             &ArrayAset { array, index, val } => ArrayAset { array: find!(array), index: find!(index), val: find!(val) },
             &ArrayPop { array, state } => ArrayPop { array: find!(array), state: find!(state) },
             &ArrayLength { array } => ArrayLength { array: find!(array) },
+            &AdjustBounds { index, length } => AdjustBounds { index: find!(index), length: find!(length) },
             &ArrayMax { ref elements, state } => ArrayMax { elements: find_vec!(elements), state: find!(state) },
             &ArrayInclude { ref elements, target, state } => ArrayInclude { elements: find_vec!(elements), target: find!(target), state: find!(state) },
             &ArrayPackBuffer { ref elements, fmt, buffer, state } => ArrayPackBuffer { elements: find_vec!(elements), fmt: find!(fmt), buffer: find!(buffer), state: find!(state) },
@@ -2923,6 +2935,7 @@ impl Function {
             Insn::ArrayAref { .. } => types::BasicObject,
             Insn::ArrayPop { .. } => types::BasicObject,
             Insn::ArrayLength { .. } => types::CInt64,
+            Insn::AdjustBounds { .. } => types::CInt64,
             Insn::HashAref { .. } => types::BasicObject,
             Insn::NewHash { .. } => types::HashExact,
             Insn::HashDup { .. } => types::HashExact,
@@ -5281,6 +5294,16 @@ impl Function {
                             _ => insn_id,
                         }
                     }
+                    Insn::AdjustBounds { index, .. } => {
+                        // If index is known nonnegative, then we don't need to adjust bounds.
+                        if self.type_of(index).cint64_value().filter(|&i| i >= 0).is_some() {
+                            self.make_equal_to(insn_id, index);
+                            // Don't bother re-inferring the type of index; we already know it.
+                            continue;
+                        } else {
+                            insn_id
+                        }
+                    }
                     Insn::Test { val } if self.type_of(val).is_known_falsy() => {
                         self.new_insn(Insn::Const { val: Const::CBool(false) })
                     }
@@ -6062,6 +6085,10 @@ impl Function {
             Insn::ArrayAset { array, index, .. } => {
                 self.assert_subtype(insn_id, array, types::ArrayExact)?;
                 self.assert_subtype(insn_id, index, types::CInt64)
+            }
+            Insn::AdjustBounds { index, length } => {
+                self.assert_subtype(insn_id, index, types::CInt64)?;
+                self.assert_subtype(insn_id, length, types::CInt64)
             }
             // Instructions with Hash operands
             Insn::HashAref { hash, .. }
