@@ -2278,7 +2278,7 @@ fn test_opt_new_invalidate_new() {
 fn test_opt_newarray_send_include_p() {
     eval("
         def test(x)
-            [:y, 1, Object.new].include?(x)
+          [:y, 1, Object.new].include?(x)
         end
         test(1)
     ");
@@ -2290,19 +2290,19 @@ fn test_opt_newarray_send_include_p() {
 fn test_opt_newarray_send_include_p_redefined() {
     eval("
         class Array
-            alias_method :old_include?, :include?
-            def include?(x)
-                old_include?(x) ? :true : :false
-            end
+          alias_method :old_include?, :include?
+          def include?(x)
+            old_include?(x) ? :true : :false
+          end
         end
         def test(x)
-            [:y, 1, Object.new].include?(x)
+          [:y, 1, Object.new].include?(x)
         end
     ");
     assert_contains_opcode("test", YARVINSN_opt_newarray_send);
     assert_snapshot!(inspect("
         def test(x)
-            [:y, 1, Object.new].include?(x)
+          [:y, 1, Object.new].include?(x)
         end
         test(1)
         [test(1), test(\"n\")]
@@ -2313,7 +2313,7 @@ fn test_opt_newarray_send_include_p_redefined() {
 fn test_opt_duparray_send_include_p() {
     eval("
         def test(x)
-            [:y, 1].include?(x)
+          [:y, 1].include?(x)
         end
         test(1)
     ");
@@ -2325,19 +2325,19 @@ fn test_opt_duparray_send_include_p() {
 fn test_opt_duparray_send_include_p_redefined() {
     eval("
         class Array
-            alias_method :old_include?, :include?
-            def include?(x)
-                old_include?(x) ? :true : :false
-            end
+          alias_method :old_include?, :include?
+          def include?(x)
+            old_include?(x) ? :true : :false
+          end
         end
         def test(x)
-            [:y, 1].include?(x)
+          [:y, 1].include?(x)
         end
     ");
     assert_contains_opcode("test", YARVINSN_opt_duparray_send);
     assert_snapshot!(inspect("
         def test(x)
-            [:y, 1].include?(x)
+          [:y, 1].include?(x)
         end
         test(1)
         [test(1), test(\"n\")]
@@ -2348,7 +2348,7 @@ fn test_opt_duparray_send_include_p_redefined() {
 fn test_opt_newarray_send_pack_buffer() {
     eval(r#"
         def test(num, buffer)
-            [num].pack('C', buffer:)
+          [num].pack('C', buffer:)
         end
         test(65, "")
     "#);
@@ -2363,20 +2363,20 @@ fn test_opt_newarray_send_pack_buffer() {
 fn test_opt_newarray_send_pack_buffer_redefined() {
     eval(r#"
         class Array
-            alias_method :old_pack, :pack
-            def pack(fmt, buffer: nil)
-                old_pack(fmt, buffer: buffer)
-                "b"
-            end
+          alias_method :old_pack, :pack
+          def pack(fmt, buffer: nil)
+            old_pack(fmt, buffer: buffer)
+            "b"
+          end
         end
         def test(num, buffer)
-            [num].pack('C', buffer:)
+          [num].pack('C', buffer:)
         end
     "#);
     assert_contains_opcode("test", YARVINSN_opt_newarray_send);
     assert_snapshot!(inspect(r#"
         def test(num, buffer)
-            [num].pack('C', buffer:)
+          [num].pack('C', buffer:)
         end
         buf = ""
         test(65, buf)
@@ -2389,7 +2389,7 @@ fn test_opt_newarray_send_pack_buffer_redefined() {
 fn test_opt_newarray_send_hash() {
     eval("
         def test(x)
-            [1, 2, x].hash
+          [1, 2, x].hash
         end
         test(20)
     ");
@@ -2402,7 +2402,7 @@ fn test_opt_newarray_send_hash_redefined() {
     eval("
         Array.class_eval { def hash = 42 }
         def test(x)
-            [1, 2, x].hash
+          [1, 2, x].hash
         end
         test(20)
     ");
@@ -2424,10 +2424,10 @@ fn test_opt_newarray_send_max() {
 fn test_opt_newarray_send_max_redefined() {
     eval("
         class Array
-            alias_method :old_max, :max
-            def max
-                old_max * 2
-            end
+          alias_method :old_max, :max
+          def max
+            old_max * 2
+          end
         end
         def test(a,b) = [a,b].max
     ");
@@ -2453,11 +2453,11 @@ fn test_new_hash_empty() {
 fn test_new_hash_nonempty() {
     eval(r#"
         def test
-            key = "key"
-            value = "value"
-            num = 42
-            result = 100
-            {key => value, num => result}
+          key = "key"
+          value = "value"
+          num = 42
+          result = 100
+          {key => value, num => result}
         end
         test
     "#);
@@ -2479,7 +2479,7 @@ fn test_new_hash_single_key_value() {
 fn test_new_hash_with_computation() {
     eval(r#"
         def test(a, b)
-            {"sum" => a + b, "product" => a * b}
+          {"sum" => a + b, "product" => a * b}
         end
         test(2, 3)
     "#);
@@ -2491,21 +2491,21 @@ fn test_new_hash_with_computation() {
 fn test_new_hash_with_user_defined_hash_method() {
     assert_snapshot!(inspect(r#"
         class CustomKey
-            attr_reader :val
-            def initialize(val)
-                @val = val
-            end
-            def hash
-                @val.hash
-            end
-            def eql?(other)
-                other.is_a?(CustomKey) && @val == other.val
-            end
+          attr_reader :val
+          def initialize(val)
+            @val = val
+          end
+          def hash
+            @val.hash
+          end
+          def eql?(other)
+            other.is_a?(CustomKey) && @val == other.val
+          end
         end
         def test
-            key = CustomKey.new("key")
-            hash = {key => "value"}
-            hash[key] == "value"
+          key = CustomKey.new("key")
+          hash = {key => "value"}
+          hash[key] == "value"
         end
         test
         test
@@ -2516,23 +2516,23 @@ fn test_new_hash_with_user_defined_hash_method() {
 fn test_new_hash_with_user_hash_method_exception() {
     assert_snapshot!(inspect(r#"
         class BadKey
-            def hash
-                raise "Hash method failed!"
-            end
+          def hash
+            raise "Hash method failed!"
+          end
         end
         def test
-            key = BadKey.new
-            {key => "value"}
+          key = BadKey.new
+          {key => "value"}
         end
         begin
-            test
+          test
         rescue => e
-            e.class
+          e.class
         end
         begin
-            test
+          test
         rescue => e
-            e.class
+          e.class
         end
     "#), @"RuntimeError");
 }
@@ -2541,27 +2541,27 @@ fn test_new_hash_with_user_hash_method_exception() {
 fn test_new_hash_with_user_eql_method_exception() {
     assert_snapshot!(inspect(r#"
         class BadKey
-            def hash
-                42
-            end
-            def eql?(other)
-                raise "Eql method failed!"
-            end
+          def hash
+            42
+          end
+          def eql?(other)
+            raise "Eql method failed!"
+          end
         end
         def test
-            key1 = BadKey.new
-            key2 = BadKey.new
-            {key1 => "value1", key2 => "value2"}
+          key1 = BadKey.new
+          key2 = BadKey.new
+          {key1 => "value1", key2 => "value2"}
         end
         begin
-            test
+          test
         rescue => e
-            e.class
+          e.class
         end
         begin
-            test
+          test
         rescue => e
-            e.class
+          e.class
         end
     "#), @"RuntimeError");
 }
@@ -2586,7 +2586,7 @@ fn test_opt_hash_freeze() {
 fn test_opt_hash_freeze_rewritten() {
     eval("
         class Hash
-            def freeze = 5
+          def freeze = 5
         end
         def test = {}.freeze
         test
@@ -2599,7 +2599,7 @@ fn test_opt_hash_freeze_rewritten() {
 fn test_opt_aset_hash() {
     eval("
         def test(h, k, v)
-            h[k] = v
+          h[k] = v
         end
         test({}, :key, 42)
     ");
@@ -2611,7 +2611,7 @@ fn test_opt_aset_hash() {
 fn test_opt_aset_hash_returns_value() {
     assert_snapshot!(inspect("
         def test(h, k, v)
-            h[k] = v
+          h[k] = v
         end
         test({}, :key, 100)
         test({}, :key, 100)
@@ -2622,7 +2622,7 @@ fn test_opt_aset_hash_returns_value() {
 fn test_opt_aset_hash_string_key() {
     assert_snapshot!(inspect(r#"
         def test(h, k, v)
-            h[k] = v
+          h[k] = v
         end
         h = {}
         test(h, "foo", "bar")
@@ -2636,7 +2636,7 @@ fn test_opt_aset_hash_subclass() {
     assert_snapshot!(inspect("
         class MyHash < Hash; end
         def test(h, k, v)
-            h[k] = v
+          h[k] = v
         end
         h = MyHash.new
         test(h, :key, 42)
@@ -2649,9 +2649,9 @@ fn test_opt_aset_hash_subclass() {
 fn test_opt_aset_hash_too_few_args() {
     assert_snapshot!(inspect(r#"
         def test(h)
-            h.[]= 123
+          h.[]= 123
         rescue ArgumentError
-            "ArgumentError"
+          "ArgumentError"
         end
         test({})
         test({})
@@ -2662,9 +2662,9 @@ fn test_opt_aset_hash_too_few_args() {
 fn test_opt_aset_hash_too_many_args() {
     assert_snapshot!(inspect(r#"
         def test(h)
-            h[:a, :b] = :c
+          h[:a, :b] = :c
         rescue ArgumentError
-            "ArgumentError"
+          "ArgumentError"
         end
         test({})
         test({})
@@ -2691,7 +2691,7 @@ fn test_opt_ary_freeze() {
 fn test_opt_ary_freeze_rewritten() {
     eval("
         class Array
-            def freeze = 5
+          def freeze = 5
         end
         def test = [].freeze
         test
@@ -2720,7 +2720,7 @@ fn test_opt_str_freeze() {
 fn test_opt_str_freeze_rewritten() {
     eval("
         class String
-            def freeze = 5
+          def freeze = 5
         end
         def test = ''.freeze
         test
@@ -2749,7 +2749,7 @@ fn test_opt_str_uminus() {
 fn test_opt_str_uminus_rewritten() {
     eval("
         class String
-            def -@ = 5
+          def -@ = 5
         end
         def test = -''
         test
@@ -2857,9 +2857,9 @@ fn test_array_aref_non_fixnum_index() {
         test([1,2,3], 1)
         test([1,2,3], 1)
         begin
-            test([1,2,3], "1")
+          test([1,2,3], "1")
         rescue => e
-            e.class
+          e.class
         end
     "#), @"TypeError");
 }
@@ -2868,7 +2868,7 @@ fn test_array_aref_non_fixnum_index() {
 fn test_array_fixnum_aset() {
     eval("
         def test(arr, idx)
-            arr[idx] = 7
+          arr[idx] = 7
         end
         test([1,2,3], 2)
     ");
@@ -2880,7 +2880,7 @@ fn test_array_fixnum_aset() {
 fn test_array_fixnum_aset_returns_value() {
     eval("
         def test(arr, idx)
-            arr[idx] = 7
+          arr[idx] = 7
         end
         test([1,2,3], 2)
     ");
@@ -2892,7 +2892,7 @@ fn test_array_fixnum_aset_returns_value() {
 fn test_array_fixnum_aset_out_of_bounds() {
     assert_snapshot!(inspect("
         def test(arr)
-            arr[5] = 7
+          arr[5] = 7
         end
         arr = [1,2,3]
         test(arr)
@@ -2906,7 +2906,7 @@ fn test_array_fixnum_aset_out_of_bounds() {
 fn test_array_fixnum_aset_negative_index() {
     assert_snapshot!(inspect("
         def test(arr)
-            arr[-1] = 7
+          arr[-1] = 7
         end
         arr = [1,2,3]
         test(arr)
@@ -2920,7 +2920,7 @@ fn test_array_fixnum_aset_negative_index() {
 fn test_array_fixnum_aset_shared() {
     assert_snapshot!(inspect("
         def test(arr, idx, val)
-            arr[idx] = val
+          arr[idx] = val
         end
         arr = (0..50).to_a
         test(arr, 0, -1)
@@ -2935,16 +2935,16 @@ fn test_array_fixnum_aset_shared() {
 fn test_array_fixnum_aset_frozen() {
     assert_snapshot!(inspect("
         def test(arr, idx, val)
-            arr[idx] = val
+          arr[idx] = val
         end
         arr = [1,2,3]
         test(arr, 1, 9)
         test(arr, 1, 9)
         arr.freeze
         begin
-            test(arr, 1, 9)
+          test(arr, 1, 9)
         rescue => e
-            e.class
+          e.class
         end
     "), @"FrozenError");
 }
@@ -2954,7 +2954,7 @@ fn test_array_fixnum_aset_array_subclass() {
     eval("
         class MyArray < Array; end
         def test(arr, idx)
-            arr[idx] = 7
+          arr[idx] = 7
         end
         test(MyArray.new, 0)
     ");
@@ -2966,14 +2966,14 @@ fn test_array_fixnum_aset_array_subclass() {
 fn test_array_aset_non_fixnum_index() {
     assert_snapshot!(inspect(r#"
         def test(arr, idx)
-            arr[idx] = 7
+          arr[idx] = 7
         end
         test([1,2,3], 0)
         test([1,2,3], 0)
         begin
-            test([1,2,3], "0")
+          test([1,2,3], "0")
         rescue => e
-            e.class
+          e.class
         end
     "#), @"TypeError");
 }
