@@ -46,7 +46,7 @@ jobs:
       || contains(github.event.head_commit.message, '[DOC]')
       || contains(github.event.pull_request.title, '[DOC]')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
-      || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
+      || (github.event.pull_request.user.login == 'dependabot[bot]' && !startsWith(github.head_ref, 'dependabot/vcpkg'))
       )}}
 
     name: Windows ${{ matrix.os }}/Visual C++ ${{ matrix.vc }} (${{ matrix.test_task }})

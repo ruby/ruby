@@ -33,6 +33,7 @@ module Spec
         "spec/bundler/source/git/git_proxy_spec.rb",
         "spec/bundler/source_list_spec.rb",
         "spec/bundler/plugin/installer_spec.rb",
+        "spec/bundler/errors_spec.rb",
         "spec/bundler/friendly_errors_spec.rb",
         "spec/resolver/platform_spec.rb",
         "spec/bundler/fetcher/downloader_spec.rb",

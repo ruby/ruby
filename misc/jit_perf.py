@@ -22,8 +22,7 @@ def categorize_symbol(dso, symbol):
         return '[sha256]'
     elif symbol.startswith('[JIT] gen_send'):
         return '[JIT send]'
-    # TODO: Stop using zjit:: as the prefix for JIT code. Rust modules and JIT code should use different namespaces.
-    elif symbol.startswith('[JIT]') or (symbol.startswith('zjit::') and '@') or symbol == 'zjit::ZJIT entry trampoline':
+    elif symbol.startswith('[JIT]') or symbol.startswith('ZJIT: ') or dso.startswith('perf-'):
         return '[JIT code]'
     elif '::' in symbol or symbol.startswith('_ZN4yjit') or symbol.startswith('_ZN4zjit'):
         return '[JIT compile]'

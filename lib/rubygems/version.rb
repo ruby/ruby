@@ -345,60 +345,58 @@ class Gem::Version
   # other types may raise an exception.
 
   def <=>(other)
-    if String === other
-      return unless self.class.correct?(other)
-      return self <=> self.class.new(other)
-    end
+    if Gem::Version === other
+      # Fast path for comparison when available.
+      if @sort_key && other.sort_key
+        return @sort_key <=> other.sort_key
+      end
 
-    return unless Gem::Version === other
+      return 0 if @version == other.version || canonical_segments == other.canonical_segments
 
-    # Fast path for comparison when available.
-    if @sort_key && other.sort_key
-      return @sort_key <=> other.sort_key
-    end
+      lhsegments = canonical_segments
+      rhsegments = other.canonical_segments
 
-    return 0 if @version == other.version || canonical_segments == other.canonical_segments
+      lhsize = lhsegments.size
+      rhsize = rhsegments.size
+      limit  = (lhsize > rhsize ? rhsize : lhsize)
 
-    lhsegments = canonical_segments
-    rhsegments = other.canonical_segments
+      i = 0
 
-    lhsize = lhsegments.size
-    rhsize = rhsegments.size
-    limit  = (lhsize > rhsize ? rhsize : lhsize)
+      while i < limit
+        lhs = lhsegments[i]
+        rhs = rhsegments[i]
+        i += 1
 
-    i = 0
+        next      if lhs == rhs
+        return -1 if String  === lhs && Numeric === rhs
+        return  1 if Numeric === lhs && String  === rhs
 
-    while i < limit
+        return lhs <=> rhs
+      end
+
       lhs = lhsegments[i]
-      rhs = rhsegments[i]
-      i += 1
 
-      next      if lhs == rhs
-      return -1 if String  === lhs && Numeric === rhs
-      return  1 if Numeric === lhs && String  === rhs
+      if lhs.nil?
+        rhs = rhsegments[i]
 
-      return lhs <=> rhs
-    end
-
-    lhs = lhsegments[i]
-
-    if lhs.nil?
-      rhs = rhsegments[i]
-
-      while i < rhsize
-        return 1 if String === rhs
-        return -1 unless rhs.zero?
-        rhs = rhsegments[i += 1]
+        while i < rhsize
+          return 1 if String === rhs
+          return -1 unless rhs.zero?
+          rhs = rhsegments[i += 1]
+        end
+      else
+        while i < lhsize
+          return -1 if String === lhs
+          return 1 unless lhs.zero?
+          lhs = lhsegments[i += 1]
+        end
       end
-    else
-      while i < lhsize
-        return -1 if String === lhs
-        return 1 unless lhs.zero?
-        lhs = lhsegments[i += 1]
-      end
-    end
 
-    0
+      0
+    elsif String === other
+      return unless self.class.correct?(other)
+      self <=> self.class.new(other)
+    end
   end
 
   # remove trailing zeros segments before first letter or at the end of the version

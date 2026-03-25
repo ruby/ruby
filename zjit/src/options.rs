@@ -6,6 +6,15 @@ use crate::cruby::*;
 use crate::stats::Counter;
 use std::collections::HashSet;
 
+/// Type of symbols to dump into /tmp/perf-{pid}.map
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum PerfMap {
+    /// Dump one symbol per ISEQ
+    ISEQ,
+    /// Dump one symbol per HIR instruction
+    HIR,
+}
+
 /// Default --zjit-num-profiles
 const DEFAULT_NUM_PROFILES: NumProfiles = 5;
 pub type NumProfiles = u16;
@@ -89,7 +98,7 @@ pub struct Options {
     pub trace_side_exits_sample_interval: usize,
 
     /// Dump code map to /tmp for performance profilers.
-    pub perf: bool,
+    pub perf: Option<PerfMap>,
 
     /// List of ISEQs that can be compiled, identified by their iseq_get_location()
     pub allowed_iseqs: Option<HashSet<String>>,
@@ -118,7 +127,7 @@ impl Default for Options {
             dump_disasm: None,
             trace_side_exits: None,
             trace_side_exits_sample_interval: 0,
-            perf: false,
+            perf: None,
             allowed_iseqs: None,
             log_compiled_iseqs: None,
         }
@@ -141,7 +150,8 @@ pub const ZJIT_OPTIONS: &[(&str, &str)] = &[
                      "Collect ZJIT stats (=file to write to a file)."),
     ("--zjit-disable",
                      "Disable ZJIT for lazily enabling it with RubyVM::ZJIT.enable."),
-    ("--zjit-perf",  "Dump ISEQ symbols into /tmp/perf-{}.map for Linux perf."),
+    ("--zjit-perf[=iseq|hir]",
+                     "Dump symbols for Linux perf /tmp/perf-{}.map (default: iseq)."),
     ("--zjit-log-compiled-iseqs=path",
                      "Log compiled ISEQs to the file. The file will be truncated."),
     ("--zjit-trace-exits[=counter]",
@@ -452,7 +462,8 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             }
         }
 
-        ("perf", "") => options.perf = true,
+        ("perf", "" | "iseq") => options.perf = Some(PerfMap::ISEQ),
+        ("perf", "hir") => options.perf = Some(PerfMap::HIR),
 
         ("allowed-iseqs", _) if !opt_val.is_empty() => options.allowed_iseqs = Some(parse_jit_list(opt_val)),
         ("log-compiled-iseqs", _) if !opt_val.is_empty() => {

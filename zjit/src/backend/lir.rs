@@ -5,11 +5,11 @@ use std::panic;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use crate::bitset::BitSet;
-use crate::codegen::local_size_and_idx_to_ep_offset;
+use crate::codegen::{local_size_and_idx_to_ep_offset, perf_symbol_range_start, perf_symbol_range_end};
 use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, vm_stack_canary};
 use crate::hir::{Invariant, SideExitReason};
 use crate::hir;
-use crate::options::{TraceExits, get_option};
+use crate::options::{TraceExits, PerfMap, get_option};
 use crate::cruby::VALUE;
 use crate::payload::IseqVersionRef;
 use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, side_exit_counter, CompileError};
@@ -551,6 +551,18 @@ pub struct SideExit {
     pub pc: Opnd,
     pub stack: Vec<Opnd>,
     pub locals: Vec<Opnd>,
+    /// If set, the side exit will call the recompile function with these arguments
+    /// to profile the send and invalidate the ISEQ for recompilation.
+    pub recompile: Option<SideExitRecompile>,
+}
+
+/// Arguments for the no-profile-send recompile callback.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct SideExitRecompile {
+    pub iseq: Opnd,
+    pub insn_idx: u32,
+    /// Number of arguments, not including the receiver.
+    pub argc: i32,
 }
 
 /// Branch target (something that we can jump to)
@@ -2607,7 +2619,7 @@ impl Assembler
     pub fn compile_exits(&mut self) -> Vec<Insn> {
         /// Restore VM state (cfp->pc, cfp->sp, stack, locals) for the side exit.
         fn compile_exit_save_state(asm: &mut Assembler, exit: &SideExit) {
-            let SideExit { pc, stack, locals } = exit;
+            let SideExit { pc, stack, locals, .. } = exit;
 
             // Side exit blocks are not part of the CFG at the moment,
             // so we need to manually ensure that patchpoints get padded
@@ -2646,6 +2658,20 @@ impl Assembler
         /// that it can be safely deduplicated by using SideExit as a dedup key.
         fn compile_exit(asm: &mut Assembler, exit: &SideExit) {
             compile_exit_save_state(asm, exit);
+            // If this side exit should trigger recompilation, call the recompile
+            // function after saving VM state. The ccall must happen after
+            // compile_exit_save_state because it clobbers caller-saved registers
+            // that may hold stack/local operands we need to save.
+            if let Some(recompile) = &exit.recompile {
+                use crate::codegen::no_profile_send_recompile;
+                asm_comment!(asm, "profile and maybe recompile for no-profile send");
+                asm_ccall!(asm, no_profile_send_recompile,
+                    EC,
+                    recompile.iseq,
+                    Opnd::UImm(recompile.insn_idx as u64),
+                    Opnd::Imm(recompile.argc as i64)
+                );
+            }
             compile_exit_return(asm);
         }
 
@@ -2674,6 +2700,13 @@ impl Assembler
 
         // Map from SideExit to compiled Label. This table is used to deduplicate side exit code.
         let mut compiled_exits: HashMap<SideExit, Label> = HashMap::new();
+
+        // Start a new perf range for side exits
+        let perf_symbol = if get_option!(perf) == Some(PerfMap::HIR) {
+            Some(perf_symbol_range_start(self, "side exit"))
+        } else {
+            None
+        };
 
         // Mark the start of side-exit code so we can measure its size
         if !targets.is_empty() {
@@ -2720,7 +2753,11 @@ impl Assembler
                         // ccall doesn't clobber caller-saved registers
                         // holding stack/local operands.
                         compile_exit_save_state(self, &exit);
-                        asm_ccall!(self, rb_zjit_record_exit_stack, pc);
+                        // Leak a CString with the reason so it's available at runtime
+                        let reason_cstr = std::ffi::CString::new(reason.to_string())
+                            .unwrap_or_else(|_| std::ffi::CString::new("unknown").unwrap());
+                        let reason_ptr = reason_cstr.into_raw() as *const u8;
+                        asm_ccall!(self, rb_zjit_record_exit_stack, Opnd::const_ptr(reason_ptr));
                         compile_exit_return(self);
                     } else {
                         // If the side exit has already been compiled, jump to it.
@@ -2754,6 +2791,11 @@ impl Assembler
         if !compiled_exits.is_empty() {
             let nanos = side_exit_start.elapsed().as_nanos();
             crate::stats::incr_counter_by(crate::stats::Counter::compile_side_exit_time_ns, nanos as u64);
+        }
+
+        // Close the current perf range for side exits
+        if let Some(perf_symbol) = &perf_symbol {
+            perf_symbol_range_end(self, perf_symbol);
         }
 
         // Extract exit instructions and restore the previous current block

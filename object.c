@@ -2253,6 +2253,7 @@ rb_class_initialize(int argc, VALUE *argv, VALUE klass)
         }
     }
     rb_class_set_super(klass, super);
+    RCLASS_SET_ALLOCATOR(klass, RCLASS_ALLOCATOR(super));
     rb_make_metaclass(klass, RBASIC(super)->klass);
     rb_class_inherited(super, klass);
     rb_mod_initialize_exec(klass);
@@ -4448,7 +4449,6 @@ InitVM_Object(void)
 #endif
 
     rb_define_private_method(rb_cBasicObject, "initialize", rb_obj_initialize, 0);
-    rb_define_alloc_func(rb_cBasicObject, rb_class_allocate_instance);
     rb_define_method(rb_cBasicObject, "==", rb_obj_equal, 1);
     rb_define_method(rb_cBasicObject, "equal?", rb_obj_equal, 1);
     rb_define_method(rb_cBasicObject, "!", rb_obj_not, 0);

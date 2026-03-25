@@ -721,31 +721,22 @@ class Pathname
     nil
   end
 
-  # Iterates over and yields a new Pathname object
-  # for each element in the given path in ascending order.
+  # call-seq:
+  #   ascend {|entry| ... } -> nil
+  #   ascend -> new_enumerator
   #
-  #  Pathname.new('/path/to/some/file.rb').ascend {|v| p v}
-  #     #<Pathname:/path/to/some/file.rb>
-  #     #<Pathname:/path/to/some>
-  #     #<Pathname:/path/to>
-  #     #<Pathname:/path>
-  #     #<Pathname:/>
+  # With a block given,
+  # yields +self+, then a new pathname for each successive dirname in the stored path;
+  # see File.dirname:
   #
-  #  Pathname.new('path/to/some/file.rb').ascend {|v| p v}
-  #     #<Pathname:path/to/some/file.rb>
-  #     #<Pathname:path/to/some>
-  #     #<Pathname:path/to>
-  #     #<Pathname:path>
+  #   Pathname.new('/path/to/some/file.rb').ascend {|dirname| p dirname}
+  #   #<Pathname:/path/to/some/file.rb>
+  #   #<Pathname:/path/to/some>
+  #   #<Pathname:/path/to>
+  #   #<Pathname:/path>
+  #   #<Pathname:/>
   #
-  # Returns an Enumerator if no block was given.
-  #
-  #   enum = Pathname.new("/usr/bin/ruby").ascend
-  #     # ... do stuff ...
-  #   enum.each { |e| ... }
-  #     # yields Pathnames /usr/bin/ruby, /usr/bin, /usr, and /.
-  #
-  # It doesn't access the filesystem.
-  #
+  # With no block given, returns a new Enumerator.
   def ascend
     return to_enum(__method__) unless block_given?
     path = @path
@@ -1051,7 +1042,20 @@ class Pathname    # * File *
   # See File.binwrite.
   def binwrite(...) File.binwrite(@path, ...) end
 
-  # See <tt>File.atime</tt>.  Returns last access time.
+  # call-seq:
+  #   atime -> new_time
+  #
+  # Returns a new Time object containing the time of the most recent
+  # access (read or write) to the entry;
+  # via File.atime:
+  #
+  #   pn = Pathname.new('t.tmp')
+  #   pn.write('foo')
+  #   pn.atime # => 2026-03-22 13:49:44.5165608 -0500
+  #   pn.read  # => "foo"
+  #   pn.atime # => 2026-03-22 13:49:57.5359349 -0500
+  #   pn.delete
+  #
   def atime() File.atime(@path) end
 
   # Returns the birth time for the file.
