@@ -2599,38 +2599,89 @@ pub mod hir_build_tests {
     }
 
     #[test]
+    fn test_opt_newarray_send_min_no_elements() {
+        eval("
+            def test = [].min
+        ");
+        // TODO(min): Rewrite to nil
+        assert_contains_opcode("test", YARVINSN_opt_newarray_send);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_MIN)
+          v11:BasicObject = ArrayMin
+          CheckInterrupts
+          Return v11
+        ");
+    }
+
+    #[test]
     fn test_opt_newarray_send_min() {
         eval("
-            def test(a,b)
-              sum = a+b
-              result = [a,b].min
-              puts [1,2,3]
-              result
-            end
+            def test(a,b) = [a,b].min
         ");
         assert_contains_opcode("test", YARVINSN_opt_newarray_send);
         assert_snapshot!(hir_string("test"), @"
-        fn test@<compiled>:3:
+        fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
           v2:CPtr = LoadSP
           v3:BasicObject = LoadField v2, :a@0x1000
           v4:BasicObject = LoadField v2, :b@0x1001
-          v5:NilClass = Const Value(nil)
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4, v5, v6)
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v9:BasicObject = LoadArg :self@0
-          v10:BasicObject = LoadArg :a@1
-          v11:BasicObject = LoadArg :b@2
-          v12:NilClass = Const Value(nil)
-          v13:NilClass = Const Value(nil)
-          Jump bb3(v9, v10, v11, v12, v13)
-        bb3(v15:BasicObject, v16:BasicObject, v17:BasicObject, v18:NilClass, v19:NilClass):
-          v26:BasicObject = Send v16, :+, v17 # SendFallbackReason: Uncategorized(opt_plus)
-          SideExit UnhandledNewarraySend(MIN)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_MIN)
+          v20:BasicObject = ArrayMin v12, v13
+          CheckInterrupts
+          Return v20
+        ");
+    }
+
+    #[test]
+    fn test_opt_newarray_send_min_redefined() {
+        eval("
+            class Array
+              alias_method :old_min, :min
+              def min
+                old_min * 2
+              end
+            end
+
+            def test(a,b) = [a,b].min
+        ");
+        assert_contains_opcode("test", YARVINSN_opt_newarray_send);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:9:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_MIN))
         ");
     }
 
