@@ -4246,20 +4246,6 @@ find_cvar(VALUE klass, VALUE * front, VALUE * target, ID id)
     return v;
 }
 
-static void
-check_for_cvar_table(VALUE subclass, VALUE key)
-{
-    if (RB_TYPE_P(subclass, T_ICLASS)) return; // skip refinement ICLASSes
-
-    if (RTEST(rb_ivar_defined(subclass, key))) {
-        RB_DEBUG_COUNTER_INC(cvar_class_invalidate);
-        ruby_vm_global_cvar_state++;
-        return;
-    }
-
-    rb_class_foreach_subclass(subclass, check_for_cvar_table, key);
-}
-
 void
 rb_cvar_set(VALUE klass, ID id, VALUE val)
 {
@@ -4306,15 +4292,11 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
         ent->global_cvar_state = GET_GLOBAL_CVAR_STATE();
     }
 
-    // Break the cvar cache if this is a new class variable
-    // and target is a module or a subclass with the same
-    // cvar in this lookup.
+    // Break the cvar cache if this is a new class variable.
+    // Existing caches may have resolved this name to a different
+    // location in the hierarchy, so we must invalidate globally.
     if (new_cvar) {
-        if (RB_TYPE_P(target, T_CLASS)) {
-            if (RCLASS_SUBCLASSES_FIRST(target)) {
-                rb_class_foreach_subclass(target, check_for_cvar_table, id);
-            }
-        }
+        ruby_vm_global_cvar_state++;
     }
 }
 
