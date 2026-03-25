@@ -3,9 +3,9 @@
 use std::{collections::{HashMap, HashSet}, mem};
 
 use crate::{backend::lir::{Assembler, asm_comment}, cruby::{ID, IseqPtr, RedefinitionFlag, VALUE, iseq_name, rb_callable_method_entry_t, rb_gc_location, ruby_basic_operators, src_loc, with_vm_lock}, hir::Invariant, options::debug, state::{ZJITState, zjit_enabled_p}, virtualmem::CodePtr};
-use crate::payload::{IseqVersionRef, IseqStatus, get_or_create_iseq_payload};
-use crate::codegen::{MAX_ISEQ_VERSIONS, gen_iseq_call};
-use crate::cruby::{rb_iseq_reset_jit_func, iseq_get_location};
+use crate::payload::{IseqVersionRef, get_or_create_iseq_payload};
+use crate::codegen::invalidate_iseq_version;
+use crate::cruby::rb_iseq_reset_jit_func;
 use crate::stats::with_time_stat;
 use crate::stats::Counter::invalidation_time_ns;
 use crate::gc::remove_gc_offsets;
@@ -27,21 +27,10 @@ macro_rules! compile_patch_points {
                 let mut version = patch_point.version;
                 let iseq = unsafe { version.as_ref() }.iseq;
                 if !iseq.is_null() {
-                    let payload = get_or_create_iseq_payload(iseq);
-                    // If the ISEQ doesn't have max versions, invalidate this version.
-                    if unsafe { version.as_ref() }.status != IseqStatus::Invalidated && payload.versions.len() < MAX_ISEQ_VERSIONS {
-                        unsafe { version.as_mut() }.status = IseqStatus::Invalidated;
-                        unsafe { rb_iseq_reset_jit_func(version.as_ref().iseq) };
-
-                        // Recompile JIT-to-JIT calls into the invalidated ISEQ
-                        for incoming in unsafe { version.as_ref() }.incoming.iter() {
-                            if let Err(err) = gen_iseq_call($cb, incoming) {
-                                debug!("{err:?}: gen_iseq_call failed on PatchPoint: {}", iseq_get_location(incoming.iseq.get(), 0));
-                            }
-                        }
-                    }
+                    invalidate_iseq_version($cb, iseq, &mut version);
                     // Remember NoSingletonClass busts on the payload
                     if is_no_singleton_class!($cause) {
+                        let payload = get_or_create_iseq_payload(iseq);
                         payload.was_invalidated_for_singleton_class_creation = true;
                     }
                 }

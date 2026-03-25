@@ -201,6 +201,12 @@ impl ZJITState {
         instance.assert_compiles = true;
     }
 
+    /// Stop asserting successful compilation
+    pub fn disable_assert_compiles() {
+        let instance = ZJITState::get_instance();
+        instance.assert_compiles = false;
+    }
+
     /// Get a mutable reference to counters for ZJIT stats
     pub fn get_counters() -> &'static mut Counters {
         &mut ZJITState::get_instance().counters

@@ -551,6 +551,18 @@ pub struct SideExit {
     pub pc: Opnd,
     pub stack: Vec<Opnd>,
     pub locals: Vec<Opnd>,
+    /// If set, the side exit will call the recompile function with these arguments
+    /// to profile the send and invalidate the ISEQ for recompilation.
+    pub recompile: Option<SideExitRecompile>,
+}
+
+/// Arguments for the no-profile-send recompile callback.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct SideExitRecompile {
+    pub iseq: Opnd,
+    pub insn_idx: u32,
+    /// Number of arguments, not including the receiver.
+    pub argc: i32,
 }
 
 /// Branch target (something that we can jump to)
@@ -2607,7 +2619,7 @@ impl Assembler
     pub fn compile_exits(&mut self) -> Vec<Insn> {
         /// Restore VM state (cfp->pc, cfp->sp, stack, locals) for the side exit.
         fn compile_exit_save_state(asm: &mut Assembler, exit: &SideExit) {
-            let SideExit { pc, stack, locals } = exit;
+            let SideExit { pc, stack, locals, .. } = exit;
 
             // Side exit blocks are not part of the CFG at the moment,
             // so we need to manually ensure that patchpoints get padded
@@ -2646,6 +2658,20 @@ impl Assembler
         /// that it can be safely deduplicated by using SideExit as a dedup key.
         fn compile_exit(asm: &mut Assembler, exit: &SideExit) {
             compile_exit_save_state(asm, exit);
+            // If this side exit should trigger recompilation, call the recompile
+            // function after saving VM state. The ccall must happen after
+            // compile_exit_save_state because it clobbers caller-saved registers
+            // that may hold stack/local operands we need to save.
+            if let Some(recompile) = &exit.recompile {
+                use crate::codegen::no_profile_send_recompile;
+                asm_comment!(asm, "profile and maybe recompile for no-profile send");
+                asm_ccall!(asm, no_profile_send_recompile,
+                    EC,
+                    recompile.iseq,
+                    Opnd::UImm(recompile.insn_idx as u64),
+                    Opnd::Imm(recompile.argc as i64)
+                );
+            }
             compile_exit_return(asm);
         }
 

@@ -947,8 +947,9 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
         hasiv = has_ivars(obj, (encname = encoding_name(obj, arg)), &ivobj);
         {
             st_data_t compat_data;
-            rb_alloc_func_t allocator = rb_get_alloc_func(RBASIC(obj)->klass);
-            if (st_lookup(compat_allocator_tbl,
+            VALUE klass = CLASS_OF(obj);
+            rb_alloc_func_t allocator = RCLASS_SINGLETON_P(klass) ? 0 : rb_get_alloc_func(klass);
+            if (allocator && st_lookup(compat_allocator_tbl,
                           (st_data_t)allocator,
                           &compat_data)) {
                 marshal_compat_t *compat = (marshal_compat_t*)compat_data;

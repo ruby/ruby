@@ -1703,6 +1703,17 @@ rb_method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me, rb_method_
 
 #define UNDEF_ALLOC_FUNC ((rb_alloc_func_t)-1)
 
+static void
+propagate_alloc_func(VALUE subclass, VALUE arg)
+{
+    if (RB_TYPE_P(subclass, T_CLASS) &&
+        !RCLASS_SINGLETON_P(subclass) &&
+        !FL_TEST_RAW(subclass, RCLASS_ALLOCATOR_DEFINED)) {
+        RCLASS_SET_ALLOCATOR(subclass, (rb_alloc_func_t)arg);
+        rb_class_foreach_subclass(subclass, propagate_alloc_func, arg);
+    }
+}
+
 void
 rb_define_alloc_func(VALUE klass, VALUE (*func)(VALUE))
 {
@@ -1711,12 +1722,17 @@ rb_define_alloc_func(VALUE klass, VALUE (*func)(VALUE))
         rb_raise(rb_eTypeError, "can't define an allocator for a singleton class");
     }
     RCLASS_SET_ALLOCATOR(klass, func);
+    FL_SET_RAW(klass, RCLASS_ALLOCATOR_DEFINED);
+    rb_class_foreach_subclass(klass, propagate_alloc_func, (VALUE)func);
 }
 
 void
 rb_undef_alloc_func(VALUE klass)
 {
-    rb_define_alloc_func(klass, UNDEF_ALLOC_FUNC);
+    Check_Type(klass, T_CLASS);
+    RCLASS_SET_ALLOCATOR(klass, UNDEF_ALLOC_FUNC);
+    FL_SET_RAW(klass, RCLASS_ALLOCATOR_DEFINED);
+    rb_class_foreach_subclass(klass, propagate_alloc_func, (VALUE)UNDEF_ALLOC_FUNC);
 }
 
 rb_alloc_func_t
@@ -1726,20 +1742,8 @@ rb_get_alloc_func(VALUE klass)
 
     rb_alloc_func_t allocator = RCLASS_ALLOCATOR(klass);
     if (allocator == UNDEF_ALLOC_FUNC) return 0;
-    if (allocator) return allocator;
-
-    VALUE *superclasses = RCLASS_SUPERCLASSES(klass);
-    size_t depth = RCLASS_SUPERCLASS_DEPTH(klass);
-
-    for (size_t i = depth; i > 0; i--) {
-        klass = superclasses[i - 1];
-        RBIMPL_ASSERT_TYPE(klass, T_CLASS);
-
-        allocator = RCLASS_ALLOCATOR(klass);
-        if (allocator == UNDEF_ALLOC_FUNC) break;
-        if (allocator) return allocator;
-    }
-    return 0;
+    RUBY_ASSERT(allocator);
+    return allocator;
 }
 
 const rb_method_entry_t *
