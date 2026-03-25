@@ -411,6 +411,19 @@ impl Type {
         }
     }
 
+    fn int_spec_signed(&self) -> Option<i64> {
+        assert!(self.is_subtype(types::CSigned), "int_spec_signed() only makes sense for signed integer types");
+        match self.spec {
+            Specialization::Int(val) => Some(val as i64),
+            _ => None,
+        }
+    }
+
+    pub fn known_nonnegative(&self) -> bool {
+        assert!(self.is_subtype(types::CSigned), "nonnegative() only makes sense for signed integer types");
+        self.int_spec_signed().map_or(false, |val| val >= 0)
+    }
+
     /// Return true if the Type has object specialization and false otherwise.
     pub fn ruby_object_known(&self) -> bool {
         matches!(self.spec, Specialization::Object(_))

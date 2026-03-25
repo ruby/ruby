@@ -5296,7 +5296,7 @@ impl Function {
                     }
                     Insn::AdjustBounds { index, .. } => {
                         // If index is known nonnegative, then we don't need to adjust bounds.
-                        if self.type_of(index).cint64_value().filter(|&i| i >= 0).is_some() {
+                        if self.type_of(index).known_nonnegative() {
                             self.make_equal_to(insn_id, index);
                             // Don't bother re-inferring the type of index; we already know it.
                             continue;
