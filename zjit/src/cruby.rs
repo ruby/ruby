@@ -1267,6 +1267,15 @@ pub mod test_utils {
         ruby_str_to_rust_string(eval(&inspect))
     }
 
+    /// Like inspect, but also asserts that all compilations triggered by this program succeed.
+    pub fn assert_compiles(program: &str) -> String {
+        use crate::state::ZJITState;
+        ZJITState::enable_assert_compiles();
+        let result = inspect(program);
+        ZJITState::disable_assert_compiles();
+        result
+    }
+
     /// Get IseqPtr for a specified method
     pub fn get_method_iseq(recv: &str, name: &str) -> *const rb_iseq_t {
         get_proc_iseq(&format!("{}.method(:{})", recv, name))
