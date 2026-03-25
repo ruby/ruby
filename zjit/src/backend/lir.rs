@@ -561,6 +561,7 @@ pub struct SideExit {
 pub struct SideExitRecompile {
     pub iseq: Opnd,
     pub insn_idx: u32,
+    /// Number of arguments, not including the receiver.
     pub argc: i32,
 }
 
