@@ -2296,6 +2296,7 @@ static VALUE class_call_alloc_func(rb_alloc_func_t allocator, VALUE klass);
 static VALUE
 rb_class_alloc(VALUE klass)
 {
+    RBIMPL_ASSERT_TYPE(klass, T_CLASS);
     rb_alloc_func_t allocator = class_get_alloc_func(klass);
     return class_call_alloc_func(allocator, klass);
 }
