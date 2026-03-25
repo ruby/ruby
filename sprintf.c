@@ -84,6 +84,11 @@ expand_result(VALUE result, long bsiz, long blen, long l)
     buf = RSTRING_PTR(result);\
 } while (0)
 
+#define CHECK_WIDTH(l, w) do { \
+    if ((l) > INT_MAX - (w)) rb_raise(rb_eArgError, "width too big");\
+    CHECK((l)+(w));\
+} while (0)
+
 #define PUSH(s, l) do { \
     CHECK(l);\
     PUSH_(s, l);\
@@ -476,19 +481,13 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
                     rb_enc_mbcput(c, &buf[blen], enc);
                     blen += n;
                 }
-                else if ((flags & FMINUS)) {
-                    --width;
-                    CHECK(n + (width > 0 ? width : 0));
-                    rb_enc_mbcput(c, &buf[blen], enc);
-                    blen += n;
-                    if (width > 0) FILL_(' ', width);
-                }
                 else {
                     --width;
-                    CHECK(n + (width > 0 ? width : 0));
-                    if (width > 0) FILL_(' ', width);
+                    CHECK_WIDTH(n, (width > 0 ? width : 0));
+                    if (!(flags & FMINUS) && (width > 0)) FILL_(' ', width);
                     rb_enc_mbcput(c, &buf[blen], enc);
                     blen += n;
+                    if ((flags & FMINUS) && (width > 0)) FILL_(' ', width);
                 }
             }
             break;
@@ -525,7 +524,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
                     /* need to adjust multi-byte string pos */
                     if ((flags&FWIDTH) && (width > slen)) {
                         width -= (int)slen;
-                        CHECK(len + width);
+                        CHECK_WIDTH(len, width);
                         if (!(flags&FMINUS)) {
                             FILL_(' ', width);
                             width = 0;
@@ -839,7 +838,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
                 if (sign || (flags&FSPACE)) ++len;
                 if (prec > 0) ++len; /* period */
                 fill = width > len ? width - len : 0;
-                CHECK(fill + len);
+                CHECK(fill + len); /* max(width, len) */
                 if (fill && !(flags&(FMINUS|FZERO))) {
                     FILL_(' ', fill);
                 }
