@@ -50,10 +50,6 @@ describe "Regexps with encoding modifiers" do
     /./n.encoding.should == Encoding::US_ASCII
   end
 
-  it 'uses BINARY when is not initialized' do
-    Regexp.allocate.encoding.should == Encoding::BINARY
-  end
-
   it 'uses BINARY as /n encoding if not all chars are 7-bit' do
     /\xFF/n.encoding.should == Encoding::BINARY
   end

@@ -1701,8 +1701,6 @@ rb_method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me, rb_method_
     return method_entry_set(klass, mid, me, visi, klass);
 }
 
-#define UNDEF_ALLOC_FUNC ((rb_alloc_func_t)-1)
-
 void
 rb_define_alloc_func(VALUE klass, VALUE (*func)(VALUE))
 {
@@ -1719,12 +1717,17 @@ rb_undef_alloc_func(VALUE klass)
     rb_define_alloc_func(klass, UNDEF_ALLOC_FUNC);
 }
 
+void rb_class_safe_initialization(VALUE klass)
+{
+    RCLASS_SET_ALLOCATOR_IS_INTERNAL(klass);
+}
+
 rb_alloc_func_t
-rb_get_alloc_func(VALUE klass)
+rb_get_public_alloc_func(VALUE klass)
 {
     RBIMPL_ASSERT_TYPE(klass, T_CLASS);
 
-    rb_alloc_func_t allocator = RCLASS_ALLOCATOR(klass);
+    rb_alloc_func_t allocator = RCLASS_PUBLIC_ALLOCATOR(klass);
     if (allocator == UNDEF_ALLOC_FUNC) return 0;
     if (allocator) return allocator;
 
@@ -1735,7 +1738,36 @@ rb_get_alloc_func(VALUE klass)
         klass = superclasses[i - 1];
         RBIMPL_ASSERT_TYPE(klass, T_CLASS);
 
-        allocator = RCLASS_ALLOCATOR(klass);
+        allocator = RCLASS_PUBLIC_ALLOCATOR(klass);
+        if (allocator == UNDEF_ALLOC_FUNC) break;
+        if (allocator) return allocator;
+    }
+    return 0;
+}
+
+rb_alloc_func_t
+rb_get_alloc_func(VALUE klass)
+{
+    return rb_get_public_alloc_func(klass);
+}
+
+rb_alloc_func_t
+rb_get_internal_alloc_func(VALUE klass)
+{
+    RBIMPL_ASSERT_TYPE(klass, T_CLASS);
+
+    rb_alloc_func_t allocator = RCLASS_INTERNAL_ALLOCATOR(klass);
+    if (allocator == UNDEF_ALLOC_FUNC) return 0;
+    if (allocator) return allocator;
+
+    VALUE *superclasses = RCLASS_SUPERCLASSES(klass);
+    size_t depth = RCLASS_SUPERCLASS_DEPTH(klass);
+
+    for (size_t i = depth; i > 0; i--) {
+        klass = superclasses[i - 1];
+        RBIMPL_ASSERT_TYPE(klass, T_CLASS);
+
+        allocator = RCLASS_INTERNAL_ALLOCATOR(klass);
         if (allocator == UNDEF_ALLOC_FUNC) break;
         if (allocator) return allocator;
     }

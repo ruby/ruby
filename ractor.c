@@ -8,6 +8,7 @@
 #include "vm_core.h"
 #include "vm_sync.h"
 #include "ractor_core.h"
+#include "internal/class.h"
 #include "internal/complex.h"
 #include "internal/error.h"
 #include "internal/gc.h"
@@ -2074,7 +2075,7 @@ copy_enter(VALUE obj, struct obj_traverse_replace_data *data)
         return traverse_skip;
     }
     else {
-        if (!rb_get_alloc_func(rb_obj_class(obj))) {
+        if (!rb_get_internal_alloc_func(rb_obj_class(obj))) {
             rb_raise(rb_eRactorError, "can not copy unshareable object %+"PRIsVALUE, obj);
         }
         data->replacement = rb_obj_clone(obj);

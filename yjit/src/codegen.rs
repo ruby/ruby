@@ -4944,9 +4944,9 @@ fn gen_opt_new(
     // We now know that it's always comptime_recv_klass
     if jit.assume_expected_cfunc(asm, comptime_recv_klass, mid, rb_class_new_instance_pass_kw as _) {
         // Fast path
-        // call rb_class_alloc to actually allocate
+        // call rb_obj_internal_alloc to actually allocate
         jit_prepare_non_leaf_call(jit, asm);
-        let obj = asm.ccall(rb_obj_alloc as _, vec![comptime_recv.into()]);
+        let obj = asm.ccall(rb_obj_internal_alloc as _, vec![comptime_recv.into()]);
 
         // Get a reference to the stack location where we need to save the
         // return instance.

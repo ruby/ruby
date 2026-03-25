@@ -573,7 +573,7 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
 static VALUE
 mutable_obj_clone(VALUE obj, VALUE kwfreeze)
 {
-    VALUE clone = rb_obj_alloc(rb_obj_class(obj));
+    VALUE clone = rb_obj_internal_alloc(rb_obj_class(obj));
     return rb_obj_clone_setup(obj, clone, kwfreeze);
 }
 
@@ -640,7 +640,7 @@ rb_obj_dup(VALUE obj)
     if (special_object_p(obj)) {
         return obj;
     }
-    dup = rb_obj_alloc(rb_obj_class(obj));
+    dup = rb_obj_internal_alloc(rb_obj_class(obj));
     return rb_obj_dup_setup(obj, dup);
 }
 
@@ -2268,7 +2268,8 @@ rb_undefined_alloc(VALUE klass)
              klass);
 }
 
-static rb_alloc_func_t class_get_alloc_func(VALUE klass);
+static rb_alloc_func_t class_get_public_alloc_func(VALUE klass);
+static rb_alloc_func_t class_get_internal_alloc_func(VALUE klass);
 static VALUE class_call_alloc_func(rb_alloc_func_t allocator, VALUE klass);
 
 /*
@@ -2294,14 +2295,21 @@ static VALUE class_call_alloc_func(rb_alloc_func_t allocator, VALUE klass);
  */
 
 static VALUE
-rb_class_alloc(VALUE klass)
+rb_class_public_alloc(VALUE klass)
 {
-    rb_alloc_func_t allocator = class_get_alloc_func(klass);
+    rb_alloc_func_t allocator = class_get_public_alloc_func(klass);
+    return class_call_alloc_func(allocator, klass);
+}
+
+static VALUE
+rb_class_internal_alloc(VALUE klass)
+{
+    rb_alloc_func_t allocator = class_get_internal_alloc_func(klass);
     return class_call_alloc_func(allocator, klass);
 }
 
 static rb_alloc_func_t
-class_get_alloc_func(VALUE klass)
+class_get_public_alloc_func(VALUE klass)
 {
     rb_alloc_func_t allocator;
 
@@ -2311,7 +2319,25 @@ class_get_alloc_func(VALUE klass)
     if (RCLASS_SINGLETON_P(klass)) {
         rb_raise(rb_eTypeError, "can't create instance of singleton class");
     }
-    allocator = rb_get_alloc_func(klass);
+    allocator = rb_get_public_alloc_func(klass);
+    if (!allocator) {
+        rb_undefined_alloc(klass);
+    }
+    return allocator;
+}
+
+static rb_alloc_func_t
+class_get_internal_alloc_func(VALUE klass)
+{
+    rb_alloc_func_t allocator;
+
+    if (!RCLASS_INITIALIZED_P(klass)) {
+        rb_raise(rb_eTypeError, "can't instantiate uninitialized class");
+    }
+    if (RCLASS_SINGLETON_P(klass)) {
+        rb_raise(rb_eTypeError, "can't create instance of singleton class");
+    }
+    allocator = rb_get_internal_alloc_func(klass);
     if (!allocator) {
         rb_undefined_alloc(klass);
     }
@@ -2324,7 +2350,7 @@ rb_zjit_class_get_alloc_func(VALUE klass)
 {
     assert(RCLASS_INITIALIZED_P(klass));
     assert(!RCLASS_SINGLETON_P(klass));
-    return rb_get_alloc_func(klass);
+    return rb_get_internal_alloc_func(klass);
 }
 
 static VALUE
@@ -2344,11 +2370,19 @@ class_call_alloc_func(rb_alloc_func_t allocator, VALUE klass)
     return obj;
 }
 
+// Public C API
 VALUE
 rb_obj_alloc(VALUE klass)
 {
     Check_Type(klass, T_CLASS);
-    return rb_class_alloc(klass);
+    return rb_class_public_alloc(klass);
+}
+
+VALUE
+rb_obj_internal_alloc(VALUE klass)
+{
+    Check_Type(klass, T_CLASS);
+    return rb_class_internal_alloc(klass);
 }
 
 /*
@@ -2367,7 +2401,7 @@ rb_class_new_instance_pass_kw(int argc, const VALUE *argv, VALUE klass)
 {
     VALUE obj;
 
-    obj = rb_class_alloc(klass);
+    obj = rb_obj_internal_alloc(klass);
     rb_obj_call_init_kw(obj, argc, argv, RB_PASS_CALLED_KEYWORDS);
 
     return obj;
@@ -2379,7 +2413,7 @@ rb_class_new_instance_kw(int argc, const VALUE *argv, VALUE klass, int kw_splat)
     VALUE obj;
     Check_Type(klass, T_CLASS);
 
-    obj = rb_class_alloc(klass);
+    obj = rb_obj_internal_alloc(klass);
     rb_obj_call_init_kw(obj, argc, argv, kw_splat);
 
     return obj;
@@ -4726,8 +4760,8 @@ InitVM_Object(void)
     rb_define_method(rb_cModule, "deprecate_constant", rb_mod_deprecate_constant, -1); /* in variable.c */
     rb_define_method(rb_cModule, "singleton_class?", rb_mod_singleton_p, 0);
 
-    rb_define_method(rb_singleton_class(rb_cClass), "allocate", rb_class_alloc, 0);
-    rb_define_method(rb_cClass, "allocate", rb_class_alloc, 0);
+    rb_define_method(rb_singleton_class(rb_cClass), "allocate", rb_class_public_alloc, 0);
+    rb_define_method(rb_cClass, "allocate", rb_class_public_alloc, 0);
     rb_define_method(rb_cClass, "new", rb_class_new_instance_pass_kw, -1);
     rb_define_method(rb_cClass, "initialize", rb_class_initialize, -1);
     rb_define_method(rb_cClass, "superclass", rb_class_superclass, 0);

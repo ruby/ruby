@@ -2071,7 +2071,7 @@ fn gen_new_range_fixnum(
 fn gen_object_alloc(jit: &JITState, asm: &mut Assembler, val: lir::Opnd, state: &FrameState) -> lir::Opnd {
     // Allocating an object from an unknown class is non-leaf; see doc for `ObjectAlloc`.
     gen_prepare_non_leaf_call(jit, asm, state);
-    asm_ccall!(asm, rb_obj_alloc, val)
+    asm_ccall!(asm, rb_obj_internal_alloc, val)
 }
 
 fn gen_object_alloc_class(asm: &mut Assembler, class: VALUE, state: &FrameState) -> lir::Opnd {
