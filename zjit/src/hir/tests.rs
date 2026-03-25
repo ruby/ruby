@@ -2603,7 +2603,7 @@ pub mod hir_build_tests {
         eval("
             def test = [].min
         ");
-        // TODO(min): Rewrite to nil
+        // TODO(max): Rewrite to nil
         assert_contains_opcode("test", YARVINSN_opt_newarray_send);
         assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
