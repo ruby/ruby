@@ -193,6 +193,26 @@ fn gen_iseq_entry_point(cb: &mut CodeBlock, iseq: IseqPtr, jit_exception: bool) 
     Ok(start_ptr)
 }
 
+/// Invalidate an ISEQ version and allow it to be recompiled on the next call.
+/// Both PatchPoint invalidation and exit-profiling recompilation go through this
+/// function, serving as the central point for all invalidation/recompile decisions.
+pub fn invalidate_iseq_version(cb: &mut CodeBlock, iseq: IseqPtr, version: &mut IseqVersionRef) {
+    let payload = get_or_create_iseq_payload(iseq);
+    if unsafe { version.as_ref() }.status != IseqStatus::Invalidated
+        && payload.versions.len() < MAX_ISEQ_VERSIONS
+    {
+        unsafe { version.as_mut() }.status = IseqStatus::Invalidated;
+        unsafe { rb_iseq_reset_jit_func(iseq) };
+
+        // Recompile JIT-to-JIT calls into the invalidated ISEQ
+        for incoming in unsafe { version.as_ref() }.incoming.iter() {
+            if let Err(err) = gen_iseq_call(cb, incoming) {
+                debug!("{err:?}: gen_iseq_call failed during invalidation: {}", iseq_get_location(incoming.iseq.get(), 0));
+            }
+        }
+    }
+}
+
 /// Stub a branch for a JIT-to-JIT call
 pub fn gen_iseq_call(cb: &mut CodeBlock, iseq_call: &IseqCallRef) -> Result<(), CompileError> {
     // Compile a function stub
@@ -2892,23 +2912,10 @@ c_callable! {
 
                 // Once we have enough profiles, invalidate and recompile the ISEQ
                 if should_recompile {
-                    let num_versions = payload.versions.len();
                     if let Some(version) = payload.versions.last_mut() {
-                        if unsafe { version.as_ref() }.status != IseqStatus::Invalidated
-                            && num_versions < MAX_ISEQ_VERSIONS
-                        {
-                            unsafe { version.as_mut() }.status = IseqStatus::Invalidated;
-                            unsafe { rb_iseq_reset_jit_func(iseq) };
-
-                            // Recompile JIT-to-JIT calls into the invalidated ISEQ
-                            let cb = ZJITState::get_code_block();
-                            for incoming in unsafe { version.as_ref() }.incoming.iter() {
-                                if let Err(err) = gen_iseq_call(cb, incoming) {
-                                    debug!("{err:?}: gen_iseq_call failed on no-profile recompile: {}", iseq_get_location(incoming.iseq.get(), 0));
-                                }
-                            }
-                            cb.mark_all_executable();
-                        }
+                        let cb = ZJITState::get_code_block();
+                        invalidate_iseq_version(cb, iseq, version);
+                        cb.mark_all_executable();
                     }
                 }
             });
