@@ -912,8 +912,8 @@ pub enum Insn {
     IfFalse { val: InsnId, target: BranchEdge },
 
     /// Call a C function without pushing a frame
-    /// `name` is for printing purposes only
-    CCall { cfunc: *const u8, recv: InsnId, args: Vec<InsnId>, name: ID, return_type: Type, elidable: bool },
+    /// `name` and `owner` are for printing purposes only
+    CCall { cfunc: *const u8, recv: InsnId, args: Vec<InsnId>, name: ID, owner: VALUE, return_type: Type, elidable: bool },
 
     /// Call a C function that pushes a frame
     CCallWithFrame {
@@ -1953,15 +1953,16 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GetConstantPath { ic, .. } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
             Insn::IsBlockGiven { lep } => { write!(f, "IsBlockGiven {lep}") },
             Insn::FixnumBitCheck {val, index} => { write!(f, "FixnumBitCheck {val}, {index}") },
-            Insn::CCall { cfunc, recv, args, name, return_type: _, elidable: _ } => {
-                write!(f, "CCall {recv}, :{}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfunc))?;
+            Insn::CCall { cfunc, recv, args, name, owner, return_type: _, elidable: _ } => {
+                let display_name = if *owner == Qnil { name.contents_lossy().to_string() } else { qualified_method_name(*owner, *name) };
+                write!(f, "CCall {recv}, :{}@{:p}", display_name, self.ptr_map.map_ptr(cfunc))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
                 Ok(())
             },
-            Insn::CCallWithFrame { cfunc, recv, args, name, blockiseq, .. } => {
-                write!(f, "CCallWithFrame {recv}, :{}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfunc))?;
+            Insn::CCallWithFrame { cfunc, recv, args, name, cme, blockiseq, .. } => {
+                write!(f, "CCallWithFrame {recv}, :{}@{:p}", qualified_method_name(unsafe { (**cme).owner }, *name), self.ptr_map.map_ptr(cfunc))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
@@ -1970,8 +1971,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 }
                 Ok(())
             },
-            Insn::CCallVariadic { cfunc, recv, args, name, .. } => {
-                write!(f, "CCallVariadic {recv}, :{}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfunc))?;
+            Insn::CCallVariadic { cfunc, recv, args, name, cme, .. } => {
+                write!(f, "CCallVariadic {recv}, :{}@{:p}", qualified_method_name(unsafe { (**cme).owner }, *name), self.ptr_map.map_ptr(cfunc))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
@@ -2774,7 +2775,7 @@ impl Function {
             &HashAset { hash, key, val, state } => HashAset { hash: find!(hash), key: find!(key), val: find!(val), state },
             &ObjectAlloc { val, state } => ObjectAlloc { val: find!(val), state },
             &ObjectAllocClass { class, state } => ObjectAllocClass { class, state: find!(state) },
-            &CCall { cfunc, recv, ref args, name, return_type, elidable } => CCall { cfunc, recv: find!(recv), args: find_vec!(args), name, return_type, elidable },
+            &CCall { cfunc, recv, ref args, name, owner, return_type, elidable } => CCall { cfunc, recv: find!(recv), args: find_vec!(args), name, owner, return_type, elidable },
             &CCallWithFrame { cd, cfunc, recv, ref args, cme, name, state, return_type, elidable, blockiseq } => CCallWithFrame {
                 cd,
                 cfunc,
@@ -4075,13 +4076,14 @@ impl Function {
                                     }
 
                                     // Use CCallWithFrame for the C function.
-                                    let name = rust_str_to_id(&qualified_method_name(unsafe { (*super_cme).owner }, unsafe { (*super_cme).called_id }));
+                                    let name = unsafe { (*super_cme).called_id };
+                                    let owner = unsafe { (*super_cme).owner };
                                     let return_type = props.return_type;
                                     let elidable = props.elidable;
                                     // Filter for a leaf and GC free function
                                     let ccall = if props.leaf && props.no_gc {
                                         self.count(block, Counter::inline_cfunc_optimized_send_count);
-                                        self.push_insn(block, Insn::CCall { cfunc: cfunc_ptr, recv, args, name, return_type, elidable })
+                                        self.push_insn(block, Insn::CCall { cfunc: cfunc_ptr, recv, args, name, owner, return_type, elidable })
                                     } else {
                                         if get_option!(stats) {
                                             self.count_not_inlined_cfunc(block, super_cme);
@@ -4125,13 +4127,14 @@ impl Function {
                                     }
 
                                     // Use CCallVariadic for the variadic C function.
-                                    let name = rust_str_to_id(&qualified_method_name(unsafe { (*super_cme).owner }, unsafe { (*super_cme).called_id }));
+                                    let name = unsafe { (*super_cme).called_id };
+                                    let owner = unsafe { (*super_cme).owner };
                                     let return_type = props.return_type;
                                     let elidable = props.elidable;
                                     // Filter for a leaf and GC free function
                                     let ccall = if props.leaf && props.no_gc {
                                         self.count(block, Counter::inline_cfunc_optimized_send_count);
-                                        self.push_insn(block, Insn::CCall { cfunc: cfunc_ptr, recv, args, name, return_type, elidable })
+                                        self.push_insn(block, Insn::CCall { cfunc: cfunc_ptr, recv, args, name, owner, return_type, elidable })
                                     } else {
                                         if get_option!(stats) {
                                             self.count_not_inlined_cfunc(block, super_cme);
@@ -4254,6 +4257,7 @@ impl Function {
             recv,
             args: vec![ivar_index_insn],
             name: ID!(rb_ivar_get_at_no_ractor_check),
+            owner: Qnil,
             return_type: types::BasicObject,
             elidable: true })
     }
@@ -4636,7 +4640,7 @@ impl Function {
                     // Emit a call
                     let cfunc = unsafe { get_mct_func(cfunc) }.cast();
 
-                    let name = rust_str_to_id(&qualified_method_name(unsafe { (*cme).owner }, unsafe { (*cme).called_id }));
+                    let name = unsafe { (*cme).called_id };
                     let ccall = fun.push_insn(block, Insn::CCallWithFrame {
                         cd,
                         cfunc,
@@ -4815,13 +4819,14 @@ impl Function {
 
                     // No inlining; emit a call
                     let cfunc = unsafe { get_mct_func(cfunc) }.cast();
-                    let name = rust_str_to_id(&qualified_method_name(unsafe { (*cme).owner }, unsafe { (*cme).called_id }));
+                    let name = unsafe { (*cme).called_id };
+                    let owner = unsafe { (*cme).owner };
                     let return_type = props.return_type;
                     let elidable = props.elidable;
                     // Filter for a leaf and GC free function
                     if props.leaf && props.no_gc {
                         fun.count(block, Counter::inline_cfunc_optimized_send_count);
-                        let ccall = fun.push_insn(block, Insn::CCall { cfunc, recv, args, name, return_type, elidable });
+                        let ccall = fun.push_insn(block, Insn::CCall { cfunc, recv, args, name, owner, return_type, elidable });
                         fun.make_equal_to(send_insn_id, ccall);
                     } else {
                         if get_option!(stats) {
@@ -4901,7 +4906,7 @@ impl Function {
                         }
                         let return_type = props.return_type;
                         let elidable = props.elidable;
-                        let name = rust_str_to_id(&qualified_method_name(unsafe { (*cme).owner }, unsafe { (*cme).called_id }));
+                        let name = unsafe { (*cme).called_id };
                         let ccall = fun.push_insn(block, Insn::CCallVariadic {
                             cfunc,
                             recv,

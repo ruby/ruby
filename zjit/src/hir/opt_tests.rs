@@ -7729,7 +7729,7 @@ mod hir_opt_tests {
           v39:ArrayExact[VALUE(0x1018)] = Const Value(VALUE(0x1018))
           PatchPoint NoSingletonClass(Array@0x1020)
           PatchPoint MethodRedefined(Array@0x1020, zip@0x1028, cme:0x1030)
-          v43:BasicObject = CCallVariadic v36, :zip@0x1058, v39
+          v43:BasicObject = CCallVariadic v36, :Array#zip@0x1058, v39
           v22:CPtr = GetEP 0
           v23:BasicObject = LoadField v22, :result@0x1060
           PatchPoint NoEPEscape(test)
