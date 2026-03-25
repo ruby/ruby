@@ -50,6 +50,27 @@ class TestRactor < Test::Unit::TestCase
     assert_unshareable(x, "can not make shareable object for #<Method: String#to_s()> because it refers unshareable objects", exception: Ractor::Error)
   end
 
+  def test_sending_exception_with_backtrace
+    assert_ractor(<<~'RUBY')
+      def build_error
+        raise "Test"
+      rescue => error
+        error
+      end
+
+      error = build_error
+      refute_empty error.backtrace
+      refute_empty error.backtrace_locations
+
+      backtrace, backtrace_locations = Ractor.new(error) do |error2|
+        [error2.backtrace, error2.backtrace_locations]
+      end.value
+
+      assert_equal error.backtrace, backtrace
+      refute_empty backtrace_locations
+    RUBY
+  end
+
   def test_default_thread_group
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;

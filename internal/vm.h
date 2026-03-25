@@ -99,6 +99,10 @@ struct rb_iseq_struct;
 const struct rb_callcache *rb_vm_search_method_slowpath(const struct rb_callinfo *ci, VALUE klass);
 
 /* vm_method.c */
+typedef VALUE (*rb_copy_alloc_func_t)(VALUE klass, VALUE other);
+rb_alloc_func_t rb_get_raw_alloc_func(VALUE klass);
+void rb_define_copy_alloc_func(VALUE klass, rb_copy_alloc_func_t func);
+void rb_init_alloc_func(VALUE klass);
 int rb_ec_obj_respond_to(struct rb_execution_context_struct *ec, VALUE obj, ID id, int priv);
 
 /* vm_dump.c */
