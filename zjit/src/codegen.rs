@@ -242,6 +242,7 @@ pub fn invalidate_iseq_version(cb: &mut CodeBlock, iseq: IseqPtr, version: &mut 
 
 /// Stub a branch for a JIT-to-JIT call
 pub fn gen_iseq_call(cb: &mut CodeBlock, iseq_call: &IseqCallRef) -> Result<(), CompileError> {
+    trace_compile_phase("compile_stub", || {
     // Compile a function stub
     let stub_ptr = gen_function_stub(cb, iseq_call.clone()).inspect_err(|err| {
         debug!("{err:?}: gen_function_stub failed: {}", iseq_get_location(iseq_call.iseq.get(), 0));
@@ -255,6 +256,7 @@ pub fn gen_iseq_call(cb: &mut CodeBlock, iseq_call: &IseqCallRef) -> Result<(), 
         asm.ccall_into(C_RET_OPND, stub_addr, vec![]);
     });
     Ok(())
+    })
 }
 
 /// Write an entry to the perf map in /tmp
@@ -352,14 +354,20 @@ fn gen_iseq_body(cb: &mut CodeBlock, iseq: IseqPtr, mut version: IseqVersionRef,
 
     // Compile the High-level IR
     let (iseq_code_ptrs, gc_offsets, iseq_calls) =
-        trace_compile_phase("codegen", ||
-            crate::stats::with_time_stat(Counter::compile_lir_time_ns, || gen_function(cb, iseq, version, function))
-        )?;
+        trace_compile_phase("codegen", || {
+            let (iseq_code_ptrs, gc_offsets, iseq_calls) =
+                crate::stats::with_time_stat(Counter::compile_lir_time_ns, || gen_function(cb, iseq, version, function))?;
 
-    // Stub callee ISEQs for JIT-to-JIT calls
-    for iseq_call in iseq_calls.iter() {
-        gen_iseq_call(cb, iseq_call)?;
-    }
+            // Stub callee ISEQs for JIT-to-JIT calls
+            trace_compile_phase("generate_jit_jit_stubs", || {
+                for iseq_call in iseq_calls.iter() {
+                    gen_iseq_call(cb, iseq_call)?;
+                }
+                Ok::<(), CompileError>(())
+            })?;
+
+            Ok((iseq_code_ptrs, gc_offsets, iseq_calls))
+        })?;
 
     // Prepare for GC
     unsafe { version.as_mut() }.outgoing.extend(iseq_calls);
@@ -369,6 +377,7 @@ fn gen_iseq_body(cb: &mut CodeBlock, iseq: IseqPtr, mut version: IseqVersionRef,
 
 /// Compile a function
 fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, function: &Function) -> Result<(IseqCodePtrs, Vec<CodePtr>, Vec<IseqCallRef>), CompileError> {
+    let (mut jit, asm) = trace_compile_phase("lowering", || {
     let num_spilled_params = max_num_params(function).saturating_sub(ALLOC_REGS.len());
     let mut jit = JITState::new(iseq, version, function.num_insns(), function.num_blocks());
     let mut asm = Assembler::new_with_stack_slots(num_spilled_params);
@@ -545,6 +554,9 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
 
     // Validate CFG invariants after HIR to LIR lowering
     asm.validate_jump_positions();
+
+    (jit, asm)
+    });
 
     // Generate code if everything can be compiled
     let result = asm.compile(cb);
@@ -3270,9 +3282,11 @@ fn function_stub_hit_body(cb: &mut CodeBlock, iseq_call: &IseqCallRef) -> Result
     let jit_entry_ptr = jit_entry_ptrs[iseq_call.jit_entry_idx.to_usize()];
     let code_addr = jit_entry_ptr.raw_ptr(cb);
     let iseq = iseq_call.iseq.get();
-    iseq_call.regenerate(cb, |asm| {
-        asm_comment!(asm, "call compiled function: {}", iseq_get_location(iseq, 0));
-        asm.ccall_into(C_RET_OPND, code_addr, vec![]);
+    trace_compile_phase("compile_stub", || {
+        iseq_call.regenerate(cb, |asm| {
+            asm_comment!(asm, "call compiled function: {}", iseq_get_location(iseq, 0));
+            asm.ccall_into(C_RET_OPND, code_addr, vec![]);
+        });
     });
 
     Ok(jit_entry_ptr)

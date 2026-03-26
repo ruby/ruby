@@ -300,6 +300,7 @@ impl ZJITState {
 
     /// Get a mutable reference to the Perfetto tracer
     pub fn get_tracer() -> Option<&'static mut PerfettoTracer> {
+        if !ZJITState::has_instance() { return None; }
         ZJITState::get_instance().perfetto_tracer.as_mut()
     }
 }

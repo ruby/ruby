@@ -3,7 +3,7 @@ use std::mem;
 use crate::asm::*;
 use crate::asm::x86_64::*;
 use crate::codegen::split_patch_point;
-use crate::stats::CompileError;
+use crate::stats::{CompileError, trace_compile_phase};
 use crate::virtualmem::CodePtr;
 use crate::cruby::*;
 use crate::backend::lir::*;
@@ -1143,14 +1143,15 @@ impl Assembler {
         let use_scratch_regs = !self.accept_scratch_reg;
         asm_dump!(self, init);
 
-        let mut asm = self.x86_split();
+        let mut asm = trace_compile_phase("split", || self.x86_split());
 
         asm_dump!(asm, split);
 
-        asm.number_instructions(0);
+        let (intervals, assignments, num_stack_slots) = trace_compile_phase("regalloc", || {
+        trace_compile_phase("number_instructions", || asm.number_instructions(0));
 
-        let live_in = asm.analyze_liveness();
-        let intervals = asm.build_intervals(live_in);
+        let live_in = trace_compile_phase("analyze_liveness", || asm.analyze_liveness());
+        let intervals = trace_compile_phase("build_intervals", || asm.build_intervals(live_in));
 
         // Dump live intervals if requested
         if let Some(crate::options::Options { dump_lir: Some(dump_lirs), .. }) = unsafe { crate::options::OPTIONS.as_ref() } {
@@ -1160,7 +1161,9 @@ impl Assembler {
         }
 
         let preferred_registers = asm.preferred_register_assignments(&intervals);
-        let (assignments, num_stack_slots) = asm.linear_scan(intervals.clone(), regs.len(), &preferred_registers);
+        let (assignments, num_stack_slots) = trace_compile_phase("linear_scan", || asm.linear_scan(intervals.clone(), regs.len(), &preferred_registers));
+        (intervals, assignments, num_stack_slots)
+        });
 
         let total_stack_slots = asm.stack_base_idx + num_stack_slots;
         if total_stack_slots > Self::MAX_FRAME_STACK_SLOTS {
@@ -1198,8 +1201,10 @@ impl Assembler {
             }
         }
 
-        asm.handle_caller_saved_regs(&intervals, &assignments, &C_ARG_REGREGS);
-        asm.resolve_ssa(&intervals, &assignments);
+        trace_compile_phase("resolve_ssa", || {
+            asm.handle_caller_saved_regs(&intervals, &assignments, &C_ARG_REGREGS);
+            asm.resolve_ssa(&intervals, &assignments);
+        });
         asm_dump!(asm, alloc_regs);
 
         // We are moved out of SSA after resolve_ssa
@@ -1207,27 +1212,30 @@ impl Assembler {
         // We put compile_exits after alloc_regs to avoid extending live ranges for VRegs spilled on side exits.
         // Exit code is compiled into a separate list of instructions that we append
         // to the last reachable block before scratch_split, so it gets linearized and split.
-        let exit_insns = asm.compile_exits();
+        trace_compile_phase("compile_exits", || {
+            let exit_insns = asm.compile_exits();
+
+            // Append exit instructions to the last reachable block so they are
+            // included in linearize_instructions and processed by scratch_split.
+            if let Some(&last_block) = asm.block_order().last() {
+                for insn in exit_insns {
+                    asm.basic_blocks[last_block.0].insns.push(insn);
+                    asm.basic_blocks[last_block.0].insn_ids.push(None);
+                }
+            }
+        });
         asm_dump!(asm, compile_exits);
 
-        // Append exit instructions to the last reachable block so they are
-        // included in linearize_instructions and processed by scratch_split.
-        if let Some(&last_block) = asm.block_order().last() {
-            for insn in exit_insns {
-                asm.basic_blocks[last_block.0].insns.push(insn);
-                asm.basic_blocks[last_block.0].insn_ids.push(None);
-            }
-        }
-
         if use_scratch_regs {
-            asm = asm.x86_scratch_split();
+            asm = trace_compile_phase("scratch_split", || asm.x86_scratch_split());
             asm_dump!(asm, scratch_split);
         } else {
             // For trampolines that use scratch registers, resolve ParallelMov without scratch_reg.
-            asm = asm.resolve_parallel_mov_pass();
+            asm = trace_compile_phase("resolve_parallel_mov", || asm.resolve_parallel_mov_pass());
             asm_dump!(asm, resolve_parallel_mov);
         }
 
+        trace_compile_phase("emit", || {
         // Create label instances in the code block
         for (idx, name) in asm.label_names.iter().enumerate() {
             let label = cb.new_label(name.to_string());
@@ -1240,6 +1248,7 @@ impl Assembler {
 
         cb.link_labels().or(Err(CompileError::LabelLinkingFailure))?;
         Ok((start_ptr, gc_offsets))
+        })
     }
 }
 
