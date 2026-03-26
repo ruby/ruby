@@ -2128,10 +2128,11 @@ pub struct Param {
 impl std::fmt::Display for Param {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         if let Some(id) = self.id {
+            // If the id is 0 or empty string, write a placeholder
             if id_is_empty(id) {
-                write!(f, "<empty>[{}]", self.insn_id)
+                write!(f, "<empty>: {}", self.insn_id)
             } else {
-                write!(f, "{}[{}]", id, self.insn_id)
+                write!(f, "{}: {}", id, self.insn_id)
             }
         } else {
             self.insn_id.fmt(f)
@@ -9198,7 +9199,7 @@ mod graphviz_tests {
         </TABLE>>];
           bb2:v10 -> bb3:params:n;
           bb3 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb3(self[v11]:BasicObject, x[v12]:BasicObject, y[v13]:BasicObject)&nbsp;</TD></TR>
+        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb3(self: v11:BasicObject, x: v12:BasicObject, y: v13:BasicObject)&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v16">PatchPoint NoTracePoint&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v27">PatchPoint MethodRedefined(Integer@0x1008, |@0x1010, cme:0x1018)&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v28">v28:Fixnum = GuardType v12, Fixnum&nbsp;</TD></TR>
@@ -9251,7 +9252,7 @@ mod graphviz_tests {
         </TABLE>>];
           bb2:v8 -> bb3:params:n;
           bb3 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb3(self[v9]:BasicObject, c[v10]:BasicObject)&nbsp;</TD></TR>
+        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb3(self: v9:BasicObject, c: v10:BasicObject)&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v13">PatchPoint NoTracePoint&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v15">CheckInterrupts&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v16">v16:CBool = Test v10&nbsp;</TD></TR>
@@ -9265,7 +9266,7 @@ mod graphviz_tests {
         </TABLE>>];
           bb3:v18 -> bb4:params:n;
           bb4 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb4(self[v27]:BasicObject, v28:Falsy)&nbsp;</TD></TR>
+        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb4(self: v27:BasicObject, v28:Falsy)&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v31">PatchPoint NoTracePoint&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v32">v32:Fixnum[4] = Const Value(4)&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v35">CheckInterrupts&nbsp;</TD></TR>
