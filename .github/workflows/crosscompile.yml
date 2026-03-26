@@ -58,20 +58,11 @@ jobs:
           sparse-checkout: /.github
           persist-credentials: false
 
-      # Temporarily checkout ruby_4_0 to verify cross-compile on a branch that supports it
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          repository: ruby/ruby
-          ref: ruby_4_0
-          path: src
-          persist-credentials: false
-
       - uses: ./.github/actions/setup/directories
         with:
           srcdir: src
           builddir: build
           makeup: true
-          checkout: ''
 
       - name: Install cross-compilation toolchain
         run: |
