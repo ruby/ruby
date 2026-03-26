@@ -223,6 +223,25 @@ pub extern "C" fn rb_zjit_invalidate_no_ep_escape(iseq: IseqPtr) {
             let cb = ZJITState::get_code_block();
             compile_patch_points!(cb, patch_points, EP, "EP is escaped: {}", iseq_name(iseq));
 
+            // Also invalidate the ISEQ version so the method falls back to the
+            // interpreter on the next call. NoEPEscape PatchPoint side exits use
+            // without_locals() and don't save locals to the frame. If a PatchPoint
+            // fires on a later call (where EP hasn't escaped), the interpreter would
+            // read stale locals (e.g., nil instead of [] for keyword defaults).
+            //
+            // We can't use invalidate_iseq_version() here because it skips when
+            // at MAX_ISEQ_VERSIONS (to prevent unbounded recompilation). Instead,
+            // directly mark the version as invalidated and reset jit_func so the
+            // interpreter takes over permanently.
+            let payload = crate::payload::get_or_create_iseq_payload(iseq);
+            if let Some(version) = payload.versions.last_mut() {
+                use crate::payload::IseqStatus;
+                if unsafe { version.as_ref() }.status != IseqStatus::Invalidated {
+                    unsafe { version.as_mut() }.status = IseqStatus::Invalidated;
+                    unsafe { rb_iseq_reset_jit_func(iseq) };
+                }
+            }
+
             cb.mark_all_executable();
         }
     });

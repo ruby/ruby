@@ -5288,3 +5288,28 @@ fn test_polymorphic_getivar_too_complex_shape() {
         [normal.foo, complex.foo]
     "#), @"[:normal, :complex]");
 }
+
+/// When a method with keyword defaults contains a block that creates a lambda,
+/// the lambda causes EP escape, which globally patches NoEPEscape PatchPoints.
+/// On subsequent calls the PatchPoint side exit (which uses without_locals())
+/// must not leave stale keyword default values in the frame. We solve this by
+/// invalidating the ISEQ version on EP escape so the interpreter takes over.
+#[test]
+fn test_ep_escape_preserves_keyword_default() {
+    set_call_threshold(1);
+    assert_snapshot!(inspect(r#"
+        def target(dumped, additional_methods: [])
+          dumped.class
+          additional_methods.each { |m| ->{ m } }
+          additional_methods
+        end
+
+        def forwarder(x, **kwargs)
+          target(x, **kwargs)
+        end
+
+        5.times { forwarder("z") }
+        forwarder("y", additional_methods: [:to_s])
+        target("x")
+    "#), @"[]");
+}
