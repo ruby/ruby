@@ -698,7 +698,7 @@ fiber_pool_stack_acquire_expand(struct fiber_pool *fiber_pool)
 {
     size_t count = fiber_pool_stack_expand_count(fiber_pool);
 
-    if (DEBUG) fprintf(stderr, "fiber_pool_stack_acquire: expanding fiber pool to %"PRIuSIZE" stacks\n", count);
+    if (DEBUG) fprintf(stderr, "fiber_pool_stack_acquire: expanding fiber pool by %"PRIuSIZE" stacks\n", count);
 
     struct fiber_pool_vacancy *vacancy = NULL;
 
