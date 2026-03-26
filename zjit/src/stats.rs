@@ -1076,6 +1076,30 @@ impl PerfettoTracer {
         tracer.write_word(pid as u64);
         tracer.write_word(1u64);
 
+        // Kernel object record for process: type=7, obj_type=1 (ZX_OBJ_TYPE_PROCESS), no args
+        let process_name_ref = tracer.intern_string("ruby");
+        let ko_process_header: u64 = 7u64
+            | (2u64 << 4)                          // size = 2 words
+            | (1u64 << 16)                         // obj_type = ZX_OBJ_TYPE_PROCESS
+            | ((process_name_ref as u64) << 24);   // name
+        tracer.write_word(ko_process_header);
+        tracer.write_word(pid as u64);             // koid = process id
+
+        // Kernel object record for thread: type=7, obj_type=2 (ZX_OBJ_TYPE_THREAD), 1 arg
+        let thread_name_ref = tracer.intern_string("main");
+        let process_arg_name_ref = tracer.intern_string("process");
+        let ko_thread_header: u64 = 7u64
+            | (4u64 << 4)                          // size = 4 words (header + koid + 2-word arg)
+            | (2u64 << 16)                         // obj_type = ZX_OBJ_TYPE_THREAD
+            | ((thread_name_ref as u64) << 24)     // name
+            | (1u64 << 40);                        // n_args = 1
+        tracer.write_word(ko_thread_header);
+        tracer.write_word(1u64);                   // koid = thread id (matches thread record)
+        // Koid argument: type=8, size=2, name="process", value=pid
+        let arg_header: u64 = 8u64 | (2u64 << 4) | ((process_arg_name_ref as u64) << 16);
+        tracer.write_word(arg_header);
+        tracer.write_word(pid as u64);
+
         // Pre-intern common strings
         tracer.intern_string("side_exit");
         tracer.intern_string("compile");
