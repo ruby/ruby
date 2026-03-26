@@ -4,19 +4,36 @@ use crate::state::ZJITState;
 #[derive(Debug)]
 #[repr(C)]
 pub struct JITFrame {
+    /// Program counter for this frame, used for backtraces and GC.
+    /// NULL for C frames (they don't have a Ruby PC).
     pub pc: *const VALUE,
-    pub iseq: IseqPtr, // marked in rb_execution_context_mark
+    /// The ISEQ this frame belongs to. Marked via rb_execution_context_mark.
+    /// NULL for C frames.
+    pub iseq: IseqPtr,
+    /// Whether to materialize block_code when this frame is materialized.
+    /// True when the ISEQ doesn't contain send/invokesuper/invokeblock
+    /// (which write block_code themselves), so we must restore it.
+    /// Always false for C frames.
     pub materialize_block_code: bool,
 }
 
 impl JITFrame {
-    /// Allocate a new JITFrame on the heap and register it with ZJITState.
-    /// Returns a raw pointer that remains valid for the lifetime of the process.
-    pub fn new(pc: *const VALUE, iseq: IseqPtr, materialize_block_code: bool) -> *const Self {
-        let jit_frame = Box::new(JITFrame { pc, iseq, materialize_block_code });
-        let raw_ptr = Box::into_raw(jit_frame) as *const _;
+    /// Allocate a JITFrame on the heap, register it with ZJITState, and return
+    /// a raw pointer that remains valid for the lifetime of the process.
+    fn alloc(jit_frame: JITFrame) -> *const Self {
+        let raw_ptr = Box::into_raw(Box::new(jit_frame)) as *const _;
         ZJITState::get_jit_frames().push(raw_ptr);
         raw_ptr
+    }
+
+    /// Create a JITFrame for an ISEQ frame.
+    pub fn new_iseq(pc: *const VALUE, iseq: IseqPtr, materialize_block_code: bool) -> *const Self {
+        Self::alloc(JITFrame { pc, iseq, materialize_block_code })
+    }
+
+    /// Create a JITFrame for a C frame (no PC, no ISEQ).
+    pub fn new_cfunc() -> *const Self {
+        Self::alloc(JITFrame { pc: std::ptr::null(), iseq: std::ptr::null(), materialize_block_code: false })
     }
 }
 

@@ -2706,7 +2706,7 @@ fn gen_save_pc_for_gc(asm: &mut Assembler, state: &FrameState) {
     if let Some(pc) = PC_POISON {
         asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::const_ptr(pc));
     }
-    let jit_frame = JITFrame::new(next_pc, state.iseq, !iseq_may_write_block_code(state.iseq));
+    let jit_frame = JITFrame::new_iseq(next_pc, state.iseq, !iseq_may_write_block_code(state.iseq));
     asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), Opnd::const_ptr(jit_frame));
 }
 
@@ -2856,7 +2856,7 @@ fn gen_push_frame(asm: &mut Assembler, argc: usize, state: &FrameState, frame: C
         // Without this, stale data from a previous frame occupying this CFP slot
         // can be used as an ifunc pointer, causing a segfault.
         asm.mov(cfp_opnd(RUBY_OFFSET_CFP_BLOCK_CODE), 0.into());
-        let jit_frame = JITFrame::new(std::ptr::null(), std::ptr::null(), false);
+        let jit_frame = JITFrame::new_cfunc();
         asm.mov(cfp_opnd(RUBY_OFFSET_CFP_JIT_RETURN), Opnd::const_ptr(jit_frame));
     }
 
