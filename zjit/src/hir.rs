@@ -4930,32 +4930,60 @@ impl Function {
         }
     }
 
+    // TODO: Replace hashmaps with vecs?
+    // TODO: Add comments describing load store elimination in the first pass
+    // TODO: Link to rails at scale post?
+    // TODO: Add comments describing deada store elimination in the second pass
+    // TODO: Add master comment about type based alias analysis with specific callouts referencing the overall TBAA comment
+    // TODO(Jacob): Spend time with the old noggin to answer the following questions.
+    //       1. It is possible to do DSE forwards. Is it possible to do this at the same time as load store?
+    //          If so, this would allow us to do it in one pass*. We still need to clean up the dead stores afterwards and convert them to
+    //          NOPs or something. The more I think about it, the more I think it makes sense to have a cleanup pass at the end of all other
+    //          analysis passes.
+    //       2. DSE and load-store-opt seem like duals of each other. If this is true, then they should be symmetric. Why does DSE only handle
+    //          stores? Can I convince myself that we're not missing some potential dead loads? Is this caught at an SSA level already?
     fn optimize_load_store(&mut self) {
+        #[derive(PartialEq, Eq, Hash, Clone, Copy)]
+        struct HeapKey {
+            object: InsnId,
+            offset: i32,
+        }
+
+        // This helper function is used while we don't have type based alias
+        // analysis. Matching offsets could result in aliased objects that need
+        // to be clear.
+        // Any code location that uses the remove_aliasing function needs to be replaced
+        // when we implement TBAA
+        fn remove_aliasing(map: &mut HashMap<HeapKey, InsnId>, offset: i32) {
+            map.retain(|HeapKey { object: _, offset: off }, _| *off != offset);
+        }
+
         for block in self.rpo() {
-            let mut compile_time_heap: HashMap<(InsnId, i32), InsnId>  = HashMap::new();
+            // First, we eliminate loads and stores
+            let mut compile_time_heap: HashMap<HeapKey, InsnId> = HashMap::new();
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             let mut new_insns = vec![];
+
             for insn_id in old_insns {
-                let replacement_insn: InsnId = match self.find(insn_id) {
+                match self.find(insn_id) {
                     Insn::StoreField { recv, offset, val, .. } => {
-                        let key = (self.chase_insn(recv), offset);
+                        let key = HeapKey { object: self.chase_insn(recv), offset };
                         let heap_entry = compile_time_heap.get(&key).copied();
                         // TODO(Jacob): Switch from actual to partial equality
                         if Some(val) == heap_entry {
                             // If the value is already stored, short circuit and don't add an instruction to the block
                             continue
                         }
-                        // TODO(Jacob): Add TBAA to avoid removing so many entries
-                        compile_time_heap.retain(|(_, off), _| *off != offset);
+                        remove_aliasing(&mut compile_time_heap, offset);
                         compile_time_heap.insert(key, val);
-                        insn_id
                     },
                     Insn::LoadField { recv, offset, .. } => {
-                        let key = (self.chase_insn(recv), offset);
+                        let key = HeapKey { object: self.chase_insn(recv), offset };
                         match compile_time_heap.entry(key) {
                             std::collections::hash_map::Entry::Occupied(entry) => {
                                 // If the value is stored already, we should short circuit.
                                 // However, we need to replace insn_id with its representative in the SSA union.
+                                // TODO: Show an example of why we need this with p little ascii diagram or something
                                 self.make_equal_to(insn_id, *entry.get());
                                 continue
                             }
@@ -4964,28 +4992,64 @@ impl Function {
                                 compile_time_heap.insert(key, insn_id);
                             }
                         }
-                        insn_id
                     }
                     Insn::WriteBarrier { .. } => {
                         // Currently, WriteBarrier write effects are Allocator and Memory when we'd really like them to be flags.
                         // We don't use LoadField for mark bits so we can ignore them for now.
                         // But flags does not exist in our effects abstract heap modeling and we don't want to add special casing to effects.
                         // This special casing in this pass here should be removed once we refine our effects system to provide greater granularity for WriteBarrier.
-                        // TODO: use TBAA
                         let offset = RUBY_OFFSET_RBASIC_FLAGS;
-                        compile_time_heap.retain(|(_, off), _| *off != offset);
-                        insn_id
+                        remove_aliasing(&mut compile_time_heap, offset);
                     },
                     insn => {
                         // If an instruction affects memory and we haven't modeled it, the compile_time_heap is invalidated
                         if insn.effects_of().includes(Effect::write(abstract_heaps::Memory)) {
                             compile_time_heap.clear();
                         }
-                        insn_id
                     }
                 };
-                new_insns.push(replacement_insn);
+                new_insns.push(insn_id);
             }
+
+            // After performing scalar replacement on loads and stores where
+            // applicable, we scan in reverse to find an eliminate dead stores
+            let mut reversed_insns = std::mem::take(&mut new_insns);
+            reversed_insns.reverse();
+            compile_time_heap.clear();
+
+            for insn_id in reversed_insns {
+                match self.find(insn_id) {
+                    Insn::StoreField { recv, offset, .. } => {
+                        let key = HeapKey { object: self.chase_insn(recv), offset };
+                        if compile_time_heap.contains_key(&key) {
+                            // We've found a second store with no uses between. eliminate the earlier one
+                            continue
+                        }
+                        else {
+                            remove_aliasing(&mut compile_time_heap, offset);
+                            compile_time_heap.insert(key, insn_id);
+                        }
+                    }
+                    Insn::LoadField{ offset, .. } => {
+                        remove_aliasing(&mut compile_time_heap, offset);
+                    }
+                    Insn::WriteBarrier { .. } => {
+                        let offset = RUBY_OFFSET_RBASIC_FLAGS;
+                        remove_aliasing(&mut compile_time_heap, offset);
+                    },
+                    insn => {
+                        // TODO: Add test case for control flow potential bugs
+                        if insn.effects_of().includes(Effect::read(abstract_heaps::Memory)) {
+                            compile_time_heap.clear();
+                        }
+                        else if insn.effects_of().includes(effects::Control) {
+                            compile_time_heap.clear();
+                        }
+                    }
+                }
+                new_insns.push(insn_id);
+            }
+            new_insns.reverse();
             self.blocks[block.0].insns = new_insns;
         }
     }
@@ -5018,9 +5082,7 @@ impl Function {
             let mut active_stores: HashMap<StoreHeap, InsnId> = HashMap::new();
             let insns = std::mem::take(&mut self.blocks[block.0].insns);
             let mut new_insns = vec![];
-            for insn_id_ref in insns.iter().rev() {
-                // TODO: This is ugly, clean this up
-                let insn_id = *insn_id_ref;
+            for insn_id in insns.iter().rev().copied() {
                 match self.find(insn_id) {
                     Insn::StoreField { recv, offset, .. } => {
                         let key = StoreHeap { object: self.chase_insn(recv), offset };
@@ -5071,6 +5133,7 @@ impl Function {
                         // entries of active_stores are not loaded. This is because we use
                         // extended basic blocks and we should probably change this to be
                         // standard basic blocks.
+                        // TODO: Add a test for this case
                         if insn.effects_of().includes(Effect::read(abstract_heaps::Memory)) {
                             active_stores.clear();
                         }
@@ -5812,7 +5875,7 @@ impl Function {
         run_pass!(convert_no_profile_sends);
         run_pass!(optimize_load_store);
         run_pass!(canonicalize);
-        run_pass!(eliminate_dead_stores);
+        // run_pass!(eliminate_dead_stores);
         run_pass!(fold_constants);
         run_pass!(clean_cfg);
         run_pass!(remove_redundant_patch_points);
