@@ -720,6 +720,7 @@ describe "Predefined global $/" do
       $/.should equal(str)
     end
   end
+
   it "can be assigned nil" do
     $/ = nil
     $/.should be_nil

@@ -23,7 +23,7 @@ jobs:
           token: ${{ (github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull')) && secrets.MATZBOT_AUTO_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
           persist-credentials: false
 
-      - uses: ruby/setup-ruby@09a7688d3b55cf0e976497ff046b70949eeaccfd # v1.288.0
+      - uses: ruby/setup-ruby@319994f95fa847cf3fb3cd3dbe89f6dcde9f178f # v1.295.0
         with:
           ruby-version: head
 
@@ -51,6 +51,16 @@ jobs:
           GITHUB_NEW_SHA: ${{ github.event.pull_request.merge_commit_sha }}
         # Skip 'push' events because post_push.yml fixes them on push
         if: ${{ github.repository == 'ruby/ruby' && startsWith(github.event_name, 'pull') }}
+
+      - name: Check if date in man pages is up-to-date
+        run: |
+          git fetch origin --depth=1 "${GITHUB_OLD_SHA}"
+          git diff --exit-code --name-only "${GITHUB_OLD_SHA}" HEAD -- man ||
+          make V=1 GIT=git BASERUBY=ruby update-man-date
+          git diff --color --no-ext-diff --ignore-submodules --exit-code -- man
+        env:
+          GITHUB_OLD_SHA: ${{ github.event.pull_request.base.sha }}
+        if: ${{ startsWith(github.event_name, 'pull') }}
 
       - name: Check for bash specific substitution in configure.ac
         run: |

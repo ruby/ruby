@@ -246,4 +246,22 @@ describe "A Proc" do
       -> { p.call() }.should raise_error(ArgumentError)
     end
   end
+
+  evaluate <<-ruby do
+    @p = proc { |**nil| :ok }
+    ruby
+
+    @p.call().should == :ok
+    -> { @p.call(a: 1) }.should raise_error(ArgumentError, 'no keywords accepted')
+    -> { @p.call(**{a: 1}) }.should raise_error(ArgumentError, 'no keywords accepted')
+    -> { @p.call("a" => 1) }.should raise_error(ArgumentError, 'no keywords accepted')
+  end
+
+  evaluate <<-ruby do
+    @p = proc { |a, **nil| a }
+    ruby
+
+    @p.call({a: 1}).should == {a: 1}
+    -> { @p.call(a: 1) }.should raise_error(ArgumentError, 'no keywords accepted')
+  end
 end

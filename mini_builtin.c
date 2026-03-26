@@ -23,7 +23,8 @@ prelude_ast_value(VALUE name, VALUE code, int line)
 static void
 pm_prelude_load(pm_parse_result_t *result, VALUE name, VALUE code, int line)
 {
-    pm_options_line_set(&result->options, line);
+    pm_parse_result_init(result);
+    pm_options_line_set(result->options, line);
     VALUE error = pm_parse_string(result, code, name, NULL);
 
     if (!NIL_P(error)) {
@@ -60,7 +61,7 @@ builtin_iseq_load(const char *feature_name, const struct rb_builtin_function *ta
     };
 
     if (rb_ruby_prism_p()) {
-        pm_parse_result_t result = { 0 };
+        pm_parse_result_t result;
         pm_prelude_load(&result, name_str, code, start_line);
 
         vm->builtin_function_table = table;

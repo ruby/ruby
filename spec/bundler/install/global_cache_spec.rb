@@ -96,7 +96,7 @@ RSpec.describe "global gem caching" do
 
     describe "when the same gem from different sources is installed" do
       it "should use the appropriate one from the global cache" do
-        bundle "config path.system true"
+        bundle "config set path.system true"
 
         install_gemfile <<-G, artifice: "compact_index"
           source "#{source}"
@@ -141,7 +141,7 @@ RSpec.describe "global gem caching" do
       end
 
       it "should not install if the wrong source is provided" do
-        bundle "config path.system true"
+        bundle "config set path.system true"
 
         gemfile <<-G
           source "#{source}"
@@ -199,7 +199,7 @@ RSpec.describe "global gem caching" do
 
     describe "when installing gems from a different directory" do
       it "uses the global cache as a source" do
-        bundle "config path.system true"
+        bundle "config set path.system true"
 
         install_gemfile <<-G, artifice: "compact_index"
           source "#{source}"

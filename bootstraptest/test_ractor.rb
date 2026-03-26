@@ -1021,8 +1021,8 @@ assert_equal '1234', %q{
   values.join
 }
 
-# cvar in shareable-objects are not allowed to access from non-main Ractor
-assert_equal 'can not access class variables from non-main Ractors (@@cv from C)', %q{
+# Reading non-shareable cvar from non-main Ractor is not allowed
+assert_equal 'can not read non-shareable class variable @@cv from non-main Ractors (C)', %q{
   class C
     @@cv = 'str'
   end
@@ -1040,8 +1040,8 @@ assert_equal 'can not access class variables from non-main Ractors (@@cv from C)
   end
 }
 
-# also cached cvar in shareable-objects are not allowed to access from non-main Ractor
-assert_equal 'can not access class variables from non-main Ractors (@@cv from C)', %q{
+# also cached non-shareable cvar read from non-main Ractor is not allowed
+assert_equal 'can not read non-shareable class variable @@cv from non-main Ractors (C)', %q{
   class C
     @@cv = 'str'
     def self.cv
@@ -1060,6 +1060,95 @@ assert_equal 'can not access class variables from non-main Ractors (@@cv from C)
   rescue Ractor::RemoteError => e
     e.cause.message
   end
+}
+
+# Reading shareable cvar from non-main Ractor is allowed
+assert_equal 'shareable', %q{
+  class C
+    @@cv = 'shareable'.freeze
+    def self.cv
+      @@cv
+    end
+  end
+
+  Ractor.new { C.cv }.value
+}
+
+# Reading shareable cvar (integer) from non-main Ractor is allowed
+assert_equal '42', %q{
+  class C
+    @@cv = 42
+    def self.cv
+      @@cv
+    end
+  end
+
+  Ractor.new { C.cv }.value.to_s
+}
+
+# Reading shareable cvar via module include from non-main Ractor is allowed
+assert_equal 'hello', %q{
+  module M
+    @@cv = 'hello'.freeze
+    def self.cv
+      @@cv
+    end
+  end
+
+  class C
+    include M
+    def self.cv
+      @@cv
+    end
+  end
+
+  Ractor.new { C.cv }.value
+}
+
+# Writing cvar from non-main Ractor is not allowed
+assert_equal 'can not set class variables from non-main Ractors (@@cv from C)', %q{
+  class C
+    @@cv = 'str'
+    def self.cv=(v)
+      @@cv = v
+    end
+  end
+
+  r = Ractor.new do
+    C.cv = 'new'
+  end
+
+  begin
+    r.join
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+}
+
+# Reading cvar that was made shareable after initial assignment
+assert_equal 'made shareable', %q{
+  class C
+    @@cv = +'made shareable'
+    Ractor.make_shareable(@@cv)
+    def self.cv
+      @@cv
+    end
+  end
+
+  Ractor.new { C.cv }.value
+}
+
+# cvar_defined? works from non-main Ractor
+assert_equal 'true', %q{
+  class C
+    @@cv = 42
+    def self.cv?
+      defined?(@@cv)
+    end
+  end
+
+  r = Ractor.new { C.cv? ? 'true' : 'false' }
+  r.value
 }
 
 # Getting non-shareable objects via constants by other Ractors is not allowed

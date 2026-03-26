@@ -30,7 +30,7 @@ Gem::Specification.new do |spec|
 
   # Specify which files should be added to the gem when it is released.
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
-  excludes = %W[/.git* /bin /test /*file /#{File.basename(__FILE__)}]
+  excludes = %W[/.git* /bin /test /test_sig /*file /#{File.basename(__FILE__)}]
   spec.files = IO.popen(%W[git -C #{__dir__} ls-files -z --] + excludes.map {|e| ":^#{e}"}, &:read).split("\x0")
   spec.bindir        = "exe"
   spec.require_paths = ["lib"]

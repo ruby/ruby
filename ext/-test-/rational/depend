@@ -163,8 +163,11 @@ rat.o: $(hdrdir)/ruby/missing.h
 rat.o: $(hdrdir)/ruby/ruby.h
 rat.o: $(hdrdir)/ruby/st.h
 rat.o: $(hdrdir)/ruby/subst.h
+rat.o: $(top_srcdir)/internal.h
+rat.o: $(top_srcdir)/internal/basic_operators.h
 rat.o: $(top_srcdir)/internal/bignum.h
 rat.o: $(top_srcdir)/internal/bits.h
+rat.o: $(top_srcdir)/internal/compar.h
 rat.o: $(top_srcdir)/internal/compilers.h
 rat.o: $(top_srcdir)/internal/fixnum.h
 rat.o: $(top_srcdir)/internal/gc.h

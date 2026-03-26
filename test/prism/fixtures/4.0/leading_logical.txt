@@ -14,8 +14,3 @@ and 3
 or 2
 or 3
 
-1
-andfoo
-
-2
-orfoo

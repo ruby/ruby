@@ -199,7 +199,11 @@ module Bundler
       end
 
       spec_outdated_info = "#{active_spec.name} (newest #{spec_version}, " \
-        "installed #{current_version}#{dependency_version})"
+        "installed #{current_version}#{dependency_version}"
+
+      release_date = release_date_for(active_spec)
+      spec_outdated_info += ", released #{release_date}" unless release_date.empty?
+      spec_outdated_info += ")"
 
       output_message = if options[:parseable]
         spec_outdated_info.to_s
@@ -218,6 +222,7 @@ module Bundler
       dependency = dependency.requirement if dependency
 
       ret_val = [active_spec.name, current_version, spec_version, dependency.to_s, groups.to_s]
+      ret_val << release_date_for(active_spec)
       ret_val << loaded_from_for(active_spec).to_s if Bundler.ui.debug?
       ret_val
     end
@@ -283,9 +288,26 @@ module Bundler
     end
 
     def table_header
-      header = ["Gem", "Current", "Latest", "Requested", "Groups"]
+      header = ["Gem", "Current", "Latest", "Requested", "Groups", "Release Date"]
       header << "Path" if Bundler.ui.debug?
       header
+    end
+
+    def release_date_for(spec)
+      return "" unless spec.respond_to?(:date)
+
+      date = spec.date
+      return "" unless date
+
+      return "" unless Gem.const_defined?(:DEFAULT_SOURCE_DATE_EPOCH)
+      default_date = Time.at(Gem::DEFAULT_SOURCE_DATE_EPOCH).utc
+      default_date = Time.utc(default_date.year, default_date.month, default_date.day)
+
+      date = date.utc if date.respond_to?(:utc)
+
+      return "" if date == default_date
+
+      date.strftime("%Y-%m-%d")
     end
 
     def justify(row, sizes)

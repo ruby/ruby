@@ -3,8 +3,15 @@ require_relative 'fixtures/classes'
 require_relative '../../shared/kernel/raise'
 
 describe "Thread#raise" do
+  it "is a public method" do
+    Thread.public_instance_methods.should include(:raise)
+  end
+
   it_behaves_like :kernel_raise, :raise, ThreadSpecs::NewThreadToRaise
   it_behaves_like :kernel_raise_across_contexts, :raise, ThreadSpecs::NewThreadToRaise
+  ruby_version_is "4.0" do
+    it_behaves_like :kernel_raise_with_cause, :raise, ThreadSpecs::NewThreadToRaise
+  end
 
   it "ignores dead threads and returns nil" do
     t = Thread.new { :dead }

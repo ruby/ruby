@@ -1,2 +1,0 @@
-$(OBJS): $(HDRS) $(ruby_headers)
-$(OBJS): $(srcdir)/../../config.yml

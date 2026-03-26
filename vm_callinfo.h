@@ -66,8 +66,8 @@ struct rb_callinfo {
     VALUE flags;
     const struct rb_callinfo_kwarg *kwarg;
     VALUE mid;
-    VALUE flag;
-    VALUE argc;
+    unsigned int flag;
+    unsigned int argc;
 };
 
 #if !defined(USE_EMBED_CI) || (USE_EMBED_CI+0)
@@ -146,7 +146,7 @@ vm_ci_flag(const struct rb_callinfo *ci)
         return (unsigned int)((((VALUE)ci) >> CI_EMBED_FLAG_SHFT) & CI_EMBED_FLAG_MASK);
     }
     else {
-        return (unsigned int)ci->flag;
+        return ci->flag;
     }
 }
 
@@ -157,7 +157,7 @@ vm_ci_argc(const struct rb_callinfo *ci)
         return (unsigned int)((((VALUE)ci) >> CI_EMBED_ARGC_SHFT) & CI_EMBED_ARGC_MASK);
     }
     else {
-        return (unsigned int)ci->argc;
+        return ci->argc;
     }
 }
 

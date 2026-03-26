@@ -140,16 +140,48 @@ describe :kernel_raise, shared: true do
       }
     end
   end
+end
 
-  ruby_version_is "4.0" do
-    it "allows cause keyword argument" do
+describe :kernel_raise_with_cause, shared: true do
+  context "without cause keyword argument" do
+    it "sets cause to nil when there is no previous exception" do
+      -> do
+        @object.raise("error without a cause")
+      end.should raise_error(RuntimeError, "error without a cause") do |error|
+        error.cause.should == nil
+      end
+    end
+
+    it "supports automatic cause chaining from a previous exception" do
+      -> do
+        begin
+          raise StandardError,"first error"
+        rescue
+          @object.raise("second error")
+        end
+      end.should raise_error(RuntimeError, "second error") do |error|
+        error.cause.should be_kind_of(StandardError)
+        error.cause.message.should == "first error"
+      end
+    end
+  end
+
+  context "with cause keyword argument" do
+    it "allows setting exception's cause" do
       cause = StandardError.new("original error")
-      result = nil
 
       -> do
         @object.raise("new error", cause: cause)
       end.should raise_error(RuntimeError, "new error") do |error|
         error.cause.should == cause
+      end
+    end
+
+    it "allows setting cause to nil" do
+      -> do
+        @object.raise("error without a cause", cause: nil)
+      end.should raise_error(RuntimeError, "error without a cause") do |error|
+        error.cause.should == nil
       end
     end
 
@@ -166,7 +198,7 @@ describe :kernel_raise, shared: true do
       end.should raise_error(ArgumentError, "only cause is given with no arguments")
     end
 
-    it "raises a TypeError when given cause is not an instance of Exception" do
+    it "raises a TypeError when given cause is not an instance of Exception or nil" do
       cause = Object.new
       -> do
         @object.raise("message", cause: cause)
@@ -175,7 +207,6 @@ describe :kernel_raise, shared: true do
 
     it "doesn't set given cause when it equals the raised exception" do
       cause = StandardError.new("cause")
-      result = nil
 
       -> do
         @object.raise(cause, cause: cause)
@@ -185,18 +216,7 @@ describe :kernel_raise, shared: true do
       end
     end
 
-    it "accepts cause equal an exception" do
-      error = RuntimeError.new("message")
-      result = nil
-
-      -> do
-        @object.raise(error, cause: error)
-      end.should raise_error(RuntimeError, "message") do |e|
-        e.cause.should == nil
-      end
-    end
-
-    it "rejects circular causes" do
+    it "raises ArgumentError when cause creates a circular reference" do
       -> {
         begin
           raise "Error 1"
@@ -216,7 +236,6 @@ describe :kernel_raise, shared: true do
 
     it "supports exception class with message and cause" do
       cause = StandardError.new("cause message")
-      result = nil
 
       -> do
         @object.raise(ArgumentError, "argument error message", cause: cause)
@@ -230,7 +249,6 @@ describe :kernel_raise, shared: true do
     it "supports exception class with message, backtrace and cause" do
       cause = StandardError.new("cause message")
       backtrace = ["line1", "line2"]
-      result = nil
 
       -> do
         @object.raise(ArgumentError, "argument error message", backtrace, cause: cause)
@@ -242,21 +260,21 @@ describe :kernel_raise, shared: true do
       end
     end
 
-    it "supports automatic cause chaining" do
+    it "supports cause: exception, overriding previous exception" do
+      custom_error = StandardError.new("custom error")
       -> do
         begin
           raise "first error"
         rescue
-          # No explicit cause - should chain automatically:
-          @object.raise("second error")
+          @object.raise("second error", cause: custom_error)
         end
       end.should raise_error(RuntimeError, "second error") do |error|
-        error.cause.should be_kind_of(RuntimeError)
-        error.cause.message.should == "first error"
+        error.cause.should be_kind_of(StandardError)
+        error.cause.message.should == "custom error"
       end
     end
 
-    it "supports cause: nil to prevent automatic cause chaining" do
+    it "supports cause: nil, discarding previous exception" do
       -> do
         begin
           raise "first error"

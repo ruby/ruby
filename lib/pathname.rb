@@ -55,11 +55,35 @@ class Pathname    # * FileUtils *
 end
 
 class Pathname    # * tmpdir *
-  # Creates a tmp directory and wraps the returned path in a Pathname object.
+  # call-seq:
+  #   Pathname.mktmpdir -> new_pathname
+  #   Pathname.mktmpdir {|pathname| ... } -> object
   #
-  # Note that you need to require 'pathname' to use this method.
+  # Creates:
   #
-  # See Dir.mktmpdir
+  # - A temporary directory via Dir.mktmpdir.
+  # - A \Pathname object that contains the path to that directory.
+  #
+  # With no block given, returns the created pathname;
+  # the caller should delete the created directory when it is no longer needed
+  # (FileUtils.rm_r is a convenient method for the deletion):
+  #
+  #   pathname = Pathname.mktmpdir
+  #   dirpath = pathname.to_s
+  #   Dir.exist?(dirpath) # => true
+  #   # Do something with the directory.
+  #   require 'fileutils'
+  #   FileUtils.rm_r(dirpath)
+  #
+  # With a block given, calls the block with the created pathname;
+  # on block exit, automatically deletes the created directory and all its contents;
+  # returns the block's exit value:
+  #
+  #   pathname = Pathname.mktmpdir do |p|
+  #     # Do something with the directory.
+  #     p
+  #   end
+  #   Dir.exist?(pathname.to_s) # => false
   def self.mktmpdir
     require 'tmpdir' unless defined?(Dir.mktmpdir)
     if block_given?

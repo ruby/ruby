@@ -91,6 +91,11 @@ static VALUE encoding_spec_rb_enc_compatible(VALUE self, VALUE a, VALUE b) {
   return rb_enc_from_encoding(enc);
 }
 
+static VALUE encoding_spec_rb_enc_check(VALUE self, VALUE a, VALUE b) {
+  rb_encoding* enc = rb_enc_check(a, b);
+  return rb_enc_from_encoding(enc);
+}
+
 static VALUE encoding_spec_rb_enc_copy(VALUE self, VALUE dest, VALUE src) {
   rb_enc_copy(dest, src);
   return dest;
@@ -353,6 +358,7 @@ void Init_encoding_spec(void) {
   rb_define_method(cls, "rb_enc_associate", encoding_spec_rb_enc_associate, 2);
   rb_define_method(cls, "rb_enc_associate_index", encoding_spec_rb_enc_associate_index, 2);
   rb_define_method(cls, "rb_enc_compatible", encoding_spec_rb_enc_compatible, 2);
+  rb_define_method(cls, "rb_enc_check", encoding_spec_rb_enc_check, 2);
   rb_define_method(cls, "rb_enc_copy", encoding_spec_rb_enc_copy, 2);
   rb_define_method(cls, "rb_enc_codelen", encoding_spec_rb_enc_codelen, 2);
   rb_define_method(cls, "rb_enc_strlen", encoding_spec_rb_enc_strlen, 3);

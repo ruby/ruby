@@ -577,6 +577,12 @@ st_init_existing_table_with_size(st_table *tab, const struct st_hash_type *type,
     return tab;
 }
 
+st_table *
+st_init_existing_numtable_with_size(st_table *tab, st_index_t size)
+{
+    return st_init_existing_table_with_size(tab, &type_numhash, size);
+}
+
 /* Create and return table with TYPE which can hold at least SIZE
    entries.  The real number of entries which the table can hold is
    the nearest power of two for SIZE.  */
@@ -644,6 +650,13 @@ st_init_strtable_with_size(st_index_t size)
 {
     return st_init_table_with_size(&type_strhash, size);
 }
+
+st_table *
+st_init_existing_strtable_with_size(st_table *tab, st_index_t size)
+{
+    return st_init_existing_table_with_size(tab, &type_strhash, size);
+}
+
 
 /* Create and return table which can hold a minimal number of strings
    whose character case is ignored.  */
@@ -2551,6 +2564,12 @@ set_table *
 set_init_numtable_with_size(st_index_t size)
 {
     return set_init_table_with_size(NULL, &type_numhash, size);
+}
+
+set_table *
+set_init_embedded_numtable_with_size(set_table *tab, st_index_t size)
+{
+    return set_init_existing_table_with_size(tab, &type_numhash, size);
 }
 
 size_t

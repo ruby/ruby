@@ -288,6 +288,30 @@ The link should lead to a target in https://docs.ruby-lang.org/en/master/.
 
 Also use a full URL-based link for a link to an off-site document.
 
+#### Fragments
+
+In general, a link that includes a [fragment][fragment]
+must cite the exact identifier on the target page;
+otherwise, the browser finds no suitable identifier,
+and does not scroll to the desired part of the page.
+
+However, certain pages on `github.com` and `github.io`
+support "fuzzy" identifier matching, so that URL
+https://github.com/rdp/ruby_tutorials_core/wiki/Ruby-Talk-FAQ#-why-are-rubys-floats-imprecise,
+(whose fragment is `-why-are-rubys-floats-imprecise`)
+scrolls to heading "Why are ruby’s floats imprecise?"
+even though the identifier there actually is the longer
+`#user-content--why-are-rubys-floats-imprecise`.
+
+Ruby documentation should avoid using these shortened fragments, for two reasons:
+
+- The GitHub pages that do this implement it using Javascript;
+  if the user's browser has Javascript disabled
+  (which some employers actually require),
+  the shortened fragment is ineffective and the desired scrolling does not occur.
+- A program that checks links in Ruby documentation will find no suitable identifier,
+  and therefore will report the fragment as not found.
+
 ### Variable Names
 
 The name of a variable (as specified in its call-seq) should be marked up as
@@ -617,6 +641,7 @@ best to use a separate paragraph for each case you are discussing.
 [bold text]:             https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#bold
 [call-seq]:              https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#directive-for-specifying-rdoc-source-format
 [code blocks]:           https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#code-blocks
+[fragment]:              https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Fragment
 [headings]:              https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#headings
 [irb]:                   https://ruby.github.io/irb/index.html
 [links]:                 https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#links

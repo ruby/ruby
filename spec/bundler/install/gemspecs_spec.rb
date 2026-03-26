@@ -122,7 +122,7 @@ RSpec.describe "bundle install" do
       expect(the_bundle).to include_gems "foo 1.0"
     end
 
-    it "fails and complains about patchlevel on patchlevel mismatch",
+    it "installs gems ignoring the mismatch even when patchlevel is mismatch",
       if: RUBY_PATCHLEVEL >= 0 do
       patchlevel = RUBY_PATCHLEVEL.to_i + 1
       build_lib("foo", path: bundled_app) do |s|
@@ -135,9 +135,7 @@ RSpec.describe "bundle install" do
         gemspec
       G
 
-      expect(err).to include("Ruby patchlevel")
-      expect(err).to include("but your Gemfile specified")
-      expect(exitstatus).to eq(18)
+      expect(the_bundle).to include_gems "foo 1.0"
     end
 
     it "fails and complains about version on version mismatch" do

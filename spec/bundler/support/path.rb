@@ -10,7 +10,7 @@ module Spec
     include Spec::Env
 
     def source_root
-      @source_root ||= Pathname.new(ruby_core? ? "../../.." : "../..").expand_path(__dir__)
+      @source_root ||= Pathname.new(ruby_core? ? "../../.." : "../../bundler").expand_path(__dir__)
     end
 
     def root
@@ -50,7 +50,7 @@ module Spec
     end
 
     def bindir
-      @bindir ||= source_root.join(ruby_core? ? "spec/bin" : "bin")
+      @bindir ||= source_root.join(ruby_core? ? "spec/bin" : "../bin")
     end
 
     def exedir
@@ -76,7 +76,7 @@ module Spec
     end
 
     def spec_dir
-      @spec_dir ||= source_root.join(ruby_core? ? "spec/bundler" : "spec")
+      @spec_dir ||= source_root.join(ruby_core? ? "spec/bundler" : "../spec")
     end
 
     def man_dir
@@ -313,15 +313,17 @@ module Spec
       deps = %w[
         mustermann
         rack
+        rack-protection
+        rack-session
         tilt
         sinatra
-        ruby2_keywords
         base64
         logger
-        cgi
         compact_index
       ]
-      path = if ruby_core? && deps.all? {|dep| !Dir[source_root.join(".bundle/gems/#{dep}-*")].empty? }
+      path = if deps.all? {|dep| !Dir[scoped_base_system_gem_path.join("gems/#{dep}-*")].empty? }
+        scoped_base_system_gem_path
+      elsif ruby_core? && deps.all? {|dep| !Dir[source_root.join(".bundle/gems/#{dep}-*")].empty? }
         source_root.join(".bundle")
       else
         scoped_base_system_gem_path
@@ -343,7 +345,7 @@ module Spec
     end
 
     def tracked_files_glob
-      ruby_core? ? "libexec/bundle* lib/bundler lib/bundler.rb spec/bundler man/bundle*" : "lib exe spec CHANGELOG.md LICENSE.md README.md bundler.gemspec"
+      ruby_core? ? "libexec/bundle* lib/bundler lib/bundler.rb spec/bundler man/bundle*" : "lib exe CHANGELOG.md LICENSE.md README.md bundler.gemspec"
     end
 
     def lib_tracked_files_glob

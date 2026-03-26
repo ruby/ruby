@@ -67,12 +67,15 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
 
     uint32_t event_serial = ++th->sched.event_serial; // overflow is okay
 
-    if (ubf_set(th, ubf_event_waiting, (void *)th)) {
-        return false;
-    }
 
     thread_sched_lock(sched, th);
     {
+        // NOTE: there's a lock ordering inversion here with the ubf call, but it's benign.
+        if (ubf_set(th, ubf_event_waiting, (void *)th, NULL)) {
+            thread_sched_unlock(sched, th);
+            return false;
+        }
+
         if (timer_thread_register_waiting(th, fd, events, rel, event_serial)) {
             RUBY_DEBUG_LOG("wait fd:%d", fd);
 
@@ -114,7 +117,7 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
     thread_sched_unlock(sched, th);
 
     // if ubf triggered between sched unlock and ubf clear, sched->running == th here
-    ubf_clear(th);
+    ubf_clear(th, false);
 
     VM_ASSERT(sched->running == th);
 
@@ -189,12 +192,7 @@ nt_thread_stack_size(void)
 static struct nt_stack_chunk_header *
 nt_alloc_thread_stack_chunk(void)
 {
-    int mmap_flags = MAP_ANONYMOUS | MAP_PRIVATE;
-#if defined(MAP_STACK) && !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__)
-    mmap_flags |= MAP_STACK;
-#endif
-
-    const char *m = (void *)mmap(NULL, MSTACK_CHUNK_SIZE, PROT_READ | PROT_WRITE, mmap_flags, -1, 0);
+    const char *m = (void *)mmap(NULL, MSTACK_CHUNK_SIZE, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
     if (m == MAP_FAILED) {
         return NULL;
     }
@@ -212,6 +210,12 @@ nt_alloc_thread_stack_chunk(void)
     }
 
     VM_ASSERT(stack_count <= UINT16_MAX);
+
+    // Enable read/write for the header pages
+    if (mprotect((void *)m, (size_t)header_page_cnt * MSTACK_PAGE_SIZE, PROT_READ | PROT_WRITE) != 0) {
+        munmap((void *)m, MSTACK_CHUNK_SIZE);
+        return NULL;
+    }
 
     struct nt_stack_chunk_header *ch = (struct nt_stack_chunk_header *)m;
 
@@ -241,7 +245,7 @@ nt_stack_chunk_get_msf(const rb_vm_t *vm, const char *mstack)
     return (struct nt_machine_stack_footer *)&mstack[msz - sizeof(struct nt_machine_stack_footer)];
 }
 
-static void *
+static void
 nt_stack_chunk_get_stack(const rb_vm_t *vm, struct nt_stack_chunk_header *ch, size_t idx, void **vm_stack, void **machine_stack)
 {
     // TODO: only support stack going down
@@ -266,8 +270,6 @@ nt_stack_chunk_get_stack(const rb_vm_t *vm, struct nt_stack_chunk_header *ch, si
 
     *vm_stack = (void *)vstack;
     *machine_stack = (void *)mstack;
-
-    return (void *)guard_page;
 }
 
 RBIMPL_ATTR_MAYBE_UNUSED()
@@ -291,17 +293,6 @@ nt_stack_chunk_dump(void)
 }
 
 static int
-nt_guard_page(const char *p, size_t len)
-{
-    if (mprotect((void *)p, len, PROT_NONE) != -1) {
-        return 0;
-    }
-    else {
-        return errno;
-    }
-}
-
-static int
 nt_alloc_stack(rb_vm_t *vm, void **vm_stack, void **machine_stack)
 {
     int err = 0;
@@ -319,8 +310,26 @@ nt_alloc_stack(rb_vm_t *vm, void **vm_stack, void **machine_stack)
                 RUBY_DEBUG_LOG("uninitialized_stack_count:%d", ch->uninitialized_stack_count);
 
                 size_t idx = ch->stack_count - ch->uninitialized_stack_count--;
-                void *guard_page = nt_stack_chunk_get_stack(vm, ch, idx, vm_stack, machine_stack);
-                err = nt_guard_page(guard_page, MSTACK_PAGE_SIZE);
+
+                // The chunk was mapped PROT_NONE; enable the VM stack and
+                // machine stack pages, leaving the guard page as PROT_NONE.
+                char *stack_start = nt_stack_chunk_get_stack_start(ch, idx);
+                size_t vm_stack_size = vm->default_params.thread_vm_stack_size;
+                size_t mstack_size = nt_thread_stack_size() - vm_stack_size - MSTACK_PAGE_SIZE;
+                char *mstack_start = stack_start + vm_stack_size + MSTACK_PAGE_SIZE;
+
+                int mstack_flags = MAP_FIXED | MAP_ANONYMOUS | MAP_PRIVATE;
+#if defined(MAP_STACK) && !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__)
+                mstack_flags |= MAP_STACK;
+#endif
+
+                if (mprotect(stack_start, vm_stack_size, PROT_READ | PROT_WRITE) != 0 ||
+                    mmap(mstack_start, mstack_size, PROT_READ | PROT_WRITE, mstack_flags, -1, 0) == MAP_FAILED) {
+                    err = errno;
+                }
+                else {
+                    nt_stack_chunk_get_stack(vm, ch, idx, vm_stack, machine_stack);
+                }
             }
             else {
                 nt_free_stack_chunks = ch->prev_free_chunk;

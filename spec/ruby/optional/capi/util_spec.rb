@@ -21,11 +21,11 @@ describe "C-API Util function" do
     end
 
     it "raises an ArgumentError if there are insufficient arguments" do
-      -> { @o.rb_scan_args([1, 2], "3", 0, @acc) }.should raise_error(ArgumentError)
+      -> { @o.rb_scan_args([1, 2], "3", 0, @acc) }.should raise_error(ArgumentError, "wrong number of arguments (given 2, expected 3)")
     end
 
     it "raises an ArgumentError if there are too many arguments" do
-      -> { @o.rb_scan_args([1, 2, 3, 4], "3", 0, @acc) }.should raise_error(ArgumentError)
+      -> { @o.rb_scan_args([1, 2, 3, 4], "3", 0, @acc) }.should raise_error(ArgumentError, "wrong number of arguments (given 4, expected 3)")
     end
 
     it "assigns the required and optional arguments scanned" do
@@ -117,8 +117,15 @@ describe "C-API Util function" do
 
     it "rejects the use of nil as a hash" do
       -> {
-        @o.rb_scan_args([1, nil], "1:", 2, @acc).should == 1
-      }.should raise_error(ArgumentError)
+        @o.rb_scan_args([1, nil], "1:", 2, @acc)
+      }.should raise_error(ArgumentError, "wrong number of arguments (given 2, expected 1)")
+      ScratchPad.recorded.should == []
+    end
+
+    it "rejects the use of of a non-Hash as keywords" do
+      -> {
+        @o.rb_scan_args([42], ":", 1, @acc)
+      }.should raise_error(ArgumentError, "wrong number of arguments (given 1, expected 0)")
       ScratchPad.recorded.should == []
     end
 
@@ -186,7 +193,7 @@ describe "C-API Util function" do
 
     it "raises an error if a required argument is not in the hash" do
       h = { :a => 7, :c => 12, :b => 5 }
-      -> { @o.rb_get_kwargs(h, [:b, :d], 2, 0) }.should raise_error(ArgumentError, /missing keyword: :?d/)
+      -> { @o.rb_get_kwargs(h, [:b, :d], 2, 0) }.should raise_error(ArgumentError, "missing keyword: :d")
       h.should == {:a => 7, :c => 12}
     end
 
@@ -198,7 +205,7 @@ describe "C-API Util function" do
 
     it "raises an error if there are additional arguments  and optional is positive" do
       h = { :a => 7, :c => 12, :b => 5 }
-      -> { @o.rb_get_kwargs(h, [:b, :a], 2, 0) }.should raise_error(ArgumentError, /unknown keyword: :?c/)
+      -> { @o.rb_get_kwargs(h, [:b, :a], 2, 0) }.should raise_error(ArgumentError, "unknown keyword: :c")
       h.should == {:c => 12}
     end
 

@@ -14,33 +14,33 @@ STATIC_ASSERT(shape_id_num_bits, SHAPE_ID_NUM_BITS == sizeof(shape_id_t) * CHAR_
 #define SHAPE_BUFFER_SIZE (1 << SHAPE_ID_OFFSET_NUM_BITS)
 #define SHAPE_ID_OFFSET_MASK (SHAPE_BUFFER_SIZE - 1)
 
-#define SHAPE_ID_HEAP_INDEX_BITS 3
+#define SHAPE_ID_HEAP_INDEX_BITS 5
 #define SHAPE_ID_HEAP_INDEX_MAX ((1 << SHAPE_ID_HEAP_INDEX_BITS) - 1)
 
+#define SHAPE_ID_HEAP_INDEX_OFFSET SHAPE_ID_OFFSET_NUM_BITS
 #define SHAPE_ID_FL_USHIFT (SHAPE_ID_OFFSET_NUM_BITS + SHAPE_ID_HEAP_INDEX_BITS)
-#define SHAPE_ID_HEAP_INDEX_OFFSET SHAPE_ID_FL_USHIFT
 
 // shape_id_t bits:
 //      0-18 SHAPE_ID_OFFSET_MASK
 //              index in rb_shape_tree.shape_list. Allow to access `rb_shape_t *`.
-//      19-21 SHAPE_ID_HEAP_INDEX_MASK
+//      19-23 SHAPE_ID_HEAP_INDEX_MASK
 //              index in rb_shape_tree.capacities. Allow to access slot size.
 //              Always 0 except for T_OBJECT.
-//      22 SHAPE_ID_FL_FROZEN
+//      24 SHAPE_ID_FL_FROZEN
 //              Whether the object is frozen or not.
-//      23 SHAPE_ID_FL_HAS_OBJECT_ID
+//      25 SHAPE_ID_FL_HAS_OBJECT_ID
 //              Whether the object has an `SHAPE_OBJ_ID` transition.
-//      24 SHAPE_ID_FL_TOO_COMPLEX
+//      26 SHAPE_ID_FL_TOO_COMPLEX
 //              The object is backed by a `st_table`.
 
 enum shape_id_fl_type {
 #define RBIMPL_SHAPE_ID_FL(n) (1<<(SHAPE_ID_FL_USHIFT+n))
 
-    SHAPE_ID_HEAP_INDEX_MASK = RBIMPL_SHAPE_ID_FL(0) | RBIMPL_SHAPE_ID_FL(1) | RBIMPL_SHAPE_ID_FL(2),
+    SHAPE_ID_HEAP_INDEX_MASK = ((1 << SHAPE_ID_HEAP_INDEX_BITS) - 1) << SHAPE_ID_HEAP_INDEX_OFFSET,
 
-    SHAPE_ID_FL_FROZEN = RBIMPL_SHAPE_ID_FL(3),
-    SHAPE_ID_FL_HAS_OBJECT_ID = RBIMPL_SHAPE_ID_FL(4),
-    SHAPE_ID_FL_TOO_COMPLEX = RBIMPL_SHAPE_ID_FL(5),
+    SHAPE_ID_FL_FROZEN = RBIMPL_SHAPE_ID_FL(0),
+    SHAPE_ID_FL_HAS_OBJECT_ID = RBIMPL_SHAPE_ID_FL(1),
+    SHAPE_ID_FL_TOO_COMPLEX = RBIMPL_SHAPE_ID_FL(2),
 
     SHAPE_ID_FL_NON_CANONICAL_MASK = SHAPE_ID_FL_FROZEN | SHAPE_ID_FL_HAS_OBJECT_ID,
     SHAPE_ID_FLAGS_MASK = SHAPE_ID_HEAP_INDEX_MASK | SHAPE_ID_FL_NON_CANONICAL_MASK | SHAPE_ID_FL_TOO_COMPLEX,

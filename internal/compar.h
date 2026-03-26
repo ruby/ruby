@@ -25,5 +25,6 @@
 
 /* compar.c */
 VALUE rb_invcmp(VALUE, VALUE);
+NORETURN(void rb_cmperr_reason(VALUE, VALUE, const char*));
 
 #endif /* INTERNAL_COMPAR_H */

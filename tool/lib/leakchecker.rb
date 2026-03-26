@@ -156,7 +156,7 @@ class LeakChecker
       [prev_count, []]
     else
       tempfiles = ObjectSpace.each_object(Tempfile).reject {|t|
-        t.instance_variables.empty? || t.closed?
+        t.instance_variables.empty? || (t.closed? rescue true)
       }
       [count, tempfiles]
     end

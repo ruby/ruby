@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+require_relative "../bundler/support/switch_rubygems"
 require_relative "../bundler/support/rubygems_ext"
 
 Spec::Rubygems.gem_load("rspec-core", "rspec")

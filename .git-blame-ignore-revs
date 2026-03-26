@@ -46,3 +46,6 @@ e90282be7ba1bc8e3119f6e1a2c80356ceb3f80a
 # Win32: EOL code of batch files
 23f9a0d655c4d405bb2397a147a1523436205486
 b839989fd22fef85e2af19de1bc83aa72a5b22bd
+
+# ZJIT cargo-insta snapshot raw string literals
+b78e0a6ddf7df8a7568ea71284f593423c739551

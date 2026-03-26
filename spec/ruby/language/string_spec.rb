@@ -133,6 +133,12 @@ describe "Ruby character strings" do
     "#{obj}".should == '42'
   end
 
+  it "raise NoMethodError when #to_s is not defined for the object" do
+    obj = BasicObject.new
+
+    -> { "#{obj}" }.should raise_error(NoMethodError)
+  end
+
   it "uses an internal representation when #to_s doesn't return a String" do
     obj = mock('to_s')
     obj.stub!(:to_s).and_return(42)

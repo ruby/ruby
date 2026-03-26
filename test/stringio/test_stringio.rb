@@ -359,6 +359,9 @@ class TestStringIO < Test::Unit::TestCase
 
   def test_isatty
     assert_equal(false, StringIO.new("").isatty)
+    assert_equal(false, StringIO.new("").tty?)
+    assert_nothing_raised { StringIO.new("").freeze.isatty}
+    assert_nothing_raised { StringIO.new("").freeze.tty?}
   end
 
   def test_fsync
@@ -368,6 +371,7 @@ class TestStringIO < Test::Unit::TestCase
   def test_sync
     assert_equal(true, StringIO.new("").sync)
     assert_equal(false, StringIO.new("").sync = false)
+    assert_nothing_raised { StringIO.new("").freeze.sync}
   end
 
   def test_set_fcntl
@@ -420,8 +424,8 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal(false, f.closed?)
     f.close
     assert_equal(true, f.closed?)
-  ensure
-    f.close unless f.closed?
+    f.freeze
+    assert_nothing_raised { f.closed? }
   end
 
   def test_closed_read
@@ -431,8 +435,8 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal(false, f.closed_read?)
     f.close_read
     assert_equal(true, f.closed_read?)
-  ensure
-    f.close unless f.closed?
+    f.freeze
+    assert_nothing_raised { f.closed_read? }
   end
 
   def test_closed_write
@@ -442,8 +446,8 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal(false, f.closed_write?)
     f.close_write
     assert_equal(true, f.closed_write?)
-  ensure
-    f.close unless f.closed?
+    f.freeze
+    assert_nothing_raised { f.closed_write? }
   end
 
   def test_dup
@@ -469,8 +473,8 @@ class TestStringIO < Test::Unit::TestCase
     f.lineno = 1000
     assert_equal([1000, "baz\n"], [f.lineno, f.gets])
     assert_equal([1001, nil], [f.lineno, f.gets])
-  ensure
-    f.close unless f.closed?
+    f.freeze
+    assert_nothing_raised { f.lineno }
   end
 
   def test_pos
@@ -483,8 +487,8 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal([4, "bar\n"], [f.pos, f.gets])
     assert_equal([8, "baz\n"], [f.pos, f.gets])
     assert_equal([12, nil], [f.pos, f.gets])
-  ensure
-    f.close unless f.closed?
+    f.freeze
+    assert_nothing_raised { f.pos }
   end
 
   def test_reopen
@@ -508,13 +512,10 @@ class TestStringIO < Test::Unit::TestCase
     assert_raise(Errno::EINVAL) { f.seek(1, 3) }
     f.close
     assert_raise(IOError) { f.seek(0) }
-  ensure
-    f.close unless f.closed?
-  end
-
-  def test_seek_frozen_string
     f = StringIO.new(-"1234")
     assert_equal(0, f.seek(1))
+  ensure
+    f.close unless f.closed?
   end
 
   def test_each_byte
@@ -837,11 +838,17 @@ class TestStringIO < Test::Unit::TestCase
     buf = "stale".b
     assert_equal "stale".b, StringIO.new("").pread(0, 0, buf)
     assert_equal "stale".b, buf
+
+    assert_nothing_raised { StringIO.new("pread").freeze.pread(3, 0)}
   end
 
   def test_size
     f = StringIO.new("1234")
     assert_equal(4, f.size)
+    assert_equal(4, f.length)
+    f.freeze
+    assert_nothing_raised { f.size }
+    assert_nothing_raised { f.length }
   end
 
   # This test is should in ruby/test_method.rb
@@ -1103,6 +1110,65 @@ class TestStringIO < Test::Unit::TestCase
       assert_warning("") { io.set_encoding(Encoding::BINARY) }
       assert_same(chilled_string, io.string)
     end
+  end
+
+  def test_eof
+    f = StringIO.new
+    assert_equal(true, f.eof)
+    assert_equal(true, f.eof?)
+    f.ungetc("1234")
+    assert_equal(false, f.eof)
+    assert_equal(false, f.eof?)
+    f.freeze
+    assert_nothing_raised { f.eof }
+    assert_nothing_raised { f.eof? }
+  end
+
+  def test_pid
+    f = StringIO.new
+    assert_equal(nil, f.pid)
+    f.freeze
+    assert_nothing_raised { f.pid }
+  end
+
+  def test_fileno
+    f = StringIO.new
+    assert_equal(nil, f.fileno)
+    f.freeze
+    assert_nothing_raised { f.fileno }
+  end
+
+  def test_external_encoding
+    f = StringIO.new
+    assert_equal(Encoding.find("external"), f.external_encoding)
+    f = StringIO.new("1234".encode("UTF-16BE"))
+    assert_equal(Encoding::UTF_16BE, f.external_encoding)
+    f.freeze
+    assert_nothing_raised { f.external_encoding }
+  end
+
+  def test_string
+    f = StringIO.new
+    assert_equal("", f.string)
+    f = StringIO.new("1234")
+    assert_equal("1234", f.string)
+    f.freeze
+    assert_nothing_raised { f.string }
+  end
+
+  def test_initialize_copy
+    f = StringIO.new("1234")
+    f.read(1)
+    f2 = f.dup
+    assert_equal(1, f2.pos)
+    f.read(1)
+    assert_equal(2, f2.pos)
+    f.ungetc("56")
+    assert_equal(0, f2.pos)
+    assert_equal("5634", f2.string)
+    f.freeze
+    f2 = f.dup
+    assert_not_predicate(f2, :frozen?)
   end
 
   private

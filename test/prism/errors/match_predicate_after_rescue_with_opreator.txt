@@ -1,3 +1,4 @@
 1 rescue 2 in 3 << 4
                 ^~ unexpected <<, expecting end-of-input
+                ^~ unexpected <<, ignoring it
 

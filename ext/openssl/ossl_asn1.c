@@ -130,15 +130,17 @@ asn1integer_to_num(const ASN1_INTEGER *ai)
     if (!ai) {
         ossl_raise(rb_eTypeError, "ASN1_INTEGER is NULL!");
     }
+
+    num = ossl_bn_new(BN_value_one());
+    bn = GetBNPtr(num);
+
     if (ASN1_STRING_type(ai) == V_ASN1_ENUMERATED)
-        bn = ASN1_ENUMERATED_to_BN(ai, NULL);
+        bn = ASN1_ENUMERATED_to_BN(ai, bn);
     else
-        bn = ASN1_INTEGER_to_BN(ai, NULL);
+        bn = ASN1_INTEGER_to_BN(ai, bn);
 
     if (!bn)
         ossl_raise(eOSSLError, NULL);
-    num = ossl_bn_new(bn);
-    BN_free(bn);
 
     return num;
 }

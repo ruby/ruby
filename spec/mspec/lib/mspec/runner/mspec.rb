@@ -365,6 +365,7 @@ module MSpec
   # Writes each tag in +tags+ to the tag file. Overwrites the
   # tag file if it exists.
   def self.write_tags(tags)
+    return delete_tags if tags.empty?
     file = tags_file
     make_tag_dir(file)
     File.open(file, "w:utf-8") do |f|

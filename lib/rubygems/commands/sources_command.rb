@@ -50,11 +50,8 @@ class Gem::Commands::SourcesCommand < Gem::Command
   end
 
   def add_source(source_uri) # :nodoc:
-    check_rubygems_https source_uri
-
-    source = Gem::Source.new source_uri
-
-    check_typo_squatting(source)
+    source = build_new_source(source_uri)
+    source_uri = source.uri.to_s
 
     begin
       if Gem.sources.include? source
@@ -76,11 +73,8 @@ class Gem::Commands::SourcesCommand < Gem::Command
   end
 
   def append_source(source_uri) # :nodoc:
-    check_rubygems_https source_uri
-
-    source = Gem::Source.new source_uri
-
-    check_typo_squatting(source)
+    source = build_new_source(source_uri)
+    source_uri = source.uri.to_s
 
     begin
       source.load_specs :released
@@ -103,11 +97,8 @@ class Gem::Commands::SourcesCommand < Gem::Command
   end
 
   def prepend_source(source_uri) # :nodoc:
-    check_rubygems_https source_uri
-
-    source = Gem::Source.new source_uri
-
-    check_typo_squatting(source)
+    source = build_new_source(source_uri)
+    source_uri = source.uri.to_s
 
     begin
       source.load_specs :released
@@ -139,6 +130,19 @@ Do you want to add this source?
 
       terminate_interaction 1 unless options[:force] || ask_yes_no(question)
     end
+  end
+
+  def normalize_source_uri(source_uri) # :nodoc:
+    # Ensure the source URI has a trailing slash for proper RFC 2396 path merging
+    # Without a trailing slash, the last path segment is treated as a file and removed
+    # during relative path resolution (e.g., "/blish" + "gems/foo.gem" = "/gems/foo.gem")
+    # With a trailing slash, it's treated as a directory (e.g., "/blish/" + "gems/foo.gem" = "/blish/gems/foo.gem")
+    uri = Gem::URI.parse(source_uri)
+    uri.path = uri.path.gsub(%r{/+\z}, "") + "/" if uri.path && !uri.path.empty?
+    uri.to_s
+  rescue Gem::URI::Error
+    # If parsing fails, return the original URI and let later validation handle it
+    source_uri
   end
 
   def check_rubygems_https(source_uri) # :nodoc:
@@ -273,7 +277,8 @@ To remove a source use the --remove argument:
   end
 
   def remove_source(source_uri) # :nodoc:
-    source = Gem::Source.new source_uri
+    source = build_source(source_uri)
+    source_uri = source.uri.to_s
 
     if configured_sources&.include? source
       Gem.sources.delete source
@@ -327,5 +332,17 @@ To remove a source use the --remove argument:
 
   def config_file_name
     Gem.configuration.config_file_name
+  end
+
+  def build_source(source_uri)
+    source_uri = normalize_source_uri(source_uri)
+    Gem::Source.new(source_uri)
+  end
+
+  def build_new_source(source_uri)
+    source = build_source(source_uri)
+    check_rubygems_https(source.uri.to_s)
+    check_typo_squatting(source)
+    source
   end
 end

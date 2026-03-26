@@ -39,6 +39,13 @@ class TestWeakMap < Test::Unit::TestCase
     assert_same(:foo, @wm[x])
   end
 
+  def test_aset_returns_value
+    key = Object.new
+    value = Object.new
+
+    assert_same(value, @wm.send(:[]=, key, value))
+  end
+
   def assert_weak_include(m, k, n = 100)
     if n > 0
       return assert_weak_include(m, k, n-1)

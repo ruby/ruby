@@ -30,8 +30,8 @@ ruby/spec is known to be tested in these implementations for every commit:
 * [Opal](https://github.com/opal/opal/tree/master/spec)
 * [Artichoke](https://github.com/artichoke/spec/tree/artichoke-vendor)
 
-ruby/spec describes the behavior of Ruby 3.2 and more recent Ruby versions.
-More precisely, every latest stable MRI release should [pass](https://github.com/ruby/spec/actions/workflows/ci.yml) all specs of ruby/spec (3.2.x, 3.3.x, etc), and those are tested in CI.
+ruby/spec describes the behavior of Ruby 3.3 and more recent Ruby versions.
+More precisely, every latest stable MRI release should [pass](https://github.com/ruby/spec/actions/workflows/ci.yml) all specs of ruby/spec (3.3.x, 3.4.x, etc), and those are tested in CI.
 
 ### Synchronization with Ruby Implementations
 

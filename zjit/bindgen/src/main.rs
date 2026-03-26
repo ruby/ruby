@@ -81,6 +81,7 @@ fn main() {
         .allowlist_type("RBasic")
 
         .allowlist_type("ruby_rstring_flags")
+        .allowlist_type("rbimpl_typeddata_flags")
 
         // This function prints info about a value and is useful for debugging
         .allowlist_function("rb_raw_obj_info")
@@ -144,7 +145,7 @@ fn main() {
         .allowlist_function("rb_gc_location")
         .allowlist_function("rb_gc_writebarrier")
         .allowlist_function("rb_gc_writebarrier_remember")
-        .allowlist_function("rb_zjit_writebarrier_check_immediate")
+        .allowlist_function("rb_gc_register_mark_object")
 
         // VALUE variables for Ruby class objects
         .allowlist_var("rb_cBasicObject")
@@ -291,13 +292,16 @@ fn main() {
         .allowlist_function("rb_set_cfp_(pc|sp)")
         .allowlist_function("rb_c_method_tracing_currently_enabled")
         .allowlist_function("rb_zjit_method_tracing_currently_enabled")
+        .allowlist_function("rb_zjit_iseq_tracing_currently_enabled")
         .allowlist_function("rb_full_cfunc_return")
         .allowlist_function("rb_assert_(iseq|cme)_handle")
         .allowlist_function("rb_IMEMO_TYPE_P")
         .allowlist_function("rb_RSTRING_PTR")
         .allowlist_function("rb_RSTRING_LEN")
         .allowlist_function("rb_ENCODING_GET")
-        .allowlist_function("rb_zjit_exit_locations_dict")
+        .allowlist_function("rb_profile_frame_full_label")
+        .allowlist_function("rb_profile_frame_absolute_path")
+        .allowlist_function("rb_profile_frame_path")
         .allowlist_function("rb_optimized_call")
         .allowlist_function("rb_jit_icache_invalidate")
         .allowlist_function("rb_zjit_print_exception")
@@ -310,6 +314,8 @@ fn main() {
         .allowlist_function("rb_jit_shape_too_complex_p")
         .allowlist_function("rb_jit_multi_ractor_p")
         .allowlist_function("rb_jit_class_fields_embedded_p")
+        .allowlist_function("rb_jit_typed_data_p")
+        .allowlist_function("rb_jit_typed_data_fields_embedded_p")
         .allowlist_function("rb_jit_vm_lock_then_barrier")
         .allowlist_function("rb_jit_vm_unlock")
         .allowlist_function("rb_jit_for_each_iseq")
@@ -429,6 +435,7 @@ fn main() {
         .allowlist_function("rb_vm_base_ptr")
         .allowlist_function("rb_ec_stack_check")
         .allowlist_function("rb_vm_top_self")
+        .allowlist_function("rb_const_lookup")
 
         // We define these manually, don't import them
         .blocklist_type("VALUE")

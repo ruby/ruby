@@ -48,6 +48,8 @@ struct objspace {
     unsigned int fork_hook_vm_lock_lev;
 };
 
+#define OBJ_FREE_BUF_CAPACITY 128
+
 struct MMTk_ractor_cache {
     struct ccan_list_node list_node;
 
@@ -55,6 +57,11 @@ struct MMTk_ractor_cache {
     bool gc_mutator_p;
 
     MMTk_BumpPointer *bump_pointer;
+
+    MMTk_ObjectReference obj_free_parallel_buf[OBJ_FREE_BUF_CAPACITY];
+    size_t obj_free_parallel_count;
+    MMTk_ObjectReference obj_free_non_parallel_buf[OBJ_FREE_BUF_CAPACITY];
+    size_t obj_free_non_parallel_count;
 };
 
 struct MMTk_final_job {
@@ -143,6 +150,8 @@ rb_mmtk_resume_mutators(void)
     }
 }
 
+static void mmtk_flush_obj_free_buffer(struct MMTk_ractor_cache *cache);
+
 static void
 rb_mmtk_block_for_gc(MMTk_VMMutatorThread mutator)
 {
@@ -172,6 +181,11 @@ rb_mmtk_block_for_gc(MMTk_VMMutatorThread mutator)
         rb_gc_save_machine_context();
 
         rb_gc_vm_barrier();
+
+        struct MMTk_ractor_cache *rc;
+        ccan_list_for_each(&objspace->ractor_caches, rc, list_node) {
+            mmtk_flush_obj_free_buffer(rc);
+        }
 
         objspace->world_stopped = true;
 
@@ -584,7 +598,7 @@ rb_gc_impl_ractor_cache_alloc(void *objspace_ptr, void *ractor)
     }
     objspace->live_ractor_cache_count++;
 
-    struct MMTk_ractor_cache *cache = malloc(sizeof(struct MMTk_ractor_cache));
+    struct MMTk_ractor_cache *cache = calloc(1, sizeof(struct MMTk_ractor_cache));
     ccan_list_add(&objspace->ractor_caches, &cache->list_node);
 
     cache->mutator = mmtk_bind_mutator(cache);
@@ -600,6 +614,8 @@ rb_gc_impl_ractor_cache_free(void *objspace_ptr, void *cache_ptr)
     struct MMTk_ractor_cache *cache = cache_ptr;
 
     ccan_list_del(&cache->list_node);
+
+    mmtk_flush_obj_free_buffer(cache);
 
     if (ruby_free_at_exit_p()) {
         MMTK_ASSERT(objspace->live_ractor_cache_count > 0);
@@ -628,7 +644,6 @@ void
 rb_gc_impl_init(void)
 {
     VALUE gc_constants = rb_hash_new();
-    rb_hash_aset(gc_constants, ID2SYM(rb_intern("BASE_SLOT_SIZE")), SIZET2NUM(sizeof(VALUE) * 5));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RBASIC_SIZE")), SIZET2NUM(sizeof(struct RBasic)));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OVERHEAD")), INT2NUM(0));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVARGC_MAX_ALLOCATE_SIZE")), LONG2FIX(MMTK_MAX_OBJ_SIZE));
@@ -801,6 +816,42 @@ obj_can_parallel_free_p(VALUE obj)
     }
 }
 
+static void
+mmtk_flush_obj_free_buffer(struct MMTk_ractor_cache *cache)
+{
+    if (cache->obj_free_parallel_count > 0) {
+        mmtk_add_obj_free_candidates(cache->obj_free_parallel_buf,
+                                     cache->obj_free_parallel_count, true);
+        cache->obj_free_parallel_count = 0;
+    }
+    if (cache->obj_free_non_parallel_count > 0) {
+        mmtk_add_obj_free_candidates(cache->obj_free_non_parallel_buf,
+                                     cache->obj_free_non_parallel_count, false);
+        cache->obj_free_non_parallel_count = 0;
+    }
+}
+
+static inline void
+mmtk_buffer_obj_free_candidate(struct MMTk_ractor_cache *cache, VALUE obj)
+{
+    if (obj_can_parallel_free_p(obj)) {
+        cache->obj_free_parallel_buf[cache->obj_free_parallel_count++] = (MMTk_ObjectReference)obj;
+        if (cache->obj_free_parallel_count >= OBJ_FREE_BUF_CAPACITY) {
+            mmtk_add_obj_free_candidates(cache->obj_free_parallel_buf,
+                                         cache->obj_free_parallel_count, true);
+            cache->obj_free_parallel_count = 0;
+        }
+    }
+    else {
+        cache->obj_free_non_parallel_buf[cache->obj_free_non_parallel_count++] = (MMTk_ObjectReference)obj;
+        if (cache->obj_free_non_parallel_count >= OBJ_FREE_BUF_CAPACITY) {
+            mmtk_add_obj_free_candidates(cache->obj_free_non_parallel_buf,
+                                         cache->obj_free_non_parallel_count, false);
+            cache->obj_free_non_parallel_count = 0;
+        }
+    }
+}
+
 VALUE
 rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size)
 {
@@ -837,7 +888,7 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     mmtk_post_alloc(ractor_cache->mutator, (void*)alloc_obj, alloc_size, MMTK_ALLOCATION_SEMANTICS_DEFAULT);
 
     // TODO: only add when object needs obj_free to be called
-    mmtk_add_obj_free_candidate(alloc_obj, obj_can_parallel_free_p((VALUE)alloc_obj));
+    mmtk_buffer_obj_free_candidate(ractor_cache, (VALUE)alloc_obj);
 
     objspace->total_allocated_objects++;
 
@@ -1277,6 +1328,11 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
 
     unsigned int lev = RB_GC_VM_LOCK();
     {
+        struct MMTk_ractor_cache *rc;
+        ccan_list_for_each(&objspace->ractor_caches, rc, list_node) {
+            mmtk_flush_obj_free_buffer(rc);
+        }
+
         struct MMTk_RawVecOfObjRef registered_candidates = mmtk_get_all_obj_free_candidates();
         for (size_t i = 0; i < registered_candidates.len; i++) {
             VALUE obj = (VALUE)registered_candidates.ptr[i];
@@ -1479,12 +1535,24 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
 VALUE
 rb_gc_impl_stat_heap(void *objspace_ptr, VALUE heap_name, VALUE hash_or_sym)
 {
+    if (FIXNUM_P(heap_name) && SYMBOL_P(hash_or_sym)) {
+        int heap_idx = FIX2INT(heap_name);
+        if (heap_idx < 0 || heap_idx >= MMTK_HEAP_COUNT) {
+            rb_raise(rb_eArgError, "size pool index out of range");
+        }
+
+        if (hash_or_sym == ID2SYM(rb_intern("slot_size"))) {
+            return SIZET2NUM(heap_sizes[heap_idx]);
+        }
+
+        return Qundef;
+    }
+
     if (RB_TYPE_P(hash_or_sym, T_HASH)) {
         return hash_or_sym;
     }
-    else {
-        return Qundef;
-    }
+
+    return Qundef;
 }
 
 // Miscellaneous

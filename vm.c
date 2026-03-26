@@ -26,6 +26,7 @@
 #include "internal/proc.h"
 #include "internal/re.h"
 #include "internal/ruby_parser.h"
+#include "internal/st.h"
 #include "internal/symbol.h"
 #include "internal/thread.h"
 #include "internal/transcode.h"
@@ -3331,8 +3332,8 @@ rb_vm_mark(void *ptr)
 
         rb_hook_list_mark(&vm->global_hooks);
 
-        rb_id_table_foreach_values(vm->negative_cme_table, vm_mark_negative_cme, NULL);
-        rb_mark_tbl_no_pin(vm->overloaded_cme_table);
+        rb_id_table_foreach_values(&vm->negative_cme_table, vm_mark_negative_cme, NULL);
+        rb_mark_tbl_no_pin(&vm->overloaded_cme_table);
         for (i=0; i<VM_GLOBAL_CC_CACHE_TABLE_SIZE; i++) {
             const struct rb_callcache *cc = vm->global_cc_cache_table[i];
 
@@ -3386,16 +3387,16 @@ ruby_vm_destruct(rb_vm_t *vm)
             rb_free_warning();
             rb_free_rb_global_tbl();
 
-            rb_id_table_free(vm->negative_cme_table);
-            st_free_table(vm->overloaded_cme_table);
+            rb_id_table_free_items(&vm->negative_cme_table);
+            st_free_embedded_table(&vm->overloaded_cme_table);
 
             // TODO: Is this ignorable for classext->m_tbl ?
             // rb_id_table_free(RCLASS(rb_mRubyVMFrozenCore)->m_tbl);
 
-            st_free_table(vm->static_ext_inits);
+            st_free_embedded_table(&vm->static_ext_inits);
 
-            rb_id_table_free(vm->constant_cache);
-            set_free_table(vm->unused_block_warning_table);
+            rb_id_table_free_items(&vm->constant_cache);
+            set_free_embedded_table(&vm->unused_block_warning_table);
 
             rb_thread_free_native_thread(th);
 
@@ -3412,10 +3413,7 @@ ruby_vm_destruct(rb_vm_t *vm)
 
         rb_vm_living_threads_init(vm);
         ruby_vm_run_at_exit_hooks(vm);
-        if (vm->ci_table) {
-            st_free_table(vm->ci_table);
-            vm->ci_table = NULL;
-        }
+        st_free_embedded_table(&vm->ci_table);
         RB_ALTSTACK_FREE(vm->main_altstack);
 
         struct global_object_list *next;
@@ -3465,9 +3463,9 @@ static size_t
 vm_memsize_constant_cache(void)
 {
     rb_vm_t *vm = GET_VM();
-    size_t size = rb_id_table_memsize(vm->constant_cache);
+    size_t size = rb_id_table_memsize(&vm->constant_cache) - sizeof(struct rb_id_table);
 
-    rb_id_table_foreach(vm->constant_cache, vm_memsize_constant_cache_i, &size);
+    rb_id_table_foreach(&vm->constant_cache, vm_memsize_constant_cache_i, &size);
     return size;
 }
 
@@ -3504,10 +3502,10 @@ vm_memsize(const void *ptr)
         rb_vm_memsize_postponed_job_queue() +
         rb_vm_memsize_workqueue(&vm->workqueue) +
         vm_memsize_at_exit_list(vm->at_exit) +
-        rb_st_memsize(vm->ci_table) +
+        (rb_st_memsize(&vm->ci_table) - sizeof(struct st_table)) +
         vm_memsize_builtin_function_table(vm->builtin_function_table) +
-        rb_id_table_memsize(vm->negative_cme_table) +
-        rb_st_memsize(vm->overloaded_cme_table) +
+        (rb_id_table_memsize(&vm->negative_cme_table) - sizeof(struct rb_id_table)) +
+        (rb_st_memsize(&vm->overloaded_cme_table) - sizeof(struct st_table)) +
         vm_memsize_constant_cache()
     );
 
@@ -4566,7 +4564,10 @@ rb_vm_set_progname(VALUE filename)
 extern const struct st_hash_type rb_fstring_hash_type;
 
 static rb_vm_t _vm;
-static rb_thread_t _main_thread = { .main_thread = 1 };
+static rb_thread_t _main_thread = {
+    .vm = &_vm,
+    .main_thread = 1,
+};
 
 void
 Init_BareVM(void)
@@ -4574,25 +4575,20 @@ Init_BareVM(void)
     /* VM bootstrap: phase 1 */
     rb_vm_t *vm = &_vm;
     rb_thread_t *th = &_main_thread;
-    if (!vm || !th) {
-        fputs("[FATAL] failed to allocate memory\n", stderr);
-        exit(EXIT_FAILURE);
-    }
 
     // setup the VM
     vm_init2(vm);
 
     ruby_current_vm_ptr = vm;
     rb_objspace_alloc();
-    vm->negative_cme_table = rb_id_table_create(16);
-    vm->overloaded_cme_table = st_init_numtable();
-    vm->constant_cache = rb_id_table_create(0);
-    vm->unused_block_warning_table = set_init_numtable();
+    rb_id_table_init(&vm->negative_cme_table, 16);
+    st_init_existing_numtable_with_size(&vm->overloaded_cme_table, 0);
+    st_init_existing_strtable_with_size(&vm->static_ext_inits, 0);
+    set_init_embedded_numtable_with_size(&vm->unused_block_warning_table, 0);
     vm->global_hooks.type = hook_list_type_global;
 
     // setup main thread
     th->nt = ZALLOC(struct rb_native_thread);
-    th->vm = vm;
     th->ractor = vm->ractor.main_ractor = rb_ractor_main_alloc();
     Init_native_thread(th);
     rb_jit_cont_init();
@@ -4742,7 +4738,7 @@ Init_vm_objects(void)
 
     /* initialize mark object array, hash */
     vm->mark_object_ary = pin_array_list_new(Qnil);
-    vm->ci_table = st_init_table(&vm_ci_hashtype);
+    st_init_existing_table_with_size(&vm->ci_table, &vm_ci_hashtype, 0);
     vm->cc_refinement_set = rb_cc_refinement_set_create();
 }
 

@@ -159,8 +159,11 @@ core_ext.o: $(hdrdir)/ruby/missing.h
 core_ext.o: $(hdrdir)/ruby/ruby.h
 core_ext.o: $(hdrdir)/ruby/st.h
 core_ext.o: $(hdrdir)/ruby/subst.h
+core_ext.o: $(top_srcdir)/internal.h
+core_ext.o: $(top_srcdir)/internal/basic_operators.h
 core_ext.o: $(top_srcdir)/internal/bignum.h
 core_ext.o: $(top_srcdir)/internal/bits.h
+core_ext.o: $(top_srcdir)/internal/compar.h
 core_ext.o: $(top_srcdir)/internal/compilers.h
 core_ext.o: $(top_srcdir)/internal/fixnum.h
 core_ext.o: $(top_srcdir)/internal/numeric.h

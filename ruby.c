@@ -2181,10 +2181,8 @@ prism_script_shebang_callback(pm_options_t *options, const uint8_t *source, size
 static void
 prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
 {
-    memset(result, 0, sizeof(pm_parse_result_t));
-
-    pm_options_t *options = &result->options;
-    pm_options_line_set(options, 1);
+    pm_parse_result_init(result);
+    pm_options_t *options = result->options;
     pm_options_main_script_set(options, true);
 
     const bool read_stdin = (strcmp(opt->script, "-") == 0);
@@ -2210,7 +2208,7 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
         // If we found an __END__ marker, then we're going to define a global
         // DATA constant that is a file object that can be read to read the
         // contents after the marker.
-        if (NIL_P(error) && result->parser.data_loc.length != 0) {
+        if (NIL_P(error) && pm_parser_data_loc(result->parser)->length != 0) {
             rb_define_global_const("DATA", rb_stdin);
         }
     }
@@ -2247,15 +2245,18 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
         // If we found an __END__ marker, then we're going to define a global
         // DATA constant that is a file object that can be read to read the
         // contents after the marker.
-        if (NIL_P(error) && result->parser.data_loc.length != 0) {
+        if (NIL_P(error) && pm_parser_data_loc(result->parser)->length != 0) {
             int xflag = opt->xflag;
             VALUE file = open_load_file(script_name, &xflag);
 
-            const pm_parser_t *parser = &result->parser;
-            uint32_t offset = parser->data_loc.start + 7;
+            const pm_parser_t *parser = result->parser;
+            const pm_location_t *data_loc = pm_parser_data_loc(parser);
+            const uint8_t *start = pm_parser_start(parser);
+            const uint8_t *end = pm_parser_end(parser);
+            uint32_t offset = data_loc->start + 7;
 
-            if ((parser->start + offset < parser->end) && parser->start[offset] == '\r') offset++;
-            if ((parser->start + offset < parser->end) && parser->start[offset] == '\n') offset++;
+            if ((start + offset < end) && start[offset] == '\r') offset++;
+            if ((start + offset < end) && start[offset] == '\n') offset++;
 
             rb_funcall(file, rb_intern_const("seek"), 2, UINT2NUM(offset), INT2FIX(SEEK_SET));
             rb_define_global_const("DATA", file);
@@ -2271,11 +2272,11 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
 static VALUE
 prism_dump_tree(pm_parse_result_t *result)
 {
-    pm_buffer_t output_buffer = { 0 };
+    pm_buffer_t *output_buffer = pm_buffer_new();
 
-    pm_prettyprint(&output_buffer, &result->parser, result->node.ast_node);
-    VALUE tree = rb_str_new(output_buffer.value, output_buffer.length);
-    pm_buffer_free(&output_buffer);
+    pm_prettyprint(output_buffer, result->parser, result->node.ast_node);
+    VALUE tree = rb_str_new(pm_buffer_value(output_buffer), pm_buffer_length(output_buffer));
+    pm_buffer_free(output_buffer);
     return tree;
 }
 
