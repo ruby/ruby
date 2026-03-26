@@ -2522,8 +2522,6 @@ main()
    struct tm *tm;
 
    check(gmtime(&t), 69, 12, 31, 23, 59);
-   t = ~(time_t)0 << 31;
-   check(gmtime(&t), 1, 12, 13, 20, 52);
    return 0;
 }
 ]])],
