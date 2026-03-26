@@ -7326,6 +7326,65 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_getivar_shape_guard_recompile() {
+        // Call with one shape to compile, then call with a different shape to
+        // trigger shape guard exits and recompilation. On the recompiled version,
+        // GetIvar stays as a C call because iseq_to_hir handles polymorphic
+        // branching at parse time for getinstancevariable.
+        eval("
+            class C
+              def initialize(extra = false)
+                @bar = 0 if extra  # changes the shape
+                @foo = 42
+              end
+              def foo = @foo
+            end
+
+            c = C.new
+            c.foo  # profile
+            c.foo  # compile (version 1 with shape guard)
+            d = C.new(true)  # same class, different shape
+            100.times { d.foo }  # trigger shape guard exits -> recompile
+            100.times { c.foo }  # run recompiled version (version 2)
+        ");
+        // After recompilation, iseq_to_hir generates polymorphic branches at
+        // parse time using the exit-profiled shapes: two optimized LoadField
+        // fast paths plus a GetIvar C call fallback.
+        assert_snapshot!(hir_string_proc("C.new.method(:foo)"), @"
+        fn foo@<compiled>:7:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          v11:HeapBasicObject = GuardType v6, HeapBasicObject
+          v12:CShape = LoadField v11, :_shape_id@0x1000
+          v14:CShape[0x1001] = Const CShape(0x1001)
+          v15:CBool = IsBitEqual v12, v14
+          IfTrue v15, bb5()
+          v19:CShape[0x1002] = Const CShape(0x1002)
+          v20:CBool = IsBitEqual v12, v19
+          IfTrue v20, bb6()
+          v24:BasicObject = GetIvar v11, :@foo
+          Jump bb4(v24)
+        bb5():
+          v17:BasicObject = LoadField v11, :@foo@0x1003
+          Jump bb4(v17)
+        bb6():
+          v22:BasicObject = LoadField v11, :@foo@0x1004
+          Jump bb4(v22)
+        bb4(v13:BasicObject):
+          CheckInterrupts
+          Return v13
+        ");
+    }
+
+    #[test]
     fn test_optimize_getivar_on_module_embedded() {
         eval("
             module M

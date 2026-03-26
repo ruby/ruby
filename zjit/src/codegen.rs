@@ -518,7 +518,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                             Insn::InvokeBuiltin { .. } => SideExitReason::UnhandledHIRInvokeBuiltin,
                             _                          => SideExitReason::UnhandledHIRUnknown(insn_id),
                         };
-                        gen_side_exit(&mut jit, &mut asm, &reason, &None, &function.frame_state(last_snapshot));
+                        gen_side_exit(&mut jit, &mut asm, &reason, None, &function.frame_state(last_snapshot));
                         // Don't bother generating code after a side-exit. We won't run it.
                         // TODO(max): Generate ud2 or equivalent.
                         break;
@@ -689,7 +689,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::HasType { val, expected } => gen_has_type(jit, asm, opnd!(val), *expected),
         Insn::GuardType { val, guard_type, state } => gen_guard_type(jit, asm, opnd!(val), *guard_type, &function.frame_state(*state)),
         Insn::GuardTypeNot { val, guard_type, state } => gen_guard_type_not(jit, asm, opnd!(val), *guard_type, &function.frame_state(*state)),
-        &Insn::GuardBitEquals { val, expected, reason, state } => gen_guard_bit_equals(jit, asm, opnd!(val), expected, reason, &function.frame_state(state)),
+        &Insn::GuardBitEquals { val, expected, reason, state, recompile } => gen_guard_bit_equals(jit, asm, opnd!(val), expected, reason, recompile, &function.frame_state(state)),
         &Insn::GuardAnyBitSet { val, mask, reason, state, .. } => gen_guard_any_bit_set(jit, asm, opnd!(val), mask, reason, &function.frame_state(state)),
         &Insn::GuardNoBitsSet { val, mask, reason, state, .. } => gen_guard_no_bits_set(jit, asm, opnd!(val), mask, reason, &function.frame_state(state)),
         &Insn::GuardLess { left, right, state } => gen_guard_less(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
@@ -717,7 +717,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::SetClassVar { id, val, ic, state } => no_output!(gen_setclassvar(jit, asm, *id, opnd!(val), *ic, &function.frame_state(*state))),
         Insn::SetIvar { self_val, id, ic, val, state } => no_output!(gen_setivar(jit, asm, opnd!(self_val), *id, *ic, opnd!(val), &function.frame_state(*state))),
         Insn::FixnumBitCheck { val, index } => gen_fixnum_bit_check(asm, opnd!(val), *index),
-        Insn::SideExit { state, reason, recompile } => no_output!(gen_side_exit(jit, asm, reason, recompile, &function.frame_state(*state))),
+        Insn::SideExit { state, reason, recompile } => no_output!(gen_side_exit(jit, asm, reason, *recompile, &function.frame_state(*state))),
         Insn::PutSpecialObject { value_type } => gen_putspecialobject(asm, *value_type),
         Insn::AnyToString { val, str, state } => gen_anytostring(asm, opnd!(val), opnd!(str), &function.frame_state(*state)),
         Insn::Defined { op_type, obj, pushval, v, state } => gen_defined(jit, asm, *op_type, *obj, *pushval, opnd!(v), &function.frame_state(*state)),
@@ -1238,14 +1238,8 @@ fn gen_setglobal(jit: &mut JITState, asm: &mut Assembler, id: ID, val: Opnd, sta
 }
 
 /// Side-exit into the interpreter
-fn gen_side_exit(jit: &mut JITState, asm: &mut Assembler, reason: &SideExitReason, recompile: &Option<i32>, state: &FrameState) {
-    let mut exit = build_side_exit(jit, state);
-    exit.recompile = recompile.map(|argc| SideExitRecompile {
-        iseq: Opnd::Value(VALUE::from(jit.iseq)),
-        insn_idx: state.insn_idx() as u32,
-        argc,
-    });
-    asm.jmp(Target::SideExit { exit, reason: *reason });
+fn gen_side_exit(jit: &mut JITState, asm: &mut Assembler, reason: &SideExitReason, recompile: Option<i32>, state: &FrameState) {
+    asm.jmp(side_exit_with_recompile(jit, state, *reason, recompile));
 }
 
 /// Emit a special object lookup
@@ -2637,7 +2631,7 @@ fn gen_guard_type_not(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, g
 }
 
 /// Compile an identity check with a side exit
-fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, expected: crate::hir::Const, reason: SideExitReason, state: &FrameState) -> lir::Opnd {
+fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, expected: crate::hir::Const, reason: SideExitReason, recompile: Option<i32>, state: &FrameState) -> lir::Opnd {
     if matches!(reason, SideExitReason::GuardShape(_) ) {
         gen_incr_counter(asm, Counter::guard_shape_count);
     }
@@ -2648,7 +2642,7 @@ fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd,
         _ => panic!("gen_guard_bit_equals: unexpected hir::Const {expected:?}"),
     };
     asm.cmp(val, expected_opnd);
-    asm.jnz(jit, side_exit(jit, state, reason));
+    asm.jnz(jit, side_exit_with_recompile(jit, state, reason, recompile));
     val
 }
 
@@ -2982,6 +2976,18 @@ fn side_exit(jit: &JITState, state: &FrameState, reason: SideExitReason) -> Targ
     Target::SideExit { exit, reason }
 }
 
+/// Build a Target::SideExit that optionally triggers exit_recompile on the exit path.
+/// When `recompile` is Some(argc), the side exit calls exit_recompile with that argc.
+fn side_exit_with_recompile(jit: &JITState, state: &FrameState, reason: SideExitReason, recompile: Option<i32>) -> Target {
+    let mut exit = build_side_exit(jit, state);
+    exit.recompile = recompile.map(|argc| SideExitRecompile {
+        iseq: Opnd::Value(VALUE::from(jit.iseq)),
+        insn_idx: state.insn_idx() as u32,
+        argc,
+    });
+    Target::SideExit { exit, reason }
+}
+
 /// Build a side-exit context
 fn build_side_exit(jit: &JITState, state: &FrameState) -> SideExit {
     let mut stack = Vec::new();
@@ -3037,26 +3043,48 @@ macro_rules! c_callable {
 pub(crate) use c_callable;
 
 c_callable! {
-    /// Called from JIT side-exit code when a send instruction had no profile data. This function
-    /// profiles the receiver and arguments on the stack, then (once enough profiles are gathered)
-    /// invalidates the current ISEQ version so that the ISEQ will be recompiled with the new
-    /// profile data on the next call.
-    pub(crate) fn no_profile_send_recompile(ec: EcPtr, iseq_raw: VALUE, insn_idx: u32, argc: i32) {
+    /// Called from JIT side-exit code to profile operands and trigger recompilation.
+    /// For send instructions (argc >= 0): profiles receiver + args from the stack.
+    /// For shape guard exits (argc == -1): profiles self from the CFP.
+    /// Once enough profiles are gathered, invalidates the ISEQ for recompilation.
+    pub(crate) fn exit_recompile(ec: EcPtr, iseq_raw: VALUE, insn_idx: u32, argc: i32) {
+        // Fast check before taking the VM lock: skip if already invalidated or
+        // at the version limit. This avoids expensive lock acquisition on every
+        // shape guard exit after the recompile has already been triggered.
+        {
+            let iseq: IseqPtr = iseq_raw.as_iseq();
+            let payload = get_or_create_iseq_payload(iseq);
+            let already_done = payload.versions.last()
+                .map_or(false, |v| unsafe { v.as_ref() }.status == IseqStatus::Invalidated)
+                || payload.versions.len() >= max_iseq_versions();
+            if already_done {
+                return;
+            }
+        }
+
         with_vm_lock(src_loc!(), || {
             let iseq: IseqPtr = iseq_raw.as_iseq();
             let payload = get_or_create_iseq_payload(iseq);
 
-            // Already gathered enough profiles; nothing to do
-            if payload.profile.done_profiling_at(insn_idx as usize) {
+            // For no-profile sends, skip if already profiled at this insn_idx.
+            // For shape guard exits (argc == -1), always re-profile because the
+            // original YARV profiles were monomorphic but runtime showed new shapes.
+            if argc >= 0 && payload.profile.done_profiling_at(insn_idx as usize) {
                 return;
             }
 
             with_time_stat(Counter::profile_time_ns, || {
                 let cfp = unsafe { get_ec_cfp(ec) };
-                let sp = unsafe { get_cfp_sp(cfp) };
 
-                // Profile the receiver and arguments for this send instruction
-                let should_recompile = payload.profile.profile_send_at(iseq, insn_idx as usize, sp, argc as usize);
+                let should_recompile = if argc >= 0 {
+                    let sp = unsafe { get_cfp_sp(cfp) };
+                    // Profile the receiver and arguments for this send instruction
+                    payload.profile.profile_send_at(iseq, insn_idx as usize, sp, argc as usize)
+                } else {
+                    // Profile self for shape guard exits (argc == -1)
+                    let self_val = unsafe { get_cfp_self(cfp) };
+                    payload.profile.profile_self_at(iseq, insn_idx as usize, self_val)
+                };
 
                 // Once we have enough profiles, invalidate and recompile the ISEQ
                 if should_recompile {
