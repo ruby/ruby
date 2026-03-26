@@ -3058,7 +3058,7 @@ fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodeP
     asm.cpush(scratch_reg);
     asm.jmp(ZJITState::get_function_stub_hit_trampoline().into());
 
-    asm.compile(cb).map(|(code_ptr, gc_offsets)| {
+    asm.compile_lightweight(cb).map(|(code_ptr, gc_offsets)| {
         assert_eq!(gc_offsets.len(), 0);
         code_ptr
     })
@@ -3142,7 +3142,7 @@ pub fn gen_exit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> 
     asm.frame_teardown(&[]); // matching the setup in gen_entry_point()
     asm.cret(Qundef.into());
 
-    asm.compile(cb).map(|(code_ptr, gc_offsets)| {
+    asm.compile_lightweight(cb).map(|(code_ptr, gc_offsets)| {
         assert_eq!(gc_offsets.len(), 0);
         code_ptr
     })
@@ -3157,7 +3157,7 @@ pub fn gen_exit_trampoline_with_counter(cb: &mut CodeBlock, exit_trampoline: Cod
     gen_incr_counter(&mut asm, exit_compile_error);
     asm.jmp(Target::CodePtr(exit_trampoline));
 
-    asm.compile(cb).map(|(code_ptr, gc_offsets)| {
+    asm.compile_lightweight(cb).map(|(code_ptr, gc_offsets)| {
         assert_eq!(gc_offsets.len(), 0);
         code_ptr
     })
@@ -3273,7 +3273,7 @@ fn gen_compile_error_counter(cb: &mut CodeBlock, compile_error: &CompileError) -
     gen_incr_counter(&mut asm, exit_counter_for_compile_error(compile_error));
     asm.cret(Qundef.into());
 
-    asm.compile(cb).map(|(code_ptr, gc_offsets)| {
+    asm.compile_lightweight(cb).map(|(code_ptr, gc_offsets)| {
         assert_eq!(0, gc_offsets.len());
         code_ptr
     })
@@ -3372,7 +3372,7 @@ impl IseqCall {
             let mut asm = Assembler::new();
             asm.new_block_without_id("regenerate");
             callback(&mut asm);
-            asm.compile(cb).unwrap();
+            asm.compile_lightweight(cb).unwrap();
             assert_eq!(self.end_addr.get().unwrap(), cb.get_write_ptr());
         });
     }

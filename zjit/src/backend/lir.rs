@@ -2605,6 +2605,26 @@ impl Assembler
         ret
     }
 
+    /// Lightweight compile path for assemblers with no virtual registers.
+    /// Skips regalloc, liveness analysis, and SSA resolution.
+    pub fn compile_lightweight(self, cb: &mut CodeBlock) -> Result<(CodePtr, Vec<CodePtr>), CompileError> {
+        #[cfg(feature = "disasm")]
+        let start_addr = cb.get_write_ptr();
+        let had_dropped_bytes = cb.has_dropped_bytes();
+        let ret = self.compile_lightweight_impl(cb).inspect_err(|err| {
+            if *err == CompileError::OutOfMemory && !had_dropped_bytes {
+                cb.update_dropped_bytes();
+            }
+        });
+
+        #[cfg(feature = "disasm")]
+        if let Some(dump_disasm) = crate::options::get_option_ref!(dump_disasm).filter(|_| ret.is_ok()) {
+            let end_addr = cb.get_write_ptr();
+            crate::disasm::dump_disasm_addr_range(cb, start_addr, end_addr, dump_disasm);
+        }
+        ret
+    }
+
     /// Compile with a limited number of registers. Used only for unit tests.
     #[cfg(test)]
     pub fn compile_with_num_regs(self, cb: &mut CodeBlock, num_regs: usize) -> (CodePtr, Vec<CodePtr>) {

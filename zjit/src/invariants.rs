@@ -19,7 +19,7 @@ macro_rules! compile_patch_points {
                     asm.new_block_without_id("invalidation");
                     asm_comment!(asm, $($comment_args)*);
                     asm.jmp(patch_point.side_exit_ptr.into());
-                    asm.compile(cb).expect("can write existing code");
+                    asm.compile_lightweight(cb).expect("can write existing code");
                 });
                 // Stop marking GC offsets corrupted by the jump instruction
                 remove_gc_offsets(patch_point.version, &written_range);
