@@ -134,6 +134,11 @@ impl BasicBlock {
         self.insn_ids.push(None);
     }
 
+    pub fn push_insns(&mut self, insns: Vec<Insn>) {
+        self.insn_ids.extend(std::iter::repeat(None).take(insns.len()));
+        self.insns.extend(insns);
+    }
+
     pub fn edges(&self) -> EdgePair {
         // Stub blocks (from new_block_without_id) have no real CFG structure.
         if self.rpo_index == DUMMY_RPO_INDEX {
@@ -1832,7 +1837,11 @@ impl Assembler
 
             // Process each instruction, expanding branch params if needed
             for insn in &block.insns {
-                self.expand_branch_insn(insn, &mut insns);
+                match insn {
+                    // Skip identity moves
+                    Insn::Mov { dest, src } if src == dest => {},
+                    insn => self.expand_branch_insn(insn, &mut insns),
+                }
             }
 
             // Eliminate redundant jumps: if the last instruction is an
@@ -1931,9 +1940,7 @@ impl Assembler
         self.new_vreg(num_bits)
     }
 
-    /// Append an instruction onto the current list of instructions and update
-    /// the live ranges of any instructions whose outputs are being used as
-    /// operands to this instruction.
+    /// Append an instruction onto the current list of instructions
     pub fn push_insn(&mut self, insn: Insn) {
         // If this Assembler should not accept scratch registers, assert no use of them.
         if !self.accept_scratch_reg {
@@ -1946,6 +1953,23 @@ impl Assembler
         self.idx += 1;
 
         self.current_block().push_insn(insn);
+    }
+
+    /// Append multiple instructions to the current list of instructions
+    pub fn push_insns(&mut self, insns: Vec<Insn>) {
+        // If this Assembler should not accept scratch registers, assert no use of them.
+        if !self.accept_scratch_reg {
+            for insn in &insns {
+                let opnd_iter = insn.opnd_iter();
+                for opnd in opnd_iter {
+                    assert!(!Self::has_scratch_reg(*opnd), "should not use scratch register: {opnd:?}");
+                }
+            }
+        }
+
+        self.idx += insns.len();
+
+        self.current_block().push_insns(insns);
     }
 
     /// Create a new label instance that we can jump to
@@ -3803,24 +3827,9 @@ impl Assembler {
         // Create one giant block to linearize everything into
         asm_local.new_block_without_id("linearized");
 
-        // Get linearized instructions with branch parameters expanded into ParallelMov
+        // Get linearized instructions
         let linearized_insns = self.linearize_instructions();
-
-        // TODO: Aaron, this could be better. We don't need to do this, FIXME
-        // Process each linearized instruction
-        for insn in linearized_insns {
-            match insn {
-                Insn::Mov { dest, src } => {
-                    if src != dest {
-                        asm_local.push_insn(insn);
-                    }
-                },
-                _ => {
-                    asm_local.push_insn(insn);
-                }
-            }
-        }
-
+        asm_local.push_insns(linearized_insns);
         asm_local
     }
 }
