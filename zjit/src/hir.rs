@@ -756,8 +756,9 @@ impl Display for SendFallbackReason {
 #[derive(Debug, Clone)]
 pub enum Insn {
     Const { val: Const },
-    /// SSA block parameter. Also used for function parameters in the function's entry block.
-    Param,
+    /// SSA block parameter. Also used for function parameters in the function's entry block, with
+    /// `id` representing the parameter name.
+    Param { id: Option<ID> },
     /// Load a function argument from the calling convention.
     /// Used in JIT entry blocks. idx is the calling convention index, id is for display.
     LoadArg { idx: u32, id: ID, val_type: Type },
@@ -1096,7 +1097,7 @@ macro_rules! for_each_operand_impl {
     ($self:expr, $visit_one:ident, $visit_many:ident) => {
         match $self {
             Insn::Const { .. }
-            | Insn::Param
+            | Insn::Param { .. }
             | Insn::LoadArg { .. }
             | Insn::Entries { .. }
             | Insn::EntryPoint { .. }
@@ -1695,7 +1696,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match &self.inner {
             Insn::Const { val } => { write!(f, "Const {}", val.print(self.ptr_map)) }
-            Insn::Param => { write!(f, "Param") }
+            Insn::Param { .. } => { write!(f, "Param") }
             Insn::LoadArg { idx, id, .. } => { write!(f, "LoadArg :{}@{idx}", id.contents_lossy()) }
             Insn::Entries { targets } => {
                 write!(f, "Entries")?;
@@ -2118,18 +2119,38 @@ impl std::fmt::Display for Insn {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
+pub struct Param {
+    pub id: Option<ID>,
+    pub insn_id: InsnId,
+}
+
+impl std::fmt::Display for Param {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        if let Some(id) = self.id {
+            if id_is_empty(id) {
+                write!(f, "<empty>[{}]", self.insn_id)
+            } else {
+                write!(f, "{}[{}]", id, self.insn_id)
+            }
+        } else {
+            self.insn_id.fmt(f)
+        }
+    }
+}
+
 /// An extended basic block in a [`Function`].
 #[derive(Default, Debug)]
 pub struct Block {
     /// The index of the first YARV instruction for the Block in the ISEQ
     pub insn_idx: u32,
-    params: Vec<InsnId>,
+    params: Vec<Param>,
     insns: Vec<InsnId>,
 }
 
 impl Block {
     /// Return an iterator over params
-    pub fn params(&self) -> Iter<'_, InsnId> {
+    pub fn params(&self) -> Iter<'_, Param> {
         self.params.iter()
     }
 
@@ -2505,14 +2526,14 @@ impl Function {
 
     // Add an instruction to an SSA block
     pub fn push_insn(&mut self, block: BlockId, insn: Insn) -> InsnId {
-        let is_param = matches!(insn, Insn::Param);
-        let id = self.new_insn(insn);
-        if is_param {
-            self.blocks[block.0].params.push(id);
+        let param_id = if let Insn::Param { id } = &insn { Some(*id) } else { None };
+        let insn_id = self.new_insn(insn);
+        if let Some(id) = param_id {
+            self.blocks[block.0].params.push(Param { id, insn_id });
         } else {
-            self.blocks[block.0].insns.push(id);
+            self.blocks[block.0].insns.push(insn_id);
         }
-        id
+        insn_id
     }
 
     // Add an instruction to an SSA block
@@ -2661,7 +2682,7 @@ impl Function {
         use Insn::*;
         match &self.insns[insn_id.0] {
             result@(Const {..}
-                    | Param
+                    | Param { .. }
                     | LoadArg {..}
                     | Entries {..}
                     | GetConstantPath {..}
@@ -2905,7 +2926,7 @@ impl Function {
     fn infer_type(&self, insn: InsnId) -> Type {
         assert!(self.insns[insn.0].has_output());
         match &self.insns[insn.0] {
-            Insn::Param => unimplemented!("params should not be present in block.insns"),
+            Insn::Param { .. } => unimplemented!("params should not be present in block.insns"),
             Insn::LoadArg { val_type, .. } => *val_type,
             Insn::SetGlobal { .. } | Insn::Jump(_) | Insn::Entries { .. } | Insn::EntryPoint { .. }
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. } | Insn::Throw { .. }
@@ -3069,7 +3090,7 @@ impl Function {
             );
             for (param, param_type) in std::iter::zip(entry_params, param_types) {
                 // We know that function parameters are BasicObject or some subclass
-                self.insn_types[param.0] = *param_type;
+                self.insn_types[param.insn_id.0] = *param_type;
             }
         }
     }
@@ -3105,7 +3126,7 @@ impl Function {
                 for (idx, arg) in $target.args.iter().enumerate() {
                     let arg = self.union_find.borrow().find_const(*arg);
                     let param = $self.blocks[$target.target.0].params[idx];
-                    let param = self.union_find.borrow().find_const(param);
+                    let param = self.union_find.borrow().find_const(param.insn_id);
                     let new = self.insn_types[param.0].union(self.insn_types[arg.0]);
                     if !self.insn_types[param.0].bit_equal(new) {
                         self.insn_types[param.0] = new;
@@ -5437,7 +5458,7 @@ impl Function {
         let params = std::mem::take(&mut self.blocks[target.0].params);
         assert_eq!(args.len(), params.len());
         for (arg, param) in args.iter().zip(params) {
-            self.make_equal_to(param, *arg);
+            self.make_equal_to(param.insn_id, *arg);
         }
         // Remove branch instruction
         self.blocks[block.0].insns.pop();
@@ -5679,7 +5700,7 @@ impl Function {
             // Process all instructions (parameters and body instructions).
             // Parameters are currently guaranteed to be Parameter instructions, but in the future
             // they might be refined to other instruction kinds by the optimizer.
-            for insn_id in block.params.iter().chain(block.insns.iter()) {
+            for insn_id in block.params.iter().map(|p| &p.insn_id).chain(block.insns.iter()) {
                 let insn_id = self.union_find.borrow().find_const(*insn_id);
                 let insn = self.find(insn_id);
 
@@ -5904,7 +5925,7 @@ impl Function {
         while let Some(block) = worklist.pop_front() {
             let mut assigned = assigned_in[block.0].clone().unwrap();
             for &param in &self.blocks[block.0].params {
-                assigned.insert(param);
+                assigned.insert(param.insn_id);
             }
             for &insn_id in &self.blocks[block.0].insns {
                 let insn_id = self.union_find.borrow().find_const(insn_id);
@@ -5940,7 +5961,7 @@ impl Function {
         for &block in &rpo {
             let mut assigned = assigned_in[block.0].clone().unwrap();
             for &param in &self.blocks[block.0].params {
-                assigned.insert(param);
+                assigned.insert(param.insn_id);
             }
             for &insn_id in &self.blocks[block.0].insns {
                 let insn_id = self.union_find.borrow().find_const(insn_id);
@@ -5987,7 +6008,7 @@ impl Function {
         match insn {
             // Instructions with no InsnId operands (except state) or nothing to assert
             Insn::Const { .. }
-            | Insn::Param
+            | Insn::Param { .. }
             | Insn::LoadArg { .. }
             | Insn::PutSpecialObject { .. }
             | Insn::LoadField { .. }
@@ -6316,7 +6337,7 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
                 let mut sep = "";
                 for param in &fun.blocks[block_id.0].params {
                     write!(f, "{sep}{param}")?;
-                    let insn_type = fun.type_of(*param);
+                    let insn_type = fun.type_of(param.insn_id);
                     if !insn_type.is_subtype(types::Empty) {
                         write!(f, ":{}", insn_type.print(&self.ptr_map))?;
                     }
@@ -6388,7 +6409,7 @@ impl<'a> std::fmt::Display for FunctionGraphvizPrinter<'a> {
                 let mut sep = "";
                 for param in &fun.blocks[block_id.0].params {
                     write_encoded!(f, "{sep}{param}")?;
-                    let insn_type = fun.type_of(*param);
+                    let insn_type = fun.type_of(param.insn_id);
                     if !insn_type.is_subtype(types::Empty) {
                         write_encoded!(f, ":{}", insn_type.print(&self.ptr_map))?;
                     }
@@ -6860,15 +6881,22 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
         visited.insert(block);
 
         // Load basic block params first
-        let mut self_param = fun.push_insn(block, Insn::Param);
+        let mut self_param = fun.push_insn(block, Insn::Param { id: Some(ID!(self_))});
         let mut state = {
             let mut result = FrameState::new(iseq);
-            let local_size = if jit_entry_insns.contains(&insn_idx) { num_locals(iseq) } else { incoming_state.locals.len() };
-            for _ in 0..local_size {
-                result.locals.push(fun.push_insn(block, Insn::Param));
+            if jit_entry_insns.contains(&insn_idx) {
+                for param_idx in 0..num_locals(iseq) {
+                    // Read the parameter names for HIR printing
+                    let id = unsafe { rb_zjit_local_id(iseq, param_idx.try_into().unwrap()) };
+                    result.locals.push(fun.push_insn(block, Insn::Param { id: Some(id) } ));
+                }
+            } else {
+                for _ in 0..incoming_state.locals.len() {
+                    result.locals.push(fun.push_insn(block, Insn::Param { id: None } ));
+                }
             }
             for _ in incoming_state.stack {
-                result.stack.push(fun.push_insn(block, Insn::Param));
+                result.stack.push(fun.push_insn(block, Insn::Param { id: None } ));
             }
             result
         };
@@ -7487,12 +7515,12 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         stack_count: usize,
                     ) -> (BlockId, InsnId, FrameState, InsnId) {
                         let block = fun.new_block(insn_idx);
-                        let self_param = fun.push_insn(block, Insn::Param);
+                        let self_param = fun.push_insn(block, Insn::Param { id: None });
                         let mut state = exit_state.clone();
                         state.locals.clear();
                         state.stack.clear();
-                        state.locals.extend((0..locals_count).map(|_| fun.push_insn(block, Insn::Param)));
-                        state.stack.extend((0..stack_count).map(|_| fun.push_insn(block, Insn::Param)));
+                        state.locals.extend((0..locals_count).map(|_| fun.push_insn(block, Insn::Param { id: None })));
+                        state.stack.extend((0..stack_count).map(|_| fun.push_insn(block, Insn::Param { id: None })));
                         let snapshot = fun.push_insn(block, Insn::Snapshot { state: state.clone() });
                         (block, self_param, state, snapshot)
                     }
@@ -7785,12 +7813,12 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             join_block: BlockId,
                         ) -> BlockId {
                             let block = fun.new_block(insn_idx);
-                            let self_param = fun.push_insn(block, Insn::Param);
+                            let self_param = fun.push_insn(block, Insn::Param { id: None });
                             let mut state = exit_state.clone();
                             state.locals.clear();
                             state.stack.clear();
-                            state.locals.extend((0..locals_count).map(|_| fun.push_insn(block, Insn::Param)));
-                            state.stack.extend((0..stack_count).map(|_| fun.push_insn(block, Insn::Param)));
+                            state.locals.extend((0..locals_count).map(|_| fun.push_insn(block, Insn::Param { id: None })));
+                            state.stack.extend((0..stack_count).map(|_| fun.push_insn(block, Insn::Param { id: None })));
                             let snapshot = fun.push_insn(block, Insn::Snapshot { state: state.clone() });
                             let args = state.stack_pop_n(argc).unwrap();
                             let recv = state.stack_pop().unwrap();
@@ -8040,7 +8068,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         self_param = fun.push_insn(block, Insn::GuardType { val: self_param, guard_type: types::HeapBasicObject, state: exit_id });
                         let shape = fun.load_shape(block, self_param);
                         let join_block = insn_idx_to_block.get(&insn_idx).copied().unwrap_or_else(|| fun.new_block(insn_idx));
-                        let join_param = fun.push_insn(join_block, Insn::Param);
+                        let join_param = fun.push_insn(join_block, Insn::Param { id: None });
                         // Dedup by expected shape so objects with different classes but the same shape can share code
                         // TODO(max): De-duplicate further by checking ivar offsets to allow
                         // different shapes with the same ivar layout to share code
@@ -9091,7 +9119,7 @@ mod infer_tests {
         function.push_insn(entry, Insn::IfFalse { val, target: BranchEdge { target: side, args: vec![] } });
         let v1 = function.push_insn(entry, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(4)) });
         function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: vec![v1] }));
-        let param = function.push_insn(exit, Insn::Param);
+        let param = function.push_insn(exit, Insn::Param { id: None });
         function.seal_entries();
         crate::cruby::with_rubyvm(|| {
             function.infer_types();
@@ -9111,7 +9139,7 @@ mod infer_tests {
         function.push_insn(entry, Insn::IfFalse { val, target: BranchEdge { target: side, args: vec![] } });
         let v1 = function.push_insn(entry, Insn::Const { val: Const::Value(Qfalse) });
         function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: vec![v1] }));
-        let param = function.push_insn(exit, Insn::Param);
+        let param = function.push_insn(exit, Insn::Param { id: None} );
         function.seal_entries();
         crate::cruby::with_rubyvm(|| {
             function.infer_types();
@@ -9170,7 +9198,7 @@ mod graphviz_tests {
         </TABLE>>];
           bb2:v10 -> bb3:params:n;
           bb3 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject)&nbsp;</TD></TR>
+        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb3(self[v11]:BasicObject, x[v12]:BasicObject, y[v13]:BasicObject)&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v16">PatchPoint NoTracePoint&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v27">PatchPoint MethodRedefined(Integer@0x1008, |@0x1010, cme:0x1018)&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v28">v28:Fixnum = GuardType v12, Fixnum&nbsp;</TD></TR>
@@ -9223,7 +9251,7 @@ mod graphviz_tests {
         </TABLE>>];
           bb2:v8 -> bb3:params:n;
           bb3 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb3(v9:BasicObject, v10:BasicObject)&nbsp;</TD></TR>
+        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb3(self[v9]:BasicObject, c[v10]:BasicObject)&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v13">PatchPoint NoTracePoint&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v15">CheckInterrupts&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v16">v16:CBool = Test v10&nbsp;</TD></TR>
@@ -9237,7 +9265,7 @@ mod graphviz_tests {
         </TABLE>>];
           bb3:v18 -> bb4:params:n;
           bb4 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb4(v27:BasicObject, v28:Falsy)&nbsp;</TD></TR>
+        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb4(self[v27]:BasicObject, v28:Falsy)&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v31">PatchPoint NoTracePoint&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v32">v32:Fixnum[4] = Const Value(4)&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v35">CheckInterrupts&nbsp;</TD></TR>
