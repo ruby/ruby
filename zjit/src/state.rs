@@ -73,7 +73,7 @@ pub struct ZJITState {
     perfetto_tracer: Option<PerfettoTracer>,
 
     /// Frame metadata for ISEQ and C calls that are known at compile time
-    jit_frames: Vec<*const JITFrame>,
+    jit_frames: Vec<*mut JITFrame>,
 }
 
 /// Tracks the initialization progress
@@ -191,7 +191,7 @@ impl ZJITState {
         &mut ZJITState::get_instance().invariants
     }
 
-    pub fn get_jit_frames() -> &'static mut Vec<*const JITFrame> {
+    pub fn get_jit_frames() -> &'static mut Vec<*mut JITFrame> {
         &mut ZJITState::get_instance().jit_frames
     }
 

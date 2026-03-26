@@ -1,4 +1,4 @@
-use crate::cruby::{IseqPtr, VALUE};
+use crate::cruby::{IseqPtr, VALUE, rb_gc_mark_movable, rb_gc_location};
 use crate::state::ZJITState;
 
 #[derive(Debug)]
@@ -21,9 +21,9 @@ impl JITFrame {
     /// Allocate a JITFrame on the heap, register it with ZJITState, and return
     /// a raw pointer that remains valid for the lifetime of the process.
     fn alloc(jit_frame: JITFrame) -> *const Self {
-        let raw_ptr = Box::into_raw(Box::new(jit_frame)) as *const _;
+        let raw_ptr = Box::into_raw(Box::new(jit_frame));
         ZJITState::get_jit_frames().push(raw_ptr);
-        raw_ptr
+        raw_ptr as *const _
     }
 
     /// Create a JITFrame for an ISEQ frame.
@@ -34,6 +34,23 @@ impl JITFrame {
     /// Create a JITFrame for a C frame (no PC, no ISEQ).
     pub fn new_cfunc() -> *const Self {
         Self::alloc(JITFrame { pc: std::ptr::null(), iseq: std::ptr::null(), materialize_block_code: false })
+    }
+
+    /// Mark the iseq pointer for GC. Called from rb_zjit_root_mark.
+    pub fn mark(&self) {
+        if !self.iseq.is_null() {
+            unsafe { rb_gc_mark_movable(VALUE::from(self.iseq)); }
+        }
+    }
+
+    /// Update the iseq pointer after GC compaction.
+    pub fn update_references(&mut self) {
+        if !self.iseq.is_null() {
+            let new_iseq = unsafe { rb_gc_location(VALUE::from(self.iseq)) }.as_iseq();
+            if self.iseq != new_iseq {
+                self.iseq = new_iseq;
+            }
+        }
     }
 }
 
