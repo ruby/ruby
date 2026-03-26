@@ -63,7 +63,7 @@ enum zjit_poison_values {
 // YJIT also uses jit_return (as a return address), so this must only return
 // true when ZJIT is enabled and has set jit_return to a JITFrame pointer.
 static inline bool
-CFP_JIT_RETURN(const rb_control_frame_t *cfp)
+CFP_HAS_JIT_RETURN(const rb_control_frame_t *cfp)
 {
     if (!rb_zjit_enabled_p) return false;
 #if USE_ZJIT
@@ -78,7 +78,7 @@ CFP_JIT_RETURN(const rb_control_frame_t *cfp)
 static inline bool
 rb_zjit_cfp_has_iseq(const rb_control_frame_t *cfp)
 {
-    if (CFP_JIT_RETURN(cfp)) return ((const zjit_jit_frame_t *)cfp->jit_return)->iseq != NULL;
+    if (CFP_HAS_JIT_RETURN(cfp)) return ((const zjit_jit_frame_t *)cfp->jit_return)->iseq != NULL;
     return !!cfp->iseq;
 }
 
@@ -88,14 +88,14 @@ rb_zjit_cfp_has_iseq(const rb_control_frame_t *cfp)
 static inline bool
 rb_zjit_cfp_has_pc(const rb_control_frame_t *cfp)
 {
-    if (CFP_JIT_RETURN(cfp)) return ((const zjit_jit_frame_t *)cfp->jit_return)->pc != NULL;
+    if (CFP_HAS_JIT_RETURN(cfp)) return ((const zjit_jit_frame_t *)cfp->jit_return)->pc != NULL;
     return !!cfp->pc;
 }
 
 static inline const VALUE*
 rb_zjit_cfp_pc(const rb_control_frame_t *cfp)
 {
-    if (rb_zjit_enabled_p && CFP_JIT_RETURN(cfp)) {
+    if (rb_zjit_enabled_p && CFP_HAS_JIT_RETURN(cfp)) {
         return ((const zjit_jit_frame_t *)cfp->jit_return)->pc;
     }
     else {
@@ -106,7 +106,7 @@ rb_zjit_cfp_pc(const rb_control_frame_t *cfp)
 static inline const rb_iseq_t*
 rb_zjit_cfp_iseq(const rb_control_frame_t *cfp)
 {
-    if (rb_zjit_enabled_p && CFP_JIT_RETURN(cfp)) {
+    if (rb_zjit_enabled_p && CFP_HAS_JIT_RETURN(cfp)) {
         return ((const zjit_jit_frame_t *)cfp->jit_return)->iseq;
     }
     else {
