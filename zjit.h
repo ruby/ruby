@@ -72,14 +72,31 @@ CFP_HAS_JIT_RETURN(const rb_control_frame_t *cfp)
     return !!cfp->jit_return;
 }
 
+static inline const VALUE*
+rb_zjit_cfp_pc(const rb_control_frame_t *cfp)
+{
+    if (CFP_HAS_JIT_RETURN(cfp)) {
+        return ((const zjit_jit_frame_t *)cfp->jit_return)->pc;
+    }
+    return cfp->pc;
+}
+
+static inline const rb_iseq_t*
+rb_zjit_cfp_iseq(const rb_control_frame_t *cfp)
+{
+    if (CFP_HAS_JIT_RETURN(cfp)) {
+        return ((const zjit_jit_frame_t *)cfp->jit_return)->iseq;
+    }
+    return cfp->iseq;
+}
+
 // Returns true if cfp has an ISEQ, either directly or via JITFrame.
 // When JITFrame is present, it is authoritative (cfp->iseq may be stale).
 // C frames with JITFrame have iseq=NULL, so this returns false for them.
 static inline bool
 rb_zjit_cfp_has_iseq(const rb_control_frame_t *cfp)
 {
-    if (CFP_HAS_JIT_RETURN(cfp)) return ((const zjit_jit_frame_t *)cfp->jit_return)->iseq != NULL;
-    return !!cfp->iseq;
+    return !!rb_zjit_cfp_iseq(cfp);
 }
 
 // Returns true if cfp has a PC, either directly or via JITFrame.
@@ -88,30 +105,7 @@ rb_zjit_cfp_has_iseq(const rb_control_frame_t *cfp)
 static inline bool
 rb_zjit_cfp_has_pc(const rb_control_frame_t *cfp)
 {
-    if (CFP_HAS_JIT_RETURN(cfp)) return ((const zjit_jit_frame_t *)cfp->jit_return)->pc != NULL;
-    return !!cfp->pc;
-}
-
-static inline const VALUE*
-rb_zjit_cfp_pc(const rb_control_frame_t *cfp)
-{
-    if (rb_zjit_enabled_p && CFP_HAS_JIT_RETURN(cfp)) {
-        return ((const zjit_jit_frame_t *)cfp->jit_return)->pc;
-    }
-    else {
-        return cfp->pc;
-    }
-}
-
-static inline const rb_iseq_t*
-rb_zjit_cfp_iseq(const rb_control_frame_t *cfp)
-{
-    if (rb_zjit_enabled_p && CFP_HAS_JIT_RETURN(cfp)) {
-        return ((const zjit_jit_frame_t *)cfp->jit_return)->iseq;
-    }
-    else {
-        return cfp->iseq;
-    }
+    return !!rb_zjit_cfp_pc(cfp);
 }
 
 #endif // #ifndef ZJIT_H
