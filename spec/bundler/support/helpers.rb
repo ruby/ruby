@@ -374,6 +374,7 @@ module Spec
         require "rubygems/commands/list_command"
 
         # Capture output from the list command
+        require "stringio"
         output_io = StringIO.new
         cmd = Gem::Commands::ListCommand.new
         cmd.ui = Gem::StreamUI.new(StringIO.new, output_io, StringIO.new, false)

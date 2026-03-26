@@ -1655,6 +1655,27 @@ class TestGem < Gem::TestCase
     assert_nil              Gem.find_unresolved_default_spec("README")
   end
 
+  def test_register_default_spec_new_style_with_native_extension
+    Gem.clear_default_specs
+
+    dlext = RbConfig::CONFIG["DLEXT"]
+
+    new_style = Gem::Specification.new do |spec|
+      spec.name = "my_ext"
+      spec.version = "1.0"
+      spec.files = ["lib/my_ext.rb", "my_ext_core.#{dlext}", "ext/my_ext/my_ext_core.c", "README.md"]
+      spec.require_paths = ["lib"]
+    end
+
+    Gem.register_default_spec new_style
+
+    assert_equal new_style, Gem.find_unresolved_default_spec("my_ext.rb")
+    assert_equal new_style, Gem.find_unresolved_default_spec("my_ext_core")
+    assert_equal new_style, Gem.find_unresolved_default_spec("my_ext_core.#{dlext}")
+    assert_nil              Gem.find_unresolved_default_spec("ext/my_ext/my_ext_core.c")
+    assert_nil              Gem.find_unresolved_default_spec("README.md")
+  end
+
   def test_register_default_spec_old_style_with_folder_starting_with_lib
     Gem.clear_default_specs
 

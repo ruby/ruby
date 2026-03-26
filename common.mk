@@ -90,33 +90,43 @@ MAKE_ENC      = -f $(ENC_MK) V="$(V)" UNICODE_HDR_DIR="$(UNICODE_HDR_DIR)" \
 
 PRISM_BUILD_DIR = prism
 
-LIBPRISM_OBJS = prism/diagnostic.$(OBJEXT) \
+LIBPRISM_OBJS = \
+		prism/arena.$(OBJEXT) \
+		prism/buffer.$(OBJEXT) \
+		prism/char.$(OBJEXT) \
+		prism/constant_pool.$(OBJEXT) \
+		prism/diagnostic.$(OBJEXT) \
 		prism/encoding.$(OBJEXT) \
+		prism/integer.$(OBJEXT) \
+		prism/json.$(OBJEXT) \
+		prism/line_offset_list.$(OBJEXT) \
+		prism/list.$(OBJEXT) \
+		prism/memchr.$(OBJEXT) \
 		prism/node.$(OBJEXT) \
 		prism/options.$(OBJEXT) \
+		prism/parser.$(OBJEXT) \
 		prism/prettyprint.$(OBJEXT) \
+		prism/prism.$(OBJEXT) \
 		prism/regexp.$(OBJEXT) \
 		prism/serialize.$(OBJEXT) \
+		prism/source.$(OBJEXT) \
 		prism/static_literals.$(OBJEXT) \
-		prism/token_type.$(OBJEXT) \
-		prism/util/pm_arena.$(OBJEXT) \
-		prism/util/pm_buffer.$(OBJEXT) \
-		prism/util/pm_char.$(OBJEXT) \
-		prism/util/pm_constant_pool.$(OBJEXT) \
-		prism/util/pm_integer.$(OBJEXT) \
-		prism/util/pm_line_offset_list.$(OBJEXT) \
-		prism/util/pm_list.$(OBJEXT) \
-		prism/util/pm_memchr.$(OBJEXT) \
-		prism/util/pm_string.$(OBJEXT) \
-		prism/util/pm_strncasecmp.$(OBJEXT) \
-		prism/util/pm_strpbrk.$(OBJEXT) \
-		prism/prism.$(OBJEXT)
+		prism/string_query.$(OBJEXT) \
+		prism/stringy.$(OBJEXT) \
+		prism/strncasecmp.$(OBJEXT) \
+		prism/strpbrk.$(OBJEXT) \
+		prism/tokens.$(OBJEXT)
 
 EXTPRISM_OBJS = prism/api_node.$(OBJEXT) \
 		prism/extension.$(OBJEXT) \
 		prism_init.$(OBJEXT)
 
 PRISM_OBJS = $(LIBPRISM_OBJS) $(EXTPRISM_OBJS)
+
+# Prism objects depend on generated headers that are created from templates.
+# This must be declared here to ensure parallel builds don't compile prism
+# sources before the generated headers exist.
+$(LIBPRISM_OBJS): $(srcdir)/prism/ast.h $(srcdir)/prism/internal/diagnostic.h
 
 COMMONOBJS    = \
 		array.$(OBJEXT) \

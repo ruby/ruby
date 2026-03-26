@@ -3,13 +3,6 @@
 require "rubygems"
 
 begin
-  gem "test-unit", "~> 3.0"
-rescue Gem::LoadError
-end
-
-require "test/unit"
-
-begin
   raise LoadError if ENV["GEM_COMMAND"]
 
   gem "simplecov_json_formatter"
@@ -34,6 +27,13 @@ begin
 rescue LoadError
   # SimpleCov is not installed
 end
+
+begin
+  gem "test-unit", "~> 3.0"
+rescue Gem::LoadError
+end
+
+require "test/unit"
 
 require "fileutils"
 require "pathname"
@@ -1258,6 +1258,24 @@ Also, a list:
 
   def nmake_found?
     system("nmake /? 1>NUL 2>&1")
+  end
+
+  @@symlink_supported = nil
+
+  # This is needed for Windows environment without symlink support enabled (the default
+  # for non admin) to be able to skip test for features using symlinks.
+  def symlink_supported?
+    if @@symlink_supported.nil?
+      begin
+        File.symlink(File.join(@tempdir, "a"), File.join(@tempdir, "b"))
+      rescue NotImplementedError, SystemCallError
+        @@symlink_supported = false
+      else
+        File.unlink(File.join(@tempdir, "b"))
+        @@symlink_supported = true
+      end
+    end
+    @@symlink_supported
   end
 
   # In case we're building docs in a background process, this method waits for

@@ -525,7 +525,7 @@ PERF=record ruby --yjit-perf=codegen -Iharness-perf benchmarks/lobsters/benchmar
 
 # Aggregate results
 perf script > /tmp/perf.txt
-../ruby/misc/yjit_perf.py /tmp/perf.txt
+../ruby/misc/jit_perf.py /tmp/perf.txt
 ```
 
 #### Building perf with Python support
@@ -543,5 +543,5 @@ make
 make install
 
 # Aggregate results
-perf script -s ../ruby/misc/yjit_perf.py
+perf script -s ../ruby/misc/jit_perf.py
 ```

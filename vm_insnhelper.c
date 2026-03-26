@@ -2352,9 +2352,9 @@ vm_search_method_slowpath0(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
     return cc;
 }
 
-ALWAYS_INLINE(static const struct rb_callcache *vm_search_method_fastpath(VALUE cd_owner, struct rb_call_data *cd, VALUE klass));
+ALWAYS_INLINE(static const struct rb_callcache *vm_search_method_fastpath(const struct rb_control_frame_struct *reg_cfp, struct rb_call_data *cd, VALUE klass));
 static const struct rb_callcache *
-vm_search_method_fastpath(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
+vm_search_method_fastpath(const struct rb_control_frame_struct *reg_cfp, struct rb_call_data *cd, VALUE klass)
 {
     const struct rb_callcache *cc = cd->cc;
 
@@ -2376,24 +2376,28 @@ vm_search_method_fastpath(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
     }
 #endif
 
-    return vm_search_method_slowpath0(cd_owner, cd, klass);
+    return vm_search_method_slowpath0((VALUE)reg_cfp->iseq, cd, klass);
 }
 
 static const struct rb_callable_method_entry_struct *
-vm_search_method(VALUE cd_owner, struct rb_call_data *cd, VALUE recv)
+vm_search_method(struct rb_control_frame_struct *reg_cfp, struct rb_call_data *cd, VALUE recv)
 {
     VALUE klass = CLASS_OF(recv);
     VM_ASSERT(klass != Qfalse);
     VM_ASSERT(RBASIC_CLASS(klass) == 0 || rb_obj_is_kind_of(klass, rb_cClass));
 
-    const struct rb_callcache *cc = vm_search_method_fastpath(cd_owner, cd, klass);
+    const struct rb_callcache *cc = vm_search_method_fastpath(reg_cfp, cd, klass);
     return vm_cc_cme(cc);
 }
 
 const struct rb_callable_method_entry_struct *
 rb_zjit_vm_search_method(VALUE cd_owner, struct rb_call_data *cd, VALUE recv)
 {
-    return vm_search_method(cd_owner, cd, recv);
+    // Called from ZJIT with the compile-time iseq, which may differ from
+    // the iseq on the current CFP. Use the slowpath to avoid stale caches.
+    VALUE klass = CLASS_OF(recv);
+    const struct rb_callcache *cc = vm_search_method_slowpath0(cd_owner, cd, klass);
+    return vm_cc_cme(cc);
 }
 
 #if __has_attribute(transparent_union)
@@ -2453,10 +2457,10 @@ check_method_basic_definition(const rb_callable_method_entry_t *me)
 }
 
 static inline int
-vm_method_cfunc_is(const rb_iseq_t *iseq, CALL_DATA cd, VALUE recv, cfunc_type func)
+vm_method_cfunc_is(struct rb_control_frame_struct *reg_cfp, CALL_DATA cd, VALUE recv, cfunc_type func)
 {
-    VM_ASSERT(iseq != NULL);
-    const struct rb_callable_method_entry_struct *cme = vm_search_method((VALUE)iseq, cd, recv);
+    VM_ASSERT(reg_cfp != NULL);
+    const struct rb_callable_method_entry_struct *cme = vm_search_method(reg_cfp, cd, recv);
     return check_cfunc(cme, func);
 }
 
@@ -2469,11 +2473,16 @@ rb_zjit_cme_is_cfunc(const rb_callable_method_entry_t *me, const cfunc_type func
 int
 rb_vm_method_cfunc_is(const rb_iseq_t *iseq, CALL_DATA cd, VALUE recv, cfunc_type func)
 {
-    return vm_method_cfunc_is(iseq, cd, recv, func);
+    // Called from ZJIT with the compile-time iseq, which may differ from
+    // the iseq on the current CFP. Use the slowpath to avoid stale caches.
+    VALUE klass = CLASS_OF(recv);
+    const struct rb_callcache *cc = vm_search_method_slowpath0((VALUE)iseq, cd, klass);
+    const struct rb_callable_method_entry_struct *cme = vm_cc_cme(cc);
+    return check_cfunc(cme, func);
 }
 
 #define check_cfunc(me, func) check_cfunc(me, make_cfunc_type(func))
-#define vm_method_cfunc_is(iseq, cd, recv, func) vm_method_cfunc_is(iseq, cd, recv, make_cfunc_type(func))
+#define vm_method_cfunc_is(reg_cfp, cd, recv, func) vm_method_cfunc_is(reg_cfp, cd, recv, make_cfunc_type(func))
 
 #define EQ_UNREDEFINED_P(t) BASIC_OP_UNREDEFINED_P(BOP_EQ, t##_REDEFINED_OP_FLAG)
 
@@ -2542,14 +2551,14 @@ opt_equality_specialized(VALUE recv, VALUE obj)
 }
 
 static VALUE
-opt_equality(const rb_iseq_t *cd_owner, VALUE recv, VALUE obj, CALL_DATA cd)
+opt_equality(struct rb_control_frame_struct *reg_cfp, VALUE recv, VALUE obj, CALL_DATA cd)
 {
-    VM_ASSERT(cd_owner != NULL);
+    VM_ASSERT(reg_cfp != NULL);
 
     VALUE val = opt_equality_specialized(recv, obj);
     if (!UNDEF_P(val)) return val;
 
-    if (!vm_method_cfunc_is(cd_owner, cd, recv, rb_obj_equal)) {
+    if (!vm_method_cfunc_is(reg_cfp, cd, recv, rb_obj_equal)) {
         return Qundef;
     }
     else {
@@ -5171,7 +5180,7 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
         RB_OBJ_WRITE(reg_cfp->iseq, &cd->cc, cc);
     }
     else {
-        cc = vm_search_method_fastpath((VALUE)reg_cfp->iseq, cd, klass);
+        cc = vm_search_method_fastpath(reg_cfp, cd, klass);
         const rb_callable_method_entry_t *cached_cme = vm_cc_cme(cc);
 
         // define_method can cache for different method id
@@ -5895,7 +5904,6 @@ vm_declare_class(ID id, rb_num_t flags, VALUE cbase, VALUE super)
     /* new class declaration */
     VALUE s = VM_DEFINECLASS_HAS_SUPERCLASS_P(flags) ? super : rb_cObject;
     VALUE c = declare_under(id, cbase, rb_define_class_id(id, s));
-    rb_define_alloc_func(c, rb_get_alloc_func(c));
     rb_class_inherited(s, c);
     return c;
 }
@@ -6123,7 +6131,7 @@ vm_sendish(
 
     switch (method_explorer) {
       case mexp_search_method:
-        calling.cc = cc = vm_search_method_fastpath((VALUE)reg_cfp->iseq, cd, CLASS_OF(recv));
+        calling.cc = cc = vm_search_method_fastpath(reg_cfp, cd, CLASS_OF(recv));
         val = vm_cc_call(cc)(ec, GET_CFP(), &calling);
         break;
       case mexp_search_super:
@@ -6230,14 +6238,14 @@ VALUE rb_mod_to_s(VALUE);
 VALUE rb_mod_name(VALUE);
 
 static VALUE
-vm_objtostring(const rb_iseq_t *iseq, VALUE recv, CALL_DATA cd)
+vm_objtostring(struct rb_control_frame_struct *reg_cfp, VALUE recv, CALL_DATA cd)
 {
     int type = TYPE(recv);
     if (type == T_STRING) {
         return recv;
     }
 
-    const struct rb_callable_method_entry_struct *cme = vm_search_method((VALUE)iseq, cd, recv);
+    const struct rb_callable_method_entry_struct *cme = vm_search_method(reg_cfp, cd, recv);
 
     switch (type) {
       case T_SYMBOL:
@@ -6288,9 +6296,9 @@ vm_objtostring(const rb_iseq_t *iseq, VALUE recv, CALL_DATA cd)
 // ZJIT implementation is using the C function
 // and needs to call a non-static function
 VALUE
-rb_vm_objtostring(const rb_iseq_t *iseq, VALUE recv, CALL_DATA cd)
+rb_vm_objtostring(struct rb_control_frame_struct *reg_cfp, VALUE recv, CALL_DATA cd)
 {
-    return vm_objtostring(iseq, recv, cd);
+    return vm_objtostring(reg_cfp, recv, cd);
 }
 
 static VALUE
@@ -6841,10 +6849,10 @@ vm_opt_mod(VALUE recv, VALUE obj)
 }
 
 static VALUE
-vm_opt_neq(const rb_iseq_t *iseq, CALL_DATA cd, CALL_DATA cd_eq, VALUE recv, VALUE obj)
+vm_opt_neq(struct rb_control_frame_struct *reg_cfp, CALL_DATA cd, CALL_DATA cd_eq, VALUE recv, VALUE obj)
 {
-    if (vm_method_cfunc_is(iseq, cd, recv, rb_obj_not_equal)) {
-        VALUE val = opt_equality(iseq, recv, obj, cd_eq);
+    if (vm_method_cfunc_is(reg_cfp, cd, recv, rb_obj_not_equal)) {
+        VALUE val = opt_equality(reg_cfp, recv, obj, cd_eq);
 
         if (!UNDEF_P(val)) {
             return RBOOL(!RTEST(val));
@@ -7096,13 +7104,13 @@ vm_opt_empty_p(VALUE recv)
 VALUE rb_false(VALUE obj);
 
 static VALUE
-vm_opt_nil_p(const rb_iseq_t *iseq, CALL_DATA cd, VALUE recv)
+vm_opt_nil_p(struct rb_control_frame_struct *reg_cfp, CALL_DATA cd, VALUE recv)
 {
     if (NIL_P(recv) &&
         BASIC_OP_UNREDEFINED_P(BOP_NIL_P, NIL_REDEFINED_OP_FLAG)) {
         return Qtrue;
     }
-    else if (vm_method_cfunc_is(iseq, cd, recv, rb_false)) {
+    else if (vm_method_cfunc_is(reg_cfp, cd, recv, rb_false)) {
         return Qfalse;
     }
     else {
@@ -7158,9 +7166,9 @@ vm_opt_succ(VALUE recv)
 }
 
 static VALUE
-vm_opt_not(const rb_iseq_t *iseq, CALL_DATA cd, VALUE recv)
+vm_opt_not(struct rb_control_frame_struct *reg_cfp, CALL_DATA cd, VALUE recv)
 {
-    if (vm_method_cfunc_is(iseq, cd, recv, rb_obj_not)) {
+    if (vm_method_cfunc_is(reg_cfp, cd, recv, rb_obj_not)) {
         return RBOOL(!RTEST(recv));
     }
     else {

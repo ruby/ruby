@@ -5,7 +5,6 @@ use std::{ffi::c_void, ops::Range};
 use crate::{cruby::*, state::ZJITState, stats::with_time_stat, virtualmem::CodePtr};
 use crate::payload::{IseqPayload, IseqVersionRef, get_or_create_iseq_payload};
 use crate::stats::Counter::gc_time_ns;
-use crate::state::gc_mark_raw_samples;
 
 /// GC callback for marking GC objects in the per-ISEQ payload.
 #[unsafe(no_mangle)]
@@ -207,5 +206,5 @@ fn ranges_overlap<T>(left: &Range<T>, right: &Range<T>) -> bool where T: Partial
 /// Callback for marking GC objects inside [crate::invariants::Invariants].
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_root_mark() {
-    gc_mark_raw_samples();
+    // TODO(max): Either add roots to mark or consider removing this callback
 }
