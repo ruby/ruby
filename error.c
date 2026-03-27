@@ -2368,7 +2368,7 @@ name_err_init_attr(VALUE exc, VALUE recv, VALUE method)
     rb_ivar_set(exc, id_name, method);
     err_init_recv(exc, recv);
     if (cfp && VM_FRAME_TYPE(cfp) != VM_FRAME_MAGIC_DUMMY) {
-        rb_ivar_set(exc, id_iseq, rb_iseqw_new(rb_zjit_cfp_iseq(cfp)));
+        rb_ivar_set(exc, id_iseq, rb_iseqw_new(rb_cfp_iseq(cfp)));
     }
     return exc;
 }

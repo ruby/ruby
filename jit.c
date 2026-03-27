@@ -403,7 +403,7 @@ rb_get_ec_cfp(const rb_execution_context_t *ec)
 const rb_iseq_t *
 rb_get_cfp_iseq(struct rb_control_frame_struct *cfp)
 {
-    return cfp->iseq;
+    return rb_cfp_iseq(cfp);
 }
 
 VALUE *

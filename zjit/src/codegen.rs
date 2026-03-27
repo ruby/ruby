@@ -3034,7 +3034,7 @@ c_callable! {
             // Clear jit_return so the interpreter reads cfp->pc and cfp->iseq directly.
             let pc = unsafe { rb_iseq_pc_at_idx(iseq, entry_insn_idxs[iseq_call.jit_entry_idx.to_usize()]) };
             unsafe { rb_set_cfp_pc(cfp, pc) };
-            unsafe { (*cfp).iseq = iseq };
+            unsafe { (*cfp)._iseq = iseq };
             unsafe { (*cfp).jit_return = std::ptr::null_mut() };
         }
 

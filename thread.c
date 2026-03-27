@@ -5906,7 +5906,7 @@ static void
 update_line_coverage(VALUE data, const rb_trace_arg_t *trace_arg)
 {
     const rb_control_frame_t *cfp = GET_EC()->cfp;
-    VALUE coverage = rb_iseq_coverage(cfp->iseq);
+    VALUE coverage = rb_iseq_coverage(rb_cfp_iseq(cfp));
     if (RB_TYPE_P(coverage, T_ARRAY) && !RBASIC_CLASS(coverage)) {
         VALUE lines = RARRAY_AREF(coverage, COVERAGE_INDEX_LINES);
         if (lines) {
@@ -5916,7 +5916,7 @@ update_line_coverage(VALUE data, const rb_trace_arg_t *trace_arg)
             VALUE num;
             void rb_iseq_clear_event_flags(const rb_iseq_t *iseq, size_t pos, rb_event_flag_t reset);
             if (GET_VM()->coverage_mode & COVERAGE_TARGET_ONESHOT_LINES) {
-                rb_iseq_clear_event_flags(cfp->iseq, rb_zjit_cfp_pc(cfp) - ISEQ_BODY(cfp->iseq)->iseq_encoded - 1, RUBY_EVENT_COVERAGE_LINE);
+                rb_iseq_clear_event_flags(rb_cfp_iseq(cfp), rb_cfp_pc(cfp) - ISEQ_BODY(rb_cfp_iseq(cfp))->iseq_encoded - 1, RUBY_EVENT_COVERAGE_LINE);
                 rb_ary_push(lines, LONG2FIX(line + 1));
                 return;
             }
@@ -5937,12 +5937,12 @@ static void
 update_branch_coverage(VALUE data, const rb_trace_arg_t *trace_arg)
 {
     const rb_control_frame_t *cfp = GET_EC()->cfp;
-    VALUE coverage = rb_iseq_coverage(cfp->iseq);
+    VALUE coverage = rb_iseq_coverage(rb_cfp_iseq(cfp));
     if (RB_TYPE_P(coverage, T_ARRAY) && !RBASIC_CLASS(coverage)) {
         VALUE branches = RARRAY_AREF(coverage, COVERAGE_INDEX_BRANCHES);
         if (branches) {
-            long pc = rb_zjit_cfp_pc(cfp) - ISEQ_BODY(cfp->iseq)->iseq_encoded - 1;
-            long idx = FIX2INT(RARRAY_AREF(ISEQ_PC2BRANCHINDEX(cfp->iseq), pc)), count;
+            long pc = rb_cfp_pc(cfp) - ISEQ_BODY(rb_cfp_iseq(cfp))->iseq_encoded - 1;
+            long idx = FIX2INT(RARRAY_AREF(ISEQ_PC2BRANCHINDEX(rb_cfp_iseq(cfp)), pc)), count;
             VALUE counters = RARRAY_AREF(branches, 1);
             VALUE num = RARRAY_AREF(counters, idx);
             count = FIX2LONG(num) + 1;

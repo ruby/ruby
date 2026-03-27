@@ -68,10 +68,10 @@ error !
 #define INSN_ENTRY_SIG(insn) \
   if (0) { \
       ruby_debug_printf("exec: %s@(%"PRIdPTRDIFF", %"PRIdPTRDIFF")@%s:%u\n", #insn, \
-                        (reg_pc - ISEQ_BODY(reg_cfp->iseq)->iseq_encoded), \
-                        (reg_cfp->pc - ISEQ_BODY(reg_cfp->iseq)->iseq_encoded), \
-                        RSTRING_PTR(rb_iseq_path(reg_cfp->iseq)), \
-                        rb_iseq_line_no(reg_cfp->iseq, reg_pc - ISEQ_BODY(reg_cfp->iseq)->iseq_encoded)); \
+                        (reg_pc - ISEQ_BODY(rb_cfp_iseq(reg_cfp))->iseq_encoded), \
+                        (reg_cfp->pc - ISEQ_BODY(rb_cfp_iseq(reg_cfp))->iseq_encoded), \
+                        RSTRING_PTR(rb_iseq_path(rb_cfp_iseq(reg_cfp))), \
+                        rb_iseq_line_no(rb_cfp_iseq(reg_cfp), reg_pc - ISEQ_BODY(rb_cfp_iseq(reg_cfp))->iseq_encoded)); \
   }
 
 #define INSN_DISPATCH_SIG(insn)

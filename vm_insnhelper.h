@@ -114,7 +114,7 @@ enum vm_regan_acttype {
   /* set current stack value as x */
 
 /* instruction sequence C struct */
-#define GET_ISEQ() (GET_CFP()->iseq)
+#define GET_ISEQ() (rb_cfp_iseq(GET_CFP()))
 
 /**********************************************************/
 /* deal with variables                                    */
