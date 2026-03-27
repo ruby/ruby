@@ -2372,6 +2372,10 @@ pub struct Function {
     /// Whether previously, a function for this ISEQ was invalidated due to
     /// singleton class creation (violation of NoSingletonClass invariant).
     was_invalidated_for_singleton_class_creation: bool,
+    /// Whether this is the last allowed version for this ISEQ (at MAX_ISEQ_VERSIONS).
+    /// When true, convert_no_profile_sends skips converting sends to SideExits since
+    /// no further recompilation is possible.
+    is_final_version: bool,
     /// The types for the parameters of this function. They are copied to the type
     /// of entry block params after infer_types() fills Empty to all insn_types.
     param_types: Vec<Type>,
@@ -2479,6 +2483,7 @@ impl Function {
         Function {
             iseq,
             was_invalidated_for_singleton_class_creation: false,
+            is_final_version: false,
             insns: vec![],
             insn_types: vec![],
             union_find: UnionFind::new().into(),
@@ -5031,6 +5036,12 @@ impl Function {
     /// The remaining no-profile sends are turned into side exits that trigger recompilation with
     /// fresh profile data.
     fn convert_no_profile_sends(&mut self) {
+        // On the final version, recompilation is not possible, so converting sends to
+        // SideExits would just add overhead (the exit fires every time without benefit).
+        // Keep them as Send fallbacks so the interpreter handles them directly.
+        if self.is_final_version {
+            return;
+        }
         for block in self.rpo() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             assert!(self.blocks[block.0].insns.is_empty());
@@ -6814,6 +6825,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     let mut profiles = ProfileOracle::new(payload);
     let mut fun = Function::new(iseq);
     fun.was_invalidated_for_singleton_class_creation = payload.was_invalidated_for_singleton_class_creation;
+    // invalidate_iseq_version only invalidates when versions.len() < MAX_ISEQ_VERSIONS.
+    // After this compilation, versions.len() will be current + 1. If that reaches the limit,
+    // exit profiling can't trigger another recompile, so SideExits would fire permanently.
+    fun.is_final_version = payload.versions.len() + 1 >= crate::codegen::MAX_ISEQ_VERSIONS;
 
     // Compute a map of PC->Block by finding jump targets
     let jit_entry_insns = jit_entry_insns(iseq);
