@@ -102,9 +102,9 @@ calc_node_id(const rb_iseq_t *iseq, const VALUE *pc)
 int
 rb_vm_get_sourceline(const rb_control_frame_t *cfp)
 {
-    if (VM_FRAME_RUBYFRAME_P(cfp) && rb_cfp_has_iseq(cfp)) {
-        const rb_iseq_t *iseq = rb_cfp_iseq(cfp);
-        int line = calc_lineno(iseq, rb_cfp_pc(cfp));
+    if (VM_FRAME_RUBYFRAME_P(cfp) && CFP_ISEQ(cfp)) {
+        const rb_iseq_t *iseq = CFP_ISEQ(cfp);
+        int line = calc_lineno(iseq, CFP_PC(cfp));
         if (line != 0) {
             return line;
         }
@@ -618,7 +618,7 @@ backtrace_size(const rb_execution_context_t *ec)
 static bool
 is_rescue_or_ensure_frame(const rb_control_frame_t *cfp)
 {
-    enum rb_iseq_type type = ISEQ_BODY(rb_cfp_iseq(cfp))->type;
+    enum rb_iseq_type type = ISEQ_BODY(CFP_ISEQ(cfp))->type;
     return type == ISEQ_TYPE_RESCUE || type == ISEQ_TYPE_ENSURE;
 }
 
@@ -688,17 +688,17 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
     }
 
     for (; cfp != end_cfp && (bt->backtrace_size < num_frames); cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp)) {
-        if (rb_cfp_has_iseq(cfp)) {
-            if (rb_cfp_has_pc(cfp)) {
+        if (CFP_ISEQ(cfp)) {
+            if (CFP_PC(cfp)) {
                 if (start_frame > 0) {
                     start_frame--;
                 }
                 else {
-                    bool internal = is_internal_location(rb_cfp_iseq(cfp));
+                    bool internal = is_internal_location(CFP_ISEQ(cfp));
                     if (skip_internal && internal) continue;
                     if (!skip_next_frame) {
-                        const rb_iseq_t *iseq = rb_cfp_iseq(cfp);
-                        const VALUE *pc = rb_cfp_pc(cfp);
+                        const rb_iseq_t *iseq = CFP_ISEQ(cfp);
+                        const VALUE *pc = CFP_PC(cfp);
                         if (internal && backpatch_counter > 0) {
                             // To keep only one internal frame, discard the previous backpatch frames
                             bt->backtrace_size -= backpatch_counter;
@@ -753,10 +753,10 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
     // is the one of the caller Ruby frame, so if the last entry is a C frame we find the caller Ruby frame here.
     if (backpatch_counter > 0) {
         for (; cfp != end_cfp; cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp)) {
-            if (rb_cfp_has_iseq(cfp) && rb_cfp_has_pc(cfp) && !(skip_internal && is_internal_location(rb_cfp_iseq(cfp)))) {
+            if (CFP_ISEQ(cfp) && CFP_PC(cfp) && !(skip_internal && is_internal_location(CFP_ISEQ(cfp)))) {
                 VM_ASSERT(!skip_next_frame); // ISEQ_TYPE_RESCUE/ISEQ_TYPE_ENSURE should have a caller Ruby ISEQ, not a cfunc
-                bt_backpatch_loc(backpatch_counter, loc, rb_cfp_iseq(cfp), rb_cfp_pc(cfp));
-                RB_OBJ_WRITTEN(btobj, Qundef, rb_cfp_iseq(cfp));
+                bt_backpatch_loc(backpatch_counter, loc, CFP_ISEQ(cfp), CFP_PC(cfp));
+                RB_OBJ_WRITTEN(btobj, Qundef, CFP_ISEQ(cfp));
                 if (do_yield) {
                     bt_yield_loc(loc - backpatch_counter, backpatch_counter, btobj);
                 }
@@ -1020,8 +1020,8 @@ backtrace_each(const rb_execution_context_t *ec,
     /* SDR(); */
     for (i=0, cfp = start_cfp; i<size; i++, cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
         /* fprintf(stderr, "cfp: %d\n", (rb_control_frame_t *)(ec->vm_stack + ec->vm_stack_size) - cfp); */
-        if (rb_cfp_has_iseq(cfp)) {
-            if (rb_cfp_has_pc(cfp)) {
+        if (CFP_ISEQ(cfp)) {
+            if (CFP_PC(cfp)) {
                 iter_iseq(arg, cfp);
             }
         }
@@ -1053,8 +1053,8 @@ oldbt_init(void *ptr, size_t dmy)
 static void
 oldbt_iter_iseq(void *ptr, const rb_control_frame_t *cfp)
 {
-    const rb_iseq_t *iseq = rb_cfp_iseq(cfp);
-    const VALUE *pc = rb_cfp_pc(cfp);
+    const rb_iseq_t *iseq = CFP_ISEQ(cfp);
+    const VALUE *pc = CFP_PC(cfp);
     struct oldbt_arg *arg = (struct oldbt_arg *)ptr;
     VALUE file = arg->filename = rb_iseq_path(iseq);
     VALUE name = ISEQ_BODY(iseq)->location.label;
@@ -1551,7 +1551,7 @@ collect_caller_bindings_iseq(void *arg, const rb_control_frame_t *cfp)
 {
     struct collect_caller_bindings_data *data = (struct collect_caller_bindings_data *)arg;
     VALUE frame = rb_ary_new2(6);
-    const rb_iseq_t *iseq = rb_cfp_iseq(cfp);
+    const rb_iseq_t *iseq = CFP_ISEQ(cfp);
 
     rb_ary_store(frame, CALLER_BINDING_SELF, cfp->self);
     rb_ary_store(frame, CALLER_BINDING_CLASS, get_klass(cfp));
@@ -1562,7 +1562,7 @@ collect_caller_bindings_iseq(void *arg, const rb_control_frame_t *cfp)
     rb_backtrace_location_t *loc = &data->bt->backtrace[data->bt->backtrace_size++];
     RB_OBJ_WRITE(data->btobj, &loc->cme, rb_vm_frame_method_entry(cfp));
     RB_OBJ_WRITE(data->btobj, &loc->iseq, iseq);
-    loc->pc = rb_cfp_pc(cfp);
+    loc->pc = CFP_PC(cfp);
     VALUE vloc = location_create(loc, (void *)data->btobj);
     rb_ary_store(frame, CALLER_BINDING_LOC, vloc);
 
@@ -1747,7 +1747,7 @@ thread_profile_frames(rb_execution_context_t *ec, int start, int limit, VALUE *b
     end_cfp = RUBY_VM_NEXT_CONTROL_FRAME(end_cfp);
 
     for (i=0; i<limit && cfp != end_cfp; cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp)) {
-        if (VM_FRAME_RUBYFRAME_P_UNCHECKED(cfp) && rb_cfp_has_pc(cfp)) {
+        if (VM_FRAME_RUBYFRAME_P_UNCHECKED(cfp) && CFP_PC(cfp)) {
             if (start > 0) {
                 start--;
                 continue;
@@ -1755,7 +1755,7 @@ thread_profile_frames(rb_execution_context_t *ec, int start, int limit, VALUE *b
 
             /* record frame info */
             cme = rb_vm_frame_method_entry_unchecked(cfp);
-            const rb_iseq_t *iseq = rb_cfp_iseq(cfp);
+            const rb_iseq_t *iseq = CFP_ISEQ(cfp);
             if (cme && cme->def->type == VM_METHOD_TYPE_ISEQ) {
                 buff[i] = (VALUE)cme;
             }
@@ -1764,7 +1764,7 @@ thread_profile_frames(rb_execution_context_t *ec, int start, int limit, VALUE *b
             }
 
             if (lines) {
-                const VALUE *pc = rb_cfp_pc(cfp);
+                const VALUE *pc = CFP_PC(cfp);
                 VALUE *iseq_encoded = ISEQ_BODY(iseq)->iseq_encoded;
                 VALUE *pc_end = iseq_encoded + ISEQ_BODY(iseq)->iseq_size;
 
