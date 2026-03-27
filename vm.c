@@ -550,7 +550,7 @@ zjit_compile(rb_execution_context_t *ec)
 
         // At call-threshold, compile the ISEQ with ZJIT.
         if (body->jit_entry_calls == rb_zjit_call_threshold) {
-            rb_zjit_compile_iseq(iseq, false);
+            rb_zjit_compile_iseq(iseq, ec, false);
         }
     }
     return body->jit_entry;
@@ -610,7 +610,7 @@ jit_compile_exception(rb_execution_context_t *ec)
 
         // At call-threshold, compile the ISEQ with ZJIT.
         if (body->jit_exception_calls == rb_zjit_call_threshold) {
-            rb_zjit_compile_iseq(iseq, true);
+            rb_zjit_compile_iseq(iseq, ec, true);
         }
     }
 #endif
