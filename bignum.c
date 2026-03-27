@@ -2608,7 +2608,7 @@ bigdivrem1(void *ptr)
     BDIGIT_DBL_SIGNED num;
     BDIGIT q;
 
-    do {
+    while (zn > yn) {
         if (bds->stop) {
             bds->zn = zn;
             return 0;
@@ -2629,7 +2629,8 @@ bigdivrem1(void *ptr)
         }
         zn--;
         zds[zn] = q;
-    } while (zn > yn);
+    }
+    bds->zn = zn;
     return 0;
 }
 
