@@ -2673,7 +2673,7 @@ impl Assembler
                     // Clear jit_return to fully materialize the frame. This must happen
                     // before any C call in the exit path (e.g. no_profile_send_recompile)
                     // because that C call can trigger GC, which walks the stack and would
-                    // hit the CFP_HAS_JIT_RETURN assertion if jit_return still holds the
+                    // hit the CFP_JIT_RETURN assertion if jit_return still holds the
                     // runtime_checks poison value (JIT_RETURN_POISON).
                     asm_comment!(asm, "clear cfp->jit_return");
                     asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), 0.into());

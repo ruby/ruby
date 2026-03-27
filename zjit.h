@@ -69,23 +69,23 @@ enum zjit_poison_values {
     ZJIT_JIT_RETURN_POISON = 2,
 };
 
-// Check if cfp->jit_return holds a ZJIT lightweight frame (JITFrame pointer).
+// Return the JITFrame pointer from cfp->jit_return, or NULL if not present.
 // YJIT also uses jit_return (as a return address), so this must only return
-// true when ZJIT is enabled and has set jit_return to a JITFrame pointer.
-static inline bool
-CFP_HAS_JIT_RETURN(const rb_control_frame_t *cfp)
+// non-NULL when ZJIT is enabled and has set jit_return to a JITFrame pointer.
+static inline void *
+CFP_JIT_RETURN(const rb_control_frame_t *cfp)
 {
-    if (!rb_zjit_enabled_p) return false;
+    if (!rb_zjit_enabled_p) return NULL;
 #if USE_ZJIT
     RUBY_ASSERT_ALWAYS(cfp->jit_return != (void *)ZJIT_JIT_RETURN_POISON);
 #endif
-    return !!cfp->jit_return;
+    return cfp->jit_return;
 }
 
 static inline const VALUE*
 CFP_PC(const rb_control_frame_t *cfp)
 {
-    if (CFP_HAS_JIT_RETURN(cfp)) {
+    if (CFP_JIT_RETURN(cfp)) {
         return ((const zjit_jit_frame_t *)cfp->jit_return)->pc;
     }
     return cfp->pc;
@@ -94,7 +94,7 @@ CFP_PC(const rb_control_frame_t *cfp)
 static inline const rb_iseq_t*
 CFP_ISEQ(const rb_control_frame_t *cfp)
 {
-    if (CFP_HAS_JIT_RETURN(cfp)) {
+    if (CFP_JIT_RETURN(cfp)) {
         return ((const zjit_jit_frame_t *)cfp->jit_return)->iseq;
     }
     return cfp->_iseq;
