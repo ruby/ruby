@@ -2095,7 +2095,7 @@ pub mod hir_build_tests {
           v7:BasicObject = LoadArg :a@1
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
-          v16:BasicObject = Send v9, 0x1008, :foo, v10 # SendFallbackReason: Uncategorized(send)
+          v16:BasicObject = Send v9, &block, :foo, v10 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
           Return v16
         ");
@@ -3525,7 +3525,7 @@ pub mod hir_build_tests {
           v38:CInt64[0] = GuardBitEquals v37, CInt64(0)
           v39:NilClass = Const Value(nil)
           v41:NilClass = GuardType v20, NilClass
-          v43:BasicObject = Send v17, 0x1004, :foo, v18, v29, v41, v39 # SendFallbackReason: Uncategorized(send)
+          v43:BasicObject = Send v17, &block, :foo, v18, v29, v41, v39 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
           Return v43
         ");
@@ -3562,7 +3562,7 @@ pub mod hir_build_tests {
           v23:CInt64 = GuardAnyBitSet v22, CUInt64(1)
           v24:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           v26:HashExact = GuardType v12, HashExact
-          v28:BasicObject = Send v11, 0x1002, :foo, v26, v24 # SendFallbackReason: Uncategorized(send)
+          v28:BasicObject = Send v11, &block, :foo, v26, v24 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
           Return v28
         ");
@@ -3599,7 +3599,7 @@ pub mod hir_build_tests {
           v23:CInt64 = GuardAnyBitSet v22, CUInt64(1)
           v24:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           v26:HashExact = GuardType v12, HashExact
-          v28:BasicObject = Send v11, 0x1002, :foo, v26, v24 # SendFallbackReason: Uncategorized(send)
+          v28:BasicObject = Send v11, &block, :foo, v26, v24 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
           Return v28
         ");

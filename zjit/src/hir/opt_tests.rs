@@ -1485,9 +1485,10 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, length@0x1010, cme:0x1018)
           v24:ArrayExact = GuardType v10, ArrayExact
-          v25:BasicObject = CCallWithFrame v24, :Array#length@0x1040
+          v25:CInt64 = ArrayLength v24
+          v26:Fixnum = BoxFixnum v25
           CheckInterrupts
-          Return v25
+          Return v26
         ");
     }
 
@@ -4740,7 +4741,7 @@ mod hir_opt_tests {
           v18:CInt64 = LoadField v15, :_env_data_index_specval@0x1002
           v19:CInt64 = GuardAnyBitSet v18, CUInt64(1)
           v20:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          v22:BasicObject = Send v9, 0x1001, :tap, v20 # SendFallbackReason: Send: no profile data available
+          v22:BasicObject = Send v9, &block, :tap, v20 # SendFallbackReason: Send: no profile data available
           CheckInterrupts
           Return v22
         ");
@@ -7916,7 +7917,7 @@ mod hir_opt_tests {
           v19:CInt64 = LoadField v16, :_env_data_index_specval@0x1002
           v20:CInt64 = GuardAnyBitSet v19, CUInt64(1)
           v21:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          v23:BasicObject = Send v14, 0x1001, :map, v21 # SendFallbackReason: Complex argument passing
+          v23:BasicObject = Send v14, &block, :map, v21 # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v23
         ");
@@ -7949,7 +7950,7 @@ mod hir_opt_tests {
           v19:CInt64 = LoadField v16, :_env_data_index_specval@0x1002
           v20:CInt64[0] = GuardBitEquals v19, CInt64(0)
           v21:NilClass = Const Value(nil)
-          v23:BasicObject = Send v14, 0x1001, :map, v21 # SendFallbackReason: Complex argument passing
+          v23:BasicObject = Send v14, &block, :map, v21 # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v23
         ");
@@ -7983,7 +7984,7 @@ mod hir_opt_tests {
           v15:CInt64 = LoadField v12, :_env_data_index_specval@0x1001
           v16:CInt64 = GuardAnyBitSet v15, CUInt64(1)
           v17:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          v19:BasicObject = Send v10, 0x1000, :map, v17 # SendFallbackReason: Complex argument passing
+          v19:BasicObject = Send v10, &block, :map, v17 # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v19
         ");
@@ -11427,7 +11428,7 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v11:StaticSymbol[:the_block] = Const Value(VALUE(0x1000))
-          v13:BasicObject = Send v6, 0x1008, :callee, v11 # SendFallbackReason: Complex argument passing
+          v13:BasicObject = Send v6, &block, :callee, v11 # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v13
         ");
@@ -11465,7 +11466,7 @@ mod hir_opt_tests {
           v19:CInt64 = LoadField v16, :_env_data_index_specval@0x1002
           v20:CInt64 = GuardAnyBitSet v19, CUInt64(1)
           v21:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          v23:BasicObject = Send v14, 0x1001, :map, v21 # SendFallbackReason: Complex argument passing
+          v23:BasicObject = Send v14, &block, :map, v21 # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v23
         ");

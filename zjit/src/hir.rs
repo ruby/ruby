@@ -753,9 +753,10 @@ impl Display for SendFallbackReason {
 /// How a block is passed to a send-like instruction.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum BlockHandler {
-    /// Literal block ISEQ passed to the send (can be null for the `send` YARV
-    /// instruction when no literal block is present).
+    /// Literal block ISEQ (e.g. `foo { ... }`)
     BlockIseq(IseqPtr),
+    /// Block arg passed via &proc (e.g. `foo(&block)`)
+    BlockArg,
 }
 
 /// An instruction in the SSA IR. The output of an instruction is referred to by the index of
@@ -1874,7 +1875,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::IfTrue { val, target } => { write!(f, "IfTrue {val}, {target}") }
             Insn::IfFalse { val, target } => { write!(f, "IfFalse {val}, {target}") }
             Insn::SendDirect { recv, cd, iseq, args, block, .. } => {
-                let blockiseq = block.map(|BlockHandler::BlockIseq(iseq)| iseq);
+                let blockiseq = block.map(|bh| match bh { BlockHandler::BlockIseq(iseq) => iseq, BlockHandler::BlockArg => unreachable!() });
                 write!(f, "SendDirect {recv}, {:p}, :{} ({:?})", self.ptr_map.map_ptr(&blockiseq), ruby_call_method_name(*cd), self.ptr_map.map_ptr(iseq))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
@@ -1885,10 +1886,13 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 // For tests, we want to check HIR snippets textually. Addresses change
                 // between runs, making tests fail. Instead, pick an arbitrary hex value to
                 // use as a "pointer" so we can check the rest of the HIR.
-                if let Some(BlockHandler::BlockIseq(blockiseq)) = *block {
-                    write!(f, "Send {recv}, {:p}, :{}", self.ptr_map.map_ptr(blockiseq), ruby_call_method_name(*cd))?;
-                } else {
-                    write!(f, "Send {recv}, :{}", ruby_call_method_name(*cd))?;
+                match *block {
+                    Some(BlockHandler::BlockIseq(blockiseq)) =>
+                        write!(f, "Send {recv}, {:p}, :{}", self.ptr_map.map_ptr(blockiseq), ruby_call_method_name(*cd))?,
+                    Some(BlockHandler::BlockArg) =>
+                        write!(f, "Send {recv}, &block, :{}", ruby_call_method_name(*cd))?,
+                    None =>
+                        write!(f, "Send {recv}, :{}", ruby_call_method_name(*cd))?,
                 }
                 for arg in args {
                     write!(f, ", {arg}")?;
@@ -2005,8 +2009,12 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
-                if let Some(BlockHandler::BlockIseq(blockiseq)) = block {
-                    write!(f, ", block={:p}", self.ptr_map.map_ptr(blockiseq))?;
+                match block {
+                    Some(BlockHandler::BlockIseq(blockiseq)) =>
+                        write!(f, ", block={:p}", self.ptr_map.map_ptr(blockiseq))?,
+                    Some(BlockHandler::BlockArg) =>
+                        write!(f, ", block=&block")?,
+                    None => {}
                 }
                 Ok(())
             },
@@ -4656,8 +4664,7 @@ impl Function {
             }
 
             let blockiseq = match send_block {
-                None => unreachable!("went to reduce_send_without_block_to_ccall"),
-                Some(BlockHandler::BlockIseq(p)) if p.is_null() => None,
+                None | Some(BlockHandler::BlockArg) => unreachable!("went to reduce_send_without_block_to_ccall"),
                 Some(BlockHandler::BlockIseq(blockiseq)) => Some(blockiseq),
             };
 
@@ -7932,10 +7939,17 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     let args = state.stack_pop_n(argc as usize + usize::from(block_arg))?;
                     let recv = state.stack_pop()?;
-                    let send = fun.push_insn(block, Insn::Send { recv, cd, block: Some(BlockHandler::BlockIseq(blockiseq)), args, state: exit_id, reason: Uncategorized(opcode) });
+                    let block_handler = if !blockiseq.is_null() {
+                        Some(BlockHandler::BlockIseq(blockiseq))
+                    } else if block_arg {
+                        Some(BlockHandler::BlockArg)
+                    } else {
+                        None
+                    };
+                    let send = fun.push_insn(block, Insn::Send { recv, cd, block: block_handler, args, state: exit_id, reason: Uncategorized(opcode) });
                     state.stack_push(send);
 
-                    if !blockiseq.is_null() {
+                    if let Some(BlockHandler::BlockIseq(_)) = block_handler {
                         // Reload locals that may have been modified by the blockiseq.
                         // TODO: Avoid reloading locals that are not referenced by the blockiseq
                         // or not used after this. Max thinks we could eventually DCE them.

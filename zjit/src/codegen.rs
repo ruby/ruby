@@ -617,6 +617,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::Snapshot { .. } => return Ok(()), // we don't need to do anything for this instruction at the moment
         &Insn::Send { cd, block: None, state, reason, .. } => gen_send_without_block(jit, asm, cd, &function.frame_state(state), reason),
         &Insn::Send { cd, block: Some(BlockHandler::BlockIseq(blockiseq)), state, reason, .. } => gen_send(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
+        &Insn::Send { cd, block: Some(BlockHandler::BlockArg), state, reason, .. } => gen_send(jit, asm, cd, std::ptr::null(), &function.frame_state(state), reason),
         &Insn::SendForward { cd, blockiseq, state, reason, .. } => gen_send_forward(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         Insn::SendDirect { cme, iseq, recv, args, kw_bits, block, state, .. } => gen_send_iseq_direct(cb, jit, asm, *cme, *iseq, opnd!(recv), opnds!(args), *kw_bits, &function.frame_state(*state), *block),
         &Insn::InvokeSuper { cd, blockiseq, state, reason, .. } => gen_invokesuper(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
@@ -1562,7 +1563,7 @@ fn gen_send_iseq_direct(
     // The HIR specialization guards ensure we will only reach here for literal blocks,
     // not &block forwarding, &:foo, etc. Thise are rejected in `type_specialize` by
     // `unspecializable_call_type`.
-    let block_handler = block.map(|BlockHandler::BlockIseq(b)| gen_block_handler_specval(asm, b));
+    let block_handler = block.map(|bh| match bh { BlockHandler::BlockIseq(b) => gen_block_handler_specval(asm, b), BlockHandler::BlockArg => unreachable!("BlockArg in gen_send_iseq_direct") });
 
     let callee_is_bmethod = VM_METHOD_TYPE_BMETHOD == unsafe { get_cme_def_type(cme) };
 
