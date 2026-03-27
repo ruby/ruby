@@ -14924,6 +14924,66 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_recompile_no_profile_send() {
+        // Test the SideExit → recompile flow: a no-profile send becomes a SideExit,
+        // the exit profiles the send, triggers recompilation, and the new version
+        // optimizes it to SendDirect.
+        eval("
+            def greet_recompile(x) = x.to_s
+            def test_no_profile_recompile(flag)
+              if flag
+                greet_recompile(42)
+              else
+                'hello'
+              end
+            end
+        ");
+
+        // With call_threshold=2, num_profiles=1:
+        //   1st call profiles (flag=false, so greet is never reached)
+        //   2nd call compiles (greet has no profile data -> SideExit recompile)
+        eval("test_no_profile_recompile(false); test_no_profile_recompile(false)");
+
+        // Now call with flag=true. This hits the SideExit, which profiles
+        // the send and invalidates the ISEQ for recompilation.
+        eval("test_no_profile_recompile(true)");
+
+        // After profiling via the side exit, rebuilding HIR should now
+        // have a SendDirect for greet_recompile instead of SideExit.
+        assert_snapshot!(hir_string("test_no_profile_recompile"), @r"
+        fn test_no_profile_recompile@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :flag@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :flag@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          CheckInterrupts
+          v16:CBool = Test v10
+          v17:Falsy = RefineType v10, Falsy
+          IfFalse v16, bb4(v9, v17)
+          v19:Truthy = RefineType v10, Truthy
+          v23:Fixnum[42] = Const Value(42)
+          PatchPoint MethodRedefined(Object@0x1008, greet_recompile@0x1010, cme:0x1018)
+          v43:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)]
+          v44:BasicObject = SendDirect v43, 0x1040, :greet_recompile (0x1050), v23
+          CheckInterrupts
+          Return v44
+        bb4(v30:BasicObject, v31:Falsy):
+          v35:StringExact[VALUE(0x1058)] = Const Value(VALUE(0x1058))
+          v36:StringExact = StringCopy v35
+          CheckInterrupts
+          Return v36
+        ");
+    }
+
+    #[test]
     fn test_no_profile_send_on_final_version() {
         // On the final ISEQ version (MAX_ISEQ_VERSIONS reached), no-profile sends should
         // remain as Send fallbacks instead of being converted to SideExits, since recompilation
