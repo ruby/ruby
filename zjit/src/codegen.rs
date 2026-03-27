@@ -2666,7 +2666,7 @@ fn gen_incr_send_fallback_counter(asm: &mut Assembler, reason: SendFallbackReaso
 }
 
 /// Check if an ISEQ contains instructions that may write to block_code
-/// (send, sendforward, invokesuper, invokesuperforward, invokeblock, and their trace variants).
+/// (send, sendforward, invokesuper, invokesuperforward, invokeblock).
 /// These instructions call vm_caller_setup_arg_block which writes to cfp->block_code.
 #[allow(non_upper_case_globals)]
 fn iseq_may_write_block_code(iseq: IseqPtr) -> bool {
@@ -2675,14 +2675,12 @@ fn iseq_may_write_block_code(iseq: IseqPtr) -> bool {
 
     while insn_idx < encoded_size {
         let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
-        let opcode = unsafe { rb_iseq_opcode_at_pc(iseq, pc) } as u32;
+        let opcode = unsafe { rb_iseq_bare_opcode_at_pc(iseq, pc) } as u32;
 
         match opcode {
-            YARVINSN_send | YARVINSN_trace_send |
-            YARVINSN_sendforward | YARVINSN_trace_sendforward |
-            YARVINSN_invokesuper | YARVINSN_trace_invokesuper |
-            YARVINSN_invokesuperforward | YARVINSN_trace_invokesuperforward |
-            YARVINSN_invokeblock | YARVINSN_trace_invokeblock => {
+            YARVINSN_send | YARVINSN_sendforward |
+            YARVINSN_invokesuper | YARVINSN_invokesuperforward |
+            YARVINSN_invokeblock => {
                 return true;
             }
             _ => {}

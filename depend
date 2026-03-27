@@ -7830,6 +7830,7 @@ jit.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 jit.$(OBJEXT): $(top_srcdir)/internal/bits.h
 jit.$(OBJEXT): $(top_srcdir)/internal/box.h
 jit.$(OBJEXT): $(top_srcdir)/internal/class.h
+jit.$(OBJEXT): $(top_srcdir)/internal/compile.h
 jit.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 jit.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 jit.$(OBJEXT): $(top_srcdir)/internal/gc.h
