@@ -4701,6 +4701,23 @@ fn test_invokeblock_multiple_yields() {
 }
 
 #[test]
+fn test_invokeblock_ifunc_map() {
+    eval("
+        class MyList
+          include Enumerable
+          def each
+            yield 1
+            yield 2
+            yield 3
+          end
+        end
+        def test = MyList.new.map { |x| x * 2 }
+        test
+    ");
+    assert_snapshot!(assert_compiles("test"), @"[2, 4, 6]");
+}
+
+#[test]
 fn test_ccall_variadic_with_multiple_args() {
     eval("
         def test

@@ -15075,4 +15075,44 @@ mod hir_opt_tests {
           Return v36
         ");
     }
+
+    #[test]
+    fn test_invokeblock_ifunc() {
+        eval("
+            class IFuncTestList
+              include Enumerable
+              def each
+                yield 1
+                yield 2
+              end
+            end
+            IFuncTestList.new.map { |x| x }
+        ");
+        assert_snapshot!(hir_string_proc("IFuncTestList.instance_method(:each)"), @"
+        fn each@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:Fixnum[1] = Const Value(1)
+          v12:CPtr = GetEP 0
+          v13:CInt64 = LoadField v12, :_env_data_index_specval@0x1000
+          v14:CInt64 = GuardAnyBitSet v13, CUInt64(1)
+          v15:CInt64 = GuardAnyBitSet v13, CUInt64(2)
+          v16:BasicObject = InvokeBlockIfunc v13, v10
+          v20:Fixnum[2] = Const Value(2)
+          v22:CPtr = GetEP 0
+          v23:CInt64 = LoadField v22, :_env_data_index_specval@0x1000
+          v24:CInt64 = GuardAnyBitSet v23, CUInt64(1)
+          v25:CInt64 = GuardAnyBitSet v23, CUInt64(2)
+          v26:BasicObject = InvokeBlockIfunc v23, v20
+          CheckInterrupts
+          Return v26
+        ");
+    }
 }
