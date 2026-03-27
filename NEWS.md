@@ -11,6 +11,11 @@ Note that each entry is kept to a minimum, see links for details.
 
 Note: We're only listing outstanding class updates.
 
+* Array
+
+    * `Array#pack` accepts a new format `R` and `r` for unpacking unsigned
+      and signed LEB128 encoded integers. [[Feature #21785]]
+
 * ENV
 
     * `ENV.fetch_values` is added. It returns an array of values for the
@@ -30,11 +35,6 @@ Note: We're only listing outstanding class updates.
 
     * `MatchData#integer_at` is added.  It converts the matched substring to
       integer and return the result.  [[Feature #21932]]
-
-* Method
-
-    * `Array#pack` accepts a new format `R` and `r` for unpacking unsigned
-      and signed LEB128 encoded integers. [[Feature #21785]]
 
 * Regexp
 
