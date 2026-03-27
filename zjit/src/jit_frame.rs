@@ -43,6 +43,13 @@ impl JITFrame {
     }
 }
 
+/// Update the iseq pointer in an on-stack JITFrame during GC compaction.
+/// Called from rb_execution_context_update in vm.c.
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_jit_frame_update_references(jit_frame: *mut JITFrame) {
+    unsafe { &mut *jit_frame }.update_references();
+}
+
 #[cfg(test)]
 mod tests {
     use crate::cruby::{eval, inspect};

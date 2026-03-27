@@ -3672,11 +3672,7 @@ rb_execution_context_update(rb_execution_context_t *ec)
             const VALUE *ep = cfp->ep;
             cfp->self = rb_gc_location(cfp->self);
             if (rb_zjit_enabled_p && CFP_HAS_JIT_RETURN(cfp)) {
-                zjit_jit_frame_t *jit_frame = (zjit_jit_frame_t *)cfp->jit_return;
-                if (jit_frame->iseq) {
-                    // ISEQ frame with JITFrame: relocate iseq in JITFrame
-                    jit_frame->iseq = (const rb_iseq_t *)rb_gc_location((VALUE)jit_frame->iseq);
-                }
+                rb_zjit_jit_frame_update_references((zjit_jit_frame_t *)cfp->jit_return);
                 // block_code must always be relocated. For ISEQ frames, the JIT caller
                 // may have written it (gen_block_handler_specval) for passing blocks.
                 // For C frames, rb_iterate0 may have written an ifunc to block_code
