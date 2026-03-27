@@ -1910,6 +1910,13 @@ pub const DEFINED_REF: defined_type = 15;
 pub const DEFINED_FUNC: defined_type = 16;
 pub const DEFINED_CONST_FROM: defined_type = 17;
 pub type defined_type = u32;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct zjit_jit_frame {
+    pub pc: *const VALUE,
+    pub iseq: *const rb_iseq_t,
+    pub materialize_block_code: bool,
+}
 pub const ZJIT_JIT_RETURN_POISON: zjit_poison_values = 2;
 pub type zjit_poison_values = u32;
 pub const ISEQ_BODY_OFFSET_PARAM: zjit_struct_offsets = 16;

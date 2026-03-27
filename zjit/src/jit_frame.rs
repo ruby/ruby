@@ -1,21 +1,10 @@
 use crate::cruby::{IseqPtr, VALUE, rb_gc_mark_movable, rb_gc_location};
+use crate::cruby::zjit_jit_frame;
 use crate::state::ZJITState;
 
-#[derive(Debug)]
-#[repr(C)]
-pub struct JITFrame {
-    /// Program counter for this frame, used for backtraces and GC.
-    /// NULL for C frames (they don't have a Ruby PC).
-    pub pc: *const VALUE,
-    /// The ISEQ this frame belongs to. Marked via rb_execution_context_mark.
-    /// NULL for C frames.
-    pub iseq: IseqPtr,
-    /// Whether to materialize block_code when this frame is materialized.
-    /// True when the ISEQ doesn't contain send/invokesuper/invokeblock
-    /// (which write block_code themselves), so we must restore it.
-    /// Always false for C frames.
-    pub materialize_block_code: bool,
-}
+/// JITFrame struct is defined in zjit.h (the single source of truth) and
+/// imported into Rust via bindgen. See zjit.h for field documentation.
+pub type JITFrame = zjit_jit_frame;
 
 impl JITFrame {
     /// Allocate a JITFrame on the heap, register it with ZJITState, and return

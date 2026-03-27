@@ -9,11 +9,19 @@
 # define ZJIT_STATS (USE_ZJIT && RUBY_DEBUG)
 #endif
 
-// JITFrame is a C ABI compatible struct defined in Rust with #[repr(C)].
-// C code can read its fields directly without calling Rust accessor functions.
+// JITFrame is defined here as the single source of truth and imported into
+// Rust via bindgen. C code reads fields directly; Rust uses an impl block.
 typedef struct zjit_jit_frame {
+    // Program counter for this frame, used for backtraces and GC.
+    // NULL for C frames (they don't have a Ruby PC).
     const VALUE *pc;
-    const rb_iseq_t *iseq; // marked in rb_execution_context_mark
+    // The ISEQ this frame belongs to. Marked via rb_execution_context_mark.
+    // NULL for C frames.
+    const rb_iseq_t *iseq;
+    // Whether to materialize block_code when this frame is materialized.
+    // True when the ISEQ doesn't contain send/invokesuper/invokeblock
+    // (which write block_code themselves), so we must restore it.
+    // Always false for C frames.
     bool materialize_block_code;
 } zjit_jit_frame_t;
 

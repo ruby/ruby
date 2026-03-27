@@ -69,6 +69,9 @@ fn main() {
         // Import YARV bytecode instruction constants
         .allowlist_type("ruby_vminsn_type")
 
+        // JITFrame struct defined in zjit.h, imported into Rust via bindgen
+        .allowlist_type("zjit_jit_frame")
+
         .allowlist_type("ruby_special_consts")
         .allowlist_function("rb_utf8_str_new")
         .allowlist_function("rb_str_buf_append")
