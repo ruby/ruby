@@ -147,6 +147,7 @@ define_split_jumps! {
 pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exception: bool) -> *const u8 {
     // Don't compile when there is insufficient native stack space
     if unsafe { rb_ec_stack_check(ec as _) } != 0 {
+        incr_counter!(skipped_native_stack_full);
         return std::ptr::null();
     }
 
