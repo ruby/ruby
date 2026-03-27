@@ -42,7 +42,11 @@ extern int madvise(caddr_t, size_t, int);
 #include "id_table.h"
 #include "ractor_core.h"
 
-static const int DEBUG = 0;
+enum {
+    DEBUG = 0,
+    DEBUG_EXPAND = 0,
+    DEBUG_ACQUIRE = 0,
+};
 
 #define RB_PAGE_SIZE (pagesize)
 #define RB_PAGE_MASK (~(RB_PAGE_SIZE - 1))
@@ -62,11 +66,11 @@ static VALUE rb_cFiberPool;
 // Defined in `coroutine/$arch/Context.h`:
 #ifdef COROUTINE_LIMITED_ADDRESS_SPACE
 #define FIBER_POOL_ALLOCATION_FREE
-#define FIBER_POOL_INITIAL_SIZE 8
-#define FIBER_POOL_ALLOCATION_MAXIMUM_SIZE 32
+#define FIBER_POOL_MINIMUM_COUNT 8
+#define FIBER_POOL_MAXIMUM_ALLOCATIONS 32
 #else
-#define FIBER_POOL_INITIAL_SIZE 32
-#define FIBER_POOL_ALLOCATION_MAXIMUM_SIZE 1024
+#define FIBER_POOL_MINIMUM_COUNT 32
+#define FIBER_POOL_MAXIMUM_ALLOCATIONS 1024
 #endif
 #ifdef RB_EXPERIMENTAL_FIBER_POOL
 #define FIBER_POOL_ALLOCATION_FREE
@@ -189,7 +193,11 @@ struct fiber_pool {
     size_t count;
 
     // The initial number of stacks to allocate.
-    size_t initial_count;
+    size_t minimum_count;
+
+    // If positive, total stacks in this pool cannot exceed this (shared pool only:
+    // set via RUBY_SHARED_FIBER_POOL_MAXIMUM_COUNT). Expansion fails with errno EAGAIN.
+    size_t maximum_count;
 
     // Whether to madvise(free) the stack or not.
     // If this value is set to 1, the stack will be madvise(free)ed
@@ -470,7 +478,7 @@ fiber_pool_allocate_memory(size_t * count, size_t stride)
     // the system would allow (e.g. overcommit * physical memory + swap), we
     // divide count by two and try again. This condition should only be
     // encountered in edge cases, but we handle it here gracefully.
-    while (*count > 1) {
+    while (*count) {
 #if defined(_WIN32)
         void * base = VirtualAlloc(0, (*count)*stride, MEM_COMMIT, PAGE_READWRITE);
 
@@ -518,10 +526,27 @@ fiber_pool_allocate_memory(size_t * count, size_t stride)
 static struct fiber_pool_allocation *
 fiber_pool_expand(struct fiber_pool * fiber_pool, size_t count)
 {
+    if (count == 0) {
+        errno = EAGAIN;
+        return NULL;
+    }
+
     STACK_GROW_DIR_DETECTION;
 
     size_t size = fiber_pool->size;
     size_t stride = size + RB_PAGE_SIZE;
+
+    // If the maximum number of stacks is set, and we have reached it, return NULL.
+    if (fiber_pool->maximum_count > 0) {
+        if (fiber_pool->count >= fiber_pool->maximum_count) {
+            errno = EAGAIN;
+            return NULL;
+        }
+        size_t remaining = fiber_pool->maximum_count - fiber_pool->count;
+        if (count > remaining) {
+            count = remaining;
+        }
+    }
 
     // Allocate metadata before mmap: ruby_xmalloc (RB_ALLOC) raises on failure and
     // must not run after base is mapped, or the region would leak.
@@ -548,7 +573,7 @@ fiber_pool_expand(struct fiber_pool * fiber_pool, size_t count)
 #endif
     allocation->pool = fiber_pool;
 
-    if (DEBUG) {
+    if (DEBUG_EXPAND) {
         fprintf(stderr, "fiber_pool_expand(%"PRIuSIZE"): %p, %"PRIuSIZE"/%"PRIuSIZE" x [%"PRIuSIZE":%"PRIuSIZE"]\n",
                 count, (void*)fiber_pool, fiber_pool->used, fiber_pool->count, size, fiber_pool->vm_stack_size);
     }
@@ -613,7 +638,7 @@ fiber_pool_expand(struct fiber_pool * fiber_pool, size_t count)
 // Initialize the specified fiber pool with the given number of stacks.
 // @param vm_stack_size The size of the vm stack to allocate.
 static void
-fiber_pool_initialize(struct fiber_pool * fiber_pool, size_t size, size_t count, size_t vm_stack_size)
+fiber_pool_initialize(struct fiber_pool * fiber_pool, size_t size, size_t minimum_count, size_t maximum_count, size_t vm_stack_size)
 {
     VM_ASSERT(vm_stack_size < size);
 
@@ -621,14 +646,16 @@ fiber_pool_initialize(struct fiber_pool * fiber_pool, size_t size, size_t count,
     fiber_pool->vacancies = NULL;
     fiber_pool->size = ((size / RB_PAGE_SIZE) + 1) * RB_PAGE_SIZE;
     fiber_pool->count = 0;
-    fiber_pool->initial_count = count;
+    fiber_pool->minimum_count = minimum_count;
+    fiber_pool->maximum_count = maximum_count;
     fiber_pool->free_stacks = 1;
     fiber_pool->used = 0;
-
     fiber_pool->vm_stack_size = vm_stack_size;
 
-    if (RB_UNLIKELY(!fiber_pool_expand(fiber_pool, count))) {
-        rb_raise(rb_eFiberError, "can't allocate initial fiber stacks (%"PRIuSIZE" x %"PRIuSIZE" bytes): %s", count, fiber_pool->size, strerror(errno));
+    if (fiber_pool->minimum_count > 0) {
+        if (RB_UNLIKELY(!fiber_pool_expand(fiber_pool, fiber_pool->minimum_count))) {
+            rb_raise(rb_eFiberError, "can't allocate initial fiber stacks (%"PRIuSIZE" x %"PRIuSIZE" bytes): %s", fiber_pool->minimum_count, fiber_pool->size, strerror(errno));
+        }
     }
 }
 
@@ -678,15 +705,30 @@ fiber_pool_allocation_free(struct fiber_pool_allocation * allocation)
 #endif
 
 // Number of stacks to request when expanding the pool (clamped to min/max).
-static inline size_t
+static size_t
 fiber_pool_stack_expand_count(const struct fiber_pool *pool)
 {
-    const size_t maximum = FIBER_POOL_ALLOCATION_MAXIMUM_SIZE;
-    const size_t minimum = pool->initial_count;
+    const size_t maximum_allocations = FIBER_POOL_MAXIMUM_ALLOCATIONS;
+    const size_t minimum_count = FIBER_POOL_MINIMUM_COUNT;
 
+    // We are going try and double the number of stacks in the pool:
     size_t count = pool->count;
-    if (count > maximum) count = maximum;
-    if (count < minimum) count = minimum;
+    if (count > maximum_allocations) count = maximum_allocations;
+    if (count < minimum_count) count = minimum_count;
+
+    // If we have a maximum count, we need to clamp the number of stacks to the maximum:
+    if (pool->maximum_count > 0) {
+        if (pool->count >= pool->maximum_count) {
+            // No expansion is possible:
+            return 0;
+        }
+
+        // Otherwise, compute the number of stacks we can allocate to bring us to the maximum:
+        size_t remaining = pool->maximum_count - pool->count;
+        if (count > remaining) {
+            count = remaining;
+        }
+    }
 
     return count;
 }
@@ -698,7 +740,7 @@ fiber_pool_stack_acquire_expand(struct fiber_pool *fiber_pool)
 {
     size_t count = fiber_pool_stack_expand_count(fiber_pool);
 
-    if (DEBUG) fprintf(stderr, "fiber_pool_stack_acquire: expanding fiber pool by %"PRIuSIZE" stacks\n", count);
+    if (DEBUG_ACQUIRE) fprintf(stderr, "fiber_pool_stack_acquire: expanding fiber pool by %"PRIuSIZE" stacks\n", count);
 
     struct fiber_pool_vacancy *vacancy = NULL;
 
@@ -706,7 +748,7 @@ fiber_pool_stack_acquire_expand(struct fiber_pool *fiber_pool)
         return fiber_pool_vacancy_pop(fiber_pool);
     }
     else {
-        if (DEBUG) fprintf(stderr, "fiber_pool_stack_acquire: expand failed (%s), collecting garbage\n", strerror(errno));
+        if (DEBUG_ACQUIRE) fprintf(stderr, "fiber_pool_stack_acquire: expand failed (%s), collecting garbage\n", strerror(errno));
 
         rb_gc();
 
@@ -715,6 +757,9 @@ fiber_pool_stack_acquire_expand(struct fiber_pool *fiber_pool)
         if (RB_LIKELY(vacancy)) {
             return vacancy;
         }
+
+        // Recompute count as gc may have freed up some allocations:
+        count = fiber_pool_stack_expand_count(fiber_pool);
 
         // Try to expand the fiber pool again:
         if (RB_LIKELY(fiber_pool_expand(fiber_pool, count))) {
@@ -3526,7 +3571,7 @@ rb_fiber_pool_initialize(int argc, VALUE* argv, VALUE self)
 
     TypedData_Get_Struct(self, struct fiber_pool, &FiberPoolDataType, fiber_pool);
 
-    fiber_pool_initialize(fiber_pool, NUM2SIZET(size), NUM2SIZET(count), NUM2SIZET(vm_stack_size));
+    fiber_pool_initialize(fiber_pool, NUM2SIZET(size), NUM2SIZET(count), 0, NUM2SIZET(vm_stack_size));
 
     return self;
 }
@@ -3545,6 +3590,46 @@ rb_fiber_pool_initialize(int argc, VALUE* argv, VALUE self)
  *     fiber.resume #=> FiberError: dead fiber called
  */
 
+static size_t
+shared_fiber_pool_minimum_count(void)
+{
+    size_t minimum_count = FIBER_POOL_MINIMUM_COUNT;
+
+    const char *minimum_count_env = getenv("RUBY_SHARED_FIBER_POOL_MINIMUM_COUNT");
+    if (minimum_count_env && minimum_count_env[0]) {
+        char *end;
+        unsigned long value = strtoul(minimum_count_env, &end, 10);
+        if (end != minimum_count_env && *end == '\0') {
+            minimum_count = (size_t)value;
+        }
+        else {
+            rb_warn("invalid RUBY_SHARED_FIBER_POOL_MINIMUM_COUNT=%s (expected a non-negative integer)", minimum_count_env);
+        }
+    }
+
+    return minimum_count;
+}
+
+static size_t
+shared_fiber_pool_maximum_count(void)
+{
+    size_t maximum_count = 0;
+
+    const char *maximum_count_env = getenv("RUBY_SHARED_FIBER_POOL_MAXIMUM_COUNT");
+    if (maximum_count_env && maximum_count_env[0]) {
+        char *end;
+        unsigned long value = strtoul(maximum_count_env, &end, 10);
+        if (end != maximum_count_env && *end == '\0') {
+            maximum_count = (size_t)value;
+        }
+        else {
+            rb_warn("invalid RUBY_SHARED_FIBER_POOL_MAXIMUM_COUNT=%s (expected a non-negative integer)", maximum_count_env);
+        }
+    }
+
+    return maximum_count;
+}
+
 void
 Init_Cont(void)
 {
@@ -3562,7 +3647,9 @@ Init_Cont(void)
 #endif
     SET_MACHINE_STACK_END(&th->ec->machine.stack_end);
 
-    fiber_pool_initialize(&shared_fiber_pool, stack_size, FIBER_POOL_INITIAL_SIZE, vm_stack_size);
+    size_t minimum_count = shared_fiber_pool_minimum_count();
+    size_t maximum_count = shared_fiber_pool_maximum_count();
+    fiber_pool_initialize(&shared_fiber_pool, stack_size, minimum_count, maximum_count, vm_stack_size);
 
     fiber_initialize_keywords[0] = rb_intern_const("blocking");
     fiber_initialize_keywords[1] = rb_intern_const("pool");

@@ -158,6 +158,7 @@ class Gem::Version
 
   VERSION_PATTERN = '[0-9]+(?>\.[0-9a-zA-Z]+)*(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?' # :nodoc:
   ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/ # :nodoc:
+  RADIX_OPT = [9_500, 3_500, 260_000, 22_227, 24].freeze # :nodoc:
 
   ##
   # A string representation of this Version.
@@ -423,16 +424,19 @@ class Gem::Version
   attr_reader :sort_key # :nodoc:
 
   def compute_sort_key
+    return if prerelease?
+
     segments = canonical_segments
-    return if segments.size > 4 || prerelease? || segments.any? {|segment| segment > 65_000 }
+    return if segments.size > 5
 
-    base = 1_000_000_000_000
-
-    segments.sum do |segment|
-      result = segment * base
-      base /= 10_000
-      result
+    key = 0
+    RADIX_OPT.each_with_index do |radix, i|
+      seg = segments.fetch(i, 0)
+      return nil if seg >= radix
+      key = key * radix + seg
     end
+
+    key
   end
 
   def _segments

@@ -19,6 +19,11 @@ class JSONCoderTest < Test::Unit::TestCase
     assert_raise(JSON::GeneratorError) { coder.dump([Object.new]) }
   end
 
+  def test_json_coder_with_proc_returning_symbol
+    coder = JSON::Coder.new { _1 }
+    assert_equal %({"sym":"sym"}), coder.dump({ sym: :sym })
+  end
+
   def test_json_coder_hash_key
     obj = Object.new
     coder = JSON::Coder.new do |obj, is_key|

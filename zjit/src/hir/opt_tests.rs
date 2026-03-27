@@ -4816,6 +4816,72 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_setblockparam() {
+        eval("
+            def test(&block)
+              block = nil
+            end
+        ");
+        assert_contains_opcode("test", YARVINSN_setblockparam);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :block@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :block@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v14:NilClass = Const Value(nil)
+          SetLocal :block, l0, EP@3, v14
+          v18:CPtr = GetEP 0
+          v19:CInt64 = LoadField v18, :_env_data_index_flags@0x1001
+          v20:CInt64[512] = Const CInt64(512)
+          v21:CInt64 = IntOr v19, v20
+          StoreField v18, :_env_data_index_flags@0x1001, v21
+          CheckInterrupts
+          Return v14
+        ");
+    }
+
+    #[test]
+    fn test_setblockparam_nested_block() {
+        eval("
+            def test(&block)
+              proc do
+                block = nil
+              end
+            end
+        ");
+        assert_snapshot!(hir_string_proc("test"), @"
+        fn block in test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          SetLocal :block, l1, EP@3, v10
+          v14:CPtr = GetEP 1
+          v15:CInt64 = LoadField v14, :_env_data_index_flags@0x1000
+          v16:CInt64[512] = Const CInt64(512)
+          v17:CInt64 = IntOr v15, v16
+          StoreField v14, :_env_data_index_flags@0x1000, v17
+          CheckInterrupts
+          Return v10
+        ");
+    }
+
+    #[test]
     fn test_getinstancevariable() {
         eval("
             def test = @foo

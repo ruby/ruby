@@ -508,20 +508,43 @@ class TestFiber < Test::Unit::TestCase
   end
 
   def test_fiber_pool_stack_acquire_failure
-    omit "cannot determine max_map_count" unless File.exist?("/proc/sys/vm/max_map_count")
-    # On these platforms, excessive memory usage can cause the test to fail unexpectedly.
-    omit "not supported on IBM platforms" if RUBY_PLATFORM =~ /s390x|powerpc/
-    omit "not supported with YJIT" if defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
-    omit "not supported with ZJIT" if defined?(RubyVM::ZJIT) && RubyVM::ZJIT.enabled?
+    environment = {
+      "RUBY_SHARED_FIBER_POOL_MINIMUM_COUNT" => "0",
+      "RUBY_SHARED_FIBER_POOL_MAXIMUM_COUNT" => "128"
+    }
 
-    assert_separately([], <<~RUBY, timeout: 120)
-      max_map_count = File.read("/proc/sys/vm/max_map_count").to_i
+    # This program requires, effectively, at most one fiber stack, since the fiber immediately becomes unreachable.
+    assert_separately([environment], <<~RUBY, timeout: 30)
       GC.disable
+      count_before = GC.count
+
+      # Create more fibers than the pool can handle (but they become immediately unreachable):
       assert_nothing_raised do
-        (max_map_count + 10).times do
-          Fiber.new { Fiber.yield }.resume
+        256.times do
+          Fiber.new{Fiber.yield}.resume
         end
       end
+
+      # Major GC should have happened at least once:
+      assert_operator(GC.count, :>, count_before)
+    RUBY
+  end
+
+  def test_fiber_pool_stack_acquire_failure_at_maximum_count
+    environment = {
+      "RUBY_SHARED_FIBER_POOL_MAXIMUM_COUNT" => "128"
+    }
+
+    assert_separately([environment], <<~RUBY, timeout: 30)
+      GC.disable
+      fibers = []
+      assert_raise(FiberError) do
+        loop do
+          Fiber.new{fibers << Fiber.current; Fiber.yield}.resume
+          raise "expected FiberError before this" if fibers.size > 128
+        end
+      end
+      assert_operator fibers.size, :>=, 128
     RUBY
   end
 end

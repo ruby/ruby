@@ -243,13 +243,14 @@ class << RubyVM::ZJIT
     return if counters.empty?
 
     counters.transform_keys! { |key| key.to_s.delete_prefix(prefix) }
-    key_pad = counters.keys.map(&:size).max
-    value_pad = counters.values.map { |value| number_with_delimiter(value).size }.max
     total = counters.values.sum
 
     counters = counters.to_a
     counters.sort_by! { |_, value| -value }
     counters = counters.first(limit) if limit
+
+    key_pad = counters.map { |key, _| key.size }.max
+    value_pad = counters.map { |_, value| number_with_delimiter(value).size }.max
 
     buf << "Top-#{counters.size} " if limit
     buf << "#{prompt}"

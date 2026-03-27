@@ -220,6 +220,20 @@ class TestGemVersion < Gem::TestCase
     assert_nil v("2.30.1.250000").send(:sort_key)
   end
 
+  def test_sort_key_on_timestamped_version
+    a = v("1.0.0")
+    b = v("0.0.1.20220404083012")
+
+    assert_operator a, :>, b
+  end
+
+  def test_sort_key_when_segment_is_higher_than_radix
+    a = v("0.7.0")
+    b = v("0.6.63000")
+
+    assert_operator(a, :>, b)
+  end
+
   def test_sort_key_is_used_for_comparison
     a = v("18.0.1")
     b = v("18.0.2")

@@ -110,7 +110,7 @@ RSpec.describe "bundle update" do
   end
 
   context "when update_requires_all_flag is set" do
-    before { bundle "config set update_requires_all_flag true" }
+    before { bundle_config "update_requires_all_flag true" }
 
     it "errors when passed nothing" do
       install_gemfile "source 'https://gem.repo1'"
@@ -816,7 +816,7 @@ RSpec.describe "bundle update" do
     end
 
     it "should fail loudly" do
-      bundle "config deployment true"
+      bundle_config "deployment true"
       bundle "update", all: true, raise_on_error: false
 
       expect(last_command).to be_failure
@@ -828,7 +828,7 @@ RSpec.describe "bundle update" do
     end
 
     it "should fail loudly when frozen is set globally" do
-      bundle "config set --global frozen 1"
+      bundle_config_global "frozen 1"
       bundle "update", all: true, raise_on_error: false
       expect(err).to eq <<~ERROR.strip
         Bundler is unlocking, but the lockfile can't be updated because frozen mode is set
@@ -838,7 +838,7 @@ RSpec.describe "bundle update" do
     end
 
     it "should fail loudly when deployment is set globally" do
-      bundle "config set --global deployment true"
+      bundle_config_global "deployment true"
       bundle "update", all: true, raise_on_error: false
       expect(err).to eq <<~ERROR.strip
         Bundler is unlocking, but the lockfile can't be updated because frozen mode is set
@@ -1525,7 +1525,7 @@ RSpec.describe "bundle update --bundler" do
   end
 
   it "updates the bundler version in the lockfile even if the latest version is not installed", :ruby_repo do
-    bundle "config path.system true"
+    bundle_config "path.system true"
 
     pristine_system_gems "bundler-9.0.0"
 
@@ -1837,7 +1837,7 @@ RSpec.describe "bundle update conservative" do
 
     context "with patch set as default update level in config" do
       it "should do a patch level update" do
-        bundle "config set --local prefer_patch true"
+        bundle_config "prefer_patch true"
         bundle "update foo"
 
         expect(the_bundle).to include_gems "foo 1.4.5", "bar 2.1.1", "qux 1.0.0"

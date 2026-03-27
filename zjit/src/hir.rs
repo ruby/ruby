@@ -1040,6 +1040,7 @@ pub enum Insn {
     FixnumAnd  { left: InsnId, right: InsnId },
     FixnumOr   { left: InsnId, right: InsnId },
     FixnumXor  { left: InsnId, right: InsnId },
+    IntOr      { left: InsnId, right: InsnId },
     FixnumLShift { left: InsnId, right: InsnId, state: InsnId },
     FixnumRShift { left: InsnId, right: InsnId },
 
@@ -1242,6 +1243,7 @@ macro_rules! for_each_operand_impl {
             | Insn::FixnumAnd { left, right }
             | Insn::FixnumOr { left, right }
             | Insn::FixnumXor { left, right }
+            | Insn::IntOr { left, right }
             | Insn::FixnumRShift { left, right }
             | Insn::IsBitEqual { left, right }
             | Insn::IsBitNotEqual { left, right } => {
@@ -1577,6 +1579,7 @@ impl Insn {
             Insn::FixnumAnd { .. } => effects::Empty,
             Insn::FixnumOr { .. } => effects::Empty,
             Insn::FixnumXor { .. } => effects::Empty,
+            Insn::IntOr { .. } => effects::Empty,
             Insn::FixnumLShift { .. } => effects::Empty,
             Insn::FixnumRShift { .. } => effects::Empty,
             Insn::ObjToString { .. } => effects::Any,
@@ -1954,6 +1957,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::FixnumAnd  { left, right, .. } => { write!(f, "FixnumAnd {left}, {right}") },
             Insn::FixnumOr   { left, right, .. } => { write!(f, "FixnumOr {left}, {right}") },
             Insn::FixnumXor  { left, right, .. } => { write!(f, "FixnumXor {left}, {right}") },
+            Insn::IntOr      { left, right } => { write!(f, "IntOr {left}, {right}") },
             Insn::FixnumLShift { left, right, .. } => { write!(f, "FixnumLShift {left}, {right}") },
             Insn::FixnumRShift { left, right, .. } => { write!(f, "FixnumRShift {left}, {right}") },
             Insn::GuardType { val, guard_type, .. } => { write!(f, "GuardType {val}, {}", guard_type.print(self.ptr_map)) },
@@ -2738,6 +2742,7 @@ impl Function {
             &FixnumAnd { left, right } => FixnumAnd { left: find!(left), right: find!(right) },
             &FixnumOr { left, right } => FixnumOr { left: find!(left), right: find!(right) },
             &FixnumXor { left, right } => FixnumXor { left: find!(left), right: find!(right) },
+            &IntOr { left, right } => IntOr { left: find!(left), right: find!(right) },
             &FixnumLShift { left, right, state } => FixnumLShift { left: find!(left), right: find!(right), state },
             &FixnumRShift { left, right } => FixnumRShift { left: find!(left), right: find!(right) },
             &ObjToString { val, cd, state } => ObjToString {
@@ -2993,6 +2998,7 @@ impl Function {
             Insn::FixnumAnd  { .. } => types::Fixnum,
             Insn::FixnumOr   { .. } => types::Fixnum,
             Insn::FixnumXor  { .. } => types::Fixnum,
+            Insn::IntOr { left, .. } => self.type_of(*left).unspecialized(),
             Insn::FixnumLShift { .. } => types::Fixnum,
             Insn::FixnumRShift { .. } => types::Fixnum,
             Insn::PutSpecialObject { .. } => types::BasicObject,
@@ -6169,6 +6175,11 @@ impl Function {
                     Err(ValidationError::MiscValidationError(insn_id, "IsBitEqual can only compare CInt/CInt or RubyValue/RubyValue".to_string()))
                 }
             }
+            Insn::IntOr { left, right } => {
+                // TODO: Expand this to other matching C integer sizes when we need them.
+                self.assert_subtype(insn_id, left, types::CInt64)?;
+                self.assert_subtype(insn_id, right, types::CInt64)
+            }
             Insn::BoxBool { val }
             | Insn::IfTrue { val, .. }
             | Insn::IfFalse { val, .. } => {
@@ -7441,6 +7452,32 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let ep_offset = get_arg(pc, 0).as_u32();
                     let level = get_arg(pc, 1).as_u32();
                     fun.push_insn(block, Insn::SetLocal { val: state.stack_pop()?, ep_offset, level });
+                }
+                YARVINSN_setblockparam => {
+                    let ep_offset = get_arg(pc, 0).as_u32();
+                    let level = get_arg(pc, 1).as_u32();
+                    let val = state.stack_pop()?;
+                    fun.push_insn(block, Insn::SetLocal { val, ep_offset, level });
+                    if level == 0 {
+                        state.setlocal(ep_offset, val);
+                    }
+                    let ep = fun.push_insn(block, Insn::GetEP { level });
+                    let flags = fun.push_insn(block, Insn::LoadField {
+                        recv: ep,
+                        id: ID!(_env_data_index_flags),
+                        offset: SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32),
+                        return_type: types::CInt64,
+                    });
+                    let modified_flag = fun.push_insn(block, Insn::Const {
+                        val: Const::CInt64(VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into()),
+                    });
+                    let modified = fun.push_insn(block, Insn::IntOr { left: flags, right: modified_flag });
+                    fun.push_insn(block, Insn::StoreField {
+                        recv: ep,
+                        id: ID!(_env_data_index_flags),
+                        offset: SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32),
+                        val: modified,
+                    });
                 }
                 YARVINSN_getblockparamproxy => {
                     let level = get_arg(pc, 1).as_u32();

@@ -82,6 +82,8 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal '"hello"', dump(:hello, strict: true)
     assert_equal '"hello"', :hello.to_json(strict: true)
     assert_equal '"World"', "World".to_json(strict: true)
+    assert_equal '["hello"]', dump([:hello], strict: true)
+    assert_equal '{"hello":"world"}', dump({ hello: :world }, strict: true)
   end
 
   def test_not_frozen
@@ -504,10 +506,14 @@ class JSONGeneratorTest < Test::Unit::TestCase
       end
       alias_method :to_s, :to_s
     end
-    case RUBY_PLATFORM
-    when "java"
+    case RUBY_ENGINE
+    when "jruby"
       assert_equal bignum_to_s, JSON.generate(bignum)
-    else
+    when "truffleruby"
+      assert_raise(NoMethodError) do
+        JSON.generate(bignum)
+      end
+    when "ruby"
       assert_raise(TypeError) do
         JSON.generate(bignum)
       end
