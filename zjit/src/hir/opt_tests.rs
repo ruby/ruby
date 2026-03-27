@@ -4741,9 +4741,7 @@ mod hir_opt_tests {
           v18:CInt64 = LoadField v15, :_env_data_index_specval@0x1002
           v19:CInt64 = GuardAnyBitSet v18, CUInt64(1)
           v20:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          v22:BasicObject = Send v9, &block, :tap, v20 # SendFallbackReason: Send: no profile data available
-          CheckInterrupts
-          Return v22
+          SideExit NoProfileSend recompile
         ");
     }
 

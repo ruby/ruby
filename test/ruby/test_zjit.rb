@@ -399,6 +399,23 @@ class TestZJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_send_no_profiles_with_disabled_specialized_instruction
+    # Regression test: when specialized_instruction is disabled (as power_assert does),
+    # eval'd code uses `send` instead of `opt_send_without_block`, producing SendNoProfiles.
+    # The `times` call with a literal block is the SendNoProfiles send whose exit profiling
+    # triggers recompilation of `run`. After recompilation, `make`'s eval("proc { }") crashes
+    # in vm_make_env_each because the caller frame's EP[-1] (specval) has a stale value.
+    assert_runs ':ok', <<~RUBY
+      RubyVM::InstructionSequence.compile_option = { specialized_instruction: false }
+      eval <<~'INNERRUBY'
+        def make = eval("proc { }")
+        def run(n) = n.times { make }
+      INNERRUBY
+      run(6)
+      :ok
+    RUBY
+  end
+
   private
 
   # Assert that every method call in `test_script` can be compiled by ZJIT

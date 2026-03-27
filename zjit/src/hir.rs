@@ -5059,7 +5059,7 @@ impl Function {
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
                 match self.find(insn_id) {
-                    Insn::Send { cd, state, reason: SendFallbackReason::SendWithoutBlockNoProfiles, .. } => {
+                    Insn::Send { cd, state, reason: SendFallbackReason::SendWithoutBlockNoProfiles | SendFallbackReason::SendNoProfiles, .. } => {
                         let argc = unsafe { vm_ci_argc((*cd).ci) } as i32;
                         self.push_insn(block, Insn::SideExit { state, reason: SideExitReason::NoProfileSend, recompile: Some(argc) });
                         // SideExit is a terminator; don't add remaining instructions
