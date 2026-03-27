@@ -11427,9 +11427,47 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v11:StaticSymbol[:the_block] = Const Value(VALUE(0x1000))
-          v13:BasicObject = Send v6, 0x1008, :callee, v11 # SendFallbackReason: Send: no profile data available
+          v13:BasicObject = Send v6, 0x1008, :callee, v11 # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v13
+        ");
+    }
+
+    #[test]
+    fn test_profile_stack_skips_block_arg() {
+        // Regression test: profile_stack must skip the &block arg on the stack when mapping
+        // profiled operand types. Without the fix, the receiver type would be mapped to the
+        // wrong stack slot, causing resolve_receiver_type to return NoProfile.
+        // With the fix, the receiver type is correctly resolved and the send gets past type
+        // resolution to hit the ARGS_BLOCKARG guard (ComplexArgPass) instead of NoProfile.
+        eval("
+            def test(&block) = [].map(&block)
+            test { |x| x }; test { |x| x }
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :block@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :block@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v14:ArrayExact = NewArray
+          v16:CPtr = GetEP 0
+          v17:CInt64 = LoadField v16, :_env_data_index_flags@0x1001
+          v18:CInt64 = GuardNoBitsSet v17, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM=CUInt64(512)
+          v19:CInt64 = LoadField v16, :_env_data_index_specval@0x1002
+          v20:CInt64 = GuardAnyBitSet v19, CUInt64(1)
+          v21:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          v23:BasicObject = Send v14, 0x1001, :map, v21 # SendFallbackReason: Complex argument passing
+          CheckInterrupts
+          Return v23
         ");
     }
 

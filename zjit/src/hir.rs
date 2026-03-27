@@ -6758,15 +6758,17 @@ impl ProfileOracle {
         Self { payload, types: Default::default() }
     }
 
-    /// Map the interpreter-recorded types of the stack onto the HIR operands on our compile-time virtual stack
-    fn profile_stack(&mut self, state: &FrameState) {
+    /// Map the interpreter-recorded types of the stack onto the HIR operands on our compile-time virtual stack.
+    /// `stack_offset` is the number of extra stack entries above the profiled operands (e.g. 1 for
+    /// sends with ARGS_BLOCKARG, where the block arg sits on top of the regular args).
+    fn profile_stack(&mut self, state: &FrameState, stack_offset: usize) {
         let iseq_insn_idx = state.insn_idx;
         let Some(operand_types) = self.payload.profile.get_operand_types(iseq_insn_idx) else { return };
         let entry = self.types.entry(iseq_insn_idx).or_default();
         // operand_types is always going to be <= stack size (otherwise it would have an underflow
         // at run-time) so use that to drive iteration.
         for (idx, insn_type_distribution) in operand_types.iter().rev().enumerate() {
-            let insn = state.stack_topn(idx).expect("Unexpected stack underflow in profiling");
+            let insn = state.stack_topn(idx + stack_offset).expect("Unexpected stack underflow in profiling");
             entry.push((insn, TypeDistributionSummary::new(insn_type_distribution)))
         }
     }
@@ -6969,7 +6971,17 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
             }
             else {
-                profiles.profile_stack(&exit_state);
+                // For sends with ARGS_BLOCKARG, the block arg sits on the stack above
+                // the profiled operands (receiver + regular args). Skip it so that the
+                // profile types map onto the correct HIR operands.
+                let stack_offset = if opcode == YARVINSN_send || opcode == YARVINSN_opt_send_without_block {
+                    let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
+                    let flags = unsafe { vm_ci_flag(rb_get_call_data_ci(cd)) };
+                    usize::from(flags & VM_CALL_ARGS_BLOCKARG != 0)
+                } else {
+                    0
+                };
+                profiles.profile_stack(&exit_state, stack_offset);
             }
 
             // Flag a future getlocal/setlocal to add a patch point if this instruction is not leaf.
