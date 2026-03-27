@@ -644,6 +644,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::FixnumAnd { left, right } => gen_fixnum_and(asm, opnd!(left), opnd!(right)),
         Insn::FixnumOr { left, right } => gen_fixnum_or(asm, opnd!(left), opnd!(right)),
         Insn::FixnumXor { left, right } => gen_fixnum_xor(asm, opnd!(left), opnd!(right)),
+        Insn::IntAnd { left, right } => asm.and(opnd!(left), opnd!(right)),
         Insn::IntOr { left, right } => gen_int_or(asm, opnd!(left), opnd!(right)),
         &Insn::FixnumLShift { left, right, state } => {
             // We only create FixnumLShift when we know the shift amount statically and it's in [0,

@@ -15102,17 +15102,19 @@ mod hir_opt_tests {
           v10:Fixnum[1] = Const Value(1)
           v12:CPtr = GetEP 0
           v13:CInt64 = LoadField v12, :_env_data_index_specval@0x1000
-          v14:CInt64 = GuardAnyBitSet v13, CUInt64(1)
-          v15:CInt64 = GuardAnyBitSet v13, CUInt64(2)
-          v16:BasicObject = InvokeBlockIfunc v13, v10
-          v20:Fixnum[2] = Const Value(2)
-          v22:CPtr = GetEP 0
-          v23:CInt64 = LoadField v22, :_env_data_index_specval@0x1000
-          v24:CInt64 = GuardAnyBitSet v23, CUInt64(1)
-          v25:CInt64 = GuardAnyBitSet v23, CUInt64(2)
-          v26:BasicObject = InvokeBlockIfunc v23, v20
+          v14:CInt64[3] = Const CInt64(3)
+          v15:CInt64 = IntAnd v13, v14
+          v16:CInt64[3] = GuardBitEquals v15, CInt64(3)
+          v17:BasicObject = InvokeBlockIfunc v13, v10
+          v21:Fixnum[2] = Const Value(2)
+          v23:CPtr = GetEP 0
+          v24:CInt64 = LoadField v23, :_env_data_index_specval@0x1000
+          v25:CInt64[3] = Const CInt64(3)
+          v26:CInt64 = IntAnd v24, v25
+          v27:CInt64[3] = GuardBitEquals v26, CInt64(3)
+          v28:BasicObject = InvokeBlockIfunc v24, v21
           CheckInterrupts
-          Return v26
+          Return v28
         ");
     }
 }

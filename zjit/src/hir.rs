@@ -1072,6 +1072,7 @@ pub enum Insn {
     FixnumAnd  { left: InsnId, right: InsnId },
     FixnumOr   { left: InsnId, right: InsnId },
     FixnumXor  { left: InsnId, right: InsnId },
+    IntAnd     { left: InsnId, right: InsnId },
     IntOr      { left: InsnId, right: InsnId },
     FixnumLShift { left: InsnId, right: InsnId, state: InsnId },
     FixnumRShift { left: InsnId, right: InsnId },
@@ -1275,6 +1276,7 @@ macro_rules! for_each_operand_impl {
             | Insn::FixnumAnd { left, right }
             | Insn::FixnumOr { left, right }
             | Insn::FixnumXor { left, right }
+            | Insn::IntAnd { left, right }
             | Insn::IntOr { left, right }
             | Insn::FixnumRShift { left, right }
             | Insn::IsBitEqual { left, right }
@@ -1617,6 +1619,7 @@ impl Insn {
             Insn::FixnumAnd { .. } => effects::Empty,
             Insn::FixnumOr { .. } => effects::Empty,
             Insn::FixnumXor { .. } => effects::Empty,
+            Insn::IntAnd { .. } => effects::Empty,
             Insn::IntOr { .. } => effects::Empty,
             Insn::FixnumLShift { .. } => effects::Empty,
             Insn::FixnumRShift { .. } => effects::Empty,
@@ -2006,6 +2009,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::FixnumAnd  { left, right, .. } => { write!(f, "FixnumAnd {left}, {right}") },
             Insn::FixnumOr   { left, right, .. } => { write!(f, "FixnumOr {left}, {right}") },
             Insn::FixnumXor  { left, right, .. } => { write!(f, "FixnumXor {left}, {right}") },
+            Insn::IntAnd     { left, right } => { write!(f, "IntAnd {left}, {right}") },
             Insn::IntOr      { left, right } => { write!(f, "IntOr {left}, {right}") },
             Insn::FixnumLShift { left, right, .. } => { write!(f, "FixnumLShift {left}, {right}") },
             Insn::FixnumRShift { left, right, .. } => { write!(f, "FixnumRShift {left}, {right}") },
@@ -2795,6 +2799,7 @@ impl Function {
             &FixnumAnd { left, right } => FixnumAnd { left: find!(left), right: find!(right) },
             &FixnumOr { left, right } => FixnumOr { left: find!(left), right: find!(right) },
             &FixnumXor { left, right } => FixnumXor { left: find!(left), right: find!(right) },
+            &IntAnd { left, right } => IntAnd { left: find!(left), right: find!(right) },
             &IntOr { left, right } => IntOr { left: find!(left), right: find!(right) },
             &FixnumLShift { left, right, state } => FixnumLShift { left: find!(left), right: find!(right), state },
             &FixnumRShift { left, right } => FixnumRShift { left: find!(left), right: find!(right) },
@@ -3057,6 +3062,7 @@ impl Function {
             Insn::FixnumAnd  { .. } => types::Fixnum,
             Insn::FixnumOr   { .. } => types::Fixnum,
             Insn::FixnumXor  { .. } => types::Fixnum,
+            Insn::IntAnd { .. } => types::CInt64,
             Insn::IntOr { left, .. } => self.type_of(*left).unspecialized(),
             Insn::FixnumLShift { .. } => types::Fixnum,
             Insn::FixnumRShift { .. } => types::Fixnum,
@@ -6248,7 +6254,8 @@ impl Function {
                     Err(ValidationError::MiscValidationError(insn_id, "IsBitEqual can only compare CInt/CInt or RubyValue/RubyValue".to_string()))
                 }
             }
-            Insn::IntOr { left, right } => {
+            Insn::IntAnd { left, right }
+            | Insn::IntOr { left, right } => {
                 // TODO: Expand this to other matching C integer sizes when we need them.
                 self.assert_subtype(insn_id, left, types::CInt64)?;
                 self.assert_subtype(insn_id, right, types::CInt64)
@@ -8161,20 +8168,13 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             return_type: types::CInt64,
                         });
 
-                        // Guard that the block handler is an IFUNC (tag bits & 0x3 == 0x3)
-                        // bit 0x1 must be set (iseq or ifunc)
-                        fun.push_insn(block, Insn::GuardAnyBitSet {
-                            val: block_handler,
-                            mask: Const::CUInt64(0x1),
-                            mask_name: None,
-                            reason: SideExitReason::InvokeBlockNotIfunc,
-                            state: exit_id,
-                        });
-                        // bit 0x2 must be set (ifunc specifically, not iseq)
-                        fun.push_insn(block, Insn::GuardAnyBitSet {
-                            val: block_handler,
-                            mask: Const::CUInt64(0x2),
-                            mask_name: None,
+                        // Guard that the block handler is an IFUNC (tag bits & 0x3 == 0x3),
+                        // matching VM_BH_IFUNC_P() in the interpreter.
+                        let tag_mask = fun.push_insn(block, Insn::Const { val: Const::CInt64(0x3) });
+                        let tag_bits = fun.push_insn(block, Insn::IntAnd { left: block_handler, right: tag_mask });
+                        fun.push_insn(block, Insn::GuardBitEquals {
+                            val: tag_bits,
+                            expected: Const::CInt64(0x3),
                             reason: SideExitReason::InvokeBlockNotIfunc,
                             state: exit_id,
                         });
