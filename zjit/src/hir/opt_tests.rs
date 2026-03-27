@@ -14931,7 +14931,7 @@ mod hir_opt_tests {
         //
         // Use call_threshold=3 to ensure the method is auto-compiled before hir_string() builds
         // the HIR. The auto-compile creates version 1, and hir_string() creates version 2
-        // (= MAX_ISEQ_VERSIONS), so is_final_version is true.
+        // (= MAX_ISEQ_VERSIONS), so this is the final version.
         set_call_threshold(3);
         eval("
             def greet_final(x) = x.to_s
