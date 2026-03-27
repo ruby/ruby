@@ -1533,17 +1533,10 @@ rb_iseq_location(const rb_iseq_t *iseq)
 
 /*
  * call-seq:
- *    prc.source_location  -> [String, Integer, Integer, Integer, Integer]
+ *    prc.source_location  -> [String, Integer]
  *
- * Returns the location where the Proc was defined.
- * The returned Array contains:
- *   (1) the Ruby source filename
- *   (2) the line number where the definition starts
- *   (3) the column number where the definition starts
- *   (4) the line number where the definition ends
- *   (5) the column number where the definitions ends
- *
- * This method will return +nil+ if the Proc was not defined in Ruby (i.e. native).
+ * Returns the Ruby source filename and line number containing this proc
+ * or +nil+ if this proc was not defined in Ruby (i.e. native).
  */
 
 VALUE
@@ -3194,17 +3187,10 @@ rb_method_entry_location(const rb_method_entry_t *me)
 
 /*
  * call-seq:
- *    meth.source_location  -> [String, Integer, Integer, Integer, Integer]
+ *    meth.source_location  -> [String, Integer]
  *
- * Returns the location where the method was defined.
- * The returned Array contains:
- *   (1) the Ruby source filename
- *   (2) the line number where the definition starts
- *   (3) the column number where the definition starts
- *   (4) the line number where the definition ends
- *   (5) the column number where the definitions ends
- *
- * This method will return +nil+ if the method was not defined in Ruby (i.e. native).
+ * Returns the Ruby source filename and line number containing this method
+ * or nil if this method was not defined in Ruby (i.e. native).
  */
 
 VALUE
