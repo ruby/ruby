@@ -2971,7 +2971,7 @@ c_callable! {
     /// This function is expected to be called repeatedly when ZJIT fails to compile the stub.
     /// We should be able to compile most (if not all) function stubs by side-exiting at unsupported
     /// instructions, so this should be used primarily for cb.has_dropped_bytes() situations.
-    fn function_stub_hit(iseq_call_ptr: *const c_void, cfp: CfpPtr, sp: *mut VALUE) -> *const u8 {
+    fn function_stub_hit(iseq_call_ptr: *const c_void, cfp: CfpPtr, sp: *mut VALUE, ec: EcPtr) -> *const u8 {
         with_vm_lock(src_loc!(), || {
             // gen_push_frame() doesn't set PC, so we need to set them before exit.
             // function_stub_hit_body() may allocate and call gc_validate_pc(), so we always set PC.
@@ -3001,15 +3001,21 @@ c_callable! {
                 }
             }
 
-            // If we already know we can't compile the ISEQ, fail early without cb.mark_all_executable().
+            // If we already know we can't compile the ISEQ, or there is insufficient native
+            // stack space, fail early without cb.mark_all_executable().
             // TODO: Alan thinks the payload status part of this check can happen without the VM lock, since the whole
             // code path can be made read-only. But you still need the check as is while holding the VM lock in any case.
             let cb = ZJITState::get_code_block();
+            let native_stack_full = unsafe { rb_ec_stack_check(ec as _) } != 0;
             let payload = get_or_create_iseq_payload(iseq);
             let last_status = payload.versions.last().map(|version| &unsafe { version.as_ref() }.status);
             let compile_error = match last_status {
                 Some(IseqStatus::CantCompile(err)) => Some(err),
                 _ if cb.has_dropped_bytes() => Some(&CompileError::OutOfMemory),
+                _ if native_stack_full => {
+                    incr_counter!(skipped_native_stack_full);
+                    Some(&CompileError::NativeStackTooLarge)
+                },
                 _ => None,
             };
             if let Some(compile_error) = compile_error {
@@ -3114,7 +3120,7 @@ pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, C
     // cycles without clobbering something
     asm.mov(C_ARG_OPNDS[0], scratch_reg);
     // Compile the stubbed ISEQ
-    let jump_addr = asm_ccall!(asm, function_stub_hit, C_ARG_OPNDS[0], CFP, SP);
+    let jump_addr = asm_ccall!(asm, function_stub_hit, C_ARG_OPNDS[0], CFP, SP, EC);
     asm.mov(scratch_reg, jump_addr);
 
     asm_comment!(asm, "restore argument registers");
