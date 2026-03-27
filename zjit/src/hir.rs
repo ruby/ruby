@@ -4250,18 +4250,6 @@ impl Function {
                             continue;
                         }
                     }
-                    Insn::InvokeBlock { .. } => {
-                        self.set_dynamic_send_reason(insn_id, InvokeBlockNotSpecialized);
-                        self.push_insn_id(block, insn_id);
-                    }
-                    Insn::SendForward { .. } => {
-                        self.set_dynamic_send_reason(insn_id, SendForwardNotSpecialized);
-                        self.push_insn_id(block, insn_id);
-                    }
-                    Insn::InvokeSuperForward { .. } => {
-                        self.set_dynamic_send_reason(insn_id, InvokeSuperForwardNotSpecialized);
-                        self.push_insn_id(block, insn_id);
-                    }
                     _ => { self.push_insn_id(block, insn_id); }
                 }
             }
@@ -8016,7 +8004,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     let args = state.stack_pop_n(argc as usize + usize::from(forwarding))?;
                     let recv = state.stack_pop()?;
-                    let send_forward = fun.push_insn(block, Insn::SendForward { recv, cd, blockiseq, args, state: exit_id, reason: Uncategorized(opcode) });
+                    let send_forward = fun.push_insn(block, Insn::SendForward { recv, cd, blockiseq, args, state: exit_id, reason: SendForwardNotSpecialized });
                     state.stack_push(send_forward);
 
                     if !blockiseq.is_null() {
@@ -8088,7 +8076,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
                     let args = state.stack_pop_n(argc as usize + usize::from(forwarding))?;
                     let recv = state.stack_pop()?;
-                    let result = fun.push_insn(block, Insn::InvokeSuperForward { recv, cd, blockiseq, args, state: exit_id, reason: Uncategorized(opcode) });
+                    let result = fun.push_insn(block, Insn::InvokeSuperForward { recv, cd, blockiseq, args, state: exit_id, reason: InvokeSuperForwardNotSpecialized });
                     state.stack_push(result);
 
                     if !blockiseq.is_null() {
@@ -8123,7 +8111,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
                     let block_arg = (flags & VM_CALL_ARGS_BLOCKARG) != 0;
                     let args = state.stack_pop_n(argc as usize + usize::from(block_arg))?;
-                    let result = fun.push_insn(block, Insn::InvokeBlock { cd, args, state: exit_id, reason: Uncategorized(opcode) });
+                    let result = fun.push_insn(block, Insn::InvokeBlock { cd, args, state: exit_id, reason: InvokeBlockNotSpecialized });
                     state.stack_push(result);
                 }
                 YARVINSN_getglobal => {
