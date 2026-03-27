@@ -20,7 +20,7 @@ RSpec.describe "Running bin/* commands" do
   end
 
   it "allows the location of the gem stubs to be configured" do
-    bundle "config bin gbin"
+    bundle_config "bin gbin"
     bundle "binstubs myrack"
 
     expect(bundled_app("bin")).not_to exist
@@ -31,7 +31,7 @@ RSpec.describe "Running bin/* commands" do
   end
 
   it "allows absolute paths as a specification of where to install bin stubs" do
-    bundle "config bin #{tmp("bin")}"
+    bundle_config "bin #{tmp("bin")}"
     bundle "binstubs myrack"
 
     gembin tmp("bin/myrackup")

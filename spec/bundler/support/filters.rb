@@ -37,6 +37,6 @@ RSpec.configure do |config|
   config.filter_run_when_matching :focus unless ENV["CI"]
 
   config.before(:each, :bundler) do |example|
-    bundle "config simulate_version #{example.metadata[:bundler]}"
+    bundle_config "simulate_version #{example.metadata[:bundler]}"
   end
 end

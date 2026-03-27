@@ -99,7 +99,7 @@ RSpec.describe "bundle cache with path" do
       source "https://gem.repo1"
       gem "foo", :path => '#{lib_path("foo-1.0")}'
     G
-    bundle "config cache_all false"
+    bundle_config "cache_all false"
 
     bundle :cache
     expect(err).to be_empty

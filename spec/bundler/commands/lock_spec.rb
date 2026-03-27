@@ -677,8 +677,8 @@ RSpec.describe "bundle lock" do
       gem "thin"
       gem "myrack_middleware", :group => "test"
     G
-    bundle "config set without test"
-    bundle "config set path vendor/bundle"
+    bundle_config "without test"
+    bundle_config "path vendor/bundle"
     bundle "lock", verbose: true
     expect(bundled_app("vendor/bundle")).not_to exist
   end
@@ -937,7 +937,7 @@ RSpec.describe "bundle lock" do
         platform_specific
     L
 
-    bundle "config set force_ruby_platform true"
+    bundle_config "force_ruby_platform true"
     bundle "lock --add-platform java x86-mingw32"
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
@@ -1112,7 +1112,7 @@ RSpec.describe "bundle lock" do
         #{Bundler::VERSION}
     G
 
-    bundle "config set --local force_ruby_platform true"
+    bundle_config "force_ruby_platform true"
     bundle :lock
 
     checksums.checksum gem_repo4, "ffi", "1.9.14"
@@ -2195,7 +2195,7 @@ RSpec.describe "bundle lock" do
       end
     end
 
-    bundle "config lockfile_checksums false"
+    bundle_config "lockfile_checksums false"
 
     simulate_platform "x86_64-linux" do
       install_gemfile <<-G
@@ -2229,7 +2229,7 @@ RSpec.describe "bundle lock" do
       build_gem "warning", "18.0.0"
     end
 
-    bundle "config lockfile_checksums false"
+    bundle_config "lockfile_checksums false"
 
     simulate_platform "x86_64-linux" do
       install_gemfile(<<-G, artifice: "endpoint")
