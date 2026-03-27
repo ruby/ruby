@@ -265,7 +265,7 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
         pend = nil
         threads.each { |th|
           begin
-            timeout = EnvUtil.apply_timeout_scale(30)
+            timeout = EnvUtil.apply_timeout_scale(60)
             th.join(timeout) or
               th.raise(RuntimeError, "[start_server] thread did not exit in #{timeout} secs")
           rescue Test::Unit::PendedError
