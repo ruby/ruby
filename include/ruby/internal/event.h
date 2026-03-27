@@ -64,6 +64,16 @@
 /** @} */
 
 /**
+ * @name Coverage events
+ *
+ * @{
+ */
+#define RUBY_EVENT_COVERAGE_LINE    0x010000 /**< Encountered a new line (coverage). */
+#define RUBY_EVENT_COVERAGE_BRANCH  0x020000 /**< Encountered a branch target (coverage). */
+
+/** @} */
+
+/**
  * @name Special events
  *
  * @internal
