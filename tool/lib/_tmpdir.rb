@@ -85,10 +85,15 @@ END {
         warn colorize.notice("Children under ")+colorize.fail(tmpdir)+":"
         Dir.chdir(tmpdir) do
           ls.list_tree(".") do |path, st|
-            if st.directory?
-              Dir.rmdir(path)
-            else
-              File.unlink(path)
+            begin
+              if st.directory?
+                Dir.rmdir(path)
+              else
+                File.unlink(path)
+              end
+            rescue Errno::EACCES
+              # On Windows, a killed process may still hold file locks briefly.
+              # Ignore and let FileUtils.rm_rf handle it below.
             end
           end
         end
