@@ -698,6 +698,16 @@ pub enum SendFallbackReason {
     SuperPolymorphic,
     /// The `super` target call uses a complex argument pattern that the optimizer does not support.
     SuperTargetComplexArgsPass,
+    /// The `invokeblock` instruction is not yet optimized in `type_specialize`.
+    InvokeBlockNotSpecialized,
+    /// The `sendforward` instruction (argument forwarding `...`) is not yet optimized in
+    /// `type_specialize`.
+    SendForwardNotSpecialized,
+    /// The `invokesuperforward` instruction (super with forwarding `...`) is not yet optimized in
+    /// `type_specialize`.
+    InvokeSuperForwardNotSpecialized,
+    /// The single-ractor-mode assumption could not be made.
+    SingleRactorModeRequired,
     /// Initial fallback reason for every instruction, which should be mutated to
     /// a more actionable reason when an attempt to specialize the instruction fails.
     Uncategorized(ruby_vminsn_type),
@@ -745,6 +755,10 @@ impl Display for SendFallbackReason {
             SuperPolymorphic => write!(f, "super: polymorphic call site"),
             SuperTargetNotFound => write!(f, "super: profiled target method cannot be found"),
             SuperTargetComplexArgsPass => write!(f, "super: complex argument passing to `super` target call"),
+            InvokeBlockNotSpecialized => write!(f, "InvokeBlock: not yet specialized"),
+            SendForwardNotSpecialized => write!(f, "SendForward: not yet specialized"),
+            InvokeSuperForwardNotSpecialized => write!(f, "InvokeSuperForward: not yet specialized"),
+            SingleRactorModeRequired => write!(f, "Single-ractor mode required"),
             Uncategorized(insn) => write!(f, "Uncategorized({})", insn_name(*insn as usize)),
         }
     }
@@ -3716,6 +3730,7 @@ impl Function {
                             // Check for "defined with an un-shareable Proc in a different Ractor"
                             if !procv.shareable_p() && !self.assume_single_ractor_mode(block, state) {
                                 // TODO(alan): Turn this into a ractor belonging guard to work better in multi ractor mode.
+                                self.set_dynamic_send_reason(insn_id, SingleRactorModeRequired);
                                 self.push_insn_id(block, insn_id); continue;
                             }
                             // Check singleton class assumption first, before emitting other patchpoints
@@ -3735,6 +3750,7 @@ impl Function {
                             // Check if we're accessing ivars of a Class or Module object as they require single-ractor mode.
                             // We omit gen_prepare_non_leaf_call on gen_getivar, so it's unsafe to raise for multi-ractor mode.
                             if klass.is_metaclass() && !self.assume_single_ractor_mode(block, state) {
+                                self.set_dynamic_send_reason(insn_id, SingleRactorModeRequired);
                                 self.push_insn_id(block, insn_id); continue;
                             }
                             // Check singleton class assumption first, before emitting other patchpoints
@@ -3755,6 +3771,7 @@ impl Function {
                             // Check if we're accessing ivars of a Class or Module object as they require single-ractor mode.
                             // We omit gen_prepare_non_leaf_call on gen_getivar, so it's unsafe to raise for multi-ractor mode.
                             if klass.is_metaclass() && !self.assume_single_ractor_mode(block, state) {
+                                self.set_dynamic_send_reason(insn_id, SingleRactorModeRequired);
                                 self.push_insn_id(block, insn_id); continue;
                             }
 
@@ -3802,12 +3819,15 @@ impl Function {
                                     {
                                         let native_index = (index as i64) * (SIZEOF_VALUE as i64);
                                         if native_index > (i32::MAX as i64) {
+                                            self.set_dynamic_send_reason(insn_id, TooManyArgsForLir);
                                             self.push_insn_id(block, insn_id); continue;
                                         }
                                     }
                                     // Get the profiled type to check if the fields is embedded or heap allocated.
                                     let Some(is_embedded) = self.profiled_type_of_at(recv, frame_state.insn_idx).map(|t| t.flags().is_struct_embedded()) else {
                                         // No (monomorphic/skewed polymorphic) profile info
+                                        let reason = if has_block { SendNoProfiles } else { SendWithoutBlockNoProfiles };
+                                        self.set_dynamic_send_reason(insn_id, reason);
                                         self.push_insn_id(block, insn_id); continue;
                                     };
                                     // Check singleton class assumption first, before emitting other patchpoints
@@ -4229,6 +4249,18 @@ impl Function {
                             self.set_dynamic_send_reason(insn_id, SuperNotOptimizedMethodType(MethodType::from(def_type)));
                             continue;
                         }
+                    }
+                    Insn::InvokeBlock { .. } => {
+                        self.set_dynamic_send_reason(insn_id, InvokeBlockNotSpecialized);
+                        self.push_insn_id(block, insn_id);
+                    }
+                    Insn::SendForward { .. } => {
+                        self.set_dynamic_send_reason(insn_id, SendForwardNotSpecialized);
+                        self.push_insn_id(block, insn_id);
+                    }
+                    Insn::InvokeSuperForward { .. } => {
+                        self.set_dynamic_send_reason(insn_id, InvokeSuperForwardNotSpecialized);
+                        self.push_insn_id(block, insn_id);
                     }
                     _ => { self.push_insn_id(block, insn_id); }
                 }
