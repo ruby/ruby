@@ -207,9 +207,19 @@ class Pathname
 
   # :startdoc:
 
+  # call-seq:
+  #   Pathname.new(path) -> new_pathname
   #
-  # Create a Pathname object from the given String (or String-like object).
-  # If +path+ contains a NUL character (<tt>\0</tt>), an ArgumentError is raised.
+  # Returns a new \Pathname object based on the given +path+,
+  # via <tt>File.path(path).dup</tt>.
+  # the +path+ may be a String, a File, a Dir, or another \Pathname;
+  # see File.path:
+  #
+  #   Pathname.new('.')               # => #<Pathname:.>
+  #   Pathname.new('/usr/bin')        # => #<Pathname:/usr/bin>
+  #   Pathname.new(File.new('LEGAL')) # => #<Pathname:LEGAL>
+  #   Pathname.new(Dir.new('.'))      # => #<Pathname:.>
+  #   Pathname.new(Pathname.new('.')) # => #<Pathname:.>
   #
   def initialize(path)
     @path = File.path(path).dup
@@ -226,10 +236,18 @@ class Pathname
     self
   end
 
+  # call-seq:
+  #   self == other -> true or false
   #
-  # Compare this pathname with +other+.  The comparison is string-based.
-  # Be aware that two different paths (<tt>foo.txt</tt> and <tt>./foo.txt</tt>)
-  # can refer to the same file.
+  # Returns whether the stored paths in +self+ and +other+ are equal:
+  #
+  #   pn = Pathname.new('lib')
+  #   pn == Pathname.new('lib')   # => true
+  #   pn == Pathname.new('./lib') # => false
+  #
+  # Returns +false+ if +other+ is not a pathname:
+  #
+  #   pn == 'lib'                 # => false
   #
   def ==(other)
     return false unless Pathname === other
@@ -390,15 +408,105 @@ class Pathname
   end
   private :prepend_prefix
 
-  # Returns clean pathname of +self+ with consecutive slashes and useless dots
-  # removed.  The filesystem is not accessed.
+  # call-seq:
+  #   cleanpath(symlinks = false) -> new_pathname
   #
-  # If +consider_symlink+ is +true+, then a more conservative algorithm is used
-  # to avoid breaking symbolic linkages.  This may retain more +..+
-  # entries than absolutely necessary, but without accessing the filesystem,
-  # this can't be avoided.
+  # Returns a new \Pathname object, "cleaned" of unnecessary separators,
+  # single-dot entries, and double-dot entries.
   #
-  # See Pathname#realpath.
+  # When +self+ is empty, returns pathname with a single-dot entry:
+  #
+  #   Pathname.new('').cleanpath # => #<Pathname:.>
+  #
+  # <b>Separators</b>
+  #
+  # A lone separator is preserved:
+  #
+  #   Pathname.new('/').cleanpath # => #<Pathname:/>
+  #
+  # Non-lone trailing separators are removed:
+  #
+  #   Pathname.new('foo/////').cleanpath # => #<Pathname:foo>
+  #   Pathname.new('foo/').cleanpath     # => #<Pathname:foo>
+  #
+  # Multiple embedded separators are reduced to a single separator:
+  #
+  #   Pathname.new('foo///bar').cleanpath # => #<Pathname:foo/bar>
+  #
+  # Multiple leading separators are reduced:
+  #
+  #   # On Windows, where File.dirname('//') == '//'.
+  #   Pathname.new('/////foo').cleanpath # => #<Pathname://foo>
+  #   Pathname.new('/////').cleanpath    # => #<Pathname://>
+  #   # Otherwise, where File.dirname('//') == '/'.
+  #   Pathname.new('/////foo').cleanpath # => #<Pathname:/foo>
+  #   Pathname.new('/////').cleanpath    # => #<Pathname:/>
+  #
+  # <b>Single-Dot Entries</b>
+  #
+  # A lone single-dot entry is preserved:
+  #
+  #   Pathname.new('.').cleanpath  # => #<Pathname:.>
+  #
+  # A non-lone single-dot entry, regardless of its location, is removed:
+  #
+  #   Pathname.new('foo/././././bar').cleanpath  # => #<Pathname:foo/bar>
+  #   Pathname.new('./foo/./././bar').cleanpath  # => #<Pathname:foo/bar>
+  #   Pathname.new('foo/./././bar/./').cleanpath # => #<Pathname:foo/bar>
+  #
+  # <b>Double-Dot Entries</b>
+  #
+  # A lone double-dot entry is preserved:
+  #
+  #   Pathname.new('..').cleanpath # => #<Pathname:..>
+  #
+  # When a non-lone double-dot entry is preceded by a named entry, both are removed:
+  #
+  #   Pathname.new('foo/..').cleanpath          # => #<Pathname:.>
+  #   Pathname.new('foo/../bar').cleanpath      # => #<Pathname:bar>
+  #   Pathname.new('foo/../bar/..').cleanpath   # => #<Pathname:.>
+  #   Pathname.new('foo/bar/./../..').cleanpath # => #<Pathname:.>
+  #
+  # When a non-lone double-dot entry is _not_ preceded by a named entry,
+  # it is preserved:
+  #
+  #   Pathname.new('../..').cleanpath # => #<Pathname:../..>
+  #
+  # A non-lone meaningless double-dot entry is removed:
+  #
+  #   Pathname.new('/..').cleanpath    # => #<Pathname:/>
+  #   Pathname.new('/../..').cleanpath # => #<Pathname:/>
+  #
+  # <b> Symbolic Links</b>
+  #
+  # If the path may contain {symbolic links}[https://en.wikipedia.org/wiki/Symbolic_link],
+  # consider give optional argument `symlinks` as `true`;
+  # the method then uses a more conservative algorithm
+  # that avoids breaking symbolic links.
+  # This may preserve more double-dot entries than are absolutely necessary,
+  # but without accessing the filesystem, this can't be avoided.
+  #
+  # Examples:
+  #
+  #   Pathname.new('a/').cleanpath           # => #<Pathname:a>
+  #   Pathname.new('a/').cleanpath(true)     # => #<Pathname:a/>
+  #
+  #   Pathname.new('a/.').cleanpath          # => #<Pathname:a>
+  #   Pathname.new('a/.').cleanpath(true)    # => #<Pathname:a/.>
+  #
+  #   Pathname.new('a/./').cleanpath         # => #<Pathname:a>
+  #   Pathname.new('a/./').cleanpath(true)   # => #<Pathname:a/.>
+  #
+  #   Pathname.new('a/b/.').cleanpath        # => #<Pathname:a/b>
+  #   Pathname.new('a/b/.').cleanpath(true)  # => #<Pathname:a/b/.>
+  #
+  #   Pathname.new('a/../.').cleanpath       # => #<Pathname:.>
+  #   Pathname.new('a/../.').cleanpath(true) # => #<Pathname:a/..>
+  #
+  #   Pathname.new('a/b/../../../../c/../d').cleanpath
+  #   # => #<Pathname:../../d>
+  #   Pathname.new('a/b/../../../../c/../d').cleanpath(true)
+  #   # => #<Pathname:a/b/../../../../c/../d>
   #
   def cleanpath(consider_symlink=false)
     if consider_symlink
@@ -528,17 +636,19 @@ class Pathname
     chop_basename(@path) == nil && SEPARATOR_PAT.match?(@path)
   end
 
-  # Predicate method for testing whether a path is absolute.
+  # call-seq:
+  #   absolute? -> true or false
   #
-  # It returns +true+ if the pathname begins with a slash.
+  # Returns whether +self+ contains an absolute path:
   #
-  #   p = Pathname.new('/im/sure')
-  #   p.absolute?
-  #       #=> true
+  #   Pathname.new('/home').absolute? # => true
+  #   Pathname.new('lib').absolute?   # => false
   #
-  #   p = Pathname.new('not/so/sure')
-  #   p.absolute?
-  #       #=> false
+  # OS-dependent for some paths:
+  #
+  #   Pathname.new('C:/').absolute?   # => true   # On Windows.
+  #   Pathname.new('C:/').absolute?   # => false  # Elsewhere.
+  #
   def absolute?
     ABSOLUTE_PATH.match? @path
   end
@@ -611,31 +721,22 @@ class Pathname
     nil
   end
 
-  # Iterates over and yields a new Pathname object
-  # for each element in the given path in ascending order.
+  # call-seq:
+  #   ascend {|entry| ... } -> nil
+  #   ascend -> new_enumerator
   #
-  #  Pathname.new('/path/to/some/file.rb').ascend {|v| p v}
-  #     #<Pathname:/path/to/some/file.rb>
-  #     #<Pathname:/path/to/some>
-  #     #<Pathname:/path/to>
-  #     #<Pathname:/path>
-  #     #<Pathname:/>
+  # With a block given,
+  # yields +self+, then a new pathname for each successive dirname in the stored path;
+  # see File.dirname:
   #
-  #  Pathname.new('path/to/some/file.rb').ascend {|v| p v}
-  #     #<Pathname:path/to/some/file.rb>
-  #     #<Pathname:path/to/some>
-  #     #<Pathname:path/to>
-  #     #<Pathname:path>
+  #   Pathname.new('/path/to/some/file.rb').ascend {|dirname| p dirname}
+  #   #<Pathname:/path/to/some/file.rb>
+  #   #<Pathname:/path/to/some>
+  #   #<Pathname:/path/to>
+  #   #<Pathname:/path>
+  #   #<Pathname:/>
   #
-  # Returns an Enumerator if no block was given.
-  #
-  #   enum = Pathname.new("/usr/bin/ruby").ascend
-  #     # ... do stuff ...
-  #   enum.each { |e| ... }
-  #     # yields Pathnames /usr/bin/ruby, /usr/bin, /usr, and /.
-  #
-  # It doesn't access the filesystem.
-  #
+  # With no block given, returns a new Enumerator.
   def ascend
     return to_enum(__method__) unless block_given?
     path = @path
@@ -650,8 +751,14 @@ class Pathname
   # call-seq:
   #   self + other -> new_pathname
   #
-  # Returns a new \Pathname object;
-  # argument +other+ may be a string or another pathname.
+  # Returns a new \Pathname object based on the content of +self+ and +other+;
+  # argument +other+ may be a String, a File, a Dir, or another \Pathname:
+  #
+  #   pn = Pathname.new('foo') # => #<Pathname:foo>
+  #   pn + 'bar'               # => #<Pathname:foo/bar>
+  #   pn + File.new('LEGAL')   # => #<Pathname:foo/LEGAL>
+  #   pn + Dir.new('lib')      # => #<Pathname:foo/lib>
+  #   pn + Pathname.new('bar') # => #<Pathname:foo/bar>
   #
   # When +other+ specifies a relative path (see #relative?),
   # it is combined with +self+ to form a new pathname:
@@ -708,7 +815,8 @@ class Pathname
   end
   alias / +
 
-  def plus(path1, path2) # -> path # :nodoc:
+  # (path1, path2) -> path
+  def plus(path1, path2) # :nodoc:
     prefix2 = path2
     index_list2 = []
     basename_list2 = []
@@ -934,7 +1042,20 @@ class Pathname    # * File *
   # See File.binwrite.
   def binwrite(...) File.binwrite(@path, ...) end
 
-  # See <tt>File.atime</tt>.  Returns last access time.
+  # call-seq:
+  #   atime -> new_time
+  #
+  # Returns a new Time object containing the time of the most recent
+  # access (read or write) to the entry;
+  # via File.atime:
+  #
+  #   pn = Pathname.new('t.tmp')
+  #   pn.write('foo')
+  #   pn.atime # => 2026-03-22 13:49:44.5165608 -0500
+  #   pn.read  # => "foo"
+  #   pn.atime # => 2026-03-22 13:49:57.5359349 -0500
+  #   pn.delete
+  #
   def atime() File.atime(@path) end
 
   # Returns the birth time for the file.

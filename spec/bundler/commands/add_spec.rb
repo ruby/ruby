@@ -291,7 +291,7 @@ RSpec.describe "bundle add" do
   end
 
   it "shows error message when gem cannot be found" do
-    bundle "config set force_ruby_platform true"
+    bundle_config "force_ruby_platform true"
     bundle "add 'werk_it'", raise_on_error: false
     expect(err).to match("Could not find gem 'werk_it' in")
 

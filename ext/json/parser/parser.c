@@ -241,17 +241,27 @@ static void rvalue_stack_mark(void *ptr)
 {
     rvalue_stack *stack = (rvalue_stack *)ptr;
     long index;
-    for (index = 0; index < stack->head; index++) {
-        rb_gc_mark(stack->ptr[index]);
+    if (stack && stack->ptr) {
+        for (index = 0; index < stack->head; index++) {
+            rb_gc_mark(stack->ptr[index]);
+        }
     }
+}
+
+static void rvalue_stack_free_buffer(rvalue_stack *stack)
+{
+    ruby_xfree(stack->ptr);
+    stack->ptr = NULL;
 }
 
 static void rvalue_stack_free(void *ptr)
 {
     rvalue_stack *stack = (rvalue_stack *)ptr;
     if (stack) {
-        ruby_xfree(stack->ptr);
+        rvalue_stack_free_buffer(stack);
+#ifndef HAVE_RUBY_TYPED_EMBEDDABLE
         ruby_xfree(stack);
+#endif
     }
 }
 
@@ -262,14 +272,13 @@ static size_t rvalue_stack_memsize(const void *ptr)
 }
 
 static const rb_data_type_t JSON_Parser_rvalue_stack_type = {
-    "JSON::Ext::Parser/rvalue_stack",
-    {
+    .wrap_struct_name = "JSON::Ext::Parser/rvalue_stack",
+    .function = {
         .dmark = rvalue_stack_mark,
         .dfree = rvalue_stack_free,
         .dsize = rvalue_stack_memsize,
     },
-    0, 0,
-    RUBY_TYPED_FREE_IMMEDIATELY,
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE,
 };
 
 static rvalue_stack *rvalue_stack_spill(rvalue_stack *old_stack, VALUE *handle, rvalue_stack **stack_ref)
@@ -291,8 +300,12 @@ static void rvalue_stack_eagerly_release(VALUE handle)
     if (handle) {
         rvalue_stack *stack;
         TypedData_Get_Struct(handle, rvalue_stack, &JSON_Parser_rvalue_stack_type, stack);
-        RTYPEDDATA_DATA(handle) = NULL;
+#ifdef HAVE_RUBY_TYPED_EMBEDDABLE
+        rvalue_stack_free_buffer(stack);
+#else
         rvalue_stack_free(stack);
+        RTYPEDDATA_DATA(handle) = NULL;
+#endif
     }
 }
 
@@ -343,7 +356,7 @@ typedef struct JSON_ParserStruct {
 } JSON_ParserConfig;
 
 typedef struct JSON_ParserStateStruct {
-    VALUE stack_handle;
+    VALUE *stack_handle;
     const char *start;
     const char *cursor;
     const char *end;
@@ -402,11 +415,9 @@ static void emit_parse_warning(const char *message, JSON_ParserState *state)
 
 #define PARSE_ERROR_FRAGMENT_LEN 32
 
-NORETURN(static) void raise_parse_error(const char *format, JSON_ParserState *state)
+static VALUE build_parse_error_message(const char *format, JSON_ParserState *state, long line, long column)
 {
     unsigned char buffer[PARSE_ERROR_FRAGMENT_LEN + 3];
-    long line, column;
-    cursor_position(state, &line, &column);
 
     const char *ptr = "EOF";
     if (state->cursor && state->cursor < state->end) {
@@ -438,14 +449,25 @@ NORETURN(static) void raise_parse_error(const char *format, JSON_ParserState *st
         }
     }
 
-    VALUE msg = rb_sprintf(format, ptr);
-    VALUE message = rb_enc_sprintf(enc_utf8, "%s at line %ld column %ld", RSTRING_PTR(msg), line, column);
-    RB_GC_GUARD(msg);
+    VALUE message = rb_enc_sprintf(enc_utf8, format, ptr);
+    rb_str_catf(message, " at line %ld column %ld", line, column);
+    return message;
+}
 
+static VALUE parse_error_new(VALUE message, long line, long column)
+{
     VALUE exc = rb_exc_new_str(rb_path2class("JSON::ParserError"), message);
     rb_ivar_set(exc, rb_intern("@line"), LONG2NUM(line));
     rb_ivar_set(exc, rb_intern("@column"), LONG2NUM(column));
-    rb_exc_raise(exc);
+    return exc;
+}
+
+NORETURN(static) void raise_parse_error(const char *format, JSON_ParserState *state)
+{
+    long line, column;
+    cursor_position(state, &line, &column);
+    VALUE message = build_parse_error_message(format, state, line, column);
+    rb_exc_raise(parse_error_new(message, line, column));
 }
 
 NORETURN(static) void raise_parse_error_at(const char *format, JSON_ParserState *state, const char *at)
@@ -748,7 +770,9 @@ NOINLINE(static) VALUE json_string_unescape(JSON_ParserState *state, JSON_Parser
                         }
                         raise_parse_error_at("invalid ASCII control character in string: %s", state, pe - 1);
                     }
-                } else if (config->allow_invalid_escape) {
+                }
+
+                if (config->allow_invalid_escape) {
                     APPEND_CHAR(*pe);
                 } else {
                     raise_parse_error_at("invalid escape character in string: %s", state, pe - 1);
@@ -895,8 +919,10 @@ NORETURN(static) void raise_duplicate_key_error(JSON_ParserState *state, VALUE d
         rb_inspect(duplicate_key)
     );
 
-    raise_parse_error(RSTRING_PTR(message), state);
-    RB_GC_GUARD(message);
+    long line, column;
+    cursor_position(state, &line, &column);
+    rb_str_concat(message, build_parse_error_message("", state, line, column)) ;
+    rb_exc_raise(parse_error_new(message, line, column));
 }
 
 static inline VALUE json_decode_object(JSON_ParserState *state, JSON_ParserConfig *config, size_t count)
@@ -933,7 +959,7 @@ static inline VALUE json_push_value(JSON_ParserState *state, JSON_ParserConfig *
     if (RB_UNLIKELY(config->on_load_proc)) {
         value = rb_proc_call_with_block(config->on_load_proc, 1, &value, Qnil);
     }
-    rvalue_stack_push(state->stack, value, &state->stack_handle, &state->stack);
+    rvalue_stack_push(state->stack, value, state->stack_handle, &state->stack);
     return value;
 }
 
@@ -1543,11 +1569,13 @@ static VALUE cParser_parse(JSON_ParserConfig *config, VALUE Vsource)
     const char *start;
     RSTRING_GETMEM(Vsource, start, len);
 
+    VALUE stack_handle = 0;
     JSON_ParserState _state = {
         .start = start,
         .cursor = start,
         .end = start + len,
         .stack = &stack,
+        .stack_handle = &stack_handle,
     };
     JSON_ParserState *state = &_state;
 
@@ -1555,8 +1583,8 @@ static VALUE cParser_parse(JSON_ParserConfig *config, VALUE Vsource)
 
     // This may be skipped in case of exception, but
     // it won't cause a leak.
-    rvalue_stack_eagerly_release(state->stack_handle);
-
+    rvalue_stack_eagerly_release(stack_handle);
+    RB_GC_GUARD(stack_handle);
     json_ensure_eof(state);
 
     return result;
@@ -1594,26 +1622,19 @@ static void JSON_ParserConfig_mark(void *ptr)
     rb_gc_mark(config->decimal_class);
 }
 
-static void JSON_ParserConfig_free(void *ptr)
-{
-    JSON_ParserConfig *config = ptr;
-    ruby_xfree(config);
-}
-
 static size_t JSON_ParserConfig_memsize(const void *ptr)
 {
     return sizeof(JSON_ParserConfig);
 }
 
 static const rb_data_type_t JSON_ParserConfig_type = {
-    "JSON::Ext::Parser/ParserConfig",
-    {
+    .wrap_struct_name = "JSON::Ext::Parser/ParserConfig",
+    .function = {
         JSON_ParserConfig_mark,
-        JSON_ParserConfig_free,
+        RUBY_DEFAULT_FREE,
         JSON_ParserConfig_memsize,
     },
-    0, 0,
-    RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FROZEN_SHAREABLE,
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FROZEN_SHAREABLE | RUBY_TYPED_EMBEDDABLE,
 };
 
 static VALUE cJSON_parser_s_allocate(VALUE klass)

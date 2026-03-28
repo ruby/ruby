@@ -47,9 +47,9 @@ require_relative 'did_you_mean/tree_spell_checker'
 #   #    Did you mean?  :foo
 #
 #
-# == Disabling +did_you_mean+
+# == Disabling \DidYouMean
 #
-# Occasionally, you may want to disable the +did_you_mean+ gem for e.g.
+# Occasionally, you may want to disable the \DidYouMean gem for e.g.
 # debugging issues in the error object itself. You can disable it entirely by
 # specifying +--disable-did_you_mean+ option to the +ruby+ command:
 #

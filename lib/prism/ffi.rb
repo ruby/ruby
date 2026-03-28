@@ -59,6 +59,9 @@ module Prism # :nodoc:
         # We only want to load the functions that we are interested in.
         next unless functions.any? { |function| line.include?(function) }
 
+        # Strip trailing attributes (PRISM_NODISCARD, PRISM_NONNULL(...), etc.)
+        line = line.sub(/\)(\s+PRISM_\w+(?:\([^)]*\))?)+\s*;/, ");")
+
         # Parse the function declaration.
         unless /^PRISM_EXPORTED_FUNCTION (?<return_type>.+) (?<name>\w+)\((?<arg_types>.+)\);$/ =~ line
           raise "Could not parse #{line}"
@@ -85,30 +88,44 @@ module Prism # :nodoc:
       raise "Could not find functions #{functions.inspect}" unless functions.empty?
     end
 
-    callback :pm_parse_stream_fgets_t, [:pointer, :int, :pointer], :pointer
-    callback :pm_parse_stream_feof_t, [:pointer], :int
-    enum :pm_string_init_result_t, %i[PM_STRING_INIT_SUCCESS PM_STRING_INIT_ERROR_GENERIC PM_STRING_INIT_ERROR_DIRECTORY]
+    callback :pm_source_stream_fgets_t, [:pointer, :int, :pointer], :pointer
+    callback :pm_source_stream_feof_t, [:pointer], :int
+    pm_source_init_result_values = %i[PM_SOURCE_INIT_SUCCESS PM_SOURCE_INIT_ERROR_GENERIC PM_SOURCE_INIT_ERROR_DIRECTORY PM_SOURCE_INIT_ERROR_NON_REGULAR]
+    enum :pm_source_init_result_t, pm_source_init_result_values
     enum :pm_string_query_t, [:PM_STRING_QUERY_ERROR, -1, :PM_STRING_QUERY_FALSE, :PM_STRING_QUERY_TRUE]
 
+    # Ractor-safe lookup table for pm_source_init_result_t, since FFI's
+    # enum_type accesses module instance variables that are not shareable.
+    SOURCE_INIT_RESULT = pm_source_init_result_values.freeze
+
     load_exported_functions_from(
-      "prism.h",
+      "prism/version.h",
       "pm_version",
+      []
+    )
+
+    load_exported_functions_from(
+      "prism/serialize.h",
       "pm_serialize_parse",
       "pm_serialize_parse_stream",
       "pm_serialize_parse_comments",
       "pm_serialize_lex",
       "pm_serialize_parse_lex",
-      "pm_parse_success_p",
-      "pm_string_query_local",
-      "pm_string_query_constant",
-      "pm_string_query_method_name",
-      [:pm_parse_stream_fgets_t, :pm_parse_stream_feof_t]
+      "pm_serialize_parse_success_p",
+      []
     )
 
     load_exported_functions_from(
-      "prism/util/pm_buffer.h",
-      "pm_buffer_sizeof",
-      "pm_buffer_init",
+      "prism/string_query.h",
+      "pm_string_query_local",
+      "pm_string_query_constant",
+      "pm_string_query_method_name",
+      []
+    )
+
+    load_exported_functions_from(
+      "prism/buffer.h",
+      "pm_buffer_new",
       "pm_buffer_value",
       "pm_buffer_length",
       "pm_buffer_free",
@@ -116,20 +133,19 @@ module Prism # :nodoc:
     )
 
     load_exported_functions_from(
-      "prism/util/pm_string.h",
-      "pm_string_mapped_init",
-      "pm_string_free",
-      "pm_string_source",
-      "pm_string_length",
-      "pm_string_sizeof",
-      []
+      "prism/source.h",
+      "pm_source_file_new",
+      "pm_source_mapped_new",
+      "pm_source_stream_new",
+      "pm_source_free",
+      "pm_source_source",
+      "pm_source_length",
+      [:pm_source_stream_fgets_t, :pm_source_stream_feof_t]
     )
 
     # This object represents a pm_buffer_t. We only use it as an opaque pointer,
     # so it doesn't need to know the fields of pm_buffer_t.
     class PrismBuffer # :nodoc:
-      SIZEOF = LibRubyParser.pm_buffer_sizeof
-
       attr_reader :pointer
 
       def initialize(pointer)
@@ -151,20 +167,20 @@ module Prism # :nodoc:
       # Initialize a new buffer and yield it to the block. The buffer will be
       # automatically freed when the block returns.
       def self.with
-        FFI::MemoryPointer.new(SIZEOF) do |pointer|
-          raise unless LibRubyParser.pm_buffer_init(pointer)
-          return yield new(pointer)
+        buffer = LibRubyParser.pm_buffer_new
+        raise unless buffer
+
+        begin
+          yield new(buffer)
         ensure
-          LibRubyParser.pm_buffer_free(pointer)
+          LibRubyParser.pm_buffer_free(buffer)
         end
       end
     end
 
-    # This object represents a pm_string_t. We only use it as an opaque pointer,
-    # so it doesn't have to be an FFI::Struct.
-    class PrismString # :nodoc:
-      SIZEOF = LibRubyParser.pm_string_sizeof
-
+    # This object represents source code to be parsed. For strings it wraps a
+    # pointer directly; for files it uses a pm_source_t under the hood.
+    class PrismSource # :nodoc:
       PLATFORM_EXPECTS_UTF8 =
         RbConfig::CONFIG["host_os"].match?(/bccwin|cygwin|djgpp|mingw|mswin|wince|darwin/i)
 
@@ -181,7 +197,7 @@ module Prism # :nodoc:
         @pointer.read_string(@length)
       end
 
-      # Yields a pm_string_t pointer to the given block.
+      # Yields a PrismSource backed by the given string to the block.
       def self.with_string(string)
         raise TypeError unless string.is_a?(String)
 
@@ -195,32 +211,38 @@ module Prism # :nodoc:
         end
       end
 
-      # Yields a pm_string_t pointer to the given block.
+      # Yields a PrismSource to the given block, backed by a pm_source_t.
       def self.with_file(filepath)
         raise TypeError unless filepath.is_a?(String)
 
         # On Windows and Mac, it's expected that filepaths will be encoded in
         # UTF-8. If they are not, we need to convert them to UTF-8 before
-        # passing them into pm_string_mapped_init.
+        # passing them into pm_source_mapped_new.
         if PLATFORM_EXPECTS_UTF8 && (encoding = filepath.encoding) != Encoding::ASCII_8BIT && encoding != Encoding::UTF_8
           filepath = filepath.encode(Encoding::UTF_8)
         end
 
-        FFI::MemoryPointer.new(SIZEOF) do |pm_string|
-          case (result = LibRubyParser.pm_string_mapped_init(pm_string, filepath))
-          when :PM_STRING_INIT_SUCCESS
-            pointer = LibRubyParser.pm_string_source(pm_string)
-            length = LibRubyParser.pm_string_length(pm_string)
+        FFI::MemoryPointer.new(:int) do |result_ptr|
+          pm_source = LibRubyParser.pm_source_mapped_new(filepath, 0, result_ptr)
+
+          case SOURCE_INIT_RESULT[result_ptr.read_int]
+          when :PM_SOURCE_INIT_SUCCESS
+            pointer = LibRubyParser.pm_source_source(pm_source)
+            length = LibRubyParser.pm_source_length(pm_source)
             return yield new(pointer, length, false)
-          when :PM_STRING_INIT_ERROR_GENERIC
+          when :PM_SOURCE_INIT_ERROR_GENERIC
             raise SystemCallError.new(filepath, FFI.errno)
-          when :PM_STRING_INIT_ERROR_DIRECTORY
+          when :PM_SOURCE_INIT_ERROR_DIRECTORY
             raise Errno::EISDIR.new(filepath)
+          when :PM_SOURCE_INIT_ERROR_NON_REGULAR
+            # Fall back to reading the file through Ruby IO for non-regular
+            # files (pipes, character devices, etc.)
+            return with_string(File.read(filepath)) { |string| yield string }
           else
-            raise "Unknown error initializing pm_string_t: #{result.inspect}"
+            raise "Unknown error initializing pm_source_t: #{result_ptr.read_int}"
           end
         ensure
-          LibRubyParser.pm_string_free(pm_string)
+          LibRubyParser.pm_source_free(pm_source) if pm_source && !pm_source.null?
         end
       end
     end
@@ -236,29 +258,29 @@ module Prism # :nodoc:
   class << self
     # Mirror the Prism.dump API by using the serialization API.
     def dump(source, **options)
-      LibRubyParser::PrismString.with_string(source) { |string| dump_common(string, options) }
+      LibRubyParser::PrismSource.with_string(source) { |string| dump_common(string, options) }
     end
 
     # Mirror the Prism.dump_file API by using the serialization API.
     def dump_file(filepath, **options)
       options[:filepath] = filepath
-      LibRubyParser::PrismString.with_file(filepath) { |string| dump_common(string, options) }
+      LibRubyParser::PrismSource.with_file(filepath) { |string| dump_common(string, options) }
     end
 
     # Mirror the Prism.lex API by using the serialization API.
     def lex(code, **options)
-      LibRubyParser::PrismString.with_string(code) { |string| lex_common(string, code, options) }
+      LibRubyParser::PrismSource.with_string(code) { |string| lex_common(string, code, options) }
     end
 
     # Mirror the Prism.lex_file API by using the serialization API.
     def lex_file(filepath, **options)
       options[:filepath] = filepath
-      LibRubyParser::PrismString.with_file(filepath) { |string| lex_common(string, string.read, options) }
+      LibRubyParser::PrismSource.with_file(filepath) { |string| lex_common(string, string.read, options) }
     end
 
     # Mirror the Prism.parse API by using the serialization API.
     def parse(code, **options)
-      LibRubyParser::PrismString.with_string(code) { |string| parse_common(string, code, options) }
+      LibRubyParser::PrismSource.with_string(code) { |string| parse_common(string, code, options) }
     end
 
     # Mirror the Prism.parse_file API by using the serialization API. This uses
@@ -266,7 +288,7 @@ module Prism # :nodoc:
     # when it is available.
     def parse_file(filepath, **options)
       options[:filepath] = filepath
-      LibRubyParser::PrismString.with_file(filepath) { |string| parse_common(string, string.read, options) }
+      LibRubyParser::PrismSource.with_file(filepath) { |string| parse_common(string, string.read, options) }
     end
 
     # Mirror the Prism.parse_stream API by using the serialization API.
@@ -284,19 +306,19 @@ module Prism # :nodoc:
 
         eof_callback = -> (_) { stream.eof?  }
 
-        # In the pm_serialize_parse_stream function it accepts a pointer to the
-        # IO object as a void* and then passes it through to the callback as the
-        # third argument, but it never touches it itself. As such, since we have
-        # access to the IO object already through the closure of the lambda, we
-        # can pass a null pointer here and not worry.
-        LibRubyParser.pm_serialize_parse_stream(buffer.pointer, nil, callback, eof_callback, dump_options(options))
-        Prism.load(source, buffer.read, options.fetch(:freeze, false))
+        pm_source = LibRubyParser.pm_source_stream_new(nil, callback, eof_callback)
+        begin
+          LibRubyParser.pm_serialize_parse_stream(buffer.pointer, pm_source, dump_options(options))
+          Prism.load(source, buffer.read, options.fetch(:freeze, false))
+        ensure
+          LibRubyParser.pm_source_free(pm_source) if pm_source && !pm_source.null?
+        end
       end
     end
 
     # Mirror the Prism.parse_comments API by using the serialization API.
     def parse_comments(code, **options)
-      LibRubyParser::PrismString.with_string(code) { |string| parse_comments_common(string, code, options) }
+      LibRubyParser::PrismSource.with_string(code) { |string| parse_comments_common(string, code, options) }
     end
 
     # Mirror the Prism.parse_file_comments API by using the serialization
@@ -304,23 +326,23 @@ module Prism # :nodoc:
     # to use mmap when it is available.
     def parse_file_comments(filepath, **options)
       options[:filepath] = filepath
-      LibRubyParser::PrismString.with_file(filepath) { |string| parse_comments_common(string, string.read, options) }
+      LibRubyParser::PrismSource.with_file(filepath) { |string| parse_comments_common(string, string.read, options) }
     end
 
     # Mirror the Prism.parse_lex API by using the serialization API.
     def parse_lex(code, **options)
-      LibRubyParser::PrismString.with_string(code) { |string| parse_lex_common(string, code, options) }
+      LibRubyParser::PrismSource.with_string(code) { |string| parse_lex_common(string, code, options) }
     end
 
     # Mirror the Prism.parse_lex_file API by using the serialization API.
     def parse_lex_file(filepath, **options)
       options[:filepath] = filepath
-      LibRubyParser::PrismString.with_file(filepath) { |string| parse_lex_common(string, string.read, options) }
+      LibRubyParser::PrismSource.with_file(filepath) { |string| parse_lex_common(string, string.read, options) }
     end
 
     # Mirror the Prism.parse_success? API by using the serialization API.
     def parse_success?(code, **options)
-      LibRubyParser::PrismString.with_string(code) { |string| parse_file_success_common(string, options) }
+      LibRubyParser::PrismSource.with_string(code) { |string| parse_file_success_common(string, options) }
     end
 
     # Mirror the Prism.parse_failure? API by using the serialization API.
@@ -331,7 +353,7 @@ module Prism # :nodoc:
     # Mirror the Prism.parse_file_success? API by using the serialization API.
     def parse_file_success?(filepath, **options)
       options[:filepath] = filepath
-      LibRubyParser::PrismString.with_file(filepath) { |string| parse_file_success_common(string, options) }
+      LibRubyParser::PrismSource.with_file(filepath) { |string| parse_file_success_common(string, options) }
     end
 
     # Mirror the Prism.parse_file_failure? API by using the serialization API.
@@ -341,7 +363,7 @@ module Prism # :nodoc:
 
     # Mirror the Prism.profile API by using the serialization API.
     def profile(source, **options)
-      LibRubyParser::PrismString.with_string(source) do |string|
+      LibRubyParser::PrismSource.with_string(source) do |string|
         LibRubyParser::PrismBuffer.with do |buffer|
           LibRubyParser.pm_serialize_parse(buffer.pointer, string.pointer, string.length, dump_options(options))
           nil
@@ -351,7 +373,7 @@ module Prism # :nodoc:
 
     # Mirror the Prism.profile_file API by using the serialization API.
     def profile_file(filepath, **options)
-      LibRubyParser::PrismString.with_file(filepath) do |string|
+      LibRubyParser::PrismSource.with_file(filepath) do |string|
         LibRubyParser::PrismBuffer.with do |buffer|
           options[:filepath] = filepath
           LibRubyParser.pm_serialize_parse(buffer.pointer, string.pointer, string.length, dump_options(options))
@@ -400,7 +422,7 @@ module Prism # :nodoc:
     end
 
     def parse_file_success_common(string, options) # :nodoc:
-      LibRubyParser.pm_parse_success_p(string.pointer, string.length, dump_options(options))
+      LibRubyParser.pm_serialize_parse_success_p(string.pointer, string.length, dump_options(options))
     end
 
     # Return the value that should be dumped for the command_line option.

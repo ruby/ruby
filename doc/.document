@@ -6,8 +6,7 @@ distribution
 NEWS
 syntax
 optparse
-date
-rdoc
 jit
 security
 language
+strscan

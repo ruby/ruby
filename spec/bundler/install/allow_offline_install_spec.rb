@@ -24,7 +24,7 @@ RSpec.describe "bundle install allows offline install" do
     it "will install from the compact index" do
       system_gems ["myrack-1.0.0"], path: default_bundle_path
 
-      bundle "config set clean false"
+      bundle_config "clean false"
       install_gemfile <<-G, artifice: "compact_index"
         source "http://testgemserver.local"
         gem "myrack-obama"

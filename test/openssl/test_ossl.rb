@@ -24,6 +24,16 @@ class OpenSSL::TestOSSL < OpenSSL::TestCase
     assert_raise(ArgumentError) { OpenSSL.fixed_length_secure_compare("aaa", "bbbb") }
   end
 
+  def test_fixed_length_secure_compare_uaf
+    str1 = "A" * 1000000
+    evil_obj = Object.new
+    evil_obj.define_singleton_method(:to_str) do
+      str1.replace("C" * 1000000)
+      "B" * 1000000
+    end
+    assert_false(OpenSSL.fixed_length_secure_compare(str1, evil_obj))
+  end
+
   def test_secure_compare
     assert_false(OpenSSL.secure_compare("aaa", "a"))
     assert_false(OpenSSL.secure_compare("aaa", "aa"))

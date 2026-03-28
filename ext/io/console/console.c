@@ -861,7 +861,6 @@ console_set_winsize(VALUE io, VALUE size)
     int newrow, newcol;
     COORD oldsize;
     SMALL_RECT oldwindow;
-    BOOL ret;
 #endif
     VALUE row, col, xpixel, ypixel;
     const VALUE *sz;
@@ -1710,7 +1709,7 @@ console_dev(int argc, VALUE *argv, VALUE klass)
         Check_Type(sym = argv[0], T_SYMBOL);
     }
 
-    // Force the class to be File.
+    /* Force the class to be File. */
     if (klass == rb_cIO) klass = rb_cFile;
 
     if (console_dev_get(klass, &con)) {
@@ -2001,14 +2000,13 @@ InitVM_console(void)
     rb_define_method(rb_cIO, "ttyname", console_ttyname, 0);
     rb_define_singleton_method(rb_cIO, "console", console_dev, -1);
     {
-	/* :stopdoc: */
+	/* :nodoc: */
 	VALUE mReadable = rb_define_module_under(rb_cIO, "generic_readable");
-	/* :startdoc: */
 	rb_define_method(mReadable, "getch", io_getch, -1);
 	rb_define_method(mReadable, "getpass", io_getpass, -1);
     }
     {
-	/* :stopdoc: */
+	/* :nodoc: */
         cConmode = rb_define_class_under(rb_cIO, "ConsoleMode", rb_cObject);
         rb_define_const(cConmode, "VERSION", rb_obj_freeze(rb_str_new_cstr(IO_CONSOLE_VERSION)));
         rb_define_alloc_func(cConmode, conmode_alloc);
@@ -2017,6 +2015,5 @@ InitVM_console(void)
         rb_define_method(cConmode, "echo=", conmode_set_echo, 1);
         rb_define_method(cConmode, "raw!", conmode_set_raw, -1);
         rb_define_method(cConmode, "raw", conmode_raw_new, -1);
-	/* :startdoc: */
     }
 }

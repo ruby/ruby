@@ -1021,6 +1021,20 @@ class TestObjSpace < Test::Unit::TestCase
     assert_equal class_name, JSON.parse(json)["name"]
   end
 
+  def test_dump_free_immediately
+    require '-test-/typeddata'
+
+    # Bug::TypedData has flags=0 (no FREE_IMMEDIATELY)
+    info = ObjectSpace.dump(Bug::TypedData.new)
+    assert_include(info, '"struct":"typed_data"')
+    assert_include(info, '"free_immediately":false')
+
+    # Most typed data objects have FREE_IMMEDIATELY, so the field should be absent
+    info = ObjectSpace.dump(Thread.current.group)
+    assert_include(info, '"struct":"thgroup"')
+    assert_not_include(info, '"free_immediately"')
+  end
+
   def test_dump_include_shareable
     omit 'Not provided by mmtk' if RUBY_DESCRIPTION.include?("+GC[mmtk]")
 

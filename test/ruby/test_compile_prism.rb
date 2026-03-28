@@ -2694,7 +2694,7 @@ end
     # Errors                                                                   #
     ############################################################################
 
-    def test_MissingNode
+    def test_ErrorRecoveryNode
       # TODO
     end
 

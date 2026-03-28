@@ -1000,13 +1000,36 @@ gc_validate_pc(VALUE obj)
 
     rb_execution_context_t *ec = GET_EC();
     const rb_control_frame_t *cfp = ec->cfp;
-    if (cfp && VM_FRAME_RUBYFRAME_P(cfp) && cfp->pc) {
-        const VALUE *iseq_encoded = ISEQ_BODY(cfp->iseq)->iseq_encoded;
-        const VALUE *iseq_encoded_end = iseq_encoded + ISEQ_BODY(cfp->iseq)->iseq_size;
-        RUBY_ASSERT(cfp->pc >= iseq_encoded, "PC not set when allocating, breaking tracing");
-        RUBY_ASSERT(cfp->pc <= iseq_encoded_end, "PC not set when allocating, breaking tracing");
+    if (cfp && VM_FRAME_RUBYFRAME_P(cfp) && CFP_PC(cfp)) {
+        const VALUE *iseq_encoded = ISEQ_BODY(CFP_ISEQ(cfp))->iseq_encoded;
+        const VALUE *iseq_encoded_end = iseq_encoded + ISEQ_BODY(CFP_ISEQ(cfp))->iseq_size;
+        RUBY_ASSERT(CFP_PC(cfp) >= iseq_encoded, "PC not set when allocating, breaking tracing");
+        RUBY_ASSERT(CFP_PC(cfp) <= iseq_encoded_end, "PC not set when allocating, breaking tracing");
     }
 #endif
+}
+
+NOINLINE(static void gc_newobj_hook(VALUE obj));
+static void
+gc_newobj_hook(VALUE obj)
+{
+    int lev = RB_GC_VM_LOCK_NO_BARRIER();
+    {
+        size_t slot_size = rb_gc_obj_slot_size(obj);
+        memset((char *)obj + sizeof(struct RBasic), 0, slot_size - sizeof(struct RBasic));
+
+        /* We must disable GC here because the callback could call xmalloc
+         * which could potentially trigger a GC, and a lot of code is unsafe
+         * to trigger a GC right after an object has been allocated because
+         * they perform initialization for the object and assume that the
+         * GC does not trigger before then. */
+        bool gc_disabled = RTEST(rb_gc_disable_no_rest());
+        {
+            rb_gc_event_hook(obj, RUBY_INTERNAL_EVENT_NEWOBJ);
+        }
+        if (!gc_disabled) rb_gc_enable();
+    }
+    RB_GC_VM_UNLOCK_NO_BARRIER(lev);
 }
 
 static inline VALUE
@@ -1018,23 +1041,7 @@ newobj_of(rb_ractor_t *cr, VALUE klass, VALUE flags, shape_id_t shape_id, bool w
     gc_validate_pc(obj);
 
     if (UNLIKELY(rb_gc_event_hook_required_p(RUBY_INTERNAL_EVENT_NEWOBJ))) {
-        int lev = RB_GC_VM_LOCK_NO_BARRIER();
-        {
-            size_t slot_size = rb_gc_obj_slot_size(obj);
-            memset((char *)obj + sizeof(struct RBasic), 0, slot_size - sizeof(struct RBasic));
-
-            /* We must disable GC here because the callback could call xmalloc
-             * which could potentially trigger a GC, and a lot of code is unsafe
-             * to trigger a GC right after an object has been allocated because
-             * they perform initialization for the object and assume that the
-             * GC does not trigger before then. */
-            bool gc_disabled = RTEST(rb_gc_disable_no_rest());
-            {
-                rb_gc_event_hook(obj, RUBY_INTERNAL_EVENT_NEWOBJ);
-            }
-            if (!gc_disabled) rb_gc_enable();
-        }
-        RB_GC_VM_UNLOCK_NO_BARRIER(lev);
+        gc_newobj_hook(obj);
     }
 
 #if RGENGC_CHECK_MODE
@@ -1066,6 +1073,37 @@ rb_wb_protected_newobj_of(rb_execution_context_t *ec, VALUE klass, VALUE flags, 
     return newobj_of(rb_ec_ractor_ptr(ec), klass, flags, shape_id, TRUE, size);
 }
 
+VALUE
+rb_class_allocate_instance(VALUE klass)
+{
+    uint32_t index_tbl_num_entries = RCLASS_MAX_IV_COUNT(klass);
+
+    size_t size = rb_obj_embedded_size(index_tbl_num_entries);
+    if (!rb_gc_size_allocatable_p(size)) {
+        size = sizeof(struct RObject);
+    }
+
+    // There might be a NEWOBJ tracepoint callback, and it may set fields.
+    // So the shape must be passed to `NEWOBJ_OF`.
+    VALUE flags = T_OBJECT | (RGENGC_WB_PROTECTED_OBJECT ? FL_WB_PROTECTED : 0);
+    NEWOBJ_OF_WITH_SHAPE(o, struct RObject, klass, flags, rb_shape_root(rb_gc_heap_id_for_size(size)), size, 0);
+    VALUE obj = (VALUE)o;
+
+#if RUBY_DEBUG
+    RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
+    VALUE *ptr = ROBJECT_FIELDS(obj);
+    size_t fields_count = RSHAPE_LEN(RBASIC_SHAPE_ID(obj));
+    for (size_t i = fields_count; i < ROBJECT_FIELDS_CAPACITY(obj); i++) {
+        ptr[i] = Qundef;
+    }
+    if (rb_obj_class(obj) != rb_class_real(klass)) {
+        rb_bug("Expected rb_class_allocate_instance to set the class correctly");
+    }
+#endif
+
+    return obj;
+}
+
 void
 rb_gc_register_pinning_obj(VALUE obj)
 {
@@ -1079,6 +1117,7 @@ rb_gc_register_pinning_obj(VALUE obj)
 static inline void
 rb_data_object_check(VALUE klass)
 {
+    RUBY_ASSERT(!RCLASS_SINGLETON_P(klass));
     if (klass != rb_cObject && (rb_get_alloc_func(klass) == rb_class_allocate_instance)) {
         rb_undef_alloc_func(klass);
         rb_warn("undefining the allocator of T_DATA class %"PRIsVALUE, klass);
@@ -3941,10 +3980,8 @@ update_const_tbl(void *objspace, struct rb_id_table *tbl)
 static void
 update_subclasses(void *objspace, rb_classext_t *ext)
 {
-    rb_subclass_entry_t *entry;
-    rb_subclass_anchor_t *anchor = RCLASSEXT_SUBCLASSES(ext);
-    if (!anchor) return;
-    entry = anchor->head;
+    rb_subclass_entry_t *entry = RCLASSEXT_SUBCLASSES(ext);
+    if (!entry) return;
     while (entry) {
         if (entry->klass)
             UPDATE_IF_MOVED(objspace, entry->klass);
@@ -4193,25 +4230,21 @@ rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback,
 
     switch (table) {
       case RB_GC_VM_CI_TABLE: {
-        if (vm->ci_table) {
-            st_foreach_with_replace(
-                vm->ci_table,
-                vm_weak_table_foreach_weak_key,
-                vm_weak_table_foreach_update_weak_key,
-                (st_data_t)&foreach_data
-            );
-        }
+        st_foreach_with_replace(
+            &vm->ci_table,
+            vm_weak_table_foreach_weak_key,
+            vm_weak_table_foreach_update_weak_key,
+            (st_data_t)&foreach_data
+        );
         break;
       }
       case RB_GC_VM_OVERLOADED_CME_TABLE: {
-        if (vm->overloaded_cme_table) {
-            st_foreach_with_replace(
-                vm->overloaded_cme_table,
-                vm_weak_table_foreach_weak_key,
-                vm_weak_table_foreach_update_weak_key,
-                (st_data_t)&foreach_data
-            );
-        }
+        st_foreach_with_replace(
+            &vm->overloaded_cme_table,
+            vm_weak_table_foreach_weak_key,
+            vm_weak_table_foreach_update_weak_key,
+            (st_data_t)&foreach_data
+        );
         break;
       }
       case RB_GC_VM_GLOBAL_SYMBOLS_TABLE: {

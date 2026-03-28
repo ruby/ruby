@@ -1261,16 +1261,17 @@ strscan_parse_integer(struct strscanner *p, int base, long len)
 }
 
 static inline bool
-strscan_ascii_compat_fastpath(VALUE str) {
+strscan_ascii_compat_fastpath(VALUE str)
+{
     int encindex = ENCODING_GET_INLINED(str);
-    // The overwhelming majority of strings are in one of these 3 encodings.
+    /* The overwhelming majority of strings are in one of these 3 encodings. */
     return encindex == utf8_encindex || encindex == binary_encindex || encindex == usascii_encindex;
 }
 
 static inline void
 strscan_must_ascii_compat(VALUE str)
 {
-    // The overwhelming majority of strings are in one of these 3 encodings.
+    /* The overwhelming majority of strings are in one of these 3 encodings. */
     if (RB_LIKELY(strscan_ascii_compat_fastpath(str))) {
         return;
     }

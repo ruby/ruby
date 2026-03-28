@@ -417,6 +417,9 @@ gccct_method_search_slowpath(rb_vm_t *vm, VALUE klass, unsigned int index, const
 
     vm_search_method_slowpath0(vm->self, &cd, klass);
 
+    if (UNLIKELY(!vm->global_cc_cache_table_used)) {
+        vm->global_cc_cache_table_used = true;
+    }
     return vm->global_cc_cache_table[index] = cd.cc;
 }
 
@@ -491,12 +494,12 @@ gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, const struct
 }
 
 VALUE
-rb_gccct_clear_table(VALUE _self)
+rb_gccct_clear_table(void)
 {
-    int i;
     rb_vm_t *vm = GET_VM();
-    for (i=0; i<VM_GLOBAL_CC_CACHE_TABLE_SIZE; i++) {
-        vm->global_cc_cache_table[i] = NULL;
+    if (vm->global_cc_cache_table_used) {
+        MEMZERO(vm->global_cc_cache_table, struct rb_callcache *, VM_GLOBAL_CC_CACHE_TABLE_SIZE);
+        vm->global_cc_cache_table_used = false;
     }
     return Qnil;
 }
@@ -1714,16 +1717,17 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
         coverage_enabled = 0;
     }
 
-    pm_parse_result_t result = { 0 };
-    pm_options_line_set(&result.options, line);
+    pm_parse_result_t result;
+    pm_parse_result_init(&result);
+    pm_options_line_set(result.options, line);
     result.node.coverage_enabled = coverage_enabled;
 
-    // Cout scopes, one for each parent iseq, plus one for our local scope
+    // Count scopes, one for each parent iseq, plus one for our local scope
     int scopes_count = 0;
     do {
         scopes_count++;
     } while ((iseq = ISEQ_BODY(iseq)->parent_iseq));
-    pm_options_scopes_init(&result.options, scopes_count + 1);
+    pm_options_scopes_init(result.options, scopes_count + 1);
 
     // Walk over the scope tree, adding known locals at the correct depths. The
     // scope array should be deepest -> shallowest. so lower indexes in the
@@ -1745,13 +1749,13 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
         VALUE iseq_value = (VALUE)iseq;
         int locals_count = ISEQ_BODY(iseq)->local_table_size;
 
-        pm_options_scope_t *options_scope = &result.options.scopes[scopes_count - scopes_index - 1];
+        pm_options_scope_t *options_scope = pm_options_scope_mut(result.options, scopes_count - scopes_index - 1);
         pm_options_scope_init(options_scope, locals_count);
 
         uint8_t forwarding = PM_OPTIONS_SCOPE_FORWARDING_NONE;
 
         for (int local_index = 0; local_index < locals_count; local_index++) {
-            pm_string_t *scope_local = &options_scope->locals[local_index];
+            pm_string_t *scope_local = pm_options_scope_local_mut(options_scope, local_index);
             ID local = ISEQ_BODY(iseq)->local_table[local_index];
 
             if (rb_is_local_id(local)) {
@@ -1812,7 +1816,7 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
 
     // Add our empty local scope at the very end of the array for our eval
     // scope's locals.
-    pm_options_scope_init(&result.options.scopes[scopes_count], 0);
+    pm_options_scope_init(pm_options_scope_mut(result.options, scopes_count), 0);
 
     VALUE script_lines;
     VALUE error = pm_parse_string(&result, src, fname, ruby_vm_keep_script_lines ? &script_lines : NULL);
@@ -1833,17 +1837,16 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
         pm_scope_node_t *parent_scope = ruby_xcalloc(1, sizeof(pm_scope_node_t));
         RUBY_ASSERT(parent_scope != NULL);
 
-        pm_options_scope_t *options_scope = &result.options.scopes[scopes_count - scopes_index - 1];
+        const pm_options_scope_t *options_scope = pm_options_scope(result.options, scopes_count - scopes_index - 1);
         parent_scope->coverage_enabled = coverage_enabled;
-        parent_scope->parser = &result.parser;
-        parent_scope->index_lookup_table = st_init_numtable();
-
+        parent_scope->parser = result.parser;
         int locals_count = ISEQ_BODY(iseq)->local_table_size;
+        pm_index_lookup_table_init_heap(&parent_scope->index_lookup_table, (int) pm_parser_constants_size(result.parser));
         parent_scope->local_table_for_iseq_size = locals_count;
         pm_constant_id_list_init(&parent_scope->locals);
 
         for (int local_index = 0; local_index < locals_count; local_index++) {
-            const pm_string_t *scope_local = &options_scope->locals[local_index];
+            const pm_string_t *scope_local = pm_options_scope_local(options_scope, local_index);
             pm_constant_id_t constant_id = 0;
 
             const uint8_t *source = pm_string_source(scope_local);
@@ -1865,18 +1868,18 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
                         constant_id = PM_CONSTANT_DOT3;
                         break;
                       default:
-                        constant_id = pm_constant_pool_insert_constant(&result.parser.constant_pool, source, length);
+                        constant_id = pm_parser_constant_find(result.parser, source, length);
                         break;
                     }
                 }
                 else {
-                    constant_id = pm_constant_pool_insert_constant(&result.parser.constant_pool, source, length);
+                    constant_id = pm_parser_constant_find(result.parser, source, length);
                 }
 
-                st_insert(parent_scope->index_lookup_table, (st_data_t) constant_id, (st_data_t) local_index);
+                pm_index_lookup_table_insert(&parent_scope->index_lookup_table, constant_id, local_index);
             }
 
-            pm_constant_id_list_append(&result.arena, &parent_scope->locals, constant_id);
+            pm_constant_id_list_append(result.arena, &parent_scope->locals, constant_id);
         }
 
         node->previous = parent_scope;
@@ -1985,12 +1988,12 @@ eval_string_with_cref(VALUE self, VALUE src, rb_cref_t *cref, VALUE file, int li
 
     block.as.captured = *VM_CFP_TO_CAPTURED_BLOCK(cfp);
     block.as.captured.self = self;
-    block.as.captured.code.iseq = cfp->iseq;
+    block.as.captured.code.iseq = CFP_ISEQ(cfp);
     block.type = block_type_iseq;
 
     // EP is not escaped to the heap here, but captured and reused by another frame.
     // ZJIT's locals are incompatible with it unlike YJIT's, so invalidate the ISEQ for ZJIT.
-    rb_zjit_invalidate_no_ep_escape(cfp->iseq);
+    rb_zjit_invalidate_no_ep_escape(CFP_ISEQ(cfp));
 
     iseq = eval_make_iseq(src, file, line, &block);
     if (!iseq) {
@@ -2770,9 +2773,9 @@ rb_f_local_variables(VALUE _)
 
     local_var_list_init(&vars);
     while (cfp) {
-        if (cfp->iseq) {
-            for (i = 0; i < ISEQ_BODY(cfp->iseq)->local_table_size; i++) {
-                local_var_list_add(&vars, ISEQ_BODY(cfp->iseq)->local_table[i]);
+        if (CFP_ISEQ(cfp)) {
+            for (i = 0; i < ISEQ_BODY(CFP_ISEQ(cfp))->local_table_size; i++) {
+                local_var_list_add(&vars, ISEQ_BODY(CFP_ISEQ(cfp))->local_table[i]);
             }
         }
         if (!VM_ENV_LOCAL_P(cfp->ep)) {
@@ -2846,10 +2849,11 @@ rb_current_realfilepath(void)
     rb_control_frame_t *cfp = ec->cfp;
     cfp = vm_get_ruby_level_caller_cfp(ec, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
     if (cfp != NULL) {
-        VALUE path = rb_iseq_realpath(cfp->iseq);
+        const rb_iseq_t *iseq = CFP_ISEQ(cfp);
+        VALUE path = rb_iseq_realpath(iseq);
         if (RTEST(path)) return path;
         // eval context
-        path = rb_iseq_path(cfp->iseq);
+        path = rb_iseq_path(iseq);
         if (path == eval_default_path) {
             return Qnil;
         }
@@ -2875,7 +2879,7 @@ struct vm_ifunc *
 rb_current_ifunc(void)
 {
     // Search VM_FRAME_MAGIC_IFUNC to see ifunc imemos put on the iseq field.
-    VALUE ifunc = (VALUE)GET_EC()->cfp->iseq;
+    VALUE ifunc = (VALUE)CFP_ISEQ(GET_EC()->cfp);
     RUBY_ASSERT_ALWAYS(imemo_type_p(ifunc, imemo_ifunc));
     return (struct vm_ifunc *)ifunc;
 }

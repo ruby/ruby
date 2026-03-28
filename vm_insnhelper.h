@@ -113,8 +113,11 @@ enum vm_regan_acttype {
 #define SET_SV(x)  (*GET_SP() = rb_ractor_confirm_belonging(x))
   /* set current stack value as x */
 
-/* instruction sequence C struct */
-#define GET_ISEQ() (GET_CFP()->iseq)
+// instruction sequence C struct
+// Uses cfp->_iseq directly because the interpreter always has a valid _iseq
+// field (it's written on exit from JIT code). Code in vm_insnhelper.c that
+// may be called as a ZJIT fallback should use rb_cfp_iseq() instead.
+#define GET_ISEQ() (GET_CFP()->_iseq)
 
 /**********************************************************/
 /* deal with variables                                    */

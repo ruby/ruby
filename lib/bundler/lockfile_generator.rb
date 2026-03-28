@@ -71,7 +71,8 @@ module Bundler
       checksums = definition.resolve.map do |spec|
         spec.source.checksum_store.to_lock(spec)
       end
-      add_section("CHECKSUMS", checksums)
+
+      add_section("CHECKSUMS", checksums + bundler_checksum)
     end
 
     def add_locked_ruby_version
@@ -99,6 +100,18 @@ module Bundler
       else
         raise ArgumentError, "#{value.inspect} can't be serialized in a lockfile"
       end
+    end
+
+    def bundler_checksum
+      return [] if Bundler.gem_version.to_s.end_with?(".dev")
+
+      require "rubygems/package"
+
+      bundler_spec = definition.sources.metadata_source.specs.search(["bundler", Bundler.gem_version]).last
+      package = Gem::Package.new(bundler_spec.cache_file)
+      definition.sources.metadata_source.checksum_store.register(bundler_spec, Checksum.from_gem_package(package))
+
+      [definition.sources.metadata_source.checksum_store.to_lock(bundler_spec)]
     end
   end
 end

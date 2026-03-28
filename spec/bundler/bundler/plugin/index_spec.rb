@@ -193,4 +193,83 @@ RSpec.describe Bundler::Plugin::Index do
       include_examples "it cleans up"
     end
   end
+
+  describe "relative plugin paths" do
+    let(:plugin_name) { "relative-plugin" }
+
+    before do
+      Bundler::Plugin.reset!
+      allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
+
+      plugin_root = Bundler::Plugin.root
+      FileUtils.mkdir_p(plugin_root)
+
+      path = plugin_root.join(plugin_name)
+      FileUtils.mkdir_p(path.join("lib"))
+
+      index.register_plugin(plugin_name, path.to_s, [path.join("lib").to_s], [], [], [])
+    end
+
+    it "stores plugin paths relative to the plugin root" do
+      require "yaml"
+      data = YAML.load_file(index.index_file)
+
+      expect(data["plugin_paths"][plugin_name]).to eq(plugin_name)
+      expect(data["load_paths"][plugin_name]).to eq([File.join(plugin_name, "lib")])
+    end
+
+    it "expands relative paths to absolute on load" do
+      require "bundler/yaml_serializer"
+
+      plugin_root = Bundler::Plugin.root
+
+      relative_index = {
+        "commands" => {},
+        "hooks" => {},
+        "load_paths" => { plugin_name => [File.join(plugin_name, "lib")] },
+        "plugin_paths" => { plugin_name => plugin_name },
+        "sources" => {},
+      }
+
+      File.open(index.index_file, "w") {|f| f.puts Bundler::YAMLSerializer.dump(relative_index) }
+
+      new_index = Index.new
+      expect(new_index.plugin_path(plugin_name)).to eq(plugin_root.join(plugin_name))
+      expect(new_index.load_paths(plugin_name)).to eq([plugin_root.join(plugin_name, "lib").to_s])
+    end
+
+    it "keeps paths outside the plugin root as absolute" do
+      outside_path = tmp.join("outside", "external-plugin")
+      FileUtils.mkdir_p(outside_path.join("lib"))
+
+      index.register_plugin("external-plugin", outside_path.to_s, [outside_path.join("lib").to_s], [], [], [])
+
+      require "yaml"
+      data = YAML.load_file(index.index_file)
+
+      expect(data["plugin_paths"]["external-plugin"]).to eq(outside_path.to_s)
+      expect(data["load_paths"]["external-plugin"]).to eq([outside_path.join("lib").to_s])
+    end
+
+    it "reads legacy index files with absolute paths" do
+      require "bundler/yaml_serializer"
+
+      plugin_root = Bundler::Plugin.root
+      absolute_path = plugin_root.join(plugin_name).to_s
+
+      legacy_index = {
+        "commands" => {},
+        "hooks" => {},
+        "load_paths" => { plugin_name => [File.join(absolute_path, "lib")] },
+        "plugin_paths" => { plugin_name => absolute_path },
+        "sources" => {},
+      }
+
+      File.open(index.index_file, "w") {|f| f.puts Bundler::YAMLSerializer.dump(legacy_index) }
+
+      new_index = Index.new
+      expect(new_index.plugin_path(plugin_name)).to eq(Pathname.new(absolute_path))
+      expect(new_index.load_paths(plugin_name)).to eq([File.join(absolute_path, "lib")])
+    end
+  end
 end
