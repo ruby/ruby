@@ -140,7 +140,7 @@ jobs:
   result:
     if: ${{ always() && github.repository == 'ruby/ruby' }}
     name: ${{ github.workflow }} result
-    runs-on: macos-14
+    runs-on: ubuntu-latest
     needs: [make]
     steps:
       - run: exit 1
