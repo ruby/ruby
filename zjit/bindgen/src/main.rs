@@ -161,6 +161,7 @@ fn main() {
         .allowlist_var("rb_cIO")
         .allowlist_var("rb_cSymbol")
         .allowlist_var("rb_cFloat")
+        .allowlist_var("rb_cDecimal")
         .allowlist_var("rb_cNumeric")
         .allowlist_var("rb_cRange")
         .allowlist_var("rb_cString")

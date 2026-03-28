@@ -449,6 +449,11 @@ impl VALUE {
         (cval & flag) == flag
     }
 
+    pub fn decimal_imm_p(self) -> bool {
+        let VALUE(cval) = self;
+        (cval & 0xFF) == 0x84
+    }
+
     /// Return true if the value is an immediate Ruby floating-point number (flonum)
     pub fn flonum_p(self) -> bool {
         let VALUE(cval) = self;
@@ -463,7 +468,7 @@ impl VALUE {
     }
 
     pub fn instance_can_have_singleton_class(self) -> bool {
-        if self == unsafe { rb_cInteger } || self == unsafe { rb_cFloat } ||
+        if self == unsafe { rb_cInteger } || self == unsafe { rb_cFloat } || self == unsafe { rb_cDecimal } ||
             self == unsafe { rb_cSymbol } || self == unsafe { rb_cNilClass } ||
             self == unsafe { rb_cTrueClass } || self == unsafe { rb_cFalseClass } {
 

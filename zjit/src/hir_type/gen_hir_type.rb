@@ -118,6 +118,8 @@ integer_exact = final_type "Integer", base: numeric, c_name: "rb_cInteger"
 fixnum = integer_exact.subtype "Fixnum"
 integer_exact.subtype "Bignum"
 
+decimal_exact = final_type "Decimal", base: numeric, c_name: "rb_cDecimal"
+
 float_exact = final_type "Float", base: numeric, c_name: "rb_cFloat"
 # CRuby partitions Float into immediate and non-immediate variants.
 flonum = float_exact.subtype "Flonum"

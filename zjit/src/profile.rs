@@ -288,6 +288,11 @@ impl ProfiledType {
                           shape: INVALID_SHAPE_ID,
                           flags: Flags::immediate() };
         }
+        if obj.decimal_imm_p() {
+            return Self { class: unsafe { rb_cDecimal },
+                          shape: INVALID_SHAPE_ID,
+                          flags: Flags::immediate() };
+        }
         let mut flags = Flags::none();
         if obj.embedded_p() {
             flags.0 |= Flags::IS_EMBEDDED;

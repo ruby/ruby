@@ -241,6 +241,9 @@ impl Type {
         else if val == Qnil { types::NilClass }
         else if val == Qtrue { types::TrueClass }
         else if val == Qfalse { types::FalseClass }
+        else if val.decimal_imm_p() {
+            Type { bits: bits::Decimal, spec: Specialization::Object(val) }
+        }
         else if val.cme_p() {
             // NB: Checking for CME has to happen before looking at class_of because that's not
             // valid on imemo.
