@@ -1753,6 +1753,79 @@ fn gen_opt_plus(
     jit: &mut JITState,
     asm: &mut Assembler,
 ) -> Option<CodegenStatus> {
+    // Inline BID (Binary Integer Decimal) immediate addition.
+    //
+    // BID encoding (64-bit VALUE):
+    //   [sign:1][significand:51][scale:4][tag:8=0x84]
+    //
+    // Guards (all chain to ccall fallback on failure):
+    //   1. recv tag byte == 0x84 (BID immediate, not heap Decimal)
+    //   2. (recv ^ obj) & 0xFFF == 0 (same tag+scale, so addition is
+    //      just significand addition with no rescaling)
+    //   3. (recv | obj) bit 63 == 0 (both positive, avoids sign logic)
+    //   4. sum fits in 51 bits (no significand overflow)
+    //
+    // Only attempted at chain_depth==0 so we get at most two versions:
+    // the inline BID path and the ccall fallback. At chain_depth>0 we
+    // go straight to the ccall to avoid unbounded recompilation.
+    if asm.ctx.two_decimals_on_stack(jit) == Some(true) {
+        if !assume_bop_not_redefined(jit, asm, DECIMAL_REDEFINED_OP_FLAG, BOP_PLUS) {
+            return None;
+        }
+
+        if asm.ctx.get_chain_depth() == 0 {
+            let obj = asm.stack_opnd(0);
+            let recv = asm.stack_opnd(1);
+
+            asm_comment!(asm, "opt_plus: Decimal BID inline");
+            let recv_tag = asm.and(recv, Opnd::UImm(0xFF));
+            asm.cmp(recv_tag, Opnd::UImm(0x84));
+            jit_chain_guard(JCC_JNE, jit, asm, 1, Counter::decimal_not_bid);
+
+            let xor_val = asm.xor(recv, obj);
+            asm.test(xor_val, Opnd::UImm(0xFFF));
+            jit_chain_guard(JCC_JNZ, jit, asm, 1, Counter::decimal_not_bid);
+
+            let or_val = asm.or(recv, obj);
+            asm.test(or_val, Opnd::Imm(i64::MIN));
+            jit_chain_guard(JCC_JNZ, jit, asm, 1, Counter::decimal_negative);
+
+            // Pop after guards: stack_opnd references are memory operands
+            // into stack slots, so we must pop before using the values in
+            // arithmetic to get owned register operands.
+            let arg1 = asm.stack_pop(1);
+            let arg0 = asm.stack_pop(1);
+            let sig_a = asm.rshift(arg0, Opnd::UImm(12));
+            let sig_b = asm.rshift(arg1, Opnd::UImm(12));
+
+            let sum = asm.add(sig_a, sig_b);
+
+            // sum must fit in 51 bits to stay in BID range
+            asm.test(sum, Opnd::UImm(u64::MAX << 51));
+            jit_chain_guard(JCC_JNZ, jit, asm, 1, Counter::decimal_add_overflow);
+
+            // Reconstruct BID: (sum << 12) | (tag+scale from arg0)
+            let low_bits = asm.and(arg0, Opnd::UImm(0xFFF));
+            let result = asm.lshift(sum, Opnd::UImm(12));
+            let result = asm.or(result, low_bits);
+
+            let dst = asm.stack_push(Type::UnknownImm);
+            asm.mov(dst, result);
+            return Some(KeepCompiling);
+        }
+
+        // Chain depth > 0: use ccall fallback
+        jit_prepare_call_with_gc(jit, asm);
+        asm_comment!(asm, "opt_plus: Decimal ccall fallback");
+        let obj = asm.stack_opnd(0);
+        let recv = asm.stack_opnd(1);
+        let ret = asm.ccall(rb_decimal_plus_dd as *const u8, vec![recv, obj]);
+        asm.stack_pop(2);
+        let dst = asm.stack_push(Type::UnknownImm);
+        asm.mov(dst, ret);
+        return Some(KeepCompiling);
+    }
+
     let two_fixnums = match asm.ctx.two_fixnums_on_stack(jit) {
         Some(two_fixnums) => two_fixnums,
         None => {
@@ -3637,6 +3710,33 @@ fn guard_two_fixnums(
 // Conditional move operation used by comparison operators
 type CmovFn = fn(cb: &mut Assembler, opnd0: Opnd, opnd1: Opnd) -> Opnd;
 
+fn gen_decimal_cmp(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    cmov_op: CmovFn,
+    bop: ruby_basic_operators,
+) -> Option<CodegenStatus> {
+    if asm.ctx.two_decimals_on_stack(jit) != Some(true) {
+        return None;
+    }
+
+    if !assume_bop_not_redefined(jit, asm, DECIMAL_REDEFINED_OP_FLAG, bop) {
+        return None;
+    }
+
+    let arg1 = asm.stack_pop(1);
+    let arg0 = asm.stack_pop(1);
+
+    asm_comment!(asm, "decimal cmp: ccall rb_decimal_cmp_dd");
+    let cmp_result = asm.ccall(rb_decimal_cmp_dd as *const u8, vec![arg0, arg1]);
+    asm.cmp(cmp_result, Opnd::Imm(1)); // INT2FIX(0) == 1
+    let bool_opnd = cmov_op(asm, Qtrue.into(), Qfalse.into());
+
+    let dst = asm.stack_push(Type::UnknownImm);
+    asm.mov(dst, bool_opnd);
+    Some(KeepCompiling)
+}
+
 fn gen_fixnum_cmp(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -3681,6 +3781,9 @@ fn gen_opt_lt(
     jit: &mut JITState,
     asm: &mut Assembler,
 ) -> Option<CodegenStatus> {
+    if let Some(status) = gen_decimal_cmp(jit, asm, Assembler::csel_l, BOP_LT) {
+        return Some(status);
+    }
     gen_fixnum_cmp(jit, asm, Assembler::csel_l, BOP_LT)
 }
 
@@ -3688,6 +3791,9 @@ fn gen_opt_le(
     jit: &mut JITState,
     asm: &mut Assembler,
 ) -> Option<CodegenStatus> {
+    if let Some(status) = gen_decimal_cmp(jit, asm, Assembler::csel_le, BOP_LE) {
+        return Some(status);
+    }
     gen_fixnum_cmp(jit, asm, Assembler::csel_le, BOP_LE)
 }
 
@@ -3695,6 +3801,9 @@ fn gen_opt_ge(
     jit: &mut JITState,
     asm: &mut Assembler,
 ) -> Option<CodegenStatus> {
+    if let Some(status) = gen_decimal_cmp(jit, asm, Assembler::csel_ge, BOP_GE) {
+        return Some(status);
+    }
     gen_fixnum_cmp(jit, asm, Assembler::csel_ge, BOP_GE)
 }
 
@@ -3702,6 +3811,9 @@ fn gen_opt_gt(
     jit: &mut JITState,
     asm: &mut Assembler,
 ) -> Option<CodegenStatus> {
+    if let Some(status) = gen_decimal_cmp(jit, asm, Assembler::csel_g, BOP_GT) {
+        return Some(status);
+    }
     gen_fixnum_cmp(jit, asm, Assembler::csel_g, BOP_GT)
 }
 
@@ -4122,6 +4234,67 @@ fn gen_opt_minus(
     jit: &mut JITState,
     asm: &mut Assembler,
 ) -> Option<CodegenStatus> {
+    if asm.ctx.two_decimals_on_stack(jit) == Some(true) {
+        if !assume_bop_not_redefined(jit, asm, DECIMAL_REDEFINED_OP_FLAG, BOP_MINUS) {
+            return None;
+        }
+
+        // Inline BID subtraction. Same guards as addition (see gen_opt_plus)
+        // plus sig_a >= sig_b to ensure the result stays positive.
+        if asm.ctx.get_chain_depth() == 0 {
+            let obj = asm.stack_opnd(0);
+            let recv = asm.stack_opnd(1);
+
+            asm_comment!(asm, "opt_minus: Decimal BID inline");
+            let recv_tag = asm.and(recv, Opnd::UImm(0xFF));
+            asm.cmp(recv_tag, Opnd::UImm(0x84));
+            jit_chain_guard(JCC_JNE, jit, asm, 1, Counter::decimal_not_bid);
+
+            let xor_val = asm.xor(recv, obj);
+            asm.test(xor_val, Opnd::UImm(0xFFF));
+            jit_chain_guard(JCC_JNZ, jit, asm, 1, Counter::decimal_not_bid);
+
+            let or_val = asm.or(recv, obj);
+            asm.test(or_val, Opnd::Imm(i64::MIN));
+            jit_chain_guard(JCC_JNZ, jit, asm, 1, Counter::decimal_negative);
+
+            // Pre-pop significand comparison for the non-negative result guard.
+            // These are memory operands into stack slots (not yet owned values).
+            let sig_a = asm.rshift(recv, Opnd::UImm(12));
+            let sig_b = asm.rshift(obj, Opnd::UImm(12));
+            asm.cmp(sig_a, sig_b);
+            jit_chain_guard(JCC_JB, jit, asm, 1, Counter::decimal_sub_overflow);
+
+            // Pop and re-extract: stack_opnd references are invalidated by pop,
+            // so we extract significands again from the owned post-pop values.
+            let arg1 = asm.stack_pop(1);
+            let arg0 = asm.stack_pop(1);
+            let sig_a = asm.rshift(arg0, Opnd::UImm(12));
+            let sig_b = asm.rshift(arg1, Opnd::UImm(12));
+            let diff = asm.sub(sig_a, sig_b);
+
+            // Reconstruct BID: (diff << 12) | (tag+scale from arg0)
+            let low_bits = asm.and(arg0, Opnd::UImm(0xFFF));
+            let result = asm.lshift(diff, Opnd::UImm(12));
+            let result = asm.or(result, low_bits);
+
+            let dst = asm.stack_push(Type::UnknownImm);
+            asm.mov(dst, result);
+            return Some(KeepCompiling);
+        }
+
+        // Chain depth > 0: use ccall fallback
+        jit_prepare_call_with_gc(jit, asm);
+        asm_comment!(asm, "opt_minus: Decimal ccall fallback");
+        let obj = asm.stack_opnd(0);
+        let recv = asm.stack_opnd(1);
+        let ret = asm.ccall(rb_decimal_minus_dd as *const u8, vec![recv, obj]);
+        asm.stack_pop(2);
+        let dst = asm.stack_push(Type::UnknownImm);
+        asm.mov(dst, ret);
+        return Some(KeepCompiling);
+    }
+
     let two_fixnums = match asm.ctx.two_fixnums_on_stack(jit) {
         Some(two_fixnums) => two_fixnums,
         None => {
@@ -4162,6 +4335,22 @@ fn gen_opt_mult(
     jit: &mut JITState,
     asm: &mut Assembler,
 ) -> Option<CodegenStatus> {
+    if asm.ctx.two_decimals_on_stack(jit) == Some(true) {
+        if !assume_bop_not_redefined(jit, asm, DECIMAL_REDEFINED_OP_FLAG, BOP_MULT) {
+            return None;
+        }
+
+        jit_prepare_call_with_gc(jit, asm);
+        asm_comment!(asm, "opt_mult: Decimal fast path");
+        let obj = asm.stack_opnd(0);
+        let recv = asm.stack_opnd(1);
+        let ret = asm.ccall(rb_decimal_mul_dd as *const u8, vec![recv, obj]);
+        asm.stack_pop(2);
+        let dst = asm.stack_push(Type::UnknownImm);
+        asm.mov(dst, ret);
+        return Some(KeepCompiling);
+    }
+
     let two_fixnums = match asm.ctx.two_fixnums_on_stack(jit) {
         Some(two_fixnums) => two_fixnums,
         None => {
@@ -4204,6 +4393,22 @@ fn gen_opt_div(
     jit: &mut JITState,
     asm: &mut Assembler,
 ) -> Option<CodegenStatus> {
+    if asm.ctx.two_decimals_on_stack(jit) == Some(true) {
+        if !assume_bop_not_redefined(jit, asm, DECIMAL_REDEFINED_OP_FLAG, BOP_DIV) {
+            return None;
+        }
+
+        jit_prepare_call_with_gc(jit, asm);
+        asm_comment!(asm, "opt_div: Decimal fast path");
+        let obj = asm.stack_opnd(0);
+        let recv = asm.stack_opnd(1);
+        let ret = asm.ccall(rb_decimal_div_dd as *const u8, vec![recv, obj]);
+        asm.stack_pop(2);
+        let dst = asm.stack_push(Type::UnknownImm);
+        asm.mov(dst, ret);
+        return Some(KeepCompiling);
+    }
+
     // Delegate to send, call the method on the recv
     gen_opt_send_without_block(jit, asm)
 }
@@ -4212,6 +4417,22 @@ fn gen_opt_mod(
     jit: &mut JITState,
     asm: &mut Assembler,
 ) -> Option<CodegenStatus> {
+    if asm.ctx.two_decimals_on_stack(jit) == Some(true) {
+        if !assume_bop_not_redefined(jit, asm, DECIMAL_REDEFINED_OP_FLAG, BOP_MOD) {
+            return None;
+        }
+
+        jit_prepare_call_with_gc(jit, asm);
+        asm_comment!(asm, "opt_mod: Decimal fast path");
+        let obj = asm.stack_opnd(0);
+        let recv = asm.stack_opnd(1);
+        let ret = asm.ccall(rb_decimal_mod_dd as *const u8, vec![recv, obj]);
+        asm.stack_pop(2);
+        let dst = asm.stack_push(Type::UnknownImm);
+        asm.mov(dst, ret);
+        return Some(KeepCompiling);
+    }
+
     let two_fixnums = match asm.ctx.two_fixnums_on_stack(jit) {
         Some(two_fixnums) => two_fixnums,
         None => {
@@ -5090,6 +5311,14 @@ fn jit_guard_known_klass(
             jit_chain_guard(JCC_JNE, jit, asm, max_chain_depth, counter);
             asm.ctx.upgrade_opnd_type(insn_opnd, Type::Flonum);
         }
+    } else if unsafe { known_klass == rb_cDecimal } && sample_instance.decimal_imm_p() {
+        // BID immediate Decimal: check low 12 bits (tag byte + scale nibble).
+        // Decimal is frozen with no singleton classes, so this is stable.
+        let expected_low12 = sample_instance.as_u64() & 0xFFF;
+        asm_comment!(asm, "guard object is BID Decimal immediate");
+        let low12 = asm.and(obj_opnd, Opnd::UImm(0xFFF));
+        asm.cmp(low12, Opnd::UImm(expected_low12));
+        jit_chain_guard(JCC_JNE, jit, asm, max_chain_depth, counter);
     } else if unsafe {
         FL_TEST(known_klass, VALUE(RUBY_FL_SINGLETON as usize)) != VALUE(0)
             && sample_instance == rb_class_attached_object(known_klass)
@@ -5904,6 +6133,259 @@ fn jit_rb_float_div(
     asm.stack_pop(2); // Keep recv during ccall for GC
 
     let ret_opnd = asm.stack_push(Type::Unknown); // Flonum or heap Float
+    asm.mov(ret_opnd, ret);
+    true
+}
+
+fn jit_rb_decimal_plus(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<BlockHandler>,
+    _argc: i32,
+    _known_recv_class: Option<VALUE>,
+) -> bool {
+
+    let comptime_obj = jit.peek_at_stack(&asm.ctx, 0);
+    if comptime_obj.class_of() != unsafe { rb_cDecimal } {
+        return false;
+    }
+
+    let obj = asm.stack_opnd(0);
+    jit_guard_known_klass(
+        jit,
+        asm,
+        obj,
+        obj.into(),
+        comptime_obj,
+        SEND_MAX_DEPTH,
+        Counter::guard_send_not_decimal,
+    );
+
+    // Save the PC and SP because the callee may allocate
+    jit_prepare_call_with_gc(jit, asm);
+
+    asm_comment!(asm, "Decimal#+");
+    let obj = asm.stack_opnd(0);
+    let recv = asm.stack_opnd(1);
+
+    let ret = asm.ccall(rb_decimal_plus_dd as *const u8, vec![recv, obj]);
+    asm.stack_pop(2); // Keep recv during ccall for GC
+
+    let ret_opnd = asm.stack_push(Type::UnknownImm);
+    asm.mov(ret_opnd, ret);
+    true
+}
+
+fn jit_rb_decimal_minus(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<BlockHandler>,
+    _argc: i32,
+    _known_recv_class: Option<VALUE>,
+) -> bool {
+
+    let comptime_obj = jit.peek_at_stack(&asm.ctx, 0);
+    if comptime_obj.class_of() != unsafe { rb_cDecimal } {
+        return false;
+    }
+
+    let obj = asm.stack_opnd(0);
+    jit_guard_known_klass(
+        jit,
+        asm,
+        obj,
+        obj.into(),
+        comptime_obj,
+        SEND_MAX_DEPTH,
+        Counter::guard_send_not_decimal,
+    );
+
+    // Save the PC and SP because the callee may allocate
+    jit_prepare_call_with_gc(jit, asm);
+
+    asm_comment!(asm, "Decimal#-");
+    let obj = asm.stack_opnd(0);
+    let recv = asm.stack_opnd(1);
+
+    let ret = asm.ccall(rb_decimal_minus_dd as *const u8, vec![recv, obj]);
+    asm.stack_pop(2); // Keep recv during ccall for GC
+
+    let ret_opnd = asm.stack_push(Type::UnknownImm);
+    asm.mov(ret_opnd, ret);
+    true
+}
+
+fn jit_rb_decimal_mul(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<BlockHandler>,
+    _argc: i32,
+    _known_recv_class: Option<VALUE>,
+) -> bool {
+
+    let comptime_obj = jit.peek_at_stack(&asm.ctx, 0);
+    if comptime_obj.class_of() != unsafe { rb_cDecimal } {
+        return false;
+    }
+
+    let obj = asm.stack_opnd(0);
+    jit_guard_known_klass(
+        jit,
+        asm,
+        obj,
+        obj.into(),
+        comptime_obj,
+        SEND_MAX_DEPTH,
+        Counter::guard_send_not_decimal,
+    );
+
+    // Save the PC and SP because the callee may allocate
+    jit_prepare_call_with_gc(jit, asm);
+
+    asm_comment!(asm, "Decimal#*");
+    let obj = asm.stack_opnd(0);
+    let recv = asm.stack_opnd(1);
+
+    let ret = asm.ccall(rb_decimal_mul_dd as *const u8, vec![recv, obj]);
+    asm.stack_pop(2); // Keep recv during ccall for GC
+
+    let ret_opnd = asm.stack_push(Type::UnknownImm);
+    asm.mov(ret_opnd, ret);
+    true
+}
+
+fn jit_rb_decimal_div(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<BlockHandler>,
+    _argc: i32,
+    _known_recv_class: Option<VALUE>,
+) -> bool {
+
+    let comptime_obj = jit.peek_at_stack(&asm.ctx, 0);
+    if comptime_obj.class_of() != unsafe { rb_cDecimal } {
+        return false;
+    }
+
+    let obj = asm.stack_opnd(0);
+    jit_guard_known_klass(
+        jit,
+        asm,
+        obj,
+        obj.into(),
+        comptime_obj,
+        SEND_MAX_DEPTH,
+        Counter::guard_send_not_decimal,
+    );
+
+    // Save the PC and SP because the callee may allocate
+    jit_prepare_call_with_gc(jit, asm);
+
+    asm_comment!(asm, "Decimal#/");
+    let obj = asm.stack_opnd(0);
+    let recv = asm.stack_opnd(1);
+
+    let ret = asm.ccall(rb_decimal_div_dd as *const u8, vec![recv, obj]);
+    asm.stack_pop(2); // Keep recv during ccall for GC
+
+    let ret_opnd = asm.stack_push(Type::UnknownImm);
+    asm.mov(ret_opnd, ret);
+    true
+}
+
+fn jit_rb_decimal_cmp(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<BlockHandler>,
+    _argc: i32,
+    _known_recv_class: Option<VALUE>,
+) -> bool {
+    let comptime_obj = jit.peek_at_stack(&asm.ctx, 0);
+    if comptime_obj.class_of() != unsafe { rb_cDecimal } {
+        return false;
+    }
+
+    let obj = asm.stack_opnd(0);
+    jit_guard_known_klass(
+        jit,
+        asm,
+        obj,
+        obj.into(),
+        comptime_obj,
+        SEND_MAX_DEPTH,
+        Counter::guard_send_not_decimal,
+    );
+
+    // No jit_prepare_call_with_gc: rb_decimal_cmp_dd does pure i128
+    // comparison and returns INT2FIX, so it never allocates.
+    asm_comment!(asm, "Decimal#<=>");
+    let obj = asm.stack_opnd(0);
+    let recv = asm.stack_opnd(1);
+
+    let ret = asm.ccall(rb_decimal_cmp_dd as *const u8, vec![recv, obj]);
+    asm.stack_pop(2);
+
+    let ret_opnd = asm.stack_push(Type::Fixnum);
+    asm.mov(ret_opnd, ret);
+    true
+}
+
+fn jit_rb_decimal_mod(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<BlockHandler>,
+    _argc: i32,
+    _known_recv_class: Option<VALUE>,
+) -> bool {
+    let comptime_obj = jit.peek_at_stack(&asm.ctx, 0);
+    if comptime_obj.class_of() != unsafe { rb_cDecimal } {
+        return false;
+    }
+
+    let obj = asm.stack_opnd(0);
+    jit_guard_known_klass(
+        jit, asm, obj, obj.into(), comptime_obj,
+        SEND_MAX_DEPTH, Counter::guard_send_not_decimal,
+    );
+
+    jit_prepare_call_with_gc(jit, asm);
+    asm_comment!(asm, "Decimal#%");
+    let obj = asm.stack_opnd(0);
+    let recv = asm.stack_opnd(1);
+    let ret = asm.ccall(rb_decimal_mod_dd as *const u8, vec![recv, obj]);
+    asm.stack_pop(2);
+    let ret_opnd = asm.stack_push(Type::UnknownImm);
+    asm.mov(ret_opnd, ret);
+    true
+}
+
+fn jit_rb_decimal_uminus(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<BlockHandler>,
+    _argc: i32,
+    _known_recv_class: Option<VALUE>,
+) -> bool {
+    jit_prepare_call_with_gc(jit, asm);
+    asm_comment!(asm, "Decimal#-@");
+    let recv = asm.stack_opnd(0);
+    let ret = asm.ccall(rb_decimal_uminus_dd as *const u8, vec![recv]);
+    asm.stack_pop(1);
+    let ret_opnd = asm.stack_push(Type::UnknownImm);
     asm.mov(ret_opnd, ret);
     true
 }
@@ -10936,6 +11418,14 @@ pub fn yjit_reg_method_codegen_fns() {
         reg_method_codegen(rb_cFloat, "-", jit_rb_float_minus);
         reg_method_codegen(rb_cFloat, "*", jit_rb_float_mul);
         reg_method_codegen(rb_cFloat, "/", jit_rb_float_div);
+
+        reg_method_codegen(rb_cDecimal, "+", jit_rb_decimal_plus);
+        reg_method_codegen(rb_cDecimal, "-", jit_rb_decimal_minus);
+        reg_method_codegen(rb_cDecimal, "*", jit_rb_decimal_mul);
+        reg_method_codegen(rb_cDecimal, "/", jit_rb_decimal_div);
+        reg_method_codegen(rb_cDecimal, "<=>", jit_rb_decimal_cmp);
+        reg_method_codegen(rb_cDecimal, "%", jit_rb_decimal_mod);
+        reg_method_codegen(rb_cDecimal, "-@", jit_rb_decimal_uminus);
 
         reg_method_codegen(rb_cString, "dup", jit_rb_str_dup);
         reg_method_codegen(rb_cString, "empty?", jit_rb_str_empty_p);

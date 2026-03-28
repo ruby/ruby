@@ -150,6 +150,15 @@ extern "C" {
     pub fn rb_vm_ic_hit_p(ic: IC, reg_ep: *const VALUE) -> bool;
     pub fn rb_vm_stack_canary() -> VALUE;
     pub fn rb_vm_push_cfunc_frame(cme: *const rb_callable_method_entry_t, recv_idx: c_int);
+
+    pub static mut rb_cDecimal: VALUE;
+    pub fn rb_decimal_plus_dd(x: VALUE, y: VALUE) -> VALUE;
+    pub fn rb_decimal_minus_dd(x: VALUE, y: VALUE) -> VALUE;
+    pub fn rb_decimal_mul_dd(x: VALUE, y: VALUE) -> VALUE;
+    pub fn rb_decimal_div_dd(x: VALUE, y: VALUE) -> VALUE;
+    pub fn rb_decimal_cmp_dd(x: VALUE, y: VALUE) -> VALUE;
+    pub fn rb_decimal_mod_dd(x: VALUE, y: VALUE) -> VALUE;
+    pub fn rb_decimal_uminus_dd(x: VALUE) -> VALUE;
 }
 
 // Renames
@@ -391,6 +400,11 @@ impl VALUE {
         let VALUE(cval) = self;
         let flag = RUBY_SYMBOL_FLAG as usize;
         (cval & 0xff) == flag
+    }
+
+    pub fn decimal_imm_p(self) -> bool {
+        let VALUE(cval) = self;
+        (cval & 0xFF) == 0x84
     }
 
     /// Return true for a dynamic Ruby symbol (RB_DYNAMIC_SYM_P)

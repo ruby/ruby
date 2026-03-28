@@ -437,6 +437,7 @@ make_counters! {
     guard_send_not_fixnums,
     guard_send_not_fixnum,
     guard_send_not_fixnum_or_flonum,
+    guard_send_not_decimal,
     guard_send_not_string,
     guard_send_respond_to_mid_mismatch,
     guard_send_str_aref_not_fixnum,
@@ -471,6 +472,11 @@ make_counters! {
     opt_plus_overflow,
     opt_minus_overflow,
     opt_mult_overflow,
+
+    decimal_not_bid,
+    decimal_negative,
+    decimal_add_overflow,
+    decimal_sub_overflow,
 
     opt_succ_not_fixnum,
     opt_succ_overflow,

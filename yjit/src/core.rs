@@ -111,8 +111,8 @@ impl Type {
                 return Type::BlockParamProxy;
             }
             match val.builtin_type() {
-                RUBY_T_ARRAY => Type::TArray,
-                RUBY_T_HASH => Type::THash,
+                RUBY_T_ARRAY  => Type::TArray,
+                RUBY_T_HASH   => Type::THash,
                 RUBY_T_STRING => Type::TString,
                 _ => Type::UnknownHeap,
             }
@@ -2955,6 +2955,17 @@ impl Context {
         } else {
             TypeDiff::Incompatible
         }
+    }
+
+    pub fn two_decimals_on_stack(&self, jit: &mut JITState) -> Option<bool> {
+        if jit.at_compile_target() {
+            let comptime_recv = jit.peek_at_stack(self, 1);
+            let comptime_arg = jit.peek_at_stack(self, 0);
+            let is_dec = |v: VALUE| v.decimal_imm_p() || unsafe { !v.special_const_p() && v.class_of() == rb_cDecimal };
+            return Some(is_dec(comptime_recv) && is_dec(comptime_arg));
+        }
+
+        None
     }
 
     pub fn two_fixnums_on_stack(&self, jit: &mut JITState) -> Option<bool> {
