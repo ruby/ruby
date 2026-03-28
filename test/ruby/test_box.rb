@@ -872,36 +872,21 @@ class TestBox < Test::Unit::TestCase
     end;
   end
 
-  def test_fiddle_import_in_multiple_boxes_does_not_crash_on_exit
-    assert_in_out_err([ENV_ENABLE_BOX, "--enable=gems"], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 60) do |output, error, status|
+  def test_reopening_class_with_cvar_in_multiple_boxes_does_not_crash_on_exit
+    assert_in_out_err([ENV_ENABLE_BOX], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 60) do |output, error, status|
     begin;
-      require "rubygems"
-      begin
-        Gem::Specification.find_by_name("fiddle")
-      rescue Gem::MissingSpecError
-        puts :skipped
-        exit
-      end
-
-      require "tmpdir"
-
-      source = <<~'RUBY'
-        require "rubygems"
-        $LOAD_PATH.unshift(*Gem::Specification.find_by_name("fiddle").full_require_paths)
-        require "fiddle/import"
+      Ruby::Box.root.eval(<<~RUBY)
+        module M; @@x = 0; end
+        class A; include M; end
+        class B < A; end
       RUBY
-
-      Dir.mktmpdir do |dir|
-        path = File.join(dir, "fiddle_require.rb")
-        File.write(path, source)
-
-        Ruby::Box.new.require(path)
-        Ruby::Box.new.require(path)
-      end
-
+      code = "class ::B; @@x += 1 end"
+      b1 = Ruby::Box.new
+      b1.eval(code)
+      b2 = Ruby::Box.new
+      b2.eval(code)
       puts :ok
     end;
-      pend "fiddle gem unavailable" if output == ["skipped"]
 
       assert_equal ["ok"], output
       assert_predicate status, :success?
