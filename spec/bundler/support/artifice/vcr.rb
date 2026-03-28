@@ -24,7 +24,7 @@ class BundlerVCRHTTP < Gem::Net::HTTP
       end
 
       File.open(USED_CASSETTES_PATH, "a+") do |f|
-        f.puts request_pair_paths.map {|path| Pathname.new(path).relative_path_from(Spec::Path.source_root).to_s }.join("\n")
+        f.puts request_pair_paths.map {|path| Pathname.new(path).relative_path_from(Spec::Path.git_root).to_s }.join("\n")
       end
 
       if recorded_response?

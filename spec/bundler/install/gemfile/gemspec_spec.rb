@@ -126,7 +126,7 @@ RSpec.describe "bundle install from an existing gemspec" do
     # ghost pass in future, and will only catch a regression if the message
     # doesn't change. Exit codes should be used correctly (they can be more
     # than just 0 and 1).
-    bundle "config set --local deployment true"
+    bundle_config "deployment true"
     output = bundle("install", dir: tmp("foo"), artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo1.to_s })
     expect(output).not_to match(/You have added to the Gemfile/)
     expect(output).not_to match(/You have deleted from the Gemfile/)
@@ -312,7 +312,7 @@ RSpec.describe "bundle install from an existing gemspec" do
           s.add_dependency "activesupport", ">= 1.0.1"
         end
 
-        bundle "config set --local deployment true"
+        bundle_config "deployment true"
         bundle :install, raise_on_error: false
 
         expect(err).to include("changed")
@@ -435,7 +435,7 @@ RSpec.describe "bundle install from an existing gemspec" do
           gemspec
         G
 
-        bundle "config set --local force_ruby_platform true"
+        bundle_config "force_ruby_platform true"
         bundle "install"
 
         simulate_new_machine
@@ -446,7 +446,7 @@ RSpec.describe "bundle install from an existing gemspec" do
 
       context "on ruby" do
         before do
-          bundle "config set --local force_ruby_platform true"
+          bundle_config "force_ruby_platform true"
           bundle :install
         end
 
@@ -588,7 +588,7 @@ RSpec.describe "bundle install from an existing gemspec" do
     end
 
     it "installs the ruby platform gemspec" do
-      bundle "config set --local force_ruby_platform true"
+      bundle_config "force_ruby_platform true"
 
       install_gemfile <<-G
         source "https://gem.repo1"
@@ -599,9 +599,9 @@ RSpec.describe "bundle install from an existing gemspec" do
     end
 
     it "installs the ruby platform gemspec and skips dev deps with `without development` configured" do
-      bundle "config set --local force_ruby_platform true"
+      bundle_config "force_ruby_platform true"
 
-      bundle "config set --local without development"
+      bundle_config "without development"
       install_gemfile <<-G
         source "https://gem.repo1"
         gemspec :path => '#{tmp("foo")}', :name => 'foo'

@@ -57,7 +57,7 @@ RSpec.describe "bundle info" do
     end
 
     it "doesn't claim that bundler is missing, even if using a custom path without bundler there" do
-      bundle "config set --local path vendor/bundle"
+      bundle_config "path vendor/bundle"
       bundle "install"
       bundle "info bundler"
       expect(out).to include("\tPath: #{root}")
@@ -235,7 +235,7 @@ RSpec.describe "bundle info" do
 
   context "with without configured" do
     it "does not find the gem, but gives a helpful error" do
-      bundle "config without test"
+      bundle_config "without test"
 
       install_gemfile <<-G
         source "https://gem.repo1"

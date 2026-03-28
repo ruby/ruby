@@ -11,7 +11,7 @@
 #include "ruby/ruby.h"          /* for VALUE */
 
 /* object.c */
-size_t rb_obj_embedded_size(uint32_t fields_count);
+
 VALUE rb_class_allocate_instance(VALUE klass);
 VALUE rb_class_search_ancestor(VALUE klass, VALUE super);
 NORETURN(void rb_undefined_alloc(VALUE klass));
@@ -59,5 +59,11 @@ RBASIC_SET_CLASS(VALUE obj, VALUE klass)
     VALUE oldv = RBASIC_CLASS(obj);
     RBASIC_SET_CLASS_RAW(obj, klass);
     RB_OBJ_WRITTEN(obj, oldv, klass);
+}
+
+static inline size_t
+rb_obj_embedded_size(uint32_t fields_count)
+{
+    return offsetof(struct RObject, as.ary) + (sizeof(VALUE) * fields_count);
 }
 #endif /* INTERNAL_OBJECT_H */

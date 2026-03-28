@@ -25,7 +25,7 @@ pub struct X86UImm
     pub value: u64
 }
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum RegType
 {
     GP,
@@ -34,7 +34,7 @@ pub enum RegType
     IP,
 }
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct X86Reg
 {
     // Size in bits

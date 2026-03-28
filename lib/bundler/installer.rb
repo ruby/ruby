@@ -189,19 +189,11 @@ module Bundler
       standalone = options[:standalone]
       force = options[:force]
       local = options[:local] || options[:"prefer-local"]
-      jobs = installation_parallelization
+      jobs = Bundler.settings.installation_parallelization
       spec_installations = ParallelInstaller.call(self, @definition.specs, jobs, standalone, force, local: local)
       spec_installations.each do |installation|
         post_install_messages[installation.name] = installation.post_install_message if installation.has_post_install_message?
       end
-    end
-
-    def installation_parallelization
-      if jobs = Bundler.settings[:jobs]
-        return jobs
-      end
-
-      Bundler.settings.processor_count
     end
 
     def load_plugins

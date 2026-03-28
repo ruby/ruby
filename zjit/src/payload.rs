@@ -4,6 +4,8 @@ use crate::codegen::IseqCallRef;
 use crate::stats::CompileError;
 use crate::{cruby::*, profile::IseqProfile, virtualmem::CodePtr};
 
+pub use crate::jit_frame::JITFrame;
+
 /// This is all the data ZJIT stores on an ISEQ. We mark objects in this struct on GC.
 #[derive(Debug)]
 pub struct IseqPayload {
@@ -11,13 +13,17 @@ pub struct IseqPayload {
     pub profile: IseqProfile,
     /// JIT code versions. Different versions should have different assumptions.
     pub versions: Vec<IseqVersionRef>,
+    /// Whether a previous compilation of this ISEQ was invalidated due to
+    /// singleton class creation (violation of [`crate::hir::Invariant::NoSingletonClass`]).
+    pub was_invalidated_for_singleton_class_creation: bool,
 }
 
 impl IseqPayload {
-    fn new(iseq_size: u32) -> Self {
+    fn new() -> Self {
         Self {
-            profile: IseqProfile::new(iseq_size),
+            profile: IseqProfile::new(),
             versions: vec![],
+            was_invalidated_for_singleton_class_creation: false,
         }
     }
 }
@@ -87,8 +93,7 @@ pub fn get_or_create_iseq_payload_ptr(iseq: IseqPtr) -> *mut IseqPayload {
             // We drop the payload with Box::from_raw when the GC frees the ISEQ and calls us.
             // NOTE(alan): Sometimes we read from an ISEQ without ever writing to it.
             // We allocate in those cases anyways.
-            let iseq_size = get_iseq_encoded_size(iseq);
-            let new_payload = IseqPayload::new(iseq_size);
+            let new_payload = IseqPayload::new();
             let new_payload = Box::into_raw(Box::new(new_payload));
             rb_iseq_set_zjit_payload(iseq, new_payload as VoidPtr);
 

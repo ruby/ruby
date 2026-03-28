@@ -317,11 +317,11 @@ rb_ary_aref(int argc, const VALUE *argv, VALUE ary) ::
 
 rb_ary_entry(VALUE ary, long offset) ::
 
-  \ary[offset]
+  ary\[offset]
 
 rb_ary_store(VALUE ary, long offset, VALUE obj) ::
 
-  \ary[offset] = obj
+  ary\[offset] = obj
 
 rb_ary_subseq(VALUE ary, long beg, long len) ::
 
@@ -760,6 +760,50 @@ RUBY_TYPED_FROZEN_SHAREABLE ::
 
   If this flag is not set, the object can not become a shareable
   object by Ractor.make_shareable() method.
+
+RUBY_TYPED_EMBEDDABLE ::
+
+  This flag indicates that Ruby may store the C struct inside the object
+  slot, rather than allocate it separately with +malloc+.
+  However, it is not a guarantee. Ruby may decide not to embed the object.
+  For instance if it's too large to fit into one of the available slot sizes.
+
+  Embedding the C struct inside the object slot reduces pointer chasing,
+  malloc overhead, and improves sweep performance.
+  In some cases, it can also reduce the memory footprint of the object.
+
+  To be embeddable, types must abide by some restrictions:
+
+  * Pointers to the C struct, or into the C struct, MUST NOT be stored,
+    as they become invalid when GC compaction occurs.
+    It is however valid to pass and use such pointers for as long as the Ruby
+    object remains on the stack.
+
+    In a sense, this is similar to the restrictions of a stack allocated struct.
+
+    The +RB_GC_GUARD+ macro must be used to ensure the object is not moved by
+    compaction and not freed, unless the object is passed directly as an
+    argument from Ruby to C, i.e. as a parameter of a function used with
+    +rb_define_method+ and similar.
+
+  * The +DATA_PTR+ and +RTYPEDDATA_DATA+ macro can't be used.
+    Only +RTYPEDDATA_GET_DATA+` or +TypedData_Get_Struct+ macros can be used
+    with embeddable objects.
+    Accessing `RDATA(obj)->data` or `RTYPEDDATA(obj)->data` is invalid too.
+
+  * The +dfree+ function MUST NOT free the C struct itself.
+    Setting +dfree+ to +RUBY_DEFAULT_FREE+ is fine.
+    To support older Ruby versions without this feature, you can
+    conditionally free the C struct if +RUBY_TYPED_EMBEDDABLE+ isn't defined.
+
+  * The type must have the +RUBY_TYPED_FREE_IMMEDIATELY+ flag set.
+
+  If the embedded C struct is of variable size, +rb_data_typed_object_zalloc+
+  can be used instead of +TypedData_Make_Struct+.
+
+  See {Embedded TypedData}[rdoc-ref:@Appendix+G.+Embedded+TypedData] for a
+  commented example of how to use +RUBY_TYPED_EMBEDDABLE+.
+
 
 Note that this macro can raise an exception.  If sval to be wrapped
 holds a resource needs to be released (e.g., allocated memory, handle
@@ -2284,6 +2328,89 @@ To make a "Ractor-safe" C extension, we need to check the following points:
    There are possibly other points or requirements which must be considered in the
    making of a Ractor-safe extension.  This document will be extended as they are
    discovered.
+
+== Appendix G. Embedded TypedData
+
+Here is an example of how to use +RUBY_TYPED_EMBEDDABLE+::
+
+  struct my_data {
+      struct timespec created_at;
+      size_t buffer_capa;
+      char *buffer;
+  };
+
+  static void
+  my_data_free(void *ptr)
+  {
+      struct my_data *data = (struct my_data *)ptr;
+
+      // Deliberately don't free `ptr` if it is embeddable.
+      // Only auxiliary memory need to be freed.
+      ruby_xfree(data->buffer);
+  }
+
+  static size_t
+  my_data_size(const void *ptr)
+  {
+    const struct my_data *data = (const struct my_data *)ptr;
+    // We don't need to account for `sizeof(struct my_struct)` because it is embedded inside the Ruby object.
+    // Only auxiliary memory need to be reported.
+    return data->buffer_capa;
+  }
+
+  static const rb_data_type_t my_type = {
+      .wrap_struct_name = "my_type",
+      .function = {
+        .dfree = my_data_free,
+        .dsize = my_data_size,
+      }
+      .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE,
+  };
+
+  static VALUE
+  my_data_alloc(VALUE klass)
+  {
+      struct my_data *data;
+      VALUE obj = TypedData_Make_Struct(klass, struct my_data, &my_type, data);
+
+      // Is it fine to pass pointers into the embedded struct, for as long as
+      // the called function won't use it after the Ruby object have left the stack.
+      clock_gettime(CLOCK_REALTIME, &data->created_at);
+      data->buffer_capa = 1024;
+      data->buffer = ZALLOC_N(char, data->buffer_capa);
+
+      return obj
+  }
+
+  static VALUE
+  my_data_m_parse(VALUE klass)
+  {
+      struct my_data *data;
+      VALUE my_data_obj = my_data_alloc(klass);
+      TypedData_Get_Struct(obj, struct my_data, &my_type, data);
+
+      // `my_data_obj` was allocated from C, `RB_GC_GUARD` must be used to
+      // ensure the compiler will keep its reference on the stack.
+      RB_GC_GUARD(my_data_obj)
+  }
+
+  static VALUE
+  my_data_read(VALUE self)
+  {
+      struct my_data *data;
+      TypedData_Get_Struct(obj, struct my_data, &my_type, data);
+
+      // `self` is received from `rb_define_method` so `RB_GC_GUARD` isn't necessary.
+      return rb_str_new(data->buffer, data->buffer_capa)
+  }
+
+  void
+  Init_my_data(void)
+  {
+      VALUE cMyData = rb_define_class("MyData");
+      rb_define_method(cMyData, "read", my_data_read, 0);
+      rb_define_singleton_method(cMyData, "parse", my_data_m_parse, 0);
+  }
 
 --
 Local variables:

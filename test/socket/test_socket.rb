@@ -418,12 +418,16 @@ class TestSocket < Test::Unit::TestCase
 
         ping_p = false
         th = Thread.new {
-          Socket.udp_server_loop_on(sockets) {|msg, msg_src|
-            break if msg == "exit"
-            rmsg = Marshal.dump([msg, msg_src.remote_address, msg_src.local_address])
-            ping_p = true
-            msg_src.reply rmsg
-          }
+          begin
+            Socket.udp_server_loop_on(sockets) {|msg, msg_src|
+              break if msg == "exit"
+              rmsg = Marshal.dump([msg, msg_src.remote_address, msg_src.local_address])
+              ping_p = true
+              msg_src.reply rmsg
+            }
+          rescue Errno::ENOBUFS
+            # transient OS error on macOS CI, let client timeout and omit
+          end
         }
 
         ifaddrs.each {|ifa|

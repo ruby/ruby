@@ -3425,7 +3425,7 @@ unlink_internal(const char *path, void *arg)
  *  Since the underlying implementation relies on the
  *  <code>unlink(2)</code> system call, the type of
  *  exception raised depends on its error type (see
- *  https://linux.die.net/man/2/unlink) and has the form of
+ *  https://man7.org/linux/man-pages/man2/unlink.2.html) and has the form of
  *  e.g. Errno::ENOENT.
  *
  *  See also Dir::rmdir.
@@ -5283,7 +5283,7 @@ rb_file_s_extname(VALUE klass, VALUE fname)
  *    coerce to a String.
  *
  * 2. Otherwise, or if the coerced result is not a String too, the
- *    standard coersion using +to_str+ method will take place on that
+ *    standard coercion using +to_str+ method will take place on that
  *    object. (See also String.try_convert)
  *
  * The coerced string must satisfy the following conditions:

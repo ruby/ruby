@@ -423,9 +423,7 @@ module Gem
       MAX_ALIAS_RESOLUTIONS = 1_000
 
       def initialize(permitted_classes: [], permitted_symbols: [], aliases: true)
-        @permitted_tags = Array(permitted_classes).map do |c|
-          "!ruby/object:#{c.is_a?(Module) ? c.name : c}"
-        end
+        @permitted_classes = permitted_classes.map {|c| "!ruby/object:#{c}" }
         @permitted_symbols = permitted_symbols
         @aliases = aliases
         @anchor_values = {}
@@ -474,8 +472,8 @@ module Gem
       end
 
       def build_mapping(node)
-        validate_tag!(node.tag) if node.tag
         check_anchor!(node)
+        validate_tag!(node.tag) if node.tag
 
         result = case node.tag
                  when "!ruby/object:Gem::Version"
@@ -573,7 +571,7 @@ module Gem
         d = Gem::Dependency.allocate
         d.instance_variable_set(:@name, hash["name"])
 
-        d.instance_variable_set(:@requirement, hash["requirement"])
+        d.instance_variable_set(:@requirement, hash["requirement"] || hash["version_requirements"])
 
         type = hash["type"]
         type = type ? type.to_s.sub(/^:/, "").to_sym : :runtime
@@ -605,12 +603,15 @@ module Gem
       end
 
       def validate_tag!(tag)
-        unless @permitted_tags.include?(tag)
-          if defined?(Psych::VERSION)
-            raise Psych::DisallowedClass.new("load", tag)
-          else
-            raise Psych::DisallowedClass, "Tried to load unspecified class: #{tag}"
-          end
+        return if @permitted_classes.include?(tag)
+        raise_disallowed_class!(tag)
+      end
+
+      def raise_disallowed_class!(tag)
+        if defined?(Psych::VERSION)
+          raise Psych::DisallowedClass.new("load", tag)
+        else
+          raise Psych::DisallowedClass, "Tried to load unspecified class: #{tag}"
         end
       end
 

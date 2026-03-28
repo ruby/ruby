@@ -480,7 +480,7 @@ rb_yjit_set_exception_return(rb_control_frame_t *cfp, void *leave_exit, void *le
         // If it's a FINISH frame, just normally exit with a non-Qundef value.
         cfp->jit_return = leave_exit;
     }
-    else if (cfp->jit_return) {
+    else if (CFP_JIT_RETURN(cfp)) {
         while (!VM_FRAME_FINISHED_P(cfp)) {
             if (cfp->jit_return == leave_exit) {
                 // Unlike jit_exec(), leave_exit is not safe on a non-FINISH frame on

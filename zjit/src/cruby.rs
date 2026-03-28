@@ -165,7 +165,7 @@ unsafe extern "C" {
     pub fn rb_vm_stack_canary() -> VALUE;
     pub fn rb_vm_push_cfunc_frame(cme: *const rb_callable_method_entry_t, recv_idx: c_int);
     pub fn rb_obj_class(klass: VALUE) -> VALUE;
-    pub fn rb_vm_objtostring(iseq: IseqPtr, recv: VALUE, cd: *const rb_call_data) -> VALUE;
+    pub fn rb_vm_objtostring(reg_cfp: CfpPtr, recv: VALUE, cd: *const rb_call_data) -> VALUE;
 }
 
 // Renames
@@ -369,13 +369,6 @@ pub struct rb_method_cfunc_t {
 /// Opaque call-cache type from vm_callinfo.h
 #[repr(C)]
 pub struct rb_callcache {
-    _data: [u8; 0],
-    _marker: core::marker::PhantomData<(*mut u8, core::marker::PhantomPinned)>,
-}
-
-/// Opaque control_frame (CFP) struct from vm_core.h
-#[repr(C)]
-pub struct rb_control_frame_struct {
     _data: [u8; 0],
     _marker: core::marker::PhantomData<(*mut u8, core::marker::PhantomPinned)>,
 }
@@ -902,15 +895,18 @@ pub fn iseq_get_location(iseq: IseqPtr, pos: u32) -> String {
     s
 }
 
+pub fn ruby_str_to_rust_string_result(v: VALUE) -> Result<String, std::string::FromUtf8Error> {
+    let str_ptr = unsafe { rb_RSTRING_PTR(v) } as *mut u8;
+    let str_len: usize = unsafe { rb_RSTRING_LEN(v) }.try_into().unwrap();
+    let str_slice: &[u8] = unsafe { std::slice::from_raw_parts(str_ptr, str_len) };
+    String::from_utf8(str_slice.to_vec())
+}
 
 // Convert a CRuby UTF-8-encoded RSTRING into a Rust string.
 // This should work fine on ASCII strings and anything else
 // that is considered legal UTF-8, including embedded nulls.
-fn ruby_str_to_rust_string(v: VALUE) -> String {
-    let str_ptr = unsafe { rb_RSTRING_PTR(v) } as *mut u8;
-    let str_len: usize = unsafe { rb_RSTRING_LEN(v) }.try_into().unwrap();
-    let str_slice: &[u8] = unsafe { std::slice::from_raw_parts(str_ptr, str_len) };
-    String::from_utf8(str_slice.to_vec()).unwrap_or_default()
+pub fn ruby_str_to_rust_string(v: VALUE) -> String {
+    ruby_str_to_rust_string_result(v).unwrap_or_default()
 }
 
 pub fn ruby_sym_to_rust_string(v: VALUE) -> String {
@@ -1264,6 +1260,15 @@ pub mod test_utils {
         ruby_str_to_rust_string(eval(&inspect))
     }
 
+    /// Like inspect, but also asserts that all compilations triggered by this program succeed.
+    pub fn assert_compiles(program: &str) -> String {
+        use crate::state::ZJITState;
+        ZJITState::enable_assert_compiles();
+        let result = inspect(program);
+        ZJITState::disable_assert_compiles();
+        result
+    }
+
     /// Get IseqPtr for a specified method
     pub fn get_method_iseq(recv: &str, name: &str) -> *const rb_iseq_t {
         get_proc_iseq(&format!("{}.method(:{})", recv, name))
@@ -1548,6 +1553,7 @@ pub(crate) mod ids {
         name: ZJIT
         name: induce_side_exit_bang       content: b"induce_side_exit!"
         name: induce_compile_failure_bang content: b"induce_compile_failure!"
+        name: induce_breakpoint_bang      content: b"induce_breakpoint!"
     }
 
     /// Get an CRuby `ID` to an interned string, e.g. a particular method name.

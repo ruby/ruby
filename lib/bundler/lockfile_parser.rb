@@ -28,6 +28,7 @@ module Bundler
 
     attr_reader(
       :sources,
+      :metadata_source,
       :dependencies,
       :specs,
       :platforms,
@@ -97,6 +98,7 @@ module Bundler
     def initialize(lockfile, strict: false)
       @platforms    = []
       @sources      = []
+      @metadata_source = Source::Metadata.new
       @dependencies = {}
       @parse_method = nil
       @specs        = {}
@@ -252,7 +254,12 @@ module Bundler
       version = Gem::Version.new(version)
       platform = platform ? Gem::Platform.new(platform) : Gem::Platform::RUBY
       full_name = Gem::NameTuple.new(name, version, platform).full_name
-      return unless spec = @specs[full_name]
+      spec = @specs[full_name]
+
+      if name == "bundler"
+        spec ||= LazySpecification.new(name, version, platform, @metadata_source)
+      end
+      return unless spec
 
       if checksums
         checksums.split(",") do |lock_checksum|

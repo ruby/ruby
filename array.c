@@ -6540,7 +6540,7 @@ rb_ary_uniq(VALUE ary)
  *  see also {Methods for Deleting}[rdoc-ref:Array@Methods+for+Deleting].
  */
 
-static VALUE
+VALUE
 rb_ary_compact_bang(VALUE ary)
 {
     VALUE *p, *t, *end;

@@ -27,13 +27,6 @@
 #include "builtin.h"
 #include "ruby/internal/attr/nonstring.h"
 
-#if defined(USE_SYMBOL_GC) && !(USE_SYMBOL_GC+0)
-# undef USE_SYMBOL_GC
-# define USE_SYMBOL_GC 0
-#else
-# undef USE_SYMBOL_GC
-# define USE_SYMBOL_GC 1
-#endif
 #if defined(SYMBOL_DEBUG) && (SYMBOL_DEBUG+0)
 # undef SYMBOL_DEBUG
 # define SYMBOL_DEBUG 1

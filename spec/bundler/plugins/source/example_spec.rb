@@ -135,7 +135,7 @@ RSpec.describe "real source plugins" do
       end
 
       it "copies repository to vendor cache and uses it even when installed with `path` configured" do
-        bundle "config set --local path vendor/bundle"
+        bundle_config "path vendor/bundle"
         bundle :install
         bundle :cache
 
@@ -146,7 +146,7 @@ RSpec.describe "real source plugins" do
       end
 
       it "bundler package copies repository to vendor cache" do
-        bundle "config set --local path vendor/bundle"
+        bundle_config "path vendor/bundle"
         bundle :install
         bundle :cache
 

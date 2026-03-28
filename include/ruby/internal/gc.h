@@ -621,11 +621,11 @@ RBIMPL_SYMBOL_EXPORT_END()
 #define OBJ_WB_UNPROTECT RB_OBJ_WB_UNPROTECT /**< @old{RB_OBJ_WB_UNPROTECT} */
 
 /**
- * Asserts that the passed object is  not fenced by write barriers.  Objects of
- * such  property do  not contribute  to  generational GCs.   They are  scanned
- * always.
+ * Marks the object as not protected by write barriers. These objects do not
+ * participate in generational GCs which means that, as long as the object is
+ * alive, they will be scanned on every GC cycle.
  *
- * @param[out]  x  An object that would not be protected by the barrier.
+ * @param[out]  x  An object that is not protected by the write barrier.
  */
 #define RB_OBJ_WB_UNPROTECT(x) rb_obj_wb_unprotect(x, __FILE__, __LINE__)
 

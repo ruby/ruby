@@ -418,8 +418,16 @@ pub type ruby_basic_operators = u32;
 pub type rb_serial_t = ::std::os::raw::c_ulonglong;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct rb_id_table {
+pub struct rb_id_item {
     _unused: [u8; 0],
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct rb_id_table {
+    pub capa: ::std::os::raw::c_int,
+    pub num: ::std::os::raw::c_int,
+    pub used: ::std::os::raw::c_int,
+    pub items: *mut rb_id_item,
 }
 pub const imemo_env: imemo_type = 0;
 pub const imemo_cref: imemo_type = 1;
@@ -1291,6 +1299,16 @@ pub struct rb_block__bindgen_ty_1 {
     pub proc_: __BindgenUnionField<VALUE>,
     pub bindgen_union_field: [u64; 3usize],
 }
+#[repr(C)]
+pub struct rb_control_frame_struct {
+    pub pc: *const VALUE,
+    pub sp: *mut VALUE,
+    pub _iseq: *const rb_iseq_t,
+    pub self_: VALUE,
+    pub ep: *const VALUE,
+    pub block_code: *const ::std::os::raw::c_void,
+    pub jit_return: *mut ::std::os::raw::c_void,
+}
 pub type rb_control_frame_t = rb_control_frame_struct;
 #[repr(C)]
 pub struct rb_proc_t {
@@ -1892,6 +1910,15 @@ pub const DEFINED_REF: defined_type = 15;
 pub const DEFINED_FUNC: defined_type = 16;
 pub const DEFINED_CONST_FROM: defined_type = 17;
 pub type defined_type = u32;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct zjit_jit_frame {
+    pub pc: *const VALUE,
+    pub iseq: *const rb_iseq_t,
+    pub materialize_block_code: bool,
+}
+pub const ZJIT_JIT_RETURN_POISON: zjit_poison_values = 2;
+pub type zjit_poison_values = u32;
 pub const ISEQ_BODY_OFFSET_PARAM: zjit_struct_offsets = 16;
 pub type zjit_struct_offsets = u32;
 pub const ROBJECT_OFFSET_AS_HEAP_FIELDS: jit_bindgen_constants = 16;
@@ -2123,12 +2150,10 @@ unsafe extern "C" {
         buff: *mut VALUE,
         lines: *mut ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
+    pub fn rb_profile_frame_path(frame: VALUE) -> VALUE;
+    pub fn rb_profile_frame_absolute_path(frame: VALUE) -> VALUE;
+    pub fn rb_profile_frame_full_label(frame: VALUE) -> VALUE;
     pub fn rb_jit_cont_each_iseq(callback: rb_iseq_callback, data: *mut ::std::os::raw::c_void);
-    pub fn rb_zjit_exit_locations_dict(
-        zjit_raw_samples: *mut VALUE,
-        zjit_line_samples: *mut ::std::os::raw::c_int,
-        samples_len: ::std::os::raw::c_int,
-    ) -> VALUE;
     pub fn rb_zjit_profile_disable(iseq: *const rb_iseq_t);
     pub fn rb_vm_base_ptr(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
     pub fn rb_zjit_constcache_shareable(ice: *const iseq_inline_constant_cache_entry) -> bool;
@@ -2143,6 +2168,7 @@ unsafe extern "C" {
     pub fn rb_zjit_singleton_class_p(klass: VALUE) -> bool;
     pub fn rb_zjit_defined_ivar(obj: VALUE, id: ID, pushval: VALUE) -> VALUE;
     pub fn rb_zjit_method_tracing_currently_enabled() -> bool;
+    pub fn rb_zjit_iseq_tracing_currently_enabled() -> bool;
     pub fn rb_zjit_insn_leaf(insn: ::std::os::raw::c_int, opes: *const VALUE) -> bool;
     pub fn rb_zjit_local_id(iseq: *const rb_iseq_t, idx: ::std::os::raw::c_uint) -> ID;
     pub fn rb_zjit_cme_is_cfunc(
@@ -2159,10 +2185,13 @@ unsafe extern "C" {
     pub fn rb_zjit_class_has_default_allocator(klass: VALUE) -> bool;
     pub fn rb_vm_untag_block_handler(block_handler: VALUE) -> VALUE;
     pub fn rb_vm_get_untagged_block_handler(reg_cfp: *mut rb_control_frame_t) -> VALUE;
-    pub fn rb_zjit_writebarrier_check_immediate(recv: VALUE, val: VALUE);
     pub fn rb_iseq_encoded_size(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
     pub fn rb_iseq_pc_at_idx(iseq: *const rb_iseq_t, insn_idx: u32) -> *mut VALUE;
     pub fn rb_iseq_opcode_at_pc(iseq: *const rb_iseq_t, pc: *const VALUE) -> ::std::os::raw::c_int;
+    pub fn rb_iseq_bare_opcode_at_pc(
+        iseq: *const rb_iseq_t,
+        pc: *const VALUE,
+    ) -> ::std::os::raw::c_int;
     pub fn rb_RSTRING_LEN(str_: VALUE) -> ::std::os::raw::c_ulong;
     pub fn rb_RSTRING_PTR(str_: VALUE) -> *mut ::std::os::raw::c_char;
     pub fn rb_insn_name(insn: VALUE) -> *const ::std::os::raw::c_char;

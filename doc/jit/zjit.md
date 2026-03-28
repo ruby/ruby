@@ -294,17 +294,63 @@ This metric only appears when ZJIT is built with `--enable-zjit=stats` [or more]
 
 ### Tracing side exits
 
-Through [Stackprof](https://github.com/tmm1/stackprof), detailed information about the methods that the JIT side-exits from can be displayed after some execution of a program. Optionally, you can use `--zjit-trace-exits-sample-rate=N` to sample every N-th occurrence. Enabling `--zjit-trace-exits-sample-rate=N` will automatically enable `--zjit-trace-exits`.
+`--zjit-trace-exits` records a backtrace every time compiled code takes a
+side exit.  The output is a [Fuchsia Trace Format](https://fuchsia.dev/fuchsia-src/reference/tracing/trace-format)
+(`.fxt`) file written to `/tmp/perfetto-{pid}.fxt`, which can be opened
+directly in [Perfetto UI](https://ui.perfetto.dev/) or queried with the
+[Perfetto trace processor](https://perfetto.dev/docs/quickstart/trace-analysis).
 
 ```bash
-./miniruby --zjit-trace-exits script.rb
+$ ./miniruby --zjit-trace-exits -e '
+def poly(x)
+  x.to_s
+end
+
+30.times { poly(1) }
+30.times { poly("hello") }
+30.times { poly(:sym) }
+'
+ZJIT: writing trace exits to /tmp/perfetto-123456.fxt
 ```
 
-A file called `zjit_exits_{pid}.dump` will be created in the same directory as `script.rb`. Viewing the side exited methods can be done with Stackprof:
+To find the hottest side-exit locations, open the `.fxt` file in
+[Perfetto UI](https://ui.perfetto.dev/) and run an SQL query via the
+"Query (SQL)" tab in the bottom panel. Alternatively, download
+`trace_processor_shell` to query from the command line:
 
 ```bash
-stackprof path/to/zjit_exits_{pid}.dump
+curl -Lo /tmp/trace_processor_shell https://get.perfetto.dev/trace_processor
+chmod +x /tmp/trace_processor_shell
+
+/tmp/trace_processor_shell /tmp/perfetto-123456.fxt -Q "
+SELECT reason, backtrace, count(*) AS exits FROM (
+  SELECT
+    s.id,
+    s.name AS reason,
+    group_concat(a.display_value, ' <- ') AS backtrace
+  FROM slice s
+  JOIN args a USING(arg_set_id)
+  WHERE s.category = 'side_exit'
+  GROUP BY s.id
+)
+GROUP BY reason, backtrace
+ORDER BY exits DESC
+LIMIT 30
+"
 ```
+
+Example output:
+
+```
+"reason","backtrace","exits"
+"GuardType(Fixnum)","Object#poly (-e) <- block in <main> (-e) <- Integer#times (<internal:numeric>) <- <main> (-e)",60
+```
+
+You can also trace a specific counter with `--zjit-trace-exits=<counter_name>`
+(e.g. `--zjit-trace-exits=exit_compile_error`), or downsample with
+`--zjit-trace-exits-sample-rate=N` to record every N-th exit.
+Enabling `--zjit-trace-exits-sample-rate=N` will automatically enable
+`--zjit-trace-exits`.
 
 ### Viewing HIR as text
 

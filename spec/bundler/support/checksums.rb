@@ -14,9 +14,9 @@ module Spec
         @checksums = @checksums.dup
       end
 
-      def checksum(repo, name, version, platform = Gem::Platform::RUBY)
+      def checksum(repo, name, version, platform = Gem::Platform::RUBY, folder = "gems")
         name_tuple = Gem::NameTuple.new(name, version, platform)
-        gem_file = File.join(repo, "gems", "#{name_tuple.full_name}.gem")
+        gem_file = File.join(repo, folder, "#{name_tuple.full_name}.gem")
         File.open(gem_file, "rb") do |f|
           register(name_tuple, Bundler::Checksum.from_gem(f, "#{gem_file} (via ChecksumsBuilder#checksum)"))
         end

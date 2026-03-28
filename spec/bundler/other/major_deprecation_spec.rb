@@ -435,7 +435,7 @@ RSpec.describe "major deprecations" do
 
   context "bundle install with flags" do
     before do
-      bundle "config set --local path vendor/bundle"
+      bundle_config "path vendor/bundle"
 
       install_gemfile <<-G
         source "https://gem.repo1"
@@ -520,7 +520,7 @@ RSpec.describe "major deprecations" do
         "Your lockfile contains a single rubygems source section with multiple remotes, which is insecure. " \
         "Make sure you run `bundle install` in non frozen mode and commit the result to make your lockfile secure."
       )
-      bundle "config set --local frozen true"
+      bundle_config "frozen true"
       bundle "install", raise_on_error: false
 
       expect(err).to include(
@@ -754,8 +754,11 @@ RSpec.describe "major deprecations" do
 
   describe "removing rubocop" do
     before do
-      global_config "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__COC" => "false",
-                    "BUNDLE_GEM__CI" => "false", "BUNDLE_GEM__CHANGELOG" => "false"
+      bundle_config_global "gem.mit false"
+      bundle_config_global "gem.test false"
+      bundle_config_global "gem.coc false"
+      bundle_config_global "gem.ci false"
+      bundle_config_global "gem.changelog false"
     end
 
     context "bundle gem --rubocop" do

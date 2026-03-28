@@ -353,6 +353,9 @@ module RubyVM::YJIT
       # Number of failed compiler invocations
       compilation_failure = stats[:compilation_failure]
 
+      # Number of refused exceptional entries with an escaped environment
+      exceptional_entry_escaped_env = stats[:exceptional_entry_escaped_env]
+
       code_region_overhead = stats[:code_region_size] - (stats[:inline_code_size] + stats[:outlined_code_size])
 
       out.puts "num_send:              " + format_number(13, stats[:num_send])
@@ -389,6 +392,7 @@ module RubyVM::YJIT
       out.puts "bindings_allocations:  " + format_number(13, stats[:binding_allocations])
       out.puts "bindings_set:          " + format_number(13, stats[:binding_set])
       out.puts "compilation_failure:   " + format_number(13, compilation_failure) if compilation_failure != 0
+      out.puts "exceptional_entry_escaped_env:" + format_number(6, exceptional_entry_escaped_env) if exceptional_entry_escaped_env != 0
       out.puts "live_iseq_count:       " + format_number(13, stats[:live_iseq_count])
       out.puts "iseq_alloc_count:      " + format_number(13, stats[:iseq_alloc_count])
       out.puts "compiled_iseq_entry:   " + format_number(13, stats[:compiled_iseq_entry])
