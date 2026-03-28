@@ -927,6 +927,56 @@ class TestDecimal < Test::Unit::TestCase
   def test_negative_zero_negate
     assert_same(Decimal(0), -Decimal(0))
   end
+  def test_literal_float
+    assert_equal Decimal("42.42"), 42.42d
+    assert_instance_of Decimal, 42.42d
+  end
+
+  def test_literal_integer
+    assert_equal Decimal("42"), 42d
+    assert_instance_of Decimal, 42d
+  end
+
+  def test_literal_zero
+    assert_equal Decimal(0), 0.0d
+    assert_predicate 0.0d, :zero?
+    assert_equal Decimal(0), 0d
+    assert_predicate 0d, :zero?
+    assert_same 0d, 0.0d
+  end
+
+  def test_literal_negative
+    assert_equal Decimal("-1.5"), -1.5d
+  end
+
+  def test_literal_in_expression
+    assert_equal Decimal("3"), 1d + 2d
+  end
+
+  def test_literal_underscore
+    assert_equal Decimal("1000"), 1_000d
+    assert_equal Decimal("1000.5"), 1_000.5d
+  end
+  def test_ibf_round_trip
+    iseq = RubyVM::InstructionSequence.compile("42.42d")
+    bin = iseq.to_binary
+    loaded = RubyVM::InstructionSequence.load_from_binary(bin)
+    assert_equal Decimal("42.42"), loaded.eval
+  end
+
+  def test_ibf_round_trip_zero
+    iseq = RubyVM::InstructionSequence.compile("0.0d")
+    bin = iseq.to_binary
+    loaded = RubyVM::InstructionSequence.load_from_binary(bin)
+    assert_predicate loaded.eval, :zero?
+  end
+
+  def test_ibf_round_trip_negative
+    iseq = RubyVM::InstructionSequence.compile("-19.99d")
+    bin = iseq.to_binary
+    loaded = RubyVM::InstructionSequence.load_from_binary(bin)
+    assert_equal Decimal("-19.99"), loaded.eval
+  end
   def test_kernel_float
     assert_in_delta(19.99, Float(Decimal("19.99")))
   end

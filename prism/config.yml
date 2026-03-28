@@ -444,6 +444,8 @@ tokens:
     comment: "=~"
   - name: FLOAT
     comment: "a floating point number"
+  - name: FLOAT_DECIMAL
+    comment: "a floating point number with a decimal suffix"
   - name: FLOAT_IMAGINARY
     comment: "a floating pointer number with an imaginary suffix"
   - name: FLOAT_RATIONAL
@@ -472,6 +474,8 @@ tokens:
     comment: "an instance variable"
   - name: INTEGER
     comment: "an integer (any base)"
+  - name: INTEGER_DECIMAL
+    comment: "an integer with a decimal suffix"
   - name: INTEGER_IMAGINARY
     comment: "an integer with an imaginary suffix"
   - name: INTEGER_RATIONAL
@@ -2357,6 +2361,19 @@ nodes:
 
           defined?(a)
           ^^^^^^^^^^^
+  - name: DecimalNode
+    fields:
+      - name: value
+        type: string
+        comment: |
+          The value representation of the decimal literal (without suffix).
+
+              42.5d # value "42.5"
+    comment: |
+      Represents a decimal number literal.
+
+          42.5d
+          ^^^^^
   - name: ElseNode
     fields:
       - name: else_keyword_loc

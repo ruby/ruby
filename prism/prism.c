@@ -4303,6 +4303,44 @@ pm_float_node_rational_imaginary_create(pm_parser_t *parser, const pm_token_t *t
 }
 
 /**
+ * Allocate and initialize a new DecimalNode from a FLOAT_DECIMAL token.
+ */
+static pm_decimal_node_t *
+pm_float_node_decimal_create(pm_parser_t *parser, const pm_token_t *token) {
+    assert(token->type == PM_TOKEN_FLOAT_DECIMAL);
+
+    pm_decimal_node_t *node = pm_decimal_node_new(
+        parser->arena,
+        ++parser->node_id,
+        PM_NODE_FLAG_STATIC_LITERAL,
+        PM_LOCATION_INIT_TOKEN(parser, token),
+        ((pm_string_t) { 0 })
+    );
+
+    pm_string_shared_init(&node->value, token->start, token->end - 1);
+    return node;
+}
+
+/**
+ * Allocate and initialize a new DecimalNode from an INTEGER_DECIMAL token.
+ */
+static pm_decimal_node_t *
+pm_integer_node_decimal_create(pm_parser_t *parser, pm_node_flags_t base, const pm_token_t *token) {
+    assert(token->type == PM_TOKEN_INTEGER_DECIMAL);
+
+    pm_decimal_node_t *node = pm_decimal_node_new(
+        parser->arena,
+        ++parser->node_id,
+        base | PM_NODE_FLAG_STATIC_LITERAL,
+        PM_LOCATION_INIT_TOKEN(parser, token),
+        ((pm_string_t) { 0 })
+    );
+
+    pm_string_shared_init(&node->value, token->start, token->end - 1);
+    return node;
+}
+
+/**
  * Allocate and initialize a new ForNode node.
  */
 static pm_for_node_t *
@@ -8165,6 +8203,14 @@ lex_numeric_prefix(pm_parser_t *parser, bool* seen_e) {
         switch (*parser->current.end) {
             // 0d1111 is a decimal number
             case 'd':
+                parser->current.end++;
+                if (pm_char_is_decimal_digit(peek(parser))) {
+                    parser->current.end += pm_strspn_decimal_number_validate(parser, parser->current.end);
+                } else {
+                    return PM_TOKEN_INTEGER_DECIMAL;
+                }
+                break;
+
             case 'D':
                 parser->current.end++;
                 if (pm_char_is_decimal_digit(peek(parser))) {
@@ -8173,7 +8219,6 @@ lex_numeric_prefix(pm_parser_t *parser, bool* seen_e) {
                     match(parser, '_');
                     pm_parser_err_current(parser, PM_ERR_INVALID_NUMBER_DECIMAL);
                 }
-
                 break;
 
             // 0b1111 is a binary number
@@ -8338,6 +8383,8 @@ lex_numeric(pm_parser_t *parser) {
                 if (match(parser, 'i')) {
                     suffix_type = PM_TOKEN_INTEGER_RATIONAL_IMAGINARY;
                 }
+            } else if (match(parser, 'd')) {
+                suffix_type = PM_TOKEN_INTEGER_DECIMAL;
             } else if (match(parser, 'i')) {
                 suffix_type = PM_TOKEN_INTEGER_IMAGINARY;
             }
@@ -8348,6 +8395,8 @@ lex_numeric(pm_parser_t *parser) {
                 if (match(parser, 'i')) {
                     suffix_type = PM_TOKEN_FLOAT_RATIONAL_IMAGINARY;
                 }
+            } else if (match(parser, 'd')) {
+                suffix_type = PM_TOKEN_FLOAT_DECIMAL;
             } else if (match(parser, 'i')) {
                 suffix_type = PM_TOKEN_FLOAT_IMAGINARY;
             }
@@ -15634,8 +15683,8 @@ parse_conditional(pm_parser_t *parser, pm_context_t context, size_t opening_newl
  * that represent the beginning of nodes that are "primitives" in a pattern
  * matching expression.
  */
-#define PM_CASE_PRIMITIVE PM_TOKEN_INTEGER: case PM_TOKEN_INTEGER_IMAGINARY: case PM_TOKEN_INTEGER_RATIONAL: \
-    case PM_TOKEN_INTEGER_RATIONAL_IMAGINARY: case PM_TOKEN_FLOAT: case PM_TOKEN_FLOAT_IMAGINARY: \
+#define PM_CASE_PRIMITIVE PM_TOKEN_INTEGER: case PM_TOKEN_INTEGER_DECIMAL: case PM_TOKEN_INTEGER_IMAGINARY: case PM_TOKEN_INTEGER_RATIONAL: \
+    case PM_TOKEN_INTEGER_RATIONAL_IMAGINARY: case PM_TOKEN_FLOAT: case PM_TOKEN_FLOAT_DECIMAL: case PM_TOKEN_FLOAT_IMAGINARY: \
     case PM_TOKEN_FLOAT_RATIONAL: case PM_TOKEN_FLOAT_RATIONAL_IMAGINARY: case PM_TOKEN_SYMBOL_BEGIN: \
     case PM_TOKEN_REGEXP_BEGIN: case PM_TOKEN_BACKTICK: case PM_TOKEN_PERCENT_LOWER_X: case PM_TOKEN_PERCENT_LOWER_I: \
     case PM_TOKEN_PERCENT_LOWER_W: case PM_TOKEN_PERCENT_UPPER_I: case PM_TOKEN_PERCENT_UPPER_W: \
@@ -19306,6 +19355,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
         case PM_TOKEN_FLOAT:
             parser_lex(parser);
             return UP(pm_float_node_create(parser, &parser->previous));
+        case PM_TOKEN_FLOAT_DECIMAL:
+            parser_lex(parser);
+            return UP(pm_float_node_decimal_create(parser, &parser->previous));
         case PM_TOKEN_FLOAT_IMAGINARY:
             parser_lex(parser);
             return UP(pm_float_node_imaginary_create(parser, &parser->previous));
@@ -19546,6 +19598,11 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
             pm_node_flags_t base = parser->integer.base;
             parser_lex(parser);
             return UP(pm_integer_node_create(parser, base, &parser->previous));
+        }
+        case PM_TOKEN_INTEGER_DECIMAL: {
+            pm_node_flags_t base = parser->integer.base;
+            parser_lex(parser);
+            return UP(pm_integer_node_decimal_create(parser, base, &parser->previous));
         }
         case PM_TOKEN_INTEGER_IMAGINARY: {
             pm_node_flags_t base = parser->integer.base;

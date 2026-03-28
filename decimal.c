@@ -2517,10 +2517,8 @@ string_to_dec(VALUE self)
  *
  *  == Note on +0d+
  *
- *  The literal <tt>0d</tt> is Ruby's existing prefix for a decimal-base
- *  integer (like <tt>0x</tt> for hex or <tt>0b</tt> for binary), so it
- *  cannot also mean <tt>Decimal(0)</tt>.  Use <tt>0.0d</tt> or
- *  <tt>Decimal(0)</tt> for a zero \Decimal value.
+ *  <tt>0d</tt> produces <tt>Decimal(0)</tt>.  <tt>0d42</tt> and <tt>0D42</tt>
+ *  remain decimal-base integer literals, as before.
  *
  *  == What's Here
  *

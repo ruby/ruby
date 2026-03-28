@@ -22,6 +22,7 @@
 #include "internal/array.h"
 #include "internal/compile.h"
 #include "internal/complex.h"
+#include "internal/decimal.h"
 #include "internal/encoding.h"
 #include "internal/error.h"
 #include "internal/gc.h"
@@ -14449,6 +14450,30 @@ ibf_load_object_complex_rational(const struct ibf_load *load, const struct ibf_o
 }
 
 static void
+ibf_dump_object_decimal(struct ibf_dump *dump, VALUE obj)
+{
+    int128_t v = RDECIMAL(obj)->value;
+    int64_t data[2];
+    data[0] = (int64_t)((uint128_t)v & 0xFFFFFFFFFFFFFFFFULL);
+    data[1] = (int64_t)((uint128_t)v >> 64);
+    (void)IBF_W(data, int64_t, 2);
+}
+
+static VALUE
+ibf_load_object_decimal(const struct ibf_load *load, const struct ibf_object_header *header, ibf_offset_t offset)
+{
+    const int64_t *data = IBF_OBJBODY(int64_t, offset);
+    VALUE obj = rb_obj_alloc(rb_cDecimal);
+    int128_t val = (int128_t)(((uint128_t)(uint64_t)data[1] << 64) | (uint64_t)data[0]);
+    RDECIMAL(obj)->value = val;
+    if (val % DEC_SCALE == 0)
+        RBASIC(obj)->flags |= DEC_FL_INTEGRAL;
+    rb_ractor_make_shareable(rb_obj_freeze(obj));
+    if (header->internal) rb_obj_hide(obj);
+    return obj;
+}
+
+static void
 ibf_dump_object_symbol(struct ibf_dump *dump, VALUE obj)
 {
     ibf_dump_object_string(dump, rb_sym2str(obj));
@@ -14490,7 +14515,7 @@ static const ibf_dump_object_function dump_object_functions[RUBY_T_MASK+1] = {
     ibf_dump_object_unsupported, /* T_MATCH */
     ibf_dump_object_complex_rational, /* T_COMPLEX */
     ibf_dump_object_complex_rational, /* T_RATIONAL */
-    ibf_dump_object_unsupported, /* 0x10 */
+    ibf_dump_object_decimal,     /* T_DECIMAL */
     ibf_dump_object_unsupported, /* 0x11 T_NIL */
     ibf_dump_object_unsupported, /* 0x12 T_TRUE */
     ibf_dump_object_unsupported, /* 0x13 T_FALSE */
@@ -14583,7 +14608,7 @@ static const ibf_load_object_function load_object_functions[RUBY_T_MASK+1] = {
     ibf_load_object_unsupported, /* T_MATCH */
     ibf_load_object_complex_rational, /* T_COMPLEX */
     ibf_load_object_complex_rational, /* T_RATIONAL */
-    ibf_load_object_unsupported, /* 0x10 */
+    ibf_load_object_decimal,     /* T_DECIMAL */
     ibf_load_object_unsupported, /* T_NIL */
     ibf_load_object_unsupported, /* T_TRUE */
     ibf_load_object_unsupported, /* T_FALSE */

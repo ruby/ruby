@@ -368,6 +368,18 @@ parse_imaginary(const pm_imaginary_node_t *node)
     return RB_OBJ_SET_SHAREABLE(rb_complex_raw(INT2FIX(0), imaginary_part));
 }
 
+/**
+ * Convert a DecimalNode into a Ruby Decimal.
+ */
+static VALUE
+parse_decimal(const pm_decimal_node_t *node)
+{
+    const char *src = (const char *) pm_string_source(&node->value);
+    size_t len = pm_string_length(&node->value);
+    VALUE str = rb_str_new(src, len);
+    return rb_ractor_make_shareable(rb_decimal_from_str(str));
+}
+
 static inline VALUE
 parse_string(const pm_scope_node_t *scope_node, const pm_string_t *string)
 {
@@ -860,6 +872,8 @@ pm_static_literal_value(rb_iseq_t *iseq, const pm_node_t *node, pm_scope_node_t 
         RB_OBJ_SET_FROZEN_SHAREABLE(value);
         return value;
       }
+      case PM_DECIMAL_NODE:
+        return parse_decimal((const pm_decimal_node_t *) node);
       case PM_FALSE_NODE:
         return Qfalse;
       case PM_FLOAT_NODE:
@@ -1084,6 +1098,7 @@ again:
       case PM_NIL_NODE:
         PUSH_INSNL(ret, location, jump, else_label);
         return;
+      case PM_DECIMAL_NODE:
       case PM_FLOAT_NODE:
       case PM_IMAGINARY_NODE:
       case PM_INTEGER_NODE:
@@ -1979,6 +1994,7 @@ pm_setup_args_dup_rest_p(const pm_node_t *node)
       case PM_BACK_REFERENCE_READ_NODE:
       case PM_CLASS_VARIABLE_READ_NODE:
       case PM_CONSTANT_READ_NODE:
+      case PM_DECIMAL_NODE:
       case PM_FALSE_NODE:
       case PM_FLOAT_NODE:
       case PM_GLOBAL_VARIABLE_READ_NODE:
@@ -3168,6 +3184,7 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
       case PM_CLASS_VARIABLE_READ_NODE:
       case PM_CONSTANT_PATH_NODE:
       case PM_CONSTANT_READ_NODE:
+      case PM_DECIMAL_NODE:
       case PM_FALSE_NODE:
       case PM_FLOAT_NODE:
       case PM_GLOBAL_VARIABLE_READ_NODE:
@@ -4192,6 +4209,9 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
       case PM_DEF_NODE:
         // defined?(def a() end)
         //          ^^^^^^^^^^^
+      case PM_DECIMAL_NODE:
+        // defined?(1.0d)
+        //          ^^^^
       case PM_DEFINED_NODE:
         // defined?(defined?(a))
         //          ^^^^^^^^^^^
@@ -5728,6 +5748,7 @@ pm_compile_shareable_constant_literal(rb_iseq_t *iseq, const pm_node_t *node, pm
       case PM_SOURCE_LINE_NODE:
       case PM_INTEGER_NODE:
       case PM_FLOAT_NODE:
+      case PM_DECIMAL_NODE:
       case PM_RATIONAL_NODE:
       case PM_IMAGINARY_NODE:
       case PM_SOURCE_ENCODING_NODE:
@@ -9169,6 +9190,14 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // ^^^^^^^^^^^
         const pm_defined_node_t *cast = (const pm_defined_node_t *) node;
         pm_compile_defined_expr(iseq, cast->value, &location, ret, popped, scope_node, false);
+        return;
+      }
+      case PM_DECIMAL_NODE: {
+        // 1.0d
+        // ^^^^
+        if (!popped) {
+            PUSH_INSN1(ret, location, putobject, parse_decimal((const pm_decimal_node_t *) node));
+        }
         return;
       }
       case PM_EMBEDDED_STATEMENTS_NODE: {
