@@ -1012,7 +1012,7 @@ class_init_copy_check(VALUE clone, VALUE orig)
     }
 }
 
-struct cvc_table_copy_ctx {
+struct cvc_table_deep_copy_ctx {
     VALUE clone;
     struct rb_id_table * new_table;
 };
@@ -1020,7 +1020,7 @@ struct cvc_table_copy_ctx {
 static enum rb_id_table_iterator_result
 cvc_table_copy(ID id, VALUE val, void *data)
 {
-    struct cvc_table_copy_ctx *ctx = (struct cvc_table_copy_ctx *)data;
+    struct cvc_table_deep_copy_ctx *ctx = (struct cvc_table_deep_copy_ctx *)data;
     struct rb_cvar_class_tbl_entry * orig_entry;
     orig_entry = (struct rb_cvar_class_tbl_entry *)val;
 
@@ -1048,7 +1048,7 @@ copy_tables(VALUE clone, VALUE orig)
         struct rb_id_table *rb_cvc_tbl = RCLASS_CVC_TBL(orig);
         struct rb_id_table *rb_cvc_tbl_dup = rb_id_table_create(rb_id_table_size(rb_cvc_tbl));
 
-        struct cvc_table_copy_ctx ctx;
+        struct cvc_table_deep_copy_ctx ctx;
         ctx.clone = clone;
         ctx.new_table = rb_cvc_tbl_dup;
         rb_id_table_foreach(rb_cvc_tbl, cvc_table_copy, &ctx);
