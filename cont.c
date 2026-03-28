@@ -41,6 +41,7 @@ extern int madvise(caddr_t, size_t, int);
 #include "vm_sync.h"
 #include "id_table.h"
 #include "ractor_core.h"
+#include "zjit.h"
 
 enum {
     DEBUG = 0,
@@ -1455,8 +1456,11 @@ rb_jit_cont_each_iseq(rb_iseq_callback callback, void *data)
 
         const rb_control_frame_t *cfp = cont->ec->cfp;
         while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(cont->ec, cfp)) {
-            if (cfp->pc && cfp->iseq && imemo_type((VALUE)cfp->iseq) == imemo_iseq) {
-                callback(cfp->iseq, data);
+            if (CFP_PC(cfp) && CFP_ISEQ(cfp)) {
+                const rb_iseq_t *iseq = CFP_ISEQ(cfp);
+                if (iseq && imemo_type((VALUE)iseq) == imemo_iseq) {
+                    callback(iseq, data);
+                }
             }
             cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
         }
@@ -1476,7 +1480,7 @@ rb_yjit_cancel_jit_return(void *leave_exit, void *leave_exception)
 
         const rb_control_frame_t *cfp = cont->ec->cfp;
         while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(cont->ec, cfp)) {
-            if (cfp->jit_return && cfp->jit_return != leave_exception) {
+            if (CFP_JIT_RETURN(cfp) && cfp->jit_return != leave_exception) {
                 ((rb_control_frame_t *)cfp)->jit_return = leave_exit;
             }
             cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
@@ -1576,8 +1580,8 @@ show_vm_pcs(const rb_control_frame_t *cfp,
     int i=0;
     while (cfp != end_of_cfp) {
         int pc = 0;
-        if (cfp->iseq) {
-            pc = cfp->pc - ISEQ_BODY(cfp->iseq)->iseq_encoded;
+        if (CFP_ISEQ(cfp)) {
+            pc = cfp->pc - ISEQ_BODY(CFP_ISEQ(cfp))->iseq_encoded;
         }
         fprintf(stderr, "%2d pc: %d\n", i++, pc);
         cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);

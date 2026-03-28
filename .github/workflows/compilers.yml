@@ -221,7 +221,6 @@ jobs:
       - { uses: './.github/actions/compilers', name: 'NDEBUG',                         with: { cppflags: '-DNDEBUG' }, timeout-minutes: 5 }
       - { uses: './.github/actions/compilers', name: 'RUBY_DEBUG',                     with: { cppflags: '-DRUBY_DEBUG' }, timeout-minutes: 5 }
       - { uses: './.github/actions/compilers', name: 'ARRAY_DEBUG',                    with: { cppflags: '-DARRAY_DEBUG' }, timeout-minutes: 5 }
-      - { uses: './.github/actions/compilers', name: 'BIGNUM_DEBUG',                   with: { cppflags: '-DBIGNUM_DEBUG' }, timeout-minutes: 5 }
       - { uses: './.github/actions/compilers', name: 'CCAN_LIST_DEBUG',                with: { cppflags: '-DCCAN_LIST_DEBUG' }, timeout-minutes: 5 }
       - { uses: './.github/actions/compilers', name: 'CPDEBUG=-1',                     with: { cppflags: '-DCPDEBUG=-1' }, timeout-minutes: 5 }
       - { uses: './.github/actions/compilers', name: 'ENC_DEBUG',                      with: { cppflags: '-DENC_DEBUG' }, timeout-minutes: 5 }
@@ -259,8 +258,6 @@ jobs:
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
       - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
       - { uses: './.github/actions/compilers', name: 'USE_LAZY_LOAD',                  with: { cppflags: '-DUSE_LAZY_LOAD' }, timeout-minutes: 5 }
-      - { uses: './.github/actions/compilers', name: 'USE_SYMBOL_GC=0',                with: { cppflags: '-DUSE_SYMBOL_GC=0' }, timeout-minutes: 5 }
-      - { uses: './.github/actions/compilers', name: 'USE_THREAD_CACHE=0',             with: { cppflags: '-DUSE_THREAD_CACHE=0' }, timeout-minutes: 5 }
       - { uses: './.github/actions/compilers', name: 'USE_RUBY_DEBUG_LOG=1',           with: { cppflags: '-DUSE_RUBY_DEBUG_LOG=1' }, timeout-minutes: 5 }
       - { uses: './.github/actions/compilers', name: 'USE_DEBUG_COUNTER',              with: { cppflags: '-DUSE_DEBUG_COUNTER=1' }, timeout-minutes: 5 }
       - { uses: './.github/actions/compilers', name: 'SHARABLE_MIDDLE_SUBSTRING',      with: { cppflags: '-DSHARABLE_MIDDLE_SUBSTRING=1' }, timeout-minutes: 5 }

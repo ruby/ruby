@@ -11,6 +11,11 @@ Note that each entry is kept to a minimum, see links for details.
 
 Note: We're only listing outstanding class updates.
 
+* Array
+
+    * `Array#pack` accepts a new format `R` and `r` for unpacking unsigned
+      and signed LEB128 encoded integers. [[Feature #21785]]
+
 * ENV
 
     * `ENV.fetch_values` is added. It returns an array of values for the
@@ -30,17 +35,6 @@ Note: We're only listing outstanding class updates.
 
     * `MatchData#integer_at` is added.  It converts the matched substring to
       integer and return the result.  [[Feature #21932]]
-
-* Method
-
-    * `Method#source_location`, `Proc#source_location`, and
-      `UnboundMethod#source_location` now return extended location
-      information with 5 elements: `[path, start_line, start_column,
-      end_line, end_column]`. The previous 2-element format `[path,
-      line]` can still be obtained by calling `.take(2)` on the result.
-      [[Feature #6012]]
-    * `Array#pack` accepts a new format `R` and `r` for unpacking unsigned
-      and signed LEB128 encoded integers. [[Feature #21785]]
 
 * Regexp
 
@@ -145,7 +139,6 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 
 ## JIT
 
-[Feature #6012]: https://bugs.ruby-lang.org/issues/6012
 [Feature #8948]: https://bugs.ruby-lang.org/issues/8948
 [Feature #15330]: https://bugs.ruby-lang.org/issues/15330
 [Feature #21390]: https://bugs.ruby-lang.org/issues/21390

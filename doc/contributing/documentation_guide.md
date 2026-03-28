@@ -20,11 +20,18 @@ build directory:
 make html
 ```
 
+Or, to start a live-reloading server that automatically refreshes
+the browser when you edit source files:
+
+```sh
+make html-server
+```
+
+Then visit http://localhost:4000 in your browser.
+To use a different port: `make html-server RDOC_SERVER_PORT=8080`.
+
 If you don't have a build directory, follow the [quick start
 guide](building_ruby.md#label-Quick+start+guide) up to step 4.
-
-Then you can preview your changes by opening
-`{build folder}/.ext/html/index.html` file in your browser.
 
 ## Goal
 
