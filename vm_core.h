@@ -920,7 +920,7 @@ struct rb_block {
 typedef struct rb_control_frame_struct {
     const VALUE *pc;        // cfp[0]
     VALUE *sp;              // cfp[1]
-    const rb_iseq_t *iseq;  // cfp[2]
+    const rb_iseq_t *_iseq; // cfp[2] -- use rb_cfp_iseq(cfp) to read
     VALUE self;             // cfp[3] / block[0]
     const VALUE *ep;        // cfp[4] / block[1]
     const void *block_code; // cfp[5] / block[2] -- iseq, ifunc, or forwarded block handler
@@ -1532,7 +1532,10 @@ static inline int
 VM_FRAME_CFRAME_P(const rb_control_frame_t *cfp)
 {
     int cframe_p = VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_CFRAME) != 0;
-    VM_ASSERT(RUBY_VM_NORMAL_ISEQ_P(cfp->iseq) != cframe_p ||
+    // With ZJIT lightweight frames, cfp->_iseq may be stale (not yet materialized),
+    // so skip this assertion when jit_return is set (zjit.h is not available here).
+    VM_ASSERT(cfp->jit_return ||
+              RUBY_VM_NORMAL_ISEQ_P(cfp->_iseq) != cframe_p ||
               (VM_FRAME_TYPE(cfp) & VM_FRAME_MAGIC_MASK) == VM_FRAME_MAGIC_DUMMY);
     return cframe_p;
 }
