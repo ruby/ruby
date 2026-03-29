@@ -227,14 +227,6 @@ struct duplicate_id_tbl_data {
 };
 
 static enum rb_id_table_iterator_result
-duplicate_classext_id_table_i(ID key, VALUE value, void *data)
-{
-    struct rb_id_table *tbl = (struct rb_id_table *)data;
-    rb_id_table_insert(tbl, key, value);
-    return ID_TABLE_CONTINUE;
-}
-
-static enum rb_id_table_iterator_result
 duplicate_classext_m_tbl_i(ID key, VALUE value, void *data)
 {
     struct duplicate_id_tbl_data *arg = (struct duplicate_id_tbl_data *)data;
@@ -262,8 +254,19 @@ duplicate_classext_m_tbl(struct rb_id_table *orig, VALUE klass, bool init_missin
     return tbl;
 }
 
+static enum rb_id_table_iterator_result
+duplicate_classext_cvc_tbl_i(ID key, VALUE value, void *data)
+{
+    struct rb_id_table *tbl = (struct rb_id_table *)data;
+    struct rb_cvar_class_tbl_entry *cvc_entry = (struct rb_cvar_class_tbl_entry *)value;
+    struct rb_cvar_class_tbl_entry *copy = ALLOC(struct rb_cvar_class_tbl_entry);
+    MEMCPY(copy, cvc_entry, struct rb_cvar_class_tbl_entry, 1);
+    rb_id_table_insert(tbl, key, (VALUE)copy);
+    return ID_TABLE_CONTINUE;
+}
+
 static struct rb_id_table *
-duplicate_classext_id_table(struct rb_id_table *orig, bool init_missing)
+duplicate_classext_cvc_tbl(struct rb_id_table *orig, bool init_missing)
 {
     struct rb_id_table *tbl;
 
@@ -274,7 +277,7 @@ duplicate_classext_id_table(struct rb_id_table *orig, bool init_missing)
             return NULL;
     }
     tbl = rb_id_table_create(rb_id_table_size(orig));
-    rb_id_table_foreach(orig, duplicate_classext_id_table_i, tbl);
+    rb_id_table_foreach(orig, duplicate_classext_cvc_tbl_i, tbl);
     return tbl;
 }
 
@@ -411,7 +414,7 @@ rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_box_t *bo
      * RCLASSEXT_CC_TBL(copy) = NULL
      */
 
-    RCLASSEXT_CVC_TBL(ext) = duplicate_classext_id_table(RCLASSEXT_CVC_TBL(orig), dup_iclass);
+    RCLASSEXT_CVC_TBL(ext) = duplicate_classext_cvc_tbl(RCLASSEXT_CVC_TBL(orig), dup_iclass);
 
     // Subclasses/back-pointers are only in the prime classext.
 

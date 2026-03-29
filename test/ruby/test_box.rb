@@ -155,6 +155,37 @@ class TestBox < Test::Unit::TestCase
     assert_include Ruby::Box.current.inspect, "main"
   end
 
+  def test_class_variables
+    # [Bug #21952]
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "here = '#{__dir__}'; #{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      Ruby::Box.root.eval(<<~RUBY)
+        module M
+          @@x = 1
+        end
+
+        class A
+          include M
+        end
+
+        class B < A
+        end
+      RUBY
+
+      code = <<~REPRO
+        class ::B
+          @@x += 1
+        end
+      REPRO
+
+      b1 = Ruby::Box.new
+      assert_equal 2, b1.eval(code)
+
+      b2 = Ruby::Box.new
+      assert_equal 2, b2.eval(code)
+    end;
+  end
+
   def test_autoload_in_box
     setup_box
 
