@@ -2300,6 +2300,4 @@ Init_strscan(void)
     rb_define_method(StringScanner, "fixed_anchor?", strscan_fixed_anchor_p, 0);
 
     rb_define_method(StringScanner, "named_captures", strscan_named_captures, 0);
-
-    rb_require("strscan/strscan");
 }

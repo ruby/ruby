@@ -433,6 +433,50 @@ fn test_getblockparam() {
 }
 
 #[test]
+fn test_setblockparam() {
+    eval("
+        def test(&block)
+          block = proc { 3 }
+          blk = block
+          blk.call
+        end
+        test { 1 }
+    ");
+    assert_contains_opcode("test", YARVINSN_setblockparam);
+    assert_snapshot!(assert_compiles("test { 1 }"), @"3");
+}
+
+#[test]
+fn test_setblockparam_nested_block() {
+    eval("
+        def test(&block)
+          proc do
+            block = proc { 3 }
+            blk = block
+            blk.call
+          end.call
+        end
+        test { 1 }
+    ");
+    assert_snapshot!(assert_compiles("test { 1 }"), @"3");
+}
+
+#[test]
+fn test_setblockparam_side_exit() {
+    // This pattern side exits because `block.call` goes through
+    // getblockparamproxy's modified-block-parameter case.
+    eval("
+        def test(&block)
+          block = proc { 3 }
+          block.call
+        end
+        test { 1 }
+    ");
+    assert_contains_opcode("test", YARVINSN_setblockparam);
+    assert_snapshot!(inspect("test { 1 }"), @"3");
+}
+
+#[test]
 fn test_getblockparam_proxy_side_exit_restores_block_local() {
     eval("
         def test(&block)
@@ -4657,6 +4701,23 @@ fn test_invokeblock_multiple_yields() {
 }
 
 #[test]
+fn test_invokeblock_ifunc_map() {
+    eval("
+        class MyList
+          include Enumerable
+          def each
+            yield 1
+            yield 2
+            yield 3
+          end
+        end
+        def test = MyList.new.map { |x| x * 2 }
+        test
+    ");
+    assert_snapshot!(assert_compiles("test"), @"[2, 4, 6]");
+}
+
+#[test]
 fn test_ccall_variadic_with_multiple_args() {
     eval("
         def test
@@ -5287,4 +5348,29 @@ fn test_polymorphic_getivar_too_complex_shape() {
         # The too-complex object should still return :complex, not nil
         [normal.foo, complex.foo]
     "#), @"[:normal, :complex]");
+}
+
+/// When a method with keyword defaults contains a block that creates a lambda,
+/// the lambda causes EP escape, which globally patches NoEPEscape PatchPoints.
+/// On subsequent calls the PatchPoint side exit (which uses without_locals())
+/// must not leave stale keyword default values in the frame. We solve this by
+/// invalidating the ISEQ version on EP escape so the interpreter takes over.
+#[test]
+fn test_ep_escape_preserves_keyword_default() {
+    set_call_threshold(1);
+    assert_snapshot!(inspect(r#"
+        def target(dumped, additional_methods: [])
+          dumped.class
+          additional_methods.each { |m| ->{ m } }
+          additional_methods
+        end
+
+        def forwarder(x, **kwargs)
+          target(x, **kwargs)
+        end
+
+        5.times { forwarder("z") }
+        forwarder("y", additional_methods: [:to_s])
+        target("x")
+    "#), @"[]");
 }

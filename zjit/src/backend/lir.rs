@@ -6,7 +6,7 @@ use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use crate::bitset::BitSet;
 use crate::codegen::{local_size_and_idx_to_ep_offset, perf_symbol_range_start, perf_symbol_range_end};
-use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, vm_stack_canary};
+use crate::cruby::{IseqPtr, Qundef, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, vm_stack_canary};
 use crate::hir::{Invariant, SideExitReason};
 use crate::hir;
 use crate::options::{TraceExits, PerfMap, get_option};
@@ -551,6 +551,7 @@ pub struct SideExit {
     pub pc: Opnd,
     pub stack: Vec<Opnd>,
     pub locals: Vec<Opnd>,
+    pub iseq: IseqPtr,
     /// If set, the side exit will call the recompile function with these arguments
     /// to profile the send and invalidate the ISEQ for recompilation.
     pub recompile: Option<SideExitRecompile>,
@@ -2619,7 +2620,7 @@ impl Assembler
     pub fn compile_exits(&mut self) -> Vec<Insn> {
         /// Restore VM state (cfp->pc, cfp->sp, stack, locals) for the side exit.
         fn compile_exit_save_state(asm: &mut Assembler, exit: &SideExit) {
-            let SideExit { pc, stack, locals, .. } = exit;
+            let SideExit { pc, stack, locals, iseq, .. } = exit;
 
             // Side exit blocks are not part of the CFG at the moment,
             // so we need to manually ensure that patchpoints get padded
@@ -2631,6 +2632,11 @@ impl Assembler
 
             asm_comment!(asm, "save cfp->sp");
             asm.lea_into(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP), Opnd::mem(64, SP, stack.len() as i32 * SIZEOF_VALUE_I32));
+
+            asm_comment!(asm, "save cfp->iseq");
+            asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_ISEQ), VALUE::from(*iseq).into());
+
+            // cfp->block_code and cfp->jit_return are cleared by the caller jit_exec() or JIT_EXEC()
 
             if !stack.is_empty() {
                 asm_comment!(asm, "write stack slots: {}", join_opnds(&stack, ", "));
@@ -2663,6 +2669,16 @@ impl Assembler
             // compile_exit_save_state because it clobbers caller-saved registers
             // that may hold stack/local operands we need to save.
             if let Some(recompile) = &exit.recompile {
+                if cfg!(feature = "runtime_checks") {
+                    // Clear jit_return to fully materialize the frame. This must happen
+                    // before any C call in the exit path (e.g. no_profile_send_recompile)
+                    // because that C call can trigger GC, which walks the stack and would
+                    // hit the CFP_JIT_RETURN assertion if jit_return still holds the
+                    // runtime_checks poison value (JIT_RETURN_POISON).
+                    asm_comment!(asm, "clear cfp->jit_return");
+                    asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), 0.into());
+                }
+
                 use crate::codegen::no_profile_send_recompile;
                 asm_comment!(asm, "profile and maybe recompile for no-profile send");
                 asm_ccall!(asm, no_profile_send_recompile,
@@ -2791,6 +2807,7 @@ impl Assembler
         if !compiled_exits.is_empty() {
             let nanos = side_exit_start.elapsed().as_nanos();
             crate::stats::incr_counter_by(crate::stats::Counter::compile_side_exit_time_ns, nanos as u64);
+            crate::stats::incr_counter_by(crate::stats::Counter::compiled_side_exit_count, compiled_exits.len() as u64);
         }
 
         // Close the current perf range for side exits

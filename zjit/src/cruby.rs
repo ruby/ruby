@@ -373,13 +373,6 @@ pub struct rb_callcache {
     _marker: core::marker::PhantomData<(*mut u8, core::marker::PhantomPinned)>,
 }
 
-/// Opaque control_frame (CFP) struct from vm_core.h
-#[repr(C)]
-pub struct rb_control_frame_struct {
-    _data: [u8; 0],
-    _marker: core::marker::PhantomData<(*mut u8, core::marker::PhantomPinned)>,
-}
-
 /// Pointer to a control frame pointer (CFP)
 pub type CfpPtr = *mut rb_control_frame_struct;
 

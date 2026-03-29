@@ -1,5 +1,5 @@
 .\"Ruby is copyrighted by Yukihiro Matsumoto <matz@netlab.jp>.
-.Dd February 24, 2026
+.Dd March 27, 2026
 .Dt RUBY 1 "Ruby Programmer's Reference Guide"
 .Os UNIX
 .Sh NAME
@@ -699,6 +699,16 @@ Introduced in Ruby 2.1, default: 1.2, minimum: 1.0 (no growth)
 Frees stacks of pooled fibers, if set to 1.
 Do not free the stacks if set to 0.
 Introduced in Ruby 2.7, default: 1 (no growth)
+.Pp
+.It Ev RUBY_SHARED_FIBER_POOL_MAXIMUM_COUNT
+If set to a non-negative integer, the shared fiber pool cannot allocate more
+than that many stacks; further fiber creation may fail with
+.Va FiberError .
+Unset or 0 means no explicit cap (subject to process limits).
+.Pp
+.It Ev RUBY_SHARED_FIBER_POOL_MINIMUM_COUNT
+Initial and minimum growth chunk size for the shared fiber pool (stacks).
+Unset uses the implementation default.
 .Pp
 .El
 .Sh STACK SIZE ENVIRONMENT

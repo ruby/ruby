@@ -89,6 +89,14 @@ pub extern "C" fn rb_zjit_root_update_references() {
     }
     let invariants = ZJITState::get_invariants();
     invariants.update_references();
+
+    // Update iseq pointers in all JITFrames for GC compaction.
+    // rb_execution_context_update only updates JITFrames currently on the stack,
+    // but JITFrames not on the stack also need their iseq pointers updated
+    // because the JIT code will reuse them on the next call.
+    for &jit_frame in ZJITState::get_jit_frames().iter() {
+        unsafe { &mut *jit_frame }.update_references();
+    }
 }
 
 fn iseq_mark(payload: &IseqPayload) {
@@ -206,5 +214,13 @@ fn ranges_overlap<T>(left: &Range<T>, right: &Range<T>) -> bool where T: Partial
 /// Callback for marking GC objects inside [crate::invariants::Invariants].
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_root_mark() {
-    // TODO(max): Either add roots to mark or consider removing this callback
+    // Mark iseq pointers in all JITFrames. JITFrames that are currently on the
+    // stack are also marked via rb_execution_context_mark, but JITFrames not on
+    // the stack still need their iseqs kept alive because JIT code will reuse them.
+    if !ZJITState::has_instance() {
+        return;
+    }
+    for &jit_frame in ZJITState::get_jit_frames().iter() {
+        unsafe { &*jit_frame }.mark();
+    }
 }

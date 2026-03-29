@@ -8,6 +8,7 @@ use std::sync::atomic::Ordering;
 use crate::invariants::Invariants;
 use crate::asm::CodeBlock;
 use crate::options::{get_option, rb_zjit_prepare_options};
+use crate::jit_frame::JITFrame;
 use crate::stats::{Counters, InsnCounters, PerfettoTracer};
 use crate::virtualmem::CodePtr;
 use std::sync::atomic::AtomicUsize;
@@ -70,6 +71,9 @@ pub struct ZJITState {
 
     /// Perfetto tracer for --zjit-trace-exits
     perfetto_tracer: Option<PerfettoTracer>,
+
+    /// Frame metadata for ISEQ and C calls that are known at compile time
+    jit_frames: Vec<*mut JITFrame>,
 }
 
 /// Tracks the initialization progress
@@ -147,6 +151,7 @@ impl ZJITState {
             ccall_counter_pointers: HashMap::new(),
             iseq_calls_count_pointers: HashMap::new(),
             perfetto_tracer,
+            jit_frames: vec![],
         };
         unsafe { ZJIT_STATE = Enabled(zjit_state); }
 
@@ -184,6 +189,10 @@ impl ZJITState {
     /// Get a mutable reference to the invariants
     pub fn get_invariants() -> &'static mut Invariants {
         &mut ZJITState::get_instance().invariants
+    }
+
+    pub fn get_jit_frames() -> &'static mut Vec<*mut JITFrame> {
+        &mut ZJITState::get_instance().jit_frames
     }
 
     pub fn get_method_annotations() -> &'static cruby_methods::Annotations {

@@ -8,6 +8,11 @@ module Prism
       assert_frozen(Prism.parse("1 + 2; %i{foo} + %i{bar}", freeze: true))
     end
 
+    def test_offsets_usable
+      node = Prism.parse_statement("1 + 2", freeze: true)
+      assert_equal(1, node.start_line)
+    end
+
     def test_lex
       assert_frozen(Prism.lex("1 + 2; %i{foo} + %i{bar}", freeze: true))
     end

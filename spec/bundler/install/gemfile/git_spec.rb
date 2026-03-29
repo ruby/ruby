@@ -35,7 +35,7 @@ RSpec.describe "bundle install with git sources" do
       build_git "foo"
       revision = revision_for(lib_path("foo-1.0"))
 
-      bundle "config set lockfile_checksums true"
+      bundle_config "lockfile_checksums true"
       gemfile base_gemfile
 
       lockfile <<~L
@@ -62,7 +62,7 @@ RSpec.describe "bundle install with git sources" do
           #{Bundler::VERSION}
       L
 
-      bundle "config set frozen true"
+      bundle_config "frozen true"
 
       bundle "install"
       expect(the_bundle).to include_gems("foo 1.0")
@@ -83,7 +83,7 @@ RSpec.describe "bundle install with git sources" do
     it "caches the git repo globally and properly uses the cached repo on the next invocation" do
       install_base_gemfile
       pristine_system_gems
-      bundle "config set global_gem_cache true"
+      bundle_config "global_gem_cache true"
       bundle :install
       expect(Dir["#{home}/.bundle/cache/git/foo-1.0-*"]).to have_attributes size: 1
 
@@ -183,7 +183,7 @@ RSpec.describe "bundle install with git sources" do
     end
 
     it "still works after moving the application directory" do
-      bundle "config set --local path vendor/bundle"
+      bundle_config "path vendor/bundle"
       install_base_gemfile
 
       FileUtils.mv bundled_app, tmp("bundled_app.bck")
@@ -192,7 +192,7 @@ RSpec.describe "bundle install with git sources" do
     end
 
     it "can still install after moving the application directory" do
-      bundle "config set --local path vendor/bundle"
+      bundle_config "path vendor/bundle"
       install_base_gemfile
 
       FileUtils.mv bundled_app, tmp("bundled_app.bck")
@@ -381,7 +381,7 @@ RSpec.describe "bundle install with git sources" do
     it "does not download random non-head refs" do
       git("update-ref -m \"Bundler Spec!\" refs/bundler/1 main~1", lib_path("foo-1.0"))
 
-      bundle "config set global_gem_cache true"
+      bundle_config "global_gem_cache true"
 
       install_gemfile <<-G
         source "https://gem.repo1"
@@ -1291,7 +1291,7 @@ RSpec.describe "bundle install with git sources" do
 
       pristine_system_gems
 
-      bundle "config set --local deployment true"
+      bundle_config "deployment true"
       bundle :install
     end
   end
@@ -1674,7 +1674,7 @@ In Gemfile:
           gem 'foo'
         end
       G
-      bundle "config set --global path vendor/bundle"
+      bundle_config_global "path vendor/bundle"
       bundle :install
       pristine_system_gems
 
@@ -1685,7 +1685,7 @@ In Gemfile:
 
   describe "when the git source is overridden with a local git repo" do
     before do
-      bundle "config set --global local.foo #{lib_path("foo")}"
+      bundle_config_global "local.foo #{lib_path("foo")}"
     end
 
     describe "and git output is colorized" do

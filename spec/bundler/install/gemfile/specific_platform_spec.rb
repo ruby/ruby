@@ -70,7 +70,7 @@ RSpec.describe "bundle install with specific platforms" do
       setup_multiplatform_gem
 
       # Consistent location to install and look for gems
-      bundle "config set --local path vendor/bundle"
+      bundle_config "path vendor/bundle"
 
       install_gemfile(google_protobuf)
 
@@ -92,7 +92,7 @@ RSpec.describe "bundle install with specific platforms" do
       L
 
       # force strict usage of the lockfile by setting frozen mode
-      bundle "config set --local frozen true"
+      bundle_config "frozen true"
 
       # make sure the platform that got actually installed with the old bundler is used
       expect(the_bundle).to include_gem("google-protobuf 3.0.0.alpha.5.0.5.1 universal-darwin")
@@ -104,7 +104,7 @@ RSpec.describe "bundle install with specific platforms" do
       setup_multiplatform_gem
 
       # Consistent location to install and look for gems
-      bundle "config set --local path vendor/bundle"
+      bundle_config "path vendor/bundle"
 
       gemfile google_protobuf
 
@@ -275,7 +275,7 @@ RSpec.describe "bundle install with specific platforms" do
       end
 
       # Consistent location to install and look for gems
-      bundle "config set --local path vendor/bundle"
+      bundle_config "path vendor/bundle"
 
       gemfile <<-G
         source "https://gem.repo2"
@@ -359,7 +359,7 @@ RSpec.describe "bundle install with specific platforms" do
     simulate_platform "x86_64-darwin-15" do
       setup_multiplatform_gem
       gemfile(google_protobuf)
-      bundle "config set --local cache_all_platforms true"
+      bundle_config "cache_all_platforms true"
       bundle "cache"
       expect(cached_gem("google-protobuf-3.0.0.alpha.5.0.5.1-universal-darwin")).to exist
 

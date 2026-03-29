@@ -1084,7 +1084,7 @@ rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *de
                 cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
 
                 if (cfp && (line = rb_vm_get_sourceline(cfp))) {
-                    VALUE location = rb_ary_new3(2, rb_iseq_path(cfp->iseq), INT2FIX(line));
+                    VALUE location = rb_ary_new3(2, rb_iseq_path(CFP_ISEQ(cfp)), INT2FIX(line));
                     rb_ary_freeze(location);
                     RB_OBJ_SET_SHAREABLE(location);
                     RB_OBJ_WRITE(me, &def->body.attr.location, location);
@@ -2330,7 +2330,7 @@ scope_visibility_check(void)
 {
     /* Check for public/protected/private/module_function called inside a method */
     rb_control_frame_t *cfp = GET_EC()->cfp+1;
-    if (cfp && cfp->iseq && ISEQ_BODY(cfp->iseq)->type == ISEQ_TYPE_METHOD) {
+    if (cfp && CFP_ISEQ(cfp) && ISEQ_BODY(CFP_ISEQ(cfp))->type == ISEQ_TYPE_METHOD) {
         rb_warn("calling %s without arguments inside a method may not have the intended effect",
             rb_id2name(rb_frame_this_func()));
     }

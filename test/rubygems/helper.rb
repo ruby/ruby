@@ -3,13 +3,6 @@
 require "rubygems"
 
 begin
-  gem "test-unit", "~> 3.0"
-rescue Gem::LoadError
-end
-
-require "test/unit"
-
-begin
   raise LoadError if ENV["GEM_COMMAND"]
 
   gem "simplecov_json_formatter"
@@ -34,6 +27,13 @@ begin
 rescue LoadError
   # SimpleCov is not installed
 end
+
+begin
+  gem "test-unit", "~> 3.0"
+rescue Gem::LoadError
+end
+
+require "test/unit"
 
 require "fileutils"
 require "pathname"

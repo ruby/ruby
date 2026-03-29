@@ -1485,9 +1485,10 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, length@0x1010, cme:0x1018)
           v24:ArrayExact = GuardType v10, ArrayExact
-          v25:BasicObject = CCallWithFrame v24, :Array#length@0x1040
+          v25:CInt64 = ArrayLength v24
+          v26:Fixnum = BoxFixnum v25
           CheckInterrupts
-          Return v25
+          Return v26
         ");
     }
 
@@ -4740,9 +4741,7 @@ mod hir_opt_tests {
           v18:CInt64 = LoadField v15, :_env_data_index_specval@0x1002
           v19:CInt64 = GuardAnyBitSet v18, CUInt64(1)
           v20:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          v22:BasicObject = Send v9, 0x1001, :tap, v20 # SendFallbackReason: Send: no profile data available
-          CheckInterrupts
-          Return v22
+          SideExit NoProfileSend recompile
         ");
     }
 
@@ -4812,6 +4811,72 @@ mod hir_opt_tests {
         bb6(v23:BasicObject, v24:BasicObject):
           CheckInterrupts
           Return v24
+        ");
+    }
+
+    #[test]
+    fn test_setblockparam() {
+        eval("
+            def test(&block)
+              block = nil
+            end
+        ");
+        assert_contains_opcode("test", YARVINSN_setblockparam);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :block@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :block@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v14:NilClass = Const Value(nil)
+          SetLocal :block, l0, EP@3, v14
+          v18:CPtr = GetEP 0
+          v19:CInt64 = LoadField v18, :_env_data_index_flags@0x1001
+          v20:CInt64[512] = Const CInt64(512)
+          v21:CInt64 = IntOr v19, v20
+          StoreField v18, :_env_data_index_flags@0x1001, v21
+          CheckInterrupts
+          Return v14
+        ");
+    }
+
+    #[test]
+    fn test_setblockparam_nested_block() {
+        eval("
+            def test(&block)
+              proc do
+                block = nil
+              end
+            end
+        ");
+        assert_snapshot!(hir_string_proc("test"), @"
+        fn block in test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          SetLocal :block, l1, EP@3, v10
+          v14:CPtr = GetEP 1
+          v15:CInt64 = LoadField v14, :_env_data_index_flags@0x1000
+          v16:CInt64[512] = Const CInt64(512)
+          v17:CInt64 = IntOr v15, v16
+          StoreField v14, :_env_data_index_flags@0x1000, v17
+          CheckInterrupts
+          Return v10
         ");
     }
 
@@ -7452,7 +7517,7 @@ mod hir_opt_tests {
           v4:BasicObject = LoadArg :self@0
           Jump bb3(v4)
         bb3(v6:BasicObject):
-          v11:BasicObject = Send v6, :foo # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v11:BasicObject = Send v6, :foo # SendFallbackReason: Single-ractor mode required
           CheckInterrupts
           Return v11
         ");
@@ -7850,7 +7915,7 @@ mod hir_opt_tests {
           v19:CInt64 = LoadField v16, :_env_data_index_specval@0x1002
           v20:CInt64 = GuardAnyBitSet v19, CUInt64(1)
           v21:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          v23:BasicObject = Send v14, 0x1001, :map, v21 # SendFallbackReason: Complex argument passing
+          v23:BasicObject = Send v14, &block, :map, v21 # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v23
         ");
@@ -7883,7 +7948,7 @@ mod hir_opt_tests {
           v19:CInt64 = LoadField v16, :_env_data_index_specval@0x1002
           v20:CInt64[0] = GuardBitEquals v19, CInt64(0)
           v21:NilClass = Const Value(nil)
-          v23:BasicObject = Send v14, 0x1001, :map, v21 # SendFallbackReason: Complex argument passing
+          v23:BasicObject = Send v14, &block, :map, v21 # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v23
         ");
@@ -7917,7 +7982,7 @@ mod hir_opt_tests {
           v15:CInt64 = LoadField v12, :_env_data_index_specval@0x1001
           v16:CInt64 = GuardAnyBitSet v15, CUInt64(1)
           v17:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          v19:BasicObject = Send v10, 0x1000, :map, v17 # SendFallbackReason: Complex argument passing
+          v19:BasicObject = Send v10, &block, :map, v17 # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v19
         ");
@@ -11361,9 +11426,47 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v11:StaticSymbol[:the_block] = Const Value(VALUE(0x1000))
-          v13:BasicObject = Send v6, 0x1008, :callee, v11 # SendFallbackReason: Send: no profile data available
+          v13:BasicObject = Send v6, &block, :callee, v11 # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v13
+        ");
+    }
+
+    #[test]
+    fn test_profile_stack_skips_block_arg() {
+        // Regression test: profile_stack must skip the &block arg on the stack when mapping
+        // profiled operand types. Without the fix, the receiver type would be mapped to the
+        // wrong stack slot, causing resolve_receiver_type to return NoProfile.
+        // With the fix, the receiver type is correctly resolved and the send gets past type
+        // resolution to hit the ARGS_BLOCKARG guard (ComplexArgPass) instead of NoProfile.
+        eval("
+            def test(&block) = [].map(&block)
+            test { |x| x }; test { |x| x }
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :block@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :block@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v14:ArrayExact = NewArray
+          v16:CPtr = GetEP 0
+          v17:CInt64 = LoadField v16, :_env_data_index_flags@0x1001
+          v18:CInt64 = GuardNoBitsSet v17, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM=CUInt64(512)
+          v19:CInt64 = LoadField v16, :_env_data_index_specval@0x1002
+          v20:CInt64 = GuardAnyBitSet v19, CUInt64(1)
+          v21:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          v23:BasicObject = Send v14, &block, :map, v21 # SendFallbackReason: Complex argument passing
+          CheckInterrupts
+          Return v23
         ");
     }
 
@@ -14707,7 +14810,7 @@ mod hir_opt_tests {
           v88:Array = RefineType v67, Array
           v89:CInt64 = UnboxFixnum v68
           v90:BasicObject = ArrayAref v88, v89
-          v74:BasicObject = InvokeBlock, v90 # SendFallbackReason: Uncategorized(invokeblock)
+          v74:BasicObject = InvokeBlock, v90 # SendFallbackReason: InvokeBlock: not yet specialized
           v91:Fixnum[1] = Const Value(1)
           v92:Fixnum = FixnumAdd v68, v91
           PatchPoint NoEPEscape(each)
@@ -14858,8 +14961,55 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_exit_from_function_stub_for_opt_keyword_callee() {
+        // We have a SendDirect to a callee that fails to compile,
+        // so the function stub has to take care of exiting to
+        // interpreter.
+        eval("
+            def target(a = binding.local_variable_get(:a), b: nil)
+              ::RubyVM::ZJIT.induce_compile_failure!
+              [a, b]
+            end
+
+            def entry = target(b: -1)
+
+            raise 'wrong' unless [nil, -1] == entry
+            raise 'wrong' unless [nil, -1] == entry
+        ");
+
+        crate::hir::tests::hir_build_tests::assert_compile_fails("target", ParseError::DirectiveInduced);
+        let hir = hir_string("entry");
+        assert!(hir.contains("SendDirect"), "{hir}");
+    }
+
+    #[test]
+    fn test_exit_from_function_stub_for_lead_opt() {
+        // We have a SendDirect to a callee that fails to compile,
+        // so the function stub has to take care of exiting to
+        // interpreter.
+        let result = eval("
+            def target(_required, a = a, b = b)
+              ::RubyVM::ZJIT.induce_compile_failure!
+              a
+            end
+
+            def entry = target(1)
+
+            entry
+            entry
+        ");
+        assert_eq!(Qnil, result);
+
+        crate::hir::tests::hir_build_tests::assert_compile_fails("target", ParseError::DirectiveInduced);
+        let hir = hir_string("entry");
+        assert!(hir.contains("SendDirect"), "{hir}");
+    }
+
+    #[test]
     fn test_recompile_no_profile_send() {
-        // Define a callee method and a test method that calls it
+        // Test the SideExit → recompile flow: a no-profile send becomes a SideExit,
+        // the exit profiles the send, triggers recompilation, and the new version
+        // optimizes it to SendDirect.
         eval("
             def greet_recompile(x) = x.to_s
             def test_no_profile_recompile(flag)
@@ -14875,36 +15025,6 @@ mod hir_opt_tests {
         //   1st call profiles (flag=false, so greet is never reached)
         //   2nd call compiles (greet has no profile data -> SideExit recompile)
         eval("test_no_profile_recompile(false); test_no_profile_recompile(false)");
-
-        // The first compilation should have SideExit NoProfileSend recompile
-        // for the greet_recompile(42) callsite since it was never profiled.
-        assert_snapshot!(hir_string("test_no_profile_recompile"), @r"
-        fn test_no_profile_recompile@<compiled>:4:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :flag@0x1000
-          Jump bb3(v1, v3)
-        bb2():
-          EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :flag@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          CheckInterrupts
-          v16:CBool = Test v10
-          v17:Falsy = RefineType v10, Falsy
-          IfFalse v16, bb4(v9, v17)
-          v19:Truthy = RefineType v10, Truthy
-          v23:Fixnum[42] = Const Value(42)
-          SideExit NoProfileSend recompile
-        bb4(v30:BasicObject, v31:Falsy):
-          v35:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          v36:StringExact = StringCopy v35
-          CheckInterrupts
-          Return v36
-        ");
 
         // Now call with flag=true. This hits the SideExit, which profiles
         // the send and invalidates the ISEQ for recompilation.
@@ -14942,6 +15062,104 @@ mod hir_opt_tests {
           v36:StringExact = StringCopy v35
           CheckInterrupts
           Return v36
+        ");
+    }
+
+    #[test]
+    fn test_no_profile_send_on_final_version() {
+        // On the final ISEQ version (MAX_ISEQ_VERSIONS reached), no-profile sends should
+        // remain as Send fallbacks instead of being converted to SideExits, since recompilation
+        // is no longer possible and SideExits would fire every time without benefit.
+        //
+        // Use call_threshold=3 to ensure the method is auto-compiled before hir_string() builds
+        // the HIR. The auto-compile creates version 1, and hir_string() creates version 2
+        // (= MAX_ISEQ_VERSIONS), so this is the final version.
+        set_call_threshold(3);
+        eval("
+            def greet_final(x) = x.to_s
+            def test_final_version(flag)
+              if flag
+                greet_final(42)
+              else
+                'hello'
+              end
+            end
+        ");
+        // Call enough times to trigger auto-compilation. flag=false so greet_final is never
+        // reached and has no profile data.
+        eval("3.times { test_final_version(false) }");
+
+        // On the final version, greet_final should be a Send fallback, not a SideExit.
+        assert_snapshot!(hir_string("test_final_version"), @r"
+        fn test_final_version@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :flag@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :flag@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          CheckInterrupts
+          v16:CBool = Test v10
+          v17:Falsy = RefineType v10, Falsy
+          IfFalse v16, bb4(v9, v17)
+          v19:Truthy = RefineType v10, Truthy
+          v23:Fixnum[42] = Const Value(42)
+          v25:BasicObject = Send v9, :greet_final, v23 # SendFallbackReason: SendWithoutBlock: no profile data available
+          CheckInterrupts
+          Return v25
+        bb4(v30:BasicObject, v31:Falsy):
+          v35:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v36:StringExact = StringCopy v35
+          CheckInterrupts
+          Return v36
+        ");
+    }
+
+    #[test]
+    fn test_invokeblock_ifunc() {
+        eval("
+            class IFuncTestList
+              include Enumerable
+              def each
+                yield 1
+                yield 2
+              end
+            end
+            IFuncTestList.new.map { |x| x }
+        ");
+        assert_snapshot!(hir_string_proc("IFuncTestList.instance_method(:each)"), @"
+        fn each@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:Fixnum[1] = Const Value(1)
+          v12:CPtr = GetEP 0
+          v13:CInt64 = LoadField v12, :_env_data_index_specval@0x1000
+          v14:CInt64[3] = Const CInt64(3)
+          v15:CInt64 = IntAnd v13, v14
+          v16:CInt64[3] = GuardBitEquals v15, CInt64(3)
+          v17:BasicObject = InvokeBlockIfunc v13, v10
+          v21:Fixnum[2] = Const Value(2)
+          v23:CPtr = GetEP 0
+          v24:CInt64 = LoadField v23, :_env_data_index_specval@0x1000
+          v25:CInt64[3] = Const CInt64(3)
+          v26:CInt64 = IntAnd v24, v25
+          v27:CInt64[3] = GuardBitEquals v26, CInt64(3)
+          v28:BasicObject = InvokeBlockIfunc v24, v21
+          CheckInterrupts
+          Return v28
         ");
     }
 }

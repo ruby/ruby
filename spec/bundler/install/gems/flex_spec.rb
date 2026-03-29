@@ -191,7 +191,7 @@ RSpec.describe "bundle flex_install" do
     end
 
     it "discards the locked gems when the Gemfile requires different versions than the lock" do
-      bundle "config set force_ruby_platform true"
+      bundle_config "force_ruby_platform true"
 
       nice_error = <<~E.strip
         Could not find compatible versions
@@ -208,7 +208,7 @@ RSpec.describe "bundle flex_install" do
     end
 
     it "does not include conflicts with a single requirement tree, because that can't possibly be a conflict" do
-      bundle "config set force_ruby_platform true"
+      bundle_config "force_ruby_platform true"
 
       bad_error = <<~E.strip
         Bundler could not find compatible versions for gem "myrack-obama":
