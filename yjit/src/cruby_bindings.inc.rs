@@ -356,6 +356,7 @@ pub const imemo_memo: imemo_type = 5;
 pub const imemo_ment: imemo_type = 6;
 pub const imemo_iseq: imemo_type = 7;
 pub const imemo_tmpbuf: imemo_type = 8;
+pub const imemo_cvar_entry: imemo_type = 9;
 pub const imemo_callinfo: imemo_type = 10;
 pub const imemo_callcache: imemo_type = 11;
 pub const imemo_constcache: imemo_type = 12;
@@ -639,6 +640,7 @@ pub const SHAPE_ID_HAS_IVAR_MASK: shape_id_mask = 67633150;
 pub type shape_id_mask = u32;
 #[repr(C)]
 pub struct rb_cvar_class_tbl_entry {
+    pub imemo_flags: VALUE,
     pub index: u32,
     pub global_cvar_state: rb_serial_t,
     pub cref: *const rb_cref_t,

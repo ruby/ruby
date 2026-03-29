@@ -84,14 +84,6 @@ static void rb_class_remove_from_super_subclasses(VALUE klass);
 static void rb_class_remove_from_module_subclasses(VALUE klass);
 static void rb_class_classext_free_subclasses(rb_classext_t *ext);
 
-static enum rb_id_table_iterator_result
-cvar_table_free_i(VALUE value, void *ctx)
-{
-    struct rb_cvar_class_tbl_entry *entry = (struct rb_cvar_class_tbl_entry *)value;
-    SIZED_FREE(entry);
-    return ID_TABLE_CONTINUE;
-}
-
 rb_classext_t *
 rb_class_unlink_classext(VALUE klass, const rb_box_t *box)
 {
@@ -112,11 +104,6 @@ rb_class_classext_free(VALUE klass, rb_classext_t *ext, bool is_prime)
 
     if (!RCLASSEXT_SHARED_CONST_TBL(ext) && (tbl = RCLASSEXT_CONST_TBL(ext)) != NULL) {
         rb_free_const_table(tbl);
-    }
-
-    if ((tbl = RCLASSEXT_CVC_TBL(ext)) != NULL) {
-        rb_id_table_foreach_values(tbl, cvar_table_free_i, NULL);
-        rb_id_table_free(tbl);
     }
 
     if (is_prime) {
@@ -254,33 +241,6 @@ duplicate_classext_m_tbl(struct rb_id_table *orig, VALUE klass, bool init_missin
     return tbl;
 }
 
-static enum rb_id_table_iterator_result
-duplicate_classext_cvc_tbl_i(ID key, VALUE value, void *data)
-{
-    struct rb_id_table *tbl = (struct rb_id_table *)data;
-    struct rb_cvar_class_tbl_entry *cvc_entry = (struct rb_cvar_class_tbl_entry *)value;
-    struct rb_cvar_class_tbl_entry *copy = ALLOC(struct rb_cvar_class_tbl_entry);
-    MEMCPY(copy, cvc_entry, struct rb_cvar_class_tbl_entry, 1);
-    rb_id_table_insert(tbl, key, (VALUE)copy);
-    return ID_TABLE_CONTINUE;
-}
-
-static struct rb_id_table *
-duplicate_classext_cvc_tbl(struct rb_id_table *orig, bool init_missing)
-{
-    struct rb_id_table *tbl;
-
-    if (!orig) {
-        if (init_missing)
-            return rb_id_table_create(0);
-        else
-            return NULL;
-    }
-    tbl = rb_id_table_create(rb_id_table_size(orig));
-    rb_id_table_foreach(orig, duplicate_classext_cvc_tbl_i, tbl);
-    return tbl;
-}
-
 static rb_const_entry_t *
 duplicate_classext_const_entry(rb_const_entry_t *src, VALUE klass)
 {
@@ -414,7 +374,14 @@ rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_box_t *bo
      * RCLASSEXT_CC_TBL(copy) = NULL
      */
 
-    RCLASSEXT_CVC_TBL(ext) = duplicate_classext_cvc_tbl(RCLASSEXT_CVC_TBL(orig), dup_iclass);
+    VALUE cvc_table = RCLASSEXT_CVC_TBL(orig);
+    if (cvc_table) {
+        cvc_table = rb_marked_id_table_dup(cvc_table);
+    }
+    else if (dup_iclass) {
+        cvc_table = rb_marked_id_table_new(2);
+    }
+    RB_OBJ_WRITE(klass, &RCLASSEXT_CVC_TBL(ext), cvc_table);
 
     // Subclasses/back-pointers are only in the prime classext.
 
@@ -981,8 +948,14 @@ class_init_copy_check(VALUE clone, VALUE orig)
 
 struct cvc_table_copy_ctx {
     VALUE clone;
-    struct rb_id_table * new_table;
+    VALUE new_table;
 };
+
+static struct rb_cvar_class_tbl_entry *
+cvc_table_entry_alloc(void)
+{
+    return (struct rb_cvar_class_tbl_entry *)SHAREABLE_IMEMO_NEW(struct rb_cvar_class_tbl_entry, imemo_cvar_entry, 0);
+}
 
 static enum rb_id_table_iterator_result
 cvc_table_copy(ID id, VALUE val, void *data)
@@ -993,13 +966,11 @@ cvc_table_copy(ID id, VALUE val, void *data)
 
     struct rb_cvar_class_tbl_entry *ent;
 
-    ent = ALLOC(struct rb_cvar_class_tbl_entry);
-    ent->class_value = ctx->clone;
-    ent->cref = orig_entry->cref;
+    ent = cvc_table_entry_alloc();
+    RB_OBJ_WRITE((VALUE)ent, &ent->class_value, ctx->clone);
+    RB_OBJ_WRITE(ctx->clone, &ent->cref, orig_entry->cref);
     ent->global_cvar_state = orig_entry->global_cvar_state;
-    rb_id_table_insert(ctx->new_table, id, (VALUE)ent);
-
-    RB_OBJ_WRITTEN(ctx->clone, Qundef, ent->cref);
+    rb_marked_id_table_insert(ctx->new_table, id, (VALUE)ent);
 
     return ID_TABLE_CONTINUE;
 }
@@ -1012,13 +983,13 @@ copy_tables(VALUE clone, VALUE orig)
         RCLASS_WRITE_CONST_TBL(clone, 0, false);
     }
     if (RCLASS_CVC_TBL(orig)) {
-        struct rb_id_table *rb_cvc_tbl = RCLASS_CVC_TBL(orig);
-        struct rb_id_table *rb_cvc_tbl_dup = rb_id_table_create(rb_id_table_size(rb_cvc_tbl));
+        VALUE rb_cvc_tbl = RCLASS_CVC_TBL(orig);
+        VALUE rb_cvc_tbl_dup = rb_marked_id_table_new(rb_marked_id_table_size(rb_cvc_tbl));
 
         struct cvc_table_copy_ctx ctx;
         ctx.clone = clone;
         ctx.new_table = rb_cvc_tbl_dup;
-        rb_id_table_foreach(rb_cvc_tbl, cvc_table_copy, &ctx);
+        rb_marked_id_table_foreach(rb_cvc_tbl, cvc_table_copy, &ctx);
         RCLASS_WRITE_CVC_TBL(clone, rb_cvc_tbl_dup);
     }
     rb_id_table_free(RCLASS_M_TBL(clone));

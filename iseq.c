@@ -302,9 +302,7 @@ rb_iseq_mark_and_move_each_body_value(const rb_iseq_t *iseq, VALUE *original_ise
         for (unsigned int i = 0; i < body->icvarc_size; i++, is_entries++) {
             ICVARC icvarc = (ICVARC)is_entries;
             if (icvarc->entry) {
-                RUBY_ASSERT(!RB_TYPE_P(icvarc->entry->class_value, T_NONE));
-
-                rb_gc_mark_and_move(&icvarc->entry->class_value);
+                rb_gc_mark_and_move((VALUE *)&icvarc->entry);
             }
         }
 

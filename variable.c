@@ -4282,22 +4282,29 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
 
     bool new_cvar = rb_class_ivar_set(target, id, val);
 
-    struct rb_id_table *rb_cvc_tbl = RCLASS_WRITABLE_CVC_TBL(target);
-
-    if (!rb_cvc_tbl) {
-        rb_cvc_tbl = rb_id_table_create(2);
-        RCLASS_WRITE_CVC_TBL(target, rb_cvc_tbl);
-    }
+    VALUE cvc_tbl = RCLASS_WRITABLE_CVC_TBL(target);
 
     struct rb_cvar_class_tbl_entry *ent;
     VALUE ent_data;
 
-    if (!rb_id_table_lookup(rb_cvc_tbl, id, &ent_data)) {
-        ent = ALLOC(struct rb_cvar_class_tbl_entry);
-        ent->class_value = target;
+    if (!cvc_tbl || !rb_marked_id_table_lookup(cvc_tbl, id, &ent_data)) {
+        ent = (struct rb_cvar_class_tbl_entry *)SHAREABLE_IMEMO_NEW(struct rb_cvar_class_tbl_entry, imemo_cvar_entry, 0);
+        RB_OBJ_WRITE((VALUE)ent, &ent->class_value, target);
+        RB_OBJ_WRITE((VALUE)ent, &ent->cref, 0);
         ent->global_cvar_state = GET_GLOBAL_CVAR_STATE();
-        ent->cref = 0;
-        rb_id_table_insert(rb_cvc_tbl, id, (VALUE)ent);
+
+        VALUE new_cvc_tbl = cvc_tbl;
+        if (!new_cvc_tbl) {
+            new_cvc_tbl = rb_marked_id_table_new(2);
+        }
+        else if (rb_multi_ractor_p()) {
+            new_cvc_tbl = rb_marked_id_table_new(rb_marked_id_table_size(cvc_tbl) + 1);
+        }
+
+        rb_marked_id_table_insert(new_cvc_tbl, id, (VALUE)ent);
+        if (new_cvc_tbl != cvc_tbl) {
+            RCLASS_WRITE_CVC_TBL(target, new_cvc_tbl);
+        }
         RB_DEBUG_COUNTER_INC(cvar_inline_miss);
     }
     else {

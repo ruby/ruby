@@ -431,3 +431,82 @@ rb_managed_id_table_delete(VALUE table, ID id)
 {
     return rb_id_table_delete(managed_id_table_ptr(table), id);
 }
+
+static enum rb_id_table_iterator_result
+marked_id_table_mark_i(VALUE val, void *data)
+{
+    rb_gc_mark_movable(val);
+    return ID_TABLE_CONTINUE;
+}
+
+static void
+marked_id_table_mark(void *ptr)
+{
+    struct rb_id_table *tbl = (struct rb_id_table *)ptr;
+    rb_id_table_foreach_values(tbl, marked_id_table_mark_i, NULL);
+}
+
+static enum rb_id_table_iterator_result
+marked_id_table_compact_check_i(VALUE value, void *data)
+{
+    if (rb_gc_location(value) != value) {
+        return ID_TABLE_REPLACE;
+    }
+    return ID_TABLE_CONTINUE;
+}
+
+static enum rb_id_table_iterator_result
+marked_id_table_compact_replace_i(VALUE *value, void *data, int existing)
+{
+    *value = rb_gc_location(*value);
+    return ID_TABLE_CONTINUE;
+}
+
+static void
+marked_id_table_compact(void *ptr)
+{
+    struct rb_id_table *tbl = (struct rb_id_table *)ptr;
+    rb_id_table_foreach_values_with_replace(tbl, marked_id_table_compact_check_i, marked_id_table_compact_replace_i, NULL);
+}
+
+const rb_data_type_t rb_marked_id_table_type = {
+    .wrap_struct_name = "VM/marked_id_table",
+    .function = {
+        .dmark = marked_id_table_mark,
+        .dfree = managed_id_table_free,
+        .dsize = managed_id_table_memsize,
+        .dcompact = marked_id_table_compact,
+    },
+    .parent = &rb_managed_id_table_type,
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
+};
+
+VALUE
+rb_marked_id_table_new(size_t capa)
+{
+    return rb_managed_id_table_create(&rb_marked_id_table_type, capa);
+}
+
+int
+rb_marked_id_table_insert(VALUE table, ID id, VALUE val)
+{
+    int result = rb_managed_id_table_insert(table, id, val);
+    RB_OBJ_WRITTEN(table, Qundef, val);
+    return result;
+}
+
+static enum rb_id_table_iterator_result
+marked_id_table_dup_i(VALUE val, void *data)
+{
+    VALUE new_table = (VALUE)data;
+    RB_OBJ_WRITTEN(new_table, Qundef, val);
+    return ID_TABLE_CONTINUE;
+}
+
+VALUE
+rb_marked_id_table_dup(VALUE old_table)
+{
+    VALUE new_table = rb_managed_id_table_dup(old_table);
+    rb_managed_id_table_foreach_values(new_table, marked_id_table_dup_i, (void *)new_table);
+    return new_table;
+}

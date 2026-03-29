@@ -35,9 +35,10 @@ struct rb_subclass_entry {
 typedef struct rb_subclass_entry rb_subclass_entry_t;
 
 struct rb_cvar_class_tbl_entry {
+    VALUE imemo_flags;
     uint32_t index;
     rb_serial_t global_cvar_state;
-    const rb_cref_t * cref;
+    const rb_cref_t *cref;
     VALUE class_value;
 };
 
@@ -49,7 +50,7 @@ struct rb_classext_struct {
     struct rb_id_table *const_tbl;
     struct rb_id_table *callable_m_tbl;
     VALUE cc_tbl; /* { ID => { cme, [cc1, cc2, ...] }, ... } */
-    struct rb_id_table *cvc_tbl;
+    VALUE cvc_tbl;
     VALUE *superclasses;
     /**
      * The head of the subclasses linked list. This is a dummy entry (klass == 0)
@@ -226,8 +227,8 @@ static inline void RCLASS_SET_CONST_TBL(VALUE klass, struct rb_id_table *table, 
 static inline void RCLASS_WRITE_CONST_TBL(VALUE klass, struct rb_id_table *table, bool shared);
 static inline void RCLASS_WRITE_CALLABLE_M_TBL(VALUE klass, struct rb_id_table *table);
 static inline void RCLASS_WRITE_CC_TBL(VALUE klass, VALUE table);
-static inline void RCLASS_SET_CVC_TBL(VALUE klass, struct rb_id_table *table);
-static inline void RCLASS_WRITE_CVC_TBL(VALUE klass, struct rb_id_table *table);
+static inline void RCLASS_SET_CVC_TBL(VALUE klass, VALUE table);
+static inline void RCLASS_WRITE_CVC_TBL(VALUE klass, VALUE table);
 
 static inline void RCLASS_WRITE_SUPERCLASSES(VALUE klass, size_t depth, VALUE *superclasses, bool with_self);
 static inline void RCLASS_SET_SUBCLASSES(VALUE klass, rb_subclass_entry_t *head);
@@ -601,15 +602,15 @@ RCLASS_WRITE_CC_TBL(VALUE klass, VALUE table)
 }
 
 static inline void
-RCLASS_SET_CVC_TBL(VALUE klass, struct rb_id_table *table)
+RCLASS_SET_CVC_TBL(VALUE klass, VALUE table)
 {
-    RCLASSEXT_CVC_TBL(RCLASS_EXT_PRIME(klass)) = table;
+    RB_OBJ_ATOMIC_WRITE(klass, &RCLASSEXT_CVC_TBL(RCLASS_EXT_PRIME(klass)), table);
 }
 
 static inline void
-RCLASS_WRITE_CVC_TBL(VALUE klass, struct rb_id_table *table)
+RCLASS_WRITE_CVC_TBL(VALUE klass, VALUE table)
 {
-    RCLASSEXT_CVC_TBL(RCLASS_EXT_WRITABLE(klass)) = table;
+    RB_OBJ_ATOMIC_WRITE(klass, &RCLASSEXT_CVC_TBL(RCLASS_EXT_WRITABLE(klass)), table);
 }
 
 static inline void
