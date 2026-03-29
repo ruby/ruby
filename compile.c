@@ -6091,6 +6091,23 @@ compile_const_prefix(rb_iseq_t *iseq, const NODE *const node,
 }
 
 static int
+cpath_const_p(const NODE *node)
+{
+    switch (nd_type(node)) {
+      case NODE_CONST:
+      case NODE_COLON3:
+        return TRUE;
+      case NODE_COLON2:
+        if (RNODE_COLON2(node)->nd_head) {
+            return cpath_const_p(RNODE_COLON2(node)->nd_head);
+        }
+        return TRUE;
+      default:
+        return FALSE;
+    }
+}
+
+static int
 compile_cpath(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const NODE *cpath)
 {
     if (nd_type_p(cpath, NODE_COLON3)) {
@@ -6099,9 +6116,13 @@ compile_cpath(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const NODE *cpath)
         return VM_DEFINECLASS_FLAG_SCOPED;
     }
     else if (nd_type_p(cpath, NODE_COLON2) && RNODE_COLON2(cpath)->nd_head) {
-        /* Bar::Foo */
+        /* Bar::Foo or expr::Foo */
         NO_CHECK(COMPILE(ret, "nd_else->nd_head", RNODE_COLON2(cpath)->nd_head));
-        return VM_DEFINECLASS_FLAG_SCOPED;
+        int flags = VM_DEFINECLASS_FLAG_SCOPED;
+        if (!cpath_const_p(RNODE_COLON2(cpath)->nd_head)) {
+            flags |= VM_DEFINECLASS_FLAG_DYNAMIC_CREF;
+        }
+        return flags;
     }
     else {
         /* class at cbase Foo */
@@ -11477,9 +11498,20 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         CHECK(COMPILE(ret, "sclass#recv", RNODE_SCLASS(node)->nd_recv));
         ADD_INSN (ret, node, putnil);
         CONST_ID(singletonclass, "singletonclass");
+
+        /* `class << self` in a class body and `class << Foo` (constant
+           receiver) are stable. All other forms are potentially dynamic. */
+        int sclass_flags = VM_DEFINECLASS_TYPE_SINGLETON_CLASS;
+        const NODE *recv = RNODE_SCLASS(node)->nd_recv;
+        if (!(nd_type_p(recv, NODE_SELF) &&
+              ISEQ_BODY(iseq)->type == ISEQ_TYPE_CLASS) &&
+            !cpath_const_p(recv)) {
+            sclass_flags |= VM_DEFINECLASS_FLAG_DYNAMIC_CREF;
+        }
+
         ADD_INSN3(ret, node, defineclass,
                   ID2SYM(singletonclass), singleton_class,
-                  INT2FIX(VM_DEFINECLASS_TYPE_SINGLETON_CLASS));
+                  INT2FIX(sclass_flags));
         RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)singleton_class);
 
         if (popped) {

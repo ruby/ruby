@@ -811,10 +811,16 @@ defineclass
 
     rb_iseq_check(class_iseq);
 
+    rb_cref_t *cref = vm_cref_push(ec, klass, NULL, FALSE, FALSE);
+
+    if (VM_DEFINECLASS_DYNAMIC_CREF_P(flags)) {
+        CREF_DYNAMIC_SET(cref);
+    }
+
     /* enter scope */
     vm_push_frame(ec, class_iseq, VM_FRAME_MAGIC_CLASS | VM_ENV_FLAG_LOCAL, klass,
                   GC_GUARDED_PTR(box),
-                  (VALUE)vm_cref_push(ec, klass, NULL, FALSE, FALSE),
+                  (VALUE)cref,
                   ISEQ_BODY(class_iseq)->iseq_encoded, GET_SP(),
                   ISEQ_BODY(class_iseq)->local_table_size,
                   ISEQ_BODY(class_iseq)->stack_max);

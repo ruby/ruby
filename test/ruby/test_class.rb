@@ -733,6 +733,29 @@ class TestClass < Test::Unit::TestCase
     }
   end
 
+  def test_dynamic_module_cpath_constant_namespace # [Bug #20948]
+    assert_separately([], <<~'RUBY')
+      module M1
+        module Foo
+          X = 1
+        end
+      end
+
+      module M2
+        module Foo
+          X = 2
+        end
+      end
+
+      results = [M1, M2].map do
+        module it::Foo
+          X
+        end
+      end
+      assert_equal([1, 2], results)
+    RUBY
+  end
+
   def test_namescope_error_message
     m = Module.new
     o = m.module_eval "class A\u{3042}; self; end.new"

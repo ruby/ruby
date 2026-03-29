@@ -1378,15 +1378,36 @@ pm_new_child_iseq(rb_iseq_t *iseq, pm_scope_node_t *node, VALUE name, const rb_i
 }
 
 static int
+pm_cpath_const_p(const pm_node_t *node)
+{
+    switch (PM_NODE_TYPE(node)) {
+      case PM_CONSTANT_READ_NODE:
+        return TRUE;
+      case PM_CONSTANT_PATH_NODE:
+        {
+            const pm_node_t *parent = ((const pm_constant_path_node_t *) node)->parent;
+            if (!parent) return TRUE; /* ::Foo */
+            return pm_cpath_const_p(parent);
+        }
+      default:
+        return FALSE;
+    }
+}
+
+static int
 pm_compile_class_path(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_location_t *node_location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
 {
     if (PM_NODE_TYPE_P(node, PM_CONSTANT_PATH_NODE)) {
         const pm_node_t *parent = ((const pm_constant_path_node_t *) node)->parent;
 
         if (parent) {
-            /* Bar::Foo */
+            /* Bar::Foo or expr::Foo */
             PM_COMPILE(parent);
-            return VM_DEFINECLASS_FLAG_SCOPED;
+            int flags = VM_DEFINECLASS_FLAG_SCOPED;
+            if (!pm_cpath_const_p(parent)) {
+                flags |= VM_DEFINECLASS_FLAG_DYNAMIC_CREF;
+            }
+            return flags;
         }
         else {
             /* toplevel class ::Foo */
@@ -10342,7 +10363,17 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         ID singletonclass;
         CONST_ID(singletonclass, "singletonclass");
-        PUSH_INSN3(ret, location, defineclass, ID2SYM(singletonclass), child_iseq, INT2FIX(VM_DEFINECLASS_TYPE_SINGLETON_CLASS));
+
+        /* `class << self` in a class body and `class << Foo` (constant
+           receiver) are stable. All other forms are potentially dynamic. */
+        int sclass_flags = VM_DEFINECLASS_TYPE_SINGLETON_CLASS;
+        if (!(PM_NODE_TYPE_P(cast->expression, PM_SELF_NODE) &&
+              ISEQ_BODY(iseq)->type == ISEQ_TYPE_CLASS) &&
+            !pm_cpath_const_p(cast->expression)) {
+            sclass_flags |= VM_DEFINECLASS_FLAG_DYNAMIC_CREF;
+        }
+
+        PUSH_INSN3(ret, location, defineclass, ID2SYM(singletonclass), child_iseq, INT2FIX(sclass_flags));
 
         if (popped) PUSH_INSN(ret, location, pop);
         RB_OBJ_WRITTEN(iseq, Qundef, (VALUE) child_iseq);

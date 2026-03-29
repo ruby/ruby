@@ -989,14 +989,14 @@ vm_get_const_key_cref(const VALUE *ep)
     const rb_cref_t *key_cref = cref;
 
     while (cref) {
-        if (RCLASS_SINGLETON_P(CREF_CLASS(cref)) ||
-                RCLASS_CLONED_P(CREF_CLASS(cref)) ) {
+        if (CREF_DYNAMIC(cref) ||
+                RCLASS_CLONED_P(CREF_CLASS(cref))) {
             return key_cref;
         }
         cref = CREF_NEXT(cref);
     }
 
-    /* does not include singleton class */
+    /* no dynamic singleton class or cloned class found */
     return NULL;
 }
 
