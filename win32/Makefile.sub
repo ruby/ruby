@@ -1415,7 +1415,7 @@ loadpath: verconf.h
 	@for %J in (\
 "%~nI.rbinc: %I $$(tooldir)/mk_builtin_loader.rb $$(DUMP_AST_TARGET)" \
 "	$$(ECHO) making $$@" \
-"	$(Q) $(BASERUBY) $(tooldir)/mk_builtin_loader.rb $(DUMP_AST) %I" \
+"	$$(Q) $$(BASERUBY) $$(tooldir)/mk_builtin_loader.rb $$(DUMP_AST) %I" \
 "" \
 ) do @echo.%~J>>rbincs.mk]
 !else

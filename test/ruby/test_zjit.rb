@@ -395,7 +395,9 @@ class TestZJIT < Test::Unit::TestCase
       test(array)
 
       fxt_files = Dir.glob("/tmp/perfetto-\#{Process.pid}.fxt")
-      fxt_files.length == 1 && !File.empty?(fxt_files.first)
+      result = fxt_files.length == 1 && !File.empty?(fxt_files.first)
+      File.unlink(*fxt_files)
+      result
     RUBY
   end
 
