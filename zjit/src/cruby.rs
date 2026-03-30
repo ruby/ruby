@@ -738,6 +738,24 @@ impl IseqAccess for IseqPtr {
     }
 }
 
+impl IseqParameters {
+    /// The `opt_table` is a mapping where `opt_table[number_of_optional_parameters_filled]`
+    /// gives the YARV entry point of ISeq as an index of the iseq_encoded array.
+    /// This method gives over the table that additionally works when `opt_num==0`,
+    /// when the table is stored as `NULL` and implicit.
+    /// The table stores the indexes as raw VALUE integers; they are not tagged as fixnum.
+    pub fn opt_table_slice(&self) -> &[VALUE] {
+        let opt_num: usize = self.opt_num.try_into().expect("ISeq opt_num should always >=0");
+        if opt_num > 0 {
+            // The table has size=opt_num+1 because opt_table[opt_num] is valid (all optionals filled)
+            unsafe { std::slice::from_raw_parts(self.opt_table, opt_num + 1) }
+        } else {
+            // The ISeq entry point is index 0 when there are no optional parameters
+            &[VALUE(0)]
+        }
+    }
+}
+
 impl From<IseqPtr> for VALUE {
     /// For `.into()` convenience
     fn from(iseq: IseqPtr) -> Self {
