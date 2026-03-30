@@ -13,4 +13,7 @@ with_werror("", {:werror => true}) do |opt, |
   have_var("altzone", "time.h", opt)
 end
 
+have_func("rb_gc_mark_movable", "ruby.h") # RUBY_VERSION >= 2.7
+have_const("RUBY_TYPED_EMBEDDABLE", "ruby.h") # RUBY_VERSION >= 3.3
+
 create_makefile('date_core')
