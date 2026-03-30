@@ -15268,17 +15268,31 @@ mod hir_opt_tests {
           v13:CInt64 = LoadField v12, :_env_data_index_specval@0x1000
           v14:CInt64[3] = Const CInt64(3)
           v15:CInt64 = IntAnd v13, v14
-          v16:CInt64[3] = GuardBitEquals v15, CInt64(3)
-          v17:BasicObject = InvokeBlockIfunc v13, v10
-          v21:Fixnum[2] = Const Value(2)
-          v23:CPtr = GetEP 0
-          v24:CInt64 = LoadField v23, :_env_data_index_specval@0x1000
-          v25:CInt64[3] = Const CInt64(3)
-          v26:CInt64 = IntAnd v24, v25
-          v27:CInt64[3] = GuardBitEquals v26, CInt64(3)
-          v28:BasicObject = InvokeBlockIfunc v24, v21
+          v16:CInt64[3] = Const CInt64(3)
+          v17:CBool = IsBitEqual v15, v16
+          IfTrue v17, bb5()
+          v22:BasicObject = InvokeBlock, v10 # SendFallbackReason: InvokeBlock: not yet specialized
+          Jump bb4(v22)
+        bb5():
+          v20:BasicObject = InvokeBlockIfunc v13, v10
+          Jump bb4(v20)
+        bb4(v18:BasicObject):
+          v27:Fixnum[2] = Const Value(2)
+          v29:CPtr = GetEP 0
+          v30:CInt64 = LoadField v29, :_env_data_index_specval@0x1000
+          v31:CInt64[3] = Const CInt64(3)
+          v32:CInt64 = IntAnd v30, v31
+          v33:CInt64[3] = Const CInt64(3)
+          v34:CBool = IsBitEqual v32, v33
+          IfTrue v34, bb7()
+          v39:BasicObject = InvokeBlock, v27 # SendFallbackReason: InvokeBlock: not yet specialized
+          Jump bb6(v39)
+        bb7():
+          v37:BasicObject = InvokeBlockIfunc v30, v27
+          Jump bb6(v37)
+        bb6(v35:BasicObject):
           CheckInterrupts
-          Return v28
+          Return v35
         ");
     }
 }
