@@ -12,8 +12,8 @@ capstone = { version = "0.14.0", optional = true }
 jit = { version = "0.1.0", path = "../jit" }
 
 [dev-dependencies]
-insta = "1.47.0"
-rand = "0.9"
+insta = "1.47.1"
+rand = "0.10"
 yjit = { path = "../yjit" }
 
 # NOTE: Development builds select a set of these via configure.ac
