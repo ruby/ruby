@@ -5112,7 +5112,7 @@ impl Function {
         // SideExits would just add overhead (the exit fires every time without benefit).
         // Keep them as Send fallbacks so the interpreter handles them directly.
         let payload = get_or_create_iseq_payload(self.iseq);
-        if payload.versions.len() + 1 >= crate::codegen::MAX_ISEQ_VERSIONS {
+        if payload.versions.len() + 1 >= crate::codegen::max_iseq_versions() {
             return;
         }
         for block in self.rpo() {

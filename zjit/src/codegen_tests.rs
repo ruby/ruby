@@ -3,7 +3,7 @@
 use super::{gen_insn, JITState};
 use crate::asm::CodeBlock;
 use crate::backend::lir::Assembler;
-use crate::codegen::MAX_ISEQ_VERSIONS;
+use crate::codegen::max_iseq_versions;
 use crate::cruby::*;
 use crate::hir::{Insn, iseq_to_hir};
 use crate::options::{rb_zjit_prepare_options, set_call_threshold};
@@ -4926,13 +4926,14 @@ fn test_invokesuper_with_local_written_by_blockiseq() {
 
 #[test]
 fn test_max_iseq_versions() {
+    let max_versions = max_iseq_versions();
     eval(&format!("
         TEST = -1
         def test = TEST
 
         # compile and invalidate MAX+1 times
         i = 0
-        while i < {MAX_ISEQ_VERSIONS} + 1
+        while i < {max_versions} + 1
           test; test # compile a version
 
           Object.send(:remove_const, :TEST)
@@ -4945,7 +4946,7 @@ fn test_max_iseq_versions() {
     // It should not exceed MAX_ISEQ_VERSIONS
     let iseq = get_method_iseq("self", "test");
     let payload = get_or_create_iseq_payload(iseq);
-    assert_eq!(payload.versions.len(), MAX_ISEQ_VERSIONS);
+    assert_eq!(payload.versions.len(), max_iseq_versions());
 
     // The last call should not discard the JIT code
     assert!(matches!(unsafe { payload.versions.last().unwrap().as_ref() }.status, IseqStatus::Compiled(_)));

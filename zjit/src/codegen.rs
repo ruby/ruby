@@ -26,8 +26,15 @@ use crate::hir_type::{types, Type};
 use crate::options::{get_option, PerfMap};
 use crate::cast::IntoUsize;
 
-/// At the moment, we support recompiling each ISEQ only once.
-pub const MAX_ISEQ_VERSIONS: usize = 2;
+/// Default maximum number of compiled versions per ISEQ.
+const DEFAULT_MAX_VERSIONS: usize = 2;
+
+/// Maximum number of compiled versions per ISEQ.
+/// Configurable via --zjit-max-versions (default: 2).
+pub fn max_iseq_versions() -> usize {
+    unsafe { crate::options::OPTIONS.as_ref() }
+        .map_or(DEFAULT_MAX_VERSIONS, |opts| opts.max_versions)
+}
 
 /// Sentinel program counter stored in C frames when runtime checks are enabled.
 const PC_POISON: Option<*const VALUE> = if cfg!(feature = "runtime_checks") {
@@ -216,7 +223,7 @@ fn gen_iseq_entry_point(cb: &mut CodeBlock, iseq: IseqPtr, jit_exception: bool) 
 pub fn invalidate_iseq_version(cb: &mut CodeBlock, iseq: IseqPtr, version: &mut IseqVersionRef) {
     let payload = get_or_create_iseq_payload(iseq);
     if unsafe { version.as_ref() }.status != IseqStatus::Invalidated
-        && payload.versions.len() < MAX_ISEQ_VERSIONS
+        && payload.versions.len() < max_iseq_versions()
     {
         unsafe { version.as_mut() }.status = IseqStatus::Invalidated;
         unsafe { rb_iseq_reset_jit_func(iseq) };
@@ -300,8 +307,8 @@ fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr, function: Option<&Function>) -> R
         Some(IseqStatus::CantCompile(err)) => return Err(err.clone()),
         _ => {},
     }
-    // If the ISEQ already hax MAX_ISEQ_VERSIONS, do not compile a new version.
-    if payload.versions.len() == MAX_ISEQ_VERSIONS {
+    // If the ISEQ already has max versions, do not compile a new version.
+    if payload.versions.len() >= max_iseq_versions() {
         return Err(CompileError::IseqVersionLimitReached);
     }
 
