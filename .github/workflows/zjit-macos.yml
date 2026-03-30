@@ -93,7 +93,7 @@ jobs:
           rustup install ${{ matrix.rust_version }} --profile minimal
           rustup default ${{ matrix.rust_version }}
 
-      - uses: taiki-e/install-action@7627fb428e65e78e2ec9a24ae5c5bd5f8553f182 # v2.69.10
+      - uses: taiki-e/install-action@e9e8e031bcd90cdbe8ac6bb1d376f8596e587fbf # v2.70.2
         with:
           tool: nextest@0.9
         if: ${{ matrix.test_task == 'zjit-check' }}
