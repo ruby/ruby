@@ -206,6 +206,7 @@ jobs:
       - { uses: './.github/actions/compilers', name: 'OPT_THREADED_CODE=0',            with: { cppflags: '-DOPT_THREADED_CODE=0' }, timeout-minutes: 5 }
       - { uses: './.github/actions/compilers', name: 'OPT_THREADED_CODE=1',            with: { cppflags: '-DOPT_THREADED_CODE=1' }, timeout-minutes: 5 }
       - { uses: './.github/actions/compilers', name: 'OPT_THREADED_CODE=2',            with: { cppflags: '-DOPT_THREADED_CODE=2' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'OPT_THREADED_CODE=3',            with: { cppflags: '-DOPT_THREADED_CODE=3' }, timeout-minutes: 5 }
 
   compile8:
     name: 'omnibus compilations, #8'
