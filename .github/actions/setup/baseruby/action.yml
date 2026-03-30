@@ -45,7 +45,7 @@ runs:
         ln -sr "$srcdir" "$builddir/.src"
         pushd "$builddir"
         .src/configure "--prefix=${installdir}" --disable-install-doc
-        CONFIGURE_ARGS=--with-out-ext=-test- make install
+        CONFIGURE_ARGS=--with-out-ext=-test- make install dump_ast
         install dump_ast "${installdir}/bin"
         {
           echo "${installdir}/bin/dump_ast"
