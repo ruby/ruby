@@ -15861,8 +15861,33 @@ mod hir_opt_tests {
             end
             IFuncTestList.new.map { |x| x }
         ");
-        assert_snapshot!(hir_string_proc("IFuncTestList.instance_method(:each)"), @"
+        assert_snapshot!(hir_string_proc("IFuncTestList.instance_method(:each)"), @r"
         fn each@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:Fixnum[1] = Const Value(1)
+          v12:CPtr = GetEP 0
+          v13:CInt64 = LoadField v12, :_env_data_index_specval@0x1000
+          v14:CInt64[3] = Const CInt64(3)
+          v15:CInt64 = IntAnd v13, v14
+          v16:CInt64[3] = GuardBitEquals v15, CInt64(3)
+          v17:BasicObject = InvokeBlockIfunc v13, v10
+          v21:Fixnum[2] = Const Value(2)
+          v23:CPtr = GetEP 0
+          v24:CInt64 = LoadField v23, :_env_data_index_specval@0x1000
+          v25:CInt64[3] = Const CInt64(3)
+          v26:CInt64 = IntAnd v24, v25
+          v27:CInt64[3] = GuardBitEquals v26, CInt64(3)
+          v28:BasicObject = InvokeBlockIfunc v24, v21
+          CheckInterrupts
+          Return v28
         ");
     }
 
@@ -15933,10 +15958,6 @@ mod hir_opt_tests {
           v28:BasicObject = InvokeBlockIfunc v24, v21
           CheckInterrupts
           Return v28
-
-
-
-          PatchPoint SingleRactorMode
           v35:HeapBasicObject = GuardType v6, HeapBasicObject
           v36:CShape = LoadField v35, :_shape_id@0x1000
           v37:CShape[0x1001] = GuardBitEquals v36, CShape(0x1001)
