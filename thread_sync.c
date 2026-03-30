@@ -916,7 +916,7 @@ ring_buffer_expand(struct rb_queue *q)
     VALUE *old_buffer = q->buffer;
     q->buffer = new_buffer;
     q->offset = 0;
-    ruby_sized_xfree(old_buffer, q->capa * sizeof(VALUE));
+    ruby_xfree_sized(old_buffer, q->capa * sizeof(VALUE));
     q->capa *= 2;
 }
 

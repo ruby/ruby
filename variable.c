@@ -1719,7 +1719,7 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
                     SIZED_FREE_N(fields, RSHAPE_CAPACITY(old_shape_id));
                 }
                 else if (RSHAPE_CAPACITY(old_shape_id) != RSHAPE_CAPACITY(next_shape_id)) {
-                    IMEMO_OBJ_FIELDS(fields_obj)->as.external.ptr = ruby_sized_xrealloc(fields, RSHAPE_CAPACITY(next_shape_id) * sizeof(VALUE), RSHAPE_CAPACITY(old_shape_id) * sizeof(VALUE));
+                    IMEMO_OBJ_FIELDS(fields_obj)->as.external.ptr = ruby_xrealloc_sized(fields, RSHAPE_CAPACITY(next_shape_id) * sizeof(VALUE), RSHAPE_CAPACITY(old_shape_id) * sizeof(VALUE));
                 }
             }
         }

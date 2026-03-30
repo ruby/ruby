@@ -4289,7 +4289,7 @@ rb_fd_init_copy(rb_fdset_t *dst, rb_fdset_t *src)
 void
 rb_fd_term(rb_fdset_t *fds)
 {
-    ruby_sized_xfree(fds->fdset, fdset_memsize(fds->maxfd));
+    ruby_xfree_sized(fds->fdset, fdset_memsize(fds->maxfd));
     fds->maxfd = 0;
     fds->fdset = 0;
 }
@@ -4308,7 +4308,7 @@ rb_fd_resize(int n, rb_fdset_t *fds)
     size_t o = fdset_memsize(fds->maxfd);
 
     if (m > o) {
-        fds->fdset = ruby_sized_xrealloc(fds->fdset, m, o);
+        fds->fdset = ruby_xrealloc_sized(fds->fdset, m, o);
         memset((char *)fds->fdset + o, 0, m - o);
     }
     if (n >= fds->maxfd) fds->maxfd = n + 1;
@@ -4339,7 +4339,7 @@ void
 rb_fd_copy(rb_fdset_t *dst, const fd_set *src, int max)
 {
     size_t size = fdset_memsize(max);
-    dst->fdset = ruby_sized_xrealloc(dst->fdset, size, fdset_memsize(dst->maxfd));
+    dst->fdset = ruby_xrealloc_sized(dst->fdset, size, fdset_memsize(dst->maxfd));
     dst->maxfd = max;
     memcpy(dst->fdset, src, size);
 }
@@ -4348,7 +4348,7 @@ void
 rb_fd_dup(rb_fdset_t *dst, const rb_fdset_t *src)
 {
     size_t size = fdset_memsize(rb_fd_max(src));
-    dst->fdset = ruby_sized_xrealloc(dst->fdset, size, fdset_memsize(dst->maxfd));
+    dst->fdset = ruby_xrealloc_sized(dst->fdset, size, fdset_memsize(dst->maxfd));
     dst->maxfd = src->maxfd;
     memcpy(dst->fdset, src->fdset, size);
 }
@@ -4413,7 +4413,7 @@ fdset_memsize(int capa)
 void
 rb_fd_term(rb_fdset_t *set)
 {
-    ruby_sized_xfree(set->fdset, fdset_memsize(set->capa));
+    ruby_xfree_sized(set->fdset, fdset_memsize(set->capa));
     set->fdset = NULL;
     set->capa = 0;
 }

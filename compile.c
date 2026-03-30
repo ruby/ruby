@@ -1666,7 +1666,7 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     debugs("[compile step 6.1 (remove unused catch tables)] \n");
     RUBY_ASSERT(ISEQ_COMPILE_DATA(iseq));
     if (!ISEQ_COMPILE_DATA(iseq)->catch_except_p && ISEQ_BODY(iseq)->catch_table) {
-        ruby_sized_xfree(ISEQ_BODY(iseq)->catch_table, iseq_catch_table_bytes(ISEQ_BODY(iseq)->catch_table->size));
+        ruby_xfree_sized(ISEQ_BODY(iseq)->catch_table, iseq_catch_table_bytes(ISEQ_BODY(iseq)->catch_table->size));
         ISEQ_BODY(iseq)->catch_table = NULL;
     }
 
@@ -13315,7 +13315,7 @@ ibf_load_local_table(const struct ibf_load *load, ibf_offset_t local_table_offse
         }
 
         if (size == 1 && table[0] == idERROR_INFO) {
-            ruby_sized_xfree(table, sizeof(ID) * size);
+            ruby_xfree_sized(table, sizeof(ID) * size);
             return rb_iseq_shared_exc_local_tbl;
         }
         else {

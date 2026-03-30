@@ -174,10 +174,10 @@ static const struct st_hash_type type_strcasehash = {
 #define malloc ruby_xmalloc
 #define calloc ruby_xcalloc
 #define realloc ruby_xrealloc
-#define sized_realloc ruby_sized_xrealloc
+#define sized_realloc ruby_xrealloc_sized
 #define free ruby_xfree
-#define sized_free ruby_sized_xfree
-#define free_fixed_ptr(v) ruby_sized_xfree((v), sizeof(*(v)))
+#define sized_free ruby_xfree_sized
+#define free_fixed_ptr(v) ruby_xfree_sized((v), sizeof(*(v)))
 #else
 #define sized_realloc(ptr, new_size, old_size) realloc(ptr, new_size)
 #define sized_free(v, s) free(v)

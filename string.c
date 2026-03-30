@@ -7828,7 +7828,7 @@ mapping_buffer_free(void *p)
     while (current_buffer) {
         previous_buffer = current_buffer;
         current_buffer  = current_buffer->next;
-        ruby_sized_xfree(previous_buffer, offsetof(mapping_buffer, space) + previous_buffer->capa);
+        ruby_xfree_sized(previous_buffer, offsetof(mapping_buffer, space) + previous_buffer->capa);
     }
 }
 
