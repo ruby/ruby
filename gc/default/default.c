@@ -190,6 +190,15 @@ static RB_THREAD_LOCAL_SPECIFIER int malloc_increase_local;
 # define HEAP_COUNT 5
 #endif
 
+/* Retire pages when live_slots <= total_slots / HEAP_PAGE_RETIREMENT_RATIO.
+ * Retired pages are not offered for allocation, concentrating new objects
+ * on fuller pages and increasing the probability that retired pages drain
+ * completely and can be freed. */
+#define HEAP_PAGE_RETIREMENT_RATIO 4
+/* Retired free slots are discounted in growth heuristics because they are
+ * reclaimable via unretire, but less preferable than slots on active pages. */
+#define HEAP_PAGE_RETIRED_FREE_WEIGHT_DENOMINATOR 4
+
 typedef struct ractor_newobj_heap_cache {
     struct free_slot *freelist;
     struct heap_page *using_page;
@@ -473,7 +482,9 @@ typedef struct rb_heap_struct {
     struct heap_page *pooled_pages;
     size_t total_pages;      /* total page count in a heap */
     size_t total_slots;      /* total slot count */
-
+    size_t retired_pages;    /* pages below occupancy threshold, not offered for allocation */
+    size_t retired_slots;    /* free slots currently hidden in retired_list pages */
+    struct heap_page *retired_list;    /* retired pages, linked via free_next */
 } rb_heap_t;
 
 enum {
@@ -783,6 +794,7 @@ struct heap_page {
         unsigned int before_sweep : 1;
         unsigned int has_remembered_objects : 1;
         unsigned int has_uncollectible_wb_unprotected_objects : 1;
+        unsigned int retired : 1;
     } flags;
 
     rb_heap_t *heap;
@@ -1706,6 +1718,7 @@ heap_add_freepage(rb_heap_t *heap, struct heap_page *page)
     asan_unlock_freelist(page);
     GC_ASSERT(page->free_slots != 0);
     GC_ASSERT(page->freelist != NULL);
+    GC_ASSERT(!page->flags.retired);
 
     page->free_next = heap->free_pages;
     heap->free_pages = page;
@@ -1721,6 +1734,7 @@ heap_add_poolpage(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *pa
     asan_unlock_freelist(page);
     GC_ASSERT(page->free_slots != 0);
     GC_ASSERT(page->freelist != NULL);
+    GC_ASSERT(!page->flags.retired);
 
     page->free_next = heap->pooled_pages;
     heap->pooled_pages = page;
@@ -2022,12 +2036,18 @@ heap_add_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page)
     heap->total_slots += page->total_slots;
 }
 
+static bool heap_unretire_page(rb_objspace_t *objspace, rb_heap_t *heap);
+
 static int
 heap_page_allocate_and_initialize(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     gc_report(1, objspace, "heap_page_allocate_and_initialize: rb_darray_size(objspace->heap_pages.sorted): %"PRIdSIZE", "
                   "allocatable_slots: %"PRIdSIZE", heap->total_pages: %"PRIdSIZE"\n",
                   rb_darray_size(objspace->heap_pages.sorted), objspace->heap_pages.allocatable_slots, heap->total_pages);
+
+    if (heap->free_pages == NULL && heap_unretire_page(objspace, heap)) {
+        return true;
+    }
 
     bool allocated = false;
     struct heap_page *page = heap_page_resurrect(objspace);
@@ -2090,6 +2110,33 @@ gc_continue(rb_objspace_t *objspace, rb_heap_t *heap)
     gc_exit(objspace, gc_enter_event_continue, &lock_lev);
 }
 
+static bool
+heap_unretire_page(rb_objspace_t *objspace, rb_heap_t *heap)
+{
+    if (heap->free_pages != NULL || heap->retired_list == NULL) return false;
+
+    struct heap_page *page = heap->retired_list;
+    heap->retired_list = page->free_next;
+    page->flags.retired = 0;
+    heap->retired_pages--;
+    if (RB_UNLIKELY(heap->retired_slots < page->free_slots)) {
+        heap->retired_slots = 0;
+    }
+    else {
+        heap->retired_slots -= page->free_slots;
+    }
+    heap_add_freepage(heap, page);
+    return true;
+}
+
+static inline size_t
+heap_effective_available_free_slots(const rb_heap_t *heap)
+{
+    size_t active_free_slots = heap->freed_slots + heap->empty_slots;
+    size_t discounted_retired_slots = heap->retired_slots / HEAP_PAGE_RETIRED_FREE_WEIGHT_DENOMINATOR;
+    return active_free_slots + discounted_retired_slots;
+}
+
 static void
 heap_prepare(rb_objspace_t *objspace, rb_heap_t *heap)
 {
@@ -2104,6 +2151,10 @@ heap_prepare(rb_objspace_t *objspace, rb_heap_t *heap)
 
     /* Continue incremental marking or lazy sweeping, if in any of those steps. */
     gc_continue(objspace, heap);
+
+    while (heap->free_pages == NULL) {
+        if (!heap_unretire_page(objspace, heap)) break;
+    }
 
     if (heap->free_pages == NULL) {
         heap_page_allocate_and_initialize(objspace, heap);
@@ -2121,7 +2172,7 @@ heap_prepare(rb_objspace_t *objspace, rb_heap_t *heap)
         else {
             if (objspace->heap_pages.allocatable_slots == 0 && !gc_config_full_mark_val) {
                 heap_allocatable_slots_expand(objspace, heap,
-                        heap->freed_slots + heap->empty_slots,
+                        heap_effective_available_free_slots(heap),
                         heap->total_slots);
                 GC_ASSERT(objspace->heap_pages.allocatable_slots > 0);
             }
@@ -2131,6 +2182,10 @@ heap_prepare(rb_objspace_t *objspace, rb_heap_t *heap)
             /* If we're not incremental marking (e.g. a minor GC) or finished
              * sweeping and still don't have a free page, then
              * gc_sweep_finish_heap should allow us to create a new page. */
+            while (heap->free_pages == NULL) {
+                if (!heap_unretire_page(objspace, heap)) break;
+            }
+
             if (heap->free_pages == NULL && !heap_page_allocate_and_initialize(objspace, heap)) {
                 if (gc_needs_major_flags == GPR_FLAG_NONE) {
                     rb_bug("cannot create a new page after GC");
@@ -2142,6 +2197,10 @@ heap_prepare(rb_objspace_t *objspace, rb_heap_t *heap)
                     else {
                         /* Do steps of incremental marking or lazy sweeping. */
                         gc_continue(objspace, heap);
+
+                        while (heap->free_pages == NULL) {
+                            if (!heap_unretire_page(objspace, heap)) break;
+                        }
 
                         if (heap->free_pages == NULL &&
                                 !heap_page_allocate_and_initialize(objspace, heap)) {
@@ -3725,10 +3784,14 @@ gc_sweep_start_heap(rb_objspace_t *objspace, rb_heap_t *heap)
     heap->sweeping_page = ccan_list_top(&heap->pages, struct heap_page, page_node);
     heap->free_pages = NULL;
     heap->pooled_pages = NULL;
+    heap->retired_pages = 0;
+    heap->retired_slots = 0;
+    heap->retired_list = NULL;
     if (!objspace->flags.immediate_sweep) {
         struct heap_page *page = NULL;
 
         ccan_list_for_each(&heap->pages, page, page_node) {
+            page->flags.retired = 0;
             page->flags.before_sweep = TRUE;
         }
     }
@@ -3804,12 +3867,12 @@ static void
 gc_sweep_finish_heap(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     size_t total_slots = heap->total_slots;
-    size_t swept_slots = heap->freed_slots + heap->empty_slots;
+    size_t effective_swept_slots = heap_effective_available_free_slots(heap);
 
     size_t init_slots = gc_params.heap_init_slots[heap - heaps];
     size_t min_free_slots = (size_t)(MAX(total_slots, init_slots) * gc_params.heap_free_slots_min_ratio);
 
-    if (swept_slots < min_free_slots &&
+    if (effective_swept_slots < min_free_slots &&
             /* The heap is a growth heap if it freed more slots than had empty slots. */
             ((heap->empty_slots == 0 && total_slots > 0) || heap->freed_slots > heap->empty_slots)) {
         /* If we don't have enough slots and we have pages on the tomb heap, move
@@ -3817,24 +3880,24 @@ gc_sweep_finish_heap(rb_objspace_t *objspace, rb_heap_t *heap)
         * creation thrashing (frequently allocating and deallocting pages) and
         * GC thrashing (running GC more frequently than required). */
         struct heap_page *resurrected_page;
-        while (swept_slots < min_free_slots &&
+        while (effective_swept_slots < min_free_slots &&
                 (resurrected_page = heap_page_resurrect(objspace))) {
             heap_add_page(objspace, heap, resurrected_page);
             heap_add_freepage(heap, resurrected_page);
 
-            swept_slots += resurrected_page->free_slots;
+            effective_swept_slots += resurrected_page->free_slots;
         }
 
-        if (swept_slots < min_free_slots) {
+        if (effective_swept_slots < min_free_slots) {
             /* Grow this heap if we are in a major GC or if we haven't run at least
              * RVALUE_OLD_AGE minor GC since the last major GC. */
             if (is_full_marking(objspace) ||
                     objspace->profile.count - objspace->rgengc.last_major_gc < RVALUE_OLD_AGE) {
                 if (objspace->heap_pages.allocatable_slots < min_free_slots) {
-                    heap_allocatable_slots_expand(objspace, heap, swept_slots, heap->total_slots);
+                    heap_allocatable_slots_expand(objspace, heap, effective_swept_slots, heap->total_slots);
                 }
             }
-            else if (objspace->heap_pages.allocatable_slots < (min_free_slots - swept_slots)) {
+            else if (objspace->heap_pages.allocatable_slots < (min_free_slots - effective_swept_slots)) {
                 gc_needs_major_flags |= GPR_FLAG_MAJOR_BY_NOFREE;
                 heap->force_major_gc_count++;
             }
@@ -3907,6 +3970,7 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
 
         if (free_slots == sweep_page->total_slots) {
             /* There are no living objects, so move this page to the global empty pages. */
+            sweep_page->flags.retired = 0;
             heap_unlink_page(objspace, heap, sweep_page);
 
             sweep_page->start = 0;
@@ -3926,18 +3990,33 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
             objspace->empty_pages = sweep_page;
         }
         else if (free_slots > 0) {
-            heap->freed_slots += ctx.freed_slots;
-            heap->empty_slots += ctx.empty_slots;
+            int live_slots = sweep_page->total_slots - free_slots;
 
-            if (pooled_slots < GC_INCREMENTAL_SWEEP_POOL_SLOT_COUNT) {
-                heap_add_poolpage(objspace, heap, sweep_page);
-                pooled_slots += free_slots;
+            if (!objspace->flags.immediate_sweep &&
+                    live_slots > 0 &&
+                    live_slots <= sweep_page->total_slots / HEAP_PAGE_RETIREMENT_RATIO) {
+                sweep_page->flags.retired = 1;
+                heap->retired_pages++;
+                heap->retired_slots += free_slots;
+                sweep_page->free_next = heap->retired_list;
+                heap->retired_list = sweep_page;
             }
             else {
-                heap_add_freepage(heap, sweep_page);
-                swept_slots += free_slots;
-                if (swept_slots > GC_INCREMENTAL_SWEEP_SLOT_COUNT) {
-                    break;
+                /* Only count free slots for pages that remain available for allocation. */
+                heap->freed_slots += ctx.freed_slots;
+                heap->empty_slots += ctx.empty_slots;
+                sweep_page->flags.retired = 0;
+
+                if (pooled_slots < GC_INCREMENTAL_SWEEP_POOL_SLOT_COUNT) {
+                    heap_add_poolpage(objspace, heap, sweep_page);
+                    pooled_slots += free_slots;
+                }
+                else {
+                    heap_add_freepage(heap, sweep_page);
+                    swept_slots += free_slots;
+                    if (swept_slots > GC_INCREMENTAL_SWEEP_SLOT_COUNT) {
+                        break;
+                    }
                 }
             }
         }
@@ -7055,6 +7134,9 @@ gc_sort_heap_by_compare_func(rb_objspace_t *objspace, gc_compact_compare_func co
         size_t i = 0;
 
         heap->free_pages = NULL;
+        heap->retired_list = NULL;
+        heap->retired_pages = 0;
+        heap->retired_slots = 0;
         ccan_list_for_each(&heap->pages, page, page_node) {
             page_list[i++] = page;
             GC_ASSERT(page);
@@ -7070,6 +7152,7 @@ gc_sort_heap_by_compare_func(rb_objspace_t *objspace, gc_compact_compare_func co
         ccan_list_head_init(&heap->pages);
 
         for (i = 0; i < total_pages; i++) {
+            page_list[i]->flags.retired = 0;
             ccan_list_add(&heap->pages, &page_list[i]->page_node);
             if (page_list[i]->free_slots != 0) {
                 heap_add_freepage(heap, page_list[i]);
@@ -7639,6 +7722,7 @@ enum gc_stat_heap_sym {
     gc_stat_heap_sym_force_incremental_marking_finish_count,
     gc_stat_heap_sym_total_allocated_objects,
     gc_stat_heap_sym_total_freed_objects,
+    gc_stat_heap_sym_heap_retired_pages,
     gc_stat_heap_sym_last
 };
 
@@ -7660,6 +7744,7 @@ setup_gc_stat_heap_symbols(void)
         S(force_incremental_marking_finish_count);
         S(total_allocated_objects);
         S(total_freed_objects);
+        S(heap_retired_pages);
 #undef S
     }
 }
@@ -7684,6 +7769,7 @@ stat_one_heap(rb_heap_t *heap, VALUE hash, VALUE key)
     SET(force_incremental_marking_finish_count, heap->force_incremental_marking_finish_count);
     SET(total_allocated_objects, heap->total_allocated_objects);
     SET(total_freed_objects, heap->total_freed_objects);
+    SET(heap_retired_pages, heap->retired_pages);
 #undef SET
 
     if (!NIL_P(key)) {

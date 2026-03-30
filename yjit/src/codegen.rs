@@ -11375,7 +11375,8 @@ mod tests {
 
         // Try again with an even number of elements.
         asm.stack_push(Type::Nil);
-        value_array[1] = 4;
+        let mut value_array2: [u64; 2] = [0, 4];
+        jit.pc = &mut value_array2 as *mut u64 as *mut VALUE;
         status = gen_opt_reverse(&mut jit, &mut asm);
 
         assert_eq!(status, Some(KeepCompiling));

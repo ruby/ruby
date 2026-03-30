@@ -242,6 +242,9 @@ class TestGc < Test::Unit::TestCase
       assert_operator stat_heap[:total_allocated_objects], :>=, 0
       assert_operator stat_heap[:total_freed_objects], :>=, 0
       assert_operator stat_heap[:total_freed_objects], :<=, stat_heap[:total_allocated_objects]
+      if stat_heap.key?(:heap_retired_pages)
+        assert_operator stat_heap[:heap_retired_pages], :>=, 0
+      end
     end
 
     GC.stat_heap(0, stat_heap)
@@ -264,7 +267,7 @@ class TestGc < Test::Unit::TestCase
       GC.stat_heap(i, stat_heap)
 
       # Remove keys that can vary between invocations
-      %i(total_allocated_objects heap_live_slots heap_free_slots).each do |sym|
+      %i(total_allocated_objects heap_live_slots heap_free_slots heap_retired_pages).each do |sym|
         stat_heap[sym] = stat_heap_all[i][sym] = 0
       end
 
@@ -661,6 +664,57 @@ class TestGc < Test::Unit::TestCase
       # Should not be thrashing in page creation
       assert_in_epsilon before_stats[:heap_allocated_pages], after_stats[:heap_allocated_pages], 0.5, debug_msg
       assert_equal 0, after_stats[:total_freed_pages], debug_msg
+    RUBY
+  end
+
+  def test_unretire_pages_before_allocating_new_pages
+    omit "heap_retired_pages is not supported by this GC" unless GC.stat_heap(0).key?(:heap_retired_pages)
+
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY', timeout: 120)
+      long_lived = []
+      400_000.times { |i| long_lived << "seed#{i}" }
+      # Make the survivor set sparse so we have pages that meet the threshold for retirement
+      long_lived = long_lived.each_with_index.select { |_, i| (i % 5).zero? }.map(&:first)
+
+      transient = []
+      120_000.times { |i| transient << "tmp#{i}" }
+      transient = nil
+
+      GC.start(full_mark: true, immediate_sweep: false)
+
+      retired_pages = GC.stat_heap(0, :heap_retired_pages)
+      assert_operator retired_pages, :>, 0, "failed to create retired pages in heap 0"
+
+      GC.disable
+      begin
+        allocated_pages = GC.stat_heap(0, :total_allocated_pages)
+        retired_pages_drained = false
+
+        2_000_000.times do |i|
+          Object.new
+          next unless (i % 1000).zero?
+
+          current_retired_pages = GC.stat_heap(0, :heap_retired_pages)
+          current_allocated_pages = GC.stat_heap(0, :total_allocated_pages)
+
+          if current_retired_pages > 0
+            assert_equal allocated_pages, current_allocated_pages,
+              "allocated a new page while retired pages were available: #{GC.stat_heap(0)}"
+          end
+
+          if current_retired_pages < retired_pages
+            retired_pages_drained = true
+            retired_pages = current_retired_pages
+          end
+
+          allocated_pages = current_allocated_pages
+          break if current_retired_pages == 0
+        end
+
+        assert retired_pages_drained, "retired pages were not consumed under allocation pressure"
+      ensure
+        GC.enable
+      end
     RUBY
   end
 
