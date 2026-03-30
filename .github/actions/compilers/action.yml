@@ -152,3 +152,10 @@ runs:
         GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         GITHUB_PULL_REQUEST_URL: ${{ github.event.pull_request.html_url }}
         GITHUB_REF: ${{ github.ref }}
+
+    - name: clean up docker image
+      shell: bash
+      run: docker rmi "ghcr.io/ruby/ruby-ci-image:${INPUT_TAG}" || true
+      if: always()
+      env:
+        INPUT_TAG: ${{ inputs.tag }}

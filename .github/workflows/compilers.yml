@@ -49,7 +49,7 @@ jobs:
     needs: compile-if
     if: ${{ needs.compile-if.result == 'success' }}
     timeout-minutes: 60
-    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
@@ -72,7 +72,7 @@ jobs:
     needs: compile-if
     if: ${{ needs.compile-if.result == 'success' }}
     timeout-minutes: 60
-    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
@@ -102,7 +102,7 @@ jobs:
     needs: compile-if
     if: ${{ needs.compile-if.result == 'success' }}
     timeout-minutes: 60
-    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
@@ -124,7 +124,7 @@ jobs:
     needs: compile-if
     if: ${{ needs.compile-if.result == 'success' }}
     timeout-minutes: 60
-    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
@@ -145,7 +145,7 @@ jobs:
     needs: compile-if
     if: ${{ needs.compile-if.result == 'success' }}
     timeout-minutes: 60
-    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
@@ -171,7 +171,7 @@ jobs:
     needs: compile-if
     if: ${{ needs.compile-if.result == 'success' }}
     timeout-minutes: 60
-    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
@@ -191,7 +191,7 @@ jobs:
     needs: compile-if
     if: ${{ needs.compile-if.result == 'success' }}
     timeout-minutes: 60
-    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
@@ -213,7 +213,7 @@ jobs:
     needs: compile-if
     if: ${{ needs.compile-if.result == 'success' }}
     timeout-minutes: 60
-    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
@@ -232,7 +232,7 @@ jobs:
     needs: compile-if
     if: ${{ needs.compile-if.result == 'success' }}
     timeout-minutes: 60
-    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
@@ -252,7 +252,7 @@ jobs:
     needs: compile-if
     if: ${{ needs.compile-if.result == 'success' }}
     timeout-minutes: 60
-    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
@@ -270,7 +270,7 @@ jobs:
     needs: compile-if
     if: ${{ needs.compile-if.result == 'success' }}
     timeout-minutes: 60
-    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
@@ -289,7 +289,7 @@ jobs:
     needs: compile-if
     if: ${{ needs.compile-if.result == 'success' }}
     timeout-minutes: 60
-    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
