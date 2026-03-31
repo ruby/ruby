@@ -888,6 +888,16 @@ CODE
     end;
   end
 
+  def test_define_singleton_initialize
+    assert_normal_exit "#{<<~"begin;"}\n#{<<~'end;'}"
+    begin;
+      class C
+        def self.initialize
+        end
+      end
+    end;
+  end
+
   def test_singleton_cc_invalidation
     assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}")
     begin;
