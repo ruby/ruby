@@ -4,6 +4,10 @@ on:
     branches:
       - master
       - 'ruby_*_*'
+
+permissions:
+  contents: read
+
 jobs:
   hooks:
     name: Post-push hooks
