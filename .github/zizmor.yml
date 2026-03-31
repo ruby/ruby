@@ -28,5 +28,4 @@ rules:
     disable: true
   unpinned-uses:
     ignore:
-      - cygwin.yml
       - wsl.yml
