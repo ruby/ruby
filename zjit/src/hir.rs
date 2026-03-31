@@ -2610,24 +2610,6 @@ impl Function {
         id
     }
 
-    fn new_branch_block(
-        &mut self,
-        insn_idx: u32,
-        exit_state: &FrameState,
-        locals_count: usize,
-        stack_count: usize,
-    ) -> (BlockId, InsnId, FrameState, InsnId) {
-        let block = self.new_block(insn_idx);
-        let self_param = self.push_insn(block, Insn::Param);
-        let mut state = exit_state.clone();
-        state.locals.clear();
-        state.stack.clear();
-        state.locals.extend((0..locals_count).map(|_| self.push_insn(block, Insn::Param)));
-        state.stack.extend((0..stack_count).map(|_| self.push_insn(block, Insn::Param)));
-        let snapshot = self.push_insn(block, Insn::Snapshot { state: state.clone() });
-        (block, self_param, state, snapshot)
-    }
-
     fn remove_block(&mut self, block_id: BlockId) {
         if BlockId(self.blocks.len() - 1) != block_id {
             panic!("Can only remove the last block");
@@ -7587,44 +7569,41 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         None
                     };
 
-                    let locals_count = state.locals.len();
-                    let stack_count = state.stack.len();
-                    let entry_args = state.as_args(self_param);
-
                     // `getblockparamproxy` has two semantic paths:
                     // - modified: return the already-materialized block local from EP
                     // - unmodified: inspect the block handler and produce proxy/nil
-                    let (modified_block, modified_self_param, mut modified_state, ..) =
-                        fun.new_branch_block(branch_insn_idx, &exit_state, locals_count, stack_count);
-                    let (unmodified_block, unmodified_self_param, mut unmodified_state, unmodified_exit_id) =
-                        fun.new_branch_block(branch_insn_idx, &exit_state, locals_count, stack_count);
+                    let modified_block = fun.new_block(branch_insn_idx);
+                    let unmodified_block = fun.new_block(branch_insn_idx);
                     let join_block = insn_idx_to_block.get(&insn_idx).copied().unwrap_or_else(|| fun.new_block(insn_idx));
+                    let join_result = fun.push_insn(join_block, Insn::Param);
+                    let join_local = if level == 0 { Some(fun.push_insn(join_block, Insn::Param)) } else { None };
 
                     let ep = fun.push_insn(block, Insn::GetEP { level });
                     let is_modified = fun.push_insn(block, Insn::IsBlockParamModified { ep });
 
-                    fun.push_insn(block, Insn::IfTrue { val: is_modified, target: BranchEdge { target: modified_block, args: entry_args.clone() }});
-                    fun.push_insn(block, Insn::Jump(BranchEdge { target: unmodified_block, args: entry_args }));
+                    fun.push_insn(block, Insn::IfTrue { val: is_modified, target: BranchEdge { target: modified_block, args: vec![] }});
+                    fun.push_insn(block, Insn::Jump(BranchEdge { target: unmodified_block, args: vec![] }));
 
-                    // Push modified block: load the block local via EP.
+                    // Modified block: load the block local via EP.
                     let ep = fun.push_insn(modified_block, Insn::GetEP { level });
                     let modified_val = fun.get_local_from_ep(modified_block, ep, ep_offset, level, types::BasicObject);
-                    if level == 0 {
-                        modified_state.setlocal(ep_offset, modified_val);
-                    }
-                    modified_state.stack_push(modified_val);
-                    fun.push_insn(modified_block, Insn::Jump(BranchEdge { target: join_block, args: modified_state.as_args(modified_self_param) }));
+                    let mut modified_args = vec![modified_val];
+                    if level == 0 { modified_args.push(modified_val); }
+                    fun.push_insn(modified_block, Insn::Jump(BranchEdge { target: join_block, args: modified_args }));
 
-                    // Push unmodified block: inspect the current block handler to
+                    // Unmodified block: inspect the current block handler to
                     // decide whether this path returns `nil` or `BlockParamProxy`.
                     let ep = fun.push_insn(unmodified_block, Insn::GetEP { level });
                     let block_handler = fun.push_insn(unmodified_block, Insn::LoadField { recv: ep, id: ID!(_env_data_index_specval), offset: SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL, return_type: types::CInt64 });
+                    let original_local = if level == 0 { Some(state.getlocal(ep_offset)) } else { None };
 
                     match profiled_block_type {
                         Some(ty) if ty.nil_p() => {
-                            fun.push_insn(unmodified_block, Insn::GuardBitEquals { val: block_handler, expected: Const::CInt64(VM_BLOCK_HANDLER_NONE.into()), reason: SideExitReason::BlockParamProxyNotNil, state: unmodified_exit_id });
-                            unmodified_state.stack_push(fun.push_insn(unmodified_block, Insn::Const { val: Const::Value(Qnil) }));
-                            fun.push_insn(unmodified_block, Insn::Jump(BranchEdge { target: join_block, args: unmodified_state.as_args(unmodified_self_param) }));
+                            fun.push_insn(unmodified_block, Insn::GuardBitEquals { val: block_handler, expected: Const::CInt64(VM_BLOCK_HANDLER_NONE.into()), reason: SideExitReason::BlockParamProxyNotNil, state: exit_id });
+                            let nil_val = fun.push_insn(unmodified_block, Insn::Const { val: Const::Value(Qnil) });
+                            let mut unmodified_args = vec![nil_val];
+                            if let Some(local) = original_local { unmodified_args.push(local); }
+                            fun.push_insn(unmodified_block, Insn::Jump(BranchEdge { target: join_block, args: unmodified_args }));
                         }
                         _ => {
                             // This handles two cases which are nearly identical
@@ -7635,107 +7614,65 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             const _: () = assert!(RUBY_SYMBOL_FLAG & 1 == 0, "guard below rejects symbol block handlers");
 
                             // Bail out if the block handler is neither ISEQ nor ifunc
-                            fun.push_insn(unmodified_block, Insn::GuardAnyBitSet { val: block_handler, mask: Const::CUInt64(0x1), mask_name: None, reason: SideExitReason::BlockParamProxyNotIseqOrIfunc, state: unmodified_exit_id });
+                            fun.push_insn(unmodified_block, Insn::GuardAnyBitSet { val: block_handler, mask: Const::CUInt64(0x1), mask_name: None, reason: SideExitReason::BlockParamProxyNotIseqOrIfunc, state: exit_id });
                             // TODO(Shopify/ruby#753): GC root, so we should be able to avoid unnecessary GC tracing
-                            unmodified_state.stack_push(fun.push_insn(unmodified_block, Insn::Const { val: Const::Value(unsafe { rb_block_param_proxy }) }));
-                            fun.push_insn(unmodified_block, Insn::Jump(BranchEdge { target: join_block, args: unmodified_state.as_args(unmodified_self_param) }));
+                            let proxy_val = fun.push_insn(unmodified_block, Insn::Const { val: Const::Value(unsafe { rb_block_param_proxy }) });
+                            let mut unmodified_args = vec![proxy_val];
+                            if let Some(local) = original_local { unmodified_args.push(local); }
+                            fun.push_insn(unmodified_block, Insn::Jump(BranchEdge { target: join_block, args: unmodified_args }));
                         }
                     }
 
-                    // Continue compilation from the merged continuation block at the next
-                    // instruction.
-                    queue.push_back((unmodified_state, join_block, insn_idx, local_inval));
-                    break;
+                    // Continue from the join block
+                    if let Some(local_param) = join_local {
+                        state.setlocal(ep_offset, local_param);
+                    }
+                    state.stack_push(join_result);
+                    block = join_block;
                 }
                 YARVINSN_getblockparam => {
-                    fn finish_getblockparam_branch(
-                        fun: &mut Function,
-                        block: BlockId,
-                        self_param: InsnId,
-                        state: &mut FrameState,
-                        join_block: BlockId,
-                        ep_offset: u32,
-                        level: u32,
-                        val: InsnId,
-                    ) {
-                        if level == 0 {
-                            state.setlocal(ep_offset, val);
-                        }
-                        state.stack_push(val);
-                        fun.push_insn(block, Insn::Jump(BranchEdge {
-                            target: join_block,
-                            args: state.as_args(self_param),
-                        }));
-                    }
-
                     let ep_offset = get_arg(pc, 0).as_u32();
                     let level = get_arg(pc, 1).as_u32();
                     let branch_insn_idx = exit_state.insn_idx as u32;
 
                     // If the block param is already a Proc (modified), read it from EP.
                     // Otherwise, convert it to a Proc and store it to EP.
+                    let modified_block = fun.new_block(branch_insn_idx);
+                    let unmodified_block = fun.new_block(branch_insn_idx);
+                    let join_block = insn_idx_to_block.get(&insn_idx).copied().unwrap_or_else(|| fun.new_block(insn_idx));
+                    let join_param = fun.push_insn(join_block, Insn::Param);
+
                     let ep = fun.push_insn(block, Insn::GetEP { level });
                     let is_modified = fun.push_insn(block, Insn::IsBlockParamModified { ep });
 
-                    let locals_count = state.locals.len();
-                    let stack_count = state.stack.len();
-                    let entry_args = state.as_args(self_param);
-
-                    // Set up branch and join blocks.
-                    let (modified_block, modified_self_param, mut modified_state, ..) =
-                    fun.new_branch_block(branch_insn_idx, &exit_state, locals_count, stack_count);
-                    let (unmodified_block, unmodified_self_param, mut unmodified_state, unmodified_exit_id) =
-                    fun.new_branch_block(branch_insn_idx, &exit_state, locals_count, stack_count);
-                    let join_block = insn_idx_to_block.get(&insn_idx).copied().unwrap_or_else(|| fun.new_block(insn_idx));
-
                     fun.push_insn(block, Insn::IfTrue {
                         val: is_modified,
-                        target: BranchEdge { target: modified_block, args: entry_args.clone() },
+                        target: BranchEdge { target: modified_block, args: vec![] },
                     });
                     fun.push_insn(block, Insn::Jump(BranchEdge {
                         target: unmodified_block,
-                        args: entry_args,
+                        args: vec![],
                     }));
 
-                    // Push modified block: read Proc from EP.
+                    // Modified block: read Proc from EP.
                     let ep = fun.push_insn(modified_block, Insn::GetEP { level });
-                    let modified_val = fun.get_local_from_ep(modified_block,
-                        ep,
-                        ep_offset,
-                        level,
-                        types::BasicObject,
-                    );
-                    finish_getblockparam_branch(
-                        &mut fun,
-                        modified_block,
-                        modified_self_param,
-                        &mut modified_state,
-                        join_block,
-                        ep_offset,
-                        level,
-                        modified_val,
-                    );
+                    let modified_val = fun.get_local_from_ep(modified_block, ep, ep_offset, level, types::BasicObject);
+                    fun.push_insn(modified_block, Insn::Jump(BranchEdge { target: join_block, args: vec![modified_val] }));
 
-                    // Push unmodified block: convert block handler to Proc.
+                    // Unmodified block: convert block handler to Proc.
                     let unmodified_val = fun.push_insn(unmodified_block, Insn::GetBlockParam {
                         ep_offset,
                         level,
-                        state: unmodified_exit_id,
+                        state: exit_id,
                     });
-                    finish_getblockparam_branch(
-                        &mut fun,
-                        unmodified_block,
-                        unmodified_self_param,
-                        &mut unmodified_state,
-                        join_block,
-                        ep_offset,
-                        level,
-                        unmodified_val,
-                    );
+                    fun.push_insn(unmodified_block, Insn::Jump(BranchEdge { target: join_block, args: vec![unmodified_val] }));
 
-                    // Continue compilation from the join block at the next instruction.
-                    queue.push_back((unmodified_state, join_block, insn_idx, local_inval));
-                    break;
+                    // Continue from the join block
+                    if level == 0 {
+                        state.setlocal(ep_offset, join_param);
+                    }
+                    state.stack_push(join_param);
+                    block = join_block;
                 }
                 YARVINSN_pop => { state.stack_pop()?; }
                 YARVINSN_dup => { state.stack_push(state.stack_top()?); }
