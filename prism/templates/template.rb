@@ -643,8 +643,14 @@ module Prism
           end
         end
 
-        FileUtils.mkdir_p(File.dirname(write_to))
-        File.write(write_to, contents)
+        begin
+          FileUtils.mkdir_p(File.dirname(write_to))
+          File.write(write_to, contents)
+        rescue SystemCallError # EACCES, EPERM, EROFS, etc.
+          # Fall back to the current directory
+          FileUtils.mkdir_p(File.dirname(name))
+          File.write(name, contents)
+        end
       end
 
       private

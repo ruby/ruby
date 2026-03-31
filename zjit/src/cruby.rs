@@ -165,7 +165,7 @@ unsafe extern "C" {
     pub fn rb_vm_stack_canary() -> VALUE;
     pub fn rb_vm_push_cfunc_frame(cme: *const rb_callable_method_entry_t, recv_idx: c_int);
     pub fn rb_obj_class(klass: VALUE) -> VALUE;
-    pub fn rb_vm_objtostring(iseq: IseqPtr, recv: VALUE, cd: *const rb_call_data) -> VALUE;
+    pub fn rb_vm_objtostring(reg_cfp: CfpPtr, recv: VALUE, cd: *const rb_call_data) -> VALUE;
 }
 
 // Renames
@@ -369,13 +369,6 @@ pub struct rb_method_cfunc_t {
 /// Opaque call-cache type from vm_callinfo.h
 #[repr(C)]
 pub struct rb_callcache {
-    _data: [u8; 0],
-    _marker: core::marker::PhantomData<(*mut u8, core::marker::PhantomPinned)>,
-}
-
-/// Opaque control_frame (CFP) struct from vm_core.h
-#[repr(C)]
-pub struct rb_control_frame_struct {
     _data: [u8; 0],
     _marker: core::marker::PhantomData<(*mut u8, core::marker::PhantomPinned)>,
 }
@@ -742,6 +735,24 @@ impl IseqAccess for IseqPtr {
     unsafe fn params<'a>(self) -> &'a IseqParameters {
         use crate::cast::IntoUsize;
         unsafe { &*((*self).body.byte_add(ISEQ_BODY_OFFSET_PARAM.to_usize()) as *const IseqParameters) }
+    }
+}
+
+impl IseqParameters {
+    /// The `opt_table` is a mapping where `opt_table[number_of_optional_parameters_filled]`
+    /// gives the YARV entry point of ISeq as an index of the iseq_encoded array.
+    /// This method gives over the table that additionally works when `opt_num==0`,
+    /// when the table is stored as `NULL` and implicit.
+    /// The table stores the indexes as raw VALUE integers; they are not tagged as fixnum.
+    pub fn opt_table_slice(&self) -> &[VALUE] {
+        let opt_num: usize = self.opt_num.try_into().expect("ISeq opt_num should always >=0");
+        if opt_num > 0 {
+            // The table has size=opt_num+1 because opt_table[opt_num] is valid (all optionals filled)
+            unsafe { std::slice::from_raw_parts(self.opt_table, opt_num + 1) }
+        } else {
+            // The ISeq entry point is index 0 when there are no optional parameters
+            &[VALUE(0)]
+        }
     }
 }
 
@@ -1265,6 +1276,15 @@ pub mod test_utils {
     pub fn inspect(program: &str) -> String {
         let inspect = format!("({program}).inspect");
         ruby_str_to_rust_string(eval(&inspect))
+    }
+
+    /// Like inspect, but also asserts that all compilations triggered by this program succeed.
+    pub fn assert_compiles(program: &str) -> String {
+        use crate::state::ZJITState;
+        ZJITState::enable_assert_compiles();
+        let result = inspect(program);
+        ZJITState::disable_assert_compiles();
+        result
     }
 
     /// Get IseqPtr for a specified method

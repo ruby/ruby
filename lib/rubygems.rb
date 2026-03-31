@@ -1300,10 +1300,17 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
         prefix_pattern = /^(#{prefix_group})/
       end
 
+      native_extension_suffixes = Gem.dynamic_library_suffixes.reject(&:empty?)
+
       spec.files.each do |file|
         if new_format
           file = file.sub(prefix_pattern, "")
-          next unless $~
+          unless $~
+            # Also register native extension files (e.g. date_core.bundle)
+            # that are listed without require path prefix in the gemspec
+            next if file.include?("/")
+            next unless file.end_with?(*native_extension_suffixes)
+          end
         end
 
         spec.activate if already_loaded?(file)

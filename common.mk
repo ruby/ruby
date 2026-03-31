@@ -77,6 +77,7 @@ INSTALL_DOC_OPTS = --rdoc-output="$(RDOCOUT)" --html-output="$(HTMLOUT)"
 RDOC_GEN_OPTS = --no-force-update \
 	--exclude '^lib/rubygems/core_ext/kernel_require\.rb$$' \
 	$(empty)
+RDOC_SERVER_PORT = 4000
 
 INITOBJS      = dmyext.$(OBJEXT) dmyenc.$(OBJEXT)
 NORMALMAINOBJ = main.$(OBJEXT)
@@ -630,6 +631,10 @@ html: PHONY $(RDOC_DEPENDS) $(RBCONFIG)
 	@echo Generating RDoc HTML files
 	$(Q) $(RDOC) --op "$(HTMLOUT)" $(RDOC_GEN_OPTS) $(RDOCFLAGS) .
 
+html-server: PHONY $(RDOC_DEPENDS) $(RBCONFIG)
+	@echo Starting RDoc server with live reload
+	$(Q) $(RDOC) --server=$(RDOC_SERVER_PORT) $(RDOC_GEN_OPTS) $(RDOCFLAGS) .
+
 RDOC_COVERAGE_EXCLUDES = -x ^ext/json -x ^ext/openssl -x ^ext/psych \
 	-x ^lib/bundler -x ^lib/rubygems \
 	-x ^lib/did_you_mean -x ^lib/error_highlight -x ^lib/syntax_suggest
@@ -672,6 +677,8 @@ install-prereq: $(CLEAR_INSTALLED_LIST) yes-fake sudo-precheck PHONY
 clear-installed-list: PHONY
 	@> $(INSTALLED_LIST) set MAKE="$(MAKE)"
 
+noarch_config_h = tmp/include/noarch/ruby/config.h
+
 clean: clean-ext clean-enc clean-golf clean-docs clean-extout clean-modular-gc clean-local clean-platform clean-spec
 clean-local:: clean-runnable
 	$(Q)$(RM) $(ALLOBJS) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
@@ -680,6 +687,8 @@ clean-local:: clean-runnable
 	$(Q)$(RM) probes.h probes.$(OBJEXT) probes.stamp ruby-glommed.$(OBJEXT) ruby.imp ChangeLog $(STATIC_RUBY)$(EXEEXT)
 	$(Q)$(RM) GNUmakefile.old Makefile.old $(arch)-fake.rb bisect.sh $(ENC_TRANS_D) builtin_binary.rbbin
 	$(Q)$(RM) $(PRISM_BUILD_DIR)/.time $(PRISM_BUILD_DIR)/*/.time yjit_exit_locations.dump
+	$(Q)$(RM) $(noarch_config_h)
+	-$(Q)$(RMALL) dump_ast$(BUILD_EXEEXT)*
 	-$(Q)$(RMALL) target
 	-$(Q) $(RMDIR) enc/jis enc/trans enc $(COROUTINE_H:/Context.h=) coroutine target \
 	  $(PRISM_BUILD_DIR)/*/ $(PRISM_BUILD_DIR) tmp \
@@ -851,6 +860,12 @@ $(arch:noarch=ignore)-fake.rb: $(srcdir)/template/fake.rb.in $(tooldir)/generic_
 	$(BOOTSTRAPRUBY) "$(tooldir)/generic_erb.rb" -o $@ "$(srcdir)/template/fake.rb.in" \
 	    i=- srcdir="$(srcdir)" BASERUBY="$(BASERUBY)" \
 	    LIBPATHENV="$(LIBPATHENV)" PRELOADENV="$(PRELOADENV)" LIBRUBY_SO="$(LIBRUBY_SO)"
+
+# dummy file for generating sources; $(arch_hdrdir)/ruby/config.h with prereq.status.
+$(noarch_config_h):
+	$(ECHO) generating dummy config.h
+	$(Q) $(MAKEDIRS) $(@D)
+	$(Q) $(TOUCH) $@
 
 noarch-fake.rb: # prerequisite of yes-fake
 	$(Q) exit > $@
@@ -1303,7 +1318,7 @@ preludes: {$(VPATH)}miniprelude.c
 	$(ECHO) making $@
 	$(Q) $(MINIRUBY) $(tooldir)/mk_rbbin.rb $(SRC_FILE) > $(OS_DEST_FILE)
 
-{$(srcdir)}.rb.rbinc:
+{$(srcdir)}.rb.$(HAVE_BASERUBY:yes=)rbinc:
 	$(ECHO) making $@
 	$(Q) $(BASERUBY) $(tooldir)/mk_builtin_loader.rb $(DUMP_AST) $(SRC_FILE)
 
@@ -1317,9 +1332,20 @@ $(BUILTIN_BINARY:no=builtin)_binary.rbbin:
 
 $(BUILTIN_RB_INCS): $(tooldir)/mk_builtin_loader.rb $(DUMP_AST_TARGET)
 
-dump_ast$(EXEEXT): $(tooldir)/dump_ast.c $(LIBPRISM_OBJS)
+dump_ast$(BUILD_EXEEXT): $(tooldir)/dump_ast.c $(LIBPRISM_OBJS)
 	$(ECHO) compiling $@
 	$(Q) $(CC) $(CFLAGS) $(OUTFLAG)$@ $(INCFLAGS) $(tooldir)/dump_ast.c $(LIBPRISM_OBJS)
+
+build-tool/Makefile: $(tooldir)/dump_ast.mkmf.rb prism-srcs prism-incs
+	+$(BASERUBY) -s $(tooldir)/dump_ast.mkmf.rb "-INCFLAGS=$(INCFLAGS)" "-make=$(MAKE)" build-tool $(tooldir)/dump_ast.c dump_ast.$(OBJEXT) $(LIBPRISM_OBJS)
+
+build-tool/dump_ast$(BUILD_EXEEXT): build-tool/Makefile
+	cd build-tool && MAKEFLAGS= MFLAGS= && unset MAKEFLAGS MFLAGS && $(MAKE)
+
+clean-local:: clean-build-tool
+clean-build-tool:
+	- cd build-tool && $(MAKE) clean 2> $(NULL) || $(NULLCMD)
+	- $(RMDIR) build-tool
 
 $(srcdir)/revision.h$(no_baseruby:no=~disabled~): $(REVISION_H)
 

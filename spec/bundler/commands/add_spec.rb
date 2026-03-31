@@ -51,16 +51,12 @@ RSpec.describe "bundle add" do
     end
 
     it "version requirement becomes ~> major.minor.patch.pre when resolved version is < 1.0" do
-      # Ruby 3.3 on Windows has a native crash (SEGV in rb_ary_cmp during Array#join) related to Object Shape optimization.
-      skip "Ruby 3.3 on Windows crashes with SEGV in Array#join" if Gem.win_platform? && RUBY_VERSION.start_with?("3.3.")
       bundle "add 'cat'"
       expect(bundled_app_gemfile.read).to match(/gem "cat", "~> 0.12.3.pre"/)
       expect(the_bundle).to include_gems "cat 0.12.3.pre"
     end
 
     it "version requirement becomes ~> major.minor.pre when resolved version is > 1.0.pre" do
-      # Ruby 3.3 on Windows has a native crash (SEGV in rb_ary_cmp during Array#join) related to Object Shape optimization.
-      skip "Ruby 3.3 on Windows crashes with SEGV in Array#join" if Gem.win_platform? && RUBY_VERSION.start_with?("3.3.")
       bundle "add 'dog'"
       expect(bundled_app_gemfile.read).to match(/gem "dog", "~> 1.1.pre"/)
       expect(the_bundle).to include_gems "dog 1.1.3.pre"
@@ -295,7 +291,7 @@ RSpec.describe "bundle add" do
   end
 
   it "shows error message when gem cannot be found" do
-    bundle "config set force_ruby_platform true"
+    bundle_config "force_ruby_platform true"
     bundle "add 'werk_it'", raise_on_error: false
     expect(err).to match("Could not find gem 'werk_it' in")
 

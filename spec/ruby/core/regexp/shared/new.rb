@@ -5,6 +5,12 @@ describe :regexp_new, shared: true do
     Regexp.send(@method, '').is_a?(Regexp).should == true
   end
 
+  ruby_version_is "4.1" do
+    it "is frozen" do
+      Regexp.send(@method, '').should.frozen?
+    end
+  end
+
   it "works by default for subclasses with overridden #initialize" do
     class RegexpSpecsSubclass < Regexp
       def initialize(*args)

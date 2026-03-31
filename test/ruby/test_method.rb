@@ -503,6 +503,20 @@ class TestMethod < Test::Unit::TestCase
     end
   end
 
+  def test_clone_preserves_singleton_methods
+    m = method(:itself)
+    m.define_singleton_method(:foo) { :bar }
+    assert_equal(:bar, m.foo)
+    assert_equal(:bar, m.clone.foo)
+  end
+
+  def test_dup_does_not_preserve_singleton_methods
+    m = method(:itself)
+    m.define_singleton_method(:foo) { :bar }
+    assert_equal(:bar, m.foo)
+    assert_raise(NoMethodError) { m.dup.foo }
+  end
+
   def test_inspect
     o = Object.new
     def o.foo; end; line_no = __LINE__

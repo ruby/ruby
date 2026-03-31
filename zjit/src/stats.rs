@@ -156,12 +156,14 @@ make_counters! {
     default {
         compiled_iseq_count,
         failed_iseq_count,
+        skipped_native_stack_full,
 
         compile_time_ns,
         profile_time_ns,
         gc_time_ns,
         invalidation_time_ns,
 
+        compiled_side_exit_count,
         side_exit_size,
         compile_side_exit_time_ns,
 
@@ -224,16 +226,17 @@ make_counters! {
         exit_obj_to_string_fallback,
         exit_interrupt,
         exit_stackoverflow,
-        exit_block_param_proxy_modified,
         exit_block_param_proxy_not_iseq_or_ifunc,
         exit_block_param_proxy_not_nil,
         exit_block_param_wb_required,
         exit_too_many_keyword_parameters,
+        exit_no_profile_send,
         exit_splatkw_not_nil_or_hash,
         exit_splatkw_polymorphic,
         exit_splatkw_not_profiled,
         exit_directive_induced,
         exit_send_while_tracing,
+        exit_invokeblock_not_ifunc,
     }
 
     // Send fallback counters that are summed as dynamic_send_count
@@ -283,6 +286,10 @@ make_counters! {
         send_fallback_super_target_not_found,
         send_fallback_super_target_complex_args_pass,
         send_fallback_cannot_send_direct,
+        send_fallback_invokeblock_not_specialized,
+        send_fallback_sendforward_not_specialized,
+        send_fallback_invokesuperforward_not_specialized,
+        send_fallback_single_ractor_mode_required,
         send_fallback_uncategorized,
     }
 
@@ -600,7 +607,6 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         ObjToStringFallback           => exit_obj_to_string_fallback,
         Interrupt                     => exit_interrupt,
         StackOverflow                 => exit_stackoverflow,
-        BlockParamProxyModified       => exit_block_param_proxy_modified,
         BlockParamProxyNotIseqOrIfunc => exit_block_param_proxy_not_iseq_or_ifunc,
         BlockParamProxyNotNil         => exit_block_param_proxy_not_nil,
         BlockParamWbRequired          => exit_block_param_wb_required,
@@ -626,6 +632,8 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         PatchPoint(Invariant::RootBoxOnly)
                                       => exit_patchpoint_root_box_only,
         SendWhileTracing              => exit_send_while_tracing,
+        NoProfileSend                 => exit_no_profile_send,
+        InvokeBlockNotIfunc           => exit_invokeblock_not_ifunc,
     }
 }
 
@@ -679,6 +687,10 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SuperPolymorphic                          => send_fallback_super_polymorphic,
         SuperTargetNotFound                       => send_fallback_super_target_not_found,
         SuperTargetComplexArgsPass                => send_fallback_super_target_complex_args_pass,
+        InvokeBlockNotSpecialized                 => send_fallback_invokeblock_not_specialized,
+        SendForwardNotSpecialized                 => send_fallback_sendforward_not_specialized,
+        InvokeSuperForwardNotSpecialized          => send_fallback_invokesuperforward_not_specialized,
+        SingleRactorModeRequired                  => send_fallback_single_ractor_mode_required,
         Uncategorized(_)                          => send_fallback_uncategorized,
     }
 }

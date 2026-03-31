@@ -147,7 +147,7 @@ module GC
   #    sweeping_time: 0,
   #    heap_allocated_pages: 521,
   #    heap_empty_pages: 0,
-  #    heap_allocatable_slots: 0,
+  #    heap_allocatable_bytes: 0,
   #    heap_available_slots: 539590,
   #    heap_live_slots: 422243,
   #    heap_free_slots: 117347,

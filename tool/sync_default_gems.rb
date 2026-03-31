@@ -293,6 +293,7 @@ module SyncDefaultGems
     ], exclude: [
       "ext/strscan/regenc.h",
       "ext/strscan/regint.h",
+      "ext/strscan/lib/strscan/truffleruby.rb",
     ]),
     syntax_suggest: lib(["ruby/syntax_suggest", "main"], gemspec_in_subdir: true),
     tempfile: lib("ruby/tempfile"),

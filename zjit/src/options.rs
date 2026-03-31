@@ -105,6 +105,9 @@ pub struct Options {
 
     /// Path to a file where compiled ISEQs will be saved.
     pub log_compiled_iseqs: Option<std::path::PathBuf>,
+
+    /// Maximum number of versions per ISEQ
+    pub max_versions: usize,
 }
 
 impl Default for Options {
@@ -130,6 +133,7 @@ impl Default for Options {
             perf: None,
             allowed_iseqs: None,
             log_compiled_iseqs: None,
+            max_versions: 2,
         }
     }
 }
@@ -340,6 +344,10 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             Err(_) => return None,
         },
 
+        ("max-versions", _) => match opt_val.parse() {
+            Ok(n) => options.max_versions = n,
+            Err(_) => return None,
+        },
 
         ("stats-quiet", _) => {
             options.stats = true;

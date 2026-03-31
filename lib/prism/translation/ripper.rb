@@ -35,9 +35,6 @@ module Prism
     # - on_rparen
     # - on_semicolon
     # - on_sp
-    # - on_symbeg
-    # - on_tstring_beg
-    # - on_tstring_end
     #
     class Ripper < Compiler
       # Parses the given Ruby program read from +src+.
@@ -69,7 +66,7 @@ module Prism
       #          [[1, 13], :on_kw,     "end", END      ]]
       #
       def self.lex(src, filename = "-", lineno = 1, raise_errors: false)
-        result = Prism.lex_compat(src, filepath: filename, line: lineno, version: "current")
+        result = Prism.lex_compat(coerce_source(src), filepath: filename, line: lineno, version: "current")
 
         if result.failure? && raise_errors
           raise SyntaxError, result.errors.first.message
@@ -89,6 +86,21 @@ module Prism
       #
       def self.tokenize(...)
         lex(...).map { |token| token[2] }
+      end
+
+      # Mirros the various lex_types that ripper supports
+      def self.coerce_source(source) # :nodoc:
+        if source.is_a?(IO)
+          source.read
+        elsif source.respond_to?(:gets)
+          src = +""
+          while line = source.gets
+            src << line
+          end
+          src
+        else
+          source.to_str
+        end
       end
 
       # This contains a table of all of the parser events and their
@@ -480,17 +492,7 @@ module Prism
 
       # Create a new Translation::Ripper object with the given source.
       def initialize(source, filename = "(ripper)", lineno = 1)
-        if source.is_a?(IO)
-          @source = source.read
-        elsif source.respond_to?(:gets)
-          @source = +""
-          while line = source.gets
-            @source << line
-          end
-        else
-          @source = source.to_str
-        end
-
+        @source = Ripper.coerce_source(source)
         @filename = filename
         @lineno = lineno
         @column = 0
@@ -2235,20 +2237,37 @@ module Prism
       # "foo #{bar}"
       # ^^^^^^^^^^^^
       def visit_interpolated_string_node(node)
-        if node.opening&.start_with?("<<~")
-          heredoc = visit_heredoc_string_node(node)
+        with_string_bounds(node) do
+          if node.opening&.start_with?("<<~")
+            heredoc = visit_heredoc_string_node(node)
 
-          bounds(node.location)
-          on_string_literal(heredoc)
-        elsif !node.heredoc? && node.parts.length > 1 && node.parts.any? { |part| (part.is_a?(StringNode) || part.is_a?(InterpolatedStringNode)) && !part.opening_loc.nil? }
-          first, *rest = node.parts
-          rest.inject(visit(first)) do |content, part|
-            concat = visit(part)
+            bounds(node.location)
+            on_string_literal(heredoc)
+          elsif !node.heredoc? && node.parts.length > 1 && node.parts.any? { |part| (part.is_a?(StringNode) || part.is_a?(InterpolatedStringNode)) && !part.opening_loc.nil? }
+            first, *rest = node.parts
+            rest.inject(visit(first)) do |content, part|
+              concat = visit(part)
 
-            bounds(part.location)
-            on_string_concat(content, concat)
+              bounds(part.location)
+              on_string_concat(content, concat)
+            end
+          else
+            bounds(node.parts.first.location)
+            parts =
+              node.parts.inject(on_string_content) do |content, part|
+                on_string_add(content, visit_string_content(part))
+              end
+
+            bounds(node.location)
+            on_string_literal(parts)
           end
-        else
+        end
+      end
+
+      # :"foo #{bar}"
+      # ^^^^^^^^^^^^^
+      def visit_interpolated_symbol_node(node)
+        with_string_bounds(node) do
           bounds(node.parts.first.location)
           parts =
             node.parts.inject(on_string_content) do |content, part|
@@ -2256,40 +2275,29 @@ module Prism
             end
 
           bounds(node.location)
-          on_string_literal(parts)
+          on_dyna_symbol(parts)
         end
-      end
-
-      # :"foo #{bar}"
-      # ^^^^^^^^^^^^^
-      def visit_interpolated_symbol_node(node)
-        bounds(node.parts.first.location)
-        parts =
-          node.parts.inject(on_string_content) do |content, part|
-            on_string_add(content, visit_string_content(part))
-          end
-
-        bounds(node.location)
-        on_dyna_symbol(parts)
       end
 
       # `foo #{bar}`
       # ^^^^^^^^^^^^
       def visit_interpolated_x_string_node(node)
-        if node.opening.start_with?("<<~")
-          heredoc = visit_heredoc_x_string_node(node)
+        with_string_bounds(node) do
+          if node.opening.start_with?("<<~")
+            heredoc = visit_heredoc_x_string_node(node)
 
-          bounds(node.location)
-          on_xstring_literal(heredoc)
-        else
-          bounds(node.parts.first.location)
-          parts =
-            node.parts.inject(on_xstring_new) do |content, part|
-              on_xstring_add(content, visit_string_content(part))
-            end
+            bounds(node.location)
+            on_xstring_literal(heredoc)
+          else
+            bounds(node.parts.first.location)
+            parts =
+              node.parts.inject(on_xstring_new) do |content, part|
+                on_xstring_add(content, visit_string_content(part))
+              end
 
-          bounds(node.location)
-          on_xstring_literal(parts)
+            bounds(node.location)
+            on_xstring_literal(parts)
+          end
         end
       end
 
@@ -3022,24 +3030,60 @@ module Prism
       # "foo"
       # ^^^^^
       def visit_string_node(node)
-        if (content = node.content).empty?
-          bounds(node.location)
-          on_string_literal(on_string_content)
-        elsif (opening = node.opening) == "?"
-          bounds(node.location)
-          on_CHAR("?#{node.content}")
-        elsif opening.start_with?("<<~")
-          heredoc = visit_heredoc_string_node(node.to_interpolated)
+        with_string_bounds(node) do
+          if (content = node.content).empty?
+            bounds(node.location)
+            on_string_literal(on_string_content)
+          elsif (opening = node.opening) == "?"
+            bounds(node.location)
+            on_CHAR("?#{node.content}")
+          elsif opening.start_with?("<<~")
+            heredoc = visit_heredoc_string_node(node.to_interpolated)
 
-          bounds(node.location)
-          on_string_literal(heredoc)
-        else
-          bounds(node.content_loc)
-          tstring_content = on_tstring_content(content)
+            bounds(node.location)
+            on_string_literal(heredoc)
+          else
+            bounds(node.content_loc)
+            tstring_content = on_tstring_content(content)
 
-          bounds(node.location)
-          on_string_literal(on_string_add(on_string_content, tstring_content))
+            bounds(node.location)
+            on_string_literal(on_string_add(on_string_content, tstring_content))
+          end
         end
+      end
+
+      # Responsible for emitting the various string-like begin/end events
+      private def with_string_bounds(node)
+        # `foo "bar": baz` doesn't emit the closing location
+        assoc = !(opening = node.opening)&.include?(":") && node.closing&.end_with?(":")
+
+        is_heredoc = opening&.start_with?("<<")
+        if is_heredoc
+          bounds(node.opening_loc)
+          on_heredoc_beg(node.opening)
+        elsif opening&.start_with?(":", "%s")
+          bounds(node.opening_loc)
+          on_symbeg(node.opening)
+        elsif opening&.start_with?("`", "%x")
+          bounds(node.opening_loc)
+          on_backtick(node.opening)
+        elsif opening && !opening.start_with?("?")
+          bounds(node.opening_loc)
+          on_tstring_beg(opening)
+        end
+
+        result = yield
+        return result if assoc
+
+        if is_heredoc
+          bounds(node.closing_loc)
+          on_heredoc_end(node.closing)
+        elsif node.closing_loc
+          bounds(node.closing_loc)
+          on_tstring_end(node.closing)
+        end
+
+        result
       end
 
       # Ripper gives back the escaped string content but strips out the common
@@ -3119,36 +3163,18 @@ module Prism
 
       # Visit a heredoc node that is representing a string.
       private def visit_heredoc_string_node(node)
-        bounds(node.opening_loc)
-        on_heredoc_beg(node.opening)
-
         bounds(node.location)
-        result =
-          visit_heredoc_node(node.parts, on_string_content) do |parts, part|
-            on_string_add(parts, part)
-          end
-
-        bounds(node.closing_loc)
-        on_heredoc_end(node.closing)
-
-        result
+        visit_heredoc_node(node.parts, on_string_content) do |parts, part|
+          on_string_add(parts, part)
+        end
       end
 
       # Visit a heredoc node that is representing an xstring.
       private def visit_heredoc_x_string_node(node)
-        bounds(node.opening_loc)
-        on_heredoc_beg(node.opening)
-
         bounds(node.location)
-        result =
-          visit_heredoc_node(node.parts, on_xstring_new) do |parts, part|
-            on_xstring_add(parts, part)
-          end
-
-        bounds(node.closing_loc)
-        on_heredoc_end(node.closing)
-
-        result
+        visit_heredoc_node(node.parts, on_xstring_new) do |parts, part|
+          on_xstring_add(parts, part)
+        end
       end
 
       # super(foo)
@@ -3175,23 +3201,25 @@ module Prism
       # :foo
       # ^^^^
       def visit_symbol_node(node)
-        if node.value_loc.nil?
-          bounds(node.location)
-          on_dyna_symbol(on_string_content)
-        elsif (opening = node.opening)&.match?(/^%s|['"]:?$/)
-          bounds(node.value_loc)
-          content = on_string_add(on_string_content, on_tstring_content(node.value))
-          bounds(node.location)
-          on_dyna_symbol(content)
-        elsif (closing = node.closing) == ":"
-          bounds(node.location)
-          on_label("#{node.value}:")
-        elsif opening.nil? && node.closing_loc.nil?
-          bounds(node.value_loc)
-          on_symbol_literal(visit_token(node.value))
-        else
-          bounds(node.value_loc)
-          on_symbol_literal(on_symbol(visit_token(node.value)))
+        with_string_bounds(node) do
+          if node.value_loc.nil?
+            bounds(node.location)
+            on_dyna_symbol(on_string_content)
+          elsif (opening = node.opening)&.match?(/^%s|['"]:?$/)
+            bounds(node.value_loc)
+            content = on_string_add(on_string_content, on_tstring_content(node.value))
+            bounds(node.location)
+            on_dyna_symbol(content)
+          elsif (closing = node.closing) == ":"
+            bounds(node.location)
+            on_label("#{node.value}:")
+          elsif opening.nil? && node.closing_loc.nil?
+            bounds(node.value_loc)
+            on_symbol_literal(visit_token(node.value))
+          else
+            bounds(node.value_loc)
+            on_symbol_literal(on_symbol(visit_token(node.value)))
+          end
         end
       end
 
@@ -3314,20 +3342,22 @@ module Prism
       # `foo`
       # ^^^^^
       def visit_x_string_node(node)
-        if node.unescaped.empty?
-          bounds(node.location)
-          on_xstring_literal(on_xstring_new)
-        elsif node.opening.start_with?("<<~")
-          heredoc = visit_heredoc_x_string_node(node.to_interpolated)
+        with_string_bounds(node) do
+          if node.unescaped.empty?
+            bounds(node.location)
+            on_xstring_literal(on_xstring_new)
+          elsif node.opening.start_with?("<<~")
+            heredoc = visit_heredoc_x_string_node(node.to_interpolated)
 
-          bounds(node.location)
-          on_xstring_literal(heredoc)
-        else
-          bounds(node.content_loc)
-          content = on_tstring_content(node.content)
+            bounds(node.location)
+            on_xstring_literal(heredoc)
+          else
+            bounds(node.content_loc)
+            content = on_tstring_content(node.content)
 
-          bounds(node.location)
-          on_xstring_literal(on_xstring_add(on_xstring_new, content))
+            bounds(node.location)
+            on_xstring_literal(on_xstring_add(on_xstring_new, content))
+          end
         end
       end
 

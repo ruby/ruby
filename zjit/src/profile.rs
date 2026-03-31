@@ -103,10 +103,10 @@ fn profile_insn(bare_opcode: ruby_vminsn_type, ec: EcPtr) {
         _ => {}
     }
 
-    // Once we profile the instruction num_profiles times, we stop profiling it.
+    // Once we profile the instruction enough times, we stop profiling it.
     let entry = profile.entry_mut(profiler.insn_idx);
-    entry.num_profiles = entry.num_profiles.saturating_add(1);
-    if entry.num_profiles == get_option!(num_profiles) {
+    entry.profiles_remaining = entry.profiles_remaining.saturating_sub(1);
+    if entry.profiles_remaining == 0 {
         unsafe { rb_zjit_iseq_insn_set(profiler.iseq, profiler.insn_idx as u32, bare_opcode); }
     }
 }
@@ -382,8 +382,8 @@ struct ProfileEntry {
     insn_idx: u32,
     /// Type information of YARV instruction operands
     opnd_types: Vec<TypeDistribution>,
-    /// Number of profiled executions for this YARV instruction
-    num_profiles: NumProfiles,
+    /// Number of profiles remaining before recompilation. Counts down from --zjit-num-profiles.
+    profiles_remaining: NumProfiles,
 }
 
 #[derive(Debug)]
@@ -413,7 +413,7 @@ impl IseqProfile {
                 self.entries.insert(i, ProfileEntry {
                     insn_idx: idx,
                     opnd_types: Vec::new(),
-                    num_profiles: 0,
+                    profiles_remaining: get_option!(num_profiles),
                 });
                 &mut self.entries[i]
             }
@@ -425,6 +425,31 @@ impl IseqProfile {
         let idx = insn_idx as u32;
         self.entries.binary_search_by_key(&idx, |e| e.insn_idx)
             .ok().map(|i| &self.entries[i])
+    }
+
+    /// Check if enough profiles have been gathered for this instruction.
+    pub fn done_profiling_at(&self, insn_idx: usize) -> bool {
+        self.entry(insn_idx).map_or(false, |e| e.profiles_remaining == 0)
+    }
+
+    /// Profile send operands from the stack at runtime.
+    /// `sp` is the current stack pointer (after the args and receiver).
+    /// `argc` is the number of arguments (not counting receiver).
+    /// Returns true if enough profiles have been gathered and the ISEQ should be recompiled.
+    pub fn profile_send_at(&mut self, iseq: IseqPtr, insn_idx: usize, sp: *const VALUE, argc: usize) -> bool {
+        let n = argc + 1; // args + receiver
+        let entry = self.entry_mut(insn_idx);
+        if entry.opnd_types.is_empty() {
+            entry.opnd_types.resize(n, TypeDistribution::new());
+        }
+        for i in 0..n {
+            let obj = unsafe { *sp.offset(i as isize - n as isize) };
+            let ty = ProfiledType::new(obj);
+            VALUE::from(iseq).write_barrier(ty.class());
+            entry.opnd_types[i].observe(ty);
+        }
+        entry.profiles_remaining = entry.profiles_remaining.saturating_sub(1);
+        entry.profiles_remaining == 0
     }
 
     /// Get profiled operand types for a given instruction index

@@ -69,6 +69,9 @@ fn main() {
         // Import YARV bytecode instruction constants
         .allowlist_type("ruby_vminsn_type")
 
+        // JITFrame struct defined in zjit.h, imported into Rust via bindgen
+        .allowlist_type("zjit_jit_frame")
+
         .allowlist_type("ruby_special_consts")
         .allowlist_function("rb_utf8_str_new")
         .allowlist_function("rb_str_buf_append")
@@ -256,8 +259,7 @@ fn main() {
         .allowlist_type("iseq_inline_cvar_cache_entry")
         .blocklist_type("rb_execution_context_.*") // Large struct with various-type fields and an ifdef, so we don't import
         .opaque_type("rb_execution_context_.*")
-        .blocklist_type("rb_control_frame_struct")
-        .opaque_type("rb_control_frame_struct")
+        .allowlist_type("rb_control_frame_struct")
         .allowlist_function("rb_vm_bh_to_procval")
         .allowlist_function("rb_vm_env_write")
         .allowlist_function("rb_vm_ep_local_ep")
@@ -277,6 +279,7 @@ fn main() {
         .allowlist_function("rb_iseq_(get|set)_zjit_payload")
         .allowlist_function("rb_iseq_pc_at_idx")
         .allowlist_function("rb_iseq_opcode_at_pc")
+        .allowlist_function("rb_iseq_bare_opcode_at_pc")
         .allowlist_function("rb_jit_reserve_addr_space")
         .allowlist_function("rb_jit_mark_writable")
         .allowlist_function("rb_jit_mark_executable")
@@ -310,6 +313,7 @@ fn main() {
         .allowlist_function("rb_zjit_insn_leaf")
         .allowlist_type("jit_bindgen_constants")
         .allowlist_type("zjit_struct_offsets")
+        .allowlist_type("zjit_poison_values")
         .allowlist_function("rb_assert_holding_vm_lock")
         .allowlist_function("rb_jit_shape_too_complex_p")
         .allowlist_function("rb_jit_multi_ractor_p")

@@ -127,7 +127,7 @@ RSpec.describe "bundle install" do
         gem "myrack"
       G
 
-      bundle "config set ignore_messages.myrack true"
+      bundle_config "ignore_messages.myrack true"
 
       bundle :install
       expect(out).not_to include("Post-install message")
@@ -141,7 +141,7 @@ RSpec.describe "bundle install" do
         gem "myrack"
       G
 
-      bundle "config set ignore_messages true"
+      bundle_config "ignore_messages true"
 
       bundle :install
       expect(out).not_to include("Post-install message")
