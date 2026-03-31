@@ -36,6 +36,7 @@ describe "Kernel#require" do
       features -= %w[encdb transdb windows_1252 windows_31]
     end
     features.reject! { |feature| feature.end_with?('-fake') }
+    features.uniq!
 
     features.sort.should == provided.sort
 

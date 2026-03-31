@@ -121,7 +121,6 @@ InitVM_pathname(void)
 
     rb_provide("pathname.so");
     rb_provide("pathname.rb");
-    rb_provide("pathname");
 }
 
 void
