@@ -47,6 +47,13 @@ RSpec.describe Bundler::Plugin::Installer do
           build_plugin "re-plugin"
           build_plugin "ma-plugin"
         end
+
+        @previous_ui = Bundler.ui
+        Bundler.ui = Bundler::UI::Silent.new
+      end
+
+      after do
+        Bundler.ui = @previous_ui
       end
 
       context "git plugins" do

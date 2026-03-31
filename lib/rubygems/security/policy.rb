@@ -143,7 +143,7 @@ class Gem::Security::Policy
   end
 
   ##
-  # Ensures the root of +chain+ has a trusted certificate in +trust_dir+ and
+  # Ensures the root of +chain+ has a trusted certificate in Gem::Security.trust_dir and
   # the digests of the two certificates match according to +digester+
 
   def check_trust(chain, digester, trust_dir)

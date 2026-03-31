@@ -36,6 +36,16 @@ module Bundler
     end
 
     def validate_options!
+      raise InvalidOption, "You cannot specify `--git` and `--github` at the same time." if options["git"] && options["github"]
+
+      unless options["git"] || options["github"]
+        raise InvalidOption, "You cannot specify `--branch` unless `--git` or `--github` is specified." if options["branch"]
+
+        raise InvalidOption, "You cannot specify `--ref` unless `--git` or `--github` is specified." if options["ref"]
+      end
+
+      raise InvalidOption, "You cannot specify `--branch` and `--ref` at the same time." if options["branch"] && options["ref"]
+
       raise InvalidOption, "You cannot specify `--strict` and `--optimistic` at the same time." if options[:strict] && options[:optimistic]
 
       # raise error when no gems are specified

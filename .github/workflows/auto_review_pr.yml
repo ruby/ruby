@@ -1,0 +1,41 @@
+name: Auto Review PR
+on:
+  pull_request_target:
+    types: [opened, ready_for_review, reopened]
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to review'
+        required: true
+        type: number
+
+permissions:
+  contents: read
+
+jobs:
+  auto-review-pr:
+    name: Auto Review PR
+    runs-on: ubuntu-latest
+    if: ${{ github.repository == 'ruby/ruby' && (github.base_ref == 'master' || github.event_name == 'workflow_dispatch') }}
+
+    permissions:
+      pull-requests: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - uses: ruby/setup-ruby@3ff19f5e2baf30647122352b96108b1fbe250c64 # v1.299.0
+        with:
+          ruby-version: '3.4'
+          bundler: none
+
+      - name: Auto Review PR
+        run: ruby tool/auto_review_pr.rb "$GITHUB_PR_NUMBER"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_PR_NUMBER: ${{ github.event.pull_request.number || github.event.inputs.pr_number }}

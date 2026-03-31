@@ -14,18 +14,8 @@ describe "Kernel#!~" do
     (obj !~ :foo).should == false
   end
 
-  ruby_version_is ""..."3.2" do
-    it "returns true if self does not respond to #=~" do
-      suppress_warning do
-        (Object.new !~ :foo).should == true
-      end
-    end
-  end
-
-  ruby_version_is "3.2" do
-    it "raises NoMethodError if self does not respond to #=~" do
-      -> { Object.new !~ :foo }.should raise_error(NoMethodError)
-    end
+  it "raises NoMethodError if self does not respond to #=~" do
+    -> { Object.new !~ :foo }.should raise_error(NoMethodError)
   end
 
   it 'can be overridden in subclasses' do

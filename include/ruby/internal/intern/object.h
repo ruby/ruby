@@ -80,7 +80,8 @@ VALUE rb_class_new_instance(int argc, const VALUE *argv, VALUE klass);
  * @param[in]  kw_splat         Handling of keyword parameters:
  *   - RB_NO_KEYWORDS           `argv`'s last is not a keyword argument.
  *   - RB_PASS_KEYWORDS         `argv`'s last is a keyword argument.
- *   - RB_PASS_CALLED_KEYWORDS  it depends if there is a passed block.
+ *   - RB_PASS_CALLED_KEYWORDS  Pass keyword arguments if the current method
+ *                              was called with keyword arguments.
  * @exception  rb_eTypeError    `klass`'s allocator is undefined.
  * @exception  rb_eException    Any exceptions can happen inside.
  * @return     An allocated new instance of `klass`.

@@ -4,8 +4,6 @@ require_relative "version"
 require_relative "rubygems_integration"
 require_relative "current_ruby"
 
-autoload :Pathname, "pathname"
-
 module Bundler
   autoload :WINDOWS, File.expand_path("constants", __dir__)
   autoload :FREEBSD, File.expand_path("constants", __dir__)
@@ -25,6 +23,9 @@ module Bundler
     end
 
     def default_lockfile
+      given = ENV["BUNDLE_LOCKFILE"]
+      return Pathname.new(given) if given && !given.empty?
+
       gemfile = default_gemfile
 
       case gemfile.basename.to_s
@@ -57,7 +58,7 @@ module Bundler
 
     def pwd
       Bundler.rubygems.ext_lock.synchronize do
-        Pathname.pwd
+        Dir.pwd
       end
     end
 
@@ -104,7 +105,8 @@ module Bundler
     def filesystem_access(path, action = :write, &block)
       yield(path.dup)
     rescue Errno::EACCES => e
-      raise unless e.message.include?(path.to_s) || action == :create
+      path_basename = File.basename(path.to_s)
+      raise unless e.message.include?(path_basename) || action == :create
 
       raise PermissionError.new(path, action)
     rescue Errno::EAGAIN
@@ -125,22 +127,15 @@ module Bundler
       raise GenericSystemCallError.new(e, "There was an error #{[:create, :write].include?(action) ? "creating" : "accessing"} `#{path}`.")
     end
 
-    def major_deprecation(major_version, message, removed_message: nil, print_caller_location: false)
-      if print_caller_location
-        caller_location = caller_locations(2, 2).first
-        suffix = " (called at #{caller_location.path}:#{caller_location.lineno})"
-        message += suffix
-        removed_message += suffix if removed_message
-      end
+    def feature_deprecated!(message)
+      return unless prints_major_deprecations?
 
-      bundler_major_version = Bundler.bundler_major_version
-      if bundler_major_version > major_version
-        require_relative "errors"
-        raise DeprecatedError, "[REMOVED] #{removed_message || message}"
-      end
-
-      return unless bundler_major_version >= major_version && prints_major_deprecations?
       Bundler.ui.warn("[DEPRECATED] #{message}")
+    end
+
+    def feature_removed!(message)
+      require_relative "errors"
+      raise RemovedError, "[REMOVED] #{message}"
     end
 
     def print_major_deprecations!
@@ -306,6 +301,7 @@ module Bundler
     def set_bundle_variables
       Bundler::SharedHelpers.set_env "BUNDLE_BIN_PATH", bundle_bin_path
       Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", find_gemfile.to_s
+      Bundler::SharedHelpers.set_env "BUNDLE_LOCKFILE", default_lockfile.to_s
       Bundler::SharedHelpers.set_env "BUNDLER_VERSION", Bundler::VERSION
       Bundler::SharedHelpers.set_env "BUNDLER_SETUP", File.expand_path("setup", __dir__)
     end
@@ -386,7 +382,6 @@ module Bundler
     end
 
     def prints_major_deprecations?
-      require_relative "../bundler"
       return false if Bundler.settings[:silence_deprecations]
       require_relative "deprecate"
       return false if Bundler::Deprecate.skip

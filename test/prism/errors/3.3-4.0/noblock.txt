@@ -1,0 +1,6 @@
+def foo(&nil)
+         ^~~ unexpected 'nil'; expected a `)` to close the parameters
+            ^ unexpected ')', expecting end-of-input
+            ^ unexpected ')', ignoring it
+end
+

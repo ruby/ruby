@@ -84,11 +84,9 @@ describe "BasicObject#instance_eval" do
 
   end
 
-  ruby_version_is "3.3" do
-    it "uses the caller location as default location" do
-      f = Object.new
-      f.instance_eval("[__FILE__, __LINE__]").should == ["(eval at #{__FILE__}:#{__LINE__})", 1]
-    end
+  it "uses the caller location as default location" do
+    f = Object.new
+    f.instance_eval("[__FILE__, __LINE__]").should == ["(eval at #{__FILE__}:#{__LINE__})", 1]
   end
 
   it "has access to receiver's instance variables" do
@@ -286,7 +284,7 @@ describe "BasicObject#instance_eval" do
     def source_code.to_str() :symbol end
 
     a = BasicObject.new
-    -> { a.instance_eval(source_code) }.should raise_error(TypeError, /can't convert Object to String/)
+    -> { a.instance_eval(source_code) }.should raise_consistent_error(TypeError, /can't convert Object into String/)
   end
 
   it "converts filename argument with #to_str method" do
@@ -305,7 +303,7 @@ describe "BasicObject#instance_eval" do
     filename = Object.new
     def filename.to_str() :symbol end
 
-    -> { Object.new.instance_eval("raise", filename) }.should raise_error(TypeError, /can't convert Object to String/)
+    -> { Object.new.instance_eval("raise", filename) }.should raise_consistent_error(TypeError, /can't convert Object into String/)
   end
 
   it "converts lineno argument with #to_int method" do
@@ -324,6 +322,6 @@ describe "BasicObject#instance_eval" do
     lineno = Object.new
     def lineno.to_int() :symbol end
 
-    -> { Object.new.instance_eval("raise", "file.rb", lineno) }.should raise_error(TypeError, /can't convert Object to Integer/)
+    -> { Object.new.instance_eval("raise", "file.rb", lineno) }.should raise_consistent_error(TypeError, /can't convert Object into Integer/)
   end
 end

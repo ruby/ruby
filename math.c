@@ -15,7 +15,6 @@
 # define _USE_MATH_DEFINES 1
 #endif
 
-#include <errno.h>
 #include <float.h>
 #include <math.h>
 
@@ -458,6 +457,34 @@ math_exp(VALUE unused_obj, VALUE x)
     return DBL2NUM(exp(Get_Double(x)));
 }
 
+/*
+ *  call-seq:
+ *    Math.expm1(x) -> float
+ *
+ *  Returns "exp(x) - 1", +e+ raised to the +x+ power, minus 1.
+ *
+ *
+ *  - Domain: <tt>[-INFINITY, INFINITY]</tt>.
+ *  - Range: <tt>[-1.0, INFINITY]</tt>.
+ *
+ *  Examples:
+ *
+ *    expm1(-INFINITY) # => 0.0
+ *    expm1(-1.0)      # => -0.6321205588285577 # 1.0/E - 1
+ *    expm1(0.0)       # => 0.0
+ *    expm1(0.5)       # => 0.6487212707001282  # sqrt(E) - 1
+ *    expm1(1.0)       # => 1.718281828459045   # E - 1
+ *    expm1(2.0)       # => 6.38905609893065    # E**2 - 1
+ *    expm1(INFINITY)  # => Infinity
+ *
+ */
+
+static VALUE
+math_expm1(VALUE unused_obj, VALUE x)
+{
+    return DBL2NUM(expm1(Get_Double(x)));
+}
+
 #if defined __CYGWIN__
 # include <cygwin/version.h>
 # if CYGWIN_VERSION_DLL_MAJOR < 1005
@@ -645,6 +672,47 @@ math_log10(VALUE unused_obj, VALUE x)
     if (d == 0.0) return DBL2NUM(-HUGE_VAL);
 
     return DBL2NUM(log10(d) + numbits * log10(2)); /* log10(d * 2 ** numbits) */
+}
+
+/*
+ *  call-seq:
+ *    Math.log1p(x) -> float
+ *
+ *  Returns "log(x + 1)", the base E {logarithm}[https://en.wikipedia.org/wiki/Logarithm] of (+x+ + 1).
+ *
+ *  - Domain: <tt>[-1, INFINITY]</tt>.
+ *  - Range: <tt>[-INFINITY, INFINITY]</tt>.
+ *
+ *  Examples:
+ *
+ *    log1p(-1.0)     # => -Infinity
+ *    log1p(0.0)      # => 0.0
+ *    log1p(E - 1)    # => 1.0
+ *    log1p(INFINITY) # => Infinity
+ *
+ */
+
+static VALUE
+math_log1p(VALUE unused_obj, VALUE x)
+{
+    size_t numbits;
+    double d = get_double_rshift(x, &numbits);
+
+    if (numbits != 0) {
+        x = rb_big_plus(x, INT2FIX(1));
+        d = math_log_split(x, &numbits);
+        /* check for pole error */
+        if (d == 0.0) return DBL2NUM(-HUGE_VAL);
+        d = log(d);
+        d += numbits * M_LN2;
+        return DBL2NUM(d);
+    }
+
+    domain_check_min(d, -1.0, "log1p");
+    /* check for pole error */
+    if (d == -1.0) return DBL2NUM(-HUGE_VAL);
+
+    return DBL2NUM(log1p(d)); /* log10(d * 2 ** numbits) */
 }
 
 static VALUE rb_math_sqrt(VALUE x);
@@ -986,7 +1054,7 @@ math_gamma(VALUE unused_obj, VALUE x)
  *
  *    [Math.log(Math.gamma(x).abs), Math.gamma(x) < 0 ? -1 : 1]
  *
- *  See {logarithmic gamma function}[https://en.wikipedia.org/wiki/Gamma_function#The_log-gamma_function].
+ *  See {log gamma function}[https://en.wikipedia.org/wiki/Gamma_function#Log-gamma_function].
  *
  *  - Domain: <tt>(-INFINITY, INFINITY]</tt>.
  *  - Range of first element: <tt>(-INFINITY, INFINITY]</tt>.
@@ -1121,9 +1189,11 @@ InitVM_Math(void)
     rb_define_module_function(rb_mMath, "atanh", math_atanh, 1);
 
     rb_define_module_function(rb_mMath, "exp", math_exp, 1);
+    rb_define_module_function(rb_mMath, "expm1", math_expm1, 1);
     rb_define_module_function(rb_mMath, "log", math_log, -1);
     rb_define_module_function(rb_mMath, "log2", math_log2, 1);
     rb_define_module_function(rb_mMath, "log10", math_log10, 1);
+    rb_define_module_function(rb_mMath, "log1p", math_log1p, 1);
     rb_define_module_function(rb_mMath, "sqrt", math_sqrt, 1);
     rb_define_module_function(rb_mMath, "cbrt", math_cbrt, 1);
 

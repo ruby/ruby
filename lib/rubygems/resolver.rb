@@ -2,7 +2,6 @@
 
 require_relative "dependency"
 require_relative "exceptions"
-require_relative "util/list"
 
 ##
 # Given a set of Gem::Dependency objects as +needed+ and a way to query the
@@ -144,7 +143,7 @@ class Gem::Resolver
     [spec, activation_request]
   end
 
-  def requests(s, act, reqs=[]) # :nodoc:
+  def requests(s, act, reqs = []) # :nodoc:
     return reqs if @ignore_dependencies
 
     s.fetch_development_dependencies if @development
@@ -241,7 +240,7 @@ class Gem::Resolver
 
     sources.each do |source|
       groups[source].
-        sort_by {|spec| [spec.version, spec.platform =~ Gem::Platform.local ? 1 : 0] }. # rubocop:disable Performance/RegexpMatch
+        sort_by {|spec| [spec.version, -Gem::Platform.platform_specificity_match(spec.platform, Gem::Platform.local)] }.
         map {|spec| ActivationRequest.new spec, dependency }.
         each {|activation_request| activation_requests << activation_request }
     end

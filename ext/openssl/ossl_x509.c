@@ -13,7 +13,8 @@ VALUE mX509;
 
 #define DefX509Const(x) rb_define_const(mX509, #x, INT2NUM(X509_##x))
 #define DefX509Default(x,i) \
-  rb_define_const(mX509, "DEFAULT_" #x, rb_str_new2(X509_get_default_##i()))
+    rb_define_const(mX509, "DEFAULT_" #x, \
+                    rb_obj_freeze(rb_str_new_cstr(X509_get_default_##i())))
 
 ASN1_TIME *
 ossl_x509_time_adjust(ASN1_TIME *s, VALUE time)
@@ -29,10 +30,6 @@ ossl_x509_time_adjust(ASN1_TIME *s, VALUE time)
 void
 Init_ossl_x509(void)
 {
-#if 0
-    mOSSL = rb_define_module("OpenSSL");
-#endif
-
     mX509 = rb_define_module_under(mOSSL, "X509");
 
     Init_ossl_x509attr();

@@ -72,6 +72,14 @@ describe :string_encode, shared: true do
         "abc".send(@method, "xyz")
       end.should raise_error(Encoding::ConverterNotFoundError)
     end
+
+    it "raises an Encoding::UndefinedConversionError when a character cannot be represented in the destination encoding" do
+      # U+0100 (Ā) is valid UTF-8 but not representable in windows-1252
+      str = "test\u0100".force_encoding('utf-8')
+      -> {
+        str.send(@method, Encoding::Windows_1252)
+      }.should raise_error(Encoding::UndefinedConversionError)
+    end
   end
 
   describe "when passed options" do
@@ -140,6 +148,14 @@ describe :string_encode, shared: true do
     it "replaces invalid characters in the destination encoding" do
       xFF = [0xFF].pack('C').force_encoding('utf-8')
       "ab#{xFF}c".send(@method, Encoding::ISO_8859_1, invalid: :replace).should == "ab?c"
+    end
+
+    it "raises UndefinedConversionError for characters not representable in destination encoding with only invalid: :replace" do
+      # U+0100 (Ā) is valid UTF-8 but not representable in windows-1252
+      str = "test\u0100".force_encoding('utf-8')
+      -> {
+        str.send(@method, Encoding::Windows_1252, invalid: :replace, replace: "")
+      }.should raise_error(Encoding::UndefinedConversionError)
     end
 
     it "calls #to_hash to convert the options object" do

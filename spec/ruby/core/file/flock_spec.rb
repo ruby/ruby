@@ -72,35 +72,3 @@ describe "File#flock" do
     end
   end
 end
-
-platform_is :solaris do
-  describe "File#flock on Solaris" do
-    before :each do
-      @name = tmp("flock_test")
-      touch(@name)
-
-      @read_file = File.open @name, "r"
-      @write_file = File.open @name, "w"
-    end
-
-    after :each do
-      @read_file.flock File::LOCK_UN
-      @read_file.close
-      @write_file.flock File::LOCK_UN
-      @write_file.close
-      rm_r @name
-    end
-
-    it "fails with EBADF acquiring exclusive lock on read-only File" do
-      -> do
-        @read_file.flock File::LOCK_EX
-      end.should raise_error(Errno::EBADF)
-    end
-
-    it "fails with EBADF acquiring shared lock on read-only File" do
-      -> do
-        @write_file.flock File::LOCK_SH
-      end.should raise_error(Errno::EBADF)
-    end
-  end
-end

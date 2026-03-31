@@ -1,0 +1,470 @@
+                                                                        .
+                                                                    text
+                                                                ted t to
+                                                            rota tex
+                                                        dit HTML
+                                                    to etes         oss
+                                               sier  wri         acr
+                                            t earb"),        ions             .
+                                        ke itry.         etat             text
+                                    o ma "en         erpr            tive
+                                ge te.g.        e int:           erna
+                            L paut (        tiplsteps         alt        edit,he
+                       a HTM inp         muling          cted        ach dit tu
+               -w  tes nt as        havellow         expe        er ely ere yo
+           uby neragume         can e fo         the          aftrect whethis
+        in/rt gee ar         hat y th    t.   has         stepindicesshat
+   usr/bcripingl        ext tt tr     texsult         ion  to  prois w
+#!/his s a s        of t migh    inale re        rotatededis aich         ts.
+# TTakest.      ece  you     origf th        tra ts neike , wh         tex
+ # stdou    a piles,     the ck i        e exemenuld lusly        ated    the
+ #      ite  ang    s tod che        f th movu wotaneo         rot    pen
+ # To wrrent    edit, an         se orsort yoimul          and    nd o         ne.
+ # diffe    ome tion1-2.     ecaue cu Whats s         inal    t, a        en do
+  #      ke srotaeps     ous be thve.  tex         orig    ayou        t wh
+  # 1. Maply t st    tediecausuitiated        hold     he l         tex     this
+  # 2. Apepea     is lt bunint rot         to     rom ted.     ated     but
+  #  3. R    cessficu is l and        ough    le fenabl     upd    nce,          in
+   #      pro diftextgina         e en    L fiipt       the    atie        dable
+   # Thisalsoive  ori         larg     HTMascr    paste    of p         reay
+   # and rnat thedes:    at's     te a jav    opy&     bit its.    t is Rubke   },
+   # alteeditrovi    t th     nerawith    en c    fair l ed     thar ine-li, %w{
+    # can pt p    ayou    to geser     , th    h a manua    textasiequot %()
+    # scri     a l    ipt  brow    page     witose      ing 's eple %{},
+    #     Make     scrin a     TML     textn th     writt itulti of         ter
+    ## 1.     thisTML     the H    dit ly o    lly:l, buas m use         Ras         t
+     #    Run ut H    via      ly euick    ficaiviauby hakestes.    eral          wan
+     # 2. outp    its     anualte q    peciy trse R.rb m quo     Gen        nd we
+     #        y ed    to mitera    by sactlecauntryouble     for        rs a
+     #    Appl    eed you      g Rut exs, b.  ele+d     ithm        acte
+     # 3.     ll nlet     ardins nouageientsing    Algor        char        paperpplyg
+      #     stiill      regons ilangnvenmon     ast ces:     are         nal ply ardin
+      # Youol w    hingtatither e co com    "A Feren     els         rigi sim regato
+       # to    re trienny o quit the     on diff    r pix        .  O andailsnter
+       #   e mole oo ma areourse    asedtwo     e ous.       tionates detn ce         o
+       # Onltiped tthatof c     is bith     sincalue     rotardine toatio         is n
+       # mumparors and     ithm h, w    ls, er v    r of  coot du rot        here ns  d
+       # coerat//,     lgor Paet    pixeract    enteinput, but to        r, tratio, an.
+       # op{},     on aAlan     ing  cha    ng cthe as isspecion.    ente opeinput two
+        # %W    tati by     blendinal    ardiing ues th reunct    on ctionthe ne or
+        #   e roion"    for  orig     reghift vale witer f    tatirota of a li
+        # Thotat    ort  the     tionut snate car_cen     e roise hapeextr
+         # R    supperve    idera aboordixtra get    stablockwhe s an         ons.
+         #   No pres    consthingd coed e see    ore terclon tting        tatiugh
+         # - to     nal  any-basee neble,     a mcoun lot nser        e roltho
+         #      itio sayto 0ng, wersi    tingise/ds a by i        oducd, a
+         #   Addsn'trms undit rev    elecockwepenible         ] prstea
+          # - doensfor routpu     in se clIt dvers         pi/2t in            ly to
+          #   trategehe o    care utivt.  e re        i/2,  tex            ical
+          #    inke t    tra onsecr ou mad         [-pt the            omat
+           #   ma    h exat c othen be        weenstorible.         aut
+           #      wite theachon ca         beto divers         sted
+           # Evenantecel tati         glesnd te re         adju            s.
+           # guar cane ro         y ane tell b        l be             ment
+           # willn th          Onlrang sti         wil              ele
+            # ofte        gle.that ight        idth             text
+            #         n anide ion m        .  W             ble                 erialink
+                  atiooutsrmat/ 13     entss.          edita        les.    he scan l
+               Rotles nsfo:PI      elemcell        all           tup    .  T we
+             # Ang traath:    edit ter          to          eme)    textthat
+             # the = M     of harac        ched        graph    ate uch her.
+             #NGLE    ightre c.9em"    atta        al,       rotD, sh ot
+             A    e hesqua= "0      be         seri    me toue I eac
+               Linure GHT     me to         x,     aphe uniqs to
+              # ens_HEI    s na          (y,    d grme aation
+              #LINE    clas "t"     t of    s anaphe rot
+                   yle SS =    a lis    nateh grrent
+               # St_CLA     as      ordi eaciffe
+               EDIT    nput    he cogivess d
+                   ad i    ed td to acro
+               # Lo    y neaddeheme
+               #    onl is grap          0
+                # Wemberame put      _y =        {|c|
+                # nuhe sd_in]   ursor        ster
+                 # t loa = [ = c     ine|_clu            8
+                 defdataor_x 0  ne{|lheme            x %
+                    cursal =h_li_grap     1      sor_r\n"             ]
+                    seri.eaceach= " "x +="    cur= "\             , c]
+                    ARGFine. c =rsor_ "\t 8 - c =             rial
+                       l  if  cu c ==x +=" ||            x, se
+                             lsifrsor_ "\n0           sor_
+                            e  cu c ==x =  1       cur
+                             lsifrsor_y +=    r_y,                                          t
+                            e  cursor_    urso                                           thay
+                               cu      [[c= 1                                      ilityed bext.
+                             lse ta +=_x +1                                    obabollowal t
+                            e  daursor +=                                  e pron frigin
+                                cerial                         ass.    s thtatihe o
+                                 s                          of m    easee roin t    l be hat
+                              end                      nter     incrkwislts      wilges thave
+                                                   m ce    nter clocresu    heret ed  We
+                           }      a             fro    n cee. a sa)     o, taighion.
+                               dat         nter    atio, i.e ver     zer strotat
+                        } turn         n ce     rotible vic     frome.g.he r                 ,
+                        re        tatio    s asvers (or    away er, er t                 tione.
+                      nd      e ro      mase retion    und  cent aftcts:             rotaitiv
+                     e    mput    er ofll brota    e rotionld betifa    o.  ox. ftern pos
+                       # Co    centon wiise     ow wrotashouse ar     zerng box aemai     r
+                       #   ing tatilockw    to hthe hey  the     d ofunding bon r     othey
+                       # Use roterc     due ear an tduce    nsteaf bounditati    s atbilittion
+                       # thcoun    ely, ts nd tho re    ty iter of bor ro    factersiul op
+                       # a     unattifacaggegs t    fini cenner oafte    arti revusef         f
+                       #   forte arore jthin    e ino be cor and     get  theost          er or
+                       # Unsiblut mious     itivon to before      we losehe m         centr fo
+                       # vime o var      postation ts be     thatlso be t         theedito
+                        # coried    owardf rotatinate    e is we a to         ause an  and the t
+                         # t    nd tter of roordi    thes andpears        ll catesaddsm in  tha
+                         #   Rou center ol co     of ter,s ap         s wienerrts rithd for
+                         # - Set cenat al     all cen mas         cterly guppoalgo neer).
+                         # - Seth th     with ther of        charat onso sion reatithe
+                         # - suc    ened d ofente.       ing script alotat a gol e
+                         #      happnsteang cacts    emovhis r thahe re iss to
+                         #  hat es i  Usirtif    nd rhy tditoent tther thi
+                          # Wplacure.the a    ng ais wan eplemsure  for
+                           # featite      ertiich ave reimnot  need
+                           # desp    t ins, whTo h to  am  any
+                           #      thashiftt.  need.  Ie is
+                           # Note to g texill riptther
+                           # massacin we wvascure
+                           # repltes,ed jaot sa)
+                           # deleerat am n(dat                     ze
+                            #  genl (Ienter                    ta.si
+                             # tooet_cy = 0t|              / da
+                             #ef g = cach{|1]           cy
+                             d  cxta.e+= t[0]      ize,
+                                da cx += t[    ta.s        es.
+                                   cy      / da        inat
+                                      n cx         oorda)
+                                } etur         to ccy,                              .
+                                  r         ion cx,  2)                          gain
+                               end     rotatta, (a /                          X a
+                                   ply te(da:tan(a) |                    r in
+                               # AprotaMath::sinp{|tnts.             shea
+                               def x = Math:a.maonte            then
+                                  ry = n dater c cx          Y,
+                                  retur Cent1] - cy     r in                 me).
+                                  r   # = t[0] -    shead                aphe                 eme.
+                                      x = t[     X, round            , gr                graph
+                                       y     r in y).round       erial                ach
+                                         Shearx * x).roun    x, s                 nd e
+                                       # -= (ry * y).    (y,                  arou
+                                       x += (rx *    ted ]                pan
+                                       y -= (    updat[3]             ne s
+                                       x     urn 2],             ith o
+                                        # Ret, t[            xt wfix)
+                                        [y, x            L te_pre
+                                                       HTM, id
+                                      }           k ofdata0]      n
+                                     d        blocock(ata[    ].min
+                                   en    rate e_bl = d    t[1]].mi
+                                     Geneneratin_xt|  _x, t[0]
+                                   # f ge_y, mch{|[min_y,
+                                   de minta.eax = [min                 >\n"
+                                       da min_y =                 ix}\"
+                                           min_        x       pref
+                                                   min_y   {id_
+                                        }      x = min_=\"#             r_y)
+                                          rsor_y = e id{|t|        curso
+                                        cursor_"<preach        y -
+                                        cuxt = ort.t    < y * (
+                                        teata.sx = or_y"\n"
+                                         d  y, curs +=  = yin_x
+                                             if textor_y = m
+                                                cursor_x
+                                                curs        [3] &"  "
+                                                         = t== "amp;"
+                                             end    textext = "&= "<
+                                                ner_er_text xt =lt;""                        ' +
+                                              in inner_tr_te= "&= ">                      '">
+                                              if inninneext xt =gt;"             SS +_s +
+                                                sif er_tr_te= "&         x) +_CLA].to
+                                               el inninneext         rsor_EDIT t[2
+                                                 sif er_t        - cu"' + ix +
+                                               el inn         (x ass=_pref
+                                                 d        " *n cl+ id                              low.
+                                               en    += "<spa="' t +                          er be
+                                                 ext    '" id_tex                         numb
+                                                t       'nneran>"                     ial          ns.
+                                                        i</sp+ 1                   ser        colum
+                                                         "= x     re>"         next.        by
+                                                      r_x     n</p         the airs    them
+                                                  urso    + "\        find er p    oup
+                                                 c    ext         er,  numbta) d gr
+                                              }   rn t        numbrialap(das an
+                                              retu        ial f sewn_my row
+                                             nd        serst or_dors b
+                                            e     eacha liursoumbe
+                                               For rns te_cal n             ]]
+                                             # Retuneraseri}   |t| ]    [t[2
+                                             #ef geort  = {ach{t[1]] +=     ]
+                                             d  # Sumnsrt.emns[t[1]    [t[2]
+                                                cola.socolumns[    ] =              n.
+                                                dat if colu    t[1]             olum        0]])                 .
+                                                       e   mns[             ch c         [r[                 ight
+                                                    elscolu            or ea        1] +                 he r         by
+                                                                    rs f         e -                  to t        sortnext
+                                                     end        umbe         .siz                mber          we the
+                                                            al n    r|  [1, r                l nu         o if us
+                                                  }     seri [] |_, ip(r                 eria         s, s get
+                                                    Add ls =ach{ r.z                 xt s        inateould        )
+                                                  # erians.es +=                 e ners.     oordhat w        [0]]
+                                                   solumrial    s            d th pai    n) c1, t         ials
+                                                   c  se    rial        , finmberta) olum by          [ser                 a
+                                                        n se        mberal nup(daw, cials        1] +                  extr
+                                                    }etur        l nuseriht_ma (ro ser        e -                   one
+                                                    r        eria of _rig with all        .siz                  get
+                                                 end     ch slistrsortartotate    [2]}ials        .        e we        ,'
+                                                     r eas a e_cues snd r     t| t ser        airs     sinc        + '"
+                                                 # Foturnerattuples a.   map{|s[1,        ue p)   ine,         o_s
+                                                 # Re genput tuplbersort.erial         valairsnewl         1].t
+                                                  def# Input  numta.sip(s          keyal_ping          + t[
+                                                     # inrial= dals.z         s asserirail        efix
+                                                      # seals eria         pairix, ut t        + pr
+                                                      serirn s        mber(prefitho         "'
+                                                      retu        l nu_mapies wate.     '":
+                                                              eriarsorentrtempl|t| _s +
+                                                   end    at st_cumap the .map{].to
+                                                      Formnverate rom airs+ t[0
+                                                    # f coenerne fal_pfix
+                                                    de # Gewliseri pre             es.
+                                                        # nurn "' +             valu
+                                                        ret'   "           nate
+                                                            "\n        ordi
+                                                        } *        f co)   a[0]
+                                                       d       ge odata dat
+                                                     en     ranize(_x =
+                                                        Getet_s minn_x
+                                                      #ef gn_y,= min_y          min                 1
+                                                       d  mix_x = mi|t|     , x].max             y +
+                                                          max_y ach{t   in_x, x].min         min_
+                                                          mata.ex = = [max_x, y].max     y -
+                                                          da y, n_x = [min_y, y].    max_
+                                                              mix_x = [max_y      1,
+                                                              man_y = [m    n_x +
+                                                              mix_y     - mi
+                                                              ma    x_x
+                                                                n ma
+                                                            }etur
+                                                            r            ut
+                                                         end         _inp
+                                                                 loadty?          )   a)      GLE))                        /td>
+                                                             a = .emp        (data(dat     -ANNGLE                     ")}<     >
+                                                          datdatarn      nter_size     cy,y, A        d>       r>  , "Ltd> }</td
+                                                          if retu    t_ce get      cx,x, c        /hea     "><tdata)}</"R")
+                                                                 = geht =    data,a, c        le><    ng="4eft_ "M"ta,
+                                                           end cy heig    ate(e(dat        /tit    addiock(lata,t_da
+                                                           cx,th,      rototat         est<    ellpe_block(drigh
+                                                           wid    ta = = r         te t    1" cerate_bllock(
+                                                              t_dadata        >Rota    ng="{generatte_b         l>
+                                                           lefght_    OT" itle     pacip">#{gennera         labe
+                                                            ri    <<"Ed><t    cells="top">##{ge        le)</
+                                                              int <hea    "1" align="toop">    ">  togg                                  or
+                                                            prtml>    der=t" valignn="t    edit to l>                                 errght,
+                                                             <hody> bor"left" vvalig    id="(ESC"><u                              izes-hei
+                                                             <bableign="lefft"      ox" dit nonet.                           minimline
+                                                             <td align=="le    heckble elay: tex                         hat sing
+                                                             <td allignble>e="c>Enabdisplace    .                    ne tcreap.
+                                                             <ttd a</ta typdit"yle=" repor. anel                 he oy deerla
+                                                              </tr>nputr="e" sters =cursct p                 ep tis bo ov
+                                                              <p><il fohelpractmove sele                nd keo thes t
+                                                              <labeid=" chas = ab =                 s, also d lin
+                                                               <div SCII keyft+to.           ">  aluean ae the                             ;
+                                                               <li>Arrow shi und         riptng vWe ccaus                              ght)
+                                                               <li>Aab /+Z =         vascpacio.  ill                               tHei
+                                                               <li>TCtrliv>     xt/jaer-sratich wM");;                        offse
+                                                               <<li>></d    ="te lettect o muId("HT}"                     / p.
+                                                                </ul    typerentd aspt tontByHEIG                     dth
+                                                                    ipt iffesireg thalemeINE_                     etWi
+                                                                <scrry de deasin.getE"#{L        2)           offs
+                                                                // To thecrementht =          0.0         - p.
+                                                                 // tut ddocuHeig         x +=    em";ght}
+                                                                 // bp = line= 0; 2;  .0;      + "{hei
+                                                                 var yle.t_x or =x < 2     = x / #
+                                                                 p.st bes_err 0;      cingdth}
+                                                                  var min x =    erSpa#{wi
+                                                                  var(var    lett.abs( )
+                                                                  for    yle.Mathr > e
+                                                                  {  p.ste = erro     ;   ;
+                                                                      var min_    r = e"em"
+                                                                      if(     erro x +         t_x;);  }";
+                                                                      {   min__x =          bes("L"IGHT
+                                                                          best         ng =ByIdE_HE
+                                                                                  Spaciment{LINt_x;"); T}";
+                                                                       }      tteretEle= "# besd("REIGH
+                                                                          e.lent.gight ng =tByINE_H;
+                                                                    } stylcumeneHeSpaciemen#{LIst_x
+                                                                     p.= doe.littergetEl = "= be
+                                                                     p style.leent.eighting
+                                                                     p.stylocumineHrSpac                                         ta))}
+                                                                     p. = dle.lette         e;                               t_da     }
+                                                                      p.style.l    tate.fals    .                        (lefa))}ata))
+                                                                      p.sty    le sit =     tion        ns.          _map(datht_d
+                                                                      p    itabe_ed     posi        itio         down_map(rig
+                                                                       / Wrnabl    rsor ;        pos        rsor_down_map             )}
+                                                                       /ar e    t cu "M0"    rsor        e_cursor_down            data)
+                                                                       v    rrenor =     t cu        erate_cursor_            eft_)}   ))}
+                                                                        / Cucurs    o nex         generate_cu             ap(lata)_data
+                                                                       /var     ng t         "L", generat             ht_map(dight
+                                                                            appi =       map("M", gen             _right_map(r
+                                                                        // Mdown    rsor_map("R",            ursor_right_m
+                                                                        var     t_cursor_map(            te_cursor_rig
+                                                                        {   nvert_cursor_            nerate_cursor
+                                                                         #{convert_cu             , generate_c
+                                                                         #{conver             ("L", genera         rs.
+                                                                         #{co    ht =     _map("M", ge        ) pai
+                                                                          };  rig    ursor_map("R"        text
+                                                                          var    rt_cursor_map        nal
+                                                                          {  onvert_cursor        rigi
+                                                                          #{convert_c         x, o                     n))
+                                                                          #{conve         uffi        .            (dow
+                                                                          #{c        (id s [];    ions        tries
+                                                                           };      of ist =    osit        t.en             )
+                                                                              Listdo_l     or p        bjec             ght)
+                                                                           // r un     curs        of O             s(ri
+                                                                            va    erse};       ue]             ntrie
+                                                                               Rev = { {};  val            ct.e
+                                                                            //r upft =[key,            Obje
+                                                                            var lenst      key;     of
+                                                                            var(co    e] =     lue]
+                                                                             fo    valu     , va                             on.
+                                                                             {  up[     [key    ey;                      siti
+                                                                                   onst      = k                     e po            ;
+                                                                              }or(c    alue]        .           e sam            tyle;
+                                                                              f    ft[v         okes$/;     t th              = style;
+                                                                              {  le         ystr!-~]    rs a             tyle = style
+                                                                                       ed ke /^[    actele)          x).style = s
+                                                                              }    cepteys =    char sty        suffix).style
+                                                                                / AcditK     for (id,    (1);" + suffix).s
+                                                                               /ar e    tyle tyle    bstrd("L" + suffi
+                                                                               v    et s setS    d.sutById("M" +
+                                                                                // Stion      = iementById("R                     .
+                                                                                func    uffixetElementByI                     tion
+                                                                                {   ar sent.getElemen                     posi
+                                                                                   vocument.getEl        n.           sor
+                                                                                   document.g        itio        s cur        .            0";
+                                                                                    docum          posd)      viou         tion        ff808
+                                                                                    d         rsoror(i     pre         posi        nd:#                         ;
+                                                                                  }      te cuCurs    t at        rsor     );  grou                         xt])
+                                                                                     Updan set    ligh"");    w cu     f80"back                         erTe
+                                                                                  // ctio     highor,     t ne    :#80f = "                         .inn
+                                                                                  fun    lear curs    ht a    oundstyle        ion.             fix)
+                                                                                  {  // Ctyle(    hlig    ckgrid).         osit              suf
+                                                                                     setS      hig     "bayId(         me p            "M" +t;
+                                                                                         pdate id;sor,entB        at sa            yId(= text;
+                                                                                      // Usor =(curElem        ers              entBext = text;
+                                                                                       curStyle.get        ractxt)          ElemnerText = tex
+                                                                                       setument         cha, te         .get).innerText
+                                                                                       doc          fort(id    1); umentffix).innerT
+                                                                                               texteTex    str( doc + suffix).in
+                                                                                    }     lace plac    .subfix,("L" + suffix
+                                                                                       Repon re    = id[sufById("M" + su
+                                                                                    //ncti     fix ush(mentById("R"
+                                                                                     fu    r sufst.ptElementById
+                                                                                     {   vado_lit.getElement
+                                                                                         uncument.getEle
+                                                                                         document.ge        it.                                   [1];
+                                                                                         documen        t ed        )                         ntry[1];
+                                                                                         do         ecen        = 0                      t = entry[1];
+                                                                                                st r()      th =                     rText = entry
+                                                                                      }    do moundo    leng                     innerText = e
+                                                                                        / Untion     ist.            );       ix).innerTex
+                                                                                       /func     do_l            pop(     suffix).inne
+                                                                                        {   f( un            ist.    L" + suffix).
+                                                                                           i     urn;    do_l[0];Id("M" + suff
+                                                                                           {  ret    = unntryntById("R" +
+                                                                                                 try  = elementById("
+                                                                                           }ar enffixgetElementBy         x);
+                                                                                           var suent.getEleme        suffi
+                                                                                            vdocument.getEit )    ] +
+                                                                                             document.e_ed    or[0
+                                                                                             documnabl    curs                                          ";
+                                                                                             if( e    sor(                                          line
+                                                                                             {    tCur                                           "in
+                                                                                                se            us.                          lay =
+                                                                                             }            statt()     it;              disp
+                                                                                                      dit _edi    e_ed             yle.                 ;
+                                                                                          }       ge eggle    nabl             ).st                 one"
+                                                                                               Chann to    = !e)            elp"                 = "n
+                                                                                            //nctio    dit dit     ;   Id("h                play     ;
+                                                                                            fu     le_ele_e    sor)ntBy                 .dis     edit
+                                                                                            {  enabenab    (curleme                 tyle    able_            )
+                                                                                               if(     rsorgetE                 ").s    = en             S}")
+                                                                                               {   etCuent.            ;    help    ked              CLAS
+                                                                                                  socum             "")yId("    chec             DIT_
+                                                                                                  d            sor,entB     t").            ("#{E
+                                                                                                 }  e       (curElem    ("edi            Name
+                                                                                                 els    tyle.get    ById             lass
+                                                                                                 {  setSment    ment             sByC    {
+                                                                                                    docu    tEle             ment     =>
+                                                                                                        t.ge        s.  etEle    ent)
+                                                                                                 }  umen        enernt.g      (ev
+                                                                                                 doc        listcume    ick",
+                                                                                                        ent f do    ("cl
+                                                                                               }     d ev t o    ener )                       => {
+                                                                                                // Adonst    Listedit                     nt)                          ) )
+                                                                                                for(c    ventble_    id);             (eve                          "Z"
+                                                                                                {    addE ena    r(t.             n",                          y ==
+                                                                                                   t. if(    urso             ydow                         t.ke
+                                                                                                      {  setC            r("ke                         even
+                                                                                                                     tene                           ||
+                                                                                                       }         tLis)        e" )            = "z"
+                                                                                                      );      Evendit     Escap            ey =
+                                                                                                     }    .addle_e    == "             nt.k                     ) )
+                                                                                                  }   mentenab    key              (eve                      "Z"
+                                                                                                  docuf( !    ent.    ();       &&                      y ==
+                                                                                                     i    ( ev    edit    rlKey                     t.ke
+                                                                                                     {  if    gle_    t.ct                      even
+                                                                                                        {  tog    even                     " ||
+                                                                                                              if(                      = "z
+                                                                                                         }lse     ;                ey =
+                                                                                                          e    do()             nt.k
+                                                                                                          {  un             (eve
+                                                                                                               n;      y &&             s) )
+                                                                                                          }etur    rlKe             tKey
+                                                                                                          r    t.ct             (edi    );
+                                                                                                       }   even            match    .key
+                                                                                                       if(     ();     key.     vent
+                                                                                                        {  undo    ent.    or, er]);     )
+                                                                                                                ( ev    curscurso    wUp"                             e" )
+                                                                                                         }  e if    ext(ght[     Arro                             spac
+                                                                                                         els    aceTr(ri     == "                             Back
+                                                                                                         {  replurso    .key     );      n" )             == "
+                                                                                                            setC    vent    rsor]    wDow             key
+                                                                                                                f( e    p[cu     Arro            vent.            )
+                                                                                                         }  se i    or(u     == "            || e             " "
+                                                                                                          el    Curs    .key     r]);    ft"               ==
+                                                                                                           {  set    vent    curso    owLe             .key
+                                                                                                                 f( e    own[     "Arr            event
+                                                                                                           } se i    or(d    y ==     ;        ||                      M"}
+                                                                                                           el    Curs    t.ke     or])    ght"                     ": "L"};
+                                                                                                           {  set    even    [curs    owRi                     , "R": "
+                                                                                                                 if(     left     "Arr                      "L", "R
+                                                                                                           } lse     sor(    y ==     );               "M": "R"
+                                                                                                            e    tCur    t.ke     sor]            "R", "M":;
+                                                                                                             {  se    even    t[cur    b" )    L": "M", r(1)
+                                                                                                                  if(     righ      "Ta    ? {"L": subst
+                                                                                                             }lse     sor(    ey ==    Key : {"sor.
+                                                                                                             e    tCur    nt.k     hift     cur                                  {
+                                                                                                             {  se     eve    ent.s    ]] +                                 ) =>
+                                                                                                                   if(    = ev     or[0                                 vent
+                                                                                                             }else    ext     [curs        " )                      , (e
+                                                                                                              {   ar n    nextsor);    cape                     ick"
+                                                                                                                  v    r = (cur      "Es                     ("cl
+                                                                                                                   ursorsor    ey ==                     ener
+                                                                                                                  cetCu    nt.k                     tList
+                                                                                                                  s     eve    );               Even
+                                                                                                               }    if(    dit(     ();     .add
+                                                                                                               else    le_e    fault    it")
+                                                                                                               {   togg    ntDe     ("ed
+                                                                                                                       reve    tById
+                                                                                                                }  nt.p    emen
+                                                                                                                 eve    etEl();
+                                                                                                                ;   nt.gedit
+                                                                                                              })cumegle_
+                                                                                                              do tog
+                                                                                                                ;   pt>     >
+                                                                                                              })scri    html
+                                                                                                              </    y></
+                                                                                                                /bod
+                                                                                                                <OT
+                                                                                                                E

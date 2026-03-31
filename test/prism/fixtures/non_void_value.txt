@@ -1,0 +1,31 @@
+x = begin
+  return if true
+  "conditional"
+end
+
+x = if rand < 0.5
+  return
+  "else is nil"
+end
+
+x = if true
+  return if true
+  "conditional"
+else
+  return
+end
+
+x = if true
+  return if true
+else
+  return if true
+  "conditional"
+end
+
+x = case
+  when 1
+    return if true
+    "conditional"
+  else
+    return
+end

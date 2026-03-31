@@ -34,39 +34,37 @@ describe 'Coverage.result' do
     }
   end
 
-  ruby_version_is "3.2" do
-    it 'returns results for each mode separately when enabled :all modes' do
-      Coverage.start(:all)
-      require @class_file.chomp('.rb')
-      result = Coverage.result
+  it 'returns results for each mode separately when enabled :all modes' do
+    Coverage.start(:all)
+    require @class_file.chomp('.rb')
+    result = Coverage.result
 
-      result.should == {
-        @class_file => {
-          lines: [
-            nil, nil, 1, nil, nil, 1, nil, nil, 0, nil, nil, nil, nil, nil, nil, nil
-          ],
-          branches: {},
-          methods: {
-            [SomeClass, :some_method, 6, 2, 11, 5] => 0
-          }
+    result.should == {
+      @class_file => {
+        lines: [
+          nil, nil, 1, nil, nil, 1, nil, nil, 0, nil, nil, nil, nil, nil, nil, nil
+        ],
+        branches: {},
+        methods: {
+          [SomeClass, :some_method, 6, 2, 11, 5] => 0
         }
       }
-    end
+    }
+  end
 
-    it 'returns results for each mode separately when enabled any mode explicitly' do
-      Coverage.start(lines: true)
-      require @class_file.chomp('.rb')
-      result = Coverage.result
+  it 'returns results for each mode separately when enabled any mode explicitly' do
+    Coverage.start(lines: true)
+    require @class_file.chomp('.rb')
+    result = Coverage.result
 
-      result.should == {
-        @class_file =>
-          {
-            lines: [
-              nil, nil, 1, nil, nil, 1, nil, nil, 0, nil, nil, nil, nil, nil, nil, nil
-            ]
-          }
-      }
-    end
+    result.should == {
+      @class_file =>
+        {
+          lines: [
+            nil, nil, 1, nil, nil, 1, nil, nil, 0, nil, nil, nil, nil, nil, nil, nil
+          ]
+        }
+    }
   end
 
   it 'no requires/loads should give empty hash' do
@@ -113,48 +111,32 @@ describe 'Coverage.result' do
     Coverage.result.should_not include(@config_file)
   end
 
-  ruby_version_is '3.1'...'3.2' do
-    it 'returns the correct results when eval is used' do
-      Coverage.start
-      require @eval_code_file.chomp('.rb')
-      result = Coverage.result
+  it 'returns the correct results when eval coverage is enabled' do
+    Coverage.supported?(:eval).should == true
 
-      result.should == {
-        @eval_code_file => [
-          1, nil, 1, nil, 1, nil, nil, nil, nil, nil, 1
-        ]
+    Coverage.start(lines: true, eval: true)
+    require @eval_code_file.chomp('.rb')
+    result = Coverage.result
+
+    result.should == {
+      @eval_code_file => {
+        lines: [1, nil, 1, nil, 1, 1, nil, nil, nil, nil, 1]
       }
-    end
+    }
   end
 
-  ruby_version_is '3.2' do
-    it 'returns the correct results when eval coverage is enabled' do
-      Coverage.supported?(:eval).should == true
+  it 'returns the correct results when eval coverage is disabled' do
+    Coverage.supported?(:eval).should == true
 
-      Coverage.start(lines: true, eval: true)
-      require @eval_code_file.chomp('.rb')
-      result = Coverage.result
+    Coverage.start(lines: true, eval: false)
+    require @eval_code_file.chomp('.rb')
+    result = Coverage.result
 
-      result.should == {
-        @eval_code_file => {
-          lines: [1, nil, 1, nil, 1, 1, nil, nil, nil, nil, 1]
-        }
+    result.should == {
+      @eval_code_file => {
+        lines: [1, nil, 1, nil, 1, nil, nil, nil, nil, nil, 1]
       }
-    end
-
-    it 'returns the correct results when eval coverage is disabled' do
-      Coverage.supported?(:eval).should == true
-
-      Coverage.start(lines: true, eval: false)
-      require @eval_code_file.chomp('.rb')
-      result = Coverage.result
-
-      result.should == {
-        @eval_code_file => {
-          lines: [1, nil, 1, nil, 1, nil, nil, nil, nil, nil, 1]
-        }
-      }
-    end
+    }
   end
 
   it "disables coverage measurement when stop option is not specified" do

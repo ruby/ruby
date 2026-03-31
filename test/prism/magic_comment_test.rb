@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "test_helper"
+require "ripper"
 
 module Prism
   class MagicCommentTest < TestCase
@@ -66,6 +67,10 @@ module Prism
 
     def test_emacs_multiple
       assert_magic_encoding(Encoding::US_ASCII, "# -*- foo: bar; encoding: ascii -*-")
+    end
+
+    def test_emacs_missing_delimiter
+      assert_magic_encoding(Encoding::US_ASCII, '# -*- \1; encoding: ascii -*-')
     end
 
     def test_coding_whitespace

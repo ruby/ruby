@@ -22,6 +22,6 @@ describe "Regexp.try_convert" do
   it "raises a TypeError if the object does not return an Regexp from #to_regexp" do
     obj = mock("regexp")
     obj.should_receive(:to_regexp).and_return("string")
-    -> { Regexp.try_convert(obj) }.should raise_error(TypeError, "can't convert MockObject to Regexp (MockObject#to_regexp gives String)")
+    -> { Regexp.try_convert(obj) }.should raise_consistent_error(TypeError, "can't convert MockObject into Regexp (MockObject#to_regexp gives String)")
   end
 end

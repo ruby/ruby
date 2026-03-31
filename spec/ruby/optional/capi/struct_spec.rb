@@ -208,53 +208,107 @@ describe "C-API Struct function" do
       @s.rb_struct_size(@struct).should == 3
     end
   end
-end
 
-ruby_version_is "3.3" do
-  describe "C-API Data function" do
-    before :each do
-      @s = CApiStructSpecs.new
+  describe "rb_struct_initialize" do
+    it "sets all members" do
+      @s.rb_struct_initialize(@struct, [1, 2, 3]).should == nil
+      @struct.a.should == 1
+      @struct.b.should == 2
+      @struct.c.should == 3
     end
 
-    describe "rb_data_define" do
-      it "returns a subclass of Data class when passed nil as the first argument" do
-        klass = @s.rb_data_define(nil, "a", "b", "c")
+    it "does not freeze the Struct instance" do
+      @s.rb_struct_initialize(@struct, [1, 2, 3]).should == nil
+      @struct.should_not.frozen?
+      @s.rb_struct_initialize(@struct, [4, 5, 6]).should == nil
+      @struct.a.should == 4
+      @struct.b.should == 5
+      @struct.c.should == 6
+    end
 
-        klass.should.is_a? Class
-        klass.superclass.should == Data
-      end
+    it "raises ArgumentError if too many values" do
+      -> { @s.rb_struct_initialize(@struct, [1, 2, 3, 4]) }.should raise_error(ArgumentError, "struct size differs")
+    end
 
-      it "returns a subclass of a class when passed as the first argument" do
-        superclass = Class.new(Data)
-        klass = @s.rb_data_define(superclass, "a", "b", "c")
+    it "treats missing values as nil" do
+      @s.rb_struct_initialize(@struct, [1, 2]).should == nil
+      @struct.a.should == 1
+      @struct.b.should == 2
+      @struct.c.should == nil
+    end
+  end
+end
 
-        klass.should.is_a? Class
-        klass.superclass.should == superclass
-      end
+describe "C-API Data function" do
+  before :all do
+    @s = CApiStructSpecs.new
+    @klass = @s.rb_data_define(nil, "a", "b", "c")
+  end
 
-      it "creates readers for the members" do
-        klass = @s.rb_data_define(nil, "a", "b", "c")
-        obj = klass.new(1, 2, 3)
+  describe "rb_data_define" do
+    it "returns a subclass of Data class when passed nil as the first argument" do
+      @klass.should.is_a? Class
+      @klass.superclass.should == Data
+    end
 
-        obj.a.should == 1
-        obj.b.should == 2
-        obj.c.should == 3
-      end
+    it "returns a subclass of a class when passed as the first argument" do
+      superclass = Class.new(Data)
+      klass = @s.rb_data_define(superclass, "a", "b", "c")
 
-      it "returns the member names as Symbols" do
-        klass = @s.rb_data_define(nil, "a", "b", "c")
-        obj = klass.new(0, 0, 0)
+      klass.should.is_a? Class
+      klass.superclass.should == superclass
+    end
 
-        obj.members.should == [:a, :b, :c]
-      end
+    it "creates readers for the members" do
+      obj = @klass.new(1, 2, 3)
 
-      it "raises an ArgumentError if arguments contain duplicate member name" do
-        -> { @s.rb_data_define(nil, "a", "b", "a") }.should raise_error(ArgumentError)
-      end
+      obj.a.should == 1
+      obj.b.should == 2
+      obj.c.should == 3
+    end
 
-      it "raises when first argument is not a class" do
-        -> { @s.rb_data_define([], "a", "b", "c") }.should raise_error(TypeError, "wrong argument type Array (expected Class)")
-      end
+    it "returns the member names as Symbols" do
+      obj = @klass.new(0, 0, 0)
+
+      obj.members.should == [:a, :b, :c]
+    end
+
+    it "raises an ArgumentError if arguments contain duplicate member name" do
+      -> { @s.rb_data_define(nil, "a", "b", "a") }.should raise_error(ArgumentError)
+    end
+
+    it "raises when first argument is not a class" do
+      -> { @s.rb_data_define([], "a", "b", "c") }.should raise_error(TypeError, "wrong argument type Array (expected Class)")
+    end
+  end
+
+  describe "rb_struct_initialize" do
+    it "sets all members for a Data instance" do
+      data = @klass.allocate
+      @s.rb_struct_initialize(data, [1, 2, 3]).should == nil
+      data.a.should == 1
+      data.b.should == 2
+      data.c.should == 3
+    end
+
+    it "freezes the Data instance" do
+      data = @klass.allocate
+      @s.rb_struct_initialize(data, [1, 2, 3]).should == nil
+      data.should.frozen?
+      -> { @s.rb_struct_initialize(data, [1, 2, 3]) }.should raise_error(FrozenError)
+    end
+
+    it "raises ArgumentError if too many values" do
+      data = @klass.allocate
+      -> { @s.rb_struct_initialize(data, [1, 2, 3, 4]) }.should raise_error(ArgumentError, "struct size differs")
+    end
+
+    it "treats missing values as nil" do
+      data = @klass.allocate
+      @s.rb_struct_initialize(data, [1, 2]).should == nil
+      data.a.should == 1
+      data.b.should == 2
+      data.c.should == nil
     end
   end
 end

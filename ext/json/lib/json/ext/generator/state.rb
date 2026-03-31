@@ -8,20 +8,8 @@ module JSON
         #
         # Instantiates a new State object, configured by _opts_.
         #
-        # _opts_ can have the following keys:
-        #
-        # * *indent*: a string used to indent levels (default: ''),
-        # * *space*: a string that is put after, a : or , delimiter (default: ''),
-        # * *space_before*: a string that is put before a : pair delimiter (default: ''),
-        # * *object_nl*: a string that is put at the end of a JSON object (default: ''),
-        # * *array_nl*: a string that is put at the end of a JSON array (default: ''),
-        # * *allow_nan*: true if NaN, Infinity, and -Infinity should be
-        #   generated, otherwise an exception is thrown, if these values are
-        #   encountered. This options defaults to false.
-        # * *ascii_only*: true if only ASCII characters should be generated. This
-        #   option defaults to false.
-        # * *buffer_initial_length*: sets the initial length of the generator's
-        #   internal buffer.
+        # Argument +opts+, if given, contains a \Hash of options for the generation.
+        # See {Generating Options}[rdoc-ref:JSON@Generating+Options].
         def initialize(opts = nil)
           if opts && !opts.empty?
             configure(opts)
@@ -68,6 +56,11 @@ module JSON
             buffer_initial_length: buffer_initial_length,
           }
 
+          allow_duplicate_key = allow_duplicate_key?
+          unless allow_duplicate_key.nil?
+            result[:allow_duplicate_key] = allow_duplicate_key
+          end
+
           instance_variables.each do |iv|
             iv = iv.to_s[1..-1]
             result[iv.to_sym] = self[iv]
@@ -82,6 +75,8 @@ module JSON
         #
         # Returns the value returned by method +name+.
         def [](name)
+          ::JSON.deprecation_warning("JSON::State#[] is deprecated and will be removed in json 3.0.0")
+
           if respond_to?(name)
             __send__(name)
           else
@@ -94,6 +89,8 @@ module JSON
         #
         # Sets the attribute name to value.
         def []=(name, value)
+          ::JSON.deprecation_warning("JSON::State#[]= is deprecated and will be removed in json 3.0.0")
+
           if respond_to?(name_writer = "#{name}=")
             __send__ name_writer, value
           else

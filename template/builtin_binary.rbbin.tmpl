@@ -1,0 +1,35 @@
+// -*- c -*-
+// DO NOT MODIFY THIS FILE DIRECTLY.
+// auto-generated file by tool/generic_erb.rb
+// with template/builtin_binary.rbbin.tmpl
+% unless ARGV.include?('--cross=yes')
+%   ary = RubyVM.enum_for(:each_builtin).to_a
+%   ary.each{|feature, iseq|
+%     bin = iseq.to_binary
+
+static const union {
+    unsigned char binary[<%= bin.bytesize %>];
+    uint32_t align_as_ibf_header;
+} <%= feature %>_builtin = {
+    .binary = {
+%     bin                    \
+%     . each_byte            \
+%     . each_slice(12) {|a|
+        <%= a.map{ '0x%02x,' % _1 }.join(' ') %>
+%     }
+    }
+};
+%   }
+
+#define BUILTIN_BIN(feature) \
+    { #feature, feature ## _builtin.binary, sizeof(feature ## _builtin.binary), }
+static const struct builtin_binary builtin_binary[] = {
+%   ary.each{|feature, |
+    BUILTIN_BIN(<%= feature %>),
+%   }
+    { NULL, },/* sentinel */
+};
+
+#define BUILTIN_BINARY_SIZE <%= ary.size %>
+STATIC_ASSERT(n_builtin, numberof(builtin_binary) == BUILTIN_BINARY_SIZE + 1);
+% end

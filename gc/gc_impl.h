@@ -55,7 +55,7 @@ GC_IMPL_FN VALUE rb_gc_impl_stress_get(void *objspace_ptr);
 GC_IMPL_FN VALUE rb_gc_impl_config_get(void *objspace_ptr);
 GC_IMPL_FN void rb_gc_impl_config_set(void *objspace_ptr, VALUE hash);
 // Object allocation
-GC_IMPL_FN VALUE rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, bool wb_protected, size_t alloc_size);
+GC_IMPL_FN VALUE rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size);
 GC_IMPL_FN size_t rb_gc_impl_obj_slot_size(VALUE obj);
 GC_IMPL_FN size_t rb_gc_impl_heap_id_for_size(void *objspace_ptr, size_t size);
 GC_IMPL_FN bool rb_gc_impl_size_allocatable_p(size_t size);
@@ -72,9 +72,9 @@ GC_IMPL_FN bool rb_gc_impl_size_allocatable_p(size_t size);
  * memory just return NULL (with appropriate errno set).
  * The caller side takes care of that situation.
  */
-GC_IMPL_FN void *rb_gc_impl_malloc(void *objspace_ptr, size_t size);
-GC_IMPL_FN void *rb_gc_impl_calloc(void *objspace_ptr, size_t size);
-GC_IMPL_FN void *rb_gc_impl_realloc(void *objspace_ptr, void *ptr, size_t new_size, size_t old_size);
+GC_IMPL_FN void *rb_gc_impl_malloc(void *objspace_ptr, size_t size, bool gc_allowed);
+GC_IMPL_FN void *rb_gc_impl_calloc(void *objspace_ptr, size_t size, bool gc_allowed);
+GC_IMPL_FN void *rb_gc_impl_realloc(void *objspace_ptr, void *ptr, size_t new_size, size_t old_size, bool gc_allowed);
 GC_IMPL_FN void rb_gc_impl_free(void *objspace_ptr, void *ptr, size_t old_size);
 GC_IMPL_FN void rb_gc_impl_adjust_memory_usage(void *objspace_ptr, ssize_t diff);
 // Marking
@@ -82,9 +82,11 @@ GC_IMPL_FN void rb_gc_impl_mark(void *objspace_ptr, VALUE obj);
 GC_IMPL_FN void rb_gc_impl_mark_and_move(void *objspace_ptr, VALUE *ptr);
 GC_IMPL_FN void rb_gc_impl_mark_and_pin(void *objspace_ptr, VALUE obj);
 GC_IMPL_FN void rb_gc_impl_mark_maybe(void *objspace_ptr, VALUE obj);
-GC_IMPL_FN void rb_gc_impl_mark_weak(void *objspace_ptr, VALUE *ptr);
-GC_IMPL_FN void rb_gc_impl_remove_weak(void *objspace_ptr, VALUE parent_obj, VALUE *ptr);
+// Weak references
+GC_IMPL_FN void rb_gc_impl_declare_weak_references(void *objspace_ptr, VALUE obj);
+GC_IMPL_FN bool rb_gc_impl_handle_weak_references_alive_p(void *objspace_ptr, VALUE obj);
 // Compaction
+GC_IMPL_FN void rb_gc_impl_register_pinning_obj(void *objspace_ptr, VALUE obj);
 GC_IMPL_FN bool rb_gc_impl_object_moved_p(void *objspace_ptr, VALUE obj);
 GC_IMPL_FN VALUE rb_gc_impl_location(void *objspace_ptr, VALUE value);
 // Write barriers
@@ -100,9 +102,6 @@ GC_IMPL_FN VALUE rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALU
 GC_IMPL_FN void rb_gc_impl_undefine_finalizer(void *objspace_ptr, VALUE obj);
 GC_IMPL_FN void rb_gc_impl_copy_finalizer(void *objspace_ptr, VALUE dest, VALUE obj);
 GC_IMPL_FN void rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr);
-// Object ID
-GC_IMPL_FN VALUE rb_gc_impl_object_id(void *objspace_ptr, VALUE obj);
-GC_IMPL_FN VALUE rb_gc_impl_object_id_to_ref(void *objspace_ptr, VALUE object_id);
 // Forking
 GC_IMPL_FN void rb_gc_impl_before_fork(void *objspace_ptr);
 GC_IMPL_FN void rb_gc_impl_after_fork(void *objspace_ptr, rb_pid_t pid);

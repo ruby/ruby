@@ -248,6 +248,7 @@ typedef struct RNode_SCOPE {
 
     rb_ast_id_table_t *nd_tbl;
     struct RNode *nd_body;
+    struct RNode *nd_parent;
     struct RNode_ARGS *nd_args;
 } rb_node_scope_t;
 
@@ -288,25 +289,7 @@ typedef struct RNode_CASE {
     struct RNode *nd_body;
     rb_code_location_t case_keyword_loc;
     rb_code_location_t end_keyword_loc;
-} rb_node_case_t;
-
-typedef struct RNode_CASE2 {
-    NODE node;
-
-    struct RNode *nd_head;
-    struct RNode *nd_body;
-    rb_code_location_t case_keyword_loc;
-    rb_code_location_t end_keyword_loc;
-} rb_node_case2_t;
-
-typedef struct RNode_CASE3 {
-    NODE node;
-
-    struct RNode *nd_head;
-    struct RNode *nd_body;
-    rb_code_location_t case_keyword_loc;
-    rb_code_location_t end_keyword_loc;
-} rb_node_case3_t;
+} rb_node_case_t, rb_node_case2_t, rb_node_case3_t;
 
 typedef struct RNode_WHEN {
     NODE node;
@@ -324,6 +307,9 @@ typedef struct RNode_IN {
     struct RNode *nd_head;
     struct RNode *nd_body;
     struct RNode *nd_next;
+    rb_code_location_t in_keyword_loc;
+    rb_code_location_t then_keyword_loc;
+    rb_code_location_t operator_loc;
 } rb_node_in_t;
 
 typedef struct RNode_LOOP {
@@ -778,7 +764,7 @@ struct rb_args_info {
 
     struct RNode_OPT_ARG *opt_args;
     unsigned int no_kwarg: 1;
-    unsigned int ruby2_keywords: 1;
+    unsigned int no_blockarg: 1;
     unsigned int forwarding: 1;
 };
 
@@ -901,6 +887,8 @@ typedef struct RNode_MODULE {
 
     struct RNode *nd_cpath;
     struct RNode *nd_body;
+    rb_code_location_t module_keyword_loc;
+    rb_code_location_t end_keyword_loc;
 } rb_node_module_t;
 
 typedef struct RNode_SCLASS {
@@ -908,6 +896,9 @@ typedef struct RNode_SCLASS {
 
     struct RNode *nd_recv;
     struct RNode *nd_body;
+    rb_code_location_t class_keyword_loc;
+    rb_code_location_t operator_loc;
+    rb_code_location_t end_keyword_loc;
 } rb_node_sclass_t;
 
 typedef struct RNode_COLON2 {
@@ -915,12 +906,16 @@ typedef struct RNode_COLON2 {
 
     struct RNode *nd_head;
     ID nd_mid;
+    rb_code_location_t delimiter_loc;
+    rb_code_location_t name_loc;
 } rb_node_colon2_t;
 
 typedef struct RNode_COLON3 {
     NODE node;
 
     ID nd_mid;
+    rb_code_location_t delimiter_loc;
+    rb_code_location_t name_loc;
 } rb_node_colon3_t;
 
 /* NODE_DOT2, NODE_DOT3, NODE_FLIP2, NODE_FLIP3 */
@@ -958,6 +953,7 @@ typedef struct RNode_DEFINED {
     NODE node;
 
     struct RNode *nd_head;
+    rb_code_location_t keyword_loc;
 } rb_node_defined_t;
 
 typedef struct RNode_POSTEXE {
@@ -1153,7 +1149,7 @@ typedef struct RNode_ERROR {
 #define RNODE_FILE(node) ((rb_node_file_t *)(node))
 #define RNODE_ENCODING(node) ((rb_node_encoding_t *)(node))
 
-/* FL     : 0..4: T_TYPES, 5: KEEP_WB, 6: PROMOTED, 7: FINALIZE, 8: UNUSED, 9: UNUSED, 10: EXIVAR, 11: FREEZE */
+/* FL     : 0..4: T_TYPES, 5: KEEP_WB, 6: PROMOTED, 7: FINALIZE, 8..10: UNUSED, 11: FREEZE */
 /* NODE_FL: 0..4: UNUSED,  5: UNUSED,  6: UNUSED,   7: NODE_FL_NEWLINE,
  *          8..14: nd_type,
  *          15..: nd_line

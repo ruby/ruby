@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 
 require_relative 'marshal_multibyte_data'
 
@@ -532,18 +532,16 @@ module MarshalSpec
     "Random" => random_data,
   }
 
-  if defined? Data # TODO: remove the condition when minimal supported version is 3.2
-    module DataSpec
-      Measure = Data.define(:amount, :unit)
-      Empty = Data.define
+  module DataSpec
+    Measure = Data.define(:amount, :unit)
+    Empty = Data.define
 
-      MeasureExtended = Class.new(Measure)
-      MeasureExtended.extend(Enumerable)
+    MeasureExtended = Class.new(Measure)
+    MeasureExtended.extend(Enumerable)
 
-      class MeasureWithOverriddenName < Measure
-        def self.name
-          "Foo"
-        end
+    class MeasureWithOverriddenName < Measure
+      def self.name
+        "Foo"
       end
     end
   end

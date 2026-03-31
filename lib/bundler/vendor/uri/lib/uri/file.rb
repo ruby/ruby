@@ -47,7 +47,7 @@ module Bundler::URI
     #       :path => '/ruby/src'})
     #     uri2.to_s  # => "file://host.example.com/ruby/src"
     #
-    #     uri3 = Bundler::URI::File.build({:path => Bundler::URI::escape('/path/my file.txt')})
+    #     uri3 = Bundler::URI::File.build({:path => Bundler::URI::RFC2396_PARSER.escape('/path/my file.txt')})
     #     uri3.to_s  # => "file:///path/my%20file.txt"
     #
     def self.build(args)

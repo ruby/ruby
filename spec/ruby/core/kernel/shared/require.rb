@@ -266,15 +266,13 @@ describe :kernel_require, shared: true do
       ScratchPad.recorded.should == [:loaded]
     end
 
-    ruby_bug "#17340", ''...'3.3' do
-      it "loads a file concurrently" do
-        path = File.expand_path "concurrent_require_fixture.rb", CODE_LOADING_DIR
-        ScratchPad.record(@object)
-        -> {
-          @object.require(path)
-        }.should_not complain(/circular require considered harmful/, verbose: true)
-        ScratchPad.recorded.join
-      end
+    it "loads a file concurrently" do
+      path = File.expand_path "concurrent_require_fixture.rb", CODE_LOADING_DIR
+      ScratchPad.record(@object)
+      -> {
+        @object.require(path)
+      }.should_not complain(/circular require considered harmful/, verbose: true)
+      ScratchPad.recorded.join
     end
   end
 
@@ -295,6 +293,16 @@ describe :kernel_require, shared: true do
       @object.require("load_fixture").should be_true
       $LOAD_PATH.replace [File.expand_path("b", CODE_LOADING_DIR), CODE_LOADING_DIR]
       @object.require("load_fixture").should be_false
+    end
+
+    it "stores the missing path in a LoadError object" do
+      path = "abcd1234"
+
+      -> {
+        @object.send(@method, path)
+      }.should raise_error(LoadError) { |e|
+        e.path.should == path
+      }
     end
   end
 
@@ -814,5 +822,25 @@ describe :kernel_require, shared: true do
     }.should raise_error(LoadError) { |e|
       e.path.should == path
     }
+  end
+
+  platform_is :linux, :darwin do
+    it "does not store the missing path in a LoadError object when c-extension file exists but loading fails and passed absolute path without extension" do
+      # the error message is specific to what dlerror() returns
+      path = File.join CODE_LOADING_DIR, "a", "load_fixture"
+      -> { @object.send(@method, path) }.should raise_error(LoadError) { |e|
+        e.path.should == nil
+      }
+    end
+  end
+
+  platform_is :darwin do
+    it "does not store the missing path in a LoadError object when c-extension file exists but loading fails and passed absolute path with extension" do
+      # the error message is specific to what dlerror() returns
+      path = File.join CODE_LOADING_DIR, "a", "load_fixture.bundle"
+      -> { @object.send(@method, path) }.should raise_error(LoadError) { |e|
+        e.path.should == nil
+      }
+    end
   end
 end

@@ -9,10 +9,9 @@
 #include "vm_core.h"
 #include "method.h"
 
-// YJIT_STATS controls whether to support runtime counters in generated code
-// and in the interpreter.
+// YJIT_STATS controls whether to support runtime counters in the interpreter
 #ifndef YJIT_STATS
-# define YJIT_STATS RUBY_DEBUG
+# define YJIT_STATS (USE_YJIT && RUBY_DEBUG)
 #endif
 
 #if USE_YJIT
@@ -36,8 +35,9 @@ void rb_yjit_cme_invalidate(rb_callable_method_entry_t *cme);
 void rb_yjit_collect_binding_alloc(void);
 void rb_yjit_collect_binding_set(void);
 void rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception);
+void rb_yjit_init_builtin_cmes(void);
 void rb_yjit_init(bool yjit_enabled);
-void rb_yjit_free_at_exit();
+void rb_yjit_free_at_exit(void);
 void rb_yjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop);
 void rb_yjit_constant_state_changed(ID id);
 void rb_yjit_iseq_mark(void *payload);
@@ -50,6 +50,8 @@ void rb_yjit_show_usage(int help, int highlight, unsigned int width, int columns
 void rb_yjit_lazy_push_frame(const VALUE *pc);
 void rb_yjit_invalidate_no_singleton_class(VALUE klass);
 void rb_yjit_invalidate_ep_is_bp(const rb_iseq_t *iseq);
+void rb_yjit_mark_all_writeable(void);
+void rb_yjit_mark_all_executable(void);
 
 #else
 // !USE_YJIT
@@ -62,6 +64,7 @@ static inline void rb_yjit_cme_invalidate(rb_callable_method_entry_t *cme) {}
 static inline void rb_yjit_collect_binding_alloc(void) {}
 static inline void rb_yjit_collect_binding_set(void) {}
 static inline void rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception) {}
+static inline void rb_yjit_init_builtin_cmes(void) {}
 static inline void rb_yjit_init(bool yjit_enabled) {}
 static inline void rb_yjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop) {}
 static inline void rb_yjit_constant_state_changed(ID id) {}

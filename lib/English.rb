@@ -9,7 +9,7 @@
 #      "waterbuffalo" =~ /buff/
 #      print $', $$, "\n"
 #
-#  With English:
+#  With 'English':
 #
 #      require "English"
 #
@@ -20,30 +20,30 @@
 #  Below is a full list of descriptive aliases and their associated global
 #  variable:
 #
-#  $ERROR_INFO::              $!
-#  $ERROR_POSITION::          $@
-#  $FS::                      $;
-#  $FIELD_SEPARATOR::         $;
-#  $OFS::                     $,
-#  $OUTPUT_FIELD_SEPARATOR::  $,
-#  $RS::                      $/
-#  $INPUT_RECORD_SEPARATOR::  $/
-#  $ORS::                     $\
-#  $OUTPUT_RECORD_SEPARATOR:: $\
-#  $INPUT_LINE_NUMBER::       $.
-#  $NR::                      $.
-#  $LAST_READ_LINE::          $_
-#  $DEFAULT_OUTPUT::          $>
-#  $DEFAULT_INPUT::           $<
-#  $PID::                     $$
-#  $PROCESS_ID::              $$
-#  $CHILD_STATUS::            $?
-#  $LAST_MATCH_INFO::         $~
-#  $ARGV::                    $*
-#  $MATCH::                   $&
-#  $PREMATCH::                $`
-#  $POSTMATCH::               $'
-#  $LAST_PAREN_MATCH::        $+
+#  <tt>$ERROR_INFO</tt>::              <tt>$!</tt>
+#  <tt>$ERROR_POSITION</tt>::          <tt>$@</tt>
+#  <tt>$FS</tt>::                      <tt>$;</tt>
+#  <tt>$FIELD_SEPARATOR</tt>::         <tt>$;</tt>
+#  <tt>$OFS</tt>::                     <tt>$,</tt>
+#  <tt>$OUTPUT_FIELD_SEPARATOR</tt>::  <tt>$,</tt>
+#  <tt>$RS</tt>::                      <tt>$/</tt>
+#  <tt>$INPUT_RECORD_SEPARATOR</tt>::  <tt>$/</tt>
+#  <tt>$ORS</tt>::                     <tt>$\</tt>
+#  <tt>$OUTPUT_RECORD_SEPARATOR</tt>:: <tt>$\</tt>
+#  <tt>$NR</tt>::                      <tt>$.</tt>
+#  <tt>$INPUT_LINE_NUMBER</tt>::       <tt>$.</tt>
+#  <tt>$LAST_READ_LINE</tt>::          <tt>$_</tt>
+#  <tt>$DEFAULT_OUTPUT</tt>::          <tt>$></tt>
+#  <tt>$DEFAULT_INPUT</tt>::           <tt>$<</tt>
+#  <tt>$PID</tt>::                     <tt>$$</tt>
+#  <tt>$PROCESS_ID</tt>::              <tt>$$</tt>
+#  <tt>$CHILD_STATUS</tt>::            <tt>$?</tt>
+#  <tt>$LAST_MATCH_INFO</tt>::         <tt>$~</tt>
+#  <tt>$ARGV</tt>::                    <tt>$*</tt>
+#  <tt>$MATCH</tt>::                   <tt>$&</tt>
+#  <tt>$PREMATCH</tt>::                <tt>$`</tt>
+#  <tt>$POSTMATCH</tt>::               <tt>$'</tt>
+#  <tt>$LAST_PAREN_MATCH</tt>::        <tt>$+</tt>
 #
 module English end if false
 

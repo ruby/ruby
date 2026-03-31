@@ -82,16 +82,22 @@ module UnicodeNormalize  # :nodoc:
 
   ## Canonical Ordering
   def self.canonical_ordering_one(string)
-    sorting = string.each_char.collect { |c| [c, CLASS_TABLE[c]] }
-    (sorting.length-2).downto(0) do |i| # almost, but not exactly bubble sort
-      (0..i).each do |j|
-        later_class = sorting[j+1].last
-        if 0<later_class and later_class<sorting[j].last
-          sorting[j], sorting[j+1] = sorting[j+1], sorting[j]
-        end
+    result = ''
+    unordered = []
+    chars = string.chars
+    n = chars.size
+    chars.each_with_index do |char, i|
+      ccc = CLASS_TABLE[char]
+      if ccc == 0
+        unordered.sort!.each { result << chars[it % n] }
+        unordered.clear
+        result << char
+      else
+        unordered << ccc * n + i
       end
     end
-    return sorting.collect(&:first).join('')
+    unordered.sort!.each { result << chars[it % n] }
+    result
   end
 
   ## Normalization Forms for Patterns (not whole Strings)
@@ -105,16 +111,22 @@ module UnicodeNormalize  # :nodoc:
     start = nfd_string[0]
     last_class = CLASS_TABLE[start]-1
     accents = ''
+    result = ''
     nfd_string[1..-1].each_char do |accent|
       accent_class = CLASS_TABLE[accent]
       if last_class<accent_class and composite = COMPOSITION_TABLE[start+accent]
         start = composite
+      elsif accent_class == 0
+        result << start << accents
+        start = accent
+        accents = ''
+        last_class = -1
       else
         accents << accent
         last_class = accent_class
       end
     end
-    hangul_comp_one(start+accents)
+    hangul_comp_one(result+start+accents)
   end
 
   def self.normalize(string, form = :nfc)

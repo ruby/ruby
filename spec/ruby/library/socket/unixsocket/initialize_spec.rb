@@ -1,48 +1,56 @@
 require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 
-with_feature :unix_socket do
-  describe 'UNIXSocket#initialize' do
-    describe 'using a non existing path' do
+describe 'UNIXSocket#initialize' do
+  describe 'using a non existing path' do
+    platform_is_not :windows do
       it 'raises Errno::ENOENT' do
         -> { UNIXSocket.new(SocketSpecs.socket_path) }.should raise_error(Errno::ENOENT)
       end
     end
 
-    describe 'using an existing socket path' do
-      before do
-        @path = SocketSpecs.socket_path
-        @server = UNIXServer.new(@path)
-        @socket = UNIXSocket.new(@path)
+    platform_is :windows do
+      # Why, Windows, why?
+      it 'raises Errno::ECONNREFUSED' do
+        -> { UNIXSocket.new(SocketSpecs.socket_path) }.should raise_error(Errno::ECONNREFUSED)
       end
+    end
+  end
 
-      after do
-        @socket.close
-        @server.close
-        rm_r(@path)
-      end
+  describe 'using an existing socket path' do
+    before do
+      @path = SocketSpecs.socket_path
+      @server = UNIXServer.new(@path)
+      @socket = UNIXSocket.new(@path)
+    end
 
-      it 'returns a new UNIXSocket' do
-        @socket.should be_an_instance_of(UNIXSocket)
-      end
+    after do
+      @socket.close
+      @server.close
+      rm_r(@path)
+    end
 
-      it 'sets the socket path to an empty String' do
-        @socket.path.should == ''
-      end
+    it 'returns a new UNIXSocket' do
+      @socket.should be_an_instance_of(UNIXSocket)
+    end
 
-      it 'sets the socket to binmode' do
-        @socket.binmode?.should be_true
-      end
+    it 'sets the socket path to an empty String' do
+      @socket.path.should == ''
+    end
 
+    it 'sets the socket to binmode' do
+      @socket.binmode?.should be_true
+    end
+
+    platform_is_not :windows do
       it 'sets the socket to nonblock' do
         require 'io/nonblock'
         @socket.should.nonblock?
       end
+    end
 
-      it 'sets the socket to close on exec' do
-        @socket.should.close_on_exec?
-      end
-
+    it 'sets the socket to close on exec' do
+      @socket.should.close_on_exec?
     end
   end
 end

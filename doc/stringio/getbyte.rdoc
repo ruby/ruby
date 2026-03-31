@@ -1,0 +1,24 @@
+Reads and returns the next integer byte (not character) from the stream:
+
+  s = 'foo'
+  s.bytes       # => [102, 111, 111]
+  strio = StringIO.new(s)
+  strio.getbyte # => 102
+  strio.getbyte # => 111
+  strio.getbyte # => 111
+
+Returns +nil+ if at end-of-stream:
+
+  strio.eof?    # => true
+  strio.getbyte # => nil
+
+Returns a byte, not a character:
+
+  s = 'こんにちは'
+  s.bytes
+  # => [227, 129, 147, 227, 130, 147, 227, 129, 171, 227, 129, 161, 227, 129, 175]
+  strio = StringIO.new(s)
+  strio.getbyte # => 227
+  strio.getbyte # => 129
+
+Related: #each_byte, #ungetbyte, #getc.

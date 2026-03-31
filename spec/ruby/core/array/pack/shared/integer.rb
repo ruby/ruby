@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 
 describe :array_pack_16bit_le, shared: true do
   it "encodes the least significant 16 bits of a positive number" do
@@ -41,21 +41,10 @@ describe :array_pack_16bit_le, shared: true do
     str.should == "\x78\x65\xcd\xab\x21\x43"
   end
 
-  ruby_version_is ""..."3.3" do
-    it "ignores NULL bytes between directives" do
-      suppress_warning do
-        str = [0x1243_6578, 0xdef0_abcd].pack(pack_format("\000", 2))
-        str.should == "\x78\x65\xcd\xab"
-      end
-    end
-  end
-
-  ruby_version_is "3.3" do
-    it "raise ArgumentError for NULL bytes between directives" do
-      -> {
-        [0x1243_6578, 0xdef0_abcd].pack(pack_format("\000", 2))
-      }.should raise_error(ArgumentError, /unknown pack directive/)
-    end
+  it "raise ArgumentError for NULL bytes between directives" do
+    -> {
+      [0x1243_6578, 0xdef0_abcd].pack(pack_format("\000", 2))
+    }.should raise_error(ArgumentError, /unknown pack directive/)
   end
 
   it "ignores spaces between directives" do
@@ -105,21 +94,10 @@ describe :array_pack_16bit_be, shared: true do
     str.should == "\x65\x78\xab\xcd\x43\x21"
   end
 
-  ruby_version_is ""..."3.3" do
-    it "ignores NULL bytes between directives" do
-      suppress_warning do
-        str = [0x1243_6578, 0xdef0_abcd].pack(pack_format("\000", 2))
-        str.should == "\x65\x78\xab\xcd"
-      end
-    end
-  end
-
-  ruby_version_is "3.3" do
-    it "raise ArgumentError for NULL bytes between directives" do
-      -> {
-        [0x1243_6578, 0xdef0_abcd].pack(pack_format("\000", 2))
-      }.should raise_error(ArgumentError, /unknown pack directive/)
-    end
+  it "raise ArgumentError for NULL bytes between directives" do
+    -> {
+      [0x1243_6578, 0xdef0_abcd].pack(pack_format("\000", 2))
+    }.should raise_error(ArgumentError, /unknown pack directive/)
   end
 
   it "ignores spaces between directives" do
@@ -169,21 +147,10 @@ describe :array_pack_32bit_le, shared: true do
     str.should == "\x78\x65\x43\x12\xcd\xab\xf0\xde\x21\x43\x65\x78"
   end
 
-  ruby_version_is ""..."3.3" do
-    it "ignores NULL bytes between directives" do
-      suppress_warning do
-        str = [0x1243_6578, 0xdef0_abcd].pack(pack_format("\000", 2))
-        str.should == "\x78\x65\x43\x12\xcd\xab\xf0\xde"
-      end
-    end
-  end
-
-  ruby_version_is "3.3" do
-    it "raise ArgumentError for NULL bytes between directives" do
-      -> {
-        [0x1243_6578, 0xdef0_abcd].pack(pack_format("\000", 2))
-      }.should raise_error(ArgumentError, /unknown pack directive/)
-    end
+  it "raise ArgumentError for NULL bytes between directives" do
+    -> {
+      [0x1243_6578, 0xdef0_abcd].pack(pack_format("\000", 2))
+    }.should raise_error(ArgumentError, /unknown pack directive/)
   end
 
   it "ignores spaces between directives" do
@@ -233,21 +200,10 @@ describe :array_pack_32bit_be, shared: true do
     str.should == "\x12\x43\x65\x78\xde\xf0\xab\xcd\x78\x65\x43\x21"
   end
 
-  ruby_version_is ""..."3.3" do
-    it "ignores NULL bytes between directives" do
-      suppress_warning do
-        str = [0x1243_6578, 0xdef0_abcd].pack(pack_format("\000", 2))
-        str.should == "\x12\x43\x65\x78\xde\xf0\xab\xcd"
-      end
-    end
-  end
-
-  ruby_version_is "3.3" do
-    it "raise ArgumentError for NULL bytes between directives" do
-      -> {
-        [0x1243_6578, 0xdef0_abcd].pack(pack_format("\000", 2))
-      }.should raise_error(ArgumentError, /unknown pack directive/)
-    end
+  it "raise ArgumentError for NULL bytes between directives" do
+    -> {
+      [0x1243_6578, 0xdef0_abcd].pack(pack_format("\000", 2))
+    }.should raise_error(ArgumentError, /unknown pack directive/)
   end
 
   it "ignores spaces between directives" do
@@ -357,21 +313,10 @@ describe :array_pack_64bit_le, shared: true do
     str.should == "\x56\x78\x12\x34\xcd\xab\xf0\xde\xf0\xde\xba\xdc\x21\x43\x65\x78"
   end
 
-  ruby_version_is ""..."3.3" do
-    it "ignores NULL bytes between directives" do
-      suppress_warning do
-        str = [0xdef0_abcd_3412_7856, 0x7865_4321_dcba_def0].pack(pack_format("\000", 2))
-        str.should == "\x56\x78\x12\x34\xcd\xab\xf0\xde\xf0\xde\xba\xdc\x21\x43\x65\x78"
-      end
-    end
-  end
-
-  ruby_version_is "3.3" do
-    it "raise ArgumentError for NULL bytes between directives" do
-      -> {
-        [0xdef0_abcd_3412_7856, 0x7865_4321_dcba_def0].pack(pack_format("\000", 2))
-      }.should raise_error(ArgumentError, /unknown pack directive/)
-    end
+  it "raise ArgumentError for NULL bytes between directives" do
+    -> {
+      [0xdef0_abcd_3412_7856, 0x7865_4321_dcba_def0].pack(pack_format("\000", 2))
+    }.should raise_error(ArgumentError, /unknown pack directive/)
   end
 
   it "ignores spaces between directives" do
@@ -429,21 +374,10 @@ describe :array_pack_64bit_be, shared: true do
     str.should == "\xde\xf0\xab\xcd\x34\x12\x78\x56\x78\x65\x43\x21\xdc\xba\xde\xf0"
   end
 
-  ruby_version_is ""..."3.3" do
-    it "ignores NULL bytes between directives" do
-      suppress_warning do
-        str = [0xdef0_abcd_3412_7856, 0x7865_4321_dcba_def0].pack(pack_format("\000", 2))
-        str.should == "\xde\xf0\xab\xcd\x34\x12\x78\x56\x78\x65\x43\x21\xdc\xba\xde\xf0"
-      end
-    end
-  end
-
-  ruby_version_is "3.3" do
-    it "raise ArgumentError for NULL bytes between directives" do
-      -> {
-        [0xdef0_abcd_3412_7856, 0x7865_4321_dcba_def0].pack(pack_format("\000", 2))
-      }.should raise_error(ArgumentError, /unknown pack directive/)
-    end
+  it "raise ArgumentError for NULL bytes between directives" do
+    -> {
+      [0xdef0_abcd_3412_7856, 0x7865_4321_dcba_def0].pack(pack_format("\000", 2))
+    }.should raise_error(ArgumentError, /unknown pack directive/)
   end
 
   it "ignores spaces between directives" do

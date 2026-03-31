@@ -1,11 +1,14 @@
 # frozen_string_literal: true
 
+require "json"
+
 module Bundler
   class CLI::List
     def initialize(options)
       @options = options
       @without_group = options["without-group"].map(&:to_sym)
       @only_group = options["only-group"].map(&:to_sym)
+      @format = options["format"]
     end
 
     def run
@@ -25,6 +28,36 @@ module Bundler
         end
       end.reject {|s| s.name == "bundler" }.sort_by(&:name)
 
+      case @format
+      when "json"
+        print_json(specs: specs)
+      when nil
+        print_human(specs: specs)
+      else
+        raise InvalidOption, "Unknown option`--format=#{@format}`. Supported formats: `json`"
+      end
+    end
+
+    private
+
+    def print_json(specs:)
+      gems = if @options["name-only"]
+        specs.map {|s| { name: s.name } }
+      else
+        specs.map do |s|
+          {
+            name: s.name,
+            version: s.version.to_s,
+            git_version: s.git_version&.strip,
+          }.tap do |h|
+            h[:path] = s.full_gem_path if @options["paths"]
+          end
+        end
+      end
+      Bundler.ui.info({ gems: gems }.to_json)
+    end
+
+    def print_human(specs:)
       return Bundler.ui.info "No gems in the Gemfile" if specs.empty?
 
       return specs.each {|s| Bundler.ui.info s.name } if @options["name-only"]
@@ -36,8 +69,6 @@ module Bundler
 
       Bundler.ui.info "Use `bundle info` to print more detailed information about a gem"
     end
-
-    private
 
     def verify_group_exists(groups)
       (@without_group + @only_group).each do |group|

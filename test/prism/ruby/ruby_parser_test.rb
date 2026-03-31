@@ -13,23 +13,12 @@ rescue LoadError
   return
 end
 
-# We want to also compare lines and files to make sure we're setting them
-# correctly.
-Sexp.prepend(
-  Module.new do
-    def ==(other)
-      super && line == other.line && file == other.file # && line_max == other.line_max
-    end
-  end
-)
-
 module Prism
   class RubyParserTest < TestCase
     todos = [
+      "character_literal.txt",
       "encoding_euc_jp.txt",
-      "newline_terminated.txt",
       "regex_char_width.txt",
-      "seattlerb/bug169.txt",
       "seattlerb/masgn_colon3.txt",
       "seattlerb/messy_op_asgn_lineno.txt",
       "seattlerb/op_asgn_primary_colon_const_command_call.txt",
@@ -37,15 +26,10 @@ module Prism
       "seattlerb/str_lit_concat_bad_encodings.txt",
       "strings.txt",
       "unescaping.txt",
-      "unparser/corpus/literal/kwbegin.txt",
-      "unparser/corpus/literal/send.txt",
       "whitequark/masgn_const.txt",
       "whitequark/pattern_matching_constants.txt",
-      "whitequark/pattern_matching_implicit_array_match.txt",
       "whitequark/pattern_matching_single_match.txt",
       "whitequark/ruby_bug_12402.txt",
-      "whitequark/ruby_bug_14690.txt",
-      "whitequark/space_args_block.txt"
     ]
 
     # https://github.com/seattlerb/ruby_parser/issues/344
@@ -53,6 +37,8 @@ module Prism
       "alias.txt",
       "dsym_str.txt",
       "dos_endings.txt",
+      "heredoc_dedent_line_continuation.txt",
+      "heredoc_percent_q_newline_delimiter.txt",
       "heredocs_with_fake_newlines.txt",
       "heredocs_with_ignored_newlines.txt",
       "method_calls.txt",
@@ -73,6 +59,7 @@ module Prism
       "spanning_heredoc.txt",
       "symbols.txt",
       "tilde_heredocs.txt",
+      "unary_method_calls.txt",
       "unparser/corpus/literal/literal.txt",
       "while.txt",
       "whitequark/cond_eflipflop.txt",
@@ -90,10 +77,20 @@ module Prism
       "whitequark/ruby_bug_11989.txt",
       "whitequark/ruby_bug_18878.txt",
       "whitequark/ruby_bug_19281.txt",
-      "whitequark/slash_newline_in_heredocs.txt"
+      "whitequark/slash_newline_in_heredocs.txt",
+
+      "3.3-3.3/block_args_in_array_assignment.txt",
+      "3.3-3.3/it_with_ordinary_parameter.txt",
+      "3.3-3.3/keyword_args_in_array_assignment.txt",
+      "3.3-3.3/return_in_sclass.txt",
+
+      "3.3-4.0/void_value.txt",
+
+      # https://bugs.ruby-lang.org/issues/21168#note-5
+      "command_method_call_2.txt",
     ]
 
-    Fixture.each(except: failures) do |fixture|
+    Fixture.each_for_version(version: "3.3", except: failures) do |fixture|
       define_method(fixture.test_name) do
         assert_ruby_parser(fixture, todos.include?(fixture.path))
       end
@@ -105,10 +102,16 @@ module Prism
       source = fixture.read
       expected = ignore_warnings { ::RubyParser.new.parse(source, fixture.path) }
       actual = Prism::Translation::RubyParser.new.parse(source, fixture.path)
+      on_failure = -> { message(expected, actual) }
 
       if !allowed_failure
-        assert_equal(expected, actual, -> { message(expected, actual) })
-      elsif expected == actual
+        assert_equal(expected, actual, on_failure)
+
+        unless actual.nil?
+          assert_equal(expected.line, actual.line, on_failure)
+          assert_equal(expected.file, actual.file, on_failure)
+        end
+      elsif expected == actual && expected.line && actual.line && expected.file == actual.file
         puts "#{name} now passes"
       end
     end

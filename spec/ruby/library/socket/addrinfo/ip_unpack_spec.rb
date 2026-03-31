@@ -21,15 +21,13 @@ describe "Addrinfo#ip_unpack" do
     end
   end
 
-  with_feature :unix_socket do
-    describe "for a unix socket" do
-      before :each do
-        @addrinfo = Addrinfo.unix("/tmp/sock")
-      end
+  describe "for a unix socket" do
+    before :each do
+      @addrinfo = Addrinfo.unix("/tmp/sock")
+    end
 
-      it "raises an exception" do
-        -> { @addrinfo.ip_unpack }.should raise_error(SocketError)
-      end
+    it "raises an exception" do
+      -> { @addrinfo.ip_unpack }.should raise_error(SocketError)
     end
   end
 end

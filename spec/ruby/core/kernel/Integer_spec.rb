@@ -586,19 +586,10 @@ describe :kernel_integer_string_base, shared: true do
     Integer("777", obj).should == 0777
   end
 
-  # https://bugs.ruby-lang.org/issues/19349
-  ruby_version_is ''...'3.3' do
-    it "ignores the base if it is not an integer and does not respond to #to_i" do
-      Integer("777", "8").should == 777
-    end
-  end
-
-  ruby_version_is '3.3' do
-    it "raises a TypeError if it is not an integer and does not respond to #to_i" do
-      -> {
-        Integer("777", "8")
-      }.should raise_error(TypeError, "no implicit conversion of String into Integer")
-    end
+  it "raises a TypeError if it is not an integer and does not respond to #to_i" do
+    -> {
+      Integer("777", "8")
+    }.should raise_error(TypeError, "no implicit conversion of String into Integer")
   end
 
   describe "when passed exception: false" do

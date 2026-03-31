@@ -161,26 +161,47 @@ RSpec.describe "bundle add" do
   end
 
   describe "with --github" do
+    before do
+      build_git "rake", "13.0"
+      git("config --global url.file://#{lib_path("rake-13.0")}.insteadOf https://github.com/ruby/rake.git")
+    end
+
     it "adds dependency with specified github source" do
       bundle "add rake --github=ruby/rake"
 
       expect(bundled_app_gemfile.read).to match(%r{gem "rake", "~> 13\.\d+", github: "ruby\/rake"})
     end
-  end
 
-  describe "with --github and --branch" do
     it "adds dependency with specified github source and branch" do
-      bundle "add rake --github=ruby/rake --branch=master"
+      bundle "add rake --github=ruby/rake --branch=main"
 
-      expect(bundled_app_gemfile.read).to match(%r{gem "rake", "~> 13\.\d+", github: "ruby\/rake", branch: "master"})
+      expect(bundled_app_gemfile.read).to match(%r{gem "rake", "~> 13\.\d+", github: "ruby\/rake", branch: "main"})
     end
-  end
 
-  describe "with --github and --ref" do
     it "adds dependency with specified github source and ref" do
-      bundle "add rake --github=ruby/rake --ref=5c60da8"
+      ref = revision_for(lib_path("rake-13.0"))
+      bundle "add rake --github=ruby/rake --ref=#{ref}"
 
-      expect(bundled_app_gemfile.read).to match(%r{gem "rake", "~> 13\.\d+", github: "ruby\/rake", ref: "5c60da8"})
+      expect(bundled_app_gemfile.read).to match(%r{gem "rake", "~> 13\.\d+", github: "ruby\/rake", ref: "#{ref}"})
+    end
+
+    it "adds dependency with specified github source and glob" do
+      bundle "add rake --github=ruby/rake --glob='./*.gemspec'"
+
+      expect(bundled_app_gemfile.read).to match(%r{gem "rake", "~> 13\.\d+", github: "ruby\/rake", glob: "\.\/\*\.gemspec"})
+    end
+
+    it "adds dependency with specified github source, branch and glob" do
+      bundle "add rake --github=ruby/rake --branch=main --glob='./*.gemspec'"
+
+      expect(bundled_app_gemfile.read).to match(%r{gem "rake", "~> 13\.\d+", github: "ruby\/rake", branch: "main", glob: "\.\/\*\.gemspec"})
+    end
+
+    it "adds dependency with specified github source, ref and glob" do
+      ref = revision_for(lib_path("rake-13.0"))
+      bundle "add rake --github=ruby/rake --ref=#{ref} --glob='./*.gemspec'"
+
+      expect(bundled_app_gemfile.read).to match(%r{gem "rake", "~> 13\.\d+", github: "ruby\/rake", ref: "#{ref}", glob: "\.\/\*\.gemspec"})
     end
   end
 
@@ -215,27 +236,37 @@ RSpec.describe "bundle add" do
     end
   end
 
-  describe "with --github and --glob" do
-    it "adds dependency with specified github source" do
-      bundle "add rake --github=ruby/rake --glob='./*.gemspec'"
+  describe "with mismatched pair in --git/--github, --branch/--ref" do
+    describe "with --git and --github" do
+      it "throws error" do
+        bundle "add 'foo' --git x --github y", raise_on_error: false
 
-      expect(bundled_app_gemfile.read).to match(%r{gem "rake", "~> 13\.\d+", github: "ruby\/rake", glob: "\.\/\*\.gemspec"})
+        expect(err).to include("You cannot specify `--git` and `--github` at the same time.")
+      end
     end
-  end
 
-  describe "with --github and --branch --and glob" do
-    it "adds dependency with specified github source and branch" do
-      bundle "add rake --github=ruby/rake --branch=master --glob='./*.gemspec'"
+    describe "with --branch and --ref with --git" do
+      it "throws error" do
+        bundle "add 'foo' --branch x --ref y --git file://git", raise_on_error: false
 
-      expect(bundled_app_gemfile.read).to match(%r{gem "rake", "~> 13\.\d+", github: "ruby\/rake", branch: "master", glob: "\.\/\*\.gemspec"})
+        expect(err).to include("You cannot specify `--branch` and `--ref` at the same time.")
+      end
     end
-  end
 
-  describe "with --github and --ref and --glob" do
-    it "adds dependency with specified github source and ref" do
-      bundle "add rake --github=ruby/rake --ref=5c60da8 --glob='./*.gemspec'"
+    describe "with --branch but without --git or --github" do
+      it "throws error" do
+        bundle "add 'foo' --branch x", raise_on_error: false
 
-      expect(bundled_app_gemfile.read).to match(%r{gem "rake", "~> 13\.\d+", github: "ruby\/rake", ref: "5c60da8", glob: "\.\/\*\.gemspec"})
+        expect(err).to include("You cannot specify `--branch` unless `--git` or `--github` is specified.")
+      end
+    end
+
+    describe "with --ref but without --git or --github" do
+      it "throws error" do
+        bundle "add 'foo' --ref y", raise_on_error: false
+
+        expect(err).to include("You cannot specify `--ref` unless `--git` or `--github` is specified.")
+      end
     end
   end
 
@@ -260,7 +291,7 @@ RSpec.describe "bundle add" do
   end
 
   it "shows error message when gem cannot be found" do
-    bundle "config set force_ruby_platform true"
+    bundle_config "force_ruby_platform true"
     bundle "add 'werk_it'", raise_on_error: false
     expect(err).to match("Could not find gem 'werk_it' in")
 

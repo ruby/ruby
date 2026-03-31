@@ -43,7 +43,7 @@ class TestGemCommandManager < Gem::TestCase
     assert_kind_of Gem::Commands::SigninCommand, command
   end
 
-  def test_find_logout_alias_comamnd
+  def test_find_logout_alias_command
     command = @command_manager.find_command "logout"
 
     assert_kind_of Gem::Commands::SignoutCommand, command
@@ -78,7 +78,7 @@ class TestGemCommandManager < Gem::TestCase
 
     message = "Unknown command pish".dup
 
-    if defined?(DidYouMean::SPELL_CHECKERS) && defined?(DidYouMean::Correctable)
+    if e.respond_to?(:corrections)
       message << "\nDid you mean?  \"push\""
     end
 
@@ -285,47 +285,6 @@ class TestGemCommandManager < Gem::TestCase
     check_options = nil
     @command_manager.process_args %w[build foobar.rb]
     assert_equal "foobar.rb", check_options[:args].first
-  end
-
-  # HACK: move to query command test
-  def test_process_args_query
-    # capture all query options
-    check_options = nil
-    @command_manager["query"].when_invoked do |options|
-      check_options = options
-      true
-    end
-
-    # check defaults
-    Gem::Deprecate.skip_during do
-      @command_manager.process_args %w[query]
-    end
-    assert_nil(check_options[:name])
-    assert_equal :local, check_options[:domain]
-    assert_equal false, check_options[:details]
-
-    # check settings
-    check_options = nil
-    Gem::Deprecate.skip_during do
-      @command_manager.process_args %w[query --name foobar --local --details]
-    end
-    assert_equal(/foobar/i, check_options[:name])
-    assert_equal :local, check_options[:domain]
-    assert_equal true, check_options[:details]
-
-    # remote domain
-    check_options = nil
-    Gem::Deprecate.skip_during do
-      @command_manager.process_args %w[query --remote]
-    end
-    assert_equal :remote, check_options[:domain]
-
-    # both (local/remote) domains
-    check_options = nil
-    Gem::Deprecate.skip_during do
-      @command_manager.process_args %w[query --both]
-    end
-    assert_equal :both, check_options[:domain]
   end
 
   # HACK: move to update command test

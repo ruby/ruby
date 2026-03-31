@@ -1,40 +1,8 @@
 #ifndef _FBUFFER_H_
 #define _FBUFFER_H_
 
-#include "ruby.h"
-#include "ruby/encoding.h"
+#include "../json.h"
 #include "../vendor/jeaiii-ltoa.h"
-
-/* shims */
-/* This is the fallback definition from Ruby 3.4 */
-
-#ifndef RBIMPL_STDBOOL_H
-#if defined(__cplusplus)
-# if defined(HAVE_STDBOOL_H) && (__cplusplus >= 201103L)
-#  include <cstdbool>
-# endif
-#elif defined(HAVE_STDBOOL_H)
-# include <stdbool.h>
-#elif !defined(HAVE__BOOL)
-typedef unsigned char _Bool;
-# define bool  _Bool
-# define true  ((_Bool)+1)
-# define false ((_Bool)+0)
-# define __bool_true_false_are_defined
-#endif
-#endif
-
-#ifndef RB_UNLIKELY
-#define RB_UNLIKELY(expr) expr
-#endif
-
-#ifndef RB_LIKELY
-#define RB_LIKELY(expr) expr
-#endif
-
-#ifndef MAYBE_UNUSED
-# define MAYBE_UNUSED(x) x
-#endif
 
 enum fbuffer_type {
     FBUFFER_HEAP_ALLOCATED = 0,
@@ -43,9 +11,12 @@ enum fbuffer_type {
 
 typedef struct FBufferStruct {
     enum fbuffer_type type;
-    unsigned long initial_length;
-    unsigned long len;
-    unsigned long capa;
+    size_t initial_length;
+    size_t len;
+    size_t capa;
+#if JSON_DEBUG
+    size_t requested;
+#endif
     char *ptr;
     VALUE io;
 } FBuffer;
@@ -61,12 +32,12 @@ typedef struct FBufferStruct {
 
 static void fbuffer_free(FBuffer *fb);
 static void fbuffer_clear(FBuffer *fb);
-static void fbuffer_append(FBuffer *fb, const char *newstr, unsigned long len);
+static void fbuffer_append(FBuffer *fb, const char *newstr, size_t len);
 static void fbuffer_append_long(FBuffer *fb, long number);
 static inline void fbuffer_append_char(FBuffer *fb, char newchr);
 static VALUE fbuffer_finalize(FBuffer *fb);
 
-static void fbuffer_stack_init(FBuffer *fb, unsigned long initial_length, char *stack_buffer, long stack_buffer_size)
+static void fbuffer_stack_init(FBuffer *fb, size_t initial_length, char *stack_buffer, size_t stack_buffer_size)
 {
     fb->initial_length = (initial_length > 0) ? initial_length : FBUFFER_INITIAL_LENGTH_DEFAULT;
     if (stack_buffer) {
@@ -74,6 +45,20 @@ static void fbuffer_stack_init(FBuffer *fb, unsigned long initial_length, char *
         fb->ptr = stack_buffer;
         fb->capa = stack_buffer_size;
     }
+#if JSON_DEBUG
+    fb->requested = 0;
+#endif
+}
+
+static inline void fbuffer_consumed(FBuffer *fb, size_t consumed)
+{
+#if JSON_DEBUG
+    if (consumed > fb->requested) {
+        rb_bug("fbuffer: Out of bound write");
+    }
+    fb->requested = 0;
+#endif
+    fb->len += consumed;
 }
 
 static void fbuffer_free(FBuffer *fb)
@@ -94,7 +79,7 @@ static void fbuffer_flush(FBuffer *fb)
     fbuffer_clear(fb);
 }
 
-static void fbuffer_realloc(FBuffer *fb, unsigned long required)
+static void fbuffer_realloc(FBuffer *fb, size_t required)
 {
     if (required > fb->capa) {
         if (fb->type == FBUFFER_STACK_ALLOCATED) {
@@ -109,7 +94,7 @@ static void fbuffer_realloc(FBuffer *fb, unsigned long required)
     }
 }
 
-static void fbuffer_do_inc_capa(FBuffer *fb, unsigned long requested)
+static void fbuffer_do_inc_capa(FBuffer *fb, size_t requested)
 {
     if (RB_UNLIKELY(fb->io)) {
         if (fb->capa < FBUFFER_IO_BUFFER_SIZE) {
@@ -123,7 +108,7 @@ static void fbuffer_do_inc_capa(FBuffer *fb, unsigned long requested)
         }
     }
 
-    unsigned long required;
+    size_t required;
 
     if (RB_UNLIKELY(!fb->ptr)) {
         fb->ptr = ALLOC_N(char, fb->initial_length);
@@ -135,44 +120,77 @@ static void fbuffer_do_inc_capa(FBuffer *fb, unsigned long requested)
     fbuffer_realloc(fb, required);
 }
 
-static inline void fbuffer_inc_capa(FBuffer *fb, unsigned long requested)
+static inline void fbuffer_inc_capa(FBuffer *fb, size_t requested)
 {
+#if JSON_DEBUG
+    fb->requested = requested;
+#endif
+
     if (RB_UNLIKELY(requested > fb->capa - fb->len)) {
         fbuffer_do_inc_capa(fb, requested);
     }
 }
 
-static void fbuffer_append(FBuffer *fb, const char *newstr, unsigned long len)
+static inline void fbuffer_append_reserved(FBuffer *fb, const char *newstr, size_t len)
+{
+    MEMCPY(fb->ptr + fb->len, newstr, char, len);
+    fbuffer_consumed(fb, len);
+}
+
+static inline void fbuffer_append(FBuffer *fb, const char *newstr, size_t len)
 {
     if (len > 0) {
         fbuffer_inc_capa(fb, len);
-        MEMCPY(fb->ptr + fb->len, newstr, char, len);
-        fb->len += len;
+        fbuffer_append_reserved(fb, newstr, len);
     }
 }
 
 /* Appends a character into a buffer. The buffer needs to have sufficient capacity, via fbuffer_inc_capa(...). */
 static inline void fbuffer_append_reserved_char(FBuffer *fb, char chr)
 {
+#if JSON_DEBUG
+    if (fb->requested < 1) {
+        rb_bug("fbuffer: unreserved write");
+    }
+    fb->requested--;
+#endif
+
     fb->ptr[fb->len] = chr;
-    fb->len += 1;
+    fb->len++;
 }
 
 static void fbuffer_append_str(FBuffer *fb, VALUE str)
 {
-    const char *newstr = StringValuePtr(str);
-    unsigned long len = RSTRING_LEN(str);
+    const char *ptr;
+    size_t len;
+    RSTRING_GETMEM(str, ptr, len);
 
+    fbuffer_append(fb, ptr, len);
     RB_GC_GUARD(str);
+}
 
-    fbuffer_append(fb, newstr, len);
+static void fbuffer_append_str_repeat(FBuffer *fb, VALUE str, size_t repeat)
+{
+    const char *ptr;
+    size_t len;
+    RSTRING_GETMEM(str, ptr, len);
+
+    fbuffer_inc_capa(fb, repeat * len);
+    while (repeat) {
+#if JSON_DEBUG
+        fb->requested = len;
+#endif
+        fbuffer_append_reserved(fb, ptr, len);
+        repeat--;
+    }
+    RB_GC_GUARD(str);
 }
 
 static inline void fbuffer_append_char(FBuffer *fb, char newchr)
 {
     fbuffer_inc_capa(fb, 1);
     *(fb->ptr + fb->len) = newchr;
-    fb->len++;
+    fbuffer_consumed(fb, 1);
 }
 
 static inline char *fbuffer_cursor(FBuffer *fb)
@@ -182,7 +200,7 @@ static inline char *fbuffer_cursor(FBuffer *fb)
 
 static inline void fbuffer_advance_to(FBuffer *fb, char *end)
 {
-    fb->len = end - fb->ptr;
+    fbuffer_consumed(fb, (end - fb->ptr) - fb->len);
 }
 
 /*
@@ -223,14 +241,11 @@ static VALUE fbuffer_finalize(FBuffer *fb)
 {
     if (fb->io) {
         fbuffer_flush(fb);
-        fbuffer_free(fb);
         rb_io_flush(fb->io);
         return fb->io;
     } else {
-        VALUE result = rb_utf8_str_new(FBUFFER_PTR(fb), FBUFFER_LEN(fb));
-        fbuffer_free(fb);
-        return result;
+        return rb_utf8_str_new(FBUFFER_PTR(fb), FBUFFER_LEN(fb));
     }
 }
 
-#endif
+#endif // _FBUFFER_H_

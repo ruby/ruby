@@ -3,7 +3,7 @@
 #include "iseq.h"
 #include "builtin.h"
 
-#include "builtin_binary.inc"
+#include "builtin_binary.rbbin"
 
 #ifndef BUILTIN_BINARY_SIZE
 
@@ -32,8 +32,8 @@ builtin_lookup(const char *feature, size_t *psize)
     return bin;
 }
 
-void
-rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin_function *table)
+static void
+load_with_builtin_functions(const char *feature_name, const struct rb_builtin_function *table)
 {
     // search binary
     size_t size;
@@ -51,7 +51,13 @@ rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin
     vm->builtin_function_table = NULL;
 
     // exec
-    rb_iseq_eval(rb_iseq_check(iseq));
+    rb_iseq_eval(rb_iseq_check(iseq), rb_root_box()); // builtin functions are loaded in the root box
+}
+
+void
+rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin_function *table)
+{
+    load_with_builtin_functions(feature_name, table);
 }
 
 #endif
@@ -71,5 +77,11 @@ Init_builtin(void)
 void
 Init_builtin_features(void)
 {
-    rb_load_with_builtin_functions("gem_prelude", NULL);
+
+#ifdef BUILTIN_BINARY_SIZE
+
+    load_with_builtin_functions("gem_prelude", NULL);
+
+#endif
+
 }

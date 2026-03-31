@@ -69,15 +69,33 @@ class TestData < Test::Unit::TestCase
     assert_equal(1, test_kw.foo)
     assert_equal(2, test_kw.bar)
     assert_equal(test_kw, klass.new(foo: 1, bar: 2))
+    assert_equal(test_kw, klass.new('foo' => 1, 'bar' => 2))
     assert_equal(test_kw, test)
 
     # Wrong protocol
     assert_raise(ArgumentError) { klass.new(1) }
     assert_raise(ArgumentError) { klass.new(1, 2, 3) }
-    assert_raise(ArgumentError) { klass.new(foo: 1) }
-    assert_raise(ArgumentError) { klass.new(foo: 1, bar: 2, baz: 3) }
-    # Could be converted to foo: 1, bar: 2, but too smart is confusing
-    assert_raise(ArgumentError) { klass.new(1, bar: 2) }
+    assert_raise(TypeError) do
+      klass.new(0 => 1, 1 => 2)
+    end
+    assert_raise(TypeError) do
+      klass.new(foo: 0, bar: 2, 0 => 1)
+    end
+    assert_raise_with_message(ArgumentError, "missing keyword: :bar") do
+      klass.new(foo: 1)
+    end
+    assert_raise_with_message(ArgumentError, "missing keyword: :bar") do
+      klass.new('foo' => 1)
+    end
+    assert_raise_with_message(ArgumentError, "missing keyword: :bar") do
+      klass.new(foo: 1, 'foo' => 1)
+    end
+    assert_raise_with_message(ArgumentError, "missing keywords: :foo, :bar") do
+      klass.new(x: 1, y: 2)
+    end
+    assert_raise_with_message(ArgumentError, "unknown keyword: :baz") do
+      klass.new(foo: 1, bar: 2, baz: 3)
+    end
   end
 
   def test_initialize_redefine
@@ -259,9 +277,10 @@ class TestData < Test::Unit::TestCase
     assert_equal(klass.new, test)
     assert_not_equal(Data.define.new, test)
 
-    assert_equal('#<data >', test.inspect)
+    assert_equal('#<data>', test.inspect)
     assert_equal([], test.members)
     assert_equal({}, test.to_h)
+    assert_predicate(test, :frozen?)
   end
 
   def test_dup
@@ -279,5 +298,11 @@ class TestData < Test::Unit::TestCase
     assert_equal(test, loaded)
     assert_not_same(test, loaded)
     assert_predicate(loaded, :frozen?)
+  end
+
+  def test_frozen_subclass
+    test = Class.new(Data.define(:a)).freeze.new(a: 0)
+    assert_kind_of(Data, test)
+    assert_equal([:a], test.members)
   end
 end

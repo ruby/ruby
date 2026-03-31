@@ -128,6 +128,7 @@ bug_reporter.o: $(hdrdir)/ruby/internal/intern/re.h
 bug_reporter.o: $(hdrdir)/ruby/internal/intern/ruby.h
 bug_reporter.o: $(hdrdir)/ruby/internal/intern/select.h
 bug_reporter.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+bug_reporter.o: $(hdrdir)/ruby/internal/intern/set.h
 bug_reporter.o: $(hdrdir)/ruby/internal/intern/signal.h
 bug_reporter.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 bug_reporter.o: $(hdrdir)/ruby/internal/intern/string.h

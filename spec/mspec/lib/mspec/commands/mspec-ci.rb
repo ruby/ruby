@@ -18,6 +18,7 @@ class MSpecCI < MSpecScript
     options.chdir
     options.prefix
     options.configure { |f| load f }
+    options.repeat
     options.pretend
     options.interrupt
     options.timeout

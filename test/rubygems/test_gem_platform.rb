@@ -11,15 +11,6 @@ class TestGemPlatform < Gem::TestCase
     assert_equal Gem::Platform.new(%w[x86 darwin 8]), Gem::Platform.local
   end
 
-  def test_self_match
-    Gem::Deprecate.skip_during do
-      assert Gem::Platform.match(nil), "nil == ruby"
-      assert Gem::Platform.match(Gem::Platform.local), "exact match"
-      assert Gem::Platform.match(Gem::Platform.local.to_s), "=~ match"
-      assert Gem::Platform.match(Gem::Platform::RUBY), "ruby"
-    end
-  end
-
   def test_self_match_gem?
     assert Gem::Platform.match_gem?(nil, "json"), "nil == ruby"
     assert Gem::Platform.match_gem?(Gem::Platform.local, "json"), "exact match"
@@ -148,12 +139,29 @@ class TestGemPlatform < Gem::TestCase
       "wasm32-wasi" => ["wasm32", "wasi", nil],
       "wasm32-wasip1" => ["wasm32", "wasi", nil],
       "wasm32-wasip2" => ["wasm32", "wasi", nil],
+
+      "darwin-java-java" => ["darwin", "java", nil],
+      "linux-linux-linux" => ["linux", "linux", "linux"],
+      "linux-linux-linux1.0" => ["linux", "linux", "linux1"],
+      "x86x86-1x86x86x86x861linuxx86x86" => ["x86x86", "linux", "x86x86"],
+      "freebsd0" => [nil, "freebsd", "0"],
+      "darwin0" => [nil, "darwin", "0"],
+      "darwin0---" => [nil, "darwin", "0"],
+      "x86-linux-x8611.0l" => ["x86", "linux", "x8611"],
+      "0-x86linuxx86---" => ["0", "linux", "x86"],
+      "x86_64-macruby-x86" => ["x86_64", "macruby", nil],
+      "x86_64-dotnetx86" => ["x86_64", "dotnet", nil],
+      "x86_64-dalvik0" => ["x86_64", "dalvik", "0"],
+      "x86_64-dotnet1." => ["x86_64", "dotnet", "1"],
+
+      "--" => [nil, "unknown", nil],
     }
 
     test_cases.each do |arch, expected|
       platform = Gem::Platform.new arch
       assert_equal expected, platform.to_a, arch.inspect
-      assert_equal expected, Gem::Platform.new(platform.to_s).to_a, arch.inspect
+      platform2 = Gem::Platform.new platform.to_s
+      assert_equal expected, platform2.to_a, "#{arch.inspect} => #{platform2.inspect}"
     end
   end
 
@@ -246,19 +254,19 @@ class TestGemPlatform < Gem::TestCase
     x86_darwin8 = Gem::Platform.new "i686-darwin8.0"
 
     util_set_arch "powerpc-darwin8"
-    assert((ppc_darwin8 === Gem::Platform.local), "powerpc =~ universal")
-    assert((uni_darwin8 === Gem::Platform.local), "powerpc =~ universal")
-    refute((x86_darwin8 === Gem::Platform.local), "powerpc =~ universal")
+    assert(ppc_darwin8 === Gem::Platform.local, "powerpc =~ universal")
+    assert(uni_darwin8 === Gem::Platform.local, "powerpc =~ universal")
+    refute(x86_darwin8 === Gem::Platform.local, "powerpc =~ universal")
 
     util_set_arch "i686-darwin8"
-    refute((ppc_darwin8 === Gem::Platform.local), "powerpc =~ universal")
-    assert((uni_darwin8 === Gem::Platform.local), "x86 =~ universal")
-    assert((x86_darwin8 === Gem::Platform.local), "powerpc =~ universal")
+    refute(ppc_darwin8 === Gem::Platform.local, "powerpc =~ universal")
+    assert(uni_darwin8 === Gem::Platform.local, "x86 =~ universal")
+    assert(x86_darwin8 === Gem::Platform.local, "powerpc =~ universal")
 
     util_set_arch "universal-darwin8"
-    assert((ppc_darwin8 === Gem::Platform.local), "universal =~ ppc")
-    assert((uni_darwin8 === Gem::Platform.local), "universal =~ universal")
-    assert((x86_darwin8 === Gem::Platform.local), "universal =~ x86")
+    assert(ppc_darwin8 === Gem::Platform.local, "universal =~ ppc")
+    assert(uni_darwin8 === Gem::Platform.local, "universal =~ universal")
+    assert(x86_darwin8 === Gem::Platform.local, "universal =~ x86")
   end
 
   def test_nil_cpu_arch_is_treated_as_universal
@@ -266,18 +274,18 @@ class TestGemPlatform < Gem::TestCase
     with_uni_arch = Gem::Platform.new ["universal", "mingw32"]
     with_x86_arch = Gem::Platform.new ["x86", "mingw32"]
 
-    assert((with_nil_arch === with_uni_arch), "nil =~ universal")
-    assert((with_uni_arch === with_nil_arch), "universal =~ nil")
-    assert((with_nil_arch === with_x86_arch), "nil =~ x86")
-    assert((with_x86_arch === with_nil_arch), "x86 =~ nil")
+    assert(with_nil_arch === with_uni_arch, "nil =~ universal")
+    assert(with_uni_arch === with_nil_arch, "universal =~ nil")
+    assert(with_nil_arch === with_x86_arch, "nil =~ x86")
+    assert(with_x86_arch === with_nil_arch, "x86 =~ nil")
   end
 
   def test_nil_version_is_treated_as_any_version
     x86_darwin_8 = Gem::Platform.new "i686-darwin8.0"
     x86_darwin_nil = Gem::Platform.new "i686-darwin"
 
-    assert((x86_darwin_8 === x86_darwin_nil), "8.0 =~ nil")
-    assert((x86_darwin_nil === x86_darwin_8), "nil =~ 8.0")
+    assert(x86_darwin_8 === x86_darwin_nil, "8.0 =~ nil")
+    assert(x86_darwin_nil === x86_darwin_8, "nil =~ 8.0")
   end
 
   def test_nil_version_is_stricter_for_linux_os
@@ -371,40 +379,33 @@ class TestGemPlatform < Gem::TestCase
     arm64 = Gem::Platform.new "arm64-linux"
 
     util_set_arch "armv5-linux"
-    assert((arm   === Gem::Platform.local), "arm   === armv5")
-    assert((armv5 === Gem::Platform.local), "armv5 === armv5")
-    refute((armv7 === Gem::Platform.local), "armv7 === armv5")
-    refute((arm64 === Gem::Platform.local), "arm64 === armv5")
-    refute((Gem::Platform.local === arm), "armv5 === arm")
+    assert(arm   === Gem::Platform.local, "arm   === armv5")
+    assert(armv5 === Gem::Platform.local, "armv5 === armv5")
+    refute(armv7 === Gem::Platform.local, "armv7 === armv5")
+    refute(arm64 === Gem::Platform.local, "arm64 === armv5")
+    refute(Gem::Platform.local === arm, "armv5 === arm")
 
     util_set_arch "armv7-linux"
-    assert((arm   === Gem::Platform.local), "arm   === armv7")
-    refute((armv5 === Gem::Platform.local), "armv5 === armv7")
-    assert((armv7 === Gem::Platform.local), "armv7 === armv7")
-    refute((arm64 === Gem::Platform.local), "arm64 === armv7")
-    refute((Gem::Platform.local === arm), "armv7 === arm")
+    assert(arm   === Gem::Platform.local, "arm   === armv7")
+    refute(armv5 === Gem::Platform.local, "armv5 === armv7")
+    assert(armv7 === Gem::Platform.local, "armv7 === armv7")
+    refute(arm64 === Gem::Platform.local, "arm64 === armv7")
+    refute(Gem::Platform.local === arm, "armv7 === arm")
 
     util_set_arch "arm64-linux"
-    refute((arm   === Gem::Platform.local), "arm   === arm64")
-    refute((armv5 === Gem::Platform.local), "armv5 === arm64")
-    refute((armv7 === Gem::Platform.local), "armv7 === arm64")
-    assert((arm64 === Gem::Platform.local), "arm64 === arm64")
+    refute(arm   === Gem::Platform.local, "arm   === arm64")
+    refute(armv5 === Gem::Platform.local, "armv5 === arm64")
+    refute(armv7 === Gem::Platform.local, "armv7 === arm64")
+    assert(arm64 === Gem::Platform.local, "arm64 === arm64")
   end
 
   def test_equals3_universal_mingw
     uni_mingw  = Gem::Platform.new "universal-mingw"
-    mingw32    = Gem::Platform.new "x64-mingw32"
     mingw_ucrt = Gem::Platform.new "x64-mingw-ucrt"
 
-    util_set_arch "x64-mingw32"
-    assert((uni_mingw === Gem::Platform.local), "uni_mingw === mingw32")
-    assert((mingw32 === Gem::Platform.local), "mingw32 === mingw32")
-    refute((mingw_ucrt === Gem::Platform.local), "mingw32 === mingw_ucrt")
-
     util_set_arch "x64-mingw-ucrt"
-    assert((uni_mingw === Gem::Platform.local), "uni_mingw === mingw32")
-    assert((mingw_ucrt === Gem::Platform.local), "mingw_ucrt === mingw_ucrt")
-    refute((mingw32 === Gem::Platform.local), "mingw32 === mingw_ucrt")
+    assert(uni_mingw === Gem::Platform.local, "uni_mingw === mingw_ucrt")
+    assert(mingw_ucrt === Gem::Platform.local, "mingw_ucrt === mingw_ucrt")
   end
 
   def test_equals3_version
@@ -415,11 +416,11 @@ class TestGemPlatform < Gem::TestCase
     x86_darwin8 = Gem::Platform.new ["x86", "darwin", "8"]
     x86_darwin9 = Gem::Platform.new ["x86", "darwin", "9"]
 
-    assert((x86_darwin  === Gem::Platform.local), "x86_darwin === x86_darwin8")
-    assert((x86_darwin8 === Gem::Platform.local), "x86_darwin8 === x86_darwin8")
+    assert(x86_darwin  === Gem::Platform.local, "x86_darwin === x86_darwin8")
+    assert(x86_darwin8 === Gem::Platform.local, "x86_darwin8 === x86_darwin8")
 
-    refute((x86_darwin7 === Gem::Platform.local), "x86_darwin7 === x86_darwin8")
-    refute((x86_darwin9 === Gem::Platform.local), "x86_darwin9 === x86_darwin8")
+    refute(x86_darwin7 === Gem::Platform.local, "x86_darwin7 === x86_darwin8")
+    refute(x86_darwin9 === Gem::Platform.local, "x86_darwin9 === x86_darwin8")
   end
 
   def test_equals_tilde
@@ -492,13 +493,169 @@ class TestGemPlatform < Gem::TestCase
     assert_equal 1, result.scan(/@version=/).size
   end
 
-  def test_gem_platform_match_with_string_argument
-    util_set_arch "x86_64-linux-musl"
+  def test_constants
+    assert_equal [nil, "java", nil], Gem::Platform::JAVA.to_a
+    assert_equal ["x86", "mswin32", nil], Gem::Platform::MSWIN.to_a
+    assert_equal [nil, "mswin64", nil], Gem::Platform::MSWIN64.to_a
+    assert_equal ["x86", "mingw32", nil], Gem::Platform::MINGW.to_a
+    assert_equal ["x64", "mingw", "ucrt"], Gem::Platform::X64_MINGW.to_a
+    assert_equal ["universal", "mingw", nil], Gem::Platform::UNIVERSAL_MINGW.to_a
+    assert_equal [["x86", "mswin32", nil], [nil, "mswin64", nil], ["universal", "mingw", nil]], Gem::Platform::WINDOWS.map(&:to_a)
+    assert_equal ["x86_64", "linux", nil], Gem::Platform::X64_LINUX.to_a
+    assert_equal ["x86_64", "linux", "musl"], Gem::Platform::X64_LINUX_MUSL.to_a
+  end
 
-    Gem::Deprecate.skip_during do
-      assert(Gem::Platform.match(Gem::Platform.new("x86_64-linux")), "should match Gem::Platform")
-      assert(Gem::Platform.match("x86_64-linux"), "should match String platform")
+  def test_generic
+    # converts non-windows platforms into ruby
+    assert_equal Gem::Platform::RUBY, Gem::Platform.generic(Gem::Platform.new("x86-darwin-10"))
+    assert_equal Gem::Platform::RUBY, Gem::Platform.generic(Gem::Platform::RUBY)
+
+    # converts java platform variants into java
+    assert_equal Gem::Platform::JAVA, Gem::Platform.generic(Gem::Platform.new("java"))
+    assert_equal Gem::Platform::JAVA, Gem::Platform.generic(Gem::Platform.new("universal-java-17"))
+
+    # converts mswin platform variants into x86-mswin32
+    assert_equal Gem::Platform::MSWIN, Gem::Platform.generic(Gem::Platform.new("mswin32"))
+    assert_equal Gem::Platform::MSWIN, Gem::Platform.generic(Gem::Platform.new("i386-mswin32"))
+    assert_equal Gem::Platform::MSWIN, Gem::Platform.generic(Gem::Platform.new("x86-mswin32"))
+
+    # converts 32-bit mingw platform variants into universal-mingw
+    assert_equal Gem::Platform::UNIVERSAL_MINGW, Gem::Platform.generic(Gem::Platform.new("i386-mingw32"))
+    assert_equal Gem::Platform::UNIVERSAL_MINGW, Gem::Platform.generic(Gem::Platform.new("x86-mingw32"))
+
+    # converts 64-bit mingw platform variants into universal-mingw
+    assert_equal Gem::Platform::UNIVERSAL_MINGW, Gem::Platform.generic(Gem::Platform.new("x64-mingw32"))
+
+    # converts x64 mingw UCRT platform variants into universal-mingw
+    assert_equal Gem::Platform::UNIVERSAL_MINGW, Gem::Platform.generic(Gem::Platform.new("x64-mingw-ucrt"))
+
+    # converts aarch64 mingw UCRT platform variants into universal-mingw
+    assert_equal Gem::Platform::UNIVERSAL_MINGW, Gem::Platform.generic(Gem::Platform.new("aarch64-mingw-ucrt"))
+
+    assert_equal Gem::Platform::RUBY, Gem::Platform.generic(Gem::Platform.new("unknown"))
+    assert_equal Gem::Platform::RUBY, Gem::Platform.generic(nil)
+    assert_equal Gem::Platform::MSWIN64, Gem::Platform.generic(Gem::Platform.new("mswin64"))
+  end
+
+  def test_platform_specificity_match
+    [
+      ["ruby", "ruby", -1, -1],
+      ["x86_64-linux-musl", "x86_64-linux-musl", -1, -1],
+      ["x86_64-linux", "x86_64-linux-musl", 100, 200],
+      ["universal-darwin", "x86-darwin", 10, 20],
+      ["universal-darwin-19", "x86-darwin", 210, 120],
+      ["universal-darwin-19", "universal-darwin-20", 200, 200],
+      ["arm-darwin-19", "arm64-darwin-19", 0, 20],
+    ].each do |spec_platform, user_platform, s1, s2|
+      spec_platform = Gem::Platform.new(spec_platform)
+      user_platform = Gem::Platform.new(user_platform)
+      assert_equal s1, Gem::Platform.platform_specificity_match(spec_platform, user_platform),
+        "Gem::Platform.platform_specificity_match(#{spec_platform.to_s.inspect}, #{user_platform.to_s.inspect})"
+      assert_equal s2, Gem::Platform.platform_specificity_match(user_platform, spec_platform),
+        "Gem::Platform.platform_specificity_match(#{user_platform.to_s.inspect}, #{spec_platform.to_s.inspect})"
     end
+  end
+
+  def test_sort_and_filter_best_platform_match
+    a_1 = util_spec "a", "1"
+    a_1_java = util_spec "a", "1" do |s|
+      s.platform = Gem::Platform::JAVA
+    end
+    a_1_universal_darwin = util_spec "a", "1" do |s|
+      s.platform = Gem::Platform.new("universal-darwin")
+    end
+    a_1_universal_darwin_19 = util_spec "a", "1" do |s|
+      s.platform = Gem::Platform.new("universal-darwin-19")
+    end
+    a_1_universal_darwin_20 = util_spec "a", "1" do |s|
+      s.platform = Gem::Platform.new("universal-darwin-20")
+    end
+    a_1_arm_darwin_19 = util_spec "a", "1" do |s|
+      s.platform = Gem::Platform.new("arm64-darwin-19")
+    end
+    a_1_x86_darwin = util_spec "a", "1" do |s|
+      s.platform = Gem::Platform.new("x86-darwin")
+    end
+    specs = [a_1, a_1_java, a_1_universal_darwin, a_1_universal_darwin_19, a_1_universal_darwin_20, a_1_arm_darwin_19, a_1_x86_darwin]
+    assert_equal [a_1], Gem::Platform.sort_and_filter_best_platform_match(specs, "ruby")
+    assert_equal [a_1_java], Gem::Platform.sort_and_filter_best_platform_match(specs, Gem::Platform::JAVA)
+    assert_equal [a_1_arm_darwin_19], Gem::Platform.sort_and_filter_best_platform_match(specs, Gem::Platform.new("arm64-darwin-19"))
+    assert_equal [a_1_universal_darwin_20], Gem::Platform.sort_and_filter_best_platform_match(specs, Gem::Platform.new("arm64-darwin-20"))
+    assert_equal [a_1_universal_darwin_19], Gem::Platform.sort_and_filter_best_platform_match(specs, Gem::Platform.new("x86-darwin-19"))
+    assert_equal [a_1_universal_darwin_20], Gem::Platform.sort_and_filter_best_platform_match(specs, Gem::Platform.new("x86-darwin-20"))
+    assert_equal [a_1_x86_darwin], Gem::Platform.sort_and_filter_best_platform_match(specs, Gem::Platform.new("x86-darwin-21"))
+  end
+
+  def test_sort_best_platform_match
+    a_1 = util_spec "a", "1"
+    a_1_java = util_spec "a", "1" do |s|
+      s.platform = Gem::Platform::JAVA
+    end
+    a_1_universal_darwin = util_spec "a", "1" do |s|
+      s.platform = Gem::Platform.new("universal-darwin")
+    end
+    a_1_universal_darwin_19 = util_spec "a", "1" do |s|
+      s.platform = Gem::Platform.new("universal-darwin-19")
+    end
+    a_1_universal_darwin_20 = util_spec "a", "1" do |s|
+      s.platform = Gem::Platform.new("universal-darwin-20")
+    end
+    a_1_arm_darwin_19 = util_spec "a", "1" do |s|
+      s.platform = Gem::Platform.new("arm64-darwin-19")
+    end
+    a_1_x86_darwin = util_spec "a", "1" do |s|
+      s.platform = Gem::Platform.new("x86-darwin")
+    end
+    specs = [a_1, a_1_java, a_1_universal_darwin, a_1_universal_darwin_19, a_1_universal_darwin_20, a_1_arm_darwin_19, a_1_x86_darwin]
+    assert_equal ["ruby",
+                  "java",
+                  "universal-darwin",
+                  "universal-darwin-19",
+                  "universal-darwin-20",
+                  "arm64-darwin-19",
+                  "x86-darwin"], Gem::Platform.sort_best_platform_match(specs, "ruby").map {|s| s.platform.to_s }
+    assert_equal ["java",
+                  "universal-darwin",
+                  "x86-darwin",
+                  "universal-darwin-19",
+                  "universal-darwin-20",
+                  "arm64-darwin-19",
+                  "ruby"], Gem::Platform.sort_best_platform_match(specs, Gem::Platform::JAVA).map {|s| s.platform.to_s }
+    assert_equal ["arm64-darwin-19",
+                  "universal-darwin-19",
+                  "universal-darwin",
+                  "java",
+                  "x86-darwin",
+                  "universal-darwin-20",
+                  "ruby"], Gem::Platform.sort_best_platform_match(specs, Gem::Platform.new("arm64-darwin-19")).map {|s| s.platform.to_s }
+    assert_equal ["universal-darwin-20",
+                  "universal-darwin",
+                  "java",
+                  "x86-darwin",
+                  "arm64-darwin-19",
+                  "universal-darwin-19",
+                  "ruby"], Gem::Platform.sort_best_platform_match(specs, Gem::Platform.new("arm64-darwin-20")).map {|s| s.platform.to_s }
+    assert_equal ["universal-darwin-19",
+                  "arm64-darwin-19",
+                  "x86-darwin",
+                  "universal-darwin",
+                  "java",
+                  "universal-darwin-20",
+                  "ruby"], Gem::Platform.sort_best_platform_match(specs, Gem::Platform.new("x86-darwin-19")).map {|s| s.platform.to_s }
+    assert_equal ["universal-darwin-20",
+                  "x86-darwin",
+                  "universal-darwin",
+                  "java",
+                  "universal-darwin-19",
+                  "arm64-darwin-19",
+                  "ruby"], Gem::Platform.sort_best_platform_match(specs, Gem::Platform.new("x86-darwin-20")).map {|s| s.platform.to_s }
+    assert_equal ["x86-darwin",
+                  "universal-darwin",
+                  "java",
+                  "universal-darwin-19",
+                  "universal-darwin-20",
+                  "arm64-darwin-19",
+                  "ruby"], Gem::Platform.sort_best_platform_match(specs, Gem::Platform.new("x86-darwin-21")).map {|s| s.platform.to_s }
   end
 
   def assert_local_match(name)
@@ -507,5 +664,39 @@ class TestGemPlatform < Gem::TestCase
 
   def refute_local_match(name)
     refute_match Gem::Platform.local, name
+  end
+
+  def test_deconstruct
+    platform = Gem::Platform.new("x86_64-linux")
+    assert_equal ["x86_64", "linux", nil], platform.deconstruct
+  end
+
+  def test_deconstruct_keys
+    platform = Gem::Platform.new("x86_64-darwin-20")
+    assert_equal({ cpu: "x86_64", os: "darwin", version: "20" }, platform.deconstruct_keys(nil))
+  end
+
+  def test_pattern_matching_array
+    platform = Gem::Platform.new("arm64-darwin-21")
+    result =
+      case platform
+      in ["arm64", "darwin", version]
+        version
+      else
+        "no match"
+      end
+    assert_equal "21", result
+  end
+
+  def test_pattern_matching_hash
+    platform = Gem::Platform.new("x86_64-linux")
+    result =
+      case platform
+      in cpu: "x86_64", os: "linux"
+        "matched"
+      else
+        "no match"
+      end
+    assert_equal "matched", result
   end
 end

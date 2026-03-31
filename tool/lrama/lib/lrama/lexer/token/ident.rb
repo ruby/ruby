@@ -3,8 +3,8 @@
 
 module Lrama
   class Lexer
-    class Token
-      class Ident < Token
+    module Token
+      class Ident < Base
       end
     end
   end

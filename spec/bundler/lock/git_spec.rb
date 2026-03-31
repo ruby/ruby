@@ -60,7 +60,7 @@ RSpec.describe "bundle lock with git gems" do
         foo!
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     bundle "install", raise_on_error: false
@@ -123,7 +123,7 @@ RSpec.describe "bundle lock with git gems" do
         foo!
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     bundle "install"
@@ -161,7 +161,7 @@ RSpec.describe "bundle lock with git gems" do
         foo!
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     bundle "install"
@@ -206,7 +206,7 @@ RSpec.describe "bundle lock with git gems" do
         activesupport
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     gemfile <<~G
@@ -219,5 +219,40 @@ RSpec.describe "bundle lock with git gems" do
     bundle "lock"
 
     expect(lockfile).to include("securerandom (0.3.2)")
+  end
+
+  it "does not lock versions that don't exist in the repository when changing a GIT direct dep to a GEM direct dep" do
+    build_repo4 do
+      build_gem "ruby-lsp", "0.16.1"
+    end
+
+    path = lib_path("ruby-lsp")
+    revision = build_git("ruby-lsp", "0.16.2", path: path).ref_for("HEAD")
+
+    lockfile <<~L
+      GIT
+        remote: #{path}
+        revision: #{revision}
+        specs:
+          ruby-lsp (0.16.2)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        ruby-lsp!
+
+      BUNDLED WITH
+        #{Bundler::VERSION}
+    L
+
+    gemfile <<~G
+      source "https://gem.repo4"
+      gem "ruby-lsp"
+    G
+
+    bundle "lock"
+
+    expect(lockfile).to include("ruby-lsp (0.16.1)")
   end
 end

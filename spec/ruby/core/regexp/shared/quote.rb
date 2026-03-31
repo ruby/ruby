@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 
 describe :regexp_quote, shared: true do
   it "escapes any characters with special meaning in a regular expression" do

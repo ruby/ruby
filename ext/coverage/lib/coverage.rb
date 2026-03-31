@@ -1,6 +1,11 @@
 require "coverage.so"
 
 module Coverage
+  # call-seq:
+  #   line_stub(file) -> array
+  #
+  # A simple helper function that creates the "stub" of line coverage
+  # from a given source code.
   def self.line_stub(file)
     lines = File.foreach(file).map { nil }
     iseqs = [RubyVM::InstructionSequence.compile_file(file)]

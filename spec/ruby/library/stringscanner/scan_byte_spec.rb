@@ -43,7 +43,6 @@ version_is StringScanner::Version, "3.1.1" do # ruby_version_is "3.4"
 
     describe "#[] successive call with a capture group name" do
       # https://github.com/ruby/strscan/issues/139
-      ruby_version_is ""..."3.5" do # Don't run on 3.5.0dev that already contains not released fixes
       version_is StringScanner::Version, "3.1.1"..."3.1.3" do # ruby_version_is "3.4.0"..."3.4.3"
         it "returns nil" do
           s = StringScanner.new("abc")
@@ -51,7 +50,6 @@ version_is StringScanner::Version, "3.1.1" do # ruby_version_is "3.4"
           s.should.matched?
           s[:a].should be_nil
         end
-      end
       end
       version_is StringScanner::Version, "3.1.3" do # ruby_version_is "3.4.3"
         it "raises IndexError" do
@@ -69,7 +67,6 @@ version_is StringScanner::Version, "3.1.1" do # ruby_version_is "3.4"
       end
 
       # https://github.com/ruby/strscan/issues/135
-      ruby_version_is ""..."3.5" do # Don't run on 3.5.0dev that already contains not released fixes
       version_is StringScanner::Version, "3.1.1"..."3.1.3" do # ruby_version_is "3.4.0"..."3.4.3"
         it "ignores the previous matching with Regexp" do
           s = StringScanner.new("abc")
@@ -82,7 +79,6 @@ version_is StringScanner::Version, "3.1.1" do # ruby_version_is "3.4"
           s.should.matched?
           s[:a].should == nil
         end
-      end
       end
       version_is StringScanner::Version, "3.1.3" do # ruby_version_is "3.4.0"..."3.4.3"
         it "ignores the previous matching with Regexp" do

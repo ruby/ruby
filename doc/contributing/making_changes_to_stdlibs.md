@@ -4,7 +4,7 @@ Everything in the [lib](https://github.com/ruby/ruby/tree/master/lib) directory 
 If you'd like to make contributions to standard libraries, do so in the standalone repositories, and the
 changes will be automatically mirrored into the Ruby repository.
 
-For example, CSV lives in [a separate repository](https://github.com/ruby/csv) and is mirrored into [Ruby](https://github.com/ruby/ruby/tree/master/lib/csv).
+For example, ERB lives in [a separate repository](https://github.com/ruby/erb) and is mirrored into [Ruby](https://github.com/ruby/ruby/tree/master/lib/erb).
 
 ## Maintainers
 
@@ -45,5 +45,5 @@ bundle exec rake test TEST="test/test_foo.rb"
 To run a single test case:
 
 ```shell
-bundle exec rake test TEST="test/test_foo.rb" TESTOPS="--name=/test_mytest/"
+bundle exec rake test TEST="test/test_foo.rb" TESTOPTS="--name=/test_mytest/"
 ```

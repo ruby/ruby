@@ -131,6 +131,7 @@ rmd160.o: $(hdrdir)/ruby/internal/intern/re.h
 rmd160.o: $(hdrdir)/ruby/internal/intern/ruby.h
 rmd160.o: $(hdrdir)/ruby/internal/intern/select.h
 rmd160.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+rmd160.o: $(hdrdir)/ruby/internal/intern/set.h
 rmd160.o: $(hdrdir)/ruby/internal/intern/signal.h
 rmd160.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 rmd160.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -293,6 +294,7 @@ rmd160init.o: $(hdrdir)/ruby/internal/intern/re.h
 rmd160init.o: $(hdrdir)/ruby/internal/intern/ruby.h
 rmd160init.o: $(hdrdir)/ruby/internal/intern/select.h
 rmd160init.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+rmd160init.o: $(hdrdir)/ruby/internal/intern/set.h
 rmd160init.o: $(hdrdir)/ruby/internal/intern/signal.h
 rmd160init.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 rmd160init.o: $(hdrdir)/ruby/internal/intern/string.h

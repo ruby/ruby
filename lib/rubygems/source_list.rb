@@ -60,6 +60,42 @@ class Gem::SourceList
   end
 
   ##
+  # Prepends +obj+ to the beginning of the source list which may be a Gem::Source, Gem::URI or URI
+  # Moves +obj+ to the beginning of the list if already present.
+  # String.
+
+  def prepend(obj)
+    src = case obj
+          when Gem::Source
+            obj
+          else
+            Gem::Source.new(obj)
+    end
+
+    @sources.delete(src) if @sources.include?(src)
+    @sources.unshift(src)
+    src
+  end
+
+  ##
+  # Appends +obj+ to the end of the source list, moving it if already present.
+  # +obj+ may be a Gem::Source, Gem::URI or URI String.
+  # Moves +obj+ to the end of the list if already present.
+
+  def append(obj)
+    src = case obj
+          when Gem::Source
+            obj
+          else
+            Gem::Source.new(obj)
+    end
+
+    @sources.delete(src) if @sources.include?(src)
+    @sources << src
+    src
+  end
+
+  ##
   # Replaces this SourceList with the sources in +other+  See #<< for
   # acceptable items in +other+.
 

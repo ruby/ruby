@@ -1,0 +1,15 @@
+= Command Injection
+
+Some Ruby core methods accept string data
+that includes text to be executed as a system command.
+
+They should not be called with unknown or unsanitized commands.
+
+These methods include:
+
+- Kernel.exec
+- Kernel.spawn
+- Kernel.system
+- {\`command` (backtick method)}[rdoc-ref:Kernel#`]
+  (also called by the expression <tt>%x[command]</tt>).
+- IO.popen (when called with other than <tt>"-"</tt>).

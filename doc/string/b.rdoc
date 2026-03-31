@@ -12,3 +12,5 @@ the underlying bytes are not modified:
   t = s.b      # => "\xE4\x82\x95"
   t.encoding   # => #<Encoding:ASCII-8BIT>
   t.bytes      # => [228, 130, 149]
+
+Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].

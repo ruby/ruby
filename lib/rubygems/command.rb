@@ -117,7 +117,7 @@ class Gem::Command
   # Unhandled arguments (gem names, files, etc.) are left in
   # <tt>options[:args]</tt>.
 
-  def initialize(command, summary=nil, defaults={})
+  def initialize(command, summary = nil, defaults = {})
     @command = command
     @summary = summary
     @program_name = "gem #{command}"

@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 require_relative '../../../spec_helper'
 require_relative '../fixtures/classes'
 require_relative 'shared/basic'
@@ -24,20 +24,10 @@ describe "Array#pack with format 'w'" do
     [obj].pack("w").should == "\x05"
   end
 
-  ruby_version_is ""..."3.3" do
-    it "ignores NULL bytes between directives" do
-      suppress_warning do
-        [1, 2, 3].pack("w\x00w").should == "\x01\x02"
-      end
-    end
-  end
-
-  ruby_version_is "3.3" do
-    it "raise ArgumentError for NULL bytes between directives" do
-      -> {
-        [1, 2, 3].pack("w\x00w")
-      }.should raise_error(ArgumentError, /unknown pack directive/)
-    end
+  it "raise ArgumentError for NULL bytes between directives" do
+    -> {
+      [1, 2, 3].pack("w\x00w")
+    }.should raise_error(ArgumentError, /unknown pack directive/)
   end
 
   it "ignores spaces between directives" do

@@ -151,7 +151,7 @@ class TestThreadInstrumentation < Test::Unit::TestCase
       end
 
       full_timeline = record do
-        ractor.take
+        ractor.value
       end
 
       timeline = timeline_for(Thread.current, full_timeline)
@@ -172,7 +172,7 @@ class TestThreadInstrumentation < Test::Unit::TestCase
         thread = Ractor.new{
           sleep 0.1
           Thread.current
-        }.take
+        }.value
         sleep 0.1
       end
 

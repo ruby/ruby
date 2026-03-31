@@ -5,10 +5,8 @@ describe "Math.lgamma" do
     Math.lgamma(0).should == [infinity_value, 1]
   end
 
-  platform_is_not :windows do
-    it "returns [Infinity, 1] when passed -1" do
-      Math.lgamma(-1).should == [infinity_value, 1]
-    end
+  it "returns [Infinity, ...] when passed -1" do
+    Math.lgamma(-1)[0].should == infinity_value
   end
 
   it "returns [Infinity, -1] when passed -0.0" do
@@ -47,8 +45,7 @@ describe "Math.lgamma" do
     Math.lgamma(infinity_value).should == [infinity_value, 1]
   end
 
-  it "returns [NaN, 1] when passed NaN" do
-    Math.lgamma(nan_value)[0].nan?.should be_true
-    Math.lgamma(nan_value)[1].should == 1
+  it "returns [NaN, ...] when passed NaN" do
+    Math.lgamma(nan_value)[0].should.nan?
   end
 end

@@ -170,7 +170,7 @@ In this mode, all values assigned to constants are made shareable.
 
   # shareable_constant_value: experimental_everything
   FOO = Set[1, 2, {foo: []}]
-  # same as FOO = Ractor.make_sharable(...)
+  # same as FOO = Ractor.make_shareable(...)
   # OR same as `FOO = Set[1, 2, {foo: [].freeze}.freeze].freeze`
 
   var = [{foo: []}]

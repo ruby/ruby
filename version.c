@@ -12,6 +12,7 @@
 #include "internal/cmdlineopt.h"
 #include "internal/parse.h"
 #include "internal/gc.h"
+#include "ruby/internal/globals.h"
 #include "ruby/ruby.h"
 #include "version.h"
 #include "vm_core.h"
@@ -24,8 +25,9 @@
 
 #ifdef RUBY_REVISION
 # if RUBY_PATCHLEVEL == -1
+#  define RUBY_API_VERSION_NAME "master"
 #  ifndef RUBY_BRANCH_NAME
-#   define RUBY_BRANCH_NAME "master"
+#   define RUBY_BRANCH_NAME RUBY_API_VERSION_NAME
 #  endif
 #  define RUBY_REVISION_STR " "RUBY_BRANCH_NAME" "RUBY_REVISION
 # else
@@ -34,6 +36,9 @@
 #else
 # define RUBY_REVISION "HEAD"
 # define RUBY_REVISION_STR ""
+#endif
+#ifndef RUBY_API_VERSION_NAME
+# define RUBY_API_VERSION_NAME RUBY_API_VERSION_STR
 #endif
 #if !defined RUBY_RELEASE_DATETIME || RUBY_PATCHLEVEL != -1
 # undef RUBY_RELEASE_DATETIME
@@ -44,6 +49,9 @@
 #define MKSTR(type) rb_obj_freeze(rb_usascii_str_new_static(ruby_##type, sizeof(ruby_##type)-1))
 #define MKINT(name) INT2FIX(ruby_##name)
 
+#define RUBY_API_VERSION_STR \
+    STRINGIZE(RUBY_API_VERSION_MAJOR) "." \
+    STRINGIZE(RUBY_API_VERSION_MINOR)
 const int ruby_api_version[] = {
     RUBY_API_VERSION_MAJOR,
     RUBY_API_VERSION_MINOR,
@@ -61,6 +69,11 @@ const int ruby_api_version[] = {
 #else
 #define YJIT_DESCRIPTION " +YJIT"
 #endif
+#ifdef ZJIT_SUPPORT
+#define ZJIT_DESCRIPTION " +ZJIT " STRINGIZE(ZJIT_SUPPORT)
+#else
+#define ZJIT_DESCRIPTION " +ZJIT"
+#endif
 #if USE_MODULAR_GC
 #define GC_DESCRIPTION " +GC"
 #else
@@ -71,6 +84,7 @@ const char ruby_revision[] = RUBY_FULL_REVISION;
 const char ruby_release_date[] = RUBY_RELEASE_DATE;
 const char ruby_platform[] = RUBY_PLATFORM;
 const int ruby_patchlevel = RUBY_PATCHLEVEL;
+const char ruby_api_version_name[] = RUBY_API_VERSION_NAME;
 const char ruby_description[] =
     "ruby " RUBY_VERSION RUBY_PATCHLEVEL_STR " "
     "(" RUBY_RELEASE_DATETIME RUBY_REVISION_STR ") "
@@ -99,6 +113,12 @@ define_ruby_const(VALUE mod, const char *name, VALUE value, bool toplevel)
 /* RDoc needs rb_define_const */
 #define rb_define_const(mod, name, value) \
     define_ruby_const(mod, (mod == mRuby ? "RUBY_" name : name), value, (mod == mRuby))
+
+void
+Init_Ruby_module(void)
+{
+    rb_define_module("Ruby");
+}
 
 /*! Defines platform-depended Ruby-level constants */
 void
@@ -162,6 +182,12 @@ Init_version(void)
 #define YJIT_OPTS_ON 0
 #endif
 
+#if USE_ZJIT
+#define ZJIT_OPTS_ON opt->zjit
+#else
+#define ZJIT_OPTS_ON 0
+#endif
+
 int ruby_mn_threads_enabled;
 
 #ifndef RB_DEFAULT_PARSER
@@ -184,9 +210,11 @@ rb_ruby_default_parser_set(ruby_default_parser_enum parser)
 static void
 define_ruby_description(const char *const jit_opt)
 {
+#define JIT_DESCRIPTION YJIT_DESCRIPTION ZJIT_DESCRIPTION
+
     static char desc[
         sizeof(ruby_description)
-        + rb_strlen_lit(YJIT_DESCRIPTION)
+        + rb_strlen_lit(JIT_DESCRIPTION)
         + rb_strlen_lit(" +MN")
         + rb_strlen_lit(" +PRISM")
 #if USE_MODULAR_GC
@@ -203,7 +231,7 @@ define_ruby_description(const char *const jit_opt)
     memcpy(desc, ruby_description, n);
 # define append(s) (n += (int)strlcpy(desc + n, s, sizeof(desc) - n))
     if (*jit_opt) append(jit_opt);
-    RUBY_ASSERT(n <= ruby_description_opt_point + (int)rb_strlen_lit(YJIT_DESCRIPTION));
+    RUBY_ASSERT(n <= ruby_description_opt_point + (int)rb_strlen_lit(JIT_DESCRIPTION));
     if (ruby_mn_threads_enabled) append(" +MN");
     if (rb_ruby_prism_p()) append(" +PRISM");
 #if USE_MODULAR_GC
@@ -225,6 +253,7 @@ define_ruby_description(const char *const jit_opt)
      * The full ruby version string, like <tt>ruby -v</tt> prints
      */
     rb_define_const(mRuby, "DESCRIPTION", /* MKSTR(description) */ description);
+#undef JIT_DESCRIPTION
 }
 
 void
@@ -232,6 +261,7 @@ Init_ruby_description(ruby_cmdline_options_t *opt)
 {
     const char *const jit_opt =
         YJIT_OPTS_ON ? YJIT_DESCRIPTION :
+        ZJIT_OPTS_ON ? ZJIT_DESCRIPTION :
         "";
     define_ruby_description(jit_opt);
 }
@@ -243,6 +273,15 @@ ruby_set_yjit_description(void)
     rb_const_remove(rb_cObject, rb_intern("RUBY_DESCRIPTION"));
     rb_const_remove(mRuby, rb_intern("DESCRIPTION"));
     define_ruby_description(YJIT_DESCRIPTION);
+}
+
+void
+ruby_set_zjit_description(void)
+{
+    VALUE mRuby = rb_path2class("Ruby");
+    rb_const_remove(rb_cObject, rb_intern("RUBY_DESCRIPTION"));
+    rb_const_remove(mRuby, rb_intern("DESCRIPTION"));
+    define_ruby_description(ZJIT_DESCRIPTION);
 }
 
 void

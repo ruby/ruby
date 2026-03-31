@@ -9,6 +9,7 @@ s,@CC@,false,g
 s,@CFLAGS@,,g
 s,@CHDIR@,cd,g
 s,@CONFIGURE@,configure,g
+s,@COUTFLAG@,-o ,g
 s,@CP@,cp,g
 s,@CPPFLAGS@,,g
 s,@CXXFLAGS@,,g
@@ -24,6 +25,7 @@ s,@LIBRUBY_A@,libruby.a,g
 s,@MINIRUBY@,$(BASERUBY),g
 s,@MKDIR_P@,mkdir -p,g
 s,@OBJEXT@,o,g
+s,@OUTFLAG@,-o ,g
 s,@PATH_SEPARATOR@,:,g
 s,@PWD@,.,g
 s,@RM@,rm -f,g
@@ -32,6 +34,9 @@ s,@RMDIR@,rmdir,g
 s,@RMDIRS@,$(RMDIR) -p,g
 s,@RUBY@,$(BASERUBY),g
 s,@RUNRUBY@,$(MINIRUBY),g
+s,@X_BUILD_EXEEXT@,,g
+s,@X_DUMP_AST@,build-tool/dump_ast$(BUILD_EXEEXT),g
+s,@X_DUMP_AST_TARGET@,$(DUMP_AST),g
 s,@arch@,noarch,g
 s,@bindir@,,g
 s,@configure_args@,,g
@@ -40,5 +45,9 @@ s,@rubyarchdir@,,g
 s,@rubylibprefix@,,g
 s,@srcdir@,.,g
 
+# for comipling dump_ast on build-os
+/^CC *=/d
+
 s/@[A-Za-z][A-Za-z0-9_]*@//g
-s/{\$([A-Za-z]*)}//g
+s/{\$([^(){}]*)}//g
+s/^!/#!/

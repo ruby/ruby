@@ -174,39 +174,39 @@ describe "IO.readlines" do
     $_.should == "test"
   end
 
-  describe "when passed a string that starts with a |" do
-    it "gets data from the standard out of the subprocess" do
-      cmd = "|sh -c 'echo hello;echo line2'"
-      platform_is :windows do
-        cmd = "|cmd.exe /C echo hello&echo line2"
-      end
+  ruby_version_is ""..."4.0" do
+    describe "when passed a string that starts with a |" do
+      it "gets data from the standard out of the subprocess" do
+        cmd = "|sh -c 'echo hello;echo line2'"
+        platform_is :windows do
+          cmd = "|cmd.exe /C echo hello&echo line2"
+        end
 
-      lines = nil
-      suppress_warning do # https://bugs.ruby-lang.org/issues/19630
-        lines = IO.readlines(cmd)
-      end
-      lines.should == ["hello\n", "line2\n"]
-    end
-
-    platform_is_not :windows do
-      it "gets data from a fork when passed -" do
         lines = nil
         suppress_warning do # https://bugs.ruby-lang.org/issues/19630
-          lines = IO.readlines("|-")
+          lines = IO.readlines(cmd)
         end
+        lines.should == ["hello\n", "line2\n"]
+      end
 
-        if lines # parent
-          lines.should == ["hello\n", "from a fork\n"]
-        else
-          puts "hello"
-          puts "from a fork"
-          exit!
+      platform_is_not :windows do
+        it "gets data from a fork when passed -" do
+          lines = nil
+          suppress_warning do # https://bugs.ruby-lang.org/issues/19630
+            lines = IO.readlines("|-")
+          end
+
+          if lines # parent
+            lines.should == ["hello\n", "from a fork\n"]
+          else
+            puts "hello"
+            puts "from a fork"
+            exit!
+          end
         end
       end
     end
-  end
 
-  ruby_version_is "3.3" do
     # https://bugs.ruby-lang.org/issues/19630
     it "warns about deprecation given a path with a pipe" do
       cmd = "|echo ok"

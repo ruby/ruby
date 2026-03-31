@@ -334,7 +334,11 @@ OnigEncodingDefine(emacs_mule, Emacs_Mule) = {
   onigenc_not_support_get_ctype_code_range,
   left_adjust_char_head,
   onigenc_always_true_is_allowed_reverse_match,
+#ifdef USE_CASE_MAP_API
   onigenc_ascii_only_case_map,
+#else
+  NULL,
+#endif
   0,
   ONIGENC_FLAG_NONE,
 };

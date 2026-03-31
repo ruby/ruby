@@ -138,6 +138,7 @@ zlib.o: $(hdrdir)/ruby/internal/intern/re.h
 zlib.o: $(hdrdir)/ruby/internal/intern/ruby.h
 zlib.o: $(hdrdir)/ruby/internal/intern/select.h
 zlib.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+zlib.o: $(hdrdir)/ruby/internal/intern/set.h
 zlib.o: $(hdrdir)/ruby/internal/intern/signal.h
 zlib.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 zlib.o: $(hdrdir)/ruby/internal/intern/string.h

@@ -57,7 +57,7 @@ module OpenSSL
   #   OpenSSL::Digest("MD5")
   #   # => OpenSSL::Digest::MD5
   #
-  #   Digest("Foo")
+  #   OpenSSL::Digest("Foo")
   #   # => NameError: wrong constant name Foo
 
   def Digest(name)

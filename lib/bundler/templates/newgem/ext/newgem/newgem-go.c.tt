@@ -1,0 +1,2 @@
+#include "<%= config[:underscored_name] %>.h"
+#include "_cgo_export.h"

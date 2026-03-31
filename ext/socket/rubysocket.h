@@ -292,8 +292,8 @@ extern VALUE rb_eResolution;
 #ifdef SOCKS
 extern VALUE rb_cSOCKSSocket;
 #  ifndef SOCKS5
-void SOCKSinit();
-int Rconnect();
+void SOCKSinit(char *);
+int Rconnect(int, const struct sockaddr *, socklen_t);
 #  endif
 #endif
 
@@ -327,8 +327,8 @@ void rb_freeaddrinfo(struct rb_addrinfo *ai);
 VALUE rsock_freeaddrinfo(VALUE arg);
 int rb_getnameinfo(const struct sockaddr *sa, socklen_t salen, char *host, size_t hostlen, char *serv, size_t servlen, int flags);
 int rsock_fd_family(int fd);
-struct rb_addrinfo *rsock_addrinfo(VALUE host, VALUE port, int family, int socktype, int flags);
-struct rb_addrinfo *rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack);
+struct rb_addrinfo *rsock_addrinfo(VALUE host, VALUE port, int family, int socktype, int flags, VALUE timeout);
+struct rb_addrinfo *rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack, VALUE timeout);
 
 VALUE rsock_fd_socket_addrinfo(int fd, struct sockaddr *addr, socklen_t len);
 VALUE rsock_io_socket_addrinfo(VALUE io, struct sockaddr *addr, socklen_t len);
@@ -355,7 +355,7 @@ int rsock_socket(int domain, int type, int proto);
 int rsock_detect_cloexec(int fd);
 VALUE rsock_init_sock(VALUE sock, int fd);
 VALUE rsock_sock_s_socketpair(int argc, VALUE *argv, VALUE klass);
-VALUE rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv, VALUE local_host, VALUE local_serv, int type, VALUE resolv_timeout, VALUE connect_timeout, VALUE fast_fallback, VALUE test_mode_settings);
+VALUE rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv, VALUE local_host, VALUE local_serv, int type, VALUE resolv_timeout, VALUE connect_timeout, VALUE open_timeout, VALUE fast_fallback, VALUE test_mode_settings);
 VALUE rsock_init_unixsock(VALUE sock, VALUE path, int server);
 
 struct rsock_send_arg {
@@ -453,6 +453,8 @@ void free_fast_fallback_getaddrinfo_shared(struct fast_fallback_getaddrinfo_shar
 #  endif
 #endif
 
+NORETURN(void rsock_raise_user_specified_timeout(struct addrinfo *ai, VALUE host, VALUE port));
+
 void rsock_init_basicsocket(void);
 void rsock_init_ipsocket(void);
 void rsock_init_tcpsocket(void);
@@ -507,8 +509,6 @@ extern ID tcp_fast_fallback;
 const char *inet_ntop(int, const void *, char *, size_t);
 #elif defined __MINGW32__
 # define inet_ntop(f,a,n,l)      rb_w32_inet_ntop(f,a,n,l)
-#elif defined _MSC_VER && RUBY_MSVCRT_VERSION < 90
-const char *WSAAPI inet_ntop(int, const void *, char *, size_t);
 #endif
 
 #endif

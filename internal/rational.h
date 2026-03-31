@@ -28,6 +28,7 @@ VALUE rb_rational_plus(VALUE self, VALUE other);
 VALUE rb_rational_minus(VALUE self, VALUE other);
 VALUE rb_rational_mul(VALUE self, VALUE other);
 VALUE rb_rational_div(VALUE self, VALUE other);
+VALUE rb_rational_fdiv(VALUE self, VALUE other);
 VALUE rb_lcm(VALUE x, VALUE y);
 VALUE rb_rational_reciprocal(VALUE x);
 VALUE rb_cstr_to_rat(const char *, int);
@@ -67,5 +68,23 @@ RATIONAL_SET_DEN(VALUE r, VALUE d)
     assert(INT_POSITIVE_P(d));
     RB_OBJ_WRITE(r, &RRATIONAL(r)->den, d);
 }
+
+inline static bool
+f_zero_p(VALUE x)
+{
+    if (RB_INTEGER_TYPE_P(x)) {
+        return FIXNUM_ZERO_P(x);
+    }
+    else if (RB_FLOAT_TYPE_P(x)) {
+        return FLOAT_ZERO_P(x);
+    }
+    else if (RB_TYPE_P(x, T_RATIONAL)) {
+        const VALUE num = RRATIONAL(x)->num;
+        return FIXNUM_ZERO_P(num);
+    }
+    return rb_equal(x, INT2FIX(0)) != 0;
+}
+
+#define f_nonzero_p(x) (!f_zero_p(x))
 
 #endif /* INTERNAL_RATIONAL_H */

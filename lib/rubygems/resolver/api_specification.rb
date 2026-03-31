@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 ##
-# Represents a specification retrieved via the rubygems.org API.
+# Represents a specification retrieved via the Compact Index API.
 #
 # This is used to avoid loading the full Specification object when all we need
 # is the name, version, and dependencies.
@@ -19,10 +19,10 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
   end
 
   ##
-  # Creates an APISpecification for the given +set+ from the rubygems.org
+  # Creates an APISpecification for the given +set+ from the Compact Index API
   # +api_data+.
   #
-  # See https://guides.rubygems.org/rubygems-org-api/#misc-methods for the
+  # See https://guides.rubygems.org/rubygems-org-compact-index-api for the
   # format of the +api_data+.
 
   def initialize(set, api_data)

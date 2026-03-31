@@ -103,7 +103,7 @@ RSpec.describe Bundler::Dsl do
       )
     end
 
-    context "default hosts", bundler: "< 3" do
+    context "default hosts" do
       it "converts :github to URI using https" do
         subject.gem("sparks", github: "indirect/sparks")
         github_uri = "https://github.com/indirect/sparks.git"
@@ -162,7 +162,7 @@ RSpec.describe Bundler::Dsl do
 
   describe "#method_missing" do
     it "raises an error for unknown DSL methods" do
-      expect(Bundler).to receive(:read_file).with(source_root.join("Gemfile").to_s).
+      expect(Bundler).to receive(:read_file).with(git_root.join("Gemfile").to_s).
         and_return("unknown")
 
       error_msg = "There was an error parsing `Gemfile`: Undefined local variable or method `unknown' for Gemfile. Bundler cannot continue."
@@ -173,13 +173,13 @@ RSpec.describe Bundler::Dsl do
 
   describe "#eval_gemfile" do
     it "handles syntax errors with a useful message" do
-      expect(Bundler).to receive(:read_file).with(source_root.join("Gemfile").to_s).and_return("}")
+      expect(Bundler).to receive(:read_file).with(git_root.join("Gemfile").to_s).and_return("}")
       expect { subject.eval_gemfile("Gemfile") }.
         to raise_error(Bundler::GemfileError, /There was an error parsing `Gemfile`: (syntax error, unexpected tSTRING_DEND|(compile error - )?syntax error, unexpected '\}'|.+?unexpected '}', ignoring it\n). Bundler cannot continue./m)
     end
 
     it "distinguishes syntax errors from evaluation errors" do
-      expect(Bundler).to receive(:read_file).with(source_root.join("Gemfile").to_s).and_return(
+      expect(Bundler).to receive(:read_file).with(git_root.join("Gemfile").to_s).and_return(
         "ruby '2.1.5', :engine => 'ruby', :engine_version => '1.2.4'"
       )
       expect { subject.eval_gemfile("Gemfile") }.
@@ -187,13 +187,13 @@ RSpec.describe Bundler::Dsl do
     end
 
     it "populates __dir__ and __FILE__ correctly" do
-      abs_path = source_root.join("../fragment.rb").to_s
+      abs_path = git_root.join("../fragment.rb").to_s
       expect(Bundler).to receive(:read_file).with(abs_path).and_return(<<~RUBY)
         @fragment_dir = __dir__
         @fragment_file = __FILE__
       RUBY
       subject.eval_gemfile("../fragment.rb")
-      expect(subject.instance_variable_get(:@fragment_dir)).to eq(source_root.dirname.to_s)
+      expect(subject.instance_variable_get(:@fragment_dir)).to eq(git_root.dirname.to_s)
       expect(subject.instance_variable_get(:@fragment_file)).to eq(abs_path)
     end
   end
@@ -201,8 +201,8 @@ RSpec.describe Bundler::Dsl do
   describe "#gem" do
     # rubocop:disable Naming/VariableNumber
     [:ruby, :ruby_18, :ruby_19, :ruby_20, :ruby_21, :ruby_22, :ruby_23, :ruby_24, :ruby_25, :ruby_26, :ruby_27,
-     :ruby_30, :ruby_31, :ruby_32, :ruby_33, :ruby_34, :ruby_35, :mri, :mri_18, :mri_19, :mri_20, :mri_21, :mri_22, :mri_23, :mri_24,
-     :mri_25, :mri_26, :mri_27, :mri_30, :mri_31, :mri_32, :mri_33, :mri_34, :mri_35, :jruby, :rbx, :truffleruby].each do |platform|
+     :ruby_30, :ruby_31, :ruby_32, :ruby_33, :ruby_34, :ruby_40, :mri, :mri_18, :mri_19, :mri_20, :mri_21, :mri_22, :mri_23, :mri_24,
+     :mri_25, :mri_26, :mri_27, :mri_30, :mri_31, :mri_32, :mri_33, :mri_34, :mri_40, :jruby, :rbx, :truffleruby].each do |platform|
       it "allows #{platform} as a valid platform" do
         subject.gem("foo", platform: platform)
       end
@@ -221,8 +221,8 @@ RSpec.describe Bundler::Dsl do
         to raise_error(Bundler::GemfileError, /is not a valid platform/)
     end
 
-    it "raises a deprecation warning for legacy windows platforms" do
-      expect(Bundler::SharedHelpers).to receive(:major_deprecation).with(2, /\APlatform :mswin, :x64_mingw is deprecated/, removed_message: /\APlatform :mswin, :x64_mingw has been removed/)
+    it "warn for legacy windows platforms" do
+      expect(Bundler::SharedHelpers).to receive(:feature_deprecated!).with(/\APlatform :mswin, :x64_mingw will be removed in the future./)
       subject.gem("foo", platforms: [:mswin, :jruby, :x64_mingw])
     end
 
@@ -291,8 +291,8 @@ RSpec.describe Bundler::Dsl do
   end
 
   describe "#platforms" do
-    it "raises a deprecation warning for legacy windows platforms" do
-      expect(Bundler::SharedHelpers).to receive(:major_deprecation).with(2, /\APlatform :mswin64, :mingw is deprecated/, removed_message: /\APlatform :mswin64, :mingw has been removed/)
+    it "warn for legacy windows platforms" do
+      expect(Bundler::SharedHelpers).to receive(:feature_deprecated!).with(/\APlatform :mswin64, :mingw will be removed in the future./)
       subject.platforms(:mswin64, :jruby, :mingw) do
         subject.gem("foo")
       end

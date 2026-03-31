@@ -208,6 +208,26 @@ describe :io_new, shared: true do
     @io.internal_encoding.to_s.should == 'IBM866'
   end
 
+  it "does not use binary encoding when mode encoding is specified along with binmode: true option" do
+    @io = IO.send(@method, @fd, 'w:iso-8859-1', binmode: true)
+    @io.external_encoding.to_s.should == 'ISO-8859-1'
+  end
+
+  it "does not use textmode argument when mode encoding is specified" do
+    @io = IO.send(@method, @fd, 'w:ascii-8bit', textmode: true)
+    @io.external_encoding.to_s.should == 'ASCII-8BIT'
+  end
+
+  it "does not use binmode argument when external encoding is specified via the :external_encoding option" do
+    @io = IO.send(@method, @fd, 'w', binmode: true, external_encoding: 'iso-8859-1')
+    @io.external_encoding.to_s.should == 'ISO-8859-1'
+  end
+
+  it "does not use textmode argument when external encoding is specified via the :external_encoding option" do
+    @io = IO.send(@method, @fd, 'w', textmode: true, external_encoding: 'ascii-8bit')
+    @io.external_encoding.to_s.should == 'ASCII-8BIT'
+  end
+
   it "raises ArgumentError for nil options" do
     -> {
       IO.send(@method, @fd, 'w', nil)
@@ -323,6 +343,9 @@ describe :io_new_errors, shared: true do
     }.should raise_error(ArgumentError)
     -> {
       @io = IO.send(@method, @fd, 'w:ISO-8859-1', external_encoding: 'ISO-8859-1')
+    }.should raise_error(ArgumentError)
+    -> {
+      @io = IO.send(@method, @fd, 'w:ISO-8859-1', internal_encoding: 'ISO-8859-1')
     }.should raise_error(ArgumentError)
     -> {
       @io = IO.send(@method, @fd, 'w:ISO-8859-1:UTF-8', internal_encoding: 'ISO-8859-1')

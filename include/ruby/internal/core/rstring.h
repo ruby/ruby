@@ -369,41 +369,6 @@ RSTRING_LEN(VALUE str)
     return RSTRING(str)->len;
 }
 
-RBIMPL_WARNING_PUSH()
-#if RBIMPL_COMPILER_IS(Intel)
-RBIMPL_WARNING_IGNORED(413)
-#endif
-
-RBIMPL_ATTR_PURE_UNLESS_DEBUG()
-RBIMPL_ATTR_ARTIFICIAL()
-/**
- * @private
- *
- * "Expands" an embedded  string into an ordinal one.  This  is a function that
- * returns aggregated type.   The returned struct always  has its `as.heap.len`
- * an `as.heap.ptr` fields set appropriately.
- *
- * This is an implementation detail that 3rd parties should never bother.
- */
-static inline struct RString
-rbimpl_rstring_getmem(VALUE str)
-{
-    RBIMPL_ASSERT_TYPE(str, RUBY_T_STRING);
-
-    if (RB_FL_ANY_RAW(str, RSTRING_NOEMBED)) {
-        return *RSTRING(str);
-    }
-    else {
-        /* Expecting compilers to optimize this on-stack struct away. */
-        struct RString retval;
-        retval.len = RSTRING_LEN(str);
-        retval.as.heap.ptr = RSTRING(str)->as.embed.ary;
-        return retval;
-    }
-}
-
-RBIMPL_WARNING_POP()
-
 RBIMPL_ATTR_ARTIFICIAL()
 /**
  * Queries the contents pointer of the string.
@@ -415,7 +380,9 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline char *
 RSTRING_PTR(VALUE str)
 {
-    char *ptr = rbimpl_rstring_getmem(str).as.heap.ptr;
+    char *ptr = RB_FL_TEST_RAW(str, RSTRING_NOEMBED) ?
+        RSTRING(str)->as.heap.ptr :
+        RSTRING(str)->as.embed.ary;
 
     if (RUBY_DEBUG && RB_UNLIKELY(! ptr)) {
         /* :BEWARE: @shyouhei thinks  that currently, there are  rooms for this
@@ -441,14 +408,17 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline char *
 RSTRING_END(VALUE str)
 {
-    struct RString buf = rbimpl_rstring_getmem(str);
+    char *ptr = RB_FL_TEST_RAW(str, RSTRING_NOEMBED) ?
+        RSTRING(str)->as.heap.ptr :
+        RSTRING(str)->as.embed.ary;
+    long len = RSTRING_LEN(str);
 
-    if (RUBY_DEBUG && RB_UNLIKELY(! buf.as.heap.ptr)) {
+    if (RUBY_DEBUG && RB_UNLIKELY(!ptr)) {
         /* Ditto. */
         rb_debug_rstring_null_ptr("RSTRING_END");
     }
 
-    return &buf.as.heap.ptr[buf.len];
+    return &ptr[len];
 }
 
 RBIMPL_ATTR_ARTIFICIAL()
@@ -477,16 +447,7 @@ RSTRING_LENINT(VALUE str)
  * @param  ptrvar  Variable where its contents is stored.
  * @param  lenvar  Variable where its length is stored.
  */
-#ifdef HAVE_STMT_AND_DECL_IN_EXPR
-# define RSTRING_GETMEM(str, ptrvar, lenvar) \
-    __extension__ ({ \
-        struct RString rbimpl_str = rbimpl_rstring_getmem(str); \
-        (ptrvar) = rbimpl_str.as.heap.ptr; \
-        (lenvar) = rbimpl_str.len; \
-    })
-#else
 # define RSTRING_GETMEM(str, ptrvar, lenvar) \
     ((ptrvar) = RSTRING_PTR(str),           \
      (lenvar) = RSTRING_LEN(str))
-#endif /* HAVE_STMT_AND_DECL_IN_EXPR */
 #endif /* RBIMPL_RSTRING_H */

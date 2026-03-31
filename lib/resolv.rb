@@ -4,6 +4,7 @@ require 'socket'
 require 'timeout'
 require 'io/wait'
 require 'securerandom'
+require 'rbconfig'
 
 # Resolv is a thread-aware DNS resolver library written in Ruby.  Resolv can
 # handle multiple DNS requests concurrently without blocking the entire Ruby
@@ -33,7 +34,8 @@ require 'securerandom'
 
 class Resolv
 
-  VERSION = "0.6.0"
+  # The version string
+  VERSION = "0.7.1"
 
   ##
   # Looks up the first IP address for +name+.
@@ -173,21 +175,19 @@ class Resolv
 
   class ResolvTimeout < Timeout::Error; end
 
-  WINDOWS = /mswin|cygwin|mingw|bccwin/ =~ RUBY_PLATFORM || ::RbConfig::CONFIG['host_os'] =~ /mswin/
-  private_constant :WINDOWS
-
   ##
   # Resolv::Hosts is a hostname resolver that uses the system hosts file.
 
   class Hosts
-    if WINDOWS
+    if /mswin|cygwin|mingw|bccwin/ =~ RUBY_PLATFORM || ::RbConfig::CONFIG['host_os'] =~ /mswin/
       begin
         require 'win32/resolv' unless defined?(Win32::Resolv)
-        DefaultFileName = Win32::Resolv.get_hosts_path || IO::NULL
+        hosts = Win32::Resolv.get_hosts_path || IO::NULL
       rescue LoadError
       end
     end
-    DefaultFileName ||= '/etc/hosts'
+    # The default file name for host names
+    DefaultFileName = hosts || '/etc/hosts'
 
     ##
     # Creates a new Resolv::Hosts, using +filename+ for its data source.
@@ -487,13 +487,18 @@ class Resolv
     # * Resolv::DNS::Resource::IN::A
     # * Resolv::DNS::Resource::IN::AAAA
     # * Resolv::DNS::Resource::IN::ANY
+    # * Resolv::DNS::Resource::IN::CAA
     # * Resolv::DNS::Resource::IN::CNAME
     # * Resolv::DNS::Resource::IN::HINFO
+    # * Resolv::DNS::Resource::IN::HTTPS
+    # * Resolv::DNS::Resource::IN::LOC
     # * Resolv::DNS::Resource::IN::MINFO
     # * Resolv::DNS::Resource::IN::MX
     # * Resolv::DNS::Resource::IN::NS
     # * Resolv::DNS::Resource::IN::PTR
     # * Resolv::DNS::Resource::IN::SOA
+    # * Resolv::DNS::Resource::IN::SRV
+    # * Resolv::DNS::Resource::IN::SVCB
     # * Resolv::DNS::Resource::IN::TXT
     # * Resolv::DNS::Resource::IN::WKS
     #
@@ -524,6 +529,8 @@ class Resolv
         extract_resources(reply, reply_name, typeclass, &proc)
       }
     end
+
+    # :stopdoc:
 
     def fetch_resource(name, typeclass)
       lazy_initialize
@@ -719,7 +726,8 @@ class Resolv
           begin
             reply, from = recv_reply(select_result[0])
           rescue Errno::ECONNREFUSED, # GNU/Linux, FreeBSD
-                 Errno::ECONNRESET # Windows
+                 Errno::ECONNRESET, # Windows
+                 EOFError
             # No name server running on the server?
             # Don't wait anymore.
             raise ResolvTimeout
@@ -928,8 +936,11 @@ class Resolv
         end
 
         def recv_reply(readable_socks)
-          len = readable_socks[0].read(2).unpack('n')[0]
+          len_data = readable_socks[0].read(2)
+          raise EOFError if len_data.nil? || len_data.bytesize != 2
+          len = len_data.unpack('n')[0]
           reply = @socks[0].read(len)
+          raise EOFError if reply.nil? || reply.bytesize != len
           return reply, nil
         end
 
@@ -998,13 +1009,13 @@ class Resolv
             next unless keyword
             case keyword
             when 'nameserver'
-              nameserver.concat(args)
+              nameserver.concat(args.each(&:freeze))
             when 'domain'
               next if args.empty?
-              search = [args[0]]
+              search = [args[0].freeze]
             when 'search'
               next if args.empty?
-              search = args
+              search = args.each(&:freeze)
             when 'options'
               args.each {|arg|
                 case arg
@@ -1015,22 +1026,21 @@ class Resolv
             end
           }
         }
-        return { :nameserver => nameserver, :search => search, :ndots => ndots }
+        return { :nameserver => nameserver.freeze, :search => search.freeze, :ndots => ndots.freeze }.freeze
       end
 
       def Config.default_config_hash(filename="/etc/resolv.conf")
         if File.exist? filename
-          config_hash = Config.parse_resolv_conf(filename)
+          Config.parse_resolv_conf(filename)
+        elsif defined?(Win32::Resolv)
+          search, nameserver = Win32::Resolv.get_resolv_info
+          config_hash = {}
+          config_hash[:nameserver] = nameserver if nameserver
+          config_hash[:search] = [search].flatten if search
+          config_hash
         else
-          if WINDOWS
-            require 'win32/resolv' unless defined?(Win32::Resolv)
-            search, nameserver = Win32::Resolv.get_resolv_info
-            config_hash = {}
-            config_hash[:nameserver] = nameserver if nameserver
-            config_hash[:search] = [search].flatten if search
-          end
+          {}
         end
-        config_hash || {}
       end
 
       def lazy_initialize
@@ -1679,6 +1689,7 @@ class Resolv
           prev_index = @index
           save_index = nil
           d = []
+          size = -1
           while true
             raise DecodeError.new("limit exceeded") if @limit <= @index
             case @data.getbyte(@index)
@@ -1699,7 +1710,10 @@ class Resolv
               end
               @index = idx
             else
-              d << self.get_label
+              l = self.get_label
+              d << l
+              size += 1 + l.string.bytesize
+              raise DecodeError.new("name label data exceed 255 octets") if size > 255
             end
           end
         end
@@ -2125,7 +2139,14 @@ class Resolv
 
       attr_reader :ttl
 
-      ClassHash = {} # :nodoc:
+      ClassHash = Module.new do
+        module_function
+
+        def []=(type_class_value, klass)
+          type_value, class_value = type_class_value
+          Resource.const_set(:"Type#{type_value}_Class#{class_value}", klass)
+        end
+      end
 
       def encode_rdata(msg) # :nodoc:
         raise NotImplementedError.new
@@ -2163,7 +2184,9 @@ class Resolv
       end
 
       def self.get_class(type_value, class_value) # :nodoc:
-        return ClassHash[[type_value, class_value]] ||
+        cache = :"Type#{type_value}_Class#{class_value}"
+
+        return (const_defined?(cache) && const_get(cache)) ||
                Generic.create(type_value, class_value)
       end
 
@@ -2592,7 +2615,7 @@ class Resolv
         end
 
         ##
-        # Flags for this proprty:
+        # Flags for this property:
         # - Bit 0 : 0 = not critical, 1 = critical
 
         attr_reader :flags
@@ -2913,14 +2936,20 @@ class Resolv
 
   class IPv4
 
-    ##
-    # Regular expression IPv4 addresses must match.
-
     Regex256 = /0
                |1(?:[0-9][0-9]?)?
                |2(?:[0-4][0-9]?|5[0-5]?|[6-9])?
-               |[3-9][0-9]?/x
+               |[3-9][0-9]?/x # :nodoc:
+
+    ##
+    # Regular expression IPv4 addresses must match.
     Regex = /\A(#{Regex256})\.(#{Regex256})\.(#{Regex256})\.(#{Regex256})\z/
+
+    ##
+    # Creates a new IPv4 address from +arg+ which may be:
+    #
+    # IPv4:: returns +arg+.
+    # String:: +arg+ must match the IPv4::Regex constant
 
     def self.create(arg)
       case arg
@@ -3230,12 +3259,14 @@ class Resolv
 
   end
 
-  module LOC
+  module LOC # :nodoc:
 
     ##
     # A Resolv::LOC::Size
 
     class Size
+
+      # Regular expression LOC size must match.
 
       Regex = /^(\d+\.*\d*)[m]$/
 
@@ -3262,6 +3293,7 @@ class Resolv
         end
       end
 
+      # Internal use; use self.create.
       def initialize(scalar)
         @scalar = scalar
       end
@@ -3299,6 +3331,8 @@ class Resolv
 
     class Coord
 
+      # Regular expression LOC Coord must match.
+
       Regex = /^(\d+)\s(\d+)\s(\d+\.\d+)\s([NESW])$/
 
       ##
@@ -3328,6 +3362,7 @@ class Resolv
         end
       end
 
+      # Internal use; use self.create.
       def initialize(coordinates,orientation)
         unless coordinates.kind_of?(String)
           raise ArgumentError.new("Coord must be a 32bit unsigned integer in hex format: #{coordinates.inspect}")
@@ -3390,6 +3425,8 @@ class Resolv
 
     class Alt
 
+      # Regular expression LOC Alt must match.
+
       Regex = /^([+-]*\d+\.*\d*)[m]$/
 
       ##
@@ -3415,6 +3452,7 @@ class Resolv
         end
       end
 
+      # Internal use; use self.create.
       def initialize(altitude)
         @altitude = altitude
       end

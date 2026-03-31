@@ -274,7 +274,7 @@ class TestMonitor < Test::Unit::TestCase
       @monitor.synchronize do
         queue2.enq(nil)
         assert_equal("foo", b)
-        result2 = cond.wait(0.1)
+        result2 = cond.wait(10)
         assert_equal(true, result2)
         assert_equal("bar", b)
       end

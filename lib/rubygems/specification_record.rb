@@ -73,7 +73,7 @@ module Gem
     end
 
     ##
-    # Adds +spec+ to the the record, keeping the collection properly sorted.
+    # Adds +spec+ to the record, keeping the collection properly sorted.
 
     def add_spec(spec)
       return if all.include? spec
@@ -152,6 +152,19 @@ module Gem
       end || NOT_FOUND
 
       spec.to_spec
+    end
+
+    ##
+    # Return the best specification that contains the file matching +path+
+    # amongst the specs that are not loaded. This method is different than
+    # +find_inactive_by_path+ as it will filter out loaded specs by their name.
+
+    def find_unloaded_by_path(path)
+      stub = stubs.find do |s|
+        next if Gem.loaded_specs[s.name]
+        s.contains_requirable_file? path
+      end
+      stub&.to_spec
     end
 
     ##

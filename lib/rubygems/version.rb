@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "deprecate"
-
 ##
 # The Version class processes string versions into comparable
 # values. A version string should normally be a series of numbers
@@ -152,11 +150,15 @@ require_relative "deprecate"
 # For the last example, single-digit versions are automatically extended with
 # a zero to give a sensible result.
 
+# Workaround for directly loading Gem::Version in some cases
+module Gem; end
+
 class Gem::Version
   include Comparable
 
   VERSION_PATTERN = '[0-9]+(?>\.[0-9a-zA-Z]+)*(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?' # :nodoc:
   ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/ # :nodoc:
+  RADIX_OPT = [9_500, 3_500, 260_000, 22_227, 24].freeze # :nodoc:
 
   ##
   # A string representation of this Version.
@@ -171,9 +173,7 @@ class Gem::Version
   # True if the +version+ string matches RubyGems' requirements.
 
   def self.correct?(version)
-    nil_versions_are_discouraged! if version.nil?
-
-    ANCHORED_VERSION_PATTERN.match?(version.to_s)
+    version.nil? || ANCHORED_VERSION_PATTERN.match?(version.to_s)
   end
 
   ##
@@ -182,15 +182,10 @@ class Gem::Version
   #
   #   ver1 = Version.create('1.3.17')   # -> (Version object)
   #   ver2 = Version.create(ver1)       # -> (ver1)
-  #   ver3 = Version.create(nil)        # -> nil
 
   def self.create(input)
     if self === input # check yourself before you wreck yourself
       input
-    elsif input.nil?
-      nil_versions_are_discouraged!
-
-      nil
     else
       new input
     end
@@ -206,14 +201,6 @@ class Gem::Version
     @@all[version] ||= super
   end
 
-  def self.nil_versions_are_discouraged!
-    unless Gem::Deprecate.skip
-      warn "nil versions are discouraged and will be deprecated in Rubygems 4"
-    end
-  end
-
-  private_class_method :nil_versions_are_discouraged!
-
   ##
   # Constructs a Version from the +version+ string.  A version string is a
   # series of digits or ASCII letters separated by dots.
@@ -224,7 +211,7 @@ class Gem::Version
     end
 
     # If version is an empty string convert it to 0
-    version = 0 if version.is_a?(String) && /\A\s*\Z/.match?(version)
+    version = 0 if version.nil? || (version.is_a?(String) && /\A\s*\Z/.match?(version))
 
     @version = version.to_s
 
@@ -236,6 +223,7 @@ class Gem::Version
     end
     @version = -@version
     @segments = nil
+    @sort_key = compute_sort_key
   end
 
   ##
@@ -354,55 +342,62 @@ class Gem::Version
   ##
   # Compares this version with +other+ returning -1, 0, or 1 if the
   # other version is larger, the same, or smaller than this
-  # one. Attempts to compare to something that's not a
-  # <tt>Gem::Version</tt> or a valid version String return +nil+.
+  # one. +other+ must be an instance of Gem::Version, comparing with
+  # other types may raise an exception.
 
   def <=>(other)
-    return self <=> self.class.new(other) if (String === other) && self.class.correct?(other)
+    if Gem::Version === other
+      # Fast path for comparison when available.
+      if @sort_key && other.sort_key
+        return @sort_key <=> other.sort_key
+      end
 
-    return unless Gem::Version === other
-    return 0 if @version == other.version || canonical_segments == other.canonical_segments
+      return 0 if @version == other.version || canonical_segments == other.canonical_segments
 
-    lhsegments = canonical_segments
-    rhsegments = other.canonical_segments
+      lhsegments = canonical_segments
+      rhsegments = other.canonical_segments
 
-    lhsize = lhsegments.size
-    rhsize = rhsegments.size
-    limit  = (lhsize > rhsize ? rhsize : lhsize)
+      lhsize = lhsegments.size
+      rhsize = rhsegments.size
+      limit  = (lhsize > rhsize ? rhsize : lhsize)
 
-    i = 0
+      i = 0
 
-    while i < limit
+      while i < limit
+        lhs = lhsegments[i]
+        rhs = rhsegments[i]
+        i += 1
+
+        next      if lhs == rhs
+        return -1 if String  === lhs && Numeric === rhs
+        return  1 if Numeric === lhs && String  === rhs
+
+        return lhs <=> rhs
+      end
+
       lhs = lhsegments[i]
-      rhs = rhsegments[i]
-      i += 1
 
-      next      if lhs == rhs
-      return -1 if String  === lhs && Numeric === rhs
-      return  1 if Numeric === lhs && String  === rhs
+      if lhs.nil?
+        rhs = rhsegments[i]
 
-      return lhs <=> rhs
-    end
-
-    lhs = lhsegments[i]
-
-    if lhs.nil?
-      rhs = rhsegments[i]
-
-      while i < rhsize
-        return 1 if String === rhs
-        return -1 unless rhs.zero?
-        rhs = rhsegments[i += 1]
+        while i < rhsize
+          return 1 if String === rhs
+          return -1 unless rhs.zero?
+          rhs = rhsegments[i += 1]
+        end
+      else
+        while i < lhsize
+          return -1 if String === lhs
+          return 1 unless lhs.zero?
+          lhs = lhsegments[i += 1]
+        end
       end
-    else
-      while i < lhsize
-        return -1 if String === lhs
-        return 1 unless lhs.zero?
-        lhs = lhsegments[i += 1]
-      end
-    end
 
-    0
+      0
+    elsif String === other
+      return unless self.class.correct?(other)
+      self <=> self.class.new(other)
+    end
   end
 
   # remove trailing zeros segments before first letter or at the end of the version
@@ -425,6 +420,24 @@ class Gem::Version
   end
 
   protected
+
+  attr_reader :sort_key # :nodoc:
+
+  def compute_sort_key
+    return if prerelease?
+
+    segments = canonical_segments
+    return if segments.size > 5
+
+    key = 0
+    RADIX_OPT.each_with_index do |radix, i|
+      seg = segments.fetch(i, 0)
+      return nil if seg >= radix
+      key = key * radix + seg
+    end
+
+    key
+  end
 
   def _segments
     # segments is lazy so it can pick up version values that come from

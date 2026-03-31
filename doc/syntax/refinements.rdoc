@@ -212,10 +212,7 @@ all refinements from the same module are active when a refined method
 
 When looking up a method for an instance of class +C+ Ruby checks:
 
-* If refinements are active for +C+, in the reverse order they were activated:
-  * The prepended modules from the refinement for +C+
-  * The refinement for +C+
-  * The included modules from the refinement for +C+
+* The refinements of +C+, in reverse order of activation
 * The prepended modules of +C+
 * +C+
 * The included modules of +C+

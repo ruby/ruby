@@ -15,12 +15,10 @@ describe :env_update, shared: true do
     ENV["bar"].should == "1"
   end
 
-  ruby_version_is "3.2" do
-    it "adds the multiple parameter hashes to ENV, returning ENV" do
-      ENV.send(@method, {"foo" => "multi1"}, {"bar" => "multi2"}).should equal(ENV)
-      ENV["foo"].should == "multi1"
-      ENV["bar"].should == "multi2"
-    end
+  it "adds the multiple parameter hashes to ENV, returning ENV" do
+    ENV.send(@method, {"foo" => "multi1"}, {"bar" => "multi2"}).should equal(ENV)
+    ENV["foo"].should == "multi1"
+    ENV["bar"].should == "multi2"
   end
 
   it "returns ENV when no block given" do

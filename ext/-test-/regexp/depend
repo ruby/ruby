@@ -128,6 +128,7 @@ init.o: $(hdrdir)/ruby/internal/intern/re.h
 init.o: $(hdrdir)/ruby/internal/intern/ruby.h
 init.o: $(hdrdir)/ruby/internal/intern/select.h
 init.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+init.o: $(hdrdir)/ruby/internal/intern/set.h
 init.o: $(hdrdir)/ruby/internal/intern/signal.h
 init.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 init.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -288,6 +289,7 @@ parse_depth_limit.o: $(hdrdir)/ruby/internal/intern/re.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/intern/ruby.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/intern/select.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+parse_depth_limit.o: $(hdrdir)/ruby/internal/intern/set.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/intern/signal.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/intern/string.h

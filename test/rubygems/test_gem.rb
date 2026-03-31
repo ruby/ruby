@@ -527,35 +527,6 @@ class TestGem < Gem::TestCase
     assert_equal expected, Gem.configuration
   end
 
-  def test_self_datadir
-    foo = nil
-
-    Dir.chdir @tempdir do
-      FileUtils.mkdir_p "data"
-      File.open File.join("data", "foo.txt"), "w" do |fp|
-        fp.puts "blah"
-      end
-
-      foo = util_spec "foo" do |s|
-        s.files = %w[data/foo.txt]
-      end
-
-      install_gem foo
-    end
-
-    gem "foo"
-
-    expected = File.join @gemhome, "gems", foo.full_name, "data", "foo"
-
-    assert_equal expected, Gem::Specification.find_by_name("foo").datadir
-  end
-
-  def test_self_datadir_nonexistent_package
-    assert_raise(Gem::MissingSpecError) do
-      Gem::Specification.find_by_name("xyzzy").datadir
-    end
-  end
-
   def test_self_default_exec_format
     ruby_install_name "ruby" do
       assert_equal "%s", Gem.default_exec_format
@@ -615,6 +586,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_default_sources
+    Gem.remove_instance_variable :@default_sources
     assert_equal %w[https://rubygems.org/], Gem.default_sources
   end
 
@@ -1227,6 +1199,8 @@ class TestGem < Gem::TestCase
     Gem.sources = nil
     Gem.configuration.sources = %w[http://test.example.com/]
     assert_equal %w[http://test.example.com/], Gem.sources
+  ensure
+    Gem.configuration.sources = nil
   end
 
   def test_try_activate_returns_true_for_activated_specs
@@ -1237,6 +1211,28 @@ class TestGem < Gem::TestCase
 
     assert Gem.try_activate("b"), "try_activate should return true"
     assert Gem.try_activate("b"), "try_activate should still return true"
+  end
+
+  def test_try_activate_does_not_raise_no_method_error_on_activation_conflict
+    a1 = util_spec "a", "1.0" do |s|
+      s.files << "lib/a/old.rb"
+    end
+
+    a2 = util_spec "a", "2.0" do |s|
+      s.files << "lib/a/old.rb"
+      s.files << "lib/a/new_file.rb"
+    end
+
+    install_specs a1, a2
+
+    # Activate the older version
+    gem "a", "= 1.0"
+
+    # try_activate a file only in the newer version should not raise
+    # NoMethodError on nil (https://bugs.ruby-lang.org/issues/21954)
+    assert_nothing_raised do
+      Gem.try_activate("a/new_file")
+    end
   end
 
   def test_spec_order_is_consistent
@@ -1657,6 +1653,27 @@ class TestGem < Gem::TestCase
     assert_equal new_style, Gem.find_unresolved_default_spec("bar.rb")
     assert_nil              Gem.find_unresolved_default_spec("exec")
     assert_nil              Gem.find_unresolved_default_spec("README")
+  end
+
+  def test_register_default_spec_new_style_with_native_extension
+    Gem.clear_default_specs
+
+    dlext = RbConfig::CONFIG["DLEXT"]
+
+    new_style = Gem::Specification.new do |spec|
+      spec.name = "my_ext"
+      spec.version = "1.0"
+      spec.files = ["lib/my_ext.rb", "my_ext_core.#{dlext}", "ext/my_ext/my_ext_core.c", "README.md"]
+      spec.require_paths = ["lib"]
+    end
+
+    Gem.register_default_spec new_style
+
+    assert_equal new_style, Gem.find_unresolved_default_spec("my_ext.rb")
+    assert_equal new_style, Gem.find_unresolved_default_spec("my_ext_core")
+    assert_equal new_style, Gem.find_unresolved_default_spec("my_ext_core.#{dlext}")
+    assert_nil              Gem.find_unresolved_default_spec("ext/my_ext/my_ext_core.c")
+    assert_nil              Gem.find_unresolved_default_spec("README.md")
   end
 
   def test_register_default_spec_old_style_with_folder_starting_with_lib

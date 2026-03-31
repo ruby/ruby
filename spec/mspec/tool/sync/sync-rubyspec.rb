@@ -3,7 +3,7 @@
 
 IMPLS = {
   truffleruby: {
-    git: "https://github.com/oracle/truffleruby.git",
+    git: "https://github.com/truffleruby/truffleruby.git",
     from_commit: "f10ab6988d",
   },
   jruby: {
@@ -33,6 +33,13 @@ RUBYSPEC_REPO = File.expand_path("../rubyspec", MSPEC_REPO)
 raise RUBYSPEC_REPO unless Dir.exist?(RUBYSPEC_REPO)
 
 SOURCE_REPO = MSPEC ? MSPEC_REPO : RUBYSPEC_REPO
+
+# LAST_MERGE is a commit of ruby/spec or ruby/mspec
+# which is the spec/mspec commit that was last imported in the Ruby implementation
+# (i.e. the commit in "Update to ruby/spec@commit").
+# It is normally automatically computed, but can be manually set when
+# e.g. the last update of specs wasn't merged in the Ruby implementation.
+LAST_MERGE = ENV["LAST_MERGE"]
 
 NOW = Time.now
 
@@ -142,8 +149,8 @@ def rebase_commits(impl)
     else
       sh "git", "checkout", impl.name
 
-      if ENV["LAST_MERGE"]
-        last_merge = `git log -n 1 --format='%H %ct' #{ENV["LAST_MERGE"]}`
+      if LAST_MERGE
+        last_merge = `git log -n 1 --format='%H %ct' #{LAST_MERGE}`
       else
         last_merge = `git log --grep='^#{impl.last_merge_message}' -n 1 --format='%H %ct'`
       end
@@ -183,20 +190,20 @@ def test_new_specs
   Dir.chdir(SOURCE_REPO) do
     workflow = YAML.load_file(".github/workflows/ci.yml")
     job_name = MSPEC ? "test" : "specs"
-    versions = workflow.dig("jobs", job_name, "strategy", "matrix", "ruby")
+    versions = workflow.dig("jobs", job_name, "strategy", "matrix", "ruby").map(&:to_s)
     versions = versions.grep(/^\d+\./) # Test on MRI
     min_version, max_version = versions.minmax
 
     test_command = MSPEC ? "bundle install && bundle exec rspec" : "../mspec/bin/mspec -j"
 
     run_test = -> version {
-      command = "chruby #{version} && #{test_command}"
+      command = "chruby ruby-#{version} && #{test_command}"
       sh ENV["SHELL"], "-c", command
     }
 
     run_test[min_version]
     run_test[max_version]
-    run_test["ruby-master"] if TEST_MASTER
+    run_test["master"] if TEST_MASTER
   end
 end
 

@@ -22,6 +22,13 @@ describe :strscan_pos, shared: true do
     @s.terminate
     @s.send(@method).should == @s.string.length
   end
+
+  it "is not multi-byte character sensitive" do
+    s = StringScanner.new("abcädeföghi")
+
+    s.scan_until(/ö/)
+    s.pos.should == 10
+  end
 end
 
 describe :strscan_pos_set, shared: true do

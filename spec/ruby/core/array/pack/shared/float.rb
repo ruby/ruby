@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 
 describe :array_pack_float_le, shared: true do
   it "encodes a positive Float" do
@@ -25,20 +25,10 @@ describe :array_pack_float_le, shared: true do
     [2.9, 1.4, 8.2].pack(pack_format("*")).should == "\x9a\x999@33\xb3?33\x03A"
   end
 
-  ruby_version_is ""..."3.3" do
-    it "ignores NULL bytes between directives" do
-      suppress_warning do
-        [5.3, 9.2].pack(pack_format("\000", 2)).should == "\x9a\x99\xa9@33\x13A"
-      end
-    end
-  end
-
-  ruby_version_is "3.3" do
-    it "raise ArgumentError for NULL bytes between directives" do
-      -> {
-        [5.3, 9.2].pack(pack_format("\000", 2))
-      }.should raise_error(ArgumentError, /unknown pack directive/)
-    end
+  it "raise ArgumentError for NULL bytes between directives" do
+    -> {
+      [5.3, 9.2].pack(pack_format("\000", 2))
+    }.should raise_error(ArgumentError, /unknown pack directive/)
   end
 
   it "ignores spaces between directives" do
@@ -105,20 +95,10 @@ describe :array_pack_float_be, shared: true do
     [2.9, 1.4, 8.2].pack(pack_format("*")).should == "@9\x99\x9a?\xb333A\x0333"
   end
 
-  ruby_version_is ""..."3.3" do
-    it "ignores NULL bytes between directives" do
-      suppress_warning do
-        [5.3, 9.2].pack(pack_format("\000", 2)).should == "@\xa9\x99\x9aA\x1333"
-      end
-    end
-  end
-
-  ruby_version_is "3.3" do
-    it "raise ArgumentError for NULL bytes between directives" do
-      -> {
-        [5.3, 9.2].pack(pack_format("\000", 2))
-      }.should raise_error(ArgumentError, /unknown pack directive/)
-    end
+  it "raise ArgumentError for NULL bytes between directives" do
+    -> {
+      [5.3, 9.2].pack(pack_format("\000", 2))
+    }.should raise_error(ArgumentError, /unknown pack directive/)
   end
 
   it "ignores spaces between directives" do
@@ -177,20 +157,10 @@ describe :array_pack_double_le, shared: true do
     [2.9, 1.4, 8.2].pack(pack_format("*")).should == "333333\x07@ffffff\xf6?ffffff\x20@"
   end
 
-  ruby_version_is ""..."3.3" do
-    it "ignores NULL bytes between directives" do
-      suppress_warning do
-        [5.3, 9.2].pack(pack_format("\000", 2)).should == "333333\x15@ffffff\x22@"
-      end
-    end
-  end
-
-  ruby_version_is "3.3" do
-    it "raise ArgumentError for NULL bytes between directives" do
-      -> {
-        [5.3, 9.2].pack(pack_format("\000", 2))
-      }.should raise_error(ArgumentError, /unknown pack directive/)
-    end
+  it "raise ArgumentError for NULL bytes between directives" do
+    -> {
+      [5.3, 9.2].pack(pack_format("\000", 2))
+    }.should raise_error(ArgumentError, /unknown pack directive/)
   end
 
   it "ignores spaces between directives" do
@@ -248,20 +218,10 @@ describe :array_pack_double_be, shared: true do
     [2.9, 1.4, 8.2].pack(pack_format("*")).should == "@\x07333333?\xf6ffffff@\x20ffffff"
   end
 
-  ruby_version_is ""..."3.3" do
-    it "ignores NULL bytes between directives" do
-      suppress_warning do
-        [5.3, 9.2].pack(pack_format("\000", 2)).should == "@\x15333333@\x22ffffff"
-      end
-    end
-  end
-
-  ruby_version_is "3.3" do
-    it "raise ArgumentError for NULL bytes between directives" do
-      -> {
-        [5.3, 9.2].pack(pack_format("\000", 2))
-      }.should raise_error(ArgumentError, /unknown pack directive/)
-    end
+  it "raise ArgumentError for NULL bytes between directives" do
+    -> {
+      [5.3, 9.2].pack(pack_format("\000", 2))
+    }.should raise_error(ArgumentError, /unknown pack directive/)
   end
 
   it "ignores spaces between directives" do

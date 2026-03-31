@@ -1,0 +1,3 @@
+a = b c or 1
+        ^~ unexpected 'or', expecting end-of-input
+

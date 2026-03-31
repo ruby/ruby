@@ -18,6 +18,10 @@ describe "IO.select" do
     @wr.syswrite("be ready")
     IO.pipe do |_, wr|
       result = IO.select [@rd], [wr], nil, 0
+      unless result
+        # On some platforms (e.g., Windows), pipe readiness may not be immediate
+        result = IO.select [@rd], [wr], nil, 2
+      end
       result.should == [[@rd], [wr], []]
     end
   end
@@ -112,7 +116,17 @@ describe "IO.select" do
   end
 
   it "raises an ArgumentError when passed a negative timeout" do
-    -> { IO.select(nil, nil, nil, -5)}.should raise_error(ArgumentError)
+    -> { IO.select(nil, nil, nil, -5)}.should raise_error(ArgumentError, "time interval must not be negative")
+  end
+
+  ruby_version_is "4.0" do
+    it "raises an ArgumentError when passed negative infinity as timeout" do
+      -> { IO.select(nil, nil, nil, -Float::INFINITY)}.should raise_error(ArgumentError, "time interval must not be negative")
+    end
+  end
+
+  it "raises an RangeError when passed NaN as timeout" do
+    -> { IO.select(nil, nil, nil, Float::NAN)}.should raise_error(RangeError, "NaN out of Time range")
   end
 
   describe "returns the available descriptors when the file descriptor" do
@@ -149,16 +163,28 @@ describe "IO.select" do
   end
 end
 
-describe "IO.select when passed nil for timeout" do
-  it "sleeps forever and sets the thread status to 'sleep'" do
-    t = Thread.new do
-      IO.select(nil, nil, nil, nil)
-    end
+describe "IO.select with infinite timeout" do
+  describe :io_select_infinite_timeout, shared: true do
+    it "sleeps forever and sets the thread status to 'sleep'" do
+      t = Thread.new do
+        IO.select(nil, nil, nil, @method)
+      end
 
-    Thread.pass while t.status && t.status != "sleep"
-    t.join unless t.status
-    t.status.should == "sleep"
-    t.kill
-    t.join
+      Thread.pass while t.status && t.status != "sleep"
+      t.join unless t.status
+      t.status.should == "sleep"
+      t.kill
+      t.join
+    end
+  end
+
+  describe "IO.select when passed nil for timeout" do
+    it_behaves_like :io_select_infinite_timeout, nil
+  end
+
+  ruby_version_is "4.0" do
+    describe "IO.select when passed Float::INFINITY for timeout" do
+      it_behaves_like :io_select_infinite_timeout, Float::INFINITY
+    end
   end
 end

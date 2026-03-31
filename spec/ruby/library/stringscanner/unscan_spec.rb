@@ -21,8 +21,8 @@ describe "StringScanner#unscan" do
     @s.pos.should == pos
   end
 
-  it "raises a ScanError when the previous match had failed" do
-    -> { @s.unscan }.should raise_error(ScanError)
-    -> { @s.scan(/\d/); @s.unscan }.should raise_error(ScanError)
+  it "raises a StringScanner::Error when the previous match had failed" do
+    -> { @s.unscan }.should raise_error(StringScanner::Error)
+    -> { @s.scan(/\d/); @s.unscan }.should raise_error(StringScanner::Error)
   end
 end

@@ -78,7 +78,33 @@ describe "File.dirname" do
     File.dirname("foo/../").should == "foo"
   end
 
+  it "rejects strings encoded with non ASCII-compatible encodings" do
+    Encoding.list.reject(&:ascii_compatible?).reject(&:dummy?).each do |enc|
+      path = "/foo/bar".encode(enc)
+      -> {
+        File.dirname(path)
+      }.should raise_error(Encoding::CompatibilityError)
+    end
+  end
+
+  it "works with all ASCII-compatible encodings" do
+    Encoding.list.select(&:ascii_compatible?).each do |enc|
+      File.dirname("/foo/bar".encode(enc)).should == "/foo".encode(enc)
+    end
+  end
+
+  it "handles Shift JIS 0x5C (\\) as second byte of a multi-byte sequence" do
+    # dir/fileソname.txt
+    path = "dir/file\x83\x5cname.txt".b.force_encoding(Encoding::SHIFT_JIS)
+    path.valid_encoding?.should be_true
+    File.dirname(path).should == "dir"
+  end
+
   platform_is_not :windows do
+    it "ignores repeated leading / (edge cases on non-windows)" do
+      File.dirname("/////foo/bar/").should == "/foo"
+    end
+
     it "returns all the components of filename except the last one (edge cases on non-windows)" do
       File.dirname('/////').should == '/'
       File.dirname("//foo//").should == "/"
@@ -93,6 +119,13 @@ describe "File.dirname" do
       File.dirname("//foo").should == "//foo"
       File.dirname("//foo//").should == "//foo"
       File.dirname('/////').should == '//'
+    end
+
+    it "handles Shift JIS 0x5C (\\) as second byte of a multi-byte sequence (windows)" do
+      # dir\fileソname.txt
+      path = "dir\\file\x83\x5cname.txt".b.force_encoding(Encoding::SHIFT_JIS)
+      path.valid_encoding?.should be_true
+      File.dirname(path).should == "dir"
     end
   end
 

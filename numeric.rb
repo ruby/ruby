@@ -93,9 +93,14 @@ end
 
 class Integer
   # call-seq:
-  #    -int -> integer
+  #   -self -> integer
   #
-  # Returns +self+, negated.
+  # Returns +self+, negated:
+  #
+  #   -1    # => -1
+  #   -(-1) # => 1
+  #   -0    # => 0
+  #
   def -@
     Primitive.attr! :leaf
     Primitive.cexpr! 'rb_int_uminus(self)'
@@ -322,7 +327,7 @@ class Integer
     1
   end
 
-  with_yjit do
+  with_jit do
     if Primitive.rb_builtin_basic_definition_p(:downto)
       undef :downto
 
@@ -373,9 +378,13 @@ class Float
   alias magnitude abs
 
   # call-seq:
-  #   -float -> float
+  #   -self -> float
   #
-  # Returns +self+, negated.
+  # Returns +self+, negated:
+  #
+  #   -3.14    # => -3.14
+  #   -(-3.14) # => 3.14
+  #   -0.0     # => -0.0
   #
   def -@
     Primitive.attr! :leaf

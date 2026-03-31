@@ -33,7 +33,6 @@ has_rdoc: true
 Gem::Specification.new do |s|
   s.name = %q{keyedlist}
   s.version = %q{0.4.0}
-  s.has_rdoc = true
   s.summary = %q{A Hash which automatically computes keys.}
   s.files = [%q{lib/keyedlist.rb}]
   s.require_paths = [%q{lib}]
@@ -1029,7 +1028,7 @@ dependencies: []
 
     gem = "mingw"
     v   = "1.1.1"
-    platforms = ["x86-mingw32", "x64-mingw32"]
+    platforms = ["x86-mingw32", "x64-mingw-ucrt"]
 
     # create specs
     platforms.each do |plat|
@@ -1248,12 +1247,37 @@ dependencies: []
   end
 
   def test_initialize_nil_version
-    expected = "nil versions are discouraged and will be deprecated in Rubygems 4\n"
-    actual_stdout, actual_stderr = capture_output do
-      Gem::Specification.new.version = nil
+    spec = Gem::Specification.new
+    spec.name = "test-name"
+
+    assert_nil spec.version
+    spec.version = nil
+    assert_nil spec.version
+
+    spec.summary = "test gem"
+    spec.authors = ["test author"]
+    e = assert_raise Gem::InvalidSpecificationException do
+      spec.validate
     end
-    assert_empty actual_stdout
-    assert_equal(expected, actual_stderr)
+    assert_match("missing value for attribute version", e.message)
+  end
+
+  def test_set_version_to_nil_after_setting_version
+    spec = Gem::Specification.new
+    spec.name = "test-name"
+
+    assert_nil spec.version
+    spec.version = "1.0.0"
+    assert_equal "1.0.0", spec.version.to_s
+    spec.version = nil
+    assert_nil spec.version
+
+    spec.summary = "test gem"
+    spec.authors = ["test author"]
+    e = assert_raise Gem::InvalidSpecificationException do
+      spec.validate
+    end
+    assert_match("missing value for attribute version", e.message)
   end
 
   def test__dump
@@ -2216,9 +2240,9 @@ dependencies: []
     s1 = util_spec "a", "1"
     s2 = util_spec "b", "1"
 
-    assert_equal(-1, (s1 <=> s2))
-    assert_equal(0, (s1 <=> s1)) # rubocop:disable Lint/BinaryOperatorWithIdenticalOperands
-    assert_equal(1, (s2 <=> s1))
+    assert_equal(-1, s1 <=> s2)
+    assert_equal(0, s1 <=> s1) # rubocop:disable Lint/BinaryOperatorWithIdenticalOperands
+    assert_equal(1, s2 <=> s1)
   end
 
   def test_spaceship_platform
@@ -2227,18 +2251,18 @@ dependencies: []
       s.platform = Gem::Platform.new "x86-my_platform1"
     end
 
-    assert_equal(-1, (s1 <=> s2))
-    assert_equal(0, (s1 <=> s1)) # rubocop:disable Lint/BinaryOperatorWithIdenticalOperands
-    assert_equal(1, (s2 <=> s1))
+    assert_equal(-1, s1 <=> s2)
+    assert_equal(0, s1 <=> s1) # rubocop:disable Lint/BinaryOperatorWithIdenticalOperands
+    assert_equal(1, s2 <=> s1)
   end
 
   def test_spaceship_version
     s1 = util_spec "a", "1"
     s2 = util_spec "a", "2"
 
-    assert_equal(-1, (s1 <=> s2))
-    assert_equal(0, (s1 <=> s1)) # rubocop:disable Lint/BinaryOperatorWithIdenticalOperands
-    assert_equal(1, (s2 <=> s1))
+    assert_equal(-1, s1 <=> s2)
+    assert_equal(0, s1 <=> s1) # rubocop:disable Lint/BinaryOperatorWithIdenticalOperands
+    assert_equal(1, s2 <=> s1)
   end
 
   def test_spec_file
@@ -2671,27 +2695,7 @@ end
         @a1.validate
       end
 
-      expected = <<-EXPECTED
-#{w}:  prerelease dependency on b (>= 1.0.rc1) is not recommended
-#{w}:  prerelease dependency on c (>= 2.0.rc2, development) is not recommended
-#{w}:  open-ended dependency on i (>= 1.2) is not recommended
-  if i is semantically versioned, use:
-    add_runtime_dependency "i", "~> 1.2"
-#{w}:  open-ended dependency on j (>= 1.2.3) is not recommended
-  if j is semantically versioned, use:
-    add_runtime_dependency "j", "~> 1.2", ">= 1.2.3"
-#{w}:  open-ended dependency on k (> 1.2) is not recommended
-  if k is semantically versioned, use:
-    add_runtime_dependency "k", "~> 1.2", "> 1.2"
-#{w}:  open-ended dependency on l (> 1.2.3) is not recommended
-  if l is semantically versioned, use:
-    add_runtime_dependency "l", "~> 1.2", "> 1.2.3"
-#{w}:  open-ended dependency on o (>= 0) is not recommended
-  use a bounded requirement, such as "~> x.y"
-#{w}:  See https://guides.rubygems.org/specification-reference/ for help
-      EXPECTED
-
-      assert_equal expected, @ui.error, "warning"
+      assert_equal "", @ui.error, "warning"
     end
   end
 
@@ -2808,14 +2812,13 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
     Dir.chdir @tempdir do
       @a1.add_dependency @a1.name, "1"
 
-      use_ui @ui do
+      e = assert_raise Gem::InvalidSpecificationException do
         @a1.validate
       end
 
-      assert_equal <<-EXPECTED, @ui.error
-#{w}:  Self referencing dependency is unnecessary and strongly discouraged.
-#{w}:  See https://guides.rubygems.org/specification-reference/ for help
-      EXPECTED
+      expected = "Dependencies of this gem include a self-reference."
+
+      assert_equal expected, e.message
     end
   end
 
@@ -2880,6 +2883,61 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
       use_ui @ui do
         @a1.validate
       end
+    end
+  end
+
+  def test_validate_extension_require_relative_warning
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @a1.extensions = ["ext/a/extconf.rb"]
+      @a1.files = %w[lib/code.rb lib/a.rb ext/a/extconf.rb]
+
+      File.write File.join("lib", "a.rb"), 'require_relative "a/a"'
+
+      use_ui @ui do
+        @a1.validate
+      end
+
+      assert_match(%r{require_relative "a/a"}, @ui.error)
+      assert_match(/will break in RubyGems 4\.2/, @ui.error)
+      assert_match(/Use `require` instead of `require_relative`/, @ui.error)
+    end
+  end
+
+  def test_validate_extension_require_relative_no_warning_when_rb_exists
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @a1.extensions = ["ext/a/extconf.rb"]
+      @a1.files = %w[lib/code.rb lib/a.rb lib/a/a.rb ext/a/extconf.rb]
+
+      FileUtils.mkdir_p File.join("lib", "a")
+      File.write File.join("lib", "a.rb"), 'require_relative "a/a"'
+      File.write File.join("lib", "a", "a.rb"), ""
+
+      use_ui @ui do
+        @a1.validate
+      end
+
+      refute_match(/require_relative/, @ui.error)
+    end
+  end
+
+  def test_validate_extension_require_relative_no_warning_without_extensions
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @a1.extensions = []
+      @a1.files = %w[lib/code.rb lib/a.rb]
+
+      File.write File.join("lib", "a.rb"), 'require_relative "a/a"'
+
+      use_ui @ui do
+        @a1.validate
+      end
+
+      refute_match(/require_relative/, @ui.error)
     end
   end
 
@@ -3007,6 +3065,65 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
 
     assert_equal "", @ui.output, "output"
     assert_match "#{w}:  bin/exec is missing #! line\n", @ui.error, "error"
+  end
+
+  def test_validate_executables_with_space
+    util_setup_validate
+
+    FileUtils.mkdir_p File.join(@tempdir, "bin")
+    File.write File.join(@tempdir, "bin", "echo hax"), "#!/usr/bin/env ruby\n"
+
+    @a1.executables = ["echo hax"]
+
+    e = assert_raise Gem::InvalidSpecificationException do
+      use_ui @ui do
+        Dir.chdir @tempdir do
+          @a1.validate
+        end
+      end
+    end
+
+    assert_match "executable \"echo hax\" contains invalid characters", e.message
+  end
+
+  def test_validate_executables_with_path_separator
+    util_setup_validate
+
+    FileUtils.mkdir_p File.join(@tempdir, "bin")
+    File.write File.join(@tempdir, "exe"), "#!/usr/bin/env ruby\n"
+
+    @a1.executables = Gem.win_platform? ? ["..\\exe"] : ["../exe"]
+
+    e = assert_raise Gem::InvalidSpecificationException do
+      use_ui @ui do
+        Dir.chdir @tempdir do
+          @a1.validate
+        end
+      end
+    end
+
+    assert_match "executable \"#{Gem.win_platform? ? "..\\exe" : "../exe"}\" contains invalid characters", e.message
+  end
+
+  def test_validate_executables_with_path_list_separator
+    sep = Gem.win_platform? ? ";" : ":"
+
+    util_setup_validate
+
+    FileUtils.mkdir_p File.join(@tempdir, "bin")
+    File.write File.join(@tempdir, "bin", "foo#{sep}bar"), "#!/usr/bin/env ruby\n"
+
+    @a1.executables = ["foo#{sep}bar"]
+
+    e = assert_raise Gem::InvalidSpecificationException do
+      use_ui @ui do
+        Dir.chdir @tempdir do
+          @a1.validate
+        end
+      end
+    end
+
+    assert_match "executable \"foo#{sep}bar\" contains invalid characters", e.message
   end
 
   def test_validate_empty_require_paths
@@ -3664,8 +3781,6 @@ Did you mean 'Ruby'?
   end
 
   def test__load_fixes_Date_objects
-    pend "Marshal.load of links and floats is broken on truffleruby, see https://github.com/oracle/truffleruby/issues/3747" if RUBY_ENGINE == "truffleruby"
-
     spec = util_spec "a", 1
     spec.instance_variable_set :@date, Date.today
 

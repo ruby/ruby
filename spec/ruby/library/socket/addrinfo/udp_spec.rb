@@ -27,10 +27,8 @@ describe 'Addrinfo.udp' do
       Addrinfo.udp(ip_address, 80).socktype.should == Socket::SOCK_DGRAM
     end
 
-    platform_is_not :solaris do
-      it 'sets the socket protocol' do
-        Addrinfo.udp(ip_address, 80).protocol.should == Socket::IPPROTO_UDP
-      end
+    it 'sets the socket protocol' do
+      Addrinfo.udp(ip_address, 80).protocol.should == Socket::IPPROTO_UDP
     end
   end
 end

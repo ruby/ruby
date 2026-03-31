@@ -119,6 +119,12 @@ module Prism
       assert Prism.parse_success?("1 + 1", version: "3.5")
       assert Prism.parse_success?("1 + 1", version: "3.5.0")
 
+      assert Prism.parse_success?("1 + 1", version: "4.0")
+      assert Prism.parse_success?("1 + 1", version: "4.0.0")
+
+      assert Prism.parse_success?("1 + 1", version: "4.1")
+      assert Prism.parse_success?("1 + 1", version: "4.1.0")
+
       assert Prism.parse_success?("1 + 1", version: "latest")
 
       # Test edge case
@@ -138,6 +144,18 @@ module Prism
       assert_raise ArgumentError do
         Prism.parse("1 + 1", version: "3.6.0")
       end
+    end
+
+    def test_version_current
+      if RUBY_VERSION >= "3.3"
+        assert Prism.parse_success?("1 + 1", version: "current")
+      else
+        assert_raise(CurrentVersionError) { Prism.parse_success?("1 + 1", version: "current") }
+      end
+    end
+
+    def test_nearest
+      assert Prism.parse_success?("1 + 1", version: "nearest")
     end
 
     def test_scopes

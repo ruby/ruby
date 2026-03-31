@@ -3,6 +3,7 @@ module StructClasses
   class Apple < Struct; end
 
   Ruby = Struct.new(:version, :platform)
+  Single = Struct.new(:value)
 
   Car = Struct.new(:make, :model, :year)
 

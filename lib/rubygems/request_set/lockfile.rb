@@ -38,7 +38,7 @@ class Gem::RequestSet::Lockfile
   end
 
   ##
-  # Creates a new Lockfile for the given +request_set+ and +gem_deps_file+
+  # Creates a new Lockfile for the given Gem::RequestSet and +gem_deps_file+
   # location.
 
   def self.build(request_set, gem_deps_file, dependencies = nil)

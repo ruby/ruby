@@ -168,7 +168,7 @@ RSpec.describe "bundler plugin install" do
       build_repo2 do
         build_plugin "chaplin" do |s|
           s.write "plugins.rb", <<-RUBY
-            raise "I got you man"
+            raise RuntimeError, "threw exception on load"
           RUBY
         end
       end
@@ -202,13 +202,6 @@ RSpec.describe "bundler plugin install" do
 
       expect(out).to include("Installed plugin foo")
       plugin_should_be_installed("foo")
-    end
-
-    it "raises an error when both git and local git sources are specified", bundler: "< 3" do
-      bundle "plugin install foo --git /phony/path/project --local_git git@gitphony.com:/repo/project", raise_on_error: false
-
-      expect(exitstatus).not_to eq(0)
-      expect(err).to eq("Remote and local plugin git sources can't be both specified")
     end
   end
 
@@ -270,6 +263,43 @@ RSpec.describe "bundler plugin install" do
 
       expect(the_bundle).to include_gems("myrack 1.0.0")
       plugin_should_be_installed("foo")
+    end
+
+    it "overrides the index with the new plugin version" do
+      gemfile <<-G
+        source 'https://gem.repo2'
+        plugin 'foo', "1.0"
+        gem 'myrack', "1.0.0"
+      G
+
+      bundle "install"
+
+      update_repo2 do
+        build_plugin "foo", "2.0.0"
+      end
+
+      gemfile <<-G
+        source 'https://gem.repo2'
+        plugin 'foo', "2.0"
+        gem 'myrack', "1.0.0"
+      G
+
+      bundle "install"
+
+      expected = local_plugin_gem("foo-2.0.0", "lib").to_s
+      expect(Bundler::Plugin.index.load_paths("foo")).to eq([expected])
+    end
+
+    it "respects bundler groups" do
+      gemfile <<-G
+        source 'https://gem.repo2'
+        plugin 'foo'
+        gem 'myrack', "1.0.0"
+      G
+
+      bundle "install", env: { "BUNDLE_WITHOUT" => "default" }
+
+      expect(out).to include("Bundle complete! 1 Gemfile dependency, 0 gems now installed.")
     end
 
     it "accepts plugin version" do
@@ -341,7 +371,7 @@ RSpec.describe "bundler plugin install" do
           gem 'myrack', "1.0.0"
         G
 
-        bundle "config set --local deployment true"
+        bundle_config "deployment true"
         install_gemfile <<-G
           source 'https://gem.repo2'
           plugin 'foo'

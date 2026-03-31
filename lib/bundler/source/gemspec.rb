@@ -10,6 +10,10 @@ module Bundler
         super
         @gemspec = options["gemspec"]
       end
+
+      def to_s
+        "gemspec at `#{@path}`"
+      end
     end
   end
 end

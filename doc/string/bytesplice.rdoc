@@ -1,0 +1,66 @@
+Replaces <i>target bytes</i> in +self+ with <i>source bytes</i> from the given string +str+;
+returns +self+.
+
+In the first form, arguments +offset+ and +length+ determine the target bytes,
+and the source bytes are all of the given +str+:
+
+  '0123456789'.bytesplice(0, 3, 'abc')  # => "abc3456789"
+  '0123456789'.bytesplice(3, 3, 'abc')  # => "012abc6789"
+  '0123456789'.bytesplice(0, 50, 'abc') # => "abc"
+  '0123456789'.bytesplice(50, 3, 'abc') # Raises IndexError.
+
+The counts of the target bytes and source source bytes may be different:
+
+  '0123456789'.bytesplice(0, 6, 'abc') # => "abc6789"      # Shorter source.
+  '0123456789'.bytesplice(0, 1, 'abc') # => "abc123456789" # Shorter target.
+
+And either count may be zero (i.e., specifying an empty string):
+
+  '0123456789'.bytesplice(0, 3, '')    # => "3456789"       # Empty source.
+  '0123456789'.bytesplice(0, 0, 'abc') # => "abc0123456789" # Empty target.
+
+In the second form, just as in the first,
+arugments +offset+ and +length+ determine the target bytes;
+argument +str+ _contains_ the source bytes,
+and the additional arguments +str_offset+ and +str_length+
+determine the actual source bytes:
+
+  '0123456789'.bytesplice(0, 3, 'abc', 0, 3) # => "abc3456789"
+  '0123456789'.bytesplice(0, 3, 'abc', 1, 1) # => "b3456789"      # Shorter source.
+  '0123456789'.bytesplice(0, 1, 'abc', 0, 3) # => "abc123456789"  # Shorter target.
+  '0123456789'.bytesplice(0, 3, 'abc', 1, 0) # => "3456789"       # Empty source.
+  '0123456789'.bytesplice(0, 0, 'abc', 0, 3) # => "abc0123456789" # Empty target.
+
+In the third form, argument +range+ determines the target bytes
+and the source bytes are all of the given +str+:
+
+  '0123456789'.bytesplice(0..2, 'abc')  # => "abc3456789"
+  '0123456789'.bytesplice(3..5, 'abc')  # => "012abc6789"
+  '0123456789'.bytesplice(0..5, 'abc')  # => "abc6789"       # Shorter source.
+  '0123456789'.bytesplice(0..0, 'abc')  # => "abc123456789"  # Shorter target.
+  '0123456789'.bytesplice(0..2, '')     # => "3456789"       # Empty source.
+  '0123456789'.bytesplice(0...0, 'abc') # => "abc0123456789" # Empty target.
+
+In the fourth form, just as in the third,
+arugment +range+ determines the target bytes;
+argument +str+ _contains_ the source bytes,
+and the additional argument +str_range+
+determines the actual source bytes:
+
+  '0123456789'.bytesplice(0..2, 'abc', 0..2)  # => "abc3456789"
+  '0123456789'.bytesplice(3..5, 'abc', 0..2)  # => "012abc6789"
+  '0123456789'.bytesplice(0..2, 'abc', 0..1)  # => "ab3456789"     # Shorter source.
+  '0123456789'.bytesplice(0..1, 'abc', 0..2)  # => "abc23456789"   # Shorter target.
+  '0123456789'.bytesplice(0..2, 'abc', 0...0) # => "3456789"       # Empty source.
+  '0123456789'.bytesplice(0...0, 'abc', 0..2) # => "abc0123456789" # Empty target.
+
+In any of the forms, the beginnings and endings of both source and target
+must be on character boundaries.
+
+In these examples, +self+ has five 3-byte characters,
+and so has character boundaries at offsets 0, 3, 6, 9, 12, and 15.
+
+  'こんにちは'.bytesplice(0, 3, 'abc') # => "abcんにちは"
+  'こんにちは'.bytesplice(1, 3, 'abc') # Raises IndexError.
+  'こんにちは'.bytesplice(0, 2, 'abc') # Raises IndexError.
+

@@ -17,7 +17,7 @@ describe "Proc#call on a Proc created with Kernel#lambda or Kernel#proc" do
   it_behaves_like :proc_call_on_proc_or_lambda, :call
 end
 
-describe "Proc#[] with frozen_string_literals" do
+describe "Proc#[] with frozen_string_literal: true/false" do
   it "doesn't duplicate frozen strings" do
     ProcArefSpecs.aref.frozen?.should be_false
     ProcArefSpecs.aref_freeze.frozen?.should be_true

@@ -242,10 +242,8 @@ describe "C-API Kernel function" do
       @s.rb_yield(1) { break 73 }.should == 73
     end
 
-    platform_is_not :"solaris2.10" do # NOTE: i386-pc-solaris2.10
-      it "rb_yield through a callback to a block that breaks with a value returns the value" do
-        @s.rb_yield_indirected(1) { break 73 }.should == 73
-      end
+    it "rb_yield through a callback to a block that breaks with a value returns the value" do
+      @s.rb_yield_indirected(1) { break 73 }.should == 73
     end
 
     it "rb_yield to block passed to enumerator" do
@@ -637,22 +635,24 @@ describe "C-API Kernel function" do
     end
   end
 
-  describe "rb_eval_cmd_kw" do
-    it "evaluates a string of ruby code" do
-      @s.rb_eval_cmd_kw("1+1", [], 0).should == 2
-    end
+  ruby_version_is ""..."4.0" do
+    describe "rb_eval_cmd_kw" do
+      it "evaluates a string of ruby code" do
+        @s.rb_eval_cmd_kw("1+1", [], 0).should == 2
+      end
 
-    it "calls a proc with the supplied arguments" do
-      @s.rb_eval_cmd_kw(-> *x { x.map { |i| i + 1 } }, [1, 3, 7], 0).should == [2, 4, 8]
-    end
+      it "calls a proc with the supplied arguments" do
+        @s.rb_eval_cmd_kw(-> *x { x.map { |i| i + 1 } }, [1, 3, 7], 0).should == [2, 4, 8]
+      end
 
-    it "calls a proc with keyword arguments if kw_splat is non zero" do
-      a_proc = -> *x, **y {
-        res = x.map { |i| i + 1 }
-        y.each { |k, v| res << k; res << v }
-        res
-      }
-      @s.rb_eval_cmd_kw(a_proc, [1, 3, 7, {a: 1, b: 2, c: 3}], 1).should == [2, 4, 8, :a, 1, :b, 2, :c, 3]
+      it "calls a proc with keyword arguments if kw_splat is non zero" do
+        a_proc = -> *x, **y {
+          res = x.map { |i| i + 1 }
+          y.each { |k, v| res << k; res << v }
+          res
+        }
+        @s.rb_eval_cmd_kw(a_proc, [1, 3, 7, {a: 1, b: 2, c: 3}], 1).should == [2, 4, 8, :a, 1, :b, 2, :c, 3]
+      end
     end
   end
 
@@ -700,6 +700,12 @@ describe "C-API Kernel function" do
   describe "rb_set_end_proc" do
     it "runs a C function on shutdown" do
       ruby_exe("require #{kernel_path.inspect}; CApiKernelSpecs.new.rb_set_end_proc(STDOUT)").should == "in write_io"
+    end
+  end
+
+  describe "ruby_vm_at_exit" do
+    it "runs a C function after the VM is terminated" do
+      ruby_exe("require #{kernel_path.inspect}; CApiKernelSpecs.new.ruby_vm_at_exit").should == "ruby_vm_at_exit hook ran\n"
     end
   end
 

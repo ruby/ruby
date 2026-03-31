@@ -57,7 +57,7 @@ RSpec.describe "bundle info" do
     end
 
     it "doesn't claim that bundler is missing, even if using a custom path without bundler there" do
-      bundle "config set --local path vendor/bundle"
+      bundle_config "path vendor/bundle"
       bundle "install"
       bundle "info bundler"
       expect(out).to include("\tPath: #{root}")
@@ -86,7 +86,7 @@ RSpec.describe "bundle info" do
       expect(err).to include(default_bundle_path("gems", "rails-2.3.2").to_s)
     end
 
-    context "given a default gem shippped in ruby", :ruby_repo do
+    context "given a default gem shipped in ruby", :ruby_repo do
       it "prints information about the default gem" do
         bundle "info json"
         expect(out).to include("* json")
@@ -235,7 +235,7 @@ RSpec.describe "bundle info" do
 
   context "with without configured" do
     it "does not find the gem, but gives a helpful error" do
-      bundle "config without test"
+      bundle_config "without test"
 
       install_gemfile <<-G
         source "https://gem.repo1"

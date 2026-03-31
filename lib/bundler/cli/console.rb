@@ -21,6 +21,11 @@ module Bundler
       get_constant(name)
     rescue LoadError
       if name == "irb"
+        if defined?(Gem::BUNDLED_GEMS) && Gem::BUNDLED_GEMS.respond_to?(:force_activate)
+          Gem::BUNDLED_GEMS.force_activate "irb"
+          require name
+          return get_constant(name)
+        end
         Bundler.ui.error "#{name} is not available"
         exit 1
       else

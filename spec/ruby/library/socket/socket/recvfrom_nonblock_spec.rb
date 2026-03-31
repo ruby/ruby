@@ -158,61 +158,30 @@ describe 'Socket#recvfrom_nonblock' do
         @client.close unless @client.closed?
       end
 
-      ruby_version_is ""..."3.3" do
-        it "returns an empty String as received data on a closed stream socket" do
-          ready = false
+      it "returns nil on a closed stream socket" do
+        ready = false
 
-          t = Thread.new do
-            client, _ = @server.accept
+        t = Thread.new do
+          client, _ = @server.accept
 
-            Thread.pass while !ready
-            begin
-              client.recvfrom_nonblock(10)
-            rescue IO::EAGAINWaitReadable
-              retry
-            end
-          ensure
-            client.close if client
+          Thread.pass while !ready
+          begin
+            client.recvfrom_nonblock(10)
+          rescue IO::EAGAINWaitReadable
+            retry
           end
-
-          Thread.pass while t.status and t.status != "sleep"
-          t.status.should_not be_nil
-
-          @client.connect(@server_addr)
-          @client.close
-          ready = true
-
-          t.value.should.is_a? Array
-          t.value[0].should == ""
+        ensure
+          client.close if client
         end
-      end
 
-      ruby_version_is "3.3" do
-        it "returns nil on a closed stream socket" do
-          ready = false
+        Thread.pass while t.status and t.status != "sleep"
+        t.status.should_not be_nil
 
-          t = Thread.new do
-            client, _ = @server.accept
+        @client.connect(@server_addr)
+        @client.close
+        ready = true
 
-            Thread.pass while !ready
-            begin
-              client.recvfrom_nonblock(10)
-            rescue IO::EAGAINWaitReadable
-              retry
-            end
-          ensure
-            client.close if client
-          end
-
-          Thread.pass while t.status and t.status != "sleep"
-          t.status.should_not be_nil
-
-          @client.connect(@server_addr)
-          @client.close
-          ready = true
-
-          t.value.should be_nil
-        end
+        t.value.should be_nil
       end
     end
   end

@@ -1,9 +1,8 @@
 require_relative "../thor"
 require_relative "group"
 
-require "yaml"
 require "digest/sha2"
-require "pathname"
+require "pathname" unless defined?(Pathname)
 
 class Bundler::Thor::Runner < Bundler::Thor #:nodoc:
   map "-T" => :list, "-i" => :install, "-u" => :update, "-v" => :version
@@ -195,6 +194,7 @@ private
   def thor_yaml
     @thor_yaml ||= begin
       yaml_file = File.join(thor_root, "thor.yml")
+      require "yaml"
       yaml = YAML.load_file(yaml_file) if File.exist?(yaml_file)
       yaml || {}
     end

@@ -17,7 +17,7 @@ class TestFiberCurrentRactor < Test::Unit::TestCase
           Fiber.current.class
         end.resume
       end
-      assert_equal(Fiber, r.take)
+      assert_equal(Fiber, r.value)
     end;
   end
 end

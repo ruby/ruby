@@ -16,11 +16,21 @@ module BundledGem
     "psych" # rdoc
   ]
 
+  def self.command(gem, cmd)
+    if stub = Gem::Specification.latest_spec_for(gem)
+      spec = stub.spec
+      File.join(spec.gem_dir, spec.bindir, cmd)
+    end
+  end
+
   module_function
 
   def unpack(file, *rest)
     pkg = Gem::Package.new(file)
-    prepare_test(pkg.spec, *rest) {|dir| pkg.extract_files(dir)}
+    prepare_test(pkg.spec, *rest) do |dir|
+      pkg.extract_files(dir)
+      FileUtils.rm_rf(Dir.glob(".git*", base: dir).map {|n| File.join(dir, n)})
+    end
     puts "Unpacked #{file}"
   rescue Gem::Package::FormatError, Errno::ENOENT
     puts "Try with hash version of bundled gems instead of #{file}. We don't use this gem with release version of Ruby."

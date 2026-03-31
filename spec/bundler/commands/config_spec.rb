@@ -592,3 +592,20 @@ RSpec.describe "setting gemfile via config" do
     end
   end
 end
+
+RSpec.describe "setting lockfile via config" do
+  it "persists the lockfile location to .bundle/config" do
+    gemfile bundled_app("NotGemfile"), <<-G
+      source "https://gem.repo1"
+      gem 'myrack'
+    G
+
+    bundle "config set --local gemfile #{bundled_app("NotGemfile")}"
+    bundle "config set --local lockfile #{bundled_app("ReallyNotGemfile.lock")}"
+    expect(File.exist?(bundled_app(".bundle/config"))).to eq(true)
+
+    bundle "config list"
+    expect(out).to include("NotGemfile")
+    expect(out).to include("ReallyNotGemfile.lock")
+  end
+end

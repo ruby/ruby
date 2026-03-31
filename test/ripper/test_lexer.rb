@@ -344,6 +344,47 @@ world"
     ]
 
     assert_lexer(expected, code)
+
+    code = <<~'HEREDOC'
+      <<H1
+      #{<<H2}a
+      H2
+      b
+    HEREDOC
+
+    expected = [
+      [[1, 0], :on_heredoc_beg, "<<H1", state(:EXPR_BEG)],
+      [[1, 4], :on_nl, "\n", state(:EXPR_BEG)],
+      [[2, 0], :on_embexpr_beg, "\#{", state(:EXPR_BEG)],
+      [[2, 2], :on_heredoc_beg, "<<H2", state(:EXPR_BEG)],
+      [[2, 6], :on_embexpr_end, "}", state(:EXPR_END)],
+      [[2, 7], :on_tstring_content, "a\n", state(:EXPR_BEG)],
+      [[3, 0], :on_heredoc_end, "H2\n", state(:EXPR_BEG)],
+      [[4, 0], :on_tstring_content, "b\n", state(:EXPR_BEG)]
+    ]
+
+    assert_lexer(expected, code)
+
+    code = <<~'HEREDOC'
+      <<H1
+      #{<<H2}a
+      H2
+      b
+      c
+    HEREDOC
+
+    expected = [
+      [[1, 0], :on_heredoc_beg, "<<H1", state(:EXPR_BEG)],
+      [[1, 4], :on_nl, "\n", state(:EXPR_BEG)],
+      [[2, 0], :on_embexpr_beg, "\#{", state(:EXPR_BEG)],
+      [[2, 2], :on_heredoc_beg, "<<H2", state(:EXPR_BEG)],
+      [[2, 6], :on_embexpr_end, "}", state(:EXPR_END)],
+      [[2, 7], :on_tstring_content, "a\n", state(:EXPR_BEG)],
+      [[3, 0], :on_heredoc_end, "H2\n", state(:EXPR_BEG)],
+      [[4, 0], :on_tstring_content, "b\nc\n", state(:EXPR_BEG)]
+    ]
+
+    assert_lexer(expected, code)
   end
 
   def test_invalid_escape_ctrl_mbchar
@@ -541,6 +582,58 @@ world"
       [[1, 0], :on_int, "1", state(:EXPR_END)],
       [[1, 1], :on_nl, "\n", state(:EXPR_BEG)],
       [[2, 0], :on_sp, "\t \t", state(:EXPR_END)],
+    ]
+    assert_lexer(expected, code)
+  end
+
+  def test_fluent_and
+    code = "foo\n" "and"
+    expected = [
+      [[1, 0], :on_ident, "foo", state(:EXPR_CMDARG)],
+      [[1, 3], :on_ignored_nl, "\n", state(:EXPR_CMDARG)],
+      [[2, 0], :on_kw, "and", state(:EXPR_BEG)],
+    ]
+    assert_lexer(expected, code)
+
+    code = "foo\n" "and?"
+    expected = [
+      [[1, 0], :on_ident, "foo", state(:EXPR_CMDARG)],
+      [[1, 3], :on_nl, "\n", state(:EXPR_BEG)],
+      [[2, 0], :on_ident, "and?", state(:EXPR_CMDARG)],
+    ]
+    assert_lexer(expected, code)
+
+    code = "foo\n" "and!"
+    expected = [
+      [[1, 0], :on_ident, "foo", state(:EXPR_CMDARG)],
+      [[1, 3], :on_nl, "\n", state(:EXPR_BEG)],
+      [[2, 0], :on_ident, "and!", state(:EXPR_CMDARG)],
+    ]
+    assert_lexer(expected, code)
+  end
+
+  def test_fluent_or
+    code = "foo\n" "or"
+    expected = [
+      [[1, 0], :on_ident, "foo", state(:EXPR_CMDARG)],
+      [[1, 3], :on_ignored_nl, "\n", state(:EXPR_CMDARG)],
+      [[2, 0], :on_kw, "or", state(:EXPR_BEG)],
+    ]
+    assert_lexer(expected, code)
+
+    code = "foo\n" "or?"
+    expected = [
+      [[1, 0], :on_ident, "foo", state(:EXPR_CMDARG)],
+      [[1, 3], :on_nl, "\n", state(:EXPR_BEG)],
+      [[2, 0], :on_ident, "or?", state(:EXPR_CMDARG)],
+    ]
+    assert_lexer(expected, code)
+
+    code = "foo\n" "or!"
+    expected = [
+      [[1, 0], :on_ident, "foo", state(:EXPR_CMDARG)],
+      [[1, 3], :on_nl, "\n", state(:EXPR_BEG)],
+      [[2, 0], :on_ident, "or!", state(:EXPR_CMDARG)],
     ]
     assert_lexer(expected, code)
   end

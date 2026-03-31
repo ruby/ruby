@@ -2,7 +2,7 @@ require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 
 # TODO: verify these for windows
-describe "TCPSocket#gethostbyname" do
+describe "TCPSocket.gethostbyname" do
   before :each do
     suppress_warning do
       @host_info = TCPSocket.gethostbyname(SocketSpecs.hostname)
@@ -52,7 +52,7 @@ describe "TCPSocket#gethostbyname" do
   end
 end
 
-describe 'TCPSocket#gethostbyname' do
+describe 'TCPSocket.gethostbyname' do
   it 'returns an Array' do
     suppress_warning do
       TCPSocket.gethostbyname('127.0.0.1').should be_an_instance_of(Array)

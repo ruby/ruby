@@ -1,45 +1,49 @@
 require_relative "../../spec_helper"
+require_relative "../integer/shared/integer_floor_precision"
 
 describe "Rational#floor" do
+  context "with values equal to integers" do
+    it_behaves_like :integer_floor_precision, :Rational
+  end
+
   before do
     @rational = Rational(2200, 7)
   end
 
   describe "with no arguments (precision = 0)" do
-    it "returns an integer" do
-      @rational.floor.should be_kind_of(Integer)
-    end
 
-    it "returns the truncated value toward negative infinity" do
-      @rational.floor.should == 314
-      Rational(1, 2).floor.should == 0
-      Rational(-1, 2).floor.should == -1
+    it "returns the Integer value rounded toward negative infinity" do
+      @rational.floor.should eql 314
+
+      Rational(1, 2).floor.should eql 0
+      Rational(-1, 2).floor.should eql(-1)
+      Rational(1, 1).floor.should eql 1
     end
   end
 
   describe "with a precision < 0" do
-    it "returns an integer" do
-      @rational.floor(-2).should be_kind_of(Integer)
-      @rational.floor(-1).should be_kind_of(Integer)
-    end
+    it "moves the rounding point n decimal places left, returning an Integer" do
+      @rational.floor(-3).should eql 0
+      @rational.floor(-2).should eql 300
+      @rational.floor(-1).should eql 310
 
-    it "moves the truncation point n decimal places left" do
-      @rational.floor(-3).should == 0
-      @rational.floor(-2).should == 300
-      @rational.floor(-1).should == 310
+      Rational(100, 2).floor(-1).should eql 50
+      Rational(100, 2).floor(-2).should eql 0
+      Rational(-100, 2).floor(-1).should eql(-50)
+      Rational(-100, 2).floor(-2).should eql(-100)
     end
   end
 
   describe "with a precision > 0" do
-    it "returns a Rational" do
-      @rational.floor(1).should be_kind_of(Rational)
-      @rational.floor(2).should be_kind_of(Rational)
-    end
+    it "moves the rounding point n decimal places right, returning a Rational" do
+      @rational.floor(1).should eql Rational(1571, 5)
+      @rational.floor(2).should eql Rational(7857, 25)
+      @rational.floor(3).should eql Rational(62857, 200)
 
-    it "moves the truncation point n decimal places right" do
-      @rational.floor(1).should == Rational(1571, 5)
-      @rational.floor(2).should == Rational(7857, 25)
-      @rational.floor(3).should == Rational(62857, 200)
+      Rational(100, 2).floor(1).should eql Rational(50, 1)
+      Rational(100, 2).floor(2).should eql Rational(50, 1)
+      Rational(-100, 2).floor(1).should eql Rational(-50, 1)
+      Rational(-100, 2).floor(2).should eql Rational(-50, 1)
     end
   end
 end

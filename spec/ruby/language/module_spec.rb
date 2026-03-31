@@ -30,20 +30,35 @@ describe "The module keyword" do
     ModuleSpecs.send(:remove_const, :Reopened)
   end
 
-  ruby_version_is '3.2' do
-    it "does not reopen a module included in Object" do
-      module IncludedModuleSpecs; Reopened = true; end
-      ModuleSpecs::IncludedInObject::IncludedModuleSpecs.should_not == Object::IncludedModuleSpecs
-    ensure
-      IncludedModuleSpecs.send(:remove_const, :Reopened)
-    end
+  it "does not reopen a module included in Object" do
+    ruby_exe(<<~RUBY).should == "false"
+      module IncludedInObject
+        module IncludedModule; end
+      end
+      class Object
+        include IncludedInObject
+      end
+      module IncludedModule; end
+      print IncludedInObject::IncludedModule == Object::IncludedModule
+    RUBY
   end
 
-  ruby_version_is ''...'3.2' do
-    it "reopens a module included in Object" do
-      module IncludedModuleSpecs; Reopened = true; end
-      ModuleSpecs::IncludedInObject::IncludedModuleSpecs::Reopened.should be_true
-    end
+  it "does not reopen a module included in non-Object modules" do
+    ruby_exe(<<~RUBY).should == "false/false"
+      module Included
+        module IncludedModule; end
+      end
+      module M
+        include Included
+        module IncludedModule; end
+      end
+      class C
+        include Included
+        module IncludedModule; end
+      end
+      print Included::IncludedModule == M::IncludedModule, "/",
+            Included::IncludedModule == C::IncludedModule
+    RUBY
   end
 
   it "raises a TypeError if the constant is a Class" do

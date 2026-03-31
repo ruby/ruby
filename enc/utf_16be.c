@@ -249,7 +249,11 @@ OnigEncodingDefine(utf_16be, UTF_16BE) = {
   onigenc_utf16_32_get_ctype_code_range,
   utf16be_left_adjust_char_head,
   onigenc_always_false_is_allowed_reverse_match,
+#ifdef USE_CASE_MAP_API
   onigenc_unicode_case_map,
+#else
+  NULL,
+#endif
   0,
   ONIGENC_FLAG_UNICODE,
 };

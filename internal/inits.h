@@ -9,6 +9,10 @@
  * @brief      Internal header aggregating init functions.
  */
 
+/* box.c */
+void Init_enable_box(void);
+void Init_root_box(void);
+
 /* class.c */
 void Init_class_hierarchy(void);
 

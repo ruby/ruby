@@ -36,6 +36,13 @@ VALUE exception_spec_rb_set_errinfo(VALUE self, VALUE exc) {
   return Qnil;
 }
 
+NORETURN(VALUE exception_spec_rb_error_frozen_object(VALUE self, VALUE object));
+
+VALUE exception_spec_rb_error_frozen_object(VALUE self, VALUE object) {
+  rb_error_frozen_object(object);
+  UNREACHABLE_RETURN(Qnil);
+}
+
 VALUE exception_spec_rb_syserr_new(VALUE self, VALUE num, VALUE msg) {
   int n = NUM2INT(num);
   char *cstr = NULL;
@@ -66,6 +73,7 @@ void Init_exception_spec(void) {
   rb_define_method(cls, "rb_exc_new3", exception_spec_rb_exc_new3, 1);
   rb_define_method(cls, "rb_exc_raise", exception_spec_rb_exc_raise, 1);
   rb_define_method(cls, "rb_set_errinfo", exception_spec_rb_set_errinfo, 1);
+  rb_define_method(cls, "rb_error_frozen_object", exception_spec_rb_error_frozen_object, 1);
   rb_define_method(cls, "rb_syserr_new", exception_spec_rb_syserr_new, 2);
   rb_define_method(cls, "rb_syserr_new_str", exception_spec_rb_syserr_new_str, 2);
   rb_define_method(cls, "rb_make_exception", exception_spec_rb_make_exception, 1);

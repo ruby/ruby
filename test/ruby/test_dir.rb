@@ -653,6 +653,8 @@ class TestDir < Test::Unit::TestCase
         File.unlink("#{long_path}/c")
         Dir.rmdir(long_path)
       end
+    rescue Errno::ENOENT
+      omit "File system does not support long file name"
     end
   end
 

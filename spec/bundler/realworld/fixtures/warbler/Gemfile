@@ -3,5 +3,5 @@
 source "https://rubygems.org"
 
 gem "demo", path: "./demo"
-gem "jruby-jars", "~> 9.4"
-gem "warbler", "~> 2.0"
+gem "jruby-jars", "~> 10.0"
+gem "warbler", github: "https://github.com/jruby/warbler/pull/557"

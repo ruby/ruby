@@ -1,5 +1,7 @@
 # extension.ja.rdoc -  -*- RDoc -*- created at: Mon Aug  7 16:45:54 JST 1995
 
+{English}[rdoc-ref:extension.rdoc]
+
 = Rubyの拡張ライブラリの作り方
 
 Rubyの拡張ライブラリの作り方を説明します．
@@ -335,11 +337,11 @@ rb_ary_aref(int argc, const VALUE *argv, VALUE ary) ::
 
 rb_ary_entry(VALUE ary, long offset) ::
 
-  \ary[offset]
+  ary\[offset]
 
 rb_ary_store(VALUE ary, long offset, VALUE obj) ::
 
-  \ary[offset] = obj
+  ary\[offset] = obj
 
 rb_ary_subseq(VALUE ary, long beg, long len) ::
 

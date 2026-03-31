@@ -493,7 +493,7 @@ describe "Pattern matching" do
           in [0, 0] | [0, a]
           end
         RUBY
-      }.should raise_error(SyntaxError, /illegal variable in alternative pattern/)
+      }.should raise_error(SyntaxError)
     end
 
     it "support underscore prefixed variables in alternation" do

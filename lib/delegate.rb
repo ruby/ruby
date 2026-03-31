@@ -39,7 +39,8 @@
 # Be advised, RDoc will not detect delegated methods.
 #
 class Delegator < BasicObject
-  VERSION = "0.4.0"
+  # The version string
+  VERSION = "0.6.1"
 
   kernel = ::Kernel.dup
   kernel.class_eval do
@@ -77,7 +78,7 @@ class Delegator < BasicObject
   end
 
   #
-  # Handles the magic of delegation through \_\_getobj\_\_.
+  # Handles the magic of delegation through +__getobj__+.
   #
   ruby2_keywords def method_missing(m, *args, &block)
     r = true
@@ -94,7 +95,7 @@ class Delegator < BasicObject
 
   #
   # Checks for a method provided by this the delegate object by forwarding the
-  # call through \_\_getobj\_\_.
+  # call through +__getobj__+.
   #
   def respond_to_missing?(m, include_private)
     r = true
@@ -107,7 +108,7 @@ class Delegator < BasicObject
     r
   end
 
-  KERNEL_RESPOND_TO = ::Kernel.instance_method(:respond_to?)
+  KERNEL_RESPOND_TO = ::Kernel.instance_method(:respond_to?) # :nodoc:
   private_constant :KERNEL_RESPOND_TO
 
   # Handle BasicObject instances
@@ -126,7 +127,7 @@ class Delegator < BasicObject
 
   #
   # Returns the methods available to this delegate object as the union
-  # of this object's and \_\_getobj\_\_ methods.
+  # of this object's and +__getobj__+ methods.
   #
   def methods(all=true)
     __getobj__.methods(all) | super
@@ -134,7 +135,7 @@ class Delegator < BasicObject
 
   #
   # Returns the methods available to this delegate object as the union
-  # of this object's and \_\_getobj\_\_ public methods.
+  # of this object's and +__getobj__+ public methods.
   #
   def public_methods(all=true)
     __getobj__.public_methods(all) | super
@@ -142,7 +143,7 @@ class Delegator < BasicObject
 
   #
   # Returns the methods available to this delegate object as the union
-  # of this object's and \_\_getobj\_\_ protected methods.
+  # of this object's and +__getobj__+ protected methods.
   #
   def protected_methods(all=true)
     __getobj__.protected_methods(all) | super
@@ -175,7 +176,7 @@ class Delegator < BasicObject
   end
 
   #
-  # Delegates ! to the \_\_getobj\_\_
+  # Delegates ! to the +__getobj__+
   #
   def !
     !__getobj__
@@ -198,7 +199,7 @@ class Delegator < BasicObject
   end
 
   #
-  # Serialization support for the object returned by \_\_getobj\_\_.
+  # Serialization support for the object returned by +__getobj__+.
   #
   def marshal_dump
     ivars = instance_variables.reject {|var| /\A@delegate_/ =~ var}
@@ -232,7 +233,7 @@ class Delegator < BasicObject
 
   ##
   # :method: freeze
-  # Freeze both the object returned by \_\_getobj\_\_ and self.
+  # Freeze both the object returned by +__getobj__+ and self.
   #
   def freeze
     __getobj__.freeze
@@ -343,13 +344,6 @@ class SimpleDelegator < Delegator
   end
 end
 
-def Delegator.delegating_block(mid) # :nodoc:
-  lambda do |*args, &block|
-    target = self.__getobj__
-    target.__send__(mid, *args, &block)
-  end.ruby2_keywords
-end
-
 #
 # The primary interface to this library.  Use to setup delegation when defining
 # your class.
@@ -398,6 +392,32 @@ def DelegateClass(superclass, &block)
   protected_instance_methods -= ignores
   public_instance_methods = superclass.public_instance_methods
   public_instance_methods -= ignores
+
+  methods_to_define =
+    public_instance_methods.map { |x| [x, false] } +
+    protected_instance_methods.map { |x| [x, true] }
+
+  source = []
+
+  methods_to_define.each do |target_name, is_protected|
+    unless target_name.match?(/\A[_a-zA-Z]\w*[!\?]?\z/)
+      placeholder_name = :__delegate
+    end
+
+    send_source =
+      if is_protected || placeholder_name
+        "__getobj__.__send__(#{target_name.inspect}, ...)"
+      else
+        "__getobj__.#{target_name}(...)"
+      end
+    source << "def #{placeholder_name || target_name}(...); #{send_source}; end"
+
+    if placeholder_name
+      source << "alias_method #{target_name.inspect}, :#{placeholder_name}"
+      source << "remove_method :#{placeholder_name}"
+    end
+  end
+
   klass.module_eval do
     def __getobj__ # :nodoc:
       unless defined?(@delegate_dc_obj)
@@ -406,18 +426,17 @@ def DelegateClass(superclass, &block)
       end
       @delegate_dc_obj
     end
+
     def __setobj__(obj)  # :nodoc:
       __raise__ ::ArgumentError, "cannot delegate to self" if self.equal?(obj)
       @delegate_dc_obj = obj
     end
-    protected_instance_methods.each do |method|
-      define_method(method, Delegator.delegating_block(method))
-      protected method
-    end
-    public_instance_methods.each do |method|
-      define_method(method, Delegator.delegating_block(method))
-    end
+
+    class_eval(source.join(";"), __FILE__, __LINE__)
+
+    protected(*protected_instance_methods)
   end
+
   klass.define_singleton_method :public_instance_methods do |all=true|
     super(all) | superclass.public_instance_methods
   end

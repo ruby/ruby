@@ -6,7 +6,7 @@ module Bundler
     def initialize(options, gem_name)
       @options = options
       @gem_name = gem_name
-      @verbose = options[:verbose] || options[:outdated]
+      @verbose = options[:verbose]
       @latest_specs = fetch_latest_specs if @verbose
     end
 
@@ -57,12 +57,8 @@ module Bundler
 
     def fetch_latest_specs
       definition = Bundler.definition(true)
-      if options[:outdated]
-        Bundler.ui.info "Fetching remote specs for outdated check...\n\n"
-        Bundler.ui.silence { definition.remotely! }
-      else
-        definition.with_cache!
-      end
+      Bundler.ui.info "Fetching remote specs for outdated check...\n\n"
+      Bundler.ui.silence { definition.remotely! }
       Bundler.reset!
       definition.specs
     end

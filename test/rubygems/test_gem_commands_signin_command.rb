@@ -121,7 +121,7 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     assert_match "The default access scope is:", key_name_ui.output
     assert_match "index_rubygems: y", key_name_ui.output
     assert_match "Do you want to customise scopes? [yN]", key_name_ui.output
-    assert_equal "name=test-key&index_rubygems=true", fetcher.last_request.body
+    assert_equal "name=test-key&index_rubygems=true&push_rubygem=true", fetcher.last_request.body
 
     credentials = load_yaml_file Gem.configuration.credentials_path
     assert_equal api_key, credentials[:rubygems_api_key]

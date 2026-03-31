@@ -83,11 +83,9 @@ describe :io_readlines_options_19, shared: true do
         -> { IO.send(@method, @name, 2**128, &@object) }.should raise_error(RangeError)
       end
 
-      ruby_bug "#18767", ""..."3.3" do
-        describe "when passed limit" do
-          it "raises ArgumentError when passed 0 as a limit" do
-            -> { IO.send(@method, @name, 0, &@object) }.should raise_error(ArgumentError)
-          end
+      describe "when passed limit" do
+        it "raises ArgumentError when passed 0 as a limit" do
+          -> { IO.send(@method, @name, 0, &@object) }.should raise_error(ArgumentError)
         end
       end
     end

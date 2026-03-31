@@ -75,11 +75,11 @@ PRINTF_ARGS(void rb_warn_deprecated_to_remove(const char *removal, const char *f
 PRINTF_ARGS(void rb_warn_reserved_name(const char *removal, const char *fmt, ...), 2, 3);
 #if RUBY_DEBUG
 # include "ruby/version.h"
-# define RUBY_VERSION_SINCE(major, minor) (RUBY_API_VERSION_CODE >= (major * 10000) + (minor) * 100)
-# define RUBY_VERSION_BEFORE(major, minor) (RUBY_API_VERSION_CODE < (major * 10000) + (minor) * 100)
+# define RUBY_VERSION_SINCE(major, minor) (RUBY_API_VERSION_CODE >= (major) * 10000 + (minor) * 100)
+# define RUBY_VERSION_BEFORE(major, minor) (RUBY_API_VERSION_CODE < (major) * 10000 + (minor) * 100)
 # if defined(RBIMPL_WARNING_PRAGMA0)
 #   define RBIMPL_TODO0(x) RBIMPL_WARNING_PRAGMA0(message(x))
-# elif RBIMPL_COMPILER_SINCE(MSVC, 12, 0, 0)
+# elif RBIMPL_COMPILER_IS(MSVC)
 #   define RBIMPL_TODO0(x) __pragma(message(x))
 # endif
 
@@ -186,6 +186,9 @@ static inline void Check_Type(VALUE v, enum ruby_value_type t);
 static inline bool rb_typeddata_is_instance_of_inline(VALUE obj, const rb_data_type_t *data_type);
 #define rb_typeddata_is_instance_of rb_typeddata_is_instance_of_inline
 void rb_bug_without_die(const char *fmt, ...);
+NORETURN(void rb_no_implicit_conversion(VALUE val, const char *tname));
+NORETURN(void rb_cant_convert(VALUE val, const char *tname));
+NORETURN(void rb_cant_convert_invalid_return(VALUE val, const char *tname, const char *method_name, VALUE ret));
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* error.c (export) */
@@ -235,10 +238,18 @@ rb_key_err_raise(VALUE mesg, VALUE recv, VALUE name)
     rb_exc_raise(exc);
 }
 
+RBIMPL_ATTR_NONNULL((2))
 static inline bool
 rb_typeddata_is_instance_of_inline(VALUE obj, const rb_data_type_t *data_type)
 {
-    return RB_TYPE_P(obj, T_DATA) && RTYPEDDATA_P(obj) && (RTYPEDDATA_TYPE(obj) == data_type);
+    return rbimpl_obj_typeddata_p(obj) && (RTYPEDDATA_TYPE(obj) == data_type);
 }
+
+typedef enum {
+    rb_stack_overflow_prevention = 0, // VM stack overflow or about to machine stack overflow
+    rb_stack_overflow_signal = 1, // machine stack overflow but may be recoverable
+    rb_stack_overflow_fatal = 2, // fatal machine stack overflow
+} ruby_stack_overflow_critical_level;
+NORETURN(void rb_ec_stack_overflow(struct rb_execution_context_struct *ec, ruby_stack_overflow_critical_level crit));
 
 #endif /* INTERNAL_ERROR_H */

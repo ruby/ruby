@@ -4,8 +4,8 @@
   onigmo.h - Onigmo (Oniguruma-mod) (regular expression library)
 **********************************************************************/
 /*-
- * Copyright (c) 2002-2009  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
- * Copyright (c) 2011-2017  K.Takata  <kentkt AT csc DOT jp>
+ * Copyright (c) 2002-2016  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+ * Copyright (c) 2011-2019  K.Takata  <kentkt AT csc DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -38,8 +38,8 @@ extern "C" {
 #endif
 
 #define ONIGMO_VERSION_MAJOR   6
-#define ONIGMO_VERSION_MINOR   1
-#define ONIGMO_VERSION_TEENY   3
+#define ONIGMO_VERSION_MINOR   2
+#define ONIGMO_VERSION_TEENY   0
 
 #ifndef ONIG_EXTERN
 # ifdef RUBY_EXTERN
@@ -789,8 +789,8 @@ typedef struct re_pattern_buffer {
   unsigned char *exact;
   unsigned char *exact_end;
   unsigned char  map[ONIG_CHAR_TABLE_SIZE]; /* used as BM skip or char-map */
-  int           *int_map;                   /* BM skip for exact_len > 255 */
-  int           *int_map_backward;          /* BM skip for backward search */
+  int           *reserved1;
+  int           *reserved2;
   OnigDistance   dmin;                      /* min-distance of exact or map */
   OnigDistance   dmax;                      /* max-distance of exact or map */
 

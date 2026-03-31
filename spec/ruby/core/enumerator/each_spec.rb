@@ -86,4 +86,19 @@ describe "Enumerator#each" do
     ret.should be_an_instance_of(Enumerator)
     ret.should_not equal(@enum_with_arguments)
   end
+
+  it "does not destructure yielded array values when chaining each.map" do
+    result = [[[1]]].each.map { |a, b| [a, b] }
+    result.should == [[[1], nil]]
+  end
+
+  it "preserves array values yielded from the enumerator" do
+    result = [[1, 2]].each.map { |a| a }
+    result.should == [[1, 2]]
+  end
+
+  it "allows destructuring to occur in the block, not the enumerator" do
+    result = [[1, 2]].each.map { |a, b| a }
+    result.should == [1]
+  end
 end

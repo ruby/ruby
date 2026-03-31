@@ -46,7 +46,7 @@ pub struct Options {
     // The number of registers allocated for stack temps
     pub num_temp_regs: usize,
 
-    // Disable Ruby builtin methods defined by `with_yjit` hooks, e.g. Array#each in Ruby
+    // Disable Ruby builtin methods defined by `with_jit` hooks, e.g. Array#each in Ruby
     pub c_builtin: bool,
 
     // Capture stats

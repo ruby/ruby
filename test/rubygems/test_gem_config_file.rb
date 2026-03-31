@@ -43,6 +43,7 @@ class TestGemConfigFile < Gem::TestCase
     assert_equal [@gem_repo], Gem.sources
     assert_equal 365, @cfg.cert_expiration_length_days
     assert_equal false, @cfg.ipv4_fallback_enabled
+    assert_equal true, @cfg.install_extension_in_lib
 
     File.open @temp_conf, "w" do |fp|
       fp.puts ":backtrace: true"
@@ -58,7 +59,7 @@ class TestGemConfigFile < Gem::TestCase
       fp.puts ":ssl_verify_mode: 0"
       fp.puts ":ssl_ca_cert: /etc/ssl/certs"
       fp.puts ":cert_expiration_length_days: 28"
-      fp.puts ":install_extension_in_lib: true"
+      fp.puts ":install_extension_in_lib: false"
       fp.puts ":ipv4_fallback_enabled: true"
     end
 
@@ -74,7 +75,7 @@ class TestGemConfigFile < Gem::TestCase
     assert_equal 0, @cfg.ssl_verify_mode
     assert_equal "/etc/ssl/certs", @cfg.ssl_ca_cert
     assert_equal 28, @cfg.cert_expiration_length_days
-    assert_equal true, @cfg.install_extension_in_lib
+    assert_equal false, @cfg.install_extension_in_lib
     assert_equal true, @cfg.ipv4_fallback_enabled
   end
 
@@ -83,6 +84,43 @@ class TestGemConfigFile < Gem::TestCase
     util_config_file %W[--config-file #{@temp_conf}]
 
     assert_equal true, @cfg.ipv4_fallback_enabled
+  ensure
+    ENV.delete("IPV4_FALLBACK_ENABLED")
+  end
+
+  def test_initialize_global_gem_cache_default
+    util_config_file %W[--config-file #{@temp_conf}]
+
+    assert_equal false, @cfg.global_gem_cache
+  end
+
+  def test_initialize_global_gem_cache_env
+    ENV["RUBYGEMS_GLOBAL_GEM_CACHE"] = "true"
+    util_config_file %W[--config-file #{@temp_conf}]
+
+    assert_equal true, @cfg.global_gem_cache
+  ensure
+    ENV.delete("RUBYGEMS_GLOBAL_GEM_CACHE")
+  end
+
+  def test_initialize_global_gem_cache_gemrc
+    File.open @temp_conf, "w" do |fp|
+      fp.puts "global_gem_cache: true"
+    end
+
+    util_config_file %W[--config-file #{@temp_conf}]
+
+    assert_equal true, @cfg.global_gem_cache
+  end
+
+  def test_initialize_concurrent_downloads
+    File.open @temp_conf, "w" do |fp|
+      fp.puts "concurrent_downloads: 2"
+    end
+
+    util_config_file %W[--config-file #{@temp_conf}]
+
+    assert_equal 2, @cfg.concurrent_downloads
   end
 
   def test_initialize_handle_arguments_config_file

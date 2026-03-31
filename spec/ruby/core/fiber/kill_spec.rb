@@ -2,89 +2,87 @@ require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 require_relative '../../shared/kernel/raise'
 
-ruby_version_is "3.3" do
-  describe "Fiber#kill" do
-    it "kills a non-resumed fiber" do
-      fiber = Fiber.new{}
+describe "Fiber#kill" do
+  it "kills a non-resumed fiber" do
+    fiber = Fiber.new{}
 
-      fiber.alive?.should == true
+    fiber.alive?.should == true
 
-      fiber.kill
-      fiber.alive?.should == false
+    fiber.kill
+    fiber.alive?.should == false
+  end
+
+  it "kills a resumed fiber" do
+    fiber = Fiber.new{while true; Fiber.yield; end}
+    fiber.resume
+
+    fiber.alive?.should == true
+
+    fiber.kill
+    fiber.alive?.should == false
+  end
+
+  it "can kill itself" do
+    fiber = Fiber.new do
+      Fiber.current.kill
     end
 
-    it "kills a resumed fiber" do
-      fiber = Fiber.new{while true; Fiber.yield; end}
-      fiber.resume
+    fiber.alive?.should == true
 
-      fiber.alive?.should == true
+    fiber.resume
+    fiber.alive?.should == false
+  end
 
-      fiber.kill
-      fiber.alive?.should == false
-    end
-
-    it "can kill itself" do
-      fiber = Fiber.new do
-        Fiber.current.kill
+  it "kills a resumed fiber from a child" do
+    parent = Fiber.new do
+      child = Fiber.new do
+        parent.kill
+        parent.alive?.should == true
       end
 
-      fiber.alive?.should == true
-
-      fiber.resume
-      fiber.alive?.should == false
+      child.resume
     end
 
-    it "kills a resumed fiber from a child" do
-      parent = Fiber.new do
-        child = Fiber.new do
-          parent.kill
-          parent.alive?.should == true
-        end
+    parent.resume
+    parent.alive?.should == false
+  end
 
-        child.resume
-      end
+  it "executes the ensure block" do
+    ensure_executed = false
 
-      parent.resume
-      parent.alive?.should == false
+    fiber = Fiber.new do
+      while true; Fiber.yield; end
+    ensure
+      ensure_executed = true
     end
 
-    it "executes the ensure block" do
-      ensure_executed = false
+    fiber.resume
+    fiber.kill
+    ensure_executed.should == true
+  end
 
-      fiber = Fiber.new do
-        while true; Fiber.yield; end
-      ensure
-        ensure_executed = true
-      end
+  it "does not execute rescue block" do
+    rescue_executed = false
 
-      fiber.resume
-      fiber.kill
-      ensure_executed.should == true
+    fiber = Fiber.new do
+      while true; Fiber.yield; end
+    rescue Exception
+      rescue_executed = true
     end
 
-    it "does not execute rescue block" do
-      rescue_executed = false
+    fiber.resume
+    fiber.kill
+    rescue_executed.should == false
+  end
 
-      fiber = Fiber.new do
-        while true; Fiber.yield; end
-      rescue Exception
-        rescue_executed = true
-      end
-
-      fiber.resume
-      fiber.kill
-      rescue_executed.should == false
+  it "repeatedly kills a fiber" do
+    fiber = Fiber.new do
+      while true; Fiber.yield; end
+    ensure
+      while true; Fiber.yield; end
     end
 
-    it "repeatedly kills a fiber" do
-      fiber = Fiber.new do
-        while true; Fiber.yield; end
-      ensure
-        while true; Fiber.yield; end
-      end
-
-      fiber.kill
-      fiber.alive?.should == false
-    end
+    fiber.kill
+    fiber.alive?.should == false
   end
 end

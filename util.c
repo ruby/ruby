@@ -42,40 +42,19 @@ const char ruby_hexdigits[] = "0123456789abcdef0123456789ABCDEF";
 unsigned long
 ruby_scan_oct(const char *start, size_t len, size_t *retlen)
 {
-    register const char *s = start;
-    register unsigned long retval = 0;
-    size_t i;
-
-    for (i = 0; i < len; i++) {
-        if ((s[0] < '0') || ('7' < s[0])) {
-            break;
-        }
-        retval <<= 3;
-        retval |= *s++ - '0';
-    }
-    *retlen = (size_t)(s - start);
-    return retval;
+    int overflow;
+    unsigned long val = ruby_scan_digits(start, (ssize_t)len, 8, retlen, &overflow);
+    (void)overflow;
+    return val;
 }
 
 unsigned long
 ruby_scan_hex(const char *start, size_t len, size_t *retlen)
 {
-    register const char *s = start;
-    register unsigned long retval = 0;
-    signed char d;
-    size_t i = 0;
-
-    for (i = 0; i < len; i++) {
-        d = ruby_digit36_to_number_table[(unsigned char)*s];
-        if (d < 0 || 15 < d) {
-            break;
-        }
-        retval <<= 4;
-        retval |= d;
-        s++;
-    }
-    *retlen = (size_t)(s - start);
-    return retval;
+    int overflow;
+    unsigned long val = ruby_scan_digits(start, (ssize_t)len, 16, retlen, &overflow);
+    (void)overflow;
+    return val;
 }
 
 const signed char ruby_digit36_to_number_table[] = {
@@ -550,45 +529,43 @@ ruby_strdup(const char *str)
 char *
 ruby_getcwd(void)
 {
-    VALUE guard = rb_imemo_tmpbuf_auto_free_pointer();
     int size = 200;
     char *buf = xmalloc(size);
 
     while (!getcwd(buf, size)) {
         int e = errno;
         if (e != ERANGE) {
-            rb_free_tmp_buffer(&guard);
+            xfree(buf);
             rb_syserr_fail(e, "getcwd");
         }
         size *= 2;
-        rb_imemo_tmpbuf_set_ptr(guard, buf);
-        buf = xrealloc(buf, size);
+        xfree(buf);
+        buf = xmalloc(size);
     }
-    rb_imemo_tmpbuf_set_ptr(guard, NULL);
     return buf;
 }
 
 # else
 
-static const rb_data_type_t getcwd_buffer_guard_type = {
-    .wrap_struct_name = "ruby_getcwd_guard",
-    .function = {
-        .dfree = free // not xfree.
-    },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
-};
+static VALUE
+getcwd_strdup(VALUE arg)
+{
+    return (VALUE)ruby_strdup((const char *)arg);
+}
+
+static VALUE
+getcwd_free(VALUE arg)
+{
+    free((void *)arg);
+    return Qnil;
+}
 
 char *
 ruby_getcwd(void)
 {
-    VALUE guard = TypedData_Wrap_Struct((VALUE)0, &getcwd_buffer_guard_type, NULL);
-    char *buf, *cwd = getcwd(NULL, 0);
-    RTYPEDDATA_DATA(guard) = cwd;
+    char *cwd = getcwd(NULL, 0);
     if (!cwd) rb_sys_fail("getcwd");
-    buf = ruby_strdup(cwd);	/* allocate by xmalloc */
-    free(cwd);
-    RTYPEDDATA_DATA(RB_GC_GUARD(guard)) = NULL;
-    return buf;
+    return (char *)rb_ensure(getcwd_strdup, (VALUE)cwd, getcwd_free, (VALUE)cwd);
 }
 
 # endif

@@ -80,7 +80,7 @@ RSpec.describe Bundler::Definition do
           foo!
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       G
     end
 
@@ -137,7 +137,7 @@ RSpec.describe Bundler::Definition do
           foo!
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       G
 
       expect(lockfile).to eq(expected_lockfile)
@@ -175,7 +175,7 @@ RSpec.describe Bundler::Definition do
           only_java
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       G
     end
 
@@ -205,7 +205,7 @@ RSpec.describe Bundler::Definition do
           foo
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       G
     end
   end
@@ -296,10 +296,6 @@ RSpec.describe Bundler::Definition do
       end
 
       def path_sources
-        []
-      end
-
-      def rubygems_remotes
         []
       end
 

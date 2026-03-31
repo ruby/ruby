@@ -139,6 +139,7 @@ console.o: $(hdrdir)/ruby/internal/intern/re.h
 console.o: $(hdrdir)/ruby/internal/intern/ruby.h
 console.o: $(hdrdir)/ruby/internal/intern/select.h
 console.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+console.o: $(hdrdir)/ruby/internal/intern/set.h
 console.o: $(hdrdir)/ruby/internal/intern/signal.h
 console.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 console.o: $(hdrdir)/ruby/internal/intern/string.h

@@ -1,0 +1,5 @@
+if true
+^~ expected an `end` to close the `else` clause
+else
+    ^ unexpected end-of-input, assuming it is closing the parent top level context
+

@@ -15,6 +15,7 @@ module Psych
       s = ""
       assert_equal false, Psych.unsafe_load(s)
       assert_equal [], Psych.load_stream(s)
+      assert_equal [], Psych.safe_load_stream(s)
       assert_equal false, Psych.parse(s)
       assert_equal [], Psych.parse_stream(s).transform
       assert_nil   Psych.safe_load(s)
@@ -24,6 +25,7 @@ module Psych
       s = "false"
       assert_equal false, Psych.load(s)
       assert_equal [false], Psych.load_stream(s)
+      assert_equal [false], Psych.safe_load_stream(s)
       assert_equal false, Psych.parse(s).transform
       assert_equal [false], Psych.parse_stream(s).transform
       assert_equal false, Psych.safe_load(s)
@@ -33,6 +35,7 @@ module Psych
       s = "n"
       assert_equal "n", Psych.load(s)
       assert_equal ["n"], Psych.load_stream(s)
+      assert_equal ["n"], Psych.safe_load_stream(s)
       assert_equal "n", Psych.parse(s).transform
       assert_equal ["n"], Psych.parse_stream(s).transform
       assert_equal "n", Psych.safe_load(s)
@@ -42,6 +45,7 @@ module Psych
       s = "off"
       assert_equal false, Psych.load(s)
       assert_equal [false], Psych.load_stream(s)
+      assert_equal [false], Psych.safe_load_stream(s)
       assert_equal false, Psych.parse(s).transform
       assert_equal [false], Psych.parse_stream(s).transform
       assert_equal false, Psych.safe_load(s)
@@ -51,6 +55,7 @@ module Psych
       s = "-.inf"
       assert_equal(-Float::INFINITY, Psych.load(s))
       assert_equal([-Float::INFINITY], Psych.load_stream(s))
+      assert_equal([-Float::INFINITY], Psych.safe_load_stream(s))
       assert_equal(-Float::INFINITY, Psych.parse(s).transform)
       assert_equal([-Float::INFINITY], Psych.parse_stream(s).transform)
       assert_equal(-Float::INFINITY, Psych.safe_load(s))
@@ -60,6 +65,7 @@ module Psych
       s = ".NaN"
       assert Psych.load(s).nan?
       assert Psych.load_stream(s).first.nan?
+      assert Psych.safe_load_stream(s).first.nan?
       assert Psych.parse(s).transform.nan?
       assert Psych.parse_stream(s).transform.first.nan?
       assert Psych.safe_load(s).nan?
@@ -69,6 +75,7 @@ module Psych
       s = "0xC"
       assert_equal 12, Psych.load(s)
       assert_equal [12], Psych.load_stream(s)
+      assert_equal [12], Psych.safe_load_stream(s)
       assert_equal 12, Psych.parse(s).transform
       assert_equal [12], Psych.parse_stream(s).transform
       assert_equal 12, Psych.safe_load(s)
@@ -78,6 +85,7 @@ module Psych
       s = "<<"
       assert_equal "<<", Psych.load(s)
       assert_equal ["<<"], Psych.load_stream(s)
+      assert_equal ["<<"], Psych.safe_load_stream(s)
       assert_equal "<<", Psych.parse(s).transform
       assert_equal ["<<"], Psych.parse_stream(s).transform
       assert_equal "<<", Psych.safe_load(s)
@@ -87,6 +95,7 @@ module Psych
       s = "<<: {}"
       assert_equal({}, Psych.load(s))
       assert_equal [{}], Psych.load_stream(s)
+      assert_equal [{}], Psych.safe_load_stream(s)
       assert_equal({}, Psych.parse(s).transform)
       assert_equal [{}], Psych.parse_stream(s).transform
       assert_equal({}, Psych.safe_load(s))
@@ -96,6 +105,7 @@ module Psych
       s = "- 1000\n- +1000\n- 1_000"
       assert_equal [1000, 1000, 1000], Psych.load(s)
       assert_equal [[1000, 1000, 1000]], Psych.load_stream(s)
+      assert_equal [[1000, 1000, 1000]], Psych.safe_load_stream(s)
       assert_equal [1000, 1000, 1000], Psych.parse(s).transform
       assert_equal [[1000, 1000, 1000]], Psych.parse_stream(s).transform
       assert_equal [1000, 1000, 1000], Psych.safe_load(s)
@@ -105,6 +115,7 @@ module Psych
       s = "[8, 08, 0o10, 010]"
       assert_equal [8, "08", "0o10", 8], Psych.load(s)
       assert_equal [[8, "08", "0o10", 8]], Psych.load_stream(s)
+      assert_equal [[8, "08", "0o10", 8]], Psych.safe_load_stream(s)
       assert_equal [8, "08", "0o10", 8], Psych.parse(s).transform
       assert_equal [[8, "08", "0o10", 8]], Psych.parse_stream(s).transform
       assert_equal [8, "08", "0o10", 8], Psych.safe_load(s)
@@ -114,6 +125,7 @@ module Psych
       s = "null"
       assert_nil   Psych.load(s)
       assert_equal [nil], Psych.load_stream(s)
+      assert_equal [nil], Psych.safe_load_stream(s)
       assert_nil   Psych.parse(s).transform
       assert_equal [nil], Psych.parse_stream(s).transform
       assert_nil   Psych.safe_load(s)

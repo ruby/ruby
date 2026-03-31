@@ -17,7 +17,8 @@ require "delegate"
 #
 
 class WeakRef < Delegator
-  VERSION = "0.1.3"
+  # The version string
+  VERSION = "0.1.4"
 
   ##
   # RefError is raised when a referenced object has been recycled by the

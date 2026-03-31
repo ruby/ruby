@@ -7,7 +7,5 @@ describe "Queue#shift" do
 end
 
 describe "Queue operations with timeout" do
-  ruby_version_is "3.2" do
-    it_behaves_like :rb_num2dbl_fails, nil, -> v { q = Queue.new; q.push(1); q.shift(timeout: v) }
-  end
+  it_behaves_like :rb_num2dbl_fails, nil, -> v { q = Queue.new; q.push(1); q.shift(timeout: v) }
 end

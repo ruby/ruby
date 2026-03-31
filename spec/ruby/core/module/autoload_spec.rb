@@ -603,32 +603,30 @@ describe "Module#autoload" do
       end
     end
 
-    ruby_version_is "3.2" do
-      it "warns once in verbose mode if the constant was defined in a parent scope" do
-        ScratchPad.record -> {
-          ModuleSpecs::DeclaredInCurrentDefinedInParent = :declared_in_current_defined_in_parent
-        }
+    it "warns once in verbose mode if the constant was defined in a parent scope" do
+      ScratchPad.record -> {
+        ModuleSpecs::DeclaredInCurrentDefinedInParent = :declared_in_current_defined_in_parent
+      }
 
-        module ModuleSpecs
-          module Autoload
-            autoload :DeclaredInCurrentDefinedInParent, fixture(__FILE__, "autoload_callback.rb")
-            self.autoload?(:DeclaredInCurrentDefinedInParent).should == fixture(__FILE__, "autoload_callback.rb")
-            const_defined?(:DeclaredInCurrentDefinedInParent).should == true
+      module ModuleSpecs
+        module Autoload
+          autoload :DeclaredInCurrentDefinedInParent, fixture(__FILE__, "autoload_callback.rb")
+          self.autoload?(:DeclaredInCurrentDefinedInParent).should == fixture(__FILE__, "autoload_callback.rb")
+          const_defined?(:DeclaredInCurrentDefinedInParent).should == true
 
-            -> {
-              DeclaredInCurrentDefinedInParent
-            }.should complain(
-              /Expected .*autoload_callback.rb to define ModuleSpecs::Autoload::DeclaredInCurrentDefinedInParent but it didn't/,
-              verbose: true,
-            )
+          -> {
+            DeclaredInCurrentDefinedInParent
+          }.should complain(
+            /Expected .*autoload_callback.rb to define ModuleSpecs::Autoload::DeclaredInCurrentDefinedInParent but it didn't/,
+            verbose: true,
+          )
 
-            -> {
-              DeclaredInCurrentDefinedInParent
-            }.should_not complain(/.*/, verbose: true)
-            self.autoload?(:DeclaredInCurrentDefinedInParent).should == nil
-            const_defined?(:DeclaredInCurrentDefinedInParent).should == false
-            ModuleSpecs.const_defined?(:DeclaredInCurrentDefinedInParent).should == true
-          end
+          -> {
+            DeclaredInCurrentDefinedInParent
+          }.should_not complain(/.*/, verbose: true)
+          self.autoload?(:DeclaredInCurrentDefinedInParent).should == nil
+          const_defined?(:DeclaredInCurrentDefinedInParent).should == false
+          ModuleSpecs.const_defined?(:DeclaredInCurrentDefinedInParent).should == true
         end
       end
     end
@@ -718,6 +716,21 @@ describe "Module#autoload" do
       end
       ModuleSpecs::Autoload.r.should be_kind_of(ModuleSpecs::Autoload::MetaScope)
     end
+  end
+
+  it "should trigger the autoload when using `private_constant`" do
+    @remove << :DynClass
+    module ModuleSpecs::Autoload
+      autoload :DynClass, fixture(__FILE__, "autoload_c.rb")
+      private_constant :DynClass
+
+      ScratchPad.recorded.should be_nil
+
+      DynClass::C.new.loaded.should == :dynclass_c
+      ScratchPad.recorded.should == :loaded
+    end
+
+    -> { ModuleSpecs::Autoload::DynClass }.should raise_error(NameError, /private constant/)
   end
 
   # [ruby-core:19127] [ruby-core:29941]
@@ -935,7 +948,7 @@ describe "Module#autoload" do
 
             begin
               Object.const_get(mod_name).foo
-            rescue NoMethodError
+            rescue NameError, NoMethodError # rubocop:disable Lint/ShadowedException
               barrier.disable!
               break false
             end
@@ -943,7 +956,7 @@ describe "Module#autoload" do
         end
       end
 
-      # check that no thread got a NoMethodError because of partially loaded module
+      # check that no thread got a NameError or NoMethodError because of partially loaded module
       threads.all? {|t| t.value}.should be_true
 
       # check that the autoloaded file was evaled exactly once
@@ -952,6 +965,8 @@ describe "Module#autoload" do
       mod_names.each do |mod_name|
         Object.send(:remove_const, mod_name)
       end
+    ensure
+      threads.each(&:join) if threads
     end
 
     it "raises a NameError in each thread if the constant is not set" do

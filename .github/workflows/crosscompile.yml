@@ -1,0 +1,131 @@
+name: Cross compile
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+      - '**/man/*'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
+      - '.*.yml'
+  pull_request:
+    # Do not use paths-ignore for required status checks
+    # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks
+  merge_group:
+
+concurrency:
+  group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
+  cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
+
+permissions:
+  contents: read
+
+jobs:
+  make:
+    name: make (${{ matrix.host }} host on ${{ matrix.build }})
+    strategy:
+      matrix:
+        include:
+          - host: aarch64-linux-gnu
+            arch: arm64
+            build: x86_64-linux-gnu
+            runs-on: ubuntu-24.04
+            file_arch: ARM aarch64
+          - host: x86_64-linux-gnu
+            arch: amd64
+            build: aarch64-linux-gnu
+            runs-on: ubuntu-24.04-arm
+            file_arch: x86-64
+      fail-fast: false
+
+    env:
+      GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
+
+    runs-on: ${{ matrix.runs-on }}
+
+    if: >-
+      ${{!(false
+      || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || (github.event.pull_request.user.login == 'dependabot[bot]')
+      )}}
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout-cone-mode: false
+          sparse-checkout: /.github
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup/directories
+        with:
+          srcdir: src
+          builddir: build
+          makeup: true
+
+      - name: Install cross-compilation toolchain
+        run: |
+          sudo dpkg --add-architecture ${{ matrix.arch }}
+          native_arch=$(dpkg --print-architecture)
+          # Restrict existing sources to native arch
+          sudo sed -i '/^Architectures:/d' /etc/apt/sources.list.d/ubuntu.sources
+          sudo sed -i "/^Types:/a Architectures: ${native_arch}" /etc/apt/sources.list.d/ubuntu.sources
+          # Add cross-arch sources
+          if [ "${{ matrix.arch }}" = "arm64" ]; then
+            cross_uri="http://ports.ubuntu.com/"
+          else
+            cross_uri="http://archive.ubuntu.com/ubuntu/"
+          fi
+          printf '%s\n' \
+            "Types: deb" \
+            "URIs: ${cross_uri}" \
+            "Suites: noble noble-updates noble-security" \
+            "Components: main universe" \
+            "Architectures: ${{ matrix.arch }}" \
+            | sudo tee /etc/apt/sources.list.d/cross-${{ matrix.arch }}.sources
+          sudo apt-get update -qq
+          sudo apt-get install --no-install-recommends -qq -y \
+            crossbuild-essential-${{ matrix.arch }} \
+            libssl-dev:${{ matrix.arch }} \
+            libyaml-dev:${{ matrix.arch }} \
+            zlib1g-dev:${{ matrix.arch }} \
+            libffi-dev:${{ matrix.arch }} \
+            libreadline-dev:${{ matrix.arch }} \
+            libncurses-dev:${{ matrix.arch }} \
+            autoconf ruby
+
+      - name: Build baseruby
+        run: |
+          mkdir ../baseruby
+          cd ../baseruby
+          ../src/configure --prefix=$PWD/install --disable-install-doc
+          make
+          make install
+
+      - name: Run configure
+        run: >-
+          ../src/configure -C --disable-install-doc
+          --prefix=/usr
+          --build=${{ matrix.build }}
+          --host=${{ matrix.host }}
+          --with-baseruby=$PWD/../baseruby/install/bin/ruby
+
+      - run: make
+
+      - run: make install DESTDIR=$PWD/install
+
+      - name: Verify cross-compiled binary
+        run: |
+          file install/usr/bin/ruby
+          file install/usr/bin/ruby | grep -q '${{ matrix.file_arch }}'
+
+      - uses: ./.github/actions/slack
+        with:
+          label: cross ${{ matrix.host }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: ${{ failure() }}
+
+defaults:
+  run:
+    working-directory: build

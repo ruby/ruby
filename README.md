@@ -3,6 +3,8 @@
 [![Actions Status: Windows](https://github.com/ruby/ruby/workflows/Windows/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"Windows")
 [![Travis Status](https://app.travis-ci.com/ruby/ruby.svg?branch=master)](https://app.travis-ci.com/ruby/ruby)
 
+[日本語](rdoc-ref:README.ja.md)
+
 # What is Ruby?
 
 Ruby is an interpreted object-oriented programming language often
@@ -85,7 +87,7 @@ Bugs should be reported at https://bugs.ruby-lang.org. Read ["Reporting Issues"]
 
 ## Contributing
 
-See ["Contributing to Ruby"](https://docs.ruby-lang.org/en/master/contributing_md.html), which includes setup and build instructions.
+See ["Contributing to Ruby"](https://docs.ruby-lang.org/en/master/contributing/contributing_md.html), which includes setup and build instructions.
 
 ## The Author
 

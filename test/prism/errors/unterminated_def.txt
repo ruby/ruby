@@ -1,0 +1,5 @@
+def foo
+       ^ expected a delimiter to close the parameters
+       ^ unexpected end-of-input, assuming it is closing the parent top level context
+^~~ expected an `end` to close the `def` statement
+

@@ -6,7 +6,7 @@ describe "An ensure block inside a begin block" do
     ScratchPad.record []
   end
 
-  it "is executed when an exception is raised in it's corresponding begin block" do
+  it "is executed when an exception is raised in its corresponding begin block" do
     -> {
       begin
         ScratchPad << :begin
@@ -19,7 +19,7 @@ describe "An ensure block inside a begin block" do
     ScratchPad.recorded.should == [:begin, :ensure]
   end
 
-  it "is executed when an exception is raised and rescued in it's corresponding begin block" do
+  it "is executed when an exception is raised and rescued in its corresponding begin block" do
     begin
       ScratchPad << :begin
       raise "An exception occurred!"
@@ -32,7 +32,7 @@ describe "An ensure block inside a begin block" do
     ScratchPad.recorded.should == [:begin, :rescue, :ensure]
   end
 
-  it "is executed even when a symbol is thrown in it's corresponding begin block" do
+  it "is executed even when a symbol is thrown in its corresponding begin block" do
     catch(:symbol) do
       begin
         ScratchPad << :begin
@@ -47,7 +47,7 @@ describe "An ensure block inside a begin block" do
     ScratchPad.recorded.should == [:begin, :ensure]
   end
 
-  it "is executed when nothing is raised or thrown in it's corresponding begin block" do
+  it "is executed when nothing is raised or thrown in its corresponding begin block" do
     begin
       ScratchPad << :begin
     rescue
@@ -256,7 +256,7 @@ describe "An ensure block inside 'do end' block" do
     ScratchPad.record []
   end
 
-  it "is executed when an exception is raised in it's corresponding begin block" do
+  it "is executed when an exception is raised in its corresponding begin block" do
     -> {
       eval(<<-ruby).call
         lambda do
@@ -271,7 +271,7 @@ describe "An ensure block inside 'do end' block" do
     ScratchPad.recorded.should == [:begin, :ensure]
   end
 
-  it "is executed when an exception is raised and rescued in it's corresponding begin block" do
+  it "is executed when an exception is raised and rescued in its corresponding begin block" do
     eval(<<-ruby).call
       lambda do
         ScratchPad << :begin
@@ -286,7 +286,7 @@ describe "An ensure block inside 'do end' block" do
     ScratchPad.recorded.should == [:begin, :rescue, :ensure]
   end
 
-  it "is executed even when a symbol is thrown in it's corresponding begin block" do
+  it "is executed even when a symbol is thrown in its corresponding begin block" do
     catch(:symbol) do
       eval(<<-ruby).call
         lambda do
@@ -303,7 +303,7 @@ describe "An ensure block inside 'do end' block" do
     ScratchPad.recorded.should == [:begin, :ensure]
   end
 
-  it "is executed when nothing is raised or thrown in it's corresponding begin block" do
+  it "is executed when nothing is raised or thrown in its corresponding begin block" do
     eval(<<-ruby).call
       lambda do
         ScratchPad << :begin

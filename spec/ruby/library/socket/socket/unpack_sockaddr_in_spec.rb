@@ -32,15 +32,13 @@ describe "Socket.unpack_sockaddr_in" do
     end
   end
 
-  with_feature :unix_socket do
-    it "raises an ArgumentError when the sin_family is not AF_INET" do
-      sockaddr = Socket.sockaddr_un '/tmp/x'
-      -> { Socket.unpack_sockaddr_in sockaddr }.should raise_error(ArgumentError)
-    end
+  it "raises an ArgumentError when the sin_family is not AF_INET" do
+    sockaddr = Socket.sockaddr_un '/tmp/x'
+    -> { Socket.unpack_sockaddr_in sockaddr }.should raise_error(ArgumentError)
+  end
 
-    it "raises an ArgumentError when passed addrinfo is not AF_INET/AF_INET6" do
-      addrinfo = Addrinfo.unix('/tmp/sock')
-      -> { Socket.unpack_sockaddr_in(addrinfo) }.should raise_error(ArgumentError)
-    end
+  it "raises an ArgumentError when passed addrinfo is not AF_INET/AF_INET6" do
+    addrinfo = Addrinfo.unix('/tmp/sock')
+    -> { Socket.unpack_sockaddr_in(addrinfo) }.should raise_error(ArgumentError)
   end
 end

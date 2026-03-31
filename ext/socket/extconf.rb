@@ -704,6 +704,7 @@ SRC
 
   have_func("pthread_create")
   have_func("pthread_detach")
+  have_func("pthread_attr_setdetachstate")
 
   $VPATH << '$(topdir)' << '$(top_srcdir)'
   create_makefile("socket")

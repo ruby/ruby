@@ -12,6 +12,7 @@
 **********************************************************************/
 
 #include "ruby/internal/config.h"
+#include "ruby/internal/attr/nonstring.h"
 
 #ifdef _WIN32
 # include "missing/file.h"
@@ -131,6 +132,14 @@ int flock(int, int);
 # define STAT(p, s)      stat((p), (s))
 #endif /* _WIN32 */
 
+#ifdef HAVE_STRUCT_STATX_STX_BTIME
+# define ST_(name) stx_ ## name
+typedef struct statx_timestamp stat_timestamp;
+#else
+# define ST_(name) st_ ## name
+typedef struct timespec stat_timestamp;
+#endif
+
 #if defined _WIN32 || defined __APPLE__
 # define USE_OSPATH 1
 # define TO_OSPATH(str) rb_str_encode_ospath(str)
@@ -160,6 +169,7 @@ int flock(int, int);
 #include "internal.h"
 #include "internal/compilers.h"
 #include "internal/dir.h"
+#include "internal/encoding.h"
 #include "internal/error.h"
 #include "internal/file.h"
 #include "internal/io.h"
@@ -171,6 +181,13 @@ int flock(int, int);
 #include "ruby/encoding.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
+
+#define UIANY2NUM(x) \
+    ((sizeof(x) <= sizeof(unsigned int)) ? \
+     UINT2NUM((unsigned)(x)) : \
+     (sizeof(x) <= sizeof(unsigned long)) ? \
+     ULONG2NUM((unsigned long)(x)) : \
+     ULL2NUM((unsigned LONG_LONG)(x)))
 
 VALUE rb_cFile;
 VALUE rb_mFileTest;
@@ -197,15 +214,16 @@ file_path_convert(VALUE name)
     return name;
 }
 
-static rb_encoding *
+static void
 check_path_encoding(VALUE str)
 {
-    rb_encoding *enc = rb_enc_get(str);
-    if (!rb_enc_asciicompat(enc)) {
-        rb_raise(rb_eEncCompatError, "path name must be ASCII-compatible (%s): %"PRIsVALUE,
-                 rb_enc_name(enc), rb_str_inspect(str));
+    if (RB_UNLIKELY(!rb_str_enc_fastpath(str))) {
+        rb_encoding *enc = rb_str_enc_get(str);
+        if (!rb_enc_asciicompat(enc)) {
+            rb_raise(rb_eEncCompatError, "path name must be ASCII-compatible (%s): %"PRIsVALUE,
+                     rb_enc_name(enc), rb_str_inspect(str));
+        }
     }
-    return enc;
 }
 
 VALUE
@@ -233,7 +251,7 @@ rb_get_path_check_convert(VALUE obj)
         rb_raise(rb_eArgError, "path name contains null byte");
     }
 
-    return rb_str_new4(obj);
+    return rb_str_new_frozen(obj);
 }
 
 VALUE
@@ -247,6 +265,19 @@ rb_get_path(VALUE obj)
 {
     return rb_get_path_check_convert(rb_get_path_check_to_string(obj));
 }
+
+static inline VALUE
+check_path(VALUE obj, const char **cstr)
+{
+    VALUE str = rb_get_path_check_convert(rb_get_path_check_to_string(obj));
+#if RUBY_DEBUG
+    str = rb_str_new_frozen(str);
+#endif
+    *cstr = RSTRING_PTR(str);
+    return str;
+}
+
+#define CheckPath(str, cstr) RB_GC_GUARD(str) = check_path(str, &cstr);
 
 VALUE
 rb_str_encode_ospath(VALUE path)
@@ -358,7 +389,7 @@ rb_str_normalize_ospath(const char *ptr, long len)
         int r = rb_enc_precise_mbclen(p, e, enc);
         if (!MBCLEN_CHARFOUND_P(r)) {
             /* invalid byte shall not happen but */
-            static const char invalid[3] = "\xEF\xBF\xBD";
+            RBIMPL_ATTR_NONSTRING() static const char invalid[3] = "\xEF\xBF\xBD";
             rb_str_append_normalized_ospath(str, p1, p-p1);
             rb_str_cat(str, invalid, sizeof(invalid));
             p += 1;
@@ -493,6 +524,10 @@ apply2files(int (*func)(const char *, void *), int argc, VALUE *argv, void *arg)
     return LONG2FIX(argc);
 }
 
+static stat_timestamp stat_atimespec(const struct stat *st);
+static stat_timestamp stat_mtimespec(const struct stat *st);
+static stat_timestamp stat_ctimespec(const struct stat *st);
+
 static const rb_data_type_t stat_data_type = {
     "stat",
     {
@@ -504,29 +539,67 @@ static const rb_data_type_t stat_data_type = {
 };
 
 struct rb_stat {
-    struct stat stat;
+    rb_io_stat_data stat;
     bool initialized;
 };
 
-static VALUE
-stat_new_0(VALUE klass, const struct stat *st)
+static struct rb_stat *
+stat_alloc(VALUE klass, VALUE *obj)
 {
     struct rb_stat *rb_st;
-    VALUE obj = TypedData_Make_Struct(klass, struct rb_stat, &stat_data_type, rb_st);
+    *obj = TypedData_Make_Struct(klass, struct rb_stat, &stat_data_type, rb_st);
+    return rb_st;
+}
+
+VALUE
+rb_stat_new(const struct stat *st)
+{
+    VALUE obj;
+    struct rb_stat *rb_st = stat_alloc(rb_cStat, &obj);
+    if (st) {
+#if RUBY_USE_STATX
+# define CP(m) .stx_ ## m = st->st_ ## m
+# define CP_32(m) .stx_ ## m = (uint32_t)st->st_ ## m
+# define CP_TS(m) .stx_ ## m = stat_ ## m ## spec(st)
+        rb_st->stat = (struct statx){
+            .stx_mask = STATX_BASIC_STATS,
+            CP(mode),
+            CP_32(nlink),
+            CP(uid),
+            CP(gid),
+            CP_TS(atime),
+            CP_TS(mtime),
+            CP_TS(ctime),
+            CP(ino),
+            CP(size),
+            CP(blocks),
+        };
+# undef CP
+# undef CP_TS
+#else
+        rb_st->stat = *st;
+#endif
+        rb_st->initialized = true;
+    }
+
+    return obj;
+}
+
+#ifndef rb_statx_new
+VALUE
+rb_statx_new(const rb_io_stat_data *st)
+{
+    VALUE obj;
+    struct rb_stat *rb_st = stat_alloc(rb_cStat, &obj);
     if (st) {
         rb_st->stat = *st;
         rb_st->initialized = true;
     }
     return obj;
 }
+#endif
 
-VALUE
-rb_stat_new(const struct stat *st)
-{
-    return stat_new_0(rb_cStat, st);
-}
-
-static struct stat*
+static rb_io_stat_data*
 get_stat(VALUE self)
 {
     struct rb_stat* rb_st;
@@ -535,29 +608,51 @@ get_stat(VALUE self)
     return &rb_st->stat;
 }
 
-static struct timespec stat_mtimespec(const struct stat *st);
+#if RUBY_USE_STATX
+static stat_timestamp
+statx_mtimespec(const rb_io_stat_data *st)
+{
+    return st->stx_mtime;
+}
+#else
+# define statx_mtimespec stat_mtimespec
+#endif
 
 /*
  *  call-seq:
- *     stat <=> other_stat    -> -1, 0, 1, nil
+ *    self <=> other -> -1, 0, 1, or nil
  *
- *  Compares File::Stat objects by comparing their respective modification
- *  times.
+ *  Compares +self+ and +other+, by comparing their modification times;
+ *  that is, by comparing <tt>self.mtime</tt> and <tt>other.mtime</tt>.
  *
- *  +nil+ is returned if +other_stat+ is not a File::Stat object
+ *  Returns:
  *
- *     f1 = File.new("f1", "w")
- *     sleep 1
- *     f2 = File.new("f2", "w")
- *     f1.stat <=> f2.stat   #=> -1
+ *  - +-1+, if <tt>self.mtime</tt> is earlier.
+ *  - +0+, if the two values are equal.
+ *  - +1+, if <tt>self.mtime</tt> is later.
+ *  - +nil+, if +other+ is not a File::Stat object.
+ *
+ *  Examples:
+ *
+ *    stat0 = File.stat('README.md')
+ *    stat1 = File.stat('NEWS.md')
+ *    stat0.mtime         # => 2025-12-20 15:33:05.6972341 -0600
+ *    stat1.mtime         # => 2025-12-20 16:02:08.2672945 -0600
+ *    stat0 <=> stat1     # => -1
+ *    stat0 <=> stat0.dup # => 0
+ *    stat1 <=> stat0     # => 1
+ *    stat0 <=> :foo      # => nil
+ *
+ *  \Class \File::Stat includes module Comparable,
+ *  each of whose methods uses File::Stat#<=> for comparison.
  */
 
 static VALUE
 rb_stat_cmp(VALUE self, VALUE other)
 {
     if (rb_obj_is_kind_of(other, rb_obj_class(self))) {
-        struct timespec ts1 = stat_mtimespec(get_stat(self));
-        struct timespec ts2 = stat_mtimespec(get_stat(other));
+        stat_timestamp ts1 = statx_mtimespec(get_stat(self));
+        stat_timestamp ts2 = statx_mtimespec(get_stat(other));
         if (ts1.tv_sec == ts2.tv_sec) {
             if (ts1.tv_nsec == ts2.tv_nsec) return INT2FIX(0);
             if (ts1.tv_nsec < ts2.tv_nsec) return INT2FIX(-1);
@@ -594,7 +689,11 @@ rb_stat_cmp(VALUE self, VALUE other)
 static VALUE
 rb_stat_dev(VALUE self)
 {
-#if SIZEOF_STRUCT_STAT_ST_DEV <= SIZEOF_DEV_T
+#if RUBY_USE_STATX
+    unsigned int m = get_stat(self)->stx_dev_major;
+    unsigned int n = get_stat(self)->stx_dev_minor;
+    return ULL2NUM(makedev(m, n));
+#elif SIZEOF_STRUCT_STAT_ST_DEV <= SIZEOF_DEV_T
     return DEVT2NUM(get_stat(self)->st_dev);
 #elif SIZEOF_STRUCT_STAT_ST_DEV <= SIZEOF_LONG
     return ULONG2NUM(get_stat(self)->st_dev);
@@ -617,7 +716,9 @@ rb_stat_dev(VALUE self)
 static VALUE
 rb_stat_dev_major(VALUE self)
 {
-#if defined(major)
+#if RUBY_USE_STATX
+    return UINT2NUM(get_stat(self)->stx_dev_major);
+#elif defined(major)
     return UINT2NUM(major(get_stat(self)->st_dev));
 #else
     return Qnil;
@@ -638,7 +739,9 @@ rb_stat_dev_major(VALUE self)
 static VALUE
 rb_stat_dev_minor(VALUE self)
 {
-#if defined(minor)
+#if RUBY_USE_STATX
+    return UINT2NUM(get_stat(self)->stx_dev_minor);
+#elif defined(minor)
     return UINT2NUM(minor(get_stat(self)->st_dev));
 #else
     return Qnil;
@@ -658,16 +761,15 @@ rb_stat_dev_minor(VALUE self)
 static VALUE
 rb_stat_ino(VALUE self)
 {
+    rb_io_stat_data *ptr = get_stat(self);
 #ifdef HAVE_STRUCT_STAT_ST_INOHIGH
     /* assume INTEGER_PACK_LSWORD_FIRST and st_inohigh is just next of st_ino */
-    return rb_integer_unpack(&get_stat(self)->st_ino, 2,
+    return rb_integer_unpack(&ptr->st_ino, 2,
             SIZEOF_STRUCT_STAT_ST_INO, 0,
             INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER|
             INTEGER_PACK_2COMP);
-#elif SIZEOF_STRUCT_STAT_ST_INO > SIZEOF_LONG
-    return ULL2NUM(get_stat(self)->st_ino);
 #else
-    return ULONG2NUM(get_stat(self)->st_ino);
+    return UIANY2NUM(ptr->ST_(ino));
 #endif
 }
 
@@ -687,7 +789,7 @@ rb_stat_ino(VALUE self)
 static VALUE
 rb_stat_mode(VALUE self)
 {
-    return UINT2NUM(ST2UINT(get_stat(self)->st_mode));
+    return UINT2NUM(ST2UINT(get_stat(self)->ST_(mode)));
 }
 
 /*
@@ -706,20 +808,9 @@ static VALUE
 rb_stat_nlink(VALUE self)
 {
     /* struct stat::st_nlink is nlink_t in POSIX.  Not the case for Windows. */
-    const struct stat *ptr = get_stat(self);
+    const rb_io_stat_data *ptr = get_stat(self);
 
-    if (sizeof(ptr->st_nlink) <= sizeof(int)) {
-        return UINT2NUM((unsigned)ptr->st_nlink);
-    }
-    else if (sizeof(ptr->st_nlink) == sizeof(long)) {
-        return ULONG2NUM((unsigned long)ptr->st_nlink);
-    }
-    else if (sizeof(ptr->st_nlink) == sizeof(LONG_LONG)) {
-        return ULL2NUM((unsigned LONG_LONG)ptr->st_nlink);
-    }
-    else {
-        rb_bug(":FIXME: don't know what to do");
-    }
+    return UIANY2NUM(ptr->ST_(nlink));
 }
 
 /*
@@ -735,7 +826,7 @@ rb_stat_nlink(VALUE self)
 static VALUE
 rb_stat_uid(VALUE self)
 {
-    return UIDT2NUM(get_stat(self)->st_uid);
+    return UIDT2NUM(get_stat(self)->ST_(uid));
 }
 
 /*
@@ -751,7 +842,7 @@ rb_stat_uid(VALUE self)
 static VALUE
 rb_stat_gid(VALUE self)
 {
-    return GIDT2NUM(get_stat(self)->st_gid);
+    return GIDT2NUM(get_stat(self)->ST_(gid));
 }
 
 /*
@@ -769,16 +860,18 @@ rb_stat_gid(VALUE self)
 static VALUE
 rb_stat_rdev(VALUE self)
 {
-#ifdef HAVE_STRUCT_STAT_ST_RDEV
-# if SIZEOF_STRUCT_STAT_ST_RDEV <= SIZEOF_DEV_T
-    return DEVT2NUM(get_stat(self)->st_rdev);
-# elif SIZEOF_STRUCT_STAT_ST_RDEV <= SIZEOF_LONG
-    return ULONG2NUM(get_stat(self)->st_rdev);
-# else
-    return ULL2NUM(get_stat(self)->st_rdev);
-# endif
-#else
+#if RUBY_USE_STATX
+    unsigned int m = get_stat(self)->stx_rdev_major;
+    unsigned int n = get_stat(self)->stx_rdev_minor;
+    return ULL2NUM(makedev(m, n));
+#elif !defined(HAVE_STRUCT_STAT_ST_RDEV)
     return Qnil;
+#elif SIZEOF_STRUCT_STAT_ST_RDEV <= SIZEOF_DEV_T
+    return DEVT2NUM(get_stat(self)->ST_(rdev));
+#elif SIZEOF_STRUCT_STAT_ST_RDEV <= SIZEOF_LONG
+    return ULONG2NUM(get_stat(self)->ST_(rdev));
+#else
+    return ULL2NUM(get_stat(self)->ST_(rdev));
 #endif
 }
 
@@ -796,8 +889,10 @@ rb_stat_rdev(VALUE self)
 static VALUE
 rb_stat_rdev_major(VALUE self)
 {
-#if defined(HAVE_STRUCT_STAT_ST_RDEV) && defined(major)
-    return UINT2NUM(major(get_stat(self)->st_rdev));
+#if RUBY_USE_STATX
+    return UINT2NUM(get_stat(self)->stx_rdev_major);
+#elif defined(HAVE_STRUCT_STAT_ST_RDEV) && defined(major)
+    return UINT2NUM(major(get_stat(self)->ST_(rdev)));
 #else
     return Qnil;
 #endif
@@ -817,8 +912,10 @@ rb_stat_rdev_major(VALUE self)
 static VALUE
 rb_stat_rdev_minor(VALUE self)
 {
-#if defined(HAVE_STRUCT_STAT_ST_RDEV) && defined(minor)
-    return UINT2NUM(minor(get_stat(self)->st_rdev));
+#if RUBY_USE_STATX
+    return UINT2NUM(get_stat(self)->stx_rdev_minor);
+#elif defined(HAVE_STRUCT_STAT_ST_RDEV) && defined(minor)
+    return UINT2NUM(minor(get_stat(self)->ST_(rdev)));
 #else
     return Qnil;
 #endif
@@ -836,7 +933,7 @@ rb_stat_rdev_minor(VALUE self)
 static VALUE
 rb_stat_size(VALUE self)
 {
-    return OFFT2NUM(get_stat(self)->st_size);
+    return OFFT2NUM(get_stat(self)->ST_(size));
 }
 
 /*
@@ -854,7 +951,7 @@ static VALUE
 rb_stat_blksize(VALUE self)
 {
 #ifdef HAVE_STRUCT_STAT_ST_BLKSIZE
-    return ULONG2NUM(get_stat(self)->st_blksize);
+    return ULONG2NUM(get_stat(self)->ST_(blksize));
 #else
     return Qnil;
 #endif
@@ -876,34 +973,44 @@ rb_stat_blocks(VALUE self)
 {
 #ifdef HAVE_STRUCT_STAT_ST_BLOCKS
 # if SIZEOF_STRUCT_STAT_ST_BLOCKS > SIZEOF_LONG
-    return ULL2NUM(get_stat(self)->st_blocks);
+    return ULL2NUM(get_stat(self)->ST_(blocks));
 # else
-    return ULONG2NUM(get_stat(self)->st_blocks);
+    return ULONG2NUM(get_stat(self)->ST_(blocks));
 # endif
 #else
     return Qnil;
 #endif
 }
 
-static struct timespec
+static stat_timestamp
 stat_atimespec(const struct stat *st)
 {
-    struct timespec ts;
+    stat_timestamp ts;
     ts.tv_sec = st->st_atime;
 #if defined(HAVE_STRUCT_STAT_ST_ATIM)
-    ts.tv_nsec = st->st_atim.tv_nsec;
+    ts.tv_nsec = (uint32_t)st->st_atim.tv_nsec;
 #elif defined(HAVE_STRUCT_STAT_ST_ATIMESPEC)
-    ts.tv_nsec = st->st_atimespec.tv_nsec;
+    ts.tv_nsec = (uint32_t)st->st_atimespec.tv_nsec;
 #elif defined(HAVE_STRUCT_STAT_ST_ATIMENSEC)
-    ts.tv_nsec = (long)st->st_atimensec;
+    ts.tv_nsec = (uint32_t)st->st_atimensec;
 #else
-    ts.tv_nsec = 0;
+    ts.tv_nsec = 0
 #endif
     return ts;
 }
 
+#if RUBY_USE_STATX
+static stat_timestamp
+statx_atimespec(const rb_io_stat_data *st)
+{
+    return st->stx_atime;
+}
+#else
+# define statx_atimespec stat_atimespec
+#endif
+
 static VALUE
-stat_time(const struct timespec ts)
+stat_time(const stat_timestamp ts)
 {
     return rb_time_nano_new(ts.tv_sec, ts.tv_nsec);
 }
@@ -914,17 +1021,17 @@ stat_atime(const struct stat *st)
     return stat_time(stat_atimespec(st));
 }
 
-static struct timespec
+static stat_timestamp
 stat_mtimespec(const struct stat *st)
 {
-    struct timespec ts;
+    stat_timestamp ts;
     ts.tv_sec = st->st_mtime;
 #if defined(HAVE_STRUCT_STAT_ST_MTIM)
-    ts.tv_nsec = st->st_mtim.tv_nsec;
+    ts.tv_nsec = (uint32_t)st->st_mtim.tv_nsec;
 #elif defined(HAVE_STRUCT_STAT_ST_MTIMESPEC)
-    ts.tv_nsec = st->st_mtimespec.tv_nsec;
+    ts.tv_nsec = (uint32_t)st->st_mtimespec.tv_nsec;
 #elif defined(HAVE_STRUCT_STAT_ST_MTIMENSEC)
-    ts.tv_nsec = (long)st->st_mtimensec;
+    ts.tv_nsec = (uint32_t)st->st_mtimensec;
 #else
     ts.tv_nsec = 0;
 #endif
@@ -937,22 +1044,32 @@ stat_mtime(const struct stat *st)
     return stat_time(stat_mtimespec(st));
 }
 
-static struct timespec
+static stat_timestamp
 stat_ctimespec(const struct stat *st)
 {
-    struct timespec ts;
+    stat_timestamp ts;
     ts.tv_sec = st->st_ctime;
 #if defined(HAVE_STRUCT_STAT_ST_CTIM)
-    ts.tv_nsec = st->st_ctim.tv_nsec;
+    ts.tv_nsec = (uint32_t)st->st_ctim.tv_nsec;
 #elif defined(HAVE_STRUCT_STAT_ST_CTIMESPEC)
-    ts.tv_nsec = st->st_ctimespec.tv_nsec;
+    ts.tv_nsec = (uint32_t)st->st_ctimespec.tv_nsec;
 #elif defined(HAVE_STRUCT_STAT_ST_CTIMENSEC)
-    ts.tv_nsec = (long)st->st_ctimensec;
+    ts.tv_nsec = (uint32_t)st->st_ctimensec;
 #else
     ts.tv_nsec = 0;
 #endif
     return ts;
 }
+
+#if RUBY_USE_STATX
+static stat_timestamp
+statx_ctimespec(const rb_io_stat_data *st)
+{
+    return st->stx_ctime;
+}
+#else
+# define statx_ctimespec stat_ctimespec
+#endif
 
 static VALUE
 stat_ctime(const struct stat *st)
@@ -962,16 +1079,16 @@ stat_ctime(const struct stat *st)
 
 #define HAVE_STAT_BIRTHTIME
 #if defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC)
-typedef struct stat statx_data;
 static VALUE
-stat_birthtime(const struct stat *st)
+statx_birthtime(const rb_io_stat_data *st)
 {
-    const struct timespec *ts = &st->st_birthtimespec;
+    const stat_timestamp *ts = &st->ST_(birthtimespec);
     return rb_time_nano_new(ts->tv_sec, ts->tv_nsec);
 }
+#elif defined(HAVE_STRUCT_STATX_STX_BTIME)
+static VALUE statx_birthtime(const rb_io_stat_data *st);
 #elif defined(_WIN32)
-typedef struct stat statx_data;
-# define stat_birthtime stat_ctime
+# define statx_birthtime stat_ctime
 #else
 # undef HAVE_STAT_BIRTHTIME
 #endif /* defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC) */
@@ -990,7 +1107,7 @@ typedef struct stat statx_data;
 static VALUE
 rb_stat_atime(VALUE self)
 {
-    return stat_atime(get_stat(self));
+    return stat_time(statx_atimespec(get_stat(self)));
 }
 
 /*
@@ -1006,7 +1123,7 @@ rb_stat_atime(VALUE self)
 static VALUE
 rb_stat_mtime(VALUE self)
 {
-    return stat_mtime(get_stat(self));
+    return stat_time(statx_mtimespec(get_stat(self)));
 }
 
 /*
@@ -1026,7 +1143,7 @@ rb_stat_mtime(VALUE self)
 static VALUE
 rb_stat_ctime(VALUE self)
 {
-    return stat_ctime(get_stat(self));
+    return stat_time(statx_ctimespec(get_stat(self)));
 }
 
 #if defined(HAVE_STAT_BIRTHTIME)
@@ -1055,7 +1172,7 @@ rb_stat_ctime(VALUE self)
 static VALUE
 rb_stat_birthtime(VALUE self)
 {
-    return stat_birthtime(get_stat(self));
+    return statx_birthtime(get_stat(self));
 }
 #else
 # define rb_stat_birthtime rb_f_notimplement
@@ -1184,6 +1301,8 @@ stat_without_gvl(const char *path, struct stat *st)
 #if !defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC) && \
     defined(HAVE_STRUCT_STATX_STX_BTIME)
 
+# define STATX(path, st, mask) statx(AT_FDCWD, path, 0, mask, st)
+
 # ifndef HAVE_STATX
 #   ifdef HAVE_SYSCALL_H
 #     include <syscall.h>
@@ -1201,18 +1320,18 @@ statx(int dirfd, const char *pathname, int flags,
 #   endif /* __linux__ */
 # endif /* HAVE_STATX */
 
-typedef struct no_gvl_statx_data {
+typedef struct no_gvl_rb_io_stat_data {
     struct statx *stx;
     int fd;
     const char *path;
     int flags;
     unsigned int mask;
-} no_gvl_statx_data;
+} no_gvl_rb_io_stat_data;
 
 static VALUE
 io_blocking_statx(void *data)
 {
-    no_gvl_statx_data *arg = data;
+    no_gvl_rb_io_stat_data *arg = data;
     return (VALUE)statx(arg->fd, arg->path, arg->flags, arg->mask, arg->stx);
 }
 
@@ -1223,22 +1342,33 @@ no_gvl_statx(void *data)
 }
 
 static int
-statx_without_gvl(const char *path, struct statx *stx, unsigned int mask)
+statx_without_gvl(const char *path, rb_io_stat_data *stx, unsigned int mask)
 {
-    no_gvl_statx_data data = {stx, AT_FDCWD, path, 0, mask};
+    no_gvl_rb_io_stat_data data = {stx, AT_FDCWD, path, 0, mask};
 
     /* call statx(2) with pathname */
     return IO_WITHOUT_GVL_INT(no_gvl_statx, &data);
 }
 
 static int
-fstatx_without_gvl(rb_io_t *fptr, struct statx *stx, unsigned int mask)
+lstatx_without_gvl(const char *path, rb_io_stat_data *stx, unsigned int mask)
 {
-    no_gvl_statx_data data = {stx, fptr->fd, "", AT_EMPTY_PATH, mask};
+    no_gvl_rb_io_stat_data data = {stx, AT_FDCWD, path, AT_SYMLINK_NOFOLLOW, mask};
+
+    /* call statx(2) with pathname */
+    return IO_WITHOUT_GVL_INT(no_gvl_statx, &data);
+}
+
+static int
+fstatx_without_gvl(rb_io_t *fptr, rb_io_stat_data *stx, unsigned int mask)
+{
+    no_gvl_rb_io_stat_data data = {stx, fptr->fd, "", AT_EMPTY_PATH, mask};
 
     /* call statx(2) with fd */
     return (int)rb_io_blocking_region(fptr, io_blocking_statx, &data);
 }
+
+#define FSTATX(fd, st) statx(fd, "", AT_EMPTY_PATH, STATX_ALL, st)
 
 static int
 rb_statx(VALUE file, struct statx *stx, unsigned int mask)
@@ -1249,6 +1379,7 @@ rb_statx(VALUE file, struct statx *stx, unsigned int mask)
     tmp = rb_check_convert_type_with_id(file, T_FILE, "IO", idTo_io);
     if (!NIL_P(tmp)) {
         rb_io_t *fptr;
+
         GetOpenFile(tmp, fptr);
         result = fstatx_without_gvl(fptr, stx, mask);
         file = tmp;
@@ -1277,7 +1408,7 @@ statx_notimplement(const char *field_name)
 }
 
 static VALUE
-statx_birthtime(const struct statx *stx, VALUE fname)
+statx_birthtime(const rb_io_stat_data *stx)
 {
     if (!statx_has_birthtime(stx)) {
         /* birthtime is not supported on the filesystem */
@@ -1286,19 +1417,26 @@ statx_birthtime(const struct statx *stx, VALUE fname)
     return rb_time_nano_new((time_t)stx->stx_btime.tv_sec, stx->stx_btime.tv_nsec);
 }
 
-typedef struct statx statx_data;
-# define HAVE_STAT_BIRTHTIME
+#else
 
-#elif defined(HAVE_STAT_BIRTHTIME)
 # define statx_without_gvl(path, st, mask) stat_without_gvl(path, st)
 # define fstatx_without_gvl(fptr, st, mask) fstat_without_gvl(fptr, st)
-# define statx_birthtime(st, fname) stat_birthtime(st)
+# define lstatx_without_gvl(path, st, mask) lstat_without_gvl(path, st)
+# define rb_statx(file, stx, mask) rb_stat(file, stx)
+# define STATX(path, st, mask) STAT(path, st)
+
+#if defined(HAVE_STAT_BIRTHTIME)
 # define statx_has_birthtime(st) 1
-# define rb_statx(file, st, mask) rb_stat(file, st)
 #else
 # define statx_has_birthtime(st) 0
+#endif
+
 #endif /* !defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC) && \
         defined(HAVE_STRUCT_STATX_STX_BTIME) */
+
+#ifndef FSTAT
+# define FSTAT(fd, st) fstat(fd, st)
+#endif
 
 static int
 rb_stat(VALUE file, struct stat *st)
@@ -1336,14 +1474,14 @@ rb_stat(VALUE file, struct stat *st)
 static VALUE
 rb_file_s_stat(VALUE klass, VALUE fname)
 {
-    struct stat st;
+    rb_io_stat_data st;
 
     FilePathValue(fname);
     fname = rb_str_encode_ospath(fname);
-    if (stat_without_gvl(RSTRING_PTR(fname), &st) < 0) {
+    if (statx_without_gvl(RSTRING_PTR(fname), &st, STATX_ALL) < 0) {
         rb_sys_fail_path(fname);
     }
-    return rb_stat_new(&st);
+    return rb_statx_new(&st);
 }
 
 /*
@@ -1365,13 +1503,13 @@ static VALUE
 rb_io_stat(VALUE obj)
 {
     rb_io_t *fptr;
-    struct stat st;
+    rb_io_stat_data st;
 
     GetOpenFile(obj, fptr);
-    if (fstat(fptr->fd, &st) == -1) {
+    if (fstatx_without_gvl(fptr, &st, STATX_ALL) == -1) {
         rb_sys_fail_path(fptr->pathv);
     }
-    return rb_stat_new(&st);
+    return rb_statx_new(&st);
 }
 
 #ifdef HAVE_LSTAT
@@ -1411,14 +1549,14 @@ static VALUE
 rb_file_s_lstat(VALUE klass, VALUE fname)
 {
 #ifdef HAVE_LSTAT
-    struct stat st;
+    rb_io_stat_data st;
 
     FilePathValue(fname);
     fname = rb_str_encode_ospath(fname);
-    if (lstat_without_gvl(StringValueCStr(fname), &st) == -1) {
+    if (lstatx_without_gvl(StringValueCStr(fname), &st, STATX_ALL) == -1) {
         rb_sys_fail_path(fname);
     }
-    return rb_stat_new(&st);
+    return rb_statx_new(&st);
 #else
     return rb_file_s_stat(klass, fname);
 #endif
@@ -1443,16 +1581,16 @@ rb_file_lstat(VALUE obj)
 {
 #ifdef HAVE_LSTAT
     rb_io_t *fptr;
-    struct stat st;
+    rb_io_stat_data st;
     VALUE path;
 
     GetOpenFile(obj, fptr);
     if (NIL_P(fptr->pathv)) return Qnil;
     path = rb_str_encode_ospath(fptr->pathv);
-    if (lstat_without_gvl(RSTRING_PTR(path), &st) == -1) {
+    if (lstatx_without_gvl(RSTRING_PTR(path), &st, STATX_ALL) == -1) {
         rb_sys_fail_path(fptr->pathv);
     }
-    return rb_stat_new(&st);
+    return rb_statx_new(&st);
 #else
     return rb_io_stat(obj);
 #endif
@@ -2063,7 +2201,7 @@ rb_file_size_p(VALUE obj, VALUE fname)
  *    File.owned?(file_name)   -> true or false
  *
  * Returns <code>true</code> if the named file exists and the
- * effective used id of the calling process is the owner of
+ * effective user id of the calling process is the owner of
  * the file.
  *
  * _file_name_ can be an IO object.
@@ -2237,36 +2375,36 @@ rb_file_s_size(VALUE klass, VALUE fname)
 }
 
 static VALUE
-rb_file_ftype(const struct stat *st)
+rb_file_ftype(mode_t mode)
 {
     const char *t;
 
-    if (S_ISREG(st->st_mode)) {
+    if (S_ISREG(mode)) {
         t = "file";
     }
-    else if (S_ISDIR(st->st_mode)) {
+    else if (S_ISDIR(mode)) {
         t = "directory";
     }
-    else if (S_ISCHR(st->st_mode)) {
+    else if (S_ISCHR(mode)) {
         t = "characterSpecial";
     }
 #ifdef S_ISBLK
-    else if (S_ISBLK(st->st_mode)) {
+    else if (S_ISBLK(mode)) {
         t = "blockSpecial";
     }
 #endif
 #ifdef S_ISFIFO
-    else if (S_ISFIFO(st->st_mode)) {
+    else if (S_ISFIFO(mode)) {
         t = "fifo";
     }
 #endif
 #ifdef S_ISLNK
-    else if (S_ISLNK(st->st_mode)) {
+    else if (S_ISLNK(mode)) {
         t = "link";
     }
 #endif
 #ifdef S_ISSOCK
-    else if (S_ISSOCK(st->st_mode)) {
+    else if (S_ISSOCK(mode)) {
         t = "socket";
     }
 #endif
@@ -2274,7 +2412,7 @@ rb_file_ftype(const struct stat *st)
         t = "unknown";
     }
 
-    return rb_usascii_str_new2(t);
+    return rb_fstring_cstr(t);
 }
 
 /*
@@ -2303,7 +2441,7 @@ rb_file_s_ftype(VALUE klass, VALUE fname)
         rb_sys_fail_path(fname);
     }
 
-    return rb_file_ftype(&st);
+    return rb_file_ftype(st.st_mode);
 }
 
 /*
@@ -2328,7 +2466,7 @@ rb_file_s_atime(VALUE klass, VALUE fname)
         FilePathValue(fname);
         rb_syserr_fail_path(e, fname);
     }
-    return stat_atime(&st);
+    return stat_time(stat_atimespec(&st));
 }
 
 /*
@@ -2352,7 +2490,7 @@ rb_file_atime(VALUE obj)
     if (fstat(fptr->fd, &st) == -1) {
         rb_sys_fail_path(fptr->pathv);
     }
-    return stat_atime(&st);
+    return stat_time(stat_atimespec(&st));
 }
 
 /*
@@ -2377,7 +2515,7 @@ rb_file_s_mtime(VALUE klass, VALUE fname)
         FilePathValue(fname);
         rb_syserr_fail_path(e, fname);
     }
-    return stat_mtime(&st);
+    return stat_time(stat_mtimespec(&st));
 }
 
 /*
@@ -2400,7 +2538,7 @@ rb_file_mtime(VALUE obj)
     if (fstat(fptr->fd, &st) == -1) {
         rb_sys_fail_path(fptr->pathv);
     }
-    return stat_mtime(&st);
+    return stat_time(stat_mtimespec(&st));
 }
 
 /*
@@ -2429,7 +2567,7 @@ rb_file_s_ctime(VALUE klass, VALUE fname)
         FilePathValue(fname);
         rb_syserr_fail_path(e, fname);
     }
-    return stat_ctime(&st);
+    return stat_time(stat_ctimespec(&st));
 }
 
 /*
@@ -2455,7 +2593,7 @@ rb_file_ctime(VALUE obj)
     if (fstat(fptr->fd, &st) == -1) {
         rb_sys_fail_path(fptr->pathv);
     }
-    return stat_ctime(&st);
+    return stat_time(stat_ctimespec(&st));
 }
 
 #if defined(HAVE_STAT_BIRTHTIME)
@@ -2476,14 +2614,14 @@ rb_file_ctime(VALUE obj)
 VALUE
 rb_file_s_birthtime(VALUE klass, VALUE fname)
 {
-    statx_data st;
+    rb_io_stat_data st;
 
     if (rb_statx(fname, &st, STATX_BTIME) < 0) {
         int e = errno;
         FilePathValue(fname);
         rb_syserr_fail_path(e, fname);
     }
-    return statx_birthtime(&st, fname);
+    return statx_birthtime(&st);
 }
 #else
 # define rb_file_s_birthtime rb_f_notimplement
@@ -2506,13 +2644,13 @@ static VALUE
 rb_file_birthtime(VALUE obj)
 {
     rb_io_t *fptr;
-    statx_data st;
+    rb_io_stat_data st;
 
     GetOpenFile(obj, fptr);
     if (fstatx_without_gvl(fptr, &st, STATX_BTIME) == -1) {
         rb_sys_fail_path(fptr->pathv);
     }
-    return statx_birthtime(&st, fptr->pathv);
+    return statx_birthtime(&st);
 }
 #else
 # define rb_file_birthtime rb_f_notimplement
@@ -2625,11 +2763,11 @@ io_blocking_fchmod(void *ptr)
 }
 
 static int
-rb_fchmod(int fd, mode_t mode)
+rb_fchmod(struct rb_io* io, mode_t mode)
 {
     (void)rb_chmod; /* suppress unused-function warning when HAVE_FCHMOD */
-    struct nogvl_fchmod_data data = {.fd = fd, .mode = mode};
-    return (int)rb_thread_io_blocking_region(io_blocking_fchmod, &data, fd);
+    struct nogvl_fchmod_data data = {.fd = io->fd, .mode = mode};
+    return (int)rb_thread_io_blocking_region(io, io_blocking_fchmod, &data);
 }
 #endif
 
@@ -2659,7 +2797,7 @@ rb_file_chmod(VALUE obj, VALUE vmode)
 
     GetOpenFile(obj, fptr);
 #ifdef HAVE_FCHMOD
-    if (rb_fchmod(fptr->fd, mode) == -1) {
+    if (rb_fchmod(fptr, mode) == -1) {
         if (HAVE_FCHMOD || errno != ENOSYS)
             rb_sys_fail_path(fptr->pathv);
     }
@@ -3028,7 +3166,7 @@ static int
 utime_internal(const char *path, void *arg)
 {
     struct utime_args *v = arg;
-    const struct timespec *tsp = v->tsp;
+    const stat_timestamp *tsp = v->tsp;
     struct utimbuf utbuf, *utp = NULL;
     if (tsp) {
         utbuf.actime = tsp[0].tv_sec;
@@ -3287,7 +3425,7 @@ unlink_internal(const char *path, void *arg)
  *  Since the underlying implementation relies on the
  *  <code>unlink(2)</code> system call, the type of
  *  exception raised depends on its error type (see
- *  https://linux.die.net/man/2/unlink) and has the form of
+ *  https://man7.org/linux/man-pages/man2/unlink.2.html) and has the form of
  *  e.g. Errno::ENOENT.
  *
  *  See also Dir::rmdir.
@@ -3433,8 +3571,8 @@ static const char file_alt_separator[] = {FILE_ALT_SEPARATOR, '\0'};
 # define isADS(x) 0
 #endif
 
-#define Next(p, e, enc) ((p) + rb_enc_mbclen((p), (e), (enc)))
-#define Inc(p, e, enc) ((p) = Next((p), (e), (enc)))
+#define Next(p, e, mb_enc, enc) ((p) + ((mb_enc) ? rb_enc_mbclen((p), (e), (enc)) : 1))
+#define Inc(p, e, mb_enc, enc) ((p) = Next((p), (e), (mb_enc), (enc)))
 
 #if defined(DOSISH_UNC)
 #define has_unc(buf) (isdirsep((buf)[0]) && isdirsep((buf)[1]))
@@ -3498,7 +3636,7 @@ not_same_drive(VALUE path, int drive)
 #endif /* DOSISH_DRIVE_LETTER */
 
 static inline char *
-skiproot(const char *path, const char *end, rb_encoding *enc)
+skiproot(const char *path, const char *end)
 {
 #ifdef DOSISH_DRIVE_LETTER
     if (path + 2 <= end && has_drive_letter(path)) path += 2;
@@ -3507,55 +3645,68 @@ skiproot(const char *path, const char *end, rb_encoding *enc)
     return (char *)path;
 }
 
-#define nextdirsep rb_enc_path_next
-char *
-rb_enc_path_next(const char *s, const char *e, rb_encoding *enc)
+static inline char *
+enc_path_next(const char *s, const char *e, bool mb_enc, rb_encoding *enc)
 {
     while (s < e && !isdirsep(*s)) {
-        Inc(s, e, enc);
+        Inc(s, e, mb_enc, enc);
     }
     return (char *)s;
 }
 
-#if defined(DOSISH_UNC) || defined(DOSISH_DRIVE_LETTER)
-#define skipprefix rb_enc_path_skip_prefix
-#else
-#define skipprefix(path, end, enc) (path)
-#endif
+#define nextdirsep rb_enc_path_next
 char *
-rb_enc_path_skip_prefix(const char *path, const char *end, rb_encoding *enc)
+rb_enc_path_next(const char *s, const char *e, rb_encoding *enc)
+{
+    return enc_path_next(s, e, true, enc);
+}
+
+#if defined(DOSISH_UNC) || defined(DOSISH_DRIVE_LETTER)
+#define skipprefix enc_path_skip_prefix
+#else
+#define skipprefix(path, end, mb_enc, enc) (path)
+#endif
+static inline char *
+enc_path_skip_prefix(const char *path, const char *end, bool mb_enc, rb_encoding *enc)
 {
 #if defined(DOSISH_UNC) || defined(DOSISH_DRIVE_LETTER)
 #ifdef DOSISH_UNC
     if (path + 2 <= end && isdirsep(path[0]) && isdirsep(path[1])) {
         path += 2;
         while (path < end && isdirsep(*path)) path++;
-        if ((path = rb_enc_path_next(path, end, enc)) < end && path[0] && path[1] && !isdirsep(path[1]))
-            path = rb_enc_path_next(path + 1, end, enc);
+        if ((path = enc_path_next(path, end, mb_enc, enc)) < end &&
+            path + 2 <= end && !isdirsep(path[1])) {
+            path = enc_path_next(path + 1, end, mb_enc, enc);
+        }
         return (char *)path;
     }
 #endif
 #ifdef DOSISH_DRIVE_LETTER
-    if (has_drive_letter(path))
+    if (path + 2 <= end && has_drive_letter(path))
         return (char *)(path + 2);
 #endif
 #endif /* defined(DOSISH_UNC) || defined(DOSISH_DRIVE_LETTER) */
     return (char *)path;
 }
 
+char *
+rb_enc_path_skip_prefix(const char *path, const char *end, rb_encoding *enc)
+{
+    return enc_path_skip_prefix(path, end, true, enc);
+}
+
 static inline char *
 skipprefixroot(const char *path, const char *end, rb_encoding *enc)
 {
 #if defined(DOSISH_UNC) || defined(DOSISH_DRIVE_LETTER)
-    char *p = skipprefix(path, end, enc);
+    char *p = skipprefix(path, end, true, enc);
     while (isdirsep(*p)) p++;
     return p;
 #else
-    return skiproot(path, end, enc);
+    return skiproot(path, end);
 #endif
 }
 
-#define strrdirsep rb_enc_path_last_separator
 char *
 rb_enc_path_last_separator(const char *path, const char *end, rb_encoding *enc)
 {
@@ -3568,14 +3719,39 @@ rb_enc_path_last_separator(const char *path, const char *end, rb_encoding *enc)
             last = (char *)tmp;
         }
         else {
-            Inc(path, end, enc);
+            Inc(path, end, true, enc);
         }
     }
     return last;
 }
 
+static inline char *
+strrdirsep(const char *path, const char *end, bool mb_enc, rb_encoding *enc)
+{
+    if (RB_UNLIKELY(mb_enc)) {
+        return rb_enc_path_last_separator(path, end, enc);
+    }
+
+    const char *cursor = end - 1;
+
+    while (isdirsep(cursor[0])) {
+        cursor--;
+    }
+
+    while (cursor >= path) {
+        if (isdirsep(cursor[0])) {
+            while (cursor > path && isdirsep(cursor[-1])) {
+                cursor--;
+            }
+            return (char *)cursor;
+        }
+        cursor--;
+    }
+    return NULL;
+}
+
 static char *
-chompdirsep(const char *path, const char *end, rb_encoding *enc)
+chompdirsep(const char *path, const char *end, bool mb_enc, rb_encoding *enc)
 {
     while (path < end) {
         if (isdirsep(*path)) {
@@ -3584,7 +3760,7 @@ chompdirsep(const char *path, const char *end, rb_encoding *enc)
             if (path >= end) return (char *)last;
         }
         else {
-            Inc(path, end, enc);
+            Inc(path, end, mb_enc, enc);
         }
     }
     return (char *)path;
@@ -3594,13 +3770,13 @@ char *
 rb_enc_path_end(const char *path, const char *end, rb_encoding *enc)
 {
     if (path < end && isdirsep(*path)) path++;
-    return chompdirsep(path, end, enc);
+    return chompdirsep(path, end, true, enc);
 }
 
 static rb_encoding *
 fs_enc_check(VALUE path1, VALUE path2)
 {
-    rb_encoding *enc = rb_enc_check(path1, path2);
+    rb_encoding *enc = rb_enc_check_str(path1, path2);
     int encidx = rb_enc_to_index(enc);
     if (encidx == ENCINDEX_US_ASCII) {
         encidx = rb_enc_get_index(path1);
@@ -3629,7 +3805,7 @@ ntfs_tail(const char *path, const char *end, rb_encoding *enc)
             if (isADS(*path)) path++;
         }
         else {
-            Inc(path, end, enc);
+            Inc(path, end, true, enc);
         }
     }
     return (char *)path;
@@ -3691,7 +3867,7 @@ copy_home_path(VALUE result, const char *dir)
     rb_enc_associate_index(result, encidx);
 #if defined DOSISH || defined __CYGWIN__
     enc = rb_enc_from_index(encidx);
-    for (bend = (p = buf) + dirlen; p < bend; Inc(p, bend, enc)) {
+    for (bend = (p = buf) + dirlen; p < bend; Inc(p, bend, true, enc)) {
         if (*p == '\\') {
             *p = '/';
         }
@@ -3848,13 +4024,13 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     enc = rb_enc_get(fname);
     BUFINIT();
 
-    if (s[0] == '~' && abs_mode == 0) {      /* execute only if NOT absolute_path() */
+    if (s < fend && s[0] == '~' && abs_mode == 0) {      /* execute only if NOT absolute_path() */
         long userlen = 0;
-        if (isdirsep(s[1]) || s[1] == '\0') {
+        if (s + 1 == fend || isdirsep(s[1])) {
             buf = 0;
             b = 0;
             rb_str_set_len(result, 0);
-            if (*++s) ++s;
+            if (++s < fend) ++s;
             rb_default_home_dir(result);
         }
         else {
@@ -3884,8 +4060,8 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     }
 #ifdef DOSISH_DRIVE_LETTER
     /* skip drive letter */
-    else if (has_drive_letter(s)) {
-        if (isdirsep(s[2])) {
+    else if (s + 1 < fend && has_drive_letter(s)) {
+        if (s + 2 < fend && isdirsep(s[2])) {
             /* specified drive letter, and full path */
             /* skip drive letter */
             BUFCHECK(bdiff + 2 >= buflen);
@@ -3914,12 +4090,12 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
                 rb_enc_associate(result, enc = fs_enc_check(result, fname));
                 p = pend;
             }
-            p = chompdirsep(skiproot(buf, p, enc), p, enc);
+            p = chompdirsep(skiproot(buf, p), p, true, enc);
             s += 2;
         }
     }
 #endif /* DOSISH_DRIVE_LETTER */
-    else if (!rb_is_absolute_path(s)) {
+    else if (s == fend || !rb_is_absolute_path(s)) {
         if (!NIL_P(dname)) {
             rb_file_expand_path_internal(dname, Qnil, abs_mode, long_name, result);
             rb_enc_associate(result, fs_enc_check(result, fname));
@@ -3932,19 +4108,19 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
             p = e;
         }
 #if defined DOSISH || defined __CYGWIN__
-        if (isdirsep(*s)) {
+        if (s < fend && isdirsep(*s)) {
             /* specified full path, but not drive letter nor UNC */
             /* we need to get the drive letter or UNC share name */
-            p = skipprefix(buf, p, enc);
+            p = skipprefix(buf, p, true, enc);
         }
         else
 #endif /* defined DOSISH || defined __CYGWIN__ */
-            p = chompdirsep(skiproot(buf, p, enc), p, enc);
+            p = chompdirsep(skiproot(buf, p), p, true, enc);
     }
     else {
         size_t len;
         b = s;
-        do s++; while (isdirsep(*s));
+        do s++; while (s < fend && isdirsep(*s));
         len = s - b;
         p = buf + len;
         BUFCHECK(bdiff >= buflen);
@@ -3963,23 +4139,24 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     rb_str_set_len(result, p-buf+1);
     BUFCHECK(bdiff + 1 >= buflen);
     p[1] = 0;
-    root = skipprefix(buf, p+1, enc);
+    root = skipprefix(buf, p+1, true, enc);
 
     b = s;
-    while (*s) {
+    while (s < fend) {
         switch (*s) {
           case '.':
             if (b == s++) {	/* beginning of path element */
-                switch (*s) {
-                  case '\0':
+                if (s == fend) {
                     b = s;
                     break;
+                }
+                switch (*s) {
                   case '.':
-                    if (*(s+1) == '\0' || isdirsep(*(s+1))) {
+                    if (s+1 == fend || isdirsep(*(s+1))) {
                         /* We must go back to the parent */
                         char *n;
                         *p = '\0';
-                        if (!(n = strrdirsep(root, p, enc))) {
+                        if (!(n = strrdirsep(root, p, true, enc))) {
                             *p = '/';
                         }
                         else {
@@ -3989,7 +4166,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
                     }
 #if USE_NTFS
                     else {
-                        do ++s; while (istrailinggarbage(*s));
+                        do ++s; while (s < fend && istrailinggarbage(*s));
                     }
 #endif /* USE_NTFS */
                     break;
@@ -4042,7 +4219,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
                 }
             }
 #endif /* __APPLE__ */
-            Inc(s, fend, enc);
+            Inc(s, fend, true, enc);
             break;
         }
     }
@@ -4070,7 +4247,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
         BUFCOPY(b, s-b);
         rb_str_set_len(result, p-buf);
     }
-    if (p == skiproot(buf, p + !!*p, enc) - 1) p++;
+    if (p == skiproot(buf, p + !!*p) - 1) p++;
 
 #if USE_NTFS
     *p = '\0';
@@ -4342,7 +4519,7 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE f
             if (*prefixlenp < RSTRING_LEN(*resolvedp)) {
                 const char *resolved_str = RSTRING_PTR(*resolvedp);
                 const char *resolved_names = resolved_str + *prefixlenp;
-                const char *lastsep = strrdirsep(resolved_names, resolved_str + RSTRING_LEN(*resolvedp), enc);
+                const char *lastsep = strrdirsep(resolved_names, resolved_str + RSTRING_LEN(*resolvedp), true, enc);
                 long len = lastsep ? lastsep - resolved_names : 0;
                 rb_str_resize(*resolvedp, *prefixlenp + len);
             }
@@ -4482,7 +4659,7 @@ rb_check_realpath_emulate(VALUE basedir, VALUE path, rb_encoding *origenc, enum 
   root_found:
     RSTRING_GETMEM(resolved, prefixptr, prefixlen);
     pend = prefixptr + prefixlen;
-    ptr = chompdirsep(prefixptr, pend, enc);
+    ptr = chompdirsep(prefixptr, pend, true, enc);
     if (ptr < pend) {
         prefixlen = ++ptr - prefixptr;
         rb_str_set_len(resolved, prefixlen);
@@ -4492,7 +4669,7 @@ rb_check_realpath_emulate(VALUE basedir, VALUE path, rb_encoding *origenc, enum 
         if (*prefixptr == FILE_ALT_SEPARATOR) {
             *prefixptr = '/';
         }
-        Inc(prefixptr, pend, enc);
+        Inc(prefixptr, pend, true, enc);
     }
 #endif
 
@@ -4528,7 +4705,7 @@ rb_check_realpath_emulate(VALUE basedir, VALUE path, rb_encoding *origenc, enum 
     return resolved;
 }
 
-static VALUE rb_file_join(VALUE ary);
+static VALUE rb_file_join(long argc, VALUE *args);
 
 #ifndef HAVE_REALPATH
 static VALUE
@@ -4569,17 +4746,22 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, rb_encoding *origenc, enum
 
     unresolved_path = rb_str_dup_frozen(path);
     if (*RSTRING_PTR(unresolved_path) != '/' && !NIL_P(basedir)) {
-        unresolved_path = rb_file_join(rb_assoc_new(basedir, unresolved_path));
+        VALUE paths[2] = {basedir, unresolved_path};
+        unresolved_path = rb_file_join(2, paths);
     }
     if (origenc) unresolved_path = TO_OSPATH(unresolved_path);
 
     if ((resolved_ptr = realpath(RSTRING_PTR(unresolved_path), resolved_buffer)) == NULL) {
-        /* glibc realpath(3) does not allow /path/to/file.rb/../other_file.rb,
+        /*
+           wasi-libc 22 and later support realpath(3) but return ENOTSUP
+           when the underlying host syscall returns it.
+           glibc realpath(3) does not allow /path/to/file.rb/../other_file.rb,
            returning ENOTDIR in that case.
            glibc realpath(3) can also return ENOENT for paths that exist,
            such as /dev/fd/5.
            Fallback to the emulated approach in either of those cases. */
-        if (errno == ENOTDIR ||
+        if (errno == ENOTSUP ||
+            errno == ENOTDIR ||
             (errno == ENOENT && rb_file_exist_p(0, unresolved_path))) {
             return rb_check_realpath_emulate(basedir, path, origenc, mode);
 
@@ -4594,7 +4776,7 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, rb_encoding *origenc, enum
     free(resolved_ptr);
 # endif
 
-# if !defined(__LINUX__) && !defined(__APPLE__)
+# if !defined(__linux__) && !defined(__APPLE__)
     /* As `resolved` is a String in the filesystem encoding, no
      * conversion is needed */
     struct stat st;
@@ -4604,7 +4786,7 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, rb_encoding *origenc, enum
         }
         rb_sys_fail_path(unresolved_path);
     }
-# endif /* !defined(__LINUX__) && !defined(__APPLE__) */
+# endif /* !defined(__linux__) && !defined(__APPLE__) */
 
     if (origenc && origenc != rb_enc_get(resolved)) {
         if (!rb_enc_str_asciionly_p(resolved)) {
@@ -4731,8 +4913,8 @@ rmext(const char *p, long l0, long l1, const char *e, long l2, rb_encoding *enc)
     return 0;
 }
 
-const char *
-ruby_enc_find_basename(const char *name, long *baselen, long *alllen, rb_encoding *enc)
+static inline const char *
+enc_find_basename(const char *name, long *baselen, long *alllen, bool mb_enc, rb_encoding *enc)
 {
     const char *p, *q, *e, *end;
 #if defined DOSISH_DRIVE_LETTER || defined DOSISH_UNC
@@ -4740,14 +4922,23 @@ ruby_enc_find_basename(const char *name, long *baselen, long *alllen, rb_encodin
 #endif
     long f = 0, n = -1;
 
-    end = name + (alllen ? (size_t)*alllen : strlen(name));
-    name = skipprefix(name, end, enc);
+    long len = (alllen ? (size_t)*alllen : strlen(name));
+
+    if (len <= 0) {
+        return name;
+    }
+
+    end = name + len;
+    name = skipprefix(name, end, mb_enc, enc);
 #if defined DOSISH_DRIVE_LETTER || defined DOSISH_UNC
     root = name;
 #endif
-    while (isdirsep(*name))
+
+    while (name < end && isdirsep(*name)) {
         name++;
-    if (!*name) {
+    }
+
+    if (name == end) {
         p = name - 1;
         f = 1;
 #if defined DOSISH_DRIVE_LETTER || defined DOSISH_UNC
@@ -4768,30 +4959,45 @@ ruby_enc_find_basename(const char *name, long *baselen, long *alllen, rb_encodin
 #endif /* defined DOSISH_DRIVE_LETTER || defined DOSISH_UNC */
     }
     else {
-        if (!(p = strrdirsep(name, end, enc))) {
+        p = strrdirsep(name, end, mb_enc, enc);
+        if (!p) {
             p = name;
         }
         else {
-            while (isdirsep(*p)) p++; /* skip last / */
+            while (isdirsep(*p)) {
+                p++; /* skip last / */
+            }
         }
 #if USE_NTFS
         n = ntfs_tail(p, end, enc) - p;
 #else
-        n = chompdirsep(p, end, enc) - p;
+        n = chompdirsep(p, end, mb_enc, enc) - p;
 #endif
         for (q = p; q - p < n && *q == '.'; q++);
-        for (e = 0; q - p < n; Inc(q, end, enc)) {
+        for (e = 0; q - p < n; Inc(q, end, mb_enc, enc)) {
             if (*q == '.') e = q;
         }
-        if (e) f = e - p;
-        else f = n;
+        if (e) {
+            f = e - p;
+        }
+        else {
+            f = n;
+        }
     }
 
-    if (baselen)
+    if (baselen) {
         *baselen = f;
-    if (alllen)
+    }
+    if (alllen) {
         *alllen = n;
+    }
     return p;
+}
+
+const char *
+ruby_enc_find_basename(const char *name, long *baselen, long *alllen, rb_encoding *enc)
+{
+    return enc_find_basename(name, baselen, alllen, true, enc);
 }
 
 /*
@@ -4814,45 +5020,46 @@ ruby_enc_find_basename(const char *name, long *baselen, long *alllen, rb_encodin
 static VALUE
 rb_file_s_basename(int argc, VALUE *argv, VALUE _)
 {
-    VALUE fname, fext, basename;
-    const char *name, *p;
-    long f, n;
+    VALUE fname, fext = Qnil;
+    const char *name, *p, *fp = 0;
+    long f = 0, n;
     rb_encoding *enc;
 
-    fext = Qnil;
-    if (rb_check_arity(argc, 1, 2) == 2) {
-        fext = argv[1];
-        StringValue(fext);
-        enc = check_path_encoding(fext);
-    }
+    argc = rb_check_arity(argc, 1, 2);
     fname = argv[0];
-    FilePathStringValue(fname);
-    if (NIL_P(fext) || !(enc = rb_enc_compatible(fname, fext))) {
-        enc = rb_enc_get(fname);
-        fext = Qnil;
+    CheckPath(fname, name);
+    if (argc == 2) {
+        fext = argv[1];
+        fp = StringValueCStr(fext);
+        check_path_encoding(fext);
     }
-    if ((n = RSTRING_LEN(fname)) == 0 || !*(name = RSTRING_PTR(fname)))
-        return rb_str_new_shared(fname);
+    if (NIL_P(fext) || !(enc = rb_enc_compatible(fname, fext))) {
+        enc = rb_str_enc_get(fname);
+    }
 
-    p = ruby_enc_find_basename(name, &f, &n, enc);
+    n = RSTRING_LEN(fname);
+    if (n <= 0 || !*name) {
+        return rb_enc_str_new(0, 0, enc);
+    }
+
+    bool mb_enc = !rb_str_encindex_fastpath(rb_enc_to_index(enc));
+    p = enc_find_basename(name, &f, &n, mb_enc, enc);
     if (n >= 0) {
-        if (NIL_P(fext)) {
+        if (!fp) {
             f = n;
         }
         else {
-            const char *fp;
-            fp = StringValueCStr(fext);
             if (!(f = rmext(p, f, n, fp, RSTRING_LEN(fext), enc))) {
                 f = n;
             }
             RB_GC_GUARD(fext);
         }
-        if (f == RSTRING_LEN(fname)) return rb_str_new_shared(fname);
+        if (f == RSTRING_LEN(fname)) {
+            return rb_str_new_shared(fname);
+        }
     }
 
-    basename = rb_str_new(p, f);
-    rb_enc_copy(basename, fname);
-    return basename;
+    return rb_enc_str_new(p, f, enc);
 }
 
 static VALUE rb_file_dirname_n(VALUE fname, int n);
@@ -4897,19 +5104,18 @@ rb_file_dirname_n(VALUE fname, int n)
 {
     const char *name, *root, *p, *end;
     VALUE dirname;
-    rb_encoding *enc;
-    VALUE sepsv = 0;
-    const char **seps;
 
     if (n < 0) rb_raise(rb_eArgError, "negative level: %d", n);
-    FilePathStringValue(fname);
-    name = StringValueCStr(fname);
+    CheckPath(fname, name);
     end = name + RSTRING_LEN(fname);
-    enc = rb_enc_get(fname);
-    root = skiproot(name, end, enc);
+
+    bool mb_enc = !rb_str_enc_fastpath(fname);
+    rb_encoding *enc = rb_str_enc_get(fname);
+
+    root = skiproot(name, end);
 #ifdef DOSISH_UNC
     if (root > name + 1 && isdirsep(*name))
-        root = skipprefix(name = root - 2, end, enc);
+        root = skipprefix(name = root - 2, end, mb_enc, enc);
 #else
     if (root > name + 1)
         name = root - 1;
@@ -4918,72 +5124,41 @@ rb_file_dirname_n(VALUE fname, int n)
         p = root;
     }
     else {
-        int i;
-        switch (n) {
-          case 0:
-            p = end;
-            break;
-          case 1:
-            if (!(p = strrdirsep(root, end, enc))) p = root;
-            break;
-          default:
-            seps = ALLOCV_N(const char *, sepsv, n);
-            for (i = 0; i < n; ++i) seps[i] = root;
-            i = 0;
-            for (p = root; p < end; ) {
-                if (isdirsep(*p)) {
-                    const char *tmp = p++;
-                    while (p < end && isdirsep(*p)) p++;
-                    if (p >= end) break;
-                    seps[i++] = tmp;
-                    if (i == n) i = 0;
-                }
-                else {
-                    Inc(p, end, enc);
-                }
+        p = end;
+        while (n) {
+            if (!(p = strrdirsep(root, p, mb_enc, enc))) {
+                p = root;
+                break;
             }
-            p = seps[i];
-            ALLOCV_END(sepsv);
-            break;
+            n--;
         }
     }
-    if (p == name)
-        return rb_usascii_str_new2(".");
+
+    if (p == name) {
+        return rb_enc_str_new(".", 1, enc);
+    }
 #ifdef DOSISH_DRIVE_LETTER
-    if (has_drive_letter(name) && isdirsep(*(name + 2))) {
-        const char *top = skiproot(name + 2, end, enc);
-        dirname = rb_str_new(name, 3);
+    if (name + 3 < end && has_drive_letter(name) && isdirsep(*(name + 2))) {
+        const char *top = skiproot(name + 2, end);
+        dirname = rb_enc_str_new(name, 3, enc);
         rb_str_cat(dirname, top, p - top);
     }
     else
 #endif
-    dirname = rb_str_new(name, p - name);
+    dirname = rb_enc_str_new(name, p - name, enc);
 #ifdef DOSISH_DRIVE_LETTER
-    if (has_drive_letter(name) && root == name + 2 && p - name == 2)
+    if (root == name + 2 && p == root && name[1] == ':')
         rb_str_cat(dirname, ".", 1);
 #endif
-    rb_enc_copy(dirname, fname);
     return dirname;
 }
 
-/*
- * accept a String, and return the pointer of the extension.
- * if len is passed, set the length of extension to it.
- * returned pointer is in ``name'' or NULL.
- *                 returns   *len
- *   no dot        NULL      0
- *   dotfile       top       0
- *   end with dot  dot       1
- *   .ext          dot       len of .ext
- *   .ext:stream   dot       len of .ext without :stream (NTFS only)
- *
- */
-const char *
-ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc)
+static inline const char *
+enc_find_extname(const char *name, long *len, bool mb_enc, rb_encoding *enc)
 {
     const char *p, *e, *end = name + (len ? *len : (long)strlen(name));
 
-    p = strrdirsep(name, end, enc);	/* get the last path component */
+    p = strrdirsep(name, end, mb_enc, enc);	/* get the last path component */
     if (!p)
         p = name;
     else
@@ -5016,7 +5191,7 @@ ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc)
 #endif
         else if (isdirsep(*p))
             break;
-        Inc(p, end, enc);
+        Inc(p, end, mb_enc, enc);
     }
 
     if (len) {
@@ -5029,6 +5204,24 @@ ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc)
             *len = p - e;
     }
     return e;
+}
+
+/*
+ * accept a String, and return the pointer of the extension.
+ * if len is passed, set the length of extension to it.
+ * returned pointer is in ``name'' or NULL.
+ *                 returns   *len
+ *   no dot        NULL      0
+ *   dotfile       top       0
+ *   end with dot  dot       1
+ *   .ext          dot       len of .ext
+ *   .ext:stream   dot       len of .ext without :stream (NTFS only)
+ *
+ */
+const char *
+ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc)
+{
+    return enc_find_extname(name, len, true, enc);
 }
 
 /*
@@ -5060,29 +5253,46 @@ ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc)
 static VALUE
 rb_file_s_extname(VALUE klass, VALUE fname)
 {
-    const char *name, *e;
-    long len;
-    VALUE extname;
+    const char *name;
+    CheckPath(fname, name);
+    long len = RSTRING_LEN(fname);
 
-    FilePathStringValue(fname);
-    name = StringValueCStr(fname);
-    len = RSTRING_LEN(fname);
-    e = ruby_enc_find_extname(name, &len, rb_enc_get(fname));
-    if (len < 1)
-        return rb_str_new(0, 0);
-    extname = rb_str_subseq(fname, e - name, len); /* keep the dot, too! */
-    return extname;
+    if (len < 1) {
+        return rb_enc_str_new(0, 0, rb_str_enc_get(fname));
+    }
+
+    bool mb_enc = !rb_str_enc_fastpath(fname);
+    rb_encoding *enc = rb_str_enc_get(fname);
+
+    const char *ext = enc_find_extname(name, &len, mb_enc, enc);
+    return rb_enc_str_new(ext, len, enc);
 }
 
 /*
- *  call-seq:
+ * call-seq:
  *     File.path(path)  ->  string
  *
- *  Returns the string representation of the path
+ * Returns the string representation of the path
  *
  *     File.path(File::NULL)           #=> "/dev/null"
  *     File.path(Pathname.new("/tmp")) #=> "/tmp"
  *
+ * If +path+ is not a String:
+ *
+ * 1. If it has the +to_path+ method, that method will be called to
+ *    coerce to a String.
+ *
+ * 2. Otherwise, or if the coerced result is not a String too, the
+ *    standard coercion using +to_str+ method will take place on that
+ *    object. (See also String.try_convert)
+ *
+ * The coerced string must satisfy the following conditions:
+ *
+ * 1. It must be in an ASCII-compatible encoding; otherwise, an
+ *    Encoding::CompatibilityError is raised.
+ *
+ * 2. It must not contain the NUL character (<tt>\0</tt>); otherwise,
+ *    an ArgumentError is raised.
  */
 
 static VALUE
@@ -5109,15 +5319,17 @@ rb_file_s_split(VALUE klass, VALUE path)
     return rb_assoc_new(rb_file_dirname(path), rb_file_s_basename(1,&path,Qundef));
 }
 
+static VALUE rb_file_join_ary(VALUE ary);
+
 static VALUE
 file_inspect_join(VALUE ary, VALUE arg, int recur)
 {
     if (recur || ary == arg) rb_raise(rb_eArgError, "recursive array");
-    return rb_file_join(arg);
+    return rb_file_join_ary(arg);
 }
 
 static VALUE
-rb_file_join(VALUE ary)
+rb_file_join_ary(VALUE ary)
 {
     long len, i;
     VALUE result, tmp;
@@ -5165,7 +5377,7 @@ rb_file_join(VALUE ary)
             rb_enc_copy(result, tmp);
         }
         else {
-            tail = chompdirsep(name, name + len, rb_enc_get(result));
+            tail = chompdirsep(name, name + len, true, rb_enc_get(result));
             if (RSTRING_PTR(tmp) && isdirsep(RSTRING_PTR(tmp)[0])) {
                 rb_str_set_len(result, tail - name);
             }
@@ -5182,6 +5394,77 @@ rb_file_join(VALUE ary)
     return result;
 }
 
+static inline VALUE
+rb_file_join_fastpath(long argc, VALUE *args)
+{
+    long size = argc;
+
+    long i;
+    for (i = 0; i < argc; i++) {
+        VALUE tmp = args[i];
+        if (RB_LIKELY(RB_TYPE_P(tmp, T_STRING) && rb_str_enc_fastpath(tmp))) {
+            size += RSTRING_LEN(tmp);
+        }
+        else {
+            return 0;
+        }
+    }
+
+    VALUE result = rb_str_buf_new(size);
+
+    int encidx = ENCODING_GET_INLINED(args[0]);
+    ENCODING_SET_INLINED(result, encidx);
+    rb_str_buf_append(result, args[0]);
+
+    const char *name = RSTRING_PTR(result);
+    for (i = 1; i < argc; i++) {
+        VALUE tmp = args[i];
+        long len = RSTRING_LEN(result);
+
+        const char *tmp_s;
+        long tmp_len;
+        RSTRING_GETMEM(tmp, tmp_s, tmp_len);
+
+        if (isdirsep(tmp_s[0])) {
+            // right side has a leading separator, remove left side separators.
+            long trailing_seps = 0;
+            while (isdirsep(name[len - trailing_seps - 1])) {
+                trailing_seps++;
+            }
+            rb_str_set_len(result, len - trailing_seps);
+        }
+        else if (!isdirsep(name[len - 1])) {
+            // neither side have a separator, append one;
+            rb_str_cat(result, "/", 1);
+        }
+
+        if (RB_UNLIKELY(ENCODING_GET_INLINED(tmp) != encidx)) {
+            rb_encoding *new_enc = fs_enc_check(result, tmp);
+            rb_enc_associate(result, new_enc);
+            encidx = rb_enc_to_index(new_enc);
+        }
+
+        rb_str_buf_cat(result, tmp_s, tmp_len);
+    }
+
+    rb_str_null_check(result);
+    return result;
+}
+
+static inline VALUE
+rb_file_join(long argc, VALUE *args)
+{
+    if (RB_UNLIKELY(argc == 0)) {
+        return rb_str_new(0, 0);
+    }
+
+    VALUE result = rb_file_join_fastpath(argc, args);
+    if (RB_LIKELY(result)) {
+        return result;
+    }
+
+    return rb_file_join_ary(rb_ary_new_from_values(argc, args));
+}
 /*
  *  call-seq:
  *     File.join(string, ...)  ->  string
@@ -5194,9 +5477,9 @@ rb_file_join(VALUE ary)
  */
 
 static VALUE
-rb_file_s_join(VALUE klass, VALUE args)
+rb_file_s_join(int argc, VALUE *argv, VALUE klass)
 {
-    return rb_file_join(args);
+    return rb_file_join(argc, argv);
 }
 
 #if defined(HAVE_TRUNCATE)
@@ -5336,7 +5619,7 @@ rb_thread_flock(void *data)
  *  call-seq:
  *    flock(locking_constant) -> 0 or false
  *
- *  Locks or unlocks file +self+ according to the given `locking_constant`,
+ *  Locks or unlocks file `self` according to the given `locking_constant`,
  *  a bitwise OR of the values in the table below.
  *
  *  Not available on all platforms.
@@ -5346,10 +5629,10 @@ rb_thread_flock(void *data)
  *
  *  | Constant        | Lock         | Effect
  *  |-----------------|--------------|-----------------------------------------------------------------------------------------------------------------|
- *  | +File::LOCK_EX+ | Exclusive    | Only one process may hold an exclusive lock for +self+ at a time.                                               |
- *  | +File::LOCK_NB+ | Non-blocking | No blocking; may be combined with +File::LOCK_SH+ or +File::LOCK_EX+ using the bitwise OR operator <tt>\|</tt>. |
- *  | +File::LOCK_SH+ | Shared       | Multiple processes may each hold a shared lock for +self+ at the same time.                                     |
- *  | +File::LOCK_UN+ | Unlock       | Remove an existing lock held by this process.                                                                   |
+ *  | `File::LOCK_EX` | Exclusive    | Only one process may hold an exclusive lock for `self` at a time.                                               |
+ *  | `File::LOCK_NB` | Non-blocking | No blocking; may be combined with `File::LOCK_SH` or `File::LOCK_EX` using the bitwise OR operator <tt>\|</tt>. |
+ *  | `File::LOCK_SH` | Shared       | Multiple processes may each hold a shared lock for `self` at the same time.                                     |
+ *  | `File::LOCK_UN` | Unlock       | Remove an existing lock held by this process.                                                                   |
  *
  *  Example:
  *
@@ -5476,11 +5759,11 @@ test_check(int n, int argc, VALUE *argv)
  *      | <tt>'z'</tt> | Whether the entity exists and is of length zero.                          |
  *
  *  - This test operates only on the entity at `path0`,
- *    and returns an integer size or +nil+:
+ *    and returns an integer size or `nil`:
  *
  *      | Character    | Test                                                                                         |
  *      |:------------:|:---------------------------------------------------------------------------------------------|
- *      | <tt>'s'</tt> | Returns positive integer size if the entity exists and has non-zero length, +nil+ otherwise. |
+ *      | <tt>'s'</tt> | Returns positive integer size if the entity exists and has non-zero length, `nil` otherwise. |
  *
  *  - Each of these tests operates only on the entity at `path0`,
  *    and returns a Time object;
@@ -5622,7 +5905,7 @@ rb_f_test(int argc, VALUE *argv, VALUE _)
 
     if (strchr("=<>", cmd)) {
         struct stat st1, st2;
-        struct timespec t1, t2;
+        stat_timestamp t1, t2;
 
         CHECK(2);
         if (rb_stat(argv[1], &st1) < 0) return Qfalse;
@@ -5674,7 +5957,9 @@ rb_f_test(int argc, VALUE *argv, VALUE _)
 static VALUE
 rb_stat_s_alloc(VALUE klass)
 {
-    return stat_new_0(klass, 0);
+    VALUE obj;
+    stat_alloc(rb_cStat, &obj);
+    return obj;
 }
 
 /*
@@ -5688,11 +5973,11 @@ rb_stat_s_alloc(VALUE klass)
 static VALUE
 rb_stat_init(VALUE obj, VALUE fname)
 {
-    struct stat st;
+    rb_io_stat_data st;
 
     FilePathValue(fname);
     fname = rb_str_encode_ospath(fname);
-    if (STAT(StringValueCStr(fname), &st) == -1) {
+    if (STATX(StringValueCStr(fname), &st, STATX_ALL) == -1) {
         rb_sys_fail_path(fname);
     }
 
@@ -5738,7 +6023,7 @@ rb_stat_init_copy(VALUE copy, VALUE orig)
 static VALUE
 rb_stat_ftype(VALUE obj)
 {
-    return rb_file_ftype(get_stat(obj));
+    return rb_file_ftype(get_stat(obj)->ST_(mode));
 }
 
 /*
@@ -5755,7 +6040,7 @@ rb_stat_ftype(VALUE obj)
 static VALUE
 rb_stat_d(VALUE obj)
 {
-    if (S_ISDIR(get_stat(obj)->st_mode)) return Qtrue;
+    if (S_ISDIR(get_stat(obj)->ST_(mode))) return Qtrue;
     return Qfalse;
 }
 
@@ -5771,7 +6056,7 @@ static VALUE
 rb_stat_p(VALUE obj)
 {
 #ifdef S_IFIFO
-    if (S_ISFIFO(get_stat(obj)->st_mode)) return Qtrue;
+    if (S_ISFIFO(get_stat(obj)->ST_(mode))) return Qtrue;
 
 #endif
     return Qfalse;
@@ -5797,7 +6082,7 @@ static VALUE
 rb_stat_l(VALUE obj)
 {
 #ifdef S_ISLNK
-    if (S_ISLNK(get_stat(obj)->st_mode)) return Qtrue;
+    if (S_ISLNK(get_stat(obj)->ST_(mode))) return Qtrue;
 #endif
     return Qfalse;
 }
@@ -5818,7 +6103,7 @@ static VALUE
 rb_stat_S(VALUE obj)
 {
 #ifdef S_ISSOCK
-    if (S_ISSOCK(get_stat(obj)->st_mode)) return Qtrue;
+    if (S_ISSOCK(get_stat(obj)->ST_(mode))) return Qtrue;
 
 #endif
     return Qfalse;
@@ -5841,7 +6126,7 @@ static VALUE
 rb_stat_b(VALUE obj)
 {
 #ifdef S_ISBLK
-    if (S_ISBLK(get_stat(obj)->st_mode)) return Qtrue;
+    if (S_ISBLK(get_stat(obj)->ST_(mode))) return Qtrue;
 
 #endif
     return Qfalse;
@@ -5862,7 +6147,7 @@ rb_stat_b(VALUE obj)
 static VALUE
 rb_stat_c(VALUE obj)
 {
-    if (S_ISCHR(get_stat(obj)->st_mode)) return Qtrue;
+    if (S_ISCHR(get_stat(obj)->ST_(mode))) return Qtrue;
 
     return Qfalse;
 }
@@ -5882,14 +6167,14 @@ rb_stat_c(VALUE obj)
 static VALUE
 rb_stat_owned(VALUE obj)
 {
-    if (get_stat(obj)->st_uid == geteuid()) return Qtrue;
+    if (get_stat(obj)->ST_(uid) == geteuid()) return Qtrue;
     return Qfalse;
 }
 
 static VALUE
 rb_stat_rowned(VALUE obj)
 {
-    if (get_stat(obj)->st_uid == getuid()) return Qtrue;
+    if (get_stat(obj)->ST_(uid) == getuid()) return Qtrue;
     return Qfalse;
 }
 
@@ -5909,7 +6194,7 @@ static VALUE
 rb_stat_grpowned(VALUE obj)
 {
 #ifndef _WIN32
-    if (rb_group_member(get_stat(obj)->st_gid)) return Qtrue;
+    if (rb_group_member(get_stat(obj)->ST_(gid))) return Qtrue;
 #endif
     return Qfalse;
 }
@@ -5928,21 +6213,21 @@ rb_stat_grpowned(VALUE obj)
 static VALUE
 rb_stat_r(VALUE obj)
 {
-    struct stat *st = get_stat(obj);
+    rb_io_stat_data *st = get_stat(obj);
 
 #ifdef USE_GETEUID
     if (geteuid() == 0) return Qtrue;
 #endif
 #ifdef S_IRUSR
     if (rb_stat_owned(obj))
-        return RBOOL(st->st_mode & S_IRUSR);
+        return RBOOL(st->ST_(mode) & S_IRUSR);
 #endif
 #ifdef S_IRGRP
     if (rb_stat_grpowned(obj))
-        return RBOOL(st->st_mode & S_IRGRP);
+        return RBOOL(st->ST_(mode) & S_IRGRP);
 #endif
 #ifdef S_IROTH
-    if (!(st->st_mode & S_IROTH)) return Qfalse;
+    if (!(st->ST_(mode) & S_IROTH)) return Qfalse;
 #endif
     return Qtrue;
 }
@@ -5961,21 +6246,21 @@ rb_stat_r(VALUE obj)
 static VALUE
 rb_stat_R(VALUE obj)
 {
-    struct stat *st = get_stat(obj);
+    rb_io_stat_data *st = get_stat(obj);
 
 #ifdef USE_GETEUID
     if (getuid() == 0) return Qtrue;
 #endif
 #ifdef S_IRUSR
     if (rb_stat_rowned(obj))
-        return RBOOL(st->st_mode & S_IRUSR);
+        return RBOOL(st->ST_(mode) & S_IRUSR);
 #endif
 #ifdef S_IRGRP
-    if (rb_group_member(get_stat(obj)->st_gid))
-        return RBOOL(st->st_mode & S_IRGRP);
+    if (rb_group_member(get_stat(obj)->ST_(gid)))
+        return RBOOL(st->ST_(mode) & S_IRGRP);
 #endif
 #ifdef S_IROTH
-    if (!(st->st_mode & S_IROTH)) return Qfalse;
+    if (!(st->ST_(mode) & S_IROTH)) return Qfalse;
 #endif
     return Qtrue;
 }
@@ -5997,9 +6282,9 @@ static VALUE
 rb_stat_wr(VALUE obj)
 {
 #ifdef S_IROTH
-    struct stat *st = get_stat(obj);
-    if ((st->st_mode & (S_IROTH)) == S_IROTH) {
-        return UINT2NUM(st->st_mode & (S_IRUGO|S_IWUGO|S_IXUGO));
+    rb_io_stat_data *st = get_stat(obj);
+    if ((st->ST_(mode) & (S_IROTH)) == S_IROTH) {
+        return UINT2NUM(st->ST_(mode) & (S_IRUGO|S_IWUGO|S_IXUGO));
     }
 #endif
     return Qnil;
@@ -6019,21 +6304,21 @@ rb_stat_wr(VALUE obj)
 static VALUE
 rb_stat_w(VALUE obj)
 {
-    struct stat *st = get_stat(obj);
+    rb_io_stat_data *st = get_stat(obj);
 
 #ifdef USE_GETEUID
     if (geteuid() == 0) return Qtrue;
 #endif
 #ifdef S_IWUSR
     if (rb_stat_owned(obj))
-        return RBOOL(st->st_mode & S_IWUSR);
+        return RBOOL(st->ST_(mode) & S_IWUSR);
 #endif
 #ifdef S_IWGRP
     if (rb_stat_grpowned(obj))
-        return RBOOL(st->st_mode & S_IWGRP);
+        return RBOOL(st->ST_(mode) & S_IWGRP);
 #endif
 #ifdef S_IWOTH
-    if (!(st->st_mode & S_IWOTH)) return Qfalse;
+    if (!(st->ST_(mode) & S_IWOTH)) return Qfalse;
 #endif
     return Qtrue;
 }
@@ -6052,21 +6337,21 @@ rb_stat_w(VALUE obj)
 static VALUE
 rb_stat_W(VALUE obj)
 {
-    struct stat *st = get_stat(obj);
+    rb_io_stat_data *st = get_stat(obj);
 
 #ifdef USE_GETEUID
     if (getuid() == 0) return Qtrue;
 #endif
 #ifdef S_IWUSR
     if (rb_stat_rowned(obj))
-        return RBOOL(st->st_mode & S_IWUSR);
+        return RBOOL(st->ST_(mode) & S_IWUSR);
 #endif
 #ifdef S_IWGRP
-    if (rb_group_member(get_stat(obj)->st_gid))
-        return RBOOL(st->st_mode & S_IWGRP);
+    if (rb_group_member(get_stat(obj)->ST_(gid)))
+        return RBOOL(st->ST_(mode) & S_IWGRP);
 #endif
 #ifdef S_IWOTH
-    if (!(st->st_mode & S_IWOTH)) return Qfalse;
+    if (!(st->ST_(mode) & S_IWOTH)) return Qfalse;
 #endif
     return Qtrue;
 }
@@ -6088,9 +6373,9 @@ static VALUE
 rb_stat_ww(VALUE obj)
 {
 #ifdef S_IWOTH
-    struct stat *st = get_stat(obj);
-    if ((st->st_mode & (S_IWOTH)) == S_IWOTH) {
-        return UINT2NUM(st->st_mode & (S_IRUGO|S_IWUGO|S_IXUGO));
+    rb_io_stat_data *st = get_stat(obj);
+    if ((st->ST_(mode) & (S_IWOTH)) == S_IWOTH) {
+        return UINT2NUM(st->ST_(mode) & (S_IRUGO|S_IWUGO|S_IXUGO));
     }
 #endif
     return Qnil;
@@ -6112,23 +6397,23 @@ rb_stat_ww(VALUE obj)
 static VALUE
 rb_stat_x(VALUE obj)
 {
-    struct stat *st = get_stat(obj);
+    rb_io_stat_data *st = get_stat(obj);
 
 #ifdef USE_GETEUID
     if (geteuid() == 0) {
-        return RBOOL(st->st_mode & S_IXUGO);
+        return RBOOL(st->ST_(mode) & S_IXUGO);
     }
 #endif
 #ifdef S_IXUSR
     if (rb_stat_owned(obj))
-        return RBOOL(st->st_mode & S_IXUSR);
+        return RBOOL(st->ST_(mode) & S_IXUSR);
 #endif
 #ifdef S_IXGRP
     if (rb_stat_grpowned(obj))
-        return RBOOL(st->st_mode & S_IXGRP);
+        return RBOOL(st->ST_(mode) & S_IXGRP);
 #endif
 #ifdef S_IXOTH
-    if (!(st->st_mode & S_IXOTH)) return Qfalse;
+    if (!(st->ST_(mode) & S_IXOTH)) return Qfalse;
 #endif
     return Qtrue;
 }
@@ -6144,23 +6429,23 @@ rb_stat_x(VALUE obj)
 static VALUE
 rb_stat_X(VALUE obj)
 {
-    struct stat *st = get_stat(obj);
+    rb_io_stat_data *st = get_stat(obj);
 
 #ifdef USE_GETEUID
     if (getuid() == 0) {
-        return RBOOL(st->st_mode & S_IXUGO);
+        return RBOOL(st->ST_(mode) & S_IXUGO);
     }
 #endif
 #ifdef S_IXUSR
     if (rb_stat_rowned(obj))
-        return RBOOL(st->st_mode & S_IXUSR);
+        return RBOOL(st->ST_(mode) & S_IXUSR);
 #endif
 #ifdef S_IXGRP
-    if (rb_group_member(get_stat(obj)->st_gid))
-        return RBOOL(st->st_mode & S_IXGRP);
+    if (rb_group_member(get_stat(obj)->ST_(gid)))
+        return RBOOL(st->ST_(mode) & S_IXGRP);
 #endif
 #ifdef S_IXOTH
-    if (!(st->st_mode & S_IXOTH)) return Qfalse;
+    if (!(st->ST_(mode) & S_IXOTH)) return Qfalse;
 #endif
     return Qtrue;
 }
@@ -6179,7 +6464,7 @@ rb_stat_X(VALUE obj)
 static VALUE
 rb_stat_f(VALUE obj)
 {
-    if (S_ISREG(get_stat(obj)->st_mode)) return Qtrue;
+    if (S_ISREG(get_stat(obj)->ST_(mode))) return Qtrue;
     return Qfalse;
 }
 
@@ -6197,7 +6482,7 @@ rb_stat_f(VALUE obj)
 static VALUE
 rb_stat_z(VALUE obj)
 {
-    if (get_stat(obj)->st_size == 0) return Qtrue;
+    if (get_stat(obj)->ST_(size) == 0) return Qtrue;
     return Qfalse;
 }
 
@@ -6216,7 +6501,7 @@ rb_stat_z(VALUE obj)
 static VALUE
 rb_stat_s(VALUE obj)
 {
-    rb_off_t size = get_stat(obj)->st_size;
+    rb_off_t size = get_stat(obj)->ST_(size);
 
     if (size == 0) return Qnil;
     return OFFT2NUM(size);
@@ -6237,7 +6522,7 @@ static VALUE
 rb_stat_suid(VALUE obj)
 {
 #ifdef S_ISUID
-    if (get_stat(obj)->st_mode & S_ISUID) return Qtrue;
+    if (get_stat(obj)->ST_(mode) & S_ISUID) return Qtrue;
 #endif
     return Qfalse;
 }
@@ -6258,7 +6543,7 @@ static VALUE
 rb_stat_sgid(VALUE obj)
 {
 #ifdef S_ISGID
-    if (get_stat(obj)->st_mode & S_ISGID) return Qtrue;
+    if (get_stat(obj)->ST_(mode) & S_ISGID) return Qtrue;
 #endif
     return Qfalse;
 }
@@ -6279,7 +6564,7 @@ static VALUE
 rb_stat_sticky(VALUE obj)
 {
 #ifdef S_ISVTX
-    if (get_stat(obj)->st_mode & S_ISVTX) return Qtrue;
+    if (get_stat(obj)->ST_(mode) & S_ISVTX) return Qtrue;
 #endif
     return Qfalse;
 }
@@ -6358,96 +6643,6 @@ rb_is_absolute_path(const char *path)
     if (path[0] == '/') return 1;
 #endif
     return 0;
-}
-
-#ifndef ENABLE_PATH_CHECK
-# if defined DOSISH || defined __CYGWIN__
-#   define ENABLE_PATH_CHECK 0
-# else
-#   define ENABLE_PATH_CHECK 1
-# endif
-#endif
-
-#if ENABLE_PATH_CHECK
-static int
-path_check_0(VALUE path)
-{
-    struct stat st;
-    const char *p0 = StringValueCStr(path);
-    const char *e0;
-    rb_encoding *enc;
-    char *p = 0, *s;
-
-    if (!rb_is_absolute_path(p0)) {
-        char *buf = ruby_getcwd();
-        VALUE newpath;
-
-        newpath = rb_str_new2(buf);
-        xfree(buf);
-
-        rb_str_cat2(newpath, "/");
-        rb_str_cat2(newpath, p0);
-        path = newpath;
-        p0 = RSTRING_PTR(path);
-    }
-    e0 = p0 + RSTRING_LEN(path);
-    enc = rb_enc_get(path);
-    for (;;) {
-#ifndef S_IWOTH
-# define S_IWOTH 002
-#endif
-        if (STAT(p0, &st) == 0 && S_ISDIR(st.st_mode) && (st.st_mode & S_IWOTH)
-#ifdef S_ISVTX
-            && !(p && (st.st_mode & S_ISVTX))
-#endif
-            && !access(p0, W_OK)) {
-            rb_enc_warn(enc, "Insecure world writable dir %s in PATH, mode 0%"
-#if SIZEOF_DEV_T > SIZEOF_INT
-                        PRI_MODET_PREFIX"o",
-#else
-                        "o",
-#endif
-                        p0, st.st_mode);
-            if (p) *p = '/';
-            RB_GC_GUARD(path);
-            return 0;
-        }
-        s = strrdirsep(p0, e0, enc);
-        if (p) *p = '/';
-        if (!s || s == p0) return 1;
-        p = s;
-        e0 = p;
-        *p = '\0';
-    }
-}
-#endif
-
-int
-rb_path_check(const char *path)
-{
-    rb_warn_deprecated_to_remove_at(3.6, "rb_path_check", NULL);
-#if ENABLE_PATH_CHECK
-    const char *p0, *p, *pend;
-    const char sep = PATH_SEP_CHAR;
-
-    if (!path) return 1;
-
-    pend = path + strlen(path);
-    p0 = path;
-    p = strchr(path, sep);
-    if (!p) p = pend;
-
-    for (;;) {
-        if (!path_check_0(rb_str_new(p0, p - p0))) {
-            return 0;		/* not safe */
-        }
-        p0 = p + 1;
-        if (p0 > pend) break;
-        p = strchr(p0, sep);
-        if (!p) p = pend;
-    }
-#endif
-    return 1;
 }
 
 int
@@ -6670,7 +6865,7 @@ const char ruby_null_device[] =
  *  Methods File.new and File.open each may take string argument +mode+, which:
  *
  *  - Begins with a 1- or 2-character
- *    {read/write mode}[rdoc-ref:File@Read-2FWrite+Mode].
+ *    {read/write mode}[rdoc-ref:File@ReadWrite+Mode].
  *  - May also contain a 1-character {data mode}[rdoc-ref:File@Data+Mode].
  *  - May also contain a 1-character
  *    {file-create mode}[rdoc-ref:File@File-Create+Mode].
@@ -7311,7 +7506,7 @@ const char ruby_null_device[] =
  *
  *  First, what's elsewhere. Class \File:
  *
- *  - Inherits from {class IO}[rdoc-ref:IO@What-27s+Here],
+ *  - Inherits from {class IO}[rdoc-ref:IO@Whats+Here],
  *    in particular, methods for creating, reading, and writing files
  *  - Includes module FileTest,
  *    which provides dozens of additional methods.
@@ -7526,7 +7721,7 @@ Init_File(void)
     /* separates directory parts in path */
     rb_define_const(rb_cFile, "SEPARATOR", separator);
     rb_define_singleton_method(rb_cFile, "split",  rb_file_s_split, 1);
-    rb_define_singleton_method(rb_cFile, "join",   rb_file_s_join, -2);
+    rb_define_singleton_method(rb_cFile, "join",   rb_file_s_join, -1);
 
 #ifdef DOSISH
     /* platform specific alternative separator */
@@ -7830,11 +8025,11 @@ Init_File(void)
      *
      * ==== File::FNM_EXTGLOB
      *
-     * Flag File::FNM_EXTGLOB enables pattern <tt>'{_a_,_b_}'</tt>,
+     * Flag File::FNM_EXTGLOB enables pattern <tt>'{a,b}'</tt>,
      * which matches pattern '_a_' and pattern '_b_';
      * behaves like
      * a {regexp union}[rdoc-ref:Regexp.union]
-     * (e.g., <tt>'(?:_a_|_b_)'</tt>):
+     * (e.g., <tt>'(?:a|b)'</tt>):
      *
      *   pattern = '{LEGAL,BSDL}'
      *   Dir.glob(pattern)      # => ["LEGAL", "BSDL"]

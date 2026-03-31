@@ -22,14 +22,14 @@ module Bundler
       @specs ||= if @candidates.nil?
         []
       elsif platform
-        GemHelpers.select_best_platform_match(@candidates, platform, force_ruby: dep.force_ruby_platform)
+        MatchPlatform.select_best_platform_match(@candidates, platform, force_ruby: dep.force_ruby_platform)
       else
-        GemHelpers.select_best_local_platform_match(@candidates, force_ruby: dep.force_ruby_platform || dep.default_force_ruby_platform)
+        MatchPlatform.select_best_local_platform_match(@candidates, force_ruby: dep.force_ruby_platform || dep.default_force_ruby_platform)
       end
     end
 
     def dependencies
-      specs.first.runtime_dependencies.map {|d| [d, platform] }
+      (materialized_spec || specs.first).runtime_dependencies.map {|d| [d, platform] }
     end
 
     def materialized_spec

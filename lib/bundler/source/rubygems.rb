@@ -8,7 +8,8 @@ module Bundler
       autoload :Remote, File.expand_path("rubygems/remote", __dir__)
 
       # Ask for X gems per API request
-      API_REQUEST_SIZE = 50
+      API_REQUEST_SIZE = 100
+      REQUIRE_MUTEX = Mutex.new
 
       attr_accessor :remotes
 
@@ -21,6 +22,8 @@ module Bundler
         @allow_local = options["allow_local"] || false
         @prefer_local = false
         @checksum_store = Checksum::Store.new
+        @gem_installers = {}
+        @gem_installers_mutex = Mutex.new
 
         Array(options["remotes"]).reverse_each {|r| add_remote(r) }
 
@@ -162,62 +165,51 @@ module Bundler
         end
       end
 
-      def install(spec, options = {})
+      def download(spec, options = {})
         if (spec.default_gem? && !cached_built_in_gem(spec, local: options[:local])) || (installed?(spec) && !options[:force])
-          print_using_message "Using #{version_message(spec, options[:previous_spec])}"
-          return nil # no post-install message
+          return true
         end
 
-        if spec.remote
-          # Check for this spec from other sources
-          uris = [spec.remote, *remotes_for_spec(spec)].map(&:anonymized_uri).uniq
-          Installer.ambiguous_gems << [spec.name, *uris] if uris.length > 1
-        end
-
-        path = fetch_gem_if_possible(spec, options[:previous_spec])
-        raise GemNotFound, "Could not find #{spec.file_name} for installation" unless path
-
-        return if Bundler.settings[:no_install]
-
-        install_path = rubygems_dir
-        bin_path     = Bundler.system_bindir
-
-        require_relative "../rubygems_gem_installer"
-
-        installer = Bundler::RubyGemsGemInstaller.at(
-          path,
-          security_policy: Bundler.rubygems.security_policies[Bundler.settings["trust-policy"]],
-          install_dir: install_path.to_s,
-          bin_dir: bin_path.to_s,
-          ignore_dependencies: true,
-          wrappers: true,
-          env_shebang: true,
-          build_args: options[:build_args],
-          bundler_extension_cache_path: extension_cache_path(spec)
-        )
+        installer = rubygems_gem_installer(spec, options)
 
         if spec.remote
           s = begin
             installer.spec
           rescue Gem::Package::FormatError
-            Bundler.rm_rf(path)
+            Bundler.rm_rf(installer.gem)
             raise
           rescue Gem::Security::Exception => e
             raise SecurityError,
-             "The gem #{File.basename(path, ".gem")} can't be installed because " \
+             "The gem #{installer.gem} can't be installed because " \
              "the security policy didn't allow it, with the message: #{e.message}"
           end
 
           spec.__swap__(s)
         end
 
+        spec
+      end
+
+      def install(spec, options = {})
+        if (spec.default_gem? && !cached_built_in_gem(spec, local: options[:local])) || (installed?(spec) && !options[:force])
+          print_using_message "Using #{version_message(spec, options[:previous_spec])}"
+          return nil # no post-install message
+        end
+
+        return if Bundler.settings[:no_install]
+
+        installer = rubygems_gem_installer(spec, options)
         spec.source.checksum_store.register(spec, installer.gem_checksum)
 
         message = "Installing #{version_message(spec, options[:previous_spec])}"
         message += " with native extensions" if spec.extensions.any?
         Bundler.ui.confirm message
 
-        installed_spec = installer.install
+        installed_spec = nil
+
+        Gem.time("Installed #{spec.name} in", 0, true) do
+          installed_spec = installer.install
+        end
 
         spec.full_gem_path = installed_spec.full_gem_path
         spec.loaded_from = installed_spec.loaded_from
@@ -330,13 +322,6 @@ module Bundler
 
       def credless_remotes
         remotes.map(&method(:remove_auth))
-      end
-
-      def remotes_for_spec(spec)
-        specs.search_all(spec.name).inject([]) do |uris, s|
-          uris << s.remote if s.remote
-          uris
-        end
       end
 
       def cached_gem(spec)
@@ -491,7 +476,10 @@ module Bundler
         uri = spec.remote.uri
         Bundler.ui.confirm("Fetching #{version_message(spec, previous_spec)}")
         gem_remote_fetcher = remote_fetchers.fetch(spec.remote).gem_remote_fetcher
-        Bundler.rubygems.download_gem(spec, uri, download_cache_path, gem_remote_fetcher)
+
+        Gem.time("Downloaded #{spec.name} in", 0, true) do
+          Bundler.rubygems.download_gem(spec, uri, download_cache_path, gem_remote_fetcher)
+        end
       end
 
       # Returns the global cache path of the calling Rubygems::Source object.
@@ -506,16 +494,49 @@ module Bundler
       # @return [Pathname] The global cache path.
       #
       def download_cache_path(spec)
-        return unless Bundler.feature_flag.global_gem_cache?
+        return unless Bundler.settings[:global_gem_cache]
         return unless remote = spec.remote
         return unless cache_slug = remote.cache_slug
 
-        Bundler.user_cache.join("gems", cache_slug)
+        if Gem.respond_to?(:global_gem_cache_path)
+          Pathname.new(Gem.global_gem_cache_path).join(cache_slug)
+        else
+          # Fall back to old location for older RubyGems versions
+          Bundler.user_cache.join("gems", cache_slug)
+        end
       end
 
       def extension_cache_slug(spec)
         return unless remote = spec.remote
         remote.cache_slug
+      end
+
+      # We are using a mutex to reaed and write from/to the hash.
+      # The reason this double synchronization was added is for performance
+      # and lock the mutex for the shortest possible amount of time. Otherwise,
+      # all threads are fighting over this mutex and when it gets acquired it gets locked
+      # until a threads finishes downloading a gem, leaving the other threads waiting
+      # doing nothing.
+      def rubygems_gem_installer(spec, options)
+        @gem_installers_mutex.synchronize { @gem_installers[spec.name] } || begin
+          path = fetch_gem_if_possible(spec, options[:previous_spec])
+          raise GemNotFound, "Could not find #{spec.file_name} for installation" unless path
+
+          REQUIRE_MUTEX.synchronize { require_relative "../rubygems_gem_installer" }
+
+          installer = Bundler::RubyGemsGemInstaller.at(
+            path,
+            security_policy: Bundler.rubygems.security_policies[Bundler.settings["trust-policy"]],
+            install_dir: rubygems_dir.to_s,
+            bin_dir: Bundler.system_bindir.to_s,
+            ignore_dependencies: true,
+            wrappers: true,
+            env_shebang: true,
+            build_args: options[:build_args],
+            bundler_extension_cache_path: extension_cache_path(spec)
+          )
+          @gem_installers_mutex.synchronize { @gem_installers[spec.name] ||= installer }
+        end
       end
     end
   end

@@ -192,6 +192,23 @@ class TestCoverage < Test::Unit::TestCase
     end;
   end
 
+  def test_eval_negative_lineno
+    assert_in_out_err(ARGV, <<-"end;", ["[1, 1, 1]"], [])
+      Coverage.start(eval: true, lines: true)
+
+      eval(<<-RUBY, TOPLEVEL_BINDING, "test.rb", -2)
+      p # -2 # Not subject to measurement
+      p # -1 # Not subject to measurement
+      p #  0 # Not subject to measurement
+      p #  1 # Subject to measurement
+      p #  2 # Subject to measurement
+      p #  3 # Subject to measurement
+      RUBY
+
+      p Coverage.result["test.rb"][:lines]
+    end;
+  end
+
   def test_coverage_supported
     assert Coverage.supported?(:lines)
     assert Coverage.supported?(:oneshot_lines)

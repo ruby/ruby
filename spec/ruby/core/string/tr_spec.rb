@@ -17,13 +17,11 @@ describe "String#tr" do
     "hello ^-^".tr("---", "_").should == "hello ^_^"
   end
 
-  ruby_bug "#19769", ""..."3.3" do
-    it "accepts c1-c1 notation to denote range of one character" do
-      "hello".tr('e-e', 'x').should == "hxllo"
-      "123456789".tr("2-23","xy").should == "1xy456789"
-      "hello ^-^".tr("e-", "a-a_").should == "hallo ^_^"
-      "hello ^-^".tr("---o", "_a").should == "hella ^_^"
-    end
+  it "accepts c1-c1 notation to denote range of one character" do
+    "hello".tr('e-e', 'x').should == "hxllo"
+    "123456789".tr("2-23","xy").should == "1xy456789"
+    "hello ^-^".tr("e-", "a-a_").should == "hallo ^_^"
+    "hello ^-^".tr("---o", "_a").should == "hella ^_^"
   end
 
   it "pads to_str with its last char if it is shorter than from_string" do

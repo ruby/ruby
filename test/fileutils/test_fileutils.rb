@@ -955,16 +955,27 @@ class TestFileUtils < Test::Unit::TestCase
   def test_ln_s
     check_singleton :ln_s
 
+    ln_s TARGETS, 'tmp'
+    each_srcdest do |fname, lnfname|
+      assert_equal fname, File.readlink(lnfname)
+    ensure
+      rm_f lnfname
+    end
+
+    lnfname = 'symlink'
+    assert_raise(Errno::ENOENT, "multiple targets need a destination directory") {
+      ln_s TARGETS, lnfname
+    }
+    assert_file.not_exist?(lnfname)
+
     TARGETS.each do |fname|
-      begin
-        fname = "../#{fname}"
-        lnfname = 'tmp/lnsdest'
-        ln_s fname, lnfname
-        assert FileTest.symlink?(lnfname), 'not symlink'
-        assert_equal fname, File.readlink(lnfname)
-      ensure
-        rm_f lnfname
-      end
+      fname = "../#{fname}"
+      lnfname = 'tmp/lnsdest'
+      ln_s fname, lnfname
+      assert_file.symlink?(lnfname)
+      assert_equal fname, File.readlink(lnfname)
+    ensure
+      rm_f lnfname
     end
   end if have_symlink? and !no_broken_symlink?
 
@@ -1017,22 +1028,64 @@ class TestFileUtils < Test::Unit::TestCase
   def test_ln_sr
     check_singleton :ln_sr
 
-    TARGETS.each do |fname|
-      begin
-        lnfname = 'tmp/lnsdest'
-        ln_sr fname, lnfname
-        assert FileTest.symlink?(lnfname), 'not symlink'
-        assert_equal "../#{fname}", File.readlink(lnfname), fname
+    assert_all_assertions_foreach(nil, *TARGETS) do |fname|
+      lnfname = 'tmp/lnsdest'
+      ln_sr fname, lnfname
+      assert_file.symlink?(lnfname)
+      assert_file.identical?(lnfname, fname)
+      assert_equal "../#{fname}", File.readlink(lnfname)
+    ensure
+      rm_f lnfname
+    end
+
+    ln_sr TARGETS, 'tmp'
+    assert_all_assertions do |all|
+      each_srcdest do |fname, lnfname|
+        all.for(fname) do
+          assert_equal "../#{fname}", File.readlink(lnfname)
+        end
       ensure
         rm_f lnfname
       end
     end
+
+    File.symlink 'data', 'link'
+    mkdir 'link/d1'
+    mkdir 'link/d2'
+    ln_sr 'link/d1/z', 'link/d2'
+    assert_equal '../d1/z', File.readlink('data/d2/z')
+
     mkdir 'data/src'
     File.write('data/src/xxx', 'ok')
     File.symlink '../data/src', 'tmp/src'
     ln_sr 'tmp/src/xxx', 'data'
-    assert File.symlink?('data/xxx')
+    assert_file.symlink?('data/xxx')
     assert_equal 'ok', File.read('data/xxx')
+    assert_equal 'src/xxx', File.readlink('data/xxx')
+  end
+
+  def test_ln_sr_not_target_directory
+    assert_raise(ArgumentError) {
+      ln_sr TARGETS, 'tmp', target_directory: false
+    }
+    assert_empty(Dir.children('tmp'))
+
+    lnfname = 'symlink'
+    assert_raise(ArgumentError) {
+      ln_sr TARGETS, lnfname, target_directory: false
+    }
+    assert_file.not_exist?(lnfname)
+
+    assert_all_assertions_foreach(nil, *TARGETS) do |fname|
+      assert_raise(Errno::EEXIST, Errno::EACCES) {
+        ln_sr fname, 'tmp', target_directory: false
+      }
+      dest = File.join('tmp/', File.basename(fname))
+      assert_file.not_exist? dest
+      ln_sr fname, dest, target_directory: false
+      assert_file.symlink?(dest)
+      assert_equal("../#{fname}", File.readlink(dest))
+    end
   end if have_symlink?
 
   def test_ln_sr_broken_symlink
@@ -1349,7 +1402,7 @@ class TestFileUtils < Test::Unit::TestCase
     # regular file. It's slightly strange. Anyway it's no effect bit.
     # see /usr/src/sys/ufs/ufs/ufs_chmod()
     # NetBSD, OpenBSD, Solaris, and AIX also deny it.
-    if /freebsd|netbsd|openbsd|solaris|aix/ !~ RUBY_PLATFORM
+    if /freebsd|netbsd|openbsd|aix/ !~ RUBY_PLATFORM
       chmod "u+t,o+t", 'tmp/a'
       assert_filemode 07500, 'tmp/a'
       chmod "a-t,a-s", 'tmp/a'
@@ -1762,6 +1815,14 @@ class TestFileUtils < Test::Unit::TestCase
     remove_dir 'data/tmpdir'
     assert_file_not_exist 'data/tmpdir'
   end if have_file_perm?
+
+  def test_remove_dir_with_file
+    File.write('data/tmpfile', 'dummy')
+    assert_raise(Errno::ENOTDIR) { remove_dir 'data/tmpfile' }
+    assert_file_exist 'data/tmpfile'
+  ensure
+    File.unlink('data/tmpfile') if File.exist?('data/tmpfile')
+  end
 
   def test_compare_file
     check_singleton :compare_file

@@ -98,7 +98,7 @@ fn emit_jmp_ptr_with_invalidation(cb: &mut CodeBlock, dst_ptr: CodePtr) {
     #[cfg(not(test))]
     {
         let end = cb.get_write_ptr();
-        unsafe { rb_yjit_icache_invalidate(start.raw_ptr(cb) as _, end.raw_ptr(cb) as _) };
+        unsafe { rb_jit_icache_invalidate(start.raw_ptr(cb) as _, end.raw_ptr(cb) as _) };
     }
 }
 
@@ -878,14 +878,13 @@ impl Assembler
             }
         }
 
-        /// Emit a push instruction for the given operand by adding to the stack
-        /// pointer and then storing the given value.
+        /// Push a value to the stack by subtracting from the stack pointer then storing,
+        /// leaving an 8-byte gap for alignment.
         fn emit_push(cb: &mut CodeBlock, opnd: A64Opnd) {
             str_pre(cb, opnd, A64Opnd::new_mem(64, C_SP_REG, -C_SP_STEP));
         }
 
-        /// Emit a pop instruction into the given operand by loading the value
-        /// and then subtracting from the stack pointer.
+        /// Pop a value from the stack by loading `[sp]` then adding to the stack pointer.
         fn emit_pop(cb: &mut CodeBlock, opnd: A64Opnd) {
             ldr_post(cb, opnd, A64Opnd::new_mem(64, C_SP_REG, C_SP_STEP));
         }
@@ -1155,8 +1154,8 @@ impl Assembler
                     let regs = Assembler::get_caller_save_regs();
 
                     // Pop the state/flags register
-                    msr(cb, SystemRegister::NZCV, Self::SCRATCH0);
                     emit_pop(cb, Self::SCRATCH0);
+                    msr(cb, SystemRegister::NZCV, Self::SCRATCH0);
 
                     for reg in regs.into_iter().rev() {
                         emit_pop(cb, A64Opnd::Reg(reg));
@@ -1361,7 +1360,7 @@ impl Assembler
             #[cfg(not(test))]
             cb.without_page_end_reserve(|cb| {
                 for (start, end) in cb.writable_addrs(start_ptr, cb.get_write_ptr()) {
-                    unsafe { rb_yjit_icache_invalidate(start as _, end as _) };
+                    unsafe { rb_jit_icache_invalidate(start as _, end as _) };
                 }
             });
 
@@ -1419,7 +1418,7 @@ mod tests {
     fn test_emit_cpop_all() {
         let (mut asm, mut cb) = setup_asm();
 
-        asm.cpop_all();
+        asm.cpop_all(crate::core::RegMapping::default());
         asm.compile_with_num_regs(&mut cb, 0);
     }
 
@@ -1778,7 +1777,7 @@ mod tests {
 
         assert_disasm!(cb, "e1ff9fd2e10370b2", {"
             0x0: mov x1, #0xffff
-            0x4: orr x1, xzr, #0x10000
+            0x4: mov x1, #0x10000
         "});
     }
 

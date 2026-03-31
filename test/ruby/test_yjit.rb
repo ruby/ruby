@@ -133,7 +133,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_yjit_enable_with_monkey_patch
-    assert_separately(%w[--yjit-disable], <<~RUBY)
+    assert_ruby_status(%w[--yjit-disable], <<~RUBY)
       # This lets rb_method_entry_at(rb_mKernel, ...) return NULL
       Kernel.prepend(Module.new)
 
@@ -166,6 +166,11 @@ class TestYJIT < Test::Unit::TestCase
     end
   end
 
+  if JITSupport.zjit_supported?
+    def test_yjit_enable_with_zjit_enabled
+      assert_in_out_err(['--zjit'], 'puts RubyVM::YJIT.enable', ['false'], ['Only one JIT can be enabled at the same time.'])
+    end
+  end
 
   def test_yjit_stats_and_v_no_error
     _stdout, stderr, _status = invoke_ruby(%w(-v --yjit-stats), '', true, true)
@@ -652,6 +657,26 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_struct_aset_guards_recv_is_not_frozen
+    assert_compiles(<<~RUBY, result: :ok, exits: { opt_send_without_block: 1 })
+      def foo(obj)
+        obj.foo = 123
+      end
+
+      Foo = Struct.new(:foo)
+      obj = Foo.new(123)
+      100.times do
+        foo(obj)
+      end
+      obj.freeze
+      begin
+        foo(obj)
+      rescue FrozenError
+        :ok
+      end
+    RUBY
+  end
+
   def test_getblockparam
     assert_compiles(<<~'RUBY', insns: [:getblockparam])
       def foo &blk
@@ -945,6 +970,40 @@ class TestYJIT < Test::Unit::TestCase
       end
 
       Gnirts.new.to_s
+    RUBY
+  end
+
+  def test_super_bmethod
+    # Bmethod defined at class scope
+    assert_compiles(<<~'RUBY', insns: %i[invokesuper], result: true, exits: {})
+      class SuperItself
+        define_method(:itself) { super() }
+      end
+
+      obj = SuperItself.new
+      obj.itself
+      obj.itself == obj
+    RUBY
+
+    # Bmethod defined inside a method (the block's local_iseq is ISEQ_TYPE_METHOD
+    # but the CME is at the bmethod frame, not the enclosing method's frame)
+    assert_compiles(<<~'RUBY', insns: %i[invokesuper], result: "Base#foo via bmethod", exits: {})
+      class Base
+        def foo = "Base#foo"
+      end
+
+      class SetupHelper
+        def add_bmethod_to(klass)
+          klass.define_method(:foo) { super() + " via bmethod" }
+        end
+      end
+
+      class Target < Base; end
+
+      SetupHelper.new.add_bmethod_to(Target)
+      obj = Target.new
+      obj.foo
+      obj.foo
     RUBY
   end
 
@@ -1529,14 +1588,6 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
-  def test_opt_aref_with
-    assert_compiles(<<~RUBY, insns: %i[opt_aref_with], result: "bar", frozen_string_literal: false)
-      h = {"foo" => "bar"}
-
-      h["foo"]
-    RUBY
-  end
-
   def test_proc_block_arg
     assert_compiles(<<~RUBY, result: [:proc, :no_block])
       def yield_if_given = block_given? ? yield : :no_block
@@ -1772,6 +1823,62 @@ class TestYJIT < Test::Unit::TestCase
       def req2kws = yield a: 1, b: 2
 
       req2kws { |a:, b:| a + b }
+    RUBY
+  end
+
+  def test_proc_block_with_kwrest
+    # When the bug was present this required --yjit-stats to trigger.
+    assert_compiles(<<~RUBY, result: {extra: 5})
+      def foo = bar(w: 1, x: 2, y: 3, z: 4, extra: 5, &proc { _1 })
+      def bar(w:, x:, y:, z:, **kwrest) = yield kwrest
+
+      GC.stress = true
+      foo
+      foo
+    RUBY
+  end
+
+  def test_yjit_dump_insns
+    # Testing that this undocumented debugging feature doesn't crash
+    args = [
+      '--yjit-call-threshold=1',
+      '--yjit-dump-insns',
+      '-e def foo(case:) = {case:}[:case]',
+      '-e foo(case:0)',
+    ]
+    _out, _err, status = invoke_ruby(args, '', true, true)
+    assert_not_predicate(status, :signaled?)
+  end
+
+  def test_yjit_prelude_kernel_prepend
+    # Simulate what bundler/setup can do: prepend a module to Kernel during
+    # the prelude via the BUNDLER_SETUP mechanism in rubygems.rb:
+    #   require ENV["BUNDLER_SETUP"] if ENV["BUNDLER_SETUP"] && !defined?(Bundler)
+    Tempfile.create(["kernel_prepend", ".rb"]) do |f|
+      f.write("Kernel.prepend(Module.new)\n")
+      f.flush
+      assert_separately([{ "BUNDLER_SETUP" => f.path }, "--enable=gems", "--yjit"], "", ignore_stderr: true)
+    end
+  end
+
+  def test_exceptional_entry_into_env_escaped_before_yjit_enablement
+    threshold = 2
+    assert_separately(["--disable-all", "--yjit-disable", "--yjit-call-threshold=#{threshold}"], <<~RUBY)
+      def run
+        @captured_env = ->{}
+        RubyVM::YJIT.enable
+
+        i = 0
+        while i < #{threshold}
+          next_i = i + 1
+          from_break = tap { break i + 1 } # break from the block generates an exceptional entry
+          assert_equal(from_break, next_i, '[Bug #21941]')
+          i = next_i
+        end
+      end
+
+      run
+      assert_equal(#{threshold}, @captured_env.binding.local_variable_get(:i))
     RUBY
   end
 

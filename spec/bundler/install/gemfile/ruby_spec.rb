@@ -83,10 +83,10 @@ RSpec.describe "ruby requirement" do
         myrack
 
       RUBY VERSION
-         ruby 2.1.4p422
+         ruby 2.1.4
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)

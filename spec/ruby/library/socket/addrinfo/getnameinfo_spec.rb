@@ -22,19 +22,17 @@ describe 'Addrinfo#getnameinfo' do
 
   platform_is :linux do
     platform_is_not :android do
-      with_feature :unix_socket do
-        describe 'using a UNIX Addrinfo' do
-          before do
-            @addr = Addrinfo.unix('cats')
-            @host = Socket.gethostname
-          end
+      describe 'using a UNIX Addrinfo' do
+        before do
+          @addr = Addrinfo.unix('cats')
+          @host = Socket.gethostname
+        end
 
-          it 'returns the hostname and UNIX socket path' do
-            host, path = @addr.getnameinfo
+        it 'returns the hostname and UNIX socket path' do
+          host, path = @addr.getnameinfo
 
-            host.should == @host
-            path.should == 'cats'
-          end
+          host.should == @host
+          path.should == 'cats'
         end
       end
     end

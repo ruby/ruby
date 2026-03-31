@@ -1,0 +1,118 @@
+= Code Layout
+
+Expressions in Ruby are separated by line breaks:
+
+    x = 1
+    y = 2
+    z = x + y
+
+Line breaks also used as logical separators of the headers of some of control structures from their bodies:
+
+    if z > 3       # line break ends the condition and starts the body
+      puts "more"
+    end
+
+    while x < 3    # line break ends the condition and starts the body
+      x += 1
+    end
+
+<tt>;</tt> can be used as an expressions separator instead of a line break:
+
+    x = 1; y = 2; z = x + y
+    if z > 3; puts "more"; end
+
+Traditionally, expressions separated by <tt>;</tt> is used only in short scripts and experiments.
+
+In some control structures, there is an optional keyword that can be used instead of a line break to separate their elements:
+
+    # if, elsif, until and case ... when: 'then' is an optional separator:
+
+    if z > 3 then puts "more" end
+
+    case x
+    when Numeric then "number"
+    when String then "string"
+    else "object"
+    end
+
+    # while and until: 'do' is an optional separator
+    while x < 3 do x +=1 end
+
+Also, line breaks can be skipped in some places where it doesn't create any ambiguity. Note in the example above: no line break needed before +end+, just as no line break needed after +else+.
+
+== Breaking expressions in lines
+
+One expression might be split into several lines when each line can be unambiguously identified as "incomplete" without the next one.
+
+These works:
+
+    x =         # incomplete without something after =
+        1 +     # incomplete without something after +
+        2
+
+    File.read "test.txt",         # incomplete without something after ,
+              enconding: "utf-8"
+
+These would not:
+
+    # unintended interpretation:
+    x = 1     # already complete expression
+        + 2   # interpreted as a separate +2
+
+    # syntax error:
+    File.read "test.txt"           # already complete expression
+              , encoding: "utf-8"  # attempt to parse as a new expression, SyntaxError
+
+The exceptions to the rule are lines starting with <tt>.</tt> ("leading dot" style of method calls) or logical operators <tt>&&</tt>/<tt>||</tt> and <tt>and</tt>/<tt>or</tt>:
+
+    # OK, interpreted as a chain of calls
+    File.read('test.txt')
+        .strip("\n")
+        .split("\t")
+        .sort
+
+    # OK, interpreted as a chain of logical operators:
+    File.empty?('test.txt')
+      || File.size('test.txt') < 10
+      || File.read('test.txt').strip.empty?
+
+If the expressions is broken into multiple lines in any of the ways described above, comments between separate lines are allowed:
+
+    sum = base_salary +
+          # see "yearly bonuses section"
+          yearly_bonus(year) +
+          # per-employee coefficient is described
+          # in another module
+          personal_coeff(employee)
+
+    # We want to short-circuit on empty files
+    File.empty?('test.txt')
+      # Or almost empty ones
+      || File.size('test.txt') < 10
+      # Otherwise we check if it is full of spaces
+      || File.read('test.txt').strip.empty?
+
+Finally, the code can explicitly tell Ruby that the expression is continued on the next line with <tt>\\</tt>:
+
+    # Unusual, but works
+    File.read "test.txt" \
+              , encoding: "utf-8"
+
+    # More regular usage (joins the strings on parsing instead
+    # of concatenating them in runtime, as + would do):
+    TEXT = "One pretty long line" \
+           "one more long line" \
+           "one other line of the text"
+
+The <tt>\\</tt> works as a parse time line break escape, so with it, comments can not be inserted between the lines:
+
+    TEXT = "line 1" \
+           # here would be line 2:
+           "line 2"
+
+    # This is interpreted as if there was no line break where \ is,
+    # i.e. the same as
+    TEXT = "line 1" # here would be line 2:
+           "line 2"
+
+    puts TEXT #=> "line 1"

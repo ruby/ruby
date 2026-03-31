@@ -181,10 +181,8 @@ describe "Integer#<< (with n << m)" do
       (bignum_value << -(2**40)).should == 0
     end
 
-    ruby_bug "#18517", ""..."3.2" do
-      it "returns 0 when m > 0 long and n == 0" do
-        (0 << (2**40)).should == 0
-      end
+    it "returns 0 when m > 0 long and n == 0" do
+      (0 << (2**40)).should == 0
     end
 
     it "returns 0 when m > 0 bignum and n == 0" do

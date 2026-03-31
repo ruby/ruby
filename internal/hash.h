@@ -72,6 +72,7 @@ struct RHash {
 /* hash.c */
 void rb_hash_st_table_set(VALUE hash, st_table *st);
 VALUE rb_hash_default_value(VALUE hash, VALUE key);
+VALUE rb_hash_set_default(VALUE hash, VALUE ifnone);
 VALUE rb_hash_set_default_proc(VALUE hash, VALUE proc);
 long rb_dbl_long_hash(double d);
 st_table *rb_init_identtable(void);

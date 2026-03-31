@@ -38,7 +38,7 @@ describe "CApiModule" do
         CApiModuleSpecs::C.const_set(:_INVALID, 1)
       }.should raise_error(NameError, /wrong constant name/)
 
-      @m.rb_const_set(CApiModuleSpecs::C, :_INVALID, 2)
+      suppress_warning { @m.rb_const_set(CApiModuleSpecs::C, :_INVALID, 2) }
       @m.rb_const_get(CApiModuleSpecs::C, :_INVALID).should == 2
 
       # Ruby-level should still not allow access

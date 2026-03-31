@@ -7,8 +7,8 @@ require_relative "../command"
 # RubyGems checkout or tarball.
 
 class Gem::Commands::SetupCommand < Gem::Command
-  HISTORY_HEADER = %r{^#\s*[\d.a-zA-Z]+\s*/\s*\d{4}-\d{2}-\d{2}\s*$}
-  VERSION_MATCHER = %r{^#\s*([\d.a-zA-Z]+)\s*/\s*\d{4}-\d{2}-\d{2}\s*$}
+  HISTORY_HEADER = %r{^##\s*[\d.a-zA-Z]+\s*/\s*\d{4}-\d{2}-\d{2}\s*$}
+  VERSION_MATCHER = %r{^##\s*([\d.a-zA-Z]+)\s*/\s*\d{4}-\d{2}-\d{2}\s*$}
 
   ENV_PATHS = %w[/usr/bin/env /bin/env].freeze
 
@@ -393,16 +393,20 @@ By default, this RubyGems will install gem as:
     Dir.chdir("bundler") do
       built_gem = Gem::Package.build(new_bundler_spec)
       begin
-        Gem::Installer.at(
+        installer = Gem::Installer.at(
           built_gem,
           env_shebang: options[:env_shebang],
           format_executable: options[:format_executable],
           force: options[:force],
-          install_as_default: true,
           bin_dir: bin_dir,
           install_dir: default_dir,
           wrappers: true
-        ).install
+        )
+        # We need to install only executable and default spec files.
+        # lib/bundler.rb and lib/bundler/* are available under the site_ruby directory.
+        installer.extract_bin
+        installer.generate_bin
+        installer.write_default_spec
       ensure
         FileUtils.rm_f built_gem
       end

@@ -155,7 +155,8 @@ VALUE rb_funcallv(VALUE recv, ID mid, int argc, const VALUE *argv);
  * @param[in]      kw_splat           Handling of keyword parameters:
  *   - RB_NO_KEYWORDS           `argv`'s last is not a keyword argument.
  *   - RB_PASS_KEYWORDS         `argv`'s last is a keyword argument.
- *   - RB_PASS_CALLED_KEYWORDS  it depends if there is a passed block.
+ *   - RB_PASS_CALLED_KEYWORDS  Pass keyword arguments if the current method
+ *                              was called with keyword arguments.
  * @exception      rb_eNoMethodError  No such method.
  * @exception      rb_eException      Any exceptions happen inside.
  * @return         What the method evaluates to.
@@ -189,7 +190,8 @@ VALUE rb_funcallv_public(VALUE recv, ID mid, int argc, const VALUE *argv);
  * @param[in]      kw_splat           Handling of keyword parameters:
  *   - RB_NO_KEYWORDS           `argv`'s last is not a keyword argument.
  *   - RB_PASS_KEYWORDS         `argv`'s last is a keyword argument.
- *   - RB_PASS_CALLED_KEYWORDS  it depends if there is a passed block.
+ *   - RB_PASS_CALLED_KEYWORDS  Pass keyword arguments if the current method
+ *                              was called with keyword arguments.
  * @exception      rb_eNoMethodError  No such method.
  * @exception      rb_eNoMethodError  The method is private or protected.
  * @exception      rb_eException      Any exceptions happen inside.
@@ -261,7 +263,8 @@ VALUE rb_funcall_passing_block(VALUE recv, ID mid, int argc, const VALUE *argv);
  * @param[in]      kw_splat           Handling of keyword parameters:
  *   - RB_NO_KEYWORDS           `argv`'s last is not a keyword argument.
  *   - RB_PASS_KEYWORDS         `argv`'s last is a keyword argument.
- *   - RB_PASS_CALLED_KEYWORDS  it depends if there is a passed block.
+ *   - RB_PASS_CALLED_KEYWORDS  Pass keyword arguments if the current method
+ *                              was called with keyword arguments.
  * @exception      rb_eNoMethodError  No such method.
  * @exception      rb_eNoMethodError  The method is private or protected.
  * @exception      rb_eException      Any exceptions happen inside.
@@ -307,7 +310,8 @@ VALUE rb_funcall_with_block(VALUE recv, ID mid, int argc, const VALUE *argv, VAL
  * @param[in]      kw_splat           Handling of keyword parameters:
  *   - RB_NO_KEYWORDS           `argv`'s last is not a keyword argument.
  *   - RB_PASS_KEYWORDS         `argv`'s last is a keyword argument.
- *   - RB_PASS_CALLED_KEYWORDS  it depends if there is a passed block.
+ *   - RB_PASS_CALLED_KEYWORDS  Pass keyword arguments if the current method
+ *                              was called with keyword arguments.
  * @exception      rb_eNoMethodError  No such method.
  * @exception      rb_eNoMethodError  The method is private or protected.
  * @exception      rb_eException      Any exceptions happen inside.
@@ -335,7 +339,8 @@ VALUE rb_call_super(int argc, const VALUE *argv);
  * @param[in]  kw_splat           Handling of keyword parameters:
  *   - RB_NO_KEYWORDS           `argv`'s last is not a keyword argument.
  *   - RB_PASS_KEYWORDS         `argv`'s last is a keyword argument.
- *   - RB_PASS_CALLED_KEYWORDS  it depends if there is a passed block.
+ *   - RB_PASS_CALLED_KEYWORDS  Pass keyword arguments if the current method
+ *                              was called with keyword arguments.
  * @exception  rb_eNoMethodError  No super method are there.
  * @exception  rb_eException      Any exceptions happen inside.
  * @return     What the super method evaluates to.

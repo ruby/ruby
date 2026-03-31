@@ -117,9 +117,13 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(Rational(111, 1000), Rational('1.11e-1'))
     assert_raise(TypeError){Rational(nil)}
     assert_raise(ArgumentError){Rational('')}
-    assert_raise_with_message(ArgumentError, /\u{221a 2668}/) {
-      Rational("\u{221a 2668}")
-    }
+
+    EnvUtil.with_default_internal(Encoding::UTF_8) do
+      assert_raise_with_message(ArgumentError, /\u{221a 2668}/) {
+        Rational("\u{221a 2668}")
+      }
+    end
+
     assert_warning('') {
       assert_predicate(Rational('1e-99999999999999999999'), :zero?)
     }

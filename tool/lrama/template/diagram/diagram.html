@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Lrama syntax diagrams</title>
+
+  <style>
+    <%= output.default_style %>
+    .diagram-header {
+        display: inline-block;
+        font-weight: bold;
+        font-size: 18px;
+        margin-bottom: -8px;
+        text-align: center;
+    }
+
+    svg {
+        width: 100%;
+    }
+
+    svg.railroad-diagram g.non-terminal text {
+        cursor: pointer;
+    }
+
+    h2.hover-header {
+        background-color: #90ee90;
+    }
+
+    svg.railroad-diagram g.non-terminal.hover-g rect {
+        fill: #eded91;
+        stroke: 5;
+    }
+
+    svg.railroad-diagram g.terminal.hover-g rect {
+        fill: #eded91;
+        stroke: 5;
+    }
+  </style>
+</head>
+
+<body align="center">
+  <%= output.diagrams %>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      function addHoverEffect(selector, hoverClass, relatedSelector, relatedHoverClass, getTextElements) {
+        document.querySelectorAll(selector).forEach(element => {
+          element.addEventListener("mouseenter", () => {
+            element.classList.add(hoverClass);
+            getTextElements(element).forEach(textEl => {
+              if (!relatedSelector) return;
+              getElementsByText(relatedSelector, textEl.textContent).forEach(related => {
+                related.classList.add(relatedHoverClass);
+              });
+            });
+          });
+
+          element.addEventListener("mouseleave", () => {
+            element.classList.remove(hoverClass);
+            if (!relatedSelector) return;
+            getTextElements(element).forEach(textEl => {
+              getElementsByText(relatedSelector, textEl.textContent).forEach(related => {
+                related.classList.remove(relatedHoverClass);
+              });
+            });
+          });
+        });
+      }
+
+      function getElementsByText(selector, text) {
+        return [...document.querySelectorAll(selector)].filter(el => el.textContent.trim() === text.trim());
+      }
+
+      function getParentElementsByText(selector, text) {
+        return [...document.querySelectorAll(selector)].filter(el =>
+          [...el.querySelectorAll("text")].some(textEl => textEl.textContent.trim() === text.trim())
+        );
+      }
+
+      function scrollToMatchingHeader() {
+        document.querySelectorAll("g.non-terminal").forEach(element => {
+          element.addEventListener("click", () => {
+            const textElements = [...element.querySelectorAll("text")];
+            for (const textEl of textElements) {
+              const targetHeader = getElementsByText("h2", textEl.textContent)[0];
+              if (targetHeader) {
+                targetHeader.scrollIntoView({ behavior: "smooth", block: "start" });
+                break;
+              }
+            }
+          });
+        });
+      }
+
+      addHoverEffect("h2", "hover-header", "g.non-terminal", "hover-g", element => [element]);
+      addHoverEffect("g.non-terminal", "hover-g", "h2", "hover-header",
+        element => [...element.querySelectorAll("text")]
+      );
+      addHoverEffect("g.terminal", "hover-g", "", "", element => [element]);
+      scrollToMatchingHeader();
+    });
+  </script>
+</body>
+</html>

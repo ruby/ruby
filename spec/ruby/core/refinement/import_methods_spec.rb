@@ -242,6 +242,26 @@ describe "Refinement#import_methods" do
     end
   end
 
+  it "correctly sets owner as the refinement module" do
+    str_utils = Module.new do
+      def indent(level)
+        " " * level + self
+      end
+    end
+
+    refinement = Module.new do
+      refine String do
+        import_methods str_utils
+      end
+    end
+
+    Module.new do
+      using refinement
+
+      String.instance_method(:indent).owner.should == refinement.refinements.first
+    end
+  end
+
   context "when methods are not defined in Ruby code" do
     it "raises ArgumentError" do
       Module.new do

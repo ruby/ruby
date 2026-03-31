@@ -3,8 +3,8 @@
 
 module Lrama
   class Lexer
-    class Token
-      class Tag < Token
+    module Token
+      class Tag < Base
         # @rbs () -> String
         def member
           # Omit "<>"

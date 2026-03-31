@@ -498,8 +498,8 @@ RBIMPL_ATTR_ARTIFICIAL()
  * Our own locale-insensitive version of `tolower(3)`.
  *
  * @param[in]  c          Byte in question to convert.
- * @retval     c          The  byte is  not listed  in in  IEEE 1003.1  section
- *                        7.3.1.1 "upper".
+ * @retval     c          The byte is not listed  in IEEE 1003.1 section 7.3.1.1
+ *                        "upper".
  * @retval     otherwise  Byte converted  using the map defined  in IEEE 1003.1
  *                        section 7.3.1 "tolower".
  * @note       Not only  does this function  works under the POSIX  Locale, but

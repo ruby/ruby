@@ -48,7 +48,7 @@ module JSON
         end
       end
 
-      # TODO: exact :create_additions support to another gem for version 3.0
+      # TODO: extract :create_additions support to another gem for version 3.0
       def create_additions_proc(opts)
         if opts[:symbolize_names]
           raise ArgumentError, "options :symbolize_names and :create_additions cannot be  used in conjunction"
@@ -71,9 +71,14 @@ module JSON
             end
           when object_class
             if opts[:create_additions] != false
-              if class_name = object[JSON.create_id]
-                klass = JSON.deep_const_get(class_name)
-                if (klass.respond_to?(:json_creatable?) && klass.json_creatable?) || klass.respond_to?(:json_create)
+              if class_path = object[JSON.create_id]
+                klass = begin
+                  Object.const_get(class_path)
+                rescue NameError => e
+                  raise ArgumentError, "can't get const #{class_path}: #{e}"
+                end
+
+                if klass.respond_to?(:json_creatable?) ? klass.json_creatable? : klass.respond_to?(:json_create)
                   create_additions_warning if create_additions.nil?
                   object = klass.json_create(object)
                 end
@@ -87,31 +92,32 @@ module JSON
         opts
       end
 
-      GEM_ROOT = File.expand_path("../../../", __FILE__) + "/"
       def create_additions_warning
-        message = "JSON.load implicit support for `create_additions: true` is deprecated " \
+        JSON.deprecation_warning "JSON.load implicit support for `create_additions: true` is deprecated " \
           "and will be removed in 3.0, use JSON.unsafe_load or explicitly " \
           "pass `create_additions: true`"
-
-        uplevel = 4
-        caller_locations(uplevel, 10).each do |frame|
-          if frame.path.nil? || frame.path.start_with?(GEM_ROOT) || frame.path.end_with?("/truffle/cext_ruby.rb", ".c")
-            uplevel += 1
-          else
-            break
-          end
-        end
-
-        if RUBY_VERSION >= "3.0"
-          warn(message, uplevel: uplevel - 1, category: :deprecated)
-        else
-          warn(message, uplevel: uplevel - 1)
-        end
       end
     end
   end
 
   class << self
+    def deprecation_warning(message, uplevel = 3) # :nodoc:
+      gem_root = File.expand_path("..", __dir__) + "/"
+      caller_locations(uplevel, 10).each do |frame|
+        if frame.path.nil? || frame.path.start_with?(gem_root) || frame.path.end_with?("/truffle/cext_ruby.rb", ".c")
+          uplevel += 1
+        else
+          break
+        end
+      end
+
+      if RUBY_VERSION >= "3.0"
+        warn(message, uplevel: uplevel, category: :deprecated)
+      else
+        warn(message, uplevel: uplevel)
+      end
+    end
+
     # :call-seq:
     #   JSON[object] -> new_array or new_string
     #
@@ -123,7 +129,7 @@ module JSON
     # Otherwise, calls JSON.generate with +object+ and +opts+ (see method #generate):
     #   ruby = [0, 1, nil]
     #   JSON[ruby] # => '[0,1,null]'
-    def [](object, opts = {})
+    def [](object, opts = nil)
       if object.is_a?(String)
         return JSON.parse(object, opts)
       elsif object.respond_to?(:to_str)
@@ -146,33 +152,25 @@ module JSON
       const_set :Parser, parser
     end
 
-    # Return the constant located at _path_. The format of _path_ has to be
-    # either ::A::B::C or A::B::C. In any case, A has to be located at the top
-    # level (absolute namespace path?). If there doesn't exist a constant at
-    # the given path, an ArgumentError is raised.
-    def deep_const_get(path) # :nodoc:
-      Object.const_get(path)
-    rescue NameError => e
-      raise ArgumentError, "can't get const #{path}: #{e}"
-    end
-
     # Set the module _generator_ to be used by JSON.
     def generator=(generator) # :nodoc:
       old, $VERBOSE = $VERBOSE, nil
       @generator = generator
-      generator_methods = generator::GeneratorMethods
-      for const in generator_methods.constants
-        klass = const_get(const)
-        modul = generator_methods.const_get(const)
-        klass.class_eval do
-          instance_methods(false).each do |m|
-            m.to_s == 'to_json' and remove_method m
+      if generator.const_defined?(:GeneratorMethods)
+        generator_methods = generator::GeneratorMethods
+        for const in generator_methods.constants
+          klass = const_get(const)
+          modul = generator_methods.const_get(const)
+          klass.class_eval do
+            instance_methods(false).each do |m|
+              m.to_s == 'to_json' and remove_method m
+            end
+            include modul
           end
-          include modul
         end
       end
       self.state = generator::State
-      const_set :State, self.state
+      const_set :State, state
     ensure
       $VERBOSE = old
     end
@@ -184,6 +182,25 @@ module JSON
     attr_accessor :state
 
     private
+
+    # Called from the extension when a hash has both string and symbol keys
+    def on_mixed_keys_hash(hash, do_raise)
+      set = {}
+      hash.each_key do |key|
+        key_str = key.to_s
+
+        if set[key_str]
+          message = "detected duplicate key #{key_str.inspect} in #{hash.inspect}"
+          if do_raise
+            raise GeneratorError, message
+          else
+            deprecation_warning("#{message}.\nThis will raise an error in json 3.0 unless enabled via `allow_duplicate_key: true`")
+          end
+        else
+          set[key_str] = true
+        end
+      end
+    end
 
     def deprecated_singleton_attr_accessor(*attrs)
       args = RUBY_VERSION >= "3.0" ? ", category: :deprecated" : ""
@@ -220,31 +237,23 @@ module JSON
     Thread.current[:"JSON.create_id"] || 'json_class'
   end
 
-  NaN           = 0.0/0
+  NaN           = Float::NAN
 
-  Infinity      = 1.0/0
+  Infinity      = Float::INFINITY
 
   MinusInfinity = -Infinity
 
   # The base exception for JSON errors.
-  class JSONError < StandardError
-    def self.wrap(exception)
-      obj = new("Wrapped(#{exception.class}): #{exception.message.inspect}")
-      obj.set_backtrace exception.backtrace
-      obj
-    end
-  end
+  class JSONError < StandardError; end
 
   # This exception is raised if a parser error occurs.
-  class ParserError < JSONError; end
+  class ParserError < JSONError
+    attr_reader :line, :column
+  end
 
   # This exception is raised if the nesting of parsed data structures is too
   # deep.
   class NestingError < ParserError; end
-
-  # :stopdoc:
-  class CircularDatastructure < NestingError; end
-  # :startdoc:
 
   # This exception is raised if a generator or unparser error occurs.
   class GeneratorError < JSONError
@@ -276,7 +285,7 @@ module JSON
   # to string interpolation.
   #
   # Note: no validation is performed on the provided string. It is the
-  # responsability of the caller to ensure the string contains valid JSON.
+  # responsibility of the caller to ensure the string contains valid JSON.
   Fragment = Struct.new(:json) do
     def initialize(json)
       unless string = String.try_convert(json)
@@ -398,7 +407,7 @@ module JSON
   #
   # Returns a \String containing the generated \JSON data.
   #
-  # See also JSON.fast_generate, JSON.pretty_generate.
+  # See also JSON.pretty_generate.
   #
   # Argument +obj+ is the Ruby object to be converted to \JSON.
   #
@@ -498,7 +507,7 @@ module JSON
   #   }
   #
   def pretty_generate(obj, opts = nil)
-    return state.generate(obj) if State === opts
+    return opts.generate(obj) if State === opts
 
     options = PRETTY_GENERATE_OPTIONS
 
@@ -543,6 +552,7 @@ module JSON
     :create_additions => nil,
   }
   # :call-seq:
+  #   JSON.unsafe_load(source, options = {}) -> object
   #   JSON.unsafe_load(source, proc = nil, options = {}) -> object
   #
   # Returns the Ruby objects created by parsing the given +source+.
@@ -650,6 +660,7 @@ module JSON
   #     when Array
   #       obj.map! {|v| deserialize_obj v }
   #     end
+  #     obj
   #   })
   #   pp ruby
   # Output:
@@ -673,7 +684,12 @@ module JSON
   #
   def unsafe_load(source, proc = nil, options = nil)
     opts = if options.nil?
-      _unsafe_load_default_options
+      if proc && proc.is_a?(Hash)
+        options, proc = proc, nil
+        options
+      else
+        _unsafe_load_default_options
+      end
     else
       _unsafe_load_default_options.merge(options)
     end
@@ -691,12 +707,17 @@ module JSON
     if opts[:allow_blank] && (source.nil? || source.empty?)
       source = 'null'
     end
-    result = parse(source, opts)
-    recurse_proc(result, &proc) if proc
-    result
+
+    if proc
+      opts = opts.dup
+      opts[:on_load] = proc.to_proc
+    end
+
+    parse(source, opts)
   end
 
   # :call-seq:
+  #   JSON.load(source, options = {}) -> object
   #   JSON.load(source, proc = nil, options = {}) -> object
   #
   # Returns the Ruby objects created by parsing the given +source+.
@@ -810,6 +831,7 @@ module JSON
   #     when Array
   #       obj.map! {|v| deserialize_obj v }
   #     end
+  #     obj
   #   })
   #   pp ruby
   # Output:
@@ -832,8 +854,18 @@ module JSON
   #      @attributes={"type"=>"Admin", "password"=>"0wn3d"}>}
   #
   def load(source, proc = nil, options = nil)
+    if proc && options.nil? && proc.is_a?(Hash)
+      options = proc
+      proc = nil
+    end
+
     opts = if options.nil?
-      _load_default_options
+      if proc && proc.is_a?(Hash)
+        options, proc = proc, nil
+        options
+      else
+        _load_default_options
+      end
     else
       _load_default_options.merge(options)
     end
@@ -848,7 +880,7 @@ module JSON
       end
     end
 
-    if opts[:allow_blank] && (source.nil? || source.empty?)
+    if opts[:allow_blank] && (source.nil? || (String === source && source.empty?))
       source = 'null'
     end
 
@@ -929,6 +961,68 @@ module JSON
     end
   end
 
+  # :stopdoc:
+  # All these were meant to be deprecated circa 2009, but were just set as undocumented
+  # so usage still exist in the wild.
+  def unparse(...)
+    if RUBY_VERSION >= "3.0"
+      warn "JSON.unparse is deprecated and will be removed in json 3.0.0, just use JSON.generate", uplevel: 1, category: :deprecated
+    else
+      warn "JSON.unparse is deprecated and will be removed in json 3.0.0, just use JSON.generate", uplevel: 1
+    end
+    generate(...)
+  end
+  module_function :unparse
+
+  def fast_unparse(...)
+    if RUBY_VERSION >= "3.0"
+      warn "JSON.fast_unparse is deprecated and will be removed in json 3.0.0, just use JSON.generate", uplevel: 1, category: :deprecated
+    else
+      warn "JSON.fast_unparse is deprecated and will be removed in json 3.0.0, just use JSON.generate", uplevel: 1
+    end
+    generate(...)
+  end
+  module_function :fast_unparse
+
+  def pretty_unparse(...)
+    if RUBY_VERSION >= "3.0"
+      warn "JSON.pretty_unparse is deprecated and will be removed in json 3.0.0, just use JSON.pretty_generate", uplevel: 1, category: :deprecated
+    else
+      warn "JSON.pretty_unparse is deprecated and will be removed in json 3.0.0, just use JSON.pretty_generate", uplevel: 1
+    end
+    pretty_generate(...)
+  end
+  module_function :fast_unparse
+
+  def restore(...)
+    if RUBY_VERSION >= "3.0"
+      warn "JSON.restore is deprecated and will be removed in json 3.0.0, just use JSON.load", uplevel: 1, category: :deprecated
+    else
+      warn "JSON.restore is deprecated and will be removed in json 3.0.0, just use JSON.load", uplevel: 1
+    end
+    load(...)
+  end
+  module_function :restore
+
+  class << self
+    private
+
+    def const_missing(const_name)
+      case const_name
+      when :PRETTY_STATE_PROTOTYPE
+        if RUBY_VERSION >= "3.0"
+          warn "JSON::PRETTY_STATE_PROTOTYPE is deprecated and will be removed in json 3.0.0, just use JSON.pretty_generate", uplevel: 1, category: :deprecated
+        else
+          warn "JSON::PRETTY_STATE_PROTOTYPE is deprecated and will be removed in json 3.0.0, just use JSON.pretty_generate", uplevel: 1
+        end
+        state.new(PRETTY_GENERATE_OPTIONS)
+      else
+        super
+      end
+    end
+  end
+  # :startdoc:
+
   # JSON::Coder holds a parser and generator configuration.
   #
   #   module MyApp
@@ -944,10 +1038,11 @@ module JSON
     #   JSON.new(options = nil, &block)
     #
     # Argument +options+, if given, contains a \Hash of options for both parsing and generating.
-    # See {Parsing Options}[#module-JSON-label-Parsing+Options], and {Generating Options}[#module-JSON-label-Generating+Options].
+    # See {Parsing Options}[rdoc-ref:JSON@Parsing+Options],
+    # and {Generating Options}[rdoc-ref:JSON@Generating+Options].
     #
     # For generation, the <tt>strict: true</tt> option is always set. When a Ruby object with no native \JSON counterpart is
-    # encoutered, the block provided to the initialize method is invoked, and must return a Ruby object that has a native
+    # encountered, the block provided to the initialize method is invoked, and must return a Ruby object that has a native
     # \JSON counterpart:
     #
     #  module MyApp
@@ -973,7 +1068,7 @@ module JSON
       options[:as_json] = as_json if as_json
 
       @state = State.new(options).freeze
-      @parser_config = Ext::Parser::Config.new(ParserOptions.prepare(options))
+      @parser_config = Ext::Parser::Config.new(ParserOptions.prepare(options)).freeze
     end
 
     # call-seq:
@@ -982,7 +1077,7 @@ module JSON
     #
     # Serialize the given object into a \JSON document.
     def dump(object, io = nil)
-      @state.generate_new(object, io)
+      @state.generate(object, io)
     end
     alias_method :generate, :dump
 
@@ -1003,6 +1098,30 @@ module JSON
       load(File.read(path, encoding: Encoding::UTF_8))
     end
   end
+
+  module GeneratorMethods
+    # call-seq: to_json(*)
+    #
+    # Converts this object into a JSON string.
+    # If this object doesn't directly maps to a JSON native type,
+    # first convert it to a string (calling #to_s), then converts
+    # it to a JSON string, and returns the result.
+    # This is a fallback, if no special method #to_json was defined for some object.
+    def to_json(state = nil, *)
+      obj = case self
+      when nil, false, true, Integer, Float, Array, Hash
+        self
+      else
+        "#{self}"
+      end
+
+      if state.nil?
+        JSON::State._generate_no_fallback(obj, nil, nil)
+      else
+        JSON::State.from_state(state)._generate_no_fallback(obj)
+      end
+    end
+  end
 end
 
 module ::Kernel
@@ -1011,8 +1130,14 @@ module ::Kernel
   # Outputs _objs_ to STDOUT as JSON strings in the shortest form, that is in
   # one line.
   def j(*objs)
+    if RUBY_VERSION >= "3.0"
+      warn "Kernel#j is deprecated and will be removed in json 3.0.0", uplevel: 1, category: :deprecated
+    else
+      warn "Kernel#j is deprecated and will be removed in json 3.0.0", uplevel: 1
+    end
+
     objs.each do |obj|
-      puts JSON::generate(obj, :allow_nan => true, :max_nesting => false)
+      puts JSON.generate(obj, :allow_nan => true, :max_nesting => false)
     end
     nil
   end
@@ -1020,8 +1145,14 @@ module ::Kernel
   # Outputs _objs_ to STDOUT as JSON strings in a pretty format, with
   # indentation and over many lines.
   def jj(*objs)
+    if RUBY_VERSION >= "3.0"
+      warn "Kernel#jj is deprecated and will be removed in json 3.0.0", uplevel: 1, category: :deprecated
+    else
+      warn "Kernel#jj is deprecated and will be removed in json 3.0.0", uplevel: 1
+    end
+
     objs.each do |obj|
-      puts JSON::pretty_generate(obj, :allow_nan => true, :max_nesting => false)
+      puts JSON.pretty_generate(obj, :allow_nan => true, :max_nesting => false)
     end
     nil
   end
@@ -1032,16 +1163,11 @@ module ::Kernel
   #
   # The _opts_ argument is passed through to generate/parse respectively. See
   # generate and parse for their documentation.
-  def JSON(object, *args)
-    if object.is_a?(String)
-      return JSON.parse(object, args.first)
-    elsif object.respond_to?(:to_str)
-      str = object.to_str
-      if str.is_a?(String)
-        return JSON.parse(object.to_str, args.first)
-      end
-    end
-
-    JSON.generate(object, args.first)
+  def JSON(object, opts = nil)
+    JSON[object, opts]
   end
+end
+
+class Object
+  include JSON::GeneratorMethods
 end

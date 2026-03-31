@@ -51,7 +51,7 @@ define rp
     printf "%sT_OBJECT%s: ", $color_type, $color_end
     print ((struct RObject *)($arg0))->basic
     if ($flags & ROBJECT_EMBED)
-      print/x *((VALUE*)((struct RObject*)($arg0))->as.ary) @ (rb_shape_get_shape($arg0)->capacity)
+      print/x *((VALUE*)((struct RObject*)($arg0))->as.ary) @ (RSHAPE_CAPACITY(rb_obj_shape_id($arg0)))
     else
       print (((struct RObject *)($arg0))->as.heap)
       if (((struct RObject*)($arg0))->as.heap.numiv) > 0
@@ -185,12 +185,19 @@ define rp
     print (struct RBasic *)($arg0)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_DATA
-    if ((struct RTypedData *)($arg0))->typed_flag == 1
-      printf "%sT_DATA%s(%s): ", $color_type, $color_end, ((struct RTypedData *)($arg0))->type->wrap_struct_name
-      print (struct RTypedData *)($arg0)
+    if ($flags & RUBY_TYPED_FL_IS_TYPED_DATA)
+      set $data = (struct RTypedData *)($arg0)
+      set $type = (const rb_data_type_t *)($data->type & ~1)
+      printf "%sT_DATA%s(%s): ", $color_type, $color_end, $type->wrap_struct_name
+      print *$type
+      if ($data->type & 1)
+        print (void *)&$data->data
+      else
+        print $data
+      end
     else
       printf "%sT_DATA%s: ", $color_type, $color_end
-      print (struct RData *)($arg0)
+      print *(struct RData *)($arg0)
     end
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_MATCH
@@ -523,14 +530,14 @@ document rp_bignum
 end
 
 define rp_class
+  set $class_and_classext = (struct RClass_and_rb_classext_t *)($arg0)
   printf "(struct RClass *) %p", (void*)$arg0
-  if RCLASS_ORIGIN((struct RClass *)($arg0)) != $arg0
-    printf " -> %p", RCLASS_ORIGIN((struct RClass *)($arg0))
+  if $class_and_classext->classext->origin_ != (VALUE)$arg0
+    printf " -> %p", $class_and_classext->classext->origin_
   end
   printf "\n"
   rb_classname $arg0
-  print/x *(struct RClass *)($arg0)
-  print *RCLASS_EXT((struct RClass *)($arg0))
+  print/x *$class_and_classext
 end
 document rp_class
   Print the content of a Class/Module.
@@ -896,10 +903,10 @@ document rb_method_entry
 end
 
 define rb_classname
-  # up to 128bit int
-  set $rb_classname = rb_mod_name($arg0)
-  if $rb_classname != RUBY_Qnil
-    rp $rb_classname
+  set $rb_classname = ((struct RClass_and_rb_classext_t*)$arg0)->classext->classpath
+  if $rb_classname != RUBY_Qfalse
+    print_string $rb_classname
+    printf "\n"
   else
     echo anonymous class/module\n
   end
@@ -1296,8 +1303,7 @@ end
 
 define print_flags
   printf "RUBY_FL_WB_PROTECTED: %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_WB_PROTECTED ? "1" : "0"
-  printf "RUBY_FL_PROMOTED0   : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_PROMOTED0 ? "1" : "0"
-  printf "RUBY_FL_PROMOTED1   : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_PROMOTED1 ? "1" : "0"
+  printf "RUBY_FL_PROMOTED    : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_PROMOTED ? "1" : "0"
   printf "RUBY_FL_FINALIZE    : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_FINALIZE ? "1" : "0"
   printf "RUBY_FL_SHAREABLE   : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_SHAREABLE ? "1" : "0"
   printf "RUBY_FL_EXIVAR      : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_EXIVAR ? "1" : "0"

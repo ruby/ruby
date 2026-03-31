@@ -96,7 +96,7 @@ describe "IO#lineno=" do
 
   it "raises TypeError if cannot convert argument to Integer implicitly" do
     -> { @io.lineno = "1" }.should raise_error(TypeError, 'no implicit conversion of String into Integer')
-    -> { @io.lineno = nil }.should raise_error(TypeError, 'no implicit conversion from nil to integer')
+    -> { @io.lineno = nil }.should raise_consistent_error(TypeError, 'no implicit conversion of nil into Integer')
   end
 
   it "does not accept Integers that don't fit in a C int" do

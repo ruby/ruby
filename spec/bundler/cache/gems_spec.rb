@@ -78,13 +78,13 @@ RSpec.describe "bundle cache" do
   end
 
   context "using system gems" do
-    before { bundle "config set path.system true" }
+    before { bundle_config "path.system true" }
     let(:path) { system_gem_path }
     it_behaves_like "when there are only gemsources"
   end
 
   context "installing into a local path" do
-    before { bundle "config set path ./.bundle" }
+    before { bundle_config "path ./.bundle" }
     let(:path) { local_gem_path }
     it_behaves_like "when there are only gemsources"
   end
@@ -136,7 +136,7 @@ RSpec.describe "bundle cache" do
           gem "json"
         G
 
-        bundle "config set cache_all_platforms true"
+        bundle_config "cache_all_platforms true"
 
         bundle :cache
         expect(bundled_app("vendor/cache/json-#{default_json_version}.gem")).to exist
@@ -157,14 +157,14 @@ RSpec.describe "bundle cache" do
 
     context "when a remote gem is not available for caching" do
       it "warns, but uses builtin gems when installing to system gems" do
-        bundle "config set path.system true"
+        bundle_config "path.system true"
         install_gemfile %(source "https://gem.repo1"; gem 'json', '#{default_json_version}'), verbose: true
         expect(err).to include("json-#{default_json_version} is built in to Ruby, and can't be cached")
         expect(out).to include("Using json #{default_json_version}")
       end
 
       it "errors when explicitly caching" do
-        bundle "config set path.system true"
+        bundle_config "path.system true"
 
         install_gemfile <<-G
           source "https://gem.repo1"
@@ -226,7 +226,7 @@ RSpec.describe "bundle cache" do
 
     it "re-caches during install" do
       setup_main_repo
-      cached_gem("myrack-1.0.0").rmtree
+      FileUtils.rm_rf cached_gem("myrack-1.0.0")
       bundle :install
       expect(out).to include("Updating files in vendor/cache")
       expect(cached_gem("myrack-1.0.0")).to exist
@@ -291,7 +291,7 @@ RSpec.describe "bundle cache" do
         expect(cached_gem("platform_specific-1.0-java")).to exist
       end
 
-      pristine_system_gems :bundler
+      pristine_system_gems
 
       simulate_platform "x86-darwin-100" do
         install_gemfile <<-G
@@ -307,13 +307,13 @@ RSpec.describe "bundle cache" do
     it "doesn't remove gems cached gems that don't match their remote counterparts, but also refuses to install and prints an error" do
       setup_main_repo
       cached_myrack = cached_gem("myrack-1.0.0")
-      cached_myrack.rmtree
+      FileUtils.rm_rf cached_myrack
       build_gem "myrack", "1.0.0",
         path: cached_myrack.parent,
         rubygems_version: "1.3.2"
 
       FileUtils.rm_r default_bundle_path
-      system_gems :bundler
+      default_system_gems
 
       FileUtils.rm bundled_app_lock
       bundle :install, raise_on_error: false
@@ -338,7 +338,7 @@ RSpec.describe "bundle cache" do
 
     it "raises an error when a cached gem is altered and produces a different checksum than the remote gem" do
       setup_main_repo
-      cached_gem("myrack-1.0.0").rmtree
+      FileUtils.rm_rf cached_gem("myrack-1.0.0")
       build_gem "myrack", "1.0.0", path: bundled_app("vendor/cache")
 
       checksums = checksums_section do |c|
@@ -346,7 +346,7 @@ RSpec.describe "bundle cache" do
       end
 
       FileUtils.rm_r default_bundle_path
-      system_gems :bundler
+      default_system_gems
 
       lockfile <<-L
         GEM
@@ -362,16 +362,16 @@ RSpec.describe "bundle cache" do
       expect(err).to include("1. remove the gem at #{cached_gem("myrack-1.0.0")}")
 
       expect(cached_gem("myrack-1.0.0")).to exist
-      cached_gem("myrack-1.0.0").rmtree
+      FileUtils.rm_rf cached_gem("myrack-1.0.0")
       bundle :install
       expect(cached_gem("myrack-1.0.0")).to exist
     end
 
     it "installs a modified gem with a non-matching checksum when the API implementation does not provide checksums" do
       setup_main_repo
-      cached_gem("myrack-1.0.0").rmtree
+      FileUtils.rm_rf cached_gem("myrack-1.0.0")
       build_gem "myrack", "1.0.0", path: bundled_app("vendor/cache")
-      pristine_system_gems :bundler
+      pristine_system_gems
 
       lockfile <<-L
         GEM

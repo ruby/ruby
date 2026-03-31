@@ -50,19 +50,17 @@ describe "C-API Hash function" do
     end
   end
 
-  ruby_version_is '3.2' do
-    describe "rb_hash_new_capa" do
-      it "returns a new hash" do
-        @s.rb_hash_new_capa(3).should == {}
-      end
+  describe "rb_hash_new_capa" do
+    it "returns a new hash" do
+      @s.rb_hash_new_capa(3).should == {}
+    end
 
-      it "creates a hash with no default proc" do
-        @s.rb_hash_new_capa(3) {}.default_proc.should be_nil
-      end
+    it "creates a hash with no default proc" do
+      @s.rb_hash_new_capa(3) {}.default_proc.should be_nil
+    end
 
-      it "raises RuntimeError when negative index is provided" do
-        -> { @s.rb_hash_new_capa(-1) }.should raise_error(RuntimeError, "st_table too big")
-      end
+    it "raises RuntimeError when negative index is provided" do
+      -> { @s.rb_hash_new_capa(-1) }.should raise_error(RuntimeError, "st_table too big")
     end
   end
 

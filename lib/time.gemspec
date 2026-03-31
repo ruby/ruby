@@ -19,6 +19,7 @@ Gem::Specification.new do |spec|
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage
+  spec.metadata["changelog_uri"] = "https://github.com/ruby/time/releases"
 
   srcdir, gemspec = File.split(__FILE__)
   spec.files         = Dir.chdir(srcdir) do

@@ -6,6 +6,31 @@ module ThreadSpecs
     end
   end
 
+  class NewThreadToRaise
+    def self.raise(*args, **kwargs, &block)
+      thread = Thread.new do
+        Thread.current.report_on_exception = false
+
+        if block_given?
+          block.call do
+            sleep
+          end
+        else
+          sleep
+        end
+      end
+
+      Thread.pass until thread.stop?
+
+      thread.raise(*args, **kwargs)
+
+      thread.join
+    ensure
+      thread.kill if thread.alive?
+      Thread.pass while thread.alive? # Thread#kill may not terminate a thread immediately so it may be detected as a leaked one
+    end
+  end
+
   class Status
     attr_reader :thread, :inspect, :status, :to_s
     def initialize(thread)

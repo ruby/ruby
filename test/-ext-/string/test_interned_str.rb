@@ -9,4 +9,9 @@ class Test_RbInternedStr < Test::Unit::TestCase
     src << "b" * 20
     assert_equal "a" * 20, interned_str
   end
+
+  def test_interned_str_encoding
+    src = :ascii.name
+    assert_equal Encoding::US_ASCII, Bug::String.rb_interned_str_dup(src).encoding
+  end
 end

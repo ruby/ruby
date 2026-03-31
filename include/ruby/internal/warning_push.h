@@ -79,7 +79,7 @@
  */
 #define RBIMPL_WARNING_IGNORED(flag) __pragma(warning(disable: flag))
 
-#elif RBIMPL_COMPILER_SINCE(MSVC, 12, 0, 0)
+#elif RBIMPL_COMPILER_IS(MSVC)
 # /* Not sure exactly when but it seems VC++ 6.0 is a version with it.*/
 # define RBIMPL_WARNING_PUSH()        __pragma(warning(push))
 # define RBIMPL_WARNING_POP()         __pragma(warning(pop))

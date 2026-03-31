@@ -3,10 +3,16 @@ require_relative 'fixtures/classes'
 require_relative '../../shared/kernel/raise'
 
 describe "Fiber#raise" do
-  it_behaves_like :kernel_raise, :raise, FiberSpecs::NewFiberToRaise
-end
+  it "is a public method" do
+    Fiber.public_instance_methods.should include(:raise)
+  end
 
-describe "Fiber#raise" do
+  it_behaves_like :kernel_raise, :raise, FiberSpecs::NewFiberToRaise
+  it_behaves_like :kernel_raise_across_contexts, :raise, FiberSpecs::NewFiberToRaise
+  ruby_version_is "4.0" do
+    it_behaves_like :kernel_raise_with_cause, :raise, FiberSpecs::NewFiberToRaise
+  end
+
   it 'raises RuntimeError by default' do
     -> { FiberSpecs::NewFiberToRaise.raise }.should raise_error(RuntimeError)
   end
@@ -125,10 +131,7 @@ describe "Fiber#raise" do
       end.should raise_error(RuntimeError, "Expected error")
     end
   end
-end
 
-
-describe "Fiber#raise" do
   it "transfers and raises on a transferring fiber" do
     root = Fiber.current
     fiber = Fiber.new { root.transfer }

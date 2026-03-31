@@ -1,4 +1,5 @@
 #include "ruby.h"
+#include "ruby/vm.h"
 #include "rubyspec.h"
 
 #include <errno.h>
@@ -117,9 +118,11 @@ VALUE kernel_spec_rb_eval_string(VALUE self, VALUE str) {
   return rb_eval_string(RSTRING_PTR(str));
 }
 
+#ifndef RUBY_VERSION_IS_4_0
 VALUE kernel_spec_rb_eval_cmd_kw(VALUE self, VALUE cmd, VALUE args, VALUE kw_splat) {
   return rb_eval_cmd_kw(cmd, args, NUM2INT(kw_splat));
 }
+#endif
 
 VALUE kernel_spec_rb_raise(VALUE self, VALUE hash) {
   rb_hash_aset(hash, ID2SYM(rb_intern("stage")), ID2SYM(rb_intern("before")));
@@ -335,6 +338,15 @@ static VALUE kernel_spec_rb_set_end_proc(VALUE self, VALUE io) {
   return Qnil;
 }
 
+static void at_exit_hook(ruby_vm_t *vm) {
+  puts("ruby_vm_at_exit hook ran");
+}
+
+static VALUE kernel_spec_ruby_vm_at_exit(VALUE self) {
+  ruby_vm_at_exit(at_exit_hook);
+  return self;
+}
+
 static VALUE kernel_spec_rb_f_sprintf(VALUE self, VALUE ary) {
   return rb_f_sprintf((int)RARRAY_LEN(ary), RARRAY_PTR(ary));
 }
@@ -351,7 +363,6 @@ static VALUE kernel_spec_rb_funcallv(VALUE self, VALUE obj, VALUE method, VALUE 
   return rb_funcallv(obj, SYM2ID(method), RARRAY_LENINT(args), RARRAY_PTR(args));
 }
 
-#ifdef RUBY_VERSION_IS_3_0
 static VALUE kernel_spec_rb_funcallv_kw(VALUE self, VALUE obj, VALUE method, VALUE args) {
   return rb_funcallv_kw(obj, SYM2ID(method), RARRAY_LENINT(args), RARRAY_PTR(args), RB_PASS_KEYWORDS);
 }
@@ -359,7 +370,6 @@ static VALUE kernel_spec_rb_funcallv_kw(VALUE self, VALUE obj, VALUE method, VAL
 static VALUE kernel_spec_rb_keyword_given_p(int argc, VALUE *args, VALUE self) {
   return rb_keyword_given_p() ? Qtrue : Qfalse;
 }
-#endif
 
 static VALUE kernel_spec_rb_funcallv_public(VALUE self, VALUE obj, VALUE method) {
   return rb_funcallv_public(obj, SYM2ID(method), 0, NULL);
@@ -405,7 +415,9 @@ void Init_kernel_spec(void) {
   rb_define_method(cls, "rb_category_warn_deprecated_with_integer_extra_value", kernel_spec_rb_category_warn_deprecated_with_integer_extra_value, 1);
   rb_define_method(cls, "rb_ensure", kernel_spec_rb_ensure, 4);
   rb_define_method(cls, "rb_eval_string", kernel_spec_rb_eval_string, 1);
+#ifndef RUBY_VERSION_IS_4_0
   rb_define_method(cls, "rb_eval_cmd_kw", kernel_spec_rb_eval_cmd_kw, 3);
+#endif
   rb_define_method(cls, "rb_raise", kernel_spec_rb_raise, 1);
   rb_define_method(cls, "rb_throw", kernel_spec_rb_throw, 1);
   rb_define_method(cls, "rb_throw_obj", kernel_spec_rb_throw_obj, 2);
@@ -432,14 +444,13 @@ void Init_kernel_spec(void) {
   rb_define_method(cls, "rb_yield_splat", kernel_spec_rb_yield_splat, 1);
   rb_define_method(cls, "rb_exec_recursive", kernel_spec_rb_exec_recursive, 1);
   rb_define_method(cls, "rb_set_end_proc", kernel_spec_rb_set_end_proc, 1);
+  rb_define_method(cls, "ruby_vm_at_exit", kernel_spec_ruby_vm_at_exit, 0);
   rb_define_method(cls, "rb_f_sprintf", kernel_spec_rb_f_sprintf, 1);
   rb_define_method(cls, "rb_str_format", kernel_spec_rb_str_format, 3);
   rb_define_method(cls, "rb_make_backtrace", kernel_spec_rb_make_backtrace, 0);
   rb_define_method(cls, "rb_funcallv", kernel_spec_rb_funcallv, 3);
-#ifdef RUBY_VERSION_IS_3_0
   rb_define_method(cls, "rb_funcallv_kw", kernel_spec_rb_funcallv_kw, 3);
   rb_define_method(cls, "rb_keyword_given_p", kernel_spec_rb_keyword_given_p, -1);
-#endif
   rb_define_method(cls, "rb_funcallv_public", kernel_spec_rb_funcallv_public, 2);
   rb_define_method(cls, "rb_funcall_many_args", kernel_spec_rb_funcall_many_args, 2);
   rb_define_method(cls, "rb_funcall_with_block", kernel_spec_rb_funcall_with_block, 4);

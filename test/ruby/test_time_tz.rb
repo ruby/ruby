@@ -1,6 +1,5 @@
 # frozen_string_literal: false
 require 'test/unit'
-require '-test-/time'
 
 class TestTimeTZ < Test::Unit::TestCase
   has_right_tz = true

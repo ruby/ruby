@@ -9,8 +9,12 @@ RSpec.describe Bundler::GemHelper do
   let(:app_gemspec_path) { app_path.join("#{app_name}.gemspec") }
 
   before(:each) do
-    global_config "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__COC" => "false", "BUNDLE_GEM__LINTER" => "false",
-                  "BUNDLE_GEM__CI" => "false", "BUNDLE_GEM__CHANGELOG" => "false"
+    bundle_config_global "gem.mit false"
+    bundle_config_global "gem.test false"
+    bundle_config_global "gem.coc false"
+    bundle_config_global "gem.linter false"
+    bundle_config_global "gem.ci false"
+    bundle_config_global "gem.changelog false"
     git("config --global init.defaultBranch main")
     bundle "gem #{app_name}"
     prepare_gemspec(app_gemspec_path)
@@ -222,7 +226,7 @@ RSpec.describe Bundler::GemHelper do
           mock_confirm_message "#{app_name} (#{app_version}) installed."
           subject.install_gem(nil, :local)
           expect(app_gem_path).to exist
-          gem_command :list
+          installed_gems_list
           expect(out).to include("#{app_name} (#{app_version})")
         end
       end
@@ -386,6 +390,7 @@ RSpec.describe Bundler::GemHelper do
         credentials = double("credentials", "file?" => true)
         allow(Bundler.user_home).to receive(:join).
           with(".gem/credentials").and_return(credentials)
+        allow(Bundler.user_home).to receive(:join).and_call_original
       end
 
       describe "success messaging" do

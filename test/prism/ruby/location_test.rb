@@ -13,19 +13,22 @@ module Prism
       assert_equal 0, joined.start_offset
       assert_equal 10, joined.length
 
-      assert_raise(RuntimeError, "Incompatible locations") do
+      e = assert_raise(RuntimeError) do
         argument.location.join(receiver.location)
       end
+      assert_equal "Incompatible locations", e.message
 
       other_argument = Prism.parse_statement("1234 + 567").arguments.arguments.first
 
-      assert_raise(RuntimeError, "Incompatible sources") do
+      e = assert_raise(RuntimeError) do
         other_argument.location.join(receiver.location)
       end
+      assert_equal "Incompatible sources", e.message
 
-      assert_raise(RuntimeError, "Incompatible sources") do
+      e = assert_raise(RuntimeError) do
         receiver.location.join(other_argument.location)
       end
+      assert_equal "Incompatible sources", e.message
     end
 
     def test_character_offsets

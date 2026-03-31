@@ -10,12 +10,12 @@ returns the offset of the beginning of the <tt>n</tt>th match:
   m[3]       # => "113"
   m.bytebegin(3) # => 3
 
-  m = /(т)(е)(с)/.match('тест')
-  # => #<MatchData "тес" 1:"т" 2:"е" 3:"с">
-  m[0]       # => "тес"
-  m.bytebegin(0) # => 0
-  m[3]       # => "с"
-  m.bytebegin(3) # => 4
+  m = /(ん)(に)(ち)/.match('こんにちは')
+  # => #<MatchData "んにち" 1:"ん" 2:"に" 3:"ち">
+  m[0]           # => "んにち"
+  m.bytebegin(0) # => 3
+  m[3]           # => "ち"
+  m.bytebegin(3) # => 9
 
 When string or symbol argument +name+ is given,
 returns the offset of the beginning for the named match:

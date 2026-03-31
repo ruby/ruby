@@ -24,12 +24,22 @@ module Bundler
         state == :enqueued
       end
 
+      def enqueue_with_priority?
+        state == :installable && spec.extensions.any?
+      end
+
       def failed?
         state == :failed
       end
 
       def ready_to_enqueue?
         state == :none
+      end
+
+      def ready_to_install?(installed_specs)
+        return false unless state == :downloaded
+
+        spec.extensions.none? || dependencies_installed?(installed_specs)
       end
 
       def has_post_install_message?
@@ -84,6 +94,7 @@ module Bundler
 
     def call
       if @rake
+        do_download(@rake, 0)
         do_install(@rake, 0)
         Gem::Specification.reset
       end
@@ -107,26 +118,54 @@ module Bundler
     end
 
     def install_with_worker
-      enqueue_specs
-      process_specs until finished_installing?
+      installed_specs = {}
+      enqueue_specs(installed_specs)
+
+      process_specs(installed_specs) until finished_installing?
     end
 
     def install_serially
       until finished_installing?
         raise "failed to find a spec to enqueue while installing serially" unless spec_install = @specs.find(&:ready_to_enqueue?)
         spec_install.state = :enqueued
+        do_download(spec_install, 0)
         do_install(spec_install, 0)
       end
     end
 
     def worker_pool
       @worker_pool ||= Bundler::Worker.new @size, "Parallel Installer", lambda {|spec_install, worker_num|
-        do_install(spec_install, worker_num)
+        case spec_install.state
+        when :enqueued
+          do_download(spec_install, worker_num)
+        when :installable
+          do_install(spec_install, worker_num)
+        else
+          spec_install
+        end
       }
     end
 
-    def do_install(spec_install, worker_num)
+    def do_download(spec_install, worker_num)
       Plugin.hook(Plugin::Events::GEM_BEFORE_INSTALL, spec_install)
+
+      gem_installer = Bundler::GemInstaller.new(
+        spec_install.spec, @installer, @standalone, worker_num, @force, @local
+      )
+
+      success, message = gem_installer.download
+
+      if success
+        spec_install.state = :downloaded
+      else
+        spec_install.error = "#{message}\n\n#{require_tree_for_spec(spec_install.spec)}"
+        spec_install.state = :failed
+      end
+
+      spec_install
+    end
+
+    def do_install(spec_install, worker_num)
       gem_installer = Bundler::GemInstaller.new(
         spec_install.spec, @installer, @standalone, worker_num, @force, @local
       )
@@ -147,9 +186,19 @@ module Bundler
     # Some specs might've had to wait til this spec was installed to be
     # processed so the call to `enqueue_specs` is important after every
     # dequeue.
-    def process_specs
-      worker_pool.deq
-      enqueue_specs
+    def process_specs(installed_specs)
+      spec = worker_pool.deq
+
+      if spec.installed?
+        installed_specs[spec.name] = true
+        return
+      elsif spec.failed?
+        return
+      elsif spec.ready_to_install?(installed_specs)
+        spec.state = :installable
+      end
+
+      worker_pool.enq(spec, priority: spec.enqueue_with_priority?)
     end
 
     def finished_installing?
@@ -185,18 +234,15 @@ module Bundler
     # Later we call this lambda again to install specs that depended on
     # previously installed specifications. We continue until all specs
     # are installed.
-    def enqueue_specs
-      installed_specs = {}
+    def enqueue_specs(installed_specs)
       @specs.each do |spec|
-        next unless spec.installed?
-        installed_specs[spec.name] = true
-      end
-
-      @specs.each do |spec|
-        if spec.ready_to_enqueue? && spec.dependencies_installed?(installed_specs)
-          spec.state = :enqueued
-          worker_pool.enq spec
+        if spec.installed?
+          installed_specs[spec.name] = true
+          next
         end
+
+        spec.state = :enqueued
+        worker_pool.enq spec
       end
     end
   end

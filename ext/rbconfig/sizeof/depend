@@ -142,6 +142,7 @@ limits.o: $(hdrdir)/ruby/internal/intern/re.h
 limits.o: $(hdrdir)/ruby/internal/intern/ruby.h
 limits.o: $(hdrdir)/ruby/internal/intern/select.h
 limits.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+limits.o: $(hdrdir)/ruby/internal/intern/set.h
 limits.o: $(hdrdir)/ruby/internal/intern/signal.h
 limits.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 limits.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -301,6 +302,7 @@ sizes.o: $(hdrdir)/ruby/internal/intern/re.h
 sizes.o: $(hdrdir)/ruby/internal/intern/ruby.h
 sizes.o: $(hdrdir)/ruby/internal/intern/select.h
 sizes.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+sizes.o: $(hdrdir)/ruby/internal/intern/set.h
 sizes.o: $(hdrdir)/ruby/internal/intern/signal.h
 sizes.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 sizes.o: $(hdrdir)/ruby/internal/intern/string.h

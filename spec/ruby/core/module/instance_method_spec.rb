@@ -48,11 +48,6 @@ describe "Module#instance_method" do
 
     @mod_um.inspect.should =~ /\bbar\b/
     @mod_um.inspect.should =~ /\bModuleSpecs::InstanceMethMod\b/
-
-    ruby_version_is ""..."3.2" do
-      @child_um.inspect.should =~ /\bModuleSpecs::InstanceMethChild\b/
-      @mod_um.inspect.should =~ /\bModuleSpecs::InstanceMethChild\b/
-    end
   end
 
   it "raises a TypeError if the given name is not a String/Symbol" do
@@ -84,7 +79,7 @@ describe "Module#instance_method" do
     obj = Object.new
     def obj.to_str() [] end
 
-    -> { ModuleSpecs::InstanceMeth.instance_method(obj) }.should raise_error(TypeError, /can't convert Object to String/)
+    -> { ModuleSpecs::InstanceMeth.instance_method(obj) }.should raise_consistent_error(TypeError, /can't convert Object into String/)
   end
 
   it "raises a NameError if the method has been undefined" do

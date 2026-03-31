@@ -1,6 +1,5 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
-require_relative 'fixtures/callback_order'
 
 describe "Class.inherited" do
 
@@ -99,16 +98,21 @@ describe "Class.inherited" do
     -> { Class.new(top) }.should_not raise_error
   end
 
-  it "is invoked after the class is named when using class definition syntax" do
-    CoreClassSpecs::Callbacks::Child::INHERITED_NAME.should == "CoreClassSpecs::Callbacks::Child"
-  end
+  it "if the subclass is assigned to a constant, it is all set" do
+    ScratchPad.record []
 
-  ruby_version_is "3.5" do # https://bugs.ruby-lang.org/issues/21143
-    it "is invoked before `const_added`" do
-      CoreClassSpecs::Callbacks::ORDER.should == [
-        [:inherited, CoreClassSpecs::Callbacks::Child, "constant", :location],
-        [:const_added, :Child, "constant", :location],
-      ]
+    parent = Class.new do
+      def self.inherited(subclass)
+        ScratchPad << defined?(self::C)
+        ScratchPad << const_defined?(:C)
+        ScratchPad << constants
+        ScratchPad << const_get(:C)
+        ScratchPad << subclass.name.match?(/\A#<Class:0x\w+>::C\z/)
+      end
     end
+
+    class parent::C < parent; end
+
+    ScratchPad.recorded.should == ["constant", true, [:C], parent::C, true]
   end
 end

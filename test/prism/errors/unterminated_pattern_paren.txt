@@ -1,0 +1,7 @@
+case x
+^~~~ expected an `end` to close the `case` statement
+in (1
+   ^ expected a `)` to close the pattern expression
+     ^ expected a delimiter after the patterns of an `in` clause
+     ^ unexpected end-of-input, assuming it is closing the parent top level context
+

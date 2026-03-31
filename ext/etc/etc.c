@@ -56,7 +56,7 @@ static VALUE sGroup;
 #endif
 RUBY_EXTERN char *getlogin(void);
 
-#define RUBY_ETC_VERSION "1.4.5"
+#define RUBY_ETC_VERSION "1.4.6"
 
 #define SYMBOL_LIT(str) ID2SYM(rb_intern_const(str ""))
 
@@ -832,11 +832,7 @@ etc_uname(VALUE obj)
 			 rb_w32_conv_from_wchar(v.szCSDVersion, rb_utf8_encoding()));
     rb_hash_aset(result, SYMBOL_LIT("version"), version);
 
-# if defined _MSC_VER && _MSC_VER < 1300
-#   define GET_COMPUTER_NAME(ptr, plen) GetComputerNameW(ptr, plen)
-# else
 #   define GET_COMPUTER_NAME(ptr, plen) GetComputerNameExW(ComputerNameDnsFullyQualified, ptr, plen)
-# endif
     GET_COMPUTER_NAME(NULL, &len);
     buf = ALLOCV_N(WCHAR, vbuf, len);
     if (GET_COMPUTER_NAME(buf, &len)) {
@@ -1310,5 +1306,9 @@ Init_etc(void)
 #endif
     rb_extend_object(sGroup, rb_mEnumerable);
     rb_define_singleton_method(sGroup, "each", etc_each_group, 0);
+#endif
+
+#if defined(HAVE_GETPWENT) || defined(HAVE_GETGRENT)
+    (void)safe_setup_str;
 #endif
 }

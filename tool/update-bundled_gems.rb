@@ -1,15 +1,18 @@
-#!ruby -pla
+#!ruby -alpF\s+|#.*
 BEGIN {
   require 'rubygems'
   date = nil
   # STDOUT is not usable in inplace edit mode
   output = $-i ? STDOUT : STDERR
+  # Gems to skip auto-updating (e.g. when a new major version breaks CI)
+  pinned = %w[rbs]
 }
 output = STDERR if ARGF.file == STDIN
 END {
   output.print date.strftime("latest_date=%F") if date
 }
-unless /^[^#]/ !~ (gem = $F[0])
+if gem = $F[0]
+  next if pinned.include?(gem)
   ver = Gem::Version.new($F[1])
   (gem, src), = Gem::SpecFetcher.fetcher.detect(:latest) {|s|
     s.platform == "ruby" && s.name == gem
@@ -22,7 +25,10 @@ unless /^[^#]/ !~ (gem = $F[0])
     else
       uri = $F[2]
     end
-    date = gem.date if !date or gem.date && gem.date > date
+    if (!date or gem.date && gem.date > date) and gem.date.to_i != 315_619_200
+      # DEFAULT_SOURCE_DATE_EPOCH is meaningless
+      date = gem.date
+    end
     if $F[3]
       if $F[3].include?($F[1])
         $F[3][$F[1]] = gem.version.to_s

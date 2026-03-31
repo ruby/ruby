@@ -1,13 +1,12 @@
 # -*- frozen-string-literal: true -*-
 
+module Gem # :nodoc:
+  # TODO: the nodoc above is a workaround for RDoc's Prism parser handling stopdoc differently, we may want to use
+  # stopdoc/startdoc pair like before
+end
+
 module Gem::BUNDLED_GEMS # :nodoc:
   SINCE = {
-    "matrix" => "3.1.0",
-    "net-ftp" => "3.1.0",
-    "net-imap" => "3.1.0",
-    "net-pop" => "3.1.0",
-    "net-smtp" => "3.1.0",
-    "prime" => "3.1.0",
     "racc" => "3.3.0",
     "abbrev" => "3.4.0",
     "base64" => "3.4.0",
@@ -21,16 +20,17 @@ module Gem::BUNDLED_GEMS # :nodoc:
     "resolv-replace" => "3.4.0",
     "rinda" => "3.4.0",
     "syslog" => "3.4.0",
-    "ostruct" => "3.5.0",
-    "pstore" => "3.5.0",
-    "rdoc" => "3.5.0",
-    "win32ole" => "3.5.0",
-    "fiddle" => "3.5.0",
-    "logger" => "3.5.0",
-    "benchmark" => "3.5.0",
-    "irb" => "3.5.0",
-    "reline" => "3.5.0",
-    # "readline" => "3.5.0", # This is wrapper for reline. We don't warn for this.
+    "ostruct" => "4.0.0",
+    "pstore" => "4.0.0",
+    "rdoc" => "4.0.0",
+    "win32ole" => "4.0.0",
+    "fiddle" => "4.0.0",
+    "logger" => "4.0.0",
+    "benchmark" => "4.0.0",
+    "irb" => "4.0.0",
+    "reline" => "4.0.0",
+    # "readline" => "4.0.0", # This is wrapper for reline. We don't warn for this.
+    "tsort" => "4.1.0",
   }.freeze
 
   EXACT = {
@@ -55,12 +55,7 @@ module Gem::BUNDLED_GEMS # :nodoc:
       kernel_class.send(:alias_method, :no_warning_require, :require)
       kernel_class.send(:define_method, :require) do |name|
         if message = ::Gem::BUNDLED_GEMS.warning?(name, specs: spec_names)
-          uplevel = ::Gem::BUNDLED_GEMS.uplevel
-          if uplevel > 0
-            Kernel.warn message, uplevel: uplevel
-          else
-            Kernel.warn message
-          end
+          Kernel.warn message, uplevel: ::Gem::BUNDLED_GEMS.uplevel
         end
         kernel_class.send(:no_warning_require, name)
       end
@@ -92,11 +87,10 @@ module Gem::BUNDLED_GEMS # :nodoc:
       uplevel += 1
       # Don't show script name when bundle exec and call ruby script directly.
       if cl.path.end_with?("bundle")
-        frame_count = 0
-        break
+        return
       end
     end
-    require_found ? 1 : frame_count - 1
+    require_found ? 1 : (frame_count - 1).nonzero?
   end
 
   def self.warning?(name, specs: nil)
@@ -111,11 +105,14 @@ module Gem::BUNDLED_GEMS # :nodoc:
       # and `require "syslog"` to `require "#{ARCHDIR}/syslog.so"`.
       feature.delete_prefix!(ARCHDIR)
       feature.delete_prefix!(LIBDIR)
-      segments = feature.split("/")
+      # 1. A segment for the EXACT mapping and SINCE check
+      # 2. A segment for the SINCE check for dashed names
+      # 3. A segment to check if there's a subfeature
+      segments = feature.split("/", 3)
       name = segments.shift
       name = EXACT[name] || name
       if !SINCE[name]
-        name = [name, segments.shift].join("-")
+        name = "#{name}-#{segments.shift}"
         return unless SINCE[name]
       end
       segments.any?
@@ -125,29 +122,47 @@ module Gem::BUNDLED_GEMS # :nodoc:
       false
     end
 
+    if suppress_list = Thread.current[:__bundled_gems_warning_suppression]
+      return if suppress_list.include?(name) || suppress_list.include?(feature)
+    end
+
     return if specs.include?(name)
+
+    # Don't warn if a hyphenated gem provides this feature
+    # (e.g., benchmark-ips provides benchmark/ips, benchmark/timing, etc.)
+    if subfeature
+      prefix = feature.split("/").first + "-"
+      return if specs.any? { |spec, _| spec.start_with?(prefix) }
+
+      # Don't warn if the feature is found outside the standard library
+      # (e.g., benchmark-ips's lib dir is on $LOAD_PATH but not in specs)
+      resolved = $LOAD_PATH.resolve_feature_path(feature) rescue nil
+      if resolved && !resolved[1].start_with?(LIBDIR, ARCHDIR)
+        return
+      end
+    end
 
     return if WARNED[name]
     WARNED[name] = true
 
-    level = RUBY_VERSION < SINCE[name] ? "warning" : "error"
+    level = RUBY_VERSION < SINCE[name] ? :warning : :error
 
     if subfeature
       "#{feature} is found in #{name}, which"
     else
-      "#{feature} #{level == "warning" ? "was loaded" : "used to be loaded"} from the standard library, but"
+      "#{feature} #{level == :warning ? "was loaded" : "used to be loaded"} from the standard library, but"
     end + build_message(name, level)
   end
 
   def self.build_message(name, level)
-    msg = if level == "warning"
+    msg = if level == :warning
       " will no longer be part of the default gems starting from Ruby #{SINCE[name]}"
     else
       " is not part of the default gems since Ruby #{SINCE[name]}."
     end
 
     if defined?(Bundler)
-      motivation = level == "warning" ? "silence this warning" : "fix this error"
+      motivation = level == :warning ? "silence this warning" : "fix this error"
       msg += "\nYou can add #{name} to your Gemfile or gemspec to #{motivation}."
 
       # We detect the gem name from caller_locations. First we walk until we find `require`
@@ -197,17 +212,31 @@ module Gem::BUNDLED_GEMS # :nodoc:
   end
 
   def self.force_activate(gem)
+    require "bundler"
     Bundler.reset!
 
+    # Build and activate a temporary definition containing the original gems + the requested gem
     builder = Bundler::Dsl.new
-    if Bundler.definition.gemfiles.empty? # bundler/inline
-      Bundler.definition.locked_gems.specs.each{|spec| builder.gem spec.name, spec.version.to_s }
+
+    lockfile = nil
+    if Bundler::SharedHelpers.in_bundle? && Bundler.definition.gemfiles.size > 0
+      Bundler.definition.gemfiles.each {|gemfile| builder.eval_gemfile(gemfile) }
+      lockfile = begin
+        Bundler.default_lockfile
+      rescue Bundler::GemfileNotFound
+        nil
+      end
     else
-      Bundler.definition.gemfiles.each{|gemfile| builder.eval_gemfile(gemfile) }
+      # Fake BUNDLE_GEMFILE and BUNDLE_LOCKFILE to let checks pass
+      orig_gemfile = ENV["BUNDLE_GEMFILE"]
+      orig_lockfile = ENV["BUNDLE_LOCKFILE"]
+      Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", "Gemfile"
+      Bundler::SharedHelpers.set_env "BUNDLE_LOCKFILE", "Gemfile.lock"
     end
+
     builder.gem gem
 
-    definition = builder.to_definition(nil, true)
+    definition = builder.to_definition(lockfile, nil)
     definition.validate_runtime!
 
     begin
@@ -223,6 +252,8 @@ module Gem::BUNDLED_GEMS # :nodoc:
     rescue Bundler::GemNotFound
       warn "Failed to activate #{gem}, please install it with 'gem install #{gem}'"
     ensure
+      ENV['BUNDLE_GEMFILE'] = orig_gemfile if orig_gemfile
+      ENV['BUNDLE_LOCKFILE'] = orig_lockfile if orig_lockfile
       Bundler.ui = orig_ui
       Bundler::Definition.no_lock = orig_no_lock
     end
@@ -237,7 +268,7 @@ class LoadError
 
     name = path.tr("/", "-")
     if !defined?(Bundler) && Gem::BUNDLED_GEMS::SINCE[name] && !Gem::BUNDLED_GEMS::WARNED[name]
-      warn name + Gem::BUNDLED_GEMS.build_message(name, "error"), uplevel: Gem::BUNDLED_GEMS.uplevel
+      warn name + Gem::BUNDLED_GEMS.build_message(name, :error), uplevel: Gem::BUNDLED_GEMS.uplevel
     end
     super
   end

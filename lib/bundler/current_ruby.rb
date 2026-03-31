@@ -11,7 +11,7 @@ module Bundler
   end
 
   class CurrentRuby
-    ALL_RUBY_VERSIONS = (18..27).to_a.concat((30..35).to_a).freeze
+    ALL_RUBY_VERSIONS = [*18..27, *30..34, *40..41].freeze
     KNOWN_MINOR_VERSIONS = ALL_RUBY_VERSIONS.map {|v| v.digits.reverse.join(".") }.freeze
     KNOWN_MAJOR_VERSIONS = ALL_RUBY_VERSIONS.map {|v| v.digits.last.to_s }.uniq.freeze
     PLATFORM_MAP = {
@@ -32,7 +32,7 @@ module Bundler
     end.freeze
 
     def ruby?
-      return true if Bundler::GemHelpers.generic_local_platform_is_ruby?
+      return true if Bundler::MatchPlatform.generic_local_platform_is_ruby?
 
       !windows? && (RUBY_ENGINE == "ruby" || RUBY_ENGINE == "rbx" || RUBY_ENGINE == "maglev" || RUBY_ENGINE == "truffleruby")
     end
@@ -50,19 +50,10 @@ module Bundler
     end
 
     def maglev?
-      message =
-        "`CurrentRuby#maglev?` is deprecated with no replacement. Please use the " \
-        "built-in Ruby `RUBY_ENGINE` constant to check the Ruby implementation you are running on."
       removed_message =
         "`CurrentRuby#maglev?` was removed with no replacement. Please use the " \
         "built-in Ruby `RUBY_ENGINE` constant to check the Ruby implementation you are running on."
-      internally_exempted = caller_locations(1, 1).first.path == __FILE__
-
-      unless internally_exempted
-        SharedHelpers.major_deprecation(2, message, removed_message: removed_message, print_caller_location: true)
-      end
-
-      RUBY_ENGINE == "maglev"
+      SharedHelpers.feature_removed!(removed_message)
     end
 
     def truffleruby?
@@ -90,14 +81,11 @@ module Bundler
       end
 
       define_method(:"maglev_#{trimmed_version}?") do
-        message =
-          "`CurrentRuby##{__method__}` is deprecated with no replacement. Please use the " \
-          "built-in Ruby `RUBY_ENGINE` and `RUBY_VERSION` constants to perform a similar check."
         removed_message =
           "`CurrentRuby##{__method__}` was removed with no replacement. Please use the " \
           "built-in Ruby `RUBY_ENGINE` and `RUBY_VERSION` constants to perform a similar check."
 
-        SharedHelpers.major_deprecation(2, message, removed_message: removed_message, print_caller_location: true)
+        SharedHelpers.feature_removed!(removed_message)
 
         send(:"maglev?") && send(:"on_#{trimmed_version}?")
       end

@@ -1,0 +1,65 @@
+**Note**: \Method +pread+ is different from other reading methods
+in that it does not modify +self+ in any way;
+thus, multiple threads may read safely from the same stream.
+
+Reads up to +maxlen+ bytes from the stream,
+beginning at 0-based byte offset +offset+;
+returns a string containing the read bytes.
+
+The returned string:
+
+- Contains +maxlen+ bytes from the stream, if available;
+  otherwise contains all available bytes.
+- Has encoding +Encoding::ASCII_8BIT+.
+
+With only arguments +maxlen+ and +offset+ given,
+returns a new string:
+
+  english = 'Hello'  # Five 1-byte characters.
+  strio = StringIO.new(english)
+  strio.pread(3, 0)  # => "Hel"
+  strio.pread(3, 2)  # => "llo"
+  strio.pread(0, 0)  # => ""
+  strio.pread(50, 0) # => "Hello"
+  strio.pread(50, 2) # => "llo"
+  strio.pread(50, 4) # => "o"
+  strio.pread(0, 0).encoding
+  # => #<Encoding:BINARY (ASCII-8BIT)>
+
+  russian = 'Привет' # Six 2-byte characters.
+  strio = StringIO.new(russian)
+  strio.pread(50, 0) # All 12 bytes.
+  # => "\xD0\x9F\xD1\x80\xD0\xB8\xD0\xB2\xD0\xB5\xD1\x82"
+  strio.pread(3, 0)  # => "\xD0\x9F\xD1"
+  strio.pread(3, 3)  # => "\x80\xD0\xB8"
+  strio.pread(0, 0).encoding
+  # => #<Encoding:BINARY (ASCII-8BIT)>
+
+  japanese = 'こんにちは' # Five 3-byte characters.
+  strio = StringIO.new(japanese)
+  strio.pread(50, 0)    # All 15 bytes.
+  # => "\xE3\x81\x93\xE3\x82\x93\xE3\x81\xAB\xE3\x81\xA1\xE3\x81\xAF"
+  strio.pread(6, 0)     # => "\xE3\x81\x93\xE3\x82\x93"
+  strio.pread(1, 2)     # => "\x93"
+  strio.pread(0, 0).encoding
+  # => #<Encoding:BINARY (ASCII-8BIT)>
+
+Raises an exception if +offset+ is out-of-range:
+
+  strio = StringIO.new(english)
+  strio.pread(5, 50) # Raises EOFError: end of file reached
+
+With string argument +out_string+ given:
+
+- Reads as above.
+- Overwrites the content of +out_string+ with the read bytes.
+
+Examples:
+
+  out_string = 'Will be overwritten'
+  out_string.encoding                # => #<Encoding:UTF-8>
+  result = StringIO.new(english).pread(50, 0, out_string)
+  result.__id__ == out_string.__id__ # => true
+  out_string                         # => "Hello"
+  out_string.encoding                # => #<Encoding:BINARY (ASCII-8BIT)>
+

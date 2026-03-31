@@ -14,9 +14,6 @@ defconstfunc(rb_cBinding)
 defconstfunc(rb_cClass)
 defconstfunc(rb_cComplex)
 defconstfunc(rb_mComparable)
-#ifndef RUBY_VERSION_IS_3_0
-defconstfunc(rb_cData)
-#endif
 defconstfunc(rb_cDir)
 defconstfunc(rb_cEncoding)
 defconstfunc(rb_mEnumerable)
@@ -97,9 +94,6 @@ void Init_constants_spec(void) {
   rb_define_method(cls, "rb_cClass", constants_spec_rb_cClass, 0);
   rb_define_method(cls, "rb_cComplex", constants_spec_rb_cComplex, 0);
   rb_define_method(cls, "rb_mComparable", constants_spec_rb_mComparable, 0);
-  #ifndef RUBY_VERSION_IS_3_0
-  rb_define_method(cls, "rb_cData", constants_spec_rb_cData, 0);
-  #endif
   rb_define_method(cls, "rb_cDir", constants_spec_rb_cDir, 0);
   rb_define_method(cls, "rb_cEncoding", constants_spec_rb_cEncoding, 0);
   rb_define_method(cls, "rb_mEnumerable", constants_spec_rb_mEnumerable, 0);

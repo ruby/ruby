@@ -1,4 +1,5 @@
 @echo off
+@setlocal EnableExtensions DisableDelayedExpansion || exit /b -1
 set rt=
 set rtver=
 set osver=

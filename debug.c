@@ -57,6 +57,7 @@ const union {
     enum ruby_rstring_flags     rstring_flags;
     enum ruby_rarray_flags      rarray_flags;
     enum ruby_rarray_consts     rarray_consts;
+    enum rbimpl_typeddata_flags rtypeddata_consts;
     enum {
         RUBY_FMODE_READABLE		= FMODE_READABLE,
         RUBY_FMODE_WRITABLE		= FMODE_WRITABLE,
@@ -168,9 +169,7 @@ ruby_debug_breakpoint(void)
 }
 
 #if defined _WIN32
-# if RUBY_MSVCRT_VERSION >= 80
 extern int ruby_w32_rtc_error;
-# endif
 #endif
 #if defined _WIN32 || defined __CYGWIN__
 #include <windows.h>
@@ -233,9 +232,7 @@ ruby_env_debug_option(const char *str, int len, void *arg)
     SET_WHEN("ci", ruby_on_ci, 1);
     SET_WHEN_UINT("rgengc", &ruby_rgengc_debug, 1, ruby_rgengc_debug = 1);
 #if defined _WIN32
-# if RUBY_MSVCRT_VERSION >= 80
     SET_WHEN("rtc_error", ruby_w32_rtc_error, 1);
-# endif
 #endif
 #if defined _WIN32 || defined __CYGWIN__
     SET_WHEN_UINT("codepage", ruby_w32_codepage, numberof(ruby_w32_codepage),
@@ -371,7 +368,7 @@ setup_debug_log_filter(void)
 
             if (len >= MAX_DEBUG_LOG_FILTER_LEN) {
                 fprintf(stderr, "too long: %s (max:%d)\n", str, MAX_DEBUG_LOG_FILTER_LEN - 1);
-                exit(1);
+                exit(EXIT_FAILURE);
             }
 
             // body
@@ -399,7 +396,7 @@ setup_debug_log(void)
             debug_log.mem = (char *)malloc(MAX_DEBUG_LOG * MAX_DEBUG_LOG_MESSAGE_LEN);
             if (debug_log.mem == NULL) {
                 fprintf(stderr, "setup_debug_log failed (can't allocate memory)\n");
-                exit(1);
+                exit(EXIT_FAILURE);
             }
             ruby_debug_log_mode |= ruby_debug_log_memory;
         }
@@ -427,7 +424,7 @@ setup_debug_log(void)
                         break;
                       default:
                         fprintf(stderr, "can not parse RUBY_DEBUG_LOG filename: %s\n", log_config);
-                        exit(1);
+                        exit(EXIT_FAILURE);
                     }
                 }
                 else {
@@ -436,13 +433,13 @@ setup_debug_log(void)
 
                 if (j >= DEBUG_LOG_MAX_PATH) {
                     fprintf(stderr, "RUBY_DEBUG_LOG=%s is too long\n", log_config);
-                    exit(1);
+                    exit(EXIT_FAILURE);
                 }
             }
 
             if ((debug_log.output = fopen(debug_log.output_file, "w")) == NULL) {
                 fprintf(stderr, "can not open %s for RUBY_DEBUG_LOG\n", log_config);
-                exit(1);
+                exit(EXIT_FAILURE);
             }
             setvbuf(debug_log.output, NULL, _IONBF, 0);
         }
@@ -712,4 +709,22 @@ ruby_debug_log_dump(const char *fname, unsigned int n)
         fclose(fp);
     }
 }
+
+#else
+
+#undef ruby_debug_log
+void
+ruby_debug_log(const char *file, int line, const char *func_name, const char *fmt, ...)
+{
+    va_list args;
+
+    fprintf(stderr, "[%s:%d] %s: ", file, line, func_name);
+
+    va_start(args, fmt);
+    vfprintf(stderr, fmt, args);
+    va_end(args);
+
+    fprintf(stderr, "\n");
+}
+
 #endif // #if USE_RUBY_DEBUG_LOG

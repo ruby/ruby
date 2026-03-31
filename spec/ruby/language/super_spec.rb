@@ -461,4 +461,18 @@ describe "The super keyword" do
       @all.foo('a', b: 'b').should == [['a'], {b: 'b'}]
     end
   end
+
+  it "works in method definitions using **nil" do
+    parent = Class.new do
+      def m(*args, **kwargs)
+        [args, kwargs]
+      end
+    end
+    child = Class.new(parent) do
+      def m(*args, **nil)
+        super
+      end
+    end
+    child.new.m(1, 2).should == [[1, 2], {}]
+  end
 end

@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 require_relative '../../../spec_helper'
 require_relative '../fixtures/classes'
 require_relative 'shared/basic'
@@ -15,20 +15,10 @@ describe "String#unpack with directive 'w'" do
     ].should be_computed_by(:unpack, "w")
   end
 
-  ruby_version_is ""..."3.3" do
-    it "ignores NULL bytes between directives" do
-      suppress_warning do
-        "\x01\x02\x03".unpack("w\x00w").should == [1, 2]
-      end
-    end
-  end
-
-  ruby_version_is "3.3" do
-    it "raise ArgumentError for NULL bytes between directives" do
-      -> {
-        "\x01\x02\x03".unpack("w\x00w")
-      }.should raise_error(ArgumentError, /unknown unpack directive/)
-    end
+  it "raise ArgumentError for NULL bytes between directives" do
+    -> {
+      "\x01\x02\x03".unpack("w\x00w")
+    }.should raise_error(ArgumentError, /unknown unpack directive/)
   end
 
   it "ignores spaces between directives" do

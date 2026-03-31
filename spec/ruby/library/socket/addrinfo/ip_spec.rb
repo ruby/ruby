@@ -22,15 +22,13 @@ describe "Addrinfo#ip?" do
     end
   end
 
-  with_feature :unix_socket do
-    describe "for a unix socket" do
-      before :each do
-        @addrinfo = Addrinfo.unix("/tmp/sock")
-      end
+  describe "for a unix socket" do
+    before :each do
+      @addrinfo = Addrinfo.unix("/tmp/sock")
+    end
 
-      it "returns false" do
-        @addrinfo.ip?.should be_false
-      end
+    it "returns false" do
+      @addrinfo.ip?.should be_false
     end
   end
 end

@@ -254,7 +254,7 @@ describe "Module#define_method" do
 
     -> {
       Class.new { define_method(obj, -> {}) }
-    }.should raise_error(TypeError, /can't convert Object to String/)
+    }.should raise_consistent_error(TypeError, /can't convert Object into String/)
   end
 
   it "raises a TypeError when the given method is no Method/Proc" do

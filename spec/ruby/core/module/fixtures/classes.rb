@@ -1,6 +1,6 @@
 module ModuleSpecs
   def self.without_test_modules(modules)
-    ignore = %w[MSpecRSpecAdapter PP::ObjectMixin ModuleSpecs::IncludedInObject MainSpecs::Module ConstantSpecs::ModuleA]
+    ignore = %w[MSpecRSpecAdapter PP::ObjectMixin MainSpecs::Module ConstantSpecs::ModuleA]
     modules.reject { |k| ignore.include?(k.name) }
   end
 

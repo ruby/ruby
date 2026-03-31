@@ -52,6 +52,8 @@ rb_call_inits(void)
     CALL(Time);
     CALL(Random);
     CALL(load);
+    CALL(Ruby_module);
+    CALL(Box);
     CALL(Proc);
     CALL(Binding);
     CALL(Math);
@@ -63,18 +65,21 @@ rb_call_inits(void)
     CALL(ISeq);
     CALL(Thread);
     CALL(signal);
+    CALL(Cont);
     CALL(Fiber_Scheduler);
     CALL(process);
-    CALL(Cont);
     CALL(Rational);
     CALL(Complex);
     CALL(MemoryView);
+    CALL(pathname);
     CALL(version);
     CALL(vm_trace);
     CALL(vm_stack_canary);
     CALL(ast);
     CALL(shape);
     CALL(Prism);
+    CALL(unicode_version);
+    CALL(Set);
 
     // enable builtin loading
     CALL(builtin);
@@ -84,9 +89,10 @@ void
 rb_call_builtin_inits(void)
 {
 #define BUILTIN(n) CALL(builtin_##n)
-    BUILTIN(kernel);
+    BUILTIN(jit_hook);
     BUILTIN(yjit);
-    // BUILTIN(yjit_hook) is called after rb_yjit_init()
+    BUILTIN(zjit);
+    BUILTIN(kernel);
     BUILTIN(gc);
     BUILTIN(ractor);
     BUILTIN(numeric);
@@ -95,6 +101,7 @@ rb_call_builtin_inits(void)
     BUILTIN(ast);
     BUILTIN(trace_point);
     BUILTIN(pack);
+    BUILTIN(pathname_builtin);
     BUILTIN(warning);
     BUILTIN(array);
     BUILTIN(hash);
@@ -103,6 +110,7 @@ rb_call_builtin_inits(void)
     BUILTIN(thread_sync);
     BUILTIN(nilclass);
     BUILTIN(marshal);
+    BUILTIN(jit_undef);
     Init_builtin_prelude();
 }
 #undef CALL

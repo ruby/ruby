@@ -20,17 +20,17 @@ class URI::TestParser < Test::Unit::TestCase
     u2 = p.parse(url)
     u3 = p.parse(url)
 
-    assert(u0 == u1)
-    assert(u0.eql?(u1))
-    assert(!u0.equal?(u1))
+    assert_equal(u1, u0)
+    assert_send([u0, :eql?, u1])
+    refute_same(u1, u0)
 
-    assert(u1 == u2)
-    assert(!u1.eql?(u2))
-    assert(!u1.equal?(u2))
+    assert_equal(u2, u1)
+    assert_not_send([u1, :eql?, u2])
+    refute_same(u1, u2)
 
-    assert(u2 == u3)
-    assert(u2.eql?(u3))
-    assert(!u2.equal?(u3))
+    assert_equal(u3, u2)
+    assert_send([u2, :eql?, u3])
+    refute_same(u3, u2)
   end
 
   def test_parse_rfc2396_parser
@@ -112,5 +112,13 @@ class URI::TestParser < Test::Unit::TestCase
         uri.port = port
       end
     end
+  end
+
+  def test_rfc2822_make_regexp
+    parser = URI::RFC2396_Parser.new
+    regexp = parser.make_regexp("HTTP")
+    assert_match(regexp, "HTTP://EXAMPLE.COM/")
+    assert_match(regexp, "http://example.com/")
+    refute_match(regexp, "https://example.com/")
   end
 end

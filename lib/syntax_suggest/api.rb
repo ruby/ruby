@@ -146,11 +146,7 @@ module SyntaxSuggest
   def self.valid_without?(without_lines:, code_lines:)
     lines = code_lines - Array(without_lines).flatten
 
-    if lines.empty?
-      true
-    else
-      valid?(lines)
-    end
+    lines.empty? || valid?(lines)
   end
 
   # SyntaxSuggest.invalid? [Private]

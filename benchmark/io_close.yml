@@ -1,0 +1,13 @@
+prelude: |
+  ios = 1000.times.map do
+    100.times.map{IO.pipe}
+  end
+benchmark:
+  # Close IO
+  io_close: |
+    # Process each batch of ios per iteration of the benchmark.
+    ios.pop.each do |r, w|
+      r.close
+      w.close
+    end
+loop_count: 100

@@ -30,13 +30,13 @@
 #include <stdint.h>             /* for uintptr_t */
 #include "internal/compilers.h" /* for MSC_VERSION_SINCE */
 
-#if MSC_VERSION_SINCE(1310)
+#ifdef _MSC_VER
 # include <stdlib.h>            /* for _byteswap_uint64 */
 #endif
 
 #if defined(HAVE_X86INTRIN_H)
 # include <x86intrin.h>         /* for _lzcnt_u64 */
-#elif MSC_VERSION_SINCE(1310)
+#elif defined(_MSC_VER)
 # include <intrin.h>            /* for the following intrinsics */
 #endif
 
@@ -50,16 +50,13 @@
 # pragma intrinsic(__lzcnt64)
 #endif
 
-#if MSC_VERSION_SINCE(1310)
+#if defined(_MSC_VER)
 # pragma intrinsic(_rotl)
 # pragma intrinsic(_rotr)
 # ifdef _WIN64
 #  pragma intrinsic(_rotl64)
 #  pragma intrinsic(_rotr64)
 # endif
-#endif
-
-#if MSC_VERSION_SINCE(1400)
 # pragma intrinsic(_BitScanForward)
 # pragma intrinsic(_BitScanReverse)
 # ifdef _WIN64
@@ -266,7 +263,7 @@ ruby_swap16(uint16_t x)
 #if __has_builtin(__builtin_bswap16)
     return __builtin_bswap16(x);
 
-#elif MSC_VERSION_SINCE(1310)
+#elif defined(_MSC_VER)
     return _byteswap_ushort(x);
 
 #else
@@ -281,7 +278,7 @@ ruby_swap32(uint32_t x)
 #if __has_builtin(__builtin_bswap32)
     return __builtin_bswap32(x);
 
-#elif MSC_VERSION_SINCE(1310)
+#elif defined(_MSC_VER)
     return _byteswap_ulong(x);
 
 #else
@@ -298,7 +295,7 @@ ruby_swap64(uint64_t x)
 #if __has_builtin(__builtin_bswap64)
     return __builtin_bswap64(x);
 
-#elif MSC_VERSION_SINCE(1310)
+#elif defined(_MSC_VER)
     return _byteswap_uint64(x);
 
 #else
@@ -323,7 +320,7 @@ nlz_int32(uint32_t x)
 #elif defined(__x86_64__) && defined(__LZCNT__)
     return (unsigned int)_lzcnt_u32(x);
 
-#elif MSC_VERSION_SINCE(1400) /* &&! defined(__AVX2__) */
+#elif defined(_MSC_VER) /* &&! defined(__AVX2__) */
     unsigned long r;
     return _BitScanReverse(&r, x) ? (31 - (int)r) : 32;
 
@@ -352,7 +349,7 @@ nlz_int64(uint64_t x)
 #elif defined(__x86_64__) && defined(__LZCNT__)
     return (unsigned int)_lzcnt_u64(x);
 
-#elif defined(_WIN64) && MSC_VERSION_SINCE(1400) /* &&! defined(__AVX2__) */
+#elif defined(_WIN64) && defined(_MSC_VER) /* &&! defined(__AVX2__) */
     unsigned long r;
     return _BitScanReverse64(&r, x) ? (63u - (unsigned int)r) : 64;
 
@@ -538,7 +535,7 @@ ntz_int32(uint32_t x)
 #if defined(__x86_64__) && defined(__BMI__)
     return (unsigned)_tzcnt_u32(x);
 
-#elif MSC_VERSION_SINCE(1400)
+#elif defined(_MSC_VER)
     /* :FIXME: Is there any way to issue TZCNT instead of BSF, apart from using
      *         assembly?  Because issuing LZCNT seems possible (see nlz.h). */
     unsigned long r;
@@ -560,7 +557,7 @@ ntz_int64(uint64_t x)
 #if defined(__x86_64__) && defined(__BMI__)
     return (unsigned)_tzcnt_u64(x);
 
-#elif defined(_WIN64) && MSC_VERSION_SINCE(1400)
+#elif defined(_WIN64) && defined(_MSC_VER)
     unsigned long r;
     return _BitScanForward64(&r, x) ? (int)r : 64;
 
@@ -608,10 +605,10 @@ RUBY_BIT_ROTL(VALUE v, int n)
 #elif __has_builtin(__builtin_rotateleft64) && (SIZEOF_VALUE * CHAR_BIT == 64)
     return __builtin_rotateleft64(v, n);
 
-#elif MSC_VERSION_SINCE(1310) && (SIZEOF_VALUE * CHAR_BIT == 32)
+#elif defined(_MSC_VER) && (SIZEOF_VALUE * CHAR_BIT == 32)
     return _rotl(v, n);
 
-#elif MSC_VERSION_SINCE(1310) && (SIZEOF_VALUE * CHAR_BIT == 64)
+#elif defined(_MSC_VER) && (SIZEOF_VALUE * CHAR_BIT == 64)
     return _rotl64(v, n);
 
 #elif defined(_lrotl) && (SIZEOF_VALUE == SIZEOF_LONG)
@@ -632,10 +629,10 @@ RUBY_BIT_ROTR(VALUE v, int n)
 #elif __has_builtin(__builtin_rotateright64) && (SIZEOF_VALUE * CHAR_BIT == 64)
     return __builtin_rotateright64(v, n);
 
-#elif MSC_VERSION_SINCE(1310) && (SIZEOF_VALUE * CHAR_BIT == 32)
+#elif defined(_MSC_VER) && (SIZEOF_VALUE * CHAR_BIT == 32)
     return _rotr(v, n);
 
-#elif MSC_VERSION_SINCE(1310) && (SIZEOF_VALUE * CHAR_BIT == 64)
+#elif defined(_MSC_VER) && (SIZEOF_VALUE * CHAR_BIT == 64)
     return _rotr64(v, n);
 
 #elif defined(_lrotr) && (SIZEOF_VALUE == SIZEOF_LONG)

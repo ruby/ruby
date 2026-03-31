@@ -79,7 +79,6 @@ STATIC_ASSERT(sizeof_bdigit_and_dbl, SIZEOF_BDIGIT*2 <= SIZEOF_BDIGIT_DBL);
 STATIC_ASSERT(bdigit_signedness, 0 < (BDIGIT)-1);
 STATIC_ASSERT(bdigit_dbl_signedness, 0 < (BDIGIT_DBL)-1);
 STATIC_ASSERT(bdigit_dbl_signed_signedness, 0 > (BDIGIT_DBL_SIGNED)-1);
-STATIC_ASSERT(rbignum_embed_len_max, BIGNUM_EMBED_LEN_MAX <= (BIGNUM_EMBED_LEN_MASK >> BIGNUM_EMBED_LEN_SHIFT));
 
 #if SIZEOF_BDIGIT < SIZEOF_LONG
 STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_LONG % SIZEOF_BDIGIT == 0);
@@ -2944,11 +2943,6 @@ bary_divmod(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT *xds, s
     }
 }
 
-
-#ifndef BIGNUM_DEBUG
-# define BIGNUM_DEBUG (0+RUBY_DEBUG)
-#endif
-
 static int
 bigzero_p(VALUE x)
 {
@@ -2965,7 +2959,7 @@ int
 rb_cmpint(VALUE val, VALUE a, VALUE b)
 {
     if (NIL_P(val)) {
-        rb_cmperr(a, b);
+        rb_cmperr_reason(a, b, "comparator returned nil");
     }
     if (FIXNUM_P(val)) {
         long l = FIX2LONG(val);
@@ -2990,36 +2984,68 @@ rb_cmpint(VALUE val, VALUE a, VALUE b)
             ((l) << BIGNUM_EMBED_LEN_SHIFT)) : \
      (void)(RBIGNUM(b)->as.heap.len = (l)))
 
+static size_t
+big_embed_capa(VALUE big)
+{
+    size_t size = rb_gc_obj_slot_size(big) - offsetof(struct RBignum, as.ary);
+    RUBY_ASSERT(size % sizeof(BDIGIT) == 0);
+    size_t capa = size / sizeof(BDIGIT);
+    RUBY_ASSERT(capa <= BIGNUM_EMBED_LEN_MAX);
+    return capa;
+}
+
+static size_t
+big_embed_size(size_t capa)
+{
+    size_t size = offsetof(struct RBignum, as.ary) + (sizeof(BDIGIT) * capa);
+    if (size < sizeof(struct RBignum)) {
+        size = sizeof(struct RBignum);
+    }
+    return size;
+}
+
+static bool
+big_embeddable_p(size_t capa)
+{
+    if (capa > BIGNUM_EMBED_LEN_MAX) {
+        return false;
+    }
+    return rb_gc_size_allocatable_p(big_embed_size(capa));
+}
+
 static void
 rb_big_realloc(VALUE big, size_t len)
 {
     BDIGIT *ds;
+    size_t embed_capa = big_embed_capa(big);
+
     if (BIGNUM_EMBED_P(big)) {
-        if (BIGNUM_EMBED_LEN_MAX < len) {
+        if (embed_capa < len) {
             ds = ALLOC_N(BDIGIT, len);
-            MEMCPY(ds, RBIGNUM(big)->as.ary, BDIGIT, BIGNUM_EMBED_LEN_MAX);
+            MEMCPY(ds, RBIGNUM(big)->as.ary, BDIGIT, embed_capa);
             RBIGNUM(big)->as.heap.len = BIGNUM_LEN(big);
             RBIGNUM(big)->as.heap.digits = ds;
             FL_UNSET_RAW(big, BIGNUM_EMBED_FLAG);
         }
     }
     else {
-        if (len <= BIGNUM_EMBED_LEN_MAX) {
+        if (len <= embed_capa) {
             ds = RBIGNUM(big)->as.heap.digits;
+            size_t old_len = RBIGNUM(big)->as.heap.len;
             FL_SET_RAW(big, BIGNUM_EMBED_FLAG);
             BIGNUM_SET_LEN(big, len);
-            (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)RBIGNUM(big)->as.ary, sizeof(RBIGNUM(big)->as.ary));
+            (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)RBIGNUM(big)->as.ary, embed_capa * sizeof(BDIGIT));
             if (ds) {
                 MEMCPY(RBIGNUM(big)->as.ary, ds, BDIGIT, len);
-                xfree(ds);
+                SIZED_FREE_N(ds, old_len);
             }
         }
         else {
             if (BIGNUM_LEN(big) == 0) {
                 RBIGNUM(big)->as.heap.digits = ALLOC_N(BDIGIT, len);
             }
-            else {
-                REALLOC_N(RBIGNUM(big)->as.heap.digits, BDIGIT, len);
+            else if (BIGNUM_LEN(big) != len) {
+                SIZED_REALLOC_N(RBIGNUM(big)->as.heap.digits, BDIGIT, len, BIGNUM_LEN(big));
             }
         }
     }
@@ -3035,16 +3061,24 @@ rb_big_resize(VALUE big, size_t len)
 static VALUE
 bignew_1(VALUE klass, size_t len, int sign)
 {
-    NEWOBJ_OF(big, struct RBignum, klass,
-            T_BIGNUM | (RGENGC_WB_PROTECTED_BIGNUM ? FL_WB_PROTECTED : 0), sizeof(struct RBignum), 0);
-    VALUE bigv = (VALUE)big;
-    BIGNUM_SET_SIGN(bigv, sign);
-    if (len <= BIGNUM_EMBED_LEN_MAX) {
-        FL_SET_RAW(bigv, BIGNUM_EMBED_FLAG);
+    VALUE bigv;
+
+    if (big_embeddable_p(len)) {
+        size_t size = big_embed_size(len);
+        RUBY_ASSERT(rb_gc_size_allocatable_p(size));
+        NEWOBJ_OF(big, struct RBignum, klass,
+                T_BIGNUM | BIGNUM_EMBED_FLAG | (RGENGC_WB_PROTECTED_BIGNUM ? FL_WB_PROTECTED : 0),
+                size, 0);
+        bigv = (VALUE)big;
+        BIGNUM_SET_SIGN(bigv, sign);
         BIGNUM_SET_LEN(bigv, len);
-        (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)big->as.ary, sizeof(big->as.ary));
+        (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)big->as.ary, len * sizeof(BDIGIT));
     }
     else {
+        NEWOBJ_OF(big, struct RBignum, klass,
+                T_BIGNUM | (RGENGC_WB_PROTECTED_BIGNUM ? FL_WB_PROTECTED : 0), sizeof(struct RBignum), 0);
+        bigv = (VALUE)big;
+        BIGNUM_SET_SIGN(bigv, sign);
         big->as.heap.digits = ALLOC_N(BDIGIT, len);
         big->as.heap.len = len;
     }
@@ -3055,7 +3089,9 @@ bignew_1(VALUE klass, size_t len, int sign)
 VALUE
 rb_big_new(size_t len, int sign)
 {
-    return bignew(len, sign != 0);
+    VALUE obj = bignew(len, sign != 0);
+    memset(BIGNUM_DIGITS(obj), 0, len * sizeof(BDIGIT));
+    return obj;
 }
 
 VALUE
@@ -4475,7 +4511,7 @@ rb_str2big_gmp(VALUE arg, int base, int badcheck)
 
 #if HAVE_LONG_LONG
 
-static VALUE
+VALUE
 rb_ull2big(unsigned LONG_LONG n)
 {
     long i;
@@ -4497,7 +4533,7 @@ rb_ull2big(unsigned LONG_LONG n)
     return big;
 }
 
-static VALUE
+VALUE
 rb_ll2big(LONG_LONG n)
 {
     long neg = 0;
@@ -4535,7 +4571,7 @@ rb_ll2inum(LONG_LONG n)
 #endif  /* HAVE_LONG_LONG */
 
 #ifdef HAVE_INT128_T
-static VALUE
+VALUE
 rb_uint128t2big(uint128_t n)
 {
     long i;
@@ -6346,7 +6382,7 @@ bigand_int(VALUE x, long xn, BDIGIT hibitsx, long y)
     BDIGIT hibitsy;
 
     if (y == 0) return INT2FIX(0);
-    if (xn == 0) return hibitsx ? LONG2NUM(y) : 0;
+    if (xn == 0) return hibitsx ? LONG2NUM(y) : INT2FIX(0);
     hibitsy = 0 <= y ? 0 : BDIGMAX;
     xds = BDIGITS(x);
 #if SIZEOF_BDIGIT >= SIZEOF_LONG
@@ -6758,6 +6794,73 @@ rb_big_aref(VALUE x, VALUE y)
 }
 
 VALUE
+rb_big_aref2(VALUE x, VALUE beg, VALUE len)
+{
+    BDIGIT *xds, *vds;
+    VALUE v;
+    size_t copy_begin, xn, shift;
+    ssize_t begin, length, end;
+    bool negative_add_one;
+
+    beg = rb_to_int(beg);
+    len = rb_to_int(len);
+    length = NUM2SSIZET(len);
+    begin = NUM2SSIZET(beg);
+    end = NUM2SSIZET(rb_int_plus(beg, len));
+    shift = begin < 0 ? -begin : 0;
+    xn = BIGNUM_LEN(x);
+    xds = BDIGITS(x);
+
+    if (length < 0) return rb_big_rshift(x, beg);
+    if (length == 0 || end <= 0) return INT2FIX(0);
+    if (begin < 0) begin = 0;
+
+    if ((size_t)(end - 1) / BITSPERDIG >= xn) {
+        /* end > xn * BITSPERDIG */
+        end = xn * BITSPERDIG;
+    }
+
+    if ((size_t)begin / BITSPERDIG < xn) {
+        /* begin < xn * BITSPERDIG */
+        size_t shift_bits, copy_end;
+        copy_begin = begin / BITSPERDIG;
+        shift_bits = begin % BITSPERDIG;
+        copy_end = (end - 1) / BITSPERDIG + 1;
+        v = bignew(copy_end - copy_begin, 1);
+        vds = BDIGITS(v);
+        MEMCPY(vds, xds + copy_begin, BDIGIT, copy_end - copy_begin);
+        negative_add_one = (vds[0] & ((1 << shift_bits) - 1)) == 0;
+        v = bignorm(v);
+        if (shift_bits) v = rb_int_rshift(v, SIZET2NUM(shift_bits));
+    }
+    else {
+        /* Out of range */
+        v = INT2FIX(0);
+        negative_add_one = false;
+        copy_begin = begin = end = 0;
+    }
+
+    if (BIGNUM_NEGATIVE_P(x)) {
+        size_t mask_size = length - shift;
+        VALUE mask = rb_int_minus(rb_int_lshift(INT2FIX(1), SIZET2NUM(mask_size)), INT2FIX(1));
+        v = rb_int_xor(v, mask);
+        for (size_t i = 0; negative_add_one && i < copy_begin; i++) {
+            if (xds[i]) negative_add_one = false;
+        }
+        if (negative_add_one) v = rb_int_plus(v, INT2FIX(1));
+        v = rb_int_and(v, mask);
+    }
+    else {
+        size_t mask_size = (size_t)end - begin;
+        VALUE mask = rb_int_minus(rb_int_lshift(INT2FIX(1), SIZET2NUM(mask_size)), INT2FIX(1));
+        v = rb_int_and(v, mask);
+    }
+    RB_GC_GUARD(x);
+    if (shift) v = rb_int_lshift(v, SSIZET2NUM(shift));
+    return v;
+}
+
+VALUE
 rb_big_hash(VALUE x)
 {
     st_index_t hash;
@@ -6963,7 +7066,7 @@ int_pow_tmp3(VALUE x, VALUE y, VALUE m, int nega_flg)
     zn = mn;
     z = bignew(zn, 1);
     bary_powm_gmp(BDIGITS(z), zn, BDIGITS(x), xn, BDIGITS(y), yn, BDIGITS(m), mn);
-    if (nega_flg & BIGNUM_POSITIVE_P(z)) {
+    if (nega_flg && BIGNUM_POSITIVE_P(z) && !BIGZEROP(z)) {
         z = rb_big_minus(z, m);
     }
     RB_GC_GUARD(x);
@@ -6991,7 +7094,7 @@ int_pow_tmp3(VALUE x, VALUE y, VALUE m, int nega_flg)
         x = rb_int_modulo(x, m);
     }
 
-    if (nega_flg && rb_int_positive_p(tmp)) {
+    if (nega_flg && rb_int_positive_p(tmp) && !rb_int_zero_p(tmp)) {
         tmp = rb_int_minus(tmp, m);
     }
     return tmp;
@@ -7101,6 +7204,11 @@ rb_int_powm(int const argc, VALUE * const argv, VALUE const num)
         }
         if (!RB_INTEGER_TYPE_P(m)) {
             rb_raise(rb_eTypeError, "Integer#pow() 2nd argument not allowed unless all arguments are integers");
+        }
+
+        if (rb_int_zero_p(a) && !rb_int_zero_p(b)) {
+            /* shortcut; 0**x => 0 except for x == 0 */
+            return INT2FIX(0);
         }
 
         if (rb_int_negative_p(m)) {

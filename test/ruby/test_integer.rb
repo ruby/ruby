@@ -158,7 +158,9 @@ class TestInteger < Test::Unit::TestCase
     assert_raise(Encoding::CompatibilityError, bug6192) {Integer("0".encode("utf-32le"))}
     assert_raise(Encoding::CompatibilityError, bug6192) {Integer("0".encode("iso-2022-jp"))}
 
-    assert_raise_with_message(ArgumentError, /\u{1f4a1}/) {Integer("\u{1f4a1}")}
+    EnvUtil.with_default_internal(Encoding::UTF_8) do
+      assert_raise_with_message(ArgumentError, /\u{1f4a1}/) {Integer("\u{1f4a1}")}
+    end
 
     obj = Struct.new(:s).new(%w[42 not-an-integer])
     def obj.to_str; s.shift; end
@@ -708,6 +710,10 @@ class TestInteger < Test::Unit::TestCase
     assert_equal(x, Integer.sqrt(x ** 2), "[ruby-core:95453]")
   end
 
+  def test_bug_21217
+    assert_equal(0x10000 * 2**10, Integer.sqrt(0x100000008 * 2**20))
+  end
+
   def test_fdiv
     assert_equal(1.0, 1.fdiv(1))
     assert_equal(0.5, 1.fdiv(2))
@@ -745,7 +751,7 @@ class TestInteger < Test::Unit::TestCase
 
     o = Object.new
     def o.to_int; Object.new; end
-    assert_raise_with_message(TypeError, /can't convert Object to Integer/) {Integer.try_convert(o)}
+    assert_raise_with_message(TypeError, /can't convert Object into Integer/) {Integer.try_convert(o)}
   end
 
   def test_ceildiv

@@ -151,8 +151,30 @@ describe "File.basename" do
       File.basename("c:\\bar.txt", ".*").should == "bar"
       File.basename("c:\\bar.txt.exe", ".*").should == "bar.txt"
     end
+
+    it "handles Shift JIS 0x5C (\\) as second byte of a multi-byte sequence" do
+      # dir\fileソname.txt
+      path = "dir\\file\x83\x5cname.txt".b.force_encoding(Encoding::SHIFT_JIS)
+      path.valid_encoding?.should be_true
+      File.basename(path).should == "file\x83\x5cname.txt".b.force_encoding(Encoding::SHIFT_JIS)
+    end
   end
 
+  it "rejects strings encoded with non ASCII-compatible encodings" do
+    Encoding.list.reject(&:ascii_compatible?).reject(&:dummy?).each do |enc|
+      path = "/foo/bar".encode(enc)
+
+      -> {
+        File.basename(path)
+      }.should raise_error(Encoding::CompatibilityError)
+    end
+  end
+
+  it "works with all ASCII-compatible encodings" do
+    Encoding.list.select(&:ascii_compatible?).each do |enc|
+      File.basename("/foo/bar".encode(enc)).should == "bar".encode(enc)
+    end
+  end
 
   it "returns the extension for a multibyte filename" do
     File.basename('/path/Офис.m4a').should == "Офис.m4a"

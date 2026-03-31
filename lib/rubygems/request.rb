@@ -2,6 +2,7 @@
 
 require_relative "vendored_net_http"
 require_relative "user_interaction"
+require_relative "uri_formatter"
 
 class Gem::Request
   extend Gem::UserInteraction

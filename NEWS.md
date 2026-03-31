@@ -1,78 +1,119 @@
-# NEWS for Ruby 3.5.0
+# NEWS for Ruby 4.1.0
 
 This document is a list of user-visible feature changes
-since the **3.4.0** release, except for bug fixes.
+since the **4.0.0** release, except for bug fixes.
 
 Note that each entry is kept to a minimum, see links for details.
 
 ## Language changes
 
-* `*nil` no longer calls `nil.to_a`, similar to how `**nil` does
-  not call `nil.to_hash`.  [[Feature #21047]]
-
 ## Core classes updates
 
 Note: We're only listing outstanding class updates.
 
-* Binding
+* Array
 
-    * `Binding#local_variables` does no longer include numbered parameters.
-      Also, `Binding#local_variable_get` and `Binding#local_variable_set` reject to handle numbered parameters.
-      [[Bug #21049]]
+    * `Array#pack` accepts a new format `R` and `r` for unpacking unsigned
+      and signed LEB128 encoded integers. [[Feature #21785]]
 
-* String
+* ENV
 
-    * Update Unicode to Version 15.1.0 and Emoji Version 15.1. [[Feature #19908]]
-        (also applies to Regexp)
+    * `ENV.fetch_values` is added. It returns an array of values for the
+      given names, raising `KeyError` for missing names unless a block is
+      given. [[Feature #21781]]
+
+* Kernel
+
+    * `Kernel#autoload_relative` and `Module#autoload_relative` are added.
+      These methods work like `autoload`, but resolve the file path relative
+      to the file where the method is called, similar to `require_relative`.
+      This makes it easier to autoload constants from files in the same
+      directory without hardcoding absolute paths or manipulating `$LOAD_PATH`.
+      [[Feature #15330]]
+
+* MatchData
+
+    * `MatchData#integer_at` is added.  It converts the matched substring to
+      integer and return the result.  [[Feature #21932]]
+
+* Regexp
+
+    * All instances of `Regexp` are now frozen, not just literals.
+      Subclasses of `Regexp` are not frozen for compatibility.
+      [[Feature #8948]]
+
+* Set
+
+    * A deprecated behavior, `Set#to_set`, `Range#to_set`, and
+      `Enumerable#to_set` accepting arguments, was removed.  [[Feature #21390]]
 
 ## Stdlib updates
 
-The following bundled gems are promoted from default gems.
+### The following bundled gems are added.
 
-* ostruct 0.6.1
-* pstore 0.2.0
-* benchmark 0.4.0
-* logger 1.6.6
-* rdoc 6.12.0
-* win32ole 1.9.1
-* irb 1.15.1
-* reline 0.6.0
-* readline 0.0.4
-* fiddle 1.1.6
 
 We only list stdlib changes that are notable feature changes.
 
-Other changes are listed in the following sections. we also listed release history from the previous bundled version that is Ruby 3.3.0 if it has GitHub releases.
+Other changes are listed in the following sections. We also listed release
+history from the previous bundled version that is Ruby 3.4.0 if it has GitHub
+releases.
 
-The following default gem is added.
+### The following bundled gems are promoted from default gems.
 
-* win32-registry 0.1.0
+* tsort 0.2.0
+* win32-registry 0.1.2
 
-The following default gems are updated.
+### The following default gem is added.
 
-* RubyGems 3.7.0.dev
-* bundler 2.7.0.dev
-* cgi 0.4.2
-* json 2.10.2
-* optparse 0.7.0.dev.2
-* prism 1.4.0
-* psych 5.2.3
-* stringio 3.1.6.dev
-* uri 1.0.3
+### The following default gems are updated.
 
-The following bundled gems are added.
+* RubyGems 4.1.0.dev
+* bundler 4.1.0.dev
+* json 2.19.3
+  * 2.18.0 to [v2.18.1][json-v2.18.1], [v2.19.0][json-v2.19.0], [v2.19.1][json-v2.19.1], [v2.19.2][json-v2.19.2]
+* openssl 4.0.1
+  * 4.0.0 to [v4.0.1][openssl-v4.0.1]
+* prism 1.9.0
+  * 1.8.0 to [v1.8.1][prism-v1.8.1], [v1.9.0][prism-v1.9.0]
+* resolv 0.7.1
+  * 0.7.0 to [v0.7.1][resolv-v0.7.1]
+* stringio 3.2.1.dev
+* strscan 3.1.7.dev
+  * 3.1.6 to [v3.1.7][strscan-v3.1.7]
+* syntax_suggest 2.0.3
+* timeout 0.6.1
+  * 0.6.0 to [v0.6.1][timeout-v0.6.1]
+* zlib 3.2.3
+  * 3.2.2 to [v3.2.3][zlib-v3.2.3]
 
+### The following bundled gems are updated.
 
-The following bundled gems are updated.
+* minitest 6.0.2
+* test-unit 3.7.7
+  * 3.7.5 to [3.7.6][test-unit-3.7.6], [3.7.7][test-unit-3.7.7]
+* net-imap 0.6.3
+  * 0.6.2 to [v0.6.3][net-imap-v0.6.3]
+* rbs 4.0.0
+  * 3.10.0 to [v3.10.1][rbs-v3.10.1], [v3.10.2][rbs-v3.10.2], [v3.10.3][rbs-v3.10.3], [v4.0.0.dev.5][rbs-v4.0.0.dev.5], [v4.0.0][rbs-v4.0.0]
+* mutex_m 0.3.0
+* resolv-replace 0.2.0
+  * 0.1.1 to [v0.2.0][resolv-replace-v0.2.0]
+* syslog 0.4.0
+  * 0.3.0 to [v0.4.0][syslog-v0.4.0]
+* repl_type_completor 0.1.14
+  * 0.1.12 to [v0.1.13][repl_type_completor-v0.1.13], [v0.1.14][repl_type_completor-v0.1.14]
+* pstore 0.2.1
+  * 0.2.0 to [v0.2.1][pstore-v0.2.1]
+* rdoc 7.2.0
+  * 7.0.3 to [v7.1.0][rdoc-v7.1.0], [v7.2.0][rdoc-v7.2.0]
+* win32ole 1.9.3
+  * 1.9.2 to [v1.9.3][win32ole-v1.9.3]
+* irb 1.17.0
+  * 1.16.0 to [v1.17.0][irb-v1.17.0]
 
-* minitest 5.25.5
-* rexml 3.4.1
-* net-imap 0.5.6
-* net-smtp 0.5.1
-* rbs 3.8.1
-* bigdecimal 3.1.9
-* syslog 0.3.0
-* repl_type_completor 0.1.10
+### RubyGems and Bundler
+
+Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for details.
 
 ## Supported platforms
 
@@ -82,10 +123,62 @@ The following bundled gems are updated.
 
 ## C API updates
 
+### Embedded TypedData
+
+* The `RUBY_TYPED_EMBEDDABLE` flag is now public and documented and can be used by C extensions.
+  It allows allocating C structs directly into Ruby object slots, which reduces pointer chasing,
+  and in some case memory usage.
+  See the C extension documentation for details. [[Feature #21853]]
+
+
 ## Implementation improvements
+
+### Ractor
+
+A lot of work has gone into making Ractors more stable, performant, and usable. These improvements bring Ractor implementation closer to leaving experimental status.
 
 ## JIT
 
-[Feature #19908]: https://bugs.ruby-lang.org/issues/19908
-[Feature #21047]: https://bugs.ruby-lang.org/issues/21047
-[Bug #21049]:     https://bugs.ruby-lang.org/issues/21049
+[Feature #8948]: https://bugs.ruby-lang.org/issues/8948
+[Feature #15330]: https://bugs.ruby-lang.org/issues/15330
+[Feature #21390]: https://bugs.ruby-lang.org/issues/21390
+[Feature #21785]: https://bugs.ruby-lang.org/issues/21785
+[Feature #21853]: https://bugs.ruby-lang.org/issues/21853
+[Feature #21932]: https://bugs.ruby-lang.org/issues/21932
+[test-unit-3.7.4]: https://github.com/test-unit/test-unit/releases/tag/3.7.4
+[test-unit-3.7.5]: https://github.com/test-unit/test-unit/releases/tag/3.7.5
+[rss-0.3.2]: https://github.com/ruby/rss/releases/tag/0.3.2
+[net-imap-v0.6.2]: https://github.com/ruby/net-imap/releases/tag/v0.6.2
+[debug-v1.11.1]: https://github.com/ruby/debug/releases/tag/v1.11.1
+[rdoc-v7.0.0]: https://github.com/ruby/rdoc/releases/tag/v7.0.0
+[rdoc-v7.0.1]: https://github.com/ruby/rdoc/releases/tag/v7.0.1
+[rdoc-v7.0.2]: https://github.com/ruby/rdoc/releases/tag/v7.0.2
+[rdoc-v7.0.3]: https://github.com/ruby/rdoc/releases/tag/v7.0.3
+[json-v2.18.1]: https://github.com/ruby/json/releases/tag/v2.18.1
+[json-v2.19.0]: https://github.com/ruby/json/releases/tag/v2.19.0
+[json-v2.19.1]: https://github.com/ruby/json/releases/tag/v2.19.1
+[json-v2.19.2]: https://github.com/ruby/json/releases/tag/v2.19.2
+[openssl-v4.0.1]: https://github.com/ruby/openssl/releases/tag/v4.0.1
+[prism-v1.8.1]: https://github.com/ruby/prism/releases/tag/v1.8.1
+[prism-v1.9.0]: https://github.com/ruby/prism/releases/tag/v1.9.0
+[resolv-v0.7.1]: https://github.com/ruby/resolv/releases/tag/v0.7.1
+[strscan-v3.1.7]: https://github.com/ruby/strscan/releases/tag/v3.1.7
+[timeout-v0.6.1]: https://github.com/ruby/timeout/releases/tag/v0.6.1
+[zlib-v3.2.3]: https://github.com/ruby/zlib/releases/tag/v3.2.3
+[test-unit-3.7.6]: https://github.com/test-unit/test-unit/releases/tag/3.7.6
+[test-unit-3.7.7]: https://github.com/test-unit/test-unit/releases/tag/3.7.7
+[net-imap-v0.6.3]: https://github.com/ruby/net-imap/releases/tag/v0.6.3
+[rbs-v3.10.1]: https://github.com/ruby/rbs/releases/tag/v3.10.1
+[rbs-v3.10.2]: https://github.com/ruby/rbs/releases/tag/v3.10.2
+[rbs-v3.10.3]: https://github.com/ruby/rbs/releases/tag/v3.10.3
+[rbs-v4.0.0.dev.5]: https://github.com/ruby/rbs/releases/tag/v4.0.0.dev.5
+[rbs-v4.0.0]: https://github.com/ruby/rbs/releases/tag/v4.0.0
+[resolv-replace-v0.2.0]: https://github.com/ruby/resolv-replace/releases/tag/v0.2.0
+[syslog-v0.4.0]: https://github.com/ruby/syslog/releases/tag/v0.4.0
+[repl_type_completor-v0.1.13]: https://github.com/ruby/repl_type_completor/releases/tag/v0.1.13
+[repl_type_completor-v0.1.14]: https://github.com/ruby/repl_type_completor/releases/tag/v0.1.14
+[pstore-v0.2.1]: https://github.com/ruby/pstore/releases/tag/v0.2.1
+[rdoc-v7.1.0]: https://github.com/ruby/rdoc/releases/tag/v7.1.0
+[rdoc-v7.2.0]: https://github.com/ruby/rdoc/releases/tag/v7.2.0
+[win32ole-v1.9.3]: https://github.com/ruby/win32ole/releases/tag/v1.9.3
+[irb-v1.17.0]: https://github.com/ruby/irb/releases/tag/v1.17.0

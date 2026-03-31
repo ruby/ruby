@@ -11,17 +11,27 @@
  *             header (related to this file, but not the same role).
  */
 #include "ruby/ruby.h"          /* for ID */
+#include "vm_core.h"          /* for ID */
 
 #define id_signo ruby_static_id_signo
 #define id_status ruby_static_id_status
 
 /* eval.c */
+struct rb_refinements_data {
+    VALUE refinement;
+    VALUE refinements;
+};
+
 extern ID ruby_static_id_signo;
 extern ID ruby_static_id_status;
 VALUE rb_refinement_module_get_refined_class(VALUE module);
 void rb_class_modify_check(VALUE);
 NORETURN(VALUE rb_f_raise(int argc, VALUE *argv));
+VALUE rb_exception_setup(int argc, VALUE *argv);
+void rb_refinement_setup(struct rb_refinements_data *data, VALUE module, VALUE klass);
+void rb_vm_using_module(VALUE module);
 VALUE rb_top_main_class(const char *method);
+VALUE rb_ec_ensure(rb_execution_context_t *ec, VALUE (*b_proc)(VALUE), VALUE data1, VALUE (*e_proc)(VALUE), VALUE data2);
 
 /* eval_error.c */
 VALUE rb_get_backtrace(VALUE info);

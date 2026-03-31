@@ -1,0 +1,31 @@
+package main
+
+/*
+#include "<%= config[:underscored_name] %>.h"
+
+VALUE rb_<%= config[:underscored_name] %>_sum(VALUE self, VALUE a, VALUE b);
+*/
+import "C"
+
+import (
+	"github.com/ruby-go-gem/go-gem-wrapper/ruby"
+)
+
+//export rb_<%= config[:underscored_name] %>_sum
+func rb_<%= config[:underscored_name] %>_sum(_ C.VALUE, a C.VALUE, b C.VALUE) C.VALUE {
+	longA := ruby.NUM2LONG(ruby.VALUE(a))
+	longB := ruby.NUM2LONG(ruby.VALUE(b))
+
+	sum := longA + longB
+
+	return C.VALUE(ruby.LONG2NUM(sum))
+}
+
+//export Init_<%= config[:underscored_name] %>
+func Init_<%= config[:underscored_name] %>() {
+	rb_m<%= config[:constant_array].join %> := ruby.RbDefineModule(<%= config[:constant_name].inspect %>)
+	ruby.RbDefineSingletonMethod(rb_m<%= config[:constant_array].join %>, "sum", C.rb_<%= config[:underscored_name] %>_sum, 2)
+}
+
+func main() {
+}

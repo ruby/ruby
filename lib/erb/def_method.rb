@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-#--
+
 # ERB::DefMethod
 #
 # Utility module to define eRuby script as instance method.

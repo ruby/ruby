@@ -74,16 +74,19 @@ describe :process_fork, shared: true do
 
     it "marks threads from the parent as killed" do
       t = Thread.new { sleep }
-      pid = @object.fork {
-        touch(@file) do |f|
-          f.write Thread.current.alive?
-          f.write t.alive?
-        end
-        Process.exit!
-      }
-      Process.waitpid(pid)
-      t.kill
-      t.join
+      begin
+        pid = @object.fork {
+          touch(@file) do |f|
+            f.write Thread.current.alive?
+            f.write t.alive?
+          end
+          Process.exit!
+        }
+        Process.waitpid(pid)
+      ensure
+        t.kill
+        t.join
+      end
       File.read(@file).should == "truefalse"
     end
   end

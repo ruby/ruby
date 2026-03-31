@@ -8,19 +8,19 @@ class TestE < Test::Unit::TestCase
     assert_equal(1,1)
   end
 
-  def test_always_skip
-    skip "always"
+  def test_always_omit
+    omit "always"
   end
 
   def test_always_fail
     assert_equal(0,1)
   end
 
-  def test_skip_after_unknown_error
+  def test_pend_after_unknown_error
     begin
       raise UnknownError, "unknown error"
     rescue
-      skip "after raise"
+      pend "after raise"
     end
   end
 

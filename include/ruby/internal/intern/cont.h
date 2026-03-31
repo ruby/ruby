@@ -148,7 +148,8 @@ VALUE rb_fiber_resume(VALUE fiber, int argc, const VALUE *argv);
  * @param[in]   kw_splat        Handling of keyword parameters:
  *   - RB_NO_KEYWORDS           `argv`'s last is not a keyword argument.
  *   - RB_PASS_KEYWORDS         `argv`'s last is a keyword argument.
- *   - RB_PASS_CALLED_KEYWORDS  it depends if there is a passed block.
+ *   - RB_PASS_CALLED_KEYWORDS  Pass keyword arguments if the current method
+ *                              was called with keyword arguments.
  * @exception   rb_eFiberError  `fiber` is terminated etc.
  * @exception   rb_eException   Any exceptions happen in `fiber`.
  * @return      Either what was yielded or the last value of the fiber body.
@@ -192,7 +193,8 @@ VALUE rb_fiber_yield(int argc, const VALUE *argv);
  * @param[in]  kw_splat        Handling of keyword parameters:
  *   - RB_NO_KEYWORDS           `argv`'s last is not a keyword argument.
  *   - RB_PASS_KEYWORDS         `argv`'s last is a keyword argument.
- *   - RB_PASS_CALLED_KEYWORDS  it depends if there is a passed block.
+ *   - RB_PASS_CALLED_KEYWORDS  Pass keyword arguments if the current method
+ *                              was called with keyword arguments.
  * @exception  rb_eException   What was raised using `Fiber#raise`.
  * @return     (See rb_fiber_resume() for details)
  */
@@ -247,7 +249,8 @@ VALUE rb_fiber_transfer(VALUE fiber, int argc, const VALUE *argv);
  * @param[in]   kw_splat        Handling of keyword parameters:
  *   - RB_NO_KEYWORDS           `argv`'s last is not a keyword argument.
  *   - RB_PASS_KEYWORDS         `argv`'s last is a keyword argument.
- *   - RB_PASS_CALLED_KEYWORDS  it depends if there is a passed block.
+ *   - RB_PASS_CALLED_KEYWORDS  Pass keyword arguments if the current method
+ *                              was called with keyword arguments.
  * @exception   rb_eFiberError  (See above)
  * @exception   rb_eException   What was raised using `Fiber#raise`.
  * @return      (See rb_fiber_resume() for details)
@@ -275,7 +278,7 @@ VALUE rb_fiber_transfer_kw(VALUE fiber, int argc, const VALUE *argv, int kw_spla
  * @exception   rb_eFiberError  `fiber` is terminated etc.
  * @return      (See rb_fiber_resume() for details)
  */
-VALUE rb_fiber_raise(VALUE fiber, int argc, const VALUE *argv);
+VALUE rb_fiber_raise(VALUE fiber, int argc, VALUE *argv);
 
 RBIMPL_SYMBOL_EXPORT_END()
 

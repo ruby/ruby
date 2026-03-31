@@ -177,16 +177,16 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
     @ca  = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=CA")
     @svr = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=localhost")
     @cli = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=localhost")
-    ca_exts = [
+    @ca_exts = [
       ["basicConstraints","CA:TRUE",true],
       ["keyUsage","cRLSign,keyCertSign",true],
     ]
-    ee_exts = [
+    @ee_exts = [
       ["keyUsage","keyEncipherment,digitalSignature",true],
     ]
-    @ca_cert  = issue_cert(@ca, @ca_key, 1, ca_exts, nil, nil)
-    @svr_cert = issue_cert(@svr, @svr_key, 2, ee_exts, @ca_cert, @ca_key)
-    @cli_cert = issue_cert(@cli, @cli_key, 3, ee_exts, @ca_cert, @ca_key)
+    @ca_cert  = issue_cert(@ca, @ca_key, 1, @ca_exts, nil, nil)
+    @svr_cert = issue_cert(@svr, @svr_key, 2, @ee_exts, @ca_cert, @ca_key)
+    @cli_cert = issue_cert(@cli, @cli_key, 3, @ee_exts, @ca_cert, @ca_key)
     @server = nil
   end
 
@@ -293,6 +293,33 @@ class OpenSSL::PKeyTestCase < OpenSSL::TestCase
     assert_kind_of(OpenSSL::PKey::PKeyError, e)
   else
     assert_equal(false, ret)
+  end
+
+  def der_to_pem(der, pem_header)
+    # RFC 7468
+    <<~EOS
+    -----BEGIN #{pem_header}-----
+    #{[der].pack("m0").scan(/.{1,64}/).join("\n")}
+    -----END #{pem_header}-----
+    EOS
+  end
+
+  def der_to_encrypted_pem(der, pem_header, password)
+    # OpenSSL encryption, non-standard
+    iv = 16.times.to_a.pack("C*")
+    encrypted = OpenSSL::Cipher.new("aes-128-cbc").encrypt.then { |cipher|
+      cipher.key = OpenSSL::Digest.digest("MD5", password + iv[0, 8])
+      cipher.iv = iv
+      cipher.update(der) << cipher.final
+    }
+    <<~EOS
+    -----BEGIN #{pem_header}-----
+    Proc-Type: 4,ENCRYPTED
+    DEK-Info: AES-128-CBC,#{iv.unpack1("H*").upcase}
+
+    #{[encrypted].pack("m0").scan(/.{1,64}/).join("\n")}
+    -----END #{pem_header}-----
+    EOS
   end
 end
 

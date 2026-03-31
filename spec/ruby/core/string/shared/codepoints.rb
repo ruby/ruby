@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 describe :string_codepoints, shared: true do
   it "returns self" do
     s = "foo"
@@ -58,5 +58,10 @@ describe :string_codepoints, shared: true do
     s = "(){}".encode('ascii')
     s.ascii_only?.should be_true
     s.send(@method).to_a.should == s.bytes.to_a
+  end
+
+  it "returns individual bytes for dummy encodings UTF-16 and UTF-32" do
+    "abcd".dup.force_encoding(Encoding::UTF_16).send(@method).to_a.should == [97, 98, 99, 100]
+    "abcd".dup.force_encoding(Encoding::UTF_32).send(@method).to_a.should == [97, 98, 99, 100]
   end
 end

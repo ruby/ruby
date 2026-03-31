@@ -147,6 +147,13 @@ class TestMath < Test::Unit::TestCase
     check(Math::E ** 2, Math.exp(2))
   end
 
+  def test_expm1
+    check(0, Math.expm1(0))
+    check(Math.sqrt(Math::E) - 1, Math.expm1(0.5))
+    check(Math::E - 1, Math.expm1(1))
+    check(Math::E ** 2 - 1, Math.expm1(2))
+  end
+
   def test_log
     check(0, Math.log(1))
     check(1, Math.log(Math::E))
@@ -199,6 +206,19 @@ class TestMath < Test::Unit::TestCase
     assert_raise_with_message(Math::DomainError, /\blog10\b/) { Math.log10(-Float::EPSILON) }
     assert_nothing_raised { assert_nan(Math.log10(Float::NAN)) }
     assert_nothing_raised { assert_infinity(-Math.log10(0)) }
+  end
+
+  def test_log1p
+    check(0, Math.log1p(0))
+    check(1, Math.log1p(Math::E - 1))
+    check(Math.log(2.0 ** 64 + 1), Math.log1p(1 << 64))
+    check(Math.log(2) * 1024.0, Math.log1p(2 ** 1024))
+    assert_nothing_raised { assert_infinity(Math.log1p(1.0/0)) }
+    assert_nothing_raised { assert_infinity(-Math.log1p(-1.0)) }
+    assert_raise_with_message(Math::DomainError, /\blog1p\b/) { Math.log1p(-1.1) }
+    assert_raise_with_message(Math::DomainError, /\blog1p\b/) { Math.log1p(-Float::EPSILON-1) }
+    assert_nothing_raised { assert_nan(Math.log1p(Float::NAN)) }
+    assert_nothing_raised { assert_infinity(-Math.log1p(-1)) }
   end
 
   def test_sqrt
@@ -301,11 +321,21 @@ class TestMath < Test::Unit::TestCase
     assert_float_and_int([Math.log(6),                1], Math.lgamma(4))
 
     assert_raise_with_message(Math::DomainError, /\blgamma\b/) { Math.lgamma(-Float::INFINITY) }
+
+    x, sign = Math.lgamma(+0.0)
+    mesg = "Math.lgamma(+0.0) should be [INF, +1]"
+    assert_infinity(x, mesg)
+    assert_equal(+1, sign, mesg)
+
     x, sign = Math.lgamma(-0.0)
     mesg = "Math.lgamma(-0.0) should be [INF, -1]"
     assert_infinity(x, mesg)
     assert_equal(-1, sign, mesg)
-    x, sign = Math.lgamma(Float::NAN)
+
+    x, = Math.lgamma(-1)
+    assert_infinity(x, "Math.lgamma(-1) should be +INF")
+
+    x, = Math.lgamma(Float::NAN)
     assert_nan(x)
   end
 

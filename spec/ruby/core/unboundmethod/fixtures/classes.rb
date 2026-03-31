@@ -80,6 +80,22 @@ module UnboundMethodSpecs
     end
   end
 
+  module Mixin
+    def mixin_method; end
+  end
+
+  class IncluderBase
+    include Mixin
+  end
+
+  class IncluderChild < IncluderBase; end
+
+  class ExtenderBase
+    extend Mixin
+  end
+
+  class ExtenderChild < ExtenderBase; end
+
   class A
     def baz(a, b)
       return [__FILE__, self.class]

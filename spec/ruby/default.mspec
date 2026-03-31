@@ -20,8 +20,11 @@ class MSpecScript
   # C extension API specs
   set :capi, [ 'optional/capi' ]
 
+  # Thread safety specs
+  set :thread_safety, [ 'optional/thread_safety' ]
+
   # A list of _all_ optional specs
-  set :optional, get(:capi)
+  set :optional, get(:capi) + get(:thread_safety)
 
   # An ordered list of the directories containing specs to run
   set :files, get(:command_line) + get(:language) + get(:core) + get(:library) + get(:security) + get(:optional)

@@ -1,0 +1,18 @@
+type: lib/benchmark_driver/runner/ractor
+benchmark:
+  ractor_fstring_random: |
+    i = 0
+    str = "same".dup
+    while i < 2000000
+      -(i.to_s.freeze)
+      i += 1
+    end
+  ractor_fstring_same: |
+    i = 0
+    str = "same".dup
+    while i < 2000000
+      -str
+      i += 1
+    end
+loop_count: 1
+ractor: 4

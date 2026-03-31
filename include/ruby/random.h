@@ -332,7 +332,9 @@ RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 static inline const rb_random_interface_t *
 rb_rand_if(VALUE obj)
 {
+    RBIMPL_ASSERT_OR_ASSUME(RB_TYPE_P(obj, T_DATA));
     RBIMPL_ASSERT_OR_ASSUME(RTYPEDDATA_P(obj));
+    RUBY_ASSERT(rb_typeddata_is_kind_of(obj, &rb_random_data_type));
     const struct rb_data_type_struct *t = RTYPEDDATA_TYPE(obj);
     const void *ret = t->data;
     return RBIMPL_CAST((const rb_random_interface_t *)ret);

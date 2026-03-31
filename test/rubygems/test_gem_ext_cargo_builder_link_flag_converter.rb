@@ -25,7 +25,7 @@ class TestGemExtCargoBuilderLinkFlagConverter < Gem::TestCase
   }.freeze
 
   CASES.each do |test_name, (arg, expected)|
-    raise "duplicate test name" if instance_methods.include?(test_name)
+    raise "duplicate test name" if method_defined?(test_name)
 
     define_method(test_name) do
       assert_equal(expected, Gem::Ext::CargoBuilder::LinkFlagConverter.convert(arg))

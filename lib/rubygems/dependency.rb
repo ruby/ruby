@@ -217,7 +217,7 @@ class Gem::Dependency
   # NOTE:  Unlike #matches_spec? this method does not return true when the
   # version is a prerelease version unless this is a prerelease dependency.
 
-  def match?(obj, version=nil, allow_prerelease=false)
+  def match?(obj, version = nil, allow_prerelease = false)
     if !version
       name = obj.name
       version = obj.version

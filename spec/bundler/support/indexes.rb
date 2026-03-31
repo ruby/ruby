@@ -122,7 +122,7 @@ module Spec
         end
 
         versions "1.0 1.2 1.2.1 1.2.2 1.3 1.3.0.1 1.3.5 1.4.0 1.4.2 1.4.2.1" do |version|
-          platforms "ruby java mswin32 mingw32 x64-mingw32" do |platform|
+          platforms "ruby java mswin32 mingw32 x64-mingw-ucrt" do |platform|
             next if version == v("1.4.2.1") && platform != pl("x86-mswin32")
             next if version == v("1.4.2") && platform == pl("x86-mswin32")
             gem "nokogiri", version, platform do

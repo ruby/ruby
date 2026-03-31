@@ -24,8 +24,13 @@ struct rb_ractor_struct;
 NOINLINE(void rb_vm_lock_enter_body_cr(struct rb_ractor_struct *cr, unsigned int *lev APPEND_LOCATION_ARGS));
 NOINLINE(void rb_vm_lock_enter_body_nb(unsigned int *lev APPEND_LOCATION_ARGS));
 NOINLINE(void rb_vm_lock_enter_body(unsigned int *lev APPEND_LOCATION_ARGS));
+void rb_vm_lock_leave_body_nb(unsigned int *lev APPEND_LOCATION_ARGS);
 void rb_vm_lock_leave_body(unsigned int *lev APPEND_LOCATION_ARGS);
 void rb_vm_barrier(void);
+
+RUBY_SYMBOL_EXPORT_BEGIN
+VALUE rb_vm_lock_with_barrier(VALUE (*func)(void *args), void *args);
+RUBY_SYMBOL_EXPORT_END
 
 #if RUBY_DEBUG
 // GET_VM()
@@ -87,6 +92,14 @@ rb_vm_lock_enter_nb(unsigned int *lev, const char *file, int line)
 }
 
 static inline void
+rb_vm_lock_leave_nb(unsigned int *lev, const char *file, int line)
+{
+    if (rb_multi_ractor_p()) {
+        rb_vm_lock_leave_body_nb(lev APPEND_LOCATION_PARAMS);
+    }
+}
+
+static inline void
 rb_vm_lock_leave(unsigned int *lev, const char *file, int line)
 {
     if (rb_multi_ractor_p()) {
@@ -119,18 +132,28 @@ rb_vm_lock_leave_cr(struct rb_ractor_struct *cr, unsigned int *levp, const char 
 
 #define RB_VM_LOCK_ENTER()  { unsigned int _lev; RB_VM_LOCK_ENTER_LEV(&_lev);
 #define RB_VM_LOCK_LEAVE()    RB_VM_LOCK_LEAVE_LEV(&_lev); }
+#define RB_VM_LOCKING() \
+    for (unsigned int vm_locking_level, vm_locking_do = (RB_VM_LOCK_ENTER_LEV(&vm_locking_level), 1); \
+         vm_locking_do; RB_VM_LOCK_LEAVE_LEV(&vm_locking_level), vm_locking_do = 0)
 
 #define RB_VM_LOCK_ENTER_LEV_NB(levp) rb_vm_lock_enter_nb(levp, __FILE__, __LINE__)
+#define RB_VM_LOCK_LEAVE_LEV_NB(levp) rb_vm_lock_leave_nb(levp, __FILE__, __LINE__)
 #define RB_VM_LOCK_ENTER_NO_BARRIER()  { unsigned int _lev; RB_VM_LOCK_ENTER_LEV_NB(&_lev);
-#define RB_VM_LOCK_LEAVE_NO_BARRIER()    RB_VM_LOCK_LEAVE_LEV(&_lev); }
+#define RB_VM_LOCK_LEAVE_NO_BARRIER()    RB_VM_LOCK_LEAVE_LEV_NB(&_lev); }
+#define RB_VM_LOCKING_NO_BARRIER() \
+    for (unsigned int vm_locking_level, vm_locking_do = (RB_VM_LOCK_ENTER_LEV_NB(&vm_locking_level), 1); \
+         vm_locking_do; RB_VM_LOCK_LEAVE_LEV_NB(&vm_locking_level), vm_locking_do = 0)
 
 #if RUBY_DEBUG > 0
 void RUBY_ASSERT_vm_locking(void);
+void RUBY_ASSERT_vm_locking_with_barrier(void);
 void RUBY_ASSERT_vm_unlocking(void);
 #define ASSERT_vm_locking() RUBY_ASSERT_vm_locking()
+#define ASSERT_vm_locking_with_barrier() RUBY_ASSERT_vm_locking_with_barrier()
 #define ASSERT_vm_unlocking() RUBY_ASSERT_vm_unlocking()
 #else
 #define ASSERT_vm_locking()
+#define ASSERT_vm_locking_with_barrier()
 #define ASSERT_vm_unlocking()
 #endif
 

@@ -1,21 +1,39 @@
+# rbs_inline: enabled
 # frozen_string_literal: true
 
 module Lrama
   class Counterexamples
-    # s: state
-    # itm: item within s
-    # l: precise lookahead set
-    class Triple < Struct.new(:s, :itm, :l)
-      alias :state :s
-      alias :item :itm
-      alias :precise_lookahead_set :l
+    class Triple
+      attr_reader :precise_lookahead_set #: Bitmap::bitmap
 
-      def state_item
-        StateItem.new(state, item)
+      alias :l :precise_lookahead_set
+
+      # @rbs (StateItem state_item, Bitmap::bitmap precise_lookahead_set) -> void
+      def initialize(state_item, precise_lookahead_set)
+        @state_item = state_item
+        @precise_lookahead_set = precise_lookahead_set
       end
 
+      # @rbs () -> State
+      def state
+        @state_item.state
+      end
+      alias :s :state
+
+      # @rbs () -> State::Item
+      def item
+        @state_item.item
+      end
+      alias :itm :item
+
+      # @rbs () -> StateItem
+      def state_item
+        @state_item
+      end
+
+      # @rbs () -> ::String
       def inspect
-        "#{state.inspect}. #{item.display_name}. #{l.map(&:id).map(&:s_value)}"
+        "#{state.inspect}. #{item.display_name}. #{l.to_s(2)}"
       end
       alias :to_s :inspect
     end

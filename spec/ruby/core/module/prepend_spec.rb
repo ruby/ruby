@@ -455,32 +455,16 @@ describe "Module#prepend" do
     ModuleSpecs::SubclassSpec.send(:remove_const, :AClass)
   end
 
-  ruby_version_is ""..."3.2" do
-    it "raises ArgumentError when the argument is a refinement" do
-      refinement = nil
+  it "raises a TypeError when the argument is a refinement" do
+    refinement = nil
 
-      Module.new do
-        refine String do
-          refinement = self
-        end
+    Module.new do
+      refine String do
+        refinement = self
       end
-
-      -> { ModuleSpecs::Basic.prepend(refinement) }.should raise_error(ArgumentError, "refinement module is not allowed")
     end
-  end
 
-  ruby_version_is "3.2" do
-    it "raises a TypeError when the argument is a refinement" do
-      refinement = nil
-
-      Module.new do
-        refine String do
-          refinement = self
-        end
-      end
-
-      -> { ModuleSpecs::Basic.prepend(refinement) }.should raise_error(TypeError, "Cannot prepend refinement")
-    end
+    -> { ModuleSpecs::Basic.prepend(refinement) }.should raise_error(TypeError, "Cannot prepend refinement")
   end
 
   it "imports constants" do

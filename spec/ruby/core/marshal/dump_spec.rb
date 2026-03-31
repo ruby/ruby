@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 require_relative 'fixtures/marshal_data'
@@ -231,9 +231,12 @@ describe "Marshal.dump" do
       Marshal.dump(MarshalSpec::ClassWithOverriddenName).should == "\x04\bc)MarshalSpec::ClassWithOverriddenName"
     end
 
-    it "dumps a class with multibyte characters in name" do
-      source_object = eval("MarshalSpec::MultibyteぁあぃいClass".dup.force_encoding(Encoding::UTF_8))
-      Marshal.dump(source_object).should == "\x04\bc,MarshalSpec::Multibyte\xE3\x81\x81\xE3\x81\x82\xE3\x81\x83\xE3\x81\x84Class"
+    ruby_version_is "4.0" do
+      it "dumps a class with multibyte characters in name" do
+        source_object = eval("MarshalSpec::MultibyteぁあぃいClass".dup.force_encoding(Encoding::UTF_8))
+        Marshal.dump(source_object).should == "\x04\bIc,MarshalSpec::Multibyte\xE3\x81\x81\xE3\x81\x82\xE3\x81\x83\xE3\x81\x84Class\x06:\x06ET"
+        Marshal.load(Marshal.dump(source_object)) == source_object
+      end
     end
 
     it "uses object links for objects repeatedly dumped" do
@@ -258,9 +261,12 @@ describe "Marshal.dump" do
       Marshal.dump(MarshalSpec::ModuleWithOverriddenName).should == "\x04\bc*MarshalSpec::ModuleWithOverriddenName"
     end
 
-    it "dumps a module with multibyte characters in name" do
-      source_object = eval("MarshalSpec::MultibyteけげこごModule".dup.force_encoding(Encoding::UTF_8))
-      Marshal.dump(source_object).should == "\x04\bm-MarshalSpec::Multibyte\xE3\x81\x91\xE3\x81\x92\xE3\x81\x93\xE3\x81\x94Module"
+    ruby_version_is "4.0" do
+      it "dumps a module with multibyte characters in name" do
+        source_object = eval("MarshalSpec::MultibyteけげこごModule".dup.force_encoding(Encoding::UTF_8))
+        Marshal.dump(source_object).should == "\x04\bIm-MarshalSpec::Multibyte\xE3\x81\x91\xE3\x81\x92\xE3\x81\x93\xE3\x81\x94Module\x06:\x06ET"
+        Marshal.load(Marshal.dump(source_object)) == source_object
+      end
     end
 
     it "uses object links for objects repeatedly dumped" do
@@ -361,30 +367,28 @@ describe "Marshal.dump" do
     end
   end
 
-  ruby_version_is "3.2" do
-    describe "with a Data" do
-      it "dumps a Data" do
-        Marshal.dump(MarshalSpec::DataSpec::Measure.new(100, 'km')).should == "\x04\bS:#MarshalSpec::DataSpec::Measure\a:\vamountii:\tunit\"\akm"
-      end
+  describe "with a Data" do
+    it "dumps a Data" do
+      Marshal.dump(MarshalSpec::DataSpec::Measure.new(100, 'km')).should == "\x04\bS:#MarshalSpec::DataSpec::Measure\a:\vamountii:\tunit\"\akm"
+    end
 
-      it "dumps an extended Data" do
-        obj = MarshalSpec::DataSpec::MeasureExtended.new(100, "km")
-        Marshal.dump(obj).should == "\x04\bS:+MarshalSpec::DataSpec::MeasureExtended\a:\vamountii:\tunit\"\akm"
-      end
+    it "dumps an extended Data" do
+      obj = MarshalSpec::DataSpec::MeasureExtended.new(100, "km")
+      Marshal.dump(obj).should == "\x04\bS:+MarshalSpec::DataSpec::MeasureExtended\a:\vamountii:\tunit\"\akm"
+    end
 
-      it "ignores overridden name method" do
-        obj = MarshalSpec::DataSpec::MeasureWithOverriddenName.new(100, "km")
-        Marshal.dump(obj).should == "\x04\bS:5MarshalSpec::DataSpec::MeasureWithOverriddenName\a:\vamountii:\tunit\"\akm"
-      end
+    it "ignores overridden name method" do
+      obj = MarshalSpec::DataSpec::MeasureWithOverriddenName.new(100, "km")
+      Marshal.dump(obj).should == "\x04\bS:5MarshalSpec::DataSpec::MeasureWithOverriddenName\a:\vamountii:\tunit\"\akm"
+    end
 
-      it "uses object links for objects repeatedly dumped" do
-        d = MarshalSpec::DataSpec::Measure.new(100, 'km')
-        Marshal.dump([d, d]).should == "\x04\b[\aS:#MarshalSpec::DataSpec::Measure\a:\vamountii:\tunit\"\akm@\x06" # @\x06 is a link to the object
-      end
+    it "uses object links for objects repeatedly dumped" do
+      d = MarshalSpec::DataSpec::Measure.new(100, 'km')
+      Marshal.dump([d, d]).should == "\x04\b[\aS:#MarshalSpec::DataSpec::Measure\a:\vamountii:\tunit\"\akm@\x06" # @\x06 is a link to the object
+    end
 
-      it "raises TypeError with an anonymous Struct" do
-        -> { Marshal.dump(Data.define(:a).new(1)) }.should raise_error(TypeError, /can't dump anonymous class/)
-      end
+    it "raises TypeError with an anonymous Struct" do
+      -> { Marshal.dump(Data.define(:a).new(1)) }.should raise_error(TypeError, /can't dump anonymous class/)
     end
   end
 
@@ -469,14 +473,26 @@ describe "Marshal.dump" do
       Marshal.dump(//im).should == "\x04\bI/\x00\x05\x06:\x06EF"
     end
 
-    it "dumps a Regexp with instance variables" do
-      o = Regexp.new("")
+    it "dumps a Regexp subclass with instance variables" do
+      o = UserRegexp.new("")
       o.instance_variable_set(:@ivar, :ivar)
-      Marshal.dump(o).should == "\x04\bI/\x00\x00\a:\x06EF:\n@ivar:\tivar"
+      Marshal.dump(o).should == "\x04\bIC:\x0FUserRegexp/\x00\x00\a:\x06EF:\n@ivar:\tivar"
     end
 
-    it "dumps an extended Regexp" do
-      Marshal.dump(Regexp.new("").extend(Meths)).should == "\x04\bIe:\nMeths/\x00\x00\x06:\x06EF"
+    it "dumps an extended Regexp subclass" do
+      Marshal.dump(UserRegexp.new("").extend(Meths)).should == "\x04\bIe:\nMethsC:\x0FUserRegexp/\x00\x00\x06:\x06EF"
+    end
+
+    ruby_version_is ""..."4.1" do
+      it "dumps a Regexp with instance variables" do
+        o = Regexp.new("")
+        o.instance_variable_set(:@ivar, :ivar)
+        Marshal.dump(o).should == "\x04\bI/\x00\x00\a:\x06EF:\n@ivar:\tivar"
+      end
+
+      it "dumps an extended Regexp" do
+        Marshal.dump(Regexp.new("").extend(Meths)).should == "\x04\bIe:\nMeths/\x00\x00\x06:\x06EF"
+      end
     end
 
     it "dumps a Regexp subclass" do
@@ -876,9 +892,12 @@ describe "Marshal.dump" do
       Marshal.dump(obj).should include("MarshalSpec::TimeWithOverriddenName")
     end
 
-    it "dumps a Time subclass with multibyte characters in name" do
-      source_object = eval("MarshalSpec::MultibyteぁあぃいTime".dup.force_encoding(Encoding::UTF_8))
-      Marshal.dump(source_object).should == "\x04\bc+MarshalSpec::Multibyte\xE3\x81\x81\xE3\x81\x82\xE3\x81\x83\xE3\x81\x84Time"
+    ruby_version_is "4.0" do
+      it "dumps a Time subclass with multibyte characters in name" do
+        source_object = eval("MarshalSpec::MultibyteぁあぃいTime".dup.force_encoding(Encoding::UTF_8))
+        Marshal.dump(source_object).should == "\x04\bIc+MarshalSpec::Multibyte\xE3\x81\x81\xE3\x81\x82\xE3\x81\x83\xE3\x81\x84Time\x06:\x06ET"
+        Marshal.load(Marshal.dump(source_object)) == source_object
+      end
     end
 
     it "uses object links for objects repeatedly dumped" do

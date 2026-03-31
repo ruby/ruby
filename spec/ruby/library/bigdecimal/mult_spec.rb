@@ -21,12 +21,4 @@ describe "BigDecimal#mult" do
     @e.mult(@one, 1).should be_close(@one, @tolerance)
     @e3_minus.mult(@one, 1).should be_close(0, @tolerance2)
   end
-
-  describe "with Object" do
-    it "tries to coerce the other operand to self" do
-      object = mock("Object")
-      object.should_receive(:coerce).with(@e3_minus).and_return([@e3_minus, @e3_plus])
-      @e3_minus.mult(object, 1).should == BigDecimal("9")
-    end
-  end
 end

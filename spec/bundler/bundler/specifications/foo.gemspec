@@ -8,6 +8,6 @@ Gem::Specification.new do |s|
   s.version = "1.0.0"
   s.loaded_from = __FILE__
   s.extensions = "ext/foo"
-  s.required_ruby_version = ">= 3.1.0"
+  s.required_ruby_version = ">= 3.2.0"
 end
 # rubocop:enable Style/FrozenStringLiteralComment

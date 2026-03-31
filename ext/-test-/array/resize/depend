@@ -127,6 +127,7 @@ resize.o: $(hdrdir)/ruby/internal/intern/re.h
 resize.o: $(hdrdir)/ruby/internal/intern/ruby.h
 resize.o: $(hdrdir)/ruby/internal/intern/select.h
 resize.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+resize.o: $(hdrdir)/ruby/internal/intern/set.h
 resize.o: $(hdrdir)/ruby/internal/intern/signal.h
 resize.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 resize.o: $(hdrdir)/ruby/internal/intern/string.h

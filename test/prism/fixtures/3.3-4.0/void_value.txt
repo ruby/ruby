@@ -1,0 +1,29 @@
+x = begin
+  foo
+rescue
+  return
+else
+  return
+end
+
+x = case
+  when 1 then return
+  else        return
+end
+
+x = case 1
+  in 2 then return
+  else      return
+end
+
+x = begin
+  return
+  "NG"
+end
+
+x = if rand < 0.5
+  return
+  "NG"
+else
+  return
+end

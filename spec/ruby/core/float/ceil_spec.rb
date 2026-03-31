@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 require_relative '../integer/shared/integer_ceil_precision'
 
 describe "Float#ceil" do
-  context "with precision" do
+  context "with values equal to integers" do
     it_behaves_like :integer_ceil_precision, :Float
   end
 
@@ -20,7 +20,9 @@ describe "Float#ceil" do
     2.1679.ceil(0).should   eql(3)
     214.94.ceil(-1).should  eql(220)
     7.0.ceil(1).should      eql(7.0)
+    200.0.ceil(-2).should   eql(200)
     -1.234.ceil(2).should   eql(-1.23)
     5.123812.ceil(4).should eql(5.1239)
+    10.00001.ceil(5).should eql(10.00001)
   end
 end

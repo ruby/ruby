@@ -83,8 +83,6 @@ rb_gc_debug_body(const char *mode, const char *msg, int st, void *ptr)
 #define RUBY_GC_INFO if(0)printf
 #endif
 
-#define RUBY_FREE_UNLESS_NULL(ptr) if(ptr){ruby_xfree(ptr);(ptr)=NULL;}
-
 #if STACK_GROW_DIRECTION > 0
 # define STACK_UPPER(x, a, b) (a)
 #elif STACK_GROW_DIRECTION < 0
@@ -122,10 +120,12 @@ const char *rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
 struct rb_execution_context_struct; /* in vm_core.h */
 struct rb_objspace; /* in vm_core.h */
 
-#define NEWOBJ_OF(var, T, c, f, s, ec) \
+#define NEWOBJ_OF_WITH_SHAPE(var, T, c, f, shape_id, s, ec) \
     T *(var) = (T *)(((f) & FL_WB_PROTECTED) ? \
-            rb_wb_protected_newobj_of((ec ? ec : GET_EC()), (c), (f) & ~FL_WB_PROTECTED, s) : \
-            rb_wb_unprotected_newobj_of((c), (f), s))
+            rb_wb_protected_newobj_of((ec ? ec : GET_EC()), (c), (f) & ~FL_WB_PROTECTED, shape_id, s) : \
+            rb_wb_unprotected_newobj_of((c), (f), shape_id, s))
+
+#define NEWOBJ_OF(var, T, c, f, s, ec) NEWOBJ_OF_WITH_SHAPE(var, T, c, f, 0 /* ROOT_SHAPE_ID */, s, ec)
 
 #ifndef RB_GC_OBJECT_METADATA_ENTRY_DEFINED
 # define RB_GC_OBJECT_METADATA_ENTRY_DEFINED
@@ -198,9 +198,8 @@ RUBY_ATTR_MALLOC void *rb_xcalloc_mul_add(size_t, size_t, size_t);
 void *rb_xrealloc_mul_add(const void *, size_t, size_t, size_t);
 RUBY_ATTR_MALLOC void *rb_xmalloc_mul_add_mul(size_t, size_t, size_t, size_t);
 RUBY_ATTR_MALLOC void *rb_xcalloc_mul_add_mul(size_t, size_t, size_t, size_t);
-static inline void *ruby_sized_xrealloc_inlined(void *ptr, size_t new_size, size_t old_size) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2));
-static inline void *ruby_sized_xrealloc2_inlined(void *ptr, size_t new_count, size_t elemsiz, size_t old_count) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2, 3));
-static inline void ruby_sized_xfree_inlined(void *ptr, size_t size);
+void rb_gc_obj_id_moved(VALUE obj);
+void rb_gc_register_pinning_obj(VALUE obj);
 
 void *rb_gc_ractor_cache_alloc(rb_ractor_t *ractor);
 void rb_gc_ractor_cache_free(void *cache);
@@ -211,8 +210,8 @@ size_t rb_gc_heap_id_for_size(size_t size);
 
 void rb_gc_mark_and_move(VALUE *ptr);
 
-void rb_gc_mark_weak(VALUE *ptr);
-void rb_gc_remove_weak(VALUE parent_obj, VALUE *ptr);
+void rb_gc_declare_weak_references(VALUE obj);
+bool rb_gc_handle_weak_references_alive_p(VALUE obj);
 
 void rb_gc_ref_update_table_values_only(st_table *tbl);
 
@@ -247,8 +246,8 @@ VALUE rb_gc_disable_no_rest(void);
 
 /* gc.c (export) */
 const char *rb_objspace_data_type_name(VALUE obj);
-VALUE rb_wb_protected_newobj_of(struct rb_execution_context_struct *, VALUE, VALUE, size_t);
-VALUE rb_wb_unprotected_newobj_of(VALUE, VALUE, size_t);
+VALUE rb_wb_protected_newobj_of(struct rb_execution_context_struct *, VALUE, VALUE, uint32_t /* shape_id_t */, size_t);
+VALUE rb_wb_unprotected_newobj_of(VALUE, VALUE, uint32_t /* shape_id_t */, size_t);
 size_t rb_obj_memsize_of(VALUE);
 struct rb_gc_object_metadata_entry *rb_gc_object_metadata(VALUE obj);
 void rb_gc_mark_values(long n, const VALUE *values);
@@ -263,61 +262,36 @@ int rb_gc_modular_gc_loaded_p(void);
 
 RUBY_SYMBOL_EXPORT_END
 
+static inline VALUE
+rb_obj_atomic_write(
+    VALUE a, VALUE *slot, VALUE b,
+    RBIMPL_ATTR_MAYBE_UNUSED()
+    const char *filename,
+    RBIMPL_ATTR_MAYBE_UNUSED()
+    int line)
+{
+#ifdef RGENGC_LOGGING_WRITE
+    RGENGC_LOGGING_WRITE(a, slot, b, filename, line);
+#endif
+
+    RUBY_ATOMIC_VALUE_SET(*slot, b);
+
+    rb_obj_written(a, RUBY_Qundef /* ignore `oldv' now */, b, filename, line);
+    return a;
+}
+#define RB_OBJ_ATOMIC_WRITE(old, slot, young) \
+    RBIMPL_CAST(rb_obj_atomic_write((VALUE)(old), (VALUE *)(slot), (VALUE)(young), __FILE__, __LINE__))
+
 int rb_ec_stack_check(struct rb_execution_context_struct *ec);
 void rb_gc_writebarrier_remember(VALUE obj);
 const char *rb_obj_info(VALUE obj);
 void ruby_annotate_mmap(const void *addr, unsigned long size, const char *name);
 
-#if defined(HAVE_MALLOC_USABLE_SIZE) || defined(HAVE_MALLOC_SIZE) || defined(_WIN32)
-
-static inline void *
-ruby_sized_xrealloc_inlined(void *ptr, size_t new_size, size_t old_size)
-{
-    return ruby_xrealloc(ptr, new_size);
-}
-
-static inline void *
-ruby_sized_xrealloc2_inlined(void *ptr, size_t new_count, size_t elemsiz, size_t old_count)
-{
-    return ruby_xrealloc2(ptr, new_count, elemsiz);
-}
-
-static inline void
-ruby_sized_xfree_inlined(void *ptr, size_t size)
-{
-    ruby_xfree(ptr);
-}
-
-# define SIZED_REALLOC_N(x, y, z, w) REALLOC_N(x, y, z)
-
-static inline void *
-ruby_sized_realloc_n(void *ptr, size_t new_count, size_t element_size, size_t old_count)
-{
-    return ruby_xrealloc2(ptr, new_count, element_size);
-}
-
-#else
-
-static inline void *
-ruby_sized_xrealloc_inlined(void *ptr, size_t new_size, size_t old_size)
-{
-    return ruby_sized_xrealloc(ptr, new_size, old_size);
-}
-
-static inline void *
-ruby_sized_xrealloc2_inlined(void *ptr, size_t new_count, size_t elemsiz, size_t old_count)
-{
-    return ruby_sized_xrealloc2(ptr, new_count, elemsiz, old_count);
-}
-
-static inline void
-ruby_sized_xfree_inlined(void *ptr, size_t size)
-{
-    ruby_sized_xfree(ptr, size);
-}
-
 # define SIZED_REALLOC_N(v, T, m, n) \
     ((v) = (T *)ruby_sized_xrealloc2((void *)(v), (m), sizeof(T), (n)))
+
+# define SIZED_FREE(v) ruby_sized_xfree((void *)(v), sizeof(*(v)))
+# define SIZED_FREE_N(v, n) ruby_sized_xfree((void *)(v), sizeof(*(v)) * (n))
 
 static inline void *
 ruby_sized_realloc_n(void *ptr, size_t new_count, size_t element_size, size_t old_count)
@@ -325,9 +299,7 @@ ruby_sized_realloc_n(void *ptr, size_t new_count, size_t element_size, size_t ol
     return ruby_sized_xrealloc2(ptr, new_count, element_size, old_count);
 }
 
-#endif /* HAVE_MALLOC_USABLE_SIZE */
+void rb_gc_verify_shareable(VALUE);
+bool rb_gc_checking_shareable(void);
 
-#define ruby_sized_xrealloc ruby_sized_xrealloc_inlined
-#define ruby_sized_xrealloc2 ruby_sized_xrealloc2_inlined
-#define ruby_sized_xfree ruby_sized_xfree_inlined
 #endif /* INTERNAL_GC_H */

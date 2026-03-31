@@ -42,8 +42,28 @@ describe "With neither --enable-frozen-string-literal nor --disable-frozen-strin
     ruby_exe(fixture(__FILE__, "freeze_flag_one_literal.rb")).chomp.should == "false"
   end
 
-  it "if file has no frozen_string_literal comment produce different mutable strings each time" do
-    ruby_exe(fixture(__FILE__, "string_literal_raw.rb")).chomp.should == "frozen:false interned:false"
+  context "if file has no frozen_string_literal comment" do
+    it "produce different mutable strings each time" do
+      ruby_exe(fixture(__FILE__, "string_literal_raw.rb")).chomp.should == "frozen:false interned:false"
+    end
+
+    guard -> { ruby_version_is "3.4" and !"test".frozen? } do
+      it "complain about modification of produced mutable strings" do
+        -> { eval(<<~RUBY) }.should complain(/warning: literal string will be frozen in the future \(run with --debug-frozen-string-literal for more information\)/)
+          "test" << "!"
+        RUBY
+      end
+
+      it "does not complain about modification if Warning[:deprecated] is false" do
+        deprecated = Warning[:deprecated]
+        Warning[:deprecated] = false
+        -> { eval(<<~RUBY) }.should_not complain
+          "test" << "!"
+        RUBY
+      ensure
+        Warning[:deprecated] = deprecated
+      end
+    end
   end
 
   it "if file has frozen_string_literal:true comment produce same frozen strings each time" do

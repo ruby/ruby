@@ -69,10 +69,7 @@ module Bundler
     end
 
     def generate_plugins
-      return unless Gem::Installer.instance_methods(false).include?(:generate_plugins)
-
-      latest = Gem::Specification.stubs_for(spec.name).first
-      return if latest && latest.version > spec.version
+      return unless Gem::Installer.method_defined?(:generate_plugins, false)
 
       ensure_writable_dir @plugins_dir
 
@@ -101,6 +98,10 @@ module Bundler
 
         generate_windows_script filename, bindir
       end
+    end
+
+    def build_jobs
+      Bundler.settings[:jobs] || super
     end
 
     def build_extensions

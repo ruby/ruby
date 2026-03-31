@@ -2,6 +2,7 @@
 #include "ruby/debug.h"
 
 static int invoking; /* TODO: should not be global variable */
+extern VALUE tp_mBug;
 
 static VALUE
 invoke_proc_ensure(VALUE _)
@@ -17,9 +18,9 @@ invoke_proc_begin(VALUE proc)
 }
 
 static void
-invoke_proc(void *data)
+invoke_proc(void *ivar_name)
 {
-    VALUE proc = (VALUE)data;
+    VALUE proc = rb_ivar_get(tp_mBug, rb_intern(ivar_name));
     invoking += 1;
     rb_ensure(invoke_proc_begin, proc, invoke_proc_ensure, 0);
 }
@@ -40,16 +41,16 @@ gc_start_end_i(VALUE tpval, void *data)
 }
 
 static VALUE
-set_gc_hook(VALUE module, VALUE proc, rb_event_flag_t event, const char *tp_str, const char *proc_str)
+set_gc_hook(VALUE proc, rb_event_flag_t event, const char *tp_str, const char *proc_str)
 {
     VALUE tpval;
     ID tp_key = rb_intern(tp_str);
 
     /* disable previous keys */
-    if (rb_ivar_defined(module, tp_key) != 0 &&
-        RTEST(tpval = rb_ivar_get(module, tp_key))) {
+    if (rb_ivar_defined(tp_mBug, tp_key) != 0 &&
+        RTEST(tpval = rb_ivar_get(tp_mBug, tp_key))) {
         rb_tracepoint_disable(tpval);
-        rb_ivar_set(module, tp_key, Qnil);
+        rb_ivar_set(tp_mBug, tp_key, Qnil);
     }
 
     if (RTEST(proc)) {
@@ -57,8 +58,9 @@ set_gc_hook(VALUE module, VALUE proc, rb_event_flag_t event, const char *tp_str,
             rb_raise(rb_eTypeError, "trace_func needs to be Proc");
         }
 
-        tpval = rb_tracepoint_new(0, event, gc_start_end_i, (void *)proc);
-        rb_ivar_set(module, tp_key, tpval);
+        rb_ivar_set(tp_mBug, rb_intern(proc_str), proc);
+        tpval = rb_tracepoint_new(0, event, gc_start_end_i, (void *)proc_str);
+        rb_ivar_set(tp_mBug, tp_key, tpval);
         rb_tracepoint_enable(tpval);
     }
 
@@ -66,16 +68,16 @@ set_gc_hook(VALUE module, VALUE proc, rb_event_flag_t event, const char *tp_str,
 }
 
 static VALUE
-set_after_gc_start(VALUE module, VALUE proc)
+set_after_gc_start(VALUE _self, VALUE proc)
 {
-    return set_gc_hook(module, proc, RUBY_INTERNAL_EVENT_GC_START,
+    return set_gc_hook(proc, RUBY_INTERNAL_EVENT_GC_START,
                        "__set_after_gc_start_tpval__", "__set_after_gc_start_proc__");
 }
 
 static VALUE
-start_after_gc_exit(VALUE module, VALUE proc)
+start_after_gc_exit(VALUE _self, VALUE proc)
 {
-    return set_gc_hook(module, proc, RUBY_INTERNAL_EVENT_GC_EXIT,
+    return set_gc_hook(proc, RUBY_INTERNAL_EVENT_GC_EXIT,
                        "__set_after_gc_exit_tpval__", "__set_after_gc_exit_proc__");
 }
 

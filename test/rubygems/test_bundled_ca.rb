@@ -12,7 +12,7 @@ require "rubygems/request"
 
 # = Testing Bundled CA
 #
-# The tested hosts are explained in detail here: https://github.com/rubygems/rubygems/commit/5e16a5428f973667cabfa07e94ff939e7a83ebd9
+# The tested hosts are explained in detail here: https://github.com/ruby/rubygems/commit/5e16a5428f973667cabfa07e94ff939e7a83ebd9
 #
 
 class TestGemBundledCA < Gem::TestCase

@@ -15,7 +15,7 @@ module Bundler
 
       Bundler.self_manager.update_bundler_and_restart_with_it_if_needed(update_bundler) if update_bundler
 
-      Plugin.gemfile_install(Bundler.default_gemfile) if Bundler.feature_flag.plugins?
+      Plugin.gemfile_install(Bundler.default_gemfile) if Bundler.settings[:plugins]
 
       sources = Array(options[:source])
       groups  = Array(options[:group]).map(&:to_sym)
@@ -23,10 +23,10 @@ module Bundler
       full_update = gems.empty? && sources.empty? && groups.empty? && !options[:ruby] && !update_bundler
 
       if full_update && !options[:all]
-        if Bundler.feature_flag.update_requires_all_flag?
+        if Bundler.settings[:update_requires_all_flag]
           raise InvalidOption, "To update everything, pass the `--all` flag."
         end
-        SharedHelpers.major_deprecation 3, "Pass --all to `bundle update` to update everything"
+        SharedHelpers.feature_deprecated! "Pass --all to `bundle update` to update everything"
       elsif !full_update && options[:all]
         raise InvalidOption, "Cannot specify --all along with specific options."
       end
@@ -63,7 +63,7 @@ module Bundler
       opts = options.dup
       opts["update"] = true
       opts["local"] = options[:local]
-      opts["force"] = options[:redownload]
+      opts["force"] = options[:redownload] if options[:redownload]
 
       Bundler.settings.set_command_option_if_given :jobs, opts["jobs"]
 
@@ -92,7 +92,7 @@ module Bundler
           locked_spec = locked_info[:spec]
           new_spec = Bundler.definition.specs[name].first
           unless new_spec
-            unless locked_spec.match_platform(Bundler.local_platform)
+            unless locked_spec.installable_on_platform?(Bundler.local_platform)
               Bundler.ui.warn "Bundler attempted to update #{name} but it was not considered because it is for a different platform from the current one"
             end
 

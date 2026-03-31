@@ -1,0 +1,33 @@
+Returns a copy of +self+ with each tuple (doubling, tripling, etc.) of specified characters
+"squeezed" down to a single character.
+
+The tuples to be squeezed are specified by arguments +selectors+,
+each of which is a string;
+see {Character Selectors}[rdoc-ref:character_selectors.rdoc@Character+Selectors].
+
+A single argument may be a single character:
+
+  'Noooooo!'.squeeze('o')      # => "No!"
+  'foo  bar  baz'.squeeze(' ') # => "foo bar baz"
+  'Mississippi'.squeeze('s')   # => "Misisippi"
+  'Mississippi'.squeeze('p')   # => "Mississipi"
+  'Mississippi'.squeeze('x')   # => "Mississippi"  # Unused selector character is ignored.
+  'бессонница'.squeeze('с')    # => "бесонница"
+  'бессонница'.squeeze('н')    # => "бессоница"
+
+A single argument may be a string of characters:
+
+  'Mississippi'.squeeze('sp')       # => "Misisipi"
+  'Mississippi'.squeeze('ps')       # => "Misisipi"   # Order doesn't matter.
+  'Mississippi'.squeeze('nonsense') # => "Misisippi"  # Unused selector characters are ignored.
+
+A single argument may be a range of characters:
+
+  'Mississippi'.squeeze('a-p') # => "Mississipi"
+  'Mississippi'.squeeze('q-z') # => "Misisippi"
+  'Mississippi'.squeeze('a-z') # => "Misisipi"
+
+Multiple arguments are allowed;
+see {Multiple Character Selectors}[rdoc-ref:character_selectors.rdoc@Multiple+Character+Selectors].
+
+Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].

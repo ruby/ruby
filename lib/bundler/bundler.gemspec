@@ -23,16 +23,16 @@ Gem::Specification.new do |s|
   s.description = "Bundler manages an application's dependencies through its entire life, across many machines, systematically and repeatably"
 
   s.metadata = {
-    "bug_tracker_uri" => "https://github.com/rubygems/rubygems/issues?q=is%3Aopen+is%3Aissue+label%3ABundler",
-    "changelog_uri" => "https://github.com/rubygems/rubygems/blob/master/bundler/CHANGELOG.md",
+    "bug_tracker_uri" => "https://github.com/ruby/rubygems/issues?q=is%3Aopen+is%3Aissue+label%3ABundler",
+    "changelog_uri" => "https://github.com/ruby/rubygems/blob/master/bundler/CHANGELOG.md",
     "homepage_uri" => "https://bundler.io/",
-    "source_code_uri" => "https://github.com/rubygems/rubygems/tree/master/bundler",
+    "source_code_uri" => "https://github.com/ruby/rubygems/tree/master/bundler",
   }
 
-  s.required_ruby_version     = ">= 3.1.0"
+  s.required_ruby_version     = ">= 3.2.0"
 
   # It should match the RubyGems version shipped with `required_ruby_version` above
-  s.required_rubygems_version = ">= 3.3.3"
+  s.required_rubygems_version = ">= 3.4.1"
 
   s.files = Dir.glob("lib/bundler{.rb,/**/*}", File::FNM_DOTMATCH).reject {|f| File.directory?(f) }
 

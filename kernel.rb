@@ -17,7 +17,7 @@ module Kernel
   #
   def class
     Primitive.attr! :leaf
-    Primitive.cexpr! 'rb_obj_class(self)'
+    Primitive.cexpr! 'rb_obj_class_must(self)'
   end
 
   #
@@ -141,6 +141,7 @@ module Kernel
   #    loop do
   #      print "Input: "
   #      line = gets
+  #      # break if q, Q is entered or EOF signal (Ctrl-D on Unix, Ctrl-Z on windows) is sent
   #      break if !line or line =~ /^q/i
   #      # ...
   #    end
@@ -288,16 +289,6 @@ module Kernel
       Primitive.rb_f_integer1(arg)
     else
       Primitive.rb_f_integer(arg, base, exception)
-    end
-  end
-end
-
-class Module
-  # Internal helper for built-in initializations to define methods only when YJIT is enabled.
-  # This method is removed in yjit_hook.rb.
-  private def with_yjit(&block) # :nodoc:
-    if defined?(RubyVM::YJIT)
-      RubyVM::YJIT.send(:add_yjit_hook, block)
     end
   end
 end

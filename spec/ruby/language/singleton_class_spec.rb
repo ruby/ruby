@@ -60,7 +60,7 @@ describe "A singleton class" do
       ClassSpecs::H.singleton_class.singleton_class
   end
 
-  it "for BasicObject has Class as it's superclass" do
+  it "for BasicObject has Class as its superclass" do
     BasicObject.singleton_class.superclass.should == Class
   end
 

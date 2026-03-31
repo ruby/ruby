@@ -33,11 +33,10 @@ describe :integer_floor_precision, shared: true do
       send(@method, -123).floor(-3).should.eql?(-1000)
     end
 
-    ruby_bug "#20654", ""..."3.4" do
-      it "returns -(10**precision.abs) when self is negative and precision.abs is larger than the number digits of self" do
-        send(@method, -123).floor(-20).should.eql?(-100000000000000000000)
-        send(@method, -123).floor(-50).should.eql?(-100000000000000000000000000000000000000000000000000)
-      end
+    # Bug #20654
+    it "returns -(10**precision.abs) when self is negative and precision.abs is larger than the number digits of self" do
+      send(@method, -123).floor(-20).should.eql?(-100000000000000000000)
+      send(@method, -123).floor(-50).should.eql?(-100000000000000000000000000000000000000000000000000)
     end
   end
 end

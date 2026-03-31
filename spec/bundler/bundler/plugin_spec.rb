@@ -65,8 +65,8 @@ RSpec.describe Bundler::Plugin do
     end
 
     it "passes the name and options to installer" do
-      allow(index).to receive(:installed?).
-        with("new-plugin")
+      allow(index).to receive(:up_to_date?).
+        with(spec)
       allow(installer).to receive(:install).with(["new-plugin"], opts) do
         { "new-plugin" => spec }
       end.once
@@ -75,8 +75,8 @@ RSpec.describe Bundler::Plugin do
     end
 
     it "validates the installed plugin" do
-      allow(index).to receive(:installed?).
-        with("new-plugin")
+      allow(index).to receive(:up_to_date?).
+        with(spec)
       allow(subject).
         to receive(:validate_plugin!).with(lib_path("new-plugin")).once
 
@@ -84,8 +84,8 @@ RSpec.describe Bundler::Plugin do
     end
 
     it "registers the plugin with index" do
-      allow(index).to receive(:installed?).
-        with("new-plugin")
+      allow(index).to receive(:up_to_date?).
+        with(spec)
       allow(index).to receive(:register_plugin).
         with("new-plugin", lib_path("new-plugin").to_s, [lib_path("new-plugin").join("lib").to_s], []).once
       subject.install ["new-plugin"], opts
@@ -102,7 +102,7 @@ RSpec.describe Bundler::Plugin do
         end.once
 
         allow(subject).to receive(:validate_plugin!).twice
-        allow(index).to receive(:installed?).twice
+        allow(index).to receive(:up_to_date?).twice
         allow(index).to receive(:register_plugin).twice
         subject.install ["new-plugin", "another-plugin"], opts
       end
@@ -138,7 +138,7 @@ RSpec.describe Bundler::Plugin do
       end
 
       before do
-        allow(index).to receive(:installed?) { nil }
+        allow(index).to receive(:up_to_date?) { nil }
         allow(definition).to receive(:dependencies) { [Bundler::Dependency.new("new-plugin", ">=0"), Bundler::Dependency.new("another-plugin", ">=0")] }
         allow(installer).to receive(:install_definition) { plugin_specs }
       end
@@ -279,6 +279,7 @@ RSpec.describe Bundler::Plugin do
         s.write "plugins.rb", code
       end
 
+      @old_constants = Bundler::Plugin::Events.constants.map {|name| [name, Bundler::Plugin::Events.const_get(name)] }
       Bundler::Plugin::Events.send(:reset)
       Bundler::Plugin::Events.send(:define, :EVENT1, "event-1")
       Bundler::Plugin::Events.send(:define, :EVENT2, "event-2")
@@ -289,6 +290,13 @@ RSpec.describe Bundler::Plugin do
         and_return(["foo-plugin"])
       allow(index).to receive(:plugin_path).with("foo-plugin").and_return(path)
       allow(index).to receive(:load_paths).with("foo-plugin").and_return([])
+    end
+
+    after do
+      Bundler::Plugin::Events.send(:reset)
+      Hash[@old_constants].each do |name, value|
+        Bundler::Plugin::Events.send(:define, name, value)
+      end
     end
 
     let(:code) { <<-RUBY }

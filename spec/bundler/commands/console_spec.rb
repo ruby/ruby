@@ -40,11 +40,35 @@ RSpec.describe "bundle console", readline: true do
     end
   end
 
-  context "when the library has an unrelated error" do
+  context "when the library requires a non-existent file" do
     before do
       build_lib "loadfuuu", "1.0.0" do |s|
         s.write "lib/loadfuuu.rb", "require_relative 'loadfuuu/bar'"
         s.write "lib/loadfuuu/bar.rb", "require 'not-in-bundle'"
+      end
+
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        gem "irb"
+        path "#{lib_path}" do
+          gem "loadfuuu", require: true
+        end
+      G
+    end
+
+    it "does not show the bug report template" do
+      bundle("console", raise_on_error: false) do |input, _, _|
+        input.puts("exit")
+      end
+
+      expect(err).not_to include("ERROR REPORT TEMPLATE")
+    end
+  end
+
+  context "when the library references a non-existent constant" do
+    before do
+      build_lib "loadfuuu", "1.0.0" do |s|
+        s.write "lib/loadfuuu.rb", "Some::NonExistent::Constant"
       end
 
       install_gemfile <<-G
@@ -100,7 +124,7 @@ RSpec.describe "bundle console", readline: true do
         gem "irb"
         gem "pry"
       G
-      bundle "config set console pry"
+      bundle_config "console pry"
 
       bundle "console" do |input, _, _|
         input.puts("__method__")
@@ -112,7 +136,7 @@ RSpec.describe "bundle console", readline: true do
     it "falls back to IRB if the other REPL isn't available" do
       skip "Does not work in a ruby-core context if irb is in the default $LOAD_PATH because it enables the real IRB, not our dummy one" if ruby_core? && Gem.ruby_version < Gem::Version.new("3.5.0.a")
 
-      bundle "config set console pry"
+      bundle_config "console pry"
       # make sure pry isn't there
 
       bundle "console" do |input, _, _|
@@ -177,7 +201,7 @@ RSpec.describe "bundle console", readline: true do
         gem "foo"
       G
 
-      bundle "config set auto_install 1"
+      bundle_config "auto_install 1"
       bundle :console do |input, _, _|
         input.puts("puts 'hello'")
         input.puts("exit")

@@ -99,7 +99,7 @@ module Bundler
       return RUBY_PLATFORM_ARRAY if force_ruby_platform
       return valid_platforms if platforms.empty?
 
-      valid_platforms.select {|p| expanded_platforms.include?(GemHelpers.generic(p)) }
+      valid_platforms.select {|p| expanded_platforms.include?(Gem::Platform.generic(p)) }
     end
 
     def expanded_platforms

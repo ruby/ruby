@@ -146,6 +146,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
   end
 
   def test_fd_passing_race_condition
+    omit 'randomly crashes on macOS' if RUBY_PLATFORM =~ /darwin/
     r1, w = IO.pipe
     s1, s2 = UNIXSocket.pair
     s1.nonblock = s2.nonblock = true
@@ -292,14 +293,18 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     File.unlink path if path && File.socket?(path)
   end
 
-  def test_open_nul_byte
-    tmpfile = Tempfile.new("s")
-    path = tmpfile.path
-    tmpfile.close(true)
-    assert_raise(ArgumentError) {UNIXServer.open(path+"\0")}
-    assert_raise(ArgumentError) {UNIXSocket.open(path+"\0")}
-  ensure
-    File.unlink path if path && File.socket?(path)
+  def test_open_argument
+    assert_raise(TypeError) {UNIXServer.new(nil)}
+    assert_raise(TypeError) {UNIXServer.new(1)}
+    Tempfile.create("s") do |s|
+      path = s.path
+      s.close
+      File.unlink(path)
+      assert_raise(ArgumentError) {UNIXServer.open(path+"\0")}
+      assert_raise(ArgumentError) {UNIXSocket.open(path+"\0")}
+      arg = Struct.new(:to_path).new(path)
+      assert_equal(path, UNIXServer.open(arg) { |server| server.path })
+    end
   end
 
   def test_addr

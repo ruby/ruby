@@ -23,7 +23,6 @@ require_relative 'psych/parser'
 require_relative 'psych/omap'
 require_relative 'psych/set'
 require_relative 'psych/coder'
-require_relative 'psych/core_ext'
 require_relative 'psych/stream'
 require_relative 'psych/json/tree_builder'
 require_relative 'psych/json/stream'
@@ -270,10 +269,10 @@ module Psych
   # YAML documents that are supplied via user input.  Instead, please use the
   # load method or the safe_load method.
   #
-  def self.unsafe_load yaml, filename: nil, fallback: false, symbolize_names: false, freeze: false, strict_integer: false
+  def self.unsafe_load yaml, filename: nil, fallback: false, symbolize_names: false, freeze: false, strict_integer: false, parse_symbols: true
     result = parse(yaml, filename: filename)
     return fallback unless result
-    result.to_ruby(symbolize_names: symbolize_names, freeze: freeze, strict_integer: strict_integer)
+    result.to_ruby(symbolize_names: symbolize_names, freeze: freeze, strict_integer: strict_integer, parse_symbols: parse_symbols)
   end
 
   ###
@@ -321,13 +320,13 @@ module Psych
   #   Psych.safe_load("---\n foo: bar")                         # => {"foo"=>"bar"}
   #   Psych.safe_load("---\n foo: bar", symbolize_names: true)  # => {:foo=>"bar"}
   #
-  def self.safe_load yaml, permitted_classes: [], permitted_symbols: [], aliases: false, filename: nil, fallback: nil, symbolize_names: false, freeze: false, strict_integer: false
+  def self.safe_load yaml, permitted_classes: [], permitted_symbols: [], aliases: false, filename: nil, fallback: nil, symbolize_names: false, freeze: false, strict_integer: false, parse_symbols: true
     result = parse(yaml, filename: filename)
     return fallback unless result
 
     class_loader = ClassLoader::Restricted.new(permitted_classes.map(&:to_s),
                                                permitted_symbols.map(&:to_s))
-    scanner      = ScalarScanner.new class_loader, strict_integer: strict_integer
+    scanner      = ScalarScanner.new class_loader, strict_integer: strict_integer, parse_symbols: parse_symbols
     visitor = if aliases
                 Visitors::ToRuby.new scanner, class_loader, symbolize_names: symbolize_names, freeze: freeze
               else
@@ -367,7 +366,7 @@ module Psych
   # Raises a TypeError when `yaml` parameter is NilClass.  This method is
   # similar to `safe_load` except that `Symbol` objects are allowed by default.
   #
-  def self.load yaml, permitted_classes: [Symbol], permitted_symbols: [], aliases: false, filename: nil, fallback: nil, symbolize_names: false, freeze: false, strict_integer: false
+  def self.load yaml, permitted_classes: [Symbol], permitted_symbols: [], aliases: false, filename: nil, fallback: nil, symbolize_names: false, freeze: false, strict_integer: false, parse_symbols: true
     safe_load yaml, permitted_classes: permitted_classes,
                     permitted_symbols: permitted_symbols,
                     aliases: aliases,
@@ -375,7 +374,8 @@ module Psych
                     fallback: fallback,
                     symbolize_names: symbolize_names,
                     freeze: freeze,
-                    strict_integer: strict_integer
+                    strict_integer: strict_integer,
+                    parse_symbols: parse_symbols
   end
 
   ###
@@ -655,6 +655,35 @@ module Psych
   end
 
   ###
+  # Load multiple documents given in +yaml+. Returns the parsed documents
+  # as a list.
+  #
+  # Example:
+  #
+  #   Psych.safe_load_stream("--- foo\n...\n--- bar\n...") # => ['foo', 'bar']
+  #
+  #   list = []
+  #   Psych.safe_load_stream("--- foo\n...\n--- bar\n...") do |ruby|
+  #     list << ruby
+  #   end
+  #   list # => ['foo', 'bar']
+  #
+  def self.safe_load_stream yaml, filename: nil, permitted_classes: [], aliases: false
+    documents = parse_stream(yaml, filename: filename).children.map do |child|
+      stream = Psych::Nodes::Stream.new
+      stream.children << child
+      safe_load(stream.to_yaml, permitted_classes: permitted_classes, aliases: aliases)
+    end
+
+    if block_given?
+      documents.each { |doc| yield doc }
+      nil
+    else
+      documents
+    end
+  end
+
+  ###
   # Load the document contained in +filename+.  Returns the yaml contained in
   # +filename+ as a Ruby object, or if the file is empty, it returns
   # the specified +fallback+ return value, which defaults to +false+.
@@ -761,3 +790,5 @@ module Psych
   self.domain_types = {}
   # :startdoc:
 end
+
+require_relative 'psych/core_ext'

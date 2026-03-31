@@ -138,6 +138,7 @@ pty.o: $(hdrdir)/ruby/internal/intern/re.h
 pty.o: $(hdrdir)/ruby/internal/intern/ruby.h
 pty.o: $(hdrdir)/ruby/internal/intern/select.h
 pty.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+pty.o: $(hdrdir)/ruby/internal/intern/set.h
 pty.o: $(hdrdir)/ruby/internal/intern/signal.h
 pty.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 pty.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -172,6 +173,7 @@ pty.o: $(hdrdir)/ruby/ruby.h
 pty.o: $(hdrdir)/ruby/st.h
 pty.o: $(hdrdir)/ruby/subst.h
 pty.o: $(hdrdir)/ruby/util.h
+pty.o: $(top_srcdir)/id_table.h
 pty.o: $(top_srcdir)/internal.h
 pty.o: $(top_srcdir)/internal/array.h
 pty.o: $(top_srcdir)/internal/compilers.h

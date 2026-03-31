@@ -759,4 +759,19 @@ class TestSuper < Test::Unit::TestCase
     inherited = inherited_class.new
     assert_equal 2, inherited.test # it may read index=1 while it should be index=2
   end
+
+  def test_super_in_basic_object
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      class ::BasicObject
+        def no_super
+          super()
+        rescue ::NameError
+          :ok
+        end
+      end
+
+      assert_equal :ok, "[Bug #21694]".no_super
+    end;
+  end
 end

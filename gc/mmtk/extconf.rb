@@ -15,6 +15,10 @@ create_gc_makefile("mmtk") do |makefile|
     MMTK_BUILD = debug
     LIBMMTK_RUBY = libmmtk_ruby.#$LIBEXT
     RUSTSRCS = #{rustsrcs.join(" \\\n\t   ")}
+
+    ifeq ($(MMTK_BUILD), debug)
+    CPPFLAGS += -DMMTK_DEBUG
+    endif
     MAKEFILE
   ]
 end

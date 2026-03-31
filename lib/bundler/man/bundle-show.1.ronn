@@ -5,7 +5,6 @@ bundle-show(1) -- Shows all the gems in your bundle, or the path to a gem
 
 `bundle show` [GEM]
               [--paths]
-              [--outdated]
 
 ## DESCRIPTION
 
@@ -20,6 +19,3 @@ machine.
 * `--paths`:
   List the paths of all gems that are required by your [`Gemfile(5)`][Gemfile(5)],
   sorted by gem name.
-
-* `--outdated`:
-  Show verbose output including whether gems are outdated.

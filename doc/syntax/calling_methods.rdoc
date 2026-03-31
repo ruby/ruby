@@ -355,9 +355,8 @@ as one argument:
   # Prints the object itself:
   #   #<Name:0x00007f9d07bca650 @name="Jane Doe">
 
-This allows to handle one or many arguments polymorphically. Note also that +nil+
-has NilClass#to_a defined to return an empty array, so conditional unpacking is
-possible:
+This allows to handle one or many arguments polymorphically. Note also that <tt>*nil</tt>
+is unpacked to an empty list of arguments, so conditional unpacking is possible:
 
   my_method(*(some_arguments if some_condition?))
 

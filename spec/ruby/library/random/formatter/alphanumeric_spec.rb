@@ -41,16 +41,14 @@ describe "Random::Formatter#alphanumeric" do
     }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is "3.3" do
-    it "accepts a 'chars' argument with the output alphabet" do
-      @object.alphanumeric(chars: ['a', 'b']).should =~ /\A[ab]+\z/
-    end
+  it "accepts a 'chars' argument with the output alphabet" do
+    @object.alphanumeric(chars: ['a', 'b']).should =~ /\A[ab]+\z/
+  end
 
-    it "converts the elements of chars using #to_s" do
-      to_s = mock("to_s")
-      to_s.should_receive(:to_s).and_return("[mock to_s]")
-      # Using 1 value in chars results in an infinite loop
-      @object.alphanumeric(1, chars: [to_s, to_s]).should == "[mock to_s]"
-    end
+  it "converts the elements of chars using #to_s" do
+    to_s = mock("to_s")
+    to_s.should_receive(:to_s).and_return("[mock to_s]")
+    # Using 1 value in chars results in an infinite loop
+    @object.alphanumeric(1, chars: [to_s, to_s]).should == "[mock to_s]"
   end
 end

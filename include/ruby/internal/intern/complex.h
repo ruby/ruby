@@ -87,10 +87,6 @@ VALUE rb_complex_new(VALUE real, VALUE imag);
  */
 VALUE rb_complex_new_polar(VALUE abs, VALUE arg);
 
-RBIMPL_ATTR_DEPRECATED(("by: rb_complex_new_polar"))
-/** @old{rb_complex_new_polar} */
-VALUE rb_complex_polar(VALUE abs, VALUE arg);
-
 RBIMPL_ATTR_PURE()
 /**
  * Queries the real part of the passed Complex.

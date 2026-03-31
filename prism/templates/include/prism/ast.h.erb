@@ -2,16 +2,20 @@
  * @file ast.h
  *
  * The abstract syntax tree.
+ *
+ * --
  */
 #ifndef PRISM_AST_H
 #define PRISM_AST_H
 
-#include "prism/defines.h"
-#include "prism/util/pm_constant_pool.h"
-#include "prism/util/pm_integer.h"
-#include "prism/util/pm_string.h"
+#include "prism/compiler/align.h"
+#include "prism/compiler/exported.h"
 
-#include <assert.h>
+#include "prism/arena.h"
+#include "prism/constant_pool.h"
+#include "prism/integer.h"
+#include "prism/stringy.h"
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -20,7 +24,7 @@
  */
 typedef enum pm_token_type {
 <%- tokens.each do |token| -%>
-    /** <%= token.comment %> */
+    /** <%= Prism::Template::Doxygen.verbatim(token.comment) %> */
     PM_TOKEN_<%= token.name %><%= " = #{token.value}" if token.value %>,
 
 <%- end -%>
@@ -44,15 +48,28 @@ typedef struct {
 } pm_token_t;
 
 /**
- * This represents a range of bytes in the source string to which a node or
- * token corresponds.
+ * Returns a string representation of the given token type.
+ *
+ * @param token_type The type of the token to get the string representation of.
+ * @returns A string representation of the given token type. This is meant for
+ *     debugging purposes and is not guaranteed to be stable across versions.
+ */
+PRISM_EXPORTED_FUNCTION const char * pm_token_type(pm_token_type_t token_type);
+
+/**
+ * This struct represents a slice in the source code, defined by an offset and
+ * a length. Note that we have confirmation that we can represent all locations
+ * within Ruby source files using 32-bit integers per:
+ *
+ *     https://bugs.ruby-lang.org/issues/20488#note-1
+ *
  */
 typedef struct {
-    /** A pointer to the start location of the range in the source. */
-    const uint8_t *start;
+    /** The offset of the location from the start of the source. */
+    uint32_t start;
 
-    /** A pointer to the end location of the range in the source. */
-    const uint8_t *end;
+    /** The length of the location. */
+    uint32_t length;
 } pm_location_t;
 
 struct pm_node;
@@ -104,29 +121,13 @@ static const pm_node_flags_t PM_NODE_FLAG_NEWLINE = 0x1;
 static const pm_node_flags_t PM_NODE_FLAG_STATIC_LITERAL = 0x2;
 
 /**
- * Cast the type to an enum to allow the compiler to provide exhaustiveness
- * checking.
- */
-#define PM_NODE_TYPE(node) ((enum pm_node_type) (node)->type)
-
-/**
- * Return true if the type of the given node matches the given type.
- */
-#define PM_NODE_TYPE_P(node, type) (PM_NODE_TYPE(node) == (type))
-
-/**
- * Return true if the given flag is set on the given node.
- */
-#define PM_NODE_FLAG_P(node, flag) ((((pm_node_t *)(node))->flags & (flag)) != 0)
-
-/**
  * This is the base structure that represents a node in the syntax tree. It is
  * embedded into every node type.
  */
 typedef struct pm_node {
     /**
      * This represents the type of the node. It somewhat maps to the nodes that
-     * existed in the original grammar and ripper, but it's not a 1:1 mapping.
+     * existed in the original grammar and ripper, but it is not a 1:1 mapping.
      */
     pm_node_type_t type;
 
@@ -143,11 +144,46 @@ typedef struct pm_node {
     uint32_t node_id;
 
     /**
-     * This is the location of the node in the source. It's a range of bytes
+     * This is the location of the node in the source. It is a range of bytes
      * containing a start and an end.
      */
     pm_location_t location;
 } pm_node_t;
+
+/**
+ * Cast the given node to the base pm_node_t type.
+ */
+#define PM_NODE_UPCAST(node_) ((pm_node_t *) (node_))
+
+/**
+ * Cast the type to an enum to allow the compiler to provide exhaustiveness
+ * checking.
+ */
+#define PM_NODE_TYPE(node_) ((enum pm_node_type) (node_)->type)
+
+/**
+ * Return true if the type of the given node matches the given type.
+ */
+#define PM_NODE_TYPE_P(node_, type_) (PM_NODE_TYPE(node_) == (type_))
+
+/**
+ * Return the flags associated with the given node.
+ */
+#define PM_NODE_FLAGS(node_) (PM_NODE_UPCAST(node_)->flags)
+
+/**
+ * Return true if the given flag is set on the given node.
+ */
+#define PM_NODE_FLAG_P(node_, flag_) ((PM_NODE_FLAGS(node_) & (flag_)) != 0)
+
+/**
+ * The alignment required for a child node within a parent node.
+ */
+#ifdef _MSC_VER
+#define PM_NODE_ALIGNAS __declspec(align(8))
+#else
+#define PM_NODE_ALIGNAS PRISM_ALIGNAS(PRISM_ALIGNOF(void *))
+#endif
 <%- nodes.each do |node| -%>
 
 /**
@@ -170,7 +206,6 @@ typedef struct pm_node {
 typedef struct pm_<%= node.human %> {
     /** The embedded base node. */
     pm_node_t base;
-
 <%- node.fields.each do |field| -%>
 
     /**
@@ -183,7 +218,7 @@ typedef struct pm_<%= node.human %> {
     <%- end -%>
      */
     <%= case field
-    when Prism::Template::NodeField, Prism::Template::OptionalNodeField then "struct #{field.c_type} *#{field.name}"
+    when Prism::Template::NodeField, Prism::Template::OptionalNodeField then "PM_NODE_ALIGNAS struct #{field.c_type} *#{field.name}"
     when Prism::Template::NodeListField then "struct pm_node_list #{field.name}"
     when Prism::Template::ConstantField, Prism::Template::OptionalConstantField then "pm_constant_id_t #{field.name}"
     when Prism::Template::ConstantListField then "pm_constant_id_list_t #{field.name}"
@@ -210,7 +245,26 @@ typedef enum pm_<%= flag.human %> {
     /** <%= value.comment %> */
     PM_<%= flag.human.upcase %>_<%= value.name %> = <%= 1 << (index + Prism::Template::COMMON_FLAGS_COUNT) %>,
     <%- end -%>
+
+    PM_<%= flag.human.upcase %>_LAST,
 } pm_<%= flag.human %>_t;
+<%- end -%>
+<%- nodes.each do |node| -%>
+
+<%- params = node.fields.map(&:c_param) -%>
+/**
+ * Allocate and initialize a new <%= node.name %> node.
+ *
+ * @param arena The arena to allocate from.
+ * @param node_id The unique identifier for this node.
+ * @param flags The flags for this node.
+ * @param location The location of this node in the source.
+<%- node.fields.each do |field| -%>
+ * @param <%= field.name %> <%= field.comment ? Prism::Template::Doxygen.verbatim(field.comment.lines.first.strip) : "The #{field.name} field." %>
+<%- end -%>
+ * @returns The newly allocated and initialized node.
+ */
+PRISM_EXPORTED_FUNCTION pm_<%= node.human %>_t * pm_<%= node.human %>_new(pm_arena_t *arena, uint32_t node_id, pm_node_flags_t flags, pm_location_t location<%= params.empty? ? "" : ", #{params.join(", ")}" %>);
 <%- end -%>
 
 /**

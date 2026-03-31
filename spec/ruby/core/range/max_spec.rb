@@ -55,7 +55,7 @@ describe "Range#max" do
     (..1.0).max.should == 1.0
   end
 
-  ruby_version_is ""..."3.5" do
+  ruby_version_is ""..."4.0" do
     it "raises for an exclusive beginless Integer range" do
       -> {
         (...1).max
@@ -63,7 +63,7 @@ describe "Range#max" do
     end
   end
 
-  ruby_version_is "3.5" do
+  ruby_version_is "4.0" do
     it "returns the end point for exclusive beginless Integer ranges" do
       (...1).max.should == 0
     end

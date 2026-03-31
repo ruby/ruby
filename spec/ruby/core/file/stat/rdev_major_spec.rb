@@ -2,19 +2,12 @@ require_relative '../../../spec_helper'
 
 describe "File::Stat#rdev_major" do
   before :each do
-    platform_is :solaris do
-      @name = "/dev/zfs"
-    end
-    platform_is_not :solaris do
-      @name = tmp("file.txt")
-      touch(@name)
-    end
+    @name = tmp("file.txt")
+    touch(@name)
   end
 
   after :each do
-    platform_is_not :solaris do
-      rm_r @name
-    end
+    rm_r @name
   end
 
   platform_is_not :windows do

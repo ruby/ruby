@@ -3,6 +3,32 @@
 require "rubygems"
 
 begin
+  raise LoadError if ENV["GEM_COMMAND"]
+
+  gem "simplecov_json_formatter"
+  require "simplecov"
+
+  unless ENV["SIMPLECOV_SUBPROCESS"]
+    SimpleCov.start do
+      command_name "rubygems"
+      root File.expand_path("../..", __dir__)
+      coverage_dir File.expand_path("../../coverage", __dir__)
+
+      add_filter "/test/"
+      add_filter "/bundler/"
+      add_filter "/tool/"
+      add_filter "/lib/rubygems/vendor/"
+      add_filter ".gemspec"
+    end
+
+    # Prevent SimpleCov from running in subprocesses spawned by assert_separately
+    ENV["SIMPLECOV_SUBPROCESS"] = "1"
+  end
+rescue LoadError
+  # SimpleCov is not installed
+end
+
+begin
   gem "test-unit", "~> 3.0"
 rescue Gem::LoadError
 end
@@ -57,6 +83,44 @@ class Gem::Command
 
   def self.specific_extra_args_hash=(value)
     @specific_extra_args_hash = value
+  end
+end
+
+class Gem::Installer
+  # Copy from Gem::Installer#install with install_as_default option from old version
+  def install_default_gem
+    pre_install_checks
+
+    run_pre_install_hooks
+
+    spec.loaded_from = default_spec_file
+
+    FileUtils.rm_rf gem_dir
+    FileUtils.rm_rf spec.extension_dir
+
+    dir_mode = options[:dir_mode]
+    FileUtils.mkdir_p gem_dir, mode: dir_mode && 0o755
+
+    extract_bin
+    write_default_spec
+
+    generate_bin
+    generate_plugins
+
+    File.chmod(dir_mode, gem_dir) if dir_mode
+
+    say spec.post_install_message if options[:post_install_message] && !spec.post_install_message.nil?
+
+    Gem::Specification.add_spec(spec)
+
+    load_plugin
+
+    run_post_install_hooks
+
+    spec
+  rescue Errno::EACCES => e
+    # Permission denied - /path/to/foo
+    raise Gem::FilePermissionError, e.message.split(" - ").last
   end
 end
 
@@ -295,8 +359,12 @@ class Gem::TestCase < Test::Unit::TestCase
     ENV["XDG_CONFIG_HOME"] = nil
     ENV["XDG_DATA_HOME"] = nil
     ENV["XDG_STATE_HOME"] = nil
+    ENV["MAKEFLAGS"] = nil
     ENV["SOURCE_DATE_EPOCH"] = nil
     ENV["BUNDLER_VERSION"] = nil
+    ENV["BUNDLE_CONFIG"] = nil
+    ENV["BUNDLE_USER_CONFIG"] = nil
+    ENV["BUNDLE_USER_HOME"] = nil
     ENV["RUBYGEMS_PREVENT_UPDATE_SUGGESTION"] = "true"
 
     @current_dir = Dir.pwd
@@ -400,8 +468,9 @@ class Gem::TestCase < Test::Unit::TestCase
     Gem::RemoteFetcher.fetcher = Gem::FakeFetcher.new
 
     @gem_repo = "http://gems.example.com/"
+    Gem.instance_variable_set :@default_sources, [@gem_repo]
+    Gem.instance_variable_set :@sources, nil
     @uri = Gem::URI.parse @gem_repo
-    Gem.sources.replace [@gem_repo]
 
     Gem.searcher = nil
     Gem::SpecFetcher.fetcher = nil
@@ -417,6 +486,9 @@ class Gem::TestCase < Test::Unit::TestCase
     %w[post_install_hooks done_installing_hooks post_uninstall_hooks pre_uninstall_hooks pre_install_hooks pre_reset_hooks post_reset_hooks post_build_hooks].each do |name|
       @orig_hooks[name] = Gem.send(name).dup
     end
+
+    Gem::Platform.const_get(:GENERIC_CACHE).clear
+    Gem::Platform.const_get(:GENERICS).each {|g| Gem::Platform.const_get(:GENERIC_CACHE)[g] = g }
 
     @marshal_version = "#{Marshal::MAJOR_VERSION}.#{Marshal::MINOR_VERSION}"
     @orig_loaded_features = $LOADED_FEATURES.dup
@@ -680,15 +752,19 @@ class Gem::TestCase < Test::Unit::TestCase
     path
   end
 
+  def write_dummy_extconf(gem_name)
+    write_file File.join(@tempdir, "extconf.rb") do |io|
+      io.puts "require 'mkmf'"
+      yield io if block_given?
+      io.puts "create_makefile '#{gem_name}'"
+    end
+  end
+
   ##
-  # Load a YAML string, the psych 3 way
+  # Load a YAML string using the safe loader with gem-spec permitted classes.
 
   def load_yaml(yaml)
-    if Psych.respond_to?(:unsafe_load)
-      Psych.unsafe_load(yaml)
-    else
-      Psych.load(yaml)
-    end
+    Gem::SafeYAML.safe_load(yaml)
   end
 
   ##
@@ -713,7 +789,7 @@ class Gem::TestCase < Test::Unit::TestCase
   #
   # Use this with #write_file to build an installed gem.
 
-  def quick_gem(name, version="2")
+  def quick_gem(name, version = "2")
     require "rubygems/specification"
 
     spec = Gem::Specification.new do |s|
@@ -799,8 +875,8 @@ class Gem::TestCase < Test::Unit::TestCase
 
   def install_default_gems(*specs)
     specs.each do |spec|
-      installer = Gem::Installer.for_spec(spec, install_as_default: true)
-      installer.install
+      installer = Gem::Installer.for_spec(spec)
+      installer.install_default_gem
       Gem.register_default_spec(spec)
     end
   end
@@ -1022,7 +1098,7 @@ Also, a list:
   # Add +spec+ to +@fetcher+ serving the data in the file +path+.
   # +repo+ indicates which repo to make +spec+ appear to be in.
 
-  def add_to_fetcher(spec, path=nil, repo=@gem_repo)
+  def add_to_fetcher(spec, path = nil, repo = @gem_repo)
     path ||= spec.cache_file
     @fetcher.data["#{@gem_repo}gems/#{spec.file_name}"] = read_binary(path)
   end
@@ -1184,6 +1260,24 @@ Also, a list:
     system("nmake /? 1>NUL 2>&1")
   end
 
+  @@symlink_supported = nil
+
+  # This is needed for Windows environment without symlink support enabled (the default
+  # for non admin) to be able to skip test for features using symlinks.
+  def symlink_supported?
+    if @@symlink_supported.nil?
+      begin
+        File.symlink(File.join(@tempdir, "a"), File.join(@tempdir, "b"))
+      rescue NotImplementedError, SystemCallError
+        @@symlink_supported = false
+      else
+        File.unlink(File.join(@tempdir, "b"))
+        @@symlink_supported = true
+      end
+    end
+    @@symlink_supported
+  end
+
   # In case we're building docs in a background process, this method waits for
   # that process to exit (or if it's already been reaped, or never happened,
   # swallows the Errno::ECHILD error).
@@ -1195,7 +1289,7 @@ Also, a list:
   ##
   # Allows the proper version of +rake+ to be used for the test.
 
-  def build_rake_in(good=true)
+  def build_rake_in(good = true)
     gem_ruby = Gem.ruby
     Gem.ruby = self.class.rubybin
     env_rake = ENV["rake"]
@@ -1567,3 +1661,9 @@ class Object
 end
 
 require_relative "utilities"
+
+# mise installed rubygems_plugin.rb to system wide `site_ruby` directory.
+# This empty module avoid to call `mise` command.
+module ReshimInstaller
+  def self.reshim; end
+end

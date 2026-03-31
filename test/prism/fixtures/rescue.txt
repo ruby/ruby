@@ -33,3 +33,7 @@ end
 foo if bar rescue baz
 
 z = x y rescue c d
+
+begin
+rescue => A[]
+end

@@ -10,7 +10,7 @@ class TestExtLibs < Test::Unit::TestCase
     add_msg = ".  #{add_msg}" if add_msg
     log = "#{@extdir}/#{ext}/mkmf.log"
     define_method("test_existence_of_#{ext}") do
-      assert_separately([], <<-"end;", ignore_stderr: true) # do
+      assert_separately([], <<-"end;", ignore_stderr: true, timeout: 60) # do
         log = #{log.dump}
         msg = proc {
           "extension library `#{ext}' is not found#{add_msg}\n" <<

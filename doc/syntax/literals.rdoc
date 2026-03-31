@@ -3,7 +3,7 @@
 Literals create objects you can use in your program.  Literals include:
 
 * {Boolean and Nil Literals}[#label-Boolean+and+Nil+Literals]
-* {Number Literals}[#label-Number+Literals]
+* {Numeric Literals}[#label-Numeric+Literals]
 
   * {Integer Literals}[#label-Integer+Literals]
   * {Float Literals}[#label-Float+Literals]
@@ -36,7 +36,7 @@ Literals create objects you can use in your program.  Literals include:
 +true+ is a true value.  All objects except +nil+ and +false+ evaluate to a
 true value in conditional expressions.
 
-== Number Literals
+== \Numeric Literals
 
 === \Integer Literals
 
@@ -546,6 +546,13 @@ with <tt>%w</tt> (non-interpolable) or <tt>%W</tt> (interpolable):
   # The nested delimiters evaluated to a flat array of strings
   # (not nested array).
   %w[foo[bar baz]qux]   # => ["foo[bar", "baz]qux"]
+
+The interpolated string is treated as a single word even if it contains
+whitespace.
+
+  s = "bar baz"
+  %W[foo #{s} zot] #=> ["foo", "bar baz", "zot"]
+  %W[foo #{"bar baz  zot"} qux] # => ["foo", "bar baz  zot", "qux"]
 
 The following characters are considered as white spaces to separate words:
 

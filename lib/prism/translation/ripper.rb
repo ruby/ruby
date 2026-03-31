@@ -1,6 +1,5 @@
 # frozen_string_literal: true
-
-require "ripper"
+# :markup: markdown
 
 module Prism
   module Translation
@@ -36,9 +35,6 @@ module Prism
     # - on_rparen
     # - on_semicolon
     # - on_sp
-    # - on_symbeg
-    # - on_tstring_beg
-    # - on_tstring_end
     #
     class Ripper < Compiler
       # Parses the given Ruby program read from +src+.
@@ -70,12 +66,40 @@ module Prism
       #          [[1, 13], :on_kw,     "end", END      ]]
       #
       def self.lex(src, filename = "-", lineno = 1, raise_errors: false)
-        result = Prism.lex_compat(src, filepath: filename, line: lineno)
+        result = Prism.lex_compat(coerce_source(src), filepath: filename, line: lineno, version: "current")
 
         if result.failure? && raise_errors
           raise SyntaxError, result.errors.first.message
         else
           result.value
+        end
+      end
+
+      # Tokenizes the Ruby program and returns an array of strings.
+      # The +filename+ and +lineno+ arguments are mostly ignored, since the
+      # return value is just the tokenized input.
+      # By default, this method does not handle syntax errors in +src+,
+      # use the +raise_errors+ keyword to raise a SyntaxError for an error in +src+.
+      #
+      #   p Ripper.tokenize("def m(a) nil end")
+      #      # => ["def", " ", "m", "(", "a", ")", " ", "nil", " ", "end"]
+      #
+      def self.tokenize(...)
+        lex(...).map { |token| token[2] }
+      end
+
+      # Mirros the various lex_types that ripper supports
+      def self.coerce_source(source) # :nodoc:
+        if source.is_a?(IO)
+          source.read
+        elsif source.respond_to?(:gets)
+          src = +""
+          while line = source.gets
+            src << line
+          end
+          src
+        else
+          source.to_str
         end
       end
 
@@ -425,8 +449,34 @@ module Prism
         end
       end
 
+      autoload :Filter, "prism/translation/ripper/filter"
+      autoload :Lexer, "prism/translation/ripper/lexer"
       autoload :SexpBuilder, "prism/translation/ripper/sexp"
       autoload :SexpBuilderPP, "prism/translation/ripper/sexp"
+
+      # :stopdoc:
+      # This is not part of the public API but used by some gems.
+
+      # Ripper-internal bitflags.
+      LEX_STATE_NAMES = %i[
+        BEG END ENDARG ENDFN ARG CMDARG MID FNAME DOT CLASS LABEL LABELED FITEM
+      ].map.with_index.to_h { |name, i| [2 ** i, name] }.freeze
+      private_constant :LEX_STATE_NAMES
+
+      LEX_STATE_NAMES.each do |value, key|
+        const_set("EXPR_#{key}", value)
+      end
+      EXPR_NONE = 0
+      EXPR_VALUE = EXPR_BEG
+      EXPR_BEG_ANY = EXPR_BEG | EXPR_MID | EXPR_CLASS
+      EXPR_ARG_ANY = EXPR_ARG | EXPR_CMDARG
+      EXPR_END_ANY = EXPR_END | EXPR_ENDARG | EXPR_ENDFN
+
+      def self.lex_state_name(state)
+        LEX_STATE_NAMES.filter_map { |flag, name| name if state & flag != 0  }.join("|")
+      end
+
+      # :startdoc:
 
       # The source that is being parsed.
       attr_reader :source
@@ -437,12 +487,12 @@ module Prism
       # The current line number of the parser.
       attr_reader :lineno
 
-      # The current column number of the parser.
+      # The current column in bytes of the parser.
       attr_reader :column
 
       # Create a new Translation::Ripper object with the given source.
       def initialize(source, filename = "(ripper)", lineno = 1)
-        @source = source
+        @source = Ripper.coerce_source(source)
         @filename = filename
         @lineno = lineno
         @column = 0
@@ -465,7 +515,12 @@ module Prism
           bounds(location)
 
           if comment.is_a?(InlineComment)
-            on_comment(comment.slice)
+            # Inline comments always contain a newline if the line itself contains it
+            if result.source.source.bytesize > comment.location.end_offset
+              on_comment("#{comment.slice}\n")
+            else
+              on_comment(comment.slice)
+            end
           else
             offset = location.start_offset
             lines = comment.slice.lines
@@ -545,6 +600,8 @@ module Prism
       ##########################################################################
       # Visitor methods
       ##########################################################################
+
+      # :stopdoc:
 
       # alias foo bar
       # ^^^^^^^^^^^^^
@@ -794,7 +851,7 @@ module Prism
       # foo(bar)
       #     ^^^
       def visit_arguments_node(node)
-        arguments, _ = visit_call_node_arguments(node, nil, false)
+        arguments, _, _ = visit_call_node_arguments(node, nil, false)
         arguments
       end
 
@@ -1004,16 +1061,16 @@ module Prism
           case node.name
           when :[]
             receiver = visit(node.receiver)
-            arguments, block = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc))
+            arguments, block, has_ripper_block = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc))
 
             bounds(node.location)
             call = on_aref(receiver, arguments)
 
-            if block.nil?
-              call
-            else
+            if has_ripper_block
               bounds(node.location)
               on_method_add_block(call, block)
+            else
+              call
             end
           when :[]=
             receiver = visit(node.receiver)
@@ -1072,9 +1129,9 @@ module Prism
             if node.variable_call?
               on_vcall(message)
             else
-              arguments, block = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc || node.location))
+              arguments, block, has_ripper_block = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc || node.location))
               call =
-                if node.opening_loc.nil? && arguments&.any?
+                if node.opening_loc.nil? && get_arguments_and_block(node.arguments, node.block).first.any?
                   bounds(node.location)
                   on_command(message, arguments)
                 elsif !node.opening_loc.nil?
@@ -1085,11 +1142,11 @@ module Prism
                   on_method_add_arg(on_fcall(message), on_args_new)
                 end
 
-              if block.nil?
-                call
-              else
+              if has_ripper_block
                 bounds(node.block.location)
                 on_method_add_block(call, block)
+              else
+                call
               end
             end
           end
@@ -1113,7 +1170,7 @@ module Prism
             bounds(node.location)
             on_assign(on_field(receiver, call_operator, message), value)
           else
-            arguments, block = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc || node.location))
+            arguments, block, has_ripper_block = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc || node.location))
             call =
               if node.opening_loc.nil?
                 bounds(node.location)
@@ -1131,26 +1188,34 @@ module Prism
                 on_method_add_arg(on_call(receiver, call_operator, message), arguments)
               end
 
-            if block.nil?
-              call
-            else
+            if has_ripper_block
               bounds(node.block.location)
               on_method_add_block(call, block)
+            else
+              call
             end
           end
         end
       end
 
-      # Visit the arguments and block of a call node and return the arguments
-      # and block as they should be used.
-      private def visit_call_node_arguments(arguments_node, block_node, trailing_comma)
+      # Extract the arguments and block Ripper-style, which means if the block
+      # is like `&b` then it's moved to arguments.
+      private def get_arguments_and_block(arguments_node, block_node)
         arguments = arguments_node&.arguments || []
         block = block_node
 
         if block.is_a?(BlockArgumentNode)
-          arguments << block
+          arguments += [block]
           block = nil
         end
+
+        [arguments, block]
+      end
+
+      # Visit the arguments and block of a call node and return the arguments
+      # and block as they should be used.
+      private def visit_call_node_arguments(arguments_node, block_node, trailing_comma)
+        arguments, block = get_arguments_and_block(arguments_node, block_node)
 
         [
           if arguments.length == 1 && arguments.first.is_a?(ForwardingArgumentsNode)
@@ -1165,7 +1230,8 @@ module Prism
               on_args_add_block(args, false)
             end
           end,
-          visit(block)
+          visit(block),
+          block != nil,
         ]
       end
 
@@ -1518,7 +1584,6 @@ module Prism
       # ^^^^^^^^^^^^^^^
       def visit_constant_path_operator_write_node(node)
         target = visit_constant_path_write_node_target(node.target)
-        value = visit(node.value)
 
         bounds(node.binary_operator_loc)
         operator = on_op("#{node.binary_operator}=")
@@ -1532,7 +1597,6 @@ module Prism
       # ^^^^^^^^^^^^^^^^
       def visit_constant_path_and_write_node(node)
         target = visit_constant_path_write_node_target(node.target)
-        value = visit(node.value)
 
         bounds(node.operator_loc)
         operator = on_op("&&=")
@@ -1546,7 +1610,6 @@ module Prism
       # ^^^^^^^^^^^^^^^^
       def visit_constant_path_or_write_node(node)
         target = visit_constant_path_write_node_target(node.target)
-        value = visit(node.value)
 
         bounds(node.operator_loc)
         operator = on_op("||=")
@@ -1602,10 +1665,10 @@ module Prism
           end
 
         bounds(node.location)
-        if receiver.nil?
-          on_def(name, parameters, bodystmt)
-        else
+        if receiver
           on_defs(receiver, operator, name, parameters, bodystmt)
+        else
+          on_def(name, parameters, bodystmt)
         end
       end
 
@@ -1615,8 +1678,23 @@ module Prism
       # defined?(a)
       # ^^^^^^^^^^^
       def visit_defined_node(node)
+        expression = visit(node.value)
+
+        # Very weird circumstances here where something like:
+        #
+        #     defined?
+        #     (1)
+        #
+        # gets parsed in Ruby as having only the `1` expression but in Ripper it
+        # gets parsed as having a parentheses node. In this case we need to
+        # synthesize that node to match Ripper's behavior.
+        if node.lparen_loc && node.keyword_loc.join(node.lparen_loc).slice.include?("\n")
+          bounds(node.lparen_loc.join(node.rparen_loc))
+          expression = on_paren(on_stmts_add(on_stmts_new, expression))
+        end
+
         bounds(node.location)
-        on_defined(visit(node.value))
+        on_defined(expression)
       end
 
       # if foo then bar else baz end
@@ -1988,7 +2066,7 @@ module Prism
       # ^^^^^^^^^^^^^^^
       def visit_index_operator_write_node(node)
         receiver = visit(node.receiver)
-        arguments, _ = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc))
+        arguments, _, _ = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc))
 
         bounds(node.location)
         target = on_aref_field(receiver, arguments)
@@ -2005,7 +2083,7 @@ module Prism
       # ^^^^^^^^^^^^^^^^
       def visit_index_and_write_node(node)
         receiver = visit(node.receiver)
-        arguments, _ = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc))
+        arguments, _, _ = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc))
 
         bounds(node.location)
         target = on_aref_field(receiver, arguments)
@@ -2022,7 +2100,7 @@ module Prism
       # ^^^^^^^^^^^^^^^^
       def visit_index_or_write_node(node)
         receiver = visit(node.receiver)
-        arguments, _ = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc))
+        arguments, _, _ = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc))
 
         bounds(node.location)
         target = on_aref_field(receiver, arguments)
@@ -2039,7 +2117,7 @@ module Prism
       # ^^^^^^^^
       def visit_index_target_node(node)
         receiver = visit(node.receiver)
-        arguments, _ = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc))
+        arguments, _, _ = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.closing_loc))
 
         bounds(node.location)
         on_aref_field(receiver, arguments)
@@ -2159,20 +2237,37 @@ module Prism
       # "foo #{bar}"
       # ^^^^^^^^^^^^
       def visit_interpolated_string_node(node)
-        if node.opening&.start_with?("<<~")
-          heredoc = visit_heredoc_string_node(node)
+        with_string_bounds(node) do
+          if node.opening&.start_with?("<<~")
+            heredoc = visit_heredoc_string_node(node)
 
-          bounds(node.location)
-          on_string_literal(heredoc)
-        elsif !node.heredoc? && node.parts.length > 1 && node.parts.any? { |part| (part.is_a?(StringNode) || part.is_a?(InterpolatedStringNode)) && !part.opening_loc.nil? }
-          first, *rest = node.parts
-          rest.inject(visit(first)) do |content, part|
-            concat = visit(part)
+            bounds(node.location)
+            on_string_literal(heredoc)
+          elsif !node.heredoc? && node.parts.length > 1 && node.parts.any? { |part| (part.is_a?(StringNode) || part.is_a?(InterpolatedStringNode)) && !part.opening_loc.nil? }
+            first, *rest = node.parts
+            rest.inject(visit(first)) do |content, part|
+              concat = visit(part)
 
-            bounds(part.location)
-            on_string_concat(content, concat)
+              bounds(part.location)
+              on_string_concat(content, concat)
+            end
+          else
+            bounds(node.parts.first.location)
+            parts =
+              node.parts.inject(on_string_content) do |content, part|
+                on_string_add(content, visit_string_content(part))
+              end
+
+            bounds(node.location)
+            on_string_literal(parts)
           end
-        else
+        end
+      end
+
+      # :"foo #{bar}"
+      # ^^^^^^^^^^^^^
+      def visit_interpolated_symbol_node(node)
+        with_string_bounds(node) do
           bounds(node.parts.first.location)
           parts =
             node.parts.inject(on_string_content) do |content, part|
@@ -2180,40 +2275,29 @@ module Prism
             end
 
           bounds(node.location)
-          on_string_literal(parts)
+          on_dyna_symbol(parts)
         end
-      end
-
-      # :"foo #{bar}"
-      # ^^^^^^^^^^^^^
-      def visit_interpolated_symbol_node(node)
-        bounds(node.parts.first.location)
-        parts =
-          node.parts.inject(on_string_content) do |content, part|
-            on_string_add(content, visit_string_content(part))
-          end
-
-        bounds(node.location)
-        on_dyna_symbol(parts)
       end
 
       # `foo #{bar}`
       # ^^^^^^^^^^^^
       def visit_interpolated_x_string_node(node)
-        if node.opening.start_with?("<<~")
-          heredoc = visit_heredoc_x_string_node(node)
+        with_string_bounds(node) do
+          if node.opening.start_with?("<<~")
+            heredoc = visit_heredoc_x_string_node(node)
 
-          bounds(node.location)
-          on_xstring_literal(heredoc)
-        else
-          bounds(node.parts.first.location)
-          parts =
-            node.parts.inject(on_xstring_new) do |content, part|
-              on_xstring_add(content, visit_string_content(part))
-            end
+            bounds(node.location)
+            on_xstring_literal(heredoc)
+          else
+            bounds(node.parts.first.location)
+            parts =
+              node.parts.inject(on_xstring_new) do |content, part|
+                on_xstring_add(content, visit_string_content(part))
+              end
 
-          bounds(node.location)
-          on_xstring_literal(parts)
+            bounds(node.location)
+            on_xstring_literal(parts)
+          end
         end
       end
 
@@ -2282,6 +2366,8 @@ module Prism
               else
                 visit(node.parameters.parameters)
               end
+
+            visit_all(node.parameters.locals)
 
             if node.parameters.opening_loc.nil?
               params
@@ -2433,8 +2519,8 @@ module Prism
 
       # A node that is missing from the syntax tree. This is only used in the
       # case of a syntax error.
-      def visit_missing_node(node)
-        raise "Cannot visit missing nodes directly."
+      def visit_error_recovery_node(node)
+        raise "Cannot visit error recovery nodes directly."
       end
 
       # module Foo; end
@@ -2547,6 +2633,13 @@ module Prism
       def visit_nil_node(node)
         bounds(node.location)
         on_var_ref(on_kw("nil"))
+      end
+
+      # def foo(&nil); end
+      #         ^^^^
+      def visit_no_block_parameter_node(node)
+        bounds(node.location)
+        on_blockarg(:nil)
       end
 
       # def foo(**nil); end
@@ -2937,24 +3030,60 @@ module Prism
       # "foo"
       # ^^^^^
       def visit_string_node(node)
-        if (content = node.content).empty?
-          bounds(node.location)
-          on_string_literal(on_string_content)
-        elsif (opening = node.opening) == "?"
-          bounds(node.location)
-          on_CHAR("?#{node.content}")
-        elsif opening.start_with?("<<~")
-          heredoc = visit_heredoc_string_node(node.to_interpolated)
+        with_string_bounds(node) do
+          if (content = node.content).empty?
+            bounds(node.location)
+            on_string_literal(on_string_content)
+          elsif (opening = node.opening) == "?"
+            bounds(node.location)
+            on_CHAR("?#{node.content}")
+          elsif opening.start_with?("<<~")
+            heredoc = visit_heredoc_string_node(node.to_interpolated)
 
-          bounds(node.location)
-          on_string_literal(heredoc)
-        else
-          bounds(node.content_loc)
-          tstring_content = on_tstring_content(content)
+            bounds(node.location)
+            on_string_literal(heredoc)
+          else
+            bounds(node.content_loc)
+            tstring_content = on_tstring_content(content)
 
-          bounds(node.location)
-          on_string_literal(on_string_add(on_string_content, tstring_content))
+            bounds(node.location)
+            on_string_literal(on_string_add(on_string_content, tstring_content))
+          end
         end
+      end
+
+      # Responsible for emitting the various string-like begin/end events
+      private def with_string_bounds(node)
+        # `foo "bar": baz` doesn't emit the closing location
+        assoc = !(opening = node.opening)&.include?(":") && node.closing&.end_with?(":")
+
+        is_heredoc = opening&.start_with?("<<")
+        if is_heredoc
+          bounds(node.opening_loc)
+          on_heredoc_beg(node.opening)
+        elsif opening&.start_with?(":", "%s")
+          bounds(node.opening_loc)
+          on_symbeg(node.opening)
+        elsif opening&.start_with?("`", "%x")
+          bounds(node.opening_loc)
+          on_backtick(node.opening)
+        elsif opening && !opening.start_with?("?")
+          bounds(node.opening_loc)
+          on_tstring_beg(opening)
+        end
+
+        result = yield
+        return result if assoc
+
+        if is_heredoc
+          bounds(node.closing_loc)
+          on_heredoc_end(node.closing)
+        elsif node.closing_loc
+          bounds(node.closing_loc)
+          on_tstring_end(node.closing)
+        end
+
+        result
       end
 
       # Ripper gives back the escaped string content but strips out the common
@@ -3034,42 +3163,24 @@ module Prism
 
       # Visit a heredoc node that is representing a string.
       private def visit_heredoc_string_node(node)
-        bounds(node.opening_loc)
-        on_heredoc_beg(node.opening)
-
         bounds(node.location)
-        result =
-          visit_heredoc_node(node.parts, on_string_content) do |parts, part|
-            on_string_add(parts, part)
-          end
-
-        bounds(node.closing_loc)
-        on_heredoc_end(node.closing)
-
-        result
+        visit_heredoc_node(node.parts, on_string_content) do |parts, part|
+          on_string_add(parts, part)
+        end
       end
 
       # Visit a heredoc node that is representing an xstring.
       private def visit_heredoc_x_string_node(node)
-        bounds(node.opening_loc)
-        on_heredoc_beg(node.opening)
-
         bounds(node.location)
-        result =
-          visit_heredoc_node(node.parts, on_xstring_new) do |parts, part|
-            on_xstring_add(parts, part)
-          end
-
-        bounds(node.closing_loc)
-        on_heredoc_end(node.closing)
-
-        result
+        visit_heredoc_node(node.parts, on_xstring_new) do |parts, part|
+          on_xstring_add(parts, part)
+        end
       end
 
       # super(foo)
       # ^^^^^^^^^^
       def visit_super_node(node)
-        arguments, block = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.rparen_loc || node.location))
+        arguments, block, has_ripper_block = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.rparen_loc || node.location))
 
         if !node.lparen_loc.nil?
           bounds(node.lparen_loc)
@@ -3079,35 +3190,36 @@ module Prism
         bounds(node.location)
         call = on_super(arguments)
 
-        if block.nil?
-          call
-        else
+        if has_ripper_block
           bounds(node.block.location)
           on_method_add_block(call, block)
+        else
+          call
         end
       end
 
       # :foo
       # ^^^^
       def visit_symbol_node(node)
-        if (opening = node.opening)&.match?(/^%s|['"]:?$/)
-          bounds(node.value_loc)
-          content = on_string_content
-
-          if !(value = node.value).empty?
-            content = on_string_add(content, on_tstring_content(value))
+        with_string_bounds(node) do
+          if node.value_loc.nil?
+            bounds(node.location)
+            on_dyna_symbol(on_string_content)
+          elsif (opening = node.opening)&.match?(/^%s|['"]:?$/)
+            bounds(node.value_loc)
+            content = on_string_add(on_string_content, on_tstring_content(node.value))
+            bounds(node.location)
+            on_dyna_symbol(content)
+          elsif (closing = node.closing) == ":"
+            bounds(node.location)
+            on_label("#{node.value}:")
+          elsif opening.nil? && node.closing_loc.nil?
+            bounds(node.value_loc)
+            on_symbol_literal(visit_token(node.value))
+          else
+            bounds(node.value_loc)
+            on_symbol_literal(on_symbol(visit_token(node.value)))
           end
-
-          on_dyna_symbol(content)
-        elsif (closing = node.closing) == ":"
-          bounds(node.location)
-          on_label("#{node.value}:")
-        elsif opening.nil? && node.closing_loc.nil?
-          bounds(node.value_loc)
-          on_symbol_literal(visit_token(node.value))
-        else
-          bounds(node.value_loc)
-          on_symbol_literal(on_symbol(visit_token(node.value)))
         end
       end
 
@@ -3230,20 +3342,22 @@ module Prism
       # `foo`
       # ^^^^^
       def visit_x_string_node(node)
-        if node.unescaped.empty?
-          bounds(node.location)
-          on_xstring_literal(on_xstring_new)
-        elsif node.opening.start_with?("<<~")
-          heredoc = visit_heredoc_x_string_node(node.to_interpolated)
+        with_string_bounds(node) do
+          if node.unescaped.empty?
+            bounds(node.location)
+            on_xstring_literal(on_xstring_new)
+          elsif node.opening.start_with?("<<~")
+            heredoc = visit_heredoc_x_string_node(node.to_interpolated)
 
-          bounds(node.location)
-          on_xstring_literal(heredoc)
-        else
-          bounds(node.content_loc)
-          content = on_tstring_content(node.content)
+            bounds(node.location)
+            on_xstring_literal(heredoc)
+          else
+            bounds(node.content_loc)
+            content = on_tstring_content(node.content)
 
-          bounds(node.location)
-          on_xstring_literal(on_xstring_add(on_xstring_new, content))
+            bounds(node.location)
+            on_xstring_literal(on_xstring_add(on_xstring_new, content))
+          end
         end
       end
 
@@ -3279,7 +3393,7 @@ module Prism
 
       # Lazily initialize the parse result.
       def result
-        @result ||= Prism.parse(source, partial_script: true)
+        @result ||= Prism.parse(source, partial_script: true, version: "current")
       end
 
       ##########################################################################
@@ -3387,18 +3501,20 @@ module Prism
         @column = location.start_column
       end
 
+      # :startdoc:
+
       ##########################################################################
       # Ripper interface
       ##########################################################################
 
       # :stopdoc:
       def _dispatch_0; end
-      def _dispatch_1(_); end
-      def _dispatch_2(_, _); end
-      def _dispatch_3(_, _, _); end
-      def _dispatch_4(_, _, _, _); end
-      def _dispatch_5(_, _, _, _, _); end
-      def _dispatch_7(_, _, _, _, _, _, _); end
+      def _dispatch_1(arg); arg end
+      def _dispatch_2(arg, _); arg end
+      def _dispatch_3(arg, _, _); arg end
+      def _dispatch_4(arg, _, _, _); arg end
+      def _dispatch_5(arg, _, _, _, _); arg end
+      def _dispatch_7(arg, _, _, _, _, _, _); arg end
       # :startdoc:
 
       #

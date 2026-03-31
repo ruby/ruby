@@ -92,7 +92,7 @@ RSpec.describe "real source plugins" do
           a-path-gem!
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       G
     end
 
@@ -124,7 +124,6 @@ RSpec.describe "real source plugins" do
       let(:uri_hash) { Digest(:SHA1).hexdigest(lib_path("a-path-gem-1.0").to_s) }
       it "copies repository to vendor cache and uses it" do
         bundle "install"
-        bundle "config set cache_all true"
         bundle :cache
 
         expect(bundled_app("vendor/cache/a-path-gem-1.0-#{uri_hash}")).to exist
@@ -136,9 +135,8 @@ RSpec.describe "real source plugins" do
       end
 
       it "copies repository to vendor cache and uses it even when installed with `path` configured" do
-        bundle "config set --local path vendor/bundle"
+        bundle_config "path vendor/bundle"
         bundle :install
-        bundle "config set cache_all true"
         bundle :cache
 
         expect(bundled_app("vendor/cache/a-path-gem-1.0-#{uri_hash}")).to exist
@@ -148,9 +146,8 @@ RSpec.describe "real source plugins" do
       end
 
       it "bundler package copies repository to vendor cache" do
-        bundle "config set --local path vendor/bundle"
+        bundle_config "path vendor/bundle"
         bundle :install
-        bundle "config set cache_all true"
         bundle :cache
 
         expect(bundled_app("vendor/cache/a-path-gem-1.0-#{uri_hash}")).to exist
@@ -180,7 +177,7 @@ RSpec.describe "real source plugins" do
             a-path-gem!
 
           BUNDLED WITH
-             #{Bundler::VERSION}
+            #{Bundler::VERSION}
         G
       end
 
@@ -363,7 +360,7 @@ RSpec.describe "real source plugins" do
           ma-gitp-gem!
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       G
     end
 
@@ -389,7 +386,7 @@ RSpec.describe "real source plugins" do
             ma-gitp-gem!
 
           BUNDLED WITH
-             #{Bundler::VERSION}
+            #{Bundler::VERSION}
         G
       end
 
@@ -446,7 +443,6 @@ RSpec.describe "real source plugins" do
           end
         G
 
-        bundle "config set cache_all true"
         bundle :cache
         expect(bundled_app("vendor/cache/foo-1.0-#{ref}")).to exist
         expect(bundled_app("vendor/cache/foo-1.0-#{ref}/.git")).not_to exist

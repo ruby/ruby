@@ -17,11 +17,11 @@ runs:
 
     - name: Set ENV
       shell: bash
-      run: |
+      run: | # zizmor: ignore[github-env]
         dir_config() {
           local args=() lib var="$1"; shift
           for lib in "$@"; do
-            args+="--with-${lib%@*}-dir=$(brew --prefix $lib)"
+            args+=("--with-${lib%@*}-dir=$(brew --prefix $lib)")
           done
           echo "$var=${args[*]}" >> $GITHUB_ENV
         }

@@ -7,6 +7,7 @@ module ComparableSpecs
     end
 
     def <=>(other)
+      return nil if other.nil?
       self.value <=> other.value
     end
   end

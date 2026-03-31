@@ -1,7 +1,7 @@
 inherit_from: .rubocop_todo.yml
 
 AllCops:
-  TargetRubyVersion: 3.1
+  TargetRubyVersion: 3.2
   DisplayCopNames: true
   Exclude:
     - command_line/fixtures/bad_syntax.rb
@@ -197,6 +197,7 @@ Style/Lambda:
     - 'language/lambda_spec.rb'
     - 'language/proc_spec.rb'
     - 'language/numbered_parameters_spec.rb'
+    - 'language/it_parameter_spec.rb'
     - 'core/kernel/lambda_spec.rb'
 
 Style/EmptyLambdaParameter:

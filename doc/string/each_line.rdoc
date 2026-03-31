@@ -1,9 +1,12 @@
-With a block given, forms the substrings ("lines")
+With a block given, forms the substrings (lines)
 that are the result of splitting +self+
-at each occurrence of the given line separator +line_sep+;
+at each occurrence of the given +record_separator+;
 passes each line to the block;
-returns +self+:
+returns +self+.
 
+With the default +record_separator+:
+
+  $/ # => "\n"
   s = <<~EOT
   This is the first line.
   This is line two.
@@ -11,7 +14,6 @@ returns +self+:
   This is line four.
   This is line five.
   EOT
-
   s.each_line {|line| p line }
 
 Output:
@@ -22,9 +24,10 @@ Output:
   "This is line four.\n"
   "This is line five.\n"
 
-With a different +line_sep+:
+With a different +record_separator+:
 
-  s.each_line(' is ') {|line| p line }
+  record_separator = ' is '
+  s.each_line(record_separator) {|line| p line }
 
 Output:
 
@@ -34,7 +37,7 @@ Output:
   "line four.\nThis is "
   "line five.\n"
 
-With +chomp+ as +true+, removes the trailing +line_sep+ from each line:
+With +chomp+ as +true+, removes the trailing +record_separator+ from each line:
 
   s.each_line(chomp: true) {|line| p line }
 
@@ -46,11 +49,12 @@ Output:
   "This is line four."
   "This is line five."
 
-With an empty string as +line_sep+,
+With an empty string as +record_separator+,
 forms and passes "paragraphs" by splitting at each occurrence
 of two or more newlines:
 
-  s.each_line('') {|line| p line }
+  record_separator = ''
+  s.each_line(record_separator) {|line| p line }
 
 Output:
 
@@ -58,3 +62,5 @@ Output:
   "This is line four.\nThis is line five.\n"
 
 With no block given, returns an enumerator.
+
+Related: see {Iterating}[rdoc-ref:String@Iterating].

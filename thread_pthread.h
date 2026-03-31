@@ -17,6 +17,11 @@
 #define RB_NATIVETHREAD_LOCK_INIT PTHREAD_MUTEX_INITIALIZER
 #define RB_NATIVETHREAD_COND_INIT PTHREAD_COND_INITIALIZER
 
+// TLS can not be accessed across .so on arm64 and perhaps ppc64le too.
+#if defined(__arm64__) || defined(__aarch64__) || defined(__powerpc64__)
+# define RB_THREAD_CURRENT_EC_NOINLINE
+#endif
+
 // this data should be protected by timer_th.waiting_lock
 struct rb_thread_sched_waiting {
     enum thread_sched_waiting_flag {
@@ -34,6 +39,7 @@ struct rb_thread_sched_waiting {
 #else
         uint64_t timeout;
 #endif
+        uint32_t event_serial;
         int fd; // -1 for timeout only
         int result;
     } data;
@@ -42,7 +48,7 @@ struct rb_thread_sched_waiting {
     struct ccan_list_node node;
 };
 
-// per-Thead scheduler helper data
+// per-Thread scheduler helper data
 struct rb_thread_sched_item {
     struct {
         struct ccan_list_node ubf;
@@ -50,6 +56,9 @@ struct rb_thread_sched_item {
         // connected to ractor->threads.sched.reqdyq
         // locked by ractor->threads.sched.lock
         struct ccan_list_node readyq;
+        // Indicates whether thread is on the readyq.
+        // There is no clear relationship between this and th->status.
+        bool is_ready;
 
         // connected to vm->ractor.sched.timeslice_threads
         // locked by vm->ractor.sched.lock
@@ -64,10 +73,12 @@ struct rb_thread_sched_item {
     } node;
 
     struct rb_thread_sched_waiting waiting_reason;
+    uint32_t event_serial;
 
     bool finished;
     bool malloc_stack;
     void *context_stack;
+    size_t context_stack_size;
     struct coroutine_context *context;
 };
 
@@ -120,6 +131,11 @@ struct rb_thread_sched {
     struct rb_thread_struct *lock_owner;
 #endif
     struct rb_thread_struct *running; // running thread or NULL
+    // Most recently running thread or NULL. If this thread wakes up before the newly running
+    // thread completes the transfer of control, it can interrupt and resume running.
+    // The new thread clears this field when it takes control.
+    struct rb_thread_struct *runnable_hot_th;
+    int runnable_hot_th_waiting;
     bool is_running;
     bool is_running_timeslice;
     bool enable_mn_threads;
@@ -133,8 +149,7 @@ struct rb_thread_sched {
 #ifdef RB_THREAD_LOCAL_SPECIFIER
   NOINLINE(void rb_current_ec_set(struct rb_execution_context_struct *));
 
-  # if defined(__arm64__) || defined(__aarch64__)
-    // on Arm64, TLS can not be accessed across .so
+  # ifdef RB_THREAD_CURRENT_EC_NOINLINE
     NOINLINE(struct rb_execution_context_struct *rb_current_ec(void));
   # else
     RUBY_EXTERN RB_THREAD_LOCAL_SPECIFIER struct rb_execution_context_struct *ruby_current_ec;
@@ -163,5 +178,9 @@ native_tls_set(native_tls_key_t key, void *ptr)
 
 RUBY_EXTERN native_tls_key_t ruby_current_ec_key;
 #endif
+
+struct rb_ractor_struct;
+void rb_ractor_sched_wait(struct rb_execution_context_struct *ec, struct rb_ractor_struct *cr, rb_unblock_function_t *ubf, void *ptr);
+void rb_ractor_sched_wakeup(struct rb_ractor_struct *r, struct rb_thread_struct *th);
 
 #endif /* RUBY_THREAD_PTHREAD_H */

@@ -38,8 +38,12 @@ Logging::message "=== OpenSSL for Ruby configurator ===\n"
 
 $defs.push("-D""OPENSSL_SUPPRESS_DEPRECATED")
 
-have_func("rb_io_descriptor")
-have_func("rb_io_maybe_wait(0, Qnil, Qnil, Qnil)", "ruby/io.h") # Ruby 3.1
+# Missing in TruffleRuby
+have_func("rb_call_super_kw(0, NULL, 0)", "ruby.h")
+# Ruby 3.1
+have_func("rb_io_descriptor", "ruby/io.h")
+have_func("rb_io_maybe_wait(0, Qnil, Qnil, Qnil)", "ruby/io.h")
+# Ruby 3.2
 have_func("rb_io_timeout", "ruby/io.h")
 
 Logging::message "=== Checking for system dependent stuff... ===\n"
@@ -135,6 +139,11 @@ ssl_h = "openssl/ssl.h".freeze
 # compile options
 have_func("RAND_egd()", "openssl/rand.h")
 
+# added in OpenSSL 1.0.2, not in LibreSSL yet
+have_func("SSL_CTX_set1_sigalgs_list(NULL, NULL)", ssl_h)
+# added in OpenSSL 1.0.2, not in LibreSSL or AWS-LC yet
+have_func("SSL_CTX_set1_client_sigalgs_list(NULL, NULL)", ssl_h)
+
 # added in 1.1.0, currently not in LibreSSL
 have_func("EVP_PBE_scrypt(\"\", 0, (unsigned char *)\"\", 0, 0, 0, 0, 0, NULL, 0)", evp_h)
 
@@ -142,7 +151,7 @@ have_func("EVP_PBE_scrypt(\"\", 0, (unsigned char *)\"\", 0, 0, 0, 0, 0, NULL, 0
 have_func("EVP_PKEY_check(NULL)", evp_h)
 
 # added in 3.0.0
-have_func("SSL_set0_tmp_dh_pkey(NULL, NULL)", ssl_h)
+have_func("SSL_CTX_set0_tmp_dh_pkey(NULL, NULL)", ssl_h)
 have_func("ERR_get_error_all(NULL, NULL, NULL, NULL, NULL)", "openssl/err.h")
 have_func("SSL_CTX_load_verify_file(NULL, \"\")", ssl_h)
 have_func("BN_check_prime(NULL, NULL, NULL)", "openssl/bn.h")
@@ -151,8 +160,14 @@ have_func("EVP_MD_CTX_get_pkey_ctx(NULL)", evp_h)
 have_func("EVP_PKEY_eq(NULL, NULL)", evp_h)
 have_func("EVP_PKEY_dup(NULL)", evp_h)
 
+# added in 3.2.0
+have_func("SSL_get0_group_name(NULL)", ssl_h)
+
 # added in 3.4.0
 have_func("TS_VERIFY_CTX_set0_certs(NULL, NULL)", ts_h)
+
+# added in 3.5.0
+have_func("SSL_get0_peer_signature_name(NULL, NULL)", ssl_h)
 
 Logging::message "=== Checking done. ===\n"
 

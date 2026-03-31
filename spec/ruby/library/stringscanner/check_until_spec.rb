@@ -35,7 +35,6 @@ describe "StringScanner#check_until" do
     end
 
     # https://github.com/ruby/strscan/issues/131
-    ruby_version_is ""..."3.5" do # Don't run on 3.5.0dev that already contains not released fixes
     version_is StringScanner::Version, "3.1.1"..."3.1.3" do # ruby_version_is "3.4.1"
       it "sets the last match result if given a String" do
         @s.check_until("a")
@@ -44,7 +43,6 @@ describe "StringScanner#check_until" do
         @s.matched.should == "This is a"
         @s.post_match.should == " test"
       end
-    end
     end
 
     version_is StringScanner::Version, "3.1.3" do # ruby_version_is "3.4"
@@ -76,14 +74,12 @@ describe "StringScanner#check_until" do
     version_is StringScanner::Version, "3.1.1" do # ruby_version_is "3.4"
       context "when #check_until was called with a String pattern" do
         # https://github.com/ruby/strscan/issues/139
-        ruby_version_is ""..."3.5" do # Don't run on 3.5.0dev that already contains not released fixes
         version_is StringScanner::Version, "3.1.1"..."3.1.3" do # ruby_version_is "3.4.0"..."3.4.3"
           it "returns nil when matching succeeded" do
             @s.check_until("This")
             @s.should.matched?
             @s[:a].should be_nil
           end
-        end
         end
         version_is StringScanner::Version, "3.1.3" do # ruby_version_is "3.4.3"
           it "raises IndexError when matching succeeded" do
@@ -105,7 +101,6 @@ describe "StringScanner#check_until" do
         end
 
         # https://github.com/ruby/strscan/issues/135
-        ruby_version_is ""..."3.5" do # Don't run on 3.5.0dev that already contains not released fixes
         version_is StringScanner::Version, "3.1.1"..."3.1.3" do # ruby_version_is "3.4.0"..."3.4.3"
           it "ignores the previous matching with Regexp" do
             @s.exist?(/(?<a>This)/)
@@ -116,7 +111,6 @@ describe "StringScanner#check_until" do
             @s.should.matched?
             @s[:a].should be_nil
           end
-        end
         end
         version_is StringScanner::Version, "3.1.3" do # ruby_version_is "3.4.0"..."3.4.3"
           it "ignores the previous matching with Regexp" do

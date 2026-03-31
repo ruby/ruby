@@ -280,6 +280,12 @@ class TestObject < Test::Unit::TestCase
     assert_equal([:foo], k.private_methods(false))
   end
 
+  class ToStrCounter
+    def initialize(str = "@foo") @str = str; @count = 0; end
+    def to_str; @count += 1; @str; end
+    def count; @count; end
+  end
+
   def test_instance_variable_get
     o = Object.new
     o.instance_eval { @foo = :foo }
@@ -291,9 +297,7 @@ class TestObject < Test::Unit::TestCase
     assert_raise(NameError) { o.instance_variable_get("bar") }
     assert_raise(TypeError) { o.instance_variable_get(1) }
 
-    n = Object.new
-    def n.to_str; @count = defined?(@count) ? @count + 1 : 1; "@foo"; end
-    def n.count; @count; end
+    n = ToStrCounter.new
     assert_equal(:foo, o.instance_variable_get(n))
     assert_equal(1, n.count)
   end
@@ -308,9 +312,7 @@ class TestObject < Test::Unit::TestCase
     assert_raise(NameError) { o.instance_variable_set("bar", 1) }
     assert_raise(TypeError) { o.instance_variable_set(1, 1) }
 
-    n = Object.new
-    def n.to_str; @count = defined?(@count) ? @count + 1 : 1; "@foo"; end
-    def n.count; @count; end
+    n = ToStrCounter.new
     o.instance_variable_set(n, :bar)
     assert_equal(:bar, o.instance_eval { @foo })
     assert_equal(1, n.count)
@@ -327,9 +329,7 @@ class TestObject < Test::Unit::TestCase
     assert_raise(NameError) { o.instance_variable_defined?("bar") }
     assert_raise(TypeError) { o.instance_variable_defined?(1) }
 
-    n = Object.new
-    def n.to_str; @count = defined?(@count) ? @count + 1 : 1; "@foo"; end
-    def n.count; @count; end
+    n = ToStrCounter.new
     assert_equal(true, o.instance_variable_defined?(n))
     assert_equal(1, n.count)
   end
@@ -356,38 +356,41 @@ class TestObject < Test::Unit::TestCase
   end
 
   def test_remove_instance_variable_re_embed
-    require "objspace"
+    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      c = Class.new do
+        attr_reader :a, :b, :c
 
-    c = Class.new do
-      def a = @a
+        def initialize
+          @a = nil
+          @b = nil
+          @c = nil
+        end
+      end
 
-      def b = @b
+      o1 = c.new
+      o2 = c.new
 
-      def c = @c
-    end
+      o1.instance_variable_set(:@foo, 5)
+      o1.instance_variable_set(:@a, 0)
+      o1.instance_variable_set(:@b, 1)
+      o1.instance_variable_set(:@c, 2)
+      refute_includes ObjectSpace.dump(o1), '"embedded":true'
+      o1.remove_instance_variable(:@foo)
+      assert_includes ObjectSpace.dump(o1), '"embedded":true'
 
-    o1 = c.new
-    o2 = c.new
+      o2.instance_variable_set(:@a, 0)
+      o2.instance_variable_set(:@b, 1)
+      o2.instance_variable_set(:@c, 2)
+      assert_includes ObjectSpace.dump(o2), '"embedded":true'
 
-    o1.instance_variable_set(:@foo, 5)
-    o1.instance_variable_set(:@a, 0)
-    o1.instance_variable_set(:@b, 1)
-    o1.instance_variable_set(:@c, 2)
-    refute_includes ObjectSpace.dump(o1), '"embedded":true'
-    o1.remove_instance_variable(:@foo)
-    assert_includes ObjectSpace.dump(o1), '"embedded":true'
-
-    o2.instance_variable_set(:@a, 0)
-    o2.instance_variable_set(:@b, 1)
-    o2.instance_variable_set(:@c, 2)
-    assert_includes ObjectSpace.dump(o2), '"embedded":true'
-
-    assert_equal(0, o1.a)
-    assert_equal(1, o1.b)
-    assert_equal(2, o1.c)
-    assert_equal(0, o2.a)
-    assert_equal(1, o2.b)
-    assert_equal(2, o2.c)
+      assert_equal(0, o1.a)
+      assert_equal(1, o1.b)
+      assert_equal(2, o1.c)
+      assert_equal(0, o2.a)
+      assert_equal(1, o2.b)
+      assert_equal(2, o2.c)
+    end;
   end
 
   def test_convert_string
@@ -950,6 +953,19 @@ class TestObject < Test::Unit::TestCase
     assert_match(/\bInspect\u{3042}:.* @\u{3044}=42\b/, x.inspect)
     x.instance_variable_set("@\u{3046}".encode(Encoding::EUC_JP), 6)
     assert_match(/@\u{3046}=6\b/, x.inspect)
+
+    x = Object.new
+    x.singleton_class.class_eval do
+      private def instance_variables_to_inspect = [:@host, :@user]
+    end
+
+    x.instance_variable_set(:@host, "localhost")
+    x.instance_variable_set(:@user, "root")
+    x.instance_variable_set(:@password, "hunter2")
+    s = x.inspect
+    assert_include(s, "@host=\"localhost\"")
+    assert_include(s, "@user=\"root\"")
+    assert_not_include(s, "@password=")
   end
 
   def test_singleton_methods
@@ -1007,6 +1023,47 @@ class TestObject < Test::Unit::TestCase
     ys.prepend(Module.new)
     y.freeze
     assert_predicate(ys, :frozen?, '[Bug #19169]')
+  end
+
+  def test_singleton_class_of_singleton_class_freeze
+    x = Object.new
+    xs = x.singleton_class
+    xxs = xs.singleton_class
+    xxxs = xxs.singleton_class
+    x.freeze
+    assert_predicate(xs, :frozen?, '[Bug #20319]')
+    assert_predicate(xxs, :frozen?, '[Bug #20319]')
+    assert_predicate(xxxs, :frozen?, '[Bug #20319]')
+
+    y = Object.new
+    ys = y.singleton_class
+    ys.prepend(Module.new)
+    yys = ys.singleton_class
+    yys.prepend(Module.new)
+    yyys = yys.singleton_class
+    yyys.prepend(Module.new)
+    y.freeze
+    assert_predicate(ys, :frozen?, '[Bug #20319]')
+    assert_predicate(yys, :frozen?, '[Bug #20319]')
+    assert_predicate(yyys, :frozen?, '[Bug #20319]')
+
+    c = Class.new
+    cs = c.singleton_class
+    ccs = cs.singleton_class
+    cccs = ccs.singleton_class
+    d = Class.new(c)
+    ds = d.singleton_class
+    dds = ds.singleton_class
+    ddds = dds.singleton_class
+    d.freeze
+    assert_predicate(d, :frozen?, '[Bug #20319]')
+    assert_predicate(ds, :frozen?, '[Bug #20319]')
+    assert_predicate(dds, :frozen?, '[Bug #20319]')
+    assert_predicate(ddds, :frozen?, '[Bug #20319]')
+    assert_not_predicate(c, :frozen?, '[Bug #20319]')
+    assert_not_predicate(cs, :frozen?, '[Bug #20319]')
+    assert_not_predicate(ccs, :frozen?, '[Bug #20319]')
+    assert_not_predicate(cccs, :frozen?, '[Bug #20319]')
   end
 
   def test_redef_method_missing

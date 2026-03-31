@@ -89,6 +89,7 @@ class TestPsych < Psych::TestCase
     things = [22, "foo \n", {}]
     stream = Psych.dump_stream(*things)
     assert_equal things, Psych.load_stream(stream)
+    assert_equal things, Psych.safe_load_stream(stream)
   end
 
   def test_dump_file
@@ -119,6 +120,8 @@ class TestPsych < Psych::TestCase
   def test_load_stream
     docs = Psych.load_stream("--- foo\n...\n--- bar\n...")
     assert_equal %w{ foo bar }, docs
+    safe_docs = Psych.safe_load_stream("--- foo\n...\n--- bar\n...")
+    assert_equal %w{ foo bar }, safe_docs
   end
 
   def test_load_stream_freeze
@@ -138,8 +141,16 @@ class TestPsych < Psych::TestCase
     assert_equal [], Psych.load_stream("")
   end
 
+  def test_safe_load_stream_default_fallback
+    assert_equal [], Psych.safe_load_stream("")
+  end
+
   def test_load_stream_raises_on_bad_input
     assert_raise(Psych::SyntaxError) { Psych.load_stream("--- `") }
+  end
+
+  def test_safe_load_stream_raises_on_bad_input
+    assert_raise(Psych::SyntaxError) { Psych.safe_load_stream("--- `") }
   end
 
   def test_parse_stream

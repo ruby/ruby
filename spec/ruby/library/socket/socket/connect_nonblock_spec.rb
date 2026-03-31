@@ -16,42 +16,40 @@ describe "Socket#connect_nonblock" do
     @thread.join if @thread
   end
 
-  platform_is_not :solaris do
-    it "connects the socket to the remote side" do
-      port = nil
-      accept = false
-      @thread = Thread.new do
-        server = TCPServer.new(@hostname, 0)
-        port = server.addr[1]
-        Thread.pass until accept
-        conn = server.accept
-        conn << "hello!"
-        conn.close
-        server.close
-      end
-
-      Thread.pass until port
-
-      addr = Socket.sockaddr_in(port, @hostname)
-      begin
-        @socket.connect_nonblock(addr)
-      rescue Errno::EINPROGRESS
-      end
-
-      accept = true
-      IO.select nil, [@socket]
-
-      begin
-        @socket.connect_nonblock(addr)
-      rescue Errno::EISCONN
-        # Not all OS's use this errno, so we trap and ignore it
-      end
-
-      @socket.read(6).should == "hello!"
+  it "connects the socket to the remote side" do
+    port = nil
+    accept = false
+    @thread = Thread.new do
+      server = TCPServer.new(@hostname, 0)
+      port = server.addr[1]
+      Thread.pass until accept
+      conn = server.accept
+      conn << "hello!"
+      conn.close
+      server.close
     end
+
+    Thread.pass until port
+
+    addr = Socket.sockaddr_in(port, @hostname)
+    begin
+      @socket.connect_nonblock(addr)
+    rescue Errno::EINPROGRESS
+    end
+
+    accept = true
+    IO.select nil, [@socket]
+
+    begin
+      @socket.connect_nonblock(addr)
+    rescue Errno::EISCONN
+      # Not all OS's use this errno, so we trap and ignore it
+    end
+
+    @socket.read(6).should == "hello!"
   end
 
-  platform_is_not :freebsd, :solaris, :aix do
+  platform_is_not :freebsd, :aix do
     it "raises Errno::EINPROGRESS when the connect would block" do
       -> do
         @socket.connect_nonblock(@addr)
@@ -135,7 +133,7 @@ describe 'Socket#connect_nonblock' do
         end
       end
 
-      platform_is_not :freebsd, :solaris do
+      platform_is_not :freebsd do
         it 'raises IO:EINPROGRESSWaitWritable when the connection would block' do
           @server.bind(@sockaddr)
 

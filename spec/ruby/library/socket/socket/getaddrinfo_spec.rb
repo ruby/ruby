@@ -11,7 +11,7 @@ describe "Socket.getaddrinfo" do
     BasicSocket.do_not_reverse_lookup = @do_not_reverse_lookup
   end
 
-  platform_is_not :solaris, :windows do
+  platform_is_not :windows do
     it "gets the address information" do
       expected = []
       # The check for AP_INET6's class is needed because ipaddr.rb adds
@@ -105,6 +105,14 @@ describe "Socket.getaddrinfo" do
         ["AF_INET6", 9, "0:0:0:0:0:0:0:1", "0:0:0:0:0:0:0:1", Socket::AF_INET6, Socket::SOCK_STREAM, Socket::IPPROTO_TCP]
       ]
       res.each { |a| expected.should include(a) }
+    end
+
+    it "raises ResolutionError when fails to resolve address" do
+      -> {
+        Socket.getaddrinfo("www.kame.net", 80, "AF_UNIX")
+      }.should raise_error(Socket::ResolutionError) { |e|
+        [Socket::EAI_FAMILY, Socket::EAI_FAIL].should.include?(e.error_code)
+      }
     end
   end
 end

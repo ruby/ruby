@@ -25,3 +25,7 @@ end
 describe "StringIO#each when passed limit" do
   it_behaves_like :stringio_each_limit, :each
 end
+
+describe "StringIO#each when passed separator and limit" do
+  it_behaves_like :stringio_each_separator_and_limit, :each
+end

@@ -28,6 +28,10 @@ not have authority to change/add a feature on his/her part. They need
 consensus on ruby-core/ruby-dev before changing/adding. Some of submaintainers
 have commit right, others don't.
 
+No maintainer means that there is no specific maintainer for the part now.
+The member of ruby core team can fix issues at anytime. But major changes need
+consensus on ruby-core/ruby-dev.
+
 ### Language core features including security
 
 * Yukihiro Matsumoto ([matz])
@@ -40,25 +44,30 @@ have commit right, others don't.
 
 * Yukihiro Matsumoto ([matz])
 
-## Standard Library Maintainers
-
-### Libraries
+### Standard Library Maintainers
 
 #### lib/mkmf.rb
 
-* *unmaintained*
+* *No maintainer*
+
+#### pathname_builtin.rb, lib/pathname.rb
+
+* Tanaka Akira ([akr])
 
 #### lib/rubygems.rb, lib/rubygems/*
 
-* Eric Hodel ([drbrain])
 * Hiroshi SHIBATA ([hsbt])
-* https://github.com/rubygems/rubygems
+* https://github.com/ruby/rubygems
 
 #### lib/unicode_normalize.rb, lib/unicode_normalize/*
 
 * Martin J. Dürst ([duerst])
 
-### Extensions
+### Standard Library(Extensions) Maintainers
+
+#### set.c
+
+* Akinori MUSHA ([knu])
 
 #### ext/continuation
 
@@ -78,15 +87,19 @@ have commit right, others don't.
 
 #### ext/objspace
 
-* *unmaintained*
+* *No maintainer*
+
+#### ext/pathname
+
+* Tanaka Akira ([akr])
 
 #### ext/pty
 
-* *unmaintained*
+* *No maintainer*
 
 #### ext/ripper
 
-* *unmaintained*
+* *No maintainer*
 
 #### ext/socket
 
@@ -97,31 +110,27 @@ have commit right, others don't.
 
 * NAKAMURA Usaku ([unak])
 
-## Default gems Maintainers
-
-### Libraries
+### Default gems(Libraries) Maintainers
 
 #### lib/bundler.rb, lib/bundler/*
 
 * Hiroshi SHIBATA ([hsbt])
-* https://github.com/rubygems/rubygems
+* https://github.com/ruby/rubygems
 * https://rubygems.org/gems/bundler
 
-#### lib/cgi.rb, lib/cgi/*
+#### lib/cgi/escape.rb
 
-* *unmaintained*
-* https://github.com/ruby/cgi
-* https://rubygems.org/gems/cgi
+* *No maintainer*
 
 #### lib/English.rb
 
-* *unmaintained*
+* *No maintainer*
 * https://github.com/ruby/English
 * https://rubygems.org/gems/English
 
 #### lib/delegate.rb
 
-* *unmaintained*
+* *No maintainer*
 * https://github.com/ruby/delegate
 * https://rubygems.org/gems/delegate
 
@@ -152,7 +161,7 @@ have commit right, others don't.
 
 #### lib/fileutils.rb
 
-* *unmaintained*
+* *No maintainer*
 * https://github.com/ruby/fileutils
 * https://rubygems.org/gems/fileutils
 
@@ -178,6 +187,7 @@ have commit right, others don't.
 
 * Nobuyuki Nakada ([nobu])
 * https://github.com/ruby/optparse
+* https://rubygems.org/gems/optparse
 
 #### lib/net/http.rb, lib/net/https.rb
 
@@ -187,13 +197,13 @@ have commit right, others don't.
 
 #### lib/net/protocol.rb
 
-* *unmaintained*
+* *No maintainer*
 * https://github.com/ruby/net-protocol
 * https://rubygems.org/gems/net-protocol
 
 #### lib/open3.rb
 
-* *unmaintained*
+* *No maintainer*
 * https://github.com/ruby/open3
 * https://rubygems.org/gems/open3
 
@@ -201,6 +211,7 @@ have commit right, others don't.
 
 * Tanaka Akira ([akr])
 * https://github.com/ruby/open-uri
+* https://rubygems.org/gems/open-uri
 
 #### lib/pp.rb
 
@@ -219,6 +230,7 @@ have commit right, others don't.
 * Kevin Newton ([kddnewton])
 * Eileen Uchitelle ([eileencodes])
 * Aaron Patterson ([tenderlove])
+* Earlopain ([earlopain])
 * https://github.com/ruby/prism
 * https://rubygems.org/gems/prism
 
@@ -234,12 +246,6 @@ have commit right, others don't.
 * https://github.com/ruby/securerandom
 * https://rubygems.org/gems/securerandom
 
-#### lib/set.rb
-
-* Akinori MUSHA ([knu])
-* https://github.com/ruby/set
-* https://rubygems.org/gems/set
-
 #### lib/shellwords.rb
 
 * Akinori MUSHA ([knu])
@@ -254,7 +260,7 @@ have commit right, others don't.
 
 #### lib/tempfile.rb
 
-* *unmaintained*
+* *No maintainer*
 * https://github.com/ruby/tempfile
 * https://rubygems.org/gems/tempfile
 
@@ -270,23 +276,11 @@ have commit right, others don't.
 * https://github.com/ruby/timeout
 * https://rubygems.org/gems/timeout
 
-#### lib/thwait.rb
-
-* Keiju ISHITSUKA ([keiju])
-* https://github.com/ruby/thwait
-* https://rubygems.org/gems/thwait
-
 #### lib/tmpdir.rb
 
-* *unmaintained*
+* *No maintainer*
 * https://github.com/ruby/tmpdir
 * https://rubygems.org/gems/tmpdir
-
-#### lib/tsort.rb
-
-* Tanaka Akira ([akr])
-* https://github.com/ruby/tsort
-* https://rubygems.org/gems/tsort
 
 #### lib/un.rb
 
@@ -309,33 +303,31 @@ have commit right, others don't.
 
 #### lib/weakref.rb
 
-* *unmaintained*
+* *No maintainer*
 * https://github.com/ruby/weakref
 * https://rubygems.org/gems/weakref
 
-### Extensions
+### Default gems(Extensions) Maintainers
 
 #### ext/cgi
 
 * Nobuyoshi Nakada ([nobu])
-* https://github.com/ruby/cgi
-* https://rubygems.org/gems/cgi
 
 #### ext/date
 
-* *unmaintained*
+* *No maintainer*
 * https://github.com/ruby/date
 * https://rubygems.org/gems/date
 
 #### ext/etc
 
-* *unmaintained*
+* *No maintainer*
 * https://github.com/ruby/etc
 * https://rubygems.org/gems/etc
 
 #### ext/fcntl
 
-* *unmaintained*
+* *No maintainer*
 * https://github.com/ruby/fcntl
 * https://rubygems.org/gems/fcntl
 
@@ -371,12 +363,6 @@ have commit right, others don't.
 * https://github.com/ruby/openssl
 * https://rubygems.org/gems/openssl
 
-#### ext/pathname
-
-* Tanaka Akira ([akr])
-* https://github.com/ruby/pathname
-* https://rubygems.org/gems/pathname
-
 #### ext/psych
 
 * Aaron Patterson ([tenderlove])
@@ -402,159 +388,248 @@ have commit right, others don't.
 * https://github.com/ruby/zlib
 * https://rubygems.org/gems/zlib
 
-## Bundled gems upstream repositories
+## Bundled gems upstream repositories and maintainers
+
+The maintanance policy of bundled gems is different from Module Maintainers above.
+Please check the policies for each repository.
+
+The ruby core team tries to maintain the repositories with no maintainers.
+It may needs to make consensus on ruby-core/ruby-dev before making major changes.
 
 ### minitest
 
+* Ryan Davis ([zenspider])
 * https://github.com/minitest/minitest
+* https://rubygems.org/gems/minitest
 
 ### power_assert
 
+* Tsujimoto Kenta ([k-tsj])
 * https://github.com/ruby/power_assert
+* https://rubygems.org/gems/power_assert
 
 ### rake
 
+* Hiroshi SHIBATA ([hsbt])
 * https://github.com/ruby/rake
+* https://rubygems.org/gems/rake
 
 ### test-unit
 
+* Kouhei Sutou ([kou])
 * https://github.com/test-unit/test-unit
+* https://rubygems.org/gems/test-unit
 
 ### rexml
 
+* Kouhei Sutou ([kou])
 * https://github.com/ruby/rexml
+* https://rubygems.org/gems/rexml
 
 ### rss
 
+* Kouhei Sutou ([kou])
 * https://github.com/ruby/rss
-
-### net-ftp
-
-* https://github.com/ruby/net-ftp
+* https://rubygems.org/gems/rss
 
 ### net-imap
 
+* Nicholas A. Evans ([nevans])
 * https://github.com/ruby/net-imap
-
-### net-pop
-
-* https://github.com/ruby/net-pop
+* https://rubygems.org/gems/net-imap
 
 ### net-smtp
 
+* TOMITA Masahiro ([tmtm])
 * https://github.com/ruby/net-smtp
+* https://rubygems.org/gems/net-smtp
 
 ### matrix
 
+* Marc-André Lafortune ([marcandre])
 * https://github.com/ruby/matrix
+* https://rubygems.org/gems/matrix
 
 ### prime
 
 * https://github.com/ruby/prime
+* https://rubygems.org/gems/prime
 
 ### rbs
 
+* Soutaro Matsumoto ([soutaro])
 * https://github.com/ruby/rbs
+* https://rubygems.org/gems/rbs
 
 ### typeprof
 
+* Yusuke Endoh ([mame])
 * https://github.com/ruby/typeprof
+* https://rubygems.org/gems/typeprof
 
 ### debug
 
+* Koichi Sasada ([ko1])
 * https://github.com/ruby/debug
+* https://rubygems.org/gems/debug
 
 ### racc
 
+* Yuichi Kaneko ([yui-knk])
 * https://github.com/ruby/racc
+* https://rubygems.org/gems/racc
 
 #### mutex_m
 
 * https://github.com/ruby/mutex_m
+* https://rubygems.org/gems/mutex_m
 
 #### getoptlong
 
 * https://github.com/ruby/getoptlong
+* https://rubygems.org/gems/getoptlong
 
 #### base64
 
+* Yusuke Endoh ([mame])
 * https://github.com/ruby/base64
+* https://rubygems.org/gems/base64
 
 #### bigdecimal
 
+* Kenta Murata ([mrkn])
 * https://github.com/ruby/bigdecimal
+* https://rubygems.org/gems/bigdecimal
 
 #### observer
 
 * https://github.com/ruby/observer
+* https://rubygems.org/gems/observer
 
 #### abbrev
 
+* Akinori MUSHA ([knu])
 * https://github.com/ruby/abbrev
+* https://rubygems.org/gems/abbrev
 
 #### resolv-replace
 
+* Akira TANAKA ([akr])
 * https://github.com/ruby/resolv-replace
+* https://rubygems.org/gems/resolv-replace
 
 #### rinda
 
+* Masatoshi SEKI ([seki])
 * https://github.com/ruby/rinda
+* https://rubygems.org/gems/rinda
 
 #### drb
 
+* Masatoshi SEKI ([seki])
 * https://github.com/ruby/drb
+* https://rubygems.org/gems/drb
 
 #### nkf
 
+* Naruse Yusuke ([nurse])
 * https://github.com/ruby/nkf
+* https://rubygems.org/gems/nkf
 
 #### syslog
 
+* Akinori Musha ([knu])
 * https://github.com/ruby/syslog
+* https://rubygems.org/gems/syslog
 
 #### csv
 
+* Kouhei Sutou ([kou])
 * https://github.com/ruby/csv
+* https://rubygems.org/gems/csv
 
 #### ostruct
 
+* Marc-André Lafortune ([marcandre])
 * https://github.com/ruby/ostruct
+* https://rubygems.org/gems/ostruct
 
 #### pstore
 
 * https://github.com/ruby/pstore
+* https://rubygems.org/gems/pstore
 
 #### benchmark
 
+* Benoit Daloze ([eregon])
 * https://github.com/ruby/benchmark
+* https://rubygems.org/gems/benchmark
 
 #### logger
 
+* Naotoshi Seo ([sonots])
 * https://github.com/ruby/logger
+* https://rubygems.org/gems/logger
 
 #### rdoc
 
+* Stan Lo ([st0012])
+* Nobuyoshi Nakada ([nobu])
 * https://github.com/ruby/rdoc
+* https://rubygems.org/gems/rdoc
 
 #### win32ole
 
+* Masaki Suketa ([suketa])
 * https://github.com/ruby/win32ole
+* https://rubygems.org/gems/win32ole
 
 #### irb
 
+* Tomoya Ishida ([tompng])
+* Stan Lo ([st0012])
+* Mari Imaizumi ([ima1zumi])
+* HASUMI Hitoshi ([hasumikin])
 * https://github.com/ruby/irb
+* https://rubygems.org/gems/irb
 
 #### reline
 
+* Tomoya Ishida ([tompng])
+* Stan Lo ([st0012])
+* Mari Imaizumi ([ima1zumi])
+* HASUMI Hitoshi ([hasumikin])
 * https://github.com/ruby/reline
+* https://rubygems.org/gems/reline
 
 #### readline
 
 * https://github.com/ruby/readline
+* https://rubygems.org/gems/readline
 
 #### fiddle
 
+* Kouhei Sutou ([kou])
 * https://github.com/ruby/fiddle
+* https://rubygems.org/gems/fiddle
+
+#### repl_type_completor
+
+* Tomoya Ishida ([tompng])
+* https://github.com/ruby/repl_type_completor
+* https://rubygems.org/gems/repl_type_completor
+
+#### tsort
+
+* Tanaka Akira ([akr])
+* https://github.com/ruby/tsort
+* https://rubygems.org/gems/tsort
+
+#### win32-registry
+
+* Nakamura Usaku ([unak])
+* https://github.com/ruby/win32-registry
+* https://rubygems.org/gems/win32-registry
 
 ## Platform Maintainers
 
@@ -592,7 +667,7 @@ have commit right, others don't.
 
 ### cygwin, ...
 
-* none. (Maintainer WANTED)
+* **No maintainer**
 
 ### WebAssembly/WASI
 
@@ -603,8 +678,10 @@ have commit right, others don't.
 [colby-swandale]: https://github.com/colby-swandale
 [drbrain]: https://github.com/drbrain
 [duerst]: https://github.com/duerst
+[earlopain]: https://github.com/earlopain
 [eban]: https://github.com/eban
 [eileencodes]: https://github.com/eileencodes
+[eregon]: https://github.com/eregon
 [hasumikin]: https://github.com/hasumikin
 [hsbt]: https://github.com/hsbt
 [ima1zumi]: https://github.com/ima1zumi
@@ -635,3 +712,11 @@ have commit right, others don't.
 [tompng]: https://github.com/tompng
 [unak]: https://github.com/unak
 [yuki24]: https://github.com/yuki24
+[zenspider]: https://github.com/zenspider
+[k-tsj]: https://github.com/k-tsj
+[nevans]: https://github.com/nevans
+[tmtm]: https://github.com/tmtm
+[soutaro]: https://github.com/soutaro
+[yui-knk]: https://github.com/yui-knk
+[hasumikin]: https://github.com/hasumikin
+[suketa]: https://github.com/suketa

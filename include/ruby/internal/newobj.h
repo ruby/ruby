@@ -109,42 +109,4 @@ void rb_singleton_class_attached(VALUE klass, VALUE obj);
 void rb_copy_generic_ivar(VALUE clone, VALUE obj);
 RBIMPL_SYMBOL_EXPORT_END()
 
-RBIMPL_ATTR_DEPRECATED(("This is no longer how Object#clone works."))
-/**
- * @deprecated  Not sure exactly  when but at some time,  the implementation of
- *              `Object#clone`  stopped  using   this  function.   It  remained
- *              untouched for  a while, and  then @shyouhei realised  that they
- *              are no longer doing the  same thing.  It seems nobody seriously
- *              uses this function any longer.  Let's just abandon it.
- *
- * @param[out]  clone  The destination object.
- * @param[in]   obj    The source object.
- */
-static inline void
-rb_clone_setup(VALUE clone, VALUE obj)
-{
-    (void)clone;
-    (void)obj;
-    return;
-}
-
-RBIMPL_ATTR_DEPRECATED(("This is no longer how Object#dup works."))
-/**
- * @deprecated  Not sure exactly  when but at some time,  the implementation of
- *              `Object#dup`   stopped  using   this  function.    It  remained
- *              untouched for  a while, and  then @shyouhei realised  that they
- *              are no longer  the same thing.  It seems  nobody seriously uses
- *              this function any longer.  Let's just abandon it.
- *
- * @param[out]  dup  The destination object.
- * @param[in]   obj  The source object.
- */
-static inline void
-rb_dup_setup(VALUE dup, VALUE obj)
-{
-    (void)dup;
-    (void)obj;
-    return;
-}
-
 #endif /* RBIMPL_NEWOBJ_H */

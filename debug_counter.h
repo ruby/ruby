@@ -49,7 +49,7 @@ RB_DEBUG_COUNTER(cc_temp)       //           dummy CC (stack-allocated)
 RB_DEBUG_COUNTER(cc_found_in_ccs)      // count for CC lookup success in CCS
 RB_DEBUG_COUNTER(cc_not_found_in_ccs)  // count for CC lookup success in CCS
 
-RB_DEBUG_COUNTER(cc_ent_invalidate) // count for invalidating cc (cc->klass = 0)
+RB_DEBUG_COUNTER(cc_ent_invalidate) // count for invalidating cc (cc->klass = Qundef)
 RB_DEBUG_COUNTER(cc_cme_invalidate) // count for invalidating CME
 
 RB_DEBUG_COUNTER(cc_invalidate_leaf)          // count for invalidating klass if klass has no-subclasses
@@ -305,16 +305,18 @@ RB_DEBUG_COUNTER(obj_imemo_ment)
 RB_DEBUG_COUNTER(obj_imemo_iseq)
 RB_DEBUG_COUNTER(obj_imemo_env)
 RB_DEBUG_COUNTER(obj_imemo_tmpbuf)
-RB_DEBUG_COUNTER(obj_imemo_ast)
 RB_DEBUG_COUNTER(obj_imemo_cref)
 RB_DEBUG_COUNTER(obj_imemo_svar)
 RB_DEBUG_COUNTER(obj_imemo_throw_data)
 RB_DEBUG_COUNTER(obj_imemo_ifunc)
 RB_DEBUG_COUNTER(obj_imemo_memo)
-RB_DEBUG_COUNTER(obj_imemo_parser_strterm)
 RB_DEBUG_COUNTER(obj_imemo_callinfo)
 RB_DEBUG_COUNTER(obj_imemo_callcache)
 RB_DEBUG_COUNTER(obj_imemo_constcache)
+RB_DEBUG_COUNTER(obj_imemo_fields)
+
+RB_DEBUG_COUNTER(opt_new_hit)
+RB_DEBUG_COUNTER(opt_new_miss)
 
 /* ar_table */
 RB_DEBUG_COUNTER(artable_hint_hit)

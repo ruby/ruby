@@ -21,7 +21,7 @@ module Gem::Text
   # Wraps +text+ to +wrap+ characters and optionally indents by +indent+
   # characters
 
-  def format_text(text, wrap, indent=0)
+  def format_text(text, wrap, indent = 0)
     result = []
     work = clean_text(text)
 

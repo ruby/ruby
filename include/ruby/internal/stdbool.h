@@ -31,17 +31,9 @@
 #  define __bool_true_false_are_defined
 # endif
 
-#elif defined(HAVE_STDBOOL_H)
-# /* Take stdbool.h definition. */
+#else
+# /* Take stdbool.h definition. It exists since GCC 3.0 and VS 2015. */
 # include <stdbool.h>
-
-#elif !defined(HAVE__BOOL)
-typedef unsigned char _Bool;
-# /* See also http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2229.htm */
-# define bool  _Bool
-# define true  ((_Bool)+1)
-# define false ((_Bool)+0)
-# define __bool_true_false_are_defined
 #endif
 
 #endif /* RBIMPL_STDBOOL_H */

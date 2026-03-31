@@ -62,9 +62,6 @@
 #endif
 #include <unistd.h>
 #else
-#if defined(_MSC_VER) && _MSC_VER <= 1200
-#include <windows.h>
-#endif
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <io.h>
@@ -171,9 +168,7 @@ static const char *const ai_errlist[] = {
 
 #define GET_CANONNAME(ai, str) \
 if (pai->ai_flags & AI_CANONNAME) {\
-        if (((ai)->ai_canonname = (char *)malloc(strlen(str) + 1)) != NULL) {\
-                strcpy((ai)->ai_canonname, (str));\
-        } else {\
+        if (((ai)->ai_canonname = strdup(str)) == NULL) {\
                 error = EAI_MEMORY;\
                 goto free;\
         }\

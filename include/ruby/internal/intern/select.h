@@ -72,6 +72,8 @@ struct timeval;
  * someone else, vastly varies among operating systems.  You would better avoid
  * touching an fd from more than one threads.
  *
+ * NOTE: this function is used in native extensions, so change its API with care.
+ *
  * @internal
  *
  * Although  any file  descriptors are  possible here,  it makes  completely no

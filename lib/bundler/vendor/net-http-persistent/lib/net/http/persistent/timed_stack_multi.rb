@@ -63,7 +63,8 @@ class Gem::Net::HTTP::Persistent::TimedStackMulti < Bundler::ConnectionPool::Tim
     if @created >= @max && @enqueued >= 1
       oldest, = @lru.first
       @lru.delete oldest
-      @ques[oldest].pop
+      connection = @ques[oldest].pop
+      connection.close if connection.respond_to?(:close)
 
       @created -= 1
     end

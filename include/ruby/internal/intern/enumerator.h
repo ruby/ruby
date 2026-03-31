@@ -100,7 +100,8 @@ VALUE rb_enumeratorize_with_size(VALUE recv, VALUE meth, int argc, const VALUE *
  * @param[in]  kw_splat         Handling of keyword parameters:
  *   - RB_NO_KEYWORDS           `argv`'s last is not a keyword argument.
  *   - RB_PASS_KEYWORDS         `argv`'s last is a keyword argument.
- *   - RB_PASS_CALLED_KEYWORDS  it depends if there is a passed block.
+ *   - RB_PASS_CALLED_KEYWORDS  Pass keyword arguments if the current method
+ *                              was called with keyword arguments.
  * @exception  rb_eTypeError    `meth` is not an instance of ::rb_cSymbol.
  * @return     A  new   instance  of  ::rb_cEnumerator  which,   when  yielded,
  *             enumerates by calling `meth` on `recv` with `argv`.
@@ -186,7 +187,8 @@ RBIMPL_SYMBOL_EXPORT_END()
  * @param[in]  kw_splat         Handling of keyword parameters:
  *   - RB_NO_KEYWORDS           `argv`'s last is not a keyword argument.
  *   - RB_PASS_KEYWORDS         `argv`'s last is a keyword argument.
- *   - RB_PASS_CALLED_KEYWORDS  it depends if there is a passed block.
+ *   - RB_PASS_CALLED_KEYWORDS  Pass keyword arguments if the current method
+ *                              was called with keyword arguments.
  * @return     A  new   instance  of  ::rb_cEnumerator  which,   when  yielded,
  *             enumerates by calling the current method on `recv` with `argv`.
  */
@@ -220,7 +222,8 @@ RBIMPL_SYMBOL_EXPORT_END()
  * @param[in]  kw_splat         Handling of keyword parameters:
  *   - RB_NO_KEYWORDS           `argv`'s last is not a keyword argument.
  *   - RB_PASS_KEYWORDS         `argv`'s last is a keyword argument.
- *   - RB_PASS_CALLED_KEYWORDS  it depends if there is a passed block.
+ *   - RB_PASS_CALLED_KEYWORDS  Pass keyword arguments if the current method
+ *                              was called with keyword arguments.
  * @note       This macro may return inside.
  */
 #define RETURN_SIZED_ENUMERATOR_KW(obj, argc, argv, size_fn, kw_splat) do { \
@@ -250,7 +253,8 @@ RBIMPL_SYMBOL_EXPORT_END()
  * @param[in]  kw_splat         Handling of keyword parameters:
  *   - RB_NO_KEYWORDS           `argv`'s last is not a keyword argument.
  *   - RB_PASS_KEYWORDS         `argv`'s last is a keyword argument.
- *   - RB_PASS_CALLED_KEYWORDS  it depends if there is a passed block.
+ *   - RB_PASS_CALLED_KEYWORDS  Pass keyword arguments if the current method
+ *                              was called with keyword arguments.
  * @note       This macro may return inside.
  */
 #define RETURN_ENUMERATOR_KW(obj, argc, argv, kw_splat) \
