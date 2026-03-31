@@ -30,6 +30,7 @@
 #include "internal/hash.h"
 #include "internal/numeric.h"
 #include "internal/object.h"
+#include "internal/re.h"
 #include "internal/struct.h"
 #include "internal/symbol.h"
 #include "internal/util.h"
@@ -946,8 +947,9 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
         hasiv = has_ivars(obj, (encname = encoding_name(obj, arg)), &ivobj);
         {
             st_data_t compat_data;
-            rb_alloc_func_t allocator = rb_get_alloc_func(RBASIC(obj)->klass);
-            if (st_lookup(compat_allocator_tbl,
+            VALUE klass = CLASS_OF(obj);
+            rb_alloc_func_t allocator = RCLASS_SINGLETON_P(klass) ? 0 : rb_get_alloc_func(klass);
+            if (allocator && st_lookup(compat_allocator_tbl,
                           (st_data_t)allocator,
                           &compat_data)) {
                 marshal_compat_t *compat = (marshal_compat_t*)compat_data;
@@ -1731,7 +1733,10 @@ r_ivar_encoding(VALUE obj, struct load_arg *arg, VALUE sym, VALUE val)
     int idx = sym2encidx(sym, val);
     if (idx >= 0) {
         if (rb_enc_capable(obj)) {
-            rb_enc_associate_index(obj, idx);
+            // Check if needed to avoid rb_check_frozen() check for Regexps
+            if (rb_enc_get_index(obj) != idx) {
+                rb_enc_associate_index(obj, idx);
+            }
         }
         else {
             rb_raise(rb_eArgError, "%"PRIsVALUE" is not enc_capable", obj);
@@ -1854,17 +1859,17 @@ append_extmod(VALUE obj, VALUE extmod)
         override_ivar_error(type, str); \
     } while (0)
 
-static VALUE r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int type);
+static VALUE r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE klass, VALUE extmod, int type);
 
 static VALUE
 r_object0(struct load_arg *arg, bool partial, int *ivp, VALUE extmod)
 {
     int type = r_byte(arg);
-    return r_object_for(arg, partial, ivp, extmod, type);
+    return r_object_for(arg, partial, ivp, 0, extmod, type);
 }
 
 static VALUE
-r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int type)
+r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE klass, VALUE extmod, int type)
 {
     VALUE (*hash_new_with_size)(st_index_t) = rb_hash_new_with_size;
     VALUE v = Qnil;
@@ -1940,12 +1945,12 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
             }
             type = r_byte(arg);
             if ((c == rb_cHash) &&
-                /* Hack for compare_by_identify */
+                /* Hack for compare_by_identity */
                 (type == TYPE_HASH || type == TYPE_HASH_DEF)) {
                 hash_new_with_size = rb_ident_hash_new_with_size;
                 goto type_hash;
             }
-            v = r_object_for(arg, partial, 0, extmod, type);
+            v = r_object_for(arg, partial, 0, c, extmod, type);
             if (RB_SPECIAL_CONST_P(v) || RB_TYPE_P(v, T_OBJECT) || RB_TYPE_P(v, T_CLASS)) {
                 goto format_error;
             }
@@ -2082,7 +2087,10 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
                 }
                 rb_str_set_len(str, dst - ptr);
             }
-            VALUE regexp = rb_reg_new_str(str, options);
+            if (!klass) {
+                klass = rb_cRegexp;
+            }
+            VALUE regexp = rb_reg_init_str(rb_reg_s_alloc(klass), str, options);
             r_copy_ivar(regexp, str);
 
             v = r_entry0(regexp, idx, arg);

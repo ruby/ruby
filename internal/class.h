@@ -255,6 +255,8 @@ static inline void RCLASS_WRITE_CLASSPATH(VALUE klass, VALUE classpath, bool per
 #define RCLASS_IS_INITIALIZED FL_USER3
 // 3 is RMODULE_IS_REFINEMENT for RMODULE
 #define RCLASS_BOXABLE FL_USER4
+#define RCLASS_ALLOCATOR_DEFINED FL_USER5
+#define RCLASS_HAS_SUBCLASSES FL_USER6
 
 static inline st_table *
 RCLASS_CLASSEXT_TBL(VALUE klass)
@@ -620,9 +622,7 @@ static inline rb_alloc_func_t
 RCLASS_ALLOCATOR(VALUE klass)
 {
     RBIMPL_ASSERT_TYPE(klass, T_CLASS);
-    if (RCLASS_SINGLETON_P(klass)) {
-        return 0;
-    }
+    RUBY_ASSERT(!RCLASS_SINGLETON_P(klass));
     return RCLASS_EXT_PRIME(klass)->as.class.allocator;
 }
 

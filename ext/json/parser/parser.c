@@ -770,7 +770,9 @@ NOINLINE(static) VALUE json_string_unescape(JSON_ParserState *state, JSON_Parser
                         }
                         raise_parse_error_at("invalid ASCII control character in string: %s", state, pe - 1);
                     }
-                } else if (config->allow_invalid_escape) {
+                }
+
+                if (config->allow_invalid_escape) {
                     APPEND_CHAR(*pe);
                 } else {
                     raise_parse_error_at("invalid escape character in string: %s", state, pe - 1);

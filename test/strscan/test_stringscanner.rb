@@ -45,19 +45,6 @@ module StringScannerTests
     assert_same(str, s.string)
   end
 
-  UNINIT_ERROR = ArgumentError
-
-  def test_s_allocate
-    s = StringScanner.allocate
-    assert_equal('#<StringScanner (uninitialized)>', s.inspect.sub(/StringScanner_C/, 'StringScanner'))
-    assert_raise(UNINIT_ERROR) { s.eos? }
-    assert_raise(UNINIT_ERROR) { s.scan(/a/) }
-    s.string = 'test'
-    assert_equal('#<StringScanner 0/4 @ "test">', s.inspect.sub(/StringScanner_C/, 'StringScanner'))
-    assert_nothing_raised(UNINIT_ERROR) { s.eos? }
-    assert_equal(false, s.eos?)
-  end
-
   def test_s_mustc
     assert_nothing_raised(NotImplementedError) {
         StringScanner.must_C_version

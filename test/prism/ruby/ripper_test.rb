@@ -106,6 +106,7 @@ module Prism
       "variables.txt",
       "whitequark/dedenting_heredoc.txt",
       "whitequark/masgn_nested.txt",
+      "whitequark/newline_in_hash_argument.txt",
       "whitequark/numparam_ruby_bug_19025.txt",
       "whitequark/op_asgn_cmd.txt",
       "whitequark/parser_drops_truncated_parts_of_squiggly_heredoc.txt",
@@ -135,7 +136,7 @@ module Prism
       end
     end
 
-    UNSUPPORTED_EVENTS = %i[backtick comma heredoc_beg heredoc_end ignored_nl kw label_end lbrace lbracket lparen nl op rbrace rbracket rparen semicolon sp symbeg tstring_beg tstring_end words_sep ignored_sp]
+    UNSUPPORTED_EVENTS = %i[comma ignored_nl kw label_end lbrace lbracket lparen nl op rbrace rbracket rparen semicolon sp words_sep ignored_sp]
     SUPPORTED_EVENTS = Translation::Ripper::EVENTS - UNSUPPORTED_EVENTS
 
     module Events
@@ -241,6 +242,14 @@ module Prism
           assert_equal Ripper.sexp(object1_with_gets), Translation::Ripper.sexp(object2_with_gets)
         end
       end
+    end
+
+    def test_lex_coersion
+      string_like = Object.new
+      def string_like.to_str
+        "a"
+      end
+      assert_equal Ripper.lex(string_like), Translation::Ripper.lex(string_like)
     end
 
     # Check that the hardcoded values don't change without us noticing.

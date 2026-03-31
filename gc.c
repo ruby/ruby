@@ -1000,11 +1000,11 @@ gc_validate_pc(VALUE obj)
 
     rb_execution_context_t *ec = GET_EC();
     const rb_control_frame_t *cfp = ec->cfp;
-    if (cfp && VM_FRAME_RUBYFRAME_P(cfp) && cfp->pc) {
-        const VALUE *iseq_encoded = ISEQ_BODY(cfp->iseq)->iseq_encoded;
-        const VALUE *iseq_encoded_end = iseq_encoded + ISEQ_BODY(cfp->iseq)->iseq_size;
-        RUBY_ASSERT(cfp->pc >= iseq_encoded, "PC not set when allocating, breaking tracing");
-        RUBY_ASSERT(cfp->pc <= iseq_encoded_end, "PC not set when allocating, breaking tracing");
+    if (cfp && VM_FRAME_RUBYFRAME_P(cfp) && CFP_PC(cfp)) {
+        const VALUE *iseq_encoded = ISEQ_BODY(CFP_ISEQ(cfp))->iseq_encoded;
+        const VALUE *iseq_encoded_end = iseq_encoded + ISEQ_BODY(CFP_ISEQ(cfp))->iseq_size;
+        RUBY_ASSERT(CFP_PC(cfp) >= iseq_encoded, "PC not set when allocating, breaking tracing");
+        RUBY_ASSERT(CFP_PC(cfp) <= iseq_encoded_end, "PC not set when allocating, breaking tracing");
     }
 #endif
 }
@@ -1073,6 +1073,37 @@ rb_wb_protected_newobj_of(rb_execution_context_t *ec, VALUE klass, VALUE flags, 
     return newobj_of(rb_ec_ractor_ptr(ec), klass, flags, shape_id, TRUE, size);
 }
 
+VALUE
+rb_class_allocate_instance(VALUE klass)
+{
+    uint32_t index_tbl_num_entries = RCLASS_MAX_IV_COUNT(klass);
+
+    size_t size = rb_obj_embedded_size(index_tbl_num_entries);
+    if (!rb_gc_size_allocatable_p(size)) {
+        size = sizeof(struct RObject);
+    }
+
+    // There might be a NEWOBJ tracepoint callback, and it may set fields.
+    // So the shape must be passed to `NEWOBJ_OF`.
+    VALUE flags = T_OBJECT | (RGENGC_WB_PROTECTED_OBJECT ? FL_WB_PROTECTED : 0);
+    NEWOBJ_OF_WITH_SHAPE(o, struct RObject, klass, flags, rb_shape_root(rb_gc_heap_id_for_size(size)), size, 0);
+    VALUE obj = (VALUE)o;
+
+#if RUBY_DEBUG
+    RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
+    VALUE *ptr = ROBJECT_FIELDS(obj);
+    size_t fields_count = RSHAPE_LEN(RBASIC_SHAPE_ID(obj));
+    for (size_t i = fields_count; i < ROBJECT_FIELDS_CAPACITY(obj); i++) {
+        ptr[i] = Qundef;
+    }
+    if (rb_obj_class(obj) != rb_class_real(klass)) {
+        rb_bug("Expected rb_class_allocate_instance to set the class correctly");
+    }
+#endif
+
+    return obj;
+}
+
 void
 rb_gc_register_pinning_obj(VALUE obj)
 {
@@ -1086,6 +1117,7 @@ rb_gc_register_pinning_obj(VALUE obj)
 static inline void
 rb_data_object_check(VALUE klass)
 {
+    RUBY_ASSERT(!RCLASS_SINGLETON_P(klass));
     if (klass != rb_cObject && (rb_get_alloc_func(klass) == rb_class_allocate_instance)) {
         rb_undef_alloc_func(klass);
         rb_warn("undefining the allocator of T_DATA class %"PRIsVALUE, klass);

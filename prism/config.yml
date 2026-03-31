@@ -2627,6 +2627,14 @@ nodes:
           end
   - name: ForwardingSuperNode
     fields:
+      - name: keyword_loc
+        type: location
+        comment: |
+          super
+          ^^^^^
+
+          super { 123 }
+          ^^^^^
       - name: block
         type: node?
         kind: BlockNode

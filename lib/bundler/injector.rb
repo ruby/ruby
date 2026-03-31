@@ -80,11 +80,10 @@ module Bundler
     def conservative_version(spec)
       version = spec.version
       return ">= 0" if version.nil?
-      segments = version.segments
       seg_end_index = version >= Gem::Version.new("1.0") ? 1 : 2
 
       prerelease_suffix = version.to_s.delete_prefix(version.release.to_s) if version.prerelease?
-      "#{version_prefix}#{segments[0..seg_end_index].join(".")}#{prerelease_suffix}"
+      "#{version_prefix}#{version.segments[0..seg_end_index].join(".")}#{prerelease_suffix}"
     end
 
     def version_prefix

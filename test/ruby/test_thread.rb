@@ -1682,7 +1682,10 @@ q.pop
             stdin.close rescue nil
             stdout.close rescue nil
             stderr.close rescue nil
-            wait_thread.value
+            # On some GC implementations (e.g. mmtk), finalizers run as postponed
+            # jobs which can execute on any thread, including the wait_thread itself.
+            # Guard against joining the current thread.
+            wait_thread.value unless Thread.current == wait_thread
           end
         end
       end

@@ -318,9 +318,9 @@ class TestGc < Test::Unit::TestCase
   def test_latest_gc_info
     omit 'stress' if GC.stress
 
-    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+    assert_separately([{"RUBY_GC_HEAP_INIT_BYTES" => "409600"}, "-W0"], __FILE__, __LINE__, <<-'RUBY')
       GC.start
-      count = GC.stat(:heap_free_slots) + GC.stat(:heap_allocatable_slots)
+      count = GC.stat(:heap_free_slots) + GC.stat_heap(0, :heap_allocatable_slots)
       count.times{ "a" + "b" }
       assert_equal :newobj, GC.latest_gc_info[:gc_by]
     RUBY
@@ -453,25 +453,19 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_gc_parameter
-    env = {}
-    GC.stat_heap.keys.each do |heap|
-      env["RUBY_GC_HEAP_#{heap}_INIT_SLOTS"] = "200000"
-    end
+    env = { "RUBY_GC_HEAP_INIT_BYTES" => "#{200000 * 40}" }
     assert_normal_exit("exit", "", :child_env => env)
 
-    env = {}
-    GC.stat_heap.keys.each do |heap|
-      env["RUBY_GC_HEAP_#{heap}_INIT_SLOTS"] = "0"
-    end
+    env = { "RUBY_GC_HEAP_INIT_BYTES" => "0" }
     assert_normal_exit("exit", "", :child_env => env)
 
     env = {
       "RUBY_GC_HEAP_GROWTH_FACTOR" => "2.0",
-      "RUBY_GC_HEAP_GROWTH_MAX_SLOTS" => "10000"
+      "RUBY_GC_HEAP_GROWTH_MAX_BYTES" => "409600"
     }
     assert_normal_exit("exit", "", :child_env => env)
     assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_HEAP_GROWTH_FACTOR=2.0/, "")
-    assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_HEAP_GROWTH_MAX_SLOTS=10000/, "[ruby-core:57928]")
+    assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_HEAP_GROWTH_MAX_BYTES=409600/, "[ruby-core:57928]")
 
     if use_rgengc?
       env = {
@@ -513,18 +507,19 @@ class TestGc < Test::Unit::TestCase
     end
   end
 
-  def test_gc_parameter_init_slots
+  def test_gc_parameter_init_bytes
     omit "[Bug #21203] This test is flaky and intermittently failing now"
 
     assert_separately([], __FILE__, __LINE__, <<~RUBY, timeout: 60)
-      # Constant from gc.c.
-      GC_HEAP_INIT_SLOTS = 10_000
+      GC_HEAP_INIT_BYTES = 2560 * 1024
 
       gc_count = GC.stat(:count)
-      # Fill up all of the size pools to the init slots
+      # Fill up all heaps to the byte-derived init slot count
       GC::INTERNAL_CONSTANTS[:HEAP_COUNT].times do |i|
-        capa = (GC.stat_heap(i, :slot_size) - GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD] - (2 * RbConfig::SIZEOF["void*"])) / RbConfig::SIZEOF["void*"]
-        while GC.stat_heap(i, :heap_eden_slots) < GC_HEAP_INIT_SLOTS
+        slot_size = GC.stat_heap(i, :slot_size)
+        init_slots = GC_HEAP_INIT_BYTES / slot_size
+        capa = (slot_size - GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD] - (2 * RbConfig::SIZEOF["void*"])) / RbConfig::SIZEOF["void*"]
+        while GC.stat_heap(i, :heap_eden_slots) < init_slots
           Array.new(capa)
         end
       end
@@ -532,19 +527,17 @@ class TestGc < Test::Unit::TestCase
       assert_equal gc_count, GC.stat(:count)
     RUBY
 
-    env = {}
-    sizes = GC.stat_heap.keys.reverse.map { 20_000 }
-    GC.stat_heap.keys.each do |heap|
-      env["RUBY_GC_HEAP_#{heap}_INIT_SLOTS"] = sizes[heap].to_s
-    end
+    env = { "RUBY_GC_HEAP_INIT_BYTES" => "#{800 * 1024}" }
     assert_separately([env, "-W0"], __FILE__, __LINE__, <<~RUBY, timeout: 60)
-      SIZES = #{sizes}
+      GC_HEAP_INIT_BYTES = 800 * 1024
 
       gc_count = GC.stat(:count)
-      # Fill up all of the size pools to the init slots
+      # Fill up all heaps to the byte-derived init slot count
       GC::INTERNAL_CONSTANTS[:HEAP_COUNT].times do |i|
-        capa = (GC.stat_heap(i, :slot_size) - GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD] - (2 * RbConfig::SIZEOF["void*"])) / RbConfig::SIZEOF["void*"]
-        while GC.stat_heap(i, :heap_eden_slots) < SIZES[i]
+        slot_size = GC.stat_heap(i, :slot_size)
+        init_slots = GC_HEAP_INIT_BYTES / slot_size
+        capa = (slot_size - GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD] - (2 * RbConfig::SIZEOF["void*"])) / RbConfig::SIZEOF["void*"]
+        while GC.stat_heap(i, :heap_eden_slots) < init_slots
           Array.new(capa)
         end
       end
