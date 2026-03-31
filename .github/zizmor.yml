@@ -23,6 +23,9 @@ rules:
   unpinned-images:
     ignore:
       - compilers.yml
+  secrets-outside-env:
+    # All committers with write access are trusted; no need for environment-scoped secrets.
+    disable: true
   unpinned-uses:
     ignore:
       - cygwin.yml
