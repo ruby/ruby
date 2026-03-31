@@ -800,7 +800,12 @@ rb_vm_frame_method_entry_unchecked(const rb_control_frame_t *cfp)
     const VALUE *ep = cfp->ep;
     rb_callable_method_entry_t *me;
 
-    while (!VM_ENV_LOCAL_P_UNCHECKED(ep)) {
+    for (;;) {
+        if (UNLIKELY(!FIXNUM_P(ep[VM_ENV_DATA_INDEX_FLAGS]))) {
+            // vm_make_env_each mid-escape: flags slot holds the env object.
+            ep = ((const rb_env_t *)ep[VM_ENV_DATA_INDEX_FLAGS])->ep;
+        }
+        if (VM_ENV_LOCAL_P_UNCHECKED(ep)) break;
         if ((me = env_method_entry_unchecked(ep[VM_ENV_DATA_INDEX_ME_CREF], FALSE)) != NULL) return me;
         ep = VM_ENV_PREV_EP_UNCHECKED(ep);
     }
