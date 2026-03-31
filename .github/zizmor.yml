@@ -10,12 +10,6 @@ rules:
   dependabot-cooldown:
     ignore:
       - dependabot.yml
-  excessive-permissions:
-    ignore:
-      - post_push.yml
-      - publish.yml
-      - release.yml
-      - wsl.yml
   misfeature:
     ignore:
       - mingw.yml
