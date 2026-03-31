@@ -1095,12 +1095,25 @@ static VALUE statx_birthtime(const rb_io_stat_data *st);
 
 /*
  *  call-seq:
- *     stat.atime   -> time
+ *    atime -> new_time
  *
- *  Returns the last access time for this file as an object of class
- *  Time.
+ * Returns a new Time object containing the access time
+ * of the object represented by +self+
+ * <i>at the time +self+ was created</i>:
  *
- *     File.stat("testfile").atime   #=> Wed Dec 31 18:00:00 CST 1969
+ *   filepath = 't.tmp'
+ *   File.write(filepath, 'foo')
+ *   file = File.new(filepath, 'w')
+ *   stat = File::Stat.new(filepath)
+ *   file.atime     # => 2026-03-31 16:26:39.5913207 -0500
+ *   stat.atime     # => 2026-03-31 16:26:39.5913207 -0500
+ *   File.write(filepath, 'bar')
+ *   file.atime     # => 2026-03-31 16:27:01.4981624 -0500  # Changed by access.
+ *   stat.atime     # => 2026-03-31 16:26:39.5913207 -0500  # Unchanged by access.
+ *   stat = File::Stat.new(filepath)
+ *   stat.atime     # => 2026-03-31 16:27:01.4981624 -0500  # New access time.
+ *   file.close
+ *   File.delete(filepath)
  *
  */
 
@@ -2446,13 +2459,23 @@ rb_file_s_ftype(VALUE klass, VALUE fname)
 
 /*
  *  call-seq:
- *     File.atime(file_name)  ->  time
+ *    File.atime(object) -> new_time
  *
- *  Returns the last access time for the named file as a Time object.
+ * Returns a new Time object containing the time of the most recent
+ * access (read or write) to the object,
+ * which may be a string filepath or dirpath, or a File or Dir object:
  *
- *  _file_name_ can be an IO object.
+ *   filepath = 't.tmp'
+ *   File.exist?(filepath)             # => false
+ *   File.atime(filepath)              # Raises Errno::ENOENT.
+ *   File.write(filepath, 'foo')
+ *   File.atime(filepath)              # => 2026-03-31 16:39:37.9290772 -0500
+ *   File.write(filepath, 'bar')
+ *   File.atime(filepath)              # => 2026-03-31 16:39:57.7710876 -0500
  *
- *     File.atime("testfile")   #=> Wed Apr 09 08:51:48 CDT 2003
+ *   File.atime('.')                   # => 2026-03-31 16:47:49.0970483 -0500
+ *   File.atime(File.new('README.md')) # => 2026-03-31 11:15:27.8215934 -0500
+ *   File.atime(Dir.new('.'))          # => 2026-03-31 12:39:45.5910591 -0500
  *
  */
 
@@ -2471,12 +2494,20 @@ rb_file_s_atime(VALUE klass, VALUE fname)
 
 /*
  *  call-seq:
- *     file.atime    -> time
+ *    atime -> new_time
  *
- *  Returns the last access time (a Time object) for <i>file</i>, or
- *  epoch if <i>file</i> has not been accessed.
+ * Returns a new Time object containing the time of the most recent
+ * access (read or write) to the file represented by +self+:
  *
- *     File.new("testfile").atime   #=> Wed Dec 31 18:00:00 CST 1969
+ *   filepath = 't.tmp'
+ *   file = File.new(filepath, 'a+')
+ *   file.atime # => 2026-03-31 17:11:27.7285397 -0500
+ *   file.write('foo')
+ *   file.atime # => 2026-03-31 17:11:27.7285397 -0500  # Unchanged; not yet written.
+ *   file.flush
+ *   file.atime # => 2026-03-31 17:12:11.3408054 -0500  # Changed; now written.
+ *   file.close
+ *   File.delete(filename)
  *
  */
 
