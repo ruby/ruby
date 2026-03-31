@@ -7585,7 +7585,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     fun.push_insn(block, Insn::Jump(BranchEdge { target: unmodified_block, args: vec![] }));
 
                     // Modified block: load the block local via EP.
-                    let ep = fun.push_insn(modified_block, Insn::GetEP { level });
                     let modified_val = fun.get_local_from_ep(modified_block, ep, ep_offset, level, types::BasicObject);
                     let mut modified_args = vec![modified_val];
                     if level == 0 { modified_args.push(modified_val); }
@@ -7593,7 +7592,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     // Unmodified block: inspect the current block handler to
                     // decide whether this path returns `nil` or `BlockParamProxy`.
-                    let ep = fun.push_insn(unmodified_block, Insn::GetEP { level });
                     let block_handler = fun.push_insn(unmodified_block, Insn::LoadField { recv: ep, id: ID!(_env_data_index_specval), offset: SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL, return_type: types::CInt64 });
                     let original_local = if level == 0 { Some(state.getlocal(ep_offset)) } else { None };
 
@@ -7655,7 +7653,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     }));
 
                     // Modified block: read Proc from EP.
-                    let ep = fun.push_insn(modified_block, Insn::GetEP { level });
                     let modified_val = fun.get_local_from_ep(modified_block, ep, ep_offset, level, types::BasicObject);
                     fun.push_insn(modified_block, Insn::Jump(BranchEdge { target: join_block, args: vec![modified_val] }));
 
