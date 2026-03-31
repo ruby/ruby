@@ -1,5 +1,6 @@
 paths-ignore:
   - benchmark
   - sample
-  - spec
-  - test
+  - spec/ruby/command_line/fixtures
+  - spec/ruby/core/exception/fixtures
+  - spec/ruby/language/fixtures
