@@ -5386,3 +5386,37 @@ fn test_ep_escape_preserves_keyword_default() {
         target("x")
     "#), @"[]");
 }
+
+#[test]
+fn test_send_block_to_accepts_no_block() {
+    // Methods with &nil should raise ArgumentError when called with a block
+    assert_snapshot!(inspect("
+        def m(a, &nil); a end
+
+        def test
+          m(1) {}
+        rescue ArgumentError => e
+          e.message
+        end
+
+        test
+        test
+    "), @r#""no block accepted""#);
+}
+
+#[test]
+fn test_send_block_to_method_not_using_block() {
+    // Passing a block to a method that doesn't use it should still work correctly.
+    // ZJIT falls back to the interpreter for this case so that unused block
+    // warnings are properly emitted.
+    assert_snapshot!(inspect("
+        def m_no_block = 42
+
+        def test
+          m_no_block {}
+        end
+
+        test
+        test
+    "), @"42");
+}

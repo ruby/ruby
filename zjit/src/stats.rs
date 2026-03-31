@@ -424,6 +424,8 @@ make_counters! {
     complex_arg_pass_param_kwrest,
     complex_arg_pass_param_block,
     complex_arg_pass_param_forwardable,
+    complex_arg_pass_accepts_no_block,
+    complex_arg_pass_does_not_use_block,
 
     // Unsupported caller side features
     complex_arg_pass_caller_splat,
