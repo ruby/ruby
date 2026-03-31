@@ -440,6 +440,7 @@ OnigEncodingDefine(utf_8, UTF_8) = {
   ONIGENC_FLAG_UNICODE,
 };
 ENC_ALIAS("CP65001", "UTF-8")
+ENC_ALIAS("UTF-\xe5\x85\xab", "UTF-8") /* strfun */
 
 /*
  * Name: UTF8-MAC

@@ -886,6 +886,20 @@ rb_enc_autoload_p(rb_encoding *enc)
     return !RUBY_ATOMIC_LOAD(global_enc_table.list[idx].loaded);
 }
 
+/* strfun */
+static int
+normalize_tategaki_encoding_name(const char *s, char *d, size_t n)
+{
+    const unsigned char *p=(const unsigned char *)s;char *q=d,*e=d+n-1;
+    for(;*p&&q<e;){unsigned char c=*p,a,b;
+    if(c==' '||c=='\t'||c=='\n'||c=='\r'){p++;continue;}
+    if(c==0xEF&&(a=p[1])&&(b=p[2])){if(a==0xBC){
+    if(b>=0x90&&b<=0x99){*q++='0'+b-0x90;p+=3;continue;}
+    if(b>=0xA1&&b<=0xBA){*q++='A'+b-0xA1;p+=3;continue;}}
+    else if(a==0xBD){if(b>=0x81&&b<=0x9A){*q++='a'+b-0x81;p+=3;continue;}
+    if(b==0x9C){*q++='-';p+=3;continue;}}}*q++=*p++;}*q=0;return q<e;
+}
+
 /* Return encoding index or UNSPECIFIED_ENCODING from encoding name */
 int
 rb_enc_find_index(const char *name)
@@ -899,6 +913,14 @@ rb_enc_find_index(const char *name)
 
     if (i < 0) {
         i = load_encoding(name);
+        if (i < 0) {
+            /* try tategaki normalization as fallback */
+            char buf[ENCODING_NAMELEN_MAX+1];
+            if (normalize_tategaki_encoding_name(name, buf, sizeof(buf)) &&
+                strcmp(buf, name) != 0) {
+                return rb_enc_find_index(buf);
+            }
+        }
     }
     else if (!(enc = rb_enc_from_index(i))) {
         if (i != UNSPECIFIED_ENCODING) {

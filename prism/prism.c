@@ -7568,7 +7568,15 @@ parser_lex_magic_comment_encoding(pm_parser_t *parser) {
     }
 
     const uint8_t *value_start = cursor;
-    while ((*cursor == '-' || *cursor == '_' || parser->encoding->alnum_char(cursor, 1)) && ++cursor < end);
+    while (cursor < end) {
+        if (*cursor == '-' || *cursor == '_') {
+            cursor++;
+        } else {
+            size_t w = parser->encoding->alnum_char(cursor, (size_t) (end - cursor));
+            if (w == 0) break;
+            cursor += w;
+        }
+    }
 
     if (!parser_lex_magic_comment_encoding_value(parser, value_start, cursor)) {
         // If we were unable to parse the encoding value, then we've got an

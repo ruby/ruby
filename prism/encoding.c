@@ -5136,7 +5136,12 @@ const pm_encoding_t *
 pm_encoding_find(const uint8_t *start, const uint8_t *end) {
     size_t width = (size_t) (end - start);
 
-    // First, we're going to check for UTF-8. This is the most common encoding.
+    // First, check for "UTF-八" (八 is kanji for 8, used in Japanese law).
+    if (width == 7 && pm_strncasecmp(start, (const uint8_t *) "UTF-\xe5\x85\xab", 7) == 0) {
+        return PM_ENCODING_UTF_8_ENTRY;
+    }
+
+    // Next, we're going to check for UTF-8. This is the most common encoding.
     // UTF-8 can contain extra information at the end about the platform it is
     // encoded on, such as UTF-8-MAC or UTF-8-UNIX. We'll ignore those suffixes.
     if ((start + 5 <= end) && (pm_strncasecmp(start, (const uint8_t *) "UTF-8", 5) == 0)) {
