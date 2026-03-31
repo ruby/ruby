@@ -9736,6 +9736,109 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_send_with_non_nil_block_arg() {
+        eval(r#"
+            def foo = 42
+
+            def test
+              block = :to_s
+              foo(&block)
+            end
+            test; test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          Jump bb3(v1, v2)
+        bb2():
+          EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:NilClass = Const Value(nil)
+          Jump bb3(v5, v6)
+        bb3(v8:BasicObject, v9:NilClass):
+          v13:StaticSymbol[:to_s] = Const Value(VALUE(0x1000))
+          v19:BasicObject = Send v8, &block, :foo, v13 # SendFallbackReason: Complex argument passing
+          CheckInterrupts
+          Return v19
+        ");
+    }
+
+    #[test]
+    fn test_send_with_statically_nil_block_arg() {
+        eval(r#"
+            def foo = 42
+
+            def test
+              block = nil
+              foo(&block)
+            end
+            test; test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          Jump bb3(v1, v2)
+        bb2():
+          EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:NilClass = Const Value(nil)
+          Jump bb3(v5, v6)
+        bb3(v8:BasicObject, v9:NilClass):
+          v13:NilClass = Const Value(nil)
+          v19:BasicObject = Send v8, &block, :foo, v13 # SendFallbackReason: Complex argument passing
+          CheckInterrupts
+          Return v19
+        ");
+    }
+
+    #[test]
+    fn test_send_with_monomorphically_nil_block_arg() {
+        eval(r#"
+            def foo = 42
+
+            def test(&block)
+              foo(&block)
+            end
+            test; test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :block@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :block@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v17:CPtr = GetEP 0
+          v18:CBool = IsBlockParamModified v17
+          IfTrue v18, bb4()
+          v23:CInt64 = LoadField v17, :_env_data_index_specval@0x1001
+          v24:CInt64[0] = GuardBitEquals v23, CInt64(0)
+          v25:NilClass = Const Value(nil)
+          Jump bb6(v25, v10)
+        bb4():
+          v21:BasicObject = LoadField v17, :block@0x1002
+          Jump bb6(v21, v21)
+        bb6(v15:BasicObject, v16:BasicObject):
+          v28:BasicObject = Send v9, &block, :foo, v15 # SendFallbackReason: Complex argument passing
+          CheckInterrupts
+          Return v28
+        ");
+    }
+
+    #[test]
     fn test_inline_attr_reader_constant() {
         eval("
             class C
