@@ -9715,7 +9715,7 @@ miniinit.$(OBJEXT): {$(VPATH)}numeric.rb
 miniinit.$(OBJEXT): {$(VPATH)}onigmo.h
 miniinit.$(OBJEXT): {$(VPATH)}oniguruma.h
 miniinit.$(OBJEXT): {$(VPATH)}pack.rb
-miniinit.$(OBJEXT): {$(VPATH)}pathname_builtin.rb
+miniinit.$(OBJEXT): {$(VPATH)}pathname.rb
 miniinit.$(OBJEXT): {$(VPATH)}prelude.rb
 miniinit.$(OBJEXT): {$(VPATH)}prism_compile.h
 miniinit.$(OBJEXT): {$(VPATH)}prism_xallocator.h
@@ -11305,7 +11305,7 @@ pathname.$(OBJEXT): {$(VPATH)}missing.h
 pathname.$(OBJEXT): {$(VPATH)}onigmo.h
 pathname.$(OBJEXT): {$(VPATH)}oniguruma.h
 pathname.$(OBJEXT): {$(VPATH)}pathname.c
-pathname.$(OBJEXT): {$(VPATH)}pathname_builtin.rbinc
+pathname.$(OBJEXT): {$(VPATH)}pathname.rbinc
 pathname.$(OBJEXT): {$(VPATH)}ruby.h
 pathname.$(OBJEXT): {$(VPATH)}st.h
 pathname.$(OBJEXT): {$(VPATH)}subst.h
