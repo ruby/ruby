@@ -7584,13 +7584,13 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     fun.push_insn(block, Insn::IfTrue { val: is_modified, target: BranchEdge { target: modified_block, args: vec![] }});
                     fun.push_insn(block, Insn::Jump(BranchEdge { target: unmodified_block, args: vec![] }));
 
-                    // Modified block: load the block local via EP.
+                    // Push modified block: load the block local via EP.
                     let modified_val = fun.get_local_from_ep(modified_block, ep, ep_offset, level, types::BasicObject);
                     let mut modified_args = vec![modified_val];
                     if level == 0 { modified_args.push(modified_val); }
                     fun.push_insn(modified_block, Insn::Jump(BranchEdge { target: join_block, args: modified_args }));
 
-                    // Unmodified block: inspect the current block handler to
+                    // Push unmodified block: inspect the current block handler to
                     // decide whether this path returns `nil` or `BlockParamProxy`.
                     let block_handler = fun.push_insn(unmodified_block, Insn::LoadField { recv: ep, id: ID!(_env_data_index_specval), offset: SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL, return_type: types::CInt64 });
                     let original_local = if level == 0 { Some(state.getlocal(ep_offset)) } else { None };
@@ -7621,7 +7621,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         }
                     }
 
-                    // Continue from the join block
+                    // Continue compilation from the merged continuation block at the next
+                    // instruction.
                     if let Some(local_param) = join_local {
                         state.setlocal(ep_offset, local_param);
                     }
@@ -7652,11 +7653,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         args: vec![],
                     }));
 
-                    // Modified block: read Proc from EP.
+                    // Push modified block: read Proc from EP.
                     let modified_val = fun.get_local_from_ep(modified_block, ep, ep_offset, level, types::BasicObject);
                     fun.push_insn(modified_block, Insn::Jump(BranchEdge { target: join_block, args: vec![modified_val] }));
 
-                    // Unmodified block: convert block handler to Proc.
+                    // Push unmodified block: convert block handler to Proc.
                     let unmodified_val = fun.push_insn(unmodified_block, Insn::GetBlockParam {
                         ep_offset,
                         level,
@@ -7664,7 +7665,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     });
                     fun.push_insn(unmodified_block, Insn::Jump(BranchEdge { target: join_block, args: vec![unmodified_val] }));
 
-                    // Continue from the join block
+                    // Continue compilation from the join block at the next instruction.
                     if level == 0 {
                         state.setlocal(ep_offset, join_param);
                     }
