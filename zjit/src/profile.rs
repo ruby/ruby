@@ -333,6 +333,25 @@ impl ProfiledType {
         self.flags
     }
 
+    /// For ivar access
+    pub fn rbasic_flags_and_mask(&self) -> (u64, u64) {
+        let shape_flag_shift = u64::from(RB_SHAPE_FLAG_SHIFT);
+        let (shape, shape_mask) = (u64::from(self.shape().0) << shape_flag_shift, !0 << shape_flag_shift);
+        let (builtin_type, type_mask) = if self.flags().is_t_object() {
+            (RUBY_T_OBJECT, RUBY_T_MASK)
+        } else if self.class().is_subclass_of(unsafe { rb_cClass }) == ClassRelationship::Subclass {
+            // Check class first since `Class < Module`
+            (RUBY_T_CLASS, RUBY_T_MASK)
+        } else if self.class().is_subclass_of(unsafe { rb_cModule }) == ClassRelationship::Subclass {
+            (RUBY_T_MODULE, RUBY_T_MASK)
+        } else if self.flags().is_typed_data() {
+            (RUBY_T_DATA | RUBY_TYPED_FL_IS_TYPED_DATA, RUBY_T_MASK | RUBY_TYPED_FL_IS_TYPED_DATA)
+        } else {
+            (0, 0)
+        };
+        (shape | u64::from(builtin_type), shape_mask | u64::from(type_mask))
+    }
+
     pub fn is_fixnum(&self) -> bool {
         self.class == unsafe { rb_cInteger } && self.flags.is_immediate()
     }

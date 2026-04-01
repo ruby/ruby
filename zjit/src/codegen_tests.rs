@@ -3714,6 +3714,7 @@ fn test_getivar_t_class_then_string() {
     assert_snapshot!(assert_compiles("[STR.test, STR.test]"), @"[1000, 1000]");
 }
 
+
 #[test]
 fn test_attr_accessor_setivar() {
     eval("

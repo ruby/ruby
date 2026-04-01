@@ -40,6 +40,9 @@ enum jit_bindgen_constants {
     // Field offsets for the RString struct
     RUBY_OFFSET_RSTRING_LEN = offsetof(struct RString, len),
 
+    // Shape constant related to RBasic::flags. (See RBASIC_SET_SHAPE_ID())
+    RB_SHAPE_FLAG_SHIFT = SHAPE_FLAG_SHIFT,
+
     // Field offsets for rb_execution_context_t
     RUBY_OFFSET_EC_CFP = offsetof(rb_execution_context_t, cfp),
     RUBY_OFFSET_EC_INTERRUPT_FLAG = offsetof(rb_execution_context_t, interrupt_flag),
