@@ -399,6 +399,14 @@ impl<'a> std::fmt::Display for ConstPrinter<'a> {
             // We'll have to resolve that first.
             Const::CPtr(val) => write!(f, "CPtr({:?})", self.ptr_map.map_ptr(val)),
             &Const::CShape(shape_id) => write!(f, "CShape({:p})", self.ptr_map.map_shape(shape_id)),
+            &Const::CUInt64(int) => {
+                // Print in hex if signed bit is set
+                if 0 != int & (1 << (u64::BITS - 1)) {
+                    write!(f, "CUInt64(0x{int:x})")
+                } else {
+                    write!(f, "CUInt64({int})")
+                }
+            }
             _ => write!(f, "{:?}", self.inner),
         }
     }

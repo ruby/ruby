@@ -7719,13 +7719,13 @@ mod hir_opt_tests {
           PatchPoint SingleRactorMode
           v11:HeapBasicObject = GuardType v6, HeapBasicObject
           v12:CUInt64 = LoadField v11, :_rbasic_flags@0x1000
-          v14:CUInt64[18446744069414584351] = Const CUInt64(18446744069414584351)
+          v14:CUInt64[0xffffffff0000001f] = Const CUInt64(0xffffffff0000001f)
           v15:CPtr[CPtr(0x1008)] = Const CPtr(0x1010)
           v16 = RefineType v15, CUInt64
           v17:CInt64 = IntAnd v12, v14
           v18:CBool = IsBitEqual v17, v16
           IfTrue v18, bb5()
-          v23:CUInt64[18446744069414584351] = Const CUInt64(18446744069414584351)
+          v23:CUInt64[0xffffffff0000001f] = Const CUInt64(0xffffffff0000001f)
           v24:CPtr[CPtr(0x1008)] = Const CPtr(0x1010)
           v25 = RefineType v24, CUInt64
           v26:CInt64 = IntAnd v12, v23
@@ -7795,13 +7795,13 @@ mod hir_opt_tests {
           PatchPoint SingleRactorMode
           v11:HeapBasicObject = GuardType v6, HeapBasicObject
           v12:CUInt64 = LoadField v11, :_rbasic_flags@0x1000
-          v14:CUInt64[18446744069414584351] = Const CUInt64(18446744069414584351)
+          v14:CUInt64[0xffffffff0000001f] = Const CUInt64(0xffffffff0000001f)
           v15:CPtr[CPtr(0x1008)] = Const CPtr(0x1010)
           v16 = RefineType v15, CUInt64
           v17:CInt64 = IntAnd v12, v14
           v18:CBool = IsBitEqual v17, v16
           IfTrue v18, bb5()
-          v22:CUInt64[18446744069414584351] = Const CUInt64(18446744069414584351)
+          v22:CUInt64[0xffffffff0000001f] = Const CUInt64(0xffffffff0000001f)
           v23:CPtr[CPtr(0x1008)] = Const CPtr(0x1010)
           v24 = RefineType v23, CUInt64
           v25:CInt64 = IntAnd v12, v22
@@ -7866,13 +7866,13 @@ mod hir_opt_tests {
           PatchPoint SingleRactorMode
           v11:HeapBasicObject = GuardType v6, HeapBasicObject
           v12:CUInt64 = LoadField v11, :_rbasic_flags@0x1000
-          v14:CUInt64[18446744069414584351] = Const CUInt64(18446744069414584351)
+          v14:CUInt64[0xffffffff0000001f] = Const CUInt64(0xffffffff0000001f)
           v15:CPtr[CPtr(0x1008)] = Const CPtr(0x1010)
           v16 = RefineType v15, CUInt64
           v17:CInt64 = IntAnd v12, v14
           v18:CBool = IsBitEqual v17, v16
           IfTrue v18, bb5()
-          v22:CUInt64[18446744069414584351] = Const CUInt64(18446744069414584351)
+          v22:CUInt64[0xffffffff0000001f] = Const CUInt64(0xffffffff0000001f)
           v23:CPtr[CPtr(0x1008)] = Const CPtr(0x1010)
           v24 = RefineType v23, CUInt64
           v25:CInt64 = IntAnd v12, v22

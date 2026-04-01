@@ -99,7 +99,14 @@ fn write_spec(f: &mut std::fmt::Formatter, printer: &TypePrinter) -> std::fmt::R
         Specialization::Int(val) if ty.is_subtype(types::CUInt8) => write!(f, "[{}]", val & u8::MAX as u64),
         Specialization::Int(val) if ty.is_subtype(types::CUInt16) => write!(f, "[{}]", val & u16::MAX as u64),
         Specialization::Int(val) if ty.is_subtype(types::CUInt32) => write!(f, "[{}]", val & u32::MAX as u64),
-        Specialization::Int(val) if ty.is_subtype(types::CUInt64) => write!(f, "[{val}]"),
+        Specialization::Int(val) if ty.is_subtype(types::CUInt64) => {
+            // Print in hex if signed bit is set
+            if 0 != val & (1 << (u64::BITS - 1)) {
+                write!(f, "[0x{val:x}]")
+            } else {
+                write!(f, "[{val}]")
+            }
+        }
         Specialization::Int(val) if ty.is_subtype(types::CPtr) => write!(f, "[{}]", Const::CPtr(val as *const u8).print(printer.ptr_map)),
         Specialization::Int(val) => write!(f, "[{val}]"),
         Specialization::Double(val) => write!(f, "[{val}]"),
@@ -881,7 +888,7 @@ mod tests {
         assert_eq!(format!("{}", Type::from_cint(types::CInt32, -1)), "CInt32[-1]");
         assert_eq!(format!("{}", Type::from_cint(types::CUInt32, -1)), "CUInt32[4294967295]");
         assert_eq!(format!("{}", Type::from_cint(types::CInt64, -1)), "CInt64[-1]");
-        assert_eq!(format!("{}", Type::from_cint(types::CUInt64, -1)), "CUInt64[18446744073709551615]");
+        assert_eq!(format!("{}", Type::from_cint(types::CUInt64, -1)), "CUInt64[0xffffffffffffffff]");
         assert_eq!(format!("{}", Type::from_cbool(true)), "CBool[true]");
         assert_eq!(format!("{}", Type::from_cbool(false)), "CBool[false]");
         assert_eq!(format!("{}", types::Fixnum), "Fixnum");
