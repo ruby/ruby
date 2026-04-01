@@ -485,7 +485,6 @@ typedef struct rb_heap_struct {
     size_t force_incremental_marking_finish_count;
     size_t total_allocated_objects;
     size_t total_freed_objects;
-    size_t final_slots_count;
 
     /* Sweeping statistics */
     size_t freed_slots;
@@ -556,10 +555,6 @@ typedef struct rb_objspace {
     size_t empty_pages_count;
     struct heap_page *empty_pages;
 
-    struct {
-        rb_atomic_t finalizing;
-    } atomic_flags;
-
     mark_stack_t mark_stack;
     size_t marked_slots;
 
@@ -572,12 +567,7 @@ typedef struct rb_objspace {
         size_t freeable_pages;
 
         size_t allocatable_bytes;
-
-        /* final */
-        VALUE deferred_final;
     } heap_pages;
-
-    st_table *finalizer_table;
 
     struct {
         int run;
@@ -675,7 +665,6 @@ typedef struct rb_objspace {
 #endif
 
     rb_darray(VALUE) weak_references;
-    rb_postponed_job_handle_t finalize_deferred_pjob;
 
     unsigned long live_ractor_cache_count;
 
@@ -814,7 +803,6 @@ struct heap_page {
     unsigned short slot_size;
     unsigned short total_slots;
     unsigned short free_slots;
-    unsigned short final_slots;
     unsigned short pinned_slots;
     struct {
         unsigned int before_sweep : 1;
@@ -957,11 +945,8 @@ RVALUE_AGE_SET(VALUE obj, int age)
 #define heap_pages_lomem	objspace->heap_pages.range[0]
 #define heap_pages_himem	objspace->heap_pages.range[1]
 #define heap_pages_freeable_pages	objspace->heap_pages.freeable_pages
-#define heap_pages_deferred_final	objspace->heap_pages.deferred_final
 #define heaps              objspace->heaps
 #define during_gc		objspace->flags.during_gc
-#define finalizing		objspace->atomic_flags.finalizing
-#define finalizer_table 	objspace->finalizer_table
 #define ruby_gc_stressful	objspace->flags.gc_stressful
 #define ruby_gc_stress_mode     objspace->gc_stress_mode
 #if GC_DEBUG_STRESS_TO_CLASS
@@ -1050,17 +1035,6 @@ total_freed_objects(rb_objspace_t *objspace)
     for (int i = 0; i < HEAP_COUNT; i++) {
         rb_heap_t *heap = &heaps[i];
         count += heap->total_freed_objects;
-    }
-    return count;
-}
-
-static inline size_t
-total_final_slots_count(rb_objspace_t *objspace)
-{
-    size_t count = 0;
-    for (int i = 0; i < HEAP_COUNT; i++) {
-        rb_heap_t *heap = &heaps[i];
-        count += heap->final_slots_count;
     }
     return count;
 }
@@ -1169,8 +1143,6 @@ static inline void gc_prof_set_heap_info(rb_objspace_t *);
 # define gc_report if (!RGENGC_DEBUG_ENABLED(0)) {} else gc_report_body
 #endif
 PRINTF_ARGS(static void gc_report_body(int level, rb_objspace_t *objspace, const char *fmt, ...), 3, 4);
-
-static void gc_finalize_deferred(void *dmy);
 
 #if USE_TICK_T
 
@@ -2655,27 +2627,6 @@ rb_gc_impl_pointer_to_heap_p(void *objspace_ptr, const void *ptr)
     return is_pointer_to_heap(objspace_ptr, ptr);
 }
 
-#define ZOMBIE_OBJ_KEPT_FLAGS (FL_FINALIZE)
-
-void
-rb_gc_impl_make_zombie(void *objspace_ptr, VALUE obj, void (*dfree)(void *), void *data)
-{
-    rb_objspace_t *objspace = objspace_ptr;
-
-    struct RZombie *zombie = RZOMBIE(obj);
-    zombie->flags = T_ZOMBIE | (zombie->flags & ZOMBIE_OBJ_KEPT_FLAGS);
-    zombie->dfree = dfree;
-    zombie->data = data;
-    VALUE prev, next = heap_pages_deferred_final;
-    do {
-        zombie->next = prev = next;
-        next = RUBY_ATOMIC_VALUE_CAS(heap_pages_deferred_final, prev, obj);
-    } while (next != prev);
-
-    struct heap_page *page = GET_HEAP_PAGE(obj);
-    page->final_slots++;
-    page->heap->final_slots_count++;
-}
 
 typedef int each_obj_callback(void *, void *, size_t, void *);
 typedef int each_page_callback(struct heap_page *, void *);
@@ -2827,189 +2778,6 @@ objspace_each_pages(rb_objspace_t *objspace, each_page_callback *callback, void 
 }
 #endif
 
-VALUE
-rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
-{
-    rb_objspace_t *objspace = objspace_ptr;
-    VALUE table;
-    st_data_t data;
-
-    GC_ASSERT(!OBJ_FROZEN(obj));
-
-    RBASIC(obj)->flags |= FL_FINALIZE;
-
-    unsigned int lev = RB_GC_VM_LOCK();
-
-    if (st_lookup(finalizer_table, obj, &data)) {
-        table = (VALUE)data;
-        VALUE dup_table = rb_ary_dup(table);
-
-        RB_GC_VM_UNLOCK(lev);
-        /* avoid duplicate block, table is usually small */
-        {
-            long len = RARRAY_LEN(table);
-            long i;
-
-            for (i = 0; i < len; i++) {
-                VALUE recv = RARRAY_AREF(dup_table, i);
-                if (rb_equal(recv, block)) { // can't be called with VM lock held
-                    return recv;
-                }
-            }
-        }
-        lev = RB_GC_VM_LOCK();
-        RB_GC_GUARD(dup_table);
-
-        rb_ary_push(table, block);
-    }
-    else {
-        table = rb_ary_new3(2, rb_obj_id(obj), block);
-        rb_obj_hide(table);
-        st_add_direct(finalizer_table, obj, table);
-    }
-
-    RB_GC_VM_UNLOCK(lev);
-
-    return block;
-}
-
-void
-rb_gc_impl_undefine_finalizer(void *objspace_ptr, VALUE obj)
-{
-    rb_objspace_t *objspace = objspace_ptr;
-
-    GC_ASSERT(!OBJ_FROZEN(obj));
-
-    st_data_t data = obj;
-
-    int lev = RB_GC_VM_LOCK();
-    st_delete(finalizer_table, &data, 0);
-    RB_GC_VM_UNLOCK(lev);
-
-    FL_UNSET(obj, FL_FINALIZE);
-}
-
-void
-rb_gc_impl_copy_finalizer(void *objspace_ptr, VALUE dest, VALUE obj)
-{
-    rb_objspace_t *objspace = objspace_ptr;
-    VALUE table;
-    st_data_t data;
-
-    if (!FL_TEST(obj, FL_FINALIZE)) return;
-
-    int lev = RB_GC_VM_LOCK();
-    if (RB_LIKELY(st_lookup(finalizer_table, obj, &data))) {
-        table = rb_ary_dup((VALUE)data);
-        RARRAY_ASET(table, 0, rb_obj_id(dest));
-        st_insert(finalizer_table, dest, table);
-        FL_SET(dest, FL_FINALIZE);
-    }
-    else {
-        rb_bug("rb_gc_copy_finalizer: FL_FINALIZE set but not found in finalizer_table: %s", rb_obj_info(obj));
-    }
-    RB_GC_VM_UNLOCK(lev);
-}
-
-static VALUE
-get_final(long i, void *data)
-{
-    VALUE table = (VALUE)data;
-
-    return RARRAY_AREF(table, i + 1);
-}
-
-static unsigned int
-run_final(rb_objspace_t *objspace, VALUE zombie, unsigned int lev)
-{
-    if (RZOMBIE(zombie)->dfree) {
-        RZOMBIE(zombie)->dfree(RZOMBIE(zombie)->data);
-    }
-
-    st_data_t key = (st_data_t)zombie;
-    if (FL_TEST_RAW(zombie, FL_FINALIZE)) {
-        FL_UNSET(zombie, FL_FINALIZE);
-        st_data_t table;
-        if (st_delete(finalizer_table, &key, &table)) {
-            RB_GC_VM_UNLOCK(lev);
-            rb_gc_run_obj_finalizer(RARRAY_AREF(table, 0), RARRAY_LEN(table) - 1, get_final, (void *)table);
-            lev = RB_GC_VM_LOCK();
-        }
-        else {
-            rb_bug("FL_FINALIZE flag is set, but finalizers are not found");
-        }
-    }
-    else {
-        GC_ASSERT(!st_lookup(finalizer_table, key, NULL));
-    }
-    return lev;
-}
-
-static void
-finalize_list(rb_objspace_t *objspace, VALUE zombie)
-{
-    while (zombie) {
-        VALUE next_zombie;
-        struct heap_page *page;
-        rb_asan_unpoison_object(zombie, false);
-        next_zombie = RZOMBIE(zombie)->next;
-        page = GET_HEAP_PAGE(zombie);
-
-        unsigned int lev = RB_GC_VM_LOCK();
-
-        lev = run_final(objspace, zombie, lev);
-        {
-            GC_ASSERT(BUILTIN_TYPE(zombie) == T_ZOMBIE);
-            GC_ASSERT(page->heap->final_slots_count > 0);
-            GC_ASSERT(page->final_slots > 0);
-
-            page->heap->final_slots_count--;
-            page->final_slots--;
-            page->free_slots++;
-            RVALUE_AGE_SET_BITMAP(zombie, 0);
-            heap_page_add_freeobj(objspace, page, zombie);
-            page->heap->total_freed_objects++;
-        }
-        RB_GC_VM_UNLOCK(lev);
-
-        zombie = next_zombie;
-    }
-}
-
-static void
-finalize_deferred_heap_pages(rb_objspace_t *objspace)
-{
-    VALUE zombie;
-    while ((zombie = RUBY_ATOMIC_VALUE_EXCHANGE(heap_pages_deferred_final, 0)) != 0) {
-        finalize_list(objspace, zombie);
-    }
-}
-
-static void
-finalize_deferred(rb_objspace_t *objspace)
-{
-    rb_gc_set_pending_interrupt();
-    finalize_deferred_heap_pages(objspace);
-    rb_gc_unset_pending_interrupt();
-}
-
-static void
-gc_finalize_deferred(void *dmy)
-{
-    rb_objspace_t *objspace = dmy;
-    if (RUBY_ATOMIC_EXCHANGE(finalizing, 1)) return;
-
-    finalize_deferred(objspace);
-    RUBY_ATOMIC_SET(finalizing, 0);
-}
-
-static void
-gc_finalize_deferred_register(rb_objspace_t *objspace)
-{
-    /* will enqueue a call to gc_finalize_deferred */
-    rb_postponed_job_trigger(objspace->finalize_deferred_pjob);
-}
-
 static int pop_mark_stack(mark_stack_t *stack, VALUE *data);
 
 static void
@@ -3072,22 +2840,6 @@ rb_gc_impl_shutdown_free_objects(void *objspace_ptr)
     }
 }
 
-static int
-rb_gc_impl_shutdown_call_finalizer_i(st_data_t key, st_data_t val, st_data_t _data)
-{
-    VALUE obj = (VALUE)key;
-    VALUE table = (VALUE)val;
-
-    GC_ASSERT(RB_FL_TEST(obj, FL_FINALIZE));
-    GC_ASSERT(RB_BUILTIN_TYPE(val) == T_ARRAY);
-
-    rb_gc_run_obj_finalizer(RARRAY_AREF(table, 0), RARRAY_LEN(table) - 1, get_final, (void *)table);
-
-    FL_UNSET(obj, FL_FINALIZE);
-
-    return ST_DELETE;
-}
-
 void
 rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
 {
@@ -3099,21 +2851,6 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
 
     /* prohibit incremental GC */
     objspace->flags.dont_incremental = 1;
-
-    if (RUBY_ATOMIC_EXCHANGE(finalizing, 1)) {
-        /* Abort incremental marking and lazy sweeping to speed up shutdown. */
-        gc_abort(objspace);
-        dont_gc_on();
-        return;
-    }
-
-    while (finalizer_table->num_entries) {
-        st_foreach(finalizer_table, rb_gc_impl_shutdown_call_finalizer_i, 0);
-    }
-
-    /* run finalizers */
-    finalize_deferred(objspace);
-    GC_ASSERT(heap_pages_deferred_final == 0);
 
     /* Abort incremental marking and lazy sweeping to speed up shutdown. */
     gc_abort(objspace);
@@ -3146,12 +2883,6 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
     }
 
     gc_exit(objspace, gc_enter_event_finalizer, &lock_lev);
-
-    finalize_deferred_heap_pages(objspace);
-
-    st_free_table(finalizer_table);
-    finalizer_table = 0;
-    RUBY_ATOMIC_SET(finalizing, 0);
 }
 
 void
@@ -3195,13 +2926,13 @@ objspace_available_slots(rb_objspace_t *objspace)
 static size_t
 objspace_live_slots(rb_objspace_t *objspace)
 {
-    return total_allocated_objects(objspace) - total_freed_objects(objspace) - total_final_slots_count(objspace);
+    return total_allocated_objects(objspace) - total_freed_objects(objspace);
 }
 
 static size_t
 objspace_free_slots(rb_objspace_t *objspace)
 {
-    return objspace_available_slots(objspace) - objspace_live_slots(objspace) - total_final_slots_count(objspace);
+    return objspace_available_slots(objspace) - objspace_live_slots(objspace);
 }
 
 static void
@@ -3523,7 +3254,6 @@ gc_compact_finish(rb_objspace_t *objspace)
 
 struct gc_sweep_context {
     struct heap_page *page;
-    int final_slots;
     int freed_slots;
     int empty_slots;
 };
@@ -3553,9 +3283,6 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
                 gc_report(3, objspace, "page_sweep: %s is added to freelist\n", rb_obj_info(vp));
                 ctx->empty_slots++;
                 heap_page_add_freeobj(objspace, sweep_page, vp);
-                break;
-              case T_ZOMBIE:
-                /* already counted */
                 break;
               case T_NONE:
                 ctx->empty_slots++; /* already freed */
@@ -3594,15 +3321,11 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
                     rb_gc_event_hook(vp, RUBY_INTERNAL_EVENT_FREEOBJ);
 
                     rb_gc_obj_free_vm_weak_references(vp);
-                    if (rb_gc_obj_free(objspace, vp)) {
-                        (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, slot_size);
-                        heap_page_add_freeobj(objspace, sweep_page, vp);
-                        gc_report(3, objspace, "page_sweep: %s is added to freelist\n", rb_obj_info(vp));
-                        ctx->freed_slots++;
-                    }
-                    else {
-                        ctx->final_slots++;
-                    }
+                    rb_gc_obj_free(objspace, vp);
+                    (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, slot_size);
+                    heap_page_add_freeobj(objspace, sweep_page, vp);
+                    gc_report(3, objspace, "page_sweep: %s is added to freelist\n", rb_obj_info(vp));
+                    ctx->freed_slots++;
                 }
                 break;
             }
@@ -3669,21 +3392,17 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
 #if GC_PROFILE_MORE_DETAIL
     if (gc_prof_enabled(objspace)) {
         gc_profile_record *record = gc_prof_record(objspace);
-        record->removing_objects += ctx->final_slots + ctx->freed_slots;
+        record->removing_objects += ctx->freed_slots;
         record->empty_objects += ctx->empty_slots;
     }
 #endif
-    if (0) fprintf(stderr, "gc_sweep_page(%"PRIdSIZE"): total_slots: %d, freed_slots: %d, empty_slots: %d, final_slots: %d\n",
+    if (0) fprintf(stderr, "gc_sweep_page(%"PRIdSIZE"): total_slots: %d, freed_slots: %d, empty_slots: %d\n",
                    rb_gc_count(),
                    sweep_page->total_slots,
-                   ctx->freed_slots, ctx->empty_slots, ctx->final_slots);
+                   ctx->freed_slots, ctx->empty_slots);
 
     sweep_page->free_slots += ctx->freed_slots + ctx->empty_slots;
     sweep_page->heap->total_freed_objects += ctx->freed_slots;
-
-    if (heap_pages_deferred_final && !finalizing) {
-        gc_finalize_deferred_register(objspace);
-    }
 
 #if RGENGC_CHECK_MODE
     short freelist_len = 0;
@@ -3940,7 +3659,7 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
 
         struct gc_sweep_context ctx = {
             .page = sweep_page,
-            .final_slots = 0,
+
             .freed_slots = 0,
             .empty_slots = 0,
         };
@@ -4597,13 +4316,6 @@ rb_gc_impl_mark_maybe(void *objspace_ptr, VALUE obj)
     }
 }
 
-static int
-pin_value(st_data_t key, st_data_t value, st_data_t data)
-{
-    rb_gc_impl_mark_and_pin((void *)data, (VALUE)value);
-
-    return ST_CONTINUE;
-}
 
 static inline void
 gc_mark_set_parent_raw(rb_objspace_t *objspace, VALUE obj, bool old_p)
@@ -4636,10 +4348,6 @@ mark_roots(rb_objspace_t *objspace, const char **categoryp)
 
     MARK_CHECKPOINT("objspace");
     gc_mark_set_parent_raw(objspace, Qundef, false);
-
-    if (finalizer_table != NULL) {
-        st_foreach(finalizer_table, pin_value, (st_data_t)objspace);
-    }
 
     if (stress_to_class) rb_gc_mark(stress_to_class);
 
@@ -5070,15 +4778,8 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride,
                 if (BUILTIN_TYPE(obj) == T_ZOMBIE) {
                     data->zombie_object_count++;
 
-                    if ((RBASIC(obj)->flags & ~ZOMBIE_OBJ_KEPT_FLAGS) != T_ZOMBIE) {
+                    if (RBASIC(obj)->flags != T_ZOMBIE) {
                         fprintf(stderr, "verify_internal_consistency_i: T_ZOMBIE has extra flags set: %s\n",
-                                rb_obj_info(obj));
-                        data->err_count++;
-                    }
-
-                    if (!!FL_TEST(obj, FL_FINALIZE) != !!st_is_member(finalizer_table, obj)) {
-                        fprintf(stderr, "verify_internal_consistency_i: FL_FINALIZE %s but %s finalizer_table: %s\n",
-                                FL_TEST(obj, FL_FINALIZE) ? "set" : "not set", st_is_member(finalizer_table, obj) ? "in" : "not in",
                                 rb_obj_info(obj));
                         data->err_count++;
                     }
@@ -5097,7 +4798,6 @@ gc_verify_heap_page(rb_objspace_t *objspace, struct heap_page *page, VALUE obj)
     unsigned int has_remembered_old = FALSE;
     int remembered_old_objects = 0;
     int free_objects = 0;
-    int zombie_objects = 0;
 
     short slot_size = page->slot_size;
     uintptr_t start = (uintptr_t)page->start;
@@ -5109,7 +4809,6 @@ gc_verify_heap_page(rb_objspace_t *objspace, struct heap_page *page, VALUE obj)
             enum ruby_value_type type = BUILTIN_TYPE(val);
 
             if (type == T_NONE) free_objects++;
-            if (type == T_ZOMBIE) zombie_objects++;
             if (RVALUE_PAGE_UNCOLLECTIBLE(page, val) && RVALUE_PAGE_WB_UNPROTECTED(page, val)) {
                 has_remembered_shady = TRUE;
             }
@@ -5143,9 +4842,6 @@ gc_verify_heap_page(rb_objspace_t *objspace, struct heap_page *page, VALUE obj)
         if (page->free_slots != free_objects) {
             rb_bug("page %p's free_slots should be %d, but %d", (void *)page, page->free_slots, free_objects);
         }
-    }
-    if (page->final_slots != zombie_objects) {
-        rb_bug("page %p's final_slots should be %d, but %d", (void *)page, page->final_slots, zombie_objects);
     }
 
     return remembered_old_objects;
@@ -5226,11 +4922,10 @@ gc_verify_internal_consistency_(rb_objspace_t *objspace)
     ractor_cache_flush_count(objspace, rb_gc_get_ractor_newobj_cache());
 
     if (!is_lazy_sweeping(objspace) &&
-            !finalizing &&
             !rb_gc_multi_ractor_p()) {
         if (objspace_live_slots(objspace) != data.live_object_count) {
-            fprintf(stderr, "heap_pages_final_slots: %"PRIdSIZE", total_freed_objects: %"PRIdSIZE"\n",
-                    total_final_slots_count(objspace), total_freed_objects(objspace));
+            fprintf(stderr, "total_freed_objects: %"PRIdSIZE"\n",
+                    total_freed_objects(objspace));
             rb_bug("inconsistent live slot number: expect %"PRIuSIZE", but %"PRIuSIZE".",
                    objspace_live_slots(objspace), data.live_object_count);
         }
@@ -5244,30 +4939,6 @@ gc_verify_internal_consistency_(rb_objspace_t *objspace)
         if (objspace->rgengc.uncollectible_wb_unprotected_objects != data.remembered_shady_count) {
             rb_bug("inconsistent number of wb unprotected objects: expect %"PRIuSIZE", but %"PRIuSIZE".",
                    objspace->rgengc.uncollectible_wb_unprotected_objects, data.remembered_shady_count);
-        }
-    }
-
-    if (!finalizing) {
-        size_t list_count = 0;
-
-        {
-            VALUE z = heap_pages_deferred_final;
-            while (z) {
-                list_count++;
-                z = RZOMBIE(z)->next;
-            }
-        }
-
-        if (total_final_slots_count(objspace) != data.zombie_object_count ||
-            total_final_slots_count(objspace) != list_count) {
-
-            rb_bug("inconsistent finalizing object count:\n"
-                    "  expect %"PRIuSIZE"\n"
-                    "  but    %"PRIuSIZE" zombies\n"
-                    "  heap_pages_deferred_final list has %"PRIuSIZE" items.",
-                    total_final_slots_count(objspace),
-                    data.zombie_object_count,
-                    list_count);
         }
     }
 
@@ -5578,7 +5249,7 @@ gc_compact_move(rb_objspace_t *objspace, rb_heap_t *heap, VALUE src)
     while (!try_move(objspace, dest_pool, dest_pool->free_pages, src)) {
         struct gc_sweep_context ctx = {
             .page = dest_pool->sweeping_page,
-            .final_slots = 0,
+
             .freed_slots = 0,
             .empty_slots = 0,
         };
@@ -6186,7 +5857,6 @@ rb_gc_impl_copy_attributes(void *objspace_ptr, VALUE dest, VALUE obj)
     if (RVALUE_WB_UNPROTECTED(objspace, obj)) {
         rb_gc_impl_writebarrier_unprotect(objspace, dest);
     }
-    rb_gc_impl_copy_finalizer(objspace, dest, obj);
 }
 
 const char *
@@ -6858,7 +6528,6 @@ rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool i
     }
 
     garbage_collect(objspace, reason);
-    gc_finalize_deferred(objspace);
 
     gc_config_full_mark_set(full_marking_p);
 }
@@ -6925,16 +6594,6 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
       case T_RATIONAL:
       case T_NODE:
       case T_CLASS:
-        if (FL_TEST_RAW(obj, FL_FINALIZE)) {
-            /* The finalizer table is a numtable. It looks up objects by address.
-             * We can't mark the keys in the finalizer table because that would
-             * prevent the objects from being collected.  This check prevents
-             * objects that are keys in the finalizer table from being moved
-             * without directly pinning them. */
-            GC_ASSERT(st_is_member(finalizer_table, obj));
-
-            return FALSE;
-        }
         GC_ASSERT(RVALUE_MARKED(objspace, obj));
         GC_ASSERT(!RVALUE_PINNED(objspace, obj));
 
@@ -7197,8 +6856,6 @@ gc_update_references(rb_objspace_t *objspace)
             }
         }
     }
-
-    gc_update_table_refs(finalizer_table);
 
     rb_gc_update_vm_references((void *)objspace);
 
@@ -7597,7 +7254,7 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
     SET(heap_available_slots, objspace_available_slots(objspace));
     SET(heap_live_slots, objspace_live_slots(objspace));
     SET(heap_free_slots, objspace_free_slots(objspace));
-    SET(heap_final_slots, total_final_slots_count(objspace));
+    SET(heap_final_slots, 0);
     SET(heap_marked_slots, objspace->marked_slots);
     SET(heap_eden_pages, heap_eden_total_pages(objspace));
     SET(total_allocated_pages, objspace->heap_pages.allocated_pages);
@@ -7698,9 +7355,9 @@ stat_one_heap(rb_objspace_t *objspace, rb_heap_t *heap, VALUE hash, VALUE key)
         rb_hash_aset(hash, gc_stat_heap_symbols[gc_stat_heap_sym_##name], SIZET2NUM(attr));
 
     SET(slot_size, heap->slot_size);
-    SET(heap_live_slots, heap->total_allocated_objects - heap->total_freed_objects - heap->final_slots_count);
+    SET(heap_live_slots, heap->total_allocated_objects - heap->total_freed_objects);
     SET(heap_free_slots, heap->total_slots - (heap->total_allocated_objects - heap->total_freed_objects));
-    SET(heap_final_slots, heap->final_slots_count);
+    SET(heap_final_slots, 0);
     SET(heap_eden_pages, heap->total_pages);
     SET(heap_eden_slots, heap->total_slots);
     SET(heap_allocatable_slots, objspace->heap_pages.allocatable_bytes / heap->slot_size);
@@ -8651,9 +8308,7 @@ gc_prof_sweep_timer_stop(rb_objspace_t *objspace)
 
 #if GC_PROFILE_MORE_DETAIL
         record->gc_sweep_time += sweep_time;
-        if (heap_pages_deferred_final) record->flags |= GPR_FLAG_HAVE_FINALIZE;
 #endif
-        if (heap_pages_deferred_final) objspace->profile.latest_gc_info |= GPR_FLAG_HAVE_FINALIZE;
     }
 }
 
@@ -8681,7 +8336,7 @@ gc_prof_set_heap_info(rb_objspace_t *objspace)
         size_t total_size = 0;
         for (int i = 0; i < HEAP_COUNT; i++) {
             rb_heap_t *heap = &heaps[i];
-            size_t heap_live = heap->total_allocated_objects - heap->total_freed_objects - heap->final_slots_count;
+            size_t heap_live = heap->total_allocated_objects - heap->total_freed_objects;
             total += heap->total_slots;
             use_size += heap_live * heap->slot_size;
             total_size += heap->total_slots * heap->slot_size;
@@ -9533,10 +9188,6 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
 
     objspace->flags.measure_gc = true;
     malloc_limit = gc_params.malloc_limit_min;
-    objspace->finalize_deferred_pjob = rb_postponed_job_preregister(0, gc_finalize_deferred, objspace);
-    if (objspace->finalize_deferred_pjob == POSTPONED_JOB_HANDLE_INVALID) {
-        rb_bug("Could not preregister postponed job for GC");
-    }
 
     /* A standard RVALUE (RBasic + embedded VALUEs + debug overhead) must fit
      * in at least one pool.  In debug builds RVALUE_OVERHEAD can push this
@@ -9568,7 +9219,6 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
     init_mark_stack(&objspace->mark_stack);
 
     objspace->profile.invoke_time = getrusage_time();
-    finalizer_table = st_init_numtable();
 }
 
 void

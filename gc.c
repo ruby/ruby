@@ -646,10 +646,6 @@ typedef struct gc_function_map {
     void (*each_objects)(void *objspace_ptr, int (*callback)(void *, void *, size_t, void *), void *data);
     void (*each_object)(void *objspace_ptr, void (*func)(VALUE obj, void *data), void *data);
     // Finalizers
-    void (*make_zombie)(void *objspace_ptr, VALUE obj, void (*dfree)(void *), void *data);
-    VALUE (*define_finalizer)(void *objspace_ptr, VALUE obj, VALUE block);
-    void (*undefine_finalizer)(void *objspace_ptr, VALUE obj);
-    void (*copy_finalizer)(void *objspace_ptr, VALUE dest, VALUE obj);
     void (*shutdown_call_finalizer)(void *objspace_ptr);
     // Forking
     void (*before_fork)(void *objspace_ptr);
@@ -825,10 +821,6 @@ ruby_modular_gc_init(void)
     load_modular_gc_func(each_objects);
     load_modular_gc_func(each_object);
     // Finalizers
-    load_modular_gc_func(make_zombie);
-    load_modular_gc_func(define_finalizer);
-    load_modular_gc_func(undefine_finalizer);
-    load_modular_gc_func(copy_finalizer);
     load_modular_gc_func(shutdown_call_finalizer);
     // Forking
     load_modular_gc_func(before_fork);
@@ -913,10 +905,6 @@ ruby_modular_gc_init(void)
 # define rb_gc_impl_each_objects rb_gc_functions.each_objects
 # define rb_gc_impl_each_object rb_gc_functions.each_object
 // Finalizers
-# define rb_gc_impl_make_zombie rb_gc_functions.make_zombie
-# define rb_gc_impl_define_finalizer rb_gc_functions.define_finalizer
-# define rb_gc_impl_undefine_finalizer rb_gc_functions.undefine_finalizer
-# define rb_gc_impl_copy_finalizer rb_gc_functions.copy_finalizer
 # define rb_gc_impl_shutdown_call_finalizer rb_gc_functions.shutdown_call_finalizer
 // Forking
 # define rb_gc_impl_before_fork rb_gc_functions.before_fork
@@ -1151,6 +1139,11 @@ rb_data_object_wrap(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_FU
     data->dfree = dfree;
     data->data = datap;
 
+    /* Old-style Data objects never have FREE_IMMEDIATELY, register deferred free */
+    if (dfree && dfree != RUBY_DEFAULT_FREE) {
+        rb_gc_register_deferred_free(obj);
+    }
+
     return obj;
 }
 
@@ -1180,6 +1173,13 @@ typed_data_alloc(VALUE klass, VALUE typed_flag, void *datap, const rb_data_type_
     data->fields_obj = 0;
     *(VALUE *)&data->type = ((VALUE)type) | typed_flag;
     data->data = datap;
+
+    /* Register deferred free for non-immediate dfree */
+    if (type->function.dfree &&
+        type->function.dfree != RUBY_DEFAULT_FREE &&
+        !(type->flags & RUBY_TYPED_FREE_IMMEDIATELY)) {
+        rb_gc_register_deferred_free(obj);
+    }
 
     return obj;
 }
@@ -1364,8 +1364,6 @@ rb_gc_obj_needs_cleanup_p(VALUE obj)
 {
     VALUE flags = RBASIC(obj)->flags;
 
-    if (flags & FL_FINALIZE) return true;
-
     switch (flags & RUBY_T_MASK) {
       case T_IMEMO:
         return rb_gc_imemo_needs_cleanup_p(obj);
@@ -1443,19 +1441,6 @@ rb_gc_obj_needs_cleanup_p(VALUE obj)
     }
 }
 
-static void
-io_fptr_finalize(void *fptr)
-{
-    rb_io_fptr_finalize((struct rb_io *)fptr);
-}
-
-static inline void
-make_io_zombie(void *objspace, VALUE obj)
-{
-    rb_io_t *fptr = RFILE(obj)->fptr;
-    rb_gc_impl_make_zombie(objspace, obj, io_fptr_finalize, fptr);
-}
-
 static bool
 rb_data_free(void *objspace, VALUE obj)
 {
@@ -1488,9 +1473,8 @@ rb_data_free(void *objspace, VALUE obj)
                 RB_DEBUG_COUNTER_INC(obj_data_imm_free);
             }
             else {
-                rb_gc_impl_make_zombie(objspace, obj, dfree, data);
+                /* Non-immediate dfree is handled by deferred free weak ref */
                 RB_DEBUG_COUNTER_INC(obj_data_zombie);
-                return FALSE;
             }
         }
         else {
@@ -1649,10 +1633,9 @@ rb_gc_obj_free(void *objspace, VALUE obj)
         }
         break;
       case T_FILE:
+        /* fptr cleanup is handled by deferred free weak ref */
         if (RFILE(obj)->fptr) {
-            make_io_zombie(objspace, obj);
             RB_DEBUG_COUNTER_INC(obj_file_ptr);
-            return FALSE;
         }
         break;
       case T_RATIONAL:
@@ -1716,13 +1699,7 @@ rb_gc_obj_free(void *objspace, VALUE obj)
                BUILTIN_TYPE(obj), (void*)obj, RBASIC(obj)->flags);
     }
 
-    if (FL_TEST_RAW(obj, FL_FINALIZE)) {
-        rb_gc_impl_make_zombie(objspace, obj, 0, 0);
-        return FALSE;
-    }
-    else {
-        return TRUE;
-    }
+    return TRUE;
 }
 
 void
@@ -1859,6 +1836,251 @@ os_each_obj(int argc, VALUE *argv, VALUE os)
     return os_obj_of(of);
 }
 
+/* Weak-reference based finalizer implementation */
+
+#define WEAK_FINALIZER_COMPLETED FL_USER0
+#define WEAK_FINALIZER_DFREE     FL_USER1
+
+#define WEAK_FINALIZER_IS_DFREE(fin)     FL_TEST_RAW((fin)->self, WEAK_FINALIZER_DFREE)
+#define WEAK_FINALIZER_IS_CALLBACK(fin)  (!WEAK_FINALIZER_IS_DFREE(fin))
+
+struct rb_weak_finalizer {
+    VALUE self;        /* back-reference to this TypedData VALUE (for queue linking) */
+    VALUE target;      /* weak reference to target object (NOT marked by dmark) */
+    VALUE next_queued; /* next finalizer VALUE in ready-to-fire queue, or 0 */
+    union {
+        struct {
+            VALUE objid;       /* object_id, captured at registration time */
+            VALUE callbacks;   /* Ruby Array of finalizer procs */
+        } callback;
+        struct {
+            void (*dfree)(void *);  /* C-level dfree function (captured when target dies) */
+            void *dfree_data;       /* data pointer for dfree */
+            VALUE next;             /* linked list for dfree_finalizer_list */
+        } dfree;
+    } as;
+};
+
+static st_table *finalizer_table;               /* object_id -> finalizer VALUE */
+static VALUE finalizer_ready_queue;              /* linked list head (VALUE), 0 = empty */
+static rb_postponed_job_handle_t finalizer_pjob;
+static VALUE dfree_finalizer_list;               /* linked list head of deferred free weak finalizers, 0 = empty */
+
+static void
+weak_finalizer_mark(void *ptr)
+{
+    struct rb_weak_finalizer *fin = ptr;
+    if (WEAK_FINALIZER_IS_CALLBACK(fin)) {
+        rb_gc_mark(fin->as.callback.callbacks);
+    }
+}
+
+static size_t
+weak_finalizer_memsize(const void *ptr)
+{
+    return sizeof(struct rb_weak_finalizer);
+}
+
+static void
+weak_finalizer_compact(void *ptr)
+{
+    struct rb_weak_finalizer *fin = ptr;
+    fin->target = rb_gc_location(fin->target);
+    fin->self = rb_gc_location(fin->self);
+    if (WEAK_FINALIZER_IS_CALLBACK(fin)) {
+        fin->as.callback.callbacks = rb_gc_location(fin->as.callback.callbacks);
+    }
+    else if (fin->as.dfree.next) {
+        fin->as.dfree.next = rb_gc_location(fin->as.dfree.next);
+    }
+}
+
+static VALUE
+get_weak_final(long i, void *data)
+{
+    VALUE callbacks = (VALUE)data;
+    return RARRAY_AREF(callbacks, i);
+}
+
+static void
+finalizer_fire_ready_queue(void *data)
+{
+    VALUE queue;
+
+    /* Atomically grab the queue */
+    while ((queue = finalizer_ready_queue) != 0) {
+        if (RUBY_ATOMIC_VALUE_CAS(finalizer_ready_queue, queue, 0) == queue) {
+            break;
+        }
+    }
+
+    if (!queue) return;
+
+    rb_gc_set_pending_interrupt();
+
+    while (queue) {
+        struct rb_weak_finalizer *fin = RTYPEDDATA_GET_DATA(queue);
+        VALUE next = fin->next_queued;
+        fin->next_queued = 0;
+
+        if (WEAK_FINALIZER_IS_CALLBACK(fin)) {
+            /* Remove from finalizer_table */
+            st_data_t key = fin->as.callback.objid;
+            RB_VM_LOCKING() {
+                st_delete(finalizer_table, &key, NULL);
+            }
+
+            /* Fire Ruby callbacks */
+            long count = RARRAY_LEN(fin->as.callback.callbacks);
+            rb_gc_run_obj_finalizer(fin->as.callback.objid, count, get_weak_final, (void *)fin->as.callback.callbacks);
+        }
+        else {
+            /* Call C-level dfree */
+            if (fin->as.dfree.dfree) {
+                fin->as.dfree.dfree(fin->as.dfree.dfree_data);
+                fin->as.dfree.dfree = NULL;
+                fin->as.dfree.dfree_data = NULL;
+            }
+        }
+
+        FL_SET_RAW(queue, WEAK_FINALIZER_COMPLETED);
+        queue = next;
+    }
+
+    rb_gc_unset_pending_interrupt();
+}
+
+static void
+io_fptr_finalize_free(void *fptr)
+{
+    rb_io_fptr_finalize((struct rb_io *)fptr);
+}
+
+/* Extract dfree function and data pointer from a target object. */
+static void
+extract_dfree_from_target(VALUE target, void (**dfree)(void *), void **data)
+{
+    *dfree = NULL;
+    *data = NULL;
+
+    switch (BUILTIN_TYPE(target)) {
+      case T_DATA:
+        if (RTYPEDDATA_P(target)) {
+            const rb_data_type_t *type = RTYPEDDATA_TYPE(target);
+            *dfree = type->function.dfree;
+            *data = RTYPEDDATA_GET_DATA(target);
+        }
+        else {
+            *dfree = RDATA(target)->dfree;
+            *data = DATA_PTR(target);
+        }
+        break;
+      case T_FILE:
+        if (RFILE(target)->fptr) {
+            *dfree = io_fptr_finalize_free;
+            *data = RFILE(target)->fptr;
+        }
+        break;
+      default:
+        break;
+    }
+}
+
+static void
+weak_finalizer_handle_weak_references(void *ptr)
+{
+    struct rb_weak_finalizer *fin = ptr;
+    VALUE target = fin->target;
+
+    /* Already fired or unregistered */
+    if (target == Qundef) return;
+
+    if (rb_gc_handle_weak_references_alive_p(target)) {
+        return; /* target still alive */
+    }
+
+    RUBY_ASSERT(!FL_TEST_RAW(fin->self, WEAK_FINALIZER_COMPLETED));
+
+    /* For dfree finalizers, capture dfree info from the target while
+     * memory is still valid (pre-sweep). */
+    if (WEAK_FINALIZER_IS_DFREE(fin)) {
+        extract_dfree_from_target(target, &fin->as.dfree.dfree, &fin->as.dfree.dfree_data);
+    }
+
+    /* Target is dead: enqueue self into ready queue and trigger postponed job */
+    fin->target = Qundef;
+
+    VALUE self = fin->self;
+    VALUE old_head;
+    do {
+        old_head = finalizer_ready_queue;
+        fin->next_queued = old_head;
+    } while (RUBY_ATOMIC_VALUE_CAS(finalizer_ready_queue, old_head, self) != old_head);
+
+    rb_postponed_job_trigger(finalizer_pjob);
+}
+
+static const rb_data_type_t weak_finalizer_type = {
+    "weak_finalizer",
+    {
+        weak_finalizer_mark,
+        RUBY_DEFAULT_FREE,
+        weak_finalizer_memsize,
+        weak_finalizer_compact,
+        weak_finalizer_handle_weak_references,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+};
+
+static int
+mark_finalizer_table_i(st_data_t key, st_data_t val, st_data_t data)
+{
+    rb_gc_mark((VALUE)val);
+    return ST_CONTINUE;
+}
+
+static void
+mark_dfree_finalizer_list(void)
+{
+    VALUE *prev = &dfree_finalizer_list;
+    VALUE node = dfree_finalizer_list;
+    while (node) {
+        struct rb_weak_finalizer *fin = RTYPEDDATA_GET_DATA(node);
+        VALUE next = fin->as.dfree.next;
+
+        if (FL_TEST_RAW(node, WEAK_FINALIZER_COMPLETED)) {
+            /* Already processed, unlink */
+            *prev = next;
+            fin->as.dfree.next = 0;
+        }
+        else {
+            rb_gc_mark(node);
+            prev = &fin->as.dfree.next;
+        }
+
+        node = next;
+    }
+}
+
+void
+rb_gc_register_deferred_free(VALUE obj)
+{
+    struct rb_weak_finalizer *fin;
+    VALUE finalizer = TypedData_Make_Struct(0, struct rb_weak_finalizer, &weak_finalizer_type, fin);
+    fin->self = finalizer;
+    fin->target = obj;
+    fin->next_queued = 0;
+    FL_SET_RAW(finalizer, WEAK_FINALIZER_DFREE);
+
+    /* Link into dfree_finalizer_list */
+    RB_VM_LOCKING() {
+        RB_OBJ_WRITE(finalizer, &fin->as.dfree.next, dfree_finalizer_list);
+        dfree_finalizer_list = finalizer;
+    }
+
+    rb_gc_declare_weak_references(finalizer);
+}
+
 /*
  *  call-seq:
  *     ObjectSpace.undefine_finalizer(obj)
@@ -1878,7 +2100,17 @@ rb_undefine_finalizer(VALUE obj)
 {
     rb_check_frozen(obj);
 
-    rb_gc_impl_undefine_finalizer(rb_gc_get_objspace(), obj);
+    VALUE objid = rb_obj_id(obj);
+    st_data_t key = objid;
+    st_data_t val;
+    RB_VM_LOCKING() {
+        if (st_delete(finalizer_table, &key, &val)) {
+            struct rb_weak_finalizer *fin = RTYPEDDATA_GET_DATA((VALUE)val);
+            fin->target = Qundef;
+            fin->as.callback.callbacks = 0;
+        }
+    }
+    FL_UNSET(obj, FL_FINALIZE);
 
     return obj;
 }
@@ -1905,7 +2137,39 @@ should_be_finalizable(VALUE obj)
 void
 rb_gc_copy_finalizer(VALUE dest, VALUE obj)
 {
-    rb_gc_impl_copy_finalizer(rb_gc_get_objspace(), dest, obj);
+    if (!FL_TEST(obj, FL_FINALIZE)) return;
+
+    VALUE src_objid = rb_obj_id(obj);
+    st_data_t data;
+
+    VALUE src_finalizer = 0;
+    RB_VM_LOCKING() {
+        if (st_lookup(finalizer_table, src_objid, &data)) {
+            src_finalizer = (VALUE)data;
+        }
+    }
+    if (!src_finalizer) return;
+
+    struct rb_weak_finalizer *src_fin = RTYPEDDATA_GET_DATA(src_finalizer);
+
+    /* Create a new finalizer for dest with a copy of the callbacks */
+    VALUE dest_objid = rb_obj_id(dest);
+    VALUE callbacks_copy = rb_ary_dup(src_fin->as.callback.callbacks);
+
+    struct rb_weak_finalizer *fin;
+    VALUE finalizer = TypedData_Make_Struct(0, struct rb_weak_finalizer, &weak_finalizer_type, fin);
+    fin->self = finalizer;
+    fin->target = dest;
+    fin->as.callback.objid = dest_objid;
+    fin->next_queued = 0;
+    RB_OBJ_WRITE(finalizer, &fin->as.callback.callbacks, callbacks_copy);
+
+    rb_gc_declare_weak_references(finalizer);
+
+    RB_VM_LOCKING() {
+        st_insert(finalizer_table, dest_objid, (st_data_t)finalizer);
+    }
+    FL_SET(dest, FL_FINALIZE);
 }
 
 /*
@@ -1998,16 +2262,100 @@ rb_define_finalizer(VALUE obj, VALUE block)
     should_be_finalizable(obj);
     should_be_callable(block);
 
-    block = rb_gc_impl_define_finalizer(rb_gc_get_objspace(), obj, block);
+    VALUE objid = rb_obj_id(obj);
+    st_data_t data;
+
+    VALUE existing_finalizer = 0;
+    RB_VM_LOCKING() {
+        if (st_lookup(finalizer_table, objid, &data)) {
+            existing_finalizer = (VALUE)data;
+        }
+    }
+
+    if (existing_finalizer) {
+        /* Existing finalizer: append block (dedup check) */
+        struct rb_weak_finalizer *fin = RTYPEDDATA_GET_DATA(existing_finalizer);
+        /* rb_equal can call arbitrary Ruby code, must not hold VM lock */
+        long len = RARRAY_LEN(fin->as.callback.callbacks);
+        for (long i = 0; i < len; i++) {
+            if (rb_equal(RARRAY_AREF(fin->as.callback.callbacks, i), block)) {
+                VALUE ret = rb_ary_new3(2, INT2FIX(0), RARRAY_AREF(fin->as.callback.callbacks, i));
+                OBJ_FREEZE(ret);
+                return ret;
+            }
+        }
+        rb_ary_push(fin->as.callback.callbacks, block);
+    }
+    else {
+        /* New finalizer */
+        struct rb_weak_finalizer *fin;
+        VALUE finalizer = TypedData_Make_Struct(0, struct rb_weak_finalizer, &weak_finalizer_type, fin);
+        fin->self = finalizer;
+        fin->target = obj;
+        fin->as.callback.objid = objid;
+        fin->next_queued = 0;
+        RB_OBJ_WRITE(finalizer, &fin->as.callback.callbacks, rb_ary_new3(1, block));
+
+        rb_gc_declare_weak_references(finalizer);
+
+        RB_VM_LOCKING() {
+            st_insert(finalizer_table, objid, (st_data_t)finalizer);
+        }
+    }
+
+    FL_SET(obj, FL_FINALIZE);
 
     block = rb_ary_new3(2, INT2FIX(0), block);
     OBJ_FREEZE(block);
     return block;
 }
 
+static int
+shutdown_call_finalizer_i(st_data_t key, st_data_t val, st_data_t data)
+{
+    struct rb_weak_finalizer *fin = RTYPEDDATA_GET_DATA((VALUE)val);
+
+    long count = RARRAY_LEN(fin->as.callback.callbacks);
+    rb_gc_run_obj_finalizer(fin->as.callback.objid, count, get_weak_final, (void *)fin->as.callback.callbacks);
+
+    return ST_DELETE;
+}
+
 void
 rb_objspace_call_finalizer(void)
 {
+    /* Run all Ruby-level finalizers */
+    while (finalizer_table->num_entries) {
+        st_foreach(finalizer_table, shutdown_call_finalizer_i, 0);
+    }
+
+    /* Run dfree for all live objects that have deferred free registered */
+    VALUE node = dfree_finalizer_list;
+    while (node) {
+        struct rb_weak_finalizer *fin = RTYPEDDATA_GET_DATA(node);
+        VALUE next = fin->as.dfree.next;
+
+        if (fin->target != Qundef && fin->target != 0) {
+            /* Target is still alive — read dfree+data from it now */
+            void (*dfree)(void *) = NULL;
+            void *data = NULL;
+
+            extract_dfree_from_target(fin->target, &dfree, &data);
+
+            if (dfree && dfree != RUBY_DEFAULT_FREE) {
+                dfree(data);
+            }
+        }
+        else if (fin->as.dfree.dfree) {
+            /* Target already dead and dfree was captured */
+            fin->as.dfree.dfree(fin->as.dfree.dfree_data);
+        }
+
+        node = next;
+    }
+    dfree_finalizer_list = 0;
+
+    /* Delegate to GC impl for remaining cleanup */
     rb_gc_impl_shutdown_call_finalizer(rb_gc_get_objspace());
 }
 
@@ -3271,6 +3619,14 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
     if (categoryp) *categoryp = category; \
 } while (0)
 
+    MARK_CHECKPOINT("finalizers");
+    if (finalizer_table && finalizer_table->num_entries > 0) {
+        st_foreach(finalizer_table, mark_finalizer_table_i, 0);
+    }
+    if (dfree_finalizer_list) {
+        mark_dfree_finalizer_list();
+    }
+
     MARK_CHECKPOINT("vm");
     rb_vm_mark(vm);
 
@@ -3644,6 +4000,7 @@ void
 rb_gc_copy_attributes(VALUE dest, VALUE obj)
 {
     rb_gc_impl_copy_attributes(rb_gc_get_objspace(), dest, obj);
+    rb_gc_copy_finalizer(dest, obj);
 }
 
 int
@@ -5789,6 +6146,13 @@ Init_GC(void)
     rb_define_method(rb_mKernel, "object_id", rb_obj_id, 0);
 
     rb_define_module_function(rb_mObjSpace, "count_objects", count_objects, -1);
+
+    /* Initialize finalizer infrastructure */
+    finalizer_table = st_init_numtable();
+    finalizer_pjob = rb_postponed_job_preregister(0, finalizer_fire_ready_queue, NULL);
+    if (finalizer_pjob == POSTPONED_JOB_HANDLE_INVALID) {
+        rb_bug("Could not preregister postponed job for finalizers");
+    }
 
     rb_gc_impl_init();
 }

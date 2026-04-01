@@ -25,9 +25,6 @@ struct objspace {
     size_t total_gc_time;
     size_t total_allocated_objects;
 
-    st_table *finalizer_table;
-    struct MMTk_final_job *finalizer_jobs;
-    rb_postponed_job_handle_t finalizer_postponed_job;
 
     struct ccan_list_head ractor_caches;
     unsigned long live_ractor_cache_count;
@@ -65,23 +62,6 @@ struct MMTk_ractor_cache {
     size_t obj_free_non_parallel_count;
 };
 
-struct MMTk_final_job {
-    struct MMTk_final_job *next;
-    enum {
-        MMTK_FINAL_JOB_DFREE,
-        MMTK_FINAL_JOB_FINALIZE,
-    } kind;
-    union {
-        struct {
-            void (*func)(void *);
-            void *data;
-        } dfree;
-        struct {
-            /* HACK: we store the object ID on the 0th element of this array. */
-            VALUE finalizer_array;
-        } finalize;
-    } as;
-};
 
 #ifdef RB_THREAD_LOCAL_SPECIFIER
 RB_THREAD_LOCAL_SPECIFIER struct MMTk_GCThreadTLS *rb_mmtk_gc_thread_tls;
@@ -256,37 +236,10 @@ rb_mmtk_scan_gc_roots(void)
     rb_gc_mark_roots(objspace, NULL);
 }
 
-static int
-pin_value(st_data_t key, st_data_t value, st_data_t data)
-{
-    rb_gc_impl_mark_and_pin((void *)data, (VALUE)value);
-
-    return ST_CONTINUE;
-}
-
 static void
 rb_mmtk_scan_objspace(void)
 {
-    struct objspace *objspace = rb_gc_get_objspace();
-
-    if (objspace->finalizer_table != NULL) {
-        st_foreach(objspace->finalizer_table, pin_value, (st_data_t)objspace);
-    }
-
-    struct MMTk_final_job *job = objspace->finalizer_jobs;
-    while (job != NULL) {
-        switch (job->kind) {
-          case MMTK_FINAL_JOB_DFREE:
-            break;
-          case MMTK_FINAL_JOB_FINALIZE:
-            rb_gc_impl_mark(objspace, job->as.finalize.finalizer_array);
-            break;
-          default:
-            rb_bug("rb_mmtk_scan_objspace: unknown final job type %d", job->kind);
-        }
-
-        job = job->next;
-    }
+    /* nothing to mark */
 }
 
 static void
@@ -356,72 +309,17 @@ rb_mmtk_vm_live_bytes(void)
     return 0;
 }
 
-static void
-make_final_job(struct objspace *objspace, VALUE obj, VALUE table)
-{
-    MMTK_ASSERT(RB_BUILTIN_TYPE(table) == T_ARRAY);
-
-    struct MMTk_final_job *job = xmalloc(sizeof(struct MMTk_final_job));
-    job->next = objspace->finalizer_jobs;
-    job->kind = MMTK_FINAL_JOB_FINALIZE;
-    job->as.finalize.finalizer_array = table;
-
-    objspace->finalizer_jobs = job;
-}
-
-static int
-rb_mmtk_update_finalizer_table_i(st_data_t key, st_data_t value, st_data_t data, int error)
-{
-    MMTK_ASSERT(mmtk_is_reachable((MMTk_ObjectReference)value));
-    MMTK_ASSERT(RB_BUILTIN_TYPE(value) == T_ARRAY);
-
-    struct objspace *objspace = (struct objspace *)data;
-
-    if (mmtk_is_reachable((MMTk_ObjectReference)key)) {
-        VALUE new_key_location = rb_mmtk_call_object_closure((VALUE)key, false);
-
-        MMTK_ASSERT(RB_FL_TEST(new_key_location, RUBY_FL_FINALIZE));
-
-        if (new_key_location != key) {
-            return ST_REPLACE;
-        }
-    }
-    else {
-        make_final_job(objspace, (VALUE)key, (VALUE)value);
-
-        rb_postponed_job_trigger(objspace->finalizer_postponed_job);
-
-        return ST_DELETE;
-    }
-
-    return ST_CONTINUE;
-}
-
-static int
-rb_mmtk_update_finalizer_table_replace_i(st_data_t *key, st_data_t *value, st_data_t data, int existing)
-{
-    *key = rb_mmtk_call_object_closure((VALUE)*key, false);
-
-    return ST_CONTINUE;
-}
-
-static void
-rb_mmtk_update_finalizer_table(void)
-{
-    struct objspace *objspace = rb_gc_get_objspace();
-
-    st_foreach_with_replace(
-        objspace->finalizer_table,
-        rb_mmtk_update_finalizer_table_i,
-        rb_mmtk_update_finalizer_table_replace_i,
-        (st_data_t)objspace
-    );
-}
 
 static int
 rb_mmtk_global_tables_count(void)
 {
     return RB_GC_VM_WEAK_TABLE_COUNT;
+}
+
+static void
+rb_mmtk_update_finalizer_table_noop(void)
+{
+    /* No-op: Ruby-level finalizers are now managed in gc.c via weak references */
 }
 
 static inline VALUE rb_mmtk_call_object_closure(VALUE obj, bool pin);
@@ -530,7 +428,7 @@ MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_vm_live_bytes,
     rb_mmtk_update_global_tables,
     rb_mmtk_global_tables_count,
-    rb_mmtk_update_finalizer_table,
+    rb_mmtk_update_finalizer_table_noop,
     rb_mmtk_special_const_p,
     rb_mmtk_mutator_thread_panic_handler,
     rb_mmtk_gc_thread_panic_handler,
@@ -562,17 +460,12 @@ rb_gc_impl_objspace_alloc(void)
     return calloc(1, sizeof(struct objspace));
 }
 
-static void gc_run_finalizers(void *data);
-
 void
 rb_gc_impl_objspace_init(void *objspace_ptr)
 {
     struct objspace *objspace = objspace_ptr;
 
     objspace->measure_gc_time = true;
-
-    objspace->finalizer_table = st_init_numtable();
-    objspace->finalizer_postponed_job = rb_postponed_job_preregister(0, gc_run_finalizers, objspace);
 
     ccan_list_head_init(&objspace->ractor_caches);
 
@@ -1174,171 +1067,11 @@ rb_gc_impl_each_object(void *objspace_ptr, void (*func)(VALUE, void *), void *da
 }
 
 // Finalizers
-static VALUE
-gc_run_finalizers_get_final(long i, void *data)
-{
-    VALUE table = (VALUE)data;
-
-    return RARRAY_AREF(table, i + 1);
-}
-
-static void
-gc_run_finalizers(void *data)
-{
-    struct objspace *objspace = data;
-
-    rb_gc_set_pending_interrupt();
-
-    while (objspace->finalizer_jobs != NULL) {
-        struct MMTk_final_job *job = objspace->finalizer_jobs;
-        objspace->finalizer_jobs = job->next;
-
-        switch (job->kind) {
-          case MMTK_FINAL_JOB_DFREE:
-            job->as.dfree.func(job->as.dfree.data);
-            break;
-          case MMTK_FINAL_JOB_FINALIZE: {
-            VALUE finalizer_array = job->as.finalize.finalizer_array;
-
-            rb_gc_run_obj_finalizer(
-                RARRAY_AREF(finalizer_array, 0),
-                RARRAY_LEN(finalizer_array) - 1,
-                gc_run_finalizers_get_final,
-                (void *)finalizer_array
-            );
-
-            RB_GC_GUARD(finalizer_array);
-            break;
-          }
-        }
-
-        xfree(job);
-    }
-
-    rb_gc_unset_pending_interrupt();
-}
-
-void
-rb_gc_impl_make_zombie(void *objspace_ptr, VALUE obj, void (*dfree)(void *), void *data)
-{
-    if (dfree == NULL) return;
-
-    struct objspace *objspace = objspace_ptr;
-
-    struct MMTk_final_job *job = xmalloc(sizeof(struct MMTk_final_job));
-    job->kind = MMTK_FINAL_JOB_DFREE;
-    job->as.dfree.func = dfree;
-    job->as.dfree.data = data;
-
-    struct MMTk_final_job *prev;
-    do {
-        job->next = objspace->finalizer_jobs;
-        prev = RUBY_ATOMIC_PTR_CAS(objspace->finalizer_jobs, job->next, job);
-    } while (prev != job->next);
-
-    if (!ruby_free_at_exit_p()) {
-        rb_postponed_job_trigger(objspace->finalizer_postponed_job);
-    }
-}
-
-VALUE
-rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
-{
-    struct objspace *objspace = objspace_ptr;
-    VALUE table;
-    st_data_t data;
-
-    RBASIC(obj)->flags |= FL_FINALIZE;
-
-    int lev = RB_GC_VM_LOCK();
-
-    if (st_lookup(objspace->finalizer_table, obj, &data)) {
-        table = (VALUE)data;
-
-        /* avoid duplicate block, table is usually small */
-        {
-            long len = RARRAY_LEN(table);
-            long i;
-
-            for (i = 0; i < len; i++) {
-                VALUE recv = RARRAY_AREF(table, i);
-                if (rb_equal(recv, block)) {
-                    RB_GC_VM_UNLOCK(lev);
-                    return recv;
-                }
-            }
-        }
-
-        rb_ary_push(table, block);
-    }
-    else {
-        table = rb_ary_new3(2, rb_obj_id(obj), block);
-        rb_obj_hide(table);
-        st_add_direct(objspace->finalizer_table, obj, table);
-    }
-
-    RB_GC_VM_UNLOCK(lev);
-
-    return block;
-}
-
-void
-rb_gc_impl_undefine_finalizer(void *objspace_ptr, VALUE obj)
-{
-    struct objspace *objspace = objspace_ptr;
-
-    st_data_t data = obj;
-
-    int lev = RB_GC_VM_LOCK();
-    st_delete(objspace->finalizer_table, &data, 0);
-    RB_GC_VM_UNLOCK(lev);
-
-    FL_UNSET(obj, FL_FINALIZE);
-}
-
-void
-rb_gc_impl_copy_finalizer(void *objspace_ptr, VALUE dest, VALUE obj)
-{
-    struct objspace *objspace = objspace_ptr;
-    VALUE table;
-    st_data_t data;
-
-    if (!FL_TEST(obj, FL_FINALIZE)) return;
-
-    int lev = RB_GC_VM_LOCK();
-    if (RB_LIKELY(st_lookup(objspace->finalizer_table, obj, &data))) {
-        table = rb_ary_dup((VALUE)data);
-        RARRAY_ASET(table, 0, rb_obj_id(dest));
-        st_insert(objspace->finalizer_table, dest, table);
-        FL_SET(dest, FL_FINALIZE);
-    }
-    else {
-        rb_bug("rb_gc_copy_finalizer: FL_FINALIZE set but not found in finalizer_table: %s", rb_obj_info(obj));
-    }
-    RB_GC_VM_UNLOCK(lev);
-}
-
-static int
-move_finalizer_from_table_i(st_data_t key, st_data_t val, st_data_t arg)
-{
-    struct objspace *objspace = (struct objspace *)arg;
-
-    make_final_job(objspace, (VALUE)key, (VALUE)val);
-
-    return ST_DELETE;
-}
 
 void
 rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
 {
     struct objspace *objspace = objspace_ptr;
-
-    while (objspace->finalizer_table->num_entries) {
-        st_foreach(objspace->finalizer_table, move_finalizer_from_table_i, (st_data_t)objspace);
-
-        gc_run_finalizers(objspace);
-    }
-
     unsigned int lev = RB_GC_VM_LOCK();
     {
         struct MMTk_ractor_cache *rc;
@@ -1358,8 +1091,6 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
         mmtk_free_raw_vec_of_obj_ref(registered_candidates);
     }
     RB_GC_VM_UNLOCK(lev);
-
-    gc_run_finalizers(objspace);
 }
 
 // Forking
@@ -1626,8 +1357,6 @@ rb_gc_impl_copy_attributes(void *objspace_ptr, VALUE dest, VALUE obj)
     if (mmtk_object_wb_unprotected_p((MMTk_ObjectReference)obj)) {
         rb_gc_impl_writebarrier_unprotect(objspace_ptr, dest);
     }
-
-    rb_gc_impl_copy_finalizer(objspace_ptr, dest, obj);
 }
 
 // GC Identification

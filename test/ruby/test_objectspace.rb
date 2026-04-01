@@ -202,6 +202,23 @@ End
     END
   end
 
+  def test_finalizer_not_called_twice
+    assert_separately([], <<~'RUBY')
+      results = []
+      1000.times do |i|
+        ObjectSpace.define_finalizer(Object.new) do
+          results << i
+          GC.start if i % 100 == 0
+        end
+      end
+
+      3.times { GC.start }
+
+      assert_include 990..1000, results.size
+      assert_equal results, results.uniq
+    RUBY
+  end
+
   def test_exception_in_finalizer
     assert_in_out_err([], "#{<<~"begin;"}\n#{<<~'end;'}", [], /finalizing \(RuntimeError\)/)
     begin;

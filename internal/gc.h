@@ -212,6 +212,7 @@ void rb_gc_mark_and_move(VALUE *ptr);
 
 void rb_gc_declare_weak_references(VALUE obj);
 bool rb_gc_handle_weak_references_alive_p(VALUE obj);
+void rb_gc_register_deferred_free(VALUE obj);
 
 void rb_gc_ref_update_table_values_only(st_table *tbl);
 

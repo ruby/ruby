@@ -1115,6 +1115,8 @@ io_alloc(VALUE klass)
 
     io->fptr = 0;
 
+    rb_gc_register_deferred_free((VALUE)io);
+
     return (VALUE)io;
 }
 
