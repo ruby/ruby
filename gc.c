@@ -2475,6 +2475,9 @@ rb_gc_before_updating_jit_code(void)
 #if USE_YJIT
     rb_yjit_mark_all_writeable();
 #endif
+#if USE_ZJIT
+    rb_zjit_mark_all_writable();
+#endif
 }
 
 /*
@@ -2487,6 +2490,9 @@ rb_gc_after_updating_jit_code(void)
 {
 #if USE_YJIT
     rb_yjit_mark_all_executable();
+#endif
+#if USE_ZJIT
+    rb_zjit_mark_all_executable();
 #endif
 }
 

@@ -158,7 +158,9 @@ fn iseq_version_update_references(mut version: IseqVersionRef) {
         }
     }
 
-    // Move objects baked in JIT code
+    // Move objects baked in JIT code.
+    // The code region is already writable because rb_zjit_mark_all_writable() was called
+    // before the GC update_references phase. We write directly to avoid per-page mprotect calls.
     let cb = ZJITState::get_code_block();
     for &offset in unsafe { version.as_ref() }.gc_offsets.iter() {
         let value_ptr: *const u8 = offset.raw_ptr(cb);
@@ -170,13 +172,10 @@ fn iseq_version_update_references(mut version: IseqVersionRef) {
 
         // Only write when the VALUE moves, to be copy-on-write friendly.
         if new_addr != object {
-            for (byte_idx, &byte) in new_addr.as_u64().to_le_bytes().iter().enumerate() {
-                let byte_code_ptr = offset.add_bytes(byte_idx);
-                cb.write_mem(byte_code_ptr, byte).expect("patching existing code should be within bounds");
-            }
+            let value_ptr = value_ptr as *mut VALUE;
+            unsafe { value_ptr.write_unaligned(new_addr) };
         }
     }
-    cb.mark_all_executable();
 }
 
 /// Append a set of gc_offsets to the iseq's payload
@@ -209,6 +208,25 @@ pub fn remove_gc_offsets(mut version: IseqVersionRef, removed_range: &Range<Code
 /// Return true if given `Range<CodePtr>` ranges overlap with each other
 fn ranges_overlap<T>(left: &Range<T>, right: &Range<T>) -> bool where T: PartialOrd {
     left.start < right.end && right.start < left.end
+}
+
+/// GC callback for making all JIT code writable before updating references in bulk.
+/// This avoids toggling W^X permissions per-page during GC compaction.
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_mark_all_writable() {
+    if !ZJITState::has_instance() {
+        return;
+    }
+    ZJITState::get_code_block().mark_all_writable();
+}
+
+/// GC callback for making all JIT code executable after updating references in bulk.
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_mark_all_executable() {
+    if !ZJITState::has_instance() {
+        return;
+    }
+    ZJITState::get_code_block().mark_all_executable();
 }
 
 /// Callback for marking GC objects inside [crate::invariants::Invariants].
