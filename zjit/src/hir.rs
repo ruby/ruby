@@ -7793,45 +7793,81 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         break;
                     }
 
-                    let branch_insn_idx = exit_state.insn_idx as u32;
+                    {
+                        fn new_branch_block(
+                            fun: &mut Function,
+                            cd: *const rb_call_data,
+                            argc: usize,
+                            opcode: u32,
+                            new_type: Type,
+                            insn_idx: u32,
+                            exit_state: &FrameState,
+                            locals_count: usize,
+                            stack_count: usize,
+                            join_block: BlockId,
+                        ) -> BlockId {
+                            let block = fun.new_block(insn_idx);
+                            let self_param = fun.push_insn(block, Insn::Param);
+                            let mut state = exit_state.clone();
+                            state.locals.clear();
+                            state.stack.clear();
+                            state.locals.extend((0..locals_count).map(|_| fun.push_insn(block, Insn::Param)));
+                            state.stack.extend((0..stack_count).map(|_| fun.push_insn(block, Insn::Param)));
+                            let snapshot = fun.push_insn(block, Insn::Snapshot { state: state.clone() });
+                            let args = state.stack_pop_n(argc).unwrap();
+                            let recv = state.stack_pop().unwrap();
+                            let refined_recv = fun.push_insn(block, Insn::RefineType { val: recv, new_type });
+                            state.replace(recv, refined_recv);
+                            let send = fun.push_insn(block, Insn::Send { recv: refined_recv, cd, block: None, args, state: snapshot, reason: Uncategorized(opcode) });
+                            state.stack_push(send);
+                            fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: state.as_args(self_param) }));
+                            block
+                        }
+                        let branch_insn_idx = exit_state.insn_idx as u32;
+                        let locals_count = state.locals.len();
+                        let stack_count = state.stack.len();
+                        let recv = state.stack_topn(argc as usize)?;  // args are on top
+                        let entry_args = state.as_args(self_param);
+                        if let Some(summary) = fun.polymorphic_summary(&profiles, recv, exit_state.insn_idx) {
+                            let join_block = insn_idx_to_block.get(&insn_idx).copied().unwrap_or_else(|| fun.new_block(insn_idx));
+                            // Dedup by expected type so immediate/heap variants
+                            // under the same Ruby class can still get separate branches.
+                            let mut seen_types = Vec::with_capacity(summary.buckets().len());
+                            for &profiled_type in summary.buckets() {
+                                if profiled_type.is_empty() { break; }
+                                let expected = Type::from_profiled_type(profiled_type);
+                                if seen_types.iter().any(|ty: &Type| ty.bit_equal(expected)) {
+                                    continue;
+                                }
+                                seen_types.push(expected);
+                                let has_type = fun.push_insn(block, Insn::HasType { val: recv, expected });
+                                let iftrue_block =
+                                    new_branch_block(&mut fun, cd, argc as usize, opcode, expected, branch_insn_idx, &exit_state, locals_count, stack_count, join_block);
+                                let target = BranchEdge { target: iftrue_block, args: entry_args.clone() };
+                                fun.push_insn(block, Insn::IfTrue { val: has_type, target });
+                            }
+                            // Continue compilation from the join block at the next instruction.
+                            // Make a copy of the current state without the args (pop the receiver
+                            // and push the result) because we just use the locals/stack sizes to
+                            // make the right number of Params
+                            let mut join_state = state.clone();
+                            join_state.stack_pop_n(argc as usize)?;
+                            queue.push_back((join_state, join_block, insn_idx, local_inval));
+                            // In the fallthrough case, do a generic interpreter send and then join.
+                            let args = state.stack_pop_n(argc as usize)?;
+                            let recv = state.stack_pop()?;
+                            let reason = SendWithoutBlockPolymorphicFallback;
+                            let send = fun.push_insn(block, Insn::Send { recv, cd, block: None, args, state: exit_id, reason });
+                            state.stack_push(send);
+                            fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: state.as_args(self_param) }));
+                            break;  // End the block
+                        }
+                    }
+
                     let args = state.stack_pop_n(argc as usize)?;
                     let recv = state.stack_pop()?;
-
-                    if let Some(summary) = fun.polymorphic_summary(&profiles, recv, exit_state.insn_idx) {
-                        let join_block = insn_idx_to_block.get(&insn_idx).copied().unwrap_or_else(|| fun.new_block(insn_idx));
-                        let join_param = fun.push_insn(join_block, Insn::Param);
-                        // Dedup by expected type so immediate/heap variants
-                        // under the same Ruby class can still get separate branches.
-                        let mut seen_types = Vec::with_capacity(summary.buckets().len());
-                        for &profiled_type in summary.buckets() {
-                            if profiled_type.is_empty() { break; }
-                            let expected = Type::from_profiled_type(profiled_type);
-                            if seen_types.iter().any(|ty: &Type| ty.bit_equal(expected)) {
-                                continue;
-                            }
-                            seen_types.push(expected);
-                            let has_type = fun.push_insn(block, Insn::HasType { val: recv, expected });
-                            let iftrue_block = fun.new_block(branch_insn_idx);
-                            let target = BranchEdge { target: iftrue_block, args: vec![] };
-                            fun.push_insn(block, Insn::IfTrue { val: has_type, target });
-
-                            let refined_recv = fun.push_insn(iftrue_block, Insn::RefineType { val: recv, new_type: expected });
-                            let send = fun.push_insn(iftrue_block, Insn::Send { recv: refined_recv, cd, block: None, args: args.clone(), state: exit_id, reason: Uncategorized(opcode) });
-                            fun.push_insn(iftrue_block, Insn::Jump(BranchEdge { target: join_block, args: vec![send] }));
-                        }
-                        // In the fallthrough case, do a generic interpreter send and then join.
-                        let reason = SendWithoutBlockPolymorphicFallback;
-                        let send = fun.push_insn(block, Insn::Send { recv, cd, block: None, args, state: exit_id, reason });
-                        fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: vec![send] }));
-
-                        // Continue compilation in the join_block
-                        block = join_block;
-                        state.stack_push(join_param);
-                    } else {
-                        // Maybe monomorphic; handled in type_specialize
-                        let send = fun.push_insn(block, Insn::Send { recv, cd, block: None, args, state: exit_id, reason: Uncategorized(opcode) });
-                        state.stack_push(send);
-                    }
+                    let send = fun.push_insn(block, Insn::Send { recv, cd, block: None, args, state: exit_id, reason: Uncategorized(opcode) });
+                    state.stack_push(send);
                 }
                 YARVINSN_send => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
