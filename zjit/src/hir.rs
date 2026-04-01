@@ -2228,22 +2228,6 @@ impl<'a> FunctionPrinter<'a> {
     }
 }
 
-/// Pretty printer for [`Function`].
-pub struct FunctionGraphvizPrinter<'a> {
-    fun: &'a Function,
-    ptr_map: PtrPrintMap,
-}
-
-impl<'a> FunctionGraphvizPrinter<'a> {
-    pub fn new(fun: &'a Function) -> Self {
-        let mut ptr_map = PtrPrintMap::identity();
-        if cfg!(test) {
-            ptr_map.map_ptrs = true;
-        }
-        Self { fun, ptr_map }
-    }
-}
-
 /// Union-Find (Disjoint-Set) is a data structure for managing disjoint sets that has an interface
 /// of two operations:
 ///
@@ -5929,13 +5913,6 @@ impl Function {
             Some(DumpHIR::Debug) => println!("Optimized HIR:\n{:#?}", &self),
             None => {},
         }
-
-        if let Some(filename) = &get_option!(dump_hir_graphviz) {
-            use std::fs::OpenOptions;
-            use std::io::Write;
-            let mut file = OpenOptions::new().append(true).open(filename).unwrap();
-            writeln!(file, "{}", FunctionGraphvizPrinter::new(self)).unwrap();
-        }
     }
 
     pub fn dump_iongraph(&self, function_name: &str, passes: Vec<Json>) {
@@ -6474,87 +6451,6 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
             }
         }
         Ok(())
-    }
-}
-
-struct HtmlEncoder<'a, 'b> {
-    formatter: &'a mut std::fmt::Formatter<'b>,
-}
-
-impl<'a, 'b> std::fmt::Write for HtmlEncoder<'a, 'b> {
-    fn write_str(&mut self, s: &str) -> std::fmt::Result {
-        for ch in s.chars() {
-            match ch {
-                '<' => self.formatter.write_str("&lt;")?,
-                '>' => self.formatter.write_str("&gt;")?,
-                '&' => self.formatter.write_str("&amp;")?,
-                '"' => self.formatter.write_str("&quot;")?,
-                '\'' => self.formatter.write_str("&#39;")?,
-                _ => self.formatter.write_char(ch)?,
-            }
-        }
-        Ok(())
-    }
-}
-
-impl<'a> std::fmt::Display for FunctionGraphvizPrinter<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        macro_rules! write_encoded {
-            ($f:ident, $($arg:tt)*) => {
-                HtmlEncoder { formatter: $f }.write_fmt(format_args!($($arg)*))
-            };
-        }
-        use std::fmt::Write;
-        let fun = &self.fun;
-        let iseq_name = iseq_get_location(fun.iseq, 0);
-        write!(f, "digraph G {{ # ")?;
-        write_encoded!(f, "{iseq_name}")?;
-        writeln!(f)?;
-        writeln!(f, "node [shape=plaintext];")?;
-        writeln!(f, "mode=hier; overlap=false; splines=true;")?;
-        for block_id in fun.rpo() {
-            writeln!(f, r#"  {block_id} [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">"#)?;
-            write!(f, r#"<TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">{block_id}("#)?;
-            if !fun.blocks[block_id.0].params.is_empty() {
-                let mut sep = "";
-                for param in &fun.blocks[block_id.0].params {
-                    write_encoded!(f, "{sep}{param}")?;
-                    let insn_type = fun.type_of(*param);
-                    if !insn_type.is_subtype(types::Empty) {
-                        write_encoded!(f, ":{}", insn_type.print(&self.ptr_map))?;
-                    }
-                    sep = ", ";
-                }
-            }
-            let mut edges = vec![];
-            writeln!(f, ")&nbsp;</TD></TR>")?;
-            for insn_id in &fun.blocks[block_id.0].insns {
-                let insn_id = fun.union_find.borrow().find_const(*insn_id);
-                let insn = fun.find(insn_id);
-                if matches!(insn, Insn::Snapshot {..}) {
-                    continue;
-                }
-                write!(f, r#"<TR><TD ALIGN="left" PORT="{insn_id}">"#)?;
-                if insn.has_output() {
-                    let insn_type = fun.type_of(insn_id);
-                    if insn_type.is_subtype(types::Empty) {
-                        write_encoded!(f, "{insn_id} = ")?;
-                    } else {
-                        write_encoded!(f, "{insn_id}:{} = ", insn_type.print(&self.ptr_map))?;
-                    }
-                }
-                if let Insn::Jump(ref target) | Insn::IfTrue { ref target, .. } | Insn::IfFalse { ref target, .. } = insn {
-                    edges.push((insn_id, target.target));
-                }
-                write_encoded!(f, "{}", insn.print(&self.ptr_map, Some(fun.iseq)))?;
-                writeln!(f, "&nbsp;</TD></TR>")?;
-            }
-            writeln!(f, "</TABLE>>];")?;
-            for (src, dst) in edges {
-                writeln!(f, "  {block_id}:{src} -> {dst}:params:n;")?;
-            }
-        }
-        writeln!(f, "}}")
     }
 }
 
@@ -9289,133 +9185,5 @@ mod infer_tests {
             function.infer_types();
             assert_bit_equal(function.type_of(param), types::TrueClass.union(types::FalseClass));
         });
-    }
-}
-
-#[cfg(test)]
-mod graphviz_tests {
-    use super::*;
-    use insta::assert_snapshot;
-
-    #[track_caller]
-    fn hir_string(method: &str) -> String {
-        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", method));
-        unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
-        let mut function = iseq_to_hir(iseq).unwrap();
-        function.optimize();
-        function.validate().unwrap();
-        format!("{}", FunctionGraphvizPrinter::new(&function))
-    }
-
-    #[test]
-    fn test_guard_fixnum_or_fixnum() {
-        eval(r#"
-            def test(x, y) = x | y
-
-            test(1, 2)
-        "#);
-        assert_snapshot!(hir_string("test"), @r#"
-        digraph G { # test@&lt;compiled&gt;:2
-        node [shape=plaintext];
-        mode=hier; overlap=false; splines=true;
-          bb0 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb0()&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v25">Entries bb1, bb2&nbsp;</TD></TR>
-        </TABLE>>];
-          bb1 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb1()&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v0">EntryPoint interpreter&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v1">v1:BasicObject = LoadSelf&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v2">v2:CPtr = LoadSP&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v3">v3:BasicObject = LoadField v2, :x@0x1000&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v4">v4:BasicObject = LoadField v2, :y@0x1001&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v5">Jump bb3(v1, v3, v4)&nbsp;</TD></TR>
-        </TABLE>>];
-          bb1:v5 -> bb3:params:n;
-          bb2 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb2()&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v6">EntryPoint JIT(0)&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v7">v7:BasicObject = LoadArg :self@0&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v8">v8:BasicObject = LoadArg :x@1&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v9">v9:BasicObject = LoadArg :y@2&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v10">Jump bb3(v7, v8, v9)&nbsp;</TD></TR>
-        </TABLE>>];
-          bb2:v10 -> bb3:params:n;
-          bb3 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject)&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v16">PatchPoint NoTracePoint&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v27">PatchPoint MethodRedefined(Integer@0x1008, |@0x1010, cme:0x1018)&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v28">v28:Fixnum = GuardType v12, Fixnum&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v29">v29:Fixnum = GuardType v13, Fixnum&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v30">v30:Fixnum = FixnumOr v28, v29&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v23">CheckInterrupts&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v24">Return v30&nbsp;</TD></TR>
-        </TABLE>>];
-        }
-        "#);
-    }
-
-    #[test]
-    fn test_multiple_blocks() {
-        eval(r#"
-            def test(c)
-              if c
-                3
-              else
-                4
-              end
-            end
-
-            test(1)
-            test("x")
-        "#);
-        assert_snapshot!(hir_string("test"), @r#"
-        digraph G { # test@&lt;compiled&gt;:3
-        node [shape=plaintext];
-        mode=hier; overlap=false; splines=true;
-          bb0 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb0()&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v37">Entries bb1, bb2&nbsp;</TD></TR>
-        </TABLE>>];
-          bb1 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb1()&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v0">EntryPoint interpreter&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v1">v1:BasicObject = LoadSelf&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v2">v2:CPtr = LoadSP&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v3">v3:BasicObject = LoadField v2, :c@0x1000&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v4">Jump bb3(v1, v3)&nbsp;</TD></TR>
-        </TABLE>>];
-          bb1:v4 -> bb3:params:n;
-          bb2 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb2()&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v5">EntryPoint JIT(0)&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v6">v6:BasicObject = LoadArg :self@0&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v7">v7:BasicObject = LoadArg :c@1&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v8">Jump bb3(v6, v7)&nbsp;</TD></TR>
-        </TABLE>>];
-          bb2:v8 -> bb3:params:n;
-          bb3 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb3(v9:BasicObject, v10:BasicObject)&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v13">PatchPoint NoTracePoint&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v15">CheckInterrupts&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v16">v16:CBool = Test v10&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v17">v17:Falsy = RefineType v10, Falsy&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v18">IfFalse v16, bb4(v9, v17)&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v19">v19:Truthy = RefineType v10, Truthy&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v21">PatchPoint NoTracePoint&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v22">v22:Fixnum[3] = Const Value(3)&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v25">CheckInterrupts&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v26">Return v22&nbsp;</TD></TR>
-        </TABLE>>];
-          bb3:v18 -> bb4:params:n;
-          bb4 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb4(v27:BasicObject, v28:Falsy)&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v31">PatchPoint NoTracePoint&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v32">v32:Fixnum[4] = Const Value(4)&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v35">CheckInterrupts&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v36">Return v32&nbsp;</TD></TR>
-        </TABLE>>];
-        }
-        "#);
     }
 }
