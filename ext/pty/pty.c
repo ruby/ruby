@@ -491,8 +491,8 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
             if ((slavefd = rb_cloexec_open(SlaveName,O_RDWR,0)) >= 0) {
                 rb_update_max_fd(slavefd);
                 *slave = slavefd;
-                if (change_owner(slavefd, getuid(), getgid()) != 0) goto error;
-                if (change_mode(slavefd, nomesg ? 0600 : 0622) != 0) goto error;
+                if (change_owner(SlaveName, slavefd, getuid(), getgid()) != 0) goto error;
+                if (change_mode(SlaveName, slavefd, nomesg ? 0600 : 0622) != 0) goto error;
                 return 0;
             }
             close(masterfd);
