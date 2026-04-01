@@ -286,8 +286,8 @@ ptsname_r(int fd, char *buf, size_t buflen)
 #endif
 
 #if defined(HAVE_POSIX_OPENPT) || defined(HAVE_OPENPTY) || defined(HAVE_PTSNAME_R)
-static int
-set_device_mode(const char *slavedevice, int fd, int nomesg)
+static inline int
+prevent_messages(const char *slavedevice, int fd, int nomesg)
 {
     if (nomesg)
         return change_mode(slavedevice, fd, 0600);
@@ -352,7 +352,7 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     if (ptsname_r(masterfd, SlaveName, DEVICELEN) != 0) goto error;
     slavedevice = SlaveName;
     if ((slavefd = rb_cloexec_open(slavedevice, O_RDWR|O_NOCTTY, 0)) == -1) goto error;
-    if (set_device_mode(slavedevice, slavefd, nomesg) == -1) goto error;
+    if (prevent_messages(slavedevice, slavefd, nomesg) == -1) goto error;
     rb_update_max_fd(slavefd);
 
 #if defined(I_PUSH) && !defined(__linux__) && !defined(_AIX)
@@ -386,7 +386,7 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     }
     rb_fd_fix_cloexec(*master);
     rb_fd_fix_cloexec(*slave);
-    if (set_device_mode(SlaveName, *slave, nomesg) == -1) {
+    if (prevent_messages(SlaveName, *slave, nomesg) == -1) {
         close(*master);
         close(*slave);
         if (!fail) return -1;
@@ -438,7 +438,7 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     if (ptsname_r(masterfd, SlaveName, DEVICELEN) != 0) goto error;
     slavedevice = SlaveName;
     if((slavefd = rb_cloexec_open(slavedevice, O_RDWR, 0)) == -1) goto error;
-    if (set_device_mode(slavedevice, slavefd, nomesg) == -1) goto error;
+    if (prevent_messages(slavedevice, slavefd, nomesg) == -1) goto error;
     rb_update_max_fd(slavefd);
 #if defined(I_PUSH) && !defined(__linux__) && !defined(_AIX)
     if(ioctl_I_PUSH(slavefd, "ptem") == -1) goto error;
