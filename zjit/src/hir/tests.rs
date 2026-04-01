@@ -294,7 +294,7 @@ pub(crate) mod hir_build_tests {
           v2:CPtr = LoadSP
           v3:BasicObject = LoadField v2, :x@0x1000
           v4:CPtr = LoadPC
-          v5:CPtr[CPtr(0x1008)] = Const CPtr(0x1010)
+          v5:CPtr[CPtr(0x1001)] = Const CPtr(0x1001)
           v6:CBool = IsBitEqual v4, v5
           IfTrue v6, bb3(v1, v3)
           Jump bb5(v1, v3)
@@ -1159,7 +1159,7 @@ pub(crate) mod hir_build_tests {
           v3:BasicObject = LoadField v2, :a@0x1000
           v4:NilClass = Const Value(nil)
           v5:CPtr = LoadPC
-          v6:CPtr[CPtr(0x1008)] = Const CPtr(0x1010)
+          v6:CPtr[CPtr(0x1001)] = Const CPtr(0x1001)
           v7:CBool = IsBitEqual v5, v6
           IfTrue v7, bb3(v1, v3, v4)
           Jump bb5(v1, v3, v4)
@@ -1201,7 +1201,7 @@ pub(crate) mod hir_build_tests {
           v3:BasicObject = LoadField v2, :a@0x1000
           v4:NilClass = Const Value(nil)
           v5:CPtr = LoadPC
-          v6:CPtr[CPtr(0x1008)] = Const CPtr(0x1010)
+          v6:CPtr[CPtr(0x1001)] = Const CPtr(0x1001)
           v7:CBool = IsBitEqual v5, v6
           IfTrue v7, bb3(v1, v3, v4)
           Jump bb5(v1, v3, v4)
@@ -1239,7 +1239,7 @@ pub(crate) mod hir_build_tests {
           v2:CPtr = LoadSP
           v3:BasicObject = LoadField v2, :a@0x1000
           v4:CPtr = LoadPC
-          v5:CPtr[CPtr(0x1008)] = Const CPtr(0x1010)
+          v5:CPtr[CPtr(0x1001)] = Const CPtr(0x1001)
           v6:CBool = IsBitEqual v4, v5
           IfTrue v6, bb3(v1, v3)
           Jump bb5(v1, v3)
