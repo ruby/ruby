@@ -11362,12 +11362,6 @@ pm_parse_process(pm_parse_result_t *result, pm_node_t *node, VALUE *script_lines
     pm_intern_constants_ctx_t intern_ctx = { .constants = scope_node->constants, .encoding = scope_node->encoding, .index = 0 };
     pm_parser_constants_each(parser, pm_intern_constants_callback, &intern_ctx);
 
-    pm_constant_id_list_t *locals = &scope_node->locals;
-    pm_index_lookup_table_init_heap(&scope_node->index_lookup_table, (int) constants_size);
-    for (size_t index = 0; index < locals->size; index++) {
-        pm_index_lookup_table_insert(&scope_node->index_lookup_table, locals->ids[index], (int) index);
-    }
-
     // If we got here, this is a success and we can return Qnil to indicate that
     // no error should be raised.
     result->parsed = true;
