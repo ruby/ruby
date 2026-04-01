@@ -485,9 +485,11 @@ class TestSocket < Test::Unit::TestCase
     }
   end
 
-  def timestamp_retry_rw(s1, s2, t1, type)
+  def timestamp_retry_rw(s1, type)
     IO.pipe do |r,w|
+      t1 = Time.now
       # UDP may not be reliable, keep sending until recvmsg returns:
+      s2 = Socket.new(:INET, :DGRAM, 0)
       th = Thread.new do
         n = 0
         begin
@@ -500,80 +502,53 @@ class TestSocket < Test::Unit::TestCase
       assert_equal([[s1],[],[]], IO.select([s1], nil, nil, timeout))
       msg, _, _, stamp = s1.recvmsg
       assert_equal("a", msg)
-      assert(stamp.cmsg_is?(:SOCKET, type))
+      assert_send([stamp, :cmsg_is?, :SOCKET, type])
       w.close # stop th
       n = th.value
       th = nil
       n > 1 and
         warn "UDP packet loss for #{type} over loopback, #{n} tries needed"
-      t2 = Time.now.strftime("%Y-%m-%d")
-      pat = Regexp.union([t1, t2].uniq)
-      assert_match(pat, stamp.inspect)
-      t = stamp.timestamp
-      assert_match(pat, t.strftime("%Y-%m-%d"))
+      t2 = Time.now
+      assert_include(t1..t2, stamp.timestamp)
       stamp
     ensure
       if th and !th.join(10)
         th.kill.join(10)
       end
+      s2.close
     end
   end
 
   def test_timestamp
     return if /linux|freebsd|netbsd|openbsd|darwin/ !~ RUBY_PLATFORM
     return if !defined?(Socket::AncillaryData) || !defined?(Socket::SO_TIMESTAMP)
-    t1 = Time.now.strftime("%Y-%m-%d")
-    stamp = nil
     Addrinfo.udp("127.0.0.1", 0).bind {|s1|
-      Addrinfo.udp("127.0.0.1", 0).bind {|s2|
-        s1.setsockopt(:SOCKET, :TIMESTAMP, true)
-        stamp = timestamp_retry_rw(s1, s2, t1, :TIMESTAMP)
-      }
+      s1.setsockopt(:SOCKET, :TIMESTAMP, true)
+      timestamp_retry_rw(s1, :TIMESTAMP)
     }
-    t = stamp.timestamp
-    pat = /\.#{"%06d" % t.usec}/
-    assert_match(pat, stamp.inspect)
   end
 
   def test_timestampns
     return if /linux/ !~ RUBY_PLATFORM || !defined?(Socket::SO_TIMESTAMPNS)
-    t1 = Time.now.strftime("%Y-%m-%d")
-    stamp = nil
     Addrinfo.udp("127.0.0.1", 0).bind {|s1|
-      Addrinfo.udp("127.0.0.1", 0).bind {|s2|
-        begin
-          s1.setsockopt(:SOCKET, :TIMESTAMPNS, true)
-        rescue Errno::ENOPROTOOPT
-          # SO_TIMESTAMPNS is available since Linux 2.6.22
-          return
-        end
-        stamp = timestamp_retry_rw(s1, s2, t1, :TIMESTAMPNS)
-      }
+      begin
+        s1.setsockopt(:SOCKET, :TIMESTAMPNS, true)
+      rescue Errno::ENOPROTOOPT
+        # SO_TIMESTAMPNS is available since Linux 2.6.22
+        return
+      end
+      timestamp_retry_rw(s1, :TIMESTAMPNS)
     }
-    t = stamp.timestamp
-    pat = /\.#{"%09d" % t.nsec}/
-    assert_match(pat, stamp.inspect)
   end
 
   def test_bintime
     return if /freebsd/ !~ RUBY_PLATFORM
-    t1 = Time.now.strftime("%Y-%m-%d")
-    stamp = nil
-    Addrinfo.udp("127.0.0.1", 0).bind {|s1|
-      Addrinfo.udp("127.0.0.1", 0).bind {|s2|
-        s1.setsockopt(:SOCKET, :BINTIME, true)
-        s2.send "a", 0, s1.local_address
-        msg, _, _, stamp = s1.recvmsg
-        assert_equal("a", msg)
-        assert(stamp.cmsg_is?(:SOCKET, :BINTIME))
-      }
+    stamp = Addrinfo.udp("127.0.0.1", 0).bind {|s1|
+      s1.setsockopt(:SOCKET, :BINTIME, true)
+      timestamp_retry_rw(s1, :BINTIME)
     }
-    t2 = Time.now.strftime("%Y-%m-%d")
-    pat = Regexp.union([t1, t2].uniq)
-    assert_match(pat, stamp.inspect)
     t = stamp.timestamp
-    assert_match(pat, t.strftime("%Y-%m-%d"))
-    assert_equal(stamp.data[-8,8].unpack("Q")[0], t.subsec * 2**64)
+    assert_equal(stamp.data.unpack1("Q", offset: -8), t.subsec * 2**64)
   end
 
   def test_closed_read
