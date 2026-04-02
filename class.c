@@ -394,7 +394,6 @@ rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_box_t *bo
      * * variation count
      */
     RCLASSEXT_PERMANENT_CLASSPATH(ext) = RCLASSEXT_PERMANENT_CLASSPATH(orig);
-    RCLASSEXT_CLONED(ext) = RCLASSEXT_CLONED(orig);
     RCLASSEXT_CLASSPATH(ext) = RCLASSEXT_CLASSPATH(orig);
 
     /* For the usual T_CLASS/T_MODULE, iclass flags are always false */
@@ -880,27 +879,20 @@ rb_class_s_alloc(VALUE klass)
 }
 
 static void
-clone_method(VALUE old_klass, VALUE new_klass, ID mid, const rb_method_entry_t *me)
+clone_method(VALUE new_klass, ID mid, const rb_method_entry_t *me)
 {
-    if (me->def->type == VM_METHOD_TYPE_ISEQ) {
-        rb_cref_t *new_cref = rb_vm_rewrite_cref(me->def->body.iseq.cref, old_klass, new_klass);
-        rb_add_method_iseq(new_klass, mid, me->def->body.iseq.iseqptr, new_cref, METHOD_ENTRY_VISI(me));
-    }
-    else {
-        rb_method_entry_set(new_klass, mid, me, METHOD_ENTRY_VISI(me));
-    }
+    rb_method_entry_set(new_klass, mid, me, METHOD_ENTRY_VISI(me));
 }
 
 struct clone_method_arg {
     VALUE new_klass;
-    VALUE old_klass;
 };
 
 static enum rb_id_table_iterator_result
 clone_method_i(ID key, VALUE value, void *data)
 {
     const struct clone_method_arg *arg = (struct clone_method_arg *)data;
-    clone_method(arg->old_klass, arg->new_klass, key, (const rb_method_entry_t *)value);
+    clone_method(arg->new_klass, key, (const rb_method_entry_t *)value);
     return ID_TABLE_CONTINUE;
 }
 
@@ -1046,12 +1038,6 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
 
     rb_class_set_initialized(clone);
 
-    /* cloned flag is refer at constant inline cache
-     * see vm_get_const_key_cref() in vm_insnhelper.c
-     */
-    RCLASS_SET_CLONED(clone, true);
-    RCLASS_SET_CLONED(orig, true);
-
     if (!RCLASS_SINGLETON_P(CLASS_OF(clone))) {
         RBASIC_SET_CLASS(clone, rb_singleton_class_clone(orig));
         rb_singleton_class_attached(METACLASS_OF(clone), (VALUE)clone);
@@ -1062,7 +1048,6 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
     copy_tables(clone, orig);
     if (RCLASS_M_TBL(orig)) {
         struct clone_method_arg arg;
-        arg.old_klass = orig;
         arg.new_klass = clone;
         class_initialize_method_table(clone);
         rb_id_table_foreach(RCLASS_M_TBL(orig), clone_method_i, &arg);
@@ -1124,7 +1109,6 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
             copy_tables(clone_origin, orig_origin);
             if (RCLASS_M_TBL(orig_origin)) {
                 struct clone_method_arg arg;
-                arg.old_klass = orig;
                 arg.new_klass = clone;
                 class_initialize_method_table(clone_origin);
                 rb_id_table_foreach(RCLASS_M_TBL(orig_origin), clone_method_i, &arg);
@@ -1196,7 +1180,6 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
         }
         {
             struct clone_method_arg arg;
-            arg.old_klass = klass;
             arg.new_klass = clone;
             rb_id_table_foreach(RCLASS_M_TBL(klass), clone_method_i, &arg);
         }
