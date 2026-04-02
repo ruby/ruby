@@ -3018,9 +3018,9 @@ nodes:
       - name: statements
         type: node?
         kind: StatementsNode
-      - name: in_loc
+      - name: in_keyword_loc
         type: location
-      - name: then_loc
+      - name: then_keyword_loc
         type: location?
     comment: |
       Represents the use of the `in` keyword in a case statement.
@@ -3605,7 +3605,7 @@ nodes:
       - name: pattern
         type: node
         kind: pattern expression
-      - name: operator_loc
+      - name: keyword_loc
         type: location
     comment: |
       Represents the use of the modifier `in` operator.
@@ -4578,7 +4578,7 @@ nodes:
           ^^^^^^^^^^^^^^^^^^^^^^
   - name: UnlessNode
     fields:
-      - name: keyword_loc
+      - name: unless_keyword_loc
         type: location
         comment: |
           The Location of the `unless` keyword.
@@ -4642,11 +4642,11 @@ nodes:
   - name: UntilNode
     flags: LoopFlags
     fields:
-      - name: keyword_loc
+      - name: until_keyword_loc
         type: location
       - name: do_keyword_loc
         type: location?
-      - name: closing_loc
+      - name: end_keyword_loc
         type: location?
       - name: predicate
         type: node
@@ -4665,7 +4665,7 @@ nodes:
           ^^^^^^^^^^^^^^^^^^^^
   - name: WhenNode
     fields:
-      - name: keyword_loc
+      - name: when_keyword_loc
         type: location
       - name: conditions
         type: node[]
@@ -4685,11 +4685,11 @@ nodes:
   - name: WhileNode
     flags: LoopFlags
     fields:
-      - name: keyword_loc
+      - name: while_keyword_loc
         type: location
       - name: do_keyword_loc
         type: location?
-      - name: closing_loc
+      - name: end_keyword_loc
         type: location?
       - name: predicate
         type: node
