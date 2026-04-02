@@ -215,6 +215,17 @@ class TestAst < Test::Unit::TestCase
     end
   end
 
+  def test_cdecl_children_with_toplevel_constant_path
+    # [Bug #21974]
+    assert_in_out_err(["-e", <<~'RUBY'], "", [":COLON3", "[:Foo]", ":Foo", "[1]"], [])
+      children = RubyVM::AbstractSyntaxTree.parse("::Foo = 1").children[2].children
+      p children[0].type
+      p children[0].children
+      p children[1]
+      p children[2].children
+    RUBY
+  end
+
   def assert_parse(code, warning: '')
     node = assert_warning(warning) {RubyVM::AbstractSyntaxTree.parse(code)}
     assert_kind_of(RubyVM::AbstractSyntaxTree::Node, node, code)
