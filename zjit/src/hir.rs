@@ -5239,12 +5239,35 @@ impl Function {
         for block in self.rpo() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             let mut new_insns = vec![];
+            // Track guards seen so far in this block: (val, guard_type, result_insn_id).
+            // When we encounter a GuardType whose (val, guard_type) pair is already covered
+            // by a previous guard, we can eliminate it by reusing the earlier result.
+            let mut seen_guards: Vec<(InsnId, Type, InsnId)> = vec![];
             for insn_id in old_insns {
                 let replacement_id = match self.find(insn_id) {
                     Insn::GuardType { val, guard_type, .. } if self.is_a(val, guard_type) => {
                         self.make_equal_to(insn_id, val);
                         // Don't bother re-inferring the type of val; we already know it.
                         continue;
+                    }
+                    // Deduplicate GuardType: if we already guarded the same val with a
+                    // type that is the same or narrower, the new guard is redundant.
+                    // e.g. if we already proved val is Fixnum, a later Fixnum or
+                    // BasicObject guard on the same val is guaranteed to pass.
+                    Insn::GuardType { val, guard_type, .. } => {
+                        let mut found = None;
+                        for &(prev_val, prev_type, prev_result) in &seen_guards {
+                            if prev_val == val && prev_type.is_subtype(guard_type) {
+                                found = Some(prev_result);
+                                break;
+                            }
+                        }
+                        if let Some(prev_result) = found {
+                            self.make_equal_to(insn_id, prev_result);
+                            continue;
+                        }
+                        seen_guards.push((val, guard_type, insn_id));
+                        insn_id
                     }
                     Insn::LoadField { recv, offset, return_type, .. } if return_type.is_subtype(types::BasicObject) &&
                             u32::try_from(offset).is_ok() => {
