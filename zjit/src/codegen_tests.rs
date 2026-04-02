@@ -4651,6 +4651,27 @@ fn test_raise_in_second_argument() {
     "), @"{ok: true}");
 }
 
+// When a polymorphic call site (e.g., .name on both Symbol and Struct) is split
+// into per-type branches, the struct accessor branch must use the profiled type
+// for the struct class to determine embedding, not the dominant profiled type
+// (which may be Symbol). Using the wrong profiled type's flags caused ZJIT to
+// generate heap-access code for an embedded struct, crashing with a NULL deref.
+#[test]
+fn test_struct_aref_polymorphic_with_symbol() {
+    // Need threshold 5: 3 Symbol calls + 1 Item call to get SkewedPolymorphic
+    // (3/4 = 0.75 >= SKEW_THRESHOLD), then call 5 triggers compilation.
+    set_call_threshold(5);
+    assert_snapshot!(inspect("
+        Item = Struct.new(:name)
+        def test(x) = x.name
+        test(:foo)              # call 1: profile as Symbol
+        test(:bar)              # call 2: profile as Symbol
+        test(:baz)              # call 3: profile as Symbol (>= 75% skew)
+        test(Item.new('hello')) # call 4: profile as Item
+        test(Item.new('world')) # call 5: triggers compilation + runs JIT code
+    "), @r#""world""#);
+}
+
 #[test]
 fn test_struct_set() {
     assert_snapshot!(inspect("

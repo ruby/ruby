@@ -3895,7 +3895,12 @@ impl Function {
                                         }
                                     }
                                     // Get the profiled type to check if the fields is embedded or heap allocated.
-                                    let Some(is_embedded) = self.profiled_type_of_at(recv, frame_state.insn_idx).map(|t| t.flags().is_struct_embedded()) else {
+                                    // Filter by klass so that in polymorphic dispatch branches (after
+                                    // RefineType), we don't use the dominant profiled type from a
+                                    // different class (e.g. Symbol flags for a Struct receiver).
+                                    let Some(is_embedded) = self.profiled_type_of_at(recv, frame_state.insn_idx)
+                                        .filter(|t| t.class() == klass)
+                                        .map(|t| t.flags().is_struct_embedded()) else {
                                         // No (monomorphic/skewed polymorphic) profile info
                                         let reason = if has_block { SendNoProfiles } else { SendWithoutBlockNoProfiles };
                                         self.set_dynamic_send_reason(insn_id, reason);
