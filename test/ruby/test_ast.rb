@@ -217,13 +217,13 @@ class TestAst < Test::Unit::TestCase
 
   def test_cdecl_children_with_toplevel_constant_path
     # [Bug #21974]
-    assert_in_out_err(["-e", <<~'RUBY'], "", [":COLON3", "[:Foo]", ":Foo", "[1]"], [])
-      children = RubyVM::AbstractSyntaxTree.parse("::Foo = 1").children[2].children
-      p children[0].type
-      p children[0].children
-      p children[1]
-      p children[2].children
-    RUBY
+    children = parse("::Foo = 1").children[2].children
+
+    assert_equal(:COLON3, children[0].type)
+    assert_equal([:Foo], children[0].children)
+    assert_equal(:Foo, children[1])
+    assert_equal(:INTEGER, children[2].type)
+    assert_equal([1], children[2].children)
   end
 
   def assert_parse(code, warning: '')
