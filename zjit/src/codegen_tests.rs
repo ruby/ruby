@@ -4672,6 +4672,27 @@ fn test_struct_aref_polymorphic_with_symbol() {
     "), @r#""world""#);
 }
 
+// A loop counter that starts at 0 and increments by 1 must not be constant-folded.
+// After polymorphic opt_aref inlining for Array, the loop variable's phi node can
+// retain the narrow Fixnum[0] type from its initial value, causing fold_constants
+// to replace `i + 1` with the constant 1, producing an infinite loop.
+#[test]
+fn test_loop_counter_not_folded() {
+    set_call_threshold(5);
+    assert_snapshot!(inspect(r#"
+        def test(target, base)
+          i = 0
+          while target[i]&.== base[i]
+            i += 1
+          end
+          i
+        end
+        4.times { test(["a", "b", "c"], ["a", "b", "d"]) }
+        # After JIT, empty target must terminate (not infinite-loop)
+        [test(["a","b","c"], ["a","b","d"]), test([], ["y"])]
+    "#), @"[2, 0]");
+}
+
 #[test]
 fn test_struct_set() {
     assert_snapshot!(inspect("

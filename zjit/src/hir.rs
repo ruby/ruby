@@ -5257,6 +5257,15 @@ impl Function {
 
     /// Fold a binary operator on fixnums.
     fn fold_fixnum_bop(&mut self, insn_id: InsnId, left: InsnId, right: InsnId, f: impl FnOnce(Option<i64>, Option<i64>) -> Option<i64>) -> InsnId {
+        // Don't fold if an operand is a block parameter (potential loop phi).
+        // The parameter's type may be overly narrow (e.g. Fixnum[0] from the
+        // initial value) because infer_types may not have fully converged when
+        // intermediate passes modify the graph.
+        let left_resolved = self.union_find.borrow().find_const(left);
+        let right_resolved = self.union_find.borrow().find_const(right);
+        if matches!(self.insns[left_resolved.0], Insn::Param) || matches!(self.insns[right_resolved.0], Insn::Param) {
+            return insn_id;
+        }
         f(self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value())
             .filter(|&n| n >= (RUBY_FIXNUM_MIN as i64) && n <= RUBY_FIXNUM_MAX as i64)
             .map(|n| self.new_insn(Insn::Const { val: Const::Value(VALUE::fixnum_from_isize(n as isize)) }))
