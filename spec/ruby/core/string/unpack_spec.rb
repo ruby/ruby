@@ -18,8 +18,22 @@ describe "String#unpack" do
     "؈".unpack("CC", offset: 1).should == [136, nil]
   end
 
-  it "raises an ArgumentError when the offset is negative" do
-    -> { "a".unpack("C", offset: -1) }.should.raise(ArgumentError, "offset can't be negative")
+  describe "when the offset is negative" do
+    ruby_version_is "4.1" do
+      it "starts unpacking from the end" do
+        "abc".unpack("CC", offset: -2).should == [98, 99]
+      end
+
+      it "raises an ArgumentError if it is less than -length" do
+        -> { "a".unpack("C", offset: -2) }.should.raise(ArgumentError, "offset outside of string")
+      end
+    end
+
+    ruby_version_is ""..."4.1" do
+      it "raises an ArgumentError" do
+        -> { "a".unpack("C", offset: -1) }.should.raise(ArgumentError, "offset can't be negative")
+      end
+    end
   end
 
   it "returns nil if the offset is at the end of the string" do
