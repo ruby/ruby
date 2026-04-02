@@ -4462,10 +4462,10 @@ impl Function {
 
     /// This puts a guard that establishes the preconditon for [Self::load_ivar]
     fn load_ivar_guard_type(&mut self, block: BlockId, recv: InsnId, recv_type: ProfiledType, state: InsnId) -> InsnId {
-        if recv_type.class().is_subclass_of(unsafe { rb_cClass }) == ClassRelationship::Subclass {
+        if recv_type.flags().is_t_class() {
             // Check class first since `Class < Module`
             self.push_insn(block, Insn::GuardType { val: recv, guard_type: types::Class, state })
-        } else if recv_type.class().is_subclass_of(unsafe { rb_cModule }) == ClassRelationship::Subclass {
+        } else if recv_type.flags().is_t_module() {
             self.push_insn(block, Insn::GuardType { val: recv, guard_type: types::Module, state })
         } else if recv_type.flags().is_typed_data() {
             self.push_insn(block, Insn::GuardType { val: recv, guard_type: types::TypedTData, state })
@@ -4488,7 +4488,7 @@ impl Function {
             // shape + iv name
             return self.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
         }
-        if recv_type.flags().is_t_class_or_module() {
+        if recv_type.flags().is_t_class() || recv_type.flags().is_t_module() {
             // Class/module ivar: load from prime classext's fields_obj
             if !self.assume_root_box(block, state) {
                 // Non-root box active: fall back to C call
