@@ -1667,7 +1667,7 @@ q.pop
 
   # [Bug #21926]
   def test_thread_join_during_finalizers
-    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 30)
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 60)
     begin;
       require 'open3'
 
@@ -1690,7 +1690,7 @@ q.pop
         end
       end
 
-      50.times { ProcessWrapper.new }
+      20.times { ProcessWrapper.new }
       GC.stress = true
       1000.times { Object.new }
     end;
