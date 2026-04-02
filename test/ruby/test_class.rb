@@ -435,6 +435,7 @@ class TestClass < Test::Unit::TestCase
   end
 
   class CloneTest
+    TEST = :C0
     def foo; TEST; end
   end
 
@@ -448,8 +449,8 @@ class TestClass < Test::Unit::TestCase
   end
 
   def test_constant_access_from_method_in_cloned_class
-    assert_equal :C1, CloneTest1.new.foo, '[Bug #15877]'
-    assert_equal :C2, CloneTest2.new.foo, '[Bug #15877]'
+    assert_equal :C0, CloneTest1.new.foo, 'originally [Bug #15877], but behaviour changed'
+    assert_equal :C0, CloneTest2.new.foo, 'originally [Bug #15877], but behaviour changed'
   end
 
   def test_invalid_superclass

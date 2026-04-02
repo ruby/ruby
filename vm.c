@@ -353,12 +353,6 @@ vm_cref_new(VALUE klass, rb_method_visibility_t visi, int module_func, rb_cref_t
     return vm_cref_new0(klass, visi, module_func, prev_cref, pushed_by_eval, FALSE, singleton);
 }
 
-static rb_cref_t *
-vm_cref_new_use_prev(VALUE klass, rb_method_visibility_t visi, int module_func, rb_cref_t *prev_cref, int pushed_by_eval)
-{
-    return vm_cref_new0(klass, visi, module_func, prev_cref, pushed_by_eval, TRUE, FALSE);
-}
-
 static int
 ref_delete_symkey(VALUE key, VALUE value, VALUE unused)
 {

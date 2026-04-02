@@ -989,8 +989,7 @@ vm_get_const_key_cref(const VALUE *ep)
     const rb_cref_t *key_cref = cref;
 
     while (cref) {
-        if (CREF_DYNAMIC(cref) ||
-                RCLASS_CLONED_P(CREF_CLASS(cref))) {
+        if (CREF_DYNAMIC(cref)) {
             return key_cref;
         }
         cref = CREF_NEXT(cref);
@@ -998,39 +997,6 @@ vm_get_const_key_cref(const VALUE *ep)
 
     /* no dynamic singleton class or cloned class found */
     return NULL;
-}
-
-rb_cref_t *
-rb_vm_rewrite_cref(rb_cref_t *cref, VALUE old_klass, VALUE new_klass)
-{
-    rb_cref_t *new_cref_head = NULL;
-    rb_cref_t *new_cref_tail = NULL;
-
-    #define ADD_NEW_CREF(new_cref) \
-        if (new_cref_tail) { \
-            RB_OBJ_WRITE(new_cref_tail, &new_cref_tail->next, new_cref); \
-        } \
-        else { \
-            new_cref_head = new_cref; \
-        } \
-        new_cref_tail = new_cref;
-
-    while (cref) {
-        rb_cref_t *new_cref;
-        if (CREF_CLASS(cref) == old_klass) {
-            new_cref = vm_cref_new_use_prev(new_klass, METHOD_VISI_UNDEF, FALSE, cref, FALSE);
-            ADD_NEW_CREF(new_cref);
-            return new_cref_head;
-        }
-        new_cref = vm_cref_new_use_prev(CREF_CLASS(cref), METHOD_VISI_UNDEF, FALSE, cref, FALSE);
-        cref = CREF_NEXT(cref);
-        ADD_NEW_CREF(new_cref);
-    }
-
-    #undef ADD_NEW_CREF
-
-    // Could we just reuse the original cref?
-    return new_cref_head;
 }
 
 static rb_cref_t *

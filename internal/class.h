@@ -87,7 +87,6 @@ struct rb_classext_struct {
     attr_index_t max_iv_count;
     uint8_t variation_count;
     bool permanent_classpath : 1;
-    bool cloned : 1;
     bool shared_const_tbl : 1;
     bool iclass_is_origin : 1;
     bool iclass_origin_shared_mtbl : 1;
@@ -159,7 +158,6 @@ static inline rb_classext_t * RCLASS_EXT_WRITABLE(VALUE obj);
 // class.allocator/singleton_class.attached_object are not accessed directly via RCLASSEXT_*
 #define RCLASSEXT_INCLUDER(ext) (ext->as.iclass.includer)
 #define RCLASSEXT_PERMANENT_CLASSPATH(ext) (ext->permanent_classpath)
-#define RCLASSEXT_CLONED(ext) (ext->cloned)
 #define RCLASSEXT_SHARED_CONST_TBL(ext) (ext->shared_const_tbl)
 #define RCLASSEXT_ICLASS_IS_ORIGIN(ext) (ext->iclass_is_origin)
 #define RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(ext) (ext->iclass_origin_shared_mtbl)
@@ -196,7 +194,6 @@ static inline void RCLASSEXT_SET_INCLUDER(rb_classext_t *ext, VALUE klass, VALUE
 #define RCLASS_ORIGIN(c) (RCLASS_EXT_READABLE(c)->origin_)
 #define RICLASS_IS_ORIGIN_P(c) (RCLASS_EXT_READABLE(c)->iclass_is_origin)
 #define RCLASS_PERMANENT_CLASSPATH_P(c) (RCLASS_EXT_READABLE(c)->permanent_classpath)
-#define RCLASS_CLONED_P(c) (RCLASS_EXT_READABLE(c)->cloned)
 #define RCLASS_CLASSPATH(c) (RCLASS_EXT_READABLE(c)->classpath)
 
 // Superclasses can't be changed after initialization
@@ -247,7 +244,6 @@ static inline VALUE RCLASS_SET_ATTACHED_OBJECT(VALUE klass, VALUE attached_objec
 
 static inline void RCLASS_SET_INCLUDER(VALUE iclass, VALUE klass);
 static inline void RCLASS_SET_MAX_IV_COUNT(VALUE klass, attr_index_t count);
-static inline void RCLASS_SET_CLONED(VALUE klass, bool cloned);
 static inline void RCLASS_SET_CLASSPATH(VALUE klass, VALUE classpath, bool permanent);
 static inline void RCLASS_WRITE_CLASSPATH(VALUE klass, VALUE classpath, bool permanent);
 
@@ -748,12 +744,6 @@ static inline bool
 RCLASS_EXPECT_NO_IVAR(VALUE klass)
 {
     return RCLASS_EXT_PRIME(klass)->expect_no_ivar;
-}
-
-static inline void
-RCLASS_SET_CLONED(VALUE klass, bool cloned)
-{
-    RCLASSEXT_CLONED(RCLASS_EXT_PRIME(klass)) = cloned;
 }
 
 static inline bool
