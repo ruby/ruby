@@ -5544,3 +5544,30 @@ fn test_send_block_to_method_not_using_block() {
         test
     "), @"42");
 }
+
+#[test]
+fn test_send_block_unused_warning_emitted_from_jit() {
+    // When ZJIT compiles a send with a block as a dynamic dispatch fallback
+    // (gen_send -> rb_vm_send), warn_unused_block uses cfp->pc for the dedup
+    // key. We save cfp->pc before calling rb_vm_send so the key is stable
+    // and won't spuriously collide with prior entries in the dedup table.
+    assert_snapshot!(inspect(r#"
+        $warnings = []
+        module Warning
+          def warn(message, category: nil)
+            $warnings << message
+          end
+        end
+
+        def m_unused_block_warn_test = 42
+
+        def test
+          $VERBOSE = true
+          m_unused_block_warn_test {}
+          $warnings.any? { |w| w.include?("may be ignored") }
+        end
+
+        test
+        test
+    "#), @"true");
+}
