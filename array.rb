@@ -176,42 +176,6 @@ class Array
     end
   end
 
-  # call-seq:
-  #   fetch_values(*indexes) -> new_array
-  #   fetch_values(*indexes) { |index| ... } -> new_array
-  #
-  # With no block given, returns a new array containing the elements of +self+
-  # at the offsets specified by +indexes+. Each of the +indexes+ must be an
-  # {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects]:
-  #
-  #    a = [:foo, :bar, :baz]
-  #    a.fetch_values(2, 0)   # => [:baz, :foo]
-  #    a.fetch_values(2.1, 0) # => [:baz, :foo]
-  #    a.fetch_values         # => []
-  #
-  # For a negative index, counts backwards from the end of the array:
-  #
-  #    a.fetch_values(-2, -1) # [:bar, :baz]
-  #
-  # When no block is given, raises an exception if any index is out of range.
-  #
-  # With a block given, for each index:
-  #
-  # - If the index is in range, uses an element of +self+ (as above).
-  # - Otherwise, calls the block with the index and uses the block's return value.
-  #
-  # Example:
-  #
-  #   a = [:foo, :bar, :baz]
-  #   a.fetch_values(1, 0, 42, 777) { |index| index.to_s }
-  #   # => [:bar, :foo, "42", "777"]
-  #
-  # Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
-  def fetch_values(*indexes, &block)
-    indexes.map! { |i| fetch(i, &block) }
-    indexes
-  end
-
   with_jit do
     if Primitive.rb_builtin_basic_definition_p(:each)
       undef :each
