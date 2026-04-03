@@ -5254,6 +5254,7 @@ impl Function {
                     // type that is the same or narrower, the new guard is redundant.
                     // e.g. if we already proved val is Fixnum, a later Fixnum or
                     // BasicObject guard on the same val is guaranteed to pass.
+                    // TODO: Move into global value numbering
                     Insn::GuardType { val, guard_type, .. } => {
                         if let Some(&(_, _, prev_result)) = seen_guards.iter().find(
                             |&&(prev_val, prev_type, _)| prev_val == val && prev_type.is_subtype(guard_type)
