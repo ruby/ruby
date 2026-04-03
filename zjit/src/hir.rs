@@ -7,7 +7,7 @@
 #![allow(clippy::match_like_matches_macro)]
 use crate::{
     backend::lir::C_ARG_OPNDS,
-    cast::IntoUsize, codegen::{local_idx_to_ep_offset, max_iseq_versions}, cruby::*, invariants::{self}, payload::{get_or_create_iseq_payload, IseqPayload, IseqStatus}, options::{debug, get_option, DumpHIR}, state::ZJITState, json::Json,
+    cast::IntoUsize, codegen::{local_idx_to_ep_offset, max_iseq_versions}, cruby::*, invariants::{self}, payload::{get_or_create_iseq_payload, IseqPayload}, options::{debug, get_option, DumpHIR}, state::ZJITState, json::Json,
     state,
 };
 use std::{
@@ -2446,7 +2446,7 @@ impl CompilePolicy {
         } else {
             let payload = get_or_create_iseq_payload(iseq);
             payload.versions.iter().any(
-                |v| unsafe { v.as_ref() }.status == IseqStatus::Invalidated
+                |v| unsafe { v.as_ref() }.is_invalidated()
             ) && payload.versions.len() + 1 >= max_iseq_versions()
         };
         Self { no_side_exits }

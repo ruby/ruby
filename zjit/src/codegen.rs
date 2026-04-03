@@ -222,7 +222,7 @@ fn gen_iseq_entry_point(cb: &mut CodeBlock, iseq: IseqPtr, jit_exception: bool) 
 /// GC) so that all compile/recompile tuning decisions live in one place.
 pub fn invalidate_iseq_version(cb: &mut CodeBlock, iseq: IseqPtr, version: &mut IseqVersionRef) {
     let payload = get_or_create_iseq_payload(iseq);
-    if unsafe { version.as_ref() }.status != IseqStatus::Invalidated
+    if !unsafe { version.as_ref() }.is_invalidated()
         && payload.versions.len() < max_iseq_versions()
     {
         unsafe { version.as_mut() }.status = IseqStatus::Invalidated;
@@ -3055,7 +3055,7 @@ c_callable! {
             let iseq: IseqPtr = iseq_raw.as_iseq();
             let payload = get_or_create_iseq_payload(iseq);
             let already_done = payload.versions.last()
-                .map_or(false, |v| unsafe { v.as_ref() }.status == IseqStatus::Invalidated)
+                .map_or(false, |v| unsafe { v.as_ref() }.is_invalidated())
                 || payload.versions.len() >= max_iseq_versions();
             if already_done {
                 return;
