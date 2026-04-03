@@ -1206,10 +1206,13 @@ CVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(VALUE klass, ID id)
 static void
 cvar_read_ractor_check(VALUE klass, ID id, VALUE val)
 {
-    if (UNLIKELY(!rb_ractor_main_p()) && !rb_ractor_shareable_p(val)) {
-        rb_raise(rb_eRactorIsolationError,
-                 "can not read non-shareable class variable %"PRIsVALUE" from non-main Ractors (%"PRIsVALUE")",
-                 rb_id2str(id), klass);
+    if (UNLIKELY(!rb_ractor_main_p())) {
+        VALUE chain = Qnil;
+        if (!rb_ractor_shareable_p_continue(val, &chain)) {
+            rb_raise(rb_eRactorIsolationError,
+                    "can not read non-shareable class variable %"PRIsVALUE" from non-main Ractors (%"PRIsVALUE")%"PRIsVALUE,
+                    rb_id2str(id), klass, chain);
+        }
     }
 }
 

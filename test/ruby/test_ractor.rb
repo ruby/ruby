@@ -361,6 +361,22 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_error_for_class_variable
+    assert_ractor(<<~'RUBY')
+      module ModuleWithUnshareableClassVariable
+        def self.unshareable = @@unshareable
+        @@unshareable = Hash.new {}.freeze
+      end
+      e = Ractor.new do |mod|
+        ModuleWithUnshareableClassVariable.unshareable
+      rescue
+        $!
+      end.value
+      assert_kind_of Ractor::IsolationError, e
+      assert_match(/from Hash default proc/, e.detailed_message)
+    RUBY
+  end
+
   def test_error_for_module_constant
     assert_ractor(<<~'RUBY')
       module ModuleWithUnshareableConstant
