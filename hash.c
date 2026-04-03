@@ -1142,12 +1142,15 @@ ar_values(VALUE hash, st_data_t *values, st_index_t size)
 static ar_table*
 ar_copy(VALUE hash1, VALUE hash2)
 {
+    RUBY_ASSERT(rb_gc_obj_slot_size(hash1) >= sizeof(struct RHash) + sizeof(ar_table));
     ar_table *old_tab = RHASH_AR_TABLE(hash2);
     ar_table *new_tab = RHASH_AR_TABLE(hash1);
 
-    *new_tab = *old_tab;
+    unsigned int bound = RHASH_AR_TABLE_BOUND(hash2);
+    new_tab->ar_hint.word = old_tab->ar_hint.word;
+    MEMCPY(&new_tab->pairs, &old_tab->pairs, ar_table_pair, bound);
     RHASH_AR_TABLE(hash1)->ar_hint.word = RHASH_AR_TABLE(hash2)->ar_hint.word;
-    RHASH_AR_TABLE_BOUND_SET(hash1, RHASH_AR_TABLE_BOUND(hash2));
+    RHASH_AR_TABLE_BOUND_SET(hash1, bound);
     RHASH_AR_TABLE_SIZE_SET(hash1, RHASH_AR_TABLE_SIZE(hash2));
 
     rb_gc_writebarrier_remember(hash1);
@@ -1488,6 +1491,23 @@ VALUE
 rb_hash_new_capa(long capa)
 {
     return rb_hash_new_with_size((st_index_t)capa);
+}
+
+VALUE
+rb_hash_alloc_fixed_size(VALUE klass, st_index_t size)
+{
+    VALUE ret;
+    if (size > RHASH_AR_TABLE_MAX_SIZE) {
+        ret = hash_alloc_flags(klass, 0, Qnil, true);
+        hash_st_table_init(ret, &objhash, size);
+    }
+    else {
+        size_t slot_size = sizeof(struct RHash) + offsetof(ar_table, pairs) + size * sizeof(ar_table_pair);
+        ret = rb_wb_protected_newobj_of(GET_EC(), klass, T_HASH, 0, slot_size);
+    }
+
+    RHASH_SET_IFNONE(ret, Qnil);
+    return ret;
 }
 
 static VALUE
@@ -7475,7 +7495,7 @@ Init_Hash(void)
     rb_define_singleton_method(rb_cHash, "ruby2_keywords_hash?", rb_hash_s_ruby2_keywords_hash_p, 1);
     rb_define_singleton_method(rb_cHash, "ruby2_keywords_hash", rb_hash_s_ruby2_keywords_hash, 1);
 
-    rb_cHash_empty_frozen = rb_hash_freeze(rb_hash_new());
+    rb_cHash_empty_frozen = rb_hash_freeze(rb_hash_alloc_fixed_size(rb_cHash, 0));
     RB_OBJ_SET_SHAREABLE(rb_cHash_empty_frozen);
     rb_vm_register_global_object(rb_cHash_empty_frozen);
 

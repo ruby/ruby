@@ -876,11 +876,10 @@ pm_static_literal_value(rb_iseq_t *iseq, const pm_node_t *node, pm_scope_node_t 
             rb_ary_cat(array, pair, 2);
         }
 
-        VALUE value = rb_hash_new_with_size(elements->size);
+        VALUE value = rb_hash_alloc_fixed_size(Qfalse, elements->size);
         rb_hash_bulk_insert(RARRAY_LEN(array), RARRAY_CONST_PTR(array), value);
         RB_GC_GUARD(array);
 
-        value = rb_obj_hide(value);
         RB_OBJ_SET_FROZEN_SHAREABLE(value);
         return value;
       }
@@ -1560,10 +1559,9 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
                     }
                     index --;
 
-                    VALUE hash = rb_hash_new_with_size(RARRAY_LEN(ary) / 2);
+                    VALUE hash = rb_hash_alloc_fixed_size(Qfalse, RARRAY_LEN(ary) / 2);
                     rb_hash_bulk_insert(RARRAY_LEN(ary), RARRAY_CONST_PTR(ary), hash);
                     RB_GC_GUARD(ary);
-                    hash = rb_obj_hide(hash);
                     RB_OBJ_SET_FROZEN_SHAREABLE(hash);
 
                     // Emit optimized code.
@@ -5772,7 +5770,7 @@ pm_compile_shareable_constant_literal(rb_iseq_t *iseq, const pm_node_t *node, pm
       }
       case PM_HASH_NODE: {
         const pm_hash_node_t *cast = (const pm_hash_node_t *) node;
-        VALUE result = rb_hash_new_capa(cast->elements.size);
+        VALUE result = rb_hash_alloc_fixed_size(rb_cHash, cast->elements.size);
 
         for (size_t index = 0; index < cast->elements.size; index++) {
             const pm_node_t *element = cast->elements.nodes[index];
