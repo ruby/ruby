@@ -5255,14 +5255,9 @@ impl Function {
                     // e.g. if we already proved val is Fixnum, a later Fixnum or
                     // BasicObject guard on the same val is guaranteed to pass.
                     Insn::GuardType { val, guard_type, .. } => {
-                        let mut found = None;
-                        for &(prev_val, prev_type, prev_result) in &seen_guards {
-                            if prev_val == val && prev_type.is_subtype(guard_type) {
-                                found = Some(prev_result);
-                                break;
-                            }
-                        }
-                        if let Some(prev_result) = found {
+                        if let Some(&(_, _, prev_result)) = seen_guards.iter().find(
+                            |&&(prev_val, prev_type, _)| prev_val == val && prev_type.is_subtype(guard_type)
+                        ) {
                             self.make_equal_to(insn_id, prev_result);
                             continue;
                         }
