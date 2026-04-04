@@ -95,7 +95,7 @@ runs:
     # Launchable CLI requires Python and Java.
     # https://www.launchableinc.com/docs/resources/cli-reference/
     - name: Set up Python
-      uses: actions/setup-python@871daa956ca9ea99f3c3e30acb424b7960676734 # v5.0.0
+      uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
       with:
         python-version: "3.x"
       if: >-
@@ -103,7 +103,7 @@ runs:
         && !endsWith(inputs.os, 'ppc64le') && !endsWith(inputs.os, 's390x') }}
 
     - name: Set up Java
-      uses: actions/setup-java@7a445ee88d4e23b52c33fdc7601e40278616c7f8 # v4.0.0
+      uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.8.0
       with:
         distribution: 'temurin'
         java-version: '17'
@@ -112,7 +112,7 @@ runs:
         && !endsWith(inputs.os, 'ppc64le') && !endsWith(inputs.os, 's390x') }}
 
     - name: Set up Java ppc64le
-      uses: actions/setup-java@7a445ee88d4e23b52c33fdc7601e40278616c7f8 # v4.0.0
+      uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.8.0
       with:
         distribution: 'semeru'
         architecture: 'ppc64le'
@@ -122,7 +122,7 @@ runs:
         && endsWith(inputs.os, 'ppc64le') }}
 
     - name: Set up Java s390x
-      uses: actions/setup-java@7a445ee88d4e23b52c33fdc7601e40278616c7f8 # v4.0.0
+      uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.8.0
       with:
         distribution: 'semeru'
         architecture: 's390x'
@@ -270,7 +270,7 @@ runs:
         test_spec_report_dir: ${{ steps.global.outputs.test_spec_report_dir }}
 
     - name: Clean up test results in Launchable
-      uses: gacts/run-and-post-run@674528335da98a7afc80915ff2b4b860a0b3553a # v1.4.0
+      uses: gacts/run-and-post-run@81b6ce503cde93862cec047c54652e45c5dca991 # v1.4.3
       with:
         shell: bash
         working-directory: ${{ inputs.builddir }}
@@ -287,7 +287,7 @@ runs:
         test_spec_report_dir: ${{ steps.global.outputs.test_spec_report_dir }}
 
     - name: Record test results in Launchable
-      uses: gacts/run-and-post-run@674528335da98a7afc80915ff2b4b860a0b3553a # v1.4.0
+      uses: gacts/run-and-post-run@81b6ce503cde93862cec047c54652e45c5dca991 # v1.4.3
       with:
         shell: bash
         working-directory: ${{ inputs.builddir }}

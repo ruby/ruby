@@ -68,13 +68,21 @@ class TestStubSpecification < Gem::TestCase
   def test_contains_requirable_file_eh_extension
     stub_with_extension do |stub|
       _, err = capture_output do
-        refute stub.contains_requirable_file? "nonexistent"
+        if RUBY_ENGINE == "jruby"
+          refute stub.ignored?
+        else
+          refute stub.contains_requirable_file? "nonexistent"
+        end
       end
 
-      expected = "Ignoring stub_e-2 because its extensions are not built. " \
-                 "Try: gem pristine stub_e --version 2\n"
+      if RUBY_ENGINE == "jruby"
+        assert_equal "", err
+      else
+        expected = "Ignoring stub_e-2 because its extensions are not built. " \
+                   "Try: gem pristine stub_e --version 2\n"
 
-      assert_equal expected, err
+        assert_equal expected, err
+      end
     end
   end
 
@@ -137,7 +145,11 @@ class TestStubSpecification < Gem::TestCase
       end
     end
 
-    assert stub.missing_extensions?
+    if RUBY_ENGINE == "jruby"
+      refute stub.missing_extensions?
+    else
+      assert stub.missing_extensions?
+    end
 
     stub.build_extensions
 

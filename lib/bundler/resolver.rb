@@ -353,7 +353,25 @@ module Bundler
         message << "\n#{other_specs_matching_message(specs, matching_part)}"
       end
 
+      if specs_matching_requirement.any? && (hint = platform_mismatch_hint)
+        message << "\n\n#{hint}"
+      end
+
       raise GemNotFound, message
+    end
+
+    def platform_mismatch_hint
+      locked_platforms = Bundler.locked_gems&.platforms
+      return unless locked_platforms
+
+      local_platform = Bundler.local_platform
+      return if locked_platforms.include?(local_platform)
+      return if locked_platforms.any? {|p| p == Gem::Platform::RUBY }
+
+      "Your current platform (#{local_platform}) is not included in the lockfile's platforms (#{locked_platforms.join(", ")}). " \
+        "Add the current platform to the lockfile with\n`bundle lock --add-platform #{local_platform}` and try again."
+    rescue GemfileNotFound
+      nil
     end
 
     def filtered_versions_for(package)

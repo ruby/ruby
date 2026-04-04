@@ -1404,7 +1404,7 @@ RSpec.describe "bundle install with git sources" do
         File.open(git_reader.path.join("ext/foo.c"), "w") do |file|
           file.write <<-C
             #include "ruby.h"
-            VALUE foo() { return INT2FIX(#{i}); }
+            VALUE foo(VALUE self) { return INT2FIX(#{i}); }
             void Init_foo() { rb_define_global_function("foo", &foo, 0); }
           C
         end

@@ -557,12 +557,14 @@ pub struct SideExit {
     pub recompile: Option<SideExitRecompile>,
 }
 
-/// Arguments for the no-profile-send recompile callback.
+/// Arguments for the recompile callback on side exit.
+/// Used for both no-profile sends (argc >= 0) and shape guard failures (argc = -1).
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct SideExitRecompile {
     pub iseq: Opnd,
     pub insn_idx: u32,
-    /// Number of arguments, not including the receiver.
+    /// Number of arguments (not including receiver) for send profiling.
+    /// -1 means profile self from CFP for shape guard exits.
     pub argc: i32,
 }
 
@@ -2671,7 +2673,7 @@ impl Assembler
             if let Some(recompile) = &exit.recompile {
                 if cfg!(feature = "runtime_checks") {
                     // Clear jit_return to fully materialize the frame. This must happen
-                    // before any C call in the exit path (e.g. no_profile_send_recompile)
+                    // before any C call in the exit path (e.g. exit_recompile)
                     // because that C call can trigger GC, which walks the stack and would
                     // hit the CFP_JIT_RETURN assertion if jit_return still holds the
                     // runtime_checks poison value (JIT_RETURN_POISON).
@@ -2679,9 +2681,9 @@ impl Assembler
                     asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), 0.into());
                 }
 
-                use crate::codegen::no_profile_send_recompile;
-                asm_comment!(asm, "profile and maybe recompile for no-profile send");
-                asm_ccall!(asm, no_profile_send_recompile,
+                use crate::codegen::exit_recompile;
+                asm_comment!(asm, "profile and maybe recompile");
+                asm_ccall!(asm, exit_recompile,
                     EC,
                     recompile.iseq,
                     Opnd::UImm(recompile.insn_idx as u64),

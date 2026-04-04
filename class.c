@@ -743,7 +743,15 @@ class_associate_super(VALUE klass, VALUE super, bool init)
         // Include/prepend inserts ICLASSes into the super chain, but T_CLASS
         // subclass lists should track only the immutable T_CLASS→T_CLASS link.
         if (RB_TYPE_P(klass, T_CLASS) && RB_TYPE_P(super, T_CLASS)) {
-            class_switch_superclass(super, klass);
+            if (RCLASS_SINGLETON_P(klass)) {
+                // Instead of adding singleton classes to the subclass list,
+                // just set a flag so that method cache invalidation takes the
+                // tree path.
+                FL_SET_RAW(super, RCLASS_HAS_SUBCLASSES);
+            }
+            else {
+                class_switch_superclass(super, klass);
+            }
         }
     }
     if (init) {
@@ -1328,9 +1336,14 @@ static inline VALUE
 make_singleton_class(VALUE obj)
 {
     VALUE orig_class = METACLASS_OF(obj);
-    VALUE klass = class_boot_boxable(orig_class, FL_TEST_RAW(orig_class, RCLASS_BOXABLE));
-
+    VALUE klass = class_alloc0(T_CLASS, rb_cClass, FL_TEST_RAW(orig_class, RCLASS_BOXABLE));
     FL_SET(klass, FL_SINGLETON);
+    class_initialize_method_table(klass);
+    class_associate_super(klass, orig_class, true);
+    if (orig_class && !UNDEF_P(orig_class)) {
+        rb_class_set_initialized(klass);
+    }
+
     RBASIC_SET_CLASS(obj, klass);
     rb_singleton_class_attached(klass, obj);
     rb_yjit_invalidate_no_singleton_class(orig_class);

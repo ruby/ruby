@@ -226,7 +226,6 @@ make_counters! {
         exit_obj_to_string_fallback,
         exit_interrupt,
         exit_stackoverflow,
-        exit_block_param_proxy_modified,
         exit_block_param_proxy_not_iseq_or_ifunc,
         exit_block_param_proxy_not_nil,
         exit_block_param_wb_required,
@@ -425,6 +424,8 @@ make_counters! {
     complex_arg_pass_param_kwrest,
     complex_arg_pass_param_block,
     complex_arg_pass_param_forwardable,
+    complex_arg_pass_accepts_no_block,
+    complex_arg_pass_does_not_use_block,
 
     // Unsupported caller side features
     complex_arg_pass_caller_splat,
@@ -608,7 +609,6 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         ObjToStringFallback           => exit_obj_to_string_fallback,
         Interrupt                     => exit_interrupt,
         StackOverflow                 => exit_stackoverflow,
-        BlockParamProxyModified       => exit_block_param_proxy_modified,
         BlockParamProxyNotIseqOrIfunc => exit_block_param_proxy_not_iseq_or_ifunc,
         BlockParamProxyNotNil         => exit_block_param_proxy_not_nil,
         BlockParamWbRequired          => exit_block_param_wb_required,

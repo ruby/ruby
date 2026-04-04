@@ -136,8 +136,93 @@ module Prism
       end
     end
 
-    UNSUPPORTED_EVENTS = %i[comma ignored_nl kw label_end lbrace lbracket lparen nl op rbrace rbracket rparen semicolon sp words_sep ignored_sp]
+    # Events that are currently not emitted
+    UNSUPPORTED_EVENTS = %i[comma ignored_nl label_end lbrace lbracket lparen nl op rbrace rbracket rparen semicolon sp words_sep ignored_sp]
     SUPPORTED_EVENTS = Translation::Ripper::EVENTS - UNSUPPORTED_EVENTS
+    # Events that assert against their line/column
+    CHECK_LOCATION_EVENTS = %i[kw]
+    IGNORE_FOR_SORT_EVENTS = %i[
+      stmts_new stmts_add bodystmt void_stmt
+      args_new args_add args_add_star args_add_block arg_paren method_add_arg
+      mlhs_new mlhs_add_star
+      word_new words_new symbols_new qwords_new qsymbols_new xstring_new regexp_new
+      words_add symbols_add qwords_add qsymbols_add
+      regexp_end tstring_end heredoc_end
+      call command fcall vcall
+      field aref_field var_field var_ref block_var ident params
+      string_content heredoc_dedent unary binary dyna_symbol
+      comment magic_comment embdoc embdoc_beg embdoc_end arg_ambiguous
+    ]
+    SORT_IGNORE = {
+      aref: [
+        "blocks.txt",
+        "command_method_call.txt",
+        "whitequark/ruby_bug_13547.txt",
+      ],
+      assoc_new: [
+        "case_in_hash_key.txt",
+        "whitequark/parser_bug_525.txt",
+        "whitequark/ruby_bug_11380.txt",
+      ],
+      bare_assoc_hash: [
+        "case_in_hash_key.txt",
+        "method_calls.txt",
+        "whitequark/parser_bug_525.txt",
+        "whitequark/ruby_bug_11380.txt",
+      ],
+      brace_block: [
+        "super.txt",
+        "unparser/corpus/literal/super.txt"
+      ],
+      command_call: [
+        "blocks.txt",
+        "case_in_hash_key.txt",
+        "seattlerb/block_call_dot_op2_cmd_args_do_block.txt",
+        "seattlerb/block_call_operation_colon.txt",
+        "seattlerb/block_call_operation_dot.txt",
+      ],
+      const_path_field: [
+        "seattlerb/const_2_op_asgn_or2.txt",
+        "seattlerb/const_op_asgn_or.txt",
+        "whitequark/const_op_asgn.txt",
+      ],
+      const_path_ref: ["unparser/corpus/literal/defs.txt"],
+      do_block: ["whitequark/super_block.txt"],
+      embexpr_end: ["seattlerb/str_interp_ternary_or_label.txt"],
+      rest_param: ["whitequark/send_lambda.txt"],
+      top_const_field: [
+        "seattlerb/const_3_op_asgn_or.txt",
+        "seattlerb/const_op_asgn_and1.txt",
+        "seattlerb/const_op_asgn_and2.txt",
+        "whitequark/const_op_asgn.txt",
+      ],
+      mlhs_paren: ["unparser/corpus/literal/for.txt"],
+      mlhs_add: [
+        "whitequark/for_mlhs.txt",
+      ],
+      kw: [
+        "defined.txt",
+        "for.txt",
+        "seattlerb/block_kw__required.txt",
+        "seattlerb/case_in_42.txt",
+        "seattlerb/case_in_67.txt",
+        "seattlerb/case_in_86_2.txt",
+        "seattlerb/case_in_86.txt",
+        "seattlerb/case_in_hash_pat_paren_true.txt",
+        "seattlerb/flip2_env_lvar.txt",
+        "unless.txt",
+        "unparser/corpus/semantic/and.txt",
+        "whitequark/class.txt",
+        "whitequark/find_pattern.txt",
+        "whitequark/pattern_matching_hash.txt",
+        "whitequark/pattern_matching_implicit_array_match.txt",
+        "whitequark/pattern_matching_ranges.txt",
+        "whitequark/super_block.txt",
+        "write_command_operator.txt",
+      ],
+    }
+    SORT_IGNORE.default = []
+    SORT_EVENTS = SUPPORTED_EVENTS - IGNORE_FOR_SORT_EVENTS
 
     module Events
       attr_reader :events
@@ -147,9 +232,20 @@ module Prism
         @events = []
       end
 
+      def sorted_events
+        @events.select do |e,|
+          next false if e == :kw && @events.any? { |e,| e == :if_mod || e == :while_mod || e == :until_mod || e == :rescue || e == :rescue_mod || e == :while || e == :ensure }
+          SORT_EVENTS.include?(e) && !SORT_IGNORE[e].include?(filename)
+        end
+      end
+
       SUPPORTED_EVENTS.each do |event|
         define_method(:"on_#{event}") do |*args|
-          @events << [event, *args.map(&:to_s)]
+          if CHECK_LOCATION_EVENTS.include?(event)
+            @events << [event, lineno, column, *args.map(&:to_s)]
+          else
+            @events << [event, *args.map(&:to_s)]
+          end
           super(*args)
         end
       end
@@ -177,12 +273,14 @@ module Prism
         object_events = ObjectEvents.new(source)
         assert_nothing_raised { object_events.parse }
 
-        ripper = RipperEvents.new(source)
-        prism = PrismEvents.new(source)
+        ripper = RipperEvents.new(source, fixture.path)
+        prism = PrismEvents.new(source, fixture.path)
         ripper.parse
         prism.parse
-        # This makes sure that the content is the same. Ordering is not correct for now.
+        # Check that the same events are emitted, regardless of order
         assert_equal(ripper.events.sort, prism.events.sort)
+        # Check a subset of events against the correct order
+        assert_equal(ripper.sorted_events, prism.sorted_events)
       end
     end
 

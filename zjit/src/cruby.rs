@@ -604,6 +604,7 @@ impl VALUE {
         unsafe { rb_jit_class_fields_embedded_p(self) }
     }
 
+    /// Typed `T_DATA` made from `TypedData_Make_Struct()` (e.g. Thread, ARGF)
     pub fn typed_data_p(self) -> bool {
         !self.special_const_p() &&
             self.builtin_type() == RUBY_T_DATA &&
@@ -735,6 +736,24 @@ impl IseqAccess for IseqPtr {
     unsafe fn params<'a>(self) -> &'a IseqParameters {
         use crate::cast::IntoUsize;
         unsafe { &*((*self).body.byte_add(ISEQ_BODY_OFFSET_PARAM.to_usize()) as *const IseqParameters) }
+    }
+}
+
+impl IseqParameters {
+    /// The `opt_table` is a mapping where `opt_table[number_of_optional_parameters_filled]`
+    /// gives the YARV entry point of ISeq as an index of the iseq_encoded array.
+    /// This method gives over the table that additionally works when `opt_num==0`,
+    /// when the table is stored as `NULL` and implicit.
+    /// The table stores the indexes as raw VALUE integers; they are not tagged as fixnum.
+    pub fn opt_table_slice(&self) -> &[VALUE] {
+        let opt_num: usize = self.opt_num.try_into().expect("ISeq opt_num should always >=0");
+        if opt_num > 0 {
+            // The table has size=opt_num+1 because opt_table[opt_num] is valid (all optionals filled)
+            unsafe { std::slice::from_raw_parts(self.opt_table, opt_num + 1) }
+        } else {
+            // The ISeq entry point is index 0 when there are no optional parameters
+            &[VALUE(0)]
+        }
     }
 }
 
@@ -1209,13 +1228,13 @@ pub mod test_utils {
         // "Fun" double pointer dance to get a thin function pointer to pass through C
         unsafe extern "C" fn callback_wrapper(data: VALUE) -> VALUE {
             // SAFETY: shorter lifetime than the data local in the caller frame
-            let callback: &mut &mut dyn FnMut() = unsafe { std::mem::transmute(data) };
-            callback();
+            let callback: *mut &mut dyn FnMut() = std::ptr::with_exposed_provenance_mut(data.0);
+            unsafe { (*callback)() };
             Qnil
         }
 
         let mut state: c_int = 0;
-        unsafe { super::rb_protect(Some(callback_wrapper), VALUE((&mut data) as *mut _ as usize), &mut state) };
+        unsafe { super::rb_protect(Some(callback_wrapper), VALUE((&raw mut data).expose_provenance()), &mut state) };
         if state != 0 {
             unsafe { rb_zjit_print_exception(); }
             assert_eq!(0, state, "Exceptional unwind in callback. Ruby exception?");

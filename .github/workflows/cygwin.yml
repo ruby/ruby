@@ -45,7 +45,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup Cygwin
-        uses: cygwin/cygwin-install-action@master
+        uses: cygwin/cygwin-install-action@711d29f3da23c9f4a1798e369a6f01198c13b11a # v6.1
         with:
           packages: ruby gcc-core make autoconf libtool libssl-devel libyaml-devel libffi-devel zlib-devel rubygems
           site: |

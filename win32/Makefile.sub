@@ -362,6 +362,7 @@ LIBRUBY_LDSHARED = $(LDSHARED)
 LIBRUBY_DLDFLAGS = $(EXTLDFLAGS) -implib:dummy.lib -def:$(RUBYDEF)
 
 EXEEXT = .exe
+BUILD_EXEEXT = $(EXEEXT)
 EXECUTABLE_EXTS = ".exe",".com",".cmd",".bat"
 !if !defined(PROGRAM)
 PROGRAM=$(RUBY_INSTALL_NAME)$(EXEEXT)
@@ -561,7 +562,7 @@ ABI_VERSION_HDR = $(hdrdir)/ruby/internal/abi.h
 !if defined(DUMP_AST)
 DUMP_AST_TARGET = $(empty)
 !else
-DUMP_AST = dump_ast$(EXEEXT)
+DUMP_AST = dump_ast$(BUILD_EXEEXT)
 DUMP_AST_TARGET = $(DUMP_AST)
 !endif
 
@@ -1414,7 +1415,7 @@ loadpath: verconf.h
 	@for %J in (\
 "%~nI.rbinc: %I $$(tooldir)/mk_builtin_loader.rb $$(DUMP_AST_TARGET)" \
 "	$$(ECHO) making $$@" \
-"	$(Q) $(BASERUBY) $(tooldir)/mk_builtin_loader.rb $(DUMP_AST) %I" \
+"	$$(Q) $$(BASERUBY) $$(tooldir)/mk_builtin_loader.rb $$(DUMP_AST) %I" \
 "" \
 ) do @echo.%~J>>rbincs.mk]
 !else

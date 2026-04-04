@@ -49,7 +49,7 @@ jobs:
     needs: compile-if
     if: ${{ needs.compile-if.result == 'success' }}
     timeout-minutes: 60
-    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
@@ -72,7 +72,7 @@ jobs:
     needs: compile-if
     if: ${{ needs.compile-if.result == 'success' }}
     timeout-minutes: 60
-    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
@@ -93,8 +93,6 @@ jobs:
       - { uses: './.github/actions/compilers', name: 'GCC 11', with: { tag: 'gcc-11' }, timeout-minutes: 5 }
       - { uses: './.github/actions/compilers', name: 'GCC 10', with: { tag: 'gcc-10' }, timeout-minutes: 5 }
       - { uses: './.github/actions/compilers', name: 'GCC 9',  with: { tag: 'gcc-9'  }, timeout-minutes: 5 }
-      - { uses: './.github/actions/compilers', name: 'GCC 8',  with: { tag: 'gcc-8'  }, timeout-minutes: 5 }
-      - { uses: './.github/actions/compilers', name: 'GCC 7',  with: { tag: 'gcc-7'  }, timeout-minutes: 5 }
 
   compile3:
     name: 'omnibus compilations, #3'
@@ -102,14 +100,11 @@ jobs:
     needs: compile-if
     if: ${{ needs.compile-if.result == 'success' }}
     timeout-minutes: 60
-    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
       - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
-      - { uses: './.github/actions/compilers', name: 'clang 23', with: { tag: 'clang-23' }, timeout-minutes: 5 }
-      - { uses: './.github/actions/compilers', name: 'clang 22', with: { tag: 'clang-22' }, timeout-minutes: 5 }
-      - { uses: './.github/actions/compilers', name: 'clang 21', with: { tag: 'clang-21' }, timeout-minutes: 5 }
       - { uses: './.github/actions/compilers', name: 'clang 20', with: { tag: 'clang-20' }, timeout-minutes: 5 }
       - { uses: './.github/actions/compilers', name: 'clang 19', with: { tag: 'clang-19' }, timeout-minutes: 5 }
       - { uses: './.github/actions/compilers', name: 'clang 18', with: { tag: 'clang-18' }, timeout-minutes: 5 }
@@ -124,7 +119,7 @@ jobs:
     needs: compile-if
     if: ${{ needs.compile-if.result == 'success' }}
     timeout-minutes: 60
-    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
@@ -145,7 +140,7 @@ jobs:
     needs: compile-if
     if: ${{ needs.compile-if.result == 'success' }}
     timeout-minutes: 60
-    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
@@ -171,7 +166,7 @@ jobs:
     needs: compile-if
     if: ${{ needs.compile-if.result == 'success' }}
     timeout-minutes: 60
-    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
@@ -191,7 +186,7 @@ jobs:
     needs: compile-if
     if: ${{ needs.compile-if.result == 'success' }}
     timeout-minutes: 60
-    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
@@ -204,8 +199,6 @@ jobs:
       - { uses: './.github/actions/compilers', name: 'disable-rubygems',    with: { append_configure: '--disable-rubygems' }, timeout-minutes: 5 }
       - { uses: './.github/actions/compilers', name: 'RUBY_DEVEL',          with: { append_configure: '--enable-devel' }, timeout-minutes: 5 }
       - { uses: './.github/actions/compilers', name: 'OPT_THREADED_CODE=0',            with: { cppflags: '-DOPT_THREADED_CODE=0' }, timeout-minutes: 5 }
-      - { uses: './.github/actions/compilers', name: 'OPT_THREADED_CODE=1',            with: { cppflags: '-DOPT_THREADED_CODE=1' }, timeout-minutes: 5 }
-      - { uses: './.github/actions/compilers', name: 'OPT_THREADED_CODE=2',            with: { cppflags: '-DOPT_THREADED_CODE=2' }, timeout-minutes: 5 }
 
   compile8:
     name: 'omnibus compilations, #8'
@@ -213,7 +206,7 @@ jobs:
     needs: compile-if
     if: ${{ needs.compile-if.result == 'success' }}
     timeout-minutes: 60
-    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
@@ -232,7 +225,7 @@ jobs:
     needs: compile-if
     if: ${{ needs.compile-if.result == 'success' }}
     timeout-minutes: 60
-    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
@@ -252,7 +245,7 @@ jobs:
     needs: compile-if
     if: ${{ needs.compile-if.result == 'success' }}
     timeout-minutes: 60
-    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
@@ -263,6 +256,9 @@ jobs:
       - { uses: './.github/actions/compilers', name: 'SHARABLE_MIDDLE_SUBSTRING',      with: { cppflags: '-DSHARABLE_MIDDLE_SUBSTRING=1' }, timeout-minutes: 5 }
       - { uses: './.github/actions/compilers', name: 'DEBUG_FIND_TIME_NUMGUESS',       with: { cppflags: '-DDEBUG_FIND_TIME_NUMGUESS' }, timeout-minutes: 5 }
       - { uses: './.github/actions/compilers', name: 'DEBUG_INTEGER_PACK',             with: { cppflags: '-DDEBUG_INTEGER_PACK' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'OPT_THREADED_CODE=1',            with: { cppflags: '-DOPT_THREADED_CODE=1' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'OPT_THREADED_CODE=2',            with: { cppflags: '-DOPT_THREADED_CODE=2' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'clang 21', with: { tag: 'clang-21' }, timeout-minutes: 5 }
 
   compileB:
     name: 'omnibus compilations, #11'
@@ -270,7 +266,7 @@ jobs:
     needs: compile-if
     if: ${{ needs.compile-if.result == 'success' }}
     timeout-minutes: 60
-    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
@@ -289,7 +285,7 @@ jobs:
     needs: compile-if
     if: ${{ needs.compile-if.result == 'success' }}
     timeout-minutes: 60
-    services: { docuum: { image: 'stephanmisc/docuum', options: '--init', volumes: [ '/root', '/var/run/docker.sock:/var/run/docker.sock' ] } }
+
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
@@ -298,6 +294,10 @@ jobs:
       - { uses: './.github/actions/compilers', name: 'VM_DEBUG_VERIFY_METHOD_CACHE',   with: { cppflags: '-DVM_DEBUG_VERIFY_METHOD_CACHE' }, timeout-minutes: 5 }
       - { uses: './.github/actions/compilers', name: 'YJIT_FORCE_ENABLE',              with: { cppflags: '-DYJIT_FORCE_ENABLE' }, timeout-minutes: 5 }
       - { uses: './.github/actions/compilers', name: 'UNIVERSAL_PARSER',               with: { cppflags: '-DUNIVERSAL_PARSER' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'clang 23', with: { tag: 'clang-23' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'clang 22', with: { tag: 'clang-22' }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'GCC 8',  with: { tag: 'gcc-8'  }, timeout-minutes: 5 }
+      - { uses: './.github/actions/compilers', name: 'GCC 7',  with: { tag: 'gcc-7'  }, timeout-minutes: 5 }
 
   compilemax:
     name: 'omnibus compilations, result'

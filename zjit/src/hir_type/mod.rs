@@ -1,6 +1,7 @@
 //! High-level intermediate representation types.
 
 #![allow(non_upper_case_globals)]
+use crate::cruby;
 use crate::cruby::{rb_block_param_proxy, Qfalse, Qnil, Qtrue, RUBY_T_ARRAY, RUBY_T_CLASS, RUBY_T_HASH, RUBY_T_MODULE, RUBY_T_STRING, VALUE};
 use crate::cruby::{rb_cInteger, rb_cFloat, rb_cArray, rb_cHash, rb_cString, rb_cSymbol, rb_cRange, rb_cModule, rb_zjit_singleton_class_p};
 use crate::cruby::ClassRelationship;
@@ -213,6 +214,7 @@ impl Type {
             else if val.class_of() == unsafe { rb_cSymbol } { bits::DynamicSymbol }
             else if let Some(bits) = Self::bits_from_exact_class(val.class_of()) { bits }
             else if let Some(bits) = Self::bits_from_subclass(val.class_of()) { bits }
+            else if val.typed_data_p() { bits::TypedTData }
             else {
                 unreachable!("Class {} is not a subclass of BasicObject! Don't know what to do.",
                              get_class_name(val.class_of()))
@@ -427,6 +429,24 @@ impl Type {
     /// Return true if the Type has object specialization and false otherwise.
     pub fn ruby_object_known(&self) -> bool {
         matches!(self.spec, Specialization::Object(_))
+    }
+
+    /// Find a `T_*` type that is exactly as wide as `self`.
+    pub fn builtin_type_equivalent(&self) -> Option<cruby::ruby_value_type> {
+        if self.bit_equal(types::Array) {
+            Some(cruby::RUBY_T_ARRAY)
+        } else if self.bit_equal(types::Class) {
+            Some(cruby::RUBY_T_CLASS)
+        } else if self.bit_equal(types::Module) {
+            Some(cruby::RUBY_T_MODULE)
+        } else if self.bit_equal(types::String) {
+            Some(cruby::RUBY_T_STRING)
+        } else if self.bit_equal(types::Hash) {
+            Some(cruby::RUBY_T_HASH)
+        } else {
+            // Note that types::TypedTData is narrower than T_DATA, so not here.
+            None
+        }
     }
 
     fn is_builtin(class: VALUE) -> bool {

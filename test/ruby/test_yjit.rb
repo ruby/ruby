@@ -547,7 +547,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_opt_getconstant_path_slowpath
-    assert_compiles(<<~RUBY, exits: { opt_getconstant_path: 1 }, result: [42, 42, 1, 1], call_threshold: 2)
+    assert_compiles(<<~RUBY, result: [42, 42, 1, 1], call_threshold: 2)
       class A
         FOO = 42
         class << self

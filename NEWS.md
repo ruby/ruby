@@ -130,6 +130,18 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
   and in some case memory usage.
   See the C extension documentation for details. [[Feature #21853]]
 
+* Added new C23 inspired allocator functions, that takes the previous memory size.
+  This allow the Ruby GC to better keep track of memory usage, improving its heuristics.
+  It also improves the performance of system allocators that support C23 `free_sized`.
+
+  However, it is important to note that passing an incorrect size to these function is undefined
+  behavior and may result in crashes or memory leaks.
+
+  - `ruby_xfree_sized(void *ptr, size_t size)`
+  - `ruby_xrealloc_sized(void *ptr, size_t newsiz, size_t oldsiz)`
+  - `ruby_xrealloc2_sized(void *ptr, size_t newelems, size_t newsiz, size_t oldelems)`
+
+  [[Feature #21861]]
 
 ## Implementation improvements
 
@@ -144,6 +156,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #21390]: https://bugs.ruby-lang.org/issues/21390
 [Feature #21785]: https://bugs.ruby-lang.org/issues/21785
 [Feature #21853]: https://bugs.ruby-lang.org/issues/21853
+[Feature #21861]: https://bugs.ruby-lang.org/issues/21861
 [Feature #21932]: https://bugs.ruby-lang.org/issues/21932
 [test-unit-3.7.4]: https://github.com/test-unit/test-unit/releases/tag/3.7.4
 [test-unit-3.7.5]: https://github.com/test-unit/test-unit/releases/tag/3.7.5

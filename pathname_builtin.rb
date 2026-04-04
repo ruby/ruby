@@ -1,76 +1,96 @@
 # frozen_string_literal: true
 #
-# = pathname.rb
+# A \Pathname object contains a string directory path or filepath;
+# it does not represent a corresponding actual file or directory
+# -- which in fact may or may not exist.
 #
-# Object-Oriented Pathname Class
+# A \Pathname object is immutable (except for method #freeze).
 #
-# Author:: Tanaka Akira <akr@m17n.org>
-# Documentation:: Author and Gavin Sinclair
+# A pathname may be relative or absolute:
 #
-# For documentation, see class Pathname.
+#   Pathname.new('lib')            # => #<Pathname:lib>
+#   Pathname.new('/usr/local/bin') # => #<Pathname:/usr/local/bin>
 #
-
+# == Convenience Methods
 #
-# Pathname represents the name of a file or directory on the filesystem,
-# but not the file itself.
+# The class provides *all* functionality from class File and module FileTest,
+# along with some functionality from class Dir and module FileUtils.
 #
-# The pathname depends on the Operating System: Unix, Windows, etc.
-# This library works with pathnames of local OS, however non-Unix pathnames
-# are supported experimentally.
+# Here's an example string path and corresponding \Pathname object:
 #
-# A Pathname can be relative or absolute.  It's not until you try to
-# reference the file that it even matters whether the file exists or not.
+#   path = 'lib/fileutils.rb'
+#   pn = Pathname.new(path) # => #<Pathname:lib/fileutils.rb>
 #
-# Pathname is immutable.  It has no method for destructive update.
+# Each of these method pairs (\Pathname vs. \File) gives exactly the same result:
 #
-# The goal of this class is to manipulate file path information in a neater
-# way than standard Ruby provides.  The examples below demonstrate the
-# difference.
+#   pn.size               # => 83777
+#   File.size(path)       # => 83777
 #
-# *All* functionality from File, FileTest, and some from Dir and FileUtils is
-# included, in an unsurprising way.  It is essentially a facade for all of
-# these, and more.
+#   pn.directory?         # => false
+#   File.directory?(path) # => false
 #
-# == Examples
+#   pn.read.size          # => 81074
+#   File.read(path).size# # => 81074
 #
-# === Example 1: Using Pathname
+# Each of these method pairs gives similar results,
+# but each \Pathname method returns a more versatile \Pathname object,
+# instead of a string:
 #
-#   require 'pathname'
-#   pn = Pathname.new("/usr/bin/ruby")
-#   size = pn.size              # 27662
-#   isdir = pn.directory?       # false
-#   dir  = pn.dirname           # Pathname:/usr/bin
-#   base = pn.basename          # Pathname:ruby
-#   dir, base = pn.split        # [Pathname:/usr/bin, Pathname:ruby]
-#   data = pn.read
-#   pn.open { |f| _ }
-#   pn.each_line { |line| _ }
+#   pn.dirname          # => #<Pathname:lib>
+#   File.dirname(path)  # => "lib"
 #
-# === Example 2: Using standard Ruby
+#   pn.basename         # => #<Pathname:fileutils.rb>
+#   File.basename(path) # => "fileutils.rb"
 #
-#   pn = "/usr/bin/ruby"
-#   size = File.size(pn)        # 27662
-#   isdir = File.directory?(pn) # false
-#   dir  = File.dirname(pn)     # "/usr/bin"
-#   base = File.basename(pn)    # "ruby"
-#   dir, base = File.split(pn)  # ["/usr/bin", "ruby"]
-#   data = File.read(pn)
-#   File.open(pn) { |f| _ }
-#   File.foreach(pn) { |line| _ }
+#   pn.split            # => [#<Pathname:lib>, #<Pathname:fileutils.rb>]
+#   File.split(path)    # => ["lib", "fileutils.rb"]
 #
-# === Example 3: Special features
+# Each of these methods takes a block:
 #
-#   p1 = Pathname.new("/usr/lib")   # Pathname:/usr/lib
-#   p2 = p1 + "ruby/1.8"            # Pathname:/usr/lib/ruby/1.8
-#   p3 = p1.parent                  # Pathname:/usr
-#   p4 = p2.relative_path_from(p3)  # Pathname:lib/ruby/1.8
-#   pwd = Pathname.pwd              # Pathname:/home/gavin
-#   pwd.absolute?                   # true
-#   p5 = Pathname.new "."           # Pathname:.
-#   p5 = p5 + "music/../articles"   # Pathname:music/../articles
-#   p5.cleanpath                    # Pathname:articles
-#   p5.realpath                     # Pathname:/home/gavin/articles
-#   p5.children                     # [Pathname:/home/gavin/articles/linux, ...]
+#   pn.open do |file|
+#     p file
+#   end
+#   File.open(path) do |file|
+#     p file
+#   end
+#
+# The outputs for each:
+#
+#   #<File:lib/fileutils.rb (closed)>
+#   #<File:lib/fileutils.rb (closed)>
+#
+# Each of these methods takes a block:
+#
+#   pn.each_line do |line|
+#     p line
+#     break
+#   end
+#   File.foreach(path) do |line|
+#     p line
+#     break
+#   end
+#
+# The outputs for each:
+#
+#   "# frozen_string_literal: true\n"
+#   "# frozen_string_literal: true\n"
+#
+# == More Methods
+#
+# Here is a sampling of other available methods:
+#
+#   p1 = Pathname.new('/usr/lib')  # => #<Pathname:/usr/lib>
+#   p1.absolute?                   # => true
+#   p2 = p1 + 'ruby/4.0'           # => #<Pathname:/usr/lib/ruby/4.0>
+#   p3 = p1.parent                 # => #<Pathname:/usr>
+#   p4 = p2.relative_path_from(p3) # => #<Pathname:lib/ruby/4.0>
+#   p4.absolute?                   # => false
+#   p5 = Pathname.new('.')         # => #<Pathname:.>
+#   p6 = p5 + 'usr/../var'         # => #<Pathname:usr/../var>
+#   p6.cleanpath                   # => #<Pathname:var>
+#   p6.realpath                    # => #<Pathname:/var>
+#   p6.children.take(2)
+#   # => [#<Pathname:usr/../var/local>, #<Pathname:usr/../var/spool>]
 #
 # == Breakdown of functionality
 #
