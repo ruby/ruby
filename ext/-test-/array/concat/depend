@@ -106,6 +106,7 @@ to_ary_concat.o: $(hdrdir)/ruby/internal/intern/class.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/intern/compar.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/intern/complex.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/intern/cont.h
+to_ary_concat.o: $(hdrdir)/ruby/internal/intern/decimal.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/intern/dir.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/intern/enum.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/intern/enumerator.h

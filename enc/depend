@@ -295,6 +295,7 @@ enc/ascii.$(OBJEXT): internal/intern/class.h
 enc/ascii.$(OBJEXT): internal/intern/compar.h
 enc/ascii.$(OBJEXT): internal/intern/complex.h
 enc/ascii.$(OBJEXT): internal/intern/cont.h
+enc/ascii.$(OBJEXT): internal/intern/decimal.h
 enc/ascii.$(OBJEXT): internal/intern/dir.h
 enc/ascii.$(OBJEXT): internal/intern/enum.h
 enc/ascii.$(OBJEXT): internal/intern/enumerator.h
@@ -458,6 +459,7 @@ enc/big5.$(OBJEXT): internal/intern/class.h
 enc/big5.$(OBJEXT): internal/intern/compar.h
 enc/big5.$(OBJEXT): internal/intern/complex.h
 enc/big5.$(OBJEXT): internal/intern/cont.h
+enc/big5.$(OBJEXT): internal/intern/decimal.h
 enc/big5.$(OBJEXT): internal/intern/dir.h
 enc/big5.$(OBJEXT): internal/intern/enum.h
 enc/big5.$(OBJEXT): internal/intern/enumerator.h
@@ -631,6 +633,7 @@ enc/cesu_8.$(OBJEXT): internal/intern/class.h
 enc/cesu_8.$(OBJEXT): internal/intern/compar.h
 enc/cesu_8.$(OBJEXT): internal/intern/complex.h
 enc/cesu_8.$(OBJEXT): internal/intern/cont.h
+enc/cesu_8.$(OBJEXT): internal/intern/decimal.h
 enc/cesu_8.$(OBJEXT): internal/intern/dir.h
 enc/cesu_8.$(OBJEXT): internal/intern/enum.h
 enc/cesu_8.$(OBJEXT): internal/intern/enumerator.h
@@ -794,6 +797,7 @@ enc/cp949.$(OBJEXT): internal/intern/class.h
 enc/cp949.$(OBJEXT): internal/intern/compar.h
 enc/cp949.$(OBJEXT): internal/intern/complex.h
 enc/cp949.$(OBJEXT): internal/intern/cont.h
+enc/cp949.$(OBJEXT): internal/intern/decimal.h
 enc/cp949.$(OBJEXT): internal/intern/dir.h
 enc/cp949.$(OBJEXT): internal/intern/enum.h
 enc/cp949.$(OBJEXT): internal/intern/enumerator.h
@@ -956,6 +960,7 @@ enc/emacs_mule.$(OBJEXT): internal/intern/class.h
 enc/emacs_mule.$(OBJEXT): internal/intern/compar.h
 enc/emacs_mule.$(OBJEXT): internal/intern/complex.h
 enc/emacs_mule.$(OBJEXT): internal/intern/cont.h
+enc/emacs_mule.$(OBJEXT): internal/intern/decimal.h
 enc/emacs_mule.$(OBJEXT): internal/intern/dir.h
 enc/emacs_mule.$(OBJEXT): internal/intern/enum.h
 enc/emacs_mule.$(OBJEXT): internal/intern/enumerator.h
@@ -1128,6 +1133,7 @@ enc/encdb.$(OBJEXT): internal/intern/class.h
 enc/encdb.$(OBJEXT): internal/intern/compar.h
 enc/encdb.$(OBJEXT): internal/intern/complex.h
 enc/encdb.$(OBJEXT): internal/intern/cont.h
+enc/encdb.$(OBJEXT): internal/intern/decimal.h
 enc/encdb.$(OBJEXT): internal/intern/dir.h
 enc/encdb.$(OBJEXT): internal/intern/enum.h
 enc/encdb.$(OBJEXT): internal/intern/enumerator.h
@@ -1293,6 +1299,7 @@ enc/euc_jp.$(OBJEXT): internal/intern/class.h
 enc/euc_jp.$(OBJEXT): internal/intern/compar.h
 enc/euc_jp.$(OBJEXT): internal/intern/complex.h
 enc/euc_jp.$(OBJEXT): internal/intern/cont.h
+enc/euc_jp.$(OBJEXT): internal/intern/decimal.h
 enc/euc_jp.$(OBJEXT): internal/intern/dir.h
 enc/euc_jp.$(OBJEXT): internal/intern/enum.h
 enc/euc_jp.$(OBJEXT): internal/intern/enumerator.h
@@ -1455,6 +1462,7 @@ enc/euc_kr.$(OBJEXT): internal/intern/class.h
 enc/euc_kr.$(OBJEXT): internal/intern/compar.h
 enc/euc_kr.$(OBJEXT): internal/intern/complex.h
 enc/euc_kr.$(OBJEXT): internal/intern/cont.h
+enc/euc_kr.$(OBJEXT): internal/intern/decimal.h
 enc/euc_kr.$(OBJEXT): internal/intern/dir.h
 enc/euc_kr.$(OBJEXT): internal/intern/enum.h
 enc/euc_kr.$(OBJEXT): internal/intern/enumerator.h
@@ -1617,6 +1625,7 @@ enc/euc_tw.$(OBJEXT): internal/intern/class.h
 enc/euc_tw.$(OBJEXT): internal/intern/compar.h
 enc/euc_tw.$(OBJEXT): internal/intern/complex.h
 enc/euc_tw.$(OBJEXT): internal/intern/cont.h
+enc/euc_tw.$(OBJEXT): internal/intern/decimal.h
 enc/euc_tw.$(OBJEXT): internal/intern/dir.h
 enc/euc_tw.$(OBJEXT): internal/intern/enum.h
 enc/euc_tw.$(OBJEXT): internal/intern/enumerator.h
@@ -1779,6 +1788,7 @@ enc/gb18030.$(OBJEXT): internal/intern/class.h
 enc/gb18030.$(OBJEXT): internal/intern/compar.h
 enc/gb18030.$(OBJEXT): internal/intern/complex.h
 enc/gb18030.$(OBJEXT): internal/intern/cont.h
+enc/gb18030.$(OBJEXT): internal/intern/decimal.h
 enc/gb18030.$(OBJEXT): internal/intern/dir.h
 enc/gb18030.$(OBJEXT): internal/intern/enum.h
 enc/gb18030.$(OBJEXT): internal/intern/enumerator.h
@@ -1941,6 +1951,7 @@ enc/gb2312.$(OBJEXT): internal/intern/class.h
 enc/gb2312.$(OBJEXT): internal/intern/compar.h
 enc/gb2312.$(OBJEXT): internal/intern/complex.h
 enc/gb2312.$(OBJEXT): internal/intern/cont.h
+enc/gb2312.$(OBJEXT): internal/intern/decimal.h
 enc/gb2312.$(OBJEXT): internal/intern/dir.h
 enc/gb2312.$(OBJEXT): internal/intern/enum.h
 enc/gb2312.$(OBJEXT): internal/intern/enumerator.h
@@ -2103,6 +2114,7 @@ enc/gbk.$(OBJEXT): internal/intern/class.h
 enc/gbk.$(OBJEXT): internal/intern/compar.h
 enc/gbk.$(OBJEXT): internal/intern/complex.h
 enc/gbk.$(OBJEXT): internal/intern/cont.h
+enc/gbk.$(OBJEXT): internal/intern/decimal.h
 enc/gbk.$(OBJEXT): internal/intern/dir.h
 enc/gbk.$(OBJEXT): internal/intern/enum.h
 enc/gbk.$(OBJEXT): internal/intern/enumerator.h
@@ -2266,6 +2278,7 @@ enc/iso_8859_1.$(OBJEXT): internal/intern/class.h
 enc/iso_8859_1.$(OBJEXT): internal/intern/compar.h
 enc/iso_8859_1.$(OBJEXT): internal/intern/complex.h
 enc/iso_8859_1.$(OBJEXT): internal/intern/cont.h
+enc/iso_8859_1.$(OBJEXT): internal/intern/decimal.h
 enc/iso_8859_1.$(OBJEXT): internal/intern/dir.h
 enc/iso_8859_1.$(OBJEXT): internal/intern/enum.h
 enc/iso_8859_1.$(OBJEXT): internal/intern/enumerator.h
@@ -2429,6 +2442,7 @@ enc/iso_8859_10.$(OBJEXT): internal/intern/class.h
 enc/iso_8859_10.$(OBJEXT): internal/intern/compar.h
 enc/iso_8859_10.$(OBJEXT): internal/intern/complex.h
 enc/iso_8859_10.$(OBJEXT): internal/intern/cont.h
+enc/iso_8859_10.$(OBJEXT): internal/intern/decimal.h
 enc/iso_8859_10.$(OBJEXT): internal/intern/dir.h
 enc/iso_8859_10.$(OBJEXT): internal/intern/enum.h
 enc/iso_8859_10.$(OBJEXT): internal/intern/enumerator.h
@@ -2591,6 +2605,7 @@ enc/iso_8859_11.$(OBJEXT): internal/intern/class.h
 enc/iso_8859_11.$(OBJEXT): internal/intern/compar.h
 enc/iso_8859_11.$(OBJEXT): internal/intern/complex.h
 enc/iso_8859_11.$(OBJEXT): internal/intern/cont.h
+enc/iso_8859_11.$(OBJEXT): internal/intern/decimal.h
 enc/iso_8859_11.$(OBJEXT): internal/intern/dir.h
 enc/iso_8859_11.$(OBJEXT): internal/intern/enum.h
 enc/iso_8859_11.$(OBJEXT): internal/intern/enumerator.h
@@ -2754,6 +2769,7 @@ enc/iso_8859_13.$(OBJEXT): internal/intern/class.h
 enc/iso_8859_13.$(OBJEXT): internal/intern/compar.h
 enc/iso_8859_13.$(OBJEXT): internal/intern/complex.h
 enc/iso_8859_13.$(OBJEXT): internal/intern/cont.h
+enc/iso_8859_13.$(OBJEXT): internal/intern/decimal.h
 enc/iso_8859_13.$(OBJEXT): internal/intern/dir.h
 enc/iso_8859_13.$(OBJEXT): internal/intern/enum.h
 enc/iso_8859_13.$(OBJEXT): internal/intern/enumerator.h
@@ -2917,6 +2933,7 @@ enc/iso_8859_14.$(OBJEXT): internal/intern/class.h
 enc/iso_8859_14.$(OBJEXT): internal/intern/compar.h
 enc/iso_8859_14.$(OBJEXT): internal/intern/complex.h
 enc/iso_8859_14.$(OBJEXT): internal/intern/cont.h
+enc/iso_8859_14.$(OBJEXT): internal/intern/decimal.h
 enc/iso_8859_14.$(OBJEXT): internal/intern/dir.h
 enc/iso_8859_14.$(OBJEXT): internal/intern/enum.h
 enc/iso_8859_14.$(OBJEXT): internal/intern/enumerator.h
@@ -3080,6 +3097,7 @@ enc/iso_8859_15.$(OBJEXT): internal/intern/class.h
 enc/iso_8859_15.$(OBJEXT): internal/intern/compar.h
 enc/iso_8859_15.$(OBJEXT): internal/intern/complex.h
 enc/iso_8859_15.$(OBJEXT): internal/intern/cont.h
+enc/iso_8859_15.$(OBJEXT): internal/intern/decimal.h
 enc/iso_8859_15.$(OBJEXT): internal/intern/dir.h
 enc/iso_8859_15.$(OBJEXT): internal/intern/enum.h
 enc/iso_8859_15.$(OBJEXT): internal/intern/enumerator.h
@@ -3243,6 +3261,7 @@ enc/iso_8859_16.$(OBJEXT): internal/intern/class.h
 enc/iso_8859_16.$(OBJEXT): internal/intern/compar.h
 enc/iso_8859_16.$(OBJEXT): internal/intern/complex.h
 enc/iso_8859_16.$(OBJEXT): internal/intern/cont.h
+enc/iso_8859_16.$(OBJEXT): internal/intern/decimal.h
 enc/iso_8859_16.$(OBJEXT): internal/intern/dir.h
 enc/iso_8859_16.$(OBJEXT): internal/intern/enum.h
 enc/iso_8859_16.$(OBJEXT): internal/intern/enumerator.h
@@ -3406,6 +3425,7 @@ enc/iso_8859_2.$(OBJEXT): internal/intern/class.h
 enc/iso_8859_2.$(OBJEXT): internal/intern/compar.h
 enc/iso_8859_2.$(OBJEXT): internal/intern/complex.h
 enc/iso_8859_2.$(OBJEXT): internal/intern/cont.h
+enc/iso_8859_2.$(OBJEXT): internal/intern/decimal.h
 enc/iso_8859_2.$(OBJEXT): internal/intern/dir.h
 enc/iso_8859_2.$(OBJEXT): internal/intern/enum.h
 enc/iso_8859_2.$(OBJEXT): internal/intern/enumerator.h
@@ -3569,6 +3589,7 @@ enc/iso_8859_3.$(OBJEXT): internal/intern/class.h
 enc/iso_8859_3.$(OBJEXT): internal/intern/compar.h
 enc/iso_8859_3.$(OBJEXT): internal/intern/complex.h
 enc/iso_8859_3.$(OBJEXT): internal/intern/cont.h
+enc/iso_8859_3.$(OBJEXT): internal/intern/decimal.h
 enc/iso_8859_3.$(OBJEXT): internal/intern/dir.h
 enc/iso_8859_3.$(OBJEXT): internal/intern/enum.h
 enc/iso_8859_3.$(OBJEXT): internal/intern/enumerator.h
@@ -3732,6 +3753,7 @@ enc/iso_8859_4.$(OBJEXT): internal/intern/class.h
 enc/iso_8859_4.$(OBJEXT): internal/intern/compar.h
 enc/iso_8859_4.$(OBJEXT): internal/intern/complex.h
 enc/iso_8859_4.$(OBJEXT): internal/intern/cont.h
+enc/iso_8859_4.$(OBJEXT): internal/intern/decimal.h
 enc/iso_8859_4.$(OBJEXT): internal/intern/dir.h
 enc/iso_8859_4.$(OBJEXT): internal/intern/enum.h
 enc/iso_8859_4.$(OBJEXT): internal/intern/enumerator.h
@@ -3894,6 +3916,7 @@ enc/iso_8859_5.$(OBJEXT): internal/intern/class.h
 enc/iso_8859_5.$(OBJEXT): internal/intern/compar.h
 enc/iso_8859_5.$(OBJEXT): internal/intern/complex.h
 enc/iso_8859_5.$(OBJEXT): internal/intern/cont.h
+enc/iso_8859_5.$(OBJEXT): internal/intern/decimal.h
 enc/iso_8859_5.$(OBJEXT): internal/intern/dir.h
 enc/iso_8859_5.$(OBJEXT): internal/intern/enum.h
 enc/iso_8859_5.$(OBJEXT): internal/intern/enumerator.h
@@ -4056,6 +4079,7 @@ enc/iso_8859_6.$(OBJEXT): internal/intern/class.h
 enc/iso_8859_6.$(OBJEXT): internal/intern/compar.h
 enc/iso_8859_6.$(OBJEXT): internal/intern/complex.h
 enc/iso_8859_6.$(OBJEXT): internal/intern/cont.h
+enc/iso_8859_6.$(OBJEXT): internal/intern/decimal.h
 enc/iso_8859_6.$(OBJEXT): internal/intern/dir.h
 enc/iso_8859_6.$(OBJEXT): internal/intern/enum.h
 enc/iso_8859_6.$(OBJEXT): internal/intern/enumerator.h
@@ -4218,6 +4242,7 @@ enc/iso_8859_7.$(OBJEXT): internal/intern/class.h
 enc/iso_8859_7.$(OBJEXT): internal/intern/compar.h
 enc/iso_8859_7.$(OBJEXT): internal/intern/complex.h
 enc/iso_8859_7.$(OBJEXT): internal/intern/cont.h
+enc/iso_8859_7.$(OBJEXT): internal/intern/decimal.h
 enc/iso_8859_7.$(OBJEXT): internal/intern/dir.h
 enc/iso_8859_7.$(OBJEXT): internal/intern/enum.h
 enc/iso_8859_7.$(OBJEXT): internal/intern/enumerator.h
@@ -4380,6 +4405,7 @@ enc/iso_8859_8.$(OBJEXT): internal/intern/class.h
 enc/iso_8859_8.$(OBJEXT): internal/intern/compar.h
 enc/iso_8859_8.$(OBJEXT): internal/intern/complex.h
 enc/iso_8859_8.$(OBJEXT): internal/intern/cont.h
+enc/iso_8859_8.$(OBJEXT): internal/intern/decimal.h
 enc/iso_8859_8.$(OBJEXT): internal/intern/dir.h
 enc/iso_8859_8.$(OBJEXT): internal/intern/enum.h
 enc/iso_8859_8.$(OBJEXT): internal/intern/enumerator.h
@@ -4543,6 +4569,7 @@ enc/iso_8859_9.$(OBJEXT): internal/intern/class.h
 enc/iso_8859_9.$(OBJEXT): internal/intern/compar.h
 enc/iso_8859_9.$(OBJEXT): internal/intern/complex.h
 enc/iso_8859_9.$(OBJEXT): internal/intern/cont.h
+enc/iso_8859_9.$(OBJEXT): internal/intern/decimal.h
 enc/iso_8859_9.$(OBJEXT): internal/intern/dir.h
 enc/iso_8859_9.$(OBJEXT): internal/intern/enum.h
 enc/iso_8859_9.$(OBJEXT): internal/intern/enumerator.h
@@ -4705,6 +4732,7 @@ enc/koi8_r.$(OBJEXT): internal/intern/class.h
 enc/koi8_r.$(OBJEXT): internal/intern/compar.h
 enc/koi8_r.$(OBJEXT): internal/intern/complex.h
 enc/koi8_r.$(OBJEXT): internal/intern/cont.h
+enc/koi8_r.$(OBJEXT): internal/intern/decimal.h
 enc/koi8_r.$(OBJEXT): internal/intern/dir.h
 enc/koi8_r.$(OBJEXT): internal/intern/enum.h
 enc/koi8_r.$(OBJEXT): internal/intern/enumerator.h
@@ -4867,6 +4895,7 @@ enc/koi8_u.$(OBJEXT): internal/intern/class.h
 enc/koi8_u.$(OBJEXT): internal/intern/compar.h
 enc/koi8_u.$(OBJEXT): internal/intern/complex.h
 enc/koi8_u.$(OBJEXT): internal/intern/cont.h
+enc/koi8_u.$(OBJEXT): internal/intern/decimal.h
 enc/koi8_u.$(OBJEXT): internal/intern/dir.h
 enc/koi8_u.$(OBJEXT): internal/intern/enum.h
 enc/koi8_u.$(OBJEXT): internal/intern/enumerator.h
@@ -5032,6 +5061,7 @@ enc/shift_jis.$(OBJEXT): internal/intern/class.h
 enc/shift_jis.$(OBJEXT): internal/intern/compar.h
 enc/shift_jis.$(OBJEXT): internal/intern/complex.h
 enc/shift_jis.$(OBJEXT): internal/intern/cont.h
+enc/shift_jis.$(OBJEXT): internal/intern/decimal.h
 enc/shift_jis.$(OBJEXT): internal/intern/dir.h
 enc/shift_jis.$(OBJEXT): internal/intern/enum.h
 enc/shift_jis.$(OBJEXT): internal/intern/enumerator.h
@@ -5193,6 +5223,7 @@ enc/trans/big5.$(OBJEXT): internal/intern/class.h
 enc/trans/big5.$(OBJEXT): internal/intern/compar.h
 enc/trans/big5.$(OBJEXT): internal/intern/complex.h
 enc/trans/big5.$(OBJEXT): internal/intern/cont.h
+enc/trans/big5.$(OBJEXT): internal/intern/decimal.h
 enc/trans/big5.$(OBJEXT): internal/intern/dir.h
 enc/trans/big5.$(OBJEXT): internal/intern/enum.h
 enc/trans/big5.$(OBJEXT): internal/intern/enumerator.h
@@ -5353,6 +5384,7 @@ enc/trans/cesu_8.$(OBJEXT): internal/intern/class.h
 enc/trans/cesu_8.$(OBJEXT): internal/intern/compar.h
 enc/trans/cesu_8.$(OBJEXT): internal/intern/complex.h
 enc/trans/cesu_8.$(OBJEXT): internal/intern/cont.h
+enc/trans/cesu_8.$(OBJEXT): internal/intern/decimal.h
 enc/trans/cesu_8.$(OBJEXT): internal/intern/dir.h
 enc/trans/cesu_8.$(OBJEXT): internal/intern/enum.h
 enc/trans/cesu_8.$(OBJEXT): internal/intern/enumerator.h
@@ -5513,6 +5545,7 @@ enc/trans/chinese.$(OBJEXT): internal/intern/class.h
 enc/trans/chinese.$(OBJEXT): internal/intern/compar.h
 enc/trans/chinese.$(OBJEXT): internal/intern/complex.h
 enc/trans/chinese.$(OBJEXT): internal/intern/cont.h
+enc/trans/chinese.$(OBJEXT): internal/intern/decimal.h
 enc/trans/chinese.$(OBJEXT): internal/intern/dir.h
 enc/trans/chinese.$(OBJEXT): internal/intern/enum.h
 enc/trans/chinese.$(OBJEXT): internal/intern/enumerator.h
@@ -5673,6 +5706,7 @@ enc/trans/ebcdic.$(OBJEXT): internal/intern/class.h
 enc/trans/ebcdic.$(OBJEXT): internal/intern/compar.h
 enc/trans/ebcdic.$(OBJEXT): internal/intern/complex.h
 enc/trans/ebcdic.$(OBJEXT): internal/intern/cont.h
+enc/trans/ebcdic.$(OBJEXT): internal/intern/decimal.h
 enc/trans/ebcdic.$(OBJEXT): internal/intern/dir.h
 enc/trans/ebcdic.$(OBJEXT): internal/intern/enum.h
 enc/trans/ebcdic.$(OBJEXT): internal/intern/enumerator.h
@@ -5833,6 +5867,7 @@ enc/trans/emoji.$(OBJEXT): internal/intern/class.h
 enc/trans/emoji.$(OBJEXT): internal/intern/compar.h
 enc/trans/emoji.$(OBJEXT): internal/intern/complex.h
 enc/trans/emoji.$(OBJEXT): internal/intern/cont.h
+enc/trans/emoji.$(OBJEXT): internal/intern/decimal.h
 enc/trans/emoji.$(OBJEXT): internal/intern/dir.h
 enc/trans/emoji.$(OBJEXT): internal/intern/enum.h
 enc/trans/emoji.$(OBJEXT): internal/intern/enumerator.h
@@ -5993,6 +6028,7 @@ enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/intern/class.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/intern/compar.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/intern/complex.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/intern/cont.h
+enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/intern/decimal.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/intern/dir.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/intern/enum.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/intern/enumerator.h
@@ -6153,6 +6189,7 @@ enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/intern/class.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/intern/compar.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/intern/complex.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/intern/cont.h
+enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/intern/decimal.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/intern/dir.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/intern/enum.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/intern/enumerator.h
@@ -6313,6 +6350,7 @@ enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/intern/class.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/intern/compar.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/intern/complex.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/intern/cont.h
+enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/intern/decimal.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/intern/dir.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/intern/enum.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/intern/enumerator.h
@@ -6473,6 +6511,7 @@ enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/intern/class.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/intern/compar.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/intern/complex.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/intern/cont.h
+enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/intern/decimal.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/intern/dir.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/intern/enum.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/intern/enumerator.h
@@ -6633,6 +6672,7 @@ enc/trans/escape.$(OBJEXT): internal/intern/class.h
 enc/trans/escape.$(OBJEXT): internal/intern/compar.h
 enc/trans/escape.$(OBJEXT): internal/intern/complex.h
 enc/trans/escape.$(OBJEXT): internal/intern/cont.h
+enc/trans/escape.$(OBJEXT): internal/intern/decimal.h
 enc/trans/escape.$(OBJEXT): internal/intern/dir.h
 enc/trans/escape.$(OBJEXT): internal/intern/enum.h
 enc/trans/escape.$(OBJEXT): internal/intern/enumerator.h
@@ -6793,6 +6833,7 @@ enc/trans/gb18030.$(OBJEXT): internal/intern/class.h
 enc/trans/gb18030.$(OBJEXT): internal/intern/compar.h
 enc/trans/gb18030.$(OBJEXT): internal/intern/complex.h
 enc/trans/gb18030.$(OBJEXT): internal/intern/cont.h
+enc/trans/gb18030.$(OBJEXT): internal/intern/decimal.h
 enc/trans/gb18030.$(OBJEXT): internal/intern/dir.h
 enc/trans/gb18030.$(OBJEXT): internal/intern/enum.h
 enc/trans/gb18030.$(OBJEXT): internal/intern/enumerator.h
@@ -6953,6 +6994,7 @@ enc/trans/gbk.$(OBJEXT): internal/intern/class.h
 enc/trans/gbk.$(OBJEXT): internal/intern/compar.h
 enc/trans/gbk.$(OBJEXT): internal/intern/complex.h
 enc/trans/gbk.$(OBJEXT): internal/intern/cont.h
+enc/trans/gbk.$(OBJEXT): internal/intern/decimal.h
 enc/trans/gbk.$(OBJEXT): internal/intern/dir.h
 enc/trans/gbk.$(OBJEXT): internal/intern/enum.h
 enc/trans/gbk.$(OBJEXT): internal/intern/enumerator.h
@@ -7114,6 +7156,7 @@ enc/trans/iso2022.$(OBJEXT): internal/intern/class.h
 enc/trans/iso2022.$(OBJEXT): internal/intern/compar.h
 enc/trans/iso2022.$(OBJEXT): internal/intern/complex.h
 enc/trans/iso2022.$(OBJEXT): internal/intern/cont.h
+enc/trans/iso2022.$(OBJEXT): internal/intern/decimal.h
 enc/trans/iso2022.$(OBJEXT): internal/intern/dir.h
 enc/trans/iso2022.$(OBJEXT): internal/intern/enum.h
 enc/trans/iso2022.$(OBJEXT): internal/intern/enumerator.h
@@ -7274,6 +7317,7 @@ enc/trans/japanese.$(OBJEXT): internal/intern/class.h
 enc/trans/japanese.$(OBJEXT): internal/intern/compar.h
 enc/trans/japanese.$(OBJEXT): internal/intern/complex.h
 enc/trans/japanese.$(OBJEXT): internal/intern/cont.h
+enc/trans/japanese.$(OBJEXT): internal/intern/decimal.h
 enc/trans/japanese.$(OBJEXT): internal/intern/dir.h
 enc/trans/japanese.$(OBJEXT): internal/intern/enum.h
 enc/trans/japanese.$(OBJEXT): internal/intern/enumerator.h
@@ -7434,6 +7478,7 @@ enc/trans/japanese_euc.$(OBJEXT): internal/intern/class.h
 enc/trans/japanese_euc.$(OBJEXT): internal/intern/compar.h
 enc/trans/japanese_euc.$(OBJEXT): internal/intern/complex.h
 enc/trans/japanese_euc.$(OBJEXT): internal/intern/cont.h
+enc/trans/japanese_euc.$(OBJEXT): internal/intern/decimal.h
 enc/trans/japanese_euc.$(OBJEXT): internal/intern/dir.h
 enc/trans/japanese_euc.$(OBJEXT): internal/intern/enum.h
 enc/trans/japanese_euc.$(OBJEXT): internal/intern/enumerator.h
@@ -7594,6 +7639,7 @@ enc/trans/japanese_sjis.$(OBJEXT): internal/intern/class.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/intern/compar.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/intern/complex.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/intern/cont.h
+enc/trans/japanese_sjis.$(OBJEXT): internal/intern/decimal.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/intern/dir.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/intern/enum.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/intern/enumerator.h
@@ -7754,6 +7800,7 @@ enc/trans/korean.$(OBJEXT): internal/intern/class.h
 enc/trans/korean.$(OBJEXT): internal/intern/compar.h
 enc/trans/korean.$(OBJEXT): internal/intern/complex.h
 enc/trans/korean.$(OBJEXT): internal/intern/cont.h
+enc/trans/korean.$(OBJEXT): internal/intern/decimal.h
 enc/trans/korean.$(OBJEXT): internal/intern/dir.h
 enc/trans/korean.$(OBJEXT): internal/intern/enum.h
 enc/trans/korean.$(OBJEXT): internal/intern/enumerator.h
@@ -7913,6 +7960,7 @@ enc/trans/newline.$(OBJEXT): internal/intern/class.h
 enc/trans/newline.$(OBJEXT): internal/intern/compar.h
 enc/trans/newline.$(OBJEXT): internal/intern/complex.h
 enc/trans/newline.$(OBJEXT): internal/intern/cont.h
+enc/trans/newline.$(OBJEXT): internal/intern/decimal.h
 enc/trans/newline.$(OBJEXT): internal/intern/dir.h
 enc/trans/newline.$(OBJEXT): internal/intern/enum.h
 enc/trans/newline.$(OBJEXT): internal/intern/enumerator.h
@@ -8073,6 +8121,7 @@ enc/trans/single_byte.$(OBJEXT): internal/intern/class.h
 enc/trans/single_byte.$(OBJEXT): internal/intern/compar.h
 enc/trans/single_byte.$(OBJEXT): internal/intern/complex.h
 enc/trans/single_byte.$(OBJEXT): internal/intern/cont.h
+enc/trans/single_byte.$(OBJEXT): internal/intern/decimal.h
 enc/trans/single_byte.$(OBJEXT): internal/intern/dir.h
 enc/trans/single_byte.$(OBJEXT): internal/intern/enum.h
 enc/trans/single_byte.$(OBJEXT): internal/intern/enumerator.h
@@ -8233,6 +8282,7 @@ enc/trans/transdb.$(OBJEXT): internal/intern/class.h
 enc/trans/transdb.$(OBJEXT): internal/intern/compar.h
 enc/trans/transdb.$(OBJEXT): internal/intern/complex.h
 enc/trans/transdb.$(OBJEXT): internal/intern/cont.h
+enc/trans/transdb.$(OBJEXT): internal/intern/decimal.h
 enc/trans/transdb.$(OBJEXT): internal/intern/dir.h
 enc/trans/transdb.$(OBJEXT): internal/intern/enum.h
 enc/trans/transdb.$(OBJEXT): internal/intern/enumerator.h
@@ -8394,6 +8444,7 @@ enc/trans/utf8_mac.$(OBJEXT): internal/intern/class.h
 enc/trans/utf8_mac.$(OBJEXT): internal/intern/compar.h
 enc/trans/utf8_mac.$(OBJEXT): internal/intern/complex.h
 enc/trans/utf8_mac.$(OBJEXT): internal/intern/cont.h
+enc/trans/utf8_mac.$(OBJEXT): internal/intern/decimal.h
 enc/trans/utf8_mac.$(OBJEXT): internal/intern/dir.h
 enc/trans/utf8_mac.$(OBJEXT): internal/intern/enum.h
 enc/trans/utf8_mac.$(OBJEXT): internal/intern/enumerator.h
@@ -8554,6 +8605,7 @@ enc/trans/utf_16_32.$(OBJEXT): internal/intern/class.h
 enc/trans/utf_16_32.$(OBJEXT): internal/intern/compar.h
 enc/trans/utf_16_32.$(OBJEXT): internal/intern/complex.h
 enc/trans/utf_16_32.$(OBJEXT): internal/intern/cont.h
+enc/trans/utf_16_32.$(OBJEXT): internal/intern/decimal.h
 enc/trans/utf_16_32.$(OBJEXT): internal/intern/dir.h
 enc/trans/utf_16_32.$(OBJEXT): internal/intern/enum.h
 enc/trans/utf_16_32.$(OBJEXT): internal/intern/enumerator.h
@@ -8717,6 +8769,7 @@ enc/unicode.$(OBJEXT): internal/intern/class.h
 enc/unicode.$(OBJEXT): internal/intern/compar.h
 enc/unicode.$(OBJEXT): internal/intern/complex.h
 enc/unicode.$(OBJEXT): internal/intern/cont.h
+enc/unicode.$(OBJEXT): internal/intern/decimal.h
 enc/unicode.$(OBJEXT): internal/intern/dir.h
 enc/unicode.$(OBJEXT): internal/intern/enum.h
 enc/unicode.$(OBJEXT): internal/intern/enumerator.h
@@ -8889,6 +8942,7 @@ enc/us_ascii.$(OBJEXT): internal/intern/class.h
 enc/us_ascii.$(OBJEXT): internal/intern/compar.h
 enc/us_ascii.$(OBJEXT): internal/intern/complex.h
 enc/us_ascii.$(OBJEXT): internal/intern/cont.h
+enc/us_ascii.$(OBJEXT): internal/intern/decimal.h
 enc/us_ascii.$(OBJEXT): internal/intern/dir.h
 enc/us_ascii.$(OBJEXT): internal/intern/enum.h
 enc/us_ascii.$(OBJEXT): internal/intern/enumerator.h
@@ -9053,6 +9107,7 @@ enc/utf_16be.$(OBJEXT): internal/intern/class.h
 enc/utf_16be.$(OBJEXT): internal/intern/compar.h
 enc/utf_16be.$(OBJEXT): internal/intern/complex.h
 enc/utf_16be.$(OBJEXT): internal/intern/cont.h
+enc/utf_16be.$(OBJEXT): internal/intern/decimal.h
 enc/utf_16be.$(OBJEXT): internal/intern/dir.h
 enc/utf_16be.$(OBJEXT): internal/intern/enum.h
 enc/utf_16be.$(OBJEXT): internal/intern/enumerator.h
@@ -9216,6 +9271,7 @@ enc/utf_16le.$(OBJEXT): internal/intern/class.h
 enc/utf_16le.$(OBJEXT): internal/intern/compar.h
 enc/utf_16le.$(OBJEXT): internal/intern/complex.h
 enc/utf_16le.$(OBJEXT): internal/intern/cont.h
+enc/utf_16le.$(OBJEXT): internal/intern/decimal.h
 enc/utf_16le.$(OBJEXT): internal/intern/dir.h
 enc/utf_16le.$(OBJEXT): internal/intern/enum.h
 enc/utf_16le.$(OBJEXT): internal/intern/enumerator.h
@@ -9379,6 +9435,7 @@ enc/utf_32be.$(OBJEXT): internal/intern/class.h
 enc/utf_32be.$(OBJEXT): internal/intern/compar.h
 enc/utf_32be.$(OBJEXT): internal/intern/complex.h
 enc/utf_32be.$(OBJEXT): internal/intern/cont.h
+enc/utf_32be.$(OBJEXT): internal/intern/decimal.h
 enc/utf_32be.$(OBJEXT): internal/intern/dir.h
 enc/utf_32be.$(OBJEXT): internal/intern/enum.h
 enc/utf_32be.$(OBJEXT): internal/intern/enumerator.h
@@ -9542,6 +9599,7 @@ enc/utf_32le.$(OBJEXT): internal/intern/class.h
 enc/utf_32le.$(OBJEXT): internal/intern/compar.h
 enc/utf_32le.$(OBJEXT): internal/intern/complex.h
 enc/utf_32le.$(OBJEXT): internal/intern/cont.h
+enc/utf_32le.$(OBJEXT): internal/intern/decimal.h
 enc/utf_32le.$(OBJEXT): internal/intern/dir.h
 enc/utf_32le.$(OBJEXT): internal/intern/enum.h
 enc/utf_32le.$(OBJEXT): internal/intern/enumerator.h
@@ -9714,6 +9772,7 @@ enc/utf_8.$(OBJEXT): internal/intern/class.h
 enc/utf_8.$(OBJEXT): internal/intern/compar.h
 enc/utf_8.$(OBJEXT): internal/intern/complex.h
 enc/utf_8.$(OBJEXT): internal/intern/cont.h
+enc/utf_8.$(OBJEXT): internal/intern/decimal.h
 enc/utf_8.$(OBJEXT): internal/intern/dir.h
 enc/utf_8.$(OBJEXT): internal/intern/enum.h
 enc/utf_8.$(OBJEXT): internal/intern/enumerator.h
@@ -9878,6 +9937,7 @@ enc/windows_1250.$(OBJEXT): internal/intern/class.h
 enc/windows_1250.$(OBJEXT): internal/intern/compar.h
 enc/windows_1250.$(OBJEXT): internal/intern/complex.h
 enc/windows_1250.$(OBJEXT): internal/intern/cont.h
+enc/windows_1250.$(OBJEXT): internal/intern/decimal.h
 enc/windows_1250.$(OBJEXT): internal/intern/dir.h
 enc/windows_1250.$(OBJEXT): internal/intern/enum.h
 enc/windows_1250.$(OBJEXT): internal/intern/enumerator.h
@@ -10040,6 +10100,7 @@ enc/windows_1251.$(OBJEXT): internal/intern/class.h
 enc/windows_1251.$(OBJEXT): internal/intern/compar.h
 enc/windows_1251.$(OBJEXT): internal/intern/complex.h
 enc/windows_1251.$(OBJEXT): internal/intern/cont.h
+enc/windows_1251.$(OBJEXT): internal/intern/decimal.h
 enc/windows_1251.$(OBJEXT): internal/intern/dir.h
 enc/windows_1251.$(OBJEXT): internal/intern/enum.h
 enc/windows_1251.$(OBJEXT): internal/intern/enumerator.h
@@ -10203,6 +10264,7 @@ enc/windows_1252.$(OBJEXT): internal/intern/class.h
 enc/windows_1252.$(OBJEXT): internal/intern/compar.h
 enc/windows_1252.$(OBJEXT): internal/intern/complex.h
 enc/windows_1252.$(OBJEXT): internal/intern/cont.h
+enc/windows_1252.$(OBJEXT): internal/intern/decimal.h
 enc/windows_1252.$(OBJEXT): internal/intern/dir.h
 enc/windows_1252.$(OBJEXT): internal/intern/enum.h
 enc/windows_1252.$(OBJEXT): internal/intern/enumerator.h
@@ -10365,6 +10427,7 @@ enc/windows_1253.$(OBJEXT): internal/intern/class.h
 enc/windows_1253.$(OBJEXT): internal/intern/compar.h
 enc/windows_1253.$(OBJEXT): internal/intern/complex.h
 enc/windows_1253.$(OBJEXT): internal/intern/cont.h
+enc/windows_1253.$(OBJEXT): internal/intern/decimal.h
 enc/windows_1253.$(OBJEXT): internal/intern/dir.h
 enc/windows_1253.$(OBJEXT): internal/intern/enum.h
 enc/windows_1253.$(OBJEXT): internal/intern/enumerator.h
@@ -10528,6 +10591,7 @@ enc/windows_1254.$(OBJEXT): internal/intern/class.h
 enc/windows_1254.$(OBJEXT): internal/intern/compar.h
 enc/windows_1254.$(OBJEXT): internal/intern/complex.h
 enc/windows_1254.$(OBJEXT): internal/intern/cont.h
+enc/windows_1254.$(OBJEXT): internal/intern/decimal.h
 enc/windows_1254.$(OBJEXT): internal/intern/dir.h
 enc/windows_1254.$(OBJEXT): internal/intern/enum.h
 enc/windows_1254.$(OBJEXT): internal/intern/enumerator.h
@@ -10691,6 +10755,7 @@ enc/windows_1257.$(OBJEXT): internal/intern/class.h
 enc/windows_1257.$(OBJEXT): internal/intern/compar.h
 enc/windows_1257.$(OBJEXT): internal/intern/complex.h
 enc/windows_1257.$(OBJEXT): internal/intern/cont.h
+enc/windows_1257.$(OBJEXT): internal/intern/decimal.h
 enc/windows_1257.$(OBJEXT): internal/intern/dir.h
 enc/windows_1257.$(OBJEXT): internal/intern/enum.h
 enc/windows_1257.$(OBJEXT): internal/intern/enumerator.h
@@ -10856,6 +10921,7 @@ enc/windows_31j.$(OBJEXT): internal/intern/class.h
 enc/windows_31j.$(OBJEXT): internal/intern/compar.h
 enc/windows_31j.$(OBJEXT): internal/intern/complex.h
 enc/windows_31j.$(OBJEXT): internal/intern/cont.h
+enc/windows_31j.$(OBJEXT): internal/intern/decimal.h
 enc/windows_31j.$(OBJEXT): internal/intern/dir.h
 enc/windows_31j.$(OBJEXT): internal/intern/enum.h
 enc/windows_31j.$(OBJEXT): internal/intern/enumerator.h

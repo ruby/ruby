@@ -121,6 +121,7 @@ etc.o: $(hdrdir)/ruby/internal/intern/class.h
 etc.o: $(hdrdir)/ruby/internal/intern/compar.h
 etc.o: $(hdrdir)/ruby/internal/intern/complex.h
 etc.o: $(hdrdir)/ruby/internal/intern/cont.h
+etc.o: $(hdrdir)/ruby/internal/intern/decimal.h
 etc.o: $(hdrdir)/ruby/internal/intern/dir.h
 etc.o: $(hdrdir)/ruby/internal/intern/enum.h
 etc.o: $(hdrdir)/ruby/internal/intern/enumerator.h

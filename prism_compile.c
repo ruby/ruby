@@ -374,10 +374,15 @@ parse_imaginary(const pm_imaginary_node_t *node)
 static VALUE
 parse_decimal(const pm_decimal_node_t *node)
 {
+#if defined(HAVE_INT128_T) && SIZEOF_VALUE >= 8
     const char *src = (const char *) pm_string_source(&node->value);
     size_t len = pm_string_length(&node->value);
     VALUE str = rb_str_new(src, len);
     return rb_ractor_make_shareable(rb_decimal_from_str(str));
+#else
+    (void)node;
+    return INT2FIX(0);
+#endif
 }
 
 static inline VALUE

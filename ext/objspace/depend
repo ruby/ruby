@@ -118,6 +118,7 @@ object_tracing.o: $(hdrdir)/ruby/internal/intern/class.h
 object_tracing.o: $(hdrdir)/ruby/internal/intern/compar.h
 object_tracing.o: $(hdrdir)/ruby/internal/intern/complex.h
 object_tracing.o: $(hdrdir)/ruby/internal/intern/cont.h
+object_tracing.o: $(hdrdir)/ruby/internal/intern/decimal.h
 object_tracing.o: $(hdrdir)/ruby/internal/intern/dir.h
 object_tracing.o: $(hdrdir)/ruby/internal/intern/enum.h
 object_tracing.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -322,6 +323,7 @@ objspace.o: $(hdrdir)/ruby/internal/intern/class.h
 objspace.o: $(hdrdir)/ruby/internal/intern/compar.h
 objspace.o: $(hdrdir)/ruby/internal/intern/complex.h
 objspace.o: $(hdrdir)/ruby/internal/intern/cont.h
+objspace.o: $(hdrdir)/ruby/internal/intern/decimal.h
 objspace.o: $(hdrdir)/ruby/internal/intern/dir.h
 objspace.o: $(hdrdir)/ruby/internal/intern/enum.h
 objspace.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -538,6 +540,7 @@ objspace_dump.o: $(hdrdir)/ruby/internal/intern/class.h
 objspace_dump.o: $(hdrdir)/ruby/internal/intern/compar.h
 objspace_dump.o: $(hdrdir)/ruby/internal/intern/complex.h
 objspace_dump.o: $(hdrdir)/ruby/internal/intern/cont.h
+objspace_dump.o: $(hdrdir)/ruby/internal/intern/decimal.h
 objspace_dump.o: $(hdrdir)/ruby/internal/intern/dir.h
 objspace_dump.o: $(hdrdir)/ruby/internal/intern/enum.h
 objspace_dump.o: $(hdrdir)/ruby/internal/intern/enumerator.h

@@ -714,6 +714,7 @@ mod tests {
         assert_subtype(types::Float.union(types::Integer), types::Numeric);
         assert_bit_equal(types::Float
             .union(types::Integer)
+            .union(types::Decimal)
             .union(types::NumericExact)
             .union(types::NumericSubclass), types::Numeric);
     }

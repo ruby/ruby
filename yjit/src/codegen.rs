@@ -1772,58 +1772,7 @@ fn gen_opt_plus(
         if !assume_bop_not_redefined(jit, asm, DECIMAL_REDEFINED_OP_FLAG, BOP_PLUS) {
             return None;
         }
-
-        if asm.ctx.get_chain_depth() == 0 {
-            let obj = asm.stack_opnd(0);
-            let recv = asm.stack_opnd(1);
-
-            asm_comment!(asm, "opt_plus: Decimal BID inline");
-            let recv_tag = asm.and(recv, Opnd::UImm(0xFF));
-            asm.cmp(recv_tag, Opnd::UImm(0x84));
-            jit_chain_guard(JCC_JNE, jit, asm, 1, Counter::decimal_not_bid);
-
-            let xor_val = asm.xor(recv, obj);
-            asm.test(xor_val, Opnd::UImm(0xFFF));
-            jit_chain_guard(JCC_JNZ, jit, asm, 1, Counter::decimal_not_bid);
-
-            let or_val = asm.or(recv, obj);
-            asm.test(or_val, Opnd::Imm(i64::MIN));
-            jit_chain_guard(JCC_JNZ, jit, asm, 1, Counter::decimal_negative);
-
-            // Pop after guards: stack_opnd references are memory operands
-            // into stack slots, so we must pop before using the values in
-            // arithmetic to get owned register operands.
-            let arg1 = asm.stack_pop(1);
-            let arg0 = asm.stack_pop(1);
-            let sig_a = asm.rshift(arg0, Opnd::UImm(12));
-            let sig_b = asm.rshift(arg1, Opnd::UImm(12));
-
-            let sum = asm.add(sig_a, sig_b);
-
-            // sum must fit in 51 bits to stay in BID range
-            asm.test(sum, Opnd::UImm(u64::MAX << 51));
-            jit_chain_guard(JCC_JNZ, jit, asm, 1, Counter::decimal_add_overflow);
-
-            // Reconstruct BID: (sum << 12) | (tag+scale from arg0)
-            let low_bits = asm.and(arg0, Opnd::UImm(0xFFF));
-            let result = asm.lshift(sum, Opnd::UImm(12));
-            let result = asm.or(result, low_bits);
-
-            let dst = asm.stack_push(Type::Decimal);
-            asm.mov(dst, result);
-            return Some(KeepCompiling);
-        }
-
-        // Chain depth > 0: use ccall fallback
-        jit_prepare_call_with_gc(jit, asm);
-        asm_comment!(asm, "opt_plus: Decimal ccall fallback");
-        let obj = asm.stack_opnd(0);
-        let recv = asm.stack_opnd(1);
-        let ret = asm.ccall(rb_decimal_plus_dd as *const u8, vec![recv, obj]);
-        asm.stack_pop(2);
-        let dst = asm.stack_push(Type::Decimal);
-        asm.mov(dst, ret);
-        return Some(KeepCompiling);
+        return gen_opt_send_without_block(jit, asm);
     }
 
     let two_fixnums = match asm.ctx.two_fixnums_on_stack(jit) {
@@ -4238,61 +4187,7 @@ fn gen_opt_minus(
         if !assume_bop_not_redefined(jit, asm, DECIMAL_REDEFINED_OP_FLAG, BOP_MINUS) {
             return None;
         }
-
-        // Inline BID subtraction. Same guards as addition (see gen_opt_plus)
-        // plus sig_a >= sig_b to ensure the result stays positive.
-        if asm.ctx.get_chain_depth() == 0 {
-            let obj = asm.stack_opnd(0);
-            let recv = asm.stack_opnd(1);
-
-            asm_comment!(asm, "opt_minus: Decimal BID inline");
-            let recv_tag = asm.and(recv, Opnd::UImm(0xFF));
-            asm.cmp(recv_tag, Opnd::UImm(0x84));
-            jit_chain_guard(JCC_JNE, jit, asm, 1, Counter::decimal_not_bid);
-
-            let xor_val = asm.xor(recv, obj);
-            asm.test(xor_val, Opnd::UImm(0xFFF));
-            jit_chain_guard(JCC_JNZ, jit, asm, 1, Counter::decimal_not_bid);
-
-            let or_val = asm.or(recv, obj);
-            asm.test(or_val, Opnd::Imm(i64::MIN));
-            jit_chain_guard(JCC_JNZ, jit, asm, 1, Counter::decimal_negative);
-
-            // Pre-pop significand comparison for the non-negative result guard.
-            // These are memory operands into stack slots (not yet owned values).
-            let sig_a = asm.rshift(recv, Opnd::UImm(12));
-            let sig_b = asm.rshift(obj, Opnd::UImm(12));
-            asm.cmp(sig_a, sig_b);
-            jit_chain_guard(JCC_JB, jit, asm, 1, Counter::decimal_sub_overflow);
-
-            // Pop and re-extract: stack_opnd references are invalidated by pop,
-            // so we extract significands again from the owned post-pop values.
-            let arg1 = asm.stack_pop(1);
-            let arg0 = asm.stack_pop(1);
-            let sig_a = asm.rshift(arg0, Opnd::UImm(12));
-            let sig_b = asm.rshift(arg1, Opnd::UImm(12));
-            let diff = asm.sub(sig_a, sig_b);
-
-            // Reconstruct BID: (diff << 12) | (tag+scale from arg0)
-            let low_bits = asm.and(arg0, Opnd::UImm(0xFFF));
-            let result = asm.lshift(diff, Opnd::UImm(12));
-            let result = asm.or(result, low_bits);
-
-            let dst = asm.stack_push(Type::Decimal);
-            asm.mov(dst, result);
-            return Some(KeepCompiling);
-        }
-
-        // Chain depth > 0: use ccall fallback
-        jit_prepare_call_with_gc(jit, asm);
-        asm_comment!(asm, "opt_minus: Decimal ccall fallback");
-        let obj = asm.stack_opnd(0);
-        let recv = asm.stack_opnd(1);
-        let ret = asm.ccall(rb_decimal_minus_dd as *const u8, vec![recv, obj]);
-        asm.stack_pop(2);
-        let dst = asm.stack_push(Type::Decimal);
-        asm.mov(dst, ret);
-        return Some(KeepCompiling);
+        return gen_opt_send_without_block(jit, asm);
     }
 
     let two_fixnums = match asm.ctx.two_fixnums_on_stack(jit) {
@@ -4339,16 +4234,7 @@ fn gen_opt_mult(
         if !assume_bop_not_redefined(jit, asm, DECIMAL_REDEFINED_OP_FLAG, BOP_MULT) {
             return None;
         }
-
-        jit_prepare_call_with_gc(jit, asm);
-        asm_comment!(asm, "opt_mult: Decimal fast path");
-        let obj = asm.stack_opnd(0);
-        let recv = asm.stack_opnd(1);
-        let ret = asm.ccall(rb_decimal_mul_dd as *const u8, vec![recv, obj]);
-        asm.stack_pop(2);
-        let dst = asm.stack_push(Type::Decimal);
-        asm.mov(dst, ret);
-        return Some(KeepCompiling);
+        return gen_opt_send_without_block(jit, asm);
     }
 
     let two_fixnums = match asm.ctx.two_fixnums_on_stack(jit) {
@@ -4397,16 +4283,7 @@ fn gen_opt_div(
         if !assume_bop_not_redefined(jit, asm, DECIMAL_REDEFINED_OP_FLAG, BOP_DIV) {
             return None;
         }
-
-        jit_prepare_call_with_gc(jit, asm);
-        asm_comment!(asm, "opt_div: Decimal fast path");
-        let obj = asm.stack_opnd(0);
-        let recv = asm.stack_opnd(1);
-        let ret = asm.ccall(rb_decimal_div_dd as *const u8, vec![recv, obj]);
-        asm.stack_pop(2);
-        let dst = asm.stack_push(Type::Decimal);
-        asm.mov(dst, ret);
-        return Some(KeepCompiling);
+        return gen_opt_send_without_block(jit, asm);
     }
 
     // Delegate to send, call the method on the recv
@@ -4421,16 +4298,7 @@ fn gen_opt_mod(
         if !assume_bop_not_redefined(jit, asm, DECIMAL_REDEFINED_OP_FLAG, BOP_MOD) {
             return None;
         }
-
-        jit_prepare_call_with_gc(jit, asm);
-        asm_comment!(asm, "opt_mod: Decimal fast path");
-        let obj = asm.stack_opnd(0);
-        let recv = asm.stack_opnd(1);
-        let ret = asm.ccall(rb_decimal_mod_dd as *const u8, vec![recv, obj]);
-        asm.stack_pop(2);
-        let dst = asm.stack_push(Type::Decimal);
-        asm.mov(dst, ret);
-        return Some(KeepCompiling);
+        return gen_opt_send_without_block(jit, asm);
     }
 
     let two_fixnums = match asm.ctx.two_fixnums_on_stack(jit) {
@@ -6140,170 +6008,6 @@ fn jit_rb_float_div(
     true
 }
 
-fn jit_rb_decimal_plus(
-    jit: &mut JITState,
-    asm: &mut Assembler,
-    _ci: *const rb_callinfo,
-    _cme: *const rb_callable_method_entry_t,
-    _block: Option<BlockHandler>,
-    _argc: i32,
-    _known_recv_class: Option<VALUE>,
-) -> bool {
-
-    let comptime_obj = jit.peek_at_stack(&asm.ctx, 0);
-    if comptime_obj.class_of() != unsafe { rb_cDecimal } {
-        return false;
-    }
-
-    let obj = asm.stack_opnd(0);
-    jit_guard_known_klass(
-        jit,
-        asm,
-        obj,
-        obj.into(),
-        comptime_obj,
-        SEND_MAX_DEPTH,
-        Counter::guard_send_not_decimal,
-    );
-
-    // Save the PC and SP because the callee may allocate
-    jit_prepare_call_with_gc(jit, asm);
-
-    asm_comment!(asm, "Decimal#+");
-    let obj = asm.stack_opnd(0);
-    let recv = asm.stack_opnd(1);
-
-    let ret = asm.ccall(rb_decimal_plus_dd as *const u8, vec![recv, obj]);
-    asm.stack_pop(2); // Keep recv during ccall for GC
-
-    let ret_opnd = asm.stack_push(Type::Decimal);
-    asm.mov(ret_opnd, ret);
-    true
-}
-
-fn jit_rb_decimal_minus(
-    jit: &mut JITState,
-    asm: &mut Assembler,
-    _ci: *const rb_callinfo,
-    _cme: *const rb_callable_method_entry_t,
-    _block: Option<BlockHandler>,
-    _argc: i32,
-    _known_recv_class: Option<VALUE>,
-) -> bool {
-
-    let comptime_obj = jit.peek_at_stack(&asm.ctx, 0);
-    if comptime_obj.class_of() != unsafe { rb_cDecimal } {
-        return false;
-    }
-
-    let obj = asm.stack_opnd(0);
-    jit_guard_known_klass(
-        jit,
-        asm,
-        obj,
-        obj.into(),
-        comptime_obj,
-        SEND_MAX_DEPTH,
-        Counter::guard_send_not_decimal,
-    );
-
-    // Save the PC and SP because the callee may allocate
-    jit_prepare_call_with_gc(jit, asm);
-
-    asm_comment!(asm, "Decimal#-");
-    let obj = asm.stack_opnd(0);
-    let recv = asm.stack_opnd(1);
-
-    let ret = asm.ccall(rb_decimal_minus_dd as *const u8, vec![recv, obj]);
-    asm.stack_pop(2); // Keep recv during ccall for GC
-
-    let ret_opnd = asm.stack_push(Type::Decimal);
-    asm.mov(ret_opnd, ret);
-    true
-}
-
-fn jit_rb_decimal_mul(
-    jit: &mut JITState,
-    asm: &mut Assembler,
-    _ci: *const rb_callinfo,
-    _cme: *const rb_callable_method_entry_t,
-    _block: Option<BlockHandler>,
-    _argc: i32,
-    _known_recv_class: Option<VALUE>,
-) -> bool {
-
-    let comptime_obj = jit.peek_at_stack(&asm.ctx, 0);
-    if comptime_obj.class_of() != unsafe { rb_cDecimal } {
-        return false;
-    }
-
-    let obj = asm.stack_opnd(0);
-    jit_guard_known_klass(
-        jit,
-        asm,
-        obj,
-        obj.into(),
-        comptime_obj,
-        SEND_MAX_DEPTH,
-        Counter::guard_send_not_decimal,
-    );
-
-    // Save the PC and SP because the callee may allocate
-    jit_prepare_call_with_gc(jit, asm);
-
-    asm_comment!(asm, "Decimal#*");
-    let obj = asm.stack_opnd(0);
-    let recv = asm.stack_opnd(1);
-
-    let ret = asm.ccall(rb_decimal_mul_dd as *const u8, vec![recv, obj]);
-    asm.stack_pop(2); // Keep recv during ccall for GC
-
-    let ret_opnd = asm.stack_push(Type::Decimal);
-    asm.mov(ret_opnd, ret);
-    true
-}
-
-fn jit_rb_decimal_div(
-    jit: &mut JITState,
-    asm: &mut Assembler,
-    _ci: *const rb_callinfo,
-    _cme: *const rb_callable_method_entry_t,
-    _block: Option<BlockHandler>,
-    _argc: i32,
-    _known_recv_class: Option<VALUE>,
-) -> bool {
-
-    let comptime_obj = jit.peek_at_stack(&asm.ctx, 0);
-    if comptime_obj.class_of() != unsafe { rb_cDecimal } {
-        return false;
-    }
-
-    let obj = asm.stack_opnd(0);
-    jit_guard_known_klass(
-        jit,
-        asm,
-        obj,
-        obj.into(),
-        comptime_obj,
-        SEND_MAX_DEPTH,
-        Counter::guard_send_not_decimal,
-    );
-
-    // Save the PC and SP because the callee may allocate
-    jit_prepare_call_with_gc(jit, asm);
-
-    asm_comment!(asm, "Decimal#/");
-    let obj = asm.stack_opnd(0);
-    let recv = asm.stack_opnd(1);
-
-    let ret = asm.ccall(rb_decimal_div_dd as *const u8, vec![recv, obj]);
-    asm.stack_pop(2); // Keep recv during ccall for GC
-
-    let ret_opnd = asm.stack_push(Type::Decimal);
-    asm.mov(ret_opnd, ret);
-    true
-}
-
 fn jit_rb_decimal_cmp(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -6339,56 +6043,6 @@ fn jit_rb_decimal_cmp(
     asm.stack_pop(2);
 
     let ret_opnd = asm.stack_push(Type::Fixnum);
-    asm.mov(ret_opnd, ret);
-    true
-}
-
-fn jit_rb_decimal_mod(
-    jit: &mut JITState,
-    asm: &mut Assembler,
-    _ci: *const rb_callinfo,
-    _cme: *const rb_callable_method_entry_t,
-    _block: Option<BlockHandler>,
-    _argc: i32,
-    _known_recv_class: Option<VALUE>,
-) -> bool {
-    let comptime_obj = jit.peek_at_stack(&asm.ctx, 0);
-    if comptime_obj.class_of() != unsafe { rb_cDecimal } {
-        return false;
-    }
-
-    let obj = asm.stack_opnd(0);
-    jit_guard_known_klass(
-        jit, asm, obj, obj.into(), comptime_obj,
-        SEND_MAX_DEPTH, Counter::guard_send_not_decimal,
-    );
-
-    jit_prepare_call_with_gc(jit, asm);
-    asm_comment!(asm, "Decimal#%");
-    let obj = asm.stack_opnd(0);
-    let recv = asm.stack_opnd(1);
-    let ret = asm.ccall(rb_decimal_mod_dd as *const u8, vec![recv, obj]);
-    asm.stack_pop(2);
-    let ret_opnd = asm.stack_push(Type::Decimal);
-    asm.mov(ret_opnd, ret);
-    true
-}
-
-fn jit_rb_decimal_uminus(
-    jit: &mut JITState,
-    asm: &mut Assembler,
-    _ci: *const rb_callinfo,
-    _cme: *const rb_callable_method_entry_t,
-    _block: Option<BlockHandler>,
-    _argc: i32,
-    _known_recv_class: Option<VALUE>,
-) -> bool {
-    jit_prepare_call_with_gc(jit, asm);
-    asm_comment!(asm, "Decimal#-@");
-    let recv = asm.stack_opnd(0);
-    let ret = asm.ccall(rb_decimal_uminus_dd as *const u8, vec![recv]);
-    asm.stack_pop(1);
-    let ret_opnd = asm.stack_push(Type::Decimal);
     asm.mov(ret_opnd, ret);
     true
 }
@@ -11422,13 +11076,7 @@ pub fn yjit_reg_method_codegen_fns() {
         reg_method_codegen(rb_cFloat, "*", jit_rb_float_mul);
         reg_method_codegen(rb_cFloat, "/", jit_rb_float_div);
 
-        reg_method_codegen(rb_cDecimal, "+", jit_rb_decimal_plus);
-        reg_method_codegen(rb_cDecimal, "-", jit_rb_decimal_minus);
-        reg_method_codegen(rb_cDecimal, "*", jit_rb_decimal_mul);
-        reg_method_codegen(rb_cDecimal, "/", jit_rb_decimal_div);
         reg_method_codegen(rb_cDecimal, "<=>", jit_rb_decimal_cmp);
-        reg_method_codegen(rb_cDecimal, "%", jit_rb_decimal_mod);
-        reg_method_codegen(rb_cDecimal, "-@", jit_rb_decimal_uminus);
 
         reg_method_codegen(rb_cString, "dup", jit_rb_str_dup);
         reg_method_codegen(rb_cString, "empty?", jit_rb_str_empty_p);

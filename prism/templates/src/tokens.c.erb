@@ -113,6 +113,8 @@ pm_token_str(pm_token_type_t token_type) {
             return "'=~'";
         case PM_TOKEN_FLOAT:
             return "float";
+        case PM_TOKEN_FLOAT_DECIMAL:
+            return "decimal";
         case PM_TOKEN_FLOAT_IMAGINARY:
             return "imaginary";
         case PM_TOKEN_FLOAT_RATIONAL:
@@ -141,6 +143,8 @@ pm_token_str(pm_token_type_t token_type) {
             return "instance variable";
         case PM_TOKEN_INTEGER:
             return "integer";
+        case PM_TOKEN_INTEGER_DECIMAL:
+            return "decimal";
         case PM_TOKEN_INTEGER_IMAGINARY:
             return "imaginary";
         case PM_TOKEN_INTEGER_RATIONAL:

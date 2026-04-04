@@ -106,6 +106,7 @@ break.o: $(hdrdir)/ruby/internal/intern/class.h
 break.o: $(hdrdir)/ruby/internal/intern/compar.h
 break.o: $(hdrdir)/ruby/internal/intern/complex.h
 break.o: $(hdrdir)/ruby/internal/intern/cont.h
+break.o: $(hdrdir)/ruby/internal/intern/decimal.h
 break.o: $(hdrdir)/ruby/internal/intern/dir.h
 break.o: $(hdrdir)/ruby/internal/intern/enum.h
 break.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -267,6 +268,7 @@ init.o: $(hdrdir)/ruby/internal/intern/class.h
 init.o: $(hdrdir)/ruby/internal/intern/compar.h
 init.o: $(hdrdir)/ruby/internal/intern/complex.h
 init.o: $(hdrdir)/ruby/internal/intern/cont.h
+init.o: $(hdrdir)/ruby/internal/intern/decimal.h
 init.o: $(hdrdir)/ruby/internal/intern/dir.h
 init.o: $(hdrdir)/ruby/internal/intern/enum.h
 init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -428,6 +430,7 @@ yield.o: $(hdrdir)/ruby/internal/intern/class.h
 yield.o: $(hdrdir)/ruby/internal/intern/compar.h
 yield.o: $(hdrdir)/ruby/internal/intern/complex.h
 yield.o: $(hdrdir)/ruby/internal/intern/cont.h
+yield.o: $(hdrdir)/ruby/internal/intern/decimal.h
 yield.o: $(hdrdir)/ruby/internal/intern/dir.h
 yield.o: $(hdrdir)/ruby/internal/intern/enum.h
 yield.o: $(hdrdir)/ruby/internal/intern/enumerator.h

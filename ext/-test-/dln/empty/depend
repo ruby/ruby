@@ -106,6 +106,7 @@ empty.o: $(hdrdir)/ruby/internal/intern/class.h
 empty.o: $(hdrdir)/ruby/internal/intern/compar.h
 empty.o: $(hdrdir)/ruby/internal/intern/complex.h
 empty.o: $(hdrdir)/ruby/internal/intern/cont.h
+empty.o: $(hdrdir)/ruby/internal/intern/decimal.h
 empty.o: $(hdrdir)/ruby/internal/intern/dir.h
 empty.o: $(hdrdir)/ruby/internal/intern/enum.h
 empty.o: $(hdrdir)/ruby/internal/intern/enumerator.h

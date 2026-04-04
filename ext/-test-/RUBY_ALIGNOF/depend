@@ -106,6 +106,7 @@ c.o: $(hdrdir)/ruby/internal/intern/class.h
 c.o: $(hdrdir)/ruby/internal/intern/compar.h
 c.o: $(hdrdir)/ruby/internal/intern/complex.h
 c.o: $(hdrdir)/ruby/internal/intern/cont.h
+c.o: $(hdrdir)/ruby/internal/intern/decimal.h
 c.o: $(hdrdir)/ruby/internal/intern/dir.h
 c.o: $(hdrdir)/ruby/internal/intern/enum.h
 c.o: $(hdrdir)/ruby/internal/intern/enumerator.h

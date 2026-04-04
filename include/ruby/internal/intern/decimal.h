@@ -25,6 +25,7 @@
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
+#if defined(HAVE_INT128_T) && SIZEOF_VALUE >= 8
 /* decimal.c */
 
 /**
@@ -48,6 +49,7 @@ VALUE rb_Decimal(VALUE val);
  * @return     An instance of ::rb_cDecimal.
  */
 VALUE rb_decimal_from_str(VALUE str);
+#endif
 
 RBIMPL_SYMBOL_EXPORT_END()
 

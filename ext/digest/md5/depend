@@ -109,6 +109,7 @@ md5.o: $(hdrdir)/ruby/internal/intern/class.h
 md5.o: $(hdrdir)/ruby/internal/intern/compar.h
 md5.o: $(hdrdir)/ruby/internal/intern/complex.h
 md5.o: $(hdrdir)/ruby/internal/intern/cont.h
+md5.o: $(hdrdir)/ruby/internal/intern/decimal.h
 md5.o: $(hdrdir)/ruby/internal/intern/dir.h
 md5.o: $(hdrdir)/ruby/internal/intern/enum.h
 md5.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -272,6 +273,7 @@ md5init.o: $(hdrdir)/ruby/internal/intern/class.h
 md5init.o: $(hdrdir)/ruby/internal/intern/compar.h
 md5init.o: $(hdrdir)/ruby/internal/intern/complex.h
 md5init.o: $(hdrdir)/ruby/internal/intern/cont.h
+md5init.o: $(hdrdir)/ruby/internal/intern/decimal.h
 md5init.o: $(hdrdir)/ruby/internal/intern/dir.h
 md5init.o: $(hdrdir)/ruby/internal/intern/enum.h
 md5init.o: $(hdrdir)/ruby/internal/intern/enumerator.h

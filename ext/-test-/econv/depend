@@ -116,6 +116,7 @@ append.o: $(hdrdir)/ruby/internal/intern/class.h
 append.o: $(hdrdir)/ruby/internal/intern/compar.h
 append.o: $(hdrdir)/ruby/internal/intern/complex.h
 append.o: $(hdrdir)/ruby/internal/intern/cont.h
+append.o: $(hdrdir)/ruby/internal/intern/decimal.h
 append.o: $(hdrdir)/ruby/internal/intern/dir.h
 append.o: $(hdrdir)/ruby/internal/intern/enum.h
 append.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -279,6 +280,7 @@ init.o: $(hdrdir)/ruby/internal/intern/class.h
 init.o: $(hdrdir)/ruby/internal/intern/compar.h
 init.o: $(hdrdir)/ruby/internal/intern/complex.h
 init.o: $(hdrdir)/ruby/internal/intern/cont.h
+init.o: $(hdrdir)/ruby/internal/intern/decimal.h
 init.o: $(hdrdir)/ruby/internal/intern/dir.h
 init.o: $(hdrdir)/ruby/internal/intern/enum.h
 init.o: $(hdrdir)/ruby/internal/intern/enumerator.h

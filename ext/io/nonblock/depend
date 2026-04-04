@@ -116,6 +116,7 @@ nonblock.o: $(hdrdir)/ruby/internal/intern/class.h
 nonblock.o: $(hdrdir)/ruby/internal/intern/compar.h
 nonblock.o: $(hdrdir)/ruby/internal/intern/complex.h
 nonblock.o: $(hdrdir)/ruby/internal/intern/cont.h
+nonblock.o: $(hdrdir)/ruby/internal/intern/decimal.h
 nonblock.o: $(hdrdir)/ruby/internal/intern/dir.h
 nonblock.o: $(hdrdir)/ruby/internal/intern/enum.h
 nonblock.o: $(hdrdir)/ruby/internal/intern/enumerator.h

@@ -152,13 +152,7 @@ extern "C" {
     pub fn rb_vm_push_cfunc_frame(cme: *const rb_callable_method_entry_t, recv_idx: c_int);
 
     pub static mut rb_cDecimal: VALUE;
-    pub fn rb_decimal_plus_dd(x: VALUE, y: VALUE) -> VALUE;
-    pub fn rb_decimal_minus_dd(x: VALUE, y: VALUE) -> VALUE;
-    pub fn rb_decimal_mul_dd(x: VALUE, y: VALUE) -> VALUE;
-    pub fn rb_decimal_div_dd(x: VALUE, y: VALUE) -> VALUE;
     pub fn rb_decimal_cmp_dd(x: VALUE, y: VALUE) -> VALUE;
-    pub fn rb_decimal_mod_dd(x: VALUE, y: VALUE) -> VALUE;
-    pub fn rb_decimal_uminus_dd(x: VALUE) -> VALUE;
 }
 
 // Renames

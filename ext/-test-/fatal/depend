@@ -107,6 +107,7 @@ init.o: $(hdrdir)/ruby/internal/intern/class.h
 init.o: $(hdrdir)/ruby/internal/intern/compar.h
 init.o: $(hdrdir)/ruby/internal/intern/complex.h
 init.o: $(hdrdir)/ruby/internal/intern/cont.h
+init.o: $(hdrdir)/ruby/internal/intern/decimal.h
 init.o: $(hdrdir)/ruby/internal/intern/dir.h
 init.o: $(hdrdir)/ruby/internal/intern/enum.h
 init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -268,6 +269,7 @@ invalid.o: $(hdrdir)/ruby/internal/intern/class.h
 invalid.o: $(hdrdir)/ruby/internal/intern/compar.h
 invalid.o: $(hdrdir)/ruby/internal/intern/complex.h
 invalid.o: $(hdrdir)/ruby/internal/intern/cont.h
+invalid.o: $(hdrdir)/ruby/internal/intern/decimal.h
 invalid.o: $(hdrdir)/ruby/internal/intern/dir.h
 invalid.o: $(hdrdir)/ruby/internal/intern/enum.h
 invalid.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -429,6 +431,7 @@ rb_fatal.o: $(hdrdir)/ruby/internal/intern/class.h
 rb_fatal.o: $(hdrdir)/ruby/internal/intern/compar.h
 rb_fatal.o: $(hdrdir)/ruby/internal/intern/complex.h
 rb_fatal.o: $(hdrdir)/ruby/internal/intern/cont.h
+rb_fatal.o: $(hdrdir)/ruby/internal/intern/decimal.h
 rb_fatal.o: $(hdrdir)/ruby/internal/intern/dir.h
 rb_fatal.o: $(hdrdir)/ruby/internal/intern/enum.h
 rb_fatal.o: $(hdrdir)/ruby/internal/intern/enumerator.h

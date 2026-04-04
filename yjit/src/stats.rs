@@ -473,11 +473,6 @@ make_counters! {
     opt_minus_overflow,
     opt_mult_overflow,
 
-    decimal_not_bid,
-    decimal_negative,
-    decimal_add_overflow,
-    decimal_sub_overflow,
-
     opt_succ_not_fixnum,
     opt_succ_overflow,
 

@@ -116,6 +116,7 @@ strscan.o: $(hdrdir)/ruby/internal/intern/class.h
 strscan.o: $(hdrdir)/ruby/internal/intern/compar.h
 strscan.o: $(hdrdir)/ruby/internal/intern/complex.h
 strscan.o: $(hdrdir)/ruby/internal/intern/cont.h
+strscan.o: $(hdrdir)/ruby/internal/intern/decimal.h
 strscan.o: $(hdrdir)/ruby/internal/intern/dir.h
 strscan.o: $(hdrdir)/ruby/internal/intern/enum.h
 strscan.o: $(hdrdir)/ruby/internal/intern/enumerator.h

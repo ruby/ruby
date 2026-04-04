@@ -105,6 +105,7 @@ sanitizers.o: $(hdrdir)/ruby/internal/intern/class.h
 sanitizers.o: $(hdrdir)/ruby/internal/intern/compar.h
 sanitizers.o: $(hdrdir)/ruby/internal/intern/complex.h
 sanitizers.o: $(hdrdir)/ruby/internal/intern/cont.h
+sanitizers.o: $(hdrdir)/ruby/internal/intern/decimal.h
 sanitizers.o: $(hdrdir)/ruby/internal/intern/dir.h
 sanitizers.o: $(hdrdir)/ruby/internal/intern/enum.h
 sanitizers.o: $(hdrdir)/ruby/internal/intern/enumerator.h

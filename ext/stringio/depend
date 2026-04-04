@@ -116,6 +116,7 @@ stringio.o: $(hdrdir)/ruby/internal/intern/class.h
 stringio.o: $(hdrdir)/ruby/internal/intern/compar.h
 stringio.o: $(hdrdir)/ruby/internal/intern/complex.h
 stringio.o: $(hdrdir)/ruby/internal/intern/cont.h
+stringio.o: $(hdrdir)/ruby/internal/intern/decimal.h
 stringio.o: $(hdrdir)/ruby/internal/intern/dir.h
 stringio.o: $(hdrdir)/ruby/internal/intern/enum.h
 stringio.o: $(hdrdir)/ruby/internal/intern/enumerator.h

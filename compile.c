@@ -14449,6 +14449,7 @@ ibf_load_object_complex_rational(const struct ibf_load *load, const struct ibf_o
     return obj;
 }
 
+#if defined(HAVE_INT128_T) && SIZEOF_VALUE >= 8
 static void
 ibf_dump_object_decimal(struct ibf_dump *dump, VALUE obj)
 {
@@ -14472,6 +14473,7 @@ ibf_load_object_decimal(const struct ibf_load *load, const struct ibf_object_hea
     if (header->internal) rb_obj_hide(obj);
     return obj;
 }
+#endif
 
 static void
 ibf_dump_object_symbol(struct ibf_dump *dump, VALUE obj)
@@ -14515,7 +14517,11 @@ static const ibf_dump_object_function dump_object_functions[RUBY_T_MASK+1] = {
     ibf_dump_object_unsupported, /* T_MATCH */
     ibf_dump_object_complex_rational, /* T_COMPLEX */
     ibf_dump_object_complex_rational, /* T_RATIONAL */
+#if defined(HAVE_INT128_T) && SIZEOF_VALUE >= 8
     ibf_dump_object_decimal,     /* T_DECIMAL */
+#else
+    ibf_dump_object_unsupported, /* T_DECIMAL (no __int128) */
+#endif
     ibf_dump_object_unsupported, /* 0x11 T_NIL */
     ibf_dump_object_unsupported, /* 0x12 T_TRUE */
     ibf_dump_object_unsupported, /* 0x13 T_FALSE */
@@ -14608,7 +14614,11 @@ static const ibf_load_object_function load_object_functions[RUBY_T_MASK+1] = {
     ibf_load_object_unsupported, /* T_MATCH */
     ibf_load_object_complex_rational, /* T_COMPLEX */
     ibf_load_object_complex_rational, /* T_RATIONAL */
+#if defined(HAVE_INT128_T) && SIZEOF_VALUE >= 8
     ibf_load_object_decimal,     /* T_DECIMAL */
+#else
+    ibf_load_object_unsupported, /* T_DECIMAL (no __int128) */
+#endif
     ibf_load_object_unsupported, /* T_NIL */
     ibf_load_object_unsupported, /* T_TRUE */
     ibf_load_object_unsupported, /* T_FALSE */

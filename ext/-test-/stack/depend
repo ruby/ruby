@@ -117,6 +117,7 @@ stack.o: $(hdrdir)/ruby/internal/intern/class.h
 stack.o: $(hdrdir)/ruby/internal/intern/compar.h
 stack.o: $(hdrdir)/ruby/internal/intern/complex.h
 stack.o: $(hdrdir)/ruby/internal/intern/cont.h
+stack.o: $(hdrdir)/ruby/internal/intern/decimal.h
 stack.o: $(hdrdir)/ruby/internal/intern/dir.h
 stack.o: $(hdrdir)/ruby/internal/intern/enum.h
 stack.o: $(hdrdir)/ruby/internal/intern/enumerator.h

@@ -109,6 +109,7 @@ sha2.o: $(hdrdir)/ruby/internal/intern/class.h
 sha2.o: $(hdrdir)/ruby/internal/intern/compar.h
 sha2.o: $(hdrdir)/ruby/internal/intern/complex.h
 sha2.o: $(hdrdir)/ruby/internal/intern/cont.h
+sha2.o: $(hdrdir)/ruby/internal/intern/decimal.h
 sha2.o: $(hdrdir)/ruby/internal/intern/dir.h
 sha2.o: $(hdrdir)/ruby/internal/intern/enum.h
 sha2.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -272,6 +273,7 @@ sha2init.o: $(hdrdir)/ruby/internal/intern/class.h
 sha2init.o: $(hdrdir)/ruby/internal/intern/compar.h
 sha2init.o: $(hdrdir)/ruby/internal/intern/complex.h
 sha2init.o: $(hdrdir)/ruby/internal/intern/cont.h
+sha2init.o: $(hdrdir)/ruby/internal/intern/decimal.h
 sha2init.o: $(hdrdir)/ruby/internal/intern/dir.h
 sha2init.o: $(hdrdir)/ruby/internal/intern/enum.h
 sha2init.o: $(hdrdir)/ruby/internal/intern/enumerator.h

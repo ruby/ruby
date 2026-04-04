@@ -10,15 +10,16 @@
  */
 #include "ruby/ruby.h"          /* for struct RBasic */
 
-/* Heap fallback for values > 15 significant digits. */
+#if defined(HAVE_INT128_T) && SIZEOF_VALUE >= 8
+#pragma pack(push, 8)
 struct RDecimal {
     struct RBasic basic;
-    int128_t __attribute__((aligned(8))) value;
+    int128_t value;
 };
+#pragma pack(pop)
 
 #define DEC_SCALE       ((int128_t)1000000000000000000LL)
 #define DEC_FL_INTEGRAL RUBY_FL_USER1
-
 #define RDECIMAL(obj) ((struct RDecimal *)(obj))
 
 /* BID (Binary Integer Decimal) immediate encoding.
@@ -83,5 +84,26 @@ VALUE rb_decimal_to_f(VALUE self);
 VALUE rb_decimal_from_integer(VALUE val);
 double rb_decimal_to_f_value(VALUE self);
 VALUE rb_decimal_sum_ary(VALUE ary, VALUE init, long start);
+#else
+static inline int decimal_p(VALUE v) { return 0; }
+static inline VALUE rb_decimal_plus(VALUE x, VALUE y) { return Qundef; }
+static inline VALUE rb_decimal_minus(VALUE x, VALUE y) { return Qundef; }
+static inline VALUE rb_decimal_mul(VALUE x, VALUE y) { return Qundef; }
+static inline VALUE rb_decimal_div(VALUE x, VALUE y) { return Qundef; }
+static inline VALUE rb_decimal_plus_dd(VALUE x, VALUE y) { return Qundef; }
+static inline VALUE rb_decimal_minus_dd(VALUE x, VALUE y) { return Qundef; }
+static inline VALUE rb_decimal_mul_dd(VALUE x, VALUE y) { return Qundef; }
+static inline VALUE rb_decimal_div_dd(VALUE x, VALUE y) { return Qundef; }
+static inline VALUE rb_decimal_cmp_dd(VALUE x, VALUE y) { return Qundef; }
+static inline VALUE rb_decimal_mod_dd(VALUE x, VALUE y) { return Qundef; }
+static inline VALUE rb_decimal_uminus_dd(VALUE x) { return Qundef; }
+static inline VALUE rb_decimal_abs(VALUE x) { return Qundef; }
+static inline VALUE rb_decimal_to_f(VALUE x) { return Qundef; }
+static inline VALUE rb_decimal_from_integer(VALUE x) { return Qundef; }
+static inline double rb_decimal_to_f_value(VALUE x) { return 0.0; }
+static inline VALUE rb_decimal_sum_ary(VALUE a, VALUE b, long c) { return Qundef; }
+static inline VALUE rb_Decimal(VALUE x) { return Qundef; }
+static inline VALUE rb_decimal_from_str(VALUE x) { return Qundef; }
+#endif
 
 #endif /* INTERNAL_DECIMAL_H */

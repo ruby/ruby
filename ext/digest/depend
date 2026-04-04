@@ -106,6 +106,7 @@ digest.o: $(hdrdir)/ruby/internal/intern/class.h
 digest.o: $(hdrdir)/ruby/internal/intern/compar.h
 digest.o: $(hdrdir)/ruby/internal/intern/complex.h
 digest.o: $(hdrdir)/ruby/internal/intern/cont.h
+digest.o: $(hdrdir)/ruby/internal/intern/decimal.h
 digest.o: $(hdrdir)/ruby/internal/intern/dir.h
 digest.o: $(hdrdir)/ruby/internal/intern/enum.h
 digest.o: $(hdrdir)/ruby/internal/intern/enumerator.h

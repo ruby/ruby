@@ -105,6 +105,7 @@ extract.o: $(hdrdir)/ruby/internal/intern/class.h
 extract.o: $(hdrdir)/ruby/internal/intern/compar.h
 extract.o: $(hdrdir)/ruby/internal/intern/complex.h
 extract.o: $(hdrdir)/ruby/internal/intern/cont.h
+extract.o: $(hdrdir)/ruby/internal/intern/decimal.h
 extract.o: $(hdrdir)/ruby/internal/intern/dir.h
 extract.o: $(hdrdir)/ruby/internal/intern/enum.h
 extract.o: $(hdrdir)/ruby/internal/intern/enumerator.h

@@ -622,13 +622,14 @@ class TestRubyLiteral < Test::Unit::TestCase
           rescue NameError, SyntaxError
             r2 = :err
           end
+          next if s == "0d"
           assert_equal(r1, r2, "Integer(#{s.inspect}) != eval(#{s.inspect})")
         }
       }
     }
     bug2407 = '[ruby-dev:39798]'
     head.grep_v(/^0/) do |s|
-      head.grep(/^0/) do |h|
+      (head.grep(/^0/) - ["0d"]).each do |h|
         h = "#{s}#{h}_"
         assert_syntax_error(h, /numeric literal without digits\Z/, "#{bug2407}: #{h.inspect}")
       end

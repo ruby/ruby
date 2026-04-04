@@ -106,6 +106,7 @@ instrumentation.o: $(hdrdir)/ruby/internal/intern/class.h
 instrumentation.o: $(hdrdir)/ruby/internal/intern/compar.h
 instrumentation.o: $(hdrdir)/ruby/internal/intern/complex.h
 instrumentation.o: $(hdrdir)/ruby/internal/intern/cont.h
+instrumentation.o: $(hdrdir)/ruby/internal/intern/decimal.h
 instrumentation.o: $(hdrdir)/ruby/internal/intern/dir.h
 instrumentation.o: $(hdrdir)/ruby/internal/intern/enum.h
 instrumentation.o: $(hdrdir)/ruby/internal/intern/enumerator.h

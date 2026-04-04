@@ -67,6 +67,7 @@ array.$(OBJEXT): $(top_srcdir)/internal/box.h
 array.$(OBJEXT): $(top_srcdir)/internal/class.h
 array.$(OBJEXT): $(top_srcdir)/internal/compar.h
 array.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+array.$(OBJEXT): $(top_srcdir)/internal/decimal.h
 array.$(OBJEXT): $(top_srcdir)/internal/enum.h
 array.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 array.$(OBJEXT): $(top_srcdir)/internal/gc.h
@@ -207,6 +208,7 @@ array.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 array.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 array.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 array.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+array.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 array.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 array.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 array.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -464,6 +466,7 @@ ast.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 ast.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 ast.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 ast.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+ast.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 ast.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 ast.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 ast.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -680,6 +683,7 @@ bignum.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 bignum.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 bignum.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 bignum.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+bignum.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 bignum.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 bignum.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 bignum.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -934,6 +938,7 @@ box.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 box.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 box.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 box.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+box.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 box.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 box.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 box.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -1186,6 +1191,7 @@ builtin.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 builtin.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 builtin.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 builtin.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+builtin.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 builtin.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 builtin.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 builtin.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -1400,6 +1406,7 @@ class.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 class.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 class.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 class.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+class.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 class.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 class.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 class.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -1599,6 +1606,7 @@ compar.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 compar.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 compar.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 compar.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+compar.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 compar.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 compar.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 compar.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -1669,6 +1677,7 @@ compile.$(OBJEXT): $(top_srcdir)/internal/compar.h
 compile.$(OBJEXT): $(top_srcdir)/internal/compile.h
 compile.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 compile.$(OBJEXT): $(top_srcdir)/internal/complex.h
+compile.$(OBJEXT): $(top_srcdir)/internal/decimal.h
 compile.$(OBJEXT): $(top_srcdir)/internal/encoding.h
 compile.$(OBJEXT): $(top_srcdir)/internal/error.h
 compile.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
@@ -1857,6 +1866,7 @@ compile.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 compile.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 compile.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 compile.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+compile.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 compile.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 compile.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 compile.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -1949,6 +1959,7 @@ complex.$(OBJEXT): $(top_srcdir)/internal/class.h
 complex.$(OBJEXT): $(top_srcdir)/internal/compar.h
 complex.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 complex.$(OBJEXT): $(top_srcdir)/internal/complex.h
+complex.$(OBJEXT): $(top_srcdir)/internal/decimal.h
 complex.$(OBJEXT): $(top_srcdir)/internal/error.h
 complex.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 complex.$(OBJEXT): $(top_srcdir)/internal/gc.h
@@ -2089,6 +2100,7 @@ complex.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 complex.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 complex.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 complex.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+complex.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 complex.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 complex.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 complex.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -2295,6 +2307,7 @@ concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -2548,6 +2561,7 @@ cont.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 cont.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 cont.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 cont.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+cont.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 cont.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 cont.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 cont.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -2766,6 +2780,7 @@ debug.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 debug.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 debug.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 debug.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+debug.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 debug.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 debug.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 debug.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -2946,6 +2961,7 @@ debug_counter.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+debug_counter.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -2999,21 +3015,54 @@ debug_counter.$(OBJEXT): {$(VPATH)}missing.h
 debug_counter.$(OBJEXT): {$(VPATH)}st.h
 debug_counter.$(OBJEXT): {$(VPATH)}subst.h
 debug_counter.$(OBJEXT): {$(VPATH)}thread_native.h
+decimal.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
+decimal.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
+decimal.$(OBJEXT): $(CCAN_DIR)/list/list.h
+decimal.$(OBJEXT): $(CCAN_DIR)/str/str.h
 decimal.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+decimal.$(OBJEXT): $(top_srcdir)/internal/array.h
+decimal.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
+decimal.$(OBJEXT): $(top_srcdir)/internal/bignum.h
+decimal.$(OBJEXT): $(top_srcdir)/internal/bits.h
+decimal.$(OBJEXT): $(top_srcdir)/internal/box.h
+decimal.$(OBJEXT): $(top_srcdir)/internal/compar.h
+decimal.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 decimal.$(OBJEXT): $(top_srcdir)/internal/decimal.h
+decimal.$(OBJEXT): $(top_srcdir)/internal/error.h
+decimal.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
+decimal.$(OBJEXT): $(top_srcdir)/internal/gc.h
+decimal.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+decimal.$(OBJEXT): $(top_srcdir)/internal/numeric.h
+decimal.$(OBJEXT): $(top_srcdir)/internal/object.h
+decimal.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
+decimal.$(OBJEXT): $(top_srcdir)/internal/serial.h
+decimal.$(OBJEXT): $(top_srcdir)/internal/set_table.h
+decimal.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+decimal.$(OBJEXT): $(top_srcdir)/internal/string.h
+decimal.$(OBJEXT): $(top_srcdir)/internal/vm.h
+decimal.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 decimal.$(OBJEXT): {$(VPATH)}assert.h
+decimal.$(OBJEXT): {$(VPATH)}atomic.h
 decimal.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 decimal.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 decimal.$(OBJEXT): {$(VPATH)}backward/2/bool.h
+decimal.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 decimal.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 decimal.$(OBJEXT): {$(VPATH)}backward/2/limits.h
 decimal.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
 decimal.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 decimal.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+decimal.$(OBJEXT): {$(VPATH)}builtin.h
 decimal.$(OBJEXT): {$(VPATH)}config.h
 decimal.$(OBJEXT): {$(VPATH)}decimal.c
+decimal.$(OBJEXT): {$(VPATH)}decimal.rbinc
 decimal.$(OBJEXT): {$(VPATH)}defines.h
+decimal.$(OBJEXT): {$(VPATH)}encindex.h
+decimal.$(OBJEXT): {$(VPATH)}encoding.h
+decimal.$(OBJEXT): {$(VPATH)}id.h
+decimal.$(OBJEXT): {$(VPATH)}id_table.h
 decimal.$(OBJEXT): {$(VPATH)}intern.h
+decimal.$(OBJEXT): {$(VPATH)}internal.h
 decimal.$(OBJEXT): {$(VPATH)}internal/abi.h
 decimal.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 decimal.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
@@ -3085,6 +3134,15 @@ decimal.$(OBJEXT): {$(VPATH)}internal/core/rtypeddata.h
 decimal.$(OBJEXT): {$(VPATH)}internal/ctype.h
 decimal.$(OBJEXT): {$(VPATH)}internal/dllexport.h
 decimal.$(OBJEXT): {$(VPATH)}internal/dosish.h
+decimal.$(OBJEXT): {$(VPATH)}internal/encoding/coderange.h
+decimal.$(OBJEXT): {$(VPATH)}internal/encoding/ctype.h
+decimal.$(OBJEXT): {$(VPATH)}internal/encoding/encoding.h
+decimal.$(OBJEXT): {$(VPATH)}internal/encoding/pathname.h
+decimal.$(OBJEXT): {$(VPATH)}internal/encoding/re.h
+decimal.$(OBJEXT): {$(VPATH)}internal/encoding/sprintf.h
+decimal.$(OBJEXT): {$(VPATH)}internal/encoding/string.h
+decimal.$(OBJEXT): {$(VPATH)}internal/encoding/symbol.h
+decimal.$(OBJEXT): {$(VPATH)}internal/encoding/transcode.h
 decimal.$(OBJEXT): {$(VPATH)}internal/error.h
 decimal.$(OBJEXT): {$(VPATH)}internal/eval.h
 decimal.$(OBJEXT): {$(VPATH)}internal/event.h
@@ -3106,6 +3164,7 @@ decimal.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 decimal.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 decimal.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 decimal.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+decimal.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 decimal.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 decimal.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 decimal.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -3155,9 +3214,20 @@ decimal.$(OBJEXT): {$(VPATH)}internal/value_type.h
 decimal.$(OBJEXT): {$(VPATH)}internal/variable.h
 decimal.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 decimal.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
+decimal.$(OBJEXT): {$(VPATH)}method.h
 decimal.$(OBJEXT): {$(VPATH)}missing.h
+decimal.$(OBJEXT): {$(VPATH)}node.h
+decimal.$(OBJEXT): {$(VPATH)}onigmo.h
+decimal.$(OBJEXT): {$(VPATH)}oniguruma.h
+decimal.$(OBJEXT): {$(VPATH)}ruby_assert.h
+decimal.$(OBJEXT): {$(VPATH)}ruby_atomic.h
+decimal.$(OBJEXT): {$(VPATH)}rubyparser.h
 decimal.$(OBJEXT): {$(VPATH)}st.h
 decimal.$(OBJEXT): {$(VPATH)}subst.h
+decimal.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+decimal.$(OBJEXT): {$(VPATH)}thread_native.h
+decimal.$(OBJEXT): {$(VPATH)}vm_core.h
+decimal.$(OBJEXT): {$(VPATH)}vm_opts.h
 dir.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 dir.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 dir.$(OBJEXT): $(CCAN_DIR)/list/list.h
@@ -3309,6 +3379,7 @@ dir.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 dir.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 dir.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 dir.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+dir.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 dir.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 dir.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 dir.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -3488,6 +3559,7 @@ dln.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 dln.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 dln.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 dln.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+dln.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 dln.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 dln.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 dln.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -3647,6 +3719,7 @@ dln_find.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+dln_find.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -3805,6 +3878,7 @@ dmydln.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+dmydln.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -4862,6 +4936,7 @@ encoding.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 encoding.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 encoding.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 encoding.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+encoding.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 encoding.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 encoding.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 encoding.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -5075,6 +5150,7 @@ enum.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 enum.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 enum.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 enum.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+enum.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 enum.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 enum.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 enum.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -5147,6 +5223,7 @@ enumerator.$(OBJEXT): $(top_srcdir)/internal/box.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/class.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/compar.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+enumerator.$(OBJEXT): $(top_srcdir)/internal/decimal.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/enumerator.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/error.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
@@ -5288,6 +5365,7 @@ enumerator.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+enumerator.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -5509,6 +5587,7 @@ error.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 error.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 error.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 error.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+error.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 error.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 error.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 error.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -5774,6 +5853,7 @@ eval.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 eval.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 eval.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 eval.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+eval.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 eval.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 eval.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 eval.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -5873,6 +5953,7 @@ file.$(OBJEXT): $(CCAN_DIR)/str/str.h
 file.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 file.$(OBJEXT): $(hdrdir)/ruby/version.h
 file.$(OBJEXT): $(top_srcdir)/internal/array.h
+file.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 file.$(OBJEXT): $(top_srcdir)/internal/class.h
 file.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 file.$(OBJEXT): $(top_srcdir)/internal/dir.h
@@ -6015,6 +6096,7 @@ file.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 file.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 file.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 file.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+file.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 file.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 file.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 file.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -6282,6 +6364,7 @@ gc.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 gc.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 gc.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 gc.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+gc.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 gc.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 gc.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 gc.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -6540,6 +6623,7 @@ goruby.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 goruby.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 goruby.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 goruby.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+goruby.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 goruby.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 goruby.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 goruby.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -6801,6 +6885,7 @@ hash.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 hash.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 hash.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 hash.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+hash.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 hash.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 hash.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 hash.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -7021,6 +7106,7 @@ imemo.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 imemo.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 imemo.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 imemo.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+imemo.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 imemo.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 imemo.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 imemo.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -7200,6 +7286,7 @@ inits.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 inits.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 inits.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 inits.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+inits.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 inits.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 inits.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 inits.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -7413,6 +7500,7 @@ io.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 io.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 io.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 io.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+io.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 io.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 io.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 io.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -7634,6 +7722,7 @@ io_buffer.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+io_buffer.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -7902,6 +7991,7 @@ iseq.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 iseq.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 iseq.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 iseq.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+iseq.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 iseq.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 iseq.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 iseq.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -8164,6 +8254,7 @@ jit.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 jit.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 jit.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 jit.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 jit.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 jit.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 jit.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -8432,6 +8523,7 @@ load.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 load.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 load.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 load.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+load.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 load.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 load.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 load.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -8613,6 +8705,7 @@ loadpath.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+loadpath.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -8784,6 +8877,7 @@ localeinit.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+localeinit.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -8950,6 +9044,7 @@ main.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 main.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 main.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 main.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+main.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 main.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 main.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 main.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -9018,6 +9113,7 @@ marshal.$(OBJEXT): $(top_srcdir)/internal/box.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/class.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/compar.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+marshal.$(OBJEXT): $(top_srcdir)/internal/decimal.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/encoding.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/error.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
@@ -9162,6 +9258,7 @@ marshal.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 marshal.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 marshal.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 marshal.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+marshal.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 marshal.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 marshal.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 marshal.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -9233,6 +9330,7 @@ marshal.$(OBJEXT): {$(VPATH)}vm_debug.h
 marshal.$(OBJEXT): {$(VPATH)}vm_opts.h
 marshal.$(OBJEXT): {$(VPATH)}vm_sync.h
 math.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+math.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 math.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 math.$(OBJEXT): $(top_srcdir)/internal/class.h
 math.$(OBJEXT): $(top_srcdir)/internal/compilers.h
@@ -9353,6 +9451,7 @@ math.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 math.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 math.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 math.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+math.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 math.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 math.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 math.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -9548,6 +9647,7 @@ memory_view.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+memory_view.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -9808,6 +9908,7 @@ miniinit.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+miniinit.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -10036,6 +10137,7 @@ node.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 node.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 node.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 node.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+node.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 node.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 node.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 node.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -10253,6 +10355,7 @@ node_dump.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 node_dump.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 node_dump.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 node_dump.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+node_dump.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 node_dump.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 node_dump.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 node_dump.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -10334,6 +10437,7 @@ numeric.$(OBJEXT): $(top_srcdir)/internal/class.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/compar.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/complex.h
+numeric.$(OBJEXT): $(top_srcdir)/internal/decimal.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/enumerator.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/error.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
@@ -10475,6 +10579,7 @@ numeric.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 numeric.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 numeric.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 numeric.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+numeric.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 numeric.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 numeric.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 numeric.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -10556,6 +10661,7 @@ object.$(OBJEXT): $(top_srcdir)/internal/box.h
 object.$(OBJEXT): $(top_srcdir)/internal/class.h
 object.$(OBJEXT): $(top_srcdir)/internal/compar.h
 object.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+object.$(OBJEXT): $(top_srcdir)/internal/decimal.h
 object.$(OBJEXT): $(top_srcdir)/internal/error.h
 object.$(OBJEXT): $(top_srcdir)/internal/eval.h
 object.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
@@ -10698,6 +10804,7 @@ object.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 object.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 object.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 object.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+object.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 object.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 object.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 object.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -10921,6 +11028,7 @@ pack.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 pack.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 pack.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 pack.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+pack.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 pack.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 pack.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 pack.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -11149,6 +11257,7 @@ parse.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 parse.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 parse.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 parse.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+parse.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 parse.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 parse.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 parse.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -11411,6 +11520,7 @@ pathname.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 pathname.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 pathname.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 pathname.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 pathname.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 pathname.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 pathname.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -11627,6 +11737,7 @@ prism/api_node.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 prism/api_node.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 prism/api_node.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 prism/api_node.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+prism/api_node.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 prism/api_node.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 prism/api_node.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 prism/api_node.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -12050,6 +12161,7 @@ prism/extension.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 prism/extension.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 prism/extension.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 prism/extension.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+prism/extension.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 prism/extension.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 prism/extension.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 prism/extension.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -13098,6 +13210,7 @@ prism_init.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 prism_init.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 prism_init.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 prism_init.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+prism_init.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 prism_init.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 prism_init.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 prism_init.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -13340,6 +13453,7 @@ proc.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 proc.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 proc.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 proc.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+proc.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 proc.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 proc.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 proc.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -13575,6 +13689,7 @@ process.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 process.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 process.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 process.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+process.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 process.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 process.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 process.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -13807,6 +13922,7 @@ ractor.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 ractor.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 ractor.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 ractor.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+ractor.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 ractor.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 ractor.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 ractor.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -14029,6 +14145,7 @@ random.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 random.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 random.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 random.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+random.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 random.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 random.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 random.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -14240,6 +14357,7 @@ range.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 range.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 range.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 range.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+range.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 range.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 range.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 range.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -14310,6 +14428,7 @@ rational.$(OBJEXT): $(top_srcdir)/internal/class.h
 rational.$(OBJEXT): $(top_srcdir)/internal/compar.h
 rational.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 rational.$(OBJEXT): $(top_srcdir)/internal/complex.h
+rational.$(OBJEXT): $(top_srcdir)/internal/decimal.h
 rational.$(OBJEXT): $(top_srcdir)/internal/error.h
 rational.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 rational.$(OBJEXT): $(top_srcdir)/internal/gc.h
@@ -14446,6 +14565,7 @@ rational.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 rational.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 rational.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 rational.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+rational.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 rational.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 rational.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 rational.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -14665,6 +14785,7 @@ re.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 re.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 re.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 re.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+re.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 re.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 re.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 re.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -14844,6 +14965,7 @@ regcomp.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+regcomp.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -15007,6 +15129,7 @@ regenc.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 regenc.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 regenc.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 regenc.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+regenc.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 regenc.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 regenc.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 regenc.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -15169,6 +15292,7 @@ regerror.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 regerror.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 regerror.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 regerror.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+regerror.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 regerror.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 regerror.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 regerror.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -15331,6 +15455,7 @@ regexec.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 regexec.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 regexec.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 regexec.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+regexec.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 regexec.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 regexec.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 regexec.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -15497,6 +15622,7 @@ regparse.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 regparse.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 regparse.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 regparse.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+regparse.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 regparse.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 regparse.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 regparse.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -15660,6 +15786,7 @@ regsyntax.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+regsyntax.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -15930,6 +16057,7 @@ ruby.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 ruby.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 ruby.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 ruby.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+ruby.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 ruby.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 ruby.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 ruby.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -16139,6 +16267,7 @@ ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -16338,6 +16467,7 @@ scheduler.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+scheduler.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -16552,6 +16682,7 @@ set.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 set.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 set.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 set.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 set.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 set.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 set.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -16724,6 +16855,7 @@ setproctitle.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+setproctitle.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -16925,6 +17057,7 @@ shape.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 shape.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 shape.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 shape.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+shape.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 shape.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 shape.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 shape.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -17142,6 +17275,7 @@ signal.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 signal.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 signal.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 signal.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+signal.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 signal.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 signal.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 signal.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -17218,6 +17352,7 @@ sprintf.$(OBJEXT): $(top_srcdir)/internal/bits.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/class.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/compar.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+sprintf.$(OBJEXT): $(top_srcdir)/internal/decimal.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/error.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/gc.h
@@ -17353,6 +17488,7 @@ sprintf.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+sprintf.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -17552,6 +17688,7 @@ st.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 st.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 st.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 st.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+st.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 st.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 st.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 st.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -17618,6 +17755,7 @@ st.$(OBJEXT): {$(VPATH)}thread_native.h
 st.$(OBJEXT): {$(VPATH)}vm_core.h
 st.$(OBJEXT): {$(VPATH)}vm_opts.h
 strftime.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+strftime.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 strftime.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 strftime.$(OBJEXT): $(top_srcdir)/internal/encoding.h
 strftime.$(OBJEXT): $(top_srcdir)/internal/serial.h
@@ -17741,6 +17879,7 @@ strftime.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 strftime.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 strftime.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 strftime.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+strftime.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 strftime.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 strftime.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 strftime.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -17957,6 +18096,7 @@ string.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 string.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 string.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 string.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+string.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 string.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 string.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 string.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -18212,6 +18352,7 @@ struct.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 struct.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 struct.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 struct.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+struct.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 struct.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 struct.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 struct.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -18432,6 +18573,7 @@ symbol.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 symbol.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 symbol.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 symbol.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+symbol.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 symbol.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 symbol.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 symbol.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -18702,6 +18844,7 @@ thread.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 thread.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 thread.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 thread.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+thread.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 thread.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 thread.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 thread.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -18933,6 +19076,7 @@ time.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 time.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 time.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 time.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+time.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 time.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 time.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 time.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -19147,6 +19291,7 @@ transcode.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 transcode.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 transcode.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 transcode.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+transcode.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 transcode.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 transcode.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 transcode.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -19332,6 +19477,7 @@ util.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 util.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 util.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 util.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+util.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 util.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 util.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 util.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -19538,6 +19684,7 @@ variable.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 variable.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 variable.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 variable.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+variable.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 variable.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 variable.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 variable.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -19754,6 +19901,7 @@ version.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 version.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 version.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 version.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+version.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 version.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 version.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 version.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -19839,6 +19987,7 @@ vm.$(OBJEXT): $(top_srcdir)/internal/compile.h
 vm.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 vm.$(OBJEXT): $(top_srcdir)/internal/complex.h
 vm.$(OBJEXT): $(top_srcdir)/internal/cont.h
+vm.$(OBJEXT): $(top_srcdir)/internal/decimal.h
 vm.$(OBJEXT): $(top_srcdir)/internal/encoding.h
 vm.$(OBJEXT): $(top_srcdir)/internal/error.h
 vm.$(OBJEXT): $(top_srcdir)/internal/eval.h
@@ -20032,6 +20181,7 @@ vm.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 vm.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 vm.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 vm.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+vm.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 vm.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 vm.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 vm.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -20308,6 +20458,7 @@ vm_backtrace.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+vm_backtrace.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -20555,6 +20706,7 @@ vm_dump.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+vm_dump.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -20768,6 +20920,7 @@ vm_sync.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+vm_sync.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -21021,6 +21174,7 @@ vm_trace.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+vm_trace.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -21234,6 +21388,7 @@ weakmap.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 weakmap.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 weakmap.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 weakmap.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+weakmap.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 weakmap.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 weakmap.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 weakmap.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -21489,6 +21644,7 @@ yjit.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 yjit.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 yjit.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 yjit.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+yjit.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 yjit.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 yjit.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 yjit.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
@@ -21759,6 +21915,7 @@ zjit.$(OBJEXT): {$(VPATH)}internal/intern/class.h
 zjit.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
 zjit.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
 zjit.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/decimal.h
 zjit.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
 zjit.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
 zjit.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h

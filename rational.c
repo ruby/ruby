@@ -2697,6 +2697,25 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
 }
 
 /*
+ *  call-seq:
+ *    to_dec -> decimal
+ *
+ *  Returns the value as a Decimal.
+ *
+ *    Rational(1, 2).to_dec   #=> 0.5d
+ */
+static VALUE
+rational_to_dec(VALUE self)
+{
+#if defined(HAVE_INT128_T) && SIZEOF_VALUE >= 8
+    return rb_Decimal(self);
+#else
+    (void)self;
+    return Qnil;
+#endif
+}
+
+/*
  * A rational number can be represented as a pair of integer numbers:
  * a/b (b>0), where a is the numerator and b is the denominator.
  * Integer a equals rational a/1 mathematically.
@@ -2744,19 +2763,6 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
  *    Rational(-8) ** Rational(1, 3)
  *                       #=> (1.0000000000000002+1.7320508075688772i)
  */
-/*
- *  call-seq:
- *    to_dec -> decimal
- *
- *  Returns the value as a Decimal.
- *
- *    Rational(1, 2).to_dec   #=> 0.5d
- */
-static VALUE
-rational_to_dec(VALUE self)
-{
-    return rb_Decimal(self);
-}
 
 void
 Init_Rational(void)

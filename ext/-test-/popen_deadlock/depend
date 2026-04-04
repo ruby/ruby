@@ -106,6 +106,7 @@ infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/intern/class.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/intern/compar.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/intern/complex.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/intern/cont.h
+infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/intern/decimal.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/intern/dir.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/intern/enum.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/intern/enumerator.h

@@ -106,6 +106,7 @@ resolve_symbol_resolver.o: $(hdrdir)/ruby/internal/intern/class.h
 resolve_symbol_resolver.o: $(hdrdir)/ruby/internal/intern/compar.h
 resolve_symbol_resolver.o: $(hdrdir)/ruby/internal/intern/complex.h
 resolve_symbol_resolver.o: $(hdrdir)/ruby/internal/intern/cont.h
+resolve_symbol_resolver.o: $(hdrdir)/ruby/internal/intern/decimal.h
 resolve_symbol_resolver.o: $(hdrdir)/ruby/internal/intern/dir.h
 resolve_symbol_resolver.o: $(hdrdir)/ruby/internal/intern/enum.h
 resolve_symbol_resolver.o: $(hdrdir)/ruby/internal/intern/enumerator.h

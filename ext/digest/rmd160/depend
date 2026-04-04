@@ -109,6 +109,7 @@ rmd160.o: $(hdrdir)/ruby/internal/intern/class.h
 rmd160.o: $(hdrdir)/ruby/internal/intern/compar.h
 rmd160.o: $(hdrdir)/ruby/internal/intern/complex.h
 rmd160.o: $(hdrdir)/ruby/internal/intern/cont.h
+rmd160.o: $(hdrdir)/ruby/internal/intern/decimal.h
 rmd160.o: $(hdrdir)/ruby/internal/intern/dir.h
 rmd160.o: $(hdrdir)/ruby/internal/intern/enum.h
 rmd160.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -272,6 +273,7 @@ rmd160init.o: $(hdrdir)/ruby/internal/intern/class.h
 rmd160init.o: $(hdrdir)/ruby/internal/intern/compar.h
 rmd160init.o: $(hdrdir)/ruby/internal/intern/complex.h
 rmd160init.o: $(hdrdir)/ruby/internal/intern/cont.h
+rmd160init.o: $(hdrdir)/ruby/internal/intern/decimal.h
 rmd160init.o: $(hdrdir)/ruby/internal/intern/dir.h
 rmd160init.o: $(hdrdir)/ruby/internal/intern/enum.h
 rmd160init.o: $(hdrdir)/ruby/internal/intern/enumerator.h

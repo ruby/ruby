@@ -2373,7 +2373,7 @@ id2ref(VALUE objid)
                 }
             }
 
-            rb_raise(rb_eRangeError, "%+"PRIsVALUE" is not an id value", rb_int2str(objid, 10));
+            // Try heap lookup for unrecognized special const IDs.
         }
     }
 

@@ -105,6 +105,7 @@ continuation.o: $(hdrdir)/ruby/internal/intern/class.h
 continuation.o: $(hdrdir)/ruby/internal/intern/compar.h
 continuation.o: $(hdrdir)/ruby/internal/intern/complex.h
 continuation.o: $(hdrdir)/ruby/internal/intern/cont.h
+continuation.o: $(hdrdir)/ruby/internal/intern/decimal.h
 continuation.o: $(hdrdir)/ruby/internal/intern/dir.h
 continuation.o: $(hdrdir)/ruby/internal/intern/enum.h
 continuation.o: $(hdrdir)/ruby/internal/intern/enumerator.h

@@ -116,6 +116,7 @@ escape.o: $(hdrdir)/ruby/internal/intern/class.h
 escape.o: $(hdrdir)/ruby/internal/intern/compar.h
 escape.o: $(hdrdir)/ruby/internal/intern/complex.h
 escape.o: $(hdrdir)/ruby/internal/intern/cont.h
+escape.o: $(hdrdir)/ruby/internal/intern/decimal.h
 escape.o: $(hdrdir)/ruby/internal/intern/dir.h
 escape.o: $(hdrdir)/ruby/internal/intern/enum.h
 escape.o: $(hdrdir)/ruby/internal/intern/enumerator.h

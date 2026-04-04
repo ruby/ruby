@@ -106,6 +106,7 @@ enumerator_kw.o: $(hdrdir)/ruby/internal/intern/class.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/intern/compar.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/intern/complex.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/intern/cont.h
+enumerator_kw.o: $(hdrdir)/ruby/internal/intern/decimal.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/intern/dir.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/intern/enum.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/intern/enumerator.h

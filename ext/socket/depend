@@ -129,6 +129,7 @@ ancdata.o: $(hdrdir)/ruby/internal/intern/class.h
 ancdata.o: $(hdrdir)/ruby/internal/intern/compar.h
 ancdata.o: $(hdrdir)/ruby/internal/intern/complex.h
 ancdata.o: $(hdrdir)/ruby/internal/intern/cont.h
+ancdata.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ancdata.o: $(hdrdir)/ruby/internal/intern/dir.h
 ancdata.o: $(hdrdir)/ruby/internal/intern/enum.h
 ancdata.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -345,6 +346,7 @@ basicsocket.o: $(hdrdir)/ruby/internal/intern/class.h
 basicsocket.o: $(hdrdir)/ruby/internal/intern/compar.h
 basicsocket.o: $(hdrdir)/ruby/internal/intern/complex.h
 basicsocket.o: $(hdrdir)/ruby/internal/intern/cont.h
+basicsocket.o: $(hdrdir)/ruby/internal/intern/decimal.h
 basicsocket.o: $(hdrdir)/ruby/internal/intern/dir.h
 basicsocket.o: $(hdrdir)/ruby/internal/intern/enum.h
 basicsocket.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -561,6 +563,7 @@ constants.o: $(hdrdir)/ruby/internal/intern/class.h
 constants.o: $(hdrdir)/ruby/internal/intern/compar.h
 constants.o: $(hdrdir)/ruby/internal/intern/complex.h
 constants.o: $(hdrdir)/ruby/internal/intern/cont.h
+constants.o: $(hdrdir)/ruby/internal/intern/decimal.h
 constants.o: $(hdrdir)/ruby/internal/intern/dir.h
 constants.o: $(hdrdir)/ruby/internal/intern/enum.h
 constants.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -778,6 +781,7 @@ ifaddr.o: $(hdrdir)/ruby/internal/intern/class.h
 ifaddr.o: $(hdrdir)/ruby/internal/intern/compar.h
 ifaddr.o: $(hdrdir)/ruby/internal/intern/complex.h
 ifaddr.o: $(hdrdir)/ruby/internal/intern/cont.h
+ifaddr.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ifaddr.o: $(hdrdir)/ruby/internal/intern/dir.h
 ifaddr.o: $(hdrdir)/ruby/internal/intern/enum.h
 ifaddr.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -994,6 +998,7 @@ init.o: $(hdrdir)/ruby/internal/intern/class.h
 init.o: $(hdrdir)/ruby/internal/intern/compar.h
 init.o: $(hdrdir)/ruby/internal/intern/complex.h
 init.o: $(hdrdir)/ruby/internal/intern/cont.h
+init.o: $(hdrdir)/ruby/internal/intern/decimal.h
 init.o: $(hdrdir)/ruby/internal/intern/dir.h
 init.o: $(hdrdir)/ruby/internal/intern/enum.h
 init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -1210,6 +1215,7 @@ ipsocket.o: $(hdrdir)/ruby/internal/intern/class.h
 ipsocket.o: $(hdrdir)/ruby/internal/intern/compar.h
 ipsocket.o: $(hdrdir)/ruby/internal/intern/complex.h
 ipsocket.o: $(hdrdir)/ruby/internal/intern/cont.h
+ipsocket.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ipsocket.o: $(hdrdir)/ruby/internal/intern/dir.h
 ipsocket.o: $(hdrdir)/ruby/internal/intern/enum.h
 ipsocket.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -1426,6 +1432,7 @@ option.o: $(hdrdir)/ruby/internal/intern/class.h
 option.o: $(hdrdir)/ruby/internal/intern/compar.h
 option.o: $(hdrdir)/ruby/internal/intern/complex.h
 option.o: $(hdrdir)/ruby/internal/intern/cont.h
+option.o: $(hdrdir)/ruby/internal/intern/decimal.h
 option.o: $(hdrdir)/ruby/internal/intern/dir.h
 option.o: $(hdrdir)/ruby/internal/intern/enum.h
 option.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -1642,6 +1649,7 @@ raddrinfo.o: $(hdrdir)/ruby/internal/intern/class.h
 raddrinfo.o: $(hdrdir)/ruby/internal/intern/compar.h
 raddrinfo.o: $(hdrdir)/ruby/internal/intern/complex.h
 raddrinfo.o: $(hdrdir)/ruby/internal/intern/cont.h
+raddrinfo.o: $(hdrdir)/ruby/internal/intern/decimal.h
 raddrinfo.o: $(hdrdir)/ruby/internal/intern/dir.h
 raddrinfo.o: $(hdrdir)/ruby/internal/intern/enum.h
 raddrinfo.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -1858,6 +1866,7 @@ socket.o: $(hdrdir)/ruby/internal/intern/class.h
 socket.o: $(hdrdir)/ruby/internal/intern/compar.h
 socket.o: $(hdrdir)/ruby/internal/intern/complex.h
 socket.o: $(hdrdir)/ruby/internal/intern/cont.h
+socket.o: $(hdrdir)/ruby/internal/intern/decimal.h
 socket.o: $(hdrdir)/ruby/internal/intern/dir.h
 socket.o: $(hdrdir)/ruby/internal/intern/enum.h
 socket.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -2074,6 +2083,7 @@ sockssocket.o: $(hdrdir)/ruby/internal/intern/class.h
 sockssocket.o: $(hdrdir)/ruby/internal/intern/compar.h
 sockssocket.o: $(hdrdir)/ruby/internal/intern/complex.h
 sockssocket.o: $(hdrdir)/ruby/internal/intern/cont.h
+sockssocket.o: $(hdrdir)/ruby/internal/intern/decimal.h
 sockssocket.o: $(hdrdir)/ruby/internal/intern/dir.h
 sockssocket.o: $(hdrdir)/ruby/internal/intern/enum.h
 sockssocket.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -2290,6 +2300,7 @@ tcpserver.o: $(hdrdir)/ruby/internal/intern/class.h
 tcpserver.o: $(hdrdir)/ruby/internal/intern/compar.h
 tcpserver.o: $(hdrdir)/ruby/internal/intern/complex.h
 tcpserver.o: $(hdrdir)/ruby/internal/intern/cont.h
+tcpserver.o: $(hdrdir)/ruby/internal/intern/decimal.h
 tcpserver.o: $(hdrdir)/ruby/internal/intern/dir.h
 tcpserver.o: $(hdrdir)/ruby/internal/intern/enum.h
 tcpserver.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -2506,6 +2517,7 @@ tcpsocket.o: $(hdrdir)/ruby/internal/intern/class.h
 tcpsocket.o: $(hdrdir)/ruby/internal/intern/compar.h
 tcpsocket.o: $(hdrdir)/ruby/internal/intern/complex.h
 tcpsocket.o: $(hdrdir)/ruby/internal/intern/cont.h
+tcpsocket.o: $(hdrdir)/ruby/internal/intern/decimal.h
 tcpsocket.o: $(hdrdir)/ruby/internal/intern/dir.h
 tcpsocket.o: $(hdrdir)/ruby/internal/intern/enum.h
 tcpsocket.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -2722,6 +2734,7 @@ udpsocket.o: $(hdrdir)/ruby/internal/intern/class.h
 udpsocket.o: $(hdrdir)/ruby/internal/intern/compar.h
 udpsocket.o: $(hdrdir)/ruby/internal/intern/complex.h
 udpsocket.o: $(hdrdir)/ruby/internal/intern/cont.h
+udpsocket.o: $(hdrdir)/ruby/internal/intern/decimal.h
 udpsocket.o: $(hdrdir)/ruby/internal/intern/dir.h
 udpsocket.o: $(hdrdir)/ruby/internal/intern/enum.h
 udpsocket.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -2938,6 +2951,7 @@ unixserver.o: $(hdrdir)/ruby/internal/intern/class.h
 unixserver.o: $(hdrdir)/ruby/internal/intern/compar.h
 unixserver.o: $(hdrdir)/ruby/internal/intern/complex.h
 unixserver.o: $(hdrdir)/ruby/internal/intern/cont.h
+unixserver.o: $(hdrdir)/ruby/internal/intern/decimal.h
 unixserver.o: $(hdrdir)/ruby/internal/intern/dir.h
 unixserver.o: $(hdrdir)/ruby/internal/intern/enum.h
 unixserver.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -3154,6 +3168,7 @@ unixsocket.o: $(hdrdir)/ruby/internal/intern/class.h
 unixsocket.o: $(hdrdir)/ruby/internal/intern/compar.h
 unixsocket.o: $(hdrdir)/ruby/internal/intern/complex.h
 unixsocket.o: $(hdrdir)/ruby/internal/intern/cont.h
+unixsocket.o: $(hdrdir)/ruby/internal/intern/decimal.h
 unixsocket.o: $(hdrdir)/ruby/internal/intern/dir.h
 unixsocket.o: $(hdrdir)/ruby/internal/intern/enum.h
 unixsocket.o: $(hdrdir)/ruby/internal/intern/enumerator.h

@@ -106,6 +106,7 @@ funcall.o: $(hdrdir)/ruby/internal/intern/class.h
 funcall.o: $(hdrdir)/ruby/internal/intern/compar.h
 funcall.o: $(hdrdir)/ruby/internal/intern/complex.h
 funcall.o: $(hdrdir)/ruby/internal/intern/cont.h
+funcall.o: $(hdrdir)/ruby/internal/intern/decimal.h
 funcall.o: $(hdrdir)/ruby/internal/intern/dir.h
 funcall.o: $(hdrdir)/ruby/internal/intern/enum.h
 funcall.o: $(hdrdir)/ruby/internal/intern/enumerator.h

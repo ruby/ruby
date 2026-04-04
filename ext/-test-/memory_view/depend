@@ -106,6 +106,7 @@ memory_view.o: $(hdrdir)/ruby/internal/intern/class.h
 memory_view.o: $(hdrdir)/ruby/internal/intern/compar.h
 memory_view.o: $(hdrdir)/ruby/internal/intern/complex.h
 memory_view.o: $(hdrdir)/ruby/internal/intern/cont.h
+memory_view.o: $(hdrdir)/ruby/internal/intern/decimal.h
 memory_view.o: $(hdrdir)/ruby/internal/intern/dir.h
 memory_view.o: $(hdrdir)/ruby/internal/intern/enum.h
 memory_view.o: $(hdrdir)/ruby/internal/intern/enumerator.h

@@ -106,6 +106,7 @@ update.o: $(hdrdir)/ruby/internal/intern/class.h
 update.o: $(hdrdir)/ruby/internal/intern/compar.h
 update.o: $(hdrdir)/ruby/internal/intern/complex.h
 update.o: $(hdrdir)/ruby/internal/intern/cont.h
+update.o: $(hdrdir)/ruby/internal/intern/decimal.h
 update.o: $(hdrdir)/ruby/internal/intern/dir.h
 update.o: $(hdrdir)/ruby/internal/intern/enum.h
 update.o: $(hdrdir)/ruby/internal/intern/enumerator.h

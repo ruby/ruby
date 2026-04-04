@@ -116,6 +116,7 @@ zlib.o: $(hdrdir)/ruby/internal/intern/class.h
 zlib.o: $(hdrdir)/ruby/internal/intern/compar.h
 zlib.o: $(hdrdir)/ruby/internal/intern/complex.h
 zlib.o: $(hdrdir)/ruby/internal/intern/cont.h
+zlib.o: $(hdrdir)/ruby/internal/intern/decimal.h
 zlib.o: $(hdrdir)/ruby/internal/intern/dir.h
 zlib.o: $(hdrdir)/ruby/internal/intern/enum.h
 zlib.o: $(hdrdir)/ruby/internal/intern/enumerator.h

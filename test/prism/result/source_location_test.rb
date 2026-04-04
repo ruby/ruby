@@ -309,6 +309,11 @@ module Prism
       assert_location(DefNode, "def foo.bar = baz")
     end
 
+    def test_DecimalNode
+      assert_location(DecimalNode, "1.0d")
+      assert_location(DecimalNode, "42d")
+    end
+
     def test_DefinedNode
       assert_location(DefinedNode, "defined? foo")
       assert_location(DefinedNode, "defined?(foo)")

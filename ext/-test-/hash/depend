@@ -106,6 +106,7 @@ delete.o: $(hdrdir)/ruby/internal/intern/class.h
 delete.o: $(hdrdir)/ruby/internal/intern/compar.h
 delete.o: $(hdrdir)/ruby/internal/intern/complex.h
 delete.o: $(hdrdir)/ruby/internal/intern/cont.h
+delete.o: $(hdrdir)/ruby/internal/intern/decimal.h
 delete.o: $(hdrdir)/ruby/internal/intern/dir.h
 delete.o: $(hdrdir)/ruby/internal/intern/enum.h
 delete.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -267,6 +268,7 @@ init.o: $(hdrdir)/ruby/internal/intern/class.h
 init.o: $(hdrdir)/ruby/internal/intern/compar.h
 init.o: $(hdrdir)/ruby/internal/intern/complex.h
 init.o: $(hdrdir)/ruby/internal/intern/cont.h
+init.o: $(hdrdir)/ruby/internal/intern/decimal.h
 init.o: $(hdrdir)/ruby/internal/intern/dir.h
 init.o: $(hdrdir)/ruby/internal/intern/enum.h
 init.o: $(hdrdir)/ruby/internal/intern/enumerator.h

@@ -107,6 +107,7 @@ postponed_job.o: $(hdrdir)/ruby/internal/intern/class.h
 postponed_job.o: $(hdrdir)/ruby/internal/intern/compar.h
 postponed_job.o: $(hdrdir)/ruby/internal/intern/complex.h
 postponed_job.o: $(hdrdir)/ruby/internal/intern/cont.h
+postponed_job.o: $(hdrdir)/ruby/internal/intern/decimal.h
 postponed_job.o: $(hdrdir)/ruby/internal/intern/dir.h
 postponed_job.o: $(hdrdir)/ruby/internal/intern/enum.h
 postponed_job.o: $(hdrdir)/ruby/internal/intern/enumerator.h

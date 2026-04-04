@@ -106,6 +106,7 @@ fcntl.o: $(hdrdir)/ruby/internal/intern/class.h
 fcntl.o: $(hdrdir)/ruby/internal/intern/compar.h
 fcntl.o: $(hdrdir)/ruby/internal/intern/complex.h
 fcntl.o: $(hdrdir)/ruby/internal/intern/cont.h
+fcntl.o: $(hdrdir)/ruby/internal/intern/decimal.h
 fcntl.o: $(hdrdir)/ruby/internal/intern/dir.h
 fcntl.o: $(hdrdir)/ruby/internal/intern/enum.h
 fcntl.o: $(hdrdir)/ruby/internal/intern/enumerator.h

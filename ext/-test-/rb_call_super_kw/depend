@@ -106,6 +106,7 @@ rb_call_super_kw.o: $(hdrdir)/ruby/internal/intern/class.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/intern/compar.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/intern/complex.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/intern/cont.h
+rb_call_super_kw.o: $(hdrdir)/ruby/internal/intern/decimal.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/intern/dir.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/intern/enum.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/intern/enumerator.h

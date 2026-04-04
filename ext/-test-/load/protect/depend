@@ -106,6 +106,7 @@ protect.o: $(hdrdir)/ruby/internal/intern/class.h
 protect.o: $(hdrdir)/ruby/internal/intern/compar.h
 protect.o: $(hdrdir)/ruby/internal/intern/complex.h
 protect.o: $(hdrdir)/ruby/internal/intern/cont.h
+protect.o: $(hdrdir)/ruby/internal/intern/decimal.h
 protect.o: $(hdrdir)/ruby/internal/intern/dir.h
 protect.o: $(hdrdir)/ruby/internal/intern/enum.h
 protect.o: $(hdrdir)/ruby/internal/intern/enumerator.h

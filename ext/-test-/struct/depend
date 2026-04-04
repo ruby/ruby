@@ -106,6 +106,7 @@ data.o: $(hdrdir)/ruby/internal/intern/class.h
 data.o: $(hdrdir)/ruby/internal/intern/compar.h
 data.o: $(hdrdir)/ruby/internal/intern/complex.h
 data.o: $(hdrdir)/ruby/internal/intern/cont.h
+data.o: $(hdrdir)/ruby/internal/intern/decimal.h
 data.o: $(hdrdir)/ruby/internal/intern/dir.h
 data.o: $(hdrdir)/ruby/internal/intern/enum.h
 data.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -267,6 +268,7 @@ duplicate.o: $(hdrdir)/ruby/internal/intern/class.h
 duplicate.o: $(hdrdir)/ruby/internal/intern/compar.h
 duplicate.o: $(hdrdir)/ruby/internal/intern/complex.h
 duplicate.o: $(hdrdir)/ruby/internal/intern/cont.h
+duplicate.o: $(hdrdir)/ruby/internal/intern/decimal.h
 duplicate.o: $(hdrdir)/ruby/internal/intern/dir.h
 duplicate.o: $(hdrdir)/ruby/internal/intern/enum.h
 duplicate.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -428,6 +430,7 @@ init.o: $(hdrdir)/ruby/internal/intern/class.h
 init.o: $(hdrdir)/ruby/internal/intern/compar.h
 init.o: $(hdrdir)/ruby/internal/intern/complex.h
 init.o: $(hdrdir)/ruby/internal/intern/cont.h
+init.o: $(hdrdir)/ruby/internal/intern/decimal.h
 init.o: $(hdrdir)/ruby/internal/intern/dir.h
 init.o: $(hdrdir)/ruby/internal/intern/enum.h
 init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -589,6 +592,7 @@ len.o: $(hdrdir)/ruby/internal/intern/class.h
 len.o: $(hdrdir)/ruby/internal/intern/compar.h
 len.o: $(hdrdir)/ruby/internal/intern/complex.h
 len.o: $(hdrdir)/ruby/internal/intern/cont.h
+len.o: $(hdrdir)/ruby/internal/intern/decimal.h
 len.o: $(hdrdir)/ruby/internal/intern/dir.h
 len.o: $(hdrdir)/ruby/internal/intern/enum.h
 len.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -750,6 +754,7 @@ member.o: $(hdrdir)/ruby/internal/intern/class.h
 member.o: $(hdrdir)/ruby/internal/intern/compar.h
 member.o: $(hdrdir)/ruby/internal/intern/complex.h
 member.o: $(hdrdir)/ruby/internal/intern/cont.h
+member.o: $(hdrdir)/ruby/internal/intern/decimal.h
 member.o: $(hdrdir)/ruby/internal/intern/dir.h
 member.o: $(hdrdir)/ruby/internal/intern/enum.h
 member.o: $(hdrdir)/ruby/internal/intern/enumerator.h

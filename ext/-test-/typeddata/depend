@@ -106,6 +106,7 @@ typeddata.o: $(hdrdir)/ruby/internal/intern/class.h
 typeddata.o: $(hdrdir)/ruby/internal/intern/compar.h
 typeddata.o: $(hdrdir)/ruby/internal/intern/complex.h
 typeddata.o: $(hdrdir)/ruby/internal/intern/cont.h
+typeddata.o: $(hdrdir)/ruby/internal/intern/decimal.h
 typeddata.o: $(hdrdir)/ruby/internal/intern/dir.h
 typeddata.o: $(hdrdir)/ruby/internal/intern/enum.h
 typeddata.o: $(hdrdir)/ruby/internal/intern/enumerator.h

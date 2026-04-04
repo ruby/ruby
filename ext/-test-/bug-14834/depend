@@ -106,6 +106,7 @@ bug-14834.o: $(hdrdir)/ruby/internal/intern/class.h
 bug-14834.o: $(hdrdir)/ruby/internal/intern/compar.h
 bug-14834.o: $(hdrdir)/ruby/internal/intern/complex.h
 bug-14834.o: $(hdrdir)/ruby/internal/intern/cont.h
+bug-14834.o: $(hdrdir)/ruby/internal/intern/decimal.h
 bug-14834.o: $(hdrdir)/ruby/internal/intern/dir.h
 bug-14834.o: $(hdrdir)/ruby/internal/intern/enum.h
 bug-14834.o: $(hdrdir)/ruby/internal/intern/enumerator.h

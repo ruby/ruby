@@ -106,6 +106,7 @@ gc_hook.o: $(hdrdir)/ruby/internal/intern/class.h
 gc_hook.o: $(hdrdir)/ruby/internal/intern/compar.h
 gc_hook.o: $(hdrdir)/ruby/internal/intern/complex.h
 gc_hook.o: $(hdrdir)/ruby/internal/intern/cont.h
+gc_hook.o: $(hdrdir)/ruby/internal/intern/decimal.h
 gc_hook.o: $(hdrdir)/ruby/internal/intern/dir.h
 gc_hook.o: $(hdrdir)/ruby/internal/intern/enum.h
 gc_hook.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -267,6 +268,7 @@ tracepoint.o: $(hdrdir)/ruby/internal/intern/class.h
 tracepoint.o: $(hdrdir)/ruby/internal/intern/compar.h
 tracepoint.o: $(hdrdir)/ruby/internal/intern/complex.h
 tracepoint.o: $(hdrdir)/ruby/internal/intern/cont.h
+tracepoint.o: $(hdrdir)/ruby/internal/intern/decimal.h
 tracepoint.o: $(hdrdir)/ruby/internal/intern/dir.h
 tracepoint.o: $(hdrdir)/ruby/internal/intern/enum.h
 tracepoint.o: $(hdrdir)/ruby/internal/intern/enumerator.h

@@ -106,6 +106,7 @@ internal_ivar.o: $(hdrdir)/ruby/internal/intern/class.h
 internal_ivar.o: $(hdrdir)/ruby/internal/intern/compar.h
 internal_ivar.o: $(hdrdir)/ruby/internal/intern/complex.h
 internal_ivar.o: $(hdrdir)/ruby/internal/intern/cont.h
+internal_ivar.o: $(hdrdir)/ruby/internal/intern/decimal.h
 internal_ivar.o: $(hdrdir)/ruby/internal/intern/dir.h
 internal_ivar.o: $(hdrdir)/ruby/internal/intern/enum.h
 internal_ivar.o: $(hdrdir)/ruby/internal/intern/enumerator.h

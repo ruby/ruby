@@ -105,6 +105,7 @@ call_without_gvl.o: $(hdrdir)/ruby/internal/intern/class.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/intern/compar.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/intern/complex.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/intern/cont.h
+call_without_gvl.o: $(hdrdir)/ruby/internal/intern/decimal.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/intern/dir.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/intern/enum.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/intern/enumerator.h

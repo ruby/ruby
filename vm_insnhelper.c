@@ -6741,7 +6741,7 @@ vm_opt_plus(VALUE recv, VALUE obj)
     }
     else if (decimal_p(recv) && decimal_p(obj) &&
              BASIC_OP_UNREDEFINED_P(BOP_PLUS, DECIMAL_REDEFINED_OP_FLAG)) {
-        return rb_decimal_plus_dd(recv, obj);
+        return Qundef;
     }
     else if (SPECIAL_CONST_P(recv) || SPECIAL_CONST_P(obj)) {
         return Qundef;
@@ -6779,7 +6779,7 @@ vm_opt_minus(VALUE recv, VALUE obj)
     }
     else if (decimal_p(recv) && decimal_p(obj) &&
              BASIC_OP_UNREDEFINED_P(BOP_MINUS, DECIMAL_REDEFINED_OP_FLAG)) {
-        return rb_decimal_minus_dd(recv, obj);
+        return Qundef;
     }
     else if (SPECIAL_CONST_P(recv) || SPECIAL_CONST_P(obj)) {
         return Qundef;
@@ -6807,7 +6807,7 @@ vm_opt_mult(VALUE recv, VALUE obj)
     }
     else if (decimal_p(recv) && decimal_p(obj) &&
              BASIC_OP_UNREDEFINED_P(BOP_MULT, DECIMAL_REDEFINED_OP_FLAG)) {
-        return rb_decimal_mul_dd(recv, obj);
+        return Qundef;
     }
     else if (SPECIAL_CONST_P(recv) || SPECIAL_CONST_P(obj)) {
         return Qundef;
@@ -6835,7 +6835,7 @@ vm_opt_div(VALUE recv, VALUE obj)
     }
     else if (decimal_p(recv) && decimal_p(obj) &&
              BASIC_OP_UNREDEFINED_P(BOP_DIV, DECIMAL_REDEFINED_OP_FLAG)) {
-        return rb_decimal_div_dd(recv, obj);
+        return Qundef;
     }
     else if (SPECIAL_CONST_P(recv) || SPECIAL_CONST_P(obj)) {
         return Qundef;
@@ -6863,7 +6863,7 @@ vm_opt_mod(VALUE recv, VALUE obj)
     }
     else if (decimal_p(recv) && decimal_p(obj) &&
              BASIC_OP_UNREDEFINED_P(BOP_MOD, DECIMAL_REDEFINED_OP_FLAG)) {
-        return rb_decimal_mod_dd(recv, obj);
+        return Qundef;
     }
     else if (SPECIAL_CONST_P(recv) || SPECIAL_CONST_P(obj)) {
         return Qundef;

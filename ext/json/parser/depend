@@ -119,6 +119,7 @@ parser.o: $(hdrdir)/ruby/internal/intern/class.h
 parser.o: $(hdrdir)/ruby/internal/intern/compar.h
 parser.o: $(hdrdir)/ruby/internal/intern/complex.h
 parser.o: $(hdrdir)/ruby/internal/intern/cont.h
+parser.o: $(hdrdir)/ruby/internal/intern/decimal.h
 parser.o: $(hdrdir)/ruby/internal/intern/dir.h
 parser.o: $(hdrdir)/ruby/internal/intern/enum.h
 parser.o: $(hdrdir)/ruby/internal/intern/enumerator.h

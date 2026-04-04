@@ -116,6 +116,7 @@ printf.o: $(hdrdir)/ruby/internal/intern/class.h
 printf.o: $(hdrdir)/ruby/internal/intern/compar.h
 printf.o: $(hdrdir)/ruby/internal/intern/complex.h
 printf.o: $(hdrdir)/ruby/internal/intern/cont.h
+printf.o: $(hdrdir)/ruby/internal/intern/decimal.h
 printf.o: $(hdrdir)/ruby/internal/intern/dir.h
 printf.o: $(hdrdir)/ruby/internal/intern/enum.h
 printf.o: $(hdrdir)/ruby/internal/intern/enumerator.h

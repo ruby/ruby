@@ -106,6 +106,7 @@ ensure_and_callcc.o: $(hdrdir)/ruby/internal/intern/class.h
 ensure_and_callcc.o: $(hdrdir)/ruby/internal/intern/compar.h
 ensure_and_callcc.o: $(hdrdir)/ruby/internal/intern/complex.h
 ensure_and_callcc.o: $(hdrdir)/ruby/internal/intern/cont.h
+ensure_and_callcc.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ensure_and_callcc.o: $(hdrdir)/ruby/internal/intern/dir.h
 ensure_and_callcc.o: $(hdrdir)/ruby/internal/intern/enum.h
 ensure_and_callcc.o: $(hdrdir)/ruby/internal/intern/enumerator.h

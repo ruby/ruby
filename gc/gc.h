@@ -241,6 +241,7 @@ type_sym(size_t type)
         COUNT_TYPE(T_MATCH);
         COUNT_TYPE(T_COMPLEX);
         COUNT_TYPE(T_RATIONAL);
+        COUNT_TYPE(T_DECIMAL);
         COUNT_TYPE(T_NIL);
         COUNT_TYPE(T_TRUE);
         COUNT_TYPE(T_FALSE);

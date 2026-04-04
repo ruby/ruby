@@ -768,6 +768,7 @@ rb_type_str(enum ruby_value_type type)
       case type_case(T_MATCH);
       case type_case(T_COMPLEX);
       case type_case(T_RATIONAL);
+      case type_case(T_DECIMAL);
       case type_case(T_NIL);
       case type_case(T_TRUE);
       case type_case(T_FALSE);

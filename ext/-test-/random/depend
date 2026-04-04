@@ -105,6 +105,7 @@ bad_version.o: $(hdrdir)/ruby/internal/intern/class.h
 bad_version.o: $(hdrdir)/ruby/internal/intern/compar.h
 bad_version.o: $(hdrdir)/ruby/internal/intern/complex.h
 bad_version.o: $(hdrdir)/ruby/internal/intern/cont.h
+bad_version.o: $(hdrdir)/ruby/internal/intern/decimal.h
 bad_version.o: $(hdrdir)/ruby/internal/intern/dir.h
 bad_version.o: $(hdrdir)/ruby/internal/intern/enum.h
 bad_version.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -267,6 +268,7 @@ init.o: $(hdrdir)/ruby/internal/intern/class.h
 init.o: $(hdrdir)/ruby/internal/intern/compar.h
 init.o: $(hdrdir)/ruby/internal/intern/complex.h
 init.o: $(hdrdir)/ruby/internal/intern/cont.h
+init.o: $(hdrdir)/ruby/internal/intern/decimal.h
 init.o: $(hdrdir)/ruby/internal/intern/dir.h
 init.o: $(hdrdir)/ruby/internal/intern/enum.h
 init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -427,6 +429,7 @@ loop.o: $(hdrdir)/ruby/internal/intern/class.h
 loop.o: $(hdrdir)/ruby/internal/intern/compar.h
 loop.o: $(hdrdir)/ruby/internal/intern/complex.h
 loop.o: $(hdrdir)/ruby/internal/intern/cont.h
+loop.o: $(hdrdir)/ruby/internal/intern/decimal.h
 loop.o: $(hdrdir)/ruby/internal/intern/dir.h
 loop.o: $(hdrdir)/ruby/internal/intern/enum.h
 loop.o: $(hdrdir)/ruby/internal/intern/enumerator.h

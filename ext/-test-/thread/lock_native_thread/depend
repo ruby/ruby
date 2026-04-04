@@ -105,6 +105,7 @@ lock_native_thread.o: $(hdrdir)/ruby/internal/intern/class.h
 lock_native_thread.o: $(hdrdir)/ruby/internal/intern/compar.h
 lock_native_thread.o: $(hdrdir)/ruby/internal/intern/complex.h
 lock_native_thread.o: $(hdrdir)/ruby/internal/intern/cont.h
+lock_native_thread.o: $(hdrdir)/ruby/internal/intern/decimal.h
 lock_native_thread.o: $(hdrdir)/ruby/internal/intern/dir.h
 lock_native_thread.o: $(hdrdir)/ruby/internal/intern/enum.h
 lock_native_thread.o: $(hdrdir)/ruby/internal/intern/enumerator.h

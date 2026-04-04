@@ -2,6 +2,10 @@
 require 'test/unit'
 
 class TestDecimal < Test::Unit::TestCase
+  def setup
+    omit "Decimal requires __int128" unless defined?(Decimal::MAX)
+  end
+
   class RationalBackedNumeric < Numeric
     def initialize(value)
       @value = value
@@ -928,51 +932,51 @@ class TestDecimal < Test::Unit::TestCase
     assert_same(Decimal(0), -Decimal(0))
   end
   def test_literal_float
-    assert_equal Decimal("42.42"), 42.42d
-    assert_instance_of Decimal, 42.42d
+    assert_equal Decimal("42.42"), RubyVM::InstructionSequence.compile_prism("42.42d").eval
+    assert_instance_of Decimal, RubyVM::InstructionSequence.compile_prism("42.42d").eval
   end
 
   def test_literal_integer
-    assert_equal Decimal("42"), 42d
-    assert_instance_of Decimal, 42d
+    assert_equal Decimal("42"), RubyVM::InstructionSequence.compile_prism("42d").eval
+    assert_instance_of Decimal, RubyVM::InstructionSequence.compile_prism("42d").eval
   end
 
   def test_literal_zero
-    assert_equal Decimal(0), 0.0d
-    assert_predicate 0.0d, :zero?
-    assert_equal Decimal(0), 0d
-    assert_predicate 0d, :zero?
-    assert_same 0d, 0.0d
+    assert_equal Decimal(0), RubyVM::InstructionSequence.compile_prism("0.0d").eval
+    assert_predicate RubyVM::InstructionSequence.compile_prism("0.0d").eval, :zero?
+    assert_equal Decimal(0), RubyVM::InstructionSequence.compile_prism("0d").eval
+    assert_predicate RubyVM::InstructionSequence.compile_prism("0d").eval, :zero?
+    assert_same RubyVM::InstructionSequence.compile_prism("0d").eval, RubyVM::InstructionSequence.compile_prism("0.0d").eval
   end
 
   def test_literal_negative
-    assert_equal Decimal("-1.5"), -1.5d
+    assert_equal Decimal("-1.5"), RubyVM::InstructionSequence.compile_prism("-1.5d").eval
   end
 
   def test_literal_in_expression
-    assert_equal Decimal("3"), 1d + 2d
+    assert_equal Decimal("3"), RubyVM::InstructionSequence.compile_prism("1d + 2d").eval
   end
 
   def test_literal_underscore
-    assert_equal Decimal("1000"), 1_000d
-    assert_equal Decimal("1000.5"), 1_000.5d
+    assert_equal Decimal("1000"), RubyVM::InstructionSequence.compile_prism("1_000d").eval
+    assert_equal Decimal("1000.5"), RubyVM::InstructionSequence.compile_prism("1_000.5d").eval
   end
   def test_ibf_round_trip
-    iseq = RubyVM::InstructionSequence.compile("42.42d")
+    iseq = RubyVM::InstructionSequence.compile_prism("42.42d")
     bin = iseq.to_binary
     loaded = RubyVM::InstructionSequence.load_from_binary(bin)
     assert_equal Decimal("42.42"), loaded.eval
   end
 
   def test_ibf_round_trip_zero
-    iseq = RubyVM::InstructionSequence.compile("0.0d")
+    iseq = RubyVM::InstructionSequence.compile_prism("0.0d")
     bin = iseq.to_binary
     loaded = RubyVM::InstructionSequence.load_from_binary(bin)
     assert_predicate loaded.eval, :zero?
   end
 
   def test_ibf_round_trip_negative
-    iseq = RubyVM::InstructionSequence.compile("-19.99d")
+    iseq = RubyVM::InstructionSequence.compile_prism("-19.99d")
     bin = iseq.to_binary
     loaded = RubyVM::InstructionSequence.load_from_binary(bin)
     assert_equal Decimal("-19.99"), loaded.eval

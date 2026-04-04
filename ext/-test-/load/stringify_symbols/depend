@@ -106,6 +106,7 @@ stringify_symbols.o: $(hdrdir)/ruby/internal/intern/class.h
 stringify_symbols.o: $(hdrdir)/ruby/internal/intern/compar.h
 stringify_symbols.o: $(hdrdir)/ruby/internal/intern/complex.h
 stringify_symbols.o: $(hdrdir)/ruby/internal/intern/cont.h
+stringify_symbols.o: $(hdrdir)/ruby/internal/intern/decimal.h
 stringify_symbols.o: $(hdrdir)/ruby/internal/intern/dir.h
 stringify_symbols.o: $(hdrdir)/ruby/internal/intern/enum.h
 stringify_symbols.o: $(hdrdir)/ruby/internal/intern/enumerator.h

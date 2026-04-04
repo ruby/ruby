@@ -106,6 +106,7 @@ usrmarshal.o: $(hdrdir)/ruby/internal/intern/class.h
 usrmarshal.o: $(hdrdir)/ruby/internal/intern/compar.h
 usrmarshal.o: $(hdrdir)/ruby/internal/intern/complex.h
 usrmarshal.o: $(hdrdir)/ruby/internal/intern/cont.h
+usrmarshal.o: $(hdrdir)/ruby/internal/intern/decimal.h
 usrmarshal.o: $(hdrdir)/ruby/internal/intern/dir.h
 usrmarshal.o: $(hdrdir)/ruby/internal/intern/enum.h
 usrmarshal.o: $(hdrdir)/ruby/internal/intern/enumerator.h

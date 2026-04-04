@@ -9,6 +9,7 @@
  * @brief      Internal header for RubyVM.
  */
 #include "ruby/internal/stdbool.h"         /* for bool */
+#include "internal/basic_operators.h" /* for enum ruby_basic_operators */
 #include "internal/serial.h"        /* for rb_serial_t */
 #include "internal/static_assert.h" /* for STATIC_ASSERT */
 #include "ruby/ruby.h"              /* for ID */

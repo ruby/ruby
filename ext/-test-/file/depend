@@ -115,6 +115,7 @@ fs.o: $(hdrdir)/ruby/internal/intern/class.h
 fs.o: $(hdrdir)/ruby/internal/intern/compar.h
 fs.o: $(hdrdir)/ruby/internal/intern/complex.h
 fs.o: $(hdrdir)/ruby/internal/intern/cont.h
+fs.o: $(hdrdir)/ruby/internal/intern/decimal.h
 fs.o: $(hdrdir)/ruby/internal/intern/dir.h
 fs.o: $(hdrdir)/ruby/internal/intern/enum.h
 fs.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -279,6 +280,7 @@ init.o: $(hdrdir)/ruby/internal/intern/class.h
 init.o: $(hdrdir)/ruby/internal/intern/compar.h
 init.o: $(hdrdir)/ruby/internal/intern/complex.h
 init.o: $(hdrdir)/ruby/internal/intern/cont.h
+init.o: $(hdrdir)/ruby/internal/intern/decimal.h
 init.o: $(hdrdir)/ruby/internal/intern/dir.h
 init.o: $(hdrdir)/ruby/internal/intern/enum.h
 init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -449,6 +451,7 @@ newline_conv.o: $(hdrdir)/ruby/internal/intern/class.h
 newline_conv.o: $(hdrdir)/ruby/internal/intern/compar.h
 newline_conv.o: $(hdrdir)/ruby/internal/intern/complex.h
 newline_conv.o: $(hdrdir)/ruby/internal/intern/cont.h
+newline_conv.o: $(hdrdir)/ruby/internal/intern/decimal.h
 newline_conv.o: $(hdrdir)/ruby/internal/intern/dir.h
 newline_conv.o: $(hdrdir)/ruby/internal/intern/enum.h
 newline_conv.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -622,6 +625,7 @@ stat.o: $(hdrdir)/ruby/internal/intern/class.h
 stat.o: $(hdrdir)/ruby/internal/intern/compar.h
 stat.o: $(hdrdir)/ruby/internal/intern/complex.h
 stat.o: $(hdrdir)/ruby/internal/intern/cont.h
+stat.o: $(hdrdir)/ruby/internal/intern/decimal.h
 stat.o: $(hdrdir)/ruby/internal/intern/dir.h
 stat.o: $(hdrdir)/ruby/internal/intern/enum.h
 stat.o: $(hdrdir)/ruby/internal/intern/enumerator.h

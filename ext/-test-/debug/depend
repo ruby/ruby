@@ -106,6 +106,7 @@ init.o: $(hdrdir)/ruby/internal/intern/class.h
 init.o: $(hdrdir)/ruby/internal/intern/compar.h
 init.o: $(hdrdir)/ruby/internal/intern/complex.h
 init.o: $(hdrdir)/ruby/internal/intern/cont.h
+init.o: $(hdrdir)/ruby/internal/intern/decimal.h
 init.o: $(hdrdir)/ruby/internal/intern/dir.h
 init.o: $(hdrdir)/ruby/internal/intern/enum.h
 init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -267,6 +268,7 @@ inspector.o: $(hdrdir)/ruby/internal/intern/class.h
 inspector.o: $(hdrdir)/ruby/internal/intern/compar.h
 inspector.o: $(hdrdir)/ruby/internal/intern/complex.h
 inspector.o: $(hdrdir)/ruby/internal/intern/cont.h
+inspector.o: $(hdrdir)/ruby/internal/intern/decimal.h
 inspector.o: $(hdrdir)/ruby/internal/intern/dir.h
 inspector.o: $(hdrdir)/ruby/internal/intern/enum.h
 inspector.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -428,6 +430,7 @@ profile_frames.o: $(hdrdir)/ruby/internal/intern/class.h
 profile_frames.o: $(hdrdir)/ruby/internal/intern/compar.h
 profile_frames.o: $(hdrdir)/ruby/internal/intern/complex.h
 profile_frames.o: $(hdrdir)/ruby/internal/intern/cont.h
+profile_frames.o: $(hdrdir)/ruby/internal/intern/decimal.h
 profile_frames.o: $(hdrdir)/ruby/internal/intern/dir.h
 profile_frames.o: $(hdrdir)/ruby/internal/intern/enum.h
 profile_frames.o: $(hdrdir)/ruby/internal/intern/enumerator.h

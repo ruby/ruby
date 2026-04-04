@@ -118,6 +118,7 @@ coverage.o: $(hdrdir)/ruby/internal/intern/class.h
 coverage.o: $(hdrdir)/ruby/internal/intern/compar.h
 coverage.o: $(hdrdir)/ruby/internal/intern/complex.h
 coverage.o: $(hdrdir)/ruby/internal/intern/cont.h
+coverage.o: $(hdrdir)/ruby/internal/intern/decimal.h
 coverage.o: $(hdrdir)/ruby/internal/intern/dir.h
 coverage.o: $(hdrdir)/ruby/internal/intern/enum.h
 coverage.o: $(hdrdir)/ruby/internal/intern/enumerator.h

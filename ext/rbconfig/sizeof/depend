@@ -120,6 +120,7 @@ limits.o: $(hdrdir)/ruby/internal/intern/class.h
 limits.o: $(hdrdir)/ruby/internal/intern/compar.h
 limits.o: $(hdrdir)/ruby/internal/intern/complex.h
 limits.o: $(hdrdir)/ruby/internal/intern/cont.h
+limits.o: $(hdrdir)/ruby/internal/intern/decimal.h
 limits.o: $(hdrdir)/ruby/internal/intern/dir.h
 limits.o: $(hdrdir)/ruby/internal/intern/enum.h
 limits.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -280,6 +281,7 @@ sizes.o: $(hdrdir)/ruby/internal/intern/class.h
 sizes.o: $(hdrdir)/ruby/internal/intern/compar.h
 sizes.o: $(hdrdir)/ruby/internal/intern/complex.h
 sizes.o: $(hdrdir)/ruby/internal/intern/cont.h
+sizes.o: $(hdrdir)/ruby/internal/intern/decimal.h
 sizes.o: $(hdrdir)/ruby/internal/intern/dir.h
 sizes.o: $(hdrdir)/ruby/internal/intern/enum.h
 sizes.o: $(hdrdir)/ruby/internal/intern/enumerator.h

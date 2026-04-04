@@ -106,6 +106,7 @@ iseq_load.o: $(hdrdir)/ruby/internal/intern/class.h
 iseq_load.o: $(hdrdir)/ruby/internal/intern/compar.h
 iseq_load.o: $(hdrdir)/ruby/internal/intern/complex.h
 iseq_load.o: $(hdrdir)/ruby/internal/intern/cont.h
+iseq_load.o: $(hdrdir)/ruby/internal/intern/decimal.h
 iseq_load.o: $(hdrdir)/ruby/internal/intern/dir.h
 iseq_load.o: $(hdrdir)/ruby/internal/intern/enum.h
 iseq_load.o: $(hdrdir)/ruby/internal/intern/enumerator.h

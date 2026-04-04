@@ -106,6 +106,7 @@ big2str.o: $(hdrdir)/ruby/internal/intern/class.h
 big2str.o: $(hdrdir)/ruby/internal/intern/compar.h
 big2str.o: $(hdrdir)/ruby/internal/intern/complex.h
 big2str.o: $(hdrdir)/ruby/internal/intern/cont.h
+big2str.o: $(hdrdir)/ruby/internal/intern/decimal.h
 big2str.o: $(hdrdir)/ruby/internal/intern/dir.h
 big2str.o: $(hdrdir)/ruby/internal/intern/enum.h
 big2str.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -269,6 +270,7 @@ bigzero.o: $(hdrdir)/ruby/internal/intern/class.h
 bigzero.o: $(hdrdir)/ruby/internal/intern/compar.h
 bigzero.o: $(hdrdir)/ruby/internal/intern/complex.h
 bigzero.o: $(hdrdir)/ruby/internal/intern/cont.h
+bigzero.o: $(hdrdir)/ruby/internal/intern/decimal.h
 bigzero.o: $(hdrdir)/ruby/internal/intern/dir.h
 bigzero.o: $(hdrdir)/ruby/internal/intern/enum.h
 bigzero.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -432,6 +434,7 @@ div.o: $(hdrdir)/ruby/internal/intern/class.h
 div.o: $(hdrdir)/ruby/internal/intern/compar.h
 div.o: $(hdrdir)/ruby/internal/intern/complex.h
 div.o: $(hdrdir)/ruby/internal/intern/cont.h
+div.o: $(hdrdir)/ruby/internal/intern/decimal.h
 div.o: $(hdrdir)/ruby/internal/intern/dir.h
 div.o: $(hdrdir)/ruby/internal/intern/enum.h
 div.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -595,6 +598,7 @@ init.o: $(hdrdir)/ruby/internal/intern/class.h
 init.o: $(hdrdir)/ruby/internal/intern/compar.h
 init.o: $(hdrdir)/ruby/internal/intern/complex.h
 init.o: $(hdrdir)/ruby/internal/intern/cont.h
+init.o: $(hdrdir)/ruby/internal/intern/decimal.h
 init.o: $(hdrdir)/ruby/internal/intern/dir.h
 init.o: $(hdrdir)/ruby/internal/intern/enum.h
 init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -756,6 +760,7 @@ intpack.o: $(hdrdir)/ruby/internal/intern/class.h
 intpack.o: $(hdrdir)/ruby/internal/intern/compar.h
 intpack.o: $(hdrdir)/ruby/internal/intern/complex.h
 intpack.o: $(hdrdir)/ruby/internal/intern/cont.h
+intpack.o: $(hdrdir)/ruby/internal/intern/decimal.h
 intpack.o: $(hdrdir)/ruby/internal/intern/dir.h
 intpack.o: $(hdrdir)/ruby/internal/intern/enum.h
 intpack.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -919,6 +924,7 @@ mul.o: $(hdrdir)/ruby/internal/intern/class.h
 mul.o: $(hdrdir)/ruby/internal/intern/compar.h
 mul.o: $(hdrdir)/ruby/internal/intern/complex.h
 mul.o: $(hdrdir)/ruby/internal/intern/cont.h
+mul.o: $(hdrdir)/ruby/internal/intern/decimal.h
 mul.o: $(hdrdir)/ruby/internal/intern/dir.h
 mul.o: $(hdrdir)/ruby/internal/intern/enum.h
 mul.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -1082,6 +1088,7 @@ str2big.o: $(hdrdir)/ruby/internal/intern/class.h
 str2big.o: $(hdrdir)/ruby/internal/intern/compar.h
 str2big.o: $(hdrdir)/ruby/internal/intern/complex.h
 str2big.o: $(hdrdir)/ruby/internal/intern/cont.h
+str2big.o: $(hdrdir)/ruby/internal/intern/decimal.h
 str2big.o: $(hdrdir)/ruby/internal/intern/dir.h
 str2big.o: $(hdrdir)/ruby/internal/intern/enum.h
 str2big.o: $(hdrdir)/ruby/internal/intern/enumerator.h

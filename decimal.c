@@ -18,14 +18,31 @@
 #include "internal/numeric.h"
 #include "internal/object.h"
 #include "internal/vm.h"
-#include "shape.h"
 
-#ifdef HAVE_INT128_T
+#if !defined(HAVE_INT128_T) || SIZEOF_VALUE < 8
+/* Stub for platforms without __int128 (e.g. MSVC). */
+VALUE rb_cDecimal;
+void
+Init_Decimal(void)
+{
+    rb_cDecimal = rb_define_class("Decimal", rb_cNumeric);
+}
+#include "decimal.rbinc"
+#else /* HAVE_INT128_T */
+
 typedef int128_t dec_i128;
 typedef uint128_t dec_u128;
-#else
-#error "Decimal requires __int128 (available on all 64-bit GCC/Clang targets)"
-#endif
+
+static inline int
+dec_mul_overflow(dec_i128 a, dec_i128 b, dec_i128 *res)
+{
+    *res = (dec_i128)((dec_u128)a * (dec_u128)b);
+    if (a == 0 || b == 0) return 0;
+    dec_u128 ua = a < 0 ? -(dec_u128)a : (dec_u128)a;
+    dec_u128 ub = b < 0 ? -(dec_u128)b : (dec_u128)b;
+    dec_u128 limit = (a < 0) ^ (b < 0) ? (dec_u128)1 << 127 : ((dec_u128)1 << 127) - 1;
+    return ua > limit / ub;
+}
 
 #define DEC_PRECISION 18
 #define DEC_MAX ((dec_i128)(((dec_u128)1 << 127) - 1))
@@ -180,12 +197,13 @@ dec_from_i128(dec_i128 val)
         if (scale <= 15 && r <= DEC_BID_SIG_MAX)
             return dec_bid_encode(r, scale, neg);
     }
-    NEWOBJ_OF_WITH_SHAPE(obj, struct RDecimal, rb_cDecimal,
-                         T_DECIMAL | FL_WB_PROTECTED | FL_FREEZE,
-                         SHAPE_ID_FL_FROZEN, sizeof(struct RDecimal), 0);
+    NEWOBJ_OF(obj, struct RDecimal, rb_cDecimal,
+              T_DECIMAL | FL_WB_PROTECTED,
+              sizeof(struct RDecimal), 0);
     obj->value = val;
     if (dec_integral_p(val))
         RBASIC((VALUE)obj)->flags |= DEC_FL_INTEGRAL;
+    OBJ_FREEZE((VALUE)obj);
     return (VALUE)obj;
 }
 
@@ -198,12 +216,13 @@ dec_from_integer_val(long fixval)
     if (abs <= DEC_BID_SIG_MAX)
         return dec_bid_encode(abs, 0, neg);
     dec_i128 result;
-    if (__builtin_mul_overflow((dec_i128)fixval, DEC_SCALE, &result))
+    if (dec_mul_overflow((dec_i128)fixval, DEC_SCALE, &result))
         rb_raise(rb_eRangeError, "Decimal overflow");
-    NEWOBJ_OF_WITH_SHAPE(obj, struct RDecimal, rb_cDecimal,
-                         T_DECIMAL | FL_WB_PROTECTED | FL_FREEZE | DEC_FL_INTEGRAL,
-                         SHAPE_ID_FL_FROZEN, sizeof(struct RDecimal), 0);
+    NEWOBJ_OF(obj, struct RDecimal, rb_cDecimal,
+              T_DECIMAL | FL_WB_PROTECTED | DEC_FL_INTEGRAL,
+              sizeof(struct RDecimal), 0);
     obj->value = result;
+    OBJ_FREEZE((VALUE)obj);
     return (VALUE)obj;
 }
 
@@ -272,7 +291,7 @@ dec_i128_mul_pow10(dec_i128 *val, int exp)
     while (exp > 0) {
         int chunk = exp > 18 ? 18 : exp;
         dec_i128 next;
-        if (__builtin_mul_overflow(*val, (dec_i128)POW10[chunk], &next))
+        if (dec_mul_overflow(*val, (dec_i128)POW10[chunk], &next))
             return 0;
         *val = next;
         exp -= chunk;
@@ -330,7 +349,7 @@ decimal_parse_float_string(const char *str, long slen, int raise)
             rb_raise(rb_eArgError, "invalid value for Decimal()");
         }
         dec_i128 next;
-        if (__builtin_mul_overflow(sig, 10, &next) ||
+        if (dec_mul_overflow(sig, 10, &next) ||
             __builtin_add_overflow(next, *p - '0', &next)) {
             if (!raise) return Qnil;
             rb_raise(rb_eRangeError, "Decimal overflow");
@@ -660,7 +679,7 @@ static VALUE
 decimal_from_bignum(VALUE integer)
 {
     dec_i128 val = ruby_int_to_i128(integer), result;
-    if (__builtin_mul_overflow(val, DEC_SCALE, &result))
+    if (dec_mul_overflow(val, DEC_SCALE, &result))
         rb_raise(rb_eRangeError, "Decimal overflow");
     return dec_from_i128(result);
 }
@@ -1564,7 +1583,7 @@ decimal_floor(int argc, VALUE *argv, VALUE self)
     dec_i128 q = v / factor;
     if (v < 0 && v - q * factor != 0) q--;
     dec_i128 result;
-    if (__builtin_mul_overflow(q, factor, &result))
+    if (dec_mul_overflow(q, factor, &result))
         rb_raise(rb_eRangeError, "Decimal overflow");
     return dec_from_i128(result);
 }
@@ -1635,7 +1654,7 @@ decimal_ceil(int argc, VALUE *argv, VALUE self)
     }
     if (r == 0) return self;
     dec_i128 result;
-    if (__builtin_mul_overflow(q + 1, factor, &result))
+    if (dec_mul_overflow(q + 1, factor, &result))
         rb_raise(rb_eRangeError, "Decimal overflow");
     return dec_from_i128(result);
 }
@@ -1806,7 +1825,7 @@ decimal_round(int argc, VALUE *argv, VALUE self)
     if (round_up) q++;
 
     dec_i128 result;
-    if (__builtin_mul_overflow((dec_i128)q, factor, &result))
+    if (dec_mul_overflow((dec_i128)q, factor, &result))
         rb_raise(rb_eRangeError, "Decimal overflow");
     if (neg) result = -result;
 
@@ -2065,7 +2084,7 @@ rb_decimal_sum_ary(VALUE ary, VALUE init, long start)
                     if (abs_acc <= DEC_BID_SIG_MAX)
                         return dec_bid_encode((uint64_t)abs_acc, common_scale, neg);
                     dec_i128 val;
-                    if (__builtin_mul_overflow((dec_i128)abs_acc,
+                    if (dec_mul_overflow((dec_i128)abs_acc,
                                               (dec_i128)POW10[18 - common_scale], &val))
                         rb_raise(rb_eRangeError, "Decimal overflow");
                     if (neg) val = -val;
@@ -2075,7 +2094,7 @@ rb_decimal_sum_ary(VALUE ary, VALUE init, long start)
                 int neg = neg_acc > pos_acc;
                 dec_u128 abs_acc = neg ? neg_acc - pos_acc : pos_acc - neg_acc;
                 dec_i128 acc;
-                if (__builtin_mul_overflow((dec_i128)abs_acc,
+                if (dec_mul_overflow((dec_i128)abs_acc,
                                           (dec_i128)POW10[18 - common_scale], &acc))
                     rb_raise(rb_eRangeError, "Decimal overflow");
                 if (neg) acc = -acc;
@@ -2194,7 +2213,7 @@ decimal_parse(const char *str, long slen, int raise)
             rb_raise(rb_eArgError, "invalid value for Decimal()");
         }
         dec_i128 next;
-        if (__builtin_mul_overflow(whole, 10, &next) ||
+        if (dec_mul_overflow(whole, 10, &next) ||
             __builtin_add_overflow(next, *c - '0', &next)) {
             if (!raise) return Qnil;
             rb_raise(rb_eRangeError, "Decimal overflow");
@@ -2240,7 +2259,7 @@ decimal_parse(const char *str, long slen, int raise)
         frac *= (dec_i128)POW10[DEC_PRECISION - frac_digits];
 
     dec_i128 raw;
-    if (__builtin_mul_overflow(whole, DEC_SCALE, &raw)) {
+    if (dec_mul_overflow(whole, DEC_SCALE, &raw)) {
         if (!raise) return Qnil;
         rb_raise(rb_eRangeError, "Decimal overflow");
     }
@@ -2283,7 +2302,7 @@ decimal_convert(VALUE klass, VALUE input, int raise)
             dec_i128 val, result;
             if (!ruby_int_to_i128_noexc(input, &val))
                 return Qnil;
-            if (__builtin_mul_overflow(val, DEC_SCALE, &result))
+            if (dec_mul_overflow(val, DEC_SCALE, &result))
                 return Qnil;
             return dec_from_i128(result);
         }
@@ -2680,9 +2699,13 @@ Init_Decimal(void)
     rb_define_private_method(compat, "marshal_load", decimal_marshal_load, 1);
     rb_marshal_define_compat(rb_cDecimal, compat, decimal_dumper, decimal_loader);
 
+    /* The scale factor (10**18) used to convert between raw and decimal values. */
     rb_define_const(rb_cDecimal, "SCALE", rb_int2inum(1000000000000000000LL));
+    /* The number of decimal digits of precision (18). */
     rb_define_const(rb_cDecimal, "PRECISION", INT2FIX(DEC_PRECISION));
+    /* The largest representable Decimal value. */
     rb_define_const(rb_cDecimal, "MAX", dec_from_i128(DEC_MAX));
+    /* The smallest representable Decimal value. */
     rb_define_const(rb_cDecimal, "MIN", dec_from_i128(DEC_MIN));
 
     rb_add_opt_method(rb_cDecimal, idPLUS, BOP_PLUS);
@@ -2701,3 +2724,4 @@ Init_Decimal(void)
 }
 
 #include "decimal.rbinc"
+#endif /* HAVE_INT128_T */

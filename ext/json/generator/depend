@@ -120,6 +120,7 @@ generator.o: $(hdrdir)/ruby/internal/intern/class.h
 generator.o: $(hdrdir)/ruby/internal/intern/compar.h
 generator.o: $(hdrdir)/ruby/internal/intern/complex.h
 generator.o: $(hdrdir)/ruby/internal/intern/cont.h
+generator.o: $(hdrdir)/ruby/internal/intern/decimal.h
 generator.o: $(hdrdir)/ruby/internal/intern/dir.h
 generator.o: $(hdrdir)/ruby/internal/intern/enum.h
 generator.o: $(hdrdir)/ruby/internal/intern/enumerator.h

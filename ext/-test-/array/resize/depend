@@ -105,6 +105,7 @@ resize.o: $(hdrdir)/ruby/internal/intern/class.h
 resize.o: $(hdrdir)/ruby/internal/intern/compar.h
 resize.o: $(hdrdir)/ruby/internal/intern/complex.h
 resize.o: $(hdrdir)/ruby/internal/intern/cont.h
+resize.o: $(hdrdir)/ruby/internal/intern/decimal.h
 resize.o: $(hdrdir)/ruby/internal/intern/dir.h
 resize.o: $(hdrdir)/ruby/internal/intern/enum.h
 resize.o: $(hdrdir)/ruby/internal/intern/enumerator.h

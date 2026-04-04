@@ -159,6 +159,7 @@ eventids1.o: $(hdrdir)/ruby/internal/intern/class.h
 eventids1.o: $(hdrdir)/ruby/internal/intern/compar.h
 eventids1.o: $(hdrdir)/ruby/internal/intern/complex.h
 eventids1.o: $(hdrdir)/ruby/internal/intern/cont.h
+eventids1.o: $(hdrdir)/ruby/internal/intern/decimal.h
 eventids1.o: $(hdrdir)/ruby/internal/intern/dir.h
 eventids1.o: $(hdrdir)/ruby/internal/intern/enum.h
 eventids1.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -331,6 +332,7 @@ eventids2.o: $(hdrdir)/ruby/internal/intern/class.h
 eventids2.o: $(hdrdir)/ruby/internal/intern/compar.h
 eventids2.o: $(hdrdir)/ruby/internal/intern/complex.h
 eventids2.o: $(hdrdir)/ruby/internal/intern/cont.h
+eventids2.o: $(hdrdir)/ruby/internal/intern/decimal.h
 eventids2.o: $(hdrdir)/ruby/internal/intern/dir.h
 eventids2.o: $(hdrdir)/ruby/internal/intern/enum.h
 eventids2.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -512,6 +514,7 @@ ripper.o: $(hdrdir)/ruby/internal/intern/class.h
 ripper.o: $(hdrdir)/ruby/internal/intern/compar.h
 ripper.o: $(hdrdir)/ruby/internal/intern/complex.h
 ripper.o: $(hdrdir)/ruby/internal/intern/cont.h
+ripper.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ripper.o: $(hdrdir)/ruby/internal/intern/dir.h
 ripper.o: $(hdrdir)/ruby/internal/intern/enum.h
 ripper.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -756,6 +759,7 @@ ripper_init.o: $(hdrdir)/ruby/internal/intern/class.h
 ripper_init.o: $(hdrdir)/ruby/internal/intern/compar.h
 ripper_init.o: $(hdrdir)/ruby/internal/intern/complex.h
 ripper_init.o: $(hdrdir)/ruby/internal/intern/cont.h
+ripper_init.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ripper_init.o: $(hdrdir)/ruby/internal/intern/dir.h
 ripper_init.o: $(hdrdir)/ruby/internal/intern/enum.h
 ripper_init.o: $(hdrdir)/ruby/internal/intern/enumerator.h

@@ -106,6 +106,7 @@ bubblebabble.o: $(hdrdir)/ruby/internal/intern/class.h
 bubblebabble.o: $(hdrdir)/ruby/internal/intern/compar.h
 bubblebabble.o: $(hdrdir)/ruby/internal/intern/complex.h
 bubblebabble.o: $(hdrdir)/ruby/internal/intern/cont.h
+bubblebabble.o: $(hdrdir)/ruby/internal/intern/decimal.h
 bubblebabble.o: $(hdrdir)/ruby/internal/intern/dir.h
 bubblebabble.o: $(hdrdir)/ruby/internal/intern/enum.h
 bubblebabble.o: $(hdrdir)/ruby/internal/intern/enumerator.h

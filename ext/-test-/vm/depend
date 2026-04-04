@@ -105,6 +105,7 @@ at_exit.o: $(hdrdir)/ruby/internal/intern/class.h
 at_exit.o: $(hdrdir)/ruby/internal/intern/compar.h
 at_exit.o: $(hdrdir)/ruby/internal/intern/complex.h
 at_exit.o: $(hdrdir)/ruby/internal/intern/cont.h
+at_exit.o: $(hdrdir)/ruby/internal/intern/decimal.h
 at_exit.o: $(hdrdir)/ruby/internal/intern/dir.h
 at_exit.o: $(hdrdir)/ruby/internal/intern/enum.h
 at_exit.o: $(hdrdir)/ruby/internal/intern/enumerator.h

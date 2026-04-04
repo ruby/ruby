@@ -120,6 +120,7 @@ ossl.o: $(hdrdir)/ruby/internal/intern/class.h
 ossl.o: $(hdrdir)/ruby/internal/intern/compar.h
 ossl.o: $(hdrdir)/ruby/internal/intern/complex.h
 ossl.o: $(hdrdir)/ruby/internal/intern/cont.h
+ossl.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ossl.o: $(hdrdir)/ruby/internal/intern/dir.h
 ossl.o: $(hdrdir)/ruby/internal/intern/enum.h
 ossl.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -317,6 +318,7 @@ ossl_asn1.o: $(hdrdir)/ruby/internal/intern/class.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/intern/compar.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/intern/complex.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/intern/cont.h
+ossl_asn1.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/intern/dir.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/intern/enum.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -514,6 +516,7 @@ ossl_bio.o: $(hdrdir)/ruby/internal/intern/class.h
 ossl_bio.o: $(hdrdir)/ruby/internal/intern/compar.h
 ossl_bio.o: $(hdrdir)/ruby/internal/intern/complex.h
 ossl_bio.o: $(hdrdir)/ruby/internal/intern/cont.h
+ossl_bio.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ossl_bio.o: $(hdrdir)/ruby/internal/intern/dir.h
 ossl_bio.o: $(hdrdir)/ruby/internal/intern/enum.h
 ossl_bio.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -711,6 +714,7 @@ ossl_bn.o: $(hdrdir)/ruby/internal/intern/class.h
 ossl_bn.o: $(hdrdir)/ruby/internal/intern/compar.h
 ossl_bn.o: $(hdrdir)/ruby/internal/intern/complex.h
 ossl_bn.o: $(hdrdir)/ruby/internal/intern/cont.h
+ossl_bn.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ossl_bn.o: $(hdrdir)/ruby/internal/intern/dir.h
 ossl_bn.o: $(hdrdir)/ruby/internal/intern/enum.h
 ossl_bn.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -908,6 +912,7 @@ ossl_cipher.o: $(hdrdir)/ruby/internal/intern/class.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/intern/compar.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/intern/complex.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/intern/cont.h
+ossl_cipher.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/intern/dir.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/intern/enum.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -1105,6 +1110,7 @@ ossl_config.o: $(hdrdir)/ruby/internal/intern/class.h
 ossl_config.o: $(hdrdir)/ruby/internal/intern/compar.h
 ossl_config.o: $(hdrdir)/ruby/internal/intern/complex.h
 ossl_config.o: $(hdrdir)/ruby/internal/intern/cont.h
+ossl_config.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ossl_config.o: $(hdrdir)/ruby/internal/intern/dir.h
 ossl_config.o: $(hdrdir)/ruby/internal/intern/enum.h
 ossl_config.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -1302,6 +1308,7 @@ ossl_digest.o: $(hdrdir)/ruby/internal/intern/class.h
 ossl_digest.o: $(hdrdir)/ruby/internal/intern/compar.h
 ossl_digest.o: $(hdrdir)/ruby/internal/intern/complex.h
 ossl_digest.o: $(hdrdir)/ruby/internal/intern/cont.h
+ossl_digest.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ossl_digest.o: $(hdrdir)/ruby/internal/intern/dir.h
 ossl_digest.o: $(hdrdir)/ruby/internal/intern/enum.h
 ossl_digest.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -1499,6 +1506,7 @@ ossl_engine.o: $(hdrdir)/ruby/internal/intern/class.h
 ossl_engine.o: $(hdrdir)/ruby/internal/intern/compar.h
 ossl_engine.o: $(hdrdir)/ruby/internal/intern/complex.h
 ossl_engine.o: $(hdrdir)/ruby/internal/intern/cont.h
+ossl_engine.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ossl_engine.o: $(hdrdir)/ruby/internal/intern/dir.h
 ossl_engine.o: $(hdrdir)/ruby/internal/intern/enum.h
 ossl_engine.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -1696,6 +1704,7 @@ ossl_hmac.o: $(hdrdir)/ruby/internal/intern/class.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/intern/compar.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/intern/complex.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/intern/cont.h
+ossl_hmac.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/intern/dir.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/intern/enum.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -1893,6 +1902,7 @@ ossl_kdf.o: $(hdrdir)/ruby/internal/intern/class.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/intern/compar.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/intern/complex.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/intern/cont.h
+ossl_kdf.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/intern/dir.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/intern/enum.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -2090,6 +2100,7 @@ ossl_ns_spki.o: $(hdrdir)/ruby/internal/intern/class.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/intern/compar.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/intern/complex.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/intern/cont.h
+ossl_ns_spki.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/intern/dir.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/intern/enum.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -2287,6 +2298,7 @@ ossl_ocsp.o: $(hdrdir)/ruby/internal/intern/class.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/intern/compar.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/intern/complex.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/intern/cont.h
+ossl_ocsp.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/intern/dir.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/intern/enum.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -2484,6 +2496,7 @@ ossl_pkcs12.o: $(hdrdir)/ruby/internal/intern/class.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/intern/compar.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/intern/complex.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/intern/cont.h
+ossl_pkcs12.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/intern/dir.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/intern/enum.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -2681,6 +2694,7 @@ ossl_pkcs7.o: $(hdrdir)/ruby/internal/intern/class.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/intern/compar.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/intern/complex.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/intern/cont.h
+ossl_pkcs7.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/intern/dir.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/intern/enum.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -2878,6 +2892,7 @@ ossl_pkey.o: $(hdrdir)/ruby/internal/intern/class.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/intern/compar.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/intern/complex.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/intern/cont.h
+ossl_pkey.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/intern/dir.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/intern/enum.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -3075,6 +3090,7 @@ ossl_pkey_dh.o: $(hdrdir)/ruby/internal/intern/class.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/intern/compar.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/intern/complex.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/intern/cont.h
+ossl_pkey_dh.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/intern/dir.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/intern/enum.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -3272,6 +3288,7 @@ ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/intern/class.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/intern/compar.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/intern/complex.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/intern/cont.h
+ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/intern/dir.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/intern/enum.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -3469,6 +3486,7 @@ ossl_pkey_ec.o: $(hdrdir)/ruby/internal/intern/class.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/intern/compar.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/intern/complex.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/intern/cont.h
+ossl_pkey_ec.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/intern/dir.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/intern/enum.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -3666,6 +3684,7 @@ ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/intern/class.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/intern/compar.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/intern/complex.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/intern/cont.h
+ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/intern/dir.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/intern/enum.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -3863,6 +3882,7 @@ ossl_provider.o: $(hdrdir)/ruby/internal/intern/class.h
 ossl_provider.o: $(hdrdir)/ruby/internal/intern/compar.h
 ossl_provider.o: $(hdrdir)/ruby/internal/intern/complex.h
 ossl_provider.o: $(hdrdir)/ruby/internal/intern/cont.h
+ossl_provider.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ossl_provider.o: $(hdrdir)/ruby/internal/intern/dir.h
 ossl_provider.o: $(hdrdir)/ruby/internal/intern/enum.h
 ossl_provider.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -4060,6 +4080,7 @@ ossl_rand.o: $(hdrdir)/ruby/internal/intern/class.h
 ossl_rand.o: $(hdrdir)/ruby/internal/intern/compar.h
 ossl_rand.o: $(hdrdir)/ruby/internal/intern/complex.h
 ossl_rand.o: $(hdrdir)/ruby/internal/intern/cont.h
+ossl_rand.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ossl_rand.o: $(hdrdir)/ruby/internal/intern/dir.h
 ossl_rand.o: $(hdrdir)/ruby/internal/intern/enum.h
 ossl_rand.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -4257,6 +4278,7 @@ ossl_ssl.o: $(hdrdir)/ruby/internal/intern/class.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/intern/compar.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/intern/complex.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/intern/cont.h
+ossl_ssl.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/intern/dir.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/intern/enum.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -4454,6 +4476,7 @@ ossl_ssl_session.o: $(hdrdir)/ruby/internal/intern/class.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/intern/compar.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/intern/complex.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/intern/cont.h
+ossl_ssl_session.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/intern/dir.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/intern/enum.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -4651,6 +4674,7 @@ ossl_ts.o: $(hdrdir)/ruby/internal/intern/class.h
 ossl_ts.o: $(hdrdir)/ruby/internal/intern/compar.h
 ossl_ts.o: $(hdrdir)/ruby/internal/intern/complex.h
 ossl_ts.o: $(hdrdir)/ruby/internal/intern/cont.h
+ossl_ts.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ossl_ts.o: $(hdrdir)/ruby/internal/intern/dir.h
 ossl_ts.o: $(hdrdir)/ruby/internal/intern/enum.h
 ossl_ts.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -4848,6 +4872,7 @@ ossl_x509.o: $(hdrdir)/ruby/internal/intern/class.h
 ossl_x509.o: $(hdrdir)/ruby/internal/intern/compar.h
 ossl_x509.o: $(hdrdir)/ruby/internal/intern/complex.h
 ossl_x509.o: $(hdrdir)/ruby/internal/intern/cont.h
+ossl_x509.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ossl_x509.o: $(hdrdir)/ruby/internal/intern/dir.h
 ossl_x509.o: $(hdrdir)/ruby/internal/intern/enum.h
 ossl_x509.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -5045,6 +5070,7 @@ ossl_x509attr.o: $(hdrdir)/ruby/internal/intern/class.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/intern/compar.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/intern/complex.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/intern/cont.h
+ossl_x509attr.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/intern/dir.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/intern/enum.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -5242,6 +5268,7 @@ ossl_x509cert.o: $(hdrdir)/ruby/internal/intern/class.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/intern/compar.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/intern/complex.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/intern/cont.h
+ossl_x509cert.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/intern/dir.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/intern/enum.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -5439,6 +5466,7 @@ ossl_x509crl.o: $(hdrdir)/ruby/internal/intern/class.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/intern/compar.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/intern/complex.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/intern/cont.h
+ossl_x509crl.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/intern/dir.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/intern/enum.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -5636,6 +5664,7 @@ ossl_x509ext.o: $(hdrdir)/ruby/internal/intern/class.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/intern/compar.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/intern/complex.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/intern/cont.h
+ossl_x509ext.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/intern/dir.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/intern/enum.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -5833,6 +5862,7 @@ ossl_x509name.o: $(hdrdir)/ruby/internal/intern/class.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/intern/compar.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/intern/complex.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/intern/cont.h
+ossl_x509name.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/intern/dir.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/intern/enum.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -6030,6 +6060,7 @@ ossl_x509req.o: $(hdrdir)/ruby/internal/intern/class.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/intern/compar.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/intern/complex.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/intern/cont.h
+ossl_x509req.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/intern/dir.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/intern/enum.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -6227,6 +6258,7 @@ ossl_x509revoked.o: $(hdrdir)/ruby/internal/intern/class.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/intern/compar.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/intern/complex.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/intern/cont.h
+ossl_x509revoked.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/intern/dir.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/intern/enum.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/intern/enumerator.h
@@ -6424,6 +6456,7 @@ ossl_x509store.o: $(hdrdir)/ruby/internal/intern/class.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/intern/compar.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/intern/complex.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/intern/cont.h
+ossl_x509store.o: $(hdrdir)/ruby/internal/intern/decimal.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/intern/dir.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/intern/enum.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/intern/enumerator.h

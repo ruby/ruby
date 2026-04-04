@@ -106,6 +106,7 @@ usrcompat.o: $(hdrdir)/ruby/internal/intern/class.h
 usrcompat.o: $(hdrdir)/ruby/internal/intern/compar.h
 usrcompat.o: $(hdrdir)/ruby/internal/intern/complex.h
 usrcompat.o: $(hdrdir)/ruby/internal/intern/cont.h
+usrcompat.o: $(hdrdir)/ruby/internal/intern/decimal.h
 usrcompat.o: $(hdrdir)/ruby/internal/intern/dir.h
 usrcompat.o: $(hdrdir)/ruby/internal/intern/enum.h
 usrcompat.o: $(hdrdir)/ruby/internal/intern/enumerator.h

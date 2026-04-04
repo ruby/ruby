@@ -106,6 +106,7 @@ numhash.o: $(hdrdir)/ruby/internal/intern/class.h
 numhash.o: $(hdrdir)/ruby/internal/intern/compar.h
 numhash.o: $(hdrdir)/ruby/internal/intern/complex.h
 numhash.o: $(hdrdir)/ruby/internal/intern/cont.h
+numhash.o: $(hdrdir)/ruby/internal/intern/decimal.h
 numhash.o: $(hdrdir)/ruby/internal/intern/dir.h
 numhash.o: $(hdrdir)/ruby/internal/intern/enum.h
 numhash.o: $(hdrdir)/ruby/internal/intern/enumerator.h

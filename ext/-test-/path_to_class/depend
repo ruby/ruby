@@ -106,6 +106,7 @@ path_to_class.o: $(hdrdir)/ruby/internal/intern/class.h
 path_to_class.o: $(hdrdir)/ruby/internal/intern/compar.h
 path_to_class.o: $(hdrdir)/ruby/internal/intern/complex.h
 path_to_class.o: $(hdrdir)/ruby/internal/intern/cont.h
+path_to_class.o: $(hdrdir)/ruby/internal/intern/decimal.h
 path_to_class.o: $(hdrdir)/ruby/internal/intern/dir.h
 path_to_class.o: $(hdrdir)/ruby/internal/intern/enum.h
 path_to_class.o: $(hdrdir)/ruby/internal/intern/enumerator.h
