@@ -124,7 +124,7 @@ RSpec.describe "bundle console", readline: true do
         gem "irb"
         gem "pry"
       G
-      bundle "config set console pry"
+      bundle_config "console pry"
 
       bundle "console" do |input, _, _|
         input.puts("__method__")
@@ -136,7 +136,7 @@ RSpec.describe "bundle console", readline: true do
     it "falls back to IRB if the other REPL isn't available" do
       skip "Does not work in a ruby-core context if irb is in the default $LOAD_PATH because it enables the real IRB, not our dummy one" if ruby_core? && Gem.ruby_version < Gem::Version.new("3.5.0.a")
 
-      bundle "config set console pry"
+      bundle_config "console pry"
       # make sure pry isn't there
 
       bundle "console" do |input, _, _|
@@ -201,7 +201,7 @@ RSpec.describe "bundle console", readline: true do
         gem "foo"
       G
 
-      bundle "config set auto_install 1"
+      bundle_config "auto_install 1"
       bundle :console do |input, _, _|
         input.puts("puts 'hello'")
         input.puts("exit")

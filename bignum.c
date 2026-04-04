@@ -2943,11 +2943,6 @@ bary_divmod(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT *xds, s
     }
 }
 
-
-#ifndef BIGNUM_DEBUG
-# define BIGNUM_DEBUG (0+RUBY_DEBUG)
-#endif
-
 static int
 bigzero_p(VALUE x)
 {

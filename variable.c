@@ -1008,7 +1008,7 @@ VALUE
 rb_gvar_set(ID id, VALUE val)
 {
     VALUE retval;
-    struct rb_global_entry *entry;
+    struct rb_global_entry *entry = NULL;
     const rb_box_t *box = rb_current_box();
     bool use_box_tbl = false;
 
@@ -1041,8 +1041,8 @@ rb_gvar_get(ID id)
     VALUE retval, gvars, key;
     const rb_box_t *box = rb_current_box();
     bool use_box_tbl = false;
-    struct rb_global_entry *entry;
-    struct rb_global_variable *var;
+    struct rb_global_entry *entry = NULL;
+    struct rb_global_variable *var = NULL;
     // TODO: use lock-free rb_id_table when it's available for use (doesn't yet exist)
     RB_VM_LOCKING() {
         entry = rb_global_entry(id);
@@ -1719,7 +1719,7 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
                     SIZED_FREE_N(fields, RSHAPE_CAPACITY(old_shape_id));
                 }
                 else if (RSHAPE_CAPACITY(old_shape_id) != RSHAPE_CAPACITY(next_shape_id)) {
-                    IMEMO_OBJ_FIELDS(fields_obj)->as.external.ptr = ruby_sized_xrealloc(fields, RSHAPE_CAPACITY(next_shape_id) * sizeof(VALUE), RSHAPE_CAPACITY(old_shape_id) * sizeof(VALUE));
+                    IMEMO_OBJ_FIELDS(fields_obj)->as.external.ptr = ruby_xrealloc_sized(fields, RSHAPE_CAPACITY(next_shape_id) * sizeof(VALUE), RSHAPE_CAPACITY(old_shape_id) * sizeof(VALUE));
                 }
             }
         }
@@ -4246,20 +4246,6 @@ find_cvar(VALUE klass, VALUE * front, VALUE * target, ID id)
     return v;
 }
 
-static void
-check_for_cvar_table(VALUE subclass, VALUE key)
-{
-    if (RB_TYPE_P(subclass, T_ICLASS)) return; // skip refinement ICLASSes
-
-    if (RTEST(rb_ivar_defined(subclass, key))) {
-        RB_DEBUG_COUNTER_INC(cvar_class_invalidate);
-        ruby_vm_global_cvar_state++;
-        return;
-    }
-
-    rb_class_foreach_subclass(subclass, check_for_cvar_table, key);
-}
-
 void
 rb_cvar_set(VALUE klass, ID id, VALUE val)
 {
@@ -4306,15 +4292,11 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
         ent->global_cvar_state = GET_GLOBAL_CVAR_STATE();
     }
 
-    // Break the cvar cache if this is a new class variable
-    // and target is a module or a subclass with the same
-    // cvar in this lookup.
+    // Break the cvar cache if this is a new class variable.
+    // Existing caches may have resolved this name to a different
+    // location in the hierarchy, so we must invalidate globally.
     if (new_cvar) {
-        if (RB_TYPE_P(target, T_CLASS)) {
-            if (RCLASS_SUBCLASSES_FIRST(target)) {
-                rb_class_foreach_subclass(target, check_for_cvar_table, id);
-            }
-        }
+        ruby_vm_global_cvar_state++;
     }
 }
 

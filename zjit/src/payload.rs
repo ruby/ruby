@@ -4,6 +4,8 @@ use crate::codegen::IseqCallRef;
 use crate::stats::CompileError;
 use crate::{cruby::*, profile::IseqProfile, virtualmem::CodePtr};
 
+pub use crate::jit_frame::JITFrame;
+
 /// This is all the data ZJIT stores on an ISEQ. We mark objects in this struct on GC.
 #[derive(Debug)]
 pub struct IseqPayload {
@@ -49,6 +51,11 @@ pub struct IseqVersion {
 pub type IseqVersionRef = NonNull<IseqVersion>;
 
 impl IseqVersion {
+    /// Check if this version was invalidated
+    pub fn is_invalidated(&self) -> bool {
+        self.status == IseqStatus::Invalidated
+    }
+
     /// Allocate a new IseqVersion to be compiled
     pub fn new(iseq: IseqPtr) -> IseqVersionRef {
         let version = Self {

@@ -93,7 +93,7 @@ jobs:
           rustup install ${{ matrix.rust_version }} --profile minimal
           rustup default ${{ matrix.rust_version }}
 
-      - uses: taiki-e/install-action@328a871ad8f62ecac78390391f463ccabc974b72 # v2.69.9
+      - uses: taiki-e/install-action@d858f8113943481093e02986a7586a4819a3bfd6 # v2.71.2
         with:
           tool: nextest@0.9
         if: ${{ matrix.test_task == 'zjit-check' }}
@@ -164,7 +164,7 @@ jobs:
   result:
     if: ${{ always() }}
     name: ${{ github.workflow }} result
-    runs-on: macos-14
+    runs-on: ubuntu-latest
     needs: [make]
     steps:
       - run: exit 1

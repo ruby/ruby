@@ -71,7 +71,6 @@ void Init_ossl_dh(void);
  * EC
  */
 extern VALUE cEC;
-VALUE ossl_ec_new(EVP_PKEY *);
 void Init_ossl_ec(void);
 
 #define OSSL_PKEY_BN_DEF_GETTER0(_keytype, _type, _name, _get)          \

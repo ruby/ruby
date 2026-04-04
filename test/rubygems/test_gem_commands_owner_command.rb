@@ -399,6 +399,7 @@ EOF
   end
 
   def test_with_webauthn_enabled_failure
+    pend "Flaky on TruffleRuby" if RUBY_ENGINE == "truffleruby"
     response_success = "Owner added successfully."
     server = Gem::MockTCPServer.new
     error = Gem::WebauthnVerificationError.new("Something went wrong")

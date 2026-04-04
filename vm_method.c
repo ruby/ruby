@@ -40,7 +40,7 @@ mark_cc_entry_i(VALUE ccs_ptr, void *data)
             VM_ASSERT(!vm_cc_super_p(cc) && !vm_cc_refinement_p(cc));
             vm_cc_invalidate(cc);
         }
-        ruby_sized_xfree(ccs, vm_ccs_alloc_size(ccs->capa));
+        ruby_xfree_sized(ccs, vm_ccs_alloc_size(ccs->capa));
         return ID_TABLE_DELETE;
     }
     else {
@@ -71,7 +71,7 @@ cc_table_free_i(VALUE ccs_ptr, void *data)
     struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_ptr;
     VM_ASSERT(vm_ccs_p(ccs));
 
-    ruby_sized_xfree(ccs, vm_ccs_alloc_size(ccs->capa));
+    ruby_xfree_sized(ccs, vm_ccs_alloc_size(ccs->capa));
 
     return ID_TABLE_CONTINUE;
 }
@@ -201,7 +201,7 @@ rb_vm_ccs_invalidate_and_free(struct rb_class_cc_entries *ccs)
 {
     RB_DEBUG_COUNTER_INC(ccs_free);
     vm_ccs_invalidate(ccs);
-    ruby_sized_xfree(ccs, vm_ccs_alloc_size(ccs->capa));
+    ruby_xfree_sized(ccs, vm_ccs_alloc_size(ccs->capa));
 }
 
 void
@@ -440,6 +440,7 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
         rb_vm_barrier();
 
         if (LIKELY(RCLASS_SUBCLASSES_FIRST(klass) == NULL) &&
+            !FL_TEST_RAW(klass, RCLASS_HAS_SUBCLASSES) &&
             // Non-refinement ICLASSes (from module inclusion) previously had
             // subclasses reparented onto them, so they need the tree path for
             // broader cme-based invalidation even though they now have no subclasses.
@@ -576,7 +577,7 @@ invalidate_ccs_in_iclass_cc_tbl(VALUE value, void *data)
 {
     struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)value;
     vm_cme_invalidate((rb_callable_method_entry_t *)ccs->cme);
-    ruby_sized_xfree(ccs, vm_ccs_alloc_size(ccs->capa));
+    ruby_xfree_sized(ccs, vm_ccs_alloc_size(ccs->capa));
     return ID_TABLE_DELETE;
 }
 
@@ -1084,7 +1085,7 @@ rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *de
                 cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
 
                 if (cfp && (line = rb_vm_get_sourceline(cfp))) {
-                    VALUE location = rb_ary_new3(2, rb_iseq_path(cfp->iseq), INT2FIX(line));
+                    VALUE location = rb_ary_new3(2, rb_iseq_path(CFP_ISEQ(cfp)), INT2FIX(line));
                     rb_ary_freeze(location);
                     RB_OBJ_SET_SHAREABLE(location);
                     RB_OBJ_WRITE(me, &def->body.attr.location, location);
@@ -2330,7 +2331,7 @@ scope_visibility_check(void)
 {
     /* Check for public/protected/private/module_function called inside a method */
     rb_control_frame_t *cfp = GET_EC()->cfp+1;
-    if (cfp && cfp->iseq && ISEQ_BODY(cfp->iseq)->type == ISEQ_TYPE_METHOD) {
+    if (cfp && CFP_ISEQ(cfp) && ISEQ_BODY(CFP_ISEQ(cfp))->type == ISEQ_TYPE_METHOD) {
         rb_warn("calling %s without arguments inside a method may not have the intended effect",
             rb_id2name(rb_frame_this_func()));
     }

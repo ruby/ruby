@@ -2774,12 +2774,12 @@ EOS
       # Disable GC so we can make sure GC only runs in Process.warmup
       GC.disable
 
-      total_slots_before = GC.stat(:heap_available_slots) + GC.stat(:heap_allocatable_slots)
+      total_slots_before = GC.stat(:heap_available_slots) + GC.stat(:heap_allocatable_bytes) / GC.stat_heap(0, :slot_size)
 
       Process.warmup
 
       # TODO: flaky
-      # assert_equal(total_slots_before, GC.stat(:heap_available_slots) + GC.stat(:heap_allocatable_slots))
+      # assert_equal(total_slots_before, GC.stat(:heap_available_slots) + GC.stat(:heap_allocatable_bytes) / GC.stat_heap(0, :slot_size))
 
       assert_equal(0, GC.stat(:heap_empty_pages))
       assert_operator(GC.stat(:total_freed_pages), :>, 0)

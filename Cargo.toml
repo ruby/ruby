@@ -36,10 +36,14 @@ yjit = [ "dep:yjit" ]
 zjit = [ "dep:zjit" ]
 
 [profile.dev]
-opt-level = 0
+opt-level = 1 # On 0, functions use so much stack space that we get stray `SystemStackError`s
 debug = true
 debug-assertions = true
 overflow-checks = true
+
+[profile.test]
+inherits = "dev"
+opt-level = 0
 
 [profile.dev_nodebug]
 inherits = "dev"

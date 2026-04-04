@@ -1515,20 +1515,14 @@ proc_eq(VALUE self, VALUE other)
 static VALUE
 iseq_location(const rb_iseq_t *iseq)
 {
-    VALUE loc[5];
-    int i = 0;
+    VALUE loc[2];
 
     if (!iseq) return Qnil;
     rb_iseq_check(iseq);
-    loc[i++] = rb_iseq_path(iseq);
-    const rb_code_location_t *cl = &ISEQ_BODY(iseq)->location.code_location;
-    loc[i++] = RB_INT2NUM(cl->beg_pos.lineno);
-    loc[i++] = RB_INT2NUM(cl->beg_pos.column);
-    loc[i++] = RB_INT2NUM(cl->end_pos.lineno);
-    loc[i++] = RB_INT2NUM(cl->end_pos.column);
-    RUBY_ASSERT_ALWAYS(i == numberof(loc));
+    loc[0] = rb_iseq_path(iseq);
+    loc[1] = RB_INT2NUM(ISEQ_BODY(iseq)->location.first_lineno);
 
-    return rb_ary_new_from_values(i, loc);
+    return rb_ary_new4(2, loc);
 }
 
 VALUE
@@ -1539,17 +1533,10 @@ rb_iseq_location(const rb_iseq_t *iseq)
 
 /*
  * call-seq:
- *    prc.source_location  -> [String, Integer, Integer, Integer, Integer]
+ *    prc.source_location  -> [String, Integer]
  *
- * Returns the location where the Proc was defined.
- * The returned Array contains:
- *   (1) the Ruby source filename
- *   (2) the line number where the definition starts
- *   (3) the position where the definition starts, in number of bytes from the start of the line
- *   (4) the line number where the definition ends
- *   (5) the position where the definitions ends, in number of bytes from the start of the line
- *
- * This method will return +nil+ if the Proc was not defined in Ruby (i.e. native).
+ * Returns the Ruby source filename and line number containing this proc
+ * or +nil+ if this proc was not defined in Ruby (i.e. native).
  */
 
 VALUE
@@ -3200,17 +3187,10 @@ rb_method_entry_location(const rb_method_entry_t *me)
 
 /*
  * call-seq:
- *    meth.source_location  -> [String, Integer, Integer, Integer, Integer]
+ *    meth.source_location  -> [String, Integer]
  *
- * Returns the location where the method was defined.
- * The returned Array contains:
- *   (1) the Ruby source filename
- *   (2) the line number where the definition starts
- *   (3) the position where the definition starts, in number of bytes from the start of the line
- *   (4) the line number where the definition ends
- *   (5) the position where the definitions ends, in number of bytes from the start of the line
- *
- * This method will return +nil+ if the method was not defined in Ruby (i.e. native).
+ * Returns the Ruby source filename and line number containing this method
+ * or nil if this method was not defined in Ruby (i.e. native).
  */
 
 VALUE

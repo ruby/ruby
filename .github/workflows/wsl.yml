@@ -14,6 +14,9 @@ on:
     # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
   merge_group:
 
+permissions:
+  contents: read
+
 jobs:
   wsl:
     runs-on: windows-2025

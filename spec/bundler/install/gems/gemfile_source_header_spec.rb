@@ -11,7 +11,7 @@ RSpec.describe "fetching dependencies with a mirrored source" do
       gem 'weakling'
     G
 
-    bundle "config set --local mirror.#{mirror} https://gem.repo2"
+    bundle_config "mirror.#{mirror} https://gem.repo2"
   end
 
   it "sets the 'X-Gemfile-Source' and 'User-Agent' headers and bundles successfully" do

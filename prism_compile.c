@@ -1378,15 +1378,36 @@ pm_new_child_iseq(rb_iseq_t *iseq, pm_scope_node_t *node, VALUE name, const rb_i
 }
 
 static int
+pm_cpath_const_p(const pm_node_t *node)
+{
+    switch (PM_NODE_TYPE(node)) {
+      case PM_CONSTANT_READ_NODE:
+        return TRUE;
+      case PM_CONSTANT_PATH_NODE:
+        {
+            const pm_node_t *parent = ((const pm_constant_path_node_t *) node)->parent;
+            if (!parent) return TRUE; /* ::Foo */
+            return pm_cpath_const_p(parent);
+        }
+      default:
+        return FALSE;
+    }
+}
+
+static int
 pm_compile_class_path(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_location_t *node_location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
 {
     if (PM_NODE_TYPE_P(node, PM_CONSTANT_PATH_NODE)) {
         const pm_node_t *parent = ((const pm_constant_path_node_t *) node)->parent;
 
         if (parent) {
-            /* Bar::Foo */
+            /* Bar::Foo or expr::Foo */
             PM_COMPILE(parent);
-            return VM_DEFINECLASS_FLAG_SCOPED;
+            int flags = VM_DEFINECLASS_FLAG_SCOPED;
+            if (!pm_cpath_const_p(parent)) {
+                flags |= VM_DEFINECLASS_FLAG_DYNAMIC_CREF;
+            }
+            return flags;
         }
         else {
             /* toplevel class ::Foo */
@@ -3749,7 +3770,7 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
 
     if (PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION)) {
         if (PM_BRANCH_COVERAGE_P(iseq)) {
-            uint32_t end_cursor;
+            uint32_t end_cursor = 0;
             bool end_found = false;
 
             if (call_node->closing_loc.length > 0) {
@@ -10342,7 +10363,17 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         ID singletonclass;
         CONST_ID(singletonclass, "singletonclass");
-        PUSH_INSN3(ret, location, defineclass, ID2SYM(singletonclass), child_iseq, INT2FIX(VM_DEFINECLASS_TYPE_SINGLETON_CLASS));
+
+        /* `class << self` in a class body and `class << Foo` (constant
+           receiver) are stable. All other forms are potentially dynamic. */
+        int sclass_flags = VM_DEFINECLASS_TYPE_SINGLETON_CLASS;
+        if (!(PM_NODE_TYPE_P(cast->expression, PM_SELF_NODE) &&
+              ISEQ_BODY(iseq)->type == ISEQ_TYPE_CLASS) &&
+            !pm_cpath_const_p(cast->expression)) {
+            sclass_flags |= VM_DEFINECLASS_FLAG_DYNAMIC_CREF;
+        }
+
+        PUSH_INSN3(ret, location, defineclass, ID2SYM(singletonclass), child_iseq, INT2FIX(sclass_flags));
 
         if (popped) PUSH_INSN(ret, location, pop);
         RB_OBJ_WRITTEN(iseq, Qundef, (VALUE) child_iseq);
@@ -11362,12 +11393,6 @@ pm_parse_process(pm_parse_result_t *result, pm_node_t *node, VALUE *script_lines
     pm_intern_constants_ctx_t intern_ctx = { .constants = scope_node->constants, .encoding = scope_node->encoding, .index = 0 };
     pm_parser_constants_each(parser, pm_intern_constants_callback, &intern_ctx);
 
-    pm_constant_id_list_t *locals = &scope_node->locals;
-    pm_index_lookup_table_init_heap(&scope_node->index_lookup_table, (int) constants_size);
-    for (size_t index = 0; index < locals->size; index++) {
-        pm_index_lookup_table_insert(&scope_node->index_lookup_table, locals->ids[index], (int) index);
-    }
-
     // If we got here, this is a success and we can return Qnil to indicate that
     // no error should be raised.
     result->parsed = true;
@@ -11433,6 +11458,37 @@ pm_parse_file_script_lines(const pm_scope_node_t *scope_node, const pm_parser_t 
     return lines;
 }
 
+struct load_from_fd_args {
+    VALUE path;
+    VALUE io;
+    int open_mode;
+    int fd;
+};
+
+static VALUE
+close_file(VALUE args)
+{
+    struct load_from_fd_args *arg = (void *)args;
+    if (arg->fd != -1) {
+        close(arg->fd);
+    }
+    else if (!NIL_P(arg->io)) {
+        rb_io_close(arg->io);
+    }
+    return Qnil;
+}
+
+static VALUE
+load_content(VALUE args)
+{
+    struct load_from_fd_args *arg = (void *)args;
+    VALUE io = rb_io_fdopen(arg->fd, arg->open_mode, RSTRING_PTR(arg->path));
+    arg->io = io;
+    arg->fd = -1;
+    rb_io_wait(io, RB_INT2NUM(RUBY_IO_READABLE), Qnil);
+    return rb_funcall(io, rb_intern("read"), 0);
+}
+
 /**
  * Attempt to load the file into memory. Return a Ruby error if the file cannot
  * be read.
@@ -11453,13 +11509,14 @@ pm_load_file(pm_parse_result_t *result, VALUE filepath, bool load_error)
     // For non-regular files (pipes, character devices), we need to read
     // through Ruby IO to properly release the GVL while waiting for data.
     if (init_result == PM_SOURCE_INIT_ERROR_NON_REGULAR) {
-        const int open_mode = O_RDONLY | O_NONBLOCK;
-        int fd = open(RSTRING_PTR(filepath), open_mode);
-        if (fd == -1) goto error_generic;
-
-        VALUE io = rb_io_fdopen(fd, open_mode, RSTRING_PTR(filepath));
-        rb_io_wait(io, RB_INT2NUM(RUBY_IO_READABLE), Qnil);
-        VALUE contents = rb_funcall(io, rb_intern("read"), 0);
+        struct load_from_fd_args args = {
+            .path = filepath,
+            .open_mode = O_RDONLY | O_NONBLOCK,
+            .fd = rb_cloexec_open(RSTRING_PTR(filepath), args.open_mode, 0),
+            .io = Qnil,
+        };
+        if (args.fd == -1) goto error_generic;
+        VALUE contents = rb_ensure(load_content, (VALUE)&args, close_file, (VALUE)&args);
 
         if (!RB_TYPE_P(contents, T_STRING)) goto error_generic;
 

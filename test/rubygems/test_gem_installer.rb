@@ -759,8 +759,12 @@ class TestGemInstaller < Gem::InstallerTestCase
 
     errors = @ui.error.split("\n")
     assert_equal "WARNING:  ascii_binder-0.1.10.1 ships with a dangling symlink named bin/ascii_binder pointing to missing bin/asciibinder file. Ignoring", errors.shift
-    assert_empty errors
-
+    if symlink_supported?
+      assert_empty errors
+    else
+      assert_match(/Unable to use symlinks, installing wrapper/i,
+                   errors.to_s)
+    end
     assert_empty @ui.output
   end
 

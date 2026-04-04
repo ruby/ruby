@@ -88,7 +88,7 @@ free_arena(struct iseq_compile_data_storage *cur)
 
     while (cur) {
         next = cur->next;
-        ruby_sized_xfree(cur, offsetof(struct iseq_compile_data_storage, buff) + cur->size * sizeof(char));
+        ruby_xfree_sized(cur, offsetof(struct iseq_compile_data_storage, buff) + cur->size * sizeof(char));
         cur = next;
     }
 }
@@ -208,7 +208,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
         SIZED_FREE_N(body->is_entries, ISEQ_IS_SIZE(body));
         SIZED_FREE_N(body->call_data, body->ci_size);
         if (body->catch_table) {
-            ruby_sized_xfree(body->catch_table, iseq_catch_table_bytes(body->catch_table->size));
+            ruby_xfree_sized(body->catch_table, iseq_catch_table_bytes(body->catch_table->size));
         }
         SIZED_FREE_N(body->param.opt_table, body->param.opt_num + 1);
         if (ISEQ_MBITS_BUFLEN(body->iseq_size) > 1 && body->mark_bits.list) {
