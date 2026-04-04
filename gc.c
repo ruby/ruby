@@ -5625,6 +5625,7 @@ rb_obj_info_dump_loc(VALUE obj, const char *file, int line, const char *func)
     fprintf(stderr, "<OBJ_INFO:%s@%s:%d> %s\n", func, file, line, rb_raw_obj_info(buff, 0x100, obj));
 }
 
+RBIMPL_ATTR_NOINLINE()
 void
 rb_gc_before_fork(void)
 {
