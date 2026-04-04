@@ -64,8 +64,9 @@ pub enum Type {
     BlockParamProxy, // A special sentinel value indicating the block parameter should be read from
                      // the current surrounding cfp
 
-    // The context currently relies on types taking at most 4 bits (max value 15)
-    // to encode, so if we add any more, we will need to refactor the context.
+    Decimal,
+
+    // The context encodes types using 5 bits (max value 31).
 }
 
 // Default initialization
@@ -91,6 +92,8 @@ impl Type {
                 Type::ImmSymbol
             } else if val.flonum_p() {
                 Type::Flonum
+            } else if val.decimal_imm_p() {
+                Type::Decimal
             } else {
                 unreachable!("Illegal value: {:?}", val)
             }
@@ -102,6 +105,7 @@ impl Type {
                 class if class == unsafe { rb_cArray }  => return Type::CArray,
                 class if class == unsafe { rb_cHash }   => return Type::CHash,
                 class if class == unsafe { rb_cString } => return Type::CString,
+                class if class == unsafe { rb_cDecimal } => return Type::Decimal,
                 _ => {}
             }
             // We likewise can't reference rb_block_param_proxy, but it's again an optimisation;
@@ -190,6 +194,7 @@ impl Type {
             Type::THash | Type::CHash => Some(RUBY_T_HASH),
             Type::ImmSymbol => Some(RUBY_T_SYMBOL),
             Type::TString | Type::CString => Some(RUBY_T_STRING),
+            Type::Decimal => Some(RUBY_T_DECIMAL),
             Type::Unknown | Type::UnknownImm | Type::UnknownHeap => None,
             Type::BlockParamProxy => None,
         }
@@ -208,6 +213,7 @@ impl Type {
                 Type::CArray => Some(rb_cArray),
                 Type::CHash => Some(rb_cHash),
                 Type::CString => Some(rb_cString),
+                Type::Decimal => Some(rb_cDecimal),
                 _ => None,
             }
         }
@@ -279,6 +285,10 @@ impl Type {
 
         // Specific immediate type into unknown immediate type is imperfect but valid
         if self.is_imm() && dst == Type::UnknownImm {
+            return TypeDiff::Compatible(1);
+        }
+
+        if self == Type::Decimal && (dst == Type::UnknownHeap || dst == Type::UnknownImm) {
             return TypeDiff::Compatible(1);
         }
 
@@ -828,14 +838,14 @@ mod bitvector_tests {
 #[derive(Debug, Copy, Clone)]
 #[repr(u8)]
 enum CtxOp {
-    // Self type (4 bits)
+    // Self type (5 bits)
     SetSelfType = 0,
 
-    // Local idx (3 bits), temp type (4 bits)
+    // Local idx (3 bits), temp type (5 bits)
     SetLocalType,
 
     // Map stack temp to self with known type
-    // Temp idx (3 bits), known type (4 bits)
+    // Temp idx (3 bits), known type (5 bits)
     SetTempType,
 
     // Map stack temp to a local variable
@@ -1069,7 +1079,7 @@ impl Context {
         // Encode the self type if known
         if self.self_type != Type::Unknown {
             bits.push_op(CtxOp::SetSelfType);
-            bits.push_u4(self.self_type as u8);
+            bits.push_u5(self.self_type as u8);
         }
 
         // Encode the local types if known
@@ -1078,7 +1088,7 @@ impl Context {
             if t != Type::Unknown {
                 bits.push_op(CtxOp::SetLocalType);
                 bits.push_u3(local_idx as u8);
-                bits.push_u4(t as u8);
+                bits.push_u5(t as u8);
             }
         }
 
@@ -1089,10 +1099,10 @@ impl Context {
             match mapping {
                 MapToStack(temp_type) => {
                     if temp_type != Type::Unknown {
-                        // Temp idx (3 bits), known type (4 bits)
+                        // Temp idx (3 bits), known type (5 bits)
                         bits.push_op(CtxOp::SetTempType);
                         bits.push_u3(stack_idx as u8);
-                        bits.push_u4(temp_type as u8);
+                        bits.push_u5(temp_type as u8);
                     }
                 }
 
@@ -1170,19 +1180,19 @@ impl Context {
 
             match op {
                 CtxOp::SetSelfType => {
-                    ctx.self_type = unsafe { transmute(bits.read_u4(&mut idx)) };
+                    ctx.self_type = unsafe { transmute(bits.read_u5(&mut idx)) };
                 }
 
                 CtxOp::SetLocalType => {
                     let local_idx = bits.read_u3(&mut idx) as usize;
-                    let t = unsafe { transmute(bits.read_u4(&mut idx)) };
+                    let t = unsafe { transmute(bits.read_u5(&mut idx)) };
                     ctx.set_local_type(local_idx, t);
                 }
 
                 // Map temp to stack (known type)
                 CtxOp::SetTempType => {
                     let temp_idx = bits.read_u3(&mut idx) as usize;
-                    let temp_type = unsafe { transmute(bits.read_u4(&mut idx)) };
+                    let temp_type = unsafe { transmute(bits.read_u5(&mut idx)) };
                     ctx.set_temp_mapping(temp_idx, TempMapping::MapToStack(temp_type));
                 }
 
@@ -2965,7 +2975,16 @@ impl Context {
             return Some(is_dec(comptime_recv) && is_dec(comptime_arg));
         }
 
-        None
+        let recv_type = self.get_opnd_type(StackOpnd(1));
+        let arg_type = self.get_opnd_type(StackOpnd(0));
+        let is_dec = |t: Type| t == Type::Decimal;
+        if is_dec(recv_type) && is_dec(arg_type) {
+            Some(true)
+        } else if recv_type == Type::Unknown && arg_type == Type::Unknown {
+            None
+        } else {
+            Some(false)
+        }
     }
 
     pub fn two_fixnums_on_stack(&self, jit: &mut JITState) -> Option<bool> {
@@ -4379,11 +4398,9 @@ mod tests {
 
     #[test]
     fn type_size() {
-        // Check that we can store types in 4 bits,
-        // and all local types in 32 bits
         assert_eq!(mem::size_of::<Type>(), 1);
-        assert!(Type::BlockParamProxy as usize <= 0b1111);
-        assert!(MAX_CTX_LOCALS * 4 <= 32);
+        assert!(Type::Decimal as usize <= 0b11111);
+        assert!(MAX_CTX_LOCALS * 5 <= 64);
     }
 
     #[test]

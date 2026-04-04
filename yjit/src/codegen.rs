@@ -1809,7 +1809,7 @@ fn gen_opt_plus(
             let result = asm.lshift(sum, Opnd::UImm(12));
             let result = asm.or(result, low_bits);
 
-            let dst = asm.stack_push(Type::UnknownImm);
+            let dst = asm.stack_push(Type::Decimal);
             asm.mov(dst, result);
             return Some(KeepCompiling);
         }
@@ -1821,7 +1821,7 @@ fn gen_opt_plus(
         let recv = asm.stack_opnd(1);
         let ret = asm.ccall(rb_decimal_plus_dd as *const u8, vec![recv, obj]);
         asm.stack_pop(2);
-        let dst = asm.stack_push(Type::UnknownImm);
+        let dst = asm.stack_push(Type::Decimal);
         asm.mov(dst, ret);
         return Some(KeepCompiling);
     }
@@ -4278,7 +4278,7 @@ fn gen_opt_minus(
             let result = asm.lshift(diff, Opnd::UImm(12));
             let result = asm.or(result, low_bits);
 
-            let dst = asm.stack_push(Type::UnknownImm);
+            let dst = asm.stack_push(Type::Decimal);
             asm.mov(dst, result);
             return Some(KeepCompiling);
         }
@@ -4290,7 +4290,7 @@ fn gen_opt_minus(
         let recv = asm.stack_opnd(1);
         let ret = asm.ccall(rb_decimal_minus_dd as *const u8, vec![recv, obj]);
         asm.stack_pop(2);
-        let dst = asm.stack_push(Type::UnknownImm);
+        let dst = asm.stack_push(Type::Decimal);
         asm.mov(dst, ret);
         return Some(KeepCompiling);
     }
@@ -4346,7 +4346,7 @@ fn gen_opt_mult(
         let recv = asm.stack_opnd(1);
         let ret = asm.ccall(rb_decimal_mul_dd as *const u8, vec![recv, obj]);
         asm.stack_pop(2);
-        let dst = asm.stack_push(Type::UnknownImm);
+        let dst = asm.stack_push(Type::Decimal);
         asm.mov(dst, ret);
         return Some(KeepCompiling);
     }
@@ -4404,7 +4404,7 @@ fn gen_opt_div(
         let recv = asm.stack_opnd(1);
         let ret = asm.ccall(rb_decimal_div_dd as *const u8, vec![recv, obj]);
         asm.stack_pop(2);
-        let dst = asm.stack_push(Type::UnknownImm);
+        let dst = asm.stack_push(Type::Decimal);
         asm.mov(dst, ret);
         return Some(KeepCompiling);
     }
@@ -4428,7 +4428,7 @@ fn gen_opt_mod(
         let recv = asm.stack_opnd(1);
         let ret = asm.ccall(rb_decimal_mod_dd as *const u8, vec![recv, obj]);
         asm.stack_pop(2);
-        let dst = asm.stack_push(Type::UnknownImm);
+        let dst = asm.stack_push(Type::Decimal);
         asm.mov(dst, ret);
         return Some(KeepCompiling);
     }
@@ -5312,13 +5312,14 @@ fn jit_guard_known_klass(
             asm.ctx.upgrade_opnd_type(insn_opnd, Type::Flonum);
         }
     } else if unsafe { known_klass == rb_cDecimal } && sample_instance.decimal_imm_p() {
-        // BID immediate Decimal: check low 12 bits (tag byte + scale nibble).
-        // Decimal is frozen with no singleton classes, so this is stable.
-        let expected_low12 = sample_instance.as_u64() & 0xFFF;
-        asm_comment!(asm, "guard object is BID Decimal immediate");
-        let low12 = asm.and(obj_opnd, Opnd::UImm(0xFFF));
-        asm.cmp(low12, Opnd::UImm(expected_low12));
-        jit_chain_guard(JCC_JNE, jit, asm, max_chain_depth, counter);
+        if val_type != Type::Decimal {
+            let expected_low12 = sample_instance.as_u64() & 0xFFF;
+            asm_comment!(asm, "guard object is BID Decimal immediate");
+            let low12 = asm.and(obj_opnd, Opnd::UImm(0xFFF));
+            asm.cmp(low12, Opnd::UImm(expected_low12));
+            jit_chain_guard(JCC_JNE, jit, asm, max_chain_depth, counter);
+            asm.ctx.upgrade_opnd_type(insn_opnd, Type::Decimal);
+        }
     } else if unsafe {
         FL_TEST(known_klass, VALUE(RUBY_FL_SINGLETON as usize)) != VALUE(0)
             && sample_instance == rb_class_attached_object(known_klass)
@@ -5378,6 +5379,8 @@ fn jit_guard_known_klass(
             asm.ctx.upgrade_opnd_type(insn_opnd, Type::CArray);
         } else if known_klass == unsafe { rb_cHash } {
             asm.ctx.upgrade_opnd_type(insn_opnd, Type::CHash);
+        } else if known_klass == unsafe { rb_cDecimal } {
+            asm.ctx.upgrade_opnd_type(insn_opnd, Type::Decimal);
         }
     }
 }
@@ -6173,7 +6176,7 @@ fn jit_rb_decimal_plus(
     let ret = asm.ccall(rb_decimal_plus_dd as *const u8, vec![recv, obj]);
     asm.stack_pop(2); // Keep recv during ccall for GC
 
-    let ret_opnd = asm.stack_push(Type::UnknownImm);
+    let ret_opnd = asm.stack_push(Type::Decimal);
     asm.mov(ret_opnd, ret);
     true
 }
@@ -6214,7 +6217,7 @@ fn jit_rb_decimal_minus(
     let ret = asm.ccall(rb_decimal_minus_dd as *const u8, vec![recv, obj]);
     asm.stack_pop(2); // Keep recv during ccall for GC
 
-    let ret_opnd = asm.stack_push(Type::UnknownImm);
+    let ret_opnd = asm.stack_push(Type::Decimal);
     asm.mov(ret_opnd, ret);
     true
 }
@@ -6255,7 +6258,7 @@ fn jit_rb_decimal_mul(
     let ret = asm.ccall(rb_decimal_mul_dd as *const u8, vec![recv, obj]);
     asm.stack_pop(2); // Keep recv during ccall for GC
 
-    let ret_opnd = asm.stack_push(Type::UnknownImm);
+    let ret_opnd = asm.stack_push(Type::Decimal);
     asm.mov(ret_opnd, ret);
     true
 }
@@ -6296,7 +6299,7 @@ fn jit_rb_decimal_div(
     let ret = asm.ccall(rb_decimal_div_dd as *const u8, vec![recv, obj]);
     asm.stack_pop(2); // Keep recv during ccall for GC
 
-    let ret_opnd = asm.stack_push(Type::UnknownImm);
+    let ret_opnd = asm.stack_push(Type::Decimal);
     asm.mov(ret_opnd, ret);
     true
 }
@@ -6366,7 +6369,7 @@ fn jit_rb_decimal_mod(
     let recv = asm.stack_opnd(1);
     let ret = asm.ccall(rb_decimal_mod_dd as *const u8, vec![recv, obj]);
     asm.stack_pop(2);
-    let ret_opnd = asm.stack_push(Type::UnknownImm);
+    let ret_opnd = asm.stack_push(Type::Decimal);
     asm.mov(ret_opnd, ret);
     true
 }
@@ -6385,7 +6388,7 @@ fn jit_rb_decimal_uminus(
     let recv = asm.stack_opnd(0);
     let ret = asm.ccall(rb_decimal_uminus_dd as *const u8, vec![recv]);
     asm.stack_pop(1);
-    let ret_opnd = asm.stack_push(Type::UnknownImm);
+    let ret_opnd = asm.stack_push(Type::Decimal);
     asm.mov(ret_opnd, ret);
     true
 }
