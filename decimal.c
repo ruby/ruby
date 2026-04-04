@@ -403,8 +403,22 @@ decimal_parse_float_string(const char *str, long slen, int raise)
 }
 
 static void
+wide_mul_64(dec_u128 a, uint64_t b, dec_u128 *lo, dec_u128 *hi)
+{
+    dec_u128 ll = (uint64_t)a * (dec_u128)b;
+    dec_u128 hl = (a >> 64) * (dec_u128)b;
+    *lo = ll + (hl << 64);
+    *hi = (hl >> 64) + (*lo < ll);
+}
+
+static void
 wide_mul(dec_u128 a, dec_u128 b, dec_u128 *lo, dec_u128 *hi)
 {
+    if (__builtin_expect(b <= MASK64, 1)) {
+        wide_mul_64(a, (uint64_t)b, lo, hi);
+        return;
+    }
+
     dec_u128 al = a & MASK64, ah = a >> 64;
     dec_u128 bl = b & MASK64, bh = b >> 64;
     dec_u128 ll = al * bl, lh = al * bh, hl = ah * bl, hh = ah * bh;
@@ -422,6 +436,31 @@ static int
 wide_div(dec_u128 hi, dec_u128 lo, dec_u128 d, dec_u128 *result)
 {
     if (d == 0) return -1;
+
+    if (d <= MASK64) {
+        uint64_t d64 = (uint64_t)d;
+        if (hi == 0) {
+            uint64_t lo_hi = (uint64_t)(lo >> 64);
+            if (lo_hi == 0) {
+                *result = (uint64_t)lo / d64;
+                return 0;
+            }
+            uint64_t q1 = lo_hi / d64;
+            uint64_t r1 = lo_hi - q1 * d64;
+            dec_u128 tail = ((dec_u128)r1 << 64) | (uint64_t)lo;
+            *result = ((dec_u128)q1 << 64) | (uint64_t)(tail / d64);
+            return 0;
+        }
+        if (hi >= d) return -1;
+        uint64_t r = (uint64_t)hi;
+        dec_u128 mid = ((dec_u128)r << 64) | (lo >> 64);
+        uint64_t q1 = (uint64_t)(mid / d64);
+        uint64_t r1 = (uint64_t)(mid - (dec_u128)q1 * d64);
+        dec_u128 tail = ((dec_u128)r1 << 64) | (uint64_t)lo;
+        *result = ((dec_u128)q1 << 64) | (uint64_t)(tail / d64);
+        return 0;
+    }
+
     if (hi == 0) {
         *result = lo / d;
         return 0;
@@ -459,10 +498,42 @@ i128_wide_op(dec_i128 a, dec_i128 b, dec_u128 factor, dec_u128 divisor, int *ove
     return neg ? (dec_i128)(~q + 1) : (dec_i128)q;
 }
 
+/* Barrett reduction: divide u128 by SCALE via precomputed reciprocal.
+ *  q = (n * M) >> 315 where M = ceil(2^315 / 10**18). */
+static inline dec_u128
+div_by_scale_barrett(dec_u128 n)
+{
+    static const dec_u128 M_HI = ((dec_u128)0x9392ee8e921d5d07ULL << 64) | 0x3aff322e62439fcfULL;
+    static const dec_u128 M_LO = ((dec_u128)0x32d7f344649470f9ULL << 64) | 0x0cac0c573bf9e1b6ULL;
+
+    dec_u128 unused, lo_hi, hi_lo, hi_hi;
+    wide_mul(n, M_LO, &unused, &lo_hi);
+    wide_mul(n, M_HI, &hi_lo, &hi_hi);
+
+    dec_u128 mid = lo_hi + hi_lo;
+    dec_u128 carry = (mid < lo_hi) ? 1 : 0;
+
+    dec_u128 top = hi_hi + carry;
+
+    return top >> 59;
+}
+
 static dec_i128
 i128_mul_scaled(dec_i128 a, dec_i128 b, int *overflow)
 {
+    int neg = (a < 0) ^ (b < 0);
+    dec_u128 aa = a < 0 ? -(dec_u128)a : (dec_u128)a;
     dec_u128 bb = b < 0 ? -(dec_u128)b : (dec_u128)b;
+    if (__builtin_expect(aa <= MASK64 && bb <= MASK64, 1)) {
+        dec_u128 prod = (dec_u128)(uint64_t)aa * (uint64_t)bb;
+        dec_u128 q = div_by_scale_barrett(prod);
+        dec_u128 limit = neg ? ((dec_u128)1 << 127) : (((dec_u128)1 << 127) - 1);
+        if (q > limit) {
+            *overflow = 1;
+            return 0;
+        }
+        return neg ? (dec_i128)(~q + 1) : (dec_i128)q;
+    }
     return i128_wide_op(a, b, bb, (dec_u128)DEC_SCALE, overflow);
 }
 
@@ -474,7 +545,19 @@ i128_div_scaled(dec_i128 a, dec_i128 b, int *overflow)
         return 0;
     }
     if (a == 0) return 0;
+    int neg = (a < 0) ^ (b < 0);
+    dec_u128 aa = a < 0 ? -(dec_u128)a : (dec_u128)a;
     dec_u128 bb = b < 0 ? -(dec_u128)b : (dec_u128)b;
+    if (__builtin_expect(aa <= MASK64, 1)) {
+        dec_u128 num = (dec_u128)(uint64_t)aa * (uint64_t)DEC_SCALE;
+        dec_u128 q = num / bb;
+        dec_u128 limit = neg ? ((dec_u128)1 << 127) : (((dec_u128)1 << 127) - 1);
+        if (q > limit) {
+            *overflow = 1;
+            return 0;
+        }
+        return neg ? (dec_i128)(~q + 1) : (dec_i128)q;
+    }
     return i128_wide_op(a, b, (dec_u128)DEC_SCALE, bb, overflow);
 }
 
