@@ -45,15 +45,17 @@ jobs:
       - name: Purge URLs of release package
         run: |
           curl -X POST \
-            -H "Fastly-Key: ${{ secrets.FASTLY_PURGE_TOKEN }}" \
+            -H "Fastly-Key: ${FASTLY_PURGE_TOKEN}" \
             https://api.fastly.com/purge/cache.ruby-lang.org/pub/ruby/${ABI_VERSION}/ruby-${RUBY_VERSION}.tar.gz
           curl -X POST \
-            -H "Fastly-Key: ${{ secrets.FASTLY_PURGE_TOKEN }}" \
+            -H "Fastly-Key: ${FASTLY_PURGE_TOKEN}" \
             https://api.fastly.com/purge/cache.ruby-lang.org/pub/ruby/${ABI_VERSION}/ruby-${RUBY_VERSION}.tar.xz
           curl -X POST \
-            -H "Fastly-Key: ${{ secrets.FASTLY_PURGE_TOKEN }}" \
+            -H "Fastly-Key: ${FASTLY_PURGE_TOKEN}" \
             https://api.fastly.com/purge/cache.ruby-lang.org/pub/ruby/${ABI_VERSION}/ruby-${RUBY_VERSION}.zip
 
+        env:
+          FASTLY_PURGE_TOKEN: ${{ secrets.FASTLY_PURGE_TOKEN }}
       - name: Create a release on GitHub
         run: |
           RELEASE_TAG=$(ruby tool/ruby-version.rb tag "${RUBY_VERSION}")
@@ -67,30 +69,36 @@ jobs:
       - name: Update versions index
         run: |
           curl -L -X POST \
-            -H "Authorization: Bearer ${{ secrets.MATZBOT_GITHUB_WORKFLOW_TOKEN }}" \
+            -H "Authorization: Bearer ${MATZBOT_GITHUB_WORKFLOW_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             https://api.github.com/repos/ruby/actions/dispatches \
             -d '{"event_type": "update_index"}'
 
+        env:
+          MATZBOT_GITHUB_WORKFLOW_TOKEN: ${{ secrets.MATZBOT_GITHUB_WORKFLOW_TOKEN }}
       - name: Build and push Docker images
         run: |
           curl -L -X POST \
-            -H "Authorization: Bearer ${{ secrets.MATZBOT_GITHUB_WORKFLOW_TOKEN }}" \
+            -H "Authorization: Bearer ${MATZBOT_GITHUB_WORKFLOW_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             https://api.github.com/repos/ruby/docker-images/dispatches \
             -d "{\"event_type\": \"build\", \"client_payload\": {\"ruby_version\": \"${RUBY_VERSION}\"}}"
 
+        env:
+          MATZBOT_GITHUB_WORKFLOW_TOKEN: ${{ secrets.MATZBOT_GITHUB_WORKFLOW_TOKEN }}
       - name: Build snapcraft packages
         run: |
           curl -L -X POST \
-            -H "Authorization: Bearer ${{ secrets.MATZBOT_GITHUB_WORKFLOW_TOKEN }}" \
+            -H "Authorization: Bearer ${MATZBOT_GITHUB_WORKFLOW_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             https://api.github.com/repos/ruby/snap.ruby/dispatches \
             -d "{\"event_type\": \"build\", \"client_payload\": {\"ruby_version\": \"${RUBY_VERSION}\"}}"
 
+        env:
+          MATZBOT_GITHUB_WORKFLOW_TOKEN: ${{ secrets.MATZBOT_GITHUB_WORKFLOW_TOKEN }}
       - name: Store the latest LTS version of OpenSSL
         run: |
           echo "OPENSSL_VERSION=`curl -s https://api.github.com/repos/openssl/openssl/releases | jq -r '.[].tag_name | select(startswith("openssl-3.0"))' | sort -Vr | head -n1 | cut -d'-' -f2`" >> $GITHUB_ENV
@@ -98,17 +106,22 @@ jobs:
       - name: Update ruby-build definition
         run: |
           curl -L -X POST \
-            -H "Authorization: Bearer ${{ secrets.RUBY_BUILD_WORKFLOW_TOKEN }}" \
+            -H "Authorization: Bearer ${RUBY_BUILD_WORKFLOW_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             https://api.github.com/repos/rbenv/ruby-build/dispatches \
             -d "{\"event_type\": \"update-ruby\", \"client_payload\": {\"ruby_version\": \"${RUBY_VERSION}\", \"openssl_version\": \"${OPENSSL_VERSION}\"}}"
 
+        env:
+          RUBY_BUILD_WORKFLOW_TOKEN: ${{ secrets.RUBY_BUILD_WORKFLOW_TOKEN }}
       - name: Update all-ruby definition
         run: |
           curl -L -X POST \
-            -H "Authorization: Bearer ${{ secrets.MATZBOT_GITHUB_WORKFLOW_TOKEN }}" \
+            -H "Authorization: Bearer ${MATZBOT_GITHUB_WORKFLOW_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             https://api.github.com/repos/ruby/all-ruby/dispatches \
             -d '{"event_type": "update"}'
+
+        env:
+          MATZBOT_GITHUB_WORKFLOW_TOKEN: ${{ secrets.MATZBOT_GITHUB_WORKFLOW_TOKEN }}

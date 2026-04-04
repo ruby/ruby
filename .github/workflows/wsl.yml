@@ -31,12 +31,12 @@ jobs:
 
     steps:
       - name: Install or update WSL
-        uses: Ubuntu/WSL/.github/actions/wsl-install@main
+        uses: Ubuntu/WSL/.github/actions/wsl-install@c23a4a0b03292618a19966ec299b799417d25580 # main
         with:
           distro: Ubuntu-24.04
 
       - name: Install dependencies
-        uses: Ubuntu/WSL/.github/actions/wsl-bash@main
+        uses: Ubuntu/WSL/.github/actions/wsl-bash@c23a4a0b03292618a19966ec299b799417d25580 # main
         with:
          distro: Ubuntu-24.04
          working-dir: /tmp/github/
@@ -45,14 +45,14 @@ jobs:
             DEBIAN_FRONTEND=noninteractive sudo apt install -y ruby build-essential autoconf libssl-dev libyaml-dev zlib1g-dev libgmp-dev libffi-dev
 
       - name: Check out the repository
-        uses: Ubuntu/WSL/.github/actions/wsl-checkout@main
+        uses: Ubuntu/WSL/.github/actions/wsl-checkout@c23a4a0b03292618a19966ec299b799417d25580 # main
         with:
           distro: Ubuntu-24.04
           working-dir: /tmp/github/
           submodules: true
 
       - name: Build
-        uses: Ubuntu/WSL/.github/actions/wsl-bash@main
+        uses: Ubuntu/WSL/.github/actions/wsl-bash@c23a4a0b03292618a19966ec299b799417d25580 # main
         with:
          distro: Ubuntu-24.04
          working-dir: /tmp/github/
@@ -64,7 +64,7 @@ jobs:
             make -j4
 
       - name: Test
-        uses: Ubuntu/WSL/.github/actions/wsl-bash@main
+        uses: Ubuntu/WSL/.github/actions/wsl-bash@c23a4a0b03292618a19966ec299b799417d25580 # main
         with:
          distro: Ubuntu-24.04
          working-dir: /tmp/github/
