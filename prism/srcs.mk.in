@@ -31,6 +31,9 @@ realclean-prism-srcs:: distclean-prism-srcs
 	$(RM) $(PRISM_SRCDIR)/<%=%><%=srcs%>
 
 realclean-srcs-local:: realclean-prism-srcs
+
+main srcs: prism-srcs
+main incs: prism-incs
 <% Prism::Template::TEMPLATES.map do |t|
   /\.(?:[ch]|rb)\z/ =~ t or next
   s = '$(srcdir)/' + t.sub(%r[\A(?:(src)|ext|include)/]) {$1 && 'prism/'}
@@ -38,7 +41,7 @@ realclean-srcs-local:: realclean-prism-srcs
   target = s.end_with?('.h') ? 'incs' : 'srcs'
 # %>
 
-main <%=%><%=target%>: <%=%><%=s%>
+prism-<%=%><%=target%>: <%=%><%=s%>
 <%=%><%=s%>: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/<%=%><%=t%>.erb
 	$(Q) $(BASERUBY) $(PRISM_TEMPLATE) <%=%><%=t%> $@
 

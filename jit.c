@@ -12,6 +12,7 @@
 #include "insns.inc"
 #include "insns_info.inc"
 #include "iseq.h"
+#include "internal/compile.h"
 #include "internal/gc.h"
 #include "vm_sync.h"
 #include "internal/fixnum.h"
@@ -19,6 +20,7 @@
 #include "internal/class.h"
 #include "internal/imemo.h"
 #include "ruby/internal/core/rtypeddata.h"
+#include "zjit.h"
 
 #ifndef _WIN32
 #include <sys/mman.h>
@@ -80,6 +82,19 @@ rb_iseq_opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc)
 
     const VALUE at_pc = *pc;
     return rb_vm_insn_addr2opcode((const void *)at_pc);
+}
+
+// Get the bare opcode given a program counter. Always returns the base
+// instruction, stripping trace/zjit variants.
+int
+rb_iseq_bare_opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc)
+{
+    if (OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE) {
+        RUBY_ASSERT_ALWAYS(FL_TEST_RAW((VALUE)iseq, ISEQ_TRANSLATED));
+    }
+
+    const VALUE at_pc = *pc;
+    return rb_vm_insn_addr2insn((const void *)at_pc);
 }
 
 unsigned long
@@ -388,7 +403,7 @@ rb_get_ec_cfp(const rb_execution_context_t *ec)
 const rb_iseq_t *
 rb_get_cfp_iseq(struct rb_control_frame_struct *cfp)
 {
-    return cfp->iseq;
+    return CFP_ISEQ(cfp);
 }
 
 VALUE *

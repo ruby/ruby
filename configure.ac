@@ -110,11 +110,21 @@ AS_IF([test "$HAVE_BASERUBY" = no], [
 ])
 AC_SUBST(BASERUBY)
 AC_SUBST(HAVE_BASERUBY)
+AS_IF([test "$cross_compiling" = yes],
+    [X_BUILD_EXEEXT=`$BASERUBY -rrbconfig -e ['puts RbConfig::CONFIG["EXEEXT"]']`],
+    [X_BUILD_EXEEXT='$(EXEEXT)']
+)
+AC_SUBST(X_BUILD_EXEEXT)
 
 AC_ARG_WITH(dump-ast,
 	AS_HELP_STRING([--with-dump-ast=DUMP_AST], [use DUMP_AST as dump_ast; for cross-compiling with a host-built dump_ast]),
 	[DUMP_AST=$withval DUMP_AST_TARGET='$(empty)'],
-	[DUMP_AST='./dump_ast$(EXEEXT)' DUMP_AST_TARGET='$(DUMP_AST)'])
+	[AS_IF([test "$cross_compiling" = yes], [
+	    DUMP_AST='build-tool/dump_ast$(BUILD_EXEEXT)'
+	], [
+	    DUMP_AST='./dump_ast$(BUILD_EXEEXT)'
+	])
+	DUMP_AST_TARGET='$(DUMP_AST)'])
 dnl Without baseruby, .rbinc files cannot be regenerated, so clear the
 dnl dependency on dump_ast to avoid rebuilding pre-generated .rbinc files.
 AS_IF([test "$HAVE_BASERUBY" = no], [DUMP_AST_TARGET='$(empty)'])
@@ -2501,9 +2511,7 @@ AC_CACHE_CHECK(for negative time_t for gmtime(3), rb_cv_negative_time_t,
 #include <time.h>
 
 void
-check(tm, y, m, d, h, s)
-    struct tm *tm;
-    int y, m, d, h, s;
+check(struct tm *tm, int y, int m, int d, int h, int s)
 {
     if (!tm ||
 	tm->tm_year != y ||
@@ -2587,8 +2595,7 @@ AS_IF([test "$ac_cv_func_sigprocmask" = yes && test "$ac_cv_func_sigaction" = ye
 #include <signal.h>
 
 void
-sig_handler(dummy)
-     int dummy;
+sig_handler(int dummy)
 {
 }
 

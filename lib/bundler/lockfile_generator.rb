@@ -105,9 +105,11 @@ module Bundler
     def bundler_checksum
       return [] if Bundler.gem_version.to_s.end_with?(".dev")
 
+      bundler_spec = definition.sources.metadata_source.specs.search(["bundler", Bundler.gem_version]).last
+      return [] unless File.exist?(bundler_spec.cache_file)
+
       require "rubygems/package"
 
-      bundler_spec = definition.sources.metadata_source.specs.search(["bundler", Bundler.gem_version]).last
       package = Gem::Package.new(bundler_spec.cache_file)
       definition.sources.metadata_source.checksum_store.register(bundler_spec, Checksum.from_gem_package(package))
 

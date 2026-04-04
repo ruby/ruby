@@ -172,9 +172,10 @@ rb_ec_tag_jump(const rb_execution_context_t *ec, enum ruby_tag_type st)
 
 /* CREF operators */
 
-#define CREF_FL_PUSHED_BY_EVAL IMEMO_FL_USER1
-#define CREF_FL_OMOD_SHARED    IMEMO_FL_USER2
-#define CREF_FL_SINGLETON      IMEMO_FL_USER3
+#define CREF_FL_PUSHED_BY_EVAL    IMEMO_FL_USER1
+#define CREF_FL_OMOD_SHARED      IMEMO_FL_USER2
+#define CREF_FL_SINGLETON        IMEMO_FL_USER3
+#define CREF_FL_DYNAMIC_CREF IMEMO_FL_USER4
 
 static inline int CREF_SINGLETON(const rb_cref_t *cref);
 
@@ -258,6 +259,18 @@ static inline void
 CREF_OMOD_SHARED_SET(rb_cref_t *cref)
 {
     cref->flags |= CREF_FL_OMOD_SHARED;
+}
+
+static inline int
+CREF_DYNAMIC(const rb_cref_t *cref)
+{
+    return cref->flags & CREF_FL_DYNAMIC_CREF;
+}
+
+static inline void
+CREF_DYNAMIC_SET(rb_cref_t *cref)
+{
+    cref->flags |= CREF_FL_DYNAMIC_CREF;
 }
 
 static inline void

@@ -82,11 +82,18 @@ pm_source_new(const pm_parser_t *parser, rb_encoding *encoding, bool freeze) {
     VALUE source_string = rb_enc_str_new((const char *) start, pm_parser_end(parser) - start, encoding);
 
     const pm_line_offset_list_t *line_offsets = pm_parser_line_offsets(parser);
-    VALUE offsets = rb_str_new((const char *) line_offsets->offsets, line_offsets->size * sizeof(uint32_t));
+    VALUE offsets;
 
     if (freeze) {
+        offsets = rb_ary_new_capa(line_offsets->size);
+        for (size_t index = 0; index < line_offsets->size; index++) {
+            rb_ary_push(offsets, ULONG2NUM(line_offsets->offsets[index]));
+        }
+
         rb_obj_freeze(source_string);
         rb_obj_freeze(offsets);
+    } else {
+        offsets = rb_str_new((const char *) line_offsets->offsets, line_offsets->size * sizeof(uint32_t));
     }
 
     VALUE source = rb_funcall(rb_cPrismSource, rb_intern("for"), 3, source_string, LONG2NUM(pm_parser_start_line(parser)), offsets);

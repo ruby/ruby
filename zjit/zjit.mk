@@ -133,7 +133,7 @@ zjit-test-rr: libminiruby.a
 libminiruby.a: miniruby$(EXEEXT)
 	$(ECHO) linking static-library $@
 	$(Q) $(RM) $@
-	$(Q) $(AR) $(ARFLAGS) $@ $(MINIOBJS) $(COMMONOBJS)
+	$(Q) $(AR) $(ARFLAGS) $@ $(MINIOBJS) $(COMMONOBJS:$(RUST_LIBOBJ)=)
 
 libminiruby: libminiruby.a
 

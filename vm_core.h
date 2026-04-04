@@ -920,7 +920,7 @@ struct rb_block {
 typedef struct rb_control_frame_struct {
     const VALUE *pc;        // cfp[0]
     VALUE *sp;              // cfp[1]
-    const rb_iseq_t *iseq;  // cfp[2]
+    const rb_iseq_t *_iseq; // cfp[2] -- use rb_cfp_iseq(cfp) to read
     VALUE self;             // cfp[3] / block[0]
     const VALUE *ep;        // cfp[4] / block[1]
     const void *block_code; // cfp[5] / block[2] -- iseq, ifunc, or forwarded block handler
@@ -1027,6 +1027,7 @@ STATIC_ASSERT(rb_vm_tag_buf_end,
 struct rb_unblock_callback {
     rb_unblock_function_t *func;
     void *arg;
+    rb_atomic_t event_serial;
 };
 
 struct rb_mutex_struct;
@@ -1242,9 +1243,12 @@ typedef enum {
 #define VM_DEFINECLASS_TYPE(x) ((rb_vm_defineclass_type_t)(x) & VM_DEFINECLASS_TYPE_MASK)
 #define VM_DEFINECLASS_FLAG_SCOPED         0x08
 #define VM_DEFINECLASS_FLAG_HAS_SUPERCLASS 0x10
+#define VM_DEFINECLASS_FLAG_DYNAMIC_CREF  0x20
 #define VM_DEFINECLASS_SCOPED_P(x) ((x) & VM_DEFINECLASS_FLAG_SCOPED)
 #define VM_DEFINECLASS_HAS_SUPERCLASS_P(x) \
     ((x) & VM_DEFINECLASS_FLAG_HAS_SUPERCLASS)
+#define VM_DEFINECLASS_DYNAMIC_CREF_P(x) \
+    ((x) & VM_DEFINECLASS_FLAG_DYNAMIC_CREF)
 
 /* iseq.c */
 RUBY_SYMBOL_EXPORT_BEGIN
@@ -1531,7 +1535,10 @@ static inline int
 VM_FRAME_CFRAME_P(const rb_control_frame_t *cfp)
 {
     int cframe_p = VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_CFRAME) != 0;
-    VM_ASSERT(RUBY_VM_NORMAL_ISEQ_P(cfp->iseq) != cframe_p ||
+    // With ZJIT lightweight frames, cfp->_iseq may be stale (not yet materialized),
+    // so skip this assertion when jit_return is set (zjit.h is not available here).
+    VM_ASSERT(cfp->jit_return ||
+              RUBY_VM_NORMAL_ISEQ_P(cfp->_iseq) != cframe_p ||
               (VM_FRAME_TYPE(cfp) & VM_FRAME_MAGIC_MASK) == VM_FRAME_MAGIC_DUMMY);
     return cframe_p;
 }

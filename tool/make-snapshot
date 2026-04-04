@@ -467,6 +467,7 @@ def package(vcs, rev, destdir, tmp = nil)
         "VPATH"=>(ENV["VPATH"] || "include/ruby"),
         "PROGRAM"=>(ENV["PROGRAM"] || "ruby"),
         "BUILTIN_TRANSOBJS"=>(ENV["BUILTIN_TRANSOBJS"] || "newline.o"),
+        "DUMP_AST"=>"build-tool/dump_ast#{RbConfig::CONFIG['EXEEXT']} ",
       }
       status.scan(/^s([%,])@([A-Za-z_][A-Za-z_0-9]*)@\1(.*?)\1g$/) do
         vars[$2] ||= $3
@@ -500,36 +501,6 @@ touch-unicode-files:
       ENV["CACHE_SAVE"] = "no"
       make = MAKE.new(args)
       return unless make.run("update-download")
-      # Build dump_ast for mk_builtin_loader.rb. CC=false in prereq.status
-      # prevents make from compiling it, so we build it directly here.
-      # Generate prism sources/headers from templates first, then compile.
-      dump_ast = vars["DUMP_AST"]
-      if dump_ast && !dump_ast.empty? && !File.exist?(dump_ast) && File.exist?("tool/dump_ast.c")
-        prism_template = "prism/templates/template.rb"
-        if File.exist?(prism_template)
-          baseruby_cmd = baseruby.shellsplit
-          Dir.glob("prism/templates/src/*.c.erb") do |erb|
-            name = File.basename(erb, ".erb")
-            out = "prism/#{name}"
-            system(*baseruby_cmd, prism_template, "src/#{name}", out) unless File.exist?(out)
-          end
-          %w[include/prism/ast.h include/prism/internal/diagnostic.h].each do |hdr|
-            out = "prism/#{hdr.delete_prefix("include/prism/")}"
-            FileUtils.mkpath(File.dirname(out))
-            system(*baseruby_cmd, prism_template, hdr, out) unless File.exist?(out)
-          end
-        end
-        prism_srcs = Dir.glob("prism/*.c").reject {|f| %w[api_node extension].include?(File.basename(f, ".c"))}
-        unless prism_srcs.empty?
-          print "building dump_ast..."
-          if system("cc", "-o", dump_ast, "-Iprism", "-I.", "tool/dump_ast.c", *prism_srcs)
-            clean.add(dump_ast)
-            puts $colorize.pass(" done")
-          else
-            puts $colorize.fail(" failed")
-          end
-        end
-      end
       clean.push("rbconfig.rb", ".rbconfig.time", "enc.mk", "ext/ripper/y.output", ".revision.time")
       Dir.glob("**/*") do |dest|
         next unless File.symlink?(dest)
@@ -540,6 +511,7 @@ touch-unicode-files:
       File.utime(modified, modified, *Dir.glob(["tool/config.{guess,sub}", "gems/*.gem", "tool"]))
       return unless make.run("prepare-package")
       return unless make.run("clean-cache")
+      return unless make.run("clean")
       if modified
         new_time = modified + 2
         touch_all(new_time, "**/*", File::FNM_DOTMATCH) do |name, stat|

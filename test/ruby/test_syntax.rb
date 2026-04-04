@@ -222,6 +222,16 @@ class TestSyntax < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, /block accepted/) {obj.f(&proc {})}
   end
 
+  def test_trailing_comma_in_method_parameters
+    assert_valid_syntax("def f(a,b,c,); end")
+    assert_valid_syntax("def f(a,b,*c,); end")
+    assert_valid_syntax("def f(a,b,*,); end")
+    assert_valid_syntax("def f(a,b,**c,); end")
+    assert_valid_syntax("def f(a,b,**,); end")
+    assert_syntax_error("def f(a,b,&block,); end", /unexpected/)
+    assert_syntax_error("def f(a,b,...,); end", /unexpected/)
+  end
+
   def test_no_block_argument_in_block
     assert_valid_syntax("proc do |&nil| end")
     assert_valid_syntax("proc do |a, &nil| end")

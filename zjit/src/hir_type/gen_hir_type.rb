@@ -132,6 +132,11 @@ nil_exact = final_type "NilClass", c_name: "rb_cNilClass"
 true_exact = final_type "TrueClass", c_name: "rb_cTrueClass"
 false_exact = final_type "FalseClass", c_name: "rb_cFalseClass"
 
+# Typed T_DATA objects (RTYPEDDATA_P). These have a distinct memory layout
+# for field access (fields_obj at a fixed offset in RTypedData). These
+# don't have a common class ancestor below BasicObject.
+basic_object.subtype "TypedTData"
+
 # Build the cvalue object universe. This is for C-level types that may be
 # passed around when calling into the Ruby VM or after some strength reduction
 # of HIR.

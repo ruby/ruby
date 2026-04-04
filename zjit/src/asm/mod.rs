@@ -294,6 +294,10 @@ impl CodeBlock {
     }
 
     /// Make all the code in the region executable. Call this at the end of a write session.
+    pub fn mark_all_writable(&mut self) {
+        self.mem_block.borrow_mut().mark_all_writable();
+    }
+
     pub fn mark_all_executable(&mut self) {
         self.mem_block.borrow_mut().mark_all_executable();
     }

@@ -507,7 +507,7 @@ assert_equal 'false', %q{
 }
 
 # To copy the object, now Marshal#dump is used
-assert_match /can not copy unshareable object/, %q{
+assert_match /can't clone unshareable instance of Thread/, %q{
   obj = Thread.new{}
   begin
     r = Ractor.new obj do |msg|

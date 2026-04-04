@@ -2694,7 +2694,7 @@ end
     # Errors                                                                   #
     ############################################################################
 
-    def test_MissingNode
+    def test_ErrorRecoveryNode
       # TODO
     end
 
@@ -2720,6 +2720,12 @@ end
 
       assert_raise TypeError do
         RubyVM::InstructionSequence.compile_file_prism(nil)
+      end
+
+      assert_nothing_raised(Errno::EMFILE, Errno::ENFILE) do
+        10000.times do
+          RubyVM::InstructionSequence.compile_file_prism(File::NULL)
+        end
       end
     end
 

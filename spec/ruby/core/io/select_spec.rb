@@ -18,6 +18,10 @@ describe "IO.select" do
     @wr.syswrite("be ready")
     IO.pipe do |_, wr|
       result = IO.select [@rd], [wr], nil, 0
+      unless result
+        # On some platforms (e.g., Windows), pipe readiness may not be immediate
+        result = IO.select [@rd], [wr], nil, 2
+      end
       result.should == [[@rd], [wr], []]
     end
   end

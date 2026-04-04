@@ -5,7 +5,6 @@ use std::{ffi::c_void, ops::Range};
 use crate::{cruby::*, state::ZJITState, stats::with_time_stat, virtualmem::CodePtr};
 use crate::payload::{IseqPayload, IseqVersionRef, get_or_create_iseq_payload};
 use crate::stats::Counter::gc_time_ns;
-use crate::state::gc_mark_raw_samples;
 
 /// GC callback for marking GC objects in the per-ISEQ payload.
 #[unsafe(no_mangle)]
@@ -90,6 +89,14 @@ pub extern "C" fn rb_zjit_root_update_references() {
     }
     let invariants = ZJITState::get_invariants();
     invariants.update_references();
+
+    // Update iseq pointers in all JITFrames for GC compaction.
+    // rb_execution_context_update only updates JITFrames currently on the stack,
+    // but JITFrames not on the stack also need their iseq pointers updated
+    // because the JIT code will reuse them on the next call.
+    for &jit_frame in ZJITState::get_jit_frames().iter() {
+        unsafe { &mut *jit_frame }.update_references();
+    }
 }
 
 fn iseq_mark(payload: &IseqPayload) {
@@ -151,7 +158,9 @@ fn iseq_version_update_references(mut version: IseqVersionRef) {
         }
     }
 
-    // Move objects baked in JIT code
+    // Move objects baked in JIT code.
+    // The code region is already writable because rb_zjit_mark_all_writable() was called
+    // before the GC update_references phase. We write directly to avoid per-page mprotect calls.
     let cb = ZJITState::get_code_block();
     for &offset in unsafe { version.as_ref() }.gc_offsets.iter() {
         let value_ptr: *const u8 = offset.raw_ptr(cb);
@@ -163,13 +172,10 @@ fn iseq_version_update_references(mut version: IseqVersionRef) {
 
         // Only write when the VALUE moves, to be copy-on-write friendly.
         if new_addr != object {
-            for (byte_idx, &byte) in new_addr.as_u64().to_le_bytes().iter().enumerate() {
-                let byte_code_ptr = offset.add_bytes(byte_idx);
-                cb.write_mem(byte_code_ptr, byte).expect("patching existing code should be within bounds");
-            }
+            let value_ptr = value_ptr as *mut VALUE;
+            unsafe { value_ptr.write_unaligned(new_addr) };
         }
     }
-    cb.mark_all_executable();
 }
 
 /// Append a set of gc_offsets to the iseq's payload
@@ -204,8 +210,35 @@ fn ranges_overlap<T>(left: &Range<T>, right: &Range<T>) -> bool where T: Partial
     left.start < right.end && right.start < left.end
 }
 
+/// GC callback for making all JIT code writable before updating references in bulk.
+/// This avoids toggling W^X permissions per-page during GC compaction.
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_mark_all_writable() {
+    if !ZJITState::has_instance() {
+        return;
+    }
+    ZJITState::get_code_block().mark_all_writable();
+}
+
+/// GC callback for making all JIT code executable after updating references in bulk.
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_mark_all_executable() {
+    if !ZJITState::has_instance() {
+        return;
+    }
+    ZJITState::get_code_block().mark_all_executable();
+}
+
 /// Callback for marking GC objects inside [crate::invariants::Invariants].
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_root_mark() {
-    gc_mark_raw_samples();
+    // Mark iseq pointers in all JITFrames. JITFrames that are currently on the
+    // stack are also marked via rb_execution_context_mark, but JITFrames not on
+    // the stack still need their iseqs kept alive because JIT code will reuse them.
+    if !ZJITState::has_instance() {
+        return;
+    }
+    for &jit_frame in ZJITState::get_jit_frames().iter() {
+        unsafe { &*jit_frame }.mark();
+    }
 }

@@ -85,8 +85,8 @@ RSpec.describe "bundle install" do
           foo!
       L
 
-      bundle "config set --local path vendor/bundle"
-      bundle "config set --local without development"
+      bundle_config "path vendor/bundle"
+      bundle_config "without development"
       bundle :install
 
       expect(out).to include("Bundle complete!")
@@ -188,8 +188,8 @@ RSpec.describe "bundle install" do
       build_git "foo", "1.0", path: lib_path("foo")
       rev = revision_for(lib_path("foo"))
 
-      bundle "config set path vendor/bundle"
-      bundle "config set clean true"
+      bundle_config "path vendor/bundle"
+      bundle_config "clean true"
       install_gemfile <<-G, verbose: true
         source "https://gem.repo1"
         gem "foo", :git => "#{lib_path("foo")}"
@@ -310,7 +310,7 @@ RSpec.describe "bundle install" do
       bundle :install
 
       # Set without and reinstall
-      bundle "config set --local without development"
+      bundle_config "without development"
       bundle :install
 
       # Verify only production gem is available
