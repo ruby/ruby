@@ -1518,6 +1518,12 @@ mod class_name_tests {
 }
 
 pub fn class_has_leaf_allocator(class: VALUE) -> bool {
+    // We need to check if the class is initialized and not a singleton before
+    // trying to read the allocator, otherwise it will raise.
+    // Because of this they should be considered non-leaf anyways.
+    if !unsafe { rb_zjit_class_initialized_p(class) } { return false; }
+    if unsafe { rb_zjit_singleton_class_p(class) } { return false; }
+
     // empty_hash_alloc
     if class == unsafe { rb_cHash } { return true; }
     // empty_ary_alloc

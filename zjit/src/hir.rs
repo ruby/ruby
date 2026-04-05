@@ -3617,6 +3617,21 @@ impl Function {
         self.push_insn_id(block, orig_insn_id);
     }
 
+    pub fn try_inline_object_alloc(&mut self, block: BlockId, recv: InsnId, state: InsnId) -> Option<InsnId> {
+        let recv_type = self.type_of(recv);
+        if recv_type.is_subtype(types::Class) {
+            if let Some(class) = recv_type.ruby_object() {
+                // See class_get_alloc_func in object.c; if the class isn't initialized, is
+                // a singleton class, or has a custom allocator, ObjectAlloc might raise an
+                // exception or run arbitrary code.
+                if class_has_leaf_allocator(class) {
+                    return Some(self.push_insn(block, Insn::ObjectAllocClass { class, state }));
+                }
+            }
+        }
+        None
+    }
+
     fn try_rewrite_freeze(&mut self, block: BlockId, orig_insn_id: InsnId, self_val: InsnId, state: InsnId) {
         if self.is_a(self_val, types::StringExact) {
             self.rewrite_if_frozen(block, orig_insn_id, self_val, STRING_REDEFINED_OP_FLAG, BOP_FREEZE, state);
@@ -4050,32 +4065,12 @@ impl Function {
                         self.make_equal_to(insn_id, replacement);
                     }
                     Insn::ObjectAlloc { val, state } => {
-                        let val_type = self.type_of(val);
-                        if !val_type.is_subtype(types::Class) {
-                            self.push_insn_id(block, insn_id); continue;
+                        if let Some(replacement) = self.try_inline_object_alloc(block, val, state) {
+                            self.insn_types[replacement.0] = self.infer_type(replacement);
+                            self.make_equal_to(insn_id, replacement);
+                        } else {
+                            self.push_insn_id(block, insn_id);
                         }
-                        let Some(class) = val_type.ruby_object() else {
-                            self.push_insn_id(block, insn_id); continue;
-                        };
-                        // See class_get_alloc_func in object.c; if the class isn't initialized, is
-                        // a singleton class, or has a custom allocator, ObjectAlloc might raise an
-                        // exception or run arbitrary code.
-                        //
-                        // We also need to check if the class is initialized or a singleton before
-                        // trying to read the allocator, otherwise it might raise.
-                        if !unsafe { rb_zjit_class_initialized_p(class) } {
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        if unsafe { rb_zjit_singleton_class_p(class) } {
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        if !class_has_leaf_allocator(class) {
-                            // Custom, known unsafe, or NULL allocator; could run arbitrary code.
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        let replacement = self.push_insn(block, Insn::ObjectAllocClass { class, state });
-                        self.insn_types[replacement.0] = self.infer_type(replacement);
-                        self.make_equal_to(insn_id, replacement);
                     }
                     Insn::NewRange { low, high, flag, state } => {
                         let low_is_fix  = self.is_a(low,  types::Fixnum);
@@ -6198,8 +6193,7 @@ impl Function {
             Insn::HashDup { val, .. } => self.assert_subtype(insn_id, val, types::HashExact),
             // Other
             Insn::ObjectAllocClass { class, .. } => {
-                let has_leaf_allocator = unsafe { rb_zjit_class_has_default_allocator(class) } || class_has_leaf_allocator(class);
-                if !has_leaf_allocator {
+                if !class_has_leaf_allocator(class) {
                     return Err(ValidationError::MiscValidationError(insn_id, "ObjectAllocClass must have leaf allocator".to_string()));
                 }
                 Ok(())

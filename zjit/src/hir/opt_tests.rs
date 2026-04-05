@@ -4718,6 +4718,94 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_inline_class_allocate() {
+        eval("
+            class C; end
+            def test = C.allocate
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, C)
+          v20:Class[C@0x1008] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(Class@0x1010, allocate@0x1018, cme:0x1020)
+          v23:ObjectSubclass[class_exact:C] = ObjectAllocClass C:VALUE(0x1008)
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
+    fn test_dont_inline_class_allocate_with_args() {
+        eval("
+            class C; end
+            def test = C.allocate(1)
+            test rescue 0
+            test rescue 0
+        ");
+        // Not specialized
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, C)
+          v22:Class[C@0x1008] = Const Value(VALUE(0x1008))
+          v12:Fixnum[1] = Const Value(1)
+          v14:BasicObject = Send v22, :allocate, v12 # SendFallbackReason: SendWithoutBlock: unsupported method type Cfunc
+          CheckInterrupts
+          Return v14
+        ");
+    }
+
+    #[test]
+    fn test_dont_inline_class_allocate_with_singleton_class() {
+        eval("
+            class C; end
+            SC = C.singleton_class
+            def test = SC.allocate
+            test rescue 0
+        ");
+        // Not specialized: singleton classes are not leaf allocators
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, SC)
+          v20:Class[Class@0x1008] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(Class@0x1010, allocate@0x1018, cme:0x1020)
+          v23:BasicObject = CCallWithFrame v20, :Class.allocate@0x1048
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
     fn test_opt_length() {
         eval("
             def test(a,b) = [a,b].length
