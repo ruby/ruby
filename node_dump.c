@@ -648,8 +648,12 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("example: obj&.foo(1)");
         F_ID(nd_mid, RNODE_QCALL, "method id");
         F_NODE(nd_recv, RNODE_QCALL, "receiver");
-        LAST_NODE;
         F_NODE(nd_args, RNODE_QCALL, "arguments");
+        F_LOC(call_operator_loc, RNODE_QCALL);
+        F_LOC(message_loc, RNODE_QCALL);
+        F_LOC(opening_loc, RNODE_QCALL);
+        LAST_NODE;
+        F_LOC(closing_loc, RNODE_QCALL);
         return;
 
       case NODE_SUPER:
