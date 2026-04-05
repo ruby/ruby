@@ -555,11 +555,6 @@ MSG
     conf
   end
 
-  def link_command(ldflags, *opts)
-    conf = link_config(ldflags, *opts)
-    RbConfig::expand(TRY_LINK.dup, conf)
-  end
-
   def cc_config(opt="")
     conf = RbConfig::CONFIG.merge('hdrdir' => $hdrdir.quote, 'srcdir' => $srcdir.quote,
                                   'arch_hdrdir' => $arch_hdrdir.quote,
@@ -606,20 +601,24 @@ MSG
 
   def try_link0(src, opt = "", ldflags: "", **opts, &b) # :nodoc:
     exe = CONFTEST+$EXEEXT
-    cmd = link_command(ldflags, opt)
+    conf = link_config(ldflags, opt)
+    conf['src'] = "#{CONFTEST}.#{$OBJEXT}"
+    ld = RbConfig::expand(TRY_LINK.dup, conf)
     if $universal
       require 'tmpdir'
       Dir.mktmpdir("mkmf_", oldtmpdir = ENV["TMPDIR"]) do |tmpdir|
         begin
           ENV["TMPDIR"] = tmpdir
-          try_do(src, cmd, **opts, &b)
+          try_do(src, cc_command(opt), **opts, &b)
         ensure
           ENV["TMPDIR"] = oldtmpdir
         end
       end
     else
-      try_do(src, cmd, **opts, &b)
-    end and File.executable?(exe) or return nil
+      try_do(src, cc_command(opt), **opts, &b)
+    end or return nil
+    xsystem(ld, **opts) or return nil
+    return nil unless File.executable?(exe)
     exe
   ensure
     MakeMakefile.rm_rf(*Dir["#{CONFTEST}*"]-[exe])
@@ -3035,11 +3034,6 @@ realclean: distclean
       conf = cc_config(opt)
       RbConfig::expand("$(CXX) #$INCFLAGS #$CPPFLAGS #$CXXFLAGS #$ARCH_FLAG #{opt} -c #{CONFTEST_CXX}",
                        conf)
-    end
-
-    def link_command(ldflags, *opts)
-      conf = link_config(ldflags, *opts)
-      RbConfig::expand(TRY_LINK_CXX.dup, conf)
     end
 
     # :startdoc:
