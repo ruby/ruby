@@ -5947,6 +5947,14 @@ rb_f_test(int argc, VALUE *argv, VALUE _)
  *
  *  A \File::Stat object contains information about an entry in the file system.
  *
+ *  Each of these methods returns a new \File::Stat object:
+ *
+ *  - File#lstat.
+ *  - File::Stat.new.
+ *  - File::lstat.
+ *  - File::stat.
+ *  - IO#stat.
+ *
  *  === Snapshot
  *
  *  A new \File::Stat object takes an immediate "snapshot" of the entry's information;
@@ -5973,15 +5981,7 @@ rb_f_test(int argc, VALUE *argv, VALUE _)
  *
  *  === OS-Dependencies
  *
- *  Each of these methods returns a new \File::Stat object:
- *
- *  - File#lstat.
- *  - File::Stat.new.
- *  - File::lstat.
- *  - File::stat.
- *  - IO#stat.
- *
- *  Each returns platform-specific values,
+ *  Methods in a \File::Stat object may return platform-dependents values,
  *  and not all values are meaningful on all systems;
  *  for example, File::Stat#blocks returns +nil+ on Windows,
  *  but returns an integer on Linux.
