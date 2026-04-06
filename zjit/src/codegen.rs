@@ -243,19 +243,19 @@ pub fn invalidate_iseq_version(cb: &mut CodeBlock, iseq: IseqPtr, version: &mut 
 /// Stub a branch for a JIT-to-JIT call
 pub fn gen_iseq_call(cb: &mut CodeBlock, iseq_call: &IseqCallRef) -> Result<(), CompileError> {
     trace_compile_phase("compile_stub", || {
-    // Compile a function stub
-    let stub_ptr = gen_function_stub(cb, iseq_call.clone()).inspect_err(|err| {
-        debug!("{err:?}: gen_function_stub failed: {}", iseq_get_location(iseq_call.iseq.get(), 0));
-    })?;
+        // Compile a function stub
+        let stub_ptr = gen_function_stub(cb, iseq_call.clone()).inspect_err(|err| {
+            debug!("{err:?}: gen_function_stub failed: {}", iseq_get_location(iseq_call.iseq.get(), 0));
+        })?;
 
-    // Update the JIT-to-JIT call to call the stub
-    let stub_addr = stub_ptr.raw_ptr(cb);
-    let iseq = iseq_call.iseq.get();
-    iseq_call.regenerate(cb, |asm| {
-        asm_comment!(asm, "call function stub: {}", iseq_get_location(iseq, 0));
-        asm.ccall_into(C_RET_OPND, stub_addr, vec![]);
-    });
-    Ok(())
+        // Update the JIT-to-JIT call to call the stub
+        let stub_addr = stub_ptr.raw_ptr(cb);
+        let iseq = iseq_call.iseq.get();
+        iseq_call.regenerate(cb, |asm| {
+            asm_comment!(asm, "call function stub: {}", iseq_get_location(iseq, 0));
+            asm.ccall_into(C_RET_OPND, stub_addr, vec![]);
+        });
+        Ok(())
     })
 }
 
