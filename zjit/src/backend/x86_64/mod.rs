@@ -1150,7 +1150,7 @@ impl Assembler {
         trace_compile_phase("regalloc", || {
             run_pass!(asm.number_instructions(0));
 
-            let live_in = run_pass!(asm.analyze_liveness);
+            let live_in = run_pass!(asm.analyze_liveness());
             let intervals = run_pass!(asm.build_intervals(live_in));
 
             // Dump live intervals if requested
