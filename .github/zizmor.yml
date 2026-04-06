@@ -10,12 +10,6 @@ rules:
   dependabot-cooldown:
     ignore:
       - dependabot.yml
-  excessive-permissions:
-    ignore:
-      - post_push.yml
-      - publish.yml
-      - release.yml
-      - wsl.yml
   misfeature:
     ignore:
       - mingw.yml
@@ -23,7 +17,9 @@ rules:
   unpinned-images:
     ignore:
       - compilers.yml
+  secrets-outside-env:
+    # All committers with write access are trusted; no need for environment-scoped secrets.
+    disable: true
   unpinned-uses:
     ignore:
-      - cygwin.yml
       - wsl.yml

@@ -1666,7 +1666,7 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     debugs("[compile step 6.1 (remove unused catch tables)] \n");
     RUBY_ASSERT(ISEQ_COMPILE_DATA(iseq));
     if (!ISEQ_COMPILE_DATA(iseq)->catch_except_p && ISEQ_BODY(iseq)->catch_table) {
-        ruby_sized_xfree(ISEQ_BODY(iseq)->catch_table, iseq_catch_table_bytes(ISEQ_BODY(iseq)->catch_table->size));
+        ruby_xfree_sized(ISEQ_BODY(iseq)->catch_table, iseq_catch_table_bytes(ISEQ_BODY(iseq)->catch_table->size));
         ISEQ_BODY(iseq)->catch_table = NULL;
     }
 
@@ -2058,7 +2058,7 @@ iseq_set_use_block(rb_iseq_t *iseq)
 
         if (!rb_warning_category_enabled_p(RB_WARN_CATEGORY_STRICT_UNUSED_BLOCK)) {
             st_data_t key = (st_data_t)rb_intern_str(body->location.label); // String -> ID
-            set_insert(vm->unused_block_warning_table, key);
+            set_insert(&vm->unused_block_warning_table, key);
         }
     }
 }
@@ -5375,6 +5375,7 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int meth
                 }
                 VALUE hash = rb_hash_new_with_size(RARRAY_LEN(ary) / 2);
                 rb_hash_bulk_insert(RARRAY_LEN(ary), RARRAY_CONST_PTR(ary), hash);
+                RB_GC_GUARD(ary);
                 hash = RB_OBJ_SET_FROZEN_SHAREABLE(rb_obj_hide(hash));
 
                 /* Emit optimized code */
@@ -6090,6 +6091,23 @@ compile_const_prefix(rb_iseq_t *iseq, const NODE *const node,
 }
 
 static int
+cpath_const_p(const NODE *node)
+{
+    switch (nd_type(node)) {
+      case NODE_CONST:
+      case NODE_COLON3:
+        return TRUE;
+      case NODE_COLON2:
+        if (RNODE_COLON2(node)->nd_head) {
+            return cpath_const_p(RNODE_COLON2(node)->nd_head);
+        }
+        return TRUE;
+      default:
+        return FALSE;
+    }
+}
+
+static int
 compile_cpath(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const NODE *cpath)
 {
     if (nd_type_p(cpath, NODE_COLON3)) {
@@ -6098,9 +6116,13 @@ compile_cpath(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const NODE *cpath)
         return VM_DEFINECLASS_FLAG_SCOPED;
     }
     else if (nd_type_p(cpath, NODE_COLON2) && RNODE_COLON2(cpath)->nd_head) {
-        /* Bar::Foo */
+        /* Bar::Foo or expr::Foo */
         NO_CHECK(COMPILE(ret, "nd_else->nd_head", RNODE_COLON2(cpath)->nd_head));
-        return VM_DEFINECLASS_FLAG_SCOPED;
+        int flags = VM_DEFINECLASS_FLAG_SCOPED;
+        if (!cpath_const_p(RNODE_COLON2(cpath)->nd_head)) {
+            flags |= VM_DEFINECLASS_FLAG_DYNAMIC_CREF;
+        }
+        return flags;
     }
     else {
         /* class at cbase Foo */
@@ -11476,9 +11498,20 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         CHECK(COMPILE(ret, "sclass#recv", RNODE_SCLASS(node)->nd_recv));
         ADD_INSN (ret, node, putnil);
         CONST_ID(singletonclass, "singletonclass");
+
+        /* `class << self` in a class body and `class << Foo` (constant
+           receiver) are stable. All other forms are potentially dynamic. */
+        int sclass_flags = VM_DEFINECLASS_TYPE_SINGLETON_CLASS;
+        const NODE *recv = RNODE_SCLASS(node)->nd_recv;
+        if (!(nd_type_p(recv, NODE_SELF) &&
+              ISEQ_BODY(iseq)->type == ISEQ_TYPE_CLASS) &&
+            !cpath_const_p(recv)) {
+            sclass_flags |= VM_DEFINECLASS_FLAG_DYNAMIC_CREF;
+        }
+
         ADD_INSN3(ret, node, defineclass,
                   ID2SYM(singletonclass), singleton_class,
-                  INT2FIX(VM_DEFINECLASS_TYPE_SINGLETON_CLASS));
+                  INT2FIX(sclass_flags));
         RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)singleton_class);
 
         if (popped) {
@@ -13314,7 +13347,7 @@ ibf_load_local_table(const struct ibf_load *load, ibf_offset_t local_table_offse
         }
 
         if (size == 1 && table[0] == idERROR_INFO) {
-            ruby_sized_xfree(table, sizeof(ID) * size);
+            ruby_xfree_sized(table, sizeof(ID) * size);
             return rb_iseq_shared_exc_local_tbl;
         }
         else {

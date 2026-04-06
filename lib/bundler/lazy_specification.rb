@@ -262,7 +262,7 @@ module Bundler
         spec.dependencies = dependencies
       else
         if !source.is_a?(Source::Path) && spec.runtime_dependencies.sort != dependencies.sort
-          raise IncorrectLockfileDependencies.new(self)
+          raise IncorrectLockfileDependencies.new(self, spec.runtime_dependencies, dependencies)
         end
       end
     end

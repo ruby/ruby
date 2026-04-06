@@ -5,3 +5,7 @@ def bar = A ""
 def method = 1 + 2 + 3
 
 x = def f = p 1
+
+def foo = bar baz
+
+def foo = bar(baz)

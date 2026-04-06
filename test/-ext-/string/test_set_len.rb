@@ -5,7 +5,7 @@ require "-test-/string"
 class Test_StrSetLen < Test::Unit::TestCase
   def setup
     # Make string long enough so that it is not embedded
-    @range_end = ("0".ord + GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]).chr
+    @range_end = ("0".ord + GC.stat_heap(0, :slot_size)).chr
     @s0 = [*"0"..@range_end].join("").freeze
     @s1 = Bug::String.new(@s0)
   end

@@ -94,7 +94,7 @@ rb_free_tmp_buffer(volatile VALUE *store)
         void *ptr = ATOMIC_PTR_EXCHANGE(s->ptr, 0);
         long size = s->size;
         s->size = 0;
-        ruby_sized_xfree(ptr, size);
+        ruby_xfree_sized(ptr, size);
     }
 }
 
@@ -587,7 +587,7 @@ rb_imemo_free(VALUE obj)
         if (ci->kwarg) {
             ((struct rb_callinfo_kwarg *)ci->kwarg)->references--;
             if (ci->kwarg->references == 0) {
-                ruby_sized_xfree((void *)ci->kwarg, rb_callinfo_kwarg_bytes(ci->kwarg->keyword_len));
+                ruby_xfree_sized((void *)ci->kwarg, rb_callinfo_kwarg_bytes(ci->kwarg->keyword_len));
             }
         }
         RB_DEBUG_COUNTER_INC(obj_imemo_callinfo);
@@ -637,7 +637,7 @@ rb_imemo_free(VALUE obj)
 
         break;
       case imemo_tmpbuf:
-        ruby_sized_xfree(((rb_imemo_tmpbuf_t *)obj)->ptr, ((rb_imemo_tmpbuf_t *)obj)->size);
+        ruby_xfree_sized(((rb_imemo_tmpbuf_t *)obj)->ptr, ((rb_imemo_tmpbuf_t *)obj)->size);
         RB_DEBUG_COUNTER_INC(obj_imemo_tmpbuf);
 
         break;

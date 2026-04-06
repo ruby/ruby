@@ -271,7 +271,7 @@ module URI
   #   # => #<URI::HTTP http://example.com/foo/bar>
   #
   def self.join(*str)
-    DEFAULT_PARSER.join(*str)
+    PARSER.join(*str)
   end
 
   #

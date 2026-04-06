@@ -1,19 +1,42 @@
+#include "prism/excludes.h"
+
+/* We optionally support serializing to a binary string. For systems that do not
+ * want or need this functionality, it can be turned off with the
+ * PRISM_EXCLUDE_SERIALIZATION define. */
+#ifdef PRISM_EXCLUDE_SERIALIZATION
+
+/* Ensure this translation unit is never empty, even when serialization is
+ * excluded. */
+typedef int pm_serialize_unused_t;
+
+#else
+
+#include "prism/compiler/inline.h"
+
+#include "prism/internal/buffer.h"
+#include "prism/internal/comments.h"
+#include "prism/internal/diagnostic.h"
+#include "prism/internal/encoding.h"
+#include "prism/internal/list.h"
+#include "prism/internal/magic_comments.h"
+#include "prism/internal/options.h"
+#include "prism/internal/parser.h"
+
 #include "prism.h"
+#include "prism/ast.h"
+#include "prism/line_offset_list.h"
 
-// We optionally support serializing to a binary string. For systems that don't
-// want or need this functionality, it can be turned off with the
-// PRISM_EXCLUDE_SERIALIZATION define.
-#ifndef PRISM_EXCLUDE_SERIALIZATION
-
+#include <assert.h>
 #include <stdio.h>
+#include <string.h>
 
-static inline uint32_t
+static PRISM_INLINE uint32_t
 pm_ptrdifft_to_u32(ptrdiff_t value) {
     assert(value >= 0 && ((unsigned long) value) < UINT32_MAX);
     return (uint32_t) value;
 }
 
-static inline uint32_t
+static PRISM_INLINE uint32_t
 pm_sizet_to_u32(size_t value) {
     assert(value < UINT32_MAX);
     return (uint32_t) value;
@@ -26,28 +49,10 @@ pm_serialize_location(const pm_location_t *location, pm_buffer_t *buffer) {
 }
 
 static void
-pm_serialize_string(const pm_parser_t *parser, const pm_string_t *string, pm_buffer_t *buffer) {
-    switch (string->type) {
-        case PM_STRING_SHARED: {
-            pm_buffer_append_byte(buffer, 1);
-            pm_buffer_append_varuint(buffer, pm_ptrdifft_to_u32(pm_string_source(string) - parser->start));
-            pm_buffer_append_varuint(buffer, pm_sizet_to_u32(pm_string_length(string)));
-            break;
-        }
-        case PM_STRING_OWNED:
-        case PM_STRING_CONSTANT: {
-            uint32_t length = pm_sizet_to_u32(pm_string_length(string));
-            pm_buffer_append_byte(buffer, 2);
-            pm_buffer_append_varuint(buffer, length);
-            pm_buffer_append_bytes(buffer, pm_string_source(string), length);
-            break;
-        }
-#ifdef PRISM_HAS_MMAP
-        case PM_STRING_MAPPED:
-            assert(false && "Cannot serialize mapped strings.");
-            break;
-#endif
-    }
+pm_serialize_string(const pm_string_t *string, pm_buffer_t *buffer) {
+    uint32_t length = pm_sizet_to_u32(pm_string_length(string));
+    pm_buffer_append_varuint(buffer, length);
+    pm_buffer_append_bytes(buffer, pm_string_source(string), length);
 }
 
 static void
@@ -67,8 +72,6 @@ pm_serialize_integer(const pm_integer_t *integer, pm_buffer_t *buffer) {
 static void
 pm_serialize_node(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
     pm_buffer_append_byte(buffer, (uint8_t) PM_NODE_TYPE(node));
-
-    size_t offset = buffer->length;
 
     <%- if Prism::Template::INCLUDE_NODE_ID -%>
     pm_buffer_append_varuint(buffer, node->node_id);
@@ -102,7 +105,7 @@ pm_serialize_node(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
                 pm_serialize_node(parser, (pm_node_t *)((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
             }
             <%- when Prism::Template::StringField -%>
-            pm_serialize_string(parser, &((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
+            pm_serialize_string(&((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
             <%- when Prism::Template::NodeListField -%>
             uint32_t <%= field.name %>_size = pm_sizet_to_u32(((pm_<%= node.human %>_t *)node)-><%= field.name %>.size);
             pm_buffer_append_varuint(buffer, <%= field.name %>_size);
@@ -144,7 +147,7 @@ pm_serialize_node(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
             <%- end -%>
             <%- if node.needs_serialized_length? -%>
             // serialize length
-            uint32_t length = pm_sizet_to_u32(buffer->length - offset - sizeof(uint32_t));
+            uint32_t length = pm_sizet_to_u32(buffer->length - length_offset);
             memcpy(buffer->value + length_offset, &length, sizeof(uint32_t));
             <%- end -%>
             break;
@@ -265,6 +268,7 @@ pm_serialize_metadata(pm_parser_t *parser, pm_buffer_t *buffer) {
     pm_serialize_data_loc(parser, buffer);
     pm_serialize_diagnostic_list(&parser->error_list, buffer);
     pm_serialize_diagnostic_list(&parser->warning_list, buffer);
+    pm_buffer_append_byte(buffer, (uint8_t) parser->continuable);
 }
 
 #line <%= __LINE__ + 1 %> "prism/templates/src/<%= File.basename(__FILE__) %>"
@@ -304,28 +308,12 @@ pm_serialize_content(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) 
             pm_constant_t *constant = &parser->constant_pool.constants[bucket->id - 1];
             size_t buffer_offset = offset + ((((size_t)bucket->id) - 1) * 8);
 
-            if (bucket->type == PM_CONSTANT_POOL_BUCKET_OWNED || bucket->type == PM_CONSTANT_POOL_BUCKET_CONSTANT) {
-                // Since this is an owned or constant constant, we are going to
-                // write its contents into the buffer after the constant pool.
-                // So effectively in place of the source offset, we have a
-                // buffer offset. We will add a leading 1 to indicate that this
-                // is a buffer offset.
-                uint32_t content_offset = pm_sizet_to_u32(buffer->length);
-                uint32_t owned_mask = 1U << 31;
+            // Write the constant contents into the buffer after the constant
+            // pool. In place of the source offset, we store a buffer offset.
+            uint32_t content_offset = pm_sizet_to_u32(buffer->length);
+            memcpy(buffer->value + buffer_offset, &content_offset, 4);
+            pm_buffer_append_bytes(buffer, constant->start, constant->length);
 
-                assert(content_offset < owned_mask);
-                content_offset |= owned_mask;
-
-                memcpy(buffer->value + buffer_offset, &content_offset, 4);
-                pm_buffer_append_bytes(buffer, constant->start, constant->length);
-            } else {
-                // Since this is a shared constant, we are going to write its
-                // source offset directly into the buffer.
-                uint32_t source_offset = pm_ptrdifft_to_u32(constant->start - parser->start);
-                memcpy(buffer->value + buffer_offset, &source_offset, 4);
-            }
-
-            // Now we can write the length of the constant into the buffer.
             uint32_t constant_length = pm_sizet_to_u32(constant->length);
             memcpy(buffer->value + buffer_offset + 4, &constant_length, 4);
         }
@@ -333,7 +321,7 @@ pm_serialize_content(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) 
 }
 
 static void
-serialize_token(void *data, pm_parser_t *parser, pm_token_t *token) {
+serialize_token(pm_parser_t *parser, pm_token_t *token, void *data) {
     pm_buffer_t *buffer = (pm_buffer_t *) data;
 
     pm_buffer_append_varuint(buffer, token->type);
@@ -345,7 +333,7 @@ serialize_token(void *data, pm_parser_t *parser, pm_token_t *token) {
 /**
  * Lex the given source and serialize to the given buffer.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_serialize_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data) {
     pm_options_t options = { 0 };
     pm_options_read(&options, data);
@@ -354,12 +342,7 @@ pm_serialize_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const 
     pm_parser_t parser;
     pm_parser_init(&arena, &parser, source, size, &options);
 
-    pm_lex_callback_t lex_callback = (pm_lex_callback_t) {
-        .data = (void *) buffer,
-        .callback = serialize_token,
-    };
-
-    parser.lex_callback = &lex_callback;
+    pm_parser_lex_callback_set(&parser, serialize_token, buffer);
     pm_parse(&parser);
 
     // Append 0 to mark end of tokens.
@@ -367,16 +350,16 @@ pm_serialize_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const 
 
     pm_serialize_metadata(&parser, buffer);
 
-    pm_parser_free(&parser);
-    pm_arena_free(&arena);
-    pm_options_free(&options);
+    pm_parser_cleanup(&parser);
+    pm_arena_cleanup(&arena);
+    pm_options_cleanup(&options);
 }
 
 /**
  * Parse and serialize both the AST and the tokens represented by the given
  * source to the given buffer.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_serialize_parse_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data) {
     pm_options_t options = { 0 };
     pm_options_read(&options, data);
@@ -385,20 +368,37 @@ pm_serialize_parse_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, 
     pm_parser_t parser;
     pm_parser_init(&arena, &parser, source, size, &options);
 
-    pm_lex_callback_t lex_callback = (pm_lex_callback_t) {
-        .data = (void *) buffer,
-        .callback = serialize_token,
-    };
-
-    parser.lex_callback = &lex_callback;
+    pm_parser_lex_callback_set(&parser, serialize_token, buffer);
     pm_node_t *node = pm_parse(&parser);
 
     pm_buffer_append_byte(buffer, 0);
     pm_serialize(&parser, node, buffer);
 
-    pm_parser_free(&parser);
-    pm_arena_free(&arena);
-    pm_options_free(&options);
+    pm_parser_cleanup(&parser);
+    pm_arena_cleanup(&arena);
+    pm_options_cleanup(&options);
+}
+
+/**
+ * Parse the source and return true if it parses without errors or warnings.
+ */
+bool
+pm_serialize_parse_success_p(const uint8_t *source, size_t size, const char *data) {
+    pm_options_t options = { 0 };
+    pm_options_read(&options, data);
+
+    pm_arena_t arena = { 0 };
+    pm_parser_t parser;
+    pm_parser_init(&arena, &parser, source, size, &options);
+
+    pm_parse(&parser);
+
+    bool result = parser.error_list.size == 0;
+    pm_parser_cleanup(&parser);
+    pm_arena_cleanup(&arena);
+    pm_options_cleanup(&options);
+
+    return result;
 }
 
 #endif

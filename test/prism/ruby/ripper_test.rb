@@ -82,6 +82,42 @@ module Prism
       "whitequark/procarg0.txt",
     ]
 
+    omitted_scan = [
+      "dos_endings.txt",
+      "heredocs_with_fake_newlines.txt",
+      "rescue_modifier.txt",
+      "seattlerb/block_call_dot_op2_brace_block.txt",
+      "seattlerb/block_command_operation_colon.txt",
+      "seattlerb/block_command_operation_dot.txt",
+      "seattlerb/case_in.txt",
+      "seattlerb/heredoc__backslash_dos_format.txt",
+      "seattlerb/heredoc_backslash_nl.txt",
+      "seattlerb/heredoc_nested.txt",
+      "seattlerb/heredoc_squiggly_blank_line_plus_interpolation.txt",
+      "seattlerb/heredoc_squiggly_empty.txt",
+      "seattlerb/masgn_command_call.txt",
+      "seattlerb/messy_op_asgn_lineno.txt",
+      "seattlerb/op_asgn_primary_colon_const_command_call.txt",
+      "seattlerb/parse_pattern_076.txt",
+      "tilde_heredocs.txt",
+      "unparser/corpus/literal/assignment.txt",
+      "unparser/corpus/literal/pattern.txt",
+      "unparser/corpus/semantic/dstr.txt",
+      "variables.txt",
+      "whitequark/dedenting_heredoc.txt",
+      "whitequark/masgn_nested.txt",
+      "whitequark/newline_in_hash_argument.txt",
+      "whitequark/numparam_ruby_bug_19025.txt",
+      "whitequark/op_asgn_cmd.txt",
+      "whitequark/parser_drops_truncated_parts_of_squiggly_heredoc.txt",
+      "whitequark/parser_slash_slash_n_escaping_in_literals.txt",
+      "whitequark/pattern_matching_nil_pattern.txt",
+      "whitequark/ruby_bug_12402.txt",
+      "whitequark/ruby_bug_18878.txt",
+      "whitequark/send_block_chain_cmd.txt",
+      "whitequark/slash_newline_in_heredocs.txt",
+    ]
+
     Fixture.each_for_current_ruby(except: incorrect | omitted_sexp_raw) do |fixture|
       define_method("#{fixture.test_name}_sexp_raw") { assert_ripper_sexp_raw(fixture.read) }
     end
@@ -100,6 +136,96 @@ module Prism
       end
     end
 
+    # Events that are currently not emitted
+    UNSUPPORTED_EVENTS = %i[comma ignored_nl label_end lbrace lbracket lparen nl rbrace rbracket rparen semicolon sp words_sep ignored_sp]
+    SUPPORTED_EVENTS = Translation::Ripper::EVENTS - UNSUPPORTED_EVENTS
+    # Events that assert against their line/column
+    CHECK_LOCATION_EVENTS = %i[kw op]
+    IGNORE_FOR_SORT_EVENTS = %i[
+      stmts_new stmts_add bodystmt void_stmt
+      args_new args_add args_add_star args_add_block arg_paren method_add_arg
+      mlhs_new mlhs_add mlhs_add_star mlhs_add_post
+      mrhs_new mrhs_add mrhs_add_star mrhs_new_from_args
+      word_new words_new symbols_new qwords_new qsymbols_new xstring_new regexp_new
+      words_add symbols_add qwords_add qsymbols_add
+      regexp_end tstring_end heredoc_end
+      call command fcall vcall
+      field aref_field var_field var_ref block_var ident params
+      string_content heredoc_dedent unary binary dyna_symbol
+      excessed_comma rest_param
+      comment magic_comment embdoc embdoc_beg embdoc_end arg_ambiguous
+    ]
+    SORT_IGNORE = {
+      aref: [
+        "blocks.txt",
+        "command_method_call.txt",
+        "whitequark/ruby_bug_13547.txt",
+      ],
+      assoc_new: [
+        "case_in_hash_key.txt",
+        "whitequark/parser_bug_525.txt",
+        "whitequark/ruby_bug_11380.txt",
+      ],
+      bare_assoc_hash: [
+        "case_in_hash_key.txt",
+        "method_calls.txt",
+        "whitequark/parser_bug_525.txt",
+        "whitequark/ruby_bug_11380.txt",
+      ],
+      brace_block: [
+        "super.txt",
+        "unparser/corpus/literal/super.txt"
+      ],
+      command_call: [
+        "blocks.txt",
+        "case_in_hash_key.txt",
+        "seattlerb/block_call_dot_op2_cmd_args_do_block.txt",
+        "seattlerb/block_call_operation_colon.txt",
+        "seattlerb/block_call_operation_dot.txt",
+      ],
+      const_path_field: [
+        "seattlerb/const_2_op_asgn_or2.txt",
+        "seattlerb/const_op_asgn_or.txt",
+        "whitequark/const_op_asgn.txt",
+      ],
+      const_path_ref: ["unparser/corpus/literal/defs.txt"],
+      do_block: ["whitequark/super_block.txt"],
+      embexpr_end: ["seattlerb/str_interp_ternary_or_label.txt"],
+      top_const_field: [
+        "seattlerb/const_3_op_asgn_or.txt",
+        "seattlerb/const_op_asgn_and1.txt",
+        "seattlerb/const_op_asgn_and2.txt",
+        "whitequark/const_op_asgn.txt",
+      ],
+      mlhs_paren: ["unparser/corpus/literal/for.txt"],
+      kw: [
+        "defined.txt",
+        "for.txt",
+        "seattlerb/case_in_42.txt",
+        "seattlerb/case_in_67.txt",
+        "seattlerb/case_in_86_2.txt",
+        "seattlerb/case_in_86.txt",
+        "seattlerb/case_in_hash_pat_paren_true.txt",
+        "seattlerb/flip2_env_lvar.txt",
+        "unless.txt",
+        "unparser/corpus/semantic/and.txt",
+        "whitequark/class.txt",
+        "whitequark/find_pattern.txt",
+        "whitequark/pattern_matching_hash.txt",
+        "whitequark/pattern_matching_implicit_array_match.txt",
+        "whitequark/pattern_matching_ranges.txt",
+        "whitequark/super_block.txt",
+        "write_command_operator.txt",
+      ],
+      op: [
+        "ranges.txt",
+        "ternary_operator.txt",
+        "whitequark/args_args_assocs.txt",
+      ]
+    }
+    SORT_IGNORE.default = []
+    SORT_EVENTS = SUPPORTED_EVENTS - IGNORE_FOR_SORT_EVENTS
+
     module Events
       attr_reader :events
 
@@ -108,9 +234,21 @@ module Prism
         @events = []
       end
 
-      Prism::Translation::Ripper::PARSER_EVENTS.each do |event|
+      def sorted_events
+        @events.select do |e,|
+          next false if e == :kw && @events.any? { |e,| e == :if_mod || e == :while_mod || e == :until_mod || e == :rescue || e == :rescue_mod || e == :while || e == :ensure }
+          next false if e == :op && @events.any? { |e,| e == :const_path_field || e == :const_ref || e == :top_const_field || e == :top_const_ref }
+          SORT_EVENTS.include?(e) && !SORT_IGNORE[e].include?(filename)
+        end
+      end
+
+      SUPPORTED_EVENTS.each do |event|
         define_method(:"on_#{event}") do |*args|
-          @events << [event, *args]
+          if CHECK_LOCATION_EVENTS.include?(event)
+            @events << [event, lineno, column, *args.map(&:to_s)]
+          else
+            @events << [event, *args.map(&:to_s)]
+          end
           super(*args)
         end
       end
@@ -126,28 +264,27 @@ module Prism
 
     class ObjectEvents < Translation::Ripper
       OBJECT = BasicObject.new
-      Prism::Translation::Ripper::PARSER_EVENTS.each do |event|
+      SUPPORTED_EVENTS.each do |event|
         define_method(:"on_#{event}") { |*args| OBJECT }
       end
     end
 
-    Fixture.each_for_current_ruby(except: incorrect) do |fixture|
+    Fixture.each_for_current_ruby(except: incorrect | omitted_scan) do |fixture|
       define_method("#{fixture.test_name}_events") do
         source = fixture.read
         # Similar to test/ripper/assert_parse_files.rb in CRuby
         object_events = ObjectEvents.new(source)
         assert_nothing_raised { object_events.parse }
-      end
-    end
 
-    def test_events
-      source = "1 rescue 2"
-      ripper = RipperEvents.new(source)
-      prism = PrismEvents.new(source)
-      ripper.parse
-      prism.parse
-      # This makes sure that the content is the same. Ordering is not correct for now.
-      assert_equal(ripper.events.sort, prism.events.sort)
+        ripper = RipperEvents.new(source, fixture.path)
+        prism = PrismEvents.new(source, fixture.path)
+        ripper.parse
+        prism.parse
+        # Check that the same events are emitted, regardless of order
+        assert_equal(ripper.events.sort, prism.events.sort)
+        # Check a subset of events against the correct order
+        assert_equal(ripper.sorted_events, prism.sorted_events)
+      end
     end
 
     def test_lexer
@@ -206,6 +343,14 @@ module Prism
           assert_equal Ripper.sexp(object1_with_gets), Translation::Ripper.sexp(object2_with_gets)
         end
       end
+    end
+
+    def test_lex_coersion
+      string_like = Object.new
+      def string_like.to_str
+        "a"
+      end
+      assert_equal Ripper.lex(string_like), Translation::Ripper.lex(string_like)
     end
 
     # Check that the hardcoded values don't change without us noticing.

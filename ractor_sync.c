@@ -835,20 +835,6 @@ ractor_basket_accept(struct ractor_basket *b)
 
 // Ractor blocking by receive
 
-enum ractor_wakeup_status {
-    wakeup_none,
-    wakeup_by_send,
-    wakeup_by_interrupt,
-
-    // wakeup_by_close,
-};
-
-struct ractor_waiter {
-    enum ractor_wakeup_status wakeup_status;
-    rb_thread_t *th;
-    struct ccan_list_node node;
-};
-
 #if VM_CHECK_MODE > 0
 static bool
 ractor_waiter_included(rb_ractor_t *cr, rb_thread_t *th)
@@ -991,6 +977,7 @@ ubf_ractor_wait(void *ptr)
 
     rb_thread_t *th = waiter->th;
     rb_ractor_t *r = th->ractor;
+    rb_atomic_t event_serial = waiter->event_serial;
 
     // clear ubf and nobody can kick UBF
     th->unblock.func = NULL;
@@ -1000,7 +987,7 @@ ubf_ractor_wait(void *ptr)
     {
         RACTOR_LOCK(r);
         {
-            if (waiter->wakeup_status == wakeup_none) {
+            if (RUBY_ATOMIC_LOAD(th->unblock.event_serial) == event_serial && waiter->wakeup_status == wakeup_none) {
                 RUBY_DEBUG_LOG("waiter:%p", (void *)waiter);
 
                 waiter->wakeup_status = wakeup_by_interrupt;

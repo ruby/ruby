@@ -258,9 +258,9 @@ module SyncDefaultGems
       ["bundler/exe/bundle", "libexec/bundle"],
       ["bundler/exe/bundler", "libexec/bundler"],
       ["bundler/bundler.gemspec", "lib/bundler/bundler.gemspec"],
-      ["bundler/spec", "spec/bundler"],
+      ["spec", "spec/bundler"],
       *["bundle", "parallel_rspec", "rspec"].map {|binstub|
-        ["bundler/bin/#{binstub}", "spec/bin/#{binstub}"]
+        ["bin/#{binstub}", "spec/bin/#{binstub}"]
       },
       *%w[dev_gems test_gems rubocop_gems standard_gems].flat_map {|gemfile|
         ["rb.lock", "rb"].map do |ext|
@@ -293,6 +293,7 @@ module SyncDefaultGems
     ], exclude: [
       "ext/strscan/regenc.h",
       "ext/strscan/regint.h",
+      "ext/strscan/lib/strscan/truffleruby.rb",
     ]),
     syntax_suggest: lib(["ruby/syntax_suggest", "main"], gemspec_in_subdir: true),
     tempfile: lib("ruby/tempfile"),

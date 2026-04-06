@@ -54,6 +54,17 @@ typedef unsigned char _Bool;
 #   define RUBY_TYPED_FROZEN_SHAREABLE 0
 #endif
 
+#ifdef RUBY_TYPED_EMBEDDABLE
+#  define HAVE_RUBY_TYPED_EMBEDDABLE 1
+#else
+# ifdef HAVE_CONST_RUBY_TYPED_EMBEDDABLE
+#  define RUBY_TYPED_EMBEDDABLE RUBY_TYPED_EMBEDDABLE
+#  define HAVE_RUBY_TYPED_EMBEDDABLE 1
+# else
+#  define RUBY_TYPED_EMBEDDABLE 0
+# endif
+#endif
+
 #ifndef NORETURN
 #if defined(__has_attribute) && __has_attribute(noreturn)
 #define NORETURN(x) __attribute__((noreturn)) x

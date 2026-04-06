@@ -46,6 +46,14 @@ describe "The =~ operator with named captures" do
       matched.should == "foo"
       unmatched.should == nil
     end
+
+    it "sets existing local variables if declared in a higher scope" do
+      a = 42
+      1.times do
+        /(?<a>foo)/ =~ @string
+      end
+      a.should == "foo"
+    end
   end
 
   describe "on syntax of 'string_literal' =~ /regexp/" do

@@ -248,7 +248,13 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     end
 
     refute_includes @ui.output, "Restored #{a.full_name}"
-    assert_includes @ui.output, "Restored #{b.full_name}"
+
+    if Gem.java_platform?
+      refute_includes @ui.output, "Restored #{b.full_name}"
+      assert_includes @ui.output, "No gems with missing extensions to restore"
+    else
+      assert_includes @ui.output, "Restored #{b.full_name}"
+    end
   end
 
   def test_execute_no_extension

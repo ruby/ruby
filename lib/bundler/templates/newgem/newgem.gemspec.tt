@@ -40,6 +40,9 @@ Gem::Specification.new do |spec|
 
   # Uncomment to register a new dependency of your gem
   # spec.add_dependency "example-gem", "~> 1.0"
+<%- if config[:ext] == 'rust' -%>
+  spec.add_dependency "rb_sys", "~> 0.9.91"
+<%- end -%>
 <%- if config[:ext] == 'go' -%>
   spec.add_dependency "go_gem", "~> 0.2"
 <%- end -%>

@@ -57,6 +57,29 @@ module Bundler
         attr_accessor :path, :uri, :branch, :tag, :ref, :explicit_ref
         attr_writer :revision
 
+        def self.version
+          @version ||= full_version[/((\.?\d+)+).*/, 1]
+        end
+
+        def self.full_version
+          @full_version ||= begin
+            raise GitNotInstalledError.new unless Bundler.git_present?
+
+            require "open3"
+            out, err, status = Open3.capture3("git", "--version")
+
+            raise GitCommandError.new("--version", SharedHelpers.pwd, err) unless status.success?
+            Bundler.ui.warn err unless err.empty?
+
+            out.sub(/git version\s*/, "").strip
+          end
+        end
+
+        def self.reset
+          @version = nil
+          @full_version = nil
+        end
+
         def initialize(path, uri, options = {}, revision = nil, git = nil)
           @path     = path
           @uri      = uri
@@ -92,11 +115,11 @@ module Bundler
         end
 
         def version
-          @version ||= full_version.match(/((\.?\d+)+).*/)[1]
+          self.class.version
         end
 
         def full_version
-          @full_version ||= git_local("--version").sub(/git version\s*/, "").strip
+          self.class.full_version
         end
 
         def checkout
@@ -156,7 +179,7 @@ module Bundler
         private
 
         def git_remote_fetch(args)
-          command = ["fetch", "--force", "--quiet", "--no-tags", *args, "--", configured_uri, refspec].compact
+          command = fetch_command(args)
           command_with_no_credentials = check_allowed(command)
 
           Bundler::Retry.new("`#{command_with_no_credentials}` at #{path}", [MissingGitRevisionError]).attempts do
@@ -166,6 +189,11 @@ module Bundler
             if err.include?("couldn't find remote ref") || err.include?("not our ref")
               raise MissingGitRevisionError.new(command_with_no_credentials, path, commit || explicit_ref, credential_filtered_uri)
             else
+              if shallow?
+                args -= depth_args
+                command = fetch_command(args)
+                command_with_no_credentials = check_allowed(command)
+              end
               raise GitCommandError.new(command_with_no_credentials, path, err)
             end
           end
@@ -178,7 +206,8 @@ module Bundler
             FileUtils.mkdir_p(p)
           end
 
-          command = ["clone", "--bare", "--no-hardlinks", "--quiet", *extra_clone_args, "--", configured_uri, path.to_s]
+          clone_args = extra_clone_args
+          command = clone_command(clone_args)
           command_with_no_credentials = check_allowed(command)
 
           Bundler::Retry.new("`#{command_with_no_credentials}`", [MissingGitRevisionError]).attempts do
@@ -189,13 +218,10 @@ module Bundler
                err.include?("Remote branch #{branch_option} not found") # git 2.49 or higher
               raise MissingGitRevisionError.new(command_with_no_credentials, nil, explicit_ref, credential_filtered_uri)
             else
-              idx = command.index("--depth")
-              if idx
-                command.delete_at(idx)
-                command.delete_at(idx)
+              if shallow?
+                clone_args -= depth_args
+                command = clone_command(clone_args)
                 command_with_no_credentials = check_allowed(command)
-
-                err += "Retrying without --depth argument."
               end
               raise GitCommandError.new(command_with_no_credentials, path, err)
             end
@@ -204,14 +230,14 @@ module Bundler
 
         def clone_needs_unshallow?
           return false unless path.join("shallow").exist?
-          return true if full_clone?
+          return true unless shallow?
 
           @revision && @revision != head_revision
         end
 
         def extra_ref
           return false if not_pinned?
-          return true unless full_clone?
+          return true if shallow?
 
           ref.start_with?("refs/")
         end
@@ -427,8 +453,16 @@ module Bundler
           args
         end
 
+        def fetch_command(args)
+          ["fetch", "--force", "--quiet", "--no-tags", *args, "--", configured_uri, refspec].compact
+        end
+
+        def clone_command(args)
+          ["clone", "--bare", "--no-hardlinks", "--quiet", *args, "--", configured_uri, path.to_s]
+        end
+
         def depth_args
-          return [] if full_clone?
+          return [] unless shallow?
 
           ["--depth", depth.to_s]
         end
@@ -443,8 +477,8 @@ module Bundler
           branch || tag
         end
 
-        def full_clone?
-          depth.nil?
+        def shallow?
+          !depth.nil?
         end
 
         def needs_allow_any_sha1_in_want?

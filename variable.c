@@ -1008,7 +1008,7 @@ VALUE
 rb_gvar_set(ID id, VALUE val)
 {
     VALUE retval;
-    struct rb_global_entry *entry;
+    struct rb_global_entry *entry = NULL;
     const rb_box_t *box = rb_current_box();
     bool use_box_tbl = false;
 
@@ -1041,8 +1041,8 @@ rb_gvar_get(ID id)
     VALUE retval, gvars, key;
     const rb_box_t *box = rb_current_box();
     bool use_box_tbl = false;
-    struct rb_global_entry *entry;
-    struct rb_global_variable *var;
+    struct rb_global_entry *entry = NULL;
+    struct rb_global_variable *var = NULL;
     // TODO: use lock-free rb_id_table when it's available for use (doesn't yet exist)
     RB_VM_LOCKING() {
         entry = rb_global_entry(id);
@@ -1199,7 +1199,17 @@ static void
 CVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(VALUE klass, ID id)
 {
     if (UNLIKELY(!rb_ractor_main_p())) {
-        rb_raise(rb_eRactorIsolationError, "can not access class variables from non-main Ractors (%"PRIsVALUE" from %"PRIsVALUE")", rb_id2str(id), klass);
+        rb_raise(rb_eRactorIsolationError, "can not set class variables from non-main Ractors (%"PRIsVALUE" from %"PRIsVALUE")", rb_id2str(id), klass);
+    }
+}
+
+static void
+cvar_read_ractor_check(VALUE klass, ID id, VALUE val)
+{
+    if (UNLIKELY(!rb_ractor_main_p()) && !rb_ractor_shareable_p(val)) {
+        rb_raise(rb_eRactorIsolationError,
+                 "can not read non-shareable class variable %"PRIsVALUE" from non-main Ractors (%"PRIsVALUE")",
+                 rb_id2str(id), klass);
     }
 }
 
@@ -1709,7 +1719,7 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
                     SIZED_FREE_N(fields, RSHAPE_CAPACITY(old_shape_id));
                 }
                 else if (RSHAPE_CAPACITY(old_shape_id) != RSHAPE_CAPACITY(next_shape_id)) {
-                    IMEMO_OBJ_FIELDS(fields_obj)->as.external.ptr = ruby_sized_xrealloc(fields, RSHAPE_CAPACITY(next_shape_id) * sizeof(VALUE), RSHAPE_CAPACITY(old_shape_id) * sizeof(VALUE));
+                    IMEMO_OBJ_FIELDS(fields_obj)->as.external.ptr = ruby_xrealloc_sized(fields, RSHAPE_CAPACITY(next_shape_id) * sizeof(VALUE), RSHAPE_CAPACITY(old_shape_id) * sizeof(VALUE));
                 }
             }
         }
@@ -3232,7 +3242,7 @@ autoload_feature_require(VALUE _arguments)
      * For example, the assertion below may fail in gccct_method_search();
      * VM_ASSERT(vm_cc_check_cme(cc, rb_callable_method_entry(klass, mid)))
      */
-    rb_gccct_clear_table(Qnil);
+    rb_gccct_clear_table();
 
     VALUE result = rb_funcall(receiver, rb_intern("require"), 1, arguments->autoload_data->feature);
 
@@ -4218,7 +4228,6 @@ cvar_overtaken(VALUE front, VALUE target, ID id)
     }
 
 #define CVAR_LOOKUP(v,r) do {\
-    CVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(klass, id); \
     if (cvar_lookup_at(klass, id, (v))) {r;}\
     CVAR_FOREACH_ANCESTORS(klass, v, r);\
 } while(0)
@@ -4237,22 +4246,11 @@ find_cvar(VALUE klass, VALUE * front, VALUE * target, ID id)
     return v;
 }
 
-static void
-check_for_cvar_table(VALUE subclass, VALUE key)
-{
-    // Must not check ivar on ICLASS
-    if (!RB_TYPE_P(subclass, T_ICLASS) && RTEST(rb_ivar_defined(subclass, key))) {
-        RB_DEBUG_COUNTER_INC(cvar_class_invalidate);
-        ruby_vm_global_cvar_state++;
-        return;
-    }
-
-    rb_class_foreach_subclass(subclass, check_for_cvar_table, key);
-}
-
 void
 rb_cvar_set(VALUE klass, ID id, VALUE val)
 {
+    CVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(klass, id);
+
     VALUE tmp, front = 0, target = 0;
 
     tmp = klass;
@@ -4294,15 +4292,11 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
         ent->global_cvar_state = GET_GLOBAL_CVAR_STATE();
     }
 
-    // Break the cvar cache if this is a new class variable
-    // and target is a module or a subclass with the same
-    // cvar in this lookup.
+    // Break the cvar cache if this is a new class variable.
+    // Existing caches may have resolved this name to a different
+    // location in the hierarchy, so we must invalidate globally.
     if (new_cvar) {
-        if (RB_TYPE_P(target, T_CLASS)) {
-            if (RCLASS_SUBCLASSES_FIRST(target)) {
-                rb_class_foreach_subclass(target, check_for_cvar_table, id);
-            }
-        }
+        ruby_vm_global_cvar_state++;
     }
 }
 
@@ -4318,6 +4312,7 @@ rb_cvar_find(VALUE klass, ID id, VALUE *front)
                           klass, ID2SYM(id));
     }
     cvar_overtaken(*front, target, id);
+    cvar_read_ractor_check(klass, id, value);
     return (VALUE)value;
 }
 

@@ -50,6 +50,7 @@
 #include "ruby_assert.h"
 #include "vm_core.h"
 #include "yjit.h"
+#include "zjit.h"
 
 #include "builtin.h"
 
@@ -908,6 +909,10 @@ bug_report_file(const char *file, int line, rb_pid_t *pid)
     int len = err_position_0(buf, sizeof(buf), file, line);
 
     if (out) {
+        /* Disable buffering so crash report output is not lost if
+         * rb_vm_bugreport() triggers a secondary crash (e.g. SIGSEGV
+         * while walking JIT frames). */
+        setvbuf(out, NULL, _IONBF, 0);
         if ((ssize_t)fwrite(buf, 1, len, out) == (ssize_t)len) return out;
         fclose(out);
     }
@@ -1081,6 +1086,10 @@ die(void)
     _set_abort_behavior( 0, _CALL_REPORTFAULT);
 #endif
 
+    /* Reset SIGABRT to default so that abort() does not trigger our custom
+     * handler (sigabrt), which would re-open the crash report file with "w"
+     * and truncate the report already written by rb_bug(). */
+    signal(SIGABRT, SIG_DFL);
     abort();
 }
 
@@ -2367,7 +2376,7 @@ name_err_init_attr(VALUE exc, VALUE recv, VALUE method)
     rb_ivar_set(exc, id_name, method);
     err_init_recv(exc, recv);
     if (cfp && VM_FRAME_TYPE(cfp) != VM_FRAME_MAGIC_DUMMY) {
-        rb_ivar_set(exc, id_iseq, rb_iseqw_new(cfp->iseq));
+        rb_ivar_set(exc, id_iseq, rb_iseqw_new(CFP_ISEQ(cfp)));
     }
     return exc;
 }

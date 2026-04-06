@@ -1578,13 +1578,21 @@ dependencies: []
     ext_spec
 
     _, err = capture_output do
-      refute @ext.contains_requirable_file? "nonexistent"
+      if RUBY_ENGINE == "jruby"
+        refute @ext.ignored?
+      else
+        refute @ext.contains_requirable_file? "nonexistent"
+      end
     end
 
-    expected = "Ignoring ext-1 because its extensions are not built. " \
-               "Try: gem pristine ext --version 1\n"
+    if RUBY_ENGINE == "jruby"
+      assert_equal "", err
+    else
+      expected = "Ignoring ext-1 because its extensions are not built. " \
+                 "Try: gem pristine ext --version 1\n"
 
-    assert_equal expected, err
+      assert_equal expected, err
+    end
   end
 
   def test_contains_requirable_file_eh_extension_java_platform
@@ -2812,14 +2820,13 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
     Dir.chdir @tempdir do
       @a1.add_dependency @a1.name, "1"
 
-      use_ui @ui do
+      e = assert_raise Gem::InvalidSpecificationException do
         @a1.validate
       end
 
-      assert_equal <<-EXPECTED, @ui.error
-#{w}:  Self referencing dependency is unnecessary and strongly discouraged.
-#{w}:  See https://guides.rubygems.org/specification-reference/ for help
-      EXPECTED
+      expected = "Dependencies of this gem include a self-reference."
+
+      assert_equal expected, e.message
     end
   end
 
@@ -2884,6 +2891,61 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
       use_ui @ui do
         @a1.validate
       end
+    end
+  end
+
+  def test_validate_extension_require_relative_warning
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @a1.extensions = ["ext/a/extconf.rb"]
+      @a1.files = %w[lib/code.rb lib/a.rb ext/a/extconf.rb]
+
+      File.write File.join("lib", "a.rb"), 'require_relative "a/a"'
+
+      use_ui @ui do
+        @a1.validate
+      end
+
+      assert_match(%r{require_relative "a/a"}, @ui.error)
+      assert_match(/will break in RubyGems 4\.2/, @ui.error)
+      assert_match(/Use `require` instead of `require_relative`/, @ui.error)
+    end
+  end
+
+  def test_validate_extension_require_relative_no_warning_when_rb_exists
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @a1.extensions = ["ext/a/extconf.rb"]
+      @a1.files = %w[lib/code.rb lib/a.rb lib/a/a.rb ext/a/extconf.rb]
+
+      FileUtils.mkdir_p File.join("lib", "a")
+      File.write File.join("lib", "a.rb"), 'require_relative "a/a"'
+      File.write File.join("lib", "a", "a.rb"), ""
+
+      use_ui @ui do
+        @a1.validate
+      end
+
+      refute_match(/require_relative/, @ui.error)
+    end
+  end
+
+  def test_validate_extension_require_relative_no_warning_without_extensions
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @a1.extensions = []
+      @a1.files = %w[lib/code.rb lib/a.rb]
+
+      File.write File.join("lib", "a.rb"), 'require_relative "a/a"'
+
+      use_ui @ui do
+        @a1.validate
+      end
+
+      refute_match(/require_relative/, @ui.error)
     end
   end
 
@@ -3953,7 +4015,11 @@ end
   def test_missing_extensions_eh
     ext_spec
 
-    assert @ext.missing_extensions?
+    if RUBY_ENGINE == "jruby"
+      refute @ext.missing_extensions?
+    else
+      assert @ext.missing_extensions?
+    end
 
     extconf_rb = File.join @ext.gem_dir, @ext.extensions.first
     FileUtils.mkdir_p File.dirname extconf_rb

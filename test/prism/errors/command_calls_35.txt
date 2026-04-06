@@ -14,7 +14,11 @@ p(p a, &block => value)
                       ^ unexpected ')', ignoring it
 
 p(p a do end => value)
-             ^~ unexpected '=>'; expected a `)` to close the arguments
+      ^~ unexpected 'do'; expected a `)` to close the arguments
+      ^~ unexpected 'do', expecting end-of-input
+      ^~ unexpected 'do', ignoring it
+         ^~~ unexpected 'end', ignoring it
+             ^~ unexpected '=>', ignoring it
                      ^ unexpected ')', expecting end-of-input
                      ^ unexpected ')', ignoring it
 

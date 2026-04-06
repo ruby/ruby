@@ -2,6 +2,7 @@
 
 return unless defined?(RubyVM::InstructionSequence)
 return if RubyVM::InstructionSequence.compile("").to_a[4][:parser] == :prism
+return if RUBY_VERSION < "3.2"
 
 require_relative "../test_helper"
 
@@ -21,7 +22,7 @@ module Prism
 
       ["n", "u", "e", "s"].each do |modifier|
         define_method(:"test_regular_expression_encoding_modifiers_/#{modifier}_#{encoding.name}") do
-          regexp_sources = ["abc", "garçon", "\\x80", "gar\\xC3\\xA7on", "gar\\u{E7}on", "abc\\u{FFFFFF}", "\\x80\\u{80}" ]
+          regexp_sources = ["abc", "garçon", "\\x80", "gar\\xC3\\xA7on", "gar\\u{E7}on", "abc\\u{FFFFFF}", "\\x80\\u{80}", "\\p{L}" ]
 
           assert_regular_expression_encoding_flags(
             encoding,
@@ -35,17 +36,15 @@ module Prism
 
     def assert_regular_expression_encoding_flags(encoding, regexps)
       regexps.each do |regexp|
-        regexp_modifier_used = regexp.end_with?("/u") || regexp.end_with?("/e") || regexp.end_with?("/s") || regexp.end_with?("/n")
         source = "# encoding: #{encoding.name}\n#{regexp}"
 
-        encoding_errors = ["invalid multibyte char", "escaped non ASCII character in UTF-8 regexp", "differs from source encoding"]
-        skipped_errors = ["invalid multibyte escape", "incompatible character encoding", "UTF-8 character in non UTF-8 regexp", "invalid Unicode range", "invalid Unicode list"]
-
-        # TODO (nirvdrum 21-Feb-2024): Prism currently does not handle Regexp validation unless modifiers are used. So, skip processing those errors for now: https://github.com/ruby/prism/issues/2104
-        unless regexp_modifier_used
-          skipped_errors += encoding_errors
-          encoding_errors.clear
-        end
+        encoding_errors = [
+          "invalid multibyte char", "escaped non ASCII character in UTF-8 regexp",
+          "differs from source encoding", "incompatible character encoding",
+          "invalid multibyte escape", "UTF-8 character in non UTF-8 regexp",
+          "invalid Unicode range", "non escaped non ASCII character",
+          "invalid character property name", "invalid Unicode list",
+        ]
 
         expected =
           begin
@@ -53,8 +52,6 @@ module Prism
           rescue SyntaxError => error
             if encoding_errors.find { |e| error.message.include?(e) }
               error.message.split("\n").map { |m| m[/: (.+?)$/, 1] }
-            elsif skipped_errors.find { |e| error.message.include?(e) }
-              next
             else
               raise
             end
@@ -110,19 +107,6 @@ module Prism
               end
             end
           end
-
-        # TODO (nirvdrum 22-Feb-2024): Remove this workaround once Prism better maps CRuby's error messages.
-        # This class of error message is tricky. The part not being compared is a representation of the regexp.
-        # Depending on the source encoding and any encoding modifiers being used, CRuby alters how the regexp is represented.
-        # Sometimes it's an MBC string. Other times it uses hexadecimal character escapes. And in other cases it uses
-        # the long-form Unicode escape sequences. This short-circuit checks that the error message is mostly correct.
-        if expected.is_a?(Array) && actual.is_a?(Array)
-          if expected.last.start_with?("/.../n has a non escaped non ASCII character in non ASCII-8BIT script:") &&
-              actual.last.start_with?("/.../n has a non escaped non ASCII character in non ASCII-8BIT script:")
-            expected.pop
-            actual.pop
-          end
-        end
 
         assert_equal expected, actual
       end

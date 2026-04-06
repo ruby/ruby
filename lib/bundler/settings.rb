@@ -59,6 +59,7 @@ module Bundler
       bin
       cache_path
       console
+      default_cli_command
       gem.ci
       gem.github_username
       gem.linter
@@ -303,6 +304,10 @@ module Bundler
       @app_cache_path ||= self[:cache_path] || "vendor/cache"
     end
 
+    def installation_parallelization
+      self[:jobs] || processor_count
+    end
+
     def validate!
       all.each do |raw_key|
         [@local_config, @env_config, @global_config].each do |settings|
@@ -476,7 +481,7 @@ module Bundler
       SharedHelpers.filesystem_access(config_file, :read) do |file|
         valid_file = file.exist? && !file.size.zero?
         return {} unless valid_file
-        serializer_class.load(file.read).inject({}) do |config, (k, v)|
+        (serializer_class.load(file.read) || {}).inject({}) do |config, (k, v)|
           k = k.dup
           k << "/" if /https?:/i.match?(k) && !k.end_with?("/", "__#{FALLBACK_TIMEOUT_URI_OPTION.upcase}")
           k.gsub!(".", "__")

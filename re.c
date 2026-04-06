@@ -16,6 +16,7 @@
 #include "encindex.h"
 #include "hrtime.h"
 #include "internal.h"
+#include "internal/bignum.h"
 #include "internal/encoding.h"
 #include "internal/error.h"
 #include "internal/hash.h"
@@ -106,7 +107,7 @@ rb_memcicmp(const void *x, const void *y, long len)
     return 0;
 }
 
-#ifdef HAVE_MEMMEM
+#if defined(HAVE_MEMMEM) && !defined(__APPLE__)
 static inline long
 rb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long n)
 {
@@ -1187,7 +1188,7 @@ match_size(VALUE match)
     return INT2FIX(RMATCH_REGS(match)->num_regs);
 }
 
-static int name_to_backref_number(struct re_registers *, VALUE, const char*, const char*);
+static int name_to_backref_number(const struct re_registers *, VALUE, const char*, const char*);
 NORETURN(static void name_to_backref_error(VALUE name));
 
 static void
@@ -2147,7 +2148,7 @@ match_captures(VALUE match)
 }
 
 static int
-name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name, const char* name_end)
+name_to_backref_number(const struct re_registers *regs, VALUE regexp, const char* name, const char* name_end)
 {
     if (NIL_P(regexp)) return -1;
     return onig_name_to_backref_number(RREGEXP_PTR(regexp),
@@ -2160,7 +2161,7 @@ name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name
      name_to_backref_number((regs), (re), (name_ptr), (name_end)))
 
 static int
-namev_to_backref_number(struct re_registers *regs, VALUE re, VALUE name)
+namev_to_backref_number(const struct re_registers *regs, VALUE re, VALUE name)
 {
     int num;
 
@@ -3367,6 +3368,9 @@ rb_reg_initialize(VALUE obj, const char *s, long len, rb_encoding *enc,
                           options & ARG_REG_OPTION_MASK, err,
                           sourcefile, sourceline);
     if (!re->ptr) return -1;
+    if (RBASIC_CLASS(obj) == rb_cRegexp) {
+        OBJ_FREEZE(obj);
+    }
     RB_GC_GUARD(unescaped);
     return 0;
 }
@@ -3406,7 +3410,7 @@ rb_reg_initialize_str(VALUE obj, VALUE str, int options, onig_errmsg_buffer err,
     return ret;
 }
 
-static VALUE
+VALUE
 rb_reg_s_alloc(VALUE klass)
 {
     NEWOBJ_OF(re, struct RRegexp, klass, T_REGEXP | (RGENGC_WB_PROTECTED_REGEXP ? FL_WB_PROTECTED : 0), sizeof(struct RRegexp), 0);
@@ -3459,9 +3463,7 @@ rb_reg_init_str_enc(VALUE re, VALUE s, rb_encoding *enc, int options)
 VALUE
 rb_reg_new_ary(VALUE ary, int opt)
 {
-    VALUE re = rb_reg_new_str(rb_reg_preprocess_dregexp(ary, opt), opt);
-    rb_obj_freeze(re);
-    return re;
+    return rb_reg_new_str(rb_reg_preprocess_dregexp(ary, opt), opt);
 }
 
 VALUE
@@ -3495,7 +3497,6 @@ rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourceline)
         rb_set_errinfo(rb_reg_error_desc(str, options, err));
         return Qnil;
     }
-    rb_obj_freeze(re);
     return re;
 }
 
@@ -3627,6 +3628,76 @@ match_equal(VALUE match1, VALUE match2)
     if (memcmp(regs1->beg, regs2->beg, regs1->num_regs * sizeof(*regs1->beg))) return Qfalse;
     if (memcmp(regs1->end, regs2->end, regs1->num_regs * sizeof(*regs1->end))) return Qfalse;
     return Qtrue;
+}
+
+/*
+ *  call-seq:
+ *    integer_at(index, base = 10) -> integer or nil
+ *    integer_at(name, base = 10) -> integer or nil
+ *
+ *  Converts the matched substring to integer and return the result.
+ *  +$~.integer_at(N)+ is equivalent to +$N&.to_i+.
+ *
+ *    m = /(\d+{4})(\d+{2})(\d+{2})/.match("20260308")
+ *    # => #<MatchData "20260308" 1:"2026" 2:"03" 3:"08">
+ *    m.integer_at(0)     # => 20260308
+ *    m.integer_at(1)     # => 2026
+ *    m.integer_at(2)     # => 3
+ *    m.integer_at(3)     # => 8
+ *
+ *    m = /(?<y>\d+{4})(?<m>\d+{2})(?<d>\d+{2})/.match("20260308")
+ *    m.integer_at("y")   # => 2026
+ *    m.integer_at("m")   # => 3
+ *    m.integer_at("d")   # => 8
+ *
+ *  If the substring does not match, returns +nil+.
+ *
+ *    re = /(\d+)?/
+ *    re.match("123").integer_at(1) #=> 123
+ *    re.match("abc").integer_at(1) #=> nil
+ *
+ *  The string is converted in decimal by default.
+ *
+ *    /\d+/.match("011").integer_at(0)     #=> 10
+ *    /\d+/.match("011").integer_at(0, 12) #=> 13
+ *    /\d+/.match("011").integer_at(0, 0)  #=> 9
+ *
+ *  See also MatchData#[], String#to_i.
+ */
+static VALUE
+match_integer_at(int argc, VALUE *argv, VALUE match)
+{
+    const struct re_registers *regs = RMATCH_REGS(match_check(match));
+
+    int base = 10;
+    VALUE idx;
+    long nth;
+
+    argc = rb_check_arity(argc, 1, 2);
+    if (FIXNUM_P(idx = argv[0])) {
+        nth = NUM2INT(idx);
+    }
+    else if ((nth = namev_to_backref_number(regs, RMATCH(match)->regexp, idx)) < 0) {
+        name_to_backref_error(idx);
+    }
+
+    if (argc > 1 && (base = NUM2INT(argv[1])) < 0) {
+        rb_raise(rb_eArgError, "invalid radix %d", base);
+    }
+
+    if (nth >= regs->num_regs) return Qnil;
+    if (nth < 0 && (nth += regs->num_regs) <= 0) return Qnil;
+
+    long start = BEG(nth), end = END(nth);
+    if (start < 0) return Qnil;
+    RUBY_ASSERT(start <= end, "%ld > %ld", start, end);
+
+    VALUE str = RMATCH(match)->str;
+    RUBY_ASSERT(end <= RSTRING_LEN(str), "%ld > %ld", end, RSTRING_LEN(str));
+
+    char *endp;
+    return rb_int_parse_cstr(RSTRING_PTR(str) + start, end - start, &endp, NULL,
+                             base, RB_INT_PARSE_DEFAULT);
 }
 
 static VALUE
@@ -3962,6 +4033,9 @@ reg_copy(VALUE copy, VALUE orig)
     RREGEXP_PTR(copy)->timelimit = RREGEXP_PTR(orig)->timelimit;
     rb_enc_copy(copy, orig);
     FL_SET_RAW(copy, FL_TEST_RAW(orig, KCODE_FIXED|REG_ENCODING_NONE));
+    if (RBASIC_CLASS(copy) == rb_cRegexp) {
+        OBJ_FREEZE(copy);
+    }
 
     return copy;
 }
@@ -4044,6 +4118,9 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
     }
 
     set_timeout(&RREGEXP_PTR(self)->timelimit, args.timeout);
+    if (RBASIC_CLASS(self) == rb_cRegexp) {
+        OBJ_FREEZE(self);
+    }
 
     return self;
 }
@@ -4908,4 +4985,5 @@ Init_Regexp(void)
     rb_define_method(rb_cMatch, "hash", match_hash, 0);
     rb_define_method(rb_cMatch, "eql?", match_equal, 1);
     rb_define_method(rb_cMatch, "==", match_equal, 1);
+    rb_define_method(rb_cMatch, "integer_at", match_integer_at, -1);
 }

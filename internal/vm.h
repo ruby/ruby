@@ -78,7 +78,7 @@ void rb_check_stack_overflow(void);
 #define RB_BLOCK_NO_USE_PACKED_ARGS 2
 VALUE rb_block_call2(VALUE obj, ID mid, int argc, const VALUE *argv, rb_block_call_func_t bl_proc, VALUE data2, long flags);
 struct vm_ifunc *rb_current_ifunc(void);
-VALUE rb_gccct_clear_table(VALUE);
+VALUE rb_gccct_clear_table(void);
 VALUE rb_eval_cmd_call_kw(VALUE cmd, int argc, const VALUE *argv, int kw_splat);
 
 #if USE_YJIT || USE_ZJIT

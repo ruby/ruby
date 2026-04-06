@@ -180,6 +180,25 @@ module KernelSpecs
     alias aliased_pub_method pub_method
   end
 
+  class BasicA < BasicObject
+    define_method(:respond_to?, ::Kernel.instance_method(:respond_to?))
+
+    def pub_method; :public_method; end
+
+    def undefed_method; :undefed_method; end
+    undef_method :undefed_method
+
+    protected
+    def protected_method; :protected_method; end
+
+    private
+    def private_method; :private_method; end
+  end
+
+  class MissingA < A
+    undef :respond_to_missing?
+  end
+
   class VisibilityChange
     class << self
       private :new

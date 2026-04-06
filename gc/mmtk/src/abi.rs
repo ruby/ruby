@@ -301,7 +301,7 @@ pub struct RubyUpcalls {
     pub init_gc_worker_thread: extern "C" fn(gc_worker_tls: *mut GCThreadTLS),
     pub is_mutator: extern "C" fn() -> bool,
     pub stop_the_world: extern "C" fn(),
-    pub resume_mutators: extern "C" fn(),
+    pub resume_mutators: extern "C" fn(gc_may_move: bool),
     pub block_for_gc: extern "C" fn(tls: VMMutatorThread),
     pub before_updating_jit_code: extern "C" fn(),
     pub after_updating_jit_code: extern "C" fn(),

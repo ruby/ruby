@@ -655,7 +655,7 @@ set_i_to_set(VALUE set)
         return set;
     }
 
-    return rb_funcall_passing_block(rb_cSet, id_new, 0, NULL);
+    return rb_funcall_passing_block(rb_cSet, id_new, 1, &set);
 }
 
 /*

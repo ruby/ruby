@@ -960,4 +960,48 @@ class TestIOBuffer < Test::Unit::TestCase
     refute_predicate buf, :locked?
     buf.locked { }
   end
+
+  def test_hexdump_default_width
+    buffer = IO::Buffer.for("Hello World")
+    hexdump = buffer.hexdump
+    assert_include hexdump, "Hello World"
+    assert_include hexdump, "0x00000000"
+  end
+
+  def test_hexdump_custom_width
+    buffer = IO::Buffer.for("A" * 64)
+    hexdump = buffer.hexdump(0, 64, 32)
+    assert_include hexdump, "0x00000000"
+    assert_include hexdump, "0x00000020"
+  end
+
+  def test_hexdump_maximum_width
+    buffer = IO::Buffer.for("A" * 2048)
+    # Maximum width is 1024
+    hexdump = buffer.hexdump(0, 1024, 1024)
+    assert_include hexdump, "0x00000000"
+  end
+
+  def test_hexdump_width_too_large
+    buffer = IO::Buffer.for("A")
+    # Width exceeding maximum (1024) should raise ArgumentError
+    assert_raise(ArgumentError) do
+      buffer.hexdump(0, 1, 1025)
+    end
+  end
+
+  def test_hexdump_width_negative
+    buffer = IO::Buffer.for("A")
+    assert_raise(ArgumentError) do
+      buffer.hexdump(0, 1, -1)
+    end
+  end
+
+  def test_hexdump_width_zero
+    buffer = IO::Buffer.for("A")
+    # Width must be at least 1
+    assert_raise(ArgumentError) do
+      buffer.hexdump(0, 1, 0)
+    end
+  end
 end

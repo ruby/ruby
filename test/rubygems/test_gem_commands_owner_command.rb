@@ -32,9 +32,12 @@ class TestGemCommandsOwnerCommand < Gem::TestCase
 - email: user1@example.com
   id: 1
   handle: user1
+  role: owner
 - email: user2@example.com
+  role: maintainer
 - id: 3
   handle: user3
+  role: owner
 - id: 4
 EOF
 
@@ -48,14 +51,14 @@ EOF
     assert_equal Gem.configuration.rubygems_api_key, @stub_fetcher.last_request["Authorization"]
 
     assert_match(/Owners for gem: freewill/, @stub_ui.output)
-    assert_match(/- user1@example.com/, @stub_ui.output)
-    assert_match(/- user2@example.com/, @stub_ui.output)
-    assert_match(/- user3/, @stub_ui.output)
+    assert_match(/- user1@example.com \(owner\)/, @stub_ui.output)
+    assert_match(/- user2@example.com \(maintainer\)/, @stub_ui.output)
+    assert_match(/- user3 \(owner\)/, @stub_ui.output)
     assert_match(/- 4/, @stub_ui.output)
   end
 
   def test_show_owners_dont_load_objects
-    pend "testing a psych-only API" unless defined?(::Psych::DisallowedClass)
+    Gem.load_yaml
 
     response = <<EOF
 ---
@@ -396,6 +399,7 @@ EOF
   end
 
   def test_with_webauthn_enabled_failure
+    pend "Flaky on TruffleRuby" if RUBY_ENGINE == "truffleruby"
     response_success = "Owner added successfully."
     server = Gem::MockTCPServer.new
     error = Gem::WebauthnVerificationError.new("Something went wrong")

@@ -1,0 +1,4 @@
+a.b x in pattern
+      ^~ unexpected 'in', expecting end-of-input
+      ^~ unexpected 'in', ignoring it
+

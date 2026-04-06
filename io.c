@@ -5652,7 +5652,7 @@ static void
 free_io_buffer(rb_io_buffer_t *buf)
 {
     if (buf->ptr) {
-        ruby_sized_xfree(buf->ptr, (size_t)buf->capa);
+        ruby_xfree_sized(buf->ptr, (size_t)buf->capa);
         buf->ptr = NULL;
     }
 }
@@ -10948,7 +10948,7 @@ advice_arg_check(VALUE advice)
  *    advise(advice, offset = 0, len = 0) -> nil
  *
  *  Invokes Posix system call
- *  {posix_fadvise(2)}[https://linux.die.net/man/2/posix_fadvise],
+ *  {posix_fadvise(2)}[https://man7.org/linux/man-pages/man2/posix_fadvise.2.html],
  *  which announces an intention to access data from the current file
  *  in a particular manner.
  *
@@ -11014,7 +11014,7 @@ is_pos_inf(VALUE x)
  *  call-seq:
  *    IO.select(read_ios, write_ios = [], error_ios = [], timeout = nil) -> array or nil
  *
- *  Invokes system call {select(2)}[https://linux.die.net/man/2/select],
+ *  Invokes system call {select(2)}[https://man7.org/linux/man-pages/man2/select.2.html],
  *  which monitors multiple file descriptors,
  *  waiting until one or more of the file descriptors
  *  becomes ready for some class of I/O operation.
@@ -11101,7 +11101,7 @@ is_pos_inf(VALUE x)
  *  Finally, Linux kernel developers don't guarantee that
  *  readability of select(2) means readability of following read(2) even
  *  for a single process;
- *  see {select(2)}[https://linux.die.net/man/2/select]
+ *  see {select(2)}[https://man7.org/linux/man-pages/man2/select.2.html]
  *
  *  Invoking \IO.select before IO#readpartial works well as usual.
  *  However it is not the best way to use \IO.select.
@@ -11495,7 +11495,7 @@ rb_ioctl(VALUE io, VALUE req, VALUE arg)
  *  call-seq:
  *    ioctl(integer_cmd, argument) -> integer
  *
- *  Invokes Posix system call {ioctl(2)}[https://linux.die.net/man/2/ioctl],
+ *  Invokes Posix system call {ioctl(2)}[https://man7.org/linux/man-pages/man2/ioctl.2.html],
  *  which issues a low-level command to an I/O device.
  *
  *  Issues a low-level command to an I/O device.
@@ -11584,7 +11584,7 @@ rb_fcntl(VALUE io, VALUE req, VALUE arg)
  *  call-seq:
  *    fcntl(integer_cmd, argument) -> integer
  *
- *  Invokes Posix system call {fcntl(2)}[https://linux.die.net/man/2/fcntl],
+ *  Invokes Posix system call {fcntl(2)}[https://man7.org/linux/man-pages/man2/fcntl.2.html],
  *  which provides a mechanism for issuing low-level commands to control or query
  *  a file-oriented I/O stream. Arguments and results are platform
  *  dependent.
@@ -11614,7 +11614,7 @@ rb_io_fcntl(int argc, VALUE *argv, VALUE io)
  *  call-seq:
  *    syscall(integer_callno, *arguments)   -> integer
  *
- *  Invokes Posix system call {syscall(2)}[https://linux.die.net/man/2/syscall],
+ *  Invokes Posix system call {syscall(2)}[https://man7.org/linux/man-pages/man2/syscall.2.html],
  *  which calls a specified function.
  *
  *  Calls the operating system function identified by +integer_callno+;
@@ -15113,7 +15113,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  - +:binmode+: If a truthy value, specifies the mode as binary, text-only otherwise.
  *  - +:autoclose+: If a truthy value, specifies that the +fd+ will close
  *    when the stream closes; otherwise it remains open.
- *  - +:path:+ If a string value is provided, it is used in #inspect and is available as
+ *  - +:path+: If a string value is provided, it is used in #inspect and is available as
  *    #path method.
  *
  *  Also available are the options offered in String#encode,

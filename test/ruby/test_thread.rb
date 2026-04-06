@@ -798,7 +798,7 @@ class TestThread < Test::Unit::TestCase
 
   def for_test_handle_interrupt_with_return
     Thread.handle_interrupt(Object => :never){
-      Thread.current.raise RuntimeError.new("have to be rescured")
+      Thread.current.raise RuntimeError.new("have to be rescued")
       return
     }
   rescue
@@ -815,7 +815,7 @@ class TestThread < Test::Unit::TestCase
     assert_nothing_raised do
       begin
         Thread.handle_interrupt(Object => :never){
-          Thread.current.raise RuntimeError.new("have to be rescured")
+          Thread.current.raise RuntimeError.new("have to be rescued")
           break
         }
       rescue
@@ -1592,10 +1592,9 @@ q.pop
     INPUT
   end
 
-  # [Bug #21342]
   def test_unlock_locked_mutex_with_collected_fiber
-    bug21127 = '[ruby-core:120930] [Bug #21127]'
-    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}", bug21127)
+    bug21342 = '[ruby-core:122121] [Bug #21342]'
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}", bug21342)
     begin;
       5.times do
         m = Mutex.new
@@ -1662,6 +1661,37 @@ q.pop
       t1 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       elapsed = t1 - t0
       assert_operator elapsed, :>=, 0.1, "sub-millisecond sleeps should not return immediately"
+    end;
+  end
+
+  # [Bug #21926]
+  def test_thread_join_during_finalizers
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 60)
+    begin;
+      require 'open3'
+
+      class ProcessWrapper
+        def initialize
+          @stdin, @stdout, @stderr, @wait_thread = Open3.popen3("cat") # hangs until we close our stdin side
+          ObjectSpace.define_finalizer(self, self.class.make_finalizer(@stdin, @stdout, @stderr, @wait_thread))
+        end
+
+        def self.make_finalizer(stdin, stdout, stderr, wait_thread)
+          proc do
+            stdin.close rescue nil
+            stdout.close rescue nil
+            stderr.close rescue nil
+            # On some GC implementations (e.g. mmtk), finalizers run as postponed
+            # jobs which can execute on any thread, including the wait_thread itself.
+            # Guard against joining the current thread.
+            wait_thread.value unless Thread.current == wait_thread
+          end
+        end
+      end
+
+      20.times { ProcessWrapper.new }
+      GC.stress = true
+      1000.times { Object.new }
     end;
   end
 end

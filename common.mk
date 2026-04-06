@@ -77,6 +77,7 @@ INSTALL_DOC_OPTS = --rdoc-output="$(RDOCOUT)" --html-output="$(HTMLOUT)"
 RDOC_GEN_OPTS = --no-force-update \
 	--exclude '^lib/rubygems/core_ext/kernel_require\.rb$$' \
 	$(empty)
+RDOC_SERVER_PORT = 4000
 
 INITOBJS      = dmyext.$(OBJEXT) dmyenc.$(OBJEXT)
 NORMALMAINOBJ = main.$(OBJEXT)
@@ -90,30 +91,43 @@ MAKE_ENC      = -f $(ENC_MK) V="$(V)" UNICODE_HDR_DIR="$(UNICODE_HDR_DIR)" \
 
 PRISM_BUILD_DIR = prism
 
-PRISM_FILES = prism/api_node.$(OBJEXT) \
+LIBPRISM_OBJS = \
+		prism/arena.$(OBJEXT) \
+		prism/buffer.$(OBJEXT) \
+		prism/char.$(OBJEXT) \
+		prism/constant_pool.$(OBJEXT) \
 		prism/diagnostic.$(OBJEXT) \
 		prism/encoding.$(OBJEXT) \
-		prism/extension.$(OBJEXT) \
+		prism/integer.$(OBJEXT) \
+		prism/json.$(OBJEXT) \
+		prism/line_offset_list.$(OBJEXT) \
+		prism/list.$(OBJEXT) \
+		prism/memchr.$(OBJEXT) \
 		prism/node.$(OBJEXT) \
 		prism/options.$(OBJEXT) \
+		prism/parser.$(OBJEXT) \
 		prism/prettyprint.$(OBJEXT) \
+		prism/prism.$(OBJEXT) \
 		prism/regexp.$(OBJEXT) \
 		prism/serialize.$(OBJEXT) \
+		prism/source.$(OBJEXT) \
 		prism/static_literals.$(OBJEXT) \
-		prism/token_type.$(OBJEXT) \
-		prism/util/pm_arena.$(OBJEXT) \
-		prism/util/pm_buffer.$(OBJEXT) \
-		prism/util/pm_char.$(OBJEXT) \
-		prism/util/pm_constant_pool.$(OBJEXT) \
-		prism/util/pm_integer.$(OBJEXT) \
-		prism/util/pm_line_offset_list.$(OBJEXT) \
-		prism/util/pm_list.$(OBJEXT) \
-		prism/util/pm_memchr.$(OBJEXT) \
-		prism/util/pm_string.$(OBJEXT) \
-		prism/util/pm_strncasecmp.$(OBJEXT) \
-		prism/util/pm_strpbrk.$(OBJEXT) \
-		prism/prism.$(OBJEXT) \
+		prism/string_query.$(OBJEXT) \
+		prism/stringy.$(OBJEXT) \
+		prism/strncasecmp.$(OBJEXT) \
+		prism/strpbrk.$(OBJEXT) \
+		prism/tokens.$(OBJEXT)
+
+EXTPRISM_OBJS = prism/api_node.$(OBJEXT) \
+		prism/extension.$(OBJEXT) \
 		prism_init.$(OBJEXT)
+
+PRISM_OBJS = $(LIBPRISM_OBJS) $(EXTPRISM_OBJS)
+
+# Prism objects depend on generated headers that are created from templates.
+# This must be declared here to ensure parallel builds don't compile prism
+# sources before the generated headers exist.
+$(LIBPRISM_OBJS): $(srcdir)/prism/ast.h $(srcdir)/prism/internal/diagnostic.h
 
 COMMONOBJS    = \
 		array.$(OBJEXT) \
@@ -192,7 +206,7 @@ COMMONOBJS    = \
 		vm_sync.$(OBJEXT) \
 		vm_trace.$(OBJEXT) \
 		weakmap.$(OBJEXT) \
-		$(PRISM_FILES) \
+		$(PRISM_OBJS) \
 		$(YJIT_OBJ) \
 		$(ZJIT_OBJ) \
 		$(JIT_OBJ) \
@@ -203,7 +217,7 @@ COMMONOBJS    = \
 		$(BUILTIN_TRANSOBJS) \
 		$(MISSING)
 
-$(PRISM_FILES): $(PRISM_BUILD_DIR)/.time $(PRISM_BUILD_DIR)/util/.time
+$(PRISM_OBJS): $(PRISM_BUILD_DIR)/.time $(PRISM_BUILD_DIR)/util/.time
 
 $(PRISM_BUILD_DIR)/.time $(PRISM_BUILD_DIR)/util/.time:
 	$(Q) $(MAKEDIRS) $(@D)
@@ -617,6 +631,10 @@ html: PHONY $(RDOC_DEPENDS) $(RBCONFIG)
 	@echo Generating RDoc HTML files
 	$(Q) $(RDOC) --op "$(HTMLOUT)" $(RDOC_GEN_OPTS) $(RDOCFLAGS) .
 
+html-server: PHONY $(RDOC_DEPENDS) $(RBCONFIG)
+	@echo Starting RDoc server with live reload
+	$(Q) $(RDOC) --server=$(RDOC_SERVER_PORT) $(RDOC_GEN_OPTS) $(RDOCFLAGS) .
+
 RDOC_COVERAGE_EXCLUDES = -x ^ext/json -x ^ext/openssl -x ^ext/psych \
 	-x ^lib/bundler -x ^lib/rubygems \
 	-x ^lib/did_you_mean -x ^lib/error_highlight -x ^lib/syntax_suggest
@@ -659,6 +677,8 @@ install-prereq: $(CLEAR_INSTALLED_LIST) yes-fake sudo-precheck PHONY
 clear-installed-list: PHONY
 	@> $(INSTALLED_LIST) set MAKE="$(MAKE)"
 
+noarch_config_h = tmp/include/noarch/ruby/config.h
+
 clean: clean-ext clean-enc clean-golf clean-docs clean-extout clean-modular-gc clean-local clean-platform clean-spec
 clean-local:: clean-runnable
 	$(Q)$(RM) $(ALLOBJS) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
@@ -667,6 +687,8 @@ clean-local:: clean-runnable
 	$(Q)$(RM) probes.h probes.$(OBJEXT) probes.stamp ruby-glommed.$(OBJEXT) ruby.imp ChangeLog $(STATIC_RUBY)$(EXEEXT)
 	$(Q)$(RM) GNUmakefile.old Makefile.old $(arch)-fake.rb bisect.sh $(ENC_TRANS_D) builtin_binary.rbbin
 	$(Q)$(RM) $(PRISM_BUILD_DIR)/.time $(PRISM_BUILD_DIR)/*/.time yjit_exit_locations.dump
+	$(Q)$(RM) $(noarch_config_h)
+	-$(Q)$(RMALL) dump_ast$(BUILD_EXEEXT)*
 	-$(Q)$(RMALL) target
 	-$(Q) $(RMDIR) enc/jis enc/trans enc $(COROUTINE_H:/Context.h=) coroutine target \
 	  $(PRISM_BUILD_DIR)/*/ $(PRISM_BUILD_DIR) tmp \
@@ -838,6 +860,12 @@ $(arch:noarch=ignore)-fake.rb: $(srcdir)/template/fake.rb.in $(tooldir)/generic_
 	$(BOOTSTRAPRUBY) "$(tooldir)/generic_erb.rb" -o $@ "$(srcdir)/template/fake.rb.in" \
 	    i=- srcdir="$(srcdir)" BASERUBY="$(BASERUBY)" \
 	    LIBPATHENV="$(LIBPATHENV)" PRELOADENV="$(PRELOADENV)" LIBRUBY_SO="$(LIBRUBY_SO)"
+
+# dummy file for generating sources; $(arch_hdrdir)/ruby/config.h with prereq.status.
+$(noarch_config_h):
+	$(ECHO) generating dummy config.h
+	$(Q) $(MAKEDIRS) $(@D)
+	$(Q) $(TOUCH) $@
 
 noarch-fake.rb: # prerequisite of yes-fake
 	$(Q) exit > $@
@@ -1290,9 +1318,9 @@ preludes: {$(VPATH)}miniprelude.c
 	$(ECHO) making $@
 	$(Q) $(MINIRUBY) $(tooldir)/mk_rbbin.rb $(SRC_FILE) > $(OS_DEST_FILE)
 
-{$(srcdir)}.rb.rbinc:
+{$(srcdir)}.rb.$(HAVE_BASERUBY:yes=)rbinc:
 	$(ECHO) making $@
-	$(Q) $(BASERUBY) $(tooldir)/mk_builtin_loader.rb $(SRC_FILE)
+	$(Q) $(BASERUBY) $(tooldir)/mk_builtin_loader.rb $(DUMP_AST) $(SRC_FILE)
 
 $(BUILTIN_BINARY:yes=built)in_binary.rbbin: $(PREP) $(BUILTIN_RB_SRCS) $(srcdir)/template/builtin_binary.rbbin.tmpl
 	$(Q) $(MINIRUBY) $(tooldir)/generic_erb.rb -o $@ \
@@ -1302,7 +1330,22 @@ $(BUILTIN_BINARY:yes=built)in_binary.rbbin: $(PREP) $(BUILTIN_RB_SRCS) $(srcdir)
 $(BUILTIN_BINARY:no=builtin)_binary.rbbin:
 	$(Q) echo> $@ // empty $(@F)
 
-$(BUILTIN_RB_INCS): $(top_srcdir)/tool/mk_builtin_loader.rb
+$(BUILTIN_RB_INCS): $(tooldir)/mk_builtin_loader.rb $(DUMP_AST_TARGET)
+
+dump_ast$(BUILD_EXEEXT): $(tooldir)/dump_ast.c $(LIBPRISM_OBJS)
+	$(ECHO) compiling $@
+	$(Q) $(CC) $(CFLAGS) $(OUTFLAG)$@ $(INCFLAGS) $(tooldir)/dump_ast.c $(LIBPRISM_OBJS)
+
+build-tool/Makefile: $(tooldir)/dump_ast.mkmf.rb prism-srcs prism-incs
+	+$(BASERUBY) -s $(tooldir)/dump_ast.mkmf.rb "-INCFLAGS=$(INCFLAGS)" "-make=$(MAKE)" build-tool $(tooldir)/dump_ast.c dump_ast.$(OBJEXT) $(LIBPRISM_OBJS)
+
+build-tool/dump_ast$(BUILD_EXEEXT): build-tool/Makefile
+	cd build-tool && MAKEFLAGS= MFLAGS= && unset MAKEFLAGS MFLAGS && $(MAKE)
+
+clean-local:: clean-build-tool
+clean-build-tool:
+	- cd build-tool && $(MAKE) clean 2> $(NULL) || $(NULLCMD)
+	- $(RMDIR) build-tool
 
 $(srcdir)/revision.h$(no_baseruby:no=~disabled~): $(REVISION_H)
 
@@ -1535,7 +1578,7 @@ no-test-bundled-gems-precheck:
 
 update-default-gemspecs: $(TEST_RUNNABLE)-update-default-gemspecs
 no-update-default-gemspecs:
-yes-update-default-gemspecs: $(PRECHECK_BUNDLED_GEMS:yes=main)
+yes-update-default-gemspecs: $(PRECHECK_BUNDLED_GEMS:yes=main) $(PROGRAM)
 	@$(MAKEDIRS) $(srcdir)/.bundle/specifications
 	@$(XRUBY) -W0 -C "$(srcdir)" -rrubygems \
 	    -e "destdir = ARGV.shift" \
@@ -1550,7 +1593,11 @@ yes-update-default-gemspecs: $(PRECHECK_BUNDLED_GEMS:yes=main)
 	    -e     "end" \
 	    -e     "spec.files.clear" \
 	    -e     "spec.extensions.clear" \
-	    -e     "File.binwrite(File.join(destdir, spec.full_name+'.gemspec'), spec.to_ruby)" \
+	    -e     "src = spec.to_ruby" \
+	    -e     "src.sub!(/^$$/) {" \
+	    -e       "%[# default: #{g} #{File.mtime(g).strftime(%[%s.%N])}\n]" \
+	    -e     "}" \
+	    -e     "File.binwrite(File.join(destdir, spec.full_name+'.gemspec'), src)" \
 	    -e   "end" \
 	    -e "end" \
 	    -- .bundle/specifications lib ext
@@ -1900,7 +1947,7 @@ sudo-precheck: PHONY
 update-man-date: PHONY
 	$(Q) $(BASERUBY) -I"$(tooldir)/lib" -rvcs -i -p \
 	-e 'BEGIN{@vcs=VCS.detect(ARGV.shift)}' \
-	-e '$$_.sub!(/^(\.Dd ).*/){$$1+@vcs.modified(ARGF.path).strftime("%B %d, %Y")}' \
+	-e '$$_.sub!(/^(\.Dd ).*/){$$1+@vcs.author_date(@vcs.relative_to(ARGF.path)).strftime("%B %d, %Y")}' \
 	"$(srcdir)" "$(srcdir)"/man/*.1
 
 .PHONY: ChangeLog

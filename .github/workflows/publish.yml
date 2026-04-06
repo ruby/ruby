@@ -11,6 +11,9 @@ on:
         required: true
         default: '3.3.4'
 
+permissions:
+  contents: read
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -19,7 +22,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: ruby/setup-ruby@19a43a6a2428d455dbd1b85344698725179c9d8c # v1.289.0
+      - uses: ruby/setup-ruby@3ff19f5e2baf30647122352b96108b1fbe250c64 # v1.299.0
         with:
           ruby-version: 3.3.4
 
@@ -76,8 +79,8 @@ jobs:
             -H "Authorization: Bearer ${{ secrets.MATZBOT_GITHUB_WORKFLOW_TOKEN }}" \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            https://api.github.com/repos/ruby/docker-images/actions/workflows/build.yml/dispatches \
-            -d "{\"ref\": \"master\", \"inputs\": {\"ruby_version\": \"${RUBY_VERSION}\"}}"
+            https://api.github.com/repos/ruby/docker-images/dispatches \
+            -d "{\"event_type\": \"build\", \"client_payload\": {\"ruby_version\": \"${RUBY_VERSION}\"}}"
 
       - name: Build snapcraft packages
         run: |

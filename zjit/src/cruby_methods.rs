@@ -19,6 +19,7 @@ unsafe extern "C" {
     fn rb_jit_ary_at_end(ec: EcPtr, self_: VALUE, index: VALUE) -> VALUE;
     fn rb_jit_ary_at(ec: EcPtr, self_: VALUE, index: VALUE) -> VALUE;
     fn rb_jit_fixnum_inc(ec: EcPtr, self_: VALUE, num: VALUE) -> VALUE;
+    fn rb_str_equal(str1: VALUE, str2: VALUE) -> VALUE;
 }
 
 pub struct Annotations {
@@ -353,6 +354,7 @@ fn inline_array_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
             let index = fun.push_insn(block, hir::Insn::UnboxFixnum { val: index });
             let length = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
             let index = fun.push_insn(block, hir::Insn::GuardLess { left: index, right: length, state });
+            let index = fun.push_insn(block, hir::Insn::AdjustBounds { index, length });
             let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
             use crate::hir::SideExitReason;
             let index = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: index, right: zero, reason: SideExitReason::GuardGreaterEq, state });
@@ -377,6 +379,7 @@ fn inline_array_aset(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
             let index = fun.push_insn(block, hir::Insn::UnboxFixnum { val: index });
             let length = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
             let index = fun.push_insn(block, hir::Insn::GuardLess { left: index, right: length, state });
+            let index = fun.push_insn(block, hir::Insn::AdjustBounds { index, length });
             let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
             use crate::hir::SideExitReason;
             let index = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: index, right: zero, reason: SideExitReason::GuardGreaterEq, state });
@@ -474,6 +477,7 @@ fn inline_string_getbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir
         //
         // This is unlike most other guards.
         let unboxed_index = fun.push_insn(block, hir::Insn::GuardLess { left: unboxed_index, right: len, state });
+        let unboxed_index = fun.push_insn(block, hir::Insn::AdjustBounds { index: unboxed_index, length: len });
         let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
         use crate::hir::SideExitReason;
         let _ = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: unboxed_index, right: zero, reason: SideExitReason::GuardGreaterEq, state });
@@ -497,6 +501,7 @@ fn inline_string_setbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir
             return_type: types::CInt64,
         });
         let unboxed_index = fun.push_insn(block, hir::Insn::GuardLess { left: unboxed_index, right: len, state });
+        let unboxed_index = fun.push_insn(block, hir::Insn::AdjustBounds { index: unboxed_index, length: len });
         let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
         use crate::hir::SideExitReason;
         let _ = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: unboxed_index, right: zero, reason: SideExitReason::GuardGreaterEq, state });
@@ -543,25 +548,19 @@ fn inline_string_append(fun: &mut hir::Function, block: hir::BlockId, recv: hir:
     None
 }
 
-fn inline_string_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
-    let &[other] = args else { return None; };
+fn try_inline_string_equal(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, other: hir::InsnId, state: hir::InsnId) -> Option<hir::InsnId> {
     if fun.likely_a(recv, types::String, state) && fun.likely_a(other, types::String, state) {
         let recv = fun.coerce_to(block, recv, types::String, state);
         let other = fun.coerce_to(block, other, types::String, state);
-        let return_type = types::BoolExact;
-        let elidable = true;
-        // TODO(max): Make StringEqual its own opcode so that we can later constant-fold StringEqual(a, a) => true
-        let result = fun.push_insn(block, hir::Insn::CCall {
-            cfunc: rb_yarv_str_eql_internal as *const u8,
-            recv,
-            args: vec![other],
-            name: ID!(string_eq),
-            return_type,
-            elidable,
-        });
+        let result = fun.push_insn(block, hir::Insn::StringEqual { left: recv, right: other });
         return Some(result);
     }
     None
+}
+
+fn inline_string_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    try_inline_string_equal(fun, block, recv, other, state)
 }
 
 fn inline_module_eqq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
@@ -747,12 +746,36 @@ fn inline_basic_object_not(fun: &mut hir::Function, block: hir::BlockId, recv: h
     None
 }
 
+fn try_inline_string_not_equal(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, other: hir::InsnId, state: hir::InsnId) -> Option<hir::InsnId> {
+    if !fun.likely_a(recv, types::String, state) || !fun.likely_a(other, types::String, state) {
+        return None;
+    }
+    let recv_class = fun.type_of(recv).runtime_exact_ruby_class()?;
+
+    // String#!= is lowered to #==. Keep this specialization only while #==
+    // still resolves to rb_str_equal.
+    if !fun.assume_expected_cfunc(block, recv_class, ID!(eq), rb_str_equal as _, state) {
+        return None;
+    }
+
+    let eq_result = try_inline_string_equal(fun, block, recv, other, state)?;
+    // StringEqual always returns a Ruby boolean (Qtrue/Qfalse),
+    // so `!=` can be lowered to `eq_result != Qtrue`.
+    let true_val = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qtrue) });
+    let not_equal = fun.push_insn(block, hir::Insn::IsBitNotEqual { left: eq_result, right: true_val });
+    Some(fun.push_insn(block, hir::Insn::BoxBool { val: not_equal }))
+}
+
 fn inline_basic_object_neq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
-    let result = try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumNeq { left, right }, BOP_NEQ, recv, other, state);
-    if result.is_some() {
-        return result;
+    if let Some(result) = try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumNeq { left, right }, BOP_NEQ, recv, other, state) {
+        return Some(result);
     }
+
+    if let Some(result) = try_inline_string_not_equal(fun, block, recv, other, state) {
+        return Some(result);
+    }
+
     let recv_class = fun.type_of(recv).runtime_exact_ruby_class()?;
     if !fun.assume_expected_cfunc(block, recv_class, ID!(eq), rb_obj_equal as _, state) {
         return None;

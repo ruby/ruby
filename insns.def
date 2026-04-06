@@ -811,10 +811,16 @@ defineclass
 
     rb_iseq_check(class_iseq);
 
+    rb_cref_t *cref = vm_cref_push(ec, klass, NULL, FALSE, FALSE);
+
+    if (VM_DEFINECLASS_DYNAMIC_CREF_P(flags)) {
+        CREF_DYNAMIC_SET(cref);
+    }
+
     /* enter scope */
     vm_push_frame(ec, class_iseq, VM_FRAME_MAGIC_CLASS | VM_ENV_FLAG_LOCAL, klass,
                   GC_GUARDED_PTR(box),
-                  (VALUE)vm_cref_push(ec, klass, NULL, FALSE, FALSE),
+                  (VALUE)cref,
                   ISEQ_BODY(class_iseq)->iseq_encoded, GET_SP(),
                   ISEQ_BODY(class_iseq)->local_table_size,
                   ISEQ_BODY(class_iseq)->stack_max);
@@ -926,7 +932,7 @@ opt_new
     // The bookkeeping slot should be empty.
     RUBY_ASSERT(TOPN(argc + 1) == Qnil);
 
-    if (vm_method_cfunc_is(GET_ISEQ(), cd, val, rb_class_new_instance_pass_kw)) {
+    if (vm_method_cfunc_is(GET_CFP(), cd, val, rb_class_new_instance_pass_kw)) {
         RB_DEBUG_COUNTER_INC(opt_new_hit);
         val = rb_obj_alloc(val);
         TOPN(argc) = val;
@@ -947,7 +953,7 @@ objtostring
 // attr bool leaf = false;
 // attr bool zjit_profile = true;
 {
-    val = vm_objtostring(GET_ISEQ(), recv, cd);
+    val = vm_objtostring(GET_CFP(), recv, cd);
 
     if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
@@ -1006,7 +1012,7 @@ opt_nil_p
 (VALUE val)
 // attr bool zjit_profile = true;
 {
-    val = vm_opt_nil_p(GET_ISEQ(), cd, recv);
+    val = vm_opt_nil_p(GET_CFP(), cd, recv);
 
     if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
@@ -1435,7 +1441,7 @@ opt_eq
 (VALUE val)
 // attr bool zjit_profile = true;
 {
-    val = opt_equality(GET_ISEQ(), recv, obj, cd);
+    val = opt_equality(GET_CFP(), recv, obj, cd);
 
     if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
@@ -1450,7 +1456,7 @@ opt_neq
 (VALUE val)
 // attr bool zjit_profile = true;
 {
-    val = vm_opt_neq(GET_ISEQ(), cd, cd_eq, recv, obj);
+    val = vm_opt_neq(GET_CFP(), cd, cd_eq, recv, obj);
 
     if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();
@@ -1672,7 +1678,7 @@ opt_not
 (VALUE val)
 // attr bool zjit_profile = true;
 {
-    val = vm_opt_not(GET_ISEQ(), cd, recv);
+    val = vm_opt_not(GET_CFP(), cd, recv);
 
     if (UNDEF_P(val)) {
         CALL_SIMPLE_METHOD();

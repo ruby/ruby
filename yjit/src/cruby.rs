@@ -598,6 +598,13 @@ impl From<VALUE> for u16 {
     }
 }
 
+/// Check whether a control frame has an escaped environment
+pub unsafe fn cfp_env_has_escaped(cfp: *mut rb_control_frame_struct) -> bool {
+    use crate::utils::IntoUsize;
+    let ep = get_cfp_ep(cfp);
+    0 != ep.offset(VM_ENV_DATA_INDEX_FLAGS as isize).read().0 & VM_ENV_FLAG_ESCAPED.as_usize()
+}
+
 /// Produce a Ruby string from a Rust string slice
 pub fn rust_str_to_ruby(str: &str) -> VALUE {
     unsafe { rb_utf8_str_new(str.as_ptr() as *const _, str.len() as i64) }

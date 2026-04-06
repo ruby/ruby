@@ -1,0 +1,3 @@
+case foo; in { "bar#{1}": 1 }; end
+               ^~~~~~~~~~ symbol literal with interpolation is not allowed
+

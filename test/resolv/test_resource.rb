@@ -20,16 +20,82 @@ class TestResolvResource < Test::Unit::TestCase
     assert_equal(@name1.hash, @name2.hash, bug10857)
   end
 
-  def test_coord
-    Resolv::LOC::Coord.create('1 2 1.1 N')
-  end
-
   def test_srv_no_compress
     # Domain name in SRV RDATA should not be compressed
     issue29 = 'https://github.com/ruby/resolv/issues/29'
     m = Resolv::DNS::Message.new(0)
     m.add_answer('example.com', 0, Resolv::DNS::Resource::IN::SRV.new(0, 0, 0, 'www.example.com'))
     assert_equal "\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x07example\x03com\x00\x00\x21\x00\x01\x00\x00\x00\x00\x00\x17\x00\x00\x00\x00\x00\x00\x03www\x07example\x03com\x00", m.encode, issue29
+  end
+end
+
+class TestResolvResourceLOC < Test::Unit::TestCase
+  def test_size_create
+    assert_size("0.0m", 0, 0)
+    assert_size("0.01m", 1, 0)
+    assert_size("0.09m", 9, 0)
+    assert_size("0.11m", 1, 1)
+    assert_size("1.0m", 1, 2)
+    assert_size("1234.56m", 1, 5)
+    assert_size("12345678.90m", 1, 9)
+    assert_size("98765432.10m", 9, 9)
+    assert_raise(ArgumentError) {Resolv::LOC::Size.create("100000000.00m")}
+  end
+
+  private def assert_size(input, base, power)
+    size = Resolv::LOC::Size.create(input)
+    assert_equal([(base << 4) + power], size.scalar.unpack("C"))
+    assert_equal(size, Resolv::LOC::Size.create(size.to_s))
+  end
+
+  def test_coord
+    assert_coord('1 2 1.1 N', 'lat', 0x8038c78c)
+    assert_coord('42 21 43.952 N', 'lat', 0x89170690)
+    assert_coord('71 5 6.344 W', 'lon', 0x70bf2dd8)
+    assert_coord('52 14 05.000 N', 'lat', 0x8b3556c8)
+    assert_coord('90 0 0.000 N', 'lat', 0x934fd900)
+    assert_coord('90 0 0.000 S', 'lat', 0x6cb02700)
+    assert_coord('00 8 50.000 E', 'lon', 0x80081650)
+    assert_coord('0 8 50.001 E', 'lon', 0x80081651)
+    assert_coord('32 07 19.000 S', 'lat', 0x791b7d28)
+    assert_coord('116 02 25.000 E', 'lon', 0x98e64868)
+    assert_coord('116 02 25.000 W', 'lon', 0x6719b798)
+    assert_coord('180 00 00.000 E', 'lon', 0xa69fb200)
+    assert_coord('180 00 00.000 W', 'lon', 0x59604e00)
+    assert_raise(ArgumentError) {Resolv::LOC::Coord.create('90 0 0.001 N')}
+    assert_raise(ArgumentError) {Resolv::LOC::Coord.create('90 0 0.001 S')}
+    assert_raise(ArgumentError) {Resolv::LOC::Coord.create('180 0 0.001 E')}
+    assert_raise(ArgumentError) {Resolv::LOC::Coord.create('180 0 0.001 W')}
+  end
+
+  private def assert_coord(input, orientation, coordinate)
+    coord = Resolv::LOC::Coord.create(input)
+
+    assert_equal(orientation, coord.orientation)
+    assert_equal([coordinate].pack("N"), coord.coordinates)
+    assert_equal(coord, Resolv::LOC::Coord.create(coord.to_s))
+  end
+
+  def test_alt
+    assert_alt("0.0m", 0)
+    assert_alt("+0.0m", 0)
+    assert_alt("-0.0m", 0)
+    assert_alt("+0.01m", 1)
+    assert_alt("1.0m", 100)
+    assert_alt("+1.0m", 100)
+    assert_alt("100000.0m", +10000000)
+    assert_alt("+100000.0m", +10000000)
+    assert_alt("-100000.0m", -10000000)
+    assert_alt("+42849672.95m", 0xffff_ffff-100_000_00)
+    assert_raise(ArgumentError) {Resolv::LOC::Alt.create("-100000.01m")}
+    assert_raise(ArgumentError) {Resolv::LOC::Alt.create("+42849672.96m")}
+  end
+
+  private def assert_alt(input, altitude)
+    alt = Resolv::LOC::Alt.create(input)
+
+    assert_equal([altitude + 1e7].pack("N"), alt.altitude)
+    assert_equal(alt, Resolv::LOC::Alt.create(alt.to_s))
   end
 end
 

@@ -21,6 +21,7 @@ struct objspace {
     bool gc_stress;
 
     size_t gc_count;
+    size_t moving_gc_count;
     size_t total_gc_time;
     size_t total_allocated_objects;
 
@@ -132,7 +133,7 @@ rb_mmtk_stop_the_world(void)
 }
 
 static void
-rb_mmtk_resume_mutators(void)
+rb_mmtk_resume_mutators(bool current_gc_may_move)
 {
     struct objspace *objspace = rb_gc_get_objspace();
 
@@ -143,6 +144,7 @@ rb_mmtk_resume_mutators(void)
 
     objspace->world_stopped = false;
     objspace->gc_count++;
+    if (current_gc_may_move) objspace->moving_gc_count++;
     pthread_cond_broadcast(&objspace->cond_world_started);
 
     if ((err = pthread_mutex_unlock(&objspace->mutex)) != 0) {
@@ -492,7 +494,7 @@ rb_mmtk_gc_thread_bug(const char *msg, ...)
     rb_gc_print_backtrace();
     fprintf(stderr, "\n");
 
-    rb_mmtk_resume_mutators();
+    rb_mmtk_resume_mutators(false);
 
     sleep(5);
 
@@ -644,7 +646,6 @@ void
 rb_gc_impl_init(void)
 {
     VALUE gc_constants = rb_hash_new();
-    rb_hash_aset(gc_constants, ID2SYM(rb_intern("BASE_SLOT_SIZE")), SIZET2NUM(sizeof(VALUE) * 5));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RBASIC_SIZE")), SIZET2NUM(sizeof(struct RBasic)));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OVERHEAD")), INT2NUM(0));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVARGC_MAX_ALLOCATE_SIZE")), LONG2FIX(MMTK_MAX_OBJ_SIZE));
@@ -1460,6 +1461,7 @@ rb_gc_impl_latest_gc_info(void *objspace_ptr, VALUE hash_or_key)
 
 enum gc_stat_sym {
     gc_stat_sym_count,
+    gc_stat_sym_moving_gc_count,
     gc_stat_sym_time,
     gc_stat_sym_total_allocated_objects,
     gc_stat_sym_total_bytes,
@@ -1479,6 +1481,7 @@ setup_gc_stat_symbols(void)
     if (gc_stat_symbols[0] == 0) {
 #define S(s) gc_stat_symbols[gc_stat_sym_##s] = ID2SYM(rb_intern_const(#s))
         S(count);
+        S(moving_gc_count);
         S(time);
         S(total_allocated_objects);
         S(total_bytes);
@@ -1515,6 +1518,7 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
         rb_hash_aset(hash, gc_stat_symbols[gc_stat_sym_##name], SIZET2NUM(attr));
 
         SET(count, objspace->gc_count);
+        SET(moving_gc_count, objspace->moving_gc_count);
         SET(time, objspace->total_gc_time / (1000 * 1000));
         SET(total_allocated_objects, objspace->total_allocated_objects);
         SET(total_bytes, mmtk_total_bytes());
@@ -1536,12 +1540,24 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
 VALUE
 rb_gc_impl_stat_heap(void *objspace_ptr, VALUE heap_name, VALUE hash_or_sym)
 {
+    if (FIXNUM_P(heap_name) && SYMBOL_P(hash_or_sym)) {
+        int heap_idx = FIX2INT(heap_name);
+        if (heap_idx < 0 || heap_idx >= MMTK_HEAP_COUNT) {
+            rb_raise(rb_eArgError, "size pool index out of range");
+        }
+
+        if (hash_or_sym == ID2SYM(rb_intern("slot_size"))) {
+            return SIZET2NUM(heap_sizes[heap_idx]);
+        }
+
+        return Qundef;
+    }
+
     if (RB_TYPE_P(hash_or_sym, T_HASH)) {
         return hash_or_sym;
     }
-    else {
-        return Qundef;
-    }
+
+    return Qundef;
 }
 
 // Miscellaneous

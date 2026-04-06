@@ -49,10 +49,14 @@ RSpec.describe Bundler::StubSpecification do
       expect(stub.missing_extensions?).to be false
     end
 
-    it "returns true if not manually_installed?" do
+    it "returns #{RUBY_ENGINE == "jruby" ? "false" : "true"} if not manually_installed?" do
       stub = described_class.from_stub(with_bundler_stub_spec)
       stub.installed_by_version = Gem::Version.new(1)
-      expect(stub.missing_extensions?).to be true
+      if RUBY_ENGINE == "jruby"
+        expect(stub.missing_extensions?).to be false
+      else
+        expect(stub.missing_extensions?).to be true
+      end
     end
   end
 

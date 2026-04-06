@@ -78,4 +78,113 @@ RSpec.describe Bundler::Retry do
       end
     end
   end
+
+  context "exponential backoff" do
+    it "can be disabled by setting base_delay to 0" do
+      attempts = 0
+      expect do
+        Bundler::Retry.new("test", [], 2, base_delay: 0).attempt do
+          attempts += 1
+          raise "error"
+        end
+      end.to raise_error(StandardError)
+
+      # Verify no sleep was called (implicitly - if sleep was called, timing would be different)
+      expect(attempts).to eq(3)
+    end
+
+    it "is enabled by default with 1 second base delay" do
+      original_base_delay = Bundler::Retry.default_base_delay
+      Bundler::Retry.default_base_delay = 1.0
+
+      attempts = 0
+      sleep_times = []
+
+      allow_any_instance_of(Bundler::Retry).to receive(:sleep) do |_instance, delay|
+        sleep_times << delay
+      end
+
+      expect do
+        Bundler::Retry.new("test", [], 2, jitter: 0).attempt do
+          attempts += 1
+          raise "error"
+        end
+      end.to raise_error(StandardError)
+
+      expect(attempts).to eq(3)
+      expect(sleep_times.length).to eq(2)
+      # First retry: 1.0 * 2^0 = 1.0
+      expect(sleep_times[0]).to eq(1.0)
+      # Second retry: 1.0 * 2^1 = 2.0
+      expect(sleep_times[1]).to eq(2.0)
+    ensure
+      Bundler::Retry.default_base_delay = original_base_delay
+    end
+
+    it "sleeps with exponential backoff when base_delay is set" do
+      attempts = 0
+      sleep_times = []
+
+      allow_any_instance_of(Bundler::Retry).to receive(:sleep) do |_instance, delay|
+        sleep_times << delay
+      end
+
+      expect do
+        Bundler::Retry.new("test", [], 2, base_delay: 1.0, jitter: 0).attempt do
+          attempts += 1
+          raise "error"
+        end
+      end.to raise_error(StandardError)
+
+      expect(attempts).to eq(3)
+      expect(sleep_times.length).to eq(2)
+      # First retry: 1.0 * 2^0 = 1.0
+      expect(sleep_times[0]).to eq(1.0)
+      # Second retry: 1.0 * 2^1 = 2.0
+      expect(sleep_times[1]).to eq(2.0)
+    end
+
+    it "respects max_delay" do
+      sleep_times = []
+
+      allow_any_instance_of(Bundler::Retry).to receive(:sleep) do |_instance, delay|
+        sleep_times << delay
+      end
+
+      expect do
+        Bundler::Retry.new("test", [], 3, base_delay: 10.0, max_delay: 15.0, jitter: 0).attempt do
+          raise "error"
+        end
+      end.to raise_error(StandardError)
+
+      # First retry: 10.0 * 2^0 = 10.0
+      expect(sleep_times[0]).to eq(10.0)
+      # Second retry: 10.0 * 2^1 = 20.0, capped at 15.0
+      expect(sleep_times[1]).to eq(15.0)
+      # Third retry: 10.0 * 2^2 = 40.0, capped at 15.0
+      expect(sleep_times[2]).to eq(15.0)
+    end
+
+    it "adds jitter to delay" do
+      sleep_times = []
+
+      allow_any_instance_of(Bundler::Retry).to receive(:sleep) do |_instance, delay|
+        sleep_times << delay
+      end
+
+      expect do
+        Bundler::Retry.new("test", [], 2, base_delay: 1.0, jitter: 0.5).attempt do
+          raise "error"
+        end
+      end.to raise_error(StandardError)
+
+      expect(sleep_times.length).to eq(2)
+      # First retry should be between 1.0 and 1.5 (base + jitter)
+      expect(sleep_times[0]).to be >= 1.0
+      expect(sleep_times[0]).to be <= 1.5
+      # Second retry should be between 2.0 and 2.5
+      expect(sleep_times[1]).to be >= 2.0
+      expect(sleep_times[1]).to be <= 2.5
+    end
+  end
 end

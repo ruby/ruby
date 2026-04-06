@@ -137,7 +137,7 @@ RSpec.describe "Bundler::RubyVersion and its subclasses" do
         end
       end
 
-      context "the versions, pathlevels, engines, and engine_versions match" do
+      shared_examples_for "the versions, engines, and engine_versions match" do
         it "should return true" do
           expect(subject).to eq(other_ruby_version)
         end
@@ -147,6 +147,12 @@ RSpec.describe "Bundler::RubyVersion and its subclasses" do
         let(:other_version) { "1.21.6" }
 
         it_behaves_like "two ruby versions are not equal"
+      end
+
+      context "the patchlevels do not match" do
+        let(:other_patchlevel) { "21" }
+
+        it_behaves_like "the versions, engines, and engine_versions match"
       end
 
       context "the engines do not match" do
@@ -222,9 +228,9 @@ RSpec.describe "Bundler::RubyVersion and its subclasses" do
         end
       end
 
-      shared_examples_for "there is a difference in the patchlevels" do
-        it "should return a tuple with :patchlevel and the two different patchlevels" do
-          expect(ruby_version.diff(other_ruby_version)).to eq([:patchlevel, patchlevel, other_patchlevel])
+      shared_examples_for "even there is a difference in the patchlevels" do
+        it "should return nil" do
+          expect(ruby_version.diff(other_ruby_version)).to be_nil
         end
       end
 
@@ -281,10 +287,10 @@ RSpec.describe "Bundler::RubyVersion and its subclasses" do
         it_behaves_like "there is a difference in the engine versions"
       end
 
-      context "detects patchlevel discrepancies last" do
+      context "ignores patchlevel discrepancies last" do
         let(:other_patchlevel) { "643" }
 
-        it_behaves_like "there is a difference in the patchlevels"
+        it_behaves_like "even there is a difference in the patchlevels"
       end
 
       context "successfully matches gem requirements" do
@@ -349,7 +355,7 @@ RSpec.describe "Bundler::RubyVersion and its subclasses" do
         let(:other_engine)         { "ruby" }
         let(:other_engine_version) { "2.0.5" }
 
-        it_behaves_like "there is a difference in the patchlevels"
+        it_behaves_like "even there is a difference in the patchlevels"
       end
 
       context "successfully detects bad gem requirements with engine versions" do
@@ -383,7 +389,7 @@ RSpec.describe "Bundler::RubyVersion and its subclasses" do
         context "and comparing with a patchlevel that is not -1" do
           let(:other_patchlevel)     { "642" }
 
-          it_behaves_like "there is a difference in the patchlevels"
+          it_behaves_like "even there is a difference in the patchlevels"
         end
       end
     end
