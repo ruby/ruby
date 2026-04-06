@@ -1205,7 +1205,9 @@ impl Assembler {
                 asm.handle_caller_saved_regs(&intervals, &assignments, &C_ARG_REGREGS);
                 asm.resolve_ssa(&intervals, &assignments);
             });
-        });
+
+            Ok(())
+        })?;
         asm_dump!(asm, alloc_regs);
 
         // We are moved out of SSA after resolve_ssa
