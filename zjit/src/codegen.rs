@@ -377,185 +377,185 @@ fn gen_iseq_body(cb: &mut CodeBlock, iseq: IseqPtr, mut version: IseqVersionRef,
 
 /// Compile a function
 fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, function: &Function) -> Result<(IseqCodePtrs, Vec<CodePtr>, Vec<IseqCallRef>), CompileError> {
-    let (mut jit, asm) = trace_compile_phase("lowering", || {
-    let num_spilled_params = max_num_params(function).saturating_sub(ALLOC_REGS.len());
-    let mut jit = JITState::new(iseq, version, function.num_insns(), function.num_blocks());
-    let mut asm = Assembler::new_with_stack_slots(num_spilled_params);
+    let (mut jit, asm) = trace_compile_phase("hir_to_lir", || {
+        let num_spilled_params = max_num_params(function).saturating_sub(ALLOC_REGS.len());
+        let mut jit = JITState::new(iseq, version, function.num_insns(), function.num_blocks());
+        let mut asm = Assembler::new_with_stack_slots(num_spilled_params);
 
-    // Mapping from HIR block IDs to LIR block IDs.
-    // This is is a one-to-one mapping from HIR to LIR blocks used for finding
-    // jump targets in LIR (LIR should always jump to the head of an HIR block)
-    let mut hir_to_lir: Vec<Option<lir::BlockId>> = vec![None; function.num_blocks()];
+        // Mapping from HIR block IDs to LIR block IDs.
+        // This is is a one-to-one mapping from HIR to LIR blocks used for finding
+        // jump targets in LIR (LIR should always jump to the head of an HIR block)
+        let mut hir_to_lir: Vec<Option<lir::BlockId>> = vec![None; function.num_blocks()];
 
-    let reverse_post_order = function.rpo();
+        let reverse_post_order = function.rpo();
 
-    // Create all LIR basic blocks corresponding to HIR basic blocks
-    for (rpo_idx, &block_id) in reverse_post_order.iter().enumerate() {
-        // Skip the entries superblock — it's an internal CFG artifact
-        if block_id == function.entries_block { continue; }
-        let lir_block_id = asm.new_block(block_id, function.is_entry_block(block_id), rpo_idx);
-        hir_to_lir[block_id.0] = Some(lir_block_id);
-    }
-
-    // Compile each basic block
-    for (rpo_idx, &block_id) in reverse_post_order.iter().enumerate() {
-        // Skip the entries superblock — it's an internal CFG artifact
-        if block_id == function.entries_block { continue; }
-        // Set the current block to the LIR block that corresponds to this
-        // HIR block.
-        let lir_block_id = hir_to_lir[block_id.0].unwrap();
-        asm.set_current_block(lir_block_id);
-
-        // Write a label to jump to the basic block
-        let label = jit.get_label(&mut asm, lir_block_id, block_id);
-        asm.write_label(label);
-
-        let block = function.block(block_id);
-        asm_comment!(
-            asm, "{block_id}({}): {}",
-            block.params().map(|param| format!("{param}")).collect::<Vec<_>>().join(", "),
-            iseq_get_location(iseq, block.insn_idx),
-        );
-
-        // Compile all parameters
-        for (idx, &insn_id) in block.params().enumerate() {
-            match function.find(insn_id) {
-                Insn::Param => {
-                    jit.opnds[insn_id.0] = Some(gen_param(&mut asm, idx));
-                },
-                insn => unreachable!("Non-param insn found in block.params: {insn:?}"),
-            }
+        // Create all LIR basic blocks corresponding to HIR basic blocks
+        for (rpo_idx, &block_id) in reverse_post_order.iter().enumerate() {
+            // Skip the entries superblock — it's an internal CFG artifact
+            if block_id == function.entries_block { continue; }
+            let lir_block_id = asm.new_block(block_id, function.is_entry_block(block_id), rpo_idx);
+            hir_to_lir[block_id.0] = Some(lir_block_id);
         }
 
-        // In JIT entry blocks, compile LoadArg instructions before other instructions
-        // so that calling convention registers are reserved early, like Param.
-        if function.is_entry_block(block_id) {
-            for &insn_id in block.insns() {
-                if let Insn::LoadArg { idx, .. } = function.find(insn_id) {
-                    jit.opnds[insn_id.0] = Some(gen_param(&mut asm, idx as usize));
+        // Compile each basic block
+        for (rpo_idx, &block_id) in reverse_post_order.iter().enumerate() {
+            // Skip the entries superblock — it's an internal CFG artifact
+            if block_id == function.entries_block { continue; }
+            // Set the current block to the LIR block that corresponds to this
+            // HIR block.
+            let lir_block_id = hir_to_lir[block_id.0].unwrap();
+            asm.set_current_block(lir_block_id);
+
+            // Write a label to jump to the basic block
+            let label = jit.get_label(&mut asm, lir_block_id, block_id);
+            asm.write_label(label);
+
+            let block = function.block(block_id);
+            asm_comment!(
+                asm, "{block_id}({}): {}",
+                block.params().map(|param| format!("{param}")).collect::<Vec<_>>().join(", "),
+                iseq_get_location(iseq, block.insn_idx),
+            );
+
+            // Compile all parameters
+            for (idx, &insn_id) in block.params().enumerate() {
+                match function.find(insn_id) {
+                    Insn::Param => {
+                        jit.opnds[insn_id.0] = Some(gen_param(&mut asm, idx));
+                    },
+                    insn => unreachable!("Non-param insn found in block.params: {insn:?}"),
                 }
             }
-        }
 
-        // Compile all instructions
-        for (insn_idx, &insn_id) in block.insns().enumerate() {
-            let insn = function.find(insn_id);
-
-            // IfTrue and IfFalse should never be terminators
-            if matches!(insn, Insn::IfTrue {..} | Insn::IfFalse {..}) {
-                assert!(!insn.is_terminator(), "IfTrue/IfFalse should not be terminators");
-            }
-
-            match insn {
-                Insn::IfFalse { val, target } => {
-
-                    let val_opnd = jit.get_opnd(val);
-
-                    let lir_target = hir_to_lir[target.target.0].unwrap();
-
-                    let fall_through_target = asm.new_block(block_id, false, rpo_idx);
-
-                    let branch_edge = lir::BranchEdge {
-                        target: lir_target,
-                        args: target.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
-                    };
-
-                    let fall_through_edge = lir::BranchEdge {
-                        target: fall_through_target,
-                        args: vec![]
-                    };
-
-                    gen_if_false(&mut asm, val_opnd, branch_edge, fall_through_edge);
-                    assert!(asm.current_block().insns.last().unwrap().is_terminator());
-
-                    asm.set_current_block(fall_through_target);
-
-                    let label = jit.get_label(&mut asm, fall_through_target, block_id);
-                    asm.write_label(label);
-                },
-                Insn::IfTrue { val, target } => {
-                    let val_opnd = jit.get_opnd(val);
-
-                    let lir_target = hir_to_lir[target.target.0].unwrap();
-
-                    let fall_through_target = asm.new_block(block_id, false, rpo_idx);
-
-                    let branch_edge = lir::BranchEdge {
-                        target: lir_target,
-                        args: target.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
-                    };
-
-                    let fall_through_edge = lir::BranchEdge {
-                        target: fall_through_target,
-                        args: vec![]
-                    };
-
-                    gen_if_true(&mut asm, val_opnd, branch_edge, fall_through_edge);
-                    assert!(asm.current_block().insns.last().unwrap().is_terminator());
-
-                    asm.set_current_block(fall_through_target);
-
-                    let label = jit.get_label(&mut asm, fall_through_target, block_id);
-                    asm.write_label(label);
-                }
-                Insn::Jump(target) => {
-                    let lir_target = hir_to_lir[target.target.0].unwrap();
-                    let branch_edge = lir::BranchEdge {
-                        target: lir_target,
-                        args: target.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
-                    };
-                    gen_jump(&mut asm, branch_edge);
-                    assert!(asm.current_block().insns.last().unwrap().is_terminator());
-
-                    // Jump should always be the last instruction in an HIR block
-                    assert!(insn_idx == block.insns().len() - 1, "Jump must be the last instruction in HIR block");
-                },
-                _ => {
-                    // Start a new perf range for the HIR instruction. For now, we do this only for
-                    // non-terminator instructions because LIR blocks must end with a terminator instruction.
-                    let perf_symbol = if get_option!(perf) == Some(PerfMap::HIR) && !insn.is_terminator() {
-                        let insn_name = format!("{insn}").split_whitespace().next().unwrap().to_string();
-                        Some(perf_symbol_range_start(&mut asm, &insn_name))
-                    } else {
-                        None
-                    };
-
-                    let result = gen_insn(cb, &mut jit, &mut asm, function, insn_id, &insn);
-
-                    // Close the current perf range for the HIR instruction.
-                    if let Some(perf_symbol) = &perf_symbol {
-                        perf_symbol_range_end(&mut asm, perf_symbol);
+            // In JIT entry blocks, compile LoadArg instructions before other instructions
+            // so that calling convention registers are reserved early, like Param.
+            if function.is_entry_block(block_id) {
+                for &insn_id in block.insns() {
+                    if let Insn::LoadArg { idx, .. } = function.find(insn_id) {
+                        jit.opnds[insn_id.0] = Some(gen_param(&mut asm, idx as usize));
                     }
-
-                    if let Err(last_snapshot) = result {
-                        debug!("ZJIT: gen_function: Failed to compile insn: {insn_id} {insn}. Generating side-exit.");
-                        gen_incr_counter(&mut asm, exit_counter_for_unhandled_hir_insn(&insn));
-                        let reason = match insn {
-                            Insn::ArrayMax { .. }      => SideExitReason::UnhandledHIRArrayMax,
-                            Insn::FixnumDiv { .. }     => SideExitReason::UnhandledHIRFixnumDiv,
-                            Insn::Throw { .. }         => SideExitReason::UnhandledHIRThrow,
-                            Insn::InvokeBuiltin { .. } => SideExitReason::UnhandledHIRInvokeBuiltin,
-                            _                          => SideExitReason::UnhandledHIRUnknown(insn_id),
-                        };
-                        gen_side_exit(&mut jit, &mut asm, &reason, None, &function.frame_state(last_snapshot));
-                        // Don't bother generating code after a side-exit. We won't run it.
-                        // TODO(max): Generate ud2 or equivalent.
-                        break;
-                    };
-                    // It's fine; we generated the instruction
                 }
             }
+
+            // Compile all instructions
+            for (insn_idx, &insn_id) in block.insns().enumerate() {
+                let insn = function.find(insn_id);
+
+                // IfTrue and IfFalse should never be terminators
+                if matches!(insn, Insn::IfTrue {..} | Insn::IfFalse {..}) {
+                    assert!(!insn.is_terminator(), "IfTrue/IfFalse should not be terminators");
+                }
+
+                match insn {
+                    Insn::IfFalse { val, target } => {
+
+                        let val_opnd = jit.get_opnd(val);
+
+                        let lir_target = hir_to_lir[target.target.0].unwrap();
+
+                        let fall_through_target = asm.new_block(block_id, false, rpo_idx);
+
+                        let branch_edge = lir::BranchEdge {
+                            target: lir_target,
+                            args: target.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
+                        };
+
+                        let fall_through_edge = lir::BranchEdge {
+                            target: fall_through_target,
+                            args: vec![]
+                        };
+
+                        gen_if_false(&mut asm, val_opnd, branch_edge, fall_through_edge);
+                        assert!(asm.current_block().insns.last().unwrap().is_terminator());
+
+                        asm.set_current_block(fall_through_target);
+
+                        let label = jit.get_label(&mut asm, fall_through_target, block_id);
+                        asm.write_label(label);
+                    },
+                    Insn::IfTrue { val, target } => {
+                        let val_opnd = jit.get_opnd(val);
+
+                        let lir_target = hir_to_lir[target.target.0].unwrap();
+
+                        let fall_through_target = asm.new_block(block_id, false, rpo_idx);
+
+                        let branch_edge = lir::BranchEdge {
+                            target: lir_target,
+                            args: target.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
+                        };
+
+                        let fall_through_edge = lir::BranchEdge {
+                            target: fall_through_target,
+                            args: vec![]
+                        };
+
+                        gen_if_true(&mut asm, val_opnd, branch_edge, fall_through_edge);
+                        assert!(asm.current_block().insns.last().unwrap().is_terminator());
+
+                        asm.set_current_block(fall_through_target);
+
+                        let label = jit.get_label(&mut asm, fall_through_target, block_id);
+                        asm.write_label(label);
+                    }
+                    Insn::Jump(target) => {
+                        let lir_target = hir_to_lir[target.target.0].unwrap();
+                        let branch_edge = lir::BranchEdge {
+                            target: lir_target,
+                            args: target.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
+                        };
+                        gen_jump(&mut asm, branch_edge);
+                        assert!(asm.current_block().insns.last().unwrap().is_terminator());
+
+                        // Jump should always be the last instruction in an HIR block
+                        assert!(insn_idx == block.insns().len() - 1, "Jump must be the last instruction in HIR block");
+                    },
+                    _ => {
+                        // Start a new perf range for the HIR instruction. For now, we do this only for
+                        // non-terminator instructions because LIR blocks must end with a terminator instruction.
+                        let perf_symbol = if get_option!(perf) == Some(PerfMap::HIR) && !insn.is_terminator() {
+                            let insn_name = format!("{insn}").split_whitespace().next().unwrap().to_string();
+                            Some(perf_symbol_range_start(&mut asm, &insn_name))
+                        } else {
+                            None
+                        };
+
+                        let result = gen_insn(cb, &mut jit, &mut asm, function, insn_id, &insn);
+
+                        // Close the current perf range for the HIR instruction.
+                        if let Some(perf_symbol) = &perf_symbol {
+                            perf_symbol_range_end(&mut asm, perf_symbol);
+                        }
+
+                        if let Err(last_snapshot) = result {
+                            debug!("ZJIT: gen_function: Failed to compile insn: {insn_id} {insn}. Generating side-exit.");
+                            gen_incr_counter(&mut asm, exit_counter_for_unhandled_hir_insn(&insn));
+                            let reason = match insn {
+                                Insn::ArrayMax { .. }      => SideExitReason::UnhandledHIRArrayMax,
+                                Insn::FixnumDiv { .. }     => SideExitReason::UnhandledHIRFixnumDiv,
+                                Insn::Throw { .. }         => SideExitReason::UnhandledHIRThrow,
+                                Insn::InvokeBuiltin { .. } => SideExitReason::UnhandledHIRInvokeBuiltin,
+                                _                          => SideExitReason::UnhandledHIRUnknown(insn_id),
+                            };
+                            gen_side_exit(&mut jit, &mut asm, &reason, None, &function.frame_state(last_snapshot));
+                            // Don't bother generating code after a side-exit. We won't run it.
+                            // TODO(max): Generate ud2 or equivalent.
+                            break;
+                        };
+                        // It's fine; we generated the instruction
+                    }
+                }
+            }
+            // Blocks should always end with control flow
+            assert!(asm.current_block().insns.last().unwrap().is_terminator());
         }
-        // Blocks should always end with control flow
-        assert!(asm.current_block().insns.last().unwrap().is_terminator());
-    }
 
-    assert!(!asm.rpo().is_empty());
+        assert!(!asm.rpo().is_empty());
 
-    // Validate CFG invariants after HIR to LIR lowering
-    asm.validate_jump_positions();
+        // Validate CFG invariants after HIR to LIR lowering
+        asm.validate_jump_positions();
 
-    (jit, asm)
+        (jit, asm)
     });
 
     // Generate code if everything can be compiled
