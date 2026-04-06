@@ -1610,15 +1610,15 @@ impl Assembler {
         let use_scratch_reg = !self.accept_scratch_reg;
         asm_dump!(self, init);
 
-        let mut asm = trace_compile_phase("split", || self.arm64_split());
+        let mut asm = run_pass!(self, arm64_split);
 
         asm_dump!(asm, split);
 
         trace_compile_phase("regalloc", || {
-            trace_compile_phase("number_instructions", || asm.number_instructions(0));
+            run_pass!(asm, number_instructions(0));
 
-            let live_in = trace_compile_phase("analyze_liveness", || asm.analyze_liveness());
-            let intervals = trace_compile_phase("build_intervals", || asm.build_intervals(live_in));
+            let live_in = run_pass!(asm, analyze_liveness);
+            let intervals = run_pass!(asm, build_intervals(live_in));
 
             // Dump live intervals if requested
             if let Some(crate::options::Options { dump_lir: Some(dump_lirs), .. }) = unsafe { crate::options::OPTIONS.as_ref() } {
@@ -1627,8 +1627,8 @@ impl Assembler {
                 }
             }
 
-            let preferred_registers = trace_compile_phase("preferred_registers", || asm.preferred_register_assignments(&intervals));
-            let (assignments, num_stack_slots) = trace_compile_phase("linear_scan", || asm.linear_scan(intervals.clone(), regs.len(), &preferred_registers));
+            let preferred_registers = run_pass!(asm, preferred_registers(&intervals));
+            let (assignments, num_stack_slots) = run_pass!(asm, linear_scan(intervals.clone(), regs.len(), &preferred_registers));
 
             let total_stack_slots = asm.stack_base_idx + num_stack_slots;
             if total_stack_slots > Self::MAX_FRAME_STACK_SLOTS {
@@ -1697,11 +1697,11 @@ impl Assembler {
         asm_dump!(asm, compile_exits);
 
         if use_scratch_reg {
-            asm = trace_compile_phase("scratch_split", || asm.arm64_scratch_split());
+            asm = run_pass!(asm, arm64_scratch_split());
             asm_dump!(asm, scratch_split);
         } else {
             // For trampolines that use scratch registers, resolve ParallelMov without scratch_reg.
-            asm = trace_compile_phase("resolve_parallel_mov", || asm.resolve_parallel_mov_pass());
+            asm = run_pass!(asm, asm.resolve_parallel_mov_pass());
             asm_dump!(asm, resolve_parallel_mov);
         }
 

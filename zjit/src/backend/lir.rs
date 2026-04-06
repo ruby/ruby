@@ -1654,6 +1654,20 @@ pub struct Assembler {
     idx: usize,
 }
 
+/// Run a pass on the given Assembler, tracing the method name as a compile phase
+macro_rules! run_pass {
+    ($asm:ident, $phase_name:ident) => {{
+        let result = trace_compile_phase(stringify!($phase_name), || $asm.$phase_name());
+        // TODO(max): Move asm_dump!(...) in here too
+        result
+    }};
+    ($asm:ident, $phase_name:ident ( $($arg:expr),* )) => {{
+        let result = trace_compile_phase(stringify!($phase_name), || $asm.$phase_name($($arg),*));
+        // TODO(max): Move asm_dump!(...) in here too
+        result
+    }};
+}
+
 impl Assembler
 {
     /// Create an Assembler with defaults
