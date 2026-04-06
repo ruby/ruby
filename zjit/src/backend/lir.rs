@@ -558,14 +558,11 @@ pub struct SideExit {
 }
 
 /// Arguments for the recompile callback on side exit.
-/// Used for both no-profile sends (argc >= 0) and shape guard failures (argc = -1).
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct SideExitRecompile {
     pub iseq: Opnd,
     pub insn_idx: u32,
-    /// Number of arguments (not including receiver) for send profiling.
-    /// -1 means profile self from CFP for shape guard exits.
-    pub argc: i32,
+    pub strategy: hir::Recompile,
 }
 
 /// Branch target (something that we can jump to)
@@ -2687,7 +2684,10 @@ impl Assembler
                     EC,
                     recompile.iseq,
                     Opnd::UImm(recompile.insn_idx as u64),
-                    Opnd::Imm(recompile.argc as i64)
+                    Opnd::Imm(match recompile.strategy {
+                        hir::Recompile::ProfileSend { argc } => argc as i64,
+                        hir::Recompile::ProfileSelf => -1,
+                    })
                 );
             }
             compile_exit_return(asm);

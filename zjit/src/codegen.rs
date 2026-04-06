@@ -21,7 +21,7 @@ use crate::stats::{counter_ptr, with_time_stat, Counter, Counter::{compile_time_
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, Assembler, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_STACK_PTR, Opnd, SP, SideExit, SideExitRecompile, Target, asm_ccall, asm_comment};
 use crate::hir::{iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
-use crate::hir::{BlockHandler, Const, FrameState, Function, Insn, InsnId, SendFallbackReason};
+use crate::hir::{BlockHandler, Const, FrameState, Function, Insn, InsnId, Recompile, SendFallbackReason};
 use crate::hir_type::{types, Type};
 use crate::options::{get_option, PerfMap};
 use crate::cast::IntoUsize;
@@ -1238,7 +1238,7 @@ fn gen_setglobal(jit: &mut JITState, asm: &mut Assembler, id: ID, val: Opnd, sta
 }
 
 /// Side-exit into the interpreter
-fn gen_side_exit(jit: &mut JITState, asm: &mut Assembler, reason: &SideExitReason, recompile: Option<i32>, state: &FrameState) {
+fn gen_side_exit(jit: &mut JITState, asm: &mut Assembler, reason: &SideExitReason, recompile: Option<Recompile>, state: &FrameState) {
     asm.jmp(side_exit_with_recompile(jit, state, *reason, recompile));
 }
 
@@ -2631,7 +2631,7 @@ fn gen_guard_type_not(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, g
 }
 
 /// Compile an identity check with a side exit
-fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, expected: crate::hir::Const, reason: SideExitReason, recompile: Option<i32>, state: &FrameState) -> lir::Opnd {
+fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, expected: crate::hir::Const, reason: SideExitReason, recompile: Option<Recompile>, state: &FrameState) -> lir::Opnd {
     if matches!(reason, SideExitReason::GuardShape(_) ) {
         gen_incr_counter(asm, Counter::guard_shape_count);
     }
@@ -2977,13 +2977,12 @@ fn side_exit(jit: &JITState, state: &FrameState, reason: SideExitReason) -> Targ
 }
 
 /// Build a Target::SideExit that optionally triggers exit_recompile on the exit path.
-/// When `recompile` is Some(argc), the side exit calls exit_recompile with that argc.
-fn side_exit_with_recompile(jit: &JITState, state: &FrameState, reason: SideExitReason, recompile: Option<i32>) -> Target {
+fn side_exit_with_recompile(jit: &JITState, state: &FrameState, reason: SideExitReason, recompile: Option<Recompile>) -> Target {
     let mut exit = build_side_exit(jit, state);
-    exit.recompile = recompile.map(|argc| SideExitRecompile {
+    exit.recompile = recompile.map(|strategy| SideExitRecompile {
         iseq: Opnd::Value(VALUE::from(jit.iseq)),
         insn_idx: state.insn_idx() as u32,
-        argc,
+        strategy,
     });
     Target::SideExit { exit, reason }
 }

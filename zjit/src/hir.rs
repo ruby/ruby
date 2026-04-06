@@ -540,6 +540,15 @@ pub enum SideExitReason {
     InvokeBlockNotIfunc,
 }
 
+/// Controls how a side exit triggers recompilation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Recompile {
+    /// Profile receiver + arguments from the stack (for sends without profile data).
+    ProfileSend { argc: i32 },
+    /// Profile self from the CFP (for shape guard failures).
+    ProfileSelf,
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum MethodType {
     Iseq,
@@ -1090,9 +1099,7 @@ pub enum Insn {
     GuardType { val: InsnId, guard_type: Type, state: InsnId },
     GuardTypeNot { val: InsnId, guard_type: Type, state: InsnId },
     /// Side-exit if val is not the expected Const.
-    /// `recompile`: if Some(argc), the side exit triggers exit_recompile.
-    /// argc >= 0 profiles receiver + args from stack; argc == -1 profiles self from CFP.
-    GuardBitEquals { val: InsnId, expected: Const, reason: SideExitReason, state: InsnId, recompile: Option<i32> },
+    GuardBitEquals { val: InsnId, expected: Const, reason: SideExitReason, state: InsnId, recompile: Option<Recompile> },
     /// Side-exit if (val & mask) == 0
     GuardAnyBitSet { val: InsnId, mask: Const, mask_name: Option<ID>, reason: SideExitReason, state: InsnId },
     /// Side-exit if (val & mask) != 0
@@ -1107,9 +1114,9 @@ pub enum Insn {
     PatchPoint { invariant: Invariant, state: InsnId },
 
     /// Side-exit into the interpreter.
-    /// If `recompile` is set, the side exit will profile the send and invalidate the ISEQ
+    /// If recompile is not None, the side exit will profile and invalidate the ISEQ
     /// so that it gets recompiled with the new profile data.
-    SideExit { state: InsnId, reason: SideExitReason, recompile: Option<i32> },
+    SideExit { state: InsnId, reason: SideExitReason, recompile: Option<Recompile> },
 
     /// Increment a counter in ZJIT stats
     IncrCounter(Counter),
@@ -4392,7 +4399,7 @@ impl Function {
         })
     }
 
-    fn guard_shape(&mut self, block: BlockId, val: InsnId, expected: ShapeId, state: InsnId, recompile: Option<i32>) -> InsnId {
+    fn guard_shape(&mut self, block: BlockId, val: InsnId, expected: ShapeId, state: InsnId, recompile: Option<Recompile>) -> InsnId {
         self.push_insn(block, Insn::GuardBitEquals {
             val,
             expected: Const::CShape(expected),
@@ -4543,7 +4550,7 @@ impl Function {
                         }
                         let self_val = self.load_ivar_guard_type(block, self_val, recv_type, state);
                         let shape = self.load_shape(block, self_val);
-                        self.guard_shape(block, shape, recv_type.shape(), state, Some(-1));
+                        self.guard_shape(block, shape, recv_type.shape(), state, Some(Recompile::ProfileSelf));
                         let replacement = self.load_ivar(block, self_val, recv_type, id, state);
                         self.make_equal_to(insn_id, replacement);
                     }
@@ -5178,7 +5185,7 @@ impl Function {
                 match self.find(insn_id) {
                     Insn::Send { cd, state, reason: SendFallbackReason::SendWithoutBlockNoProfiles | SendFallbackReason::SendNoProfiles, .. } => {
                         let argc = unsafe { vm_ci_argc((*cd).ci) } as i32;
-                        self.push_insn(block, Insn::SideExit { state, reason: SideExitReason::NoProfileSend, recompile: Some(argc) });
+                        self.push_insn(block, Insn::SideExit { state, reason: SideExitReason::NoProfileSend, recompile: Some(Recompile::ProfileSend { argc }) });
                         // SideExit is a terminator; don't add remaining instructions
                         break;
                     }
