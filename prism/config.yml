@@ -1017,7 +1017,9 @@ nodes:
                       ^  ^
       - name: rest
         type: node?
-        kind: pattern expression
+        kind:
+          - ImplicitRestNode
+          - SplatNode
         comment: |
           Represents the rest element of the array pattern.
 

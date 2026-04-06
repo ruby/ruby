@@ -77,6 +77,13 @@ module Prism
       assert_parameters([[:rest, :*], [:keyrest, :**], [:block, :&]], "...")
     end
 
+    def test_invalid_syntax
+      e = assert_raise(RuntimeError) do
+        Prism.parse_statement("def f(**nil, ...); end").parameters.signature
+      end
+      assert_equal("Invalid syntax", e.message)
+    end
+
     private
 
     def assert_parameters(expected, source, compare: true)

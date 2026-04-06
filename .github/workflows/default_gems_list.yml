@@ -43,7 +43,7 @@ jobs:
           data=default_gems.json
           mkdir -p .downloaded-cache
           ln -s .downloaded-cache/$data .
-          curl -O -R -z ./$data https://stdgems.org/$data
+          curl --retry 5 --retry-connrefused --retry-delay 2 --retry-max-time 60 -O -R -z ./$data https://stdgems.org/$data
         if: ${{ steps.gems.outcome == 'success' }}
 
       - name: Make default gems list

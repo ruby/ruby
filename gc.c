@@ -1278,7 +1278,9 @@ rb_gc_handle_weak_references(VALUE obj)
         GC_ASSERT(imemo_type(obj) == imemo_callcache);
 
         struct rb_callcache *cc = (struct rb_callcache *)obj;
-        if (!rb_gc_handle_weak_references_alive_p(cc->klass)) {
+        if (cc->klass != Qundef &&
+            (!rb_gc_handle_weak_references_alive_p(cc->klass) ||
+             !rb_gc_handle_weak_references_alive_p((VALUE)cc->cme_))) {
             vm_cc_invalidate(cc);
         }
 
@@ -2473,6 +2475,9 @@ rb_gc_before_updating_jit_code(void)
 #if USE_YJIT
     rb_yjit_mark_all_writeable();
 #endif
+#if USE_ZJIT
+    rb_zjit_mark_all_writable();
+#endif
 }
 
 /*
@@ -2485,6 +2490,9 @@ rb_gc_after_updating_jit_code(void)
 {
 #if USE_YJIT
     rb_yjit_mark_all_executable();
+#endif
+#if USE_ZJIT
+    rb_zjit_mark_all_executable();
 #endif
 }
 
@@ -5415,19 +5423,19 @@ ruby_xcalloc_body(size_t n, size_t size)
     return rb_gc_impl_calloc(rb_gc_get_objspace(), xmalloc2_size(n, size), malloc_gc_allowed());
 }
 
-static void *ruby_sized_xrealloc_body(void *ptr, size_t new_size, size_t old_size);
+static void *ruby_xrealloc_sized_body(void *ptr, size_t new_size, size_t old_size);
 
-#ifdef ruby_sized_xrealloc
-#undef ruby_sized_xrealloc
+#ifdef ruby_xrealloc_sized
+#undef ruby_xrealloc_sized
 #endif
 void *
-ruby_sized_xrealloc(void *ptr, size_t new_size, size_t old_size)
+ruby_xrealloc_sized(void *ptr, size_t new_size, size_t old_size)
 {
-    return handle_malloc_failure(ruby_sized_xrealloc_body(ptr, new_size, old_size));
+    return handle_malloc_failure(ruby_xrealloc_sized_body(ptr, new_size, old_size));
 }
 
 static void *
-ruby_sized_xrealloc_body(void *ptr, size_t new_size, size_t old_size)
+ruby_xrealloc_sized_body(void *ptr, size_t new_size, size_t old_size)
 {
     if ((ssize_t)new_size < 0) {
         negative_size_allocation_error("too large allocation size");
@@ -5439,22 +5447,22 @@ ruby_sized_xrealloc_body(void *ptr, size_t new_size, size_t old_size)
 void *
 ruby_xrealloc(void *ptr, size_t new_size)
 {
-    return ruby_sized_xrealloc(ptr, new_size, 0);
+    return ruby_xrealloc_sized(ptr, new_size, 0);
 }
 
-static void *ruby_sized_xrealloc2_body(void *ptr, size_t n, size_t size, size_t old_n);
+static void *ruby_xrealloc2_sized_body(void *ptr, size_t n, size_t size, size_t old_n);
 
-#ifdef ruby_sized_xrealloc2
-#undef ruby_sized_xrealloc2
+#ifdef ruby_xrealloc2_sized
+#undef ruby_xrealloc2_sized
 #endif
 void *
-ruby_sized_xrealloc2(void *ptr, size_t n, size_t size, size_t old_n)
+ruby_xrealloc2_sized(void *ptr, size_t n, size_t size, size_t old_n)
 {
-    return handle_malloc_failure(ruby_sized_xrealloc2_body(ptr, n, size, old_n));
+    return handle_malloc_failure(ruby_xrealloc2_sized_body(ptr, n, size, old_n));
 }
 
 static void *
-ruby_sized_xrealloc2_body(void *ptr, size_t n, size_t size, size_t old_n)
+ruby_xrealloc2_sized_body(void *ptr, size_t n, size_t size, size_t old_n)
 {
     size_t len = xmalloc2_size(n, size);
     return rb_gc_impl_realloc(rb_gc_get_objspace(), ptr, len, old_n * size, malloc_gc_allowed());
@@ -5463,14 +5471,14 @@ ruby_sized_xrealloc2_body(void *ptr, size_t n, size_t size, size_t old_n)
 void *
 ruby_xrealloc2(void *ptr, size_t n, size_t size)
 {
-    return ruby_sized_xrealloc2(ptr, n, size, 0);
+    return ruby_xrealloc2_sized(ptr, n, size, 0);
 }
 
-#ifdef ruby_sized_xfree
-#undef ruby_sized_xfree
+#ifdef ruby_xfree_sized
+#undef ruby_xfree_sized
 #endif
 void
-ruby_sized_xfree(void *x, size_t size)
+ruby_xfree_sized(void *x, size_t size)
 {
     if (LIKELY(x)) {
         /* It's possible for a C extension's pthread destructor function set by pthread_key_create
@@ -5488,7 +5496,7 @@ ruby_sized_xfree(void *x, size_t size)
 void
 ruby_xfree(void *x)
 {
-    ruby_sized_xfree(x, 0);
+    ruby_xfree_sized(x, 0);
 }
 
 void *

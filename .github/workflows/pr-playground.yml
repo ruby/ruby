@@ -6,6 +6,10 @@ on:
     workflows: ["WebAssembly"]
     types: [completed]
 
+permissions:
+  contents: read
+  actions: read
+
 jobs:
   post-summary:
     name: Post Playground link

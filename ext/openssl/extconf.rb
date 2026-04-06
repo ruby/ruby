@@ -169,6 +169,9 @@ have_func("TS_VERIFY_CTX_set0_certs(NULL, NULL)", ts_h)
 # added in 3.5.0
 have_func("SSL_get0_peer_signature_name(NULL, NULL)", ssl_h)
 
+# added in 4.0.0
+have_func("ASN1_BIT_STRING_set1(NULL, NULL, 0, 0)", "openssl/asn1.h")
+
 Logging::message "=== Checking done. ===\n"
 
 # Append flags from environment variables.

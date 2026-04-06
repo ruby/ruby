@@ -1480,7 +1480,7 @@ rb_yjit_cancel_jit_return(void *leave_exit, void *leave_exception)
 
         const rb_control_frame_t *cfp = cont->ec->cfp;
         while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(cont->ec, cfp)) {
-            if (CFP_JIT_RETURN(cfp) && cfp->jit_return != leave_exception) {
+            if (cfp->jit_return && cfp->jit_return != leave_exception) {
                 ((rb_control_frame_t *)cfp)->jit_return = leave_exit;
             }
             cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);

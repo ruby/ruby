@@ -13,6 +13,7 @@
 #include "internal.h"
 #include "internal/class.h"
 #include "internal/error.h"
+#include "internal/object.h"
 #include "internal/vm.h"
 #include "iseq.h"
 #include "ruby/debug.h"
@@ -577,14 +578,6 @@ rb_backtrace_p(VALUE obj)
 }
 
 static VALUE
-backtrace_alloc(VALUE klass)
-{
-    rb_backtrace_t *bt;
-    VALUE obj = TypedData_Make_Struct(klass, rb_backtrace_t, &backtrace_data_type, bt);
-    return obj;
-}
-
-static VALUE
 backtrace_alloc_capa(long num_frames, rb_backtrace_t **backtrace)
 {
     size_t memsize = offsetof(rb_backtrace_t, backtrace) + num_frames * sizeof(rb_backtrace_location_t);
@@ -960,6 +953,46 @@ static VALUE
 backtrace_limit(VALUE self)
 {
     return LONG2NUM(rb_backtrace_length_limit);
+}
+
+/* :nodoc: */
+static VALUE
+backtrace_clone(VALUE self)
+{
+    rb_backtrace_t *bt;
+    TypedData_Get_Struct(self, rb_backtrace_t, &backtrace_data_type, bt);
+
+    rb_backtrace_t *other_bt;
+    VALUE clone = backtrace_alloc_capa(bt->backtrace_size, &other_bt);
+
+    rb_obj_clone_setup(self, clone, Qfalse);
+
+    return clone;
+}
+
+/* :nodoc: */
+static VALUE
+backtrace_dup(VALUE self)
+{
+    rb_notimplement();
+
+    UNREACHABLE_RETURN(Qnil);
+}
+
+/* :nodoc: */
+static VALUE
+backtrace_initialize_copy(VALUE self, VALUE original)
+{
+    rb_backtrace_t *bt;
+    TypedData_Get_Struct(self, rb_backtrace_t, &backtrace_data_type, bt);
+
+    rb_backtrace_t *original_bt;
+    TypedData_Get_Struct(original, rb_backtrace_t, &backtrace_data_type, original_bt);
+
+    bt->backtrace_size = original_bt->backtrace_size;
+    MEMCPY(bt->backtrace, original_bt->backtrace, rb_backtrace_location_t, original_bt->backtrace_size);
+
+    return Qnil;
 }
 
 VALUE
@@ -1406,6 +1439,14 @@ each_caller_location(int argc, VALUE *argv, VALUE _)
     return Qnil;
 }
 
+static VALUE
+backtrace_no_allocator(VALUE klass)
+{
+    rb_notimplement();
+
+    UNREACHABLE_RETURN(Qnil);
+}
+
 /* called from Init_vm() in vm.c */
 void
 Init_vm_backtrace(void)
@@ -1416,10 +1457,17 @@ Init_vm_backtrace(void)
      *  settings of the current session.
      */
     rb_cBacktrace = rb_define_class_under(rb_cThread, "Backtrace", rb_cObject);
-    rb_define_alloc_func(rb_cBacktrace, backtrace_alloc);
-    rb_undef_method(CLASS_OF(rb_cBacktrace), "new");
+
+    // Can't undefine the allocator, as it's needed as a key by Marshal
+    rb_define_alloc_func(rb_cBacktrace, backtrace_no_allocator);
     rb_marshal_define_compat(rb_cBacktrace, rb_cArray, backtrace_dump_data, backtrace_load_data);
+
+    rb_undef_method(CLASS_OF(rb_cBacktrace), "new");
     rb_define_singleton_method(rb_cBacktrace, "limit", backtrace_limit, 0);
+
+    rb_define_method(rb_cBacktrace, "clone", backtrace_clone, 0);
+    rb_define_method(rb_cBacktrace, "dup", backtrace_dup, 0);
+    rb_define_method(rb_cBacktrace, "initialize_copy", backtrace_initialize_copy, 1);
 
     /*
      *	An object representation of a stack frame, initialized by

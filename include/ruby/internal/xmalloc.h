@@ -57,6 +57,10 @@
 #define xrealloc2 ruby_xrealloc2 /**< @old{ruby_xrealloc2} */
 #define xfree     ruby_xfree     /**< @old{ruby_xfree} */
 
+#define xfree_sized       ruby_xfree_sized
+#define xrealloc_sized    ruby_xrealloc_sized
+#define xrealloc2_sized   ruby_xrealloc2_sized
+
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 RBIMPL_ATTR_NODISCARD()
@@ -196,6 +200,58 @@ RBIMPL_ATTR_NOEXCEPT(realloc(ptr, newsiz))
 
 RBIMPL_ATTR_NODISCARD()
 RBIMPL_ATTR_RETURNS_NONNULL()
+RBIMPL_ATTR_ALLOC_SIZE((2))
+/**
+ * Identical to ruby_xrealloc(), except that it takes the old storage size
+ * as third argument.
+ *
+ * @param[in]  ptr             A valid  pointer to a storage  instance that was
+ *                             previously returned from either:
+ *                               - ruby_xmalloc(),
+ *                               - ruby_xmalloc2(),
+ *                               - ruby_xcalloc(),
+ *                               - ruby_xrealloc(), or
+ *                               - ruby_xrealloc2().
+ * @param[in]  newsiz          Requested new amount of memory.
+ * @param[in]  oldsiz          Existing amount of memory.
+ * @exception  rb_eNoMemError  No space left for `newsiz` bytes allocation.
+ * @return     A  valid  pointer  to   a  (possibly  newly  allocated)  storage
+ *             instance;  which  has  at   least  `newsiz`  bytes  width,  with
+ *             appropriate  alignment  detected  by  the  underlying  realloc()
+ *             routine.
+ * @pre        The passed pointer must point  to a valid live storage instance.
+ *             It is a failure to pass an already freed pointer.
+ * @pre        The passed oldsiz must be exactly equal to the size the pointer
+ *             was allocated with.
+ *             Passing an incorrect oldsiz is undefined behavior, which may
+ *             cause memory leaks or crashes.
+ * @post       In  case the  function  returns the  passed  pointer as-is,  the
+ *             storage  instance that  the  pointer holds  is  either grown  or
+ *             shrunken  to have  at least  `newsiz` bytes.  Otherwise a  valid
+ *             pointer to a  newly allocated storage instance  is returned.  In
+ *             this  case  `ptr`  is  invalidated   as  if  it  was  passed  to
+ *             ruby_xfree().
+ * @note       It doesn't return NULL.
+ * @warning    Unlike some realloc() implementations,  passing zero to `newsiz`
+ *             is not the  same as calling ruby_xfree(),  because this function
+ *             never returns NULL.  Something meaningful still returns then.
+ * @warning    It is  a failure not to  check the return value.   Do not assume
+ *             anything on  it.  It could  be either identical to,  or distinct
+ *             form the passed argument.
+ * @warning    Do not  assume anything  on the alignment  of the  return value.
+ *             There is  no guarantee  that it  inherits the  passed argument's
+ *             one.
+ * @warning    The return  value shall  be invalidated  exactly once  by either
+ *             ruby_xfree(),  ruby_xrealloc(), or  ruby_xrealloc2().   It is  a
+ *             failure to pass it to system free(), because the system and Ruby
+ *             might or might not share the same malloc() implementation.
+ */
+void *ruby_xrealloc_sized(void *ptr, size_t newsiz, size_t oldsiz)
+RBIMPL_ATTR_NOEXCEPT(realloc(ptr, newsiz))
+;
+
+RBIMPL_ATTR_NODISCARD()
+RBIMPL_ATTR_RETURNS_NONNULL()
 RBIMPL_ATTR_ALLOC_SIZE((2,3))
 /**
  * Identical to ruby_xrealloc(),  except it resizes the  given storage instance
@@ -251,6 +307,64 @@ void *ruby_xrealloc2(void *ptr, size_t newelems, size_t newsiz)
 RBIMPL_ATTR_NOEXCEPT(realloc(ptr, newelems * newsiz))
 ;
 
+RBIMPL_ATTR_NODISCARD()
+RBIMPL_ATTR_RETURNS_NONNULL()
+RBIMPL_ATTR_ALLOC_SIZE((2,3))
+/**
+ * Identical to ruby_xrealloc2(),  except it takes the old elements count.
+ *
+ * This  is   roughly  the  same   as  reallocarray()  function   that  OpenBSD
+ * etc. provides, but also interacts with our GC.
+ *
+ * @param[in]  ptr             A valid  pointer to a storage  instance that was
+ *                             previously returned from either:
+ *                               - ruby_xmalloc(),
+ *                               - ruby_xmalloc2(),
+ *                               - ruby_xcalloc(),
+ *                               - ruby_xrealloc(), or
+ *                               - ruby_xrealloc2().
+ * @param[in]  newelems        Requested new number of elements.
+ * @param[in]  newsiz          Requested new size of each element.
+ * @param[in]  oldelems        The number of elements the pointer was
+ *                             previously allocated with.
+ * @exception  rb_eNoMemError  No space left for  allocation.
+ * @exception  rb_eArgError    `newelems` * `newsiz` would overflow.
+ * @return     A  valid  pointer  to   a  (possibly  newly  allocated)  storage
+ *             instance; which has at least  `newelems` * `newsiz` bytes width,
+ *             with appropriate alignment detected  by the underlying realloc()
+ *             routine.
+ * @pre        The passed pointer must point  to a valid live storage instance.
+ *             It is a failure to pass an already freed pointer.
+ * @pre        The passed oldelems must be exactly equal to the number of
+ *             elements the pointer was allocated with.
+ *             Passing an incorrect oldelems is undefined behavior, which may
+ *             cause memory leaks or crashes.
+ * @post       In  case the  function  returns the  passed  pointer as-is,  the
+ *             storage  instance that  the  pointer holds  is  either grown  or
+ *             shrunken  to   have  at  least  `newelems`   *  `newsiz`  bytes.
+ *             Otherwise a valid pointer to  a newly allocated storage instance
+ *             is returned.   In this case  `ptr` is  invalidated as if  it was
+ *             passed to ruby_xfree().
+ * @note       It doesn't return NULL.
+ * @warning    Unlike some  realloc() implementations,  passing zero  to either
+ *             `newelems`   or  `elemsiz`   are   not  the   same  as   calling
+ *             ruby_xfree(),   because  this   function  never   returns  NULL.
+ *             Something meaningful still returns then.
+ * @warning    It is  a failure not to  check the return value.   Do not assume
+ *             anything on  it.  It could  be either identical to,  or distinct
+ *             form the passed argument.
+ * @warning    Do not  assume anything  on the alignment  of the  return value.
+ *             There is  no guarantee  that it  inherits the  passed argument's
+ *             one.
+ * @warning    The return  value shall  be invalidated  exactly once  by either
+ *             ruby_xfree(),  ruby_xrealloc(), or  ruby_xrealloc2().   It is  a
+ *             failure to pass it to system free(), because the system and Ruby
+ *             might or might not share the same malloc() implementation.
+ */
+void *ruby_xrealloc2_sized(void *ptr, size_t newelems, size_t newsiz, size_t oldelems)
+RBIMPL_ATTR_NOEXCEPT(realloc(ptr, newelems * newsiz))
+;
+
 /**
  * Deallocates a storage instance.
  *
@@ -282,6 +396,43 @@ RBIMPL_ATTR_NOEXCEPT(realloc(ptr, newelems * newsiz))
 void ruby_xfree(void *ptr)
 RBIMPL_ATTR_NOEXCEPT(free(ptr))
 ;
+
+/**
+ * Deallocates a storage instance of a specific ssize.
+ *
+ * @param[out]  ptr  Either
+ *                     - NULL, or
+ *                     - a valid pointer previously returned from one of:
+ *                       - ruby_xmalloc(),
+ *                       - ruby_xmalloc2(),
+ *                       - ruby_xcalloc(),
+ *                       - ruby_xrealloc(), or
+ *                       - ruby_xrealloc2().
+ * @pre         The passed pointer must point to a valid live storage instance.
+ *              It is a failure to pass an already freed pointer.
+ * @pre         The passed size must be exactly equal to the size the pointer
+ *              was allocated with.
+ *              Passing an incorrect size is undefined behavior, which may
+ *              cause memory leaks or crashes.
+ * @post        The  storage  instance  pointed  by  the  passed  pointer  gets
+ *              invalidated; it is no longer addressable.
+ * @warning     Every single storage instance  that was previously allocated by
+ *              either    ruby_xmalloc(),   ruby_xmalloc2(),    ruby_xcalloc(),
+ *              ruby_xrealloc(),  or  ruby_xrealloc2()   shall  be  invalidated
+ *              exactly once by  either passing it to  ruby_xfree(), or passing
+ *              it to  either ruby_xrealloc(), ruby_xrealloc2() then  check the
+ *              return value for invalidation.
+ * @warning     Do not pass anything other  than pointers described above.  For
+ *              instance pointers returned from malloc() or mmap() shall not be
+ *              passed  to   this  function,  because  the   underlying  memory
+ *              management mechanism could differ.
+ * @warning     Do  not pass  any invalid  pointers  to this  function e.g.  by
+ *              calling it twice with a same argument.
+ */
+void ruby_xfree_sized(void *ptr, size_t size)
+RBIMPL_ATTR_NOEXCEPT(free(ptr))
+;
+
 
 RBIMPL_SYMBOL_EXPORT_END()
 

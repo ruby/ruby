@@ -69,4 +69,31 @@ describe "Kernel#respond_to?" do
     KernelSpecs::Foo.new.respond_to?(:bar).should == true
     KernelSpecs::Foo.new.respond_to?(:invalid_and_silly_method_name).should == false
   end
+
+  context "if object does not have #respond_to_missing?" do
+    it "returns true if object responds to the given public method" do
+      KernelSpecs::BasicA.new.respond_to?(:pub_method).should == true
+      KernelSpecs::MissingA.new.respond_to?(:pub_method).should == true
+    end
+
+    it "returns false if object responds to the given protected method" do
+      KernelSpecs::BasicA.new.respond_to?(:protected_method).should == false
+      KernelSpecs::MissingA.new.respond_to?(:protected_method).should == false
+    end
+
+    it "returns false if object responds to the given private method" do
+      KernelSpecs::BasicA.new.respond_to?(:private_method).should == false
+      KernelSpecs::MissingA.new.respond_to?(:private_method).should == false
+    end
+
+    it "returns false if the given method was undefined" do
+      KernelSpecs::BasicA.new.respond_to?(:undefed_method).should == false
+      KernelSpecs::MissingA.new.respond_to?(:undefed_method).should == false
+    end
+
+    it "returns false if the given method never existed" do
+      KernelSpecs::BasicA.new.respond_to?(:invalid_and_silly_method_name).should == false
+      KernelSpecs::MissingA.new.respond_to?(:invalid_and_silly_method_name).should == false
+    end
+  end
 end

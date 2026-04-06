@@ -604,6 +604,7 @@ impl VALUE {
         unsafe { rb_jit_class_fields_embedded_p(self) }
     }
 
+    /// Typed `T_DATA` made from `TypedData_Make_Struct()` (e.g. Thread, ARGF)
     pub fn typed_data_p(self) -> bool {
         !self.special_const_p() &&
             self.builtin_type() == RUBY_T_DATA &&
@@ -1227,13 +1228,13 @@ pub mod test_utils {
         // "Fun" double pointer dance to get a thin function pointer to pass through C
         unsafe extern "C" fn callback_wrapper(data: VALUE) -> VALUE {
             // SAFETY: shorter lifetime than the data local in the caller frame
-            let callback: &mut &mut dyn FnMut() = unsafe { std::mem::transmute(data) };
-            callback();
+            let callback: *mut &mut dyn FnMut() = std::ptr::with_exposed_provenance_mut(data.0);
+            unsafe { (*callback)() };
             Qnil
         }
 
         let mut state: c_int = 0;
-        unsafe { super::rb_protect(Some(callback_wrapper), VALUE((&mut data) as *mut _ as usize), &mut state) };
+        unsafe { super::rb_protect(Some(callback_wrapper), VALUE((&raw mut data).expose_provenance()), &mut state) };
         if state != 0 {
             unsafe { rb_zjit_print_exception(); }
             assert_eq!(0, state, "Exceptional unwind in callback. Ruby exception?");

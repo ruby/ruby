@@ -2,7 +2,7 @@
 
 use std::{collections::{HashMap, HashSet}, mem};
 
-use crate::{backend::lir::{Assembler, asm_comment}, cruby::{ID, IseqPtr, RedefinitionFlag, VALUE, iseq_name, rb_callable_method_entry_t, rb_gc_location, ruby_basic_operators, src_loc, with_vm_lock}, hir::Invariant, options::debug, state::{ZJITState, zjit_enabled_p}, virtualmem::CodePtr};
+use crate::{backend::lir::{Assembler, asm_comment}, cruby::{ID, IseqPtr, RedefinitionFlag, VALUE, iseq_name, rb_callable_method_entry_t, rb_gc_location, ruby_basic_operators, src_loc, with_vm_lock}, hir::Invariant, options::debug, state::{ZJITState, zjit_enabled_p, trace_invalidation}, virtualmem::CodePtr};
 use crate::payload::{IseqVersionRef, get_or_create_iseq_payload};
 use crate::codegen::invalidate_iseq_version;
 use crate::cruby::rb_iseq_reset_jit_func;
@@ -12,7 +12,7 @@ use crate::gc::remove_gc_offsets;
 
 macro_rules! compile_patch_points {
     ($cb:expr, $patch_points:expr, $cause:ident, $($comment_args:tt)*) => {
-        with_time_stat(invalidation_time_ns, || {
+        trace_invalidation(&format!($($comment_args)*), || with_time_stat(invalidation_time_ns, || {
             for patch_point in $patch_points {
                 let written_range = $cb.with_write_ptr(patch_point.patch_point_ptr, |cb| {
                     let mut asm = Assembler::new();
@@ -35,7 +35,7 @@ macro_rules! compile_patch_points {
                     }
                 }
             }
-        });
+        }));
     };
 }
 

@@ -1741,8 +1741,9 @@ RSpec.describe "bundle gem" do
         expect(bundled_app("#{gem_name}/ext/#{gem_name}/build.rs")).to exist
       end
 
-      it "includes rake-compiler constraint" do
+      it "includes rake-compiler and rb_sys gems constraint" do
         expect(bundled_app("#{gem_name}/Gemfile").read).to include('gem "rake-compiler"')
+        expect(bundled_app("#{gem_name}/#{gem_name}.gemspec").read).to include('spec.add_dependency "rb_sys"')
       end
 
       it "depends on compile task for build" do

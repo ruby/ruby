@@ -265,6 +265,22 @@ impl<A: Allocator> VirtualMemory<A> {
         memory_usage_bytes + self.page_size_bytes < memory_limit_bytes
     }
 
+    /// Make all the code in the region writable. Call this before bulk writes (e.g. GC
+    /// reference updates). See [Self] for usual usage flow.
+    pub fn mark_all_writable(&mut self) {
+        self.current_write_page = None;
+
+        let region_start = self.region_start;
+        let mapped_region_bytes: u32 = self.mapped_region_bytes.try_into().unwrap();
+
+        // Make mapped region writable
+        if mapped_region_bytes > 0 {
+            if !self.allocator.mark_writable(region_start.as_ptr(), mapped_region_bytes) {
+                panic!("Cannot make JIT memory region writable");
+            }
+        }
+    }
+
     /// Make all the code in the region executable. Call this at the end of a write session.
     /// See [Self] for usual usage flow.
     pub fn mark_all_executable(&mut self) {

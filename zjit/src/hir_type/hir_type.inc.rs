@@ -4,7 +4,7 @@ mod bits {
   pub const Array: u64 = ArrayExact | ArraySubclass;
   pub const ArrayExact: u64 = 1u64 << 0;
   pub const ArraySubclass: u64 = 1u64 << 1;
-  pub const BasicObject: u64 = BasicObjectExact | BasicObjectSubclass | Object;
+  pub const BasicObject: u64 = BasicObjectExact | BasicObjectSubclass | Object | TypedTData;
   pub const BasicObjectExact: u64 = 1u64 << 2;
   pub const BasicObjectSubclass: u64 = 1u64 << 3;
   pub const Bignum: u64 = 1u64 << 4;
@@ -73,20 +73,22 @@ mod bits {
   pub const Symbol: u64 = DynamicSymbol | StaticSymbol;
   pub const TrueClass: u64 = 1u64 << 43;
   pub const Truthy: u64 = BasicObject & !Falsy;
-  pub const Undef: u64 = 1u64 << 44;
-  pub const AllBitPatterns: [(&str, u64); 74] = [
+  pub const TypedTData: u64 = 1u64 << 44;
+  pub const Undef: u64 = 1u64 << 45;
+  pub const AllBitPatterns: [(&str, u64); 75] = [
     ("Any", Any),
     ("RubyValue", RubyValue),
     ("Immediate", Immediate),
     ("Undef", Undef),
     ("BasicObject", BasicObject),
-    ("Object", Object),
     ("NotNil", NotNil),
     ("Truthy", Truthy),
+    ("HeapBasicObject", HeapBasicObject),
+    ("TypedTData", TypedTData),
+    ("Object", Object),
     ("BuiltinExact", BuiltinExact),
     ("BoolExact", BoolExact),
     ("TrueClass", TrueClass),
-    ("HeapBasicObject", HeapBasicObject),
     ("HeapObject", HeapObject),
     ("String", String),
     ("Subclass", Subclass),
@@ -150,7 +152,7 @@ mod bits {
     ("ArrayExact", ArrayExact),
     ("Empty", Empty),
   ];
-  pub const NumTypeBits: u64 = 45;
+  pub const NumTypeBits: u64 = 46;
 }
 pub mod types {
   use super::*;
@@ -227,6 +229,7 @@ pub mod types {
   pub const Symbol: Type = Type::from_bits(bits::Symbol);
   pub const TrueClass: Type = Type::from_bits(bits::TrueClass);
   pub const Truthy: Type = Type::from_bits(bits::Truthy);
+  pub const TypedTData: Type = Type::from_bits(bits::TypedTData);
   pub const Undef: Type = Type::from_bits(bits::Undef);
   pub const ExactBitsAndClass: [(u64, *const VALUE); 17] = [
     (bits::ObjectExact, &raw const crate::cruby::rb_cObject),

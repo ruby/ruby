@@ -20,6 +20,7 @@ module Prism
       ruby/find_fixtures.rb
       ruby/find_test.rb
       ruby/parser_test.rb
+      ruby/ripper_test.rb
       ruby/ruby_parser_test.rb
     ]
 

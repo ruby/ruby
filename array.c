@@ -361,7 +361,7 @@ ary_heap_alloc_buffer(size_t capa)
 static void
 ary_heap_free_ptr(VALUE ary, const VALUE *ptr, long size)
 {
-    ruby_sized_xfree((void *)ptr, size);
+    ruby_xfree_sized((void *)ptr, size);
 }
 
 static void
@@ -2427,7 +2427,7 @@ rb_ary_resize(VALUE ary, long len)
         MEMCPY((VALUE *)ARY_EMBED_PTR(ary), ptr, VALUE, len); /* WB: no new reference */
         ARY_SET_EMBED_LEN(ary, len);
 
-        if (is_malloc_ptr) ruby_sized_xfree((void *)ptr, ptr_capa);
+        if (is_malloc_ptr) ruby_xfree_sized((void *)ptr, ptr_capa);
     }
     else {
         if (olen > len + ARY_DEFAULT_SIZE) {

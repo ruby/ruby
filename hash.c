@@ -5012,6 +5012,8 @@ hash_proc_call(RB_BLOCK_CALL_FUNC_ARGLIST(key, hash))
  *    proc.call(:foo) # => 0
  *    proc.call(:bar) # => 1
  *    proc.call(:nosuch) # => nil
+ *    h.default_proc = proc { |hash, key| "Missing key: #{key}" } # This affect the existing proc object
+ *    proc.call(:nosuch) # => "Missing key: #{nosuch}"
  *
  *  Related: see {Methods for Converting}[rdoc-ref:Hash@Methods+for+Converting].
  */

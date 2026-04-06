@@ -51,6 +51,11 @@ pub struct IseqVersion {
 pub type IseqVersionRef = NonNull<IseqVersion>;
 
 impl IseqVersion {
+    /// Check if this version was invalidated
+    pub fn is_invalidated(&self) -> bool {
+        self.status == IseqStatus::Invalidated
+    }
+
     /// Allocate a new IseqVersion to be compiled
     pub fn new(iseq: IseqPtr) -> IseqVersionRef {
         let version = Self {

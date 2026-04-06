@@ -19980,6 +19980,7 @@ vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/error.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/gc.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/object.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/serial.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/set_table.h

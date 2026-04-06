@@ -4920,9 +4920,9 @@ rb_str_byterindex(VALUE str, VALUE sub, long pos)
  *    s.size              # => 3 # Three 1-byte characters.
  *    s.bytesize          # => 3 # Three bytes.
  *    s.byterindex('f')   # => 0
-      s.byterindex('o')   # => 2
-      s.byterindex('oo')  # => 1
-      s.byterindex('ooo') # => nil
+ *    s.byterindex('o')   # => 2
+ *    s.byterindex('oo')  # => 1
+ *    s.byterindex('ooo') # => nil
  *
  *  When +object+ is a Regexp,
  *  returns the index of the last found substring matching +object+;
@@ -7828,7 +7828,7 @@ mapping_buffer_free(void *p)
     while (current_buffer) {
         previous_buffer = current_buffer;
         current_buffer  = current_buffer->next;
-        ruby_sized_xfree(previous_buffer, offsetof(mapping_buffer, space) + previous_buffer->capa);
+        ruby_xfree_sized(previous_buffer, offsetof(mapping_buffer, space) + previous_buffer->capa);
     }
 }
 

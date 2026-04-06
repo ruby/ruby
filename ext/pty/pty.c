@@ -274,12 +274,23 @@ ptsname_r(int fd, char *buf, size_t buflen)
 # define HAVE_PTSNAME_R 1
 #endif
 
+#ifdef HAVE_FCHMOD
+# define change_mode(name, fd, mode) fchmod(fd, mode)
+#else
+# define change_mode(name, fd, mode) chmod(name, mode)
+#endif
+#ifdef HAVE_FCHOWN
+# define change_owner(name, fd, uid, gid) fchown(fd, uid, gid)
+#else
+# define change_owner(name, fd, uid, gid) chown(name, uid, gid)
+#endif
+
 #if defined(HAVE_POSIX_OPENPT) || defined(HAVE_OPENPTY) || defined(HAVE_PTSNAME_R)
-static int
-no_mesg(char *slavedevice, int nomesg)
+static inline int
+prevent_messages(const char *slavedevice, int fd, int nomesg)
 {
     if (nomesg)
-        return chmod(slavedevice, 0600);
+        return change_mode(slavedevice, fd, 0600);
     else
         return 0;
 }
@@ -340,8 +351,8 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     if (unlockpt(masterfd) == -1) goto error;
     if (ptsname_r(masterfd, SlaveName, DEVICELEN) != 0) goto error;
     slavedevice = SlaveName;
-    if (no_mesg(slavedevice, nomesg) == -1) goto error;
     if ((slavefd = rb_cloexec_open(slavedevice, O_RDWR|O_NOCTTY, 0)) == -1) goto error;
+    if (prevent_messages(slavedevice, slavefd, nomesg) == -1) goto error;
     rb_update_max_fd(slavefd);
 
 #if defined(I_PUSH) && !defined(__linux__) && !defined(_AIX)
@@ -375,7 +386,9 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     }
     rb_fd_fix_cloexec(*master);
     rb_fd_fix_cloexec(*slave);
-    if (no_mesg(SlaveName, nomesg) == -1) {
+    if (prevent_messages(SlaveName, *slave, nomesg) == -1) {
+        close(*master);
+        close(*slave);
         if (!fail) return -1;
         rb_raise(rb_eRuntimeError, "can't chmod slave pty");
     }
@@ -424,8 +437,8 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     if(unlockpt(masterfd) == -1) goto error;
     if (ptsname_r(masterfd, SlaveName, DEVICELEN) != 0) goto error;
     slavedevice = SlaveName;
-    if (no_mesg(slavedevice, nomesg) == -1) goto error;
     if((slavefd = rb_cloexec_open(slavedevice, O_RDWR, 0)) == -1) goto error;
+    if (prevent_messages(slavedevice, slavefd, nomesg) == -1) goto error;
     rb_update_max_fd(slavefd);
 #if defined(I_PUSH) && !defined(__linux__) && !defined(_AIX)
     if(ioctl_I_PUSH(slavefd, "ptem") == -1) goto error;
@@ -478,8 +491,8 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
             if ((slavefd = rb_cloexec_open(SlaveName,O_RDWR,0)) >= 0) {
                 rb_update_max_fd(slavefd);
                 *slave = slavefd;
-                if (chown(SlaveName, getuid(), getgid()) != 0) goto error;
-                if (chmod(SlaveName, nomesg ? 0600 : 0622) != 0) goto error;
+                if (change_owner(SlaveName, slavefd, getuid(), getgid()) != 0) goto error;
+                if (change_mode(SlaveName, slavefd, nomesg ? 0600 : 0622) != 0) goto error;
                 return 0;
             }
             close(masterfd);

@@ -2361,7 +2361,7 @@ r_object(struct load_arg *arg)
 static void
 clear_load_arg(struct load_arg *arg)
 {
-    ruby_sized_xfree(arg->buf, BUFSIZ);
+    ruby_xfree_sized(arg->buf, BUFSIZ);
     arg->buf = NULL;
     arg->buflen = 0;
     arg->offset = 0;

@@ -39,5 +39,10 @@ describe "Integer#>" do
       -> { @bignum > "4" }.should raise_error(ArgumentError)
       -> { @bignum > mock('str') }.should raise_error(ArgumentError)
     end
+
+    it "dispatches the correct operator after coercion" do
+      (bignum_value > IntegerSpecs::CoercibleNumeric.new(1)).should == true
+      (bignum_value > IntegerSpecs::CoercibleNumeric.new(bignum_value * 2)).should == false
+    end
   end
 end

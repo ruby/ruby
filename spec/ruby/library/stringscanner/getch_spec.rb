@@ -11,6 +11,13 @@ describe "StringScanner#getch" do
     s.getch.should == "c"
   end
 
+  it "scans newlines too" do
+    s = StringScanner.new("a\nc")
+    s.getch.should == "a"
+    s.getch.should == "\n"
+    s.getch.should == "c"
+  end
+
   it "is multi-byte character sensitive" do
     # Japanese hiragana "A" in EUC-JP
     src = "\244\242".dup.force_encoding("euc-jp")
