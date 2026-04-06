@@ -474,23 +474,7 @@ pub extern "C" fn rb_zjit_record_exit_stack(reason: *const std::ffi::c_char) {
     }
 
     // Collect profile frames
-    const BUFF_LEN: usize = 2048;
-    let mut frames_buffer = vec![VALUE(0_usize); BUFF_LEN];
-    let mut lines_buffer = vec![0i32; BUFF_LEN];
-
-    let stack_length = unsafe {
-        rb_profile_frames(
-            0,
-            BUFF_LEN as i32,
-            frames_buffer.as_mut_ptr(),
-            lines_buffer.as_mut_ptr(),
-        )
-    };
-
-    // Resolve each frame to a human-readable string (top frame first)
-    let frames: Vec<String> = (0..stack_length as usize)
-        .map(|i| resolve_frame_label(frames_buffer[i]))
-        .collect();
+    let frames = capture_ruby_frames();
 
     // Get the reason string
     let reason_str = if reason.is_null() {
@@ -540,6 +524,7 @@ fn capture_ruby_frames() -> Vec<String> {
         )
     };
 
+    // Resolve each frame to a human-readable string (top frame first)
     (0..stack_length as usize)
         .map(|i| resolve_frame_label(frames_buffer[i]))
         .collect()
