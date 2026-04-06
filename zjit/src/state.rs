@@ -128,7 +128,7 @@ impl ZJITState {
         let exit_trampoline = gen_exit_trampoline(&mut cb).unwrap();
         let function_stub_hit_trampoline = gen_function_stub_hit_trampoline(&mut cb).unwrap();
 
-        let perfetto_tracer = if get_option!(trace_side_exits).is_some() || get_option!(trace_compiles) {
+        let perfetto_tracer = if get_option!(trace_side_exits).is_some() || get_option!(trace_compiles) || get_option!(trace_invalidation) {
             Some(PerfettoTracer::new())
         } else {
             None
@@ -505,7 +505,7 @@ pub extern "C" fn rb_zjit_record_exit_stack(reason: *const std::ffi::c_char) {
 /// Wrap a closure in a Perfetto duration event with category "invalidation"
 /// and a Ruby backtrace captured on the begin event.
 pub fn trace_invalidation<F, R>(reason: &str, func: F) -> R where F: FnOnce() -> R {
-    if !get_option!(trace_compiles) {
+    if !get_option!(trace_invalidation) {
         return func();
     }
 
